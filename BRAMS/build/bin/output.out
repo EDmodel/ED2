@@ -1,0 +1,240 @@
+Sender: LSF System <lsfadmin@fb7>
+Subject: Job 342629: <./install.sh> Exited
+
+Job <./install.sh> was submitted from host <portal> by user <mlongo>.
+Job was executed on host(s) <fb7>, in queue <moorcroft>, as user <mlongo>.
+</n/Moorcroft_Lab/Users/mlongo> was used as the home directory.
+</n/Moorcroft_Lab/Users/mlongo/BRAMS40/build/bin> was used as the working directory.
+Started at Sat Aug 18 21:24:01 2007
+Results reported at Sat Aug 18 21:26:58 2007
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+./install.sh
+------------------------------------------------------------
+
+Exited with exit code 2.
+
+Resource usage summary:
+
+    CPU time   :    159.50 sec.
+    Max Memory :       348 MB
+    Max Swap   :       582 MB
+
+    Max Processes  :         7
+    Max Threads    :         8
+
+The output (if any) follows:
+
+Checking HDF......
+HDF OK!
+
+Checking configure files.....
+files configured!
+Installing Brams..
+/usr/bin/make -f Make_utils OPT=opt
+make[1]: Entering directory `/n/Moorcroft_Lab/Users/mlongo/BRAMS40/build/bin'
+
+Finished building === /n/Moorcroft_Lab/Users/mlongo/BRAMS40/build//libutils-2.0-opt.a
+
+make[1]: Leaving directory `/n/Moorcroft_Lab/Users/mlongo/BRAMS40/build/bin'
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/turb/turb_k.f90 turb_k.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include turb_k.f90
+rm -f turb_k.f90 
+ar rs /n/Moorcroft_Lab/Users/mlongo/BRAMS40/build//brams-opt.a alloc.o altera_dia.o an_header.o aobj.o asgen.o asti.o asti2.o astp.o avarf.o catt_start.o emission_source_map.o machine_arq.o teb_spm_start.o mem_grid_dim_defs.o cond_read.o cond_update.o conv_coms.o coriolis.o cu_read.o cup_dn.o cup_env.o cup_env_catt.o cup_grell2.o cup_grell2_shcu.o cup_grell_catt_deep.o cup_grell_catt_shallow.o cup_output_vars.o cup_up.o cyclic_mod.o diffsclr.o diffuse.o extra.o file_inv.o first_rams.o geodat.o grid_dims.o grid_struct.o hemi2.o inithis.o io_params.o isan_coms.o isan_io.o ke_coms.o landuse_input.o leaf3.o leaf3_hyd.o leaf3_init.o leaf_coms.o leaf3_teb.o mem_aerad.o mem_all.o mem_basic.o mem_carma.o mem_cuparm.o mem_cutrans.o mem_globaer.o mem_globrad.o mem_grell.o mem_grell_param2.o mem_grid.o mem_leaf.o mem_micro.o mem_mksfc.o mem_nestb.o mem_oda.o mem_opt_scratch.o mem_precision.o mem_radiate.o mem_scalar.o mem_scratch.o mem_scratch1_brams.o mem_scratch1_grell.o mem_scratch2_grell.o mem_scratch2_grell_sh.o mem_scratch3_grell.o mem_scratch3_grell_sh.o mem_shcu.o mem_sib.o mem_sib_co2.o mem_soil_moisture.o mem_stilt.o mem_tconv.o mem_tend.o mem_turb.o mem_turb_scalar.o mem_varinit.o mem_micro_optij.o mic_coll.o mic_driv.o mic_driv_new.o mic_gamma.o mic_init.o mic_misc.o mic_nuc.o mic_tabs.o mic_vap.o micphys.o mksfc_driver.o mksfc_ndvi.o mksfc_sfc.o mksfc_sst.o mksfc_top.o model.o modsched.o local_proc.o mpass_cyclic.o mpass_dtl.o mpass_feed.o mpass_full.o mpass_init.o mpass_lbc.o mpass_nest.o mpass_oda.o mpass_st.o ndvi_read.o nest_drivers.o nest_feed.o nest_filldens.o nest_geosst.o nest_intrp.o nest_move.o node_mod.o nud_analysis.o nud_read.o nud_update.o obs_input.o oda_krig.o oda_nudge.o oda_proc_obs.o oda_read.o oda_sta_count.o oda_sta_input.o opspec.o domain_decomp.o par_decomp.o para_init.o paral.o raco.o raco_adap.o rad_carma.o dry_dep.o rad_ccmp.o rad_driv.o rad_mclat.o rad_stable.o radvc.o radvc_adap.o mod_GhostBlock.o mod_GhostBlockPartition.o mod_advect_kit.o radvc_new.o rams_grid.o gridset.o adap_init.o rams_master.o rams_mem_alloc.o rams_read_header.o ranlavg.o rbnd.o rbnd_adap.o rcio.o rconstants.o rconv.o rconv_grell.o rconv_grell_catt.o extras_rconv_grell_catt.o rdint.o read_ralph.o recycle.o ref_sounding.o refstate.o rexev.o rgrad.o rhhi.o rinit.o rio.o rname.o rnest_par.o rnode.o rpara.o rprnt.o rrad2.o rrad3.o rstilt.o rshcupar.o rthrm.o rtimh.o rtimi.o ruser.o shcu_vars_const.o sib2_co2.o sib2_driver.o sib2_init.o sib_vars.o soil_moisture_init.o sst_read.o tkenn.o turb_constants.o turb_diff.o turb_diff_adap.o turb_k.o turb_k_adap.o turb_ke.o upcase.o urban_canopy.o v_interps.o var_tables.o varf_read.o varf_update.o vtab_fill.o plumerise_vector.o mksfc_fuso.o mem_teb.o mem_teb_common.o mem_teb_vars_const.o mem_gaspart.o mem_emiss.o urban.o gaspart.o ozone.o mod_ozone.o
+/usr/bin/make -f Make_ncarg OPT=opt
+make[1]: Entering directory `/n/Moorcroft_Lab/Users/mlongo/BRAMS40/build/bin'
+
+Finished building === /n/Moorcroft_Lab/Users/mlongo/BRAMS40/build//libncarg-2.0.a
+
+make[1]: Leaving directory `/n/Moorcroft_Lab/Users/mlongo/BRAMS40/build/bin'
+
+mpif90 -o /n/Moorcroft_Lab/Users/mlongo/BRAMS40/build//brams-opt rammain.o -O3 -static -Vaxlib -traceback -CB -zero /n/Moorcroft_Lab/Users/mlongo/BRAMS40/build//brams-opt.a \
+/n/Moorcroft_Lab/Users/mlongo/BRAMS40/build//libutils-2.0-opt.a /n/Moorcroft_Lab/Users/mlongo/BRAMS40/build//libncarg-2.0.a   -L.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
+IPO Warning: can not find "/usr/lib/crt1.o"
+IPO Warning: can not find "/usr/lib/crti.o"
+IPO link: can not find -lpthread
+ifort: error: problem during multi-file optimization compilation (code 1)
+make: *** [/n/Moorcroft_Lab/Users/mlongo/BRAMS40/build//brams-opt] Error 1
+Sender: LSF System <lsfadmin@fb10>
+Subject: Job 342637: <install.sh> Exited
+
+Job <install.sh> was submitted from host <portal> by user <mlongo>.
+Job was executed on host(s) <fb10>, in queue <moorcroft>, as user <mlongo>.
+</n/Moorcroft_Lab/Users/mlongo> was used as the home directory.
+</n/Moorcroft_Lab/Users/mlongo/BRAMS40/build/bin> was used as the working directory.
+Started at Sun Aug 19 10:12:13 2007
+Results reported at Sun Aug 19 10:21:36 2007
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+install.sh
+------------------------------------------------------------
+
+Exited with exit code 2.
+
+Resource usage summary:
+
+    CPU time   :    540.97 sec.
+    Max Memory :       356 MB
+    Max Swap   :       590 MB
+
+    Max Processes  :         7
+    Max Threads    :         8
+
+The output (if any) follows:
+
+Checking HDF......
+HDF OK!
+
+Checking configure files.....
+files configured!
+Installing Brams..
+/usr/bin/make -f Make_utils OPT=opt
+make[1]: Entering directory `/n/Moorcroft_Lab/Users/mlongo/BRAMS40/build/bin'
+
+Finished building === /n/Moorcroft_Lab/Users/mlongo/BRAMS40/build//libutils-2.0-opt.a
+
+make[1]: Leaving directory `/n/Moorcroft_Lab/Users/mlongo/BRAMS40/build/bin'
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/core/mod_advect_kit.f90 mod_advect_kit.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include mod_advect_kit.f90
+rm -f mod_advect_kit.f90
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/core/model.f90 model.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include model.f90
+rm -f model.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/mpi/mpass_init.f90 mpass_init.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include mpass_init.f90
+rm -f mpass_init.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/nesting/nest_drivers.f90 nest_drivers.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include nest_drivers.f90
+rm -f nest_drivers.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/nesting/nest_move.f90 nest_move.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include nest_move.f90
+rm -f nest_move.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/fdda/nud_analysis.f90 nud_analysis.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include nud_analysis.f90
+rm -f nud_analysis.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/fdda/oda_nudge.f90 oda_nudge.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include oda_nudge.f90
+rm -f oda_nudge.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/io/opspec.f90 opspec.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include opspec.f90
+rm -f opspec.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/core/raco.f90 raco.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include raco.f90
+rm -f raco.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/catt/dry_dep.f90 dry_dep.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include dry_dep.f90
+rm -f dry_dep.f90
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/radiate/rad_driv.f90 rad_driv.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rad_driv.f90
+rm -f rad_driv.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/core/radvc.f90 radvc.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include radvc.f90
+rm -f radvc.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/core/rams_master.f90 rams_master.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rams_master.f90
+rm -f rams_master.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/memory/rams_mem_alloc.f90 rams_mem_alloc.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rams_mem_alloc.f90
+rm -f rams_mem_alloc.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/io/ranlavg.f90 ranlavg.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include ranlavg.f90
+rm -f ranlavg.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/bc/rbnd.f90 rbnd.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rbnd.f90
+rm -f rbnd.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/io/rcio.f90 rcio.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rcio.f90
+rm -f rcio.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/cuparm/rconv.f90 rconv.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rconv.f90
+rm -f rconv.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/cuparm/rconv_grell.f90 rconv_grell.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rconv_grell.f90
+rm -f rconv_grell.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/cuparm/rconv_grell_catt.f90 rconv_grell_catt.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rconv_grell_catt.f90
+rm -f rconv_grell_catt.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/init/rdint.f90 rdint.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rdint.f90
+rm -f rdint.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/mass/rexev.f90 rexev.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rexev.f90
+rm -f rexev.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/init/rinit.f90 rinit.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rinit.f90
+rm -f rinit.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/io/rio.f90 rio.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rio.f90
+rm -f rio.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/io/rname.f90 rname.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rname.f90
+rm -f rname.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/core/rnode.f90 rnode.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rnode.f90
+rm -f rnode.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/io/rprnt.f90 rprnt.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rprnt.f90
+rm -f rprnt.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/mass/rstilt.f90 rstilt.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rstilt.f90
+rm -f rstilt.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/cuparm/rshcupar.f90 rshcupar.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rshcupar.f90
+rm -f rshcupar.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/core/rthrm.f90 rthrm.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rthrm.f90
+rm -f rthrm.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/core/rtimh.f90 rtimh.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rtimh.f90
+rm -f rtimh.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/core/rtimi.f90 rtimi.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include rtimi.f90
+rm -f rtimi.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/sib/sib2_driver.f90 sib2_driver.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include sib2_driver.f90
+rm -f sib2_driver.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/turb/tkenn.f90 tkenn.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include tkenn.f90
+rm -f tkenn.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/turb/turb_diff.f90 turb_diff.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include turb_diff.f90
+rm -f turb_diff.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/turb/turb_k.f90 turb_k.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include turb_k.f90
+rm -f turb_k.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/turb/turb_ke.f90 turb_ke.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include turb_ke.f90
+fortcom: Warning: turb_ke.f90, line 12: A dummy argument with an explicit INTENT(OUT) declaration is not given an explicit value.   [EPST]
+          ,tkep,tket,epsp,epst &
+--------------------------^
+rm -f turb_ke.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/surface/urban_canopy.f90 urban_canopy.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include urban_canopy.f90
+rm -f urban_canopy.f90 
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/teb_spm/gaspart.f90 gaspart.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include gaspart.f90
+rm -f gaspart.f90
+cp -f /n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/brams/teb_spm/ozone.f90 ozone.f90
+mpif90 -c -FR -O3 -Vaxlib -static -traceback -CB -zero -I/n/Moorcroft_Lab/Users/mlongo/BRAMS40/src/utils/include ozone.f90
+rm -f ozone.f90
+ar rs /n/Moorcroft_Lab/Users/mlongo/BRAMS40/build//brams-opt.a alloc.o altera_dia.o an_header.o aobj.o asgen.o asti.o asti2.o astp.o avarf.o catt_start.o emission_source_map.o machine_arq.o teb_spm_start.o mem_grid_dim_defs.o cond_read.o cond_update.o conv_coms.o coriolis.o cu_read.o cup_dn.o cup_env.o cup_env_catt.o cup_grell2.o cup_grell2_shcu.o cup_grell_catt_deep.o cup_grell_catt_shallow.o cup_output_vars.o cup_up.o cyclic_mod.o diffsclr.o diffuse.o extra.o file_inv.o first_rams.o geodat.o grid_dims.o grid_struct.o hemi2.o inithis.o io_params.o isan_coms.o isan_io.o ke_coms.o landuse_input.o leaf3.o leaf3_hyd.o leaf3_init.o leaf_coms.o leaf3_teb.o mem_aerad.o mem_all.o mem_basic.o mem_carma.o mem_cuparm.o mem_cutrans.o mem_globaer.o mem_globrad.o mem_grell.o mem_grell_param2.o mem_grid.o mem_leaf.o mem_micro.o mem_mksfc.o mem_nestb.o mem_oda.o mem_opt_scratch.o mem_precision.o mem_radiate.o mem_scalar.o mem_scratch.o mem_scratch1_brams.o mem_scratch1_grell.o mem_scratch2_grell.o mem_scratch2_grell_sh.o mem_scratch3_grell.o mem_scratch3_grell_sh.o mem_shcu.o mem_sib.o mem_sib_co2.o mem_soil_moisture.o mem_stilt.o mem_tconv.o mem_tend.o mem_turb.o mem_turb_scalar.o mem_varinit.o mem_micro_optij.o mic_coll.o mic_driv.o mic_driv_new.o mic_gamma.o mic_init.o mic_misc.o mic_nuc.o mic_tabs.o mic_vap.o micphys.o mksfc_driver.o mksfc_ndvi.o mksfc_sfc.o mksfc_sst.o mksfc_top.o model.o modsched.o local_proc.o mpass_cyclic.o mpass_dtl.o mpass_feed.o mpass_full.o mpass_init.o mpass_lbc.o mpass_nest.o mpass_oda.o mpass_st.o ndvi_read.o nest_drivers.o nest_feed.o nest_filldens.o nest_geosst.o nest_intrp.o nest_move.o node_mod.o nud_analysis.o nud_read.o nud_update.o obs_input.o oda_krig.o oda_nudge.o oda_proc_obs.o oda_read.o oda_sta_count.o oda_sta_input.o opspec.o domain_decomp.o par_decomp.o para_init.o paral.o raco.o raco_adap.o rad_carma.o dry_dep.o rad_ccmp.o rad_driv.o rad_mclat.o rad_stable.o radvc.o radvc_adap.o mod_GhostBlock.o mod_GhostBlockPartition.o mod_advect_kit.o radvc_new.o rams_grid.o gridset.o adap_init.o rams_master.o rams_mem_alloc.o rams_read_header.o ranlavg.o rbnd.o rbnd_adap.o rcio.o rconstants.o rconv.o rconv_grell.o rconv_grell_catt.o extras_rconv_grell_catt.o rdint.o read_ralph.o recycle.o ref_sounding.o refstate.o rexev.o rgrad.o rhhi.o rinit.o rio.o rname.o rnest_par.o rnode.o rpara.o rprnt.o rrad2.o rrad3.o rstilt.o rshcupar.o rthrm.o rtimh.o rtimi.o ruser.o shcu_vars_const.o sib2_co2.o sib2_driver.o sib2_init.o sib_vars.o soil_moisture_init.o sst_read.o tkenn.o turb_constants.o turb_diff.o turb_diff_adap.o turb_k.o turb_k_adap.o turb_ke.o upcase.o urban_canopy.o v_interps.o var_tables.o varf_read.o varf_update.o vtab_fill.o plumerise_vector.o mksfc_fuso.o mem_teb.o mem_teb_common.o mem_teb_vars_const.o mem_gaspart.o mem_emiss.o urban.o gaspart.o ozone.o mod_ozone.o
+/usr/bin/make -f Make_ncarg OPT=opt
+make[1]: Entering directory `/n/Moorcroft_Lab/Users/mlongo/BRAMS40/build/bin'
+
+Finished building === /n/Moorcroft_Lab/Users/mlongo/BRAMS40/build//libncarg-2.0.a
+
+make[1]: Leaving directory `/n/Moorcroft_Lab/Users/mlongo/BRAMS40/build/bin'
+
+mpif90 -o /n/Moorcroft_Lab/Users/mlongo/BRAMS40/build//brams-opt rammain.o -O3 -static -Vaxlib -traceback -CB -zero /n/Moorcroft_Lab/Users/mlongo/BRAMS40/build//brams-opt.a \
+/n/Moorcroft_Lab/Users/mlongo/BRAMS40/build//libutils-2.0-opt.a /n/Moorcroft_Lab/Users/mlongo/BRAMS40/build//libncarg-2.0.a   -L.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
+IPO Warning: can not find "/usr/lib/crt1.o"
+IPO Warning: can not find "/usr/lib/crti.o"
+IPO link: can not find -lpthread
+ifort: error: problem during multi-file optimization compilation (code 1)
+make: *** [/n/Moorcroft_Lab/Users/mlongo/BRAMS40/build//brams-opt] Error 1

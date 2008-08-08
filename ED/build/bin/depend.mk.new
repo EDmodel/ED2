@@ -1,0 +1,745 @@
+ed_driver.o : $(ED_DRIVER)/ed_driver.f90 io_params.o mem_grid.o \
+	mem_ed.o domain_decomp.o ed_state_vars.o \
+	rpara.o node_mod.o mpass_soi.o soil_coms.o misc_coms.o node_mod.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+mem_work.o : $(ED_MEMORY)/mem_work.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_1st.o : $(ED_DRIVER)/ed_1st.f90 ed_state_vars.o mem_ed.o mem_grid.o mem_sites.o \
+	mpass_soi.o node_mod.o rpara.o misc_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+canopy_update_euler.o : $(ED_DYNAMICS)/canopy_update_euler.f90 site_type.o  \
+	soil_coms.o canopy_radiation_coms.o consts_coms.o max_dims.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+euler_driver.o : $(ED_DYNAMICS)/euler_driver.f90 site_type.o  misc_coms.o \
+	consts_coms.o soil_coms.o max_dims.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+decomposition.o : $(ED_DYNAMICS)/decomposition.f90 decomp_coms.o  \
+	pft_coms.o soil_coms.o site_type.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+farq_leuning.o : $(ED_DYNAMICS)/farq_leuning.f90 c34constants.o  \
+	pft_coms.o physiology_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+photosyn_driv.o : $(ED_DYNAMICS)/photosyn_driv.f90 site_type.o max_dims.o  \
+	canopy_radiation_coms.o soil_coms.o pft_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+radiate_driver.o : $(ED_DYNAMICS)/radiate_driver.f90 site_type.o misc_coms.o  \
+	canopy_radiation_coms.o consts_coms.o soil_coms.o max_dims.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+sfcrad_ed.o : $(ED_DYNAMICS)/sfcrad_ed.f90 site_type.o max_dims.o pft_coms.o soil_coms.o \
+	canopy_radiation_coms.o consts_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+twostream_rad.o : $(ED_DYNAMICS)/twostream_rad.f90 pft_coms.o \
+	canopy_radiation_coms.o consts_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_history_io.o : $(ED_IO)/ed_history_io.f90 site_type.o max_dims.o  \
+	pft_coms.o misc_coms.o \
+	ed_type_utils.o mem_sites.o consts_coms.o fuse_fiss_utils.o  \
+	ed_misc_coms.o flags.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ecio.o : $(ED_IO)/ecio.f90 ed_commons.o grid_dims.o io_params.o mem_ed.o \
+	mem_grid.o soil_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_init.o : $(ED_INIT)/ed_init.f90 site_type.o               \
+	ed_commons.o rpara.o node_mod.o misc_coms.o          \
+	mem_ed.o mem_grid.o io_params.o ed_type_utils.o      \
+	ed_grid_utils.o disturbance_ar.o phenology_init.o      \
+	mpass_soi.o ed_grid_utils.o soil_coms.o mem_sites.o  \
+	ed_state_vars.o misc_coms.o
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+ed_met_driver.o : $(ED_DRIVER)/ed_met_driver.f90 site_type.o misc_coms.o \
+	met_driver_coms.o hdf5_utils.o max_dims.o consts_coms.o mem_sites.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(HDF5_INCS) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+analysis_write.o : $(ED_IO)/analysis_write.f90 site_type.o misc_coms.o \
+	mem_sites.o consts_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_model.o : $(ED_DRIVER)/ed_model.f90  io_params.o \
+	mem_ed.o mem_grid.o site_type.o  \
+	rk4_driver.o grid_dims.o rpara.o \
+	mpass_soi.o fuse_fiss_utils.o max_dims.o pft_coms.o \
+	ed_state_vars.o rk4_driver_ar.o flags.o \
+	disturbance_ar.o fuse_fiss_utils_ar.o growth_balive_ar.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_params.o : $(ED_INIT)/ed_params.f90 max_dims.o pft_coms.o canopy_radiation_coms.o \
+	decomp_coms.o 
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+landuse_init.o : $(ED_INIT)/landuse_init.f90 site_type.o consts_coms.o disturb_coms.o \
+	misc_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_grid.o : $(ED_UTILS)/ed_grid.f90  mem_grid.o node_mod.o consts_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+ed_mem_alloc.o : $(ED_MEMORY)/ed_mem_alloc.f90 grid_dims.o \
+	node_mod.o ed_mem_grid_dim_defs.o mem_ed.o ed_commons.o \
+	ed_mem_scratch.o var_tables.o mem_grid.o io_params.o soil_coms.o \
+	mem_sites.o mem_work.o misc_coms.o ed_grid_utils.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+ed_mem_grid_dim_defs.o : $(ED_MEMORY)/ed_mem_grid_dim_defs.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_mem_scratch.o : $(ED_MEMORY)/ed_mem_scratch.f90 grid_dims.o var_tables.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_mpass_init.o : $(ED_MPI)/ed_mpass_init.f90 decomp_coms.o disturb_coms.o ed_state_vars.o \
+	grid_dims.o max_dims.o mem_ed.o mem_grid.o mem_sites.o met_driver_coms.o \
+	misc_coms.o node_mod.o phenology_coms.o physiology_coms.o rpara.o soil_coms.o \
+	met_driver_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+fatal_error.o : $(ED_UTILS)/fatal_error.f90 node_mod.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_para_init.o : $(ED_MPI)/ed_para_init.f90 mem_grid.o var_tables.o ed_mem_scratch.o \
+	rpara.o mem_work.o soil_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+allometry.o : $(ED_DYNAMICS)/allometry.f90 soil_coms.o pft_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+c34constants.o : $(ED_MEMORY)/c34constants.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+#disturbance.o : $(ED_DYNAMICS)/disturbance.f90 decomp_coms.o disturb_coms.o \
+#	max_dims.o misc_coms.o pft_coms.o site_type.o soil_coms.o \
+#	fuse_fiss_utils.o mem_ed.o
+#	cp -f $< $(<F:.f90=.f90)
+#	$(F_COMMAND) $(<F:.f90=.f90)
+#	rm -f $(<F:.f90=.f90)
+
+ed_commons.o : $(ED_MEMORY)/ed_commons.f90 soil_coms.o max_dims.o disturb_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+edhdf.o : $(ED_IO)/edhdf.F90 an_header.o var_tables.o grid_dims.o \
+	mem_ed.o mem_grid.o io_params.o ed_commons.o
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+edio.o : $(ED_IO)/edio.f90 site_type.o mem_ed.o mem_grid.o consts_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+edrio.o : $(ED_IO)/edrio.F90 mem_ed.o misc_coms.o consts_coms.o site_type.o \
+	ed_commons.o io_params.o mem_grid.o soil_coms.o pft_coms.o \
+	hydrology_coms.o canopy_radiation_coms.o fuse_fiss_utils.o flags.o
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+ed_type_utils.o : $(ED_UTILS)/ed_type_utils.f90 site_type.o  rpara.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+growth_balive.o : $(ED_DYNAMICS)/growth_balive.f90 site_type.o pft_coms.o \
+	physiology_coms.o soil_coms.o decomp_coms.o mem_ed.o
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+structural_growth.o : $(ED_DYNAMICS)/structural_growth.f90 site_type.o \
+	pft_coms.o decomp_coms.o max_dims.o consts_coms.o
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+fire.o : $(ED_DYNAMICS)/fire.f90 site_type.o pft_coms.o soil_coms.o disturb_coms.o
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+invmondays.o : $(ED_UTILS)/invmondays.f90 site_type.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed2gridded.o : $(ED_IO)/ed2gridded.f90 mem_ed.o mem_grid.o site_type.o \
+	consts_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+rk4_derivs.o : $(ED_DYNAMICS)/rk4_derivs.F90 consts_coms.o ed_commons.o \
+	site_type.o soil_coms.o misc_coms.o canopy_radiation_coms.o pft_coms.o
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+rk4_driver.o : $(ED_DYNAMICS)/rk4_driver.f90 site_type.o soil_coms.o \
+	misc_coms.o consts_coms.o ed_commons.o canopy_radiation_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+#average_utils.o : $(ED_IO)/average_utils.f90 site_type.o consts_coms.o \
+#	misc_coms.o max_dims.o
+#	cp -f $< $(<F:.f90=.f90)
+#	$(F_COMMAND) $(<F:.f90=.f90)
+#	rm -f $(<F:.f90=.f90)
+
+rk4_stepper.o : $(ED_DYNAMICS)/rk4_stepper.F90 site_type.o soil_coms.o \
+	canopy_radiation_coms.o
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+rk4_integ_utils.o : $(ED_DYNAMICS)/rk4_integ_utils.f90 site_type.o  \
+	soil_coms.o rk4_stepper.o hydrology_coms.o canopy_radiation_coms.o \
+	max_dims.o misc_coms.o mem_ed.o mem_grid.o consts_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+mem_ed.o : $(ED_MEMORY)/mem_ed.f90 site_type.o ed_commons.o var_tables.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+mortality.o : $(ED_DYNAMICS)/mortality.f90 site_type.o pft_coms.o \
+	disturb_coms.o consts_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+phenology_init.o : $(ED_DYNAMICS)/phenology_init.f90 site_type.o \
+	phenology_coms.o misc_coms.o ed_state_vars.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+phenology_aux.o : $(ED_DYNAMICS)/phenology_aux.f90 site_type.o \
+	phenology_coms.o max_dims.o pft_coms.o consts_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+reproduction.o : $(ED_DYNAMICS)/reproduction.F90 site_type.o pft_coms.o \
+	decomp_coms.o \
+	misc_coms.o fusion_fission_coms.o max_dims.o fuse_fiss_utils.o
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+ed_bare_restart.o : $(ED_INIT)/ed_bare_restart.f90 site_type.o max_dims.o pft_coms.o \
+	ed_type_utils.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+site_type.o : $(ED_MEMORY)/site_type.f90 ed_commons.o disturb_coms.o c34constants.o \
+	met_driver_coms.o max_dims.o fusion_fission_coms.o phenology_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+phenology_driv.o : $(ED_DYNAMICS)/phenology_driv.f90 site_type.o  \
+	soil_coms.o pft_coms.o decomp_coms.o phenology_coms.o
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+grid_dims.o : $(ED_MEMORY)/grid_dims.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+io_params.o : $(ED_IO)/io_params.f90 grid_dims.o misc_coms.o soil_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+var_tables.o : $(ED_MEMORY)/var_tables.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+mem_grid.o : $(ED_MEMORY)/mem_grid.f90 grid_dims.o var_tables.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+domain_decomp.o : $(ED_MEMORY)/domain_decomp.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+vtab_fill.o : $(ED_MEMORY)/vtab_fill.f90 io_params.o var_tables.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+rpara.o : $(ED_MPI)/rpara.f90 grid_dims.o 
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+node_mod.o : $(ED_MPI)/node_mod.f90 grid_dims.o 
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+ed_grid_utils.o : $(ED_UTILS)/ed_grid_utils.f90 site_type.o  \
+	ed_type_utils.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+mpass_soi.o : $(ED_MPI)/mpass_soi.f90 site_type.o  ed_commons.o \
+	mem_ed.o rpara.o node_mod.o mem_grid.o mem_ed.o ed_type_utils.o \
+	soil_coms.o fuse_fiss_utils.o misc_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+an_header.o: $(ED_IO)/an_header.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+rsys.o: $(ED_UTILS)/rsys.F90
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) -D$(CMACH) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+utils_f.o: $(ED_UTILS)/utils_f.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+dateutils.o: $(ED_UTILS)/dateutils.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+therm_lib.o: $(ED_UTILS)/therm_lib.f90 consts_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+great_circle.o : $(ED_UTILS)/great_circle.f90 consts_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+numutils.o: $(ED_UTILS)/numutils.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+charutils.o: $(ED_UTILS)/charutils.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+hydrology_coms.o: $(ED_MEMORY)/hydrology_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_xml_config.o : $(ED_IO)/ed_xml_config.f90 ed_misc_coms.o \
+	soil_coms.o pft_coms.o hydrology_coms.o met_driver_coms.o \
+	canopy_radiation_coms.o disturb_coms.o phenology_coms.o \
+	decomp_coms.o fusion_fission_coms.o physiology_coms.o \
+	misc_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+libxml2f90.f90_pp.o : $(ED_UTILS)/libxml2f90.f90_pp.f90 
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+#init_hydro_sites.o : $(ED_INIT)/init_hydro_sites.f90 soil_coms.o \
+#	site_type.o mem_ed.o
+#	cp -f $< $(<F:.f90=.f90)
+#	$(F_COMMAND) $(<F:.f90=.f90) 
+#	rm -f $(<F:.f90=.f90)
+
+lsm_hyd.o : $(ED_DYNAMICS)/lsm_hyd.f90  site_type.o mem_grid.o soil_coms.o \
+	misc_coms.o node_mod.o hydrology_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+mem_soil_moisture.o : $(ED_MEMORY)/mem_soil_moisture.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_load_namelist.o : $(ED_IO)/ed_load_namelist.f90 \
+	ename_coms.o soil_coms.o met_driver_coms.o mem_sites.o pft_coms.o \
+	physiology_coms.o phenology_coms.o decomp_coms.o disturb_coms.o \
+	misc_coms.o max_dims.o mem_grid.o soil_coms.o mem_ed.o \
+	io_params.o domain_decomp.o soil_coms.o grid_dims.o mem_soil_moisture.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+# MODULES THAT WILL REMAIN. 
+
+max_dims.o : $(ED_MEMORY)/max_dims.f90 grid_dims.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+soil_coms.o : $(ED_MEMORY)/soil_coms.F90 max_dims.o grid_dims.o mem_grid.o
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+canopy_radiation_coms.o : $(ED_MEMORY)/canopy_radiation_coms.f90 max_dims.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+consts_coms.o : $(ED_MEMORY)/consts_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+decomp_coms.o : $(ED_MEMORY)/decomp_coms.f90 max_dims.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+disturb_coms.o : $(ED_MEMORY)/disturb_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ename_coms.o : $(ED_MEMORY)/ename_coms.f90 max_dims.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+fusion_fission_coms.o : $(ED_MEMORY)/fusion_fission_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+mem_sites.o : $(ED_MEMORY)/mem_sites.f90 max_dims.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+met_driver_coms.o : $(ED_MEMORY)/met_driver_coms.f90 max_dims.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+misc_coms.o : $(ED_MEMORY)/misc_coms.f90 max_dims.o 
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_misc_coms.o : $(ED_MEMORY)/ed_misc_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+
+pft_coms.o : $(ED_MEMORY)/pft_coms.f90 max_dims.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+hdf5_coms.o : $(ED_MEMORY)/hdf5_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(HDF5_INCS) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+phenology_coms.o : $(ED_MEMORY)/phenology_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+physiology_coms.o : $(ED_MEMORY)/physiology_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+leaf_database.o : $(ED_IO)/leaf_database.f90 hdf5_utils.o mem_grid.o soil_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+hdf5_utils.o : $(ED_UTILS)/hdf5_utils.f90 hdf5_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(HDF5_INCS) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+utils_c.o: $(ED_UTILS)/utils_c.c
+	$(C_COMMAND) $<
+
+fuse_fiss_utils.o : $(ED_UTILS)/fuse_fiss_utils.f90 site_type.o fusion_fission_coms.o \
+	mem_ed.o disturb_coms.o pft_coms.o decomp_coms.o consts_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_init_atm.o : $(ED_INIT)/ed_init_atm.f90 misc_coms.o site_type.o  \
+	soil_coms.o consts_coms.o mem_grid.o mem_ed.o fuse_fiss_utils.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_type_init.o : $(ED_INIT)/ed_type_init.f90 site_type.o max_dims.o  \
+	disturb_coms.o fuse_fiss_utils.o soil_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+flags.o : $(ED_MEMORY)/flags.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+# Modules for migrating in the array based memory structure
+
+ed_state_vars.o : $(ED_MEMTEST)/ed_state_vars.f90 var_tables_array.o \
+	site_type.o mem_grid.o ed_commons.o mem_ed.o \
+	var_tables_array.o node_mod.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+var_tables_array.o : $(ED_MEMTEST)/var_tables_array.f90 
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+#vtab_fill_array.o : $(ED_MEMTEST)/vtab_fill_array.f90 var_tables_array.o
+#	cp -f $< $(<F:.f90=.f90)
+#	$(F_COMMAND) $(<F:.f90=.f90)
+#	rm -f $(<F:.f90=.f90)
+
+prep_output.o : $(ED_MEMTEST)/prep_output.f90 site_type.o \
+	ed_state_vars.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+h5_output.o : $(ED_MEMTEST)/h5_output.F90 an_header.o \
+	var_tables_array.o grid_dims.o mem_ed.o mem_grid.o \
+	io_params.o ed_commons.o
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+ed_history_io_array.o : $(ED_MEMTEST)/ed_history_io_array.f90 \
+	ed_state_vars.o max_dims.o pft_coms.o misc_coms.o \
+	ed_type_utils.o mem_sites.o consts_coms.o fuse_fiss_utils.o  \
+	ed_misc_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(HDF5_INCS) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+init_hydro_sites_array.o : $(ED_MEMTEST)/init_hydro_sites_array.f90 \
+	soil_coms.o ed_state_vars.o mem_ed.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90) 
+	rm -f $(<F:.f90=.f90)
+
+ed_met_driver_array.o : $(ED_MEMTEST)/ed_met_driver_array.f90 \
+	ed_state_vars.o misc_coms.o met_driver_coms.o \
+	hdf5_utils.o max_dims.o consts_coms.o mem_sites.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(HDF5_INCS) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_init_atm_array.o : $(ED_MEMTEST)/ed_init_atm_array.f90 misc_coms.o   \
+	soil_coms.o consts_coms.o mem_grid.o mem_ed.o fuse_fiss_utils.o \
+	ed_state_vars.o fuse_fiss_utils_ar.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+radiate_driver_ar.o : $(ED_MEMTEST)/radiate_driver_ar.f90 \
+	ed_state_vars.o misc_coms.o canopy_radiation_coms.o \
+	consts_coms.o soil_coms.o max_dims.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+euler_driver_ar.o : $(ED_MEMTEST)/euler_driver_ar.f90 ed_state_vars.o \
+	misc_coms.o consts_coms.o soil_coms.o max_dims.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+canopy_update_euler_ar.o : $(ED_MEMTEST)/canopy_update_euler_ar.f90 \
+	ed_state_vars.o soil_coms.o canopy_radiation_coms.o \
+	consts_coms.o max_dims.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+decomposition_ar.o : $(ED_MEMTEST)/decomposition_ar.f90 decomp_coms.o  \
+	pft_coms.o soil_coms.o ed_state_vars.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+rk4_driver_ar.o : $(ED_MEMTEST)/rk4_driver_ar.f90 ed_state_vars.o soil_coms.o \
+	misc_coms.o consts_coms.o ed_commons.o canopy_radiation_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+rk4_integ_utils_ar.o : $(ED_MEMTEST)/rk4_integ_utils_ar.f90 ed_state_vars.o \
+	soil_coms.o rk4_stepper_ar.o hydrology_coms.o canopy_radiation_coms.o \
+	max_dims.o misc_coms.o mem_ed.o mem_grid.o consts_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+rk4_stepper_ar.o : $(ED_MEMTEST)/rk4_stepper_ar.F90 ed_state_vars.o \
+	soil_coms.o canopy_radiation_coms.o
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+rk4_derivs_ar.o : $(ED_MEMTEST)/rk4_derivs_ar.F90 consts_coms.o ed_commons.o \
+	site_type.o soil_coms.o misc_coms.o canopy_radiation_coms.o pft_coms.o
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+fuse_fiss_utils_ar.o : $(ED_MEMTEST)/fuse_fiss_utils_ar.f90 \
+	fusion_fission_coms.o mem_ed.o disturb_coms.o pft_coms.o \
+	decomp_coms.o consts_coms.o ed_state_vars.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+phenology_driv_ar.o : $(ED_MEMTEST)/phenology_driv_ar.f90 \
+	soil_coms.o pft_coms.o decomp_coms.o phenology_coms.o \
+	ed_state_vars.o
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+phenology_aux_ar.o : $(ED_MEMTEST)/phenology_aux_ar.f90 \
+	phenology_coms.o max_dims.o pft_coms.o consts_coms.o \
+	ed_state_vars.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+growth_balive_ar.o : $(ED_MEMTEST)/growth_balive_ar.f90 ed_state_vars.o \
+	pft_coms.o physiology_coms.o soil_coms.o decomp_coms.o mem_ed.o
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+structural_growth_ar.o : $(ED_MEMTEST)/structural_growth_ar.f90 \
+	ed_state_vars.o pft_coms.o decomp_coms.o max_dims.o consts_coms.o
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+reproduction_ar.o : $(ED_MEMTEST)/reproduction_ar.F90 pft_coms.o \
+	decomp_coms.o ed_state_vars.o \
+	misc_coms.o fusion_fission_coms.o max_dims.o fuse_fiss_utils.o
+	cp -f $< $(<F:.F90=.F90)	
+	$(F_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+disturbance_ar.o : $(ED_MEMTEST)/disturbance_ar.f90 decomp_coms.o disturb_coms.o \
+	max_dims.o misc_coms.o pft_coms.o ed_state_vars.o soil_coms.o \
+	fuse_fiss_utils_ar.o mem_ed.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+forestry_ar.o : $(ED_MEMTEST)/forestry_ar.f90 ed_state_vars.o disturb_coms.o disturbance_ar.o \
+	max_dims.o soil_coms.o fuse_fiss_utils.o
+	cp -f $< $(<F:.F90=.F90)
+	$(F_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+average_utils_ar.o : $(ED_MEMTEST)/average_utils_ar.f90 ed_state_vars.o consts_coms.o \
+	misc_coms.o max_dims.o	
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+

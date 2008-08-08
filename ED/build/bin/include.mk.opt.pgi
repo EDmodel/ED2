@@ -1,0 +1,257 @@
+#Makefile include include.mk.opt
+############################## Change Log ##################################
+# 1.0.0.2
+#
+# 000908 MJB include.mk-mrc ##
+#            Added MAKE environment varaible.
+#            Added free format option to F_OPTS for some platforms. ##
+# 000907 MJB include.mk-mrc ##
+#            Changed the defualts to no NCAR Graphics and no parallel.
+#            Also commented out the machine specifics to force the user to
+#            select the appropriate machine for them. ##
+# 000823 MJB include.mk-mrc ##
+#            New - defines all make environment varaibles and is included
+#            in all make files. ##
+#
+############################################################################
+
+# Define make (gnu make works best).
+
+MAKE=/usr/bin/make
+
+# libraries.
+
+BASE=$(ED_ROOT)/build/
+
+# Activate appropriate parts below, comment out others.
+
+#---------------------------------------------------------------
+# If you are using a real distribution of NCAR Graphics...
+#NCARG_DIR=/usr/local/ncarg-4.3.0/lib
+#LIBNCARG=-L$(NCARG_DIR) -lncarg -lncarg_gks -lncarg_c -L/usr/X11R6/lib -lX11 -ldl
+#---------------------------------------------------------------
+
+# HDF libraries  -----------------------------------------------
+# HDF4 library: Instructions to install: www.cptec.inpe.br/brams
+# If you run "configure" script, you don't need to edit line bellow
+#HDF_LIBS=-L.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
+# --------------------------------------------------------------
+
+# HDF 5  Libraries
+# ED2 HAS OPTIONAL HDF 5 I/O
+# If you wish to use this functionality specify USE_HDF5=1
+# and specify the location of the include directory
+# library files. Make sure you include the zlib.a location too.
+
+USE_HDF5=1
+
+HDF5_INCS=-I/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/include
+HDF5C_INCS=-I/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/include
+HDF5_LIBS=-lz -L/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/lib \
+	-lhdf5_fortran -lhdf5 -lhdf5_hl
+
+
+# netCDF libraries ---------------------------------------------
+# If you have netCDF set USENC=1 and type the lib folder
+# at NC_LIBS, with the leading -L (e.g. -L/usr/local/lib).
+# If you don't have it, leave USENC=0 and type a dummy
+# folder for NC_LIBS (e.g. -L/dev/null or leave it blank)
+USENC=0
+NC_LIBS=-L/dev/null
+# --------------------------------------------------------------
+
+# interface ----------------------------------------------------
+# This should be 1 unless you are running with -gen-interfaces.
+# Interfaces usually make the compilation to crash when the 
+# -gen-interfaces option are on, so this flag bypass all 
+# interfaces in the code.
+USE_INTERF=1
+
+#----------------- PGI Compiler on Linux x86_64 ----------------
+CMACH=PC_LINUX1
+F_COMP=mpif90
+#F_OPTS= -Mvect=cachesize:262144,sse -Munroll -Mnoframe -O2 -pc 64 \
+#       -Mfree
+#  -Mbyteswapio
+# -tp athlonxp -fastsse
+F_OPTS= -fastsse -Mipa=fast,inline -tp amd64e \
+	-Mvect=sse -Mcache_align #-Mconcur -mp=numa
+C_COMP=mpicc
+#C_OPTS= -g
+C_OPTS= -fastsse -Mipa=fast,inline -tp amd64e \
+	-Mvect=sse -Mcache_align
+USE_INTERF=1
+CPP_OPTS=
+LOADER=$(F_COMP)
+LOADER_OPTS=
+C_LOADER=$(C_COMP)
+C_LOADER_OPTS=
+LIBS=
+MOD_EXT=mod
+PAR_DEFS=-DRAMS_MPI
+
+
+#-----------------  LINUX Portland Group pgf77/gcc ---------------
+#CMACH=PC_LINUX1
+#F_COMP=pgf90
+#F_OPTS=-Mvect=cachesize:262144,sse -Munroll -Mnoframe -O2 -pc 64 \
+#       -Mfree
+#  -Mbyteswapio
+
+# -tp athlonxp -fastsse
+
+#C_COMP=gcc
+#C_COMP=pgcc
+#C_OPTS=-O3 -DUNDERSCORE -DLITTLE
+#LOADER=pgf90
+#LOADER_OPTS=-v -Wl,-static
+#LIBS=
+#-----------------------------------------------------------------
+
+#----------------  NEC-SX6 ---------------
+#CMACH=NEC_SX
+#F_COMP=sxmpif90
+#C_COMP=sxmpic++
+#LOADER=sxmpif90
+#C_LOADER=sxmpic++
+#LIBS=
+#MOD_EXT=mod
+#Compiler options:
+#F_OPTS=-eC -C debug -Wf "-cont -init stack=nan heap=nan"
+#F_OPTS=-ftrace
+#F_OPTS=-C ssafe
+#F_OPTS=
+#C_OPTS=-f90lib
+#C_OPTS=-f90lib -C ssafe
+#C_OPTS=-f90lib -ftrace
+#LOADER_OPTS=-eC -C debug -f90lib -Wf "-cont -init stack=nan heap=nan"
+#LOADER_OPTS=-C debug -f90lib
+#LOADER_OPTS=-ftrace
+#LOADER_OPTS=
+#-----------------------------------------------------------------
+
+#-----------------  LINUX INTEL FORTRAN-95 Compiler/GCC  ---------
+#CMACH=PC_LINUX1
+#F_COMP=ifort
+#C_COMP=icc
+#LOADER=ifort
+#C_LOADER=icc
+#LIBS=
+#MOD_EXT=mod
+
+#----------------- gfortran on Linux x86_64 --------------------
+#CMACH=PC_LINUX1
+#F_COMP=mpif77
+#F_OPTS=-FR -O3
+#C_COMP=mpicc
+#C_OPTS=
+#CPP_OPTS=
+#LOADER=$(F_COMP)
+#LOADER_OPTS=
+#C_LOADER=$(C_COMP)
+#C_LOADER_OPTS=
+#LIBS=
+#MOD_EXT=mod
+#PAR_DEFS=-DRAMS_MPI
+
+#Compiler options
+
+# A. Pickiest
+#USE_INTERF=0
+#F_OPTS= -FR -O2 -Vaxlib -static -check all -warn all -g -fpe0 -ftz -gen-interfaces \
+#       -warn interfaces -debug extended -debug-parameters all -traceback -ftrapuv
+#C_OPTS= -O2 -DLITTLE -static -g -traceback -debug extended
+#LOADER_OPTS= -FR -O2 -Vaxlib -static -warn all -check all -g -fpe0 -ftz -gen-interfaces \
+#       -warn interfaces -debug extended -debug-parameters all -traceback -ftrapuv
+#C_LOADER_OPTS=-v -g -traceback
+
+# B. Full interfacing, no fpe0
+#USE_INTERF=1
+#F_OPTS= -FR -O3 -Vaxlib -static -check all -warn all -gen-interfaces -traceback
+#C_OPTS= -O3 -DLITTLE -static -traceback
+#LOADER_OPTS= -FR -O3 -Vaxlib -static -warn all -check all -gen-interfaces -traceback
+#C_LOADER_OPTS=-v -traceback
+
+# C. No interface, with fpe0
+#USE_INTERF=1
+#F_OPTS= -FR -O2 -Vaxlib -static -fpe0 -no-ftz -check all -warn all -traceback -g \
+	-debug extended -debug-parameters all -ftrapuv
+#C_OPTS= -O2 -DLITTLE -static -traceback -g -debug extended
+#LOADER_OPTS= -FR -O2 -Vaxlib -static -fpe0 -no-ftz -check all -warn all -traceback \
+	-g -debug extended -debug-parameters all -ftrapuv
+#C_LOADER_OPTS=-v -traceback -g 
+
+# D. No interface, no fpe0
+#USE_INTERF=1
+#F_OPTS= -FR -O2 -Vaxlib -static -check all -traceback
+#C_OPTS= -O2 -DLITTLE -static -traceback
+#LOADER_OPTS= -FR -O2 -Vaxlib -static -check all -traceback
+#C_LOADER_OPTS=-v -traceback
+
+# E. Fast...
+#USE_INTERF=1
+#F_OPTS= -FR -O3 -Vaxlib -static -traceback
+#C_OPTS= -O3 -DLITTLE -static -traceback
+#LOADER_OPTS= -FR -O3 -Vaxlib -static -traceback
+#C_LOADER_OPTS=-v -traceback
+#-----------------------------------------------------------------
+
+# If compiling for a single-CPU platform only (without MPI):
+
+#-----------------------------------------------------------------
+#PAR_LIBS=
+#PAR_DEFS=
+#-----------------------------------------------------------------
+
+# Else if using MPI libraries:
+
+#---------------SGI-----------------------------------------------
+#with mpich parallel stuff
+#MPI_PATH=/n/Moorcroft_Lab/Users/mlongo/util/mpich
+#PAR_INCS=-I$(MPI_PATH)/include
+#PAR_LIBS=-L$(MPI_PATH)/lib/IRIXN32/ch_shmem -lmpi
+#  or with SGI Parallel stuff
+#PAR_LIBS=-L/usr/lib32 -lmpi
+#  need this for both
+#PAR_DEFS=-DRAMS_MPI
+#-----------------------------------------------------------------
+
+#---------------IBM-----------------------------------------------
+#MPI_PATH=/usr/local/mpich
+#PAR_INCS=-I$(MPI_PATH)/include
+#PAR_LIBS=-L$(MPI_PATH)/lib/rs6000/ch_p4 -lmpi 
+#PAR_DEFS=-DRAMS_MPI
+#-----------------------------------------------------------------
+
+#---------------Sun-----------------------------------------------
+#MPI_PATH=/usr/local/mpich
+#PAR_INCS=-I$(MPI_PATH)/include
+#PAR_LIBS=-L$(MPI_PATH)/lib/solaris/ch_p4 -lmpi 
+#PAR_DEFS=-DRAMS_MPI
+#-----------------------------------------------------------------
+
+#---------------HP-Exemplar---------------------------------------
+#MPI_PATH=/opt/mpi
+#PAR_INCS=-I$(MPI_PATH)/include
+#PAR_LIBS=$(MPI_PATH)/lib/pa1.1/libmpi.a
+#PAR_DEFS=-DRAMS_MPI
+#-----------------------------------------------------------------
+
+#---------------LINUX Portland Group pgf77/gcc--------------------
+#MPI_PATH=/n/Moorcroft_Lab/Users/mlongo/util/mpich-1.2.7p1/intel_9.1.036_64
+#PAR_INCS=-I$(MPI_PATH)/include
+#PAR_LIBS=-L$(MPI_PATH)/lib -lmpich -lpmpich
+#PAR_DEFS=-DRAMS_MPI
+#-----------------------------------------------------------------
+
+#---------------If using scritps 'mpicc' e 'mpif90'---------------'
+#PAR_DEFS=-DRAMS_MPI
+#-----------------------------------------------------------------
+
+# For IBM,HP,SGI,ALPHA,LINUX use these:
+ARCHIVE=ar rs
+# For NEC SX-6
+#ARCHIVE=sxar rs
+# For SUN,CONVEX
+#ARCHIVE=ar r'
+

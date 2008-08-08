@@ -1,0 +1,84 @@
+FUNCIONALIDADE:
+Permite recompilar apenas os arquivos alterados (e os arquivos
+que dependem os alterados).
+
+USO:
+Instale mudando o RAMS_ROOT no arquivo paths.mk
+No diretorio $(RAMS_ROOT)/build/3.3/bin, digite
+   make -f Make_model OPT=opt
+
+FUNCIONAMENTO BASICO:
+Toda a compilacao eh feita no diretorio bin. Arquivos
+.o e .mod residem no diretorio bin e nao sao removidos.
+Arquivos fonte alterados apos a ultima compilacao sao copiados 
+para o bin, compilados e a copia eh removida.
+Bibliotecas libutils e brams foram mantidas por conveniencia.
+Sao atualizadas a cada compilacao.
+
+DESVANTAGENS:
+Diretorio bin com muitos arquivos.
+
+MANUTENCAO NO CASO DE ALTERAR FONTES:
+Nada a fazer se as alteracoes nao afetam
+os USE e os nomes de arquivos.
+Alteracoes nos USE mudam as dependencias entre os arquivos,
+que devem ser atualizadas (vide abaixo).
+Alteracoes nos nomes dos arquivos mudam a lista dos objetos a gerar
+e as dependencias entre os arquivos. Os dois devem ser 
+atualizados (vide abaixo).
+
+LISTA DE OBJETOS A GERAR:
+Cada makefile possui uma lista de objetos a gerar (objects_model.mk
+para o Make_model e objects_utils.mk para o Make_utils). A lista
+eh incluida no respectivo makefile e deve ser mantida atualizada.
+Remova, da lista correspondente, os arquivos removidos do fonte.
+Insira, na lista correspondente, os novos arquivos inseridos no
+fonte. 
+
+DEPENDENCIAS ENTRE OS ARQUIVOS:
+Arquivos depend_model.mk e depend-utils.mk contem as dependencias
+entre os arquivos e como resolve-las.
+
+Cada objeto a gerar depende do seu fonte e dos arquivos objeto
+para os quais faz USE. 
+
+A dependencia eh expressa pela linha
+<objeto> : <fonte> <objeto usado 1> < objeto usado 2> ...
+do arquivo depend_XXX.mk
+
+A forma de resolver a dependencia eh o conjunto de comandos
+imediatamente apos a linha que expressa a dependencia. Há tres
+casos: compilar fonte .f90, compilar fonte .F90 e compilar fonte .c.
+Cada caso contem um unico conjunto de comandos. Os nomes dos arquivos
+fonte e objeto nao sao utilizados no conjunto de comandos.
+
+Para inserir um novo arquivo:
+Crie a linha de dependencia, colocando todos os objetos utilizados.
+Copie a forma de resolver a dependencia de um outro arquivo da mesma
+linguagem fonte. 
+
+Para modificar uma dependencia:
+Se dependencia que deixa de existir, remova-a.
+Se nova dependencia, insira-a.
+   
+Para remover um arquivo:
+Remova a dependencia do objeto para a fonte e a forma de resolve-la. 
+Observe se nao sobrou nenhuma outra dependencia do objeto removido
+(ou seja, se nao ha nenhum outro arquivo que USE o objeto removido).
+
+
+TESTES:
+Testei no SX-6 gerando o modelo e a biblioteca. Demora 15 minutos
+para gerar o modelo e a biblioteca pela primeira vez. Atualizado
+um arquivo, apenas esse arquivo (e os que dependem dele) sao 
+compilados.
+
+FALTA:
+Testar no cluster.
+Criar para outros executaveis e bibliotecas (pos-processamento,
+por exemplo).
+Criar para a instalacao.
+Criar para depuracao.
+
+
+

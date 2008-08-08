@@ -1,0 +1,63 @@
+#Makefile Make_model
+############################## Change Log ##################################
+# 4.3.0.1
+#
+############################################################################
+
+# Define path and compilation 
+
+
+include paths.mk
+include include.mk.$(OPT)
+
+# Compiler commands.
+
+INCLUDES  = $(PAR_INCS) -I$(ED_INCS)
+F_COMMAND = $(F_COMP) -c $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
+C_COMMAND  = $(C_COMP) -c $(C_OPTS) -D$(CMACH) $(HDF5_INCS) $(INCLUDES) $(PAR_DEFS)
+
+# Define archive and executable names.
+EXE=$(BASE)/ed_$(ED_VERSION)-$(OPT)
+LIBMODEL=$(BASE)/ed_$(ED_VERSION)-$(OPT).a
+
+include objects.mk
+
+# Define targets.
+
+all: $(EXE)
+
+$(EXE): $(LIBMODEL) $(MAINOBJ) 
+	@echo ""
+	$(LOADER) -o $(EXE) edmain.o $(LOADER_OPTS) $(LIBMODEL) \
+	$(HDF5_LIBS) $(PAR_LIBS) $(NC_LIBS) $(LIBS) $(LOADER_OPTS)
+	@echo ""
+	@echo Finished building === $(EXE)
+	@echo ""
+
+$(MAINOBJ):  $(MAIN) 
+	@echo ""
+	cp -f $< $(<F:.f90=.f90)
+	$(F_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+$(LIBMODEL): $(OBJ_MODEL)
+	$(ARCHIVE) $(LIBMODEL) $(OBJ_MODEL)
+
+FORCE: 
+
+install:
+	@echo ""
+	ln -fs `pwd`/$(EXE) ../run/$(BASE)
+	ln -fs `pwd`/$(EXE) ../test/$(BASE)
+	@echo ""
+
+clean:
+	@echo ""
+	#(cd ./utils ; $(MAKE) -f Make.utils.$(OPT) OPT=$(OPT) clean)
+	rm -f $(LIBMODEL) $(EXE) *.o *.mod *.F90 *.f90 *.stb *.d 
+	rm -f ../$(EXE) ../$(LIBMODEL)
+	@echo ""
+
+# Define dependencies
+
+include depend.mk

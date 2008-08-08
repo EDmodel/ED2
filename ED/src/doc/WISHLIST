@@ -1,0 +1,13 @@
+
+List of features we'd like to add
+_________________________________
+
+
+Dietze:
+
+ - Improved BGC, especially N cycling
+ - ozone effects on photosynthesis
+ - Improve "burnin" routine to hold veg constant
+   while spinning up other state variables
+ - Initial condition data assimilation routine
+  

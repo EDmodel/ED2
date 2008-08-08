@@ -1,0 +1,1100 @@
+!namelist
+
+ $MODEL_GRIDS
+
+! Simulation title (64 chars)
+
+   EXPNME   = 'BRAMS, version 4.0',
+
+   RUNTYPE  = 'INITIAL',  ! Type of run: MAKESFC, INITIAL, 
+                          !            HISTORY,  or MAKEVFILE
+
+   LOAD_BAL = 0,    !  Dynamic load balance flag: 1=yes, 0=no
+ 
+!  Start of simulation or ISAN processing
+
+   IMONTHA  =    01,
+   IDATEA   =    01,
+   IYEARA   =  2000,
+   ITIMEA   =  0000,
+
+!  End of simulation or ISAN processing
+
+   IMONTHZ  =    03,
+   IDATEZ   =    01,
+   IYEARZ   =  2000,
+   ITIMEZ   =  0000,
+
+! Grid specifications
+
+   NGRIDS   = 1,            ! Number of grids to run
+ 
+   NNXP     =  40,  74, 230,     ! Number of x gridpoints
+   NNYP     =  40,  62, 161,     ! Number of y gridpoints
+   NNZP     =  41,  41,  41,     ! Number of z gridpoints
+   NZG      =   8,          ! Number of soil layers
+   NZS      =   1,          ! Maximum number of snow layers
+ 
+   NXTNEST  = 0,1,          ! Grid number which is the next coarser grid
+   
+
+! Coarse grid specifications
+
+   IF_ADAP  = 0,            !Vertical coordinate: 0- sigma_z, 1- shaved ETA
+   
+   IHTRAN   = 1,            ! 0-Cartesian, 1-Polar stereo
+   DELTAX   = 114000.,
+   DELTAY   = 114000.,       ! X and Y grid spacing
+
+   DELTAZ   = 150.,         ! Z grid spacing (set to 0. to use ZZ)
+   DZRAT    = 1.06,         ! Vertical grid stretch ratio
+   DZMAX    = 1000.,         ! Maximum delta Z for vertical stretch
+
+   ! Vertical levels if DELTAZ = 0
+   ZZ       =    0.0,       
+                20.0,      46.0,      80.0,     120.0,     165.0,
+               220.0,     290.0,     380.0,     480.0,     590.0,
+               720.0,     870.0,    1030.0,    1200.0,    1380.0,
+              1595.0,    1850.0,    2120.0,    2410.0,    2715.0,
+              3030.0,    3400.0,    3840.0,    4380.0,    5020.0,
+              5800.0,    6730.0,    7700.0,    8700.0,    9700.0,
+             10700.0,   11700.0,   12700.0,   13700.0,   14700.0,
+             15700.0,   16700.0,   17700.0,   18700.0,   19700.0,
+ 
+   DTLONG   = 60.,          ! Coarse grid long timestep
+   NACOUST  = 5,            ! Small timestep ratio
+   IDELTAT  = 0,            ! =0 - constant timesteps
+                            ! >0 - initial computation <0 - variable
+
+                            ! Nest ratios between this grid
+                            !  and the next coarser grid.
+   NSTRATX  = 1,4,          ! x-direction
+   NSTRATY  = 1,4,          ! y-direction
+   NNDTRAT  = 1,4,          ! Time
+
+   NESTZ1   = 0,	         ! Contort coarser grids if negative
+   NSTRATZ1 = 3,3,3,3,2,2,2,2,1, !
+   NESTZ2   = 0,	         ! Contort coarser grids if negative
+   NSTRATZ2 = 3,3,3,2,2,2,2,1,   !
+
+
+   POLELAT  =  -2.5,            ! Latitude of pole point
+   POLELON  = -60.5,            ! Longitude of pole point
+
+   CENTLAT  =  -2.5, -11.0,
+   CENTLON  = -60.5, -63.0,
+                              ! Grid point on the next coarser
+                              !  nest where the lower southwest
+                              !  corner of this nest will start.
+                              !  If NINEST or NJNEST = 0, use CENTLAT/LON
+   NINEST   = 1,0,            ! i-point
+   NJNEST   = 1,0,            ! j-point
+   NKNEST   = 1,1,            ! k-point
+ 
+   NNSTTOP  = 1,1,            ! Flag (0-no or 1-yes) if this
+   NNSTBOT  = 1,1,            ! Nest goes the top or bottom of the
+                              !  coarsest nest.
+
+   GRIDU    = 0.,0.,          ! u-component for moving grids
+   GRIDV    = 0.,0.,          ! v-component for moving grids
+                              !  (not working again!)
+ 
+ $END
+ 
+ $CATT_INFO
+
+   CATT = 0,                                              ! Turn CATT on (1=on; 0=off)
+
+   FIREMAPFN = '/gfs/dk15/fazenda/data/Queima_source',    ! Fire Map and Tracers file prefix
+
+   RECYCLE_TRACERS = 0,
+
+   PLUMERISE  = 0, !0-Disable, 1-Enable Plume Rise routine
+   PRFRQ = 3600.,
+
+ $END
+
+ $TEB_SPM_INFO
+
+   TEB_SPM  = 0, ! Enable TEB urban model? (1=on; 0=off)
+
+ $END
+
+ $MODEL_FILE_INFO
+
+! Variable initialization input
+
+   INITIAL  = 2,             ! Initial fields - 1=horiz.homogeneous, 
+                             !                  2=init from varfile
+                             !                  3=init from HFILIN
+
+
+!  ------ Analysis nudging parameters -----------------------------------
+   NUD_TYPE = 2,             ! =1 - nudge from history files(1-way nest)
+                             ! =2 - nudge from varfiles
+                             ! =0 - no analysis nudging
+                             
+   VARFPFX  = './ivar/era00',
+   VWAIT1   = 0.,            ! wait between each VFILE check (s)
+   VWAITTOT = 0.,            ! total wait before giving up on a VFILE (s)
+   
+   NUD_HFILE = './histo/drytowet', 
+               ! Prefix for history nudging files
+                             
+   NUDLAT   =     5,             ! Number of points in lateral bnd region
+   TNUDLAT  =  3600.,          ! 2700 - Nudging time scale(s) at lateral boundary
+   TNUDCENT = 43200.,         ! Nudging time scale(s) in center of domain
+   TNUDTOP  = 10800.,        ! 10800 - Nudging time scale (s) at top of domain
+   ZNUDTOP  = 16000.,        ! Nudging at top of domain above height(m)
+   
+   WT_NUDGE_GRID =  1., 0.80, ! Relative nudging weights for active grids
+                             ! =0., turns off nudging for that grid
+
+                             ! These weights will multiply the base timescales
+                             !   to determine full nudging weight. 
+                             !   (Timescales)/(WT_NUDGE_*) 
+                             !    must be larger than DTLONG
+   WT_NUDGE_UV = 1.,         ! Anal nudging weight for u and v
+   WT_NUDGE_TH = 1.,         ! Anal nudging weight for theta
+   WT_NUDGE_PI = 1.,         ! Anal nudging weight for pi
+   WT_NUDGE_RT = 1.,         ! Anal nudging weight for r_tot
+   
+!-------------------------------------------------------------------------
+
+!----------- Condensate nudging ------------------------------------------
+   NUD_COND    = 0,              ! Only nudge total water where condensate
+                                 !   exists (from previous history files, HFILIN)
+   COND_HFILE = './histo/histo-H-2001-07-21-000000-head.txt',
+            ! Header file name for cond nudging history files (only prefix is used)
+   TCOND_BEG=0.,                 ! Model time start of cond nudging (sec)
+   TCOND_END=21600.,             ! Model time end of cond nudging (sec)
+   T_NUDGE_RC = 3600.,           ! Cond nudging timescale for r_total
+   WT_NUDGEC_GRID =  1., 0.8,    ! Relative nudging weights for active grids
+                                 ! =0., turns off nudging for that grid
+!-------------------------------------------------------------------------
+
+!--------- Observation Data Assimilation (ODA) ---------------------------------
+   IF_ODA = 0,                            ! Flag to turn on oda 
+   ODA_UPAPREFIX = '/n/Moorcroft_Lab/Lab/data/brams_data/racci/radio/ir',    ! File prefix for upper air obs
+   ODA_SFCPREFIX = '/n/Moorcroft_Lab/Lab/data/brams_data/racci/surf/quali/eq', ! File prefix for surface obs
+   
+   FRQODA=21600.,                         ! Frequency of obs analysis
+   TODABEG=0.,                            ! Model time start of oda (sec)
+   TODAEND=99999999.,                     ! Model time end of oda (sec)
+
+   TNUDODA= 3600.,                         ! Nudging timescale for each grid
+   WT_ODA_GRID =  1., 0.75,                ! Relative nudging weights for active grids
+                                          ! =0., turns off nudging for that grid
+
+   WT_ODA_UV = 1.,                        ! ODA nudging weight for u and v
+   WT_ODA_TH = 1.,                        ! ODA nudging weight for theta
+   WT_ODA_PI = 1.,                        ! ODA nudging weight for pi
+   WT_ODA_RT = 1.,                        ! ODA nudging weight for r_tot
+      
+  ! Following are radii that affect the "smoothness" of the analyzed fields
+  !     The SFCE and UPAE are the radii where the affect falls off to e**(-2)
+  !     The SFC0 and UPA0 are the radii where the affect falls off to 0
+  !     Values are grid dependent.
+   
+   RODA_SFCE =  72000.,  36000.,
+   RODA_SFC0 = 200000., 216000.,
+   RODA_UPAE = 150000.,  75000.,
+   RODA_UPA0 = 450000., 225000.,
+   
+   RODA_HGT = 3000.,3000.,   ! Height at which transition from SFC radii 
+                                        !   to UPA radii occurs
+   
+   RODA_ZFACT = 100.,100.,    ! Vertical factor related to dx/dz
+   
+   ! - Time interpolate limit (TIL)- if the future-past obs time 
+   !    is > this limit, do not use to interpolate
+   !
+   ! - Time extrapolate limit (TEL)- if past/future obs is greater than TIL,
+   !    but less than TEL, use the obs
+   
+   ODA_SFC_TIL=21600.,
+   ODA_SFC_TEL=1200.,
+   ODA_UPA_TIL=43200.,
+   ODA_UPA_TEL=3600.,
+!------------------------------------------------------------------------   
+
+!----- Cumulus inversion tendency input -----
+   IF_CUINV = 0,               
+   CU_PREFIX = './t5-C-',
+   
+   TNUDCU=900.,
+   WT_CU_GRID=1., 1., .5,
+      
+   TCU_BEG=0., 
+   TCU_END=7200.,
+   CU_TEL=3600.,
+   CU_TIL=21600.,
+!------------------------------------------------------------------------   
+
+! History file input
+
+! History time input 
+   IMONTHH  = 09,
+   IDATEH   = 21,
+   IYEARH   = 2002,
+   ITIMEH   = 1200,
+   HFILIN   = './histo/histo',
+                             ! Input history file name
+ 
+! Analysis file input for assimilation (currently LEAF variables)
+
+   IPASTIN   = 0,            ! Initialize various fields from analysis file?
+                             !  1=yes, 0=no
+   PASTFN    = 'a-A-2000-01-09-000000-head.txt',
+                             ! Input analysis file name
+
+! History/analysis file output
+ 
+   IOUTPUT  =  2,                                ! 0-no files, 1-save ASCII, 2-save binary
+   HFILOUT  = 'H/era00-v99',
+   AFILOUT  = 'A/era00-v99',
+   ICLOBBER = 1,                                 ! 0=stop if files exist, 1=overwite files
+   IHISTDEL = 0,                                 ! 0=keep all hist files, 1=delete previous
+   FRQHIS   = 21600.,          ! History file frequency
+   FRQANL   = 3600.,          ! Analysis file frequency
+!-----------------------------------------------------------------------
+   FRQLITE  = 0.,            ! Analysis freq. for "lite" variables
+                             !   = 0 : no lite files
+   XLITE    = '/0:0/',       ! nums>0 are absolute grid indexes
+   YLITE    = '/0:0/',       ! nums<0 count in from the domain edges
+   ZLITE    = '/0:0/',       ! nums=0 are domain edges
+   
+   NLITE_VARS=54,
+   LITE_VARS=      'GLAT',      'GLON',        'UP',        'VP',        'WP',
+                  'THETA',        'PP',        'RV',      'TOPT',      'TKEP',
+                 'CFXUP1',    'CFXUP2',    'CFXDN1',    'DFXUP1',    'DFXUP2',
+                 'EFXUP1',    'EFXUP2',    'DFXDN1',    'EFXDN1',   'SFLUX_U',
+                'SFLUX_V',    'RSHORT',     'RLONG',     'ACCPR',     'ACCPP',
+                  'ACCPS',     'ACCPA',     'ACCPG',     'ACCPH',    'ACONPR',
+             'PATCH_AREA',     'USTAR',     'TSTAR',     'RSTAR',    'PBLHGT',
+                'SFLUX_T',   'SFLUX_R',   'RLONGUP',  'VEG_TEMP',    'ALBEDT',
+             'SOIL_WATER',   'VEG_LAI',   'SFLUX_W',  'CAN_TEMP',  'CAN_RVAP',
+            'SOIL_ENERGY','SOIL_ROUGH',       'RCP',       'RRP',       'RPP',
+                    'RSP',       'RAP',       'RGP',       'RHP',
+!-----------------------------------------------------------------------
+   
+   AVGTIM   =     0.,        ! Averaging time for analysis variables
+                             !   must be abs(AVGTIM) <= FRQANL
+                             !   > 0 : averaging is centered at FRQANL
+                             !   < 0 : averaging ends at FRQANL
+                             !   = 0 : no averaged files
+   FRQMEAN  =     0.,          ! Analysis freq. for "averaged" variables
+   FRQBOTH  =     0.,        ! Analysis freq. for Both "averaged" and 
+                             !   "lite" variables
+   KWRITE   =    0,          ! 1-write,0-don't write scalar K's to anal.
+
+! Printed output controls
+ 
+   FRQPRT   = 21600.,        ! Printout frequency
+   INITFLD  = 0,             ! Initial field print flag 0=no prnt,1=prnt
+ 
+! Input topography variables
+
+   TOPFILES = './data/topog',  ! File path and prefix for topography files.
+   SFCFILES = './data/surfa',  ! File path and prefix for surface files.
+   SSTFPFX  = './data/seast',  ! File path and prefix for SST files.
+   NDVIFPFX = './data/ndvi',  ! File path and prefix for NDVI files
+              
+
+   ITOPTFLG = 1,1,1,           ! 2 - Fill data in "leaf3_init"
+   ISSTFLG  = 1,1,1,           ! 0 - Interpolate from coarser grid
+   IVEGTFLG = 1,1,1,           ! 1 - Read from standard Lat/Lon data file
+   ISOILFLG = 1,1,1,           !
+   NDVIFLG  = 2,2,2,           !
+   
+   NOFILFLG = 2,2,2,           ! 2 - Fill data in "leaf3_init"
+                                 ! 0 - Interpolate from coarser grid   
+ 
+   IUPDNDVI  = 0,             ! 0 - No update of NDVI values during run
+   IUPDSST  = 1,              ! 0 - No update of SST values during run
+                              ! 1 - Update values during run
+ 
+                             ! The following only apply for IxxxxFLG=1
+!   ITOPTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/topo10km/H',
+!              '/n/Moorcroft_Lab/Lab/data/brams_data/topo/EL',
+!   ISSTFN   = '/n/Moorcroft_Lab/Lab/data/brams_data/weeklysst/2002/W',
+!              '/n/Moorcroft_Lab/Lab/data/brams_data/weeklysst/2002/W',
+!   IVEGTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/veg_usgs/VUSGS_',
+!              '/n/Moorcroft_Lab/Lab/data/brams_data/veg_usgs/VUSGS_',
+!   ISOILFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soil_inpe/LReFAO',
+!              '/n/Moorcroft_Lab/Lab/data/brams_data/soil_inpe/LReFAO',
+!    NDVIFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/ndvi-modis/N',
+!              '/n/Moorcroft_Lab/Lab/data/brams_data/ndvi-modis/N',
+!              '/n/Moorcroft_Lab/Lab/data/brams_data/ndvi-modis/N',
+     
+   ITOPTFN  = '/home/rknox/Datasets/Geodata/topo10km/H',
+              '/home/rknox/Datasets/Geodata/topo/EL',
+   ISSTFN   = '/home/rknox/Datasets/Geodata/weeklysst/2002/W',
+              '/home/rknox/Datasets/Geodata/weeklysst/2002/W',
+   IVEGTFN  = '/home/rknox/Datasets/Geodata/ogedata/GE',
+              '/home/rknox/Datasets/Geodata/ogedata/GE',
+   ISOILFN  = '/home/rknox/Datasets/Geodata/soils/FAO',
+              '/home/rknox/Datasets/Geodata/soils/FAO',
+    NDVIFN  = '/home/rknox/Datasets/Geodata/ndvi-modis/N',
+              '/home/rknox/Datasets/Geodata/ndvi-modis/N',
+
+! Topography scheme
+
+   ITOPSFLG = 0,0,               ! 0 = Average Orography
+                                 ! 1 = Silhouette Orography
+                                 ! 2 = Envelope Orography
+                                 ! 3 = Reflected Envelope Orography
+
+   TOPTENH  = 0.,0.,             ! For ITOPSFLG=1, Weighting of topo
+                                 !   silhouette averaging 
+                                 ! For ITOPSFLG=2 or 3, Reflected Envelope
+                                 !   and Envelope Orography enhancement factor
+                                 
+   TOPTWVL  = 2.,2.,2.,2.,       ! Topo wavelength cutoff in filter 
+                                
+! Surface Roughness scheme
+
+   IZ0FLG   = 0,0,               ! 0 = Use veg, bare soil and water surface
+                                 ! 1 = Also use subgrid scale topography
+   Z0MAX    = 5.,5.,             ! Max zo for IZ0FLG=1
+   Z0FACT   = 0.005,             ! Subgrid scale orograhic roughness factor
+   
+! Microphysics collection tables
+
+   MKCOLTAB = 1,             ! Make table: 0 = no, 1 = yes
+   COLTABFN = './micro/ct4.0',
+                             ! Filename to read or write
+
+ $END
+
+
+ $CUPARM_OPTIONS
+
+! Cumulus parameterization parameters
+ 
+   !---------------------------------------------------------------------------------------!
+   ! NNQPARM(ngrids) = Convective parameterization flag: 0 - off, 1 - on.                  !
+   !---------------------------------------------------------------------------------------!
+   NNQPARM  = 0,1,
+
+   !---------------------------------------------------------------------------------------!
+   ! NCLOUDS: How many clouds do you want to use?                                          !
+   ! PS1: If you want to run deep convection only, use nclouds=1                           !
+   ! PS2: If you want to run shallow convection only for a certain grid                    !
+   !      (or all grids...) set up nclouds to 2 and ndeepest to 0                          !
+   ! PS3: If NCLOUDS >= 3, then the middle ones will necessarily use Grell's               !
+   !      parameterization.                                                                !
+   !---------------------------------------------------------------------------------------!
+    NCLOUDS  = 2,
+
+
+   !---------------------------------------------------------------------------------------!
+   ! Both define the cumulus scheme to be used for the deepest and shallowest clouds.      !
+   ! NDEEPEST(ngrids) : 0 - turn it off; 1- run Kuo ; 2- run Grell                         !
+   ! NSHALLOWEST(ngrids) : 0 - turn it off; 1- run Souza; 2- run Grell                     !
+   !---------------------------------------------------------------------------------------!
+   NDEEPEST    = 2,2,
+   NSHALLOWEST = 2,2,
+
+   !----- Kuo configuration (will be ignored by Souza and Grell's methods) ----------------!
+   WCLDBS = 0.005,  ! Vertical motion needed at cloud base for
+                    !    to trigger convection [m/s] (for nndeepest = 1 only)
+
+   !---------------------------------------------------------------------------------------!
+   ! CONFRQ(nclouds): how often should each cloud size be updated?                         !
+   ! CPTIME(nclouds): when I should start computing this cloud.
+   !                  PS1: This is NOT for each grid, but for each cloud!!!                !
+   !                  PS2: The first value is always assigned for the deepest cloud, even  !
+   !                       if you are not running it.                                      !
+   !---------------------------------------------------------------------------------------!
+   CONFRQ=1200.,1200.,1200.,
+   CPTIME=7200.,3600.,3600.,
+
+
+
+   !=======================================================================================!
+   !   Variables for Grell parameterization. Whenever it is telling (nclouds) it means     !
+   ! that a value must be given for each cloud. The first value is always reserved for the !
+   ! deepest, even if you are not running or running Kuo (the value will be ignored but    !
+   ! needs to be here).                                                                    !
+   !=======================================================================================!
+   
+   IUPMETHOD   = 2,          ! How to find the level in which updrafts originate:
+                             ! 1. Maximum moist static energy;
+                             ! 2. PBL top (if IDIFFK=7, uses the pblhgt from turbulence)
+   
+   IUPSTRM     = 1,          ! Check for previous upstream downdraft?
+                             ! 0. No, thanks
+                             ! 1. Check and lower cap_maxs
+                             ! 2. Check, lower cap_maxs and use the upstream downdraft
+                             !    mass flux to enhance convection downstream
+                             !    (not tested thoroughly, use with caution)
+   
+   RADIUS    = 15000.,666.,       ! (nclouds) - Cloud mean radius [m]. Important: the
+                                  !    cloud won't have downdrafts nor precipitation if
+                                  !    it is less than min_down_radius (grell_coms.f90).
+                                  !    Default threshold is 900.
+
+   DEPTH_MIN = 500.,50.,          ! (nclouds) - Grell's deep and shallow convection:
+                                  !    Minimum depth that the cloud must have [m]
+
+   CAP_MAXS  = 60.,60.,60.,       ! (nclouds) Grell's deep and shallow convection:
+                                  !    Depth of the inverse capping in hPa. The larger
+                                  !    the value is, the less likely is to develop 
+                                  !    convection.
+
+   ZKBMAX   = 4000.,4000.,4000.,  ! (nclouds) - Maximum AGL height in which updrafts can
+                                  !             originate. [m]
+   
+   ZCUTDOWN = 3000.,3000.,3000.,  ! (nclouds) - Maximum AGL height in which downdrafts can
+                                  !             originate. [m]
+
+   Z_DETR   = 1250.,1250.,1250.,  ! (nclouds) - Top of the downdraft detrainment layer [m]
+   
+   MAX_HEAT = 300., 300.,300.,    ! (nclouds) - Maximum heating allowed for feedback [K/day]
+
+   !=======================================================================================!
+   !    The following variables will define the ensemble members. Currently 4 types of     !
+   ! ensemble are available. Odd numbers are preferred over even numbers since everything  !
+   ! is centred around the reference value (except for CLOSURE_TYPE, which is done         !
+   ! differently). These are all (cloud) dependent.                                        !
+   ! PS1: Use with moderation, these members are multiplicative and can get slow down your !
+   !      run.                                                                             !
+   ! PS2: The perturbation increments are defined inside the code, feel free to take it    !
+   !      out...                                                                           !
+   !=======================================================================================!
+
+   CLOSURE_TYPE = 'KF','KF','KF', ! Closure type to find the reference updraft mass flux:
+                             ! PS1. Case insensitive - see table below:
+      !----------------------------------------------------------------------------------!
+      ! Type | Description                    | Deep | Shal | Reference Paper            !
+      !------+--------------------------------+------+------+----------------------------!
+      ! EN   | Ensemble (all closures)        | yes  |  no  | Grell and Dévényi, 2002    !
+      ! NC   | Ensemble, excluding LO and MC  | yes  | yes  | Grell and Dévényi, 2002    !
+      ! GR   | Modified quasi-equilibrium ABE | yes  | yes  | Grell, 1993                !
+      ! LO   | Low level omega                | yes  |  no  | Frank and Cohen, 1987      !
+      ! MC   | moisture convergence           | yes  |  no  | Krishnamurti et al., 1983  !
+      ! KF   | Instability removal            | yes  | yes  | Kain and Fritsch, 1990     !
+      ! AS   | Quasi equilibrium of ABE       | yes  | yes  | Arakawa and Schubert, 1974 !
+      !----------------------------------------------------------------------------------!
+   
+   MAXENS_LSF = 3,3,3, ! Number of different arbitrary mass fluxes for GR/AS/KF dynamic
+                       ! control (it will also create some different numbers for MC)
+
+   MAXENS_EFF = 3,3,3, ! Number of precipitation efficiency members
+   
+   MAXENS_CAP = 3,3,3, ! Number of static control members, currently changes in cap_maxs.
+   
+   !------------------------------------------------------------------------------------!
+
+ $END
+
+
+
+
+ $MODEL_OPTIONS
+
+   NADDSC   = 0,             ! Number of additional scalar species
+
+! Numerical schemes
+ 
+   ICORFLG  = 1,             ! Coriolis flag/2D v-component  -  0=off, 1=on
+
+   IEXEV    = 2,             ! Exner tendency
+                             ! 1- simplest form
+                             ! 2- complete, mass conservative, solution
+                             !    (works only with sigma z coordinate)
+  
+   IMASSFLX = 0,             ! Output advective and convective mass flux for
+                             ! Lagrangian Particle Dispersion Modelling?
+                             ! 0 - no,  1 - yes
+   
+   IBND     = 1,             ! Lateral boundary condition flags
+   JBND     = 1,             ! 1-Klemp/Wilhelmson, 2-Klemp/Lilly, 3-Orlanski
+                             !  4-cyclic
+   CPHAS    = 20.,           ! Phase speed if IBND or JBND = 1
+   LSFLG    = 0,             ! Large-scale gradient flag for variables other than
+                             !  normal velocity:
+                             !  0 = zero gradient inflow and outflow
+                             !  1 = zero gradient inflow, radiative b.c. outflow
+                             !  2 = constant inflow, radiative b.c. outflow
+                             !  3 = constant inflow and outflow
+   NFPT     = 0,             ! Rayleigh friction - number of points from the top
+   DISTIM   = 400.,          !	          - dissipation time scale
+ 
+! Radiation parameters
+ 
+   ISWRTYP  = 3,             ! Shortwave radiation type
+   ILWRTYP  = 3,             ! Longwave radiation type
+                             !    0-none,       1-Chen/Cotton, 2-Mahrer/Pielke
+                             !    3-Harrington, 4-Carma
+                             !
+   ICUMFDBK = 0,             ! Add effects of parameterized cumulus in radiation?
+                             !    0 - No , 1 - Yes
+                             ! (Used for i?wrtyp = 3 only)
+                             !
+   RADDATFN = '',            ! Radiation parameterization datafile
+                             ! (only if iswrtyp and/or ilwrtyp is 4).
+                             !
+   RADFRQ   = 600.,          ! Freq. of radiation tendency update (s)
+   LONRAD   = 1,             ! Longitudinal variation of shortwave
+                             !    (0-no, 1-yes)
+
+
+! Surface layer and soil parameterization
+ 
+   NPATCH   = 5,             ! Number of patches per grid cell (min=2)
+                       
+   NVEGPAT  = 4,             ! Number of patches per grid cell to be 
+                             !    filled from
+                             ! vegetation files 
+                             !    (min of 1, max of NPATCH-1)
+                       
+   ISFCL    = 5,             ! Surface layer/soil/veg model
+                             !  0 - specified surface layer gradients
+                             !  1 - LEAF-3 submodel
+                             !  2 - LEAF-3/TOPMODEL submodel
+                             !  3 - SIB submodel
+                             !  4 - GEMTM submodel (not available)
+                             !  5 - ED2 submodel
+
+   N_CO2    = 1,             ! number of CO2 tracers
+
+   CO2_INIT=  360., 360., 360., 355., 355.,
+              350., 350., 355., 355., 340.,   ! ppm
+
+   NVGCON   = 7,             ! Vegetation type (see below)
+!-------------------------------------------------------------------------------
+!  0 - Ocean                           11 - Tundra
+!  1 - Lakes, rivers, streams          12 - Evergreen shrub
+!  2 - Ice cap/glacier                 13 - Deciduous shrub
+!  3 - Desert, bare soil               14 - Mixed woodland
+!  4 - Evergreen needleleaf tree       15 - Crop/mixed farming, C3 grassland
+!  5 - Deciduous needleleaf tree       16 - Irrigated crop
+!  6 - Deciduous broadleaf tree        17 - Bog or marsh
+!  7 - Evergreen broadleaf tree        18 - Wooded grassland 
+!  8 - Short grass                     19 - Urban and built up
+!  9 - Tall grass                      20 - Wetland evergreen broadleaf tree
+! 10 - Semi-desert                     21 - Very urban (TEB only)
+!-------------------------------------------------------------------------------
+
+   PCTLCON  = 1.,            ! Constant land % if for all domain
+   NSLCON   = 8,             ! Constant soil type if for all domain
+
+   !   1 -- sand             2 -- loamy sand      3 -- sandy loam
+   !   4 -- silt loam        5 -- loam            6 -- sandy clay loam
+   !   7 -- silty clay loam  8 -- clay loam       9 -- sandy clay
+   !  10 -- silty clay      11 -- clay           12 -- peat
+
+   ZROUGH   = .05,           ! Constant roughness if for all domain
+   ALBEDO   = .2,            ! Constant albedo if not running soil model
+   SEATMP   = 298.,          ! Constant water surface temperature
+
+   DTHCON   = 0.,            ! Constant sfc layer  temp grad for no soil
+   DRTCON   = 0.,            ! Constant sfc layer moist grad for no soil
+   
+   SOIL_MOIST = 'n',         ! n => Homogeneous (standard)
+                             ! i,h,a => Heterogenous Soil Moist.Init.
+                             !          with file.
+                             ! i => INITIAL
+                             ! h => HISTORY
+                             ! a => INITIAL or HISTORY
+
+   SOIL_MOIST_FAIL = 'l',    ! In case that Heterogenous Soil Moist.
+                             ! file is not found, what should RAMS do?
+                             ! s => STOP the program
+                             ! h => Initialize with Homogenous Soil Moist.
+                             ! l => Looking for 5 days old files,
+                             !      and if not found again then stop.
+
+   USDATA_IN  = '/n/Moorcroft_Lab/Lab/data/brams_data/racci/smoist/GL_SM.GPCP.',  ! Soil Moisture File prefix
+   USMODEL_IN = './surfa/lesmo',  ! File prefix with pre-calculated data by BRAMS
+
+
+
+   SLZ     = -3.00,-2.00, -1.50, -1.00, -0.70, -0.40, 
+             -0.20,-0.16, -0.12, -0.09, -0.06, -0.04,   ! Soil grid levels
+   SLMSTR  =  0.74, 0.74,  0.74,  0.74,  0.74,  0.74,   
+              0.74, 0.74,  0.74,  0.74,  0.74,  0.74,   ! Initial soil moisture
+   STGOFF  =   0.0,  0.0,   0.0,   0.0,   0.0,   0.0,
+               0.0,  0.0,   0.0,   0.0,   0.0,   0.0,   ! Initial soil temperature offset
+                                                        !  from lowest atmospheric level
+!--------------------------------------------------------------------------
+
+!----- Urban canopy parameterization --------------------------------
+
+   IF_URBAN_CANOPY =0,   ! Use the urban canopy parameterization (0-no/1-yes)?
+
+!-------------------------------------------------------------------------
+ 
+!--------- Eddy diffusion coefficient parameters -----------------------
+ 
+   IDIFFK  = 7,7,7,            ! K flag:
+                             !  1 - Horiz deform/Vert Mellor-Yamada
+                             !  2 - Anisotropic deformormation
+                             !      (horiz & vert differ)
+                             !  3 - Isotropic deformation 
+                             !      (horiz and vert same)
+                             !  4 - Deardorff TKE (horiz and vert same)
+                             !  5,6 - S. Trini Castelli closures
+                             !  7 - Horiz deform/Vert Nakanishi-Niino
+
+   IHORGRAD = 1,             !  1 - horiz grad frm decomposed sigma grad
+                             !  2 - true horizontal gradient. 
+                             !      Non-conserving, but allows small DZ
+   CSX     = .32,.32,        ! Deformation horiz. K's coefficient
+   CSZ     = .35,.35,        ! Deformation vert. K's coefficient
+   XKHKM   =  3., 3.,        ! Ratio of horiz K_h to K_m for deformation
+   ZKHKM   =  3., 3.,        ! Ratio of vert K_h to K_m for deformation
+   AKMIN   =  1., 1.,        ! Ratio of minimum horizontal eddy
+                             !    viscosity coefficientto typical value
+                             !    from deformation K
+!------------------------------------------------------------------------------
+ 
+!----- Microphysics ------------------------------------------------------
+
+   LEVEL   = 2,              ! Moisture complexity level
+ 
+   ICLOUD  = 4,              ! Microphysics flags
+   IRAIN   = 2,              !-------------------
+   IPRIS   = 5,              !  1 - diagnostic concen.
+   ISNOW   = 2,              !  2 - specified mean diameter
+   IAGGR   = 2,              !  3 - specified y-intercept
+   IGRAUP  = 2,              !  4 - specified concentration
+   IHAIL   = 2,              !  5 - prognostic concentration
+ 
+   CPARM   = .3e9,           !  Microphysics parameters
+   RPARM   = 1e-3,           !-------------------------
+   PPARM   = 0.,             !  Characteristic diameter, # concentration
+   SPARM   = 1e-3,           !    or y-intercept
+   APARM   = 1e-3,
+   GPARM   = 1e-3,
+   HPARM   = 3e-3,
+
+   GNU     = 2.,2.,2.,2.,2.,2.,2., ! Gamma shape parms for
+                                   ! cld rain pris snow aggr graup hail
+!-----------------------------------------------------------------------------
+
+ $END
+
+ $ED2_INFO
+
+!-------------------------------------------------------------------------!
+! Main time step parameters                                               !
+!-------------------------------------------------------------------------!
+
+   DTLSM  = 900.0,      ! Basic time step [s].  In the Euler scheme, this
+                      ! is the length of the Euler time step.  Recommended
+                      ! values are between 60-180.  In the Runge Kutta
+                      ! scheme, this is the time between photosynthesis
+                      ! updates.  Recommended value is to set it to the
+                      ! minimum of the radiation and convective update
+ 
+!-------------------------------------------------------------------------!
+! ED2 File output                                                         !
+!-------------------------------------------------------------------------!
+ 
+   IFOUTPUT  =  0,            ! Fast analysis (mostly polygon averages)
+                             ! Fast analysis files are synchronized
+                             ! with BRAMS analysis write-outs
+                             ! FRQANL
+   IDOUTPUT  =  0,            ! Daily means   (mostly polygon averages)
+   IMOUTPUT  =  0,            ! Monthly means (mostly polygon averages)
+   ISOUTPUT  =  3,            ! State file    (contains the entire model core)
+                             ! State files are synchronized with BRAMS
+                             ! history files FRQHIST
+
+	                        ! 0 - no file;
+                                ! 1 - save ascii (deprecated);
+                                ! 2 - save RAMS-vfm file (deprecated);
+                                ! 3 - save HDF5;
+   
+   ATTACH_METADATA = 1,       ! Flag for attaching metadata to HDF datasets
+	                        ! Attaching metadata will aid new users
+	                        ! in quickly identifying dataset descriptions
+	                        ! but will compromise I/O performance significantly
+        	                ! 0 = no metadata, 1 = yes metadata
+
+
+!-------------------------------------------------------------------------!
+! Analysis/history/restart file: path, prefix, settings                   !
+!-------------------------------------------------------------------------!
+   FFILOUT   = 'F/v99',       ! Fast-time scal analysis output prefix
+   SFILOUT   = 'S/v99',       ! Output prefix for the state variables
+
+   IED_INIT_MODE   = 0,              ! 0 signifies a start from near-bare ground.   
+                                    ! 1 allows you to do a history restart from ED1-type
+                                    !   restart files
+                                    ! 2 allows you to do a standard history restart from
+                                    !   ED2-type restart files.
+                                    ! 3 - initialize via ed-2 and site file restarts 
+
+   EDRES  = 1.0,                     ! ED2/ED1 restart grid resolution
+
+                                    ! If this is a history type restart
+	                            ! then the timing information
+	                            ! is accessed via the BRAMS restart info
+   SFILIN   = '/n/Moorcroft_Lab/Users/dmm2/ED2/inputs/amazon_restart/lu.sa.05.restart.01.',
+
+!-------------------------------------------------------------------------!
+
+
+!-------------------------------------------------------------------------!
+!  Input databases                                                        !
+!-------------------------------------------------------------------------!
+
+   VEG_DATABASE = './oge2/OGE2_',
+   SOIL_DATABASE = './fao/FAO_',
+   ED_INPUTS_DIR   = './ed_inputs/',
+
+                    ! Directory where chd, dgd and glu data are kept.
+
+   SOILSTATE_DB='./STW1996OCT.dat',
+   SOILDEPTH_DB='./soil_depths.dat',
+
+   ISOILSTATEINIT = 0,  ! 0 -- use slmstr
+                       ! 1 -- read from file
+
+   ISOILDEPTHFLG  = 0,  ! 0 -- use NZG, SLZ for each grid cell
+                       ! 1 -- read file to get soil depth for each grid cell
+!-------------------------------------------------------------------------!
+
+
+!-------------------------------------------------------------------------!
+! ED model options                                                        !
+!-------------------------------------------------------------------------!
+
+   INTEGRATION_SCHEME = 1,  ! This determines how the fast time step
+                              ! is integrated:
+                              !  0  --  Euler step
+                              !  1  --  Fourth-order Runge Kutta
+
+   ISTOMA_SCHEME   = 0,  ! This is the scheme used to compute stomatal 
+                         ! conductance and photosynthesis.  Set to 0 to do 
+                         ! the full, exact calculation each time.  Set to 1 
+                         ! to do the 'small perturbation' scheme.
+
+   IPHEN_SCHEME    = 0,  ! This specifies the phenology scheme:
+                           !  0 is for the Botta et al scheme
+                           !  1 is for the Harvard Forest observations
+                           !  Other options coming soon.
+  
+   N_PLANT_LIM     = 0,  ! Determines whether (1) or not (0) plants can
+                         ! be limited by nitrogen
+
+   N_DECOMP_LIM    = 0,  ! Determines whether (1) or not (0) decomposition
+                         ! can be limited by nitrogen
+
+   INCLUDE_FIRE    = 0,  ! Determines whether (1) or not (0) simulation can have fires 
+
+   IANTH_DISTURB   = 0,  ! Flag specifying whether (1) or not (0) to include
+                         ! anthropogenic disturbances such as agriculture, 
+                         ! abandonment, and harvesting.
+
+
+   !--------------------------------------------------------------------!
+   ! PLANT FUNCTIONAL TYPES (PFTs):                                     !
+   !--------------------------------------------------------------------!
+   ! 1 - C4 grass                    |  7 - southern pines              ! 
+   ! 2 - early tropical              |  8 - late conifers               ! 
+   ! 3 - mid tropical                |  9 - early temperate deciduous   ! 
+   ! 4 - late tropical               | 10 - mid temperate deciduous     ! 
+   ! 5 - C3 grass                    | 11 - late temperate deciduous    ! 
+   ! 6 - northern pines              |                                  !
+   !--------------------------------------------------------------------!
+   INCLUDE_THESE_PFT = 1,2,3,4,        ! List of PFTs to be included 
+
+
+   PFT_1ST_CHECK = 0, ! What should I do when I find a cohort with an unexpected PFT 
+                        !    in the history start?
+                        ! 0. Stop the run;
+                        ! 1. Add the PFT in the INCLUDE_THESE_PFT list;
+                        ! 2. Ignore the cohort.
+                        !
+                        ! This option is ignored in near bare ground runs.
+
+!----- Patch and cohort dimension settings ------------------------------------------------!
+   MAXPATCH  = 10, ! If number of patches in a given site exceeds 
+                     ! MAXPATCH, force patch fusion.
+   MAXCOHORT = 10, ! If number of cohorts in a given patch exceeds
+                     ! MAXCOHORT, force cohort fusion.
+!-------------------------------------------------------------------------!
+                                                                 
+                                         
+!-------------------------------------------------------------------------!
+! Commonly changed parameters                                                              !
+!-------------------------------------------------------------------------!
+
+   TREEFALL_DISTURBANCE_RATE  = 0.0,  ! Treefall disturbance rate, 1/years
+
+   RUNOFF_TIME     = 86400.0,         ! the forest could get saturated and 
+                                        ! develop a sfcwater pool of meters or 
+                                        ! more.  In many cases, this is not realistic.
+                                        ! This is the time scale in seconds for 
+                                        ! this water to disappear.        
+!-------------------------------------------------------------------------!
+
+!-------------------------------------------------------------------------!
+! Control parameters for printing to standard output                      
+!         Any variable can be printed to standard output as long as it is
+!         one dimensional.  Polygon variables have been tested, no gaurtantees
+!         for other hierarchical levels.
+!         Choose any variables that are defined in the variable table fill
+!         routine in ed_state_vars.f90.  Choose the start and end index
+!         of the polygon,site,patch or cohort.
+!         Should work in parallel.  The indexes are global indexes of the
+!         entire domain.  The are printed out in rows of 10 columns each
+!-------------------------------------------------------------------------!
+
+   IPRINTPOLYS  =  1,          ! 0 = do not print information to screen
+                               ! 1 = print polygon arrays to screen, use variables
+                               !     described below
+
+!----- Print these variables ------------------------------------------!
+   NPVARS       =  1,
+   PRINTVARS    = 'AVG_RLONG',
+
+!----- Use these format strings ---------------------------------------!
+
+   PFMTSTR      = 'f10.8','f5.1','f7.2','f9.5',
+
+   IPMIN        = 1,       ! The first polygon index to print
+   IPMAX        = 60,       ! The last polygon index to print
+!-------------------------------------------------------------------------!
+
+   INITIAL_CO2 = 370., ! Initial value for CO2 in case no CO2 is provided at the 
+                      ! meteorological driver dataset
+
+
+!----- For phenology prescribed from observations, we also need to recycle over years. ----!
+   IPHENYS1 = 1992, ! initial year for spring
+   IPHENYSF = 2003, ! final year for spring
+   IPHENYF1 = 1992, ! initial year for fall
+   IPHENYFF = 2003, ! final year for fall
+!-------------------------------------------------------------------------!
+
+
+
+!-------------------------------------------------------------------------!
+! XML configuration file                                                                   !
+!-------------------------------------------------------------------------!
+   IEDCNFGF = 'config.xml',
+   PHENPATH = '/n/Moorcroft_Lab/Users/mlongo/EDBRAMS/ed-test/inputs',
+!-------------------------------------------------------------------------!
+
+ $END
+
+ $MODEL_SOUND
+
+!-----------------------------------
+! Sounding specification
+!-----------------------------------
+ 
+! Flags for how sounding is specified
+ 
+   IPSFLG   = 0,             ! Specifies what is in PS array
+                             !  0-pressure(mb) 1-heights(m) 
+                             !  PS(1)=sfc press(mb)
+ 
+   ITSFLG   = 0,             ! Specifies what is in TS array
+                             !  0-temp(C) 1-temp(K) 2-pot. temp(K)
+
+   IRTSFLG  = 3,             ! Specifies what is in RTS array
+                             !  0-dew pnt.(C) 1-dew pnt.(K) 
+                             !  2-mix rat(g/kg) 
+                             !  3-relative humidity in %, 
+                             !  4-dew pnt depression(K)
+ 
+   IUSFLG   = 1,             ! Specifies what is in US and VS arrays
+                             ! 0-u,v component(m/s) 
+                             ! 1-umoms-direction, vmoms-speed
+ 
+  HS  =  182.,
+  PS  =    0., 1010., 1000.,  925.,  850.,  700.,  600.,  500.,  400.,  300.,  200.,  100.,   70.,
+  TS  =          25.,  18.5,  12.0,   4.5,  -11.,  -24.,  -37., -56.5, -56.5, -56.5, -56.5,
+  RTS =          70.,   70.,   70.,   70.,   20.,   20.,   20.,   20.,   10.,   10.,   10.,
+  US  =          2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,
+  VS  =           3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,
+ 
+ $END
+ 
+ 
+ $MODEL_PRINT
+
+!-----------------------------------
+! Specifies the fields to be printed during the simulation
+!-----------------------------------
+
+   NPLT     = 0,            ! Number of fields printed at each time
+                            !   for various cross-sections (limit of 50)
+                            
+   IPLFLD     = 'UP','THP','THETA','RT','TOTPRE',
+                            ! Field names - see table below
+                            
+!   PLFMT(1)  = '0PF7.3',   ! Format spec. if default is unacceptable
+
+   IXSCTN    = 3,3,3,3,3,3,
+                            ! Cross-section type (1=XZ, 2=YZ, 3=XY)
+
+   ISBVAL    = 2,2,2,2,2,2,2,
+                            ! Grid-point slab value for third direction
+ 
+  ! The following variables can also be set in the  namelist:  IAA,
+  ! IAB, JOA, JOB, NAAVG, NOAVG, PLTIT, PLCONLO, PLCONHI, and PLCONIN.
+ 
+!     'UP'    - UP(M/S)     'RC'   - RC(G/KG)    'PCPT' - TOTPRE
+!     'VP'    - VP(M/S)     'RR'   - RR(G/KG)    'TKE'  - TKE
+!     'WP'    - WP(CM/S)    'RP'   - RP(G/KG)    'HSCL' - HL(M)
+!     'PP'   - PRS(MB)      'RA'   - RA(G/KG)    'VSCL' - VL(M)
+!     'THP'  - THP(K)
+!     'THETA'- THETA(K)     'RL'   - RL(G/KG)    'TG'   - TG (K)
+!     'THVP' - THV'(K)      'RI'   - RI(G/KG)    'SLM'  - SLM (PCT)
+!     'TV'   - TV(K)        'RCOND'- RD(G/KG)    'CONPR'- CON RATE
+!     'RT'   - RT(G/KG)     'CP'   - NPRIS       'CONP' - CON PCP
+!     'RV'   - RV(G/KG)     'RTP'  - RT'(G/KG)   'CONH' - CON HEAT
+!                                                'CONM' - CON MOIS
+!     'THIL' - Theta-il (K) 'TEMP' - temperature (K)
+!     'TVP'  - Tv' (K)      'THV'  - Theta-v     (K)
+!     'RELHUM'-relative humidity (%)           'SPEED'- wind speed (m/s)
+!     'FTHRD'- radiative flux convergence (??)
+!     'MICRO'- GASPRC
+!     'Z0'   - Z0 (M)       'ZI'   - ZI (M)      'ZMAT' - ZMAT (M)
+!     'USTARL'-USTARL(M/S)  'USTARW'-USTARW(M/S) 'TSTARL'-TSTARL (K)
+!     'TSTARW'-TSTARW(K)    'RSTARL'-RSTARL(G/G) 'RSTARW'-RSTARW(G/G)
+!     'UW'   - UW  (M*M/S*S)                     'VW'   - VW (M*M/S*S)
+!     'WFZ'  - WFZ (M*M/S*S)                     'TFZ'  - TFZ (K*M/S)
+!     'QFZ'  - QFZ (G*M/G*S)                     'RLONG'- RLONG
+!     'RSHORT'-RSHORT
+
+ $END
+
+ $ISAN_CONTROL
+ 
+!-----------------------------------
+! Isentropic control 
+!-----------------------------------
+ 
+   ISZSTAGE   = 1,        ! Main switches for isentropic-sigz
+   IVRSTAGE   = 1,        !    "varfile" processing
+    
+   ISAN_INC = 0600,         ! ISAN processing increment (hhmm)
+                            !    range controlled by TIMMAX, 
+                            !    IYEAR1,...,ITIME1
+
+   GUESS1ST = 'PRESS',      ! Type of first guess input- 'PRESS', 'RAMS'
+
+   I1ST_FLG = 1,            ! What to do if first guess file should be
+                            !  used but does not exist.
+                            !  1=I know it may not be there, 
+                            !        skip this data time
+                            !  2=I screwed up, stop the run
+                            !  3=interpolate first guess file from 
+                            !    nearest surrounding times, stop if unable
+                            !     (not yet available)
+
+   IUPA_FLG = 3,            ! UPA-upper air, SFC-surface
+   ISFC_FLG = 3,            ! What to do if other data files should be
+                            !  uesed, but does not exist.
+                            !  1 = I know it may not be there, 
+                            !      skip this data time
+                            !  2 = I screwed up, stop the run
+                            !  3 = Try to continue processing anyway
+
+! Input data file prefixes
+
+   IAPR    = '/home/rknox/Datasets/Ralph/ds118.1/SA00/dp-p',  ! Archived 1st guess   file name
+   IARAWI  = '',  ! Archived rawindsonde file name
+   IASRFCE = '', ! Archived surface obs file name
+
+! File names and dispose flags 
+
+   VARPFX    = './ivar/era00',
+   IOFLGISZ  = 0,           ! Isen-sigz file flag: 0 = no write, 1 = write
+   IOFLGVAR  = 1,           ! Var file flag: 0 = no write, 1 = write
+
+ $END
+ 
+ $ISAN_ISENTROPIC
+ 
+!-----------------------------------
+! Isentropic and sigma-z processing 
+!-----------------------------------
+
+!-----------------------------------
+! Specify isentropic levels
+!-----------------------------------
+
+   NISN     = 54,           ! Number of isentropic levels
+   LEVTH    = 258,260,262,264,266,268,270,272,274,276,
+              278,280,282,284,286,288,290,292,294,296,
+              298,300,303,306,309,312,315,318,321,324,
+              327,330,335,340,345,350,355,360,380,400,
+              420,440,460,480,500,520,540,570,600,630,
+              670,700,750,800,
+              
+!-----------------------------------
+! Analyzed grid information:
+!-----------------------------------
+
+   NIGRIDS  = 1,            ! Number of RAMS grids to analyze
+
+   TOPSIGZ  = 20000.,       ! Sigma-z coordinates to about this height
+
+   HYBBOT   = 4000.,        ! Bottom (m) of blended sigma-z/isentropic 
+                            !    layer in varfiles
+   HYBTOP   = 6000.,        ! Top (m) of blended sigma-z/isentropic layr
+
+   SFCINF   = 1000.,        ! Vert influence of sfc observation analysis
+
+   SIGZWT   = 1.,           ! Weight for sigma-z data in varfile: 
+                            !  0.= no sigz data, 
+                            !  1.=full weight from surface to HYBBOT
+
+   NFEEDVAR = 1,            ! 1=feed back nested grid varfile, 0=don't
+
+!-----------------------------------
+! Observation number limits:
+!-----------------------------------
+
+   MAXSTA   = 150,          ! maximum number of rawindsondes 
+                            !    (archived + special)
+   MAXSFC   = 9999,         ! maximum number of surface observations
+
+   NOTSTA   = 0,            ! Number of stations to be excluded
+   NOTID    = 'r76458',     ! Station ID's to be excluded
+                            !  Prefix with 'r' for rawindsonde, 
+                            !              's' for surface
+   IOBSWIN = 1800,
+
+   STASEP   = .1,           ! Minimum sfc station separation in degrees.
+                            !    Any surface obs within this distance
+                            !    of another obs will be thrown out
+                            !    unless it has less missing data, 
+                            !    in which case the other obs will be
+                            !    thrown out.
+
+
+   IGRIDFL  = 3,            ! Grid flag=0 if no grid point, only obs
+                            !           1 if all grid point data and obs
+                            !           2 if partial grid point and obs
+                            !           3 if only grid data
+                            !           4 all data... fast
+
+
+   GRIDWT   = .01,.01,      ! Relative weight for the gridded press data
+                            !   compared to the observational data in 
+                            !   the objective analysis
+
+
+   GOBSEP   = 5.,           ! Grid-observation separation (degrees)
+   GOBRAD   = 5.,           ! Grid-obs proximity radius (degrees)
+
+   WVLNTH   = 1200., 900.,  ! Used in S. Barnes objective analysis.
+                            !   Wavelength in km to be retained to the
+                            !   RESPON % from the data to the upper air 
+                            !   grids.
+   SWVLNTH  = 750., 300.,   ! Wavelength for surface objective analysis
+
+   RESPON   = .90,.9,       ! Percentage of amplitude to be retained.
+
+ $END

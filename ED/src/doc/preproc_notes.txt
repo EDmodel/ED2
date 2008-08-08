@@ -1,0 +1,78 @@
+Author: David Medvigy
+Date: 1/21/07
+
+SUMMARY:
+This file contains my notes on the files in the pre-processor directory.  
+There are currently two subdirectories, ascii2hdf and cdc2hdf.  The code in
+ascii2hdf will take the old-style ED2 met driver files (written in ASCII) and
+convert them into HDF5.  The code in in cdc2hdf will take the netcdf files
+downloaded from the CDC website and convert them into HDF5.
+
+THIS CODE WAS COMPILED AND TESTED ON MOORCROFTH.  USE ELSEWHERE AT YOUR OWN RISK!!!!!!!!!!!!!!!!!!!!!!!!
+
+---------------------------------
+
+ascii2hdf/
+
+Recall that the met driver files for IMETFLG = 2 (an SOI run) did not have
+a header, but that the met driver files for IMETFLG = 1 (regional offline 
+run) did have a header.  Currently, the ascii2hdf/ code only works with the
+IMETFLG=2 type files.  I am working on generalizing it.
+
+To generate the HDF5 files, set six variables at the top of convert_ascii.f90:
+1) first_year:  the first year you want to process
+2) last_year: the last year you want to process
+3) findir: location of the current met driver files (in ASCII)
+4) foutdir: location to write the new met driver files (HDF5)
+5) frqin: frequency (in seconds) at which non-solar-radiation fields were
+          written to the ASCII file.
+6) frqin_rad: freqency (in seconds) at which the solar radiation fields 
+              were written to the ASCII file.
+
+Once you have set these quantities, just make and run:
+
+moorcrofth > make
+moorcrofth > ./convert_ascii
+
+Let me know if you have any problems.
+
+---------------------------------
+
+cdc2hdf/
+
+You can download new meteorological files from the CDC website:
+http://www.cdc.noaa.gov/cdc/reanalysis/reanalysis.shtml
+
+Converting these files to HDF5 is currently a two-step process.  I am working
+on simplifying this, but a preliminary step is getting the f90 netcdf 
+libraries compiled on moorcrofth using the intel9.1 compilers.  This was 
+causing me problems, so we're stuck with a 2-step process for now.
+
+First set the following variables at the top of read_ncep.c:
+    LATMIN  --- minimum latitude of the subregion
+    LATMAX  --- maximum latitude of the subregion
+    LONMIN  --- minimum longitude of the subregion
+    LONMAX  --- maximum longitude of the subregion
+    MIN_YEAR --- first year you want to process
+    MAX_YEAR --- last year you want to process
+    INPUT_DIR --- location of your downloaded ncep input files
+    OUTPUT_DIR --- directory where you want to put your output files 
+
+Then set the following variables in convert_radiation_gen.f90:
+   first_year --- first year to process (should be same as MIN_YEAR)
+   last_year  --- last year to process (should be same as MAX_YEAR)
+   fdir       --- directory of the input data. Output files are placed in the
+                  same directory.  This should be the same as OUTPUT_DIR.
+   frqin ---  Frequency at which input data was written out [seconds]. For
+              CDC, this is 21600.0
+   frqout_rad --- Frequency at which you want the interpolated output 
+                  solar radiation data written [seconds].  This is up to you.
+
+See comments at the top of the programs for further info. To compile and run
+(on moorcrofth):
+
+moorcrofth > make
+moorcrofth > ./read_ncep
+moorcrofth > ./convert_radiation_gen
+
+Let me know if there are any problems.

@@ -1,0 +1,50 @@
+FUNCTIONALITY:
+Allows recompilation for just modified files and files with dependencies with those.
+
+HOW TO USE:
+Set the correct path for BRAMS in RAMS_ROOT variable in the script file: paths.mk
+In the directory $(RAMS_ROOT)/build/bin, write:
+   make -f Make_model OPT=opt
+
+Basic operation:
+All compilation is done in <source>/build/bin directory. The files with extensions "*.o" and "*.mod" stay in this same path and are not removed after the final compilation.
+Modified source files after the last compilation are copied to the <source>/build/bin directory, compiled and deleted (the copy of the respective source code).
+The usual libraries "libutils", "ncarg" and "brams" stay at directory <source>/build, and are updated at each make process, if necessary.
+
+PROBLEMS:
+Lot of files in the directory <source>/build/bin
+
+WHAT TO DO IN CASE OF MODIFICATIONS IN SOURCE CODE:
+If the modification did not affect the name of file and no modifications were done related to USE statements: there is nothing special to do, the normal operation will provide the new binaries.
+If the modification affects USE statements, the dependencies between the source files and Fortran 90 modules could be affected. So, the user can fix the dependencies in the "depend_*" correspondent file (see below).
+Modification in the name of the file demands changes in objects list (files "objects_*") and dependencies between files (see below). In this case, all files ("objects_*" and "depend_*") could be modified.
+
+OBJECTS LIST TO COMPILE:
+Each Makefile had an object list to compile ("objects_model.mk" for Make_model and "objects_utils.mk" for Make_utils). These object lists are included in the respective Makefile at compilation time, and this file need to stay updated.
+The user must delete, if necessary, from correspondent object list, the source files that are not necessary.
+The user must insert, if necessary, in correspondent object list the new source files necessary.
+
+FILE DEPENDENCIES:
+The files "depend_model.mk" and  "depend-utils.mk" describes the dependencies between files, and inform a make process to solve this problems.
+Each object file "*.o" depends of his source file and the object file from the Fortran 90 module referred in a USE statement.
+The dependency are described by the line:
+<Object> : <source> <used object 1> <used object 2> ...
+In the file "depend_XXX.mk"
+The way on how to solve the dependency must be described in a set of commands expressed in the next line after the line describing the dependency.
+There are three different cases:
+-	Compile a .f90 source file
+-	Compile a .F90 source file
+-	Compile a .c source file
+Each case could have different set of commands. The name of source file is not used in the respective set of commands.
+
+To insert a new file:
+Create the dependencies instructions following an example in the appropriate file ("depend_model.mk" or "depend_utils.mk").
+Insert the name of new source file in the respective object list file ("objects_model.mk" or "objects_utils.mk").
+
+To modify a dependency:
+If a dependency was not necessary anymore remove the respective object file from the dependency line. If the modifications in the code create a new dependency, insert to correspondent name of the object file in the appropriate line.
+
+To remove a file:
+Remove the dependency and specific compilation rule from the dependencies file. Check if there are other references to the removed file in others dependency lines. Remove the respective file from the objects list.
+
+

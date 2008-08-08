@@ -1,0 +1,59 @@
+# See README is at the bottom of this file.
+2
+/n/Moorcroft_Lab/Users/dmm2/ED2/my-edbrams/ED/src/preproc/cdc2hdf/output_fhdf/ED_OL1_
+37 21 2.5 2.5 -108.75 -30
+8
+'prate' 'dlwrf' 'pres' 'hgt' 'ugrd' 'vgrd' 'sh' 'tmp'
+21600. 21600. 21600. 21600. 21600. 21600. 21600. 21600. 
+1 0 1 1 1 1 1 1
+/n/Moorcroft_Lab/Users/dmm2/ED2/my-edbrams/ED/src/preproc/cdc2hdf/output_fhdf/ED_OL2_
+37 21 2.5 2.5 -108.75 -30
+4
+'nbdsf'      'nddsf'      'vbdsf'      'vddsf'
+3600.0       3600.0       3600.0       3600.0
+0            0            0            0
+
+
+#/n/Moorcroft_Lab/Users/dmm2/ED2/my-edbrams/ED/build/bin/met_drivers/f2/ED_OL1_
+#37 21 2.5 2.5 -108.75 -30
+#2
+#'prate'      'dlwrf'
+#21600.0      21600.0
+#1            0
+#/n/Moorcroft_Lab/Users/dmm2/ED2/my-edbrams/ED/build/bin/met_drivers/f3/ED
+#37 21 2.5 2.5 -108.75 -30
+#6
+#'pres'      'hgt'        'ugrd'      'vgrd'     'sh'     'tmp'
+#21600.0      21600.0     21600.0     21600.0    21600.0  21600.0
+#1            1           1           1          1        1
+#
+# README
+# Line 1:  Number of file formats (n)
+# Then, loop over n:
+#    Prefixes of the file format
+#    nlon, nlat, dx, dy, xmin, ymin
+#    Number of variables contained in this format 
+#    list of variables for each format
+#    frequency at which variables are updated, for each var, or the scalar value if the variable type is 4 (see next)
+#    do: (0) read gridded data - no time interpolation
+#        (1) read gridded data - with time interpolatation
+#        (2) read gridded data - constant in time, not changing (if this is lat/lon, will overwrite line 3 information)
+#        (3) read one value representing the whole grid - no time interpolation
+#        (4) specify a constant for all polygons, constant in time (most likely reference height)
+# End loop over n.
+# VARIABLE NAMES FOLLOW NCEP NAMING CONVENTIONS:
+# nbdsf:  near IR beam downward solar radiation [W/m2]
+# nddsf:  near IR diffuse downward solar radiation [W/m2]
+# vbdsf:  visible beam downward solar radiation [W/m2]
+# vddsf:  visible diffuse downward solar radiation [W/m2]
+# prate:  precipitation rate [kg_H2O/m2/s]
+# dlwrf:  downward long wave radiation [W/m2]
+# pres: pressure [Pa]
+# hgt: geopotential height [m]
+# ugrd: zonal wind [m/s]
+# vgrd: meridional wind [m/s]
+# sh: specific humidity [kg_H2O/kg_air]
+# tmp: temperature [K]
+# co2: surface co2 concentration [ppm]
+# lat: grid of latitude coordinates, if this variable is present line 3 is ignored
+# lon: grid of longitude coordinates, if this variable is present line 3 is ignored
