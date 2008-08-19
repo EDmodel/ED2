@@ -132,7 +132,7 @@ subroutine copy_atm2lsm(ifm,init)
         pi0_mean(i,j) = (basic_g(ifm)%pp(1,i,j) + basic_g(ifm)%pp(2,i,j) & 
              +basic_g(ifm)%pi0(1,i,j)+basic_g(ifm)%pi0(2,i,j)) * 0.5
         
-        if(pi0_mean(i,j)+1.0e-6.eq.0.0 .and.pi0_mean(i,j)-1.0e-6.eq.0.0)then
+        if(pi0_mean(i,j) .ne. pi0_mean(i,j))then
            print*,'bad pi0 mean'
            print*,i,j,basic_g(ifm)%pp(1,i,j),basic_g(ifm)%pp(2,i,j), &
                 basic_g(ifm)%pi0(1,i,j),basic_g(ifm)%pi0(2,i,j)
@@ -369,6 +369,11 @@ subroutine copy_fluxes_future_2_past(ifm)
   ed_fluxp_g(ifm)%rstar   = ed_fluxf_g(ifm)%rstar
   ed_fluxp_g(ifm)%albedt  = ed_fluxf_g(ifm)%albedt
   ed_fluxp_g(ifm)%rlongup = ed_fluxf_g(ifm)%rlongup
+  ed_fluxp_g(ifm)%sflux_u = ed_fluxf_g(ifm)%sflux_u
+  ed_fluxp_g(ifm)%sflux_v = ed_fluxf_g(ifm)%sflux_v
+  ed_fluxp_g(ifm)%sflux_w = ed_fluxf_g(ifm)%sflux_w
+  ed_fluxp_g(ifm)%sflux_t = ed_fluxf_g(ifm)%sflux_t
+  ed_fluxp_g(ifm)%sflux_r = ed_fluxf_g(ifm)%sflux_r
 
   ! Do water body fluxes
   wgridp_g(ifm)%ustar   = wgridf_g(ifm)%ustar
@@ -376,7 +381,11 @@ subroutine copy_fluxes_future_2_past(ifm)
   wgridp_g(ifm)%rstar   = wgridf_g(ifm)%rstar
   wgridp_g(ifm)%albedt  = wgridf_g(ifm)%albedt
   wgridp_g(ifm)%rlongup = wgridf_g(ifm)%rlongup
-
+  wgridp_g(ifm)%sflux_u = wgridf_g(ifm)%sflux_u
+  wgridp_g(ifm)%sflux_v = wgridf_g(ifm)%sflux_v
+  wgridp_g(ifm)%sflux_w = wgridf_g(ifm)%sflux_w
+  wgridp_g(ifm)%sflux_t = wgridf_g(ifm)%sflux_t
+  wgridp_g(ifm)%sflux_r = wgridf_g(ifm)%sflux_r
 
   return
 end subroutine copy_fluxes_future_2_past
@@ -911,7 +920,39 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
            print*,cpoly%met(isi)%atm_shv,cgrid%met(ipy)%atm_shv
            call fatal_error('Problems with ATM MOISTURE A','calc_met_lapse_ar','ed_met_driver.f90')
         endif
+        if ( cpoly%met(isi)%rlong > 600.0) then
+           print*,"Problems with RLONG too high"  
+           print*,cpoly%met(isi)%rlong,cgrid%met(ipy)%rlong
+           call fatal_error('Problems with RLONG A','calc_met_lapse_ar','ed_met_driver.f90')
+        end if
+        if ( cpoly%met(isi)%atm_tmp > 317.0) then
+           print*,"Problems with atm temp"  
+           print*,cpoly%met(isi)%atm_tmp,cgrid%met(ipy)%atm_tmp
+           call fatal_error('Problems with atm temp','calc_met_lapse_ar','ed_met_driver.f90')
+        end if
+        if ( cpoly%met(isi)%atm_tmp < 130.0) then
+           print*,"Problems with atm temp,too low"  
+           print*,cpoly%met(isi)%atm_tmp,cgrid%met(ipy)%atm_tmp
+           call fatal_error('Problems with atm temp','calc_met_lapse_ar','ed_met_driver.f90')
+        end if
+        if ( cpoly%met(isi)%par_beam   +cpoly%met(isi)%nir_beam+ &
+             cpoly%met(isi)%par_diffuse+cpoly%met(isi)%nir_diffuse > 1320.0 ) then
+           print*,"Problems with solar radiation, higher than solar const."
+           print*,cpoly%met(isi)%par_beam,cpoly%met(isi)%nir_beam
+           print*,cpoly%met(isi)%par_diffuse,cpoly%met(isi)%nir_diffuse
+           call fatal_error('Problems with solar radiation','calc_met_lapse_ar','ed_met_driver.f90')
+        end if
+        if ( cpoly%met(isi)%atm_shv < 0.001e-3) then
+           print*,"Atmospheric moisture at surface too low"  
+           print*,cpoly%met(isi)%atm_shv
+           call fatal_error('Problems with atm shv','calc_met_lapse_ar','ed_met_driver.f90')
+        end if
 
+        if ( cpoly%met(isi)%atm_shv > 30.0e-3) then
+           print*,"Atmospheric moisture at surface too high"  
+           print*,cpoly%met(isi)%atm_shv
+           call fatal_error('Problems with atm shv','calc_met_lapse_ar','ed_met_driver.f90')
+        end if
      enddo
    
   else
