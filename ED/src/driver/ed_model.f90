@@ -142,7 +142,7 @@ subroutine ed_model()
      call update_model_time_dm(current_time, dtlsm)
      
      ! Checking whether it is some special time...
-     analysis_time   = mod(current_time%time, frqstate) < dtlsm .and. ifoutput /= 0
+     analysis_time   = mod(current_time%time, frqfast) < dtlsm .and. ifoutput /= 0
      new_day         = current_time%time < dtlsm
      if (.not. past_one_day .and. new_day) past_one_day=.true.
      

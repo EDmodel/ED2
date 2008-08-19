@@ -74,11 +74,11 @@ USE_INTERF=1
 CMACH=PC_LINUX1
 F_COMP=mpif90
 F_OPTS= -fastsse -Mipa=fast,inline -tp amd64e -Minfo \
-	-Mvect -Mconcur#-mp=numa
+	-Mvect #-Mconcur-mp=numa
 #F_OPTS= -g #-Mchkstk
 C_COMP=mpicc
 #C_OPTS= -g
-C_OPTS= -fastsse -Mipa=fast,inline -Msmartalloc -Minfo -Mconcur#-mp=numa
+C_OPTS= -fastsse -tp amd64e -Mipa=fast,inline -Msmartalloc -Minfo #-Mconcur -mp=numa
 USE_INTERF=1
 CPP_OPTS=
 LOADER=$(F_COMP)

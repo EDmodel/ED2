@@ -376,7 +376,7 @@ subroutine print_array(ifm,cgrid)
   ! format string at the end.  The X.Xf
   !--------------------------------------------------------
   
-  use ed_node_coms,only: mynum,nnodetot,sendnum,recvnum,master_num
+  use ed_node_coms,only: mynum,nnodetot,sendnum,recvnum,master_num,machs
   use ed_state_vars,only: edtype,polygontype
   use misc_coms, only: &
             printvars,  &
@@ -460,7 +460,7 @@ subroutine print_array(ifm,cgrid)
         exit count_pvars
      endif
 
-     call MPI_Barrier(MPI_COMM_WORLD,ierr)
+!     call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
      pvartrue = .false.
      do nv = 1,num_var(ifm)
@@ -482,13 +482,13 @@ subroutine print_array(ifm,cgrid)
 
                  do nm = 1,nnodetot-1
 
-                    call MPI_Recv(ptr_recv,1,MPI_LOGICAL,nm,31,MPI_COMM_WORLD,status,ierr)
+                    call MPI_Recv(ptr_recv,1,MPI_LOGICAL,machs(nm),31,MPI_COMM_WORLD,status,ierr)
 
                     if (ptr_recv) then
-                       call MPI_Recv(mast_idmin,1,MPI_INTEGER,nm,32,MPI_COMM_WORLD,status,ierr)
-                       call MPI_Recv(mast_idmax,1,MPI_INTEGER,nm,33,MPI_COMM_WORLD,status,ierr)
+                       call MPI_Recv(mast_idmin,1,MPI_INTEGER,machs(nm),32,MPI_COMM_WORLD,status,ierr)
+                       call MPI_Recv(mast_idmax,1,MPI_INTEGER,machs(nm),33,MPI_COMM_WORLD,status,ierr)
                        call MPI_Recv(pvar_g(mast_idmin:mast_idmax),mast_idmax-mast_idmin+1,MPI_REAL,&
-                            nm,34,MPI_COMM_WORLD,status,ierr)
+                            machs(nm),34,MPI_COMM_WORLD,status,ierr)
                     end if
                  enddo
               endif
@@ -580,12 +580,12 @@ subroutine print_array(ifm,cgrid)
 
               if (mynum /= nnodetot) then
 
-                 call MPI_Send(ptr_send,1,MPI_LOGICAL,0,31,MPI_COMM_WORLD,ierr)
+                 call MPI_Send(ptr_send,1,MPI_LOGICAL,machs(nnodetot),31,MPI_COMM_WORLD,ierr)
                  if (ptr_send) then
-                    call MPI_Send(node_idmin,1,MPI_INTEGER,0,32,MPI_COMM_WORLD,ierr)
-                    call MPI_Send(node_idmax,1,MPI_INTEGER,0,33,MPI_COMM_WORLD,ierr)
+                    call MPI_Send(node_idmin,1,MPI_INTEGER,machs(nnodetot),32,MPI_COMM_WORLD,ierr)
+                    call MPI_Send(node_idmax,1,MPI_INTEGER,machs(nnodetot),33,MPI_COMM_WORLD,ierr)
                     call MPI_Send(pvar_l(node_idmin:node_idmax),node_idmax-node_idmin+1, &
-                         MPI_REAL,0,34,MPI_COMM_WORLD,ierr)
+                         MPI_REAL,machs(nnodetot),34,MPI_COMM_WORLD,ierr)
                  end if
                  
               
@@ -658,7 +658,7 @@ subroutine print_array(ifm,cgrid)
   ! if this is not done, then there will be other writing
   ! contaminating the output, and thats icky
 
-  call MPI_Barrier(MPI_COMM_WORLD,ierr)
+!  call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
   
   return

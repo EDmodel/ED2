@@ -460,7 +460,7 @@ subroutine simple_lake_model(ifm,dtlong)
 
   use node_mod,only:ja,jz,ia,iz
 
-  use consts_coms,only:stefan,cpi,vonk,cp,grav,p00,rocp
+  use consts_coms,only:stefan,cpi,vonk,cp,grav,p00,rocp,cpor
   
   use mem_edcp,only:wgrids_g,wgridf_g
 
@@ -479,6 +479,7 @@ subroutine simple_lake_model(ifm,dtlong)
   real :: dtwb
   real :: cosz
   real :: exner
+  real :: prss
   real :: ustar,tstar,rstar,thetacan,water_rsat,zts,water_rough
   real :: vels_pat,dtllohcc,dtllowcc
   real :: b,csm,csh,d,a2,c1,ri,fm,fh,c2,cm,ch,c3
@@ -499,8 +500,8 @@ subroutine simple_lake_model(ifm,dtlong)
 
   integer :: m1,m2,m3,i,j,m1max,ifm
   integer :: k1w,k2w,k3w,k2u,k2u_1,k2v,k2v_1
-  real :: up_mean,vp_mean,pi0_mean,dn0_mean
-  real :: rv_mean,theta_mean
+  real, up_mean,vp_mean,pi0_mean,dn0_mean
+  real, rv_mean,theta_mean
   real :: topma_t,wtw,wtu1,wtu2,wtv1,wtv2
   real :: canopy_water_vapor
   real :: canopy_tempk
@@ -610,8 +611,10 @@ subroutine simple_lake_model(ifm,dtlong)
            
         endif
 
+        pi0_mean = pi0_mean  ! Convert to pascals
+
         cosz  = radiate_g(ifm)%cosz(i,j)
-        exner = cp * (pi0_mean / p00)**rocp
+        exner = cp * (pi0_mean*100.0 / p00)**rocp
 
         ustar              = wgridf_g(ifm)%ustar(i,j)
         canopy_tempk       = wgrids_g(ifm)%canopy_tempk(i,j)
@@ -631,11 +634,13 @@ subroutine simple_lake_model(ifm,dtlong)
 
            idt = idt+dtwb
 
-           water_rsat  = rslif(100*pi0_mean, leaf_g(ifm)%seatp(i,j))
+           pis =  pi0_mean * cpi
+           
+           prss = pis ** cpor * p00
+
+           water_rsat  = rslif(prss, leaf_g(ifm)%seatp(i,j))
            
            water_rough = max(z0fac_water * ustar ** 2,.0001)
-
-           pis =  pi0_mean * cpi
            
            thetacan = canopy_tempk / pis
            
@@ -693,7 +698,7 @@ subroutine simple_lake_model(ifm,dtlong)
               d_veln = .5 * vels_pat
               ustar=sqrt(d_veln*delz/dtlsm)
            endif
-           
+
            ! Calculate the heat,moisture and momentum fluxes
            ! -----------------------------------------------
 
@@ -738,8 +743,8 @@ subroutine simple_lake_model(ifm,dtlong)
         ! --------------------------------------------
 
         wgridf_g(ifm)%ustar(i,j) = ustar
-        wgridf_g(ifm)%rstar(i,j) = tstar
-        wgridf_g(ifm)%tstar(i,j) = rstar
+        wgridf_g(ifm)%rstar(i,j) = rstar
+        wgridf_g(ifm)%tstar(i,j) = tstar
 
         wgridf_g(ifm)%sflux_u(i,j) = dn0_mean*sflux_u/real(nsubsteps)
         wgridf_g(ifm)%sflux_v(i,j) = dn0_mean*sflux_v/real(nsubsteps)
