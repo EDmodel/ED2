@@ -678,7 +678,7 @@ module ed_state_vars
 
      real,pointer,dimension(:) :: avg_veg_temp
      real,pointer,dimension(:) :: avg_veg_water
-     
+
      !----- Hydrology variables ------------------------------------------------------------!
      real,pointer,dimension(:)   :: watertable
      real,pointer,dimension(:)   :: moist_dz
@@ -1168,6 +1168,18 @@ module ed_state_vars
 
      real,pointer,dimension(:,:) :: avg_soil_water
      real,pointer,dimension(:,:) :: avg_soil_temp
+
+
+     real,pointer,dimension(:) :: avg_snowdepth     !sfcwater_depth
+     real,pointer,dimension(:) :: avg_snowmass      !sfcwater_mass
+     real,pointer,dimension(:) :: avg_snowtempk     !sfcwater_tempk
+     real,pointer,dimension(:) :: avg_snowfracliq   !sfcwater_fracliq
+     real,pointer,dimension(:) :: avg_co2can
+     real,pointer,dimension(:) :: avg_bdead
+     real,pointer,dimension(:) :: avg_balive
+     real,pointer,dimension(:) :: avg_fsc
+     real,pointer,dimension(:) :: avg_ssc
+     real,pointer,dimension(:) :: avg_stsc
 
 
      !----- Meteorologic Conditions ----------------------------------------------------!
@@ -1660,6 +1672,19 @@ contains
        allocate(cgrid%avg_root_resp  (npolygons))
        allocate(cgrid%avg_plant_resp  (npolygons))
        allocate(cgrid%avg_htroph_resp  (npolygons))
+
+       !! added MCD for NACP intercomparison
+       allocate(cgrid%avg_snowdepth   (npolygons))
+       allocate(cgrid%avg_snowmass    (npolygons))
+       allocate(cgrid%avg_snowtempk   (npolygons))
+       allocate(cgrid%avg_snowfracliq (npolygons))
+       allocate(cgrid%avg_co2can      (npolygons))
+       allocate(cgrid%avg_bdead       (npolygons))
+       allocate(cgrid%avg_balive      (npolygons))
+       allocate(cgrid%avg_fsc         (npolygons))
+       allocate(cgrid%avg_ssc         (npolygons))
+       allocate(cgrid%avg_stsc        (npolygons))
+
 
        ! Meteorologic conditions (forcing)
        allocate(cgrid%avg_nir_beam     (npolygons))
@@ -2288,6 +2313,20 @@ contains
        nullify(cgrid%avg_root_resp    )
        nullify(cgrid%avg_plant_resp   )
        nullify(cgrid%avg_htroph_resp  )
+
+
+       !!! added for NACP intercomparison (MCD)
+       nullify(cgrid%avg_snowdepth     )
+       nullify(cgrid%avg_snowmass      )
+       nullify(cgrid%avg_snowtempk     )
+       nullify(cgrid%avg_snowfracliq   )
+       nullify(cgrid%avg_co2can        )
+       nullify(cgrid%avg_bdead         )
+       nullify(cgrid%avg_balive        )
+       nullify(cgrid%avg_fsc           )
+       nullify(cgrid%avg_ssc           )
+       nullify(cgrid%avg_stsc          )
+       
 
        ! Meteorologic conditions (forcing)
        nullify(cgrid%avg_nir_beam            )
@@ -5277,8 +5316,8 @@ contains
     if (associated(cgrid%zbar)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%zbar(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'ZBAR :11:hist:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'NA','NA','ipoly')
+            var_len,var_len_global,max_ptrs,'ZBAR :11:hist:anal:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Polygon average water table depth','[m]','ipoly')
     endif
     
     if (associated(cgrid%tau)) then
@@ -5312,7 +5351,7 @@ contains
     if (associated(cgrid%swliq)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%swliq(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'SWLIQ :11:hist:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'SWLIQ :11:hist:anal:mpti:mpt3') 
        call metadata_edio(nvar,igr,'NA','NA','ipoly')
     endif
 
@@ -5968,8 +6007,8 @@ contains
     if(associated(cgrid%lai_pft )) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%lai_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'LAI_PFT :14:hist:dail:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+            var_len,var_len_global,max_ptrs,'LAI_PFT :14:hist:anal:dail:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Leaf Area Index','[m/m]','NA') 
     endif
     
     if(associated(cgrid%mmean_gpp)) then

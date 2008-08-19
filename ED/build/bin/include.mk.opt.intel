@@ -231,8 +231,8 @@ MOD_EXT=mod
 #C_LOADER_OPTS=-v -O2 -traceback -g
 
 ## Dietze's favorite
-#F_OPTS=  -recursive -g -check all -inline-debug-info -traceback -debug extended  ## Full traceback debugging
-#LOADER_OPTS = $(F_OPTS)
+F_OPTS=  -recursive -g -check all -inline-debug-info -traceback -debug extended  ## Full traceback debugging
+LOADER_OPTS = $(F_OPTS)
 
 # E. Simple debugging configuration
 #USE_INTERF=1
@@ -243,9 +243,9 @@ MOD_EXT=mod
 
 # F. Fast...
 USE_INTERF=1
-F_OPTS= -FR -O3 -recursive -Vaxlib -static -traceback
+#F_OPTS= -FR -O3 -recursive -Vaxlib -static -traceback
 C_OPTS= -O3 -DLITTLE -static -traceback
-LOADER_OPTS= -FR -O3 -Vaxlib -static -traceback
+#LOADER_OPTS= -FR -O3 -Vaxlib -static -traceback
 C_LOADER_OPTS=-v -traceback
 
 
