@@ -145,7 +145,7 @@ subroutine read_ed1_history_file_array
 
            do ipy2 = 1,cgrid%npolygons
               
-              call create_ed1_fname(cgrid%lat(ipy2), grid_res, cgrid%lon(ipy2),  &
+              call create_ed1_fname(cgrid%lat(ipy2), edres, cgrid%lon(ipy2),  &
                    trim(sfilin), pss_name, css_name, site_name)
               inquire(file=trim(pss_name),exist=restart_exist)
               if(restart_exist)then
@@ -2081,7 +2081,7 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel)
      end if
   endif
 
-  write(unit=*,fmt='(a)') 'History start: Loading '//trim(varn)//'...'
+!  write(unit=*,fmt='(a)') 'History start: Loading '//trim(varn)//'...'
 
   call h5sclose_f(filespace, hdferr)
   call h5sclose_f(memspace , hdferr)
@@ -2171,7 +2171,7 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel)
      end if
   end if
 
-  write(unit=*,fmt='(a)') 'History start: Loading '//trim(varn)//'...'
+!  write(unit=*,fmt='(a)') 'History start: Loading '//trim(varn)//'...'
 
   call h5sclose_f(filespace, hdferr)
   call h5sclose_f(memspace, hdferr)

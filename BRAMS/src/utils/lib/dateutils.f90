@@ -334,7 +334,7 @@ subroutine date_make_big (inyear,inmonth,indate,inhour,outdate)
    write(outdate(1:4),fmt='(i4.4)') inyear
    write(outdate(5:6),fmt='(i2.2)') inmonth
    write(outdate(7:8),fmt='(i2.2)') indate
-   write(outdate(9:14),fmt='(i2.2)') inhour
+   write(outdate(9:14),fmt='(i6.6)') inhour
 
    return
 end subroutine date_make_big
