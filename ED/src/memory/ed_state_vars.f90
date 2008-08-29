@@ -957,8 +957,21 @@ module ed_state_vars
 
      real,pointer,dimension(:,:) :: avg_soil_water
      real,pointer,dimension(:,:) :: avg_soil_temp
+     real,pointer,dimension(:,:) :: avg_soil_fracliq
 
      real,pointer,dimension(:) :: runoff
+
+     !----- NACP intercomparison ---------------------------------------------!
+     real,pointer,dimension(:) :: avg_snowdepth
+     real,pointer,dimension(:) :: avg_snowmass
+     real,pointer,dimension(:) :: avg_snowtempk
+     real,pointer,dimension(:) :: avg_snowfracliq
+     real,pointer,dimension(:) :: avg_fsc
+     real,pointer,dimension(:) :: avg_ssc
+     real,pointer,dimension(:) :: avg_stsc
+     real,pointer,dimension(:) :: avg_co2can
+     real,pointer,dimension(:) :: avg_balive
+     real,pointer,dimension(:) :: avg_bdead
 
 
   end type polygontype
@@ -1168,6 +1181,7 @@ module ed_state_vars
 
      real,pointer,dimension(:,:) :: avg_soil_water
      real,pointer,dimension(:,:) :: avg_soil_temp
+     real,pointer,dimension(:,:) :: avg_soil_fracliq
 
 
      real,pointer,dimension(:) :: avg_snowdepth     !sfcwater_depth
@@ -1666,6 +1680,7 @@ contains
        allocate(cgrid%avg_can_shv   (npolygons))
        allocate(cgrid%avg_soil_water(nzg,npolygons))
        allocate(cgrid%avg_soil_temp (nzg,npolygons))
+       allocate(cgrid%avg_soil_fracliq (nzg,npolygons))
 
        allocate(cgrid%avg_gpp  (npolygons))
        allocate(cgrid%avg_leaf_resp  (npolygons))
@@ -1708,6 +1723,8 @@ contains
        allocate(cgrid%avg_atm_co2      (npolygons))
        allocate(cgrid%avg_albedt       (npolygons))
        allocate(cgrid%avg_rlongup      (npolygons))
+       
+       allocate(cgrid%lai_pft            (n_pft       ,npolygons))
 
        !-----------------------------------------------------------------!
        ! Allocating the daily means, only if daily or monthly means were !
@@ -1737,7 +1754,6 @@ contains
           allocate(cgrid%dmean_rh_lu        (n_dist_types,npolygons))
           allocate(cgrid%dmean_nep_lu       (n_dist_types,npolygons))
           allocate(cgrid%dmean_gpp_dbh      (n_dbh       ,npolygons))
-          allocate(cgrid%lai_pft            (n_pft       ,npolygons))
           allocate(cgrid%agb_pft            (n_pft       ,npolygons))
        end if
        !-------------------------------------------------------------------!
@@ -1924,8 +1940,22 @@ contains
     allocate(cpoly%avg_can_shv   (nsites))
     allocate(cpoly%avg_soil_water(nzg,nsites))
     allocate(cpoly%avg_soil_temp (nzg,nsites))
+    allocate(cpoly%avg_soil_fracliq (nzg,nsites))
 
     allocate(cpoly%runoff           (nsites))
+
+    !!!NACP
+    allocate(cpoly%avg_snowdepth           (nsites))
+    allocate(cpoly%avg_snowmass            (nsites))
+    allocate(cpoly%avg_snowfracliq         (nsites))
+    allocate(cpoly%avg_snowtempk           (nsites))
+    allocate(cpoly%avg_fsc                 (nsites))
+    allocate(cpoly%avg_stsc                (nsites))
+    allocate(cpoly%avg_ssc                 (nsites))
+    allocate(cpoly%avg_balive              (nsites))
+    allocate(cpoly%avg_bdead               (nsites))
+    allocate(cpoly%avg_co2can              (nsites))
+
 
     ! Initialize the variables with a non-sense number.
     call huge_polygontype(cpoly)
@@ -2307,6 +2337,7 @@ contains
        nullify(cgrid%avg_can_shv             )
        nullify(cgrid%avg_soil_water          )
        nullify(cgrid%avg_soil_temp           )
+       nullify(cgrid%avg_soil_fracliq           )
 
        nullify(cgrid%avg_gpp          )
        nullify(cgrid%avg_leaf_resp    )
@@ -2545,8 +2576,21 @@ contains
     nullify(cpoly%avg_can_shv   )
     nullify(cpoly%avg_soil_water)
     nullify(cpoly%avg_soil_temp )
+    nullify(cpoly%avg_soil_fracliq )
 
     nullify(cpoly%runoff        )
+
+    ! NACP
+    nullify(cpoly%avg_snowdepth    )
+    nullify(cpoly%avg_snowmass     )
+    nullify(cpoly%avg_snowtempk    )
+    nullify(cpoly%avg_snowfracliq  )
+    nullify(cpoly%avg_fsc          )
+    nullify(cpoly%avg_stsc         )
+    nullify(cpoly%avg_ssc          )
+    nullify(cpoly%avg_balive       )
+    nullify(cpoly%avg_bdead        )
+    nullify(cpoly%avg_co2can       )
 
     return
   end subroutine nullify_polygontype
@@ -2908,12 +2952,32 @@ contains
        if(associated(cgrid%avg_can_shv             )) deallocate(cgrid%avg_can_shv             )
        if(associated(cgrid%avg_soil_water          )) deallocate(cgrid%avg_soil_water          )
        if(associated(cgrid%avg_soil_temp           )) deallocate(cgrid%avg_soil_temp           )
+       if(associated(cgrid%avg_soil_fracliq        )) deallocate(cgrid%avg_soil_fracliq           )
        
        if(associated(cgrid%avg_gpp                 )) deallocate(cgrid%avg_gpp          )
        if(associated(cgrid%avg_leaf_resp           )) deallocate(cgrid%avg_leaf_resp    )
        if(associated(cgrid%avg_root_resp           )) deallocate(cgrid%avg_root_resp    )
        if(associated(cgrid%avg_plant_resp          )) deallocate(cgrid%avg_plant_resp   )
        if(associated(cgrid%avg_htroph_resp         )) deallocate(cgrid%avg_htroph_resp  )
+
+
+
+       !!! added for NACP intercomparison (MCD)
+       if(associated(cgrid%avg_snowdepth           )) deallocate(cgrid%avg_snowdepth       )
+       if(associated(cgrid%avg_snowmass            )) deallocate(cgrid%avg_snowmass        )
+       if(associated(cgrid%avg_snowtempk           )) deallocate(cgrid%avg_snowtempk       )
+       if(associated(cgrid%avg_snowfracliq         )) deallocate(cgrid%avg_snowfracliq     )
+       if(associated(cgrid%avg_co2can              )) deallocate(cgrid%avg_co2can          )
+       if(associated(cgrid%avg_bdead               )) deallocate(cgrid%avg_bdead           )
+       if(associated(cgrid%avg_balive              )) deallocate(cgrid%avg_balive          )
+       if(associated(cgrid%avg_fsc                 )) deallocate(cgrid%avg_fsc             )
+       if(associated(cgrid%avg_ssc                 )) deallocate(cgrid%avg_ssc             )
+       if(associated(cgrid%avg_stsc                )) deallocate(cgrid%avg_stsc            )
+
+
+
+
+
        ! ----------------------------------------------
 
        if(associated(cgrid%avg_nir_beam            )) deallocate(cgrid%avg_nir_beam            )
@@ -3127,7 +3191,20 @@ contains
     if(associated(cpoly%avg_can_shv                 )) deallocate(cpoly%avg_can_shv                 )
     if(associated(cpoly%avg_soil_water              )) deallocate(cpoly%avg_soil_water              )
     if(associated(cpoly%avg_soil_temp               )) deallocate(cpoly%avg_soil_temp               )
+    if(associated(cpoly%avg_soil_fracliq            )) deallocate(cpoly%avg_soil_fracliq            )
     if(associated(cpoly%runoff                      )) deallocate(cpoly%runoff                      )
+
+    ! NACP
+    if(associated(cpoly%avg_snowdepth             )) deallocate(cpoly%avg_snowdepth             )
+    if(associated(cpoly%avg_snowmass              )) deallocate(cpoly%avg_snowmass              )
+    if(associated(cpoly%avg_snowfracliq           )) deallocate(cpoly%avg_snowfracliq           )
+    if(associated(cpoly%avg_snowtempk             )) deallocate(cpoly%avg_snowtempk             )
+    if(associated(cpoly%avg_fsc                   )) deallocate(cpoly%avg_fsc                   )
+    if(associated(cpoly%avg_stsc                  )) deallocate(cpoly%avg_stsc                  )
+    if(associated(cpoly%avg_ssc                   )) deallocate(cpoly%avg_ssc                   )
+    if(associated(cpoly%avg_bdead                 )) deallocate(cpoly%avg_bdead                 )
+    if(associated(cpoly%avg_balive                )) deallocate(cpoly%avg_balive                )
+    if(associated(cpoly%avg_co2can                )) deallocate(cpoly%avg_co2can                )
 
     return
   end subroutine deallocate_polygontype
@@ -3537,6 +3614,20 @@ contains
        if(associated(cgrid%avg_can_shv             )) cgrid%avg_can_shv              = large_real
        if(associated(cgrid%avg_soil_water          )) cgrid%avg_soil_water           = large_real
        if(associated(cgrid%avg_soil_temp           )) cgrid%avg_soil_temp            = large_real
+       if(associated(cgrid%avg_soil_fracliq           )) cgrid%avg_soil_fracliq            = large_real
+
+       !!! added for NACP intercomparison (MCD)
+       if(associated(cgrid%avg_snowdepth           )) cgrid%avg_snowdepth            = large_real
+       if(associated(cgrid%avg_snowmass            )) cgrid%avg_snowmass             = large_real
+       if(associated(cgrid%avg_snowtempk           )) cgrid%avg_snowtempk            = large_real
+       if(associated(cgrid%avg_snowfracliq         )) cgrid%avg_snowfracliq          = large_real
+       if(associated(cgrid%avg_co2can              )) cgrid%avg_co2can               = large_real
+       if(associated(cgrid%avg_bdead               )) cgrid%avg_bdead                = large_real
+       if(associated(cgrid%avg_balive              )) cgrid%avg_balive               = large_real
+       if(associated(cgrid%avg_fsc                 )) cgrid%avg_fsc                  = large_real
+       if(associated(cgrid%avg_ssc                 )) cgrid%avg_ssc                  = large_real
+       if(associated(cgrid%avg_stsc                )) cgrid%avg_stsc                 = large_real
+
 
        ! ---------------------------------------------
 
@@ -3776,7 +3867,20 @@ contains
     if(associated(cpoly%avg_can_shv                 )) cpoly%avg_can_shv                 = large_real
     if(associated(cpoly%avg_soil_water              )) cpoly%avg_soil_water              = large_real
     if(associated(cpoly%avg_soil_temp               )) cpoly%avg_soil_temp               = large_real
+    if(associated(cpoly%avg_soil_fracliq             )) cpoly%avg_soil_fracliq               = large_real
     if(associated(cpoly%runoff                      )) cpoly%runoff                      = large_real
+
+    !NACP
+    if(associated(cpoly%avg_snowdepth               )) cpoly%avg_snowdepth               = large_real
+    if(associated(cpoly%avg_snowmass                )) cpoly%avg_snowmass                = large_real
+    if(associated(cpoly%avg_snowtempk               )) cpoly%avg_snowtempk               = large_real
+    if(associated(cpoly%avg_snowfracliq             )) cpoly%avg_snowfracliq             = large_real
+    if(associated(cpoly%avg_fsc                     )) cpoly%avg_fsc                     = large_real
+    if(associated(cpoly%avg_stsc                    )) cpoly%avg_stsc                    = large_real
+    if(associated(cpoly%avg_ssc                     )) cpoly%avg_ssc                     = large_real
+    if(associated(cpoly%avg_balive                  )) cpoly%avg_balive                  = large_real
+    if(associated(cpoly%avg_bdead                   )) cpoly%avg_bdead                   = large_real
+    if(associated(cpoly%avg_co2can                  )) cpoly%avg_co2can                  = large_real
 
     return
   end subroutine huge_polygontype
@@ -5121,46 +5225,46 @@ contains
     ! (switched 99 by 90 just to keep the notation)
     nvar=1
     call vtable_edio_i(cgrid%npolygons_global,nvar,igr,0,0, &
-         var_len,var_len_global,max_ptrs,'NPOLYGONS_GLOBAL :90:hist:anal:dail:mont:mpti:mpt3')
+         var_len,var_len_global,max_ptrs,'NPOLYGONS_GLOBAL :90:hist:anal:dail:mont:year:mpti:mpt3')
 
     call vtable_edio_i(cgrid%npolygons_global,nvar,igr,1,0, &
-         var_len,var_len_global,max_ptrs,'NPOLYGONS_GLOBAL :90:hist:anal:dail:mont:mpti:mpt3')
+         var_len,var_len_global,max_ptrs,'NPOLYGONS_GLOBAL :90:hist:anal:dail:mont:year:mpti:mpt3')
     
     nvar=nvar+1
     call vtable_edio_i(cgrid%nsites_global,nvar,igr,0,0, &
-         var_len,var_len_global,max_ptrs,'NSITES_GLOBAL :90:hist:anal:dail:mont:mpti:mpt3')
+         var_len,var_len_global,max_ptrs,'NSITES_GLOBAL :90:hist:anal:dail:mont:year:mpti:mpt3')
     
     call vtable_edio_i(cgrid%nsites_global,nvar,igr,1,0, &
-         var_len,var_len_global,max_ptrs,'NSITES_GLOBAL :90:hist:anal:dail:mont:mpti:mpt3')
+         var_len,var_len_global,max_ptrs,'NSITES_GLOBAL :90:hist:anal:dail:mont:year:mpti:mpt3')
     
     nvar=nvar+1
     call vtable_edio_i(cgrid%npatches_global,nvar,igr,0,0, &
-         var_len,var_len_global,max_ptrs,'NPATCHES_GLOBAL :90:hist:anal:dail:mont:mpti:mpt3')
+         var_len,var_len_global,max_ptrs,'NPATCHES_GLOBAL :90:hist:anal:dail:mont:year:mpti:mpt3')
     
     call vtable_edio_i(cgrid%npatches_global,nvar,igr,1,0, &
-         var_len,var_len_global,max_ptrs,'NPATCHES_GLOBAL :90:hist:anal:dail:mont:mpti:mpt3')
+         var_len,var_len_global,max_ptrs,'NPATCHES_GLOBAL :90:hist:anal:dail:mont:year:mpti:mpt3')
 
     nvar=nvar+1
     call vtable_edio_i(cgrid%ncohorts_global,nvar,igr,0,0, &
-         var_len,var_len_global,max_ptrs,'NCOHORTS_GLOBAL :90:hist:anal:dail:mont:mpti:mpt3')
+         var_len,var_len_global,max_ptrs,'NCOHORTS_GLOBAL :90:hist:anal:dail:mont:year:mpti:mpt3')
     
     call vtable_edio_i(cgrid%ncohorts_global,nvar,igr,1,0, &
-         var_len,var_len_global,max_ptrs,'NCOHORTS_GLOBAL :90:hist:anal:dail:mont:mpti:mpt3')
+         var_len,var_len_global,max_ptrs,'NCOHORTS_GLOBAL :90:hist:anal:dail:mont:yearmpti:mpt3')
     nvar=nvar+1
     call vtable_edio_i(nzg,nvar,igr,0,0, &
-         var_len,var_len_global,max_ptrs,'NZG :90:hist:anal:dail:mont:mpti:mpt3')
+         var_len,var_len_global,max_ptrs,'NZG :90:hist:anal:dail:mont:year:mpti:mpt3')
 
     call vtable_edio_i(nzg,nvar,igr,1,0, &
-         var_len,var_len_global,max_ptrs,'NZG :90:hist:anal:dail:mont:mpti:mpt3')
+         var_len,var_len_global,max_ptrs,'NZG :90:hist:anal:dail:mont:year:mpti:mpt3')
 
     nvar=nvar+1
     var_len        = nzg
     var_len_global = nzg
     call vtable_edio_r(slz(1),nvar,igr,0,0, &
-         var_len,var_len_global,max_ptrs,'SLZ :90:hist:anal:dail:mont:mpti:mpt3')
+         var_len,var_len_global,max_ptrs,'SLZ :90:hist:anal:dail:mont:year:mpti:mpt3')
 
     call vtable_edio_r(slz(1),nvar,igr,1,0, &
-         var_len,var_len_global,max_ptrs,'SLZ :90:hist:anal:dail:mont:mpti:mpt3')
+         var_len,var_len_global,max_ptrs,'SLZ :90:hist:anal:dail:mont:year:mpti:mpt3')
 
 ! SOIL PARAMETERS MAY BE ADDED IN THE FUTURE - RIGHT NOW THIS DOESNT REALLY WORK - RGK 7-19-08
 !    nvar=nvar+1
@@ -5222,7 +5326,7 @@ contains
     if (associated(cgrid%pysi_id)) then
        nvar = nvar + 1
        call vtable_edio_i(cgrid%pysi_id(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'PYSI_ID :11:hist:anal:dail:mont:mpti:mpt3')
+            var_len,var_len_global,max_ptrs,'PYSI_ID :11:hist:anal:dail:mont:year:mpti:mpt3')
 
        call metadata_edio(nvar,igr,'Polygons first site indexes','NA','ipoly')
 
@@ -5231,7 +5335,7 @@ contains
     if (associated(cgrid%pysi_n)) then
        nvar=nvar+1
        call vtable_edio_i(cgrid%pysi_n(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'PYSI_N :11:hist:anal:dail:mont:mpti:mpt3')
+            var_len,var_len_global,max_ptrs,'PYSI_N :11:hist:anal:dail:mont:year:mpti:mpt3')
 
        call metadata_edio(nvar,igr,'Number of sites per polygon','NA','ipoly')
 
@@ -5240,7 +5344,7 @@ contains
     if (associated(cgrid%lat)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%lat(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'LATITUDE :11:hist:anal:dail:mont:mpti:mpt3')
+            var_len,var_len_global,max_ptrs,'LATITUDE :11:hist:anal:dail:mont:year:mpti:mpt3')
 
        call metadata_edio(nvar,igr,'Latitude of Polygon','degrees','ipoly')
 
@@ -5249,7 +5353,7 @@ contains
     if (associated(cgrid%lon)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%lon(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'LONGITUDE :11:hist:anal:dail:mont:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'LONGITUDE :11:hist:anal:dail:mont:year:mpti:mpt3') 
        
         call metadata_edio(nvar,igr,'Longitude of Polygon','degrees','ipoly')
        
@@ -5285,7 +5389,7 @@ contains
     if (associated(cgrid%ntext_soil)) then
        nvar=nvar+1
        call vtable_edio_i(cgrid%ntext_soil(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'NTEXT_SOIL :12:hist:anal:dail:mont:mpti:mpt3')   
+            var_len,var_len_global,max_ptrs,'NTEXT_SOIL :12:hist:anal:dail:mont:year:mpti:mpt3')   
        call metadata_edio(nvar,igr,'Polygon mode soil class','OGE2 Class','ipoly-ngz')
 
     endif
@@ -5293,7 +5397,7 @@ contains
     if (associated(cgrid%lsl)) then
        nvar=nvar+1
        call vtable_edio_i(cgrid%lsl(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'LSL :11:hist:anal:dail:mont:mpti:mpt3')
+            var_len,var_len_global,max_ptrs,'LSL :11:hist:anal:dail:mont:year:mpti:mpt3')
        call metadata_edio(nvar,igr,'Index of lowest soil layer','NA','ipoly')
        
     endif
@@ -5338,7 +5442,7 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%baseflow(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'BASEFLOW :11:hist:anal:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'NA','NA','ipoly')
+       call metadata_edio(nvar,igr,'loss of water from site to watershed discharge','kg/m2/s','ipoly')
     endif
     
     if (associated(cgrid%runoff)) then
@@ -5358,14 +5462,14 @@ contains
     if (associated(cgrid%total_agb)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%total_agb(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'TOTAL_AGB :11:hist:anal:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'TOTAL_AGB :11:hist:anal:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon Total Above Ground Biomass','[tC/ha]','ipoly')
     endif
     
     if (associated(cgrid%total_basal_area)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%total_basal_area(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'TOTAL_BASAL_AREA :11:hist:anal:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'TOTAL_BASAL_AREA :11:hist:anal:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon Total Basal Area','[m2/ha]','ipoly')
        
     endif
@@ -5450,14 +5554,14 @@ contains
     if (associated(cgrid%basal_area)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%basal_area(1,1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'BASAL_AREA :146:hist:anal:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'BASAL_AREA :146:hist:anal:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon basal area profile','[m2/ha]','ipoly - n_dbh - n_pft')
     endif
     
     if (associated(cgrid%agb)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%agb(1,1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AGB :146:hist:anal:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'AGB :146:hist:anal:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon above ground biomass profile','[kgC/m2]','ipoly - n_dbh - n_pft')
     endif
     
@@ -5649,6 +5753,70 @@ contains
        call metadata_edio(nvar,igr,'Polygon Average Heterotrohic Respiration','[umol/m2/s]','ipoly') 
     endif
 
+
+       !!! added for NACP intercomparison (MCD)
+    if (associated(cgrid%avg_snowdepth)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_snowdepth(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_SNOWDEPTH :11:hist:anal:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Poly Avg. Snow Depth ','[m]','ipoly') 
+    endif
+    if (associated(cgrid%avg_snowmass)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_snowmass(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_SNOWMASS :11:hist:anal:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Poly Avg. Snow Mass (SWE) ','[kg/m2]','ipoly') 
+    endif
+    if (associated(cgrid%avg_snowtempk)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_snowtempk(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_SNOWTEMP :11:hist:anal:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Poly Avg. Snow Temperature','[K]','ipoly') 
+    endif
+    if (associated(cgrid%avg_snowfracliq)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_snowfracliq(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_SNOWFRACLIQ :11:hist:anal:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Poly Avg. Snow liquid fraction','[proportion]','ipoly') 
+    endif
+    if (associated(cgrid%avg_co2can)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_co2can(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_CO2CAN :11:hist:anal:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Poly Avg. Canopy Air Space CO2','[umol/mol]','ipoly') 
+    endif
+    if (associated(cgrid%avg_bdead)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_bdead(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_BDEAD :11:hist:anal:year:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Poly Avg. Biomass - structural','[kgC/m2]','ipoly') 
+    endif
+    if (associated(cgrid%avg_balive)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_balive(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_BALIVE :11:hist:anal:year:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Poly Avg. Biomass -- living','[kgC/m2]','ipoly') 
+    endif
+    if (associated(cgrid%avg_fsc)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_fsc(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_FSC :11:hist:anal:year:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Poly Avg. Fast Soil Carbon','[kg/m2]','ipoly') 
+    endif
+    if (associated(cgrid%avg_ssc)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_stsc(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_SSC :11:hist:anal:year:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Poly Avg. Slow Soil Carbon','[kg/m2]','ipoly') 
+    endif
+    if (associated(cgrid%avg_stsc)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_stsc(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_STSC :11:hist:anal:year:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Poly Avg. Structural Soil Carbon','[kg/m2]','ipoly') 
+    endif
+
+
     ! ----------------------------------------------
     
     if (associated(cgrid%avg_nir_beam)) then
@@ -5839,6 +6007,13 @@ contains
             var_len,var_len_global,max_ptrs,'AVG_SOIL_TEMP :12:hist:anal:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon Average Soil Temperature','[K]','ipoly - nzg') 
     endif
+
+    if (associated(cgrid%avg_soil_fracliq)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_soil_fracliq(1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_SOIL_FRACLIQ :12:hist:anal:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Polygon Average Soil Fraction Liquid','[proportion]','ipoly - nzg') 
+    endif
     
     ! Daily and monthly variables. Note that all these variables need to be stored at the
     ! history file, because the averaging can be resumed...
@@ -6004,11 +6179,14 @@ contains
        call metadata_edio(nvar,igr,'Polygon Averaged by DBH, Daily Integrated Gross Primary Production','[tC/ha/d]','ipoly - ndbh') 
     endif
     
-    if(associated(cgrid%lai_pft )) then
+    if(associated(cgrid%lai_pft)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%lai_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'LAI_PFT :14:hist:anal:dail:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'LAI_PFT :14:hist:anal:dail') 
        call metadata_edio(nvar,igr,'Leaf Area Index','[m/m]','NA') 
+    else
+       print*,"LAI_PFT not associated"
+       stop
     endif
     
     if(associated(cgrid%mmean_gpp)) then
@@ -6260,28 +6438,28 @@ contains
     if (associated(cpoly%sipa_id)) then
        nvar=nvar+1
        call vtable_edio_i(cpoly%sipa_id(1),nvar,igr,init,cpoly%siglob_id, &
-            var_len,var_len_global,max_ptrs,'SIPA_ID :21:hist:dail:mont:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'SIPA_ID :21:hist:dail:mont:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
     if (associated(cpoly%sipa_n)) then
        nvar=nvar+1
        call vtable_edio_i(cpoly%sipa_n(1),nvar,igr,init,cpoly%siglob_id, &
-            var_len,var_len_global,max_ptrs,'SIPA_N :21:hist:dail:mont:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'SIPA_N :21:hist:dail:mont:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
     if (associated(cpoly%patch_count)) then
        nvar=nvar+1
        call vtable_edio_i(cpoly%patch_count(1),nvar,igr,init,cpoly%siglob_id, &
-            var_len,var_len_global,max_ptrs,'PATCH_COUNT :21:hist:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'PATCH_COUNT :21:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
     if (associated(cpoly%sitenum)) then
        nvar=nvar+1
        call vtable_edio_i(cpoly%sitenum(1),nvar,igr,init,cpoly%siglob_id, &
-            var_len,var_len_global,max_ptrs,'SITENUM :21:hist:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'SITENUM :21:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
@@ -6351,14 +6529,14 @@ contains
     if (associated(cpoly%area)) then
        nvar=nvar+1
          call vtable_edio_r(cpoly%area(1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'AREA_SI:21:hist:dail:mont:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'AREA_SI:21:hist:dail:mont:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpoly%patch_area)) then
        nvar=nvar+1
          call vtable_edio_r(cpoly%patch_area(1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'PATCH_AREA:21:hist:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'PATCH_AREA:21:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -6450,7 +6628,7 @@ contains
        nvar=nvar+1
          call vtable_edio_r(cpoly%baseflow  (1),nvar,igr,init,cpoly%siglob_id, &
          var_len,var_len_global,max_ptrs,'BASEFLOW_SI :21:hist:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+       call metadata_edio(nvar,igr,'loss of water from site to watershed discharge','[kg/m2/s]','NA') 
     endif 
 
     if (associated(cpoly%metplex_beg_month)) then
@@ -6631,7 +6809,7 @@ contains
     if (associated(cpoly%ntext_soil)) then
        nvar=nvar+1
          call vtable_edio_i(cpoly%ntext_soil(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'NTEXT_SOIL_SI :22:hist:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'NTEXT_SOIL_SI :22:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
@@ -6787,77 +6965,77 @@ contains
     if (associated(csite%paco_id)) then
        nvar=nvar+1
          call vtable_edio_i(csite%paco_id(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'PACO_ID :31:hist:dail:mont:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'PACO_ID :31:hist:dail:mont:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(csite%paco_n)) then
        nvar=nvar+1
          call vtable_edio_i(csite%paco_n(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'PACO_N :31:hist:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'PACO_N :31:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
     if (associated(csite%dist_type)) then
        nvar=nvar+1
          call vtable_edio_i(csite%dist_type(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'DIST_TYPE :31:hist:dail:mont:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'DIST_TYPE :31:hist:dail:mont:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(csite%age)) then
        nvar=nvar+1
          call vtable_edio_r(csite%age(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'AGE :31:hist:dail:mont:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'AGE :31:hist:dail:mont:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(csite%area)) then
        nvar=nvar+1
          call vtable_edio_r(csite%area(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'AREA :31:hist:dail:mont:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'AREA :31:hist:dail:mont:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(csite%fast_soil_C)) then
        nvar=nvar+1
          call vtable_edio_r(csite%fast_soil_C(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'FAST_SOIL_C :31:hist:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'FAST_SOIL_C :31:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(csite%slow_soil_C)) then
        nvar=nvar+1
          call vtable_edio_r(csite%slow_soil_C(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'SLOW_SOIL_C :31:hist:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'SLOW_SOIL_C :31:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(csite%structural_soil_C)) then
        nvar=nvar+1
          call vtable_edio_r(csite%structural_soil_C(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'STRUCTURAL_SOIL_C :31:hist:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'STRUCTURAL_SOIL_C :31:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(csite%structural_soil_L)) then
        nvar=nvar+1
          call vtable_edio_r(csite%structural_soil_L(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'STRUCTURAL_SOIL_L :31:hist:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'STRUCTURAL_SOIL_L :31:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(csite%mineralized_soil_N)) then
        nvar=nvar+1
          call vtable_edio_r(csite%mineralized_soil_N(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'MINERALIZED_SOIL_N :31:hist:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'MINERALIZED_SOIL_N :31:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(csite%fast_soil_N)) then
        nvar=nvar+1
          call vtable_edio_r(csite%fast_soil_N(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'FAST_SOIL_N :31:hist:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'FAST_SOIL_N :31:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
@@ -6976,14 +7154,14 @@ contains
     if (associated(csite%nlev_sfcwater)) then
        nvar=nvar+1
          call vtable_edio_i(csite%nlev_sfcwater(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'NLEV_SFCWATER :31:hist:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'NLEV_SFCWATER :31:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(csite%ntext_soil)) then
        nvar=nvar+1
          call vtable_edio_i(csite%ntext_soil(1,1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'NTEXT_SOIL_PA :32:hist:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'NTEXT_SOIL_PA :32:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -7560,42 +7738,42 @@ contains
     if (associated(cpatch%pft)) then
        nvar=nvar+1
          call vtable_edio_i(cpatch%pft(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'PFT :41:hist:mont:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         var_len,var_len_global,max_ptrs,'PFT :41:hist:mont:year:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Plant Functional Type','[-]','NA') 
     endif
 
     if (associated(cpatch%nplant)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%nplant(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'NPLANT :41:hist:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         var_len,var_len_global,max_ptrs,'NPLANT :41:hist:year:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Plant density','[NA]','NA') 
     endif
 
     if (associated(cpatch%hite)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%hite(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'HITE :41:hist:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'HITE :41:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%dbh)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%dbh(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'DBH :41:hist:mont:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'DBH :41:hist:year:mont:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%bdead)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bdead(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BDEAD :41:hist:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'BDEAD :41:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%bleaf)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bleaf(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BLEAF :41:hist:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'BLEAF :41:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -7609,43 +7787,43 @@ contains
     if (associated(cpatch%balive)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%balive(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BALIVE :41:hist:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'BALIVE :41:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%lai)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%lai(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'LAI_CO :41:hist:dail:mont:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'LAI_CO :41:hist:dail:mont:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%bstorage)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bstorage(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BSTORAGE :41:hist:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'BSTORAGE :41:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%cb)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%cb(1,1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'CB :49:hist:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'CB :49:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%cb_max)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%cb_max(1,1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'CB_MAX :49:hist:mpti:mpt3') 
+         var_len,var_len_global,max_ptrs,'CB_MAX :49:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%cbr_bar)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%cbr_bar(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'CBR_BAR :41:hist:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         var_len,var_len_global,max_ptrs,'CBR_BAR :41:hist:year:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Annual average ratio of cb/cb_max','[NA]','NA') 
     endif
 
     if (associated(cpatch%veg_temp)) then

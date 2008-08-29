@@ -107,6 +107,7 @@
    NL%IFOUTPUT  =  0            ! Instantaneous analysis (site average)
    NL%IDOUTPUT  =  0            ! Daily means (site average)
    NL%IMOUTPUT  =  0            ! Monthly means (site average)
+   NL%IYOUTPUT  =  0            ! Annual output
    NL%ISOUTPUT  =  3            ! History files
                                 ! 0 - no file;
                                 ! 1 - save ascii (deprecated);

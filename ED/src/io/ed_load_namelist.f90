@@ -45,7 +45,7 @@ subroutine copy_nl(copy_type)
   use misc_coms, only: expnme, runtype, itimez, idatez, imonthz, iyearz,  &
        itimea, idatea, imontha, iyeara, ifoutput, iclobber, frqfast, &
        sfilin, ied_init_mode, current_time, ed_inputs_dir,   &
-       end_time, radfrq, integration_scheme, ffilout, idoutput,imoutput, dtlsm, &
+       end_time, radfrq, integration_scheme, ffilout, idoutput,imoutput,iyoutput, dtlsm, &
        frqstate,sfilout,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmax,ipmin, &
        iedcnfgf
 
@@ -82,6 +82,7 @@ subroutine copy_nl(copy_type)
      ifoutput = nl%ifoutput
      idoutput = nl%idoutput
      imoutput = nl%imoutput
+     iyoutput = nl%iyoutput
      isoutput = nl%isoutput
 
      attach_metadata = nl%attach_metadata

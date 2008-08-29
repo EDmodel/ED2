@@ -1,5 +1,5 @@
  
-subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time&
+subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time&
                     ,writing_dail,writing_mont,history_time,reset_time,the_end)
   
   use ed_state_vars,only:edgrid_g
@@ -15,6 +15,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time&
   use misc_coms, only: dtlsm, current_time, &
        idoutput, &
        imoutput, &
+       iyoutput, &
        isoutput, &
        ifoutput, &
        iprintpolys, &
@@ -24,7 +25,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time&
     
   logical, intent(in) :: the_end,analysis_time,dail_analy_time
   logical, intent(in) :: writing_dail,writing_mont,reset_time
-  logical, intent(in) :: mont_analy_time,history_time,new_day
+  logical, intent(in) :: mont_analy_time,history_time,new_day,annual_time
   real :: time_frqa,time_frql,time_frqm
   integer :: ngr,ifm
   integer :: sigr,sipy,sisi,sipa,sico
@@ -105,6 +106,12 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time&
      end do
   end if
 
+  if (annual_time) then
+
+     call h5_output('YEAR')
+
+  endif
+
   ! History files should only be output at a frequency which
   ! divides by frqanl, thus the integrated fast-time variables
   ! are valid, but representative of the last frqanl period, not
@@ -148,7 +155,7 @@ subroutine spatial_averages
   ! -----------------------------------------------------------------------------
 
   use ed_state_vars,only:edtype,polygontype,sitetype,patchtype,edgrid_g
-  use grid_coms, only : ngrids,nzg
+  use grid_coms, only : ngrids,nzg,nzs
   use canopy_radiation_coms, only: lai_min
   use consts_coms, only : alvl
   use misc_coms, only: frqsum
@@ -163,6 +170,7 @@ subroutine spatial_averages
   integer :: k
   real :: lai_sum,site_area_i,poly_area_i
   real :: frqsumi
+  real :: snow_min = 0.0000001
 
   frqsumi = 1.0 / frqsum
   do igr=1,ngrids
@@ -173,6 +181,9 @@ subroutine spatial_averages
      cgrid%avg_root_resp   = 0.0
      cgrid%avg_plant_resp  = 0.0
      cgrid%avg_htroph_resp = 0.0
+
+     cgrid%avg_balive      = 0.0
+     cgrid%avg_bdead       = 0.0
      
      do ipy=1,cgrid%npolygons
         cpoly => cgrid%polygon(ipy)
@@ -200,7 +211,37 @@ subroutine spatial_averages
            cpoly%avg_sensible_gc(isi)    = sum(csite%avg_sensible_gc    * csite%area ) * site_area_i
            cpoly%avg_sensible_ac(isi)    = sum(csite%avg_sensible_ac    * csite%area ) * site_area_i
            cpoly%avg_sensible_tot(isi)   = sum(csite%avg_sensible_tot   * csite%area ) * site_area_i
+
+           !! for NACP intercomparision (MCD)
+           cpoly%avg_fsc(isi)            = sum(csite%fast_soil_C        * csite%area ) * site_area_i
+           cpoly%avg_ssc(isi)            = sum(csite%slow_soil_C        * csite%area ) * site_area_i
+           cpoly%avg_stsc(isi)           = sum(csite%structural_soil_C  * csite%area ) * site_area_i
+           cpoly%avg_co2can(isi)         = sum(csite%can_co2            * csite%area ) * site_area_i
            
+           cpoly%avg_snowdepth(isi)   = 0.0
+           cpoly%avg_snowmass(isi)    = 0.0
+           cpoly%avg_snowtempk(isi)   = 0.0
+           cpoly%avg_snowfracliq(isi) = 0.0
+           do k=1,csite%npatches
+              if(csite%nlev_sfcwater(k) > 0 .and. csite%sfcwater_mass(1,k) > snow_min) then
+                 cpoly%avg_snowfracliq(isi) = cpoly%avg_snowfracliq(isi) + &
+                      & sum(csite%sfcwater_fracliq(1:csite%nlev_sfcwater(k),k)) * csite%area(k)
+                 cpoly%avg_snowdepth(isi)   = cpoly%avg_snowdepth(isi)   + &
+                      &sum(csite%sfcwater_depth(1:csite%nlev_sfcwater(k)  ,k)) * csite%area(k)
+                 cpoly%avg_snowmass(isi)    = cpoly%avg_snowmass(isi)    + &
+                      &sum(csite%sfcwater_mass(1:csite%nlev_sfcwater(k)   ,k)) * csite%area(k)
+                 cpoly%avg_snowtempk(isi)   = cpoly%avg_snowtempk(isi)   + &
+                      &sum(csite%sfcwater_tempk(1:csite%nlev_sfcwater(k)  ,k)) * csite%area(k)
+              endif
+           enddo
+           cpoly%avg_snowfracliq(isi) = cpoly%avg_snowfracliq(isi) * site_area_i
+           cpoly%avg_snowdepth(isi)   = cpoly%avg_snowdepth(isi)   * site_area_i
+           cpoly%avg_snowmass(isi)    = cpoly%avg_snowmass(isi)    * site_area_i
+           cpoly%avg_snowtempk(isi)   = cpoly%avg_snowtempk(isi)   * site_area_i
+
+
+           !!--------------------
+
            do k=cpoly%lsl(isi),nzg
 
               cpoly%avg_sensible_gg(k,isi)  = sum(csite%avg_sensible_gg(k,:)  * csite%area ) * site_area_i
@@ -210,6 +251,7 @@ subroutine spatial_averages
 
               cpoly%avg_soil_water(k,isi)   = sum(csite%soil_water(k,:)       * csite%area ) * site_area_i
               cpoly%avg_soil_temp(k,isi)    = sum(csite%soil_tempk(k,:)       * csite%area ) * site_area_i
+              cpoly%avg_soil_fracliq(k,isi)    = sum(csite%soil_fracliq(k,:)       * csite%area ) * site_area_i
 
            enddo
            
@@ -237,6 +279,11 @@ subroutine spatial_averages
                       csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_leaf_resp)
                  cgrid%avg_root_resp(ipy) = cgrid%avg_root_resp(ipy) + &
                       csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_root_resp)
+                 cgrid%avg_balive(ipy)    = cgrid%avg_balive(ipy) + &
+                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%balive*cpatch%nplant)
+                 cgrid%avg_bdead(ipy)     = cgrid%avg_bdead(ipy) + &
+                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%bdead*cpatch%nplant)
+
                  
               else
                  ! Set veg-temp to air temp
@@ -304,6 +351,7 @@ subroutine spatial_averages
            cgrid%aux_s(k,ipy)            = sum(cpoly%aux_s(k,:)            * cpoly%area ) * poly_area_i
            cgrid%avg_soil_water(k,ipy)   = sum(cpoly%avg_soil_water(k,:)   * cpoly%area ) * poly_area_i
            cgrid%avg_soil_temp(k,ipy)    = sum(cpoly%avg_soil_temp(k,:)    * cpoly%area ) * poly_area_i
+           cgrid%avg_soil_fracliq(k,ipy)    = sum(cpoly%avg_soil_fracliq(k,:)    * cpoly%area ) * poly_area_i
 
         enddo
         

@@ -30,7 +30,7 @@ subroutine read_ed1_history_file_array
   real :: flat
   real :: flon
   
-  logical, parameter :: renumber_pfts = .true.
+  logical, parameter :: renumber_pfts = .false.
   character(len=str_len) :: pss_name
   character(len=str_len) :: css_name
   character(len=str_len) :: site_name

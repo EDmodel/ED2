@@ -189,6 +189,7 @@ subroutine reset_averaged_vars(cgrid)
 
       cpoly%avg_soil_temp(:,:)      = 0.0
       cpoly%avg_soil_water(:,:)     = 0.0
+      cpoly%avg_soil_fracliq(:,:)   = 0.0
    enddo
 
    ! Should this be here as well?
@@ -223,7 +224,7 @@ subroutine reset_averaged_vars(cgrid)
    cgrid%avg_transp(:)         = 0.0
    cgrid%avg_sensible_tot(:)   = 0.0
    cgrid%avg_soil_temp(:,:)    = 0.0
-   cgrid%avg_soil_water(:,:)   = 0.0
+   cgrid%avg_soil_fracliq(:,:) = 0.0
 
    return
 end subroutine reset_averaged_vars

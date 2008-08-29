@@ -34,6 +34,7 @@ Module misc_coms
   integer :: ifoutput
   integer :: idoutput
   integer :: imoutput
+  integer :: iyoutput
   integer :: isoutput
   integer :: iclobber
   real ::  frqstate

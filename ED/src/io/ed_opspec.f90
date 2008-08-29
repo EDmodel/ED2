@@ -341,7 +341,7 @@ subroutine ed_opspec_times
 !------------------------------------------------------------------------------------------!
    use misc_coms , only : frqfast,frqstate,imontha,idatea,iyeara,itimea  &
                          ,imonthz,idatez,iyearz,itimez,dtlsm,radfrq    &
-                         ,ifoutput,isoutput,idoutput,imoutput
+                         ,ifoutput,isoutput,idoutput,imoutput,iyoutput
    use consts_coms, only : day_sec,hr_sec
    use grid_coms , only : timmax
 
@@ -446,7 +446,7 @@ subroutine ed_opspec_misc
 ! allowed ranges and conflicting dynamic settings.
 !------------------------------------------------------------------------------------------!
    use max_dims, only : n_pft
-   use misc_coms, only : ifoutput,idoutput,imoutput,isoutput,iclobber,runtype,ied_init_mode &
+   use misc_coms, only : ifoutput,idoutput,imoutput,iyoutput,isoutput,iclobber,runtype,ied_init_mode &
                         ,integration_scheme
    use soil_coms, only : isoilflg, nslcon,isoilstateinit,isoildepthflg,zrough,runoff_time
    use mem_sites, only : n_soi,n_ed_region,maxpatch,maxcohort
@@ -478,6 +478,12 @@ subroutine ed_opspec_misc
    if (imoutput /= 0 .and. imoutput /= 3) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid IMOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',imoutput,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+   if (iyoutput /= 0 .and. iyoutput /= 3) then
+      write (reason,fmt='(a,1x,i4,a)') &
+        'Invalid IYOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',iyoutput,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if

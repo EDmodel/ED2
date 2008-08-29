@@ -125,6 +125,8 @@ subroutine h5_output(vtype)
      vnam='D'
   case ('MONT') 
      vnam='E'
+  case ('YEAR') 
+     vnam='Y'
   case('HIST') 
      vnam='S'  ! S for reStart, don't want confusion with RAMS' H or R files
   end select  
@@ -158,6 +160,15 @@ subroutine h5_output(vtype)
         
         
         call makefnam(anamel,ffilout,zero,outyear,outmonth,0, &
+             0,vnam,cgrid,'h5 ')
+
+     case('YEAR')
+         
+        call date_add_to (iyeara,imontha,idatea,itimea*100,  &
+             time-21600,'s',outyear,outmonth,outdate,outhour)
+        
+        
+        call makefnam(anamel,ffilout,zero,outyear,0,0, &
              0,vnam,cgrid,'h5 ')
 
      case('HIST')
@@ -309,6 +320,7 @@ subroutine h5_output(vtype)
             (vtype == 'LITE' .and. vt_info(nv,ngr)%ilite == 1) .or. &
             (vtype == 'DAIL' .and. vt_info(nv,ngr)%idail == 1) .or. &
             (vtype == 'MONT' .and. vt_info(nv,ngr)%imont == 1) .or. &
+            (vtype == 'YEAR' .and. vt_info(nv,ngr)%iyear == 1) .or. &
             (vtype == 'HIST' .and. vt_info(nv,ngr)%ihist == 1)) then
 
            varn= vt_info(nv,ngr)%name
@@ -614,6 +626,8 @@ subroutine h5_output(vtype)
      subaname='  Daily average analysis HDF write    '
   case ('MONT')
      subaname='  Monthly average analysis HDF write   '
+  case ('YEAR')
+     subaname='  Annual average analysis HDF write   '
   case ('HIST')
      subaname='  History HDF write   '
   case default
