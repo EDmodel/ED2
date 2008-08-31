@@ -36,7 +36,7 @@ subroutine copy_nl(copy_type)
        ed_reg_latmax, ed_reg_lonmin, ed_reg_lonmax, grid_res, grid_type, edres, &
        maxpatch, maxcohort
   use physiology_coms, only: istoma_scheme, n_plant_lim
-  use phenology_coms, only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath
+  use phenology_coms, only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath,repro_scheme
   use decomp_coms, only: n_decomp_lim
   use disturb_coms, only: include_fire, ianth_disturb,   &
        treefall_disturbance_rate
@@ -123,6 +123,7 @@ subroutine copy_nl(copy_type)
      integration_scheme = nl%integration_scheme
      istoma_scheme = nl%istoma_scheme
      iphen_scheme  = nl%iphen_scheme
+     repro_scheme  = nl%repro_scheme
      n_plant_lim   = nl%n_plant_lim
      n_decomp_lim  = nl%n_decomp_lim
      include_fire  = nl%include_fire

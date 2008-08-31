@@ -91,7 +91,7 @@ subroutine ed_masterput_nl(par_run)
                              ,ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax      &
                              ,edres,maxpatch,maxcohort
    use physiology_coms, only: istoma_scheme,n_plant_lim
-   use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath
+   use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath,repro_scheme
    use decomp_coms,     only: n_decomp_lim
    use pft_coms,        only: include_these_pft,pft_1st_check
    use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
@@ -198,6 +198,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(integration_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(repro_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_fire,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -664,7 +665,7 @@ subroutine ed_nodeget_nl
                              ,ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax      &
                              ,edres,maxpatch,maxcohort
    use physiology_coms, only: istoma_scheme,n_plant_lim
-   use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath
+   use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath,repro_scheme
    use decomp_coms,     only: n_decomp_lim
    use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
    use optimiz_coms,    only: ioptinpt
@@ -770,6 +771,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(integration_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(repro_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_fire,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

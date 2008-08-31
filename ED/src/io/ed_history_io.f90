@@ -389,7 +389,7 @@ subroutine read_ed1_history_file_array
                  ipft(ic) = ipft(ic) - 100
               endif
            endif
-                     
+
            !! check if the year matches
            year = int(ctime(ic))
            if(use_target_year == 1 .and. year .ne. restart_target_year) continue
@@ -517,6 +517,9 @@ subroutine read_ed1_history_file_array
                     endif
                  enddo
               else ! if (csite%cohort_count(ipa) == 0) then
+
+                 print*,"WARNING: found patch with no cohorts: poly",ip,"patch",ipa
+                 stop
 
            ! MLO 5-27-08. Force the patch to have one cohort of each pft that should be included
            !              Considers whether this is agricultural or forest.

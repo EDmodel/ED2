@@ -1,3 +1,4 @@
+
 allometry.o : $(ED_DYNAMICS)/allometry.f90 grid_coms.o pft_coms.o soil_coms.o 
 	cp -f $< $(<F:.f90=.f90)
 	$(F_COMMAND) $(<F:.f90=.f90)
@@ -439,7 +440,8 @@ radiate_driver.o : $(ED_DYNAMICS)/radiate_driver.f90 \
 
 reproduction.o : $(ED_DYNAMICS)/reproduction.f90 pft_coms.o \
 	decomp_coms.o ed_state_vars.o \
-	misc_coms.o fusion_fission_coms.o max_dims.o fuse_fiss_utils.o
+	misc_coms.o fusion_fission_coms.o max_dims.o fuse_fiss_utils.o \
+	phenology_coms.o
 	cp -f $< $(<F:.F90=.F90)	
 	$(F_COMMAND) $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)

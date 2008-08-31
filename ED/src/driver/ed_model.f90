@@ -90,8 +90,10 @@ subroutine ed_model()
      call reset_averaged_vars(edgrid_g(ifm))
   end do
   
+  !!Output Initial State
+  call h5_output('YEAR')
+
   !         Start the timesteps
-  
 
   if ( mynum == 1) then
      write(*,"(/,a,/)") " === Time integration starts (model) ==="
