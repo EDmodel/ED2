@@ -359,6 +359,7 @@ subroutine init_params(init)
   use node_mod
   use mem_oda
   use mem_radiate, only: ISWRTYP, ILWRTYP ! Intent(in)
+  use mem_leaf, only: isfcl
 
   implicit none
 
@@ -374,7 +375,8 @@ subroutine init_params(init)
   call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
   call nodeget_processid(init)
-  call nodeget_nl
+  call nodeget_nl()
+  if (isfcl == 5) call nodeget_ednl(master_num)
   call nodeget_gridinit
   if (ibnd .eq. 4 .or. jbnd .eq. 4) then
      call ipaths_cyc_alloc(nnxp(1),nnyp(1),ibnd,jbnd)

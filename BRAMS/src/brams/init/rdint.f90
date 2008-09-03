@@ -1642,6 +1642,9 @@ subroutine ReadNamelist(fileName)
                    ,'ReadNamelist','rdint.f90')
   end if
 
+  write (unit=*,fmt='(a)') 'Reading ED2 namelist information'
+  call read_ednl(iunit)
+
   read (iunit, iostat=err, NML=MODEL_SOUND)
   if (err /= 0) then
      write(*,"(a)") "**(ERROR)** reading section MODEL_SOUND "//&

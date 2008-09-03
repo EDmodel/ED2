@@ -483,7 +483,7 @@ contains
           endif          
 
           !!open phenology file
-          write(phen_name,'(6a)')trim(phenpath),".lat",trim(clat),"lon",trim(clon),".txt"
+          write(phen_name,'(6a)')trim(phenpath),'.lat',trim(clat),'lon',trim(clon),'.txt'
           inquire(file=trim(phen_name),exist=phenology_exist)
           if(.not.phenology_exist) then
              print*,"phenology file not found :: ",phen_name

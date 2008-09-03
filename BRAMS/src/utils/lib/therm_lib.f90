@@ -234,7 +234,7 @@ real function rhovsi(tc)
   !     This function calculates the density of water vapor at saturation
   !     over ice as a function of Celsius temperature
   
-  use consts_coms, only: t00,rvap
+  use rconstants, only: t00,rm
   implicit none
   real, intent(in) :: tc
   
@@ -245,7 +245,7 @@ real function rhovsi(tc)
   
   x = max(-80.,tc)
   esi = c0+x*(c1+x*(c2+x*(c3+x*(c4+x*(c5+x*(c6+x*(c7+x*c8)))))))
-  rhovsi = esi / (rvap * (tc + t00))
+  rhovsi = esi / (rm * (tc + t00))
   
   return
 end function rhovsi

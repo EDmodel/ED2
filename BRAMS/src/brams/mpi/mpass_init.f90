@@ -354,10 +354,6 @@ subroutine masterput_nl(master_num)
   call MPI_Bcast(CPARM,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(GNU,7,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
-  if(isfcl==5) then
-     call masterput_ednl(mainnum)
-  end if
-
   return
 end subroutine masterput_nl
 
@@ -1044,11 +1040,6 @@ subroutine nodeget_nl
   call MPI_Bcast(HPARM,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(CPARM,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(GNU,7,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-
-  !Pass ED2 namelist parameters - there lots - its better in a subroutine
-  if(isfcl==5) then
-     call nodeget_ednl(master_num)
-  endif
 
   return
 end subroutine nodeget_nl
