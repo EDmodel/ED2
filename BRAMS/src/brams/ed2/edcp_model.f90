@@ -500,8 +500,8 @@ subroutine simple_lake_model(ifm,dtlong)
 
   integer :: m1,m2,m3,i,j,m1max,ifm
   integer :: k1w,k2w,k3w,k2u,k2u_1,k2v,k2v_1
-  real, up_mean,vp_mean,pi0_mean,dn0_mean
-  real, rv_mean,theta_mean
+  real :: up_mean,vp_mean,pi0_mean,dn0_mean
+  real :: rv_mean,theta_mean
   real :: topma_t,wtw,wtu1,wtu2,wtv1,wtv2
   real :: canopy_water_vapor
   real :: canopy_tempk

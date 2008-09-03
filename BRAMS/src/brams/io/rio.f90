@@ -390,8 +390,6 @@ subroutine anlwrt(restart,vtype)
   use mem_grid
   use io_params
 
-  use mem_cuparm, only: nclouds
-
   ![MLO - For  CARMA
    use mem_aerad, only: nwave
   !MLO]
@@ -545,10 +543,6 @@ subroutine anlwrt(restart,vtype)
               !  Rearrange 4-d leaf%sfcwater variables to (i,j,k,ip)
               call rearrange_p(nnxp(ngr),nnyp(ngr),nzs,npatch  &
                    ,vtab_r(nv,ngr)%var_p,scratch%scr2(1))
-           !  Rearrange 4-d cuparm variables to (i,j,k,icld)
-           elseif (vtab_r(nv,ngr)%idim_type == 8) then
-              call rearrange_p(nnxp(ngr),nnyp(ngr),nnzp(ngr),nclouds  &
-                   ,vtab_r(nv,ngr)%var_p,scratch%scr2(1))
 !    For types 2, and 6-9 we don't need to change the order, but I need to copy to         !
 !  scr2, so I will use a dum function to do that                                           !
            ! Copy 2-d (i,j,1)
@@ -563,11 +557,12 @@ subroutine anlwrt(restart,vtype)
            elseif (vtab_r(nv,ngr)%idim_type == 7) then
               call rearrange_dum(nnxp(ngr),nnyp(ngr),nwave  &
                    ,vtab_r(nv,ngr)%var_p,scratch%scr2(1))
-           ! Copy 3-d (i,j,ip)
-           elseif (vtab_r(nv,ngr)%idim_type == 9) then
-              call rearrange_dum(nnxp(ngr),nnyp(ngr),nclouds  &
+           ! Copy 3-d (i,j,kzg)
+           elseif (vtab_r(nv,ngr)%idim_type == 8) then
+              call rearrange_dum(nnxp(ngr),nnyp(ngr),nzg  &
                    ,vtab_r(nv,ngr)%var_p,scratch%scr2(1))
            end if
+
            nvcnt=nvcnt+1
            aw_table(nvcnt)%string=varn
            aw_table(nvcnt)%npointer=npointer
@@ -619,11 +614,7 @@ subroutine anlwrt(restart,vtype)
               !  Rearrange 4-d leaf%sfcwater variables to (i,j,k,ip)
               call rearrange_p(nnxp(ngr),nnyp(ngr),nzs,npatch  &
                    ,vtab_r(nv,ngr)%var_m,scratch%scr2(1))
-              !  Rearrange 4-d cuparm% variables to (i,j,k,ip)
-           elseif(vtab_r(nv,ngr)%idim_type == 8) then
-              call rearrange_p(nnxp(ngr),nnyp(ngr),nnzp(ngr),nclouds  &
-                   ,vtab_r(nv,ngr)%var_m,scratch%scr2(1))
-!    For types 2, 6, 7, and 9 we don't need to change the order, but I need to copy to     !
+!    For types 2, and 6-8 we don't need to change the order, but I need to copy to         !
 !  scr2, so I will use a dum function to do that                                           !
            ! Copy 2-d (i,j,1)
            elseif (vtab_r(nv,ngr)%idim_type == 2) then
@@ -637,11 +628,12 @@ subroutine anlwrt(restart,vtype)
            elseif (vtab_r(nv,ngr)%idim_type == 7) then
               call rearrange_dum(nnxp(ngr),nnyp(ngr),nwave  &
                    ,vtab_r(nv,ngr)%var_m,scratch%scr2(1))
-           ! Copy 3-d (i,j,kwave)
-           elseif (vtab_r(nv,ngr)%idim_type == 9) then
-              call rearrange_dum(nnxp(ngr),nnyp(ngr),nclouds  &
+           ! Copy 3-d (i,j,kzg)
+           elseif (vtab_r(nv,ngr)%idim_type == 8) then
+              call rearrange_dum(nnxp(ngr),nnyp(ngr),nzg  &
                    ,vtab_r(nv,ngr)%var_m,scratch%scr2(1))
-           end if
+          end if
+
            nvcnt=nvcnt+1
            aw_table(nvcnt)%string=varn
            aw_table(nvcnt)%npointer=npointer

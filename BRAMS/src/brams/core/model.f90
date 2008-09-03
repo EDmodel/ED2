@@ -199,8 +199,6 @@ subroutine model()
 
      enddo
 
-     
-
      ! New position to update 'TIME' - ALF
      time=begtime+dtlongn(1)
 
@@ -253,7 +251,6 @@ subroutine par_model(master_num)
        ptimes            ! INTENT(IN)
 
   use dtset, only: dtset_new ! subroutine
-  use mem_leaf,only: isfcl
 
   implicit none
   !   +------------------------------------------------------------------
@@ -399,11 +396,6 @@ subroutine par_model(master_num)
         call MPI_Barrier(MPI_COMM_WORLD,ierr)
      endif
 
-     ! Call any subroutines that match 
-!     if(isfcl.eq.5) then
-!        call MPI_Barrier(MPI_COMM_WORLD,ierr)
-!     endif
-     
 
      wtime2=walltime(wtime_start)
      call timing(2,t2)

@@ -37,43 +37,46 @@
 ! or Roni Avissar (avissar@duke.edu).
 !===============================================================================
 !MLO - Adapted to ED-BRAMS 1.4
-subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nadd_rad    &
-                       ,iswrtyp,ilwrtyp,icumfdbk,flpw,topt,glat,rtgt,pi0,pp,rho,theta,rv &
-                       ,rshort,rlong,fthrd,rlongup,cosz                                  &
-                       ,albedt,rshort_top,rshortup_top,rlongup_top,fthrd_lw              &
-                       ,sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h                               &
-                       ,con_c,con_r,con_p,con_s,con_a,con_g,con_h                        &
-                       ,cupcond,mynum)
+subroutine harr_raddriv(m1,m2,m3,ifm,if_adap,ia,iz,ja,jz,nadd_rad,iswrtyp,ilwrtyp,icumfdbk &
+                       ,flpw,topt,glat,rtgt,pi0,pp,rho,theta,rv                            &
+                       ,rshort,rlong,fthrd,rlongup,cosz                                    &
+                       ,albedt,rshort_top,rshortup_top,rlongup_top,fthrd_lw                &
+                       ,sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h                                 &
+                       ,con_c,con_r,con_p,con_s,con_a,con_g,con_h                          &
+                       ,rain,xkbcon,xjmin,dnmf,rtsrc,rtsrc_sh,grell_on,mynum)
 
   use mem_harr,        only: mg, mb
-  use mem_grid,        only: zm, zt
+  use mem_grid,        only: zm, zt,time,dtlongn,dzt
   use rconstants,      only: cpor, p00i, stefan, cp, cpi, p00, hr_sec
   use micphys,         only: ncat
   use mem_leaf,        only: isfcl
+  use mem_cuparm,      only: confrq
+  use shcu_vars_const, only: shcufrq
 
   implicit none
-  integer                     , intent(in)    :: m1,m2,m3,nclouds,mynum,ifm,if_adap
-  integer                     , intent(in)    :: ia,iz,ja,jz
-  integer                     , intent(in)    :: nadd_rad,iswrtyp,ilwrtyp,icumfdbk
-  real(kind=8)                , intent(in)    :: time
-  real                        , intent(in)    :: deltat
+  integer, intent(in)                         :: m1,m2,m3,mynum,ifm,if_adap
+  integer, intent(in)                         :: ia,iz,ja,jz
+  integer, intent(in)                         :: nadd_rad,iswrtyp,ilwrtyp,icumfdbk
+  logical, intent(in)                         :: grell_on
 
-  real, dimension(m1,m2,m3)   , intent(in)    :: pi0,pp,rho,theta,rv
-  real, dimension(m1,m2,m3)   , intent(in)    :: sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h
-  real, dimension(m1,m2,m3)   , intent(in)    :: con_c,con_r,con_p,con_s,con_a,con_g,con_h
+  real   , intent(in)   , dimension(m1,m2,m3) :: pi0,pp,rho,theta,rv
+  real   , intent(in)   , dimension(m1,m2,m3) :: sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h
+  real   , intent(in)   , dimension(m1,m2,m3) :: con_c,con_r,con_p,con_s,con_a,con_g,con_h
 
-  real, dimension(m2,m3)      , intent(in)    :: topt,glat,flpw,rtgt
+  real   , intent(in)   , dimension(m2,m3)    :: topt,glat,flpw,rtgt
   
-  real, dimension(m1,m2,m3)   , intent(inout) :: fthrd,fthrd_lw
-  real, dimension(m2,m3)      , intent(inout) :: rshort,rlong,rlongup,cosz,albedt &
+  real   , intent(inout), dimension(m1,m2,m3) :: fthrd,fthrd_lw
+  real   , intent(inout), dimension(m2,m3)    :: rshort,rlong,rlongup,cosz,albedt &
                                                 ,rshort_top,rshortup_top,rlongup_top
 
-  !MLO variables cumulus feedback
-  ! This is the liquid water that came from cumulus parameterization
-  real, dimension(m1,m2,m3,nclouds), intent(in) :: cupcond
+!MLO variables for the stupid cloud based on the cumulus parameterization output
+! Rain, boundaries and vertical scale for the rain drops of the stupid cloud
+  real   , intent(in)   , dimension(m2,m3)    :: rain,xkbcon,xjmin,dnmf
+! Moistening tendencies, to create the cloud droplets of the stupid cloud
+  real   , intent(in)   , dimension(m1,m2,m3) :: rtsrc,rtsrc_sh 
 
 !------ Local arrays -----------------------------------------------------------------------!
-  integer :: ka,nrad,koff,icld
+  integer :: ka,nrad,koff
   integer :: jhcat(m1,ncat)  ! hydrom category table with ice habits
 
   real, dimension(m1)       :: tairk   ! air temperature [K]
@@ -125,8 +128,9 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
 
 !MLO - Auxiliary variables for the stupid cloud 
   real, dimension(m1) :: rcl_parm
+  integer             :: kbcon,jmin
   
-  first_with_ed= time < dble(deltat) .and. isfcl == 5
+  first_with_ed= time < dble(dtlongn(ifm)) .and. isfcl == 5
 
   ! Copy surface and vertical-column values from model to radiation memory space
   ! In this loop, (k-koff) ranges from 2 to m1 + 1 - nint(flpw(i,j))
@@ -165,15 +169,44 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
              ztl(k-koff) = topt(i,j) + zt(k) * rtgt(i,j)
            end do
         end if
+!----- Getting information about the cloud base and downdrafts originating level 
+        if (rain(i,j) > 0. ) then
+          if (grell_on) then 
+            ! Grell scheme, I know the parameterized cloud base and downdrafts originating level
+            kbcon=nint(xkbcon(i,j))
+            jmin =nint(xjmin(i,j))
+          else
+!----- Kuo scheme, I'll assume a cloud with base at about 2 km and downdrafts originating level at about 5 km
+            kbcon=ka
+            botloop: do k=ka,m1-1
+               if ((zt(k)-zm(ka))*rtgt(i,j) > 2000.) then
+                 kbcon=k
+                 exit botloop
+               end if
+            end do botloop
+
+            jmin=m1-1
+            toploop: do k=ka,m1-1
+               if ((zt(k)-zm(ka))*rtgt(i,j) > 5000.) then
+                 jmin=k
+                 exit toploop
+               end if      
+            end do toploop
+          end if
+        end if
 
 !----- Now I fill the cloud droplets mixing ratio based on the tendencies. The idea is very simple
 !      I will assume that a cloud existed wherever the moistening term was positive, and I assumed
 !      a on/off cloud, and assuming that all contribution for moistening was once a cloud.
-        rcl_parm = 0.
-        do icld=1,nclouds
-           do k=ka,m1-1
-              rcl_parm(k) = rcl_parm(k)+ cupcond(k,i,j,icld)
-           end do
+        do k=ka,m1-1
+! Deep convection cloud
+          if (rtsrc(k,i,j) > 0. ) then
+            rcl_parm(k) = rtsrc(k,i,j) * confrq
+          else
+            rcl_parm(k) = 0.
+          end if
+! Shallow convection cloud
+          if (rtsrc_sh(k,i,j) > 0.) rcl_parm(k) = rcl_parm(k) + rtsrc_sh(k,i,j) * shcufrq
         end do
 
 
@@ -214,9 +247,15 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
              ,con_s(1:m1,i,j),con_a(1:m1,i,j),con_g(1:m1,i,j),con_h(1:m1,i,j))
 
         ! Fill hydrometeor optical property arrays [tp, omgp, gp]
-        call cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,jhcat,dzl,rx           &
-                      ,cx,embharr,tp,omgp,gp,sngl(time),rho(1:m1,i,j)       &
-                      ,rcl_parm,mynum)
+        if (grell_on) then 
+           call cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,rain(i,j),jhcat,dzl,rx &
+                         ,cx,embharr,tp,omgp,gp,sngl(time),rho(1:m1,i,j)       &
+                         ,kbcon,jmin,dnmf(i,j),rcl_parm,mynum)
+        else
+           call cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,rain(i,j),jhcat,dzl,rx &
+                         ,cx,embharr,tp,omgp,gp,sngl(time),rho(1:m1,i,j)       &
+                         ,kbcon,jmin,0.1,rcl_parm,mynum)
+        end if
 
         ! Get the path lengths for the various gases...
 
@@ -541,8 +580,8 @@ end subroutine cloudprep_rad
 
 !******************************************************************************
 
-subroutine cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,jhcat,dzl,rx,cx,embharr &
-                    ,tp,omgp,gp,time,rho,rcl_parm,mynum)
+subroutine cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,rain,jhcat,dzl,rx,cx,embharr &
+                    ,tp,omgp,gp,time,rho,kbcon,jmin,dnmf,rcl_parm,mynum)
 
   use mem_harr, only: mb, nb, ocoef, bcoef, gcoef, nsolb
   use micphys, only: ncat, jnmb, pwmasi, dnfac,rxmin,cfmas,pwmas,emb0,emb1,gnu
@@ -572,7 +611,11 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,jhcat,dzl,rx,cx,embharr &
   ! pwmasi ...... inverse of power used in mass power law
 
   ! MLO - New variables included to describe the stupid cloud which was drawn from cumulus parameterization
-  ! rcl_parm .... cloud droplets mixing ratio due to deep convection in the parameterized cumulus;
+  ! kbcon ....... k-index of the cloud base
+  ! jmin ........ k-index of the downdraft originating level
+  ! dnmf  ....... downdraft mass flux at  the cloud base;
+  ! rcl_deep .... cloud droplets mixing ratio due to deep convection in the stupid cloud;
+  ! rcl_shal .... cloud droplets mixing ratio due to shallow convection in the stupid cloud;
 
   implicit none
 
@@ -598,7 +641,9 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,jhcat,dzl,rx,cx,embharr &
                                        !   particles are spherical)
   real, dimension(m1), intent(in) :: rho
 
-  ! Adding parameterized rain properties:
+! Adding parameterized rain properties:
+  real,    intent(in)                :: rain,dnmf
+  integer, intent(in)                :: kbcon,jmin
   real   , dimension(m1), intent(in) :: rcl_parm
 
   integer, intent(in) :: mynum
@@ -612,7 +657,8 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,jhcat,dzl,rx,cx,embharr &
   real :: om
   real :: gg
 
-  ! MLO : variables to account for the parameterized rain
+  ! MLO : variables to account for the parameterized rain, borrowed from CARMA
+  real, parameter :: diam_prain=1.e-3                          ! This came from microphysics default diameter for rain drops [m]
   real, parameter :: parmi_cloud=1./.3e9                       ! This came from microphysics default count for cloud droplets [#/kg]. 
                                                                !    I only need the reciprocal, so I will only provide this instead.
   real            :: emb2_prain,cx_prain,emb2_cloud,cx_cloud,glg,glgm,dnfac_cloud
@@ -707,9 +753,36 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,jhcat,dzl,rx,cx,embharr &
      endif
   enddo
 ! MLO - Adding effects of parameterized rain. It is a very simple parameterization.
-!       It assumes that all the parameterized condensed water was cloud droplet . It is crude, but 
+!       It assumes that all the parameterized rain was once a rain drop and the parameterized cloud was
+!       a cloud in which all drops were evenly distributed between the cloud base and top. It is crude, but 
 !       it is just to give some guess...
   if (icumfdbk == 1) then
+     if (rain > 0.) then
+       emb2_prain=cfmas(2)*(diam_prain)**pwmas(2)
+       cx_prain= rain  / ( emb2_prain * dnmf)
+       dn=1.e6*diam_prain
+   ! Do the same I would do for the resolved clouds
+       do k=kbcon,jmin
+          krad=k-koff
+          do ib=1,nb
+             ext = cx_prain * rho(k) * dzl(krad)  &
+                * bcoef(1,ib,2) * dn ** bcoef(2,ib,2)
+
+             om = ocoef(1,ib,2)  &
+                + ocoef(2,ib,2) * exp(ocoef(3,ib,2) * dn)  &
+                + ocoef(4,ib,2) * exp(ocoef(5,ib,2) * dn)
+
+             gg = gcoef(1,ib,2)  &
+                + gcoef(2,ib,2) * exp(gcoef(3,ib,2) * dn)  &
+                + gcoef(4,ib,2) * exp(gcoef(5,ib,2) * dn)
+             if (ib <= nsolb) then
+               gg = gg * 1.08
+             else
+               gg = gg * 2.9
+             end if 
+          end do
+       end do
+     end if
    !MLO - Now I add the effects of shallow and deep convection with respect to the moistening factor
      do k=ka,m1-1
        krad=k-koff
@@ -817,22 +890,3 @@ subroutine path_lengths(nrad,u,rl,dzl,dl,o3l,vp,pl)
 
   return
 end subroutine path_lengths
-
-!******************************************************************************
-real function rhovsl(tc)
-  ! MLO - Subroutine imported from OLAM's omic_vap.f90
-  ! This function calculates water vapour saturation vapour mixing ratio
-  !    over liquid as a function of Celsius temperature
-  use rconstants, only : rm,t00
-  implicit none
-  real, intent(in) :: tc
-  real, parameter  :: c0 = .6105851e+03, c1 = .4440316e+02, c2 =  .1430341e+01
-  real, parameter  :: c3 = .2641412e-01, c4 = .2995057e-03, c5 =  .2031998e-05
-  real, parameter  :: c6 = .6936113e-08, c7 = .2564861e-11, c8 = -.3704404e-13
-  real :: esl, x
-  
-  x   = max(-80.,tc)
-  esl = c0+x*(c1+x*(c2+x*(c3+x*(c4+x*(c5+x*(c6+x*(c7+x*c8)))))))
-  rhovsl = esl / (rm * (tc+t00))
-  return
-end function rhovsl

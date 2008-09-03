@@ -50,7 +50,9 @@ LIBNCARG=$(BASE)/libncarg-$(UTILS_VERSION).a
 # HDF libraries-------------------------------------------------
 # HDF4 library: Instructions to install: www.cptec.inpe.br/brams
 # If you run "configure" script, you don't need to edit line bellow
-HDF_LIBS=-L.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
+USE_HDF4=0
+HDF4_LIBS=
+#HDF4_LIBS=-L.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
 # --------------------------------------------------------------
 
 # HDF 5  Libraries
@@ -211,14 +213,14 @@ MOD_EXT=mod
 
 # A. Pickiest
 USE_INTERF=0
-#F_OPTS= -FR -O0 -recursive -Vaxlib -static -check all -g -fpe0 -ftz -gen-interfaces \
-    -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
-    -traceback -ftrapuv
-#C_OPTS= -O0 -DLITTLE -static -g -traceback -debug extended
-#LOADER_OPTS= -FR -O0 -Vaxlib -static -check all -g -fpe0 -ftz -gen-interfaces \
-    -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
-    -traceback -ftrapuv
-#C_LOADER_OPTS=-v -g -traceback
+F_OPTS= -FR -O0 -recursive -Vaxlib -static -check all -g -fpe0 -ftz -gen-interfaces \
+   -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
+   -traceback -ftrapuv
+C_OPTS= -O0 -DLITTLE -static -g -traceback -debug extended
+LOADER_OPTS= -FR -O0 -Vaxlib -static -check all -g -fpe0 -ftz -gen-interfaces \
+   -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
+   -traceback -ftrapuv
+C_LOADER_OPTS=-v -g -traceback
 
 # B. Pickiest with optimization
 #USE_INTERF=0
@@ -246,11 +248,11 @@ USE_INTERF=0
 #C_LOADER_OPTS=-v -O2 -traceback -g
 
 # E. Fast...
-USE_INTERF=1
-F_OPTS= -FR -O3 -recursive -Vaxlib -static -traceback
-C_OPTS= -O3 -DLITTLE -static -traceback
-LOADER_OPTS= -FR -O3 -Vaxlib -static -traceback
-C_LOADER_OPTS=-v -traceback
+#USE_INTERF=1
+#F_OPTS= -FR -O3 -recursive -Vaxlib -static -traceback
+#C_OPTS= -O3 -DLITTLE -static -traceback
+#LOADER_OPTS= -FR -O3 -Vaxlib -static -traceback
+#C_LOADER_OPTS=-v -traceback
 
 # If compiling for a single-CPU platform only (without MPI):
 

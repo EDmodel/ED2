@@ -104,25 +104,14 @@ subroutine master_sendinit()
                       ,nxbeg(nm,ng),nxend(nm,ng)  &
                       ,nybeg(nm,ng),nyend(nm,ng))
                  npts=mxyp*nwave
-
               elseif ( vtab_r(nv,ng)%idim_type == 8) then
-
-                 call mk_4_buff(vtab_r(nv,ng)%var_p  &
-                      ,scratch%scr2(1),nnzp(ng),nnxp(ng),nnyp(ng)  &
-                      ,nclouds,nnzp(ng),mxp,myp,nclouds &
-                      ,nxbeg(nm,ng),nxend(nm,ng)  &
-                      ,nybeg(nm,ng),nyend(nm,ng))
-                 npts=mxyzp*nclouds
-
-              elseif ( vtab_r(nv,ng)%idim_type == 9 ) then
-
+                 ! 3D Soil Layers with no patch dimension
                  call mk_2p_buff(vtab_r(nv,ng)%var_p  &
                       ,scratch%scr2(1),nnxp(ng),nnyp(ng)  &
-                      ,nclouds,mxp,myp,nclouds &
+                      ,nzg,mxp,myp,nzg &
                       ,nxbeg(nm,ng),nxend(nm,ng)  &
                       ,nybeg(nm,ng),nyend(nm,ng))
-                 npts=mxyp*nclouds
-
+                 npts=mxyp*nzg
               endif
 
               call MPI_Send(scratch%scr2(1),npts,MPI_REAL,machnum(nm),  &
@@ -258,6 +247,7 @@ subroutine node_sendall()
   use mem_grid
   use var_tables
   use mem_scratch
+
   implicit none
 
   include 'interface.h'
@@ -304,8 +294,7 @@ subroutine master_getall()
   use var_tables
   use mem_scratch
   use mem_aerad, only: nwave
-  use mem_cuparm, only: nclouds
-  
+
   implicit none
 
   include 'interface.h'
@@ -375,14 +364,12 @@ subroutine master_getall()
                ,nnxp(ng),nnyp(ng),nwave,mxp,myp,nwave  &
                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
        elseif (idim_type == 8) then
-          call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1)  &
-               ,nnzp(ng),nnxp(ng),nnyp(ng),nclouds,nnzp(ng),mxp,myp,nclouds  &
+          ![ED2-MLO: tridimensional variables, with vertical dimension 
+          !being the number soil levels
+          call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1)  &
+               ,nnxp(ng),nnyp(ng),nzg,mxp,myp,nzg  &
                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-        elseif (idim_type == 9) then
-           call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1)  &
-                ,nnxp(ng),nnyp(ng),nclouds,mxp,myp,nclouds      &
-                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-       endif
+        endif
 
      enddo
   enddo

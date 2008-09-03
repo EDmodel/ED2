@@ -28,8 +28,7 @@ all: $(EXE)
 $(EXE): $(LIBMODEL) $(MAINOBJ) 
 	@echo ""
 	$(LOADER) -o $(EXE) rammain.o $(LOADER_OPTS) $(LIBMODEL) \
-	$(HDF5_LIBS) $(PAR_LIBS) \
-	$(NC_LIBS) $(LIBS) $(HDF_LIBS)
+	$(HDF4_LIBS) $(HDF5_LIBS) $(PAR_LIBS) $(NC_LIBS) $(LIBS)
 	@echo ""
 	@echo Finished building === $(EXE)
 	@echo ""

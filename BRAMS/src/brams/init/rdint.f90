@@ -218,7 +218,7 @@ subroutine initlz (name_name)
      ! Fill land surface data for all grids that have no standard input files
 
      ! ALF - For use with SiB
-     if (isfcl <= 2) then
+     if (isfcl <= 2 .or. isfcl == 5) then
         call sfcdata
      elseif (isfcl == 3) then
         call sfcdata_sib_driver
@@ -740,31 +740,11 @@ subroutine ReadNamelist(fileName)
        tcu_end, &
        tnudcu, &
        wcldbs, &
-       wt_cu_grid, &
-       nclouds, &
-       ndeepest, &
-       nshallowest, &
-       cptime
+       wt_cu_grid
   use mem_globrad, only: raddatfn, & !CARMA
        rdatfnum                      !CARMA
-  ! For Grell Paramet.
-  use grell_coms, only:  &
-          closure_type,  & ! INTENT(OUT)
-          maxclouds,     & ! INTENT(OUT)
-          iupmethod,     & ! INTENT(OUT)
-          depth_min,     & ! INTENT(OUT)
-          cap_maxs,      & ! INTENT(OUT)
-          maxens_lsf,    & ! INTENT(OUT)
-          maxens_eff,    & ! INTENT(OUT)
-          maxens_dyn,    & ! INTENT(OUT)
-          maxens_cap,    & ! INTENT(OUT)
-          iupmethod,     & ! INTENT(OUT)
-          iupstrm,       & ! INTENT(OUT)
-          radius,        & ! INTENT(OUT)
-          zkbmax,        & ! INTENT(OUT)
-          max_heat,      & ! INTENT(OUT)
-          zcutdown,      & ! INTENT(OUT)
-          z_detr         ! ! INTENT(OUT)
+  use mem_grell_param, only: closure_type, &
+                             icbase, depth_min,cap_maxs
   use mem_grid, only: centlat, &
        centlon, &
        cphas, &
@@ -926,7 +906,8 @@ subroutine ReadNamelist(fileName)
        ts, &
        us, &
        vs
-
+  use shcu_vars_const, only: nnshcu, &
+       shcufrq
   use sib_vars, only: co2_init, &
        n_co2
 
@@ -1066,17 +1047,14 @@ subroutine ReadNamelist(fileName)
        ndvifn, itopsflg, toptenh, toptwvl, iz0flg, z0max, z0fact,      &
        mkcoltab, coltabfn
 
-  namelist /CUPARM_OPTIONS/ &
-       nnqparm,nclouds,ndeepest,nshallowest,wcldbs,confrq,cptime,        &
-       iupmethod,iupstrm,radius,depth_min,cap_maxs,zkbmax,zcutdown,      &
-       z_detr,max_heat,closure_type,maxens_lsf,maxens_eff,maxens_cap
-
   namelist /MODEL_OPTIONS/ &
-       !MLO - Adding mass related variables (iexev and imassflx)...
+       !MLO - Adding STILT related variables (iexev and imassflx)...
        naddsc, icorflg, iexev,imassflx, ibnd, jbnd, cphas, lsflg, nfpt,  &
        distim,iswrtyp, ilwrtyp,icumfdbk,                                 &
-       raddatfn,radfrq, lonrad,npatch, nvegpat, isfcl, n_co2, co2_init,  &
-       nvgcon, pctlcon, nslcon, drtcon, zrough, albedo, seatmp, dthcon,  &
+       raddatfn,radfrq, lonrad, nnqparm,nnshcu,                          &
+       closure_type, depth_min,cap_maxs, icbase, confrq,                 &
+       shcufrq, wcldbs, npatch, nvegpat, isfcl, n_co2, co2_init, nvgcon, &
+       pctlcon, nslcon, drtcon, zrough, albedo, seatmp, dthcon,          &
        soil_moist, soil_moist_fail, usdata_in, usmodel_in, slz, slmstr,  &
        stgoff, if_urban_canopy, idiffk, ihorgrad, csx, csz, xkhkm, zkhkm,&
        akmin, level, icloud, irain, ipris, isnow, iaggr, igraup, ihail,  &
@@ -1099,7 +1077,6 @@ subroutine ReadNamelist(fileName)
        gridwt, gobsep, gobrad, wvlnth, swvlnth, respon
 
 
-  
   ! defaults (just for arrays); should be revised to accomodate
   ! precise defaults
 
@@ -1150,6 +1127,7 @@ subroutine ReadNamelist(fileName)
   toptwvl=0.0
   iz0flg=0
   z0max=0.0
+  nnqparm=0
   gnu=0.0
   iplfld=" "
   ixsctn=0
@@ -1160,6 +1138,10 @@ subroutine ReadNamelist(fileName)
   ps=0.0
   hs=0.0
   rts=0.0
+  icbase=0
+  depth_min=0.
+  cap_maxs=0.
+  nnshcu=0
   co2_init=0.0
   slz=0.0
   slmstr=0.0
@@ -1303,24 +1285,6 @@ subroutine ReadNamelist(fileName)
      pletraf      = 0.0   !Maximum value of latent heat
      pleindu      = 0.0   !Maximum value of latent heat
   endif
-
-
-  nnqparm=0
-  ndeepest=0
-  nshallowest=0
-  confrq=0.
-  cptime=0.
-  radius=0.
-  depth_min=0.
-  cap_maxs=0.
-  zkbmax=0.
-  zcutdown=0.
-  z_detr=0.
-  max_heat=0.
-  closure_type=""
-  maxens_lsf=0
-  maxens_eff=0
-  maxens_cap=0
 
 
   ! select unused i/o unit
@@ -1599,37 +1563,6 @@ subroutine ReadNamelist(fileName)
                    ,'ReadNamelist','rdint.f90')
   end if
 
-
-  read (iunit, iostat=err, NML=CUPARM_OPTIONS)
-  if (err /= 0) then
-     write(*,"(a)") "**(ERROR)** reading section CUPARM_OPTIONS "//&
-          &"of namelist file "//trim(fileName)
-     write (*, *) "nnqparm=",nnqparm
-     write (*, *) "nclouds=",nclouds
-     write (*, *) "ndeepest=",ndeepest
-     write (*, *) "nshallowest=",nshallowest
-     write (*, *) "wcldbs=",wcldbs
-     write (*, *) "confrq=",confrq
-     write (*, *) "cptime=",cptime
-     write (*, *) "iupmethod=",iupmethod
-     write (*, *) "iupstrm=",iupstrm
-     write (*, *) "radius=",radius
-     write (*, *) "depth_min=",depth_min
-     write (*, *) "cap_maxs=",depth_min
-     write (*, *) "zkbmax=",zkbmax
-     write (*, *) "zcutdown=",zcutdown
-     write (*, *) "z_detr=",z_detr
-     write (*, *) "max_heat=",max_heat
-     write (*, *) "closure_type=",closure_type
-     write (*, *) "maxens_lsf=",maxens_lsf
-     write (*, *) "maxens_eff=",maxens_eff
-     write (*, *) "maxens_cap=",maxens_cap
-
-     call abort_run('Error reading namelist, CUPARM_OPTIONS block.' &
-                   ,'ReadNamelist','rdint.f90')
-  end if
-
-
   read (iunit, iostat=err, NML=MODEL_OPTIONS)
   if (err /= 0) then
      write(*,"(a)") "**(ERROR)** reading section MODEL_OPTIONS "//&
@@ -1652,6 +1585,15 @@ subroutine ReadNamelist(fileName)
      write (*, *) "raddatfn=", RADDATFN
      write (*, *) "radfrq=",radfrq
      write (*, *) "lonrad=",lonrad
+     write (*, *) "nnqparm=",nnqparm
+     write (*, *) "nnshcu=",nnshcu
+     write (*, *) "closure_type=",closure_type
+     write (*, *) "icbase=",icbase
+     write (*, *) "depth_min=",depth_min
+     write (*, *) "cap_maxs=",depth_min
+     write (*, *) "confrq=",confrq
+     write (*, *) "shcufrq=",shcufrq
+     write (*, *) "wcldbs=",wcldbs
      write (*, *) "npatch=",npatch
      write (*, *) "nvegpat=",nvegpat
      write (*, *) "isfcl=",isfcl
@@ -1698,13 +1640,7 @@ subroutine ReadNamelist(fileName)
      write (*, *) "gnu=",gnu
      call abort_run('Error reading namelist, MODEL_OPTIONS block.' &
                    ,'ReadNamelist','rdint.f90')
-  else
-     !----- Switching closure type to lower case
-     call tolower(closure_type,maxclouds)
   end if
-
-  write (unit=*,fmt='(a)') 'Reading ED2 namelist information'
-  call read_ednl(iunit)
 
   read (iunit, iostat=err, NML=MODEL_SOUND)
   if (err /= 0) then
@@ -1792,17 +1728,13 @@ subroutine ReadNamelist(fileName)
                    ,'ReadNamelist','rdint.f90')
   end if
 
-  ! If the simulation uses ED2 as the land-surface, run the model
-  
-  
-
   close(iunit, iostat=err)
   if (err /= 0) then
      write(c0,"(i10)") err
      call abort_run('Closing file '//trim(fileName)//' returned iostat='//trim(adjustl(c0)) &
                    ,'ReadNamelist','rdint.f90')
   end if
-
+  
   call date_2_seconds (iyearz,imonthz,idatez,itimez*100, &
   iyeara,imontha,idatea,itimea*100,timmax)
   

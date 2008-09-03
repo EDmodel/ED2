@@ -6,6 +6,7 @@ module shcu_vars_const
   use grid_dims, only : maxgrds  ! INTENT(IN)
 
   ! Control Parameters. Some of the them in RAMSIN namelist
+  real :: shcufrq
   integer :: nshcu, nnshcu(maxgrds)
 
 !  COMMON/SHPARS /

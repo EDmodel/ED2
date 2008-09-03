@@ -1566,7 +1566,7 @@ ELSEIF(VARN.EQ.'CONPR') THEN
     FMT='0PF7.2'
     TILO='CON RATE'
   ELSE
-    VAL1=cuparm_g(ngrid)%CONPRR(i,j,1)
+    VAL1=cuparm_g(ngrid)%CONPRR(i,j)
     OPTLIB=VAL1*3600.
   ENDIF
 !
@@ -1587,7 +1587,7 @@ ELSEIF(VARN.EQ.'CONH') THEN
     FMT='0PF7.1'
     TILO='CON HEAT'
   ELSE
-    VAL1=cuparm_g(ngrid)%THSRC(k,i,j,1)
+    VAL1=cuparm_g(ngrid)%THSRC(k,i,j)
     OPTLIB=VAL1*86400.
   ENDIF
 !
@@ -1598,7 +1598,7 @@ ELSEIF(VARN.EQ.'CONM') THEN
     FMT='0PF7.1'
     TILO='CON MOIS'
   ELSE
-    VAL1=cuparm_g(ngrid)%RTSRC(k,i,j,1)
+    VAL1=cuparm_g(ngrid)%RTSRC(k,i,j)
     OPTLIB=VAL1*86400.
   ENDIF
 !

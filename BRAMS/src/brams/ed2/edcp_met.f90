@@ -253,7 +253,7 @@ end subroutine copy_atm2lsm
 
 subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean)
   
-  use mem_cuparm, only: cuparm_g,nnqparm,nclouds
+  use mem_cuparm, only: cuparm_g,nnqparm
   use mem_micro,  only: micro_g
   use micphys,    only: level
   use mem_basic,  only: basic_g

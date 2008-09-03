@@ -11,6 +11,8 @@ subroutine dealloc_all()
 
   use mem_all
 
+  use mem_shcu   ! needed for Shallow Cumulus
+
   use mem_opt    ! Needed for optimization - ALF
 
   use catt_start, only: &
@@ -41,33 +43,22 @@ subroutine dealloc_all()
        dealloc_gaspart          ! Subroutine
 
 
-  use mem_scratch_grell, only : dealloc_scratch_grell
-  use mem_ensemble, only : ensemble_e,dealloc_ensemble
-  use grell_coms, only : grell_nclouds => nclouds
+  use mem_grell, only : grell_g,grellm_g,grell_g_sh,grellm_g_sh,dealloc_grell
+  use mem_scratch1_grell, only : sc1_grell_g,dealloc_scratch1_grell
   use shcu_vars_const, only : nnshcu
-  ![MLO - Used for mass
   use mem_mass
-  !MLO]
 
 
   implicit none
 
   ! deallocate all model memory.  Used on dynamic balance
 
-  integer :: ng,ne
+  integer :: ng
 
   deallocate(num_var,vtab_r,scalar_tab,num_scalar)
 
   call dealloc_tend(naddsc)
   call dealloc_scratch()
-
-  call dealloc_scratch_grell()
-  if (allocated(ensemble_e)) then
-     do ne=1,grell_nclouds
-        call dealloc_ensemble(ensemble_e(ne))
-     end do
-  end if
-  deallocate(ensemble_e)
 
   call dealloc_opt_scratch() ! For optimization - ALF
 
@@ -80,6 +71,8 @@ subroutine dealloc_all()
   do ng=1,ngrids
      call dealloc_basic(basic_g(ng)) 
      call dealloc_basic(basicm_g(ng))
+     call dealloc_cuparm(cuparm_g(ng))  
+     call dealloc_cuparm(cuparmm_g(ng))
      call dealloc_grid(grid_g(ng))    
      call dealloc_grid(gridm_g(ng))
      call dealloc_leaf(leaf_g(ng))    
@@ -99,6 +92,9 @@ subroutine dealloc_all()
      call dealloc_oda(oda_g(ng)) 
      call dealloc_oda(odam_g(ng))
 
+     call dealloc_shcu(shcu_g(ng))    ! use by shallow cumulus
+     call dealloc_shcu(shcum_g(ng))   ! use by shallow cumulus
+
      if (TEB_SPM==1) then
         if(allocated(tebc_g)) then
            call dealloc_tebc(tebc_g(ng))      !for teb common
@@ -114,8 +110,15 @@ subroutine dealloc_all()
         endif
      endif
 
-  enddo
+     if (nnshcu(ng) == 2 .or. nnqparm(ng) == 2) then
+        call dealloc_grell(grell_g(ng))
+        call dealloc_grell(grellm_g(ng))
+        call dealloc_grell(grell_g_sh(ng))
+        call dealloc_grell(grellm_g_sh(ng))
+        call dealloc_scratch1_grell(sc1_grell_g(ng))
+     end if
 
+  enddo
   deallocate(basic_g,basicm_g)
   deallocate(cuparm_g,cuparmm_g)
   deallocate(grid_g,gridm_g)
@@ -128,7 +131,11 @@ subroutine dealloc_all()
 
   if (allocated(mass_g)) deallocate(mass_g,massm_g)
 
+  if (allocated(grell_g))     deallocate(grell_g,grellm_g)
+  if (allocated(grell_g_sh))  deallocate(grell_g_sh,grellm_g_sh)
+  if (allocated(sc1_grell_g)) deallocate(sc1_grell_g)
 
+  deallocate(shcu_g, shcum_g)         ! use by shallow cumulus
 
   if (TEB_SPM==1) then
      if(allocated(teb_g)) then

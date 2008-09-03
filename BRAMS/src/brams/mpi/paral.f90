@@ -73,7 +73,7 @@ subroutine master_getanl(vtype)
   use mem_scratch
   use var_tables
   use mem_aerad, only: nwave
-  use mem_cuparm, only: nclouds
+
   implicit none
 
   character(len=*) :: vtype
@@ -173,17 +173,11 @@ subroutine master_getanl(vtype)
                 ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
         case (8)
-           call ex_4_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1)  &
-                ,nnzp(ng),nnxp(ng),nnyp(ng),nclouds  &
-                ,nnzp(ng),mxp,myp,nclouds  &
-                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-        case (9)
+           !tridimensional variables, with vertical dimension 
+           !being the number soil levels
            call ex_2p_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1)  &
-                ,nnxp(ng),nnyp(ng),nclouds  &
-                ,mxp,myp,nclouds  &
+                ,nnxp(ng),nnyp(ng),nzg,mxp,myp,nzg  &
                 ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
         end select
 
      case ('LITE')
@@ -225,17 +219,11 @@ subroutine master_getanl(vtype)
                 ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
         case (8)
-           call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1)  &
-                ,nnzp(ng),nnxp(ng),nnyp(ng),nclouds  &
-                ,nnzp(ng),mxp,myp,nclouds  &
-                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-        case (9)
+           ![ED2-MLO: tridimensional variables, with vertical dimension 
+           !being the number soil levels
            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1)  &
-                ,nnxp(ng),nnyp(ng),nclouds  &
-                ,mxp,myp,nclouds  &
+                ,nnxp(ng),nnyp(ng),nzg,mxp,myp,nzg  &
                 ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
         end select
      end select
   
