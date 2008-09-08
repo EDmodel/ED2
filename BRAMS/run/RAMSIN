@@ -29,9 +29,9 @@
 
    NGRIDS   = 1,            ! Number of grids to run
  
-   NNXP     =  32,  62, 230,     ! Number of x gridpoints
-   NNYP     =  26,  38, 161,     ! Number of y gridpoints
-   NNZP     =  41,  41,  41,     ! Number of z gridpoints
+   NNXP     =  84,  62,      ! Number of x gridpoints
+   NNYP     =  66,  38,      ! Number of y gridpoints
+   NNZP     =  41,  41,      ! Number of z gridpoints
    NZG      =  12,          ! Number of soil layers
    NZS      =   1,          ! Maximum number of snow layers
  
@@ -77,11 +77,11 @@
    NSTRATZ2 = 3,3,3,2,2,2,2,1,   !
 
 
-   POLELAT  = -10.5,          ! Latitude of pole point
-   POLELON  = -63.5,         ! Longitude of pole point
+   POLELAT  =  -2.5,          ! Latitude of pole point
+   POLELON  = -62.5,         ! Longitude of pole point
 
-   CENTLAT  = -10.5, -10.5,
-   CENTLON  = -63.5, -63.5,
+   CENTLAT  =  -2.5, -11.0,
+   CENTLON  = -62.5, -63.0,
                               ! Grid point on the next coarser
                               !  nest where the lower southwest
                               !  corner of this nest will start.
@@ -140,9 +140,9 @@
    NUD_HFILE = './histo/wetamc', 
                ! Prefix for history nudging files
                              
-   NUDLAT   =     6,             ! Number of points in lateral bnd region
-   TNUDLAT  =   900.,          ! 2700 - Nudging time scale(s) at lateral boundary
-   TNUDCENT = 28800.,         ! Nudging time scale(s) in center of domain
+   NUDLAT   =     5,             ! Number of points in lateral bnd region
+   TNUDLAT  =  3600.,          ! 2700 - Nudging time scale(s) at lateral boundary
+   TNUDCENT = 43200.,         ! Nudging time scale(s) in center of domain
    TNUDTOP  = 10800.,        ! 10800 - Nudging time scale (s) at top of domain
    ZNUDTOP  = 16000.,        ! Nudging at top of domain above height(m)
    
@@ -392,7 +392,7 @@
                              !    0-none,       1-Chen/Cotton, 2-Mahrer/Pielke
                              !    3-Harrington, 4-Carma
                              !
-   ICUMFDBK = 1,             ! Add effects of parameterized cumulus in radiation?
+   ICUMFDBK = 0,             ! Add effects of parameterized cumulus in radiation?
                              !    0 - No , 1 - Yes
                              ! (Used for i?wrtyp = 3 only)
                              !
