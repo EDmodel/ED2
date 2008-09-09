@@ -85,7 +85,7 @@ subroutine apply_forestry_ar(cpoly, isi, year, rhos)
   ! WILL THIS SUM OVER ALL DIMENSIONS INTO A SCALAR VALUE?
   total_site_biomass = 0.
   do ipft=1,n_pft
-     do idbh=1,n_pft
+     do idbh=1,n_dbh
         total_site_biomass = total_site_biomass + cpoly%agb(ipft, idbh, isi)
      end do
   end do
