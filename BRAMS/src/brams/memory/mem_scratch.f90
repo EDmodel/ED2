@@ -40,7 +40,7 @@ module mem_scratch
 contains
 
   subroutine alloc_scratch(nmzp,nmxp,nmyp,nnzp,nnxp,nnyp  &
-       ,ngrs,nzg,nzs,npatch,nclouds,proc_type  &
+       ,ngrs,nzg,nzs,npatch,proc_type  &
        ,maxx,maxy,maxz)
 
     ! FOR CATT
@@ -52,7 +52,7 @@ contains
     implicit none
 
     integer, dimension (*) :: nmzp,nmxp,nmyp,nnzp,nnxp,nnyp
-    integer :: ngrs,nzg,nzs,npatch,nclouds,proc_type
+    integer :: ngrs,nzg,nzs,npatch,proc_type
 
     integer :: ng,ntpts,ntpts1,ntpts2,ntptsx,maxx,maxy,maxz
 
@@ -77,8 +77,7 @@ contains
        ntpts2=max( nmxp(ng)*nmyp(ng),ntpts2 )
     enddo
     ! scr1 and scr2 needs to be the max of a passed field
-    ntptsx=max(maxx*maxy*maxz,maxx*maxy*maxz*nclouds,ntpts2*nzg*npatch &
-              ,ntpts2*nzs*npatch,maxz*40)+1000
+    ntptsx=max(maxx*maxy*maxz,ntpts2*nzg*npatch,ntpts2*nzs*npatch,maxz*40)+1000
 
     ! For CARMA
     !if (CATT == 1) then

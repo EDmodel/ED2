@@ -34,7 +34,7 @@ subroutine sfclyr_sib(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
 
   ng=ngrid
 
-  call sib_driver(mzp,mxp,myp,nzg,nzs,npatch,nclouds,ia,iz,ja,jz &
+  call sib_driver(mzp,mxp,myp,nzg,nzs,npatch,ia,iz,ja,jz           &
        ,leaf_g (ng), basic_g (ng), turb_g (ng), radiate_g(ng)   &
        ,grid_g (ng), cuparm_g(ng), micro_g(ng)                  &
        ,scratch%vt2da (1) ,scratch%vt2db(1) ,scratch%vt2dc (1)  &
@@ -67,7 +67,7 @@ end subroutine sfclyr_sib
 
 !*****************************************************************************
 
-subroutine sib_driver(m1,m2,m3,mzg,mzs,np,nclds,ia,iz,ja,jz   &
+subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
      ,leaf,basic,turb,radiate,grid,cuparm,micro    &
      ,ths2,rvs2,pis2,dens2,ups2,vps2,zts2, ng      )
 
@@ -83,7 +83,7 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,nclds,ia,iz,ja,jz   &
 
   implicit none
 
-  integer :: m1,m2,m3,mzg,mzs,np,nclds,ia,iz,ja,jz
+  integer :: m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz
 
   integer :: ng
 
@@ -636,18 +636,14 @@ subroutine sfc_pcp_sib(nqparm,level,i,j,cuparm,micro,cupr,lspr)
 
   implicit none
 
-  integer :: nqparm,level,i,j,icld
+  integer :: nqparm,level,i,j
   real :: cupr,lspr
   type (cuparm_vars)  cuparm
   type (micro_vars)   micro
 
   cupr = 0.
   lspr = 0.
-  if (nqparm > 0) then
-     do icld=1,nclouds
-        cupr = cupr + cuparm%conprr(i,j,icld) ! conv   precip at mm/s
-     end do
-  end if
+  if (nqparm > 0) cupr = cuparm%conprr(i,j) ! conv   precip at mm/s
   if (level >= 3) lspr = micro%   pcpg(i,j) ! explic precip at mm/s
 
 !  if(cupr.gt. 0.) print*,'CUPR=',i,j,cupr

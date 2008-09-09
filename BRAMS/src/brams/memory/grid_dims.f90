@@ -51,8 +51,4 @@ module grid_dims
   integer, parameter :: maxsteb=5
   integer, parameter :: maxubtp=3
 
-  ! Cumulus parameterization
-  ! Maximum number of clouds that the model can handle
-  integer, parameter :: maxclouds = 6
-
 end module grid_dims

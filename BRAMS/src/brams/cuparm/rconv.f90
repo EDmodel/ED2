@@ -6,7 +6,7 @@
 !  Regional Atmospheric Modeling System - RAMS
 !###########################################################################
 
-subroutine kuo_cupar_driver()
+subroutine cuparm()
 
 use mem_tend
 use mem_cuparm
@@ -16,62 +16,72 @@ use node_mod
 
 implicit none
 
-! If I reached here, then I am at the deepest convection
-integer, parameter :: icld=1
+real, save :: cptime=7200.
+
 
 if (if_cuinv == 0) then
 
-      !        Zero out tendencies initially. This has been moved to the 
-      ! initialization at rams_mem_alloc.f90
+   !        Zero out tendencies initially
 
-
-   !!$      print 90,time+dtlt,(time+dtlt)/3600.  &
-   !!$               +(itimea/100+mod(itimea,100)/60.)
-   !!$      90   format('  Convective tendencies updated    time =',f10.1,  &
-   !!$               '  Real time (hrs) =',f6.1)
-
-         call azero(mxp*myp*mzp,cuparm_g(ngrid)%thsrc(1,1,1,icld))
-         call azero(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(1,1,1,icld))
-         call azero(mxp*myp,cuparm_g(ngrid)%conprr(1,1,icld))
-
-         call conpar(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-             ,basic_g(ngrid)%up      (1,1,1)        &
-             ,basic_g(ngrid)%vp      (1,1,1)        &
-             ,basic_g(ngrid)%wp      (1,1,1)        &
-             ,basic_g(ngrid)%theta   (1,1,1)        &
-             ,basic_g(ngrid)%pp      (1,1,1)        &
-             ,basic_g(ngrid)%pi0     (1,1,1)        &
-             ,basic_g(ngrid)%dn0     (1,1,1)        &
-             ,basic_g(ngrid)%rv      (1,1,1)        &
-             ,cuparm_g(ngrid)%thsrc  (1,1,1,icld)   &
-             ,cuparm_g(ngrid)%rtsrc  (1,1,1,icld)   &
-             ,grid_g(ngrid)%rtgt     (1,1)          &
-             ,cuparm_g(ngrid)%conprr (1,1,icld), grid_g(ngrid)%flpw(1,1)  )
-
-   elseif (if_cuinv == 1) then
-      ! Check cumulus inversion tendencies and see if they are usable. If so,
-      !   put in thsrc,rtscr,conprr arrays.
-      call cu_inv_tend(mzp,mxp,myp,ia,iz,ja,jz             &
-                      ,cuparm_g(ngrid)%thsrc (1,1,1,icld)  &
-                      ,cuparm_g(ngrid)%thsrcp     (1,1,1)  &
-                      ,cuparm_g(ngrid)%thsrcf     (1,1,1)  &
-                      ,cuparm_g(ngrid)%rtsrc (1,1,1,icld)  &
-                      ,cuparm_g(ngrid)%rtsrcp     (1,1,1)  &
-                      ,cuparm_g(ngrid)%rtsrcf     (1,1,1)  &
-                      ,cuparm_g(ngrid)%conprr  (1,1,icld)  &
-                      ,cuparm_g(ngrid)%conprrp      (1,1)  &
-                      ,cuparm_g(ngrid)%conprrf      (1,1)  )
+   if(time == 0.)then
+      call azero(mxp*myp*mzp,cuparm_g(ngrid)%thsrc(1,1,1))
+      call azero(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(1,1,1))
+      call azero(mxp*myp,cuparm_g(ngrid)%conprr(1,1))
    endif
-      
 
-   call accum(mxp*myp*mzp,tend%tht(1),cuparm_g(ngrid)%thsrc(1,1,1,icld)    )
-   call accum(mxp*myp*mzp,tend%rtt(1),cuparm_g(ngrid)%rtsrc(1,1,1,icld)    )
+   if(initial == 2 .and. time < cptime)return
 
-   call update(mxp*myp,cuparm_g(ngrid)%aconpr(1,1)  &
-                      ,cuparm_g(ngrid)%conprr(1,1,icld)  ,dtlt)
+   if(mod(time+dtlt+.001,dble(confrq)).le.dtlt.or.time.lt..01)then
 
-   return
-end subroutine kuo_cupar_driver
+!!$      print 90,time+dtlt,(time+dtlt)/3600.  &
+!!$               +(itimea/100+mod(itimea,100)/60.)
+!!$      90   format('  Convective tendencies updated    time =',f10.1,  &
+!!$               '  Real time (hrs) =',f6.1)
+
+      call azero(mxp*myp*mzp,cuparm_g(ngrid)%thsrc(1,1,1))
+      call azero(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(1,1,1))
+      call azero(mxp*myp,cuparm_g(ngrid)%conprr(1,1))
+
+      call conpar(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
+          ,basic_g(ngrid)%up      (1,1,1)  &
+          ,basic_g(ngrid)%vp      (1,1,1)  &
+          ,basic_g(ngrid)%wp      (1,1,1)  &
+          ,basic_g(ngrid)%theta   (1,1,1)  &
+          ,basic_g(ngrid)%pp      (1,1,1)  &
+          ,basic_g(ngrid)%pi0     (1,1,1)  &
+          ,basic_g(ngrid)%dn0     (1,1,1)  &
+          ,basic_g(ngrid)%rv      (1,1,1)  &
+          ,cuparm_g(ngrid)%thsrc  (1,1,1)  &
+          ,cuparm_g(ngrid)%rtsrc  (1,1,1)  &
+          ,grid_g(ngrid)%rtgt     (1,1)    &
+          ,cuparm_g(ngrid)%conprr (1,1), grid_g(ngrid)%flpw(1,1)  )
+
+   endif
+   
+elseif (if_cuinv == 1) then
+   ! Check cumulus inversion tendencies and see if they are usable. If so,
+   !   put in thsrc,rtscr,conprr arrays.
+   call cu_inv_tend(mzp,mxp,myp,ia,iz,ja,jz  &
+                   ,cuparm_g(ngrid)%thsrc(1,1,1)  &
+                   ,cuparm_g(ngrid)%thsrcp(1,1,1)  &
+                   ,cuparm_g(ngrid)%thsrcf(1,1,1)  &
+                   ,cuparm_g(ngrid)%rtsrc(1,1,1)  &
+                   ,cuparm_g(ngrid)%rtsrcp(1,1,1)  &
+                   ,cuparm_g(ngrid)%rtsrcf(1,1,1)  &
+                   ,cuparm_g(ngrid)%conprr (1,1)  &
+                   ,cuparm_g(ngrid)%conprrp (1,1)  &
+                   ,cuparm_g(ngrid)%conprrf (1,1) )
+endif
+   
+
+call accum(mxp*myp*mzp,tend%tht(1),cuparm_g(ngrid)%thsrc(1,1,1)    )
+call accum(mxp*myp*mzp,tend%rtt(1),cuparm_g(ngrid)%rtsrc(1,1,1)    )
+
+call update(mxp*myp,cuparm_g(ngrid)%aconpr(1,1)  &
+                   ,cuparm_g(ngrid)%conprr(1,1)  ,dtlt)
+
+return
+end
 
 !*************************************************************************
 
@@ -235,7 +245,7 @@ do j = j1,j2
     enddo
     conprr(i,j)=0.
     wconmin=wcldbs
-    contim=confrq(1)
+    contim=confrq
 
     lpw = nint(flpw(i,j))
 

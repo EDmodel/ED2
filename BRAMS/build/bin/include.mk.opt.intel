@@ -50,7 +50,9 @@ LIBNCARG=$(BASE)/libncarg-$(UTILS_VERSION).a
 # HDF libraries-------------------------------------------------
 # HDF4 library: Instructions to install: www.cptec.inpe.br/brams
 # If you run "configure" script, you don't need to edit line bellow
-HDF_LIBS=-L.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
+USE_HDF4=0
+HDF4_LIBS=
+#HDF4_LIBS=-L.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
 # --------------------------------------------------------------
 
 # HDF 5  Libraries
@@ -59,10 +61,16 @@ HDF_LIBS=-L.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
 # library files. Make sure you include the zlib.a location too.
 
 # For 64-bit 
+#USE_HDF5=1
+#HDF5_INCS=-I/n/Moorcroft_Lab/Lab/apps/i91/lib -I/n/Moorcroft_Lab/Lab/apps/i91/include
+#HDF5_LIBS=-L/n/Moorcroft_Lab/Lab/apps/i91/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
+#          -L/n/Moorcroft_Lab/Lab/mlongo/util/hdflib/hdf4_64/zlib/lib -lz
+
+# For 32-bit
 USE_HDF5=1
-HDF5_INCS=-I/n/Moorcroft_Lab/Lab/apps/i91/lib -I/n/Moorcroft_Lab/Lab/apps/i91/include
-HDF5_LIBS=-L/n/Moorcroft_Lab/Lab/apps/i91/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
-          -L/n/Moorcroft_Lab/Lab/mlongo/util/hdflib/hdf4_64/zlib/lib -lz
+HDF5_INCS=-I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib -I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/include
+HDF5_LIBS=-L/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
+          -L/n/Moorcroft_Lab/Lab/mlongo/util/hdflib/hdf5_32/zlib/lib -lz
 
 # netCDF libraries ---------------------------------------------
 # If you have netCDF set USENC=1 and type the lib folder
@@ -204,14 +212,14 @@ MOD_EXT=mod
 #Compiler options
 
 # A. Pickiest
-USE_INTERF=0
+#USE_INTERF=0
 #F_OPTS= -FR -O0 -recursive -Vaxlib -static -check all -g -fpe0 -ftz -gen-interfaces \
-    -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
-    -traceback -ftrapuv
+   -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
+   -traceback -ftrapuv
 #C_OPTS= -O0 -DLITTLE -static -g -traceback -debug extended
 #LOADER_OPTS= -FR -O0 -Vaxlib -static -check all -g -fpe0 -ftz -gen-interfaces \
-    -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
-    -traceback -ftrapuv
+   -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
+   -traceback -ftrapuv
 #C_LOADER_OPTS=-v -g -traceback
 
 # B. Pickiest with optimization
@@ -288,7 +296,13 @@ C_LOADER_OPTS=-v -traceback
 #-----------------------------------------------------------------
 
 #---------------LINUX Portland Group pgf77/gcc--------------------
-MPI_PATH=/n/Moorcroft_Lab/Lab/apps/i91
+# 64-bit machine
+#MPI_PATH=/n/Moorcroft_Lab/Lab/apps/i91
+#PAR_INCS=-I$(MPI_PATH)/include
+#PAR_LIBS=-L$(MPI_PATH)/lib -lmpich -lpmpich
+#PAR_DEFS=-DRAMS_MPI
+# 32-bit machine
+MPI_PATH=/n/Moorcroft_Lab/Users/mlongo/util/mpich-1.2.7p1/intel_9.1.036_32
 PAR_INCS=-I$(MPI_PATH)/include
 PAR_LIBS=-L$(MPI_PATH)/lib -lmpich -lpmpich
 PAR_DEFS=-DRAMS_MPI

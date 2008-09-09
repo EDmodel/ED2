@@ -16,7 +16,6 @@ use io_params
 !srf -for carma AOT recycle
   use mem_aerad, only: nwave !INTENT(IN)
 
-use mem_cuparm, only: nclouds ! intent(in)
 implicit none
 
 character(len=128) :: flnm
@@ -66,12 +65,7 @@ do ng=1,ngrids
 	    call rearrange_aot(nwave,nnxp(ng),nnyp(ng)  &
 			 ,scratch%scr1(1),vtab_r(nvars,ng)%var_p)
 
-! Cumulus parameterization variables with profile and spectrum
-         elseif(vtab_r(nvars,ng)%idim_type == 8) then
-            call unarrange_p(nnxp(ng),nnyp(ng),nnzp(ng),nclouds  &
-                         ,scratch%scr1(1),vtab_r(nvars,ng)%var_p)
-
-!use this for leaf 3, horizontal cumulus variables, or 2 dim:
+!use this for leaf 3 or 2 dim:
          else
             call atob(vtab_r(nvars,ng)%npts  &
                      ,scratch%scr1(1),vtab_r(nvars,ng)%var_p)

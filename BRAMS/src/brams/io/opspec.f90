@@ -594,23 +594,8 @@ subroutine opspec3
   use mem_cuparm
   use mem_turb
   use mem_leaf
-  use grell_coms, only:  &
-          closure_type,  & ! INTENT(IN)
-          maxclouds,     & ! INTENT(IN)
-          iupmethod,     & ! INTENT(IN)
-          depth_min,     & ! INTENT(IN)
-          cap_maxs,      & ! INTENT(IN)
-          maxens_lsf,    & ! INTENT(IN)
-          maxens_eff,    & ! INTENT(IN)
-          maxens_dyn,    & ! INTENT(IN)
-          maxens_cap,    & ! INTENT(IN)
-          iupmethod,     & ! INTENT(IN)
-          iupstrm,       & ! INTENT(IN)
-          radius,        & ! INTENT(IN)
-          zkbmax,        & ! INTENT(IN)
-          max_heat,      & ! INTENT(IN)
-          zcutdown,      & ! INTENT(IN)
-          z_detr         ! ! INTENT(IN)
+  use shcu_vars_const, only: shcufrq
+  use mem_grell_param, only: closure_type,icbase,depth_min,cap_maxs
 
   ! TEB_SPM
   use teb_spm_start, only: TEB_SPM ! INTENT(IN)
@@ -622,13 +607,14 @@ subroutine opspec3
   ! Sib
   use sib_vars, only: N_CO2 ! INTENT(IN)
 
-  ![MLO - mass check and exner function check
+  ![MLO - stilt check and exner function check
   use mem_mass, only : iexev, imassflx
+  use shcu_vars_const, only : nnshcu
 
 
   implicit none
 
-  integer :: ip,k,ifaterr,iwarerr,infoerr,ng,ngr,nc
+  integer :: ip,k,ifaterr,iwarerr,infoerr,ng,ngr
   character(len=*), parameter :: h="**(opspec3)**"
 
   ifaterr=0
@@ -650,7 +636,7 @@ subroutine opspec3
   endif
   !##########################################################################
 
-  ! CATT
+  ! CAT
   if (CATT==1) then
      ! Consistency in CATT
      ! Checking the tracers
@@ -658,133 +644,93 @@ subroutine opspec3
         print*, 'FATAL - If using CATT, the variable NADDSC must be >= 4.'
         IFATERR = IFATERR + 1
      endif
-![MLO - make sure that CATT would work. Maybe these aren't strong requirements.
+![MLO - To avoid old-style CATT call
      do ng=1,ngrids
-       if (ndeepest(ng) == 1) then
+       if (nnqparm(ng) == 1) then
          print *, 'FATAL - You cannot run Kuo deep cumulus parameterization closure with CATT.'
-         print *, 'Change ndeepest to 0 (off) or 2 (Grell).'
+         print *, 'Change nnqparm to 0 (off) or 2 (Grell).'
          IFATERR=IFATERR+1
        end if
-       if (nshallowest(ng) == 1) then
+       if (nnshcu(ng) == 1) then
          print *, 'FATAL - You cannot run Souza shallow cumulus parametrization with CATT'
-         print *, 'Change nshallowest to 0 (off) or 2 (Grell).'
+         print *, 'Change nnshcu to 0 (off) or 2 (Grell).'
          IFATERR=IFATERR+1
        end if
-       if (nclouds > 2) then
-         print *, 'FATAL - CATT expects up to two clouds only.'
-         print *, 'Make your NCLOUDS to 1 or 2.'
-         IFATERR=IFATERR+1
-       end if
-     end do
-   end if
-   
-   ! Making sure that there aren't more clouds than the maximum
-   if (nclouds > maxclouds) then
-      print *, 'FATAL - Too many clouds, reduce nclouds'
-      print *, 'Please change your setup for grid ',ng,'...'
-      IFATERR=IFATERR+1
-   end if
-   ! Making sure that there aren't more clouds than the maximum
-   do ng=1,ngrids
-      if (nclouds < 1 .and. nnqparm(ng) > 0) then
-         print *, 'FATAL - You need at least 1 cloud'
-         print *, 'Please change your setup for grid ',ng,'...'
-         IFATERR=IFATERR+1
-      end if
-   end do
-!  Blocking Grell convection without TKE. It should allow though, but force iupmethod to
+!  Blocking Grell convection without TKE. It should allow though, but force icbase to
 ! be one.
-   do ng=1,ngrids
-       if (nclouds > 3 .or. ndeepest(ng) == 2 .or. nshallowest(ng) == 2) then
+       if (nnqparm(ng) == 2 .or. nnshcu(ng) == 2) then
           if (idiffk(ng) == 2 .or. idiffk(ng) == 3) then
             print *, 'FATAL - Grell cumulus requires turbulence scheme with TKE (1,4,5,6,7)'
             print *, 'Please change your setup for grid ',ng,'...'
             IFATERR=IFATERR+1
           end if
        end if
-   end do
-! Checking whether shallow cumulus call frequency is a divisor of deep cumulus call
-  if (any(nnqparm > 0)) then
-     do nc=1,nclouds-1
-        if (mod(confrq(nc),confrq(nc+1)) /= 0.) then
-           print *, 'FATAL - If more than one kind of cloud is used, then all frequencies'
-           print *, '        must be an integer multiple of the smaller clours'
-           print *, '        Deeper= ',confrq(nc),' and Shallower=',confrq(nc+1)
-           IFATERR=IFATERR+1
-        end if
-        if (radius(nc) < radius (nc+1)) then
-           print *, 'FATAL - Cloud radii must be in decreasing sequence'
-           print *, '        Deeper= ',radius(nc),' and Shallower=',radius(nc+1)
-           IFATERR=IFATERR+1
-        end if
      end do
-     do nc=1,nclouds
-        if (iupmethod < 1 .or. iupmethod > 2) then
-            print *, 'FATAL - If Cumulus parameterization is used, iupmethod must be 1 or 2.'
-            print *, 'Yours is currently set to ',iupmethod
-            IFATERR=IFATERR+1
+  endif
+! Checking whether shallow cumulus call frequency is a divisor of deep cumulus call
+  do ng=1,ngrids
+     if (nnshcu(ng) > 0 .and. nnqparm(ng) > 0) then
+        if (mod(confrq,shcufrq) > 0.) then
+           print *, 'FATAL - If both shallow and deep convection are going to be called,'
+           print *, '        Then confrq must be an integer multiple of shcufrq!'
+           print *, '        Confrq= ',confrq,' and shcufrq=',shcufrq
+           IFATERR=IFATERR+1
         end if
-        if (iupstrm < 0 .or. iupstrm > 2) then
-            print *, 'FATAL - If Cumulus parameterization is used, iupstrm must be 0, 1, or 2.'
-            print *, 'Yours is currently set to ',iupstrm
-            IFATERR=IFATERR+1
-        end if
-        if (depth_min(nc) <= 0.) then
-          print *, 'FATAL - depth_min(nc) must be positive.'
-          print *, 'Your is currently set to ',depth_min(nc),' for type ',nc
+     end if
+     if ((nnshcu(ng) == 2 .or. nnqparm(ng) == 2) .and. &
+         (icbase < 1 .or. icbase > 2                  )) then
+         print *, 'FATAL - If Grell parameterization is used, ICBASE must be 1 or 2.'
+         print *, 'Yours is currently set to ',icbase
+         IFATERR=IFATERR+1
+     end if
+     if (nnqparm(ng) == 2) then
+        if (depth_min(1) <= 0.) then
+          print *, 'FATAL - depth_min(1) must be positive when Grell(deep) is activated.'
+          print *, 'Your is currently set to ',depth_min(1)
           IFATERR=IFATERR+1
         end if
-        if (cap_maxs(nc) <= 0.) then
-          print *, 'FATAL - cap_maxs(nc) must be positive when Cuparm is activated.'
-          print *, 'Yours is currently set to ',cap_maxs(1),' for type ',nc
+        if (cap_maxs(1) <= 0.) then
+          print *, 'FATAL - cap_maxs(1) must be positive when Grell(deep) is activated.'
+          print *, 'Yours is currently set to ',cap_maxs(1)
           IFATERR=IFATERR+1
         end if
-        if (zkbmax(nc) <= 0.) then
-          print *, 'FATAL - zkbmax(nc) must be positive when Cuparm is activated.'
-          print *, 'Yours is currently set to ',zkbmax(nc),' for type ',nc
-          IFATERR=IFATERR+1
-        end if
-        if (zcutdown(nc) <= 0.) then
-          print *, 'FATAL - zcutdown(nc) must be positive when Cuparm is activated.'
-          print *, 'Yours is currently set to ',zcutdown(nc),' for type ',nc
-          IFATERR=IFATERR+1
-        end if
-        if (z_detr(nc) <= 0.) then
-          print *, 'FATAL - z_detr(nc) must be positive when Cuparm is activated.'
-          print *, 'Yours is currently set to ',z_detr(nc),' for type ',nc
-          IFATERR=IFATERR+1
-        end if
-        if (max_heat(nc) <= 0.) then
-          print *, 'FATAL - max_heat(nc) must be positive when Cuparm is activated.'
-          print *, 'Yours is currently set to ',max_heat(nc),' for type ',nc
-          IFATERR=IFATERR+1
-        end if
-        select case (closure_type(nc))
-        case ('en','nc','gr','lo','mc','kf','as')
+        select case (closure_type(1))
+        case ('EN','en','En','GR','gr','Gr','LO','lo','Lo','MC','mc','Mc' &
+             ,'SC','sc','Sc','AS','as','As')
           continue
         case default
-          print *, 'FATAL - Invalid closure_type for Grell''s convection.'
-          print *, 'Yours is currently set to ',closure_type(nc)
+          print *, 'FATAL - Invalid closure_type for Grell''s deep convection.'
+          print *, 'Yours is currently set to ',closure_type(1)
           IFATERR=IFATERR+1
         end select
-        if (maxens_lsf(nc) <= 0) then
-          print *, 'FATAL - maxens_lsf(nc) must be positive when Cuparm is activated.'
-          print *, 'Yours is currently set to ',maxens_lsf(nc),' for type ',nc
+     end if
+     if (nnshcu(ng) == 2) then
+        if (depth_min(2) <= 0.) then
+          print *, 'FATAL - depth_min(2) must be positive when Grell(shallow) is activated.'
+          print *, 'Yours is currently set to ',depth_min(2)
           IFATERR=IFATERR+1
         end if
-        if (maxens_eff(nc) <= 0) then
-          print *, 'FATAL - maxens_eff(nc) must be positive when Cuparm is activated.'
-          print *, 'Yours is currently set to ',maxens_eff(nc),' for type ',nc
+        if (cap_maxs(2) <= 0.) then
+          print *, 'FATAL - cap_maxs(1) must be positive when Grell(shallow) is activated.'
+          print *, 'Yours is currently set to ',cap_maxs(2)
           IFATERR=IFATERR+1
         end if
-        if (maxens_cap(nc) <= 0) then
-          print *, 'FATAL - maxens_cap(nc) must be positive when Cuparm is activated.'
-          print *, 'Yours is currently set to ',maxens_cap(nc),' for type ',nc
+        select case (closure_type(2))
+        case ('EN','en','En','GR','gr','Gr','SC','sc','Sc','AS','as','As')
+          continue
+        case ('LO','lo','Lo','MC','mc','Mc')
+          print *, 'FATAL - You chose a closure for shallow convection that is available for deep convection only.'
+          print *, 'Yours is currently set to ',closure_type(2)
           IFATERR=IFATERR+1
-        end if
+        case default
+          print *, 'FATAL - Invalid closure_type for Grell''s shallow convection.'
+          print *, 'Yours is currently set to ',closure_type(2)
+          IFATERR=IFATERR+1
+        end select
+     end if
      
-     end do
-  end if
+  end do
+
   ! SiB
   ! Checking the naddsc variable
   if (isfcl == 3) then
@@ -896,11 +842,28 @@ subroutine opspec3
      endif
   endif
 
-![MLO - Some extra checks for mass and Medvidy's fix on Exner tendency
+![MLO - Some extra checks for STILT and Medvidy's fix on Exner tendency
 ! Complete Exner tendency and vertical coordinate.
   if (iexev == 2 .and. if_adap /= 0) then 
     print *, 'FATAL - IEXEV cannot be set to 2 with adaptive coordinate'
     ifaterr=ifaterr+1 
+  end if
+
+!Need to check if I really need these restrictions...
+!Mass flux  cannot be output with Kuo parameterization
+  if (imassflx == 1 ) then
+    do ng=1, ngrids
+      if (nnqparm(ng) == 1) then
+        print *, 'FATAL - Convective mass flux output cannot be used with Kuo deep cumulus parameterization'
+        print *, 'Switch your nnqparm by either 0 (off) or 2 (Grell).'
+        ifaterr=ifaterr+1
+       end if
+      if (nnshcu(ng) == 1) then
+        print *, 'FATAL - Convective mass flux output cannot be used with Pereira shallow cumulus parameterization'
+        print *, 'Switch your nnshcu by either 0 (off) or 2 (Grell).'
+        ifaterr=ifaterr+1
+       end if
+    end do
   end if
 
   ! Just adding a warning message that cumulus parameterization feedback will be ignored 
@@ -922,7 +885,7 @@ subroutine opspec3
     infoerr = infoerr + 1
   end if
   do ng=1,ngrids
-    if (nnqparm(ng) == 0 .and. icumfdbk == 1 .and. & 
+    if ((nnqparm(ng) == 0 .and. nnshcu(ng) < 2) .and. icumfdbk == 0 .and. & 
         (iswrtyp == 3 .or. ilwrtyp == 3)) then
        print *, '-------------------------------------------------------------------------'
        print *, 'INFO - Cumulus parameterization will have no effect on Harrington scheme '

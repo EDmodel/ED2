@@ -4,7 +4,7 @@
 ! Adapted    by  Alvaro Luiz Fazenda    (for V.5.04)
 !
 !##############################################################
-subroutine souza_cupar_driver()
+subroutine SHCUPA()
 
   ! USE Modules for 5.0
   use mem_basic
@@ -22,47 +22,64 @@ subroutine souza_cupar_driver()
        I0,                    &   ! INTENT(IN)  ! Rever função
        J0                         ! INTENT(IN)  ! Rever função
 
-  use mem_cuparm, only : confrq,cuparm_g,nclouds,cptime       ! INTENT(IN)
+  use mem_shcu ! USE Module for Shallow Cumulus
+
+  use shcu_vars_const, only : SHCUFRQ       ! INTENT(IN)
 
   implicit none
 
   ! INCLUDE 'rcommons.h' ! Not necessary in V.5.04
   !      INCLUDE 'rnode.h'  ! Not necessary in V.5.x
 
+  real    :: CPTIME = 7200.
+
   integer :: I, J
-  integer :: icld
+
 !  TFZMIN = turb_g(ngrid)%sflux_t(1,1)
 !  TFZMAX = turb_g(ngrid)%sflux_t(1,1)
-  icld = nclouds ! Just to make it similar to other methods
 
+
+  if(TIME.eq.0.)then
+     call AZERO(mxp*myp*mzp,shcu_g(ngrid)%THSRCSH(1,1,1))
+     call AZERO(mxp*myp*mzp,shcu_g(ngrid)%RTSRCSH(1,1,1))
+     call AZERO(mxp*myp,shcu_g(ngrid)%SHMF(1,1))
+  endif
   !
 
-  call AZERO(mxp*myp*mzp,cuparm_g(ngrid)%thsrc(1,1,1,icld))
-  call AZERO(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(1,1,1,icld))
-  call AZERO(mxp*myp,cuparm_g(ngrid)%upmf(1,1,icld))
+  if(INITIAL.eq.2.and.TIME.lt.CPTIME-dtlt)return
 
-  call SHCUPAR(mzp,mxp,myp,ia,iz,ja,jz,i0,j0,                   &
-       basic_g(ngrid)%wp(1,1,1), basic_g(ngrid)%theta(1,1,1),   &
-       basic_g(ngrid)%pp(1,1,1), basic_g(ngrid)%pi0(1,1,1),     &
-       basic_g(ngrid)%dn0(1,1,1), basic_g(ngrid)%rv(1,1,1),     &
-       cuparm_g(ngrid)%thsrc(1,1,1,icld),                       &
-       cuparm_g(ngrid)%rtsrc(1,1,1,icld),                       &
-       cuparm_g(ngrid)%upmf(1,1,icld), grid_g(ngrid)%rtgt(1,1), &
-       turb_g(ngrid)%sflux_t(1,1),                              & 
-       turb_g(ngrid)%sflux_r(1,1),                              &
-       turb_g(ngrid)%vkh(1,1,1),                                &
-       micro_g(ngrid)%rcp(1,1,1))
+  !IF(MOD(TIME+DTLT+.001,CONFRQ).LE.DTLT.OR.time.LT..01)THEN
+  ! Using SHCUFRQ instead CONFRQ
+  if(mod(TIME+DTLT+.001,dble(SHCUFRQ)).le.DTLT.or.time.lt..01)then
 
-       ! turb_g()%vkh     == vkkh
-       ! turb_g()%sflux_r == QFZ
-       ! turb_g()%sflux_t == TFZ
-       ! micro_g()%rcp    == rcp
+     call AZERO(mxp*myp*mzp,shcu_g(ngrid)%THSRCSH(1,1,1))
+     call AZERO(mxp*myp*mzp,shcu_g(ngrid)%RTSRCSH(1,1,1))
+     call AZERO(mxp*myp,shcu_g(ngrid)%SHMF(1,1))
 
-  call ACCUM(mxp*myp*mzp, tend%tht(1), cuparm_g(ngrid)%thsrc(1,1,1,icld))
-  call ACCUM(mxp*myp*mzp, tend%tht(1), cuparm_g(ngrid)%rtsrc(1,1,1,icld))
+     call SHCUPAR(mzp,mxp,myp,ia,iz,ja,jz,i0,j0,                   &
+          basic_g(ngrid)%wp(1,1,1), basic_g(ngrid)%theta(1,1,1),   &
+          basic_g(ngrid)%pp(1,1,1), basic_g(ngrid)%pi0(1,1,1),     &
+          basic_g(ngrid)%dn0(1,1,1), basic_g(ngrid)%rv(1,1,1),     &
+          shcu_g(ngrid)%THSRCSH(1,1,1),                            &
+          shcu_g(ngrid)%RTSRCSH(1,1,1),                            & 
+          shcu_g(ngrid)%SHMF(1,1), grid_g(ngrid)%rtgt(1,1),        &
+          turb_g(ngrid)%sflux_t(1,1),                              & 
+          turb_g(ngrid)%sflux_r(1,1),                              &
+          turb_g(ngrid)%vkh(1,1,1),                                &
+          micro_g(ngrid)%rcp(1,1,1))
+
+          ! turb_g()%vkh     == vkkh
+          ! turb_g()%sflux_r == QFZ
+          ! turb_g()%sflux_t == TFZ
+          ! micro_g()%rcp    == rcp
+
+  endif
+
+  call ACCUM(mxp*myp*mzp, tend%tht(1), shcu_g(ngrid)%THSRCSH(1,1,1))
+  call ACCUM(mxp*myp*mzp, tend%tht(1), shcu_g(ngrid)%RTSRCSH(1,1,1))
 
   return
-end subroutine souza_cupar_driver
+end subroutine SHCUPA
 
 !##############################################################
 subroutine SHCUPAR(m1,m2,m3,ia,iz,ja,jz,i0,j0,                 &

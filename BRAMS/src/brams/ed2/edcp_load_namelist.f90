@@ -115,7 +115,6 @@ subroutine read_ednl(iunit)
      write(*,*) "iphenyff=",iphenyff
      write(*,*) "iedcnfgf=",iedcnfgf
      write(*,*) "phenpath =",phenpath 
-     stop
      call abort_run('Error reading namelist, ED2_INFO block.' &
           ,'read_ednl','ed_load_namelist.f90')
   end if

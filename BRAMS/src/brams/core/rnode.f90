@@ -109,7 +109,6 @@ subroutine rams_node()
 
   call init_fields(1)
 
-
   isendflg=0
   isendlite = 0
   isendmean = 0
@@ -191,6 +190,7 @@ subroutine rams_node()
 
      endif
 
+
      !    Receive message from master containing ISENDFLG, new dt's, etc.
 
      ! ALF
@@ -222,7 +222,7 @@ subroutine rams_node()
      !------------------------------------------------------------------------
      !                  Loop through all grids and advance a 'DTLONG' timestep.
      !-------------------------------------------------------------------------
-     
+
      !                  Start the timestep schedule
 
      do npass=1,nsubs
@@ -232,6 +232,7 @@ subroutine rams_node()
         call newgrid(ngrid)
 
         call node_index()
+
         !---------------------------------------------------------------------
         !         Advance this grid forward by the appropriate timestep.
 
@@ -242,6 +243,7 @@ subroutine rams_node()
         call timestep()
 
         ngbegun(ngrid)=1
+
         !---------------------------------------------------------------------
         !---------------------------------------------------------------------
         !---------------------------------------------------------------------
@@ -283,6 +285,7 @@ subroutine rams_node()
         !---------------------------------------------------------------------
 
      enddo
+
      !------------------------------------------------------------------------
      !        Also, average each of the analysis variables over time
      do ngrid=1,ngrids
@@ -311,6 +314,7 @@ subroutine rams_node()
      totcpu=totcpu+t6-t1
 
      call node_putcflcpu(t6-t1,w6-w1)
+
      ! Receiveing CFL to Recalculate DeltaT if necessary
      if (ideltat < 0) then
         call node_getcflmax()
@@ -338,11 +342,6 @@ subroutine rams_node()
         call node_sendanl('BOTH')
         call MPI_Barrier(MPI_COMM_WORLD,ierr)
      endif
-
-
-
-     call ed_timestep(begtime,dtlongn(1))
-
      !------------------------------------------------------------------------
      !                   Update main time variable by a long timestep.
 
@@ -360,6 +359,7 @@ subroutine init_params(init)
   use node_mod
   use mem_oda
   use mem_radiate, only: ISWRTYP, ILWRTYP ! Intent(in)
+  use mem_leaf, only: isfcl
 
   implicit none
 
@@ -375,7 +375,8 @@ subroutine init_params(init)
   call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
   call nodeget_processid(init)
-  call nodeget_nl
+  call nodeget_nl()
+  if (isfcl == 5) call nodeget_ednl(master_num)
   call nodeget_gridinit
   if (ibnd .eq. 4 .or. jbnd .eq. 4) then
      call ipaths_cyc_alloc(nnxp(1),nnyp(1),ibnd,jbnd)
@@ -413,17 +414,13 @@ subroutine init_fields(init)
 
   !          Initialize surface constants.
   !          -------------------------------------------------------
-
   if(init == 1) then
      ! ALF - For use with SiB
-
      if (isfcl <= 2) then
         call sfcdata
-
      elseif (isfcl == 3) then
         call sfcdata_sib_driver
      endif
-     
   endif
 
   !          Get all necessary fields from master.
@@ -435,8 +432,6 @@ subroutine init_fields(init)
   if (isfcl == 5 .and. init.eq.1) then
      call node_ed_init
   endif
-  
-
 
   !     Can we use existing memory for the nesting communication buffers?
   !       If not, allocate new buffers or compute buffer sizes.

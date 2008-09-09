@@ -10,7 +10,6 @@ subroutine inithis()
 
   use var_tables
   use an_header
-  use mem_cuparm, only: nclouds
   use mem_basic
   use mem_grid
   use rconstants
@@ -21,7 +20,7 @@ subroutine inithis()
 
   implicit none
 
-  integer :: ngrids1,ioutput1,nzg1,nzs1,npatch1,nclouds1
+  integer :: ngrids1,ioutput1,nzg1,nzs1,npatch1
   real(kind=8) :: time1
   real :: ztop1
   integer, allocatable, dimension(:) :: nnxp1,nnyp1,nnzp1
@@ -66,7 +65,6 @@ subroutine inithis()
   ie=cio_i_sca(iunhd,1,'npatch',npatch1,1)
   ie=cio_i_sca(iunhd,1,'nzg',nzg1,1)
   ie=cio_i_sca(iunhd,1,'nzs',nzs1,1)
-  ie=cio_i_sca(iunhd,1,'nclouds',nclouds1,1)
   ie=cio_i_sca(iunhd,1,'ioutput',ioutput1,1)
   ie=cio_f8_sca(iunhd,1,'time',time1,1)
   ie=cio_f_sca(iunhd,1,'ztop',ztop1,1)
@@ -102,7 +100,6 @@ subroutine inithis()
   maxz1=0
   do ngr=1,ngrids1
      maxarr=max(maxarr,nnxp1(ngr)*nnyp1(ngr)*nnzp1(ngr)  &
-          ,nnxp1(ngr)*nnyp1(ngr)*nnzp1(ngr)*nclouds1 &
           ,nnxp1(ngr)*nnyp1(ngr)*nzg1*npatch1 &
           ,nnxp1(ngr)*nnyp1(ngr)*nzs1*npatch1)
      maxarr2=max(maxarr2,nnxp1(ngr)*nnyp1(ngr))
@@ -316,35 +313,6 @@ subroutine inithis()
                    ,1,ngr,vtab_r(nv,1)%name,6)
               call patch_land_unaverage(1,nnxp(1),nnyp(1),npatch  &
                    ,scr3(1),vtab_r(nv,1)%var_p)
-
-           elseif (vtab_r(nv,1)%idim_type == 8) then
-              call hi_interp(nnzp1(ngr),nnxp1(ngr),nnyp1(ngr),nclouds,scr(1)  &
-                   ,xmn1(1,ngr),xtn1(1,ngr)  &
-                   ,ymn1(1,ngr),ytn1(1,ngr)  &
-                   ,zmn1(1,ngr),ztn1(1,ngr)  &
-                   ,platn1(ngr),plonn1(ngr)  &
-                   ,topt1(1,ngr),ztop1  &
-                   ,nnzp(1),nnxp(1),nnyp(1),nclouds  &
-                   ,vtab_r(nv,1)%var_p  &
-                   ,1,ngr,vtab_r(nv,1)%name,8)
-
-           elseif (vtab_r(nv,1)%idim_type == 9 .and.         &
-                hr_table(nvh)%string /= 'XIERR'  .and.   &
-                hr_table(nvh)%string /= 'XJMIN'  .and.   &
-                hr_table(nvh)%string /= 'XJMIN'  .and.   &
-                hr_table(nvh)%string /= 'XK22'   .and.   &
-                hr_table(nvh)%string /= 'XKBCON' .and.   &
-                hr_table(nvh)%string /= 'XKTOP' ) then
-              call hi_interp(1,nnxp1(ngr),nnyp1(ngr),nclouds,scr(1)  &
-                   ,xmn1(1,ngr),xtn1(1,ngr)  &
-                   ,ymn1(1,ngr),ytn1(1,ngr)  &
-                   ,zmn1(1,ngr),ztn1(1,ngr)  &
-                   ,platn1(ngr),plonn1(ngr)  &
-                   ,topt1(1,ngr),ztop1  &
-                   ,1,nnxp(1),nnyp(1),1  &
-                   ,vtab_r(nv,1)%var_p  &
-                   ,nclouds,ngr,vtab_r(nv,1)%name,9)
-
            endif
            exit         
         endif
@@ -659,9 +627,9 @@ subroutine hi_interp(n1,n2,n3,n4,vn,xm1,xt1,ym1,yt1,zm1,zt1  &
               vm(1:m1,i,j,np)=vctr10(1:m1)
            elseif (idim == 2) then
               vm(1,i,j,np)=vctr1(1)
-           elseif (idim == 4 .or. idim == 5 .or. idim == 8) then
+           elseif (idim == 4 .or. idim == 5) then
               vm(1:m1,i,j,np)=vctr1(1:m1)
-           elseif (idim == 6 .or. idim == 9) then
+           elseif (idim == 6) then
               vm(1,i,j,np)=vctr1(1)
            endif
 

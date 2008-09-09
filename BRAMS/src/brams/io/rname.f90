@@ -11,28 +11,16 @@ subroutine NAMEOUT
 
   use mem_all
   
-  ! For mass
+  ! For STILT
   use mem_mass, only : iexev, imassflx
 
+  ! For Shallow Cumulus
+  use shcu_vars_const, only : nnshcu,  & ! INTENT(IN)
+       shcufrq                           ! INTENT(IN)
 
   ! For Grell Paramet.
-  use grell_coms, only:  &
-          closure_type,  & ! INTENT(IN)
-          maxclouds,     & ! INTENT(IN)
-          iupmethod,     & ! INTENT(IN)
-          depth_min,     & ! INTENT(IN)
-          cap_maxs,      & ! INTENT(IN)
-          maxens_lsf,    & ! INTENT(IN)
-          maxens_dyn,    & ! INTENT(IN)
-          maxens_eff,    & ! INTENT(IN)
-          maxens_cap,    & ! INTENT(IN)
-          iupmethod,     & ! INTENT(IN)
-          iupstrm,       & ! INTENT(IN)
-          radius,        & ! INTENT(IN)
-          zkbmax,        & ! INTENT(IN)
-          max_heat,      & ! INTENT(IN)
-          zcutdown,      & ! INTENT(IN)
-          z_detr         ! ! INTENT(IN)
+  use mem_grell_param, only : CLOSURE_TYPE, & ! INTENT(IN)
+                              icbase,depth_min,cap_maxs
 
   ! For Soil Moisture Init.
   use mem_soil_moisture, only : SOIL_MOIST,  & ! INTENT(IN)
@@ -81,27 +69,14 @@ subroutine NAMEOUT
 
 
   write(6,102)(' ',NSTRATY(NG),IDIFFK(NG),NNDTRAT(NG)  &
-       ,NINEST(NG),NG=1,NGRIDS)
+       ,NNQPARM(NG),NINEST(NG),NG=1,NGRIDS)
 
-  write(*,fmt='(a,10(1x,i5))')   'NNQPARM      = ',nnqparm
-  write(*,fmt='(a,1x,i5)')       'NCLOUDS      = ',iupmethod
-  write(*,fmt='(a,10(1x,i5))')   'NDEEPEST     = ',ndeepest
-  write(*,fmt='(a,10(1x,i5))')   'NSHALLOWEST  = ',nshallowest
-  write(*,fmt='(a,1x,f8.5)')       'WCLDBS       = ',wcldbs
-  write(*,fmt='(a,10(1x,f8.2))') 'CONFRQ       = ',confrq
-  write(*,fmt='(a,10(1x,f8.2))') 'CPTIME       = ',cptime
-  write(*,fmt='(a,1x,i5)')       'IUPMETHOD    = ',iupmethod
-  write(*,fmt='(a,1x,i5)')       'IUPSTRM      = ',iupstrm  
-  write(*,fmt='(a,10(1x,f8.2))') 'RADIUS       = ',radius
-  write(*,fmt='(a,10(1x,f8.2))') 'DEPTH_MIN    = ',depth_min
-  write(*,fmt='(a,10(1x,f8.2))') 'CAP_MAXS     = ',cap_maxs
-  write(*,fmt='(a,10(1x,f8.2))') 'ZKBMAX       = ',zkbmax  
-  write(*,fmt='(a,10(1x,f8.2))') 'ZCUTDOWN     = ',zcutdown
-  write(*,fmt='(a,10(1x,f8.2))') 'Z_DETR       = ',z_detr
-  write(*,fmt='(11(a,1x))')      'CLOSURE_TYPE = ',closure_type
-  write(*,fmt='(a,10(1x,i5))')   'MAXENS_LSF   = ',maxens_lsf
-  write(*,fmt='(a,10(1x,i5))')   'MAXENS_EFF   = ',maxens_eff
-  write(*,fmt='(a,10(1x,i5))')   'MAXENS_CAP   = ',maxens_cap
+  write(*,fmt='(3(a,1x))')      'CLOSURE_TYPE (for Grell Param.)= ',CLOSURE_TYPE
+  write(*,fmt='(a,1x,i5)')      'ICBASE (for Grell Param.)      = ',icbase
+  write(*,fmt='(a,3(1x,f8.2))') 'DEPTH_MIN (for Grell Param.)   = ',depth_min
+  write(*,fmt='(a,3(1x,f8.2))') 'CAP_MAXS (for Grell Param.)    = ',cap_maxs
+  
+  write(6,999) (' ', NNSHCU(NG), NG=1, NGRIDS)  ! For Shallow Cumulus Param.
 
   write(6,103)(' ',NJNEST(NG),NKNEST(NG),NNSTTOP(NG)  &
        ,NNSTBOT(NG),ITOPTFLG(NG),NG=1,NGRIDS)
@@ -111,8 +86,9 @@ subroutine NAMEOUT
 101 format(A1,'   NNXP=',I4,'       NNYP=',I4,'       NNZP=',I4  &
        ,'    NXTNEST=',I4,'    NSTRATX=',I4,999(A1,/,I13,4I16))
 102 format(A1,'NSTRATY=',I4,'     IDIFFK=',I4,'    NNDTRAT=',I4  &
-       ,'     NINEST=',I4,999(A1,/,I13,4I16))
+       ,'    NNQPARM=',I4,'     NINEST=',I4,999(A1,/,I13,4I16))
 
+999 format(A1,' NNSHCU=',I4,999(A1,/,I13))  ! For Shallow Cumulus Param.
 
 103 format(A1,' NJNEST=',I4,'     NKNEST=',I4,'    NNSTTOP=',I4  &
        ,'    NNSTBOT=',I4,'   ITOPTFLG=',I4,999(A1,/,I13,4I16))
@@ -125,8 +101,8 @@ subroutine NAMEOUT
   write(6,203)IUPDSST,IZFLAT,IMPL,ICORFLG,NSLCON,IBND
   write(6,204)JBND,LSFLG,NFPT,IDELTAT,ISWRTYP,ILWRTYP,ICUMFDBK
 
-![MLO - Adding ED2 and mass variables: 
-! mass:
+![MLO - Adding ED2 and STILT variables: 
+! STILT:
   write(6,298) IEXEV,IMASSFLX
 ! ED2:
   write(6,205)LONRAD,IMONTHA,IDATEA,IYEARA,ITIMEA,ISFCL
@@ -191,7 +167,9 @@ subroutine NAMEOUT
   write(6,405)POLELAT,POLELON,DELTAZ
   write(6,406)DZRAT,DZMAX,SSPCT
   write(6,407)CPHAS,DISTIM,RADFRQ
-  write(6,409)WCLDBS
+  write(6,408)CONFRQ,WCLDBS
+
+  write(6,409)SHCUFRQ  ! For Shallow Cumulus
 
   write(6,410)PCTLCON,ZROUGH,ALBEDO
   write(6,411)SEATMP,DTHCON,DRTCON
@@ -213,8 +191,9 @@ subroutine NAMEOUT
        ,'          SSPCT=',E12.5)
 407 format('    CPHAS=',E12.5,'         DISTIM=',E12.5  &
        ,'         RADFRQ=',E12.5)
-409 format('   WCLDBS=',E12.5)
+408 format('   CONFRQ=',E12.5,'         WCLDBS=',E12.5)
 
+409 format('   SHCUFRQ=',E12.5)  ! For Shallow Cumulus
 
 410 format('  PCTLCON=',E12.5,'         ZROUGH=',E12.5  &
        ,'         ALBEDO=',E12.5)

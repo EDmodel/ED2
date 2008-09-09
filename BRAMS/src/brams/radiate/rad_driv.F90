@@ -27,7 +27,7 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
   ! CATT
   !kmlnew
   use micphys     , only: gnu,level,icloud,irain,ipris,isnow,iaggr,igraup,ihail
-  use mem_cuparm  , only: cuparm_g,nnqparm,nclouds
+  use mem_cuparm  , only: cuparm_g, cuparm_g_sh, nnqparm
   !kmlnew
   use rad_carma   , only: radcomp_carma
   use catt_start  , only: catt           ! intent(in)
@@ -39,6 +39,8 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
        tebc_g
        
   !MLO - For the new deal with parameterized clouds in Harrington
+  use mem_grell,       only : grell_g
+  use mem_shcu,        only : shcu_g
   use shcu_vars_const, only : nnshcu
 
   implicit none
@@ -53,7 +55,7 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
   real, dimension(mxp,myp)     :: rain
   real :: dummy
   integer :: ncall = 0
-  integer :: i,j,k,icld
+  integer :: i,j,k
   real :: max_albedt,max_rlongup
   !kmlnew
   real                 :: time_rfrq
@@ -62,11 +64,14 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
   !
 
   !MLO - Pointers to ease the Harrington radiation call:
-  real, pointer, dimension(:,:,:)   :: ha_rcp,ha_rrp,ha_rpp,ha_rsp,ha_rap,ha_rgp,ha_rhp &
-                                      ,ha_ccp,ha_crp,ha_cpp,ha_csp,ha_cap,ha_cgp,ha_chp
-  real, pointer, dimension(:,:,:,:) :: parm_rcp
-  real, allocatable, target, dimension(:,:,:,:) :: dumzero4d
-  real, allocatable, target, dimension(:,:,:)   :: dumzero3d
+  real, pointer, dimension(:,:,:) :: ha_rcp,ha_rrp,ha_rpp,ha_rsp,ha_rap,ha_rgp,ha_rhp &
+                                    ,ha_ccp,ha_crp,ha_cpp,ha_csp,ha_cap,ha_cgp,ha_chp
+  real, pointer, dimension(:,:)   :: parm_rain,parm_xkbcon,parm_xjmin,parm_dnmf
+  real, pointer, dimension(:,:,:) :: parm_rtsrc,parm_rtsrc_sh
+  real, allocatable, target, dimension(:,:,:) :: dumzero3d
+  real, allocatable, target, dimension(:,:)   :: dumzero2d
+
+  logical :: grell_on
 
   ! interface necessary to use pointer as argument - teb_spm
 #if USE_INTERF
@@ -106,10 +111,11 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
   !MLO - Nullifying the pointers for Harrington/Bulk microphysics interface
   nullify(ha_rcp,ha_rrp,ha_rpp,ha_rsp,ha_rap,ha_rgp,ha_rhp &
          ,ha_ccp,ha_crp,ha_cpp,ha_csp,ha_cap,ha_cgp,ha_chp &
-         ,parm_rcp)
-  allocate(dumzero3d(mzp,mxp,myp),dumzero4d(mzp,mxp,myp,nclouds))
+         ,parm_rain,parm_xkbcon,parm_xjmin,parm_dnmf       &
+         ,parm_rtsrc,parm_rtsrc_sh)
+  allocate(dumzero3d(mzp,mxp,myp),dumzero2d(mxp,myp))
   call azero(mzp*mxp*myp,dumzero3d)
-  call azero(mzp*mxp*myp*nclouds,dumzero4d)
+  call azero(mxp*myp,dumzero2d)
 
   ! teb_spm
   if (teb_spm==1) then
@@ -192,13 +198,10 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
            call azero(mzp*mxp*myp,iwl) ! not used with level 2 - putting zeros
 
            if (nnqparm(ngrid) > 0) then
-              rain(i,j)=0.
-              do icld=1,nclouds
+              do i=ia,iz
                  do j=ja,jz
-                    do i=ia,iz
-                       ! conv  precip at mm/h
-                       rain(i,j)= rain(i,j)+cuparm_g(ngrid)%conprr(i,j,icld)
-                    enddo
+                    ! conv  precip at mm/h
+                    rain(i,j)= cuparm_g(ngrid)%conprr(i,j)
                  enddo
               enddo
            endif
@@ -206,16 +209,13 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
         elseif (level >= 3) then
 
            if (nnqparm(ngrid) > 0) then
-              rain(i,j)=micro_g(ngrid)%pcpg(i,j)
-              do icld=1,nclouds
+              do i=ia,iz
                  do j=ja,jz
-                    do i=ia,iz
-                       ! conv + explic  precip at mm/h
-                       rain(i,j)= rain(i,j) + cuparm_g(ngrid)%conprr(i,j,icld)
-                    enddo
+                    ! conv + explic  precip at mm/h
+                    rain(i,j)= (cuparm_g(ngrid)%conprr(i,j) + &
+                         micro_g(ngrid)%pcpg(i,j)) * 3600.
                  enddo
-              end do
-              rain(i,j)=rain(i,j) * 3600.
+              enddo
            endif
            
            call azero2(mzp*mxp*myp,lwl,iwl)
@@ -349,7 +349,13 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
         ha_cgp        => dumzero3d
         ha_chp        => dumzero3d
 
-        parm_rcp      => dumzero4d
+        parm_rain     => dumzero2d
+        parm_xkbcon   => dumzero2d
+        parm_xjmin    => dumzero2d
+        parm_dnmf     => dumzero2d
+        
+        parm_rtsrc    => dumzero3d
+        parm_rtsrc_sh => dumzero3d
 
         ! Now I check whether condensation is allowed. If so, I repoint to the actual arrays.
         if (level >= 2) then
@@ -372,13 +378,32 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
            if (ihail  == 5) ha_chp => micro_g(ngrid)%chp
         end if
 ! MLO - Now I'm going to add the effects of parameterized rain in the radiation.
-!       The way I'm going to do this is by assuming that all available cloud due to 
-!       updrafts were liquid droplets. 
+!       The way I'm going to do this is by drawing a very stupid cloud, which
+!       contains rain drops between the cloud base and level of origin of downdrafts, and 
+!       cloud droplets wherever rtsrc is greater than zero. Yes, you are right, these clouds 
+!       don't even have ice particles, but, come on, they didn't even exist until the last revision...
+!       Here is the shopping section. The values were already set up as zeroes, so they will only be 
+!       reset if the feature is available.
+! 1. Getting the precipitation rate (which will be magically transformed into rain drops);
+! 2. Getting the moistening rate (which will be magically transformed into cloud droplets);
         if (nnqparm(ngrid) > 0) then
-          parm_rcp => cuparm_g(ngrid)%cupcond
+          parm_rain  => cuparm_g(ngrid)%conprr
+          parm_rtsrc => cuparm_g(ngrid)%rtsrc
         end if
-        call harr_raddriv(mzp,mxp,myp,nclouds,ngrid,if_adap,time,dtlt,ia,iz,ja,jz,nadd_rad           &
-             ,iswrtyp,ilwrtyp,icumfdbk                                                       &
+        if (nnshcu(ngrid) == 1) then
+          parm_rtsrc_sh => shcu_g(ngrid)%rtsrcsh
+        elseif (nnshcu(ngrid) == 2) then
+          parm_rtsrc_sh => cuparm_g_sh(ngrid)%rtsrc
+        end if
+! 3. If I am using Grell scheme, I also provide the cloud base, level of origin of downdrafts and
+!    the downdraft mass flux (just to find a typical value for convective downdrafts)
+        grell_on = nnqparm(ngrid) == 2
+        if (grell_on) then
+          parm_xkbcon => grell_g(ngrid)%xkbcon
+          parm_xjmin  => grell_g(ngrid)%xjmin
+          parm_dnmf   => grell_g(ngrid)%dnmf
+        end if
+        call harr_raddriv(mzp,mxp,myp,ngrid,if_adap,ia,iz,ja,jz,nadd_rad,iswrtyp,ilwrtyp,icumfdbk    &
              ,grid_g(ngrid)%flpw            (1,1  )  ,grid_g(ngrid)%topt            (1,1)    &
              ,grid_g(ngrid)%glat            (1,1  )  ,grid_g(ngrid)%rtgt            (1,1  )  &
              ,basic_g(ngrid)%pi0            (1,1,1)  ,basic_g(ngrid)%pp             (1,1,1)  &
@@ -395,11 +420,14 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
              ,ha_ccp                        (1,1,1)  ,ha_crp                        (1,1,1)  &
              ,ha_cpp                        (1,1,1)  ,ha_csp                        (1,1,1)  &
              ,ha_cap                        (1,1,1)  ,ha_cgp                        (1,1,1)  &
-             ,ha_chp                        (1,1,1)  ,parm_rcp                    (1,1,1,1)  &
-             ,mynum                                  )
+             ,ha_chp                        (1,1,1)  ,parm_rain                     (1,1)    &
+             ,parm_xkbcon                   (1,1)    ,parm_xjmin                    (1,1)    &
+             ,parm_dnmf                     (1,1)    ,parm_rtsrc                    (1,1,1)  &
+             ,parm_rtsrc_sh                 (1,1,1)  &
+             ,grell_on                               ,mynum                                  )
      end if
   end if
-  deallocate(dumzero4d,dumzero3d)
+  deallocate(dumzero2d,dumzero3d)
   return
 end subroutine radiate
 
@@ -516,10 +544,7 @@ subroutine radprep(m2,m3,mzg,mzs,np,ia,iz,ja,jz,iswrtyp,ilwrtyp,             &
                  l_alb_town  => alb_town(i,j)
                  l_ts_town   => ts_town(i,j)
               endif
-                      
-	      !Output - albedt,rlongup
-	
-      
+                            
               call sfcrad(mzg,mzs,ip               &
                    ,soil_energy    (:,i,j,ip) ,soil_water      (:,i,j,ip)  &
                    ,soil_text      (:,i,j,ip) ,sfcwater_energy (:,i,j,ip)  &
