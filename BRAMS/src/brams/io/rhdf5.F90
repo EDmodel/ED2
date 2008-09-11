@@ -7,8 +7,7 @@ subroutine anlhdf(vtype)
   use an_header
   use var_tables
   use grid_dims,only : maxgrds
-  use mem_aerad, only: nwave
-  use mem_cuparm, only: nclouds
+  use mem_aerad, ONLY: nwave
 
   use mem_grid
   use io_params
@@ -138,16 +137,16 @@ subroutine anlhdf(vtype)
               dsetrank    = 3
               
            case(4)    !  2-D w/ soil,patches
-              datadims(1) = nzg
-              datadims(2) = nnxp(ngr)
-              datadims(3) = nnyp(ngr)
+              datadims(1) = nnxp(ngr)
+              datadims(2) = nnyp(ngr)
+              datadims(3) = nzg
               datadims(4) = npatch
               dsetrank    = 4
               
            case(5)    !  2-D w/ snow,patches
-              datadims(1) = nzs
-              datadims(2) = nnxp(ngr)
-              datadims(3) = nnyp(ngr)
+              datadims(1) = nnxp(ngr)
+              datadims(2) = nnyp(ngr)
+              datadims(3) = nzs
               datadims(4) = npatch
               dsetrank    = 4
               
@@ -163,19 +162,11 @@ subroutine anlhdf(vtype)
               datadims(3) = nwave
               dsetrank    = 3
               
-           case (8)   !   3-D with cloud spectrum
-              datadims(1) = nnzp(ngr)
-              datadims(2) = nnxp(ngr)
-              datadims(3) = nnyp(ngr)
-              datadims(4) = nclouds
-              dsetrank    = 4
-              
-           case (9)   !   2-D with cloud spectrum
+           case (8)   !   2-D w/soil
               datadims(1) = nnxp(ngr)
               datadims(2) = nnyp(ngr)
-              datadims(3) = nclouds
+              datadims(3) = nzg
               dsetrank    = 3
-
            end select
            
            !   Create a dataspace

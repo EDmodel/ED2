@@ -45,28 +45,17 @@ subroutine masterput_nl(master_num)
   use mem_all
   use rpara
 
-  use mem_mass          , only : iexev,        & ! intent(in)
-                                  imassflx        ! intent(in)
-  use grell_coms, only:  &
-          closure_type,  & ! INTENT(IN)
-          maxclouds,     & ! INTENT(IN)
-          iupmethod,     & ! INTENT(IN)
-          depth_min,     & ! INTENT(IN)
-          cap_maxs,      & ! INTENT(IN)
-          maxens_lsf,    & ! INTENT(IN)
-          maxens_dyn,    & ! INTENT(IN)
-          maxens_eff,    & ! INTENT(IN)
-          maxens_cap,    & ! INTENT(IN)
-          iupmethod,     & ! INTENT(IN)
-          iupstrm,       & ! INTENT(IN)
-          radius,        & ! INTENT(IN)
-          zkbmax,        & ! INTENT(IN)
-          max_heat,      & ! INTENT(IN)
-          zcutdown,      & ! INTENT(IN)
-          z_detr         ! ! INTENT(IN)
+  use shcu_vars_const    , only : shcufrq,      & ! intent(in)
+                                  nnshcu          ! intent(in)
+  ! For Grell Paramet    .
+  use mem_grell_param    , only : CLOSURE_TYPE, & ! intent(in)
+                                  icbase,depth_min,cap_maxs,maxiens
   ! For SIB
   use sib_vars           , only : N_CO2,        & ! intent(in)
                                   CO2_INIT        ! intent(in)
+  !For Mass flux
+  use mem_mass           , only : iexev,        & ! intent(in)
+                                  imassflx        ! intent(in)
   ! CATT
   use catt_start         , only : CATT            ! intent(in)
   use mem_globrad        , only : RADDATFN        ! intent(in)
@@ -225,29 +214,16 @@ subroutine masterput_nl(master_num)
 
   call MPI_Bcast(NADDSC,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
-
-  call MPI_Bcast(NNQPARM,MAXGRDS,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(NCLOUDS,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(NDEEPEST,MAXGRDS,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(NSHALLOWEST,MAXGRDS,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(WCLDBS,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(CONFRQ,MAXCLOUDS,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(CPTIME,MAXCLOUDS,MPI_DOUBLE_PRECISION,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(IUPMETHOD,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(IUPSTRM,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(RADIUS,MAXCLOUDS,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(DEPTH_MIN,MAXCLOUDS,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr) 
-  call MPI_Bcast(CAP_MAXS,MAXCLOUDS,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr) 
-  call MPI_Bcast(ZKBMAX,MAXCLOUDS,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)   
-  call MPI_Bcast(ZCUTDOWN,MAXCLOUDS,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr) 
-  call MPI_Bcast(Z_DETR,MAXCLOUDS,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)   
-  call MPI_Bcast(MAX_HEAT,MAXCLOUDS,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr) 
-  do nm=1,maxclouds
-     call MPI_Bcast(CLOSURE_TYPE(nm),2,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr) 
+  call MPI_Bcast(NNQPARM,MAXGRDS,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr) 
+  do nm=1,maxiens
+    call MPI_Bcast(CLOSURE_TYPE(nm),2,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr) ! For G. Grell parametereization
   end do
-  call MPI_Bcast(MAXENS_LSF,maxclouds,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(MAXENS_EFF,maxclouds,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(MAXENS_CAP,maxclouds,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(ICBASE,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr) ! for Shallow cumulus
+  call MPI_Bcast(DEPTH_MIN,MAXIENS,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr) ! for Shallow cumulus
+  call MPI_Bcast(CAP_MAXS,MAXIENS,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr) ! for Shallow cumulus
+  call MPI_Bcast(NNSHCU,MAXGRDS,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr) ! for Shallow cumulus
+  call MPI_Bcast(CONFRQ,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(SHCUFRQ,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr) ! for Shallow cumulus
 
   call MPI_Bcast(SLZ,NZGMAX,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(STGOFF,NZGMAX,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -255,6 +231,7 @@ subroutine masterput_nl(master_num)
   call MPI_Bcast(IDIFFK,MAXGRDS,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(IHORGRAD,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(IF_URBAN_CANOPY,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(WCLDBS,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
   
   call MPI_Bcast(CATT,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(RADDATFN(1:160),160,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)! 
@@ -376,11 +353,6 @@ subroutine masterput_nl(master_num)
   call MPI_Bcast(HPARM,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(CPARM,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(GNU,7,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-
-  if(isfcl==5) then
-     call masterput_ednl(mainnum)
-  end if
-
 
   return
 end subroutine masterput_nl
@@ -751,26 +723,16 @@ subroutine nodeget_nl
   use mem_all
   use node_mod
 
+  ! needed for Shallow Cumulus
+  use shcu_vars_const, only : shcufrq,  & ! INTENT(OUT)
+       nnshcu                             ! INTENT(OUT)
+
+  ! For stilt mass flux output
   use mem_mass, only : iexev, imassflx !INTENT(OUT)
 
-
-  use grell_coms, only:  &
-          closure_type,  & ! INTENT(OUT)
-          maxclouds,     & ! INTENT(OUT)
-          iupmethod,     & ! INTENT(OUT)
-          depth_min,     & ! INTENT(OUT)
-          cap_maxs,      & ! INTENT(OUT)
-          maxens_lsf,    & ! INTENT(OUT)
-          maxens_dyn,    & ! INTENT(OUT)
-          maxens_eff,    & ! INTENT(OUT)
-          maxens_cap,    & ! INTENT(OUT)
-          iupmethod,     & ! INTENT(OUT)
-          iupstrm,       & ! INTENT(OUT)
-          radius,        & ! INTENT(OUT)
-          zkbmax,        & ! INTENT(OUT)
-          max_heat,      & ! INTENT(OUT)
-          zcutdown,      & ! INTENT(OUT)
-          z_detr         ! ! INTENT(OUT)
+  ! For Grell Paramet.
+  use mem_grell_param, only : CLOSURE_TYPE, & ! INTENT(OUT)
+                              icbase,depth_min,cap_maxs,maxiens
 
   ! For SIB
   use sib_vars, only : N_CO2,  & ! INTENT(OUT)
@@ -940,28 +902,15 @@ subroutine nodeget_nl
   call MPI_Bcast(NADDSC,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
   call MPI_Bcast(NNQPARM,MAXGRDS,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(NCLOUDS,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(NDEEPEST,MAXGRDS,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(NSHALLOWEST,MAXGRDS,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(WCLDBS,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(CONFRQ,MAXCLOUDS,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(CPTIME,MAXCLOUDS,MPI_DOUBLE_PRECISION,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(IUPMETHOD,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(IUPSTRM,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(RADIUS,MAXCLOUDS,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(DEPTH_MIN,MAXCLOUDS,MPI_REAL,master_num,MPI_COMM_WORLD,ierr) 
-  call MPI_Bcast(CAP_MAXS,MAXCLOUDS,MPI_REAL,master_num,MPI_COMM_WORLD,ierr) 
-  call MPI_Bcast(ZKBMAX,MAXCLOUDS,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)   
-  call MPI_Bcast(ZCUTDOWN,MAXCLOUDS,MPI_REAL,master_num,MPI_COMM_WORLD,ierr) 
-  call MPI_Bcast(Z_DETR,MAXCLOUDS,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)   
-  call MPI_Bcast(MAX_HEAT,MAXCLOUDS,MPI_REAL,master_num,MPI_COMM_WORLD,ierr) 
-  do nm=1,maxclouds
-     call MPI_Bcast(CLOSURE_TYPE(nm),2,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr) 
+  do nm=1,maxiens
+     call MPI_Bcast(CLOSURE_TYPE(nm),2,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr) ! For G. Grell parametereization
   end do
-  call MPI_Bcast(MAXENS_LSF,maxclouds,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(MAXENS_EFF,maxclouds,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(MAXENS_CAP,maxclouds,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-
+  call MPI_Bcast(ICBASE,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(DEPTH_MIN,MAXIENS,MPI_REAL,master_num,MPI_COMM_WORLD,ierr) ! for Shallow cumulus
+  call MPI_Bcast(CAP_MAXS,MAXIENS,MPI_REAL,master_num,MPI_COMM_WORLD,ierr) ! for Shallow cumulus
+  call MPI_Bcast(NNSHCU,MAXGRDS,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr) ! for Shallow cumulus
+  call MPI_Bcast(CONFRQ,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(SHCUFRQ,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr) ! for Shallow cumulus
 
   call MPI_Bcast(SLZ,NZGMAX,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(STGOFF,NZGMAX,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -969,6 +918,7 @@ subroutine nodeget_nl
   call MPI_Bcast(IDIFFK,MAXGRDS,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(IHORGRAD,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(IF_URBAN_CANOPY,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(WCLDBS,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   
   call MPI_Bcast(CATT,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(RADDATFN(1:160),160,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)! 
@@ -1090,11 +1040,6 @@ subroutine nodeget_nl
   call MPI_Bcast(HPARM,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(CPARM,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(GNU,7,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-
-  !Pass ED2 namelist parameters - there lots - its better in a subroutine
-  if(isfcl==5) then
-     call nodeget_ednl(master_num)
-  endif
 
   return
 end subroutine nodeget_nl

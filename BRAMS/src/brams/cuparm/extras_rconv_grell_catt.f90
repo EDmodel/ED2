@@ -1,4 +1,4 @@
-subroutine trans_conv_mflx(icld,iscl,m1,m2,m3,i,j,edt,upmf,sttend)
+subroutine trans_conv_mflx(iens,stcum)
   !------------------------------------------------------------------
   !-Convective transport for smoke aerosols and non-hygroscopic gases
   !-Developed by Saulo Freitas (sfreitas@cptec.inpe.br)
@@ -13,22 +13,20 @@ subroutine trans_conv_mflx(icld,iscl,m1,m2,m3,i,j,edt,upmf,sttend)
                                zero_tconv
 
   use mem_scalar        ,only: scalar_g
+  use node_mod          ,only: m1=>mzp,m2=>mxp,m3=>myp,ia,iz,ja,jz,i0,j0,mynum
   use mem_grid          ,only: dtlt,ngrid,naddsc
   use mem_scratch       ,only: scratch
   use mem_basic         ,only: basic_g
-  use grell_coms        ,only : mgmzp
-  use mem_scratch_grell ,only: jmin,k22,kbcon,kdet,ktop,cdu,mentru_rate,etau_cld,cdd &
-                              ,mentrd_rate,etad_cld,z_cup,qlu_cld,tu_cld,ierr,kstabi &
-                              ,kstabm,kgoff
-  
+  use mem_cuparm        ,only: cuparm_g
+  use mem_grell_param   ,only: mgmxp,mgmyp,mgmzp,maxiens,ngrids_cp
+  use mem_scratch1_grell,only: sc1_grell_g,iruncon
 
   implicit none
 
-  integer, intent(in)                      :: m1,m2,m3,icld,iscl,i,j
-  real, dimension(m1,m2,m3), intent(inout) :: sttend
-  real, intent(in)                         :: edt,upmf
+  integer, intent(IN) :: iens
+  integer :: i,j,k,kr,ipr,jpr,iscl,iconv,iwet
+  real,intent(INOUT) :: stcum(m1,m2,m3)
 
-  integer                                  :: k,kr,iconv,iwet
   real, dimension(2) :: c0
 
   data (c0(i),i=1,2)  &
@@ -43,79 +41,111 @@ subroutine trans_conv_mflx(icld,iscl,m1,m2,m3,i,j,edt,upmf,sttend)
      !PRINT*,'======================================================='
   end if
 
+  ipr=0 - i0
+  jpr=0 - j0
 
-  iwet = 0
-  !---
-  !02/05/2005: COstc nao tera apenas plumerise
-  if(iscl == 2) return    ! sem transporte convectivo
-  !---
-  if(iscl == 3 .and. icld == 1) iwet = 1   ! com deposicao umida
+  do iscl = 1,naddsc          !loop trhoug the tracers (gases/aerossols)
 
-  call azero(mgmzp,stcum1d)
-  iconv = 0       
-  if(ierr == 0) then
-     
-     iconv = 1
-     call get_dn01d(mgmzp,m1,dn01d,basic_g(ngrid)%dn0(1,i,j))
-     call get_se(mgmzp,m1,m2,m3,i,j,scalar_g(iscl,ngrid)%sclp(1,1,1),&
-          se,se_cup)
+     iwet = 0
+     !---
+     !02/05/2005: COstc nao tera apenas plumerise
+     if(iscl == 2) cycle    ! sem transporte convectivo
+     !---
+     if(iscl == 3 .and. iens == 1) iwet = 1   ! com deposicao umida
 
-     if(iwet == 0) then
-        call get_sc_up( mgmzp,m1,se,se_cup,sc_up,    &
-             k22,kbcon,cdu(1:m1),mentru_rate(1:m1),  &
-             etau_cld(1:m1)   )
-     else
-        ! print*,'I J PREC:',i,j
-        ! print*,'PM25=',scalar_g(iscl,ngrid)%sclp(:,I,J)
-                       
-        call get_sc_up_wet( mgmzp,m1,se,se_cup,sc_up,   &
-             k22, kbcon,ktop, cdu(1:m1),mentru_rate(1:m1),  &
-             etau_cld(1:m1),sc_up_c,henry_coef,pw_up,dn01d, &
-             c0(icld), qlu_cld(1:m1), tu_cld(1:m1), z_cup(1:m1) )
+     do j=ja,jz
+        do i=ia,iz
+           call azero(mgmzp,stcum1d)
+           iconv = 0       
+           if(sc1_grell_g(ngrid)%ierr4d(i,j,iens) == 0) then
+              
+              iconv = 1
+              call get_dn01d(mgmzp,m1,dn01d,basic_g(ngrid)%dn0(1,i,j))
+              call get_se(mgmzp,m1,m2,m3,i,j,scalar_g(iscl,ngrid)%sclp(1,1,1),&
+                   se,se_cup)
 
-     endif
+              if(iwet == 0) then
+                 call get_sc_up( mgmzp,m1,se,se_cup,sc_up,  &
+                      sc1_grell_g(ngrid)%k224d(i,j,iens),  &
+                      sc1_grell_g(ngrid)%kbcon4d(i,j,iens),  &
+                      sc1_grell_g(ngrid)%deup5d(1:m1,i,j,iens),  &
+                      sc1_grell_g(ngrid)%enup5d(1:m1,i,j,iens),  &
+                      sc1_grell_g(ngrid)%zcup5d(1:m1,i,j,iens)   )
+              else
+                 ! print*,'I J PREC:',i,j
+                 ! print*,'PM25=',scalar_g(iscl,ngrid)%sclp(:,I,J)
+		 		
+                 call get_sc_up_wet( mgmzp,m1,se,se_cup,sc_up,   &
+                      sc1_grell_g(ngrid)%k224d  (i,j,iens),  &
+                      sc1_grell_g(ngrid)%kbcon4d(i,j,iens),    &
+                      sc1_grell_g(ngrid)%ktop4d (i,j,iens),  &
+                      sc1_grell_g(ngrid)%deup5d (1:m1,i,j,iens),  &
+                      sc1_grell_g(ngrid)%enup5d (1:m1,i,j,iens),  &
+                      sc1_grell_g(ngrid)%zcup5d (1,i,j,iens),  &
+                      sc_up_c,henry_coef,pw_up,dn01d,c0(iens), &
+                      sc1_grell_g(ngrid)%clwup5d(1:m1,i,j,iens),  &
+                      sc1_grell_g(ngrid)%tup5d  (1:m1,i,j,iens),  &
+                      sc1_grell_g(ngrid)%zup5d  (1:m1,i,j,iens) )
 
-     call get_sc_dn(mgmzp,m1,se,se_cup,sc_dn,jmin,kdet,cdd(1:m1),mentrd_rate(1:m1),  &
-                    etau_cld(1:m1)  )
+              endif
 
-     call get_stcum(mgmzp,m1,dn01d,stcum1d,se,se_cup,sc_up,sc_dn,                             &
-          upmf  , edt, jmin  , kdet, k22   , kbcon, ktop  ,  kstabi, kstabm,             &
-          z_cup(1:m1), cdu(1:m1), mentru_rate(1:m1),cdd(1:m1),                 &
-          mentrd_rate(1:m1),etau_cld(1:m1) , etad_cld(1:m1))
+              call get_sc_dn(mgmzp,m1,se,se_cup,sc_dn, &
+                   sc1_grell_g(ngrid)%jmin4d(i,j,iens),  sc1_grell_g(ngrid)%kdet4d(i,j,iens), &
+                   sc1_grell_g(ngrid)%dedn5d(1:m1,i,j,iens),sc1_grell_g(ngrid)%endn5d(1:m1,i,j,iens),  &
+                   sc1_grell_g(ngrid)%zcup5d(1:m1,i,j,iens)  )
 
-     if(iwet == 1) then
-        !------------- WET REMOVAL SCHEMES -------------
-        !-- contribuicao devido `a concentracao aquosa desentranhada
-        !-- junto com a agua liquida
-        call get_stcum_detrain(mgmzp,m1,dn01d,stcum1d,sc_up_c,sc_dn_c,&
-             upmf    , edt,           &
-             jmin    , kdet,          &
-             k22     , kbcon,         &
-             ktop    ,           &
-             kstabi  , kstabm,        &
-             z_cup(1:m1)  ,   &
-             cdu(1:m1)  , mentru_rate(1:m1),  &
-             cdd(1:m1)  , mentrd_rate(1:m1),  &
-             etau_cld(1:m1)   , etad_cld(1:m1)    )
+              call get_stcum(mgmzp,m1,dn01d,stcum1d,se,se_cup,sc_up,sc_dn,                             &
+                   sc1_grell_g(ngrid)%xmb4d(i,j,iens)   , sc1_grell_g(ngrid)%edt4d(i,j,iens),          &
+                   sc1_grell_g(ngrid)%jmin4d(i,j,iens)  , sc1_grell_g(ngrid)%kdet4d(i,j,iens),         &
+                   sc1_grell_g(ngrid)%k224d(i,j,iens)   , sc1_grell_g(ngrid)%kbcon4d(i,j,iens),        &
+                   sc1_grell_g(ngrid)%ktop4d(i,j,iens)  , sc1_grell_g(ngrid)%kpbl4d(i,j,iens),         &
+                   sc1_grell_g(ngrid)%kstabi4d(i,j,iens), sc1_grell_g(ngrid)%kstabm4d(i,j,iens),       &
+                   sc1_grell_g(ngrid)%zcup5d(1:m1,i,j,iens), sc1_grell_g(ngrid)%pcup5d(1:m1,i,j,iens), &
+                   sc1_grell_g(ngrid)%deup5d(1:m1,i,j,iens), sc1_grell_g(ngrid)%enup5d(1:m1,i,j,iens), &
+                   sc1_grell_g(ngrid)%dedn5d(1:m1,i,j,iens), sc1_grell_g(ngrid)%endn5d(1:m1,i,j,iens), &
+                   sc1_grell_g(ngrid)%zup5d(1:m1,i,j,iens) , sc1_grell_g(ngrid)%zdn5d(1:m1,i,j,iens)   )
 
-        !-- calcula a massa removida e depositada na superficie
-        call get_wet_deposited_mass(mgmzp,m1,dtlt,dn01d,pw_up,pw_dn,                   &
-             scalar_g(iscl,ngrid)%wetdep(i,j),                                         &
-             upmf,  edt,kbcon,ktop)
-        !print*,'I J WM:',i,j, scalar_g(iscl,ngrid)%wetdep(i,j)
+              if(iwet == 1) then
+                 !------------- WET REMOVAL SCHEMES -------------
+                 !-- contribuicao devido `a concentracao aquosa desentranhada
+                 !-- junto com a agua liquida
+		 call get_stcum_detrain(mgmzp,m1,dn01d,stcum1d,sc_up_c,sc_dn_c,&
+                      sc1_grell_g(ngrid)%xmb4d(i,j,iens)     , sc1_grell_g(ngrid)%edt4d(i,j,iens),           &
+                      sc1_grell_g(ngrid)%jmin4d(i,j,iens)    , sc1_grell_g(ngrid)%kdet4d(i,j,iens),          &
+                      sc1_grell_g(ngrid)%k224d(i,j,iens)     , sc1_grell_g(ngrid)%kbcon4d(i,j,iens),         &
+                      sc1_grell_g(ngrid)%ktop4d(i,j,iens)    , sc1_grell_g(ngrid)%kpbl4d(i,j,iens),          &
+                      sc1_grell_g(ngrid)%kstabi4d(i,j,iens)  , sc1_grell_g(ngrid)%kstabm4d(i,j,iens),        &
+                      sc1_grell_g(ngrid)%zcup5d(1:m1,i,j,iens)  , sc1_grell_g(ngrid)%pcup5d(1:m1,i,j,iens),  &
+                      sc1_grell_g(ngrid)%deup5d(1:m1,i,j,iens)  , sc1_grell_g(ngrid)%enup5d(1:m1,i,j,iens),  &
+                      sc1_grell_g(ngrid)%dedn5d(1:m1,i,j,iens)  , sc1_grell_g(ngrid)%endn5d(1:m1,i,j,iens),  &
+                      sc1_grell_g(ngrid)%zup5d(1:m1,i,j,iens)   , sc1_grell_g(ngrid)%zdn5d(1:m1,i,j,iens)    )
+
+		 !-- calcula a massa removida e depositada na superficie
+		 call get_wet_deposited_mass(mgmzp,m1,dtlt,dn01d,pw_up,pw_dn,                   &
+                      scalar_g(iscl,ngrid)%wetdep(i,j),                                         &
+                      sc1_grell_g(ngrid)%xmb4d(i,j,iens),  sc1_grell_g(ngrid)%edt4d(i,j,iens),  &
+                      sc1_grell_g(ngrid)%kbcon4d(i,j,iens),sc1_grell_g(ngrid)%ktop4d(i,j,iens)  )
+		 !print*,'I J WM:',i,j, scalar_g(iscl,ngrid)%wetdep(i,j)
 
 
-     endif
+              endif
 
-  endif    ! endif of test if is there or not convection
-   if(iconv .eq. 1) then
-     do k=1,m1-1
-        kr= k + kgoff !nivel k da grade do grell corresponde ao nivel k+kgoff do rams
-        sttend(kr,i,j)= sttend(kr,i,j) + stcum1d(k)
-     enddo
-  endif  !endif do iconv
+           endif    ! endif of test if is there or not convection
+            if(iconv .eq. 1) then
+              do k=1,m1-1
+                 kr= k + 1 !nivel k da grade do grell corresponde ao nivel k+1 do rams
+                 stcum(kr,i,j)=stcum1d(k)
+              enddo
+           endif  !endif do iconv
+        enddo     !loop em i
+     enddo        !loop em j
 
-  return
+     !     acumula a tendencia assoc. ao trans convectivo `a tendencia total
+     call accum(m1*m2*m3,scalar_g(iscl,ngrid)%sclt(1),stcum)
+
+222  continue
+  enddo   !loop no gases
+  !stop 1450
 end subroutine trans_conv_mflx
 
 !--------------------------------------------------
@@ -213,8 +243,8 @@ end subroutine get_sc_dn
 
 
 subroutine get_stcum(mgmzp,n1,dn0,stcum1d,se,se_cup,sc_up,sc_dn,xmb,edt, &
-     jmin,kdet,k22,kbcon,ktop,kstabi,kstabm,z_cup,                  &
-     cd,entr,cdd,entrd,zu,zd                                       )
+     jmin,kdet,k22,kbcon,ktop,kpbl,kstabi,kstabm,z_cup,                  &
+     p_cup,cd,entr,cdd,entrd,zu,zd                                       )
 
   use rconstants, only: g
 
@@ -222,10 +252,10 @@ subroutine get_stcum(mgmzp,n1,dn0,stcum1d,se,se_cup,sc_up,sc_dn,xmb,edt, &
 
   ! Arguments
   integer                :: mgmzp, n1, jmin, kdet, k22, &
-       kbcon, ktop, kstabi, kstabm
+       kbcon, ktop, kpbl, kstabi, kstabm
   real                   :: xmb,edt
   real, dimension(mgmzp) :: se,se_cup,sc_up,sc_dn,stcum1d,dn0
-  real, dimension(n1) :: z_cup,cd,entr,cdd,entrd,zu,zd
+  real, dimension(n1) :: z_cup,p_cup,cd,entr,cdd,entrd,zu,zd
 
   ! Local variables
   integer                :: k
@@ -253,7 +283,8 @@ subroutine get_stcum(mgmzp,n1,dn0,stcum1d,se,se_cup,sc_up,sc_dn,xmb,edt, &
      endif
 
      if(k.eq.jmin)          entdoj = edt*zd(k)
-     if(k.eq.k22-1)         entupk = zu(k22)
+     if(k.eq.k22-1)         entupk = zu(kpbl)
+     !if(k.eq.kpbl)         entupk = zu(kpbl)	
      if(k.gt.kdet)          detdo  = 0.
      if(k.lt.kbcon)         detup  = 0.
      if(k.eq.ktop) then
@@ -401,8 +432,8 @@ end subroutine get_sc_up_wet
 !---------------------------------------------------------------------
 
 subroutine get_stcum_detrain(mgmzp,n1,dn0,stcum1d,sc_up_c,sc_dn_c,  &
-     	  		     xmb,edt,jmin,kdet,k22,kbcon,ktop, &
-     	  		     kstabi,kstabm,z_cup,cd,entr,cdd, &
+     	  		     xmb,edt,jmin,kdet,k22,kbcon,ktop,kpbl, &
+     	  		     kstabi,kstabm,z_cup,p_cup,cd,entr,cdd, &
      	  		     entrd,zu,zd)
 
   use rconstants, only: g  			
@@ -410,10 +441,10 @@ subroutine get_stcum_detrain(mgmzp,n1,dn0,stcum1d,sc_up_c,sc_dn_c,  &
   implicit none
 
   ! Arguments
-  integer                :: mgmzp,n1,jmin,kdet,k22,kbcon,ktop,kstabi,kstabm
+  integer                :: mgmzp,n1,jmin,kdet,k22,kbcon,ktop,kpbl,kstabi,kstabm
   real                   :: xmb,edt
   real, dimension(mgmzp) :: sc_up_c,sc_dn_c,stcum1d,dn0
-  real, dimension(n1)    :: z_cup,cd,entr,cdd,entrd,zu,zd
+  real, dimension(n1)    :: z_cup,p_cup,cd,entr,cdd,entrd,zu,zd
 
   ! Local Variables
   integer :: k

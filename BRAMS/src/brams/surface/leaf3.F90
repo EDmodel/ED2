@@ -40,7 +40,7 @@ subroutine sfclyr(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
 #if USE_INTERF
   ! Interface necessary to use pointer as argument - TEB
   interface
-     subroutine leaf3(m1,m2,m3,mzg,mzs,np,nclds,ia,iz,ja,jz    &
+     subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz    &
           ,leaf,basic,turb,radiate,grid,cuparm,micro     &
           ,ths2,rvs2,pis2,dens2,ups2,vps2,zts2           &
           ! For TEB
@@ -58,7 +58,7 @@ subroutine sfclyr(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
        use mem_teb, only: teb_vars               !Type
        USE mem_teb_common, only: teb_common             !Type
        !       
-       integer, intent(in) :: m1,m2,m3,mzg,mzs,np,nclds,ia,iz,ja,jz
+       integer, intent(in) :: m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz
        type (leaf_vars)    :: leaf
        type (basic_vars)   :: basic
        type (turb_vars)    :: turb
@@ -98,7 +98,7 @@ subroutine sfclyr(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
      nullify(p_tebc_g)
   endif
   
-  call leaf3(mzp,mxp,myp,nzg,nzs,npatch,nclouds,ia,iz,ja,jz     &
+  call leaf3(mzp,mxp,myp,nzg,nzs,npatch,ia,iz,ja,jz             &
        ,leaf_g (ng), basic_g (ng), turb_g (ng), radiate_g(ng)   &
        ,grid_g (ng), cuparm_g(ng), micro_g(ng)                  &
        ,l_ths2(1,1), l_rvs2(1,1), l_pis2(1,1)                   &
@@ -145,7 +145,7 @@ end subroutine sfclyr
 
 !*****************************************************************************
 
-subroutine leaf3(m1,m2,m3,mzg,mzs,np,nclds,ia,iz,ja,jz  &
+subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz  &
    ,leaf,basic,turb,radiate,grid,cuparm,micro     &
    ,ths2,rvs2,pis2,dens2,ups2,vps2,zts2           &
    ! For TEB
@@ -165,7 +165,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,nclds,ia,iz,ja,jz  &
    implicit none
 
    ! Arguments:
-   integer, intent(in) :: m1,m2,m3,mzg,mzs,np,nclds,ia,iz,ja,jz
+   integer, intent(in) :: m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz
    type (leaf_vars)    :: leaf
    type (basic_vars)   :: basic
    type (turb_vars)    :: turb
@@ -317,12 +317,6 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,nclds,ia,iz,ja,jz  &
 
    ! Zero out albedo, upward surface longwave, and momentum, heat, and moisture
    ! flux arrays before summing over patches
-
-	if(radiate%rlong(i,j)<200.0) then
- 	print*,"RLONG IS LOW",i,j,radiate%rlong(i,j)
-	stop
-	endif	
-
 
          if (ilwrtyp > 0 .or. iswrtyp > 0) then
             radiate%albedt(i,j) = 0.
@@ -1838,16 +1832,13 @@ subroutine sfc_pcp(nqparm,level,i,j,cuparm,micro)
 
    implicit none
 
-   integer :: nqparm,level,i,j,icld
+   integer :: nqparm,level,i,j
    type (cuparm_vars)  cuparm
    type (micro_vars)   micro
 
    if (nqparm > 0) then
-      pcpgl = 0.
-      do icld=1,nclouds
-         pcpgl  = pcpgl + cuparm%conprr(i,j,icld)
-      end do
-      pcpgl  = pcpgl  * dtll 
+
+      pcpgl  = cuparm%conprr(i,j) * dtll
       qpcpgl = pcpgl  * cliq * (ths * pis - 193.36)
       dpcpgl = pcpgl  * .001
       pcpgc  = dtlc_factor * pcpgl

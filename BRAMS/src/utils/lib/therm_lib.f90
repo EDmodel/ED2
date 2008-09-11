@@ -164,6 +164,7 @@ rslfp=ep*eslpf/(p-eslpf)
 return
 end
 
+
 !     ******************************************************************
 
 !     This function calculates the partial derivative of ice saturation vapor
@@ -184,6 +185,70 @@ rsifp=ep*esipf/(p-esipf)
 
 return
 end
+
+
+
+!******************************************************************************
+real function rhovsl(tc)
+  ! MLO - Subroutine imported from OLAM's omic_vap.f90
+  ! This function calculates water vapour saturation vapour mixing ratio
+  !    over liquid as a function of Celsius temperature
+  use rconstants, only : rm,t00
+  implicit none
+  real, intent(in) :: tc
+  real, parameter  :: c0 = .6105851e+03, c1 = .4440316e+02, c2 =  .1430341e+01
+  real, parameter  :: c3 = .2641412e-01, c4 = .2995057e-03, c5 =  .2031998e-05
+  real, parameter  :: c6 = .6936113e-08, c7 = .2564861e-11, c8 = -.3704404e-13
+  real :: esl, x
+  
+  x   = max(-80.,tc)
+  esl = c0+x*(c1+x*(c2+x*(c3+x*(c4+x*(c5+x*(c6+x*(c7+x*c8)))))))
+  rhovsl = esl / (rm * (tc+t00))
+  return
+end function rhovsl
+
+
+real function rhovsil(tc)
+  
+  implicit none
+  
+  real, intent(in) :: tc
+  real, external :: rhovsl,rhovsi
+  
+  !     This function calculates the density of water vapor at saturation,
+  !     over liquid or ice depending on temperature, as a function of
+  !     Celsius temperature
+  
+  if (tc >= 0.) then
+     rhovsil = rhovsl(tc)
+  else
+     rhovsil = rhovsi(tc)
+  endif
+  
+  return
+end function rhovsil
+!============================================================================
+
+real function rhovsi(tc)
+
+  !     This function calculates the density of water vapor at saturation
+  !     over ice as a function of Celsius temperature
+  
+  use rconstants, only: t00,rm
+  implicit none
+  real, intent(in) :: tc
+  
+  real, parameter :: c0 = .6114327e+03 ,c1 = .5027041e+02 ,c2 = .1875982e+01
+  real, parameter :: c3 = .4158303e-01 ,c4 = .5992408e-03 ,c5 = .5743775e-05
+  real, parameter :: c6 = .3566847e-07 ,c7 = .1306802e-09 ,c8 = .2152144e-12
+  real :: esi,x
+  
+  x = max(-80.,tc)
+  esi = c0+x*(c1+x*(c2+x*(c3+x*(c4+x*(c5+x*(c6+x*(c7+x*c8)))))))
+  rhovsi = esi / (rm * (tc + t00))
+  
+  return
+end function rhovsi
 
 !     ******************************************************************
 
@@ -324,24 +389,6 @@ tw   =  tsa( aos,press)
 
 return
 end
-
-!     ******************************************************************
-
-real function virtt(t,rv)
-   !---------------------------------------------------------------------------------------!
-   ! This function computes the virtual temperature.                                       !
-   ! Inputs: t  - temperature   [    K];                                                   !
-   !         rv - mixing ratio  [kg/kg];                                                   !
-   !---------------------------------------------------------------------------------------!
-   use rconstants, only: ep
-   implicit none
-   real, intent(in) :: t
-   real, intent(in) :: rv
-   
-   virtt = t * (rv + ep)/(ep*(rv+1.))
-   return
-end function virtt
-
 
 !     ******************************************************************
 

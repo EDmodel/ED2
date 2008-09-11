@@ -439,8 +439,13 @@ q(6:8) = 0.3463
 q(9:11) = 1.1274
 q(12:15) = 1.0
 
-!qsw = SLA / 3900.0 !KIM - ED1/ED2 codes and Moorcroft et al.'re wrong!
-qsw = SLA / (3900.0*2.0/1000.0)
+
+!    Using the wrong qsw for mid-latitude PFTs (5-13), since the other parameters need to 
+! be optimized with the fixed version. I assumed 12 and 13 to be mid-latitudes, and 
+! 14 and 15 to be tropical, is that correct?
+qsw(1:4)    = SLA(1:4)   / (3900.0*2.0/1000.0)
+qsw(14:15)  = SLA(14:15) / (3900.0*2.0/1000.0)
+qsw(5:13)    = SLA(5:13) / 3900.0 !KIM - ED1/ED2 codes and Moorcroft et al.'re wrong!
 
 hgt_min = 1.5
 

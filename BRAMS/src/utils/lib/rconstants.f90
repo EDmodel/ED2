@@ -142,17 +142,6 @@ Module rconstants
    real, parameter ::   abswltlmin  = 1.e-4                ! Minimum abs value of Theta*
    real, parameter ::   lturbmin    = 1.e-3                ! Minimum abs value of turb. lenght
 
-!--------------------------------------------------------------------------------------------------!
-! Constants that control the convergence for iterative methods                                     !
-!--------------------------------------------------------------------------------------------------!
-   real, parameter ::   toler       = 1.e-5                ! Relative tolerance for iterative 
-                                                           !    methods. The smaller the value, the
-                                                           !    more accurate the result, but it
-                                                           !    will slow down the run.
-   real, parameter ::   maxit       = 999                  ! Maximum # of iterations before crash-
-                                                           !    ing. Hopefully this won't be neces-
-                                                           !    sary :)
-   real, parameter ::   maxbis      = 40                   ! Maximum # of iterations before crash-
                                                            !    ing for bisection.
 !--------------------------------------------------------------------------------------------------!
 ! Don't know what do these variables stand for.                                                    !
