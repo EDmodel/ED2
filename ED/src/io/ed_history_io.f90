@@ -182,12 +182,12 @@ subroutine read_ed1_history_file_array
         ! Open file and read in patches
         open(12,file=trim(pss_name),form='formatted',status='old')
         read(12,*)  ! skip header
+        nwater = 1
         if(ied_init_mode == 1) then
            read(12,*)cdum,nwater
            read(12,*)cdum,depth(1:nwater)
            read(12,*)
-        else
-           nwater = 1
+        elseif(ied_init_mode == 2) then
            read(12,*)!water patch
         endif
 
@@ -358,7 +358,9 @@ subroutine read_ed1_history_file_array
         
         open(12,file=trim(css_name),form='formatted',status='old')
         read(12,*)  ! skip header
-        read(12,*)  ! skip header
+        if(ied_init_mode < 3) then
+           read(12,*)  ! skip header
+        endif
         
         ic = 0
         
@@ -394,6 +396,8 @@ subroutine read_ed1_history_file_array
            year = int(ctime(ic))
            if(use_target_year == 1 .and. year .ne. restart_target_year) continue
            
+           print*,ipft(ic)
+
            ! Find site and patch and start counting how many to allocate
            
            put_cohort:do isi=1,cpoly%nsites
@@ -629,12 +633,12 @@ subroutine read_ed1_history_file_array
         
         poly_lai = 0.0
         ncohorts = 0
-        
+
         do isi = 1,cpoly%nsites
-           
+
            nsitepat = 0
            csite => cpoly%site(isi)
-           
+
            do ipa = 1,csite%npatches
               
               csite%lai(ipa) = 0.0

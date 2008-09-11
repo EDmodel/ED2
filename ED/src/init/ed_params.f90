@@ -59,7 +59,10 @@ subroutine load_ed_ecosystem_params()
       p = p+1
    end do
    if (sum(include_pft_ag) == 0) then
-      call fatal_error ('No grass included in include_these_pft, you should have at least one kind of grass...' &
+!      WHY DO WE REQUIRE THERE TO BE AT LEAST ONE GRASS??  (MCD)
+!      call fatal_error ('No grass included in include_these_pft, you should have at least one kind of grass...' &
+!                       ,'load_ecosystem_params','ed_params.f90')
+      call warning ('No grass included in include_these_pft, you should have at least one kind of grass...' &
                        ,'load_ecosystem_params','ed_params.f90')
    end if
 

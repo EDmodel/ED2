@@ -229,6 +229,8 @@ subroutine ed_init_atm_ar
               
               cpatch => csite%patch(ipa)
 
+print*,cpatch%ncohorts 
+
               call fuse_cohorts_ar(csite,ipa,cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
               
               do ico = 1,cpatch%ncohorts

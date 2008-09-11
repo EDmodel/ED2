@@ -21,7 +21,15 @@ subroutine h5_output(vtype)
 	                idatea,  &
 	                imontha, &
 	                iyeara,  &
-                        iclobber
+                        iclobber, &
+                        nrec_fast, &
+                        nrec_state, &
+                        irec_fast, &
+                        irec_state, &
+                        out_time_fast, &
+                        out_time_state, &
+                        outstate, &
+                        outfast, frqfast
 
   use ed_misc_coms,only: attach_metadata
 
@@ -86,12 +94,15 @@ subroutine h5_output(vtype)
   real, external :: dbh2bl
   type(var_table),pointer        :: vtinfo
   type(var_table_vector),pointer :: vtvec
+  integer :: irec, nrec
 
   integer :: mpierror
   integer :: comm,info
   integer :: mpi_size,mpi_rank
   integer :: ping,ierr
   integer,       dimension(MPI_STATUS_SIZE) :: status
+  real(kind=8)    :: dsec
+  logical :: new_file = .true.
 
   logical,parameter :: collective_mpi = .false.
 
@@ -138,7 +149,9 @@ subroutine h5_output(vtype)
      if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,734,MPI_COMM_WORLD,status,ierr)
   end if
 
-  
+
+  nrec = 1
+  irec = 1  
   do ngr=1,ngrids
      
      write(cgrid,'(a1,i1)') 'g',ngr
@@ -176,8 +189,33 @@ subroutine h5_output(vtype)
              itimea*100,vnam,cgrid,'h5 ')
         
      case default
-        call makefnam(anamel,ffilout,time,iyeara,imontha,idatea,  &
-             itimea*100,vnam,cgrid,'h5 ')
+        if(nrec_fast .eq. 1) then  !! single file per output
+           call makefnam(anamel,ffilout,time,iyeara,imontha,idatea,  &
+                itimea*100,vnam,cgrid,'h5 ')
+        else   !! group outputs
+           new_file = .false.
+           !! determine whether to advance out_time_fast
+           call date_add_to (iyeara,imontha,idatea,itimea*100,  &
+                time,'s',outyear,outmonth,outdate,outhour)
+           call date_2_seconds(out_time_fast%year,out_time_fast%month, &
+                out_time_fast%date,out_time_fast%time*100, &
+                iyeara,imontha,idatea,itimea*100,dsec)
+           if(time >= (dsec+outfast) .or. outmonth > out_time_fast%month) then
+              out_time_fast%year  = outyear
+              out_time_fast%month = outmonth
+              out_time_fast%date  = outdate
+              out_time_fast%time  = (3600.*int(outhour/10000)+60.*mod(int(outhour/100),100)+mod(outhour,100))/100.   !! DOUBLE CHECK
+              dsec = time
+              new_file = .true.
+           endif
+           irec_fast = ((time-dsec)/frqfast) + 1
+           nrec = nrec_fast
+           irec = irec_fast
+           !! construct filename
+           call makefnam(anamel,ffilout,0.0,out_time_fast%year, &
+                out_time_fast%month,out_time_fast%date,out_time_fast%time*100, &
+                vnam,cgrid,'h5 ')
+        endif
         
      end select
 
@@ -254,7 +292,7 @@ subroutine h5_output(vtype)
 
      else
         
-        if (mynum == 1) then
+        if (mynum == 1 .and. new_file) then
 
            call h5fcreate_f(trim(anamel)//char(0), H5F_ACC_TRUNC_F, file_id, hdferr)
            if (hdferr /= 0) then
@@ -327,8 +365,12 @@ subroutine h5_output(vtype)
 
            ! Initialize global dimensions of the hyperslab
            
-           call geth5dims(vt_info(nv,ngr)%idim_type,0,0,vt_info(nv,ngr)%var_len_global,dsetrank,varn)
+           call geth5dims(vt_info(nv,ngr)%idim_type,0,0,vt_info(nv,ngr)%var_len_global,dsetrank,varn,nrec,irec)
 
+           !if this is a 1d vector
+!           globdims(2) = nrec
+!           chnkdims(2) = 1
+!           chnkoffs(2) = irec
 
            call h5screate_simple_f(dsetrank, globdims, filespace, hdferr)
            if (hdferr /= 0) then
@@ -352,9 +394,9 @@ subroutine h5_output(vtype)
                     stop
                     
                  endif
-           else
+              else
 
-              if (mynum == 1) then
+              if (mynum == 1 .and. new_file) then
                  
                  if (vt_info(nv,ngr)%dtype == 'r') then   ! real data type
                     call h5dcreate_f(file_id,varn,H5T_NATIVE_REAL, filespace, &
@@ -471,7 +513,7 @@ subroutine h5_output(vtype)
                  ! Initialize hyperslab indexes
 
                  call geth5dims(vt_info(nv,ngr)%idim_type,vtvec%varlen, &
-                      vtvec%globid,vt_info(nv,ngr)%var_len_global,dsetrank,varn)
+                      vtvec%globid,vt_info(nv,ngr)%var_len_global,dsetrank,varn,nrec,irec)
                  
                  ! Create the data space for the  dataset. 
                  
@@ -634,7 +676,7 @@ subroutine h5_output(vtype)
      subaname='  Analysis HDF write         '
   end select
   
-  if (mynum.eq.nnodetot) then
+  if (mynum.eq.nnodetot .and. new_file) then
      write(c0,'(F10.0)') time
      write(*,"(/,a)") " === "//trim(adjustl(subaname))//" at Sim time "//trim(adjustl(c0))//" ==="
      write(*,"(a,/)") " === wrote file "//&
@@ -657,7 +699,7 @@ end subroutine h5_output
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn)
+subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,irec)
   
   use grid_coms,only : nzg,nzs
   use max_dims, only : n_pft,n_dist_types,n_dbh
@@ -666,7 +708,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn)
 
   implicit none
   character(len=*) :: varn
-  integer :: idim_type,varlen,globid,var_len_global,dsetrank
+  integer :: idim_type,varlen,globid,var_len_global,dsetrank,nrec,irec
   
   ! Initialize the size of the memory and file-space dimensioning
   
@@ -977,6 +1019,16 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn)
      write (unit=*,fmt='(a)')       '--------------------------------------------------'
      call fatal_error ('Wrong idim_type','geth5dims','h5_output.F90')
   end select
+
+  !!! add TIME if writing multiple observations/file
+  if(nrec .gt. 1) then
+     dsetrank = dsetrank + 1
+     globdims(dsetrank) = nrec
+     chnkdims(dsetrank) = 1
+     chnkoffs(dsetrank) = irec-1
+     cnt(dsetrank)      = 1
+     stride(dsetrank)   = 1
+  endif
 
   return
 end subroutine geth5dims

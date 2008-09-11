@@ -50,6 +50,8 @@ Module ename_coms
       integer :: iclobber = 0
       real    :: frqfast   = 3600.0
       real    :: frqstate    = 21600.0
+      real    :: outfast   = -1.
+      real    :: outstate  = -1.
 
       character(len=str_len) :: ffilout   = 'F/'
       integer           :: ied_init_mode = 0

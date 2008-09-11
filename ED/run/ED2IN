@@ -121,8 +121,14 @@
         	                ! 0 = no metadata, 1 = yes metadata
 
    NL%ICLOBBER   = 1             ! 0 = stop if files exist, 1 = overwite files
-   NL%FRQFAST    = 3600.         ! Time interval between analysis/history files
-   NL%FRQSTATE   = 8640000.       ! Time interval between history files (10 days)
+   NL%FRQFAST    = 3600.         ! Time interval between analysis file writes
+   NL%FRQSTATE   = 8640000.      ! Time interval between history file writes(10 days)
+
+   NL%OUTFAST    = -1		! Time interval between analysis files
+   NL%OUTSTATE   = 0		! Time interval between history files
+				! Values are in seconds and must be <= 1 month
+				! Values < FRQFAST/FRQSTATE are set to those values
+				! Special values: -1 = daily; -2 = monthly
 
 !-------------------------------------------------------------------------!
 
@@ -229,8 +235,13 @@
 
    NL%IPHEN_SCHEME    = 0  ! This specifies the phenology scheme:
                            !  0 is for the Botta et al scheme
-                           !  1 is for the Harvard Forest observations
+                           !  1 is for prescribed phenology
                            !  Other options coming soon.
+
+   NL%REPRO_SCHEME    = 0  ! This specifies the reproduction scheme:
+			   !  0 -- reproduction off (useful for short runs)
+			   !  1 -- original ED1 default
+
   
    NL%N_PLANT_LIM     = 0  ! Determines whether (1) or not (0) plants can
                          ! be limited by nitrogen

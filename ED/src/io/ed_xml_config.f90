@@ -920,7 +920,7 @@ subroutine write_ed_xml_config
  
   call libxml2f90_ll_closetag("CONFIG")
   !! write list
-  print*,trim(xfilout)
+  print*,"Wrote Config Record:", trim(xfilout)
   open(12,file=trim(xfilout),form='formatted',status='replace')
   call libxml2f90__ll_report("OUTCONFIG",12,.false.)
   close(12)

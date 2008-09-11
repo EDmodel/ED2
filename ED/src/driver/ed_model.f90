@@ -7,7 +7,7 @@
 subroutine ed_model()
   
   use misc_coms, only: integration_scheme, current_time, frqfast, frqstate    &
-                      , current_time, dtlsm, ifoutput, isoutput, idoutput    &
+                      , out_time_fast, dtlsm, ifoutput, isoutput, idoutput    &
                       , imoutput, iyoutput,frqsum
   use ed_misc_coms, only: outputMonth
 
@@ -70,6 +70,7 @@ subroutine ed_model()
   writing_dail      = idoutput > 0
   writing_mont      = imoutput > 0
   writing_year      = iyoutput > 0
+  out_time_fast     = current_time
 
   if (writing_mont) then
      do ifm=1,ngrids

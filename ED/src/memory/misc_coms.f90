@@ -40,6 +40,14 @@ Module misc_coms
   real ::  frqstate
   real ::  frqfast
   real ::  frqsum
+  real ::  outstate
+  real ::  outfast
+  integer :: nrec_fast
+  integer :: nrec_state
+  integer :: irec_fast
+  integer :: irec_state
+  type(simtime) :: out_time_fast
+  type(simtime) :: out_time_state
 
   character(len=str_len) :: sfilin
   character(len=str_len) ::ffilout 

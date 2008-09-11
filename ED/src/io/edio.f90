@@ -745,8 +745,8 @@ subroutine print_veg_heating
   sigr = 1
   sipy = 1
   sisi = 1
-  sipa = 11
-  sico = 6
+  sipa = 1
+  sico = 1
   write(*,"(i3,i3,i5,f8.1,10(f10.5))") &
        current_time%month,current_time%date,           &
        current_time%year,current_time%time,           &
