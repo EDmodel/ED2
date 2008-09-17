@@ -218,6 +218,7 @@ subroutine initlz (name_name)
      ! Fill land surface data for all grids that have no standard input files
 
      ! ALF - For use with SiB
+
      if (isfcl <= 2 .or. isfcl == 5) then
         call sfcdata
      elseif (isfcl == 3) then

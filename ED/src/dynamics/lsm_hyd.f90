@@ -666,7 +666,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
    use hydrology_constants
    use hydrology_coms, only: MoistSatThresh
    use ed_state_vars,  only: polygontype, sitetype 
-   use consts_Coms, only : cliq1000
+   use consts_coms, only : cliq1000
    use soil_coms, only: soil,slz,dslz,dslzi
    use grid_coms, only: nzg
 

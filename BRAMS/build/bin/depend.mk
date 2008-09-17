@@ -1437,7 +1437,7 @@ canopy_update_euler.o : $(ED_DYNAMICS)/canopy_update_euler.f90 ed_state_vars.o g
 	$(F_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-consts_coms.o : $(ED_MEMORY)/consts_coms.F90 rconstants.o
+consts_coms.o : $(ED_MEMORY)/consts_coms.f90 rconstants.o
 	cp -f $< $(<F:.F90=.F90)
 	$(F_COMMAND) -DCOUPLED $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)

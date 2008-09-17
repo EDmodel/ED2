@@ -20,8 +20,7 @@ subroutine ed_timestep(timel,dtlong)
   ! Activate the ED2 model if time has reached the LSM timestep
 
   if (isfcl.ne.5)return
-  
-  
+    
   if ( mod(timel+dble(dtlong),dble(dtlsm)) < dble(dtlong) .or. first ) then
 
      wtime_start=walltime(0.)
@@ -60,7 +59,7 @@ subroutine ed_timestep(timel,dtlong)
      wtime2=walltime(wtime_start)
      call TIMING(2,T2)
      
-     if(mynum.eq.nnodetot) then
+     if(mynum.eq.1) then
         write(*,"(a,a,i2.2,a,i2.2,a,i4.4,a,f6.0,2(a,f7.3),a)") &
              ' ED2 LSM Timestep ',&
              '; Sim time  ',current_time%month, &

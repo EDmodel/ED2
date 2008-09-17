@@ -137,7 +137,21 @@ subroutine ed_coup_driver
   !--------------------------------------------------------------------------------!
   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] initHydrology...'
   call initHydrology()
-
+!-----------------------------------------------------------------------!
+  ! STEP 16: Initialize the flux arrays that pass to the atmosphere
+  !-----------------------------------------------------------------------!
+!  if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,622,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
+!  if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Allocating Transfer Arrays...'
+  allocate(wgridf_g(ngrids))
+  allocate(wgridp_g(ngrids))
+  allocate(ed_fluxp_g(ngrids))
+  allocate(ed_fluxf_g(ngrids))
+  allocate(wgrids_g(ngrids))
+  allocate(ed_precip_g(ngrids))
+  do ifm=1,ngrids
+     call newgrid(ifm)
+     call initialize_ed2leaf(ifm,mmxp(ifm),mmyp(ifm))
+  enddo
   !-----------------------------------------------------------------------!
   ! STEP 8: Inform edtypes which atmospheric cell to look at
   !          
@@ -226,22 +240,7 @@ subroutine ed_coup_driver
      call reset_averaged_vars(edgrid_g(ifm))
   end do
 
-  !-----------------------------------------------------------------------!
-  ! STEP 16: Initialize the flux arrays that pass to the atmosphere
-  !-----------------------------------------------------------------------!
-  allocate(wgridf_g(ngrids))
-  allocate(wgridp_g(ngrids))
-  allocate(ed_fluxp_g(ngrids))
-  allocate(ed_fluxf_g(ngrids))
-  allocate(wgrids_g(ngrids))
-  allocate(ed_precip_g(ngrids))
-  do ifm=1,ngrids
-     call newgrid(ifm)
-     call initialize_ed2leaf(ifm,mmxp(ifm),mmyp(ifm))
-  enddo
-
-
-  !-----------------------------------------------------------------------!
+   !-----------------------------------------------------------------------!
   ! STEP 17. Getting the CPU time and printing the banner                 !
   !-----------------------------------------------------------------------!
   if (mynum == nnodetot) then
@@ -269,7 +268,7 @@ subroutine find_frqsum()
         frqstate,         &
         frqfast,          &
         frqsum
-   use consts_coms, only: day_sec
+   use rconstants, only: day_sec
 
    implicit none 
 

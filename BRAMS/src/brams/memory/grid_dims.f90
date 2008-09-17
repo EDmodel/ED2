@@ -43,7 +43,7 @@ module grid_dims
 
   !   MAXMACH - the maximum number of processors on a parallel run
 
-  integer, parameter :: maxmach=64
+  integer, parameter :: maxmach=256
 
   ! TEB
   !  MAXSTEB - Maximum number of layers used in TEB

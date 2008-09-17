@@ -161,7 +161,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz  &
    use teb_spm_start, only: TEB_SPM    ! INTENT(IN)
    use mem_teb, only: teb_vars               !Type
    use mem_teb_common, only: teb_common             !Type
-
+   use mem_grid,only:ngrid
    implicit none
 
    ! Arguments:
@@ -331,7 +331,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz  &
 
    ! For no soil model (patch 2) fill "canopy" temperature and moisture
 
-         if (isfcl == 0) then
+         if (isfcl  == 0) then
             leaf%can_temp  (i,j,2) = (ths - dthcon) * pis
             leaf%can_rvap  (i,j,2) = rvs - drtcon
             leaf%patch_area(i,j,1) = 1. - pctlcon
