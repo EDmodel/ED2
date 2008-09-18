@@ -4953,30 +4953,41 @@ contains
 
           
        endif
-       
-       
-       call filltab_globtype(igr)
-       call filltab_edtype(igr,0)
-       call filltab_polygontype(igr,1,0)
-       call filltab_sitetype(igr,1,1,0)
-       call filltab_patchtype(igr,1,1,1,0)
 
-    enddo
+       call filltab_globtype(igr)
+
+       call filltab_edtype(igr,0)
+
+       if (gdpy(mynum,igr)>0) then
+          call filltab_polygontype(igr,1,0)
+
+!          if (gdsi(mynum,igr)>0) then
+             call filltab_sitetype(igr,1,1,0)
+
+ !            if (gdpa(mynum,igr)>0) then
+                call filltab_patchtype(igr,1,1,1,0)
+  !           endif
+ !         endif
+       endif
        
+          
+    enddo
+
+
     do igr = 1,ngrids
 
        ! Test to see if the var_table has been initialized. If it has
        ! then deallocate its pointers and reset its first flag. These
        ! will be reallocated on the first pass of the filltab_
        ! subroutines.
-       
+
        cgrid => edgrid_g(igr)
-       
+
        cgrid%pyglob_id = 0 + cgrid%mach_polygon_offset_index
        
        ! Determine the total number of variables for each grid
        ! These will determine the length of the vt_vector
-              
+
        call filltab_edtype(igr,1)
        
        ncohorts_g = 0 + cgrid%mach_cohort_offset_index
@@ -5035,13 +5046,14 @@ contains
           enddo
           
        enddo
-
+      
        if (mynum.eq.1 .and. model_start) then
           model_start = .false.
           do nv=1,num_var(igr)
              write(*,"(a,i4,a,i4,a,a)")'Registering: ',nv,' of',num_var(igr),'  ',vt_info(nv,igr)%name
           enddo
-       endif
+       endif 
+
     enddo
 
 
@@ -6209,6 +6221,11 @@ contains
     integer :: nvar
     
     type(polygontype),pointer :: cpoly
+    
+    if (.not.associated(edgrid_g(igr)%polygon(ipy)%sipa_id)) then
+       print*,"RETURNING",igr,ipy,init
+       return
+    endif
 
     cpoly => edgrid_g(igr)%polygon(ipy)
 
@@ -7506,6 +7523,11 @@ contains
     integer :: var_len,max_ptrs,var_len_global
     integer :: nvar
     type(patchtype),pointer :: cpatch
+
+    if(.not.associated(edgrid_g(igr)%polygon(ipy)%site(isi)%patch(ipa)%nplant)) then
+       print*,"RETURNING",igr,ipy,isi,ipa
+       return
+    endif
 
     cpatch => edgrid_g(igr)%polygon(ipy)%site(isi)%patch(ipa)
 

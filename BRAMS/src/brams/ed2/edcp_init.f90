@@ -245,6 +245,7 @@ subroutine init_master_work()
         
         offset=offset+npolys
         npolys=count(work_e(ifm)%land)
+           
         gdpy(nm,ifm)   = npolys
         py_off(nm,ifm) = offset
         call MPI_Bcast(nm,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
