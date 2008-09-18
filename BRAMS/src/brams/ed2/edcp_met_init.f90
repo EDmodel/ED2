@@ -4,7 +4,7 @@ subroutine ed_init_coup_atm
   use misc_coms,     only: ied_init_mode,runtype
   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype,edgrid_g
   use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr
-  use consts_coms,    only: alli1000, cliq1000, cice1000, t00
+  use rconstants,    only: alli1000, cliq1000, cice1000, t00
   use grid_coms,      only: nzs, nzg, ngrids
   use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
@@ -244,7 +244,7 @@ subroutine ed_init_radiation
   use mem_radiate,only:radiate_g
   use mem_leaf,only:leaf_g
   use mem_grid,only:ngrids
-  use consts_coms,only:stefan
+  use rconstants,only:stefan
   use ed_state_vars,only:edgrid_g,edtype
 
   implicit none
@@ -412,7 +412,7 @@ subroutine update_site_derived_props_ar(cpoly, census_flag, isi)
   
   use ed_state_vars,only: polygontype,sitetype,patchtype
 
-  use consts_coms,    only : pi1
+  use rconstants,    only : pi1
   implicit none
   
   type(polygontype),target :: cpoly
@@ -468,7 +468,7 @@ subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
 
   use soil_coms,   only: ed_nstyp, soil
   use grid_coms,   only: nzg
-  use consts_coms, only: t00, pi1, grav, rvap
+  use rconstants, only: t00, pi1, g, rm
 
   implicit none
 
@@ -484,7 +484,7 @@ subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
   real, intent(out) :: surface_ssh     ! surface (saturation) spec hum [kg_vap/kg_air]
 
 
-  real, parameter :: gorvap = grav / rvap  ! gravity divided by vapor gas constant
+  real, parameter :: gorvap = g / rm  ! gravity divided by vapor gas constant
 
 
   ! Local variables
@@ -535,7 +535,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
 
   use ed_state_vars, only: edtype, polygontype, sitetype, patchtype
   use soil_coms, only: soilstate_db, soil,slz
-  use consts_coms, only: alli1000, cliq1000, cice1000, t00
+  use rconstants, only: alli1000, cliq1000, cice1000, t00
   use grid_coms, only: nzg, ngrids
   
   implicit none

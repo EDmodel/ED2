@@ -439,6 +439,8 @@ subroutine lat2index(jo,nperdeg,njosh,offpix,nthtile,alt,lat)
   
   if (wjo2 < .5) jo = jo1
 
+  if (jo==njosh+1) jo=njosh
+
   if (jo .lt. 1 .or. jo .gt. njosh) then
      print*,"JO IS MESSED UP",jo,njosh,lat,wlat1,rjo_full,alt 
      print*,"TRY SHIFTING YOUR GRID CENTER EVER SO SLIGHTLY, IE +-0.01"
@@ -517,6 +519,8 @@ subroutine lon2index(io,nperdeg,niosh,offpix,nthtile,alt,lon)
   io = io2
   
   if (wio2 < .5) io = io1
+
+  if (io==niosh+1) io=niosh
 
   if (io .lt. 1 .or. io .gt. niosh) then
      print*,"IO IS MESSED UP",io,niosh,lon,rio_full,io_full,nthtile,alt

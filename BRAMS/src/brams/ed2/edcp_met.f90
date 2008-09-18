@@ -7,7 +7,7 @@ subroutine copy_atm2lsm(ifm,init)
        master_num,mmzp,mmxp,mmyp,  &
        ia,iz,ja,jz,ia_1,iz1,ja_1,jz1
   
-  use consts_coms,only:cpi,cp,p00,rocp,rdry,cliq,alli,cice
+  use rconstants,only:cpi,cp,p00,rocp,rgas,cliq,alli,cice
   use met_driver_coms, only: have_co2,initial_co2
   use ed_state_vars,only: edgrid_g,edtype,polygontype
   use ed_node_coms,only:mynum
@@ -226,7 +226,7 @@ subroutine copy_atm2lsm(ifm,init)
         
         
         ! rho
-        cpoly%met(isi)%rhos = cpoly%met(isi)%prss / (rdry *   &
+        cpoly%met(isi)%rhos = cpoly%met(isi)%prss / (rgas *   &
              cpoly%met(isi)%atm_tmp * (1.0 + 0.61 * cpoly%met(isi)%atm_shv))
         
         ! qpcpg, dpcpg
@@ -257,7 +257,7 @@ subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean)
   use mem_micro,  only: micro_g
   use micphys,    only: level
   use mem_basic,  only: basic_g
-  use consts_coms, only: cpi, cliq
+  use rconstants, only: cpi, cliq
   use ed_state_vars,only: edtype
   use mem_edcp, only : ed_precip_g
   use misc_coms, only: dtlsm
@@ -498,7 +498,7 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
   use mem_leaf,only:leaf_g
   use mem_basic,only: basic_g
   use mem_grid,only: grid_g,zt,dzt,zm,if_adap,jdim
-  use consts_coms,only:cpi
+  use rconstants,only:cpi
  
 
   implicit none
@@ -617,7 +617,7 @@ subroutine transfer_ed2leaf(ifm,timel)
        edtime1,       &
        edtime2
   use mem_turb,only: turb_g
-  use consts_coms,only:stefan
+  use rconstants,only:stefan
   use mem_leaf,only:leaf_g
   use mem_radiate,only:radiate_g
   use node_mod, only : &
