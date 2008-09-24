@@ -9,12 +9,12 @@
 subroutine sfclyr_sib(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
 
   use mem_all
+  use therm_lib, only: level
 
   implicit none
 
   integer :: mzp,mxp,myp,ia,iz,ja,jz,ibcon
 
-  real :: rslif
   integer :: ng
   !integer, save :: ncall=0
 
@@ -80,6 +80,7 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
   use mem_sib, only : sib_brams_g
   ! TEB_SPM
   use teb_spm_start, only: TEB_SPM !INTENT(IN)
+  use therm_lib, only: rslif,qwtk,qtk,level
 
   implicit none
 
@@ -99,9 +100,6 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
 
   integer :: i,j,ip,iter_leaf
 
-  real :: rslif
-
-  integer :: k2
 
   !itb...stuff for SiB...
   integer, external :: julday
@@ -116,70 +114,19 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
 
   real :: co2flx,pco2c,pco2m_sib
 
-  ![MLO - Sfcrad should have TEB variables, however, I have no idea whether this 
-  !       makes sense or not, just reproducing what was present at rad_driv.f90
-  !TEB_SPM
-  !DIMENSION(m2,m3)
-  REAL, pointer :: EMIS_TOWN(:,:), ALB_TOWN(:,:), TS_TOWN(:,:)
-  !DIMENSION(m2,m3,np)
-  real, pointer :: G_URBAN(:,:,:)
   ! Local Variables
   ! Needed by TEB_SPM
-  real, pointer :: L_EMIS_TOWN, L_ALB_TOWN, L_TS_TOWN, L_G_URBAN
+  real :: L_EMIS_TOWN, L_ALB_TOWN, L_TS_TOWN, L_G_URBAN
 
   integer :: ksn,nsoil,k
   integer, save :: i_init_stars_sib
   data i_init_stars_sib/0/
 
   ! Interface necessary to use pointer as argument - TEB_SPM
-#if USE_INTERF
-  interface
-     subroutine sfcrad(mzg,mzs,ip  &
-          ,soil_energy,soil_water,soil_text,sfcwater_energy,sfcwater_depth  &
-          ,patch_area,can_temp,veg_temp,leaf_class,veg_height,veg_fracarea  &
-          ,veg_albedo,sfcwater_nlev,rshort,rlong,albedt,rlongup,cosz        &
-          ! For TEB_SPM
-          ,G_URBAN, ETOWN, ALBTOWN, TSTOWN                                  &
-          !
-          )
-       integer, intent(in) :: mzg,mzs,ip
-       real, dimension(:) :: soil_energy,soil_water,soil_text
-       real, dimension(:) :: sfcwater_energy,sfcwater_depth
-       real :: patch_area,can_temp,veg_temp,leaf_class,veg_height,veg_fracarea&
-            ,veg_albedo,sfcwater_nlev,rshort,rlong,albedt,rlongup,cosz
-       ! for TEB_SPM
-       real, pointer :: G_URBAN, ETOWN, ALBTOWN, TSTOWN
-     end subroutine sfcrad
-
-     subroutine sfclmcv(ustar,tstar,rstar,vels,vels_pat,ups,vps,gzotheta, &
-          patch_area,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r              &
-          ! For TEB
-          ,G_URBAN)
-       real, intent(in)    :: ustar, tstar, rstar, vels,vels_pat, ups, vps, &
-            gzotheta, patch_area
-       real, intent(inout) :: sflux_u, sflux_v, sflux_w, sflux_t, sflux_r
-       ! For TEB
-       real, pointer :: G_URBAN
-     end subroutine sfclmcv
-    
-  end interface
-#endif
   
-  ! TEB_SPM
-  nullify(EMIS_TOWN)
-  nullify(ALB_TOWN)
-  nullify(TS_TOWN)
-  nullify(G_URBAN)
-  nullify(L_EMIS_TOWN)
-  nullify(L_ALB_TOWN)
-  nullify(L_TS_TOWN)
-  nullify(L_G_URBAN)
-  allocate(EMIS_TOWN(m2,m3))
-  allocate(ALB_TOWN(m2,m3))
-  allocate(TS_TOWN(m2,m3))
-  allocate(G_URBAN(m2,m3,np))
-  call azero(m2*m3*np,G_URBAN)
 
+  ! TEB_SPM
+  
 
   !srf - SIB2
 
@@ -250,9 +197,9 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
 
         ! Update water internal energy from time-dependent SST
 
-        leaf%soil_energy(mzg,i,j,1) = 334000.  &
-             + 4186. * (leaf%seatp(i,j) + (leaf%seatf(i,j) - leaf%seatp(i,j)) &
-             * timefac_sst - 273.15)
+        leaf%soil_energy(mzg,i,j,1) = alli  &
+             + cliq * (leaf%seatp(i,j) + (leaf%seatf(i,j) - leaf%seatp(i,j)) &
+             * timefac_sst - t00)
 
         ! Fill surface precipitation arrays for input to SiB
 
@@ -304,20 +251,23 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
               if (iswrtyp > 0 .or. ilwrtyp > 0) then
 
                  if (ip == 1 .or. leaf%patch_area(i,j,ip) >= .009) then
-                    ! TEB_SPM
+                    ! TEB_SPM - This is just to avoid problems with pointers in 
+                    !           subroutines. 
                     if (TEB_SPM==1) then
-                       L_G_URBAN   => leaf%G_URBAN(i,j,ip)
-                       L_EMIS_TOWN => EMIS_TOWN(i,j)
-                       L_ALB_TOWN  => ALB_TOWN(i,j)
-                       L_TS_TOWN   => TS_TOWN(i,j)
-                    endif
+                       L_G_URBAN   = leaf%G_URBAN(i,j,ip)
+                    else
+                       L_G_URBAN   = 0. 
+                    end if
+                    L_EMIS_TOWN = 0.
+                    L_ALB_TOWN  = 0.
+                    L_TS_TOWN   = 0.
 
                     call sfcrad(mzg,mzs,ip                 &
-                         ,leaf%soil_energy     (:,i,j,ip)  &
-                         ,leaf%soil_water      (:,i,j,ip)  &
-                         ,leaf%soil_text       (:,i,j,ip)  &
-                         ,leaf%sfcwater_energy (:,i,j,ip)  &
-                         ,leaf%sfcwater_depth  (:,i,j,ip)  &
+                         ,leaf%soil_energy     (1:mzg,i,j,ip)  &
+                         ,leaf%soil_water      (1:mzg,i,j,ip)  &
+                         ,leaf%soil_text       (1:mzg,i,j,ip)  &
+                         ,leaf%sfcwater_energy (1:mzs,i,j,ip)  &
+                         ,leaf%sfcwater_depth  (1:mzs,i,j,ip)  &
                          ,leaf%patch_area      (i,j,ip)    &
                          ,leaf%can_temp        (i,j,ip)    &
                          ,leaf%veg_temp        (i,j,ip)    &
@@ -438,7 +388,7 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
 
                  if (leaf%patch_area(i,j,ip) >= .009) then
                     if (TEB_SPM == 1) then
-                      L_G_URBAN => leaf%G_URBAN(i,j,ip)
+                      L_G_URBAN = leaf%G_URBAN(i,j,ip)
                     end if
 
                     call sfclmcv(leaf%ustar(i,j,ip),leaf%tstar(i,j,ip)      &
@@ -580,9 +530,9 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
                     !calculate back soil energy 
                     do k=1,mzg
                        nsoil = nint(leaf%soil_text(k,i,j,ip))
-                       leaf%soil_energy(k,i,j,ip) = (tempk(k)- 273.15)  &
-                            *(slcpd(nsoil)+leaf%soil_water(k,i,j,ip)*4.186e6) &
-                            + leaf%soil_water(k,i,j,ip)*3.34e8
+                       leaf%soil_energy(k,i,j,ip) = (tempk(k)- t00)  &
+                            *(slcpd(nsoil)+leaf%soil_water(k,i,j,ip)*cliq1000) &
+                            + leaf%soil_water(k,i,j,ip)*alli1000
                     enddo
 
                  endif
@@ -615,11 +565,6 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
         enddo
      enddo
   endif
-
-  deallocate(EMIS_TOWN)
-  deallocate(ALB_TOWN)
-  deallocate(TS_TOWN)
-  deallocate(G_URBAN)
 
   return
 end subroutine sib_driver

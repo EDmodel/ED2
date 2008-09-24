@@ -29,9 +29,9 @@ subroutine h5_output(vtype)
                         time
             
   use hdf5_coms,only : chnkdims,chnkoffs,cnt,stride,globdims
-
+#if USE_HDF5
   use hdf5
-  
+#endif
   use ed_node_coms,only:mynum,nnodetot,recvnum,sendnum
   use max_dims, only : n_pft,n_dist_types,n_dbh,maxgrds
   use ed_state_vars,only: edgrid_g,edtype,polygontype,sitetype,patchtype,gdpy

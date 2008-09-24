@@ -455,7 +455,7 @@ Contains
 !**********************************************************************
 
    subroutine mclat_copy(jday)
-
+   use rconstants, only: twopi
    implicit none
    
    integer, intent(in) :: jday
@@ -470,7 +470,7 @@ Contains
 ! function.  Assume that extreme values occur on January 16 and 1/2 year later.
 
    fjday = float(jday)
-   wtjan = .5 * (1. + cos(6.283185 * (fjday-16.) / 365.))
+   wtjan = .5 * (1. + cos(twopi * (fjday-16.) / 365.))
    wtjul = 1. - wtjan
 
    do lv = 1,33

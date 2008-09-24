@@ -45,8 +45,7 @@ Module mem_leaf
   type (leaf_vars), allocatable :: leaf_g(:), leafm_g(:)
 
   !----------------------------------------------------------------------------
-  integer                 :: nslcon,nvgcon,nvegpat
-  integer :: isfcl
+  integer                 :: nslcon,nvgcon,nvegpat,isfcl
   real                    :: zrough,pctlcon,ubmin,albedo,drtcon,dthcon,seatmp
   real, dimension(nzgmax) :: stgoff,slmstr
   real, dimension(nzgmax)       :: slz

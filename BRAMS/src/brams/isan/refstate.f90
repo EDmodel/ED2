@@ -215,6 +215,7 @@ subroutine varfile_refstate(n1,n2,n3,thp,pc,pi0,th0,rtp,dn0  &
                  ,dn0u,dn0v,topt,rtgt,zt,ztop,piref,thref,dnref,rtref)
 
 use rconstants
+use therm_lib, only: virtt
                  
 implicit none
 
@@ -252,14 +253,14 @@ call htint2(n1,thp(1,ir,jr),vctr2,n1,vctr1,zt)
 call htint2(n1,rtp(1,ir,jr),vctr2,n1,rtref(1),zt)
 
 do k = 1,n1
-   thref(k) = vctr1(k) * (1. + .61 * rtref(k))
+   thref(k) = virtt(vctr1(k),rtref(k))
 enddo
 rtref(1) = rtref(2)
 thref(1) = thref(2)
 
 piref(1) = pc(1,ir,jr) + g * (vctr2(1) - zt(1))  &
                 / (.5 * (thref(1)  &
-                + thp(1,ir,jr) * (1. + .61 * rtp(1,ir,jr))))
+                + virtt(thp(1,ir,jr),rtp(1,ir,jr))))
 do k = 2,n1
    piref(k) = piref(k-1) - g * (zt(k)-zt(k-1))  &
              / ( .5 * (thref(k) + thref(k-1)))

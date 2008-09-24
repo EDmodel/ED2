@@ -50,10 +50,6 @@ subroutine rams_mem_alloc(proc_type)
   use mem_scratch2_grell_sh    ! scratch 2 shallow
   use mem_scratch3_grell_sh    ! scratch 3 shallow
 
-  ! ALF
-  ! Data for Optimization for vector machines
-  use mem_micro_opt, only: &
-       alloc_micro_opt
 
   ! For specific optimization depending the type of machine
   use machine_arq, only: machine ! INTENT(IN)
@@ -255,16 +251,6 @@ subroutine rams_mem_alloc(proc_type)
   enddo
 
 
-  ! Allocate Optimized Micro variables
-  ! Only for use with SX-6 specific optimization
-  !if (machine==1 .and. CATT==1) then
-  if (machine==1) then
-     !  if (CATT == 1) then
-     !     ! micphys_data already allocated
-     !     allocate(micro_g_opt(ngrids))
-     !     call nullify_micro_opt()  !(micro_g_opt)
-     call alloc_micro_opt(nmzp,nmxp,nmyp) !,micro_g_opt)
-  endif
 
   ! Allocate radiate variables data type
   write (unit=*,fmt=*) ' + Radiate allocation;'

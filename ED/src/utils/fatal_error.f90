@@ -8,7 +8,7 @@ subroutine fatal_error(reason,subr,file)
    use ed_node_coms, only: nnodetot,mynum
    implicit none
    character(len=*), intent(in) :: reason
-   character(len=*), intent(in), optional   :: subr,file
+   character(len=*), intent(in) :: subr,file
 
    include 'mpif.h'
   
@@ -24,9 +24,8 @@ subroutine fatal_error(reason,subr,file)
    elseif (nnodetot > 1) then
       write(unit=*,fmt='(a)')         ' On the master node:'
    end if
-   ! Although it is optional, it should always be present 
-   if (present(file)) write(unit=*,fmt='(a,1x,a)')    '    ---> File:       ',trim(file)
-   if (present(subr)) write(unit=*,fmt='(a,1x,a)')    '    ---> Subroutine: ',trim(subr)
+   write (unit=*,fmt='(a,1x,a)')    '    ---> File:       ',trim(file)
+   write (unit=*,fmt='(a,1x,a)')    '    ---> Subroutine: ',trim(subr)
    write (unit=*,fmt='(a,1x,a)')                      '    ---> Reason:     ',trim(reason)
    write(unit=*,fmt='(a)') '------------------------------------------------------------------'
    write(unit=*,fmt='(a)') ' ED execution halts (see previous error message)...'

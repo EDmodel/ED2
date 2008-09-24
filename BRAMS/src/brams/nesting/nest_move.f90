@@ -465,10 +465,9 @@ do nf = 1,num_scalar(ifm)
    if (jshft .lt. 0) j2 = 1 - jshft
    if (jshft .gt. 0) j2 = nnyp(ifm) - jshft
 
-   call thermo (nnzp(ifm),nnxp(ifm),nnyp(ifm),i1,i2,j1,j2  &
-      ,'thrm_only')
+   call thermo (nnzp(ifm),nnxp(ifm),nnyp(ifm),i1,i2,j1,j2)
 
-   call tkeinit(nzp,nxp,nyp)
+   call tkeinit(nzp,nxp,nyp,i1,i2,j1,j2)
 
 endif
 return

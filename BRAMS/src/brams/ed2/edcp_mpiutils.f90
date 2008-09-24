@@ -1,17 +1,17 @@
 subroutine masterput_ednl(mainnum)
   
-  use max_dims, only: str_len,n_pft,maxpvars,nzgmax,str_len_short,maxgrds
-  
-  use max_dims,        only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
-  use misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
-                           ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput        &
-                           ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir   &
-                           ,integration_scheme,end_time,current_time,sfilout,frqstate     &
-                           ,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmin,ipmax,iedcnfgf
+  use max_dims,        only: str_len,n_pft,maxpvars,nzgmax,str_len_short,maxgrds,max_soi   &
+                           ,max_ed_regions,n_pft
+  use misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz   &
+                           ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput         &
+                           ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir    &
+                           ,integration_scheme,end_time,current_time,sfilout,frqstate      &
+                           ,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmin,ipmax      &
+                           ,iedcnfgf
   use ed_misc_coms,only: attach_metadata
   use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,time,timmax
-  use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database &
-                            ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg       &
+  use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database  &
+                            ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg        &
                             ,runoff_time,zrough
   use met_driver_coms, only: initial_co2
   use mem_sites,       only: edres,maxpatch,maxcohort
@@ -136,9 +136,8 @@ end subroutine masterput_ednl
 !===================================================================
 subroutine nodeget_ednl(master_num)
   
-  use max_dims, only: str_len,n_pft,maxpvars,nzgmax,str_len_short,maxgrds
-
-  use max_dims,        only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
+  use max_dims,        only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars &
+                            ,str_len_short
   use misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
                            ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput        &
                            ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir   &

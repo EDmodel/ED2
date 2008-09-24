@@ -36,9 +36,6 @@ subroutine timestep()
   use mem_oda,   only: &
        if_oda ! intent(in)
 
-  use micphys,   only: &
-       level ! intent(in)
-
   use mem_grid, only: &
        ngrid,      & ! intent(in)
        time,       & ! intent(in)
@@ -86,6 +83,10 @@ subroutine timestep()
        ichemi,         & ! INTENT(IN)
        isource           ! INTENT(IN)
 
+  ! For Microphysics
+  use therm_lib, only: &
+         bulk_on       ! ! intent(in)
+
   ! ALF
   ! Necessary in new advection scheme
   use advect_kit, only : &
@@ -121,11 +122,6 @@ subroutine timestep()
   !        +-------------------------------------------------------------+
 
 
-  ! MLO - Initialize microphysics tables if the level is 3. This should probably 
-  !       be placed outside the subroutine timestep for efficiency, but I will 
-  !       leave it here.
-  if (level == 3) call micro_1st()
-
   !  Zero out all tendency arrays.   
   !--------------------------------
   t1=cputime(w1)
@@ -152,9 +148,9 @@ subroutine timestep()
   !  Thermodynamic diagnosis   
   !--------------------------------
   t1=cputime(w1)
-  if (level  /=  3) then
+  if (.not. bulk_on) then
      if (banneron) write(unit=*,fmt='(a)') '     [-] Calling thermo(supsat)...'
-     call THERMO(mzp,mxp,myp,ia,iz,ja,jz,'SUPSAT') 
+     call THERMO(mzp,mxp,myp,ia,iz,ja,jz) 
   endif
   if (acct) call acctimes('accu',3,'THERMO',t1,w1)
 
@@ -299,7 +295,7 @@ subroutine timestep()
   if (iexev == 2) then
      t1=cputime(w1)
      if (banneron) write(unit=*,fmt='(a)') '     [-] Calling thermo(micro)...'
-     call thermo(mzp,mxp,myp,1,mxp,1,myp,'MICRO') 
+     call thermo(mzp,mxp,myp,1,mxp,1,myp) 
      if (banneron) write(unit=*,fmt='(a)') '     [-] Calling exevolve(tha)...'
      call exevolve(mzp,mxp,myp,ngrid,ia,iz,ja,jz,izu,jzv,jdim,mynum,dtlt,'THA')
      if (acct) call acctimes('accu',17,'EXEVOLVE_THA',t1,w1)
@@ -399,30 +395,24 @@ subroutine timestep()
   !----------------------------------------
   t1=cputime(w1)
   if (banneron) write(unit=*,fmt='(a)') '     [-] Calling negadj1...'
-  call negadj1(mzp,mxp,myp) 
+  call negadj1(mzp,mxp,myp,ia,iz,ja,jz) 
   if (acct) call acctimes('accu',25,'NEGADJ1',t1,w1)
 
   !  Microphysics
   !----------------------------------------
   t1=cputime(w1)
-  if (level==3) then
-!     if (machine==1 .and. TEB_SPM==0) then
-!        ! Optimized version only for SX-6
-!        call micro_opt()
-!     else
-        ! Original Version used in a Generic IA32 machine
-        if (banneron) write(unit=*,fmt='(a)') '     [-] Calling micro...'
-        call micro()
-!     endif
-  endif
+  if (bulk_on) then
+     if (banneron) write(unit=*,fmt='(a)') '     [-] Calling micro...'
+     call micro_driver()
+  end if
   if (acct) call acctimes('accu',26,'MICRO',t1,w1)
 
   !  Thermodynamic diagnosis
   !----------------------------------------
   t1=cputime(w1)
-  if (level /= 3) then
+  if (.not. bulk_on) then
      if (banneron) write(unit=*,fmt='(a)') '     [-] Calling thermo(micro)...'
-     call THERMO(mzp,mxp,myp,1,mxp,1,myp,'MICRO') 
+     call THERMO(mzp,mxp,myp,1,mxp,1,myp) 
   endif
   if (acct) call acctimes('accu',27,'THERMO',t1,w1)
 
@@ -685,7 +675,7 @@ subroutine mass_flux(n1,n2,n3,m1,m2,m3,up,vp,wp  &
   print*,  wmass,emass,smass,nmass
   print*, 'total (kg/(m2 s):',tmass/area
   print*, 'total (kg/m2):',aintmass/area
-  print*, 'total pr change (pa):',aintmass/area*9.8
+  print*, 'total pr change (pa):',aintmass/area*g
   print*, 'computed mean press:',prtot/area
   print*,'==============================='
 

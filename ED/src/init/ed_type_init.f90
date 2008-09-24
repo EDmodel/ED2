@@ -301,6 +301,7 @@ subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
   use ed_state_vars,only:sitetype
   use grid_coms, only: nzg, nzs
   use soil_coms, only: soil
+  use therm_lib, only: qwtk,qtk
   
   implicit none
   integer :: ipa

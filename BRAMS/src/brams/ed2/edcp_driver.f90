@@ -64,6 +64,12 @@ subroutine ed_coup_driver
   w1=walltime(wtime_start)
 
   !---------------------------------------------------------------------------!
+  ! STEP 0: Load the node_mod arrays in case it is a serial run.              !
+  !---------------------------------------------------------------------------!
+  if (nnodetot == 1) call onenode()
+
+
+  !---------------------------------------------------------------------------!
   ! STEP 1: Set the ED model parameters                                       !
   !---------------------------------------------------------------------------!
   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Load_Ed_Ecosystem_Params...'
@@ -268,7 +274,7 @@ subroutine find_frqsum()
         frqstate,         &
         frqfast,          &
         frqsum
-   use rconstants, only: day_sec
+   use consts_coms, only: day_sec
 
    implicit none 
 

@@ -1,2 +1,7 @@
 #!/bin/sh
-bsub -Is -q interact make OPT=opt
+if [ 'z'${1} == 'zclean' ]
+then
+  ./install.sh clean
+else
+  bsub -Is -q interact ./install.sh
+fi

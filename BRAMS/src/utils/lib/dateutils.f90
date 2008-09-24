@@ -7,7 +7,8 @@
 !                                                                                          !
 !  MLO - 08/08/08 : Adjusting dates on BRAMS so it will also use Gregorian calendar (97    !
 !                   leap years every 400 years), so it will be in line with ED2.           !
-!                   Also, BRAMS, like ED2, uses January 1, 1583, 00GMT as the time origin. !
+!                   Also, BRAMS, like ED2, now uses January 1, 1583, 00GMT as the time     !
+!                   origin.                                                                !
 !##########################################################################################!
 subroutine date_abs_secs (indate1,seconds)
    use rconstants, only : day_sec,hr_sec,min_sec

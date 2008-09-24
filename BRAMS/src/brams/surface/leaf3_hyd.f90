@@ -119,6 +119,8 @@ subroutine hydrol(m2,m3,mzg,mzs,np,maxpatch,ngrps          &
    ,slz,ig,jg,ipg,lpg,slmsts,zi,fa,wi,finv                 &
    ,rhow,rhowi,dtlt,slcons0,slcpd,wateradd,time)
 
+use rconstants, only: cliq,cliq1000, tsupercool
+use therm_lib, only: qwtk,qtk
 implicit none
 integer :: m2,m3,mzg,mzs,np,maxpatch,ngrps,ngd,i,j,k,lp,l,ip,nsoil,ibotpatch
 integer, dimension(*) :: ig,jg,lpg
@@ -250,10 +252,10 @@ do ngd = 1,ngrps
                   ,slcpd(nsoil),tempk,fracliq)
          delta_water = wateradd(l) / (slz(ksat(l)+1) - slz(ksat(l)))
          soil_water(ksat(l),i,j,ip) = soil_water(ksat(l),i,j,ip) + delta_water
-         delta_energy = delta_water * 4.186e6 * (tempk - 193.36)
+         delta_energy = delta_water * cliq1000 * (tempk - tsupercool)
          soil_energy(ksat(l),i,j,ip) = soil_energy(ksat(l),i,j,ip) + delta_energy
          wsum = wsum + wateradd(l) * fa(l)
-         qwsum = qwsum + wateradd(l) * 4.186e6 * (tempk - 193.36) * fa(l)
+         qwsum = qwsum + wateradd(l) * cliq1000 * (tempk - tsupercool) * fa(l)
       endif
    enddo
 
@@ -322,7 +324,7 @@ do ngd = 1,ngrps
          if (fracliq .gt. .1) then
             qw = sfcwater_energy(1,i,j,ip) * sfcwater_mass(1,i,j,ip)
             wfreeb = sfcwater_mass(1,i,j,ip) * (fracliq - .1) / 0.9
-            qwfree = wfreeb * 4186. * (tempk - 193.36)
+            qwfree = wfreeb * cliq * (tempk - tsupercool)
             sfcwater_mass(1,i,j,ip) = sfcwater_mass(1,i,j,ip) - wfreeb
             sfcwater_energy(1,i,j,ip) = (qw - qwfree)  &
                / (max(1.e-4,sfcwater_mass(1,i,j,ip)))

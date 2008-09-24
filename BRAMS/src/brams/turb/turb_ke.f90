@@ -834,7 +834,7 @@ end subroutine tkemy
 
 !     *****************************************************************
 
-subroutine tkeinit(n1,n2,n3)
+subroutine tkeinit(n1,n2,n3,ia,iz,ja,jz)
 
 use mem_grid, only: &
               ngrid, &         !INTENT(IN)
@@ -851,7 +851,7 @@ use rconstants, only: &
                 vonk           !INTENT(IN)
                 
 implicit none
-integer, intent(in) :: n1,n2,n3
+integer, intent(in) :: n1,n2,n3,ia,iz,ja,jz
 
 integer :: i,j,k
 real :: epsmin
@@ -859,8 +859,8 @@ real :: epsmin
 !        limit the values to the minimum
 
 if( associated(turb_g(ngrid)%tkep) ) then
-   do j = 1,n3
-      do i = 1,n2
+   do j = ja,jz
+      do i = ia,iz
          do k = 1,n1
             turb_g(ngrid)%tkep(k,i,j) = max(tkmin,turb_g(ngrid)%tkep(k,i,j))
          enddo
@@ -869,8 +869,8 @@ if( associated(turb_g(ngrid)%tkep) ) then
 endif
 if( associated(turb_g(ngrid)%epsp) ) then
    epsmin=(c_eps*(tkmin**1.5))/(vonk*zt(2))
-   do j = 1,n3
-      do i = 1,n2
+   do j = ja,jz
+      do i = ia,iz
          do k = 1,n1
             turb_g(ngrid)%epsp(k,i,j) = max(epsmin,turb_g(ngrid)%epsp(k,i,j))
          enddo

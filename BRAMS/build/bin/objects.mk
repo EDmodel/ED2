@@ -57,9 +57,9 @@ OBJ_MODEL =                         \
 	grid_dims.o                 \
 	grid_struct.o               \
 	gridset.o                   \
-	harr_radinit.o              \
-	harr_raddriv.o              \
 	harr_rad.o                  \
+	harr_raddriv.o              \
+	harr_radinit.o              \
 	hemi2.o                     \
 	htint-opt.o                 \
 	inithis.o                   \
@@ -96,7 +96,6 @@ OBJ_MODEL =                         \
 	mem_mass.o                  \
 	mem_mclat.o                 \
 	mem_micro.o                 \
-	mem_micro_optij.o           \
 	mem_mksfc.o                 \
 	mem_nestb.o                 \
 	mem_oda.o                   \
@@ -125,7 +124,6 @@ OBJ_MODEL =                         \
 	mem_varinit.o               \
 	mic_coll.o                  \
 	mic_driv.o                  \
-	mic_driv_new.o              \
 	mic_gamma.o                 \
 	mic_init.o                  \
 	mic_misc.o                  \
@@ -133,6 +131,7 @@ OBJ_MODEL =                         \
 	mic_tabs.o                  \
 	mic_vap.o                   \
 	micphys.o                   \
+	micro_coms.o                \
 	mksfc_driver.o              \
 	mksfc_fuso.o                \
 	mksfc_ndvi.o                \
@@ -255,12 +254,21 @@ OBJ_MODEL =                         \
 	varf_update.o               \
 	vformat.o                   \
 	vtab_fill.o                 \
+	edcp_driver.o               \
+	edcp_init.o                 \
+	edcp_load_namelist.o        \
+	edcp_met.o                  \
+	edcp_met_init.o             \
+	edcp_model.o                \
+	edcp_mpiutils.o             \
+	mem_edcp.o                  \
 	allometry.o                 \
 	average_utils.o             \
 	c34constants.o              \
 	canopy_air_coms.o           \
 	canopy_radiation_coms.o     \
 	canopy_update_euler.o       \
+	consts_coms.o               \
 	decomp_coms.o               \
 	decomposition.o             \
 	disturb_coms.o              \
@@ -280,13 +288,6 @@ OBJ_MODEL =                         \
 	ed_type_init.o              \
 	ed_work_vars.o              \
 	ed_xml_config.o             \
-	edcp_driver.o               \
-	edcp_init.o                 \
-	edcp_load_namelist.o        \
-	edcp_met.o                  \
-	edcp_model.o                \
-	edcp_mpiutils.o             \
-	edcp_met_init.o             \
 	edio.o                      \
 	ename_coms.o                \
 	euler_driver.o              \
@@ -311,7 +312,6 @@ OBJ_MODEL =                         \
 	libxml2f90.f90_pp.o         \
 	lsm_hyd.o                   \
 	max_dims.o                  \
-	mem_edcp.o                  \
 	mem_sites.o                 \
 	met_driver_coms.o           \
 	misc_coms.o                 \
@@ -334,3 +334,4 @@ OBJ_MODEL =                         \
 	structural_growth.o         \
 	twostream_rad.o             \
 	var_tables_array.o
+

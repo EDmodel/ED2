@@ -3,6 +3,7 @@ subroutine cup_env(j,z,qes,he,hes,t,q,p,z1,mix,mgmxp,mkx,mgmzp,istart,iend     &
                   ,psur,ierr,tcrit,itest)
 
   use rconstants, only : rgas, cp, alvl, aklv, akiv, ep, g, rocp
+  use therm_lib, only: virtt
 
   implicit none
   integer                         :: mix,mgmxp,mkx,mgmzp,i,k,istart,iend,iph,j &
@@ -27,7 +28,7 @@ subroutine cup_env(j,z,qes,he,hes,t,q,p,z1,mix,mgmxp,mkx,mgmzp,istart,iend     &
            QES(I,K) = ep*E/(100.*P(I,K)-E)
            if (QES(I,K) .le. 1.E-08)   QES(I,K)=1.E-08
            if (Q(I,K)   .gt. QES(I,K)) Q(I,K)=QES(I,K)
-           TV(I,K) = T(I,K)+.608*Q(I,K)*T(I,K)
+           TV(I,K) = virtt(T(I,K),Q(I,K))
         endif
      enddo
   enddo

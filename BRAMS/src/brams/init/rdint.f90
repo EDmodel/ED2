@@ -20,6 +20,7 @@ subroutine initlz (name_name)
   use mem_turb, only:if_urban_canopy
   use io_params
   use micphys
+  use therm_lib, only : level
 
   ! CATT
   use catt_start, only         : CATT                      ! intent(in)
@@ -45,6 +46,8 @@ subroutine initlz (name_name)
 
   ! Soil Moisture Init.
   use mem_soil_moisture, only : SOIL_MOIST ! INTENT(IN)
+
+  use ref_sounding, only : dn01dn
 
   implicit none
 
@@ -179,11 +182,12 @@ subroutine initlz (name_name)
      do ifm=1,ngrids
         call newgrid(ifm)
         call fldinit(1)
-        call negadj1(nzp,nxp,nyp)
-        call thermo(nzp,nxp,nyp,1,nxp,1,nyp,'THRM_ONLY')
+        call negadj1(nzp,nxp,nyp,1,nxp,1,nyp)
+        call thermo(nzp,nxp,nyp,1,nxp,1,nyp)
 
         if (level  ==  3) then
-           call initqin(nzp,nxp,nyp        &
+           !----- Using scratch variables to define cccnp and cifnp -----------------------!
+           call initqin(nzp,nxp,nyp          &
                 ,micro_g(ifm)%q2    (1,1,1)  &
                 ,micro_g(ifm)%q6    (1,1,1)  &
                 ,micro_g(ifm)%q7    (1,1,1)  &
@@ -191,21 +195,14 @@ subroutine initlz (name_name)
                 ,basic_g(ifm)%pp    (1,1,1)  &
                 ,basic_g(ifm)%theta (1,1,1)  &
                 ,basic_g(ifm)%dn0   (1,1,1)  &
-                ,micro_g(ifm)%cccnp (1,1,1)  &
-                ,micro_g(ifm)%cifnp (1,1,1)  )
+                ,scratch%vt3dc          (1)  &
+                ,scratch%vt3di          (1)  )
+           !----- Copying them to the micro arrays if they are allocated ------------------!
+           if (icloud == 7) call atob(nzp*nxp*nyp,scratch%vt3dc,micro_g(ifm)%cccnp)
+           if (ipris  == 7) call atob(nzp*nxp*nyp,scratch%vt3di,micro_g(ifm)%cifnp)
+        end if
 
-           ! This section only if bin model spawned from bulk model fields
-           !            elseif (level  ==  4or5) then
-           !               call xmic_init(nzp,nxp,nyp,nb  &
-           !                 ,basic_g(ifm)%dn0 (1,1,1)  &
-           !                 ,basic_g(ifm)%rtp (1,1,1)  &
-           !                 ,basic_g(ifm)%rv  (1,1,1)  &
-           !                 ,sclp(2))  &
-           !                 ,sclp(nb+2))  &
-           !                 ,vctr1,vctr2)
-        endif
-
-     enddo
+     end do
 
      ! If initializing some fields from previous runs...
 
@@ -218,7 +215,6 @@ subroutine initlz (name_name)
      ! Fill land surface data for all grids that have no standard input files
 
      ! ALF - For use with SiB
-
      if (isfcl <= 2 .or. isfcl == 5) then
         call sfcdata
      elseif (isfcl == 3) then
@@ -385,7 +381,7 @@ subroutine initlz (name_name)
      do ifm = 1,min(ngrids,ngridsh)
         icm = nxtnest(ifm)
         if (icm  >  0) call fmrefs3d(ifm,0)
-        call negadj1(nzp,nxp,nyp)
+        call negadj1(nzp,nxp,nyp,1,nxp,1,nyp)
      enddo
 
      ! ALF - For use with SiB
@@ -444,8 +440,8 @@ subroutine initlz (name_name)
            call fmdn0(ifm)
            call newgrid(ifm)
            call fldinit(0)
-           call negadj1(nzp,nxp,nyp)
-           call thermo(nzp,nxp,nyp,1,nxp,1,nyp,'THRM_ONLY')
+           call negadj1(nzp,nxp,nyp,1,nxp,1,nyp)
+           call thermo(nzp,nxp,nyp,1,nxp,1,nyp)
            if (level  ==  3) then
               call initqin(nzp,nxp,nyp        &
                    ,micro_g(ifm)%q2    (1,1,1)  &
@@ -518,7 +514,12 @@ subroutine initlz (name_name)
        ,scratch%scr1(1)      ,scratch%scr1(1+ihm)  ,scratch%scr1(1+2*ihm)  &
        ,scratch%scr1(1+3*ihm),scratch%scr1(1+4*ihm),scratch%scr1(1+5*ihm))
 
-  call micro_master()
+  !----------------------------------------------------------------------------------------!
+  !    Initialise a bunch of microphysics parameters. The new input is the density at the  !
+  ! top, to find the minimum concentration of hydrometeors to be considered.               !
+  !----------------------------------------------------------------------------------------!
+  call micro_master(dn01dn(nnzp(1),1))
+  !----------------------------------------------------------------------------------------!
 
   !       Fill latitude-longitude, map factor, and Coriolis arrays.
 
@@ -891,7 +892,6 @@ subroutine ReadNamelist(fileName)
        ipris, &
        irain, &
        isnow, &
-       level, &
        mkcoltab, &
        pparm, &
        rparm, &
@@ -986,6 +986,9 @@ subroutine ReadNamelist(fileName)
 
   ! Explicit domain decomposition
   use domain_decomp, only: domain_fname
+  
+  ! Logical tests for microphysics complexity 
+  use therm_lib, only: vapour_on,cloud_on,bulk_on,level
 
   implicit none
 
@@ -1745,4 +1748,15 @@ subroutine ReadNamelist(fileName)
   call date_2_seconds (iyearh,imonthh,idateh,itimeh*100, &
   iyeara,imontha,idatea,itimea*100,timstr)
 
+  !----------------------------------------------------------------------------------------!
+  !    Saving the moisture complexity level into logical variables. Note that vapour_on is !
+  ! not level == 1, it will be true when level is 1, 2, and 3. (whenever vapour is on).    !
+  ! Likewise, cloud_on will be true when level is either 2 or 3. Bulk microphysics will be !
+  ! true only when level = 3 (levels = 4 and 5 exist too but rarely used).                 !
+  !----------------------------------------------------------------------------------------!
+  vapour_on = level >= 1
+  cloud_on  = level >= 2
+  bulk_on   = level >= 3
+
+  return
 end subroutine ReadNamelist

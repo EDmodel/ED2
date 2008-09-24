@@ -282,6 +282,7 @@ subroutine prebarn (nprx,npry,nisn,nvar  &
                    ,igns,gsdat,gsx,gsy,gswt  &
                    ,ngs,igridfl,gobsep,gobrad  &
                    ,gridwt,scra,polat,polon)
+use rconstants, only: spconkm
 implicit none
 integer ::  nprx,npry,nisn,nvar,nnsta,ist,igns,ngs,igridfl                  
 real :: grid(nprx,npry,nisn,*),glat(nprx,npry),glon(nprx,npry)  &
@@ -323,16 +324,16 @@ if(igridfl.eq.1) then
    return
 
 elseif(igridfl.eq.2) then
-   gobkm=gobsep*111.120
-   gobrd=gobrad*111.120
+   gobkm=gobsep*spconkm
+   gobrd=gobrad*spconkm
    do i=1,nprx
       do j=1,npry
          do iq=1,4
             iqf(iq)=0
          enddo
          do ns=1,nnsta
-            scra(ns)=sqrt(((glat(i,j)-sslt(ns))*111.12)**2  &
-                 +((glon(i,j)-ssln(ns))*111.12  &
+            scra(ns)=sqrt(((glat(i,j)-sslt(ns))*spconkm)**2  &
+                 +((glon(i,j)-ssln(ns))*spconkm  &
                  *cos((glat(i,j)+sslt(ns))*.5*.01745))**2)
          enddo
          do ns=1,nnsta
@@ -372,7 +373,7 @@ END
 !***************************************************************************
 
 subroutine bn_parm(wvlnth,respon,gamma,x4k)
-
+use rconstants, only : pi1
 implicit none
 
 real :: wvlnth,respon,gamma,x4k
@@ -383,8 +384,8 @@ integer :: n
 !       Computes the Barnes(1974) "4K" value given a
 !          wavelength, response, and gamma
 
-a=-(3.14159/wvlnth)**2
-o4k=(wvlnth/3.14159)**2
+a=-(pi1/wvlnth)**2
+o4k=(wvlnth/pi1)**2
 agam=a*gamma
 agam1=a*(gamma+1)
 n=0

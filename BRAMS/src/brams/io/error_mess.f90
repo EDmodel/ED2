@@ -7,8 +7,7 @@ subroutine abort_run(reason,subr,file)
 !------------------------------------------------------------------------------------------!
    use node_mod, only: nmachs,mynum
    implicit none
-   character(len=*), intent(in) :: reason
-   character(len=*), intent(in), optional   :: subr,file
+   character(len=*), intent(in) :: reason,subr,file
 
    include 'mpif.h'
   
@@ -24,10 +23,9 @@ subroutine abort_run(reason,subr,file)
    elseif (nmachs > 0) then
       write(unit=*,fmt='(a)')         ' On the master node:'
    end if
-   ! Although it is optional, it should always be present 
-   if (present(file)) write(unit=*,fmt='(a,1x,a)')    '    ---> File:       ',trim(file)
-   if (present(subr)) write(unit=*,fmt='(a,1x,a)')    '    ---> Subroutine: ',trim(subr)
-   write (unit=*,fmt='(a,1x,a)')                      '    ---> Reason:     ',trim(reason)
+   write(unit=*,fmt='(a,1x,a)')    '    ---> File:       ',trim(file)
+   write(unit=*,fmt='(a,1x,a)')    '    ---> Subroutine: ',trim(subr)
+   write(unit=*,fmt='(a,1x,a)')    '    ---> Reason:     ',trim(reason)
    write(unit=*,fmt='(a)') '------------------------------------------------------------------'
    write(unit=*,fmt='(a)') ' BRAMS execution halts (see previous error message)...'
    write(unit=*,fmt='(a)') '------------------------------------------------------------------'

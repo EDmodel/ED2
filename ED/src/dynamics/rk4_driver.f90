@@ -569,7 +569,7 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
   use ed_state_vars,only:sitetype,patchtype
   use grid_coms, only: nzg
   use soil_coms, only: dslz
-  use consts_coms, only: cp, cliq, cice, alli, t00
+  use consts_coms, only: cp, cliq, cice, alli, t3ple
   use canopy_radiation_coms, only: lai_min
 
   implicit none
@@ -595,7 +595,7 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
           csite%sfcwater_mass(k,ipa)
   enddo
 
-  cas_storage = cp * rhos * csite%veg_height(ipa) * (csite%can_temp(ipa) - t00)
+  cas_storage = cp * rhos * csite%veg_height(ipa) * (csite%can_temp(ipa) - t3ple)
 
   veg_storage = 0.0
   do ico = 1,cpatch%ncohorts
@@ -605,13 +605,13 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
      if(csite%lai(ipa) > lai_min)then
         veg_storage = veg_storage +   &
              3.0e3 * max(csite%patch(ipa)%hite(1),1.5) * cpatch%lai(ico) &
-             / csite%lai(ipa) * (cpatch%veg_temp(ico) - t00)
-        if(cpatch%veg_temp(ico) > t00)then
+             / csite%lai(ipa) * (cpatch%veg_temp(ico) - t3ple)
+        if(cpatch%veg_temp(ico) > t3ple)then
            veg_storage = veg_storage + cpatch%veg_water(ico) *  &
-                (cliq * (cpatch%veg_temp(ico) - t00) + alli)
+                (cliq * (cpatch%veg_temp(ico) - t3ple) + alli)
         else
            veg_storage = veg_storage + cpatch%veg_water(ico) *  &
-                cice * (cpatch%veg_temp(ico) - t00)
+                cice * (cpatch%veg_temp(ico) - t3ple)
         endif
      endif
 
@@ -680,11 +680,12 @@ end subroutine sum_plant_cfluxes_ar
 real function compute_co2_storage_ar(csite, rhos, ipa)
 
   use ed_state_vars,only: sitetype
+  use consts_coms, only : mmdryi
   implicit none
   type(sitetype),target :: csite
   real, intent(in) :: rhos
   integer :: ipa
-  compute_co2_storage_ar = csite%can_co2(ipa) / 0.029 * rhos * csite%veg_height(ipa)
+  compute_co2_storage_ar = csite%can_co2(ipa) * mmdryi * rhos * csite%veg_height(ipa)
   return
 end function compute_co2_storage_ar
 

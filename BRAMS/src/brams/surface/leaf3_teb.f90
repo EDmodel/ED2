@@ -32,7 +32,7 @@ subroutine LEAF3_TEB_INTERFACE(ISTP,ZTSTEPFRC,ZTSTEP,COSZ,ZZREF,  &
 
   use teb_vars_const
   use mem_emiss, only:EFSAT,EFSUN,WEEKDAYIN     
-
+  use therm_lib, only: rslif
   implicit none
   
   ! Declarations of variables
@@ -158,7 +158,7 @@ subroutine LEAF3_TEB_INTERFACE(ISTP,ZTSTEPFRC,ZTSTEP,COSZ,ZZREF,  &
   !                  normal to the surface and the vertical
   !                  ZTANZEN   = tangent of solar zenith angle
   !
-  real   :: ZRHOA,  ZEXNA, ZEXNS, ZVMOD,  ZPA, ZTVI, ZAZENIT,ZEXN2,ZP2,rslf
+  real   :: ZRHOA,  ZEXNA, ZEXNS, ZVMOD,  ZPA, ZTVI, ZAZENIT,ZEXN2,ZP2
   !                  ZRHOA   = air density
   !                  ZEXNA   = Exner function
   !                  ZEXNS   = Exner function
@@ -339,7 +339,7 @@ subroutine LEAF3_TEB_INTERFACE(ISTP,ZTSTEPFRC,ZTSTEP,COSZ,ZZREF,  &
   
   T2M = ZT_WALL(1) * ZEXN2 / ZEXNS
   
-  R2M = ZR_CANYON * (rslf(ZP2,T2M) / rslf(ZPS,ZT_WALL(1)))
+  R2M = ZR_CANYON * (rslif(ZP2,T2M) / rslif(ZPS,ZT_WALL(1)))
   
   return
 end subroutine LEAF3_TEB_INTERFACE
@@ -494,7 +494,7 @@ subroutine TEB_INIT(ng,n1,n2,n3,np,vegt,theta,rv,pi,pp,TROOF,TROAD,TWALL, &
      TIBLD,TIROAD,TCANYON,RCANYON,TSROOF,TSROAD,TSWALL,                   &
      HT,LET,HIN,LEIN,WSROOF,WSROAD,EMISTOWN,ALBTOWN,                      &
      TSTOWN,G_URBAN)
-  
+  use rconstants, only: t00
   use teb_vars_const, only: TMINBLD,D_ROAD,TC_ROAD        &
        ,D_WALL,TC_WALL,D_ROOF,TC_ROOF &
        ,NURBTYPE,ILEAFCOD 
@@ -550,7 +550,7 @@ subroutine TEB_INIT(ng,n1,n2,n3,np,vegt,theta,rv,pi,pp,TROOF,TROAD,TWALL, &
            
            if(nint(G_URBAN(i,j,inp))/=0.)then
               
-              TIBLD(i,j)=273.16+TMINBLD !internal temperature defined in RAMSIN
+              TIBLD(i,j)=t00+TMINBLD !internal temperature defined in RAMSIN
               !     TIROAD(i,j)=  (theta(2,i,j)+theta(1,i,j))*0.5*pis  !surface
               TIROAD(i,j)=  281.16  !surface
               TSROOF(i,j) = (theta(2,i,j))*pl2            !model's first level

@@ -85,7 +85,8 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
   use ed_state_vars,only:sitetype,patchtype
 
   use canopy_radiation_coms, only: lai_min
-  use consts_coms, only: cice, cliq, alli
+  use consts_coms, only: cice, cliq, alli, t3ple
+  use therm_lib, only: qwtk
 
   implicit none
 
@@ -99,7 +100,7 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
 
   real :: laii
 
-  real :: tvegc
+  real :: tvegaux
   real :: qwtot
   real :: lai_fraction
   real :: fracliqv
@@ -122,7 +123,7 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
      do ico = 1,cpatch%ncohorts
 
         if(cpatch%hite(ico) > csite%total_snow_depth(ipa) .and. cpatch%lai(ico) > lai_min)then
-           tvegc = cpatch%veg_temp(ico) - 273.15
+           tvegaux = cpatch%veg_temp(ico) - t3ple
 
            hcapveg_factor = cpatch%lai(ico) / csite%lai(ipa)
 
@@ -131,12 +132,12 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
 
 ! Vegetation layers intercept precipitation in proportion to their LAI
            lai_fraction = cpatch%lai(ico) * laii
-           if(tvegc > 0.0)then
-              qwtot = cpatch%hcapveg(ico) * hcapveg_factor * tvegc + qpcpg *   &
-                   lai_fraction + cpatch%veg_water(ico) * (cliq * tvegc + alli)
+           if(tvegaux > 0.0)then
+              qwtot = cpatch%hcapveg(ico) * hcapveg_factor * tvegaux + qpcpg *   &
+                   lai_fraction + cpatch%veg_water(ico) * (cliq * tvegaux + alli)
            else
-              qwtot = cpatch%hcapveg(ico) * hcapveg_factor * tvegc +   &
-                   qpcpg * lai_fraction + cpatch%veg_water(ico) * cice * tvegc
+              qwtot = cpatch%hcapveg(ico) * hcapveg_factor * tvegaux +   &
+                   qpcpg * lai_fraction + cpatch%veg_water(ico) * cice * tvegaux
            endif
            cpatch%veg_water(ico) = cpatch%veg_water(ico) + pcpg * lai_fraction
 
@@ -144,7 +145,7 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
 
            call qwtk(qwtot, cpatch%veg_water(ico), cpatch%hcapveg(ico) * hcapveg_factor,   &
                 cpatch%veg_temp(ico), fracliqv)
-           tvegc = cpatch%veg_temp(ico) - 273.15
+           tvegaux = cpatch%veg_temp(ico) - t3ple
       
 ! Shed any excess intercepted precipitation and its energy
 
@@ -153,10 +154,10 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
               wshed_canopy = wshed_canopy + wshed_layer
 
               if (fracliqv <= .0001) then
-                 qwshed_canopy = qwshed_canopy + cice * tvegc * wshed_layer
+                 qwshed_canopy = qwshed_canopy + cice * tvegaux * wshed_layer
               else
                  qwshed_canopy = qwshed_canopy +   &
-                      (cliq * tvegc + fracliqv * alli) * wshed_layer
+                      (cliq * tvegaux + fracliqv * alli) * wshed_layer
               endif
               
               cpatch%veg_water(ico) = cpatch%veg_water(ico) - wshed_layer
@@ -188,7 +189,7 @@ subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
   use canopy_radiation_coms, only: lai_min
   use consts_coms, only: cp, alvl, alvi
   use grid_coms, only: nzg
-
+  use therm_lib, only: rhovsil
   implicit none
 
   type(sitetype), target  :: csite
@@ -214,9 +215,8 @@ subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
 
   real, dimension(ndims, ndims) :: t_evolve_matrix
   integer :: ic
-  real :: tvegc
+  real :: tvegaux
   real :: veg_rhovs
-  real :: rhovsil
   real :: veg_rhovsp
   real :: vp_gradient
   real :: a1
@@ -269,9 +269,9 @@ subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
         a10 = 2.2 * cp * rhos * cpatch%lai(ico) / cpatch%rb(ico)
 
         ! compute ET using variables at time n
-        tvegc = cpatch%veg_temp(ico) - 273.15
-        veg_rhovs= rhovsil(tvegc)
-        veg_rhovsp = rhovsil(tvegc+1.0) - veg_rhovs
+        tvegaux = cpatch%veg_temp(ico)
+        veg_rhovs= rhovsil(tvegaux)
+        veg_rhovsp = rhovsil(tvegaux+1.0) - veg_rhovs
         vp_gradient = veg_rhovs - rhos * csite%can_shv(ipa)
         a1 = 2.2 * cpatch%lai(ico) / cpatch%rb(ico)
         sigmaw = min(1.,(cpatch%veg_water(ico) / (.22 * cpatch%lai(ico)))**.66667)
@@ -437,8 +437,8 @@ subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
         cpatch%veg_temp(ico) = implicit_new_state(idim)
         cpatch%veg_water(ico) = implicit_new_state(idim+1)
         
-        veg_rhovs= rhovsil(original_state(idim)-273.15)
-        veg_rhovsp = rhovsil(original_state(idim)-272.15) - veg_rhovs
+        veg_rhovs= rhovsil(original_state(idim))
+        veg_rhovsp = rhovsil(original_state(idim)+1.0) - veg_rhovs
         vp_gradient = veg_rhovs - rhos * original_state(2)
         if(vp_gradient > 0.0)then
           ! Calculate the resulting transpiration
@@ -512,8 +512,9 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
 
   use ed_state_vars,only:sitetype,patchtype
   use canopy_radiation_coms, only: lai_min
-  use consts_coms, only: cp, alvl, alvi, cliq, cice, alli
+  use consts_coms, only: cp, alvl, alvi, cliq, cice, alli, t3ple
   use grid_coms, only: nzg
+  use therm_lib, only: rhovsil
 
   implicit none
 
@@ -541,9 +542,8 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
 
   integer :: ic
 
-  real :: tvegc
+  real :: tvegaux
   real :: veg_rhovs
-  real :: rhovsil
   real :: veg_rhovsp
   real :: vp_gradient
   real :: a1
@@ -590,9 +590,9 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
         a10 = 2.2 * cp * rhos * cpatch%lai(ico) / cpatch%rb(ico)
 
         ! compute ET using variables at time n
-        tvegc = cpatch%veg_temp(ico) - 273.15
-        veg_rhovs= rhovsil(tvegc)
-        veg_rhovsp = rhovsil(tvegc+1.0) - veg_rhovs
+        tvegaux = cpatch%veg_temp(ico)
+        veg_rhovs= rhovsil(tvegaux)
+        veg_rhovsp = rhovsil(tvegaux+1.0) - veg_rhovs
         vp_gradient = veg_rhovs - rhos * csite%can_shv(ipa)
         a1 = 2.2 * cpatch%lai(ico) / cpatch%rb(ico)
         sigmaw = min(1.,(cpatch%veg_water(ico) / (.22 * cpatch%lai(ico)))**.66667)
@@ -634,18 +634,18 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
         dQdt = cpatch%rshort_v(ico) + cpatch%rlong_v(ico) -   &
              a10 * (cpatch%veg_temp(ico) - csite%can_temp(ipa)) -   &
              alvl * et_conductance * vp_gradient
-        tvegc = cpatch%veg_temp(ico) - 273.15
-        if(tvegc > 0.0)then
+        tvegaux = cpatch%veg_temp(ico) - t3ple
+        if(tvegaux > 0)then
            csite%mean_latflux(ipa) = csite%mean_latflux(ipa) +   &
                 vp_gradient * et_conductance * alvl -   &
-                (cliq * tvegc + alli) * explicit_deriv_portion(ind2)
+                (cliq * tvegaux + alli) * explicit_deriv_portion(ind2)
            explicit_deriv_portion(ind1) = dQdt / (cpatch%hcapveg(ico) * cpatch%lai(ico) /   &
                 csite%lai(ipa) + cliq *   &
                 cpatch%veg_water(ico))
         else
            csite%mean_latflux(ipa) = csite%mean_latflux(ipa) +   &
                 vp_gradient * et_conductance * alvl -   &
-                cice * tvegc * explicit_deriv_portion(ind2)
+                cice * tvegaux * explicit_deriv_portion(ind2)
            explicit_deriv_portion(ind1) = dQdt / (cpatch%hcapveg(ico) * cpatch%lai(ico) /   &
                 csite%lai(ipa) + cice * cpatch%veg_water(ico))
         endif

@@ -61,16 +61,16 @@ HDF4_LIBS=
 # library files. Make sure you include the zlib.a location too.
 
 # For 64-bit 
-#USE_HDF5=1
-#HDF5_INCS=-I/n/Moorcroft_Lab/Lab/apps/i91/lib -I/n/Moorcroft_Lab/Lab/apps/i91/include
-#HDF5_LIBS=-L/n/Moorcroft_Lab/Lab/apps/i91/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
-#          -L/n/Moorcroft_Lab/Lab/mlongo/util/hdflib/hdf4_64/zlib/lib -lz
+USE_HDF5=1
+HDF5_INCS=-I/n/Moorcroft_Lab/Lab/apps/i91/lib -I/n/Moorcroft_Lab/Lab/apps/i91/include
+HDF5_LIBS=-L/n/Moorcroft_Lab/Lab/apps/i91/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
+          -L/n/Moorcroft_Lab/Lab/mlongo/util/hdflib/hdf4_64/zlib/lib -lz
 
 # For 32-bit
-USE_HDF5=1
-HDF5_INCS=-I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib -I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/include
-HDF5_LIBS=-L/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
-          -L/n/Moorcroft_Lab/Lab/mlongo/util/hdflib/hdf5_32/zlib/lib -lz
+#USE_HDF5=1
+#HDF5_INCS=-I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib -I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/include
+#HDF5_LIBS=-L/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
+#          -L/n/Moorcroft_Lab/Lab/mlongo/util/hdflib/hdf5_32/zlib/lib -lz
 
 # netCDF libraries ---------------------------------------------
 # If you have netCDF set USENC=1 and type the lib folder
@@ -212,15 +212,15 @@ MOD_EXT=mod
 #Compiler options
 
 # A. Pickiest
-USE_INTERF=0
-F_OPTS= -FR -O0 -recursive -Vaxlib -static -check all -g -fpe0 -ftz -gen-interfaces \
-  -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
-  -traceback -ftrapuv
-C_OPTS= -O0 -DLITTLE -static -g -traceback -debug extended
-LOADER_OPTS= -FR -O0 -Vaxlib -static -check all -g -fpe0 -ftz -gen-interfaces \
-  -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
-  -traceback -ftrapuv
-C_LOADER_OPTS=-v -g -traceback
+#USE_INTERF=0
+#F_OPTS= -FR -O0 -recursive -Vaxlib -check all -g -fpe0 -ftz -gen-interfaces \
+      -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
+      -traceback -ftrapuv
+#C_OPTS= -O0 -DLITTLE -g -traceback -debug extended
+#LOADER_OPTS= -FR -O0 -Vaxlib -check all -g -fpe0 -ftz -gen-interfaces \
+      -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
+      -traceback -ftrapuv
+#C_LOADER_OPTS=-v -g -traceback
 
 # B. Pickiest with optimization
 #USE_INTERF=0
@@ -235,17 +235,17 @@ C_LOADER_OPTS=-v -g -traceback
 
 # C. Medium debugging configuration
 #USE_INTERF=1
-#F_OPTS= -FR -O0 -fpe0 -ftz  -ftrapuv -recursive -static -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
-#C_OPTS=  -DLITTLE -O0 -static -traceback -g
-#LOADER_OPTS= -FR -O0 -fpe0 -ftz -ftrapuv -recursive -static -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
+#F_OPTS= -FR -O0 -fpe0 -ftz  -ftrapuv -recursive -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
+#C_OPTS=  -DLITTLE -O0 -traceback -g
+#LOADER_OPTS= -FR -O0 -fpe0 -ftz -ftrapuv -recursive -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
 #C_LOADER_OPTS=-v -O0 -traceback -g
 
 # D. Simple debugging configuration
-#USE_INTERF=1
-#F_OPTS= -FR -O2 -recursive -static -fpe0 -ftz -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
-#C_OPTS=  -DLITTLE -O2 -static -traceback -g
-#LOADER_OPTS= -FR -O2 -static -traceback -fpe0 -ftz -check all -g -debug extended -debug inline_debug_info -debug-parameters all
-#C_LOADER_OPTS=-v -O2 -traceback -g
+USE_INTERF=1
+F_OPTS= -FR -O2 -recursive -fpe0 -ftz -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
+C_OPTS=  -DLITTLE -O2 -traceback -g
+LOADER_OPTS= -FR -O2 -traceback -fpe0 -ftz -check all -g -debug extended -debug inline_debug_info -debug-parameters all
+C_LOADER_OPTS=-v -O2 -traceback -g
 
 # E. Fast...
 #USE_INTERF=1
@@ -297,15 +297,15 @@ C_LOADER_OPTS=-v -g -traceback
 
 #---------------LINUX Portland Group pgf77/gcc--------------------
 # 64-bit machine
-#MPI_PATH=/n/Moorcroft_Lab/Lab/apps/i91
-#PAR_INCS=-I$(MPI_PATH)/include
-#PAR_LIBS=-L$(MPI_PATH)/lib -lmpich -lpmpich
-#PAR_DEFS=-DRAMS_MPI
-# 32-bit machine
-MPI_PATH=/n/Moorcroft_Lab/Users/mlongo/util/mpich-1.2.7p1/intel_9.1.036_32
+MPI_PATH=/n/Moorcroft_Lab/Lab/apps/i91
 PAR_INCS=-I$(MPI_PATH)/include
 PAR_LIBS=-L$(MPI_PATH)/lib -lmpich -lpmpich
 PAR_DEFS=-DRAMS_MPI
+# 32-bit machine
+#MPI_PATH=/n/Moorcroft_Lab/Users/mlongo/util/mpich-1.2.7p1/intel_9.1.036_32
+#PAR_INCS=-I$(MPI_PATH)/include
+#PAR_LIBS=-L$(MPI_PATH)/lib -lmpich -lpmpich
+#PAR_DEFS=-DRAMS_MPI
 #-----------------------------------------------------------------
 
 #---------------If using scritps 'mpicc' e 'mpif90'---------------'

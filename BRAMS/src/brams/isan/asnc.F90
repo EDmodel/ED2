@@ -318,7 +318,7 @@ subroutine nc_pressure_stage(n1,n2,nhem,glat,glon,glat2,glon2)
 
 
                 if(p_r(i,j,k) <= 0.05) p_r(i,j,k)=.05
-                if(i.eq.25.and.j.eq.25)print*,k,pnpr(k),p_r(i,j,k),1000*rr,1000*rs(pnpr(k),p_t(i,j,k)),p_t(i,j,k)-273.15
+                if(i.eq.25.and.j.eq.25)print*,k,pnpr(k),p_r(i,j,k),1000*rr,1000*rs(pnpr(k),p_t(i,j,k)),p_t(i,j,k)-t00
              enddo
           enddo
        enddo
@@ -334,7 +334,7 @@ subroutine nc_pressure_stage(n1,n2,nhem,glat,glon,glat2,glon2)
                 rr=p_r(i,j,k) / (1.-p_r(i,j,k) )
                 p_r(i,j,k)=rr/rs(pnpr(k),p_t(i,j,k))
                 if(p_r(i,j,k) <= 0.05) p_r(i,j,k)=.05
-                if(i.eq.25.and.j.eq.25)print*,k, pnpr(k),p_r(i,j,k), 1000*rr, 1000*rs(pnpr(k),p_t(i,j,k)), p_t(i,j,k)-273.15
+                if(i.eq.25.and.j.eq.25)print*,k, pnpr(k),p_r(i,j,k), 1000*rr, 1000*rs(pnpr(k),p_t(i,j,k)), p_t(i,j,k)-t00
              enddo
           enddo
        enddo

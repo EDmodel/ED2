@@ -4797,22 +4797,7 @@ contains
     
     use var_tables_array,only:num_var,vt_info,var_table
     use ed_node_coms,only:mynum,mchnum,machs,nmachs,nnodetot,sendnum,recvnum,master_num
-    !---------------------------------------------------------------------------!
-    !---------------------------------------------------------------------------!
-    !---------------------------------------------------------------------------!
-    !---------------------------------------------------------------------------!
-    ! I am removing ed_para_coms from here. I may be wrong, so please don't hate 
-    ! me if I screwed up things that were once working... The thing is that 
-    ! ed_para_coms is loaded only at the head node, and the information at this 
-    ! module is never sent to the nodes, which receive the necessary information 
-    ! to ed_node_coms. Maybe it wasn't a problem because mainnum was left zero, 
-    ! the number it should be. 
-    !---------------------------------------------------------------------------!
-    !---------------------------------------------------------------------------!
-    !---------------------------------------------------------------------------!
-    !---------------------------------------------------------------------------!
-    ! use ed_para_coms,           only: mainnum
-
+    use grid_dims, only: maxgrds, maxmach
     implicit none
     
     include 'mpif.h'
@@ -4820,7 +4805,7 @@ contains
     integer :: ncohorts_g,npatches_g,nsites_g,npolygons_g
     integer :: igr,ipy,isi,ipa,ico,nv,ierr,nm
     integer,       dimension(MPI_STATUS_SIZE) :: status
-    integer :: request,ping
+    integer :: request,ping,uniqueid
     logical,save :: model_start = .true.
    
     type(edtype),pointer      :: cgrid
@@ -4866,48 +4851,56 @@ contains
 
           ! Send all them sizes to root (CHANGED, NODE 1)
           
-          ! Set the blocking recieve to allow ordering, start with machine 1
-          if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,242,MPI_COMM_WORLD,status,ierr)
 
-          ! Send the information to node (1)
-          call MPI_Send(cgrid%npolygons_global,1,MPI_INTEGER,machs(1),801+10*mynum,MPI_COMM_WORLD,ierr)
-          call MPI_Send(cgrid%nsites_global,   1,MPI_INTEGER,machs(1),802+10*mynum,MPI_COMM_WORLD,ierr)
-          call MPI_Send(cgrid%npatches_global, 1,MPI_INTEGER,machs(1),803+10*mynum,MPI_COMM_WORLD,ierr)
-          call MPI_Send(cgrid%ncohorts_global, 1,MPI_INTEGER,machs(1),804+10*mynum,MPI_COMM_WORLD,ierr)
+          if (mynum == 1) then
           
-          ! When this node is finished, send the blocking MPI_Send to the next machine
-          if (mynum /= nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,242,MPI_COMM_WORLD,ierr)
+             gdpy(1,igr) = cgrid%npolygons_global
+             gdsi(1,igr) = cgrid%nsites_global
+             gdpa(1,igr) = cgrid%npatches_global
+             gdco(1,igr) = cgrid%ncohorts_global
 
-          if (mynum .eq. 1) then
+             call MPI_Send(ping,1,MPI_INTEGER,sendnum,242,MPI_COMM_WORLD,ierr)
              
              ! Have node 1 recieve the info
-             do nm=1,nnodetot
-                call MPI_Recv(gdpy(nm,igr),1,MPI_INTEGER,machs(nm),801+10*nm,MPI_COMM_WORLD,status,ierr)
-                call MPI_Recv(gdsi(nm,igr),1,MPI_INTEGER,machs(nm),802+10*nm,MPI_COMM_WORLD,status,ierr)
-                call MPI_Recv(gdpa(nm,igr),1,MPI_INTEGER,machs(nm),803+10*nm,MPI_COMM_WORLD,status,ierr)
-                call MPI_Recv(gdco(nm,igr),1,MPI_INTEGER,machs(nm),804+10*nm,MPI_COMM_WORLD,status,ierr)
+             do nm=2,nnodetot
+                uniqueid=((igr-1)*maxmach)+nm
+                call MPI_Recv(gdpy(nm,igr),1,MPI_INTEGER,machs(nm),810000+uniqueid,MPI_COMM_WORLD,status,ierr)
+                call MPI_Recv(gdsi(nm,igr),1,MPI_INTEGER,machs(nm),820000+uniqueid,MPI_COMM_WORLD,status,ierr)
+                call MPI_Recv(gdpa(nm,igr),1,MPI_INTEGER,machs(nm),830000+uniqueid,MPI_COMM_WORLD,status,ierr)
+                call MPI_Recv(gdco(nm,igr),1,MPI_INTEGER,machs(nm),840000+uniqueid,MPI_COMM_WORLD,status,ierr)
              enddo
 
              ! Broadcast all this info to the nodes
-             do nm=1,nnodetot
-                call MPI_Send(gdpy,maxmach*maxgrds,MPI_INTEGER,machs(nm),601+10*nm,MPI_COMM_WORLD,ierr)
-                call MPI_Send(gdsi,maxmach*maxgrds,MPI_INTEGER,machs(nm),602+10*nm,MPI_COMM_WORLD,ierr)
-                call MPI_Send(gdpa,maxmach*maxgrds,MPI_INTEGER,machs(nm),603+10*nm,MPI_COMM_WORLD,ierr)
-                call MPI_Send(gdco,maxmach*maxgrds,MPI_INTEGER,machs(nm),604+10*nm,MPI_COMM_WORLD,ierr)
+             do nm=2,nnodetot
+                uniqueid=((igr-1)*maxmach)+nm
+                call MPI_Send(gdpy,maxmach*maxgrds,MPI_INTEGER,machs(nm),610000+uniqueid,MPI_COMM_WORLD,ierr)
+                call MPI_Send(gdsi,maxmach*maxgrds,MPI_INTEGER,machs(nm),620000+uniqueid,MPI_COMM_WORLD,ierr)
+                call MPI_Send(gdpa,maxmach*maxgrds,MPI_INTEGER,machs(nm),630000+uniqueid,MPI_COMM_WORLD,ierr)
+                call MPI_Send(gdco,maxmach*maxgrds,MPI_INTEGER,machs(nm),640000+uniqueid,MPI_COMM_WORLD,ierr)
              enddo
 
-          endif
+         else
+            ! Set the blocking recieve to allow ordering, start with machine 1
+            call MPI_Recv(ping,1,MPI_INTEGER,recvnum,242,MPI_COMM_WORLD,status,ierr)
+
+            uniqueid=((igr-1)*maxmach)+mynum
+            ! Send the information to node (1)
+            call MPI_Send(cgrid%npolygons_global, 1,MPI_INTEGER,machs(1),810000+uniqueid,MPI_COMM_WORLD,ierr)
+            call MPI_Send(cgrid%nsites_global   , 1,MPI_INTEGER,machs(1),820000+uniqueid,MPI_COMM_WORLD,ierr)
+            call MPI_Send(cgrid%npatches_global , 1,MPI_INTEGER,machs(1),830000+uniqueid,MPI_COMM_WORLD,ierr)
+            call MPI_Send(cgrid%ncohorts_global , 1,MPI_INTEGER,machs(1),840000+uniqueid,MPI_COMM_WORLD,ierr)
           
-!          if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,213,MPI_COMM_WORLD,status,ierr)
-          
-          call MPI_Recv(gdpy,maxmach*maxgrds,MPI_INTEGER,machs(1),601+10*mynum,MPI_COMM_WORLD,status,ierr)
-          call MPI_Recv(gdsi,maxmach*maxgrds,MPI_INTEGER,machs(1),602+10*mynum,MPI_COMM_WORLD,status,ierr)
-          call MPI_Recv(gdpa,maxmach*maxgrds,MPI_INTEGER,machs(1),603+10*mynum,MPI_COMM_WORLD,status,ierr)
-          call MPI_Recv(gdco,maxmach*maxgrds,MPI_INTEGER,machs(1),604+10*mynum,MPI_COMM_WORLD,status,ierr)
-                
-          ! When this node is finished, send the blocking MPI_Send to the next machine
-!          if (mynum /= nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,213,MPI_COMM_WORLD,ierr)
+            ! When this node is finished, send the blocking MPI_Send to the next machine
+            if (mynum /= nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,242,MPI_COMM_WORLD,ierr)
+
+            uniqueid=((igr-1)*maxmach)+mynum
+            call MPI_Recv(gdpy,maxmach*maxgrds,MPI_INTEGER,machs(1),610000+uniqueid,MPI_COMM_WORLD,status,ierr)
+            call MPI_Recv(gdsi,maxmach*maxgrds,MPI_INTEGER,machs(1),620000+uniqueid,MPI_COMM_WORLD,status,ierr)
+            call MPI_Recv(gdpa,maxmach*maxgrds,MPI_INTEGER,machs(1),630000+uniqueid,MPI_COMM_WORLD,status,ierr)
+            call MPI_Recv(gdco,maxmach*maxgrds,MPI_INTEGER,machs(1),640000+uniqueid,MPI_COMM_WORLD,status,ierr)
  
+         end if
+
 
           ! The barriers complicate cases when the model is not in stand-alone, or when all
           ! of the nodes are not undergoing this process - continue testing if this poses problems rgk 7-30-08

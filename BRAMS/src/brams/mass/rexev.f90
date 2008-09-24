@@ -11,10 +11,10 @@ subroutine exevolve(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,key)
 
   use mem_basic,   only: basic_g
   use mem_grid,    only: grid_g, itopo
-  use mem_mass,   only: mass_g
+  use mem_mass,    only: mass_g
   use mem_tend,    only: tend
   use mem_scratch, only: scratch
-  use micphys,     only: level
+  use therm_lib,   only: vapour_on
 
   implicit none
 
@@ -51,21 +51,39 @@ subroutine exevolve(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,key)
          ,grid_g(ifm)%fmapt       (1,1)   ,grid_g(ifm)%fmapui        (1,1)   &
          ,grid_g(ifm)%fmapvi      (1,1)   )
      ! Put theta_v from last timestep into memory
-     if (level == 0) then
-        !MLO - If level is zero, then send a dummy array of zeroes to avoid
+     if (vapour_on) then
+        call fill_thvlast(m1,m2,m3,ia,iz,ja,jz                          &
+            ,mass_g(ifm)%thvlast (1,1,1) ,basic_g(ifm)%theta   (1,1,1) &
+            ,basic_g(ifm)%rtp     (1,1,1) ,basic_g(ifm)%rv      (1,1,1) )
+     else
+        !MLO - If this is a dry run, then send a dummy array of zeroes to avoid
         !      segmentation violation.
         call azero(m1*m2*m3,scratch%vt3dq(1))
         call fill_thvlast(m1,m2,m3,ia,iz,ja,jz                          &
             ,mass_g(ifm)%thvlast (1,1,1) ,basic_g(ifm)%theta   (1,1,1) &
             ,scratch%vt3dq        (1)     ,scratch%vt3dq        (1)     )
-     else
-        call fill_thvlast(m1,m2,m3,ia,iz,ja,jz                          &
-            ,mass_g(ifm)%thvlast (1,1,1) ,basic_g(ifm)%theta   (1,1,1) &
-            ,basic_g(ifm)%rtp     (1,1,1) ,basic_g(ifm)%rv      (1,1,1) )
      end if
      
   case ('THA')
-     if (level == 0) then
+     if (vapour_on) then
+        call advect_theta(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt   &
+            ,basic_g(ifm)%up      (1,1,1) ,basic_g(ifm)%uc      (1,1,1) &
+            ,basic_g(ifm)%vp      (1,1,1) ,basic_g(ifm)%vc      (1,1,1) &
+            ,basic_g(ifm)%wp      (1,1,1) ,basic_g(ifm)%wc      (1,1,1) &
+            ,basic_g(ifm)%pi0     (1,1,1) ,basic_g(ifm)%pc      (1,1,1) &
+            ,tend%pt              (1)     ,basic_g(ifm)%theta   (1,1,1) &
+            ,basic_g(ifm)%rtp     (1,1,1) ,basic_g(ifm)%rv      (1,1,1) &
+            ,basic_g(ifm)%dn0     (1,1,1) ,basic_g(ifm)%dn0u    (1,1,1) &
+            ,basic_g(ifm)%dn0v    (1,1,1) ,grid_g(ifm)%rtgt     (1,1)   &
+            ,grid_g(ifm)%rtgu     (1,1)   ,grid_g(ifm)%rtgv     (1,1)   &
+            ,grid_g(ifm)%fmapt    (1,1)   ,grid_g(ifm)%fmapui   (1,1)   &
+            ,grid_g(ifm)%fmapvi   (1,1)   ,grid_g(ifm)%f13t     (1,1)   &
+            ,grid_g(ifm)%f23t     (1,1)   ,grid_g(ifm)%dxu      (1,1)   &
+            ,grid_g(ifm)%dyv      (1,1)   ,grid_g(ifm)%dxt      (1,1)   &
+            ,grid_g(ifm)%dyt      (1,1)   ,mass_g(ifm)%thvadv  (1,1,1)  &
+            ,mass_g(ifm)%thetav  (1,1,1) )
+
+     else
         call azero(m1*m2*m3,scratch%vt3dq(1))
         call advect_theta(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt   &
             ,basic_g(ifm)%up      (1,1,1) ,basic_g(ifm)%uc      (1,1,1) &
@@ -83,38 +101,22 @@ subroutine exevolve(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,key)
             ,grid_g(ifm)%dyv      (1,1)   ,grid_g(ifm)%dxt      (1,1)   &
             ,grid_g(ifm)%dyt      (1,1)   ,mass_g(ifm)%thvadv  (1,1,1) &
             ,mass_g(ifm)%thetav  (1,1,1) )
-     else
-        call advect_theta(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt   &
-            ,basic_g(ifm)%up      (1,1,1) ,basic_g(ifm)%uc      (1,1,1) &
-            ,basic_g(ifm)%vp      (1,1,1) ,basic_g(ifm)%vc      (1,1,1) &
-            ,basic_g(ifm)%wp      (1,1,1) ,basic_g(ifm)%wc      (1,1,1) &
-            ,basic_g(ifm)%pi0     (1,1,1) ,basic_g(ifm)%pc      (1,1,1) &
-            ,tend%pt              (1)     ,basic_g(ifm)%theta   (1,1,1) &
-            ,basic_g(ifm)%rtp     (1,1,1) ,basic_g(ifm)%rv      (1,1,1) &
-            ,basic_g(ifm)%dn0     (1,1,1) ,basic_g(ifm)%dn0u    (1,1,1) &
-            ,basic_g(ifm)%dn0v    (1,1,1) ,grid_g(ifm)%rtgt     (1,1)   &
-            ,grid_g(ifm)%rtgu     (1,1)   ,grid_g(ifm)%rtgv     (1,1)   &
-            ,grid_g(ifm)%fmapt    (1,1)   ,grid_g(ifm)%fmapui   (1,1)   &
-            ,grid_g(ifm)%fmapvi   (1,1)   ,grid_g(ifm)%f13t     (1,1)   &
-            ,grid_g(ifm)%f23t     (1,1)   ,grid_g(ifm)%dxu      (1,1)   &
-            ,grid_g(ifm)%dyv      (1,1)   ,grid_g(ifm)%dxt      (1,1)   &
-            ,grid_g(ifm)%dyt      (1,1)   ,mass_g(ifm)%thvadv  (1,1,1)  &
-            ,mass_g(ifm)%thetav  (1,1,1) )
+
     end if
     
   case ('THS')
-     if (level == 0) then
+     if (vapour_on) then
+        call storage_theta(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,mynum,edt   &
+            ,basic_g(ifm)%pi0     (1,1,1) ,basic_g(ifm)%pc      (1,1,1) &
+            ,basic_g(ifm)%rtp     (1,1,1) ,basic_g(ifm)%rv      (1,1,1) &
+            ,basic_g(ifm)%theta   (1,1,1) ,mass_g(ifm)%thvlast (1,1,1)  &
+            ,mass_g(ifm)%thvtend (1,1,1) ,tend%pt              (1)     )
+     else
         call azero(m1*m2*m3,scratch%vt3dq(1))
         call storage_theta(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,mynum,edt   &
             ,basic_g(ifm)%pi0     (1,1,1) ,basic_g(ifm)%pc      (1,1,1) &
             ,scratch%vt3dq        (1)     ,scratch%vt3dq        (1)     &
             ,basic_g(ifm)%theta   (1,1,1) ,mass_g(ifm)%thvlast (1,1,1) &
-            ,mass_g(ifm)%thvtend (1,1,1) ,tend%pt              (1)     )
-     else
-        call storage_theta(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,mynum,edt   &
-            ,basic_g(ifm)%pi0     (1,1,1) ,basic_g(ifm)%pc      (1,1,1) &
-            ,basic_g(ifm)%rtp     (1,1,1) ,basic_g(ifm)%rv      (1,1,1) &
-            ,basic_g(ifm)%theta   (1,1,1) ,mass_g(ifm)%thvlast (1,1,1)  &
             ,mass_g(ifm)%thvtend (1,1,1) ,tend%pt              (1)     )
      end if
   case default
@@ -482,6 +484,7 @@ end subroutine prep_vt3dabc
 !==========================================================================
 
 subroutine prep_thetv(m1,m2,m3,ia,iz,ja,jz,theta,rtp,rv,thetav)
+  use therm_lib, only: virtt
   implicit none
   integer , intent(in)                         :: m1,m2,m3,ia,iz,ja,jz
   real    , intent(in)   , dimension(m1,m2,m3) :: theta,rtp,rv
@@ -492,7 +495,7 @@ subroutine prep_thetv(m1,m2,m3,ia,iz,ja,jz,theta,rtp,rv,thetav)
   do i=1,m2
     do j=1,m3
       do k=1,m1
-           thetav(k,i,j)=theta(k,i,j)*(1.0+1.61*rv(k,i,j))/(1.0+rtp(k,i,j))
+           thetav(k,i,j)=virtt(theta(k,i,j),rv(k,i,j),rtp(k,i,j))
       enddo
     enddo
   enddo
@@ -505,6 +508,7 @@ end subroutine prep_thetv
 subroutine exhtend_ad(m1,m2,m3,ia,iz,ja,jz,pi0,pc,theta,rtp,rv,pt,thvadv)
 
   use rconstants, only: rocv
+  use therm_lib, only: virtt
   implicit none
   
   integer , intent(in)                          :: m1,m2,m3,ia,iz,ja,jz
@@ -518,8 +522,7 @@ subroutine exhtend_ad(m1,m2,m3,ia,iz,ja,jz,pi0,pc,theta,rtp,rv,pt,thvadv)
      do i=ia,iz
         do k=2,m1-1
            pt(k,i,j) = pt(k,i,j) + rocv * (pi0(k,i,j) + pc(k,i,j))  &
-                / ( theta(k,i,j) * (1.0+1.61*rv(k,i,j))   &
-                / (1.0+rtp(k,i,j)) ) * thvadv(k,i,j)
+                / virtt(theta(k,i,j),rv(k,i,j),rtp(k,i,j)) * thvadv(k,i,j)
         end do
      end do
   end do
@@ -558,6 +561,7 @@ end subroutine storage_theta
 !===========================================================================================
 subroutine prep_thvtend(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,edt,theta,thvlast,rtp,rv,thvtend)
   use mem_grid, only: time,dtlongn
+  use therm_lib, only: virtt
   implicit none
   integer , intent(in)                       :: m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv
   real    , intent(in)                       :: edt
@@ -584,8 +588,8 @@ subroutine prep_thvtend(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,edt,theta,thvlast,rtp,r
   do j=ja,jz
      do i=ia,iz
         do k=2,m1-1
-           thvtend(k,i,j) = (  theta(k,i,j) * (1.0+1.61*rv(k,i,j))  &
-                / (1.0 + rtp(k,i,j))   -  thvlast(k,i,j)  )  * edti
+           thvtend(k,i,j) = (  virtt(theta(k,i,j),rv(k,i,j),rtp(k,i,j))    &
+                            -  thvlast(k,i,j)  )  * edti
         enddo
      enddo
   enddo
@@ -597,6 +601,7 @@ end subroutine prep_thvtend
 
 subroutine exhtend_st(m1,m2,m3,ia,iz,ja,jz,pi0,pc,rtp,theta,thvtend,rv,pt)
   use rconstants, only : rocv
+  use therm_lib, only: virtt
   implicit none
   integer , intent(in)                         :: m1,m2,m3,ia,iz,ja,jz
   real    , intent(in)   , dimension(m1,m2,m3) :: pi0,pc,rtp,theta,thvtend,rv
@@ -608,8 +613,7 @@ subroutine exhtend_st(m1,m2,m3,ia,iz,ja,jz,pi0,pc,rtp,theta,thvtend,rv,pt)
      do i=ia,iz
         do k=2,m1-1
            pt(k,i,j) = pt(k,i,j) + rocv * (pi0(k,i,j) + pc(k,i,j))  &
-                / ( theta(k,i,j) * (1.0+1.61*rv(k,i,j))   &
-                / (1.0+rtp(k,i,j)) ) * thvtend(k,i,j)
+                / virtt(theta(k,i,j),rv(k,i,j),rtp(k,i,j))  * thvtend(k,i,j)
         end do
      end do
   end do

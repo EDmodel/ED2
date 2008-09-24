@@ -10,6 +10,7 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
   use canopy_radiation_coms, only: lai_min
   use grid_coms, only: nzg
   use soil_coms, only: soil, dslz
+  use consts_coms, only : t00,mmdov
 
   implicit none
 
@@ -96,8 +97,8 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
                 / leaf_width(cpatch%pft(ico))))
 
               call lphysiol_full(  &
-                   cpatch%veg_temp(ico)-273.15  &  ! Vegetation temperature (C)
-                   ,csite%can_shv(ipa)*29.0/18.0  &  ! canopy specific humidity (mol/mol)
+                   cpatch%veg_temp(ico)-t00  &  ! Vegetation temperature (C)
+                   ,csite%can_shv(ipa)*mmdov  &  ! canopy specific humidity (mol/mol)
                    ,csite%can_co2(ipa)*1e-6 &            ! effective CO2 mixing ratio (umol/mol)*(mol/1e6 umol)=(mol/mol)
 !                   ,3.6e-4  &                      ! effective CO2 mixing ratio (mol/mol)
                    ,cpatch%par_v(ico)/cpatch%lai(ico)  &             ! absorbed PAR (Ein/m2 leaf/s)
@@ -117,7 +118,7 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
               ! type containing the exact stomatal derivatives and met info
               !           else
               !              call lphysiol_sell(cpatch%veg_temp-t00  &
-              !                   ,csite%can_shv*29.0/18.0    &
+              !                   ,csite%can_shv*mmdov    &
               !                   ,3.6e-4  &
               !                   ,cpatch%par_v/cpatch%lai,cpatch%rb  &
               !                   ,rhos,csite%A_o_max(ipft),csite%A_c_max(ipft)  &
@@ -169,8 +170,8 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
 
 !        if (iphoto == 1) then
            call lphysiol_full(  &
-                cpatch%veg_temp(ico)-273.15  &  ! Vegetation temperature (C)
-                ,csite%can_shv(ipa)*29.0/18.0  &  ! canopy specific humidity (mol/mol)
+                cpatch%veg_temp(ico)-t00  &  ! Vegetation temperature (C)
+                ,csite%can_shv(ipa)*mmdov  &  ! canopy specific humidity (mol/mol)
                 ,csite%can_co2(ipa)*1e-6 &            ! effective CO2 mixing ratio (umol/mol)*(mol/1e6 umol)=(mol/mol)
                ! ,3.6e-4  &          ! effective CO2 mixing ratio (mol/mol)
                 ,cpatch%par_v(ico)/cpatch%lai(ico)  &  ! absorbed PAR (Ein/m2 leaf/s)
@@ -191,7 +192,7 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
            ! ---------------------------------------------------------
 !           call lphysiol_sell( &
 !                cpatch%veg_temp-t00,                          &
-!                csite%can_shv*29.0/18.0,   &
+!                csite%can_shv*mmdov,   &
 !                3.6e-4,                               &
 !                cpatch%par_v/cpatch%lai,                    &
 !                cpatch%rb,                               &

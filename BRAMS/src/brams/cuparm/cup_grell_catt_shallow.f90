@@ -87,12 +87,11 @@ subroutine cuparth_shal_catt(           &
            		     icoic  =>icoic_sh	  !,& !INTENT(IN)
            		     !ensdim,		      !INTENT(IN)
 
-  use rconstants, only: rgas,cp,rm,p00,g,cpor
+  use rconstants, only: rgas,cp,rm,p00,tcrit,g,cpor,pkdcut 
 
   use mem_scratch2_grell_sh
 
   implicit none
-  real, parameter :: tcrit=273.15
   integer mgmxp,mgmyp,mgmzp,ngrid,ngrids_cp
   integer maxiens,ensdim,iens,icbase
   real, intent(in) :: depth_min,cap_maxs

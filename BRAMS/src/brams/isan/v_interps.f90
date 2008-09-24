@@ -204,6 +204,7 @@ SUBROUTINE obs_sigz (m1,m2,tsnd,psnd,zsnd,rsnd,usndz,vsndz  &
                     ,obsu,obsv,obsp,obst,obsr,no,ztop)
 use isan_coms
 use rconstants
+use therm_lib,only: ptrh2rvapl,virtt
 
 implicit none
 integer :: m1,m2,no,lpst(m1),lzst(m1)
@@ -368,8 +369,8 @@ staloop: do ns=1,nsta
            tsz(k)=obst(ns,k)*obsp(ns,k)/cp
            psz(K)=(obsp(ns,k)/cp)**cpor*p00
            IF(obsr(ns,k).LT.1E19) THEN
-              rsz(k)=rs(psz(k),tsz(k))*obsr(ns,k)
-              tsz(k)=obst(ns,k)*(1.+.61*rsz(k))
+              rsz(k)=ptrh2rvapl(obsr(ns,k),psz(k),tsz(k))
+              tsz(k)=virtt(obst(ns,k),rsz(k))
            else
               tsz(k)=obst(ns,k)
            endif
@@ -621,6 +622,7 @@ subroutine vterpp_s (np1,np2,np3,npi3,un,vn,tn,zn,rn  &
      
 use isan_coms
 use rconstants
+use therm_lib, only: ptrh2rvapil,virtt
 
 implicit none
 integer :: np1,np2,np3,npi3
@@ -636,7 +638,7 @@ real :: ppd(npr),thetd(npr),pkd(npr),ud(npr),vd(npr),zd(npr)  &
          ,sigzr(maxsigz),vvv(maxsigz)
 
 integer :: i,j,k,mcnt,npd,kl,kpbc,kibc
-real :: rs,pbc,thvp,piibc
+real :: pbc,thvp,piibc,raux
 
 do j=1,np2
    do i=1,np1
@@ -685,8 +687,8 @@ do j=1,np2
          PKD(K)=PPD(K)**ROCP
          pid(k)=cp*(ppd(k)/p00)**rocp
          tempd(k)=thetd(k)*pid(k)/cp
-         rtd(k)=rd(k)*rs(ppd(k),tempd(k))
-         thvd(k)=thetd(k)*(1.+.61*rtd(k))
+         rtd(k)=ptrh2rvapil(rd(k),ppd(k),tempd(k))
+         thvd(k)=virtt(thetd(k),rtd(k))
       ENDDO
 
       zd(2)=zd(3)+(thvd(3)+thvd(2))*.5*(pid(3)-pid(2))/g
@@ -746,9 +748,11 @@ do j=1,np2
 
       do k=1,npi3
          vvv(k)=ti2(i,j,k)*(pi2(i,j,k)/p00)**rocp
-         vvv(k)=ti2(i,j,k)*(1.+.61*ri2(i,j,k)*rs(pi2(i,j,k),vvv(k)))
+         raux  =ptrh2rvapil(ri2(i,j,k),pi2(i,j,k),vvv(k))
+         vvv(k)=virtt(ti2(i,j,k),raux)
       enddo
-      thvp=thetd(kpbc)*(1.+.61*rd(kpbc)*rs(ppd(kpbc),tempd(kpbc)))
+      raux = ptrh2rvapil(rd(kpbc),ppd(kpbc),tempd(kpbc))
+      thvp=virtt(thetd(kpbc),raux)
 
 
       piibc=cp*pkd(kpbc)/p00**rocp
