@@ -164,7 +164,7 @@ USE_INTERF=1
 #C_COMP=pgcc
 #C_OPTS=-O3 -DUNDERSCORE -DLITTLE
 #LOADER=pgf90
-#LOADER_OPTS=-v -Wl,-static
+#LOADER_OPTS=-v -Wl,
 #LIBS=
 #-----------------------------------------------------------------
 
@@ -202,37 +202,37 @@ MOD_EXT=mod
 #Compiler options
 
 # A. Pickiest
-USE_INTERF=0
-F_OPTS= -FR -O0 -recursive -Vaxlib -static -check all -g -fpe0 -ftz -gen-interfaces \
+#USE_INTERF=0
+#F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces \
  -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
  -traceback -ftrapuv
-C_OPTS= -O0 -DLITTLE -static -g -traceback -debug extended
-LOADER_OPTS= -FR -O0 -Vaxlib -static -check all -g -fpe0 -ftz -gen-interfaces \
+#C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended
+#LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces \
  -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
  -traceback -ftrapuv
-C_LOADER_OPTS=-v -g -traceback
+#C_LOADER_OPTS=-v -g -traceback
 
 # B. Full interfacing, no fpe0
 #USE_INTERF=1
-#F_OPTS= -FR -O3 -recursive -Vaxlib -static -check all -warn all -gen-interfaces -traceback
-#C_OPTS= -O3 -DLITTLE -static -traceback
-#LOADER_OPTS= -FR -O3 -Vaxlib -static -warn all -check all -gen-interfaces -traceback
+#F_OPTS= -FR -O3 -recursive -Vaxlib  -check all -warn all -gen-interfaces -traceback
+#C_OPTS= -O3 -DLITTLE  -traceback
+#LOADER_OPTS= -FR -O3 -Vaxlib  -warn all -check all -gen-interfaces -traceback
 #C_LOADER_OPTS=-v -traceback
 
 # C. No interface, with fpe0
 #USE_INTERF=1
-#F_OPTS= -FR -O3 -recursive -Vaxlib -static -fpe0 -ftz -check all -traceback -g \
+#F_OPTS= -FR -O3 -recursive -Vaxlib  -fpe0 -ftz -check all -traceback -g \
 #       -debug extended -debug-parameters all -ftrapuv
-#C_OPTS= -O3 -DLITTLE -static -traceback -g -debug extended
-#LOADER_OPTS= -FR -O3 -Vaxlib -static -fpe0 -ftz -check all -traceback \
+#C_OPTS= -O3 -DLITTLE  -traceback -g -debug extended
+#LOADER_OPTS= -FR -O3 -Vaxlib  -fpe0 -ftz -check all -traceback \
 #       -g -debug extended -debug-parameters all -ftrapuv
 #C_LOADER_OPTS=-v -traceback -g 
 
 # D. Medium debugging configuration
 #USE_INTERF=1
-#F_OPTS= -FR -O2 -fpe0 -ftz  -ftrapuv -recursive -static -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
-#C_OPTS=  -DLITTLE -O2 -static -traceback -g
-#LOADER_OPTS= -FR -O2 -fpe0 -ftz -ftrapuv -recursive -static -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
+#F_OPTS= -FR -O2 -fpe0 -ftz  -ftrapuv -recursive  -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
+#C_OPTS=  -DLITTLE -O2  -traceback -g
+#LOADER_OPTS= -FR -O2 -fpe0 -ftz -ftrapuv -recursive  -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
 #C_LOADER_OPTS=-v -O2 -traceback -g
 
 ## Dietze's favorite
@@ -240,17 +240,17 @@ C_LOADER_OPTS=-v -g -traceback
 #LOADER_OPTS = $(F_OPTS)
 
 # E. Simple debugging configuration
-#USE_INTERF=1
-#F_OPTS= -FR -O2  -recursive -static -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
-#C_OPTS=  -DLITTLE -O2 -static -traceback -g
-#LOADER_OPTS= -FR -O2 -static -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
-#C_LOADER_OPTS=-v -O2 -traceback -g
+USE_INTERF=1
+F_OPTS= -FR -O2  -recursive  -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
+C_OPTS=  -DLITTLE -O2  -traceback -g
+LOADER_OPTS= -FR -O2  -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
+C_LOADER_OPTS=-v -O2 -traceback -g
 
 # F. Fast...
 #USE_INTERF=1
-#F_OPTS= -FR -O3 -recursive -Vaxlib -static -traceback
-#C_OPTS= -O3 -DLITTLE -static -traceback
-#LOADER_OPTS= -FR -O3 -Vaxlib -static -traceback
+#F_OPTS= -FR -O3 -recursive -Vaxlib  -traceback
+#C_OPTS= -O3 -DLITTLE  -traceback
+#LOADER_OPTS= -FR -O3 -Vaxlib  -traceback
 #C_LOADER_OPTS=-v -traceback
 
 

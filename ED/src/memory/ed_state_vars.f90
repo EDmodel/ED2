@@ -4800,7 +4800,7 @@ contains
     
     use var_tables_array,only:num_var,vt_info,var_table
     use ed_node_coms,only:mynum,mchnum,machs,nmachs,nnodetot,sendnum,recvnum,master_num
-    use grid_dims, only: maxgrds, maxmach
+    use max_dims, only: maxgrds, maxmach
     implicit none
     
     include 'mpif.h'
