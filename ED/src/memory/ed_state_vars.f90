@@ -1569,7 +1569,9 @@ contains
 
     call nullify_edtype(cgrid)
     cgrid%npolygons = npolygons
-
+    ! This if is needed for coupled runs: some nodes may receive areas exclusively over oceans, and 
+    ! npolygons will be 0 in these nodes. Nothing should be allocated in these circumstances. 
+    if (npolygons > 0) then
        allocate(cgrid%polygon(npolygons))
        allocate(cgrid%lat(npolygons))
        allocate(cgrid%lon(npolygons))
@@ -1754,6 +1756,7 @@ contains
        end if
        ! Initialize the variables with a non-sense number.
        call huge_edtype(cgrid)
+    end if
     return
   end subroutine allocate_edtype
 !============================================================================!

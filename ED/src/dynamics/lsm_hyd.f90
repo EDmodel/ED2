@@ -63,17 +63,24 @@ subroutine initHydrology()
         msites=max(msites,edgrid_g(igr)%polygon(ipy)%nsites)
      end do
   end do
-  write(unit=*,fmt='(4(a,1x,i9,1x),l1)')  &
+  write(unit=*,fmt='(4(a,1x,i9,1x))')  &
      'initHydrology | mynum=',mynum,'ngrids=',ngrids,'mpolys=',mpolys,'msites=',msites
   allocate(qw4out(ngrids,mpolys,msites))  !!just for debugging
   allocate(qh4out(ngrids,mpolys,msites))  !!just for debugging
   qw4out = 0.0
   qh4out = 0.0
+  write(unit=*,fmt='(4(a,1x,i9,1x))')  &
+     'Allocated | mynum=',mynum,'ngrids=',ngrids,'mpolys=',mpolys,'msites=',msites
 
   !!initialize runoff parameters
   do igr=1,ngrids
      call updateHydroParms (edgrid_g(igr))
   end do
+  write(unit=*,fmt='(4(a,1x,i9,1x))')  &
+     'Updated | mynum=',mynum,'ngrids=',ngrids,'mpolys=',mpolys,'msites=',msites
+  deallocate(qw4out,qh4out)
+  write(unit=*,fmt='(4(a,1x,i9,1x))')  &
+     'Deallocated | mynum=',mynum,'ngrids=',ngrids,'mpolys=',mpolys,'msites=',msites
   return
 end subroutine initHydrology
 !==========================================================================================!
@@ -1617,7 +1624,7 @@ subroutine updateHydroParms (cgrid)
 !  integer :: ifm ! grid counter
 
   if(useRUNOFF == 0) return
-
+  write (unit=*,fmt='(a)') 'What am I doing here????'
   !! Surface Runoff Parameterization
   !! Parameters for Manning's Formula
   !! based on USGS Water-Supply Paper 2339

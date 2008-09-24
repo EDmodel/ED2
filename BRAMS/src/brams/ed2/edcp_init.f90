@@ -106,7 +106,7 @@ subroutine master_ed_init(iparallel)
      end do
   
      write (unit=*,fmt='(a,i5,a)') ' + Memory successfully allocated on none ',mynum,';'
-
+     call onenode()
      call ed_coup_driver()
 
   end if

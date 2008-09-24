@@ -279,11 +279,12 @@ subroutine init_ed_poly_vars_array(cgrid)
   real :: veg_N
   
   
-  cgrid%mean_precip = 0.0
-  cgrid%mean_qprecip = 0.0
-  cgrid%mean_netrad = 0.0
 
   do ipy = 1,cgrid%npolygons
+     !Moved inside the loop for the cases in which npolygons is 0
+     cgrid%mean_precip(ipy)  = 0.0
+     cgrid%mean_qprecip(ipy) = 0.0
+     cgrid%mean_netrad(ipy)  = 0.0
      call compute_C_and_N_storage(cgrid,ipy,soil_C, soil_N, veg_C, veg_N)
      cgrid%cbudget_initialstorage(ipy) = soil_C + veg_C
      cgrid%nbudget_initialstorage(ipy) = soil_N + veg_N

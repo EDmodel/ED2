@@ -491,7 +491,7 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
        alloc_wgrid_s,   &
        zero_wgrid_s
 
-  use node_mod,only:mmxp,mmyp,ia,iz,ja,jz
+  use node_mod,only:mmxp,mmyp,ia,iz,ja,jz,mynum
   use ed_work_vars,only:work_e
   use mem_leaf,only:leaf_g
   use mem_basic,only: basic_g
@@ -519,12 +519,10 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
 
   do i=1,mxp
      do j=1,myp
-        
         ix = work_e(ifm)%xatm(i,j)
         iy = work_e(ifm)%yatm(i,j)
         leaf_g(ifm)%patch_area(ix,iy,1) = 1.0-work_e(ifm)%landfrac(i,j)
         leaf_g(ifm)%patch_area(ix,iy,2) = work_e(ifm)%landfrac(i,j)
-        
      enddo
   enddo
 
@@ -588,14 +586,14 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
               +basic_g(ifm)%pi0(1,i,j)+basic_g(ifm)%pi0(2,i,j)) * 0.5
       endif
       
+      wgrids_g(ifm)%canopy_tempk(i,j)       =  theta_mean(i,j) * pi0_mean(i,j) * cpi
+      wgrids_g(ifm)%canopy_water_vapor(i,j) =  rv_mean(i,j)
     enddo
   enddo
 
+!  wgrids_g(ifm)%canopy_tempk       =  theta_mean * pi0_mean * cpi
   
-
-  wgrids_g(ifm)%canopy_tempk       =  theta_mean * pi0_mean * cpi
-  
-  wgrids_g(ifm)%canopy_water_vapor =  rv_mean
+!  wgrids_g(ifm)%canopy_water_vapor =  rv_mean
 
 
   return
