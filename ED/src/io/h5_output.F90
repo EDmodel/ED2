@@ -198,19 +198,21 @@ subroutine h5_output(vtype)
            call date_add_to (iyeara,imontha,idatea,itimea*100,  &
                 time,'s',outyear,outmonth,outdate,outhour)
            call date_2_seconds(out_time_fast%year,out_time_fast%month, &
-                out_time_fast%date,out_time_fast%time*100, &
+                out_time_fast%date,int(out_time_fast%time), &
                 iyeara,imontha,idatea,itimea*100,dsec)
-           if(time >= (dsec+outfast) .or. outmonth > out_time_fast%month) then
+           if(time >= (dsec+outfast) .or. outmonth .ne. out_time_fast%month) then
+              print*,"SYNC"
               out_time_fast%year  = outyear
               out_time_fast%month = outmonth
               out_time_fast%date  = outdate
-              out_time_fast%time  = (3600.*int(outhour/10000)+60.*mod(int(outhour/100),100)+mod(outhour,100))/100.   !! DOUBLE CHECK
+              out_time_fast%time  = outhour*1.!!(3600.*int(outhour/10000)+60.*int(mod(outhour,10000)/100)+mod(outhour,100)*1.)   !! DOUBLE CHECK
               dsec = time
               new_file = .true.
            endif
            irec_fast = ((time-dsec)/frqfast) + 1
            nrec = nrec_fast
            irec = irec_fast
+print*,irec,nrec,outmonth,out_time_fast,dsec,time
            !! construct filename
            call makefnam(anamel,ffilout,0.0,out_time_fast%year, &
                 out_time_fast%month,out_time_fast%date,out_time_fast%time*100, &
@@ -279,7 +281,7 @@ subroutine h5_output(vtype)
          call h5fcreate_f(trim(anamel)//char(0), H5F_ACC_TRUNC_F, file_id, &
               hdferr,access_prp = plist_id)
          if (hdferr /= 0) then
-            print*,"COULD NOT OPEN THE HDF FILE"
+            print*,"COULD NOT OPEN THE NEW HDF FILE"
             print*,trim(anamel),file_id,hdferr
             call fatal_error('Failed opening the HDF file' &
                  ,'h5_output','h5_output.F90')
@@ -296,7 +298,7 @@ subroutine h5_output(vtype)
 
            call h5fcreate_f(trim(anamel)//char(0), H5F_ACC_TRUNC_F, file_id, hdferr)
            if (hdferr /= 0) then
-              print*,"COULD NOT OPEN THE HDF FILE"
+              print*,"COULD NOT OPEN THE new HDF FILE"
               print*,trim(anamel),file_id,hdferr
               call fatal_error('Failed opening the HDF file' &
                               ,'h5_output','h5_output.F90')
@@ -306,7 +308,7 @@ subroutine h5_output(vtype)
            
            call h5fopen_f(trim(anamel)//char(0), H5F_ACC_RDWR_F, file_id, hdferr)
            if (hdferr /= 0) then
-              print*,"COULD NOT OPEN THE HDF FILE"
+              print*,"COULD NOT OPEN THE existing HDF FILE"
               print*,trim(anamel),file_id,hdferr
               call fatal_error('Failed opening the HDF file' &
                               ,'h5_output','h5_output.F90')
@@ -1026,6 +1028,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
      globdims(dsetrank) = nrec
      chnkdims(dsetrank) = 1
      chnkoffs(dsetrank) = irec-1
+     if(chnkoffs(dsetrank) .lt. 0) chnkoffs(dsetrank) = 0
      cnt(dsetrank)      = 1
      stride(dsetrank)   = 1
   endif

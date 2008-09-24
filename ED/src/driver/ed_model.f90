@@ -71,6 +71,7 @@ subroutine ed_model()
   writing_mont      = imoutput > 0
   writing_year      = iyoutput > 0
   out_time_fast     = current_time
+  out_time_fast%month = -1
 
   if (writing_mont) then
      do ifm=1,ngrids
