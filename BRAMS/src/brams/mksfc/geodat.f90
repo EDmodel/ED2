@@ -10,6 +10,7 @@ subroutine geodat(n2,n3,datr,hfn,ofn,vt2da,vt2db,ngr,vnam)
 
 use mem_grid
 use io_params
+use rconstants, only: spcon
 
 implicit none
 integer :: n2,n3,ngr
@@ -79,7 +80,7 @@ NIQ=INT(FLOAT(NNXP(NGR)-1)*DELTAXN(NGR)/DELTAXQ)+4
 NJQ=INT(FLOAT(NNYP(NGR)-1)*DELTAYN(NGR)/DELTAYQ)+4
 
 !     interpollated raw data grid (P)
-NP=MIN(10,MAX(1,INT(DELTAXQ/(DELTALLO*111000.))))
+NP=MIN(10,MAX(1,INT(DELTAXQ/(DELTALLO*spcon))))
 DELTAXP=DELTAXQ/FLOAT(NP)
 DELTAYP=DELTAYQ/FLOAT(NP)
 
@@ -258,11 +259,19 @@ DO JQ=1,NJQ
       DO JP=1,NP
          SH=0.
          RH=0.
-         DO IP=1,NP
+         thisloop: DO IP=1,NP
+            !------------------------------------------------------------------------------!
+            !   No, this doesn't make any sense but if I don't put this "cycle" it gives   !
+            ! floating point exception when it attempts to compute the max and it crashes. !
+            !------------------------------------------------------------------------------!
+            if (datp(ip,jp) < 1.e-16 ) cycle thisloop
+            !------------------------------------------------------------------------------!
+
             SH=MAX(SH,DATP(IP,JP))
             RH=RH+DATP(IP,JP)
             RH2=RH2+DATP(IP,JP)**2
-         ENDDO
+         END DO thisloop
+
          SHA=SHA+SH/(2.*FLOAT(NP))
          RHA=RHA+RH
       ENDDO

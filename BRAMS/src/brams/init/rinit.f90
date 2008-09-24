@@ -28,18 +28,26 @@ if (initial /= 3) then
    call atob(nxyzp,basic_g(ngrid)%pc(1,1,1),basic_g(ngrid)%pp(1,1,1))
 
    if(initflg.eq.1) then
-      if(icloud.ge.1) call azero(nxyzp,micro_g(ngrid)%rcp(1,1,1))
-      if(irain.ge.1)  call azero(nxyzp,micro_g(ngrid)%rrp(1,1,1))
-      if(ipris.ge.1)  call azero(nxyzp,micro_g(ngrid)%rpp(1,1,1))
-      if(isnow.ge.1)  call azero(nxyzp,micro_g(ngrid)%rsp(1,1,1))
-      if(iaggr.ge.1)  call azero(nxyzp,micro_g(ngrid)%rap(1,1,1))
-      if(igraup.ge.1) call azero(nxyzp,micro_g(ngrid)%rgp(1,1,1))
-      if(ihail.ge.1)  call azero(nxyzp,micro_g(ngrid)%rhp(1,1,1))
+      if(icloud >= 1) call azero(nxyzp,micro_g(ngrid)%rcp(1,1,1))
+      if(irain  >= 1) call azero(nxyzp,micro_g(ngrid)%rrp(1,1,1))
+      if(ipris  >= 1) call azero(nxyzp,micro_g(ngrid)%rpp(1,1,1))
+      if(isnow  >= 1) call azero(nxyzp,micro_g(ngrid)%rsp(1,1,1))
+      if(iaggr  >= 1) call azero(nxyzp,micro_g(ngrid)%rap(1,1,1))
+      if(igraup >= 1) call azero(nxyzp,micro_g(ngrid)%rgp(1,1,1))
+      if(ihail  >= 1) call azero(nxyzp,micro_g(ngrid)%rhp(1,1,1))
+
+      if(icloud >= 5) call azero(nxyzp,micro_g(ngrid)%ccp(1,1,1))
+      if(irain  >= 5) call azero(nxyzp,micro_g(ngrid)%crp(1,1,1))
+      if(ipris  >= 5) call azero(nxyzp,micro_g(ngrid)%cpp(1,1,1))
+      if(isnow  >= 5) call azero(nxyzp,micro_g(ngrid)%csp(1,1,1))
+      if(iaggr  >= 5) call azero(nxyzp,micro_g(ngrid)%cap(1,1,1))
+      if(igraup >= 5) call azero(nxyzp,micro_g(ngrid)%cgp(1,1,1))
+      if(ihail  >= 5) call azero(nxyzp,micro_g(ngrid)%chp(1,1,1))
 
       call azero(nxyzp,basic_g(ngrid)%wp(1,1,1))
    endif
 
-   call tkeinit(nzp,nxp,nyp)
+   call tkeinit(nzp,nxp,nyp,1,nxp,1,nyp)
 
 endif
 

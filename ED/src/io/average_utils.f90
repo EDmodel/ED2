@@ -38,36 +38,36 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
       do isi = 1,cpoly%nsites
          csite => cpoly%site(isi)
 
-         csite%aux(:)              = csite%aux(:)               * frqsumi
-         csite%avg_vapor_vc(:)     = csite%avg_vapor_vc(:)      * frqsumi
-         csite%avg_dew_cg(:)       = csite%avg_dew_cg(:)        * frqsumi
-         csite%avg_vapor_gc(:)     = csite%avg_vapor_gc(:)      * frqsumi
-         csite%avg_wshed_vg(:)     = csite%avg_wshed_vg(:)      * frqsumi
-         csite%avg_vapor_ac(:)     = csite%avg_vapor_ac(:)      * frqsumi
-         csite%avg_transp(:)       = csite%avg_transp(:)        * frqsumi
-         csite%avg_evap(:)         = csite%avg_evap(:)          * frqsumi
-         csite%avg_runoff(:)       = csite%avg_runoff(:)        * tfact ! kg (water) / m2 / s
-         csite%avg_sensible_vc(:)  = csite%avg_sensible_vc(:)   * frqsumi
-         csite%avg_sensible_2cas(:)= csite%avg_sensible_2cas(:) * frqsumi
-         csite%avg_qwshed_vg(:)    = csite%avg_qwshed_vg(:)     * frqsumi
-         csite%avg_sensible_gc(:)  = csite%avg_sensible_gc(:)   * frqsumi
-         csite%avg_sensible_ac(:)  = csite%avg_sensible_ac(:)   * frqsumi
-         csite%avg_sensible_tot(:) = csite%avg_sensible_tot(:)  * frqsumi
-         csite%avg_carbon_ac(:)    = csite%avg_carbon_ac(:)     * frqsumi
-         csite%avg_runoff_heat(:)  = csite%avg_runoff_heat(:)   * tfact
-         ! csite%avg_heatstor_veg(:) = csite%avg_heatstor_veg(:)  * tfact ! CHECK THIS?
-         
-         do k=cpoly%lsl(isi),nzg
-            csite%avg_sensible_gg(k,:) = csite%avg_sensible_gg(k,:) * frqsumi
-            csite%avg_smoist_gg(k,:)   = csite%avg_smoist_gg(k,:)   * frqsumi
-            csite%avg_smoist_gc(k,:)   = csite%avg_smoist_gc(k,:)   * frqsumi
-            csite%aux_s(k,:)           = csite%aux_s(k,:)           * frqsumi
-         end do
-
          do ipa = 1,csite%npatches
             cpatch => csite%patch(ipa)
+
+            csite%aux(ipa)              = csite%aux(ipa)               * frqsumi
+            csite%avg_vapor_vc(ipa)     = csite%avg_vapor_vc(ipa)      * frqsumi
+            csite%avg_dew_cg(ipa)       = csite%avg_dew_cg(ipa)        * frqsumi
+            csite%avg_vapor_gc(ipa)     = csite%avg_vapor_gc(ipa)      * frqsumi
+            csite%avg_wshed_vg(ipa)     = csite%avg_wshed_vg(ipa)      * frqsumi
+            csite%avg_vapor_ac(ipa)     = csite%avg_vapor_ac(ipa)      * frqsumi
+            csite%avg_transp(ipa)       = csite%avg_transp(ipa)        * frqsumi
+            csite%avg_evap(ipa)         = csite%avg_evap(ipa)          * frqsumi
+            csite%avg_runoff(ipa)       = csite%avg_runoff(ipa)        * tfact ! kg (water) / m2 / s
+            csite%avg_sensible_vc(ipa)  = csite%avg_sensible_vc(ipa)   * frqsumi
+            csite%avg_sensible_2cas(ipa)= csite%avg_sensible_2cas(ipa) * frqsumi
+            csite%avg_qwshed_vg(ipa)    = csite%avg_qwshed_vg(ipa)     * frqsumi
+            csite%avg_sensible_gc(ipa)  = csite%avg_sensible_gc(ipa)   * frqsumi
+            csite%avg_sensible_ac(ipa)  = csite%avg_sensible_ac(ipa)   * frqsumi
+            csite%avg_sensible_tot(ipa) = csite%avg_sensible_tot(ipa)  * frqsumi
+            csite%avg_carbon_ac(ipa)    = csite%avg_carbon_ac(ipa)     * frqsumi
+            csite%avg_runoff_heat(ipa)  = csite%avg_runoff_heat(ipa)   * tfact
+            ! csite%avg_heatstor_veg(ipa) = csite%avg_heatstor_veg(ipa)  * tfact ! CHECK THIS?
+         
+            do k=cpoly%lsl(isi),nzg
+               csite%avg_sensible_gg(k,ipa) = csite%avg_sensible_gg(k,ipa) * frqsumi
+               csite%avg_smoist_gg(k,ipa)   = csite%avg_smoist_gg(k,ipa)   * frqsumi
+               csite%avg_smoist_gc(k,ipa)   = csite%avg_smoist_gc(k,ipa)   * frqsumi
+               csite%aux_s(k,ipa)           = csite%aux_s(k,ipa)           * frqsumi
+            end do
             
-            if (cpatch%ncohorts>0) then
+            do ico=1,cpatch%ncohorts
                !-- Normalization of cohort level state variables
                !-- leaf and root respiration are state variables, ie
                !-- used to update other quanities in the code. They
@@ -82,20 +82,20 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
 
                ! For IO - they should be replaced by these guys
                ! units: [umol/m2/s * steps] -> [umol/m2/s] 
-               cpatch%mean_leaf_resp = cpatch%mean_leaf_resp * tfact
-               cpatch%mean_root_resp = cpatch%mean_root_resp * tfact
-               cpatch%mean_gpp       = cpatch%mean_gpp       * tfact
+               cpatch%mean_leaf_resp(ico) = cpatch%mean_leaf_resp(ico) * tfact
+               cpatch%mean_root_resp(ico) = cpatch%mean_root_resp(ico) * tfact
+               cpatch%mean_gpp(ico)       = cpatch%mean_gpp(ico)       * tfact
                
                !  Normalize the vegetation heating/cooling rates
                !  
                if(diag_veg_heating) then
-                  cpatch%co_srad_h = cpatch%co_srad_h * frqsumi
-                  cpatch%co_lrad_h = cpatch%co_lrad_h * frqsumi
-                  cpatch%co_sens_h = cpatch%co_sens_h * frqsumi
-                  cpatch%co_evap_h = cpatch%co_evap_h * frqsumi
-                  cpatch%co_liqr_h = cpatch%co_liqr_h * frqsumi
+                  cpatch%co_srad_h(ico) = cpatch%co_srad_h(ico) * frqsumi
+                  cpatch%co_lrad_h(ico) = cpatch%co_lrad_h(ico) * frqsumi
+                  cpatch%co_sens_h(ico) = cpatch%co_sens_h(ico) * frqsumi
+                  cpatch%co_evap_h(ico) = cpatch%co_evap_h(ico) * frqsumi
+                  cpatch%co_liqr_h(ico) = cpatch%co_liqr_h(ico) * frqsumi
                endif
-            end if
+            end do
          end do
       end do
    end do
@@ -128,103 +128,105 @@ subroutine reset_averaged_vars(cgrid)
       do isi = 1,cpoly%nsites
          csite => cpoly%site(isi)
 
-         !----------------------------------------------------------------!
-         ! Zeroing CO2 budget variables                                   !
-         !----------------------------------------------------------------!
-         csite%co2budget_gpp      = 0.0
-         csite%co2budget_gpp_dbh  = 0.0
-         csite%co2budget_rh       = 0.0
-         csite%co2budget_plresp   = 0.0
-         csite%wbudget_precipgain = 0.0
-         csite%ebudget_precipgain = 0.0
-         csite%ebudget_netrad     = 0.0
-         !----------------------------------------------------------------!
-
-         csite%avg_carbon_ac    = 0.0
-         csite%avg_vapor_vc     = 0.0
-         csite%avg_dew_cg       = 0.0
-         csite%avg_vapor_gc     = 0.0
-         csite%avg_wshed_vg     = 0.0
-         csite%avg_vapor_ac     = 0.0
-         csite%avg_transp       = 0.0
-         csite%avg_evap         = 0.0
-         csite%avg_smoist_gg    = 0.0
-         csite%avg_smoist_gc    = 0.0
-         csite%avg_runoff       = 0.0
-         csite%avg_sensible_vc  = 0.0
-         csite%avg_sensible_2cas= 0.0
-         csite%avg_qwshed_vg    = 0.0
-         csite%avg_sensible_gc  = 0.0
-         csite%avg_sensible_ac  = 0.0
-         csite%avg_sensible_tot = 0.0
-         csite%avg_sensible_gg  = 0.0
-         csite%avg_runoff_heat  = 0.0
-         csite%aux              = 0.0
-         csite%aux_s            = 0.0
-         
-         csite%avg_heatstor_veg = 0.0  !SHOULD THIS BE ZERO'D ALSO?
+         cpoly%avg_soil_temp(:,isi)      = 0.0
+         cpoly%avg_soil_water(:,isi)     = 0.0
 
          do ipa = 1,csite%npatches
             cpatch => csite%patch(ipa)
-            if (cpatch%ncohorts>0) then
-               cpatch%leaf_respiration    = 0.0
-               cpatch%root_respiration    = 0.0
+
+            !----------------------------------------------------------------!
+            ! Zeroing CO2 budget variables                                   !
+            !----------------------------------------------------------------!
+            csite%co2budget_gpp(ipa)        = 0.0
+            csite%co2budget_gpp_dbh(:,ipa)  = 0.0
+            csite%co2budget_rh(ipa)         = 0.0
+            csite%co2budget_plresp(ipa)     = 0.0
+            csite%wbudget_precipgain(ipa)   = 0.0
+            csite%ebudget_precipgain(ipa)   = 0.0
+            csite%ebudget_netrad(ipa)       = 0.0
+            !----------------------------------------------------------------!
+
+            csite%avg_carbon_ac(ipa)        = 0.0
+            csite%avg_vapor_vc(ipa)         = 0.0
+            csite%avg_dew_cg(ipa)           = 0.0
+            csite%avg_vapor_gc(ipa)         = 0.0
+            csite%avg_wshed_vg(ipa)         = 0.0
+            csite%avg_vapor_ac(ipa)         = 0.0
+            csite%avg_transp(ipa)           = 0.0
+            csite%avg_evap(ipa)             = 0.0
+            csite%avg_smoist_gg(:,ipa)      = 0.0
+            csite%avg_smoist_gc(:,ipa)      = 0.0
+            csite%avg_runoff(ipa)           = 0.0
+            csite%avg_sensible_vc(ipa)      = 0.0
+            csite%avg_sensible_2cas(ipa)    = 0.0
+            csite%avg_qwshed_vg(ipa)        = 0.0
+            csite%avg_sensible_gc(ipa)      = 0.0
+            csite%avg_sensible_ac(ipa)      = 0.0
+            csite%avg_sensible_tot(ipa)     = 0.0
+            csite%avg_sensible_gg(:,ipa)    = 0.0
+            csite%avg_runoff_heat(ipa)      = 0.0
+            csite%aux(ipa)                  = 0.0
+            csite%aux_s(:,ipa)              = 0.0
+         
+            csite%avg_heatstor_veg(ipa)     = 0.0  !SHOULD THIS BE ZERO'D ALSO?
+
+            do ico=1,cpatch%ncohorts
+               cpatch%leaf_respiration(ico)    = 0.0
+               cpatch%root_respiration(ico)    = 0.0
                !Still checking if these should be zerod, should not be necessary
                !They are not integrated variables...
-               !cpatch%mean_leaf_resp      = 0.0
-               !cpatch%mean_root_resp      = 0.0
-               cpatch%gpp                 = 0.0
+               !cpatch%mean_leaf_resp(ico)      = 0.0
+               !cpatch%mean_root_resp(ico)      = 0.0
+               cpatch%gpp(ico)                 = 0.0
 
-               cpatch%co_srad_h = 0.0
-               cpatch%co_lrad_h = 0.0
-               cpatch%co_sens_h = 0.0
-               cpatch%co_evap_h = 0.0
-               cpatch%co_liqr_h = 0.0
+               cpatch%co_srad_h(ico) = 0.0
+               cpatch%co_lrad_h(ico) = 0.0
+               cpatch%co_sens_h(ico) = 0.0
+               cpatch%co_evap_h(ico) = 0.0
+               cpatch%co_liqr_h(ico) = 0.0
 
-            endif
+            end do
          end do
 
 
       enddo
-
-      cpoly%avg_soil_temp(:,:)      = 0.0
-      cpoly%avg_soil_water(:,:)     = 0.0
    enddo
 
-   ! Should this be here as well?
-   cgrid%cbudget_nep       = 0.0
+   do ipy = 1,cgrid%npolygons
+      ! Should this be here as well?
+      cgrid%cbudget_nep(ipy)       = 0.0
 
-   ! Reset the meteorological diagnostic
+      ! Reset the meteorological diagnostic
    
-   cgrid%avg_nir_beam(:)       = 0.0
-   cgrid%avg_nir_diffuse(:)    = 0.0
-   cgrid%avg_par_beam(:)       = 0.0
-   cgrid%avg_par_diffuse(:)    = 0.0
-   cgrid%avg_atm_tmp(:)        = 0.0
-   cgrid%avg_atm_shv(:)        = 0.0
-   cgrid%avg_rhos(:)           = 0.0
-   cgrid%avg_theta(:)          = 0.0
-   cgrid%avg_rshort(:)         = 0.0
-   cgrid%avg_rshort_diffuse(:) = 0.0
-   cgrid%avg_rlong(:)          = 0.0
-   cgrid%avg_pcpg(:)           = 0.0
-   cgrid%avg_qpcpg(:)          = 0.0
-   cgrid%avg_dpcpg(:)          = 0.0
-   cgrid%avg_vels(:)           = 0.0
-   cgrid%avg_prss(:)           = 0.0
-   cgrid%avg_exner(:)          = 0.0
-   cgrid%avg_geoht(:)          = 0.0
-   cgrid%avg_atm_co2(:)        = 0.0
-   cgrid%avg_albedt(:)         = 0.0
-   cgrid%avg_rlongup(:)        = 0.0
+      cgrid%avg_nir_beam(ipy)       = 0.0
+      cgrid%avg_nir_diffuse(ipy)    = 0.0
+      cgrid%avg_par_beam(ipy)       = 0.0
+      cgrid%avg_par_diffuse(ipy)    = 0.0
+      cgrid%avg_atm_tmp(ipy)        = 0.0
+      cgrid%avg_atm_shv(ipy)        = 0.0
+      cgrid%avg_rhos(ipy)           = 0.0
+      cgrid%avg_theta(ipy)          = 0.0
+      cgrid%avg_rshort(ipy)         = 0.0
+      cgrid%avg_rshort_diffuse(ipy) = 0.0
+      cgrid%avg_rlong(ipy)          = 0.0
+      cgrid%avg_pcpg(ipy)           = 0.0
+      cgrid%avg_qpcpg(ipy)          = 0.0
+      cgrid%avg_dpcpg(ipy)          = 0.0
+      cgrid%avg_vels(ipy)           = 0.0
+      cgrid%avg_prss(ipy)           = 0.0
+      cgrid%avg_exner(ipy)          = 0.0
+      cgrid%avg_geoht(ipy)          = 0.0
+      cgrid%avg_atm_co2(ipy)        = 0.0
+      cgrid%avg_albedt(ipy)         = 0.0
+      cgrid%avg_rlongup(ipy)        = 0.0
    
-   !
-   cgrid%avg_evap(:)           = 0.0
-   cgrid%avg_transp(:)         = 0.0
-   cgrid%avg_sensible_tot(:)   = 0.0
-   cgrid%avg_soil_temp(:,:)    = 0.0
-   cgrid%avg_soil_water(:,:)   = 0.0
-
+      !
+      cgrid%avg_evap(ipy)           = 0.0
+      cgrid%avg_transp(ipy)         = 0.0
+      cgrid%avg_sensible_tot(ipy)   = 0.0
+      cgrid%avg_soil_temp(:,ipy)    = 0.0
+      cgrid%avg_soil_water(:,ipy)   = 0.0
+   end do
    return
 end subroutine reset_averaged_vars
 !==========================================================================================!
@@ -462,18 +464,19 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          cgrid%dmean_gpp_dbh(dbh,ipy) = cgrid%dmean_gpp_dbh(dbh,ipy) + sitesum_gpp_dbh(dbh)* poly_area_i
       end do
 
-   end do polyloop
+      !These variables are already averaged at gridtype, just add them up
+      do k=1,nzg
+         cgrid%dmean_soil_temp(k,ipy)  = cgrid%dmean_soil_temp(k,ipy)  + cgrid%avg_soil_temp(k,ipy) 
+         cgrid%dmean_soil_water(k,ipy) = cgrid%dmean_soil_water(k,ipy) + cgrid%avg_soil_water(k,ipy)
+      end do
+      cgrid%dmean_evap(ipy)         = cgrid%dmean_evap(ipy)         + cgrid%avg_evap(ipy)     
+      cgrid%dmean_transp(ipy)       = cgrid%dmean_transp(ipy)       + cgrid%avg_transp(ipy)   
+      cgrid%dmean_sensible_vc(ipy)  = cgrid%dmean_sensible_vc(ipy)  + cgrid%avg_sensible_vc(ipy) 
+      cgrid%dmean_sensible_gc(ipy)  = cgrid%dmean_sensible_gc(ipy)  + cgrid%avg_sensible_gc(ipy) 
+      cgrid%dmean_sensible_ac(ipy)  = cgrid%dmean_sensible_ac(ipy)  + cgrid%avg_sensible_ac(ipy) 
+      cgrid%dmean_sensible(ipy)     = cgrid%dmean_sensible(ipy)     + cgrid%avg_sensible_tot(ipy) 
 
-   !These variables are already averaged at gridtype, just add them up
-   cgrid%dmean_soil_temp(:,:)  = cgrid%dmean_soil_temp(:,:)  + cgrid%avg_soil_temp(:,:) 
-   cgrid%dmean_soil_water(:,:) = cgrid%dmean_soil_water(:,:) + cgrid%avg_soil_water(:,:)
-   
-   cgrid%dmean_evap(:)         = cgrid%dmean_evap(:)         + cgrid%avg_evap(:)     
-   cgrid%dmean_transp(:)       = cgrid%dmean_transp(:)       + cgrid%avg_transp(:)   
-   cgrid%dmean_sensible_vc(:)  = cgrid%dmean_sensible_vc(:)  + cgrid%avg_sensible_vc(:) 
-   cgrid%dmean_sensible_gc(:)  = cgrid%dmean_sensible_gc(:)  + cgrid%avg_sensible_gc(:) 
-   cgrid%dmean_sensible_ac(:)  = cgrid%dmean_sensible_ac(:)  + cgrid%avg_sensible_ac(:) 
-   cgrid%dmean_sensible(:)     = cgrid%dmean_sensible(:)     + cgrid%avg_sensible_tot(:) 
+   end do polyloop
 
    return
 end subroutine integrate_ed_daily_output_flux
@@ -542,6 +545,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
 !    This subroutine normalize the sum before writing the daily analysis. It also computes !
 ! some of the variables that didn't need to be computed every time step, like LAI.         !
 !------------------------------------------------------------------------------------------!
+   use grid_coms     , only : nzg
    use ed_state_vars , only : edtype,polygontype,sitetype,patchtype
    use max_dims      , only : n_pft
    use consts_coms   , only : alvl,day_sec,umol_2_kgC
@@ -551,7 +555,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    type(polygontype) , pointer :: cpoly
    type(sitetype)    , pointer :: csite
    type(patchtype)   , pointer :: cpatch
-   integer                  :: ipy,isi,ipa,ipft
+   integer                  :: ipy,isi,ipa,ipft,k
    real                     :: polygon_area_i, site_area_i
    real :: sitesum_storage_resp, sitesum_vleaf_resp, sitesum_growth_resp
    real :: patchsum_storage_resp, patchsum_vleaf_resp , patchsum_growth_resp
@@ -566,39 +570,42 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       find_factors    = .false.
    end if
    
-   ! State variables, updated every time step, so these are normalized by dtlsm/day_sec
-   cgrid%dmean_fsw               = cgrid%dmean_fsw               * dtlsm_o_daysec
-   cgrid%dmean_fsn               = cgrid%dmean_fsn               * dtlsm_o_daysec
-   
-   ! State variables, updated every frqsum, so these are normalized by frqsum/day_sec
-   cgrid%dmean_soil_temp         = cgrid%dmean_soil_temp         * frqsum_o_daysec
-   cgrid%dmean_soil_water        = cgrid%dmean_soil_water        * frqsum_o_daysec
-
-   ! Flux variables, updated every frqsum, so these are normalized by frqsum/day_sec
-   cgrid%dmean_evap              = cgrid%dmean_evap              * frqsum_o_daysec
-   cgrid%dmean_transp            = cgrid%dmean_transp            * frqsum_o_daysec
-   cgrid%dmean_sensible_vc       = cgrid%dmean_sensible_vc       * frqsum_o_daysec
-   cgrid%dmean_sensible_gc       = cgrid%dmean_sensible_gc       * frqsum_o_daysec
-   cgrid%dmean_sensible_ac       = cgrid%dmean_sensible_ac       * frqsum_o_daysec
-   cgrid%dmean_sensible          = cgrid%dmean_sensible          * frqsum_o_daysec
-
-   ! Carbon flux variables should be total flux integrated over the day at this point, [µmol/m²/s] -> [kgC/m²/day]
-   cgrid%dmean_leaf_resp         = cgrid%dmean_leaf_resp         * umol_2_kgC * day_sec
-   cgrid%dmean_root_resp         = cgrid%dmean_root_resp         * umol_2_kgC * day_sec
-
-   ! Carbon flux variables should be total flux integrated over the day at this point, [µmol/m²/day] -> [kgC/m²/day]
-   cgrid%dmean_rh                = cgrid%dmean_rh                * umol_2_kgC
-   cgrid%dmean_gpp               = cgrid%dmean_gpp               * umol_2_kgC
-   cgrid%dmean_plresp            = cgrid%dmean_plresp            * umol_2_kgC
-   cgrid%dmean_nep               = cgrid%dmean_nep               * umol_2_kgC
-   
-   cgrid%dmean_gpp_lu            = cgrid%dmean_gpp_lu            * umol_2_kgC
-   cgrid%dmean_rh_lu             = cgrid%dmean_rh_lu             * umol_2_kgC
-   cgrid%dmean_nep_lu            = cgrid%dmean_nep_lu            * umol_2_kgC
-   cgrid%dmean_gpp_dbh           = cgrid%dmean_gpp_dbh           * umol_2_kgC
 
    polyloop: do ipy=1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
+
+      ! State variables, updated every time step, so these are normalized by dtlsm/day_sec
+      cgrid%dmean_fsw(ipy)          = cgrid%dmean_fsw(ipy)          * dtlsm_o_daysec
+      cgrid%dmean_fsn(ipy)          = cgrid%dmean_fsn(ipy)          * dtlsm_o_daysec
+   
+      ! State variables, updated every frqsum, so these are normalized by frqsum/day_sec
+      do k=1,nzg
+         cgrid%dmean_soil_temp (k,ipy) = cgrid%dmean_soil_temp (k,ipy)   * frqsum_o_daysec
+         cgrid%dmean_soil_water(k,ipy) = cgrid%dmean_soil_water(k,ipy)   * frqsum_o_daysec
+      end do
+
+      ! Flux variables, updated every frqsum, so these are normalized by frqsum/day_sec
+      cgrid%dmean_evap       (ipy)  = cgrid%dmean_evap       (ipy)  * frqsum_o_daysec
+      cgrid%dmean_transp     (ipy)  = cgrid%dmean_transp     (ipy)  * frqsum_o_daysec
+      cgrid%dmean_sensible_vc(ipy)  = cgrid%dmean_sensible_vc(ipy)  * frqsum_o_daysec
+      cgrid%dmean_sensible_gc(ipy)  = cgrid%dmean_sensible_gc(ipy)  * frqsum_o_daysec
+      cgrid%dmean_sensible_ac(ipy)  = cgrid%dmean_sensible_ac(ipy)  * frqsum_o_daysec
+      cgrid%dmean_sensible   (ipy)  = cgrid%dmean_sensible   (ipy)  * frqsum_o_daysec
+
+      ! Carbon flux variables should be total flux integrated over the day at this point, [µmol/m²/s] -> [kgC/m²/day]
+      cgrid%dmean_leaf_resp  (ipy)  = cgrid%dmean_leaf_resp (ipy)   * umol_2_kgC * day_sec
+      cgrid%dmean_root_resp  (ipy)  = cgrid%dmean_root_resp (ipy)   * umol_2_kgC * day_sec
+
+      ! Carbon flux variables should be total flux integrated over the day at this point, [µmol/m²/day] -> [kgC/m²/day]
+      cgrid%dmean_rh         (ipy)  = cgrid%dmean_rh        (ipy)   * umol_2_kgC
+      cgrid%dmean_gpp        (ipy)  = cgrid%dmean_gpp       (ipy)   * umol_2_kgC
+      cgrid%dmean_plresp     (ipy)  = cgrid%dmean_plresp    (ipy)   * umol_2_kgC
+      cgrid%dmean_nep        (ipy)  = cgrid%dmean_nep       (ipy)   * umol_2_kgC
+   
+      cgrid%dmean_gpp_lu     (:,ipy)  = cgrid%dmean_gpp_lu    (:,ipy)   * umol_2_kgC
+      cgrid%dmean_rh_lu      (:,ipy)  = cgrid%dmean_rh_lu     (:,ipy)   * umol_2_kgC
+      cgrid%dmean_nep_lu     (:,ipy)  = cgrid%dmean_nep_lu    (:,ipy)   * umol_2_kgC
+      cgrid%dmean_gpp_dbh    (:,ipy)  = cgrid%dmean_gpp_dbh   (:,ipy)   * umol_2_kgC
 
       polygon_area_i = 1./sum(cpoly%area)
 
@@ -676,23 +683,26 @@ subroutine zero_ed_daily_vars(cgrid)
       do isi = 1,cpoly%nsites
          csite => cpoly%site(isi)
 
-         !--------------------------------------!
-         ! Reset variables stored in sitetype   !
-         !--------------------------------------!
-         csite%dmean_A_decomp  = 0.0
-         csite%dmean_Af_decomp = 0.0
 
          do ipa = 1,csite%npatches
             cpatch => csite%patch(ipa)
             
+            !--------------------------------------!
+            ! Reset variables stored in sitetype   !
+            !--------------------------------------!
+            csite%dmean_A_decomp(ipa)  = 0.0
+            csite%dmean_Af_decomp(ipa) = 0.0
+
             !-------------------------------------!
             ! Reset variables stored in patchtype !
             !-------------------------------------!
-            cpatch%dmean_gpp       = 0.0
-            cpatch%dmean_gpp_pot   = 0.0
-            cpatch%dmean_gpp_max   = 0.0
-            cpatch%dmean_leaf_resp = 0.0
-            cpatch%dmean_root_resp = 0.0
+            do ico = 1, cpatch%ncohorts
+               cpatch%dmean_gpp      (ico) = 0.0
+               cpatch%dmean_gpp_pot  (ico) = 0.0
+               cpatch%dmean_gpp_max  (ico) = 0.0
+               cpatch%dmean_leaf_resp(ico) = 0.0
+               cpatch%dmean_root_resp(ico) = 0.0
+            end do
          end do
       end do
    end do
@@ -721,41 +731,44 @@ subroutine zero_ed_daily_output_vars(cgrid)
    type(patchtype)  , pointer :: cpatch
    integer                    :: ipy,isi,ipa,ico
    
-   !--------------------------------!
-   ! Variables stored in edtype     !
-   !--------------------------------!
-   cgrid%dmean_gpp               = 0.
-   cgrid%dmean_evap              = 0.
-   cgrid%dmean_transp            = 0.
-   cgrid%dmean_sensible_vc       = 0.
-   cgrid%dmean_sensible_gc       = 0.
-   cgrid%dmean_sensible_ac       = 0.
-   cgrid%dmean_sensible          = 0.
-   cgrid%dmean_plresp            = 0.
-   cgrid%dmean_rh                = 0.
-   cgrid%dmean_leaf_resp         = 0.
-   cgrid%dmean_root_resp         = 0.
-   cgrid%dmean_growth_resp       = 0.
-   cgrid%dmean_storage_resp      = 0.
-   cgrid%dmean_vleaf_resp        = 0.
-   cgrid%dmean_nep               = 0.
-   cgrid%dmean_soil_temp         = 0.
-   cgrid%dmean_soil_water        = 0.
-   cgrid%dmean_fsw               = 0.
-   cgrid%dmean_fsn               = 0.
-   cgrid%dmean_gpp_lu            = 0.
-   cgrid%dmean_rh_lu             = 0.
-   cgrid%dmean_nep_lu            = 0.
-   cgrid%dmean_gpp_dbh           = 0.
-   cgrid%lai_pft                 = 0.
 
    do ipy = 1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
       
+      !-------------------------------------!
+      ! Variables stored in edtype          !
+      !-------------------------------------!
+      cgrid%dmean_gpp            (ipy) = 0.
+      cgrid%dmean_evap           (ipy) = 0.
+      cgrid%dmean_transp         (ipy) = 0.
+      cgrid%dmean_sensible_vc    (ipy) = 0.
+      cgrid%dmean_sensible_gc    (ipy) = 0.
+      cgrid%dmean_sensible_ac    (ipy) = 0.
+      cgrid%dmean_sensible       (ipy) = 0.
+      cgrid%dmean_plresp         (ipy) = 0.
+      cgrid%dmean_rh             (ipy) = 0.
+      cgrid%dmean_leaf_resp      (ipy) = 0.
+      cgrid%dmean_root_resp      (ipy) = 0.
+      cgrid%dmean_growth_resp    (ipy) = 0.
+      cgrid%dmean_storage_resp   (ipy) = 0.
+      cgrid%dmean_vleaf_resp     (ipy) = 0.
+      cgrid%dmean_nep            (ipy) = 0.
+      cgrid%dmean_fsw            (ipy) = 0.
+      cgrid%dmean_fsn            (ipy) = 0.
+      cgrid%dmean_soil_temp    (:,ipy) = 0.
+      cgrid%dmean_soil_water   (:,ipy) = 0.
+      cgrid%dmean_gpp_lu       (:,ipy) = 0.
+      cgrid%dmean_rh_lu        (:,ipy) = 0.
+      cgrid%dmean_nep_lu       (:,ipy) = 0.
+      cgrid%dmean_gpp_dbh      (:,ipy) = 0.
+      cgrid%lai_pft            (:,ipy) = 0.
+
       !-----------------------------------------!
       ! Reset variables stored in polygontype   !
       !-----------------------------------------!
-      cpoly%lai_pft = 0.
+      do isi=1,cpoly%nsites
+         cpoly%lai_pft (:,isi) = 0.
+      end do
    end do
 
    return
@@ -785,43 +798,47 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
    implicit none
    
    type(edtype)      , target  :: cgrid
+   integer                     :: ipy
    
-   !------------------------------------------------------------------------------!
-   ! First the mean variables that can be computed from the daily averages        !
-   !------------------------------------------------------------------------------!
-   cgrid%mmean_gpp          = cgrid%mmean_gpp           +  cgrid%dmean_gpp
-   cgrid%mmean_evap         = cgrid%mmean_evap          +  cgrid%dmean_evap
-   cgrid%mmean_transp       = cgrid%mmean_transp        +  cgrid%dmean_transp
-   cgrid%mmean_sensible     = cgrid%mmean_sensible      +  cgrid%dmean_sensible
-   cgrid%mmean_sensible_ac  = cgrid%mmean_sensible_ac   +  cgrid%dmean_sensible_ac
-   cgrid%mmean_sensible_gc  = cgrid%mmean_sensible_gc   +  cgrid%dmean_sensible_gc
-   cgrid%mmean_sensible_vc  = cgrid%mmean_sensible_vc   +  cgrid%dmean_sensible_vc
-   cgrid%mmean_nep          = cgrid%mmean_nep           +  cgrid%dmean_nep
-   cgrid%mmean_soil_temp    = cgrid%mmean_soil_temp     +  cgrid%dmean_soil_temp
-   cgrid%mmean_soil_water   = cgrid%mmean_soil_water    +  cgrid%dmean_soil_water
-   cgrid%mmean_plresp       = cgrid%mmean_plresp        +  cgrid%dmean_plresp
-   cgrid%mmean_rh           = cgrid%mmean_rh            +  cgrid%dmean_rh
-   cgrid%mmean_leaf_resp    = cgrid%mmean_leaf_resp     +  cgrid%dmean_leaf_resp
-   cgrid%mmean_root_resp    = cgrid%mmean_root_resp     +  cgrid%dmean_root_resp
-   cgrid%mmean_growth_resp  = cgrid%mmean_growth_resp   +  cgrid%dmean_growth_resp
-   cgrid%mmean_storage_resp = cgrid%mmean_storage_resp  +  cgrid%dmean_storage_resp
-   cgrid%mmean_vleaf_resp   = cgrid%mmean_vleaf_resp    +  cgrid%dmean_vleaf_resp
-   cgrid%mmean_gpp_lu       = cgrid%mmean_gpp_lu        +  cgrid%dmean_gpp_lu
-   cgrid%mmean_rh_lu        = cgrid%mmean_rh_lu         +  cgrid%dmean_rh_lu
-   cgrid%mmean_nep_lu       = cgrid%mmean_nep_lu        +  cgrid%dmean_nep_lu
-   cgrid%mmean_gpp_dbh      = cgrid%mmean_gpp_dbh       +  cgrid%dmean_gpp_dbh
-   cgrid%mmean_lai_pft      = cgrid%mmean_lai_pft       +  cgrid%lai_pft
+   do ipy=1,cgrid%npolygons
+      !------------------------------------------------------------------------------!
+      ! First the mean variables that can be computed from the daily averages        !
+      !------------------------------------------------------------------------------!
+      cgrid%mmean_gpp           (ipy) = cgrid%mmean_gpp           (ipy) +  cgrid%dmean_gpp           (ipy)
+      cgrid%mmean_evap          (ipy) = cgrid%mmean_evap          (ipy) +  cgrid%dmean_evap          (ipy)
+      cgrid%mmean_transp        (ipy) = cgrid%mmean_transp        (ipy) +  cgrid%dmean_transp        (ipy)
+      cgrid%mmean_sensible      (ipy) = cgrid%mmean_sensible      (ipy) +  cgrid%dmean_sensible      (ipy)
+      cgrid%mmean_sensible_ac   (ipy) = cgrid%mmean_sensible_ac   (ipy) +  cgrid%dmean_sensible_ac   (ipy)
+      cgrid%mmean_sensible_gc   (ipy) = cgrid%mmean_sensible_gc   (ipy) +  cgrid%dmean_sensible_gc   (ipy)
+      cgrid%mmean_sensible_vc   (ipy) = cgrid%mmean_sensible_vc   (ipy) +  cgrid%dmean_sensible_vc   (ipy)
+      cgrid%mmean_nep           (ipy) = cgrid%mmean_nep           (ipy) +  cgrid%dmean_nep           (ipy)
+      cgrid%mmean_plresp        (ipy) = cgrid%mmean_plresp        (ipy) +  cgrid%dmean_plresp        (ipy)
+      cgrid%mmean_rh            (ipy) = cgrid%mmean_rh            (ipy) +  cgrid%dmean_rh            (ipy)
+      cgrid%mmean_leaf_resp     (ipy) = cgrid%mmean_leaf_resp     (ipy) +  cgrid%dmean_leaf_resp     (ipy)
+      cgrid%mmean_root_resp     (ipy) = cgrid%mmean_root_resp     (ipy) +  cgrid%dmean_root_resp     (ipy)
+      cgrid%mmean_growth_resp   (ipy) = cgrid%mmean_growth_resp   (ipy) +  cgrid%dmean_growth_resp   (ipy)
+      cgrid%mmean_storage_resp  (ipy) = cgrid%mmean_storage_resp  (ipy) +  cgrid%dmean_storage_resp  (ipy)
+      cgrid%mmean_vleaf_resp    (ipy) = cgrid%mmean_vleaf_resp    (ipy) +  cgrid%dmean_vleaf_resp    (ipy)
 
-   !------------------------------------------------------------------------------------!
-   !    During the integration stage we keep the sum of squares, it will be converted   !
-   ! to standard deviation right before the monthly output.                             !
-   !------------------------------------------------------------------------------------!
-   cgrid%stdev_gpp          = cgrid%stdev_gpp           +  cgrid%dmean_gpp           ** 2
-   cgrid%stdev_evap         = cgrid%stdev_evap          +  cgrid%dmean_evap          ** 2
-   cgrid%stdev_transp       = cgrid%stdev_transp        +  cgrid%dmean_transp        ** 2
-   cgrid%stdev_sensible     = cgrid%stdev_sensible      +  cgrid%dmean_sensible      ** 2
-   cgrid%stdev_nep          = cgrid%stdev_nep           +  cgrid%dmean_nep           ** 2
-   cgrid%stdev_rh           = cgrid%stdev_rh            +  cgrid%dmean_rh            ** 2
+      cgrid%mmean_soil_temp   (:,ipy) = cgrid%mmean_soil_temp   (:,ipy) +  cgrid%dmean_soil_temp   (:,ipy)
+      cgrid%mmean_soil_water  (:,ipy) = cgrid%mmean_soil_water  (:,ipy) +  cgrid%dmean_soil_water  (:,ipy)
+      cgrid%mmean_gpp_lu      (:,ipy) = cgrid%mmean_gpp_lu      (:,ipy) +  cgrid%dmean_gpp_lu      (:,ipy)
+      cgrid%mmean_rh_lu       (:,ipy) = cgrid%mmean_rh_lu       (:,ipy) +  cgrid%dmean_rh_lu       (:,ipy)
+      cgrid%mmean_nep_lu      (:,ipy) = cgrid%mmean_nep_lu      (:,ipy) +  cgrid%dmean_nep_lu      (:,ipy)
+      cgrid%mmean_gpp_dbh     (:,ipy) = cgrid%mmean_gpp_dbh     (:,ipy) +  cgrid%dmean_gpp_dbh     (:,ipy)
+      cgrid%mmean_lai_pft     (:,ipy) = cgrid%mmean_lai_pft     (:,ipy) +  cgrid%lai_pft           (:,ipy)
+
+      !------------------------------------------------------------------------------------!
+      !    During the integration stage we keep the sum of squares, it will be converted   !
+      ! to standard deviation right before the monthly output.                             !
+      !------------------------------------------------------------------------------------!
+      cgrid%stdev_gpp     (ipy) = cgrid%stdev_gpp     (ipy) +  cgrid%dmean_gpp     (ipy) ** 2
+      cgrid%stdev_evap    (ipy) = cgrid%stdev_evap    (ipy) +  cgrid%dmean_evap    (ipy) ** 2
+      cgrid%stdev_transp  (ipy) = cgrid%stdev_transp  (ipy) +  cgrid%dmean_transp  (ipy) ** 2
+      cgrid%stdev_sensible(ipy) = cgrid%stdev_sensible(ipy) +  cgrid%dmean_sensible(ipy) ** 2
+      cgrid%stdev_nep     (ipy) = cgrid%stdev_nep     (ipy) +  cgrid%dmean_nep     (ipy) ** 2
+      cgrid%stdev_rh      (ipy) = cgrid%stdev_rh      (ipy) +  cgrid%dmean_rh      (ipy) ** 2
+   end do
 
    return
 end subroutine integrate_ed_monthly_output_vars
@@ -856,55 +873,55 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
    ! Finding the inverse of number of days used for this monthly integral !
    !----------------------------------------------------------------------!
    call lastmonthdate(current_time,lastmonth,ndaysi)
-   
-   !-----------------------------------------------------------!
-   ! First normalize the variables previously defined          !
-   !-----------------------------------------------------------!
-   cgrid%mmean_gpp          = cgrid%mmean_gpp           * ndaysi
-   cgrid%mmean_evap         = cgrid%mmean_evap          * ndaysi
-   cgrid%mmean_transp       = cgrid%mmean_transp        * ndaysi
-   cgrid%mmean_sensible     = cgrid%mmean_sensible      * ndaysi
-   cgrid%mmean_sensible_ac  = cgrid%mmean_sensible_ac   * ndaysi
-   cgrid%mmean_sensible_gc  = cgrid%mmean_sensible_gc   * ndaysi
-   cgrid%mmean_sensible_vc  = cgrid%mmean_sensible_vc   * ndaysi
-   cgrid%mmean_nep          = cgrid%mmean_nep           * ndaysi
-   cgrid%mmean_soil_temp    = cgrid%mmean_soil_temp     * ndaysi
-   cgrid%mmean_soil_water   = cgrid%mmean_soil_water    * ndaysi
-   cgrid%mmean_plresp       = cgrid%mmean_plresp        * ndaysi
-   cgrid%mmean_rh           = cgrid%mmean_rh            * ndaysi
-   cgrid%mmean_leaf_resp    = cgrid%mmean_leaf_resp     * ndaysi
-   cgrid%mmean_root_resp    = cgrid%mmean_root_resp     * ndaysi
-   cgrid%mmean_growth_resp  = cgrid%mmean_growth_resp   * ndaysi
-   cgrid%mmean_storage_resp = cgrid%mmean_storage_resp  * ndaysi
-   cgrid%mmean_vleaf_resp   = cgrid%mmean_vleaf_resp    * ndaysi
-   cgrid%mmean_gpp_lu       = cgrid%mmean_gpp_lu        * ndaysi
-   cgrid%mmean_rh_lu        = cgrid%mmean_rh_lu         * ndaysi
-   cgrid%mmean_nep_lu       = cgrid%mmean_nep_lu        * ndaysi
-   cgrid%mmean_gpp_dbh      = cgrid%mmean_gpp_dbh       * ndaysi
-   cgrid%mmean_lai_pft      = cgrid%mmean_lai_pft       * ndaysi
-  
-!------------------------------------------------------------------------------------------!
-!   Here we convert the sum of squares into standard deviation. The standard deviation can !
-! be written in two different ways, and we will use the latter because it doesn't require  !
-! previous knowledge of the mean.                                                          !
-!              __________________          ____________________________________            !
-!             / SUM_i[X_i - Xm]²          /  / SUM_i[X_i²]        \      1                 !
-! sigma = \  /  ----------------   =  \  /  |  -----------  - Xm²  | ---------             !
-!          \/       N - 1              \/    \      N             /   1 - 1/N              !
-!                                                                                          !
-! srnonm1 is the square root of 1 / (1 - 1/N)                                              !
-!------------------------------------------------------------------------------------------!
-   srnonm1 = sqrt(1./(1-ndaysi))
-!------------------------------------------------------------------------------------------!
-   cgrid%stdev_gpp      = srnonm1 * sqrt(cgrid%stdev_gpp      * ndaysi - cgrid%mmean_gpp      ** 2)
-   cgrid%stdev_evap     = srnonm1 * sqrt(cgrid%stdev_evap     * ndaysi - cgrid%mmean_evap     ** 2)
-   cgrid%stdev_transp   = srnonm1 * sqrt(cgrid%stdev_transp   * ndaysi - cgrid%mmean_transp   ** 2)
-   cgrid%stdev_sensible = srnonm1 * sqrt(cgrid%stdev_sensible * ndaysi - cgrid%mmean_sensible ** 2)
-   cgrid%stdev_nep      = srnonm1 * sqrt(cgrid%stdev_nep      * ndaysi - cgrid%mmean_nep      ** 2)
-   cgrid%stdev_rh       = srnonm1 * sqrt(cgrid%stdev_rh       * ndaysi - cgrid%mmean_rh       ** 2)
-  
+
    do ipy=1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
+      !-----------------------------------------------------------!
+      ! First normalize the variables previously defined          !
+      !-----------------------------------------------------------!
+      cgrid%mmean_gpp            (ipy) = cgrid%mmean_gpp            (ipy) * ndaysi
+      cgrid%mmean_evap           (ipy) = cgrid%mmean_evap           (ipy) * ndaysi
+      cgrid%mmean_transp         (ipy) = cgrid%mmean_transp         (ipy) * ndaysi
+      cgrid%mmean_sensible       (ipy) = cgrid%mmean_sensible       (ipy) * ndaysi
+      cgrid%mmean_sensible_ac    (ipy) = cgrid%mmean_sensible_ac    (ipy) * ndaysi
+      cgrid%mmean_sensible_gc    (ipy) = cgrid%mmean_sensible_gc    (ipy) * ndaysi
+      cgrid%mmean_sensible_vc    (ipy) = cgrid%mmean_sensible_vc    (ipy) * ndaysi
+      cgrid%mmean_nep            (ipy) = cgrid%mmean_nep            (ipy) * ndaysi
+      cgrid%mmean_plresp         (ipy) = cgrid%mmean_plresp         (ipy) * ndaysi
+      cgrid%mmean_rh             (ipy) = cgrid%mmean_rh             (ipy) * ndaysi
+      cgrid%mmean_leaf_resp      (ipy) = cgrid%mmean_leaf_resp      (ipy) * ndaysi
+      cgrid%mmean_root_resp      (ipy) = cgrid%mmean_root_resp      (ipy) * ndaysi
+      cgrid%mmean_growth_resp    (ipy) = cgrid%mmean_growth_resp    (ipy) * ndaysi
+      cgrid%mmean_storage_resp   (ipy) = cgrid%mmean_storage_resp   (ipy) * ndaysi
+      cgrid%mmean_vleaf_resp     (ipy) = cgrid%mmean_vleaf_resp     (ipy) * ndaysi
+      cgrid%mmean_soil_temp    (:,ipy) = cgrid%mmean_soil_temp    (:,ipy) * ndaysi
+      cgrid%mmean_soil_water   (:,ipy) = cgrid%mmean_soil_water   (:,ipy) * ndaysi
+      cgrid%mmean_gpp_lu       (:,ipy) = cgrid%mmean_gpp_lu       (:,ipy) * ndaysi
+      cgrid%mmean_rh_lu        (:,ipy) = cgrid%mmean_rh_lu        (:,ipy) * ndaysi
+      cgrid%mmean_nep_lu       (:,ipy) = cgrid%mmean_nep_lu       (:,ipy) * ndaysi
+      cgrid%mmean_gpp_dbh      (:,ipy) = cgrid%mmean_gpp_dbh      (:,ipy) * ndaysi
+      cgrid%mmean_lai_pft      (:,ipy) = cgrid%mmean_lai_pft      (:,ipy) * ndaysi
+  
+      !------------------------------------------------------------------------------------!
+      !   Here we convert the sum of squares into standard deviation. The standard devi-   !
+      ! ation can be written in two different ways, and we will use the latter because it  !
+      ! doesn't require previous knowledge of the mean.                                    !
+      !              __________________          ____________________________________      !
+      !             / SUM_i[X_i - Xm]²          /  / SUM_i[X_i²]        \      1           !
+      ! sigma = \  /  ----------------   =  \  /  |  -----------  - Xm²  | ---------       !
+      !          \/       N - 1              \/    \      N             /   1 - 1/N        !
+      !                                                                                    !
+      ! srnonm1 is the square root of 1 / (1 - 1/N)                                        !
+      !------------------------------------------------------------------------------------!
+      srnonm1 = sqrt(1./(1-ndaysi))
+      !------------------------------------------------------------------------------------!
+      cgrid%stdev_gpp     (ipy) = srnonm1 * sqrt(cgrid%stdev_gpp     (ipy) * ndaysi - cgrid%mmean_gpp     (ipy) ** 2)
+      cgrid%stdev_evap    (ipy) = srnonm1 * sqrt(cgrid%stdev_evap    (ipy) * ndaysi - cgrid%mmean_evap    (ipy) ** 2)
+      cgrid%stdev_transp  (ipy) = srnonm1 * sqrt(cgrid%stdev_transp  (ipy) * ndaysi - cgrid%mmean_transp  (ipy) ** 2)
+      cgrid%stdev_sensible(ipy) = srnonm1 * sqrt(cgrid%stdev_sensible(ipy) * ndaysi - cgrid%mmean_sensible(ipy) ** 2)
+      cgrid%stdev_nep     (ipy) = srnonm1 * sqrt(cgrid%stdev_nep     (ipy) * ndaysi - cgrid%mmean_nep     (ipy) ** 2)
+      cgrid%stdev_rh      (ipy) = srnonm1 * sqrt(cgrid%stdev_rh      (ipy) * ndaysi - cgrid%mmean_rh      (ipy) ** 2)
+  
       
       polygon_area_i = 1./sum(cpoly%area)
       do ipft = 1,n_pft
@@ -934,38 +951,42 @@ subroutine zero_ed_monthly_output_vars(cgrid)
 
    implicit none
    type(edtype),target       :: cgrid
+   integer                   :: ipy
 
-   cgrid%mmean_gpp          = 0.
-   cgrid%mmean_evap         = 0.
-   cgrid%mmean_transp       = 0.
-   cgrid%mmean_sensible     = 0.
-   cgrid%mmean_sensible_ac  = 0.
-   cgrid%mmean_sensible_gc  = 0.
-   cgrid%mmean_sensible_vc  = 0.
-   cgrid%mmean_nep          = 0.
-   cgrid%mmean_soil_temp    = 0.
-   cgrid%mmean_soil_water   = 0.
-   cgrid%mmean_plresp       = 0.
-   cgrid%mmean_rh           = 0.
-   cgrid%mmean_leaf_resp    = 0.
-   cgrid%mmean_root_resp    = 0.
-   cgrid%mmean_growth_resp  = 0.
-   cgrid%mmean_storage_resp = 0.
-   cgrid%mmean_vleaf_resp   = 0.
-   cgrid%mmean_gpp_lu       = 0.
-   cgrid%mmean_rh_lu        = 0.
-   cgrid%mmean_nep_lu       = 0.
-   cgrid%mmean_gpp_dbh      = 0.
-   cgrid%mmean_lai_pft      = 0.
-   cgrid%agb_pft            = 0.
-   cgrid%ba_pft             = 0.
-   cgrid%stdev_gpp          = 0.
-   cgrid%stdev_evap         = 0.
-   cgrid%stdev_transp       = 0.
-   cgrid%stdev_sensible     = 0.
-   cgrid%stdev_nep          = 0.
-   cgrid%stdev_rh           = 0.
- 
+   !----- The loop is necessary for coupled runs (when npolygons may be 0) ----------------!
+   do ipy=1,cgrid%npolygons
+      cgrid%mmean_gpp(ipy)          = 0.
+      cgrid%mmean_evap(ipy)         = 0.
+      cgrid%mmean_transp(ipy)       = 0.
+      cgrid%mmean_sensible(ipy)     = 0.
+      cgrid%mmean_sensible_ac(ipy)  = 0.
+      cgrid%mmean_sensible_gc(ipy)  = 0.
+      cgrid%mmean_sensible_vc(ipy)  = 0.
+      cgrid%mmean_nep(ipy)          = 0.
+      cgrid%mmean_plresp(ipy)       = 0.
+      cgrid%mmean_rh(ipy)           = 0.
+      cgrid%mmean_leaf_resp(ipy)    = 0.
+      cgrid%mmean_root_resp(ipy)    = 0.
+      cgrid%mmean_growth_resp(ipy)  = 0.
+      cgrid%mmean_storage_resp(ipy) = 0.
+      cgrid%mmean_vleaf_resp(ipy)   = 0.
+      cgrid%mmean_soil_temp(:,ipy)  = 0.
+      cgrid%mmean_soil_water(:,ipy) = 0.
+      cgrid%mmean_gpp_lu(:,ipy)     = 0.
+      cgrid%mmean_rh_lu(:,ipy)      = 0.
+      cgrid%mmean_nep_lu(:,ipy)     = 0.
+      cgrid%mmean_gpp_dbh(:,ipy)    = 0.
+      cgrid%mmean_lai_pft(:,ipy)    = 0.
+      cgrid%agb_pft(:,ipy)          = 0.
+      cgrid%ba_pft(:,ipy)           = 0.
+      cgrid%stdev_gpp(ipy)          = 0.
+      cgrid%stdev_evap(ipy)         = 0.
+      cgrid%stdev_transp(ipy)       = 0.
+      cgrid%stdev_sensible(ipy)     = 0.
+      cgrid%stdev_nep(ipy)          = 0.
+      cgrid%stdev_rh(ipy)           = 0.
+   end do
+
    return
 end subroutine zero_ed_monthly_output_vars
 !==========================================================================================!

@@ -437,6 +437,7 @@ subroutine sfc_obs_convert(n1,n2,n3,pp,pi0,prs,ng,nobs)
 
   use mem_oda
   use rconstants
+  use therm_lib, only : rslif
 
   implicit none
 
@@ -451,7 +452,6 @@ subroutine sfc_obs_convert(n1,n2,n3,pp,pi0,prs,ng,nobs)
   REAL, INTENT(INOUT) :: prs(n2,n3)
 
   integer :: i,j,ns
-  real, external :: rs
 
 
   ! Routine to convert input sfc temp and dewpt to theta and mixing ratio
@@ -479,13 +479,13 @@ subroutine sfc_obs_convert(n1,n2,n3,pp,pi0,prs,ng,nobs)
 
   do ns=1,nobs
      if (rkobs(ns) > -998. .and. pkobs(ns) > -998.) then
-        rkobs(ns) = rs(pkobs(ns),rkobs(ns)+273.16)
+        rkobs(ns) = rslif(pkobs(ns),rkobs(ns)+t00)
      else
         rkobs(ns)=-999.
      endif
      if (tkobs(ns) > -998. .and. pkobs(ns) > -998.) then
         !if(ns == 258) print*,'tconv:',ns,tkobs(ns),pkobs(ns)
-        tkobs(ns) = (tkobs(ns)+273.16)*(p00/pkobs(ns))**rocp
+        tkobs(ns) = (tkobs(ns)+t00)*(p00/pkobs(ns))**rocp
         !if(tkobs(ns) > 200. .and. tkobs(ns) < 273.) print*,'tconv:',ns,tkobs(ns),pkobs(ns)
      else
         tkobs(ns)=-999.

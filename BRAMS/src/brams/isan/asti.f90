@@ -439,8 +439,8 @@ real ::  glat(nxp,nyp),glon(nxp,nyp),sflt(*),sfln(*),scra(*)  &
 integer :: iqf(4),i,j,ns
 real :: gobkm,gobrd
 
-gobkm=2.*111.120
-gobrd=4.*111.120
+gobkm=2.*spconkm
+gobrd=4.*spconkm
 
 do i=1,nxp
    do j=1,nyp
@@ -450,8 +450,8 @@ do i=1,nxp
       iqf(3)=0
       iqf(4)=0
       do ns=1,nssfc
-         scra(ns)=sqrt(((glat(i,j)-sflt(ns))*111.12)**2  &
-                 +((glon(i,j)-sfln(ns))*111.12  &
+         scra(ns)=sqrt(((glat(i,j)-sflt(ns))*spconkm)**2  &
+                 +((glon(i,j)-sfln(ns))*spconkm  &
                  *cos((glat(i,j)+sflt(ns))*.5*.01745))**2)
       enddo
       do ns=1,nssfc
@@ -480,7 +480,7 @@ subroutine strmfun (nxp,nyp,topt,rtgt)
 
 use isan_coms
 use rconstants
-
+use therm_lib, only : ptrh2rvapil,virtt
 implicit none
 
 integer :: nxp,nyp
@@ -489,8 +489,7 @@ real, dimension(nxp,nyp) :: topt,rtgt
 real, dimension(maxsigz) :: sigzr,temp,thv
 
 integer :: k,i,j,lbchyd,lbc,lbcp
-real, external :: rs
-real :: syo,po,tho,thvo,sigo,bcpr
+real :: syo,po,tho,thvo,sigo,bcpr,raux
 
 if(guess1st.ne.'RAMS') then
  
@@ -585,8 +584,8 @@ do i=1,nxp
       do k=1,nsigz
          temp(k)=ps_t(i,j,k)*(ps_p(i,j,k)/p00)**rocp
          sigzr(k)=topt(i,j)+sigz(k)*rtgt(i,j)
-         thv(k)=ps_t(i,j,k)*(1.+.61*ps_r(i,j,k)  &
-              *rs(ps_p(i,j,k),temp(k)))
+         raux = ptrh2rvapil(ps_r(i,j,k),ps_p(i,j,k),temp(k))
+         thv(k)=virtt(ps_t(i,j,k),raux)
       enddo
 
       ps_p(i,j,lbcp)=cp*(ps_p(i,j,lbcp)/p00)**rocp

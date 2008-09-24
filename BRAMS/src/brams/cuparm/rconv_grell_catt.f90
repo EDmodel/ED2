@@ -44,7 +44,7 @@ subroutine CUPARM_GRELL_CATT(iens)
 !srf
   use io_params         , only: frqanl
   use mem_leaf          , only: leaf_g
-  use micphys           , only: level
+  use therm_lib         , only: level
   
 ![MLO -> To allow writing convective mass fluxes and call shallow cumulus in a different frequency
   use mem_mass         , only: imassflx

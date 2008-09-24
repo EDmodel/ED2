@@ -470,6 +470,7 @@ subroutine simple_lake_model(ifm,dtlong)
   use mem_cuparm, only: cuparm_g
   use mem_micro,  only: micro_g
   use mem_grid,   only: zt,grid_g,dzt,zm,if_adap,jdim
+  use therm_lib,  only: rslif
   !--------------------------------------------------!
 
   implicit none
@@ -490,7 +491,6 @@ subroutine simple_lake_model(ifm,dtlong)
   integer :: niter_leaf,niter_can,nsubsteps,n
 
   real,parameter :: dtwbmax = 90.0  ! Water body timesteps can go no longer than 90 seconds
-  real,external :: rslif
   real,external :: vertical_vel_flux
   real, parameter :: ubmin = .25   &    ! should use ubmin=1.0 for convec case
        ,ustmin = .1     !                 ubmin=0.1 for stable case

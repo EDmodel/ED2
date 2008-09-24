@@ -1,1103 +1,1295 @@
-!############################# Change Log ##################################
-! 5.0.0
-!
-!###########################################################################
-!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved
-!  Regional Atmospheric Modeling System - RAMS
-!###########################################################################
+!====================================== Change Log ========================================!
+! 5.0.0                                                                                    !
+!                                                                                          !
+!==========================================================================================!
+!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved                       !
+!  Regional Atmospheric Modeling System - RAMS                                             !
+!==========================================================================================!
+!==========================================================================================!
 
-!  FOR ICNFLG=3, DEBATING WHETHER TO KEEP IT #/M4 OR CHANGE
-!  PARM TO #/KG/M.  NEED TO DEFINE AVMIPSA, ETC. FOR ALL CATEGORIES.
-!  MAY WANT TO DEFINE C1 TOO AND RENAME IT.
-!  IMPORTANT ISSUE: k loop limits for the jnmb == 5 sections
-!  need to consider collection efficiencies for different habits?
-!  collection efficiency for hail too high.  big hail should not
-!  coallesce.
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 
 subroutine each_call(m1,dtlt)
+   !---------------------------------------------------------------------------------------!
+   !     FOR ICNFLG=3, DEBATING WHETHER TO KEEP IT #/M4 OR CHANGE PARM TO #/KG/M.  NEED TO !
+   ! DEFINE AVMIPSA, ETC. FOR ALL CATEGORIES. MAY WANT TO DEFINE C1 TOO AND RENAME IT.     !
+   ! IMPORTANT ISSUE: k loop limits for the jnmb == 5 sections need to consider collection !
+   ! efficiencies for different habits? Collection efficiency for hail too high. Big hail  !
+   ! should not coallesce.                                                                 !
+   !---------------------------------------------------------------------------------------!
 
-  use rconstants, only : &
-       pi4,              & ! INTENT(IN)
-       alvl,             & ! INTENT(IN)
-       alvi,             & ! INTENT(IN)
-       alli,             & ! INTENT(IN)
-       cliq,             & ! INTENT(IN)
-       cice               ! INTENT(IN)
+   use rconstants, only : &
+           pi4            & ! intent(in)
+          ,alvl           & ! intent(in)
+          ,alvi           & ! intent(in)
+          ,alli           & ! intent(in)
+          ,cliq           & ! intent(in)
+          ,cice           ! ! intent(in)
 
-  use micphys, only :    &
-       colf,             & ! INTENT(OUT)
-       pi4dt,            & ! INTENT(OUT)
-       sl,               & ! INTENT(OUT)
-       sc,               & ! INTENT(OUT)
-       sj,               & ! INTENT(OUT)
-       sk,               & ! INTENT(OUT)
-       jnmb,             & ! INTENT(IN)
-       emb,              & ! INTENT(OUT)
-       cfmas,            & ! INTENT(IN)
-       parm,             & ! INTENT(IN)
-       pwmas,            & ! INTENT(IN)
-       jhcat,            & ! INTENT(OUT)
-       sh,               & ! INTENT(OUT)
-       sm                  ! INTENT(OUT)
-       
+   use micphys, only :    &
+           jnmb           & ! intent(in)
+          ,cfmas          & ! intent(in)
+          ,parm           & ! intent(in)
+          ,pwmas          & ! intent(in)
+          ,emb            & ! intent(out)
+          ,colf           & ! intent(out)
+          ,pi4dt          & ! intent(out)
+          ,sl             & ! intent(out)
+          ,sc             & ! intent(out)
+          ,sj             & ! intent(out)
+          ,sk             & ! intent(out)
+          ,jhcat          & ! intent(out)
+          ,sh             & ! intent(out)
+          ,sm             ! ! intent(out)
+
+   implicit none
+
+   !----- Arguments -----------------------------------------------------------------------!
+   integer, intent(in) :: m1
+   real   , intent(in) :: dtlt
+   !----- Local Variables -----------------------------------------------------------------!
+   integer :: lcat, k
+   !---------------------------------------------------------------------------------------!
 
 
-  implicit none
+   !----- Initialize constants for vapor diffusion and, for fixed diameter cases, emb. ----!
+   colf  = .785 * dtlt
+   pi4dt = pi4  * dtlt
 
-  ! Arguments
-  integer, intent(in) :: m1
-  real, intent(in)    :: dtlt
+   sl(1) = alvl
+   sl(2) = alvi
+   sc(1) = cliq
+   sc(2) = cice
+   sj(1) = 0
+   sj(2) = 1
+   sj(3) = 0
+   sj(4) = 0
+   sj(5) = 0
+   sj(6) = 1
+   sj(7) = 1
+   sk(1) = alli
+   sk(2) = 0.
 
-  ! Local Variables
-  integer :: lcat, k
+   do lcat = 1,7
+      if (jnmb(lcat) == 2) then
+         do k = 2,m1-1
+            emb(k,lcat) = cfmas(lcat) * parm(lcat) ** pwmas(lcat)
+         enddo
+      endif
+      do k = 2,m1-1
+         jhcat(k,lcat) = lcat
+      enddo
+   enddo
 
-  ! Initialize constants for vapor diffusion and, for fixed diameter cases, emb.
+   do k = 2,m1-1
+      sh(k,1) = 0.
+      sh(k,2) = 1.
+      sh(k,6) = 1.
+      sh(k,7) = 1.
 
-  colf = .785 * dtlt
-  pi4dt = pi4 * dtlt
-  sl(1) = alvl
-  sl(2) = alvi
-  sc(1) = cliq
-  sc(2) = cice
-  sj(1) = 0
-  sj(2) = 1
-  sj(3) = 0
-  sj(4) = 0
-  sj(5) = 0
-  sj(6) = 1
-  sj(7) = 1
-  sk(1) = alli
-  sk(2) = 0.
+      sm(k,1) = 1.
+      sm(k,2) = 1.
+   enddo
 
-  do lcat = 1,7
-     if (jnmb(lcat) == 2) then
-        do k = 2,m1-1
-           emb(k,lcat) = cfmas(lcat) * parm(lcat) ** pwmas(lcat)
-        enddo
-     endif
-     do k = 2,m1-1
-        jhcat(k,lcat) = lcat
-     enddo
-  enddo
-
-  do k = 2,m1-1
-     sh(k,1) = 0.
-     sh(k,2) = 1.
-     sh(k,6) = 1.
-     sh(k,7) = 1.
-
-     sm(k,1) = 1.
-     sm(k,2) = 1.
-  enddo
-
-  return
+   return
 end subroutine each_call
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************
 
-subroutine range_check(m1,k1,k2,k3,i,j,flpw,micro)
 
-  use mem_micro, only : micro_vars ! INTENT(IN) ! Only a type or structure
 
-  use micphys, only : &
-       ncat,          & ! INTENT(IN)
-       rx,            & ! INTENT(OUT)
-       cx,            & ! INTENT(OUT)
-       qr,            & ! INTENT(OUT)
-       qx,            & ! INTENT(OUT)
-       vap,           & ! INTENT(OUT)
-       tx,            & ! INTENT(OUT)
-       jnmb,          & ! INTENT(IN)
-       emb,           & ! INTENT(OUT)
-       rxfer,         & ! INTENT(OUT)
-       qrxfer,        & ! INTENT(OUT)
-       enxfer,        & ! INTENT(OUT)
-       cccnx,         & ! INTENT(OUT)
-       cifnx            ! INTENT(OUT)
 
-  implicit none
 
-  ! Arguments
-  type (micro_vars), intent(in)       :: micro 
-  integer, intent(in)                 :: m1, i, j
-  real, intent(in) :: flpw
-  integer, dimension(10), intent(out) :: k1, k2, k3
+!==========================================================================================!
+!==========================================================================================!
+subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
 
-  ! Local Variables
-  integer                             :: k, lcatt, lcat, l, jcat
-  integer                             :: lpw
+   use mem_micro, only : micro_vars ! INTENT(IN) - micro structure
 
-  ! zero out microphysics scratch arrays for the present i,j column
-  lpw=nint(flpw)
-  do lcat = 1,ncat
-     do k = 2,m1-1
-        rx(k,lcat) = 0.
-        cx(k,lcat) = 0.
-        qr(k,lcat) = 0.
-        qx(k,lcat) = 0.
-        vap(k,lcat) = 0.
-        tx(k,lcat) = 0.
-     enddo
+   use micphys, only : &
+        ncat           & ! intent(in)
+       ,availcat       & ! intent(in)
+       ,progncat       & ! intent(in)
+       ,jnmb           & ! intent(in)
+       ,thil           & ! intent(in)
+       ,pottemp        & ! intent(in)
+       ,press          & ! intent(in)
+       ,exner          & ! intent(in)
+       ,vertvelo       & ! intent(in)
+       ,rhoa           & ! intent(in)
+       ,rhoi           & ! intent(in)
+       ,rvap           & ! intent(in)
+       ,rtot           & ! intent(in)
+       ,totcond        & ! intent(in)
+       ,rxmin          & ! intent(in)
+       ,cxmin          & ! intent(in)
+       ,jhcat          & ! intent(in)
+       ,k1             & ! intent(out)
+       ,k2             & ! intent(out)
+       ,k3             & ! intent(out)
+       ,lpw            & ! intent(out)
+       ,rx             & ! intent(out)
+       ,cx             & ! intent(out)
+       ,qr             & ! intent(out)
+       ,qx             & ! intent(out)
+       ,vap            & ! intent(out)
+       ,tx             & ! intent(out)
+       ,emb            & ! intent(out)
+       ,rxfer          & ! intent(out)
+       ,qrxfer         & ! intent(out)
+       ,enxfer         & ! intent(out)
+       ,cccnx          & ! intent(out)
+       ,cifnx          ! ! intent(out)
 
-     if (jnmb(lcat) >= 3) then
-        do k = 2,m1-1
-           emb(k,lcat) = 0.
-        enddo
-     endif
+   use rconstants, only : p00, cpi, cpor,toodry
 
-     do jcat = 1,ncat
-        do k = 2,m1-1
-           rxfer(k,lcat,jcat) = 0.
-           qrxfer(k,lcat,jcat) = 0.
-           enxfer(k,lcat,jcat) = 0.
-        enddo
-     enddo
-  enddo
+   implicit none
 
-  do l = 1,7
-     k1(l) = lpw
-     k2(l) = 1
-  enddo
+   !----- Arguments -----------------------------------------------------------------------!
+   integer                         , intent(in ) :: m1, i, j
+   real                            , intent(in ) :: flpw
+   real             , dimension(m1), intent(in ) :: thp,btheta,pp,rtp,rv,wp,dn0,pi0
+   type (micro_vars)               , intent(in ) :: micro 
+   !----- Local Variables -----------------------------------------------------------------!
+   integer                             :: k, lcatt, lcat, jcat,lhcat
+   real                                :: rhomin, frac
+   !---------------------------------------------------------------------------------------!
 
-  ! fill scratch arrays for cloud water
+   !----- Initialising the scratch structures ---------------------------------------------!
+   do k=1,m1
+      thil     (k) = thp   (k)
+      pottemp  (k) = btheta(k)
+      exner    (k) = pi0   (k) + pp (k)
+      press    (k) = p00 * (cpi * exner(k))**cpor
+      vertvelo (k) = wp    (k)
+      rhoa     (k) = dn0   (k)
+      rhoi     (k) = 1./ rhoa(k)
+      rtot     (k) = rtp   (k)
+      rvap     (k) = rv    (k)
+      totcond  (k) = 0.
+   end do
 
-  if (jnmb(1) >= 1) then
-     do k = lpw,m1-1
-        if (micro%rcp(k,i,j) >= 1.e-9) then
-           k2(1) = k
-           rx(k,1) = micro%rcp(k,i,j)
-           if (jnmb(1) >= 5) cx(k,1) = micro%ccp(k,i,j)
-           if (jnmb(1) == 7) cccnx(k) = micro%cccnp(k,i,j)
-        else
-           if (k2(1) == 1) k1(1) = k + 1
-        endif
-     enddo
-  endif
+   !----- Finding the lowest level above ground -------------------------------------------!
+   lpw=nint(flpw)
 
-  ! fill scratch arrays for rain
+   !----- Zero out microphysics scratch arrays for the present i,j column -----------------!
+   do lcat = 1,ncat
+      do k = 2,m1-1
+         rx(k,lcat)  = 0.
+         cx(k,lcat)  = 0.
+         qr(k,lcat)  = 0.
+         qx(k,lcat)  = 0.
+         vap(k,lcat) = 0.
+         tx(k,lcat)  = 0.
+      end do
 
-  if (jnmb(2) >= 1) then
-     do k = lpw,m1-1
-        if (micro%rrp(k,i,j) >= 1.e-9) then
-           k2(2) = k
-           rx(k,2) = micro%rrp(k,i,j)
-           qx(k,2) = micro%q2(k,i,j)
-           qr(k,2) = qx(k,2) * rx(k,2)
-           if (jnmb(2) >= 5) cx(k,2) = micro%crp(k,i,j)
-        else
-           if (k2(2) == 1) k1(2) = k + 1
-        endif
-     enddo
-  endif
+      if (jnmb(lcat) >= 3) then
+         do k = 2,m1-1
+            emb(k,lcat) = 0.
+         end do
+      end if
 
-  ! fill scratch arrays for pristine ice
+      do jcat = 1,ncat
+         do k = 2,m1-1
+            rxfer (k,lcat,jcat) = 0.
+            qrxfer(k,lcat,jcat) = 0.
+            enxfer(k,lcat,jcat) = 0.
+         end do
+      end do
+   end do
 
-  if (jnmb(3) >= 1) then
-     do k = lpw,m1-1
-        if (micro%rpp(k,i,j) >= 1.e-9) then
-           k2(3) = k
-           rx(k,3) = micro%rpp(k,i,j)
-           cx(k,3) = micro%cpp(k,i,j)
-           if (jnmb(3) == 7) cifnx(k) = micro%cifnp(k,i,j)
-        else
-           if (k2(3) == 1) k1(3) = k + 1
-        endif
-     enddo
-  endif
+   do lcat = 1,ncat
+      k1(lcat) = lpw
+      k2(lcat) = 1
+   end do
+   !---------------------------------------------------------------------------------------!
 
-  ! fill scratch arrays for snow
 
-  if (jnmb(4) >= 1) then
-     do k = lpw,m1-1
-        if (micro%rsp(k,i,j) >= 1.e-9) then
-           k2(4) = k
-           rx(k,4) = micro%rsp(k,i,j)
-           if (jnmb(4) >= 5) cx(k,4) = micro%csp(k,i,j)
-        else
-           if (k2(4) == 1) k1(4) = k + 1
-        endif
-     enddo
-  endif
 
-  ! fill scratch arrays for aggregates
+   !---------------------------------------------------------------------------------------!
+   ! 1. Fill scratch arrays for cloud water.                                               !
+   !---------------------------------------------------------------------------------------!
+   if (availcat(1)) then
+      do k = lpw,m1-1
+         if (micro%rcp(k,i,j) >= rxmin(1)) then
+            k2(1) = k
+            rx(k,1) = micro%rcp(k,i,j)
+            if (progncat(1))  cx(k,1)  = micro%ccp(k,i,j)
+            if (jnmb(1) == 7) cccnx(k) = micro%cccnp(k,i,j)
+         else
+            if (k2(1) == 1) k1(1) = k + 1
+         end if
+      end do
+   end if
+   !---------------------------------------------------------------------------------------!
 
-  if (jnmb(5) >= 1) then
-     do k = lpw,m1-1
-        if (micro%rap(k,i,j) >= 1.e-9) then
-           k2(5) = k
-           rx(k,5) = micro%rap(k,i,j)
-           if (jnmb(5) >= 5) cx(k,5) = micro%cap(k,i,j)
-        else
-           if (k2(5) == 1) k1(5) = k + 1
-        endif
-     enddo
-  endif
 
-  ! fill scratch arrays for graupel
+   !---------------------------------------------------------------------------------------!
+   ! 2. Fill scratch arrays for rain.                                                      !
+   !---------------------------------------------------------------------------------------!
+   if (availcat(2)) then
+      do k = lpw,m1-1
+         if (micro%rrp(k,i,j) >= rxmin(2)) then
+            k2(2) = k
+            rx(k,2)    = micro%rrp(k,i,j)
+            totcond(k) = totcond(k)        + rx(k,2)
+            qx(k,2)    = micro%q2(k,i,j)
+            qr(k,2)    = qx(k,2) * rx(k,2)
+            if (progncat(2)) cx(k,2) = micro%crp(k,i,j)
+         else
+            if (k2(2) == 1) k1(2) = k + 1
+         end if
+      end do
+   end if
+   !---------------------------------------------------------------------------------------!
 
-  if (jnmb(6) >= 1) then
-     do k = lpw,m1-1
-        if (micro%rgp(k,i,j) >= 1.e-9) then
-           k2(6) = k
-           rx(k,6) = micro%rgp(k,i,j)
-           qx(k,6) = micro%q6(k,i,j)
-           qr(k,6) = qx(k,6) * rx(k,6)
-           if (jnmb(6) >= 5) cx(k,6) = micro%cgp(k,i,j)
-        else
-           if (k2(6) == 1) k1(6) = k + 1
-        endif
-     enddo
-  endif
 
-  ! fill scratch arrays for hail
+   !---------------------------------------------------------------------------------------!
+   ! 3. Fill scratch arrays for pristine ice.                                              !
+   !---------------------------------------------------------------------------------------!
+   if (availcat(3)) then
+      do k = lpw,m1-1
+         if (micro%rpp(k,i,j) >= rxmin(3)) then
+            k2(3)      = k
+            rx(k,3)    = micro%rpp(k,i,j)
+            totcond(k) = totcond(k) + rx(k,3)
+            cx(k,3)    = micro%cpp(k,i,j)
+            if (jnmb(3) == 7) cifnx(k) = micro%cifnp(k,i,j)
+         else
+            if (k2(3) == 1) k1(3) = k + 1
+         end if
+      end do
+   end if
+   !---------------------------------------------------------------------------------------!
 
-  if (jnmb(7) >= 1) then
-     do k = lpw,m1-1
-        if (micro%rhp(k,i,j) >= 1.e-9) then
-           k2(7) = k
-           rx(k,7) = micro%rhp(k,i,j)
-           qx(k,7) = micro%q7(k,i,j)
-           qr(k,7) = qx(k,7) * rx(k,7)
-           if (jnmb(7) >= 5) cx(k,7) = micro%chp(k,i,j)
-        else
-           if (k2(7) == 1) k1(7) = k + 1
-        endif
-     enddo
-  endif
 
-  k3(1) = k2(1)
-  k3(3) = k2(3)
+   !---------------------------------------------------------------------------------------!
+   ! 4. Fill scratch arrays for snow.                                                      !
+   !---------------------------------------------------------------------------------------!
+   if (availcat(4)) then
+      do k = lpw,m1-1
+         if (micro%rsp(k,i,j) >= rxmin(4)) then
+            k2(4)      = k
+            rx(k,4)    = micro%rsp(k,i,j)
+            totcond(k) = totcond(k) + rx(k,4)
+            if (progncat(4)) cx(k,4) = micro%csp(k,i,j)
+         else
+            if (k2(4) == 1) k1(4) = k + 1
+         endif
+      enddo
+   endif
+   !---------------------------------------------------------------------------------------!
 
-  k1(8) = min(k1(1),k1(2))
-  k2(8) = max(k2(1),k2(2))
-  k1(9) = min(k1(3),k1(4),k1(5),k1(6),k1(7))
-  k2(9) = max(k2(3),k2(4),k2(5),k2(6),k2(7))
-  k1(10) = min(k1(8),k1(9))
-  k2(10) = max(k2(8),k2(9))
-  return
+
+   !---------------------------------------------------------------------------------------!
+   ! 5. Fill scratch arrays for aggregates.                                                !
+   !---------------------------------------------------------------------------------------!
+   if (availcat(5)) then
+      do k = lpw,m1-1
+         if (micro%rap(k,i,j) >= rxmin(5)) then
+            k2(5)      = k
+            rx(k,5)    = micro%rap(k,i,j)
+            totcond(k) = totcond(k)       + rx(k,5)
+            if (progncat(5)) cx(k,5) = micro%cap(k,i,j)
+         else
+            if (k2(5) == 1) k1(5) = k + 1
+         endif
+      enddo
+   endif
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   ! 6. Fill scratch arrays for graupel.                                                   !
+   !---------------------------------------------------------------------------------------!
+   if (availcat(6)) then
+      do k = lpw,m1-1
+         if (micro%rgp(k,i,j) >= rxmin(6)) then
+            k2(6)      = k
+            rx(k,6)    = micro%rgp(k,i,j)
+            totcond(k) = totcond(k)       + rx(k,6)
+            qx(k,6)    = micro%q6(k,i,j)
+            qr(k,6)    = qx(k,6)          * rx(k,6)
+            if (progncat(6)) cx(k,6) = micro%cgp(k,i,j)
+         else
+            if (k2(6) == 1) k1(6) = k + 1
+         endif
+      enddo
+   endif
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   ! 7. Fill scratch arrays for hail.                                                      !
+   !---------------------------------------------------------------------------------------!
+   if (availcat(7)) then
+      do k = lpw,m1-1
+         if (micro%rhp(k,i,j) >= rxmin(7)) then
+            k2(7)      = k
+            rx(k,7)    = micro%rhp(k,i,j)
+            totcond(k) = totcond(k)       + rx(k,7)
+            qx(k,7)    = micro%q7(k,i,j)
+            qr(k,7)    = qx(k,7)          * rx(k,7)
+            if (progncat(7)) cx(k,7) = micro%chp(k,i,j)
+         else
+            if (k2(7) == 1) k1(7) = k + 1
+         endif
+      enddo
+   endif
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Adjust condensate amounts downward if their sum exceeds rhow (this replaces       !
+   ! negadj call in subroutine timestep).                                                  !
+   !---------------------------------------------------------------------------------------!
+   totcond(k) = 1.001*totcond(k)
+   negadjloop: do k = lpw,m1-1
+   
+      rtot(k) = max(toodry,rtot(k))
+      !----- Vapour would be less than the minimum, rescale condensates -------------------!
+      if (totcond(k) > rtot(k)-toodry) then 
+         frac = (rtot(k)-toodry) / totcond(k)
+      !----- The setting is fine, move on -------------------------------------------------!
+      else
+         cycle negadjloop
+      end if
+   
+      !----- Rescaling the condensates, always checking whether they are above minimum. ---!
+      totcond(k) = 0.
+      do lcat = 1,ncat
+         lhcat = jhcat(k,lcat)
+         rx(k,lcat) = rx(k,lcat) * frac
+         if (rx(k,lcat) < rxmin(lcat)) then
+           rx(k,lcat) = 0.
+           cx(k,lcat) = 0.
+         else
+            cx(k,lcat) = cx(k,lcat) * frac
+         end if
+         totcond(k) = totcond(k) + rx(k,lcat)
+      end do
+      rvap (k) = rtot(k) - totcond(k)
+   end do negadjloop
+   !---------------------------------------------------------------------------------------!
+
+
+   k3(1) = k2(1) ! k3 saves this initial value for copyback
+   k3(3) = k2(3) ! k3 saves this initial value for copyback
+   
+   k1(8) = min(k1(1),k1(2))
+   k2(8) = max(k2(1),k2(2))
+   k1(9) = min(k1(3),k1(4),k1(5),k1(6),k1(7))
+   k2(9) = max(k2(3),k2(4),k2(5),k2(6),k2(7))
+   k1(10) = min(k1(8),k1(9))
+   k2(10) = max(k2(8),k2(9))
+
+   return
 end subroutine range_check
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************
 
-subroutine each_column(m1,k1,k2,i,j,flpw,rv,dn0)
 
-  use rconstants, only : &
-       alvl,             & ! INTENT(IN)
-       alvi                ! INTENT(IN)
 
-  use micphys, only :    &
-       rvlsair,          & ! INTENT(OUT)
-       press,            & ! INTENT(IN)
-       tair,             & ! INTENT(IN)
-       rvisair,          & ! INTENT(OUT)
-       dn0i,             & ! INTENT(OUT)
-       tairc,            & ! INTENT(OUT)
-       tx,               & ! INTENT(OUT)
-       thrmcon,          & ! INTENT(OUT)
-       dynvisc,          & ! INTENT(OUT)
-       jhcat,            & ! INTENT(OUT)
-       jhabtab,          & ! INTENT(IN)
-       vapdif,           & ! INTENT(OUT)
-       rdynvsci,         & ! INTENT(OUT)
-       denfac,           & ! INTENT(OUT)
-       colfacr,          & ! INTENT(OUT)
-       colf,             & ! INTENT(IN)
-       colfacr2,         & ! INTENT(OUT)
-       colfacc,          & ! INTENT(OUT)
-       colfacc2,         & ! INTENT(OUT)
-       tref,             & ! INTENT(OUT)
-       sa,               & ! INTENT(OUT)
-       tairstrc,         & ! INTENT(IN)
-       rvstr,            & ! INTENT(IN)
-       sumuy,            & ! INTENT(OUT)
-       sumuz,            & ! INTENT(OUT)
-       sumvr,            & ! INTENT(OUT)
-       rvsref,           & ! INTENT(OUT)
-       rvsrefp,          & ! INTENT(OUT)
-       rvs0,             & ! INTENT(OUT)
-       sh,               & ! INTENT(OUT)
-       rxmin               ! INTENT(IN)
-  implicit none
 
-  ! Arguments
-  integer, intent(in)                :: m1
-  integer, intent(in)                :: i, j  ! Not used
-  real, intent(in)                   :: flpw
-  integer, dimension(10), intent(in) :: k1, k2
-  real, dimension(m1), intent(in)    :: rv, dn0
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine each_column(m1,dtlt)
+
+  use rconstants, only :   &
+          pi4              & ! intent(in)
+         ,t3ple            & ! intent(in)
+         ,es3ple           & ! intent(in)
+         ,t00              & ! intent(in)
+         ,ep               & ! intent(in)
+         ,epes3ple         & ! intent(in)
+         ,alvl             & ! intent(in)
+         ,alvi               ! intent(in)
+
+  use micphys, only :      &
+          k1               & ! intent(in)
+         ,k2               & ! intent(in)
+         ,lpw              & ! intent(in)
+         ,press            & ! intent(in)
+         ,tair             & ! intent(in)
+         ,jhabtab          & ! intent(in)
+         ,colf             & ! intent(in)
+         ,tairstrc         & ! intent(in)
+         ,rvstr            & ! intent(in)
+         ,rxmin            & ! intent(in)
+         ,rvap             & ! intent(in)
+         ,rvlsair          & ! intent(out)
+         ,rvisair          & ! intent(out)
+         ,rhoa             & ! intent(in)
+         ,rhoi             & ! intent(in)
+         ,press            & ! intent(in)
+         ,colf             & ! intent(out)
+         ,pi4dt            & ! intent(out)
+         ,tairc            & ! intent(out)
+         ,tx               & ! intent(out)
+         ,thrmcon          & ! intent(out)
+         ,dynvisc          & ! intent(out)
+         ,jhcat            & ! intent(out)
+         ,vapdif           & ! intent(out)
+         ,rdynvsci         & ! intent(out)
+         ,denfac           & ! intent(out)
+         ,colfacr          & ! intent(out)
+         ,colfacr2         & ! intent(out)
+         ,colfacc          & ! intent(out)
+         ,colfacc2         & ! intent(out)
+         ,tref             & ! intent(out)
+         ,sa               & ! intent(out)
+         ,sumuy            & ! intent(out)
+         ,sumuz            & ! intent(out)
+         ,sumvr            & ! intent(out)
+         ,rvsref           & ! intent(out)
+         ,rvsrefp          & ! intent(out)
+         ,sh               ! ! intent(out)
+
+
+    use micro_coms, only : &
+           ckcoeff         & ! intent(in)
+          ,dvcoeff         & ! intent(in)
+          ,vdcoeff         & ! intent(in)
+          ,retempc         ! ! intent(in)
+
+   use therm_lib  , only : &
+           rslf            & ! Function
+          ,rsif            & ! Function
+          ,rslfp           & ! Function
+          ,rsifp           & ! Function
+          ,rehul           ! ! Function
+
+
+
   
-  
-  ! Local Variables
-  integer :: k,nt,ns,lpw
-  real :: ck1,ck2,ck3,elsref,elsrefp,dplinv,eisref,eisrefp,dpiinv,relhum
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   integer, intent(in) :: m1
+   real   , intent(in) :: dtlt
+   !----- Local Variables -----------------------------------------------------------------!
+   integer :: k,nt,ns,irh
+   real    :: relhum,pvap
+   real    :: tauxkelvin
+   !---------------------------------------------------------------------------------------!
 
-  real :: rslf,rsif,eslf,eslpf,esif,esipf
+   do k = lpw,m1-1
+      rvlsair(k) = rslf(press(k),tair(k))
+      rvisair(k) = rsif(press(k),tair(k))
 
-  data ck1,ck2,ck3/-4.818544e-3,1.407892e-4,-1.249986e-7/
+      tairc(k)   = tair(k) - t00
+      tx(k,1)    = tairc(k)
+      thrmcon(k) = ckcoeff(1) + (ckcoeff(2) + ckcoeff(3) * tair(k)) * tair(k)
+      dynvisc(k) = dvcoeff(1) + dvcoeff(2) * tairc(k)
+      denfac(k)  = sqrt(rhoi(k))
 
-  lpw = nint(flpw)
-  
-  do k = lpw,m1-1
-     rvlsair(k) = rslf (press(k),tair(k))
-     rvisair(k) = rsif (press(k),tair(k))
-     dn0i(k) = 1. / dn0(k)
-     tairc(k)   = tair(k) - 273.16
-     tx(k,1) = tairc(k)
-     thrmcon(k) = ck1 + (ck2 + ck3 * tair(k)) * tair(k)
-     dynvisc(k) = .1718e-4 + .49e-7 * tairc(k)
 
-     ! Diagnose habit of pristine ice and snow
+      !----- Diagnose habit of pristine ice and snow --------------------------------------!
+      nt = max(1,min(31,-nint(tairc(k))))
+      !----- THERMO DILEMMA : Shouldn't it be rehuil here? --------------------------------!
+      relhum = min(1.,rehul(press(k),tair(k),rvap(k)))
 
-     nt = max(1,min(31,-nint(tairc(k))))
-     relhum = min(1.,rv(k) / rvlsair(k))
-     ns = max(1,nint(100. * relhum))
-     jhcat(k,3) = jhabtab(nt,ns,1)
-     jhcat(k,4) = jhabtab(nt,ns,2)
+      irh = nint(100.*relhum)
+      ns = max(1,irh)
+      jhcat(k,3) = jhabtab(nt,ns,1)
+      jhcat(k,4) = jhabtab(nt,ns,2)
 
-  enddo
+   end do
 
-  do k = k1(10),k2(10)
-     vapdif(k)     = 2.14 * (tair(k) / 273.15) ** 1.94 / press(k)
-     rdynvsci(k) = sqrt(1. / dynvisc(k))
-     denfac(k) = sqrt(dn0i(k))
 
-     colfacr(k) = colf * denfac(k) * dn0(k)
-     colfacr2(k) = 2. * colfacr(k)
-     colfacc(k) = colfacr(k) * dn0(k)
-     colfacc2(k) = 2. * colfacc(k)
+   do k = k1(10),k2(10)
+      vapdif(k)   = vdcoeff(1) * (tair(k) / t00) ** vdcoeff(2) / press(k)
+      rdynvsci(k) = sqrt(1. / dynvisc(k))
 
-     tref(k,1)   = tairc(k) - min(25.,700. * (rvlsair(k) - rv(k)))
-     sa(k,2) = thrmcon(k) * sa(k,1)
-     sa(k,3) = thrmcon(k) * (tairstrc(k) + sa(k,1) * rvstr(k))
+      colfacr(k)  = colf * denfac(k) * rhoa(k)
+      colfacr2(k) = 2. * colfacr(k)
+      colfacc(k)  = colfacr(k) * rhoa(k)
+      colfacc2(k) = 2. * colfacc(k)
 
-     sumuy(k) = 0.
-     sumuz(k) = 0.
-     sumvr(k) = 0.
-  enddo
+      tref(k,1)   = tairc(k) - min(retempc,700. * (rvlsair(k) - rvap(k)))
+      sa(k,2)     = thrmcon(k) * sa(k,1)
+      sa(k,3)     = thrmcon(k) * (tairstrc(k) + sa(k,1) * rvstr(k))
 
-  do k = k1(8),k2(8)
-     elsref       = eslf(tref(k,1))
-     elsrefp      = eslpf(tref(k,1))
-     dplinv       = 1. / (press(k) - elsref)
-     rvsref (k,1) = .622 * elsref * dplinv
-     rvsrefp(k,1) = .622 * elsrefp * dplinv * (1. + elsref * dplinv)
+      sumuy(k) = 0.
+      sumuz(k) = 0.
+      sumvr(k) = 0.
+   end do
 
-     sa(k,4) = rvsrefp(k,1) * tref(k,1) - rvsref(k,1)
-     sa(k,6) = alvl * rvsrefp(k,1)
-     sa(k,8) = alvl * sa(k,4)
-  enddo
+   !----- Liquid water properties ---------------------------------------------------------!
+   do k = k1(8),k2(8)
+      tauxkelvin   = tref(k,1)+t00
+      rvsref (k,1) = rslf(press(k),tauxkelvin)
+      rvsrefp(k,1) = rslfp(press(k),tauxkelvin)
 
-  do k = k1(9),k2(9)
-     tref(k,2)    = min(0.,tref(k,1))
-     eisref       = esif (tref(k,2))
-     eisrefp      = esipf(tref(k,2))
-     dpiinv       = 1. / (press(k) - eisref)
-     rvsref (k,2) = .622 * eisref * dpiinv
-     rvsrefp(k,2) = .622 * eisrefp * dpiinv * (1. + eisref * dpiinv)
-     rvs0(k)      = 379.4 / (press(k) - 610.)
+      sa(k,4)      = rvsrefp(k,1) * tref(k,1) - rvsref(k,1)
+      sa(k,6)      = alvl * rvsrefp(k,1)
+      sa(k,8)      = alvl * sa(k,4)
+   enddo
+   !----- Ice properties ------------------------------------------------------------------!
+   do k = k1(9),k2(9)
+      tref(k,2)    = min(t3ple-t00,tref(k,1))
+      tauxkelvin   = tref(k,2)+t00
+      rvsref (k,2) = rsif(press(k),tauxkelvin)
+      rvsrefp(k,2) = rsifp(press(k),tauxkelvin)
 
-     sa(k,5) = rvsrefp(k,2) * tref(k,2) - rvsref(k,2)
-     sa(k,7) = alvi * rvsrefp(k,2)
-     sa(k,9) = alvi * sa(k,5)
-     sh(k,3) = 0.
-     sh(k,4) = 0.
-     sh(k,5) = 0.
+      sa(k,5)      = rvsrefp(k,2) * tref(k,2) - rvsref(k,2)
+      sa(k,7)      = alvi * rvsrefp(k,2)
+      sa(k,9)      = alvi * sa(k,5)
+      sh(k,3)      = 0.
+      sh(k,4)      = 0.
+      sh(k,5)      = 0.
+   end do
 
-  enddo
 
-  return
+   return
 end subroutine each_column
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************
 
-subroutine enemb(m1,k1,k2,lcat,jflag,dn0,i,j)
 
-  use micphys, only : &
-       jnmb,          & ! INTENT(IN)
-       emb,           & ! INTENT(INOUT)
-       cx,            & ! INTENT(OUT)
-       rx,            & ! INTENT(IN)
-       rxmin,         & ! INTENT(IN)
-       jhcat,         & ! INTENT(IN)
-       cfemb0,        & ! INTENT(IN)
-       pwemb0,        & ! INTENT(IN)
-       cfen0,         & ! INTENT(IN)
-       dn0i,          & ! INTENT(IN)
-       pwen0,         & ! INTENT(IN)
-       parm,          & ! INTENT(IN)
-       emb0,          & ! INTENT(IN)
-       emb1,          & ! INTENT(IN)
-       vap,           & ! INTENT(IN)
-       enmlttab         ! INTENT(IN)
 
-  implicit none
 
-  ! Arguments
-  integer, intent(in)             :: m1, k1, k2, lcat, jflag
-  integer, intent(in)             :: i, j ! Not used
-  real, dimension(m1), intent(in) :: dn0
 
-  ! Local Variables
-  integer :: k,lhcat
-  real :: embi,parmi,fracmass,cxloss
+!==========================================================================================!
+!==========================================================================================!
+subroutine enemb(lcat,jflag)
 
-  if (jnmb(lcat) == 2) then
-     embi = 1. / emb(2,lcat)
-     do k = k1,k2
-        cx(k,lcat) = rx(k,lcat) * embi
-     enddo
-  elseif (jnmb(lcat) == 3) then
-     do k = k1,k2
-        lhcat = jhcat(k,lcat)
-        emb(k,lcat) = cfemb0(lhcat) * (dn0(k) * rx(k,lcat)) ** pwemb0(lhcat)
-        cx(k,lcat) = cfen0(lhcat) * dn0i(k)  &
-             * (dn0(k) * rx(k,lcat)) ** pwen0(lhcat)
-     enddo
-  elseif (jnmb(lcat) == 4) then
-     parmi = 1. / parm(lcat)
-     do k = k1,k2
-        emb(k,lcat) = max(emb0(lcat),min(emb1(lcat),rx(k,lcat) * parmi))
-        cx(k,lcat) = rx(k,lcat) / emb(k,lcat)
-     enddo
-  elseif (jnmb(lcat) >= 5 .and. jflag == 1) then
-     do k = k1,k2
-        emb(k,lcat) = max(emb0(lcat),min(emb1(lcat),rx(k,lcat)  &
-             / max(1.e-9,cx(k,lcat))))
-        cx(k,lcat) = rx(k,lcat) / emb(k,lcat)
-     enddo
-  elseif (jnmb(lcat) >= 5 .and. jflag == 2) then
-     do k = k1,k2
+   use micphys, only : &
+           k1          & ! intent(in)
+          ,k2          & ! intent(in)
+          ,rhoa        & ! intent(in)
+          ,jnmb        & ! intent(in)
+          ,emb         & ! intent(inout)
+          ,cx          & ! intent(out)
+          ,rx          & ! intent(in)
+          ,cxmin       & ! intent(in)
+          ,rxmin       & ! intent(in)
+          ,jhcat       & ! intent(in)
+          ,cfemb0      & ! intent(in)
+          ,pwemb0      & ! intent(in)
+          ,cfen0       & ! intent(in)
+          ,rhoi        & ! intent(in)
+          ,pwen0       & ! intent(in)
+          ,parm        & ! intent(in)
+          ,emb0        & ! intent(in)
+          ,emb1        & ! intent(in)
+          ,vap         & ! intent(in)
+          ,enmlttab      ! intent(in)
 
-        if (rx(k,lcat) >= 1.e-9) then
+   implicit none
 
-           if (vap(k,lcat) < 0.) then
-              fracmass = min(1.,-vap(k,lcat) / rx(k,lcat))
-              cxloss = cx(k,lcat) * enmlttab(int(200. * fracmass) + 1  &
-                   ,jhcat(k,lcat))
-              cx(k,lcat) = cx(k,lcat) - cxloss
-           endif
-           emb(k,lcat) = max(emb0(lcat),min(emb1(lcat),rx(k,lcat)  &
-                / max(rxmin(lcat),cx(k,lcat))))
-           cx(k,lcat) = rx(k,lcat) / emb(k,lcat)
+   !----- Arguments -----------------------------------------------------------------------!
+   integer, intent(in)             :: lcat, jflag
+   !----- Local Variables -----------------------------------------------------------------!
+   integer                         :: k,lhcat,lk1,lk2
+   real                            :: embi,parmi,fracmass,cxloss
+   !---------------------------------------------------------------------------------------!
 
-        endif
 
-     enddo
-  endif
+   lk1=k1(lcat)
+   lk2=k2(lcat)
 
-  return
+   select case (jnmb(lcat))
+   case(2)
+      embi = 1. / emb(2,lcat)
+      do k = lk1,lk2
+         cx(k,lcat) = rx(k,lcat) * embi
+      end do
+
+   case(3)
+      do k = lk1,lk2
+         lhcat       = jhcat(k,lcat)
+         emb(k,lcat) = cfemb0(lhcat)        * (rhoa(k) * rx(k,lcat)) ** pwemb0(lhcat)
+         cx(k,lcat)  = cfen0(lhcat)*rhoi(k) * (rhoa(k) * rx(k,lcat)) ** pwen0(lhcat)
+      end do
+
+   case (4)
+      parmi = 1. / parm(lcat)
+      do k = lk1,lk2
+         emb(k,lcat) = max(emb0(lcat),min(emb1(lcat),rx(k,lcat) * parmi))
+         cx(k,lcat)  = rx(k,lcat) / emb(k,lcat)
+      end do
+
+   case (5:7)
+      select case (jflag)
+      case (1)
+         do k = lk1,lk2
+             lhcat = jhcat(k,lcat)
+             !-----------------------------------------------------------------------------!
+             ! Leaving cxmin commented out for now, I will check the impact later.         !
+             !-----------------------------------------------------------------------------!
+             ! emb(k,lcat) = max(emb0(lcat),min(emb1(lcat)                                   &
+             !                                 ,rx(k,lcat)/max(cxmin(lhcat),cx(k,lcat)) ) )
+             emb(k,lcat) = max(emb0(lcat),min(emb1(lcat)                                   &
+                                             ,rx(k,lcat)/max(1.e-9,cx(k,lcat)) ) )
+             cx(k,lcat) = rx(k,lcat) / emb(k,lcat)
+         end do
+
+      case(2)
+         do k = lk1,lk2
+            lhcat = jhcat(k,lcat)
+            if (rx(k,lcat) >= rxmin(lcat)) then
+
+               if (vap(k,lcat) < 0.) then
+                  fracmass = min(1.,-vap(k,lcat) / rx(k,lcat))
+                  cxloss = cx(k,lcat) * enmlttab(int(200. * fracmass) + 1,lhcat)
+                  cx(k,lcat) = cx(k,lcat) - cxloss
+               end if
+               !---------------------------------------------------------------------------!
+               ! Leaving cxmin commented out for now, I will check the impact later.       !
+               !---------------------------------------------------------------------------!
+               ! emb(k,lcat) = max(emb0(lcat),min(emb1(lcat)                                 &
+               !                                 ,rx(k,lcat)/max(cxmin(lhcat),cx(k,lcat)) ) )
+               emb(k,lcat) = max(emb0(lcat),min(emb1(lcat)                                 &
+                                               ,rx(k,lcat)/max(1.e-9,cx(k,lcat)) ) )
+               cx(k,lcat) = rx(k,lcat) / emb(k,lcat)
+
+            end if
+
+         end do
+      end select
+   end select
+
+   if (jflag == 2) call getict(lcat)
+
+   return
 end subroutine enemb
-
-!******************************************************************************
-
-subroutine x02(m1,k1,k2,lcat,dn0,i,j)
-
-  use rconstants, only: alli   ! INTENT(IN)
-
-  use micphys, only:  &
-       rx,            & ! INTENT(INOUT)
-       jhcat,         & ! INTENT(IN)
-       vterm,         & ! INTENT(OUT)
-       vtfac,         & ! INTENT(IN)
-       emb,           & ! INTENT(IN)
-       pwvtmasi,      & ! INTENT(IN)
-       denfac,        & ! INTENT(IN)
-       qx,            & ! INTENT(OUT)
-       qr,            & ! INTENT(INOUT)
-       cx,            & ! INTENT(INOUT)
-       enmlttab,      & ! INTENT(IN)
-       dnfac,         & ! INTENT(IN)
-       pwmasi,        & ! INTENT(IN)
-       gnu,           & ! INTENT(IN)
-       shedtab          ! INTENT(IN)
+!==========================================================================================!
+!==========================================================================================!
 
 
-  implicit none
-
-  ! Arguments
-  integer, intent(in)                :: m1, lcat
-  integer, intent(in)                :: i, j  ! Not Used
-  integer, dimension(10),intent(out) :: k1, k2
-  real, dimension(m1), intent(in)    :: dn0
-
-  ! Local Variables
-  integer :: k,jflag,lhcat,inc,idns
-  real :: rinv,closs,rxinv,rmelt,fracliq,cmelt,tcoal,ricetor6,rshed,rmltshed  &
-       ,qrmltshed,shedmass,fracmloss,dn
 
 
-  k1(lcat) = k1(10)
-  k2(lcat) = 1
-  do k = k1(10),k2(10)
-     if (rx(k,lcat) >= 1.e-9) k2(lcat) = k
-     if (k2(lcat) == 1 .and. rx(k,lcat) < 1.e-9) k1(lcat) = k + 1
-  enddo
-
-  if (lcat == 2 .or. lcat >= 4) then
-     jflag = 1
-
-     call enemb(m1,k1(lcat),k2(lcat),lcat,jflag,dn0,i,j)
-
-     do k = k1(lcat),k2(lcat)
-
-        if (rx(k,lcat) >= 1.e-9) then
-
-           lhcat = jhcat(k,lcat)
-           vterm(k,lcat) = -vtfac(lhcat) * emb(k,lcat) ** pwvtmasi(lhcat) &
-                * denfac(k)
-
-        endif
-
-     enddo
-  endif
-
-  if (lcat == 2) then
-
-     do k = k1(lcat),k2(lcat)
-
-        if (rx(k,lcat) >= 1.e-9) then
-
-           rxinv = 1. / rx(k,lcat)
-           qx(k,lcat) = qr(k,lcat) * rxinv
-           ! limit rain to under 48C and over -80C
-           qx(k,lcat) = max(0.,min(1.6*alli,qx(k,lcat)))
-
-        endif
-
-     enddo
-
-  elseif (lcat == 3) then
-
-     do k = k1(lcat),k2(lcat)
-
-        if (rx(k,lcat) >= 1.e-9) then
 
 
-           rinv = 1. / rx(k,lcat)
-           qx(k,lcat) = qr(k,lcat) * rinv
+!==========================================================================================!
+!==========================================================================================!
+subroutine x02(lcat)
 
-           call qtc(qx(k,lcat),tcoal,fracliq)
+   use rconstants, only: alli   ! INTENT(IN)
 
-           rmelt = rx(k,lcat) * fracliq
-           cmelt = cx(k,lcat) * fracliq
+   use micphys, only:  &
+        rx,            & ! INTENT(INOUT)
+        rxmin,         & ! intent(in)
+        jhcat,         & ! INTENT(IN)
+        k1,            & ! intent(in)
+        k2,            & ! intent(in)
+        rhoa,          & ! intent(in)
+        vterm,         & ! INTENT(OUT)
+        vtfac,         & ! INTENT(IN)
+        emb,           & ! INTENT(IN)
+        pwvtmasi,      & ! INTENT(IN)
+        denfac,        & ! INTENT(IN)
+        qx,            & ! INTENT(OUT)
+        qr,            & ! INTENT(INOUT)
+        cx,            & ! INTENT(INOUT)
+        enmlttab,      & ! INTENT(IN)
+        dnfac,         & ! INTENT(IN)
+        pwmasi,        & ! INTENT(IN)
+        gnu,           & ! INTENT(IN)
+        shedtab          ! INTENT(IN)
 
-           rx(k,lcat) = rx(k,lcat) - rmelt
-           rx(k,1) = rx(k,1) + rmelt
-           cx(k,lcat) = cx(k,lcat) - cmelt
-           cx(k,1) = cx(k,1) + cmelt
+   use therm_lib, only : qtk
 
+   implicit none
 
-        endif
+   !----- Argument ------------------------------------------------------------------------!
+   integer, intent(in)                :: lcat
+   !----- Local Variables -----------------------------------------------------------------!
+   integer :: k,jflag,lhcat,inc,idns
+   real    :: rinv,closs,rxinv,rmelt,fracliq,cmelt,tcoal,ricetor6,rshed,rmltshed
+   real    :: qrmltshed,shedmass,fracmloss,dn
+   !---------------------------------------------------------------------------------------!
 
-     enddo
-     !
-     ! meyers - source for cloud aerosol number here?
-     !
-  elseif (lcat == 4 .or. lcat == 5) then
+   k1(lcat) = k1(10)
+   k2(lcat) = 1
+   do k = k1(10),k2(10)
+      if (rx(k,lcat) >= rxmin(lcat)) k2(lcat) = k
+      if (k2(lcat) == 1 .and. rx(k,lcat) < rxmin(lcat)) k1(lcat) = k + 1
+   end do
 
-     do k = k1(lcat),k2(lcat)
-
-        if (rx(k,lcat) >= 1.e-9) then
-
-           rinv = 1. / rx(k,lcat)
-           qx(k,lcat) = qr(k,lcat) * rinv
-           call qtc(qx(k,lcat),tcoal,fracliq)
-
-           if (fracliq > 1.e-6) then
-              rmelt = rx(k,lcat) * fracliq
-
-              ! change this??? move to rain instead ??? look at melting decisions in col2
-
-              ricetor6 = min(rx(k,lcat) - rmelt,rmelt)
-              rx(k,lcat) = rx(k,lcat) - rmelt - ricetor6
-              rx(k,6) = rx(k,6) + rmelt + ricetor6
-              qr(k,6) = qr(k,6) + rmelt * alli
-              qx(k,lcat) = 0.
-
-              ! keep the above the same with ricetor6
-              ! meyers - use sa melt table here? yes
-              !
-              fracmloss = (rmelt + ricetor6) * rinv
-              closs = enmlttab(int(200. * fracmloss) + 1,jhcat(k,lcat)) * cx(k,lcat)
-              cx(k,lcat) = cx(k,lcat) - closs
-              cx(k,6) = cx(k,6) + closs
-           endif
+   if (k1(lcat) > k2(lcat)) return
 
 
-        endif
+   !----- Finding the terminal velocity ---------------------------------------------------!
+   select case (lcat)
+   case (2,4:7)
+      jflag = 1
+      call enemb(lcat,jflag)
+      terminalloop: do k = k1(lcat),k2(lcat)
 
-     enddo
+         if (rx(k,lcat) < rxmin(lcat) ) cycle terminalloop
+
+         lhcat = jhcat(k,lcat)
+         vterm(k,lcat) = -vtfac(lhcat) * emb(k,lcat) ** pwvtmasi(lhcat) * denfac(k)
+
+      end do terminalloop
+   end select
+   !---------------------------------------------------------------------------------------!
 
 
-  elseif (lcat == 6) then
+   select case (lcat) 
+   case (2) !----- Rain -------------------------------------------------------------------!
+      do k = k1(lcat),k2(lcat)
+         if (rx(k,lcat) >= rxmin(lcat)) then
+            rxinv = 1. / rx(k,lcat)
+            qx(k,lcat) = qr(k,lcat) * rxinv
+            !----- Limit rain to under 48C and over -80C ----------------------------------!
+            qx(k,lcat) = max(0.,min(1.6*alli,qx(k,lcat)))
+         end if
+      end do
 
-     do k = k1(lcat),k2(lcat)
+   case (3) !----- Pristine Ice -----------------------------------------------------------!
+      do k = k1(lcat),k2(lcat)
+         if (rx(k,lcat) >= rxmin(lcat)) then
+            rinv       = 1. / rx(k,lcat)
+            qx(k,lcat) = qr(k,lcat) * rinv
 
-        if (rx(k,lcat) >= 1.e-9) then
+            call qtk(qx(k,lcat),tcoal,fracliq)
 
-           rxinv = 1. / rx(k,lcat)
-           qx(k,lcat) = qr(k,lcat) * rxinv
-           call qtc(qx(k,lcat),tcoal,fracliq)
+            rmelt = rx(k,lcat) * fracliq
+            cmelt = cx(k,lcat) * fracliq
 
-           if (fracliq > 0.95) then
-              rx(k,2) = rx(k,2) + rx(k,6)
-              qr(k,2) = qr(k,2) + rx(k,6) * alli
-              cx(k,2) = cx(k,2) + cx(k,6)
-              rx(k,6) = 0.
-              qr(k,6) = 0.
-              cx(k,6) = 0.
-           endif
+            rx(k,lcat) = rx(k,lcat) - rmelt
+            rx(k,1)    = rx(k,1)    + rmelt
+            cx(k,lcat) = cx(k,lcat) - cmelt
+            cx(k,1)    = cx(k,1)    + cmelt
+         end if
+      end do
 
-        endif
 
-     enddo
+   case (4,5) !----- Snow, aggregates -----------------------------------------------------!
+      do k = k1(lcat),k2(lcat)
 
-  elseif (lcat == 7) then
+         if (rx(k,lcat) >= rxmin(lcat)) then
 
-     shedmass = 5.236e-7
-     do k = k1(lcat),k2(lcat)
+            rinv = 1. / rx(k,lcat)
+            qx(k,lcat) = qr(k,lcat) * rinv
+            call qtk(qx(k,lcat),tcoal,fracliq)
 
-        if (rx(k,lcat) >= 1.e-9) then
+            if (fracliq > 1.e-6) then
+               rmelt = rx(k,lcat) * fracliq
 
-           rxinv = 1. / rx(k,lcat)
-           qx(k,lcat) = qr(k,lcat) * rxinv
-           !c          qx(k,lcat) = max(-50.,qx(k,lcat))
-           call qtc(qx(k,lcat),tcoal,fracliq)
+               !---------------------------------------------------------------------------!
+               !    Change this??? Move to rain instead ??? Look at melting decisions in   !
+               ! col2.                                                                     !
+               !---------------------------------------------------------------------------!
+               ricetor6   = min(rx(k,lcat) - rmelt,rmelt)
+               rx(k,lcat) = rx(k,lcat) - rmelt - ricetor6
+               rx(k,6)    = rx(k,6) + rmelt + ricetor6
+               qr(k,6)    = qr(k,6) + rmelt * alli
+               qx(k,lcat) = 0.
 
-           if (fracliq > 0.95) then
-              rx(k,2) = rx(k,2) + rx(k,7)
-              qr(k,2) = qr(k,2) + rx(k,7) * alli
-              cx(k,2) = cx(k,2) + cx(k,7)
-              rx(k,7) = 0.
-              qr(k,7) = 0.
-              cx(k,7) = 0.
-              !
-              !  take out following IF statement?
-              !
+               !----- Keep the above the same with ricetor6 -------------------------------!
+               fracmloss  = (rmelt + ricetor6) * rinv
+               closs      = enmlttab(int(200. * fracmloss) + 1,jhcat(k,lcat)) * cx(k,lcat)
+               cx(k,lcat) = cx(k,lcat) - closs
+               cx(k,6)    = cx(k,6) + closs
+            end if
+         end if
+      end do
 
-           elseif (fracliq > 0.3) then
+   case (6) !----- Graupel ----------------------------------------------------------------!
+      do k = k1(lcat),k2(lcat)
+         if (rx(k,lcat) >= rxmin(lcat)) then
+            rxinv = 1. / rx(k,lcat)
+            qx(k,lcat) = qr(k,lcat) * rxinv
+            call qtk(qx(k,lcat),tcoal,fracliq)
 
-              lhcat = jhcat(k,lcat)
-              inc = nint(200. * fracliq) + 1
-              dn = dnfac(lhcat) * emb(k,lcat) ** pwmasi(lhcat)
-              idns = max(1,nint(1.e3 * dn * gnu(lcat)))
-              rshed = rx(k,lcat) * shedtab(inc,idns)
-              !cc               rmltshed = rx(k,lcat) * rmlttab(inc) + rshed
-              rmltshed = rshed
-              qrmltshed = rmltshed * alli
+            if (fracliq > 0.95) then
+               rx(k,2) = rx(k,2) + rx(k,6)
+               qr(k,2) = qr(k,2) + rx(k,6) * alli
+               cx(k,2) = cx(k,2) + cx(k,6)
+               rx(k,6) = 0.
+               qr(k,6) = 0.
+               cx(k,6) = 0.
+            end if
+         end if
+      end do
 
-              rx(k,2) = rx(k,2) + rmltshed
-              qr(k,2) = qr(k,2) + qrmltshed
-              rx(k,lcat) = rx(k,lcat) - rmltshed
-              qr(k,lcat) = qr(k,lcat) - qrmltshed
-              !               closs = cx(k,lcat) * enmlttab(inc,lhcat)
-              !               cx(k,lcat) = cx(k,lcat) - closs
-              !               cx(k,2) = cx(k,2) + closs + rshed / shedmass
-              cx(k,2) = cx(k,2) + rshed / shedmass
-           endif
+   case (7) !----- Hail -------------------------------------------------------------------!
+      shedmass = 5.236e-7
+      do k = k1(lcat),k2(lcat)
+         if (rx(k,lcat) >= rxmin(lcat)) then
+            rxinv = 1. / rx(k,lcat)
+            qx(k,lcat) = qr(k,lcat) * rxinv
+            call qtk(qx(k,lcat),tcoal,fracliq)
 
-        endif
+            if (fracliq > 0.95) then
+               rx(k,2) = rx(k,2) + rx(k,7)
+               qr(k,2) = qr(k,2) + rx(k,7) * alli
+               cx(k,2) = cx(k,2) + cx(k,7)
+               rx(k,7) = 0.
+               qr(k,7) = 0.
+               cx(k,7) = 0.
+            !----- Take out following IF statement? ---------------------------------------!
+            elseif (fracliq > 0.3) then
 
-     enddo
+               lhcat      = jhcat(k,lcat)
+               inc        = nint(200. * fracliq) + 1
+               dn         = dnfac(lhcat) * emb(k,lcat) ** pwmasi(lhcat)
+               idns       = max(1,nint(1.e3 * dn * gnu(lcat)))
+               rshed      = rx(k,lcat) * shedtab(inc,idns)
+               rmltshed   = rshed
+               qrmltshed  = rmltshed * alli
 
-  endif
-  
-  return
+               rx(k,2)    = rx(k,2)    + rmltshed
+               qr(k,2)    = qr(k,2)    + qrmltshed
+               rx(k,lcat) = rx(k,lcat) - rmltshed
+               qr(k,lcat) = qr(k,lcat) - qrmltshed
+               cx(k,2)    = cx(k,2)    + rshed / shedmass
+            end if
+         end if
+      end do
+
+   end select
+
+   return
 end subroutine x02
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************
 
-subroutine c03(m1,k1,k2,lcat,dn0,i,j)
 
-  use micphys, only: jnmb  ! INTENT(IN)
 
-  implicit none
 
-  ! Arguments
-  integer, intent(in)             :: m1, k1, k2, lcat, i, j
-  real, dimension(m1), intent(in) :: dn0
 
-  ! Local Variables
-  integer :: jflag
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine determines the terminal velocity.                                    !
+!------------------------------------------------------------------------------------------!
+subroutine pc03(lcat,jflag)
 
-  jflag = 1
-  if (jnmb(lcat) >= 3) call enemb(m1,k1,k2,lcat,jflag,dn0,i,j)
+   use micphys, only: &
+           k1         & ! intent(in)
+          ,k2         & ! intent(in)
+          ,jnmb       & ! intent(in)
+          ,rx         & ! intent(in)
+          ,jhcat      & ! intent(in)
+          ,vtfac      & ! intent(in)
+          ,emb        & ! intent(in)
+          ,pwvtmasi   & ! intent(in)
+          ,denfac     & ! intent(in)
+          ,rxmin      & ! intent(in)
+          ,vterm      ! ! intent(out)
 
-  return
-end subroutine c03
+   implicit none
 
-!******************************************************************************
+   !----- Arguments -----------------------------------------------------------------------!
+   integer, intent(in)             :: lcat, jflag
+   !----- Local Variables -----------------------------------------------------------------!
+   integer :: k, lhcat
+   !---------------------------------------------------------------------------------------!
 
-subroutine pc03(m1,k1,k2,lcat,dn0,i,j)
+   if (jnmb(lcat) >= 3) call enemb(lcat,jflag)
 
-  use micphys, only: &
-       jnmb,         & ! INTENT(IN)
-       rx,           & ! INTENT(IN)
-       jhcat,        & ! INTENT(IN)
-       vterm,        & ! INTENT(OUT)
-       vtfac,        & ! INTENT(IN)
-       emb,          & ! INTENT(IN)
-       pwvtmasi,     & ! INTENT(IN)
-       denfac          ! INTENT(IN)
+   mainloop: do k = k1(lcat),k2(lcat)
 
-  implicit none
+      if (rx(k,lcat) < rxmin(lcat)) cycle mainloop
 
-  ! Arguments
-  integer, intent(in)             :: m1, k1, k2, lcat, i, j
-  real, dimension(m1), intent(in) :: dn0
+      lhcat = jhcat(k,lcat)
+      vterm(k,lcat) = -vtfac(lhcat) * emb(k,lcat) ** pwvtmasi(lhcat) * denfac(k)
 
-  ! Local Variables
-  integer :: k, lhcat, jflag
+   end do mainloop
 
-  jflag = 1
-  if (jnmb(lcat) >= 3) call enemb(m1,k1,k2,lcat,jflag,dn0,i,j)
-
-  do k = k1,k2
-
-     if (rx(k,lcat) >= 1.e-9) then
-
-        lhcat = jhcat(k,lcat)
-        vterm(k,lcat) = -vtfac(lhcat) * emb(k,lcat) ** pwvtmasi(lhcat) * denfac(k)
-
-     endif
-
-  enddo
-
-  return
+   return
 end subroutine pc03
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************
 
-subroutine sedim(m1,lcat,ngr,nembfall,maxkfall,k1,k2,flpw,i,j  &
-     ,rtp,thp,theta,dn0,alphasfc  &
-     ,pcpg,qpcpg,dpcpg,dtlti,cnew,rnew,qrnew,pcpfillc,pcpfillr,sfcpcp, &
-     dzt, if_adap)
 
-  use rconstants, only: cpi  ! INTENT(IN)
 
-  use micphys, only: &
-       nhcat,        & ! INTENT(IN)
-       jhcat,        & ! INTENT(IN)
-       pcprx,        & ! INTENT(IN)
-       rx,           & ! INTENT(INOUT)
-       cx,           & ! INTENT(INOUT)
-       qx,           & ! INTENT(INOUT)
-       ch1,          & ! INTENT(IN)
-       emb,          & ! INTENT(IN)
-       cfmas,        & ! INTENT(IN)
-       ch3,          & ! INTENT(IN)
-       dn0i,         & ! INTENT(IN)
-       ch2,          & ! INTENT(IN)
-       dispemb0,     & ! INTENT(IN)
-       accpx,        & ! INTENT(OUT)
-       tairc,        & ! INTENT(OUT)
-       tair            ! INTENT(IN)
 
-  implicit none
 
-  ! Arguments
-  integer, intent(in) :: m1, lcat, ngr, nembfall, maxkfall, k1, k2, i, j
-  real, intent(in) :: flpw
-  real, dimension(m1), intent(out) :: rtp
-  real, dimension(m1), intent(in)  :: thp, theta, dn0
-  real, intent(in) :: alphasfc, dtlti
-  real, intent(inout) :: pcpg, qpcpg, dpcpg
-  real, dimension(m1), intent(out) :: cnew, rnew, qrnew
-  real, dimension(m1,maxkfall,nembfall,nhcat), intent(in) :: pcpfillc, pcpfillr
-  real, dimension(maxkfall,nembfall,nhcat), intent(in) :: sfcpcp
-  real, dimension(m1), intent(in) :: dzt          ! From RAMS 6.0
-  integer, intent(in) :: if_adap                  ! From RAMS 6.0
+!==========================================================================================!
+!==========================================================================================!
+subroutine sedim(m1,lcat,if_adap,mynum,alphasfc,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,pcpfillr   &
+                ,sfcpcp,dzt)
 
-  ! Local Variables
-  integer :: k,lhcat,iemb,iemb2,kkf,kk,lpw
-  real :: colddn0,rolddn0,qrolddn0,dispemb,riemb,wt2,psfc,qnew
+   use rconstants, only : cpi,ttripoli,alvl,alvi,alli,cp  ! intent(in)
+   use therm_lib , only : qtk,dthil_sedimentation
+   use micphys   , only : &
+           k1             & ! intent(in   )
+          ,k2             & ! intent(in   )
+          ,nembfall       & ! intent(in   )
+          ,maxkfall       & ! intent(in   )
+          ,nhcat          & ! intent(in   )
+          ,jhcat          & ! intent(in   )
+          ,progncat       & ! intent(in   )
+          ,pcprx          & ! intent(in   )
+          ,ch1            & ! intent(in   )
+          ,emb            & ! intent(in   )
+          ,cfmasi         & ! intent(in   )
+          ,ch3            & ! intent(in   )
+          ,rhoi           & ! intent(in   )
+          ,ch2            & ! intent(in   )
+          ,dispemb0i      & ! intent(in   )
+          ,tair           & ! intent(in   )
+          ,rhoa           & ! intent(in   )
+          ,rhoi           & ! intent(in   )
+          ,rtot           & ! intent(in   )
+          ,thil           & ! intent(in   )
+          ,pottemp        & ! intent(in   )
+          ,lpw            & ! intent(in   )
+          ,denfac         & ! intent(in   )
+          ,rx             & ! intent(inout)
+          ,rxmin          & ! intent(inout)
+          ,cx             & ! intent(inout)
+          ,cxmin          & ! intent(inout)
+          ,qx             & ! intent(inout)
+          ,qr             & ! intent(inout)
+          ,dsed_thil      & ! intent(inout)
+          ,cfall          & ! intent(  out)
+          ,rfall          & ! intent(  out)
+          ,qrfall         & ! intent(  out)
+          ,accpx          & ! intent(  out)
+          ,tairc          ! ! intent(  out)
 
-  pcprx(lcat) = 0.
-  !do k = 2,k2
-  do k = 1, m1 ! From RAMS 6.0
-     rnew(k) = 0.
-     cnew(k) = 0.
-     qrnew(k) = 0.
-  enddo
 
-  do k = k1,k2
-     lhcat = jhcat(k,lcat)
+   implicit none
 
-     if (rx(k,lcat) > 1.e-9) then
-        colddn0 = cx(k,lcat) * dn0(k)
-        rolddn0 = rx(k,lcat) * dn0(k)
-        qrolddn0 = qx(k,lcat) * rolddn0
+   !----- Arguments -----------------------------------------------------------------------!
+   integer                                    , intent(in)    :: m1,lcat,if_adap,mynum
+   real                                       , intent(in)    :: alphasfc, dtlti
+   real, dimension(m1                        ), intent(in)    :: dzt
+   real, dimension(m1,maxkfall,nembfall,nhcat), intent(in)    :: pcpfillc, pcpfillr
+   real, dimension(   maxkfall,nembfall,nhcat), intent(in)    :: sfcpcp
+   real                                       , intent(inout) :: pcpg, qpcpg, dpcpg
+   !----- Local Variables -----------------------------------------------------------------!
+   integer :: k,lhcat,iemb,iemb2,kkf,kk,jcat,ee
+   real    :: dispemb,riemb,wt2,psfc,qfall
+   real    :: tcoal,fliqfall,fliq,dqlat,coldrhoa,roldrhoa,qroldrhoa
+   !---------------------------------------------------------------------------------------!
 
-        dispemb = ch1(lhcat)  &
-             * (emb(k,lcat)/cfmas(lhcat)) ** ch3(lhcat) * sqrt(dn0i(k))
-        riemb = 1. + ch2(lhcat,ngr) * log10(dispemb / dispemb0(lhcat,ngr))
+   !----- Zero out any "fall" cells that might accumulate precipitation -------------------!
+   pcprx(lcat) = 0.
+   do k = 1, m1
+      rfall(k)  = 0.
+      cfall(k)  = 0.
+      qrfall(k) = 0.
+   end do
 
-        !Bob (10/24/00):  Now, limiting iemb to max of nembfall
+   !----- Loop over potential donor cells -------------------------------------------------!
+   mainloop: do k = k1(lcat),k2(lcat)
+      lhcat = jhcat(k,lcat)
 
-        iemb = min(nint(riemb),nembfall)
+      !----- Jump to end of loop if current cell has little or no hydrometeor mass --------!
+      if (rx(k,lcat) < rxmin(lcat)) cycle mainloop
 
-        if (k <= maxkfall) then
-           psfc = rolddn0 * sfcpcp(k,iemb,lhcat)
-        endif
+      coldrhoa  = cx(k,lcat) * rhoa(k)
+      roldrhoa  = rx(k,lcat) * rhoa(k)
+      qroldrhoa = qx(k,lcat) * roldrhoa
 
-        do kkf = 1,min(maxkfall,k-1)
-           kk = k + 1 - kkf
+      dispemb = ch1(lhcat) * (emb(k,lcat) * cfmasi(lhcat)) ** ch3(lhcat) * denfac(k)
+      riemb   = 1. + ch2(lhcat) * log10(dispemb * dispemb0i(lhcat))
 
-           cnew(kk)  = cnew(kk)   &
-                +  colddn0 * dn0i(kk) * pcpfillc(k,kkf,iemb,lhcat)
-           rnew(kk)  = rnew(kk)   &
-                +  rolddn0 * dn0i(kk) * pcpfillr(k,kkf,iemb,lhcat)
-           qrnew(kk) = qrnew(kk)  &
-                + qrolddn0 * dn0i(kk) * pcpfillr(k,kkf,iemb,lhcat)
+      !----- Bob (10/24/00):  Now, limiting iemb to max of nembfall -----------------------!
+      iemb = min(nint(riemb),nembfall)
 
-           !---------------------------------------------------------------
-           ! adjustment for underground and partial grid cells for ada grid
+      do kkf = 1,min(maxkfall,k-1)
+         kk = k + 1 - kkf
 
-           !if (ada_flag == 1) then
-           !   do k = 2,nint(flpw)-1
+         cfall(kk) = cfall(kk) + coldrhoa  * rhoi(kk) * pcpfillc(k,kkf,iemb,lhcat)
+         rfall(kk) = rfall(kk) + roldrhoa  * rhoi(kk) * pcpfillr(k,kkf,iemb,lhcat)
+         qrfall(kk) = qrfall(kk) + qroldrhoa * rhoi(kk) * pcpfillr(k,kkf,iemb,lhcat)
+      end do
 
-           !must consider volt correction to pcpfillc and pcpfillr tables
+      if (k <= maxkfall) then
+         psfc        = roldrhoa * sfcpcp(k,iemb,lhcat)
+         qpcpg       = qpcpg + psfc * qx(k,lcat)
+         pcprx(lcat) = pcprx(lcat) + psfc
+      end if
+   end do mainloop
 
-           !---------------------------------------------------------------
 
-        enddo
+   !----- Copy accumulated precip in "below-ground" cells to surface precip ---------------!
+   if (if_adap == 1) then
+      do k=2,lpw-1
+         pcprx(lcat) = pcprx(lcat) + rfall(k)  * rhoa(k) / dzt(k)
+         qpcpg       = qpcpg       + qrfall(k) * rhoa(k) / dzt(k)
+         
+         cfall(k)  = 0.
+         rfall(k)  = 0.
+         qrfall(k) = 0.
+      end do
+   end if
 
-        if (k <= maxkfall) then
-           qpcpg = qpcpg + psfc * qx(k,lcat)
-           pcprx(lcat) = pcprx(lcat) + psfc
-        endif
+   pcpg        = pcpg  + pcprx(lcat)
+   accpx(lcat) = pcprx(lcat)
+   dpcpg       = dpcpg + pcprx(lcat) * alphasfc
+   pcprx(lcat) = pcprx(lcat)  * dtlti
 
-     endif
-  enddo
+   do k = lpw,k2(lcat) ! From RAMS 6.0
+      rtot(k) = rtot(k) + rfall(k) - rx(k,lcat)
 
-  lpw = nint(flpw)
+      qfall = qrfall(k) / max(1.e-20, rfall(k))
 
-  ! From RAMS 6.0
-  if (if_adap == 1) then
-     do k = 2,lpw-1
-        pcprx(lcat) = pcprx(lcat) + rnew(k) * dn0(k) / dzt(k)
-        qpcpg = qpcpg + qrnew(k) * dn0(k) / dzt(k)
-        
-        cnew(k) = 0.
-        rnew(k) = 0.
-        qrnew(k) = 0.
-     enddo
-  endif
+      !----- I guess this is already computed, but I don't want trouble... ----------------!
+      qr(k,lcat) = qx(k,lcat) * rx(k,lcat) 
 
-  pcpg = pcpg + pcprx(lcat)
-  accpx(lcat) = pcprx(lcat)
-  dpcpg = dpcpg + pcprx(lcat) * alphasfc
-  pcprx(lcat) = pcprx(lcat) * dtlti
+      dsed_thil(k)   = dsed_thil(k)                                                        &
+                     + dthil_sedimentation(thil(k),pottemp(k),tair(k),rx(k,lcat),rfall(k)  &
+                                          ,qr(k,lcat),qrfall(k))
 
-  !do k = 2,k2
-  do k = lpw,k2 ! From RAMS 6.0
-     rtp(k) = rtp(k) + rnew(k) - rx(k,lcat)
-     qnew = qrnew(k) / max(1.e-20, rnew(k))
+      rx(k,lcat) = rfall(k)
+      cx(k,lcat) = cfall(k)
+      qx(k,lcat) = qfall
 
-     !         if (iqflag == 1) then
-     tairc(k) = tairc(k) - thp(k) * thp(k)  &
-          * (2820. * (rnew(k) - rx(k,lcat))  &
-          - cpi * (qrnew(k) - qx(k,lcat) * rx(k,lcat)))  &
-          / (max(tair(k), 253.) * theta(k))
-     !         else
-     !            tairc(k) = tairc(k) - thp(k) * thp(k) * 2820.
-     !     +          * (rnew(k) - rx(k,lcat)) / (max(tair(k), 253.) * theta(k))
-     !         endif
 
-     rx(k,lcat) = rnew(k)
-     cx(k,lcat) = cnew(k)
-     qx(k,lcat) = qnew
+      if (rx(k,lcat) < rxmin(lcat)) then
+         rx(k,lcat) = 0.
+         cx(k,lcat) = 0.
+         qx(k,lcat) = 0.
+      end if
+   end do
 
-     if (rx(k,lcat) < 1.e-9) then
-        rx(k,lcat) = 0.
-        cx(k,lcat) = 0.
-        qx(k,lcat) = 0.
-     endif
-
-  enddo
   return
 end subroutine sedim
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************
 
-subroutine negadj1(m1,m2,m3)
 
-  use mem_basic, only: basic_g ! INTENT(OUT)
 
-  use mem_micro, only: micro_g ! INTENT(OUT)
 
-  use mem_grid,  only: &
-       grid_g,         & ! INTENT(IN)
-       ngrid             ! INTENT(IN)
 
-  use micphys, only:   level ! INTENT(IN)
+!==========================================================================================!
+!==========================================================================================!
+!   This subroutine is a wrapper for the microphysics sanity check of hydrometeors mixing  !
+! ratio. This is to ensure that all species are either above a minimum value or zero, and  !
+! that both vapour and total mixing ratio are above a safe minimum to prevent singular-    !
+! ities, memory invasion and other horrible things that overflow and underflow can cause.  !
+!------------------------------------------------------------------------------------------!
+subroutine negadj1(m1,m2,m3,ia,iz,ja,jz)
 
-  use mem_scratch, only: vctr9 ! INTENT(OUT)
+   use mem_basic  , only:  &
+           basic_g         ! intent(out)
 
-  implicit none
+   use mem_micro  , only : &
+           micro_g         ! ! intent(out)
 
-  ! Arguments
-  integer, intent(in) :: m1, m2, m3
+   use mem_grid   , only : &
+           grid_g          & ! intent(in)
+          ,ngrid           ! ! intent(in)
 
-  if (level == 0) return
+   use therm_lib  , only : &
+           vapour_on       ! ! intent(in)
 
-  call adj1(m1,m2,m3,grid_g(ngrid)%flpw(1,1),basic_g(ngrid)%rtp(1,1,1)  &
-       ,basic_g(ngrid)%thp(1,1,1),micro_g(ngrid),vctr9)
+   implicit none
 
-  return
+   !----- Arguments -----------------------------------------------------------------------!
+   integer, intent(in) :: m1,m2,m3,ia,iz,ja,jz
+
+   if (.not. vapour_on) return
+
+   call adj1(m1,m2,m3,ia,iz,ja,jz                                                          &
+            , grid_g(ngrid)%flpw   (1,1)          , basic_g(ngrid)%rv  (1,1,1)             &
+            , basic_g(ngrid)%rtp (1,1,1)          , basic_g(ngrid)%dn0 (1,1,1)             &
+            , micro_g(ngrid)                      )
+
+   return
 end subroutine negadj1
-
-!******************************************************************************
-
-subroutine adj1(m1,m2,m3,flpw,rtp,thp,micro,vctr9)
-
-  use mem_micro, only: &
-       micro_vars        ! INTENT(IN)
-
-
-  use micphys, only:   &
-       level,          & ! INTENT(IN)
-       ncat,           & ! INTENT(IN)
-       rx,             & ! INTENT(OUT)
-       cx,             & ! INTENT(OUT)
-       jnmb              ! INTENT(IN)
-
-  implicit none
-
-  ! Arguments
-  integer, intent(in)                      :: m1, m2, m3
-  real, dimension(m2,m3), intent(in)       :: flpw
-  type (micro_vars), intent(inout)         :: micro
-  real, dimension(m1,m2,m3), intent(inout) :: rtp, thp
-  real, dimension(m1), intent(out)         :: vctr9
-
-  ! Local Variables
-  integer :: i,j,k,lcat,ka
-  real :: frac
+!==========================================================================================!
+!==========================================================================================!
 
 
 
 
-  if (level .eq. 0) return
 
-  do lcat = 1,ncat
-     do k = 1,m1
-        rx(k,lcat) = 0.
-        cx(k,lcat) = 0.
-     enddo
-  enddo
 
-  do j = 1,m3
-     do i = 1,m2
-        ka = nint(flpw(i,j))
+!==========================================================================================!
+!==========================================================================================!
+subroutine adj1(m1,m2,m3,ia,iz,ja,jz,flpw,rv,rtp,dn0,micro)
 
-        if (jnmb(1) > 0) call ae1kmic(ka,m1,rx(1,1),micro%rcp(1,i,j))
-        if (jnmb(2) > 0) call ae1kmic(ka,m1,rx(1,2),micro%rrp(1,i,j))
-        if (jnmb(3) > 0) call ae1kmic(ka,m1,rx(1,3),micro%rpp(1,i,j))
-        if (jnmb(4) > 0) call ae1kmic(ka,m1,rx(1,4),micro%rsp(1,i,j))
-        if (jnmb(5) > 0) call ae1kmic(ka,m1,rx(1,5),micro%rap(1,i,j))
-        if (jnmb(6) > 0) call ae1kmic(ka,m1,rx(1,6),micro%rgp(1,i,j))
-        if (jnmb(7) > 0) call ae1kmic(ka,m1,rx(1,7),micro%rhp(1,i,j))
+   use mem_micro  , only : &
+           micro_vars      ! ! INTENT(IN)
 
-        do lcat = 1,ncat
-           do k = ka,m1
-              if (rx(k,lcat) < 1.e-9) rx(k,lcat) = 0.
-           enddo
-        enddo
+   use micphys    , only : &
+           ncat            & ! intent(in)
+          ,rx              & ! intent(out)
+          ,cx              & ! intent(out)
+          ,rxmin           & ! intent(in)
+          ,cxmin           & ! intent(in)
+          ,jnmb            & ! intent(in)
+          ,progncat        & ! intent(in)
+          ,availcat        ! ! intent(in)
 
-        do k = ka,m1
-           rtp(k,i,j) = max(0.,rtp(k,i,j))
-           vctr9(k) = 1.001 * (rx(k,1)+ rx(k,2) + rx(k,3)  &
-                + rx(k,4) + rx(k,5) + rx(k,6) + rx(k,7))
-        enddo
+   use mem_scratch, only : &
+           vctr6           & ! intent(out)
+          ,vctr9           & ! intent(out)
+          ,vctr11          & ! intent(out)
+          ,vctr21          & ! intent(out)
+          ,vctr37          ! ! intent(out)
 
-        do k = ka,m1
-           if (vctr9(k) > rtp(k,i,j)) then
-              frac = rtp(k,i,j) / (1.e-9 + vctr9(k))
-              do lcat = 1,ncat
-                 rx(k,lcat) = rx(k,lcat) * frac
-              enddo
-           endif
-        enddo
+   use rconstants , only : &
+           toodry          ! ! intent(in)
 
-        if (jnmb(1) > 0) call ae1kmic(ka,m1,micro%rcp(1,i,j),rx(1,1))
-        if (jnmb(2) > 0) call ae1kmic(ka,m1,micro%rrp(1,i,j),rx(1,2))
-        if (jnmb(3) > 0) call ae1kmic(ka,m1,micro%rpp(1,i,j),rx(1,3))
-        if (jnmb(4) > 0) call ae1kmic(ka,m1,micro%rsp(1,i,j),rx(1,4))
-        if (jnmb(5) > 0) call ae1kmic(ka,m1,micro%rap(1,i,j),rx(1,5))
-        if (jnmb(6) > 0) call ae1kmic(ka,m1,micro%rgp(1,i,j),rx(1,6))
-        if (jnmb(7) > 0) call ae1kmic(ka,m1,micro%rhp(1,i,j),rx(1,7))
+   implicit none
 
-        if (jnmb(1) >= 5)  &
-             call ae1mic(ka,m1,micro%ccp(1,i,j),micro%rcp(1,i,j),rx(1,1))
-        if (jnmb(2) >= 5)  &
-             call ae1mic(ka,m1,micro%crp(1,i,j),micro%rrp(1,i,j),rx(1,2))
-        if (jnmb(3) >= 5)  &
-             call ae1mic(ka,m1,micro%cpp(1,i,j),micro%rpp(1,i,j),rx(1,3))
-        if (jnmb(4) >= 5)  &
-             call ae1mic(ka,m1,micro%csp(1,i,j),micro%rsp(1,i,j),rx(1,4))
-        if (jnmb(5) >= 5)  &
-             call ae1mic(ka,m1,micro%cap(1,i,j),micro%rap(1,i,j),rx(1,5))
-        if (jnmb(6) >= 5)  &
-             call ae1mic(ka,m1,micro%cgp(1,i,j),micro%rgp(1,i,j),rx(1,6))
-        if (jnmb(7) >= 5)  &
-             call ae1mic(ka,m1,micro%chp(1,i,j),micro%rhp(1,i,j),rx(1,7))
+   !----- Arguments -----------------------------------------------------------------------!
+   integer                              , intent(in)    :: m1, m2, m3,ia,iz,ja,jz
+   real            , dimension(m2,m3)   , intent(in)    :: flpw
+   type(micro_vars)                     , intent(inout) :: micro
+   real            , dimension(m1,m2,m3), intent(inout) :: rv,rtp,dn0
+   !----- Local Variables -----------------------------------------------------------------!
+   integer :: i,j,k,lcat,ka
+   !---------------------------------------------------------------------------------------!
 
-        !
-        !  Think about how thp should change here - should it be due to a change in
-        !     rtp or to a change in the condensate?
-        !
-        !               vctr10(k) = rrp(k,i,j +rpp(k,i,j)  + rsp(k,i,j) + rap(k,i,j)
-        !     +                   + rgp(k,i,j) + rhp(k,i,j)
-        !               thp(k,i,j) = thp(k,i,j)
-        !     +                    * (1. - aklv * (vctr8(k) - rtp(k,i,j))
-        !c or +                    * (1. - aklv * (vctr10(k) - vctr9(k,i,j))
-        !     +                    /(max(temp, 253.)))
 
-     enddo
-  enddo
+   !---------------------------------------------------------------------------------------!
+   ! 1. Initialise all r and c arrays.                                                     !
+   !---------------------------------------------------------------------------------------!
+   do lcat = 1,ncat
+      do k = 1,m1
+         rx(k,lcat) = 0.
+         cx(k,lcat) = 0.
+      enddo
+   enddo
+
+
+   do j = ja,jz
+      do i = ia,iz
+         ka = nint(flpw(i,j))
+
+         !---------------------------------------------------------------------------------!
+         ! 2. Copying the arrays to scratch structures.                                    !
+         !---------------------------------------------------------------------------------!
+         do k=ka,m1
+            !----- 1. Cloud ---------------------------------------------------------------!
+            if (availcat(1)) rx(k,1) = micro%rcp(k,i,j)
+            if (progncat(1)) cx(k,1) = micro%ccp(k,i,j)
+            !----- 2. Rain ----------------------------------------------------------------!
+            if (availcat(2)) rx(k,2) = micro%rrp(k,i,j)
+            if (progncat(2)) cx(k,2) = micro%crp(k,i,j)
+            !----- 3. Pristine ice --------------------------------------------------------!
+            if (availcat(3)) rx(k,3) = micro%rpp(k,i,j)
+            if (progncat(3)) cx(k,3) = micro%cpp(k,i,j)
+            !----- 4. Snow ----------------------------------------------------------------!
+            if (availcat(4)) rx(k,4) = micro%rsp(k,i,j)
+            if (progncat(4)) cx(k,4) = micro%csp(k,i,j)
+            !----- 5. Aggregates ----------------------------------------------------------!
+            if (availcat(5)) rx(k,5) = micro%rap(k,i,j)
+            if (progncat(5)) cx(k,5) = micro%cap(k,i,j)
+            !----- 6. Graupel -------------------------------------------------------------!
+            if (availcat(6)) rx(k,6) = micro%rgp(k,i,j)
+            if (progncat(6)) cx(k,6) = micro%cgp(k,i,j)
+            !----- 7. Hail ----------------------------------------------------------------!
+            if (availcat(7)) rx(k,7) = micro%rhp(k,i,j)
+            if (progncat(7)) cx(k,7) = micro%chp(k,i,j)
+         end do
+
+
+         !---------------------------------------------------------------------------------!
+         ! 3. Now I will check for very low mixing ratios and flush them to zero.          !
+         !---------------------------------------------------------------------------------!
+         do lcat = 1,ncat
+            do k=ka,m1
+               if (rx(k,lcat)  < rxmin(lcat)) then
+                  rx(k,lcat) = 0.
+                  cx(k,lcat) = 0.
+               end if
+            end do
+         end do
+         
+         !---------------------------------------------------------------------------------!
+         ! 4. This is somewhat a sanity check. We don't want rtp to be zero or too small,  !
+         !    so we fix the minimum possible to be the "toodry" variable. Here we check    !
+         !    this and also sum all hydrometeors, and check whether this amount of hydro-  !
+         !    meteors can exist. Not only rtp must be >= toodry, vapour mixing ratio       !
+         !    should also be. If these criteria are not met, then we scale down the hydro- !
+         !    meteor mixing ratio and make them consistent.                                !
+         !---------------------------------------------------------------------------------!
+         do k = ka,m1
+            rtp(k,i,j) = max(toodry,rtp(k,i,j))
+            !----- vctr9 is the total condensed mixing ratio ------------------------------!
+            vctr9(k)   = 1.001*sum(rx(k,:))
+            !----- vctr6 is the vapour mixing ratio ---------------------------------------!
+            vctr6(k)   = rtp(k,i,j)-vctr9(k)
+         enddo
+
+         !---------------------------------------------------------------------------------!
+         ! 5. Check whether the condensates would make either rtp or rv fall below toodry. !
+         !    If needed, rescale the condensate mixing ratio. vctr37(k) has the rescaling  !
+         !    factor that will then be used to rescale the concentration in case the run   !
+         !    is prognostic.                                                               !
+         !---------------------------------------------------------------------------------!
+         scaleloop: do k = ka,m1
+            !----- a. This is as dry as it can be, no condensation allowed ----------------!
+            if (rtp(k,i,j) == toodry) then
+               vctr37(k) = 0.
+            !----- b. rv would be too small, rescale it. vctr37 is the scaling factor -----!
+            else if (vctr6(k) < toodry) then
+               vctr37(k) = (rtp(k,i,j)-toodry)/vctr9(k)
+            !----- c. Good combination, keep it. ------------------------------------------!
+            else
+               vctr37(k) = 1.0
+               cycle scaleloop
+            end if
+            !----- d. Rescale rx, and check if it is still more than rxmin ----------------!
+            do lcat = 1,ncat
+               rx(k,lcat) = rx(k,lcat) * vctr37(k)
+               if (progncat(lcat)) cx(k,lcat) = cx(k,lcat) * vctr37(k)
+               if (rx(k,lcat) < rxmin(lcat)) then
+                  rx(k,lcat) = 0.
+                  cx(k,lcat) = 0.
+               end if
+            end do
+         end do scaleloop
+         
+         !---------------------------------------------------------------------------------!
+         ! 6. Make sure that the total mixing ratio is the actual total                    !
+         !---------------------------------------------------------------------------------!
+         do k=ka,m1
+            !----- vctr21 is the new condensed mixing ratio -------------------------------!
+            vctr21(k) = 0.
+            do lcat = 1,ncat
+               vctr21(k) = vctr21(k) + rx(k,lcat)
+            end do
+            rv(k,i,j)  = vctr6(k)
+            rtp(k,i,j) = vctr6(k) + vctr21(k)
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         ! 7. Copy back to the original structures.                                        !
+         !---------------------------------------------------------------------------------!
+         do k=ka,m1
+            !----- 1. Cloud ---------------------------------------------------------------!
+            if (availcat(1)) micro%rcp(k,i,j) = rx(k,1)
+            if (progncat(1)) micro%ccp(k,i,j) = cx(k,1)
+            !----- 2. Rain ----------------------------------------------------------------!
+            if (availcat(2)) micro%rrp(k,i,j) = rx(k,2)
+            if (progncat(2)) micro%crp(k,i,j) = cx(k,2)
+            !----- 3. Pristine ice --------------------------------------------------------!
+            if (availcat(3)) micro%rpp(k,i,j) = rx(k,3)
+            if (progncat(3)) micro%cpp(k,i,j) = cx(k,3)
+            !----- 4. Snow ----------------------------------------------------------------!
+            if (availcat(4)) micro%rsp(k,i,j) = rx(k,4)
+            if (progncat(4)) micro%csp(k,i,j) = cx(k,4)
+            !----- 5. Aggregates ----------------------------------------------------------!
+            if (availcat(5)) micro%rap(k,i,j) = rx(k,5)
+            if (progncat(5)) micro%cap(k,i,j) = cx(k,5)
+            !----- 6. Graupel -------------------------------------------------------------!
+            if (availcat(6)) micro%rgp(k,i,j) = rx(k,6)
+            if (progncat(6)) micro%cgp(k,i,j) = cx(k,6)
+            !----- 7. Hail ----------------------------------------------------------------!
+            if (availcat(7)) micro%rhp(k,i,j) = rx(k,7)
+            if (progncat(7)) micro%chp(k,i,j) = cx(k,7)
+         end do
+     end do
+  end do
   return
 end subroutine adj1
-
-!---------------------------------------------------------------------------
-
-subroutine ae1mic(ka,m1,c3,r3,r1)
-
-  implicit none
-
-  ! Arguments
-  integer, intent(in)                :: m1,ka
-  real, dimension(m1), intent(inout) :: c3
-  real, dimension(m1), intent(in)    :: r3, r1
-
-  ! Local Variables
-  integer :: k
-
-  do k = ka,m1
-     c3(k) = c3(k) * r1(k) / (1.e-9 + r3(k))
-     if (c3(k) < 0.) c3(k) = 0.
-  enddo
-
-  return
-end subroutine ae1mic
-
-!---------------------------------------------------------------------------
-
-subroutine ae1kmic(ka,kb,cr3,cr1)
-
-  implicit none
-
-  ! Arguments
-  integer, intent(in) :: ka,kb
-  real, dimension(kb), intent(out) :: cr3
-  real, dimension(kb), intent(in)  :: cr1
-
-  ! Local Variables
-  integer :: k
-
-  do k = ka,kb
-     cr3(k) = cr1(k)
-  enddo
-
-  return
-end subroutine ae1kmic
+!==========================================================================================!
+!==========================================================================================!

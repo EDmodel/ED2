@@ -13,7 +13,7 @@ use mem_varinit
 use mem_basic
 use mem_grid
 use mem_scratch
-use micphys
+use therm_lib, only: level
 
 implicit none
 
@@ -192,6 +192,7 @@ subroutine varf_adap(n1,n2,n3,varu,varv,varp,vart,varr,topta)
 use mem_scratch
 use mem_grid
 use rconstants
+use therm_lib, only: virtt
 
 implicit none
 
@@ -221,7 +222,7 @@ do j=1,n3
 
       ! Do hydrostatic balance
       do k=1,n1
-         vctr15(k) = vctr13(k)* (1.+.61*vctr14(k))
+         vctr15(k) = virtt(vctr13(k),vctr14(k))
       enddo
 
       vctr16(n1)= varp(n1,i,j) + g * (ztn(n1,ngrid) - vctr10(n1) )  &
@@ -252,6 +253,7 @@ use mem_grid
 use ref_sounding
 use mem_scratch
 use rconstants
+use therm_lib, only: virtt
                  
 implicit none
 integer :: n1,n2,n3,level          
@@ -301,16 +303,15 @@ endif
 
 
 do k = 1,nzp
-   th01dn(k,ngrid) = vctr1(k) * (1. + .61 * rt01dn(k,ngrid))
-enddo
+   th01dn(k,ngrid) = virtt(vctr1(k),rt01dn(k,ngrid))
+end do
 u01dn(1,ngrid) = u01dn(2,ngrid)
 v01dn(1,ngrid) = v01dn(2,ngrid)
 rt01dn(1,ngrid) = rt01dn(2,ngrid)
 th01dn(1,ngrid) = th01dn(2,ngrid)
 
 pi01dn(1,ngrid) = pc(1,iref,jref) + g * (vctr2(1) - zt(1))  &
-   / (.5 * (th01dn(1,ngrid)  &
-   + thp(1,iref,jref) * (1. + .61 * rtp(1,iref,jref))))
+   / (.5 * (th01dn(1,ngrid) + virtt(thp(1,iref,jref),rtp(1,iref,jref)) ))
 do k = 2,nzp
   pi01dn(k,ngrid) = pi01dn(k-1,ngrid) - g / (dzm(k-1) * .5  &
      * (th01dn(k,ngrid) + th01dn(k-1,ngrid)))

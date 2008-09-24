@@ -216,7 +216,7 @@ end subroutine update_thermal_sums_ar
 !==========================================================================================!
 real function daylength(lat,day)
 
-  use consts_coms, only: pio180
+  use consts_coms, only: pio180,twopi
 
   implicit none
   
@@ -224,7 +224,7 @@ real function daylength(lat,day)
   real :: arg
   integer :: day
   
-  arg = -tan(lat*pio180)*tan(-23.5*pio180*cos(6.283/365.0*(float(day)+9.0)))
+  arg = -tan(lat*pio180)*tan(-23.5*pio180*cos(twopi/365.0*(float(day)+9.0)))
   if( abs(arg) < 1.0 )then
      daylength = 120.0 * acos(arg)/(15.0*pio180)
   elseif(arg >= 1.0)then

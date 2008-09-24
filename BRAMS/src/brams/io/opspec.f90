@@ -15,6 +15,7 @@ subroutine opspec1
 
   use mem_grid
   use micphys
+  use therm_lib, only: level
 
   implicit none
 
@@ -262,7 +263,7 @@ subroutine opspec1
   ! that are out of bounds.  if level is equal to 4, set microphysics
   ! parameters other than icloud to zero.
 
-  if (level .le. 2) then
+  if (level <= 2) then
 
      icloud = 0
      irain = 0
@@ -272,7 +273,7 @@ subroutine opspec1
      igraup = 0
      ihail = 0
 
-  elseif (level .eq. 3) then
+  elseif (level >= 3) then
 
      if (icloud .lt. 0 .or. icloud .gt. 7) then
         print*,'fatal - icloud out of range'
@@ -302,7 +303,14 @@ subroutine opspec1
         print*,'fatal - ihail out of range'
         ifaterr = ifaterr + 1
      endif
-
+     
+     !----- Moved from mic_init to here ---------------------------------------------------!
+     if(mkcoltab.lt.0.or.mkcoltab.gt.1)then
+        print*, 'mkcoltab set to ',mkcoltab, 'which is out of bounds'
+        ifaterr = ifaterr + 1
+     endif
+     !-------------------------------------------------------------------------------------!
+     
   elseif (level .eq. 4) then
 
      ipris = 0
@@ -316,8 +324,8 @@ subroutine opspec1
   ! if level is 4, make sure that naddsc is large enough for number
   !   of bins specified in icloud.
 
-  if (level .eq. 4) then
-     if (irain .eq. 0) then
+  if (level == 4) then
+     if (irain == 0) then
         lev4bins = 2 * icloud + 1
         if (naddsc .lt. lev4bins) then
            print*, 'fatal - naddsc is not large enough for icloud'
@@ -339,8 +347,8 @@ subroutine opspec1
   ! if level is 5, make sure that naddsc is large enough for number
   !   of bins specified in icloud.
 
-  if (level .eq. 5) then
-     if (irain .eq. 0) then
+  if (level == 5) then
+     if (irain == 0) then
         lev5bins = 2 * (icloud + ipris + iaggr + igraup) + 5
         if (naddsc .lt. lev5bins) then
            print*, 'fatal - naddsc is not large enough for icloud,'
@@ -610,6 +618,7 @@ subroutine opspec3
   ![MLO - stilt check and exner function check
   use mem_mass, only : iexev, imassflx
   use shcu_vars_const, only : nnshcu
+  use therm_lib, only : level
 
 
   implicit none

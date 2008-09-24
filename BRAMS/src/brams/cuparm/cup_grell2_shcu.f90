@@ -17,12 +17,11 @@ subroutine CUPARTH_shal(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0      
        ensdim=>ensdim_sh,                          & !INTENT(IN)
        icoic=>icoic_sh                             !INTENT(IN)
 
-  use rconstants, only: rgas,cp,rm,p00,g,cpor 
+  use rconstants, only: rgas,cp,rm,p00,tcrit,g,cpor,pkdcut 
 
   use mem_scratch2_grell_sh
 
   implicit none
-  real, parameter :: tcrit=273.15
   integer mgmxp,mgmyp,mgmzp
   integer maxiens,iens,icbase
   real, intent(in) :: depth_min,cap_maxs
@@ -686,6 +685,7 @@ subroutine cup_forcing_ens_shal(aa0,aa1,xaa0,mbdt,dtime,xmb,ierr, &
         enddo
         if(p_cup(i,ktop(i)).gt.pcrit(1))kclim=1
 9       continue
+        kclim=min(max(kclim,1),mkxcrt)
         k= max(kclim-1,1)
         aclim1= acrit(kclim)*1.e3
         aclim2= acrit(k)*1.e3

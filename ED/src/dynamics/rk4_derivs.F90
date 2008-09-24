@@ -83,7 +83,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
      atm_tmp, exner, geoht, lsl)
 
   use max_dims, only : nzgmax,nzsmax
-  use consts_coms, only : alvl, cliq1000, cpi, alvi, alli1000, t00
+  use consts_coms, only : alvl, cliq1000, cpi, alvi, alli1000, t3ple,tsupercool
   use grid_coms, only: nzg,nzs
   use soil_coms, only : soil, slz, dslz, dslzi, water_stab_thresh,  &
        infiltration_method, dslzti, slcons1, slzt, min_sfcwater_mass,ss
@@ -91,6 +91,8 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
   use canopy_radiation_coms, only: lai_min
 
   use ed_state_vars,only:sitetype,patchtype,rk4patchtype
+  
+  use therm_lib, only : qtk, qwtk
 
   implicit none
 
@@ -403,15 +405,15 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
                 * .5 * (initp%soil_fracliq(nzg)+ fracliq)  !! mean liquid fraction
            !! adjust other rates accordingly
            w_flux(nzg+1) = w_flux(nzg+1) + infilt
-           qw_flux(nzg+1)= qw_flux(nzg+1)+ infilt * cliq1000 * (tempk - 193.36)
+           qw_flux(nzg+1)= qw_flux(nzg+1)+ infilt * cliq1000 * (tempk - tsupercool)
            dinitp%virtual_water = dinitp%virtual_water - infilt*1000
-           dinitp%virtual_heat  = dinitp%virtual_heat  - infilt*cliq1000 * (tempk - 193.36)
+           dinitp%virtual_heat  = dinitp%virtual_heat  - infilt*cliq1000 * (tempk - tsupercool)
         endif
      endif  !! end virtual water pool
      if(initp%nlev_sfcwater .ge. 1) then   !!process "snow" water pool 
         call qtk(initp%sfcwater_energy(1),tempk,fracliq)
         surface_water = initp%sfcwater_mass(1)*fracliq*0.001 !(m/m2)
-        !        surface_heat  = surface_water*(tempk - 193.36)*4.186e6
+        !        surface_heat  = surface_water*(tempk - tsupercool)*cliq1000
         nsoil = csite%ntext_soil(nzg,ipa)
         if(nsoil.ne.13) then
            !! calculate infiltration rate (m/s?)
@@ -421,9 +423,9 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
                 * .5 * (initp%soil_fracliq(nzg)+ fracliq)  !! mean liquid fraction
            !! adjust other rates accordingly
            w_flux(nzg+1) = w_flux(nzg+1) + infilt
-           qw_flux(nzg+1)= qw_flux(nzg+1)+ infilt * cliq1000 * (tempk - 193.36)
+           qw_flux(nzg+1)= qw_flux(nzg+1)+ infilt * cliq1000 * (tempk - tsupercool)
            dinitp%sfcwater_mass(1) = dinitp%sfcwater_mass(1) - infilt*1000
-           dinitp%sfcwater_energy(1) = dinitp%sfcwater_energy(1) - infilt * cliq1000 * (tempk - 193.36) 
+           dinitp%sfcwater_energy(1) = dinitp%sfcwater_energy(1) - infilt * cliq1000 * (tempk - tsupercool) 
            dinitp%sfcwater_depth(1) = dinitp%sfcwater_depth(1) - infilt
         endif
      endif  !! end snow water pool
@@ -458,7 +460,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
            end if
         end if
      endif
-     qw_flux(k) = w_flux(k) * cliq1000 * (initp%soil_tempk(k) - 193.36)
+     qw_flux(k) = w_flux(k) * cliq1000 * (initp%soil_tempk(k) - tsupercool)
      
      dinitp%avg_smoist_gg(k-1) = w_flux(k)*1000   ! Diagnostic
 
@@ -492,7 +494,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
 
                  dinitp%soil_water(k2) = dinitp%soil_water(k2) - wloss
 
-                 qwloss = wloss * (cliq1000 * (initp%soil_tempk(k2) - t00) + &
+                 qwloss = wloss * (cliq1000 * (initp%soil_tempk(k2) - t3ple) + &
                       alli1000)
                  dinitp%soil_energy(k2) = dinitp%soil_energy(k2) - qwloss
 
@@ -551,12 +553,13 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   use ed_state_vars,only: rk4patchtype,sitetype,patchtype
  
   use consts_coms, only : alvl, cp, cpi, day_sec, grav, alvi,   &
-       alli, cliq, cice, t00, umol_2_kgC
+       alli, cliq, cice, t3ple, umol_2_kgC, mmdry, mmdryi
   use grid_coms, only : nzg
   use soil_coms, only : soil, dewmax
   use canopy_radiation_coms, only: lai_min
   use pft_coms, only: q, qsw, water_conductance,leaf_width,rho
   use ed_misc_coms,only:diag_veg_heating
+  use therm_lib, only : rslif
 
   implicit none
 
@@ -573,7 +576,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   real, intent(in) :: geoht
   real, intent(out) :: hflxgc,wflxgc
   real, intent(out) :: wshed_tot,qwshed_tot
-  real :: dvegqtot,dqwdt,transp,qpcpg_lw,dumarg,rsat,cflxac,rslf
+  real :: dvegqtot,dqwdt,transp,qpcpg_lw,dumarg,rsat,cflxac
   real :: wflxac,hflxac
   type(rk4patchtype), target :: initp,dinitp 
   integer :: k,iter_can
@@ -709,7 +712,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         endif
 
         ! Do evaporation/dew formation on leaf surfaces
-        c3 = cpatch%lai(ico) * rhos * (rslf(prss,initp%veg_temp(ico)) &
+        c3 = cpatch%lai(ico) * rhos * (rslif(prss,initp%veg_temp(ico)) &
              - initp%can_shv)
         rbi = 1.0 / cpatch%rb(ico)
 
@@ -796,20 +799,20 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         
 
         ! dinitp%veg_temp is d(cohort temperature)/dt. 
-        ! vegetation energy = hcapveg * (initp%veg_temp - t00) +  &
-        !        initp%veg_water * (cliq * (initp%veg_temp - t00) + alli)
+        ! vegetation energy = hcapveg * (initp%veg_temp - t3ple) +  &
+        !        initp%veg_water * (cliq * (initp%veg_temp - t3ple) + alli)
         ! for temperatures >= 273.15, and 
-        ! vegetation energy = hcapveg * (initp%veg_temp - t00) +  &
-        !        initp%veg_water * cice * (initp%veg_temp - t00)
+        ! vegetation energy = hcapveg * (initp%veg_temp - t3ple) +  &
+        !        initp%veg_water * cice * (initp%veg_temp - t3ple)
         ! We are ignoring energy associated with phase changes on the leaf.
         
-        if(initp%veg_temp(ico) >= t00)then
+        if(initp%veg_temp(ico) >= t3ple)then
            dinitp%veg_temp(ico) = (dvegQtot - dinitp%veg_water(ico) *   &
-                (cliq * (initp%veg_temp(ico) - t00) + alli)) /   &
+                (cliq * (initp%veg_temp(ico) - t3ple) + alli)) /   &
                 (hcapveg + initp%veg_water(ico) * cliq)
         else
            dinitp%veg_temp(ico) = (dvegQtot - dinitp%veg_water(ico) * cice *   &
-                (initp%veg_temp(ico) - t00)) / (hcapveg + initp%veg_water(ico) * cice)
+                (initp%veg_temp(ico) - t3ple)) / (hcapveg + initp%veg_water(ico) * cice)
         endif
 
         if (diag_veg_heating)then
@@ -817,7 +820,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
            dinitp%co_lrad_h(ico) =  cpatch%rlong_v(ico)
            dinitp%co_sens_h(ico) =  -hflxvc
            dinitp%co_evap_h(ico) =  -(wflxvc + transp)*alvl
-           dinitp%co_liqr_h(ico) =  heat_intercept_rate - dinitp%veg_water(ico)*(cliq*(initp%veg_temp(ico)-t00)+alli)
+           dinitp%co_liqr_h(ico) =  heat_intercept_rate - dinitp%veg_water(ico)*(cliq*(initp%veg_temp(ico)-t3ple)+alli)
         endif
 
         !dinitp%veg_temp = dvegQtot / hcapveg
@@ -869,11 +872,11 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   dinitp%wbudget_loss2atm = - wflxac
   dinitp%ebudget_loss2atm = - hflxac
   dinitp%ebudget_latent = dinitp%ebudget_latent + (-dewgndflx + wflxgc) * alvi
-  dinitp%can_co2 = ( (cflxgc + cflxvc_tot)*0.029 + cflxac) * wcapcani
-  dinitp%co2budget_loss2atm = - cflxac / 0.029
+  dinitp%can_co2 = ( (cflxgc + cflxvc_tot)*mmdry + cflxac) * wcapcani
+  dinitp%co2budget_loss2atm = - cflxac * mmdryi
 
   dinitp%avg_gpp = gpp_tot
-  dinitp%avg_carbon_ac = cflxac /0.029
+  dinitp%avg_carbon_ac = cflxac * mmdryi
 
   dinitp%avg_sensible_vc   = hflxvc_tot                             ! Sensible heat        vegetation -> canopy air
   dinitp%avg_sensible_2cas = hflxgc+hflxac+hflxvc_tot               ! Sensible heat        everywhere -> canopy air

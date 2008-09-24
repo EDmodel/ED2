@@ -321,6 +321,7 @@ contains
     use grid_coms, only: nzg
     use soil_coms, only: soil
     use canopy_radiation_coms, only: lai_min
+    use consts_coms, only : t3ple
 
     implicit none
     integer, intent(in) :: lsl
@@ -341,13 +342,13 @@ contains
     iflag1 = 1
 
     do k = lsl, nzg
-       if(y%soil_tempk(k).lt.273.14 .and. y%soil_fracliq(k).gt.0.001)then
+       if(y%soil_tempk(k) < (t3ple-0.01) .and. y%soil_fracliq(k).gt.0.001)then
           iflag1 = 0
           if(print_diags==1)print*,'too much liquid',iflag1,  &
                y%soil_tempk(k),y%soil_fracliq(k)    
           return
        endif
-       if(y%soil_tempk(k).gt.273.16 .and. y%soil_fracliq(k).lt.0.999)then
+       if(y%soil_tempk(k) > (t3ple+0.01) .and. y%soil_fracliq(k).lt.0.999)then
           iflag1 = 0
           if(print_diags==1)print*,'too much ice',iflag1,  &
                y%soil_tempk(k),y%soil_fracliq(k)    

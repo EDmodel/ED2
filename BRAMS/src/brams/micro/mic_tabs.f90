@@ -1,850 +1,905 @@
-!############################# Change Log ##################################
-! 5.0.0
-!
-!###########################################################################
-!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved
-!  Regional Atmospheric Modeling System - RAMS
-!###########################################################################
+!====================================== Change Log ========================================!
+! 5.0.0                                                                                    !
+!                                                                                          !
+!==========================================================================================!
+!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved                       !
+!  Regional Atmospheric Modeling System - RAMS                                             !
+!==========================================================================================!
+!==========================================================================================!
 
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine build the haze nucleation table.                                      !
+!------------------------------------------------------------------------------------------!
 subroutine haznuc()
 
-  use micphys, only : &
-       nthz,          & !INTENT(IN)
-       dthz,          & !INTENT(IN)
-       nrhhz,         & !INTENT(IN)
-       drhhz,         & !INTENT(IN)
-       frachz           !INTENT(OUT)
-  use rconstants, only : pio6
-  implicit none
+   use micphys, only : &
+        nthz,          & !intent(in)
+        dthz,          & !intent(in)
+        nrhhz,         & !intent(in)
+        drhhz,         & !intent(in)
+        frachz           !intent(out)
+   use rconstants, only : pio6,onethird
+   implicit none
 
-  ! Local Variables:
-  integer :: ithz,irhhz,k
-  real :: denccn,gnuccn,dnccn,ddccn,rhhz,c1hz,c2hz,c3hz,bhz,dm,sum,dccn,y,dum,thz
-  real :: gammln
+   !----- Local Variables: ----------------------------------------------------------------!
+   integer :: ithz,irhhz,k
+   real :: denccn,gnuccn,dnccn,ddccn,rhhz,c1hz,c2hz,c3hz,bhz,dm,sum,dccn,y,dum,thz
+   real :: gammln
 
-  !  Haze nucleation table
+   denccn = 1.769
+   gnuccn = 1.
+   dnccn =   .075E-4
+   ddccn = .005e-4
+   do ithz = 1,nthz
+      thz = -60. + dthz * float(ithz - 1)
+      do irhhz = 1,nrhhz
+         rhhz = 0.82 + drhhz * float(irhhz - 1)
+         c1hz = (pio6 * denccn) ** (-onethird)
+         c2hz = -14.65 - 1.045 * thz
+         c3hz = -492.35 - 8.34 * thz - 0.0608 * thz ** 2
+         bhz = min(38., max(-38., c2hz + c3hz * (1. - rhhz)))
+         dm = c1hz * 10 ** (-bhz/6.)
 
-  denccn = 1.769
-  gnuccn = 1.
-  dnccn =   .075E-4
-  ddccn = .005e-4
-  do ithz = 1,nthz
-     thz = -60. + dthz * float(ithz - 1)
-     do irhhz = 1,nrhhz
-        rhhz = 0.82 + drhhz * float(irhhz - 1)
-        c1hz = (pio6 * denccn) ** (-.333333)
-        c2hz = -14.65 - 1.045 * thz
-        c3hz = -492.35 - 8.34 * thz - 0.0608 * thz ** 2
-        bhz = min(38., max(-38., c2hz + c3hz * (1. - rhhz)))
-        dm = c1hz * 10 ** (-bhz/6.)
+         sum = 0.
+         dccn = 0.
+         do k=1,200
+            dccn = dccn + ddccn
+            y=dccn / dnccn
+            !------------------------------------------------------------------------------!
+            !  This IF is needed to avoid underflow...                                     !
+            !------------------------------------------------------------------------------!
+            if (abs(dccn / dm) < 1.e-4) then
+               dum=0.
+            else
+               dum=min(50., (dccn / dm) ** 6)
+            end if
+            sum = sum + y ** (gnuccn-1.) * exp(-y) * (1. - exp(-dum))
+         end do
+         frachz(irhhz,ithz) = sum*ddccn/(exp(gammln(gnuccn))*dnccn)
+      end do
+   end do
 
-        sum = 0.
-        dccn = 0.
-        do k=1,200
-           dccn = dccn + ddccn
-           y=dccn / dnccn
-           ! Problem in NEC SX-6
-           ! * 271 RPWR -> underflow in R**I : R=4.0801993E-07 I=6 PROG=haznuc
-           !   ELN=41(4005a126c)
-           if (abs(dccn / dm) < 1.e-4) then
-              dum=0.
-           else
-              dum=min(50., (dccn / dm) ** 6)
-           endif
-           sum = sum + y ** (gnuccn-1.) * exp(-y) * (1. - exp(-dum))
-        enddo
-        frachz(irhhz,ithz) = sum*ddccn/(exp(gammln(gnuccn))*dnccn)
-     enddo
-  enddo
-
-  return
+   return
 end subroutine haznuc
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine produces the table for homogeneous freezing of cloud droplets. Most  !
+! internal computation was switched to double precision to avoid overflow/underflow.       !
+!------------------------------------------------------------------------------------------!
 subroutine homfrzcl(dtlt,ngr)
 
-  use micphys, only: &
-       ntc,          & !INTENT(IN)
-       dtc,          & !INTENT(IN)
-       ndnc,         & !INTENT(IN)
-       ddnc,         & !INTENT(IN)
-       fracc           !INTENT(OUT)
+   use micphys, only: &
+        ntc,          & !INTENT(IN)
+        ndnc,         & !INTENT(IN)
+        dtc8,         & !INTENT(IN)
+        ddnc8,        & !INTENT(IN)
+        fracc           !INTENT(OUT)
 
-  implicit none
+   implicit none
 
-  ! Arguments:
-  integer, intent(in) :: ngr 
-  real, intent(in)    :: dtlt
+   !----- Arguments: ----------------------------------------------------------------------!
+   integer, intent(in) :: ngr 
+   real   , intent(in) :: dtlt
+   !----- Local Variables: ----------------------------------------------------------------!
+   integer                 :: itc,k,idnc
+   real(kind=8)            :: ajlso,dnc,osum,dc,v1,tc,y,dfracc,expvar,dtlt8
+   real                    :: gammln
+   real(kind=8), parameter :: gnuc=1., ddc=0.5d-6
+   real(kind=8), parameter :: tinyexp=-38. ! A number small enough to assume exp to be zero
+   !---------------------------------------------------------------------------------------!
 
-  ! Local Variables: MLO: changing to double precision to avoid over/under flow.
-  integer                 :: itc,k,idnc
-  real(kind=8)            :: ajlso,dnc,ssum,dc,v1,tc,y,dfracc,expvar
-  real                    :: gammln
-  real(kind=8), parameter :: gnuc=1., ddc=0.5e-6
-  real(kind=8), parameter :: tinyexp=-706. ! A number small enough to assume exp to be zero
-  !  Make table for homogeneous freezing of cloud droplets
-  !  Need gnuc = gnu(1) ???
-
-  do itc = 1,ntc
-     tc = -50. + dble(dtc) * dble(itc-1)
-     y = -(606.3952+tc*(52.6611+tc*(1.7439+tc*(.0265+tc*1.536e-4))))
-     ajlso = 1.e6 * 10. ** y
-     do idnc = 1,ndnc
-        dnc = dble(ddnc) * dble(idnc)
-        ssum = 0.
-        do k = 1,2000 !MLO - What is this 2000? 
-           dc = dble(k)*ddc
-           v1 = 0.523599 * dc ** 3
-           expvar=-ajlso * v1 * dble(dtlt)
-           if (expvar > tinyexp) then
-             ssum = ssum + (dc / dnc) ** (gnuc - 1.) * dexp(-dc / dnc)  &
-                  * (1. - dexp(expvar))
-           else
-             ssum = ssum + (dc / dnc) ** (gnuc - 1.) * dexp(-dc / dnc)
-           end if
-        enddo
-        dfracc=ssum * ddc / (dexp(dble(gammln(sngl(gnuc)))) * dnc)
-        fracc(idnc,itc,ngr) = sngl(dfracc)
-     enddo
-  enddo
-  return
+   !---------------------------------------------------------------------------------------!
+   !     Make table for homogeneous freezing of cloud droplets. Need gnuc = gnu(1) ???     !
+   !---------------------------------------------------------------------------------------!
+   dtlt8 = dble(dtlt)
+   do itc = 1,ntc
+      tc = -50. + dtc8*dble(itc-1)
+      y = -(606.3952+tc*(52.6611+tc*(1.7439+tc*(.0265+tc*1.536e-4))))
+      ajlso = 1.e6 * 10. ** y
+      do idnc = 1,ndnc
+         dnc  = ddnc8 * dble(idnc)
+         osum = 0.
+         dc   = 0.
+         do k = 1,2000 !MLO - What is this 2000? 
+            dc = dc + ddc
+            v1 = 0.523599 * dc ** 3
+            expvar=-ajlso * v1 * dtlt8
+            if (expvar > tinyexp) then
+              osum = osum + (dc / dnc) ** (gnuc - 1.) * exp(-dc / dnc) * (1. - exp(expvar))
+            else
+              osum = osum + (dc / dnc) ** (gnuc - 1.) * exp(-dc / dnc)
+            end if
+         end do
+         dfracc = osum * ddc / (exp(dble(gammln(sngl(gnuc)))) * dnc)
+         fracc(idnc,itc,ngr) = sngl(dfracc)
+      end do
+   end do
+   return
 end subroutine homfrzcl
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************
 
-! As before, sedimentation is not yet designed to transfer hydrometeor mass
-! between grids in the case where a nested grid does not reach the top and/or
-! bottom of the model domain.  Thus, vertical nested grid boundaries should
-! be avoided where sedimentation occurs.
 
-subroutine mksedim_tab(m1,m2,m3,ngr,nembfall,maxkfall  &
-     ,zm,dzt,pcpfillc,pcpfillr,sfcpcp)
 
-  use micphys, only: &
-       nhcat,        & !INTENT(IN)
-       sedtime0,     & !INTENT(OUT)
-       sedtime1,     & !INTENT(OUT)
-       dispemb0,     & !INTENT(OUT)
-       cfvt,         & !INTENT(IN)
-       emb0,         & !INTENT(IN)
-       cfmas,        & !INTENT(IN)
-       pwvt,         & !INTENT(IN)
-       pwmasi,       & !INTENT(IN)
-       dispemb1,     & !INTENT(OUT)
-       emb1,         & !INTENT(IN)
-       gnu,          & !INTENT(IN)
-       pwmas           !INTENT(IN)
 
-  implicit none
 
-  ! Arguments:
-  integer, intent(in) :: m1,m2,m3,ngr,nembfall,maxkfall
-  real, dimension(m1), intent(in) :: zm,dzt
-  real, dimension(m1,maxkfall,nembfall,nhcat), intent(out) :: pcpfillc,pcpfillr
-  real, dimension(maxkfall,nembfall,nhcat), intent(out) :: sfcpcp
+!==========================================================================================!
+!==========================================================================================!
+!     As before, sedimentation is not yet designed to transfer hydrometeor mass between    !
+! grids in the case where a nested grid does not reach the top and/or bottom of the model  !
+! domain.  Thus, vertical nested grid boundaries should be avoided where sedimentation     !
+! occurs.                                                                                  !
+!------------------------------------------------------------------------------------------!
+subroutine mksedim_tab(m1,zm,dzt,pcpfillc,pcpfillr,sfcpcp)
 
-  ! Local Variables:
-  integer, parameter :: nbin=50
-  integer :: iembs,lcat,lhcat,k,kkf,ibin,kk,jbin
-  real :: dmbodn,diam0,diam1,fac1,fac3,sumc,sumr,diam,fac2,fac4  &
-       ,disp,ztopnew,zbotnew,fallin,delzsfc,dispemb,dispmax,dispmx
-  real :: gammln,gammp
-  real, dimension(nbin) :: cbin,rbin,reldisp
+   use micphys, only: &
+            nembfall  & ! intent(in)
+           ,maxkfall  & ! intent(in)
+           ,nhcat     & ! intent(in)
+           ,sedtime0  & ! intent(out)
+           ,sedtime1  & ! intent(out)
+           ,dispemb0  & ! intent(out)
+           ,dispemb0i & ! intent(out)
+           ,cfvt      & ! intent(in)
+           ,emb0      & ! intent(in)
+           ,cfmas     & ! intent(in)
+           ,cfmasi    & ! intent(in)
+           ,pwvt      & ! intent(in)
+           ,pwmasi    & ! intent(in)
+           ,dispemb1  & ! intent(out)
+           ,ch2       & ! intent(out)
+           ,emb1      & ! intent(in)
+           ,gnu       & ! intent(in)
+           ,pwmas       ! intent(in)
 
-  ! Because timestep may now be variable in time, define sedtime0 and sedtime1
-  ! here as 0.1 seconds and 3000 seconds.  The former is supposed to be
-  ! less than 0.7 of the shortest timestep on any grid (sqrt(dn0i) never exceeds
-  ! 0.7) and the latter is the longest timestep expected to ever be used (300
-  ! seconds) times a factor of 2 for the maximum inverse of rtgt times a factor
-  ! of 5 for the largest value of sqrt(dn0i).
+   use micro_coms, only : lcat_lhcat
+   implicit none
 
-  sedtime0 = .1
-  sedtime1 = 3000.
-  dispmax = 500.
+   !----- Arguments: ----------------------------------------------------------------------!
+   integer                                    , intent(in)  :: m1
+   real, dimension(m1                        ), intent(in)  :: zm,dzt
+   real, dimension(m1,maxkfall,nembfall,nhcat), intent(out) :: pcpfillc,pcpfillr
+   real, dimension(   maxkfall,nembfall,nhcat), intent(out) :: sfcpcp
+   !----- Local Constant: -----------------------------------------------------------------!
+   integer, parameter    :: nbin=50
+   !----- Local Variables: ----------------------------------------------------------------!
+   integer               :: iembs,lcat,lhcat,k,kkf,ibin,kk,jbin
+   real                  :: dmbodn,diam0,diam1,fac1,fac3,sumc,sumr,diam,fac2,fac4
+   real                  :: disp,ztopnew,zbotnew,fallin,delzsfc,dispemb,dispmax,dispmx
+   real, dimension(nbin) :: cbin,rbin,reldisp
+   !----- Functions -----------------------------------------------------------------------!
+   real, external        :: gammln,gammp
+   !---------------------------------------------------------------------------------------!
 
-  ! Loop over hydrometeor categories
+   !---------------------------------------------------------------------------------------!
+   !     Because timestep may now be variable in time, define sedtime0 and sedtime1 here   !
+   ! as 0.1 seconds and 3000 seconds.  The former is supposed to be less than 0.7 of the   !
+   ! shortest timestep on any grid (sqrt(dn0i) never exceeds 0.7) and the latter is the    !
+   ! longest timestep expected to ever be used (300 seconds) times a factor of 2 for the   !
+   ! maximum inverse of rtgt times a factor of 5 for the largest value of sqrt(dn0i).      !
+   !---------------------------------------------------------------------------------------!
+   sedtime0 = .1
+   sedtime1 = 3000.
+   dispmax  = 500.
 
-  do lhcat = 1,nhcat
-     lcat = lhcat + (3 - lhcat) * (lhcat / 8) + lhcat / 12
+   !----- Loop over hydrometeor categories ------------------------------------------------!
 
-     dispemb0(lhcat,ngr) = sedtime0 * cfvt(lhcat)  &
-          * (emb0(lcat) / cfmas(lhcat)) ** (pwvt(lhcat) * pwmasi(lhcat))
+   do lhcat = 1,nhcat
+      lcat = lcat_lhcat(lhcat)
 
-     dispemb1(lhcat,ngr) = sedtime1 * cfvt(lhcat)  &
-          * (emb1(lcat) / cfmas(lhcat)) ** (pwvt(lhcat) * pwmasi(lhcat))
+      dispemb0(lhcat) = sedtime0 * cfvt(lhcat)                                             &
+                      * (emb0(lcat) * cfmasi(lhcat)) ** (pwvt(lhcat) * pwmasi(lhcat))
+      
+      dispemb0i(lhcat) = 1. / dispemb0(lhcat)
 
-     !Bob (10/24/00):  Limit dispemb1 to a maximum of dispmax
+      dispemb1(lhcat) = sedtime1 * cfvt(lhcat)                                             &
+                      * (emb1(lcat) * cfmasi(lhcat)) ** (pwvt(lhcat) * pwmasi(lhcat))
 
-     if (dispemb1(lhcat,ngr) .gt. dispmax) dispemb1(lhcat,ngr) = dispmax
+      !----- Bob (10/24/00):  Limit dispemb1 to a maximum of dispmax ----------------------!
+      if (dispemb1(lhcat) > dispmax) dispemb1(lhcat) = dispmax
 
-     ! Loop over bins, filling them with fractional number, fractional mass,
-     ! and displacement quotient relative to emb.
+      ch2(lhcat) = real(nembfall-1) / log10(dispemb1(lhcat) * dispemb0i(lhcat))
 
-     dmbodn = (exp(gammln(gnu(lcat) + pwmas(lhcat))  &
-          - gammln(gnu(lcat)))) ** pwmasi(lhcat)
-     diam0 = 0.06 * dmbodn
-     diam1 = 1.0 * dmbodn
-     fac1 = gammp(gnu(lcat),diam0)
-     fac3 = gammp(gnu(lcat) + pwmas(lhcat),diam0)
-     sumc = 0.
-     sumr = 0.
+      !------------------------------------------------------------------------------------!
+      !    Loop over bins, filling them with fractional number, fractional mass, and dis-  !
+      ! placement quotient relative to emb.                                                !
+      !------------------------------------------------------------------------------------!
+      dmbodn = (exp(gammln(gnu(lcat) + pwmas(lhcat)) - gammln(gnu(lcat)))) ** pwmasi(lhcat)
+      diam0 = 0.06 * dmbodn
+      diam1 = 1.0 * dmbodn
+      fac1 = gammp(gnu(lcat),diam0)
+      fac3 = gammp(gnu(lcat) + pwmas(lhcat),diam0)
+      sumc = 0.
+      sumr = 0.
 
-     do jbin = 1,nbin
+      do jbin = 1,nbin
+         diam = diam0 * (diam1 / diam0) ** (real(jbin)/real(nbin))
+         fac2 = gammp(gnu(lcat),diam)
+         fac4 = gammp(gnu(lcat) + pwmas(lhcat),diam)
+         cbin(jbin) = fac2 - fac1
+         rbin(jbin) = fac4 - fac3
+         fac1 = fac2
+         fac3 = fac4
+         sumc = sumc + cbin(jbin)
+         sumr = sumr + rbin(jbin)
+         reldisp(jbin) = diam ** pwvt(lhcat)
+      end do
 
-        diam = diam0 * (diam1 / diam0) ** (float(jbin)/float(nbin))
-        fac2 = gammp(gnu(lcat),diam)
-        fac4 = gammp(gnu(lcat) + pwmas(lhcat),diam)
-        cbin(jbin) = fac2 - fac1
-        rbin(jbin) = fac4 - fac3
-        fac1 = fac2
-        fac3 = fac4
-        sumc = sumc + cbin(jbin)
-        sumr = sumr + rbin(jbin)
-        reldisp(jbin) = diam ** pwvt(lhcat)
+      do jbin = 1,nbin
+         cbin(jbin) = cbin(jbin) / sumc
+         rbin(jbin) = rbin(jbin) / sumr
+      end do
 
-     enddo
+      !----- Loop over displacement distance for size emb. --------------------------------!
 
-     do jbin = 1,nbin
-        cbin(jbin) = cbin(jbin) / sumc
-        rbin(jbin) = rbin(jbin) / sumr
-     enddo
+      do iembs = 1,nembfall
+         dispemb = dispemb0(lhcat) * (dispemb1(lhcat) * dispemb0i(lhcat))                  &
+                                  ** (real(iembs-1) / real(nembfall-1))
 
-     ! Loop over displacement distance for size emb.
+         !---------------------------------------------------------------------------------!
+         !     Zero out concentration and mass fill arrays and surface precip array before !
+         ! accumulation.                                                                   !
+         !---------------------------------------------------------------------------------!
+         do k = 1,m1
+            do kkf = 1,maxkfall
+               pcpfillc(k,kkf,iembs,lhcat) = 0.
+               pcpfillr(k,kkf,iembs,lhcat) = 0.
+            end do
+            if (k <= maxkfall) sfcpcp(k,iembs,lhcat) = 0.
+         end do
 
-     do iembs = 1,nembfall
-        dispemb = dispemb0(lhcat,ngr)  &
-             * (dispemb1(lhcat,ngr) / dispemb0(lhcat,ngr))  &
-             ** (float(iembs-1) / float(nembfall-1))
+         !----- Loop over vertical grid index. --------------------------------------------!
+         do k = 2,m1-1
+            !----- Bob (10/24/00):  Limit disp distance to (maxkfall-1) levels ------------!
+            dispmx = dispmax
+            if (k > maxkfall) then
+               dispmx = min(dispmx,zm(k-1) - zm(k-maxkfall))
+            endif
 
-        ! Zero out concentration and mass fill arrays and surface precip array
-        ! before accumulation.
+            !----- Loop over bins ---------------------------------------------------------!
 
-        do k = 1,m1
-           do kkf = 1,maxkfall
-              pcpfillc(k,kkf,iembs,lhcat) = 0.
-              pcpfillr(k,kkf,iembs,lhcat) = 0.
-           enddo
-           if (k .le. maxkfall) sfcpcp(k,iembs,lhcat) = 0.
-        enddo
+            do ibin = 1,nbin
+               disp = max(dispmx,dispemb * reldisp(ibin))
 
-        ! Loop over vertical grid index.
+               ztopnew = zm(k)   - disp
+               zbotnew = zm(k-1) - disp
 
-        do k = 2,m1-1
+               !----- Loop over grid cells that a parcel falls into. ----------------------! 
 
-           !Bob (10/24/00):  Limit disp distance to (maxkfall-1) levels
+               parcelloop: do kkf = 1,min(k-1,maxkfall)
 
-           dispmx = dispmax
-           if (k .gt. maxkfall) then
-              dispmx = min(dispmx,zm(k-1) - zm(k-maxkfall))
-           endif
+                  kk = k + 1 - kkf
+                  if (zbotnew > zm(kk)) exit parcelloop
 
-           ! Loop over bins
+                  if (ztopnew <= zm(kk-1)) then
+                     fallin = 0.
+                  else
+                     fallin = dzt(kk) * (min(zm(kk),ztopnew) - max(zm(kk-1),zbotnew))
+                  end if
 
-           do ibin = 1,nbin
-              disp = dispemb * reldisp(ibin)
-              if (disp .gt. dispmx) disp = dispmx
+                  pcpfillc(k,kkf,iembs,lhcat) = pcpfillc(k,kkf,iembs,lhcat)                &
+                                              + fallin * cbin(ibin)
+                  pcpfillr(k,kkf,iembs,lhcat) = pcpfillr(k,kkf,iembs,lhcat)                &
+                                              + fallin * rbin(ibin)
+               end do parcelloop
 
-              ztopnew = zm(k) - disp
-              zbotnew = zm(k-1) - disp
+               !----- Compute surface precipitation. --------------------------------------!
+               if (zbotnew < 0.) then
+                  delzsfc = min(0.,ztopnew) - zbotnew
+                  if (k <= maxkfall) then
+                     sfcpcp(k,iembs,lhcat) = sfcpcp(k,iembs,lhcat) + delzsfc * rbin(ibin)
+                  end if
+               end if
+            end do
+         end do
+      end do
+   end do
 
-              ! Loop over grid cells that a parcel falls into.
-
-              do kkf = 1,min(k-1,maxkfall)
-
-                 kk = k + 1 - kkf
-                 if (zbotnew .gt. zm(kk)) go to 50
-
-                 if (ztopnew .le. zm(kk-1)) then
-                    fallin = 0.
-                 else
-                    fallin = dzt(kk) *  &
-                         (min(zm(kk),ztopnew) - max(zm(kk-1),zbotnew))
-                 endif
-
-                 pcpfillc(k,kkf,iembs,lhcat) = pcpfillc(k,kkf,iembs,lhcat)  &
-                      + fallin * cbin(ibin)
-
-                 pcpfillr(k,kkf,iembs,lhcat) = pcpfillr(k,kkf,iembs,lhcat)  &
-                      + fallin * rbin(ibin)
-
-              enddo
-
-50            continue
-
-              ! Compute surface precipitation.
-
-              if (zbotnew .lt. 0.) then
-                 delzsfc = min(0.,ztopnew) - zbotnew
-                 if (k .le. maxkfall) sfcpcp(k,iembs,lhcat)  &
-                      = sfcpcp(k,iembs,lhcat) + delzsfc * rbin(ibin)
-              endif
-
-           enddo
-
-        enddo
-     enddo
-  enddo
-
-  return
+   return
 end subroutine mksedim_tab
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine tabmelt()
 
-  use micphys, only: &
-       ncat,         & !INTENT(IN)
-       nhcat,        & !INTENT(IN)
-       gnu,          & !INTENT(IN)
-       rmlttab,      & !INTENT(OUT)
-       ninc,         & !INTENT(IN)
-       enmlttab,     & !INTENT(OUT)
-       ndns,         & !INTENT(IN)
-       shedtab,      & !INTENT(OUT)
-       cfmas,        & !INTENT(IN)
-       pwmas,        & !INTENT(IN)
-       cfvt,         & !INTENT(IN)
-       pwvt,         & !INTENT(IN)
-       var_shape       !INTENT(IN)
-       
-  implicit none
+   use micphys, only: &
+           ncat       & ! intent(in)
+          ,nhcat      & ! intent(in)
+          ,gnu        & ! intent(in)
+          ,rmlttab    & ! intent(out)
+          ,ninc       & ! intent(in)
+          ,enmlttab   & ! intent(out)
+          ,ndns       & ! intent(in)
+          ,shedtab    & ! intent(out)
+          ,cfmas      & ! intent(in)
+          ,pwmas      & ! intent(in)
+          ,cfvt       & ! intent(in)
+          ,pwvt       & ! intent(in)
+          ,shapefac   ! ! intent(in)
+        
+   use micro_coms, only : &
+           lcat_lhcat     & ! intent(in)
+          ,dmean          & ! intent(in)
+          ,vk             ! ! intent(in)
 
-  ! Local Variables:
-  integer, parameter :: nbins=500
-  integer :: lhcat,lcat,ndns1,ibin,inc,iter,idns
-  real :: dn,gammaa,totfmg,totmass,vtx,fre,totqm,qmgoal,qmnow,totmdqdt,deltat  &
-       ,pliqmass,picemass,critmass,vk
+   implicit none
 
-  real, dimension(nbins) :: db,fmg,pmass,binmass,dqdt,q
-  real, dimension(ncat) :: dmean
-  real :: gammln
+   !----- Local Constants -----------------------------------------------------------------!
+   integer, parameter     :: nbins=500
+   !----- Local Variables -----------------------------------------------------------------!
+   integer                :: lhcat,lcat,ndns1,ibin,inc,iter,idns
+   real                   :: dn,gammaa,totfmg,totmass,vtx,fre,totqm,qmgoal,qmnow,totmdqdt
+   real                   :: deltat,pliqmass,picemass,critmass
+   real, dimension(nbins) :: db,fmg,pmass,binmass,dqdt,q
+   !----- Functions -----------------------------------------------------------------------!
+   real, external         :: gammln
+   !---------------------------------------------------------------------------------------!
 
-  data dmean/20.e-6,500.e-6,30.e-6,500.e-6,500.e-6,500.e-6,8000.e-6/
-  data vk/0.2123e-04/
+   do lhcat = 1,nhcat
+      lcat = lcat_lhcat(lhcat)
 
-  do lhcat = 1,nhcat
-     lcat = lhcat + (3 - lhcat) * (lhcat / 8) + lhcat / 12
+      dn     = dmean(lcat) / gnu(lcat)
+      gammaa = exp(gammln(gnu(lcat)))
 
-     dn = dmean(lcat) / gnu(lcat)
-     gammaa = exp(gammln(gnu(lcat)))
+      rmlttab(1)           = 0.0
+      rmlttab(ninc)        = 1.0
+      enmlttab(1,lhcat)    = 0.0
+      enmlttab(ninc,lhcat) = 1.0
 
-     rmlttab(1) = 0.0
-     rmlttab(ninc) = 1.0
-     enmlttab(1,lhcat) = 0.0
-     enmlttab(ninc,lhcat) = 1.0
+      ndns1 = 1
+      if (lcat == 7) ndns1 = ndns
 
-     ndns1 = 1
-     if (lcat .eq. 7) ndns1 = ndns
+      do idns = 1,ndns1
+         shedtab(1,idns) = 0.0
+         shedtab(ninc,idns) = 0.0
 
-     do idns = 1,ndns1
-        shedtab(1,idns) = 0.0
-        shedtab(ninc,idns) = 0.0
+         if (ndns1 > 1) dn = 1.e-3 * real(idns) / gnu(lcat)
 
-        if (ndns1 .gt. 1) dn = 1.e-3 * float(idns) / gnu(lcat)
+         totfmg = 0.
+         totmass = 0.
+         do ibin = 1,nbins
+            db(ibin)      = 0.02 * dn * (real(ibin) - 0.5)
+            fmg(ibin)     = (db(ibin)/dn) ** (gnu(lcat)-1.) / (dn*gammaa) *                &
+                            exp(-db(ibin)/dn)
+            totfmg        = totfmg + fmg(ibin)
+            q(ibin)       = 0.
+            pmass(ibin)   = cfmas(lhcat) * db(ibin) ** pwmas(lhcat)
+            binmass(ibin) = pmass(ibin) * fmg(ibin)
+            totmass       = totmass + binmass(ibin)
+            vtx           = cfvt(lhcat) * db(ibin) ** pwvt(lhcat)
+            fre           = (1.0 + 0.229 * sqrt(vtx*db(ibin)/vk)) * shapefac(lhcat)
+            dqdt(ibin)    = db(ibin) ** (1. - pwmas(lhcat)) * fre
+         end do
+         totqm = totmass * 80.
 
-        totfmg = 0.
-        totmass = 0.
-        do ibin = 1,nbins
-           db(ibin) = 0.02 * dn * (float(ibin) - 0.5)
-           fmg(ibin) = (db(ibin) / dn) ** (gnu(lcat) - 1.)  &
-                / (dn * gammaa) * exp(-db(ibin) / dn)
-           totfmg = totfmg + fmg(ibin)
-           q(ibin) = 0.
-           pmass(ibin) = cfmas(lhcat) * db(ibin) ** pwmas(lhcat)
-           binmass(ibin) = pmass(ibin) * fmg(ibin)
-           totmass = totmass + binmass(ibin)
-           vtx = cfvt(lhcat) * db(ibin) ** pwvt(lhcat)
-           fre = (1.0 + 0.229 * sqrt(vtx * db(ibin) / vk))  &
-                * var_shape(lhcat)
-           dqdt(ibin) = db(ibin) ** (1. - pwmas(lhcat)) * fre
-        enddo
-        totqm = totmass * 80.
+         do inc = 2,ninc-1
+            qmgoal = totqm * real(inc-1) / real(ninc-1)
+            do iter = 1,2
+               qmnow = 0.
+               totmdqdt = 0.
+               do ibin = 1,nbins
+                  if(q(ibin) < 79.9999)then
+                     totmdqdt = totmdqdt + binmass(ibin) * dqdt(ibin)
+                  endif
+                  qmnow = qmnow + q(ibin) * binmass(ibin)
+               end do
+               deltat = max(0.,(qmgoal - qmnow) / totmdqdt)
+               do ibin = 1,nbins
+                  q(ibin) = min(80.,q(ibin) + dqdt(ibin) * deltat)
+               end do
+            end do
 
-        do inc = 2,ninc-1
-           qmgoal = totqm * float(inc-1) / float(ninc-1)
+            !  For the current inc value (representing total liquid fraction), compute
+            !  melted mixing ratio (rmlttab) and number (enmlttab) from totally-melted
+            !  bins and compute shedded mixing ratio (shedtab) from partially-melted bins.
 
-           do iter = 1,2
-              qmnow = 0.
-              totmdqdt = 0.
-              do ibin = 1,nbins
-                 if(q(ibin) .lt. 79.9999)then
-                    totmdqdt = totmdqdt + binmass(ibin) * dqdt(ibin)
-                 endif
-                 qmnow = qmnow + q(ibin) * binmass(ibin)
-              enddo
-              deltat = max(0.,(qmgoal - qmnow) / totmdqdt)
-              do ibin = 1,nbins
-                 q(ibin) = min(80.,q(ibin) + dqdt(ibin) * deltat)
-              enddo
-           enddo
+            if(idns == 7)then
+               rmlttab(inc) = 0.0
+               do ibin = 1,nbins
+                  if(q(ibin) > 79.9)then
+                     rmlttab(inc) = rmlttab(inc) + binmass(ibin)
+                  end if
+               end do
+               rmlttab(inc) = rmlttab(inc) / totmass
+            end if
 
-           !  For the current inc value (representing total liquid fraction), compute
-           !  melted mixing ratio (rmlttab) and number (enmlttab) from totally-melted
-           !  bins and compute shedded mixing ratio (shedtab) from partially-melted bins.
+            if(idns == 7 .or. ndns1 == 1)then
+               enmlttab(inc,lhcat) = 0.0
+               do ibin = 1,nbins
+                  if(q(ibin) .gt. 79.9)then
+                     enmlttab(inc,lhcat) = enmlttab(inc,lhcat)  &
+                          + fmg(ibin)
+                  end if
+               end do
+               enmlttab(inc,lhcat) = enmlttab(inc,lhcat) / totfmg
+            end if
 
-           if(idns .eq. 7)then
-              rmlttab(inc) = 0.0
-              do ibin = 1,nbins
-                 if(q(ibin) .gt. 79.9)then
-                    rmlttab(inc) = rmlttab(inc) + binmass(ibin)
-                 endif
-              enddo
-              rmlttab(inc) = rmlttab(inc) / totmass
-           endif
+            if(lcat == 7)then
+               shedtab(inc,idns) = 0.0
+               !                  do ibin = kbin,nbins
+               do ibin = 1,nbins
+                  if(q(ibin) <= 79.9)then
+                     pliqmass = pmass(ibin) * q(ibin) / 80.
+                     picemass = pmass(ibin) - pliqmass
+                     critmass = .268e-3 + .1389 * picemass
+                     shedtab(inc,idns) = shedtab(inc,idns)  &
+                          + max(0.0, pliqmass - critmass) * fmg(ibin)
+                  end if
+               end do
+               shedtab(inc,idns) = shedtab(inc,idns) / totmass
+            endif
 
-           if(idns .eq. 7 .or. ndns1 .eq. 1)then
-              enmlttab(inc,lhcat) = 0.0
-              do ibin = 1,nbins
-                 if(q(ibin) .gt. 79.9)then
-                    enmlttab(inc,lhcat) = enmlttab(inc,lhcat)  &
-                         + fmg(ibin)
-                 endif
-              enddo
-              enmlttab(inc,lhcat) = enmlttab(inc,lhcat) / totfmg
-           endif
-
-           if(lcat .eq. 7)then
-              shedtab(inc,idns) = 0.0
-              !                  do ibin = kbin,nbins
-              do ibin = 1,nbins
-                 if(q(ibin) .le. 79.9)then
-                    pliqmass = pmass(ibin) * q(ibin) / 80.
-                    picemass = pmass(ibin) - pliqmass
-                    critmass = .268e-3 + .1389 * picemass
-                    shedtab(inc,idns) = shedtab(inc,idns)  &
-                         + max(0.0, pliqmass - critmass) * fmg(ibin)
-                 endif
-              enddo
-              shedtab(inc,idns) = shedtab(inc,idns) / totmass
-           endif
-
-        enddo
-     enddo
-  enddo
-  return
+         enddo
+      enddo
+   enddo
+   return
 end subroutine tabmelt
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine constructs some useful collection tables.                             !
+!------------------------------------------------------------------------------------------!
 subroutine mkcoltb
 
-  use micphys, only: &
-       nhcat,        & !INTENT(IN)
-       gnu,          & !INTENT(IN)
-       pwmas,        & !INTENT(IN)
-       emb0,         & !INTENT(IN)
-       cfmas,        & !INTENT(IN)
-       emb1,         & !INTENT(IN)
-       ipairc,       & !INTENT(IN)
-       ipairr,       & !INTENT(IN)
-       pwvt,         & !INTENT(IN)
-       nembc,        & !INTENT(IN)
-       cfvt,         & !INTENT(IN)
-       coltabc,      & !INTENT(OUT)
-       coltabr         !INTENT(OUT)
-       
-  implicit none
+   use micphys, only: &
+           nhcat      & ! intent(in)
+          ,gnu        & ! intent(in)
+          ,pwmas      & ! intent(in)
+          ,emb0       & ! intent(in)
+          ,cfmas      & ! intent(in)
+          ,emb1       & ! intent(in)
+          ,ipairc     & ! intent(in)
+          ,ipairr     & ! intent(in)
+          ,pwvt       & ! intent(in)
+          ,nembc      & ! intent(in)
+          ,cfvt       & ! intent(in)
+          ,coltabc    & ! intent(out)
+          ,coltabr    ! ! intent(out)
+   use micro_coms, only : lcat_lhcat
+   implicit none
 
-  ! Local Variables:
-  integer, parameter :: ndx=20
-  integer :: ihx,ix,ihy,iy,iemby,iembx,idx
-  real :: gxm,dnminx,dnmaxx,dxlo,dxhi,gyn,gyn1,gyn2,gynp,gynp1,gynp2,gym  &
-       ,dnminy,dnmaxy,dny,vny,dnx,ans
-  real :: gammln,xj
-  real, dimension(ndx) :: dx,fx,gx
+   !----- Local Constant: -----------------------------------------------------------------!
+   integer, parameter :: ndx=20
+   !----- Local Variables: ----------------------------------------------------------------!
+   integer              :: ihx,ix,ihy,iy,iemby,iembx,idx
+   real                 :: gxm,dnminx,dnmaxx,dxlo,dxhi,gyn,gyn1,gyn2,gynp,gynp1,gynp2,gym
+   real                 :: dnminy,dnmaxy,dny,vny,dnx,ans
+   real, dimension(ndx) :: dx,fx,gx
+   !----- Function ------------------------------------------------------------------------!
+   real, external       :: gammln,xj
+   !---------------------------------------------------------------------------------------!
 
+   do ihx = 1,nhcat
+      ix = lcat_lhcat(ihx)
 
-  do ihx = 1,nhcat
-     ix = ihx + (3 - ihx) * (ihx / 8) + ihx / 12
+      gxm    = exp(gammln(gnu(ix)) - gammln(gnu(ix) + pwmas(ihx)))
+      dnminx = ((emb0(ix) / cfmas(ihx)) * gxm) ** (1. / pwmas(ihx))
+      dnmaxx = ((emb1(ix) / cfmas(ihx)) * gxm) ** (1. / pwmas(ihx))
+      dxlo   = .01 * dnminx
+      dxhi   = 10. * dnmaxx
 
-     gxm = exp(gammln(gnu(ix)) - gammln(gnu(ix) + pwmas(ihx)))
-     dnminx = ((emb0(ix) / cfmas(ihx)) * gxm) ** (1. / pwmas(ihx))
-     dnmaxx = ((emb1(ix) / cfmas(ihx)) * gxm) ** (1. / pwmas(ihx))
-     dxlo = .01 * dnminx
-     dxhi = 10. * dnmaxx
+      do ihy = 1,nhcat
 
-     do ihy = 1,nhcat
+         iy = lcat_lhcat(ihy)
 
-        iy = ihy + (3 - ihy) * (ihy / 8) + ihy / 12
+         if (ipairc(ihx,ihy) > 0 .or. ipairr(ihx,ihy) > 0) then
+            gyn = exp(gammln(gnu(iy)))
+            gyn1 = exp(gammln(gnu(iy) + 1.)) / gyn
+            gyn2 = exp(gammln(gnu(iy) + 2.)) / gyn
+            gynp = exp(gammln(gnu(iy) + pwvt(ihy))) / gyn
+            gynp1 = exp(gammln(gnu(iy) + pwvt(ihy) + 1.)) / gyn
+            gynp2 = exp(gammln(gnu(iy) + pwvt(ihy) + 2.)) / gyn
 
-        if (ipairc(ihx,ihy) .gt. 0 .or. ipairr(ihx,ihy) .gt. 0) then
-           gyn = exp(gammln(gnu(iy)))
-           gyn1 = exp(gammln(gnu(iy) + 1.)) / gyn
-           gyn2 = exp(gammln(gnu(iy) + 2.)) / gyn
-           gynp = exp(gammln(gnu(iy) + pwvt(ihy))) / gyn
-           gynp1 = exp(gammln(gnu(iy) + pwvt(ihy) + 1.)) / gyn
-           gynp2 = exp(gammln(gnu(iy) + pwvt(ihy) + 2.)) / gyn
+            gym = exp(gammln(gnu(iy)) - gammln(gnu(iy) + pwmas(ihy)))
+            dnminy = ((emb0(iy) / cfmas(ihy)) * gym) ** (1. /pwmas(ihy))
+            dnmaxy = ((emb1(iy) / cfmas(ihy)) * gym) ** (1. /pwmas(ihy))
 
-           gym = exp(gammln(gnu(iy)) - gammln(gnu(iy) + pwmas(ihy)))
-           dnminy = ((emb0(iy) / cfmas(ihy)) * gym) ** (1. /pwmas(ihy))
-           dnmaxy = ((emb1(iy) / cfmas(ihy)) * gym) ** (1. /pwmas(ihy))
+            do iemby = 1,nembc
+               dny = dnminy * (dnmaxy / dnminy) ** (real(iemby-1)/real(nembc-1))
+               vny = cfvt(ihy) * dny ** pwvt(ihy)
+               do iembx = 1,nembc
 
-           do iemby = 1,nembc
-              dny = dnminy * (dnmaxy / dnminy) ** (float(iemby-1)  &
-                   / float(nembc-1))
-              vny = cfvt(ihy) * dny ** pwvt(ihy)
-              do iembx = 1,nembc
+                  dnx = dnminx * (dnmaxx / dnminx) ** (real(iembx-1)/ real(nembc-1))
+                  do idx = 1,ndx
+                     dx(idx) = dxlo * (dxhi / dxlo)** (real(idx-1) / real(ndx-1))
+                     fx(idx) = xj(dx(idx),cfvt(ihx),pwvt(ihx),cfvt(ihy),pwvt(ihy),vny,dnx  &
+                                 ,dny,gnu(ix),gnu(iy),gyn1,gyn2,gynp,gynp1,gynp2)
+                     gx(idx) = fx(idx) * cfmas(ihx)* dx(idx) ** pwmas(ihx)
 
-                 dnx = dnminx * (dnmaxx / dnminx) ** (float(iembx-1)  &
-                      / float(nembc-1))
-                 do idx = 1,ndx
-                    dx(idx) = dxlo * (dxhi / dxlo)  &
-                         ** (float(idx-1) / float(ndx-1))
-                    fx(idx) = xj(dx(idx),cfvt(ihx),pwvt(ihx),cfvt(ihy)  &
-                         ,pwvt(ihy),vny,dnx,dny,gnu(ix),gnu(iy)  &
-                         ,gyn1,gyn2,gynp,gynp1,gynp2)
-                    gx(idx) = fx(idx) * cfmas(ihx)  &
-                         * dx(idx) ** pwmas(ihx)
-
-                 enddo
-                 if (ipairc(ihx,ihy) .gt. 0) then
-                    call avint(dx,fx,ndx,dxlo,dxhi,ans)
-                    !nonlog10                     coltabc(iembx,iemby,ipairc(ihx,ihy))=max(0.,ans)
-                    coltabc(iembx,iemby,ipairc(ihx,ihy))=  &
-                         -log10(max(1.e-30,ans))
-                 endif
-                 if (ipairr(ihx,ihy) .gt. 0) then
-                    call avint(dx,gx,ndx,dxlo,dxhi,ans)
-                    !nonlog10                     coltabr(iembx,iemby,ipairr(ihx,ihy))=max(0.,ans)
-                    coltabr(iembx,iemby,ipairr(ihx,ihy))=  &
-                         -log10(max(1.e-30,ans))
-                 endif
-              enddo
-           enddo
-        endif
-     enddo
-  enddo
-  return
+                  end do
+                  if (ipairc(ihx,ihy) > 0) then
+                     call avint(dx,fx,ndx,dxlo,dxhi,ans)
+                     coltabc(iembx,iemby,ipairc(ihx,ihy))= -log10(max(1.e-30,ans))
+                  end if
+                  if (ipairr(ihx,ihy) .gt. 0) then
+                     call avint(dx,gx,ndx,dxlo,dxhi,ans)
+                     coltabr(iembx,iemby,ipairr(ihx,ihy))= -log10(max(1.e-30,ans))
+                  end if
+               end do
+            end do
+         end if
+      end do
+   end do
+   return
 end subroutine mkcoltb
 
-!******************************************************************************
-
-real function xj(dx,cvx,pvx,cvy,pvy,vny,dnx,dny,xnu,ynu  &
-     ,gyn1,gyn2,gynp,gynp1,gynp2)
-
-  implicit none
-
-  ! Arguments:
-  real, intent(in) :: dx,cvx,pvx,cvy,pvy,vny,dnx,dny,xnu,ynu,gyn1,gyn2,gynp,gynp1,gynp2
-
-  ! Local Variables:
-  real :: dnxi,rdx,vx,dxy,ynup
-  real :: gammln,gammp,gammq
 
 
-  dnxi = 1. / dnx
-  rdx = dx * dnxi
-  vx = cvx * dx ** pvx
-  dxy = (vx / cvy) ** (1. / pvy) / dny
-  ynup = ynu + pvy
 
-  if (rdx .lt. 38.) then
-     xj=exp(-rdx-gammln(xnu)-gammln(ynu))*rdx**(xnu-1.)*dnxi*(  &
-          vx*(dx*dx*(gammp(ynu,dxy)-gammq(ynu,dxy))  &
-          +2.*dx*dny*gyn1*(gammp(ynu+1.,dxy)-gammq(ynu+1.,dxy))  &
-          +dny*dny*gyn2*(gammp(ynu+2.,dxy)-gammq(ynu+2.,dxy)))  &
-          -vny*(dx*dx*gynp*(gammp(ynup,dxy)-gammq(ynup,dxy))  &
-          +2.*dx*dny*gynp1*(gammp(ynup+1.,dxy)-gammq(ynup+1.,dxy))  &
-          +dny*dny*gynp2*(gammp(ynup+2.,dxy)-gammq(ynup+2.,dxy))))
-  else
-     xj = 0.
-  endif
-  return
+
+
+!==========================================================================================!
+!==========================================================================================!
+real function xj(dx,cvx,pvx,cvy,pvy,vny,dnx,dny,xnu,ynu,gyn1,gyn2,gynp,gynp1,gynp2)
+
+   implicit none
+
+   !----- Arguments: ----------------------------------------------------------------------!
+   real, intent(in) :: dx,cvx,pvx,cvy,pvy,vny,dnx,dny,xnu,ynu,gyn1,gyn2,gynp,gynp1,gynp2
+   !----- Local Variables: ----------------------------------------------------------------!
+   real :: dnxi,rdx,vx,dxy,ynup
+   real :: gammln,gammp,gammq
+   !---------------------------------------------------------------------------------------!
+
+
+   dnxi = 1. / dnx
+   rdx  = dx * dnxi
+   vx   = cvx * dx ** pvx
+   dxy  = (vx / cvy) ** (1. / pvy) / dny
+   ynup = ynu + pvy
+
+   if (rdx < 38.) then
+      xj = exp(-rdx-gammln(xnu)-gammln(ynu)) * rdx**(xnu-1.) * dnxi                        &
+         * (vx * ( dx*dx*(gammp(ynu,dxy)-gammq(ynu,dxy))                                   &
+                 + 2.*dx*dny*gyn1*(gammp(ynu+1.,dxy)-gammq(ynu+1.,dxy))                    &
+                 + dny*dny*gyn2*(gammp(ynu+2.,dxy)-gammq(ynu+2.,dxy)) )                    &
+               - vny * (dx*dx*gynp*(gammp(ynup,dxy)-gammq(ynup,dxy))                       &
+                       + 2.*dx*dny*gynp1*(gammp(ynup+1.,dxy)-gammq(ynup+1.,dxy))           &
+                       + dny*dny*gynp2*(gammp(ynup+2.,dxy)-gammq(ynup+2.,dxy))  ) )
+   else
+      xj = 0.
+   end if
+   return
 end function xj
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine creates the (auto collection?) table. It works in CGS units...        !
+!------------------------------------------------------------------------------------------!
 subroutine make_autotab()
 
-  use micphys, only: &
-       d1min,        & ! INTENT(OUT)
-       d1max,        & ! INTENT(OUT)
-       d1ecc,        & ! INTENT(OUT)
-       nd1cc,        & ! INTENT(IN)
-       d1ecr,        & ! INTENT(OUT)
-       nd1cr,        & ! INTENT(IN)
-       r2min,        & ! INTENT(OUT)
-       r2max,        & ! INTENT(OUT)
-       r2ecr,        & ! INTENT(OUT)
-       nr2cr,        & ! INTENT(IN)
-       r2err,        & ! INTENT(OUT)
-       nr2rr,        & ! INTENT(IN)
-       d2min,        & ! INTENT(OUT)
-       d2max,        & ! INTENT(OUT)
-       gnu,          & ! INTENT(IN)
-       r1tabcc,      & ! INTENT(OUT)
-       c1tabcc,      & ! INTENT(OUT)
-       c2tabcc,      & ! INTENT(OUT)
-       nd2cr,        & ! INTENT(IN)
-       r1tabcr,      & ! INTENT(OUT)
-       c1tabcr,      & ! INTENT(OUT)
-       nd2rr,        & ! INTENT(IN)
-       c2tabrr         ! INTENT(OUT)
+   use micphys, only: &
+           nd1cc      & ! intent(in)
+          ,nd1cr      & ! intent(in)
+          ,nr2cr      & ! intent(in)
+          ,nr2rr      & ! intent(in)
+          ,gnu        & ! intent(in)
+          ,nd2cr      & ! intent(in)
+          ,nd2rr      & ! intent(in)
+          ,d1min      & ! intent(out)
+          ,d1max      & ! intent(out)
+          ,d1ecc      & ! intent(out)
+          ,d1ecr      & ! intent(out)
+          ,r2min      & ! intent(out)
+          ,r2max      & ! intent(out)
+          ,r2ecr      & ! intent(out)
+          ,r2err      & ! intent(out)
+          ,d2min      & ! intent(out)
+          ,d2max      & ! intent(out)
+          ,r1tabcc    & ! intent(out)
+          ,c1tabcc    & ! intent(out)
+          ,c2tabcc    & ! intent(out)
+          ,r1tabcr    & ! intent(out)
+          ,c1tabcr    & ! intent(out)
+          ,c2tabrr      ! intent(out)
 
+   implicit none
 
-  implicit none
+   !----- Local constants -----------------------------------------------------------------!
+   integer, parameter :: ibins=36
+   integer, parameter :: ithresh=15
+   !----- Local Variables -----------------------------------------------------------------!
+   integer                        :: i,k,id1cc,id1cr,ir2cr,id2cr,ir2rr,id2rr
+   real                           :: r2,en1,en2,en1i,en1i2,d1,r1,d2minx,d2ecr,d2
+   real                           :: sum1,sum10,sun10,sun1,sun20,sum20,sun2,sum2,d2err
+   real, dimension(ibins+1)       :: x,diam
+   real, dimension(ibins)         :: ank0,amk0,ank,amk,ank1,amk1,ank2,amk2
+   real, dimension(ibins,ibins,3) :: akbarx
+   real, dimension(ibins,ibins)   :: akbar
+   !---------------------------------------------------------------------------------------!
 
-  ! Local Variables:
-  integer, parameter :: ibins=36,ithresh=15
-  integer :: i,k,id1cc,id1cr,ir2cr,id2cr,ir2rr,id2rr
-  real :: r2,en1,en2,en1i,en1i2,d1,r1,d2minx,d2ecr,d2,sum1,sum10,sun10,sun1  &
-       ,sun20,sum20,sun2,sum2,d2err
-  real, dimension(ibins+1) :: x,diam
-  real, dimension(ibins) :: ank0,amk0,ank,amk,ank1,amk1,ank2,amk2
-  real, dimension(ibins,ibins,3) :: akbarx
-  real, dimension(ibins,ibins) :: akbar
+   !---------------------------------------------------------------------------------------!
+   ! Read in mass grid x(k+1)=2*x(k), diameters (diam) and collection kernel kbar          !
+   ! GNF: kernels for ice with cloud?                                                      !
+   !---------------------------------------------------------------------------------------!
+   call micro_data(x,diam,akbar,ibins)
 
+   call azero (ibins*ibins*3,akbarx)
+   do i=1,ibins
+      do k=1,ibins
+         if(i > ithresh .and. k > ithresh) then
+            akbarx(i,k,3) = akbar(i,k)
+         elseif(i <= ithresh .and. k <= ithresh) then
+            akbarx(i,k,1) = akbar(i,k)
+         else
+            akbarx(i,k,2) = akbar(i,k)
+         end if
+      end do
+   end do
 
-  ! This subroutine works in cgs units.
+   !---------------------------------------------------------------------------------------!
+   !     d1min and d1max are equivalent to dmb0 and dmb1, but may have different values.   !
+   !---------------------------------------------------------------------------------------!
+   d1min = 4.e-4
+   d1max = 50.e-4
+   d1ecc = log10 (d1max / d1min) / float(nd1cc-1)
+   d1ecr = log10 (d1max / d1min) / float(nd1cr-1)
 
-  ! read in mass grid x(k+1)=2*x(k), diameters (diam) and collection kernel kbar
+   r2min = .01e-6
+   r2max = 20.e-6
+   r2ecr = log10 (r2max / r2min) / float(nr2cr-1)
+   r2err = log10 (r2max / r2min) / float(nr2rr-1)
 
-  ! GNF: kernels for ice with cloud?
+   d2min = 1.e-2
+   d2max = 1.
 
-  !     open(53,file='kbarn',status='old')
-  !      open(53,file='kbarf',status='old')
-  call micro_data(x,diam,akbar,ibins)
-  !      close(53)
+   !---------------------------------------------------------------------------------------!
+   ! Start 1 cc loop for dm1, dn1, and dn2.                                                !
+   !---------------------------------------------------------------------------------------!
+   r2 = .01e-06
+   en1 = 100.
+   en2 = 1.e-6
+   en1i = 1. / en1
+   en1i2 = en1i ** 2
 
-  call azero (ibins*ibins*3,akbarx)
-  do i=1,ibins
-     do k=1,ibins
-        if(i.gt.ithresh.and.k.gt.ithresh) then
-           akbarx(i,k,3) = akbar(i,k)
-        elseif(i.le.ithresh.and.k.le.ithresh) then
-           akbarx(i,k,1) = akbar(i,k)
-        else
-           akbarx(i,k,2) = akbar(i,k)
-        endif
-     enddo
-  enddo
+   do id1cc = 1,nd1cc
 
-  ! d1min and d1max are equivalent to dmb0 and dmb1, but may have different
-  ! values.
+      d1 = d1min + (d1max - d1min) * float(id1cc-1) / float(nd1cc-1)
+      r1 = en1 * .5236 * d1 ** 3
 
-  d1min = 4.e-4
-  d1max = 50.e-4
-  d1ecc = log10 (d1max / d1min) / float(nd1cc-1)
-  d1ecr = log10 (d1max / d1min) / float(nd1cr-1)
+      call initg(r1,r2,en1,en2,gnu(1),gnu(2),diam,x,amk0,ank0,ank1,amk1,ank2,amk2,ibins    &
+                ,ithresh)
+      call sumn(ank0,amk0,1,ithresh,ibins,sun10,sum10)
+      call sumn(ank0,amk0,ithresh+1,ibins,ibins,sun20,sum20)
+      call sxy(x,amk0,ank0,amk,ank,akbarx(1:ibins,1:ibins,1))
+      call sumn(ank,amk,1,ithresh,ibins,sun1,sum1)
+      call sumn(ank,amk,ithresh+1,ibins,ibins,sun2,sum2)
 
-  r2min = .01e-6
-  r2max = 20.e-6
-  r2ecr = log10 (r2max / r2min) / float(nr2cr-1)
-  r2err = log10 (r2max / r2min) / float(nr2rr-1)
+      r1tabcc(id1cc) = max(0.,(sum10-sum1) * en1i2)
+      c1tabcc(id1cc) = max(0.,(sun10-sun1) * en1i2)
+      c2tabcc(id1cc) = max(0.,(sun2-sun20) * en1i2)
 
-  d2min = 1.e-2
-  d2max = 1.
+   end do
 
-  ! Start 1 cc loop for dm1, dn1, and dn2.
+   !---------------------------------------------------------------------------------------!
+   ! Start 3 cr loops for dm1 and dn1.                                                     !
+   !---------------------------------------------------------------------------------------!
+   do id1cr = 1,nd1cr
+      d1 = d1min * 10. ** (d1ecr * float(id1cr-1))
+      r1 = en1 * .5236 * d1 ** 3
 
-  r2 = .01e-06
-  en1 = 100.
-  en2 = 1.e-6
-  en1i = 1. / en1
-  en1i2 = en1i ** 2
+      do ir2cr = 1,nr2cr
+         r2 = r2min * 10. ** (r2ecr * float(ir2cr-1))
+         d2minx = max(d2min,(r2 / (.1 * .5236)) ** .333333)
+         d2ecr = alog10(d2max / d2minx) / float(nd2cr-1)
 
-  do id1cc = 1,nd1cc
+         do id2cr = 1,nd2cr
+            d2 = d2minx * 10. ** (d2ecr * float(id2cr-1))
+            en2 = r2 / (.5236 * d2 ** 3)
 
-     d1 = d1min + (d1max - d1min) * float(id1cc-1) / float(nd1cc-1)
-     r1 = en1 * .5236 * d1 ** 3
+            call initg(r1,r2,en1,en2,gnu(1),gnu(2),diam,x,amk0,ank0,ank1,amk1,ank2,amk2    &
+                      ,ibins,ithresh)
+            call sumn(ank0,amk0,1,ithresh,ibins,sun10,sum10)
+            call sxy(x,amk0,ank0,amk,ank,akbarx(1,1,2))
+            call sumn(ank,amk,1,ithresh,ibins,sun1,sum1)
 
-     call initg(r1,r2,en1,en2,gnu(1),gnu(2),diam,x,amk0,ank0  &
-          ,ank1,amk1,ank2,amk2,ibins,ithresh)
-     call sumn(ank0,amk0,1,ithresh,ibins,sun10,sum10)
-     call sumn(ank0,amk0,ithresh+1,ibins,ibins,sun20,sum20)
-     call sxy(x,amk0,ank0,amk,ank,akbarx(1:ibins,1:ibins,1))
-     call sumn(ank,amk,1,ithresh,ibins,sun1,sum1)
-     call sumn(ank,amk,ithresh+1,ibins,ibins,sun2,sum2)
+            r1tabcr(id1cr,ir2cr,id2cr) = alog10(max(1.e-20,(sum10-sum1) * en1i))
+            c1tabcr(id1cr,ir2cr,id2cr) = alog10(max(1.e-20,(sun10-sun1) * en1i))
 
-     r1tabcc(id1cc) = max(0.,(sum10-sum1) * en1i2)
-     c1tabcc(id1cc) = max(0.,(sun10-sun1) * en1i2)
-     c2tabcc(id1cc) = max(0.,(sun2-sun20) * en1i2)
+         end do
+      end do
+   end do
 
-  enddo
+   !---------------------------------------------------------------------------------------!
+   ! Start 2 rr loops for dn2.                                                             !
+   !---------------------------------------------------------------------------------------!
+   d1 = 4.e-4
+   r1 = en1 * .5236 * d1 ** 3
 
-  ! Start 3 cr loops for dm1 and dn1.
+   do ir2rr = 1,nr2rr
+      r2 = r2min * 10. ** (r2err * float(ir2rr-1))
+      d2minx = max(d2min,(r2 / (.1 * .5236)) ** .333333)
+      d2err = alog10(d2max / d2minx) / float(nd2rr-1)
 
-  do id1cr = 1,nd1cr
-     d1 = d1min * 10. ** (d1ecr * float(id1cr-1))
-     r1 = en1 * .5236 * d1 ** 3
+      do id2rr = 1,nd2rr
+         d2 = d2minx * 10. ** (d2err * float(id2rr-1))
+         en2 = r2 / (.5236 * d2 ** 3)
 
-     do ir2cr = 1,nr2cr
-        r2 = r2min * 10. ** (r2ecr * float(ir2cr-1))
-        d2minx = max(d2min,(r2 / (.1 * .5236)) ** .333333)
-        d2ecr = alog10(d2max / d2minx) / float(nd2cr-1)
+         call initg(r1,r2,en1,en2,gnu(1),gnu(2),diam,x,amk0,ank0,ank1,amk1,ank2,amk2,ibins &
+                   ,ithresh)
+         call sumn(ank0,amk0,ithresh+1,ibins,ibins,sun20,sum20)
+         call sxy(x,amk0,ank0,amk,ank,akbarx(1,1,3))
+         call sumn(ank,amk,ithresh+1,ibins,ibins,sun2,sum2)
 
-        do id2cr = 1,nd2cr
-           d2 = d2minx * 10. ** (d2ecr * float(id2cr-1))
-           en2 = r2 / (.5236 * d2 ** 3)
+         c2tabrr(ir2rr,id2rr) = alog10(max(1.e-25,sun20-sun2))
 
-           call initg(r1,r2,en1,en2,gnu(1),gnu(2),diam,x,amk0,ank0  &
-                ,ank1,amk1,ank2,amk2,ibins,ithresh)
-           call sumn(ank0,amk0,1,ithresh,ibins,sun10,sum10)
-           call sxy(x,amk0,ank0,amk,ank,akbarx(1,1,2))
-           call sumn(ank,amk,1,ithresh,ibins,sun1,sum1)
+      end do
+   end do
 
-           r1tabcr(id1cr,ir2cr,id2cr)  &
-                = alog10(max(1.e-20,(sum10-sum1) * en1i))
-           c1tabcr(id1cr,ir2cr,id2cr)  &
-                = alog10(max(1.e-20,(sun10-sun1) * en1i))
-
-        enddo
-     enddo
-  enddo
-
-  ! Start 2 rr loops for dn2.
-
-  d1 = 4.e-4
-  r1 = en1 * .5236 * d1 ** 3
-
-  do ir2rr = 1,nr2rr
-     r2 = r2min * 10. ** (r2err * float(ir2rr-1))
-     d2minx = max(d2min,(r2 / (.1 * .5236)) ** .333333)
-     d2err = alog10(d2max / d2minx) / float(nd2rr-1)
-
-     do id2rr = 1,nd2rr
-        d2 = d2minx * 10. ** (d2err * float(id2rr-1))
-        en2 = r2 / (.5236 * d2 ** 3)
-
-        call initg(r1,r2,en1,en2,gnu(1),gnu(2),diam,x,amk0,ank0  &
-             ,ank1,amk1,ank2,amk2,ibins,ithresh)
-        call sumn(ank0,amk0,ithresh+1,ibins,ibins,sun20,sum20)
-        call sxy(x,amk0,ank0,amk,ank,akbarx(1,1,3))
-        call sumn(ank,amk,ithresh+1,ibins,ibins,sun2,sum2)
-
-        c2tabrr(ir2rr,id2rr) = alog10(max(1.e-25,sun20-sun2))
-
-     enddo
-  enddo
-  return
+   return
 end subroutine make_autotab
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine was adapted to double precision to avoid underflow and overflow.      !
+!------------------------------------------------------------------------------------------!
 subroutine sxy(x,amkd,ankd,amk,ank,akbar)
-  implicit none
+   implicit none
   
-  ! Local Variables:
-  integer, parameter :: ibins=36
+   !----- Local Constants -----------------------------------------------------------------!
+   integer     , parameter :: ibins=36
+   real(kind=8), parameter :: ap=1.062500000
+   !-----  Arguments: ---------------------------------------------------------------------!
+   real, dimension(ibins+1)    , intent(in)  :: x
+   real, dimension(ibins)      , intent(in)  :: amkd, ankd
+   real, dimension(ibins)      , intent(out) :: amk, ank
+   real, dimension(ibins,ibins), intent(in)  :: akbar
+   !-----  Local Variables ----------------------------------------------------------------!
+   integer                              :: i,ik,k,l
+   real(kind=8), dimension(ibins+1)     :: x8
+   real(kind=8), dimension(ibins)       :: xave,am2,am3,am4,psi,f,amkd8,ankd8
+   real(kind=8), dimension(ibins,ibins) :: akbar8
+   real(kind=8)                         :: dm,dn,sm1,sm2,sm3,sm4,sm5
+   real(kind=8)                         :: sn1,sn2,sn3,sn4,dm4,dm2
+   !---------------------------------------------------------------------------------------!
 
-  ! Arguments:
-  real, dimension(ibins+1), intent(in)     :: x
-  real, dimension(ibins), intent(in)       :: amkd, ankd
-  real, dimension(ibins), intent(out)      :: amk, ank
-  real, dimension(ibins,ibins), intent(in) :: akbar
+   x8     = dble(x)
+   amkd8  = dble(amkd)
+   ankd8  = dble(ankd)
+   akbar8 = dble(akbar)
 
-  ! Local Variables:
-  integer :: i,ik,k,l
-  real(kind=8), dimension(ibins+1)     :: x8
-  real(kind=8), dimension(ibins)       :: xave,am2,am3,am4,psi,f,amkd8,ankd8
-  real(kind=8), dimension(ibins,ibins) :: akbar8
-  real(kind=8)                         :: dm,dn,sm1,sm2,sm3,sm4,sm5,sn1,sn2,sn3,sn4,dm4,dm2
-  real(kind=8), parameter              :: ap=1.062500000
+   do l=1,ibins
+      if(ankd8(l) > 0.)then
+         xave(l)=amkd8(l)/ankd8(l)
+      else
+         xave(l)=0.
+      endif
+   enddo
 
+   do k=1,ibins
+      !------------------------------------------------------------------------------------!
+      !     Calculation of the 2nd, 3rd, and 4th moments of the mass distribution based on !
+      ! equation 8 in reference.                                                           !
+      !------------------------------------------------------------------------------------!
+      am2(k) = ap*xave(k)*amkd8(k)
+      am3(k) = ap*ap*xave(k)*am2(k)
+      am4(k) = ap*ap*ap*xave(k)*am3(k)
 
-  x8     = dble(x)
-  amkd8  = dble(amkd)
-  ankd8  = dble(ankd)
-  akbar8 = dble(akbar)
+      !------------------------------------------------------------------------------------!
+      !     These functions come out of the linear approximations used to integrate over   !
+      ! partial bins.  they are defined:                                                   !
+      !      psi(k) = nk(k+1)                                                              !
+      !        f(k) = nk(k)                                                                !
+      ! where nk is the distribution function.  see equation 13 in reference.              !
+      !------------------------------------------------------------------------------------!
+      psi(k) = 2./x8(k)*(amkd8(k)/x8(k)-ankd8(k))
+      f(k)   = 2./x8(k)*(2.*ankd8(k)-amkd8(k)/x8(k)) 
 
-  do l=1,ibins
-     if(ankd8(l) > 0.)then
-        xave(l)=amkd8(l)/ankd8(l)
-     else
-        xave(l)=0.
-     endif
-  enddo
+      !----- Zeroing the tendencies on the moments. ---------------------------------------!
+      sm1=0.
+      sm2=0.
+      sm3=0.
+      sm4=0.
+      sm5=0.
+      sn1=0.
+      sn2=0.
+      sn3=0.
+      sn4=0.
 
-  do k=1,ibins
+      !----- Calculation of tendencies on moments -----------------------------------------!
+      do i=k,ibins
+         dm = akbar8(i,k)*(  am2(k)*ankd8(i)+amkd8(k)*amkd8(i))
+         dn = akbar8(i,k)*(ankd8(k)*amkd8(i)+amkd8(k)*ankd8(i))
 
-     ! calculation of the 2nd, 3rd, and 4th moments of the mass distribution
-     ! based on equation 8 in reference.
+         sm5 = sm5+dm
+         sn4 = sn4+dn
+      end do
 
-     am2(k)=ap*xave(k)*amkd8(k)
-     am3(k)=ap*ap*xave(k)*am2(k)
-     am4(k)=ap*ap*ap*xave(k)*am3(k)
+      if(k > 1)then
+         sm3 = akbar8(k-1,k-1)*(am2(k-1)*ankd8(k-1)+amkd8(k-1)*amkd8(k-1))
+         sn2 = akbar8(k-1,k-1)*ankd8(k-1)*amkd8(k-1)
+         dn  = sn2
+         dm  = sm3
+      end if
 
-     ! these functions come out of the linear approximations used to integrate
-     ! over partial bins.  they are defined:
-     !      psi(k) = nk(k+1)
-     !        f(k) = nk(k)
-     ! where nk is the distribution function.  see equation 13 in reference.
-     psi(k) = 2./x8(k)*(amkd8(k)/x8(k)-ankd8(k))
-     f(k)   = 2./x8(k)*(2.*ankd8(k)-amkd8(k)/x8(k)) 
+      do i=1,k-1
+         dm4=akbar8(k,i)*(ankd8(k)*am2(i)+amkd8(k)*amkd8(i))
+         sm4=sm4+dm4
 
-     ! zeroing the tendencies on the moments.
-     sm1=0.
-     sm2=0.
-     sm3=0.
-     sm4=0.
-     sm5=0.
-     sn1=0.
-     sn2=0.
-     sn3=0.
-     sn4=0.
+         if(xave(k) >= x8(k)) then
+            dm2=akbar8(k,i)*(4.*x8(k)*x8(k)*psi(k)*amkd8(i)                                &
+                 +0.5*x8(k)*(4.*psi(k)+f(k))*am2(i)                                        &
+                 -(psi(k)-f(k))*am3(i)                                                     &
+                 -0.5/x8(k)*(psi(k)-f(k)*am4(i)))
+            sm2=sm2+dm2
+            dn=akbar8(k,i)*(2.*x8(k)*psi(k)*amkd8(i)                                       &
+                 +0.5*(f(k)*am2(i))                                                        &
+                 -0.5/x8(k)*((psi(k)-f(k))*am3(i)))
+            sn3=sn3+dn
+         end if
+      end do
 
-     ! calculation of tendencies on moments
-     do i=k,ibins
-        dm=akbar8(i,k)*(  am2(k)*ankd8(i)+amkd8(k)*amkd8(i))
-        dn=akbar8(i,k)*(ankd8(k)*amkd8(i)+amkd8(k)*ankd8(i))
+      do i=1,k-2
+         ik=k-1
+         if(xave(ik) >= x8(ik))then
 
-        sm5=sm5+dm
-        sn4=sn4+dn
-     enddo
+            dm=akbar8(ik,i)*(4.*x8(ik)*x8(ik)*psi(ik)*amkd8(i)                             &
+                 +0.5*x8(ik)*(4.*psi(ik)+f(ik))*am2(i)                                     &
+                 -(psi(ik)-f(ik))*am3(i)                                                   &
+                 -0.5/x8(ik)*(psi(ik)-f(ik))*am4(i))
+            sm1=sm1+dm
+            dn=akbar8(ik,i)*(2.*x8(ik)*psi(ik)*amkd8(i)                                    &
+                 +0.5*(f(ik)*am2(i))                                                       &
+                 -0.5/x8(ik)*(psi(ik)-f(ik))*am3(i))
+            sn1=sn1+dn
 
-     if(k.gt.1)then
-        sm3=akbar8(k-1,k-1)*(am2(k-1)*ankd8(k-1)+amkd8(k-1)*amkd8(k-1))
-        sn2=akbar8(k-1,k-1)*ankd8(k-1)*amkd8(k-1)
-        dn=sn2
-        dm=sm3
-     endif
+         endif
+      enddo
 
-     do i=1,k-1
-        dm4=akbar8(k,i)*(ankd8(k)*am2(i)+amkd8(k)*amkd8(i))
-        sm4=sm4+dm4
+      amk(k)=sngl(amkd8(k)+sm1-sm2+sm3+sm4-sm5)
+      ank(k)=sngl(ankd8(k)+sn1+sn2-sn3-sn4)
 
-        if(xave(k) >= x8(k)) then
-           dm2=akbar8(k,i)*(4.*x8(k)*x8(k)*psi(k)*amkd8(i)     &
-                +0.5*x8(k)*(4.*psi(k)+f(k))*am2(i)             &
-                -(psi(k)-f(k))*am3(i)                          &
-                -0.5/x8(k)*(psi(k)-f(k)*am4(i)))
-           sm2=sm2+dm2
-           dn=akbar8(k,i)*(2.*x8(k)*psi(k)*amkd8(i)            &
-                +0.5*(f(k)*am2(i))                             &
-                -0.5/x8(k)*((psi(k)-f(k))*am3(i)))
-           sn3=sn3+dn
-        end if
-     end do
-
-     do i=1,k-2
-        ik=k-1
-        if(xave(ik) >= x8(ik))then
-
-           dm=akbar8(ik,i)*(4.*x8(ik)*x8(ik)*psi(ik)*amkd8(i)  &
-                +0.5*x8(ik)*(4.*psi(ik)+f(ik))*am2(i)          &
-                -(psi(ik)-f(ik))*am3(i)                        &
-                -0.5/x8(ik)*(psi(ik)-f(ik))*am4(i))
-           sm1=sm1+dm
-           dn=akbar8(ik,i)*(2.*x8(ik)*psi(ik)*amkd8(i)         &
-                +0.5*(f(ik)*am2(i))                            &
-                -0.5/x8(ik)*(psi(ik)-f(ik))*am3(i))
-           sn1=sn1+dn
-
-        endif
-     enddo
-
-     amk(k)=sngl(amkd8(k)+sm1-sm2+sm3+sm4-sm5)
-     ank(k)=sngl(ankd8(k)+sn1+sn2-sn3-sn4)
-
-  enddo
-  return
+   enddo
+   return
 end subroutine sxy
 
 !******************************************************************************
 
 subroutine micro_data(x,diam,akbar,ibins)
-  use rconstants, only : pio6,pio6i
+  use rconstants, only : pio6,pio6i,onethird
   implicit none
 
   !Arguments:
@@ -1005,7 +1060,7 @@ subroutine micro_data(x,diam,akbar,ibins)
   x(1)=pio6*diam(1)**3.
   do l=2,ibins+1
      x(l)=2.*x(l-1)
-     diam(l)=(pio6i*x(l))**(0.333333333333)
+     diam(l)=(pio6i*x(l))**onethird
   enddo
 
   l=1
@@ -1039,7 +1094,7 @@ end subroutine micro_data
 
 subroutine initg(r1,r2,n1,n2,gnu1,gnu2,diam,x,amk,ank  &
      ,ank1,amk1,ank2,amk2,ibins,ithresh)
-
+  use rconstants, only: pi1,pio6i,onethird
   implicit none
 
   ! Arguments:
@@ -1050,16 +1105,13 @@ subroutine initg(r1,r2,n1,n2,gnu1,gnu2,diam,x,amk,ank  &
 
   ! Local Variables:
   integer :: i
-  real :: dn1,dn2,trunc,trunc1,fac1,fac2,pi  &
-       ,gamp,dmean,sum,sumn,xntot,xr3,ex1
+  real :: dn1,dn2,trunc,trunc1,fac1,fac2 &
+       ,gamp,dmean,sum,sumn,xntot,xr3
   real :: gammln,gammp
   
   ! * *
   ! * Initial double gamma distribution: n(D) = n1(D) + n2(D)
   ! * *
-
-  data pi/3.141592654/
-  data ex1/0.333333333/
 
   ! * *
   ! * gamma spectrum
@@ -1067,8 +1119,8 @@ subroutine initg(r1,r2,n1,n2,gnu1,gnu2,diam,x,amk,ank  &
 
 
   gamp = exp(gammln(gnu1))
-  dmean = (6.*r1/(pi*n1))**ex1   !mass mean diam
-  dn1 = dmean * (exp(gammln(gnu1) - gammln(gnu1+3.))) ** ex1
+  dmean = (pio6i*r1/n1)**onethird  !mass mean diam
+  dn1 = dmean * (exp(gammln(gnu1) - gammln(gnu1+3.))) ** onethird
 
   do i=1,ibins
      ank1(i)=0.
@@ -1102,8 +1154,8 @@ subroutine initg(r1,r2,n1,n2,gnu1,gnu2,diam,x,amk,ank  &
   !      enddo
 
   gamp = exp(gammln(gnu2))
-  dmean = (6. * r2 / (pi * n2)) ** ex1   !mass mean diam
-  dn2 = dmean * (exp(gammln(gnu2) - gammln(gnu2+3.))) ** ex1
+  dmean = (pio6i * r2 /n2) ** onethird   !mass mean diam
+  dn2 = dmean * (exp(gammln(gnu2) - gammln(gnu2+3.))) ** onethird
 
   sum=0.
   sumn=0.

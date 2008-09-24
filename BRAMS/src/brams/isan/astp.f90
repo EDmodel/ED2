@@ -19,7 +19,6 @@ subroutine pressure_stage(n1,n2,nhem,glat,glon,glat2,glon2)
   real :: fnprx,fnpry,grx,gry,gglat,gglon,thmax,thmin  &
        ,xswlon_east,cntlon_east,rr
   integer :: i,j,k,lv,ifm,loop,n,iunit
-  real, external :: rs
 
   ! Read the header of input pressure file.
 
@@ -607,20 +606,24 @@ end subroutine press_miss
 !***************************************************************************
 
 subroutine pr_hystatic_z(np,z1,z2,t1,t2,r1,r2,p1,p2)
+  use rconstants
+  use therm_lib, only: ptrh2rvapil,virtt
   implicit none
   integer :: np
   real :: z1(np),z2(np),t1(np),t2(np),r1(np),r2(np)
 
   integer :: n
-  real :: p1,p2,tv1,rslf,tv2,vtfact
+  real :: p1,p2,tv1,tv2,vtfact,raux
 
   do n=1,np
      if(z2(n).lt.1.e20.and.t1(n).lt.1.e20.and.  &
           t2(n).lt.1.e20.and.r1(n).lt.1.e20.and.  &
           r2(n).lt.1.e20 ) then
-        tv1=t1(n)*(1.+.61*rslf(p1*100.,t1(n))*r1(n))
-        tv2=t2(n)*(1.+.61*rslf(p2*100.,t2(n))*r2(n))
-        z1(n)=z2(n)- 287.*.5*(tv1+tv2)*(log(p1*100.)-log(p2*100.))/9.8
+        raux = ptrh2rvapil(r1(n),p1*100.,t1(n))
+        tv1=virtt(t1(n),raux)
+        raux = ptrh2rvapil(r2(n),p2*100.,t2(n))
+        tv2=virtt(t2(n),raux)
+        z1(n)=z2(n)- rgas*.5*(tv1+tv2)*(log(p1/p2))/g
         !print*,z1(n),z2(n),t1(n),t2(n),tv1,tv2,p1,p2
      else
         z1(n)=1.e30
@@ -635,9 +638,10 @@ subroutine pr_hystatic_z(np,z1,z2,t1,t2,r1,r2,p1,p2)
      if(t2(n).lt.1.e20.and.z1(n).lt.1.e20  &
           .and.z2(n).lt.1.e20.and.r1(n).lt.1.e20  &
           .and.r2(n).lt.1.e20 ) then
-        vtfact=(1.+.61*rslf(p2*100.,t2(n))*r2(n))
-        t1(n)=-t2(n)- (2.*9.8*(z1(n)-z2(n))  &
-             /(287. *(log(p1*100.)-log(p2*100.))) )  &
+        raux=ptrh2rvapil(r2(n),p2*100.,t2(n))
+        vtfact=virtt(t2(n),raux)/t2(n)
+        t1(n)=-t2(n)- (2.*g*(z1(n)-z2(n))  &
+             /(rgas *(log(p1/p2))) )  &
              /vtfact
         !if(n.eq.36*(13-1)+13) print*,t1(n),t2(n),z1(n),z2(n),vtfact,p1,p2 
      else

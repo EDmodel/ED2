@@ -200,7 +200,7 @@ subroutine read_ed1_history_file_array
               endif
            end if
         else
-           !           write(unit=*,fmt='(a)') ' + Your restart file exists:'//trim(pss_name)
+           !           write(unit=*,fmt='(a)') ' + Your restart file exists: '//trim(pss_name)
            
         endif
 

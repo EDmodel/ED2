@@ -327,9 +327,9 @@ do j = 1,n3
       can_temp(i,j,1) = airtemp
       can_rvap(i,j,1) = rv(k2,i,j)
 
-      soil_energy(mzg,i,j,1) = 334000.  &
-         + 4186. * (seatp(i,j) + (seatf(i,j) - seatp(i,j))  &
-         * timefac_sst - 273.15)
+      soil_energy(mzg,i,j,1) = alli  &
+         + cliq * (seatp(i,j) + (seatf(i,j) - seatp(i,j))  &
+         * timefac_sst - t3ple)
 
       do ipat = 2,npat
 
@@ -366,17 +366,17 @@ do j = 1,n3
 
 ! By default, initialize soil internal energy at a temperature equal to
 ! airtemp + stgoff(k) and with all water assumed to be liquid.  If the
-! temperature is initially below 0C, this will immediately adjust to soil
-! at 0C with part ice.  In order to begin with partially or totally frozen
+! temperature is initially below triple point, this will immediately adjust to soil
+! at triple point with part ice.  In order to begin with partially or totally frozen
 ! soil, reduce or remove the latent-heat-of-fusion term (the one with the
-! factor of 3.34) from soil_energy below.  If the soil is totally frozen and the
-! temperature is below zero C, the factor of 4.186 should be changed to 2.093
+! factor of alli1000) from soil_energy below.  If the soil is totally frozen and the
+! temperature is below zero C, the factor of cliq1000 should be changed to cice1000
 ! to reflect the reduced heat capacity of ice compared to liquid.  These
 ! changes may be alternatively be done in subroutine sfcinit_user in ruser.f
 
-            soil_energy(k,i,j,ipat) = (airtemp - 273.15 + stgoff(k))  &
-               * (slcpd(nsoil) + soil_water(k,i,j,ipat) * 4.186e6)  &
-               + soil_water(k,i,j,ipat) * 3.34e8
+            soil_energy(k,i,j,ipat) = (airtemp - t3ple + stgoff(k))  &
+               * (slcpd(nsoil) + soil_water(k,i,j,ipat) * cliq1000)  &
+               + soil_water(k,i,j,ipat) * alli1000
 
          enddo
 
@@ -393,7 +393,7 @@ do j = 1,n3
                 nint(leaf_class(i,j,ipat)) == 20) then
                if (k .eq. 1) then
                   sfcwater_mass(k,i,j,ipat) = 100.
-                  sfcwater_energy(k,i,j,ipat) = (airtemp - 193.36) * 4186.
+                  sfcwater_energy(k,i,j,ipat) = (airtemp - tsupercool) * cliq
                   sfcwater_depth(k,i,j,ipat) = .1
                endif
             endif
@@ -403,7 +403,7 @@ do j = 1,n3
                   sfcwater_mass(k,i,j,ipat) = sfcwater_mass(k,i,j,ipat)  &
                      + snow_mass(i,j)
                   sfcwater_energy(k,i,j,ipat) = sfcwater_energy(k,i,j,ipat)  &
-                     + min(0., (airtemp - 273.15) * 2093.)
+                     + min(0., (airtemp - t3ple) * cice)
                   sfcwater_depth(k,i,j,ipat) = sfcwater_depth(k,i,j,ipat)  &
                      + snow_mass(i,j) * 5.e-3   ! 5x equivalent liquid depth
                endif

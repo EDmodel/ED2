@@ -295,7 +295,7 @@ subroutine cu_environ(k1,k2)
 
 use conv_coms
 use rconstants
-
+use therm_lib, only: the2t,thetae,virtt
 implicit none
 integer :: k1,k2
 
@@ -378,7 +378,7 @@ enddo
 
 pke(1)=picon(1)
 do k=1,kmt
-  thve(k)=the(k)*(1.+.61*rve(k))
+  thve(k)=virtt(the(k),rve(k))
 enddo
 do k=2,kmt
   pke(k)=pke(k-1)-g*2.*(ze(k)-ze(k-1))  &
@@ -387,7 +387,7 @@ enddo
 do k=1,kmt
   te(k)=the(k)*pke(k)/cp
   pe(k)=(pke(k)/cp)**cpor*p00
-  rhoe(k)=pe(k)/(rgas*te(k)*(1.+.61*rve(k)))
+  rhoe(k)=pe(k)/(rgas*virtt(te(k),rve(k)))
 enddo
 do k=1,kmt
   call thetae(pe(k),te(k),rve(k),thee(k))
@@ -466,7 +466,7 @@ endif
 abe=0.
 do k=klcl,ketl
   call the2t(theu(klcl),pe(k),thdu,tdu,rdsu)
-  abe=abe+(thdu*(1.+.61*rdsu)-thve(k))/thve(k)*(zc(k)-zc(k-1))
+  abe=abe+(virtt(thdu,rdsu)-thve(k))/thve(k)*(zc(k)-zc(k-1))
 enddo
 if(abe.le.0.)then
   igo=0
@@ -487,6 +487,7 @@ subroutine kuocp
 
 use conv_coms
 use rconstants
+use therm_lib, only: the2t
 
 implicit none
 
@@ -877,7 +878,7 @@ ENDIF
 !      QVCT2(K)=RVE(K)+FRCON(K)*CONTIM
 !      QVCT4(K)=RVE(K)
 !      TGRID=THGRID*(PE(K)/P00)**ROCP
-!      RVVV=RS(PE(K),TGRID)
+!      RVVV=RSLF(PE(K),TGRID)
 !      QVCT1(K)=THGRID+AKLV*MAX(0.,QVCT2(K)-RVVV)
 !  410 CONTINUE
 !      QVCT1(1)=QVCT1(2)
@@ -1047,7 +1048,7 @@ end
 subroutine lcl(t0,pp0,r0,tlcl,plcl,dzlcl)
 
 use rconstants
-
+use therm_lib, only : rslf, dewpoint,virtt
 implicit none
 real :: t0,pp0,r0,tlcl,plcl,dzlcl
 
@@ -1055,7 +1056,6 @@ real, parameter :: cpg=102.45
 
 integer :: nitt,ip
 real :: p0k,pi0i,ttth0,ttd,dz,pki,pppi,ti,rvs
-real, external :: td,rs
 
 ip=0
 11 continue
@@ -1065,19 +1065,19 @@ tlcl=t0
 p0k=pp0**rocp
 pi0i=p0k/p00k*cp
 ttth0=t0*p00k/p0k
-ttd=td(pp0,r0)
+ttd=dewpoint(pp0,r0)
 dz=cpg*(t0-ttd)
 if(dz.le.0.)then
 dzlcl=0.
 return
 endif
 do 100 nitt=1,50
-pki=pi0i-g*dz/(ttth0*(1.+.61*r0))
+pki=pi0i-g*dz/virtt(ttth0,r0)
 pppi=(pki/cp)**cpor*p00
 ti=ttth0*pki/cp
-rvs=rs(pppi,ti)
+rvs=rslf(pppi,ti)
 if(abs(rvs-r0).lt..00003)go to 110
-ttd=td(pppi,r0)
+ttd=dewpoint(pppi,r0)
 dz=dz+cp/g*(ti-ttd)
 !print*,nitt,rvs-r0,ttd,ti,dz
 100 continue

@@ -133,239 +133,126 @@ subroutine strain(m1,m2,m3,ia,iz,ja,jz,ia_1,ja_1,iz1,jz1,jd                     
 
   return
 end subroutine strain
+!==========================================================================================!
+!==========================================================================================!
 
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine computes the Brunt-Väisälä frequency squared (en2) based on the       !
+! virtual temperature profile. It will consider the effect of condensed phase.             !
 !------------------------------------------------------------------------------------------!
+subroutine bruvais(m1,m2,m3,ia,iz,ja,jz,theta,rtp,rv,rtgt,flpw,en2)
+   use mem_scratch, only :  & !
+           vctr12           & ! intent(out) - Virtual temperature
+          ,vctr1            & ! intent(out) - Height above ground
+          ,vctr5            & ! intent(out) - Delta-z between k and k+1
+          ,vctr6            & ! intent(out) - Delta-z between k-1 and k
+          ,vctr10           & ! intent(out) - Ratio between z(k)-z(k-½) and z(k+½)-z(k-½)
+          ,vctr25           & ! intent(out) - d(theta_v)/dz at k+½
+          ,vctr26           ! ! intent(out) - d(theta_v)/dz at k-½
 
-subroutine bruvais(m1,m2,m3,ia,iz,ja,jz,theta,rtp,rv,rcp,pp,pi0,en2,rtgt,flpw)
+   use mem_grid, only    : &
+           zt              & ! intent(in)
+          ,zm              & ! intent(in)
+          ,nzp             & ! intent(in)
+          ,nz              & ! intent(in)
+          ,nzpmax          ! ! intent(in)
 
-  use mem_scratch, only : vctr11,    &     !INTENT(INOUT)
-                          vctr12,    &     !INTENT(INOUT)
-                          vctr32,    &     !INTENT(INOUT)
-                          vctr1,     &     !INTENT(INOUT)
-                          vctr2,     &     !INTENT(INOUT)
-                          vctr3,     &     !INTENT(INOUT)
-                          vctr4            !INTENT(INOUT)
+   use rconstants, only  : &
+           g               ! ! intent(in)
 
-  use micphys, only     : level,     &     !INTENT(in)
-                          ipris,     &     !INTENT(in)
-                          isnow,     &     !INTENT(in)
-                          igraup,    &     !INTENT(in)
-                          iaggr,     &     !INTENT(in)
-                          ihail            !INTENT(in)
+   use therm_lib, only   : &
+           virtt           & ! function
+          ,vapour_on       ! ! intent(in)
 
-  use mem_grid, only    : zt,        &     !INTENT(in)
-                          nzp,       &     !INTENT(in)
-                          nz,        &     !INTENT(in)
-                          nzpmax           !INTENT(in)
+   implicit none
 
-  use rconstants, only  : alvl,      &     !INTENT(in)
-                          rgas,      &     !INTENT(in)
-                          ep,        &     !INTENT(in)
-                          cp,        &     !INTENT(in)
-                          alvi,      &     !INTENT(in)
-                          p00,       &     !INTENT(in)
-                          cpor,      &     !INTENT(in)
-                          g                !INTENT(in)
+   !----- Arguments -----------------------------------------------------------------------!
+   integer                  , intent(in   ) :: m1,m2,m3 ! Z,X,Y dimensions         [   ---]
+   integer                  , intent(in   ) :: ia,iz    ! West-East node bound.    [   ---]
+   integer                  , intent(in   ) :: ja,jz    ! South-North node bound.  [   ---]
+   real, dimension(m1,m2,m3), intent(in   ) :: theta    ! Potential temperature    [     K]
+   real, dimension(m1,m2,m3), intent(in   ) :: rtp      ! Total mixing ratio       [ kg/kg]
+   real, dimension(m1,m2,m3), intent(in   ) :: rv       ! Vapour mixing ratio      [ kg/kg]       
+   real, dimension(   m2,m3), intent(in   ) :: rtgt     ! Sigma-z correction       [   m/m]
+   real, dimension(   m2,m3), intent(in   ) :: flpw     ! Lowest point in W grid   [   ---]
+   real, dimension(m1,m2,m3), intent(inout) :: en2      ! (Brunt-Väisälä freq.)²   [   Hz²]
+   !----- Local variables -----------------------------------------------------------------!
+   integer :: i,j,k,ki,k2,k1
+   !---------------------------------------------------------------------------------------!
 
-  implicit none
+   do j = ja,jz
+      do i = ia,iz
 
-  integer, INTENT(IN) :: m1  &
-                       , m2  &
-                       , m3  &
-                       , ia  &
-                       , iz  &
-                       , ja  &
-                       , jz
+         k2=nint(flpw(i,j))
+         k1=k2-1
 
-  real, dimension(m1,m2,m3), INTENT(in)    :: theta,   &
-                                              pp,      &
-                                              pi0,     &
-                                              rtp,     &
-                                              rcp,     &
-                                              rv
-
-
-  real, dimension(m1,m2,m3), INTENT(INOUT)   :: en2
-
-  real, dimension(m2,m3), INTENT(IN)         :: rtgt
-
-  real, dimension(m2,m3), INTENT(IN)      :: flpw
-
-  !local variables
-  integer :: i,j,k,iweten,iwdiffk,ki,k2,k1,lpw
-
-  real :: c1,c2,c3,ci1,ci2,ci3,rvii
-  ![MLO - Nothing useful, just to avoid the compiler to complain...
-  real, dimension(1) :: rvlsi
-  !MLO]
-  real, dimension(nzpmax) :: pi,temp,prt,rvls,rc
-  ! **(JP)** fatora expressoes logicas para fora dos lacos
-  logical :: log1, log2, log3, log4
+         !----- Calculate the virtual potential temperature profile -----------------------!
+         if (vapour_on) then
+            !----- Consider the vapour and possibly the condensation effect ---------------!
+            do k = k1,m1
+               vctr12(k) = virtt(theta(k,i,j),rv(k,i,j),rtp(k,i,j))
+            end do
+         else
+            !----- No water substance, theta_v = theta
+            vctr12(k1:m1) = theta(k1:m1,i,j)
+         endif
 
 
-  !     calculate brunt-vaisalla frequency squared (en2)
+         do k = k1,m1
+            vctr1(k) = rtgt(i,j)*(zt(k)-zm(k1))
+         end do
+         
+         !---------------------------------------------------------------------------------!
+         !    This correction is necessary because delta-z is not constant in most cases.  !
+         ! If it were constant, then vctr10 is 0.5 which is the original case.             !
+         !---------------------------------------------------------------------------------!
+         do k = k2,m1-1
+            vctr5(k)  = 1. / (vctr1(k+1) - vctr1(k))        ! 1/Delta_z(k+½)
+            vctr6(k)  = 1. / (vctr1(k)   - vctr1(k-1))      ! 1/Delta_z(k-½)
+            !----- vctr10 is the ratio between [z(k)-z(k-½)] and [z(k+½)+z(k-½)] ----------!
+            vctr10(k) = (vctr1(k)-vctr1(k-1)) / (vctr1(k+1)-vctr1(k-1))
+         end do
 
-  iweten = 1
+         do k = k2,m1-1
+            vctr25(k)  = vctr5(k) * (vctr12(k+1) - vctr12(k))
+            vctr26(k)  = vctr6(k) * (vctr12(k) - vctr12(k-1))
+            en2(k,i,j) = g * (vctr10(k)*vctr25(k) + (1.-vctr10(k))*vctr26(k)) / vctr12(k)
+         end do
 
-  iwdiffk = 0
-  c1 = alvl / rgas
-  c2 = ep * alvl ** 2 / (cp * rgas)
-  c3 = alvl / cp
-  ci1 = alvi / rgas
-  ci2 = ep * alvi ** 2 / (cp * rgas)
-  ci3 = alvi / cp
+      end do
+   end do
 
-  ! **(JP)** fatora expressoes logicas para fora dos lacos
-  log1 = level >= 1
-  log2 = level >= 2 .and. iweten == 1
-  log3 = (ipris  >= 1   .or. isnow >= 1 .or.  &
-          igraup >= 1   .or. iaggr >= 1 .or.  &
-          ihail  >= 1) .and. level == 3
-  log4 = level == 3
-  ! **(JP)** fim modificacao
+   !----- **(JP)** Removed from the main loop to allow vectorisation ----------------------!
+   do j = ja,jz
+      do i = ia,iz
+         k1=nint(flpw(i,j))-1
+         en2(k1,i,j)=en2(k1,i,j)
+      end do
+   end do
+   do j = ja,jz
+      do i = ia,iz
+         en2(nzp,i,j)=en2(nz,i,j)
+      end do
+   end do
 
-  !     calculate potential temperature profile
-
-  do j = ja,jz
-     do i = ia,iz
-
-        k2=nint(flpw(i,j))
-        k1=k2-1
-
-        do k = k1,m1
-           vctr11(k) = theta(k,i,j)
-           vctr12(k) = theta(k,i,j)
-           vctr32(k) = 0.
-        enddo
-        ! **(JP)** fatora expressoes logicas para fora dos lacos
-        if (log1) then
-        ! **(JP)** fim modificacao
-           do k = k1,m1
-              vctr12(k) = vctr11(k) * (1. + .61 * rv(k,i,j))
-              vctr32(k) = (rtp(k,i,j) - rv(k,i,j))
-           enddo
-        endif
-
-        !     check for saturation if level is 2 or greater.
-        ! **(JP)** fatora expressoes logicas para fora dos lacos
-        if (log2) then
-        ! **(JP)** fim modificacao
-           do k = k1,m1
-              pi(k) = (pp(k,i,j) + pi0(k,i,j)) / cp
-              temp(k) = theta(k,i,j) * pi(k)
-              prt(k) = p00 * pi(k) ** cpor
-           enddo
-           call mrsl(m1,prt(:),temp(:),rvls(:))
-           do k = k2-1,m1
-              vctr2(k) = c1
-              vctr3(k) = c2
-              vctr4(k) = c3
-           enddo
-           ki = m1 + 1
-
-           !     if any ice phase microphysics are activated ....
-           ! **(JP)** fatora expressoes logicas para fora dos lacos
-           if (log3) then
-           ! **(JP)** fim modificacao
-              !  find level of -20 c.  assume ice saturation above this
-              !   level.
-
-              do k = k1,m1
-                 if (temp(k) .le. 253.16) then
-                    ki = k
-                    go to 10
-                 endif
-              enddo
-              ki = m1 + 1
-10            continue
-              call mrsi(m1-ki+1,prt(ki),temp(ki),rvls(ki))
-!-srf 19/03/2005
-!bug: Subscript out of range for array prt
-!    subscript=0, lower bound=1, upper bound=132, dimension=1
-! tempc < 253 sobre parte da Antartica.
-!              ki = max(ki,k2)                                    !solucao 1
-!              call mrsi(1,prt(ki-1),temp(ki-1),rvlsi(1))
-               if(ki > 1) call mrsi(1,prt(ki-1),temp(ki-1),rvlsi(1)) ! solucao 2
-!srf
-
-
-              do k = ki,m1
-                 vctr2(k) = ci1
-                 vctr3(k) = ci2
-                 vctr4(k) = ci3
-              enddo
-           endif
-
-           ! **(JP)** fatora expressoes logicas para fora dos lacos
-           if (log4) then
-           ! **(JP)** fim modificacao
-              do k = k1,m1
-                 rc(k) = rcp(k,i,j)
-              enddo
-           else
-              do k = k1,m1
-                 rc(k) = max(rv(k,i,j) / rvls(k) - .999,0.)
-              enddo
-           endif
-
-        endif
-
-        do k = k2,m1-1
-           vctr1(k) = g / ((zt(k+1) - zt(k-1)) * rtgt(i,j))
-        enddo
-
-        ! **(JP)** fatora expressoes logicas para fora dos lacos
-        if (log2) then
-        ! **(JP)** fim modificacao
-           do k = k2,m1-1
-              if (rc(k) .gt. 0.) then
-                 rvii = rvls(k-1)
-                 if (k .eq. ki) rvii = rvlsi(1)
-                 en2(k,i,j) = vctr1(k) * (  &
-                      (1. + vctr2(k) * rvls(k) / temp(k))  &
-                      / (1. + vctr3(k) * rvls(k) / temp(k) ** 2)  &
-                      * ((vctr11(k+1) - vctr11(k-1)) / vctr11(k)  &
-                      + vctr4(k) / temp(k) * (rvls(k+1) - rvii))  &
-                      - (rtp(k+1,i,j) - rtp(k-1,i,j)))
-              else
-                 en2(k,i,j) = vctr1(k)*((vctr12(k+1)-vctr12(k-1))  &
-                      / vctr12(k) - (vctr32(k+1) - vctr32(k-1)))
-              endif
-
-           enddo
-        else
-           do k = k2,m1-1
-              en2(k,i,j) = vctr1(k) * ((vctr12(k+1)-vctr12(k-1))  &
-                   / vctr12(k) - (vctr32(k+1) - vctr32(k-1)))
-           enddo
-        endif
-        ! **(JP)** remove para fora do laco, permitindo vetorizacao
-        !en2(k1,i,j) = en2(k2,i,j)
-        !en2(nzp,i,j)=en2(nz,i,j)
-        ! **(JP)** fim da modificacao
-
-     enddo
-  enddo
-
-  ! **(JP)** removido de dentro do laco
-  do j = ja,jz
-     do i = ia,iz
-        lpw = nint(flpw(i,j))
-        en2(lpw-1,i,j)=en2(lpw,i,j)
-     end do
-  end do
-  do j = ja,jz
-     do i = ia,iz
-        en2(nzp,i,j)=en2(nz,i,j)
-     end do
-  end do
-  ! **(JP)** fim da modificacao
-
-  return
+   return
 end subroutine bruvais
+!==========================================================================================!
+!==========================================================================================!
 
-!------------------------------------------------------------------------------------------!
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine mxdefm(m1,m2,m3,ia,iz,ja,jz,ibcon,jd  &
      ,vt3dh,vt3di,vt3dj,vt3dk,scr1,scr2,dn0,rtgt,dxt,dyt,flpw,mynum)
 

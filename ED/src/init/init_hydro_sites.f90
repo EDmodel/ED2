@@ -38,7 +38,7 @@ subroutine read_site_file_array(cgrid)
    ! ASSUMING FOR NOW THAT THERE IS NO WATER SITE
 
    ! init values
-   cgrid%load_adjacency = 0
+   if (associated(cgrid%load_adjacency)) cgrid%load_adjacency = 0
 
   
    do ipy = 1,cgrid%npolygons

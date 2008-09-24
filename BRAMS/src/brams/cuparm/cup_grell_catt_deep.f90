@@ -136,10 +136,9 @@ subroutine CUPARTH_CATT( &
        massfln                           !INTENT(?)
 
 ![ MLO - Changed to rconstants, to remove Phys_const.o
-  use rconstants, only: cp, p00, g, cpor,pi1,onerad !INTENT(IN)
+  use rconstants, only: cp, p00, tcrit, g, cpor,pi1,onerad !INTENT(IN)
 !MLO]
   implicit none
-  real, parameter :: tcrit=273.15
   integer, intent(in) :: mgmxp, mgmyp, mgmzp, ngrid, ngrids_cp
   integer, intent(in) :: maxiens ! maxens,maxens2,maxens3,ensdim
   integer, intent(in) :: iens     
@@ -457,7 +456,7 @@ subroutine CUP_enss_catt(ngrid, mynum, m1, m2, m3, i0, j0,                      
 !- USE Modules for Grell Cumulus Parameterization
   use mem_scratch3_grell
 ![MLO - switching to rconstants
-  use rconstants, only: rgas,cp,rm,p00,g,cpor,day_sec,alvl
+  use rconstants, only: rgas,cp,rm,p00,g,cpor,pkdcut,day_sec,alvl
 !MLO]
   implicit none
   integer maxiens,maxens,maxens2,maxens3,ensdim

@@ -1,127 +1,154 @@
-!############################# Change Log ##################################
-! 5.0.0
-!
-!###########################################################################
-!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved
-!  Regional Atmospheric Modeling System - RAMS
-!###########################################################################
+!====================================== Change Log ========================================!
+! 5.0.0                                                                                    !
+!                                                                                          !
+!==========================================================================================!
+!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved                       !
+!  Regional Atmospheric Modeling System - RAMS                                             !
+!==========================================================================================!
+!==========================================================================================!
 
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 real function gammp(a,x)
-implicit none
-real :: a,x,gln,gammcf
+   implicit none
+   real :: a,x,gln,gammcf
 
-if(x .lt. a+1.) then
-    call gser(gammp,a,x,gln)
-else
-    call gcf(gammcf,a,x,gln)
-    gammp = 1. - gammcf
-endif
+   if(x < a+1.) then
+       call gser(gammp,a,x,gln)
+   else
+       call gcf(gammcf,a,x,gln)
+       gammp = 1. - gammcf
+   endif
 
-return
-end
+   return
+end function gammp
+!==========================================================================================!
+!==========================================================================================!
 
-!     *************************************************************
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 real function gammq(a,x)
-implicit none
-real :: a,x,gamser,gln
+   implicit none
+   real :: a,x,gamser,gln
 
-if(x .lt. a+1.) then
-    call gser(gamser,a,x,gln)
-    gammq = 1. - gamser
-else
-    call gcf(gammq,a,x,gln)
-endif
+   if(x < a+1.) then
+       call gser(gamser,a,x,gln)
+       gammq = 1. - gamser
+   else
+       call gcf(gammq,a,x,gln)
+   endif
 
-return
-end
+   return
+end function gammq
+!==========================================================================================!
+!==========================================================================================!
 
-!     ****************************************************************
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine gcf(gammcf,a,x,gln)
-implicit none
-real :: a,x,gammcf,gln
 
-integer, parameter :: itmax=100
-real, parameter :: mold=6. ! MLO Just a mold, the number doesn't matter
-real, parameter :: eps=2.*epsilon(mold),tinypow=-38.
-real,external ::gammln
+   use therm_lib, only : maxit,toler
+   implicit none
+   real :: a,x,gammcf,gln
 
-real :: gold,a0,a1,b0,b1,fac,an,ana,anf,gaccel
-integer :: n
+   integer, parameter :: tinypow=-38. ! To avoid FPE errors
+   real,external ::gammln
 
-gln = gammln(a)
-gold = 0.
-a0 = 1.
-a1 = x
-b0 = 0.
-b1 = 1.
-fac = 1.
-itloop: do n = 1, itmax
-    an = float(n)
-    ana = an - a
-    a0 = (a1+a0*ana)*fac
-    b0 = (b1+b0*ana)*fac
-    anf = an*fac
-    a1 = x*a0 + anf*a1
-    b1 = x*b0 + anf*b1
-    if (a1 .ne. 0.) then
-        fac = 1./a1
-        gaccel = b1*fac
-        if(abs((gaccel-gold)/gaccel) .lt. eps) exit itloop
-        gold = gaccel
-    endif
-end do itloop
+   real :: gold,a0,a1,b0,b1,fac,an,ana,anf,gaccel
+   integer :: n
 
-fac=-x+a*alog(x)-gln
-if(fac .gt. tinypow) then
-  gammcf = exp(fac)*gaccel
-else
-  gammcf = 0.
-endif
-return
-end
+   gln = gammln(a)
+   gold = 0.
+   a0 = 1.
+   a1 = x
+   b0 = 0.
+   b1 = 1.
+   fac = 1.
+   itloop: do n = 1, maxit
+      an = real(n)
+      ana = an - a
+      a0 = (a1+a0*ana)*fac
+      b0 = (b1+b0*ana)*fac
+      anf = an*fac
+      a1 = x*a0 + anf*a1
+      b1 = x*b0 + anf*b1
+      if (a1 /= 0.) then
+          fac = 1./a1
+          gaccel = b1*fac
+          if(abs(gaccel-gold) < toler * gaccel) exit itloop
+          gold = gaccel
+      end if
+   end do itloop
 
-!     ****************************************************************
-
+   fac=-x+a*alog(x)-gln
+   if(fac > tinypow) then
+     gammcf = exp(fac)*gaccel
+   else
+     gammcf = 0.
+   end if
+   return
+end subroutine gcf
+!==========================================================================================!
+!==========================================================================================!
 subroutine gser(gamser,a,x,gln)
-implicit none
-real :: a,x,gamser,gln
+   use therm_lib, only: maxit,toler
+   implicit none
+   real :: a,x,gamser,gln
 
-integer, parameter :: itmax=100
-real, parameter :: mold=6. ! MLO Just a mold, the number doesn't matter
-real, parameter :: eps=2.*epsilon(mold)
-real,external ::gammln
+   real,external ::gammln
 
-real :: ap,sum,del
-integer :: n
+   real :: ap,sum,del
+   integer :: n
 
-gln = gammln(a)
-if(x .le. 0.) then
-    if(x .lt. 0.) pause
-    gamser = 0.
-    return
-endif
-ap = a
-sum = 1./a
-del = sum
-do n = 1, itmax
-    ap = ap + 1.
-    del = del*x/ap
-    sum =  sum  +  del
-    if(abs(del) .lt. abs(sum)*eps) goto 20
-enddo
-20 continue
-if((-x+a*log(x)-gln) .gt. -38.) then
-  gamser = sum*exp(-x+a*log(x)-gln)
-else
-  gamser = 0.
-endif
-return
-end
+   gln = gammln(a)
+   if (x <= 0.) then
+      if (x < 0.) pause
+      gamser = 0.
+      return
+   end if
+   ap = a
+   sum = 1./a
+   del = sum
 
-!     ***************************************************************
+   itloop: do n = 1, maxit
+      ap = ap + 1.
+      del = del*x/ap
+      sum =  sum  +  del
+      if(abs(del) < abs(sum)*toler) exit itloop
+   end do itloop
 
+   if((-x+a*log(x)-gln) .gt. -38.) then
+     gamser = sum*exp(-x+a*log(x)-gln)
+   else
+     gamser = 0.
+   endif
+   return
+end subroutine gser
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 real function gammln(xx)
   implicit none
   real :: xx
@@ -148,10 +175,16 @@ real function gammln(xx)
   gammln=sngl(tmp+dlog(stp*ser))
   return
 end function gammln
+!==========================================================================================!
+!==========================================================================================!
 
-!     ****************************************************************
 
-!476
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine avint(x,y,n,xlo,xup,ans)
 implicit none
 integer :: n

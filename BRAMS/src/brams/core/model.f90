@@ -57,6 +57,8 @@ subroutine model()
 
   use node_mod, only : ia, iz, izu, ja, jz, jzv ! INTENT(IN)
 
+  use mem_leaf, only : isfcl
+
   use dtset, only: dtset_new ! subroutine
 
   implicit none
@@ -98,8 +100,11 @@ subroutine model()
   f_thermo_n = .true.
   f_thermo_s = .true.
 
-  !         Start the timesteps
+  !----- Initialise microphysics tables ---------------------------------------------------!
+  call micro_1st()
+  !----------------------------------------------------------------------------------------!
 
+  !         Start the timesteps
   write(*,"(/,a,/)") " === Time integration starts (model) ==="
   do while (time .lt. timmax)
 
@@ -198,6 +203,8 @@ subroutine model()
              call anlavg(nzp,nxp,nyp,nzg)
 
      enddo
+
+     if (isfcl == 5) call ed_timestep(begtime,dtlongn(1))
 
      ! New position to update 'TIME' - ALF
      time=begtime+dtlongn(1)

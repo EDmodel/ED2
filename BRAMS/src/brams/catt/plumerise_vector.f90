@@ -440,8 +440,7 @@ SUBROUTINE plumerise(m1,m2,m3,ibcon,mynum   &
   DO iveg_ag=1,iveg
     DO ij=ijbeg,ijend
       IF( plume_2d(ij,k_CO_smold + iveg_ag) < 1.e-6 ) CYCLE
-      !!rsurf(ij,iveg_ag) = sqrt(max(plume_2d(ij,iveg_ag),0)/ 3.14159)
-      rsurf(ij,iveg_ag) = sqrt(plume_2d(ij,iveg_ag) / 3.14159)
+      rsurf(ij,iveg_ag) = sqrt(plume_2d(ij,iveg_ag) / pi1)
     END DO
   END DO
             
@@ -487,6 +486,7 @@ SUBROUTINE Get_Env_Condition(k1,k2,kmt,thtcon,picon,rvcon,zcon,qvenv, &
                              pe,te,zt,nkp,ijbeg,ijend)
 
   USE rconstants
+  use therm_lib, only : virtt
   
   IMPLICIT NONE
   INTEGER,INTENT(IN)                       :: k2,nkp,ijend,ijbeg
@@ -537,7 +537,7 @@ SUBROUTINE Get_Env_Condition(k1,k2,kmt,thtcon,picon,rvcon,zcon,qvenv, &
   DO k=1,nkp
     DO ij=ijbeg,ijend
       IF(k>kmt(ij)) CYCLE
-      thve(ij,k)=the(ij,k)*(1.+.61*qvenv(ij,k)) ! virtual pot temperature
+      thve(ij,k)=virtt(the(ij,k),qvenv(ij,k)) ! virtual pot temperature
     END DO
   END DO
 
@@ -554,8 +554,8 @@ SUBROUTINE Get_Env_Condition(k1,k2,kmt,thtcon,picon,rvcon,zcon,qvenv, &
       IF(k>kmt(ij)) CYCLE
       te(ij,k)  = the(ij,k)*pke(ij,k)/cp         ! temperature (K)
       pe(ij,k)  = (pke(ij,k)/cp)**cpor*p00    ! pressure (Pa)
-      dne(ij,k)= pe(ij,k)/(rgas*te(ij,k)*(1.+.61*qvenv(ij,k))) !  dry air density (kg/m3)
-      !  print*,'ENV=',qvenv(k)*1000., te(k)-273.15,zt(k)
+      dne(ij,k)= pe(ij,k)/(rgas*virtt(te(ij,k),qvenv(ij,k))) !  dry air density (kg/m3)
+      !  print*,'ENV=',qvenv(k)*1000., te(k)-t00,zt(k)
     END DO
   ENDDO
 
@@ -789,6 +789,7 @@ SUBROUTINE Makeplume(kmt,ztopmax,zm,dzm,zt,dz, &
   !**********************************************************************
   USE plume_utils, ONLY: ijindex,indexj,indexi
   
+  use rconstants, only : g,rgas,cp,ep,alvi,alvl,alli 
   IMPLICIT NONE
   ! ******************* SOME CONSTANTS **********************************
   !
@@ -796,8 +797,7 @@ SUBROUTINE Makeplume(kmt,ztopmax,zm,dzm,zt,dz, &
   !         VC = 38.3/(XNO**.125) mean volume fallspeed eqn. (K)
   !
   REAL   ,PARAMETER :: vc=5.107387
-  REAL   ,PARAMETER :: g=9.80796,r=287.04,cp=1004.,eps=0.622,tmelt =273.3
-  REAL   ,PARAMETER :: heatsubl=2.834e6,heatfus=3.34e5,heatcond=2.501e6
+  REAL   ,PARAMETER :: tmelt =273.3
   REAL   ,PARAMETER :: tfreeze=269.3
   REAL   ,PARAMETER :: alpha = 0.1     !- entrainment constant
   REAL   ,PARAMETER :: tstpf = 2.0     !- timestep factor
@@ -976,7 +976,7 @@ SUBROUTINE Makeplume(kmt,ztopmax,zm,dzm,zt,dz, &
               IF(isdone(ij) .OR. l>nm1(ij)-1) CYCLE
                 wbar(ij)    = 0.5*(vvel(ij,l)+vvel(ij,l-1))
                 es          = 0.1*esat_l(temp(ij,l))               !blob saturation vapor pressure, em kpa
-                qsat(ij,l) = (eps * es) / (pe(ij,l) - es)  !blob saturation lwc(ij,:) g/g dry air
+                qsat(ij,l) = (ep * es) / (pe(ij,l) - es)  !blob saturation lwc(ij,:) g/g dry air
                 est (ij,l) = es  
                 rho (ij,l) = 3483.8 * pe(ij,l) / temp(ij,l) ! air parcel density , g/m**3
               !srf18jun2005
@@ -1056,7 +1056,7 @@ SUBROUTINE Makeplume(kmt,ztopmax,zm,dzm,zt,dz, &
             es        = 0.1*esat_l(temp(ij,k)) !blob saturation vapor pressure, em kPa
             !    rotina do plumegen calcula em kPa
             !    es        = esat_pr (t(k))  !blob saturation vapor pressure, em kPa
-            qsat(ij,k) = (eps * es) / (pe(ij,k) - es)  !blob saturation lwc(ij,:) g/g dry air
+            qsat(ij,k) = (ep * es) / (pe(ij,k) - es)  !blob saturation lwc(ij,:) g/g dry air
             est (ij,k) = es  
             txs (ij,k) = temp(ij,k) - te(ij,k)
             rho (ij,k) = 3483.8 * pe(ij,k) / temp (ij,k) ! air parcel density , g/m**3
@@ -1130,7 +1130,7 @@ SUBROUTINE Initial(kmt,imm,iveg_ag,iveg,ijbeg,ijend,nkp,rsurf,qvenv,pe,te,txs,vv
                        temp,wc,wt,qv,vth,vti,qh,qi,qc,est,qsat,rho,radius,visc,&
                        viscosity,alpha,zt,dt,mintime,time,tdur,fmoist,heating, &
                      ntime,l,wbar,dqsdz,cvi,plume_2d,m1,im,isdone,ib,maxblock_size)  
-        
+  use rconstants, only : ep
   USE plume_utils, ONLY: ijindex
   
   IMPLICIT NONE
@@ -1202,7 +1202,7 @@ SUBROUTINE Initial(kmt,imm,iveg_ag,iveg,ijbeg,ijend,nkp,rsurf,qvenv,pe,te,txs,vv
        IF(K>kmt(ij)) CYCLE
        !  es       = esat_pr (t(k))  !blob saturation vapor pressure, em kpa
        est  (ij,k) = es(ij)  
-       qsat (ij,k) = (.622 * es(ij)) / (pe(ij,k) - es(ij)) !saturation lwc g/g
+       qsat (ij,k) = (ep * es(ij)) / (pe(ij,k) - es(ij)) !saturation lwc g/g
        rho  (ij,k) = 3483.8 * pe(ij,k) / temp(ij,k)         !dry air density g/m**3    
     END DO
   END DO  
@@ -1263,12 +1263,12 @@ SUBROUTINE Lbound(imm,iveg_ag,qh,qi,qc,rsurf,plume_2d,iveg,ijbeg,ijend,alpha,&
   ! QC(1).
   ! EFLUX = energy flux at ground,watt/m**2 for the last DT
   !
-  
+  use rconstants, only: g,rgas,cp,ep,pi1 
   USE plume_utils, ONLY: indexi,indexj
   
   implicit none
-  REAL, PARAMETER :: g=9.80796,r=287.04,cp=1004.6,eps=0.622,tmelt=273.3
-  REAL, PARAMETER :: tfreeze=269.3,pi=3.14159,e1=1./3.,e2=5./3.
+  REAL, PARAMETER :: tmelt=273.3
+  REAL, PARAMETER :: tfreeze=269.3,e1=1./3.,e2=5./3.
   REAL, PARAMETER :: heat = 19.3e6    !joules/kg - floresta em alta floresta (mt)
 
   INTEGER,INTENT(IN) :: imm,iveg_ag,ijbeg,ijend,iveg
@@ -1323,8 +1323,8 @@ SUBROUTINE Lbound(imm,iveg_ag,qh,qi,qc,rsurf,plume_2d,iveg,ijbeg,ijend,alpha,&
     pres = pe(ij,1) * 1000.   !need pressure in n/m**2
     c1 = 5. / (6. * alpha)  !alpha is entrainment constant
     c2 = 0.9 * alpha  
-    f = eflux / (pres * cp * pi)  
-    f = g * r * f * plume_2d(ij,iveg_ag)  !buoyancy flux
+    f = eflux / (pres * cp * pi1)  
+    f = g * rgas * f * plume_2d(ij,iveg_ag)  !buoyancy flux
     zv = c1 * rsurf(ij,iveg_ag)  !virtual boundary height
 
     !WRITE(99,FMT='(4(I3.3,1X),6(E18.8,1X))') ij,indexi(ij,ib),indexj(ij,ib),iveg_ag,c1,c2,f,e1,zv,rsurf(ij,iveg_ag)
@@ -1364,7 +1364,7 @@ SUBROUTINE Lbound(imm,iveg_ag,qh,qi,qc,rsurf,plume_2d,iveg,ijbeg,ijend,alpha,&
     !rotina do plumegen ja calcula em kpa
     !es           = esat_pr (t(1))  !blob saturation vapor pressure, em kpa
     est(ij,1)  = es(ij)                                  
-    qsat(ij,1) = (eps * es(ij)) / (pe(ij,1) - es(ij))   !blob saturation lwc g/g dry air
+    qsat(ij,1) = (ep * es(ij)) / (pe(ij,1) - es(ij))   !blob saturation lwc g/g dry air
     IF (qv(ij,1) .gt. qsat (ij,1) ) THEN  
        qc(ij,1) = qv(ij,1) - qsat(ij,1) + qc(ij,1)  !remainder goes into cloud drops
        qv(ij,1) = qsat(ij,1)  
@@ -1440,13 +1440,14 @@ SUBROUTINE Evaporate(l,nkp,qsat,qv,wbar,dqsdz,dt,qh,qi,qc,temp,rho,est,cvi,ijbeg
   !
   !- evaporates cloud,rain and ice to saturation
   !
+  use rconstants, only: cp, alvl,alvi
   IMPLICIT NONE
   !
   !        XNO=10.0E06
   !        HERC = 1.93*1.E-6*XN035        !evaporation constant
   !
-  REAL,PARAMETER :: herc = 5.44e-4, cp = 1.004, heatcond = 2.5e3  
-  REAL,PARAMETER :: heatsubl = 2834., tmelt = 273., tfreeze = 269.3
+  REAL,PARAMETER :: herc = 5.44e-4, heatcond = alvl/1000.  
+  REAL,PARAMETER :: heatsubl = alvi/1000., tmelt = 273., tfreeze = 269.3
   REAL,PARAMETER :: frc = heatcond / cp, src = heatsubl / cp
   
   INTEGER,INTENT(IN) :: l,nkp,ijbeg,ijend
@@ -1662,11 +1663,11 @@ END SUBROUTINE Evaporate
 !-----------------------------------
 
 SUBROUTINE Sublimate(l,nkp,qv,qi,temp,dt,qsat,rho,est,ijbeg,ijend,nottodo)  
+  use rconstants, only: alvi,alli,cp
   !
   ! ********************* VAPOR TO ICE (USE EQUATION OT22)***************
   !
-  REAL,PARAMETER :: eps = 0.622, heatfus = 334., heatsubl = 2834., cp = 1.004
-  REAL,PARAMETER :: src = heatsubl / cp, frc = heatfus / cp, tmelt = 273.3
+  REAL,PARAMETER :: src = alvi / cp, frc = alli / cp, tmelt = 273.3
   REAL,PARAMETER :: tfreeze = 269.3
 
   INTEGER,INTENT(IN)                       :: l,nkp,ijbeg,ijend
@@ -1727,13 +1728,13 @@ END SUBROUTINE Sublimate
 !------------------------------------------------------
 
 SUBROUTINE Glaciate(l,nkp,qh,qi,temp,qsat,dt,qv,ijbeg,ijend,nottodo)  
+  use rconstants, only: alli,cp,ep,alvi
   !
   ! *********************** CONVERSION OF RAIN TO ICE *******************
   !     uses equation OT 16, simplest. correction from W not applied, but
   !     vapor pressure differences are supplied.  
   !
-  REAL,PARAMETER :: heatfus = 334., cp = 1.004, eps = 0.622, heatsubl = 2834.
-  REAL,PARAMETER :: frc = heatfus / cp, frs = heatsubl / cp, tfreeze =  269.3
+  REAL,PARAMETER :: frc = alli / cp, frs = alvi/cp, tfreeze =  269.3
   REAL,PARAMETER :: glconst = 0.025   !glaciation time constant, 1/sec
   
   INTEGER,INTENT(IN) :: l,nkp,ijbeg,ijend
@@ -2215,9 +2216,8 @@ SUBROUTINE scl_misc(nm1,nkp,ijbeg,ijend,qvenv,te,vvel,temp,qv,qc,qh,qi, &
                     tt,qvt,qct,qht,qit,radius,alpha,adiabat,wbar,isdone)
 
   USE plume_utils, ONLY: ijindex
-
+  use rconstants, only:g,cp
   IMPLICIT NONE
-  REAL, PARAMETER    :: g = 9.81, cp=1004.
 
   INTEGER,INTENT(IN) ,DIMENSION(ijbeg:ijend) :: nm1
   LOGICAL,INTENT(IN) ,DIMENSION(ijbeg:ijend) :: isdone
@@ -2316,10 +2316,10 @@ END SUBROUTINE Damp_Grav_Wave
 SUBROUTINE Fallpart(nm1,nkp,qvt,qct,qht,qit,rho,vvel,qh,qi,zm, &
                     vth,vti,cvi,ijbeg,ijend,isdone)
 
+  use rconstants, only: g,cp,ep
   IMPLICIT NONE
 
-  REAL, PARAMETER :: vconst = 5.107387, eps = 0.622, f0 = 0.75  
-  REAL, PARAMETER :: g = 9.81, cp = 1004.
+  REAL, PARAMETER :: vconst = 5.107387, f0 = 0.75  
 
   INTEGER,INTENT(IN) :: nkp,ijbeg,ijend
   INTEGER,INTENT(IN),DIMENSION(ijbeg:ijend) :: nm1
@@ -2528,9 +2528,10 @@ END SUBROUTINE Hadvance_Plumerise
 
 
 SUBROUTINE Buoyancy_Plumerise(nm1,temp,te,qv,qvenv,qh,qi,qc,wt,nkp,ijbeg,ijend,isdone)
+  use rconstants, only: g,ep
   IMPLICIT NONE
   REAL, PARAMETER     :: mu = 0.15
-  REAL, PARAMETER     :: g = 9.8, eps = 0.622, gama = 0.5 ! mass virtual coeff.
+  REAL, PARAMETER     :: gama = 0.5 ! mass virtual coeff.
   ! compensa a falta do termo de aceleracao associado `as
   ! das pertubacoes nao-hidrostaticas no campo de pressao  
   REAL, PARAMETER     :: umgamai = 1./(1.+gama)
@@ -2551,8 +2552,8 @@ SUBROUTINE Buoyancy_Plumerise(nm1,temp,te,qv,qvenv,qh,qi,qc,wt,nkp,ijbeg,ijend,i
   DO k = 2,nkp
     DO ij=ijbeg,ijend
       IF (isdone(ij) .OR. k>nm1(ij)-1) CYCLE
-      tv =   temp(ij,k) * (1. + (qv(ij,k)   /eps))/(1. + qv(ij,k)   )  !blob virtual temp.                                                  
-      tve = te(ij,k) * (1. + (qvenv(ij,k)/eps))/(1. + qvenv(ij,k))  !and environment
+      tv =   temp(ij,k) * (1. + (qv(ij,k)   /ep))/(1. + qv(ij,k)   )  !blob virtual temp.                                                  
+      tve = te(ij,k) * (1. + (qvenv(ij,k)/ep))/(1. + qvenv(ij,k))  !and environment
       qwtotl = qh(ij,k) + qi(ij,k) + qc(ij,k)                         ! QWTOTL*G is drag
       !- orig
       !scr1(ij,k)= g*( umgamai*(  tv - tve) / tve   - qwtotl)
@@ -2609,12 +2610,13 @@ END SUBROUTINE  Entrainment
 
 !     ******************************************************************
 REAL FUNCTION  Esat_l(temp)
+  use rconstants, only: t00
   IMPLICIT NONE
-  REAL, PARAMETER :: abz=273.15
+
   REAL,INTENT(IN) :: temp
   REAL :: tc
   !     esat(millibars),t(kelvin)
-  tc=temp-abz
+  tc=temp-t00
   esat_l=6.1078*exp((17.2693882*tc)/(tc+237.3))
 
 END FUNCTION Esat_l

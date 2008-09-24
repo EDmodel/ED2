@@ -417,9 +417,9 @@ enddo
 
 !       Make sure all positive definite quantities remain such.
 
-call tkeinit(mzp,mxp,myp)
+call tkeinit(mzp,mxp,myp,ia,iz,ja,jz)
 
-call negadj1(mzp,mxp,myp)
+call negadj1(mzp,mxp,myp,ia,iz,ja,jz)
 
 return
 end
@@ -757,7 +757,7 @@ use mem_scratch
 use mem_basic
 use mem_grid
 use node_mod
-use micphys
+use therm_lib, only : virtt,vapour_on
 
 implicit none
 
@@ -772,14 +772,14 @@ mxyzp = mxp * myp * mzp
 
 !     First load past virtual theta into temporary.
 
-if (level .ge. 1) then
+if (vapour_on) then
    ind = 0
    do j = 1,mmyp(ngrid)
       do i = 1,mmxp(ngrid)
          do k = 1,mmzp(ngrid)
             ind = ind + 1
-            scratch%vt3da(ind) = basic_g(ngrid)%theta(k,i,j)  &
-               * (1. + .61 * basic_g(ngrid)%rv(k,i,j))
+            scratch%vt3da(ind) = virtt(basic_g(ngrid)%theta(k,i,j)                         &
+                                      ,basic_g(ngrid)%rv(k,i,j),basic_g(ngrid)%rtp(k,i,j))
          enddo
       enddo
    enddo

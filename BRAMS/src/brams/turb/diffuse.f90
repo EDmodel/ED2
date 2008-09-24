@@ -82,9 +82,6 @@ subroutine diffuse_brams31()
        alf_eps,   &
        alf_tke
 
-  use micphys, only:      &
-       level                !INTENT(IN)
-
   use mem_opt, only:      &      ! For optmization
        jstep,   &
        istep,   &
@@ -94,6 +91,9 @@ subroutine diffuse_brams31()
 
   ! Mass flux
   use mem_mass, only: mass_g, imassflx
+
+  ! Moisture level
+  use therm_lib, only: vapour_on
 
 implicit none
   
@@ -123,16 +123,17 @@ implicit none
        ,scratch%vt3dh     (1)     ,scratch%vt3di     (1)      &
        ,scratch%vt3dn     (1)     ,scratch%scr2      (1)      &
        ,idiffk(ngrid))
-     
-  if (level <= 1) call azero(mxyzp,scratch%vt3dp(1))
-  if (level >= 2) call ae1  (mxyzp,scratch%vt3dp(1),micro_g(ngrid)%rcp(1,1,1))
-  
-  call bruvais(mzp,mxp,myp,ia,iz,ja,jz                          &
-       ,basic_g(ngrid)%theta (1,1,1) ,basic_g(ngrid)%rtp (1,1,1)  &
-       ,basic_g(ngrid)%rv    (1,1,1) ,scratch%vt3dp(1)            &
-       ,basic_g(ngrid)%pp    (1,1,1) ,basic_g(ngrid)%pi0 (1,1,1)  &
-       ,scratch%vt3dj        (1)     ,grid_g(ngrid)%rtgt (1,1)    &
-       ,grid_g(ngrid)%flpw    (1,1)   )
+
+  call azero2(mxyzp,scratch%vt3dp(1),scratch%vt3dq(1))
+  if(vapour_on) then
+    call atob(mxyzp,basic_g(ngrid)%rv(1,1,1),scratch%vt3dp(1))
+    call atob(mxyzp,basic_g(ngrid)%rtp(1,1,1),scratch%vt3dq(1))
+  end if
+
+  call bruvais(mzp,mxp,myp,ia,iz,ja,jz                            &
+       ,basic_g(ngrid)%theta (1,1,1) ,scratch%vt3dq          (1)  &
+       ,scratch%vt3dp            (1) ,grid_g(ngrid)%rtgt   (1,1)  &
+       ,grid_g(ngrid)%flpw     (1,1) ,scratch%vt3dj          (1)  )
   
   if (idiffk(ngrid) <= 3 .or. idiffk(ngrid) == 7) then
      call mxdefm(mzp,mxp,myp,ia,iz,ja,jz,ibcon,jdim            &
@@ -146,43 +147,29 @@ implicit none
 
   ![MLO -> Nananishi and Niino (2004) scheme based on Mellor-Yamada Level 2½
   if (idiffk(ngrid) == 7) then
-     if(level >= 1) then
-       call nakanishi(mzp, mxp, myp, npatch, ia, iz, ja, jz, jdim,level         &
-          ,turb_g(ngrid)%tkep       (1,1,1)   ,tend%tket                (1)     &
-          ,scratch%vt3dd            (1)       ,scratch%vt3de            (1)     &
-          ,scratch%vt3dh            (1)       ,scratch%vt3di            (1)     &
-          ,scratch%vt3dj            (1)       ,scratch%scr1             (1)     &
-          ,grid_g(ngrid)%rtgt       (1,1)     ,basic_g(ngrid)%theta     (1,1,1) &
-          ,basic_g(ngrid)%rv        (1,1,1)   ,basic_g(ngrid)%dn0       (1,1,1) &
-          ,basic_g(ngrid)%up        (1,1,1)   ,basic_g(ngrid)%vp        (1,1,1) &
-          ,leaf_g(ngrid)%veg_rough  (1,1,1)   ,leaf_g(ngrid)%patch_rough(1,1,1) &
-          ,leaf_g(ngrid)%tstar      (1,1,1)   ,leaf_g(ngrid)%ustar      (1,1,1) &
-          ,leaf_g(ngrid)%patch_area (1,1,1)   ,turb_g(ngrid)%sflux_u    (1,1)   &
-          ,turb_g(ngrid)%sflux_v    (1,1)     ,turb_g(ngrid)%sflux_t    (1,1)   &
-          ,grid_g(ngrid)%flpu       (1,1)     ,grid_g(ngrid)%flpv       (1,1)   &
-          ,grid_g(ngrid)%flpw       (1,1)     ,turb_g(ngrid)%kpbl       (1,1)   &
-          ,turb_g(ngrid)%pblhgt     (1,1)     ,turb_g(ngrid)%lmo        (1,1)   &
-          ,turb_g(ngrid)%ltscale    (1,1,1)   ,turb_g(ngrid)%sigw       (1,1,1))
-     else
-       call azero(mxyzp,scratch%vt3dp(1))
-       call nakanishi(mzp, mxp, myp, npatch, ia, iz, ja, jz, jdim,level         &
-          ,turb_g(ngrid)%tkep       (1,1,1)   ,tend%tket                (1)     &
-          ,scratch%vt3dd            (1)       ,scratch%vt3de            (1)     &
-          ,scratch%vt3dh            (1)       ,scratch%vt3di            (1)     &
-          ,scratch%vt3dj            (1)       ,scratch%scr1             (1)     &
-          ,grid_g(ngrid)%rtgt       (1,1)     ,basic_g(ngrid)%theta     (1,1,1) &
-          ,scratch%vt3dp            (1)       ,basic_g(ngrid)%dn0       (1,1,1) &
-          ,basic_g(ngrid)%up        (1,1,1)   ,basic_g(ngrid)%vp        (1,1,1) &
-          ,leaf_g(ngrid)%veg_rough  (1,1,1)   ,leaf_g(ngrid)%patch_rough(1,1,1) &
-          ,leaf_g(ngrid)%tstar      (1,1,1)   ,leaf_g(ngrid)%ustar      (1,1,1) &
-          ,leaf_g(ngrid)%patch_area (1,1,1)   ,turb_g(ngrid)%sflux_u    (1,1)   &
-          ,turb_g(ngrid)%sflux_v    (1,1)     ,turb_g(ngrid)%sflux_t    (1,1)   &
-          ,grid_g(ngrid)%flpu       (1,1)     ,grid_g(ngrid)%flpv       (1,1)   &
-          ,grid_g(ngrid)%flpw       (1,1)     ,turb_g(ngrid)%kpbl       (1,1)   &
-          ,turb_g(ngrid)%pblhgt     (1,1)     ,turb_g(ngrid)%lmo        (1,1)   &
-          ,turb_g(ngrid)%ltscale    (1,1,1)   ,turb_g(ngrid)%sigw       (1,1,1))
+     call azero2(mxyzp,scratch%vt3dp(1),scratch%vt3dq(1))
+     if(vapour_on) then
+       call atob(mxyzp,basic_g(ngrid)%rv(1,1,1),scratch%vt3dp(1))
+       call atob(mxyzp,basic_g(ngrid)%rtp(1,1,1),scratch%vt3dq(1))
      end if
-  endif
+     call nakanishi(mzp, mxp, myp, npatch, ia, iz, ja, jz, jdim             &
+        ,turb_g(ngrid)%tkep       (1,1,1) ,tend%tket                    (1) &
+        ,scratch%vt3dd                (1) ,scratch%vt3de                (1) &
+        ,scratch%vt3dh                (1) ,scratch%vt3di                (1) &
+        ,scratch%vt3dj                (1) ,scratch%scr1                 (1) &
+        ,grid_g(ngrid)%rtgt         (1,1) ,basic_g(ngrid)%theta     (1,1,1) &
+        ,scratch%vt3dp                (1) ,scratch%vt3dq                (1) &
+        ,basic_g(ngrid)%dn0       (1,1,1) ,basic_g(ngrid)%up        (1,1,1) &
+        ,basic_g(ngrid)%vp        (1,1,1) ,leaf_g(ngrid)%veg_rough  (1,1,1) &
+        ,leaf_g(ngrid)%patch_rough(1,1,1) ,leaf_g(ngrid)%tstar      (1,1,1) &
+        ,leaf_g(ngrid)%ustar      (1,1,1) ,leaf_g(ngrid)%patch_area (1,1,1) &
+        ,turb_g(ngrid)%sflux_u      (1,1) ,turb_g(ngrid)%sflux_v      (1,1) &
+        ,turb_g(ngrid)%sflux_t      (1,1) ,grid_g(ngrid)%flpu         (1,1) &
+        ,grid_g(ngrid)%flpv         (1,1) ,grid_g(ngrid)%flpw         (1,1) &
+        ,turb_g(ngrid)%kpbl         (1,1) ,turb_g(ngrid)%pblhgt       (1,1) &
+        ,turb_g(ngrid)%lmo          (1,1) ,turb_g(ngrid)%ltscale    (1,1,1) &
+        ,turb_g(ngrid)%sigw       (1,1,1) )
+  end if
   !MLO]
 
   

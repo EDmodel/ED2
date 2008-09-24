@@ -177,8 +177,8 @@ diffuse_backscatter_nir = (2.0 * leaf_reflect_nir -   &
 
 leaf_scatter_vis(1:4) = leaf_scatter_vis_tropics
 leaf_scatter_vis(5:11) = leaf_scatter_vis_temperate
-leaf_scatter_vis(12) = leaf_scatter_vis_temperate
-leaf_scatter_vis(13) = leaf_scatter_vis_tropics
+leaf_scatter_vis(12:13) = leaf_scatter_vis_temperate
+leaf_scatter_vis(14:15) = leaf_scatter_vis_tropics
 
 diffuse_backscatter_vis(1:4) =  diffuse_bscat_vis_trop
 diffuse_backscatter_vis(5:11) = diffuse_bscat_vis_temp

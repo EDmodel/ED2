@@ -18,13 +18,12 @@ subroutine cuparth(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0,maxiens,ie
        icoic                             !INTENT(IN)
 
   use mem_scratch2_grell
-  use rconstants, only: rgas, cp, rm, p00, g, cpor, pi1,onerad
+  use rconstants, only: rgas, cp, rm, p00, tcrit, g, cpor, pkdcut,pi1,onerad
 
   !srf   mgmxp, mgmyp, mgmzp sao usadas alocar memoria para as
   !      variaveis da parametrizacao do Grell.
 
   implicit none
-  real, parameter :: tcrit = 273.15
   integer, intent(in) :: mgmxp     ! Number of points in x-direction;
   integer, intent(in) :: mgmyp     ! Number of points in y-direction;
   integer, intent(in) :: mgmzp     ! Number of points in z-direction;
@@ -662,6 +661,10 @@ subroutine cup_enss(mynum, m1, m2, m3, i0, j0,                 &
 
 
         !     hcdo(i,ki)=heo_cup(i,ki)
+        if (jmin(i) <= 3) then
+           ierr(i) = 9
+           go to 100
+        end if
         hcdo(i,ki) = heso_cup(i,ki)
         DZ         = Zo_cup(i,Ki+1)-Zo_cup(i,Ki)
         dh         = dz*(HCDo(i,Ki)-heso_cup(i,ki))
@@ -1341,6 +1344,7 @@ subroutine cup_forcing_ens_16(aa0,aa1,xaa0,mbdt,dtime,xmb,ierr,   &
         enddo
         if(p_cup(i,ktop(i)).gt.pcrit(1))kclim=1
 9       continue
+        kclim = min(mkxcrt,max(kclim,1))
         k= max(kclim-1,1)
         aclim1= acrit(kclim)*1.e3
         aclim2= acrit(k)*1.e3

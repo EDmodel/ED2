@@ -10,13 +10,11 @@
 
 subroutine drydep_driver(m1,m2,m3,ia,iz,ja,jz)
   
-  USE mem_grid         ,  ONLY :  npatch,naddsc
-  USE mem_grid         ,  ONLY :  MAXGRDS,nzpmax,dzt,zt,ngrids  &
-       ,ngrid,nzg,nzs,jdim,dtlt,grid_g
+  USE mem_grid         ,  ONLY :  npatch,naddsc,MAXGRDS,nzpmax,dzt,zt,ngrids  &
+                                 ,ngrid,nzg,nzs,jdim,dtlt,grid_g
   USE mem_basic        ,  ONLY :  basic_g
   USE mem_turb         ,  ONLY :  turb_g
   USE mem_micro        ,  ONLY :  micro_g
-  USE mem_grid         ,  ONLY :  grid_g
   USE mem_scratch      ,  ONLY :  scratch
   USE mem_leaf         ,  ONLY :  leaf_g 
   USE extras           ,  ONLY :  extra2d 
@@ -259,7 +257,7 @@ subroutine sedim_particles(m2,m3,npatch,ia,iz,ja,jz,temps,dens,v_sed)
 
   real, dimension(m2,m3)    :: v_sed
 
-  real :: pi,g,A,B,C,Kn,n_air,Gi,v_air,mfp,nu,rey,part_dens,part_radius
+  real :: A,B,C,Kn,n_air,Gi,v_air,mfp,nu,rey,part_dens,part_radius
 
   !- constantes
   !parameter (g=9.80622, pi=3.141593)
@@ -324,7 +322,7 @@ end subroutine sedim_particles
 subroutine lsl_particles(m2,m3,npatch,ia,iz,ja,jz           &
      ,temps,dens,vels,rvs,Zi,ustar,tstar,patch_area,veg,Z0m &
      ,v_sed,r_lsl)
-
+  use rconstants, only: t00, vonk,cp,pi1,g
   implicit none
   REAL,PARAMETER :: kB = 1.3807e-23      ! const Boltzmann - kg m^2 s^-2 K^-1 molecule^-1
   REAL,PARAMETER :: ASP = 1.257          ! 1.249
@@ -332,11 +330,8 @@ subroutine lsl_particles(m2,m3,npatch,ia,iz,ja,jz           &
   REAL,PARAMETER :: CSP = 1.1            ! 0.87 
   
   REAL,PARAMETER :: M_AVEG = 4.8096e-26  ! average mass of one molecure - kg  molecule^-1
-  REAL,PARAMETER :: vonK = 0.40          ! von Karman constant
-  REAL,PARAMETER :: Cpd = 1004.67        ! specific heat of dry air [J/kg/K]
   REAL,PARAMETER :: em23 = -2./3., ep23 = +2./3., ep13=1./3.    ! exponents 2./3. 1/3
-  REAL,PARAMETER :: pi = 3.1415927, g = 9.80
-  
+ 
   integer :: m2,m3,npatch,ia,iz,ja,jz,i,j,ipatch
   real, dimension(m2,m3) :: temps,dens,vels,rvs,Zi
   real, dimension(m2,m3,npatch) :: ustar,tstar,patch_area,veg,Z0m
@@ -363,7 +358,7 @@ subroutine lsl_particles(m2,m3,npatch,ia,iz,ja,jz           &
         !- several particle/environment properties
         
         !- mean speed of air molecules (m/s)
-        !  v_air = sqrt( 8. * kB   * temps(i,j) / (pi * M_AVEG) )
+        !  v_air = sqrt( 8. * kB   * temps(i,j) / (pi1 * M_AVEG) )
         v_air = sqrt( 7.3102e+2 * temps(i,j)                        )
         
         !-dynamic viscosity of air (kg m^-1 s^-1)
@@ -384,9 +379,9 @@ subroutine lsl_particles(m2,m3,npatch,ia,iz,ja,jz           &
         !- Schmidt number determination (Jacobson)
         !-- molecular diffusivity (Brownian diffusivity coeficient)   
         !XXXXXXXXXXXXXXXXXXXXXXXXXXXX
-        D =  kB * temps(i,j) * Gi / (6.*pi*part_radius*n_air)
+        D =  kB * temps(i,j) * Gi / (6.*pi1*part_radius*n_air)
         
-        !x    D =  (kB/M_AVEG) * temps(i,j) * Gi / (6.*pi*part_radius*n_air)
+        !x    D =  (kB/M_AVEG) * temps(i,j) * Gi / (6.*pi1*part_radius*n_air)
         
         !-  kinematic viscosity of air ()
         nu = n_air/dens(i,j)
@@ -428,14 +423,14 @@ subroutine lsl_particles(m2,m3,npatch,ia,iz,ja,jz           &
                     !- expression from Jacobson(1999)
 !
                     !- thermal conductivity of dry air (Kd)
-                    Kd = 0.023807 + 7.1128e-5*(temps(i,j) - 273.15) !- Eq.(2.3) 
+                    Kd = 0.023807 + 7.1128e-5*(temps(i,j) - t00) !- Eq.(2.3) 
                     !- Prandt number
-                    Pr =  n_air*Cpd*(1.+0.859*rvs(i,j))/Kd           !- Eq.(17.32)  
+                    Pr =  n_air*Cp*(1.+0.859*rvs(i,j))/Kd           !- Eq.(17.32)  
                     
                     !- energy moisture roughness lengths (Z0h)                
                     !- Eq.(8.10)
                     !-- molecular thermal diffusion coeff. (m^2 s^-1)
-                    Dh=Kd/(dens(i,j)*Cpd)
+                    Dh=Kd/(dens(i,j)*Cp)
                     !- Z0h	   
                     Z0h=Dh/(vonK*ustar(i,j,ipatch))
 

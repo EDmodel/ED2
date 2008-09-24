@@ -303,9 +303,9 @@ subroutine onenode()
   mi0(1:ngrids)=i0
   mj0(1:ngrids)=j0
   mia(1:ngrids)=ia
-  miz(1:ngrids)=iz
+  miz(1:ngrids)=mmxp(1:ngrids)-1
   mja(1:ngrids)=ja
-  mjz(1:ngrids)=jz
+  mjz(1:ngrids)=mmyp(1:ngrids)-1
 
 
 

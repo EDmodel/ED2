@@ -343,19 +343,18 @@ end
 subroutine comp_rhfrac(n1,n2,n3,a,b,c)
 
 use rconstants
-
+use therm_lib, only: rehuil
 implicit none
 integer :: n1,n2,n3
 real :: a(n1,n2,n3),b(n1,n2,n3),c(n1,n2,n3)
 real :: xtemp,xpress
 integer :: i,j,k
-real, external :: rs
 do k=1,n3
    do j=1,n2
       do i=1,n1
          xtemp=c(i,j,k)*b(i,j,k)/cp
          xpress=(b(i,j,k)/cp)**cpor*p00
-         a(i,j,k)=min(1.,max(0.,a(i,j,k)/rs(xpress,xtemp)))
+         a(i,j,k)=min(1.,rehuil(xpress,xtemp,a(i,j,k)))
       enddo
    enddo
 enddo

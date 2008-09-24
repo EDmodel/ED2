@@ -3284,6 +3284,7 @@ MODULE rad_carma
           		   caseG,wave,imie               !kml2
     
     USE mem_aerad, ONLY: iprocopio
+    use rconstants, only: t00
     IMPLICIT NONE
     
     INTEGER,INTENT(IN) :: ia,iz,ja,jz,m1
@@ -3433,8 +3434,8 @@ MODULE rad_carma
          REFFI(ij,j) =  9.5 * 1.e+3 * LWL_aerad(ij,j) + 4.0 
        END IF
        
-       CORR(ij,j) = 1.047 - 0.913e-4 * (tt(ij,j)-273.16) + 0.203e-3 * &
-                   (tt(ij,j)-273.16) **2 - 0.106e-4 * (tt(ij,j)-273.16) **3
+       CORR(ij,j) = 1.047 - 0.913e-4 * (tt(ij,j)-t00) + 0.203e-3 * &
+                   (tt(ij,j)-t00) **2 - 0.106e-4 * (tt(ij,j)-t00) **3
       
        CORR(ij,j) = MAX(CORR(ij,j),REAL((epsilon)))
               
@@ -4313,7 +4314,7 @@ MODULE rad_carma
   
   SUBROUTINE miess( ro, rfr, rfi, thetd, jx, qext, qscat,  &
   	  ctbrqs, r, re2, tmag2, wvno  )
-   
+    use rconstants, only: pio180
     !
     ! **********************************************************************
     !	 THIS SUBROUTINE COMPUTES MIE SCATTERING BY A STRATIFIED SPHERE,
@@ -4520,7 +4521,7 @@ MODULE rad_carma
       si2tht(j) = 0.0
       CYCLE
       24 IF ( thetd(j) >= 90.0 )  GO TO 25
-      t(1)	=  ( 3.14159265359 * thetd(j) ) / 180.0
+      t(1)	=  pio180 * thetd(j)
       cstht(j)  =  COS( t(1) )
       si2tht(j) =  1.0 - cstht(j)**2
       CYCLE

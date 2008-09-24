@@ -364,7 +364,8 @@ subroutine cloudprep_rad(m1,ka,mcat,jhcat,tairk,rhov,rx,cx,embharr        &
    ! NOT PER M^3 AS IN THE ORIGINAL MICROPHYSICS SUBROUTINES.
 
    use rconstants, only: t00
-   use micphys,    only: ncat,jnmb,jhabtab,level,emb0,emb1,emb2,rxmin,parm
+   use micphys,    only: ncat,jnmb,jhabtab,emb0,emb1,emb2,rxmin,parm
+   use therm_lib,  only: rhovsl,level
 
    implicit none
    integer, intent(in)  :: m1
@@ -394,18 +395,17 @@ subroutine cloudprep_rad(m1,ka,mcat,jhcat,tairk,rhov,rx,cx,embharr        &
    real, dimension(m1), intent(in) :: sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h
    real, dimension(m1), intent(in) :: con_c,con_r,con_p,con_s,con_a,con_g,con_h
 
-   real, external :: rhovsl
    real, parameter :: offset=1.e-16
 
    ! If level <= 1, there is no condensate of any type in this simulation.
-   if (level <= 1) then
+   select case (level)
+   case (0,1)
       ! Set mcat to 0 and return
       mcat = 0
       return
-   endif
 
    ! If level = 2, cloud water is the only form of condensate that may exist. 
-   if (level == 2) then
+   case (2)
       ! Set mcat to 1
       mcat = 1
       ! Set jnmb flag for cloud water to 1
@@ -420,10 +420,8 @@ subroutine cloudprep_rad(m1,ka,mcat,jhcat,tairk,rhov,rx,cx,embharr        &
          jhcat(k,1) = 1
       end do
       return
-   endif
-
    ! If level = 3, up to 7 forms of condensate that may exist.
-   if (level == 3) then
+   case (3)
       ! Set mcat to 7.
       mcat = 7
       ! Zero out microphysics scratch arrays for the present i,j column
@@ -521,7 +519,7 @@ subroutine cloudprep_rad(m1,ka,mcat,jhcat,tairk,rhov,rx,cx,embharr        &
       ! and EACH_COLUMN in omic_misc.f90
       do k = ka,m1-1
          tairc = tairk(k) - t00
-         rhovslair = rhovsl(tairc)
+         rhovslair = rhovsl(tairk(k)) ! This is now expecting temp. in Kelvin!
          relhum = min(1.,rhov(k) / rhovslair)
 
          ns = max(1,nint(100. * relhum))
@@ -573,7 +571,7 @@ subroutine cloudprep_rad(m1,ka,mcat,jhcat,tairk,rhov,rx,cx,embharr        &
       enddo
       
 
-   endif
+   end select
 
    return
 end subroutine cloudprep_rad

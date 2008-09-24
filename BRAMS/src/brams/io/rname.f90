@@ -11,6 +11,9 @@ subroutine NAMEOUT
 
   use mem_all
   
+  ! For water
+  use therm_lib, only: level
+  
   ! For STILT
   use mem_mass, only : iexev, imassflx
 
