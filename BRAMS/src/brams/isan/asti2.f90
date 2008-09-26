@@ -211,7 +211,7 @@ do nobs=1,10000
          if((iqflagsp(kl,3,iq).ne.5.and.iqflagsp(kl,3,iq).ne.0  &
               .and.iqflagsp(kl,3,iq).ne.8).or.t(kl).lt.-998.) iqf=0
       enddo
-      if (iqf.eq.1) tp(kl)=t(kl)+273.16
+      if (iqf.eq.1) tp(kl)=t(kl)+t00
       if (iqf.eq.0) tp(kl)=1.e30
 
       iqf=1
@@ -290,7 +290,7 @@ subroutine sndproc (lp,lz,xlat,xlon,elev,idsta,tp,zp,pp,rp,dz,fz,zz)
 
 use isan_coms
 use rconstants
-
+use therm_lib, only: ptrh2rvapl,virtt
 implicit none
                    
 real, dimension(*) :: tp,zp,pp,rp,dz,fz,zz
@@ -302,7 +302,6 @@ real, dimension(maxlev) :: uz,vz,thz
 
 integer :: not,non,llp,k,llz,kk,lbc
 real :: bchyd,rss,pio,tho,zso
-real, external :: rs
 
 do not=1,notsta
    if('r'//idsta(1:5).eq.notid(not)(1:6)) then
@@ -447,8 +446,12 @@ do k=1,lp
    if(tp(k) < 1.e19 .and. pp(k) < 1.e19) then
       thz(k)=tp(k)*(p00/pp(k))**rocp
       if(rp(k) < 1.e19) then
-         rss=rs(pp(k),tp(k))*rp(k)
-         thz(k)=thz(k)*(1.+.61*rss)
+         !---------------------------------------------------------------------------------!
+         !    Since this is radiosonde, always use liquid water to define vapour mixing    !
+         ! ratio. This is the WMO standard, so we assume the data is in standard form.     !
+         !---------------------------------------------------------------------------------!
+         rss=ptrh2rvapl(rp(k),pp(k),tp(k))
+         thz(k)=virtt(thz(k),rss)
       endif
    endif
 enddo
@@ -718,7 +721,7 @@ do nsss=1,1000000
       if((iqflags(3,iq).ne.5.and.iqflags(3,iq).ne.0  &
          .and.iqflags(3,iq).ne.8) .or. tx.lt.-998.) iqf=0
    enddo
-   if (iqf.eq.1) tx=tx+273.16
+   if (iqf.eq.1) tx=tx+t00
    if (iqf.eq.0) tx=1.e30
 
    iqf=1
@@ -726,7 +729,7 @@ do nsss=1,1000000
       if((iqflags(4,iq).ne.5.and.iqflags(4,iq).ne.0  &
          .and.iqflags(4,iq).ne.8) .or. tdx.lt.-998.) iqf=0
    enddo
-   if (iqf.eq.1) tdx=tdx+273.16
+   if (iqf.eq.1) tdx=tdx+t00
    if (iqf.eq.0) tdx=1.e30
 
    iqf=1
@@ -771,7 +774,7 @@ subroutine sfcproc (nasecs,jyr,jmo,jdy,jt,idsta,xlat,xlon  &
                    
 use isan_coms
 use rconstants
-
+use therm_lib, only : rslf,rehul
 implicit none
 
 integer :: jyr,jmo,jdy,jt
@@ -786,7 +789,6 @@ character(len=14) :: obsdate
 character(len=8) :: csfc
 
 integer :: nsu,ns,not,mis1,mis2,irepl,isfc
-real, external :: rs
 integer, save ::ncall=0
 
 call date_make_big(jyr,jmo,jdy,jt*100,obsdate)
@@ -863,7 +865,11 @@ endif
 
 if(tx.lt.1.e19.and.px.lt.1.e19) then
    if(tdx.lt.1.e19) then
-      sf_r(nsu)=rs(px,tdx)/rs(px,tx)
+      !------------------------------------------------------------------------------------!
+      !     Assuming relative humidity with respect to the liquid phase. This is observed  !
+      ! data, and following the WMO convention this should be in liquid phase.             !
+      !------------------------------------------------------------------------------------!
+      sf_r(nsu)=rehul(px,tx,rslf(px,tdx))
    else
       sf_r(nsu)=1.e30
    endif

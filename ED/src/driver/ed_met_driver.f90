@@ -554,7 +554,8 @@ subroutine update_met_drivers_array(cgrid)
   use met_driver_coms, only: met_frq, nformats, met_nv, met_interp, met_vars &
                             ,have_co2,initial_co2
   use misc_coms, only: current_time
-  use consts_coms, only: rdry, cice, cliq, alli, rocp, p00, cp,day_sec
+  use consts_coms, only: rdry, cice, cliq, alli, rocp, p00, cp,day_sec,t3ple
+  use therm_lib, only: virtt
 
   implicit none
 
@@ -875,16 +876,16 @@ subroutine update_met_drivers_array(cgrid)
         
         
         ! rho
-        cpoly%met(isi)%rhos = cpoly%met(isi)%prss / (rdry *   &
-             cpoly%met(isi)%atm_tmp * (1.0 + 0.61 * cpoly%met(isi)%atm_shv))
+        cpoly%met(isi)%rhos = cpoly%met(isi)%prss &
+                            / (rdry * virtt(cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv))
         
         ! qpcpg, dpcpg
-        if(cpoly%met(isi)%atm_tmp > 273.15)then
-           cpoly%met(isi)%qpcpg = (cliq * (cpoly%met(isi)%atm_tmp - 273.15) +   &
+        if(cpoly%met(isi)%atm_tmp > t3ple)then
+           cpoly%met(isi)%qpcpg = (cliq * (cpoly%met(isi)%atm_tmp - t3ple) +   &
                 alli) * cpoly%met(isi)%pcpg
            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg * 0.001)
         else
-           cpoly%met(isi)%qpcpg = cice * (cpoly%met(isi)%atm_tmp - 273.15) *  &
+           cpoly%met(isi)%qpcpg = cice * (cpoly%met(isi)%atm_tmp - t3ple) *  &
                 cpoly%met(isi)%pcpg
            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg * 0.01)
         endif

@@ -6,7 +6,7 @@
 !                                                                        !
 !------------------------------------------------------------------------!
 
-subroutine ed_coup_driver
+subroutine ed_coup_driver()
   
   use grid_coms, only: &
        ngrids,          &
@@ -40,7 +40,6 @@ subroutine ed_coup_driver
   use ed_node_coms , only: mynum,nnodetot,sendnum,recvnum,mmxp,mmyp
 
   implicit none
-
   real :: w1,w2,w3,wtime_start  ! wall time
   real, external :: walltime    ! wall time
   real :: t1,t2                 ! cpu time
@@ -62,6 +61,7 @@ subroutine ed_coup_driver
 
   wtime_start=walltime(0.)
   w1=walltime(wtime_start)
+
 
   !---------------------------------------------------------------------------!
   ! STEP 1: Set the ED model parameters                                       !
@@ -112,7 +112,7 @@ subroutine ed_coup_driver
      !          state.
      !-----------------------------------------------------------------------!
 
-     if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,606,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
+     if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,606,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
   
      if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Init_Full_History_Restart...'
      call init_full_history_restart()
@@ -127,7 +127,7 @@ subroutine ed_coup_driver
      ! STEP 6B: Initialize state properties of polygons/sites/patches/cohorts !
      !------------------------------------------------------------------------!
      
-     if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Load_Ecosystem_State...'
+     if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Load_Ecosystem_State...'
      call load_ecosystem_state()
 
   end if
@@ -135,13 +135,30 @@ subroutine ed_coup_driver
   !--------------------------------------------------------------------------------!
   ! STEP 7: Initialize hydrology related variables                                 !
   !--------------------------------------------------------------------------------!
-  if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] initHydrology...'
+
+  if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Initializing Hydrology...'
   call initHydrology()
+
+  !-----------------------------------------------------------------------!
+  ! STEP 16: Initialize the flux arrays that pass to the atmosphere
+  !-----------------------------------------------------------------------!
+  if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Allocating Transfer Arrays...'
+  allocate(wgridf_g(ngrids))
+  allocate(wgridp_g(ngrids))
+  allocate(ed_fluxp_g(ngrids))
+  allocate(ed_fluxf_g(ngrids))
+  allocate(wgrids_g(ngrids))
+  allocate(ed_precip_g(ngrids))
+  do ifm=1,ngrids
+     call newgrid(ifm)
+     call initialize_ed2leaf(ifm,mmxp(ifm),mmyp(ifm))
+  enddo
 
   !-----------------------------------------------------------------------!
   ! STEP 8: Inform edtypes which atmospheric cell to look at
   !          
   !-----------------------------------------------------------------------!
+  if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Setting the correspondent atmospheric cells...'
   do ifm=1,ngrids
      call set_edtype_atm(ifm)
   enddo
@@ -150,6 +167,7 @@ subroutine ed_coup_driver
   ! STEP 9: Initialize meteorology                                        !
   !-----------------------------------------------------------------------!
   
+  if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Initializing meteorology...'
   do ifm = 1,ngrids
      call newgrid(ifm)
      call copy_atm2lsm(ifm,.true.)
@@ -193,14 +211,14 @@ subroutine ed_coup_driver
   !          types.                                                       !
   !-----------------------------------------------------------------------!
   
-  if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Filltab_Alltypes...'
+  if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Filltab_Alltypes...'
   call filltab_alltypes
 
   !-----------------------------------------------------------------------!
   ! STEP 13. Checking how the output was configure and determining the    !
   !          averaging frequency.                                         !
   !-----------------------------------------------------------------------!
-  if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Finding frqsum...'
+  if (mynum == 1) write(unit=*,fmt='(a)') ' [+] Finding frqsum...'
   call find_frqsum()
 
   !-----------------------------------------------------------------------!
@@ -226,22 +244,7 @@ subroutine ed_coup_driver
      call reset_averaged_vars(edgrid_g(ifm))
   end do
 
-  !-----------------------------------------------------------------------!
-  ! STEP 16: Initialize the flux arrays that pass to the atmosphere
-  !-----------------------------------------------------------------------!
-  allocate(wgridf_g(ngrids))
-  allocate(wgridp_g(ngrids))
-  allocate(ed_fluxp_g(ngrids))
-  allocate(ed_fluxf_g(ngrids))
-  allocate(wgrids_g(ngrids))
-  allocate(ed_precip_g(ngrids))
-  do ifm=1,ngrids
-     call newgrid(ifm)
-     call initialize_ed2leaf(ifm,mmxp(ifm),mmyp(ifm))
-  enddo
-
-
-  !-----------------------------------------------------------------------!
+   !-----------------------------------------------------------------------!
   ! STEP 17. Getting the CPU time and printing the banner                 !
   !-----------------------------------------------------------------------!
   if (mynum == nnodetot) then

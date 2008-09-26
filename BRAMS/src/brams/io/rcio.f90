@@ -9,6 +9,7 @@
 subroutine commio (cfile,io,iun)
 
    use mem_all
+   use therm_lib, only: level
    use mem_mass, only: imassflx, iexev ![MLO
    use leaf_coms
 

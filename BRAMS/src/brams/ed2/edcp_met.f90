@@ -7,18 +7,19 @@ subroutine copy_atm2lsm(ifm,init)
        master_num,mmzp,mmxp,mmyp,  &
        ia,iz,ja,jz,ia_1,iz1,ja_1,jz1
   
-  use consts_coms,only:cpi,cp,p00,rocp,rdry,cliq,alli,cice
+  use rconstants,only:cpi,cp,p00,rocp,rgas,cliq,alli,cice,t3ple
   use met_driver_coms, only: have_co2,initial_co2
   use ed_state_vars,only: edgrid_g,edtype,polygontype
   use ed_node_coms,only:mynum
   use canopy_radiation_coms,only : rlong_min
 
   !------- Transfer these arrays to the polygons ----!
-  use mem_basic, only: basic_g
+  use mem_basic,   only: basic_g
   use mem_radiate, only: radiate_g
-  use mem_cuparm, only: cuparm_g
-  use mem_micro, only: micro_g
-  use mem_grid, only: zt,grid_g,dzt,zm,if_adap,jdim
+  use mem_cuparm,  only: cuparm_g
+  use mem_micro,   only: micro_g
+  use mem_grid,    only: zt,grid_g,dzt,zm,if_adap,jdim
+  use therm_lib,   only: virtt
   !--------------------------------------------------!
 
 
@@ -126,7 +127,6 @@ subroutine copy_atm2lsm(ifm,init)
         
         theta_mean(i,j) = basic_g(ifm)%theta(2,i,j)
         rv_mean(i,j) = basic_g(ifm)%rv(2,i,j)
-
         up_mean(i,j) = (basic_g(ifm)%up(2,i,j) + basic_g(ifm)%up(2,i-1,j)) * 0.5
         vp_mean(i,j) = (basic_g(ifm)%vp(2,i,j) +basic_g(ifm)% vp(2,i,j-jdim)) * 0.5
         pi0_mean(i,j) = (basic_g(ifm)%pp(1,i,j) + basic_g(ifm)%pp(2,i,j) & 
@@ -178,7 +178,6 @@ subroutine copy_atm2lsm(ifm,init)
      cgrid%met(ipy)%atm_shv  = rv_mean(ix,iy)
      cgrid%met(ipy)%atm_tmp  = theta_mean(ix,iy)*pi0_mean(ix,iy) * cpi
      cgrid%met(ipy)%atm_co2  = initial_co2
-  
   enddo
 
   call fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean)
@@ -226,16 +225,16 @@ subroutine copy_atm2lsm(ifm,init)
         
         
         ! rho
-        cpoly%met(isi)%rhos = cpoly%met(isi)%prss / (rdry *   &
-             cpoly%met(isi)%atm_tmp * (1.0 + 0.61 * cpoly%met(isi)%atm_shv))
+        cpoly%met(isi)%rhos = cpoly%met(isi)%prss / (rgas *   &
+             virtt(cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv))
         
         ! qpcpg, dpcpg
-        if(cpoly%met(isi)%atm_tmp > 273.15)then
-           cpoly%met(isi)%qpcpg = (cliq * (cpoly%met(isi)%atm_tmp - 273.15) +   &
+        if(cpoly%met(isi)%atm_tmp > t3ple)then
+           cpoly%met(isi)%qpcpg = (cliq * (cpoly%met(isi)%atm_tmp - t3ple) +   &
                 alli) * cpoly%met(isi)%pcpg
            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg * 0.001)
         else
-           cpoly%met(isi)%qpcpg = cice * (cpoly%met(isi)%atm_tmp - 273.15) *  &
+           cpoly%met(isi)%qpcpg = cice * (cpoly%met(isi)%atm_tmp - t3ple) *  &
                 cpoly%met(isi)%pcpg
            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg * 0.01)
         endif
@@ -255,9 +254,9 @@ subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean)
   
   use mem_cuparm, only: cuparm_g,nnqparm
   use mem_micro,  only: micro_g
-  use micphys,    only: level
+  use therm_lib,  only: bulk_on
   use mem_basic,  only: basic_g
-  use consts_coms, only: cpi, cliq
+  use rconstants, only: cpi, cliq
   use ed_state_vars,only: edtype
   use mem_edcp, only : ed_precip_g
   use misc_coms, only: dtlsm
@@ -274,7 +273,6 @@ subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean)
   real    :: dtlsmi
 
   cumulus_on   = nnqparm(ifm) > 0
-  bulkmicro_on = level == 3
   dtlsmi = 1./dtlsm
 
   ! Zero the precipitation structures
@@ -313,7 +311,7 @@ subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean)
 
      ! 2) Check for resolved precipitation
      ! -----------------------------------
-     if (level == 3) then
+     if (bulk_on) then
 
         ! Again, we need to use the accumulated precipitation because the bulk microphysics is called every
         ! BRAMS time step. Therefore, if we use pcpg we will capture the precipitation that happened only at
@@ -493,12 +491,12 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
        alloc_wgrid_s,   &
        zero_wgrid_s
 
-  use node_mod,only:mmxp,mmyp,ia,iz,ja,jz
+  use node_mod,only:mmxp,mmyp,ia,iz,ja,jz,mynum
   use ed_work_vars,only:work_e
   use mem_leaf,only:leaf_g
   use mem_basic,only: basic_g
   use mem_grid,only: grid_g,zt,dzt,zm,if_adap,jdim
-  use consts_coms,only:cpi
+  use rconstants,only:cpi
  
 
   implicit none
@@ -521,12 +519,10 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
 
   do i=1,mxp
      do j=1,myp
-        
         ix = work_e(ifm)%xatm(i,j)
         iy = work_e(ifm)%yatm(i,j)
         leaf_g(ifm)%patch_area(ix,iy,1) = 1.0-work_e(ifm)%landfrac(i,j)
         leaf_g(ifm)%patch_area(ix,iy,2) = work_e(ifm)%landfrac(i,j)
-        
      enddo
   enddo
 
@@ -554,8 +550,6 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
 
   call alloc_edprecip(ed_precip_g(ifm),mmxp(ifm),mmyp(ifm))
   call zero_edprecip (ed_precip_g(ifm))
-
-
 
   do j=ja,jz
      do i=ia,iz
@@ -592,14 +586,14 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
               +basic_g(ifm)%pi0(1,i,j)+basic_g(ifm)%pi0(2,i,j)) * 0.5
       endif
       
+      wgrids_g(ifm)%canopy_tempk(i,j)       =  theta_mean(i,j) * pi0_mean(i,j) * cpi
+      wgrids_g(ifm)%canopy_water_vapor(i,j) =  rv_mean(i,j)
     enddo
   enddo
 
+!  wgrids_g(ifm)%canopy_tempk       =  theta_mean * pi0_mean * cpi
   
-
-  wgrids_g(ifm)%canopy_tempk       =  theta_mean * pi0_mean * cpi
-  
-  wgrids_g(ifm)%canopy_water_vapor =  rv_mean
+!  wgrids_g(ifm)%canopy_water_vapor =  rv_mean
 
 
   return
@@ -617,7 +611,7 @@ subroutine transfer_ed2leaf(ifm,timel)
        edtime1,       &
        edtime2
   use mem_turb,only: turb_g
-  use consts_coms,only:stefan
+  use rconstants,only:stefan
   use mem_leaf,only:leaf_g
   use mem_radiate,only:radiate_g
   use node_mod, only : &

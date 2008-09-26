@@ -19,7 +19,8 @@ subroutine lphysiol_full(T_L,  &
   use pft_coms, only: D0, cuticular_cond, dark_respiration_factor,   &
        stomatal_slope, quantum_efficiency, photosyn_pathway, Vm0, Vm_low_temp
   use physiology_coms, only: istoma_scheme
-
+  use therm_lib, only : rslif
+  use consts_coms, only : t00,mmdov
   implicit none
 
   real, intent(in) :: T_L
@@ -46,7 +47,7 @@ subroutine lphysiol_full(T_L,  &
   type(glim) :: apar
   integer :: ilimit
 
-  real :: co2cp,arrhenius,rslf
+  real :: co2cp,arrhenius
   real :: gsw_update
   integer :: success
 
@@ -63,7 +64,7 @@ subroutine lphysiol_full(T_L,  &
   met%par = PAR*(1.0e6)
   met%gbc = adens / (rb*4.06e-8)
   met%gbci = 1.0/met%gbc
-  met%el = 29.0/18.0 * rslf(prss, met%tl + 273.15)
+  met%el = mmdov * rslif(prss, met%tl + t00)
   met%compp = co2cp(met%tl)
   met%gbw = 1.4*met%gbc
   met%eta = 1.0 + (met%el-met%ea)/gsdata%d0
@@ -940,21 +941,14 @@ end function co2cp
 !=================================================
 
 real function arrhenius(T,c1,c2)
+  use consts_coms, only: t00
   implicit none
   real :: T,c1,c2
   real(kind=8) :: arr8
-  arr8 = dble(c1) * dexp( dble(c2)*(dble(1.)/dble(288.15)-dble(1.0)/dble(T+273.15)))
+  arr8 = dble(c1) * dexp( dble(c2)*(dble(1.)/dble(288.15)-dble(1.0)/dble(T+t00)))
   arrhenius = sngl(arr8)
   return
 end function arrhenius
-
-!===============================
-real function rsat(t)
-  implicit none
-  real :: t
-  rsat = (2.5414e6)*exp(-5415.0/(t+273.15))
-  return
-end function rsat
 
 !=========================================
 subroutine testsolution(gsdata,met,apar,x)
@@ -966,7 +960,7 @@ subroutine testsolution(gsdata,met,apar,x)
   type(farqdata) :: gsdata
   type(metdat) :: met
   type(glim) :: apar
-  real :: tl,cs,rsat,psi,ci,eta,vm,gamma,arrhenius,co2cp,a,aflux,csc
+  real :: tl,cs,psi,ci,eta,vm,gamma,arrhenius,co2cp,a,aflux,csc
   real :: x,es
 
   eta = 1.0 + (met%el-met%ea)/gsdata%d0
@@ -1082,7 +1076,8 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
      photosyn_pathway, Vm0, Vm_low_temp)
 
   use c34constants
-
+  use therm_lib, only: rslif
+  use consts_coms, only: t00,mmdov
   implicit none
 
   
@@ -1100,7 +1095,7 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
   real, intent(in) :: Vm0
   real, intent(in) :: Vm_low_temp
 
-  real, external :: rslf
+
   real, external :: co2cp
   real, external :: arrhenius
   real :: dprss
@@ -1142,7 +1137,7 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
         
         ! Temperature derivative
         met%tl = met%tl + 0.1
-        met%el = 29.0/18.0 * rslf(prss,met%tl + 273.15)
+        met%el = mmdov * rslif(prss,met%tl + t00)
         met%compp = co2cp(met%tl)
         apar%vm = Vm0 * arrhenius(met%tl,1.0,3000.0)  &
              /(1.0+exp(0.4*(Vm_low_temp-met%tl)))  &
@@ -1160,7 +1155,7 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
 
         ! Reset parameters
         met%tl = met%tl - 0.1
-        met%el = 29.0/18.0*rslf(prss,met%tl+273.15)
+        met%el = mmdov*rslif(prss,met%tl+t00)
         met%compp = co2cp(met%tl)
         apar%vm = Vm0 * arrhenius(met%tl,1.0,3000.0)  &
              /(1.0+exp(0.4*(Vm_low_temp-met%tl)))  &
@@ -1198,12 +1193,12 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
 
         ! pressure derivative
         dprss = prss * 1.005
-        met%el = 29.0/18.0*rslf(dprss,met%tl+273.15)
+        met%el = mmdov*rslif(dprss,met%tl+t00)
         met%eta = 1.0 + (met%el-met%ea)/gsdata%d0
         call setapar_c3(gsdata,met,apar,ilimit)
         old_st_data%prss_residual = residual_c3(gsdata,met,apar,sol%gsw(2,1)) &
              / (dprss*(1.0-1.0/1.005)*old_st_data%gsw_residual)
-        met%el = 29.0/18.0*rslf(prss,met%tl+273.15)
+        met%el = mmdov*rslif(prss,met%tl+t00)
         met%eta = 1.0 + (met%el-met%ea)/gsdata%d0
 
      else
@@ -1215,7 +1210,7 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
              sol%gsw(2,1)*1.01) / (0.01*sol%gsw(2,1))
         
         met%tl = met%tl + 0.1
-        met%el = 29.0/18.0*rslf(prss,met%tl+273.15)
+        met%el = mmdov*rslif(prss,met%tl+t00)
         met%compp = co2cp(met%tl)
         apar%vm = Vm0 * arrhenius(met%tl,1.0,3000.0)  &
              /(1.0+exp(0.4*(5.0-met%tl)))/(1.0+exp(0.4*(met%tl-100.0))) 
@@ -1224,7 +1219,7 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
              residual_c4(gsdata,met,apar,sol%gsw(2,1)) &
              / (0.1 * old_st_data%gsw_residual)
         met%tl = met%tl - 0.1
-        met%el = 29.0/18.0*rslf(prss,met%tl+273.15)
+        met%el = mmdov*rslif(prss,met%tl+t00)
         met%compp = co2cp(met%tl)
         apar%vm = Vm0 * arrhenius(met%tl,1.0,3000.0)  &
              /(1.0+exp(0.4*(5.0-met%tl)))/(1.0+exp(0.4*(met%tl-100.0))) 
@@ -1253,12 +1248,12 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
         met%gbc = met%gbc / 1.01
         
         dprss = prss * 1.005
-        met%el = 29.0/18.0*rslf(dprss,met%tl+273.15)
+        met%el = mmdov*rslif(dprss,met%tl+t00)
         met%eta = 1.0 + (met%el-met%ea)/gsdata%d0
         call setapar_c4(gsdata,met,apar,ilimit)
         old_st_data%prss_residual = residual_c4(gsdata,met,apar,sol%gsw(2,1)) &
              / (dprss*(1.0-1.0/1.005)*old_st_data%gsw_residual)
-        met%el = 29.0/18.0*rslf(prss,met%tl+273.15)
+        met%el = mmdov*rslif(prss,met%tl+t00)
         met%eta = 1.0 + (met%el-met%ea)/gsdata%d0
         
      endif
@@ -1271,6 +1266,7 @@ end subroutine store_exact_lphys_solution
 
 subroutine fill_lphys_sol_exact(A_open, rsw_open, A_cl, rsw_cl, sol, adens)
 
+  use consts_coms, only : mmdry1000
   use c34constants
 
   implicit none
@@ -1285,10 +1281,10 @@ subroutine fill_lphys_sol_exact(A_open, rsw_open, A_cl, rsw_cl, sol, adens)
   real, intent(in) :: adens
 
   A_open = sol%a(2,1)
-  rsw_open = 1.0e9 * adens / (29.0 * sol%gsw(2,1))
+  rsw_open = 1.0e9 * adens / (mmdry1000 * sol%gsw(2,1))
 !  rsw_open = (2.9e-8 * adens) / sol%gsw(2,1)
   A_cl = sol%a(1,1)
-  rsw_cl = 1.0e9 * adens / (29.0 * sol%gsw(1,1))
+  rsw_cl = 1.0e9 * adens / (mmdry1000 * sol%gsw(1,1))
 !  rsw_cl = (2.9e-8 * adens) / sol%gsw(1,1)
 
   return
@@ -1300,6 +1296,7 @@ subroutine fill_lphys_sol_approx(gsdata, met, apar, old_st_data, sol,   &
      A_cl, rsw_cl, adens, rsw_open, A_open, photosyn_pathway, prss)
 
   use c34constants
+  use consts_coms, only : mmdry1000
 
   implicit none
 
@@ -1334,7 +1331,7 @@ subroutine fill_lphys_sol_approx(gsdata, met, apar, old_st_data, sol,   &
   endif
 
   A_cl = sol%a(1,1)
-  rsw_cl = 1.0e9 * adens / (29.0 * sol%gsw(1,1))
+  rsw_cl = 1.0e9 * adens / (mmdry1000 * sol%gsw(1,1))
 !  rsw_cl = (2.9e-8 * adens) / sol%gsw(1,1)
   if(old_st_data%ilimit /= -1)then
      gsw_update = old_st_data%gsw_open - &
@@ -1348,7 +1345,7 @@ subroutine fill_lphys_sol_approx(gsdata, met, apar, old_st_data, sol,   &
         ci_approx = quad4ci(gsdata,met,apar,gsw_update,success)
         if(success == 1)then
            A_open = aflux_c3(apar,gsw_update,ci_approx)
-           rsw_open = 1.0e9 * adens / (29.0 * gsw_update)
+           rsw_open = 1.0e9 * adens / (mmdry1000 * gsw_update)
 !           rsw_open = (2.9e-8 * adens) / gsw_update
         else
            A_open = A_cl
@@ -1356,7 +1353,7 @@ subroutine fill_lphys_sol_approx(gsdata, met, apar, old_st_data, sol,   &
         endif
      else
         A_open = aflux_c4(apar,met,gsw_update)
-        rsw_open = 1.0e9 * adens / (29.0 * gsw_update)
+        rsw_open = 1.0e9 * adens / (mmdry1000 * gsw_update)
 !        rsw_open = (2.9e-8 * adens) / gsw_update
      endif
   else

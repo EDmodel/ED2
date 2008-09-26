@@ -503,7 +503,8 @@ end
 subroutine sfc_data_convert (varn,cvars,nvars)
 
 use obs_input
-
+use rconstants, only : t00
+use therm_lib, only : rslf,rehul
 implicit none
 
 integer :: nvars
@@ -513,7 +514,7 @@ character(len=*) :: cvars(nvars)
 character(len=16) :: cvar
 real :: vv
 integer :: ll,nv
-real,external :: rs
+
 
 ! Convert units and type of sfc input data
 
@@ -554,9 +555,8 @@ do nv=1,nvars
       ! rh in percent
       if(rsfc_obs%t>-998. .and. rsfc_obs%td>-998. .and.  &
          rsfc_obs%p>-998.) &
-      varn(nv)=100.*min(1.,max(0.  &
-               ,rs(rsfc_obs%p,rsfc_obs%td+273.16)  &
-               /rs(rsfc_obs%p,rsfc_obs%t+273.16)))
+      varn(nv)=100.*min(1.,rehul(rsfc_obs%p,rsfc_obs%t+t00 &
+                                ,rslf(rsfc_obs%p,rsfc_obs%td+t00)))
    else
       print*,'UNKNOWN CONVERT VARIABLE in sfc_data_convert !!!!',cvar
       stop 'sfc_data_convert'
@@ -573,7 +573,7 @@ subroutine upa_get_profile (varn,nlevels,cvar,ctype)
 
 use obs_input
 use rconstants
-
+use therm_lib, only: dewpoint, ptrh2rvapl
 implicit none
 
 integer :: nlevels
@@ -582,7 +582,6 @@ character(len=*) :: cvar,ctype
 
 real :: vv
 integer :: ll,nv,k,nlev
-real,external :: rs,td
 
 ! Convert units and type of sfc input data
 
@@ -618,7 +617,7 @@ real,external :: rs,td
       elseif(cvar(1:ll)=='theta') then  
          ! theta in K
          if(rupa_obs%p(k)>-998..and.rupa_obs%t(k)>-998.) &
-            varn(k)=(rupa_obs%t(k)+273.16)*(p00/rupa_obs%p(k))**rocp
+            varn(k)=(rupa_obs%t(k)+t00)*(p00/rupa_obs%p(k))**rocp
       elseif(cvar(1:ll)=='p_pas') then  
          ! pressure in pascals
          if(rupa_obs%p(k)>-998.) varn(k)=rupa_obs%p(k)
@@ -629,16 +628,14 @@ real,external :: rs,td
          ! dewpoint in C
          if(rupa_obs%r(k)>-998..and.rupa_obs%t(k)>-998..and.  &
             rupa_obs%p(k)>-998.) &
-            vv=min(1.,max(0.,rupa_obs%r(k)))  &
-                 *rs(rupa_obs%p(k),rupa_obs%t(k)+273.16)
-            varn(k)=td(rupa_obs%p(k),vv )-273.16
+            vv     =ptrh2rvapl(rupa_obs%r(k),rupa_obs%p(k),rupa_obs%t(k)+t00)
+            varn(k)=dewpoint(rupa_obs%p(k),vv )-t00
       elseif(cvar(1:ll)=='dewptf') then  
          ! dewpoint in F
          if(rupa_obs%r(k)>-998..and.rupa_obs%t(k)>-998..and.  &
                 rupa_obs%p(k)>-998.) &
-            vv=min(1.,max(0.,rupa_obs%r(k)))  &
-                 *rs(rupa_obs%p(k),rupa_obs%t(k)+273.16)
-            varn(k)=(td(rupa_obs%p(k),vv )-273.16)*1.8+32.
+            vv     =ptrh2rvapl(rupa_obs%r(k),rupa_obs%p(k),rupa_obs%t(k)+t00)
+            varn(k)=(dewpoint(rupa_obs%p(k),vv )-t00)*1.8+32.
       elseif(cvar(1:ll)=='geo') then  
          ! geopotential in m
          if(rupa_obs%z(k)>-998.) varn(k)=rupa_obs%z(k)
@@ -646,8 +643,7 @@ real,external :: rs,td
          ! vapor in kg/kg
          if(rupa_obs%r(k)>-998..and.rupa_obs%t(k)>-998..and.  &
             rupa_obs%p(k)>-998.) &
-            varn(k)=min(1.,max(0.,rupa_obs%r(k)))  &
-                 *rs(rupa_obs%p(k),rupa_obs%t(k)+273.16)
+            varn(k)= ptrh2rvapl(rupa_obs%r(k),rupa_obs%p(k),rupa_obs%t(k)+t00)
        elseif(cvar(1:ll)=='relhum') then  
          ! rh in percent
          if(rupa_obs%r(k)>-998.) varn(k)=100.  &

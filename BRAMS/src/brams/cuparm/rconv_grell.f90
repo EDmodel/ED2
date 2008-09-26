@@ -64,7 +64,6 @@ subroutine cuparm_grell(iens)
 ![MLO - Extra variables for output
   use io_params         , only: frqanl
   use mem_leaf          , only: leaf_g
-  use micphys           , only: level
   use mem_mass          , only: imassflx
 !MLO]
 
@@ -244,6 +243,7 @@ end subroutine cuparm_grell
 !==========================================================================================!
 subroutine include_shal_effect(m1,m2,m3,ia,iz,ja,jz,dtlt                                   &
                               ,thetasta,rvsta,theta,rv,pi0,pp,thsrc,rtsrc)
+   use therm_lib , only : rslf
    use rconstants, only : cpi,cpor,p00
    implicit none
    integer, intent(in)                                           :: ia,iz,ja,jz
@@ -254,7 +254,6 @@ subroutine include_shal_effect(m1,m2,m3,ia,iz,ja,jz,dtlt                        
    real   , intent(in)  , dimension(m1,m2,m3)                    :: thsrc,rtsrc
    integer                                                       :: i,j,k
    real                                                          :: press,rsat,tempk
-   real, external                                                :: rslf
    do j=ja,jz
       do i=ia,iz
          do k=2,m1

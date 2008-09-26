@@ -27,8 +27,9 @@ subroutine read_ed1_history_file_array
   
   integer :: ii,pft
   character(len=str_len) :: ed_fname
-  real :: flat
-  real :: flon
+  real :: flat,lat
+  real :: flon,lon
+  integer :: ilat,ilon
   
   logical, parameter :: renumber_pfts = .false.
   character(len=str_len) :: pss_name
@@ -143,6 +144,8 @@ subroutine read_ed1_history_file_array
            best_dist = huge(6.)
            best_pss_name = 'null'
 
+           ! IT IS POSSIBLE THAT NONE OF THE POLYGONS ON THIS TILE
+           ! ARE CLOSE TO VALUES IN THE DATABASE
            do ipy2 = 1,cgrid%npolygons
               
               call create_ed1_fname(cgrid%lat(ipy2), edres, cgrid%lon(ipy2),  &
@@ -166,12 +169,39 @@ subroutine read_ed1_history_file_array
               css_name = trim(best_css_name)
               write(unit=*,fmt='(a)') '    - Using:'//trim(pss_name)//' instead.'
            else
-              call fatal_error('Cannot find a suitable restart file.' &
-                              ,'read_ed1_history_file','ed_history_io_array.f90')
+
+              ! LAST RESORT - USE SPARINGLY
+              do ilat = 1,180
+                 do ilon = 1,360
+                    lat = -90.0 + real(ilat-1)
+                    lon = -180.0 + real(ilon-1)
+                    call create_ed1_fname(lat, edres,lon,  &
+                         trim(sfilin), pss_name, css_name, site_name)
+                    inquire(file=trim(pss_name),exist=restart_exist)
+                    if(restart_exist)then
+                       
+                       dist = dist_gc(cgrid%lon(ipy),cgrid%lon(ipy2),cgrid%lat(ipy),cgrid%lat(ipy2))
+                       if(dist < best_dist)then
+                          best_dist = dist
+                          best_pss_name = trim(pss_name)
+                          best_css_name = trim(css_name)
+                       endif
+                    endif
+                 enddo
+              enddo
+              if(trim(best_pss_name) /= 'null')then
+                 pss_name = trim(best_pss_name)
+                 css_name = trim(best_css_name)
+                 write(unit=*,fmt='(a)') '    - Using:'//trim(pss_name)//' instead.'
+              else
+                 
+                 call fatal_error('Cannot find a suitable restart file.' &
+                      ,'read_ed1_history_file','ed_history_io_array.f90')
+              endif
            end if
         else
-!           write(unit=*,fmt='(a)') ' + Your restart file exists:'//trim(pss_name)
-        
+           !           write(unit=*,fmt='(a)') ' + Your restart file exists: '//trim(pss_name)
+           
         endif
 
         ! =================================

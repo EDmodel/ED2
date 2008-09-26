@@ -789,12 +789,11 @@ subroutine buoyancy()
   use mem_scratch
   use mem_grid
   use node_mod
-  use micphys
 
   implicit none
 
-  call boyanc(mzp,mxp,myp,ia,iz,ja,jz,level                   &
-       ,grid_g(ngrid)%flpw   (1,1)   ,tend%wt           (1)      &
+  call boyanc(mzp,mxp,myp,ia,iz,ja,jz                           &
+       ,grid_g(ngrid)%flpw   (1,1)   ,tend%wt           (1)     &
        ,basic_g(ngrid)%theta(1,1,1) ,basic_g(ngrid)%rtp(1,1,1)  &
        ,basic_g(ngrid)%rv   (1,1,1) ,basic_g(ngrid)%th0(1,1,1)  &
        ,scratch%vt3da       (1)     ,mynum                      )
@@ -804,10 +803,11 @@ end subroutine buoyancy
 
 !******************************************************************************
 
-subroutine boyanc(m1,m2,m3,ia,iz,ja,jz,level,flpw  &
+subroutine boyanc(m1,m2,m3,ia,iz,ja,jz,flpw  &
      ,wt,theta,rtc,rv,th0,vtemp,mynum)
 
   use rconstants
+  use therm_lib, only: virtt, vapour_on
 
   implicit none
 
@@ -818,16 +818,15 @@ subroutine boyanc(m1,m2,m3,ia,iz,ja,jz,level,flpw  &
 
   integer :: i,j,k
 
-  if (level .ge. 1) then
+  if (vapour_on) then
      do j = ja,jz
         do i = ia,iz
            
            ilpw = nint(flpw(i,j))
 
            do k = ilpw,m1-1
-              vtemp(k,i,j) = gg * ((theta(k,i,j) * (1. + .61 * rv(k,i,j))  &
-                   - th0(k,i,j)) / th0(k,i,j) - (rtc(k,i,j) - rv(k,i,j)) )
-           enddo
+              vtemp(k,i,j) = gg *(virtt(theta(k,i,j),rv(k,i,j),rtc(k,i,j))/th0(k,i,j) - 1.)
+           end do
         enddo
      enddo
   else

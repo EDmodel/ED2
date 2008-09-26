@@ -169,6 +169,7 @@ subroutine visurf(n1,n2,n3,up,vp,thp,rtp,pp,topt,rtgt,zt)
 
 use isan_coms
 use rconstants
+use therm_lib, only: rehuil,ptrh2rvapil,virtt
 
 implicit none
 
@@ -181,7 +182,6 @@ integer :: i,j,k
 
 real, allocatable :: v3(:)
 real :: zgp,dzgobs,wt,ppp,ttt,rhm
-real, external :: rs
 
 
 allocate(v3(n1))
@@ -207,13 +207,13 @@ do j=1,n3
                     vp(k,i,j)=vp(k,i,j)*wt+rs_v(i,j)*(1.-wt)
                ppp=(pp(k,i,j)/cp)**cpor*p00
                ttt=thp(k,i,j)*pp(k,i,j)/cp
-               rhm=rtp(k,i,j)/rs(ppp,ttt)
+               rhm=rehuil(ppp,ttt,rtp(k,i,j))
                if(rs_r(i,j).lt.1.e10)  &
                     rhm=rhm*wt+rs_r(i,j)*(1.-wt)
                if(rs_t(i,j).lt.1.e10)  &
                     thp(k,i,j)=thp(k,i,j)*wt+rs_t(i,j)*(1.-wt)
                ttt=thp(k,i,j)*pp(k,i,j)/cp
-               rtp(k,i,j)=rhm*rs(ppp,ttt)
+               rtp(k,i,j)=ptrh2rvapil(rhm,ppp,ttt)
             endif
          enddo
 
@@ -221,9 +221,9 @@ do j=1,n3
             v3(k)=topt(i,j)+zt(k)*rtgt(i,j)
          enddo
          do k=n1-1,1,-1
-            pp(k,i,j)=pp(k+1,i,j)+g*(v3(k+1)-v3(k))  &
-                 /((thp(k,i,j)*(1.+.61*rtp(k,i,j))+thp(k+1,i,j)  &
-                 *(1.+.61*rtp(k+1,i,j)))*.5)
+            pp(k,i,j)=pp(k+1,i,j)+g*(v3(k+1)-v3(k))      &
+                 /((virtt(thp(k,i,j),rtp(k,i,j))         &
+                  +virtt(thp(k+1,i,j),rtp(k+1,i,j)))*.5)
          enddo
 
       endif
@@ -242,7 +242,7 @@ subroutine vshyd(n1,n2,n3,pp,tt,rr,topt,rtg,zt)
      
 use isan_coms
 use rconstants
-
+use therm_lib, only: ptrh2rvapil,virtt
 implicit none
      
 integer :: n1,n2,n3
@@ -252,7 +252,6 @@ real, dimension(n1) :: zt
 
 integer :: i,j,k,lbc,kabc
 real :: thmin,ppp,ttt,tmpbc,rvibc,piibc,ziibc,gd2
-real, external :: rs
 
 real, allocatable :: v3(:)
 
@@ -333,25 +332,25 @@ do j=1,n3
          do k=1,n1
             ppp=(pp(k,i,j)/cp)**cpor*p00
             ttt=tt(k,i,j)*pp(k,i,j)/cp
-            rr(k,i,j)=rr(k,i,j)*rs(ppp,ttt)
+            rr(k,i,j)=ptrh2rvapil(rr(k,i,j),ppp,ttt)
          enddo
 
          tmpbc=levth(lbc)*piibc/cp
-         rvibc=pi_r(i,j,lbc)*rs(pi_p(i,j,lbc),tmpbc)
+         rvibc=ptrh2rvapil(pi_r(i,j,lbc),pi_p(i,j,lbc),tmpbc)
 
          pp(kabc-1,i,j)=piibc+gd2*(ziibc-v3(kabc-1))  &
-              /(levth(lbc)*(1.+.61*rvibc)  &
-               +tt(kabc-1,i,j)*(1.+.61*rr(kabc-1,i,j)))
+              /(virtt(real(levth(lbc)),rvibc)  &
+               +virtt(tt(kabc-1,i,j),rr(kabc-1,i,j)))
          do k=kabc-2,1,-1
             pp(k,i,j)=pp(k+1,i,j)+gd2*(v3(k+1)-v3(k))  &
-                 /(tt(k+1,i,j)*(1.+.61*rr(k+1,i,j))  &
-                  +tt(k,i,j)*(1.+.61*rr(k,i,j)))
+                 /(virtt(tt(k+1,i,j),rr(k+1,i,j))  &
+                  +virtt(tt(k,i,j),rr(k,i,j)))
          enddo
 
          do k=kabc,n1
             pp(k,i,j)=pp(k-1,i,j)-gd2*(v3(k)-v3(k-1))  &
-                 /((tt(k,i,j)*(1.+.61*rr(k,i,j))+tt(k-1,i,j)  &
-                 *(1.+.61*rr(k-1,i,j))))
+                 /((virtt(tt(k,i,j),rr(k,i,j))         &
+                   +virtt(tt(k-1,i,j),rr(k-1,i,j))))
          enddo
 
       elseif (guess1st.eq.'RAMS') then
@@ -359,14 +358,13 @@ do j=1,n3
          do k=1,n1
             ppp=pp(k,i,j)
             ttt=tt(k,i,j)*(ppp/p00)**rocp
-            rr(k,i,j)=rr(k,i,j)*rs(ppp,ttt)
+            rr(k,i,j)=ptrh2rvapil(rr(k,i,j),ppp,ttt)
          enddo
 
          pp(1,i,j)= cp*(pp(1,i,j)/p00)**rocp
          do k=2,n1
             pp(k,i,j)=pp(k-1,i,j)-g*(v3(k)-v3(k-1))  &
-                 /((tt(k,i,j)*(1.+.61*rr(k,i,j))+tt(k-1,i,j)  &
-                 *(1.+.61*rr(k-1,i,j)))*.5)
+                 /((virtt(tt(k,i,j),rr(k,i,j))+virtt(tt(k-1,i,j),rr(k-1,i,j)) ) *.5)
        !  if(i==10.and.j==10) &
        !     print*,'avrf222, k:',k,tt(k,i,j),rr(k,i,j), pp(k,i,j)
          enddo

@@ -77,6 +77,7 @@ use mem_grid
 use mem_scratch
 use ref_sounding
 use rconstants
+use therm_lib, only: rslf,ptrh2rvapl,virtt
 
 implicit none
 
@@ -105,7 +106,7 @@ if (ps(1) .eq. 0.) then
 endif
 
 if(itsflg.eq.0)then
-   toffset=273.16
+   toffset=t00
 elseif(itsflg.eq.1)then
    toffset=0.
 endif
@@ -133,9 +134,9 @@ do nsndg=1,maxsndg
 !     integrating hydrostatically to get sounding pressure.
 !
       if(irtsflg.eq.2)then
-         vctr4(nsndg)=(1.+.61*rts(nsndg)*1.e-3)
+         vctr4(nsndg)=virtt(ts(nsndg+toffset),rts(nsndg)*1.e-3)
       else
-         vctr4(nsndg)=1.
+         vctr4(nsndg)=ts(nsndg+toffset)
       endif
       if(nsndg.eq.1)then
          ps(nsndg)=ps(nsndg)*100.
@@ -144,14 +145,11 @@ do nsndg=1,maxsndg
          zold1=zold2
          zold2=ps(nsndg)
          if(itsflg.eq.0.or.itsflg.eq.1)then
-            tavg = 0.5*( (ts(nsndg)+toffset)*vctr4(nsndg)  &
-                 +        ts(nsndg-1)*vctr4(nsndg-1) )
+            tavg = 0.5*( vctr4(nsndg) + vctr4(nsndg-1) )
             ps(nsndg)=ps(nsndg-1)*exp(-g*(zold2-zold1)/(rgas*tavg))
          elseif(itsflg.eq.2)then
-            tavg=(ts(nsndg)*vctr4(nsndg)  &
-                + ts(nsndg-1)*vctr4(nsndg-1)*p00k/ps(nsndg-1)**rocp)*.5
-            ps(nsndg)=(ps(nsndg-1)**rocp-g*(zold2-zold1)*p00k  &
-               /(cp*tavg))**cpor
+            tavg=(vctr4(nsndg) + vctr4(nsndg-1)*p00k/ps(nsndg-1)**rocp)*.5
+            ps(nsndg)=(ps(nsndg-1)**rocp-g*(zold2-zold1)*p00k/(cp*tavg))**cpor
          endif
       endif
    else
@@ -162,9 +160,9 @@ do nsndg=1,maxsndg
 
    if(itsflg.eq.0)then
 !     Temperature in degrees celsius
-      ts(nsndg)=ts(nsndg)+273.16
+      ts(nsndg)=ts(nsndg)+t00
    elseif(itsflg.eq.1)then
-!     Temperature in degrees kelvin
+!     Temperature in Kelvin
    elseif(itsflg.eq.2)then
 !     Temperature is potential temperature in kelvin
       ts(nsndg)=(ps(nsndg)*p00i)**rocp*ts(nsndg)
@@ -176,20 +174,19 @@ do nsndg=1,maxsndg
 
    if(irtsflg.eq.0)then
 !     Humidity given as dew point in degrees celsius
-      call mrsl(1,ps(nsndg),rts(nsndg)+273.16,rts(nsndg))
+      rts(nsndg) = rslf(ps(nsndg),rts(nsndg)+t00)
    elseif(irtsflg.eq.1)then
 !     Humidity given as dew point in degrees kelvin
-      call mrsl(1,ps(nsndg),rts(nsndg),rts(nsndg))
+      rts(nsndg) = rslf(ps(nsndg),rts(nsndg))
    elseif(irtsflg.eq.2)then
 !     Humidity given as mixing ratio in g/kg
       rts(nsndg)=rts(nsndg)*1.e-3
    elseif(irtsflg.eq.3)then
 !     Humidity given as relative humidity in percent
-      call mrsl(1,ps(nsndg),ts(nsndg),rtss(1))
-      rts(nsndg)=rtss(1)*rts(nsndg)*.01
+      rts(nsndg) = ptrh2rvapl(rts(nsndg)*.01,ps(nsndg),ts(nsndg))
    elseif(irtsflg.eq.4)then
 !     Humidity given as dew point depression in kelvin
-      call mrsl(1,ps(nsndg),ts(nsndg)-rts(nsndg),rts(nsndg))
+      rts(nsndg) = rslf(ps(nsndg),ts(nsndg)-rts(nsndg))
    else
       write(6,125) irtsflg
 125        format(' HUMIDITY TYPE (IRTSFLG=',I2,') NOT KNOWN')
@@ -219,7 +216,7 @@ enddo
 
 do k=2,nsndg
    hs(k)=hs(k-1)-rgas*.5  &
-      *(ts(k)*(1.+.61*rts(k))+ts(k-1)*(1.+.61*rts(k-1)))  &
+      *(virtt(ts(k),rts(k))+virtt(ts(k-1),rts(k-1)))  &
       *(log(ps(k))-log(ps(k-1)))/g
 enddo
 
@@ -243,10 +240,9 @@ subroutine refs1d
 
 use mem_grid
 use mem_scratch
-use micphys
 use ref_sounding
 use rconstants
-
+use therm_lib, only: virtt,vapour_on
 implicit none
 ! +---------------------------------------------------------------------
 ! \   This routine computes the reference state sounding on the model
@@ -266,7 +262,7 @@ call htint(nsndg,thds,hs,nnzp(ngrid),vctr1,ztn(1,ngrid))
 call htint(nsndg,us,hs,nnzp(ngrid),u01dn(1,ngrid),ztn(1,ngrid))
 call htint(nsndg,vs,hs,nnzp(ngrid),v01dn(1,ngrid),ztn(1,ngrid))
 
-if (level .ge. 1) then
+if (vapour_on) then
    call htint(nsndg,rts,hs,nnzp(ngrid),rt01dn(1,ngrid),ztn(1,ngrid))
 else
    do k = 1,nnzp(ngrid)
@@ -275,7 +271,7 @@ else
 endif
 
 do k = 1,nnzp(ngrid)
-   th01dn(k,ngrid) = vctr1(k) * (1. + .61 * rt01dn(k,ngrid))
+   th01dn(k,ngrid) = virtt(vctr1(k),rt01dn(k,ngrid))
 enddo
 u01dn(1,ngrid) = u01dn(2,ngrid)
 v01dn(1,ngrid) = v01dn(2,ngrid)
@@ -284,7 +280,7 @@ th01dn(1,ngrid) = th01dn(2,ngrid)
 
 pi01dn(1,ngrid) = cp * (ps(1) * p00i) ** rocp  &
    + g * (hs(1) - ztn(1,ngrid))  &
-   / (.5 * (th01dn(1,ngrid) + thds(1) * (1. + .61 * rts(1)) ) )
+   / (.5 * (th01dn(1,ngrid) + virtt(thds(1),rts(1)) ) )
 do k = 2,nnzp(ngrid)
    pi01dn(k,ngrid) = pi01dn(k-1,ngrid) - g / (dzmn(k-1,ngrid)  &
       * .5 * (th01dn(k,ngrid) + th01dn(k-1,ngrid)))
@@ -308,7 +304,7 @@ use mem_grid
 use mem_scratch
 use ref_sounding
 use rconstants
-use micphys
+use therm_lib, only: mrsl,theta_iceliq,tv2temp,vapour_on,cloud_on
 
 implicit none
 integer :: n1,n2,n3
@@ -338,8 +334,7 @@ do j=1,nyp
       call htint(nzp, u01dn(1,ngrid),zt,nzp,vctr5,vctr12)
       call htint(nzp, v01dn(1,ngrid),zt,nzp,vctr6,vctr13)
       call htint(nzp,th01dn(1,ngrid),zt,nzp,vctr3,vctr11)
-      if(level.ge.1)  &
-      call htint(nzp,rt01dn(1,ngrid),zt,nzp,rtp(1,i,j),vctr11)
+      if(vapour_on) call htint(nzp,rt01dn(1,ngrid),zt,nzp,rtp(1,i,j),vctr11)
 
 ! If sounding winds are to be interpreted as eastward (U) and
 ! northward (V) components, rotate winds from geographic to
@@ -365,9 +360,9 @@ do j=1,nyp
          enddo
       endif
 
-      if(level.ge.1)then
+      if(vapour_on)then
          do k=1,nzp
-            thp(k,i,j)=vctr3(k)/(1.+.61*rtp(k,i,j))
+            thp(k,i,j)=tv2temp(vctr3(k),rtp(k,i,j))
          enddo
       else
          do k=1,nzp
@@ -379,13 +374,13 @@ do j=1,nyp
          pc(k,i,j)=0.
       enddo
 
-      if(level.eq.1)then
+      if(vapour_on)then
          do k=1,nzp
             rv(k,i,j)=rtp(k,i,j)
          enddo
       endif
 
-      if(level.ge.2)then
+      if(cloud_on)then
          do k=1,nzp
             p0(k)=(pi0(k,i,j)/cp)**cpor*p00
             temp(k)=pi0(k,i,j)*thp(k,i,j)/cp
@@ -393,8 +388,7 @@ do j=1,nyp
          call mrsl(nzp,p0(1),temp(1),rvls(1))
          do k=1,nzp
             rc(k)=max(0.,rtp(k,i,j)-rvls(k))
-            thp(k,i,j)=theta(k,i,j)  &
-                /(1.+(aklv*rc(k))/max(temp(k),253.))
+            thp(k,i,j)=theta_iceliq(pi0(k,i,j),temp(k),rc(k),0.)
             rv(k,i,j)=rtp(k,i,j)-rc(k)
          enddo
       endif
@@ -413,8 +407,7 @@ subroutine flds3d_adap(n1,n2,n3,flpu,flpv,flpw  &
 use mem_grid
 use ref_sounding
 use rconstants
-use micphys
-
+use therm_lib, only: mrsl,tv2temp,vapour_on,level
 implicit none
 integer :: n1,n2,n3
 real, dimension(n2,n3) :: flpu,flpv,flpw
@@ -463,10 +456,10 @@ do j = 1,n3
 
       endif
 
-      if (level >= 1) then
+      if (vapour_on) then
          do k = 1,n1
             rtp(k,i,j) = rt01dn(k,ngrid)
-            thp(k,i,j) = th01dn(k,ngrid) / (1.+.61*rtp(k,i,j))
+            thp(k,i,j) = tv2temp(th01dn(k,ngrid),rtp(k,i,j))
          enddo
       else
          do k = 1,n1
@@ -483,9 +476,7 @@ do j = 1,n3
          do k = 1,n1
             rv(k,i,j) = rtp(k,i,j)
          enddo
-      endif
-
-      if (level >= 2) then
+      elseif (level >= 2) then
          do k = 1,n1
             p0(k) = (pi0(k,i,j)/cp) ** cpor * p00
             temp(k) = pi0(k,i,j) * thp(k,i,j) / cp
@@ -494,7 +485,7 @@ do j = 1,n3
          do k = 1,n1
             rc(k) = max(0.,rtp(k,i,j) - rvls(k))
             thp(k,i,j) = theta(k,i,j)  &
-               / (1.+(aklv*rc(k)) / max(temp(k),253.))
+               / (1.+(aklv*rc(k)) / max(temp(k),ttripoli))
             rv(k,i,j) = rtp(k,i,j) - rc(k)
          enddo
       endif

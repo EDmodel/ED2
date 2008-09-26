@@ -100,6 +100,8 @@ subroutine masterput_nl(master_num)
        eveivoc           ! intent(in)
   !For Sib...
   use ref_sounding, only: maxsndg
+  
+  use therm_lib , only : level,vapour_on,cloud_on,bulk_on
 
   implicit none
 
@@ -354,6 +356,11 @@ subroutine masterput_nl(master_num)
   call MPI_Bcast(CPARM,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(GNU,7,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
+  call MPI_Bcast(vapour_on,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(cloud_on,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(bulk_on,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+
+
   return
 end subroutine masterput_nl
 
@@ -597,7 +604,10 @@ subroutine masterput_micphys(master_num)
   include 'mpif.h'
   integer :: ierr
 
-  call MPI_Bcast(var_shape,nhcat,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(availcat,ncat,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(progncat,ncat,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+
+  call MPI_Bcast(shapefac,nhcat,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(cfmas,nhcat,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(pwmas,nhcat,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(cfvt,nhcat,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -608,6 +618,7 @@ subroutine masterput_micphys(master_num)
   call MPI_Bcast(emb1,ncat,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(emb2,nhcat,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(rxmin,ncat,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(cxmin,nhcat,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(coltabc,nembc*nembc*npairc,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(coltabr,nembc*nembc*npairr,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
 
@@ -789,6 +800,8 @@ subroutine nodeget_nl
        EVEICO ,        & ! INTENT(OUT)
        EVEISO2,        & ! INTENT(OUT)
        EVEIVOC           ! INTENT(OUT)
+
+  use therm_lib , only : level,vapour_on,cloud_on,bulk_on
 
   implicit none
 
@@ -1040,6 +1053,10 @@ subroutine nodeget_nl
   call MPI_Bcast(HPARM,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(CPARM,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(GNU,7,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+
+  call MPI_Bcast(vapour_on,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(cloud_on,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(bulk_on,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
 
   return
 end subroutine nodeget_nl
@@ -1297,7 +1314,10 @@ subroutine nodeget_micphys
 
   integer :: ierr
 
-  call MPI_Bcast(var_shape,nhcat,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(availcat,ncat,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(progncat,ncat,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+
+  call MPI_Bcast(shapefac,nhcat,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(cfmas,nhcat,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(pwmas,nhcat,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(cfvt,nhcat,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -1308,6 +1328,7 @@ subroutine nodeget_micphys
   call MPI_Bcast(emb1,ncat,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(emb2,nhcat,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(rxmin,ncat,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(cxmin,nhcat,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(coltabc,nembc*nembc*npairc,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(coltabr,nembc*nembc*npairr,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(ipairc,nhcat*nhcat,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

@@ -36,7 +36,7 @@ subroutine rams_master(ipara, nslaves, master_num, name_name)
   use mem_oda, only:if_oda
 
   use mem_radiate, only: ISWRTYP, ILWRTYP ! Intent(in)
-  use mem_leaf, only : isfcl
+  use mem_leaf, only : isfcl ! Intent(in)
   use dtset, only: dtset_new ! subroutine
 
   implicit none
@@ -242,9 +242,10 @@ subroutine rams_master(ipara, nslaves, master_num, name_name)
         if (if_oda == 1) call masterput_oda(master_num)
         call masterput_misc(master_num)
         call master_sendinit()
-        if (isfcl==5)call master_ed_init
+        call master_ed_init(iparallel)
         call MPI_Barrier(MPI_COMM_WORLD,ierr)
-        
+     else
+        call master_ed_init(iparallel)
      end if
 
      call timing(1,t1)
@@ -763,7 +764,6 @@ subroutine rams_output()
   use mem_emiss, only : isource         ! INTENT(IN)
   
   ![MLO-ED2
-  use mem_turb, only: idiffk, turb_g, turbm_g
   use mem_mass, only:     &
         mass_g,           & ! intent(inout)
         imassflx,         & ! intent(in)

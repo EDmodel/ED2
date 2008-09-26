@@ -1,357 +1,491 @@
-!############################# Change Log ##################################
-! 5.0.0
-!
-!###########################################################################
-!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved
-!  Regional Atmospheric Modeling System - RAMS
-!###########################################################################
+!====================================== Change Log ========================================!
+! 5.0.0                                                                                    !
+!                                                                                          !
+!   08/31/08 - MLO - Switching micro by OLAM equivalent, which uses densities rather than  !
+!                    mixing ratio.                                                         !
+!==========================================================================================!
+!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved                       !
+!  Regional Atmospheric Modeling System - RAMS                                             !
+!==========================================================================================!
+!==========================================================================================!
 
-subroutine thrmstr(m1,k1,k2,flpw,pp,thp,theta,pi0,rtp,rv,i,j)
 
-use rconstants
-use micphys
 
-implicit none
 
-integer :: m1,i,j,k,lcat,lpw
-real :: flpw
-real :: fracliq,tcoal,tairstr
-integer, dimension(10) :: k1,k2
-real, dimension(m1) :: pp,thp,theta,pi0,rtp,rv
 
-lpw = nint(flpw)
 
-do k = lpw,m1
-   pitot(k) = pi0(k) + pp(k)
-   press(k) = p00 * (pitot(k) * cpi) ** cpor
-   tair(k) = theta(k) * pitot(k) * cpi
-enddo
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine computes some thermodynamic properties (such as temperature and its   !
+! derivative with respect to the mixing ratio) for a moist process.                        !
+!------------------------------------------------------------------------------------------!
+subroutine thrmstr(m1)
 
-do k = 1,k1(10)-1
-   theta(k) = thp(k)
-   rv(k) = rtp(k)
-enddo
+   use rconstants
+   use micphys
+   use therm_lib, only: qtk,thil2temp,dtempdrs
 
-do k = k2(10)+1,m1
-   theta(k) = thp(k)
-   rv(k) = rtp(k)
-enddo
+   implicit none
+   !----- Argument ------------------------------------------------------------------------!
+   integer, intent(in) :: m1
+   !----- Local variables -----------------------------------------------------------------!
+   integer :: k,lcat
+   real :: fracliq,tcoal,tairstr,t1stguess
+   !---------------------------------------------------------------------------------------!
 
-do k = k1(10),k2(10)
-   til(k) = thp(k) * pitot(k) * cpi
-   rliq(k) = 0.
-   rice(k) = 0.
-enddo
+   do k = lpw,m1
+      tair(k) = pottemp(k) * exner(k) * cpi
+   end do
 
-do lcat = 1,2
-   do k = k1(lcat),k2(lcat)
-      rliq(k) = rliq(k) + rx(k,lcat)
-   enddo
-enddo
+   !----- Outside the levels in which condensation happens, use non-condensation thermo ---!
+   do k = 1,k1(10)-1
+      pottemp(k) = thil(k)
+      til(k)     = tair(k)
+      rvap(k)    = rtot(k)
+   end do
+   do k = k2(10)+1,m1
+      pottemp(k) = thil(k)
+      til(k)     = tair(k)
+      rvap(k)    = rtot(k)
+   end do
+   !---------------------------------------------------------------------------------------!
 
-do lcat = 3,5
-   do k = k1(lcat),k2(lcat)
-      rice(k) = rice(k) + rx(k,lcat)
-   enddo
-enddo
+   !----- Initialise til, rliq and rice at the levels in which condensates exist ----------!
+   do k = k1(10),k2(10)
+      til(k) = thil(k) * exner(k) * cpi
+      rliq(k) = 0.
+      rice(k) = 0.
+   end do
 
-do lcat = 6,7
-   do k = k1(lcat),k2(lcat)
-      call qtc(qx(k,lcat),tcoal,fracliq)
-      rliq(k) = rliq(k) + rx(k,lcat) * fracliq
-      rice(k) = rice(k) + rx(k,lcat) * (1. - fracliq)
-   enddo
-enddo
+   !----- Cloud and rain are all liquid ---------------------------------------------------!
+   do lcat = 1,2
+      do k = k1(lcat),k2(lcat)
+         rliq(k) = rliq(k) + rx(k,lcat)
+      end do
+   end do
 
-do k = k1(10),k2(10)
-   qhydm(k) = alvl * rliq(k) + alvi * rice(k)
-   rvstr(k) = rtp(k) - rliq(k) - rice(k)
-   sa(k,1) = til(k) * qhydm(k) / (1.e-12 + rliq(k) + rice(k))
-enddo
+   !----- Pristine ice, snow, and aggregates are all ice ----------------------------------!
+   do lcat = 3,5
+      do k = k1(lcat),k2(lcat)
+         rice(k) = rice(k) + rx(k,lcat)
+      end do
+   end do
 
-do k = k1(10),k2(10)
-   if (tair(k) .gt. 253.) then
-      tairstr = 0.5 * (til(k)  &
-         + sqrt(til(k) * (til(k) + cpi4 * qhydm(k))))
-      sa(k,1) = sa(k,1) * cpi / (2. * tairstr - til(k))
-   else
-      tairstr = til(k) * (1. + qhydm(k) * cp253i)
-      sa(k,1) = sa(k,1) * cp253i
-  endif
-  tairstrc(k) = tairstr - t00
-enddo
+   !----- Graupel and Hail have both phases, figure out how much of each ------------------!
+   do lcat = 6,7
+      do k = k1(lcat),k2(lcat)
+         call qtk(qx(k,lcat),tcoal,fracliq)
+         rliq(k) = rliq(k) + rx(k,lcat) * fracliq
+         rice(k) = rice(k) + rx(k,lcat) * (1. - fracliq)
+      end do
+   end do
 
-return
-end
+   !----- Find the vapour pressure and the total enthalpy due to phase change -------------!
+   do k = k1(10),k2(10)
+      qhydm(k) = alvl * rliq(k) + alvi * rice(k)
+      rvstr(k) = rtot(k) - rliq(k) - rice(k)
+   end do
 
-!******************************************************************************
+   !----- Finding the air temperature and -dT/drs for this temperature --------------------!
+   do k = k1(10),k2(10)
+      tairstr = thil2temp(thil(k),exner(k),rliq(k),rice(k),tair(k))
+      sa(k,1) = (-1) * dtempdrs(exner(k),thil(k),tairstr,rliq(k),rice(k),1.e-12)
+      tairstrc(k) = tairstr - t00
+   end do
 
-subroutine diffprep(m1,lcat,k1,k2,rv,dn0,i,j,mynum)
+   return
+end subroutine thrmstr
+!==========================================================================================!
+!==========================================================================================!
 
-use rconstants
-use micphys
 
-implicit none
 
-integer :: m1,lcat,k1,k2,i,j,k,mynum,if1,if4,if6,if8,lhcat
-real :: fre,scdei
-real, dimension(m1) :: rv,dn0
 
-if (lcat .le. 2) then
-   if1 = 1
-   if4 = 4
-   if6 = 6
-   if8 = 8
-else
-   if1 = 2
-   if4 = 5
-   if6 = 7
-   if8 = 9
-endif
 
-do k = k1,k2
-   lhcat = jhcat(k,lcat)
-![MLO - Changing the logical test so no goto is needed...
-   if (rx(k,lcat) >= rxmin(lcat)) then
-!MLO]
-      fre = frefac1(lhcat) * emb(k,lcat) ** pwmasi(lhcat)  &
-         + rdynvsci(k) * frefac2(lhcat) * emb(k,lcat) ** cdp1(lhcat)
 
-      sb(k,lcat) = cx(k,lcat) * dn0(k) * fre * pi4dt
-      su(k,lcat) = vapdif(k) * sb(k,lcat)
-      sd(k,lcat) = sh(k,lcat) * rx(k,lcat)
-      se(k,lcat) = su(k,lcat) * sa(k,if6) + sb(k,lcat) * thrmcon(k)
-      sf(k,lcat) = su(k,lcat) * sl(if1) - sb(k,lcat) * sa(k,2)
-      sg(k,lcat) = su(k,lcat) * sa(k,if8) + sb(k,lcat) * sa(k,3)  &
-                 + sj(lcat) * qr(k,lcat)
-!        + lambda_j [Joules/kg_air added by radiative heating this timestep]
-      scdei = 1. / (sc(if1) * sd(k,lcat) + se(k,lcat))
-      ss(k,lcat) = sf(k,lcat) * scdei
-      sw(k,lcat) = (sg(k,lcat) - sk(if1) * sd(k,lcat)) * scdei
-      ttest(k,lcat) = ss(k,lcat) * rv(k) + sw(k,lcat)
-   end if
-enddo
+!==========================================================================================!
+!==========================================================================================!
+subroutine diffprep(lcat)
 
-if (lcat .ge. 3 .and. lcat .le. 5) then
-   do k = k1,k2
-      if (rx(k,lcat) >= rxmin(lcat)) then
-        if (ttest(k,lcat) .ge. 0.) then
-           sm(k,lcat) = 0.
-           sh(k,lcat) = 1.
-           sd(k,lcat) = sh(k,lcat) * rx(k,lcat)
-           scdei = 1. / (sc(if1) * sd(k,lcat) + se(k,lcat))
-           ss(k,lcat) = sf(k,lcat) * scdei
-           sw(k,lcat) = (sg(k,lcat) - sk(if1) * sd(k,lcat)) * scdei
-        else
-           sm(k,lcat) = 1.
-        end if
-      end if
-   enddo
-endif
+   use rconstants
+   use micphys
 
-if (lcat .ge. 6) then
-   do k = k1,k2
-      if (rx(k,lcat) >= rxmin(lcat)) then
-         if (ttest(k,lcat) .ge. 0.) then
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   integer, intent(in) :: lcat
+   !----- Local variables -----------------------------------------------------------------!
+   integer :: k,if1,if4,if6,if8,lhcat
+   real    :: fre,scdei
+   !---------------------------------------------------------------------------------------!
+
+   !----- Selecting whether to use liquid or ice related stuff ----------------------------!
+   select case (lcat)
+   case (1,2)
+      if1 = 1
+      if4 = 4
+      if6 = 6
+      if8 = 8
+   case default
+      if1 = 2
+      if4 = 5
+      if6 = 7
+      if8 = 9
+   end select
+
+   !---------------------------------------------------------------------------------------!
+   !     This part is solving the set of equations around Walko et al.(2000), equation 14. !
+   !  All the s?(k,lcat) correspond to Walko et al. (2000) ?j, that are defined at their   !
+   ! main table.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   mainloop: do k = k1(lcat),k2(lcat)
+      lhcat = jhcat(k,lcat)
+
+      if (rx(k,lcat) < rxmin(lcat)) cycle mainloop
+
+      fre = frefac1(lhcat) * emb(k,lcat) ** pwmasi(lhcat)                                  &
+          + rdynvsci(k) * frefac2(lhcat) * emb(k,lcat) ** cdp1(lhcat)
+
+      sb(k,lcat)    = cx(k,lcat) * rhoa(k) * fre * pi4dt
+      su(k,lcat)    = vapdif(k)  * sb(k,lcat)
+      sd(k,lcat)    = sh(k,lcat) * rx(k,lcat)
+      se(k,lcat)    = su(k,lcat) * sa(k,if6) + sb(k,lcat) * thrmcon(k)
+      sf(k,lcat)    = su(k,lcat) * sl(if1) - sb(k,lcat) * sa(k,2)
+      sg(k,lcat)    = su(k,lcat) * sa(k,if8) + sb(k,lcat) * sa(k,3) + sj(lcat) * qr(k,lcat)
+      
+      scdei         = 1. / (sc(if1) * sd(k,lcat) + se(k,lcat))
+      ss(k,lcat)    = sf(k,lcat) * scdei
+      sw(k,lcat)    = (sg(k,lcat) - sk(if1) * sd(k,lcat)) * scdei
+      ttest(k,lcat) = ss(k,lcat) * rvap(k) + sw(k,lcat)
+   end do mainloop
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Iced categories. The first trial assumed Mj = 1 and assuming rvap to be the        !
+   ! previous rvap. If that gives T above the triple point, then force it to be at the     !
+   ! triple point, and Mj becomes 0. Otherwise, happy with the temperature and Mj is set   !
+   ! to 1.                                                                                 !
+   !---------------------------------------------------------------------------------------!
+   select case (lcat)
+   case(3:5)
+      iceloop: do k = k1(lcat),k2(lcat)
+         if (rx(k,lcat) < rxmin(lcat)) cycle iceloop
+         !---------------------------------------------------------------------------------!
+         !     For all-ice categories, the test is done by assuming Hj to be zero, and the !
+         ! variable is switched to 1 in case temperature is greater than triple point.     !
+         ! (as explained in Walko et al. (2000) between equations 16 and 17).              !
+         !---------------------------------------------------------------------------------!
+         if (ttest(k,lcat) >= t3ple-t00 ) then
+            sm(k,lcat) = 0.
+            sh(k,lcat) = 1.
+            sd(k,lcat) = sh(k,lcat) * rx(k,lcat)
+            scdei = 1. / (sc(if1) * sd(k,lcat) + se(k,lcat))
+            ss(k,lcat) = sf(k,lcat) * scdei
+            sw(k,lcat) = (sg(k,lcat) - sk(if1) * sd(k,lcat)) * scdei
+         else
+            sm(k,lcat) = 1.
+         end if
+      end do iceloop
+   case (6,7)
+      mixloop: do k = k1(lcat),k2(lcat)
+         if (rx(k,lcat) < rxmin(lcat)) cycle mixloop
+
+         if (ttest(k,lcat) >= t3ple-t00) then
             sm(k,lcat) = 0.
          else
             sm(k,lcat) = 1.
-         endif
+         end if
+      end do mixloop
+
+   end select
+
+   lastloop: do k = k1(lcat),k2(lcat)
+      if (rx(k,lcat) < rxmin(lcat)) cycle lastloop
+
+      sy(k,lcat) = rvsrefp(k,if1) * sm(k,lcat) * sw(k,lcat) - sa(k,if4)
+      sz(k,lcat) = 1. - rvsrefp(k,if1) * ss(k,lcat) * sm(k,lcat)
+      sumuy(k)   = sumuy(k) + su(k,lcat) * sy(k,lcat)
+      sumuz(k)   = sumuz(k) + su(k,lcat) * sz(k,lcat)
+      
+   end do lastloop
+
+   return
+end subroutine diffprep
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    The subroutine computes the first attempt to find a closed solution for water vapour  !
+! in which the fast-response phenomena are implicitly balanced while slow-response         !
+! phenomena are represented as explicit forcing terms, and all the effects of heat storage !
+! and latent heat are included where appropriate. This is solving equation (17) of Walko   !
+! et al. (2000) paper.                                                                     !
+!------------------------------------------------------------------------------------------!
+subroutine vapdiff ()
+   use micphys, only : &
+           k1          & ! intent(in)
+          ,k2          & ! intent(in)
+          ,rvstr       & ! intent(in)
+          ,sumuy       & ! intent(in)
+          ,sumuz       & ! intent(in)
+          ,rvap        ! ! intent(out)
+ 
+   implicit none
+   !----- Local variables -----------------------------------------------------------------!
+   integer :: k
+   !---------------------------------------------------------------------------------------!
+
+
+   do k = k1(10),k2(10)
+      rvap(k) = (rvstr(k) + sumuy(k)) / (1.0 + sumuz(k))
+   end do
+
+   return
+end subroutine vapdiff
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine computes the Walko et al (2000)'s equation (17) again. depending on   !
+! the outcome of the first evaluation. At that point it was assumed that no hydrometeor    !
+! had completely evaporated. If equation (9) stated that the category completely evaporat- !
+! ed, then Uj and Vj are switched to their alternate values, rvap will be corrected from   !
+! equation (17) and rx will be set to zero in that category. The order in which the        !
+! hydrometeors are called does matter here.                                                !
+!------------------------------------------------------------------------------------------!
+subroutine vapflux(lcat)
+
+   use micphys
+   use rconstants, only : alli,t3ple,t00
+   implicit none
+
+   integer, intent(in) :: lcat
+   integer             :: k,if1,if4
+   real                :: rxx
+
+
+   !----- Selecting whether to use liquid or ice related stuff ----------------------------!
+   select case (lcat)
+   case (1:2)
+      if1 = 1
+      if4 = 4
+   case (3:7)
+      if1 = 2
+      if4 = 5
+   end select
+
+   mainloop: do k = k1(lcat),k2(lcat)
+
+      if (rx(k,lcat) < rxmin(lcat)) cycle mainloop
+      !------------------------------------------------------------------------------------!
+      !    We now solve equation (16) to get the temperature [tx] with the known Mj, and   !
+      ! we then compute the first term of the RHS of equation (9) [vap(k,lcat)]            !
+      ! sa(k,if4) has rs'(Ref)*T(Ref) - rs(Ref).                                           !
+      !------------------------------------------------------------------------------------!
+      tx(k,lcat)  = (ss(k,lcat) * rvap(k) + sw(k,lcat)) * sm(k,lcat)
+      vap(k,lcat) = su(k,lcat) * (rvap(k) + sa(k,if4) - rvsrefp(k,if1) * tx(k,lcat))
+
+
+      !------------------------------------------------------------------------------------!
+      !    In case it wasn't completely evaporated.                                        !
+      !------------------------------------------------------------------------------------!
+      if (vap(k,lcat) > -rx(k,lcat)) then
+         rxx = rx(k,lcat) + vap(k,lcat) ! New mixing ratio.
+         !----- 
+         if (sm(k,lcat) > .5) then
+            qx(k,lcat) = sc(if1) * tx(k,lcat) + sk(if1)
+            qr(k,lcat) = qx(k,lcat) * rxx
+         else
+            qx(k,lcat) = (rvap(k)*sf(k,lcat)+sg(k,lcat)-tx(k,lcat)*se(k,lcat)) / sd(k,lcat)
+            !----- It seems a bound sanity check, not sure what 35000 and -10000 mean. ----!
+            qx(k,lcat) = min(350000.,max(-100000.,qx(k,lcat)))
+            qr(k,lcat) = qx(k,lcat) * rxx
+         end if
       end if
-   enddo
-endif
 
-do k = k1,k2
-   if (rx(k,lcat) >= rxmin(lcat)) then
-     sy(k,lcat) = rvsrefp(k,if1) * sm(k,lcat) * sw(k,lcat) - sa(k,if4)
-     sz(k,lcat) = 1. - rvsrefp(k,if1) * ss(k,lcat) * sm(k,lcat)
-     sumuy(k) = sumuy(k) + su(k,lcat) * sy(k,lcat)
-     sumuz(k) = sumuz(k) + su(k,lcat) * sz(k,lcat)
-   end if
-enddo
+      !------------------------------------------------------------------------------------!
+      !     For all hydrometeors, eliminate them in case the solution of equation (9) led  !
+      ! to complete evaporation.                                                           !
+      !                                                                                    ! 
+      ! Bob - Now also do the following section if pristine ice totally melts:evaporate it !
+      !       too.                                                                         !
+      ! THERMODYNAMIC DILEMMA - what is written as 0.988*alli used to be 330000., which is !
+      !     equivalent. However, shouldn't it be alli (334000.)???
+      !------------------------------------------------------------------------------------!
+      if ((lcat == 3 .and. qx(k,lcat) > 0.988*alli) .or. vap(k,lcat) <= -rx(k,lcat)) then
+         sumuy(k) = sumuy(k) - su(k,lcat) * sy(k,lcat)
+         sumuz(k) = sumuz(k) - su(k,lcat) * sz(k,lcat)
+         sumvr(k) = sumvr(k) + rx(k,lcat)
+         rvap(k)  = (rvstr(k) + sumuy(k) + sumvr(k)) / (1.0 + sumuz(k))
 
-return
-end
+         vap(k,lcat) = - rx(k,lcat)
+         tx(k,lcat)  = 0.
+         rx(k,lcat)  = 0.
+         qx(k,lcat)  = 0.
+         qr(k,lcat)  = 0.
+      !----- Just copy rxx to rx and we are all set ---------------------------------------!
+      elseif (vap(k,lcat) > -rx(k,lcat)) then
+         rx(k,lcat) = rxx
 
-!******************************************************************************
+      end if
 
-subroutine vapdiff (m1,kf1,kf2,rv,i,j,mynum)
+   end do mainloop
 
-use micphys
-
-implicit none
-
-integer :: m1,kf1,kf2,i,j,k,mynum
-real, dimension(m1) :: rv
-
-do k = kf1,kf2
-   rv(k) = (rvstr(k) + sumuy(k)) / (1.0 + sumuz(k))
-enddo
-
-return
-end
-
-!******************************************************************************
-
-subroutine vapflux(m1,lcat,i,j,mynum,k1,k2,dn0,rv)
-
-use micphys
-
-implicit none
-
-integer :: m1,lcat,i,j,k,mynum,k1,k2,if1,if4
-real :: rxx
-real, dimension(m1) :: dn0,rv
-
-if (lcat .le. 2) then
-   if1 = 1
-   if4 = 4
-else
-   if1 = 2
-   if4 = 5
-endif
-
-do k = k1,k2
-
-   if (rx(k,lcat) >= rxmin(lcat)) then
-
-     tx(k,lcat) = (ss(k,lcat) * rv(k) + sw(k,lcat)) * sm(k,lcat)
-     vap(k,lcat) = su(k,lcat) * (rv(k) + sa(k,if4) - rvsrefp(k,if1) * tx(k,lcat))
-
-
-     if (vap(k,lcat) .gt. -rx(k,lcat)) then
-
-        rxx = rx(k,lcat) + vap(k,lcat)
-        if (sm(k,lcat) .gt. .5) then
-           qx(k,lcat) = sc(if1) * tx(k,lcat) + sk(if1)
-           qr(k,lcat) = qx(k,lcat) * rxx
-        else
-           qx(k,lcat) = (rv(k) * sf(k,lcat) + sg(k,lcat)  &
-                      - tx(k,lcat) * se(k,lcat)) / sd(k,lcat)
-           qx(k,lcat) = min(350000.,max(-100000.,qx(k,lcat)))
-           qr(k,lcat) = qx(k,lcat) * rxx
-        endif
-
-     endif
-
-!bob Now also do the following section if pristine ice totally melts:
-! evaporate it too.
-
-     if ((lcat .eq. 3 .and. qx(k,lcat) .gt. 330000.) .or.  &
-        vap(k,lcat) .le. -rx(k,lcat)) then
-
-        sumuy(k) = sumuy(k) - su(k,lcat) * sy(k,lcat)
-        sumuz(k) = sumuz(k) - su(k,lcat) * sz(k,lcat)
-        sumvr(k) = sumvr(k) + rx(k,lcat)
-        rv(k) = (rvstr(k) + sumuy(k) + sumvr(k)) / (1.0 + sumuz(k))
-
-        vap(k,lcat) = - rx(k,lcat)
-        tx(k,lcat) = 0.
-        rx(k,lcat) = 0.
-        qx(k,lcat) = 0.
-        qr(k,lcat) = 0.
-     elseif(vap(k,lcat) .gt. -rx(k,lcat)) then
-        rx(k,lcat) = rxx
-     endif
-
-  end if
-
-enddo
-
-return
+   return
 end subroutine vapflux
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************
 
-subroutine psxfer(m1,k1,k2,dn0,i,j)
 
-use micphys
 
-implicit none
 
-integer :: m1,k1,k2,i,j,k,lhcat,it
-real(kind=8) :: embx,dn,xlim,dvap,dqr,dnum
-real, dimension(m1) :: dn0
 
-real(kind=8),dimension(m1) :: dn80
+!==========================================================================================!
+!==========================================================================================!
+!    I think this subroutine is based on Walko et al. (1995), section 2.7 (other           !
+! conversions). This is the first part, conversion between pristine ice and snow due to    !
+! secondary ice production based on riming.                                                !
+!                                                                                          !
+!    In any case, we had to switch most of the internal calculation to double precision,   !
+! to avoid underflow/overflow.                                                             !
+!------------------------------------------------------------------------------------------!
+subroutine psxfer()
 
-real :: zerovar
-! Convert to doubles for the computations
+   use micphys
 
-zerovar = 0.0
+   implicit none
+   !----- Local variables -----------------------------------------------------------------!
+   integer             :: k,lhcat,it
+   real(kind=8)        :: embx,dn,xlim,dvap,dqr,dnum
+   real(kind=8)        :: rx8,cx8,qx8,vapx8,rxmin8,cxmin8,pwmas8,pwmasi8,dnfac8,dpsmi8
+   real(kind=8)        :: gamx8,gam18,dps28,dps8,gnux8,gamn1x8
+   !---------------------------------------------------------------------------------------!
 
-do k = k1,k2
+   mainloop: do k = k1(3),k2(3)  ! These are now equal to k1(4),k2(4)
 
-   if (vap(k,3) .gt. 0. .or. vap(k,4) .lt. 0.) then
+      if (vap(k,3) > 0. .or. vap(k,4) < 0.) then
 
-      if (vap(k,3) .gt. 0.) then
+         if (vap(k,3) > 0.) then
+            lhcat = jhcat(k,3)
 
-         lhcat = jhcat(k,3)
+            !----- Copying data to double precision scratch variables ---------------------!
+            dps8    = dble(dps)
+            dps28   = dble(dps2)
+            rx8     = dble(rx(k,3))
+            cx8     = dble(cx(k,3))
+            qx8     = dble(qx(k,3))
+            vapx8   = dble(vap(k,3))
+            gnux8   = dble(gnu(3))
+            gamn1x8 = dble(gamn1(3))
+            rxmin8  = dble(rxmin(3))
+            cxmin8  = 1.e-3 ! dble(cxmin(3))
+            pwmas8  = dble(pwmas(lhcat))
+            pwmasi8 = dble(pwmasi(lhcat))
+            dnfac8  = dble(dnfac(lhcat))
+            dpsmi8  = dble(dpsmi(lhcat))
+            !------------------------------------------------------------------------------!
+            
+            embx    = max(rxmin8,rx8) / max(cxmin8,cx8)
+            dn      = dnfac8 * embx**pwmasi8
+            it      = nint(dn*1.e6)
+            gamx8   = dble(gam(it,3))
+            gam18   = dble(gam(it,1))
 
-         embx = dble(max(rxmin(3),rx(k,3)) / max(1.e-3,cx(k,3)))
-
-         dn = dble(dnfac(lhcat)) * embx ** pwmasi(lhcat)
-
-         it = nint(dn * 1.e6)
-
-         xlim = dble(gam(it,3)) * dble(dps2) * (dble(dps) / dn) ** (gnu(3) - 1.)  &
-            / (dble(gamn1(3)) * dble(pwmas(lhcat)) * dn ** 2)
-
-         dvap = min( dble(rx(k,3)) ,  &
-                    dble(vap(k,3)) * (dble(xlim) + dble(gam(it,1)) / dble(gamn1(3)) ))
-         dqr = dvap * dble(qx(k,3))
-         dnum = dvap * min(dpsmi(lhcat),1./embx)
-      else
+            xlim = gamx8 * dps28 * (dps8/dn)**(gnux8-1.) / (gamn1x8 * pwmas8 * dn * dn)
+            dvap = min(rx8,vapx8 * (xlim + gam18/gamn1x8))
+            dqr  = dvap * qx8
+            dnum = dvap * min(dpsmi8,1./embx)
+         else
          
-         lhcat = jhcat(k,4)
-         embx = max(dble(rxmin(4)),dble(rx(k,4))) / max(1.e-3,dble(cx(k,4)))
-         dn = dble(dnfac(lhcat)) * embx ** pwmasi(lhcat)
-         it = nint(dn * 1.e6)
+            lhcat = jhcat(k,4)
 
-         xlim = dble(gam(it,3)) * dble(dps2) * (dble(dps) / dn) ** (gnu(4) - 1.)  &
-              / (dble(gamn1(4)) * dble(pwmas(lhcat)) * dn ** 2)
+            !----- Copying data to double precision scratch variables ---------------------!
+            dps8    = dble(dps)
+            dps28   = dble(dps2)
+            rx8     = dble(rx(k,4))
+            cx8     = dble(cx(k,4))
+            qx8     = dble(qx(k,4))
+            vapx8   = dble(vap(k,4))
+            gnux8   = dble(gnu(4))
+            rxmin8  = dble(rxmin(4))
+            cxmin8  = 1.e-3 ! dble(cxmin(4))
+            gamn1x8 = dble(gamn1(4))
+            pwmas8  = dble(pwmas(lhcat))
+            pwmasi8 = dble(pwmasi(lhcat))
+            dnfac8  = dble(dnfac(lhcat))
+            dpsmi8  = dble(dpsmi(lhcat))
+            !------------------------------------------------------------------------------!
 
+            embx    = max(rxmin8,rx8) / max(cxmin8,cx8)
+            dn      = dnfac8 * embx**pwmasi8
+            it      = nint(dn*1.e6)
+            gamx8   = dble(gam(it,3))  ! Shouldn't this be gam(it,4)????
 
-         dvap = max(dble(-rx(k,4)),dble(vap(k,4)) * xlim)
+            xlim = gamx8 * dps28 * (dps8/dn)**(gnux8-1.)/ (gamn1x8 * pwmas8 * dn*dn)
+            dvap = max(-rx8,vapx8* xlim)
+            dqr = dvap * qx8
+            dnum = dvap * max(dpsmi8,1./embx)
+         end if
 
-         dqr = dvap * dble(qx(k,4))
+         rx(k,3) = rx(k,3) - sngl(dvap)
+         cx(k,3) = cx(k,3) - sngl(dnum)
+         qr(k,3) = qr(k,3) - sngl(dqr)
+         rx(k,4) = rx(k,4) + sngl(dvap)
+         cx(k,4) = cx(k,4) + sngl(dnum)
+         qr(k,4) = qr(k,4) + sngl(dqr)
 
-         dnum = dvap * max(dble(dpsmi(lhcat)),1./embx)
-      endif
+      end if
 
-      rx(k,3) = rx(k,3) - real(dvap)
-      cx(k,3) = cx(k,3) - real(dnum)
-      qr(k,3) = qr(k,3) - real(dqr)
-      rx(k,4) = rx(k,4) + real(dvap)
-      cx(k,4) = cx(k,4) + real(dnum)
-      qr(k,4) = qr(k,4) + real(dqr)
-   endif
-enddo
-return
+   end do mainloop
+
+   return
 end subroutine psxfer
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************
 
-subroutine newtemp(m1,kf1,kf2,rv,theta,i,j)
 
-use rconstants
-use micphys
 
-implicit none
 
-real rslf,rsif
 
-integer :: m1,kf1,kf2,i,j,k
-real, dimension(m1) :: rv,theta
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine updates the temperature and corresponding saturation mixing ratios.   !
+!------------------------------------------------------------------------------------------!
+subroutine newtemp()
 
-do k = kf1,kf2
-   tairc(k) = tairstrc(k) + sa(k,1) * (rvstr(k) - rv(k))
-   tair(k)  = tairc(k) + 273.16
-   theta(k) = tair(k) * cp / pitot(k)
+   use rconstants
+   use micphys
+   use therm_lib, only: rslf,rsif
 
-   rvlsair(k) = rslf(press(k),tair(k))
-   rvisair(k) = rsif (press(k),tair(k))
-enddo
+   implicit none
 
-return
-end
+   !----- Local variables -----------------------------------------------------------------!
+   integer             :: k
+   !---------------------------------------------------------------------------------------!
+
+   do k = k1(10),k2(10)
+      tairc(k)   = tairstrc(k) + sa(k,1) * (rvstr(k) - rvap(k))
+      tair(k)    = tairc(k)    + t00
+      pottemp(k) = tair(k) * cp / exner(k)
+
+      rvlsair(k) = rslf(press(k),tair(k))
+      rvisair(k) = rsif (press(k),tair(k))
+   end do
+
+   return
+end subroutine newtemp
+!==========================================================================================!
+!==========================================================================================!

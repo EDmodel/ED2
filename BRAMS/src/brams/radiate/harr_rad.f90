@@ -1260,6 +1260,7 @@ end subroutine rayleigh
 ! ---------------------------------------------------------------------
 !
 subroutine csband(wlnlo,wlnhi,csavg)
+  use rconstants, only: g,prefsea
   implicit none
   real :: wlnlo,wlnhi,csavg
   real :: cs,wnhi,wnlo,sum,wn1,f1,fac,f2,wn,wn2,plkavg
@@ -1287,7 +1288,7 @@ subroutine csband(wlnlo,wlnhi,csavg)
      wn1 = wn2
      f1  = f2
   enddo
-  csavg = sum/(plkavg(wnlo,wnhi,296.)*1013250.*9.81)
+  csavg = sum/(plkavg(wnlo,wnhi,296.)*10.*prefsea*g)
   return
 end subroutine csband
 !

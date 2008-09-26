@@ -72,6 +72,8 @@ subroutine rams_node()
        mmxp,           & ! INTENT(IN)
        mmyp,           & ! INTENT(IN)
        mmzp              ! INTENT(IN)
+  
+  use mem_leaf, only: isfcl ! intent(in)
 
   use dtset, only: dtset_new ! subroutine
 
@@ -158,6 +160,10 @@ subroutine rams_node()
      ! Checking Northern boundary
      f_thermo_n(ng) = (myp+j0) == nyp
   enddo
+
+  !----- Initialise microphysics tables ---------------------------------------------------!
+  call micro_1st()
+  !----------------------------------------------------------------------------------------!
 
   do while (time<timmax)
 
@@ -342,6 +348,13 @@ subroutine rams_node()
         call node_sendanl('BOTH')
         call MPI_Barrier(MPI_COMM_WORLD,ierr)
      endif
+
+     !-------------------------------------------------------------------------------------!
+     !    Updating the ED-related variables.                                               !
+     !-------------------------------------------------------------------------------------!
+     if (isfcl == 5) call ed_timestep(begtime,dtlongn(1))
+     !-------------------------------------------------------------------------------------!
+
      !------------------------------------------------------------------------
      !                   Update main time variable by a long timestep.
 
@@ -359,7 +372,7 @@ subroutine init_params(init)
   use node_mod
   use mem_oda
   use mem_radiate, only: ISWRTYP, ILWRTYP ! Intent(in)
-  use mem_leaf, only: isfcl
+  use mem_leaf   , only: isfcl ! Intent(in)
 
   implicit none
 
@@ -375,7 +388,7 @@ subroutine init_params(init)
   call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
   call nodeget_processid(init)
-  call nodeget_nl()
+  call nodeget_nl
   if (isfcl == 5) call nodeget_ednl(master_num)
   call nodeget_gridinit
   if (ibnd .eq. 4 .or. jbnd .eq. 4) then
@@ -426,12 +439,12 @@ subroutine init_fields(init)
   !          Get all necessary fields from master.
   !          -------------------------------------------------------
   call node_getinit()
+  if (isfcl == 5 .and. init == 1) then
+     call node_ed_init()
+  endif
 
   !          Initialize the ED2 Environment
   !          ------------------------------------------------------
-  if (isfcl == 5 .and. init.eq.1) then
-     call node_ed_init
-  endif
 
   !     Can we use existing memory for the nesting communication buffers?
   !       If not, allocate new buffers or compute buffer sizes.

@@ -172,6 +172,7 @@ subroutine URBAN(PTS_TOWN, PEMIS_TOWN, PALB_TOWN,             &
   !
   !
   use teb_vars_const
+  use therm_lib, only: rslif        !RAMS function to calculate the saturation vapor pressure
   implicit none
 
   !
@@ -347,7 +348,6 @@ subroutine URBAN(PTS_TOWN, PEMIS_TOWN, PALB_TOWN,             &
   real :: ZABS_LW_WALL
   real :: ZABS_LW_ROOF
   !
-  real :: rslf        !RAMS function to calculate the saturation vapor pressure
   !
   !-----------------------------------------------------------------------------
   !
@@ -437,9 +437,9 @@ subroutine URBAN(PTS_TOWN, PEMIS_TOWN, PALB_TOWN,             &
   !
   !*****************************************************************************
   !ZQA = PQA * QSAT(ZTA,PPS) / QSAT(PTA,PPA)
-  QSATP=rslf(PPS,ZTA)
+  QSATP=rslif(PPS,ZTA)
 
-  QSATZ=rslf(PPA,PTA)
+  QSATZ=rslif(PPA,PTA)
 
   !
   !modified
@@ -1077,6 +1077,7 @@ subroutine URBAN_DRAG(PTSTEP, PT_CANYON, PQ_CANYON,    &
   !
   !
   use teb_vars_const
+  use therm_lib, only: rslif
   implicit none
   !*      0.1    declarations of arguments
   !
@@ -1152,7 +1153,7 @@ subroutine URBAN_DRAG(PTSTEP, PT_CANYON, PQ_CANYON,    &
   real :: ZCDN           ! neutral drag coefficient
   real :: ZLE_MAX        ! maximum latent heat flux available
   real :: ZLE            ! actual latent heat flux
-  real :: rslf,zwake
+  real :: zwake
   !
   !-----------------------------------------------------------------------------
   !
@@ -1171,10 +1172,10 @@ subroutine URBAN_DRAG(PTSTEP, PT_CANYON, PQ_CANYON,    &
   !
   !*       2.    COMPUTE SATURATION HUMIDITY
   !              ---------------------------
-  PQSAT_ROOF =rslf(PPS,PTS_ROOF)
+  PQSAT_ROOF =rslif(PPS,PTS_ROOF)
   !
   !
-  PQSAT_ROAD =rslf(PPS,PTS_ROAD)
+  PQSAT_ROAD =rslif(PPS,PTS_ROAD)
   !
   !-----------------------------------------------------------------------------
   !
@@ -1884,6 +1885,7 @@ subroutine  ROOF_LAYER_E_BUDGET(PTS_ROOF, PT_ROOF, ZQSAT_ROOF,            &
   !
   !
   use teb_vars_const
+  use therm_lib, only : rslif,rslifp
   implicit none
   !
   !*      0.1    declarations of arguments
@@ -1938,7 +1940,6 @@ subroutine  ROOF_LAYER_E_BUDGET(PTS_ROOF, PT_ROOF, ZQSAT_ROOF,            &
   !
   integer :: IROOF_LAYER           ! number of roof layers
   integer :: JLAYER                ! loop counter
-  real :: rslf,rslfp
   !-----------------------------------------------------------------------------
   !
   ZABS_LW_ROOF = 0.
@@ -1986,7 +1987,7 @@ subroutine  ROOF_LAYER_E_BUDGET(PTS_ROOF, PT_ROOF, ZQSAT_ROOF,            &
   !*       2.1.2.    DERIVATION ACCORDING TO TEMPERATURE
   !              -----------------------------------
   !
-  ZDQSAT_ROOF=(rslfp(PPS,PTS_ROOF))
+  ZDQSAT_ROOF=(rslifp(PPS,PTS_ROOF))
   !
   !
   !
@@ -2095,7 +2096,7 @@ subroutine  ROOF_LAYER_E_BUDGET(PTS_ROOF, PT_ROOF, ZQSAT_ROOF,            &
   !*      8.     New saturated specified humidity near the roof surface
   !              ------------------------------------------------------
   !
-  ZQSAT_ROOF=rslf(PPS,PTS_ROOF)
+  ZQSAT_ROOF=rslif(PPS,PTS_ROOF)
 
   !
   !-----------------------------------------------------------------------------
@@ -2216,6 +2217,7 @@ subroutine ROAD_WALL_LAYER_E_BUDGET(PTS_ROAD, PT_ROAD,                     &
   !
   !
   use teb_vars_const
+  use therm_lib, only: rslif,rslifp
   implicit none
   !
   !*      0.1    declarations of arguments
@@ -2325,7 +2327,6 @@ subroutine ROAD_WALL_LAYER_E_BUDGET(PTS_ROAD, PT_ROAD,                     &
   integer :: IWALL_LAYER           ! number of wall layers
   integer :: ILAYER                ! current layer
   integer :: JLAYER                ! loop counter
-  real :: rslf,rslfp
   !-----------------------------------------------------------------------------
   !
   !
@@ -2400,7 +2401,7 @@ subroutine ROAD_WALL_LAYER_E_BUDGET(PTS_ROAD, PT_ROAD,                     &
   !              ---------------------------------------
   !
 
-  ZDQSAT_ROAD=(rslfp(PPS,PTS_ROAD))
+  ZDQSAT_ROAD=(rslifp(PPS,PTS_ROAD))
 
   !-----------------------------------------------------------------------------
   !
@@ -2697,7 +2698,7 @@ subroutine ROAD_WALL_LAYER_E_BUDGET(PTS_ROAD, PT_ROAD,                     &
   !*     14.1    New saturated specified humidity near the road surface
   !              ------------------------------------------------------
   !
-  PQSAT_ROAD=rslf(PPS,PTS_ROAD)
+  PQSAT_ROAD=rslif(PPS,PTS_ROAD)
   !
   !*     14.2    Canyon air specific humidity
   !              ----------------------------

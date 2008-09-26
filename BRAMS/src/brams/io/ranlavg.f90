@@ -107,11 +107,11 @@ subroutine anlavg(n1,n2,n3,n4)
   !      Implement THERMO call for THETA and RV so matches code in rdriv.f
   !         Note that theta is changed, BUT never used on boundary points
 
-  call thermo(n1,n2,n3,1,1,1,n3,'THRM_ONLY')
-  call thermo(n1,n2,n3,n2,n2,1,n3,'THRM_ONLY')
+  call thermo(n1,n2,n3,1,1,1,n3)
+  call thermo(n1,n2,n3,n2,n2,1,n3)
   if (jdim .eq. 1) then
-     call thermo(n1,n2,n3,1,n2,1,1,'THRM_ONLY')
-     call thermo(n1,n2,n3,1,n2,n3,n3,'THRM_ONLY')
+     call thermo(n1,n2,n3,1,n2,1,1)
+     call thermo(n1,n2,n3,1,n2,n3,n3)
   endif
 
   ! Loop through the main variable table

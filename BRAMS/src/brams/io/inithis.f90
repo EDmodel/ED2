@@ -16,7 +16,7 @@ subroutine inithis()
   use ref_sounding
   use io_params
   use mem_scratch
-  use micphys
+  use therm_lib, only : virtt,vapour_on
 
   implicit none
 
@@ -345,14 +345,14 @@ subroutine inithis()
   call htint(nzpg1,u01dn1,ztn1(1,1) ,nnzp(1),u01dn(1,1),ztn(1,1))
   call htint(nzpg1,v01dn1,ztn1(1,1) ,nnzp(1),v01dn(1,1),ztn(1,1))
 
-  if (level .ge. 1) then
+  if (vapour_on) then
      call htint(nzpg1,rt01dn1,ztn1(1,1),nnzp(1),rt01dn(1,1),ztn(1,1))
   else
      rt01dn(1:nnzp(ngrid),1) = 0.
   endif
 
   do k = 1,nnzp(ngrid)
-     th01dn(k,1) = vctr1(k) * (1. + .61 * rt01dn(k,1))
+     th01dn(k,1) = virtt(vctr1(k),rt01dn(k,1))
   enddo
   u01dn(1,1) = u01dn(2,1)
   v01dn(1,1) = v01dn(2,1)
@@ -360,7 +360,7 @@ subroutine inithis()
   th01dn(1,1) = th01dn(2,1)
 
   pi01dn(1,1) = pi01dn1(1) + g * (ztn1(1,1) - ztn(1,1))  &
-       / (.5 * (th01dn(1,1) + th01dn1(1)*(1.+.61*rt01dn1(1)) ) )
+       / (.5 * (th01dn(1,1) + virtt(th01dn1(1),rt01dn1(1)) ) )
   do k = 2,nnzp(1)
      pi01dn(k,1) = pi01dn(k-1,1) - g / (dzmn(k-1,1)  &
           * .5 * (th01dn(k,1) + th01dn(k-1,1)))

@@ -189,7 +189,7 @@ subroutine sfcprt(n2,n3,mzg,mzs,npat,leaf,vnam,lprt)
 
 use mem_leaf
 use leaf_coms
-
+use therm_lib, only: qtk, qwtk
 type (leaf_vars) :: leaf
 
 dimension tempkk(20),fracliqq(20),area(20)
@@ -517,7 +517,7 @@ FUNCTION OPTLIB(VARN,K,I,J,IPLGRD,FMT,TILO)
 use mem_all
 use var_tables
 use rconstants
-
+use therm_lib, only: rehul,rehui,rehuil,virtt
 CHARACTER*(*) VARN
 CHARACTER*8 FMT,TILO
 !
@@ -741,7 +741,7 @@ ELSEIF(VARN.EQ.'THV') THEN
     VALTHET = basic_g(ngrid)%THETA(k,i,j)
     VALRTP  = basic_g(ngrid)%RTP(k,i,j)
     VALRV   = basic_g(ngrid)%RV(k,i,j)
-    OPTLIB  = VALTHET*(1. + 1.61*VALRV)/(1.+VALRTP)
+    OPTLIB  = virtt(VALTHET,VALRV,VALRTP)
   ENDIF
 !
 !           PERTURBATION THETA V
@@ -759,7 +759,7 @@ ELSEIF(VARN.EQ.'THVP') THEN
        VALRTP = 0.
        VALRV  = 0.
     ENDIF
-    OPTLIB = VALTHET*(1.+1.61*VALRV)/(1.+VALRTP)-VALTH0
+    OPTLIB = virtt(VALTHET,VALRV,VALRTP)-VALTH0
   ENDIF
 !
 !            TEMPERATURE
@@ -785,7 +785,7 @@ ELSEIF(VARN.EQ.'TEMPC') THEN
     VALTHET = basic_g(ngrid)%THETA(k,i,j)
     VALPP   = basic_g(ngrid)%PP(k,i,j)
     VALPI0  = basic_g(ngrid)%PI0(k,i,j)
-    OPTLIB  = VALTHET*(VALPP+VALPI0)/CP - 273.16
+    OPTLIB  = VALTHET*(VALPP+VALPI0)/CP - t00
   ENDIF
 !
 !           VIRTUAL TEMPERATURE
@@ -801,7 +801,7 @@ ELSEIF(VARN.EQ.'TV') THEN
     VALRTP = basic_g(ngrid)%RTP(k,i,j)
     VALRV = 0
     IF (LEVEL.GE.1)  VALRV = basic_g(ngrid)%RV(k,i,j)
-    OPTLIB = VALTHET*(1. + 1.61*VALRV)/(1.+VALRTP)  &
+    OPTLIB = virtt(VALTHET,VALRV,VALRTP)  &
                  *(VALPP + VALPI0)/CP
   ENDIF
 !
@@ -819,7 +819,7 @@ ELSEIF(VARN.EQ.'TVP') THEN
     VALRTP = basic_g(ngrid)%RTP(k,i,j)
     VALRV = 0
     IF (LEVEL.GE.1)  VALRV = basic_g(ngrid)%RV(k,i,j)
-    OPTLIB = (VALTHET*(1. + 1.61*VALRV)/(1.+VALRTP) -VALTHV0)  &
+    OPTLIB = (virtt(VALTHET,VALRV,VALRTP) -VALTHV0)  &
                  *(VALPP + VALPI0)/CP
   ENDIF
 !
@@ -1125,15 +1125,13 @@ ELSEIF(VARN.EQ.'SUPSATW') THEN
     VALPI0 = basic_g(ngrid)%PI0(k,i,j)
     VALTEMP= VALTHET*(VALPP+VALPI0)/CP
     VALPRS = ((VALPI0 + VALPP)/CP)**CPOR * P00
-    VALRVS = RSLF(VALPRS,VALTEMP)
-!          VALRVS = RS(VALPRS,VALTEMP)
     VALRV  = basic_g(ngrid)%RV(k,i,j)
-      OPTLIB = VALRV/VALRVS
-      IF(OPTLIB.GT.1.)THEN
-         OPTLIB=OPTLIB-1.
-      ELSE
-         OPTLIB=0.0
-      ENDIF
+    OPTLIB = 100.*REHUL(VALPRS,VALTEMP,VALRV)
+    IF(OPTLIB > 100.)THEN
+       OPTLIB=OPTLIB-100.
+    ELSE
+       OPTLIB=0.0
+    ENDIF
   ENDIF
 !
 !           SUPERSATURATION/ICE
@@ -1148,15 +1146,13 @@ ELSEIF(VARN.EQ.'SUPSATI') THEN
     VALPI0 = basic_g(ngrid)%PI0(k,i,j)
     VALTEMP= VALTHET*(VALPP+VALPI0)/CP
     VALPRS = ((VALPI0 + VALPP)/CP)**CPOR * P00
-    VALRVS = RSIF(VALPRS,VALTEMP)
-!          VALRVS = RS(VALPRS,VALTEMP)
     VALRV  = basic_g(ngrid)%RV(k,i,j)
-      OPTLIB = VALRV/VALRVS
-      IF(OPTLIB.GT.1.)THEN
-         OPTLIB=OPTLIB-1.
-      ELSE
-         OPTLIB=0.0
-      ENDIF
+    OPTLIB = 100.*REHUI(VALPRS,VALTEMP,VALRV)
+    IF(OPTLIB > 100.)THEN
+       OPTLIB=OPTLIB-100.
+    ELSE
+       OPTLIB=0.0
+    ENDIF
   ENDIF
 !
 !           RELATIVE HUMIDITY
@@ -1171,10 +1167,8 @@ ELSEIF(VARN.EQ.'RELHUM') THEN
     VALPI0 = basic_g(ngrid)%PI0(k,i,j)
     VALTEMP= VALTHET*(VALPP+VALPI0)/CP
     VALPRS = ((VALPI0 + VALPP)/CP)**CPOR * P00
-!          VALRVS = RS(VALPRS,VALTEMP)
-    VALRVS = RSLF(VALPRS,VALTEMP)
     VALRV  = basic_g(ngrid)%RV(k,i,j)
-    OPTLIB = 100. * VALRV/VALRVS
+    OPTLIB = 100. * rehuil(VALPRS,VALTEMP,VALRV)
   ENDIF
 !
 !           TOTAL NUMBER CONCENTRATION OF CCN
@@ -1627,9 +1621,9 @@ ELSEIF(VARN.EQ.'MICRO') THEN
         IF(IGRAUP.GE.1) PRTG=micro_g(ngrid)%RGP(k,i,j)
         IF(IHAIL.GE.1)  PRTH=micro_g(ngrid)%RHP(k,i,j)
       ENDIF
-      RTOT=basic_g(ngrid)%RTP(k,i,j)
-      RVAP=basic_g(ngrid)%RV(k,i,j)
-      PRTC=MAX(0.,RTOT-RVAP-PRTR-PRTP-PRTS-PRTA-PRTG-PRTH)
+      PRALL=basic_g(ngrid)%RTP(k,i,j)
+      PRVAP=basic_g(ngrid)%RV(k,i,j)
+      PRTC=MAX(0.,PRALL-PRVAP-PRTR-PRTP-PRTS-PRTA-PRTG-PRTH)
 
       PRTC=MIN(9,INT((PRTC+.9999E-3)*1.E3))
       PRTR=MIN(9,INT((PRTR+.9999E-3)*1.E3))
@@ -1754,6 +1748,7 @@ use ref_sounding
 use rconstants
 use mem_turb
 use ref_sounding
+use therm_lib, only: mrsl,virtt
 
 IF(INITIAL.NE.2)THEN
   call mrsl(nsndg,ps(1),ts(1),vctr5(1))
@@ -1773,7 +1768,7 @@ ENDIF
 !
 DO K=1,NNZP(1)
   VCTR1(K)=P00*(PI01DN(K,1)/CP)**CPOR
-  VCTR2(K)=TH01DN(K,1)/(1.+.61*RT01DN(K,1))
+  VCTR2(K)=virtt(TH01DN(K,1),RT01DN(K,1))
 ENDDO
 WRITE(M,310)IREF,JREF,TOPREF,(ZTN(K,1),U01DN(K,1),V01DN(K,1)  &
   ,DN01DN(K,1),PI01DN(K,1),VCTR1(K),TH01DN(K,1),VCTR2(K)  &
@@ -1839,6 +1834,7 @@ SUBROUTINE UWC(N1,N2,N3,UP,WP,DXT)
 use mem_grid
 use mem_scratch
 use ref_sounding
+use rconstants
 
 DIMENSION UP(N1,N2,N3),WP(N1,N2,N3),DXT(N2,N3)
 DIMENSION UMN(NZPMAX,NXPMAX),WMN(NZPMAX,NXPMAX),V1(NXPMAX)
@@ -1875,7 +1871,7 @@ DO K=1,NZ
            /(VCTR3(K)*DXT(I,J))
    ENDDO
    UWFLX=-SSUM(NTPT,V1(IL),1)
-   TVAL=3.14159/4.*20.*.01957*(10.**2)/VCTR3(1)
+   TVAL=pio4*20.*.01957*(10.**2)/VCTR3(1)
    PRINT 90,K,ZT(K),UWFLX/TVAL*100.,UWFLX,TVAL,VCTR1(K)-20.  &
         ,VCTR2(K)
 90      FORMAT(I5,F8.0,F8.1,2E12.4,2F9.5)

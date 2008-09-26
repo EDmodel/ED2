@@ -20,8 +20,7 @@ subroutine ed_timestep(timel,dtlong)
   ! Activate the ED2 model if time has reached the LSM timestep
 
   if (isfcl.ne.5)return
-  
-  
+    
   if ( mod(timel+dble(dtlong),dble(dtlsm)) < dble(dtlong) .or. first ) then
 
      wtime_start=walltime(0.)
@@ -60,7 +59,7 @@ subroutine ed_timestep(timel,dtlong)
      wtime2=walltime(wtime_start)
      call TIMING(2,T2)
      
-     if(mynum.eq.nnodetot) then
+     if(mynum.eq.1) then
         write(*,"(a,a,i2.2,a,i2.2,a,i4.4,a,f6.0,2(a,f7.3),a)") &
              ' ED2 LSM Timestep ',&
              '; Sim time  ',current_time%month, &
@@ -471,6 +470,7 @@ subroutine simple_lake_model(ifm,dtlong)
   use mem_cuparm, only: cuparm_g
   use mem_micro,  only: micro_g
   use mem_grid,   only: zt,grid_g,dzt,zm,if_adap,jdim
+  use therm_lib,  only: rslif
   !--------------------------------------------------!
 
   implicit none
@@ -491,7 +491,6 @@ subroutine simple_lake_model(ifm,dtlong)
   integer :: niter_leaf,niter_can,nsubsteps,n
 
   real,parameter :: dtwbmax = 90.0  ! Water body timesteps can go no longer than 90 seconds
-  real,external :: rslif
   real,external :: vertical_vel_flux
   real, parameter :: ubmin = .25   &    ! should use ubmin=1.0 for convec case
        ,ustmin = .1     !                 ubmin=0.1 for stable case

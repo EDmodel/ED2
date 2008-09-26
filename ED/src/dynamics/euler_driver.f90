@@ -4,7 +4,7 @@ subroutine euler_timestep_ar(cgrid)
        sitetype,patchtype
   use misc_coms, only: dtlsm
   use soil_coms, only: soil_rough
-  use consts_coms, only: cp
+  use consts_coms, only: cp,mmdryi
 
   implicit none
 
@@ -51,7 +51,7 @@ subroutine euler_timestep_ar(cgrid)
                 csite%can_co2(ipa))
 
            csite%co2budget_loss2atm(ipa) = - cpoly%met(isi)%rhos *   &
-                csite%ustar(ipa) * csite%cstar(ipa) / 0.029 * dtlsm
+                csite%ustar(ipa) * csite%cstar(ipa) * mmdryi * dtlsm
            csite%ebudget_loss2atm(ipa) = - cp * cpoly%met(isi)%rhos * &
                 csite%ustar(ipa) * csite%tstar(ipa) * cpoly%met(isi)%exner * dtlsm
            csite%wbudget_loss2atm(ipa) = - cpoly%met(isi)%rhos *  &
@@ -107,6 +107,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
   use soil_coms, only: soil_rough, snow_rough, soil
   use misc_coms, only: dtlsm
   use max_dims, only: n_pft
+  use therm_lib, only: qtk,qwtk
 
   implicit none
 
@@ -174,7 +175,6 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
   real :: qwshed  ! water energy shed from veg this timestep [J/m^2]
   real :: rdi     ! (soil or surface water)-to-can_air conductance [m/s]
   
-  real, external :: rhovsil ! function to compute sat spec hum over liquid or ice
 
   !=================================================================
   ! TEMPORARY RUNOFF VARIABLES
@@ -466,8 +466,6 @@ real :: b8
 real :: b9
 real :: evapotransp
 
-real, external :: rhovsil ! function to compute sat vapor density
-real, external :: eslf    ! function to compute sat vapor pressure
 integer, intent(in) :: lsl
 
 ! Canopy air (vapor) and heat capacity
@@ -583,7 +581,8 @@ subroutine sfcwater(nlev_sfcwater,ntext_soil,                       &
 use soil_coms, only: slz, dslz, dslzi, dslzo2, soil
 use grid_coms, only: nzg, nzs                       
 use misc_coms, only: dtlsm
-use consts_coms, only: alvi, cice, cliq, alli
+use consts_coms, only: alvi, cice, cliq, alli, t3ple
+use therm_lib, only: qwtk
 
 implicit none
 
@@ -693,11 +692,11 @@ if (nlev_sfcwater > 0) then
 ! Compute snow heat resistance times HALF layer depth (sfcwater_rfactor).
 ! Sfcwater_tempk(k) should be correctly balanced value at this point, so 
 ! sfcwater_rfactor(k) should have correct value.  Formula applies to snow,
-! so limit temperature to no greater than 273.15.
+! so limit temperature to no greater than T3ple.
 
    do k = 1,nlev_sfcwater
       snden = sfcwater_mass(k) / sfcwater_depth(k)
-      tempk = min(273.15,sfcwater_tempk(k))
+      tempk = min(t3ple,sfcwater_tempk(k))
 
       sfcwater_rfactor(k) = .5 * sfcwater_depth(k)  &
          / (1.093e-3 * exp(.028 * tempk) *          &
@@ -841,7 +840,7 @@ do k = nlev_sfcwater,1,-1
 ! gives the minimum rfactor for a given density.
 
    if (k == 1) then
-      tempk = 273.15
+      tempk = t3ple
 
       sfcwater_rfactor(k) = .5 * sfcwater_depth(k)  &
          / (1.093e-3 * exp(.028 * tempk) *          &
@@ -881,7 +880,7 @@ do k = nlev_sfcwater,1,-1
 
          sfcwater_fracliq(1) = 0.
          sfcwater_tempk(1) = tempk
-         energy_per_m2(1) = sfcwater_mass(1) * cice * (tempk - 273.15)
+         energy_per_m2(1) = sfcwater_mass(1) * cice * (tempk - t3ple)
 
       elseif (qwt > wt * alli) then
       
@@ -889,7 +888,7 @@ do k = nlev_sfcwater,1,-1
 
          sfcwater_fracliq(1) = 1.
          sfcwater_tempk(1) = tempk
-         energy_per_m2(1) = sfcwater_mass(1) * (cliq * (tempk - 273.15) + alli)
+         energy_per_m2(1) = sfcwater_mass(1) * (cliq * (tempk - t3ple) + alli)
 
       else
       
@@ -909,7 +908,7 @@ do k = nlev_sfcwater,1,-1
 ! New sfcwater_fracliq(1) value becomes closest value within bounds to old value.
 
          sfcwater_fracliq(1) = max(0.,flmin,min(1.0,flmax,sfcwater_fracliq(1)))
-         sfcwater_tempk(1) = 273.15
+         sfcwater_tempk(1) = t3ple
          energy_per_m2(1) = sfcwater_mass(1) * sfcwater_fracliq(1) * alli
 
       endif
@@ -959,7 +958,7 @@ do k = nlev_sfcwater,1,-1
 
 ! Evaluate energy and depth transferred in wfree (which is in liquid phase)
 
-      qwfree = wfree * (cliq * (sfcwater_tempk(k) - 273.15) + alli)
+      qwfree = wfree * (cliq * (sfcwater_tempk(k) - t3ple) + alli)
       dwfree = wfree * .001
 
 ! Check if essentially all of sfcwater_mass(k) will drain from layer
@@ -1180,7 +1179,7 @@ subroutine soil_euler_ar(nlev_sfcwater, ntext_soil, ktrans,    &
 
 use soil_coms, only: dslz, dslzi, slzt, dslzidt, dslztidt, soil, slcons1 
 use grid_coms, only: nzg
-use consts_coms, only: cliq1000, alli1000, alvi
+use consts_coms, only: cliq1000, alli1000, alvi,t3ple
 
 use ed_state_vars,only:sitetype,patchtype
 
@@ -1235,7 +1234,7 @@ real, dimension(nzg) :: ed_transp
 
 do k = lsl, nzg
    wloss = ed_transp(k) * dslzi(k) * 1.e-3
-   qwloss = wloss * (cliq1000 * (soil_tempk(k) - 273.15) + alli1000)
+   qwloss = wloss * (cliq1000 * (soil_tempk(k) - t3ple) + alli1000)
    soil_water(k) = soil_water(k) - wloss
    soil_energy(k) = soil_energy(k) - qwloss
    csite%mean_latflux(ipa) =   &
@@ -1327,7 +1326,7 @@ do k = lsl+1,nzg
       wxfer(k) = - min(-wxfer(k),soil_liq(k),half_soilair(k-1))
    endif
 
-   qwxfer(k) = wxfer(k) * (cliq1000 * (soil_tempk(k) - 273.15) + alli1000)
+   qwxfer(k) = wxfer(k) * (cliq1000 * (soil_tempk(k) - t3ple) + alli1000)
 
 enddo
 
@@ -1355,8 +1354,9 @@ subroutine remove_runoff(ksn, sfcwater_fracliq, sfcwater_mass,   &
 
   use soil_coms, only: runoff_time
   use grid_coms, only: nzs
-  use consts_coms, only: alli, cliq
+  use consts_coms, only: alli, cliq,t3ple
   use misc_coms, only: dtlsm
+  use therm_lib, only: qtk
 
   implicit none
 
@@ -1381,7 +1381,7 @@ subroutine remove_runoff(ksn, sfcwater_fracliq, sfcwater_mass,   &
              sfcwater_fracliq(ksn))
         runoff = sfcwater_mass(ksn) * (sfcwater_fracliq(ksn) - 0.1) /   &
              (0.9 * runoff_time) * dtlsm
-        qrunoff = runoff * (cliq * (sfcwater_tempk(ksn) - 273.15) +  alli)
+        qrunoff = runoff * (cliq * (sfcwater_tempk(ksn) - t3ple) +  alli)
         
         sfcwater_energy(ksn) = (sfcwater_energy(ksn) *   &
              sfcwater_mass(ksn) - qrunoff ) / (sfcwater_mass(ksn) - runoff)

@@ -26,7 +26,8 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
 
   ! CATT
   !kmlnew
-  use micphys     , only: gnu,level,icloud,irain,ipris,isnow,iaggr,igraup,ihail
+  use therm_lib   , only: qtk, level, cloud_on, bulk_on
+  use micphys     , only: gnu,icloud,irain,ipris,isnow,iaggr,igraup,ihail
   use mem_cuparm  , only: cuparm_g, cuparm_g_sh, nnqparm
   !kmlnew
   use rad_carma   , only: radcomp_carma
@@ -73,46 +74,13 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
 
   logical :: grell_on
 
-  ! interface necessary to use pointer as argument - teb_spm
-#if USE_INTERF
-  interface
-     subroutine radprep(m2,m3,mzg,mzs,np,ia,iz,ja,jz,iswrtyp,ilwrtyp,        &
-          soil_water,soil_energy,                                            &
-          soil_text,sfcwater_energy,sfcwater_depth,leaf_class,               &
-          veg_fracarea,veg_height,veg_albedo,patch_area,                     &
-          sfcwater_nlev,veg_temp,can_temp,                                   &
-          ! TEB_SPM
-          emis_town,alb_town,ts_town,g_urban,                                &
-          !
-          glat,glon,rlongup,rlong_albedo,albedt,rshort,                      &
-          rlong,rshort_top,rshortup_top,cosz                                 )
-       integer                  :: m2,m3,mzg,mzs,np,ia,iz,ja,jz,iswrtyp,ilwrtyp
-              !dimension(mzg,m2,m3,np)
-       real, dimension(:,:,:,:) :: soil_water,soil_energy,soil_text
-       !dimension(mzs,m2,m3,np)
-       real, dimension(:,:,:,:) :: sfcwater_energy,sfcwater_depth
-       !dimension(m2,m3,np)
-       real, dimension(:,:,:)   :: leaf_class,veg_fracarea,veg_height, &
-            veg_albedo,patch_area,sfcwater_nlev,veg_temp,can_temp
-       !TEB_SPM
-       !dimension(m2,m3)
-       real, pointer :: emis_town(:,:), alb_town(:,:), ts_town(:,:)
-       !dimension(m2,m3,np)
-       real, pointer :: g_urban(:,:,:)
-       !       
-       !dimension(m2,m3)
-       real, dimension(:,:) :: glat,glon,rlongup,rlong_albedo,albedt,rshort, &
-                               rlong,rshort_top,rshortup_top,cosz
-     end subroutine radprep
-  end interface
-#endif
   if (ilwrtyp + iswrtyp == 0) return
 
   !MLO - Nullifying the pointers for Harrington/Bulk microphysics interface
   nullify(ha_rcp,ha_rrp,ha_rpp,ha_rsp,ha_rap,ha_rgp,ha_rhp &
          ,ha_ccp,ha_crp,ha_cpp,ha_csp,ha_cap,ha_cgp,ha_chp &
          ,parm_rain,parm_xkbcon,parm_xjmin,parm_dnmf       &
-         ,parm_rtsrc,parm_rtsrc_sh)
+         ,parm_rtsrc,parm_rtsrc_sh,emis_town,alb_town,ts_town,g_urban)
   allocate(dumzero3d(mzp,mxp,myp),dumzero2d(mxp,myp))
   call azero(mzp*mxp*myp,dumzero3d)
   call azero(mxp*myp,dumzero2d)
@@ -124,10 +92,10 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
      ts_town   => tebc_g(ngrid)%ts_town
      g_urban   => leaf_g(ngrid)%g_urban
   else
-     nullify(emis_town)
-     nullify(alb_town)
-     nullify(ts_town)
-     nullify(g_urban)
+     emis_town => dumzero2d
+     alb_town  => dumzero2d
+     ts_town   => dumzero2d
+     g_urban   => dumzero3d
   endif
   !
 
@@ -206,7 +174,7 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
               enddo
            endif
 
-        elseif (level >= 3) then
+        elseif (bulk_on) then
 
            if (nnqparm(ngrid) > 0) then
               do i=ia,iz
@@ -227,7 +195,7 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
                  
                  do i=ia,iz
                     do j=ja,jz
-                       call qtc(micro_g(ngrid)%q6(k,i,j), &
+                       call qtk(micro_g(ngrid)%q6(k,i,j), &
                             dummy,fracao_liq(k,i,j))
                     enddo
                  enddo
@@ -247,7 +215,7 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
 
                  do i=ia,iz
                     do j=ja,jz
-                       call qtc(micro_g(ngrid)%q7(k,i,j),dummy,  &
+                       call qtk(micro_g(ngrid)%q7(k,i,j),dummy,  &
                             fracao_liq(k,i,j))
                     enddo
                  enddo
@@ -358,7 +326,7 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
         parm_rtsrc_sh => dumzero3d
 
         ! Now I check whether condensation is allowed. If so, I repoint to the actual arrays.
-        if (level >= 2) then
+        if (cloud_on) then
            ha_rcp => micro_g(ngrid)%rcp
            if (icloud == 5) ha_ccp => micro_g(ngrid)%ccp
         end if
@@ -470,56 +438,28 @@ subroutine radprep(m2,m3,mzg,mzs,np,ia,iz,ja,jz,iswrtyp,ilwrtyp,             &
   implicit none
 
   ! arguments:
-  integer                  :: m2,m3,mzg,mzs,np,ia,iz,ja,jz,iswrtyp,ilwrtyp
+  integer                       :: m2,m3,mzg,mzs,np,ia,iz,ja,jz,iswrtyp,ilwrtyp
   !dimension(mzg,m2,m3,np)
-  real, dimension(:,:,:,:) :: soil_water,soil_energy,soil_text
+  real, dimension(mzg,m2,m3,np) :: soil_water,soil_energy,soil_text
   !dimension(mzs,m2,m3,np)
-  real, dimension(:,:,:,:) :: sfcwater_energy,sfcwater_depth
+  real, dimension(mzs,m2,m3,np) :: sfcwater_energy,sfcwater_depth
   !dimension(m2,m3,np)
-  real, dimension(:,:,:)   :: leaf_class,veg_fracarea,veg_height, &
-       veg_albedo,patch_area,sfcwater_nlev,veg_temp,can_temp
+  real, dimension(m2,m3,np)     :: leaf_class,veg_fracarea,veg_height, &
+                                   veg_albedo,patch_area,sfcwater_nlev,veg_temp,can_temp
   !TEB_SPM
   !dimension(m2,m3)
-  real, pointer :: emis_town(:,:), alb_town(:,:), ts_town(:,:)
+  real, dimension(m2,m3) :: emis_town,alb_town,ts_town
   !dimension(m2,m3,np)
-  real, pointer :: g_urban(:,:,:)
+  real, dimension(m2,m3,np) :: g_urban
   !dimension(m2,m3)
-  real, dimension(:,:) :: glat,glon,rlongup,rlong_albedo,albedt,rshort,     &
+  real, dimension(m2,m3) :: glat,glon,rlongup,rlong_albedo,albedt,rshort,     &
                    rlong,rshort_top,rshortup_top,cosz
 
-  ! Local Variables
-  ! Needed by TEB_SPM
-  real, pointer :: l_emis_town, l_alb_town, l_ts_town, l_g_urban
-  !
+
   INTEGER :: ip,i,j
   ! REAL :: c1,c2
 
   ! Interface necessary to use pointer as argument - TEB_SPM
-#if USE_INTERF
-  interface
-     subroutine sfcrad(mzg,mzs,ip  &
-          ,soil_energy,soil_water,soil_text,sfcwater_energy,sfcwater_depth  &
-          ,patch_area,can_temp,veg_temp,leaf_class,veg_height,veg_fracarea  &
-          ,veg_albedo,sfcwater_nlev,rshort,rlong,albedt,rlongup,cosz        &
-          ! For TEB_SPM
-          ,g_urban, etown, albtown, tstown                                  &
-          !
-          )
-       integer, intent(in) :: mzg,mzs,ip
-       real, dimension(:) :: soil_energy,soil_water,soil_text
-       real, dimension(:) :: sfcwater_energy,sfcwater_depth
-       real :: patch_area,can_temp,veg_temp,leaf_class,veg_height,veg_fracarea&
-            ,veg_albedo,sfcwater_nlev,rshort,rlong,albedt,rlongup,cosz
-       ! for TEB_SPM
-       real, pointer :: g_urban, etown, albtown, tstown
-     end subroutine sfcrad
-  end interface
-#endif  
-  ! TEB_SPM
-  nullify(l_emis_town)
-  nullify(l_alb_town)
-  nullify(l_ts_town)
-  nullify(l_g_urban)
 
   ! Compute solar zenith angle [cosz(i,j)] & solar constant factr [solfac].
 
@@ -536,19 +476,11 @@ subroutine radprep(m2,m3,mzg,mzs,np,ia,iz,ja,jz,iswrtyp,ilwrtyp,             &
      do ip = 1,np
         do j = 1,jz
            do i = 1,iz
-              
-              ! TEB_SPM
-              if (TEB_SPM==1) then
-                 l_g_urban   => g_urban(i,j,ip)
-                 l_emis_town => emis_town(i,j)
-                 l_alb_town  => alb_town(i,j)
-                 l_ts_town   => ts_town(i,j)
-              endif
                             
               call sfcrad(mzg,mzs,ip               &
-                   ,soil_energy    (:,i,j,ip) ,soil_water      (:,i,j,ip)  &
-                   ,soil_text      (:,i,j,ip) ,sfcwater_energy (:,i,j,ip)  &
-                   ,sfcwater_depth (:,i,j,ip) ,patch_area      (i,j,ip)    &
+                   ,soil_energy    (1:mzg,i,j,ip) ,soil_water      (1:mzg,i,j,ip)  &
+                   ,soil_text      (1:mzg,i,j,ip) ,sfcwater_energy (1:mzs,i,j,ip)  &
+                   ,sfcwater_depth (1:mzs,i,j,ip) ,patch_area      (i,j,ip)    &
                    ,can_temp       (i,j,ip)   ,veg_temp        (i,j,ip)    &
                    ,leaf_class     (i,j,ip)   ,veg_height      (i,j,ip)    &
                    ,veg_fracarea   (i,j,ip)   ,veg_albeDO      (i,j,ip)    &
@@ -557,9 +489,8 @@ subroutine radprep(m2,m3,mzg,mzs,np,ia,iz,ja,jz,iswrtyp,ilwrtyp,             &
                    ,albedt         (i,j)      ,rlongup         (i,j)       &
                    ,cosz           (i,j)                                   &
                    ! TEB_SPM
-                   ,l_g_urban                                              &
-                   ,l_emis_town               ,l_alb_town                  &
-                   ,l_ts_town                                              &
+                   ,g_urban        (i,j,ip)   ,emis_town       (i,j)       &
+                   ,alb_town       (i,j)      ,ts_town         (i,j)       &
                    !
                    )
            end do

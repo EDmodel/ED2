@@ -25,7 +25,6 @@ subroutine sfclyr(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
   integer, intent(in) :: mzp,mxp,myp,ia,iz,ja,jz,ibcon
   
   !Local Variables
-  real :: rslif
   integer :: ng
   !integer, save :: ncall=0
   !Pointer to TEB data. Can be associated or not
@@ -161,7 +160,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz  &
    use teb_spm_start, only: TEB_SPM    ! INTENT(IN)
    use mem_teb, only: teb_vars               !Type
    use mem_teb_common, only: teb_common             !Type
-
+   use therm_lib, only: rslif,level
    implicit none
 
    ! Arguments:
@@ -180,55 +179,21 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz  &
 
    ! Local variables:
    integer :: i,j,ip,iter_leaf
-   real :: rslif
-   integer :: k2
    real :: dvelu,dvelv,velnew,sflux_uv,cosine1,sine1
    ! Local variables used for TEB
    real :: PSUP1,PSUP2,depe,alt2,deze,dpdz,exn1ST,airt
    real :: ZH_TOWN,ZLE_TOWN,ZSFU_TOWN,ZSFV_TOWN
-   real, pointer :: EMIS_TOWN, ALB_TOWN, TS_TOWN
-   real, pointer :: G_URBAN
+   real, save :: EMIS_TOWN, ALB_TOWN, TS_TOWN,G_URBAN
+   logical, save :: firsttime = .true. 
 
-
-! Interface necessary to use pointer as argument - TEB
-#if USE_INTERF
-   interface
-      subroutine sfcrad(mzg,mzs,ip  &
-           ,soil_energy,soil_water,soil_text,sfcwater_energy,sfcwater_depth  &
-           ,patch_area,can_temp,veg_temp,leaf_class,veg_height,veg_fracarea  &
-           ,veg_albedo,sfcwater_nlev,rshort,rlong,albedt,rlongup,cosz        &
-           ! For TEB
-           ,G_URBAN, ETOWN, ALBTOWN, TSTOWN                                  &
-           !
-           )
-        integer, intent(in) :: mzg,mzs,ip
-        real, dimension(:) :: soil_energy,soil_water,soil_text
-        real, dimension(:) :: sfcwater_energy,sfcwater_depth
-        real :: patch_area,can_temp,veg_temp,leaf_class,veg_height,veg_fracarea  &
-             ,veg_albedo,sfcwater_nlev,rshort,rlong,albedt,rlongup,cosz
-        ! for TEB
-        real, pointer :: G_URBAN, ETOWN, ALBTOWN, TSTOWN
-      end subroutine sfcrad
-
-      subroutine sfclmcv(ustar,tstar,rstar,vels,vels_pat,ups,vps,gzotheta, &
-           patch_area,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r              &
-           ! For TEB
-           ,G_URBAN)
-        real, intent(in)    :: ustar, tstar, rstar, vels,vels_pat, ups, vps, &
-             gzotheta, patch_area
-        real, intent(inout) :: sflux_u, sflux_v, sflux_w, sflux_t, sflux_r
-        ! For TEB
-        real, pointer :: G_URBAN
-      end subroutine sfclmcv
-
-   end interface
-#endif
-
-   !TEB
-   nullify(G_URBAN)
-   nullify(EMIS_TOWN)
-   nullify(ALB_TOWN)
-   nullify(TS_TOWN)
+   if (firsttime) then 
+      !TEB
+      G_URBAN    = 0.
+      EMIS_TOWN  = 0.
+      ALB_TOWN   = 0.
+      TS_TOWN    = 0.
+      firsttime  = .false.
+   end if
 
    ! Time interpolation factor for updating SST
 
@@ -309,7 +274,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz  &
 
          leaf%soil_energy(mzg,i,j,1) = alli  &
             + cliq * (leaf%seatp(i,j) + (leaf%seatf(i,j) - leaf%seatp(i,j))  &
-            * timefac_sst - t00)
+            * timefac_sst - t3ple)
 
    ! Fill surface precipitation arrays for input to leaf
 
@@ -372,18 +337,18 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz  &
 
                      ! TEB - defining pointers
                      if (TEB_SPM==1) then
-                        G_URBAN   => leaf%G_URBAN(i,j,ip)
-                        EMIS_TOWN => ptebc%EMIS_TOWN(i,j)
-                        ALB_TOWN  => ptebc%ALB_TOWN(i,j)
-                        TS_TOWN   => ptebc%TS_TOWN(i,j)
-                     endif
+                        G_URBAN   = leaf%G_URBAN(i,j,ip)
+                        EMIS_TOWN = ptebc%EMIS_TOWN(i,j)
+                        ALB_TOWN  = ptebc%ALB_TOWN(i,j)
+                        TS_TOWN   = ptebc%TS_TOWN(i,j)
+                     end if
 
                      call sfcrad(mzg,mzs,ip                                       &
-                          ,leaf%soil_energy(:,i,j,ip)                             &
-                          ,leaf%soil_water(:,i,j,ip)                              &
-                          ,leaf%soil_text(:,i,j,ip)                               &
-                          ,leaf%sfcwater_energy(:,i,j,ip)                         &
-                          ,leaf%sfcwater_depth(:,i,j,ip)                          &
+                          ,leaf%soil_energy(1:mzg,i,j,ip)                         &
+                          ,leaf%soil_water(1:mzg,i,j,ip)                          &
+                          ,leaf%soil_text(1:mzg,i,j,ip)                           &
+                          ,leaf%sfcwater_energy(1:mzs,i,j,ip)                     &
+                          ,leaf%sfcwater_depth(1:mzs,i,j,ip)                      &
                           ,leaf%patch_area(i,j,ip)                                &
                           ,leaf%can_temp      (i,j,ip)  ,leaf%veg_temp  (i,j,ip)  &
                           ,leaf%leaf_class    (i,j,ip)  ,leaf%veg_height(i,j,ip)  &
@@ -440,7 +405,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz  &
 
                ! TEB
                if (TEB_SPM==1) then
-                  G_URBAN => leaf%G_URBAN(i,j,ip)
+                  G_URBAN = leaf%G_URBAN(i,j,ip)
                endif
 
                call sfclmcv(leaf%ustar(i,j,ip),leaf%tstar(i,j,ip)     &
@@ -498,7 +463,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz  &
 
                         ! TEB - defining pointers
                         if (TEB_SPM==1) then
-                           G_URBAN   => leaf%G_URBAN(i,j,ip)
+                           G_URBAN   = leaf%G_URBAN(i,j,ip)
                         endif
                  
                         CALL LEAF3_TEB_INTERFACE(ISTP,DTLT,DTLL,          &
@@ -616,7 +581,7 @@ subroutine leaftw(mzg,mzs,np  &
    use mem_leaf
    use rconstants
    use mem_scratch
-
+   use therm_lib, only: qwtk
    !CATT
    use catt_start, only: CATT
 
@@ -810,9 +775,9 @@ subroutine leaftw(mzg,mzs,np  &
             wt = w + soil_water(mzg) * 1.e3 * dslz(mzg)
             soilhcap = slcpd(nsoil) * dslz(mzg)
             call qwtk(qwt,wt,soilhcap,tempk(k+mzg),fracliq(k+mzg))
-            fac = 4186.
-            if (fracliq(k+mzg) <= .0001) fac = 2093.
-            qw = (fac * (tempk(k+mzg) - 273.15) + fracliq(k+mzg) * 334000.) * w
+            fac = cliq
+            if (fracliq(k+mzg) <= .0001) fac = cice
+            qw = (fac * (tempk(k+mzg) - t3ple) + fracliq(k+mzg) * alli) * w
             tempk(mzg) = tempk(k+mzg)
             fracliq(mzg) = fracliq(k+mzg)
             soil_energy(mzg) = (qwt - qw) * dslzi(mzg)
@@ -828,11 +793,11 @@ subroutine leaftw(mzg,mzs,np  &
          if (k == 1) then
             soilcap = 1.e3 * max (0.,-slz(mzg) * (slmsts(nsoil) - soil_water(mzg)))
             wfreeb = min (wfreeb, soilcap)
-            qwfree = wfreeb * 4186. * (tempk(k+mzg) - 193.36)
+            qwfree = wfreeb * cliq * (tempk(k+mzg) - tsupercool)
             soil_water(mzg) = soil_water(mzg) + 1.e-3 * wfreeb * dslzi(mzg)
             soil_energy(mzg) = soil_energy(mzg) + qwfree * dslzi(mzg)
          endif
-         qwfree = wfreeb * 4186. * (tempk(k+mzg) - 193.36)
+         qwfree = wfreeb * cliq * (tempk(k+mzg) - tsupercool)
 
          !srf-25/02/2005
          sfcwater_mass(k) = w - wfreeb ! from RAMS 6.0
@@ -870,7 +835,7 @@ subroutine leaftw(mzg,mzs,np  &
          newlayers = 1
          do k = 2,mzs
             if (snowmin * thicknet(k) <= totsnow .and.  &
-               sfcwater_energy(k) < 334000.) newlayers = newlayers + 1
+               sfcwater_energy(k) < alli) newlayers = newlayers + 1
          enddo
          newlayers = min (newlayers, mzs, nlayers+1)
          sfcwater_nlev = float(newlayers)
@@ -945,7 +910,7 @@ subroutine leaftw(mzg,mzs,np  &
          wflux(k) = - min(-wflux(k),soil_liq(k),half_soilair(k-1))
       endif
 
-      qwflux(k) = wflux(k) * 4.186e6 * (tempk(k) - 193.36)
+      qwflux(k) = wflux(k) * cliq1000 * (tempk(k) - tsupercool)
 
    enddo
 
@@ -987,7 +952,7 @@ subroutine leaftw(mzg,mzs,np  &
 
    soil_water(ktrans) = soil_water(ktrans) - wloss
    soil_energy(ktrans) = soil_energy(ktrans)  &
-      - wloss * 4.186e6 * (tempk(ktrans) - 193.36)
+      - wloss * cliq1000 * (tempk(ktrans) - tsupercool)
 
    4044 continue
 
@@ -1013,6 +978,8 @@ subroutine canopy(mzg,mzs,ksn,nveg  &
    use leaf_coms
    use rconstants
 
+   use therm_lib, only: eslif,rslif,qwtk
+
    !CATT
    use catt_start, only: CATT
 
@@ -1030,7 +997,7 @@ subroutine canopy(mzg,mzs,ksn,nveg  &
 
    integer :: i,j,ip
 
-   real :: aux,brad,bswp,bthi,btlo,bvpd,c2,c3,c4,dsm,es,eslf,fac,factv         &
+   real :: aux,brad,bswp,bthi,btlo,bvpd,c2,c3,c4,dsm,es,fac,factv         &
       ,fracliqv,fthi,ftlo,frad,fswp,fvpd,qwtot,rasgnd,rasveg,rleaf,rsatveg     &
       ,sigmaw ,slai,stai,slpotv,srad,sswp,sthi,stlo,svpd,swp,tveg,tvegc,tvegk  &
       ,vpd,wtemp,wtroot,x,zognd,zoveg,zdisp,zveg,wflx,dewgndflx,ustar0         &
@@ -1146,7 +1113,7 @@ subroutine canopy(mzg,mzs,ksn,nveg  &
    !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
          if (slpotv > swp) swp = slpotv
       enddo
-      swp = swp * 9810.
+      swp = swp * g * 1000.
 
    ! Begin canopy time-split iterations
 
@@ -1155,15 +1122,14 @@ subroutine canopy(mzg,mzs,ksn,nveg  &
    ! Calculate the saturation vapor pressure at TVEG
 
          tveg = veg_temp
-         tvegc = tveg - 273.15
-         es = eslf(tvegc)
-         rsatveg = .622 * es / (prss - es)
-
+         es = eslif(tveg)
+         rsatveg = rslif(prss,tveg)
+         
    ! Compute mixing ratio at leaf surface using previous rc
 
          rc = stom_resist
          rleaf = (rb * rsatveg + rc * can_rvap) / (rb + rc)
-         vpd = max((es - rleaf * prss / (.622 + rleaf)),0.)
+         vpd = max((es - rleaf * prss / (ep + rleaf)),0.)
 
    ! Evaluate 5 environmental factors and new rc
 
@@ -1226,10 +1192,7 @@ subroutine canopy(mzg,mzs,ksn,nveg  &
    ! to the heat capacity of a layer of water 7.5 mm thick.
 
          ! From RAMS 6.0
-         !tvegc = veg_temp - 273.15 + dtlcohcv  &
-         !   * (rshort_v + rlonga_v + rlonggs_v - rlongv_gs  &
-         !   -  rlongv_a - hflxvc - (wflxvc + transp) * alvl)
-         tvegc = veg_temp - 273.15 + dtlcohcv  &
+         tvegc = veg_temp - t00 + dtlcohcv  &
             * (rshort_v + rlonga_v + rlonggs_v - rlongv_gs  &
             -  rlongv_a - hflxvc - (wflxvc + transp0) * alvl)
 
@@ -1238,11 +1201,10 @@ subroutine canopy(mzg,mzs,ksn,nveg  &
          qwtot = qpcpgc * vf + hcapveg * tvegc
          call qwtk(qwtot,pcpgc * vf,hcapveg,tvegk,fracliqv)
          veg_temp = tvegk
-         fac = 4186.
-         if (fracliqv <= .0001) fac = 2093.
+         fac = cliq
+         if (fracliqv <= .0001) fac = cice
          ! From RAMS 6.0
-         !qwshed = (fac * (tvegk - 273.15) + fracliqv * 334000.) * wshed
-         qwshed = qwshed + (fac * (tvegk - 273.15) + fracliqv * 334000.) * wshed0
+         qwshed = qwshed + (fac * (tvegk - t3ple) + fracliqv * alli) * wshed0
 
    ! Update temperature and moisture of canopy.  hcapcan [J/m2/K] and
    ! wcapcan [kg_air/m2] are
@@ -1420,7 +1382,7 @@ subroutine sfclmcv(ustar,tstar,rstar,vels,vels_pat,ups,vps,gzotheta,patch_area&
         patch_area
    real, intent(inout) :: sflux_u, sflux_v, sflux_w, sflux_t, sflux_r
    ! For TEB
-   real, pointer :: G_URBAN
+   real:: G_URBAN
 
    ! Local Variables:
    real :: zoverl
@@ -1474,6 +1436,7 @@ subroutine grndvap(soil_energy,soil_water,soil_text,sfcwater_energy  &
 
   use leaf_coms
   use rconstants
+  use therm_lib, only: rslif,qwtk,qtk
 
   implicit none
 
@@ -1483,7 +1446,6 @@ subroutine grndvap(soil_energy,soil_water,soil_text,sfcwater_energy  &
   integer :: ksn,nsoil
 
   real :: tempkk,fracliqq,slpotvn,alpha,beta
-  real :: rslif
 
 
   ksn = nint(sfcwater_nlev)
@@ -1828,7 +1790,7 @@ subroutine sfc_pcp(nqparm,level,i,j,cuparm,micro)
    use mem_micro
    use mem_cuparm
    use leaf_coms
-   use rconstants, only : cliq
+   use rconstants, only : cliq,tsupercool
 
    implicit none
 
@@ -1839,7 +1801,7 @@ subroutine sfc_pcp(nqparm,level,i,j,cuparm,micro)
    if (nqparm > 0) then
 
       pcpgl  = cuparm%conprr(i,j) * dtll
-      qpcpgl = pcpgl  * cliq * (ths * pis - 193.36)
+      qpcpgl = pcpgl  * cliq * (ths * pis - tsupercool)
       dpcpgl = pcpgl  * .001
       pcpgc  = dtlc_factor * pcpgl
       qpcpgc = dtlc_factor * qpcpgl
@@ -1994,7 +1956,7 @@ subroutine sfcrad(mzg,mzs,ip  &
    use leaf_coms
    use rconstants
    use mem_scratch
-
+   use therm_lib, only : qwtk,qtk
    !CATT
    use catt_start, only: CATT ! INTENT(IN)
 
@@ -2004,13 +1966,13 @@ subroutine sfcrad(mzg,mzs,ip  &
    implicit none
 
    integer, intent(in) :: mzg,mzs,ip
-   real, dimension(:) :: soil_energy,soil_water,soil_text !(mzg)
-   real, dimension(:) :: sfcwater_energy,sfcwater_depth   !(mzs)
+   real, dimension(mzg) :: soil_energy,soil_water,soil_text !(mzg)
+   real, dimension(mzs) :: sfcwater_energy,sfcwater_depth   !(mzs)
    real :: patch_area,can_temp,veg_temp,leaf_class,veg_height,veg_fracarea  &
           ,veg_albedo,sfcwater_nlev,rshort,rlong,albedt,rlongup,cosz
 
    ! for TEB
-   real, pointer :: G_URBAN, ETOWN, ALBTOWN, TSTOWN
+   real :: G_URBAN, ETOWN, ALBTOWN, TSTOWN
    !
 
    integer :: k,nsoil,nveg,ksn

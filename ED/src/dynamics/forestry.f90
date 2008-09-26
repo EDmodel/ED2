@@ -1,10 +1,10 @@
 subroutine apply_forestry_ar(cpoly, isi, year, rhos)
 
-  use ed_state_vars,only : polygontype,sitetype
+  use ed_state_vars,only : polygontype,sitetype,allocate_sitetype,deallocate_sitetype      &
+                          ,copy_sitetype_mask
 
   use disturb_coms, only: lutime, min_new_patch_area, plantation_year
   use disturbance_utils_ar, only: initialize_disturbed_patch_ar, plant_patch_ar
-  use ed_state_vars,only : allocate_sitetype,deallocate_sitetype,copy_sitetype_mask
   use fuse_fiss_utils_ar,only : terminate_patches_ar
 
   use max_dims, only: n_pft, n_dbh

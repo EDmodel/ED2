@@ -4,7 +4,7 @@ subroutine ed_init_atm_ar
   use misc_coms,     only: ied_init_mode,runtype
   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype,edgrid_g
   use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr
-  use consts_coms,    only: alli1000, cliq1000, cice1000, t00
+  use consts_coms,    only: alli1000, cliq1000, cice1000, t3ple
   use grid_coms,      only: nzs, nzg, ngrids
   use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
@@ -62,7 +62,7 @@ subroutine ed_init_atm_ar
               ! For now, choose heat/vapor capacities for stability
               csite%can_depth(ipa) = 30.0
               do k=1,nzs
-                 csite%sfcwater_tempk(k,ipa) = t00   ! Set canopy temp to 0 C
+                 csite%sfcwater_tempk(k,ipa) = t3ple   ! Set canopy temp triple point
                  csite%sfcwater_fracliq(k,ipa) = 1.0 ! Set to 100% liquid
               end do
               
@@ -126,13 +126,13 @@ subroutine ed_init_atm_ar
                  
                  csite%soil_tempk(1:nzg,ipa) = csite%can_temp(ipa)
                  
-                 if(csite%can_temp(ipa) > t00)then
+                 if(csite%can_temp(ipa) > t3ple)then
                     do k = 1, nzg
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 1.0
                        csite%soil_water(k,ipa) = max(soil(nsoil)%soilcp,   &
                             slmstr(k) * soil(nsoil)%slmsts)
-                       csite%soil_energy(k,ipa) = (csite%soil_tempk(k,ipa) - t00) *   &
+                       csite%soil_energy(k,ipa) = (csite%soil_tempk(k,ipa) - t3ple) *   &
                             (soil(nsoil)%slcpd + csite%soil_water(k,ipa) *   &
                             cliq1000) + csite%soil_water(k,ipa) * alli1000
                     enddo
@@ -142,7 +142,7 @@ subroutine ed_init_atm_ar
                        csite%soil_fracliq(k,ipa) = 0.0
                        csite%soil_water(k,ipa) = max(soil(nsoil)%soilcp,             &
                             slmstr(k) * soil(nsoil)%slmsts)
-                       csite%soil_energy(k,ipa) = (csite%soil_tempk(k,ipa) - t00) *   &
+                       csite%soil_energy(k,ipa) = (csite%soil_tempk(k,ipa) - t3ple) *   &
                             (soil(nsoil)%slcpd + csite%soil_water(k,ipa) * cice1000)
                     enddo
                  endif
@@ -441,7 +441,8 @@ subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
 
   use soil_coms,   only: ed_nstyp, soil
   use grid_coms,   only: nzg
-  use consts_coms, only: t00, pi1, grav, rvap
+  use consts_coms, only:  pi1, grav, rvap
+  use therm_lib  , only: rhovsil, qtk, qwtk
 
   implicit none
 
@@ -467,15 +468,13 @@ subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
   real :: beta    ! "beta" term in Lee and Pielke (1993)
   real :: tempk   ! surface water temp [K]
   real :: fracliq ! fraction of surface water in liquid phase
-  
-  real, external :: rhovsil  ! function to compute sat vapor density (over ice or liq)
 
   ! surface_ssh is the saturation mixing ratio of the top soil or snow surface
   ! and is used for dew formation and snow evaporation.
 
   if (nlev_sfcwater > 0) then
      call qtk(sfcwater_energy,tempk,fracliq)
-     surface_ssh = rhovsil(tempk-t00) / rhos
+     surface_ssh = rhovsil(tempk) / rhos
   else
      
      ! Without snowcover, ground_shv is the effective saturation mixing
@@ -483,7 +482,7 @@ subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
      ! "alpha" term or soil "relative humidity" and the "beta" term.
      
      call qwtk(soil_energy,soil_water*1.e3,soil(nts)%slcpd,tempk,fracliq)
-     surface_ssh = rhovsil(tempk-t00) / rhos
+     surface_ssh = rhovsil(tempk) / rhos
      
      slpotvn = soil(nts)%slpots * (soil(nts)%slmsts / soil_water) ** soil(nts)%slbs
      alpha = exp(gorvap * slpotvn / tempk)
@@ -508,7 +507,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
 
   use ed_state_vars, only: edtype, polygontype, sitetype, patchtype
   use soil_coms, only: soilstate_db, soil,slz
-  use consts_coms, only: alli1000, cliq1000, cice1000, t00
+  use consts_coms, only: alli1000, cliq1000, cice1000, t3ple
   use grid_coms, only: nzg, ngrids
   
   implicit none
@@ -531,7 +530,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
   integer :: ilonf
   integer :: nls
   integer :: nlsw1
-  real :: soil_tempc
+  real :: soil_tempaux
   integer :: k
   real :: tmp1
   real :: tmp2
@@ -606,22 +605,22 @@ subroutine read_soil_moist_temp_ar(cgrid)
 
                           if(abs(slz(k)) < 0.1)then
                              csite%soil_tempk(k,ipa) = tmp1
-                             soil_tempc = tmp1 - t00
+                             soil_tempaux = tmp1 - t3ple
                              csite%soil_water(k,ipa) = max(soil(ntext)%soilcp,   &
                                   soilw1 * soil(ntext)%slmsts)
                           else
                              csite%soil_tempk(k,ipa) = tmp2
-                             soil_tempc = tmp2 - t00
+                             soil_tempaux = tmp2 - t3ple
                              csite%soil_water(k,ipa) = max(soil(ntext)%soilcp,   &
                                   soilw2 * soil(ntext)%slmsts)
                           endif
-                          if(soil_tempc > 0.0)then
-                             csite%soil_energy(k,ipa) = soil_tempc * (soil(ntext)%slcpd   &
+                          if(soil_tempaux > 0.0)then
+                             csite%soil_energy(k,ipa) = soil_tempaux * (soil(ntext)%slcpd   &
                                   + csite%soil_water(k,ipa) * cliq1000) +   &
                                     csite%soil_water(k,ipa) * alli1000
                              csite%soil_fracliq(k,ipa) = 1.0
                           else
-                             csite%soil_energy(k,ipa) = soil_tempc * (soil(ntext)%slcpd   &
+                             csite%soil_energy(k,ipa) = soil_tempaux * (soil(ntext)%slcpd   &
                                   + csite%soil_water(k,ipa) * cice1000)
                              csite%soil_fracliq(k,ipa) = 0.0
                           end if
