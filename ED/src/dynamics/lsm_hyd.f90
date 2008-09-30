@@ -166,7 +166,8 @@ subroutine initHydroSubsurface()
               !!set soil moisture at specified height
               !!loop from bottom up 
               do k = cpoly%lsl(isi),nzg
-                 nsoil = csite%ntext_soil(k,ipa)
+!                 nsoil = csite%ntext_soil(k,ipa)
+                 nsoil = cpoly%ntext_soil(k,isi) !! mcd [9/30/08]
                  if(cpoly%moist_zi(isi) < slz(k+1)) then
                     csite%soil_water(k,ipa) = max(soil(nsoil)%soilcp, &
                          soil(nsoil)%slmsts*(cpoly%moist_zi(isi)-slz(k))*dslzi(k))
@@ -502,7 +503,8 @@ subroutine calcWatertable(cpoly,isi,ipa)
   csite%soil_sat_heat(ipa)   = 0.0
 
   layerloop: do k = cpoly%lsl(isi),nzg
-     nsoil = csite%ntext_soil(k,ipa)  !look up soil type
+     nsoil = cpoly%ntext_soil(k,isi)  !look up soil type (switched to using SITE level soils [mcd 9/30/08]
+!     nsoil = csite%ntext_soil(k,ipa)  !look up soil type
      fracw = csite%soil_water(k,ipa) / soil(nsoil)%slmsts  !calculate fraction of moisture capacity
      csite%watertable(ipa)      = csite%watertable(ipa)      + fracw *dslz(k)
      csite%soil_sat_energy(ipa) = csite%soil_sat_energy(ipa) + csite%soil_energy(k,ipa)*dslz(k)
@@ -510,7 +512,6 @@ subroutine calcWatertable(cpoly,isi,ipa)
      csite%soil_sat_heat(ipa)   = csite%soil_sat_heat(ipa)   + soil(nsoil)%slcpd*dslz(k)
      if (fracw < MoistSatThresh) exit layerloop!change from original version to go one layer up
   end do layerloop
-
   !!store watertable depth integer
   csite%ksat(ipa) = max(cpoly%lsl(isi),k-1)
 
@@ -891,6 +892,10 @@ subroutine writeHydro()
   real                                 :: area_land
   character(len=255)                   :: format_str
   real                                 :: tpw,tsw !! total site and patch water
+
+  return  
+!!! ALL variables in this section of code that are NOT for debugging should be migrated to the analysis files
+!!! MCD
 
   if(useTOPMODEL == 0) return
 

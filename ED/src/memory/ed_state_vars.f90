@@ -5949,7 +5949,8 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%dmean_gpp_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'DMEAN_GPP_LU :15:hist:dail:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'Polygon Averaged by Landuse, Daily Integrated Gross Primary Productivity','[tC/ha/d]','ipoly - lu') 
+       call metadata_edio(nvar,igr,'Polygon Averaged by Landuse, Daily Integrated Gross Primary Productivity',&
+            '[tC/ha/d]','ipoly - lu') 
     endif
     
     if(associated(cgrid%dmean_rh_lu)) then
@@ -5963,7 +5964,8 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%dmean_nep_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'DMEAN_NEP_LU :15:hist:dail:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'Polygon Averaged by Landuse, Daily Integrated Net Ecosystem Production','[tC/ha/d]','ipoly - lu') 
+       call metadata_edio(nvar,igr,'Polygon Averaged by Landuse, Daily Integrated Net Ecosystem Production',&
+            '[tC/ha/d]','ipoly - lu') 
     endif
     
     if(associated(cgrid%dmean_gpp_dbh)) then
