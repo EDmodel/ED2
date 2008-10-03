@@ -20,6 +20,9 @@ subroutine count_pft_xml_config(filename,maxpft)
   integer :: maxpft
   logical(4) :: texist = .false.
   character*(*) :: filename
+  character(1),allocatable    ::  readstring(:)
+  allocate(readstring(10))
+  deallocate(readstring)
 
   !! Open File and Init
   call libxml2f90__setformat(1) !set to pure XML but with blank removal
@@ -943,7 +946,7 @@ subroutine putConfigINT(tag,ivalue)
   integer,intent(in) :: ivalue
   character(256) :: value
   integer :: lenval 
-  write(value,"(i)") ivalue
+  write(value,"(i11.1)") ivalue
   lenval = len(trim(value))
   call libxml2f90_ll_opentag(tag)
   call libxml2f90_ll_addid(trim(tag),lenval,trim(value))
@@ -955,7 +958,7 @@ subroutine putConfigREAL(tag,rvalue)
   real,intent(in) :: rvalue
   character(256) :: value
   integer :: lenval 
-  write(value,"(f)") rvalue
+  write(value,"(f20.10)") rvalue
   lenval = len(trim(value))
   call libxml2f90_ll_opentag(tag)
   call libxml2f90_ll_addid(trim(tag),lenval,trim(value))
@@ -967,7 +970,7 @@ subroutine putConfigREAL8(tag,rvalue)
   real(kind=8),intent(in) :: rvalue
   character(256) :: value
   integer :: lenval 
-  write(value,"(f)") rvalue
+  write(value,"(f40.20)") rvalue
   lenval = len(trim(value))
   call libxml2f90_ll_opentag(tag)
   call libxml2f90_ll_addid(trim(tag),lenval,trim(value))
