@@ -242,6 +242,12 @@
 			   !  0 -- reproduction off (useful for short runs)
 			   !  1 -- original ED1 default
 
+   NL%LAPSE_SCHEME    = 0  ! This specifies the met lapse rate scheme:
+			   !  0 -- lapse rates off
+			   !  1 -- phenomenological, global
+			   !  2 -- phenomenological, local (not yet implemented)
+			   !  2 -- mechanistic(not yet implemented)
+
   
    NL%N_PLANT_LIM     = 0  ! Determines whether (1) or not (0) plants can
                          ! be limited by nitrogen

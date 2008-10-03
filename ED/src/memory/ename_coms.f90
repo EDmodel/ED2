@@ -128,6 +128,7 @@ Module ename_coms
       integer                   :: istoma_scheme = 0
       integer                   :: iphen_scheme  = 0
       integer                   :: repro_scheme  = 1
+      integer                   :: lapse_scheme  = 0
       integer                   :: n_plant_lim   = 0
       integer                   :: n_decomp_lim  = 0
       integer                   :: include_fire  = 0

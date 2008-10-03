@@ -204,7 +204,6 @@ subroutine h5_output(vtype)
                    out_time_fast%date,int(out_time_fast%time), &
                    iyeara,imontha,idatea,itimea*100,dsec)
               if(time >= (dsec+outfast) .or. outmonth .ne. out_time_fast%month) then
-                 print*,"SYNC"
                  out_time_fast%year  = outyear
                  out_time_fast%month = outmonth
                  out_time_fast%date  = outdate
@@ -215,10 +214,10 @@ subroutine h5_output(vtype)
               irec_fast = ((time-dsec)/frqfast) + 1
               nrec = nrec_fast
               irec = irec_fast
-              print*,irec,nrec,outmonth,out_time_fast,dsec,time
+!              print*,irec,nrec,outmonth,out_time_fast,dsec,time
               !! construct filename
               call makefnam(anamel,ffilout,0.0,out_time_fast%year, &
-                   out_time_fast%month,out_time_fast%date,out_time_fast%time*100, &
+                   out_time_fast%month,out_time_fast%date,int(out_time_fast%time), &
                    vnam,cgrid,'h5 ')
            endif
            

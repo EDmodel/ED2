@@ -87,7 +87,7 @@ subroutine ed_masterput_nl(par_run)
    use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database &
                              ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg       &
                              ,runoff_time,zrough,layer_index,nlon_lyr,nlat_lyr
-   use met_driver_coms, only: ed_met_driver_db,imettype,metcyc1,metcycf,initial_co2
+   use met_driver_coms, only: ed_met_driver_db,imettype,metcyc1,metcycf,initial_co2, lapse_scheme
    use mem_sites,       only: n_soi,n_ed_region,grid_type,grid_res,soi_lat,soi_lon         &
                              ,ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax      &
                              ,edres,maxpatch,maxcohort
@@ -202,6 +202,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(repro_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(lapse_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_fire,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -664,7 +665,7 @@ subroutine ed_nodeget_nl
    use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database &
                              ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg       &
                              ,runoff_time,zrough,layer_index,nlon_lyr,nlat_lyr
-   use met_driver_coms, only: ed_met_driver_db,imettype,metcyc1,metcycf,initial_co2
+   use met_driver_coms, only: ed_met_driver_db,imettype,metcyc1,metcycf,initial_co2,lapse_scheme
    use mem_sites,       only: n_soi,n_ed_region,grid_type,grid_res,soi_lat,soi_lon         &
                              ,ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax      &
                              ,edres,maxpatch,maxcohort
@@ -778,6 +779,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(repro_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(lapse_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_fire,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

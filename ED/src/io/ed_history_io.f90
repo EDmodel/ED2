@@ -31,7 +31,7 @@ subroutine read_ed1_history_file_array
   real :: flon,lon
   integer :: ilat,ilon
   
-  logical, parameter :: renumber_pfts = .false.
+  logical :: renumber_pfts = .true.
   character(len=str_len) :: pss_name
   character(len=str_len) :: css_name
   character(len=str_len) :: site_name
@@ -107,6 +107,8 @@ subroutine read_ed1_history_file_array
   
   real, external :: ed_biomass
   
+  if(ied_init_mode == 3) renumber_pfts = .false.
+
   
   ! Loop over all grids, polygons, and sites
 
@@ -267,8 +269,8 @@ subroutine read_ed1_history_file_array
               
            case(3)
               
-              read(12,*,iostat=ierr) sitenum(ip),time(ip),pname(ip),trk(ip),water(1,ip),age(ip), &
-                   darea,fsc(ip),stsc(ip),stsl(ip),ssc(ip),psc(ip),msn(ip),fsn(ip)
+              read(12,*,iostat=ierr) sitenum(ip),time(ip),pname(ip),trk(ip),age(ip), &
+                   darea,water(1,ip),fsc(ip),stsc(ip),stsl(ip),ssc(ip),psc(ip),msn(ip),fsn(ip)
               if(ierr /= 0)exit count_patches
               area(ip)=sngl(max(snglmin,darea))
               

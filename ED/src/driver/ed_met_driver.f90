@@ -1459,10 +1459,11 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
   
   use ed_state_vars,only    : edtype,polygontype
   use canopy_radiation_coms,only : rlong_min
-  
+  use met_driver_coms, only : lapse_scheme
+
+
   implicit none
   integer, intent(in) :: ipy
-  logical,parameter :: bypass=.true.
   integer :: isi
   type(edtype),target       :: cgrid
   type(polygontype),pointer :: cpoly
@@ -1472,20 +1473,9 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
   real            :: aterr  !! terrestrial area
   real, parameter :: offset=tiny(1.)/epsilon(1.) !! Tiny offset to avoid FPE
 
-  !pass over sites once to calc preliminary stats
-
   cpoly => cgrid%polygon(ipy)
 
-  ebar = 0.0
-  aterr = 0.0
-
-  do isi=1,cpoly%nsites
-     ebar = ebar + cpoly%area(isi)*cpoly%elevation(isi)
-     aterr = aterr + cpoly%area(isi)
-  enddo
-  ebar = ebar/aterr
-
-  if (bypass) then
+  if (lapse_scheme == 0) then  !!!!! bypass
      do isi = 1,cpoly%nsites
         cpoly%met(isi)%geoht       = cgrid%met(ipy)%geoht
         cpoly%met(isi)%atm_tmp     = cgrid%met(ipy)%atm_tmp
@@ -1518,7 +1508,16 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
      enddo
    
   else
-     
+
+     !pass over sites once to calc preliminary stats
+     ebar = 0.0
+     aterr = 0.0
+     do isi=1,cpoly%nsites
+        ebar = ebar + cpoly%area(isi)*cpoly%elevation(isi)
+        aterr = aterr + cpoly%area(isi)
+     enddo
+     ebar = ebar/aterr
+
      !!second pass, calc lapse rate adjustment
      do isi = 1,cpoly%nsites
         
@@ -1553,6 +1552,8 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
 !           print*,cpoly%met(isi)%atm_shv,cgrid%met(ipy)%atm_shv
 !           call fatal_error('Problems with ATM MOISTURE A','calc_met_lapse_ar','ed_met_driver.f90')
         endif
+
+        call MetDiagnostics(cpoly,ipy,isi)
         
      enddo
   endif
@@ -1562,6 +1563,66 @@ end subroutine calc_met_lapse_ar
 !==========================================================================================!
 
 
+subroutine MetDiagnostics(cpoly,ipy,isi)
+  use ed_state_vars,only    : edtype,polygontype
+  use canopy_radiation_coms,only : rlong_min
+  
+  implicit none
+  integer, intent(in) :: ipy
+  integer, intent(in) :: isi
+  type(polygontype),target :: cpoly
+  
+  if(cpoly%met(isi)%geoht .le. 0.)  then
+     print*,cpoly%met(isi)%geoht
+     call fatal_error('Problems with GEOHT','MetDiagnostics','ed_met_driver.f90')
+  endif
+  if(cpoly%met(isi)%atm_tmp .le. 200. .or. cpoly%met(isi)%atm_tmp .ge. 350.)  then
+     print*,cpoly%met(isi)%atm_tmp
+     call fatal_error('Problems with atm_tmp','MetDiagnostics','ed_met_driver.f90')
+  endif
+  if(cpoly%met(isi)%atm_shv .le. 0. .or. cpoly%met(isi)%atm_shv .ge. 1.)  then
+     print*,cpoly%met(isi)%atm_shv
+     call fatal_error('Problems with atm_shv','MetDiagnostics','ed_met_driver.f90')
+  endif
+  if(cpoly%met(isi)%prss .le. 0.)  then
+     print*,cpoly%met(isi)%prss
+     call fatal_error('Problems with prss','MetDiagnostics','ed_met_driver.f90')
+  endif
+  if(cpoly%met(isi)%pcpg .lt. 0. .or. cpoly%met(isi)%pcpg .gt. 0.01)  then
+     print*,cpoly%met(isi)%pcpg
+     call fatal_error('Problems with precipitation','MetDiagnostics','ed_met_driver.f90')
+  endif
+  if(cpoly%met(isi)%atm_co2 .le. 100. .or. cpoly%met(isi)%atm_co2 .gt. 2000.)  then
+     print*,cpoly%met(isi)%atm_co2
+     call fatal_error('Problems with ATM CO2','MetDiagnostics','ed_met_driver.f90')
+  endif
+  if(cpoly%met(isi)%rlong .le. rlong_min)  then
+     print*,cpoly%met(isi)%rlong
+     call fatal_error('Problems with LONGWAVE RADIATION','MetDiagnostics','ed_met_driver.f90')
+  endif
+  if(cpoly%met(isi)%par_diffuse .lt. 0. .or. cpoly%met(isi)%par_diffuse .gt. 1400.)  then
+     print*,cpoly%met(isi)%par_diffuse
+     call fatal_error('Problems with DIFFUSE PAR','MetDiagnostics','ed_met_driver.f90')
+  endif
+  if(cpoly%met(isi)%par_beam .lt. 0. .or. cpoly%met(isi)%par_beam .gt. 1400.)  then
+     print*,cpoly%met(isi)%par_beam
+     call fatal_error('Problems with DIRECT BEAM PAR','MetDiagnostics','ed_met_driver.f90')
+  endif
+  if(cpoly%met(isi)%nir_diffuse .lt. 0. .or. cpoly%met(isi)%nir_diffuse .gt. 1400.)  then
+     print*,cpoly%met(isi)%nir_diffuse
+     call fatal_error('Problems with DIFUSE NIR','MetDiagnostics','ed_met_driver.f90')
+  endif
+  if(cpoly%met(isi)%nir_beam .lt. 0. .or. cpoly%met(isi)%nir_beam .gt. 1400.)  then
+     print*,cpoly%met(isi)%nir_beam
+     call fatal_error('Problems with DIRECT BEAM NIR','MetDiagnostics','ed_met_driver.f90')
+  endif
+  if(cpoly%met(isi)%vels .lt. 0.)  then
+     print*,cpoly%met(isi)%vels
+     call fatal_error('Problems with WIND VELOCITY','MetDiagnostics','ed_met_driver.f90')
+  endif
+
+  return
+end subroutine MetDiagnostics
 
 
 
