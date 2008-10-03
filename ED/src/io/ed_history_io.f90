@@ -31,7 +31,7 @@ subroutine read_ed1_history_file_array
   real :: flon,lon
   integer :: ilat,ilon
   
-  logical, parameter :: renumber_pfts = .true.
+  logical :: renumber_pfts = .true.
   character(len=str_len) :: pss_name
   character(len=str_len) :: css_name
   character(len=str_len) :: site_name
@@ -107,6 +107,8 @@ subroutine read_ed1_history_file_array
   
   real, external :: ed_biomass
   
+  if(ied_init_mode == 3) renumber_pfts = .false.
+
   
   ! Loop over all grids, polygons, and sites
 
@@ -216,9 +218,11 @@ subroutine read_ed1_history_file_array
            read(12,*)cdum,nwater
            read(12,*)cdum,depth(1:nwater)
            read(12,*)
-        else
+        else 
            nwater = 1
-           read(12,*)!water patch
+           if(ied_init_mode == 2) then
+              read(12,*)!water patch
+           endif
         endif
 
         ! Note that if we are doing an ED1 restart we can 
@@ -267,11 +271,14 @@ subroutine read_ed1_history_file_array
               
            case(3)
               
-              read(12,*,iostat=ierr) sitenum(ip),time(ip),pname(ip),trk(ip),water(1,ip),age(ip), &
-                   darea,fsc(ip),stsc(ip),stsl(ip),ssc(ip),psc(ip),msn(ip),fsn(ip)
+              read(12,*,iostat=ierr) sitenum(ip),time(ip),pname(ip),trk(ip),age(ip), &
+                   darea,water(1,ip),fsc(ip),stsc(ip),stsl(ip),ssc(ip),psc(ip),msn(ip),fsn(ip)
               if(ierr /= 0)exit count_patches
               area(ip)=sngl(max(snglmin,darea))
-              
+          
+!!              print*,sitenum(ip),time(ip),trim(pname(ip)),trk(ip),age(ip), &
+!!                   darea,fsc(ip),stsc(ip),stsl(ip),ssc(ip),psc(ip),msn(ip),fsn(ip)
+    
               if(sitenum(ip)<= 0) continue !! check for valid site number
               
               !! check for valid year
@@ -388,8 +395,10 @@ subroutine read_ed1_history_file_array
         
         open(12,file=trim(css_name),form='formatted',status='old')
         read(12,*)  ! skip header
-        read(12,*)  ! skip header
-        
+        if(ied_init_mode < 3) then
+           read(12,*)  ! skip header
+        endif
+
         ic = 0
         
         read_cohorts: do
@@ -410,6 +419,9 @@ subroutine read_ed1_history_file_array
               cb(1:12,ic) = 1.0
               cb_max(1:12,ic) = 1.0           
            end select
+
+!           print*,ctime(ic),trim(cpname(ic)),trim(cname(ic)),dbh(ic),hite(ic),ipft(ic),nplant(ic),  &
+ !                  bdead(ic),balive(ic),avgRg(ic)
 
            if(renumber_pfts) then
               if(ipft(ic) < 100)then
@@ -2032,10 +2044,10 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel)
      if (hdferr /= 0) then
         select case (trim(varn))
         case('DMEAN_GPP','DMEAN_EVAP','DMEAN_TRANSP','DMEAN_SENSIBLE_VC','DMEAN_SENSIBLE_GC'    &
-            ,'DMEAN_SENSIBLE_AC','DMEAN_SENSIBLE','DMEAN_PLRESP','DMEAN_RH','DMEAN_LEAF_RESP'   &
-            ,'DMEAN_ROOT_RESP','DMEAN_GROWTH_RESP','DMEAN_STORAGE_RESP','DMEAN_VLEAF_RESP'      &
-            ,'DMEAN_NEP','DMEAN_FSW','DMEAN_FSN','DMEAN_SOIL_TEMP','DMEAN_SOIL_WATER'           &
-            ,'DMEAN_GPP_LU','DMEAN_RH_LU','DMEAN_NEP_LU','DMEAN_GPP_DBH')
+            &,'DMEAN_SENSIBLE_AC','DMEAN_SENSIBLE','DMEAN_PLRESP','DMEAN_RH','DMEAN_LEAF_RESP'   &
+            &,'DMEAN_ROOT_RESP','DMEAN_GROWTH_RESP','DMEAN_STORAGE_RESP','DMEAN_VLEAF_RESP'      &
+            &,'DMEAN_NEP','DMEAN_FSW','DMEAN_FSN','DMEAN_SOIL_TEMP','DMEAN_SOIL_WATER'           &
+            &,'DMEAN_GPP_LU','DMEAN_RH_LU','DMEAN_NEP_LU','DMEAN_GPP_DBH')
            write (unit=*,fmt='(a)') '-----------------------------------------------------------'
            write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
            write (unit=*,fmt='(a)') '                                                           '
@@ -2047,11 +2059,11 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel)
            write (unit=*,fmt='(a)') '                                                           '
            buff=0.
         case('MMEAN_GPP','MMEAN_EVAP','MMEAN_TRANSP','MMEAN_SENSIBLE','MMEAN_NEP','MMEAN_PLRESP'&
-            ,'MMEAN_RH','MMEAN_LEAF_RESP','MMEAN_ROOT_RESP','MMEAN_GROWTH_RESP'                 &
-            ,'MMEAN_STORAGE_RESP','MMEAN_VLEAF_RESP','STDEV_GPP','STDEV_EVAP','STDEV_TRANSP'    &
-            ,'STDEV_SENSIBLE','STDEV_NEP','STDEV_RH','MMEAN_LAI_PFT','MMEAN_GPP_LU'             &
-            ,'MMEAN_SOIL_TEMP','MMEAN_SOIL_WATER'                                               &
-            ,'MMEAN_RH_LU','MMEAN_NEP_LU','MMEAN_GPP_DBH')
+            &,'MMEAN_RH','MMEAN_LEAF_RESP','MMEAN_ROOT_RESP','MMEAN_GROWTH_RESP'                 &
+            &,'MMEAN_STORAGE_RESP','MMEAN_VLEAF_RESP','STDEV_GPP','STDEV_EVAP','STDEV_TRANSP'    &
+            &,'STDEV_SENSIBLE','STDEV_NEP','STDEV_RH','MMEAN_LAI_PFT','MMEAN_GPP_LU'             &
+            &,'MMEAN_SOIL_TEMP','MMEAN_SOIL_WATER'                                               &
+            &,'MMEAN_RH_LU','MMEAN_NEP_LU','MMEAN_GPP_DBH')
            write (unit=*,fmt='(a)') '-----------------------------------------------------------'
            write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
            write (unit=*,fmt='(a)') '                                                           '
@@ -2074,10 +2086,10 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel)
      if (hdferr /= 0) then
         select case (trim(varn))
         case('DMEAN_GPP','DMEAN_EVAP','DMEAN_TRANSP','DMEAN_SENSIBLE_VC','DMEAN_SENSIBLE_GC'    &
-            ,'DMEAN_SENSIBLE_AC','DMEAN_SENSIBLE','DMEAN_PLRESP','DMEAN_RH','DMEAN_LEAF_RESP'   &
-            ,'DMEAN_ROOT_RESP','DMEAN_GROWTH_RESP','DMEAN_STORAGE_RESP','DMEAN_VLEAF_RESP'      &
-            ,'DMEAN_NEP','DMEAN_FSW','DMEAN_FSN','DMEAN_SOIL_TEMP','DMEAN_SOIL_WATER'           &
-            ,'DMEAN_GPP_LU','DMEAN_RH_LU','DMEAN_NEP_LU','DMEAN_GPP_DBH')
+           & ,'DMEAN_SENSIBLE_AC','DMEAN_SENSIBLE','DMEAN_PLRESP','DMEAN_RH','DMEAN_LEAF_RESP'   &
+           & ,'DMEAN_ROOT_RESP','DMEAN_GROWTH_RESP','DMEAN_STORAGE_RESP','DMEAN_VLEAF_RESP'      &
+           & ,'DMEAN_NEP','DMEAN_FSW','DMEAN_FSN','DMEAN_SOIL_TEMP','DMEAN_SOIL_WATER'           &
+           & ,'DMEAN_GPP_LU','DMEAN_RH_LU','DMEAN_NEP_LU','DMEAN_GPP_DBH')
            write (unit=*,fmt='(a)') '-----------------------------------------------------------'
            write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
            write (unit=*,fmt='(a)') '                                                           '
@@ -2089,11 +2101,11 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel)
            write (unit=*,fmt='(a)') '                                                           '
            buff=0.
         case('MMEAN_GPP','MMEAN_EVAP','MMEAN_TRANSP','MMEAN_SENSIBLE','MMEAN_NEP','MMEAN_PLRESP'&
-            ,'MMEAN_RH','MMEAN_LEAF_RESP','MMEAN_ROOT_RESP','MMEAN_GROWTH_RESP'                 &
-            ,'MMEAN_STORAGE_RESP','MMEAN_VLEAF_RESP','STDEV_GPP','STDEV_EVAP','STDEV_TRANSP'    &
-            ,'STDEV_SENSIBLE','STDEV_NEP','STDEV_RH','MMEAN_LAI_PFT','MMEAN_GPP_LU'             &
-            ,'MMEAN_SOIL_TEMP','MMEAN_SOIL_WATER'                                               &
-            ,'MMEAN_RH_LU','MMEAN_NEP_LU','MMEAN_GPP_DBH')
+           & ,'MMEAN_RH','MMEAN_LEAF_RESP','MMEAN_ROOT_RESP','MMEAN_GROWTH_RESP'                 &
+           & ,'MMEAN_STORAGE_RESP','MMEAN_VLEAF_RESP','STDEV_GPP','STDEV_EVAP','STDEV_TRANSP'    &
+           & ,'STDEV_SENSIBLE','STDEV_NEP','STDEV_RH','MMEAN_LAI_PFT','MMEAN_GPP_LU'             &
+           & ,'MMEAN_SOIL_TEMP','MMEAN_SOIL_WATER'                                               &
+           & ,'MMEAN_RH_LU','MMEAN_NEP_LU','MMEAN_GPP_DBH')
            write (unit=*,fmt='(a)') '-----------------------------------------------------------'
            write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
            write (unit=*,fmt='(a)') '                                                           '

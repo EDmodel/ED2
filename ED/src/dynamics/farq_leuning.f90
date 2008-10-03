@@ -167,10 +167,12 @@ subroutine c3solver(met,apar,gsdata,sol,ilimit)
   endif
 
   if(sol%cs(2,1) > 1.25e7)then
-     print*,'Stomatal conductance dangerously close to upper limit.  Stopping.'
      success_flag = 0
-     print*,met%ea,met%ca,met%rn,met%tl,met%par,met%gbc,met%gbw,met%ta  &
-          ,met%el,met%compp,met%eta
+     
+!     print*,'Stomatal conductance dangerously close to upper limit.  Stopping.'
+!     print*,met%ea,met%ca,met%rn,met%tl,met%par,met%gbc,met%gbw,met%ta  &
+!          ,met%el,met%compp,met%eta
+
   endif
 
   return
