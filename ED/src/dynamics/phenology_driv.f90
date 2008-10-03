@@ -133,7 +133,7 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
         if(cpatch%phenology_status(ico) < 2 .and. phenology(cpatch%pft(ico)) == 2 .and.   &
              drop_cold == 1)then
 !             day >= 210)then
-!print*,'dropping ',cs%green_leaf_factor(cpatch%pft(ico)),cs%leaf_aging_factor(cpatch%pft(ico))           
+print*,'dropping ',cpoly%green_leaf_factor(cpatch%pft(ico),isi),cpoly%leaf_aging_factor(cpatch%pft(ico),isi)           
            ! If dropping, compute litter inputs.
            delta_bleaf = cpatch%bleaf(ico) - bl_max
            if(delta_bleaf > 0.0)then
@@ -176,7 +176,7 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
 !             cs%green_leaf_factor(cpatch%pft) > 0.02 .and. day < 210)then 
            
            ! Cold deciduous flushing? 
-!print*,'flushing ',cs%green_leaf_factor(cpatch%pft),cs%leaf_aging_factor(cpatch%pft)                      
+print*,'flushing ',cpoly%green_leaf_factor(cpatch%pft(ico),isi),cpoly%leaf_aging_factor(cpatch%pft(ico),isi)                      
            ! Update plant carbon pools
            cpatch%phenology_status(ico) = 1 ! 1 indicates leaves are growing
            cpatch%bleaf(ico) = cpoly%green_leaf_factor(cpatch%pft(ico),isi) * cpatch%balive(ico)   &
