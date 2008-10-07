@@ -1,3 +1,4 @@
+
  
 subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time&
                     ,writing_dail,writing_mont,history_time,reset_time,the_end)
@@ -224,14 +225,23 @@ subroutine spatial_averages
            cpoly%avg_snowfracliq(isi) = 0.0
            do k=1,csite%npatches
               if(csite%nlev_sfcwater(k) > 0 .and. csite%sfcwater_mass(1,k) > snow_min) then
-                 cpoly%avg_snowfracliq(isi) = cpoly%avg_snowfracliq(isi) + &
-                      & sum(csite%sfcwater_fracliq(1:csite%nlev_sfcwater(k),k)) * csite%area(k)
+                 !! if snow is present, sum mass and depth over layers
                  cpoly%avg_snowdepth(isi)   = cpoly%avg_snowdepth(isi)   + &
                       &sum(csite%sfcwater_depth(1:csite%nlev_sfcwater(k)  ,k)) * csite%area(k)
                  cpoly%avg_snowmass(isi)    = cpoly%avg_snowmass(isi)    + &
                       &sum(csite%sfcwater_mass(1:csite%nlev_sfcwater(k)   ,k)) * csite%area(k)
+                 !! average temp and frac liq weighted by **mass**
                  cpoly%avg_snowtempk(isi)   = cpoly%avg_snowtempk(isi)   + &
-                      &sum(csite%sfcwater_tempk(1:csite%nlev_sfcwater(k)  ,k)) * csite%area(k)
+                      &sum(csite%sfcwater_tempk(1:csite%nlev_sfcwater(k),k)*csite%sfcwater_mass(1:csite%nlev_sfcwater(k),k))&
+                      &/sum(csite%sfcwater_mass(1:csite%nlev_sfcwater(k)   ,k))* csite%area(k)
+                 cpoly%avg_snowfracliq(isi) = cpoly%avg_snowfracliq(isi) + &
+                      & sum(csite%sfcwater_fracliq(1:csite%nlev_sfcwater(k),k)*csite%sfcwater_mass(1:csite%nlev_sfcwater(k),k)) &
+                      &/sum(csite%sfcwater_mass(1:csite%nlev_sfcwater(k)   ,k)) * csite%area(k)
+
+              else
+                 !! assume a thin layer in equilibrium with the top soil layer
+                 cpoly%avg_snowtempk(isi)   = cpoly%avg_snowtempk(isi) + csite%soil_tempk(nzg,k) * csite%area(k)
+                 cpoly%avg_snowtempk(isi)   = cpoly%avg_snowtempk(isi) + csite%soil_fracliq(nzg,k) * csite%area(k)
               endif
            enddo
            cpoly%avg_snowfracliq(isi) = cpoly%avg_snowfracliq(isi) * site_area_i
@@ -315,13 +325,23 @@ subroutine spatial_averages
 
 
 
-        enddo
+     enddo
         
         ! Average Fast Time Flux Dynamics Over Polygons
         cgrid%avg_vapor_vc(ipy)       = sum(cpoly%avg_vapor_vc       * cpoly%area ) * poly_area_i
         cgrid%avg_dew_cg(ipy)         = sum(cpoly%avg_dew_cg         * cpoly%area ) * poly_area_i
         cgrid%avg_vapor_gc(ipy)       = sum(cpoly%avg_vapor_gc       * cpoly%area ) * poly_area_i
         cgrid%avg_wshed_vg(ipy)       = sum(cpoly%avg_wshed_vg       * cpoly%area ) * poly_area_i
+        cgrid%avg_co2can(ipy)         = sum(cpoly%avg_co2can         * cpoly%area ) * poly_area_i
+        cgrid%avg_fsc(ipy)            = sum(cpoly%avg_fsc            * cpoly%area ) * poly_area_i
+        cgrid%avg_stsc(ipy)           = sum(cpoly%avg_stsc           * cpoly%area ) * poly_area_i
+        cgrid%avg_ssc(ipy)            = sum(cpoly%avg_ssc            * cpoly%area ) * poly_area_i
+        cgrid%avg_runoff_heat(ipy)    = sum(cpoly%avg_runoff_heat    * cpoly%area ) * poly_area_i
+        cgrid%avg_runoff(ipy)         = sum(cpoly%avg_runoff         * cpoly%area ) * poly_area_i
+        cgrid%avg_snowmass(ipy)       = sum(cpoly%avg_snowmass       * cpoly%area ) * poly_area_i
+        cgrid%avg_snowtempk(ipy)      = sum(cpoly%avg_snowtempk      * cpoly%area ) * poly_area_i
+        cgrid%avg_snowfracliq(ipy)    = sum(cpoly%avg_snowfracliq    * cpoly%area ) * poly_area_i
+        cgrid%avg_snowdepth(ipy)      = sum(cpoly%avg_snowdepth      * cpoly%area ) * poly_area_i
 
         ! I REMOVED THE FOLLOWING SCALING BY ALVL. THIS VARIABLE IS ALREADY IN ENERGY UNITS, SEE
         ! RK4_DERIVS.F90. RGK-6-30-08

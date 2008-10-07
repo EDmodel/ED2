@@ -570,6 +570,16 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    
    logical           , save :: find_factors=.true.
    real              , save :: dtlsm_o_daysec=1.E34, frqsum_o_daysec=1.E34
+
+   !!! RESET LAI
+   do ipy=1,cgrid%npolygons
+      cpoly => cgrid%polygon(ipy)
+      cgrid%lai_pft            (:,ipy) = 0.
+      do isi=1,cpoly%nsites
+         cpoly%lai_pft (:,isi) = 0.
+      end do
+   end do
+
    
    ! Computing the normalization factors. This is done once.
    if (find_factors) then
