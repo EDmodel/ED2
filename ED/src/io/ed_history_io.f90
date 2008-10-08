@@ -47,6 +47,7 @@ subroutine read_ed1_history_file_array
   integer :: ip,ip2,ic,ic2
 
   character(len=str_len) :: cdum
+  real :: dummy
   integer :: nwater
   real , dimension(max_water) :: depth
   integer, dimension(n_pft) :: include_pft_ep
@@ -180,7 +181,8 @@ subroutine read_ed1_history_file_array
                     inquire(file=trim(pss_name),exist=restart_exist)
                     if(restart_exist)then
                        
-                       dist = dist_gc(cgrid%lon(ipy),cgrid%lon(ipy2),cgrid%lat(ipy),cgrid%lat(ipy2))
+                       dist = dist_gc(cgrid%lon(ipy),lon,cgrid%lat(ipy),lat)
+                       !dist = dist_gc(cgrid%lon(ipy),cgrid%lon(ipy2),cgrid%lat(ipy),cgrid%lat(ipy2))
                        if(dist < best_dist)then
                           best_dist = dist
                           best_pss_name = trim(pss_name)
@@ -250,9 +252,8 @@ subroutine read_ed1_history_file_array
               end do
               
            case(2)  !! read ED2 format files
-              
-              read(12,*,iostat=ierr)time(ip),pname(ip),trk(ip),dwater(1),dage,darea,dfsc,dstsc  &
-                                   ,dstsl,dssc,dpsc,dmsn,dfsn
+              read(12,*,iostat=ierr)time(ip),pname(ip),trk(ip),dage,darea,dwater(1),dfsc,dstsc  &
+                                   ,dstsl,dssc,dummy,dmsn,dfsn,dummy,dummy,dummy             
               if(ierr /= 0)exit count_patches
               area(ip)   = sngl(max(snglmin,darea  ))
               age(ip)    = sngl(max(min_ok ,dage   ))
@@ -388,7 +389,7 @@ subroutine read_ed1_history_file_array
         
         open(12,file=trim(css_name),form='formatted',status='old')
         read(12,*)  ! skip header
-        read(12,*)  ! skip header
+        if (ied_init_mode == 1) read(12,*)  ! skip header
         
         ic = 0
         

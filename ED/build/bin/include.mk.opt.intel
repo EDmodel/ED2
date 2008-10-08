@@ -44,15 +44,15 @@ BASE=$(ED_ROOT)/build/
 # library files. Make sure you include the zlib.a location too.
 
 # For 64-bit 
-#USE_HDF5=1
-#HDF5_INCS=-I/n/Moorcroft_Lab/Lab/apps/i91/lib -I/n/Moorcroft_Lab/Lab/apps/i91/include
-#HDF5_LIBS=-L/n/Moorcroft_Lab/Lab/apps/i91/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
+USE_HDF5=1
+HDF5_INCS=-I/n/Moorcroft_Lab/Lab/apps/i91/lib -I/n/Moorcroft_Lab/Lab/apps/i91/include
+HDF5_LIBS=-L/n/Moorcroft_Lab/Lab/apps/i91/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
           -L/n/Moorcroft_Lab/User/mlongo/util/hdflib/hdf5_64/zlib-1.2.1/lib -lz
 
 # For 32-bit
-USE_HDF5=1
-HDF5_INCS=-I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib -I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/include
-HDF5_LIBS=-L/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
+#USE_HDF5=1
+#HDF5_INCS=-I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib -I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/include
+#HDF5_LIBS=-L/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
           -L/n/Moorcroft_Lab/Lab/mlongo/util/hdflib/hdf5_32/zlib/lib -lz
 
 # netCDF libraries ---------------------------------------------
@@ -309,15 +309,15 @@ C_LOADER_OPTS=-v -O2 -traceback -g
 
 #---------------LINUX Portland Group pgf77/gcc--------------------
 # 64-bit machine
-#MPI_PATH=/n/Moorcroft_Lab/Lab/apps/i91
-#PAR_INCS=-I$(MPI_PATH)/include
-#PAR_LIBS=-L$(MPI_PATH)/lib -lmpich -lpmpich
-#PAR_DEFS=-DRAMS_MPI
-# 32-bit machine
-MPI_PATH=/n/Moorcroft_Lab/Users/mlongo/util/mpich-1.2.7p1/intel_9.1.036_32
+MPI_PATH=/n/Moorcroft_Lab/Lab/apps/i91
 PAR_INCS=-I$(MPI_PATH)/include
 PAR_LIBS=-L$(MPI_PATH)/lib -lmpich -lpmpich
 PAR_DEFS=-DRAMS_MPI
+# 32-bit machine
+#MPI_PATH=/n/Moorcroft_Lab/Users/mlongo/util/mpich-1.2.7p1/intel_9.1.036_32
+#PAR_INCS=-I$(MPI_PATH)/include
+#PAR_LIBS=-L$(MPI_PATH)/lib -lmpich -lpmpich
+#PAR_DEFS=-DRAMS_MPI
 #-----------------------------------------------------------------
 
 #---------------If using scritps 'mpicc' e 'mpif90'---------------'

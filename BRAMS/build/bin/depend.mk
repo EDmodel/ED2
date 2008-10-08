@@ -1239,7 +1239,7 @@ teb_spm_start.o : $(TEB_SPM)/teb_spm_start.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-therm_lib.o: $(UTILS_LIB)/therm_lib.f90 rconstants.o
+therm_lib.o: $(UTILS_LIB)/therm_lib.f90 rconstants.o node_mod.o
 	 cp -f $< $(<F:.f90=.f90)
 	 $(F90_COMMAND) $(<F:.f90=.f90)
 	 rm -f $(<F:.f90=.f90)

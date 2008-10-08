@@ -712,8 +712,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         endif
 
         ! Do evaporation/dew formation on leaf surfaces
-        c3 = cpatch%lai(ico) * rhos * (rslif(prss,initp%veg_temp(ico)) &
-             - initp%can_shv)
+        c3 = cpatch%lai(ico) * rhos * (rslif(prss,initp%veg_temp(ico)) - initp%can_shv)
         rbi = 1.0 / cpatch%rb(ico)
 
         if (c3 >= 0.) then  

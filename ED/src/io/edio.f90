@@ -168,15 +168,16 @@ subroutine spatial_averages
   do igr=1,ngrids
      cgrid => edgrid_g(1)
 
-     cgrid%avg_gpp         = 0.0
-     cgrid%avg_leaf_resp   = 0.0
-     cgrid%avg_root_resp   = 0.0
-     cgrid%avg_plant_resp  = 0.0
-     cgrid%avg_htroph_resp = 0.0
      
      do ipy=1,cgrid%npolygons
         cpoly => cgrid%polygon(ipy)
      
+        cgrid%avg_gpp(ipy)         = 0.0
+        cgrid%avg_leaf_resp(ipy)   = 0.0
+        cgrid%avg_root_resp(ipy)   = 0.0
+        cgrid%avg_plant_resp(ipy)  = 0.0
+        cgrid%avg_htroph_resp(ipy) = 0.0
+
         poly_area_i = 1./sum(cpoly%area)
 
         do isi=1,cpoly%nsites
