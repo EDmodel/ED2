@@ -42,6 +42,7 @@ Module ename_coms
       integer :: ifoutput  = 1      
       integer :: idoutput  = 1
       integer :: imoutput  = 1
+      integer :: iyoutput  = 0
       integer :: isoutput  = 1
       
       integer :: attach_metadata=0
@@ -49,6 +50,8 @@ Module ename_coms
       integer :: iclobber = 0
       real    :: frqfast   = 3600.0
       real    :: frqstate    = 21600.0
+      real    :: outfast   = -1.
+      real    :: outstate  = -1.
 
       character(len=str_len) :: ffilout   = 'F/'
       integer           :: ied_init_mode = 0
@@ -124,6 +127,8 @@ Module ename_coms
       integer                   :: integration_scheme = 0
       integer                   :: istoma_scheme = 0
       integer                   :: iphen_scheme  = 0
+      integer                   :: repro_scheme  = 1
+      integer                   :: lapse_scheme  = 0
       integer                   :: n_plant_lim   = 0
       integer                   :: n_decomp_lim  = 0
       integer                   :: include_fire  = 0

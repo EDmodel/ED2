@@ -31,12 +31,12 @@ subroutine copy_nl(copy_type)
   use soil_coms, only: isoilflg, nslcon, slmstr, zrough, soil_database, &
        isoilstateinit, isoildepthflg, soilstate_db, soildepth_db,   &
                        runoff_time, slz,veg_database
-  use met_driver_coms, only: ed_met_driver_db, metcyc1, metcycf,imettype,initial_co2
+  use met_driver_coms, only: ed_met_driver_db, metcyc1, metcycf,imettype,initial_co2, lapse_scheme
   use mem_sites, only: n_soi, soi_lat, soi_lon, n_ed_region, ed_reg_latmin,  &
        ed_reg_latmax, ed_reg_lonmin, ed_reg_lonmax, grid_res, grid_type, edres, &
        maxpatch, maxcohort
   use physiology_coms, only: istoma_scheme, n_plant_lim
-  use phenology_coms, only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath
+  use phenology_coms, only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath,repro_scheme
   use decomp_coms, only: n_decomp_lim
   use disturb_coms, only: include_fire, ianth_disturb,   &
        treefall_disturbance_rate
@@ -45,9 +45,9 @@ subroutine copy_nl(copy_type)
   use misc_coms, only: expnme, runtype, itimez, idatez, imonthz, iyearz,  &
        itimea, idatea, imontha, iyeara, ifoutput, iclobber, frqfast, &
        sfilin, ied_init_mode, current_time, ed_inputs_dir,   &
-       end_time, radfrq, integration_scheme, ffilout, idoutput,imoutput, dtlsm, &
+       end_time, radfrq, integration_scheme, ffilout, idoutput,imoutput,iyoutput, dtlsm, &
        frqstate,sfilout,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmax,ipmin, &
-       iedcnfgf
+       iedcnfgf, outfast, outstate
 
   use grid_coms, only: time,centlon,centlat,deltax,deltay,nnxp,nnyp,nstratx, &
                        nstraty,polelat,polelon,ngrids,timmax,time,nzg, nzs
@@ -82,6 +82,7 @@ subroutine copy_nl(copy_type)
      ifoutput = nl%ifoutput
      idoutput = nl%idoutput
      imoutput = nl%imoutput
+     iyoutput = nl%iyoutput
      isoutput = nl%isoutput
 
      attach_metadata = nl%attach_metadata
@@ -89,6 +90,8 @@ subroutine copy_nl(copy_type)
      iclobber       = nl%iclobber
      frqfast        = nl%frqfast
      frqstate       = nl%frqstate
+     outfast        = nl%outfast
+     outstate       = nl%outstate
      sfilin         = nl%sfilin
      ffilout        = nl%ffilout
      sfilout        = nl%sfilout
@@ -122,6 +125,8 @@ subroutine copy_nl(copy_type)
      integration_scheme = nl%integration_scheme
      istoma_scheme = nl%istoma_scheme
      iphen_scheme  = nl%iphen_scheme
+     repro_scheme  = nl%repro_scheme
+     lapse_scheme  = nl%lapse_scheme
      n_plant_lim   = nl%n_plant_lim
      n_decomp_lim  = nl%n_decomp_lim
      include_fire  = nl%include_fire

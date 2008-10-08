@@ -31,7 +31,7 @@ subroutine read_ed1_history_file_array
   real :: flon,lon
   integer :: ilat,ilon
   
-  logical, parameter :: renumber_pfts = .true.
+  logical :: renumber_pfts = .true.
   character(len=str_len) :: pss_name
   character(len=str_len) :: css_name
   character(len=str_len) :: site_name
@@ -47,6 +47,7 @@ subroutine read_ed1_history_file_array
   integer :: ip,ip2,ic,ic2
 
   character(len=str_len) :: cdum
+  real :: dummy
   integer :: nwater
   real , dimension(max_water) :: depth
   integer, dimension(n_pft) :: include_pft_ep
@@ -107,6 +108,8 @@ subroutine read_ed1_history_file_array
   
   real, external :: ed_biomass
   
+  if(ied_init_mode == 3) renumber_pfts = .false.
+
   
   ! Loop over all grids, polygons, and sites
 
@@ -180,7 +183,8 @@ subroutine read_ed1_history_file_array
                     inquire(file=trim(pss_name),exist=restart_exist)
                     if(restart_exist)then
                        
-                       dist = dist_gc(cgrid%lon(ipy),cgrid%lon(ipy2),cgrid%lat(ipy),cgrid%lat(ipy2))
+                       dist = dist_gc(cgrid%lon(ipy),lon,cgrid%lat(ipy),lat)
+                       !dist = dist_gc(cgrid%lon(ipy),cgrid%lon(ipy2),cgrid%lat(ipy),cgrid%lat(ipy2))
                        if(dist < best_dist)then
                           best_dist = dist
                           best_pss_name = trim(pss_name)
@@ -212,12 +216,12 @@ subroutine read_ed1_history_file_array
         ! Open file and read in patches
         open(12,file=trim(pss_name),form='formatted',status='old')
         read(12,*)  ! skip header
+        nwater = 1
         if(ied_init_mode == 1) then
            read(12,*)cdum,nwater
            read(12,*)cdum,depth(1:nwater)
            read(12,*)
-        else
-           nwater = 1
+        elseif(ied_init_mode == 2) then
            read(12,*)!water patch
         endif
 
@@ -250,9 +254,8 @@ subroutine read_ed1_history_file_array
               end do
               
            case(2)  !! read ED2 format files
-              
-              read(12,*,iostat=ierr)time(ip),pname(ip),trk(ip),dwater(1),dage,darea,dfsc,dstsc  &
-                                   ,dstsl,dssc,dpsc,dmsn,dfsn
+              read(12,*,iostat=ierr)time(ip),pname(ip),trk(ip),dage,darea,dwater(1),dfsc,dstsc  &
+                                   ,dstsl,dssc,dummy,dmsn,dfsn,dummy,dummy,dummy             
               if(ierr /= 0)exit count_patches
               area(ip)   = sngl(max(snglmin,darea  ))
               age(ip)    = sngl(max(min_ok ,dage   ))
@@ -267,8 +270,8 @@ subroutine read_ed1_history_file_array
               
            case(3)
               
-              read(12,*,iostat=ierr) sitenum(ip),time(ip),pname(ip),trk(ip),water(1,ip),age(ip), &
-                   darea,fsc(ip),stsc(ip),stsl(ip),ssc(ip),psc(ip),msn(ip),fsn(ip)
+              read(12,*,iostat=ierr) sitenum(ip),time(ip),pname(ip),trk(ip),age(ip), &
+                   darea,water(1,ip),fsc(ip),stsc(ip),stsl(ip),ssc(ip),psc(ip),msn(ip),fsn(ip)
               if(ierr /= 0)exit count_patches
               area(ip)=sngl(max(snglmin,darea))
               
@@ -388,7 +391,9 @@ subroutine read_ed1_history_file_array
         
         open(12,file=trim(css_name),form='formatted',status='old')
         read(12,*)  ! skip header
-        read(12,*)  ! skip header
+        if(ied_init_mode /= 3) then
+           read(12,*)  ! skip header
+        end if
         
         ic = 0
         
@@ -419,11 +424,12 @@ subroutine read_ed1_history_file_array
                  ipft(ic) = ipft(ic) - 100
               endif
            endif
-                     
+
            !! check if the year matches
            year = int(ctime(ic))
            if(use_target_year == 1 .and. year .ne. restart_target_year) continue
            
+
            ! Find site and patch and start counting how many to allocate
            
            put_cohort:do isi=1,cpoly%nsites
@@ -548,6 +554,15 @@ subroutine read_ed1_history_file_array
                  enddo
               else ! if (csite%cohort_count(ipa) == 0) then
 
+           ! Mike, ED1 restart files are plenty of patches with no cohorts, and they bug us 
+           !   too, but we cannot avoid them when we run regional runs at least for now
+           !   (too many patches like that...).
+           !   If you really want to stop the run in this case, make a special if here for
+           !   ied_init_mode == 3 or something like that...
+            
+           !      print*,"WARNING: found patch with no cohorts: poly",ip,"patch",ipa
+           !      stop
+
            ! MLO 5-27-08. Force the patch to have one cohort of each pft that should be included
            !              Considers whether this is agricultural or forest.
               
@@ -656,12 +671,12 @@ subroutine read_ed1_history_file_array
         
         poly_lai = 0.0
         ncohorts = 0
-        
+
         do isi = 1,cpoly%nsites
-           
+
            nsitepat = 0
            csite => cpoly%site(isi)
-           
+
            do ipa = 1,csite%npatches
               
               csite%lai(ipa) = 0.0

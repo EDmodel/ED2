@@ -26,6 +26,11 @@ Module phenology_coms
   ! 2 - new scheme (not yet implemented)
   integer :: iphen_scheme
 
+  ! Flag specifying which reproduction scheme to run
+  ! 0 - no reproduction
+  ! 1 - original ED1 reproduction
+  integer :: repro_scheme
+
   real :: l_fract
 
   !Flag specifying the first and last spring

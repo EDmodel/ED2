@@ -7,16 +7,17 @@ subroutine masterput_ednl(mainnum)
                            ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir    &
                            ,integration_scheme,end_time,current_time,sfilout,frqstate      &
                            ,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmin,ipmax      &
-                           ,iedcnfgf
+                           ,iedcnfgf,iyoutput,outfast,outstate
   use ed_misc_coms,only: attach_metadata
   use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,time,timmax
   use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database  &
                             ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg        &
                             ,runoff_time,zrough
-  use met_driver_coms, only: initial_co2
+  use met_driver_coms, only: initial_co2,lapse_scheme
   use mem_sites,       only: edres,maxpatch,maxcohort
   use physiology_coms, only: istoma_scheme,n_plant_lim
-  use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath
+  use phenology_coms , only: iphen_scheme,repro_scheme,iphenys1,iphenysf,iphenyf1,iphenyff &
+                             ,phenpath
   use decomp_coms,     only: n_decomp_lim
   use pft_coms,        only: include_these_pft,pft_1st_check
   use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
@@ -48,8 +49,11 @@ subroutine masterput_ednl(mainnum)
   call MPI_Bcast(ifoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(idoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(imoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(iyoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(isoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(attach_metadata,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(outfast,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(outstate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(ffilout,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(sfilout,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(ied_init_mode,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -65,6 +69,8 @@ subroutine masterput_ednl(mainnum)
   call MPI_Bcast(integration_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(repro_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(lapse_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(include_fire,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -142,16 +148,18 @@ subroutine nodeget_ednl(master_num)
                            ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput        &
                            ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir   &
                            ,integration_scheme,end_time,current_time,sfilout,frqstate     &
-                           ,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmin,ipmax,iedcnfgf
+                           ,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmin,ipmax     &
+                           ,iedcnfgf,iyoutput,outfast,outstate
   use ed_misc_coms,only: attach_metadata
   use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,time,timmax
   use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database &
                              ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg       &
                              ,runoff_time,zrough
-  use met_driver_coms, only: initial_co2
+  use met_driver_coms, only: initial_co2,lapse_scheme
   use mem_sites,       only: edres,maxpatch,maxcohort
   use physiology_coms, only: istoma_scheme,n_plant_lim
-  use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath
+  use phenology_coms , only: iphen_scheme,repro_scheme,iphenys1,iphenysf,iphenyf1,iphenyff &
+                            ,phenpath
   use decomp_coms,     only: n_decomp_lim
   use pft_coms,        only: include_these_pft,pft_1st_check
   use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
@@ -182,8 +190,11 @@ subroutine nodeget_ednl(master_num)
   call MPI_Bcast(ifoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(idoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(imoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(iyoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(isoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(attach_metadata,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(outfast,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(outstate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(ffilout,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(sfilout,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(ied_init_mode,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
@@ -199,6 +210,8 @@ subroutine nodeget_ednl(master_num)
   call MPI_Bcast(integration_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(repro_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(lapse_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(include_fire,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

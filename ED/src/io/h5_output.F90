@@ -21,7 +21,15 @@ subroutine h5_output(vtype)
 	                idatea,  &
 	                imontha, &
 	                iyeara,  &
-                        iclobber
+                        iclobber, &
+                        nrec_fast, &
+                        nrec_state, &
+                        irec_fast, &
+                        irec_state, &
+                        out_time_fast, &
+                        out_time_state, &
+                        outstate, &
+                        outfast, frqfast
 
   use ed_misc_coms,only: attach_metadata
 
@@ -86,12 +94,15 @@ subroutine h5_output(vtype)
   real, external :: dbh2bl
   type(var_table),pointer        :: vtinfo
   type(var_table_vector),pointer :: vtvec
+  integer :: irec, nrec
 
   integer :: mpierror
   integer :: comm,info
   integer :: mpi_size,mpi_rank
   integer :: ping,ierr
   integer,       dimension(MPI_STATUS_SIZE) :: status
+  real(kind=8)    :: dsec
+  logical :: new_file = .true.
 
   logical,parameter :: collective_mpi = .false.
 
@@ -125,13 +136,17 @@ subroutine h5_output(vtype)
      vnam='D'
   case ('MONT') 
      vnam='E'
+  case ('YEAR') 
+     vnam='Y'
   case('HIST') 
      vnam='S'  ! S for reStart, don't want confusion with RAMS' H or R files
   end select  
   nvcnt=0
 
   ! DOING SEQUENTIAL IO RIGHT NOW - THE NEXT 4 LINES ARE A BLOCKING PROCEDURE
-  
+  nrec = 1
+  irec = 1  
+
   do ngr=1,ngrids
 
      ping = 0 
@@ -164,14 +179,47 @@ subroutine h5_output(vtype)
            
            call makefnam(anamel,ffilout,zero,outyear,outmonth,0, &
                 0,vnam,cgrid,'h5 ')
+        case('YEAR')
+           
+           call date_add_to (iyeara,imontha,idatea,itimea*100,  &
+                time-21600,'s',outyear,outmonth,outdate,outhour)
+           
+           call makefnam(anamel,ffilout,zero,outyear,0,0, &
+                0,vnam,cgrid,'h5 ')
            
         case('HIST')
            call makefnam(anamel,sfilout,time,iyeara,imontha,idatea,  &
                 itimea*100,vnam,cgrid,'h5 ')
            
         case default
-           call makefnam(anamel,ffilout,time,iyeara,imontha,idatea,  &
-                itimea*100,vnam,cgrid,'h5 ')
+           if(nrec_fast .eq. 1) then  !! single file per output
+              call makefnam(anamel,ffilout,time,iyeara,imontha,idatea,  &
+                   itimea*100,vnam,cgrid,'h5 ')
+           else   !! group outputs
+              new_file = .false.
+              !! determine whether to advance out_time_fast
+              call date_add_to (iyeara,imontha,idatea,itimea*100,  &
+                   time,'s',outyear,outmonth,outdate,outhour)
+              call date_2_seconds(out_time_fast%year,out_time_fast%month, &
+                   out_time_fast%date,int(out_time_fast%time), &
+                   iyeara,imontha,idatea,itimea*100,dsec)
+              if(time >= (dsec+outfast) .or. outmonth .ne. out_time_fast%month) then
+                 out_time_fast%year  = outyear
+                 out_time_fast%month = outmonth
+                 out_time_fast%date  = outdate
+                 out_time_fast%time  = outhour*1.!!(3600.*int(outhour/10000)+60.*int(mod(outhour,10000)/100)+mod(outhour,100)*1.)   !! DOUBLE CHECK
+                 dsec = time
+                 new_file = .true.
+              endif
+              irec_fast = ((time-dsec)/frqfast) + 1
+              nrec = nrec_fast
+              irec = irec_fast
+!              print*,irec,nrec,outmonth,out_time_fast,dsec,time
+              !! construct filename
+              call makefnam(anamel,ffilout,zero,out_time_fast%year, &
+                   out_time_fast%month,out_time_fast%date,int(out_time_fast%time), &
+                   vnam,cgrid,'h5 ')
+           endif
            
         end select
         
@@ -235,7 +283,7 @@ subroutine h5_output(vtype)
            call h5fcreate_f(trim(anamel)//char(0), H5F_ACC_TRUNC_F, file_id, &
                 hdferr,access_prp = plist_id)
            if (hdferr /= 0) then
-              print*,"COULD NOT OPEN THE HDF FILE"
+              print*,"COULD NOT OPEN THE new HDF FILE"
               print*,trim(anamel),file_id,hdferr
               call fatal_error('Failed opening the HDF file' &
                    ,'h5_output','h5_output.F90')
@@ -248,11 +296,11 @@ subroutine h5_output(vtype)
            
         else
            
-           if (ping == 0) then
+           if (ping == 0 .and. new_file) then
               
               call h5fcreate_f(trim(anamel)//char(0), H5F_ACC_TRUNC_F, file_id, hdferr)
               if (hdferr /= 0) then
-                 print*,"COULD NOT OPEN THE HDF FILE"
+                 print*,"COULD NOT CREATE THE HDF FILE"
                  print*,trim(anamel),file_id,hdferr
                  call fatal_error('Failed opening the HDF file' &
                       ,'h5_output','h5_output.F90')
@@ -314,13 +362,14 @@ subroutine h5_output(vtype)
                 (vtype == 'LITE' .and. vt_info(nv,ngr)%ilite == 1) .or. &
                 (vtype == 'DAIL' .and. vt_info(nv,ngr)%idail == 1) .or. &
                 (vtype == 'MONT' .and. vt_info(nv,ngr)%imont == 1) .or. &
+                (vtype == 'YEAR' .and. vt_info(nv,ngr)%iyear == 1) .or. &
                 (vtype == 'HIST' .and. vt_info(nv,ngr)%ihist == 1)) then
               
               varn= vt_info(nv,ngr)%name
               
               ! Initialize global dimensions of the hyperslab
               
-              call geth5dims(vt_info(nv,ngr)%idim_type,0,0,vt_info(nv,ngr)%var_len_global,dsetrank,varn)
+              call geth5dims(vt_info(nv,ngr)%idim_type,0,0,vt_info(nv,ngr)%var_len_global,dsetrank,varn,nrec,irec)
               
               
               call h5screate_simple_f(dsetrank, globdims, filespace, hdferr)
@@ -347,7 +396,7 @@ subroutine h5_output(vtype)
                  endif
               else
                  
-                 if (ping == 0) then
+                 if (ping == 0 .and. new_file) then
                     
                     if (vt_info(nv,ngr)%dtype == 'r') then   ! real data type
                        call h5dcreate_f(file_id,varn,H5T_NATIVE_REAL, filespace, &
@@ -420,8 +469,7 @@ subroutine h5_output(vtype)
                        call h5sclose_f(aspace_id,hdferr)
                        
                     end if
-                    
-                    
+                                        
                  else
                     call h5dopen_f(file_id,varn,dset_id,hdferr)
                  end if
@@ -464,7 +512,7 @@ subroutine h5_output(vtype)
                     ! Initialize hyperslab indexes
                     
                     call geth5dims(vt_info(nv,ngr)%idim_type,vtvec%varlen, &
-                         vtvec%globid,vt_info(nv,ngr)%var_len_global,dsetrank,varn)
+                         vtvec%globid,vt_info(nv,ngr)%var_len_global,dsetrank,varn,nrec,irec)
                     
                     ! Create the data space for the  dataset. 
                     
@@ -620,13 +668,15 @@ subroutine h5_output(vtype)
      subaname='  Daily average analysis HDF write    '
   case ('MONT')
      subaname='  Monthly average analysis HDF write   '
+  case ('YEAR')
+     subaname='  Annual average analysis HDF write   '
   case ('HIST')
      subaname='  History HDF write   '
   case default
      subaname='  Analysis HDF write         '
   end select
   
-  if (mynum.eq.nnodetot) then
+  if (mynum.eq.nnodetot .and. new_file) then
      write(c0,'(F10.0)') time
      write(*,"(/,a)") " === "//trim(adjustl(subaname))//" at Sim time "//trim(adjustl(c0))//" ==="
      write(*,"(a,/)") " === wrote file "//&
@@ -649,7 +699,7 @@ end subroutine h5_output
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn)
+subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,irec)
   
   use grid_coms,only : nzg,nzs
   use max_dims, only : n_pft,n_dist_types,n_dbh
@@ -658,7 +708,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn)
 
   implicit none
   character(len=*) :: varn
-  integer :: idim_type,varlen,globid,var_len_global,dsetrank
+  integer :: idim_type,varlen,globid,var_len_global,dsetrank,nrec,irec
   
   ! Initialize the size of the memory and file-space dimensioning
   
@@ -969,6 +1019,17 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn)
      write (unit=*,fmt='(a)')       '--------------------------------------------------'
      call fatal_error ('Wrong idim_type','geth5dims','h5_output.F90')
   end select
+
+  !!! add TIME if writing multiple observations/file
+  if(nrec .gt. 1) then
+     dsetrank = dsetrank + 1
+     globdims(dsetrank) = nrec
+     chnkdims(dsetrank) = 1
+     chnkoffs(dsetrank) = irec-1
+     if(chnkoffs(dsetrank) .lt. 0) chnkoffs(dsetrank) = 0
+     cnt(dsetrank)      = 1
+     stride(dsetrank)   = 1
+  endif
 
   return
 end subroutine geth5dims
