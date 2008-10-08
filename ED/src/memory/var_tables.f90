@@ -21,7 +21,7 @@ type var_tables_r
    integer :: ihist,ianal,imean,ilite,impti,impt1,impt2,impt3,irecycle
    character (len=16) :: name
    ![ED2-MLO
-   integer :: imont,idail
+   integer :: imont,idail,iyear
    !ED2-MLO]
 
    

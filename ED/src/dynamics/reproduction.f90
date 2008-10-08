@@ -12,7 +12,8 @@ subroutine reproduction_ar(cgrid, month)
   use max_dims, only: n_pft
   use fuse_fiss_utils_ar, only: sort_cohorts_ar, terminate_cohorts_ar,fuse_cohorts_ar &
                             ,split_cohorts_ar
-  
+  use phenology_coms,only:repro_scheme
+
   implicit none
 
   type(edtype),target       :: cgrid
@@ -38,6 +39,8 @@ subroutine reproduction_ar(cgrid, month)
   integer :: inew,ncohorts_new
   real,dimension(n_pft,9) :: recruit_array
 
+  if(repro_scheme .eq. 0) seedling_mortality(1:n_pft) = 1.0
+
   allocate(temppatch)
 
   do ipy = 1,cgrid%npolygons
@@ -48,6 +51,9 @@ subroutine reproduction_ar(cgrid, month)
         
         csite => cpoly%site(isi)
         
+        !!initialize
+        csite%repro = 0.0
+   
         !--------------------------
         ! First, sort the cohorts after the growth
         !----------------------------
@@ -130,12 +136,13 @@ subroutine reproduction_ar(cgrid, month)
            recruit_array = 0.0
            
            do pft = 1, n_pft
-              
+           
               ! Check to make sure we are including the PFT and that 
               ! it is not too cold.
 
               if(include_pft(pft) == 1 .and.   &
-                   cpoly%min_monthly_temp(isi) >= plant_min_temp(pft) - 5.0)then
+                   cpoly%min_monthly_temp(isi) >= plant_min_temp(pft) - 5.0 .and. &
+                   repro_scheme > 0)then
                  
                  ! Make sure that this is not agriculture or that it is 
                  ! OK for this PFT to be in an agriculture patch.

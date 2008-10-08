@@ -1400,7 +1400,8 @@ edcp_met_init.o : $(ED_MIXED)/edcp_met_init.f90 misc_coms.o ed_state_vars.o soil
 edcp_model.o : $(ED_MIXED)/edcp_model.f90 mem_grid.o mem_leaf.o ed_node_coms.o misc_coms.o \
 	mem_edcp.o grid_coms.o ed_state_vars.o rk4_driver.o disturb_coms.o mem_sites.o     \
 	consts_coms.o disturbance.o fuse_fiss_utils.o growth_balive.o node_mod.o           \
-	mem_leaf.o mem_basic.o mem_radiate.o mem_cuparm.o mem_micro.o therm_lib.o
+	mem_leaf.o mem_basic.o mem_radiate.o mem_cuparm.o mem_micro.o therm_lib.o          \
+	ed_misc_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -1787,7 +1788,7 @@ radiate_driver.o : $(ED_DYNAMICS)/radiate_driver.f90 misc_coms.o ed_state_vars.o
 	rm -f $(<F:.f90=.f90)
 
 reproduction.o : $(ED_DYNAMICS)/reproduction.f90 ed_state_vars.o misc_coms.o pft_coms.o    \
-	decomp_coms.o fusion_fission_coms.o max_dims.o fuse_fiss_utils.o
+	decomp_coms.o fusion_fission_coms.o max_dims.o fuse_fiss_utils.o phenology_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

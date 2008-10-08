@@ -1,19 +1,22 @@
 #Makefile include paths.mk
 
 # RAMS root directory.
-EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/mlongo/EDBRAMS
+#EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/mlongo/repository/EDBRAMS
 
 # MCD: EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/mcd/EDBRAMS
 # KIM: EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/kim/ed-code/EDBRAMS
 # RGK: EDBRAMS_ROOT=/Home2ln/rknox/Models/EDBRAMS
 # DMM: EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/dmm2/ED2/my-edbrams
-# MLO: EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/mlongo/EDBRAMS
+# MLO: 
+EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/mlongo/EDBRAMS
+
 
 
 BRAMS_ROOT=$(EDBRAMS_ROOT)/BRAMS
 ED_ROOT=$(EDBRAMS_ROOT)/ED
 
 # Versions.
+
 BRAMS_VERSION=4.0.6
 ED_VERSION=2.1
 
@@ -42,6 +45,7 @@ SURFACE=$(BRAMS_ROOT)/src/brams/surface
 TEB_SPM=$(BRAMS_ROOT)/src/brams/teb_spm
 TURB=$(BRAMS_ROOT)/src/brams/turb
 
+
 # ED directories that will be accessed by BRAMS
 ED_DYNAMICS=$(ED_ROOT)/src/dynamics
 ED_IO=$(ED_ROOT)/src/io
@@ -49,6 +53,7 @@ ED_INIT=$(ED_ROOT)/src/init
 ED_MEMORY=$(ED_ROOT)/src/memory
 ED_MPI=$(ED_ROOT)/src/mpi
 ED_UTILS=$(ED_ROOT)/src/utils
+
 
 UTILS_LIB=$(BRAMS_ROOT)/src/utils/lib
 EFF=$(BRAMS_ROOT)/src/utils/eff
