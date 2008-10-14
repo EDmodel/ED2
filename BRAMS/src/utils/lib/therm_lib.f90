@@ -1,7 +1,11 @@
 !==========================================================================================!
-! therm_lib.f90                                                                            !
+! BRAMS-4.0.6. File: therm_lib.f90                                                                            !
 !                                                                                          !
-!    This file contains various subroutines to handle common thermodynamic properties.     !
+!    This file contains most functions and subroutines that deal with several thermo-      !
+! dynamic conversions. These procedures were built to avoid assumptions like hydrostatic   !
+! and linearisation. Most equations could not be solved analytically, and the standard     !
+! here was to use Newton's method as the default, always having bisection or, more often,  !
+! the modified Regula Falsi (Illinois) method in case Newton's fails.                      !
 !==========================================================================================!
 !==========================================================================================!
 module therm_lib
@@ -231,7 +235,6 @@ module therm_lib
    !---------------------------------------------------------------------------------------!
    real function rslif(pres,temp,useice)
       use rconstants, only: t3ple,ep
-      use node_mod,   only: mynum
       implicit none
       real   , intent(in)           :: pres,temp
       logical, intent(in), optional :: useice
@@ -406,6 +409,41 @@ module therm_lib
 
 
 
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function calculates the partial derivative of saturation vapour pressure as  !
+   ! a function of  Kelvin temperature. It chooses which phase to look depending on        !
+   ! whether the temperature is below or above the triple point.                           !
+   !---------------------------------------------------------------------------------------!
+   real function eslifp(temp,useice)
+      use rconstants, only: t3ple
+      implicit none
+      real   , intent(in)           :: temp
+      logical, intent(in), optional :: useice
+      logical                       :: brrr_cold
+
+      if (present(useice)) then
+         brrr_cold = useice  .and. temp < t3ple
+      else 
+         brrr_cold = bulk_on .and. temp < t3ple
+      end if
+
+      if (brrr_cold) then
+         eslifp = esifp(temp) ! d(Ice saturation vapour pressure)/dT
+      else
+         eslifp = eslfp(temp) ! d(Liquid saturation vapour pressure)/dT
+      end if
+
+      return
+   end function eslifp
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
 
    !=======================================================================================!
    !=======================================================================================!
@@ -564,7 +602,11 @@ module therm_lib
          funz  = fun
          zside = .true.
       else
-         delta = max(abs(funa * (tempz-tempa)/(fun-funa)),100.*toler*tempa)
+         if (abs(fun-funa) < 100.*toler*tempa) then
+            delta = 100.*toler*tempa
+         else
+            delta = max(abs(funa * (tempz-tempa)/(fun-funa)),100.*toler*tempa)
+         end if
          tempz = tempa + delta
          zside = .false.
          zgssloop: do itb=1,maxfpo
@@ -693,7 +735,11 @@ module therm_lib
          funz  = fun
          zside = .true.
       else
-         delta = max(abs(funa * (tempz-tempa)/(fun-funa)),100.*toler*tempa)
+         if (abs(fun-funa) < 100.*toler*tempa) then
+            delta = 100.*toler*delta
+         else
+            delta = max(abs(funa * (tempz-tempa)/(fun-funa)),100.*toler*tempa)
+         end if
          tempz = tempa + delta
          zside = .false.
          zgssloop: do itb=1,maxfpo
@@ -767,7 +813,7 @@ module therm_lib
       use rconstants, only: es3ple,alvl,alvi,lvt3ple,lst3ple,rmt3ple,es3plei
 
       implicit none
-      real, intent(in) :: pvap
+      real   , intent(in)           :: pvap
       logical, intent(in), optional :: useice
       logical                       :: brrr_cold
       
@@ -1197,6 +1243,41 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
+   !     This function finds the density based on the virtual temperature and the ideal    !
+   ! gas law. The condensed phase will be taken into account if the user provided both     !
+   ! the vapour and the total mixing ratios.                                               !
+   !---------------------------------------------------------------------------------------!
+   real function idealdens(pres,temp,rvap,rtot)
+      use rconstants, only: rgas
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real, intent(in)           :: pres     ! Pressure                             [   Pa]
+      real, intent(in)           :: temp     ! Temperature                          [    K]
+      real, intent(in)           :: rvap     ! Vapour mixing ratio                  [kg/kg]
+      real, intent(in), optional :: rtot     ! Total mixing ratio                   [kg/kg]
+      !----- Local variable ---------------------------------------------------------------!
+      real                       :: tvir     ! Virtual temperature                  [    K]
+      !------------------------------------------------------------------------------------!
+      if (present(rtot)) then
+        tvir = virtt(temp,rvap,rtot)
+      else
+        tvir = virtt(temp,rvap)
+      end if
+
+      idealdens = pres / (rgas * tvir)
+
+      return
+   end function idealdens
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !     This fucntion computes the ice liquid potential temperature given the Exner       !
    ! function [J/kg/K], temperature [K], and liquid and ice mixing ratios [kg/kg].         !
    !---------------------------------------------------------------------------------------!
@@ -1205,16 +1286,15 @@ module therm_lib
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real, intent(in) :: exner ! Exner function                                   [J/kg/K]
-      real, intent(in) :: temp  ! Temperature                                      [     K]
-      real, intent(in) :: rliq  ! Liquid mixing ratio                              [ kg/kg]
-      real, intent(in) :: rice  ! Ice mixing ratio                                 [ kg/kg]
+      real, intent(in)           :: exner   ! Exner function                       [J/kg/K]
+      real, intent(in)           :: temp    ! Temperature                          [     K]
+      real, intent(in)           :: rliq    ! Liquid mixing ratio                  [ kg/kg]
+      real, intent(in)           :: rice    ! Ice mixing ratio                     [ kg/kg]
       !----- Local variables --------------------------------------------------------------!
       real             :: hh    ! Enthalpy associated with sensible heat           [  J/kg]
       real             :: qq    ! Enthalpy associated with latent heat             [  J/kg]
       !------------------------------------------------------------------------------------!
-      
-      
+
       !----- Finding the enthalpies -------------------------------------------------------!
       hh = cp*temp
       qq  = alvl*rliq+alvi*rice
@@ -1223,9 +1303,9 @@ module therm_lib
       
          !----- Deciding how to compute, based on temperature -----------------------------!
          if (temp > ttripoli) then
-            theta_iceliq = hh * exp(qq/hh) / exner
+            theta_iceliq = hh * exp(-qq/hh) / exner
          else
-            theta_iceliq = hh * exp(qq * htripolii) / exner
+            theta_iceliq = hh * exp(-qq * htripolii) / exner
          end if
       else
          !----- Deciding how to compute, based on temperature -----------------------------!
@@ -1251,24 +1331,24 @@ module therm_lib
    !     This function computes the liquid potential temperature derivative with respect   !
    ! to temperature, useful in iterative methods.                                          !
    !---------------------------------------------------------------------------------------!
-   real function dthetail_dt(exner,pres,temp,rsat,rliq,ricein)
+   real function dthetail_dt(condconst,thil,exner,pres,temp,rliq,ricein)
       use rconstants, only: alvl, alvi, cp, ttripoli,htripoli,htripolii,t3ple
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real, intent(in)           :: exner       ! Exner function                   [J/kg/K]
-      real, intent(in)           :: pres        ! Pressure                         [    Pa]
-      real, intent(in)           :: temp        ! Temperature                      [     K]
-      real, intent(in)           :: rsat        ! Saturation mixing ratio          [ kg/kg]
-      real, intent(in)           :: rliq        ! Liquid mixing ratio              [ kg/kg]
-      real, intent(in), optional :: ricein      ! Ice mixing ratio                 [ kg/kg]
+      logical, intent(in)           :: condconst  ! Condensation is constant?      [   T|F]
+      real   , intent(in)           :: thil       ! Ice liquid pot. temperature    [     K]
+      real   , intent(in)           :: exner      ! Exner function                 [J/kg/K]
+      real   , intent(in)           :: pres       ! Pressure                       [    Pa]
+      real   , intent(in)           :: temp       ! Temperature                    [     K]
+      real   , intent(in)           :: rliq       ! Liquid mixing ratio            [ kg/kg]
+      real   , intent(in), optional :: ricein     ! Ice mixing ratio               [ kg/kg]
       !----- Local variables --------------------------------------------------------------!
-      real                       :: rice        ! Ice mixing ratio or 0.           [ kg/kg]
-      real                       :: thil        ! Ice-liquid potential temperature [     K]
-      real                       :: ldrst       ! L × d(rs)/dT × T                 [  J/kg]
-      real                       :: hh          ! Sensible heat enthalpy           [  J/kg]
-      real                       :: qq          ! Latent heat enthalpy             [  J/kg]
-      logical                    :: thereisice  ! Is ice present                   [   ---]
+      real                          :: rice       ! Ice mixing ratio or 0.         [ kg/kg]
+      real                          :: ldrst      ! L × d(rs)/dT × T               [  J/kg]
+      real                          :: hh         ! Sensible heat enthalpy         [  J/kg]
+      real                          :: qq         ! Latent heat enthalpy           [  J/kg]
+      logical                       :: thereisice ! Is ice present                 [   ---]
       !------------------------------------------------------------------------------------!
       
       !------------------------------------------------------------------------------------!
@@ -1284,18 +1364,20 @@ module therm_lib
       
       !----- No condensation, dthetail_dt is a constant -----------------------------------!
       if (rliq+rice == 0.) then
-         dthetail_dt = cp/exner
+         dthetail_dt = thil/temp
          return
       else
-         thil  = theta_iceliq(exner,temp,rliq,rice) !----- Ice liquid potential temp.
          hh    = cp*temp                            !----- Sensible heat enthalpy
          qq    = alvl*rliq+alvi*rice                !----- Latent heat enthalpy
          !---------------------------------------------------------------------------------!
          !    This is the term L×[d(rs)/dt]×T. L may be either the vapourisation or        !
          ! sublimation latent heat, depending on the temperature and whether we are consi- !
-         ! dering ice or not.                                                              !
+         ! dering ice or not. Also, if condensation mixing ratio is constant, then this    !
+         ! term will be always zero.                                                       !
          !---------------------------------------------------------------------------------!
-         if (thereisice .and. temp < t3ple) then
+         if (condconst) then
+            ldrst = 0.
+         elseif (thereisice .and. temp < t3ple) then
             ldrst = alvi*rsifp(pres,temp)*temp
          else
             ldrst = alvl*rslfp(pres,temp)*temp  
@@ -1336,12 +1418,13 @@ module therm_lib
    ! the 253 K to reduce the error on neglecting the changes on latent heat due to temper- !
    ! ature.                                                                                !
    !---------------------------------------------------------------------------------------!
-   real function thil2temp(thil,exner,rliq,rice,t1stguess)
+   real function thil2temp(thil,exner,pres,rliq,rice,t1stguess)
       use rconstants, only: cp, cpi, alvl, alvi, t00, t3ple, ttripoli,htripolii,cpi4
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)   :: thil       ! Ice-liquid water potential temperature    [     K]
       real, intent(in)   :: exner      ! Exner function                            [J/kg/K]
+      real, intent(in)   :: pres       ! Pressure                                  [    Pa]
       real, intent(in)   :: rliq       ! Liquid water mixing ratio                 [ kg/kg]
       real, intent(in)   :: rice       ! Ice mixing ratio                          [ kg/kg]
       real, intent(in)   :: t1stguess  ! 1st. guess for temperature                [     K]
@@ -1352,7 +1435,6 @@ module therm_lib
       real               :: funz       ! Largest   guess function
       real               :: tempa      ! Smallest  guess (or previous guess in Newton)
       real               :: tempz      ! Largest   guess (or new guess in Newton)
-      real               :: alpha      ! Part inside the exponential in theta_il formula
       real               :: delta      ! Aux. var to compute 2nd guess for bisection
       integer            :: itn,itb    ! Iteration counter
       logical            :: converged  ! Convergence handle
@@ -1386,26 +1468,27 @@ module therm_lib
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
-      !----- If not, iterate: For the Newton's 1st. guess, ignore rliq and rice -----------!
+      !----- If not, iterate: For the Newton's 1st. guess, use t1stguess ------------------!
       tempz     = t1stguess
-      alpha     = - (alvl*rliq + alvi*rice)/ (cp*max(tempz,ttripoli))
-      fun       = cp * tempz/ exner * exp(alpha) - thil
-      if (tempz >= ttripoli) then
-         deriv     = (fun+thil)*(1.-alpha)/tempz
-      else
-         deriv     = (fun+thil)/tempz
-      end if
+      fun       = theta_iceliq(exner,tempz,rliq,rice)
+      deriv     = dthetail_dt(.true.,fun,exner,pres,tempz,rliq,rice)
+      fun       = fun - thil
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-      !write(unit=89,fmt='(a,1x,i5,1x,a,1x,l1,1x,a,1x,f11.4,3(1x,a,1x,es12.5))')            &
-      !   'itn=',0,'bisection=',.false.,'tempz=',tempz-t00,'alpha=',alpha                   &
+      !write(unit=89,fmt='(a,1x,i5,1x,a,1x,l1,1x,a,1x,f11.4,2(1x,a,1x,es12.5))')            &
+      !   'itn=',0,'bisection=',.false.,'tempz=',tempz-t00                                  &
       !           ,'fun=',fun,'deriv=',deriv
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-
-      tempa = tempz
-      funa  = fun
+      if (fun == 0.) then
+         thil2temp = tempz
+         converged = .true.
+         return
+      else 
+         tempa = tempz
+         funa  = fun
+      end if
       !----- Enter loop: it will probably skip when the air is not saturated --------------!
       converged = .false.
       newloop: do itn=1,maxfpo/6
@@ -1413,25 +1496,24 @@ module therm_lib
          tempa = tempz
          funa  = fun
          tempz = tempa - fun/deriv
-         alpha     = - (alvl*rliq + alvi*rice)/ (cp*max(tempz,ttripoli))
-         fun       = cp * tempz/ exner * exp(alpha) - thil
-         if (tempz >= ttripoli) then
-            deriv     = (fun+thil)*(1.-alpha)/tempz
-         else
-            deriv     = (fun+thil)/tempz
-         end if
-
+         fun   = theta_iceliq(exner,tempz,rliq,rice)
+         deriv = dthetail_dt(.true.,fun,exner,pres,tempz,rliq,rice)
+         fun   = fun - thil
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-         !write(unit=89,fmt='(a,1x,i5,1x,a,1x,l1,1x,a,1x,f11.4,3(1x,a,1x,es12.5))')         &
-         !   'itn=',itn,'bisection=',.false.,'tempz=',tempz-t00,'alpha=',alpha              &
+         !write(unit=89,fmt='(a,1x,i5,1x,a,1x,l1,1x,a,1x,f11.4,2(1x,a,1x,es12.5))')         &
+         !   'itn=',itn,'bisection=',.false.,'tempz=',tempz-t00                             &
          !           ,'fun=',fun,'deriv=',deriv
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
 
-         converged = abs(tempa-tempz)/tempz < toler .or. fun == 0.
+         converged = abs(tempa-tempz) < toler*tempz
          !----- Converged, happy with that, return the average b/w the 2 previous guesses -!
-         if (converged) then
+         if (fun == 0.) then
+            thil2temp = tempz
+            converged = .true.
+            return
+         elseif(converged) then
             thil2temp = 0.5 * (tempa+tempz)
             return
          end if
@@ -1445,22 +1527,29 @@ module therm_lib
          funz  = fun
          zside = .true.
       else
-         delta = -funa * (tempz-tempa)/(fun-funa)
+         if (abs(fun-funa) < toler*tempa) then
+            delta = 100.*toler*tempa
+         else 
+            delta = max(abs(funa * (tempz-tempa)/(fun-funa)),100.*toler*tempa)
+         end if
          tempz = tempa + delta
          zside = .false.
          zgssloop: do itb=1,maxfpo
             tempz = tempa + real((-1)**itb * (itb+3)/2) * delta
-            alpha     = - (alvl*rliq + alvi*rice)/ (cp*max(tempz,ttripoli))
-            funz      = cp * tempz/ exner * exp(alpha) - thil
-            zside     = funa*funz < 0
+            funz  = theta_iceliq(exner,tempz,rliq,rice) - thil
+            zside = funa*funz < 0
             if (zside) exit zgssloop
          end do zgssloop
          if (.not. zside) then
             write (unit=*,fmt='(a)') ' No second guess for you...'
-            write (unit=*,fmt='(2(a,1x,es14.7))') 'tempa=',tempa,'funa=',funa
-            write (unit=*,fmt='(2(a,1x,es14.7))') 'tempz=',tempz,'func=',funz
-            write (unit=*,fmt='(2(a,1x,es14.7))') 'delta=',delta,'alpha=',alpha
-            call abort_run('Failed finding the second guess for regula falsi'           &
+            write (unit=*,fmt='(2(a,1x,i14,1x))')    'itn  =',itn  ,'itb =',itb
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'thil =',thil ,'t1st=',t1stguess
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'exner=',exner,'pres=',pres
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'rliq =',rliq ,'rice=',rice
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tempa=',tempa,'funa=',funa
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tempz=',tempz,'funz=',funz
+            write (unit=*,fmt='(1(a,1x,es14.7,1x))') 'delta=',delta
+            call abort_run('Failed finding the second guess for regula falsi'              &
                           ,'thil2temp','therm_lib.f90')
          end if
       end if
@@ -1473,17 +1562,16 @@ module therm_lib
          !     Now that we updated the guess, check whether they are really close. If so,  !
          ! it converged, I can use this as my guess.                                       !
          !---------------------------------------------------------------------------------!
-         converged = abs(thil2temp-tempa)/thil2temp < toler
+         converged = abs(thil2temp-tempa)< toler*thil2temp 
          if (converged) exit bisloop
 
          !------ Finding the new function -------------------------------------------------!
-         alpha     = - (alvl*rliq + alvi*rice)/ (cp*max(thil2temp,ttripoli))
-         fun       =  cp*thil2temp/exner*exp(alpha)-thil
+         fun  = theta_iceliq(exner,tempz,rliq,rice) - thil
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-         !write(unit=89,fmt='(a,1x,i5,1x,a,1x,l1,1x,a,1x,es12.5,6(1x,a,1x,f11.4))')         &
-         !   'itn=',itb,'bisection=',.true.,'alpha=',alpha                                  &
+         !write(unit=89,fmt='(a,1x,i5,1x,a,1x,l1,1x,6(1x,a,1x,f11.4))')         &
+         !   'itn=',itb,'bisection=',.true.                                                 &
          !           ,'temp=',thil2temp-t00,'tempa=',tempa-t00,'tempz=',tempz-t00           &
          !           ,'fun=',fun,'funa=',funa,'funz=',funz
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1556,8 +1644,9 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the derivative of temperature as a function of the satur-  !
-   ! ation mixing ratio [kg/kg], based on the ice-liquid potential temperature equation.   !
+   !     This function computes the partial derivative of temperature as a function of the !
+   ! saturation mixing ratio [kg/kg],, keeping pressure constant. This is based on the     !
+   ! ice-liquid potential temperature equation.                                            !
    !---------------------------------------------------------------------------------------!
    real function dtempdrs(exner,thil,temp,rliq,rice,rconmin)
       use rconstants, only: alvl, alvi, cp, cpi, ttripoli, htripolii
@@ -1624,12 +1713,12 @@ module therm_lib
    ! new enthalpy [J/kg].                                                                  !
    !---------------------------------------------------------------------------------------!
    real function dthil_sedimentation(thil,theta,temp,rold,rnew,qrold,qrnew)
-      use rconstants, only: ttripoli,cpi
+      use rconstants, only: ttripoli,cp,alvi
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in) :: thil  ! Ice-liquid potential temperature                 [     K]
-      real, intent(in) :: theta ! Potential temperature (*)                        [     K]
+      real, intent(in) :: theta ! Potential temperature                            [     K]
       real, intent(in) :: temp  ! Temperature                                      [     K]
       real, intent(in) :: rold  ! Old hydrometeor mixing ratio                     [ kg/kg]
       real, intent(in) :: rnew  ! New hydrometeor mixing ratio                     [ kg/kg]
@@ -1639,11 +1728,11 @@ module therm_lib
 
 
       if (newthermo) then
-         dthil_sedimentation = - thil * (2820.*(rnew-rold) - cpi * (qrnew-qrold))          &
-                                        / (max(temp,ttripoli))
+         dthil_sedimentation = - thil * (alvi*(rnew-rold) - (qrnew-qrold))          &
+                                        / (cp * max(temp,ttripoli))
       else
-         dthil_sedimentation = - thil*thil * (2820.*(rnew-rold) - cpi * (qrnew-qrold))     &
-                                        / (max(temp,ttripoli) * theta)
+         dthil_sedimentation = - thil*thil * (alvi*(rnew-rold) - (qrnew-qrold))     &
+                                        / (cp * max(temp,ttripoli) * theta)
       end if
       return
    end function dthil_sedimentation
@@ -1660,176 +1749,92 @@ module therm_lib
    !    This function computes the ice-vapour equivalent potential temperature from        !
    !  theta_iland the total mixing ratio. This is equivalent to the equivalent potential   !
    ! temperature considering also the effects of fusion/melting/sublimation.               !
-   !                                                                                       !
-   !    References:                                                                        !
-   !    Tripoli, J. T.; and Cotton, W.R., 1981: The use of ice-liquid water potential      !
-   !        temperature as a thermodynamic variable in deep atmospheric models. Mon. Wea.  !
-   !        Rev., v. 109, 1094-1102. (TC81)                                                !
-   !    Bolton, D., 1980: The computation of the equivalent potential temperature. Mon.    !
-   !        Wea. Rev., v. 108, 1046-1053. (BO80)                                           !
-   !                                                                                       !
-   !    Some algebra was needed to find this equation, essentially combining (TC81-26) and !
-   ! (TC81-27), and the conservation of total water (TC81-16). It assumes that the divi-   !
-   ! sion between the three phases is already taken care of.                               !
-   !    Iterative procedure is needed, and here we iterate looking for T(LCL). Theta_il    !
-   ! can be rewritten in terms of T(LCL) only, and once we know this thetae_iv becomes     !
-   ! straightforward. T(LCL) will be found using Newton's method, and in the unlikely      !
-   ! event it fails,we will fall back to the modified regula falsi (Illinois method).      !
+   !    In case you want to find thetae (i.e. without ice) simply provide the logical      !
+   ! useice as .false. .                                                                   !
    !---------------------------------------------------------------------------------------!
-   real function thetaeiv(thil,pres,temp,rvap,rtot,tlclout)
+   real function thetaeiv(thil,pres,temp,rvap,rtot,useice)
       use rconstants, only : alvl,alvi,cp,ep,p00,rocp,ttripoli,t3ple
       implicit none
-      real, intent(in)            :: thil    ! Ice-liquid water potential temp.    [     K]
-      real, intent(in)            :: pres    ! Pressure                            [    Pa]
-      real, intent(in)            :: temp    ! Temperature                         [     K]
-      real, intent(in)            :: rvap    ! Water vapour mixing ratio           [ kg/kg]
-      real, intent(in)            :: rtot    ! Total mixing ratio                  [ kg/kg]
-      real, intent(out), optional :: tlclout ! Lifting condensation temperature    [     K]
       !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in)           :: thil    ! Ice-liquid water potential temp.  [     K]
+      real   , intent(in)           :: pres    ! Pressure                          [    Pa]
+      real   , intent(in)           :: temp    ! Temperature                       [     K]
+      real   , intent(in)           :: rvap    ! Water vapour mixing ratio         [ kg/kg]
+      real   , intent(in)           :: rtot    ! Total mixing ratio                [ kg/kg]
+      logical, intent(in), optional :: useice  ! Should I use ice?                 [   T|F]
       !----- Local variables for iterative method -----------------------------------------!
-      real               :: tlcl       ! TLCL current guess
-      real               :: pvap       ! Sat. vapour pressure
-      real               :: deriv      ! Function derivative 
-      real               :: funnow     ! Function for which we seek a root.
-      real               :: funa       ! Smallest  guess function
-      real               :: funz       ! Largest   guess function
-      real               :: tlcla      ! Smallest  guess (or previous guess in Newton)
-      real               :: tlclz      ! Largest   guess (or new guess in Newton)
-      real               :: es00       ! Defined as p00*rt/(epsilon + rt)
-      real               :: delta      ! Aux. variable in case bisection is needed.
-      integer            :: itn,itb    ! Iteration counters
-      logical            :: converged  ! Convergence handle
-      logical            :: zside      ! Aux. flag, to check sides for Regula Falsi
+      real                          :: tlcl    ! Internal LCL temperature          [     K]
+      real                          :: plcl    ! Lifting condensation pressure     [    Pa]
+      real                          :: dzlcl   ! Thickness of layer beneath LCL    [     m]
       !------------------------------------------------------------------------------------!
-    
-      !----- Finding es00, which is a constant --------------------------------------------!
-      es00 = p00 * rtot / (ep+rtot)
+
+      if (present(useice)) then
+         call lcl_il(thil,pres,temp,rtot,rvap,tlcl,plcl,dzlcl,useice)
+      else
+         call lcl_il(thil,pres,temp,rtot,rvap,tlcl,plcl,dzlcl)
+      end if
 
       !------------------------------------------------------------------------------------!
-      !     The 1st. guess, use equation 21 from Bolton (1980). For this we'll need the    !
-      ! vapour pressure.                                                                   !
+      !     The definition of the thetae_iv is the thetae_ivs at the LCL. The LCL, in turn !
+      ! is the point in which rtot = rvap = rsat, so at the LCL rliq = rice = 0.           !
       !------------------------------------------------------------------------------------!
-      pvap      = pres * rvap / (ep + rvap) 
-      tlclz     = 55. + 2840. / (3.5 * log(temp) - log(0.01*pvap) - 4.805) ! pvap in hPa.
-      pvap      = eslif(tlclz)
-      funnow    = tlclz * (es00/pvap)**rocp - thil
-      if (tlclz >= t3ple) then
-         deriv  = (funnow+thil)*(cp*tlclz+ep*alvl)/(cp*tlclz*tlclz)
-      else
-         deriv  = (funnow+thil)*(cp*tlclz+ep*alvi)/(cp*tlclz*tlclz)
-      end if
-      converged = abs(funnow) > tlclz*epsilon(1.)
-      !----- Looping ----------------------------------------------------------------------!
-      if (converged) then
-         tlcl      = tlclz
-      else
-         tlcla     = tlclz
-         funa      = funnow
-         newloop: do itn=1,maxfpo/6
-            if (abs(deriv) < toler) exit newloop !----- Too dangerous, skip to bisection --!
-            !----- Updating guesses -------------------------------------------------------!
-            tlcla   = tlclz
-            funa    = funnow
-            
-            tlclz   = tlcla - funnow/deriv
-
-            pvap = eslif(tlclz)
-            funnow = tlclz * (es00/pvap)**rocp - thil
-            if (tlclz >= t3ple) then
-               deriv  = (funnow+thil)*(cp*tlclz+ep*alvl)/(cp*tlclz*tlclz)
-            else
-               deriv  = (funnow+thil)*(cp*tlclz+ep*alvi)/(cp*tlclz*tlclz)
-            end if
-            !------------------------------------------------------------------------------!
-            !   Convergence may happen when we are lucky or get close guesses.             !
-            !------------------------------------------------------------------------------!
-            !----- 1. We are lucky. -------------------------------------------------------!
-            converged = abs(funnow) < epsilon(1.)*tlclz
-            if (converged) then
-               tlcl = tlclz
-               exit newloop
-            end if
-            !----- 2. The two guesses are really close ------------------------------------!
-            converged = abs(tlcla-tlclz)/tlclz < toler
-            if (converged) then
-               tlcl = 0.5*(tlcla+tlclz)
-               exit newloop
-            end if
-         end do newloop
-      end if
-
-      if (.not. converged) then
-         !---------------------------------------------------------------------------------!
-         !     If I reached this point then it's because Newton's method failed. Using bi- !
-         ! section instead. First, I need to find two guesses that give me functions with  !
-         ! opposite signs. If funa and funnow have opposite signs, then we are all set.    !                                                                      !
-         !---------------------------------------------------------------------------------!
-         if (funa*funnow < 0. ) then
-            funz  = funnow
-            zside = .true.
-         !----- They have the same sign, seeking the other guess --------------------------!
-         else
-            !----- We fix funa, and try a funz that will work as 2nd guess ----------------!
-            delta = -funa*(tlclz-tlcla)/(funnow-funa)
-            tlclz = tlcla + delta
-            zside = .false.
-            zgssloop: do itb=1,maxfpo
-               !----- So the first time tlclz = tlcla - 2*delta ---------------------------!
-               tlclz = tlcla + real((-1)**itb * (itb+3)/2) * delta
-               pvap  = eslif(tlclz)
-               funz  = tlclz * (es00/pvap)**rocp - thil
-               zside = funa*funz < 0
-               if (zside) exit zgssloop
-            end do zgssloop
-            if (.not. zside) then
-               write (unit=*,fmt='(a)') ' No second guess for you...'
-               write (unit=*,fmt='(2(a,1x,es14.7))') 'tlcla=',tlcla,'funa=',funa
-               write (unit=*,fmt='(2(a,1x,es14.7))') 'tlclz=',tlclz,'func=',funz
-               write (unit=*,fmt='(2(a,1x,es14.7))') 'delta=',delta,'funn=',funnow
-               call abort_run('Failed finding the second guess for regula falsi'           &
-                             ,'thetaeiv','therm_lib.f90')
-            end if
-         end if
-         !---- Continue iterative method --------------------------------------------------!
-         fpoloop: do itb=itn+1,maxfpo
-            tlcl = (funz*tlcla-funa*tlclz)/(funz-funa)
-            pvap = eslif(tlcl)
-            funnow = tlcl * (es00/pvap)**rocp - thil
-
-            !------------------------------------------------------------------------------!
-            !    Checking for convergence. If it did, return, we found the solution.       !
-            ! Otherwise, constrain the guesses.                                            !
-            !------------------------------------------------------------------------------!
-            converged = abs(tlcl-tlcla)/tlcl < toler
-            if (converged) then
-               exit fpoloop
-            elseif (funnow*funa < 0.) then 
-               tlclz = tlcl
-               funz  = funnow
-               !----- If we are updating zside again, modify aside (Illinois method) ------!
-               if (zside) funa=funa * 0.5
-               !----- We just updated zside, setting zside to true. -----------------------!
-               zside = .true.
-            else
-               tlcla = tlcl
-               funa  = funnow
-               !----- If we are updating aside again, modify zside (Illinois method) ------!
-               if (.not.zside) funz = funz * 0.5
-               !----- We just updated aside, setting zside to false -----------------------!
-               zside = .false. 
-            end if
-         end do fpoloop
-      end if
-
-      if (converged) then 
-         thetaeiv  = thil * exp ( alvl * rtot / (cp * max(tlcl,ttripoli)) )
-         if (present(tlclout)) tlclout = tlcl
-      else
-         call abort_run('Thetae_iv didn''t converge, gave up!','thetaeiv','therm_lib.f90')
-      end if
+      thetaeiv  = thetaeivs(thil,tlcl,rtot,0.,0.)
 
       return
    end function thetaeiv
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This function computes the derivative of ice-vapour equivalent potential tempera-  !
+   ! ture, based on the expression used to compute the ice-vapour equivalent potential     !
+   ! temperature (function thetaeiv).                                                      !
+   !                                                                                       !
+   !    IMPORTANT!!! This CANNOT BE USED to compute d(Thetae_ivs)/dT, because here         !
+   !                 we assume that T(LCL) and saturation mixing ratio are known and       !
+   !                 constants, and that the LCL pressure (actually the saturation  vapour !
+   !                 pressure at the LCL) is a function of temperature. In case you want   !
+   !                 d(Thetae_ivs)/dT, use the dthetaeivs_dt function instead.             !
+   !---------------------------------------------------------------------------------------!
+   real function dthetaeiv_dtlcl(theiv,tlcl,rtot,eslcl,useice)
+      use rconstants, only : rocp,aklv,ttripoli
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in)           :: theiv     ! Ice-vapour equiv. pot. temp.   [      K]
+      real   , intent(in)           :: tlcl      ! LCL temperature                [      K]
+      real   , intent(in)           :: rtot      ! Total mixing ratio (rs @ LCL)  [     Pa]
+      real   , intent(in)           :: eslcl     ! LCL saturation vapour pressure [     Pa]
+      logical, intent(in), optional :: useice    ! Flag for considering ice       [    T|F]
+      !----- Local variables --------------------------------------------------------------!
+      real                          :: desdtlcl  ! Saturated vapour pres. deriv.  [   Pa/K]
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Finding the derivative of rs with temperature --------------------------------!
+      if (present(useice)) then
+         desdtlcl = eslifp(tlcl,useice)
+      else
+         desdtlcl = eslifp(tlcl)
+      end if
+
+
+
+      !----- Finding the derivative. Depending on the temperature, use different eqn. -----!
+      if (tlcl > ttripoli) then
+         dthetaeiv_dtlcl = theiv * (1. - rocp*tlcl*desdtlcl/eslcl - aklv*rtot/tlcl) / tlcl
+      else
+         dthetaeiv_dtlcl = theiv * (1. - rocp*tlcl*desdtlcl/eslcl                 ) / tlcl
+      end if
+
+      return
+   end function dthetaeiv_dtlcl
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1882,79 +1887,164 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This function finds the ice-liquid potential temperature from the ice-vapour equi- !
-   ! valent potential temperature. It is also an iterative method since we need the LCL    !
-   ! temperature and we don't have it. We find T(LCL) using (you guessed it right!) an     !
-   ! iterative method, using, as usual Newton's method as a starting point, and if it      !
-   ! fails, fall back to the modified regula falsi (Illinois method).                      !
+   !    This function computes the derivative of saturation ice-vapour equivalent          !
+   ! potential temperature, based on the expression used to compute the saturation         !
+   ! ice-vapour equivalent potential temperature (function thetaeivs).                     !
+   !                                                                                       !
+   !    IMPORTANT!!! This CANNOT BE USED to compute d(Thetae_iv)/d(T_LCL), because here    !
+   !                 we assume that temperature and pressure are known and constants, and  !
+   !                 that the mixing ratio is a function of temperature. In case you want  !
+   !                 d(Thetae_iv)/d(T_LCL), use the dthetaeiv_dtlcl function instead.      !
    !---------------------------------------------------------------------------------------!
-   real function thetaeiv2thil(thetaeiv,pres,rtot,tlclout)
-      use rconstants, only : alvl,alvi,cp,ep,p00,rocp,ttripoli,t3ple
+   real function dthetaeivs_dt(theivs,temp,pres,rsat,useice)
+      use rconstants, only : aklv,alvl,ttripoli,htripolii
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real, intent(in)            :: thetaeiv ! Ice vapour equivalent pot. temp.   [     K]
-      real, intent(in)            :: pres     ! Pressure                           [    Pa]
-      real, intent(in)            :: rtot     ! Total mixing ratio                 [ kg/kg]
-      real, intent(out), optional :: tlclout  ! Temperature @ lifting cond. level  [     K]
-      !----- Local variables for iterative method -----------------------------------------!
-      real               :: pvap       ! Sat. vapour pressure
-      real               :: deriv      ! Function derivative 
-      real               :: funnow     ! Function for which we seek a root.
-      real               :: funa       ! Smallest  guess function
-      real               :: funz       ! Largest   guess function
-      real               :: tlcla      ! Smallest  guess (or previous guess in Newton)
-      real               :: tlclz      ! Largest   guess (or new guess in Newton)
-      real               :: tlcl       ! What will be the LCL temperature
-      real               :: es00       ! Defined as p00*rt/(epsilon + rt)
-      real               :: delta      ! Aux. variable in case bisection is needed.
-      integer            :: itn,itb    ! Iteration counters
-      logical            :: converged  ! Convergence handle
-      logical            :: zside      ! Aux. flag, to check sides for Regula Falsi
+      real   , intent(in)           :: theivs    ! Sat. ice-vap. eq. pot. temp.   [      K]
+      real   , intent(in)           :: temp      ! Temperature                    [      K]
+      real   , intent(in)           :: pres      ! Pressure                       [     Pa]
+      real   , intent(in)           :: rsat      ! Saturation mixing ratio        [  kg/kg]
+      logical, intent(in), optional :: useice    ! Flag for considering ice       [    T|F]
+      !----- Local variables --------------------------------------------------------------!
+      real                          :: drsdt     ! Saturated mixing ratio deriv.  [kg/kg/K]
       !------------------------------------------------------------------------------------!
+
+
+      !----- Finding the derivative of rs with temperature --------------------------------!
+      if (present(useice)) then
+         drsdt = rslifp(pres,temp,useice)
+      else
+         drsdt = rslifp(pres,temp)
+      end if
+
+
+      !----- Finding the derivative. Depending on the temperature, use different eqn. -----!
+      if (temp > ttripoli) then
+         dthetaeivs_dt = theivs * (1. + aklv * (drsdt*temp-rsat)/temp ) / temp
+      else
+         dthetaeivs_dt = theivs * (1. + alvl * drsdt * temp * htripolii ) / temp
+      end if
+
+      
+      return
+   end function dthetaeivs_dt
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This function finds the ice-liquid potential temperature from the ice-vapour equi- !
+   ! valent potential temperature.                                                         !
+   ! Important remarks:                                                                    !
+   ! 1. If you don't want to use ice thermodynamics, simply force useice to be .false.     !
+   !    Otherwise, the model will decide based on the LEVEL given by the user from their   !
+   !    RAMSIN.                                                                            !
+   ! 2. If rtot < rsat, then this will convert theta_e into theta, which can be thought as !
+   !    a particular case.                                                                 !
+   !---------------------------------------------------------------------------------------!
+   real function thetaeiv2thil(theiv,pres,rtot,useice)
+      use rconstants, only : alvl,cp,ep,p00,rocp,ttripoli,t3ple,t00
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in)           :: theiv     ! Ice vapour equiv. pot. temp.    [     K]
+      real   , intent(in)           :: pres      ! Pressure                        [    Pa]
+      real   , intent(in)           :: rtot      ! Total mixing ratio              [ kg/kg]
+      logical, intent(in), optional :: useice    ! Flag for considering ice thermo [   T|F]
+      !----- Local variables for iterative method -----------------------------------------!
+      real                          :: pvap      ! Sat. vapour pressure
+      real                          :: theta     ! Potential temperature
+      real                          :: deriv     ! Function derivative 
+      real                          :: funnow    ! Function for which we seek a root.
+      real                          :: funa      ! Smallest  guess function
+      real                          :: funz      ! Largest   guess function
+      real                          :: tlcla     ! Smallest  guess (or old guess in Newton)
+      real                          :: tlclz     ! Largest   guess (or new guess in Newton)
+      real                          :: tlcl      ! What will be the LCL temperature
+      real                          :: es00      ! Defined as p00*rt/(epsilon + rt)
+      real                          :: delta     ! Aux. variable (For 2nd guess).
+      integer                       :: itn,itb   ! Iteration counters
+      logical                       :: converged ! Convergence handle
+      logical                       :: zside     ! Aux. flag - check sides for Regula Falsi
+      logical                       :: brrr_cold ! Flag - considering ice thermo.
+      !------------------------------------------------------------------------------------!
+    
+      !----- Filling the flag for ice thermo that will be always present ------------------!
+      if (present(useice)) then
+         brrr_cold = useice
+      else
+         brrr_cold = bulk_on
+      end if
     
       !----- Finding es00, which is a constant --------------------------------------------!
       es00 = p00 * rtot / (ep+rtot)
+
+
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      !write (unit=36,fmt='(a)') '----------------------------------------------------------'
+      !write (unit=36,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x))')                                  &
+      !   'INPUT : it=',-1,'theiv=',theiv,'pres=',0.01*pres,'rtot=',rtot*1000.
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
       !------------------------------------------------------------------------------------!
       !     The 1st. guess, we assume we are lucky and right at the LCL.                   !
       !------------------------------------------------------------------------------------!
       pvap      = pres * rtot / (ep + rtot) 
-      tlclz     = tslif(pvap) 
-      funnow    = tlclz * (es00/pvap)**rocp * exp(alvl*rtot/(cp*max(tlclz,ttripoli)))      &
-                - thetaeiv
-      if (tlclz >= t3ple) then
-         deriv  = (funnow+thetaeiv)*(cp*tlclz-alvl*ep-alvl*rtot)/(cp*tlclz*tlclz)
-      elseif (tlclz >= ttripoli) then
-         deriv  = (funnow+thetaeiv)*(cp*tlclz-alvi*ep-alvl*rtot)/(cp*tlclz*tlclz)
-      else
-         deriv  = (funnow+thetaeiv)*(cp*tlclz-alvi*ep)/(cp*tlclz*tlclz)
-      end if
+      tlclz     = tslif(pvap,brrr_cold)
+      theta     = tlclz * (es00/pvap)**rocp
+      funnow    = thetaeivs(theta,tlclz,rtot,0.,0.)
+      deriv     = dthetaeiv_dtlcl(funnow,tlclz,rtot,pvap,brrr_cold)
+      funnow    = funnow - theiv
+
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      !write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')                &
+      !   'NEWTON: it=',0,'tlclz=',tlclz-t00,'pvap=',0.01*pvap,'fun=',funnow,'deriv=',deriv
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+
+      !----- Putting something in tlcla in case we never loop through Newton's method -----!
       tlcla     = tlclz
       funa      = funnow
       converged = .false.
-      !----- Looping ----------------------------------------------------------------------!
+
+      !----- Looping: Newton's iterative method -------------------------------------------!
       newloop: do itn=1,maxfpo/6
          if (abs(deriv) < toler) exit newloop !----- Too dangerous, skip to bisection -----!
          !----- Updating guesses ----------------------------------------------------------!
          tlcla   = tlclz
          funa    = funnow
-         
          tlclz   = tlcla - funnow/deriv
 
-         pvap = eslif(tlclz)
-         funnow = tlclz * (es00/pvap)**rocp * exp(alvl*rtot/(cp*max(tlclz,ttripoli)))      &
-                - thetaeiv
-         if (tlclz >= t3ple) then
-            deriv  = (funnow+thetaeiv)*(cp*tlclz-alvl*ep-alvl*rtot)/(cp*tlclz*tlclz)
-         elseif (tlclz >= ttripoli) then
-            deriv  = (funnow+thetaeiv)*(cp*tlclz-alvi*ep-alvl*rtot)/(cp*tlclz*tlclz)
-         else
-            deriv  = (funnow+thetaeiv)*(cp*tlclz-alvi*ep)/(cp*tlclz*tlclz)
-         end if
+         !----- Updating the function evaluation and its derivative -----------------------!
+         pvap    = eslif(tlclz,brrr_cold)
+         theta   = tlclz * (es00/pvap)**rocp
+         funnow  = thetaeivs(theta,tlclz,rtot,0.,0.)
+         deriv   = dthetaeiv_dtlcl(funnow,tlclz,rtot,pvap,brrr_cold)
+         funnow  = funnow - theiv
 
-         converged = abs(tlcla-tlclz)/tlclz < toler
-         if (converged) then
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+         !write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')             &
+         !   'NEWTON: it=',itn,'tlclz=',tlclz-t00,'pvap=',0.01*pvap,'fun=',funnow           &
+         !          ,'deriv=',deriv
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+
+         converged = abs(tlcla-tlclz) < toler * tlclz
+         if (funnow == 0.) then
+            tlcl = tlclz
+            funz = funnow
+            converged = .true.
+         elseif (converged) then
             tlcl = 0.5*(tlcla+tlclz)
+            funz = funnow
             exit newloop
          end if
       end do newloop
@@ -1969,15 +2059,36 @@ module therm_lib
          zside=.true.
          if (funa*funnow > 0.) then
             !----- We fix funa, and try a funz that will work as 2nd guess ----------------!
-            delta = -funa*(tlclz-tlcla)/(funz-funa)
+            if (abs(funz-funa) < toler*tlcla) then
+               delta = 100.*toler*tlcla
+            else
+               delta = max(abs(funa*(tlclz-tlcla)/(funz-funa)),100.*toler*tlcla)
+            end if
             tlclz = tlcla + delta
+
+            !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+            !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+            !write (unit=36,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x),3(a,1x,es11.4,1x))')          &
+            !   '2NGGSS: tt=',0,'tlclz=',tlclz-t00,'tlcla=',tlcla-t00,'pvap=',0.01*pvap     &
+            !           ,'funa=',funa,'funz=',funnow,'delta=',delta
+            !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+            !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
             zside = .false.
             zgssloop: do itb=1,maxfpo
                !----- So the first time tlclz = tlcla - 2*delta ---------------------------!
-               tlclz = tlclz + delta
-               pvap  = eslif(tlclz)
-               funz  = tlclz*(es00/pvap)**rocp * exp(alvl*rtot/(cp*max(tlclz,ttripoli)))   &
-                     - thetaeiv
+               tlclz = tlcla + real((-1)**itb * (itb+3)/2) * delta
+               pvap  = eslif(tlclz,brrr_cold)
+               theta = tlclz * (es00/pvap)**rocp
+               funz  = thetaeivs(theta,tlclz,rtot,0.,0.) - theiv
+
+               !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+               !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+               !write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')       &
+               !   '2NGGSS: tt=',itb,'tlclz=',tlclz-t00,'pvap=',0.01*pvap,'fun=',funz       &
+               !           ,'delta=',delta
+               !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+               !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+
                zside = funa*funz < 0
                if (zside) exit zgssloop
             end do zgssloop
@@ -1987,16 +2098,27 @@ module therm_lib
          end if
          !---- Continue iterative method --------------------------------------------------!
          fpoloop: do itb=itn+1,maxfpo
-            tlcl = (funz*tlcla-funa*tlclz)/(funz-funa)
-            pvap = eslif(tlcl)
-            funnow = tlcl*(es00/pvap)**rocp * exp(alvl*rtot/(cp*max(tlcl,ttripoli)))       &
-                   - thetaeiv
+
+            !----- Updating the guess -----------------------------------------------------!
+            tlcl   = (funz*tlcla-funa*tlclz)/(funz-funa)
+
+            !----- Updating function evaluation -------------------------------------------!
+            pvap   = eslif(tlcl,brrr_cold)
+            theta  = tlcl * (es00/pvap)**rocp
+            funnow = thetaeivs(theta,tlcl,rtot,0.,0.) - theiv
+
+            !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+            !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+            !write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),1(a,1x,es11.4,1x))')          &
+            !   'REGFAL: it=',itb,'tlcl =',tlcl -t00,'pvap=',0.01*pvap,'fun=',funnow
+            !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+            !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
             !------------------------------------------------------------------------------!
             !    Checking for convergence. If it did, return, we found the solution.       !
             ! Otherwise, constrain the guesses.                                            !
             !------------------------------------------------------------------------------!
-            converged = abs(tlcl-tlcla)/tlcl < toler
+            converged = abs(tlcl-tlcla) < toler * tlcl
             if (converged) then
                exit fpoloop
             elseif (funnow*funa < 0.) then 
@@ -2018,10 +2140,18 @@ module therm_lib
       end if
 
       if (converged) then 
-         thetaeiv2thil  = thetaeiv * exp (- alvl * rtot / (cp * max(tlcl,ttripoli)) )
-         if (present(tlclout)) tlclout = tlcl
+         thetaeiv2thil  = theiv * exp (- alvl * rtot / (cp * max(tlcl,ttripoli)) )
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+         !write (unit=36,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')             &
+         !   'ANSWER: itb=',itn,'tlcl=',tlcl-t00,'eslcl=',0.01*pvap                         &
+         !          ,'thil=',thetaeiv2thil,'funa=',funa,'funz=',funz
+         !write (unit=36,fmt='(a)') '-------------------------------------------------------'
+         !write (unit=36,fmt='(a)') ' '
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       else
-         call abort_run('Theta_il didn''t converge, gave up!'                              &
+         call abort_run('TLCL didn''t converge, gave up!'                                  &
                        ,'thetaeiv2thil','therm_lib.f90')
       end if
 
@@ -2037,66 +2167,87 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine computes the equivalent potential temperature, given pressure in  !
-   ! Pa, temperature in Kelvin, vapour mixing ratio in kg/kg.                              !
+   !    This subroutine converts saturated ice-vapour equivalent potential temperature     !
+   ! into temperature, given pressure in Pa, and theta_es in Kelvin. It also returns the   !
+   ! potential temperature in Kelvin, and saturation vapour mixing ratio in kg/kg. As      !
+   ! usual,  we seek T using Newton's method as a starting point, and if it fails, we fall !
+   ! back to the modified regula falsi (Illinois method).                                  !
+   !                                                                                       !
+   ! OBS: In case you want to ignore ice, send useice as false. The default is to consider !
+   !      when level >= 3 and to ignore otherwise.                                         !
    !---------------------------------------------------------------------------------------!
-   subroutine thetae(pres,temp,rvap,the)
-      use rconstants, only : alvl,cp,ep,p00,rocp,ttripoli
+   subroutine thetaeivs2temp(theivs,pres,theta,temp,rsat,useice)
+      use rconstants, only : alvl,cp,ep,p00,rocp,ttripoli,t00
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real, intent(in)            :: temp    ! Temperature                         [     K]
-      real, intent(in)            :: pres    ! Pressure                            [    Pa]
-      real, intent(in)            :: rvap    ! Water vapour mixing ratio           [ kg/kg]
-      real, intent(out)           :: the     ! Equivalent potential temperature    [     K]
+      real   , intent(in)            :: theivs     ! Sat. thetae_iv               [      K]
+      real   , intent(in)            :: pres       ! Pressure                     [     Pa]
+      real   , intent(out)           :: theta      ! Potential temperature        [      K]
+      real   , intent(out)           :: temp       ! Temperature                  [      K]
+      real   , intent(out)           :: rsat       ! Saturation mixing ratio      [  kg/kg]
+      logical, intent(in) , optional :: useice     ! Flag for considering ice     [    T|F]
+      !----- Local variables, with other thermodynamic properties -------------------------!
+      real                           :: exnernormi ! 1./ (Norm. Exner function)   [    ---]
+      logical                        :: brrr_cold  ! Flag for ice thermo          [    T|F]
       !----- Local variables for iterative method -----------------------------------------!
-      real               :: theta      ! Potential temperature 
-      real               :: tlcl       ! TLCL current guess
-      real               :: pvap       ! Sat. vapour pressure
-      real               :: deriv      ! Function derivative 
-      real               :: funnow     ! Function for which we seek a root.
-      real               :: funa       ! Smallest  guess function
-      real               :: funz       ! Largest   guess function
-      real               :: tlcla      ! Smallest  guess (or previous guess in Newton)
-      real               :: tlclz      ! Largest   guess (or new guess in Newton)
-      real               :: es00       ! Defined as p00*rt/(epsilon + rt)
-      real               :: delta      ! Aux. variable in case bisection is needed.
-      integer            :: itn,itb    ! Iteration counters
-      logical            :: converged  ! Convergence handle
-      logical            :: zside      ! Aux. flag, to check sides for Regula Falsi
+      real                           :: deriv      ! Function derivative 
+      real                           :: funnow     ! Function for which we seek a root.
+      real                           :: funa       ! Smallest  guess function
+      real                           :: funz       ! Largest   guess function
+      real                           :: tempa      ! Smallest  guess (or previous in Newton)
+      real                           :: tempz      ! Largest   guess (or new  in Newton)
+      real                           :: delta      ! Aux. variable for 2nd guess finding.
+      integer                        :: itn,itb    ! Iteration counters
+      logical                        :: converged  ! Convergence handle
+      logical                        :: zside      ! Aux. flag, check sides (Regula Falsi)
       !------------------------------------------------------------------------------------!
     
-      !----- Finding es00 and theta, which are constants ----------------------------------!
-      es00  = p00 * rvap / (ep+rvap)
-      theta = temp * (p00 / pres) ** rocp
+      !----- Setting up the ice check, in case useice is not present. ---------------------!
+      if (present(useice)) then
+         brrr_cold = useice
+      else 
+         brrr_cold = bulk_on
+      end if
+    
+      !----- Finding the inverse of normalised Exner, which is constant in this routine ---!
+      exnernormi = (p00 /pres) ** rocp
 
       !------------------------------------------------------------------------------------!
-      !     The 1st. guess, use equation 21 from Bolton (1980). For this we'll need the    !
-      ! vapour pressure.                                                                   !
+      !     The 1st. guess, no idea, guess 0°C.                                            !
       !------------------------------------------------------------------------------------!
-      pvap      = pres * rvap / (ep + rvap) 
-      tlclz     = 55. + 2840. / (3.5 * log(temp) - log(0.01*pvap) - 4.805) ! pvap in hPa.
-      pvap      = eslf(tlclz)
-      funnow    = tlclz * (es00/pvap)**rocp - theta
-      deriv     = (funnow+theta)*(cp*tlclz-ep*alvl)/(cp*tlclz*tlclz)
-      tlcla     = tlclz
+      tempz     = t00
+      theta     = tempz * exnernormi
+      rsat      = rslif(pres,tempz,brrr_cold)
+      funnow    = thetaeivs(theta,tempz,rsat,0.,0.)
+      deriv     = dthetaeivs_dt(funnow,tempz,pres,rsat,brrr_cold)
+      funnow    = funnow - theivs
+
+      !----- Saving here just in case Newton is aborted at the 1st guess ------------------!
+      tempa     = tempz
       funa      = funnow
+
       converged = .false.
       !----- Looping ----------------------------------------------------------------------!
       newloop: do itn=1,maxfpo/6
          if (abs(deriv) < toler) exit newloop !----- Too dangerous, skip to bisection -----!
          !----- Updating guesses ----------------------------------------------------------!
-         tlcla   = tlclz
+         tempa   = tempz
          funa    = funnow
          
-         tlclz   = tlcla - funnow/deriv
+         tempz   = tempa - funnow/deriv
+         theta   = tempz * exnernormi
+         rsat    = rslif(pres,tempz,brrr_cold)
+         funnow  = thetaeivs(theta,tempz,rsat,0.,0.)
+         deriv   = dthetaeivs_dt(funnow,tempz,pres,rsat,brrr_cold)
+         funnow  = funnow - theivs
 
-         pvap = eslf(tlclz)
-         funnow = tlclz * (es00/pvap)**rocp - theta
-         deriv  = (funnow+theta)*(cp*tlclz-ep*alvl)/(cp*tlclz*tlclz)
-
-         converged = abs(tlcla-tlclz)/tlclz < toler
-         if (converged) then
-            tlcl = 0.5*(tlcla+tlclz)
+         converged = abs(tempa-tempz) < toler*tempz
+         if (funnow == 0.) then
+            converged =.true.
+            temp = tempz
+            exit newloop
+         elseif (converged) then
+            temp = 0.5*(tempa+tempz)
             exit newloop
          end if
       end do newloop
@@ -2107,36 +2258,294 @@ module therm_lib
       !------------------------------------------------------------------------------------!
       if (.not. converged) then
          !----- Set funz, and check whether funa and funz already have opposite sign. -----!
-         funz = funnow
+         funz  = funnow
+         zside = .false.
          if (funa*funnow > 0.) then
             !----- We fix funa, and try a funz that will work as 2nd guess ----------------!
-            delta = max(abs(funa*(tlclz-tlcla)/(funz-funa)),100.*toler*tlcla)
-            tlclz = tlcla + delta
-            zside = .false.
+            if (abs(funz-funa) < toler*tempa) then
+               delta = 100.*toler*tempa
+            else
+               delta = max(abs(funa*(tempz-tempa)/(funz-funa)),100.*toler*tempa)
+            end if
+            tempz = tempa + delta
             zgssloop: do itb=1,maxfpo
                !----- So this will be +1 -1 +2 -2 etc. ------------------------------------!
-               tlclz = tlclz + real((-1)**itb * (itb+3)/2) * delta
-               pvap  = eslf(tlclz)
-               funz  = tlclz * (es00/pvap)**rocp - theta
+               tempz = tempz + real((-1)**itb * (itb+3)/2) * delta
+               theta = tempz * exnernormi
+               rsat  = rslif(pres,tempz,brrr_cold)
+               funz  = thetaeivs(theta,tempz,rsat,0.,0.) - theivs
                zside = funa*funz < 0
                if (zside) exit zgssloop
             end do zgssloop
             if (.not. zside)                                                               &
                call abort_run('Failed finding the second guess for regula falsi'           &
-                             ,'thetae','therm_lib.f90')
+                             ,'thetaes2temp','therm_lib.f90')
          end if
          !---- Continue iterative method --------------------------------------------------!
          fpoloop: do itb=itn+1,maxfpo
-            tlcl = (funz*tlcla-funa*tlclz)/(funz-funa)
-            pvap = eslf(tlcl)
-            funnow = tlcl * (es00/pvap)**rocp - theta
+            if (abs(funz-funa) < toler*tempa) then
+               temp   = 0.5*(tempa+tempz)
+            else
+               temp   = (funz*tempa-funa*tempz)/(funz-funa)
+            end if
+            theta  = temp * exnernormi
+            rsat   = rslif(pres,temp,brrr_cold)
+            funnow = thetaeivs(theta,temp,rsat,0.,0.) - theivs
 
             !------------------------------------------------------------------------------!
             !    Checking for convergence. If it did, return, we found the solution.       !
             ! Otherwise, constrain the guesses.                                            !
             !------------------------------------------------------------------------------!
-            converged = abs(tlcl-tlcla)/tlcl < toler
+            converged = abs(temp-tempa) < toler*temp
             if (converged) then
+               exit fpoloop
+            elseif (funnow*funa < 0.) then 
+               tempz = temp
+               funz  = funnow
+               !----- If we are updating zside again, modify aside (Illinois method) ------!
+               if (zside) funa=funa * 0.5
+               !----- We just updated zside, setting zside to true. -----------------------!
+               zside = .true.
+            else
+               tempa = temp
+               funa  = funnow
+               !----- If we are updating aside again, modify zside (Illinois method) ------!
+               if (.not. zside) funz = funz * 0.5
+               !----- We just updated aside, setting zside to false -----------------------!
+               zside = .false. 
+            end if
+         end do fpoloop
+      end if
+
+      if (converged) then 
+         !----- Compute theta and rsat with temp just for consistency ---------------------!
+         theta = temp * exnernormi
+         rsat  = rslif(pres,temp,brrr_cold)
+      else
+         call abort_run('Temperature didn''t converge, I gave up!'                         &
+                       ,'thetaes2temp','therm_lib.f90')
+      end if
+
+      return
+   end subroutine thetaeivs2temp
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine finds the lifting condensation level given the ice-liquid          !
+   ! potential temperature in Kelvin, temperature in Kelvin, the pressure in Pascal, and   !
+   ! the mixing ratio in kg/kg. The output will give the LCL temperature and pressure, and !
+   ! the thickness of the layer between the initial point and the LCL.                     !
+   !                                                                                       !
+   !    References:                                                                        !
+   !    Tripoli, J. T.; and Cotton, W.R., 1981: The use of ice-liquid water potential      !
+   !        temperature as a thermodynamic variable in deep atmospheric models. Mon. Wea.  !
+   !        Rev., v. 109, 1094-1102. (TC81)                                                !
+   !    Bolton, D., 1980: The computation of the equivalent potential temperature. Mon.    !
+   !        Wea. Rev., v. 108, 1046-1053. (BO80)                                           !
+   !                                                                                       !
+   !    Some algebra was needed to find this equation, essentially combining (TC81-26) and !
+   ! (TC81-27), and the conservation of total water (TC81-16). It assumes that the divi-   !
+   ! sion between the three phases is already taken care of.                               !
+   !    Iterative procedure is needed, and here we iterate looking for T(LCL). Theta_il    !
+   ! can be rewritten in terms of T(LCL) only, and once we know this thetae_iv becomes     !
+   ! straightforward. T(LCL) will be found using Newton's method, and in the unlikely      !
+   ! event it fails,we will fall back to the modified regula falsi (Illinois method).      !
+   !                                                                                       !
+   ! Important remarks:                                                                    !
+   ! 1. TLCL and PLCL are the actual TLCL and PLCL, so in case condensation exists, they   !
+   !    will be larger than the actual temperature and pressure (because one would go down !
+   !    to reach the equilibrium);                                                         !
+   ! 2. DZLCL WILL BE SET TO ZERO in case the LCL is beneath the starting level. So in     !
+   !    case you want to force TLCL <= TEMP and PLCL <= PRES, you can use this variable    !
+   !    to run the saturation check afterwards. DON'T CHANGE PLCL and TLCL here, they will !
+   !    be used for conversions between theta_il and thetae_iv as they are defined here.   !
+   ! 3. In case you don't want ice, simply pass useice=.false.. Otherwise let the model    !
+   !    decide by itself based on the LEVEL variable.                                      !
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   subroutine lcl_il(thil,pres,temp,rtot,rvap,tlcl,plcl,dzlcl,useice)
+      use rconstants, only: cpog,alvl,alvi,cp,ep,p00,rocp,ttripoli,t3ple,t00,rgas
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in)            :: thil   ! Ice liquid potential temp. (*)   [      K]
+      real   , intent(in)            :: pres   ! Pressure                         [     Pa]
+      real   , intent(in)            :: temp   ! Temperature                      [      K]
+      real   , intent(in)            :: rtot   ! Total mixing ratio               [  kg/kg]
+      real   , intent(in)            :: rvap   ! Vapour mixing ratio              [  kg/kg]
+      real   , intent(out)           :: tlcl   ! LCL temperature                  [      K]
+      real   , intent(out)           :: plcl   ! LCL pressure                     [     Pa]
+      real   , intent(out)           :: dzlcl  ! Sub-LCL layer thickness          [      m]
+      logical, intent(in) , optional :: useice ! Should I use ice thermodynamics? [    T|F]
+      !----- Local variables for iterative method -----------------------------------------!
+      real                :: pvap       ! Sat. vapour pressure
+      real                :: deriv      ! Function derivative 
+      real                :: funnow     ! Function for which we seek a root.
+      real                :: funa       ! Smallest  guess function
+      real                :: funz       ! Largest   guess function
+      real                :: tlcla      ! Smallest  guess (or previous guess in Newton)
+      real                :: tlclz      ! Largest   guess (or new guess in Newton)
+      real                :: es00       ! Defined as p00*rt/(epsilon + rt)
+      real                :: delta      ! Aux. variable in case bisection is needed.
+      integer             :: itn,itb    ! Iteration counters
+      logical             :: converged  ! Convergence handle
+      logical             :: zside      ! Aux. flag, to check sides for Regula Falsi
+      !----- Other local variables --------------------------------------------------------!
+      logical             :: brrr_cold ! This requires ice thermodynamics         [    T|F]
+      !------------------------------------------------------------------------------------!
+      ! (*) This is the most general variable. Thil is exactly theta for no condensation   !
+      !     condition, and it is the liquid potential temperature if no ice is present.    !
+      !------------------------------------------------------------------------------------!
+      if (present(useice)) then
+         brrr_cold = useice
+      else 
+         brrr_cold = bulk_on
+      end if
+
+      !----- Finding es00, which is a constant --------------------------------------------!
+      es00 = p00 * rtot / (ep+rtot)
+
+
+      !------------------------------------------------------------------------------------!
+      !     The 1st. guess, use equation 21 from Bolton (1980). For this we'll need the    !
+      ! vapour pressure.                                                                   !
+      !------------------------------------------------------------------------------------!
+      pvap      = pres * rvap / (ep + rvap)
+
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      !write (unit=21,fmt='(a)') '----------------------------------------------------------'
+      !write (unit=21,fmt='(a,1x,i5,1x,5(a,1x,f11.4,1x))')                                  &
+      !   'INPUT : it=',-1,'thil=',thil,'pres=',0.01*pres,'temp=',temp-t00                  &
+      !        ,'rvap=',rvap*1000.,'rtot=',rtot*1000.
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+
+      tlclz     = 55. + 2840. / (3.5 * log(temp) - log(0.01*pvap) - 4.805) ! pvap in hPa.
+      pvap      = eslif(tlclz,brrr_cold)
+      funnow    = tlclz * (es00/pvap)**rocp - thil
+      deriv     = (funnow+thil)*(1./tlclz - rocp*eslifp(tlclz,brrr_cold)/pvap) 
+
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      !write (unit=21,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')                &
+      !   'NEWTON: it=',0,'tlclz=',tlclz-t00,'pvap=',0.01*pvap,'fun=',funnow,'deriv=',deriv
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      tlcla     = tlclz
+      funa      = funnow
+      !------------------------------------------------------------------------------------!
+      !     Looping: Newton's method.                                                      !
+      !------------------------------------------------------------------------------------!
+      newloop: do itn=1,maxfpo/6
+         if (abs(deriv) < toler) exit newloop !----- Too dangerous, skip to bisection -----!
+         !----- Updating guesses ----------------------------------------------------------!
+         tlcla  = tlclz
+         funa   = funnow
+         
+         tlclz  = tlcla - funnow/deriv
+         pvap   = eslif(tlclz,brrr_cold)
+         funnow = tlclz * (es00/pvap)**rocp - thil
+         deriv  = (funnow+thil)*(1./tlclz - rocp*eslifp(tlclz,brrr_cold)/pvap)
+
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+         !write (unit=21,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')             &
+         !   'NEWTON: it=',itn,'tlclz=',tlclz-t00,'pvap=',0.01*pvap,'fun=',funnow           &
+         !          ,'deriv=',deriv
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+
+         !------------------------------------------------------------------------------!
+         !   Convergence may happen when we get close guesses.                          !
+         !------------------------------------------------------------------------------!
+         converged = abs(tlcla-tlclz) < toler*tlclz
+         if (converged) then
+            tlcl = tlclz !0.5*(tlcla+tlclz)
+            funz = funnow
+            exit newloop
+         end if
+      end do newloop
+
+      if (.not. converged) then
+         !---------------------------------------------------------------------------------!
+         !     If I reached this point then it's because Newton's method failed. Using re- !
+         ! gula falsi instead. First, I need to find two guesses that give me functions    !
+         ! with opposite signs. If funa and funnow have opposite signs, then we are all    !
+         ! set.                                                                            !
+         !---------------------------------------------------------------------------------!
+         if (funa*funnow < 0. ) then
+            funz  = funnow
+            zside = .true.
+         !----- They have the same sign, seeking the other guess --------------------------!
+         else
+            !----- We fix funa, and try a funz that will work as 2nd guess ----------------!
+            if (abs(funnow-funa) < toler*tlcla) then
+               delta = 100.*toler*tlcla
+            else
+               delta = max(abs(funa*(tlclz-tlcla)/(funnow-funa)),100.*toler*tlcla)
+            end if
+            tlclz = tlcla + delta
+
+            !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+            !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+            !write (unit=21,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x),3(a,1x,es11.4,1x))')          &
+            !   '2NGGSS: tt=',0,'tlclz=',tlclz-t00,'tlcla=',tlcla-t00,'pvap=',0.01*pvap     &
+            !           ,'funa=',funa,'funz=',funnow,'delta=',delta
+            !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+            !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+            zside = .false.
+            zgssloop: do itb=1,maxfpo
+               !----- So the first time tlclz = tlcla - 2*delta ---------------------------!
+               tlclz = tlcla + real((-1)**itb * (itb+3)/2) * delta
+               pvap  = eslif(tlclz,brrr_cold)
+               funz  = tlclz * (es00/pvap)**rocp - thil
+
+               !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+               !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+               !write (unit=21,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')       &
+               !   '2NGGSS: tt=',itb,'tlclz=',tlclz-t00,'pvap=',0.01*pvap,'fun=',funz       &
+               !           ,'delta=',delta
+               !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+               !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+               zside = funa*funz < 0
+               if (zside) exit zgssloop
+            end do zgssloop
+            if (.not. zside) then
+               write (unit=*,fmt='(a)') ' No second guess for you...'
+               write (unit=*,fmt='(2(a,1x,es14.7))') 'tlcla=',tlcla,'funa=',funa
+               write (unit=*,fmt='(2(a,1x,es14.7))') 'tlclz=',tlclz,'func=',funz
+               write (unit=*,fmt='(2(a,1x,es14.7))') 'delta=',delta,'funn=',funnow
+               call abort_run('Failed finding the second guess for regula falsi'           &
+                             ,'lcl_il','therm_lib.f90')
+            end if
+         end if
+         !---- Continue iterative method --------------------------------------------------!
+         fpoloop: do itb=itn+1,maxfpo
+            tlcl = (funz*tlcla-funa*tlclz)/(funz-funa)
+            pvap = eslif(tlcl,brrr_cold)
+            funnow = tlcl * (es00/pvap)**rocp - thil
+
+            !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+            !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+            !write (unit=21,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),1(a,1x,es11.4,1x))')          &
+            !   'REGFAL: it=',itb,'tlcl =',tlcl -t00,'pvap=',0.01*pvap,'fun=',funnow
+            !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+            !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+
+            !------------------------------------------------------------------------------!
+            !    Checking for convergence. If it did, return, we found the solution.       !
+            ! Otherwise, constrain the guesses.                                            !
+            !------------------------------------------------------------------------------!
+            converged = abs(tlcl-tlcla) < toler*tlcl .and.  abs(tlcl-tlclz) < toler*tlcl
+            if (funnow == 0. .or. converged) then
+               converged = .true.
                exit fpoloop
             elseif (funnow*funa < 0.) then 
                tlclz = tlcl
@@ -2155,171 +2564,25 @@ module therm_lib
             end if
          end do fpoloop
       end if
-
+      !----- Finding the other LCL thermodynamic variables --------------------------------!
       if (converged) then 
-         the  = theta * exp ( alvl * rvap / (cp * max(tlcl,ttripoli)) )
+         pvap  = eslif(tlcl,brrr_cold)
+         plcl  = (ep + rvap) * pvap / rvap
+         dzlcl = max(cpog*(temp-tlcl),0.)
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+         !write (unit=21,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x),3(a,1x,es11.4,1x))')             &
+         !   'ANSWER: itb=',itn,'tlcl=',tlcl-t00,'eslcl=',0.01*pvap                         &
+         !        ,'dzlcl=',dzlcl,'plcl=',plcl*0.01,'funa=',funa,'funz=',funz
+         !write (unit=21,fmt='(a)') '-------------------------------------------------------'
+         !write (unit=21,fmt='(a)') ' '
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       else
-         call abort_run('Thetae didn''t converge, gave up!','thetae','therm_lib.f90')
+         call abort_run('TLCL didn''t converge, gave up!','lcl_il','therm_lib.f90')
       end if
-
       return
-   end subroutine thetae
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    This subroutine converts saturated equivalent potential temperature into tempera-  !
-   ! ture, given pressure in Pa, and theta_es in Kelvin. It also returns potential temper- !
-   ! ature in Kelvin, and saturation vapour mixing ratio in kg/kg. Since this is equiva-   !
-   ! lent potential temperature, it will never consider ice. As usual,  we seek T using    !
-   ! Newton's method as a starting point, and if it fails, we fall back to the modified    !
-   ! regula falsi (Illinois method).                                                       !
-   !---------------------------------------------------------------------------------------!
-   subroutine the2t(thes,pres,theta,temp,rsat)
-      use rconstants, only : alvl,cp,ep,p00,rocp,ttripoli,t00
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      real, intent(in)   :: thes       ! Sat. equivalent potential temperature    [      K]
-      real, intent(in)   :: pres       ! Pressure                                 [     Pa]
-      real, intent(out)  :: theta      ! Potential temperature                    [      K]
-      real, intent(out)  :: temp       ! Temperature                              [      K]
-      real, intent(out)  :: rsat       ! Saturation mixing ratio                  [  kg/kg]
-      !----- Local variables, with other thermodynamic properties -------------------------!
-      real               :: exnernormi ! 1./ (Normalised Exner function)          [    ---]
-      real               :: drsdt      ! d(rsat)/dT, keeping pressure constant    [kg/kg/K]
-      !----- Local variables for iterative method -----------------------------------------!
-      real               :: deriv      ! Function derivative 
-      real               :: funnow     ! Function for which we seek a root.
-      real               :: funa       ! Smallest  guess function
-      real               :: funz       ! Largest   guess function
-      real               :: tempa      ! Smallest  guess (or previous guess in Newton)
-      real               :: tempz      ! Largest   guess (or new guess in Newton)
-      real               :: delta      ! Aux. variable in case bisection is needed.
-      integer            :: itn,itb    ! Iteration counters
-      logical            :: converged  ! Convergence handle
-      logical            :: zside      ! Aux. flag, to check sides for Regula Falsi
-      !------------------------------------------------------------------------------------!
-    
-      !----- Finding the inverse of normalised Exner, which is constant in this routine ---!
-      exnernormi = (p00 /pres) ** rocp
-
-      !------------------------------------------------------------------------------------!
-      !     The 1st. guess, no idea, guess 0°C.                                            !
-      !------------------------------------------------------------------------------------!
-      tempz     = t00
-      theta     = tempz * exnernormi
-      rsat      = rslf(pres,tempz)
-      drsdt     = rslfp(pres,tempz)
-      funnow    = theta * exp(alvl*rsat / (cp*max(tempz,ttripoli))) - thes
-      if (tempz >= ttripoli) then
-         deriv  = (funnow+thes)*(cp*tempz-alvl*(rsat - drsdt*tempz))/(cp*tempz*tempz)
-      else
-         deriv  = (funnow+thes)*(cp*ttripoli+alvl*drsdt*tempz)/(cp*tempz*ttripoli)
-      end if
-      !----- Saving here just in case Newton is aborted at the 1st guess ------------------!
-      tempa     = tempz
-      funa      = funnow
-
-      converged = .false.
-      !----- Looping ----------------------------------------------------------------------!
-      newloop: do itn=1,maxfpo/6
-         if (abs(deriv) < toler) exit newloop !----- Too dangerous, skip to bisection -----!
-         !----- Updating guesses ----------------------------------------------------------!
-         tempa   = tempz
-         funa    = funnow
-         
-         tempz   = tempa - funnow/deriv
-         theta   = tempz * exnernormi
-         rsat    = rslf(pres,tempz)
-         drsdt   = rslfp(pres,tempz)
-         funnow  = theta * exp(alvl*rsat / (cp*max(tempz,ttripoli))) - thes
-         if (tempz >= ttripoli) then
-            deriv  = (funnow+thes)*(cp*tempz-alvl*(rsat - drsdt*tempz))/(cp*tempz*tempz)
-         else
-            deriv  = (funnow+thes)*(cp*ttripoli+alvl*drsdt*tempz)/(cp*tempz*ttripoli)
-         end if
-
-         converged = abs(tempa-tempz)/tempz < toler
-         if (converged) then
-            temp = 0.5*(tempa+tempz)
-            exit newloop
-         end if
-      end do newloop
-
-      !------------------------------------------------------------------------------------!
-      !     If I reached this point then it's because Newton's method failed. Using bisec- !
-      ! tion instead.                                                                      !
-      !------------------------------------------------------------------------------------!
-      if (.not. converged) then
-         !----- Set funz, and check whether funa and funz already have opposite sign. -----!
-         funz = funnow
-         if (funa*funnow > 0.) then
-            !----- We fix funa, and try a funz that will work as 2nd guess ----------------!
-            delta = max(abs(funa*(tempz-tempa)/(funz-funa)),100.*toler*tempa)
-            tempz = tempa + delta
-            zside = .false.
-            zgssloop: do itb=1,maxfpo
-               !----- So this will be +1 -1 +2 -2 etc. ------------------------------------!
-               tempz = tempz + real((-1)**itb * (itb+3)/2) * delta
-               theta = tempz * exnernormi
-               rsat  = rslf(pres,tempz)
-               funz  = theta * exp(alvl*rsat / (cp*max(tempz,ttripoli))) - thes
-               zside = funa*funz < 0
-               if (zside) exit zgssloop
-            end do zgssloop
-            if (.not. zside)                                                               &
-               call abort_run('Failed finding the second guess for regula falsi'           &
-                             ,'the2t','therm_lib.f90')
-         end if
-         !---- Continue iterative method --------------------------------------------------!
-         fpoloop: do itb=itn+1,maxfpo
-            temp   = (funz*tempa-funa*tempz)/(funz-funa)
-            theta  = temp * exnernormi
-            rsat   = rslf(pres,temp)
-            funnow = theta * exp(alvl*rsat / (cp*max(temp,ttripoli))) - thes
-
-            !------------------------------------------------------------------------------!
-            !    Checking for convergence. If it did, return, we found the solution.       !
-            ! Otherwise, constrain the guesses.                                            !
-            !------------------------------------------------------------------------------!
-            converged = abs(temp-tempa)/temp < toler
-            if (converged) then
-               exit fpoloop
-            elseif (funnow*funa < 0.) then 
-               tempz = temp
-               funz  = funnow
-               !----- If we are updating zside again, modify aside (Illinois method) ------!
-               if (zside) funa=funa * 0.5
-               !----- We just updated zside, setting zside to true. -----------------------!
-               zside = .true.
-            else
-               tempa = temp
-               funa  = funnow
-               !----- If we are updating aside again, modify zside (Illinois method) ------!
-               if (.not.zside) funz = funz * 0.5
-               !----- We just updated aside, setting zside to false -----------------------!
-               zside = .false. 
-            end if
-         end do fpoloop
-      end if
-
-      if (converged) then 
-         !----- Compute theta and rsat with temp just for consistency ---------------------!
-         theta = temp * exnernormi
-         rsat  = rslf(pres,temp)
-      else
-         call abort_run('Temperature didn''t converge, I gave up!'                         &
-                       ,'the2t','therm_lib.f90')
-      end if
-
-      return
-   end subroutine the2t
+   end subroutine lcl_il
    !=======================================================================================!
    !=======================================================================================!
 

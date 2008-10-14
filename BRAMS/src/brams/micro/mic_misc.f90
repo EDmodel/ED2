@@ -466,7 +466,7 @@ subroutine each_column(m1,dtlt)
           ,rsif            & ! Function
           ,rslfp           & ! Function
           ,rsifp           & ! Function
-          ,rehul           ! ! Function
+          ,rehuil          ! ! Function
 
 
 
@@ -495,7 +495,7 @@ subroutine each_column(m1,dtlt)
       !----- Diagnose habit of pristine ice and snow --------------------------------------!
       nt = max(1,min(31,-nint(tairc(k))))
       !----- THERMO DILEMMA : Shouldn't it be rehuil here? --------------------------------!
-      relhum = min(1.,rehul(press(k),tair(k),rvap(k)))
+      relhum = min(1.,rehuil(press(k),tair(k),rvap(k)))
 
       irh = nint(100.*relhum)
       ns = max(1,irh)

@@ -27,52 +27,13 @@ subroutine sfclyr(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
   !Local Variables
   integer :: ng
   !integer, save :: ncall=0
-  !Pointer to TEB data. Can be associated or not
-  type(teb_vars), pointer   :: p_teb_g
-  type(teb_common), pointer :: p_tebc_g
+
   ! New automatic arrays for use as scratch instead of:
   ! scratch%vt2da, scratch%vt2db, scratch%vt2dc, scratch%vt2dd,
   ! scratch%vt2de, scratch%vt2df, scratch%vt3da
   real, dimension(mxp,myp) :: l_ths2, l_rvs2, l_pis2, l_dens2, &
        l_ups2, l_vps2, l_zts2
   
-#if USE_INTERF
-  ! Interface necessary to use pointer as argument - TEB
-  interface
-     subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz    &
-          ,leaf,basic,turb,radiate,grid,cuparm,micro     &
-          ,ths2,rvs2,pis2,dens2,ups2,vps2,zts2           &
-          ! For TEB
-          ,pteb,ptebc                                    &
-          !
-          )
-       ! for interface
-       use mem_leaf, only: leaf_vars  ! type
-       use mem_basic, only: basic_vars! type
-       use mem_turb, only: turb_vars! type
-       use mem_radiate, only: radiate_vars! type
-       use mem_grid, only: grid_vars! type
-       use mem_cuparm, only: cuparm_vars! type
-       use mem_micro, only: micro_vars! type
-       use mem_teb, only: teb_vars               !Type
-       USE mem_teb_common, only: teb_common             !Type
-       !       
-       integer, intent(in) :: m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz
-       type (leaf_vars)    :: leaf
-       type (basic_vars)   :: basic
-       type (turb_vars)    :: turb
-       type (radiate_vars) :: radiate
-       type (grid_vars)    :: grid
-       type (cuparm_vars)  :: cuparm
-       type (micro_vars)   :: micro
-       ! For TEB
-       TYPE (teb_vars), pointer   :: pteb
-       TYPE (teb_common), pointer :: ptebc
-       real, dimension(m2,m3), intent(out) :: ths2,rvs2,pis2,dens2,ups2,vps2,zts2
-     end subroutine leaf3
-  end interface
-#endif
-
   if (nstbot == 0) return
   
   !print*,'ncall=',ncall
@@ -88,25 +49,14 @@ subroutine sfclyr(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
 
   ng=ngrid
 
-  ! TEB
-  if (TEB_SPM==1) then
-     p_teb_g  => teb_g(ngrid)
-     p_tebc_g => tebc_g(ngrid)
-  else
-     nullify(p_teb_g)
-     nullify(p_tebc_g)
-  endif
-  
+
   call leaf3(mzp,mxp,myp,nzg,nzs,npatch,ia,iz,ja,jz             &
        ,leaf_g (ng), basic_g (ng), turb_g (ng), radiate_g(ng)   &
        ,grid_g (ng), cuparm_g(ng), micro_g(ng)                  &
        ,l_ths2(1,1), l_rvs2(1,1), l_pis2(1,1)                   &
        ,l_dens2(1,1),l_ups2(1,1), l_vps2(1,1)                   &
        ,l_zts2(1,1)                                             &
-       ! For TEB
-       ,p_teb_g, p_tebc_g                                       &
-       !
-       )
+       ,teb_g(ng), tebc_g(ng)                                   )
   
   if (isfcl == 2) then
      call hydro(mxp,myp,nzg,nzs,npatch         &
@@ -147,10 +97,7 @@ end subroutine sfclyr
 subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz  &
    ,leaf,basic,turb,radiate,grid,cuparm,micro     &
    ,ths2,rvs2,pis2,dens2,ups2,vps2,zts2           &
-   ! For TEB
-   ,pteb,ptebc                                    &
-   !
-   )
+   ,teb,tebc                                      )
 
    use mem_all
    use leaf_coms
@@ -173,8 +120,8 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz  &
    type (cuparm_vars)  :: cuparm
    type (micro_vars)   :: micro
    ! For TEB
-   TYPE (teb_vars), pointer   :: pteb
-   TYPE (teb_common), pointer :: ptebc
+   TYPE (teb_vars)     :: teb
+   TYPE (teb_common)   :: tebc
    real, dimension(m2,m3), intent(out) :: ths2,rvs2,pis2,dens2,ups2,vps2,zts2
 
    ! Local variables:
@@ -338,9 +285,9 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz  &
                      ! TEB - defining pointers
                      if (TEB_SPM==1) then
                         G_URBAN   = leaf%G_URBAN(i,j,ip)
-                        EMIS_TOWN = ptebc%EMIS_TOWN(i,j)
-                        ALB_TOWN  = ptebc%ALB_TOWN(i,j)
-                        TS_TOWN   = ptebc%TS_TOWN(i,j)
+                        EMIS_TOWN = tebc%EMIS_TOWN(i,j)
+                        ALB_TOWN  = tebc%ALB_TOWN(i,j)
+                        TS_TOWN   = tebc%TS_TOWN(i,j)
                      end if
 
                      call sfcrad(mzg,mzs,ip                                       &
@@ -357,12 +304,9 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz  &
                           ,radiate%rshort     (i,j)     ,radiate%rlong  (i,j)     &
                           ,radiate%albedt     (i,j)     ,radiate%rlongup(i,j)     &
                           ,radiate%cosz       (i,j)                               &
-                          ! For TEB
                           ,G_URBAN                                                &
                           ,EMIS_TOWN                    ,ALB_TOWN                 &
-                          ,TS_TOWN                                                &
-                          !
-                          )
+                          ,TS_TOWN                                                )
                   endif
 
                endif
@@ -470,19 +414,19 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz  &
                              radiate%COSZ(i,j), ZTS,                      &
                              radiate%rlong(i,j), radiate%rshort(i,j),     &
                              psup2, airt, ups, vps, basic%rv(2,i,j),      &
-                             pcpgl/dtlt, pteb%fuso(i,j),                  &
-                             pteb%T_CANYON(i,j), pteb%R_CANYON(i,j),      &
-                             pteb%TS_ROOF(i,j), pteb%TS_ROAD(i,j),        &
-                             pteb%TS_WALL(i,j), pteb%TI_ROAD(i,j),        &
-                             pteb%TI_BLD(i,j), pteb%WS_ROOF(i,j),         &
-                             pteb%WS_ROAD(i,j), pteb%T_ROOF(2:4,i,j),     &
-                             pteb%T_ROAD(2:4,i,j), pteb%T_WALL(2:4,i,j),  &
-                             ZH_TOWN, ZLE_TOWN, ptebc%EMIS_TOWN(i,j),     &
-                             ZSFU_TOWN, ZSFV_TOWN, ptebc%TS_TOWN(i,j),    &
-                             ptebc%ALB_TOWN(i,j), NINT(G_URBAN),          &
-                             pteb%H_TRAFFIC(i,j), pteb%H_INDUSTRY(i,j),   &
-                             pteb%LE_TRAFFIC(i,j), pteb%LE_INDUSTRY(i,j), &
-                             pteb%T2M_TOWN(i,j), pteb%R2M_TOWN(i,j),      &
+                             pcpgl/dtlt, teb%fuso(i,j),                   &
+                             teb%T_CANYON(i,j), teb%R_CANYON(i,j),      &
+                             teb%TS_ROOF(i,j), teb%TS_ROAD(i,j),        &
+                             teb%TS_WALL(i,j), teb%TI_ROAD(i,j),        &
+                             teb%TI_BLD(i,j), teb%WS_ROOF(i,j),         &
+                             teb%WS_ROAD(i,j), teb%T_ROOF(2:4,i,j),     &
+                             teb%T_ROAD(2:4,i,j), teb%T_WALL(2:4,i,j),  &
+                             ZH_TOWN, ZLE_TOWN, tebc%EMIS_TOWN(i,j),     &
+                             ZSFU_TOWN, ZSFV_TOWN, tebc%TS_TOWN(i,j),    &
+                             tebc%ALB_TOWN(i,j), NINT(G_URBAN),          &
+                             teb%H_TRAFFIC(i,j), teb%H_INDUSTRY(i,j),   &
+                             teb%LE_TRAFFIC(i,j), teb%LE_INDUSTRY(i,j), &
+                             teb%T2M_TOWN(i,j), teb%R2M_TOWN(i,j),      &
                              time, itimea, dpdz, dens                     )
                         
                         turb%sflux_u(i,j) = &
@@ -1787,6 +1731,7 @@ end subroutine sfc_fields_adap
 subroutine sfc_pcp(nqparm,level,i,j,cuparm,micro)
 
    use mem_basic
+   use mem_grid
    use mem_micro
    use mem_cuparm
    use leaf_coms
@@ -1794,13 +1739,16 @@ subroutine sfc_pcp(nqparm,level,i,j,cuparm,micro)
 
    implicit none
 
-   integer :: nqparm,level,i,j
+   integer :: nqparm,level,i,j,icld
    type (cuparm_vars)  cuparm
    type (micro_vars)   micro
 
    if (nqparm > 0) then
-
-      pcpgl  = cuparm%conprr(i,j) * dtll
+      pcpgl = 0.
+      do icld=1,nclouds
+         pcpgl  = pcpgl + cuparm%conprr(i,j,icld) * dtlt / confrq(icld)
+      end do
+      pcpgl  = pcpgl  * dtll 
       qpcpgl = pcpgl  * cliq * (ths * pis - tsupercool)
       dpcpgl = pcpgl  * .001
       pcpgc  = dtlc_factor * pcpgl

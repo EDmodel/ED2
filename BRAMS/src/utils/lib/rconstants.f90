@@ -146,7 +146,7 @@ Module rconstants
    real, parameter :: alvl     = 2.50e6       ! Latent heat - vaporisation (Lv) [     J/kg]
    real, parameter :: alvi     = 2.834e6      ! Latent heat - sublimation  (Ls) [     J/kg]
    real, parameter :: alli     = 3.34e5       ! Latent heat - fusion       (Lf) [     J/kg]
-   real, parameter :: alli1000 = 1000. * alli ! Latent heat - fusion       (Lf) [     J/m³]
+   real, parameter :: alli1000 = 1000. * alli ! Latent heat - fusion       (Lf) [     J/kg]
    real, parameter :: alvl2    = alvl*alvl    ! Lv²                             [   J²/kg²]
    real, parameter :: alvi2    = alvi*alvi    ! Ls²                             [   J²/kg²]
    real, parameter :: allii    = 1. / alli    ! 1./Lf                           [     kg/J]
@@ -193,16 +193,5 @@ Module rconstants
    real, parameter :: ltscalemax  = 1.e5  ! Maximum Lagrangian timescale        [        s]
    real, parameter :: abswltlmin  = 1.e-4 ! Minimum abs value of Theta*         [    K m/s]
    real, parameter :: lturbmin    = 1.e-3 ! Minimum abs value of turb. lenght   [        m]
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   ! For Grell parameterization, they will go away soon                                    !
-   !---------------------------------------------------------------------------------------!
-   real, parameter ::   PKDCUT    = 75.    ! ???
-   real, parameter ::   tcrit     = 273.15 ! ???
    !---------------------------------------------------------------------------------------!
 end module rconstants

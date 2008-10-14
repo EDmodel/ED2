@@ -233,31 +233,24 @@ MOD_EXT=mod
 #C_LOADER_OPTS=-v -g -traceback
 
 # C. Medium debugging configuration
-#USE_INTERF=1
-#F_OPTS= -FR -O0 -fpe0 -ftz  -ftrapuv -recursive -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
-#C_OPTS=  -DLITTLE -O0 -traceback -g
-#LOADER_OPTS= -FR -O0 -fpe0 -ftz -ftrapuv -recursive -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
-#C_LOADER_OPTS=-v -O0 -traceback -g
-
-# D. Simple debugging configuration
 USE_INTERF=1
-F_OPTS= -FR -O2 -fpe0 -ftz  -ftrapuv -recursive -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
-C_OPTS=  -DLITTLE -O2 -traceback -g
-LOADER_OPTS= -FR -O2 -fpe0 -ftz -ftrapuv -recursive -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
-C_LOADER_OPTS=-v -O2 -traceback -g
+F_OPTS= -FR -O0 -fpe0 -ftz  -ftrapuv -recursive -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
+C_OPTS=  -DLITTLE -O0 -traceback -g
+LOADER_OPTS= -FR -O0 -fpe0 -ftz -ftrapuv -recursive -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
+C_LOADER_OPTS=-v -O0 -traceback -g
 
 # D. Simple debugging configuration
 #USE_INTERF=1
-#F_OPTS= -Vaxlib -FR -O3 -recursive -traceback -axP
-#C_OPTS=-DLITTLE -traceback
-#LOADER_OPTS= -FR -O3 -axP -Vaxlib -traceback
-#C_LOADER_OPTS=-v -traceback
+#F_OPTS= -FR -O2 -fpe0 -ftz  -ftrapuv -recursive -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
+#C_OPTS=  -DLITTLE -O2 -traceback -g
+#LOADER_OPTS= -FR -O2 -fpe0 -ftz -ftrapuv -recursive -traceback -check all -g -debug extended -debug inline_debug_info -debug-parameters all
+#C_LOADER_OPTS=-v -O2 -traceback -g
 
 # E. Fast...
 #USE_INTERF=1
-#F_OPTS= -FR -O3 -recursive -Vaxlib -static -traceback
+#F_OPTS= -FR -O3 -recursive -Vaxlib -static -traceback -axP
 #C_OPTS= -O3 -DLITTLE -static -traceback
-#LOADER_OPTS= -FR -O3 -Vaxlib -static -traceback
+#LOADER_OPTS= -FR -O3 -axP -Vaxlib -static -traceback
 #C_LOADER_OPTS=-v -traceback
 
 # If compiling for a single-CPU platform only (without MPI):

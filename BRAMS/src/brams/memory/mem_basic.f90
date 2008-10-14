@@ -171,7 +171,7 @@ use var_tables
    if (associated(basic%thp)) &
       call vtables2 (basic%thp(1,1,1),basicm%thp(1,1,1)  &
                  ,ng, npts, imean,  &
-                 'THP :3:hist:mpti:mpt3:mpt1')
+                 'THP :3:hist:anal:mpti:mpt3:mpt1')
    if (associated(basic%rtp)) &
       call vtables2 (basic%rtp(1,1,1),basicm%rtp(1,1,1)  &
                  ,ng, npts, imean,  &

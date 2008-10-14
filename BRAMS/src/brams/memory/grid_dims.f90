@@ -43,12 +43,15 @@ module grid_dims
 
   !   MAXMACH - the maximum number of processors on a parallel run
 
-  integer, parameter :: maxmach=512
+  integer, parameter :: maxmach=64
 
   ! TEB
   !  MAXSTEB - Maximum number of layers used in TEB
   !  MAXUBTP - Maximum number of urban types used in TEB
   integer, parameter :: maxsteb=5
   integer, parameter :: maxubtp=3
+  
+  ! Parameter defining the maximum number of cloud spectral sizes allowed.
+  integer, parameter :: maxclouds = 6
 
 end module grid_dims

@@ -59,14 +59,6 @@ HDF4_LIBS=
 # If you wish to use this functionality specify USE_HDF5=1
 # and specify the location of the include directory
 # library files. Make sure you include the zlib.a location too.
-
-# For 64-bit 
-#USE_HDF5=1
-#HDF5_INCS=-I/n/Moorcroft_Lab/Lab/apps/i91/lib -I/n/Moorcroft_Lab/Lab/apps/i91/include
-#HDF5_LIBS=-L/n/Moorcroft_Lab/Lab/apps/i91/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
-#          -L/n/Moorcroft_Lab/Lab/mlongo/util/hdflib/hdf4_64/zlib/lib -lz
-
-# For 32-bit
 USE_HDF5=1
 HDF5_INCS=-I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib -I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/include
 HDF5_LIBS=-L/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
@@ -296,12 +288,6 @@ C_LOADER_OPTS=-v -g -traceback
 #-----------------------------------------------------------------
 
 #---------------LINUX Portland Group pgf77/gcc--------------------
-# 64-bit machine
-#MPI_PATH=/n/Moorcroft_Lab/Lab/apps/i91
-#PAR_INCS=-I$(MPI_PATH)/include
-#PAR_LIBS=-L$(MPI_PATH)/lib -lmpich -lpmpich
-#PAR_DEFS=-DRAMS_MPI
-# 32-bit machine
 MPI_PATH=/n/Moorcroft_Lab/Users/mlongo/util/mpich-1.2.7p1/intel_9.1.036_32
 PAR_INCS=-I$(MPI_PATH)/include
 PAR_LIBS=-L$(MPI_PATH)/lib -lmpich -lpmpich

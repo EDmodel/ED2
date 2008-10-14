@@ -97,209 +97,153 @@ end subroutine compute_mass_flux
 
 
 
-
-
-!------------------------------------------------------------------------------------------!
-! Subroutine prep_convflx_to_mass                                                          !
-! Developed by Saulo R. Freitas (CPTEC/INPE)                                               !
+!==========================================================================================!
+!==========================================================================================!
+! Subroutine save_convective_mass                                                          !
 !                                                                                          !
-!   This subroutine prepares the convective fluxes to be used in STILT (or other           !
-! Lagrangian models).                                                                      !
+!   This subroutine prepares the convective fluxes to be used in Lagrangian models.        !
 !------------------------------------------------------------------------------------------!
-subroutine prep_convflx_to_mass(m1,m2,m3,ia,iz,ja,jz,maxiens,ifm                          &
-                                ,ierr4d,jmin4d,kdet4d,k224d,kbcon4d,ktop4d                 &
-                                ,kpbl4d,kstabi4d,kstabm4d,xmb4d,edt4d,zcup5d,pcup5d,enup5d &
-                                ,endn5d,deup5d,dedn5d,zup5d,zdn5d,iens)
+subroutine prep_convflx_to_mass(m1,dnmf,upmf,cfxdn,cfxup,dfxdn,dfxup,efxdn,efxup)
 
-use mem_mass
+   use mem_scratch_grell, only: &
+          cdd                   & ! Downdraft detrainment function;
+         ,cdu                   & ! Updraft detrainment function;
+         ,dzd_cld               & ! Delta-z for downdrafts;
+         ,etad_cld              & ! Normalized dndraft mass flux;
+         ,etau_cld              & ! Normalized updraft mass flux;
+         ,ierr                  & ! Error flag;
+         ,jmin                  & ! Downdraft origin level
+         ,k22                   & ! Updraft origin level
+         ,kbcon                 & ! Cloud base level
+         ,kdet                  & ! Detrainment level
+         ,kgoff                 & ! BRAMS grid offset
+         ,ktop                  & ! Cloud top level
+         ,mentrd_rate           & ! Downdraft entrainment rate
+         ,mentru_rate           ! ! Updraft entrainment rate
 
-implicit none
+   implicit none
+   integer            , intent(in)    :: m1      ! BRAMS vertical dimension
+   real               , intent(in)    :: dnmf    ! Reference downdraft mass flux   [kg/m²/s]
+   real               , intent(in)    :: upmf    ! Reference updraft mass flux     [kg/m²/s]
 
-integer, intent(in) :: ifm,iens, maxiens,m1,m2,m3,ia,iz,ja,jz
+   !---------------------------------------------------------------------------------------!
+   !    All fluxes are given in kg/m²/s.                                                   !
+   !---------------------------------------------------------------------------------------!
+   !----- Deep convection variables -------------------------------------------------------!
+   real, dimension(m1), intent(out) :: cfxdn  ! Convective downdraft flux
+   real, dimension(m1), intent(out) :: cfxup  ! Convective updraft flux
+   real, dimension(m1), intent(out) :: dfxdn  ! Detrainment associated with downdraft
+   real, dimension(m1), intent(out) :: dfxup  ! Detrainment associated with updraft
+   real, dimension(m1), intent(out) :: efxdn  ! Entrainment associated with downdraft
+   real, dimension(m1), intent(out) :: efxup  ! Entrainment associated with updraft
+   !---------------------------------------------------------------------------------------!
 
-integer, intent(in),dimension(m2,m3,maxiens) ::                                            &
-                         ierr4d,jmin4d,kdet4d,k224d,kbcon4d,ktop4d,kpbl4d,kstabi4d,kstabm4d
-                       
-real, intent(in), dimension(m2,m3,maxiens) :: xmb4d,edt4d
-                        
-real, intent(in), dimension(m1,m2,m3,maxiens) ::                        &
-                                      enup5d,endn5d,deup5d,dedn5d,zup5d,zdn5d,zcup5d,pcup5d
+   integer                            :: k       ! Grell's grid counter
+   integer                            :: kr      ! BRAMS's grid counter
+   real                               :: subin   ! Subsidence from level aloft;
+   real                               :: subout  ! Subsidence to level below;
+   real                               :: detdo   ! Downdraft detrainment term
+   real                               :: detdo1  ! Downdraft detrainment term @ 1st level
+   real                               :: detdo2  ! Downdraft detrainment term @ 2nd level
+   real                               :: entdo   ! Downdraft entrainment term
+   real                               :: detup   ! Updraft detrainment term
+   real                               :: entup   ! Updraft entrainment term
+   real                               :: totmass ! Total mass balance
 
-integer :: i, j
+   cfxdn = 0.
+   cfxup = 0.
+   dfxdn = 0.
+   dfxup = 0.
+   efxdn = 0.
+   efxup = 0.
+
+   vertloop: do k=2,ktop
+      kr = k + kgoff ! Output variables should use BRAMS grid.
+
+      !------------------------------------------------------------------------------------!
+      ! Computing updraft terms, depending on where I am.                                  !
+      !------------------------------------------------------------------------------------!
+      !----- Below the cloud base, no entrainment or detrainment --------------------------!
+      if (k < kbcon .and. k /= k22-1) then 
+         entup = 0.
+         detup = 0.
+
+      !------------------------------------------------------------------------------------!
+      !    Where the updrafts begin, entrainment only. You may ask yourself why only at    !
+      ! k22-1, and the levels between k22 and kbcon-1 are all zero? This is because the    !
+      ! net value is zero, since the rates cancel out in this layer.                       !
+      !------------------------------------------------------------------------------------!
+      elseif (k == k22-1) then
+         entup = etau_cld(k22)
+         detup = 0.
+
+      !----- In-cloud, both entrainment and detrainment -----------------------------------!
+      elseif (k >= kbcon .and. k < ktop) then
+         entup = mentru_rate(k) * dzd_cld(k) * etau_cld(k)
+         detup =       cdu(k+1) * dzd_cld(k) * etau_cld(k)
+      
+      !----- At the cloud top, detrainment only -------------------------------------------!
+      else
+         entup = 0.
+         subin = 0.          !---- NOTHING enters through the top, not even from above. ---!
+         detup = etau_cld(k)
+      end if
+      !------------------------------------------------------------------------------------!
+      
+      
+      !------------------------------------------------------------------------------------!
+      !    Compute downdraft terms, depending on where I am. Note that it's safe to use    !
+      ! this for shallow clouds, because it kdet and jmin will be both zero, so it will    !
+      ! always fall in the "nothing happens" case.                                         !
+      !------------------------------------------------------------------------------------!
+      !----- Below detrainment level, both entrainment and detrainment happen -------------!
+      if (k <= kdet) then
+         detdo  = cdd(k) * dzd_cld(k) * etad_cld(k+1)
+         entdo  = mentrd_rate(k) * dzd_cld(k) * etad_cld(k+1)
+      !----- Within the downdraft layer, but above kdet, only entrainment happens ---------!
+      elseif (k > kdet .and. k < jmin) then
+         detdo  = 0.
+         entdo  = mentrd_rate(k) * dzd_cld(k) * etad_cld(k+1)
+      !----- Jmin requires special assumption otherwise the entrainment would be zero -----!
+      elseif (k == jmin) then 
+         detdo  = 0.
+         entdo  = etad_cld(k)
+      !----- Outside the downdraft layer, nothing happens ---------------------------------!
+      else 
+         detdo  = 0.
+         entdo  = 0.
+      end if
+      !------------------------------------------------------------------------------------!
+      
+      cfxup(kr) =  upmf * etau_cld(k)
+      cfxdn(kr) = -dnmf * etad_cld(k)
+      dfxup(kr) =  upmf*detup
+      efxup(kr) = -upmf*entup
+      dfxdn(kr) =  dnmf*detdo
+      efxdn(kr) = -dnmf*entdo
+
+   end do vertloop
+
+   !---------------------------------------------------------------------------------------!
+   ! Bottom layer                                                                          !
+   !---------------------------------------------------------------------------------------!
+   kr= 1 + kgoff  ! the K-level of Grell is equivalent to the BRAMS K+1-level
 
 
-!zero out all convflx
-if (iens == 1) then
-!Deep conv
-  call azero(m1*m2*m3,mass_g(ifm)%cfxup1(1,1,1))
-  call azero(m1*m2*m3,mass_g(ifm)%cfxdn1(1,1,1))
-  call azero(m1*m2*m3,mass_g(ifm)%dfxup1(1,1,1))
-  call azero(m1*m2*m3,mass_g(ifm)%efxup1(1,1,1))
-  call azero(m1*m2*m3,mass_g(ifm)%dfxdn1(1,1,1))
-  call azero(m1*m2*m3,mass_g(ifm)%efxdn1(1,1,1))
-!shallow conv
-elseif (iens == 2) then
- call azero(m1*m2*m3,mass_g(ifm)%cfxup2(1,1,1))
- call azero(m1*m2*m3,mass_g(ifm)%dfxup2(1,1,1))       
- call azero(m1*m2*m3,mass_g(ifm)%efxup2(1,1,1))
-end if
+   detdo1  = etad_cld(2)*cdd(1)*dzd_cld(1)
+   detdo2  = etad_cld(1)
+   entdo   = etad_cld(2)*mentrd_rate(1)*dzd_cld(1)
 
-do j=ja,jz
-  do i=ia,iz
-!    if((iens == 1 .and. ierr4d(i,j,iens,ngrid) == 0) .or. iens == 2) then
-    if(ierr4d(i,j,iens) == 0) then
-      call get_convflx(iens,i,j,m1,m2,m3                                       &
-                  ,   xmb4d(i,j,iens),   edt4d(i,j,iens)                       &
-                  ,  jmin4d(i,j,iens),  kdet4d(i,j,iens)                       &
-                  ,   k224d(i,j,iens), kbcon4d(i,j,iens)                       &
-                  ,  ktop4d(i,j,iens),  kpbl4d(i,j,iens)                       &
-                  ,kstabi4d(i,j,iens),kstabm4d(i,j,iens)                       &
-                  ,zcup5d(1:m1,i,j,iens),pcup5d(1:m1,i,j,iens)                 &
-                  ,deup5d(1:m1,i,j,iens),enup5d(1:m1,i,j,iens)                 &
-                  ,dedn5d(1:m1,i,j,iens),endn5d(1:m1,i,j,iens)                 &
-                  , zup5d(1:m1,i,j,iens), zdn5d(1:m1,i,j,iens)                 &
-                  ,mass_g(ifm)%cfxup1(1,1,1),mass_g(ifm)%cfxdn1(1,1,1)   &
-                  ,mass_g(ifm)%dfxup1(1,1,1),mass_g(ifm)%efxup1(1,1,1)   &
-                  ,mass_g(ifm)%dfxdn1(1,1,1),mass_g(ifm)%efxdn1(1,1,1)   &
-                  ,mass_g(ifm)%cfxup2(1,1,1),mass_g(ifm)%dfxup2(1,1,1)   &
-                  ,mass_g(ifm)%efxup2(1,1,1))
-    endif 
-  enddo 
-enddo  
-
-return
+   cfxup(kr) = 0.
+   cfxdn(kr) =-dnmf * etad_cld(1)
+   dfxup(kr) = 0.
+   efxup(kr) = 0.
+   dfxdn(kr) = dnmf*(detdo1+detdo2) !edt already is at detdo1,2
+   efxdn(kr) =-dnmf*entdo           !edt already is at entdo
+   return
 end subroutine prep_convflx_to_mass
-!------------------------------------------------------------------------------------------!
-
-!------------------------------------------------------------------------------------------!
-! Subroutine get_convflx                                                                   !
-! Developed by Saulo R. Freitas (CPTEC/INPE)                                               !
-!                                                                                          !
-!   This subroutine aims at getting the convective fluxes from Grell shallow and           !
-! deep convective parameterizations.                                                       !
-!------------------------------------------------------------------------------------------!
-subroutine get_convflx(iens,i,j,m1,m2,m3,xmb,edt,jmin,kdet,k22,kbcon,ktop,kpbl             &
-                      ,kstabi,kstabm,z_cup,p_cup,cd,entr,cdd,entrd,zu,zd,cfxup1,cfxdn1     &
-                      ,dfxup1,efxup1,dfxdn1,efxdn1,cfxup2,dfxup2,efxup2)
-
-implicit none
-
-integer, intent(in)                      ::  iens,i,j,m1,m2,m3,jmin,kdet,k22,kbcon   &
-                                            ,ktop,kpbl,kstabi,kstabm
-                                            
-real, intent(in)                         ::  xmb,edt
-
-real, intent(in),    dimension(m1)       ::  z_cup,p_cup,cd,entr,cdd,entrd,zu,zd
-
-real, intent(inout), dimension(m1,m2,m3) ::  cfxup1,cfxdn1,dfxup1,efxup1,dfxdn1,efxdn1     &
-			                    ,cfxup2,dfxup2,efxup2  
-                                             
-integer                                  ::  k,kr
-real                                     ::  dz,totmas,entup,detup,entdoj,entupk,detupk    &
-                                            ,detdo,entdo,subdown,subin,detdo1,detdo2
-
-do k=2,ktop+1
-        
-  kr= k + 1   ! level K of conv grid  corresponds to level K + 1 of RAMS grid
-  dz =  z_cup(kr) - z_cup(k)
-   
-  entup   = 0.
-  detup   = 0.
-  entdoj  = 0.
-  entupk  = 0.
-  detupk  = 0.
-  detdo   = edt*cdd(k)*dz*zd(kr)
-  entdo   = edt*entrd(k)*dz*zd(kr)
-  subdown = zu(k ) - edt*zd(k )
-  subin   = zu(kr) - edt*zd(kr)
-
-  if (k >= kbcon .and. k < ktop) then
-    entup  = entr(k)   *dz*zu(k)
-    detup  =   cd(kr) *dz*zu(k)
-  end if
-
-  if(k == jmin)  entdoj = edt*zd(k)
-  if(k == k22-1) entupk = zu(kpbl)
-  if(k == ktop)  detupk = zu(ktop)
-  if(k > kdet)   detdo  = 0.
-  if(k == ktop)  subin  = 0.
-  if(k < kbcon)  detup  = 0.
-  
-  if(iens == 1) then ! Deep convection
-      cfxup1(k ,i,j) =     xmb* zu(k)
-      cfxdn1(k ,i,j) =-edt*xmb* zd(k)
-      dfxup1(kr,i,j) =     xmb*(detup + detupk)
-      efxup1(kr,i,j) =    -xmb*(entup + entupk)
-      dfxdn1(kr,i,j) =     xmb*(detdo         ) !edt already is at detdo
-      efxdn1(kr,i,j) =    -xmb*(entdo + entdoj) !edt already is at entdo,entdoj
-  elseif(iens == 2)  then ! Shallow convection
-      cfxup2(k ,i,j) =     xmb* zu(k)
-      dfxup2(kr,i,j) =     xmb*(detup + detupk)
-      efxup2(kr,i,j) =    -xmb*(entup + entupk)
-  end if
-!------------------------------------------------------------------------------------------!
-! Checking the mass conservation                                                           !
-!------------------------------------------------------------------------------------------!
-  totmas=subin-subdown+detup-entup-entdo+detdo-entupk-entdoj+detupk
-  if(abs(totmas) > 1.e-6) then
-    write (unit=*,fmt='(a)')                 '----------- Subroutine Get_convflx ----------'
-    write(unit=*, fmt='(4(a,1x,i3,1x))')     '  K= ',k,'   I=',i,'   J=',j,'   IENS=',iens
-    write(unit=*, fmt='(2(a,1x,es10.3,1x))') '  subin=  ',    subin,'subdown=',subdown
-    write(unit=*, fmt='(2(a,1x,es10.3,1x))') '  detup=  ',    detup,'entup=  ',entup
-    write(unit=*, fmt='(2(a,1x,es10.3,1x))') '  entdo=  ',    entdo,'detdo=  ',detdo
-    write(unit=*, fmt='(2(a,1x,es10.3,1x))') '  entupk= ',   entupk,'detupk= ',detupk
-    write(unit=*, fmt='(2(a,1x,es10.3,1x))') '  zu(k)=  ',    zu(k),'zd(k)=  ',zd(k)
-    write(unit=*, fmt='(2(a,1x,es10.3,1x))') '  zu(kr)= ',   zu(kr),'zd(kr)= ',zd(kr)
-    write(unit=*, fmt='(2(a,1x,es10.3,1x))') '  entdoj= ',   entdoj,'edt=    ',edt
-    write(unit=*, fmt='(1(a,1x,es10.3,1x))') '  totmas= ',   totmas
-    write(unit=*, fmt='(a)')                 '---------------------------------------------'
-    call abort_run('The model will stop since it is not conserving mass...' &
-                  ,'get_convfx','rmass.f90')
-  end if
-
-end do
-
-!------------------------------------------------------------------------------------------!
-! Bottom layer                                                                             !
-!------------------------------------------------------------------------------------------!
-if(iens == 1) then  ! Deep convection
-  k = 1
-  kr= k + 1  ! the K-level of Grell is equivalent to the BRAMS K+1-level
-
-  dz        =  z_cup(2)-z_cup(1)
-
-  detdo1    = edt*zd(2)*  cdd(1)*dz
-  detdo2    = edt*zd(1)
-  entdo     = edt*zd(2)*entrd(1)*dz
-  subin     =-edt*zd(2)           
-
-  cfxup1(kr,i,j) = 0.
-  cfxdn1(k,i,j) =-edt*xmb* zd(1)
-  dfxup1(kr,i,j) = 0.
-  efxup1(kr,i,j) = 0.
-  dfxdn1(kr,i,j) = xmb*(detdo1+detdo2) !edt already is at detdo1,2
-  efxdn1(kr,i,j) =-xmb* entdo          !edt already is at entdo
- 
-
-!------------------------------------------------------------------------------------------!
-! Checking the mass conservation                                                           !
-!------------------------------------------------------------------------------------------!
-  totmas = detdo1+detdo2-entdo+subin
-  if(abs(totmas) > 1.e-6) then
-    write (unit=*,fmt='(a)')                 '----------- Subroutine Get_convflx ----------'
-    write(unit=*, fmt='(4(a,1x,i3,1x))')     '  K= ',k,'   I=',i,'   J=',j,'   IENS=',iens
-    write(unit=*, fmt='(2(a,1x,es10.3,1x))') '  subin=  ',    subin,'entdo=  ',entdo
-    write(unit=*, fmt='(2(a,1x,es10.3,1x))') '  detdo1= ',   detdo1,'detdo2= ',detdo2
-    write(unit=*, fmt='(1(a,1x,es10.3,1x))') '  totmas= ',   totmas
-    write(unit=*, fmt='(a)')                 '---------------------------------------------'
-    call abort_run('The model will stop since it is not conserving mass...' &
-                  ,'get_convfx','rmass.f90')
-  end if
-end if
-
-return
-end subroutine get_convflx
-!------------------------------------------------------------------------------------------!
+!==========================================================================================!
+!==========================================================================================!
 
 
 
@@ -308,19 +252,19 @@ end subroutine get_convflx
 
 !==========================================================================================!
 !==========================================================================================!
-! Subroutine prepare_tke_to_mass                                                           !
+! Subroutine prepare_timeavg_to_mass                                                       !
 !                                                                                          !
-!   The aim of this subroutine is simply save the mean TKE value at the regular and lite   !
-! analysis.                                                                                !
+!   The aim of this subroutine is simply save the mean value of any variable at the        !
+! regular and lite analysis.                                                               !
 !------------------------------------------------------------------------------------------!
-subroutine prepare_tke_to_mass(m1,m2,m3,ia,iz,ja,jz,dtlt,tkep,tkepb)
+subroutine prepare_timeavg_to_mass(m1,m2,m3,ia,iz,ja,jz,dtlt,var,avgvar)
    use mem_mass, only : frqmassave
    implicit none
    integer, intent(in)                      :: m1,m2,m3
    integer, intent(in)                      :: ia,iz,ja,jz
    real                     , intent(in)    :: dtlt
-   real, dimension(m1,m2,m3), intent(in)    :: tkep
-   real, dimension(m1,m2,m3), intent(inout) :: tkepb
+   real, dimension(m1,m2,m3), intent(in)    :: var
+   real, dimension(m1,m2,m3), intent(inout) :: avgvar
    integer                                  :: i, j, k
    real                                     :: timefac
 
@@ -329,52 +273,12 @@ subroutine prepare_tke_to_mass(m1,m2,m3,ia,iz,ja,jz,dtlt,tkep,tkepb)
    do k=1, m1
      do i= ia, iz
        do j= ja, jz
-         tkepb(k,i,j)= tkepb(k,i,j) + tkep(k,i,j) * timefac
+         avgvar(k,i,j)= avgvar(k,i,j) + var(k,i,j) * timefac
        end do
      end do
    end do
 
    return
-end subroutine prepare_tke_to_mass
+end subroutine prepare_timeavg_to_mass
 !==========================================================================================!
 !==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-! Subroutine prep_turb_to_mass                                                             !
-!    Saving the standard deviation of vertical velocity and vertical Lagrangian time scale !
-! to the average structures.                                                               !
-!------------------------------------------------------------------------------------------!
-subroutine prepare_turb_to_mass(m1,m2,m3,ia,iz,ja,jz,dtlt,sigw,tl,sigwb,tlb)
-   use mem_mass, only : frqmassave
-   implicit none
-   integer                  , intent(in)    :: m1,m2,m3
-   integer                  , intent(in)    :: ia,iz,ja,jz
-   real                     , intent(in)    :: dtlt
-   real, dimension(m1,m2,m3), intent(in)    :: sigw,tl
-   real, dimension(m1,m2,m3), intent(inout) :: sigwb,tlb
-   integer                                  :: i, j, k
-   real                                     :: timefac
-
-   timefac = dtlt/frqmassave
-
-   do k=1, m1
-      do i= ia, iz
-         do j= ja, jz
-            sigwb(k,i,j) = sigwb(k,i,j) + sigw(k,i,j) * timefac
-            tlb(k,i,j)   = tlb(k,i,j)   + tl(k,i,j)   * timefac
-         end do
-      end do
-   end do
-
-   return
-end subroutine prepare_turb_to_mass
-!==========================================================================================!
-!==========================================================================================!
-
-
