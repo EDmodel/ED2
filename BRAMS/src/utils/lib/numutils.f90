@@ -1077,7 +1077,7 @@ real function cdf2normal(mycdf)
    !----- Local variables -----------------------------------------------------------------!
    logical             :: converged          ! Convergence handle
    logical             :: bisection          ! Bisection check
-   integer             :: it                 ! Iteration counter
+   integer             :: it,i               ! Iteration counter
    real                :: delta              ! Aux. variable for 2nd guess.
    real                :: normala            ! Aux. variables with previous guess
    real                :: normalz            ! Aux. variables with previous guess
@@ -1106,12 +1106,21 @@ real function cdf2normal(mycdf)
       call abort_run('Invalid input CDF!','cdf2normal','numutils.f90')
    end if
 
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+   !write(unit=84,fmt='(a,1x,es14.7)') 'INPUT: ',mycdf
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+
    !----- First two guesses: no idea, just try -0.5 and 0.5 -------------------------------!
    normala  = -0.5
    funa     = cdf(normala) - mycdf
    normalz  =  0.5
    funz     = cdf(normalz) - mycdf
    
+
+
+
    !----- This is highly unlikely, but... -------------------------------------------------!
    if (funa == 0.) then
       cdf2normal = normala
@@ -1120,6 +1129,12 @@ real function cdf2normal(mycdf)
       cdf2normal = normalz
       return
    end if
+
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+   !write(unit=84,fmt='(60a1)')        ('-',i=1,60)
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
    
    !---------------------------------------------------------------------------------------!
    !   Finding the second guess for bisection. Checking whether the two guesses have op-   !
@@ -1135,7 +1150,11 @@ real function cdf2normal(mycdf)
          normala = normalz
          normalz = normalp
       end if
-      delta   = - funa * (normalz-normala)/(funz-funa)
+      if (abs(funz-funa) < toler) then
+         delta = 100.*toler
+      else
+         delta   = max(abs(funa * (normalz-normala)/(funz-funa)),100.*toler)
+      end if
       bisection = .false.
       guessloop: do it=1,maxfpo
          normalz = normala + real((-1)**it * (it+3)/2) * delta
@@ -1151,6 +1170,8 @@ real function cdf2normal(mycdf)
          call abort_run('Failed finding the second guess for bisection'                    &
                        ,'cdf2normal','numutils.f90')
       end if
+   else 
+      bisection = .true.
    end if
    
    !----- Choose the closest one to be the previous guess ---------------------------------!
@@ -1163,8 +1184,19 @@ real function cdf2normal(mycdf)
    end if
    
    normalc    = (funz * normala - funa * normalz) / (funz-funa)
-   func       = cdf(normalc) - mycdf 
-   
+   func       = cdf(normalc) - mycdf
+
+
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+   !write(unit=84,fmt='(a,1x,i5,1x,a,1x,l1,1x,8(a,1x,es14.7,1x))')                          &
+   !    '1STCALL: IT =', 0,'bisection=',bisection,'normala=',normala,'normalz=',normalz     &
+   !                ,'normalp=',normalp,'normalc=',normalc,'funa=',funa,'funz=',funz        &
+   !                ,'funp=',funp,'func=',func
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+
+
    !----- Looping until convergence is achieved -------------------------------------------!
    converged = .false.
    bisection = .false.
@@ -1230,6 +1262,18 @@ real function cdf2normal(mycdf)
       funp    = func
       normalc = cdf2normal
       func    = funnow
+
+
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      !write(unit=84,fmt='(a,1x,i5,1x,a,1x,l1,1x,8(a,1x,es14.7,1x))')                       &
+      !    'LOOP   : IT =',it,'bisection=',bisection,'normala=',normala,'normalz=',normalz  &
+      !                ,'normalp=',normalp,'normalc=',normalc,'funa=',funa,'funz=',funz     &
+      !                ,'funp=',funp,'func=',func
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+
+
    end do itloop
 
    if (.not. converged) then
@@ -1255,6 +1299,18 @@ real function cdf2normal(mycdf)
       
       call abort_run('Failed finding normalised value from CDF!!!'                         &
                                       ,'cdf2normal','numutils.f90')
+   !else
+
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      !write(unit=84,fmt='(a,1x,i5,1x,a,1x,l1,1x,8(a,1x,es14.7,1x))')                       &
+      !    'ANSWER : IT =',it,'bisection=',bisection,'normala=',normala,'normalz=',normalz  &
+      !                ,'normalp=',normalp,'normalc=',normalc,'funa=',funa,'funz=',funz     &
+      !                ,'funp=',funp,'func=',func
+      !write(unit=84,fmt='(60a1)')        ('-',i=1,60)
+      !write(unit=84,fmt='(a)')           ' '
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
    end if
    return
 end function cdf2normal
@@ -1431,9 +1487,14 @@ real function errorfun(x)
          ll(i)  = ll(i-1)
       end if
    end do iterloop
-
-   !----- Computing the function ----------------------------------------------------------!
-   errorfun = 2. * app * sqrtpii * sign(1.,x)
+   
+   !---------------------------------------------------------------------------------------!
+   !     Computing the function. erf is known to be bounded by -1.and 1 and here we will   !
+   ! ensure that that will be the case. Due to numerical precision the final value of      !
+   ! x) may be such that 1 <= erf(x) <= 1.+toler. Although within the tolerance, this  !
+   ! can cause problems elsewhere.                                                         !
+   !---------------------------------------------------------------------------------------!
+   errorfun = max(-1.,min(1.,2. * app * sqrtpii * sign(1.,x)))
    
    return
 end function errorfun
