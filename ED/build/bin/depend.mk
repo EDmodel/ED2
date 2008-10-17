@@ -373,7 +373,7 @@ mortality.o : $(ED_DYNAMICS)/mortality.f90 ed_state_vars.o pft_coms.o disturb_co
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-numutils.o: $(ED_UTILS)/numutils.f90
+numutils.o: $(ED_UTILS)/numutils.f90 therm_lib.o consts_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

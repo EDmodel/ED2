@@ -14,6 +14,7 @@ Module rconstants
    real, parameter :: pi1       = 3.14159265358979  ! Pi                        [      ---]
    real, parameter :: pii       = 1./pi1            ! 1/Pi                      [      ---]
    real, parameter :: halfpi    = pi1/2             ! Pi/2                      [      ---]
+   real, parameter :: sqrtpii   = 1./(pi1**0.5)     ! 1/sqrt(pi)                [      ---]
    real, parameter :: twopi     = pi1* 2.           ! 2 Pi                      [      ---]
    real, parameter :: pio180    = pi1/ 180.         ! Pi/180 (deg -> rad)       [      ---]
    real, parameter :: onerad    = 180. / pi1        ! 180/pi (rad -> deg)       [      ---]
@@ -33,6 +34,7 @@ Module rconstants
    real, parameter :: srtwoi    = 1./srtwo          ! 1./ Square root of 2.     [      ---]
    real, parameter :: srthreei  = 1./srthree        ! 1./ Square root of 3.     [      ---]
    real, parameter :: onethird  = 1./3.             ! 1/3                       [      ---]
+   real, parameter :: onesixth  = 1./6.             ! 1/6                       [      ---]
    !---------------------------------------------------------------------------------------!
 
 

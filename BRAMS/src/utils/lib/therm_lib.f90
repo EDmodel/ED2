@@ -24,6 +24,10 @@ module therm_lib
    integer, parameter ::   maxit  = 150             ! Maximum # of iterations before crash-
                                                     !   ing, for other methods.
 
+   integer, parameter ::   maxlev = 100             ! Maximum # of levels for adaptive     
+                                                    !   quadrature methods.    
+
+
    logical, parameter ::   newthermo = .true.      ! Use new thermodynamics [T|F]
 
    !---------------------------------------------------------------------------------------!
@@ -50,7 +54,7 @@ module therm_lib
    !     water for atmospheric applications. Q. J. Royal Meteor. Soc., vol. 31, pp. 1539-  !
    !     1565 (hereafter MK05).                                                            !
    !                                                                                       !
-   !  These equations give the triple point at 273.16, with vapour pressure being 
+   !  These equations give the triple point at t3ple, with vapour pressure being es3ple.   !
    !---------------------------------------------------------------------------------------!
    !----- Coefficients based on equation (7): ---------------------------------------------!
    real, dimension(0:3), parameter :: iii_7 = (/ 9.550426,-5723.265, 3.53068,-0.00728332 /)
@@ -60,6 +64,40 @@ module therm_lib
    real, dimension(0:3), parameter :: l02_10= (/53.878   ,-1331.22 ,-9.44523, 0.014025   /)
    !----- Coefficients based on the hyperbolic tangent ------------------------------------!
    real, dimension(2)  , parameter :: ttt_10= (/0.0415,218.8/)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     These constants came from the paper in which the saturation vapour pressure is    !
+   ! based on:                                                                             !
+   !                                                                                       !
+   !  Flatau, P. J.; Walko, R. L.; Cotton, W. R., 1992: Polynomial fits to saturation      !
+   !     vapor pressure. J. Appl. Meteor., vol. 31, pp. 1507-1513. (hereafter FWC92).      !
+   !                                                                                       !
+   !  These equations give the triple point at 273.004K.                                   !
+   !  N.B.: The coefficients here don't seem to match those listed on FWC92, but that's    !
+   !        what was on the original code...                                               !
+   !---------------------------------------------------------------------------------------!
+   !----- Coefficients for esat (liquid) --------------------------------------------------!
+   real, dimension(0:8), parameter :: cll = (/ .6105851e+03,  .4440316e+02,  .1430341e+01  &
+                                             , .2641412e-01,  .2995057e-03,  .2031998e-05  &
+                                             , .6936113e-08,  .2564861e-11, -.3704404e-13 /)
+   !----- Coefficients for esat (ice) -----------------------------------------------------!
+   real, dimension(0:8), parameter :: cii = (/ .6114327e+03,  .5027041e+02,  .1875982e+01  &
+                                             , .4158303e-01,  .5992408e-03,  .5743775e-05  &
+                                             , .3566847e-07,  .1306802e-09,  .2152144e-12 /)
+   !----- Coefficients for d(esat)/dT (liquid) --------------------------------------------!
+   real, dimension(0:8), parameter :: dll = (/ .4443216e+02,  .2861503e+01,  .7943347e-01  &
+                                             , .1209650e-02,  .1036937e-04,  .4058663e-07  &
+                                             ,-.5805342e-10, -.1159088e-11, -.3189651e-14 /)
+   !----- Coefficients for esat (ice) -----------------------------------------------------!
+   real, dimension(0:8), parameter :: dii = (/ .5036342e+02,  .3775758e+01,  .1269736e+00  &
+                                             , .2503052e-02,  .3163761e-04,  .2623881e-06  &
+                                             , .1392546e-08,  .4315126e-11,  .5961476e-14 /)
+   !---------------------------------------------------------------------------------------!
+
+
 
    contains
    !=======================================================================================!
@@ -70,9 +108,6 @@ module therm_lib
    real function eslf(temp,l1funout,l2funout,ttfunout)
       use rconstants, only : t00
       implicit none
-      real, parameter             :: c0= .6105851e+03, c1= .4440316e+02, c2= .1430341e+01
-      real, parameter             :: c3= .2641412e-01, c4= .2995057e-03, c5= .2031998e-05
-      real, parameter             :: c6= .6936113e-08, c7= .2564861e-11, c8=-.3704404e-13
       real, intent(in)            :: temp
       real, intent(out), optional :: l1funout,ttfunout,l2funout
       real                        :: l1fun,ttfun,l2fun,x
@@ -90,7 +125,8 @@ module therm_lib
       else
          !----- Original method, using polynomial fit (FWC92) -----------------------------!
          x    = max(-80.,temp-t00)
-         eslf = c0+x*(c1+x*(c2+x*(c3+x*(c4+x*(c5+x*(c6+x*(c7+x*c8)))))))
+         eslf = cll(0) + x * (cll(1) + x * (cll(2) + x * (cll(3) + x * (cll(4)             &
+                       + x * (cll(5) + x * (cll(6) + x * (cll(7) + x * cll(8)) ) ) ) ) ) )
 
          if (present(l1funout)) l1funout = eslf
          if (present(l2funout)) l2funout = eslf
@@ -115,9 +151,6 @@ module therm_lib
    real function esif(temp,iifunout)
       use rconstants, only : t00
       implicit none
-      real, parameter             :: c0= .6114327e+03, c1= .5027041e+02, c2= .1875982e+01
-      real, parameter             :: c3= .4158303e-01, c4= .5992408e-03, c5= .5743775e-05
-      real, parameter             :: c6= .3566847e-07, c7= .1306802e-09, c8= .2152144e-12
       real, intent(in)            :: temp
       real, intent(out), optional :: iifunout
       real                        :: iifun,x
@@ -131,7 +164,8 @@ module therm_lib
       else
          !----- Original method, using polynomial fit (FWC92) -----------------------------!
          x=max(-80.,temp-t00)
-         esif=c0+x*(c1+x*(c2+x*(c3+x*(c4+x*(c5+x*(c6+x*(c7+x*c8)))))))
+         esif = cii(0) + x * (cii(1) + x * (cii(2) + x * (cii(3) + x * (cii(4)             &
+                       + x * (cii(5) + x * (cii(6) + x * (cii(7) + x * cii(8)) ) ) ) ) ) )
 
          if (present(iifunout)) iifunout=esif
       end if
@@ -344,9 +378,6 @@ module therm_lib
    real function eslfp(temp)
       use rconstants, only: t00
       implicit none
-      real, parameter  :: d0= .4443216e+02, d1= .2861503e+01, d2= .7943347e-01
-      real, parameter  :: d3= .1209650e-02, d4= .1036937e-04, d5= .4058663e-07
-      real, parameter  :: d6=-.5805342e-10, d7=-.1159088e-11, d8=-.3189651e-14
       real, intent(in) :: temp
       real             :: esl,l2fun,ttfun,l1prime,l2prime,ttprime,x
 
@@ -360,7 +391,8 @@ module therm_lib
       else
          !----- Original method, using polynomial fit (FWC92) -----------------------------!
          x=max(-80.,temp-t00)
-         eslfp=d0+x*(d1+x*(d2+x*(d3+x*(d4+x*(d5+x*(d6+x*(d7+x*d8)))))))
+         eslfp = dll(0) + x * (dll(1) + x * (dll(2) + x * (dll(3) + x * (dll(4)            &
+                        + x * (dll(5) + x * (dll(6) + x * (dll(7) + x * dll(8)) ) ) ) ) ) )
       end if
 
 
@@ -382,9 +414,6 @@ module therm_lib
    real function esifp(temp)
       use rconstants, only: lsorvap, t00
       implicit none
-      real, parameter  :: d0= .5036342e+02, d1= .3775758e+01, d2= .1269736e+00
-      real, parameter  :: d3= .2503052e-02, d4= .3163761e-04, d5= .2623881e-06
-      real, parameter  :: d6= .1392546e-08, d7= .4315126e-11, d8= .5961476e-14
       real, intent(in) :: temp
       real             :: esi,iiprime,x
 
@@ -396,7 +425,8 @@ module therm_lib
       else
          !----- Original method, using polynomial fit (FWC92) -----------------------------!
          x=max(-80.,temp-t00)
-         esifp=d0+x*(d1+x*(d2+x*(d3+x*(d4+x*(d5+x*(d6+x*(d7+x*d8)))))))
+         esifp = dii(0) + x * (dii(1) + x * (dii(2) + x * (dii(3) + x * (dii(4)            &
+                        + x * (dii(5) + x * (dii(6) + x * (dii(7) + x * dii(8)) ) ) ) ) ) )
       end if
 
       return
