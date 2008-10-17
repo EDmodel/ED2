@@ -913,8 +913,7 @@ end subroutine pc03
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine sedim(m1,lcat,if_adap,mynum,alphasfc,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,pcpfillr   &
-                ,sfcpcp,dzt)
+subroutine sedim(m1,lcat,if_adap,mynum,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,pcpfillr,sfcpcp,dzt)
 
    use rconstants, only : cpi,ttripoli,alvl,alvi,alli,cp  ! intent(in)
    use therm_lib , only : qtk,dthil_sedimentation
@@ -954,13 +953,14 @@ subroutine sedim(m1,lcat,if_adap,mynum,alphasfc,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,
           ,qrfall         & ! intent(  out)
           ,accpx          & ! intent(  out)
           ,tairc          ! ! intent(  out)
-
+   use micro_coms, only : &
+           alphasfc       ! ! intent(in   )
 
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
    integer                                    , intent(in)    :: m1,lcat,if_adap,mynum
-   real                                       , intent(in)    :: alphasfc, dtlti
+   real                                       , intent(in)    :: dtlti
    real, dimension(m1                        ), intent(in)    :: dzt
    real, dimension(m1,maxkfall,nembfall,nhcat), intent(in)    :: pcpfillc, pcpfillr
    real, dimension(   maxkfall,nembfall,nhcat), intent(in)    :: sfcpcp
@@ -1026,7 +1026,7 @@ subroutine sedim(m1,lcat,if_adap,mynum,alphasfc,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,
 
    pcpg        = pcpg  + pcprx(lcat)
    accpx(lcat) = pcprx(lcat)
-   dpcpg       = dpcpg + pcprx(lcat) * alphasfc
+   dpcpg       = dpcpg + pcprx(lcat) * alphasfc(lcat)
    pcprx(lcat) = pcprx(lcat)  * dtlti
 
    do k = lpw,k2(lcat) ! From RAMS 6.0
@@ -1212,7 +1212,7 @@ subroutine adj1(m1,m2,m3,ia,iz,ja,jz,flpw,rv,rtp,dn0,micro)
          do k = ka,m1
             rtp(k,i,j) = max(toodry,rtp(k,i,j))
             !----- vctr9 is the total condensed mixing ratio ------------------------------!
-            vctr9(k)   = 1.001*sum(rx(k,:))
+            vctr9(k)   = rx(k,1)+rx(k,2)+rx(k,3)+rx(k,4)+rx(k,5)+rx(k,6)+rx(k,7)
             !----- vctr6 is the vapour mixing ratio ---------------------------------------!
             vctr6(k)   = rtp(k,i,j)-vctr9(k)
          enddo

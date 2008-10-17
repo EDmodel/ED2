@@ -43,7 +43,6 @@ subroutine dealloc_all()
 
   use mem_scratch_grell, only : dealloc_scratch_grell
   use mem_ensemble, only : ensemble_e,dealloc_ensemble
-  use grell_coms, only : nclouds
   use mem_mass, only : mass_g, massm_g, dealloc_mass
 
 

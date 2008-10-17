@@ -22,7 +22,6 @@ subroutine rams_mem_alloc(proc_type)
           ,maxens_eff           & ! - intent(inout)
           ,maxens_cap           & ! - intent(inout)
           ,maxens_dyn           & ! - intent(inout)
-          ,nclouds              & ! - intent(inout)
           ,define_grell_coms    ! ! - subroutine
             
    use mem_scratch_grell, only: & ! Grell's simple scratch variables:

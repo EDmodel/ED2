@@ -493,7 +493,7 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
    real                :: funnow      ! Function at this iteration.
    real                :: delta       ! Aux. var in case we need regula falsi.
    real                :: deriv       ! Derivative of this function.
-   integer             :: itn,itb     ! Iteration counter
+   integer             :: itn,itb,ii  ! Iteration counter
    logical             :: converged   ! Convergence handle
    logical             :: zside       ! Aux. Flag, for two purposes:
                                       ! 1. Found a good 2nd guess for regula falsi.
@@ -767,8 +767,32 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
       itb=itb+1
    end if
 
-   if (.not. converged) call abort_run('Failed finding equilibrium, I gave up!'            &
-                                      ,'thil2tqall','rthrm.f90')
+   if (.not. converged) then
+      write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
+      write (unit=*,fmt='(a)')           ' THIL2TQALL failed!'
+      write (unit=*,fmt='(a)')           ' '
+      write (unit=*,fmt='(a)')           ' -> Input: '
+      write (unit=*,fmt='(a,1x,f12.5)')  '    THETA_IL [     K]:',thil
+      write (unit=*,fmt='(a,1x,f12.5)')  '    EXNER    [J/kg/K]:',exner
+      write (unit=*,fmt='(a,1x,f12.5)')  '    RTOT     [  g/kg]:',1000.*rtot
+      write (unit=*,fmt='(a)')           ' '
+      write (unit=*,fmt='(a)')           ' -> Output: '
+      write (unit=*,fmt='(a,1x,i12)')    '    ITERATIONS       :',itb
+      write (unit=*,fmt='(a,1x,f12.5)')  '    TEMP     [    °C]:',temp-t00
+      write (unit=*,fmt='(a,1x,f12.5)')  '    RVAP     [  g/kg]:',1000.*rvap
+      write (unit=*,fmt='(a,1x,f12.5)')  '    RLIQ     [  g/kg]:',1000.*rliq
+      write (unit=*,fmt='(a,1x,f12.5)')  '    RICE     [  g/kg]:',1000.*rice
+      write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPA    [    °C]:',tempa-t00
+      write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPZ    [    °C]:',tempz-t00
+      write (unit=*,fmt='(a,1x,es12.5)') '    FUNA     [     K]:',funnow
+      write (unit=*,fmt='(a,1x,es12.5)') '    FUNZ     [     K]:',funnow
+      write (unit=*,fmt='(a,1x,es12.5)') '    DERIV    [   ---]:',deriv
+      write (unit=*,fmt='(a,1x,es12.5)') '    ERR_A    [   ---]:',abs(temp-tempa)/temp
+      write (unit=*,fmt='(a,1x,es12.5)') '    ERR_Z    [   ---]:',abs(temp-tempz)/temp
+      write (unit=*,fmt='(a)')           ' '
+      write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
+      call abort_run('Failed finding equilibrium, I gave up!','thil2tqall','rthrm.f90')
+   end if
    !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
    !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
    !write (unit=46,fmt='(a,1x,i5,1x,6(a,1x,f11.4,1x))')                                     &

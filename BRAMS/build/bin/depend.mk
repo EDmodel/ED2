@@ -97,7 +97,7 @@ dateutils.o: $(UTILS_LIB)/dateutils.f90 rconstants.o
 
 dealloc.o : $(MEMORY)/dealloc.f90 mem_all.o mem_opt_scratch.o catt_start.o mem_aerad.o     \
 	mem_globaer.o mem_globrad.o teb_spm_start.o mem_teb.o mem_teb_common.o             \
-	mem_gaspart.o mem_scratch_grell.o mem_ensemble.o grell_coms.o mem_mass.o
+	mem_gaspart.o mem_scratch_grell.o mem_ensemble.o mem_mass.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
