@@ -24,7 +24,7 @@ module therm_lib
    integer, parameter ::   maxit  = 150             ! Maximum # of iterations before crash-
                                                     !   ing, for other methods.
 
-   integer, parameter ::   maxlev = 100             ! Maximum # of levels for adaptive     
+   integer, parameter ::   maxlev = 16              ! Maximum # of levels for adaptive     
                                                     !   quadrature methods.    
 
 

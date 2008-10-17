@@ -1343,6 +1343,16 @@ real function errorfun(x)
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !    Return right away if x is too large. erf quickly converges to 1/-1 so no need to   !
+   ! compute when |x| > 9., even because the exponential would be too large.               !
+   !---------------------------------------------------------------------------------------!
+   if (abs(x) >= 9.) then
+     errorfun = sign(1.,x)
+     return
+   end if
+   !---------------------------------------------------------------------------------------!
+
 
    !----- Initialise integral and integration limits --------------------------------------!
    app           = 0            !----- This is the integral's approximate value
