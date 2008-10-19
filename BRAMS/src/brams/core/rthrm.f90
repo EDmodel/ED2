@@ -613,9 +613,15 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
       converged = abs(tempa-tempz) < toler*tempz
       !------------------------------------------------------------------------------------!
       !   Convergence. The temperature will be the mid-point between tempa and tempz. Fix  !
-      ! the mixing ratios and return.                                                      !
+      ! the mixing ratios and return. But first check for converged due to luck. If the    !
+      ! guess gives a root, then that's it. It looks unlikely, but it actually happens     !
+      ! sometimes and if not checked it becomes a singularity.                             !
       !------------------------------------------------------------------------------------!
-      if (converged) then
+      if (funnow == 0.) then
+         temp = tempz
+         converged = .true.
+         exit newloop
+      elseif (converged) then
          temp = 0.5 * (tempa+tempz)
          rsat  = max(toodry,rslif(pres,temp))
          if (temp >= t3ple) then
@@ -697,7 +703,9 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
       !------------------------------------------------------------------------------------!
       fpoloop: do itb=itn,maxfpo
          temp = (funz*tempa-funa*tempz)/(funz-funa)
-         !temp = 0.5*(tempa+tempz)
+         !----- Checking whether this guess will fall outside the range -------------------!
+         if (abs(temp-tempa) > abs(tempz-tempa) .or. abs(temp-tempz) > abs(tempz-tempa))   &
+            temp = 0.5*(tempa+tempz)
          !----- Distributing vapour into the three phases ---------------------------------!
          rsat   = max(toodry,rslif(pres,temp))
          rvap   = min(rtot,rsat)
@@ -735,13 +743,13 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
             if (zside) funa=funa * 0.5
             !----- We just updated zside, setting zside to true. --------------------------!
             zside = .true.
-         else
+         elseif (funnow*funz < 0.) then
             tempa = temp
             funa  = funnow
             !----- If we are updating aside again, modify zside (Illinois method) ---------!
             if (.not.zside) funz = funz * 0.5
             !----- We just updated aside, setting zside to false --------------------------!
-            zside = .false. 
+            zside = .false.
          end if
 
       end do fpoloop
@@ -930,9 +938,14 @@ subroutine thil2tqliq(thil,exner,pres,rtot,rliq,temp,rvap,rsat)
       converged = abs(tempa-tempz) < toler*tempz
       !------------------------------------------------------------------------------------!
       !   Convergence. The temperature will be the mid-point between tempa and tempz. Fix  !
-      ! the mixing ratios and return.                                                      !
+      ! the mixing ratios and return. Just check for the lucky guess, it actually happens  !
+      ! sometimes and if not checked, it becomes a singularity of this method.             !
       !------------------------------------------------------------------------------------!
-      if (converged) then
+      if (funnow == 0.) then
+         temp = tempz
+         converged = .true.
+         exit newloop
+      elseif (converged) then
          temp = 0.5 * (tempa+tempz)
          rsat  = max(toodry,rslf(pres,temp))
          rliq = max(0.,rtot-rsat)
