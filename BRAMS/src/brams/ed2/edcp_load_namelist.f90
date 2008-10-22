@@ -7,7 +7,8 @@ subroutine read_ednl(iunit)
        isoilstateinit, isoildepthflg, soilstate_db, soildepth_db,   &
        runoff_time,veg_database
 
-  use met_driver_coms,only: ed_met_driver_db,imettype,metcyc1,metcycf,initial_co2
+  use met_driver_coms,only: ed_met_driver_db,imettype,metcyc1,metcycf,initial_co2 &
+                           ,lapse_scheme
 
   use mem_sites, only: n_soi, soi_lat, soi_lon, n_ed_region, ed_reg_latmin,  &
        ed_reg_latmax, ed_reg_lonmin, ed_reg_lonmax, grid_res, grid_type, edres, &
@@ -15,7 +16,7 @@ subroutine read_ednl(iunit)
   
   use physiology_coms, only: istoma_scheme, n_plant_lim
 
-  use phenology_coms, only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath
+  use phenology_coms, only: iphen_scheme,repro_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath
  
   use decomp_coms, only: n_decomp_lim
   
@@ -24,11 +25,11 @@ subroutine read_ednl(iunit)
   
   use pft_coms, only: include_these_pft,pft_1st_check
   
-  use misc_coms, only:  ifoutput,idoutput,imoutput,isoutput, &
-       frqfast, frqstate,                          &
-       ied_init_mode, current_time,ed_inputs_dir,            &
-       end_time, integration_scheme, ffilout,  dtlsm,        &
-       iprintpolys,printvars,npvars,pfmtstr,ipmax,ipmin,            &
+  use misc_coms, only:  ifoutput,idoutput,imoutput,iyoutput,isoutput, &
+       frqfast, frqstate, outfast,outstate,                           &
+       ied_init_mode, current_time,ed_inputs_dir,                     &
+       end_time, integration_scheme, ffilout,  dtlsm,                 &
+       iprintpolys,printvars,npvars,pfmtstr,ipmax,ipmin,              &
        iedcnfgf,ffilout,sfilout,sfilin
   
   use grid_coms, only: timmax,time
@@ -56,13 +57,13 @@ subroutine read_ednl(iunit)
   integer :: err
 
   logical :: fexists,op
-  namelist /ED2_INFO/  dtlsm,ifoutput,idoutput,imoutput,isoutput,           &
+  namelist /ED2_INFO/  dtlsm,ifoutput,idoutput,imoutput,iyoutput,isoutput,  &
        attach_metadata,ffilout,sfilout,ied_init_mode,edres,sfilin,          &
        veg_database,soil_database,ed_inputs_dir,soilstate_db,soildepth_db,  &
        isoilstateinit,isoildepthflg,integration_scheme,istoma_scheme,       &
-       iphen_scheme,n_plant_lim,n_decomp_lim,include_fire,ianth_disturb,    &
-       include_these_pft,pft_1st_check,maxpatch,maxcohort,                  &
-       treefall_disturbance_rate,runoff_time,iprintpolys,npvars,        &
+       iphen_scheme,repro_scheme,lapse_scheme,n_plant_lim,n_decomp_lim,     &
+       include_fire,ianth_disturb,include_these_pft,pft_1st_check,maxpatch, &
+       maxcohort,treefall_disturbance_rate,runoff_time,iprintpolys,npvars,  &
        printvars,pfmtstr,ipmin,ipmax,initial_co2,iphenys1,iphenysf,         &
        iphenyf1,iphenyff,iedcnfgf,phenpath       
 
@@ -75,6 +76,7 @@ subroutine read_ednl(iunit)
      write(*,*) "ifoutput=",ifoutput
      write(*,*) "idoutput=",idoutput
      write(*,*) "imoutput=",imoutput
+     write(*,*) "iyoutput=",iyoutput
      write(*,*) "isoutput=",isoutput
      write(*,*) "attach_metadata=",attach_metadata
      write(*,*) "ffilout=",ffilout
@@ -91,7 +93,9 @@ subroutine read_ednl(iunit)
      write(*,*) "isoildepthflg=",isoildepthflg
      write(*,*) "integration_scheme=",integration_scheme
      write(*,*) "istoma_scheme=",istoma_scheme
-     write(*,*) "=iphen_scheme",iphen_scheme
+     write(*,*) "iphen_scheme",iphen_scheme
+     write(*,*) "repro_scheme",repro_scheme
+     write(*,*) "lapse_scheme",lapse_scheme
      write(*,*) "n_plant_lim=",n_plant_lim
      write(*,*) "n_decomp_lim=",n_decomp_lim
      write(*,*) "include_fire=",include_fire
@@ -213,6 +217,9 @@ subroutine read_ednl(iunit)
      call date_2_seconds (iyearz,imonthz,idatez,itimez*100, &
           iyeara,imontha,idatea,itimea*100,timmax)
 
+    ! Not sure what to do with these variables, setting it to zero.
+    outfast  = 0
+    outstate = 0
 
      return
    end subroutine read_ednl

@@ -7,8 +7,9 @@
 subroutine ed_model()
   
   use misc_coms, only: integration_scheme, current_time, frqfast, frqstate    &
-                      , current_time, dtlsm, ifoutput, isoutput, idoutput    &
-                      , imoutput, frqsum
+                      , out_time_fast, dtlsm, ifoutput, isoutput, idoutput    &
+                      , imoutput, iyoutput,frqsum
+  use ed_misc_coms, only: outputMonth
 
   use grid_coms, only : &
        ngrids,          &
@@ -52,7 +53,7 @@ subroutine ed_model()
   real :: tfact1
   integer :: ipa,ico
   logical :: analysis_time, new_day, new_month, new_year, the_end
-  logical :: writing_dail,writing_mont,history_time
+  logical :: writing_dail,writing_mont,writing_year,history_time, annual_time
   logical :: mont_analy_time,dail_analy_time,reset_time
   logical :: past_one_day,past_one_month
   logical :: printbanner
@@ -68,6 +69,9 @@ subroutine ed_model()
   
   writing_dail      = idoutput > 0
   writing_mont      = imoutput > 0
+  writing_year      = iyoutput > 0
+  out_time_fast     = current_time
+  out_time_fast%month = -1
 
   if (writing_mont) then
      do ifm=1,ngrids
@@ -88,8 +92,13 @@ subroutine ed_model()
      call reset_averaged_vars(edgrid_g(ifm))
   end do
   
+  !!Output Initial State
+  do ifm=1,ngrids
+     call update_ed_yearly_vars_ar(edgrid_g(ifm))
+  end do
+  call h5_output('YEAR')
+
   !         Start the timesteps
-  
 
   if ( mynum == 1) then
      write(*,"(/,a,/)") " === Time integration starts (model) ==="
@@ -155,13 +164,14 @@ subroutine ed_model()
      history_time    = mod(time,dble(frqstate)) < dtlsm .and. isoutput /= 0
      reset_time      = mod(time,dble(frqsum)) < dtlsm
      the_end         = mod(time,timmax) < dtlsm
+     annual_time     = new_month .and. writing_year .and. current_time%month == outputMonth
 
 
 !     if(analysis_time) call analysis_write(polygon_list_g(1)%first_polygon) 
 
      !   Call the model output driver 
      !   ====================================================
-     call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time &
+     call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time &
                    ,writing_dail,writing_mont,history_time,reset_time,the_end)
 
      ! Check if this is the beginning of a new simulated day.
@@ -209,8 +219,10 @@ subroutine ed_model()
      if(analysis_time)then
         if(new_month .and. new_day)then
            if(current_time%month == 6)then
-!              call update_ed_yearly_vars(polygon_list_g(1)%first_polygon)
-!              call zero_ed_yearly_vars(polygon_list_g(1)%first_polygon)
+              do ifm = 1,ngrids
+                 call update_ed_yearly_vars_ar(edgrid_g(ifm))
+                 enddo
+                 !call zero_ed_yearly_vars(polygon_list_g(1)%first_polygon)
            endif
         endif
      endif

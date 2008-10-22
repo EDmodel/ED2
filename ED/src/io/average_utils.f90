@@ -190,7 +190,13 @@ subroutine reset_averaged_vars(cgrid)
 
 
       enddo
+
+      cpoly%avg_soil_temp(:,:)      = 0.0
+      cpoly%avg_soil_water(:,:)     = 0.0
+      cpoly%avg_soil_fracliq(:,:)   = 0.0
+
    enddo
+
 
    do ipy = 1,cgrid%npolygons
       ! Should this be here as well?
@@ -226,7 +232,9 @@ subroutine reset_averaged_vars(cgrid)
       cgrid%avg_sensible_tot(ipy)   = 0.0
       cgrid%avg_soil_temp(:,ipy)    = 0.0
       cgrid%avg_soil_water(:,ipy)   = 0.0
+      cgrid%avg_soil_fracliq(:,ipy) = 0.0
    end do
+
    return
 end subroutine reset_averaged_vars
 !==========================================================================================!
@@ -562,6 +570,16 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    
    logical           , save :: find_factors=.true.
    real              , save :: dtlsm_o_daysec=1.E34, frqsum_o_daysec=1.E34
+
+   !!! RESET LAI
+   do ipy=1,cgrid%npolygons
+      cpoly => cgrid%polygon(ipy)
+      cgrid%lai_pft            (:,ipy) = 0.
+      do isi=1,cpoly%nsites
+         cpoly%lai_pft (:,isi) = 0.
+      end do
+   end do
+
    
    ! Computing the normalization factors. This is done once.
    if (find_factors) then

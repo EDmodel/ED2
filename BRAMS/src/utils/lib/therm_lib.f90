@@ -231,6 +231,7 @@ module therm_lib
    !---------------------------------------------------------------------------------------!
    real function rslif(pres,temp,useice)
       use rconstants, only: t3ple,ep
+      use node_mod,   only: mynum
       implicit none
       real   , intent(in)           :: pres,temp
       logical, intent(in), optional :: useice

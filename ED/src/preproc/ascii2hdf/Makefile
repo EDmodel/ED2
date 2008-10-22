@@ -18,3 +18,4 @@ all: convert_ascii.f90 hdf5_coms.f90 hdf5_utils_f.f90
 	$(F9X) -c convert_ascii.f90
 	$(F9X) -o convert_ascii $(LOADER_OPTS) convert_ascii.o hdf5_coms.o hdf5_utils_f.o -L$(HDF5_DIR)/lib -lhdf5 -lz -lm -lhdf5_fortran
 
+

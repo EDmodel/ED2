@@ -60,3 +60,37 @@ subroutine opspec_fatal(reason,opssub)
    write (unit=*,fmt='(a)')       ' '
    return
 end subroutine opspec_fatal
+
+subroutine warning(reason,subr,file)
+!------------------------------------------------------------------------------------------!
+!  Warning message, does not exit                                                          !
+!------------------------------------------------------------------------------------------!
+
+   use ed_node_coms, only: nnodetot,mynum
+   implicit none
+   character(len=*), intent(in) :: reason
+   character(len=*), intent(in), optional   :: subr,file
+
+   include 'mpif.h'
+  
+   write(unit=*,fmt='(a)') '::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::'
+   write(unit=*,fmt='(a)') '::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::'
+   write(unit=*,fmt='(a)') '::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::'
+   write(unit=*,fmt='(a)') ' '
+   write(unit=*,fmt='(a)') '------------------------------------------------------------------'
+   write(unit=*,fmt='(a)') '                       !!! WARNING !!!                            '
+   write(unit=*,fmt='(a)') '------------------------------------------------------------------'
+   if (nnodetot > 1 .and. mynum /= nnodetot) then
+      write(unit=*,fmt='(a,1x,i5,a)') ' On node: ',mynum,':'
+   elseif (nnodetot > 1) then
+      write(unit=*,fmt='(a)')         ' On the master node:'
+   end if
+   ! Although it is optional, it should always be present 
+   if (present(file)) write(unit=*,fmt='(a,1x,a)')    '    ---> File:       ',trim(file)
+   if (present(subr)) write(unit=*,fmt='(a,1x,a)')    '    ---> Subroutine: ',trim(subr)
+   write (unit=*,fmt='(a,1x,a)')                      '    ---> Reason:     ',trim(reason)
+   write(unit=*,fmt='(a)') '------------------------------------------------------------------'
+   write(unit=*,fmt='(a)') '------------------------------------------------------------------'
+ end subroutine warning
+!==========================================================================================!
+!==========================================================================================!

@@ -114,7 +114,8 @@ subroutine ed_coup_model()
   
   use misc_coms, only: integration_scheme, current_time, frqfast, frqstate    &
                       , current_time, dtlsm, ifoutput, isoutput, idoutput    &
-                      , imoutput, frqsum
+                      , imoutput, iyoutput, frqsum
+  use ed_misc_coms, only: outputMonth
 
   use grid_coms, only : &
        ngrids,          &
@@ -159,7 +160,7 @@ subroutine ed_coup_model()
   real :: tfact1
   integer :: ipa,ico
   logical :: analysis_time, new_day, new_month, new_year, the_end
-  logical :: writing_dail,writing_mont,history_time
+  logical :: writing_dail,writing_mont,writing_year,history_time,annual_time
   logical :: mont_analy_time,dail_analy_time,reset_time
   logical :: printbanner
   
@@ -170,6 +171,7 @@ subroutine ed_coup_model()
   
   writing_dail      = idoutput > 0
   writing_mont      = imoutput > 0
+  writing_year      = iyoutput > 0
 
 
   !         Start the timesteps
@@ -211,6 +213,7 @@ subroutine ed_coup_model()
   
   new_year        = current_time%month == 1 .and. new_month
   mont_analy_time = new_month .and. writing_mont
+  annual_time     = new_month .and. writing_year .and. current_time%month == outputMonth
   dail_analy_time = new_day   .and. writing_dail
   history_time    = mod(time,dble(frqstate)) < dtlsm .and. isoutput /= 0
   reset_time      = mod(time,dble(frqsum)) < dtlsm
@@ -219,7 +222,7 @@ subroutine ed_coup_model()
     
   !   Call the model output driver 
   !   ====================================================
-  call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time &
+  call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time &
        ,writing_dail,writing_mont,history_time,reset_time,the_end)
   
   ! Check if this is the beginning of a new simulated day.
