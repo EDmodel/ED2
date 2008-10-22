@@ -603,6 +603,7 @@
                              ! FRQANL
    IDOUTPUT  =  3,            ! Daily means   (mostly polygon averages)
    IMOUTPUT  =  3,            ! Monthly means (mostly polygon averages)
+   IYOUTPUT  =  0,            ! Annual output
    ISOUTPUT  =  0,            ! State file    (contains the entire model core)
                              ! State files are synchronized with BRAMS
                              ! history files FRQHIST
@@ -679,9 +680,19 @@
 
    IPHEN_SCHEME    = 1,  ! This specifies the phenology scheme:
                            !  0 is for the Botta et al scheme
-                           !  1 is for the Harvard Forest observations
+                           !  1 is for prescribed phenology
                            !  Other options coming soon.
   
+   REPRO_SCHEME    = 0,  ! This specifies the reproduction scheme:
+                         !  0 -- reproduction off (useful for short runs)
+                         !  1 -- original ED1 default
+
+   LAPSE_SCHEME    = 0,  ! This specifies the met lapse rate scheme:
+			 !  0 -- lapse rates off
+			 !  1 -- phenomenological, global
+			 !  2 -- phenomenological, local (not yet implemented)
+			 !  2 -- mechanistic(not yet implemented)
+
    N_PLANT_LIM     = 1,  ! Determines whether (1) or not (0) plants can
                          ! be limited by nitrogen
 

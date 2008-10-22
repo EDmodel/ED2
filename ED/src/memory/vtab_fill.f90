@@ -49,6 +49,7 @@
    ![ED2-MLO: adding options for daily and monthly analysis
    vtab_r(nv,ng)%imont=0
    vtab_r(nv,ng)%idail=0
+   vtab_r(nv,ng)%iyear=0
    !ED2-MLO]
 
    do nt=3,ntok
@@ -75,6 +76,8 @@
       	 vtab_r(nv,ng)%imont=1
       elseif(ctab == 'dail' ) then
       	 vtab_r(nv,ng)%idail=1
+      elseif(ctab == 'year' ) then
+      	 vtab_r(nv,ng)%iyear=1
  !ED2-MLO]
 
 

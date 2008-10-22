@@ -229,8 +229,34 @@ subroutine calcHydroSubsurface()
   real                        :: bf_site, bf_patch
   integer                     :: slsl,nsoil
 
-  !!if not using TOPMODEL leave hydrology calculation early
-  if(useTOPMODEL == 0) return
+  !!if not using TOPMODEL, just do water table calculation then return
+  if(useTOPMODEL == 0)then
+     do igr = 1,ngrids
+        cgrid => edgrid_g(igr)
+        do ipy=1,cgrid%npolygons
+           cpoly => cgrid%polygon(ipy)
+           cgrid%zbar(ipy)     = 0.0
+           cgrid%baseflow(ipy) = 0.0
+           area_land = 0.0        !proportion
+           do isi=1,cpoly%nsites
+              csite => cpoly%site(isi)
+              zbar_site   = 0.0  !reset site vars
+              do ipa=1,csite%npatches
+                 !!first calculate water table depth for each patch 
+                 call calcWatertable(cpoly,isi,ipa)
+                 !!update site mean variables
+                 zbar_site = zbar_site + csite%watertable(ipa)*csite%area(ipa)
+              end do
+              !update polygon mean variables
+              area_land       = area_land + cpoly%area(isi)
+              cgrid%zbar(ipy) = cgrid%zbar(ipy)+ zbar_site * cpoly%area(isi)
+           enddo
+           !normalize variables by non-water site areas
+           cgrid%zbar(ipy) = cgrid%zbar(ipy)/area_land 
+        enddo
+     enddo
+     return
+  endif
 
   ! Calculates TOPMODEL water table adjustment
 

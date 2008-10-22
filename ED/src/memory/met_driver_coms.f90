@@ -9,6 +9,8 @@ Module met_driver_coms
                                       ! its spacing directly?
   real               :: initial_co2
 
+  integer            :: lapse_scheme  ! which variant of lapse rate correction to use
+
   integer :: nformats
   character(len=metname_len), allocatable, dimension(:) :: met_names
   integer, allocatable, dimension(:) :: met_nlon

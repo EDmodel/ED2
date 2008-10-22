@@ -86,7 +86,7 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
       case (2,3) ! Secondary or primary forest
          mypfts= sum(include_pft)
       end select
-   
+
       call allocate_patchtype(cpatch,mypfts)
       do ico = 1,mypfts
          ! Include_these_pft is sorted, so just the first elements will be used 
@@ -96,7 +96,7 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
          case (2,3)
             ipft=include_these_pft(ico)
          end select
-   
+
          cpatch%pft(ico)              = ipft
    
          ! Define the near-bare ground
