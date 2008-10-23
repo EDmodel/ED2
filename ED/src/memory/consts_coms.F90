@@ -20,7 +20,8 @@ Module consts_coms
      , b_t3ple      => t3ple      , b_t3plei     => t3plei     , b_es3ple     => es3ple    &
      , b_es3plei    => es3plei    , b_epes3ple   => epes3ple   , b_alvl       => alvl      &
      , b_alvi       => alvi       , b_alli       => alli       , b_alli1000   => alli1000  &
-     , b_allii      => allii      , b_tsupercool => tsupercool , b_erad2      => erad2
+     , b_allii      => allii      , b_tsupercool => tsupercool , b_erad2      => erad2     &
+     , b_sqrtpii    => sqrtpii    , b_onesixth   => onesixth
 
    implicit none
 
@@ -49,7 +50,8 @@ Module consts_coms
    real, parameter :: alvl       = b_alvl       , alvi       = b_alvi
    real, parameter :: alli       = b_alli       , alli1000   = b_alli1000
    real, parameter :: allii      = b_allii      , tsupercool = b_tsupercool
-   real, parameter :: erad2      = b_erad2
+   real, parameter :: erad2      = b_erad2      , sqrtpii    = b_sqrtpii
+   real, parameter :: onesixth   = b_onesixth
 
 #else
    implicit none
@@ -59,6 +61,7 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    real, parameter :: pi1       = 3.14159265358979  ! Pi                        [      ---]
    real, parameter :: twopi     = pi1* 2.           ! 2 Pi                      [      ---]
+   real, parameter :: sqrtpii   = 0.564189584       ! 1/sqrt(pi)                [      ---]
    real, parameter :: pio180    = pi1/ 180.         ! Pi/180 (deg -> rad)       [      ---]
    real, parameter :: pi4       = pi1 * 4.          ! 4 Pi                      [      ---]
    real, parameter :: pio4      = pi1 /4.           ! Pi/4                      [      ---]
@@ -74,6 +77,7 @@ Module consts_coms
    real, parameter :: srtwoi    = 1./srtwo          ! 1./ Square root of 2.     [      ---]
    real, parameter :: srthreei  = 1./srthree        ! 1./ Square root of 3.     [      ---]
    real, parameter :: onethird  = 1./3.             ! 1/3                       [      ---]
+   real, parameter :: onesixth  = 1./6.             ! 1/6                       [      ---]
    !---------------------------------------------------------------------------------------!
 
 

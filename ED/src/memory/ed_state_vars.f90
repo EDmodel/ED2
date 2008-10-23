@@ -6163,7 +6163,8 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%dmean_gpp_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'DMEAN_GPP_LU :15:hist:dail:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'Polygon Averaged by Landuse, Daily Integrated Gross Primary Productivity','[tC/ha/d]','ipoly - lu') 
+       call metadata_edio(nvar,igr,'Polygon Averaged by Landuse, Daily Integrated Gross Primary Productivity' &
+            ,'[tC/ha/d]','ipoly - lu') 
     endif
     
     if(associated(cgrid%dmean_rh_lu)) then
@@ -6177,14 +6178,16 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%dmean_nep_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'DMEAN_NEP_LU :15:hist:dail:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'Polygon Averaged by Landuse, Daily Integrated Net Ecosystem Production','[tC/ha/d]','ipoly - lu') 
+       call metadata_edio(nvar,igr,'Polygon Averaged by Landuse, Daily Integrated Net Ecosystem Production' &
+            ,'[tC/ha/d]','ipoly - lu') 
     endif
     
     if(associated(cgrid%dmean_gpp_dbh)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%dmean_gpp_dbh(1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'DMEAN_GPP_DBH :16:hist:dail:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'Polygon Averaged by DBH, Daily Integrated Gross Primary Production','[tC/ha/d]','ipoly - ndbh') 
+       call metadata_edio(nvar,igr,'Polygon Averaged by DBH, Daily Integrated Gross Primary Production' &
+            ,'[tC/ha/d]','ipoly - ndbh') 
     endif
     
     if(associated(cgrid%lai_pft)) then
@@ -6194,7 +6197,10 @@ contains
        call metadata_edio(nvar,igr,'Leaf Area Index','[m/m]','NA') 
     else
        print*,"LAI_PFT not associated"
-       stop
+       ! REMOVING THE STOP, WITH LARGE GRIDS, IT IS POSSIBLE THAT
+       ! A PARALLEL NODE WILL HAVE NO POLYGONS, AND THUS BREAK THIS
+       ! CONDITION IN A LAWFULL CONTEXT. RK 10-25-08
+       !       stop
     endif
     
     if(associated(cgrid%mmean_gpp)) then
