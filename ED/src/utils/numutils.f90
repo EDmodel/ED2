@@ -1057,3 +1057,470 @@ cvmgn=vct2
 endif
 return
 end
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This function computes the normalised value of a Gaussian distribution associated     !
+! with the given cumulative distribution function. Fortran90 does not have the inverse of  !
+! erf function, so we use the zeroin method (without IQI) to find the root.                !
+!------------------------------------------------------------------------------------------!
+real function cdf2normal(mycdf)
+   use therm_lib, only : toler, maxfpo
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   real   , intent(in) :: mycdf              ! The CDF we want to invert
+   !----- Local variables -----------------------------------------------------------------!
+   logical             :: converged          ! Convergence handle
+   logical             :: bisection          ! Bisection check
+   integer             :: it,i               ! Iteration counter
+   real                :: delta              ! Aux. variable for 2nd guess.
+   real                :: normala            ! Aux. variables with previous guess
+   real                :: normalz            ! Aux. variables with previous guess
+   real                :: normalp            ! Aux. variables with previous guess
+   real                :: normalc            ! Aux. variables with current  guess
+   real                :: funa,funz          ! Function evaluation for bisection 
+   real                :: func,funp          ! Function evaluation for secant 
+   real                :: funnow             ! Function we want to find the root.
+   !----- External functions --------------------------------------------------------------!
+   real, external      :: cdf                ! Cumulative distribution function function
+   !---------------------------------------------------------------------------------------!
+
+   !----- Sanity check first... -----------------------------------------------------------!
+   if (mycdf == 1.) then
+      cdf2normal = 6.
+      return
+   elseif (mycdf == 0.) then
+      cdf2normal = -6.
+      return
+   !----- This is a singularity for error checking, but we know it... ---------------------!
+   elseif (mycdf == 0.5) then
+      cdf2normal = 0.
+      return
+   elseif (mycdf < 0. .or. mycdf > 1.) then
+      write (unit=*,fmt='(a,1x,es14.7)') 'WEIRD CDF!!! ',mycdf
+      call fatal_error('Invalid input CDF!','cdf2normal','numutils.f90')
+   end if
+
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+   !write(unit=84,fmt='(a,1x,es14.7)') 'INPUT: ',mycdf
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+
+   !----- First two guesses: no idea, just try -0.5 and 0.5 -------------------------------!
+   normala  = -0.5
+   funa     = cdf(normala) - mycdf
+   normalz  =  0.5
+   funz     = cdf(normalz) - mycdf
+   
+
+
+
+   !----- This is highly unlikely, but... -------------------------------------------------!
+   if (funa == 0.) then
+      cdf2normal = normala
+      return
+   elseif (funz == 0.) then
+      cdf2normal = normalz
+      return
+   end if
+
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+   !write(unit=84,fmt='(60a1)')        ('-',i=1,60)
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+   
+   !---------------------------------------------------------------------------------------!
+   !   Finding the second guess for bisection. Checking whether the two guesses have op-   !
+   ! posite signs, if not, fix the closest guess as normala and seek a better normalz.     !
+   !---------------------------------------------------------------------------------------!
+   if (funa * funz > 0.) then
+      !----- Switching A and Z ------------------------------------------------------------!
+      if (abs(funz) < abs(funa)) then
+         funp    = funa
+         funa    = funz
+         funz    = funp
+         normalp = normala
+         normala = normalz
+         normalz = normalp
+      end if
+      if (abs(funz-funa) < toler) then
+         delta = 100.*toler
+      else
+         delta   = max(abs(funa * (normalz-normala)/(funz-funa)),100.*toler)
+      end if
+      bisection = .false.
+      guessloop: do it=1,maxfpo
+         normalz = normala + real((-1)**it * (it+3)/2) * delta
+         funz    = cdf(normalz) - mycdf
+         bisection = funa*funz < 0.
+         if (bisection) exit guessloop
+      end do guessloop
+      if (.not. bisection) then
+         write (unit=*,fmt='(a)') ' No second guess for you...'
+         write (unit=*,fmt='(2(a,1x,es14.7))') 'normala=',normala,'funa=',funa
+         write (unit=*,fmt='(2(a,1x,es14.7))') 'normalz=',normalz,'funz=',funz
+         write (unit=*,fmt='(1(a,1x,es14.7))') 'delta=',delta
+         call fatal_error('Failed finding the second guess for bisection'                    &
+                       ,'cdf2normal','numutils.f90')
+      end if
+   else 
+      bisection = .true.
+   end if
+   
+   !----- Choose the closest one to be the previous guess ---------------------------------!
+   if (abs(funa) < abs(funz)) then
+      funp    = funa
+      normalp = normala
+   else
+      funp    = funz
+      normalp = normalz
+   end if
+   
+   normalc    = (funz * normala - funa * normalz) / (funz-funa)
+   func       = cdf(normalc) - mycdf
+
+
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+   !write(unit=84,fmt='(a,1x,i5,1x,a,1x,l1,1x,8(a,1x,es14.7,1x))')                          &
+   !    '1STCALL: IT =', 0,'bisection=',bisection,'normala=',normala,'normalz=',normalz     &
+   !                ,'normalp=',normalp,'normalc=',normalc,'funa=',funa,'funz=',funz        &
+   !                ,'funp=',funp,'func=',func
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+
+
+   !----- Looping until convergence is achieved -------------------------------------------!
+   converged = .false.
+   bisection = .false.
+   itloop: do it=1,maxfpo
+   
+      !------------------------------------------------------------------------------------!
+      ! e1. Deciding whether to go with bisection or not. I should go with bisection if    !
+      !     the secant is dangerously small (derivative too flat, which causes diver-      !
+      !     gence). Also if it didn't converge fast with secant, fall back to bisection.   !
+      !------------------------------------------------------------------------------------!
+      bisection = it > maxfpo / 4 .or. abs(func-funp) < toler
+
+      !------------------------------------------------------------------------------------!
+      ! e2. Setting the new guess. Still not sure with which method I should go, so estab- !
+      !     lish the new guess using secant. If the guess is outside the range defined by  !
+      !     the A Z pair, use bisection this time.                                         !
+      !------------------------------------------------------------------------------------!
+      if (.not.bisection) then
+          cdf2normal = (funp*normalc - func*normalp) / (funp-func)
+          bisection  = abs(cdf2normal-normala) > abs(normalz-normala) .or.                 &
+                       abs(cdf2normal-normalz) > abs(normalz-normala)
+      end if
+      if (bisection) cdf2normal = 0.5 * (normala+normalz)
+
+      !------------------------------------------------------------------------------------!
+      ! e3. Finding the new function evaluation.                                           !
+      !------------------------------------------------------------------------------------!
+      funnow = cdf(cdf2normal) - mycdf
+
+
+
+      !------------------------------------------------------------------------------------!
+      ! e4. Testing for convergence, depending on the method.                              !
+      !------------------------------------------------------------------------------------!
+      if (funnow == 0.) then
+         converged = .true.
+      elseif (bisection) then 
+         converged = abs(cdf2normal-normala) < toler*abs(cdf2normal)
+      else
+         converged = abs(cdf2normal-normalc) < toler*abs(cdf2normal)
+      end if
+      !----- Found a good set, leaving... -------------------------------------------------!
+      if (converged) exit itloop
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      ! e5. Checking which side from the A Z pair I can update, based on funnow.           !
+      !------------------------------------------------------------------------------------!
+      if (funnow*funa < 0.) then
+         funz    = funnow
+         normalz = cdf2normal
+      else
+         funa    = funnow
+         normala = cdf2normal
+      end if
+
+      !------------------------------------------------------------------------------------!
+      ! e6. Updating the Previous-Current pair for the next secant attempt.                !
+      !------------------------------------------------------------------------------------!
+      normalp = normalc
+      funp    = func
+      normalc = cdf2normal
+      func    = funnow
+
+
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      !write(unit=84,fmt='(a,1x,i5,1x,a,1x,l1,1x,8(a,1x,es14.7,1x))')                       &
+      !    'LOOP   : IT =',it,'bisection=',bisection,'normala=',normala,'normalz=',normalz  &
+      !                ,'normalp=',normalp,'normalc=',normalc,'funa=',funa,'funz=',funz     &
+      !                ,'funp=',funp,'func=',func
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+
+
+   end do itloop
+
+   if (.not. converged) then
+      write (unit=*,fmt='(a)') '-----------------------------------------------------------'
+      write (unit=*,fmt='(a)') ' Normalised value from CDF didn''t converge!!!'
+      write (unit=*,fmt='(a,1x,i5,1x,a)')    ' I gave up, after',maxfpo,'iterations...'
+      write (unit=*,fmt='(a)')               ' '
+      write (unit=*,fmt='(a)')               ' Input CDF.'
+      write (unit=*,fmt='(a,1x,f12.4)' )     '  # mycdf   =',mycdf
+      write (unit=*,fmt='(a)')               ' '
+      write (unit=*,fmt='(a)')               '  Last iteration outcome.'
+      write (unit=*,fmt='(2(a,1x,es14.7))' ) '  # Normala   =',normala,' # Funa=',funa
+      write (unit=*,fmt='(2(a,1x,es14.7))' ) '  # Normalz   =',normalz,' # Funz=',funz
+      write (unit=*,fmt='(2(a,1x,es14.7))' ) '  # Normalc   =',normalc,' # Func=',func
+      write (unit=*,fmt='(2(a,1x,es14.7))' ) '  # Normalp   =',normalp,' # Funp=',funp
+      write (unit=*,fmt='(2(a,1x,es14.7))' ) '  # Normal    =',cdf2normal,' # Fun =',funnow
+      write (unit=*,fmt='(a)')               '  Errors.'
+      write (unit=*,fmt='(a,1x,es14.7)')     '  # Secant    ='                             &
+                                             ,abs(cdf2normal-normalc)/abs(cdf2normal)
+      write (unit=*,fmt='(a,1x,es14.7)')     '  # Bisection ='                             &
+                                             ,abs(cdf2normal-normala)/abs(cdf2normal) 
+      write (unit=*,fmt='(a)') '-----------------------------------------------------------'
+      
+      call fatal_error('Failed finding normalised value from CDF!!!'                         &
+                                      ,'cdf2normal','numutils.f90')
+   !else
+
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      !write(unit=84,fmt='(a,1x,i5,1x,a,1x,l1,1x,8(a,1x,es14.7,1x))')                       &
+      !    'ANSWER : IT =',it,'bisection=',bisection,'normala=',normala,'normalz=',normalz  &
+      !                ,'normalp=',normalp,'normalc=',normalc,'funa=',funa,'funz=',funz     &
+      !                ,'funp=',funp,'func=',func
+      !write(unit=84,fmt='(60a1)')        ('-',i=1,60)
+      !write(unit=84,fmt='(a)')           ' '
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   end if
+   return
+end function cdf2normal
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This function computes the cumulative distribution function of a given normalised     !
+! value. Fortran90 (at least gfortran, intel, and pgf) contains a built-in erf function.   !
+! If your compiler doesn't have, it may be needed to use iterative methods instead.        !
+!------------------------------------------------------------------------------------------!
+real function cdf(normal)
+   use consts_coms, only : srtwoi
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   real, intent(in) :: normal
+   !----- External function, the error function. PGI doesn't have the intrinsic erf -------!
+   real, external   :: errorfun
+   !---------------------------------------------------------------------------------------!
+   cdf = 0.5 * (1. + errorfun(normal * srtwoi))
+   return
+end function cdf
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!   This function simply computes the cubic root of all numbers, including the negative    !
+! ones.                                                                                    !
+!------------------------------------------------------------------------------------------!
+real function cbrt(x)
+   use consts_coms, only: onethird
+   implicit none
+   real, intent(in) :: x
+   if (x > 0) then
+     cbrt=x**onethird
+   else
+     cbrt=-((-x)**onethird)
+   end if 
+end function cbrt
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This function computes the error function of a variable x. Some fortran distributions !
+! have the intrinsic erf function, but not all of them come with (pgi seems not to have).  !
+! This function was tested against the intrinsic function for ifort and results were       !
+! within the tolerance for all values tested.                                              !
+!    Here we will use the adaptive quadrature method to find it. The method implemented    !
+! here was entirely based on the algorithm 4.3 from:                                       !
+!     BURDEN, R.L.;l FAIRES, J.D., 2005. Numerical Analysis, 8th edition. Thomson          !
+!          Brooks/Cole, Belmont, CA.                                                       !
+!------------------------------------------------------------------------------------------!
+real function errorfun(x)
+   use consts_coms, only: onethird,onesixth,sqrtpii
+   use therm_lib , only: toler,maxlev 
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   real, intent(in) :: x
+   !----- Local variables -----------------------------------------------------------------!  
+   real, dimension(8)      :: vv !   Temporary storage area
+   real, dimension(maxlev) :: tol,aa,hh,fa,fb,fc,ss,ll
+   real                    :: a0,b0,fd,fe,s1,s2,app,toomanylevels
+   integer                 :: i
+   !----- Function ------------------------------------------------------------------------!
+   real, external          :: expmsq
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Return right away if x is too large. erf quickly converges to 1/-1 so no need to   !
+   ! compute when |x| > 9., even because the exponential would be too large.               !
+   !---------------------------------------------------------------------------------------!
+   if (abs(x) >= 9.) then
+     errorfun = sign(1.,x)
+     return
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Initialise integral and integration limits --------------------------------------!
+   app           = 0            !----- This is the integral's approximate value
+   a0            = min(0.,x)    !----- Lower bound
+   b0            = max(0.,x)    !----- Upper bound 
+   toomanylevels = real(maxlev) !----- Just for if test.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Initialise scratch arrays -------------------------------------------------------!
+   i      = 1
+   tol(i) = 10.*toler
+   aa(i)  = a0
+   hh(i)  = 0.5*(b0-a0)
+   fa(i)  = expmsq(aa(i))
+   fc(i)  = expmsq(aa(i)+hh(i))
+   fb(i)  = expmsq(b0)
+   !----- Approximation from Simpson's method for entire interval -------------------------!
+   ss(i)  = onethird * hh(i) * (fa(i) + 4.*fc(i) + fb(i)) 
+   ll(i)  = 1
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !  Entering the iterative loop. I'm not using do while because people say that it is    !
+   ! deprecated in fortran90.                                                              !
+   !---------------------------------------------------------------------------------------!
+   iterloop: do
+      if (i == 0) exit iterloop
+
+      !----- Computing Simpson's method for halves of subintervals ------------------------!
+      fd = expmsq(aa(i)+0.5*hh(i))
+      fe = expmsq(aa(i)+1.5*hh(i))
+      s1 = onesixth * hh(i) * (fa(i) + 4.*fd + fc(i))
+      s2 = onesixth * hh(i) * (fc(i) + 4.*fe + fb(i))
+
+      !----- Saving data at this level ----------------------------------------------------!
+      vv(1) = aa(i)
+      vv(2) = fa(i)
+      vv(3) = fc(i)
+      vv(4) = fb(i)
+      vv(5) = hh(i)
+      vv(6) = tol(i)
+      vv(7) = ss(i)
+      vv(8) = ll(i)
+      
+      !----- Delete the level -------------------------------------------------------------!
+      i     = i -1
+      
+      !----- Checking convergence ---------------------------------------------------------!
+      if (abs(s1+s2-vv(7)) < vv(6)) then
+         app = app + s1 + s2
+      elseif (vv(8) >= toomanylevels) then
+         call fatal_error('Too many levels, it won''t converge!','errorfun','numutils.f90')
+      !----- Add one level ----------------------------------------------------------------!
+      else
+         !----- Data for the right half subinterval ---------------------------------------!
+         i      = i + 1
+         aa(i)  = vv(1) + vv(5)
+         fa(i)  = vv(3)
+         fc(i)  = fe
+         fb(i)  = vv(4)
+         hh(i)  = 0.5 * vv(5)
+         tol(i) = 0.5 * vv(6) 
+         ss(i)  = s2
+         ll(i)  = vv(8) 
+         !----- Data for the left half subinterval ----------------------------------------!
+         i      = i + 1
+         aa(i)  = vv(1)
+         fa(i)  = vv(2)
+         fc(i)  = fd
+         fb(i)  = vv(3)
+         hh(i)  = hh(i-1)
+         tol(i) = tol(i-1)
+         ss(i)  = s1
+         ll(i)  = ll(i-1)
+      end if
+   end do iterloop
+   
+   !---------------------------------------------------------------------------------------!
+   !     Computing the function. erf is known to be bounded by -1.and 1 and here we will   !
+   ! ensure that that will be the case. Due to numerical precision the final value of      !
+   ! x) may be such that 1 <= erf(x) <= 1.+toler. Although within the tolerance, this  !
+   ! can cause problems elsewhere.                                                         !
+   !---------------------------------------------------------------------------------------!
+   errorfun = max(-1.,min(1.,2. * app * sqrtpii * sign(1.,x)))
+   
+   return
+end function errorfun
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This function simply computes f(x) = exp (-x²). Just to make errorfun neater.         !
+!------------------------------------------------------------------------------------------!
+real function expmsq(x)
+   implicit none
+   !----- Argument ------------------------------------------------------------------------!
+   real, intent(in) :: x
+   !---------------------------------------------------------------------------------------!
+   
+   expmsq=exp(-x*x)
+
+   return
+end function expmsq
+!==========================================================================================!
+!==========================================================================================!

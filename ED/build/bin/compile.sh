@@ -1,4 +1,5 @@
 #!/bin/sh
+
 if [ 'z'${1} == 'zclean' ]
 then
   ./install.sh clean
