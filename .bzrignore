@@ -194,3 +194,4 @@ ED/build/bin/rk4_stepper_ar.mod
 ED/build/bin/soil_coms.mod
 ED/build/bin/therm_lib.mod
 ED/build/bin/var_tables_array.mod
+logs.txt
