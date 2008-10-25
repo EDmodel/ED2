@@ -157,7 +157,7 @@ ed_misc_coms.o : $(ED_MEMORY)/ed_misc_coms.f90
 
 ed_model.o : $(ED_DRIVER)/ed_model.f90 misc_coms.o grid_coms.o ed_state_vars.o             \
 	rk4_driver.o ed_node_coms.o disturb_coms.o mem_sites.o consts_coms.o disturbance.o \
-	fuse_fiss_utils.o growth_balive.o ed_misc_coms.o
+	fuse_fiss_utils.o growth_balive.o ed_misc_coms.o consts_coms.o 
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

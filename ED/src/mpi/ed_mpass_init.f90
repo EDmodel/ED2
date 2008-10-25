@@ -79,7 +79,8 @@ subroutine ed_masterput_nl(par_run)
                              ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir   &
                              ,integration_scheme,end_time,current_time,sfilout,frqstate     &
                              ,isoutput,iprintpolys,printvars,pfmtstr,ipmin,ipmax,iedcnfgf   &
-                             ,outfast,outstate,out_time_fast,out_time_state,nrec_fast,nrec_state,irec_fast,irec_state
+                             ,outfast,outstate,out_time_fast,out_time_state,nrec_fast       &
+                             ,nrec_state,irec_fast,irec_state,unitfast,unitstate
 
    use ed_misc_coms,only: attach_metadata
    use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,deltax,deltay,polelat,polelon       &
@@ -149,6 +150,8 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(frqfast,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(outfast,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(outstate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(unitfast,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(unitstate,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
                       
    call MPI_Bcast(sfilin,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ffilout,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
@@ -658,7 +661,8 @@ subroutine ed_nodeget_nl
                              ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir   &
                              ,integration_scheme,end_time,current_time,isoutput,sfilout    &
                              ,frqstate,iprintpolys,printvars,pfmtstr,ipmin,ipmax,iedcnfgf  &
-   ,outfast,outstate,out_time_fast,out_time_state,nrec_fast,nrec_state,irec_fast,irec_state
+                             ,outfast,outstate,out_time_fast,out_time_state,nrec_fast      &
+                             ,nrec_state,irec_fast,irec_state,unitfast,unitstate
 
    use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,deltax,deltay,polelat,polelon       &
                              ,centlat,centlon,time,timmax,nstratx,nstraty
@@ -726,6 +730,8 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(frqfast,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(outfast,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(outstate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(unitfast,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(unitstate,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
                       
    call MPI_Bcast(sfilin,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ffilout,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)

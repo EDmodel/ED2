@@ -379,8 +379,8 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
      ! This requires multiplication of volumetric water content, m3(water)/m3
      ! must be multiplied by depth to get a depth of water.
 
-     soil_liq(k) = min( initp%soil_water(k) - soil(nsoil)%soilcp,   &
-          initp%soil_water(k) * initp%soil_fracliq(k) )
+     soil_liq(k) = max(0.0, (initp%soil_water(k) - soil(nsoil)%soilcp) *  &
+                            initp%soil_fracliq(k))
 
      soilair99(k) = 0.99 * soil(nsoil)%slmsts - initp%soil_water(k)
   enddo

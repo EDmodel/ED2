@@ -1338,7 +1338,7 @@ edcp_model.o : $(ED_MIXED)/edcp_model.f90 mem_grid.o mem_leaf.o ed_node_coms.o m
 	mem_edcp.o grid_coms.o ed_state_vars.o rk4_driver.o disturb_coms.o mem_sites.o     \
 	consts_coms.o disturbance.o fuse_fiss_utils.o growth_balive.o node_mod.o           \
 	mem_leaf.o mem_basic.o mem_radiate.o mem_cuparm.o mem_micro.o therm_lib.o          \
-	ed_misc_coms.o
+	ed_misc_coms.o consts_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

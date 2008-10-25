@@ -1105,7 +1105,7 @@ real function cdf2normal(mycdf)
       return
    elseif (mycdf < 0. .or. mycdf > 1.) then
       write (unit=*,fmt='(a,1x,es14.7)') 'WEIRD CDF!!! ',mycdf
-      call abort_run('Invalid input CDF!','cdf2normal','numutils.f90')
+      call fatal_error('Invalid input CDF!','cdf2normal','numutils.f90')
    end if
 
    !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1169,7 +1169,7 @@ real function cdf2normal(mycdf)
          write (unit=*,fmt='(2(a,1x,es14.7))') 'normala=',normala,'funa=',funa
          write (unit=*,fmt='(2(a,1x,es14.7))') 'normalz=',normalz,'funz=',funz
          write (unit=*,fmt='(1(a,1x,es14.7))') 'delta=',delta
-         call abort_run('Failed finding the second guess for bisection'                    &
+         call fatal_error('Failed finding the second guess for bisection'                    &
                        ,'cdf2normal','numutils.f90')
       end if
    else 
@@ -1299,7 +1299,7 @@ real function cdf2normal(mycdf)
                                              ,abs(cdf2normal-normala)/abs(cdf2normal) 
       write (unit=*,fmt='(a)') '-----------------------------------------------------------'
       
-      call abort_run('Failed finding normalised value from CDF!!!'                         &
+      call fatal_error('Failed finding normalised value from CDF!!!'                         &
                                       ,'cdf2normal','numutils.f90')
    !else
 
@@ -1464,7 +1464,7 @@ real function errorfun(x)
       if (abs(s1+s2-vv(7)) < vv(6)) then
          app = app + s1 + s2
       elseif (vv(8) >= toomanylevels) then
-         call abort_run('Too many levels, it won''t converge!','errorfun','numutils.f90')
+         call fatal_error('Too many levels, it won''t converge!','errorfun','numutils.f90')
       !----- Add one level ----------------------------------------------------------------!
       else
          !----- Data for the right half subinterval ---------------------------------------!

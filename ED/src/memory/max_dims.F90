@@ -120,6 +120,6 @@ Module max_dims
   
   integer,parameter :: maxpvars = 50     ! The maximum number of printable variables
 
-  integer, parameter :: maxfiles = 4000  ! Maximum number of files
+  integer, parameter :: maxfiles = 6666  ! Maximum number of files
   
 end Module max_dims

@@ -716,6 +716,14 @@
         	                ! 0 = no metadata, 1 = yes metadata
 
 
+   OUTFAST    = 0,             ! Time interval between analysis files
+   OUTSTATE   = 0,             ! Time interval between history files
+                               ! Values are in seconds and must be <= 1 month
+                               ! Values < FRQFAST/FRQSTATE are set to those values
+                               ! Special values:  0 = same as frqanl/frqhist;
+                               !                 -1 = daily;
+                               !                 -2 = monthly
+
 !-------------------------------------------------------------------------!
 ! Analysis/history/restart file: path, prefix, settings                   !
 !-------------------------------------------------------------------------!

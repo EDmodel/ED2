@@ -340,70 +340,551 @@ subroutine ed_opspec_times
 !    This subroutine checks time related settings from ED2IN.                              !
 !------------------------------------------------------------------------------------------!
    use misc_coms , only : frqfast,frqstate,imontha,idatea,iyeara,itimea  &
-                         ,imonthz,idatez,iyearz,itimez,dtlsm,radfrq    &
-                         ,ifoutput,isoutput,idoutput,imoutput,iyoutput, &
-                         nrec_fast,nrec_state,outfast,outstate
+                         ,imonthz,idatez,iyearz,itimez,dtlsm,radfrq      &
+                         ,ifoutput,isoutput,idoutput,imoutput,iyoutput,  &
+                         nrec_fast,nrec_state,outfast,outstate,unitfast,unitstate
    use consts_coms, only : day_sec,hr_sec
    use grid_coms , only : timmax
 
 
    implicit none
    character(len=222)           :: reason
-   integer :: ifaterr
+   integer :: ifaterr,n
    ifaterr=0
 
-! Frequency of fast and state must be a divisor or multiple of 1 day
-   if (ifoutput /= 0 .and. (imoutput /= 0 .or. idoutput /= 0) .and. &
-       mod(day_sec,frqfast) /= 0.0 .and. mod(frqfast,day_sec) /= 0.0) then
-      write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
-          'FRQFAST must be a divisor or an integer multiple of ',day_sec, &
-          ' sec when daily and/or monthly analysis are on. Yours is set to ',frqfast
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Checking whether the user provided a valid combination of unitfast, frqfast, and  !
+   ! outfast.                                                                              !
+   !---------------------------------------------------------------------------------------!
+   select case(unitfast)
+   !---------------------------------------------------------------------------------------!
+   !    Seconds                                                                            !
+   !---------------------------------------------------------------------------------------!
+   case (0)
+      if (ifoutput == 0) then
+         nrec_fast = 1 ! Useless, no output will be created.
+      !------------------------------------------------------------------------------------!
+      !    If unitfrq is 0, then frqfast must be either a divisor or a multiple of one day !
+      ! in case there is daily and/or monthly analysis.                                    !
+      !------------------------------------------------------------------------------------!
+      elseif ((imoutput /= 0 .or. idoutput /= 0 .or. outfast == -1. .or. outfast == -2. )  &
+             .and. (mod(day_sec,frqfast) /= 0. .and. mod(frqfast,day_sec) /= 0.)) then
+         write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
+             'FRQFAST must be a divisor or an integer multiple of ',day_sec,               &
+             ' sec when daily and/or monthly analysis are on. Yours is set to ',frqfast
+         call opspec_fatal(reason,'opspec_times')
+         ifaterr = ifaterr + 1
+      !------------------------------------------------------------------------------------!
+      !   Checking outfast setting and adjusting it if needed. Depending on the            !
+      ! configuration, this will cause the run to crash.                                   !
+      !------------------------------------------------------------------------------------!
+      !----- User didn't specify any outfast, use frqfast ---------------------------------!
+      elseif(outfast == 0.) then
+         outfast    = frqfast
+         nrec_fast  = 1
+      elseif (outfast == -1.) then
+         outfast = day_sec
+         nrec_fast  = outfast/frqfast
+      elseif (outfast == -2.) then
+         nrec_fast = 0 !---- This must be reset every month.
+      !----- User set outfast < frqfast. Resetting it and printing a warning --------------!
+      elseif(outfast > 0. .and. outfast < frqfast) then
+         outfast = frqfast
+         nrec_fast  = 1 
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!  WARNING! WARNING! WARNING! WARNING! WARNING!   !!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') ' -> Outfast cannot be less than frqfast.'
+         write (unit=*,fmt='(a,1x,f7.0,1x,a)')                                             &
+                                  '    Oufast was redefined to ',outfast,'seconds.'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') ' '
+      elseif(mod(outfast,frqfast) /= 0.0) then
+         call opspec_fatal('OUTFAST must be a multiple of FRQFAST','opspec_times')
+         ifaterr = ifaterr + 1
+      else
+         nrec_fast = outfast/frqfast
+      end if
+
+   !---------------------------------------------------------------------------------------!
+   !    Days.                                                                              !
+   !---------------------------------------------------------------------------------------!
+   case (1)
+      if (ifoutput == 0) then
+         nrec_fast = 1 ! Useless, no output will be created.
+      !------------------------------------------------------------------------------------!
+      !    If unitfrq is 0, then frqfast must be either a divisor or a multiple of one day !
+      ! in case there is daily and/or monthly analysis.                                    !
+      !------------------------------------------------------------------------------------!
+      elseif ((imoutput /= 0 .or. idoutput /= 0) .and.                                     &
+              (mod(day_sec,day_sec*frqfast) /= 0. .and. mod(frqfast,1.) /= 0.)) then
+         write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
+             'FRQFAST must be a divisor or an integer multiple of ',1,                     &
+             ' day when daily and/or monthly analysis are on. Yours is set to ',frqfast
+         call opspec_fatal(reason,'opspec_times')
+
+      !------------------------------------------------------------------------------------!
+      !   Checking outfast setting and adjusting it if needed. Depending on the            !
+      ! configuration, this will cause the run to crash.                                   !
+      !------------------------------------------------------------------------------------!
+      !----- User didn't specify any outfast, use frqfast ---------------------------------!
+      elseif(outfast == 0.) then
+         outfast    = frqfast
+         nrec_fast  = 1
+      elseif (outfast == -1.) then
+         outfast    = 1.
+         nrec_fast  = outfast/frqfast
+      elseif (outfast == -2.) then
+         nrec_fast = 0 !---- This must be reset every month.
+      !----- User set outfast < frqfast. Resetting it and printing a warning --------------!
+      elseif(outfast > 0. .and. outfast < frqfast) then
+         outfast = frqfast
+         nrec_fast  = 1 
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!  WARNING! WARNING! WARNING! WARNING! WARNING!   !!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') ' -> Outfast cannot be less than frqfast.'
+         write (unit=*,fmt='(a,1x,f7.0,1x,a)')                                             &
+                                  '    Oufast was redefined to ',outfast,'days.'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') ' '
+      elseif(mod(outfast,frqfast) /= 0.0) then
+         call opspec_fatal('OUTFAST must be a multiple of FRQFAST','opspec_times')
+         ifaterr = ifaterr + 1
+      else
+         nrec_fast = outfast/frqfast
+      end if
+
+      !----- Since days are always 86,400 sec, use seconds instead. -----------------------!
+      frqfast = frqfast * day_sec
+      if (outfast /= -2. ) outfast = outfast * day_sec
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Months.                                                                            !
+   !---------------------------------------------------------------------------------------!
+   case (2)
+      if (ifoutput == 0) then
+         nrec_fast = 1 ! Useless, no output will be created.
+      !------------------------------------------------------------------------------------!
+      !    If unifrq is monthly, it needs to be a round number.                            !
+      !------------------------------------------------------------------------------------!
+      elseif (mod(frqfast,1.) /= 0) then
+         write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
+             'FRQFAST must be a round number when unitfast is ',unitfast,                  &
+             '(months). Yours is currently set to ',frqfast
+         call opspec_fatal(reason,'opspec_times')  
+         ifaterr = ifaterr + 1
+      !------------------------------------------------------------------------------------!
+      !    If unifrq is monthly, it needs to be a divisor of 12, so it closes a year cycle.!
+      ! This could be softened at some point, but that would require more calculations.    !
+      !  Therefore, the only values accepted now are 1,2,3,4,6, and 12.                    !
+      !------------------------------------------------------------------------------------!
+      elseif (mod(12.,frqfast) /= 0) then
+         write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
+             'FRQFAST must be a divisor of 12 (one year) when unitfast is ',unitfast,      &
+             '(months). Yours is currently set to ',frqfast
+         call opspec_fatal(reason,'opspec_times')  
+         ifaterr = ifaterr + 1
+      !------------------------------------------------------------------------------------!
+      !    This is fine but now outfast must be set exactly as frqfast. If the user wasn't !
+      ! aware of this, print an informative banner.                                        !
+      !------------------------------------------------------------------------------------!
+      elseif (outfast /= 0. .or. outfast > frqfast) then
+         outfast = frqfast
+         nrec_fast = 1
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!  WARNING! WARNING! WARNING! WARNING! WARNING!   !!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') ' -> Outfast cannot be different than frqfast when'
+         write (unit=*,fmt='(a)') '    unitfast is set to 2 (months).'
+         write (unit=*,fmt='(a,1x,f7.0,1x,a)')                                             &
+                                  '    Oufast was redefined to ',outfast,'months.'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') ' '
+      else !----- The user either knew or was lucky, don't print the banner ---------------!
+         outfast = frqfast
+         nrec_fast = 1
+      end if
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Years.                                                                             !
+   !---------------------------------------------------------------------------------------!
+   case (3)
+      if (ifoutput == 0) then
+         nrec_fast = 1 ! Useless, no output will be created.
+      ! If unifrq is yearly, then frqfast must be integer ---------------------------------!
+      elseif (mod(frqfast,1.) /= 0) then
+         write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
+             'FRQFAST must be a round number when unitfast is ',unitfast,                  &
+             '(years). Yours is currently set to ',frqfast
+         call opspec_fatal(reason,'opspec_times')  
+         ifaterr = ifaterr + 1
+      !------------------------------------------------------------------------------------!
+      !    This is fine but now outfast must be set exactly as frqfast. If the user wasn't !
+      ! aware of this, print an informative banner.                                        !
+      !------------------------------------------------------------------------------------!
+      elseif (outfast /= 0. .or. outfast > frqfast) then
+         outfast = frqfast
+         nrec_fast = 1
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!  WARNING! WARNING! WARNING! WARNING! WARNING!   !!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') ' -> Outfast cannot be different than frqfast when'
+         write (unit=*,fmt='(a)') '    unitfast is set to 3 (years).'
+         write (unit=*,fmt='(a,1x,f7.0,1x,a)')                                             &
+                                  '    Oufast was redefined to ',outfast,'years.'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') ' '
+      else !----- The user either knew or was lucky, don't print the banner ---------------!
+         outfast = frqfast
+         nrec_fast = 1
+      end if
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Invalid unit, stopping the run.                                                    !
+   !---------------------------------------------------------------------------------------!
+   case default
+      write (reason,fmt='(a,1x,i4,a)') &
+        'Invalid UNITFAST, it must be between 0 and 3. Yours is set to',unitfast,'...'
       call opspec_fatal(reason,'opspec_times')  
-      ifaterr=ifaterr+1
-   end if
-   if (isoutput /= 0 .and. (imoutput /= 0 .or. idoutput /= 0) .and. &
-       mod(day_sec,frqstate) /= 0.0 .and. mod(frqstate,day_sec) /= 0.0 ) then
-      write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
-          'FRQSTATE must be a divisor of ',day_sec, &
-          ' sec when daily and/or monthly analysis are on. Yours is set to ',frqstate
+      ifaterr = ifaterr +1
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Checking whether the user provided a valid combination of unitstate, frqstate,    !
+   ! and outstate.                                                                         !
+   !---------------------------------------------------------------------------------------!
+   select case(unitstate)
+   !---------------------------------------------------------------------------------------!
+   !    Seconds                                                                            !
+   !---------------------------------------------------------------------------------------!
+   case (0)
+      if (isoutput == 0) then
+         nrec_state = 1 ! Useless, no output will be created.
+      !------------------------------------------------------------------------------------!
+      !    If unitstate is 0, then frqstate must be either a divisor or a multiple of one   !
+      ! day in case there is daily and/or monthly analysis.                                !
+      !------------------------------------------------------------------------------------!
+      elseif ((imoutput /= 0 .or. idoutput /= 0 .or. outstate == -1. .or. outstate == -2.) &
+             .and. (mod(day_sec,frqstate) /= 0. .and. mod(frqstate,day_sec) /= 0.)) then
+         write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
+             'FRQSTATE must be a divisor or an integer multiple of ',day_sec,              &
+             ' sec when daily and/or monthly analysis are on. Yours is set to ',frqstate
+         call opspec_fatal(reason,'opspec_times')
+         ifaterr = ifaterr + 1
+      !------------------------------------------------------------------------------------!
+      !   Checking outstate setting and adjusting it if needed. Depending on the           !
+      ! configuration, this will cause the run to crash.                                   !
+      !------------------------------------------------------------------------------------!
+      !----- User didn't specify any outstate, use frqstate -------------------------------!
+      elseif(outstate == 0.) then
+         outstate    = frqstate
+         nrec_state  = 1
+      elseif (outstate == -1.) then
+         outstate = day_sec
+         nrec_state  = outstate/frqstate
+      elseif (outstate == -2.) then
+         nrec_state = 0 !---- This must be reset every month.
+      !----- User set outstate < frqstate. Resetting it and printing a warning ------------!
+      elseif(outstate > 0. .and. outstate < frqstate) then
+         outstate = frqstate
+         nrec_state  = 1 
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!  WARNING! WARNING! WARNING! WARNING! WARNING!   !!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') ' -> Outstate cannot be less than frqstate.'
+         write (unit=*,fmt='(a,1x,f7.0,1x,a)')                                             &
+                                  '    Oustate was redefined to ',outstate,'seconds.'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') ' '
+      elseif(mod(outstate,frqstate) /= 0.0) then
+         call opspec_fatal('OUTSTATE must be a multiple of FRQSTATE','opspec_times')
+         ifaterr = ifaterr + 1
+      else
+         nrec_state = outstate/frqstate
+      end if
+
+   !---------------------------------------------------------------------------------------!
+   !    Days.                                                                              !
+   !---------------------------------------------------------------------------------------!
+   case (1)
+      if (isoutput == 0) then
+         nrec_state = 1 ! Useless, no output will be created.
+      !------------------------------------------------------------------------------------!
+      !    If unitfrq is 0, then frqstate must be either a divisor or a multiple of one    !
+      ! day in case there is daily and/or monthly analysis.                                !
+      !------------------------------------------------------------------------------------!
+      elseif ((imoutput /= 0 .or. idoutput /= 0) .and.                                     &
+              (mod(day_sec,day_sec*frqstate) /= 0. .and. mod(frqstate,1.) /= 0.)) then
+         write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
+             'FRQSTATE must be a divisor or an integer multiple of ',1,                     &
+             ' day when daily and/or monthly analysis are on. Yours is set to ',frqstate
+         call opspec_fatal(reason,'opspec_times')
+
+      !------------------------------------------------------------------------------------!
+      !   Checking outstate setting and adjusting it if needed. Depending on the           !
+      ! configuration, this will cause the run to crash.                                   !
+      !------------------------------------------------------------------------------------!
+      !----- User didn't specify any outstate, use frqstate ---------------------------------!
+      elseif(outstate == 0.) then
+         outstate    = frqstate
+         nrec_state  = 1
+      elseif (outstate == -1.) then
+         outstate    = 1.
+         nrec_state  = outstate/frqstate
+      elseif (outstate == -2.) then
+         nrec_state = 0 !---- This must be reset every month.
+      !----- User set outstate < frqstate. Resetting it and printing a warning --------------!
+      elseif(outstate > 0. .and. outstate < frqstate) then
+         outstate = frqstate
+         nrec_state  = 1 
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!  WARNING! WARNING! WARNING! WARNING! WARNING!   !!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') ' -> Outstate cannot be less than frqstate.'
+         write (unit=*,fmt='(a,1x,f7.0,1x,a)')                                             &
+                                  '    Oustate was redefined to ',outstate,'days.'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') ' '
+      elseif(mod(outstate,frqstate) /= 0.0) then
+         call opspec_fatal('OUTSTATE must be a multiple of FRQSTATE','opspec_times')
+         ifaterr = ifaterr + 1
+      else
+         nrec_state = outstate/frqstate
+      end if
+
+      !----- Since days are always 86,400 sec, use seconds instead. -----------------------!
+      frqstate = frqstate * day_sec
+      if (outstate /= -2. ) outstate = outstate * day_sec
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Months.                                                                            !
+   !---------------------------------------------------------------------------------------!
+   case (2)
+      if (isoutput == 0) then
+         nrec_state = 1 ! Useless, no output will be created.
+      !------------------------------------------------------------------------------------!
+      !    If unifrq is monthly, it needs to be a round number.                            !
+      !------------------------------------------------------------------------------------!
+      elseif (mod(frqstate,1.) /= 0) then
+         write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
+             'FRQSTATE must be a round number when unitstate is ',unitstate,               &
+             '(months). Yours is currently set to ',frqstate
+         call opspec_fatal(reason,'opspec_times')  
+         ifaterr = ifaterr + 1
+      !------------------------------------------------------------------------------------!
+      !    If unistate is monthly, it needs to be a divisor of 12, so it closes a year     !
+      ! cycle. This could be softened at some point, but that would require more           !
+      ! calculations.  Therefore, the only values accepted now are 1,2,3,4,6, and 12.      !
+      !------------------------------------------------------------------------------------!
+      elseif (mod(12.,frqstate) /= 0) then
+         write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
+             'FRQSTATE must be a divisor of 12 (one year) when unitstate is ',unitstate,   &
+             '(months). Yours is currently set to ',frqstate
+         call opspec_fatal(reason,'opspec_times')  
+         ifaterr = ifaterr + 1
+      !------------------------------------------------------------------------------------!
+      !    This is fine but now outstate must be set exactly as frqstate. If the user wasn't !
+      ! aware of this, print an informative banner.                                        !
+      !------------------------------------------------------------------------------------!
+      elseif (outstate /= 0. .or. outstate > frqstate) then
+         outstate = frqstate
+         nrec_state = 1
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!  WARNING! WARNING! WARNING! WARNING! WARNING!   !!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') ' -> Outstate cannot be different than frqstate when'
+         write (unit=*,fmt='(a)') '    unitstate is set to 2 (months).'
+         write (unit=*,fmt='(a,1x,f7.0,1x,a)')                                             &
+                                  '    Oustate was redefined to ',outstate,'months.'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') ' '
+      else !----- The user either knew or was lucky, don't print the banner ---------------!
+         outstate = frqstate
+         nrec_state = 1
+      end if
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Years.                                                                             !
+   !---------------------------------------------------------------------------------------!
+   case (3)
+      if (isoutput == 0) then
+         nrec_state = 1 ! Useless, no output will be created.
+      ! If unifrq is yearly, then frqstate must be integer ---------------------------------!
+      elseif (mod(frqstate,1.) /= 0) then
+         write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
+             'FRQSTATE must be a round number when unitstate is ',unitstate,                  &
+             '(years). Yours is currently set to ',frqstate
+         call opspec_fatal(reason,'opspec_times')  
+         ifaterr = ifaterr + 1
+      !------------------------------------------------------------------------------------!
+      !    This is fine but now outstate must be set exactly as frqstate. If the user      !
+      ! wasn't aware of this, print an informative banner.                                 !
+      !------------------------------------------------------------------------------------!
+      elseif (outstate /= 0. .or. outstate > frqstate) then
+         outstate = frqstate
+         nrec_state = 1
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!  WARNING! WARNING! WARNING! WARNING! WARNING!   !!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') ' -> Outstate cannot be different than frqstate when'
+         write (unit=*,fmt='(a)') '    unitstate is set to 3 (years).'
+         write (unit=*,fmt='(a,1x,f7.0,1x,a)')                                             &
+                                  '    Oustate was redefined to ',outstate,'years.'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') ' '
+      else !----- The user either knew or was lucky, don't print the banner ---------------!
+         outstate = frqstate
+         nrec_state = 1
+      end if
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Invalid unit, stopping the run.                                                    !
+   !---------------------------------------------------------------------------------------!
+   case default
+      write (reason,fmt='(a,1x,i4,a)') &
+        'Invalid UNITSTATE, it must be between 0 and 3. Yours is set to',unitstate,'...'
       call opspec_fatal(reason,'opspec_times')  
-      ifaterr=ifaterr+1
+      ifaterr = ifaterr +1
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Frequency of the analysis must be a divisor of the frequency of history output     !
+   ! The history files contain variables that are integrated over the analysis frequency.  !
+   ! If the analysis and history times are not synchronized, then the integrated values    !
+   ! will be improperly normalized and give strange/biased results. Notes: If it is abso-  !
+   ! lutely necessary to have them non-divisible, then do so, but realize any integrated   !
+   ! fast-time variables are meaningless, or scale them yourself. Note 2: If there are no  !
+   ! analysis outputs, only history, then the analysis time will be set to the history     !
+   ! time, so that the integrated variables reported in the history file are integrated    !
+   ! over the history period.                                                              !
+   !---------------------------------------------------------------------------------------!
+   if (isoutput /= 0. .and. ifoutput /= 0.) then
+      if (unitfast == unitstate .and. mod(frqstate,frqfast) /= 0.0 ) then
+         write(reason,fmt='(a,1x,2(a,1x,f10.2,1x))')                                       &
+              'FRQFAST must be a divisor of FRQSTATE if both are outputing data.',         &
+              'Yours is set to FRQFAST=',frqfast,' sec and FRQSTATE=',frqstate,'days!'
+         call opspec_fatal(reason,'opspec_times')  
+         ifaterr=ifaterr+1
+      end if
+      !----- Now we check other combinations ----------------------------------------------!
+      select case (unitfast)
+      case (0) !----- Seconds -------------------------------------------------------------!
+         select case(unitstate)
+         case (1) !---- state in days -----------------------------------------------------!
+            if (mod(frqstate*day_sec,frqfast) /= 0.0) then
+               write(reason,fmt='(a,1x,2(a,1x,f10.2,1x))')                                 &
+                    'FRQFAST must be a divisor of FRQSTATE if both are outputing data.',   &
+                    'Yours is set to FRQFAST=',frqfast,'sec and FRQSTATE=',frqstate,'days!'
+            end if
+         case (2,3) !---- State in months or years, frqfast must be divisor of 1 day ------!
+            if (mod(frqstate*day_sec,frqfast) /= 0.0) then
+               write(reason,fmt='(a,1x,a,1x,f10.2,1x,a,1x,f10.2)')                         &
+                    'FRQFAST must be a divisor of one day when frqfast is in seconds and', &
+                    'FRQSTATE is in months or years. Your FRQFAST=',frqfast,'sec.'
+            end if
+         end select
+
+      case (1) !----- Days ----------------------------------------------------------------!
+         select case(unitstate)
+         case (0) !---- state in seconds --------------------------------------------------!
+            if (mod(frqstate,frqfast*day_sec) /= 0.0) then
+               write(reason,fmt='(a,1x,a,1x,f10.2,1x,a,1x,f10.2,1x,a)')                    &
+                    'FRQFAST must be a divisor of FRQSTATE if both are outputing data.',   &
+                    'Yours is set to FRQFAST=',frqfast,'days and FRQSTATE=',frqstate,'sec!'
+            end if
+
+         case (2,3) !---- State in months or years, frqfast must be divisor of 1 day ------!
+            if (frqfast /= 1.0) then
+               write(reason,fmt='(a,1x,a,1x,f10.2,1x,a,1x,f10.2)')                         &
+                    'FRQFAST must be a divisor of one day or 1 day when UNITFAST is in',   &
+                    'days and FRQSTATE is in months or years. Your FRQFAST=',frqfast,'days.'
+            end if
+
+         end select
+
+      case (2) !----- Months --------------------------------------------------------------!
+         select case(unitstate)
+         case (0,1) !---- state in seconds or days. Can't be since months are irregular. --!
+            write(reason,fmt='(a,1x,a,1x,i5)')                                             &
+               'If UNITFAST is in months, UNITSTATE must be either months or year, and',   &
+               'currently UNITSTATE=',unitstate
+      
+         case (3) !---- State years, frqfast must be divisor ------------------------------!
+            if (mod(frqstate,frqfast*12) /= 0.) then
+               write(reason,fmt='(a,1x,2(a,1x,f10.2,1x))')                                 &
+                    'FRQFAST must be a divisor of FRQSTATE if both are outputing data.',   &
+                    'Yours is set to FRQFAST=',frqfast,'mon and FRQSTATE=',frqstate,'yrs!'
+            end if
+
+         end select
+
+      case (3) !----- Years ---------------------------------------------------------------!
+         select case(unitstate)
+         case (0,1) !---- state in seconds or days. Can't be since months are irregular. --!
+            write(reason,fmt='(a,1x,a,1x,i5)')                                             &
+               'If UNITFAST is in months, UNITSTATE must be either months or year, and',   &
+               'currently UNITSTATE=',unitstate
+      
+         case (2) !---- State months, frqfast must be divisor -----------------------------!
+            if (mod(frqstate*12,frqfast) /= 0.) then
+               write(reason,fmt='(a,1x,2(a,1x,f10.2,1x))')                                 &
+                    'FRQFAST must be a divisor of FRQSTATE if both are outputing data.',   &
+                    'Yours is set to FRQFAST=',frqfast,'yrs and FRQSTATE=',frqstate,'mon!'
+            end if
+         end select
+      end select
    end if
 
-!! Frequency of the fast and state FILES must be:
-!!          *   >= to and multiples of FRQFAST/STATE
-   if(ifoutput/=0) then
-      if(outfast .eq. -1.) outfast = 86400.
-      if(outfast >= 0 .and. outfast < frqfast) outfast = frqfast
-      if(mod(outfast,frqfast) /= 0.0) call opspec_fatal('OUTFAST must be a multiple of FRQFAST','opspec_times')
-      if(outfast .eq. -2) outfast = 86400.*31.
-   endif
-   if(isoutput/=0) then
-      if(outstate .eq. -1.) outstate = 86400.
-      if(outstate >= 0 .and. outstate < frqstate) outstate = frqstate
-      if(mod(outstate,frqstate) /= 0.0) call opspec_fatal('OUTSTATE must be a multiple of FRQSTATE','opspec_times')
-      if(outstate .eq. -2) outstate = 86400.*32.
-   endif
-   nrec_fast  = outfast/frqfast
-   nrec_state = outstate/frqstate
-
-   ! Frequency of the analysis must be a divisor of the frequency of history output
-   ! THe history files contain variables that are integrated over the analysis
-   ! frequency.  If the analysis and history times are not synchronized, then the
-   ! integrated values will be improperly normalized and give strange/biased results.
-   ! Notes: If it is absolutely necessary to have them non-divisible, then do so, but realize
-   ! any integrated fast-time variables are meaningless, or scale them yourself.
-   ! Note 2: If there are no analysis outputs, only history, then the analysis time will be set
-   ! to the history time, so that the integrated variables reported in the history file are
-   ! integrated over the history period.
-
-   if ( mod(frqstate,frqfast) /= 0.0 ) then
-      write(reason,fmt='(a,1x,a,1x,f10.2,1x,a,1x,f10.2)')&
-           'frqfast must be a divisor of frqstate if both are outputing data.', &
-           'Yours is set to ',frqfast,' and',frqstate
-      call opspec_fatal(reason,'opspec_times')  
-      ifaterr=ifaterr+1
-   end if
 
    !Check if this simulation has a positive timmax.
    if (timmax < 0.0) then

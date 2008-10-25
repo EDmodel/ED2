@@ -120,15 +120,27 @@
 	                        ! but will compromise I/O performance significantly
         	                ! 0 = no metadata, 1 = yes metadata
 
+
    NL%ICLOBBER   = 1             ! 0 = stop if files exist, 1 = overwite files
+
+   NL%UNITFAST   = 0             ! Units for FRQFAST/OUTFAST
+   NL%UNITSTATE  = 0             ! Units for FRQSTATE/OUTSTATE
+                                 ! 0 - Seconds;
+                                 ! 1 - Days;
+                                 ! 2 - Calendar months (variable)
+                                 ! 3 - Calendar years  (variable)
+                                 ! PS: If OUTFAST/OUTSTATE are set to special flags
+                                 !     (-1 or -2) unitfast/unitstate will be ignored for
+                                 !     them
+
    NL%FRQFAST    = 3600.         ! Time interval between analysis file writes
    NL%FRQSTATE   = 8640000.      ! Time interval between history file writes(10 days)
 
-   NL%OUTFAST    = -1		! Time interval between analysis files
-   NL%OUTSTATE   = 0		! Time interval between history files
-				! Values are in seconds and must be <= 1 month
-				! Values < FRQFAST/FRQSTATE are set to those values
-				! Special values: -1 = daily; -2 = monthly
+   NL%OUTFAST    = -1            ! Time interval between analysis files
+   NL%OUTSTATE   = 0             ! Time interval between history files
+                                 ! Special values:  0 = same as frqanl/frqhist;
+                                 !                 -1 = daily;
+                                 !                 -2 = monthly
 
 !-------------------------------------------------------------------------!
 

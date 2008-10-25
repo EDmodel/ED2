@@ -47,7 +47,7 @@ subroutine copy_nl(copy_type)
        sfilin, ied_init_mode, current_time, ed_inputs_dir,   &
        end_time, radfrq, integration_scheme, ffilout, idoutput,imoutput,iyoutput, dtlsm, &
        frqstate,sfilout,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmax,ipmin, &
-       iedcnfgf, outfast, outstate
+       iedcnfgf, outfast, outstate,unitfast,unitstate
 
   use grid_coms, only: time,centlon,centlat,deltax,deltay,nnxp,nnyp,nstratx, &
                        nstraty,polelat,polelon,ngrids,timmax,time,nzg, nzs
@@ -88,6 +88,8 @@ subroutine copy_nl(copy_type)
      attach_metadata = nl%attach_metadata
 
      iclobber       = nl%iclobber
+     unitfast       = nl%unitfast
+     unitstate      = nl%unitstate
      frqfast        = nl%frqfast
      frqstate       = nl%frqstate
      outfast        = nl%outfast
