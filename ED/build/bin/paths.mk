@@ -9,7 +9,7 @@
 # RGK: ED_ROOT=/Home2ln/rknox/Models/EDBRAMS/ED
 # DMM: ED_ROOT=/n/Moorcroft_Lab/Users/dmm2/ED2/my-edbrams/ED
 # MLO: 
-ED_ROOT=/n/Moorcroft_Lab/Users/mlongo/mlo-edbrams/ED
+ED_ROOT=/n/Moorcroft_Lab/Users/mlongo/EDBRAMS/ED
 
 # Versions.
 ED_VERSION=2.1
