@@ -27,6 +27,7 @@ OBJ_MODEL =                        \
 	ed_1st.o                   \
 	ed_bare_restart.o          \
 	ed_driver.o                \
+	ed_filelist.o              \
 	ed_grid.o                  \
 	ed_history_io.o            \
 	ed_init.o                  \

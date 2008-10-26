@@ -274,6 +274,7 @@ OBJ_MODEL =                         \
 	disturb_coms.o              \
 	disturbance.o               \
 	ed_bare_restart.o           \
+	ed_filelist.o               \
 	ed_grid.o                   \
 	ed_history_io.o             \
 	ed_init.o                   \

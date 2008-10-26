@@ -1499,6 +1499,11 @@ ed_driver.o : $(ED_DRIVER)/ed_driver.f90 grid_coms.o ed_state_vars.o misc_coms.o
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+ed_filelist.o : $(ED_UTILS)/ed_filelist.F90 max_dims.o
+	cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90) 
+
 ed_grid.o : $(ED_UTILS)/ed_grid.f90 grid_coms.o ed_node_coms.o max_dims.o consts_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
