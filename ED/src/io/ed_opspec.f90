@@ -845,7 +845,7 @@ subroutine ed_opspec_times
 
          case (2,3) !---- State in months or years, frqfast must be divisor of 1 day ------!
             if (frqfast /= 1.0) then
-               write(reason,fmt='(a,1x,a,1x,f10.2,1x,a,1x,f10.2)')                         &
+               write(reason,fmt='(a,1x,a,1x,f10.2,1x,a,1x,f10.2,1x,a)')                    &
                     'FRQFAST must be a divisor of one day or 1 day when UNITFAST is in',   &
                     'days and FRQSTATE is in months or years. Your FRQFAST=',frqfast,'days.'
             end if
@@ -860,8 +860,8 @@ subroutine ed_opspec_times
                'currently UNITSTATE=',unitstate
       
          case (3) !---- State years, frqfast must be divisor ------------------------------!
-            if (mod(frqstate,frqfast*12) /= 0.) then
-               write(reason,fmt='(a,1x,2(a,1x,f10.2,1x))')                                 &
+            if (mod(frqstate*12,frqfast) /= 0.) then
+               write(reason,fmt='(a,1x,2(a,1x,f10.2,1x),a)')                               &
                     'FRQFAST must be a divisor of FRQSTATE if both are outputing data.',   &
                     'Yours is set to FRQFAST=',frqfast,'mon and FRQSTATE=',frqstate,'yrs!'
             end if
@@ -876,8 +876,8 @@ subroutine ed_opspec_times
                'currently UNITSTATE=',unitstate
       
          case (2) !---- State months, frqfast must be divisor -----------------------------!
-            if (mod(frqstate*12,frqfast) /= 0.) then
-               write(reason,fmt='(a,1x,2(a,1x,f10.2,1x))')                                 &
+            if (mod(frqstate,frqfast*12) /= 0.) then
+               write(reason,fmt='(a,1x,2(a,1x,f10.2,1x),a)')                               &
                     'FRQFAST must be a divisor of FRQSTATE if both are outputing data.',   &
                     'Yours is set to FRQFAST=',frqfast,'yrs and FRQSTATE=',frqstate,'mon!'
             end if
