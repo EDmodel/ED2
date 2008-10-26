@@ -350,33 +350,32 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
    !     Adjust condensate amounts downward if their sum exceeds rhow (this replaces       !
    ! negadj call in subroutine timestep).                                                  !
    !---------------------------------------------------------------------------------------!
-   totcond(k) = 1.001*totcond(k)
-   negadjloop: do k = lpw,m1-1
+   !negadjloop: do k = lpw,m1-1
+   !   totcond(k) = 1.001*totcond(k)
+   !   rtot(k) = max(0.,rtot(k))
+   !   !----- Vapour would be less than the minimum, rescale condensates -------------------!
+   !   if (totcond(k) > rtot(k)) then 
+   !      frac = rtot(k) / totcond(k)
+   !   !----- The setting is fine, move on -------------------------------------------------!
+   !   else
+   !      cycle negadjloop
+   !   end if
    
-      rtot(k) = max(toodry,rtot(k))
-      !----- Vapour would be less than the minimum, rescale condensates -------------------!
-      if (totcond(k) > rtot(k)-toodry) then 
-         frac = (rtot(k)-toodry) / totcond(k)
-      !----- The setting is fine, move on -------------------------------------------------!
-      else
-         cycle negadjloop
-      end if
-   
-      !----- Rescaling the condensates, always checking whether they are above minimum. ---!
-      totcond(k) = 0.
-      do lcat = 1,ncat
-         lhcat = jhcat(k,lcat)
-         rx(k,lcat) = rx(k,lcat) * frac
-         if (rx(k,lcat) < rxmin(lcat)) then
-           rx(k,lcat) = 0.
-           cx(k,lcat) = 0.
-         else
-            cx(k,lcat) = cx(k,lcat) * frac
-         end if
-         totcond(k) = totcond(k) + rx(k,lcat)
-      end do
-      rvap (k) = rtot(k) - totcond(k)
-   end do negadjloop
+   !   !----- Rescaling the condensates, always checking whether they are above minimum. ---!
+   !   totcond(k) = 0.
+   !   do lcat = 1,ncat
+   !      lhcat = jhcat(k,lcat)
+   !      rx(k,lcat) = rx(k,lcat) * frac
+   !      if (rx(k,lcat) < rxmin(lcat)) then
+   !        rx(k,lcat) = 0.
+   !        cx(k,lcat) = 0.
+   !      else
+   !         cx(k,lcat) = cx(k,lcat) * frac
+   !      end if
+   !      totcond(k) = totcond(k) + rx(k,lcat)
+   !   end do
+   !   rvap (k) = rtot(k) - totcond(k)
+   !end do negadjloop
    !---------------------------------------------------------------------------------------!
 
 
@@ -466,7 +465,7 @@ subroutine each_column(m1,dtlt)
           ,rsif            & ! Function
           ,rslfp           & ! Function
           ,rsifp           & ! Function
-          ,rehul           ! ! Function
+          ,rehuil          ! ! Function
 
 
 
@@ -495,7 +494,7 @@ subroutine each_column(m1,dtlt)
       !----- Diagnose habit of pristine ice and snow --------------------------------------!
       nt = max(1,min(31,-nint(tairc(k))))
       !----- THERMO DILEMMA : Shouldn't it be rehuil here? --------------------------------!
-      relhum = min(1.,rehul(press(k),tair(k),rvap(k)))
+      relhum = min(1.,rehuil(press(k),tair(k),rvap(k)))
 
       irh = nint(100.*relhum)
       ns = max(1,irh)
@@ -913,8 +912,7 @@ end subroutine pc03
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine sedim(m1,lcat,if_adap,mynum,alphasfc,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,pcpfillr   &
-                ,sfcpcp,dzt)
+subroutine sedim(m1,lcat,if_adap,mynum,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,pcpfillr,sfcpcp,dzt)
 
    use rconstants, only : cpi,ttripoli,alvl,alvi,alli,cp  ! intent(in)
    use therm_lib , only : qtk,dthil_sedimentation
@@ -954,13 +952,14 @@ subroutine sedim(m1,lcat,if_adap,mynum,alphasfc,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,
           ,qrfall         & ! intent(  out)
           ,accpx          & ! intent(  out)
           ,tairc          ! ! intent(  out)
-
+   use micro_coms, only : &
+           alphasfc       ! ! intent(in   )
 
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
    integer                                    , intent(in)    :: m1,lcat,if_adap,mynum
-   real                                       , intent(in)    :: alphasfc, dtlti
+   real                                       , intent(in)    :: dtlti
    real, dimension(m1                        ), intent(in)    :: dzt
    real, dimension(m1,maxkfall,nembfall,nhcat), intent(in)    :: pcpfillc, pcpfillr
    real, dimension(   maxkfall,nembfall,nhcat), intent(in)    :: sfcpcp
@@ -1026,7 +1025,7 @@ subroutine sedim(m1,lcat,if_adap,mynum,alphasfc,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,
 
    pcpg        = pcpg  + pcprx(lcat)
    accpx(lcat) = pcprx(lcat)
-   dpcpg       = dpcpg + pcprx(lcat) * alphasfc
+   dpcpg       = dpcpg + pcprx(lcat) * alphasfc(lcat)
    pcprx(lcat) = pcprx(lcat)  * dtlti
 
    do k = lpw,k2(lcat) ! From RAMS 6.0
@@ -1210,10 +1209,10 @@ subroutine adj1(m1,m2,m3,ia,iz,ja,jz,flpw,rv,rtp,dn0,micro)
          !    meteor mixing ratio and make them consistent.                                !
          !---------------------------------------------------------------------------------!
          do k = ka,m1
-            rtp(k,i,j) = max(toodry,rtp(k,i,j))
+            rtp(k,i,j) = max(0.,rtp(k,i,j))
             !----- vctr9 is the total condensed mixing ratio ------------------------------!
-            vctr9(k)   = 1.001*sum(rx(k,:))
-            !----- vctr6 is the vapour mixing ratio ---------------------------------------!
+            vctr9(k)   = 1.001*sum(rx(k,1:7))
+            !----- vctr6 is the temporary vapour mixing ratio -----------------------------!
             vctr6(k)   = rtp(k,i,j)-vctr9(k)
          enddo
 
@@ -1225,11 +1224,11 @@ subroutine adj1(m1,m2,m3,ia,iz,ja,jz,flpw,rv,rtp,dn0,micro)
          !---------------------------------------------------------------------------------!
          scaleloop: do k = ka,m1
             !----- a. This is as dry as it can be, no condensation allowed ----------------!
-            if (rtp(k,i,j) == toodry) then
+            if (rtp(k,i,j) == 0.) then
                vctr37(k) = 0.
             !----- b. rv would be too small, rescale it. vctr37 is the scaling factor -----!
-            else if (vctr6(k) < toodry) then
-               vctr37(k) = (rtp(k,i,j)-toodry)/vctr9(k)
+            else if (vctr6(k) < 0.) then
+               vctr37(k) = rtp(k,i,j)/vctr9(k)
             !----- c. Good combination, keep it. ------------------------------------------!
             else
                vctr37(k) = 1.0
@@ -1241,7 +1240,7 @@ subroutine adj1(m1,m2,m3,ia,iz,ja,jz,flpw,rv,rtp,dn0,micro)
                if (progncat(lcat)) cx(k,lcat) = cx(k,lcat) * vctr37(k)
                if (rx(k,lcat) < rxmin(lcat)) then
                   rx(k,lcat) = 0.
-                  cx(k,lcat) = 0.
+                  if(progncat(lcat)) cx(k,lcat) = 0.
                end if
             end do
          end do scaleloop
@@ -1255,8 +1254,7 @@ subroutine adj1(m1,m2,m3,ia,iz,ja,jz,flpw,rv,rtp,dn0,micro)
             do lcat = 1,ncat
                vctr21(k) = vctr21(k) + rx(k,lcat)
             end do
-            rv(k,i,j)  = vctr6(k)
-            rtp(k,i,j) = vctr6(k) + vctr21(k)
+            rv(k,i,j) = max(0.,rtp(k,i,j) - vctr21(k))
          end do
          !---------------------------------------------------------------------------------!
 

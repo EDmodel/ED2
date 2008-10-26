@@ -1,234 +1,267 @@
-!---------------------------------------------------------------------------
+!===================================== Change Log =========================================!
+! 5.0.0                                                                                    !
+!                                                                                          !
+! MLO - 09/29/08 Including the new Grell related dimensions.                               !
+!                                                                                          !
+!==========================================================================================!
+!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved                       !
+!  Regional Atmospheric Modeling System - RAMS                                             !
+!==========================================================================================!
+!==========================================================================================!
 
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This routine sends the lite and/or averaged variables (structures) back to the head   !
+! node if these analyses are requested.                                                    !
+!------------------------------------------------------------------------------------------!
 subroutine node_sendanl(vtype)
-  !     Send just the 'type' variables back to the master process
+   use node_mod
+   use mem_grid
+   use var_tables
+   use mem_scratch
 
-  use node_mod
-  use mem_grid
-  use var_tables
-  use mem_scratch
 
-  implicit none
+   implicit none
+   !----- External variable declaration ---------------------------------------------------!
+   include 'interface.h'
+   include 'mpif.h'
+   !----- Arguments -----------------------------------------------------------------------!
+   character(len=*)         , intent(in) :: vtype
+   !----- Local constants -----------------------------------------------------------------!
+   integer                  , parameter  :: ntags=5
+   !----- Local variables -----------------------------------------------------------------!
+   integer, dimension(ntags)             :: msgtags
+   integer                               :: ierr,msiii,msgnum,nv,ng
+   integer                               :: mxyp,mxyzp,nmp,ind,isend
+   !---------------------------------------------------------------------------------------!
 
-  character*(*) vtype
-  include 'interface.h'
-  include 'mpif.h'
+   msiii = 0
+   !----- First tag is always the node ID, defining it only once --------------------------!
+   msgtags(1)=mynum
+   do ng=1,ngrids
+      !----- Grid ID, defining only when we switch grids ----------------------------------!
+      msgtags(2)=ng
 
-  integer :: ierr,msiii
+      do nv=1, num_var(ng)
+         !---------------------------------------------------------------------------------!
+         !     Lite Analysis time. Check whether the variable should be there and, if so,  !
+         ! send it to the head node.                                                       !
+         !---------------------------------------------------------------------------------!
+         if(trim(vtype) == 'LITE' .and. vtab_r(nv,ng)%ilite == 1) then
+            msiii = msiii + 1
 
-  integer, parameter :: ntags=5  !4 ! Changed by ALF
-  integer :: msgtags(ntags)
-  integer :: msgnum,nv,ng
-  integer :: mxyp,mxyzp,nmp,ind,isend!,msgnum
+            !----- Variable specific tags -------------------------------------------------!
+            msgtags(3)= vtab_r(nv,ng)%npts
+            msgtags(4)= vtab_r(nv,ng)%idim_type
+            msgtags(5)= nv
 
-  msiii = 0
-  msgtags(1)=mynum
+            !----- Sending the tags and the variable --------------------------------------!
+            call MPI_Send(msgtags,ntags,MPI_INTEGER,master_num,230000+mynum*100+msiii      &
+                         ,MPI_COMM_WORLD,ierr)
+            call MPI_Send(vtab_r(nv,ng)%var_p, vtab_r(nv,ng)%npts,MPI_REAL,master_num      &
+                         ,240000+mynum*100+msiii,MPI_COMM_WORLD,ierr)
 
-  do ng=1,ngrids
+         !---------------------------------------------------------------------------------!
+         !     Averaged analysis time. Check whether the variable should be there and, if  !
+         ! so, send the averaged value to the head node.                                   !
+         !---------------------------------------------------------------------------------!
+         elseif( (vtype == 'MEAN' .or. vtype == 'BOTH') .and. vtab_r(nv,ng)%imean == 1)    &
+         then
+            msiii = msiii + 1
 
-     msgtags(2)=ng
+            !----- Variable specific tags -------------------------------------------------!
+            msgtags(3)= vtab_r(nv,ng)%npts
+            msgtags(4)= vtab_r(nv,ng)%idim_type
+            msgtags(5)= nv
 
-     do nv=1, num_var(ng)
+            !----- Sending the tags and the variable --------------------------------------!
+            call MPI_Send(msgtags,ntags,MPI_INTEGER,master_num,230000+mynum*100+msiii      &
+                         ,MPI_COMM_WORLD,ierr)
+            call MPI_Send(vtab_r(nv,ng)%var_m, vtab_r(nv,ng)%npts,MPI_REAL,master_num      &
+                         ,240000+mynum*100+msiii,MPI_COMM_WORLD,ierr)
+         end if
+      end do
+   end do
 
-        if(vtype == 'LITE' .and. vtab_r(nv,ng)%ilite == 1) then
-           msiii = msiii + 1
-
-           msgtags(3)= vtab_r(nv,ng)%npts
-           msgtags(4)= vtab_r(nv,ng)%idim_type
-           msgtags(5)= nv
-
-           call MPI_Send(msgtags,ntags,MPI_INTEGER,master_num,            &
-                         230000+mynum*100+msiii,MPI_COMM_WORLD,ierr)
-           call MPI_Send(vtab_r(nv,ng)%var_p, vtab_r(nv,ng)%npts,MPI_REAL, &
-                         master_num,240000+mynum*100+msiii,MPI_COMM_WORLD,ierr)
-
-        elseif( (vtype == 'MEAN' .or. vtype == 'BOTH')  &
-             .and. vtab_r(nv,ng)%imean == 1) then
-           msiii = msiii + 1
-
-           msgtags(3)= vtab_r(nv,ng)%npts
-           msgtags(4)= vtab_r(nv,ng)%idim_type
-           msgtags(5)= nv
-
-           call MPI_Send(msgtags,ntags,MPI_INTEGER,master_num,            &
-                         230000+mynum*100+msiii,MPI_COMM_WORLD,ierr)
-           call MPI_Send(vtab_r(nv,ng)%var_m, vtab_r(nv,ng)%npts,MPI_REAL, &
-                         master_num,240000+mynum*100+msiii,MPI_COMM_WORLD,ierr)
-        endif
-     enddo
-  enddo
-
-  return
+   return
 end subroutine node_sendanl
+!==========================================================================================!
+!==========================================================================================!
 
-!     ****************************************************************
 
 
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!   This subroutine retrieves the information sent by the nodes, reads at a temporary      !
+! place and copy it to the appropriate variable depending on its type. This happens when   !
+! a "lite", "averaged", or "both" analysis is to be output.                                !
+!------------------------------------------------------------------------------------------!
 subroutine master_getanl(vtype)
-  !     Get just the 'type' variables from the nodes
 
-  use mem_grid
-  use rpara
-  use mem_scratch
-  use var_tables
-  use mem_aerad, only: nwave
+   use mem_grid
+   use rpara
+   use mem_scratch
+   use var_tables
+   use mem_cuparm, only : nclouds
+   use mem_aerad , only : nwave
 
-  implicit none
-
-  character(len=*) :: vtype
-
-  include 'interface.h'
-  include 'mpif.h'
-
-  integer, dimension(MPI_STATUS_SIZE) :: status
-  integer :: ierr,msiii,nmi
-
-
-  integer, parameter :: ntags=5  !4 ! Changed by ALF
-  integer :: msgtags(ntags)
-  integer :: numvars,ng,nummess,nvvv,ibytes,msgtyp,ihostnum
-  integer :: nm,il1,ir2,jb1,jt2,mxp,myp,mxyp
-  integer :: nv,npts,idim_type
-
-  ! Checking the amount of information (messages) to be received
-  numvars = 0
-  do ng = 1, ngrids
-     do nv = 1, num_var(ng)
-        select case (trim(vtype))
-        case ('MEAN','BOTH')
-           if (vtab_r(nv,ng)%imean == 1) numvars=numvars+1
-        case ('LITE')
-           if (vtab_r(nv,ng)%ilite == 1) numvars=numvars+1
-        end select
-     enddo
-  enddo
-
-  do nvvv =1,numvars
-     msiii=msiii+1
-     call MPI_Recv(msgtags,ntags,MPI_INTEGER,machnum(nmi),    &
-                   230000+machnum(nmi)*100+msiii,MPI_COMM_WORLD,status,ierr)
-     nm = msgtags(1)        ! Number of process for the message received
-     ng=msgtags(2)          ! Number of the Grid
-     npts=msgtags(3)        ! Total number of points for the real array
-     idim_type=msgtags(4)   ! Dimension of the real array
-     nv=msgtags(5)          ! Number of the variable in: vtab_r(nv,ng)
-
-     ! Calculating the position (plane coordinates) to fit on grid
-     il1=nxbegc(nm,ng)
-     ir2=nxendc(nm,ng)
-     jb1=nybegc(nm,ng)
-     jt2=nyendc(nm,ng)
-
-     if(iand(ibcflg(nm,ng),1).ne.0) il1=il1-1
-     if(iand(ibcflg(nm,ng),2).ne.0) ir2=ir2+1
-     if(iand(ibcflg(nm,ng),4).ne.0) jb1=jb1-1
-     if(iand(ibcflg(nm,ng),8).ne.0) jt2=jt2+1
-
-     mxp = nxend(nm,ng) - nxbeg(nm,ng) + 1
-     myp = nyend(nm,ng) - nybeg(nm,ng) + 1
-     mxyp = mxp * myp
-     
-     call MPI_Recv(scratch%scr1(1),npts,MPI_REAL,nm,    &
-                   240000+nm*100+msiii,MPI_COMM_WORLD,status,ierr)
+   implicit none
+   !----- External variable declaration ---------------------------------------------------!
+   include 'interface.h'
+   include 'mpif.h'
+   !----- Arguments -----------------------------------------------------------------------!
+   character(len=*)         , intent(in) :: vtype
+   !----- Local constants -----------------------------------------------------------------!
+   integer                  , parameter  :: ntags=5
+   !----- Local variables -----------------------------------------------------------------!
+   integer, dimension(ntags)             :: msgtags
+   integer                               :: ierr,msiii,nmi,numvars,ng,nummess,nvvv,ibytes
+   integer                               :: msgtyp,ihostnum,nm,il1,ir2,jb1,jt2,mxp,myp,mxyp
+   integer                               :: nv,npts,idim_type
+   !---------------------------------------------------------------------------------------!
 
 
-     select case (trim(vtype))
-     case ('MEAN','BOTH')
-        ! Copying the buffer scratch in the real array
-        select case (idim_type)
-        case (2) 
-           call ex_2_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1)  &
-                ,nnxp(ng),nnyp(ng)  &
-                ,mxp,myp  &
-                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+   !----- Checking the amount of information (messages) to be received --------------------!
+   numvars = 0
+   do ng = 1, ngrids
+      do nv = 1, num_var(ng)
+         select case (trim(vtype))
+         case ('MEAN','BOTH')
+            if (vtab_r(nv,ng)%imean == 1) numvars=numvars+1
+         case ('LITE')
+            if (vtab_r(nv,ng)%ilite == 1) numvars=numvars+1
+         end select
+      enddo
+   enddo
 
-        case (3)
-           call ex_3_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1)  &
-                ,nnzp(ng),nnxp(ng),nnyp(ng)  &
-                ,nnzp(ng),mxp,myp  &
-                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+   !----- Receiving the information. First the tags, then the actual data. ----------------!
+   do nvvv =1,numvars
+      msiii=msiii+1
 
-        case (4)
-           call ex_4_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1)  &
-                ,nzg,nnxp(ng),nnyp(ng),npatch  &
-                ,nzg,mxp,myp,npatch  &
-                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+      !----- Getting the tags, and assigning to some scratch variables --------------------!
+      call MPI_Recv(msgtags,ntags,MPI_INTEGER,machnum(nmi),230000+machnum(nmi)*100+msiii   &
+                   ,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
 
-        case (5)
-           call ex_4_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1)  &
-                ,nzs,nnxp(ng),nnyp(ng),npatch  &
-                ,nzs,mxp,myp,npatch  &
-                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+      nm        = msgtags(1) !----- Number of process for the message received
+      ng        = msgtags(2) !----- Number of the Grid
+      npts      = msgtags(3) !----- Total number of points for the real array
+      idim_type = msgtags(4) !----- Dimension of the real array
+      nv        = msgtags(5) !----- Number of the variable in: vtab_r(nv,ng)
 
-        case (6)
-           call ex_2p_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1)  &
-                ,nnxp(ng),nnyp(ng),npatch  &
-                ,mxp,myp,npatch  &
-                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+      !----- Calculating the position (plane coordinates) to fit on grid. -----------------!
+      il1=nxbegc(nm,ng)
+      ir2=nxendc(nm,ng)
+      jb1=nybegc(nm,ng)
+      jt2=nyendc(nm,ng)
 
-        case (7)
-           call ex_buff_carma(vtab_r(nv,ng)%var_m,scratch%scr1(1)  &
-                ,nnxp(ng),nnyp(ng),nwave,mxp,myp,nwave  &
-                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+      !----- Checking whether any of the node edge is an actual domain edge ---------------!
+      if(iand(ibcflg(nm,ng),1) /= 0) il1 = il1 - 1
+      if(iand(ibcflg(nm,ng),2) /= 0) ir2 = ir2 + 1
+      if(iand(ibcflg(nm,ng),4) /= 0) jb1 = jb1 - 1
+      if(iand(ibcflg(nm,ng),8) /= 0) jt2 = jt2 + 1
 
-        case (8)
-           !tridimensional variables, with vertical dimension 
-           !being the number soil levels
-           call ex_2p_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1)  &
-                ,nnxp(ng),nnyp(ng),nzg,mxp,myp,nzg  &
-                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-        end select
+      !----- Determining the sub-domain sizes ---------------------------------------------!
+      mxp  = nxend(nm,ng) - nxbeg(nm,ng) + 1
+      myp  = nyend(nm,ng) - nybeg(nm,ng) + 1
+      mxyp = mxp * myp
+      
+      !----- Receiving the data; storing first at a temporary place. ----------------------!
+      call MPI_Recv(scratch%scr1(1),npts,MPI_REAL,nm,240000+nm*100+msiii,MPI_COMM_WORLD    &
+                   ,MPI_STATUS_IGNORE,ierr)
 
-     case ('LITE')
-        ! Copying the buffer scratch in the real array
-        select case (idim_type)
-        case (2)
-           call ex_2_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1)  &
-                ,nnxp(ng),nnyp(ng)  &
-                ,mxp,myp  &
-                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
-        case (3)
-           call ex_3_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1)  &
-                ,nnzp(ng),nnxp(ng),nnyp(ng)  &
-                ,nnzp(ng),mxp,myp  &
-                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+      !------------------------------------------------------------------------------------!
+      !    Copying the buffer scratch in the real array. Here we check whether it is an    !
+      ! instantaneous or averaged data, and use the right subroutine to copy to the actual !
+      ! variable (the vtab_r%var_? is a predefined pointer to the right place).            !
+      !------------------------------------------------------------------------------------!
+      select case (trim(vtype))
+      !----- Instantaneous variables, use var_p pointer -----------------------------------!
+      case ('LITE') 
+         select case (idim_type)
+         case (2) !----- 2D variable (nxp,nyp) --------------------------------------------!
+            call ex_2_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nnxp(ng),nnyp(ng),mxp,myp   &
+                          ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
-        case (4)
-           call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1)  &
-                ,nzg,nnxp(ng),nnyp(ng),npatch  &
-                ,nzg,mxp,myp,npatch  &
-                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+         case (3) !----- 3D variable (nzp,nxp,nyp) ----------------------------------------!
+            call ex_3_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nnzp(ng),nnxp(ng),nnyp(ng)  &
+                          ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
-        case (5)
-           call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1)  &
-                ,nzs,nnxp(ng),nnyp(ng),npatch  &
-                ,nzs,mxp,myp,npatch  &
-                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+         case (4) !----- 4D variable (nzg,nxp,nyp,npatch) ---------------------------------!
+            call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nzg,nnxp(ng),nnyp(ng)       &
+                          ,npatch,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
-        case (6)
-           call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1)  &
-                ,nnxp(ng),nnyp(ng),npatch  &
-                ,mxp,myp,npatch  &
-                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+         case (5) !----- 4D variable (nzs,nxp,nyp,npatch) ---------------------------------!
+            call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nzs,nnxp(ng),nnyp(ng)       &
+                          ,npatch,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
-        case (7)
-           call ex_buff_carma(vtab_r(nv,ng)%var_p,scratch%scr1(1)  &
-                ,nnxp(ng),nnyp(ng),nwave,mxp,myp,nwave  &
-                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+         case (6) !----- 3D variable (nxp,nyp,npatch) -------------------------------------!
+            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nnxp(ng),nnyp(ng),npatch   &
+                           ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
-        case (8)
-           ![ED2-MLO: tridimensional variables, with vertical dimension 
-           !being the number soil levels
-           call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1)  &
-                ,nnxp(ng),nnyp(ng),nzg,mxp,myp,nzg  &
-                ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-        end select
-     end select
+         case (7) !----- 3D variable (nxp,nyp,nwave) --------------------------------------!
+            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nnxp(ng),nnyp(ng),nwave    &
+                           ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+
+         case (8) !----- 4D variable (nzp,nxp,nyp,nclouds) --------------------------------!
+            call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nnzp(ng),nnxp(ng),nnyp(ng)  &
+                          ,nclouds,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+
+         case (9) !----- 3D variable (nxp,nyp,nclouds) ------------------------------------!
+            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nnxp(ng),nnyp(ng),nclouds  &
+                           ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+         end select
+      !------------------------------------------------------------------------------------!
+
+      !----- Averaged variables, use var_m pointer ----------------------------------------!
+      case ('MEAN','BOTH') 
+         select case (idim_type)
+         case (2) !----- 2D variable (nxp,nyp) --------------------------------------------!
+            call ex_2_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1),nnxp(ng),nnyp(ng),mxp,myp   &
+                          ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+
+         case (3) !----- 3D variable (nzp,nxp,nyp) ----------------------------------------!
+            call ex_3_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1),nnzp(ng),nnxp(ng),nnyp(ng)  &
+                          ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+
+         case (4) !----- 4D variable (nzg,nxp,nyp,npatch) ---------------------------------!
+            call ex_4_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1),nzg,nnxp(ng),nnyp(ng)       &
+                          ,npatch,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+
+         case (5) !----- 4D variable (nzs,nxp,nyp,npatch) ---------------------------------!
+            call ex_4_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1),nzs,nnxp(ng),nnyp(ng)       &
+                          ,npatch,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+
+         case (6) !----- 3D variable (nxp,nyp,npatch) -------------------------------------!
+            call ex_2p_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1),nnxp(ng),nnyp(ng),npatch   &
+                           ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+
+         case (7) !----- 3D variable (nxp,nyp,nwave) --------------------------------------!
+            call ex_2p_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1),nnxp(ng),nnyp(ng),nwave    &
+                           ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+
+         case (8) !----- 4D variable (nzp,nxp,nyp,nclouds) --------------------------------!
+            call ex_4_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1),nnzp(ng),nnxp(ng),nnyp(ng)  &
+                          ,nclouds,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+
+         case (9) !----- 3D variable (nxp,nyp,nclouds) ------------------------------------!
+            call ex_2p_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1),nnxp(ng),nnyp(ng),nclouds  &
+                           ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
+         end select
+      !------------------------------------------------------------------------------------!
+      end select
   
-  end do
+   end do
 
-  return
+   return
 end subroutine master_getanl
-
+!==========================================================================================!
+!==========================================================================================!

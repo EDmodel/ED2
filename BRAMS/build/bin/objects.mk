@@ -26,15 +26,6 @@ OBJ_MODEL =                         \
 	conv_coms.o                 \
 	coriolis.o                  \
 	cu_read.o                   \
-	cup_dn.o                    \
-	cup_env.o                   \
-	cup_env_catt.o              \
-	cup_grell2.o                \
-	cup_grell2_shcu.o           \
-	cup_grell_catt_deep.o       \
-	cup_grell_catt_shallow.o    \
-	cup_output_vars.o           \
-	cup_up.o                    \
 	cyclic_mod.o                \
 	dateutils.o                 \
 	dealloc.o                   \
@@ -47,13 +38,21 @@ OBJ_MODEL =                         \
 	emission_source_map.o       \
 	error_mess.o                \
 	extra.o                     \
-	extras_rconv_grell_catt.o   \
 	file_inv.o                  \
 	filelist.o                  \
 	first_rams.o                \
 	gaspart.o                   \
 	geodat.o                    \
 	getvar.o                    \
+	grell_coms.o                \
+	grell_cupar_aux.o           \
+	grell_cupar_downdraft.o     \
+	grell_cupar_driver.o        \
+	grell_cupar_ensemble.o      \
+	grell_cupar_environment.o   \
+	grell_cupar_main.o          \
+	grell_cupar_updraft.o       \
+	grell_extras_catt.o         \
 	grid_dims.o                 \
 	grid_struct.o               \
 	gridset.o                   \
@@ -68,6 +67,7 @@ OBJ_MODEL =                         \
 	isan_coms.o                 \
 	isan_io.o                   \
 	ke_coms.o                   \
+	kuo_cupar_driver.o          \
 	landuse_input.o             \
 	leaf_coms.o                 \
 	leaf3.o                     \
@@ -82,13 +82,11 @@ OBJ_MODEL =                         \
 	mem_basic.o                 \
 	mem_carma.o                 \
 	mem_cuparm.o                \
-	mem_cutrans.o               \
 	mem_emiss.o                 \
+	mem_ensemble.o              \
 	mem_gaspart.o               \
 	mem_globaer.o               \
 	mem_globrad.o               \
-	mem_grell.o                 \
-	mem_grell_param2.o          \
 	mem_grid.o                  \
 	mem_grid_dim_defs.o         \
 	mem_harr.o                  \
@@ -104,13 +102,8 @@ OBJ_MODEL =                         \
 	mem_radiate.o               \
 	mem_scalar.o                \
 	mem_scratch.o               \
+	mem_scratch_grell.o         \
 	mem_scratch1_brams.o        \
-	mem_scratch1_grell.o        \
-	mem_scratch2_grell.o        \
-	mem_scratch2_grell_sh.o     \
-	mem_scratch3_grell.o        \
-	mem_scratch3_grell_sh.o     \
-	mem_shcu.o                  \
 	mem_sib.o                   \
 	mem_sib_co2.o               \
 	mem_soil_moisture.o         \
@@ -198,10 +191,8 @@ OBJ_MODEL =                         \
 	rbnd.o                      \
 	rbnd_adap.o                 \
 	rcio.o                      \
-	rconv.o                     \
-	rconv_grell.o               \
-	rconv_grell_catt.o          \
 	rconstants.o                \
+	rconv_driver.o              \
 	rdint.o                     \
 	read_ralph.o                \
 	recycle.o                   \
@@ -219,7 +210,6 @@ OBJ_MODEL =                         \
 	rnode.o                     \
 	rpara.o                     \
 	rprnt.o                     \
-	rshcupar.o                  \
 	rthrm.o                     \
 	rtimh.o                     \
 	rtimi.o                     \
@@ -231,6 +221,7 @@ OBJ_MODEL =                         \
 	sib2_driver.o               \
 	sib2_init.o                 \
 	soil_moisture_init.o        \
+	souza_cupar_driver.o        \
 	sst_read.o                  \
 	teb_spm_start.o             \
 	therm_lib.o                 \
@@ -243,7 +234,6 @@ OBJ_MODEL =                         \
 	turb_k.o                    \
 	turb_k_adap.o               \
 	turb_ke.o                   \
-	upcase.o                    \
 	urban.o                     \
 	urban_canopy.o              \
 	utils_c.o                   \

@@ -35,6 +35,7 @@ subroutine read_ed1_history_file_array
   character(len=str_len) :: pss_name
   character(len=str_len) :: css_name
   character(len=str_len) :: site_name
+
   real :: dist
   real :: best_dist
 
@@ -119,8 +120,8 @@ subroutine read_ed1_history_file_array
   !----------------------------------------------------------------------------------------!
   
   real, external :: ed_biomass
-
-
+  
+  
   !----- Retrieve all files with the specified prefix. ------------------------------------!
   call ed_filelist(full_list,sfilin,nflist)
 
@@ -130,8 +131,6 @@ subroutine read_ed1_history_file_array
      renumber_pfts = .false.
      call ed1_fileinfo('.site',nflist,full_list(1:nflist),nflsite,site_list,slon_list      &
                       ,slat_list)
-  else
-     renumber_pfts = .true.
   end if
   
   !----- Retrieve LON/LAT information for patches and cohorts -----------------------------!
@@ -663,7 +662,6 @@ subroutine read_ed1_history_file_array
      end do polyloop
 
 
-     
      !! need to check what's going on in here
      call init_ed_poly_vars_array(cgrid)
 

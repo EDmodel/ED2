@@ -616,7 +616,7 @@ subroutine transfer_ed2leaf(ifm,timel)
   use mem_radiate,only:radiate_g
   use node_mod, only : &
        master_num,mmzp,mmxp,mmyp,  &
-       ia,iz,ja,jz,ia_1,iz1,ja_1,jz1
+       ia,iz,ja,jz,ia_1,iz1,ja_1,jz1,ibcon
   use mem_grid,only:jdim
 
   implicit none
@@ -700,45 +700,48 @@ subroutine transfer_ed2leaf(ifm,timel)
   ! cells, likely the 2nd or 2nd to last cell in each row or column
   ! ----------------------------------------------------------------------------------------------
 
+  !----- Western Boundary -----------------------------------------------------------------!
+  if (iand(ibcon,1) /= 0) then
+     do j=ja,jz
+        radiate_g(ifm)%albedt(1,j) = radiate_g(ifm)%albedt(2,j)
+        radiate_g(ifm)%rlongup(1,j)= radiate_g(ifm)%rlongup(2,j)
+        turb_g(ifm)%sflux_u(1,j)   = turb_g(ifm)%sflux_u(2,j)
+        turb_g(ifm)%sflux_v(1,j)   = turb_g(ifm)%sflux_v(2,j)
+        turb_g(ifm)%sflux_w(1,j)   = turb_g(ifm)%sflux_w(2,j)
+        turb_g(ifm)%sflux_t(1,j)   = turb_g(ifm)%sflux_t(2,j)
+        turb_g(ifm)%sflux_r(1,j)   = turb_g(ifm)%sflux_r(2,j)
+        leaf_g(ifm)%ustar(1,j,1)   = leaf_g(ifm)%ustar(2,j,1)
+        leaf_g(ifm)%rstar(1,j,1)   = leaf_g(ifm)%rstar(2,j,1)
+        leaf_g(ifm)%tstar(1,j,1)   = leaf_g(ifm)%tstar(2,j,1)
+        leaf_g(ifm)%ustar(1,j,2)   = leaf_g(ifm)%ustar(2,j,2)
+        leaf_g(ifm)%rstar(1,j,2)   = leaf_g(ifm)%rstar(2,j,2)
+        leaf_g(ifm)%tstar(1,j,2)   = leaf_g(ifm)%tstar(2,j,2)
+     end do
+  end if
 
-  do j = 1,m3
-     ! Top Row
-     radiate_g(ifm)%albedt(1,j) = radiate_g(ifm)%albedt(2,j)
-     radiate_g(ifm)%rlongup(1,j)= radiate_g(ifm)%rlongup(2,j)
-     turb_g(ifm)%sflux_u(1,j)= turb_g(ifm)%sflux_u(2,j)
-     turb_g(ifm)%sflux_v(1,j)= turb_g(ifm)%sflux_v(2,j)
-     turb_g(ifm)%sflux_w(1,j)= turb_g(ifm)%sflux_w(2,j)
-     turb_g(ifm)%sflux_t(1,j)= turb_g(ifm)%sflux_t(2,j)
-     turb_g(ifm)%sflux_r(1,j)= turb_g(ifm)%sflux_r(2,j)
+  !----- Eastern Boundary -----------------------------------------------------------------!
+  if (iand(ibcon,2) /= 0) then
+     do j = ja, jz
+        radiate_g(ifm)%albedt(m2,j) = radiate_g(ifm)%albedt(m2-1,j)
+        radiate_g(ifm)%rlongup(m2,j)= radiate_g(ifm)%rlongup(m2-1,j)
+        turb_g(ifm)%sflux_u(m2,j)= turb_g(ifm)%sflux_u(m2-1,j)
+        turb_g(ifm)%sflux_v(m2,j)= turb_g(ifm)%sflux_v(m2-1,j)
+        turb_g(ifm)%sflux_w(m2,j)= turb_g(ifm)%sflux_w(m2-1,j)
+        turb_g(ifm)%sflux_t(m2,j)= turb_g(ifm)%sflux_t(m2-1,j)
+        turb_g(ifm)%sflux_r(m2,j)= turb_g(ifm)%sflux_r(m2-1,j)
      
-     leaf_g(ifm)%ustar(1,j,1)=leaf_g(ifm)%ustar(2,j,1)
-     leaf_g(ifm)%rstar(1,j,1)=leaf_g(ifm)%rstar(2,j,1)
-     leaf_g(ifm)%tstar(1,j,1)=leaf_g(ifm)%tstar(2,j,1)
-     leaf_g(ifm)%ustar(1,j,2)=leaf_g(ifm)%ustar(2,j,2)
-     leaf_g(ifm)%rstar(1,j,2)=leaf_g(ifm)%rstar(2,j,2)
-     leaf_g(ifm)%tstar(1,j,2)=leaf_g(ifm)%tstar(2,j,2)
-
-     !Bottom Row
-     radiate_g(ifm)%albedt(m2,j) = radiate_g(ifm)%albedt(m2-1,j)
-     radiate_g(ifm)%rlongup(m2,j)= radiate_g(ifm)%rlongup(m2-1,j)
-     turb_g(ifm)%sflux_u(m2,j)= turb_g(ifm)%sflux_u(m2-1,j)
-     turb_g(ifm)%sflux_v(m2,j)= turb_g(ifm)%sflux_v(m2-1,j)
-     turb_g(ifm)%sflux_w(m2,j)= turb_g(ifm)%sflux_w(m2-1,j)
-     turb_g(ifm)%sflux_t(m2,j)= turb_g(ifm)%sflux_t(m2-1,j)
-     turb_g(ifm)%sflux_r(m2,j)= turb_g(ifm)%sflux_r(m2-1,j)
-     
-     leaf_g(ifm)%ustar(m2,j,1)=leaf_g(ifm)%ustar(m2-1,j,1)
-     leaf_g(ifm)%rstar(m2,j,1)=leaf_g(ifm)%rstar(m2-1,j,1)
-     leaf_g(ifm)%tstar(m2,j,1)=leaf_g(ifm)%tstar(m2-1,j,1)
-     leaf_g(ifm)%ustar(m2,j,2)=leaf_g(ifm)%ustar(m2-1,j,2)
-     leaf_g(ifm)%rstar(m2,j,2)=leaf_g(ifm)%rstar(m2-1,j,2)
-     leaf_g(ifm)%tstar(m2,j,2)=leaf_g(ifm)%tstar(m2-1,j,2)
-
-  enddo
+        leaf_g(ifm)%ustar(m2,j,1)=leaf_g(ifm)%ustar(m2-1,j,1)
+        leaf_g(ifm)%rstar(m2,j,1)=leaf_g(ifm)%rstar(m2-1,j,1)
+        leaf_g(ifm)%tstar(m2,j,1)=leaf_g(ifm)%tstar(m2-1,j,1)
+        leaf_g(ifm)%ustar(m2,j,2)=leaf_g(ifm)%ustar(m2-1,j,2)
+        leaf_g(ifm)%rstar(m2,j,2)=leaf_g(ifm)%rstar(m2-1,j,2)
+        leaf_g(ifm)%tstar(m2,j,2)=leaf_g(ifm)%tstar(m2-1,j,2)
+     end do
+  end if
   
-  if (jdim == 1) then
-     do i = 1,m2
-
+  !----- Southern Boundary ----------------------------------------------------------------!
+  if (jdim == 1 .and. iand(ibcon,4) /= 0) then
+     do i = ia,iz
         radiate_g(ifm)%albedt(i,1) = radiate_g(ifm)%albedt(i,2)
         radiate_g(ifm)%rlongup(i,1)= radiate_g(ifm)%rlongup(i,2)
         turb_g(ifm)%sflux_u(i,1)= turb_g(ifm)%sflux_u(i,2)
@@ -753,8 +756,13 @@ subroutine transfer_ed2leaf(ifm,timel)
         leaf_g(ifm)%ustar(i,1,2)=leaf_g(ifm)%ustar(i,2,2)
         leaf_g(ifm)%rstar(i,1,2)=leaf_g(ifm)%rstar(i,2,2)
         leaf_g(ifm)%tstar(i,1,2)=leaf_g(ifm)%tstar(i,2,2)
+     enddo
+  end if
 
 
+  !----- Northern Boundary ----------------------------------------------------------------!
+  if (jdim == 1 .and. iand(ibcon,8) /= 0) then
+     do i = ia,iz
         radiate_g(ifm)%albedt(i,m3) = radiate_g(ifm)%albedt(i,m3-1)
         radiate_g(ifm)%rlongup(i,m3)= radiate_g(ifm)%rlongup(i,m3-1)
         turb_g(ifm)%sflux_u(i,m3)= turb_g(ifm)%sflux_u(i,m3-1)
@@ -771,83 +779,91 @@ subroutine transfer_ed2leaf(ifm,timel)
         leaf_g(ifm)%tstar(i,m3,2)=leaf_g(ifm)%tstar(i,m3-1,2)
 
      enddo
-  endif
+  end if
 
+  !----- Southwestern corner --------------------------------------------------------------!
+  if (iand(ibcon,5) /= 0 .or. (iand(ibcon,1) /= 0 .and. jdim == 0)) then
+     ic=1
+     jc=1
+     ici=2
+     jci=1+jdim
+     radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
+     radiate_g(ifm)%rlongup(ic,jc)= radiate_g(ifm)%rlongup(ici,jci)
+     turb_g(ifm)%sflux_u(ic,jc)= turb_g(ifm)%sflux_u(ici,jci)
+     turb_g(ifm)%sflux_v(ic,jc)= turb_g(ifm)%sflux_v(ici,jci)
+     turb_g(ifm)%sflux_w(ic,jc)= turb_g(ifm)%sflux_w(ici,jci)
+     turb_g(ifm)%sflux_t(ic,jc)= turb_g(ifm)%sflux_t(ici,jci)
+     turb_g(ifm)%sflux_r(ic,jc)= turb_g(ifm)%sflux_r(ici,jci)
+     leaf_g(ifm)%ustar(ic,jc,1)=leaf_g(ifm)%ustar(ici,jci,1)
+     leaf_g(ifm)%rstar(ic,jc,1)=leaf_g(ifm)%rstar(ici,jci,1)
+     leaf_g(ifm)%tstar(ic,jc,1)=leaf_g(ifm)%tstar(ici,jci,1)
+     leaf_g(ifm)%ustar(ic,jc,2)=leaf_g(ifm)%ustar(ici,jci,2)
+     leaf_g(ifm)%rstar(ic,jc,2)=leaf_g(ifm)%rstar(ici,jci,2)
+     leaf_g(ifm)%tstar(ic,jc,2)=leaf_g(ifm)%tstar(ici,jci,2)
+  end if
 
-  ! Fill the four corners of each grid
-  ! ----------------------------------
-
-  ic=1
-  jc=1
-  ici=2
-  jci=2
-  radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
-  radiate_g(ifm)%rlongup(ic,jc)= radiate_g(ifm)%rlongup(ici,jci)
-  turb_g(ifm)%sflux_u(ic,jc)= turb_g(ifm)%sflux_u(ici,jci)
-  turb_g(ifm)%sflux_v(ic,jc)= turb_g(ifm)%sflux_v(ici,jci)
-  turb_g(ifm)%sflux_w(ic,jc)= turb_g(ifm)%sflux_w(ici,jci)
-  turb_g(ifm)%sflux_t(ic,jc)= turb_g(ifm)%sflux_t(ici,jci)
-  turb_g(ifm)%sflux_r(ic,jc)= turb_g(ifm)%sflux_r(ici,jci)
-  leaf_g(ifm)%ustar(ic,jc,1)=leaf_g(ifm)%ustar(ici,jci,1)
-  leaf_g(ifm)%rstar(ic,jc,1)=leaf_g(ifm)%rstar(ici,jci,1)
-  leaf_g(ifm)%tstar(ic,jc,1)=leaf_g(ifm)%tstar(ici,jci,1)
-  leaf_g(ifm)%ustar(ic,jc,2)=leaf_g(ifm)%ustar(ici,jci,2)
-  leaf_g(ifm)%rstar(ic,jc,2)=leaf_g(ifm)%rstar(ici,jci,2)
-  leaf_g(ifm)%tstar(ic,jc,2)=leaf_g(ifm)%tstar(ici,jci,2)
-
-  ic=m2
-  jc=1
-  ici=m2-1
-  jci=2
-  radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
-  radiate_g(ifm)%rlongup(ic,jc)= radiate_g(ifm)%rlongup(ici,jci)
-  turb_g(ifm)%sflux_u(ic,jc)= turb_g(ifm)%sflux_u(ici,jci)
-  turb_g(ifm)%sflux_v(ic,jc)= turb_g(ifm)%sflux_v(ici,jci)
-  turb_g(ifm)%sflux_w(ic,jc)= turb_g(ifm)%sflux_w(ici,jci)
-  turb_g(ifm)%sflux_t(ic,jc)= turb_g(ifm)%sflux_t(ici,jci)
-  turb_g(ifm)%sflux_r(ic,jc)= turb_g(ifm)%sflux_r(ici,jci)
-  leaf_g(ifm)%ustar(ic,jc,1)=leaf_g(ifm)%ustar(ici,jci,1)
-  leaf_g(ifm)%rstar(ic,jc,1)=leaf_g(ifm)%rstar(ici,jci,1)
-  leaf_g(ifm)%tstar(ic,jc,1)=leaf_g(ifm)%tstar(ici,jci,1)
-  leaf_g(ifm)%ustar(ic,jc,2)=leaf_g(ifm)%ustar(ici,jci,2)
-  leaf_g(ifm)%rstar(ic,jc,2)=leaf_g(ifm)%rstar(ici,jci,2)
-  leaf_g(ifm)%tstar(ic,jc,2)=leaf_g(ifm)%tstar(ici,jci,2)
+  !----- Southeastern corner --------------------------------------------------------------!
+  if (iand(ibcon,6) /= 0 .or. (iand(ibcon,1) /= 0 .and. jdim == 0)) then
+     ic=m2
+     jc=1
+     ici=m2-1
+     jci=1+jdim
+     radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
+     radiate_g(ifm)%rlongup(ic,jc)= radiate_g(ifm)%rlongup(ici,jci)
+     turb_g(ifm)%sflux_u(ic,jc)= turb_g(ifm)%sflux_u(ici,jci)
+     turb_g(ifm)%sflux_v(ic,jc)= turb_g(ifm)%sflux_v(ici,jci)
+     turb_g(ifm)%sflux_w(ic,jc)= turb_g(ifm)%sflux_w(ici,jci)
+     turb_g(ifm)%sflux_t(ic,jc)= turb_g(ifm)%sflux_t(ici,jci)
+     turb_g(ifm)%sflux_r(ic,jc)= turb_g(ifm)%sflux_r(ici,jci)
+     leaf_g(ifm)%ustar(ic,jc,1)=leaf_g(ifm)%ustar(ici,jci,1)
+     leaf_g(ifm)%rstar(ic,jc,1)=leaf_g(ifm)%rstar(ici,jci,1)
+     leaf_g(ifm)%tstar(ic,jc,1)=leaf_g(ifm)%tstar(ici,jci,1)
+     leaf_g(ifm)%ustar(ic,jc,2)=leaf_g(ifm)%ustar(ici,jci,2)
+     leaf_g(ifm)%rstar(ic,jc,2)=leaf_g(ifm)%rstar(ici,jci,2)
+     leaf_g(ifm)%tstar(ic,jc,2)=leaf_g(ifm)%tstar(ici,jci,2)
+  end if
   
-  ic=m2
-  jc=m3
-  ici=m2-1
-  jci=m3-1
-  radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
-  radiate_g(ifm)%rlongup(ic,jc)= radiate_g(ifm)%rlongup(ici,jci)
-  turb_g(ifm)%sflux_u(ic,jc)= turb_g(ifm)%sflux_u(ici,jci)
-  turb_g(ifm)%sflux_v(ic,jc)= turb_g(ifm)%sflux_v(ici,jci)
-  turb_g(ifm)%sflux_w(ic,jc)= turb_g(ifm)%sflux_w(ici,jci)
-  turb_g(ifm)%sflux_t(ic,jc)= turb_g(ifm)%sflux_t(ici,jci)
-  turb_g(ifm)%sflux_r(ic,jc)= turb_g(ifm)%sflux_r(ici,jci)
-  leaf_g(ifm)%ustar(ic,jc,1)=leaf_g(ifm)%ustar(ici,jci,1)
-  leaf_g(ifm)%rstar(ic,jc,1)=leaf_g(ifm)%rstar(ici,jci,1)
-  leaf_g(ifm)%tstar(ic,jc,1)=leaf_g(ifm)%tstar(ici,jci,1)
-  leaf_g(ifm)%ustar(ic,jc,2)=leaf_g(ifm)%ustar(ici,jci,2)
-  leaf_g(ifm)%rstar(ic,jc,2)=leaf_g(ifm)%rstar(ici,jci,2)
-  leaf_g(ifm)%tstar(ic,jc,2)=leaf_g(ifm)%tstar(ici,jci,2)
+  !----- Northeastern corner --------------------------------------------------------------!
+  if (iand(ibcon,9) /= 0 .or. (iand(ibcon,2) /= 0 .and. jdim == 0)) then
+     ic=m2
+     jc=m3
+     ici=m2-1
+     jci=m3-jdim
+     radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
+     radiate_g(ifm)%rlongup(ic,jc)= radiate_g(ifm)%rlongup(ici,jci)
+     turb_g(ifm)%sflux_u(ic,jc)= turb_g(ifm)%sflux_u(ici,jci)
+     turb_g(ifm)%sflux_v(ic,jc)= turb_g(ifm)%sflux_v(ici,jci)
+     turb_g(ifm)%sflux_w(ic,jc)= turb_g(ifm)%sflux_w(ici,jci)
+     turb_g(ifm)%sflux_t(ic,jc)= turb_g(ifm)%sflux_t(ici,jci)
+     turb_g(ifm)%sflux_r(ic,jc)= turb_g(ifm)%sflux_r(ici,jci)
+     leaf_g(ifm)%ustar(ic,jc,1)=leaf_g(ifm)%ustar(ici,jci,1)
+     leaf_g(ifm)%rstar(ic,jc,1)=leaf_g(ifm)%rstar(ici,jci,1)
+     leaf_g(ifm)%tstar(ic,jc,1)=leaf_g(ifm)%tstar(ici,jci,1)
+     leaf_g(ifm)%ustar(ic,jc,2)=leaf_g(ifm)%ustar(ici,jci,2)
+     leaf_g(ifm)%rstar(ic,jc,2)=leaf_g(ifm)%rstar(ici,jci,2)
+     leaf_g(ifm)%tstar(ic,jc,2)=leaf_g(ifm)%tstar(ici,jci,2)
+  end if
   
-  ic=1
-  jc=m3
-  ici=2
-  jci=m3-1
-  radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
-  radiate_g(ifm)%rlongup(ic,jc)= radiate_g(ifm)%rlongup(ici,jci)
-  turb_g(ifm)%sflux_u(ic,jc)= turb_g(ifm)%sflux_u(ici,jci)
-  turb_g(ifm)%sflux_v(ic,jc)= turb_g(ifm)%sflux_v(ici,jci)
-  turb_g(ifm)%sflux_w(ic,jc)= turb_g(ifm)%sflux_w(ici,jci)
-  turb_g(ifm)%sflux_t(ic,jc)= turb_g(ifm)%sflux_t(ici,jci)
-  turb_g(ifm)%sflux_r(ic,jc)= turb_g(ifm)%sflux_r(ici,jci)
-  leaf_g(ifm)%ustar(ic,jc,1)=leaf_g(ifm)%ustar(ici,jci,1)
-  leaf_g(ifm)%rstar(ic,jc,1)=leaf_g(ifm)%rstar(ici,jci,1)
-  leaf_g(ifm)%tstar(ic,jc,1)=leaf_g(ifm)%tstar(ici,jci,1)
-  leaf_g(ifm)%ustar(ic,jc,2)=leaf_g(ifm)%ustar(ici,jci,2)
-  leaf_g(ifm)%rstar(ic,jc,2)=leaf_g(ifm)%rstar(ici,jci,2)
-  leaf_g(ifm)%tstar(ic,jc,2)=leaf_g(ifm)%tstar(ici,jci,2)
+  !----- Northwestern corner --------------------------------------------------------------!
+  if (iand(ibcon,10) /= 0 .or. (iand(ibcon,2) /= 0 .and. jdim == 0)) then
+     ic=1
+     jc=m3
+     ici=2
+     jci=m3-jdim
+     radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
+     radiate_g(ifm)%rlongup(ic,jc)= radiate_g(ifm)%rlongup(ici,jci)
+     turb_g(ifm)%sflux_u(ic,jc)= turb_g(ifm)%sflux_u(ici,jci)
+     turb_g(ifm)%sflux_v(ic,jc)= turb_g(ifm)%sflux_v(ici,jci)
+     turb_g(ifm)%sflux_w(ic,jc)= turb_g(ifm)%sflux_w(ici,jci)
+     turb_g(ifm)%sflux_t(ic,jc)= turb_g(ifm)%sflux_t(ici,jci)
+     turb_g(ifm)%sflux_r(ic,jc)= turb_g(ifm)%sflux_r(ici,jci)
+     leaf_g(ifm)%ustar(ic,jc,1)=leaf_g(ifm)%ustar(ici,jci,1)
+     leaf_g(ifm)%rstar(ic,jc,1)=leaf_g(ifm)%rstar(ici,jci,1)
+     leaf_g(ifm)%tstar(ic,jc,1)=leaf_g(ifm)%tstar(ici,jci,1)
+     leaf_g(ifm)%ustar(ic,jc,2)=leaf_g(ifm)%ustar(ici,jci,2)
+     leaf_g(ifm)%rstar(ic,jc,2)=leaf_g(ifm)%rstar(ici,jci,2)
+     leaf_g(ifm)%tstar(ic,jc,2)=leaf_g(ifm)%tstar(ici,jci,2)
+  end if
 
 
   return

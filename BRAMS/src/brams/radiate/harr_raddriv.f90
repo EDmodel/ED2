@@ -37,46 +37,43 @@
 ! or Roni Avissar (avissar@duke.edu).
 !===============================================================================
 !MLO - Adapted to ED-BRAMS 1.4
-subroutine harr_raddriv(m1,m2,m3,ifm,if_adap,ia,iz,ja,jz,nadd_rad,iswrtyp,ilwrtyp,icumfdbk &
-                       ,flpw,topt,glat,rtgt,pi0,pp,rho,theta,rv                            &
-                       ,rshort,rlong,fthrd,rlongup,cosz                                    &
-                       ,albedt,rshort_top,rshortup_top,rlongup_top,fthrd_lw                &
-                       ,sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h                                 &
-                       ,con_c,con_r,con_p,con_s,con_a,con_g,con_h                          &
-                       ,rain,xkbcon,xjmin,dnmf,rtsrc,rtsrc_sh,grell_on,mynum)
+subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nadd_rad    &
+                       ,iswrtyp,ilwrtyp,icumfdbk,flpw,topt,glat,rtgt,pi0,pp,rho,theta,rv &
+                       ,rshort,rlong,fthrd,rlongup,cosz                                  &
+                       ,albedt,rshort_top,rshortup_top,rlongup_top,fthrd_lw              &
+                       ,sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h                               &
+                       ,con_c,con_r,con_p,con_s,con_a,con_g,con_h                        &
+                       ,cuprliq,cuprice,mynum)
 
   use mem_harr,        only: mg, mb
-  use mem_grid,        only: zm, zt,time,dtlongn,dzt
+  use mem_grid,        only: zm, zt
   use rconstants,      only: cpor, p00i, stefan, cp, cpi, p00, hr_sec
   use micphys,         only: ncat
   use mem_leaf,        only: isfcl
-  use mem_cuparm,      only: confrq
-  use shcu_vars_const, only: shcufrq
 
   implicit none
-  integer, intent(in)                         :: m1,m2,m3,mynum,ifm,if_adap
-  integer, intent(in)                         :: ia,iz,ja,jz
-  integer, intent(in)                         :: nadd_rad,iswrtyp,ilwrtyp,icumfdbk
-  logical, intent(in)                         :: grell_on
+  integer                     , intent(in)    :: m1,m2,m3,nclouds,mynum,ifm,if_adap
+  integer                     , intent(in)    :: ia,iz,ja,jz
+  integer                     , intent(in)    :: nadd_rad,iswrtyp,ilwrtyp,icumfdbk
+  real(kind=8)                , intent(in)    :: time
+  real                        , intent(in)    :: deltat
 
-  real   , intent(in)   , dimension(m1,m2,m3) :: pi0,pp,rho,theta,rv
-  real   , intent(in)   , dimension(m1,m2,m3) :: sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h
-  real   , intent(in)   , dimension(m1,m2,m3) :: con_c,con_r,con_p,con_s,con_a,con_g,con_h
+  real, dimension(m1,m2,m3)   , intent(in)    :: pi0,pp,rho,theta,rv
+  real, dimension(m1,m2,m3)   , intent(in)    :: sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h
+  real, dimension(m1,m2,m3)   , intent(in)    :: con_c,con_r,con_p,con_s,con_a,con_g,con_h
 
-  real   , intent(in)   , dimension(m2,m3)    :: topt,glat,flpw,rtgt
+  real, dimension(m2,m3)      , intent(in)    :: topt,glat,flpw,rtgt
   
-  real   , intent(inout), dimension(m1,m2,m3) :: fthrd,fthrd_lw
-  real   , intent(inout), dimension(m2,m3)    :: rshort,rlong,rlongup,cosz,albedt &
+  real, dimension(m1,m2,m3)   , intent(inout) :: fthrd,fthrd_lw
+  real, dimension(m2,m3)      , intent(inout) :: rshort,rlong,rlongup,cosz,albedt &
                                                 ,rshort_top,rshortup_top,rlongup_top
 
-!MLO variables for the stupid cloud based on the cumulus parameterization output
-! Rain, boundaries and vertical scale for the rain drops of the stupid cloud
-  real   , intent(in)   , dimension(m2,m3)    :: rain,xkbcon,xjmin,dnmf
-! Moistening tendencies, to create the cloud droplets of the stupid cloud
-  real   , intent(in)   , dimension(m1,m2,m3) :: rtsrc,rtsrc_sh 
+  !MLO variables cumulus feedback
+  ! This is the liquid water that came from cumulus parameterization
+  real, dimension(m1,m2,m3,nclouds), intent(in) :: cuprliq,cuprice
 
 !------ Local arrays -----------------------------------------------------------------------!
-  integer :: ka,nrad,koff
+  integer :: ka,nrad,koff,icld
   integer :: jhcat(m1,ncat)  ! hydrom category table with ice habits
 
   real, dimension(m1)       :: tairk   ! air temperature [K]
@@ -85,6 +82,8 @@ subroutine harr_raddriv(m1,m2,m3,ifm,if_adap,ia,iz,ja,jz,nadd_rad,iswrtyp,ilwrty
   real, dimension(m1,ncat)  :: rx      ! hydrom bulk spec dens [kg_hyd/kg_air]
   real, dimension(m1,ncat)  :: cx      ! hydrom bulk number [num_hyd/kg_air]
   real, dimension(m1,ncat)  :: embharr ! hydrom mean particle mass [kg/particle]
+
+  integer, dimension(m1)       :: ns,nt ! Classes for moisture and temperature => habit table
 
   !Dimension nrad
   real, allocatable, dimension(:) :: rl  ! vapor density of all radiation levels (kg/m^3)
@@ -127,10 +126,9 @@ subroutine harr_raddriv(m1,m2,m3,ifm,if_adap,ia,iz,ja,jz,nadd_rad,iswrtyp,ilwrty
   logical :: first_with_ed
 
 !MLO - Auxiliary variables for the stupid cloud 
-  real, dimension(m1) :: rcl_parm
-  integer             :: kbcon,jmin
+  real, dimension(m1) :: rcl_parm,rpl_parm
   
-  first_with_ed= time < dble(dtlongn(ifm)) .and. isfcl == 5
+  first_with_ed= time < dble(deltat) .and. isfcl == 5
 
   ! Copy surface and vertical-column values from model to radiation memory space
   ! In this loop, (k-koff) ranges from 2 to m1 + 1 - nint(flpw(i,j))
@@ -169,44 +167,17 @@ subroutine harr_raddriv(m1,m2,m3,ifm,if_adap,ia,iz,ja,jz,nadd_rad,iswrtyp,ilwrty
              ztl(k-koff) = topt(i,j) + zt(k) * rtgt(i,j)
            end do
         end if
-!----- Getting information about the cloud base and downdrafts originating level 
-        if (rain(i,j) > 0. ) then
-          if (grell_on) then 
-            ! Grell scheme, I know the parameterized cloud base and downdrafts originating level
-            kbcon=nint(xkbcon(i,j))
-            jmin =nint(xjmin(i,j))
-          else
-!----- Kuo scheme, I'll assume a cloud with base at about 2 km and downdrafts originating level at about 5 km
-            kbcon=ka
-            botloop: do k=ka,m1-1
-               if ((zt(k)-zm(ka))*rtgt(i,j) > 2000.) then
-                 kbcon=k
-                 exit botloop
-               end if
-            end do botloop
-
-            jmin=m1-1
-            toploop: do k=ka,m1-1
-               if ((zt(k)-zm(ka))*rtgt(i,j) > 5000.) then
-                 jmin=k
-                 exit toploop
-               end if      
-            end do toploop
-          end if
-        end if
 
 !----- Now I fill the cloud droplets mixing ratio based on the tendencies. The idea is very simple
 !      I will assume that a cloud existed wherever the moistening term was positive, and I assumed
 !      a on/off cloud, and assuming that all contribution for moistening was once a cloud.
-        do k=ka,m1-1
-! Deep convection cloud
-          if (rtsrc(k,i,j) > 0. ) then
-            rcl_parm(k) = rtsrc(k,i,j) * confrq
-          else
-            rcl_parm(k) = 0.
-          end if
-! Shallow convection cloud
-          if (rtsrc_sh(k,i,j) > 0.) rcl_parm(k) = rcl_parm(k) + rtsrc_sh(k,i,j) * shcufrq
+        rcl_parm = 0.
+        rpl_parm = 0.
+        do icld=1,nclouds
+           do k=ka,m1-1
+              rcl_parm(k) = rcl_parm(k)+ cuprliq(k,i,j,icld)
+              rpl_parm(k) = rpl_parm(k)+ cuprice(k,i,j,icld)
+           end do
         end do
 
 
@@ -240,22 +211,16 @@ subroutine harr_raddriv(m1,m2,m3,ifm,if_adap,ia,iz,ja,jz,nadd_rad,iswrtyp,ilwrty
 
         ! Fill arrays rx, cx, and emb with hydrometeor properties
 
-        call cloudprep_rad(m1,ka,mcat,jhcat,tairk,rhov,rx,cx,embharr        &
+        call cloudprep_rad(m1,ka,mcat,jhcat,tairk,rhov,rx,cx,embharr,ns,nt  &
              ,sh_c(1:m1,i,j),sh_r(1:m1,i,j),sh_p(1:m1,i,j),sh_s(1:m1,i,j)   &
              ,sh_a(1:m1,i,j),sh_g(1:m1,i,j),sh_h(1:m1,i,j)                  &
              ,con_c(1:m1,i,j),con_r(1:m1,i,j),con_p(1:m1,i,j)               &
              ,con_s(1:m1,i,j),con_a(1:m1,i,j),con_g(1:m1,i,j),con_h(1:m1,i,j))
 
         ! Fill hydrometeor optical property arrays [tp, omgp, gp]
-        if (grell_on) then 
-           call cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,rain(i,j),jhcat,dzl,rx &
-                         ,cx,embharr,tp,omgp,gp,sngl(time),rho(1:m1,i,j)       &
-                         ,kbcon,jmin,dnmf(i,j),rcl_parm,mynum)
-        else
-           call cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,rain(i,j),jhcat,dzl,rx &
-                         ,cx,embharr,tp,omgp,gp,sngl(time),rho(1:m1,i,j)       &
-                         ,kbcon,jmin,0.1,rcl_parm,mynum)
-        end if
+        call cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,jhcat,dzl,rx           &
+                      ,cx,embharr,tp,omgp,gp,sngl(time),rho(1:m1,i,j)       &
+                      ,ns,nt,rcl_parm,rpl_parm,mynum)
 
         ! Get the path lengths for the various gases...
 
@@ -354,7 +319,7 @@ end subroutine harr_raddriv
 !******************************************************************************
 
 subroutine cloudprep_rad(m1,ka,mcat,jhcat,tairk,rhov,rx,cx,embharr        &
-                        ,sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h                   &
+                        ,ns,nt,sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h                   &
                         ,con_c,con_r,con_p,con_s,con_a,con_g,con_h)
 
    ! This subroutine was developed from parts of subroutine MIC_COPY in
@@ -364,9 +329,9 @@ subroutine cloudprep_rad(m1,ka,mcat,jhcat,tairk,rhov,rx,cx,embharr        &
    ! NOT PER M^3 AS IN THE ORIGINAL MICROPHYSICS SUBROUTINES.
 
    use rconstants, only: t00
+   
    use micphys,    only: ncat,jnmb,jhabtab,emb0,emb1,emb2,rxmin,parm
-   use therm_lib,  only: rhovsl,level
-
+   use therm_lib , only: level,rhovsil
    implicit none
    integer, intent(in)  :: m1
    integer, intent(in)  :: ka
@@ -381,13 +346,13 @@ subroutine cloudprep_rad(m1,ka,mcat,jhcat,tairk,rhov,rx,cx,embharr        &
    real, intent(out)    :: cx (m1,ncat)     ! hydrom bulk number [num_hyd/kg_air]
    real, intent(out)    :: embharr(m1,ncat) ! hydrom mean particle mass [kg/particle]
 
-   integer              :: k
-   integer              :: icat
-   integer              :: ihcat
-   integer              :: ns
-   integer              :: nt
+   integer               :: k
+   integer               :: icat
+   integer               :: ihcat
+   integer, intent(out), dimension(m1) :: ns ! Moisture class for habit table
+   integer, intent(out), dimension(m1) :: nt ! Temperature class for habit table
 
-   real                 :: rhovslair
+   real                 :: rhovsilair
    real                 :: relhum
    real                 :: tairc
    real                 :: parmi
@@ -398,14 +363,14 @@ subroutine cloudprep_rad(m1,ka,mcat,jhcat,tairk,rhov,rx,cx,embharr        &
    real, parameter :: offset=1.e-16
 
    ! If level <= 1, there is no condensate of any type in this simulation.
-   select case (level)
-   case (0,1)
+   if (level <= 1) then
       ! Set mcat to 0 and return
       mcat = 0
       return
+   endif
 
    ! If level = 2, cloud water is the only form of condensate that may exist. 
-   case (2)
+   if (level == 2) then
       ! Set mcat to 1
       mcat = 1
       ! Set jnmb flag for cloud water to 1
@@ -420,8 +385,10 @@ subroutine cloudprep_rad(m1,ka,mcat,jhcat,tairk,rhov,rx,cx,embharr        &
          jhcat(k,1) = 1
       end do
       return
+   endif
+
    ! If level = 3, up to 7 forms of condensate that may exist.
-   case (3)
+   if (level == 3) then
       ! Set mcat to 7.
       mcat = 7
       ! Zero out microphysics scratch arrays for the present i,j column
@@ -519,16 +486,16 @@ subroutine cloudprep_rad(m1,ka,mcat,jhcat,tairk,rhov,rx,cx,embharr        &
       ! and EACH_COLUMN in omic_misc.f90
       do k = ka,m1-1
          tairc = tairk(k) - t00
-         rhovslair = rhovsl(tairk(k)) ! This is now expecting temp. in Kelvin!
-         relhum = min(1.,rhov(k) / rhovslair)
+         rhovsilair = rhovsil(tairk(k))
+         relhum = min(1.,rhov(k) / rhovsilair)
 
-         ns = max(1,nint(100. * relhum))
-         nt = max(1,min(31,-nint(tairc)))
+         ns(k) = max(1,nint(100. * relhum))
+         nt(k) = max(1,min(31,-nint(tairc)))
 
          jhcat(k,1) = 1
          jhcat(k,2) = 2
-         jhcat(k,3) = jhabtab(nt,ns,1)
-         jhcat(k,4) = jhabtab(nt,ns,2)
+         jhcat(k,3) = jhabtab(nt(k),ns(k),1)
+         jhcat(k,4) = jhabtab(nt(k),ns(k),2)
          jhcat(k,5) = 5
          jhcat(k,6) = 6
          jhcat(k,7) = 7
@@ -571,18 +538,18 @@ subroutine cloudprep_rad(m1,ka,mcat,jhcat,tairk,rhov,rx,cx,embharr        &
       enddo
       
 
-   end select
+   endif
 
    return
 end subroutine cloudprep_rad
 
 !******************************************************************************
 
-subroutine cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,rain,jhcat,dzl,rx,cx,embharr &
-                    ,tp,omgp,gp,time,rho,kbcon,jmin,dnmf,rcl_parm,mynum)
+subroutine cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,jhcat,dzl,rx,cx,embharr &
+                    ,tp,omgp,gp,time,rho,ns,nt,rcl_parm,rpl_parm,mynum)
 
   use mem_harr, only: mb, nb, ocoef, bcoef, gcoef, nsolb
-  use micphys, only: ncat, jnmb, pwmasi, dnfac,rxmin,cfmas,pwmas,emb0,emb1,gnu
+  use micphys, only: ncat, jnmb, pwmasi, dnfac,rxmin,cfmas,pwmas,emb0,emb1,gnu,jhabtab
   use rconstants, only: p00i, rocp, hr_sec
 
   ! computing properties of spherical liquid water and irregular ice
@@ -609,11 +576,7 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,rain,jhcat,dzl,rx,cx,embharr 
   ! pwmasi ...... inverse of power used in mass power law
 
   ! MLO - New variables included to describe the stupid cloud which was drawn from cumulus parameterization
-  ! kbcon ....... k-index of the cloud base
-  ! jmin ........ k-index of the downdraft originating level
-  ! dnmf  ....... downdraft mass flux at  the cloud base;
-  ! rcl_deep .... cloud droplets mixing ratio due to deep convection in the stupid cloud;
-  ! rcl_shal .... cloud droplets mixing ratio due to shallow convection in the stupid cloud;
+  ! rcl_parm .... cloud droplets mixing ratio due to deep convection in the parameterized cumulus;
 
   implicit none
 
@@ -639,10 +602,10 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,rain,jhcat,dzl,rx,cx,embharr 
                                        !   particles are spherical)
   real, dimension(m1), intent(in) :: rho
 
-! Adding parameterized rain properties:
-  real,    intent(in)                :: rain,dnmf
-  integer, intent(in)                :: kbcon,jmin
+  ! Adding parameterized rain properties:
+  integer, dimension(m1), intent(in) :: ns,nt    ! Moisture and temperature categories
   real   , dimension(m1), intent(in) :: rcl_parm
+  real   , dimension(m1), intent(in) :: rpl_parm
 
   integer, intent(in) :: mynum
 
@@ -655,11 +618,17 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,rain,jhcat,dzl,rx,cx,embharr 
   real :: om
   real :: gg
 
-  ! MLO : variables to account for the parameterized rain, borrowed from CARMA
-  real, parameter :: diam_prain=1.e-3                          ! This came from microphysics default diameter for rain drops [m]
-  real, parameter :: parmi_cloud=1./.3e9                       ! This came from microphysics default count for cloud droplets [#/kg]. 
+  ! MLO : variables to account for the parameterized rain
+  real, parameter :: parmi_cloud=1./.3e9                       ! This came from microphysics default count for cloud droplets [#/kg].
                                                                !    I only need the reciprocal, so I will only provide this instead.
-  real            :: emb2_prain,cx_prain,emb2_cloud,cx_cloud,glg,glgm,dnfac_cloud
+  real, parameter :: parmi_prist=1./.1e4                       ! This came from microphysics default count for pristine ice   [#/kg].
+                                                               !    This is rarely used since pristine ice is prognosed,  but it's 
+                                                               !    probably okay for the cumulus cloud (I hope...). This will be 
+                                                               !    used only at the radiation, and the cloud is parametrised anyway...
+
+  real            :: emb2_cloud,cx_cloud,glg_cloud,glgm_cloud,dnfac_cloud
+  real            :: emb2_prist,cx_prist,glg_prist,glgm_prist,dnfac_prist
+
   real, parameter :: offset=1.e-16
   real, external  :: gammln
 
@@ -751,59 +720,36 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,rain,jhcat,dzl,rx,cx,embharr 
      endif
   enddo
 ! MLO - Adding effects of parameterized rain. It is a very simple parameterization.
-!       It assumes that all the parameterized rain was once a rain drop and the parameterized cloud was
-!       a cloud in which all drops were evenly distributed between the cloud base and top. It is crude, but 
+!       It assumes that all the parameterized condensed water was cloud droplet . It is crude, but 
 !       it is just to give some guess...
   if (icumfdbk == 1) then
-     if (rain > 0.) then
-       emb2_prain=cfmas(2)*(diam_prain)**pwmas(2)
-       cx_prain= rain  / ( emb2_prain * dnmf)
-       dn=1.e6*diam_prain
-   ! Do the same I would do for the resolved clouds
-       do k=kbcon,jmin
-          krad=k-koff
-          do ib=1,nb
-             ext = cx_prain * rho(k) * dzl(krad)  &
-                * bcoef(1,ib,2) * dn ** bcoef(2,ib,2)
+   !MLO - Now I add the parameterized liquid water
 
-             om = ocoef(1,ib,2)  &
-                + ocoef(2,ib,2) * exp(ocoef(3,ib,2) * dn)  &
-                + ocoef(4,ib,2) * exp(ocoef(5,ib,2) * dn)
-
-             gg = gcoef(1,ib,2)  &
-                + gcoef(2,ib,2) * exp(gcoef(3,ib,2) * dn)  &
-                + gcoef(4,ib,2) * exp(gcoef(5,ib,2) * dn)
-             if (ib <= nsolb) then
-               gg = gg * 1.08
-             else
-               gg = gg * 2.9
-             end if 
-          end do
-       end do
-     end if
-   !MLO - Now I add the effects of shallow and deep convection with respect to the moistening factor
      do k=ka,m1-1
        krad=k-koff
-       if (rcl_parm(k) > rxmin(1)) then
-          emb2_cloud = max(emb0(1),min(emb1(1),rcl_parm(k) * parmi_cloud))
-          cx_cloud = rcl_parm(k) / max(offset,emb2_cloud)
-          glg = gammln(gnu(1))
-          glgm = gammln(gnu(1) + pwmas(1))
-          dnfac_cloud = (exp(glg - glgm)/cfmas(1)) ** pwmasi(1)
-          dn = 1.e6 * dnfac_cloud * emb2_cloud ** pwmasi(1)
-          dn = max(dnmin(1),min(dnmax(1),dn))  ! dn units are microns
+       icat  = 1
+       ihcat = 1
+       krc   = kradcat(ihcat)
+       if (rcl_parm(k) > rxmin(icat)) then
+          emb2_cloud  = max(emb0(icat),min(emb1(icat),rcl_parm(k) * parmi_cloud))
+          cx_cloud    = rcl_parm(k) / max(offset,emb2_cloud)
+          glg_cloud   = gammln(gnu(icat))
+          glgm_cloud  = gammln(gnu(icat) + pwmas(ihcat))
+          dnfac_cloud = (exp(glg_cloud - glgm_cloud)/cfmas(ihcat)) ** pwmasi(ihcat)
+          dn = 1.e6 * dnfac_cloud * emb2_cloud ** pwmasi(ihcat)
+          dn = max(dnmin(icat),min(dnmax(icat),dn))  ! dn units are microns
    ! Do the same I would do for the resolved clouds
           do ib = 1,nb
              ext = cx_cloud * rho(k) * dzl(krad)  &
-                * bcoef(1,ib,1) * dn ** bcoef(2,ib,1)
+                * bcoef(1,ib,krc) * dn ** bcoef(2,ib,krc)
 
-             om = ocoef(1,ib,1)  &
-                + ocoef(2,ib,1) * exp(ocoef(3,ib,1) * dn)  &
-                + ocoef(4,ib,1) * exp(ocoef(5,ib,1) * dn)
+             om = ocoef(1,ib,krc)  &
+                + ocoef(2,ib,krc) * exp(ocoef(3,ib,krc) * dn)  &
+                + ocoef(4,ib,krc) * exp(ocoef(5,ib,krc) * dn)
 
-             gg = gcoef(1,ib,1)  &
-                + gcoef(2,ib,1) * exp(gcoef(3,ib,1) * dn)  &
-                + gcoef(4,ib,1) * exp(gcoef(5,ib,1) * dn)
+             gg = gcoef(1,ib,krc)  &
+                + gcoef(2,ib,krc) * exp(gcoef(3,ib,krc) * dn)  &
+                + gcoef(4,ib,krc) * exp(gcoef(5,ib,krc) * dn)
 
              if(ib <= nsolb)then
                 gg = gg * 1.13
@@ -817,6 +763,46 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,rain,jhcat,dzl,rx,cx,embharr 
 
           end do
         end if
+
+       !----- Adding the parametrised ice as pristine ice. 
+       icat  = 3
+       if (rpl_parm(k) > rxmin(icat)) then
+          ihcat = jhabtab(nt(k),ns(k),1)
+          krc   = kradcat(ihcat)
+          emb2_prist = max(emb0(icat),min(emb1(icat),rpl_parm(k) * parmi_prist))
+          cx_prist = rpl_parm(k) / max(offset,emb2_prist)
+          glg_prist = gammln(gnu(icat))
+          glgm_prist = gammln(gnu(icat) + pwmas(icat))
+          dnfac_prist = (exp(glg_prist - glgm_prist)/cfmas(ihcat)) ** pwmasi(ihcat)
+          dn = 1.e6 * dnfac_prist * emb2_prist ** pwmasi(ihcat)
+          dn = max(dnmin(icat),min(dnmax(icat),dn))  ! dn units are microns
+   ! Do the same I would do for the resolved clouds
+          do ib = 1,nb
+             ext = cx_prist * rho(k) * dzl(krad)  &
+                * bcoef(1,ib,krc) * dn ** bcoef(2,ib,krc)
+
+             om = ocoef(1,ib,krc)  &
+                + ocoef(2,ib,krc) * exp(ocoef(3,ib,krc) * dn)  &
+                + ocoef(4,ib,krc) * exp(ocoef(5,ib,krc) * dn)
+
+             gg = gcoef(1,ib,krc)  &
+                + gcoef(2,ib,krc) * exp(gcoef(3,ib,krc) * dn)  &
+                + gcoef(4,ib,krc) * exp(gcoef(5,ib,krc) * dn)
+
+             if(ib <= nsolb)then
+                gg = gg * 1.13
+             else
+                gg = gg * 2.1
+             endif
+
+             tp(krad,ib)   = tp(krad,ib)   +           ext
+             omgp(krad,ib) = omgp(krad,ib) +      om * ext
+             gp(krad,ib)   = gp(krad,ib)   + gg * om * ext
+
+          end do
+        end if
+
+
      end do
   end if
   

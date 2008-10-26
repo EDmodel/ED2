@@ -37,11 +37,15 @@ Module misc_coms
   integer :: iyoutput
   integer :: isoutput
   integer :: iclobber
+
+  integer :: unitfast
+  integer :: unitstate
   real ::  frqstate
   real ::  frqfast
   real ::  frqsum
   real ::  outstate
   real ::  outfast
+
   integer :: nrec_fast
   integer :: nrec_state
   integer :: irec_fast

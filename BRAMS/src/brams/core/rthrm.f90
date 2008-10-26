@@ -68,7 +68,7 @@ subroutine thermo(mzp,mxp,myp,ia,iz,ja,jz)
    use therm_lib, only:   &
        level              ! ! intent(in) - Number of H2O phases 
    use micphys, only:     &
-       jnmb               ! ! intent(in) - Table with action for each hydrometeor
+       availcat           ! ! intent(in) - Flag: the hydrometeor is available [T|F]
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer, intent(in)  :: mzp  ! # of points in Z                                [   ----]
@@ -87,34 +87,34 @@ subroutine thermo(mzp,mxp,myp,ia,iz,ja,jz)
    select case (level)
    !----- No condensation, if super-saturation happens, then it will be supersaturated... -!
    case (1)
-      call drythrm(mzp,mxp,myp,ia,iz,ja,jz  &
-           ,basic_g(ngrid)%thp ,basic_g(ngrid)%theta   &
-           ,basic_g(ngrid)%rtp ,basic_g(ngrid)%rv      &
-           ,level)
+      call drythrm(mzp,mxp,myp,ia,iz,ja,jz                                                 &
+           ,basic_g(ngrid)%thp                     ,basic_g(ngrid)%theta                   &
+           ,basic_g(ngrid)%rtp                     ,basic_g(ngrid)%rv                      &
+           ,level                                  )
 
    !----- Liquid phase only: cloud droplets can develop, but no ice -----------------------!
    case (2)
-      call satadjst(mzp,mxp,myp,ia,iz,ja,jz                    &
-           ,basic_g(ngrid)%pp         ,scratch%scr1            &
-           ,basic_g(ngrid)%thp        ,basic_g(ngrid)%theta    &
-           ,scratch%vt3db             ,basic_g(ngrid)%pi0      &
-           ,basic_g(ngrid)%rtp        ,basic_g(ngrid)%rv       &
-           ,micro_g(ngrid)%rcp        ,scratch%scr2            )
+      call satadjst(mzp,mxp,myp,ia,iz,ja,jz                                                &
+           ,basic_g(ngrid)%pp                      ,scratch%scr1                           &
+           ,basic_g(ngrid)%thp                     ,basic_g(ngrid)%theta                   &
+           ,scratch%vt3db                          ,basic_g(ngrid)%pi0                     &
+           ,basic_g(ngrid)%rtp                     ,basic_g(ngrid)%rv                      &
+           ,micro_g(ngrid)%rcp                     ,scratch%scr2                           )
 
    !----- All three phases of water are allowed -------------------------------------------!
    case (3)
-      call wetthrm3(mzp,mxp,myp,ia,iz,ja,jz,jnmb               &
-           ,basic_g(ngrid)%pi0        ,basic_g(ngrid)%pp       &
-           ,basic_g(ngrid)%thp        ,basic_g(ngrid)%theta    &
-           ,basic_g(ngrid)%rtp        ,basic_g(ngrid)%rv       &
-           ,micro_g(ngrid)%rcp        ,micro_g(ngrid)%rrp      &
-           ,micro_g(ngrid)%rpp        ,micro_g(ngrid)%rsp      &
-           ,micro_g(ngrid)%rap        ,micro_g(ngrid)%rgp      &
-           ,micro_g(ngrid)%rhp        ,micro_g(ngrid)%q6       &
-           ,micro_g(ngrid)%q7         ,vctr5 ,vctr6            )
+      call wetthrm3(mzp,mxp,myp,ia,iz,ja,jz,availcat                                       &
+           ,basic_g(ngrid)%pi0                     ,basic_g(ngrid)%pp                      &
+           ,basic_g(ngrid)%thp                     ,basic_g(ngrid)%theta                   &
+           ,basic_g(ngrid)%rtp                     ,basic_g(ngrid)%rv                      &
+           ,micro_g(ngrid)%rcp                     ,micro_g(ngrid)%rrp                     &
+           ,micro_g(ngrid)%rpp                     ,micro_g(ngrid)%rsp                     &
+           ,micro_g(ngrid)%rap                     ,micro_g(ngrid)%rgp                     &
+           ,micro_g(ngrid)%rhp                     ,micro_g(ngrid)%q6                      &
+           ,micro_g(ngrid)%q7                      ,vctr5 ,vctr6                           )
 
    case default
-      call abort_run('Thermo option not supported...LEVEL out of bounds' &
+      call abort_run('Thermo option not supported...LEVEL out of bounds'                   &
                     ,'thermo','rthrm.f90')
 
    end select
@@ -184,14 +184,14 @@ subroutine satadjst(m1,m2,m3,ia,iz,ja,jz,pp,p,thil,theta,t,pi0,rtp,rv,rcp,rvls)
    ! case when water is in the liquid and vapour phases only.                              !
    !---------------------------------------------------------------------------------------!
    use rconstants, only: &
-        cpi,  & ! intent(in)
-        p00,  & ! intent(in)
-        alvl, & ! intent(in)
-        cp,   & ! intent(in)
-        cpor  ! ! intent(in)
+           cpi           & ! intent(in)
+          ,p00           & ! intent(in)
+          ,alvl          & ! intent(in)
+          ,cp            & ! intent(in)
+          ,cpor          ! ! intent(in)
    !----- External functions --------------------------------------------------------------!
    use therm_lib , only: &
-        rslf    ! Sat. mixing ratio function
+           rslf    ! Sat. mixing ratio function
    implicit none
   
    !----- Input arguments -----------------------------------------------------------------!
@@ -242,8 +242,8 @@ end subroutine satadjst
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine wetthrm3(m1,m2,m3,ia,iz,ja,jz,jnmb,pi0,pp,thp,theta,rtp,rv,rcp,rrp,rpp,rsp,rap  &
-                   ,rgp,rhp,q6,q7,rliq,rice)
+subroutine wetthrm3(m1,m2,m3,ia,iz,ja,jz,availcat,pi0,pp,thp,theta,rtp,rv,rcp,rrp,rpp,rsp  &
+                   ,rap,rgp,rhp,q6,q7,rliq,rice)
 
    !---------------------------------------------------------------------------------------!
    !    This routine calculates theta and rv for "level 3 microphysics"
@@ -253,6 +253,8 @@ subroutine wetthrm3(m1,m2,m3,ia,iz,ja,jz,jnmb,pi0,pp,thp,theta,rtp,rv,rcp,rrp,rp
    use rconstants, only: &
         cpi,      & ! intent(in)
         cp,       & ! intent(in)
+        cpor,     & ! intent(in)
+        p00,      & ! intent(in)
         ttripoli, & ! intent(in)
         alvl,     & ! intent(in)
         alvi,     & ! intent(in)
@@ -265,27 +267,27 @@ subroutine wetthrm3(m1,m2,m3,ia,iz,ja,jz,jnmb,pi0,pp,thp,theta,rtp,rv,rcp,rrp,rp
    implicit none
 
    !----- Input arguments -----------------------------------------------------------------!
-   integer                     , intent(in)    :: m1    ! Vertical dimension      [   ----]
-   integer                     , intent(in)    :: m2    ! Zonal dimension         [   ----]
-   integer                     , intent(in)    :: m3    ! Meridional dimension    [   ----]
-   integer                     , intent(in)    :: ia    ! Node Western edge       [   ----]
-   integer                     , intent(in)    :: iz    ! Node Eastern edge       [   ----]
-   integer                     , intent(in)    :: ja    ! Node Southern edge      [   ----]
-   integer                     , intent(in)    :: jz    ! Node Northern edge      [   ----]
-   integer, dimension(*)       , intent(in)    :: jnmb  ! Microphysics handle     [   ----]
-   real   , dimension(m1,m2,m3), intent(in)    :: pi0   ! Ref. Exner function     [ J/kg/K]
-   real   , dimension(m1,m2,m3), intent(in)    :: pp    ! Exner funtion perturb.  [ J/kg/K]
-   real   , dimension(m1,m2,m3), intent(in)    :: thp   ! Ice-liquid pot. temp.   [      K]
-   real   , dimension(m1,m2,m3), intent(in)    :: rtp   ! Total mixing ratio      [  kg/kg]
-   real   , dimension(m1,m2,m3), intent(in)    :: rcp   ! Cloud mixing ratio      [  kg/kg]
-   real   , dimension(m1,m2,m3), intent(in)    :: rrp   ! Rain mixing ratio       [  kg/kg]
-   real   , dimension(m1,m2,m3), intent(in)    :: rpp   ! Pristine ice mix. rat.  [  kg/kg]
-   real   , dimension(m1,m2,m3), intent(in)    :: rsp   ! Snow mixing ratio       [  kg/kg]
-   real   , dimension(m1,m2,m3), intent(in)    :: rap   ! Aggregates mix. ratio   [  kg/kg]
-   real   , dimension(m1,m2,m3), intent(in)    :: rgp   ! Graupel mixing ratio    [  kg/kg]
-   real   , dimension(m1,m2,m3), intent(in)    :: rhp   ! Hail mixing ratio       [  kg/kg]
-   real   , dimension(m1,m2,m3), intent(in)    :: q6    ! Graupel internal energy [   J/kg]
-   real   , dimension(m1,m2,m3), intent(in)    :: q7    ! Hail internal energy    [   J/kg]
+   integer                     , intent(in)    :: m1       ! Vertical dimension   [   ----]
+   integer                     , intent(in)    :: m2       ! Zonal dimension      [   ----]
+   integer                     , intent(in)    :: m3       ! Meridional dimension [   ----]
+   integer                     , intent(in)    :: ia       ! Node Western edge    [   ----]
+   integer                     , intent(in)    :: iz       ! Node Eastern edge    [   ----]
+   integer                     , intent(in)    :: ja       ! Node Southern edge   [   ----]
+   integer                     , intent(in)    :: jz       ! Node Northern edge   [   ----]
+   logical, dimension(*)       , intent(in)    :: availcat ! Microphysics handle  [    T|F]
+   real   , dimension(m1,m2,m3), intent(in)    :: pi0      ! Ref. Exner function  [ J/kg/K]
+   real   , dimension(m1,m2,m3), intent(in)    :: pp       ! Exner funtion pert.  [ J/kg/K]
+   real   , dimension(m1,m2,m3), intent(in)    :: thp      ! Ice-liq. pot. temp.  [      K]
+   real   , dimension(m1,m2,m3), intent(in)    :: rtp      ! Total mixing ratio   [  kg/kg]
+   real   , dimension(m1,m2,m3), intent(in)    :: rcp      ! Cloud mixing ratio   [  kg/kg]
+   real   , dimension(m1,m2,m3), intent(in)    :: rrp      ! Rain mixing ratio    [  kg/kg]
+   real   , dimension(m1,m2,m3), intent(in)    :: rpp      ! Prist. ice mix. rat. [  kg/kg]
+   real   , dimension(m1,m2,m3), intent(in)    :: rsp      ! Snow mixing ratio    [  kg/kg]
+   real   , dimension(m1,m2,m3), intent(in)    :: rap      ! Aggregates mix. rat. [  kg/kg]
+   real   , dimension(m1,m2,m3), intent(in)    :: rgp      ! Graupel mixing ratio [  kg/kg]
+   real   , dimension(m1,m2,m3), intent(in)    :: rhp      ! Hail mixing ratio    [  kg/kg]
+   real   , dimension(m1,m2,m3), intent(in)    :: q6       ! Graupel int. en.     [   J/kg]
+   real   , dimension(m1,m2,m3), intent(in)    :: q7       ! Hail internal en.    [   J/kg]
    !----- Output arguments (some are scratch) ---------------------------------------------!
    real   , dimension(m1)      , intent(inout) :: rliq  ! Liquid mixing ratio     [  kg/kg]
    real   , dimension(m1)      , intent(inout) :: rice  ! Ice mixing ratio        [  kg/kg]
@@ -294,15 +296,16 @@ subroutine wetthrm3(m1,m2,m3,ia,iz,ja,jz,jnmb,pi0,pp,thp,theta,rtp,rv,rcp,rrp,rp
    !----- Local Variables -----------------------------------------------------------------!
    integer                                     :: i,j,k ! Counter.                [   ----]
    real                                        :: exner ! Exner function          [   J/kg]
+   real                                        :: pres  ! Pressure                [     Pa]
    real                                        :: temp  ! Temperature             [      K]
    real                                        :: til   ! Ice-liquid temperature  [      K]
    do j = ja,jz
       do i = ia,iz
          !----- Finding the amount of liquid and ice from the hydrometeor species ---------!
-         call integ_liq_ice(m1,jnmb,rcp(1:m1,i,j),rrp(1:m1,i,j),rpp(1:m1,i,j)              &
-                                   ,rsp(1:m1,i,j),rap(1:m1,i,j),rgp(1:m1,i,j)              &
-                                   ,rhp(1:m1,i,j),q6 (1:m1,i,j),q7 (1:m1,i,j)              &
-                                   ,rliq(1:m1)   ,rice(1:m1)                 )
+         call integ_liq_ice(m1,availcat,rcp(1:m1,i,j),rrp(1:m1,i,j),rpp(1:m1,i,j)          &
+                                       ,rsp(1:m1,i,j),rap(1:m1,i,j),rgp(1:m1,i,j)          &
+                                       ,rhp(1:m1,i,j),q6 (1:m1,i,j),q7 (1:m1,i,j)          &
+                                       ,rliq(1:m1)   ,rice(1:m1)                 )
          !----- Vapour mixing ratio as the difference b/w total and non-vapour ------------!
          do k = 1,m1
             rv(k,i,j) = rtp(k,i,j) - rliq(k) - rice(k)
@@ -311,16 +314,17 @@ subroutine wetthrm3(m1,m2,m3,ia,iz,ja,jz,jnmb,pi0,pp,thp,theta,rtp,rv,rcp,rrp,rp
          !----- Finding the potential temperature -----------------------------------------!
          do k = 1,m1
             exner        = pi0(k,i,j) + pp(k,i,j)
-            temp = cpi * theta(k,i,j) * exner
+            pres         = p00 * (cpi * exner)**cpor
             !----- Finding the first guess ------------------------------------------------!
             til  = cpi * thp(k,i,j)   * exner
+            temp = cpi * theta(k,i,j) * exner
             if (temp > ttripoli) then
                temp = 0.5 * (til + sqrt(til * (til + cpi4*(alvl*rliq(k)+alvi*rice(k)))))
             else
                temp = til * (1. + htripolii * (alvl*rliq(k)+alvi*rice(k)))
             endif
             !----- First guess for temperature --------------------------------------------!
-            temp         = thil2temp(thp(k,i,j),exner,rliq(k),rice(k),temp)
+            temp         = thil2temp(thp(k,i,j),exner,pres,rliq(k),rice(k),temp)
             theta(k,i,j) = cp * temp / exner
          end do
 
@@ -338,7 +342,7 @@ end subroutine wetthrm3
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine integ_liq_ice(m1,jnmb,rcp,rrp,rpp,rsp,rap,rgp,rhp,q6,q7,rliq,rice)
+subroutine integ_liq_ice(m1,availcat,rcp,rrp,rpp,rsp,rap,rgp,rhp,q6,q7,rliq,rice)
    !---------------------------------------------------------------------------------------!
    !     This subroutine computes the total liquid water and ice mixing ratios from all    !
    ! micrometeors. It was part of wetthrm3, the only reason it's outside now is that the   !
@@ -348,24 +352,24 @@ subroutine integ_liq_ice(m1,jnmb,rcp,rrp,rpp,rsp,rap,rgp,rhp,q6,q7,rliq,rice)
    use therm_lib, only: qtk
    implicit none
    !----- Input variables -----------------------------------------------------------------!
-   integer               , intent(in)    :: m1    ! Vertical dimension            [   ----]
-   integer, dimension(*) , intent(in)    :: jnmb  ! Microphysics handle           [   ----]
-   real   , dimension(m1), intent(in)    :: rcp   ! Cloud mixing ratio            [  kg/kg]
-   real   , dimension(m1), intent(in)    :: rrp   ! Rain mixing ratio             [  kg/kg]
-   real   , dimension(m1), intent(in)    :: rpp   ! Pristine ice mix. ratio       [  kg/kg]
-   real   , dimension(m1), intent(in)    :: rsp   ! Snow mixing ratio             [  kg/kg]
-   real   , dimension(m1), intent(in)    :: rap   ! Aggregates mix. ratio         [  kg/kg]
-   real   , dimension(m1), intent(in)    :: rgp   ! Graupel mixing ratio          [  kg/kg]
-   real   , dimension(m1), intent(in)    :: rhp   ! Hail mixing ratio             [  kg/kg]
-   real   , dimension(m1), intent(in)    :: q6    ! Graupel internal energy       [   J/kg]
-   real   , dimension(m1), intent(in)    :: q7    ! Hail internal energy          [   J/kg]
+   integer               , intent(in)    :: m1       ! Vertical dimension         [   ----]
+   logical, dimension(*) , intent(in)    :: availcat ! Microphysics handle        [    T|F]
+   real   , dimension(m1), intent(in)    :: rcp      ! Cloud mixing ratio         [  kg/kg]
+   real   , dimension(m1), intent(in)    :: rrp      ! Rain mixing ratio          [  kg/kg]
+   real   , dimension(m1), intent(in)    :: rpp      ! Pristine ice mix. ratio    [  kg/kg]
+   real   , dimension(m1), intent(in)    :: rsp      ! Snow mixing ratio          [  kg/kg]
+   real   , dimension(m1), intent(in)    :: rap      ! Aggregates mix. ratio      [  kg/kg]
+   real   , dimension(m1), intent(in)    :: rgp      ! Graupel mixing ratio       [  kg/kg]
+   real   , dimension(m1), intent(in)    :: rhp      ! Hail mixing ratio          [  kg/kg]
+   real   , dimension(m1), intent(in)    :: q6       ! Graupel internal energy    [   J/kg]
+   real   , dimension(m1), intent(in)    :: q7       ! Hail internal energy       [   J/kg]
    !----- Output variables ----------------------------------------------------------------!
-   real   , dimension(m1), intent(out)  :: rliq   ! Liquid mixing ratio           [  kg/kg]
-   real   , dimension(m1), intent(out)  :: rice   ! Ice mixing ratio              [  kg/kg]
+   real   , dimension(m1), intent(out)   :: rliq     ! Liquid mixing ratio        [  kg/kg]
+   real   , dimension(m1), intent(out)   :: rice     ! Ice mixing ratio           [  kg/kg]
    !----- Local variables -----------------------------------------------------------------!
-   integer                              :: k      ! Counter                       [   ----]
-   real                                 :: tcoal  ! Coal. temperature             [      K]
-   real                                 :: frcliq ! Frac. of liquid               [   ----]
+   integer                               :: k        ! Counter                    [   ----]
+   real                                  :: tcoal    ! Coal. temperature          [      K]
+   real                                  :: frcliq   ! Frac. of liquid            [   ----]
    !---------------------------------------------------------------------------------------!
 
 
@@ -378,7 +382,7 @@ subroutine integ_liq_ice(m1,jnmb,rcp,rrp,rpp,rsp,rap,rgp,rhp,q6,q7,rliq,rice)
    !---------------------------------------------------------------------------------------!
 
    !----- Adding cloud droplet mixing ratio to liquid -------------------------------------!
-   if (jnmb(1) >= 1) then
+   if (availcat(1)) then
       do k = 1,m1
          rliq(k) = rliq(k) + rcp(k)
       end do
@@ -386,7 +390,7 @@ subroutine integ_liq_ice(m1,jnmb,rcp,rrp,rpp,rsp,rap,rgp,rhp,q6,q7,rliq,rice)
    !---------------------------------------------------------------------------------------!
 
    !----- Adding rain mixing ratio to liquid ----------------------------------------------!
-   if (jnmb(2) >= 1) then
+   if (availcat(2)) then
       do k = 1,m1
          rliq(k) = rliq(k) + rrp(k)
       end do
@@ -394,7 +398,7 @@ subroutine integ_liq_ice(m1,jnmb,rcp,rrp,rpp,rsp,rap,rgp,rhp,q6,q7,rliq,rice)
    !---------------------------------------------------------------------------------------!
 
    !----- Adding pristine ice mixing ratio to ice -----------------------------------------!
-   if (jnmb(3) >= 1) then
+   if (availcat(3)) then
       do k = 1,m1
          rice(k) = rice(k) + rpp(k)
       end do
@@ -402,7 +406,7 @@ subroutine integ_liq_ice(m1,jnmb,rcp,rrp,rpp,rsp,rap,rgp,rhp,q6,q7,rliq,rice)
    !---------------------------------------------------------------------------------------!
 
    !----- Adding snow mixing ratio to ice -------------------------------------------------!
-   if (jnmb(4) >= 1) then
+   if (availcat(4)) then
       do k = 1,m1
          rice(k) = rice(k) + rsp(k)
       end do
@@ -410,7 +414,7 @@ subroutine integ_liq_ice(m1,jnmb,rcp,rrp,rpp,rsp,rap,rgp,rhp,q6,q7,rliq,rice)
    !---------------------------------------------------------------------------------------!
 
    !----- Adding aggregates to ice --------------------------------------------------------!
-   if (jnmb(5) >= 1) then
+   if (availcat(5)) then
       do k = 1,m1
          rice(k) = rice(k) + rap(k)
       end do
@@ -418,7 +422,7 @@ subroutine integ_liq_ice(m1,jnmb,rcp,rrp,rpp,rsp,rap,rgp,rhp,q6,q7,rliq,rice)
    !---------------------------------------------------------------------------------------!
 
    !----- Graupel is mixed, find the liquid fraction and distribute to both phases --------!
-   if (jnmb(6) >= 1) then
+   if (availcat(6)) then
       do k = 1,m1
          call qtk(q6(k),tcoal,frcliq)
          rliq(k) = rliq(k) + rgp(k) * frcliq
@@ -428,7 +432,7 @@ subroutine integ_liq_ice(m1,jnmb,rcp,rrp,rpp,rsp,rap,rgp,rhp,q6,q7,rliq,rice)
    !---------------------------------------------------------------------------------------!
 
    !----- Hail is also mixed, do the same as graupel --------------------------------------!
-   if (jnmb(7) >= 1) then
+   if (availcat(7)) then
       do k = 1,m1
          call qtk(q7(k),tcoal,frcliq)
          rliq(k) = rliq(k) + rhp(k) * frcliq
@@ -489,7 +493,7 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
    real                :: funnow      ! Function at this iteration.
    real                :: delta       ! Aux. var in case we need regula falsi.
    real                :: deriv       ! Derivative of this function.
-   integer             :: itn,itb     ! Iteration counter
+   integer             :: itn,itb,ii  ! Iteration counter
    logical             :: converged   ! Convergence handle
    logical             :: zside       ! Aux. Flag, for two purposes:
                                       ! 1. Found a good 2nd guess for regula falsi.
@@ -548,10 +552,10 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
    ! theta_il we provided. Thus, the function is simply the difference between the         !
    ! theta_il associated with our guess and the actual theta_il.                           !
    !---------------------------------------------------------------------------------------!
-   funnow = theta_iceliq(exner,tempz,rliq,rice) - thil
-   
+   funnow = theta_iceliq(exner,tempz,rliq,rice)
    !----- Updating the derivative. --------------------------------------------------------!
-   deriv = dthetail_dt(exner,pres,tempz,rsat,rliq,rice)
+   deriv  = dthetail_dt(.false.,funnow,exner,pres,tempz,rliq,rice)
+   funnow = funnow - thil
 
    !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
    !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
@@ -593,10 +597,10 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
       rvap = rtot-rliq-rice
 
       !----- Updating the function --------------------------------------------------------!
-      funnow = theta_iceliq(exner,tempz,rliq,rice) - thil
-
+      funnow = theta_iceliq(exner,tempz,rliq,rice)
       !----- Updating the derivative. -----------------------------------------------------!
-      deriv = dthetail_dt(exner,pres,tempz,rsat,rliq,rice)
+      deriv  = dthetail_dt(.false.,funnow,exner,pres,tempz,rliq,rice)
+      funnow = funnow - thil
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -609,9 +613,15 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
       converged = abs(tempa-tempz) < toler*tempz
       !------------------------------------------------------------------------------------!
       !   Convergence. The temperature will be the mid-point between tempa and tempz. Fix  !
-      ! the mixing ratios and return.                                                      !
+      ! the mixing ratios and return. But first check for converged due to luck. If the    !
+      ! guess gives a root, then that's it. It looks unlikely, but it actually happens     !
+      ! sometimes and if not checked it becomes a singularity.                             !
       !------------------------------------------------------------------------------------!
-      if (converged) then
+      if (funnow == 0.) then
+         temp = tempz
+         converged = .true.
+         exit newloop
+      elseif (converged) then
          temp = 0.5 * (tempa+tempz)
          rsat  = max(toodry,rslif(pres,temp))
          if (temp >= t3ple) then
@@ -648,7 +658,11 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
       ! keep going further...                                                              !
       !------------------------------------------------------------------------------------!
       else
-         delta = funa*(tempz-tempa)/(funnow-funa)
+         if (abs(funnow-funa) < toler*tempa) then
+            delta = 100.*toler*tempa
+         else
+            delta = max(abs(funa*(tempz-tempa)/(funnow-funa)),100.*toler*tempa)
+         end if
          tempz = tempa + delta
          funz  = funa
          !----- Just to enter at least once. The 1st time tempz=tempa-2*delta -------------!
@@ -668,9 +682,14 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
              zside = funa*funz < 0
              if (zside) exit zgssloop
          end do zgssloop
-         if (.not. zside)                                                                  &
+         if (.not. zside) then
+            write (unit=*,fmt='(a)') ' No second guess for you...'
+            write (unit=*,fmt='(2(a,1x,es14.7))') 'tempa=',tempa,'funa=',funa
+            write (unit=*,fmt='(2(a,1x,es14.7))') 'tempz=',tempz,'func=',funz
+            write (unit=*,fmt='(1(a,1x,es14.7))') 'delta=',delta
             call abort_run('Failed finding the second guess for regula falsi'              &
                           ,'thil2tqall','rthrm.f90')
+         end if
       end if
       !------------------------------------------------------------------------------------!
 
@@ -683,8 +702,10 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
       ! conserving the total condensed mixing ratio.                                       !
       !------------------------------------------------------------------------------------!
       fpoloop: do itb=itn,maxfpo
-         !temp = (funz*tempa-funa*tempz)/(funz-funa)
-         temp = 0.5*(tempa+tempz)
+         temp = (funz*tempa-funa*tempz)/(funz-funa)
+         !----- Checking whether this guess will fall outside the range -------------------!
+         if (abs(temp-tempa) > abs(tempz-tempa) .or. abs(temp-tempz) > abs(tempz-tempa))   &
+            temp = 0.5*(tempa+tempz)
          !----- Distributing vapour into the three phases ---------------------------------!
          rsat   = max(toodry,rslif(pres,temp))
          rvap   = min(rtot,rsat)
@@ -708,55 +729,83 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
 
          !---------------------------------------------------------------------------------!
-         !    Checking for convergence. If it did, return, we found the solution. Other-   !
-         ! wise, constrain the guesses.                                                    !
+         !    Checking for convergence or lucky guess. If it did, return, we found the     !
+         ! solution. Otherwise, constrain the guesses.                                     !
          !---------------------------------------------------------------------------------!
-         converged = abs(temp-tempa)/temp < toler
-         if (converged) then
+         converged = abs(temp-tempa) < toler*temp .and. abs(temp-tempz) < toler*temp 
+         if (funnow == 0. .or. converged) then
+            converged = .true.
             exit fpoloop
          elseif (funnow*funa < 0.) then 
             tempz = temp
             funz  = funnow
             !----- If we are updating zside again, modify aside (Illinois method) ---------!
-            !if (zside) funa=funa * 0.5
+            if (zside) funa=funa * 0.5
             !----- We just updated zside, setting zside to true. --------------------------!
             zside = .true.
-         else
+         elseif (funnow*funz < 0.) then
             tempa = temp
             funa  = funnow
             !----- If we are updating aside again, modify zside (Illinois method) ---------!
-            !if (.not.zside) funz = funz * 0.5
+            if (.not.zside) funz = funz * 0.5
             !----- We just updated aside, setting zside to false --------------------------!
-            zside = .false. 
+            zside = .false.
          end if
 
       end do fpoloop
+
+      !------------------------------------------------------------------------------------!
+      !    Almost done... Usually when the method goes through regula falsi, it means that !
+      ! the temperature is too close to the triple point, and often all three phases will  !
+      ! coexist. The problem with the method is that it converges for temperature, but     !
+      ! whenever regula falsi is called the function evaluation is usually far from zero.  !
+      ! This can be improved by finding a better partition between ice and liquid given    !
+      ! the temperature and saturation mixing ratio we just found. So just to round these  !
+      ! edges, we will invert the ice-liquid potential temperature using the set of tem-   !
+      ! perature and rsat, and fiding the liquid mixing ratio.                             !
+      !------------------------------------------------------------------------------------!
+      if (abs(temp-t3ple) < toler*temp) then
+         rliq = min(rtot-rsat,max(0.,                                                      &
+                    allii*(alvi*(rtot-rsat)+cp*max(temp,ttripoli)                          &
+                         *log(cpi*exner*thil/temp))))
+         rice = max(0.,rtot-rsat-rliq)
+         funnow = theta_iceliq(exner,temp,rliq,rice) - thil
+      end if
+
       itb=itb+1
    end if
 
-   if (.not. converged) call abort_run('Failed finding equilibrium, I gave up!'            &
-                                      ,'thil2tqall','rthrm.f90')
-
-   !---------------------------------------------------------------------------------------!
-   !    Almost done... Usually when the method goes through regula falsi, it means that    !
-   ! the temperature is too close to the triple point, and often all three phases will co- !
-   ! exist. The problem with the method is that it converges for temperature, but whenever !
-   ! regula falsi is called the function evaluation is usually far from zero. This can be  !
-   ! improved by finding a better partition between ice and liquid given the temperature   !
-   ! and saturation mixing ratio we just found. So just to round these edges, we will      !
-   ! invert the ice-liquid potential temperature using the set of temperature and rsat,    !
-   ! and fiding the liquid mixing ratio.                                                   !
-   !---------------------------------------------------------------------------------------!
-   rliq = min(rtot-rsat,max(0.,                                                            &
-          allii*(alvi*(rtot-rsat)+cp*max(temp,ttripoli)*log(cpi*exner*thil/temp))))
-   rice = max(0.,rtot-rsat-rliq)
-   funnow = theta_iceliq(exner,temp,rliq,rice) - thil
+   if (.not. converged) then
+      write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
+      write (unit=*,fmt='(a)')           ' THIL2TQALL failed!'
+      write (unit=*,fmt='(a)')           ' '
+      write (unit=*,fmt='(a)')           ' -> Input: '
+      write (unit=*,fmt='(a,1x,f12.5)')  '    THETA_IL [     K]:',thil
+      write (unit=*,fmt='(a,1x,f12.5)')  '    EXNER    [J/kg/K]:',exner
+      write (unit=*,fmt='(a,1x,f12.5)')  '    RTOT     [  g/kg]:',1000.*rtot
+      write (unit=*,fmt='(a)')           ' '
+      write (unit=*,fmt='(a)')           ' -> Output: '
+      write (unit=*,fmt='(a,1x,i12)')    '    ITERATIONS       :',itb
+      write (unit=*,fmt='(a,1x,f12.5)')  '    TEMP     [    °C]:',temp-t00
+      write (unit=*,fmt='(a,1x,f12.5)')  '    RVAP     [  g/kg]:',1000.*rvap
+      write (unit=*,fmt='(a,1x,f12.5)')  '    RLIQ     [  g/kg]:',1000.*rliq
+      write (unit=*,fmt='(a,1x,f12.5)')  '    RICE     [  g/kg]:',1000.*rice
+      write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPA    [    °C]:',tempa-t00
+      write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPZ    [    °C]:',tempz-t00
+      write (unit=*,fmt='(a,1x,es12.5)') '    FUNA     [     K]:',funnow
+      write (unit=*,fmt='(a,1x,es12.5)') '    FUNZ     [     K]:',funnow
+      write (unit=*,fmt='(a,1x,es12.5)') '    DERIV    [   ---]:',deriv
+      write (unit=*,fmt='(a,1x,es12.5)') '    ERR_A    [   ---]:',abs(temp-tempa)/temp
+      write (unit=*,fmt='(a,1x,es12.5)') '    ERR_Z    [   ---]:',abs(temp-tempz)/temp
+      write (unit=*,fmt='(a)')           ' '
+      write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
+      call abort_run('Failed finding equilibrium, I gave up!','thil2tqall','rthrm.f90')
+   end if
    !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
    !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
    !write (unit=46,fmt='(a,1x,i5,1x,6(a,1x,f11.4,1x))')                                     &
-   !   'ANSWER: it=',itb,'fun=',funnow,'temp=',temp-t00                                     &
+   !   'ANSWER: it=',itb,'funf=',funnow,'temp=',temp-t00                                    &
    !  ,'rsat=',1000.*rsat,'rliq=',1000.*rliq,'rice=',1000.*rice,'rvap=',1000.*rvap
-   !  
    !write (unit=46,fmt='(a)') '-------------------------------------------------------------'
    !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
    !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
@@ -844,19 +893,16 @@ subroutine thil2tqliq(thil,exner,pres,rtot,rliq,temp,rvap,rsat)
 
 
    !---------------------------------------------------------------------------------------!
-   !     Finding the function. We are seeking a temperature which is associated with the   !
-   ! theta_il we provided. Thus, the function is simply the difference between the         !
-   ! theta_il associated with our guess and the actual theta_il.                           !
+   !     Finding the function and its derivative. We are seeking a temperature which is    !
+   ! associated with the theta_il we provided. Thus, the function is simply the difference !
+   ! between the theta_il associated with our guess and the actual theta_il.               !
+   !     To find the derivative, we use the fact that rliq = rtot - rsat(T,p). When        !
+   ! T < T(Tripoli), then the temperature at the denominator becomes constant so the       !
+   ! derivative becomes different.                                                         !
    !---------------------------------------------------------------------------------------!
-   funnow = theta_iceliq(exner,tempz,rliq,0.) - thil
-   
-   !---------------------------------------------------------------------------------------!
-   !    Finding the derivative of this function with respect to the temperature. To find   !
-   ! the derivative, we use the fact that rliq = rtot - rsat(T,p). When T < T(Tripoli),    !
-   ! then the temperature at the denominator becomes constant so the derivative becomes    !
-   ! different.                                                                            !
-   !---------------------------------------------------------------------------------------!
-   deriv = dthetail_dt(exner,pres,tempz,rsat,rliq)
+   funnow = theta_iceliq(exner,tempz,rliq,0.) ! Finding thil from our guess
+   deriv  = dthetail_dt(.false.,funnow,exner,pres,tempz,rliq)
+   funnow = funnow - thil ! Computing the function
 
 
    !---------------------------------------------------------------------------------------!
@@ -884,27 +930,22 @@ subroutine thil2tqliq(thil,exner,pres,rtot,rliq,temp,rvap,rsat)
       rliq = max(0.,rtot-rsat)
       rvap = rtot-rliq
 
-      !----- Updating the function --------------------------------------------------------!
-      funnow = theta_iceliq(exner,tempz,rliq,0.) - thil
-
-      !----- Updating the derivative. -----------------------------------------------------!
-      deriv = dthetail_dt(exner,pres,tempz,rsat,rliq)
-      !if (rsat >= rtot) then
-      !   deriv = cp/exner
-      !elseif (tempz >= ttripoli) then
-      !   deriv = (funnow+thil)*(cp*tempz+alvl*(rliq+tempz*rslfp(pres,tempz)))              &
-      !         / (cp*tempz*tempz)
-      !else
-      !   deriv = (funnow+thil)*(cp*ttripoli+alvl*tempz*rslfp(pres,tempz))                  &
-      !         / (cp*tempz*ttripoli)
-      !end if
+      !----- Updating the function and its derivative -------------------------------------!
+      funnow = theta_iceliq(exner,tempz,rliq,0.)
+      deriv = dthetail_dt(.false.,funnow,exner,pres,tempz,rliq)
+      funnow = funnow - thil
 
       converged = abs(tempa-tempz) < toler*tempz
       !------------------------------------------------------------------------------------!
       !   Convergence. The temperature will be the mid-point between tempa and tempz. Fix  !
-      ! the mixing ratios and return.                                                      !
+      ! the mixing ratios and return. Just check for the lucky guess, it actually happens  !
+      ! sometimes and if not checked, it becomes a singularity of this method.             !
       !------------------------------------------------------------------------------------!
-      if (converged) then
+      if (funnow == 0.) then
+         temp = tempz
+         converged = .true.
+         exit newloop
+      elseif (converged) then
          temp = 0.5 * (tempa+tempz)
          rsat  = max(toodry,rslf(pres,temp))
          rliq = max(0.,rtot-rsat)
@@ -970,11 +1011,12 @@ subroutine thil2tqliq(thil,exner,pres,rtot,rliq,temp,rvap,rsat)
          funnow = theta_iceliq(exner,tempz,rliq,0.) - thil
 
          !---------------------------------------------------------------------------------!
-         !    Checking for convergence. If it did, return, we found the solution. Other-   !
-         ! wise, constrain the guesses.                                                    !
+         !    Checking for convergence or lucky guess. If it did, return, we found the     !
+         ! solution. Otherwise, constrain the guesses.                                                    !
          !---------------------------------------------------------------------------------!
-         converged = abs(temp-tempa)/temp < toler
-         if (converged) then
+         converged = abs(temp-tempa)< toler*temp  .and. abs(temp-tempz) < toler*temp
+         if (funnow == 0. .or. converged) then
+            converged = .true.
             exit fpoloop
          elseif (funnow*funa < 0.) then 
             tempz = temp

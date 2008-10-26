@@ -14,6 +14,7 @@ Module rconstants
    real, parameter :: pi1       = 3.14159265358979  ! Pi                        [      ---]
    real, parameter :: pii       = 1./pi1            ! 1/Pi                      [      ---]
    real, parameter :: halfpi    = pi1/2             ! Pi/2                      [      ---]
+   real, parameter :: sqrtpii   = 1./(pi1**0.5)     ! 1/sqrt(pi)                [      ---]
    real, parameter :: twopi     = pi1* 2.           ! 2 Pi                      [      ---]
    real, parameter :: pio180    = pi1/ 180.         ! Pi/180 (deg -> rad)       [      ---]
    real, parameter :: onerad    = 180. / pi1        ! 180/pi (rad -> deg)       [      ---]
@@ -33,6 +34,7 @@ Module rconstants
    real, parameter :: srtwoi    = 1./srtwo          ! 1./ Square root of 2.     [      ---]
    real, parameter :: srthreei  = 1./srthree        ! 1./ Square root of 3.     [      ---]
    real, parameter :: onethird  = 1./3.             ! 1/3                       [      ---]
+   real, parameter :: onesixth  = 1./6.             ! 1/6                       [      ---]
    !---------------------------------------------------------------------------------------!
 
 
@@ -146,7 +148,7 @@ Module rconstants
    real, parameter :: alvl     = 2.50e6       ! Latent heat - vaporisation (Lv) [     J/kg]
    real, parameter :: alvi     = 2.834e6      ! Latent heat - sublimation  (Ls) [     J/kg]
    real, parameter :: alli     = 3.34e5       ! Latent heat - fusion       (Lf) [     J/kg]
-   real, parameter :: alli1000 = 1000. * alli ! Latent heat - fusion       (Lf) [     J/m³]
+   real, parameter :: alli1000 = 1000. * alli ! Latent heat - fusion       (Lf) [     J/kg]
    real, parameter :: alvl2    = alvl*alvl    ! Lv²                             [   J²/kg²]
    real, parameter :: alvi2    = alvi*alvi    ! Ls²                             [   J²/kg²]
    real, parameter :: allii    = 1. / alli    ! 1./Lf                           [     kg/J]
@@ -193,16 +195,5 @@ Module rconstants
    real, parameter :: ltscalemax  = 1.e5  ! Maximum Lagrangian timescale        [        s]
    real, parameter :: abswltlmin  = 1.e-4 ! Minimum abs value of Theta*         [    K m/s]
    real, parameter :: lturbmin    = 1.e-3 ! Minimum abs value of turb. lenght   [        m]
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   ! For Grell parameterization, they will go away soon                                    !
-   !---------------------------------------------------------------------------------------!
-   real, parameter ::   PKDCUT    = 75.    ! ???
-   real, parameter ::   tcrit     = 273.15 ! ???
    !---------------------------------------------------------------------------------------!
 end module rconstants
