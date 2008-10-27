@@ -829,6 +829,11 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
            stop
         endif
 
+        if(initp%veg_temp(ico) < 0. )then
+           print*,'initp%veg_temp is < 0 K'
+           stop
+        endif
+
         if(dinitp%veg_temp(ico) .ne.dinitp%veg_temp(ico) )then
            print*,'dinitp%veg_temp is nan'
            print*,dinitp%veg_temp(ico) ,initp%veg_temp(ico), &

@@ -436,6 +436,12 @@ contains
                cpatch%lai(ico),cpatch%pft(ico),cpatch%veg_temp(ico)
           return
        endif
+       if(y%veg_temp(ico) < 0.0)then
+          iflag1 = 0
+          if(print_diags==1) print*,'leaf temp too low',y%veg_temp(ico),  &
+               cpatch%lai(ico),cpatch%pft(ico),cpatch%veg_temp(ico)
+          return
+       endif
     enddo
     
     return

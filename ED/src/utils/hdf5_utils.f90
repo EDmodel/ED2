@@ -408,6 +408,9 @@ subroutine shdf5_irec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
   
   character(len=2) :: ctype
   
+  logical :: convert = .false.
+  integer :: type_id
+  real(kind=8), allocatable, dimension(:) :: dvaraTEMP
   
   ! Find which data type will be read
   if(present(ivars)) then ; ctype='is'
@@ -438,34 +441,49 @@ subroutine shdf5_irec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
   
   call h5dopen_f(fileid_f,trim(dsetname)//char(0), dsetid_f, hdferr)
   call h5dget_space_f(dsetid_f, dspaceid_f, hdferr)
-  
-  if (ctype == 'is') then
-     call h5dread_f(dsetid_f, H5T_NATIVE_INTEGER, ivars, dimshf, hdferr)
-  elseif (ctype == 'rs') then
-     call h5dread_f(dsetid_f, H5T_NATIVE_REAL,rvars, dimshf, hdferr )
-  elseif (ctype == 'cs') then
-     call h5dread_f(dsetid_f,H5T_NATIVE_CHARACTER,cvars, dimshf, hdferr )
-  elseif (ctype == 'ds') then
-     call h5dread_f(dsetid_f,H5T_NATIVE_DOUBLE,dvars, dimshf, hdferr )
-  elseif (ctype == 'ls') then
-     !      call h5dread_f(dsetid_f,H5T_NATIVE_HBOOL,lvars, dimsh, hdferr )
-     print*,"THERE IS NO HDF5 FORTRAN API DATATYPE FOR BOOLEAN"
-     print*,"YOU MUST CHANGE BACK TO C IO FOR THIS"
-     print*,"STOPPING"
+
+  !! check that data field arguement matches data type, convert if possible
+  call h5dget_type_f(dsetid_f,type_id,hdferr)
+
+  if(ctype == 'ra' .and. (type_id == H5T_NATIVE_DOUBLE .or. type_id == H5T_IEEE_F64LE) .and. ndims == 1) then
+     print*,"TYPEID",type_id,H5T_NATIVE_DOUBLE,H5T_IEEE_F64LE
+     print*,"shdf5_irec_f: Trying to convert double to real may result in loss of precision" 
+     allocate(dvaraTEMP(1:dims(1)))
+     call h5dread_f(dsetid_f,H5T_NATIVE_DOUBLE,dvaraTEMP, dimshf, hdferr )
+     rvara(1:dims(1)) = sngl(dvaraTEMP(1:dims(1)))
      stop
-  elseif (ctype == 'ia') then
-     call h5dread_f(dsetid_f,H5T_NATIVE_INTEGER,ivara, dimshf, hdferr )
-  elseif (ctype == 'ra') then
-     call h5dread_f(dsetid_f,H5T_NATIVE_REAL,rvara, dimshf, hdferr )
-  elseif (ctype == 'ca') then
-     call h5dread_f(dsetid_f,H5T_NATIVE_CHARACTER,cvara, dimshf, hdferr )
-  elseif (ctype == 'da') then
-     call h5dread_f(dsetid_f,H5T_NATIVE_DOUBLE,dvara, dimshf, hdferr )
-  elseif (ctype == 'la') then
-     print*,"THERE IS NO HDF5 FORTRAN API DATATYPE FOR BOOLEAN"
-     print*,"YOU MUST CHANGE BACK TO C IO FOR THIS"
-     print*,"STOPPING"
-     stop
+  endif
+
+
+  if(convert .eqv. .false.) then 
+     if (ctype == 'is') then
+        call h5dread_f(dsetid_f, H5T_NATIVE_INTEGER, ivars, dimshf, hdferr)
+     elseif (ctype == 'rs') then
+        call h5dread_f(dsetid_f, H5T_NATIVE_REAL,rvars, dimshf, hdferr )
+     elseif (ctype == 'cs') then
+        call h5dread_f(dsetid_f,H5T_NATIVE_CHARACTER,cvars, dimshf, hdferr )
+     elseif (ctype == 'ds') then
+        call h5dread_f(dsetid_f,H5T_NATIVE_DOUBLE,dvars, dimshf, hdferr )
+     elseif (ctype == 'ls') then
+        !      call h5dread_f(dsetid_f,H5T_NATIVE_HBOOL,lvars, dimsh, hdferr )
+        print*,"THERE IS NO HDF5 FORTRAN API DATATYPE FOR BOOLEAN"
+        print*,"YOU MUST CHANGE BACK TO C IO FOR THIS"
+        print*,"STOPPING"
+        stop
+     elseif (ctype == 'ia') then
+        call h5dread_f(dsetid_f,H5T_NATIVE_INTEGER,ivara, dimshf, hdferr )
+     elseif (ctype == 'ra') then
+        call h5dread_f(dsetid_f,H5T_NATIVE_REAL,rvara, dimshf, hdferr )
+     elseif (ctype == 'ca') then
+        call h5dread_f(dsetid_f,H5T_NATIVE_CHARACTER,cvara, dimshf, hdferr )
+     elseif (ctype == 'da') then
+        call h5dread_f(dsetid_f,H5T_NATIVE_DOUBLE,dvara, dimshf, hdferr )
+     elseif (ctype == 'la') then
+        print*,"THERE IS NO HDF5 FORTRAN API DATATYPE FOR BOOLEAN"
+        print*,"YOU MUST CHANGE BACK TO C IO FOR THIS"
+        print*,"STOPPING"
+        stop
+     endif
   endif
   
   

@@ -3,7 +3,7 @@ subroutine read_met_driver_head()
   use met_driver_coms, only: nformats, met_names, met_nlon,   &
        met_nlat, met_dx, met_dy, met_xmin, met_ymin, met_nv,   &
        met_vars, met_frq, met_interp, ed_met_driver_db, no_ll
-  implicit none
+  implicit none  
   logical :: l1
   logical :: yes_lat     ! Logical for determining if latitude grids are present
   logical :: yes_lon     ! Logical for determining if longitude grids are present
@@ -23,7 +23,6 @@ subroutine read_met_driver_head()
 
   ! Read the number of different file formats
   read(unit=12,fmt=*) nformats
-
   ! Allocate the header information for each format
   allocate(met_names(nformats))
   allocate(met_nlon(nformats))
@@ -287,7 +286,7 @@ subroutine read_met_drivers_init_array
   do igr = 1,ngrids
 
      cgrid => edgrid_g(igr)
-     
+
      ! Loop over the different file formats
      do iformat = 1, nformats
         
@@ -953,8 +952,6 @@ subroutine read_ol_file_ar(iformat, iv, year_use, mname, year, offset, cgrid)
   ! during leap years, and the number of days in February during the model year may not match
   ! that of the simulation year
 
-  
-  
   ! Geoposition variables do not apply
   if (met_vars(iformat,iv).eq.'lat' .or. met_vars(iformat,iv).eq.'lon') return
   
@@ -1001,6 +998,10 @@ subroutine read_ol_file_ar(iformat, iv, year_use, mname, year, offset, cgrid)
 
   ! Allocate the buffer space
   
+print*,met_interp
+
+print*,"X",iformat,iv
+
   select case (met_interp(iformat,iv))
   !  Case 3, reading in 1 value representing the whole grid,
   !  but over all available times
@@ -1080,7 +1081,9 @@ subroutine read_ol_file_ar(iformat, iv, year_use, mname, year, offset, cgrid)
         print*,"DATASET: ",trim(met_vars(iformat,iv))
         print*,"DOES NOT HAVE DIMENSIONS THAT MATCH THE"
         print*,"SPECIFIED INPUT, OR LAT/LON GRID"
-        print*,ndims,np_dset,met_nlon(iformat),met_nlat(iformat),idims
+        print*,ndims
+        print*,np_dset,met_nlon(iformat),met_nlat(iformat)
+        print*,idims
         stop
      endif
 
@@ -1571,7 +1574,7 @@ subroutine MetDiagnostics(cpoly,ipy,isi)
   integer, intent(in) :: ipy
   integer, intent(in) :: isi
   type(polygontype),target :: cpoly
-  
+
   if(cpoly%met(isi)%geoht .le. 0.)  then
      print*,cpoly%met(isi)%geoht
      call fatal_error('Problems with GEOHT','MetDiagnostics','ed_met_driver.f90')
@@ -1588,7 +1591,7 @@ subroutine MetDiagnostics(cpoly,ipy,isi)
      print*,cpoly%met(isi)%prss
      call fatal_error('Problems with prss','MetDiagnostics','ed_met_driver.f90')
   endif
-  if(cpoly%met(isi)%pcpg .lt. 0. .or. cpoly%met(isi)%pcpg .gt. 0.01)  then
+  if(cpoly%met(isi)%pcpg .lt. 0. .or. cpoly%met(isi)%pcpg .gt. 0.1)  then
      print*,cpoly%met(isi)%pcpg
      call fatal_error('Problems with precipitation','MetDiagnostics','ed_met_driver.f90')
   endif
