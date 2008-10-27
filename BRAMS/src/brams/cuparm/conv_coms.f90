@@ -7,7 +7,7 @@
 !###########################################################################
 
 
-Module conv_coms
+module conv_coms
 
 integer, parameter :: nkp=100
 
@@ -24,4 +24,5 @@ real, dimension(nkp) :: ucon,vcon,wcon,thtcon ,rvcon,prcon,picon,tmpcon  &
                ,vheat,vmois,vmdry,frcon,ftcon,tcon,rcon &
                ,theu,rsu,thu,tu,thd,wtd,thcon,rtcon
 
-End Module
+end module conv_coms
+

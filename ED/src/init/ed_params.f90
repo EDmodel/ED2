@@ -60,6 +60,10 @@ subroutine load_ed_ecosystem_params()
    end do
    if (sum(include_pft_ag) == 0) then
 !      WHY DO WE REQUIRE THERE TO BE AT LEAST ONE GRASS??  (MCD)
+!      MLO - Because pft 1 and 5 used to be the only PFTs allowed in agricultural patches.
+!            So when a new agricultural patch is created not having one was causing memory
+!            allocation issues. Yeonjoo also mentioned that this may be a problem at the
+!            reproduction.
 !      call fatal_error ('No grass included in include_these_pft, you should have at least one kind of grass...' &
 !                       ,'load_ecosystem_params','ed_params.f90')
       call warning ('No grass included in include_these_pft, you should have at least one kind of grass...' &

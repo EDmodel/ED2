@@ -318,7 +318,7 @@ subroutine mcphys_main(m1,ngr,mynum,if_adap,dtlt,dtlti,time,zm,dzt,zt,rtgt,pcpg,
    k2(1) = max(k2(1),k2cnuc)
    k3(1) = max(k2(1),k3(1))
    jflag = 1
-   if (jnmb(1) >= 3) call enemb(1,jflag)
+   if (availcat(1)) call enemb(1,jflag)
 
    !----- Compute ice nucleation ----------------------------------------------------------!
    if (availcat(3)) call icenuc(m1,ngr,dtlt)
@@ -350,8 +350,8 @@ subroutine mcphys_main(m1,ngr,mynum,if_adap,dtlt,dtlti,time,zm,dzt,zt,rtgt,pcpg,
    do lcat = 2,7
       if (availcat(lcat) .and. k2(lcat) >= k1(lcat)) then
          !------ Compute sedimentation for all 6 precipitating categories -----------------!
-         call sedim (m1,lcat,if_adap,mynum,alphasfc(lcat),pcpg,qpcpg,dpcpg,dtlti,pcpfillc  &
-                    ,pcpfillr,sfcpcp,dzt)
+         call sedim (m1,lcat,if_adap,mynum,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,pcpfillr,sfcpcp &
+                    ,dzt)
       end if
    enddo
    !----- Dsed_thil is the tendency on theta_il due to sedimentation ----------------------!

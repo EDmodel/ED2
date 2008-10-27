@@ -18,6 +18,7 @@ rm -fv edio.o                  edio.mod
 rm -fv ed_1st.o                ed_1st.mod 
 rm -fv ed_bare_restart.o       ed_bare_restart.mod 
 rm -fv ed_driver.o             ed_driver.mod 
+rm -fv ed_filelist.o           ed_filelist.mod 
 rm -fv ed_grid.o               ed_grid.mod 
 rm -fv ed_history_io.o         ed_history_io.mod 
 rm -fv ed_init.o               ed_init.mod 

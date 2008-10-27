@@ -3,10 +3,11 @@
 
 module mem_grell_param
 
+  use grell_coms, only: mgmzp
   !Memory for Grell's Cumulus scheme
-  integer :: ngrids_cp, mgmxp, mgmyp, mgmzp
-  integer, parameter ::               &
-       maxiens = 2,  & !  Cloud spectral size
+  integer :: ngrids_cp, mgmxp, mgmyp
+  integer, parameter ::                          &
+       maxiens = 2,                   & !2 # of clouds with old grell (only 2 are allowed)
        maxens  = 3,                   & !3  ensemble one on cap_max
        maxens2 = 3,                   & !3  ensemble two on precip efficiency
        maxens_sh  = 3,                & !3  ensemble one on mbdt
@@ -17,12 +18,6 @@ module mem_grell_param
 
   integer :: icoic                      ! Closure choice for deep
   integer :: icoic_sh                   ! Closure choice for shallow
-
-  integer :: icbase  ! Choice of how to compute the PBL 
-                     ! 1 - Maximum moist static energy
-                     ! 2 - PBL top
-  real, dimension(maxiens) :: depth_min ! Minimum depth that the cloud should have [m]
-  real, dimension(maxiens) :: cap_maxs  ! Depth of inversion capping [mb]
   
   integer :: Flag_Grell = 0             ! = 0 Grell Arrays not allocated
   !     mgm*p not determined
@@ -31,11 +26,10 @@ module mem_grell_param
   ! = 2 Grell Arrays ALLOCATED
   !     mgm*p DETERMINED
 
-  character (len=2),dimension(maxiens) :: CLOSURE_TYPE  ! For new G.Grell Parameterization
 
 contains
 
-  subroutine define_memory(mmxp, mmyp, mmzp, ngrids, nnqparm, nnshcu)
+  subroutine define_memory(mmxp, mmyp, mmzp, ngrids, nnqparm,ndeepest,nshallowest)
 
     implicit none
     integer, dimension (*) ::   &
@@ -43,7 +37,8 @@ contains
          mmyp,                  &  ! Number of points in Y direction
          mmzp,                  &  ! Number of points in Z direction
          nnqparm,               &  ! Flag for cumulus parameterization
-         nnshcu                    ! Flag for shallow cumulus parameterization
+         ndeepest,              &  ! Flag for deepest cumulus
+         nshallowest               ! Flag for shallowest cumulus
 
     ! indexed by number of grids
     ! The above integers data are passed by arguments and can be the amount
@@ -67,7 +62,7 @@ contains
     mgmzp = 0
     ngrids_cp = 0
     do i=1, ngrids
-       if (nnqparm(i) == 2 .or. nnshcu(i) == 2)  then
+       if (nnqparm(i) == 1 .and. (ndeepest(i) == 3 .or. nshallowest(i) == 3))  then
           mgmxp = max(mgmxp,mmxp(i))
           mgmyp = max(mgmyp,mmyp(i))
           mgmzp = max(mgmzp,mmzp(i))

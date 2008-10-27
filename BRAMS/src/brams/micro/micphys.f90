@@ -19,7 +19,7 @@ module micphys
    integer, parameter ::    &
                     nthz     =   26  & ! # of temp values spanning haze nucleation table
                    ,nrhhz    =   10  & ! # of R.H. values spanning haze nucleation table
-                   ,ngam     = 5000  & ! # of values in incomplete gamma function table
+                   ,ngam     = 8000  & ! # of values in incomplete gamma function table
                    ,ninc     =  201  & ! 
                    ,ndns     =   15  & ! 
                    ,ntc      =   21  & ! 

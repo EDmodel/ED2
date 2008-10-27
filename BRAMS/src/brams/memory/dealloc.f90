@@ -11,8 +11,6 @@ subroutine dealloc_all()
 
   use mem_all
 
-  use mem_shcu   ! needed for Shallow Cumulus
-
   use mem_opt    ! Needed for optimization - ALF
 
   use catt_start, only: &
@@ -43,22 +41,30 @@ subroutine dealloc_all()
        dealloc_gaspart          ! Subroutine
 
 
-  use mem_grell, only : grell_g,grellm_g,grell_g_sh,grellm_g_sh,dealloc_grell
+  use mem_scratch_grell, only : dealloc_scratch_grell
+  use mem_ensemble, only : ensemble_e,dealloc_ensemble
+  use mem_mass, only : mass_g, massm_g, dealloc_mass
   use mem_scratch1_grell, only : sc1_grell_g,dealloc_scratch1_grell
-  use shcu_vars_const, only : nnshcu
-  use mem_mass
 
 
   implicit none
 
   ! deallocate all model memory.  Used on dynamic balance
 
-  integer :: ng
+  integer :: ng,ne
 
   deallocate(num_var,vtab_r,scalar_tab,num_scalar)
 
   call dealloc_tend(naddsc)
   call dealloc_scratch()
+
+  call dealloc_scratch_grell()
+  if (allocated(ensemble_e)) then
+     do ne=1,nclouds
+        call dealloc_ensemble(ensemble_e(ne))
+     end do
+  end if
+  deallocate(ensemble_e)
 
   call dealloc_opt_scratch() ! For optimization - ALF
 
@@ -91,9 +97,7 @@ subroutine dealloc_all()
 
      call dealloc_oda(oda_g(ng)) 
      call dealloc_oda(odam_g(ng))
-
-     call dealloc_shcu(shcu_g(ng))    ! use by shallow cumulus
-     call dealloc_shcu(shcum_g(ng))   ! use by shallow cumulus
+     if (allocated(sc1_grell_g)) call dealloc_scratch1_grell(sc1_grell_g(ng))
 
      if (TEB_SPM==1) then
         if(allocated(tebc_g)) then
@@ -110,32 +114,18 @@ subroutine dealloc_all()
         endif
      endif
 
-     if (nnshcu(ng) == 2 .or. nnqparm(ng) == 2) then
-        call dealloc_grell(grell_g(ng))
-        call dealloc_grell(grellm_g(ng))
-        call dealloc_grell(grell_g_sh(ng))
-        call dealloc_grell(grellm_g_sh(ng))
-        call dealloc_scratch1_grell(sc1_grell_g(ng))
-     end if
-
   enddo
-  deallocate(basic_g,basicm_g)
-  deallocate(cuparm_g,cuparmm_g)
-  deallocate(grid_g,gridm_g)
-  deallocate(leaf_g,leafm_g)
-  deallocate(micro_g,microm_g)
-  deallocate(radiate_g,radiatem_g)
-  deallocate(turb_g,turbm_g)
-  deallocate(varinit_g,varinitm_g)
-  deallocate(oda_g,odam_g)
-
-  if (allocated(mass_g)) deallocate(mass_g,massm_g)
-
-  if (allocated(grell_g))     deallocate(grell_g,grellm_g)
-  if (allocated(grell_g_sh))  deallocate(grell_g_sh,grellm_g_sh)
+  if (allocated(basic_g  )) deallocate(basic_g   ,basicm_g   )
+  if (allocated(cuparm_g )) deallocate(cuparm_g  ,cuparmm_g  )
+  if (allocated(grid_g   )) deallocate(grid_g    ,gridm_g    )
+  if (allocated(leaf_g   )) deallocate(leaf_g    ,leafm_g    )
+  if (allocated(micro_g  )) deallocate(micro_g   ,microm_g   )
+  if (allocated(radiate_g)) deallocate(radiate_g ,radiatem_g )
+  if (allocated(turb_g   )) deallocate(turb_g    ,turbm_g    )
+  if (allocated(varinit_g)) deallocate(varinit_g ,varinitm_g )
+  if (allocated(oda_g    )) deallocate(oda_g     ,odam_g     )
+  if (allocated(mass_g   )) deallocate(mass_g    ,massm_g    )
   if (allocated(sc1_grell_g)) deallocate(sc1_grell_g)
-
-  deallocate(shcu_g, shcum_g)         ! use by shallow cumulus
 
   if (TEB_SPM==1) then
      if(allocated(teb_g)) then
