@@ -186,15 +186,15 @@ contains
           sspct0 = min(1., (.95/sscnmax)**.5)
           
           if ( sspct0<.2 ) then
-             print*, 'Sound speed percent is forced to be too low'
-             stop 'low_sspct0'
-          endif
+             call abort_run ('Sound speed percent is forced to be too low'                 &
+                            ,'dtset_new','local_proc.f90')
+          end if
           
           sspct = 1.
           do ifm = 1,ngrids
              nnacoust(ifm) = max(2, nint(sspct0 * sscourn(ifm) * 2. / .95))
              sspct = min(sspct, .95*float(nnacoust(ifm))/(2.*sscourn(ifm)))
-          enddo
+          end do
           
        endif
        
@@ -215,6 +215,7 @@ contains
              print*, 'Considering (ideltat>=0): time, cflxyz =', &
                   time, cflxyz
              call flush(6)
+             call abort_run('CFL limit exceeded...','dtset_new','local_proc.f90')
           endif
        enddo
        

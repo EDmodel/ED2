@@ -1,7 +1,7 @@
 subroutine read_ed1_history_file_array
 
 
-  use max_dims, only: n_pft,huge_patch,huge_cohort,max_water,str_len
+  use max_dims, only: n_pft,huge_patch,huge_cohort,max_water,str_len,maxfiles
   use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, include_pft_ag, phenology,pft_1st_check,include_these_pft
   use misc_coms, only: sfilin, ied_init_mode
   use mem_sites, only: grid_res,edres
@@ -31,10 +31,11 @@ subroutine read_ed1_history_file_array
   real :: flon,lon
   integer :: ilat,ilon
   
-  logical :: renumber_pfts = .true.
+  logical :: renumber_pfts
   character(len=str_len) :: pss_name
   character(len=str_len) :: css_name
   character(len=str_len) :: site_name
+
   real :: dist
   real :: best_dist
 
@@ -105,19 +106,46 @@ subroutine read_ed1_history_file_array
   logical :: site_match
   real :: dist_gc
   integer :: nw
+
+  !----- Variables for new method to find the closest file --------------------------------!
+  integer                                   , parameter :: maxlist=3*maxfiles
+  integer                                               :: nf,nflist,nflsite,nflpss,nflcss
+  integer                                               :: nclosest
+  character(len=str_len), dimension(maxlist)            :: full_list
+  character(len=str_len), dimension(maxfiles)           :: site_list,pss_list,css_list
+  real                  , dimension(maxfiles)           :: slon_list,slat_list
+  real                  , dimension(maxfiles)           :: plon_list,plat_list
+  real                  , dimension(maxfiles)           :: clon_list,clat_list
+  real                  , dimension(maxfiles)           :: file_dist
+  !----------------------------------------------------------------------------------------!
   
   real, external :: ed_biomass
   
-  if(ied_init_mode == 3) renumber_pfts = .false.
+  
+  !----- Retrieve all files with the specified prefix. ------------------------------------!
+  call ed_filelist(full_list,sfilin,nflist)
 
+  
+  !----- Retrieve LON/LAT information for sites -------------------------------------------!
+  if (ied_init_mode == 3) then
+     renumber_pfts = .false.
+     call ed1_fileinfo('.site',nflist,full_list(1:nflist),nflsite,site_list,slon_list      &
+                      ,slat_list)
+  else
+     renumber_pfts = .true.
+  end if
+  
+  !----- Retrieve LON/LAT information for patches and cohorts -----------------------------!
+  call ed1_fileinfo('.pss',nflist,full_list(1:nflist),nflpss,pss_list,plon_list,plat_list)
+  call ed1_fileinfo('.css',nflist,full_list(1:nflist),nflcss,css_list,clon_list,clat_list)
   
   ! Loop over all grids, polygons, and sites
 
-  do igr = 1,ngrids
+  gridloop: do igr = 1,ngrids
 
      cgrid => edgrid_g(igr)
 
-     do ipy = 1,cgrid%npolygons
+     polyloop: do ipy = 1,cgrid%npolygons
         
         cpoly => cgrid%polygon(ipy)
 
@@ -130,83 +158,18 @@ subroutine read_ed1_history_file_array
            cgrid%ntext_soil(2,ipy) = 2
            cgrid%ntext_soil(3,ipy) = 3
            cgrid%ntext_soil(4,ipy) = 3
-        endif
+        end if
 
         ! =================================
         ! Part I: Find the restart files
         ! =================================
-
-        call create_ed1_fname(cgrid%lat(ipy), edres, cgrid%lon(ipy),  &
-             trim(sfilin), pss_name, css_name, site_name)
-        
-        inquire(file=trim(pss_name),exist=restart_exist)
-        if(.not.restart_exist)then
-           write(unit=*,fmt='(a)') ' + Your restart file does not exist:'
-           write(unit=*,fmt='(a)') '    - Not found:'//trim(pss_name)
-           ! Find nearest neighbor.
-           best_dist = huge(6.)
-           best_pss_name = 'null'
-
-           ! IT IS POSSIBLE THAT NONE OF THE POLYGONS ON THIS TILE
-           ! ARE CLOSE TO VALUES IN THE DATABASE
-           do ipy2 = 1,cgrid%npolygons
-              
-              call create_ed1_fname(cgrid%lat(ipy2), edres, cgrid%lon(ipy2),  &
-                   trim(sfilin), pss_name, css_name, site_name)
-              inquire(file=trim(pss_name),exist=restart_exist)
-              if(restart_exist)then
-                 
-                 dist = dist_gc(cgrid%lon(ipy),cgrid%lon(ipy2),cgrid%lat(ipy),cgrid%lat(ipy2))
-                 if(dist < best_dist)then
-                    best_dist = dist
-                    best_pss_name = trim(pss_name)
-                    best_css_name = trim(css_name)
-                 endif
-              endif
-              
-           enddo
-
-           
-           if(trim(best_pss_name) /= 'null')then
-              pss_name = trim(best_pss_name)
-              css_name = trim(best_css_name)
-              write(unit=*,fmt='(a)') '    - Using:'//trim(pss_name)//' instead.'
-           else
-
-              ! LAST RESORT - USE SPARINGLY
-              do ilat = 1,180
-                 do ilon = 1,360
-                    lat = -90.0 + real(ilat-1)
-                    lon = -180.0 + real(ilon-1)
-                    call create_ed1_fname(lat, edres,lon,  &
-                         trim(sfilin), pss_name, css_name, site_name)
-                    inquire(file=trim(pss_name),exist=restart_exist)
-                    if(restart_exist)then
-                       
-                       dist = dist_gc(cgrid%lon(ipy),lon,cgrid%lat(ipy),lat)
-                       !dist = dist_gc(cgrid%lon(ipy),cgrid%lon(ipy2),cgrid%lat(ipy),cgrid%lat(ipy2))
-                       if(dist < best_dist)then
-                          best_dist = dist
-                          best_pss_name = trim(pss_name)
-                          best_css_name = trim(css_name)
-                       endif
-                    endif
-                 enddo
-              enddo
-              if(trim(best_pss_name) /= 'null')then
-                 pss_name = trim(best_pss_name)
-                 css_name = trim(best_css_name)
-                 write(unit=*,fmt='(a)') '    - Using:'//trim(pss_name)//' instead.'
-              else
-                 
-                 call fatal_error('Cannot find a suitable restart file.' &
-                      ,'read_ed1_history_file','ed_history_io_array.f90')
-              endif
-           end if
-        else
-           !           write(unit=*,fmt='(a)') ' + Your restart file exists: '//trim(pss_name)
-           
-        endif
+        do nf=1,nflpss
+           file_dist(nf)=dist_gc(cgrid%lon(ipy),plon_list(nf),cgrid%lat(ipy),plat_list(nf))
+        end do
+        ! nclosest is the file with the closest information. 
+        nclosest=minloc(file_dist(1:nflpss),dim=1)
+        pss_name = trim(pss_list(nclosest))
+        css_name = trim(css_list(nclosest))
 
         ! =================================
         ! Part II: Add the patches
@@ -698,14 +661,13 @@ subroutine read_ed1_history_file_array
            cpoly%patch_count(isi) = nsitepat
         enddo
         
-     enddo
+     end do polyloop
 
 
-     
      !! need to check what's going on in here
      call init_ed_poly_vars_array(cgrid)
 
-  enddo
+  end do gridloop
 
   return
 end subroutine read_ed1_history_file_array

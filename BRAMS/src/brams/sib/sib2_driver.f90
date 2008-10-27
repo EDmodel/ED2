@@ -121,8 +121,6 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
   integer :: ksn,nsoil,k
   integer, save :: i_init_stars_sib
   data i_init_stars_sib/0/
-
-  ! Interface necessary to use pointer as argument - TEB_SPM
   
 
   ! TEB_SPM
@@ -581,14 +579,18 @@ subroutine sfc_pcp_sib(nqparm,level,i,j,cuparm,micro,cupr,lspr)
 
   implicit none
 
-  integer :: nqparm,level,i,j
+  integer :: nqparm,level,i,j,icld
   real :: cupr,lspr
   type (cuparm_vars)  cuparm
   type (micro_vars)   micro
 
   cupr = 0.
   lspr = 0.
-  if (nqparm > 0) cupr = cuparm%conprr(i,j) ! conv   precip at mm/s
+  if (nqparm > 0) then
+     do icld = 1,nclouds
+        cupr = cupr + cuparm%conprr(i,j,icld) ! conv   precip at mm/s
+     end do
+  end if
   if (level >= 3) lspr = micro%   pcpg(i,j) ! explic precip at mm/s
 
 !  if(cupr.gt. 0.) print*,'CUPR=',i,j,cupr

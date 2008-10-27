@@ -1,8 +1,8 @@
 !srf - fev-2003
 !---------------------------GRELL SHALLOW CUMULUS SCHEME---------------------------
 subroutine CUPARTH_shal(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0      &
-                       ,maxiens,iens,icbase,depth_min,cap_maxs                  &
-                       ,DTIME,time,UA,VA,WA,THETA                               &
+                       ,maxiens,iens,iupmethod,depth_min,cap_maxs,radius,zkbmax &
+                       ,zcutdown,z_detr,DTIME,time,UA,VA,WA,THETA               &
                        ,PP,PI0,DN0,RV,kpbl,TKE,TKMIN,RCP,topo,RTGT,THT,RTT,PT   &
                        ,OUTTEM,OUTRT,ierr4d,jmin4d,kdet4d,k224d,kbcon4d,ktop4d  &
                        ,kpbl4d,kstabi4d,kstabm4d,xmb4d,edt4d,zcup5d,pcup5d      &
@@ -17,14 +17,19 @@ subroutine CUPARTH_shal(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0      
        ensdim=>ensdim_sh,                          & !INTENT(IN)
        icoic=>icoic_sh                             !INTENT(IN)
 
-  use rconstants, only: rgas,cp,rm,p00,tcrit,g,cpor,pkdcut 
+  use rconstants, only: rgas,cp,rm,p00,t00,g,cpor
 
   use mem_scratch2_grell_sh
 
   implicit none
   integer mgmxp,mgmyp,mgmzp
-  integer maxiens,iens,icbase
-  real, intent(in) :: depth_min,cap_maxs
+  integer maxiens,iens,iupmethod
+  real,    intent(in) :: depth_min
+  real,    intent(in) :: cap_maxs
+  real,    intent(in) :: radius
+  real,    intent(in) :: zkbmax
+  real,    intent(in) :: zcutdown
+  real,    intent(in) :: z_detr
   !
   !------------------------------------ RAMS vectors:
   integer m1,m2,m3,ia,iz,ja,jz,i0,j0,j1,j2,mynum  ! ,ibcon
@@ -120,11 +125,12 @@ subroutine CUPARTH_shal(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0      
 !     write (*,*) 'Vou entrar na sub-rotina cup_enss_shal...'
      call CUP_enss_shal(mynum,m1,m2,m3,i0,                                   & ! 06
                         j0,mgmxp,mgmyp,mgmzp,maxiens,maxens,                 & ! 12
-                        maxens2,maxens3,ensdim,icoic,icbase,depth_min,       & ! 18
-                        cap_maxs,j,iens_tmp,ISTART,IEND,mix,                 & ! 24
+                        maxens2,maxens3,ensdim,icoic,iupmethod,depth_min,       & ! 18
+                        cap_maxs,radius,zkbmax,zcutdown,z_detr,j,iens_tmp, & !
+                        ISTART,IEND,mix,                 & ! 24
                         mjx,mkx,xland,z1,AA0,T,                              & ! 30
                         Q,TN,QO,PO,P,OUTT,                                   & ! 36
-                        OUTQ,DTIME,PSUR,TCRIT,time,OMEG,                     & ! 42
+                        OUTQ,DTIME,PSUR,T00,time,OMEG,                     & ! 42
                         PBLIDX,TKEG,RCPG,tkmin,                              & ! 46
                         ierr4d(1,j,iens),       jmin4d(1,j,iens),      & ! 48
                         kdet4d(1,j,iens),       k224d(1,j,iens),       & ! 50
@@ -166,19 +172,20 @@ end subroutine CUPARTH_shal
 
 !===========================================================================================!
 !===========================================================================================!
-subroutine CUP_enss_shal(mynum,m1,m2,m3,i0,                             & ! 06
-                         j0,mgmxp,mgmyp,mgmzp,maxiens,maxens,           & ! 12
-                         maxens2,maxens3,ensdim,icoic,icbase,depth_min, & ! 18
-                         cap_maxs,j,iens,ISTART,IEND,mix,               & ! 24
-                         mjx,mkx,xland,Z1,AAEQ,T,                       & ! 30
-                         Q,TN,QO,PO,P,OUTT,                             & ! 36
-                         OUTQ,DTIME,PSUR,TCRIT,time,omeg,               & ! 42
-                         PBLIDX,TKEG,RCPG,tkmin,                        & ! 46
-                         ierr4d,jmin4d,kdet4d,k224d,kbcon4d,ktop4d,     & ! 52
-                         kpbl4d,kstabi4d,kstabm4d,xmb4d,edt4d,zcup5d,   & ! 58
-                         pcup5d,enup5d,endn5d,deup5d,dedn5d,zup5d,      & ! 64
-                         zdn5d,prup5d,clwup5d,tup5d,                    & ! 70
-                         upmf,xierr,xktop,xkbcon,xk22,xierr_dp)         ! ! 76
+subroutine CUP_enss_shal(mynum,m1,m2,m3,i0,                                & !
+                         j0,mgmxp,mgmyp,mgmzp,maxiens,maxens,              & !
+                         maxens2,maxens3,ensdim,icoic,iupmethod,depth_min, & !
+                         cap_maxs,radius,zkbmax,zcutdown,z_detr,           & !
+                         j,iens,ISTART,IEND,mix,                           & !
+                         mjx,mkx,xland,Z1,AAEQ,T,                          & !
+                         Q,TN,QO,PO,P,OUTT,                                & !
+                         OUTQ,DTIME,PSUR,TCRIT,time,omeg,                  & !
+                         PBLIDX,TKEG,RCPG,tkmin,                           & !
+                         ierr4d,jmin4d,kdet4d,k224d,kbcon4d,ktop4d,        & !
+                         kpbl4d,kstabi4d,kstabm4d,xmb4d,edt4d,zcup5d,      & !
+                         pcup5d,enup5d,endn5d,deup5d,dedn5d,zup5d,         & !
+                         zdn5d,prup5d,clwup5d,tup5d,                       & !
+                         upmf,xierr,xktop,xkbcon,xk22,xierr_dp)            ! !
      
 
   use mem_scratch3_grell_sh
@@ -211,8 +218,13 @@ subroutine CUP_enss_shal(mynum,m1,m2,m3,i0,                             & ! 06
   !------Variables saved in RAMS Analisys
   ! use (m1,m2,m3) para dimensionar os vetores que sao escritos nas analises DO RAMS
   real, dimension(m2,m3) :: upmf,xierr,xktop,xkbcon,xk22,xierr_dp
-  integer, intent(in) :: icbase
-  real, intent(in) :: depth_min,cap_maxs
+  integer, intent(in) :: iupmethod
+  real, intent(in) :: depth_min
+  real, intent(in) :: cap_maxs
+  real, intent(in) :: radius
+  real, intent(in) :: zkbmax
+  real, intent(in) :: zcutdown
+  real, intent(in) :: z_detr
 
   integer fquasi  !,fstab,iresult,fmconv
   integer kstart  !,ki,ip1,jp1,m
@@ -223,12 +235,10 @@ subroutine CUP_enss_shal(mynum,m1,m2,m3,i0,                             & ! 06
   real cap_inc,dellaqsum,dp,mbdt
 
   !--- New entrainment/detrainment related stuff --------------------
-  real mentr_rate,entr_rate,radius,zkbmax  !,z_detr,zcutDOwn,dh,zktop
+  real mentr_rate,entr_rate  !,dh,zktop
 
 
   cap_inc=0.
-  !--- specify entrainmentrate and detrainment rate
-  radius=150.
   !--- gross entrainment rate (these may be changed later on in the
   !--- program, depending what your detrainment is!!)
   entr_rate=.2/radius
@@ -258,9 +268,6 @@ subroutine CUP_enss_shal(mynum,m1,m2,m3,i0,                             & ! 06
         xierr(i,j)=0.
      !endif
   enddo
-
-  !--- max height(m) above ground where shallow clouds can originate
-  zkbmax=4000.
 
   do nens=1,maxens
      mbdt_ens(nens)=(float(nens)-3.)*dtime*1.e-3+dtime*5.E-03
@@ -310,7 +317,7 @@ subroutine CUP_enss_shal(mynum,m1,m2,m3,i0,                             & ! 06
   !
   !srf-fev2003
 
-  if (icbase == 2 .and. pblidx(i) == 0) then
+  if (iupmethod == 2 .and. pblidx(i) == 0) then
      !	  New way to define K22
      !----   Determine PBL top using TKE (TKEG) and liquid water mixing ratio (RCPG)
      call get_zi(mix,mgmxp,mkx,mgmzp,istart,iend,j,ierr,kzi,&
@@ -324,9 +331,9 @@ subroutine CUP_enss_shal(mynum,m1,m2,m3,i0,                             & ! 06
         if(ierr(i) == 0) k22(i) = max(2, kzi(i) - 1)
         !	    IF(ierr(i).eq.0) PRINT*,k22(i)
      enddo
-  elseif (icbase == 2 .and. pblidx(i) /= 0) then
+  elseif (iupmethod == 2 .and. pblidx(i) /= 0) then
      k22(i) = pblidx(i)
-  else !(icbase == 1)
+  else !(iupmethod == 1)
      !	 Old way to define k22
      kstart=2
      call maximi(heo_cup,mix,mgmxp,mkx,mgmzp,kstart,kbmax,k22,istart,iend,ierr)

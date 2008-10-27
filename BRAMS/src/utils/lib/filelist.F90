@@ -98,33 +98,6 @@ if(iprelen == 0) iprelen=len(file_prefix)
 
     enddo
 
-![Deprecated way]! !  ! Let C determine a unique filename
-![Deprecated way]!
-![Deprecated way]!    tmpname='/tmp/XXXXXX'//char(0)
-![Deprecated way]!    call form_tmpname(tmpname)
-![Deprecated way]! ! 
-![Deprecated way]!    command = '/bin/ls -1 '//file_prefix(1:iprelen)//' > '//tmpname
-![Deprecated way]!    call system(command)
-![Deprecated way]!    command = 'chmod 777 '//tmpname
-![Deprecated way]!    call system(command)
-![Deprecated way]!
-![Deprecated way]! !  ! open the directory list and read through the files
-![Deprecated way]!
-![Deprecated way]!    iun=98
-![Deprecated way]!    open(unit=iun,file=tmpname,status='unknown',err=15)
-![Deprecated way]!    rewind iun
-![Deprecated way]!
-![Deprecated way]!    do nf=1,1000000
-![Deprecated way]!       read(iun,'(a128)',end=30,err=30) file
-![Deprecated way]!       fnames(nf) = file
-![Deprecated way]!    enddo
-![Deprecated way]!      
-![Deprecated way]!    30 continue!
-![Deprecated way]! !   close(iun)
-![Deprecated way]!
-![Deprecated way]!    command= '/bin/rm -f '//tmpname
-![Deprecated way]!    call system(command)
-
 #endif
 
 

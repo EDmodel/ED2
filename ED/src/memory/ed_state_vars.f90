@@ -1386,21 +1386,6 @@ module ed_state_vars
      real,pointer,dimension(:) :: veg_temp
      real,pointer,dimension(:) :: veg_water
 
-     ! THESE VARIABLES ARE DEPRICATED
-     ! GPP IS NOT INTEGRATED, IT IS UPDATED IN PHOTOSYNTHESIS DRIVER
-     ! TRANSPIRATION IS INERT
-     ! LEAF_RESPIRATION IS CALCULATED IN PHOTOSYNTHESIS DRIVER
-     ! ROOT_RESPIRATION IS CALCULATED IN DECOMPOSITION
-     ! RC AND RCINT MUST BE TOTALLY OLD-SCHOOL
-     
-     !     real,pointer,dimension(:) :: gpp
-     !     real,pointer,dimension(:) :: transpiration
-     
-     !     real,pointer,dimension(:) :: leaf_resp
-     !     real,pointer,dimension(:) :: root_resp
-     !     real,pointer,dimension(:) :: rc
-     !     integer,pointer,dimension(:) :: rcinit
-
      real,pointer,dimension(:) :: co_srad_h
      real,pointer,dimension(:) :: co_lrad_h
      real,pointer,dimension(:) :: co_sens_h
@@ -1419,8 +1404,7 @@ module ed_state_vars
      real :: avg_evap          ! Evaporation
      real,pointer,dimension(:) :: avg_smoist_gg   ! Moisture flux between layers
      real,pointer,dimension(:) :: avg_smoist_gc     ! Trabspired soil moisture sink
-     real :: avg_runoff            ! Total runoff
-     real :: aux               ! Auxillary surface variable
+      real :: aux               ! Auxillary surface variable
      real,pointer,dimension(:) :: aux_s           ! Auxillary soil variable
      real :: avg_sensible_vc   ! Vegetation to Canopy sensible heat flux
      real :: avg_sensible_2cas ! Sensible heat flux to canopy air space
@@ -1429,7 +1413,6 @@ module ed_state_vars
      real :: avg_sensible_ac   ! Canopy to atmosphere sensible heat flux
      real :: avg_sensible_tot  ! Sensible heat flux
      real,pointer,dimension(:) :: avg_sensible_gg ! Net soil heat flux between layers
-     real :: avg_runoff_heat   ! Total runoff internal energy flux
      real :: avg_heatstor_veg  ! Heat storage in vegetation
      
   end type rk4patchtype
@@ -4963,7 +4946,7 @@ contains
 
     ! The first loop through populates the info tables
 
-    write (unit=*,fmt='(a,i4,a,i4,a)') ' + Initializing Variable I/O Tables ',mynum,' of ',nnodetot,';'
+!    write (unit=*,fmt='(a,i4,a,i4,a)') ' + Initializing Variable I/O Tables ',mynum,' of ',nnodetot,';'
 
     do igr = 1,ngrids
        cgrid => edgrid_g(igr)
@@ -5189,7 +5172,7 @@ contains
        if (mynum.eq.1 .and. model_start) then
           model_start = .false.
           do nv=1,num_var(igr)
-             write(*,"(a,i4,a,i4,a,a)")'Registering: ',nv,' of',num_var(igr),'  ',vt_info(nv,igr)%name
+!             write(*,"(a,i4,a,i4,a,a)")'Registering: ',nv,' of',num_var(igr),'  ',vt_info(nv,igr)%name
           enddo
        endif 
 
@@ -5645,7 +5628,7 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_runoff(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_RUNOFF :11:hist:anal:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+       call metadata_edio(nvar,igr,'Polygon average surface runoff','[kg/m2/s]','NA') 
     endif
     
     if (associated(cgrid%aux)) then
@@ -6171,7 +6154,8 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%dmean_rh_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'DMEAN_RH_LU :15:hist:dail:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'Polygon Averaged by Landuse, Daily Integrated Respiration','[tC/ha/d]','ipoly - lu') 
+       call metadata_edio(nvar,igr,'Polygon Averaged by Landuse, Daily Integrated Respiration','[tC/ha/d]' &
+            ,'ipoly - lu') 
     endif
     
     if(associated(cgrid%dmean_nep_lu)) then
@@ -6196,11 +6180,12 @@ contains
             var_len,var_len_global,max_ptrs,'LAI_PFT :14:hist:anal:dail') 
        call metadata_edio(nvar,igr,'Leaf Area Index','[m/m]','NA') 
     else
-       print*,"LAI_PFT not associated"
+       !    print*,"LAI_PFT not associated"
        ! REMOVING THE STOP, WITH LARGE GRIDS, IT IS POSSIBLE THAT
        ! A PARALLEL NODE WILL HAVE NO POLYGONS, AND THUS BREAK THIS
        ! CONDITION IN A LAWFULL CONTEXT. RK 10-25-08
        !       stop
+       !       print*,"LAI_PFT not associated"
     endif
     
     if(associated(cgrid%mmean_gpp)) then

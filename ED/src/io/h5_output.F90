@@ -203,7 +203,7 @@ subroutine h5_output(vtype)
               call date_2_seconds(out_time_fast%year,out_time_fast%month, &
                    out_time_fast%date,int(out_time_fast%time), &
                    iyeara,imontha,idatea,itimea*100,dsec)
-              if(time >= (dsec+outfast) .or. outmonth .ne. out_time_fast%month) then
+              if(time >= (dsec+outfast) .or. outmonth /= out_time_fast%month) then
                  out_time_fast%year  = outyear
                  out_time_fast%month = outmonth
                  out_time_fast%date  = outdate

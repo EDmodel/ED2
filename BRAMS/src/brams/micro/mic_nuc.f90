@@ -130,7 +130,7 @@ subroutine icenuc(m1,ngr,dtlt)
    use rconstants
    use micphys
    use micro_coms, only: ssi0
-   use therm_lib , only: rehul,rehui
+   use therm_lib , only: rehuil,rehui
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -210,7 +210,7 @@ subroutine icenuc(m1,ngr,dtlt)
       ! THERMODYNAMIC DILEMMA: Shouldn't it be rehuil instead of rehul here, since we      !
       !     seek haze nucleation at cold temperatures?                                     !
       !------------------------------------------------------------------------------------!
-      rhhz = rehul(press(k),tair(k),rvap(k))
+      rhhz = rehuil(press(k),tair(k),rvap(k))
       haznuc = 0.
       if (rhhz > 0.82 .and. tairc(k) <= -35.01) then
          rirhhz  = min(0.1799,rhhz-0.82) / drhhz + 1.0

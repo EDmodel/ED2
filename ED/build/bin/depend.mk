@@ -95,6 +95,11 @@ ed_driver.o : $(ED_DRIVER)/ed_driver.f90 grid_coms.o ed_state_vars.o misc_coms.o
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+ed_filelist.o : $(ED_UTILS)/ed_filelist.F90 max_dims.o
+	cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90) 
+
 ed_grid.o : $(ED_UTILS)/ed_grid.f90 grid_coms.o ed_node_coms.o max_dims.o consts_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -152,7 +157,7 @@ ed_misc_coms.o : $(ED_MEMORY)/ed_misc_coms.f90
 
 ed_model.o : $(ED_DRIVER)/ed_model.f90 misc_coms.o grid_coms.o ed_state_vars.o             \
 	rk4_driver.o ed_node_coms.o disturb_coms.o mem_sites.o consts_coms.o disturbance.o \
-	fuse_fiss_utils.o growth_balive.o ed_misc_coms.o
+	fuse_fiss_utils.o growth_balive.o ed_misc_coms.o consts_coms.o 
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -368,7 +373,7 @@ mortality.o : $(ED_DYNAMICS)/mortality.f90 ed_state_vars.o pft_coms.o disturb_co
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-numutils.o: $(ED_UTILS)/numutils.f90
+numutils.o: $(ED_UTILS)/numutils.f90 therm_lib.o consts_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

@@ -1077,7 +1077,7 @@ real function cdf2normal(mycdf)
    !----- Local variables -----------------------------------------------------------------!
    logical             :: converged          ! Convergence handle
    logical             :: bisection          ! Bisection check
-   integer             :: it                 ! Iteration counter
+   integer             :: it,i               ! Iteration counter
    real                :: delta              ! Aux. variable for 2nd guess.
    real                :: normala            ! Aux. variables with previous guess
    real                :: normalz            ! Aux. variables with previous guess
@@ -1106,12 +1106,21 @@ real function cdf2normal(mycdf)
       call abort_run('Invalid input CDF!','cdf2normal','numutils.f90')
    end if
 
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+   !write(unit=84,fmt='(a,1x,es14.7)') 'INPUT: ',mycdf
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+
    !----- First two guesses: no idea, just try -0.5 and 0.5 -------------------------------!
    normala  = -0.5
    funa     = cdf(normala) - mycdf
    normalz  =  0.5
    funz     = cdf(normalz) - mycdf
    
+
+
+
    !----- This is highly unlikely, but... -------------------------------------------------!
    if (funa == 0.) then
       cdf2normal = normala
@@ -1120,6 +1129,12 @@ real function cdf2normal(mycdf)
       cdf2normal = normalz
       return
    end if
+
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+   !write(unit=84,fmt='(60a1)')        ('-',i=1,60)
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
    
    !---------------------------------------------------------------------------------------!
    !   Finding the second guess for bisection. Checking whether the two guesses have op-   !
@@ -1135,7 +1150,11 @@ real function cdf2normal(mycdf)
          normala = normalz
          normalz = normalp
       end if
-      delta   = - funa * (normalz-normala)/(funz-funa)
+      if (abs(funz-funa) < toler) then
+         delta = 100.*toler
+      else
+         delta   = max(abs(funa * (normalz-normala)/(funz-funa)),100.*toler)
+      end if
       bisection = .false.
       guessloop: do it=1,maxfpo
          normalz = normala + real((-1)**it * (it+3)/2) * delta
@@ -1151,6 +1170,8 @@ real function cdf2normal(mycdf)
          call abort_run('Failed finding the second guess for bisection'                    &
                        ,'cdf2normal','numutils.f90')
       end if
+   else 
+      bisection = .true.
    end if
    
    !----- Choose the closest one to be the previous guess ---------------------------------!
@@ -1163,8 +1184,19 @@ real function cdf2normal(mycdf)
    end if
    
    normalc    = (funz * normala - funa * normalz) / (funz-funa)
-   func       = cdf(normalc) - mycdf 
-   
+   func       = cdf(normalc) - mycdf
+
+
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+   !write(unit=84,fmt='(a,1x,i5,1x,a,1x,l1,1x,8(a,1x,es14.7,1x))')                          &
+   !    '1STCALL: IT =', 0,'bisection=',bisection,'normala=',normala,'normalz=',normalz     &
+   !                ,'normalp=',normalp,'normalc=',normalc,'funa=',funa,'funz=',funz        &
+   !                ,'funp=',funp,'func=',func
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+
+
    !----- Looping until convergence is achieved -------------------------------------------!
    converged = .false.
    bisection = .false.
@@ -1230,6 +1262,18 @@ real function cdf2normal(mycdf)
       funp    = func
       normalc = cdf2normal
       func    = funnow
+
+
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      !write(unit=84,fmt='(a,1x,i5,1x,a,1x,l1,1x,8(a,1x,es14.7,1x))')                       &
+      !    'LOOP   : IT =',it,'bisection=',bisection,'normala=',normala,'normalz=',normalz  &
+      !                ,'normalp=',normalp,'normalc=',normalc,'funa=',funa,'funz=',funz     &
+      !                ,'funp=',funp,'func=',func
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+
+
    end do itloop
 
    if (.not. converged) then
@@ -1255,6 +1299,18 @@ real function cdf2normal(mycdf)
       
       call abort_run('Failed finding normalised value from CDF!!!'                         &
                                       ,'cdf2normal','numutils.f90')
+   !else
+
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      !write(unit=84,fmt='(a,1x,i5,1x,a,1x,l1,1x,8(a,1x,es14.7,1x))')                       &
+      !    'ANSWER : IT =',it,'bisection=',bisection,'normala=',normala,'normalz=',normalz  &
+      !                ,'normalp=',normalp,'normalc=',normalc,'funa=',funa,'funz=',funz     &
+      !                ,'funp=',funp,'func=',func
+      !write(unit=84,fmt='(60a1)')        ('-',i=1,60)
+      !write(unit=84,fmt='(a)')           ' '
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
    end if
    return
 end function cdf2normal
@@ -1275,9 +1331,12 @@ end function cdf2normal
 real function cdf(normal)
    use rconstants, only : srtwoi
    implicit none
-
+   !----- Arguments -----------------------------------------------------------------------!
    real, intent(in) :: normal
-   cdf = 0.5 * (1. + erf(normal * srtwoi))
+   !----- External function, the error function. PGI doesn't have the intrinsic erf -------!
+   real, external   :: errorfun
+   !---------------------------------------------------------------------------------------!
+   cdf = 0.5 * (1. + errorfun(normal * srtwoi))
    return
 end function cdf
 !==========================================================================================!
@@ -1303,5 +1362,163 @@ real function cbrt(x)
      cbrt=-((-x)**onethird)
    end if 
 end function cbrt
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This function computes the error function of a variable x. Some fortran distributions !
+! have the intrinsic erf function, but not all of them come with (pgi seems not to have).  !
+! This function was tested against the intrinsic function for ifort and results were       !
+! within the tolerance for all values tested.                                              !
+!    Here we will use the adaptive quadrature method to find it. The method implemented    !
+! here was entirely based on the algorithm 4.3 from:                                       !
+!     BURDEN, R.L.;l FAIRES, J.D., 2005. Numerical Analysis, 8th edition. Thomson          !
+!          Brooks/Cole, Belmont, CA.                                                       !
+!------------------------------------------------------------------------------------------!
+real function errorfun(x)
+   use rconstants, only: onethird,onesixth,sqrtpii
+   use therm_lib , only: toler,maxlev 
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   real, intent(in) :: x
+   !----- Local variables -----------------------------------------------------------------!  
+   real, dimension(8)      :: vv !   Temporary storage area
+   real, dimension(maxlev) :: tol,aa,hh,fa,fb,fc,ss,ll
+   real                    :: a0,b0,fd,fe,s1,s2,app,toomanylevels
+   integer                 :: i
+   !----- Function ------------------------------------------------------------------------!
+   real, external          :: expmsq
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Return right away if x is too large. erf quickly converges to 1/-1 so no need to   !
+   ! compute when |x| > 9., even because the exponential would be too large.               !
+   !---------------------------------------------------------------------------------------!
+   if (abs(x) >= 9.) then
+     errorfun = sign(1.,x)
+     return
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Initialise integral and integration limits --------------------------------------!
+   app           = 0            !----- This is the integral's approximate value
+   a0            = min(0.,x)    !----- Lower bound
+   b0            = max(0.,x)    !----- Upper bound 
+   toomanylevels = real(maxlev) !----- Just for if test.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Initialise scratch arrays -------------------------------------------------------!
+   i      = 1
+   tol(i) = 10.*toler
+   aa(i)  = a0
+   hh(i)  = 0.5*(b0-a0)
+   fa(i)  = expmsq(aa(i))
+   fc(i)  = expmsq(aa(i)+hh(i))
+   fb(i)  = expmsq(b0)
+   !----- Approximation from Simpson's method for entire interval -------------------------!
+   ss(i)  = onethird * hh(i) * (fa(i) + 4.*fc(i) + fb(i)) 
+   ll(i)  = 1
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !  Entering the iterative loop. I'm not using do while because people say that it is    !
+   ! deprecated in fortran90.                                                              !
+   !---------------------------------------------------------------------------------------!
+   iterloop: do
+      if (i == 0) exit iterloop
+
+      !----- Computing Simpson's method for halves of subintervals ------------------------!
+      fd = expmsq(aa(i)+0.5*hh(i))
+      fe = expmsq(aa(i)+1.5*hh(i))
+      s1 = onesixth * hh(i) * (fa(i) + 4.*fd + fc(i))
+      s2 = onesixth * hh(i) * (fc(i) + 4.*fe + fb(i))
+
+      !----- Saving data at this level ----------------------------------------------------!
+      vv(1) = aa(i)
+      vv(2) = fa(i)
+      vv(3) = fc(i)
+      vv(4) = fb(i)
+      vv(5) = hh(i)
+      vv(6) = tol(i)
+      vv(7) = ss(i)
+      vv(8) = ll(i)
+      
+      !----- Delete the level -------------------------------------------------------------!
+      i     = i -1
+      
+      !----- Checking convergence ---------------------------------------------------------!
+      if (abs(s1+s2-vv(7)) < vv(6)) then
+         app = app + s1 + s2
+      elseif (vv(8) >= toomanylevels) then
+         call abort_run('Too many levels, it won''t converge!','errorfun','numutils.f90')
+      !----- Add one level ----------------------------------------------------------------!
+      else
+         !----- Data for the right half subinterval ---------------------------------------!
+         i      = i + 1
+         aa(i)  = vv(1) + vv(5)
+         fa(i)  = vv(3)
+         fc(i)  = fe
+         fb(i)  = vv(4)
+         hh(i)  = 0.5 * vv(5)
+         tol(i) = 0.5 * vv(6) 
+         ss(i)  = s2
+         ll(i)  = vv(8) 
+         !----- Data for the left half subinterval ----------------------------------------!
+         i      = i + 1
+         aa(i)  = vv(1)
+         fa(i)  = vv(2)
+         fc(i)  = fd
+         fb(i)  = vv(3)
+         hh(i)  = hh(i-1)
+         tol(i) = tol(i-1)
+         ss(i)  = s1
+         ll(i)  = ll(i-1)
+      end if
+   end do iterloop
+   
+   !---------------------------------------------------------------------------------------!
+   !     Computing the function. erf is known to be bounded by -1.and 1 and here we will   !
+   ! ensure that that will be the case. Due to numerical precision the final value of      !
+   ! x) may be such that 1 <= erf(x) <= 1.+toler. Although within the tolerance, this  !
+   ! can cause problems elsewhere.                                                         !
+   !---------------------------------------------------------------------------------------!
+   errorfun = max(-1.,min(1.,2. * app * sqrtpii * sign(1.,x)))
+   
+   return
+end function errorfun
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This function simply computes f(x) = exp (-x²). Just to make errorfun neater.         !
+!------------------------------------------------------------------------------------------!
+real function expmsq(x)
+   implicit none
+   !----- Argument ------------------------------------------------------------------------!
+   real, intent(in) :: x
+   !---------------------------------------------------------------------------------------!
+   
+   expmsq=exp(-x*x)
+
+   return
+end function expmsq
 !==========================================================================================!
 !==========================================================================================!
