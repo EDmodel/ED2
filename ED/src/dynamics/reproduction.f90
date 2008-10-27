@@ -88,7 +88,7 @@ subroutine reproduction_ar(cgrid, month)
                     csite%repro(cpatch%pft(ico),ipa1) = csite%repro(cpatch%pft(ico),ipa1) +   &
                          nonlocal_dispersal(cpatch%pft(ico)) * cpatch%nplant(ico) *   &
                          ( 1.0 - seedling_mortality(cpatch%pft(ico)) ) &
-                         * cpatch%bseeds(ico) * csite%area(ipa2)
+                         * cpatch%bseeds(ico) * csite%area(ipa1)
 
 !                    print*,ipa1,ico,cpatch%pft(ico),csite%repro(cpatch%pft(ico),ipa1),"PARTS", &
 !                         nonlocal_dispersal(cpatch%pft(ico)),cpatch%nplant(ico),   &
