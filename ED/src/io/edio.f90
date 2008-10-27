@@ -175,20 +175,14 @@ subroutine spatial_averages
 
   frqsumi = 1.0 / frqsum
   do igr=1,ngrids
-     cgrid => edgrid_g(1)
-
-     cgrid%avg_gpp         = 0.0
-     cgrid%avg_leaf_resp   = 0.0
-     cgrid%avg_root_resp   = 0.0
-     cgrid%avg_plant_resp  = 0.0
-     cgrid%avg_htroph_resp = 0.0
-
-     cgrid%avg_balive      = 0.0
-     cgrid%avg_bdead       = 0.0
+     cgrid => edgrid_g(igr)
      
      do ipy=1,cgrid%npolygons
         cpoly => cgrid%polygon(ipy)
-     
+
+        cgrid%avg_balive(ipy)      = 0.0
+        cgrid%avg_bdead(ipy)       = 0.0
+
         cgrid%avg_gpp(ipy)         = 0.0
         cgrid%avg_leaf_resp(ipy)   = 0.0
         cgrid%avg_root_resp(ipy)   = 0.0
