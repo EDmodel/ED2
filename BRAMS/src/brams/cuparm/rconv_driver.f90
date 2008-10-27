@@ -49,6 +49,8 @@ subroutine rconv_driver(banneron)
    
    use mem_scratch, only : & 
            scratch      !  ! Scratch structure
+   use mem_tend, only:  &
+           tend         !  ! Tendency structure
 
    implicit none
    logical, intent(in) :: banneron          ! Flag to print the banner
@@ -78,26 +80,31 @@ subroutine rconv_driver(banneron)
 
 
    !---------------------------------------------------------------------------------------!
-   !   Checking whether I should use Souza's scheme                                        !
+   !   Checking whether I should use Souza's or old Grell's scheme                         !
    !---------------------------------------------------------------------------------------!
-   if (nshallowest(ngrid) == 1 .and.                                                       &
-       cumulus_time(initial,time,cptime(nclouds),confrq(nclouds),dtlt)) then
-       call souza_cupar_driver()
-       
-       !----- If I have TKE available, I may use it to define PBL top ---------------------!
-       select case (idiffk(ngrid))
-       case (1,4,5,6,7)
-          call atob(mzp*mxp*myp,turb_g(ngrid)%tkep(1,1,1),scratch%vt3de(1))
-       case default
-          call azero(mzp*mxp*myp,scratch%vt3de(1))
-       end select
-       
-       
-       call cloud_sketch(mzp,mxp,myp,ia,iz,ja,jz,dtlt                                      &
-         , grid_g(ngrid)%flpw               (1,1) , grid_g(ngrid)%rtgt               (1,1) &
-         , turb_g(ngrid)%kpbl               (1,1) , scratch%vt3de                      (1) &
-         , cuparm_g(ngrid)%upmf     (1,1,nclouds) , cuparm_g(ngrid)%rtsrc  (1,1,1,nclouds) &
-         , cuparm_g(ngrid)%conprr   (1,1,nclouds) , cuparm_g(ngrid)%cuprliq(1,1,1,nclouds) )
+   if ((nshallowest(ngrid) == 1 .or. nshallowest(ngrid) == 3) .and.                        &
+        cumulus_time(initial,time,cptime(nclouds),confrq(nclouds),dtlt)) then
+      select case(nshallowest(ngrid))
+      case (1) !
+         call souza_cupar_driver()
+      case (3)
+         call old_grell_cupar_driver(nclouds)
+      end select
+      
+      !----- If I have TKE available, I may use it to define PBL top ----------------------!
+      select case (idiffk(ngrid))
+      case (1,4,5,6,7)
+         call atob(mzp*mxp*myp,turb_g(ngrid)%tkep(1,1,1),scratch%vt3de(1))
+      case default
+         call azero(mzp*mxp*myp,scratch%vt3de(1))
+      end select
+      
+      !----- This is just temporary, it is not working properly ---------------------------!
+      call cloud_sketch(mzp,mxp,myp,ia,iz,ja,jz,dtlt                                       &
+         , grid_g(ngrid)%flpw              (1,1), grid_g(ngrid)%rtgt                 (1,1) &
+         , turb_g(ngrid)%kpbl              (1,1), scratch%vt3de                        (1) &
+         , cuparm_g(ngrid)%upmf    (1,1,nclouds), cuparm_g(ngrid)%rtsrc    (1,1,1,nclouds) &
+         , cuparm_g(ngrid)%conprr  (1,1,nclouds), cuparm_g(ngrid)%cuprliq  (1,1,1,nclouds) )
    end if
 
 
@@ -114,9 +121,14 @@ subroutine rconv_driver(banneron)
    !---------------------------------------------------------------------------------------!
    !   Checking whether I was supposed to run Kuo for this grid.                           !
    !---------------------------------------------------------------------------------------!
-   if (ndeepest(ngrid) == 1 .and.                                                          &
+   if ((ndeepest(ngrid) == 1 .or. ndeepest(ngrid) == 3) .and.                              &
        cumulus_time(initial,time,cptime(1),confrq(1),dtlt)) then
-       call kuo_cupar_driver()
+       select case (ndeepest(ngrid))
+       case (1)
+          call kuo_cupar_driver()
+       case (3)
+          call old_grell_cupar_driver(1)
+       end select
 
 
        !----- If I have TKE available, I may use it to define PBL top ---------------------!
@@ -127,13 +139,25 @@ subroutine rconv_driver(banneron)
           call azero(mzp*mxp*myp,scratch%vt3de(1))
        end select
        
-       
+       !----- This is temporary, it is not working properly -------------------------------!
        call cloud_sketch(mzp,mxp,myp,ia,iz,ja,jz,dtlt                                      &
          , grid_g(ngrid)%flpw               (1,1) , grid_g(ngrid)%rtgt               (1,1) &
          , turb_g(ngrid)%kpbl               (1,1) , scratch%vt3de                      (1) &
          , cuparm_g(ngrid)%upmf           (1,1,1) , cuparm_g(ngrid)%rtsrc        (1,1,1,1) &
          , cuparm_g(ngrid)%conprr         (1,1,1) , cuparm_g(ngrid)%cuprliq      (1,1,1,1) )
    end if
+
+   !---------------------------------------------------------------------------------------!
+   !   Updating the heating and moistening rates, and the convective precipitation.        !
+   !---------------------------------------------------------------------------------------!
+   do icld=1,nclouds
+      !----- Accumulating the tendencies --------------------------------------------------!
+      call accum(mxp*myp*mzp,tend%tht(1),cuparm_g(ngrid)%thsrc(1,1,1,icld)    )
+      call accum(mxp*myp*mzp,tend%rtt(1),cuparm_g(ngrid)%rtsrc(1,1,1,icld)    )
+      !----- Updating total precipitation -------------------------------------------------!
+      call update(mxp*myp,cuparm_g(ngrid)%aconpr(1,1),cuparm_g(ngrid)%conprr(1,1,icld),dtlt)
+   end do
+
 
    return
 end subroutine rconv_driver

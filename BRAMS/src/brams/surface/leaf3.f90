@@ -1746,7 +1746,7 @@ subroutine sfc_pcp(nqparm,level,i,j,cuparm,micro)
    if (nqparm > 0) then
       pcpgl = 0.
       do icld=1,nclouds
-         pcpgl  = pcpgl + cuparm%conprr(i,j,icld) * dtlt / confrq(icld)
+         pcpgl  = pcpgl + cuparm%conprr(i,j,icld)
       end do
       pcpgl  = pcpgl  * dtll 
       qpcpgl = pcpgl  * cliq * (ths * pis - tsupercool)

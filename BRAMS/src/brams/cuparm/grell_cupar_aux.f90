@@ -50,9 +50,9 @@ subroutine initial_grid_grell(m1,deltax,deltay,zt,zm,flpw,rtgt,confrq,pblidx)
    !------ Grid-dependent Kain-Fritsch time scale, based on Betts suggestion --------------!
    !tscal_kf = 0.02 * sqrt(deltax*deltay)
    !------ Using the frequency of call as the time scale ----------------------------------!
-   tscal_kf = confrq
+   !tscal_kf = confrq
    !------ Using the original: 3000.s -----------------------------------------------------!
-   !tscal_kf  = 3000.
+   tscal_kf  = 3000.
 
    !------ PBL top. If running Nakanishi/Niino only, otherwise it needs to be found. ------!
    if (pblidx /= 0) then
@@ -283,7 +283,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,pi0,pp,pc,wp,dn0,tkep,rli
       !------ 3b. Shallower cumulus happened, need to find new equilibrium state ----------!
       else
          thil0(k)  = thp(kr)   + dtime*dthildt_shal(k)
-         qtot0(k)  = rtp(kr)   + dtime*dqtotdt_shal(k)
+         qtot0(k)  = max(toodry,rtp(kr)   + dtime*dqtotdt_shal(k))
         !----- Using the Taylor expansion proxy as Tripoli/Cotton (1981) with prev. t -----!
          t0(k)     = cpi * theta(kr) * exner0(k)
          call thil2tqall(thil0(k),exner0(k),p0(k),qtot0(k),qliq0(k),qice0(k),t0(k)         &
@@ -319,7 +319,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,pi0,pp,pc,wp,dn0,tkep,rli
       !------ 3. Ice-liquid potential temperature, with the tendency ----------------------!
       thil(k)  = thp(kr) + dthildt(k)*dtime
       !------ 4. Total mixing ratio, with the tendency ------------------------------------!
-      qtot(k)  = max(1.e-8,rtp(kr)   + dqtotdt(k) * dtime)
+      qtot(k)  = max(toodry,rtp(kr)   + dqtotdt(k) * dtime)
       !------ 5. Finding the equilibrium state. Temperature 1st guess is simply t0 --------!
       t(k)     = t0(k)
       call thil2tqall(thil(k),exner(k),p(k),qtot(k),qliq(k),qice(k),t(k),qvap(k),qsat)

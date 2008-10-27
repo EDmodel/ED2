@@ -672,13 +672,13 @@ subroutine opspec3
      endif
 ![MLO - make sure that CATT would work. Maybe these aren't strong requirements.
      do ng=1,ngrids
-       if (ndeepest(ng) == 1) then
-         print *, 'FATAL - You cannot run Kuo deep cumulus parameterization closure with CATT.'
+       if (ndeepest(ng) == 1 .or. ndeepest(ng) == 3) then
+         print *, 'FATAL - You cannot run Kuo or Old Grell deep cumulus parameterization closure with CATT.'
          print *, 'Change ndeepest to 0 (off) or 2 (Grell).'
          IFATERR=IFATERR+1
        end if
-       if (nshallowest(ng) == 1) then
-         print *, 'FATAL - You cannot run Souza shallow cumulus parametrization with CATT'
+       if (nshallowest(ng) == 1 .or. nshallowest(ng) == 3) then
+         print *, 'FATAL - You cannot run Souza or old Grell shallow cumulus parametrization with CATT'
          print *, 'Change nshallowest to 0 (off) or 2 (Grell).'
          IFATERR=IFATERR+1
        end if
@@ -711,6 +711,16 @@ subroutine opspec3
          print *, 'Please change your setup for grid ',ng,'...'
          IFATERR=IFATERR+1
       end if
+      if (nnqparm(ng) > 0 .and. (ndeepest(ng) < 0 .or. ndeepest(ng) > 3)) then
+         print *, 'FATAL - Ndeepest is out of range. Valid options are 0,1,2, or 3.'
+         print *, 'Please change your setup for grid ',ng,'...'
+         IFATERR=IFATERR+1
+      end if 
+      if (nnqparm(ng) > 0 .and. (nshallowest(ng) < 0 .or. nshallowest(ng) > 3)) then
+         print *, 'FATAL - Nshallowest is out of range. Valid options are 0,1,2, or 3.'
+         print *, 'Please change your setup for grid ',ng,'...'
+         IFATERR=IFATERR+1
+      end if 
    end do
    !  Blocking Grell convection without TKE. In the future this can be relaxed by 
    !  imposing iupmethod to be 1 in case the user wants to run idiffk=2 or 3. 
@@ -818,6 +828,11 @@ subroutine opspec3
                  print *, 'Yours is currently set to ',cap_maxs(nc),' for type ',nc
                  print *, 'And your turbulence is set to ',idiffk(ng),' for grid ',ng
                  ifaterr = ifaterr + 1
+              elseif(ndeepest(ng)    == 3 .or. &
+                     (nclouds > 1 .and. nshallowest(ng) == 3)) then
+                 print *, 'FATAL - cap_maxs(nc) can''t be < 0. for old Grell.'
+                 print *, 'Yours is currently set to ',cap_maxs(nc),' for type ',nc
+                 print *, 'And your turbulence is set to ',idiffk(ng),' for grid ',ng
               end if
            end do
         end if
@@ -925,6 +940,11 @@ subroutine opspec3
         ifaterr=ifaterr+1
      endif
   enddo
+
+  if(ibruvais < 1 .or. ibruvais > 2)then
+     print*,' fatal - ibruvais must be either 1 or 2. Yours is set to ',ibruvais,'...'
+     ifaterr=ifaterr+1
+  end if
   ! check that diffusion flags are compatible if using ihorgrad=1
 
   if(ihorgrad.eq.2)then

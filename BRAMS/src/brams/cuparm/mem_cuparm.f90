@@ -42,7 +42,9 @@ module mem_cuparm
           ,zk22                         & ! Updraft originating level
           ,zkdt                         & ! Top of detrainment level
           ,zkbcon                       & ! Level of free convection
-          ,zktop                        ! ! Cloud top
+          ,zktop                        & ! Cloud top
+          ,xiact_c                      & ! For old Grell
+          ,xiact_p                      ! ! For old Grell
 
      !-------------------------------------------------------------------------------------!
      ! Variables to be dimensioned by (nzp,nxp,nyp), these are used for cumulus inversion  !
@@ -155,7 +157,7 @@ contains
         if (nnqparm(ngr) == 0) then
            ndeepest(ngr)    = 0
            nshallowest(ngr) = 0
-           grell_1st (ngr)  = maxclouds ! 1st greater than last = no Greel 
+           grell_1st (ngr)  = maxclouds ! 1st greater than last = no Grell 
            grell_last(ngr)  = 0
         else
            if (ndeepest(ngr) == 2) then
@@ -205,6 +207,8 @@ contains
     allocate (cuparm%aconpr     (n2,n3)        )
     allocate (cuparm%upmf       (n2,n3,nclouds))
     allocate (cuparm%conprr     (n2,n3,nclouds))
+    allocate (cuparm%xiact_c    (n2,n3,nclouds))
+    allocate (cuparm%xiact_p    (n2,n3,nclouds))
 
 
     !----- If cumulus inversion is on, include extra variables. ---------------------------!
@@ -218,7 +222,8 @@ contains
     endif
 
     !----- If Grell will be used in this grid, allocate the other variables ---------------!
-    if (grell_1st(ng) <= grell_last(ng)) then
+    if (grell_1st(ng) <= grell_last(ng) .or. ndeepest(ng) == 3 .or. nshallowest(ng) == 3)  &
+    then
        allocate (cuparm%aadn       (n2,n3,nclouds))
        allocate (cuparm%aaup       (n2,n3,nclouds))
        allocate (cuparm%dnmf       (n2,n3,nclouds))
@@ -251,7 +256,6 @@ contains
 
     if(associated(cuparm%thsrc      ))  nullify (cuparm%thsrc      )
     if(associated(cuparm%rtsrc      ))  nullify (cuparm%rtsrc      )
-    if(associated(cuparm%upmf       ))  nullify (cuparm%upmf       )
     if(associated(cuparm%areadn     ))  nullify (cuparm%areadn     )
     if(associated(cuparm%areaup     ))  nullify (cuparm%areaup     )
     if(associated(cuparm%cuprliq    ))  nullify (cuparm%cuprliq    )
@@ -275,6 +279,8 @@ contains
     if(associated(cuparm%zkdt       ))  nullify (cuparm%zkdt       )
     if(associated(cuparm%zkbcon     ))  nullify (cuparm%zkbcon     )
     if(associated(cuparm%zktop      ))  nullify (cuparm%zktop      )
+    if(associated(cuparm%xiact_c    ))  nullify (cuparm%xiact_c    )
+    if(associated(cuparm%xiact_p    ))  nullify (cuparm%xiact_p    )
 
     return
   end subroutine nullify_cuparm
@@ -295,7 +301,6 @@ contains
     type (cuparm_vars) :: cuparm
     if(associated(cuparm%thsrc      ))  deallocate (cuparm%thsrc      )
     if(associated(cuparm%rtsrc      ))  deallocate (cuparm%rtsrc      )
-    if(associated(cuparm%upmf       ))  deallocate (cuparm%upmf       )
     if(associated(cuparm%areadn     ))  deallocate (cuparm%areadn     )
     if(associated(cuparm%areaup     ))  deallocate (cuparm%areaup     )
     if(associated(cuparm%cuprliq    ))  deallocate (cuparm%cuprliq    )
@@ -319,6 +324,8 @@ contains
     if(associated(cuparm%zkdt       ))  deallocate (cuparm%zkdt       )
     if(associated(cuparm%zkbcon     ))  deallocate (cuparm%zkbcon     )
     if(associated(cuparm%zktop      ))  deallocate (cuparm%zktop      )
+    if(associated(cuparm%xiact_c    ))  deallocate (cuparm%xiact_c    )
+    if(associated(cuparm%xiact_p    ))  deallocate (cuparm%xiact_p    )
 
     return
   end subroutine dealloc_cuparm
@@ -363,6 +370,8 @@ contains
     if(associated(cuparm%zkdt       ))  cuparm%zkdt       = 0.
     if(associated(cuparm%zkbcon     ))  cuparm%zkbcon     = 0.
     if(associated(cuparm%zktop      ))  cuparm%zktop      = 0.
+    if(associated(cuparm%xiact_c    ))  cuparm%xiact_c    = 0.
+    if(associated(cuparm%xiact_p    ))  cuparm%xiact_p    = 0.
 
     return
   end subroutine initialize_cuparm
@@ -501,6 +510,16 @@ contains
          call vtables2 (cuparm%zktop(1,1,1),cuparmm%zktop(1,1,1)  &
          ,ng, npts, imean,  &
          'ZKTOP :9:hist:anal:mpti:mpt3')
+
+    if (associated(cuparm%xiact_c))  &
+         call vtables2 (cuparm%xiact_c(1,1,1),cuparmm%xiact_c(1,1,1)  &
+         ,ng, npts, imean,  &
+         'XIACT_C :9:hist:anal:mpti:mpt3')
+
+    if (associated(cuparm%xiact_p))  &
+         call vtables2 (cuparm%xiact_p(1,1,1),cuparmm%xiact_p(1,1,1)  &
+         ,ng, npts, imean,  &
+         'XIACT_P :9:hist:anal:mpti:mpt3')
     !--------------------------------------------------------------------------------------!
 
 

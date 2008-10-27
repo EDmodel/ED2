@@ -26,6 +26,11 @@ OBJ_MODEL =                         \
 	conv_coms.o                 \
 	coriolis.o                  \
 	cu_read.o                   \
+	cup_dn.o                    \
+	cup_env.o                   \
+	cup_grell2.o                \
+	cup_grell2_shcu.o           \
+	cup_up.o                    \
 	cyclic_mod.o                \
 	dateutils.o                 \
 	dealloc.o                   \
@@ -87,6 +92,7 @@ OBJ_MODEL =                         \
 	mem_gaspart.o               \
 	mem_globaer.o               \
 	mem_globrad.o               \
+	mem_grell_param2.o          \
 	mem_grid.o                  \
 	mem_grid_dim_defs.o         \
 	mem_harr.o                  \
@@ -104,6 +110,11 @@ OBJ_MODEL =                         \
 	mem_scratch.o               \
 	mem_scratch_grell.o         \
 	mem_scratch1_brams.o        \
+	mem_scratch1_grell.o        \
+	mem_scratch2_grell.o        \
+	mem_scratch2_grell_sh.o     \
+	mem_scratch3_grell.o        \
+	mem_scratch3_grell_sh.o     \
 	mem_sib.o                   \
 	mem_sib_co2.o               \
 	mem_soil_moisture.o         \
@@ -166,6 +177,7 @@ OBJ_MODEL =                         \
 	oda_read.o                  \
 	oda_sta_count.o             \
 	oda_sta_input.o             \
+	old_grell_cupar_driver.o    \
 	opspec.o                    \
 	ozone.o                     \
 	par_decomp.o                \

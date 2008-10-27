@@ -402,18 +402,6 @@ subroutine grell_cupar_driver(banneron,icld)
    end do jloop
    !---------------------------------------------------------------------------------------!
 
-
-
-
-   !---------------------------------------------------------------------------------------!
-   ! 7. Now I will update the tendencies due to this type of cloud, as well as the         !
-   !    precipitation                                                                      !
-   !---------------------------------------------------------------------------------------!
-   if (banneron) write (unit=60+mynum,fmt='(a)') '       [~] Calling accum/update...'
-   call accum (mzp*mxp*myp, tend%tht, cuparm_g(ngrid)%thsrc(:,:,:,icld))
-   call accum (mzp*mxp*myp, tend%rtt, cuparm_g(ngrid)%rtsrc(:,:,:,icld))
-   call update(mxp*myp,cuparm_g(ngrid)%aconpr,cuparm_g(ngrid)%conprr(:,:,icld),dtlt)
-
    return 
 end subroutine grell_cupar_driver
 !==========================================================================================!

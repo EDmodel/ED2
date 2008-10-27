@@ -131,6 +131,8 @@ subroutine read_ed1_history_file_array
      renumber_pfts = .false.
      call ed1_fileinfo('.site',nflist,full_list(1:nflist),nflsite,site_list,slon_list      &
                       ,slat_list)
+  else
+     renumber_pfts = .true.
   end if
   
   !----- Retrieve LON/LAT information for patches and cohorts -----------------------------!

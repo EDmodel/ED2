@@ -54,11 +54,6 @@ subroutine kuo_cupar_driver()
              ,cuparm_g(ngrid)%conprr   (  1,1,icld) ,cuparm_g(ngrid)%conprrp  (  1,1     ) &
              ,cuparm_g(ngrid)%conprrf  (  1,1     ) )
    end select
-   !----- Accumulating the tendencies -----------------------------------------------------!
-   call accum(mxp*myp*mzp,tend%tht(1),cuparm_g(ngrid)%thsrc(1,1,1,icld)    )
-   call accum(mxp*myp*mzp,tend%rtt(1),cuparm_g(ngrid)%rtsrc(1,1,1,icld)    )
-   !----- Updating total precipitation ----------------------------------------------------!
-   call update(mxp*myp,cuparm_g(ngrid)%aconpr(1,1),cuparm_g(ngrid)%conprr(1,1,icld),dtlt)
 
    return
 end subroutine kuo_cupar_driver

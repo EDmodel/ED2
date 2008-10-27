@@ -50,7 +50,7 @@
 !------------------------------------------------------------------------------------------!
 
 !---- ED Region dimensions ----------------------------------------------------------------!
-   NL%N_ED_REGION   =  1  ! number of regions for which you want to run ED. 
+   NL%N_ED_REGION   =  0  ! number of regions for which you want to run ED. 
                           ! This can be zero provided that N_SOI is not...
                           
    NL%GRID_TYPE     =  1  !  0 corresponds to a lat/lon grid.  
@@ -83,7 +83,7 @@
    NL%NSTRATY = 1,4 ! regions. The variables affected are denoted by [\*/]
 
 !----- You can pinpoint individual locations, known as SOI. -------------------------------!
-   NL%N_SOI    =    0  ! number of sites of interest (SOIs).  This could be zero.
+   NL%N_SOI    =    1  ! number of sites of interest (SOIs).  This could be zero.
 
    NL%SOI_LAT  =  -2.50,  42.5, -3.5  ! list of the latitudes of the SOIs (degrees north)
    NL%SOI_LON  = -59.50, -72.5,-55.5  ! list of the longitudes of the SOIs (degrees east)
@@ -112,25 +112,30 @@
 	                        ! but will compromise I/O performance significantly
         	                ! 0 = no metadata, 1 = yes metadata
 
-   NL%UNITFAST   = 0             ! Units for FRQFAST/OUTFAST
-   NL%UNITSTATE  = 0             ! Units for FRQSTATE/OUTSTATE
-                                 ! 0 - Seconds;
-                                 ! 1 - Days;
-                                 ! 2 - Calendar months (variable)
-                                 ! 3 - Calendar years  (variable)
-                                 ! PS: If OUTFAST/OUTSTATE are set to special flags
-                                 !     (-1 or -2) unitfast/unitstate will be ignored for
-                                 !     them
+   NL%UNITFAST   = 2            ! Units for FRQFAST/OUTFAST
+   NL%UNITSTATE  = 3            ! Units for FRQSTATE/OUTSTATE
+                                ! 0 - Seconds;
+                                ! 1 - Days;
+                                ! 2 - Calendar months (variable)
+                                ! 3 - Calendar years  (variable)
+                                ! PS: If OUTFAST/OUTSTATE are set to special flags
+                                !     (-1 or -2) unitfast/unitstate will be ignored for
+                                !     them
 
    NL%OUTFAST    = 0		! Time interval between analysis files
    NL%OUTSTATE   = 0		! Time interval between history files
-				! Values are in seconds and must be <= 1 month
-				! Values < FRQFAST/FRQSTATE are set to those values
-				! Special values: -1 = daily; -2 = monthly
+				! Notes: 
+                                ! - Values are given by UNITFAST/UNITSTATE;
+                                ! - Values over one month are accepted only if they are
+                                !   exactly the same as FRQFAST/FRQSTATE 
+				! - Values < FRQFAST/FRQSTATE are set to those values
+				! - Special values:  0 = same as FRQFAST/FRQSTATE;
+                                !                   -1 = daily; 
+                                !                   -2 = monthly
 
    NL%ICLOBBER  = 1             ! 0 = stop if files exist, 1 = overwite files
-   NL%FRQFAST   = 3600.         ! Time interval between analysis/history files
-   NL%FRQSTATE  = 126230400.    ! Time interval between history files
+   NL%FRQFAST   = 3.            ! Time interval between analysis/history files
+   NL%FRQSTATE  = 1.            ! Time interval between history files
 !------------------------------------------------------------------------------------------!
 
 

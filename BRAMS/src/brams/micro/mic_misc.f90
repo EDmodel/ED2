@@ -350,32 +350,32 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
    !     Adjust condensate amounts downward if their sum exceeds rhow (this replaces       !
    ! negadj call in subroutine timestep).                                                  !
    !---------------------------------------------------------------------------------------!
-   !negadjloop: do k = lpw,m1-1
-   !   totcond(k) = 1.001*totcond(k)
-   !   rtot(k) = max(0.,rtot(k))
-   !   !----- Vapour would be less than the minimum, rescale condensates -------------------!
-   !   if (totcond(k) > rtot(k)) then 
-   !      frac = rtot(k) / totcond(k)
-   !   !----- The setting is fine, move on -------------------------------------------------!
-   !   else
-   !      cycle negadjloop
-   !   end if
+   negadjloop: do k = lpw,m1-1
+      totcond(k) = 1.001*totcond(k)
+      rtot(k) = max(0.,rtot(k))
+      !----- Vapour would be less than the minimum, rescale condensates -------------------!
+      if (totcond(k) > rtot(k)) then 
+         frac = rtot(k) / totcond(k)
+      !----- The setting is fine, move on -------------------------------------------------!
+      else
+         cycle negadjloop
+      end if
    
-   !   !----- Rescaling the condensates, always checking whether they are above minimum. ---!
-   !   totcond(k) = 0.
-   !   do lcat = 1,ncat
-   !      lhcat = jhcat(k,lcat)
-   !      rx(k,lcat) = rx(k,lcat) * frac
-   !      if (rx(k,lcat) < rxmin(lcat)) then
-   !        rx(k,lcat) = 0.
-   !        cx(k,lcat) = 0.
-   !      else
-   !         cx(k,lcat) = cx(k,lcat) * frac
-   !      end if
-   !      totcond(k) = totcond(k) + rx(k,lcat)
-   !   end do
-   !   rvap (k) = rtot(k) - totcond(k)
-   !end do negadjloop
+      !----- Rescaling the condensates, always checking whether they are above minimum. ---!
+      totcond(k) = 0.
+      do lcat = 1,ncat
+         lhcat = jhcat(k,lcat)
+         rx(k,lcat) = rx(k,lcat) * frac
+         if (rx(k,lcat) < rxmin(lcat)) then
+           rx(k,lcat) = 0.
+           cx(k,lcat) = 0.
+         else
+            cx(k,lcat) = cx(k,lcat) * frac
+         end if
+         totcond(k) = totcond(k) + rx(k,lcat)
+      end do
+      rvap (k) = rtot(k) - totcond(k)
+   end do negadjloop
    !---------------------------------------------------------------------------------------!
 
 

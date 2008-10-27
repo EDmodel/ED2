@@ -106,7 +106,16 @@ subroutine rams_mem_alloc(proc_type)
 
    ! Needed for Nakanishi and Niino turbulence closure
    use turb_constants, only: assign_const_nakanishi
-  
+   
+   
+   ! For old Grell 
+   use mem_grell_param       ! scalar parameters
+   use mem_scratch1_grell    ! scratch 1
+   use mem_scratch2_grell    ! scratch 2
+   use mem_scratch3_grell    ! scratch 3
+   use mem_scratch2_grell_sh ! scratch 2
+   use mem_scratch3_grell_sh ! scratch 3
+
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -114,6 +123,7 @@ subroutine rams_mem_alloc(proc_type)
    !----- Local Variables: ----------------------------------------------------------------!
    integer, pointer , dimension(:)             :: nmzp,nmxp,nmyp
    integer                                     :: ng,nv,imean,na,ne
+   logical                                     :: Alloc_Old_Grell_Flag
    !----- Local variables because of TEB_SPM ----------------------------------------------!
    type(gaspart_vars), pointer :: gaspart_p
    !---------------------------------------------------------------------------------------!
@@ -229,7 +239,68 @@ subroutine rams_mem_alloc(proc_type)
    end if
    !---------------------------------------------------------------------------------------!
 
+   !----- Allocate Cuparm variables data type. --------------------------------------------!
+   Alloc_Old_Grell_Flag = .false.
+   grellplusloop: do ng=1, ngrids
+      if (nnqparm(ng) == 1 .and. (ndeepest(ng) == 3 .or. nshallowest(ng) == 3)) then
+         Alloc_Old_Grell_Flag = .true.
+         exit grellplusloop
+      end if
+   end do grellplusloop
+   if (Alloc_Old_Grell_Flag) then
+      write (unit=*,fmt=*) ' [+] ''Old Grell'' scratch allocation on node ',mynum,'...'
+      call define_memory(nmxp, nmyp, nmzp, ngrids, nnqparm,ndeepest,nshallowest)
 
+      !----- Allocating data for scratch data ---------------------------------------------!
+      call alloc_scratch2_grell
+      call alloc_scratch3_grell
+      call alloc_scratch2_grell_sh 
+      call alloc_scratch3_grell_sh 
+      allocate(sc1_grell_g(ngrids))
+      do ng=1,ngrids
+         if (ndeepest(ng) == 3 .or. nshallowest(ng) == 3) then
+            call nullify_scratch1_grell(sc1_grell_g(ng))
+            call alloc_scratch1_grell(sc1_grell_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),nclouds)
+            call zero_scratch1_grell(sc1_grell_g(ng))
+         end if
+      end do
+      call zero_scratch2_grell() !LFR
+      call zero_scratch3_grell() !LFR
+      call zero_scratch2_grell_sh() !LFR
+      call zero_scratch3_grell_sh() !LFR
+
+      Flag_Grell = 2
+      !----- Translating closure_type to icoic --------------------------------------------!
+      select case (closure_type(1))
+      case ('en')
+         icoic = 0
+      case ('gr')
+         icoic = 1
+      case ('lo')
+         icoic = 4
+      case ('mc')
+         icoic = 7
+      case ('kf') 
+         icoic = 10
+      case ('as') 
+         icoic = 13
+      case default 
+         icoic_sh = 1
+      end select
+      !----- Translating closure_type to icoic_sh -----------------------------------------!
+      select case (CLOSURE_TYPE(nclouds))
+      case ('en')
+         icoic_sh = 0
+      case ('gr')
+         icoic_sh = 1
+      case ('as')
+         icoic_sh = 4
+      case ('kf') 
+         icoic_sh = 8
+      case default 
+         icoic_sh = 8
+      end select
+   end if
 
    !----- Allocate Leaf type. -------------------------------------------------------------!
    write (unit=*,fmt=*) ' [+] Leaf allocation on node ',mynum,'...'

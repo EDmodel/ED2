@@ -44,10 +44,6 @@ subroutine souza_cupar_driver()
         turb_g(ngrid)%sflux_r(1,1),                              &
         turb_g(ngrid)%vkh(1,1,1),                                &
         micro_g(ngrid)%rcp(1,1,1))
-
-   call accum(mxp*myp*mzp, tend%tht(1), cuparm_g(ngrid)%thsrc(1,1,1,icld))
-   call accum(mxp*myp*mzp, tend%tht(1), cuparm_g(ngrid)%rtsrc(1,1,1,icld))
-
    return
 end subroutine souza_cupar_driver
 !==========================================================================================!

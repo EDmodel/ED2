@@ -25,6 +25,7 @@ subroutine diffuse()
 
   use mem_turb, only:    &
        idiffk,           &    !INTENT(IN)
+       ibruvais,         &    ! intent(in)
        turb_g,           &    ! %tkep, %hkm, %vkh
        xkhkm
 
@@ -165,7 +166,8 @@ subroutine diffuse()
     call atob(mxyzp,basic_g(ngrid)%rtp(1,1,1),scratch%vt3dq(1))
   end if
 
-  call bruvais(mzp,mxp,myp,ia,iz,ja,jz                            &
+  call bruvais(ibruvais,mzp,mxp,myp,ia,iz,ja,jz                   &
+       ,basic_g(ngrid)%pi0   (1,1,1) ,basic_g(ngrid)%pp  (1,1,1)  &
        ,basic_g(ngrid)%theta (1,1,1) ,scratch%vt3dq          (1)  &
        ,scratch%vt3dp            (1) ,grid_g(ngrid)%rtgt   (1,1)  &
        ,grid_g(ngrid)%flpw     (1,1) ,scratch%vt3dj          (1)  )

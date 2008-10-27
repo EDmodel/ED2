@@ -44,6 +44,7 @@ subroutine dealloc_all()
   use mem_scratch_grell, only : dealloc_scratch_grell
   use mem_ensemble, only : ensemble_e,dealloc_ensemble
   use mem_mass, only : mass_g, massm_g, dealloc_mass
+  use mem_scratch1_grell, only : sc1_grell_g,dealloc_scratch1_grell
 
 
   implicit none
@@ -96,6 +97,7 @@ subroutine dealloc_all()
 
      call dealloc_oda(oda_g(ng)) 
      call dealloc_oda(odam_g(ng))
+     if (allocated(sc1_grell_g)) call dealloc_scratch1_grell(sc1_grell_g(ng))
 
      if (TEB_SPM==1) then
         if(allocated(tebc_g)) then
@@ -123,6 +125,7 @@ subroutine dealloc_all()
   if (allocated(varinit_g)) deallocate(varinit_g ,varinitm_g )
   if (allocated(oda_g    )) deallocate(oda_g     ,odam_g     )
   if (allocated(mass_g   )) deallocate(mass_g    ,massm_g    )
+  if (allocated(sc1_grell_g)) deallocate(sc1_grell_g)
 
   if (TEB_SPM==1) then
      if(allocated(teb_g)) then

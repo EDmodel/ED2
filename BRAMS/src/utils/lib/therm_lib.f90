@@ -24,7 +24,7 @@ module therm_lib
    integer, parameter ::   maxit  = 150             ! Maximum # of iterations before crash-
                                                     !   ing, for other methods.
 
-   integer, parameter ::   maxlev = 16              ! Maximum # of levels for adaptive     
+   integer, parameter ::   maxlev = 16             ! Maximum # of levels for adaptive     
                                                     !   quadrature methods.    
 
 
@@ -156,6 +156,7 @@ module therm_lib
       real                        :: iifun,x
 
       if (newthermo) then
+
          !----- Updated method, using MK05 ------------------------------------------------!
          iifun = iii_7(0) + iii_7(1)/temp + iii_7(2) * log(temp) + iii_7(3) * temp
          esif  = exp(iifun)

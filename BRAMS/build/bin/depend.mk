@@ -85,6 +85,33 @@ cu_read.o : $(CUPARM)/cu_read.f90  mem_basic.o mem_cuparm.o mem_grid.o
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
+cup_dn.o : $(OLDGRELL)/cup_dn.f90 rconstants.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+cup_env.o : $(OLDGRELL)/cup_env.f90 rconstants.o therm_lib.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+cup_grell2.o : $(OLDGRELL)/cup_grell2.f90  mem_grell_param2.o mem_scratch2_grell.o         \
+	mem_scratch3_grell.o rconstants.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+cup_grell2_shcu.o: $(OLDGRELL)/cup_grell2_shcu.f90 rconstants.o mem_grell_param2.o         \
+	mem_scratch2_grell_sh.o mem_scratch3_grell_sh.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+cup_up.o : $(OLDGRELL)/cup_up.f90 rconstants.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
 cyclic_mod.o : $(BC)/cyclic_mod.f90 grid_dims.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -97,7 +124,7 @@ dateutils.o: $(UTILS_LIB)/dateutils.f90 rconstants.o
 
 dealloc.o : $(MEMORY)/dealloc.f90 mem_all.o mem_opt_scratch.o catt_start.o mem_aerad.o     \
 	mem_globaer.o mem_globrad.o teb_spm_start.o mem_teb.o mem_teb_common.o             \
-	mem_gaspart.o mem_scratch_grell.o mem_ensemble.o mem_mass.o
+	mem_gaspart.o mem_scratch_grell.o mem_ensemble.o mem_mass.o mem_scratch1_grell.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
@@ -420,6 +447,11 @@ mem_globrad.o : $(RADIATE)/mem_globrad.f90 mem_precision.o mem_aerad.o mem_radia
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
+mem_grell_param2.o : $(OLDGRELL)/mem_grell_param2.f90 grell_coms.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
 mem_grid.o : $(MEMORY)/mem_grid.f90 grid_dims.o var_tables.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -497,6 +529,32 @@ mem_scratch.o : $(MEMORY)/mem_scratch.f90 grid_dims.o mem_aerad.o mem_radiate.o 
 	rm -f $(<F:.f90=.f90) 
 
 mem_scratch_grell.o : $(CUPARM)/mem_scratch_grell.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+mem_scratch1_grell.o : $(OLDGRELL)/mem_scratch1_grell.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+mem_scratch2_grell.o : $(OLDGRELL)/mem_scratch2_grell.f90 mem_grell_param2.o node_mod.o 
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+mem_scratch2_grell_sh.o : $(OLDGRELL)/mem_scratch2_grell_sh.f90 mem_grell_param2.o         \
+	node_mod.o 
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+mem_scratch3_grell.o : $(OLDGRELL)/mem_scratch3_grell.f90 mem_grell_param2.o 
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+mem_scratch3_grell_sh.o : $(OLDGRELL)/mem_scratch3_grell_sh.f90 mem_grell_param2.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
@@ -838,6 +896,15 @@ oda_sta_input.o : $(FDDA)/oda_sta_input.f90 mem_oda.o obs_input.o mem_grid.o
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
+old_grell_cupar_driver.o : $(OLDGRELL)/old_grell_cupar_driver.f90 mem_basic.o mem_tend.o   \
+	mem_cuparm.o node_mod.o mem_grell_param2.o grell_coms.o mem_scratch1_grell.o       \
+	mem_scratch2_grell.o mem_scratch2_grell_sh.o mem_scratch3_grell.o                  \
+	mem_scratch3_grell_sh.o mem_grid.o rconstants.o mem_turb.o mem_micro.o             \
+	mem_scratch.o mem_scalar.o io_params.o mem_leaf.o mem_mass.o therm_lib.o 
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
 opspec.o : $(IO)/opspec.f90 mem_grid.o therm_lib.o micphys.o mem_grid.o mem_varinit.o      \
 	mem_radiate.o mem_globrad.o io_params.o mem_cuparm.o mem_turb.o mem_leaf.o         \
 	grell_coms.o teb_spm_start.o mem_emiss.o catt_start.o sib_vars.o mem_mass.o
@@ -954,7 +1021,9 @@ rams_mem_alloc.o : $(MEMORY)/rams_mem_alloc.f90 mem_all.o node_mod.o grell_coms.
 	mem_opt_scratch.o catt_start.o mem_carma.o mem_aerad.o mem_globaer.o mem_globrad.o \
 	extra.o mem_turb_scalar.o machine_arq.o mem_grid_dim_defs.o mem_scalar.o           \
 	teb_spm_start.o mem_emiss.o mem_gaspart.o mem_teb_common.o mem_teb_vars_const.o    \
-	mem_teb.o mem_mass.o turb_constants.o
+	mem_teb.o mem_mass.o turb_constants.o mem_grell_param2.o mem_scratch1_grell.o      \
+	mem_scratch2_grell.o mem_scratch3_grell.o mem_scratch2_grell_sh.o                  \
+	mem_scratch3_grell_sh.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
@@ -992,7 +1061,7 @@ rconstants.o: $(UTILS_LIB)/rconstants.f90
 	rm -f $(<F:.f90=.f90) 
 
 rconv_driver.o: $(CUPARM)/rconv_driver.f90 mem_cuparm.o mem_grid.o node_mod.o mem_turb.o   \
-	mem_scratch.o
+	mem_scratch.o mem_tend.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
