@@ -100,41 +100,69 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,  &
         csite%ebudget_loss2runoff(ipa) = 0.0
         ksn = integration_buff%y%nlev_sfcwater
         
+        !----------------------------------------------------------------------------------!
+        !    I had to split the following if into two tests. When ksn is 0, then we cannot !
+        ! test sfcwater_???(ksn) otherwise the compiler complains about out of bounds      !
+        ! problem.                                                                         !
+        !----------------------------------------------------------------------------------!
+        
         if (irunoff == 1 .and. ksn >= 1) then
-           if (integration_buff%y%sfcwater_mass(ksn) > 0.0) then
-              if (integration_buff%y%sfcwater_fracliq(ksn) > 0.1) then
-                 wfreeb = integration_buff%y%sfcwater_mass(ksn)  &
-                      * (integration_buff%y%sfcwater_fracliq(ksn) - .1)  &
-                      / 0.9 * min(1.0,runoff_time*hdid) 
-                 qwfree = wfreeb * cliq   &
-                      * (integration_buff%y%sfcwater_tempk(ksn) - tsupercool)
-                 
-                 ! Convert to J/m2
-                 integration_buff%y%sfcwater_energy(ksn) =   &
-                      integration_buff%y%sfcwater_energy(ksn) *  &
+           if (integration_buff%y%sfcwater_mass(ksn) > 0.0 .and. &
+               integration_buff%y%sfcwater_fracliq(ksn) > 0.1) then
+
+              wfreeb = integration_buff%y%sfcwater_mass(ksn)  &
+                   * (integration_buff%y%sfcwater_fracliq(ksn) - .1)  &
+                   / 0.9 * min(1.0,runoff_time*hdid) 
+              qwfree = wfreeb * cliq   &
+                   * (integration_buff%y%sfcwater_tempk(ksn) - tsupercool)
+           
+              ! Convert to J/m2
+              integration_buff%y%sfcwater_energy(ksn) =   &
+                   integration_buff%y%sfcwater_energy(ksn) *  &
+                   integration_buff%y%sfcwater_mass(ksn)
+              integration_buff%y%sfcwater_mass(ksn) =  &
+                   integration_buff%y%sfcwater_mass(ksn) - wfreeb
+              integration_buff%y%sfcwater_depth(ksn) =  &
+                   integration_buff%y%sfcwater_depth(ksn) - wfreeb*0.001
+              if(integration_buff%y%sfcwater_mass(ksn) >= min_sfcwater_mass)then
+                 integration_buff%y%sfcwater_energy(ksn) =  ( &
+                      integration_buff%y%sfcwater_energy(ksn)-qwfree)/ &
                       integration_buff%y%sfcwater_mass(ksn)
-                 integration_buff%y%sfcwater_mass(ksn) =  &
-                      integration_buff%y%sfcwater_mass(ksn) - wfreeb
-                 integration_buff%y%sfcwater_depth(ksn) =  &
-                      integration_buff%y%sfcwater_depth(ksn) - wfreeb*0.001
-                 if(integration_buff%y%sfcwater_mass(ksn) >= min_sfcwater_mass)then
-                    integration_buff%y%sfcwater_energy(ksn) =  ( &
-                         integration_buff%y%sfcwater_energy(ksn)-qwfree)/ &
-                         integration_buff%y%sfcwater_mass(ksn)
-                 else
-                    integration_buff%y%sfcwater_energy(ksn) = 0.0
-                 endif
-                 
-                 call stabilize_snow_layers_ar(integration_buff%y, csite,ipa,  &
-                      0.0, lsl)
-                 ! Compute runoff for output 
-!                   csite%runoff(ipa) = csite%runoff(ipa) + wfreeb/(x2-x1)
-!                   csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa) + qwfree/(x2-x1)
-                 csite%wbudget_loss2runoff(ipa) = wfreeb
-                 csite%ebudget_loss2runoff(ipa) = qwfree
+              else
+                 integration_buff%y%sfcwater_energy(ksn) = 0.0
               endif
-           endif
-        endif
+           
+              call stabilize_snow_layers_ar(integration_buff%y, csite,ipa,  &
+                   0.0, lsl)
+
+              ! Compute runoff for output 
+           
+              csite%runoff(ipa) = csite%runoff(ipa) + wfreeb/(x2-x1)
+           
+              csite%avg_runoff(ipa) = csite%avg_runoff(ipa) + wfreeb
+           
+              csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa) + qwfree
+           
+              csite%wbudget_loss2runoff(ipa) = wfreeb
+              csite%ebudget_loss2runoff(ipa) = qwfree
+           else
+              csite%runoff(ipa) = 0.0
+              csite%avg_runoff(ipa) = 0.0
+              csite%avg_runoff_heat(ipa) = 0.0
+              csite%wbudget_loss2runoff(ipa) = 0.0
+              csite%ebudget_loss2runoff(ipa) = 0.0
+           end if
+           
+        else
+
+           csite%runoff(ipa) = 0.0
+           csite%avg_runoff(ipa) = 0.0
+           csite%avg_runoff_heat(ipa) = 0.0
+           csite%wbudget_loss2runoff(ipa) = 0.0
+           csite%ebudget_loss2runoff(ipa) = 0.0
+
+        end if
+
 
         call copy_rk4_patch_ar(integration_buff%y,   &
              integration_buff%initp, cpatch, lsl)
@@ -661,14 +689,12 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch, lsl)
   targetp%avg_vapor_ac       = sourcep%avg_vapor_ac
   targetp%avg_transp         = sourcep%avg_transp  
   targetp%avg_evap           = sourcep%avg_evap    
-  targetp%avg_runoff         = sourcep%avg_runoff
   targetp%avg_sensible_vc    = sourcep%avg_sensible_vc  
   targetp%avg_sensible_2cas  = sourcep%avg_sensible_2cas
   targetp%avg_qwshed_vg      = sourcep%avg_qwshed_vg    
   targetp%avg_sensible_gc    = sourcep%avg_sensible_gc  
   targetp%avg_sensible_ac    = sourcep%avg_sensible_ac  
   targetp%avg_sensible_tot   = sourcep%avg_sensible_tot 
-
 
   targetp%ground_shv = sourcep%ground_shv
   targetp%surface_ssh = sourcep%surface_ssh
@@ -1489,7 +1515,6 @@ subroutine zero_rk4_patch(y)
   y%avg_evap                       = 0.
   y%avg_smoist_gg                  = 0.
   y%avg_smoist_gc                  = 0.
-  y%avg_runoff                     = 0.
   y%aux                            = 0.
   y%aux_s                          = 0.
   y%avg_sensible_vc                = 0.
@@ -1499,7 +1524,6 @@ subroutine zero_rk4_patch(y)
   y%avg_sensible_ac                = 0.
   y%avg_sensible_tot               = 0.
   y%avg_sensible_gg                = 0.
-  y%avg_runoff_heat                = 0.
   y%avg_heatstor_veg               = 0.
 
   return

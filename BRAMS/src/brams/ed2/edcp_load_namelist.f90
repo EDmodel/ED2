@@ -26,7 +26,7 @@ subroutine read_ednl(iunit)
   use pft_coms, only: include_these_pft,pft_1st_check
   
   use misc_coms, only:  ifoutput,idoutput,imoutput,iyoutput,isoutput, &
-       frqfast, frqstate, outfast,outstate,                           &
+       frqfast, frqstate, outfast,outstate,unitfast,unitstate,        &
        ied_init_mode, current_time,ed_inputs_dir,                     &
        end_time, integration_scheme, ffilout,  dtlsm,                 &
        iprintpolys,printvars,npvars,pfmtstr,ipmax,ipmin,              &
@@ -58,14 +58,14 @@ subroutine read_ednl(iunit)
 
   logical :: fexists,op
   namelist /ED2_INFO/  dtlsm,ifoutput,idoutput,imoutput,iyoutput,isoutput,  &
-       attach_metadata,ffilout,sfilout,ied_init_mode,edres,sfilin,          &
-       veg_database,soil_database,ed_inputs_dir,soilstate_db,soildepth_db,  &
-       isoilstateinit,isoildepthflg,integration_scheme,istoma_scheme,       &
-       iphen_scheme,repro_scheme,lapse_scheme,n_plant_lim,n_decomp_lim,     &
-       include_fire,ianth_disturb,include_these_pft,pft_1st_check,maxpatch, &
-       maxcohort,treefall_disturbance_rate,runoff_time,iprintpolys,npvars,  &
-       printvars,pfmtstr,ipmin,ipmax,initial_co2,iphenys1,iphenysf,         &
-       iphenyf1,iphenyff,iedcnfgf,phenpath       
+       attach_metadata,outfast,outstate,ffilout,sfilout,ied_init_mode,      &
+       edres,sfilin,veg_database,soil_database,ed_inputs_dir,soilstate_db,  &
+       soildepth_db,isoilstateinit,isoildepthflg,integration_scheme,        &
+       istoma_scheme,iphen_scheme,repro_scheme,lapse_scheme,n_plant_lim,    &
+       n_decomp_lim,include_fire,ianth_disturb,include_these_pft,           &
+       pft_1st_check,maxpatch,maxcohort,treefall_disturbance_rate,          &
+       runoff_time,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax,        &
+       initial_co2,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf,phenpath
 
   read (iunit, iostat=err, NML=ED2_INFO)
   if (err /= 0) then
@@ -79,6 +79,8 @@ subroutine read_ednl(iunit)
      write(*,*) "iyoutput=",iyoutput
      write(*,*) "isoutput=",isoutput
      write(*,*) "attach_metadata=",attach_metadata
+     write(*,*) "outfast=",outfast
+     write(*,*) "outstate=",outstate
      write(*,*) "ffilout=",ffilout
      write(*,*) "sfilout=",sfilout
      write(*,*) "ied_init_mode=",ied_init_mode
@@ -147,7 +149,12 @@ subroutine read_ednl(iunit)
   imettype = 1             ! NOT USED IN COUPLED
   metcyc1  = 0000          ! NOT USED IN COUPLED
   metcycf  = 0000          ! NOT USED IN COUPLED
-  ioptinpt = ''            !NOT USED, DEPRICATED?
+  ioptinpt = ''            !NOT USED, DEPRICATED? It will be used once optimization is 
+                           ! implemented in the new version.
+  
+  unitfast  = 0           ! Since BRAMS uses frqanl and frqhist in seconds, there is no
+  unitstate = 0           ! reason to ask the user for units for outfast and outstate, the
+                          ! special flags cover all possibilities.
 
   
   ! Force LEAF3's number of patches to be 2. This is necessary for
@@ -216,10 +223,6 @@ subroutine read_ednl(iunit)
      !  Determine the length of simuation
      call date_2_seconds (iyearz,imonthz,idatez,itimez*100, &
           iyeara,imontha,idatea,itimea*100,timmax)
-
-    ! Not sure what to do with these variables, setting it to zero.
-    outfast  = 0
-    outstate = 0
 
      return
    end subroutine read_ednl

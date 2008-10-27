@@ -25,6 +25,7 @@ subroutine diffuse()
 
   use mem_turb, only:    &
        idiffk,           &    !INTENT(IN)
+       ibruvais,         &    ! intent(in)
        turb_g,           &    ! %tkep, %hkm, %vkh
        xkhkm
 
@@ -165,7 +166,8 @@ subroutine diffuse()
     call atob(mxyzp,basic_g(ngrid)%rtp(1,1,1),scratch%vt3dq(1))
   end if
 
-  call bruvais(mzp,mxp,myp,ia,iz,ja,jz                            &
+  call bruvais(ibruvais,mzp,mxp,myp,ia,iz,ja,jz                   &
+       ,basic_g(ngrid)%pi0   (1,1,1) ,basic_g(ngrid)%pp  (1,1,1)  &
        ,basic_g(ngrid)%theta (1,1,1) ,scratch%vt3dq          (1)  &
        ,scratch%vt3dp            (1) ,grid_g(ngrid)%rtgt   (1,1)  &
        ,grid_g(ngrid)%flpw     (1,1) ,scratch%vt3dj          (1)  )
@@ -205,8 +207,8 @@ subroutine diffuse()
           ,basic_g(ngrid)%vp    (1,1,1) ,basic_g(ngrid)%wp    (1,1,1)  &
           ,turb_g(ngrid)%sflux_u(1,1)   ,turb_g(ngrid)%sflux_v(1,1)    &
           ,turb_g(ngrid)%sflux_w(1,1)   ,turb_g(ngrid)%sflux_t(1,1),vctr34 &
-          ,grid_g(ngrid)%flpw    (1,1)   ,grid_g(ngrid)%flpu    (1,1)   &
-          ,grid_g(ngrid)%flpv    (1,1))
+          ,grid_g(ngrid)%flpw    (1,1)  ,grid_g(ngrid)%flpu    (1,1)   &
+          ,grid_g(ngrid)%flpv    (1,1)  ,turb_g(ngrid)%sigw   (1,1,1)  )
 ! Deardoff (1980) LES scheme
   elseif (idiffk(ngrid) == 4) then
      call mxtked(mzp,mxp,myp,ia,iz,ja,jz  &
@@ -529,15 +531,21 @@ subroutine diffuse()
   !----------------------------------------------------------------------------------------!
   if (imassflx == 1) then
      select case (idiffk(ngrid))
-     case (1,4,5,6)
-        call prepare_tke_to_mass(mzp,mxp,myp,ia,iz,ja,jz,dtlt              &
+     case (4,5,6)
+        call prepare_timeavg_to_mass(mzp,mxp,myp,ia,iz,ja,jz,dtlt          &
              ,turb_g(ngrid)%tkep    (1,1,1) ,mass_g(ngrid)%tkepb    (1,1,1))
+     case (1)
+        call prepare_timeavg_to_mass(mzp,mxp,myp,ia,iz,ja,jz,dtlt          &
+             ,turb_g(ngrid)%tkep    (1,1,1) ,mass_g(ngrid)%tkepb    (1,1,1))
+        call prepare_timeavg_to_mass(mzp,mxp,myp,ia,iz,ja,jz,dtlt          &
+             ,turb_g(ngrid)%sigw    (1,1,1) ,mass_g(ngrid)%sigwb    (1,1,1))
      case (7)
-        call prepare_tke_to_mass(mzp,mxp,myp,ia,iz,ja,jz,dtlt              &
+        call prepare_timeavg_to_mass(mzp,mxp,myp,ia,iz,ja,jz,dtlt          &
              ,turb_g(ngrid)%tkep    (1,1,1) ,mass_g(ngrid)%tkepb    (1,1,1))
-        call prepare_turb_to_mass(mzp,mxp,myp,ia,iz,ja,jz,dtlt             &
-             ,turb_g(ngrid)%sigw    (1,1,1) ,turb_g(ngrid)%ltscale  (1,1,1)&
-             ,mass_g(ngrid)%sigwb   (1,1,1) ,mass_g(ngrid)%ltscaleb (1,1,1))
+        call prepare_timeavg_to_mass(mzp,mxp,myp,ia,iz,ja,jz,dtlt          &
+             ,turb_g(ngrid)%sigw    (1,1,1) ,mass_g(ngrid)%sigwb    (1,1,1))
+        call prepare_timeavg_to_mass(mzp,mxp,myp,ia,iz,ja,jz,dtlt          &
+             ,turb_g(ngrid)%ltscale (1,1,1) ,mass_g(ngrid)%ltscaleb (1,1,1))
      end select
   end if
 

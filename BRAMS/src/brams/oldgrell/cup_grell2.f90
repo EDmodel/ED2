@@ -3,8 +3,8 @@
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
 subroutine cuparth(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0,maxiens,iens         &
-                  ,icbase,depth_min,cap_maxs,dtime,time,ua,va,wa,theta,pp,pi0              &
-                  ,dn0,rv,kpbl,tke,tkmin,rcp,ht,rtgt,tht,rtt                               &
+                  ,iupmethod,depth_min,cap_maxs,radius,zkbmax,zcutdown,z_detr,dtime,time   &
+                  ,ua,va,wa,theta,pp,pi0,dn0,rv,kpbl,tke,tkmin,rcp,ht,rtgt,tht,rtt         &
                   ,pt,outtem,outrt,precip,ierr4d,jmin4d,kdet4d,k224d,kbcon4d,ktop4d,kpbl4d &
                   ,kstabi4d,kstabm4d,xmb4d,edt4d,zcup5d,pcup5d,enup5d,endn5d,deup5d,dedn5d &
                   ,zup5d,zdn5d,prup5d,clwup5d,tup5d,upmf,dnmf,xierr,xktop,xkbcon,xk22      &
@@ -18,7 +18,7 @@ subroutine cuparth(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0,maxiens,ie
        icoic                             !INTENT(IN)
 
   use mem_scratch2_grell
-  use rconstants, only: rgas, cp, rm, p00, tcrit, g, cpor, pkdcut,pi1,onerad
+  use rconstants, only: rgas, cp, rm, p00, t00, g, cpor, pi1,onerad
 
   !srf   mgmxp, mgmyp, mgmzp sao usadas alocar memoria para as
   !      variaveis da parametrizacao do Grell.
@@ -27,9 +27,13 @@ subroutine cuparth(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0,maxiens,ie
   integer, intent(in) :: mgmxp     ! Number of points in x-direction;
   integer, intent(in) :: mgmyp     ! Number of points in y-direction;
   integer, intent(in) :: mgmzp     ! Number of points in z-direction;
-  integer, intent(in) :: icbase    ! Method to determine the cloud base; 
+  integer, intent(in) :: iupmethod    ! Method to determine the cloud base; 
   real,    intent(in) :: depth_min ! Minimum depth that the cloud should have [m]
   real,    intent(in) :: cap_maxs  ! Maximum depth of capping inversion [mb]
+  real,    intent(in) :: radius
+  real,    intent(in) :: zkbmax
+  real,    intent(in) :: zcutdown
+  real,    intent(in) :: z_detr
   integer :: maxiens               ! Number of different clouds;
 
   integer :: iens                  ! Flag to denote deep (1) or shallow (2) convection
@@ -229,10 +233,11 @@ subroutine cuparth(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0,maxiens,ie
 
      call cup_enss(mynum, m1, m2, m3, i0, j0,              &
           mgmxp, mgmyp, mgmzp, maxiens, maxens, maxens2,          &
-          maxens3, ensdim, icoic, icbase, depth_min, cap_maxs,  j, iens, istart, iend,  &
+          maxens3, ensdim, icoic, iupmethod, depth_min, cap_maxs, &
+          radius,zkbmax,zcutdown,z_detr,  j, iens, istart, iend,  &
           mix, mjx, mkx, massfln, massflx, iact_gr, iact_old_gr,  &
           xland, ter11, aa0, t, q, tn, qo, po, pret, p, outt,     &
-          outq, outqc, dtime, psur, us_grell, vs_grell, kdet, tcrit, time,    &
+          outq, outqc, dtime, psur, us_grell, vs_grell, kdet, t00, time,    &
           mconv, omeg, pblidx,tkeg,rcpg,tkmin, direction,        &
           !Insercao de variaveis para salvar  propriedades dos cumulus
           ierr4d(1,j,iens), jmin4d(1,j,iens),        &
@@ -317,7 +322,8 @@ end subroutine cuparth
 
 subroutine cup_enss(mynum, m1, m2, m3, i0, j0,                 &
      mgmxp, mgmyp, mgmzp, maxiens, maxens, maxens2, maxens3, ensdim,  &
-     icoic, icbase,depth_min,cap_maxs, j, iens, istart, iend, mix, mjx, mkx, massfln, massflx,   &
+     icoic, iupmethod,depth_min,cap_maxs,radius,zkbmax,zcutdown,z_detr &
+     , j, iens, istart, iend, mix, mjx, mkx, massfln, massflx,   &
      iact_gr, iact_old_gr, xland, z1, aaeq, t, q, tn, qo, po, pre, p, &
      outt, outq, outqc, dtime, psur, us, vs, kdet, tcrit, time,       &
      mconv, omeg, pblidx,tkeg,rcpg,tkmin, &
@@ -340,9 +346,18 @@ subroutine cup_enss(mynum, m1, m2, m3, i0, j0,                 &
   integer nens3
   integer izero
   integer icoic
-  integer,intent(in) :: icbase
+  integer,intent(in) :: iupmethod
   real, intent(in) :: depth_min
   real, intent(in) :: cap_maxs
+  real, intent(in) :: radius
+  real, intent(in) :: zkbmax
+  real, intent(in) :: zcutdown
+  real, intent(in) :: z_detr
+
+
+
+
+
   integer, save :: ialloc
   data ialloc/0/
   real(kind=8) :: time
@@ -404,8 +419,8 @@ subroutine cup_enss(mynum, m1, m2, m3, i0, j0,                 &
 
   !--- New entrainment/detrainment related stuff --------------------
 
-  real mentr_rate, mentrd_rate, entr_rate, radius, entrd_rate,  &
-       massfld, zcutdown, edtmax, edtmin, zkbmax, z_detr, zktop, dh
+  real mentr_rate, mentrd_rate, entr_rate, entrd_rate,  &
+       massfld, edtmax, edtmin, zktop, dh
 
   !----------------------End of memory allocation ----
 
@@ -415,9 +430,7 @@ subroutine cup_enss(mynum, m1, m2, m3, i0, j0,                 &
   !
   !--- specify entrainment rate and detrainment rate
   !
-  !     radius=14000.-float(iens)*2000.
-  radius=12000.
-  !      radius=5000.
+
   fquasi=1
   fstab=0
   fmconv=0
@@ -486,18 +499,6 @@ subroutine cup_enss(mynum, m1, m2, m3, i0, j0,                 &
      endif
   enddo
 
-  !--- max height(m) above ground where updraft air can originate
-
-  zkbmax=4000.
-
-  !--- height(m) above which no downdrafts are allowed to originate
-
-  zcutdown=3000.
-
-  !--- depth(m) over which downdraft detrains all its mass
-
-  z_detr=1250.
-
   do nens=1,maxens
      mbdt_ens(nens)=(float(nens)-3.)*dtime*1.e-3+dtime*5.E-03
      !        mbdt_ens(nens)=(float(nens)-1.5)*dtime*2.e-3+dtime*5.E-03
@@ -560,7 +561,7 @@ subroutine cup_enss(mynum, m1, m2, m3, i0, j0,                 &
   enddo
 
   !--- DETERMINE LEVEL WITH HIGHEST MOIST STATIC ENERGY CONTENT - K22
-  if (icbase == 2 .and. pblidx(i) == 0) then
+  if (iupmethod == 2 .and. pblidx(i) == 0) then
      !	  New way to define K22
      !----   Determine PBL top using TKE (TKEG) and liquid water mixing ratio (RCPG)
      call get_zi(mix,mgmxp,mkx,mgmzp,istart,iend,j,ierr,kzi,&
@@ -574,9 +575,9 @@ subroutine cup_enss(mynum, m1, m2, m3, i0, j0,                 &
         if(ierr(i) == 0) k22(i) = max(2, kzi(i) - 1)
         !	    IF(ierr(i).eq.0) PRINT*,k22(i)
      enddo
-  elseif (icbase == 2 .and. pblidx(i) /= 0) then
+  elseif (iupmethod == 2 .and. pblidx(i) /= 0) then
      k22(i) = pblidx(i)
-  else !(icbase == 1)
+  else !(iupmethod == 1)
      !	 Old way to define k22
      call maximi(heo_cup,mix,mgmxp,mkx,mgmzp,3,kbmax,k22,istart,iend,ierr)
   endif
@@ -992,11 +993,11 @@ subroutine cup_enss(mynum, m1, m2, m3, i0, j0,                 &
      !--- LARGE SCALE FORCING
 
      !------- CHECK wether aa0 should have been zero
-     if (icbase == 2) then
+     if (iupmethod == 2) then
         do i=istart,iend
           k22x(i) = k22(i)
         end do
-     elseif (icbase == 1) then
+     elseif (iupmethod == 1) then
         call MAXIMI(HE_CUP, mix, mgmxp, mkx, mgmzp, 3,   &
              KBMAX, K22x, ISTART, IEND, ierr)
      end if

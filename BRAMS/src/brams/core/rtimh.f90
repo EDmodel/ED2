@@ -349,19 +349,12 @@ subroutine timestep()
   end if
 
   !--------------------------------------------------------------------------------!
-  !MLO - Cumulus parameterization.                                                 !
+  !MLO - Cumulus parameterization. This is just a wrapper that will call the       !
+  !      appropriate cumulus closures.                                             !
   !--------------------------------------------------------------------------------!
   t1=cputime(w1)
-  if(NNQPARM(ngrid) == 1 .or. IF_CUINV == 1) call cuparm()      
-  if(NNSHCU(ngrid) == 1) call SHCUPA()
-  if (CATT==1) then
-     if(nnshcu(ngrid)==2) call cuparm_grell_catt(2) 
-     if(NNQPARM(ngrid)==2) CALL cuparm_grell_catt(1) 
-  else if (CATT==0) then
-     if(nnshcu(ngrid) == 2)  call cuparm_grell(2)
-     if(nnqparm(ngrid) == 2) call cuparm_grell(1)
-  end if
-  if (banneron) write(unit=*,fmt='(a)') '     [-] Calling cuparm...'
+  if (banneron) write(unit=*,fmt='(a,1x,i5)') '     [-] Calling cuparm...',mynum
+  call rconv_driver(banneron)  
   if (acct) call acctimes('accu',21,'CUPARM',t1,w1)
   !--------------------------------------------------------------------------------!
 

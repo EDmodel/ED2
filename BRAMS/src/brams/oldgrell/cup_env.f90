@@ -430,3 +430,69 @@ subroutine MAXIMI(ARRAY,MXX,mgmxp,MZX,mgmzp,KS,KE,MAXX,ISTART,IEND,ierr)
   return
 end subroutine MAXIMI
 
+
+!-------------------------------------------------------------------
+
+subroutine get_zi(mix,mgmxp,mkx,mgmzp,istart,iend,j,ierr,kzi,tkeg, &
+                  rcpg,z,ztop,tkmin)
+
+  implicit none
+  integer mix,mgmxp,mkx,mgmzp,i,k,istart,iend,j,kzimax,ktke_max
+  real tkmin,rcpmin,pblhmax,tke_tmp
+  real,    dimension(mgmxp,mgmzp) :: tkeg,rcpg,z
+  real,    dimension(mgmxp)	  :: ztop
+  integer, dimension(mgmxp)	  :: kzi,ierr
+
+  data rcpmin/1.e-5/, pblhmax/3000./ 
+  !print*,j,mgmxp,mgmzp,mix,istart,iend
+  kzimax=2
+  do i=istart,iend
+    kzi(i)  = 2
+
+    if(ierr(i).eq.0)then
+     tke_tmp = 0.
+     ktke_max= 1
+     !---  max level for kzi
+     do k=1,mkx
+       if(z(i,k).ge. pblhmax+ztop(i)) then	
+          kzimax = k
+          !print*,z(i,k), pblhmax,ztop(i),kzimax
+          exit
+       endif
+     enddo
+     !---
+     !       go to 201
+     !level of max tke  below kzimax and w/out clouds
+     do  k=1,kzimax
+       !print*,k,tkeg(i,k), tke_tmp,ktke_max,kzimax
+       if(rcpg(i,k) .lt. rcpmin) then
+	 if( tkeg(i,k) .ge. tke_tmp) then
+	   tke_tmp = tkeg(i,k)
+	   cycle
+	 else
+	   ktke_max= max(1,k-1)
+	   exit
+	 endif
+       endif	   
+     enddo	     
+     !201    continue
+!         print*,ktke_max
+
+     do k=ktke_max,kzimax+1
+!  	print*,rcpg(i,k),tkeg(i,k),k,kzi(i),i
+	if(rcpg(i,k) .lt. rcpmin) then
+          if(tkeg(i,k) .gt. 1.1*tkmin)  then
+	    kzi(i) = k
+	    cycle
+	  endif
+        else
+	   kzi(i) = k
+	   exit
+	endif
+     enddo
+     kzi(i) = max(2     ,kzi(i))
+     kzi(i) = min(kzimax,kzi(i))
+
+   endif
+ enddo
+end subroutine get_zi

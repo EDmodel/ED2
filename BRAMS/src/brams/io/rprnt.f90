@@ -1560,8 +1560,11 @@ ELSEIF(VARN.EQ.'CONPR') THEN
     FMT='0PF7.2'
     TILO='CON RATE'
   ELSE
-    VAL1=cuparm_g(ngrid)%CONPRR(i,j)
-    OPTLIB=VAL1*3600.
+    VAL1=0.
+    DO ICLD=1,NCLOUDS
+       VAL1=VAL1+cuparm_g(ngrid)%CONPRR(i,j,icld)
+    END DO
+    OPTLIB=VAL1*hr_sec
   ENDIF
 !
 !           ACCUMULATED CONVECTIVE PRECIP
@@ -1581,8 +1584,11 @@ ELSEIF(VARN.EQ.'CONH') THEN
     FMT='0PF7.1'
     TILO='CON HEAT'
   ELSE
-    VAL1=cuparm_g(ngrid)%THSRC(k,i,j)
-    OPTLIB=VAL1*86400.
+    VAL1=0.
+    DO ICLD=1,NCLOUDS
+       VAL1=VAL1+cuparm_g(ngrid)%THSRC(k,i,j,icld)
+    END DO
+    OPTLIB=VAL1*day_sec
   ENDIF
 !
 !           CONVECTIVE MOISTENING RATE
@@ -1592,8 +1598,11 @@ ELSEIF(VARN.EQ.'CONM') THEN
     FMT='0PF7.1'
     TILO='CON MOIS'
   ELSE
-    VAL1=cuparm_g(ngrid)%RTSRC(k,i,j)
-    OPTLIB=VAL1*86400.
+    VAL1=0.
+    DO ICLD=1,NCLOUDS
+       VAL1=VAL1+cuparm_g(ngrid)%RTSRC(k,i,j,icld)
+    END DO
+    OPTLIB=VAL1*day_sec
   ENDIF
 !
 !

@@ -134,9 +134,9 @@ do nsndg=1,maxsndg
 !     integrating hydrostatically to get sounding pressure.
 !
       if(irtsflg.eq.2)then
-         vctr4(nsndg)=virtt(ts(nsndg+toffset),rts(nsndg)*1.e-3)
+         vctr4(nsndg)=virtt(ts(nsndg)+toffset,rts(nsndg)*1.e-3)
       else
-         vctr4(nsndg)=ts(nsndg+toffset)
+         vctr4(nsndg)=ts(nsndg)+toffset
       endif
       if(nsndg.eq.1)then
          ps(nsndg)=ps(nsndg)*100.

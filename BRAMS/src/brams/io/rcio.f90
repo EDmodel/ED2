@@ -12,6 +12,9 @@ subroutine commio (cfile,io,iun)
    use therm_lib, only: level
    use mem_mass, only: imassflx, iexev ![MLO
    use leaf_coms
+   use grell_coms, only : iupmethod,iupstrm,radius,depth_min,cap_maxs         &
+                         ,zkbmax,zcutdown,z_detr,max_heat,closure_type        &
+                         ,maxens_lsf,maxens_eff,maxens_cap
 
    implicit none
    integer :: iun
@@ -34,6 +37,7 @@ subroutine commio (cfile,io,iun)
    ie=cio_i_sca(iun,irw,'ngrids',ngrids,1)
    ie=cio_i_sca(iun,irw,'nzg',nzg,1)
    ie=cio_i_sca(iun,irw,'nzs',nzs,1)
+   ie=cio_i_sca(iun,irw,'nclouds',nclouds,1)
    ie=cio_i_sca(iun,irw,'naddsc',naddsc,1)
    ie=cio_f8_sca(iun,irw,'time',time,1)
    ie=cio_f_sca(iun,irw,'ztop',ztop,1)
@@ -45,7 +49,7 @@ subroutine commio (cfile,io,iun)
    ie=cio_i(iun,irw,'nnxp',nnxp,ngrids)
    ie=cio_i(iun,irw,'nnyp',nnyp,ngrids)
    ie=cio_i(iun,irw,'nnzp',nnzp,ngrids)
-   ie=cio_i(iun,irw,'nnqparm',nnqparm,ngrids)
+
    ie=cio_i(iun,irw,'nndtrat',nndtrat,ngrids)
    ie=cio_i(iun,irw,'nstratx',nstratx,ngrids)
    ie=cio_i(iun,irw,'nstraty',nstraty,ngrids)
@@ -102,6 +106,25 @@ subroutine commio (cfile,io,iun)
 
    ie=cio_i(iun,irw,'kroot',kroot,nvtyp+nvtyp_teb)
 
+   ie=cio_i(iun,irw,'nnqparm',nnqparm,ngrids)
+   ie=cio_i(iun,irw,'ndeepest',ndeepest,ngrids)
+   ie=cio_i(iun,irw,'nshallowest',nshallowest,ngrids)
+   ie=cio_f_sca(iun,irw,'wcldbs',wcldbs,1)
+   ie=cio_f(iun,irw,'confrq',confrq,nclouds)
+   ie=cio_i_sca(iun,irw,'iupmethod',iupmethod,1)
+   ie=cio_i_sca(iun,irw,'iupstrm',iupstrm,1)
+   ie=cio_f(iun,irw,'radius',radius,nclouds)
+   ie=cio_f(iun,irw,'depth_min',depth_min,nclouds)
+   ie=cio_f(iun,irw,'cap_maxs',cap_maxs,nclouds)
+   ie=cio_f(iun,irw,'zkbmax',zkbmax,nclouds)
+   ie=cio_f(iun,irw,'zcutdown',zcutdown,nclouds)
+   ie=cio_f(iun,irw,'z_detr',z_detr,nclouds)
+   ie=cio_f(iun,irw,'max_heat',max_heat,nclouds)
+   ie=cio_c(iun,irw,'closure_type',closure_type,nclouds)
+   ie=cio_i(iun,irw,'maxens_lsf',maxens_lsf,ngrids)
+   ie=cio_i(iun,irw,'maxens_eff',maxens_eff,ngrids)
+   ie=cio_i(iun,irw,'maxens_cap',maxens_cap,ngrids)
+
    ie=cio_i_sca(iun,irw,'itopo',itopo,1)
    ie=cio_i_sca(iun,irw,'initial',initial,1)
    ie=cio_i_sca(iun,irw,'impl',impl,1)
@@ -151,14 +174,13 @@ subroutine commio (cfile,io,iun)
    ie=cio_i_sca(iun,irw,'icloud',icloud,1)
    ie=cio_i_sca(iun,irw,'ihail',ihail,1)
 
+   ie=cio_i_sca(iun,irw,'ibruvais',ibruvais,1)
    ie=cio_f_sca(iun,irw,'brunt',brunt,1)
-   ie=cio_f_sca(iun,irw,'wcldbs',wcldbs,1)
    ie=cio_f_sca(iun,irw,'drtcon',drtcon,1)
    ie=cio_f_sca(iun,irw,'rmin',rmin,1)
    ie=cio_f_sca(iun,irw,'radfrq',radfrq,1)
    ie=cio_f_sca(iun,irw,'distim',distim,1)
    ie=cio_f_sca(iun,irw,'seatmp',seatmp,1)
-   ie=cio_f_sca(iun,irw,'confrq',confrq,1)
    ie=cio_f_sca(iun,irw,'rmax',rmax,1)
    ie=cio_f_sca(iun,irw,'eps',eps,1)
    ie=cio_f_sca(iun,irw,'albedo',albedo,1)
