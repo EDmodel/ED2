@@ -180,7 +180,7 @@ contains
     ! the namelist.
     tend = dtlsm 
     ! desired accuracy.
-    eps = 1.0e-4
+    eps = 1.0e-2
     ! initial step size.  experience has shown that giving this too large a 
     ! value causes the integrator to fail (e.g., soil layers become
     ! supersaturated).
