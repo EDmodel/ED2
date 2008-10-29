@@ -408,7 +408,7 @@ module ed_state_vars
      real,    pointer,dimension(:,:) :: soil_energy
      
      ! Soil water (m3 water / m3 soil)
-     real,    pointer,dimension(:,:) :: soil_water
+     real(kind=8),    pointer,dimension(:,:) :: soil_water
      
      ! Temperature of soil (K)
      real,    pointer,dimension(:,:) :: soil_tempk
@@ -1343,7 +1343,7 @@ module ed_state_vars
      real, pointer :: soil_energy(:)
      real, pointer :: soil_tempk(:)
      real, pointer :: soil_fracliq(:)
-     real, pointer :: soil_water(:)
+     real(kind=8), pointer :: soil_water(:)
      
      real, pointer :: sfcwater_depth(:)
      real, pointer :: sfcwater_mass(:)
@@ -6180,8 +6180,12 @@ contains
             var_len,var_len_global,max_ptrs,'LAI_PFT :14:hist:anal:dail') 
        call metadata_edio(nvar,igr,'Leaf Area Index','[m/m]','NA') 
     else
-!       print*,"LAI_PFT not associated"
-!       stop
+       !    print*,"LAI_PFT not associated"
+       ! REMOVING THE STOP, WITH LARGE GRIDS, IT IS POSSIBLE THAT
+       ! A PARALLEL NODE WILL HAVE NO POLYGONS, AND THUS BREAK THIS
+       ! CONDITION IN A LAWFULL CONTEXT. RK 10-25-08
+       !       stop
+       !       print*,"LAI_PFT not associated"
     endif
     
     if(associated(cgrid%mmean_gpp)) then
@@ -6941,7 +6945,7 @@ contains
 !==========================================================================================!
   subroutine filltab_sitetype(igr,ipy,isi,init)
 
-    use var_tables_array,only:vtable_edio_r,vtable_edio_i,metadata_edio
+    use var_tables_array,only:vtable_edio_r,vtable_edio_i,metadata_edio,vtable_edio_d
 
     implicit none
     
@@ -7174,7 +7178,7 @@ contains
 
     if (associated(csite%soil_water)) then
        nvar=nvar+1
-         call vtable_edio_r(csite%soil_water(1,1),nvar,igr,init,csite%paglob_id, &
+         call vtable_edio_d(csite%soil_water(1,1),nvar,igr,init,csite%paglob_id, &
          var_len,var_len_global,max_ptrs,'SOIL_WATER_PA :32:hist:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif

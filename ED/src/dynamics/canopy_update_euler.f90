@@ -41,7 +41,7 @@ subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, prss, pcpg, qpcpg,  &
   integer :: ndims
   integer, dimension(nzg) :: ed_ktrans
   integer, dimension(nzg), intent(in) :: ntext_soil
-  real, dimension(nzg), intent(in) :: soil_water
+  real(kind=8), dimension(nzg), intent(in) :: soil_water
   real, dimension(nzg), intent(in) :: soil_fracliq
   integer, intent(in) :: lsl
 

@@ -590,7 +590,7 @@ subroutine stabilize_snow_layers_ar(initp, csite,ipa, step, lsl)
   use ed_state_vars,only:sitetype,patchtype,rk4patchtype
   use soil_coms, only: soil
   use grid_coms, only: nzg, nzs
-  use therm_lib, only: qwtk, qtk
+  use therm_lib, only: qwtk8, qtk
   implicit none
 
   integer, intent(in) :: lsl
@@ -602,7 +602,7 @@ subroutine stabilize_snow_layers_ar(initp, csite,ipa, step, lsl)
   
   do k = lsl, nzg - 1
      soilhcap = soil(csite%ntext_soil(k,ipa))%slcpd
-     call qwtk(initp%soil_energy(k),initp%soil_water(k)*1000.0  &
+     call qwtk8(initp%soil_energy(k),initp%soil_water(k)*1000.0  &
           ,soilhcap,initp%soil_tempk(k),initp%soil_fracliq(k))
   enddo
 
@@ -951,7 +951,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   use soil_coms, only: soil, water_stab_thresh, dslz, dslzi, &
        min_sfcwater_mass
   use consts_coms, only: cice, cliq, alli,tsupercool,t3ple
-  use therm_lib, only : qtk,qwtk
+  use therm_lib, only : qtk,qwtk,qwtk8
 
   implicit none
   integer :: ipa,ico
@@ -974,13 +974,13 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   real :: wdiff
   real :: totsnow
   real :: depthgain
-  real :: wfree
+  real(kind=8) :: wfree
   real :: qwfree
   type(rk4patchtype), target :: initp
   real :: qw
   real :: w
-  real :: wfreeb
-  real :: depthloss
+  real(kind=8) :: wfreeb
+  real(kind=8) :: depthloss
   real :: snden
   real :: sndenmin
   real :: sndenmax
@@ -988,12 +988,12 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   integer :: ksn
   integer :: ksnnew
   real :: qwt
-  real :: wt
+  real(kind=8) :: wt
   real :: soilhcap
   real :: fac
   type(sitetype),target :: csite
   type(patchtype),pointer :: cpatch
-  real :: free_surface_water_demand
+  real(kind=8) :: free_surface_water_demand
   real :: total_water_before,total_water_after
   real :: snow_beg,soil_beg,virt_beg,snow_end,soil_end,virt_end
   real :: infilt,freezeCor
@@ -1057,8 +1057,9 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
           water_stab_thresh )then
         qwt = qw + initp%soil_energy(nzg) * dslz(nzg)
         wt = w + initp%soil_water(nzg) * dslz(nzg) * 1000.0
+
         soilhcap = soil(csite%ntext_soil(nzg,ipa))%slcpd * dslz(nzg)
-        call qwtk(qwt,wt,soilhcap  &
+        call qwtk8(qwt,wt,soilhcap  &
              ,initp%sfcwater_tempk(k),initp%sfcwater_fracliq(k))
         ! portion out the heat to the snow
         if(initp%sfcwater_fracliq(k) == 0.)then
@@ -1090,7 +1091,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
            call fatal_error('NaN in soil energy','redistribute_snow_ar','rk4_integ_utils.f90')
         end if
      else
-        call qwtk(initp%soil_energy(nzg)  &
+        call qwtk8(initp%soil_energy(nzg)  &
              ,initp%soil_water(nzg)*1000.0  &
              ,soil(csite%ntext_soil(nzg,ipa))%slcpd,  &
              initp%soil_tempk(nzg),initp%soil_fracliq(nzg))
@@ -1137,7 +1138,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
              write (unit=*,fmt='(a)')            '----------------------------------------------------------------'
              call fatal_error('NaN in soil energy','redistribute_snow_ar','rk4_integ_utils.f90')
           end if
-          call qwtk(initp%soil_energy(nzg)  &
+          call qwtk8(initp%soil_energy(nzg)  &
                ,initp%soil_water(nzg)*1000.0  &
                ,soil(csite%ntext_soil(nzg,ipa))%slcpd,  &
                initp%soil_tempk(nzg),initp%soil_fracliq(nzg))
@@ -1194,7 +1195,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   ! Re-distribute snow layers to maintain prescribed distribution of mass
   if(totsnow < min_sfcwater_mass .or. ksnnew == 0)then
      initp%nlev_sfcwater = 0
-     call qwtk(initp%soil_energy(nzg),  &
+     call qwtk8(initp%soil_energy(nzg),  &
           initp%soil_water(nzg) * 1000.0, &
           soil(csite%ntext_soil(nzg,ipa))%slcpd,  &
           initp%soil_tempk(nzg),initp%soil_fracliq(nzg))
