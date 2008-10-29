@@ -5,7 +5,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
   
   use ed_state_vars,only:edgrid_g
 
-  use grid_coms, only: ngrids  ! INTENT(IN)
+  use grid_coms, only: ngrids,nzg  ! INTENT(IN)
   
   use ed_misc_coms,only:diag_veg_heating
 
@@ -24,18 +24,19 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
 
   implicit none
     
-  logical, intent(in) :: the_end,analysis_time,dail_analy_time
-  logical, intent(in) :: writing_dail,writing_mont,reset_time
+  logical, intent(in)  :: the_end,analysis_time,dail_analy_time
+  logical, intent(in)  :: writing_dail,writing_mont,reset_time
   logical, intent(in) :: mont_analy_time,history_time,new_day,annual_time
   real :: time_frqa,time_frql,time_frqm
   integer :: ngr,ifm
   integer :: sigr,sipy,sisi,sipa,sico
 
+
   if(analysis_time .or. history_time .or. (new_day .and. (writing_dail .or. writing_mont))) then
      do ifm=1,ngrids
         call normalize_averaged_vars_ar(edgrid_g(ifm),frqsum,dtlsm)
      enddo
-     
+
      !  Perform averaging and data preparation
      call spatial_averages
      

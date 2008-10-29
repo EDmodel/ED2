@@ -29,6 +29,7 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
    !  by that period to get their value per unit time.                       !
    !-------------------------------------------------------------------------!
 
+   
    frqsumi = 1.0 / frqsum
    tfact = dtlsm * frqsumi
 

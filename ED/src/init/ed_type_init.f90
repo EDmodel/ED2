@@ -302,7 +302,7 @@ subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
   use ed_state_vars,only:sitetype
   use grid_coms, only: nzg, nzs
   use soil_coms, only: soil
-  use therm_lib, only: qwtk,qtk
+  use therm_lib, only: qwtk8,qtk
   
   implicit none
   integer :: ipa
@@ -311,7 +311,7 @@ subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
   real, intent(in) :: rhos
   
   do k = 1, nzg
-     call qwtk(csite%soil_energy(k,ipa), csite%soil_water(k,ipa)*1.e3,  &
+     call qwtk8(csite%soil_energy(k,ipa), csite%soil_water(k,ipa)*1.e3,  &
           soil(csite%ntext_soil(k,ipa))%slcpd, csite%soil_tempk(k,ipa), csite%soil_fracliq(k,ipa))
   enddo
 
