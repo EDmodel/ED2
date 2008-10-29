@@ -131,6 +131,7 @@ subroutine ed_model()
      do ifm=1,ngrids
          call radiate_driver_ar(edgrid_g(ifm))
      end do
+
      ! THEN, DO THE PHOTOSYNTHESIS AND BIOPHYSICS.
      if(integration_scheme == 0)then
         do ifm=1,ngrids

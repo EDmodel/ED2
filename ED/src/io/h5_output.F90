@@ -388,6 +388,9 @@ subroutine h5_output(vtype)
                  else if (vt_info(nv,ngr)%dtype == 'c') then   ! character data type
                     call h5dcreate_f(file_id,varn,H5T_NATIVE_CHARACTER, filespace, &
                          dset_id,hdferr)
+                 else if (vt_info(nv,ngr)%dtype == 'd') then   ! character data type
+                    call h5dcreate_f(file_id,varn,H5T_NATIVE_DOUBLE, filespace, &
+                         dset_id,hdferr)
                  else
                     print*,"YOU ARE ATTEMPTING TO WRITE AN UNDEFINED DATATYPE"
                     print*,varn,vt_info(nv,ngr)%dtype
@@ -406,6 +409,9 @@ subroutine h5_output(vtype)
                             dset_id,hdferr)
                     else if (vt_info(nv,ngr)%dtype == 'c') then   ! character data type
                        call h5dcreate_f(file_id,varn,H5T_NATIVE_CHARACTER, filespace, &
+                            dset_id,hdferr)
+                    else if (vt_info(nv,ngr)%dtype == 'd') then   ! character data type
+                       call h5dcreate_f(file_id,varn,H5T_NATIVE_DOUBLE, filespace, &
                             dset_id,hdferr)
                     else
                        print*,"YOU ARE ATTEMPTING TO WRITE AN UNDEFINED DATATYPE"
@@ -558,7 +564,12 @@ subroutine h5_output(vtype)
                           call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER,vtvec%var_cp,globdims, &
                                hdferr,file_space_id = filespace, mem_space_id = memspace, &
                                xfer_prp = plist_id)
+                         
+                       elseif(vt_info(nv,ngr)%dtype .eq. 'd') then ! character data type
                           
+                          call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%var_dp,globdims, &
+                               hdferr,file_space_id = filespace, mem_space_id = memspace, &
+                               xfer_prp = plist_id) 
                        end if
                        if (hdferr /= 0) then
                           write (unit=*,fmt=*) 'Variable name:    ',varn
@@ -585,6 +596,11 @@ subroutine h5_output(vtype)
                           
                           call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER,vtvec%var_cp,globdims, &
                                hdferr,file_space_id = filespace, mem_space_id = memspace)
+                       elseif(vt_info(nv,ngr)%dtype .eq. 'd') then ! character data type
+                          
+                          call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%var_dp,globdims, &
+                               hdferr,file_space_id = filespace, mem_space_id = memspace)
+                          
                        end if
                        if (hdferr /= 0) then
                           write (unit=*,fmt=*) 'Variable name:    ',varn

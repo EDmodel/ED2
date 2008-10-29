@@ -440,14 +440,14 @@ subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
   use soil_coms,   only: ed_nstyp, soil
   use grid_coms,   only: nzg
   use consts_coms, only:  pi1, grav, rvap
-  use therm_lib  , only: rhovsil, qtk, qwtk
+  use therm_lib  , only: rhovsil, qtk, qwtk8
 
   implicit none
 
   integer, intent(in) :: nlev_sfcwater ! # active levels of surface water
   integer, intent(in) :: nts           ! soil textural class (local name)
   
-  real, intent(in)  :: soil_water      ! soil water content [vol_water/vol_tot]
+  real(kind=8), intent(in)  :: soil_water      ! soil water content [vol_water/vol_tot]
   real, intent(in)  :: soil_energy     ! [J/m^3]
   real, intent(in)  :: sfcwater_energy ! [J/kg]
   real, intent(in)  :: rhos            ! air density [kg/m^3]
@@ -479,7 +479,7 @@ subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
      ! ratio of soil and is used for soil evaporation.  First, compute the
      ! "alpha" term or soil "relative humidity" and the "beta" term.
      
-     call qwtk(soil_energy,soil_water*1.e3,soil(nts)%slcpd,tempk,fracliq)
+     call qwtk8(soil_energy,soil_water*1.e3,soil(nts)%slcpd,tempk,fracliq)
      surface_ssh = rhovsil(tempk) / rhos
      
      slpotvn = soil(nts)%slpots * (soil(nts)%slmsts / soil_water) ** soil(nts)%slbs
