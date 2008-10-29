@@ -550,7 +550,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
      dewgndflx, wshed_tot, qwshed_tot, rhos, prss, pcpg, qpcpg, exner, &
      geoht, atm_tmp, lsl)
   
-  use ed_state_vars,only: rk4patchtype,sitetype,patchtype
+  use ed_state_vars,only: rk4patchtype,sitetype,patchtype,edgrid_g
  
   use consts_coms, only : alvl, cp, cpi, day_sec, grav, alvi,   &
        alli, cliq, cice, t3ple, umol_2_kgC, mmdry, mmdryi
@@ -710,8 +710,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         else
            sigmaw = 0.0
         endif
-
-        ! Do evaporation/dew formation on leaf surfaces
+         
         c3 = cpatch%lai(ico) * rhos * (rslif(prss,initp%veg_temp(ico)) - initp%can_shv)
         rbi = 1.0 / cpatch%rb(ico)
 
@@ -821,6 +820,51 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
            dinitp%co_evap_h(ico) =  -(wflxvc + transp)*alvl
            dinitp%co_liqr_h(ico) =  heat_intercept_rate - dinitp%veg_water(ico)*(cliq*(initp%veg_temp(ico)-t3ple)+alli)
         endif
+
+
+        ! Do evaporation/dew formation on leaf surfaces
+        if (abs(initp%veg_temp(ico)-atm_tmp) > 20.) then
+           write(unit=*,fmt='(a,1x,i5)')     '================== FATAL ERROR =================='
+           write(unit=*,fmt='(a,1x,i5)')     ' IPY:',ipy
+           write(unit=*,fmt='(a,1x,i5)')     ' ISI:',isi
+           write(unit=*,fmt='(a,1x,i5)')     ' IPA:',ipa
+           write(unit=*,fmt='(a,1x,i5)')     ' ICO:',ico
+           write(unit=*,fmt='(a,1x,f14.5)')  ' Longitude:',edgrid_g(1)%lon(ipy)
+           write(unit=*,fmt='(a,1x,f14.5)')  ' Latitude: ',edgrid_g(1)%lat(ipy)
+           write(unit=*,fmt='(a)')           ' '
+           write(unit=*,fmt='(a,1x,es14.7)') ' PRSS:     ',prss
+           write(unit=*,fmt='(a,1x,es14.7)') ' ATM_TMP:  ',atm_tmp
+           write(unit=*,fmt='(a,1x,es14.7)') ' RHOS:     ',rhos
+           write(unit=*,fmt='(a,1x,es14.7)') ' PCPG:     ',pcpg
+           write(unit=*,fmt='(a)')           ' '
+           write(unit=*,fmt='(a,1x,es14.7)') ' dvegQtot: ',dvegQtot
+           write(unit=*,fmt='(a,1x,es14.7)') ' rshort_v: ',cpatch%rshort_v(ico)
+           write(unit=*,fmt='(a,1x,es14.7)') ' rlong_v:  ',cpatch%rlong_v(ico)
+           write(unit=*,fmt='(a,1x,es14.7)') ' hflxvc:   ',hflxvc
+           write(unit=*,fmt='(a,1x,es14.7)') ' wflxvc*Lv:',wflxvc*alvl
+           write(unit=*,fmt='(a,1x,es14.7)') ' transp*Lv:',transp*alvl
+           write(unit=*,fmt='(a,1x,es14.7)') ' qwshed:   ',qwshed
+           write(unit=*,fmt='(a,1x,es14.7)') ' intercept:',heat_intercept_rate
+           write(unit=*,fmt='(a)')           ' '
+           write(unit=*,fmt='(a,1x,es14.7)') ' can_temp :',initp%can_temp
+           write(unit=*,fmt='(a,1x,es14.7)') ' can_shv  :',initp%can_shv
+           write(unit=*,fmt='(a,1x,es14.7)') ' gnd_shv  :',initp%ground_shv
+           write(unit=*,fmt='(a)')           ' '
+           write(unit=*,fmt='(a,1x,es14.7)') ' c2       :',c2
+           write(unit=*,fmt='(a,1x,es14.7)') ' rd       :',rd
+           write(unit=*,fmt='(a,1x,es14.7)') ' rasgnd   :',rasgnd
+           write(unit=*,fmt='(a,1x,es14.7)') ' rasveg   :',initp%rasveg
+           write(unit=*,fmt='(a)')           ' '
+           write(unit=*,fmt='(a,1x,es14.7)') 'Lai_coh   :',cpatch%lai(ico)
+           write(unit=*,fmt='(a,1x,es14.7)') 'veg_temp  :',initp%veg_temp(ico)
+           write(unit=*,fmt='(a,1x,es14.7)') 'veg_water :',initp%veg_water(ico)
+           write(unit=*,fmt='(a,1x,es14.7)') 'rb        :',cpatch%rb(ico)
+           write(unit=*,fmt='(a)')           ' '
+           write(unit=*,fmt='(a,1x,es14.7)') 'hcapveg   :',hcapveg
+           write(unit=*,fmt='(a,1x,es14.7)') 'dveg_temp :',dinitp%veg_temp(ico)
+           write(unit=*,fmt='(a,1x,es14.7)') 'dveg_water:',dinitp%veg_water(ico)
+        end if
+
 
         !dinitp%veg_temp = dvegQtot / hcapveg
 
