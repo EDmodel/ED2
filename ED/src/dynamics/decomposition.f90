@@ -67,7 +67,7 @@ subroutine resp_index(nsoil,tempk,theta,slmsts,resp_weight)
 
   integer :: nsoil
   real :: tempk
-  real :: theta
+  real(kind=8) :: theta
   real :: slmsts
   real :: resp_weight
   real :: temperature_limitation
@@ -80,6 +80,9 @@ subroutine resp_index(nsoil,tempk,theta,slmsts,resp_weight)
 
   ! moisture dependence
   Ws = theta/slmsts
+
+
+
   if(Ws.le.resp_opt_water)then
      water_limitation = exp( (Ws - resp_opt_water) * resp_water_below_opt)
   else
