@@ -201,7 +201,6 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
        initp%ground_shv,  &
        initp%surface_ssh)
 
-
   ! Calculate water available to vegetation (in meters)
   ! SLZ is specified in RAMSIN.  Each element of the array sets the value of the bottom of a corresponding soil layer.
   ! Eg, SLZ = -2, -1, -0.5, -0.25.  There are four soil layers in this example; soil layer 1 goes from 2 meters below the 
@@ -209,6 +208,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
   nsoil = csite%ntext_soil(nzg,ipa)
   initp%available_liquid_water(nzg) = dslz(nzg) * max(0.0,  &
        initp%soil_fracliq(nzg) * (initp%soil_water(nzg) - soil(nsoil)%soilcp))
+
   ! initialized to zero
   initp%extracted_water(nzg) = 0.0
   do k = nzg - 1, lsl, -1
@@ -222,6 +222,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
   ! Get derivatives of canopy variables
   call canopy_derivs_two_ar(initp, dinitp, csite, ipa,isi,ipy,hflxgc, wflxgc, dewgnd,  &
        wshed,qwshed, rhos, prss, pcpg, qpcpg, exner, geoht, atm_tmp, lsl)
+
   
   ! Calculate conductivities:
   !        soil
@@ -236,6 +237,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
      endif
      rfactor(k) = dslz(k) / soilcond
   enddo
+
   !        water
   do k = 1, ksn
      if(initp%sfcwater_depth(k) > 0.0)then
@@ -383,8 +385,10 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
                             initp%soil_fracliq(k))
 
      soilair99(k) = 0.99 * soil(nsoil)%slmsts - initp%soil_water(k)
+
   enddo
-  
+
+
   ! Find amount of water transferred between soil layers (w_flux) [m]
   ! modulated by the liquid water fraction
   w_flux(nzg+1) = w_flux(nzg+1) * 1.0e-3 ! now in m/s
@@ -403,6 +407,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
                 * (initp%soil_water(nzg) / soil(nsoil)%slmsts)**(2. * soil(nsoil)%slbs + 3.)  &
                 * (psiplusz(nzg) - initp%virtual_water/2000)  &  !!difference in potentials
                 * .5 * (initp%soil_fracliq(nzg)+ fracliq)  !! mean liquid fraction
+
            !! adjust other rates accordingly
            w_flux(nzg+1) = w_flux(nzg+1) + infilt
            qw_flux(nzg+1)= qw_flux(nzg+1)+ infilt * cliq1000 * (tempk - tsupercool)
@@ -436,12 +441,16 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
   do k = lsl+1, nzg
      nsoil = csite%ntext_soil(k,ipa)
      if(nsoil /= 13 .and. csite%ntext_soil(k-1,ipa) /= 13)then
+
         wgpmid = 0.5 * (initp%soil_water(k) + initp%soil_water(k-1))
         freezeCor = 0.5 * (initp%soil_fracliq(k)+ initp%soil_fracliq(k-1))
         if(freezeCor .lt. 1.0)freezeCor = 10**(-7*(1-freezeCor))
         w_flux(k) = dslzti(k) * slcons1(k,nsoil)  &
              * (wgpmid / soil(nsoil)%slmsts)**(2. * soil(nsoil)%slbs + 3.)  &
              * (psiplusz(k-1) - psiplusz(k)) * freezeCor
+
+        
+
         ! Limit water transfers to prevent over-saturation and over-depletion
         ! Compute q transfers between soil layers (qw_flux) [J/m2]
         ! Added some "lids" that exist on LEAF-3
@@ -460,6 +469,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
            end if
         end if
      endif
+
      qw_flux(k) = w_flux(k) * cliq1000 * (initp%soil_tempk(k) - tsupercool)
      
      dinitp%avg_smoist_gg(k-1) = w_flux(k)*1000   ! Diagnostic
@@ -482,40 +492,40 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
   enddo
 
   ! Update soil moisture from transpiration
-  if(csite%lai(ipa) > lai_min)then
-     do k1 = lsl, nzg    ! loop over extracted water
-
-        do k2=k1,nzg
-           if(csite%ntext_soil(k2,ipa) /= 13) then
-              if(initp%available_liquid_water(k1) > 0.0)then
-
-                 wloss = 0.001 * initp%extracted_water(k1)   &
-                      * soil_liq(k2) / initp%available_liquid_water(k1)
-
-                 dinitp%soil_water(k2) = dinitp%soil_water(k2) - wloss
-
-                 qwloss = wloss * (cliq1000 * (initp%soil_tempk(k2) - t3ple) + &
-                      alli1000)
-                 dinitp%soil_energy(k2) = dinitp%soil_energy(k2) - qwloss
-
-                 dinitp%avg_smoist_gc(k2)=dinitp%avg_smoist_gc(k2)-1000*wloss
-
-                 dinitp%ebudget_latent = dinitp%ebudget_latent + qwloss
-
-              elseif(initp%extracted_water(k1) > 0.0)then
-                 print*,initp%extracted_water(k1),  &
-                      initp%available_liquid_water(k1)
-                 print*,k1,initp%available_liquid_water(lsl:nzg)
-                 print*,current_time%time,initp%soil_fracliq(lsl:nzg)
-                 print*,'Model is trying to extract water '
-                 print*,'(via transpiration) from soil '
-                 print*,'that is either frozen or otherwise has no water.'
-                 stop
-              endif
+  !  if(csite%lai(ipa) > lai_min)then
+  do k1 = lsl, nzg    ! loop over extracted water
+     
+     do k2=k1,nzg
+        if(csite%ntext_soil(k2,ipa) /= 13) then
+           if(initp%available_liquid_water(k1) > 0.0)then
+              
+              wloss = 0.001 * initp%extracted_water(k1)   &
+                   * soil_liq(k2) / initp%available_liquid_water(k1)
+              
+              dinitp%soil_water(k2) = dinitp%soil_water(k2) - wloss
+              
+              qwloss = wloss * (cliq1000 * (initp%soil_tempk(k2) - t3ple) + &
+                   alli1000)
+              dinitp%soil_energy(k2) = dinitp%soil_energy(k2) - qwloss
+              
+              dinitp%avg_smoist_gc(k2)=dinitp%avg_smoist_gc(k2)-1000*wloss
+              
+              dinitp%ebudget_latent = dinitp%ebudget_latent + qwloss
+              
+           elseif(initp%extracted_water(k1) > 0.0)then
+              print*,initp%extracted_water(k1),  &
+                   initp%available_liquid_water(k1)
+              print*,k1,initp%available_liquid_water(lsl:nzg)
+              print*,current_time%time,initp%soil_fracliq(lsl:nzg)
+              print*,'Model is trying to extract water '
+              print*,'(via transpiration) from soil '
+              print*,'that is either frozen or otherwise has no water.'
+              stop
            endif
-        enddo
+        endif
      enddo
-  endif
+  enddo
+     !  endif
 
   ! If we have a thin layer of snow the heat derivatives will require 
   ! special treatment.
@@ -619,9 +629,6 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   wcapcan = rhos * zveg
   wcapcani = 1.0 / wcapcan
   hcapcani = cpi * wcapcani
-
-  !  print*,"AR",hcapcani,wcapcani,zveg,zoveg,rho_ustar,hflxac,wflxac
-
 
   ! The following value of ground-canopy resistance for the
   ! nonvegetated (bare soil or water) surface is from John Garratt.

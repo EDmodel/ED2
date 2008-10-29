@@ -54,17 +54,17 @@ USE_HDF5=1
 #	/sw/hdf5-1.8.0-pabs/lib/libhdf5.a \
 #	/sw/hdf5-1.8.0-pabs/lib/libhdf5_hl.a
 
-HDF5_INCS=-I/sw/hdf5-1.6.6-gfortran/lib
-HDF5C_INCS=-I/sw/hdf5-1.6.6-gfortran/include
-HDF5_LIBS=-lz /sw/hdf5-1.6.6-gfortran/lib/libhdf5_fortran.a \
-	/sw/hdf5-1.6.6-gfortran/lib/libhdf5.a \
-	/sw/hdf5-1.6.6-gfortran/lib/libhdf5_hl.a
+#HDF5_INCS=-I/sw/hdf5-1.6.6-gfortran/lib
+#HDF5C_INCS=-I/sw/hdf5-1.6.6-gfortran/include
+#HDF5_LIBS=-lz /sw/hdf5-1.6.6-gfortran/lib/libhdf5_fortran.a \
+#	/sw/hdf5-1.6.6-gfortran/lib/libhdf5.a \
+#	/sw/hdf5-1.6.6-gfortran/lib/libhdf5_hl.a
 
-#HDF5_INCS=-I/usr/local/hdf5-1.8.0/include
-#HDF5C_INCS=-I/usr/local/hdf5-1.8.0/include
-#HDF5_LIBS=-lz /usr/local/hdf5-1.8.0/lib/libhdf5_fortran.a \
-#        /usr/local/hdf5-1.8.0/lib/libhdf5.a \
-#        /usr/local/hdf5-1.8.0/lib/libhdf5_hl.a
+HDF5_INCS=-I/usr/local/hdf5-1.8.0/include
+HDF5C_INCS=-I/usr/local/hdf5-1.8.0/include
+HDF5_LIBS=-lz /usr/local/hdf5-1.8.0/lib/libhdf5_fortran.a \
+        /usr/local/hdf5-1.8.0/lib/libhdf5.a \
+        /usr/local/hdf5-1.8.0/lib/libhdf5_hl.a
 
 # netCDF libraries ---------------------------------------------
 # If you have netCDF set USENC=1 and type the lib folder
@@ -82,16 +82,6 @@ NC_LIBS=-L/dev/null
 # interfaces in the code.
 USE_INTERF=1
 
-#----------------- SGI -n32 ------------------------------------
-#CMACH=SGI
-#F_COMP=f90
-#F_OPTS=-n32 -mips4 -r10000 -O2 -freeform \
-#       -OPT:IEEE_arithmetic=3:roundoff=3 -OPT:fold_arith_limit=3200
-#C_COMP=cc
-#C_OPTS=-O -n32 -mips4 -DUNDERSCORE
-#LOADER=f90
-#LOADER_OPTS=-n32
-#LIBS=-lm
 
 #----------------- gfortran on IBM PPC Darwin -------------------
 #CMACH=IBM
@@ -132,7 +122,11 @@ USE_INTERF=1
 #----------------- gfortran on Linux x86_64 --------------------
 CMACH=PC_LINUX1
 F_COMP=mpif90
+F_OPTS=-O3
+#F_OPTS=-g -ffpe-trap=invalid,zero,overflow -fbounds-check
 C_COMP=mpicc
+#C_OPTS=-g
+C_OPTS=-O3
 LOADER=mpif90
 C_LOADER=mpicc
 LIBS=
@@ -270,11 +264,11 @@ MOD_EXT=mod
 #PAR_DEFS=-DRAMS_MPI
 
 #Compiler options
-USE_INTERF=1
-F_OPTS= -ffree-form -O3 -fconvert=little-endian -frecord-marker=4
-C_OPTS= -O3 -DLITTLE 
-LOADER_OPTS= -ffree-form -O3 -fconvert=little-endian -frecord-marker=4
-C_LOADER_OPTS=-v 
+#USE_INTERF=1
+#F_OPTS= -ffree-form -O3 -fconvert=little-endian -frecord-marker=4
+#C_OPTS= -O3 -DLITTLE 
+#LOADER_OPTS= -ffree-form -O3 -fconvert=little-endian -frecord-marker=4
+#C_LOADER_OPTS=-v 
 
 
 # If compiling for a single-CPU platform only (without MPI):

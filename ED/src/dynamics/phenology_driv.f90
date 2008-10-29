@@ -261,7 +261,7 @@ subroutine phenology_thresholds(daylight, soil_temp, soil_water, soil_class,  &
 
   real, intent(in) :: daylight
   real, intent(in) :: soil_temp
-  real, dimension(nzg), intent(in) :: soil_water
+  real(kind=8), dimension(nzg), intent(in) :: soil_water
   integer, dimension(nzg), intent(in) :: soil_class
   real, intent(inout) :: sum_dgd
   real, intent(inout) :: sum_chd

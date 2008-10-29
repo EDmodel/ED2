@@ -22,7 +22,7 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
   real, intent(in) :: prss
   integer, dimension(nzg), intent(out) :: ed_ktrans
   integer, dimension(nzg), intent(in) :: ntext_soil
-  real, dimension(nzg), intent(in) :: soil_water
+  real(kind=8), dimension(nzg), intent(in) :: soil_water
   real, dimension(nzg), intent(in) :: soil_fracliq
   integer, intent(in) :: lsl
   real, intent(in), dimension(n_pft) :: leaf_aging_factor
