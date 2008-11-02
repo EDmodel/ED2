@@ -64,10 +64,10 @@ subroutine ed_init_atm_ar
               csite%can_shv(ipa)  =   cpoly%met(isi)%atm_shv
               
               ! Initialize stars
-              csite%tstar(ipa)  = 0.
-              csite%ustar(ipa)  = 0.
-              csite%rstar(ipa)  = 0.
-              csite%cstar(ipa)  = 0.
+              !csite%tstar(ipa)  = 0.
+              !csite%ustar(ipa)  = 0.
+              !csite%rstar(ipa)  = 0.
+              !csite%cstar(ipa)  = 0.
               
               ! For now, choose heat/vapor capacities for stability
               csite%can_depth(ipa) = 30.0

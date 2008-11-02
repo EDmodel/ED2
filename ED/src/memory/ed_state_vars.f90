@@ -1210,7 +1210,6 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_atm_tmp
      real,pointer,dimension(:) :: avg_atm_shv
      real,pointer,dimension(:) :: avg_rhos
-     real,pointer,dimension(:) :: avg_theta
      real,pointer,dimension(:) :: avg_rshort
      real,pointer,dimension(:) :: avg_rshort_diffuse
      real,pointer,dimension(:) :: avg_rlong
@@ -1701,7 +1700,6 @@ contains
        allocate(cgrid%avg_atm_tmp      (npolygons))
        allocate(cgrid%avg_atm_shv      (npolygons))
        allocate(cgrid%avg_rhos         (npolygons))
-       allocate(cgrid%avg_theta        (npolygons))
        allocate(cgrid%avg_rshort       (npolygons))
        allocate(cgrid%avg_rshort_diffuse (npolygons))
        allocate(cgrid%avg_rlong        (npolygons))
@@ -2364,7 +2362,6 @@ contains
        nullify(cgrid%avg_atm_tmp             )
        nullify(cgrid%avg_atm_shv             )
        nullify(cgrid%avg_rhos                )
-       nullify(cgrid%avg_theta               )
        nullify(cgrid%avg_rshort              )
        nullify(cgrid%avg_rshort_diffuse      )
        nullify(cgrid%avg_rlong               )
@@ -2988,7 +2985,6 @@ contains
        if(associated(cgrid%avg_atm_tmp             )) deallocate(cgrid%avg_atm_tmp             )
        if(associated(cgrid%avg_atm_shv             )) deallocate(cgrid%avg_atm_shv             )
        if(associated(cgrid%avg_rhos                )) deallocate(cgrid%avg_rhos                )
-       if(associated(cgrid%avg_theta               )) deallocate(cgrid%avg_theta               )
        if(associated(cgrid%avg_rshort              )) deallocate(cgrid%avg_rshort              )
        if(associated(cgrid%avg_rshort_diffuse      )) deallocate(cgrid%avg_rshort_diffuse      )
        if(associated(cgrid%avg_rlong               )) deallocate(cgrid%avg_rlong               )
@@ -3643,7 +3639,6 @@ contains
        if(associated(cgrid%avg_atm_tmp             )) cgrid%avg_atm_tmp              = large_real
        if(associated(cgrid%avg_atm_shv             )) cgrid%avg_atm_shv              = large_real
        if(associated(cgrid%avg_rhos                )) cgrid%avg_rhos                 = large_real
-       if(associated(cgrid%avg_theta               )) cgrid%avg_theta                = large_real
        if(associated(cgrid%avg_rshort              )) cgrid%avg_rshort               = large_real
        if(associated(cgrid%avg_rshort_diffuse      )) cgrid%avg_rshort_diffuse       = large_real
        if(associated(cgrid%avg_rlong               )) cgrid%avg_rlong                = large_real
@@ -5882,13 +5877,6 @@ contains
        call vtable_edio_r(cgrid%avg_rhos(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_RHOS :11:hist:anal:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon Averaged Atmospheric Density at Ref Height','[kg/m3]','ipoly') 
-    endif
-    
-    if (associated(cgrid%avg_theta)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%avg_theta(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_THETA :11:hist:anal:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'Polygon Averaged Potential Temperature at Ref. Height','[K]','ipoly') 
     endif
     
     if (associated(cgrid%avg_rshort)) then
