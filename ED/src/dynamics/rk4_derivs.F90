@@ -798,8 +798,11 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         endif
 
         ! dinitp%veg_energy is d(vegetation internal energy)/dt. 
+        ! Not sure about what to do with wflxvc and transp when the temperature is below
+        !  freezing. 
         dinitp%veg_energy(ico) = cpatch%rshort_v(ico) + cpatch%rlong_v(ico) - hflxvc   &
-             - (wflxvc + transp) * alvl + heat_intercept_rate
+             - (wflxvc + transp) * (fracliq * alvl + (1.-fracliq) * alvi)              &
+             + heat_intercept_rate
 
         wflxvc_tot=wflxvc_tot+wflxvc
         hflxvc_tot=hflxvc_tot+hflxvc

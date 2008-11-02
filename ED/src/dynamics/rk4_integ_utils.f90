@@ -398,6 +398,7 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
   use grid_coms, only: nzg, nzs
   use soil_coms, only: min_sfcwater_mass
   use consts_coms, only: cliq,alli
+  use canopy_radiation_coms, only: lai_min
 
   implicit none
 
@@ -456,10 +457,15 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
   yscal%virtual_heat = cliq * 110.0 * yscal%virtual_water
   
   do ico = 1,cpatch%ncohorts
-     yscal%veg_water(ico) = 0.22
-     yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
-                                + abs(dy%veg_energy(k)*htry),74000.)! Roughly 0.22*alli
-  enddo
+     if (cpatch%lai(ico) > lai_min) then
+        yscal%veg_water(ico) = 0.22
+        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
+                                   + abs(dy%veg_energy(ico)*htry),0.22*alli)
+     else
+        yscal%veg_water(ico) = 1.e30
+        yscal%veg_energy(ico) = 1.e30
+     end if
+  end do
 
   return
 end subroutine get_yscal_ar
@@ -479,7 +485,7 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
   type(patchtype),target :: cpatch
   type(rk4patchtype),target :: yerr,yscal,y,ytemp
   integer :: ico
-  real :: errmax
+  real :: errmax,errh2o,errene
   integer :: k
   
   errmax = 0.0
@@ -502,14 +508,24 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
   errmax = max(errmax,abs(yerr%virtual_heat/yscal%virtual_heat))
   errmax = max(errmax,abs(yerr%virtual_water/yscal%virtual_water))
 
+!  write (unit=40,fmt='(132a)') ('-',k=1,132)
+!  write (unit=40,fmt='(2(a5,1x),8(a14,1x))') &
+!    '  COH','  PFT','           LAI','        ERRH2O','        ERRENE','        ERRMAX'    &
+!                   ,'  YERR%VEG_H2O',' YSCAL%VEG_H2O',' YERR%VEG_ENER','YSCAL%VEG_ENER'
   do ico = 1,cpatch%ncohorts
      
      if(cpatch%lai(ico).gt.lai_min)then
-        errmax = max(errmax,abs(yerr%veg_water(ico)/yscal%veg_water(ico)))
-        errmax = max(errmax,abs(yerr%veg_energy(ico)/yscal%veg_energy(ico)))
+        errh2o = abs(yerr%veg_water(ico)/yscal%veg_water(ico))
+        errene = abs(yerr%veg_energy(ico)/yscal%veg_energy(ico))
+!        write (unit=40,fmt='(2(i5,1x),8(es14.7,1x))') &
+!            ico,cpatch%pft(ico),cpatch%lai(ico),errh2o,errene,errmax &
+!           ,yerr%veg_water(ico),yscal%veg_water(ico)                 &
+!           ,yerr%veg_energy(ico),yscal%veg_energy(ico)
+        errmax = max(errmax,errh2o,errene)
      endif
-
-  enddo
+  end do
+!  write (unit=40,fmt='(132a)') ('-',k=1,132)
+!  write (unit=40,fmt='(a)') ' '
 
   return
 end subroutine get_errmax_ar

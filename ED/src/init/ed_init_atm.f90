@@ -9,7 +9,7 @@ subroutine ed_init_atm_ar
   use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
   use pft_coms,only : sla
-  use canopy_air_coms, only: hcapveg_ref, veghite_min
+  use canopy_air_coms, only: hcapveg_ref, heathite_min
   
   
   implicit none
@@ -62,6 +62,12 @@ subroutine ed_init_atm_ar
               csite%can_temp(ipa) =   cpoly%met(isi)%atm_tmp
               
               csite%can_shv(ipa)  =   cpoly%met(isi)%atm_shv
+              
+              ! Initialize stars
+              csite%tstar(ipa)  = 0.
+              csite%ustar(ipa)  = 0.
+              csite%rstar(ipa)  = 0.
+              csite%cstar(ipa)  = 0.
               
               ! For now, choose heat/vapor capacities for stability
               csite%can_depth(ipa) = 30.0

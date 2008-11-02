@@ -464,49 +464,73 @@ contains
     integer iflag1,k
     real :: atm_tempk
 
-    print*
-    print*,'in print sanity check'
-    print*
+    write(unit=*,fmt='(64a)') ('=',k=1,64)
+    write(unit=*,fmt='(64a)') ('=',k=1,64)
+    write(unit=*,fmt='(a,20x,a,20x,a)') '======','SANITY CHECK','======'
+    write(unit=*,fmt='(64a)') ('=',k=1,64)
 
+    write(unit=*,fmt='(a)') ' '
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write(unit=*,fmt='(a5,3(1x,a12))') 'LEVEL','  SOIL_TEMPK','SOIL_FRACLIQ','  SOIL_WATER'
     do k=lsl,nzg
-!       write(*,'(a33,i,3f8.2)')'k, soil_tempk, soil_fracliq, soil_water',  &
-!            k, y%soil_tempk(k), y%soil_fracliq(k), y%soil_water(k)
-       print*,"k, soil_tempk, soil_fracliq, soil_water",  &
+       write(unit=*,fmt='(i5,3(1x,es12.5))') &
             k, y%soil_tempk(k), y%soil_fracliq(k), y%soil_water(k)
-    enddo
+    end do
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
 
+    write(unit=*,fmt='(a)') ' '
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write(unit=*,fmt='(a5,3(1x,a12))') 'LEVEL','  OLD_SOIL_T','OLD_SOIL_FLQ','OLD_SOIL_H2O'
     do k=lsl,nzg
-       !       write(*,'(a33,i,3f8.2)')'k, soil_tempk, soil_fracliq, soil_water',  &
-       !            k, y%soil_tempk(k), y%soil_fracliq(k), y%soil_water(k)
-       print*,"k, soil_tempk, soil_fracliq, soil_water",  &
+       write(unit=*,fmt='(i5,3(1x,es12.5))') &
             k, csite%soil_tempk(k,ipa), csite%soil_fracliq(k,ipa), csite%soil_water(k,ipa)
-    enddo
+    end do
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
 
-!    write(*,'(a33,f)')'can_temp', y%can_temp
-!    write(*,'(a33,i)')'nlev_sfcwater', y%nlev_sfcwater
+    write(unit=*,fmt='(a)') ' '
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write (unit=*,fmt='(a,1x,es12.5)') ' CAN_TEMP=     ',y%can_temp
+    write (unit=*,fmt='(a,1x,es12.5)') ' OLD_CAN_TEMP= ',csite%can_temp(ipa)
+    write (unit=*,fmt='(a,1x,es12.5)') ' CAN_VAPOR=    ',y%can_shv
+    write (unit=*,fmt='(a,1x,es12.5)') ' OLD_CAN_VAP=  ',csite%can_shv(ipa)
+    write (unit=*,fmt='(a,1x,i12)')    ' #LEV_SFCH2O=  ',y%nlev_sfcwater
+    write (unit=*,fmt='(a,1x,i12)')    ' OLD_#_SFCH2O= ',csite%nlev_sfcwater(ipa)
+    if(y%nlev_sfcwater == 1) then
+       write(unit=*,fmt='(a,1x,es12.5)') ,'SFCWATER_TEMPK=',y%sfcwater_tempk(1)
+    end if
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
 
-    print*,"can_temp", y%can_temp,csite%can_temp(ipa)
-    print*,"nlev_sfcwater", y%nlev_sfcwater,csite%nlev_sfcwater(ipa)
-
-
-!    if(y%nlev_sfcwater == 1)write(*,'(a33,f)')'sfcwater_tempk',  &
-!         y%sfcwater_tempk(1)
-
-    if(y%nlev_sfcwater == 1)print*,"sfcwater_tempk",y%sfcwater_tempk(1)
-
-!    write(*,'(a33,f)')'canopy water vapor', y%can_shv
-    print*,"canopy water vapor", y%can_shv,csite%can_shv(ipa)
-
+    write(unit=*,fmt='(a)') ' '
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
     cpatch => csite%patch(ipa)
+    write (unit=*,fmt='(2(a5,1x),4(a12,1x))') &
+       '  COH','  PFT','         LAI','  VEG_ENERGY','OLD_VEG_ENER','OLD_VEG_TEMP'
     do ico = 1,cpatch%ncohorts
-       if(cpatch%lai(ico) > lai_min)then
-!          write(*,'(a33,2f)')'lai, veg_temp',cpatch%lai(ico),y%veg_temp(ico)
-          print*,"lai, veg_energy",cpatch%lai(ico),y%veg_energy(ico),y%veg_water(ico),&
-               cpatch%veg_energy(ico),cpatch%veg_temp(ico),cpatch%veg_water(ico)
-          
-       endif
-    enddo
+       if(cpatch%lai(ico) > lai_min) then
+          write(unit=*,fmt='(2(i5,1x),4(es12.5,1x))') &
+             ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_energy(ico),cpatch%veg_energy(ico)  &
+                                ,cpatch%veg_temp(ico)
+       end if
+    end do
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
+
+    write(unit=*,fmt='(a)') ' '
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write (unit=*,fmt='(2(a5,1x),3(a12,1x))') &
+       '  COH','  PFT','         LAI','   VEG_WATER',' OLD_VEG_H2O'
+    do ico = 1,cpatch%ncohorts
+       if(cpatch%lai(ico) > lai_min) then
+          write(unit=*,fmt='(2(i5,1x),3(es12.5,1x))') &
+             ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_water(ico),cpatch%veg_water(ico)
+       end if
+    end do
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write(unit=*,fmt='(a)') ' '
     
+    write(unit=*,fmt='(64a)') ('=',k=1,64)
+    write(unit=*,fmt='(64a)') ('=',k=1,64)
+    write(unit=*,fmt='(a)') ' '
+
     return
   end subroutine print_sanity_check_ar
 
