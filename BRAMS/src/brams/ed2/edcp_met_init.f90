@@ -9,6 +9,7 @@ subroutine ed_init_coup_atm
   use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
   use pft_coms,only : sla
+  use canopy_air_coms, only: hcapveg_ref, heathite_min
 
   implicit none
 
@@ -24,6 +25,7 @@ subroutine ed_init_coup_atm
   integer :: ncohorts
   real    :: poly_lai,p_lai
   integer :: ix,iy
+  real    :: hcapveg
   integer, parameter :: harvard_override = 0
   include 'mpif.h'
   integer :: ping,ierr
@@ -87,6 +89,10 @@ subroutine ed_init_coup_atm
                  cpatch%hcapveg(ico) = 4.5e4
                  cpatch%veg_temp(ico)  = cpoly%met(isi)%atm_tmp
                  cpatch%veg_water(ico) = 0.0
+                 ! I think this should be standardized, but I'm not sure what cpatch%hcapveg is doing...
+                 hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
+                 ! Not sure about this one... 
+                 cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
               enddo
            
            enddo

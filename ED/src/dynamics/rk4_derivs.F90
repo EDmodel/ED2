@@ -567,9 +567,12 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   use grid_coms, only : nzg
   use soil_coms, only : soil, dewmax
   use canopy_radiation_coms, only: lai_min
+
+  use canopy_air_coms, only: hcapveg_ref,heathite_min
+
   use pft_coms, only: q, qsw, water_conductance,leaf_width,rho
   use ed_misc_coms,only:diag_veg_heating
-  use therm_lib, only : rslif
+  use therm_lib, only : rslif,qwtk
 
   implicit none
 
@@ -586,7 +589,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   real, intent(in) :: geoht
   real, intent(out) :: hflxgc,wflxgc
   real, intent(out) :: wshed_tot,qwshed_tot
-  real :: dvegqtot,dqwdt,transp,qpcpg_lw,dumarg,rsat,cflxac
+  real :: transp,qpcpg_lw,dumarg,rsat,cflxac
   real :: wflxac,hflxac
   type(rk4patchtype), target :: initp,dinitp 
   integer :: k,iter_can
@@ -608,6 +611,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   real :: storage_decay,vertical_vel_flux
   real :: heat_intercept_rate,dew_evap_latent_heat_loss
   real :: w_demand,w_supply,wcapcani,hcapcani,broot
+  real :: sat_shv,veg_temp,fracliq
 
   ! Fluxes from atmosphere to canopy
   rho_ustar = rhos * initp%ustar
@@ -705,6 +709,16 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
      ! See if this cohort has leaves
      if(cpatch%lai(ico) > lai_min)then
 
+
+        hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) * laii
+!        hcapveg = 3.0e3 * max(cpatch%hite(1),1.5) * cpatch%lai(ico) * laii
+        
+        ! Potential alternatives to the vegetation heat capacity
+!        hcapveg = 3.0e3 * ( cpatch%bdead(ico)/rho(cpatch%pft(ico)) + cpatch%lai(ico)*leaf_width(cpatch%pft(ico)) )
+!        hcapveg = 3.0e3 * cpatch%lai(ico) * leaf_width(cpatch%pft(ico))
+
+        call qwtk (initp%veg_energy(ico),initp%veg_water(ico),hcapveg,veg_temp,fracliq)
+        !write(unit=*,fmt='(3(a,1x,es12.5,1x))') 'ENERGY=',initp%veg_energy(ico),'WATER=',initp%veg_energy(ico),'TEMP=',veg_temp
         !  Calculate leaf-level flux
         leaf_flux = cpatch%gpp(ico) - cpatch%leaf_respiration(ico)
 
@@ -717,8 +731,10 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         else
            sigmaw = 0.0
         endif
-         
-        c3 = cpatch%lai(ico) * rhos * (rslif(prss,initp%veg_temp(ico)) - initp%can_shv)
+        sat_shv=rslif(prss,veg_temp)
+        c3 = cpatch%lai(ico) * rhos * (sat_shv - initp%can_shv)
+
+        
         rbi = 1.0 / cpatch%rb(ico)
 
         if (c3 >= 0.) then  
@@ -754,7 +770,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         ! cp is the specific heat
         ! 2.2 acpatchounts for stems and branches.
         hflxvc = 2.2 * cpatch%lai(ico) * cp * rhos * rbi  &
-             * (initp%veg_temp(ico) - initp%can_temp)
+             * (veg_temp - initp%can_temp)
 
         ! How much precipitation is intercepted?
 
@@ -781,7 +797,8 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
            qwshed = 0.0
         endif
 
-        dvegQtot = cpatch%rshort_v(ico) + cpatch%rlong_v(ico) - hflxvc   &
+        ! dinitp%veg_energy is d(vegetation internal energy)/dt. 
+        dinitp%veg_energy(ico) = cpatch%rshort_v(ico) + cpatch%rlong_v(ico) - hflxvc   &
              - (wflxvc + transp) * alvl + heat_intercept_rate
 
         wflxvc_tot=wflxvc_tot+wflxvc
@@ -794,103 +811,77 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         wshed_tot = wshed_tot + wshed
         qwshed_tot = qwshed_tot + qwshed
 
-!        hcapveg = 3.0e3 * max(cpatch%hite(1),1.5) * cpatch%lai(ico) * laii
-
-         hcapveg = 3.0e3 * max(cpatch%hite(1),2.5) * cpatch%lai(ico) * laii
-        
-        ! Potential alternatives to the vegetation heat capacity
-!        hcapveg = 3.0e3 * ( cpatch%bdead(ico)/rho(cpatch%pft(ico)) + cpatch%lai(ico)*leaf_width(cpatch%pft(ico)) )
-!        hcapveg = 3.0e3 * cpatch%lai(ico) * leaf_width(cpatch%pft(ico))
-        
-
-        ! dinitp%veg_temp is d(cohort temperature)/dt. 
-        ! vegetation energy = hcapveg * (initp%veg_temp - t3ple) +  &
-        !        initp%veg_water * (cliq * (initp%veg_temp - t3ple) + alli)
-        ! for temperatures >= 273.15, and 
-        ! vegetation energy = hcapveg * (initp%veg_temp - t3ple) +  &
-        !        initp%veg_water * cice * (initp%veg_temp - t3ple)
-        ! We are ignoring energy associated with phase changes on the leaf.
-        
-        if(initp%veg_temp(ico) >= t3ple)then
-           dinitp%veg_temp(ico) = (dvegQtot - dinitp%veg_water(ico) *   &
-                (cliq * (initp%veg_temp(ico) - t3ple) + alli)) /   &
-                (hcapveg + initp%veg_water(ico) * cliq)
-        else
-           dinitp%veg_temp(ico) = (dvegQtot - dinitp%veg_water(ico) * cice *   &
-                (initp%veg_temp(ico) - t3ple)) / (hcapveg + initp%veg_water(ico) * cice)
-        endif
 
         if (diag_veg_heating)then
            dinitp%co_srad_h(ico) =  cpatch%rshort_v(ico)
            dinitp%co_lrad_h(ico) =  cpatch%rlong_v(ico)
            dinitp%co_sens_h(ico) =  -hflxvc
            dinitp%co_evap_h(ico) =  -(wflxvc + transp)*alvl
-           dinitp%co_liqr_h(ico) =  heat_intercept_rate - dinitp%veg_water(ico)*(cliq*(initp%veg_temp(ico)-t3ple)+alli)
+           dinitp%co_liqr_h(ico) =  heat_intercept_rate - dinitp%veg_water(ico)*(cliq*(veg_temp-t3ple)+alli)
         endif
 
 
         ! Do evaporation/dew formation on leaf surfaces
-        if (abs(initp%veg_temp(ico)-atm_tmp) > 20.) then
-           write(unit=*,fmt='(a,1x,i5)')     '================== FATAL ERROR =================='
-           write(unit=*,fmt='(a,1x,i5)')     ' IPY:',ipy
-           write(unit=*,fmt='(a,1x,i5)')     ' ISI:',isi
-           write(unit=*,fmt='(a,1x,i5)')     ' IPA:',ipa
-           write(unit=*,fmt='(a,1x,i5)')     ' ICO:',ico
-           write(unit=*,fmt='(a,1x,f14.5)')  ' Longitude:',edgrid_g(1)%lon(ipy)
-           write(unit=*,fmt='(a,1x,f14.5)')  ' Latitude: ',edgrid_g(1)%lat(ipy)
-           write(unit=*,fmt='(a)')           ' '
-           write(unit=*,fmt='(a,1x,es14.7)') ' PRSS:     ',prss
-           write(unit=*,fmt='(a,1x,es14.7)') ' ATM_TMP:  ',atm_tmp
-           write(unit=*,fmt='(a,1x,es14.7)') ' RHOS:     ',rhos
-           write(unit=*,fmt='(a,1x,es14.7)') ' PCPG:     ',pcpg
-           write(unit=*,fmt='(a)')           ' '
-           write(unit=*,fmt='(a,1x,es14.7)') ' dvegQtot: ',dvegQtot
-           write(unit=*,fmt='(a,1x,es14.7)') ' rshort_v: ',cpatch%rshort_v(ico)
-           write(unit=*,fmt='(a,1x,es14.7)') ' rlong_v:  ',cpatch%rlong_v(ico)
-           write(unit=*,fmt='(a,1x,es14.7)') ' hflxvc:   ',hflxvc
-           write(unit=*,fmt='(a,1x,es14.7)') ' wflxvc*Lv:',wflxvc*alvl
-           write(unit=*,fmt='(a,1x,es14.7)') ' transp*Lv:',transp*alvl
-           write(unit=*,fmt='(a,1x,es14.7)') ' qwshed:   ',qwshed
-           write(unit=*,fmt='(a,1x,es14.7)') ' intercept:',heat_intercept_rate
-           write(unit=*,fmt='(a)')           ' '
-           write(unit=*,fmt='(a,1x,es14.7)') ' can_temp :',initp%can_temp
-           write(unit=*,fmt='(a,1x,es14.7)') ' can_shv  :',initp%can_shv
-           write(unit=*,fmt='(a,1x,es14.7)') ' gnd_shv  :',initp%ground_shv
-           write(unit=*,fmt='(a)')           ' '
-           write(unit=*,fmt='(a,1x,es14.7)') ' c2       :',c2
-           write(unit=*,fmt='(a,1x,es14.7)') ' rd       :',rd
-           write(unit=*,fmt='(a,1x,es14.7)') ' rasgnd   :',rasgnd
-           write(unit=*,fmt='(a,1x,es14.7)') ' rasveg   :',initp%rasveg
-           write(unit=*,fmt='(a)')           ' '
-           write(unit=*,fmt='(a,1x,es14.7)') 'Lai_coh   :',cpatch%lai(ico)
-           write(unit=*,fmt='(a,1x,es14.7)') 'veg_temp  :',initp%veg_temp(ico)
-           write(unit=*,fmt='(a,1x,es14.7)') 'veg_water :',initp%veg_water(ico)
-           write(unit=*,fmt='(a,1x,es14.7)') 'rb        :',cpatch%rb(ico)
-           write(unit=*,fmt='(a)')           ' '
-           write(unit=*,fmt='(a,1x,es14.7)') 'hcapveg   :',hcapveg
-           write(unit=*,fmt='(a,1x,es14.7)') 'dveg_temp :',dinitp%veg_temp(ico)
-           write(unit=*,fmt='(a,1x,es14.7)') 'dveg_water:',dinitp%veg_water(ico)
+        !if (abs(veg_temp-atm_tmp) > 20.) then
+        !   write(unit=*,fmt='(a,1x,i5)')     '================== FATAL ERROR =================='
+        !   write(unit=*,fmt='(a,1x,i5)')     ' IPY:',ipy
+        !   write(unit=*,fmt='(a,1x,i5)')     ' ISI:',isi
+        !   write(unit=*,fmt='(a,1x,i5)')     ' IPA:',ipa
+        !   write(unit=*,fmt='(a,1x,i5)')     ' ICO:',ico
+        !   write(unit=*,fmt='(a,1x,f14.5)')  ' Longitude:',edgrid_g(1)%lon(ipy)
+        !   write(unit=*,fmt='(a,1x,f14.5)')  ' Latitude: ',edgrid_g(1)%lat(ipy)
+        !   write(unit=*,fmt='(a)')           ' '
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' PRSS:     ',prss
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' ATM_TMP:  ',atm_tmp
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' RHOS:     ',rhos
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' PCPG:     ',pcpg
+        !   write(unit=*,fmt='(a)')           ' '
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' dvegQtot: ',dvegQtot
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' rshort_v: ',cpatch%rshort_v(ico)
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' rlong_v:  ',cpatch%rlong_v(ico)
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' hflxvc:   ',hflxvc
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' wflxvc*Lv:',wflxvc*alvl
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' transp*Lv:',transp*alvl
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' qwshed:   ',qwshed
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' intercept:',heat_intercept_rate
+        !   write(unit=*,fmt='(a)')           ' '
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' can_temp :',initp%can_temp
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' can_shv  :',initp%can_shv
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' gnd_shv  :',initp%ground_shv
+        !   write(unit=*,fmt='(a)')           ' '
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' c2       :',c2
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' rd       :',rd
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' rasgnd   :',rasgnd
+        !   write(unit=*,fmt='(a,1x,es14.7)') ' rasveg   :',initp%rasveg
+        !   write(unit=*,fmt='(a)')           ' '
+        !   write(unit=*,fmt='(a,1x,es14.7)') 'Lai_coh   :',cpatch%lai(ico)
+        !   write(unit=*,fmt='(a,1x,es14.7)') 'veg_temp  :',veg_temp
+        !   write(unit=*,fmt='(a,1x,es14.7)') 'veg_energy:',initp%veg_energy(ico)
+        !   write(unit=*,fmt='(a,1x,es14.7)') 'veg_water :',initp%veg_water(ico)
+        !   write(unit=*,fmt='(a,1x,es14.7)') 'rb        :',cpatch%rb(ico)
+        !   write(unit=*,fmt='(a)')           ' '
+        !   write(unit=*,fmt='(a,1x,es14.7)') 'hcapveg   :',hcapveg
+        !   write(unit=*,fmt='(a,1x,es14.7)') 'dveg_temp :',dinitp%veg_temp(ico)
+        !   write(unit=*,fmt='(a,1x,es14.7)') 'dveg_water:',dinitp%veg_water(ico)
+        !end if
+
+
+        if(initp%veg_energy(ico) .ne.initp%veg_energy(ico) )then
+           call fatal_error('initp%veg_energy is NaN','canopy_derivs_two_ar','rk4_derivs.F90')
         end if
 
-
-        !dinitp%veg_temp = dvegQtot / hcapveg
-
-        if(initp%veg_temp(ico) .ne.initp%veg_temp(ico) )then
-           print*,'initp%veg_temp is nan'
-           stop
-        endif
-
-        if(dinitp%veg_temp(ico) .ne.dinitp%veg_temp(ico) )then
-           print*,'dinitp%veg_temp is nan'
-           print*,dinitp%veg_temp(ico) ,initp%veg_temp(ico), &
-                dinitp%veg_water(ico) ,dvegQtot,cpatch%rshort_v(ico), &
-                cpatch%rlong_v(ico),hflxvc,wflxvc,transp,alvl,heat_intercept_rate
-           stop
+        if(dinitp%veg_energy(ico) .ne.dinitp%veg_energy(ico) ) then
+           print*, 'dinitp%veg_energy is nan'
+           print*, dinitp%veg_energy(ico), initp%veg_energy(ico), veg_temp, &
+                   dinitp%veg_water(ico), cpatch%rshort_v(ico),             &
+                   cpatch%rlong_v(ico), hflxvc, wflxvc, transp, alvl,       &
+                   heat_intercept_rate
+           call fatal_error('dinitp%veg_energy is NaN','canopy_derivs_two_ar','rk4_derivs.F90')
         endif
 
      else
         ! If there are no leaves, 
-        dinitp%veg_temp(ico) = 0.0
+        dinitp%veg_energy(ico) = 0.0
         dinitp%veg_water(ico) = 0.0
 
         if (diag_veg_heating) then

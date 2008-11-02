@@ -9,6 +9,9 @@ subroutine ed_init_atm_ar
   use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
   use pft_coms,only : sla
+  use canopy_air_coms, only: hcapveg_ref, veghite_min
+  
+  
   implicit none
 
   type(edtype)     ,pointer :: cgrid
@@ -22,6 +25,7 @@ subroutine ed_init_atm_ar
   integer :: nlsw1
   integer :: ncohorts
   real    :: poly_lai,p_lai
+  real    :: hcapveg
   integer, parameter :: harvard_override = 0
   include 'mpif.h'
   integer :: ping,ierr
@@ -85,6 +89,11 @@ subroutine ed_init_atm_ar
                  cpatch%hcapveg(ico) = 4.5e4
                  cpatch%veg_temp(ico)  = cpoly%met(isi)%atm_tmp
                  cpatch%veg_water(ico) = 0.0
+                
+                 ! I think this should be standardized, but I'm not sure what cpatch%hcapveg is doing...
+                 hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
+                 ! Not sure about this one... 
+                 cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
               enddo
            
            enddo
@@ -479,7 +488,7 @@ subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
      ! ratio of soil and is used for soil evaporation.  First, compute the
      ! "alpha" term or soil "relative humidity" and the "beta" term.
      
-     call qwtk8(soil_energy,soil_water*1.e3,soil(nts)%slcpd,tempk,fracliq)
+     call qwtk8(soil_energy,soil_water*1.d3,soil(nts)%slcpd,tempk,fracliq)
      surface_ssh = rhovsil(tempk) / rhos
      
      slpotvn = soil(nts)%slpots * (soil(nts)%slmsts / soil_water) ** soil(nts)%slbs

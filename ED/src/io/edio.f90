@@ -274,6 +274,7 @@ subroutine spatial_averages
               if (cpatch%ncohorts>0) then
                  
                  lai_sum = max(lai_min,sum(cpatch%lai, cpatch%lai > lai_min))
+                 csite%avg_veg_energy(ipa)  = sum(cpatch%veg_energy * cpatch%lai,cpatch%lai > lai_min)   / lai_sum
                  csite%avg_veg_temp(ipa)  = sum(cpatch%veg_temp * cpatch%lai,cpatch%lai > lai_min)   / lai_sum
                  csite%avg_veg_water(ipa) = sum(cpatch%veg_water * cpatch%lai,cpatch%lai > lai_min)  / lai_sum
                  
@@ -298,7 +299,7 @@ subroutine spatial_averages
                  
               else
                  ! Set veg-temp to air temp
-                 
+                 csite%avg_veg_energy(ipa)  = 0.0          
                  csite%avg_veg_temp(ipa)  = csite%can_temp(ipa)
                  csite%avg_veg_water(ipa) = 0.0
                  
@@ -314,10 +315,11 @@ subroutine spatial_averages
 
            csite%laiarea = csite%laiarea / max(sum(csite%laiarea),1.0)
 
-           cpoly%avg_veg_temp(isi)  = sum(csite%avg_veg_temp     * csite%laiarea)
-           cpoly%avg_veg_water(isi) = sum(csite%avg_veg_water    * csite%laiarea)
-           cpoly%avg_can_temp(isi)  = sum(csite%can_temp         * csite%area)
-           cpoly%avg_can_shv(isi)   = sum(csite%can_shv          * csite%area)
+           cpoly%avg_veg_energy(isi) = sum(csite%avg_veg_energy   * csite%laiarea)
+           cpoly%avg_veg_temp(isi)   = sum(csite%avg_veg_temp     * csite%laiarea)
+           cpoly%avg_veg_water(isi)  = sum(csite%avg_veg_water    * csite%laiarea)
+           cpoly%avg_can_temp(isi)   = sum(csite%can_temp         * csite%area)
+           cpoly%avg_can_shv(isi)    = sum(csite%can_shv          * csite%area)
 
 
         else
@@ -359,6 +361,7 @@ subroutine spatial_averages
         cgrid%avg_sensible_tot(ipy)   = sum(cpoly%avg_sensible_tot   * cpoly%area ) * poly_area_i
 
 
+        cgrid%avg_veg_energy(ipy)     = sum(cpoly%avg_veg_energy     * cpoly%area ) * poly_area_i
         cgrid%avg_veg_temp(ipy)       = sum(cpoly%avg_veg_temp       * cpoly%area ) * poly_area_i
         cgrid%avg_veg_water(ipy)      = sum(cpoly%avg_veg_water      * cpoly%area ) * poly_area_i
         cgrid%avg_can_temp(ipy)       = sum(cpoly%avg_can_temp       * cpoly%area ) * poly_area_i

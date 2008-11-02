@@ -322,6 +322,8 @@ contains
     use soil_coms, only: soil
     use canopy_radiation_coms, only: lai_min
     use consts_coms, only : t3ple
+    use canopy_air_coms, only: hcapveg_ref,heathite_min
+    use therm_lib, only: qwtk
 
     implicit none
     integer, intent(in) :: lsl
@@ -329,7 +331,7 @@ contains
     type(patchtype),pointer :: cpatch
     type(rk4patchtype), target :: y,dydx
     integer iflag1,k
-    real :: atm_tempk,h
+    real :: atm_tempk,h,hcapveg,veg_temp,fracliq
     integer :: ipa,ico
     integer, parameter :: print_diags=0
 
@@ -430,9 +432,12 @@ contains
     cpatch => csite%patch(ipa)
 
     do ico = 1,cpatch%ncohorts
-       if(cpatch%lai(ico) > lai_min.and. y%veg_temp(ico) > 380.0)then
+       hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
+       call qwtk(y%veg_energy(ico),y%veg_water(ico),hcapveg,veg_temp,fracliq)
+
+       if(cpatch%lai(ico) > lai_min.and. veg_temp > 380.0)then
           iflag1 = 0
-          if(print_diags==1) print*,'leaf temp too high',y%veg_temp(ico),  &
+          if(print_diags==1) print*,'leaf temp too high',veg_temp,y%veg_energy(ico),  &
                cpatch%lai(ico),cpatch%pft(ico),cpatch%veg_temp(ico)
           return
        endif
@@ -496,8 +501,8 @@ contains
     do ico = 1,cpatch%ncohorts
        if(cpatch%lai(ico) > lai_min)then
 !          write(*,'(a33,2f)')'lai, veg_temp',cpatch%lai(ico),y%veg_temp(ico)
-          print*,"lai, veg_temp",cpatch%lai(ico),y%veg_temp(ico),y%veg_water(ico),&
-               cpatch%veg_temp(ico),cpatch%veg_water(ico)
+          print*,"lai, veg_energy",cpatch%lai(ico),y%veg_energy(ico),y%veg_water(ico),&
+               cpatch%veg_energy(ico),cpatch%veg_temp(ico),cpatch%veg_water(ico)
           
        endif
     enddo

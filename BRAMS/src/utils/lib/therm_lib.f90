@@ -570,6 +570,91 @@ module therm_lib
 
 
 
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function calculates the derivative of vapour-liquid equilibrium density, as  !
+   ! a function of temperature in Kelvin.                                                  !
+   !---------------------------------------------------------------------------------------!
+   real function rhovslp(temp)
+      use rconstants, only : rm
+      implicit none
+      real, intent(in) :: temp
+      real             :: es,desdt
+      es    = eslf(temp)
+      desdt = eslfp(temp)
+      rhovslp = (desdt-es/temp) / (rm * temp)
+      return
+   end function rhovslp
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function calculates the derivative of vapour-ice equilibrium density, as a   !
+   ! function of temperature in Kelvin.                                                    !
+   !---------------------------------------------------------------------------------------!
+   real function rhovsip(temp)
+      use rconstants, only : rm
+      implicit none
+      real, intent(in) :: temp
+      real             :: es,desdt
+      es    = esif(temp)
+      desdt = esifp(temp)
+      rhovsip = (desdt-es/temp) / (rm * temp)
+      return
+   end function rhovsip
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function calculates the derivative of saturation density for vapour, as a    !
+   ! function of temperature in Kelvin. It will decide between ice-vapour or liquid-vapour !
+   ! based on the temperature.                                                             !
+   !---------------------------------------------------------------------------------------!
+   real function rhovsilp(temp,useice)
+      use rconstants, only: t3ple
+      implicit none
+      real, intent(in)              :: temp
+      logical, intent(in), optional :: useice
+      logical                       :: brrr_cold
+
+      if (present(useice)) then
+         brrr_cold = useice  .and. temp < t3ple
+      else 
+         brrr_cold = bulk_on .and. temp < t3ple
+      end if
+
+      if (brrr_cold) then
+         rhovsilp=rhovsip(temp)
+      else
+         rhovsilp=rhovslp(temp)
+      end if
+
+      return
+   end function rhovsilp
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+
    !=======================================================================================!
    !=======================================================================================!
    !     This function calculates the temperature from the liquid sat. vapour pressure.    !
