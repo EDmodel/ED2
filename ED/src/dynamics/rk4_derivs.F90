@@ -675,15 +675,36 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   !!! TESTING -> cap on dew flux
   !  dewgndflx = max(0.,-wflx)
   dewgndflx = min(dewmax, max(0.0, -wflx))
+
+  ! IF NO SURFACE WATER AND NOT DRY - EVAPORATE FROM SOIL PORES
   if(initp%nlev_sfcwater == 0 .and. initp%soil_water(nzg)  &
        > soil(csite%ntext_soil(nzg,ipa))%soilcp) then
      wflxgc = max(0.0, (initp%ground_shv - initp%can_shv) * rdi)
+  
+  ! IF NO SURFACE WATER AND REALLY DRY - DONT EVAPORATE AT ALL
+  else if ( initp%nlev_sfcwater == 0 .and. initp%soil_water(nzg)  &
+       <= soil(csite%ntext_soil(nzg,ipa))%soilcp) then
+     wflxgc = 0.0
   else
      wflxgc = max(0.,wflx)
   endif
-  if(initp%available_liquid_water(nzg) <= 0.01 .and. wflxgc > 0.0)then
-     wflxgc = 0.0
-  endif
+
+  ! -----------------------------------------------------------------
+  ! IF THERE IS ONLY 1mm OF WATER IN THE SOIL LAYER DONT
+  ! EXTRACT.
+  ! PROBLEM, THIS CALCULATION IS LAYER THICKNESS DEPENDANT.
+  ! IF YOUR TOP LAYER IS ONLY 5 mm, THEN THIS WILL NULLIFY
+  ! WATER FLUXES WHEN RELATIVE WATER CONTENT IS <20%, BUT
+  ! IF YOU TOP LAYER IS 20mm THICK, THEN THIS THRESHOLD IS
+  ! ABOUT THE SAME AS THE RESIDUAL WATER CONTENT.
+  ! IN OTHER WORDS THIS CONDITION IS A KLUGE AND MAY NOT BE
+  ! APPROPRIATE, UNLESS SOMEONE THINKS IT SHOULD STAY.
+  ! RGK 11-2-08
+  !
+  !  if(initp%available_liquid_water(nzg) <= 0.01 .and. wflxgc > 0.0)then
+  !     wflxgc = 0.0
+  !  endif
+  !-----------------------------------------------------------------
   
   ! Initialize variables used to store sums over cohorts.
   hflxvc_tot = 0.0
@@ -710,6 +731,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
      if(cpatch%lai(ico) > lai_min)then
 
 
+        ! Effective heat capacity of vegetation [J K-1] = [m3] * [J m-3 K-1]
         hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) * laii
 !        hcapveg = 3.0e3 * max(cpatch%hite(1),1.5) * cpatch%lai(ico) * laii
         
@@ -800,9 +822,19 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         ! dinitp%veg_energy is d(vegetation internal energy)/dt. 
         ! Not sure about what to do with wflxvc and transp when the temperature is below
         !  freezing. 
-        dinitp%veg_energy(ico) = cpatch%rshort_v(ico) + cpatch%rlong_v(ico) - hflxvc   &
-             - (wflxvc + transp) * (fracliq * alvl + (1.-fracliq) * alvi)              &
-             + heat_intercept_rate
+        !dinitp%veg_energy(ico) = cpatch%rshort_v(ico) + cpatch%rlong_v(ico) - hflxvc   &
+        !     - (wflxvc + transp) * (fracliq * alvl + (1.-fracliq) * alvi)              &
+        !     + heat_intercept_rate
+
+        ! Alternative:
+        dinitp%veg_energy(ico) = &
+             cpatch%rshort_v(ico)     &   ! Absorbed short wave radiation
+             + cpatch%rlong_v(ico)    &   ! Net thermal radiation
+             - hflxvc                 &   ! Sensible heat flux
+             - wflxvc * (fracliq * alvl + (1.-fracliq) * alvi) & ! Evaporative phase cooling
+             - transp * alvl          &   ! Transpirative phase cooling
+             + heat_intercept_rate    !   !
+             !+ intr_energy_dewevap    !
 
         wflxvc_tot=wflxvc_tot+wflxvc
         hflxvc_tot=hflxvc_tot+hflxvc
