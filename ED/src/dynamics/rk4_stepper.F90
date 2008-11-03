@@ -3,10 +3,11 @@ module rk4_stepper_ar
 contains 
 
   subroutine rkqs_ar(integration_buff, x, htry, hmin, epsil, hdid, hnext, csite, &
-       ipa,isi,ipy,rhos, vels, atm_tmp, atm_shv, atm_co2, geoht, exner, pcpg, qpcpg, &
+       ipa,isi,ipy,ifm,rhos, vels, atm_tmp, atm_shv, atm_co2, geoht, exner, pcpg, qpcpg, &
        prss, lsl)
 
-    use ed_state_vars,only:sitetype,patchtype,rk4patchtype,integration_vars_ar
+    use ed_state_vars,only:sitetype,patchtype,rk4patchtype,integration_vars_ar &
+                          ,edgrid_g
 !    use lsm_integ_utils, only: print_patch, copy_rk4_patch, get_errmax, &
 !         print_errmax
 
@@ -14,7 +15,7 @@ contains
 
     integer, intent(in) :: lsl
     type(sitetype),target :: csite
-    integer :: ipa,isi,ipy
+    integer :: ipa,isi,ipy,ifm
     type(integration_vars_ar), target :: integration_buff
 
     real, parameter :: safety = 0.9
@@ -109,6 +110,9 @@ contains
           if(xnew == x)then
 
              print*,'stepsize underflow in rkqs'
+             print*,'Longitude:',edgrid_g(ifm)%lon(ipy)
+             print*,'Latitude:',edgrid_g(ifm)%lat(ipy)
+             print*,'Polygon:',ipy
              print*,'patch age: ',csite%age(ipa)
              print*,'patch dist_type: ',csite%dist_type(ipa)
              print*,'iflag1: ',iflag1

@@ -1,4 +1,4 @@
-subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,  &
+subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,ifm,  &
      integration_buff, rhos, vels, atm_tmp, atm_shv, atm_co2, geoht,  &
      exner, pcpg, qpcpg, prss, lsl)
 
@@ -16,7 +16,7 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,  &
   type(integration_vars_ar), target :: integration_buff
   type(sitetype),target :: csite
   type(patchtype),pointer :: cpatch
-  integer :: ipa,ico,isi,ipy
+  integer :: ipa,ico,isi,ipy,ifm
 
   integer, parameter :: maxstp=100000000
   real, parameter :: tiny=1.0e-20
@@ -87,7 +87,7 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,  &
 
      ! Take the step
      call rkqs_ar(integration_buff, x, h, hmin, epsi, hdid, hnext,  &
-          csite,ipa,isi,ipy, rhos, vels, atm_tmp, atm_shv, atm_co2,  &
+          csite,ipa,isi,ipy,ifm, rhos, vels, atm_tmp, atm_shv, atm_co2,  &
           geoht, exner, pcpg, qpcpg, prss, lsl)
 
      ! Re-calculate tempks, fracliqs, surface water flags.
@@ -456,6 +456,9 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
   yscal%virtual_water = 0.1
   yscal%virtual_heat = cliq * 110.0 * yscal%virtual_water
   
+!  write (unit=31,fmt='(87a)') ('-',k=1,87)
+!  write (unit=31,fmt='(2(a5,1x),5(a14,1x))') &
+!        '  ICO','  PFT','LAI','ENERGY','D_ENERGY','HTRY','SCALE'
   do ico = 1,cpatch%ncohorts
      if (cpatch%lai(ico) > lai_min) then
         yscal%veg_water(ico) = 0.22
@@ -465,7 +468,12 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
         yscal%veg_water(ico) = 1.e30
         yscal%veg_energy(ico) = 1.e30
      end if
+!     write (unit=31,fmt='(2(i5,1x),5(es14.7,1x))') &
+!       ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_energy(ico),dy%veg_energy(ico),htry &
+!          ,yscal%veg_energy(ico)
   end do
+!  write (unit=31,fmt='(87a)') ('-',k=1,87)
+!  write (unit=31,fmt='(a)') ' '
 
   return
 end subroutine get_yscal_ar

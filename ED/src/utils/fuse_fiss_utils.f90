@@ -576,6 +576,8 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
              cpatch%veg_water(ico1) * cpatch%nplant(ico1)) * newni
 
         !---- Will this conserve energy? Is the total LAI conserved? I hope so...
+        ! I think this is fine because temperature is no longer prognostic, so temperature will be 
+        ! adjusted at the next fast step...
         cpatch%veg_energy(ico2) = (cpatch%veg_energy(ico2) * cpatch%nplant(ico2) +   &
              cpatch%veg_energy(ico1) * cpatch%nplant(ico1)) * newni
         

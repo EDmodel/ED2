@@ -4,7 +4,7 @@ contains
 
 ! Main driver of short-time scale dynamics of the land surface model.
 !-------------------------------------------------------
-  subroutine rk4_timestep_ar(cgrid,integration_buff)
+  subroutine rk4_timestep_ar(cgrid,ifm,integration_buff)
 
     use ed_state_vars,only:integration_vars_ar,edtype,polygontype,sitetype,patchtype
     use grid_coms, only: nzg
@@ -20,7 +20,7 @@ contains
     type(polygontype),pointer :: cpoly
     type(sitetype),pointer    :: csite
     type(patchtype),pointer   :: cpatch
-    integer :: ipy,isi,ipa,ico
+    integer :: ifm,ipy,isi,ipa,ico
     integer :: k,idbh
         
     integer, dimension(nzg) :: ed_ktrans
@@ -85,6 +85,7 @@ contains
                   ipa,                     &
                   isi,                     &
                   ipy,                     &
+                  ifm,                     &
                   integration_buff,        &
                   cpoly%met(isi)%rhos,     &
                   cpoly%met(isi)%vels,     &
@@ -117,7 +118,7 @@ contains
 
 !==============================================================
 
-  subroutine integrate_patch_ar(csite,ipa,isi,ipy, integration_buff, rhos,  &
+  subroutine integrate_patch_ar(csite,ipa,isi,ipy,ifm, integration_buff, rhos,  &
        vels, atm_tmp, rv, atm_co2, zoff, exner, pcpg, qpcpg, dpcpg, prss,  &
        atm_shv, geoht, lsl)
 
@@ -131,7 +132,7 @@ contains
 
     type(sitetype),target   :: csite
     type(patchtype),pointer :: cpatch
-    integer :: ipy,isi,ipa,ico
+    integer :: ifm,ipy,isi,ipa,ico
     integer, intent(in) :: lsl
     type(integration_vars_ar), target :: integration_buff
 
@@ -271,7 +272,7 @@ contains
 
 
     ! Go into the integrator
-    call odeint_ar(tbeg, tend, eps, hbeg, hmin, csite,ipa,isi,ipy,  &
+    call odeint_ar(tbeg, tend, eps, hbeg, hmin, csite,ipa,isi,ipy,ifm,  &
          integration_buff, rhos, vels, atm_tmp, atm_shv, atm_co2, geoht,  &
          exner, pcpg, qpcpg, prss, lsl)
 

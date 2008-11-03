@@ -1375,7 +1375,7 @@ edcp_driver.o : $(ED_MIXED)/edcp_driver.f90 grid_coms.o mem_edcp.o ed_state_vars
 
 edcp_init.o : $(ED_MIXED)/edcp_init.f90 node_mod.o mem_grid.o rpara.o soil_coms.o          \
 	mem_leaf.o soil_coms.o ed_state_vars.o ed_node_coms.o ed_para_coms.o max_dims.o    \
-	grid_coms.o ed_work_vars.o
+	grid_coms.o ed_work_vars.o canopy_air_coms.o consts_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -1398,7 +1398,7 @@ edcp_met.o : $(ED_MIXED)/edcp_met.f90 node_mod.o rconstants.o met_driver_coms.o 
 
 edcp_met_init.o : $(ED_MIXED)/edcp_met_init.f90 misc_coms.o ed_state_vars.o soil_coms.o    \
 	rconstants.o grid_coms.o fuse_fiss_utils.o ed_node_coms.o pft_coms.o mem_radiate.o \
-	mem_leaf.o mem_grid.o therm_lib.o canopy_air_coms.o
+	mem_leaf.o mem_grid.o therm_lib.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

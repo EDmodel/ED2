@@ -9,7 +9,6 @@ subroutine ed_init_atm_ar
   use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
   use pft_coms,only : sla
-  use canopy_air_coms, only: hcapveg_ref, heathite_min
   
   
   implicit none
@@ -25,7 +24,6 @@ subroutine ed_init_atm_ar
   integer :: nlsw1
   integer :: ncohorts
   real    :: poly_lai,p_lai
-  real    :: hcapveg
   integer, parameter :: harvard_override = 0
   include 'mpif.h'
   integer :: ping,ierr
@@ -95,11 +93,6 @@ subroutine ed_init_atm_ar
                  cpatch%hcapveg(ico) = 4.5e4
                  cpatch%veg_temp(ico)  = cpoly%met(isi)%atm_tmp
                  cpatch%veg_water(ico) = 0.0
-                
-                 ! I think this should be standardized, but I'm not sure what cpatch%hcapveg is doing...
-                 hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
-                 ! Not sure about this one... 
-                 cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
               enddo
            
            enddo
@@ -709,3 +702,52 @@ subroutine update_polygon_derived_props_ar(cgrid)
 
   return
 end subroutine update_polygon_derived_props_ar
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine simply assigns the initial value for internal energy. The only reason !
+! to do it separatedly is that we first load atmospheric-based variables, then we assign   !
+! LAI and height. This should be called just at the initialization, during the run energy  !
+! is what defines the temperature, not the other way.                                      !
+!------------------------------------------------------------------------------------------!
+subroutine initialize_vegetation_energy(cgrid)
+   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype
+   use canopy_air_coms, only: hcapveg_ref, heathite_min
+   use consts_coms, only: t3ple
+   implicit none 
+   !----- Argument ------------------------------------------------------------------------!
+   type(edtype), target :: cgrid
+   !----- Local variables -----------------------------------------------------------------!
+   integer :: ipy,isi,ipa,ico
+   type(polygontype), pointer :: cpoly
+   type(sitetype)   , pointer :: csite
+   type(patchtype)  , pointer :: cpatch
+   real                       :: hcapveg
+   !---------------------------------------------------------------------------------------!
+
+   do ipy=1,cgrid%npolygons
+      cpoly => cgrid%polygon(ipy)
+      do isi=1,cpoly%nsites
+         csite => cpoly%site(isi)
+         do ipa=1,csite%npatches
+            cpatch => csite%patch(ipa)
+            do ico=1,cpatch%ncohorts
+               hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)  &
+                       / csite%lai(ipa)
+               cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
+            end do
+         end do
+      end do
+   end do
+
+   return
+end subroutine initialize_vegetation_energy
+!==========================================================================================!
+!==========================================================================================!
