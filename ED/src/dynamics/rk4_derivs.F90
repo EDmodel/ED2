@@ -573,6 +573,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   use pft_coms, only: q, qsw, water_conductance,leaf_width,rho
   use ed_misc_coms,only:diag_veg_heating
   use therm_lib, only : rslif,qwtk
+  use misc_coms, only: dtlsm
 
   implicit none
 
@@ -612,6 +613,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   real :: heat_intercept_rate,dew_evap_latent_heat_loss
   real :: w_demand,w_supply,wcapcani,hcapcani,broot
   real :: sat_shv,veg_temp,fracliq
+  real :: minfluxrate
 
   ! Fluxes from atmosphere to canopy
   rho_ustar = rhos * initp%ustar
@@ -675,12 +677,18 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   !!! TESTING -> cap on dew flux
   !  dewgndflx = max(0.,-wflx)
   dewgndflx = min(dewmax, max(0.0, -wflx))
+  
+  ! Final evap check, make sure that the projected integrated 
+  ! evaporative mass flux does not exceed 75% of the available
+  ! liquid water in the top soil layer. I don't like this either
+  
+  minfluxrate = 0.75 * 1000. * initp%available_liquid_water(nzg)/dtlsm
 
   ! IF NO SURFACE WATER AND NOT DRY - EVAPORATE FROM SOIL PORES
   if(initp%nlev_sfcwater == 0 .and. initp%soil_water(nzg)  &
        > soil(csite%ntext_soil(nzg,ipa))%soilcp) then
-     wflxgc = max(0.0, (initp%ground_shv - initp%can_shv) * rdi)
-  
+     wflxgc = min(max(0.0, (initp%ground_shv - initp%can_shv) * rdi) &
+                 ,minfluxrate)
   ! IF NO SURFACE WATER AND REALLY DRY - DONT EVAPORATE AT ALL
   else if ( initp%nlev_sfcwater == 0 .and. initp%soil_water(nzg)  &
        <= soil(csite%ntext_soil(nzg,ipa))%soilcp) then

@@ -18,7 +18,7 @@ module therm_lib
                                                     !   methods. The smaller the value, the
                                                     !   more accurate the result, but it
                                                     !   will slow down the run.
-   integer, parameter ::   maxfpo = 60              ! Maximum # of iterations before crash-
+   integer, parameter ::   maxfpo = 80              ! Maximum # of iterations before crash-
                                                     !   ing for false position method.
 
    integer, parameter ::   maxit  = 150             ! Maximum # of iterations before crash-
@@ -2583,8 +2583,13 @@ module therm_lib
          !------------------------------------------------------------------------------!
          converged = abs(tlcla-tlclz) < toler*tlclz
          if (converged) then
-            tlcl = tlclz !0.5*(tlcla+tlclz)
+            tlcl = 0.5*(tlcla+tlclz)
             funz = funnow
+            exit newloop
+         elseif (funnow == 0.) then
+            tlcl = tlclz
+            funz = funnow
+            converged = .true.
             exit newloop
          end if
       end do newloop
@@ -2695,6 +2700,29 @@ module therm_lib
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       else
+         write (unit=*,fmt='(a)') '-------------------------------------------------------'
+         write (unit=*,fmt='(a)') ' LCL Temperature didn''t converge!!!'
+         write (unit=*,fmt='(a,1x,i5,1x,a)') ' I gave up, after',maxfpo,'iterations...'
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a)') ' Input values.'
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'theta_il        [     K] =',thil
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'Pressure        [   hPa] =',100.*pres
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'Temperature     [    °C] =',temp-t00
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'rtot            [  g/kg] =',1000.*rtot
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'rvap            [  g/kg] =',1000.*rvap
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a)') ' Last iteration outcome.'
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'tlcla           [    °C] =',tlcla-t00
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'tlclz           [    °C] =',tlclz-t00
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'fun             [     K] =',funnow
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'funa            [     K] =',funa
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'funz            [     K] =',funz
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'deriv           [  ----] =',deriv
+         write (unit=*,fmt='(a,1x,es12.4)') 'toler           [  ----] =',toler
+         write (unit=*,fmt='(a,1x,es12.4)') 'error           [  ----] ='                   &
+                                                            ,abs(tlclz-tlcla)/tlclz
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'tlcl            [    °C] =',tlcl
          call abort_run('TLCL didn''t converge, gave up!','lcl_il','therm_lib.f90')
       end if
       return
