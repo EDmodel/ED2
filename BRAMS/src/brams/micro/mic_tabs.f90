@@ -566,28 +566,69 @@ real function xj(dx,cvx,pvx,cvy,pvy,vny,dnx,dny,xnu,ynu,gyn1,gyn2,gynp,gynp1,gyn
    !----- Arguments: ----------------------------------------------------------------------!
    real, intent(in) :: dx,cvx,pvx,cvy,pvy,vny,dnx,dny,xnu,ynu,gyn1,gyn2,gynp,gynp1,gynp2
    !----- Local Variables: ----------------------------------------------------------------!
-   real :: dnxi,rdx,vx,dxy,ynup
-   real :: gammln,gammp,gammq
+   real(kind=8) :: dx8,cvx8,pvx8,cvy8,pvy8,vny8,dnx8,dny8,xnu8,ynu8,gyn18,gyn28,gynp8
+   real(kind=8) :: gynp18,gynp28
+   real(kind=8) :: dnxi8,rdx8,vx8,xj8
+   real         :: dxy,ynup
+   real(kind=8) :: glxnu8,glynu8,gpynu8,gqynu8,gpynua18,gqynua18,gpynua28,gqynua28
+   real(kind=8) :: gpynup8,gqynup8,gpynupa18,gqynupa18,gpynupa28,gqynupa28
+   !----- External functions --------------------------------------------------------------!
+   real, external :: gammln,gammp,gammq
    !---------------------------------------------------------------------------------------!
 
+   dx8     = dble(dx   )
+   pvx8    = dble(pvx  )
+   cvy8    = dble(cvy  )
+   pvy8    = dble(pvy  )
+   vny8    = dble(vny  )
+   dnx8    = dble(dnx  )
+   dny8    = dble(dny  )
+   xnu8    = dble(xnu  ) 
+   ynu8    = dble(ynu  ) 
+   gyn18   = dble(gyn1 ) 
+   gyn28   = dble(gyn2 ) 
+   gynp8   = dble(gynp )
+   gynp18  = dble(gynp1)
+   gynp28  = dble(gynp2)
+           
+   dnxi8 = 1. / dnx8
+   rdx8  = dx8 * dnxi8
+   vx8   = cvx8 * dx8 ** pvx8
+   dxy   = (sngl(vx8) / cvy) ** (1. / pvy) / dny
+   ynup  = ynu + pvy 
+   
 
-   dnxi = 1. / dnx
-   rdx  = dx * dnxi
-   vx   = cvx * dx ** pvx
-   dxy  = (vx / cvy) ** (1. / pvy) / dny
-   ynup = ynu + pvy
-
-   if (rdx < 38.) then
-      xj = exp(-rdx-gammln(xnu)-gammln(ynu)) * rdx**(xnu-1.) * dnxi                        &
-         * (vx * ( dx*dx*(gammp(ynu,dxy)-gammq(ynu,dxy))                                   &
-                 + 2.*dx*dny*gyn1*(gammp(ynu+1.,dxy)-gammq(ynu+1.,dxy))                    &
-                 + dny*dny*gyn2*(gammp(ynu+2.,dxy)-gammq(ynu+2.,dxy)) )                    &
-               - vny * (dx*dx*gynp*(gammp(ynup,dxy)-gammq(ynup,dxy))                       &
-                       + 2.*dx*dny*gynp1*(gammp(ynup+1.,dxy)-gammq(ynup+1.,dxy))           &
-                       + dny*dny*gynp2*(gammp(ynup+2.,dxy)-gammq(ynup+2.,dxy))  ) )
+   if (rdx8 < 38.) then
+      glxnu8    = dble(gammln(xnu))
+      glynu8    = dble(gammln(ynu))
+      gpynu8    = dble(gammp(ynu,dxy))
+      gqynu8    = dble(gammq(ynu,dxy))
+      gpynua18  = dble(gammp(ynu+1,dxy))
+      gqynua18  = dble(gammq(ynu+1,dxy))
+      gpynua28  = dble(gammp(ynu+2,dxy))
+      gqynua28  = dble(gammq(ynu+2,dxy))
+      gpynup8   = dble(gammp(ynu,dxy))
+      gqynup8   = dble(gammq(ynu,dxy))
+      gpynupa18 = dble(gammp(ynup+1,dxy))
+      gqynupa18 = dble(gammq(ynup+1,dxy))
+      gpynupa28 = dble(gammp(ynup+2,dxy))
+      gqynupa28 = dble(gammq(ynup+2,dxy))
+     
+      
+      xj8 = exp(-rdx8-glxnu8-glynu8) * rdx8**(xnu8-1.) * dnxi8                             &
+          * (vx8 * ( dx8*dx8*(gpynu8-gqynu8))                                              &
+                   + 2.*dx8*dny8*gyn18*(gpynua18-gqynua18)                                 &
+                   + dny8*dny8*gyn28*(gpynua28-gqynua28)                                   &
+                   - vny8 * (dx8*dx8*gynp8*(gpynup8-gqynup8)                               &
+                            + 2.*dx8*dny8*gynp18*(gpynupa18-gqynupa18)                     &
+                            + dny8*dny8*gynp28*(gpynupa28-gqynupa28)))
+      !----- Making sure underflow won't happen. If overflow happens, let it complain... --!
+      if (abs(xj8) < 1.d-30)  xj8 = sign(1.d-30,xj8)
    else
-      xj = 0.
+      xj8 = 0.
    end if
+   
+   xj = sngl(xj8)
    return
 end function xj
 !==========================================================================================!
