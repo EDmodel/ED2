@@ -1,3 +1,8 @@
+!========================================================================
+! NOTICE:  These subroutines have not been thoroughly tested. Please
+!          report problems to David Medvigy, medvigy@post.harvard.edu.
+!========================================================================
+
 subroutine apply_forestry_ar(cpoly, isi, year, rhos)
 
   use ed_state_vars,only : polygontype,sitetype,allocate_sitetype,deallocate_sitetype      &
@@ -250,6 +255,8 @@ subroutine inventory_mat_forests_ar(cpoly,isi, area_mature_primary,   &
              cpatch%bstorage(ico)) * cpatch%nplant(ico)
      enddo
 
+     if(csite%plant_ag_biomass(ipa) < 0.01)cycle
+
      ! Increment appropriate counter
      if(csite%plantation(ipa) == 1 .and. csite%age(ipa) > plantation_rotation)then
         
@@ -378,7 +385,7 @@ subroutine harv_mat_patches_ar(cpoly,isi,np, lambda_mature_primary,   &
         dA = 0.0  ! Immature patches not harvested here.
      endif
      
-     if(dA > 0.0)then
+     if(dA > 0.0 .and. csite%plant_ag_biomass(ipa) >= 0.01)then
         csite%area(ipa) = csite%area(ipa) - dA
         call increment_patch_vars_ar(csite,np,ipa, dA)
         call accum_dist_litt_ar(csite,np,ipa, 1, dA, &
@@ -425,6 +432,8 @@ subroutine harv_immat_patches_ar(cpoly,isi, np, harvest_deficit,   &
 
   do ipa=1,csite%npatches-1
 
+     if(csite%plant_ag_biomass(ipa) < 0.01)cycle
+
      ! First harvest the immature secondary
      if(harvest_deficit > 0.0 .and.        &  ! There is still a deficit
           csite%dist_type(ipa) == 2 .and.  &  ! Secondary forest
@@ -466,6 +475,8 @@ subroutine harv_immat_patches_ar(cpoly,isi, np, harvest_deficit,   &
   ! harvesting from immature primary.
   do ipa=1,csite%npatches
   
+     if(csite%plant_ag_biomass(ipa) < 0.01)cycle
+
      ! If necessary, harvest the immature primary
      if(harvest_deficit > 0.0 .and.  &  ! There is still a deficit
           csite%dist_type(ipa) == 3 .and.    &  ! and this is primary forest
