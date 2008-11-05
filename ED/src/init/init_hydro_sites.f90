@@ -85,6 +85,8 @@ subroutine read_site_file_array(cgrid)
 
       else
 
+print*,trim(site_name)
+
          !! Read data from site file
          open(unit=12,file=trim(site_name),form='formatted',status='old')
 

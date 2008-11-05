@@ -998,10 +998,6 @@ subroutine read_ol_file_ar(iformat, iv, year_use, mname, year, offset, cgrid)
 
   ! Allocate the buffer space
   
-print*,met_interp
-
-print*,"X",iformat,iv
-
   select case (met_interp(iformat,iv))
   !  Case 3, reading in 1 value representing the whole grid,
   !  but over all available times
@@ -1492,7 +1488,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
         cpoly%met(isi)%nir_diffuse = cgrid%met(ipy)%nir_diffuse
         cpoly%met(isi)%nir_beam    = cgrid%met(ipy)%nir_beam
         cpoly%met(isi)%vels        = cgrid%met(ipy)%vels
-      
+
 !        if ( cpoly%met(isi)%rlong < rlong_min) then
 !           print*,"Problems with RLONG A"  
 !           print*,cpoly%met(isi)%rlong,cgrid%met(ipy)%rlong,rlong_min
@@ -1560,6 +1556,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
         
      enddo
   endif
+
   return
 end subroutine calc_met_lapse_ar
 !==========================================================================================!

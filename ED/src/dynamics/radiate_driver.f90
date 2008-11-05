@@ -37,8 +37,10 @@ subroutine radiate_driver_ar(cgrid)
            csite => cpoly%site(isi)
 
            
-           if(cgrid%met(isi)%rlong < rlong_min ) then
-              print*,"STRANGE DATA",cgrid%metinput(ipy)%dlwrf(isi),ipy,isi,int(real(isi)/4)
+           if(cpoly%met(isi)%rlong < rlong_min ) then
+              print*,"STRANGE DATA",cpoly%met(isi)%rlong,ipy,isi,int(real(isi)/4),rlong_min
+              print*,cpoly%met(isi)
+              stop
            endif
 
 

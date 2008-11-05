@@ -41,7 +41,8 @@ subroutine prescribed_leaf_state(lat, imonth, iyear, doy,   &
         my_year = iyear - iphenys1 + 1
      endif
 
-     print*,"phenA",phen_pars%flush_a(my_year),max(phen_pars%flush_b(my_year),-100.),doy
+!     print*,"phenA",phen_pars%flush_a(my_year),max(phen_pars%flush_b(my_year),-100.),doy
+
      ! calculate the factors
      ! precalc denominator and limit rate in order to increase numerical stability (MCD 10/23/08)
      elonDen = real((phen_pars%flush_a(my_year) * doy),kind=8)**max(phen_pars%flush_b(my_year),-100.)
@@ -52,7 +53,7 @@ subroutine prescribed_leaf_state(lat, imonth, iyear, doy,   &
         elongf = sngl(elonDen)
      end if
      delay = elongf
-     print*,elongf
+!     print*,elongf
      
   else
      ! leaves turning color
@@ -67,18 +68,18 @@ subroutine prescribed_leaf_state(lat, imonth, iyear, doy,   &
         my_year = iyear - iphenyf1 + 1
      endif
 
-print*,"phenB"          
+!print*,"phenB"          
      ! calculate the factors
      elongf = 1.0 / (1.0 +   &
           (phen_pars%color_a(my_year) * doy)**phen_pars%color_b(my_year))
-print*,"elongf"
+!print*,"elongf"
      delay = 1.0 / (1.0 +   &
           (phen_pars%color_a(my_year) *   &
           doy * 1.095)**phen_pars%color_b(my_year))
-     print*,phen_pars%color_a(my_year),phen_pars%color_b(my_year),elongf,doy
+!     print*,phen_pars%color_a(my_year),phen_pars%color_b(my_year),elongf,doy
   endif
 
-print*,"phenC" 
+!print*,"phenC" 
  
   ! load the values for each PFT
   do pft = 1, n_pft
