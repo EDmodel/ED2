@@ -1203,7 +1203,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
      nlayers = ksnnew
      snowmin = 3.0
      newlayers = 1
-     do k = 2,nzs
+     do k = 1,nzs
         if(initp%sfcwater_mass(k) >= min_sfcwater_mass)then
            if(snowmin * thicknet(k) <= totsnow .and.  &
                 initp%sfcwater_energy(k) < alli)then
@@ -1258,6 +1258,11 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
         initp%sfcwater_depth(k) = vctr18(k)
      enddo
         
+     do k = newlayers + 1, nzs
+        initp%sfcwater_mass(k) = 0.0
+        initp%sfcwater_energy(k) = 0.0
+        initp%sfcwater_depth(k) = 0.0
+     enddo
 
   endif
   
