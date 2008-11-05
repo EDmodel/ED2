@@ -577,6 +577,7 @@ real function xj(dx,cvx,pvx,cvy,pvy,vny,dnx,dny,xnu,ynu,gyn1,gyn2,gynp,gynp1,gyn
    !---------------------------------------------------------------------------------------!
 
    dx8     = dble(dx   )
+   cvx8    = dble(cvx  )
    pvx8    = dble(pvx  )
    cvy8    = dble(cvy  )
    pvy8    = dble(pvy  )

@@ -687,8 +687,9 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   ! IF NO SURFACE WATER AND NOT DRY - EVAPORATE FROM SOIL PORES
   if(initp%nlev_sfcwater == 0 .and. initp%soil_water(nzg)  &
        > soil(csite%ntext_soil(nzg,ipa))%soilcp) then
-     wflxgc = min(max(0.0, (initp%ground_shv - initp%can_shv) * rdi) &
-                 ,minfluxrate)
+     wflxgc = max(0.0, (initp%ground_shv - initp%can_shv) * rdi)
+     !wflxgc = min(max(0.0, (initp%ground_shv - initp%can_shv) * rdi) &
+     !            ,minfluxrate)
   ! IF NO SURFACE WATER AND REALLY DRY - DONT EVAPORATE AT ALL
   else if ( initp%nlev_sfcwater == 0 .and. initp%soil_water(nzg)  &
        <= soil(csite%ntext_soil(nzg,ipa))%soilcp) then
@@ -709,9 +710,9 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   ! APPROPRIATE, UNLESS SOMEONE THINKS IT SHOULD STAY.
   ! RGK 11-2-08
   !
-  !  if(initp%available_liquid_water(nzg) <= 0.01 .and. wflxgc > 0.0)then
-  !     wflxgc = 0.0
-  !  endif
+  if(initp%available_liquid_water(nzg) <= 0.01 .and. wflxgc > 0.0)then
+     wflxgc = 0.0
+  end if
   !-----------------------------------------------------------------
   
   ! Initialize variables used to store sums over cohorts.
@@ -761,6 +762,39 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         else
            sigmaw = 0.0
         endif
+        
+        if (veg_temp < 183.15) then
+           write (unit=*,fmt='(a)') '================================================================'
+           write (unit=*,fmt='(a)') ' Oh no, am I guessing an ice age mixed with global warming?
+           write (unit=*,fmt='(a)') '================================================================'
+           write(unit=*,fmt='(a,1x,i5)')     ' IPY       :',ipy
+           write(unit=*,fmt='(a,1x,i5)')     ' ISI       :',isi
+           write(unit=*,fmt='(a,1x,i5)')     ' IPA       :',ipa
+           write(unit=*,fmt='(a,1x,i5)')     ' ICO       :',ico
+           write(unit=*,fmt='(a,1x,f14.5)')  ' Longitude :',edgrid_g(1)%lon(ipy)
+           write(unit=*,fmt='(a,1x,f14.5)')  ' Latitude  :',edgrid_g(1)%lat(ipy)
+           write(unit=*,fmt='(a)')           ' '
+           write(unit=*,fmt='(a,1x,es14.7)') ' PRSS      :',prss
+           write(unit=*,fmt='(a,1x,es14.7)') ' ATM_TMP   :',atm_tmp
+           write(unit=*,fmt='(a,1x,es14.7)') ' RHOS      :',rhos
+           write(unit=*,fmt='(a,1x,es14.7)') ' PCPG      :',pcpg
+           write(unit=*,fmt='(a)')           ' '
+           write(unit=*,fmt='(a,1x,es14.7)') ' rshort_v  :',cpatch%rshort_v(ico)
+           write(unit=*,fmt='(a,1x,es14.7)') ' rlong_v   :',cpatch%rlong_v(ico)
+           write(unit=*,fmt='(a)')           ' '
+           write(unit=*,fmt='(a,1x,es14.7)') ' can_temp  :',initp%can_temp
+           write(unit=*,fmt='(a,1x,es14.7)') ' can_shv   :',initp%can_shv
+           write(unit=*,fmt='(a,1x,es14.7)') ' gnd_shv   :',initp%ground_shv
+           write(unit=*,fmt='(a,1x,es14.7)') ' rasveg    :',initp%rasveg
+           write(unit=*,fmt='(a,1x,es14.7)') ' hcapveg   :',hcapveg
+           write(unit=*,fmt='(a)')           ' '
+           write(unit=*,fmt='(a,1x,es14.7)') ' Lai_coh   :',cpatch%lai(ico)
+           write(unit=*,fmt='(a,1x,es14.7)') ' veg_temp  :',veg_temp
+           write(unit=*,fmt='(a,1x,es14.7)') ' veg_energy:',initp%veg_energy(ico)
+           write(unit=*,fmt='(a,1x,es14.7)') ' veg_water :',initp%veg_water(ico)
+           write(unit=*,fmt='(a,1x,es14.7)') ' rb        :',cpatch%rb(ico)
+           write(unit=*,fmt='(a)')           ' '
+        end if
         sat_shv=rslif(prss,veg_temp)
         c3 = cpatch%lai(ico) * rhos * (sat_shv - initp%can_shv)
 
