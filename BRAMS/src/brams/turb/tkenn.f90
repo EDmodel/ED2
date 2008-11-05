@@ -391,7 +391,9 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
             ! conditions                                                                   !
             !------------------------------------------------------------------------------!
             elseif (vctr1(k) >= 0.1* pblhgt(i,j)) then ! if z/h > 0.1
-               tl(k,i,j)= 0.15*pblhgt(i,j)*(1-exp(-5.0*vctr1(k)/pblhgt(i,j)))/sigw(k,i,j)
+               ! If PBL is too low, this number can cause underflow in exp. ---------------!
+               aux       = max(40.,5.0*vctr1(k)/pblhgt(i,j))
+               tl(k,i,j) = 0.15*pblhgt(i,j)*(1-exp(-aux))/sigw(k,i,j)
             elseif ((z0w - vctr1(k)) <= lmo(i,j)) then ! -(z-z0)/Lmo > 1 and z/h < 0.1
                tl(k,i,j)= 0.59*vctr1(k)/sigw(k,i,j)
             else                                       ! -(z-z0)/Lmo < 1 and z/h < 0.1

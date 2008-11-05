@@ -68,6 +68,8 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
        c2n_storage
   use decomp_coms, only: f_labile
   use phenology_coms, only: retained_carbon_fraction, theta_crit, iphen_scheme
+  use consts_coms, only: t3ple
+  use canopy_air_coms, only: hcapveg_ref,heathite_min
 
   implicit none
   
@@ -81,6 +83,7 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
   integer :: isoil_lev
   real :: daylight
   real, external :: daylength
+  real :: hcapveg
 
   integer :: drop_cold
   integer :: leaf_out_cold
@@ -184,6 +187,13 @@ print*,'flushing ',cpoly%green_leaf_factor(cpatch%pft(ico),isi),cpoly%leaf_aging
            cpatch%lai(ico) = cpatch%nplant(ico) * cpatch%bleaf(ico) * sla(cpatch%pft(ico))
            cpatch%veg_temp(ico) = csite%can_temp(ipa)
            cpatch%veg_water(ico) = 0.0
+
+           !----- Because we assigned no water, the internal energy is simply hcapveg*(T-T3)
+           hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)/csite%lai(ipa)
+           cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
+           
+
+           
            
         elseif(phenology(cpatch%pft(ico)) == 1)then 
 
@@ -234,6 +244,10 @@ print*,'flushing ',cpoly%green_leaf_factor(cpatch%pft(ico),isi),cpoly%leaf_aging
               cpatch%lai(ico) = cpatch%nplant(ico) * cpatch%bleaf(ico) * sla(cpatch%pft(ico))
               cpatch%veg_temp(ico) = csite%can_temp(ipa)
               cpatch%veg_water(ico) = 0.0
+
+              !----- Because we assigned no water, the internal energy is simply hcapveg*(T-T3)
+              hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)/csite%lai(ipa)
+              cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
                  
            endif  ! critical moisture
            

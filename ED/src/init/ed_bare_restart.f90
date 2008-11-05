@@ -61,8 +61,9 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
                            ,allocate_sitetype,allocate_patchtype
    use max_dims, only: n_pft
    use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, include_these_pft,include_pft_ag
+   use canopy_air_coms, only: hcapveg_ref, heathite_min
    ! This subroutine assigns a near-bare ground state for the given patch
-
+   use consts_coms, only : t3ple
    implicit none
    logical, intent(in)      :: zero_time   ! This is a call done at initialisation.
    type(sitetype), target   :: csite
@@ -75,6 +76,9 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
    type(patchtype), pointer :: cpatch
    real, external :: h2dbh,dbh2bd,dbh2bl,ed_biomass
    integer :: ipa,ico,mypfts,ipft
+   real :: hcapveg ! Not sure if we should merge it with cpatch%hcapveg...
+   real :: laisum
+   
 
    do ipa=ipa_a,ipa_z
       cpatch => csite%patch(ipa)
@@ -86,7 +90,7 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
       case (2,3) ! Secondary or primary forest
          mypfts= sum(include_pft)
       end select
-
+      laisum = 0.
       call allocate_patchtype(cpatch,mypfts)
       do ico = 1,mypfts
          ! Include_these_pft is sorted, so just the first elements will be used 
@@ -122,12 +126,20 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
          ! Initialize cohort-level variables
          call init_ed_cohort_vars_array(cpatch,ico,lsl)
          
-         ! 
+         laisum = laisum + cpatch%lai(ico)
+      end do
+
+
          ! If this is not the initial time, set heat capacity for stability.
+      do ico = 1,mypfts
          if (.not. zero_time) then
             cpatch%hcapveg(ico) = 4.5e4
             cpatch%veg_temp(ico)  = atm_tmp
             cpatch%veg_water(ico) = 0.0
+            
+            ! I think this should be standardized, but I'm not sure what cpatch%hcapveg is doing...
+            hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / laisum
+            cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * (cpatch%veg_temp(ico)-t3ple)
          end if
       end do
    end do

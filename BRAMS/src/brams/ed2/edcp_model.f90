@@ -192,7 +192,7 @@ subroutine ed_coup_model()
      end do
   elseif(integration_scheme == 1)then
      do ifm=1,ngrids
-        call rk4_timestep_ar(edgrid_g(ifm),integration_buff_g)
+        call rk4_timestep_ar(edgrid_g(ifm),ifm,integration_buff_g)
      end do
   endif
 

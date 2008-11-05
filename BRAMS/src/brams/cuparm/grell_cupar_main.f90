@@ -439,6 +439,7 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
       !  9. Downdraft would require more water than what is available to stay saturated;   !
       ! 10. Cloud work function associated with updraft is zero.                           !
       ! 11. Reference upward mass flux is zero.                                            !
+      ! 12. Downdrafts would happen below the updrafts origin.                             !
       !------------------------------------------------------------------------------------!
       ierr   = 0
 

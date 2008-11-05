@@ -169,8 +169,15 @@ subroutine read_ed1_history_file_array
         ! nclosest is the file with the closest information. 
         nclosest=minloc(file_dist(1:nflpss),dim=1)
         pss_name = trim(pss_list(nclosest))
-        css_name = trim(css_list(nclosest))
 
+        do nf=1,nflcss
+           file_dist(nf)=dist_gc(cgrid%lon(ipy),clon_list(nf),cgrid%lat(ipy),clat_list(nf))
+        end do
+        ! nclosest is the file with the closest information. 
+        nclosest=minloc(file_dist(1:nflcss),dim=1)
+        css_name = trim(css_list(nclosest))
+        
+        
         ! =================================
         ! Part II: Add the patches
         ! =================================
@@ -667,7 +674,6 @@ subroutine read_ed1_history_file_array
         enddo
         
      end do polyloop
-
 
      !! need to check what's going on in here
      call init_ed_poly_vars_array(cgrid)
@@ -1872,6 +1878,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
   call hdf_getslab_r(cpatch%lai(1),'LAI_CO ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%bstorage(1),'BSTORAGE ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%cbr_bar(1),'CBR_BAR ',dsetrank,iparallel)
+  call hdf_getslab_r(cpatch%veg_energy(1),'VEG_ENERGY ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%veg_temp(1),'VEG_TEMP ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%veg_water(1),'VEG_WATER ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%mean_gpp(1),'MEAN_GPP ',dsetrank,iparallel)

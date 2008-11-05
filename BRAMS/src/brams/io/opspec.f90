@@ -941,8 +941,8 @@ subroutine opspec3
      endif
   enddo
 
-  if(ibruvais < 1 .or. ibruvais > 2)then
-     print*,' fatal - ibruvais must be either 1 or 2. Yours is set to ',ibruvais,'...'
+  if(ibruvais < 1 .or. ibruvais > 3)then
+     print*,' fatal - ibruvais must be either 1, 2, or 3. Yours is set to ',ibruvais,'...'
      ifaterr=ifaterr+1
   end if
   ! check that diffusion flags are compatible if using ihorgrad=1
