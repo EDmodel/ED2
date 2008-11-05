@@ -4,7 +4,7 @@ contains
 
 ! Main driver of short-time scale dynamics of the land surface model.
 !-------------------------------------------------------
-  subroutine rk4_timestep_ar(cgrid,integration_buff)
+  subroutine rk4_timestep_ar(cgrid,ifm,integration_buff)
 
     use ed_state_vars,only:integration_vars_ar,edtype,polygontype,sitetype,patchtype
     use grid_coms, only: nzg
@@ -20,7 +20,7 @@ contains
     type(polygontype),pointer :: cpoly
     type(sitetype),pointer    :: csite
     type(patchtype),pointer   :: cpatch
-    integer :: ipy,isi,ipa,ico
+    integer :: ifm,ipy,isi,ipa,ico
     integer :: k,idbh
         
     integer, dimension(nzg) :: ed_ktrans
@@ -85,6 +85,7 @@ contains
                   ipa,                     &
                   isi,                     &
                   ipy,                     &
+                  ifm,                     &
                   integration_buff,        &
                   cpoly%met(isi)%rhos,     &
                   cpoly%met(isi)%vels,     &
@@ -117,7 +118,7 @@ contains
 
 !==============================================================
 
-  subroutine integrate_patch_ar(csite,ipa,isi,ipy, integration_buff, rhos,  &
+  subroutine integrate_patch_ar(csite,ipa,isi,ipy,ifm, integration_buff, rhos,  &
        vels, atm_tmp, rv, atm_co2, zoff, exner, pcpg, qpcpg, dpcpg, prss,  &
        atm_shv, geoht, lsl)
 
@@ -131,7 +132,7 @@ contains
 
     type(sitetype),target   :: csite
     type(patchtype),pointer :: cpatch
-    integer :: ipy,isi,ipa,ico
+    integer :: ifm,ipy,isi,ipa,ico
     integer, intent(in) :: lsl
     type(integration_vars_ar), target :: integration_buff
 
@@ -271,7 +272,7 @@ contains
 
 
     ! Go into the integrator
-    call odeint_ar(tbeg, tend, eps, hbeg, hmin, csite,ipa,isi,ipy,  &
+    call odeint_ar(tbeg, tend, eps, hbeg, hmin, csite,ipa,isi,ipy,ifm,  &
          integration_buff, rhos, vels, atm_tmp, atm_shv, atm_co2, geoht,  &
          exner, pcpg, qpcpg, prss, lsl)
 
@@ -297,11 +298,14 @@ contains
   subroutine initp2modelp_ar(hdid, initp, csite, ipa,isi,ipy, rhos, lsl)
 
     use ed_state_vars,only:sitetype,patchtype,rk4patchtype
-    use consts_coms, only: day_sec
+    use consts_coms, only: day_sec,t3ple
     use soil_coms, only: soil, slz
     use grid_coms, only: nzg, nzs
     use canopy_radiation_coms, only: lai_min, veg_temp_min
     use ed_misc_coms,only:diag_veg_heating
+
+    use canopy_air_coms, only: hcapveg_ref,heathite_min
+    use therm_lib, only: qwtk
     implicit none
 
     integer, intent(in) :: lsl
@@ -316,6 +320,7 @@ contains
     real :: hdid,qwt,wt,soilhcap,fac
     real :: available_water
     real, parameter :: tendays_sec=10.*day_sec
+    real :: hcapveg,fracliq
 
     csite%can_temp(ipa) = initp%can_temp
     csite%can_shv(ipa) = initp%can_shv
@@ -404,15 +409,18 @@ contains
     
 
     do ico = 1,cpatch%ncohorts
-       cpatch%veg_water(ico) = initp%veg_water(ico)
-       cpatch%veg_temp(ico)  = initp%veg_temp(ico)
-  
-
+       cpatch%veg_water(ico)  = initp%veg_water(ico)
+       cpatch%veg_energy(ico) = initp%veg_energy(ico)
+       hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
+    
        ! For plants with minimal foliage, fix the vegetation
        ! temperature to the canopy air space
-       if ( cpatch%lai(ico) < lai_min) then
+       if (cpatch%lai(ico) < lai_min) then
           cpatch%veg_temp(ico) = csite%can_temp(ipa)
-       endif
+       else 
+          call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),hcapveg,cpatch%veg_temp(ico),fracliq)
+       end if
+  
        
        if ( cpatch%veg_temp(ico) < veg_temp_min .or. cpatch%veg_temp(ico) > 360.0  ) then
           print*,"==========================================================="
@@ -424,6 +432,7 @@ contains
           print*,"Sensible Heating Rate",initp%co_sens_h(ico)
           print*,"Evapotranspirative Heating Rate",initp%co_evap_h(ico)
           print*,"Liquid deposition Heating Rate",initp%co_liqr_h(ico)
+          print*,"Internal Energy",initp%veg_energy(ico)
           print*,"LAI",cpatch%lai
           print*,"Height",cpatch%hite
           print*,"DBH",cpatch%dbh
@@ -571,6 +580,7 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
   use soil_coms, only: dslz
   use consts_coms, only: cp, cliq, cice, alli, t3ple
   use canopy_radiation_coms, only: lai_min
+  use canopy_air_coms, only: hcapveg_ref,heathite_min
 
   implicit none
   
@@ -604,7 +614,7 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
 
      if(csite%lai(ipa) > lai_min)then
         veg_storage = veg_storage +   &
-             3.0e3 * max(csite%patch(ipa)%hite(1),1.5) * cpatch%lai(ico) &
+             hcapveg_ref * max(csite%patch(ipa)%hite(1),heathite_min) * cpatch%lai(ico) &
              / csite%lai(ipa) * (cpatch%veg_temp(ico) - t3ple)
         if(cpatch%veg_temp(ico) > t3ple)then
            veg_storage = veg_storage + cpatch%veg_water(ico) *  &

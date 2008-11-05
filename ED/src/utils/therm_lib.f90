@@ -1,7 +1,11 @@
 !==========================================================================================!
-! therm_lib.f90                                                                            !
+!. File: therm_lib.f90                                                                            !
 !                                                                                          !
-!    This file contains various subroutines to handle common thermodynamic properties.     !
+!  Based on BRAMS-4.0.6   This file contains most functions and subroutines that deal with !
+! several thermodynamic conversions. These procedures were built to avoid assumptions like !
+! hydrostatic and linearisation. Most equations could not be solved analytically, and the  !
+! standard here was to use Newton's method as the default, always having bisection or,     !
+! more often, the modified Regula Falsi (Illinois) method in case Newton's fails.          !
 !==========================================================================================!
 !==========================================================================================!
 module therm_lib
@@ -29,15 +33,15 @@ module therm_lib
    !   This is the "level" variable, that used to be in micphys. Since it affects more the !
    ! thermodynamics choices than the microphysics, it was moved to here.                   !
    !---------------------------------------------------------------------------------------!
-   integer, parameter ::   level=3
+   integer, parameter ::   level = 3
 
    !---------------------------------------------------------------------------------------!
    !    The following three variables are just the logical tests on variable "level",      !
    ! saved here to speed up checks for "li" functions.                                     !
    !---------------------------------------------------------------------------------------!
-   logical, parameter ::   vapour_on=.true.
-   logical, parameter ::   cloud_on=.true.
-   logical, parameter ::   bulk_on=.true.
+   logical, parameter ::   vapour_on = .true.
+   logical, parameter ::   cloud_on  = .true.
+   logical, parameter ::   bulk_on   = .true.
    !---------------------------------------------------------------------------------------!
 
 
@@ -49,7 +53,7 @@ module therm_lib
    !     water for atmospheric applications. Q. J. Royal Meteor. Soc., vol. 31, pp. 1539-  !
    !     1565 (hereafter MK05).                                                            !
    !                                                                                       !
-   !  These equations give the triple point at 273.16.                                     !
+   !  These equations give the triple point at t3ple, with vapour pressure being es3ple.   !
    !---------------------------------------------------------------------------------------!
    !----- Coefficients based on equation (7): ---------------------------------------------!
    real, dimension(0:3), parameter :: iii_7 = (/ 9.550426,-5723.265, 3.53068,-0.00728332 /)
@@ -59,6 +63,40 @@ module therm_lib
    real, dimension(0:3), parameter :: l02_10= (/53.878   ,-1331.22 ,-9.44523, 0.014025   /)
    !----- Coefficients based on the hyperbolic tangent ------------------------------------!
    real, dimension(2)  , parameter :: ttt_10= (/0.0415,218.8/)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     These constants came from the paper in which the saturation vapour pressure is    !
+   ! based on:                                                                             !
+   !                                                                                       !
+   !  Flatau, P. J.; Walko, R. L.; Cotton, W. R., 1992: Polynomial fits to saturation      !
+   !     vapor pressure. J. Appl. Meteor., vol. 31, pp. 1507-1513. (hereafter FWC92).      !
+   !                                                                                       !
+   !  These equations give the triple point at 273.004K.                                   !
+   !  N.B.: The coefficients here don't seem to match those listed on FWC92, but that's    !
+   !        what was on the original code...                                               !
+   !---------------------------------------------------------------------------------------!
+   !----- Coefficients for esat (liquid) --------------------------------------------------!
+   real, dimension(0:8), parameter :: cll = (/ .6105851e+03,  .4440316e+02,  .1430341e+01  &
+                                             , .2641412e-01,  .2995057e-03,  .2031998e-05  &
+                                             , .6936113e-08,  .2564861e-11, -.3704404e-13 /)
+   !----- Coefficients for esat (ice) -----------------------------------------------------!
+   real, dimension(0:8), parameter :: cii = (/ .6114327e+03,  .5027041e+02,  .1875982e+01  &
+                                             , .4158303e-01,  .5992408e-03,  .5743775e-05  &
+                                             , .3566847e-07,  .1306802e-09,  .2152144e-12 /)
+   !----- Coefficients for d(esat)/dT (liquid) --------------------------------------------!
+   real, dimension(0:8), parameter :: dll = (/ .4443216e+02,  .2861503e+01,  .7943347e-01  &
+                                             , .1209650e-02,  .1036937e-04,  .4058663e-07  &
+                                             ,-.5805342e-10, -.1159088e-11, -.3189651e-14 /)
+   !----- Coefficients for esat (ice) -----------------------------------------------------!
+   real, dimension(0:8), parameter :: dii = (/ .5036342e+02,  .3775758e+01,  .1269736e+00  &
+                                             , .2503052e-02,  .3163761e-04,  .2623881e-06  &
+                                             , .1392546e-08,  .4315126e-11,  .5961476e-14 /)
+   !---------------------------------------------------------------------------------------!
+
+
 
    contains
    !=======================================================================================!
@@ -69,9 +107,6 @@ module therm_lib
    real function eslf(temp,l1funout,l2funout,ttfunout)
       use consts_coms, only : t00
       implicit none
-      real, parameter             :: c0= .6105851e+03, c1= .4440316e+02, c2= .1430341e+01
-      real, parameter             :: c3= .2641412e-01, c4= .2995057e-03, c5= .2031998e-05
-      real, parameter             :: c6= .6936113e-08, c7= .2564861e-11, c8=-.3704404e-13
       real, intent(in)            :: temp
       real, intent(out), optional :: l1funout,ttfunout,l2funout
       real                        :: l1fun,ttfun,l2fun,x
@@ -89,7 +124,8 @@ module therm_lib
       else
          !----- Original method, using polynomial fit (FWC92) -----------------------------!
          x    = max(-80.,temp-t00)
-         eslf = c0+x*(c1+x*(c2+x*(c3+x*(c4+x*(c5+x*(c6+x*(c7+x*c8)))))))
+         eslf = cll(0) + x * (cll(1) + x * (cll(2) + x * (cll(3) + x * (cll(4)             &
+                       + x * (cll(5) + x * (cll(6) + x * (cll(7) + x * cll(8)) ) ) ) ) ) )
 
          if (present(l1funout)) l1funout = eslf
          if (present(l2funout)) l2funout = eslf
@@ -114,9 +150,6 @@ module therm_lib
    real function esif(temp,iifunout)
       use consts_coms, only : t00
       implicit none
-      real, parameter             :: c0= .6114327e+03, c1= .5027041e+02, c2= .1875982e+01
-      real, parameter             :: c3= .4158303e-01, c4= .5992408e-03, c5= .5743775e-05
-      real, parameter             :: c6= .3566847e-07, c7= .1306802e-09, c8= .2152144e-12
       real, intent(in)            :: temp
       real, intent(out), optional :: iifunout
       real                        :: iifun,x
@@ -130,7 +163,8 @@ module therm_lib
       else
          !----- Original method, using polynomial fit (FWC92) -----------------------------!
          x=max(-80.,temp-t00)
-         esif=c0+x*(c1+x*(c2+x*(c3+x*(c4+x*(c5+x*(c6+x*(c7+x*c8)))))))
+         esif = cii(0) + x * (cii(1) + x * (cii(2) + x * (cii(3) + x * (cii(4)             &
+                       + x * (cii(5) + x * (cii(6) + x * (cii(7) + x * cii(8)) ) ) ) ) ) )
 
          if (present(iifunout)) iifunout=esif
       end if
@@ -343,9 +377,6 @@ module therm_lib
    real function eslfp(temp)
       use consts_coms, only: t00
       implicit none
-      real, parameter  :: d0= .4443216e+02, d1= .2861503e+01, d2= .7943347e-01
-      real, parameter  :: d3= .1209650e-02, d4= .1036937e-04, d5= .4058663e-07
-      real, parameter  :: d6=-.5805342e-10, d7=-.1159088e-11, d8=-.3189651e-14
       real, intent(in) :: temp
       real             :: esl,l2fun,ttfun,l1prime,l2prime,ttprime,x
 
@@ -359,7 +390,8 @@ module therm_lib
       else
          !----- Original method, using polynomial fit (FWC92) -----------------------------!
          x=max(-80.,temp-t00)
-         eslfp=d0+x*(d1+x*(d2+x*(d3+x*(d4+x*(d5+x*(d6+x*(d7+x*d8)))))))
+         eslfp = dll(0) + x * (dll(1) + x * (dll(2) + x * (dll(3) + x * (dll(4)            &
+                        + x * (dll(5) + x * (dll(6) + x * (dll(7) + x * dll(8)) ) ) ) ) ) )
       end if
 
 
@@ -381,9 +413,6 @@ module therm_lib
    real function esifp(temp)
       use consts_coms, only: t00
       implicit none
-      real, parameter  :: d0= .5036342e+02, d1= .3775758e+01, d2= .1269736e+00
-      real, parameter  :: d3= .2503052e-02, d4= .3163761e-04, d5= .2623881e-06
-      real, parameter  :: d6= .1392546e-08, d7= .4315126e-11, d8= .5961476e-14
       real, intent(in) :: temp
       real             :: esi,iiprime,x
 
@@ -395,11 +424,47 @@ module therm_lib
       else
          !----- Original method, using polynomial fit (FWC92) -----------------------------!
          x=max(-80.,temp-t00)
-         esifp=d0+x*(d1+x*(d2+x*(d3+x*(d4+x*(d5+x*(d6+x*(d7+x*d8)))))))
+         esifp = dii(0) + x * (dii(1) + x * (dii(2) + x * (dii(3) + x * (dii(4)            &
+                        + x * (dii(5) + x * (dii(6) + x * (dii(7) + x * dii(8)) ) ) ) ) ) )
       end if
 
       return
    end function esifp
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function calculates the partial derivative of saturation vapour pressure as  !
+   ! a function of  Kelvin temperature. It chooses which phase to look depending on        !
+   ! whether the temperature is below or above the triple point.                           !
+   !---------------------------------------------------------------------------------------!
+   real function eslifp(temp,useice)
+      use consts_coms, only: t3ple
+      implicit none
+      real   , intent(in)           :: temp
+      logical, intent(in), optional :: useice
+      logical                       :: brrr_cold
+
+      if (present(useice)) then
+         brrr_cold = useice  .and. temp < t3ple
+      else 
+         brrr_cold = bulk_on .and. temp < t3ple
+      end if
+
+      if (brrr_cold) then
+         eslifp = esifp(temp) ! d(Ice saturation vapour pressure)/dT
+      else
+         eslifp = eslfp(temp) ! d(Liquid saturation vapour pressure)/dT
+      end if
+
+      return
+   end function eslifp
    !=======================================================================================!
    !=======================================================================================!
 
@@ -503,6 +568,90 @@ module therm_lib
 
 
 
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function calculates the derivative of vapour-liquid equilibrium density, as  !
+   ! a function of temperature in Kelvin.                                                  !
+   !---------------------------------------------------------------------------------------!
+   real function rhovslp(temp)
+      use consts_coms, only : rvap
+      implicit none
+      real, intent(in) :: temp
+      real             :: es,desdt
+      es    = eslf(temp)
+      desdt = eslfp(temp)
+      rhovslp = (desdt-es/temp) / (rvap * temp)
+      return
+   end function rhovslp
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function calculates the derivative of vapour-ice equilibrium density, as a   !
+   ! function of temperature in Kelvin.                                                    !
+   !---------------------------------------------------------------------------------------!
+   real function rhovsip(temp)
+      use consts_coms, only : rvap
+      implicit none
+      real, intent(in) :: temp
+      real             :: es,desdt
+      es    = esif(temp)
+      desdt = esifp(temp)
+      rhovsip = (desdt-es/temp) / (rvap * temp)
+      return
+   end function rhovsip
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function calculates the derivative of saturation density for vapour, as a    !
+   ! function of temperature in Kelvin. It will decide between ice-vapour or liquid-vapour !
+   ! based on the temperature.                                                             !
+   !---------------------------------------------------------------------------------------!
+   real function rhovsilp(temp,useice)
+      use consts_coms, only: t3ple
+      implicit none
+      real, intent(in)              :: temp
+      logical, intent(in), optional :: useice
+      logical                       :: brrr_cold
+
+      if (present(useice)) then
+         brrr_cold = useice  .and. temp < t3ple
+      else 
+         brrr_cold = bulk_on .and. temp < t3ple
+      end if
+
+      if (brrr_cold) then
+         rhovsilp=rhovsip(temp)
+      else
+         rhovsilp=rhovslp(temp)
+      end if
+
+      return
+   end function rhovsilp
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
    !=======================================================================================!
    !=======================================================================================!
    !     This function finds the virtual temperature based on the temperature and mixing   !
@@ -511,12 +660,12 @@ module therm_lib
    ! 2. This can be used for virtual potential temperature, just give potential tempera-   !
    !    ture instead of temperature.                                                       !
    !---------------------------------------------------------------------------------------!
-   real function virtt(temp,rvap,rtot)
+   real function virtt(temp,rvpr,rtot)
       use consts_coms, only: epi
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)           :: temp     ! Temperature                          [    K]
-      real, intent(in)           :: rvap     ! Vapour mixing ratio                  [kg/kg]
+      real, intent(in)           :: rvpr     ! Vapour mixing ratio                  [kg/kg]
       real, intent(in), optional :: rtot     ! Total mixing ratio                   [kg/kg]
       !----- Local variable ---------------------------------------------------------------!
       real                       :: rtothere ! Internal rtot, to deal with optional [kg/kg]
@@ -524,16 +673,15 @@ module therm_lib
       if (present(rtot)) then
         rtothere = rtot
       else
-        rtothere = rvap
+        rtothere = rvpr
       end if
 
-      virtt = temp * (1. + epi * rvap) / (1. + rtothere)
+      virtt = temp * (1. + epi * rvpr) / (1. + rtothere)
 
       return
    end function virtt
    !=======================================================================================!
    !=======================================================================================!
-
 
 
 
@@ -743,5 +891,61 @@ module therm_lib
    end subroutine qwtk
    !=======================================================================================!
    !=======================================================================================!
-end module therm_lib
 
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine computes the temperature (Kelvin) and liquid fraction from inter-  !
+   ! nal energy (J/m² or J/m³), mass (kg/m² or kg/m³), and heat capacity (J/m²/K or        !
+   ! J/m³/K).                                                                              !
+   ! This routine requires an 8-byte double precision floating point value for density     !
+   !---------------------------------------------------------------------------------------!
+   subroutine qwtk8(qw,w,dryhcap,tempk,fracliq)
+      use consts_coms, only: cliqi,cliq,cicei,cice,allii,alli,t3ple
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real        , intent(in)  :: qw      ! Internal energy           [  J/m²] or [  J/m³]
+      real(kind=8), intent(in)  :: w       ! Density                   [ kg/m²] or [ kg/m³]
+      real        , intent(in)  :: dryhcap ! Heat capacity, nonwater   [J/m²/K] or [J/m³/K]
+      real        , intent(out) :: tempk   ! Temperature                           [     K]
+      real        , intent(out) :: fracliq ! Liquid fraction (0-1)                 [   ---]
+      !----- Local variable ---------------------------------------------------------------!
+      real              :: qwliq0  ! qw of liquid at triple point      [  J/m²] or [  J/m³]
+      real              :: ch2ow   ! heat capacity of water            [  J/m²] or [  J/m³]
+      !------------------------------------------------------------------------------------!
+     
+      !----- Converting melting heat to J/m² or J/m³ --------------------------------------!
+      qwliq0 = sngl(w) * alli
+      !------------------------------------------------------------------------------------!
+     
+      !------------------------------------------------------------------------------------!
+      !    This is analogous to the qtk computation, we should analyse the sign and        !
+      ! magnitude of the internal energy to choose between liquid, ice, or both.           !
+      !------------------------------------------------------------------------------------!
+     
+      !----- Negative internal energy, frozen, all ice ------------------------------------!
+      if (qw < 0.) then
+         fracliq = 0.
+         tempk   = qw  / (cice * sngl(w) + dryhcap) + t3ple
+      !----- Positive internal energy, over latent heat of melting, all liquid ------------!
+      elseif (qw > qwliq0) then
+         fracliq = 1.
+         tempk   = (qw - qwliq0) / (cliq * sngl(w) + dryhcap) + t3ple
+      !----- Changing phase, it must be at triple point -----------------------------------!
+      else
+         fracliq = qw / qwliq0
+         tempk = t3ple
+      end if
+      !------------------------------------------------------------------------------------!
+     
+      return
+   end subroutine qwtk8
+   !=======================================================================================!
+   !=======================================================================================!
+end module therm_lib
+!==========================================================================================!
+!==========================================================================================!

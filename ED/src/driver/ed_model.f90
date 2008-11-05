@@ -8,7 +8,8 @@ subroutine ed_model()
   
   use misc_coms, only: integration_scheme, current_time, frqfast, frqstate    &
                       , out_time_fast, dtlsm, ifoutput, isoutput, idoutput    &
-                      , imoutput, iyoutput,frqsum
+                      , imoutput, iyoutput,frqsum,unitfast,unitstate, imontha &
+                      , iyeara, outstate,outfast, nrec_fast, nrec_state
   use ed_misc_coms, only: outputMonth
 
   use grid_coms, only : &
@@ -30,6 +31,7 @@ subroutine ed_model()
   use ed_node_coms,only:mynum,nnodetot
   use disturb_coms, only: include_fire
   use mem_sites, only : n_ed_region
+  use consts_coms, only: day_sec
 
   implicit none
 
@@ -57,6 +59,8 @@ subroutine ed_model()
   logical :: mont_analy_time,dail_analy_time,reset_time
   logical :: past_one_day,past_one_month
   logical :: printbanner
+  integer :: ndays
+  integer, external :: num_days
   
   past_one_day   = .false.
   past_one_month = .false.
@@ -96,7 +100,7 @@ subroutine ed_model()
   do ifm=1,ngrids
      call update_ed_yearly_vars_ar(edgrid_g(ifm))
   end do
-  call h5_output('YEAR')
+  if (writing_year) call h5_output('YEAR')
 
   !         Start the timesteps
 
@@ -127,6 +131,7 @@ subroutine ed_model()
      do ifm=1,ngrids
          call radiate_driver_ar(edgrid_g(ifm))
      end do
+
      ! THEN, DO THE PHOTOSYNTHESIS AND BIOPHYSICS.
      if(integration_scheme == 0)then
         do ifm=1,ngrids
@@ -134,7 +139,7 @@ subroutine ed_model()
         end do
      elseif(integration_scheme == 1)then
         do ifm=1,ngrids
-           call rk4_timestep_ar(edgrid_g(ifm),integration_buff_g)
+           call rk4_timestep_ar(edgrid_g(ifm),ifm,integration_buff_g)
         end do
      endif
      
@@ -149,25 +154,56 @@ subroutine ed_model()
      
      time=time+dtlsm
      call update_model_time_dm(current_time, dtlsm)
-     
-     ! Checking whether it is some special time...
-     analysis_time   = mod(current_time%time, frqfast) < dtlsm .and. ifoutput /= 0
+
+     !----- Checking whether it is some special time... -----------------------------------!
      new_day         = current_time%time < dtlsm
      if (.not. past_one_day .and. new_day) past_one_day=.true.
      
      new_month       = current_time%date == 1  .and. new_day
      if (.not. past_one_month .and. new_month) past_one_month=.true.
-     
+
      new_year        = current_time%month == 1 .and. new_month
      mont_analy_time = new_month .and. writing_mont
      dail_analy_time = new_day   .and. writing_dail
-     history_time    = mod(time,dble(frqstate)) < dtlsm .and. isoutput /= 0
      reset_time      = mod(time,dble(frqsum)) < dtlsm
      the_end         = mod(time,timmax) < dtlsm
      annual_time     = new_month .and. writing_year .and. current_time%month == outputMonth
 
+     !----- Checking whether this is time to write fast analysis output or not. -----------!
+     select case (unitfast)
+     case (0,1) !----- Now both are in seconds --------------------------------------------!
+        analysis_time   = mod(current_time%time, frqfast) < dtlsm .and. ifoutput /= 0
+     case (2)   !----- Months, analysis time is at the new month --------------------------!
+        analysis_time   = new_month .and. ifoutput /= 0 .and.                              &
+                          mod(real(12+current_time%month-imontha),frqfast) == 0.
+     case (3) !----- Year, analysis time is at the same month as initial time -------------!
+        analysis_time   = new_month .and. ifoutput /= 0 .and.                              &
+                          current_time%month == imontha .and.                              &
+                          mod(real(current_time%year-iyeara),frqfast) == 0.
+     end select
 
-!     if(analysis_time) call analysis_write(polygon_list_g(1)%first_polygon) 
+     !----- Checking whether this is time to write restart output or not. -----------------!
+     select case(unitstate)
+     case (0,1) !----- Now both are in seconds --------------------------------------------!
+        history_time   = mod(current_time%time, frqstate) < dtlsm .and. isoutput /= 0
+     case (2)   !----- Months, history time is at the new month ---------------------------!
+        history_time   = new_month .and. isoutput /= 0 .and.                               &
+                         mod(real(12+current_time%month-imontha),frqstate) == 0.
+     case (3) !----- Year, history time is at the same month as initial time --------------!
+        history_time   = new_month .and. isoutput /= 0 .and.                               &
+                         current_time%month == imontha .and.                               &
+                         mod(real(current_time%year-iyeara),frqstate) == 0.
+     end select
+
+     !-------------------------------------------------------------------------------------!
+     !    Updating nrec_fast and nrec_state if it is a new month and outfast/outstate are  !
+     ! monthly and frqfast/frqstate are daily or by seconds.                               !
+     !-------------------------------------------------------------------------------------!
+     if (new_month) then
+        ndays=num_days(current_time%month,current_time%year)
+        if (outfast  == -2.) nrec_fast  = ndays*day_sec/frqfast
+        if (outstate == -2.) nrec_state = ndays*day_sec/frqstate
+     end if
 
      !   Call the model output driver 
      !   ====================================================
@@ -198,12 +234,6 @@ subroutine ed_model()
         endif
         
      endif
-
-
-     !   Call the model output driver - moved to before the vegetation dynamics
-     !   ====================================================
-     !call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time &
-     !              ,writing_dail,writing_mont,history_time,reset_time,the_end)
 
      do ifm=1,ngrids
         call update_met_drivers_array(edgrid_g(ifm))

@@ -1,6 +1,7 @@
 #Makefile include paths.mk
 
 # RAMS root directory.
+#
 EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/mlongo/repository/EDBRAMS
 
 # MCD: EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/mcd/EDBRAMS
@@ -37,6 +38,7 @@ MICRO=$(BRAMS_ROOT)/src/brams/micro
 MKSFC=$(BRAMS_ROOT)/src/brams/mksfc
 MPI=$(BRAMS_ROOT)/src/brams/mpi
 NESTING=$(BRAMS_ROOT)/src/brams/nesting
+OLDGRELL=$(BRAMS_ROOT)/src/brams/oldgrell
 RADIATE=$(BRAMS_ROOT)/src/brams/radiate
 SIB=$(BRAMS_ROOT)/src/brams/sib
 SOIL_MOISTURE=$(BRAMS_ROOT)/src/brams/soil_moisture

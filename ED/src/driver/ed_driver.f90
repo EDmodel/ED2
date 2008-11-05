@@ -181,6 +181,18 @@ subroutine ed_driver
   
   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Filltab_Alltypes...'
   call filltab_alltypes
+  
+  !-----------------------------------------------------------------------!
+  ! STEP 11½. Initialize the vegetation internal energy. This needs to    !
+  !           be done after ed_init_coup_atm and update_derived_props so  !
+  !           we have all variables we need.                              !
+  !-----------------------------------------------------------------------!
+  if (trim(runtype) == 'INITIAL') then
+     if (mynum == 1) write(unit=*,fmt='(a)') ' [+] Finding veg. energy...'
+     do ifm=1,ngrids
+        call initialize_vegetation_energy(edgrid_g(ifm))
+     end do
+  end if
 
   !-----------------------------------------------------------------------!
   ! STEP 12. Checking how the output was configure and determining the    !
@@ -223,37 +235,75 @@ end subroutine ed_driver
 !==========================================================================================!
 subroutine find_frqsum()
    use misc_coms, only:  &
+        unitfast,        &
+        unitstate,       &
         isoutput,        &
-        ifoutput,         &
+        ifoutput,        &
         imoutput,        &
         idoutput,        &
-        frqstate,         &
-        frqfast,          &
+        frqstate,        &
+        frqfast,         &
         frqsum
    use consts_coms, only: day_sec
 
    implicit none 
-   ! Determining which frequency I should use to normalize variables.
+
+   !---------------------------------------------------------------------------------------!
+   ! Determining which frequency I should use to normalize variables. FRQSUM should never  !
+   ! exceed 1 day.                                                                         !
+   !---------------------------------------------------------------------------------------!
    if (ifoutput == 0 .and. isoutput == 0 .and. idoutput == 0 .and. imoutput == 0) then
-         write(unit=*,fmt='(a)') '---------------------------------------------------------'
-         write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
-         write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
-         write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
-         write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
-         write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
-         write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
-         write(unit=*,fmt='(a)') '---------------------------------------------------------'
-         write(unit=*,fmt='(a)') ' You are running a simulation that will have no output...'
-         frqsum=day_sec ! Just for avoiding build up, 
-   elseif (isoutput == 0 .and. ifoutput == 0) then
-       frqsum=day_sec
-   elseif (isoutput > 0 .and. ifoutput == 0) then
-       frqsum=min(frqstate,day_sec)
-   elseif (ifoutput > 0 .and. isoutput == 0) then
-       frqsum=min(frqfast,day_sec)
-   else ! If both are on. If both are off the simulation won't reach this point.
-       frqsum=min(min(frqstate,frqfast),day_sec)
+      write(unit=*,fmt='(a)') '---------------------------------------------------------'
+      write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+      write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+      write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+      write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+      write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+      write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+      write(unit=*,fmt='(a)') '---------------------------------------------------------'
+      write(unit=*,fmt='(a)') ' You are running a simulation that will have no output...'
+      frqsum=day_sec ! Just for avoiding build up
+
+   !---------------------------------------------------------------------------------------!
+   !     Either no instantaneous output was requested, or the user is outputting it at     !
+   ! monthly or yearly scale, force it to be one day.                                      !
+   !---------------------------------------------------------------------------------------!
+   elseif ((isoutput == 0 .and. ifoutput == 0) .or.                                        &
+           (ifoutput == 0 .and. isoutput  > 0 .and. unitstate > 1) .or.                    &
+           (isoutput == 0 .and. ifoutput  > 0 .and. unitfast  > 1) .or.                    &
+           (ifoutput  > 0 .and. isoutput  > 0 .and. unitstate > 1 .and. unitfast > 1)      &
+          ) then
+      frqsum=day_sec
+   !---------------------------------------------------------------------------------------!
+   !    Only restarts, and the unit is in seconds, test which frqsum to use.               !
+   !---------------------------------------------------------------------------------------!
+   elseif (ifoutput == 0 .and. isoutput > 0) then
+      frqsum=min(frqstate,day_sec)
+   !---------------------------------------------------------------------------------------!
+   !    Only fast analysis, and the unit is in seconds, test which frqsum to use.          !
+   !---------------------------------------------------------------------------------------!
+   elseif (isoutput == 0 .and. ifoutput > 0) then
+      frqsum=min(frqfast,day_sec)
+   !---------------------------------------------------------------------------------------!
+   !    Both are on and both outputs are in seconds or day scales. Choose the minimum      !
+   ! between them and one day.                                                             !
+   !---------------------------------------------------------------------------------------!
+   elseif (unitfast < 2 .and. unitstate < 2) then 
+      frqsum=min(min(frqstate,frqfast),day_sec)
+   !---------------------------------------------------------------------------------------!
+   !    Both are on but unitstate is in month or years. Choose the minimum between frqfast !
+   ! and one day.                                                                          !
+   !---------------------------------------------------------------------------------------!
+   elseif (unitfast < 2) then 
+      frqsum=min(frqfast,day_sec)
+   !---------------------------------------------------------------------------------------!
+   !    Both are on but unitfast is in month or years. Choose the minimum between frqstate !
+   ! and one day.                                                                          !
+   !---------------------------------------------------------------------------------------!
+   else
+      frqsum=min(frqstate,day_sec)
    end if
+
    return
 end subroutine find_frqsum
 !==========================================================================================!

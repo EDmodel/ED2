@@ -50,5 +50,8 @@ module grid_dims
   !  MAXUBTP - Maximum number of urban types used in TEB
   integer, parameter :: maxsteb=5
   integer, parameter :: maxubtp=3
+  
+  ! Parameter defining the maximum number of cloud spectral sizes allowed.
+  integer, parameter :: maxclouds = 6
 
 end module grid_dims

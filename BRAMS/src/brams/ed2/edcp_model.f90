@@ -112,9 +112,10 @@ end subroutine ed_timestep
 
 subroutine ed_coup_model()
   
-  use misc_coms, only: integration_scheme, current_time, frqfast, frqstate    &
-                      , current_time, dtlsm, ifoutput, isoutput, idoutput    &
-                      , imoutput, iyoutput, frqsum
+  use misc_coms, only: integration_scheme, current_time, frqfast, frqstate     &
+                      , out_time_fast, dtlsm, ifoutput, isoutput, idoutput     &
+                      , imoutput, iyoutput, frqsum,unitfast,unitstate, imontha &
+                      , iyeara, outstate,outfast, nrec_fast, nrec_state
   use ed_misc_coms, only: outputMonth
 
   use grid_coms, only : &
@@ -136,6 +137,7 @@ subroutine ed_coup_model()
   use ed_node_coms,only:mynum,nnodetot
   use disturb_coms, only: include_fire
   use mem_sites, only : n_ed_region
+  use consts_coms, only: day_sec
 
   implicit none
 
@@ -163,7 +165,9 @@ subroutine ed_coup_model()
   logical :: writing_dail,writing_mont,writing_year,history_time,annual_time
   logical :: mont_analy_time,dail_analy_time,reset_time
   logical :: printbanner
-  
+  integer :: ndays
+  integer, external :: num_days
+
   logical,save :: past_one_day   = .false.
   logical,save :: past_one_month = .false.
   
@@ -172,6 +176,8 @@ subroutine ed_coup_model()
   writing_dail      = idoutput > 0
   writing_mont      = imoutput > 0
   writing_year      = iyoutput > 0
+  out_time_fast     = current_time
+  out_time_fast%month = -1
 
 
   !         Start the timesteps
@@ -186,7 +192,7 @@ subroutine ed_coup_model()
      end do
   elseif(integration_scheme == 1)then
      do ifm=1,ngrids
-        call rk4_timestep_ar(edgrid_g(ifm),integration_buff_g)
+        call rk4_timestep_ar(edgrid_g(ifm),ifm,integration_buff_g)
      end do
   endif
 
@@ -204,7 +210,6 @@ subroutine ed_coup_model()
   call update_model_time_dm(current_time, dtlsm)
   
   ! Checking whether it is some special time...
-  analysis_time   = mod(current_time%time, frqfast) < dtlsm .and. ifoutput /= 0
   new_day         = current_time%time < dtlsm
   if (.not. past_one_day .and. new_day) past_one_day=.true.
   
@@ -215,9 +220,44 @@ subroutine ed_coup_model()
   mont_analy_time = new_month .and. writing_mont
   annual_time     = new_month .and. writing_year .and. current_time%month == outputMonth
   dail_analy_time = new_day   .and. writing_dail
-  history_time    = mod(time,dble(frqstate)) < dtlsm .and. isoutput /= 0
   reset_time      = mod(time,dble(frqsum)) < dtlsm
   the_end         = mod(time,timmax) < dtlsm
+
+  !----- Checking whether this is time to write fast analysis output or not. -----------!
+  select case (unitfast)
+  case (0,1) !----- Now both are in seconds --------------------------------------------!
+     analysis_time   = mod(current_time%time, frqfast) < dtlsm .and. ifoutput /= 0
+  case (2)   !----- Months, analysis time is at the new month --------------------------!
+     analysis_time   = new_month .and. ifoutput /= 0 .and.                              &
+                       mod(real(12+current_time%month-imontha),frqfast) == 0.
+  case (3) !----- Year, analysis time is at the same month as initial time -------------!
+     analysis_time   = new_month .and. ifoutput /= 0 .and.                              &
+                       current_time%month == imontha .and.                              &
+                       mod(real(current_time%year-iyeara),frqfast) == 0.
+  end select
+
+  !----- Checking whether this is time to write restart output or not. -----------------!
+  select case(unitstate)
+  case (0,1) !----- Now both are in seconds --------------------------------------------!
+     history_time   = mod(current_time%time, frqstate) < dtlsm .and. isoutput /= 0
+  case (2)   !----- Months, history time is at the new month ---------------------------!
+     history_time   = new_month .and. isoutput /= 0 .and.                               &
+                      mod(real(12+current_time%month-imontha),frqstate) == 0.
+  case (3) !----- Year, history time is at the same month as initial time --------------!
+     history_time   = new_month .and. isoutput /= 0 .and.                               &
+                      current_time%month == imontha .and.                               &
+                      mod(real(current_time%year-iyeara),frqstate) == 0.
+  end select
+
+  !-------------------------------------------------------------------------------------!
+  !    Updating nrec_fast and nrec_state if it is a new month and outfast/outstate are  !
+  ! monthly and frqfast/frqstate are daily or by seconds.                               !
+  !-------------------------------------------------------------------------------------!
+  if (new_month) then
+     ndays=num_days(current_time%month,current_time%year)
+     if (outfast  == -2.) nrec_fast  = ndays*day_sec/frqfast
+     if (outstate == -2.) nrec_state = ndays*day_sec/frqstate
+  end if
   
     
   !   Call the model output driver 

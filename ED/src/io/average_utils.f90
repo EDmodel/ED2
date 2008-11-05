@@ -29,6 +29,7 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
    !  by that period to get their value per unit time.                       !
    !-------------------------------------------------------------------------!
 
+   
    frqsumi = 1.0 / frqsum
    tfact = dtlsm * frqsumi
 
@@ -49,7 +50,7 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
             csite%avg_vapor_ac(ipa)     = csite%avg_vapor_ac(ipa)      * frqsumi
             csite%avg_transp(ipa)       = csite%avg_transp(ipa)        * frqsumi
             csite%avg_evap(ipa)         = csite%avg_evap(ipa)          * frqsumi
-            csite%avg_runoff(ipa)       = csite%avg_runoff(ipa)        * tfact ! kg (water) / m2 / s
+            csite%avg_runoff(ipa)       = csite%avg_runoff(ipa)        * frqsumi
             csite%avg_sensible_vc(ipa)  = csite%avg_sensible_vc(ipa)   * frqsumi
             csite%avg_sensible_2cas(ipa)= csite%avg_sensible_2cas(ipa) * frqsumi
             csite%avg_qwshed_vg(ipa)    = csite%avg_qwshed_vg(ipa)     * frqsumi
@@ -57,7 +58,7 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
             csite%avg_sensible_ac(ipa)  = csite%avg_sensible_ac(ipa)   * frqsumi
             csite%avg_sensible_tot(ipa) = csite%avg_sensible_tot(ipa)  * frqsumi
             csite%avg_carbon_ac(ipa)    = csite%avg_carbon_ac(ipa)     * frqsumi
-            csite%avg_runoff_heat(ipa)  = csite%avg_runoff_heat(ipa)   * tfact
+            csite%avg_runoff_heat(ipa)  = csite%avg_runoff_heat(ipa)   * frqsumi
             ! csite%avg_heatstor_veg(ipa) = csite%avg_heatstor_veg(ipa)  * tfact ! CHECK THIS?
          
             do k=cpoly%lsl(isi),nzg
@@ -211,7 +212,6 @@ subroutine reset_averaged_vars(cgrid)
       cgrid%avg_atm_tmp(ipy)        = 0.0
       cgrid%avg_atm_shv(ipy)        = 0.0
       cgrid%avg_rhos(ipy)           = 0.0
-      cgrid%avg_theta(ipy)          = 0.0
       cgrid%avg_rshort(ipy)         = 0.0
       cgrid%avg_rshort_diffuse(ipy) = 0.0
       cgrid%avg_rlong(ipy)          = 0.0

@@ -24,6 +24,7 @@ subroutine ed_init_coup_atm
   integer :: ncohorts
   real    :: poly_lai,p_lai
   integer :: ix,iy
+  real    :: hcapveg
   integer, parameter :: harvard_override = 0
   include 'mpif.h'
   integer :: ping,ierr
@@ -60,6 +61,13 @@ subroutine ed_init_coup_atm
               csite%can_temp(ipa) =   cpoly%met(isi)%atm_tmp
               
               csite%can_shv(ipa)  =   cpoly%met(isi)%atm_shv
+
+              ! Initialize stars
+              csite%tstar(ipa)  = 0.
+              csite%ustar(ipa)  = 0.
+              csite%rstar(ipa)  = 0.
+              csite%cstar(ipa)  = 0.
+              
               
               ! For now, choose heat/vapor capacities for stability
               csite%can_depth(ipa) = 30.0
@@ -469,20 +477,20 @@ subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
   use soil_coms,   only: ed_nstyp, soil
   use grid_coms,   only: nzg
   use rconstants,  only: pi1, g, rm
-  use therm_lib  , only: rhovsil,qtk,qwtk
+  use therm_lib  , only: rhovsil,qtk,qwtk8
 
   implicit none
 
   integer, intent(in) :: nlev_sfcwater ! # active levels of surface water
   integer, intent(in) :: nts           ! soil textural class (local name)
   
-  real, intent(in)  :: soil_water      ! soil water content [vol_water/vol_tot]
-  real, intent(in)  :: soil_energy     ! [J/m^3]
-  real, intent(in)  :: sfcwater_energy ! [J/kg]
-  real, intent(in)  :: rhos            ! air density [kg/m^3]
-  real, intent(in)  :: can_shv         ! canopy vapor spec hum [kg_vap/kg_air]
-  real, intent(out) :: ground_shv      ! ground equilibrium spec hum [kg_vap/kg_air]
-  real, intent(out) :: surface_ssh     ! surface (saturation) spec hum [kg_vap/kg_air]
+  real(kind=8), intent(in)  :: soil_water      ! soil water content [vol_water/vol_tot]
+  real        , intent(in)  :: soil_energy     ! [J/m^3]
+  real        , intent(in)  :: sfcwater_energy ! [J/kg]
+  real        , intent(in)  :: rhos            ! air density [kg/m^3]
+  real        , intent(in)  :: can_shv         ! canopy vapor spec hum [kg_vap/kg_air]
+  real        , intent(out) :: ground_shv      ! ground equilibrium spec hum [kg_vap/kg_air]
+  real        , intent(out) :: surface_ssh     ! surface (saturation) spec hum [kg_vap/kg_air]
 
 
   real, parameter :: gorvap = g / rm  ! gravity divided by vapor gas constant
@@ -508,7 +516,7 @@ subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
      ! ratio of soil and is used for soil evaporation.  First, compute the
      ! "alpha" term or soil "relative humidity" and the "beta" term.
      
-     call qwtk(soil_energy,soil_water*1.e3,soil(nts)%slcpd,tempk,fracliq)
+     call qwtk8(soil_energy,soil_water*1.e3,soil(nts)%slcpd,tempk,fracliq)
      surface_ssh = rhovsil(tempk) / rhos
      
      slpotvn = soil(nts)%slpots * (soil(nts)%slmsts / soil_water) ** soil(nts)%slbs
@@ -723,3 +731,52 @@ subroutine update_polygon_derived_props_ar(cgrid)
 
   return
 end subroutine update_polygon_derived_props_ar
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine simply assigns the initial value for internal energy. The only reason !
+! to do it separatedly is that we first load atmospheric-based variables, then we assign   !
+! LAI and height. This should be called just at the initialization, during the run energy  !
+! is what defines the temperature, not the other way.                                      !
+!------------------------------------------------------------------------------------------!
+subroutine initialize_vegetation_energy(cgrid)
+   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype
+   use canopy_air_coms, only: hcapveg_ref, heathite_min
+   use consts_coms, only: t3ple
+   implicit none 
+   !----- Argument ------------------------------------------------------------------------!
+   type(edtype), target :: cgrid
+   !----- Local variables -----------------------------------------------------------------!
+   integer :: ipy,isi,ipa,ico
+   type(polygontype), pointer :: cpoly
+   type(sitetype)   , pointer :: csite
+   type(patchtype)  , pointer :: cpatch
+   real                       :: hcapveg
+   !---------------------------------------------------------------------------------------!
+
+   do ipy=1,cgrid%npolygons
+      cpoly => cgrid%polygon(ipy)
+      do isi=1,cpoly%nsites
+         csite => cpoly%site(isi)
+         do ipa=1,csite%npatches
+            cpatch => csite%patch(ipa)
+            do ico=1,cpatch%ncohorts
+               hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)  &
+                       / csite%lai(ipa)
+               cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
+            end do
+         end do
+      end do
+   end do
+
+   return
+end subroutine initialize_vegetation_energy
+!==========================================================================================!
+!==========================================================================================!

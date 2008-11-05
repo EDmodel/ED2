@@ -88,7 +88,7 @@ subroutine thrmstr(m1)
 
    !----- Finding the air temperature and -dT/drs for this temperature --------------------!
    do k = k1(10),k2(10)
-      tairstr = thil2temp(thil(k),exner(k),rliq(k),rice(k),tair(k))
+      tairstr = thil2temp(thil(k),exner(k),press(k),rliq(k),rice(k),tair(k))
       sa(k,1) = (-1) * dtempdrs(exner(k),thil(k),tairstr,rliq(k),rice(k),1.e-12)
       tairstrc(k) = tairstr - t00
    end do
@@ -334,6 +334,8 @@ subroutine vapflux(lcat)
          rx(k,lcat)  = 0.
          qx(k,lcat)  = 0.
          qr(k,lcat)  = 0.
+         !---- Not sure about this one, but if rx is 0, I guess that cx should also be 0. -!
+         cx(k,lcat)  = 0.
       !----- Just copy rxx to rx and we are all set ---------------------------------------!
       elseif (vap(k,lcat) > -rx(k,lcat)) then
          rx(k,lcat) = rxx
@@ -367,7 +369,7 @@ subroutine psxfer()
 
    implicit none
    !----- Local variables -----------------------------------------------------------------!
-   integer             :: k,lhcat,it
+   integer             :: k,lhcat,it,uuu
    real(kind=8)        :: embx,dn,xlim,dvap,dqr,dnum
    real(kind=8)        :: rx8,cx8,qx8,vapx8,rxmin8,cxmin8,pwmas8,pwmasi8,dnfac8,dpsmi8
    real(kind=8)        :: gamx8,gam18,dps28,dps8,gnux8,gamn1x8
@@ -376,8 +378,12 @@ subroutine psxfer()
    mainloop: do k = k1(3),k2(3)  ! These are now equal to k1(4),k2(4)
 
       if (vap(k,3) > 0. .or. vap(k,4) < 0.) then
+         !----- Assigning a value so in case nothing happens here, nothing will happen... -!
+         dvap = 0.
+         dqr  = 0.
+         dnum = 0.
 
-         if (vap(k,3) > 0.) then
+         if (vap(k,3) > 0. .and. rx(k,3) >= rxmin(3)) then
             lhcat = jhcat(k,3)
 
             !----- Copying data to double precision scratch variables ---------------------!
@@ -400,6 +406,7 @@ subroutine psxfer()
             embx    = max(rxmin8,rx8) / max(cxmin8,cx8)
             dn      = dnfac8 * embx**pwmasi8
             it      = nint(dn*1.e6)
+
             gamx8   = dble(gam(it,3))
             gam18   = dble(gam(it,1))
 
@@ -407,7 +414,7 @@ subroutine psxfer()
             dvap = min(rx8,vapx8 * (xlim + gam18/gamn1x8))
             dqr  = dvap * qx8
             dnum = dvap * min(dpsmi8,1./embx)
-         else
+         elseif (vap(k,4) < 0. .and. rx(k,4) >= rxmin(4)) then
          
             lhcat = jhcat(k,4)
 
@@ -431,7 +438,8 @@ subroutine psxfer()
             embx    = max(rxmin8,rx8) / max(cxmin8,cx8)
             dn      = dnfac8 * embx**pwmasi8
             it      = nint(dn*1.e6)
-            gamx8   = dble(gam(it,3))  ! Shouldn't this be gam(it,4)????
+
+            gamx8   = dble(gam(it,3)) 
 
             xlim = gamx8 * dps28 * (dps8/dn)**(gnux8-1.)/ (gamn1x8 * pwmas8 * dn*dn)
             dvap = max(-rx8,vapx8* xlim)

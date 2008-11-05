@@ -1,7 +1,7 @@
 subroutine read_ed1_history_file_array
 
 
-  use max_dims, only: n_pft,huge_patch,huge_cohort,max_water,str_len
+  use max_dims, only: n_pft,huge_patch,huge_cohort,max_water,str_len,maxfiles
   use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, include_pft_ag, phenology,pft_1st_check,include_these_pft
   use misc_coms, only: sfilin, ied_init_mode
   use mem_sites, only: grid_res,edres
@@ -31,10 +31,11 @@ subroutine read_ed1_history_file_array
   real :: flon,lon
   integer :: ilat,ilon
   
-  logical :: renumber_pfts = .true.
+  logical :: renumber_pfts
   character(len=str_len) :: pss_name
   character(len=str_len) :: css_name
   character(len=str_len) :: site_name
+
   real :: dist
   real :: best_dist
 
@@ -105,19 +106,46 @@ subroutine read_ed1_history_file_array
   logical :: site_match
   real :: dist_gc
   integer :: nw
+
+  !----- Variables for new method to find the closest file --------------------------------!
+  integer                                   , parameter :: maxlist=3*maxfiles
+  integer                                               :: nf,nflist,nflsite,nflpss,nflcss
+  integer                                               :: nclosest
+  character(len=str_len), dimension(maxlist)            :: full_list
+  character(len=str_len), dimension(maxfiles)           :: site_list,pss_list,css_list
+  real                  , dimension(maxfiles)           :: slon_list,slat_list
+  real                  , dimension(maxfiles)           :: plon_list,plat_list
+  real                  , dimension(maxfiles)           :: clon_list,clat_list
+  real                  , dimension(maxfiles)           :: file_dist
+  !----------------------------------------------------------------------------------------!
   
   real, external :: ed_biomass
   
-  if(ied_init_mode == 3) renumber_pfts = .false.
+  
+  !----- Retrieve all files with the specified prefix. ------------------------------------!
+  call ed_filelist(full_list,sfilin,nflist)
 
+  
+  !----- Retrieve LON/LAT information for sites -------------------------------------------!
+  if (ied_init_mode == 3) then
+     renumber_pfts = .false.
+     call ed1_fileinfo('.site',nflist,full_list(1:nflist),nflsite,site_list,slon_list      &
+                      ,slat_list)
+  else
+     renumber_pfts = .true.
+  end if
+  
+  !----- Retrieve LON/LAT information for patches and cohorts -----------------------------!
+  call ed1_fileinfo('.pss',nflist,full_list(1:nflist),nflpss,pss_list,plon_list,plat_list)
+  call ed1_fileinfo('.css',nflist,full_list(1:nflist),nflcss,css_list,clon_list,clat_list)
   
   ! Loop over all grids, polygons, and sites
 
-  do igr = 1,ngrids
+  gridloop: do igr = 1,ngrids
 
      cgrid => edgrid_g(igr)
 
-     do ipy = 1,cgrid%npolygons
+     polyloop: do ipy = 1,cgrid%npolygons
         
         cpoly => cgrid%polygon(ipy)
 
@@ -130,84 +158,26 @@ subroutine read_ed1_history_file_array
            cgrid%ntext_soil(2,ipy) = 2
            cgrid%ntext_soil(3,ipy) = 3
            cgrid%ntext_soil(4,ipy) = 3
-        endif
+        end if
 
         ! =================================
         ! Part I: Find the restart files
         ! =================================
+        do nf=1,nflpss
+           file_dist(nf)=dist_gc(cgrid%lon(ipy),plon_list(nf),cgrid%lat(ipy),plat_list(nf))
+        end do
+        ! nclosest is the file with the closest information. 
+        nclosest=minloc(file_dist(1:nflpss),dim=1)
+        pss_name = trim(pss_list(nclosest))
 
-        call create_ed1_fname(cgrid%lat(ipy), edres, cgrid%lon(ipy),  &
-             trim(sfilin), pss_name, css_name, site_name)
+        do nf=1,nflcss
+           file_dist(nf)=dist_gc(cgrid%lon(ipy),clon_list(nf),cgrid%lat(ipy),clat_list(nf))
+        end do
+        ! nclosest is the file with the closest information. 
+        nclosest=minloc(file_dist(1:nflcss),dim=1)
+        css_name = trim(css_list(nclosest))
         
-        inquire(file=trim(pss_name),exist=restart_exist)
-        if(.not.restart_exist)then
-           write(unit=*,fmt='(a)') ' + Your restart file does not exist:'
-           write(unit=*,fmt='(a)') '    - Not found:'//trim(pss_name)
-           ! Find nearest neighbor.
-           best_dist = huge(6.)
-           best_pss_name = 'null'
-
-           ! IT IS POSSIBLE THAT NONE OF THE POLYGONS ON THIS TILE
-           ! ARE CLOSE TO VALUES IN THE DATABASE
-           do ipy2 = 1,cgrid%npolygons
-              
-              call create_ed1_fname(cgrid%lat(ipy2), edres, cgrid%lon(ipy2),  &
-                   trim(sfilin), pss_name, css_name, site_name)
-              inquire(file=trim(pss_name),exist=restart_exist)
-              if(restart_exist)then
-                 
-                 dist = dist_gc(cgrid%lon(ipy),cgrid%lon(ipy2),cgrid%lat(ipy),cgrid%lat(ipy2))
-                 if(dist < best_dist)then
-                    best_dist = dist
-                    best_pss_name = trim(pss_name)
-                    best_css_name = trim(css_name)
-                 endif
-              endif
-              
-           enddo
-
-           
-           if(trim(best_pss_name) /= 'null')then
-              pss_name = trim(best_pss_name)
-              css_name = trim(best_css_name)
-              write(unit=*,fmt='(a)') '    - Using:'//trim(pss_name)//' instead.'
-           else
-
-              ! LAST RESORT - USE SPARINGLY
-              do ilat = 1,180
-                 do ilon = 1,360
-                    lat = -90.0 + real(ilat-1)
-                    lon = -180.0 + real(ilon-1)
-                    call create_ed1_fname(lat, edres,lon,  &
-                         trim(sfilin), pss_name, css_name, site_name)
-                    inquire(file=trim(pss_name),exist=restart_exist)
-                    if(restart_exist)then
-                       
-                       dist = dist_gc(cgrid%lon(ipy),lon,cgrid%lat(ipy),lat)
-                       !dist = dist_gc(cgrid%lon(ipy),cgrid%lon(ipy2),cgrid%lat(ipy),cgrid%lat(ipy2))
-                       if(dist < best_dist)then
-                          best_dist = dist
-                          best_pss_name = trim(pss_name)
-                          best_css_name = trim(css_name)
-                       endif
-                    endif
-                 enddo
-              enddo
-              if(trim(best_pss_name) /= 'null')then
-                 pss_name = trim(best_pss_name)
-                 css_name = trim(best_css_name)
-                 write(unit=*,fmt='(a)') '    - Using:'//trim(pss_name)//' instead.'
-              else
-                 
-                 call fatal_error('Cannot find a suitable restart file.' &
-                      ,'read_ed1_history_file','ed_history_io_array.f90')
-              endif
-           end if
-        else
-           !           write(unit=*,fmt='(a)') ' + Your restart file exists: '//trim(pss_name)
-           
-        endif
-
+        
         ! =================================
         ! Part II: Add the patches
         ! =================================
@@ -703,14 +673,12 @@ subroutine read_ed1_history_file_array
            cpoly%patch_count(isi) = nsitepat
         enddo
         
-     enddo
+     end do polyloop
 
-
-     
      !! need to check what's going on in here
      call init_ed_poly_vars_array(cgrid)
 
-  enddo
+  end do gridloop
 
   return
 end subroutine read_ed1_history_file_array
@@ -1788,7 +1756,7 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
 
   call hdf_getslab_i(csite%ntext_soil(1,1),'NTEXT_SOIL_PA ',dsetrank,iparallel)
   call hdf_getslab_r(csite%soil_energy(1,1),'SOIL_ENERGY_PA ',dsetrank,iparallel)
-  call hdf_getslab_r(csite%soil_water(1,1),'SOIL_WATER_PA ',dsetrank,iparallel)
+  call hdf_getslab_d(csite%soil_water(1,1),'SOIL_WATER_PA ',dsetrank,iparallel)
   call hdf_getslab_r(csite%soil_tempk(1,1),'SOIL_TEMPK_PA ',dsetrank,iparallel)
   call hdf_getslab_r(csite%soil_fracliq(1,1),'SOIL_FRACLIQ_PA ',dsetrank,iparallel)
 
@@ -1910,6 +1878,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
   call hdf_getslab_r(cpatch%lai(1),'LAI_CO ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%bstorage(1),'BSTORAGE ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%cbr_bar(1),'CBR_BAR ',dsetrank,iparallel)
+  call hdf_getslab_r(cpatch%veg_energy(1),'VEG_ENERGY ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%veg_temp(1),'VEG_TEMP ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%veg_water(1),'VEG_WATER ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%mean_gpp(1),'MEAN_GPP ',dsetrank,iparallel)
@@ -2143,7 +2112,158 @@ end subroutine hdf_getslab_r
 !==========================================================================================!
 !==========================================================================================!
 
+subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel)
+  
+  use hdf5
+  use hdf5_coms,only:file_id,dset_id,dspace_id,plist_id, &
+       filespace,memspace, &
+       globdims,chnkdims,chnkoffs,cnt,stride, &
+       memdims,memoffs,memsize
+  
+  
+  implicit none
+  
+  real(kind=8),dimension(memsize(1),memsize(2),memsize(3),memsize(4)) :: buff
 
+  integer :: hdferr,dsetrank
+  integer :: iparallel
+  character(len=*),intent(in) :: varn
+  
+
+  call h5dopen_f(file_id,trim(varn), dset_id, hdferr)
+  if (hdferr /= 0) then
+     write(unit=*,fmt=*) 'File_ID = ',file_id
+     write(unit=*,fmt=*) 'Dset_ID = ',dset_id
+     call fatal_error('Could not get the dataset for '//trim(varn)//'!!!' &
+                     ,'hdf_getslab_r','ed_history_io.f90')
+  end if
+  
+  call h5dget_space_f(dset_id,filespace,hdferr)
+  if (hdferr /= 0) then
+     call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!!!' &
+                     ,'hdf_getslab_r','ed_history_io.f90')
+  end if
+
+  call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
+       chnkdims,hdferr)
+  if (hdferr /= 0) then
+     call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
+                     ,'hdf_getslab_r','ed_history_io.f90')
+  end if
+
+  call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
+  if (hdferr /= 0) then
+     write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
+     write(unit=*,fmt=*) 'Dsetrank = ',dsetrank
+     call fatal_error('Could not create the hyperslabs memspace for '//trim(varn)//'!!!' &
+                     ,'hdf_getslab_r','ed_history_io.f90')
+  end if
+
+  call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
+       memdims,hdferr)
+  if (hdferr /= 0) then
+     call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
+                     ,'hdf_getslab_r','ed_history_io.f90')
+  end if
+
+  if (iparallel == 1) then
+     
+     call h5dread_f(dset_id, H5T_NATIVE_REAL,buff,globdims, hdferr, &
+          mem_space_id = memspace, file_space_id = filespace, &
+          xfer_prp = plist_id)
+     if (hdferr /= 0) then
+        select case (trim(varn))
+        case('DMEAN_GPP','DMEAN_EVAP','DMEAN_TRANSP','DMEAN_SENSIBLE_VC','DMEAN_SENSIBLE_GC'    &
+            ,'DMEAN_SENSIBLE_AC','DMEAN_SENSIBLE','DMEAN_PLRESP','DMEAN_RH','DMEAN_LEAF_RESP'   &
+            ,'DMEAN_ROOT_RESP','DMEAN_GROWTH_RESP','DMEAN_STORAGE_RESP','DMEAN_VLEAF_RESP'      &
+            ,'DMEAN_NEP','DMEAN_FSW','DMEAN_FSN','DMEAN_SOIL_TEMP','DMEAN_SOIL_WATER'           &
+            ,'DMEAN_GPP_LU','DMEAN_RH_LU','DMEAN_NEP_LU','DMEAN_GPP_DBH')
+           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
+           write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+           write (unit=*,fmt='(a)') '                                                           '
+           write (unit=*,fmt='(a)') ' + Variable '//trim(varn)//' not found in your history.'
+           write (unit=*,fmt='(a)') ' + Initializing this variable with zero. '
+           write (unit=*,fmt='(a)') ' + This may cause your first daily and first monthly       '
+           write (unit=*,fmt='(a)') '   output to be incorrect for this variable.'
+           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
+           write (unit=*,fmt='(a)') '                                                           '
+           buff=0.
+        case('MMEAN_GPP','MMEAN_EVAP','MMEAN_TRANSP','MMEAN_SENSIBLE','MMEAN_NEP','MMEAN_PLRESP'&
+            ,'MMEAN_RH','MMEAN_LEAF_RESP','MMEAN_ROOT_RESP','MMEAN_GROWTH_RESP'                 &
+            ,'MMEAN_STORAGE_RESP','MMEAN_VLEAF_RESP','STDEV_GPP','STDEV_EVAP','STDEV_TRANSP'    &
+            ,'STDEV_SENSIBLE','STDEV_NEP','STDEV_RH','MMEAN_LAI_PFT','MMEAN_GPP_LU'             &
+            ,'MMEAN_SOIL_TEMP','MMEAN_SOIL_WATER'                                               &
+            ,'MMEAN_RH_LU','MMEAN_NEP_LU','MMEAN_GPP_DBH')
+           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
+           write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+           write (unit=*,fmt='(a)') '                                                           '
+           write (unit=*,fmt='(a)') ' + Variable '//trim(varn)//' not found in your history.'
+           write (unit=*,fmt='(a)') ' + Initializing this variable with zero. '
+           write (unit=*,fmt='(a)') ' + This may cause your first monthly output to be incorrect'
+           write (unit=*,fmt='(a)') '   for this variable.'
+           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
+           write (unit=*,fmt='(a)') '                                                           '
+           buff=0.
+        case default
+           call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
+                           ,'hdf_getslab_r','ed_history_io.f90')
+        end select
+     end if
+     
+  else
+     call h5dread_f(dset_id, H5T_NATIVE_DOUBLE,buff,globdims, hdferr, &
+          mem_space_id = memspace, file_space_id = filespace )
+     if (hdferr /= 0) then
+        select case (trim(varn))
+        case('DMEAN_GPP','DMEAN_EVAP','DMEAN_TRANSP','DMEAN_SENSIBLE_VC','DMEAN_SENSIBLE_GC'    &
+            ,'DMEAN_SENSIBLE_AC','DMEAN_SENSIBLE','DMEAN_PLRESP','DMEAN_RH','DMEAN_LEAF_RESP'   &
+            ,'DMEAN_ROOT_RESP','DMEAN_GROWTH_RESP','DMEAN_STORAGE_RESP','DMEAN_VLEAF_RESP'      &
+            ,'DMEAN_NEP','DMEAN_FSW','DMEAN_FSN','DMEAN_SOIL_TEMP','DMEAN_SOIL_WATER'           &
+            ,'DMEAN_GPP_LU','DMEAN_RH_LU','DMEAN_NEP_LU','DMEAN_GPP_DBH')
+           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
+           write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+           write (unit=*,fmt='(a)') '                                                           '
+           write (unit=*,fmt='(a)') ' + Variable '//trim(varn)//' not found in your history.'
+           write (unit=*,fmt='(a)') ' + Initializing this variable with zero. '
+           write (unit=*,fmt='(a)') ' + This may cause your first daily and first monthly       '
+           write (unit=*,fmt='(a)') '   output to be incorrect for this variable.'
+           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
+           write (unit=*,fmt='(a)') '                                                           '
+           buff=0.
+        case('MMEAN_GPP','MMEAN_EVAP','MMEAN_TRANSP','MMEAN_SENSIBLE','MMEAN_NEP','MMEAN_PLRESP'&
+            ,'MMEAN_RH','MMEAN_LEAF_RESP','MMEAN_ROOT_RESP','MMEAN_GROWTH_RESP'                 &
+            ,'MMEAN_STORAGE_RESP','MMEAN_VLEAF_RESP','STDEV_GPP','STDEV_EVAP','STDEV_TRANSP'    &
+            ,'STDEV_SENSIBLE','STDEV_NEP','STDEV_RH','MMEAN_LAI_PFT','MMEAN_GPP_LU'             &
+            ,'MMEAN_SOIL_TEMP','MMEAN_SOIL_WATER'                                               &
+            ,'MMEAN_RH_LU','MMEAN_NEP_LU','MMEAN_GPP_DBH')
+           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
+           write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+           write (unit=*,fmt='(a)') '                                                           '
+           write (unit=*,fmt='(a)') ' + Variable '//trim(varn)//' not found in your history.'
+           write (unit=*,fmt='(a)') ' + Initializing this variable with zero. '
+           write (unit=*,fmt='(a)') ' + This may cause your first monthly output to be incorrect'
+           write (unit=*,fmt='(a)') '   for this variable.'
+           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
+           write (unit=*,fmt='(a)') '                                                           '
+           buff=0.
+        case default
+           call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
+                           ,'hdf_getslab_r','ed_history_io.f90')
+        end select
+     end if
+  endif
+
+!  write(unit=*,fmt='(a)') 'History start: Loading '//trim(varn)//'...'
+
+  call h5sclose_f(filespace, hdferr)
+  call h5sclose_f(memspace , hdferr)
+  call h5dclose_f(dset_id  , hdferr)
+  
+
+  return
+end subroutine hdf_getslab_d
+!==========================================================================================!
+!==========================================================================================!
 
 
 

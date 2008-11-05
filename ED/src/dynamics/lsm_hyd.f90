@@ -202,7 +202,7 @@ subroutine calcHydroSubsurface()
   use soil_coms, only: soil,slz,dslz
   use grid_coms, only: ngrids,nzg
   use misc_coms, only: dtlsm
-  use therm_lib, only: qtk, qwtk
+  use therm_lib, only: qtk,qwtk,qwtk8
   implicit none
 
   type(edtype)      , pointer :: cgrid                ! Alias for current ED grid-type
@@ -591,7 +591,7 @@ subroutine updateWatertableAdd(cpoly,isi,ipa,dw,sheat)
   use ed_state_vars, only: sitetype,polygontype
   use soil_coms, only: soil,slz,dslz,dslzi
   use grid_coms, only: nzg
-  use therm_lib, only: qwtk
+  use therm_lib, only: qwtk8
   implicit none
   type(polygontype) , target        :: cpoly
   integer           , intent(in)    :: isi,ipa
@@ -635,7 +635,7 @@ subroutine updateWatertableAdd(cpoly,isi,ipa,dw,sheat)
          csite%soil_energy(k,ipa)  = csite%soil_energy(k,ipa) + dw_layer*sheat
 
          !!update soil temperature
-         call qwtk(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*1.e3,soil(nsoil)%slcpd,tempk,fracliq)
+         call qwtk8(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*1.e3,soil(nsoil)%slcpd,tempk,fracliq)
          csite%soil_tempk(k,ipa) = tempk
          if(done) exit layerloop
       end if
@@ -705,7 +705,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
    use consts_coms, only : cliq1000,tsupercool
    use soil_coms, only: soil,slz,dslz,dslzi
    use grid_coms, only: nzg
-   use therm_lib, only : qwtk
+   use therm_lib, only : qwtk8
 
    implicit none
    type(polygontype), target      :: cpoly
@@ -792,7 +792,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
       swater = swater - dw*dslz(k)
 
       !!update soil temperature
-      call qwtk(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*1.e3,soil(nsoil)%slcpd,tempk,fracliq)
+      call qwtk8(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*1.e3,soil(nsoil)%slcpd,tempk,fracliq)
       csite%soil_tempk(k,ipa) = tempk
 
       !!iterate

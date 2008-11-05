@@ -146,15 +146,25 @@ end subroutine strain
 !    This subroutine computes the Brunt-Väisälä frequency squared (en2) based on the       !
 ! virtual temperature profile. It will consider the effect of condensed phase.             !
 !------------------------------------------------------------------------------------------!
-subroutine bruvais(m1,m2,m3,ia,iz,ja,jz,theta,rtp,rv,rtgt,flpw,en2)
+subroutine bruvais(ibruvais,m1,m2,m3,ia,iz,ja,jz,pi0,pp,theta,rtp,rv,rtgt,flpw,en2)
    use mem_scratch, only :  & !
-           vctr12           & ! intent(out) - Virtual temperature
+           vctr11           & ! intent(out) - Potential temperature
+          ,vctr12           & ! intent(out) - Virtual potential temperature
           ,vctr1            & ! intent(out) - Height above ground
+          ,vctr2            & ! intent(out) - coefficient #1 (either cl1 or ci1)
+          ,vctr3            & ! intent(out) - coefficient #2 (either cl2 or ci2)
+          ,vctr4            & ! intent(out) - coefficient #3 (either cl3 or ci3)
           ,vctr5            & ! intent(out) - Delta-z between k and k+1
           ,vctr6            & ! intent(out) - Delta-z between k-1 and k
           ,vctr10           & ! intent(out) - Ratio between z(k)-z(k-½) and z(k+½)-z(k-½)
+          ,vctr19           & ! intent(out) - g / Height above ground
           ,vctr25           & ! intent(out) - d(theta_v)/dz at k+½
-          ,vctr26           ! ! intent(out) - d(theta_v)/dz at k-½
+          ,vctr26           & ! intent(out) - d(theta_v)/dz at k-½
+          ,vctr27           & ! intent(out) - Full Exner function                  [J/kg/K]
+          ,vctr28           & ! intent(out) - Pressure                             [    Pa]
+          ,vctr29           & ! intent(out) - Temperature                          [     K]
+          ,vctr30           & ! intent(out) - Saturation mixing ratio              [ kg/kg]
+          ,vctr31           ! ! intent(out) - Condensed  mixing ratio              [ kg/kg]
 
    use mem_grid, only    : &
            zt              & ! intent(in)
@@ -164,18 +174,34 @@ subroutine bruvais(m1,m2,m3,ia,iz,ja,jz,theta,rtp,rv,rtgt,flpw,en2)
           ,nzpmax          ! ! intent(in)
 
    use rconstants, only  : &
-           g               ! ! intent(in)
+           g               & ! intent(in)
+          ,t00             & ! intent(in)
+          ,p00             & ! intent(in)
+          ,alvl            & ! intent(in)
+          ,alvi            & ! intent(in)
+          ,rgas            & ! intent(in)
+          ,cp              & ! intent(in)
+          ,cpi             & ! intent(in)
+          ,cpor            & ! intent(in)
+          ,ep              ! ! intent(in)
 
    use therm_lib, only   : &
            virtt           & ! function
-          ,vapour_on       ! ! intent(in)
+          ,rslf            & ! function
+          ,rsif            & ! function
+          ,vapour_on       & ! intent(in)
+          ,cloud_on        & ! intent(in)
+          ,bulk_on         ! ! intent(in)
 
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
+   integer                  , intent(in   ) :: ibruvais ! Method to compute N²     [   ---]
    integer                  , intent(in   ) :: m1,m2,m3 ! Z,X,Y dimensions         [   ---]
    integer                  , intent(in   ) :: ia,iz    ! West-East node bound.    [   ---]
    integer                  , intent(in   ) :: ja,jz    ! South-North node bound.  [   ---]
+   real, dimension(m1,m2,m3), intent(in   ) :: pi0      ! Ref. Exner function      [J/kg/K]
+   real, dimension(m1,m2,m3), intent(in   ) :: pp       ! Perturbation on Exner    [J/kg/K]
    real, dimension(m1,m2,m3), intent(in   ) :: theta    ! Potential temperature    [     K]
    real, dimension(m1,m2,m3), intent(in   ) :: rtp      ! Total mixing ratio       [ kg/kg]
    real, dimension(m1,m2,m3), intent(in   ) :: rv       ! Vapour mixing ratio      [ kg/kg]       
@@ -184,10 +210,19 @@ subroutine bruvais(m1,m2,m3,ia,iz,ja,jz,theta,rtp,rv,rtgt,flpw,en2)
    real, dimension(m1,m2,m3), intent(inout) :: en2      ! (Brunt-Väisälä freq.)²   [   Hz²]
    !----- Local variables -----------------------------------------------------------------!
    integer :: i,j,k,ki,k2,k1
+   real :: temp,rvlsi,rvii
+   !----- Local constants, for alternative method to compute N², test only ----------------!
+   real, parameter :: cl1 = alvl / rgas
+   real, parameter :: cl2 = ep * alvl ** 2 / (cp * rgas)
+   real, parameter :: cl3 = alvl / cp
+   real, parameter :: ci1 = alvi / rgas
+   real, parameter :: ci2 = ep * alvi ** 2 / (cp * rgas)
+   real, parameter :: ci3 = alvi / cp
+
    !---------------------------------------------------------------------------------------!
 
-   do j = ja,jz
-      do i = ia,iz
+   jloop: do j = ja,jz
+      iloop: do i = ia,iz
 
          k2=nint(flpw(i,j))
          k1=k2-1
@@ -196,21 +231,27 @@ subroutine bruvais(m1,m2,m3,ia,iz,ja,jz,theta,rtp,rv,rtgt,flpw,en2)
          if (vapour_on) then
             !----- Consider the vapour and possibly the condensation effect ---------------!
             do k = k1,m1
-               vctr12(k) = virtt(theta(k,i,j),rv(k,i,j),rtp(k,i,j))
+               vctr11(k) = theta(k,i,j)
+               vctr12(k) = virtt(vctr11(k),rv(k,i,j),rtp(k,i,j))
             end do
          else
-            !----- No water substance, theta_v = theta
-            vctr12(k1:m1) = theta(k1:m1,i,j)
-         endif
+            vctr11(k1:m1) = theta(k1:m1,i,j)
+            !----- No water substance, theta_v = theta ------------------------------------!
+            do k = k1,m1
+               vctr11(k) = theta(k,i,j)
+               vctr12(k) = vctr11(k)
+            end do
+         end if
 
-
+         !----- vctr1(k) is the height above ground ---------------------------------------!
          do k = k1,m1
             vctr1(k) = rtgt(i,j)*(zt(k)-zm(k1))
          end do
          
+         
          !---------------------------------------------------------------------------------!
-         !    This correction is necessary because delta-z is not constant in most cases.  !
-         ! If it were constant, then vctr10 is 0.5 which is the original case.             !
+         !    This correction is necessary because delta-z is not constant in most         !
+         ! cases. If it were constant, then vctr10 is 0.5 which is the original case.      !
          !---------------------------------------------------------------------------------!
          do k = k2,m1-1
             vctr5(k)  = 1. / (vctr1(k+1) - vctr1(k))        ! 1/Delta_z(k+½)
@@ -218,21 +259,93 @@ subroutine bruvais(m1,m2,m3,ia,iz,ja,jz,theta,rtp,rv,rtgt,flpw,en2)
             !----- vctr10 is the ratio between [z(k)-z(k-½)] and [z(k+½)+z(k-½)] ----------!
             vctr10(k) = (vctr1(k)-vctr1(k-1)) / (vctr1(k+1)-vctr1(k-1))
          end do
+         
+         
+         !---- Alternative way to compute, lacks citation ---------------------------------!
+         if (ibruvais == 3) then
+            do k=k2,m1-1
+               vctr19(k) = g / ((zt(k+1)-zt(k-1)) * rtgt(i,j))
+            end do
+         elseif (cloud_on .and. ibruvais == 2) then 
 
-         do k = k2,m1-1
-            vctr25(k)  = vctr5(k) * (vctr12(k+1) - vctr12(k))
-            vctr26(k)  = vctr6(k) * (vctr12(k) - vctr12(k-1))
-            en2(k,i,j) = g * (vctr10(k)*vctr25(k) + (1.-vctr10(k))*vctr26(k)) / vctr12(k)
-         end do
+            do k = k2,m1-1
+               vctr19(k) = g / ((zt(k+1) - zt(k-1)) * rtgt(i,j))
+            end do
 
-      end do
-   end do
+            do k=k1,m1
+               vctr27(k) = pi0(k,i,j) + pp(k,i,j)
+               vctr28(k) = p00 * (cpi   * vctr27(k)) ** cpor
+               vctr29(k) = theta(k,i,j) * vctr27(k)  * cpi
+
+               !---------------------------------------------------------------------------!
+               !    Deciding which coefficient to use. This is inconsistent with most      !
+               ! thermodynamics, but I will use it anyway, just to check whether this is   !
+               ! the cause of the dramatic difference.                                     !
+               !---------------------------------------------------------------------------!
+               if (bulk_on .and. vctr29(k) < t00-20.) then
+                  vctr30(k) = rsif(vctr28(k),vctr29(k))
+                  vctr2(k) = ci1
+                  vctr3(k) = ci2
+                  vctr4(k) = ci3
+               else
+                  vctr30(k) = rslf(vctr28(k),vctr29(k))
+                  vctr2(k) = cl1
+                  vctr3(k) = cl2
+                  vctr4(k) = cl3
+               end if
+               vctr31(k) = max(rtp(k,i,j)/vctr30(k) -.999 ,0.)
+            end do
+            !----- Finding the lowest level above the -20C level and compute rsif ---------!
+            if (bulk_on .and. any(vctr29(k1:m1) >= t00 -20.)) then
+               ki = minloc(vctr29(k1:m1),dim=1,mask=vctr29(k1:m1) >= t00-20.) + k1-1
+               rvlsi = rsif(vctr28(ki-1),vctr29(ki-1))
+            else
+               ki = k1
+               rvlsi = rsif(vctr28(ki),vctr29(ki))
+            end if
+         end if
+
+         !----- Computing the frequency according to the option. --------------------------!
+         if (ibruvais == 3) then
+            do k=k2,m1-1
+               en2(k,i,j)=vctr19(k)*(vctr12(k+1)-vctr12(k-1))/vctr12(k)
+            end do
+         elseif (cloud_on .and. ibruvais == 2) then
+            do k=k2,m1-1
+               if (vctr31(k) > 0) then
+                  if ( k == ki) then
+                     rvii = rvlsi
+                  else
+                     rvii = vctr30(k-1)
+                  end if
+                  en2(k,i,j) = vctr19(k) * ((1. + vctr2(k) * vctr30(k) / vctr29(k))        &
+                                          /(1. + vctr3(k) * vctr30(k) / vctr29(k) ** 2)    &
+                             * ((vctr11(k+1) - vctr11(k-1)) / vctr11(k)                    &
+                             + vctr4(k) / vctr29(k) * (vctr30(k+1) - rvii))                &
+                             - (rtp(k+1,i,j) - rtp(k-1,i,j)))
+               else
+                  vctr25(k)  = vctr5(k) * (vctr12(k+1) - vctr12(k))
+                  vctr26(k)  = vctr6(k) * (vctr12(k) - vctr12(k-1))
+                  en2(k,i,j) = g * (vctr10(k)*vctr25(k) + (1.-vctr10(k))*vctr26(k))        &
+                                   /vctr12(k)
+               end if
+            end do
+         else
+            do k = k2,m1-1
+               vctr25(k)  = vctr5(k) * (vctr12(k+1) - vctr12(k))
+               vctr26(k)  = vctr6(k) * (vctr12(k) - vctr12(k-1))
+               en2(k,i,j) = g * (vctr10(k)*vctr25(k) + (1.-vctr10(k))*vctr26(k)) / vctr12(k)
+            end do
+         end if
+
+      end do iloop
+   end do jloop
 
    !----- **(JP)** Removed from the main loop to allow vectorisation ----------------------!
    do j = ja,jz
       do i = ia,iz
          k1=nint(flpw(i,j))-1
-         en2(k1,i,j)=en2(k1,i,j)
+         en2(k1,i,j)=en2(k2,i,j)
       end do
    end do
    do j = ja,jz

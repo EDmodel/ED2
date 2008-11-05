@@ -32,6 +32,10 @@ subroutine init_ed_cohort_vars_array(cpatch,ico, lsl)
 
   cpatch%fsw(ico) = 1.0
   cpatch%fsn(ico) = 1.0
+  
+  !----- This variable would never be assigned for low LAI cohorts 
+  cpatch%fs_open(ico) = cpatch%fsw(ico)*cpatch%fsn(ico)
+
   cpatch%monthly_dndt(ico) = 0.0
 
   cpatch%par_v(ico)            = 0.0
@@ -299,19 +303,20 @@ end subroutine init_ed_poly_vars_array
 
 subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
   
-  use ed_state_vars,only:sitetype
+  use ed_state_vars,only:sitetype,patchtype
   use grid_coms, only: nzg, nzs
-  use soil_coms, only: soil
-  use therm_lib, only: qwtk,qtk
+  use soil_coms, only: soil,slz
+  use therm_lib, only: qwtk8,qtk
   
   implicit none
-  integer :: ipa
+  integer :: ipa,ico
   type(sitetype), target :: csite
+  type(patchtype), pointer :: cpatch
   integer :: k
   real, intent(in) :: rhos
   
   do k = 1, nzg
-     call qwtk(csite%soil_energy(k,ipa), csite%soil_water(k,ipa)*1.e3,  &
+     call qwtk8(csite%soil_energy(k,ipa), csite%soil_water(k,ipa)*1.e3,  &
           soil(csite%ntext_soil(k,ipa))%slcpd, csite%soil_tempk(k,ipa), csite%soil_fracliq(k,ipa))
   enddo
 
@@ -329,6 +334,25 @@ subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
        csite%soil_water(nzg,ipa), csite%soil_energy(nzg,ipa),    &
        csite%sfcwater_energy(max(1,csite%nlev_sfcwater(ipa)),ipa), rhos,   &
        csite%can_shv(ipa), csite%ground_shv(ipa), csite%surface_ssh(ipa))
+  
+  
+  !---- paw_avg10d is a 10-day running average of available water. Initialize it with the current value.
+  cpatch => csite%patch(ipa)
+  do ico = 1, cpatch%ncohorts
+     cpatch%paw_avg10d(ico) = 0.0
+     do k = cpatch%krdepth(ico), nzg - 1
+        cpatch%paw_avg10d(ico) = cpatch%paw_avg10d(ico)                           &
+             + (csite%soil_water(k,ipa)-soil(csite%ntext_soil(k,ipa))%soilcp)     &
+             * (slz(k+1)-slz(k))/(soil(csite%ntext_soil(k,ipa))%slmsts            &
+             - soil(csite%ntext_soil(k,ipa))%soilcp) 
+     end do
+     cpatch%paw_avg10d(ico)= cpatch%paw_avg10d(ico) + (csite%soil_water(nzg,ipa)  &
+          -soil(csite%ntext_soil(nzg,ipa))%soilcp) &
+          *(-1.0*slz(nzg))              &
+          /(soil(csite%ntext_soil(nzg,ipa))%slmsts &
+          -soil(csite%ntext_soil(nzg,ipa))%soilcp) 
+     cpatch%paw_avg10d(ico) = cpatch%paw_avg10d(ico)/(-1.0*slz(cpatch%krdepth(ico)))
+  end do
   
   return
 end subroutine new_patch_sfc_props_ar

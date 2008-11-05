@@ -600,26 +600,28 @@ end subroutine mxtked
 
 subroutine tkemy(m1,m2,m3,ia,iz,ja,jz,ibcon,jd,i0,j0  &
    ,tkep,tket,vt3dh,vt3di,vt3dj,scr1,rtgt  &
-   ,theta,dn0,up,vp,wp,sflux_u,sflux_v,sflux_w,sflux_t,tkep2,flpw,flpu,flpv)
+   ,theta,dn0,up,vp,wp,sflux_u,sflux_v,sflux_w,sflux_t,tkep2,flpw,flpu,flpv,sigw)
 
 use mem_grid, only:  &
-              zt, &       !INTENT(IN)
-              zm, &       !INTENT(IN)
-              nstbot      !INTENT(IN)
+              zt, &       ! intent(in)
+              zm, &       ! intent(in)
+              nstbot      ! intent(in)
 
 use mem_scratch, only: &
-                 vctr30, &     !INTENT(OUT)
-                 vctr31, &     !INTENT(OUT)
-                 vctr1, &      !INTENT(OUT)
-                 vctr32, &     !INTENT(OUT)
-                 vctr33, &     !INTENT(OUT)
-                 vctr9, &      !INTENT(OUT)
-                 vctr5         !INTENT(OUT)
+                 vctr30, &     ! intent(out)
+                 vctr31, &     ! intent(out)
+                 vctr1, &      ! intent(out)
+                 vctr32, &     ! intent(out)
+                 vctr33, &     ! intent(out)
+                 vctr9, &      ! intent(out)
+                 vctr5         ! intent(out)
 
 use rconstants, only: &
-                vonk, &        !INTENT(IN)
-                tkmin, &       !INTENT(IN)
-                g              !INTENT(IN)
+                onethird, &    ! intent(in)
+                vonk, &        ! intent(in)
+                tkmin, &       ! intent(in)
+                g,     &       ! intent(in)
+                sigwmin        ! intent(in)
 
 implicit none
 
@@ -635,7 +637,8 @@ real, intent(in)   , dimension(m1,m2,m3) :: tkep,  &
 
 
 real, intent(out)  , dimension(m1,m2,m3) :: vt3dh, &
-                                            scr1
+                                            scr1,  &
+                                            sigw
                                             
                                          
 real, intent(inout), dimension(m1,m2,m3) :: tket,  &
@@ -666,7 +669,7 @@ data a1,a2,b1,b2,c1/0.92,0.74,16.6,10.1,0.08/
 data aux1,aux2/0.758964199,2.58286747/
 data rf1,rf2,rf3,rf4/1.,0.191232309,0.223117196,0.234067819/
 
-!        7 - mellor and yamada (after andre et al, 1978)
+!        1 - mellor and yamada (after andre et al, 1978)
 
 wght3=1.
 !c      wght3=zt(nint(flpw(2))/zt(3)
@@ -730,6 +733,13 @@ do j=ja,jz
             sh2=1.-30.5916*gh
             sh0=sh1/max(sh2,1e-10)
          endif
+         
+         !-------- MLO. Finding sigma-w for cumulus parameterization ----------------------!
+         sigw(k,i,j) = sqrt(max(sigwmin*sigwmin,                 &
+                       tkep2(k)*(onethird - 2.*a1*ssm*gm + 4.*a1*sh0*gh)))
+         !---------------------------------------------------------------------------------!
+         
+         
          scr1(k,i,j)=vctr9(k)*vctr30(k)*ssm
          vt3dh(k,i,j)=vctr9(k)*vctr30(k)*sh0
          vctr5(k)=scr1(k,i,j)*vt3di(k,i,j)  &

@@ -244,12 +244,12 @@ MOD_EXT=mod
 #    failing or giving instabilities, or funny results after a long time.                  #
 #------------------------------------------------------------------------------------------#
 USE_INTERF=1
-F_OPTS= -FR -O2 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
+F_OPTS= -FR -O2 -recursive -static -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
         -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
-C_OPTS= -O2 -DLITTLE  -g -traceback -debug extended
-LOADER_OPTS= -FR -O2 -Vaxlib  -check all -g -fpe0 -ftz -debug extended        \
+C_OPTS= -O2 -DLITTLE  -g -static -traceback -debug extended
+LOADER_OPTS= -FR -O2 -Vaxlib -static -check all -g -fpe0 -ftz -debug extended        \
              -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
-C_LOADER_OPTS=-v -g -traceback
+C_LOADER_OPTS=-v -g -traceback -static
 #------------------------------------------------------------------------------------------#
 
 

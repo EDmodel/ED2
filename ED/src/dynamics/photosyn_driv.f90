@@ -22,7 +22,7 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
   real, intent(in) :: prss
   integer, dimension(nzg), intent(out) :: ed_ktrans
   integer, dimension(nzg), intent(in) :: ntext_soil
-  real, dimension(nzg), intent(in) :: soil_water
+  real(kind=8), dimension(nzg), intent(in) :: soil_water
   real, dimension(nzg), intent(in) :: soil_fracliq
   integer, intent(in) :: lsl
   real, intent(in), dimension(n_pft) :: leaf_aging_factor
@@ -236,7 +236,7 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
 
         ! Photorespiration can become important at high temperatures.  If so,
         ! close down the stomata.
-        if(cpatch%A_open(ico) < cpatch%A_closed(ico))cpatch%fs_open(ico) = 0.0
+        if(cpatch%A_open(ico) < cpatch%A_closed(ico)) cpatch%fs_open(ico) = 0.0
 
         ! Net stomatal resistance
         cpatch%stomatal_resistance(ico) = 1.0 / (cpatch%fs_open(ico) / cpatch%rsw_open(ico) +   &

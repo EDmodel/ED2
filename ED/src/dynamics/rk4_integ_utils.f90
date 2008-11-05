@@ -1,4 +1,4 @@
-subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,  &
+subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,ifm,  &
      integration_buff, rhos, vels, atm_tmp, atm_shv, atm_co2, geoht,  &
      exner, pcpg, qpcpg, prss, lsl)
 
@@ -16,7 +16,7 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,  &
   type(integration_vars_ar), target :: integration_buff
   type(sitetype),target :: csite
   type(patchtype),pointer :: cpatch
-  integer :: ipa,ico,isi,ipy
+  integer :: ipa,ico,isi,ipy,ifm
 
   integer, parameter :: maxstp=100000000
   real, parameter :: tiny=1.0e-20
@@ -87,7 +87,7 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,  &
 
      ! Take the step
      call rkqs_ar(integration_buff, x, h, hmin, epsi, hdid, hnext,  &
-          csite,ipa,isi,ipy, rhos, vels, atm_tmp, atm_shv, atm_co2,  &
+          csite,ipa,isi,ipy,ifm, rhos, vels, atm_tmp, atm_shv, atm_co2,  &
           geoht, exner, pcpg, qpcpg, prss, lsl)
 
      ! Re-calculate tempks, fracliqs, surface water flags.
@@ -100,41 +100,69 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,  &
         csite%ebudget_loss2runoff(ipa) = 0.0
         ksn = integration_buff%y%nlev_sfcwater
         
+        !----------------------------------------------------------------------------------!
+        !    I had to split the following if into two tests. When ksn is 0, then we cannot !
+        ! test sfcwater_???(ksn) otherwise the compiler complains about out of bounds      !
+        ! problem.                                                                         !
+        !----------------------------------------------------------------------------------!
+        
         if (irunoff == 1 .and. ksn >= 1) then
-           if (integration_buff%y%sfcwater_mass(ksn) > 0.0) then
-              if (integration_buff%y%sfcwater_fracliq(ksn) > 0.1) then
-                 wfreeb = integration_buff%y%sfcwater_mass(ksn)  &
-                      * (integration_buff%y%sfcwater_fracliq(ksn) - .1)  &
-                      / 0.9 * min(1.0,runoff_time*hdid) 
-                 qwfree = wfreeb * cliq   &
-                      * (integration_buff%y%sfcwater_tempk(ksn) - tsupercool)
-                 
-                 ! Convert to J/m2
-                 integration_buff%y%sfcwater_energy(ksn) =   &
-                      integration_buff%y%sfcwater_energy(ksn) *  &
+           if (integration_buff%y%sfcwater_mass(ksn) > 0.0 .and. &
+               integration_buff%y%sfcwater_fracliq(ksn) > 0.1) then
+
+              wfreeb = integration_buff%y%sfcwater_mass(ksn)  &
+                   * (integration_buff%y%sfcwater_fracliq(ksn) - .1)  &
+                   / 0.9 * min(1.0,runoff_time*hdid) 
+              qwfree = wfreeb * cliq   &
+                   * (integration_buff%y%sfcwater_tempk(ksn) - tsupercool)
+           
+              ! Convert to J/m2
+              integration_buff%y%sfcwater_energy(ksn) =   &
+                   integration_buff%y%sfcwater_energy(ksn) *  &
+                   integration_buff%y%sfcwater_mass(ksn)
+              integration_buff%y%sfcwater_mass(ksn) =  &
+                   integration_buff%y%sfcwater_mass(ksn) - wfreeb
+              integration_buff%y%sfcwater_depth(ksn) =  &
+                   integration_buff%y%sfcwater_depth(ksn) - wfreeb*0.001
+              if(integration_buff%y%sfcwater_mass(ksn) >= min_sfcwater_mass)then
+                 integration_buff%y%sfcwater_energy(ksn) =  ( &
+                      integration_buff%y%sfcwater_energy(ksn)-qwfree)/ &
                       integration_buff%y%sfcwater_mass(ksn)
-                 integration_buff%y%sfcwater_mass(ksn) =  &
-                      integration_buff%y%sfcwater_mass(ksn) - wfreeb
-                 integration_buff%y%sfcwater_depth(ksn) =  &
-                      integration_buff%y%sfcwater_depth(ksn) - wfreeb*0.001
-                 if(integration_buff%y%sfcwater_mass(ksn) >= min_sfcwater_mass)then
-                    integration_buff%y%sfcwater_energy(ksn) =  ( &
-                         integration_buff%y%sfcwater_energy(ksn)-qwfree)/ &
-                         integration_buff%y%sfcwater_mass(ksn)
-                 else
-                    integration_buff%y%sfcwater_energy(ksn) = 0.0
-                 endif
-                 
-                 call stabilize_snow_layers_ar(integration_buff%y, csite,ipa,  &
-                      0.0, lsl)
-                 ! Compute runoff for output 
-!                   csite%runoff(ipa) = csite%runoff(ipa) + wfreeb/(x2-x1)
-!                   csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa) + qwfree/(x2-x1)
-                 csite%wbudget_loss2runoff(ipa) = wfreeb
-                 csite%ebudget_loss2runoff(ipa) = qwfree
+              else
+                 integration_buff%y%sfcwater_energy(ksn) = 0.0
               endif
-           endif
-        endif
+           
+              call stabilize_snow_layers_ar(integration_buff%y, csite,ipa,  &
+                   0.0, lsl)
+
+              ! Compute runoff for output 
+           
+              csite%runoff(ipa) = csite%runoff(ipa) + wfreeb/(x2-x1)
+           
+              csite%avg_runoff(ipa) = csite%avg_runoff(ipa) + wfreeb
+           
+              csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa) + qwfree
+           
+              csite%wbudget_loss2runoff(ipa) = wfreeb
+              csite%ebudget_loss2runoff(ipa) = qwfree
+           else
+              csite%runoff(ipa) = 0.0
+              csite%avg_runoff(ipa) = 0.0
+              csite%avg_runoff_heat(ipa) = 0.0
+              csite%wbudget_loss2runoff(ipa) = 0.0
+              csite%ebudget_loss2runoff(ipa) = 0.0
+           end if
+           
+        else
+
+           csite%runoff(ipa) = 0.0
+           csite%avg_runoff(ipa) = 0.0
+           csite%avg_runoff_heat(ipa) = 0.0
+           csite%wbudget_loss2runoff(ipa) = 0.0
+           csite%ebudget_loss2runoff(ipa) = 0.0
+
+        end if
+
 
         call copy_rk4_patch_ar(integration_buff%y,   &
              integration_buff%initp, cpatch, lsl)
@@ -247,7 +275,7 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
   cpatch => sourcesite%patch(ipa)
   do ico = 1,cpatch%ncohorts
      targetp%veg_water(ico)     = cpatch%veg_water(ico)
-     targetp%veg_temp(ico)      = cpatch%veg_temp(ico)
+     targetp%veg_energy(ico)    = cpatch%veg_energy(ico)
   enddo
 
   if (diag_veg_heating) then
@@ -343,7 +371,7 @@ subroutine inc_rk4_patch_ar(rkp, inc, fac, cpatch, lsl)
   do ico = 1,cpatch%ncohorts
      rkp%veg_water(ico)     = rkp%veg_water(ico) + fac * inc%veg_water(ico)
      rkp%veg_water(ico)     = max(rkp%veg_water(ico),0.0)
-     rkp%veg_temp(ico)      = rkp%veg_temp(ico) + fac * inc%veg_temp(ico)
+     rkp%veg_energy(ico)    = rkp%veg_energy(ico) + fac * inc%veg_energy(ico)
   enddo
 
   ! Increment the heating/cooling rates over analfrq
@@ -370,6 +398,7 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
   use grid_coms, only: nzg, nzs
   use soil_coms, only: min_sfcwater_mass
   use consts_coms, only: cliq,alli
+  use canopy_radiation_coms, only: lai_min
 
   implicit none
 
@@ -427,10 +456,24 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
   yscal%virtual_water = 0.1
   yscal%virtual_heat = cliq * 110.0 * yscal%virtual_water
   
+!  write (unit=31,fmt='(87a)') ('-',k=1,87)
+!  write (unit=31,fmt='(2(a5,1x),5(a14,1x))') &
+!        '  ICO','  PFT','LAI','ENERGY','D_ENERGY','HTRY','SCALE'
   do ico = 1,cpatch%ncohorts
-     yscal%veg_water(ico) = 0.22
-     yscal%veg_temp(ico) = abs(y%veg_temp(ico)) + abs(dy%veg_temp(ico)*htry) + tiny
-  enddo
+     if (cpatch%lai(ico) > lai_min) then
+        yscal%veg_water(ico) = 0.22
+        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
+                                   + abs(dy%veg_energy(ico)*htry),0.22*alli)
+     else
+        yscal%veg_water(ico) = 1.e30
+        yscal%veg_energy(ico) = 1.e30
+     end if
+!     write (unit=31,fmt='(2(i5,1x),5(es14.7,1x))') &
+!       ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_energy(ico),dy%veg_energy(ico),htry &
+!          ,yscal%veg_energy(ico)
+  end do
+!  write (unit=31,fmt='(87a)') ('-',k=1,87)
+!  write (unit=31,fmt='(a)') ' '
 
   return
 end subroutine get_yscal_ar
@@ -450,7 +493,7 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
   type(patchtype),target :: cpatch
   type(rk4patchtype),target :: yerr,yscal,y,ytemp
   integer :: ico
-  real :: errmax
+  real :: errmax,errh2o,errene
   integer :: k
   
   errmax = 0.0
@@ -473,14 +516,24 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
   errmax = max(errmax,abs(yerr%virtual_heat/yscal%virtual_heat))
   errmax = max(errmax,abs(yerr%virtual_water/yscal%virtual_water))
 
+!  write (unit=40,fmt='(132a)') ('-',k=1,132)
+!  write (unit=40,fmt='(2(a5,1x),8(a14,1x))') &
+!    '  COH','  PFT','           LAI','        ERRH2O','        ERRENE','        ERRMAX'    &
+!                   ,'  YERR%VEG_H2O',' YSCAL%VEG_H2O',' YERR%VEG_ENER','YSCAL%VEG_ENER'
   do ico = 1,cpatch%ncohorts
      
      if(cpatch%lai(ico).gt.lai_min)then
-        errmax = max(errmax,abs(yerr%veg_water(ico)/yscal%veg_water(ico)))
-        errmax = max(errmax,abs(yerr%veg_temp(ico)/yscal%veg_temp(ico)))
+        errh2o = abs(yerr%veg_water(ico)/yscal%veg_water(ico))
+        errene = abs(yerr%veg_energy(ico)/yscal%veg_energy(ico))
+!        write (unit=40,fmt='(2(i5,1x),8(es14.7,1x))') &
+!            ico,cpatch%pft(ico),cpatch%lai(ico),errh2o,errene,errmax &
+!           ,yerr%veg_water(ico),yscal%veg_water(ico)                 &
+!           ,yerr%veg_energy(ico),yscal%veg_energy(ico)
+        errmax = max(errmax,errh2o,errene)
      endif
-
-  enddo
+  end do
+!  write (unit=40,fmt='(132a)') ('-',k=1,132)
+!  write (unit=40,fmt='(a)') ' '
 
   return
 end subroutine get_errmax_ar
@@ -546,8 +599,8 @@ subroutine print_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
         errmax = max(errmax,abs(yerr%veg_water(ico)/yscal%veg_water(ico)))
         print*,'veg_water',errmax,yerr%veg_water(ico),yscal%veg_water(ico), &
              cpatch%lai(ico),cpatch%pft(ico)
-        errmax = max(errmax,abs(yerr%veg_temp(ico)/yscal%veg_temp(ico)))
-        print*,'veg_temp',errmax,yerr%veg_temp(ico),yscal%veg_temp(ico), &
+        errmax = max(errmax,abs(yerr%veg_energy(ico)/yscal%veg_energy(ico)))
+        print*,'veg_energy',errmax,yerr%veg_energy(ico),yscal%veg_energy(ico), &
              cpatch%lai(ico),cpatch%pft(ico)
      endif
   enddo
@@ -562,7 +615,7 @@ subroutine stabilize_snow_layers_ar(initp, csite,ipa, step, lsl)
   use ed_state_vars,only:sitetype,patchtype,rk4patchtype
   use soil_coms, only: soil
   use grid_coms, only: nzg, nzs
-  use therm_lib, only: qwtk, qtk
+  use therm_lib, only: qwtk8, qtk
   implicit none
 
   integer, intent(in) :: lsl
@@ -574,7 +627,7 @@ subroutine stabilize_snow_layers_ar(initp, csite,ipa, step, lsl)
   
   do k = lsl, nzg - 1
      soilhcap = soil(csite%ntext_soil(k,ipa))%slcpd
-     call qwtk(initp%soil_energy(k),initp%soil_water(k)*1000.0  &
+     call qwtk8(initp%soil_energy(k),initp%soil_water(k)*1000.0  &
           ,soilhcap,initp%soil_tempk(k),initp%soil_fracliq(k))
   enddo
 
@@ -661,14 +714,12 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch, lsl)
   targetp%avg_vapor_ac       = sourcep%avg_vapor_ac
   targetp%avg_transp         = sourcep%avg_transp  
   targetp%avg_evap           = sourcep%avg_evap    
-  targetp%avg_runoff         = sourcep%avg_runoff
   targetp%avg_sensible_vc    = sourcep%avg_sensible_vc  
   targetp%avg_sensible_2cas  = sourcep%avg_sensible_2cas
   targetp%avg_qwshed_vg      = sourcep%avg_qwshed_vg    
   targetp%avg_sensible_gc    = sourcep%avg_sensible_gc  
   targetp%avg_sensible_ac    = sourcep%avg_sensible_ac  
   targetp%avg_sensible_tot   = sourcep%avg_sensible_tot 
-
 
   targetp%ground_shv = sourcep%ground_shv
   targetp%surface_ssh = sourcep%surface_ssh
@@ -692,7 +743,7 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch, lsl)
   do k=1,nco
 
      targetp%veg_water(k) = sourcep%veg_water(k)
-     targetp%veg_temp(k)  = sourcep%veg_temp(k)
+     targetp%veg_energy(k)  = sourcep%veg_energy(k)
   
   enddo
 
@@ -859,7 +910,7 @@ subroutine print_patch_ar(y, csite,ipa, lsl)
   print*,csite%htry(ipa)
 
   print*,'cohorts'
-  print*,1,"y%veg_water,y%veg_temp"
+  print*,1,"y%veg_water,y%veg_energy"
   print*,2,"ccp%lai"
   print*,3,"ccp%hite"
   print*,4,"pft,krdepth,dbh"
@@ -869,7 +920,7 @@ subroutine print_patch_ar(y, csite,ipa, lsl)
 
   do ico=1,cpatch%ncohorts
      if(cpatch%lai(ico).gt.lai_min)then
-        print*,1,y%veg_water(ico),y%veg_temp(ico)
+        print*,1,y%veg_water(ico),y%veg_energy(ico)
         print*,2,cpatch%lai(ico)!,y%a_op(ico),y%a_cl(ico)
         !print*,3,y%p_op(ico),y%p_cl(ico),y%rb(ico),
         print*,3,cpatch%hite(ico)
@@ -925,7 +976,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   use soil_coms, only: soil, water_stab_thresh, dslz, dslzi, &
        min_sfcwater_mass
   use consts_coms, only: cice, cliq, alli,tsupercool,t3ple
-  use therm_lib, only : qtk,qwtk
+  use therm_lib, only : qtk,qwtk,qwtk8
 
   implicit none
   integer :: ipa,ico
@@ -948,13 +999,13 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   real :: wdiff
   real :: totsnow
   real :: depthgain
-  real :: wfree
+  real(kind=8) :: wfree
   real :: qwfree
   type(rk4patchtype), target :: initp
   real :: qw
   real :: w
-  real :: wfreeb
-  real :: depthloss
+  real(kind=8) :: wfreeb
+  real(kind=8) :: depthloss
   real :: snden
   real :: sndenmin
   real :: sndenmax
@@ -962,12 +1013,12 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   integer :: ksn
   integer :: ksnnew
   real :: qwt
-  real :: wt
+  real(kind=8) :: wt
   real :: soilhcap
   real :: fac
   type(sitetype),target :: csite
   type(patchtype),pointer :: cpatch
-  real :: free_surface_water_demand
+  real(kind=8) :: free_surface_water_demand
   real :: total_water_before,total_water_after
   real :: snow_beg,soil_beg,virt_beg,snow_end,soil_end,virt_end
   real :: infilt,freezeCor
@@ -1031,8 +1082,9 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
           water_stab_thresh )then
         qwt = qw + initp%soil_energy(nzg) * dslz(nzg)
         wt = w + initp%soil_water(nzg) * dslz(nzg) * 1000.0
+
         soilhcap = soil(csite%ntext_soil(nzg,ipa))%slcpd * dslz(nzg)
-        call qwtk(qwt,wt,soilhcap  &
+        call qwtk8(qwt,wt,soilhcap  &
              ,initp%sfcwater_tempk(k),initp%sfcwater_fracliq(k))
         ! portion out the heat to the snow
         if(initp%sfcwater_fracliq(k) == 0.)then
@@ -1064,7 +1116,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
            call fatal_error('NaN in soil energy','redistribute_snow_ar','rk4_integ_utils.f90')
         end if
      else
-        call qwtk(initp%soil_energy(nzg)  &
+        call qwtk8(initp%soil_energy(nzg)  &
              ,initp%soil_water(nzg)*1000.0  &
              ,soil(csite%ntext_soil(nzg,ipa))%slcpd,  &
              initp%soil_tempk(nzg),initp%soil_fracliq(nzg))
@@ -1111,7 +1163,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
              write (unit=*,fmt='(a)')            '----------------------------------------------------------------'
              call fatal_error('NaN in soil energy','redistribute_snow_ar','rk4_integ_utils.f90')
           end if
-          call qwtk(initp%soil_energy(nzg)  &
+          call qwtk8(initp%soil_energy(nzg)  &
                ,initp%soil_water(nzg)*1000.0  &
                ,soil(csite%ntext_soil(nzg,ipa))%slcpd,  &
                initp%soil_tempk(nzg),initp%soil_fracliq(nzg))
@@ -1168,7 +1220,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   ! Re-distribute snow layers to maintain prescribed distribution of mass
   if(totsnow < min_sfcwater_mass .or. ksnnew == 0)then
      initp%nlev_sfcwater = 0
-     call qwtk(initp%soil_energy(nzg),  &
+     call qwtk8(initp%soil_energy(nzg),  &
           initp%soil_water(nzg) * 1000.0, &
           soil(csite%ntext_soil(nzg,ipa))%slcpd,  &
           initp%soil_tempk(nzg),initp%soil_fracliq(nzg))
@@ -1176,7 +1228,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
      nlayers = ksnnew
      snowmin = 3.0
      newlayers = 1
-     do k = 2,nzs
+     do k = 1,nzs
         if(initp%sfcwater_mass(k) >= min_sfcwater_mass)then
            if(snowmin * thicknet(k) <= totsnow .and.  &
                 initp%sfcwater_energy(k) < alli)then
@@ -1231,6 +1283,11 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
         initp%sfcwater_depth(k) = vctr18(k)
      enddo
         
+     do k = newlayers + 1, nzs
+        initp%sfcwater_mass(k) = 0.0
+        initp%sfcwater_energy(k) = 0.0
+        initp%sfcwater_depth(k) = 0.0
+     enddo
 
   endif
   
@@ -1489,7 +1546,6 @@ subroutine zero_rk4_patch(y)
   y%avg_evap                       = 0.
   y%avg_smoist_gg                  = 0.
   y%avg_smoist_gc                  = 0.
-  y%avg_runoff                     = 0.
   y%aux                            = 0.
   y%aux_s                          = 0.
   y%avg_sensible_vc                = 0.
@@ -1499,7 +1555,6 @@ subroutine zero_rk4_patch(y)
   y%avg_sensible_ac                = 0.
   y%avg_sensible_tot               = 0.
   y%avg_sensible_gg                = 0.
-  y%avg_runoff_heat                = 0.
   y%avg_heatstor_veg               = 0.
 
   return
@@ -1565,7 +1620,7 @@ subroutine allocate_rk4_coh_ar(maxcohort,y)
 
   call nullify_rk4_cohort(y)
 
-  allocate(y%veg_temp(maxcohort))
+  allocate(y%veg_energy(maxcohort))
   allocate(y%veg_water(maxcohort))
 
   if (diag_veg_heating) then
@@ -1598,7 +1653,7 @@ subroutine nullify_rk4_cohort(y)
   
   type(rk4patchtype) :: y
       
-  nullify(y%veg_temp)
+  nullify(y%veg_energy)
   nullify(y%veg_water)
 
   nullify(y%co_srad_h )
@@ -1627,7 +1682,7 @@ subroutine zero_rk4_cohort(y)
   
   type(rk4patchtype) :: y
 
-  if(associated(y%veg_temp      ))  y%veg_temp      = 0.
+  if(associated(y%veg_energy    ))  y%veg_energy    = 0.
   if(associated(y%veg_water     ))  y%veg_water     = 0.
 
   if(associated(y%co_srad_h     ))  y%co_srad_h     = 0.
@@ -1657,7 +1712,7 @@ subroutine deallocate_rk4_coh_ar(y)
   
   type(rk4patchtype) :: y
       
-  if(associated(y%veg_temp))       deallocate(y%veg_temp)
+  if(associated(y%veg_energy))     deallocate(y%veg_energy)
   if(associated(y%veg_water))      deallocate(y%veg_water)
   
   if(associated(y%co_srad_h ))     deallocate(y%co_srad_h )

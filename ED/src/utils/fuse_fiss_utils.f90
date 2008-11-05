@@ -458,6 +458,7 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      cpatch%balive(idt) = cpatch%balive(isc)
      cpatch%lai(idt)    = cpatch%lai(isc)
      cpatch%bstorage(idt) = cpatch%bstorage(isc)
+     cpatch%veg_energy(idt) = cpatch%veg_energy(isc)
      cpatch%veg_temp(idt) = cpatch%veg_temp(isc)
      cpatch%veg_water(idt) = cpatch%veg_water(isc)
      cpatch%mean_gpp(idt) = cpatch%mean_gpp(isc)
@@ -573,6 +574,13 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
 
         cpatch%veg_water(ico2) = (cpatch%veg_water(ico2) * cpatch%nplant(ico2) +   &
              cpatch%veg_water(ico1) * cpatch%nplant(ico1)) * newni
+
+        !---- Will this conserve energy? Is the total LAI conserved? I hope so...
+        ! I think this is fine because temperature is no longer prognostic, so temperature will be 
+        ! adjusted at the next fast step...
+        cpatch%veg_energy(ico2) = (cpatch%veg_energy(ico2) * cpatch%nplant(ico2) +   &
+             cpatch%veg_energy(ico1) * cpatch%nplant(ico1)) * newni
+        
 
         ! Remember, phenology_status is determined solely by cc.
         ! So if cc didn't have leaves before, it doesn't have
@@ -1000,6 +1008,9 @@ end subroutine fuse_patches_ar
                                      *  newareai
      csite%avg_heatstor_veg(rp)      = (csite%avg_heatstor_veg(rp)      * csite%area(rp)        &
                                      +  csite%avg_heatstor_veg(dp)      * csite%area(dp))       &
+                                     *  newareai
+     csite%avg_veg_energy(rp)        = (csite%avg_veg_energy(rp)        * csite%area(rp)        &
+                                     +  csite%avg_veg_energy(dp)        * csite%area(dp))       &
                                      *  newareai
      csite%avg_veg_temp(rp)          = (csite%avg_veg_temp(rp)          * csite%area(rp)        &
                                      +  csite%avg_veg_temp(dp)          * csite%area(dp))       &

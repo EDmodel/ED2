@@ -5,7 +5,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
   
   use ed_state_vars,only:edgrid_g
 
-  use grid_coms, only: ngrids  ! INTENT(IN)
+  use grid_coms, only: ngrids,nzg  ! INTENT(IN)
   
   use ed_misc_coms,only:diag_veg_heating
 
@@ -24,18 +24,19 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
 
   implicit none
     
-  logical, intent(in) :: the_end,analysis_time,dail_analy_time
-  logical, intent(in) :: writing_dail,writing_mont,reset_time
+  logical, intent(in)  :: the_end,analysis_time,dail_analy_time
+  logical, intent(in)  :: writing_dail,writing_mont,reset_time
   logical, intent(in) :: mont_analy_time,history_time,new_day,annual_time
   real :: time_frqa,time_frql,time_frqm
   integer :: ngr,ifm
   integer :: sigr,sipy,sisi,sipa,sico
 
+
   if(analysis_time .or. history_time .or. (new_day .and. (writing_dail .or. writing_mont))) then
      do ifm=1,ngrids
         call normalize_averaged_vars_ar(edgrid_g(ifm),frqsum,dtlsm)
      enddo
-     
+
      !  Perform averaging and data preparation
      call spatial_averages
      
@@ -175,20 +176,14 @@ subroutine spatial_averages
 
   frqsumi = 1.0 / frqsum
   do igr=1,ngrids
-     cgrid => edgrid_g(1)
-
-     cgrid%avg_gpp         = 0.0
-     cgrid%avg_leaf_resp   = 0.0
-     cgrid%avg_root_resp   = 0.0
-     cgrid%avg_plant_resp  = 0.0
-     cgrid%avg_htroph_resp = 0.0
-
-     cgrid%avg_balive      = 0.0
-     cgrid%avg_bdead       = 0.0
+     cgrid => edgrid_g(igr)
      
      do ipy=1,cgrid%npolygons
         cpoly => cgrid%polygon(ipy)
-     
+
+        cgrid%avg_balive(ipy)      = 0.0
+        cgrid%avg_bdead(ipy)       = 0.0
+
         cgrid%avg_gpp(ipy)         = 0.0
         cgrid%avg_leaf_resp(ipy)   = 0.0
         cgrid%avg_root_resp(ipy)   = 0.0
@@ -279,6 +274,7 @@ subroutine spatial_averages
               if (cpatch%ncohorts>0) then
                  
                  lai_sum = max(lai_min,sum(cpatch%lai, cpatch%lai > lai_min))
+                 csite%avg_veg_energy(ipa)  = sum(cpatch%veg_energy * cpatch%lai,cpatch%lai > lai_min)   / lai_sum
                  csite%avg_veg_temp(ipa)  = sum(cpatch%veg_temp * cpatch%lai,cpatch%lai > lai_min)   / lai_sum
                  csite%avg_veg_water(ipa) = sum(cpatch%veg_water * cpatch%lai,cpatch%lai > lai_min)  / lai_sum
                  
@@ -303,7 +299,7 @@ subroutine spatial_averages
                  
               else
                  ! Set veg-temp to air temp
-                 
+                 csite%avg_veg_energy(ipa)  = 0.0          
                  csite%avg_veg_temp(ipa)  = csite%can_temp(ipa)
                  csite%avg_veg_water(ipa) = 0.0
                  
@@ -319,10 +315,11 @@ subroutine spatial_averages
 
            csite%laiarea = csite%laiarea / max(sum(csite%laiarea),1.0)
 
-           cpoly%avg_veg_temp(isi)  = sum(csite%avg_veg_temp     * csite%laiarea)
-           cpoly%avg_veg_water(isi) = sum(csite%avg_veg_water    * csite%laiarea)
-           cpoly%avg_can_temp(isi)  = sum(csite%can_temp         * csite%area)
-           cpoly%avg_can_shv(isi)   = sum(csite%can_shv          * csite%area)
+           cpoly%avg_veg_energy(isi) = sum(csite%avg_veg_energy   * csite%laiarea)
+           cpoly%avg_veg_temp(isi)   = sum(csite%avg_veg_temp     * csite%laiarea)
+           cpoly%avg_veg_water(isi)  = sum(csite%avg_veg_water    * csite%laiarea)
+           cpoly%avg_can_temp(isi)   = sum(csite%can_temp         * csite%area)
+           cpoly%avg_can_shv(isi)    = sum(csite%can_shv          * csite%area)
 
 
         else
@@ -364,6 +361,7 @@ subroutine spatial_averages
         cgrid%avg_sensible_tot(ipy)   = sum(cpoly%avg_sensible_tot   * cpoly%area ) * poly_area_i
 
 
+        cgrid%avg_veg_energy(ipy)     = sum(cpoly%avg_veg_energy     * cpoly%area ) * poly_area_i
         cgrid%avg_veg_temp(ipy)       = sum(cpoly%avg_veg_temp       * cpoly%area ) * poly_area_i
         cgrid%avg_veg_water(ipy)      = sum(cpoly%avg_veg_water      * cpoly%area ) * poly_area_i
         cgrid%avg_can_temp(ipy)       = sum(cpoly%avg_can_temp       * cpoly%area ) * poly_area_i

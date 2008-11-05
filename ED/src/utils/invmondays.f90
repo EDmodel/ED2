@@ -68,3 +68,23 @@ subroutine yesterday(inyear,inmonth,inday,outyear,outmonth,outday)
   return
 end subroutine yesterday
 !------------------------------------------------------------------------------------------!
+
+
+
+!------------------------------------------------------------------------------------------!
+! Function the number of days of a certain month                                           !
+!------------------------------------------------------------------------------------------!
+integer function num_days(month,year)
+   implicit none
+   integer, intent(in) :: month, year
+   logical, external :: isleap
+   integer, dimension(12) :: maxdays
+   
+   !----- Temporary array with # of days --------------------------------------------------!
+   maxdays=(/31,28,31,30,31,30,31,31,30,31,30,31/)
+   if (isleap(year)) maxdays(2) = 29
+   
+   num_days = maxdays(month)
+   return
+end function num_days
+!------------------------------------------------------------------------------------------!

@@ -22,6 +22,9 @@ module mem_scratch
      real, pointer, dimension(:) ::                   &
           vt2da,vt2db,vt2dc,vt2dd,vt2de,vt2df
 
+     real, pointer, dimension(:) ::                   &
+          vt4da,vt4db,vt4dc
+
   end type scratch_vars
 
   type (scratch_vars) :: scratch
@@ -40,7 +43,7 @@ module mem_scratch
 contains
 
   subroutine alloc_scratch(nmzp,nmxp,nmyp,nnzp,nnxp,nnyp  &
-       ,ngrs,nzg,nzs,npatch,proc_type  &
+       ,ngrs,nzg,nzs,npatch,nclouds,proc_type  &
        ,maxx,maxy,maxz)
 
     ! FOR CATT
@@ -52,9 +55,9 @@ contains
     implicit none
 
     integer, dimension (*) :: nmzp,nmxp,nmyp,nnzp,nnxp,nnyp
-    integer :: ngrs,nzg,nzs,npatch,proc_type
+    integer :: ngrs,nzg,nzs,npatch,nclouds,proc_type
 
-    integer :: ng,ntpts,ntpts1,ntpts2,ntptsx,maxx,maxy,maxz
+    integer :: ng,ntpts,ntpts1,ntpts2,ntptsx,maxx,maxy,maxz,ntpts4
 
     ! For CATT
     integer :: ntpts_catt
@@ -69,15 +72,18 @@ contains
     ntpts=0
     ntpts2=0
     ntpts_catt = 0 ! CATT
+    ntpts4=0
     do ng=1,ngrs
        maxx = max(maxx,nnxp(ng))
        maxy = max(maxy,nnyp(ng))
        maxz = max(maxz,nnzp(ng))
        ntpts=max( nmxp(ng)*nmyp(ng)*nmzp(ng),ntpts )
        ntpts2=max( nmxp(ng)*nmyp(ng),ntpts2 )
+       ntpts4=max(nmxp(ng)*nmyp(ng)*nmzp(ng)*nclouds,ntpts4)
     enddo
     ! scr1 and scr2 needs to be the max of a passed field
-    ntptsx=max(maxx*maxy*maxz,ntpts2*nzg*npatch,ntpts2*nzs*npatch,maxz*40)+1000
+    ntptsx=max(maxx*maxy*maxz,ntpts4,ntpts2*nzg*npatch &
+              ,ntpts2*nzs*npatch,maxz*40)+1000
 
     ! For CARMA
     !if (CATT == 1) then
@@ -136,6 +142,11 @@ contains
     allocate (scratch%vt2de(ntpts2))
     allocate (scratch%vt2df(ntpts2))
 
+
+    allocate (scratch%vt4da(ntpts4))
+    allocate (scratch%vt4db(ntpts4))
+    allocate (scratch%vt4dc(ntpts4))
+
     ! ALF - Putting zero in all variables
     ! For CATT
     call azero(ntpts_catt, scratch%scr1(1))
@@ -169,6 +180,9 @@ contains
     call azero(ntpts2, scratch%vt2dd(1))
     call azero(ntpts2, scratch%vt2de(1))
     call azero(ntpts2, scratch%vt2df(1))
+    call azero(ntpts4, scratch%vt4da(1))
+    call azero(ntpts4, scratch%vt4db(1))
+    call azero(ntpts4, scratch%vt4dc(1))
 
     return
   end subroutine alloc_scratch
@@ -207,6 +221,9 @@ contains
     if (associated(scratch%vt2dd))  nullify (scratch%vt2dd)
     if (associated(scratch%vt2de))  nullify (scratch%vt2de)
     if (associated(scratch%vt2df))  nullify (scratch%vt2df)
+    if (associated(scratch%vt4da))  nullify (scratch%vt4da)
+    if (associated(scratch%vt4db))  nullify (scratch%vt4db)
+    if (associated(scratch%vt4dc))  nullify (scratch%vt4dc)
 
 
     return
@@ -245,6 +262,9 @@ contains
     if (associated(scratch%vt2dd))  deallocate (scratch%vt2dd)
     if (associated(scratch%vt2de))  deallocate (scratch%vt2de)
     if (associated(scratch%vt2df))  deallocate (scratch%vt2df)
+    if (associated(scratch%vt4da))  deallocate (scratch%vt4da)
+    if (associated(scratch%vt4db))  deallocate (scratch%vt4db)
+    if (associated(scratch%vt4dc))  deallocate (scratch%vt4dc)
 
     return
   end subroutine dealloc_scratch

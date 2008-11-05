@@ -4,7 +4,7 @@
 
 ! Simulation title (64 chars)
 
-   EXPNME   = 'EDBRAMS, on top of BRAMS-4.0.6 and ED-2.1',
+   EXPNME   = 'BRAMS, version 4.0.6',
 
    RUNTYPE  = 'INITIAL',  ! Type of run: MAKESFC, INITIAL, 
                           !            HISTORY,  or MAKEVFILE
@@ -13,15 +13,15 @@
  
 !  Start of simulation or ISAN processing
 
-   IMONTHA  =    02,
-   IDATEA   =    19,
+   IMONTHA  =    01,
+   IDATEA   =    01,
    IYEARA   =  1999,
    ITIMEA   =  0000,
 
 !  End of simulation or ISAN processing
 
-   IMONTHZ  =    02,
-   IDATEZ   =    25,
+   IMONTHZ  =    01,
+   IDATEZ   =    20,
    IYEARZ   =  1999,
    ITIMEZ   =  0000,
 
@@ -29,11 +29,11 @@
 
    NGRIDS   = 1,            ! Number of grids to run
  
-   NNXP     =  84,  62,      ! Number of x gridpoints
-   NNYP     =  66,  38,      ! Number of y gridpoints
-   NNZP     =  41,  41,      ! Number of z gridpoints
-   NZG      =  12,          ! Number of soil layers
-   NZS      =   1,          ! Maximum number of snow layers
+   NNXP     =  110,  80, 230,     ! Number of x gridpoints
+   NNYP     =   70,  60, 161,     ! Number of y gridpoints
+   NNZP     =   41,  41,  41,     ! Number of z gridpoints
+   NZG      =   13,          ! Number of soil layers
+   NZS      =    4,          ! Maximum number of snow layers
  
    NXTNEST  = 0,1,          ! Grid number which is the next coarser grid
    
@@ -43,8 +43,8 @@
    IF_ADAP  = 0,            !Vertical coordinate: 0- sigma_z, 1- shaved ETA
    
    IHTRAN   = 1,            ! 0-Cartesian, 1-Polar stereo
-   DELTAX   = 64000.,
-   DELTAY   = 64000.,       ! X and Y grid spacing
+   DELTAX   = 60000.,
+   DELTAY   = 60000.,       ! X and Y grid spacing
 
    DELTAZ   = 150.,         ! Z grid spacing (set to 0. to use ZZ)
    DZRAT    = 1.06,         ! Vertical grid stretch ratio
@@ -77,11 +77,11 @@
    NSTRATZ2 = 3,3,3,2,2,2,2,1,   !
 
 
-   POLELAT  =  -2.5,          ! Latitude of pole point
-   POLELON  = -62.5,         ! Longitude of pole point
+   POLELAT  =  -3.5,          ! Latitude of pole point
+   POLELON  = -58.0,         ! Longitude of pole point
 
-   CENTLAT  =  -2.5, -11.0,
-   CENTLON  = -62.5, -63.0,
+   CENTLAT  =  -3.5,  -3.5,
+   CENTLON  = -58.0, -62.5,
                               ! Grid point on the next coarser
                               !  nest where the lower southwest
                               !  corner of this nest will start.
@@ -137,7 +137,7 @@
    VWAIT1   = 0.,            ! wait between each VFILE check (s)
    VWAITTOT = 0.,            ! total wait before giving up on a VFILE (s)
    
-   NUD_HFILE = './histo/wetamc', 
+   NUD_HFILE = './histo/drytowet', 
                ! Prefix for history nudging files
                              
    NUDLAT   =     5,             ! Number of points in lateral bnd region
@@ -255,7 +255,7 @@
    ICLOBBER = 1,                                 ! 0=stop if files exist, 1=overwite files
    IHISTDEL = 0,                                 ! 0=keep all hist files, 1=delete previous
    FRQHIS   = 43200.,          ! History file frequency
-   FRQANL   = 1200.,          ! Analysis file frequency
+   FRQANL   =  7200.,          ! Analysis file frequency
 !-----------------------------------------------------------------------
    FRQLITE  = 0.,            ! Analysis freq. for "lite" variables
                              !   = 0 : no lite files
@@ -350,11 +350,148 @@
 ! Microphysics collection tables
 
    MKCOLTAB = 1,             ! Make table: 0 = no, 1 = yes
-   COLTABFN = './micro/ct4.0.6',
+   COLTABFN = './micro/coltab_4.0.6',
                              ! Filename to read or write
 
  $END
+
+
+
+ $CUPARM_OPTIONS
+
+! Cumulus parameterization parameters
  
+   !---------------------------------------------------------------------------------------!
+   ! NNQPARM(ngrids) = Convective parameterization flag: 0 - off, 1 - on.                  !
+   !---------------------------------------------------------------------------------------!
+   NNQPARM  = 1,1,
+
+   !---------------------------------------------------------------------------------------!
+   ! NCLOUDS: How many clouds do you want to use?                                          !
+   ! PS1: If you want to run deep convection only, use nclouds=1                           !
+   ! PS2: If you want to run shallow convection only for a certain grid                    !
+   !      (or all grids...) set up nclouds to 2 and ndeepest to 0                          !
+   ! PS3: If NCLOUDS >= 3, then the middle ones will necessarily use Grell's               !
+   !      parameterization.                                                                !
+   !---------------------------------------------------------------------------------------!
+    NCLOUDS  = 2,
+
+
+   !---------------------------------------------------------------------------------------!
+   ! Both define the cumulus scheme to be used for the deepest and shallowest clouds.      !
+   ! NDEEPEST(ngrids)    : 0 - turn it off; 1- run Kuo  ; 2- run Grell                     !
+   ! NSHALLOWEST(ngrids) : 0 - turn it off; 1- run Souza; 2- run Grell                     !
+   !---------------------------------------------------------------------------------------!
+   NDEEPEST    = 2,2,
+   NSHALLOWEST = 2,2,
+
+   !----- Kuo configuration (will be ignored by Souza and Grell's methods) ----------------!
+   WCLDBS = 0.005,  ! Vertical motion needed at cloud base for
+                    !    to trigger convection [m/s] (for nndeepest = 1 only)
+
+   !---------------------------------------------------------------------------------------!
+   ! CONFRQ(nclouds): how often should each cloud size be updated?                         !
+   ! CPTIME(nclouds): when I should start computing this cloud.
+   !                  PS1: This is NOT for each grid, but for each cloud!!!                !
+   !                  PS2: The first value is always assigned for the deepest cloud, even  !
+   !                       if you are not running it.                                      !
+   !---------------------------------------------------------------------------------------!
+   CONFRQ=1200.,1200.,1200.,
+   CPTIME=1200.,1200.,1200.,
+
+
+
+   !=======================================================================================!
+   !   Variables for Grell parameterization. Whenever it is telling (nclouds) it means     !
+   ! that a value must be given for each cloud. The first value is always reserved for the !
+   ! deepest, even if you are not running or running Kuo (the value will be ignored but    !
+   ! needs to be here).                                                                    !
+   !=======================================================================================!
+   
+   IUPMETHOD   = 1,          ! How to find the level in which updrafts originate:
+                             ! 1. Maximum moist static energy;
+                             ! 2. PBL top (if IDIFFK=7, uses the pblhgt from turbulence)
+   
+   IUPSTRM     = 0,          ! Check for previous upstream downdraft?
+                             ! 0. No, thanks
+                             ! 1. Check and lower cap_maxs
+                             ! 2. Check, lower cap_maxs and use the upstream downdraft
+                             !    mass flux to enhance convection downstream
+                             !    (not tested thoroughly, use with caution)
+   
+   RADIUS    = 15000.,666., ! (nclouds) - Cloud mean radius [m]. Important: the
+                                 !    cloud won't have downdrafts nor precipitation if
+                                  !    it is less than min_down_radius (grell_coms.f90).
+                                  !    Default threshold is 900.
+
+   DEPTH_MIN = 500.,50.,   ! (nclouds) - Grell's deep and shallow convection:
+                                  !    Minimum depth that the cloud must have [m]
+
+   CAP_MAXS  = 110.,110.,110.,
+   !CAP_MAXS  =  -12.,-12., -12.,   ! (nclouds) Grell's deep and shallow convection:
+                                  !           This one depends on the sign:
+                                  !    Positive: Depth of the inverse capping in hPa. 
+                                  !              The larger the value is, the less likely 
+                                  !              is to develop convection.
+                                  !    Negative: The minimum area [%] relative to the grid
+                                  !              with vertical velocity above the minimum 
+                                  !              to trigger convection. The larger the 
+                                  !              absolute value, the less likely that 
+                                  !              convection will occur.
+                                  !              The minimum is determined as the vertical
+                                  !              velocity which would allow w to be zero at 
+                                  !              the level of free convection. The area
+                                  !              is found by using the mean velocity and 
+                                  !              sigma-w, so this option works only when
+                                  !              IDIFFK is 1 or 7.
+
+   ZKBMAX   = 4000.,4000.,4000.,  ! (nclouds) - Maximum AGL height in which updrafts can
+                                  !             originate. [m]
+   
+   ZCUTDOWN = 3000.,3000.,3000.,  ! (nclouds) - Maximum AGL height in which downdrafts can
+                                  !             originate. [m]
+
+   Z_DETR   = 1250.,1250.,1250.,  ! (nclouds) - Top of the downdraft detrainment layer [m]
+   
+   MAX_HEAT = 400., 400.,400.,    ! (nclouds) - Maximum heating allowed for feedback [K/day]
+
+   !=======================================================================================!
+   !    The following variables will define the ensemble members. Currently 4 types of     !
+   ! ensemble are available. Odd numbers are preferred over even numbers since everything  !
+   ! is centred around the reference value (except for CLOSURE_TYPE, which is done         !
+   ! differently). These are all (cloud) dependent.                                        !
+   ! PS1: Use with moderation, these members are multiplicative and can get slow down your !
+   !      run.                                                                             !
+   ! PS2: The perturbation increments are defined inside the code, feel free to take it    !
+   !      out...                                                                           !
+   !=======================================================================================!
+
+   CLOSURE_TYPE = 'KF','KF','KF', ! Closure type to find the reference updraft mass flux:
+                             ! PS1. Case insensitive - see table below:
+      !----------------------------------------------------------------------------------!
+      ! Type | Description                    | Deep | Shal | Reference Paper            !
+      !------+--------------------------------+------+------+----------------------------!
+      ! EN   | Ensemble (all closures)        | yes  |  no  | Grell and Dévényi, 2002    !
+      ! NC   | Ensemble, excluding LO and MC  | yes  | yes  | Grell and Dévényi, 2002    !
+      ! GR   | Modified quasi-equilibrium ABE | yes  | yes  | Grell, 1993                !
+      ! LO   | Low level omega                | yes  |  no  | Frank and Cohen, 1987      !
+      ! MC   | moisture convergence           | yes  |  no  | Krishnamurti et al., 1983  !
+      ! KF   | Instability removal            | yes  | yes  | Kain and Fritsch, 1990     !
+      ! AS   | Quasi equilibrium of ABE       | yes  | yes  | Arakawa and Schubert, 1974 !
+      !----------------------------------------------------------------------------------!
+   
+   MAXENS_LSF = 1,1,1, ! Number of different arbitrary mass fluxes for GR/AS/KF dynamic
+                       ! control (it will also create some different numbers for MC)
+
+   MAXENS_EFF = 1,1,1, ! Number of precipitation efficiency members
+   
+   MAXENS_CAP = 1,1,1, ! Number of static control members, currently changes in cap_maxs.
+   
+   !------------------------------------------------------------------------------------!
+
+ $END
+
+
  $MODEL_OPTIONS
 
    NADDSC   = 0,             ! Number of additional scalar species
@@ -402,47 +539,6 @@
    RADFRQ   = 900.,          ! Freq. of radiation tendency update (s)
    LONRAD   = 1,             ! Longitudinal variation of shortwave
                              !    (0-no, 1-yes)
- 
-! Cumulus parameterization parameters
- 
-   NNQPARM  = 2,2,      ! Convective param. flag: 0 - off,
-                        !                         1 - Kuo scheme,
-                        !                         2 - Grell par.)
-                        
-   !----------------------------------------------------------------------------------!
-   ! CLOSURE_TYPE, DEPTH_MIN, CAP_MAXS are cloud spectral size dependent. THEY ARE    !
-   ! _NOT_ GRID DEPENDENT... First for deep, second for shallow.                      !
-   !----------------------------------------------------------------------------------!
-
-   CLOSURE_TYPE = 'SC','SC', ! Closure type (for Grell Param.):
-                             ! EN: ensemble (all closures)
-                             ! GR: Grell
-                             ! LO: low level omega
-                             ! MC: moisture convergence
-                             ! SC: like Fritsch Chappel or Kain Fritsch
-                             ! AS: Arakawa-Schubert
-
-   DEPTH_MIN = 500.,50.,     ! Minimum thickness [m] the cloud should have to be 
-                             ! considered
-
-   CAP_MAXS = 110.,110.,     ! Depth of capping inversion [hPa]. The smaller the 
-                             ! magnitude, the less likely that convection will
-                             ! develop
-
-
-   NNSHCU   = 2,2,      ! Shallow Cumulus Param. flag: 0 - off 
-                        !                              1 - Pereira scheme
-                        !                              2 - Grell scheme
-   
-   ICBASE   = 2,        ! How to find the "k22" level:
-                        ! 1. Maximum moist static energy;
-                        ! 2. PBL top 
-                        !    (if IDIFFK=7, uses the pblhgt from the turbulence)
-
-   CONFRQ   = 1200.,    ! Frequency of conv param. updates (s)
-   SHCUFRQ  = 600.,     ! Frequency of Shallow param. updates (s)
-   WCLDBS   = .0005,    ! Vertical motion needed at cloud base for
-                        !    to trigger convection
  
 ! Surface layer and soil parameterization
  
@@ -515,12 +611,12 @@
 
 
 
-   SLZ     = -6.00,-4.50, -3.50, -2.50, -1.80, -1.30, 
-             -0.90,-0.60, -0.40, -0.27, -0.16, -0.08,   ! Soil grid levels
-   SLMSTR  =  0.60, 0.60,  0.60,  0.60,  0.60,  0.60,   
-              0.60, 0.60,  0.60,  0.60,  0.60,  0.60,   ! Initial soil moisture
-  STGOFF  =   0.0,  0.0,   0.0,   0.0,   0.0,   0.0,   ! Initial soil temperature offset
-               0.0,  0.0,   0.0,   0.0,   0.0,   0.0,   !  from lowest atmospheric level
+   SLZ     = -4.50, -3.50, -2.75, -2.00, -1.50, -1.10, -0.80, 
+             -0.60, -0.45, -0.30, -0.20, -0.12, -0.06,        ! Soil grid levels
+   SLMSTR  =  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,
+              0.60,  0.60,  0.60,  0.60,  0.60,  0.60,        ! Initial soil moisture
+   STGOFF  =   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0, 
+               0.0,   0.0,   0.0,   0.0,   0.0,   0.0,        !  from lowest atmospheric level
 !--------------------------------------------------------------------------
 
 !----- Urban canopy parameterization --------------------------------
@@ -557,18 +653,18 @@
 
    LEVEL   = 3,              ! Moisture complexity level
  
-   ICLOUD  = 4,              ! Microphysics flags
-   IRAIN   = 2,              !-------------------
-   IPRIS   = 5,              !  1 - diagnostic concen.
-   ISNOW   = 2,              !  2 - specified mean diameter
-   IAGGR   = 2,              !  3 - specified y-intercept
-   IGRAUP  = 2,              !  4 - specified concentration
-   IHAIL   = 2,              !  5 - prognostic concentration
- 
-   CPARM   = .3e9,           !  Microphysics parameters
-   RPARM   = 1e-3,           !-------------------------
-   PPARM   = 0.,             !  Characteristic diameter, # concentration
-   SPARM   = 1e-3,           !    or y-intercept
+   ICLOUD  =     4,  !    5,     ! Microphysics flags
+   IRAIN   =     2,  !    5,     !-------------------
+   IPRIS   =     5,  !    5,     !  1 - diagnostic concen.
+   ISNOW   =     2,  !    5,     !  2 - specified mean diameter
+   IAGGR   =     2,  !    5,     !  3 - specified y-intercept
+   IGRAUP  =     2,  !    5,     !  4 - specified concentration
+   IHAIL   =     2,  !    5,     !  5 - prognostic concentration
+
+   CPARM   =  .3e9,  !6.66e9,    !  Microphysics parameters
+   RPARM   = 1e-3,               !-------------------------
+   PPARM   = 0.,                 !  Characteristic diameter, # concentration
+   SPARM   = 1e-3,               !    or y-intercept
    APARM   = 1e-3,
    GPARM   = 1e-3,
    HPARM   = 3e-3,
@@ -586,7 +682,7 @@
 ! Main time step parameters                                               !
 !-------------------------------------------------------------------------!
 
-   DTLSM  = 300.0,      ! Basic time step [s].  In the Euler scheme, this
+   DTLSM  = 120.0,    ! Basic time step [s].  In the Euler scheme, this
                       ! is the length of the Euler time step.  Recommended
                       ! values are between 60-180.  In the Runge Kutta
                       ! scheme, this is the time between photosynthesis
@@ -620,6 +716,14 @@
         	                ! 0 = no metadata, 1 = yes metadata
 
 
+   OUTFAST    = 0,             ! Time interval between analysis files
+   OUTSTATE   = 0,             ! Time interval between history files
+                               ! Values are in seconds and must be <= 1 month
+                               ! Values < FRQFAST/FRQSTATE are set to those values
+                               ! Special values:  0 = same as frqanl/frqhist;
+                               !                 -1 = daily;
+                               !                 -2 = monthly
+
 !-------------------------------------------------------------------------!
 ! Analysis/history/restart file: path, prefix, settings                   !
 !-------------------------------------------------------------------------!
@@ -636,9 +740,9 @@
    EDRES  = 1.0,                     ! ED2/ED1 restart grid resolution
 
                                     ! If this is a history type restart
-	                            ! then the timing information
-	                            ! is accessed via the BRAMS restart info
-   SFILIN   = '/n/Moorcroft_Lab/Users/dmm2/ED2/inputs/amazon_restart/lu.sa.05.restart.01.',
+                                    ! then the timing information
+                                    ! is accessed via the BRAMS restart info
+   SFILIN   = '/n/Moorcroft_Lab/Lab/data/brams_data/restart/lu.sa.05.restart.01.',
 
 !-------------------------------------------------------------------------!
 
@@ -678,7 +782,7 @@
                          ! the full, exact calculation each time.  Set to 1 
                          ! to do the 'small perturbation' scheme.
 
-   IPHEN_SCHEME    = 1,  ! This specifies the phenology scheme:
+   IPHEN_SCHEME    = 0,  ! This specifies the phenology scheme:
                            !  0 is for the Botta et al scheme
                            !  1 is for prescribed phenology
                            !  Other options coming soon.
@@ -916,7 +1020,7 @@
 
 ! Input data file prefixes
 
-   IAPR    = '/n/Moorcroft_Lab/Lab/data/brams_data/ecmwf/1999/dp-p', ! Archived 1st guess   file name
+   IAPR    = '/n/Moorcroft_Lab/Lab/data/brams_data/wetamc/ecmwf/1stguess/e1st', ! Archived 1st guess   file name
    IARAWI  = '/n/Moorcroft_Lab/Lab/data/brams_data/wetamc/radio/ir',       ! Archived rawindsonde file name
    IASRFCE = '/n/Moorcroft_Lab/Lab/data/brams_data/wetamc/weasta/es',  ! Archived surface obs file name
 

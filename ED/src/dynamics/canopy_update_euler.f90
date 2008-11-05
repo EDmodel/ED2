@@ -41,7 +41,7 @@ subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, prss, pcpg, qpcpg,  &
   integer :: ndims
   integer, dimension(nzg) :: ed_ktrans
   integer, dimension(nzg), intent(in) :: ntext_soil
-  real, dimension(nzg), intent(in) :: soil_water
+  real(kind=8), dimension(nzg), intent(in) :: soil_water
   real, dimension(nzg), intent(in) :: soil_fracliq
   integer, intent(in) :: lsl
 
@@ -189,7 +189,7 @@ subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
   use canopy_radiation_coms, only: lai_min
   use consts_coms, only: cp, alvl, alvi
   use grid_coms, only: nzg
-  use therm_lib, only: rhovsil
+  use therm_lib, only: rhovsil,rhovsilp
   implicit none
 
   type(sitetype), target  :: csite
@@ -271,7 +271,7 @@ subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
         ! compute ET using variables at time n
         tvegaux = cpatch%veg_temp(ico)
         veg_rhovs= rhovsil(tvegaux)
-        veg_rhovsp = rhovsil(tvegaux+1.0) - veg_rhovs
+        veg_rhovsp = rhovsilp(tvegaux)
         vp_gradient = veg_rhovs - rhos * csite%can_shv(ipa)
         a1 = 2.2 * cpatch%lai(ico) / cpatch%rb(ico)
         sigmaw = min(1.,(cpatch%veg_water(ico) / (.22 * cpatch%lai(ico)))**.66667)
@@ -438,7 +438,7 @@ subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
         cpatch%veg_water(ico) = implicit_new_state(idim+1)
         
         veg_rhovs= rhovsil(original_state(idim))
-        veg_rhovsp = rhovsil(original_state(idim)+1.0) - veg_rhovs
+        veg_rhovsp = rhovsilp(original_state(idim))
         vp_gradient = veg_rhovs - rhos * original_state(2)
         if(vp_gradient > 0.0)then
           ! Calculate the resulting transpiration
@@ -514,7 +514,7 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
   use canopy_radiation_coms, only: lai_min
   use consts_coms, only: cp, alvl, alvi, cliq, cice, alli, t3ple
   use grid_coms, only: nzg
-  use therm_lib, only: rhovsil
+  use therm_lib, only: rhovsil,rhovsilp
 
   implicit none
 
@@ -592,7 +592,7 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
         ! compute ET using variables at time n
         tvegaux = cpatch%veg_temp(ico)
         veg_rhovs= rhovsil(tvegaux)
-        veg_rhovsp = rhovsil(tvegaux+1.0) - veg_rhovs
+        veg_rhovsp = rhovsilp(tvegaux)
         vp_gradient = veg_rhovs - rhos * csite%can_shv(ipa)
         a1 = 2.2 * cpatch%lai(ico) / cpatch%rb(ico)
         sigmaw = min(1.,(cpatch%veg_water(ico) / (.22 * cpatch%lai(ico)))**.66667)
