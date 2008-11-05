@@ -115,6 +115,9 @@ module ed_state_vars
      ! Annual average ratio of cb/cb_max
      real ,pointer,dimension(:) :: cbr_bar
 
+     ! Vegetation internal energy (J/kg)
+     real ,pointer,dimension(:) :: veg_energy
+
      ! Vegetation temperature (K)
      real ,pointer,dimension(:) :: veg_temp
 
@@ -676,6 +679,7 @@ module ed_state_vars
 
      !----- Mass and Energy --------------------------------------------------!
 
+     real,pointer,dimension(:) :: avg_veg_energy
      real,pointer,dimension(:) :: avg_veg_temp
      real,pointer,dimension(:) :: avg_veg_water
 
@@ -949,6 +953,7 @@ module ed_state_vars
 
      !----- Mass and Energy --------------------------------------------------!
 
+     real,pointer,dimension(:) :: avg_veg_energy
      real,pointer,dimension(:) :: avg_veg_temp
      real,pointer,dimension(:) :: avg_veg_water
      
@@ -1173,6 +1178,7 @@ module ed_state_vars
 
      !----- Mass and Energy --------------------------------------------------!
 
+     real,pointer,dimension(:) :: avg_veg_energy
      real,pointer,dimension(:) :: avg_veg_temp
      real,pointer,dimension(:) :: avg_veg_water
      
@@ -1204,7 +1210,6 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_atm_tmp
      real,pointer,dimension(:) :: avg_atm_shv
      real,pointer,dimension(:) :: avg_rhos
-     real,pointer,dimension(:) :: avg_theta
      real,pointer,dimension(:) :: avg_rshort
      real,pointer,dimension(:) :: avg_rshort_diffuse
      real,pointer,dimension(:) :: avg_rlong
@@ -1383,7 +1388,7 @@ module ed_state_vars
      real, pointer :: available_liquid_water(:)
      real, pointer :: extracted_water(:)
      
-     real,pointer,dimension(:) :: veg_temp
+     real,pointer,dimension(:) :: veg_energy
      real,pointer,dimension(:) :: veg_water
 
      real,pointer,dimension(:) :: co_srad_h
@@ -1659,6 +1664,7 @@ contains
        allocate(cgrid%avg_heatstor_veg (npolygons))
 
        ! Fast time state diagnostics
+       allocate(cgrid%avg_veg_energy(npolygons))
        allocate(cgrid%avg_veg_temp  (npolygons))
        allocate(cgrid%avg_veg_water (npolygons))
        allocate(cgrid%avg_can_temp  (npolygons))
@@ -1694,7 +1700,6 @@ contains
        allocate(cgrid%avg_atm_tmp      (npolygons))
        allocate(cgrid%avg_atm_shv      (npolygons))
        allocate(cgrid%avg_rhos         (npolygons))
-       allocate(cgrid%avg_theta        (npolygons))
        allocate(cgrid%avg_rshort       (npolygons))
        allocate(cgrid%avg_rshort_diffuse (npolygons))
        allocate(cgrid%avg_rlong        (npolygons))
@@ -1920,6 +1925,7 @@ contains
     allocate(cpoly%avg_runoff_heat  (nsites))
     allocate(cpoly%avg_heatstor_veg (nsites))
     ! Fast time state diagnostics
+    allocate(cpoly%avg_veg_energy(nsites))
     allocate(cpoly%avg_veg_temp  (nsites))
     allocate(cpoly%avg_veg_water (nsites))
     allocate(cpoly%avg_can_temp  (nsites))
@@ -2114,6 +2120,7 @@ contains
     allocate(csite%avg_runoff_heat  (npatches))
     allocate(csite%avg_heatstor_veg (npatches))
     ! ----------------------------------------------
+    allocate(csite%avg_veg_energy(npatches))
     allocate(csite%avg_veg_temp  (npatches))
     allocate(csite%avg_veg_water (npatches))
 
@@ -2166,6 +2173,7 @@ contains
     allocate(cpatch%cb(13,ncohorts))
     allocate(cpatch%cb_max(13,ncohorts))
     allocate(cpatch%cbr_bar(ncohorts))
+    allocate(cpatch%veg_energy(ncohorts))
     allocate(cpatch%veg_temp(ncohorts))
     allocate(cpatch%veg_water(ncohorts))
     allocate(cpatch%mean_gpp(ncohorts))
@@ -2317,6 +2325,7 @@ contains
        nullify(cgrid%avg_heatstor_veg        )
 
        ! Fast time state diagnostics 
+       nullify(cgrid%avg_veg_energy          )
        nullify(cgrid%avg_veg_temp            )
        nullify(cgrid%avg_veg_water           )
        nullify(cgrid%avg_can_temp            )
@@ -2353,7 +2362,6 @@ contains
        nullify(cgrid%avg_atm_tmp             )
        nullify(cgrid%avg_atm_shv             )
        nullify(cgrid%avg_rhos                )
-       nullify(cgrid%avg_theta               )
        nullify(cgrid%avg_rshort              )
        nullify(cgrid%avg_rshort_diffuse      )
        nullify(cgrid%avg_rlong               )
@@ -2556,6 +2564,7 @@ contains
     nullify(cpoly%avg_runoff_heat  )
     nullify(cpoly%avg_heatstor_veg )
     ! ----------------------------------------------
+    nullify(cpoly%avg_veg_energy)
     nullify(cpoly%avg_veg_temp  )
     nullify(cpoly%avg_veg_water )
     nullify(cpoly%avg_can_temp  )
@@ -2738,6 +2747,7 @@ contains
     nullify(csite%avg_runoff_heat  )
     nullify(csite%avg_heatstor_veg )
     ! ----------------------------------------------
+    nullify(csite%avg_veg_energy) 
     nullify(csite%avg_veg_temp) 
     nullify(csite%avg_veg_water)
 
@@ -2783,6 +2793,7 @@ contains
     nullify(cpatch%cb)
     nullify(cpatch%cb_max)
     nullify(cpatch%cbr_bar)
+    nullify(cpatch%veg_energy)
     nullify(cpatch%veg_temp)
     nullify(cpatch%veg_water)
     nullify(cpatch%mean_gpp)
@@ -2932,6 +2943,7 @@ contains
        if(associated(cgrid%avg_heatstor_veg        )) deallocate(cgrid%avg_heatstor_veg        )
 
        ! Fast time state diagnostics
+       if(associated(cgrid%avg_veg_energy          )) deallocate(cgrid%avg_veg_energy          )
        if(associated(cgrid%avg_veg_temp            )) deallocate(cgrid%avg_veg_temp            )
        if(associated(cgrid%avg_veg_water           )) deallocate(cgrid%avg_veg_water           )
        if(associated(cgrid%avg_can_temp            )) deallocate(cgrid%avg_can_temp            )
@@ -2973,7 +2985,6 @@ contains
        if(associated(cgrid%avg_atm_tmp             )) deallocate(cgrid%avg_atm_tmp             )
        if(associated(cgrid%avg_atm_shv             )) deallocate(cgrid%avg_atm_shv             )
        if(associated(cgrid%avg_rhos                )) deallocate(cgrid%avg_rhos                )
-       if(associated(cgrid%avg_theta               )) deallocate(cgrid%avg_theta               )
        if(associated(cgrid%avg_rshort              )) deallocate(cgrid%avg_rshort              )
        if(associated(cgrid%avg_rshort_diffuse      )) deallocate(cgrid%avg_rshort_diffuse      )
        if(associated(cgrid%avg_rlong               )) deallocate(cgrid%avg_rlong               )
@@ -3171,6 +3182,7 @@ contains
     if(associated(cpoly%avg_sensible_gg             )) deallocate(cpoly%avg_sensible_gg             )
     if(associated(cpoly%avg_runoff_heat             )) deallocate(cpoly%avg_runoff_heat             )
     if(associated(cpoly%avg_heatstor_veg            )) deallocate(cpoly%avg_heatstor_veg            )
+    if(associated(cpoly%avg_veg_energy              )) deallocate(cpoly%avg_veg_energy              )
     if(associated(cpoly%avg_veg_temp                )) deallocate(cpoly%avg_veg_temp                )
     if(associated(cpoly%avg_veg_water               )) deallocate(cpoly%avg_veg_water               )
     if(associated(cpoly%avg_can_temp                )) deallocate(cpoly%avg_can_temp                )
@@ -3348,6 +3360,7 @@ contains
     if(associated(csite%avg_sensible_gg              )) deallocate(csite%avg_sensible_gg              )
     if(associated(csite%avg_runoff_heat              )) deallocate(csite%avg_runoff_heat              )
     if(associated(csite%avg_heatstor_veg             )) deallocate(csite%avg_heatstor_veg             )
+    if(associated(csite%avg_veg_energy               )) deallocate(csite%avg_veg_energy               )
     if(associated(csite%avg_veg_temp                 )) deallocate(csite%avg_veg_temp                 )
     if(associated(csite%avg_veg_water                )) deallocate(csite%avg_veg_water                )
 
@@ -3398,6 +3411,7 @@ contains
     if(associated(cpatch%cb))        deallocate(cpatch%cb)
     if(associated(cpatch%cb_max))    deallocate(cpatch%cb_max)
     if(associated(cpatch%cbr_bar))   deallocate(cpatch%cbr_bar)
+    if(associated(cpatch%veg_energy))  deallocate(cpatch%veg_energy)
     if(associated(cpatch%veg_temp))  deallocate(cpatch%veg_temp)
     if(associated(cpatch%veg_water)) deallocate(cpatch%veg_water)
     if(associated(cpatch%mean_gpp))  deallocate(cpatch%mean_gpp)
@@ -3594,6 +3608,7 @@ contains
        if(associated(cgrid%avg_heatstor_veg        )) cgrid%avg_heatstor_veg         = large_real
 
        ! Fast time state diagnostics
+       if(associated(cgrid%avg_veg_energy          )) cgrid%avg_veg_energy           = large_real
        if(associated(cgrid%avg_veg_temp            )) cgrid%avg_veg_temp             = large_real
        if(associated(cgrid%avg_veg_water           )) cgrid%avg_veg_water            = large_real
        if(associated(cgrid%avg_can_temp            )) cgrid%avg_can_temp             = large_real
@@ -3624,7 +3639,6 @@ contains
        if(associated(cgrid%avg_atm_tmp             )) cgrid%avg_atm_tmp              = large_real
        if(associated(cgrid%avg_atm_shv             )) cgrid%avg_atm_shv              = large_real
        if(associated(cgrid%avg_rhos                )) cgrid%avg_rhos                 = large_real
-       if(associated(cgrid%avg_theta               )) cgrid%avg_theta                = large_real
        if(associated(cgrid%avg_rshort              )) cgrid%avg_rshort               = large_real
        if(associated(cgrid%avg_rshort_diffuse      )) cgrid%avg_rshort_diffuse       = large_real
        if(associated(cgrid%avg_rlong               )) cgrid%avg_rlong                = large_real
@@ -3847,6 +3861,7 @@ contains
     if(associated(cpoly%avg_sensible_gg             )) cpoly%avg_sensible_gg             = large_real
     if(associated(cpoly%avg_runoff_heat             )) cpoly%avg_runoff_heat             = large_real
     if(associated(cpoly%avg_heatstor_veg            )) cpoly%avg_heatstor_veg            = large_real
+    if(associated(cpoly%avg_veg_energy              )) cpoly%avg_veg_energy              = large_real
     if(associated(cpoly%avg_veg_temp                )) cpoly%avg_veg_temp                = large_real
     if(associated(cpoly%avg_veg_water               )) cpoly%avg_veg_water               = large_real
     if(associated(cpoly%avg_can_temp                )) cpoly%avg_can_temp                = large_real
@@ -4039,6 +4054,7 @@ contains
     if(associated(csite%avg_sensible_gg              )) csite%avg_sensible_gg              = large_real
     if(associated(csite%avg_runoff_heat              )) csite%avg_runoff_heat              = large_real
     if(associated(csite%avg_heatstor_veg             )) csite%avg_heatstor_veg             = large_real
+    if(associated(csite%avg_veg_energy               )) csite%avg_veg_energy               = large_real
     if(associated(csite%avg_veg_temp                 )) csite%avg_veg_temp                 = large_real
     if(associated(csite%avg_veg_water                )) csite%avg_veg_water                = large_real
 
@@ -4081,6 +4097,7 @@ contains
     if(associated(cpatch%cb))                   cpatch%cb                  = large_real
     if(associated(cpatch%cb_max))               cpatch%cb_max              = large_real
     if(associated(cpatch%cbr_bar))              cpatch%cbr_bar             = large_real
+    if(associated(cpatch%veg_energy))           cpatch%veg_energy          = large_real
     if(associated(cpatch%veg_temp))             cpatch%veg_temp            = large_real
     if(associated(cpatch%veg_water))            cpatch%veg_water           = large_real
     if(associated(cpatch%mean_gpp))             cpatch%mean_gpp            = large_real
@@ -4472,6 +4489,7 @@ contains
     siteout%avg_sensible_tot(1:inc)     = pack(sitein%avg_sensible_tot,logmask)
     siteout%avg_runoff_heat(1:inc)      = pack(sitein%avg_runoff_heat,logmask)
     siteout%avg_heatstor_veg(1:inc)     = pack(sitein%avg_heatstor_veg,logmask)
+    siteout%avg_veg_energy(1:inc)       = pack(sitein%avg_veg_energy,logmask)
     siteout%avg_veg_temp(1:inc)         = pack(sitein%avg_veg_temp,logmask)
     siteout%avg_veg_water(1:inc)        = pack(sitein%avg_veg_water,logmask)
 
@@ -4611,6 +4629,7 @@ contains
     patchout%lai(1:inc)              = pack(patchin%lai,mask)
     patchout%bstorage(1:inc)         = pack(patchin%bstorage,mask)
     patchout%cbr_bar(1:inc)          = pack(patchin%cbr_bar,mask)
+    patchout%veg_energy(1:inc)       = pack(patchin%veg_energy,mask)
     patchout%veg_temp(1:inc)         = pack(patchin%veg_temp,mask)
     patchout%veg_water(1:inc)        = pack(patchin%veg_water,mask)
     patchout%mean_gpp(1:inc)         = pack(patchin%mean_gpp,mask)
@@ -4731,9 +4750,10 @@ contains
        patchout%balive(iout)           = patchin%balive(iin)
        patchout%lai(iout)              = patchin%lai(iin)
        patchout%bstorage(iout)         = patchin%bstorage(iin)
-       patchout%cb(:,iout)               = patchin%cb(:,iin)
-       patchout%cb_max(:,iout)           = patchin%cb_max(:,iin)
+       patchout%cb(:,iout)             = patchin%cb(:,iin)
+       patchout%cb_max(:,iout)         = patchin%cb_max(:,iin)
        patchout%cbr_bar(iout)          = patchin%cbr_bar(iin)
+       patchout%veg_energy(iout)       = patchin%veg_energy(iin)
        patchout%veg_temp(iout)         = patchin%veg_temp(iin)
        patchout%veg_water(iout)        = patchin%veg_water(iin)
        patchout%mean_gpp(iout)         = patchin%mean_gpp(iin)
@@ -5859,13 +5879,6 @@ contains
        call metadata_edio(nvar,igr,'Polygon Averaged Atmospheric Density at Ref Height','[kg/m3]','ipoly') 
     endif
     
-    if (associated(cgrid%avg_theta)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%avg_theta(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_THETA :11:hist:anal:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'Polygon Averaged Potential Temperature at Ref. Height','[K]','ipoly') 
-    endif
-    
     if (associated(cgrid%avg_rshort)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_rshort(1),nvar,igr,init,cgrid%pyglob_id, &
@@ -5957,9 +5970,16 @@ contains
        call metadata_edio(nvar,igr,'Polygon Average Upwelling Longwave Radiation','[W/m2]','ipoly') 
     endif
     
+    if (associated(cgrid%avg_veg_energy)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_veg_energy(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_VEG_ENERGY :11:hist:anal:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Polygon Average Internal Energy of Vegetation','[J/kg]','ipoly') 
+    endif
+    
     if (associated(cgrid%avg_veg_temp)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%avg_veg_temp (1),nvar,igr,init,cgrid%pyglob_id, &
+       call vtable_edio_r(cgrid%avg_veg_temp(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_VEG_TEMP :11:hist:anal:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon Average Temperature of Vegetation','[K]','ipoly') 
     endif
@@ -7833,6 +7853,13 @@ contains
          call vtable_edio_r(cpatch%cbr_bar(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'CBR_BAR :41:hist:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Annual average ratio of cb/cb_max','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%veg_energy)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%veg_energy(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'VEG_ENERGY :41:hist:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%veg_temp)) then

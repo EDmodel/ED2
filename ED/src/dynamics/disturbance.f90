@@ -807,6 +807,8 @@ end subroutine apply_disturbances_ar
     use pft_coms, only: q, qsw, sla, hgt_min
     use misc_coms, only: dtlsm
     use fuse_fiss_utils_ar, only : sort_cohorts_ar
+    use canopy_air_coms, only: hcapveg_ref,heathite_min
+    use consts_coms, only: t3ple
 
     implicit none
 
@@ -822,6 +824,7 @@ end subroutine apply_disturbances_ar
     real :: h2dbh
     real :: dbh2bd
     real :: dbh2bl
+    real :: hcapveg
 
     
     cpatch => csite%patch(np)
@@ -867,6 +870,10 @@ end subroutine apply_disturbances_ar
 
     cpatch%veg_temp(nc) = csite%can_temp(np)
     cpatch%veg_water(nc) = 0.0
+
+    !----- Because we assigned no water, the internal energy is simply hcapveg*(T-T3)
+    hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(nc)/csite%lai(np)
+    cpatch%veg_energy(nc) = hcapveg * (cpatch%veg_temp(nc)-t3ple)
     
     call init_ed_cohort_vars_array(cpatch, nc, lsl)
     

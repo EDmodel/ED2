@@ -212,7 +212,6 @@ subroutine reset_averaged_vars(cgrid)
       cgrid%avg_atm_tmp(ipy)        = 0.0
       cgrid%avg_atm_shv(ipy)        = 0.0
       cgrid%avg_rhos(ipy)           = 0.0
-      cgrid%avg_theta(ipy)          = 0.0
       cgrid%avg_rshort(ipy)         = 0.0
       cgrid%avg_rshort_diffuse(ipy) = 0.0
       cgrid%avg_rlong(ipy)          = 0.0

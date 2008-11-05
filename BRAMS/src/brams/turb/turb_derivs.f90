@@ -262,7 +262,11 @@ subroutine bruvais(ibruvais,m1,m2,m3,ia,iz,ja,jz,pi0,pp,theta,rtp,rv,rtgt,flpw,e
          
          
          !---- Alternative way to compute, lacks citation ---------------------------------!
-         if (cloud_on .and. ibruvais == 2) then 
+         if (ibruvais == 3) then
+            do k=k2,m1-1
+               vctr19(k) = g / ((zt(k+1)-zt(k-1)) * rtgt(i,j))
+            end do
+         elseif (cloud_on .and. ibruvais == 2) then 
 
             do k = k2,m1-1
                vctr19(k) = g / ((zt(k+1) - zt(k-1)) * rtgt(i,j))
@@ -302,7 +306,11 @@ subroutine bruvais(ibruvais,m1,m2,m3,ia,iz,ja,jz,pi0,pp,theta,rtp,rv,rtgt,flpw,e
          end if
 
          !----- Computing the frequency according to the option. --------------------------!
-         if (cloud_on .and. ibruvais == 2) then
+         if (ibruvais == 3) then
+            do k=k2,m1-1
+               en2(k,i,j)=vctr19(k)*(vctr12(k+1)-vctr12(k-1))/vctr12(k)
+            end do
+         elseif (cloud_on .and. ibruvais == 2) then
             do k=k2,m1-1
                if (vctr31(k) > 0) then
                   if ( k == ki) then
@@ -337,7 +345,7 @@ subroutine bruvais(ibruvais,m1,m2,m3,ia,iz,ja,jz,pi0,pp,theta,rtp,rv,rtgt,flpw,e
    do j = ja,jz
       do i = ia,iz
          k1=nint(flpw(i,j))-1
-         en2(k1,i,j)=en2(k1,i,j)
+         en2(k1,i,j)=en2(k2,i,j)
       end do
    end do
    do j = ja,jz

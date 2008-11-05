@@ -236,7 +236,7 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
 
         ! Photorespiration can become important at high temperatures.  If so,
         ! close down the stomata.
-        if(cpatch%A_open(ico) < cpatch%A_closed(ico))cpatch%fs_open(ico) = 0.0
+        if(cpatch%A_open(ico) < cpatch%A_closed(ico)) cpatch%fs_open(ico) = 0.0
 
         ! Net stomatal resistance
         cpatch%stomatal_resistance(ico) = 1.0 / (cpatch%fs_open(ico) / cpatch%rsw_open(ico) +   &

@@ -1054,8 +1054,6 @@ subroutine int_met_avg(cgrid)
              cpoly%met(isi)%atm_shv * cpoly%area(isi) * tfact
         cgrid%avg_rhos(ipy)        = cgrid%avg_rhos(ipy) + &
              cpoly%met(isi)%rhos * cpoly%area(isi) * tfact
-        cgrid%avg_theta(ipy)       = cgrid%avg_theta(ipy) + &
-             cpoly%met(isi)%theta * cpoly%area(isi) * tfact
         cgrid%avg_rshort(ipy)      = cgrid%avg_rshort(ipy) + &
              cpoly%met(isi)%rshort * cpoly%area(isi) * tfact
         cgrid%avg_rshort_diffuse(ipy) = cgrid%avg_rshort_diffuse(ipy) + &

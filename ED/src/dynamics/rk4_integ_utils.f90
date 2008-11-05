@@ -1,4 +1,4 @@
-subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,  &
+subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,ifm,  &
      integration_buff, rhos, vels, atm_tmp, atm_shv, atm_co2, geoht,  &
      exner, pcpg, qpcpg, prss, lsl)
 
@@ -16,7 +16,7 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,  &
   type(integration_vars_ar), target :: integration_buff
   type(sitetype),target :: csite
   type(patchtype),pointer :: cpatch
-  integer :: ipa,ico,isi,ipy
+  integer :: ipa,ico,isi,ipy,ifm
 
   integer, parameter :: maxstp=100000000
   real, parameter :: tiny=1.0e-20
@@ -87,7 +87,7 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,  &
 
      ! Take the step
      call rkqs_ar(integration_buff, x, h, hmin, epsi, hdid, hnext,  &
-          csite,ipa,isi,ipy, rhos, vels, atm_tmp, atm_shv, atm_co2,  &
+          csite,ipa,isi,ipy,ifm, rhos, vels, atm_tmp, atm_shv, atm_co2,  &
           geoht, exner, pcpg, qpcpg, prss, lsl)
 
      ! Re-calculate tempks, fracliqs, surface water flags.
@@ -275,7 +275,7 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
   cpatch => sourcesite%patch(ipa)
   do ico = 1,cpatch%ncohorts
      targetp%veg_water(ico)     = cpatch%veg_water(ico)
-     targetp%veg_temp(ico)      = cpatch%veg_temp(ico)
+     targetp%veg_energy(ico)    = cpatch%veg_energy(ico)
   enddo
 
   if (diag_veg_heating) then
@@ -371,7 +371,7 @@ subroutine inc_rk4_patch_ar(rkp, inc, fac, cpatch, lsl)
   do ico = 1,cpatch%ncohorts
      rkp%veg_water(ico)     = rkp%veg_water(ico) + fac * inc%veg_water(ico)
      rkp%veg_water(ico)     = max(rkp%veg_water(ico),0.0)
-     rkp%veg_temp(ico)      = rkp%veg_temp(ico) + fac * inc%veg_temp(ico)
+     rkp%veg_energy(ico)    = rkp%veg_energy(ico) + fac * inc%veg_energy(ico)
   enddo
 
   ! Increment the heating/cooling rates over analfrq
@@ -398,6 +398,7 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
   use grid_coms, only: nzg, nzs
   use soil_coms, only: min_sfcwater_mass
   use consts_coms, only: cliq,alli
+  use canopy_radiation_coms, only: lai_min
 
   implicit none
 
@@ -455,10 +456,24 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
   yscal%virtual_water = 0.1
   yscal%virtual_heat = cliq * 110.0 * yscal%virtual_water
   
+!  write (unit=31,fmt='(87a)') ('-',k=1,87)
+!  write (unit=31,fmt='(2(a5,1x),5(a14,1x))') &
+!        '  ICO','  PFT','LAI','ENERGY','D_ENERGY','HTRY','SCALE'
   do ico = 1,cpatch%ncohorts
-     yscal%veg_water(ico) = 0.22
-     yscal%veg_temp(ico) = abs(y%veg_temp(ico)) + abs(dy%veg_temp(ico)*htry) + tiny
-  enddo
+     if (cpatch%lai(ico) > lai_min) then
+        yscal%veg_water(ico) = 0.22
+        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
+                                   + abs(dy%veg_energy(ico)*htry),0.22*alli)
+     else
+        yscal%veg_water(ico) = 1.e30
+        yscal%veg_energy(ico) = 1.e30
+     end if
+!     write (unit=31,fmt='(2(i5,1x),5(es14.7,1x))') &
+!       ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_energy(ico),dy%veg_energy(ico),htry &
+!          ,yscal%veg_energy(ico)
+  end do
+!  write (unit=31,fmt='(87a)') ('-',k=1,87)
+!  write (unit=31,fmt='(a)') ' '
 
   return
 end subroutine get_yscal_ar
@@ -478,7 +493,7 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
   type(patchtype),target :: cpatch
   type(rk4patchtype),target :: yerr,yscal,y,ytemp
   integer :: ico
-  real :: errmax
+  real :: errmax,errh2o,errene
   integer :: k
   
   errmax = 0.0
@@ -501,14 +516,24 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
   errmax = max(errmax,abs(yerr%virtual_heat/yscal%virtual_heat))
   errmax = max(errmax,abs(yerr%virtual_water/yscal%virtual_water))
 
+!  write (unit=40,fmt='(132a)') ('-',k=1,132)
+!  write (unit=40,fmt='(2(a5,1x),8(a14,1x))') &
+!    '  COH','  PFT','           LAI','        ERRH2O','        ERRENE','        ERRMAX'    &
+!                   ,'  YERR%VEG_H2O',' YSCAL%VEG_H2O',' YERR%VEG_ENER','YSCAL%VEG_ENER'
   do ico = 1,cpatch%ncohorts
      
      if(cpatch%lai(ico).gt.lai_min)then
-        errmax = max(errmax,abs(yerr%veg_water(ico)/yscal%veg_water(ico)))
-        errmax = max(errmax,abs(yerr%veg_temp(ico)/yscal%veg_temp(ico)))
+        errh2o = abs(yerr%veg_water(ico)/yscal%veg_water(ico))
+        errene = abs(yerr%veg_energy(ico)/yscal%veg_energy(ico))
+!        write (unit=40,fmt='(2(i5,1x),8(es14.7,1x))') &
+!            ico,cpatch%pft(ico),cpatch%lai(ico),errh2o,errene,errmax &
+!           ,yerr%veg_water(ico),yscal%veg_water(ico)                 &
+!           ,yerr%veg_energy(ico),yscal%veg_energy(ico)
+        errmax = max(errmax,errh2o,errene)
      endif
-
-  enddo
+  end do
+!  write (unit=40,fmt='(132a)') ('-',k=1,132)
+!  write (unit=40,fmt='(a)') ' '
 
   return
 end subroutine get_errmax_ar
@@ -574,8 +599,8 @@ subroutine print_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
         errmax = max(errmax,abs(yerr%veg_water(ico)/yscal%veg_water(ico)))
         print*,'veg_water',errmax,yerr%veg_water(ico),yscal%veg_water(ico), &
              cpatch%lai(ico),cpatch%pft(ico)
-        errmax = max(errmax,abs(yerr%veg_temp(ico)/yscal%veg_temp(ico)))
-        print*,'veg_temp',errmax,yerr%veg_temp(ico),yscal%veg_temp(ico), &
+        errmax = max(errmax,abs(yerr%veg_energy(ico)/yscal%veg_energy(ico)))
+        print*,'veg_energy',errmax,yerr%veg_energy(ico),yscal%veg_energy(ico), &
              cpatch%lai(ico),cpatch%pft(ico)
      endif
   enddo
@@ -718,7 +743,7 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch, lsl)
   do k=1,nco
 
      targetp%veg_water(k) = sourcep%veg_water(k)
-     targetp%veg_temp(k)  = sourcep%veg_temp(k)
+     targetp%veg_energy(k)  = sourcep%veg_energy(k)
   
   enddo
 
@@ -885,7 +910,7 @@ subroutine print_patch_ar(y, csite,ipa, lsl)
   print*,csite%htry(ipa)
 
   print*,'cohorts'
-  print*,1,"y%veg_water,y%veg_temp"
+  print*,1,"y%veg_water,y%veg_energy"
   print*,2,"ccp%lai"
   print*,3,"ccp%hite"
   print*,4,"pft,krdepth,dbh"
@@ -895,7 +920,7 @@ subroutine print_patch_ar(y, csite,ipa, lsl)
 
   do ico=1,cpatch%ncohorts
      if(cpatch%lai(ico).gt.lai_min)then
-        print*,1,y%veg_water(ico),y%veg_temp(ico)
+        print*,1,y%veg_water(ico),y%veg_energy(ico)
         print*,2,cpatch%lai(ico)!,y%a_op(ico),y%a_cl(ico)
         !print*,3,y%p_op(ico),y%p_cl(ico),y%rb(ico),
         print*,3,cpatch%hite(ico)
@@ -1595,7 +1620,7 @@ subroutine allocate_rk4_coh_ar(maxcohort,y)
 
   call nullify_rk4_cohort(y)
 
-  allocate(y%veg_temp(maxcohort))
+  allocate(y%veg_energy(maxcohort))
   allocate(y%veg_water(maxcohort))
 
   if (diag_veg_heating) then
@@ -1628,7 +1653,7 @@ subroutine nullify_rk4_cohort(y)
   
   type(rk4patchtype) :: y
       
-  nullify(y%veg_temp)
+  nullify(y%veg_energy)
   nullify(y%veg_water)
 
   nullify(y%co_srad_h )
@@ -1657,7 +1682,7 @@ subroutine zero_rk4_cohort(y)
   
   type(rk4patchtype) :: y
 
-  if(associated(y%veg_temp      ))  y%veg_temp      = 0.
+  if(associated(y%veg_energy    ))  y%veg_energy    = 0.
   if(associated(y%veg_water     ))  y%veg_water     = 0.
 
   if(associated(y%co_srad_h     ))  y%co_srad_h     = 0.
@@ -1687,7 +1712,7 @@ subroutine deallocate_rk4_coh_ar(y)
   
   type(rk4patchtype) :: y
       
-  if(associated(y%veg_temp))       deallocate(y%veg_temp)
+  if(associated(y%veg_energy))     deallocate(y%veg_energy)
   if(associated(y%veg_water))      deallocate(y%veg_water)
   
   if(associated(y%co_srad_h ))     deallocate(y%co_srad_h )
