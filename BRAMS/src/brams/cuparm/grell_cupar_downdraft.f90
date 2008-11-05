@@ -53,7 +53,6 @@ subroutine grell_find_downdraft_origin(mkx,mgmzp,k22,ktop,relheight_down,zcutdow
    zktop = min(relheight_down*z_cup(ktop),zcutdown)
    
    
-   
    !---------------------------------------------------------------------------------------!
    !    The above definition should be sufficient to not allow the level to be above ktop  !
    !  anyway, but here we constrain it to be at least two levels apart.                    !
@@ -62,6 +61,14 @@ subroutine grell_find_downdraft_origin(mkx,mgmzp,k22,ktop,relheight_down,zcutdow
       if (z_cup(kzdown) > zktop) exit kzdownloop
    end do kzdownloop
 
+   !---------------------------------------------------------------------------------------!
+   !    If k22 is above kzdown, then this cloud doesn't make sense. Assign error message   !
+   ! and leave the subroutine. s                                                            !
+   !---------------------------------------------------------------------------------------!
+   if (kzdown < k22) then
+      ierr = 12
+      return
+   end if
 
 
    !---------------------------------------------------------------------------------------!
