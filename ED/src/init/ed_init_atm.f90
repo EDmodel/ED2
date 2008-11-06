@@ -739,9 +739,11 @@ subroutine initialize_vegetation_energy(cgrid)
          do ipa=1,csite%npatches
             cpatch => csite%patch(ipa)
             do ico=1,cpatch%ncohorts
-               hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)  &
+               if(cpatch%lai(ico) > 0.0) then
+                  hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)  &
                        / csite%lai(ipa)
-               cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
+                  cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
+               endif
             end do
          end do
       end do
