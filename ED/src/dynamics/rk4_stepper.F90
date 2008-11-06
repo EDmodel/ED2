@@ -397,55 +397,65 @@ contains
        return
     endif
 
-    do k=lsl,nzg
-       if(y%soil_water(k).lt.soil(csite%ntext_soil(k,ipa))%soilcp)then
-          iflag1 = 0
-          if(print_diags==1) print*,'soil water too low',k,  &
-               y%soil_water(k),csite%ntext_soil(k,ipa)
-       endif
+      do k=lsl,nzg
+         if(y%soil_water(k).lt.soil(csite%ntext_soil(k,ipa))%soilcp)then
+            iflag1 = 0
+            if(print_diags==1) print*,'soil water too low',k,  &
+            y%soil_water(k),csite%ntext_soil(k,ipa)
+         endif
        if(y%soil_water(k).gt.1.0)then
           iflag1 = 0
           if(print_diags==1) print*,'soil water too high',k,  &
-               y%soil_water(k),csite%ntext_soil(k,ipa)
+          y%soil_water(k),csite%ntext_soil(k,ipa)
        endif
        if(y%soil_tempk(k) > 350.0)then
           iflag1 = 0
           if(print_diags==1) print*,'soil_tempk too high',k,y%soil_tempk(k)
        endif
-    enddo
-    
-    if(y%nlev_sfcwater >= 1)then
-       if(y%sfcwater_mass(y%nlev_sfcwater).lt.-1.0e-3)then
-          iflag1 = 0
-          if(print_diags==1) print*,'sfcwater_mass too low',  &
-               y%nlev_sfcwater,y%sfcwater_mass(y%nlev_sfcwater)
-          return
-       endif
-    endif
-
-    ! Negative rk4 increment factors can make this value significantly
-    ! negative, but it should not slow down the integration
-    ! Changed from -1.0e-3 to -1.0e-1
-    
-    if(y%virtual_water < -1.0e-1)then
-       iflag1 = 0
-       if(print_diags==1)print*,'virtual water too low',y%virtual_water
-       return
-    endif
-
-    cpatch => csite%patch(ipa)
-
-    do ico = 1,cpatch%ncohorts
-       hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
-       call qwtk(y%veg_energy(ico),y%veg_water(ico),hcapveg,veg_temp,fracliq)
-
-       if(cpatch%lai(ico) > lai_min.and. veg_temp > 380.0)then
-          iflag1 = 0
-          if(print_diags==1) print*,'leaf temp too high',veg_temp,y%veg_energy(ico),  &
+      enddo
+      
+      if(y%nlev_sfcwater >= 1)then
+         if(y%sfcwater_mass(y%nlev_sfcwater).lt.-1.0e-3)then
+            iflag1 = 0
+            if(print_diags==1) print*,'sfcwater_mass too low',  &
+            y%nlev_sfcwater,y%sfcwater_mass(y%nlev_sfcwater)
+            return
+         endif
+      endif
+      
+!! Negative rk4 increment factors can make this value significantly
+!! negative, but it should not slow down the integration
+!! Changed from -1.0e-3 to -1.0e-1
+      
+      if(y%virtual_water < -1.0e-1)then
+         iflag1 = 0
+         if(print_diags==1)print*,'virtual water too low',y%virtual_water
+         return
+      endif
+      
+      cpatch => csite%patch(ipa)
+      
+      do ico = 1,cpatch%ncohorts
+         if(cpatch%lai(ico) > 0.0) then	
+            hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
+            call qwtk(y%veg_energy(ico),y%veg_water(ico),hcapveg,veg_temp,fracliq)
+            
+            if(cpatch%lai(ico) > lai_min.and. veg_temp > 380.0)then
+               iflag1 = 0
+               if(print_diags==1) print*,'leaf temp too high',veg_temp,y%veg_energy(ico),  &
                cpatch%lai(ico),cpatch%pft(ico),cpatch%veg_temp(ico)
-          return
-       endif
-    enddo
+               return
+            endif
+!     if(y%veg_temp(ico) < 0.0)then
+!     iflag1 = 0
+!     if(print_diags==1) print*,'leaf temp too low',y%veg_temp(ico),  &
+!     cpatch%lai(ico),cpatch%pft(ico),cpatch%veg_temp(ico)
+!     return
+!     endif
+           
+
+         endif
+      enddo
     
     return
   end subroutine lsm_sanity_check_ar

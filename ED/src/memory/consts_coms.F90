@@ -61,7 +61,7 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    real, parameter :: pi1       = 3.14159265358979  ! Pi                        [      ---]
    real, parameter :: twopi     = pi1* 2.           ! 2 Pi                      [      ---]
-   real, parameter :: sqrtpii   = 0.564189584       ! 1/sqrt(pi)                [      ---]
+   real, parameter :: sqrtpii   = 0.564189583547756  !1./(pi1**0.5)     ! 1/sqrt(pi)                [      ---]
    real, parameter :: pio180    = pi1/ 180.         ! Pi/180 (deg -> rad)       [      ---]
    real, parameter :: pi4       = pi1 * 4.          ! 4 Pi                      [      ---]
    real, parameter :: pio4      = pi1 /4.           ! Pi/4                      [      ---]

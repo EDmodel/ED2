@@ -4961,7 +4961,7 @@ contains
     type(polygontype),pointer :: cpoly
     type(sitetype),pointer    :: csite
     type(patchtype),pointer   :: cpatch
-    
+    logical :: verbose = .false.    
 
 
     ! The first loop through populates the info tables
@@ -5189,7 +5189,7 @@ contains
           
        enddo
       
-       if (mynum.eq.1 .and. model_start) then
+       if (mynum.eq.1 .and. model_start .and. verbose) then
           model_start = .false.
           do nv=1,num_var(igr)
 !             write(*,"(a,i4,a,i4,a,a)")'Registering: ',nv,' of',num_var(igr),'  ',vt_info(nv,igr)%name

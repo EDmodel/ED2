@@ -5,7 +5,7 @@ subroutine read_site_file_array(cgrid)
    ! function for loading sites within polygons and initializing polygon parms
    ! call prior to loading pss/css files but after basic polygon established
   
-   use soil_coms, only: soil
+   use soil_coms, only: soil,slz
    use grid_coms, only: nzg
    use misc_coms, only: ied_init_mode,sfilin
    use mem_sites, only: edres
@@ -27,6 +27,7 @@ subroutine read_site_file_array(cgrid)
    integer :: fformat = 0    ! file format
    logical :: fexist         ! file exists
    real :: Te,T0,K0,water_area = 0.0
+   real :: fa,fb,zmin=-2.0
    integer :: sitenum,get_site_line,get_mat_line,get_header,found_mat_header=0,lcount=0,mcount=0
    real :: area,TCI,elevation,slope,aspect
    integer,allocatable :: soilclass(:)
@@ -77,6 +78,12 @@ subroutine read_site_file_array(cgrid)
          sc = cpoly%ntext_soil(nzg-1,1)
          cpoly%moist_f(1) = -log(soil(sc)%slcons / soil(sc)%slcons0) / 2.0
 
+         !! derive adjustments to f
+         zmin = slz(cpoly%lsl(1))
+         fa = -1.0/zmin !! should be 1/(depth to bedrock)
+         fb = cpoly%moist_f(1)/(1-exp(cpoly%moist_f(1)*zmin))
+         cpoly%moist_f(1) = max(fa,fb)
+
          cpoly%sitenum(1)   = 1
          cpoly%elevation(1) = 0.0
          cpoly%slope(1)     = 0.0
@@ -84,6 +91,8 @@ subroutine read_site_file_array(cgrid)
          cpoly%TCI(1)       = 0.0
 
       else
+
+print*,trim(site_name)
 
          !! Read data from site file
          open(unit=12,file=trim(site_name),form='formatted',status='old')
@@ -205,6 +214,11 @@ subroutine read_site_file_array(cgrid)
                   !//Currently do nothing with setting site-level soils
                   sc = cpoly%ntext_soil(nzg-1,1)
                   cpoly%moist_f(isi) = -log(soil(sc)%slcons / soil(sc)%slcons0) / 2.0
+                  !! derive adjustments to f
+                  zmin = slz(cpoly%lsl(isi))
+                  fa = -1.0/zmin !! should be 1/(depth to bedrock)
+                  fb = cpoly%moist_f(isi)/(1-exp(cpoly%moist_f(isi)*zmin))
+                  cpoly%moist_f(isi) = max(fa,fb)
 
                end if  ! end valid line
             end if        !//********** END READ SITE LINE**************
