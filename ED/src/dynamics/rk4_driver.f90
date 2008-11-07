@@ -411,13 +411,13 @@ contains
     do ico = 1,cpatch%ncohorts
        cpatch%veg_water(ico)  = initp%veg_water(ico)
        cpatch%veg_energy(ico) = initp%veg_energy(ico)
-       hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
     
        ! For plants with minimal foliage, fix the vegetation
        ! temperature to the canopy air space
        if (cpatch%lai(ico) < lai_min) then
           cpatch%veg_temp(ico) = csite%can_temp(ipa)
        else 
+          hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
           call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),hcapveg,cpatch%veg_temp(ico),fracliq)
        end if
   

@@ -695,7 +695,6 @@ subroutine transfer_ed2leaf(ifm,timel)
        leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)* &
        ((1-tfact)*wgridp_g(ifm)%sflux_r(ia:iz,ja:jz) + tfact*wgridf_g(ifm)%sflux_r(ia:iz,ja:jz))
 
-
   ! The boundary cells of these arrays have not been filled.  These must be filled by the adjacent
   ! cells, likely the 2nd or 2nd to last cell in each row or column
   ! ----------------------------------------------------------------------------------------------
@@ -842,10 +841,10 @@ subroutine transfer_ed2leaf(ifm,timel)
      leaf_g(ifm)%ustar(ic,jc,2)=leaf_g(ifm)%ustar(ici,jci,2)
      leaf_g(ifm)%rstar(ic,jc,2)=leaf_g(ifm)%rstar(ici,jci,2)
      leaf_g(ifm)%tstar(ic,jc,2)=leaf_g(ifm)%tstar(ici,jci,2)
-  end if
+  !end if
   
   !----- Northwestern corner --------------------------------------------------------------!
-  if (iand(ibcon,10) /= 0 .or. (iand(ibcon,2) /= 0 .and. jdim == 0)) then
+  !if (iand(ibcon,10) /= 0 .or. (iand(ibcon,2) /= 0 .and. jdim == 0)) then
      ic=1
      jc=m3
      ici=2
@@ -1088,3 +1087,59 @@ subroutine int_met_avg(cgrid)
   
   return
 end subroutine int_met_avg
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine copy_avgvars_to_leaf(ifm)
+
+   use ed_state_vars , only: edgrid_g,edtype,polygontype,sitetype
+   use mem_leaf      , only: leaf_g
+   use mem_grid      , only: nzg
+   use rconstants    , only: t3ple,cliq1000,cice1000,alli1000
+   use soil_coms     , only: soil
+   implicit none
+   
+   !----- Argument ------------------------------------------------------------------------!
+   integer, intent(in)  :: ifm
+   !----- Local variables -----------------------------------------------------------------!
+   type(edtype),pointer :: cgrid
+   integer              :: ipy,isi
+   integer              :: ix,iy,k
+   !---------------------------------------------------------------------------------------!
+
+   !----- Set the pointers ----------------------------------------------------------------!
+   cgrid => edgrid_g(ifm)
+
+   do ipy=1,cgrid%npolygons
+
+      ix = cgrid%ilon(ipy)
+      iy = cgrid%ilat(ipy)
+      
+      do k=1,nzg
+         leaf_g(ifm)%soil_text(k,ix,iy,2)   = cgrid%ntext_soil(k,ipy)
+         leaf_g(ifm)%soil_energy(k,ix,iy,2) = cgrid%avg_soil_energy(k,ipy)
+         leaf_g(ifm)%soil_water(k,ix,iy,2)  = cgrid%avg_soil_water(k,ipy)
+      end do
+      
+      leaf_g(ifm)%veg_water(ix,iy,2) = cgrid%avg_veg_water(ipy)
+      leaf_g(ifm)%veg_temp(ix,iy,2)  = cgrid%avg_veg_temp(ipy)
+      
+      leaf_g(ifm)%can_temp(ix,iy,2)  = cgrid%avg_can_temp(ipy)
+      leaf_g(ifm)%can_rvap(ix,iy,2)  = cgrid%avg_can_shv(ipy)
+      
+      leaf_g(ifm)%veg_lai(ix,iy,2)   = cgrid%lai(ipy)
+
+   end do
+   return
+
+   
+end subroutine copy_avgvars_to_leaf
+!==========================================================================================!
+!==========================================================================================!

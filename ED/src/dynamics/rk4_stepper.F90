@@ -436,16 +436,19 @@ contains
     cpatch => csite%patch(ipa)
 
     do ico = 1,cpatch%ncohorts
-       hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
-       call qwtk(y%veg_energy(ico),y%veg_water(ico),hcapveg,veg_temp,fracliq)
+    
+       if (cpatch%lai(ico) > lai_min) then
+          hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
+          call qwtk(y%veg_energy(ico),y%veg_water(ico),hcapveg,veg_temp,fracliq)
 
-       if(cpatch%lai(ico) > lai_min.and. veg_temp > 380.0)then
-          iflag1 = 0
-          if(print_diags==1) print*,'leaf temp too high',veg_temp,y%veg_energy(ico),  &
-               cpatch%lai(ico),cpatch%pft(ico),cpatch%veg_temp(ico)
-          return
-       endif
-    enddo
+          if(veg_temp > 380.0)then
+             iflag1 = 0
+             if(print_diags==1) print*,'leaf temp too high',veg_temp,y%veg_energy(ico),  &
+                  cpatch%lai(ico),cpatch%pft(ico),cpatch%veg_temp(ico)
+             return
+          end if
+       end if
+    end do
     
     return
   end subroutine lsm_sanity_check_ar

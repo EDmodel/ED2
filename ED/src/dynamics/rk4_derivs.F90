@@ -614,6 +614,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   real :: w_demand,w_supply,wcapcani,hcapcani,broot
   real :: sat_shv,veg_temp,fracliq
   real :: minfluxrate
+  real :: leflxvc,leflxvc_tot
 
   ! Fluxes from atmosphere to canopy
   rho_ustar = rhos * initp%ustar
@@ -717,6 +718,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   
   ! Initialize variables used to store sums over cohorts.
   hflxvc_tot = 0.0
+  leflxvc_tot = 0.0
   wflxvc_tot = 0.0
   cflxvc_tot = csite%cwd_rh(ipa)
   transp_tot = 0.0
@@ -868,18 +870,25 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         !     - (wflxvc + transp) * (fracliq * alvl + (1.-fracliq) * alvi)              &
         !     + heat_intercept_rate
 
+        ! Because evaporation and dew formation change the mass, we do need to consider the 
+        ! effect on heat capacity. 
+        leflxvc = wflxvc * ( cp * (veg_temp-t3ple) + fracliq * alvl + (1.-fracliq) * alvi)
+        
+
         ! Alternative:
         dinitp%veg_energy(ico) = &
              cpatch%rshort_v(ico)     &   ! Absorbed short wave radiation
              + cpatch%rlong_v(ico)    &   ! Net thermal radiation
              - hflxvc                 &   ! Sensible heat flux
-             - wflxvc * (fracliq * alvl + (1.-fracliq) * alvi) & ! Evaporative phase cooling
+             - leflxvc                &   ! Evaporative phase cooling 
              - transp * alvl          &   ! Transpirative phase cooling
              + heat_intercept_rate    !   !
+             !- wflxvc * (fracliq * alvl + (1.-fracliq) * alvi) & ! Evaporative phase cooling
              !+ intr_energy_dewevap    !
 
         wflxvc_tot=wflxvc_tot+wflxvc
         hflxvc_tot=hflxvc_tot+hflxvc
+        leflxvc_tot = leflxvc_tot + leflxvc
         transp_tot=transp_tot+transp
 
         ! wshed:  Water passing through vegetated canopy to soil surface 
@@ -893,7 +902,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
            dinitp%co_srad_h(ico) =  cpatch%rshort_v(ico)
            dinitp%co_lrad_h(ico) =  cpatch%rlong_v(ico)
            dinitp%co_sens_h(ico) =  -hflxvc
-           dinitp%co_evap_h(ico) =  -(wflxvc + transp)*alvl
+           dinitp%co_evap_h(ico) =  -leflxvc - transp*alvl
            dinitp%co_liqr_h(ico) =  heat_intercept_rate - dinitp%veg_water(ico)*(cliq*(veg_temp-t3ple)+alli)
         endif
 
@@ -977,7 +986,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   ! wcapcan [kg_air/m2] are the heat and moisture capacities of   
   ! the canopy.
   
-  dinitp%can_temp = (hflxgc + hflxvc_tot + hflxac) * hcapcani
+  dinitp%can_temp = (hflxgc + hflxvc_tot + leflxvc_tot + hflxac) * hcapcani
 
 !  if (ipa.eq.1) then
      !print*,"AR",hflxgc,hflxvc_tot,hflxac,hcapcani
