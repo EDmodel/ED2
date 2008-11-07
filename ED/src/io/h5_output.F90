@@ -102,10 +102,11 @@ subroutine h5_output(vtype)
   integer :: ping,ierr
   integer,       dimension(MPI_STATUS_SIZE) :: status
   real(kind=8)    :: dsec
-  logical :: new_file = .true.
+  logical :: new_file
 
   logical,parameter :: collective_mpi = .false.
 
+  new_file=.true.
 
   comm = MPI_COMM_WORLD
   info = MPI_INFO_NULL
