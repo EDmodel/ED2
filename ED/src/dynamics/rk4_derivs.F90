@@ -765,7 +765,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         
         if (veg_temp < 183.15) then
            write (unit=*,fmt='(a)') '================================================================'
-           write (unit=*,fmt='(a)') ' Oh no, am I guessing an ice age mixed with global warming?
+           write (unit=*,fmt='(a)') ' Oh no, am I guessing an ice age mixed with global warming?'
            write (unit=*,fmt='(a)') '================================================================'
            write(unit=*,fmt='(a,1x,i5)')     ' IPY       :',ipy
            write(unit=*,fmt='(a,1x,i5)')     ' ISI       :',isi

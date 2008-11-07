@@ -164,7 +164,7 @@ subroutine load_ecosystem_state
           call bare_ground_init(edgrid_g(igr))
      end do
      
-  case(1,2,3)
+  case(-1,1,2,3)
      
      ! Initialize with ED1-type restart info
      

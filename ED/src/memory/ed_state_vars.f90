@@ -935,9 +935,12 @@ module ed_state_vars
      real,pointer,dimension(:,:) :: avg_smoist_gc   ! Trabspired soil moisture sink
      real,pointer,dimension(:) :: avg_runoff            ! Total runoff
 
-     !----- Auxillary Variables (user can modify to view any variable -----------------------------------------------!
+     !----- Auxiliary Variables (user can modify to view any variable -----------------------------------------------!
      real,pointer,dimension(:)   :: aux             ! Auxillary surface variable
      real,pointer,dimension(:,:) :: aux_s           ! Auxillary soil variable
+
+     !---- Polygon LAI --------------------------------------------------------------------!
+     real, pointer, dimension(:) :: lai
 
      !----- Sensible heat -------------------------------------------------------------------------------------------!
      !                                              | Description
@@ -960,6 +963,7 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_can_temp
      real,pointer,dimension(:) :: avg_can_shv
 
+     real,pointer,dimension(:,:) :: avg_soil_energy
      real,pointer,dimension(:,:) :: avg_soil_water
      real,pointer,dimension(:,:) :: avg_soil_temp
      real,pointer,dimension(:,:) :: avg_soil_fracliq
@@ -1164,6 +1168,10 @@ module ed_state_vars
      real,pointer,dimension(:)   :: aux             ! Auxillary surface variable
      real,pointer,dimension(:,:) :: aux_s           ! Auxillary soil variable
 
+     !----- LAI --------------------------------------------------------------!
+     real,pointer,dimension(:) :: lai
+
+
      !----- Sensible heat Flux -----------------------------------------------!
 
      real,pointer,dimension(:) :: avg_sensible_vc   ! Vegetation to Canopy sensible heat flux
@@ -1185,6 +1193,7 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_can_temp
      real,pointer,dimension(:) :: avg_can_shv
 
+     real,pointer,dimension(:,:) :: avg_soil_energy
      real,pointer,dimension(:,:) :: avg_soil_water
      real,pointer,dimension(:,:) :: avg_soil_temp
      real,pointer,dimension(:,:) :: avg_soil_fracliq
@@ -1639,6 +1648,8 @@ contains
 
        allocate(cgrid%lapse(npolygons))
 
+       allocate(cgrid%lai  (npolygons))
+
        ! Fast time flux diagnostics
        ! ---------------------------------------------
        allocate(cgrid%avg_vapor_vc  (npolygons))
@@ -1669,6 +1680,7 @@ contains
        allocate(cgrid%avg_veg_water (npolygons))
        allocate(cgrid%avg_can_temp  (npolygons))
        allocate(cgrid%avg_can_shv   (npolygons))
+       allocate(cgrid%avg_soil_energy(nzg,npolygons))
        allocate(cgrid%avg_soil_water(nzg,npolygons))
        allocate(cgrid%avg_soil_temp (nzg,npolygons))
        allocate(cgrid%avg_soil_fracliq (nzg,npolygons))
@@ -1901,6 +1913,7 @@ contains
     allocate(cpoly%albedt(nsites))
     allocate(cpoly%rlongup(nsites))
 
+    allocate(cpoly%lai  (nsites))
     ! Fast time flux diagnostics
     ! ---------------------------------------------
     allocate(cpoly%avg_vapor_vc  (nsites))
@@ -1930,6 +1943,7 @@ contains
     allocate(cpoly%avg_veg_water (nsites))
     allocate(cpoly%avg_can_temp  (nsites))
     allocate(cpoly%avg_can_shv   (nsites))
+    allocate(cpoly%avg_soil_energy(nzg,nsites))
     allocate(cpoly%avg_soil_water(nzg,nsites))
     allocate(cpoly%avg_soil_temp (nzg,nsites))
     allocate(cpoly%avg_soil_fracliq (nzg,nsites))
@@ -2300,6 +2314,8 @@ contains
 
        nullify(cgrid%lapse                   )
 
+       nullify(cgrid%lai                     )
+
        ! Fast time flux diagnostics
        ! ---------------------------------------------
        nullify(cgrid%avg_vapor_vc            )
@@ -2330,6 +2346,7 @@ contains
        nullify(cgrid%avg_veg_water           )
        nullify(cgrid%avg_can_temp            )
        nullify(cgrid%avg_can_shv             )
+       nullify(cgrid%avg_soil_energy         )
        nullify(cgrid%avg_soil_water          )
        nullify(cgrid%avg_soil_temp           )
        nullify(cgrid%avg_soil_fracliq           )
@@ -2539,6 +2556,7 @@ contains
     
     nullify(cpoly%albedt)
     nullify(cpoly%rlongup)
+    nullify(cpoly%lai    )
     
     ! Fast time flux diagnostics
     ! ---------------------------------------------
@@ -2569,6 +2587,7 @@ contains
     nullify(cpoly%avg_veg_water )
     nullify(cpoly%avg_can_temp  )
     nullify(cpoly%avg_can_shv   )
+    nullify(cpoly%avg_soil_energy)
     nullify(cpoly%avg_soil_water)
     nullify(cpoly%avg_soil_temp )
     nullify(cpoly%avg_soil_fracliq )
@@ -2918,6 +2937,8 @@ contains
        if(associated(cgrid%met                     )) deallocate(cgrid%met                     )
        if(associated(cgrid%lapse                   )) deallocate(cgrid%lapse                   )
 
+       if(associated(cgrid%lai                     )) deallocate(cgrid%lai                     )
+
        ! Fast time flux diagnostics
        ! ---------------------------------------------
        if(associated(cgrid%avg_vapor_vc            )) deallocate(cgrid%avg_vapor_vc            )
@@ -2948,6 +2969,7 @@ contains
        if(associated(cgrid%avg_veg_water           )) deallocate(cgrid%avg_veg_water           )
        if(associated(cgrid%avg_can_temp            )) deallocate(cgrid%avg_can_temp            )
        if(associated(cgrid%avg_can_shv             )) deallocate(cgrid%avg_can_shv             )
+       if(associated(cgrid%avg_soil_energy         )) deallocate(cgrid%avg_soil_energy         )
        if(associated(cgrid%avg_soil_water          )) deallocate(cgrid%avg_soil_water          )
        if(associated(cgrid%avg_soil_temp           )) deallocate(cgrid%avg_soil_temp           )
        if(associated(cgrid%avg_soil_fracliq        )) deallocate(cgrid%avg_soil_fracliq           )
@@ -3159,6 +3181,8 @@ contains
     if(associated(cpoly%albedt                      )) deallocate(cpoly%albedt                      )
     if(associated(cpoly%rlongup                     )) deallocate(cpoly%rlongup                     )
     
+    if(associated(cpoly%lai                         )) deallocate(cpoly%lai                         )
+
     ! Fast time flux diagnostics
     ! ---------------------------------------------
     if(associated(cpoly%avg_vapor_vc                )) deallocate(cpoly%avg_vapor_vc                )
@@ -3187,6 +3211,7 @@ contains
     if(associated(cpoly%avg_veg_water               )) deallocate(cpoly%avg_veg_water               )
     if(associated(cpoly%avg_can_temp                )) deallocate(cpoly%avg_can_temp                )
     if(associated(cpoly%avg_can_shv                 )) deallocate(cpoly%avg_can_shv                 )
+    if(associated(cpoly%avg_soil_energy             )) deallocate(cpoly%avg_soil_energy             )
     if(associated(cpoly%avg_soil_water              )) deallocate(cpoly%avg_soil_water              )
     if(associated(cpoly%avg_soil_temp               )) deallocate(cpoly%avg_soil_temp               )
     if(associated(cpoly%avg_soil_fracliq            )) deallocate(cpoly%avg_soil_fracliq            )
@@ -3583,6 +3608,7 @@ contains
           cgrid%lapse(:)%atm_co2        = large_real
        end if                         
 
+       if(associated(cgrid%lai                     )) cgrid%lai                      = large_real
        ! Fast time flux diagnostics
        ! ---------------------------------------------
        if(associated(cgrid%avg_vapor_vc            )) cgrid%avg_vapor_vc             = large_real
@@ -3613,6 +3639,7 @@ contains
        if(associated(cgrid%avg_veg_water           )) cgrid%avg_veg_water            = large_real
        if(associated(cgrid%avg_can_temp            )) cgrid%avg_can_temp             = large_real
        if(associated(cgrid%avg_can_shv             )) cgrid%avg_can_shv              = large_real
+       if(associated(cgrid%avg_soil_energy         )) cgrid%avg_soil_energy          = large_real
        if(associated(cgrid%avg_soil_water          )) cgrid%avg_soil_water           = large_real
        if(associated(cgrid%avg_soil_temp           )) cgrid%avg_soil_temp            = large_real
        if(associated(cgrid%avg_soil_fracliq           )) cgrid%avg_soil_fracliq            = large_real
@@ -3838,6 +3865,8 @@ contains
     if(associated(cpoly%albedt                      )) cpoly%albedt                      = large_real
     if(associated(cpoly%rlongup                     )) cpoly%rlongup                     = large_real
     
+    if(associated(cpoly%lai                         )) cpoly%lai                         = large_real
+
     ! Fast time flux diagnostics
     ! ---------------------------------------------
     if(associated(cpoly%avg_vapor_vc                )) cpoly%avg_vapor_vc                = large_real
@@ -3866,6 +3895,7 @@ contains
     if(associated(cpoly%avg_veg_water               )) cpoly%avg_veg_water               = large_real
     if(associated(cpoly%avg_can_temp                )) cpoly%avg_can_temp                = large_real
     if(associated(cpoly%avg_can_shv                 )) cpoly%avg_can_shv                 = large_real
+    if(associated(cpoly%avg_soil_energy             )) cpoly%avg_soil_energy             = large_real
     if(associated(cpoly%avg_soil_water              )) cpoly%avg_soil_water              = large_real
     if(associated(cpoly%avg_soil_temp               )) cpoly%avg_soil_temp               = large_real
     if(associated(cpoly%avg_soil_fracliq             )) cpoly%avg_soil_fracliq               = large_real
@@ -5736,6 +5766,13 @@ contains
        call metadata_edio(nvar,igr,'Polygon Average GPP','[umol/m2/s]','ipoly') 
     endif
 
+    if (associated(cgrid%lai)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%lai(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'LAI :11:hist:anal:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Polygon  LAI','[m/m]','ipoly') 
+    endif
+
     if (associated(cgrid%avg_leaf_resp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_leaf_resp(1),nvar,igr,init,cgrid%pyglob_id, &
@@ -6003,6 +6040,13 @@ contains
        call vtable_edio_r(cgrid%avg_can_shv(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_CAN_SHV :11:hist:anal:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon Average Specific Humidity of Canopy Air','[kg/kg]','NA') 
+    endif
+    
+    if (associated(cgrid%avg_soil_energy)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_soil_energy(1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_SOIL_ENERGY :12:hist:anal:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Polygon Average Volumetric Soil Water','[m/m]','ipoly - nzg') 
     endif
     
     if (associated(cgrid%avg_soil_water)) then
