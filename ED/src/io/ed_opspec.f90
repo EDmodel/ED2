@@ -1005,7 +1005,24 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
 
-   if (ied_init_mode < 0 .or. ied_init_mode > 3) then
+   if (ied_init_mode == -1) then ! This should be avoided. Use as a last resort!
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '    You have set up the run to read ED-1 and ED-2 files    '
+      write (unit=*,fmt='(a)') ' mixed in the same run. This is against my beliefs and you '
+      write (unit=*,fmt='(a)') ' should know that I''m only doing this because I am a very '
+      write (unit=*,fmt='(a)') ' nice model and I don''t know how to say NO! to such a     '
+      write (unit=*,fmt='(a)') ' desperate user. But don''t put high expectations on this  '
+      write (unit=*,fmt='(a)') ' run, and in case it crashes, it is going to be all your   '
+      write (unit=*,fmt='(a)') ' fault and I will remind you that!!!                       '
+      write (unit=*,fmt='(a)') '==========================================================='
+   elseif (ied_init_mode < 0 .or. ied_init_mode > 3) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid IED_INIT_MODE, it must be between 0 and 3. Yours is set to',ied_init_mode,'...'
       call opspec_fatal(reason,'opspec_misc')  

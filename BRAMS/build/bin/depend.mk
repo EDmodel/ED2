@@ -1617,7 +1617,7 @@ farq_leuning.o : $(ED_DYNAMICS)/farq_leuning.f90 c34constants.o pft_coms.o      
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-fatal_error.o : $(ED_UTILS)/fatal_error.f90 ed_node_coms.o
+fatal_error.o : $(ED_UTILS)/fatal_error.f90 ed_node_coms.o misc_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

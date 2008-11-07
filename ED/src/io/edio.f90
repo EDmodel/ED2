@@ -1,7 +1,7 @@
 
  
 subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time&
-                    ,writing_dail,writing_mont,history_time,reset_time,the_end)
+                    ,writing_dail,writing_mont,history_time,the_end)
   
   use ed_state_vars,only:edgrid_g
 
@@ -25,7 +25,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
   implicit none
     
   logical, intent(in)  :: the_end,analysis_time,dail_analy_time
-  logical, intent(in)  :: writing_dail,writing_mont,reset_time
+  logical, intent(in)  :: writing_dail,writing_mont
   logical, intent(in) :: mont_analy_time,history_time,new_day,annual_time
   real :: time_frqa,time_frql,time_frqm
   integer :: ngr,ifm
@@ -126,14 +126,6 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
      
   endif
 
-  ! Reset time happens every frqsum. This is to avoid variables to build up when
-  ! history and analysis are off.
-  if(reset_time) then    
-     do ifm=1,ngrids
-        call reset_averaged_vars(edgrid_g(ifm))
-     enddo
-     
-  endif
 
 
   return
@@ -184,6 +176,8 @@ subroutine spatial_averages
         cgrid%avg_balive(ipy)      = 0.0
         cgrid%avg_bdead(ipy)       = 0.0
 
+        cgrid%lai(ipy)             = 0.0
+
         cgrid%avg_gpp(ipy)         = 0.0
         cgrid%avg_leaf_resp(ipy)   = 0.0
         cgrid%avg_root_resp(ipy)   = 0.0
@@ -197,6 +191,9 @@ subroutine spatial_averages
            
            if (csite%npatches>0) then
               site_area_i=1./sum(csite%area)
+
+           cpoly%lai(isi)                = sum(csite%lai                * csite%area ) * site_area_i
+
 
            ! Average Fast Time Flux Dynamics Over Sites
            cpoly%avg_vapor_vc(isi)       = sum(csite%avg_vapor_vc       * csite%area ) * site_area_i
@@ -260,9 +257,10 @@ subroutine spatial_averages
               cpoly%avg_smoist_gc(k,isi)    = sum(csite%avg_smoist_gc(k,:)    * csite%area ) * site_area_i
               cpoly%aux_s(k,isi)            = sum(csite%aux_s(k,:)            * csite%area ) * site_area_i
 
+              cpoly%avg_soil_energy(k,isi)  = sum(csite%soil_energy(k,:)      * csite%area ) * site_area_i
               cpoly%avg_soil_water(k,isi)   = sum(csite%soil_water(k,:)       * csite%area ) * site_area_i
               cpoly%avg_soil_temp(k,isi)    = sum(csite%soil_tempk(k,:)       * csite%area ) * site_area_i
-              cpoly%avg_soil_fracliq(k,isi)    = sum(csite%soil_fracliq(k,:)       * csite%area ) * site_area_i
+              cpoly%avg_soil_fracliq(k,isi) = sum(csite%soil_fracliq(k,:)     * csite%area ) * site_area_i
 
            enddo
            
@@ -272,6 +270,7 @@ subroutine spatial_averages
               cpatch => csite%patch(ipa)
               
               if (cpatch%ncohorts>0) then
+                 
                  
                  lai_sum = max(lai_min,sum(cpatch%lai, cpatch%lai > lai_min))
                  csite%avg_veg_energy(ipa)  = sum(cpatch%veg_energy * cpatch%lai,cpatch%lai > lai_min)   / lai_sum
@@ -330,6 +329,8 @@ subroutine spatial_averages
 
      enddo
         
+        cgrid%lai(ipy)                = sum(cpoly%lai                * cpoly%area ) * poly_area_i
+        
         ! Average Fast Time Flux Dynamics Over Polygons
         cgrid%avg_vapor_vc(ipy)       = sum(cpoly%avg_vapor_vc       * cpoly%area ) * poly_area_i
         cgrid%avg_dew_cg(ipy)         = sum(cpoly%avg_dew_cg         * cpoly%area ) * poly_area_i
@@ -373,9 +374,10 @@ subroutine spatial_averages
            cgrid%avg_smoist_gg(k,ipy)    = sum(cpoly%avg_smoist_gg(k,:)    * cpoly%area ) * poly_area_i
            cgrid%avg_smoist_gc(k,ipy)    = sum(cpoly%avg_smoist_gc(k,:)    * cpoly%area ) * poly_area_i
            cgrid%aux_s(k,ipy)            = sum(cpoly%aux_s(k,:)            * cpoly%area ) * poly_area_i
+           cgrid%avg_soil_energy(k,ipy)  = sum(cpoly%avg_soil_energy(k,:)  * cpoly%area ) * poly_area_i
            cgrid%avg_soil_water(k,ipy)   = sum(cpoly%avg_soil_water(k,:)   * cpoly%area ) * poly_area_i
            cgrid%avg_soil_temp(k,ipy)    = sum(cpoly%avg_soil_temp(k,:)    * cpoly%area ) * poly_area_i
-           cgrid%avg_soil_fracliq(k,ipy)    = sum(cpoly%avg_soil_fracliq(k,:)    * cpoly%area ) * poly_area_i
+           cgrid%avg_soil_fracliq(k,ipy) = sum(cpoly%avg_soil_fracliq(k,:) * cpoly%area ) * poly_area_i
 
         enddo
         

@@ -263,8 +263,23 @@ subroutine ed_coup_model()
   !   Call the model output driver 
   !   ====================================================
   call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time &
-       ,writing_dail,writing_mont,history_time,reset_time,the_end)
+       ,writing_dail,writing_mont,history_time,the_end)
   
+  if (analysis_time) then
+     do ifm=1,ngrids
+        call copy_avgvars_to_leaf(ifm)
+     end do
+  end if
+  
+  ! Reset time happens every frqsum. This is to avoid variables to build up when
+  ! history and analysis are off. Put outside ed_output so I have a chance to copy
+  ! some of these to BRAMS structures.
+  if(reset_time) then    
+     do ifm=1,ngrids
+        call reset_averaged_vars(edgrid_g(ifm))
+     end do
+  end if
+
   ! Check if this is the beginning of a new simulated day.
   if(new_day)then
      

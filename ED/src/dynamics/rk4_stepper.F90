@@ -412,50 +412,45 @@ contains
           iflag1 = 0
           if(print_diags==1) print*,'soil_tempk too high',k,y%soil_tempk(k)
        endif
-      enddo
-      
-      if(y%nlev_sfcwater >= 1)then
-         if(y%sfcwater_mass(y%nlev_sfcwater).lt.-1.0e-3)then
-            iflag1 = 0
-            if(print_diags==1) print*,'sfcwater_mass too low',  &
-            y%nlev_sfcwater,y%sfcwater_mass(y%nlev_sfcwater)
-            return
-         endif
-      endif
-      
-!! Negative rk4 increment factors can make this value significantly
-!! negative, but it should not slow down the integration
-!! Changed from -1.0e-3 to -1.0e-1
-      
-      if(y%virtual_water < -1.0e-1)then
-         iflag1 = 0
-         if(print_diags==1)print*,'virtual water too low',y%virtual_water
-         return
-      endif
-      
-      cpatch => csite%patch(ipa)
-      
-      do ico = 1,cpatch%ncohorts
-         if(cpatch%lai(ico) > 0.0) then	
-            hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
-            call qwtk(y%veg_energy(ico),y%veg_water(ico),hcapveg,veg_temp,fracliq)
-            
-            if(cpatch%lai(ico) > lai_min.and. veg_temp > 380.0)then
-               iflag1 = 0
-               if(print_diags==1) print*,'leaf temp too high',veg_temp,y%veg_energy(ico),  &
-               cpatch%lai(ico),cpatch%pft(ico),cpatch%veg_temp(ico)
-               return
-            endif
-!     if(y%veg_temp(ico) < 0.0)then
-!     iflag1 = 0
-!     if(print_diags==1) print*,'leaf temp too low',y%veg_temp(ico),  &
-!     cpatch%lai(ico),cpatch%pft(ico),cpatch%veg_temp(ico)
-!     return
-!     endif
-           
 
-         endif
-      enddo
+    enddo
+    
+    if(y%nlev_sfcwater >= 1)then
+       if(y%sfcwater_mass(y%nlev_sfcwater).lt.-1.0e-3)then
+          iflag1 = 0
+          if(print_diags==1) print*,'sfcwater_mass too low',  &
+               y%nlev_sfcwater,y%sfcwater_mass(y%nlev_sfcwater)
+          return
+       endif
+    endif
+
+    ! Negative rk4 increment factors can make this value significantly
+    ! negative, but it should not slow down the integration
+    ! Changed from -1.0e-3 to -1.0e-1
+    
+    if(y%virtual_water < -1.0e-1)then
+       iflag1 = 0
+       if(print_diags==1)print*,'virtual water too low',y%virtual_water
+       return
+    endif
+
+    cpatch => csite%patch(ipa)
+
+    do ico = 1,cpatch%ncohorts
+    
+       if (cpatch%lai(ico) > lai_min) then
+          hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
+          call qwtk(y%veg_energy(ico),y%veg_water(ico),hcapveg,veg_temp,fracliq)
+
+          if(veg_temp > 380.0)then
+             iflag1 = 0
+             if(print_diags==1) print*,'leaf temp too high',veg_temp,y%veg_energy(ico),  &
+                  cpatch%lai(ico),cpatch%pft(ico),cpatch%veg_temp(ico)
+             return
+          end if
+       end if
+    end do
+
     
     return
   end subroutine lsm_sanity_check_ar
