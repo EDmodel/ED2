@@ -399,6 +399,8 @@ subroutine vegetation_dynamics(new_month,new_year)
   integer               :: isite
   integer               :: ifm
   type(edtype), pointer :: cgrid
+  
+  logical, save         :: first_time = .true.
 
   ! find the day of year
   doy = julday(current_time%month, current_time%date, current_time%year)
@@ -461,6 +463,7 @@ subroutine vegetation_dynamics(new_month,new_year)
      if(new_year) then
 !        write (unit=*,fmt='(a)') '### Fuse_patchesar...'
         call fuse_patches_ar(cgrid)
+        first_time =.false.
      end if
 
      ! Recalculate the agb and basal area at the polygon level

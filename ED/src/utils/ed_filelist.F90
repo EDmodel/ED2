@@ -95,7 +95,7 @@ subroutine ed_filelist(fnames,file_prefix,nfile)
    do nf=1,n
 
       fnames(nf) = trim(filelist(indices(nf):indices(nf+1)-1))
-      write (unit=*,fmt='(a,1x,i5,1x,a)') '   [-] File #: ',nf,trim(fnames(nf))
+      !write (unit=*,fmt='(a,1x,i5,1x,a)') '   [-] File #: ',nf,trim(fnames(nf))
    end do
 
 #endif

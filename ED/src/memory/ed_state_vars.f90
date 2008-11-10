@@ -1796,7 +1796,7 @@ contains
           allocate(cgrid%stdev_rh           (             npolygons))
        end if
        ! Initialize the variables with a non-sense number.
-       call huge_edtype(cgrid)
+       !call huge_edtype(cgrid)
     end if
     return
   end subroutine allocate_edtype
@@ -1964,7 +1964,7 @@ contains
 
 
     ! Initialize the variables with a non-sense number.
-    call huge_polygontype(cpoly)
+    !call huge_polygontype(cpoly)
     
     return
   end subroutine allocate_polygontype
@@ -2151,7 +2151,7 @@ contains
     allocate(csite%runoff          (npatches))
 
     ! Initialize the variables with a non-sense number.
-    call huge_sitetype(csite)
+    !call huge_sitetype(csite)
 
     return
   end subroutine allocate_sitetype
@@ -2242,7 +2242,7 @@ contains
     allocate(cpatch%co_liqr_h(ncohorts))
 
     ! Initialize the variables with a non-sense number.
-    call huge_patchtype(cpatch)
+    !call huge_patchtype(cpatch)
 
     return
   end subroutine allocate_patchtype

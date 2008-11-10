@@ -226,7 +226,7 @@ MOD_EXT=mod
 #    Ideally, you should compile your code with this option whenever you make any changes. #
 #    Note, however, that if you change arguments you should first try A.                   #
 #------------------------------------------------------------------------------------------#
-#USE_INTERF=1
+USE_INTERF=1
 F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
          -debug inline_debug_info -static -debug-parameters all -traceback -ftrapuv
 C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended -static
@@ -244,10 +244,10 @@ C_LOADER_OPTS=-v -g -traceback -static
 #------------------------------------------------------------------------------------------#
 #USE_INTERF=1
 #F_OPTS= -FR -O2 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
-         -debug inline_debug_info -debug-parameters all -traceback -ftrapuv -static
+        -debug inline_debug_info -debug-parameters all -traceback -ftrapuv -static
 #C_OPTS= -O2 -DLITTLE  -g -traceback -debug extended -static
 #LOADER_OPTS= -FR -O2 -Vaxlib  -check all -g -fpe0 -ftz -debug extended        \
-              -debug inline_debug_info -debug-parameters all -traceback -ftrapuv -static
+             -debug inline_debug_info -debug-parameters all -traceback -ftrapuv -static
 #C_LOADER_OPTS=-v -g -traceback -static
 #------------------------------------------------------------------------------------------#
 

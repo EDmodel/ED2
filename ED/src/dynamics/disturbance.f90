@@ -42,6 +42,7 @@ module disturbance_utils_ar
 
     integer,allocatable :: disturb_mask(:)
     integer :: onsp
+    logical, save :: first_time=.true.
 
     allocate(tsite)  ! The disturbance site
     
@@ -272,6 +273,8 @@ module disturbance_utils_ar
   enddo
 
   deallocate(tsite)
+  
+  first_time = .false.
   
   return
 end subroutine apply_disturbances_ar

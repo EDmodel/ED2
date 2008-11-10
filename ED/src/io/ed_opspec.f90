@@ -1135,19 +1135,19 @@ subroutine ed_opspec_misc
       call opspec_fatal(reason,'opspec_misc')  
    end if
    
-   if (maxpatch < 0) then
-      write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid MAXPATCH, it must be either 0 (no limit) or positive. Yours is set to',maxpatch,'...'
-      call opspec_fatal(reason,'opspec_misc')  
-      ifaterr = ifaterr +1
-   end if
-    
-   if (maxcohort < 0) then
-      write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid MAXCOHORT, it must be either 0 (no limit) or positive. Yours is set to',maxcohort,'...'
-      call opspec_fatal(reason,'opspec_misc')  
-      ifaterr = ifaterr +1
-   end if
+   !if (maxpatch < 0) then
+   !   write (reason,fmt='(a,1x,i4,a)') &
+   !     'Invalid MAXPATCH, it must be either 0 (no limit) or positive. Yours is set to',maxpatch,'...'
+   !   call opspec_fatal(reason,'opspec_misc')  
+   !   ifaterr = ifaterr +1
+   !end if
+   ! 
+   !if (maxcohort < 0) then
+   !   write (reason,fmt='(a,1x,i4,a)') &
+   !     'Invalid MAXCOHORT, it must be either 0 (no limit) or positive. Yours is set to',maxcohort,'...'
+   !   call opspec_fatal(reason,'opspec_misc')  
+   !   ifaterr = ifaterr +1
+   !end if
     
    if (zrough <= 0) then
       write (reason,fmt='(a,1x,es14.7,a)') &

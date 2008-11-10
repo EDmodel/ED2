@@ -42,6 +42,8 @@ subroutine reproduction_ar(cgrid, month)
   real :: hcapveg
   integer :: inew,ncohorts_new
   real,dimension(n_pft,9) :: recruit_array
+  
+  logical, save :: first_time=.true.
 
   if(repro_scheme .eq. 0) seedling_mortality(1:n_pft) = 1.0
 
@@ -299,6 +301,8 @@ subroutine reproduction_ar(cgrid, month)
 
 
   deallocate(temppatch)
+  
+  first_time = .false.
 
   return
 end subroutine reproduction_ar

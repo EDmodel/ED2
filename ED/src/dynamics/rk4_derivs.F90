@@ -872,8 +872,10 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
 
         ! Because evaporation and dew formation change the mass, we do need to consider the 
         ! effect on heat capacity. 
-        leflxvc = wflxvc * ( cp * (veg_temp-t3ple) + fracliq * alvl + (1.-fracliq) * alvi)
+        !leflxvc = wflxvc * ( cp * (veg_temp-t3ple) + fracliq * alvl + (1.-fracliq) * alvi)
         
+        ! No, we don't. This if you do this your energy becomes dependent on the ref. temperature
+        leflxvc = wflxvc * (fracliq * alvl + (1.-fracliq) * alvi)
 
         ! Alternative:
         dinitp%veg_energy(ico) = &
@@ -883,8 +885,6 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
              - leflxvc                &   ! Evaporative phase cooling 
              - transp * alvl          &   ! Transpirative phase cooling
              + heat_intercept_rate    !   !
-             !- wflxvc * (fracliq * alvl + (1.-fracliq) * alvi) & ! Evaporative phase cooling
-             !+ intr_energy_dewevap    !
 
         wflxvc_tot=wflxvc_tot+wflxvc
         hflxvc_tot=hflxvc_tot+hflxvc

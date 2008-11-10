@@ -419,11 +419,11 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
            call copy_cohort_ar(cpatch,ico,inew)
 
            ! Tweak the heights and DBHs
-           cpatch%bdead(ico) = cpatch%bdead(ico) - epsilon
+           cpatch%bdead(ico) = cpatch%bdead(ico) - (cpatch%bdead(ico) * epsilon)
            cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
            cpatch%hite(ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
 
-           cpatch%bdead(inew) = cpatch%bdead(inew) + epsilon
+           cpatch%bdead(inew) = cpatch%bdead(inew) + (cpatch%bdead(inew) * epsilon)
            cpatch%dbh(inew) = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
            cpatch%hite(inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
 

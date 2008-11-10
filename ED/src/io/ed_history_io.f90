@@ -106,7 +106,9 @@ subroutine read_ed1_history_file_array
   logical :: site_match
   real :: dist_gc
   integer :: nw
-  integer :: ied_init_mode_local
+  integer                        :: ied_init_mode_local
+  integer,dimension(huge_patch)  :: ied_init_mode_patch
+  integer,dimension(huge_cohort) :: ied_init_mode_cohort
 
   !----- Variables for new method to find the closest file --------------------------------!
   integer                                   , parameter :: maxlist=3*maxfiles
@@ -121,8 +123,6 @@ subroutine read_ed1_history_file_array
   !----------------------------------------------------------------------------------------!
   
   real, external :: ed_biomass
-  
-  ied_init_mode_local = ied_init_mode 
 
   !----- Retrieve all files with the specified prefix. ------------------------------------!
   call ed_filelist(full_list,sfilin,nflist)
@@ -187,15 +187,17 @@ subroutine read_ed1_history_file_array
 
         ! Open file and read in patches
         open(12,file=trim(pss_name),form='formatted',status='old')
-        read(12,*)  cdum ! skip header
+        read(12,'(a4)')  cdum ! skip header
         
         !----- If running mixed ED-1/ED-2, check whether the file is ED1 or ED2. ----------!
         if (ied_init_mode == -1) then
-           if (cdum == 'time') then
+           if (trim(cdum) == 'time') then
               ied_init_mode_local = 2
            else
               ied_init_mode_local = 1
            end if
+        else
+           ied_init_mode_local = ied_init_mode
         end if
         
         nwater = 1
@@ -222,6 +224,7 @@ subroutine read_ed1_history_file_array
               read(12,*,iostat=ierr)  time(ip),pname(ip),trk(ip),dage,darea,dfsc,dstsc,  &
                                       dstsl,dssc,dpsc,dmsn,dfsn,dwater(1:nwater)
               if(ierr /= 0)exit count_patches
+              ied_init_mode_patch(ip) = ied_init_mode_local
               area(ip)   = sngl(max(snglmin,darea  ))
               age(ip)    = sngl(max(min_ok ,dage   ))
               fsc(ip)    = sngl(max(min_ok ,dfsc   ))
@@ -239,6 +242,7 @@ subroutine read_ed1_history_file_array
               read(12,*,iostat=ierr)time(ip),pname(ip),trk(ip),dage,darea,dwater(1),dfsc,dstsc  &
                                    ,dstsl,dssc,dummy,dmsn,dfsn,dummy,dummy,dummy             
               if(ierr /= 0)exit count_patches
+              ied_init_mode_patch(ip) = ied_init_mode_local
               area(ip)   = sngl(max(snglmin,darea  ))
               age(ip)    = sngl(max(min_ok ,dage   ))
               fsc(ip)    = sngl(max(min_ok ,dfsc   ))
@@ -254,6 +258,7 @@ subroutine read_ed1_history_file_array
               read(12,*,iostat=ierr) sitenum(ip),time(ip),pname(ip),trk(ip),age(ip), &
                    darea,water(1,ip),fsc(ip),stsc(ip),stsl(ip),ssc(ip),psc(ip),msn(ip),fsn(ip)
               if(ierr /= 0)exit count_patches
+              ied_init_mode_patch(ip) = ied_init_mode_local
               area(ip)=sngl(max(snglmin,darea))
               
               if(sitenum(ip)<= 0) continue !! check for valid site number
@@ -371,11 +376,22 @@ subroutine read_ed1_history_file_array
         
         
         open(12,file=trim(css_name),form='formatted',status='old')
-        read(12,*)  ! skip header
-        if(ied_init_mode_local /= 3) then
-           read(12,*)  ! skip header
+        read(12,'(a4)')  cdum ! skip header
+
+        !----- If running mixed ED-1/ED-2, check whether the file is ED1 or ED2. ----------!
+        if (ied_init_mode == -1) then
+           if (trim(cdum) == 'time') then
+              ied_init_mode_local = 2
+           else
+              ied_init_mode_local = 1
+           end if
+        else
+           ied_init_mode_local = ied_init_mode
         end if
-        
+
+        if (ied_init_mode_local == 1) then
+           read(12,*) ! Skip second line.
+        end if
         ic = 0
         
         read_cohorts: do
@@ -389,10 +405,12 @@ subroutine read_ed1_history_file_array
               read(12,*,iostat=ierr)ctime(ic),cpname(ic),cname(ic),dbh(ic),hite(ic),ipft(ic),nplant(ic),  &
                    bdead(ic),balive(ic),avgRg(ic),leaves_on(ic),cb(1:12,ic),cb_max(1:12,ic)
               if(ierr /= 0)exit read_cohorts  
+              ied_init_mode_cohort(ic) = ied_init_mode_local
            case (2,3)
               read(12,*,iostat=ierr)ctime(ic),cpname(ic),cname(ic),dbh(ic),hite(ic),ipft(ic),nplant(ic),  &
                    bdead(ic),balive(ic),avgRg(ic)
               if(ierr /= 0)exit read_cohorts
+              ied_init_mode_cohort(ic) = ied_init_mode_local
               cb(1:12,ic) = 1.0
               cb_max(1:12,ic) = 1.0           
            end select
@@ -400,7 +418,7 @@ subroutine read_ed1_history_file_array
            if(renumber_pfts) then
               if(ipft(ic) < 100)then
                  ipft(ic) = ipft(ic) + 1
-                 if(ipft(ic) >= 5)ipft(ic) = ipft(ic) - 3
+                 if(ipft(ic) >= 5) ipft(ic) = ipft(ic) - 3
               else
                  ipft(ic) = ipft(ic) - 100
               endif
@@ -470,7 +488,7 @@ subroutine read_ed1_history_file_array
                        ic2 = ic2 + 1
                        
                        cpatch%pft(ic2) = ipft(ic)
-                       if(ied_init_mode_local == 1) then
+                       if(ied_init_mode_cohort(ic) == 1) then
                           cpatch%nplant(ic2) = nplant(ic) / (csite%area(ipa) )
                        else
                           cpatch%nplant(ic2) = nplant(ic)
