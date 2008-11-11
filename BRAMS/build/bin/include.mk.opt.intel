@@ -230,10 +230,10 @@ MOD_EXT=mod
 #------------------------------------------------------------------------------------------#
 #USE_INTERF=1
 #F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
-         -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+        -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
 #C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended
 #LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -debug extended        \
-              -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+             -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
 #C_LOADER_OPTS=-v -g -traceback
 #------------------------------------------------------------------------------------------#
 
@@ -244,13 +244,13 @@ MOD_EXT=mod
 #    You should use this if your run seems to be working fine at the beginning, but it is  #
 #    failing or giving instabilities, or funny results after a long time.                  #
 #------------------------------------------------------------------------------------------#
-#USE_INTERF=1
-#F_OPTS= -FR -O2 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
-        -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
-#C_OPTS= -O2 -DLITTLE  -g -traceback -debug extended
-#LOADER_OPTS= -FR -O2 -Vaxlib  -check all -g -fpe0 -ftz -debug extended        \
-             -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
-#C_LOADER_OPTS=-v -g -traceback
+USE_INTERF=1
+F_OPTS= -FR -O2 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
+       -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+C_OPTS= -O2 -DLITTLE  -g -traceback -debug extended
+LOADER_OPTS= -FR -O2 -Vaxlib  -check all -g -fpe0 -ftz -debug extended        \
+            -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+C_LOADER_OPTS=-v -g -traceback
 #------------------------------------------------------------------------------------------#
 
 
@@ -273,11 +273,11 @@ MOD_EXT=mod
 #           problems, which means that this is an option suitable for end users, not de-   #
 #           velopers.                                                                      #
 #------------------------------------------------------------------------------------------#
-USE_INTERF=1
-F_OPTS= -FR -O2 -recursive -Vaxlib -traceback
-C_OPTS= -O2 -DLITTLE -traceback
-LOADER_OPTS= -FR -O2 -Vaxlib  -traceback
-C_LOADER_OPTS=-v -traceback
+#USE_INTERF=1
+#F_OPTS= -FR -O2 -recursive -Vaxlib -traceback
+#C_OPTS= -O2 -DLITTLE -traceback
+#LOADER_OPTS= -FR -O2 -Vaxlib  -traceback
+#C_LOADER_OPTS=-v -traceback
 #------------------------------------------------------------------------------------------#
 
 ############################################################################################

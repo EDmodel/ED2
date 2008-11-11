@@ -207,15 +207,15 @@ MOD_EXT=mod
 #               If the compilation fails either at step 1 or 3, then your code has inter-  #
 #                  face problems. If it successfully compiles, then you can switch to B.   #
 #------------------------------------------------------------------------------------------#
-#USE_INTERF=0
-#F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces            \
+USE_INTERF=0
+F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces            \
         -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
-        -traceback -ftrapuv
-#C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended
-#LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces \
+        -traceback -ftrapuv -static
+C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended -static
+LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces \
             -warn interfaces -debug extended -debug inline_debug_info  \
-            -debug-parameters all -traceback -ftrapuv
-#C_LOADER_OPTS=-v -g -traceback
+            -debug-parameters all -traceback -ftrapuv -static
+C_LOADER_OPTS=-v -g -traceback
 #------------------------------------------------------------------------------------------#
 
 
@@ -226,13 +226,13 @@ MOD_EXT=mod
 #    Ideally, you should compile your code with this option whenever you make any changes. #
 #    Note, however, that if you change arguments you should first try A.                   #
 #------------------------------------------------------------------------------------------#
-USE_INTERF=1
-F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
+#USE_INTERF=1
+#F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
          -debug inline_debug_info -static -debug-parameters all -traceback -ftrapuv
-C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended -static
-LOADER_OPTS= -FR -O0 -Vaxlib -static -check all -g -fpe0 -ftz -debug extended        \
+#C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended -static
+#LOADER_OPTS= -FR -O0 -Vaxlib -static -check all -g -fpe0 -ftz -debug extended        \
               -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
-C_LOADER_OPTS=-v -g -traceback -static
+#C_LOADER_OPTS=-v -g -traceback -static
 #------------------------------------------------------------------------------------------#
 
 

@@ -47,6 +47,30 @@ subroutine init_ed_cohort_vars_array(cpatch,ico, lsl)
   cpatch%rlong_v(ico)          = 0.0
   cpatch%rlong_v_surf(ico)     = 0.0
   cpatch%rlong_v_incid(ico)    = 0.0
+       
+  cpatch%rb(ico)               = 0.0
+  cpatch%A_open(ico)           = 0.0
+  cpatch%A_closed(ico)         = 0.0
+  cpatch%Psi_closed(ico)       = 0.0
+  cpatch%rsw_open(ico)         = 0.0
+  cpatch%rsw_closed(ico)       = 0.0
+      
+      
+  cpatch%stomatal_resistance(ico) = 0.0
+  cpatch%maintenance_costs(ico)   = 0.0
+  cpatch%paw_avg10d(ico)          = 0.0
+
+  cpatch%co_srad_h(ico)        = 1.0
+  cpatch%co_lrad_h(ico)        = 1.0
+  cpatch%co_sens_h(ico)        = 1.0
+  cpatch%co_evap_h(ico)        = 1.0
+  cpatch%co_liqr_h(ico)        = 1.0
+
+  cpatch%co_srad_h(ico)  =   cpatch%co_srad_h(ico)  -      1.0
+  cpatch%co_lrad_h(ico)  =   cpatch%co_lrad_h(ico)  -      1.0
+  cpatch%co_sens_h(ico)  =   cpatch%co_sens_h(ico)  -      1.0
+  cpatch%co_evap_h(ico)  =   cpatch%co_evap_h(ico)  -      1.0
+  cpatch%co_liqr_h(ico)  =   cpatch%co_liqr_h(ico)  -      1.0
 
 
   cpatch%Psi_open(ico) = 0.0
@@ -120,6 +144,7 @@ subroutine init_ed_patch_vars_array(csite,ip1,ip2)
   csite%can_co2(ip1:ip2) = 370.0
 
   csite%wbudget_loss2atm(ip1:ip2) = 0.0
+  csite%wbudget_loss2runoff(ip1:ip2) = 0.0
   csite%co2budget_loss2atm(ip1:ip2) = 0.0
   csite%ebudget_loss2atm(ip1:ip2) = 0.0
   csite%ebudget_latent(ip1:ip2) = 0.0
@@ -175,6 +200,11 @@ subroutine init_ed_patch_vars_array(csite,ip1,ip2)
   csite%rlongup(ip1:ip2) = 0.0
   csite%rlong_albedo(ip1:ip2) = 0.0
 
+  csite%fsc_in(ip1:ip2)                      = 0.0
+  csite%ssc_in(ip1:ip2)                      = 0.0
+  csite%ssl_in(ip1:ip2)                      = 0.0
+  csite%fsn_in(ip1:ip2)                      = 0.0
+  csite%total_plant_nitrogen_uptake(ip1:ip2) = 0.0
 
   ncohorts = 0
   do ipa=1,csite%npatches

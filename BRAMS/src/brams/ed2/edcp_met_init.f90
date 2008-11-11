@@ -187,6 +187,9 @@ subroutine ed_init_coup_atm
      enddo
      
      call update_polygon_derived_props_ar(cgrid)
+     
+     ! Energy needs to be done after LAI and Hite are loaded
+     call initialize_vegetation_energy(cgrid)
 
 
      call fuse_patches_ar(cgrid)
@@ -239,6 +242,9 @@ subroutine ed_init_coup_atm
 
 
   enddo
+
+  ! Energy needs to be done after LAI and Hite are loaded
+  call initialize_vegetation_energy(cgrid)
 
   return
 end subroutine ed_init_coup_atm
@@ -397,6 +403,8 @@ subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
   endif
   csite%veg_rough(ipa) = 0.13 * csite%veg_height(ipa)
   
+  csite%A_o_max(:,ipa)          = 0.0
+  csite%A_c_max(:,ipa)          = 0.0
 
   csite%wbudget_initialstorage(ipa) = compute_water_storage_ar(csite, lsl, rhos, ipa)
   csite%ebudget_initialstorage(ipa) = compute_energy_storage_ar(csite, lsl, rhos, ipa)

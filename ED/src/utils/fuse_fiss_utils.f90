@@ -213,6 +213,7 @@ end subroutine terminate_cohorts_ar
      real    , external :: dbh2bl
      real, parameter :: tolerance_max = 2.0
      integer :: ncohorts_old
+     integer, parameter :: fuse_relax = 0
 
      if(csite%cohort_count(ipa) == 0)return ! return if there aren't any cohorts
      
@@ -241,6 +242,10 @@ end subroutine terminate_cohorts_ar
            ! test for similarity
            if(cpatch%hite(ico1) < (0.95 * hite_threshold ))then
               fusion_test = (abs(cpatch%hite(ico1) - cpatch%hite(ico2)) < fusetol_h * tolerance_mult)
+              if(fuse_relax == 1)then
+                 fusion_test = (abs(cpatch%hite(ico1) - cpatch%hite(ico2)) / &
+                   (0.5*(cpatch%hite(ico1) + cpatch%hite(ico2)))  < fusetol * tolerance_mult)  
+              end if
            else
               fusion_test = (abs(cpatch%dbh(ico1) - cpatch%dbh(ico2)) /   &
                    (0.5*(cpatch%dbh(ico1) + cpatch%dbh(ico2))) < fusetol * tolerance_mult)
@@ -272,8 +277,10 @@ end subroutine terminate_cohorts_ar
      
      if( count(fuse_table) <= maxcohort)exit force_fusion
      if( (count(fuse_table) == ncohorts_old) .and. (tolerance_mult > tolerance_max) ) exit force_fusion
-     tolerance_mult = tolerance_mult * 1.01
      
+     tolerance_mult = tolerance_mult * 1.01
+     ncohorts_old = count(fuse_table)
+
   enddo force_fusion
 
   ! If fusion didn't happen at all, return
@@ -334,7 +341,8 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      real    :: slai 
 
      real, external :: dbh2h
-     real, external :: bd2dbh
+!     real, external :: bd2dbh
+     real, external :: dbh2bd
      integer, intent(in) :: lsl
      integer,allocatable :: split_mask(:)
 
@@ -419,14 +427,23 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
            call copy_cohort_ar(cpatch,ico,inew)
 
            ! Tweak the heights and DBHs
-           cpatch%bdead(ico) = cpatch%bdead(ico) - (cpatch%bdead(ico) * epsilon)
-           cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
+!KIM - leading to negative bdead!
+!KIM - tweak the dbh, following ED2.0
+!!$           cpatch%bdead(ico) = cpatch%bdead(ico) - epsilon
+!!$           cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
+!!$           cpatch%hite(ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
+!!$
+!!$           cpatch%bdead(inew) = cpatch%bdead(inew) + epsilon
+!!$           cpatch%dbh(inew) = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
+!!$           cpatch%hite(inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
+
+           cpatch%dbh(ico) = cpatch%dbh(ico) - epsilon
            cpatch%hite(ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
-
-           cpatch%bdead(inew) = cpatch%bdead(inew) + (cpatch%bdead(inew) * epsilon)
-           cpatch%dbh(inew) = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
+           cpatch%bdead(ico) = dbh2bd(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico))
+ 
+           cpatch%dbh(inew) = cpatch%dbh(inew) + epsilon
            cpatch%hite(inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
-
+           cpatch%bdead(inew) = dbh2bd(cpatch%dbh(inew),cpatch%hite(inew),cpatch%pft(inew))
 
         endif
 
@@ -792,6 +809,7 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
         if(npatches <= maxpatch)exit max_patch
         if((npatches == npatches_old) .and. (tolerance_mult > tolerance_max)) exit max_patch
         tolerance_mult = tolerance_mult * 1.01
+        npatches_old = npatches
      enddo max_patch
      
      

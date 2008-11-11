@@ -186,23 +186,9 @@ subroutine ed_init_atm_ar
      
      call update_polygon_derived_props_ar(cgrid)
 
+     ! Energy needs to be done after LAI and Hite are loaded
+     call initialize_vegetation_energy(cgrid)
 
-     do ipy = 1,cgrid%npolygons
-        
-        cpoly => cgrid%polygon(ipy)
-        
-        do isi = 1,cpoly%nsites
-           
-           csite => cpoly%site(isi)
-           
-           do ipa = 1,csite%npatches
-              
-              cpatch => csite%patch(ipa)
-
-           enddo
-
-        enddo
-     enddo
 
      call fuse_patches_ar(cgrid)
      do ipy = 1,cgrid%npolygons
@@ -253,6 +239,9 @@ subroutine ed_init_atm_ar
      enddo
   
   enddo
+
+  ! Energy needs to be done after LAI and Hite are loaded
+  call initialize_vegetation_energy(cgrid)
 
   return
 end subroutine ed_init_atm_ar

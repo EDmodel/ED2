@@ -215,17 +215,6 @@ subroutine ed_coup_driver()
   call filltab_alltypes
 
   
-  !-----------------------------------------------------------------------!
-  ! STEP 12½. Initialize the vegetation internal energy. This needs to    !
-  !           be done after ed_init_coup_atm and update_derived_props so  !
-  !           we have all variables we need.                              !
-  !-----------------------------------------------------------------------!
-  if (trim(runtype) == 'INITIAL') then
-     if (mynum == 1) write(unit=*,fmt='(a)') ' [+] Finding veg. energy...'
-     do ifm=1,ngrids
-        call initialize_vegetation_energy(edgrid_g(ifm))
-     end do
-  end if
 
   !-----------------------------------------------------------------------!
   ! STEP 13. Checking how the output was configure and determining the    !
