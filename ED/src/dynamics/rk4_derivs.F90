@@ -86,7 +86,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
   use consts_coms, only : alvl, cliq1000, cpi, alvi, alli1000, t3ple,tsupercool
   use grid_coms, only: nzg,nzs
   use soil_coms, only : soil, slz, dslz, dslzi, water_stab_thresh,  &
-       infiltration_method, dslzti, slcons1, slzt, min_sfcwater_mass,ss
+       infiltration_method, dslzti, slcons1, slzt, min_sfcwater_mass,ss,isoilbc
   use misc_coms, only: current_time
   use canopy_radiation_coms, only: lai_min
 
@@ -469,12 +469,31 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
            end if
         end if
      endif
+     
 
      qw_flux(k) = w_flux(k) * cliq1000 * (initp%soil_tempk(k) - tsupercool)
      
      dinitp%avg_smoist_gg(k-1) = w_flux(k)*1000   ! Diagnostic
 
   enddo
+
+  nsoil = csite%ntext_soil(lsl,ipa)
+  if (nsoil /= 13 .and. isoilbc == 1) then
+     !----- Free drainage -----------------------------------------------------------------!
+     wgpmid      = initp%soil_water(lsl)
+     freezeCor   = initp%soil_fracliq(lsl)
+     if(freezeCor .lt. 1.0) freezeCor = 10**(-7*(1-freezeCor))
+     w_flux(lsl) = dslzti(lsl) * slcons1(lsl,nsoil)  &
+                 * (wgpmid / soil(nsoil)%slmsts)**(2. * soil(nsoil)%slbs + 3.)  &
+                 * freezeCor
+     if (soil_liq(lsl) == 0.) w_flux(lsl) = 0.
+     qw_flux(k) = w_flux(k) * cliq1000 * (initp%soil_tempk(k) - tsupercool)
+  else
+     !----- Bedrock -----------------------------------------------------------------------!
+     w_flux(lsl) = 0.
+     qw_flux(lsl) = 0.
+  end if
+
 
   ! Finally, update soil moisture (impose minimum value of soilcp) and q value.
   do k = lsl,nzg

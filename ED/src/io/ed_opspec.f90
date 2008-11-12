@@ -947,7 +947,8 @@ subroutine ed_opspec_misc
    use max_dims, only : n_pft
    use misc_coms, only : ifoutput,idoutput,imoutput,iyoutput,isoutput,iclobber,runtype,ied_init_mode &
                         ,integration_scheme
-   use soil_coms, only : isoilflg, nslcon,isoilstateinit,isoildepthflg,zrough,runoff_time
+   use soil_coms, only : isoilflg, nslcon,isoilstateinit,isoildepthflg,isoilbc,zrough      &
+                        ,runoff_time
    use mem_sites, only : n_soi,n_ed_region,maxpatch,maxcohort
    use grid_coms , only : ngrids
    use physiology_coms, only : istoma_scheme,n_plant_lim
@@ -1055,6 +1056,13 @@ subroutine ed_opspec_misc
    if (isoildepthflg < 0 .or. isoildepthflg > 1) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid ISOILDEPTHFLG, it must be between 0 and 1. Yours is set to',isoildepthflg,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (isoilbc < 0 .or. isoilbc > 1) then
+      write (reason,fmt='(a,1x,i4,a)') &
+        'Invalid ISOILBC, it must be between 0 and 1. Yours is set to',isoilbc,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if

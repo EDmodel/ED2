@@ -12,7 +12,7 @@ subroutine masterput_ednl(mainnum)
   use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,time,timmax
   use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database  &
                             ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg        &
-                            ,runoff_time,zrough
+                            ,isoilbc,runoff_time,zrough
   use met_driver_coms, only: initial_co2,lapse_scheme
   use mem_sites,       only: edres,maxpatch,maxcohort
   use physiology_coms, only: istoma_scheme,n_plant_lim
@@ -68,6 +68,7 @@ subroutine masterput_ednl(mainnum)
   call MPI_Bcast(soildepth_db,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(isoilstateinit,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(isoildepthflg,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(isoilbc,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(integration_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -156,7 +157,7 @@ subroutine nodeget_ednl(master_num)
   use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,time,timmax
   use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database &
                              ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg       &
-                             ,runoff_time,zrough
+                             ,isoilbc,runoff_time,zrough
   use met_driver_coms, only: initial_co2,lapse_scheme
   use mem_sites,       only: edres,maxpatch,maxcohort
   use physiology_coms, only: istoma_scheme,n_plant_lim
@@ -211,6 +212,7 @@ subroutine nodeget_ednl(master_num)
   call MPI_Bcast(soildepth_db,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(isoilstateinit,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(isoildepthflg,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(isoilbc,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(integration_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

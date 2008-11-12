@@ -29,7 +29,7 @@ subroutine copy_nl(copy_type)
   use max_dims , only: n_pft, nzgmax
   use ename_coms, only: nl
   use soil_coms, only: isoilflg, nslcon, slmstr, zrough, soil_database, &
-       isoilstateinit, isoildepthflg, soilstate_db, soildepth_db,   &
+       isoilstateinit, isoildepthflg, isoilbc, soilstate_db, soildepth_db,   &
                        runoff_time, slz,veg_database
   use met_driver_coms, only: ed_met_driver_db, metcyc1, metcycf,imettype,initial_co2, lapse_scheme
   use mem_sites, only: n_soi, soi_lat, soi_lon, n_ed_region, ed_reg_latmin,  &
@@ -112,6 +112,7 @@ subroutine copy_nl(copy_type)
      soildepth_db = nl%soildepth_db
      isoilstateinit = nl%isoilstateinit
      isoildepthflg = nl%isoildepthflg
+     isoilbc       = nl%isoilbc
 
      n_soi         = nl%n_soi
      n_ed_region   = nl%n_ed_region

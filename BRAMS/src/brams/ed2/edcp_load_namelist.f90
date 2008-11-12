@@ -4,7 +4,7 @@ subroutine read_ednl(iunit)
   use max_dims , only: n_pft
 
   use soil_coms, only: ed_zrough => zrough, soil_database, &
-       isoilstateinit, isoildepthflg, soilstate_db, soildepth_db,   &
+       isoilstateinit, isoildepthflg, isoilbc, soilstate_db, soildepth_db,   &
        runoff_time,veg_database
 
   use met_driver_coms,only: ed_met_driver_db,imettype,metcyc1,metcycf,initial_co2 &
@@ -57,14 +57,14 @@ subroutine read_ednl(iunit)
   integer :: err
 
   logical :: fexists,op
-  namelist /ED2_INFO/  dtlsm,ifoutput,idoutput,imoutput,iyoutput,isoutput,  &
-       attach_metadata,outfast,outstate,ffilout,sfilout,ied_init_mode,      &
-       edres,sfilin,veg_database,soil_database,ed_inputs_dir,soilstate_db,  &
-       soildepth_db,isoilstateinit,isoildepthflg,integration_scheme,        &
-       istoma_scheme,iphen_scheme,repro_scheme,lapse_scheme,n_plant_lim,    &
-       n_decomp_lim,include_fire,ianth_disturb,include_these_pft,           &
-       pft_1st_check,maxpatch,maxcohort,treefall_disturbance_rate,          &
-       runoff_time,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax,        &
+  namelist /ED2_INFO/  dtlsm,ifoutput,idoutput,imoutput,iyoutput,isoutput,   &
+       attach_metadata,outfast,outstate,ffilout,sfilout,ied_init_mode,       &
+       edres,sfilin,veg_database,soil_database,ed_inputs_dir,soilstate_db,   &
+       soildepth_db,isoilstateinit,isoildepthflg,isoilbc,integration_scheme, &
+       istoma_scheme,iphen_scheme,repro_scheme,lapse_scheme,n_plant_lim,     &
+       n_decomp_lim,include_fire,ianth_disturb,include_these_pft,            &
+       pft_1st_check,maxpatch,maxcohort,treefall_disturbance_rate,           &
+       runoff_time,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax,         &
        initial_co2,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf,phenpath
 
   read (iunit, iostat=err, NML=ED2_INFO)
@@ -93,6 +93,7 @@ subroutine read_ednl(iunit)
      write(*,*) "soildepth_db=",soildepth_db
      write(*,*) "isoilstateinit=",isoilstateinit
      write(*,*) "isoildepthflg=",isoildepthflg
+     write(*,*) "isoilbc=",isoilbc
      write(*,*) "integration_scheme=",integration_scheme
      write(*,*) "istoma_scheme=",istoma_scheme
      write(*,*) "iphen_scheme",iphen_scheme

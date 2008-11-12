@@ -143,15 +143,21 @@
 !------------------------------------------------------------------------------------------!
 ! Analysis/history/restart file: path, prefix, settings                                    !
 !------------------------------------------------------------------------------------------!
-   NL%FFILOUT = 'analy/mytest'         ! Analysis output prefix
-   NL%SFILOUT   = 'histo/mytest'       ! History output prefix
+   NL%FFILOUT = 'analy/mytest'      ! Analysis output prefix
+   NL%SFILOUT   = 'histo/mytest'    ! History output prefix
 
-   NL%IED_INIT_MODE   = 0              ! 0 signifies a start from near-bare ground.   
-                                       ! 1 allows you to do a history restart from ED1-type
-                                       !   restart files
-                                       ! 2 allows you to do a standard history restart from
-                                       !   ED2-type restart files.
-                                       ! 3 - initialize via ed-2 and site file restarts 
+   NL%IED_INIT_MODE   = 0           ! 0 signifies a start from near-bare ground.   
+                                    ! 1 allows you to do a history restart from ED1-type
+                                    !   restart files
+                                    ! 2 allows you to do a standard history restart from
+                                    !   ED2-type restart files.
+                                    ! 3 - initialize via ed-2 and site file restarts 
+                                    !
+                                    ! -1 - use a mix of ED-1 and ED-2 files. This should
+                                    !      be avoided by all means, unless:
+                                    !      a. You are absolute sure of what you're doing;
+                                    !      b. You have absolute no idea about what you're 
+                                    !         doing;
                          
    NL%EDRES  = 1.0                     ! ED2/ED1 restart grid resolution
                                        ! Probably not necessary anymore.
@@ -223,6 +229,10 @@
 
    NL%ISOILDEPTHFLG  = 0  ! 0 -- use NZG, SLZ for each grid cell
                           ! 1 -- read file to get soil depth for each grid cell
+
+   NL%ISOILBC        = 0  ! Soil boundary condition at lowest soil level
+                          ! 0 - Bedrock;
+                          ! 1 - Free drainage.
 !------------------------------------------------------------------------------------------!
 
 
