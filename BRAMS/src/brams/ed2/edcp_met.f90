@@ -354,9 +354,7 @@ subroutine copy_fluxes_future_2_past(ifm)
 
   use mem_edcp,only: &
        ed_fluxf_g,   &
-       ed_fluxp_g,   &
-       wgridp_g,     &
-       wgridf_g
+       ed_fluxp_g
                           
   implicit none
   integer :: ifm
@@ -372,18 +370,6 @@ subroutine copy_fluxes_future_2_past(ifm)
   ed_fluxp_g(ifm)%sflux_w = ed_fluxf_g(ifm)%sflux_w
   ed_fluxp_g(ifm)%sflux_t = ed_fluxf_g(ifm)%sflux_t
   ed_fluxp_g(ifm)%sflux_r = ed_fluxf_g(ifm)%sflux_r
-
-  ! Do water body fluxes
-  wgridp_g(ifm)%ustar   = wgridf_g(ifm)%ustar
-  wgridp_g(ifm)%tstar   = wgridf_g(ifm)%tstar
-  wgridp_g(ifm)%rstar   = wgridf_g(ifm)%rstar
-  wgridp_g(ifm)%albedt  = wgridf_g(ifm)%albedt
-  wgridp_g(ifm)%rlongup = wgridf_g(ifm)%rlongup
-  wgridp_g(ifm)%sflux_u = wgridf_g(ifm)%sflux_u
-  wgridp_g(ifm)%sflux_v = wgridf_g(ifm)%sflux_v
-  wgridp_g(ifm)%sflux_w = wgridf_g(ifm)%sflux_w
-  wgridp_g(ifm)%sflux_t = wgridf_g(ifm)%sflux_t
-  wgridp_g(ifm)%sflux_r = wgridf_g(ifm)%sflux_r
 
   return
 end subroutine copy_fluxes_future_2_past
@@ -478,18 +464,14 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
   use mem_edcp,only:    &
        ed_fluxf_g,      &
        ed_fluxp_g,      &
-       wgridp_g,        &
-       wgridf_g,        &
-       wgrids_g,        &
+       wgrid_g,         &
        ed_precip_g,     &
        alloc_edprecip,  &
        zero_edprecip,   &
        alloc_edflux,    &
        zero_edflux,     &
        alloc_wgrid,     &
-       zero_wgrid,      &
-       alloc_wgrid_s,   &
-       zero_wgrid_s
+       zero_wgrid
 
   use node_mod,only:mmxp,mmyp,ia,iz,ja,jz,mynum
   use ed_work_vars,only:work_e
@@ -538,14 +520,8 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
   call zero_edflux(ed_fluxf_g(ifm))
   call zero_edflux(ed_fluxp_g(ifm))
 
-  call alloc_wgrid(wgridp_g(ifm),mmxp(ifm),mmyp(ifm))
-  call alloc_wgrid(wgridf_g(ifm),mmxp(ifm),mmyp(ifm))
-  
-  call zero_wgrid(wgridp_g(ifm))
-  call zero_wgrid(wgridf_g(ifm))
-
-  call alloc_wgrid_s(wgrids_g(ifm),mmxp(ifm),mmyp(ifm))
-  call zero_wgrid_s(wgrids_g(ifm))
+  call alloc_wgrid(wgrid_g(ifm),mmxp(ifm),mmyp(ifm))
+  call zero_wgrid(wgrid_g(ifm))
   
 
   call alloc_edprecip(ed_precip_g(ifm),mmxp(ifm),mmyp(ifm))
@@ -586,8 +562,10 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
               +basic_g(ifm)%pi0(1,i,j)+basic_g(ifm)%pi0(2,i,j)) * 0.5
       endif
       
-      wgrids_g(ifm)%canopy_tempk(i,j)       =  theta_mean(i,j) * pi0_mean(i,j) * cpi
-      wgrids_g(ifm)%canopy_water_vapor(i,j) =  rv_mean(i,j)
+      leaf_g(ifm)%can_temp(i,j,1) =  theta_mean(i,j) * pi0_mean(i,j) * cpi
+      leaf_g(ifm)%can_rvap(i,j,1) =  rv_mean(i,j)
+      leaf_g(ifm)%can_temp(i,j,2) =  theta_mean(i,j) * pi0_mean(i,j) * cpi
+      leaf_g(ifm)%can_rvap(i,j,2) =  rv_mean(i,j)
     enddo
   enddo
 
@@ -606,8 +584,7 @@ subroutine transfer_ed2leaf(ifm,timel)
   use mem_edcp,only:  &
        ed_fluxf_g,    &
        ed_fluxp_g,    &
-       wgridp_g,      &
-       wgridf_g,      &
+       wgrid_g,       &
        edtime1,       &
        edtime2
   use mem_turb,only: turb_g
@@ -646,9 +623,9 @@ subroutine transfer_ed2leaf(ifm,timel)
   leaf_g(ifm)%rstar(ia:iz,ja:jz,2) = (1-tfact)*ed_fluxp_g(ifm)%rstar(ia:iz,ja:jz) + tfact*ed_fluxf_g(ifm)%rstar(ia:iz,ja:jz)     
 
   ! Interpolate the water-body fluxes
-  leaf_g(ifm)%ustar(ia:iz,ja:jz,1) = (1-tfact)*wgridp_g(ifm)%ustar(ia:iz,ja:jz) + tfact*wgridf_g(ifm)%ustar(ia:iz,ja:jz)
-  leaf_g(ifm)%tstar(ia:iz,ja:jz,1) = (1-tfact)*wgridp_g(ifm)%tstar(ia:iz,ja:jz) + tfact*wgridf_g(ifm)%tstar(ia:iz,ja:jz)
-  leaf_g(ifm)%rstar(ia:iz,ja:jz,1) = (1-tfact)*wgridp_g(ifm)%rstar(ia:iz,ja:jz) + tfact*wgridf_g(ifm)%rstar(ia:iz,ja:jz)
+  leaf_g(ifm)%ustar(ia:iz,ja:jz,1) = wgrid_g(ifm)%ustar(ia:iz,ja:jz)
+  leaf_g(ifm)%tstar(ia:iz,ja:jz,1) = wgrid_g(ifm)%tstar(ia:iz,ja:jz)
+  leaf_g(ifm)%rstar(ia:iz,ja:jz,1) = wgrid_g(ifm)%rstar(ia:iz,ja:jz)
 
 
   ! Interpolate and blend the albedo, upwelling longwave, and turbulent fluxes
@@ -656,44 +633,37 @@ subroutine transfer_ed2leaf(ifm,timel)
   radiate_g(ifm)%albedt(ia:iz,ja:jz) = &
        leaf_g(ifm)%patch_area(ia:iz,ja:jz,2)* &
        ((1-tfact)*ed_fluxp_g(ifm)%albedt(ia:iz,ja:jz) + tfact*ed_fluxf_g(ifm)%albedt(ia:iz,ja:jz)) + &
-       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)* &
-       ((1-tfact)*wgridp_g(ifm)%albedt(ia:iz,ja:jz) + tfact*wgridf_g(ifm)%albedt(ia:iz,ja:jz))
+       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)*wgrid_g(ifm)%albedt(ia:iz,ja:jz)
   
   radiate_g(ifm)%rlongup(ia:iz,ja:jz) = &
        leaf_g(ifm)%patch_area(ia:iz,ja:jz,2)* &
        ((1-tfact)*ed_fluxp_g(ifm)%rlongup(ia:iz,ja:jz) + tfact*ed_fluxf_g(ifm)%rlongup(ia:iz,ja:jz)) + &
-       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)* &
-       ((1-tfact)*wgridp_g(ifm)%rlongup(ia:iz,ja:jz) + tfact*wgridf_g(ifm)%rlongup(ia:iz,ja:jz))
+       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)*wgrid_g(ifm)%rlongup(ia:iz,ja:jz)
   
   turb_g(ifm)%sflux_u(ia:iz,ja:jz) = &
        leaf_g(ifm)%patch_area(ia:iz,ja:jz,2)* &
        ((1-tfact)*ed_fluxp_g(ifm)%sflux_u(ia:iz,ja:jz) + tfact*ed_fluxf_g(ifm)%sflux_u(ia:iz,ja:jz)) + &
-       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)* &
-       ((1-tfact)*wgridp_g(ifm)%sflux_u(ia:iz,ja:jz) + tfact*wgridf_g(ifm)%sflux_u(ia:iz,ja:jz))
+       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)*wgrid_g(ifm)%sflux_u(ia:iz,ja:jz)
 
   turb_g(ifm)%sflux_v(ia:iz,ja:jz) = &
        leaf_g(ifm)%patch_area(ia:iz,ja:jz,2)* &
        ((1-tfact)*ed_fluxp_g(ifm)%sflux_v(ia:iz,ja:jz) + tfact*ed_fluxf_g(ifm)%sflux_v(ia:iz,ja:jz)) + &
-       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)* &
-       ((1-tfact)*wgridp_g(ifm)%sflux_v(ia:iz,ja:jz) + tfact*wgridf_g(ifm)%sflux_v(ia:iz,ja:jz))
+       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)*wgrid_g(ifm)%sflux_v(ia:iz,ja:jz)
 
   turb_g(ifm)%sflux_w(ia:iz,ja:jz) = &
        leaf_g(ifm)%patch_area(ia:iz,ja:jz,2)* &
        ((1-tfact)*ed_fluxp_g(ifm)%sflux_w(ia:iz,ja:jz) + tfact*ed_fluxf_g(ifm)%sflux_w(ia:iz,ja:jz)) + &
-       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)* &
-       ((1-tfact)*wgridp_g(ifm)%sflux_w(ia:iz,ja:jz) + tfact*wgridf_g(ifm)%sflux_w(ia:iz,ja:jz))
+       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)*wgrid_g(ifm)%sflux_w(ia:iz,ja:jz)
 
   turb_g(ifm)%sflux_t(ia:iz,ja:jz) = &
        leaf_g(ifm)%patch_area(ia:iz,ja:jz,2)* &
        ((1-tfact)*ed_fluxp_g(ifm)%sflux_t(ia:iz,ja:jz) + tfact*ed_fluxf_g(ifm)%sflux_t(ia:iz,ja:jz)) + &
-       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)* &
-       ((1-tfact)*wgridp_g(ifm)%sflux_t(ia:iz,ja:jz) + tfact*wgridf_g(ifm)%sflux_t(ia:iz,ja:jz))
+       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)*wgrid_g(ifm)%sflux_t(ia:iz,ja:jz)
   
   turb_g(ifm)%sflux_r(ia:iz,ja:jz) = &
        leaf_g(ifm)%patch_area(ia:iz,ja:jz,2)* &
        ((1-tfact)*ed_fluxp_g(ifm)%sflux_r(ia:iz,ja:jz) + tfact*ed_fluxf_g(ifm)%sflux_r(ia:iz,ja:jz)) + &
-       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)* &
-       ((1-tfact)*wgridp_g(ifm)%sflux_r(ia:iz,ja:jz) + tfact*wgridf_g(ifm)%sflux_r(ia:iz,ja:jz))
+       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)*wgrid_g(ifm)%sflux_r(ia:iz,ja:jz)
 
   ! The boundary cells of these arrays have not been filled.  These must be filled by the adjacent
   ! cells, likely the 2nd or 2nd to last cell in each row or column

@@ -1419,6 +1419,13 @@ edcp_mpiutils.o : $(ED_MIXED)/edcp_mpiutils.f90 max_dims.o misc_coms.o ed_misc_c
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+edcp_water.o : $(ED_MIXED)/edcp_water.f90 node_mod.o consts_coms.o canopy_air_coms.o       \
+	mem_edcp.o mem_leaf.o mem_basic.o mem_radiate.o mem_cuparm.o mem_micro.o           \
+	mem_grid.o therm_lib.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 mem_edcp.o : $(ED_MIXED)/mem_edcp.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)

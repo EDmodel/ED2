@@ -263,6 +263,7 @@ OBJ_MODEL =                         \
 	edcp_met_init.o             \
 	edcp_model.o                \
 	edcp_mpiutils.o             \
+	edcp_water.o                \
 	mem_edcp.o                  \
 	allometry.o                 \
 	average_utils.o             \
