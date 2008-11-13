@@ -487,7 +487,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
                  * (wgpmid / soil(nsoil)%slmsts)**(2. * soil(nsoil)%slbs + 3.)  &
                  * freezeCor
      if (soil_liq(lsl) == 0.) w_flux(lsl) = 0.
-     qw_flux(k) = w_flux(k) * cliq1000 * (initp%soil_tempk(k) - tsupercool)
+     qw_flux(lsl) = w_flux(lsl) * cliq1000 * (initp%soil_tempk(lsl) - tsupercool)
   else
      !----- Bedrock -----------------------------------------------------------------------!
      w_flux(lsl) = 0.

@@ -142,7 +142,7 @@ subroutine ed_coup_model()
   use rk4_driver_ar,only: rk4_timestep_ar
   use ed_node_coms,only:mynum,nnodetot
   use disturb_coms, only: include_fire
-  use mem_sites, only : n_ed_region
+  use mem_sites, only : n_ed_region,maxpatch,maxcohort
   use consts_coms, only: day_sec
 
   implicit none
@@ -293,7 +293,7 @@ subroutine ed_coup_model()
      call vegetation_dynamics(new_month,new_year)
      
      ! First day of a month.
-     if(new_month)then
+     if(new_month .and. (maxpatch >= 0 .or. maxcohort >= 0))then
         
         ! On the monthly timestep we have performed various
         ! fusion/fission calls. Therefore the var-table's pointer
@@ -429,6 +429,7 @@ subroutine vegetation_dynamics(new_month,new_year)
   use ed_state_vars,only : edgrid_g,filltab_alltypes,edtype
   use growth_balive_ar,only : dbalive_dt_ar
   use consts_coms, only : day_sec,yr_day
+  use mem_sites, only: maxpatch,maxcohort
   implicit none
 
   logical, intent(in)   :: new_month,new_year
@@ -500,7 +501,7 @@ subroutine vegetation_dynamics(new_month,new_year)
      ! the number of patch variables that actually need to be fused.  
      if(new_year) then
 !        write (unit=*,fmt='(a)') '### Fuse_patchesar...'
-        call fuse_patches_ar(cgrid)
+        if (maxpatch >= 0) call fuse_patches_ar(cgrid)
      end if
 
      ! Recalculate the agb and basal area at the polygon level

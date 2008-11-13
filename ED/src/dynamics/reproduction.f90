@@ -16,6 +16,7 @@ subroutine reproduction_ar(cgrid, month)
   
   use consts_coms, only: t3ple
   use canopy_air_coms, only: hcapveg_ref,heathite_min
+  use mem_sites, only: maxcohort
 
 
   implicit none
@@ -276,7 +277,7 @@ subroutine reproduction_ar(cgrid, month)
         
         do ipa = 1,csite%npatches
            cpatch => csite%patch(ipa)
-           if(cpatch%ncohorts>0) then
+           if(cpatch%ncohorts>0 .and. maxcohort >= 0) then
               
               call terminate_cohorts_ar(csite,ipa)
               call fuse_cohorts_ar(csite,ipa, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))

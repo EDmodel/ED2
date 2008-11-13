@@ -275,7 +275,7 @@ end subroutine terminate_cohorts_ar
      end do donloop
 
      
-     if( count(fuse_table) <= maxcohort)exit force_fusion
+     if( count(fuse_table) <= abs(maxcohort))exit force_fusion
      if( (count(fuse_table) == ncohorts_old) .and. (tolerance_mult > tolerance_max) ) exit force_fusion
      
      tolerance_mult = tolerance_mult * 1.01
@@ -806,7 +806,7 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
         
         npatches = sum(fuse_table)
 
-        if(npatches <= maxpatch)exit max_patch
+        if(npatches <= abs(maxpatch))exit max_patch
         if((npatches == npatches_old) .and. (tolerance_mult > tolerance_max)) exit max_patch
         tolerance_mult = tolerance_mult * 1.01
         npatches_old = npatches

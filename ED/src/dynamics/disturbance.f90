@@ -22,6 +22,7 @@ module disturbance_utils_ar
     use disturb_coms, only: treefall_age_threshold,  &
          min_new_patch_area
     use max_dims, only: n_dist_types, n_pft, n_dbh
+    use mem_sites, only: maxcohort
 
     implicit none
 
@@ -187,7 +188,7 @@ module disturbance_utils_ar
               qpatch => csite%patch(q+onsp)
 
               !  fuse then terminate cohorts
-              if (csite%patch(q+onsp)%ncohorts > 0) then
+              if (csite%patch(q+onsp)%ncohorts > 0 .and. maxcohort >= 0) then
                  call fuse_cohorts_ar(csite,q+onsp, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
                  call terminate_cohorts_ar(csite,q+onsp)
                  call split_cohorts_ar(qpatch, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))

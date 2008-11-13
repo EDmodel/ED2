@@ -1496,7 +1496,7 @@ disturb_coms.o : $(ED_MEMORY)/disturb_coms.f90
 
 disturbance.o : $(ED_DYNAMICS)/disturbance.f90 ed_state_vars.o fuse_fiss_utils.o           \
 	misc_coms.o disturb_coms.o max_dims.o pft_coms.o consts_coms.o grid_coms.o         \
-	decomp_coms.o canopy_air_coms.o
+	decomp_coms.o canopy_air_coms.o mem_sites.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -1808,7 +1808,7 @@ radiate_driver.o : $(ED_DYNAMICS)/radiate_driver.f90 misc_coms.o ed_state_vars.o
 
 reproduction.o : $(ED_DYNAMICS)/reproduction.f90 ed_state_vars.o misc_coms.o pft_coms.o    \
 	decomp_coms.o fusion_fission_coms.o max_dims.o fuse_fiss_utils.o phenology_coms.o  \
-	consts_coms.o canopy_air_coms.o
+	consts_coms.o canopy_air_coms.o mem_sites.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
