@@ -566,6 +566,11 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
       leaf_g(ifm)%can_rvap(i,j,1) =  rv_mean(i,j)
       leaf_g(ifm)%can_temp(i,j,2) =  theta_mean(i,j) * pi0_mean(i,j) * cpi
       leaf_g(ifm)%can_rvap(i,j,2) =  rv_mean(i,j)
+    
+      leaf_g(ifm)%gpp(i,j)     = 0.0
+      leaf_g(ifm)%resphet(i,j) = 0.0
+      leaf_g(ifm)%resproot(i,j) = 0.0
+      leaf_g(ifm)%respleaf(i,j) = 0.0
     enddo
   enddo
 
@@ -1105,6 +1110,11 @@ subroutine copy_avgvars_to_leaf(ifm)
       leaf_g(ifm)%can_rvap(ix,iy,2)  = cgrid%avg_can_shv(ipy)
       
       leaf_g(ifm)%veg_lai(ix,iy,2)   = cgrid%lai(ipy)
+      
+      leaf_g(ifm)%gpp(ix,iy)         = cgrid%avg_gpp(ipy)
+      leaf_g(ifm)%resphet(ix,iy)     = cgrid%avg_htroph_resp(ipy)
+      leaf_g(ifm)%respleaf(ix,iy)    = cgrid%avg_leaf_resp(ipy)
+      leaf_g(ifm)%resproot(ix,iy)    = cgrid%avg_root_resp(ipy)
 
    end do
    return

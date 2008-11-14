@@ -39,7 +39,8 @@ Module mem_leaf
      
      ! Variables to be dimensioned by (nxp,nyp)
      real, pointer, dimension(:,:) :: &
-          snow_mass,snow_depth,seatp,seatf
+          snow_mass,snow_depth,seatp,seatf,gpp,resphet,resproot &
+          ,respleaf
   End Type leaf_vars
   
   type (leaf_vars), allocatable :: leaf_g(:), leafm_g(:)
@@ -116,6 +117,14 @@ Contains
     allocate (leaf%seatp        (nx,ny))
     allocate (leaf%seatf        (nx,ny))
 
+    ! ED Variables... Yes, I know it's redundant... 
+    if (isfcl == 5) then
+       allocate(leaf%gpp     (nx,ny))
+       allocate(leaf%resphet (nx,ny))
+       allocate(leaf%resproot(nx,ny))
+       allocate(leaf%respleaf(nx,ny))
+    end if
+
   end subroutine alloc_leaf
 
   !************************************************************************
@@ -181,6 +190,12 @@ Contains
     if(associated(leaf%seatp))           nullify (leaf%seatp)
     if(associated(leaf%seatf))           nullify (leaf%seatf)
 
+
+    if (associated(leaf%gpp     ))       nullify(leaf%gpp     )
+    if (associated(leaf%resphet ))       nullify(leaf%resphet )
+    if (associated(leaf%resproot))       nullify(leaf%resproot)
+    if (associated(leaf%respleaf))       nullify(leaf%respleaf)
+
   end subroutine nullify_leaf
 
   ! ********************************************************************
@@ -245,6 +260,12 @@ Contains
     if(associated(leaf%snow_depth))      deallocate (leaf%snow_depth)
     if(associated(leaf%seatp))           deallocate (leaf%seatp)
     if(associated(leaf%seatf))           deallocate (leaf%seatf)
+
+
+    if (associated(leaf%gpp     ))       deallocate (leaf%gpp     )
+    if (associated(leaf%resphet ))       deallocate (leaf%resphet )
+    if (associated(leaf%resproot))       deallocate (leaf%resproot)
+    if (associated(leaf%respleaf))       deallocate (leaf%respleaf)
     
   end subroutine dealloc_leaf
 
@@ -404,6 +425,22 @@ Contains
     call vtables2 (leaf%seatf(1,1),leafm%seatf(1,1)  &
          ,ng, npts, imean,  &
          'SEATF :2:mpti')
+
+    if (associated(leaf%gpp     )) &
+       call vtables2 (leaf%gpp(1,1),leafm%gpp(1,1),ng, npts, imean,  &
+                      'GPP :2:mpti:anal')
+
+    if (associated(leaf%resphet )) &     
+       call vtables2 (leaf%resphet(1,1),leafm%resphet(1,1),ng, npts, imean,  &
+                      'RESPHET :2:mpti:anal')
+
+    if (associated(leaf%resproot)) &     
+       call vtables2 (leaf%resproot(1,1),leafm%resproot(1,1),ng, npts, imean,  &
+                      'RESPROOT :2:mpti:anal')
+
+    if (associated(leaf%respleaf)) &     
+       call vtables2 (leaf%respleaf(1,1),leafm%respleaf(1,1),ng, npts, imean,  &
+                      'RESPLEAF :2:mpti:anal')
     
  end subroutine filltab_leaf
 
