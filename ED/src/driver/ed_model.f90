@@ -139,7 +139,7 @@ subroutine ed_model()
         end do
      elseif(integration_scheme == 1)then
         do ifm=1,ngrids
-           call rk4_timestep_ar(edgrid_g(ifm),integration_buff_g)
+           call rk4_timestep_ar(edgrid_g(ifm),ifm,integration_buff_g)
         end do
      endif
      
@@ -208,7 +208,16 @@ subroutine ed_model()
      !   Call the model output driver 
      !   ====================================================
      call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time &
-                   ,writing_dail,writing_mont,history_time,reset_time,the_end)
+                   ,writing_dail,writing_mont,history_time,the_end)
+
+     ! Reset time happens every frqsum. This is to avoid variables to build up when
+     ! history and analysis are off. Put outside ed_output so I have a chance to copy
+     ! some of these to BRAMS structures.
+     if(reset_time) then    
+        do ifm=1,ngrids
+           call reset_averaged_vars(edgrid_g(ifm))
+        end do
+     end if
 
      ! Check if this is the beginning of a new simulated day.
      if(new_day)then

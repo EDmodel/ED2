@@ -3,10 +3,11 @@ module rk4_stepper_ar
 contains 
 
   subroutine rkqs_ar(integration_buff, x, htry, hmin, epsil, hdid, hnext, csite, &
-       ipa,isi,ipy,rhos, vels, atm_tmp, atm_shv, atm_co2, geoht, exner, pcpg, qpcpg, &
+       ipa,isi,ipy,ifm,rhos, vels, atm_tmp, atm_shv, atm_co2, geoht, exner, pcpg, qpcpg, &
        prss, lsl)
 
-    use ed_state_vars,only:sitetype,patchtype,rk4patchtype,integration_vars_ar
+    use ed_state_vars,only:sitetype,patchtype,rk4patchtype,integration_vars_ar &
+                          ,edgrid_g
 !    use lsm_integ_utils, only: print_patch, copy_rk4_patch, get_errmax, &
 !         print_errmax
 
@@ -14,7 +15,7 @@ contains
 
     integer, intent(in) :: lsl
     type(sitetype),target :: csite
-    integer :: ipa,isi,ipy
+    integer :: ipa,isi,ipy,ifm
     type(integration_vars_ar), target :: integration_buff
 
     real, parameter :: safety = 0.9
@@ -109,6 +110,9 @@ contains
           if(xnew == x)then
 
              print*,'stepsize underflow in rkqs'
+             print*,'Longitude:',edgrid_g(ifm)%lon(ipy)
+             print*,'Latitude:',edgrid_g(ifm)%lat(ipy)
+             print*,'Polygon:',ipy
              print*,'patch age: ',csite%age(ipa)
              print*,'patch dist_type: ',csite%dist_type(ipa)
              print*,'iflag1: ',iflag1
@@ -322,6 +326,8 @@ contains
     use soil_coms, only: soil
     use canopy_radiation_coms, only: lai_min
     use consts_coms, only : t3ple
+    use canopy_air_coms, only: hcapveg_ref,heathite_min
+    use therm_lib, only: qwtk
 
     implicit none
     integer, intent(in) :: lsl
@@ -329,7 +335,7 @@ contains
     type(patchtype),pointer :: cpatch
     type(rk4patchtype), target :: y,dydx
     integer iflag1,k
-    real :: atm_tempk,h
+    real :: atm_tempk,h,hcapveg,veg_temp,fracliq
     integer :: ipa,ico
     integer, parameter :: print_diags=0
 
@@ -430,13 +436,19 @@ contains
     cpatch => csite%patch(ipa)
 
     do ico = 1,cpatch%ncohorts
-       if(cpatch%lai(ico) > lai_min.and. y%veg_temp(ico) > 380.0)then
-          iflag1 = 0
-          if(print_diags==1) print*,'leaf temp too high',y%veg_temp(ico),  &
-               cpatch%lai(ico),cpatch%pft(ico),cpatch%veg_temp(ico)
-          return
-       endif
-    enddo
+    
+       if (cpatch%lai(ico) > lai_min) then
+          hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
+          call qwtk(y%veg_energy(ico),y%veg_water(ico),hcapveg,veg_temp,fracliq)
+
+          if(veg_temp > 380.0)then
+             iflag1 = 0
+             if(print_diags==1) print*,'leaf temp too high',veg_temp,y%veg_energy(ico),  &
+                  cpatch%lai(ico),cpatch%pft(ico),cpatch%veg_temp(ico)
+             return
+          end if
+       end if
+    end do
     
     return
   end subroutine lsm_sanity_check_ar
@@ -459,49 +471,73 @@ contains
     integer iflag1,k
     real :: atm_tempk
 
-    print*
-    print*,'in print sanity check'
-    print*
+    write(unit=*,fmt='(64a)') ('=',k=1,64)
+    write(unit=*,fmt='(64a)') ('=',k=1,64)
+    write(unit=*,fmt='(a,20x,a,20x,a)') '======','SANITY CHECK','======'
+    write(unit=*,fmt='(64a)') ('=',k=1,64)
 
+    write(unit=*,fmt='(a)') ' '
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write(unit=*,fmt='(a5,3(1x,a12))') 'LEVEL','  SOIL_TEMPK','SOIL_FRACLIQ','  SOIL_WATER'
     do k=lsl,nzg
-!       write(*,'(a33,i,3f8.2)')'k, soil_tempk, soil_fracliq, soil_water',  &
-!            k, y%soil_tempk(k), y%soil_fracliq(k), y%soil_water(k)
-       print*,"k, soil_tempk, soil_fracliq, soil_water",  &
+       write(unit=*,fmt='(i5,3(1x,es12.5))') &
             k, y%soil_tempk(k), y%soil_fracliq(k), y%soil_water(k)
-    enddo
+    end do
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
 
+    write(unit=*,fmt='(a)') ' '
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write(unit=*,fmt='(a5,3(1x,a12))') 'LEVEL','  OLD_SOIL_T','OLD_SOIL_FLQ','OLD_SOIL_H2O'
     do k=lsl,nzg
-       !       write(*,'(a33,i,3f8.2)')'k, soil_tempk, soil_fracliq, soil_water',  &
-       !            k, y%soil_tempk(k), y%soil_fracliq(k), y%soil_water(k)
-       print*,"k, soil_tempk, soil_fracliq, soil_water",  &
+       write(unit=*,fmt='(i5,3(1x,es12.5))') &
             k, csite%soil_tempk(k,ipa), csite%soil_fracliq(k,ipa), csite%soil_water(k,ipa)
-    enddo
+    end do
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
 
-!    write(*,'(a33,f)')'can_temp', y%can_temp
-!    write(*,'(a33,i)')'nlev_sfcwater', y%nlev_sfcwater
+    write(unit=*,fmt='(a)') ' '
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write (unit=*,fmt='(a,1x,es12.5)') ' CAN_TEMP=     ',y%can_temp
+    write (unit=*,fmt='(a,1x,es12.5)') ' OLD_CAN_TEMP= ',csite%can_temp(ipa)
+    write (unit=*,fmt='(a,1x,es12.5)') ' CAN_VAPOR=    ',y%can_shv
+    write (unit=*,fmt='(a,1x,es12.5)') ' OLD_CAN_VAP=  ',csite%can_shv(ipa)
+    write (unit=*,fmt='(a,1x,i12)')    ' #LEV_SFCH2O=  ',y%nlev_sfcwater
+    write (unit=*,fmt='(a,1x,i12)')    ' OLD_#_SFCH2O= ',csite%nlev_sfcwater(ipa)
+    if(y%nlev_sfcwater == 1) then
+       write(unit=*,fmt='(a,1x,es12.5)') ,'SFCWATER_TEMPK=',y%sfcwater_tempk(1)
+    end if
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
 
-    print*,"can_temp", y%can_temp,csite%can_temp(ipa)
-    print*,"nlev_sfcwater", y%nlev_sfcwater,csite%nlev_sfcwater(ipa)
-
-
-!    if(y%nlev_sfcwater == 1)write(*,'(a33,f)')'sfcwater_tempk',  &
-!         y%sfcwater_tempk(1)
-
-    if(y%nlev_sfcwater == 1)print*,"sfcwater_tempk",y%sfcwater_tempk(1)
-
-!    write(*,'(a33,f)')'canopy water vapor', y%can_shv
-    print*,"canopy water vapor", y%can_shv,csite%can_shv(ipa)
-
+    write(unit=*,fmt='(a)') ' '
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
     cpatch => csite%patch(ipa)
+    write (unit=*,fmt='(2(a5,1x),4(a12,1x))') &
+       '  COH','  PFT','         LAI','  VEG_ENERGY','OLD_VEG_ENER','OLD_VEG_TEMP'
     do ico = 1,cpatch%ncohorts
-       if(cpatch%lai(ico) > lai_min)then
-!          write(*,'(a33,2f)')'lai, veg_temp',cpatch%lai(ico),y%veg_temp(ico)
-          print*,"lai, veg_temp",cpatch%lai(ico),y%veg_temp(ico),y%veg_water(ico),&
-               cpatch%veg_temp(ico),cpatch%veg_water(ico)
-          
-       endif
-    enddo
+       if(cpatch%lai(ico) > lai_min) then
+          write(unit=*,fmt='(2(i5,1x),4(es12.5,1x))') &
+             ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_energy(ico),cpatch%veg_energy(ico)  &
+                                ,cpatch%veg_temp(ico)
+       end if
+    end do
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
+
+    write(unit=*,fmt='(a)') ' '
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write (unit=*,fmt='(2(a5,1x),3(a12,1x))') &
+       '  COH','  PFT','         LAI','   VEG_WATER',' OLD_VEG_H2O'
+    do ico = 1,cpatch%ncohorts
+       if(cpatch%lai(ico) > lai_min) then
+          write(unit=*,fmt='(2(i5,1x),3(es12.5,1x))') &
+             ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_water(ico),cpatch%veg_water(ico)
+       end if
+    end do
+    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write(unit=*,fmt='(a)') ' '
     
+    write(unit=*,fmt='(64a)') ('=',k=1,64)
+    write(unit=*,fmt='(64a)') ('=',k=1,64)
+    write(unit=*,fmt='(a)') ' '
+
     return
   end subroutine print_sanity_check_ar
 

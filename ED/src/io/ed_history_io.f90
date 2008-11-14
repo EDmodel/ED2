@@ -106,6 +106,7 @@ subroutine read_ed1_history_file_array
   logical :: site_match
   real :: dist_gc
   integer :: nw
+  integer :: ied_init_mode_local
 
   !----- Variables for new method to find the closest file --------------------------------!
   integer                                   , parameter :: maxlist=3*maxfiles
@@ -121,7 +122,8 @@ subroutine read_ed1_history_file_array
   
   real, external :: ed_biomass
   
-  
+  ied_init_mode_local = ied_init_mode 
+
   !----- Retrieve all files with the specified prefix. ------------------------------------!
   call ed_filelist(full_list,sfilin,nflist)
 
@@ -169,8 +171,15 @@ subroutine read_ed1_history_file_array
         ! nclosest is the file with the closest information. 
         nclosest=minloc(file_dist(1:nflpss),dim=1)
         pss_name = trim(pss_list(nclosest))
-        css_name = trim(css_list(nclosest))
 
+        do nf=1,nflcss
+           file_dist(nf)=dist_gc(cgrid%lon(ipy),clon_list(nf),cgrid%lat(ipy),clat_list(nf))
+        end do
+        ! nclosest is the file with the closest information. 
+        nclosest=minloc(file_dist(1:nflcss),dim=1)
+        css_name = trim(css_list(nclosest))
+        
+        
         ! =================================
         ! Part II: Add the patches
         ! =================================
@@ -178,13 +187,23 @@ subroutine read_ed1_history_file_array
 
         ! Open file and read in patches
         open(12,file=trim(pss_name),form='formatted',status='old')
-        read(12,*)  ! skip header
+        read(12,*)  cdum ! skip header
+        
+        !----- If running mixed ED-1/ED-2, check whether the file is ED1 or ED2. ----------!
+        if (ied_init_mode == -1) then
+           if (cdum == 'time') then
+              ied_init_mode_local = 2
+           else
+              ied_init_mode_local = 1
+           end if
+        end if
+        
         nwater = 1
-        if(ied_init_mode == 1) then
+        if(ied_init_mode_local == 1) then
            read(12,*)cdum,nwater
            read(12,*)cdum,depth(1:nwater)
            read(12,*)
-        elseif(ied_init_mode == 2) then
+        elseif(ied_init_mode_local == 2) then
            read(12,*)!water patch
         endif
 
@@ -197,7 +216,7 @@ subroutine read_ed1_history_file_array
            
            if (ip>huge_patch) call fatal_error('IP too high','read_ed1_history_file_array','ed_history_io.f90')
 
-           select case (ied_init_mode)
+           select case (ied_init_mode_local)
            case (1) !! read ED1 format files
               
               read(12,*,iostat=ierr)  time(ip),pname(ip),trk(ip),dage,darea,dfsc,dstsc,  &
@@ -226,7 +245,6 @@ subroutine read_ed1_history_file_array
               stsc(ip)   = sngl(max(min_ok ,dstsc  ))
               stsl(ip)   = sngl(max(min_ok ,dstsl  ))
               ssc(ip)    = sngl(max(min_ok ,dssc   ))
-              psc(ip)    = sngl(max(min_ok ,dpsc   ))
               msn(ip)    = sngl(max(min_ok ,dmsn   ))
               fsn(ip)    = sngl(max(min_ok ,dfsn   ))
               water(1,ip)  = sngl(max(min_ok ,dwater(1) ))
@@ -354,7 +372,7 @@ subroutine read_ed1_history_file_array
         
         open(12,file=trim(css_name),form='formatted',status='old')
         read(12,*)  ! skip header
-        if(ied_init_mode /= 3) then
+        if(ied_init_mode_local /= 3) then
            read(12,*)  ! skip header
         end if
         
@@ -366,7 +384,7 @@ subroutine read_ed1_history_file_array
            
            if (ic>huge_cohort) call fatal_error('IC too high','read_ed1_history_file_array','ed_history_io.f90')
 
-           select case (ied_init_mode)
+           select case (ied_init_mode_local)
            case (1)
               read(12,*,iostat=ierr)ctime(ic),cpname(ic),cname(ic),dbh(ic),hite(ic),ipft(ic),nplant(ic),  &
                    bdead(ic),balive(ic),avgRg(ic),leaves_on(ic),cb(1:12,ic),cb_max(1:12,ic)
@@ -452,7 +470,7 @@ subroutine read_ed1_history_file_array
                        ic2 = ic2 + 1
                        
                        cpatch%pft(ic2) = ipft(ic)
-                       if(ied_init_mode == 1) then
+                       if(ied_init_mode_local == 1) then
                           cpatch%nplant(ic2) = nplant(ic) / (csite%area(ipa) )
                        else
                           cpatch%nplant(ic2) = nplant(ic)
@@ -521,7 +539,7 @@ subroutine read_ed1_history_file_array
            !   too, but we cannot avoid them when we run regional runs at least for now
            !   (too many patches like that...).
            !   If you really want to stop the run in this case, make a special if here for
-           !   ied_init_mode == 3 or something like that...
+           !   ied_init_mode_local == 3 or something like that...
             
            !      print*,"WARNING: found patch with no cohorts: poly",ip,"patch",ipa
            !      stop
@@ -662,7 +680,6 @@ subroutine read_ed1_history_file_array
         enddo
         
      end do polyloop
-
 
      !! need to check what's going on in here
      call init_ed_poly_vars_array(cgrid)
@@ -1871,6 +1888,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
   call hdf_getslab_r(cpatch%lai(1),'LAI_CO ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%bstorage(1),'BSTORAGE ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%cbr_bar(1),'CBR_BAR ',dsetrank,iparallel)
+  call hdf_getslab_r(cpatch%veg_energy(1),'VEG_ENERGY ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%veg_temp(1),'VEG_TEMP ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%veg_water(1),'VEG_WATER ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%mean_gpp(1),'MEAN_GPP ',dsetrank,iparallel)

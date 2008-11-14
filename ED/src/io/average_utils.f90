@@ -131,6 +131,7 @@ subroutine reset_averaged_vars(cgrid)
 
          cpoly%avg_soil_temp(:,isi)      = 0.0
          cpoly%avg_soil_water(:,isi)     = 0.0
+         cpoly%avg_soil_energy(:,isi)    = 0.0
 
          do ipa = 1,csite%npatches
             cpatch => csite%patch(ipa)
@@ -194,6 +195,7 @@ subroutine reset_averaged_vars(cgrid)
 
       cpoly%avg_soil_temp(:,:)      = 0.0
       cpoly%avg_soil_water(:,:)     = 0.0
+      cpoly%avg_soil_energy(:,:)    = 0.0
       cpoly%avg_soil_fracliq(:,:)   = 0.0
 
    enddo
@@ -212,7 +214,6 @@ subroutine reset_averaged_vars(cgrid)
       cgrid%avg_atm_tmp(ipy)        = 0.0
       cgrid%avg_atm_shv(ipy)        = 0.0
       cgrid%avg_rhos(ipy)           = 0.0
-      cgrid%avg_theta(ipy)          = 0.0
       cgrid%avg_rshort(ipy)         = 0.0
       cgrid%avg_rshort_diffuse(ipy) = 0.0
       cgrid%avg_rlong(ipy)          = 0.0
@@ -233,6 +234,7 @@ subroutine reset_averaged_vars(cgrid)
       cgrid%avg_sensible_tot(ipy)   = 0.0
       cgrid%avg_soil_temp(:,ipy)    = 0.0
       cgrid%avg_soil_water(:,ipy)   = 0.0
+      cgrid%avg_soil_energy(:,ipy)  = 0.0
       cgrid%avg_soil_fracliq(:,ipy) = 0.0
    end do
 
@@ -475,8 +477,8 @@ subroutine integrate_ed_daily_output_flux(cgrid)
 
       !These variables are already averaged at gridtype, just add them up
       do k=1,nzg
-         cgrid%dmean_soil_temp(k,ipy)  = cgrid%dmean_soil_temp(k,ipy)  + cgrid%avg_soil_temp(k,ipy) 
-         cgrid%dmean_soil_water(k,ipy) = cgrid%dmean_soil_water(k,ipy) + cgrid%avg_soil_water(k,ipy)
+         cgrid%dmean_soil_temp(k,ipy)   = cgrid%dmean_soil_temp(k,ipy)   + cgrid%avg_soil_temp(k,ipy) 
+         cgrid%dmean_soil_water(k,ipy)  = cgrid%dmean_soil_water(k,ipy)  + cgrid%avg_soil_water(k,ipy)
       end do
       cgrid%dmean_evap(ipy)         = cgrid%dmean_evap(ipy)         + cgrid%avg_evap(ipy)     
       cgrid%dmean_transp(ipy)       = cgrid%dmean_transp(ipy)       + cgrid%avg_transp(ipy)   

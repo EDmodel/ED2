@@ -548,8 +548,7 @@ subroutine ed_PAR_decomp(nxp,nyp,nsiz,nodes,work,ixb,ixe,iyb,iye)
   ! rows and columns.
 
   do jnode = 1,nodes
-     if (iye(jnode) - iyb(jnode) .lt. 1 .or.  &
-          ixe(jnode) - ixb(jnode) .lt. 1) then
+     if ((iye(jnode) - iyb(jnode)+1)*(ixe(jnode) - ixb(jnode)+1) .lt. 1) then
         print*, 'grid:',nxp,nyp,'  subdomain too small on node ',jnode
         print*, '(ixb,ixe,iyb,iye) = '  &
              ,ixb(jnode),ixe(jnode),iyb(jnode),iye(jnode)

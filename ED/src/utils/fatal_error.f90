@@ -6,6 +6,7 @@ subroutine fatal_error(reason,subr,file)
 !being frozen.                                                                             !
 !------------------------------------------------------------------------------------------!
    use ed_node_coms, only: nnodetot,mynum
+   use misc_coms, only: ied_init_mode
    implicit none
    character(len=*), intent(in) :: reason
    character(len=*), intent(in) :: subr,file
@@ -30,6 +31,17 @@ subroutine fatal_error(reason,subr,file)
    write(unit=*,fmt='(a)') '------------------------------------------------------------------'
    write(unit=*,fmt='(a)') ' ED execution halts (see previous error message)...'
    write(unit=*,fmt='(a)') '------------------------------------------------------------------'
+   !---- Print a message warning the user that the used a likely to crash set up... -------!
+   if (ied_init_mode == -1) then
+      write(unit=*,fmt='(a)') ' '
+      write(unit=*,fmt='(a)') '------------------------------------------------------------'
+      write(unit=*,fmt='(a)') '     I TOLD YOU NOT TO RUN WITH MIXED ED-1 AND ED-2         '
+      write(unit=*,fmt='(a)') ' RESTARTS. It''s always like that, we warn, we try to       '
+      write(unit=*,fmt='(a)') ' convince it is a stupid idea, and in the end, they keep    '
+      write(unit=*,fmt='(a)') ' insisting in making the same mistakes. Oh well, but what   '
+      write(unit=*,fmt='(a)') '  can I do if nobody listens to me...                       '
+      write(unit=*,fmt='(a)') '------------------------------------------------------------'
+   end if
    if (nnodetot > 1) call MPI_Abort(MPI_COMM_WORLD, 1)
    stop 'fatal_error'
 end subroutine fatal_error

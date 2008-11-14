@@ -131,8 +131,8 @@ subroutine ed1_fileinfo(text,nfiles,full_list,ntype,type_list,tlon_list,tlat_lis
    real                  , dimension(maxfiles), intent(out) :: tlon_list, tlat_list
    !----- Local variables -----------------------------------------------------------------!
    character(len=str_len)                                   :: this_file
-   integer                                                  :: n,posend,posdot
-   integer                                                  :: latbeg,lonbeg
+   integer                                                  :: n,posend,posdot,posextradot
+   integer                                                  :: latbeg,lonbeg,poslondot
    integer                                                  :: okdot
    !---------------------------------------------------------------------------------------!
 
@@ -156,9 +156,12 @@ subroutine ed1_fileinfo(text,nfiles,full_list,ntype,type_list,tlon_list,tlat_lis
       this_file = full_list(n)
       posdot    = index(this_file,text,.true.)
       posend    = len_trim(this_file)
-      
+            
       if (posdot == 0 .or. posend-posdot /= okdot) cycle listloop
       
+      !----- Seeking for some possible dots after lon but before the file extension -------!
+      posextradot = index(this_file(1:(posdot-1)),'.',.true.)
+
       !---- It is! Adding one more to our count and assigning the file to this count. -----!
       ntype=ntype+1
       type_list(ntype) = this_file
@@ -166,8 +169,18 @@ subroutine ed1_fileinfo(text,nfiles,full_list,ntype,type_list,tlon_list,tlat_lis
       !---- Figuring out the latitude and longitude of this file. -------------------------!
       latbeg = index(this_file,'lat',.true.) + 3
       lonbeg = index(this_file,'lon',.true.) + 3
+      poslondot = index(this_file(lonbeg:(posdot-1)),'.',.false.)+lonbeg-1
+
       read(this_file(latbeg:lonbeg-4),fmt=*) tlat_list(ntype)
-      read(this_file(lonbeg:posdot-1),fmt=*) tlon_list(ntype)
+
+
+      !---- If poslondot is the same as posextradot, no extra dot was found ---------------!
+      if (poslondot == posextradot) then
+         read(this_file(lonbeg:posdot-1),fmt=*) tlon_list(ntype)
+      else
+         read(this_file(lonbeg:posextradot-1),fmt=*) tlon_list(ntype)
+      end if
+      
    end do listloop
    !---------------------------------------------------------------------------------------!
 

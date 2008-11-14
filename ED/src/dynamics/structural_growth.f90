@@ -408,13 +408,16 @@ subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
   real, intent(out) :: veg_N
 
   integer :: ipft
-  real :: area_factor
+  real(kind=8) :: area_factor, this_carbon, this_nitrogen
+  real(kind=8) :: soil_C8, soil_N8, veg_C8, veg_N8
+  
+  real, parameter :: almostnothing=1.e-30
 
   ! Initialize C and N pools
-  soil_C = 0.0
-  soil_N = 0.0
-  veg_C = 0.0
-  veg_N = 0.0
+  soil_C8 = 0.0
+  soil_N8 = 0.0
+  veg_C8 = 0.0
+  veg_N8 = 0.0
 
   cpoly => cgrid%polygon(ipy)
 
@@ -427,37 +430,47 @@ subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
         cpatch => csite%patch(ipa)
 
         ! site area times patch area
-        area_factor = cpoly%area(isi) * csite%area(ipa)
+        area_factor   = dble(cpoly%area(isi)) * dble(csite%area(ipa))
+        
+        this_carbon   = dble(csite%fast_soil_C(ipa)) + dble(csite%slow_soil_C(ipa)) &
+                      + dble(csite%structural_soil_C(ipa))
+        this_nitrogen = dble(csite%fast_soil_N(ipa)) + dble(csite%mineralized_soil_N(ipa))  &
+                      + dble(csite%slow_soil_C(ipa)) / dble(c2n_slow)                       &
+                      + dble(csite%structural_soil_C(ipa)) / dble(c2n_structural)
+        
         ! Get soil nitrogen and carbon
-        soil_C = soil_C + area_factor *   &
-             (csite%fast_soil_C(ipa) + csite%slow_soil_C(ipa) + &
-             csite%structural_soil_C(ipa))
-        soil_N = soil_N + area_factor *   &
-             (csite%fast_soil_N(ipa) + csite%mineralized_soil_N(ipa) +  &
-             csite%slow_soil_C(ipa) / c2n_slow +   &
-             csite%structural_soil_C(ipa) / c2n_structural)
+        soil_C8 = soil_C8 + area_factor * this_carbon
+        soil_N8 = soil_N8 + area_factor * this_nitrogen
 
         ! Account for carbon/nitrogen in repro arrays
         do ipft = 1, n_pft
            if(include_pft(ipft) == 1)then
-              veg_C = veg_C + csite%repro(ipft,ipa) * area_factor
-              veg_N = veg_N + csite%repro(ipft,ipa) / c2n_recruit(ipft) *  &
-                   area_factor
+              veg_C8 = veg_C8 + dble(csite%repro(ipft,ipa)) * area_factor
+              veg_N8 = veg_N8 + dble(csite%repro(ipft,ipa)) / dble(c2n_recruit(ipft)) * area_factor
            endif
         enddo
         
         do ico = 1,cpatch%ncohorts
            
            ! Get the carbon and nitrogen in vegetation.
-           veg_C = veg_C + area_factor * (cpatch%balive(ico) +   &
-                cpatch%bdead(ico) + cpatch%bstorage(ico)) * cpatch%nplant(ico)
+           veg_C8 = veg_C8 + area_factor * (dble(cpatch%balive(ico)) +   &
+                dble(cpatch%bdead(ico)) + dble(cpatch%bstorage(ico))) * dble(cpatch%nplant(ico))
            
-           veg_N = veg_N + area_factor * (cpatch%balive(ico) /   &
-                c2n_leaf(cpatch%pft(ico)) + cpatch%bdead(ico) / c2n_stem + cpatch%bstorage(ico) / &
-                c2n_storage) * cpatch%nplant(ico)
+           veg_N8 = veg_N8 + area_factor * (dble(cpatch%balive(ico)) /   &
+                dble(c2n_leaf(cpatch%pft(ico))) + dble(cpatch%bdead(ico)) / dble(c2n_stem) + dble(cpatch%bstorage(ico)) / &
+                dble(c2n_storage)) * dble(cpatch%nplant(ico))
         enddo
      enddo
   enddo
+  
+  if (abs(soil_C8) < almostnothing) soil_C8 = sign(almostnothing,soil_C8)
+  if (abs(soil_N8) < almostnothing) soil_N8 = sign(almostnothing,soil_N8)
+  if (abs(veg_C8) < almostnothing)  veg_C8  = sign(almostnothing,veg_C8)
+  if (abs(veg_N8) < almostnothing)  veg_N8  = sign(almostnothing,veg_N8)
 
+  soil_C = sngl(soil_C8)
+  soil_N = sngl(soil_N8)
+  veg_C  = sngl(veg_C8)
+  veg_N  = sngl(veg_N8)
   return
 end subroutine compute_C_and_N_storage
