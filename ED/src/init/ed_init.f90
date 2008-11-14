@@ -29,6 +29,7 @@ subroutine set_polygon_coordinates_ar()
                ipy = ipy + 1
                edgrid_g(ifm)%lon(ipy) = work_e(ifm)%glon(x,y)
                edgrid_g(ifm)%lat(ipy) = work_e(ifm)%glat(x,y)
+
                edgrid_g(ifm)%ntext_soil(1:nzg,ipy) = work_e(ifm)%ntext(x,y)
                
                edgrid_g(ifm)%xatm(ipy) = work_e(ifm)%xatm(x,y)

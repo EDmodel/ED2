@@ -296,7 +296,7 @@ contains
 
   subroutine initp2modelp_ar(hdid, initp, csite, ipa,isi,ipy, rhos, lsl)
 
-    use ed_state_vars,only:sitetype,patchtype,rk4patchtype
+    use ed_state_vars,only:sitetype,patchtype,rk4patchtype,edgrid_g
     use consts_coms, only: day_sec
     use soil_coms, only: soil, slz
     use grid_coms, only: nzg, nzs
@@ -406,7 +406,6 @@ contains
     do ico = 1,cpatch%ncohorts
        cpatch%veg_water(ico) = initp%veg_water(ico)
        cpatch%veg_temp(ico)  = initp%veg_temp(ico)
-  
 
        ! For plants with minimal foliage, fix the vegetation
        ! temperature to the canopy air space
@@ -414,16 +413,24 @@ contains
           cpatch%veg_temp(ico) = csite%can_temp(ipa)
        endif
        
-       if ( cpatch%veg_temp(ico) < veg_temp_min .or. cpatch%veg_temp(ico) > 360.0  ) then
+       if ( cpatch%veg_temp(ico) < veg_temp_min .or. cpatch%veg_temp(ico) > 360.0 ) then !.or. &
+!            abs(cpatch%veg_temp(ico)-edgrid_g(1)%polygon(ipy)%met(isi)%atm_tmp) > 20. ) then
+
           print*,"==========================================================="
-          print*,"Vegetation Temperature",cpatch%veg_temp(ico)
+          
+          write(unit=*,fmt='(a,1x,es14.7)') 'veg temperature  :',cpatch%veg_temp(ico)
+          write(unit=*,fmt='(a,1x,es14.7)') 'veg_temp min :',veg_temp_min
+
           print*,"Polygon:",ipy," Site:",isi," Patch:",ipa," Cohort:",ico," of",cpatch%ncohorts
           print*,"Check misc_commons to see if heating rate diagnostics are on"
-          print*,"Solar Heating Rate",initp%co_srad_h(ico)
-          print*,"L-Wave Heating Rate",initp%co_lrad_h(ico)
-          print*,"Sensible Heating Rate",initp%co_sens_h(ico)
-          print*,"Evapotranspirative Heating Rate",initp%co_evap_h(ico)
-          print*,"Liquid deposition Heating Rate",initp%co_liqr_h(ico)
+          if(diag_veg_heating) then
+             print*,"Solar Heating Rate",initp%co_srad_h(ico)
+             print*,"L-Wave Heating Rate",initp%co_lrad_h(ico)
+             print*,"Sensible Heating Rate",initp%co_sens_h(ico)
+             print*,"Evapotranspirative Heating Rate",initp%co_evap_h(ico)
+             print*,"Liquid deposition Heating Rate",initp%co_liqr_h(ico)
+          end if
+          
           print*,"LAI",cpatch%lai
           print*,"Height",cpatch%hite
           print*,"DBH",cpatch%dbh
@@ -434,7 +441,39 @@ contains
           print*,"Patch LAI",csite%lai(ipa)
           print*,"Patch Disturbance Type",csite%dist_type(ipa)
           print*,"Patch Canopy Temperature",csite%can_temp(ipa)
-          call fatal_error('extreme vegetation temperature','initp2modelp','rk4_driver.f90')
+          
+          write(unit=*,fmt='(a,1x,i5)')     '================== FATAL ERROR =================='
+          write(unit=*,fmt='(a,1x,i5)')     ' IPY:',ipy
+          write(unit=*,fmt='(a,1x,i5)')     ' ISI:',isi
+          write(unit=*,fmt='(a,1x,i5)')     ' IPA:',ipa
+          write(unit=*,fmt='(a,1x,i5)')     ' ICO:',ico
+          write(unit=*,fmt='(a,1x,f14.5)')  ' Longitude:',edgrid_g(1)%lon(ipy)
+          write(unit=*,fmt='(a,1x,f14.5)')  ' Latitude: ',edgrid_g(1)%lat(ipy)
+          write(unit=*,fmt='(a)')           ' '
+          write(unit=*,fmt='(a,1x,es14.7)') ' PRSS:     ',edgrid_g(1)%polygon(ipy)%met(isi)%prss
+          write(unit=*,fmt='(a,1x,es14.7)') ' ATM_TMP:  ',edgrid_g(1)%polygon(ipy)%met(isi)%atm_tmp
+          write(unit=*,fmt='(a,1x,es14.7)') ' RHOS:     ',edgrid_g(1)%polygon(ipy)%met(isi)%rhos
+          write(unit=*,fmt='(a,1x,es14.7)') ' PCPG:     ',edgrid_g(1)%polygon(ipy)%met(isi)%pcpg
+          write(unit=*,fmt='(a,1x,es14.7)') ' SHV:g/kg  ',edgrid_g(1)%polygon(ipy)%met(isi)%atm_shv*1000
+          write(unit=*,fmt='(a,1x,es14.7)') ' VELS:     ',edgrid_g(1)%polygon(ipy)%met(isi)%vels
+          write(unit=*,fmt='(a)')           ' '
+          write(unit=*,fmt='(a,1x,es14.7)') ' rshort_v: ',cpatch%rshort_v(ico)
+          write(unit=*,fmt='(a,1x,es14.7)') ' rlong_v:  ',cpatch%rlong_v(ico)
+          write(unit=*,fmt='(a)')           ' '
+          write(unit=*,fmt='(a,1x,es14.7)') ' can_temp :',csite%can_temp(ipa)
+          write(unit=*,fmt='(a,1x,es14.7)') ' can_shv g/kg :',csite%can_shv(ipa)*1000.
+          write(unit=*,fmt='(a,1x,es14.7)') ' gnd_shv g/kg :',csite%ground_shv(ipa)*1000.
+          write(unit=*,fmt='(a)')           ' '
+          write(unit=*,fmt='(a,1x,es14.7)') 'Lai_coh   :',cpatch%lai(ico)
+          
+          write(unit=*,fmt='(a,1x,es14.7)') 'veg_water :',cpatch%veg_water(ico)
+          write(unit=*,fmt='(a,1x,es14.7)') 'rb        :',cpatch%rb(ico)
+          write(unit=*,fmt='(a)')           ' '
+
+          call print_patch_ar(initp, csite,ipa, lsl)
+
+       call fatal_error('extreme vegetation temperature','initp2modelp','rk4_driver.f90')
+
        endif       
     enddo
 

@@ -771,8 +771,8 @@ subroutine init_full_history_restart()
   
   do ngr=1,ngrids
      
-     cgrid => edgrid_g(1)
-
+     cgrid => edgrid_g(ngr)
+ 
      print*,"================================================"
      print*,"      Entering Full History Initialization      "
      
@@ -794,7 +794,7 @@ subroutine init_full_history_restart()
         call fatal_error ('File '//trim(hnamel)//' not found.'         &
                          ,'init_full_history_restart','ed_history_io.f90')
      else
-        call h5fopen_f(hnamel, H5F_ACC_RDONLY_F, file_id, hdferr)
+        call h5fopen_f(hnamel, H5F_ACC_RDONLY_F, file_id, hdferr,H5P_DEFAULT_F)!plist_id)
         if (hdferr < 0) then
            print *, 'Error opening HDF5 file - error - ',hdferr
            print *, '   Filename: ',trim(hnamel)
@@ -912,6 +912,9 @@ subroutine init_full_history_restart()
      globdims(1) = cgrid%npolygons_global
      allocate(file_lats(cgrid%npolygons_global))
      allocate(file_lons(cgrid%npolygons_global))
+
+!     print*,cgrid%npolygons_global
+!     stop
      
      call h5dopen_f(file_id,'LATITUDE', dset_id, hdferr)
      call h5dget_space_f(dset_id, dspace_id, hdferr)
@@ -949,10 +952,11 @@ subroutine init_full_history_restart()
         if (py_index==0) then
            print*,"COULD NOT MATCH A POLYGON WITH THE DATASET"
            print*,"STOPPING"
-           print*,"GRID LATS: ",cgrid%lat
-           print*,"GRID LONS: ",cgrid%lon
-           print*,"FILE LATS: ",file_lats
-           print*,"FILE LONS: ",file_lons
+           print*,"GRID LATS: ",cgrid%lat(ipy)
+           print*,"GRID LONS: ",cgrid%lon(ipy)
+           print*,cgrid%npolygons_global
+           print*,"FILE LATS: ",file_lats(1:cgrid%npolygons_global)
+           print*,"FILE LONS: ",file_lons(1:cgrid%npolygons_global)
            call fatal_error('Mismatch between polygon and dataset'         &
                            ,'init_full_history_restart','ed_history_io.f90')
         endif

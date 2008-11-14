@@ -107,7 +107,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
   use soil_coms, only: soil_rough, snow_rough, soil
   use misc_coms, only: dtlsm
   use max_dims, only: n_pft
-  use therm_lib, only: qtk,qwtk
+  use therm_lib, only: qtk,qwtk8
 
   implicit none
 
@@ -115,7 +115,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
   integer, intent(in) :: ipa
   integer, intent(inout) :: nlev_sfcwater
   integer, dimension(nzg), intent(in) :: ntext_soil
-  real, dimension(nzg), intent(inout) :: soil_water
+  real(kind=8), dimension(nzg), intent(inout) :: soil_water
   real, dimension(nzg), intent(inout) :: soil_energy
   real, dimension(nzs), intent(inout) :: sfcwater_mass
   real, dimension(nzs), intent(inout) :: sfcwater_energy
@@ -273,7 +273,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
        surface_ssh)
   
   do k = lsl,nzg
-     call qwtk(soil_energy(k),soil_water(k)*1.e3,  &
+     call qwtk8(soil_energy(k),soil_water(k)*1.d3,  &
           soil(ntext_soil(k))%slcpd,soil_tempk(k),soil_fracliq(k))
   enddo
   
@@ -342,7 +342,7 @@ integer, intent(in)  :: nlev_sfcwater   ! # active levels of surface water
 integer, intent(in)  :: ntext_soil(nzg) ! soil textural class
 integer, intent(out) :: ktrans          ! k index of soil layer supplying transp
 
-real, intent(in) :: soil_water(nzg)   ! soil water content [vol_water/vol_tot]
+real(kind=8), intent(in) :: soil_water(nzg)   ! soil water content [vol_water/vol_tot]
 real, intent(in) :: soil_fracliq(nzg) ! fraction of soil moisture in liquid phase
 real, intent(in) :: soil_tempk        ! soil temp [K]
 real, intent(in) :: sfcwater_mass     ! surface water mass [kg/m^2]
@@ -590,7 +590,7 @@ integer, intent(inout) :: nlev_sfcwater      ! # of active sfc water levels
 integer, intent(in)    :: ntext_soil   (nzg) ! soil textural class
 
 real, intent(out)   :: soil_rfactor    (nzg) ! soil thermal resistance [K m^2/W]
-real, intent(inout) :: soil_water      (nzg) ! soil water content [water_vol/total_vol]
+real(kind=8), intent(inout) :: soil_water      (nzg) ! soil water content [water_vol/total_vol]
 real, intent(inout) :: soil_energy     (nzg) ! soil internal energy [J/m^3]
 real, intent(inout) :: sfcwater_mass   (nzs) ! surface water mass [kg/m^2]
 real, intent(inout) :: sfcwater_energy (nzs) ! surface water energy [J/kg]
@@ -858,7 +858,7 @@ do k = nlev_sfcwater,1,-1
 
 ! Combined sfcwater and soil water mass per square meter
 
-      wt = sfcwater_mass(1) + soil_water(nzg) * 1.e3 * dslz(nzg)
+      wt = sfcwater_mass(1) + sngl(soil_water(nzg)) * 1.e3 * dslz(nzg)
 
 ! Combined sfcwater and soil energy per square meter.
 
@@ -898,7 +898,7 @@ do k = nlev_sfcwater,1,-1
 
 ! Lower bound on sfcwater_fracliq(1): case with soil_water(nzg) all liquid
 
-         flmin = (fracliq * wt - soil_water(nzg) * 1.e3 * dslz(nzg))  &
+         flmin = (fracliq * wt - sngl(soil_water(nzg)) * 1.e3 * dslz(nzg))  &
                / sfcwater_mass(1)         
 
 ! Upper bound on sfcwater_fracliq(1): case with soil_water(nzg) all ice
@@ -951,7 +951,7 @@ do k = nlev_sfcwater,1,-1
 ! amount that can percolate into top soil layer
 
          soilcap = 1.e3 * max (0.,dslz(nzg)  &
-                 * (soil(ntext_soil(nzg))%slmsts - soil_water(nzg)))
+                 * (soil(ntext_soil(nzg))%slmsts - sngl(soil_water(nzg))))
          if (wfree > soilcap) wfree = soilcap
 
       endif
@@ -989,7 +989,7 @@ do k = nlev_sfcwater,1,-1
 
 ! This is lowest sfcwater layer.  Drained water goes to top soil layer
 
-         soil_water(nzg) = soil_water(nzg) + 1.e-3 * wfree * dslzi(nzg)
+         soil_water(nzg) = soil_water(nzg) + 1.d-3 * dble(wfree) * dble(dslzi(nzg))
          soil_energy(nzg) = soil_energy(nzg) + qwfree * dslzi(nzg)
 
       else
@@ -1202,7 +1202,7 @@ real, intent(in) :: rlong_g             ! l/w radiative flux abs by ground [W/m^
 real, intent(in) :: transp              ! transpiration loss [kg/m^2]
 
 real, intent(inout) :: soil_energy(nzg) ! [J/m^3]
-real, intent(inout) :: soil_water (nzg) ! soil water content [vol_water/vol_tot]
+real(kind=8), intent(inout) :: soil_water (nzg) ! soil water content [vol_water/vol_tot]
 
 real, intent(out) :: hxferg      (nzg+1) ! soil internal heat xfer (J/m^2]
 real, intent(out) :: wxfer       (nzg+1) ! soil water xfer [m]
@@ -1235,7 +1235,7 @@ real, dimension(nzg) :: ed_transp
 do k = lsl, nzg
    wloss = ed_transp(k) * dslzi(k) * 1.e-3
    qwloss = wloss * (cliq1000 * (soil_tempk(k) - t3ple) + alli1000)
-   soil_water(k) = soil_water(k) - wloss
+   soil_water(k) = soil_water(k) - dble(wloss)
    soil_energy(k) = soil_energy(k) - qwloss
    csite%mean_latflux(ipa) =   &
         csite%mean_latflux(ipa) + qwloss * dslz(k) / dtlsm
@@ -1267,7 +1267,7 @@ soil_energy(nzg) = soil_energy(nzg)  &
    + dslzi(nzg) * (dtlsm * (rshort_g + rlong_g) - hxfergc - wxfergc * alvi)
 
 if (nlev_sfcwater == 0) then
-   soil_water(nzg) = soil_water(nzg) - 1.e-3 * wxfergc * dslzi(nzg)
+   soil_water(nzg) = soil_water(nzg) - 1.d-3 * dble(wxfergc) * dble(dslzi(nzg))
 endif
 
 ! [12/07/04] Revisit the computation of water xfer between soil layers in
@@ -1289,13 +1289,13 @@ endif
 do k = lsl,nzg
    nts = ntext_soil(k)
 
-   psiplusz(k) = soil(nts)%slpots * (soil(nts)%slmsts / soil_water(k)) ** soil(nts)%slbs  &
+   psiplusz(k) = soil(nts)%slpots * (soil(nts)%slmsts / sngl(soil_water(k))) ** soil(nts)%slbs  &
                + slzt(k) 
 
    soil_liq(k) = dslz(k)  &
-      * min(soil_water(k) - soil(nts)%soilcp , soil_water(k) * soil_fracliq(k))
+      * sngl(min(soil_water(k) - dble(soil(nts)%soilcp) , soil_water(k) * dble(soil_fracliq(k)) ) )
 
-   half_soilair(k) = (soil(nts)%slmsts - soil_water(k)) * dslz(k) * .5
+   half_soilair(k) = (soil(nts)%slmsts - sngl(soil_water(k))) * dslz(k) * .5
 enddo
 
 ! Find amount of water transferred between soil layers (wxfer) [m]
@@ -1309,7 +1309,7 @@ qwxfer(nzg+1) = 0.
 do k = lsl+1,nzg
    nts = ntext_soil(k)
 
-   watermid = .5 * (soil_water(k) + soil_water(k-1))
+   watermid = .5 * sngl(soil_water(k) + soil_water(k-1))
    
    hydraul_cond(k) = slcons1(k,nts)  &
       * (watermid / soil(nts)%slmsts) ** (2. * soil(nts)%slbs + 3.)
@@ -1334,8 +1334,8 @@ enddo
 
 do k = lsl,nzg
    nts = ntext_soil(k)
-   soil_water(k) = max(soil(nts)%soilcp,soil_water(k)  &
-      - dslzi(k) * (wxfer(k+1) - wxfer(k)))
+   soil_water(k) = max(dble(soil(nts)%soilcp),soil_water(k)  &
+      - dble(dslzi(k)) * (dble(wxfer(k+1)) - dble(wxfer(k))))
    soil_energy(k) = soil_energy(k) - dslzi(k) * (qwxfer(k+1) - qwxfer(k))
 enddo
 

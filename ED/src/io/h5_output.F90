@@ -207,7 +207,8 @@ subroutine h5_output(vtype)
                  out_time_fast%year  = outyear
                  out_time_fast%month = outmonth
                  out_time_fast%date  = outdate
-                 out_time_fast%time  = outhour*1.!!(3600.*int(outhour/10000)+60.*int(mod(outhour,10000)/100)+mod(outhour,100)*1.)   !! DOUBLE CHECK
+                 out_time_fast%time  = outhour*1.
+                 !!(3600.*int(outhour/10000)+60.*int(mod(outhour,10000)/100)+mod(outhour,100)*1.)   !! DOUBLE CHECK
                  dsec = time
                  new_file = .true.
               endif
@@ -701,7 +702,6 @@ subroutine h5_output(vtype)
      
   ! Reset the time back to the original
   if(vtype == 'MEAN'.or.vtype == 'BOTH')  time=timeold
-  
   
   return
 end subroutine h5_output

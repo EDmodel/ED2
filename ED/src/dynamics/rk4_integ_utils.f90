@@ -487,7 +487,7 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
   errmax = max(errmax,abs(yerr%can_co2/yscal%can_co2))
   
   do k=lsl,nzg
-     errmax = max(errmax,abs(yerr%soil_water(k)/yscal%soil_water(k)))
+     errmax = real(dmax1(dble(errmax),dabs(yerr%soil_water(k)/yscal%soil_water(k))))
      errmax = max(errmax,abs(yerr%soil_energy(k)/yscal%soil_energy(k)))
   enddo
 
@@ -540,7 +540,7 @@ subroutine print_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
   print*,'can_co2',errmax,yerr%can_co2,yscal%can_co2
 
   do k=lsl,nzg
-     errmax = max(errmax,abs(yerr%soil_water(k)/yscal%soil_water(k)))
+     errmax = real(dmax1(dble(errmax),dabs(yerr%soil_water(k)/yscal%soil_water(k))))
      print*,'soil water, level',k,errmax,yerr%soil_water(k),yscal%soil_water(k)
      errmax = max(errmax,abs(yerr%soil_energy(k)/yscal%soil_energy(k)))
      print*,'soil energy, level',k,errmax,yerr%soil_energy(k),yscal%soil_energy(k)
@@ -974,13 +974,13 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   real :: wdiff
   real :: totsnow
   real :: depthgain
-  real(kind=8) :: wfree
+  real :: wfree
   real :: qwfree
   type(rk4patchtype), target :: initp
   real :: qw
   real :: w
-  real(kind=8) :: wfreeb
-  real(kind=8) :: depthloss
+  real :: wfreeb
+  real :: depthloss
   real :: snden
   real :: sndenmin
   real :: sndenmax
@@ -993,7 +993,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   real :: fac
   type(sitetype),target :: csite
   type(patchtype),pointer :: cpatch
-  real(kind=8) :: free_surface_water_demand
+  real :: free_surface_water_demand
   real :: total_water_before,total_water_after
   real :: snow_beg,soil_beg,virt_beg,snow_end,soil_end,virt_end
   real :: infilt,freezeCor
@@ -1110,11 +1110,11 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
        if(.true.) then
           !! do "greedy" infiltration
           nsoil = csite%ntext_soil(nzg,ipa)
-          free_surface_water_demand = max(0.0,  &
-               (soil(nsoil)%slmsts   &
-               - initp%soil_water(nzg)))   &
-               * 1000.0 * dslz(nzg)
+
+          free_surface_water_demand = dmax1(dble(0.0),dble(soil(nsoil)%slmsts) - initp%soil_water(nzg)) * 1000.0 * dslz(nzg)
+
           wfreeb = min(wfreeb,free_surface_water_demand)
+
           qwfree = wfreeb * cliq * (initp%sfcwater_tempk(k)-tsupercool)
           initp%soil_water(nzg) = initp%soil_water(nzg)   &
                + wfreeb * 0.001 * dslzi(nzg) 

@@ -276,7 +276,7 @@ module grell_coms
 
          !----- Finding the maximum depth. For the deepest cloud, set no bounds -----------!
          if (icld /= 1) then
-            depth_max(icld)=depth_min(icld-1)*1.25
+            depth_max(icld)=depth_min(icld-1)*1.00
          else
             depth_max(icld)=huge(1.)
          end if

@@ -207,14 +207,14 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
   ! surface to 1 meter below the surface.
   nsoil = csite%ntext_soil(nzg,ipa)
   initp%available_liquid_water(nzg) = dslz(nzg) * max(0.0,  &
-       initp%soil_fracliq(nzg) * (initp%soil_water(nzg) - soil(nsoil)%soilcp))
+       initp%soil_fracliq(nzg) * (real(initp%soil_water(nzg)) - soil(nsoil)%soilcp))
 
   ! initialized to zero
   initp%extracted_water(nzg) = 0.0
   do k = nzg - 1, lsl, -1
      nsoil = csite%ntext_soil(k,ipa)
      initp%available_liquid_water(k) = initp%available_liquid_water(k+1) +  &
-          dslz(k) * max(0.0, (initp%soil_water(k) - soil(nsoil)%soilcp) *  &
+          dslz(k) * max(0.0, (real(initp%soil_water(k)) - soil(nsoil)%soilcp) *  &
           initp%soil_fracliq(k))
      initp%extracted_water(k) = 0.0
   enddo
@@ -229,7 +229,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
   do k = lsl, nzg
      nsoil = csite%ntext_soil(k,ipa)
      if(nsoil <= 12)then
-        wgpfrac = min(initp%soil_water(k) / soil(nsoil)%slmsts,1.0)
+        wgpfrac = min(real(initp%soil_water(k)) / soil(nsoil)%slmsts,1.0)
         soilcond = soil(nsoil)%soilcond0 + wgpfrac * (soil(nsoil)%soilcond1  &
              + wgpfrac * soil(nsoil)%soilcond2)
      else
@@ -381,7 +381,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
      ! This requires multiplication of volumetric water content, m3(water)/m3
      ! must be multiplied by depth to get a depth of water.
 
-     soil_liq(k) = max(0.0, (initp%soil_water(k) - soil(nsoil)%soilcp) *  &
+     soil_liq(k) = max(0.0, (real(initp%soil_water(k)) - soil(nsoil)%soilcp) *  &
                             initp%soil_fracliq(k))
 
      soilair99(k) = 0.99 * soil(nsoil)%slmsts - initp%soil_water(k)
@@ -560,7 +560,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
      dewgndflx, wshed_tot, qwshed_tot, rhos, prss, pcpg, qpcpg, exner, &
      geoht, atm_tmp, lsl)
   
-  use ed_state_vars,only: rk4patchtype,sitetype,patchtype
+  use ed_state_vars,only: rk4patchtype,sitetype,patchtype,edgrid_g
  
   use consts_coms, only : alvl, cp, cpi, day_sec, grav, alvi,   &
        alli, cliq, cice, t3ple, umol_2_kgC, mmdry, mmdryi
@@ -717,8 +717,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         else
            sigmaw = 0.0
         endif
-
-        ! Do evaporation/dew formation on leaf surfaces
+         
         c3 = cpatch%lai(ico) * rhos * (rslif(prss,initp%veg_temp(ico)) - initp%can_shv)
         rbi = 1.0 / cpatch%rb(ico)
 
@@ -828,6 +827,10 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
            dinitp%co_evap_h(ico) =  -(wflxvc + transp)*alvl
            dinitp%co_liqr_h(ico) =  heat_intercept_rate - dinitp%veg_water(ico)*(cliq*(initp%veg_temp(ico)-t3ple)+alli)
         endif
+
+
+       
+
 
         !dinitp%veg_temp = dvegQtot / hcapveg
 
