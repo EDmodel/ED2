@@ -126,8 +126,8 @@ contains
              if(iflag1 == 1)then
                 call print_errmax_ar(errmax, integration_buff%yerr,  &
                      integration_buff%yscal, csite%patch(ipa), lsl,  &
-                     integration_buff%y,integration_buff%ytemp)
-                print*,'errmax',errmax/epsil
+                     integration_buff%y,integration_buff%ytemp,epsil)
+                print*,'errmax',errmax/epsil,'raw',errmax,'epsilon',epsil
              else
                 call print_sanity_check_ar(integration_buff%y,  &
                      iflag2, csite,ipa, lsl)

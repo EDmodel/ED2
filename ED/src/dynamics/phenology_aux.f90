@@ -23,6 +23,7 @@ subroutine prescribed_leaf_state(lat, imonth, iyear, doy,   &
   integer :: pft
   real, dimension(n_pft), intent(out) :: green_leaf_factor
   real, dimension(n_pft), intent(out) :: leaf_aging_factor
+  real, parameter :: elonMin = 0.02
   
   if( (lat >= 0.0 .and. imonth <= 7) .or.   & ! in northern hemisphere, 
        ! this assumes dropping between August 1 and December 31 and flushing
@@ -52,9 +53,7 @@ subroutine prescribed_leaf_state(lat, imonth, iyear, doy,   &
      else
         elongf = sngl(elonDen)
      end if
-     delay = elongf
-!     print*,elongf
-     
+     delay = elongf     
   else
      ! leaves turning color
      
@@ -68,19 +67,16 @@ subroutine prescribed_leaf_state(lat, imonth, iyear, doy,   &
         my_year = iyear - iphenyf1 + 1
      endif
 
-!print*,"phenB"          
      ! calculate the factors
      elongf = 1.0 / (1.0 +   &
           (phen_pars%color_a(my_year) * doy)**phen_pars%color_b(my_year))
-!print*,"elongf"
      delay = 1.0 / (1.0 +   &
           (phen_pars%color_a(my_year) *   &
           doy * 1.095)**phen_pars%color_b(my_year))
-!     print*,phen_pars%color_a(my_year),phen_pars%color_b(my_year),elongf,doy
   endif
+  print*,"elongf",elongf
+  if(elongf < elonMin) elongf = 0.0
 
-!print*,"phenC" 
- 
   ! load the values for each PFT
   do pft = 1, n_pft
      if(phenology(pft) == 2)then

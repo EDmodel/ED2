@@ -420,9 +420,9 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
   
   do k=lsl,nzg
      yscal%soil_water(k) = abs(y%soil_water(k))   &
-          + abs(dy%soil_water(k)*htry) + tiny
+        &  + abs(dy%soil_water(k)*htry) + tiny
      yscal%soil_energy(k) = max(abs(y%soil_energy(k))   &
-          + abs(dy%soil_energy(k)*htry),3.0e5)
+        &  + abs(dy%soil_energy(k)*htry),3.0e5)
   enddo
 
   if(y%sfcwater_mass(1) > 0.1 .or. y%nlev_sfcwater > 1)then
@@ -434,6 +434,10 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
              + abs(dy%sfcwater_energy(k)*htry) + tiny
         yscal%sfcwater_depth(k) = abs(y%sfcwater_depth(k))  &
              + abs(dy%sfcwater_depth(k)*htry) + tiny
+        if(yscal%sfcwater_energy(k) < 0.1) then !! added by MCD (11/17/08)
+           yscal%sfcwater_energy(k) = 0.1          !! why were we allowing this term to go to tiny?
+        endif
+                                                                        
      enddo
   else
      ! Low stability threshold
@@ -539,7 +543,7 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
 end subroutine get_errmax_ar
 
 !==================================================================
-subroutine print_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
+subroutine print_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp,epsil)
       
   use ed_state_vars,only:patchtype,rk4patchtype
   use grid_coms, only: nzg, nzs
@@ -547,6 +551,7 @@ subroutine print_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
   implicit none
 
   integer, intent(in) :: lsl
+  real, intent(in) :: epsil
   type(patchtype), target :: cpatch
   integer :: ico
   type(rk4patchtype), target :: yerr,yscal,y,ytemp
@@ -556,34 +561,49 @@ subroutine print_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
   print*,'------------------------------------------------'
   print*,'----   PRINTING ERRMAX INFO --------------------'
   print*,'name     errmax      yerr       yscal'
+
   errmax = max(0.0,abs(yerr%can_temp/yscal%can_temp))
   print*,'can_temp',errmax,yerr%can_temp,yscal%can_temp
+  call print_errmax_flag(yerr%can_temp,yscal%can_temp,epsil)
+
   errmax = max(errmax,abs(yerr%can_shv/yscal%can_shv))
   print*,'can_shv',errmax,yerr%can_shv  &
        ,yscal%can_shv
+  call print_errmax_flag(yerr%can_shv,yscal%can_shv,epsil)
+
   errmax = max(errmax,abs(yerr%can_co2/yscal%can_co2))
   print*,'can_co2',errmax,yerr%can_co2,yscal%can_co2
+  call print_errmax_flag(yerr%can_co2,yscal%can_co2,epsil)
 
   do k=lsl,nzg
      errmax = max(errmax,abs(yerr%soil_water(k)/yscal%soil_water(k)))
      print*,'soil water, level',k,errmax,yerr%soil_water(k),yscal%soil_water(k)
+     call print_errmax_flag(yerr%soil_water(k),yscal%soil_water(k),epsil)
+
      errmax = max(errmax,abs(yerr%soil_energy(k)/yscal%soil_energy(k)))
      print*,'soil energy, level',k,errmax,yerr%soil_energy(k),yscal%soil_energy(k)
+     call print_errmax_flag(yerr%soil_energy(k),yscal%soil_energy(k),epsil)
   enddo
   
   do k=1,yerr%nlev_sfcwater
      errmax = max(errmax,abs(yerr%sfcwater_energy(k)/yscal%sfcwater_energy(k)))
      print*,'sfcwater_energy, level',k,errmax,yerr%sfcwater_energy(k),yscal%sfcwater_energy(k)
+     call print_errmax_flag(yerr%sfcwater_energy(k),yscal%sfcwater_energy(k),epsil)
+
      errmax = max(errmax,abs(yerr%sfcwater_mass(k)  &
           /yscal%sfcwater_mass(k)))
      print*,'sfcwater_mass, level',k,errmax,yerr%sfcwater_mass(k),yscal%sfcwater_mass(k), &
           y%sfcwater_mass(k),ytemp%sfcwater_mass(k),ytemp%nlev_sfcwater
+     call print_errmax_flag(yerr%sfcwater_mass(k),yscal%sfcwater_mass(k),epsil)
   enddo
   
   errmax = max(errmax,abs(yerr%virtual_heat/yscal%virtual_heat))
   print*,'virtual heat',errmax,yerr%virtual_heat,yscal%virtual_heat
+  call print_errmax_flag(yerr%virtual_heat,yscal%virtual_heat,epsil)
+
   errmax = max(errmax,abs(yerr%virtual_water/yscal%virtual_water))
   print*,'virtual heat',errmax,yerr%virtual_water,yscal%virtual_water
+  call print_errmax_flag(yerr%virtual_water,yscal%virtual_water,epsil)
   
   !  errmax = max(errmax,abs(yerr%fast_soil_C/yscal%fast_soil_C))
   !  print*,'fast C',errmax,yerr%fast_soil_C,yscal%fast_soil_C
@@ -599,14 +619,27 @@ subroutine print_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
         errmax = max(errmax,abs(yerr%veg_water(ico)/yscal%veg_water(ico)))
         print*,'veg_water',errmax,yerr%veg_water(ico),yscal%veg_water(ico), &
              cpatch%lai(ico),cpatch%pft(ico)
+        call print_errmax_flag(yerr%veg_water(ico),yscal%veg_water(ico),epsil)
+
         errmax = max(errmax,abs(yerr%veg_energy(ico)/yscal%veg_energy(ico)))
         print*,'veg_energy',errmax,yerr%veg_energy(ico),yscal%veg_energy(ico), &
              cpatch%lai(ico),cpatch%pft(ico)
+        call print_errmax_flag(yerr%veg_energy(ico),yscal%veg_energy(ico),epsil)
      endif
   enddo
 
   return
 end subroutine print_errmax_ar
+
+subroutine print_errmax_flag(err,scal,epsil)
+  real, intent(in)::err,scal,epsil
+  if(epsil > 0 .and. scal > 0.0) then
+     if(abs(err/scal)/epsil > 1.0) then
+        print*,"*******"
+     endif
+  endif
+  return
+end subroutine print_errmax_flag
 
 !==================================================================
 
