@@ -1010,11 +1010,10 @@ subroutine prep_lphys_solution(photosyn_pathway, Vm0, met, Vm_low_temp,  &
      vmdble = dble(Vm0) * dble(arrhenius(met%tl, 1.0, 3000.0)) / &
               ( (dble(1.0) + dexp(dble(0.4)*dble(Vm_low_temp - met%tl) )) * &
                 (dble(1.0) + dexp(dble(0.4)*dble(met%tl - 45.0 ))) )
-              
      apar%vm = sngl(vmdble)
 
      ! Adjust Vm according to the aging factor.
-     if(leaf_aging_factor > 0.01)then
+     if(leaf_aging_factor > 0.01 .and. green_leaf_factor > 0.0001)then
         apar%vm = apar%vm * leaf_aging_factor / green_leaf_factor
      endif
 

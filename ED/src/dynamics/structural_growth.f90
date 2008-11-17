@@ -411,7 +411,8 @@ subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
   real(kind=8) :: area_factor, this_carbon, this_nitrogen
   real(kind=8) :: soil_C8, soil_N8, veg_C8, veg_N8
   
-  real, parameter :: almostnothing=1.e-30
+!  real, parameter :: almostnothing=1.e-30
+  real(kind=8), parameter :: almostnothing=1.e-30
 
   ! Initialize C and N pools
   soil_C8 = 0.0
