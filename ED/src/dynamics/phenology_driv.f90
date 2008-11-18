@@ -89,8 +89,8 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
   integer :: leaf_out_cold
   real, dimension(nzg) :: theta
   real :: leaf_litter
-  real :: bl_max
-
+  real :: bl_max, laii
+  logical :: lai_recompute = .false.
   ! Level to evaluate the soil temperature
 
   isoil_lev = nzg 
@@ -104,6 +104,8 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
   csite => cpoly%site(isi)
 
   do ipa = 1,csite%npatches
+     
+     lai_recompute = .false.
 
      cpatch => csite%patch(ipa)
 
@@ -131,6 +133,8 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
                 cpoly%leaf_aging_factor(cpatch%pft(ico),isi), cpatch%dbh(ico), cpatch%pft(ico),   &
                 drop_cold, leaf_out_cold, bl_max)
         endif
+
+!        print*,"phenStat",cpatch%phenology_status(ico),phenology(cpatch%pft(ico)),leaf_out_cold,drop_cold
 
         ! Is this a cold deciduous with leaves?
         if(cpatch%phenology_status(ico) < 2 .and. phenology(cpatch%pft(ico)) == 2 .and.   &
@@ -179,7 +183,8 @@ print*,'dropping ',cpoly%green_leaf_factor(cpatch%pft(ico),isi),cpoly%leaf_aging
 !             cs%green_leaf_factor(cpatch%pft) > 0.02 .and. day < 210)then 
            
            ! Cold deciduous flushing? 
-print*,'flushing ',cpoly%green_leaf_factor(cpatch%pft(ico),isi),cpoly%leaf_aging_factor(cpatch%pft(ico),isi)                      
+print*,'flushing ',cpoly%green_leaf_factor(cpatch%pft(ico),isi), &
+     & cpoly%leaf_aging_factor(cpatch%pft(ico),isi),cpatch%pft(ico),ico,isi                      
            ! Update plant carbon pools
            cpatch%phenology_status(ico) = 1 ! 1 indicates leaves are growing
            cpatch%bleaf(ico) = cpoly%green_leaf_factor(cpatch%pft(ico),isi) * cpatch%balive(ico)   &
@@ -187,14 +192,9 @@ print*,'flushing ',cpoly%green_leaf_factor(cpatch%pft(ico),isi),cpoly%leaf_aging
            cpatch%lai(ico) = cpatch%nplant(ico) * cpatch%bleaf(ico) * sla(cpatch%pft(ico))
            cpatch%veg_temp(ico) = csite%can_temp(ipa)
            cpatch%veg_water(ico) = 0.0
-
-           !----- Because we assigned no water, the internal energy is simply hcapveg*(T-T3)
-           hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)/csite%lai(ipa)
-           cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
-           
-
-           
-           
+           lai_recompute = .true.
+           cpatch%veg_energy(ico) = huge(1.0)
+  
         elseif(phenology(cpatch%pft(ico)) == 1)then 
 
            ! Drought deciduous?
@@ -244,10 +244,11 @@ print*,'flushing ',cpoly%green_leaf_factor(cpatch%pft(ico),isi),cpoly%leaf_aging
               cpatch%lai(ico) = cpatch%nplant(ico) * cpatch%bleaf(ico) * sla(cpatch%pft(ico))
               cpatch%veg_temp(ico) = csite%can_temp(ipa)
               cpatch%veg_water(ico) = 0.0
-
+              lai_recompute = .true.
+              cpatch%veg_energy(ico) = huge(1.0)
               !----- Because we assigned no water, the internal energy is simply hcapveg*(T-T3)
-              hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)/csite%lai(ipa)
-              cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
+!              hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)/csite%lai(ipa)
+!              cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
                  
            endif  ! critical moisture
            
@@ -255,7 +256,22 @@ print*,'flushing ',cpoly%green_leaf_factor(cpatch%pft(ico),isi),cpoly%leaf_aging
 
      enddo  ! cohorts
 
-     
+     if(lai_recompute) then ! lai changed during the calculation, need to adjust leaf energy
+        csite%lai(ipa) = sum(cpatch%lai(1:cpatch%ncohorts))
+        laii = 1.0/csite%lai(ipa)
+        do ico = 1,cpatch%ncohorts
+           !if(cpatch%veg_energy(ico) .ge. huge(1.0)) then
+
+              !----- Because we assigned no water, the internal energy is simply hcapveg*(T-T3)
+              hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)*laii
+              cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
+          !    print*,cpatch%veg_energy(ico),hcapveg,cpatch%lai(ico),laii
+          !    stop
+          ! endif
+        end do
+     endif
+
+
   enddo  ! patches
   return
 end subroutine update_phenology_ar
@@ -318,13 +334,13 @@ subroutine phenology_thresholds(daylight, soil_temp, soil_water, soil_class,  &
   theta(1:nzg) = 0.0
   do k1 = lsl, nzg
      do k2 = k1,nzg-1
-        theta(k1) = theta(k1) + soil_water(k2) *   &
+        theta(k1) = theta(k1) + real(soil_water(k2)) *   &
              (slz(k2+1)-slz(k2)) / soil(soil_class(k2))%slmsts
      enddo
-     theta(k1) = theta(k1) - soil_water(nzg) * slz(nzg) /  &
+     theta(k1) = theta(k1) - real(soil_water(nzg)) * slz(nzg) /  &
           soil(soil_class(nzg))%slmsts
      theta(k1) = - theta(k1) / slz(k1)
-  enddo
+  enddo  !! added real() to eliminate implict type casting (MCD)
 
   return
 end subroutine phenology_thresholds
