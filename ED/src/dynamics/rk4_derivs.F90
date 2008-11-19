@@ -269,11 +269,28 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
              initp%sfcwater_tempk(k-1)) / &
              ((rfactor(nzg+k) + rfactor(nzg+k-1)) * .5)
      enddo
+
+
+     ! We will need the liquid fraction of the surface water 
+     ! to partition the latent heat of sublimation
+     ! and evaporation
+     
+     call qtk(initp%sfcwater_energy(ksn),tempk,fracliq)
+     
+  else
+
+     ! We will need the liquid fraction of the soil water
+     ! to partition the latent heat of sublimation
+     ! and evaporation
+     
+     call qwtk8(initp%soil_energy(nzg),initp%soil_water(nzg)*1.d3, &
+          soil(csite%ntext_soil(nzg,ipa))%slcpd,tempk,fracliq)
+
   endif
 
   !      heat flux (hfluxgsc) at soil or sfcwater top from longwave, sensible
   !      [W/m^2]
-  hfluxgsc(nzg+ksn+1) = hflxgc + wflxgc * alvi - csite%rlong_g(ipa) - csite%rlong_s(ipa)
+  hfluxgsc(nzg+ksn+1) = hflxgc + wflxgc * (fracliq*alvl+(1-fracliq)*alvi) - csite%rlong_g(ipa) - csite%rlong_s(ipa)
   
   dinitp%avg_sensible_gg(nzg)=hfluxgsc(nzg+ksn+1) ! Diagnostic
 
