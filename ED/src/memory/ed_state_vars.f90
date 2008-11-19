@@ -265,15 +265,13 @@ module ed_state_vars
 
      real, pointer, dimension(:) :: paw_avg10d
 
-     ! THIS VARIABLE IS DEPRICATED RGK 6-30-08
-     !real, pointer, dimension(:) :: transpiration
-
      ! Vegetation heating/cooling rates
-     real,pointer,dimension(:) :: co_srad_h
-     real,pointer,dimension(:) :: co_lrad_h
-     real,pointer,dimension(:) :: co_sens_h
-     real,pointer,dimension(:) :: co_evap_h
-     real,pointer,dimension(:) :: co_liqr_h
+     ! These diagnostics are now depricated RGK 11-2008
+     !real,pointer,dimension(:) :: co_srad_h
+     !real,pointer,dimension(:) :: co_lrad_h
+     !real,pointer,dimension(:) :: co_sens_h
+     !real,pointer,dimension(:) :: co_evap_h
+     !real,pointer,dimension(:) :: co_liqr_h
 
      
   end type patchtype
@@ -1400,11 +1398,12 @@ module ed_state_vars
      real,pointer,dimension(:) :: veg_energy
      real,pointer,dimension(:) :: veg_water
 
-     real,pointer,dimension(:) :: co_srad_h
-     real,pointer,dimension(:) :: co_lrad_h
-     real,pointer,dimension(:) :: co_sens_h
-     real,pointer,dimension(:) :: co_evap_h
-     real,pointer,dimension(:) :: co_liqr_h
+     ! These diagnostics are now depricated
+!     real,pointer,dimension(:) :: co_srad_h
+!     real,pointer,dimension(:) :: co_lrad_h
+!     real,pointer,dimension(:) :: co_sens_h
+!     real,pointer,dimension(:) :: co_evap_h
+!     real,pointer,dimension(:) :: co_liqr_h
 
      ! ------------------------------------------
      ! Fast time flux diagnostic variables
@@ -2234,12 +2233,12 @@ contains
     allocate(cpatch%gpp(ncohorts))
     allocate(cpatch%paw_avg10d(ncohorts))
 
-
-    allocate(cpatch%co_srad_h(ncohorts))
-    allocate(cpatch%co_lrad_h(ncohorts))
-    allocate(cpatch%co_sens_h(ncohorts))
-    allocate(cpatch%co_evap_h(ncohorts))
-    allocate(cpatch%co_liqr_h(ncohorts))
+    ! Depricated
+!    allocate(cpatch%co_srad_h(ncohorts))
+!    allocate(cpatch%co_lrad_h(ncohorts))
+!    allocate(cpatch%co_sens_h(ncohorts))
+!    allocate(cpatch%co_evap_h(ncohorts))
+!    allocate(cpatch%co_liqr_h(ncohorts))
 
     ! Initialize the variables with a non-sense number.
     call huge_patchtype(cpatch)
@@ -2858,11 +2857,13 @@ contains
     nullify(cpatch%hcapveg)
     nullify(cpatch%gpp)
     nullify(cpatch%paw_avg10d)
-    nullify(cpatch%co_srad_h)
-    nullify(cpatch%co_lrad_h)
-    nullify(cpatch%co_sens_h)
-    nullify(cpatch%co_evap_h)
-    nullify(cpatch%co_liqr_h)
+
+! Depricated
+!    nullify(cpatch%co_srad_h)
+!    nullify(cpatch%co_lrad_h)
+!    nullify(cpatch%co_sens_h)
+!    nullify(cpatch%co_evap_h)
+!    nullify(cpatch%co_liqr_h)
 
     return
   end subroutine nullify_patchtype
@@ -3482,11 +3483,13 @@ contains
     if(associated(cpatch%hcapveg))          deallocate(cpatch%hcapveg)
     if(associated(cpatch%gpp))              deallocate(cpatch%gpp)
     if(associated(cpatch%paw_avg10d))       deallocate(cpatch%paw_avg10d)
-    if(associated(cpatch%co_srad_h))          deallocate(cpatch%co_srad_h)
-    if(associated(cpatch%co_lrad_h))          deallocate(cpatch%co_lrad_h)
-    if(associated(cpatch%co_sens_h))          deallocate(cpatch%co_sens_h)
-    if(associated(cpatch%co_evap_h))          deallocate(cpatch%co_evap_h)
-    if(associated(cpatch%co_liqr_h))          deallocate(cpatch%co_liqr_h)
+
+!Depricated
+!    if(associated(cpatch%co_srad_h))          deallocate(cpatch%co_srad_h)
+!    if(associated(cpatch%co_lrad_h))          deallocate(cpatch%co_lrad_h)
+!    if(associated(cpatch%co_sens_h))          deallocate(cpatch%co_sens_h)
+!    if(associated(cpatch%co_evap_h))          deallocate(cpatch%co_evap_h)
+!    if(associated(cpatch%co_liqr_h))          deallocate(cpatch%co_liqr_h)
 
 
     return
@@ -4190,11 +4193,13 @@ contains
     if(associated(cpatch%hcapveg))              cpatch%hcapveg             = large_real
     if(associated(cpatch%gpp))                  cpatch%gpp                 = large_real
     if(associated(cpatch%paw_avg10d))           cpatch%paw_avg10d          = large_real
-    if(associated(cpatch%co_srad_h))            cpatch%co_srad_h           = large_real
-    if(associated(cpatch%co_lrad_h))            cpatch%co_lrad_h           = large_real
-    if(associated(cpatch%co_sens_h))            cpatch%co_sens_h           = large_real
-    if(associated(cpatch%co_evap_h))            cpatch%co_evap_h           = large_real
-    if(associated(cpatch%co_liqr_h))            cpatch%co_liqr_h           = large_real 
+
+    ! Depricated
+!    if(associated(cpatch%co_srad_h))            cpatch%co_srad_h           = large_real
+!    if(associated(cpatch%co_lrad_h))            cpatch%co_lrad_h           = large_real
+!    if(associated(cpatch%co_sens_h))            cpatch%co_sens_h           = large_real
+!    if(associated(cpatch%co_evap_h))            cpatch%co_evap_h           = large_real
+!    if(associated(cpatch%co_liqr_h))            cpatch%co_liqr_h           = large_real 
 
     return
   end subroutine huge_patchtype
@@ -4830,11 +4835,12 @@ contains
        patchout%gpp(iout)              = patchin%gpp(iin)
        patchout%paw_avg10d(iout)       = patchin%paw_avg10d(iin)
 
-       patchout%co_srad_h(iout)        = patchin%co_srad_h(iin)
-       patchout%co_lrad_h(iout)        = patchin%co_lrad_h(iin)
-       patchout%co_sens_h(iout)        = patchin%co_sens_h(iin)
-       patchout%co_evap_h(iout)        = patchin%co_evap_h(iin)
-       patchout%co_liqr_h(iout)        = patchin%co_liqr_h(iin)
+       ! Depricated
+!       patchout%co_srad_h(iout)        = patchin%co_srad_h(iin)
+!       patchout%co_lrad_h(iout)        = patchin%co_lrad_h(iin)
+!       patchout%co_sens_h(iout)        = patchin%co_sens_h(iin)
+!       patchout%co_evap_h(iout)        = patchin%co_evap_h(iin)
+!       patchout%co_liqr_h(iout)        = patchin%co_liqr_h(iin)
 
        osdo => patchout%old_stoma_data(iout)
        osdi => patchin%old_stoma_data(iin)

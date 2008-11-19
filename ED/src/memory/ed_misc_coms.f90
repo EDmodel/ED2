@@ -16,8 +16,9 @@ Module ed_misc_coms
 
 
   ! Logical Switches for various memory structures
-  logical, parameter :: diag_veg_heating=.false.    ! Integrate cohort variables that track
-                                                    ! vegetation heating rates
+
+
+
 
   ! Namelist option to attach metadata to HDF5 output files 0=no, 1=yes
 

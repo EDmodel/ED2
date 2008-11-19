@@ -187,7 +187,6 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
   use ed_state_vars,only: sitetype,rk4patchtype,patchtype
   use grid_coms, only: nzg, nzs
   use soil_coms, only: water_stab_thresh, min_sfcwater_mass
-  use ed_misc_coms,only: diag_veg_heating
   
   implicit none
 
@@ -278,16 +277,6 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
      targetp%veg_energy(ico)    = cpatch%veg_energy(ico)
   enddo
 
-  if (diag_veg_heating) then
-     do ico = 1,cpatch%ncohorts
-        targetp%co_srad_h(ico)     = cpatch%co_srad_h(ico)
-        targetp%co_lrad_h(ico)     = cpatch%co_lrad_h(ico) 
-        targetp%co_sens_h(ico)     = cpatch%co_sens_h(ico)
-        targetp%co_evap_h(ico)     = cpatch%co_evap_h(ico)
-        targetp%co_liqr_h(ico)     = cpatch%co_liqr_h(ico)
-     enddo
-  endif
-
   !  Now that we are not re-allocating with every step,
   !  It may be wise to nullify the last rk4cohorts next cohort
   !  It may have a left-over pointer from the last patch
@@ -300,7 +289,6 @@ subroutine inc_rk4_patch_ar(rkp, inc, fac, cpatch, lsl)
 
   use ed_state_vars,only:sitetype,patchtype,rk4patchtype
   use grid_coms, only: nzg, nzs
-  use ed_misc_coms,only: diag_veg_heating
   
   implicit none
 
@@ -373,17 +361,6 @@ subroutine inc_rk4_patch_ar(rkp, inc, fac, cpatch, lsl)
      rkp%veg_water(ico)     = max(rkp%veg_water(ico),0.0)
      rkp%veg_energy(ico)    = rkp%veg_energy(ico) + fac * inc%veg_energy(ico)
   enddo
-
-  ! Increment the heating/cooling rates over analfrq
-  if (diag_veg_heating) then
-     do ico = 1,cpatch%ncohorts
-        rkp%co_srad_h(ico)  = rkp%co_srad_h(ico) + fac * inc%co_srad_h(ico)
-        rkp%co_lrad_h(ico)  = rkp%co_lrad_h(ico) + fac * inc%co_lrad_h(ico)
-        rkp%co_sens_h(ico)  = rkp%co_sens_h(ico) + fac * inc%co_sens_h(ico)
-        rkp%co_evap_h(ico)  = rkp%co_evap_h(ico) + fac * inc%co_evap_h(ico)
-        rkp%co_liqr_h(ico)  = rkp%co_liqr_h(ico) + fac * inc%co_liqr_h(ico)
-     enddo
-  end if
 
 
 
@@ -648,7 +625,6 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch, lsl)
   use ed_state_vars,only:sitetype,patchtype,rk4patchtype
   use grid_coms, only: nzg, nzs
   use max_dims, only: n_pft
-  use ed_misc_coms,only: diag_veg_heating
 
   implicit none
 
@@ -747,16 +723,6 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch, lsl)
   
   enddo
 
-  if (diag_veg_heating) then
-     do k=1,nco
-        targetp%co_srad_h(k)  = sourcep%co_srad_h(k)
-        targetp%co_lrad_h(k)  = sourcep%co_lrad_h(k)
-        targetp%co_sens_h(k)  = sourcep%co_sens_h(k)
-        targetp%co_evap_h(k)  = sourcep%co_evap_h(k)
-        targetp%co_liqr_h(k)  = sourcep%co_liqr_h(k)
-     enddo
-  end if
-     
 
   return
 end subroutine copy_rk4_patch_ar
@@ -1612,7 +1578,7 @@ end subroutine deallocate_rk4_patch
 subroutine allocate_rk4_coh_ar(maxcohort,y)
   
   use ed_state_vars,only:rk4patchtype
-  use ed_misc_coms,only:diag_veg_heating
+
   implicit none
   
   type(rk4patchtype) :: y
@@ -1623,14 +1589,6 @@ subroutine allocate_rk4_coh_ar(maxcohort,y)
   allocate(y%veg_energy(maxcohort))
   allocate(y%veg_water(maxcohort))
 
-  if (diag_veg_heating) then
-     allocate(y%co_srad_h (maxcohort))
-     allocate(y%co_lrad_h (maxcohort))
-     allocate(y%co_sens_h (maxcohort))
-     allocate(y%co_evap_h (maxcohort))
-     allocate(y%co_liqr_h (maxcohort))
-  endif
-  
   call zero_rk4_cohort(y)
 
   return
@@ -1656,12 +1614,6 @@ subroutine nullify_rk4_cohort(y)
   nullify(y%veg_energy)
   nullify(y%veg_water)
 
-  nullify(y%co_srad_h )
-  nullify(y%co_lrad_h )
-  nullify(y%co_sens_h )
-  nullify(y%co_evap_h )
-  nullify(y%co_liqr_h )
-
   return
 end subroutine nullify_rk4_cohort
 !==========================================================================================!
@@ -1677,20 +1629,13 @@ end subroutine nullify_rk4_cohort
 subroutine zero_rk4_cohort(y)
   
   use ed_state_vars,only:rk4patchtype
-  use ed_misc_coms,only:diag_veg_heating
+
   implicit none
   
   type(rk4patchtype) :: y
 
   if(associated(y%veg_energy    ))  y%veg_energy    = 0.
   if(associated(y%veg_water     ))  y%veg_water     = 0.
-
-  if(associated(y%co_srad_h     ))  y%co_srad_h     = 0.
-  if(associated(y%co_lrad_h     ))  y%co_lrad_h     = 0.
-  if(associated(y%co_sens_h     ))  y%co_sens_h     = 0.
-  if(associated(y%co_evap_h     ))  y%co_evap_h     = 0.
-  if(associated(y%co_liqr_h     ))  y%co_liqr_h     = 0.
-
 
   return
 end subroutine zero_rk4_cohort
@@ -1715,12 +1660,6 @@ subroutine deallocate_rk4_coh_ar(y)
   if(associated(y%veg_energy))     deallocate(y%veg_energy)
   if(associated(y%veg_water))      deallocate(y%veg_water)
   
-  if(associated(y%co_srad_h ))     deallocate(y%co_srad_h )
-  if(associated(y%co_lrad_h ))     deallocate(y%co_lrad_h )
-  if(associated(y%co_sens_h ))     deallocate(y%co_sens_h )
-  if(associated(y%co_evap_h ))     deallocate(y%co_evap_h )
-  if(associated(y%co_liqr_h ))     deallocate(y%co_liqr_h )
-
   return
 end subroutine deallocate_rk4_coh_ar
 !==========================================================================================!

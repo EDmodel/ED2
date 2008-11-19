@@ -303,7 +303,6 @@ contains
     use soil_coms, only: soil, slz
     use grid_coms, only: nzg, nzs
     use canopy_radiation_coms, only: lai_min, veg_temp_min
-    use ed_misc_coms,only:diag_veg_heating
 
     use canopy_air_coms, only: hcapveg_ref,heathite_min
     use therm_lib, only: qwtk
@@ -432,15 +431,6 @@ contains
           write(unit=*,fmt='(a,1x,es14.7)') 'veg_temp min :',veg_temp_min
 
           print*,"Polygon:",ipy," Site:",isi," Patch:",ipa," Cohort:",ico," of",cpatch%ncohorts
-          print*,"Check misc_commons to see if heating rate diagnostics are on"
-
-          if(diag_veg_heating) then
-             print*,"Solar Heating Rate",initp%co_srad_h(ico)
-             print*,"L-Wave Heating Rate",initp%co_lrad_h(ico)
-             print*,"Sensible Heating Rate",initp%co_sens_h(ico)
-             print*,"Evapotranspirative Heating Rate",initp%co_evap_h(ico)
-             print*,"Liquid deposition Heating Rate",initp%co_liqr_h(ico)
-          end if
 
           print*,"LAI",cpatch%lai
           print*,"Height",cpatch%hite
@@ -488,16 +478,6 @@ contains
        endif       
     enddo
 
-    if (diag_veg_heating) then
-       do ico = 1,cpatch%ncohorts
-          cpatch%co_srad_h(ico) = initp%co_srad_h(ico)
-          cpatch%co_lrad_h(ico) = initp%co_lrad_h(ico)
-          cpatch%co_sens_h(ico) = initp%co_sens_h(ico)
-          cpatch%co_evap_h(ico) = initp%co_evap_h(ico)
-          cpatch%co_liqr_h(ico) = initp%co_liqr_h(ico)
-       enddo
-    endif
- 
     ksn = csite%nlev_sfcwater(ipa)
     nsoil = csite%ntext_soil(nzg,ipa)
     nlsw1 = max(1, ksn)

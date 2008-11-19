@@ -588,7 +588,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   use canopy_air_coms, only: hcapveg_ref,heathite_min
 
   use pft_coms, only: q, qsw, water_conductance,leaf_width,rho
-  use ed_misc_coms,only:diag_veg_heating
+
   use therm_lib, only : rslif,qwtk
   use misc_coms, only: dtlsm
 
