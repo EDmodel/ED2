@@ -74,14 +74,14 @@ F_COMP=mpif90
 #       -Mfree
 #  -Mbyteswapio
 # -tp athlonxp -fastsse
-F_OPTS= -fastsse -Mipa=fast,inline -tp amd64e \
-	-Mvect=sse -Mcache_align #-Mconcur -mp=numa
+#F_OPTS= -fastsse -Mipa=fast,inline -tp amd64e \
+#	-Mvect=sse -Mcache_align #-Mconcur -mp=numa
 #F_OPTS = 
-#F_OPTS= -g #-C -Ktrap=divz,fp,inv,ovf,unf
+F_OPTS= -g -C -Ktrap=divz,fp,inv,ovf,unf
 C_COMP=mpicc
-#C_OPTS= -g #-C -Ktrap=divz,fp,inv,ovf,unf
-C_OPTS= -fastsse -Mipa=fast,inline -tp amd64e \
-	-Mvect=sse -Mcache_align
+C_OPTS= -g -C -Ktrap=divz,fp,inv,ovf,unf
+#C_OPTS= -fastsse -Mipa=fast,inline -tp amd64e \
+#	-Mvect=sse -Mcache_align
 USE_INTERF=1
 CPP_OPTS=
 LOADER=$(F_COMP)

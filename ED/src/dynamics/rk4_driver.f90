@@ -412,7 +412,7 @@ contains
     do ico = 1,cpatch%ncohorts
 
        cpatch%veg_water(ico) = initp%veg_water(ico)
-       cpatch%veg_temp(ico)  = initp%veg_temp(ico)
+       cpatch%veg_energy(ico)  = initp%veg_energy(ico)
 
        ! For plants with minimal foliage, fix the vegetation
        ! temperature to the canopy air space
