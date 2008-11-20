@@ -171,6 +171,11 @@ subroutine spatial_averages
         cgrid%avg_plant_resp(ipy)  = 0.0
         cgrid%avg_htroph_resp(ipy) = 0.0
 
+        cgrid%max_veg_temp(ipy)    = -10.0
+        cgrid%min_veg_temp(ipy)    = 390.0
+        cgrid%max_soil_temp(ipy)    = -10.0
+        cgrid%min_soil_temp(ipy)    = 390.0
+
         poly_area_i = 1./sum(cpoly%area)
 
         do isi=1,cpoly%nsites
@@ -282,6 +287,19 @@ subroutine spatial_averages
                  cgrid%avg_bdead(ipy)     = cgrid%avg_bdead(ipy) + &
                       csite%area(ipa)*cpoly%area(isi)*sum(cpatch%bdead*cpatch%nplant)
 
+
+                 ! Check the extremes
+                 
+                 if (maxval(cpatch%veg_temp) > cgrid%max_veg_temp(ipy)) then
+                    cgrid%max_veg_temp(ipy) = maxval(cpatch%veg_temp)
+                 endif
+
+                 if (minval(cpatch%veg_temp) < cgrid%min_veg_temp(ipy)) then
+                    cgrid%min_veg_temp(ipy) = minval(cpatch%veg_temp)
+                 endif
+
+                 
+
                  
               else
                  ! Set veg-temp to air temp
@@ -289,6 +307,9 @@ subroutine spatial_averages
                  csite%avg_veg_temp(ipa)  = csite%can_temp(ipa)
                  csite%avg_veg_water(ipa) = 0.0
                  
+                 
+
+
               endif
 
               cgrid%avg_plant_resp(ipy)  = cgrid%avg_plant_resp(ipy)  + &
@@ -296,9 +317,20 @@ subroutine spatial_averages
               cgrid%avg_htroph_resp(ipy) = cgrid%avg_htroph_resp(ipy) + &
                    csite%area(ipa)*cpoly%area(isi)*csite%co2budget_rh(ipa)    *frqsumi
               
+              
+              do k=1,nzg
+                 if ( csite%soil_tempk(k,ipa) > cgrid%max_soil_temp(ipy)) then
+                    cgrid%max_soil_temp(ipy) = csite%soil_tempk(k,ipa)
+                 endif
+                 
+                 if ( csite%soil_tempk(k,ipa) < cgrid%min_soil_temp(ipy)) then
+                    cgrid%min_soil_temp(ipy) = csite%soil_tempk(k,ipa)
+                 endif
+              enddo
+                 
 
            enddo
-
+           
            csite%laiarea = csite%laiarea / max(sum(csite%laiarea),1.0)
 
            cpoly%avg_veg_energy(isi) = sum(csite%avg_veg_energy   * csite%laiarea)
@@ -312,7 +344,7 @@ subroutine spatial_averages
            call fatal_error('No patches in this site, impossible','spatial_averages','edio.f90')
         endif
 
-
+        
 
      enddo
         

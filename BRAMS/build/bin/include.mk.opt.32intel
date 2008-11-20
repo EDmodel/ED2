@@ -49,7 +49,14 @@ HDF5_INCS=-I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib \
 HDF5_LIBS=-L/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib \
           -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl                   \
           -L/n/Moorcroft_Lab/Lab/mlongo/util/hdflib/hdf5_32/zlib/lib -lz
+#---------------------------------------------------------------
+# If you have a version of hdf5 compiled in parallel, then you
+# may benefit from collective I/O, then use this flag = 1
+# Otherwise, set it to zero.
 
+USE_COLLECTIVE_MPIO=0
+ 
+#---------------------------------------------------------------
 # netCDF libraries ---------------------------------------------
 # If you have netCDF set USENC=1 and type the lib folder
 # at NC_LIBS, with the leading -L (e.g. -L/usr/local/lib).

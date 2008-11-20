@@ -92,7 +92,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
 
   use ed_state_vars,only:sitetype,patchtype,rk4patchtype
   
-  use therm_lib, only : qtk, qwtk
+  use therm_lib, only : qtk, qwtk, qwtk8
 
   implicit none
 
@@ -352,6 +352,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
   !!     endif
   !  endif
 
+  
 
   dinitp%avg_vapor_gc  = wflxgc   ! Diagnostic
   dinitp%avg_dew_cg    = dewgnd   ! Diagnostic
@@ -591,6 +592,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
 
   use therm_lib, only : rslif,qwtk
   use misc_coms, only: dtlsm
+  use ed_misc_coms, only: fast_diagnostics
 
   implicit none
 
@@ -828,7 +830,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
 
         
         dinitp%ebudget_latent = dinitp%ebudget_latent     + &
-             wflxvc*(fracliq * alvl + (1.-fracliq) * alvi + &
+             wflxvc * (fracliq * alvl + (1.-fracliq) * alvi) + &
              transp * alvl
 
         ! We need to extract water from the soil equal to the transpiration
@@ -975,40 +977,48 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
        wflxac) * wcapcani
 
 
+  ! Update co2 concentration in the canopy
+
+  dinitp%can_co2 = ( (cflxgc + cflxvc_tot)*mmdry + cflxac) * wcapcani
+
+
   ! Integrate diagnostic variables - These are not activated
   ! unless fast file-type outputs are selected. This will speed up
   ! the integrator
   ! --------------------------------------------------------------------------
 
+  if (fast_diagnostics) then
 
-  dinitp%wbudget_loss2atm = - wflxac
-  dinitp%ebudget_loss2atm = - hflxac
-  dinitp%ebudget_latent = dinitp%ebudget_latent + (-dewgndflx + wflxgc) * alvi
-  dinitp%can_co2 = ( (cflxgc + cflxvc_tot)*mmdry + cflxac) * wcapcani
-  dinitp%co2budget_loss2atm = - cflxac * mmdryi
+     dinitp%wbudget_loss2atm = - wflxac
+     dinitp%ebudget_loss2atm = - hflxac
+     dinitp%ebudget_latent = dinitp%ebudget_latent + (-dewgndflx + wflxgc) * alvi
+     
+     dinitp%co2budget_loss2atm = - cflxac * mmdryi
+     dinitp%avg_gpp = gpp_tot
+     dinitp%avg_carbon_ac = cflxac * mmdryi
 
-  dinitp%avg_gpp = gpp_tot
-  dinitp%avg_carbon_ac = cflxac * mmdryi
+     dinitp%avg_sensible_vc   = hflxvc_tot                             ! Sensible heat        vegetation -> canopy air
+     dinitp%avg_sensible_2cas = hflxgc+hflxac+hflxvc_tot               ! Sensible heat        everywhere -> canopy air
+     dinitp%avg_vapor_vc      = alvl*wflxvc_tot                        ! Latent heat          vegetation -> canopy air
+     dinitp%avg_sensible_gc   = hflxgc                                 ! Sensible heat        ground     -> canopy air
+     dinitp%avg_sensible_ac   = hflxac / exner                         ! Sensible heat        canopy air -> atmosphere
+     dinitp%avg_vapor_ac      = alvl*wflxac                            ! Latent heat          canopy air -> atmosphere
+     dinitp%avg_transp        = alvl*transp_tot                        ! Transpiration
+     dinitp%avg_evap          = alvl*(wflxgc - dewgndflx + wflxvc_tot) ! Evaporation
+     dinitp%avg_sensible_tot  = (hflxgc + hflxvc_tot)                  ! Sensible heat
+     
+     ! Auxillary variable
+     
+     !  dinitp%aux = dinitp%aux
 
-  dinitp%avg_sensible_vc   = hflxvc_tot                             ! Sensible heat        vegetation -> canopy air
-  dinitp%avg_sensible_2cas = hflxgc+hflxac+hflxvc_tot               ! Sensible heat        everywhere -> canopy air
-  dinitp%avg_vapor_vc      = alvl*wflxvc_tot                        ! Latent heat          vegetation -> canopy air
-  dinitp%avg_sensible_gc   = hflxgc                                 ! Sensible heat        ground     -> canopy air
-  dinitp%avg_sensible_ac   = hflxac / exner                         ! Sensible heat        canopy air -> atmosphere
-  dinitp%avg_vapor_ac      = alvl*wflxac                            ! Latent heat          canopy air -> atmosphere
-  dinitp%avg_transp        = alvl*transp_tot                        ! Transpiration
-  dinitp%avg_evap          = alvl*(wflxgc - dewgndflx + wflxvc_tot) ! Evaporation
-  dinitp%avg_sensible_tot  = (hflxgc + hflxvc_tot)                  ! Sensible heat
+  endif
 
-  ! Auxillary variable - Defined as avg_avap as a check..
   
-  !  dinitp%aux = dinitp%aux
-
   ! These variables below are virtual copies of the variables above, but are here for 
   ! consistency's sake. They form the set of canopy-atmospher fluxes that are
   ! used for turbulent closure. These variables are also zeroed and normalized
   ! every dtlsm timestep, the others are likely averaged over the analysis period
-
+  
   dinitp%upwp = -(initp%ustar**2)
   dinitp%rpwp = -(initp%ustar*initp%rstar)
   dinitp%tpwp = -(initp%ustar*initp%tstar)

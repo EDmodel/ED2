@@ -50,6 +50,17 @@ HDF5C_INCS=-I/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/include
 HDF5_LIBS=-lz -L/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/lib \
 	-lhdf5_fortran -lhdf5 -lhdf5_hl
 
+#---------------------------------------------------------------
+# If you have a version of hdf5 compiled in parallel, then you
+# may benefit from collective I/O, then use this flag = 1
+# Otherwise, set it to zero.
+
+USE_COLLECTIVE_MPIO=0
+
+
+#---------------------------------------------------------------
+
+
 
 # netCDF libraries ---------------------------------------------
 # If you have netCDF set USENC=1 and type the lib folder
@@ -74,14 +85,14 @@ F_COMP=mpif90
 #       -Mfree
 #  -Mbyteswapio
 # -tp athlonxp -fastsse
-#F_OPTS= -fastsse -Mipa=fast,inline -tp amd64e \
-#	-Mvect=sse -Mcache_align #-Mconcur -mp=numa
+F_OPTS= -fastsse -Mipa=fast,inline -tp amd64e \
+	-Mvect=sse -Mcache_align #-Mconcur -mp=numa
 #F_OPTS = 
-F_OPTS= -g -C -Ktrap=divz,fp,inv,ovf,unf
+#F_OPTS= -g -C -Ktrap=divz,fp,inv,ovf,unf
 C_COMP=mpicc
-C_OPTS= -g -C -Ktrap=divz,fp,inv,ovf,unf
-#C_OPTS= -fastsse -Mipa=fast,inline -tp amd64e \
-#	-Mvect=sse -Mcache_align
+#C_OPTS= -g -C -Ktrap=divz,fp,inv,ovf,unf
+C_OPTS= -fastsse -Mipa=fast,inline -tp amd64e \
+	-Mvect=sse -Mcache_align
 USE_INTERF=1
 CPP_OPTS=
 LOADER=$(F_COMP)

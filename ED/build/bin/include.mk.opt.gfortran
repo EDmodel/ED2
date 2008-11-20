@@ -66,6 +66,15 @@ HDF5_LIBS=-lz /usr/local/hdf5-1.8.0/lib/libhdf5_fortran.a \
         /usr/local/hdf5-1.8.0/lib/libhdf5.a \
         /usr/local/hdf5-1.8.0/lib/libhdf5_hl.a
 
+#---------------------------------------------------------------
+# If you have a version of hdf5 compiled in parallel, then you
+# may benefit from collective I/O, then use this flag = 1
+# Otherwise, set it to zero.
+
+USE_COLLECTIVE_MPIO=0
+ 
+#---------------------------------------------------------------
+
 # netCDF libraries ---------------------------------------------
 # If you have netCDF set USENC=1 and type the lib folder
 # at NC_LIBS, with the leading -L (e.g. -L/usr/local/lib).

@@ -6,7 +6,7 @@
 subroutine h5_output(vtype)
 
   use an_header
-
+  
   use var_tables_array,only: &
        vt_info,              &
        var_table,            &
@@ -117,7 +117,6 @@ subroutine h5_output(vtype)
      call MPI_COMM_RANK(comm,mpi_rank,mpierror)
 !     call MPI_Barrier(MPI_COMM_WORLD,ierr)
   endif
-
   
 
   timeold=time
@@ -144,18 +143,22 @@ subroutine h5_output(vtype)
   end select  
   nvcnt=0
 
-  ! DOING SEQUENTIAL IO RIGHT NOW - THE NEXT 4 LINES ARE A BLOCKING PROCEDURE
+
   nrec = 1
   irec = 1  
 
   do ngr=1,ngrids
 
-     ping = 0 
-     
-     if (.not. collective_mpi) then
-        if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,734+ngr,MPI_COMM_WORLD,status,ierr)
-     end if
+     call h5garbage_collect_f(hdferr) 
 
+     ping = 0 
+
+#if USE_COLLECTIVE_MPIO
+#else
+
+        if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,734+ngr,MPI_COMM_WORLD,status,ierr)
+
+#endif
      ! If there are no polygons on this node, we do not have any interaction with the file
      
      if (gdpy(mynum,ngr)>0) then
@@ -189,6 +192,7 @@ subroutine h5_output(vtype)
                 0,vnam,cgrid,'h5 ')
            
         case('HIST')
+
            call makefnam(anamel,sfilout,time,iyeara,imontha,idatea,  &
                 itimea*100,vnam,cgrid,'h5 ')
            
@@ -209,10 +213,12 @@ subroutine h5_output(vtype)
                  out_time_fast%month = outmonth
                  out_time_fast%date  = outdate
                  out_time_fast%time  = outhour*1.
+
                  !!(3600.*int(outhour/10000)+60.*int(mod(outhour,10000)/100)+mod(outhour,100)*1.)   !! DOUBLE CHECK
                  dsec = time
                  new_file = .true.
               endif
+
               irec_fast = ((time-dsec)/frqfast) + 1
               nrec = nrec_fast
               irec = irec_fast
@@ -238,9 +244,7 @@ subroutine h5_output(vtype)
                 ,'h5_output','h5_output.F90')
            
         endif
-        
-        !   LETS FIRST INITIALIZE THE HDF ENVIRONMENT
-        
+
         call h5open_f(hdferr)
         if (hdferr /= 0) then
            print*,'HDF5 Open error #:',hdferr
@@ -248,109 +252,73 @@ subroutine h5_output(vtype)
                 ,'h5_output','h5_output.F90')
         endif
         
-        if(collective_mpi) then
-           
-           call h5pcreate_f(H5P_FILE_ACCESS_F,plist_id,hdferr)
-           if (hdferr /= 0) &
-                call fatal_error('Could not create the p-list' &
+
+#if USE_COLLECTIVE_MPIO
+        
+        call h5pcreate_f(H5P_FILE_ACCESS_F,plist_id,hdferr)
+        if (hdferr /= 0) &
+             call fatal_error('Could not create the p-list' &
+             ,'h5_output','h5_output.F90')
+        
+        call h5pset_fapl_mpio_f(plist_id,comm,info,hdferr)
+        if (hdferr /= 0) &
+             call fatal_error('Failed using h5pset_fapl_mpi_f' &
+             ,'h5_output','h5_output.F90')
+        
+        !   Open a new HDF file using IO mode H5F_ACC_TRUNC_F
+        !   In this case, if a file with the same name already exists
+        !   It will overwrite the data in that file, destroying all data
+        !   ------------------------------------------------------------
+        
+        call h5fcreate_f(trim(anamel)//char(0), H5F_ACC_TRUNC_F, file_id, &
+             hdferr,access_prp = plist_id)
+        if (hdferr /= 0) then
+           print*,"COULD NOT OPEN THE new HDF FILE"
+           print*,trim(anamel),file_id,hdferr
+           call fatal_error('Failed opening the HDF file' &
                 ,'h5_output','h5_output.F90')
+        endif
+        
+        call h5pclose_f(plist_id,hdferr)
+        if (hdferr /= 0) &
+             call fatal_error('Could not close the p-list' &
+             ,'h5_output','h5_output.F90')
+#else
            
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           ! COMMENTED BECAUSE IT IS NOT IN SOME LIBRARIES...
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !         call h5pset_fapl_mpio_f(plist_id,comm,info,hdferr)
-           !         if (hdferr /= 0) &
-           !            call fatal_error('Failed using h5pset_fapl_mpi_f' &
-           !                            ,'h5_output','h5_output.F90')
+        if (ping == 0 .and. new_file) then
            
-           !   Open a new HDF file using IO mode H5F_ACC_TRUNC_F
-           !   In this case, if a file with the same name already exists
-           !   It will overwrite the data in that file, destroying all data
-           !   ------------------------------------------------------------
-           
-           call h5fcreate_f(trim(anamel)//char(0), H5F_ACC_TRUNC_F, file_id, &
-                hdferr,access_prp = plist_id)
+           call h5fcreate_f(trim(anamel)//char(0), H5F_ACC_TRUNC_F, file_id, hdferr)
            if (hdferr /= 0) then
-              print*,"COULD NOT OPEN THE new HDF FILE"
+              print*,"COULD NOT CREATE THE HDF FILE"
               print*,trim(anamel),file_id,hdferr
               call fatal_error('Failed opening the HDF file' &
                    ,'h5_output','h5_output.F90')
            endif
-           
-           call h5pclose_f(plist_id,hdferr)
-           if (hdferr /= 0) &
-                call fatal_error('Could not close the p-list' &
-                ,'h5_output','h5_output.F90')
-           
         else
            
-           if (ping == 0 .and. new_file) then
-              
-              call h5fcreate_f(trim(anamel)//char(0), H5F_ACC_TRUNC_F, file_id, hdferr)
-              if (hdferr /= 0) then
-                 print*,"COULD NOT CREATE THE HDF FILE"
-                 print*,trim(anamel),file_id,hdferr
-                 call fatal_error('Failed opening the HDF file' &
-                      ,'h5_output','h5_output.F90')
-              endif
-           else
-              
-              call h5fopen_f(trim(anamel)//char(0), H5F_ACC_RDWR_F, file_id, hdferr)
-              if (hdferr /= 0) then
-                 print*,"COULD NOT OPEN THE HDF FILE"
-                 print*,trim(anamel),file_id,hdferr
-                 call fatal_error('Failed opening the HDF file' &
-                      ,'h5_output','h5_output.F90')
-              endif
+           call h5fopen_f(trim(anamel)//char(0), H5F_ACC_RDWR_F, file_id, hdferr)
+           if (hdferr /= 0) then
+              print*,"COULD NOT OPEN THE HDF FILE"
+              print*,trim(anamel),file_id,hdferr
+              call fatal_error('Failed opening the HDF file' &
+                   ,'h5_output','h5_output.F90')
            endif
-           
-           
         endif
+           
+
+#endif
         
+#if USE_COLLECTIVE_MPIO
         
-        if (collective_mpi) then
-           call h5pcreate_f(H5P_DATASET_XFER_F,plist_id,hdferr)
-           if (hdferr /= 0) call fatal_error('Errror at pcreate' &
-                ,'h5_output','h5_output.f90')
-           
-           
-           
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           ! COMMENTED BECAUSE IT IS NOT IN SOME LIBRARIES...
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !------------------------------------------------------------------------------------------!
-           !        call h5pset_dxpl_mpio_f(plist_id,H5FD_MPIO_COLLECTIVE_F,hdferr)
-           !        if (hdferr /= 0) call fatal_error('Errror at h5pset_dxpl_mpio_f' &
-           !                                         ,'h5_output','h5_output.f90')
-           
-        endif
+        call h5pcreate_f(H5P_DATASET_XFER_F,plist_id,hdferr)
+        if (hdferr /= 0) call fatal_error('Errror at pcreate' &
+             ,'h5_output','h5_output.f90')
+        
+        call h5pset_dxpl_mpio_f(plist_id,H5FD_MPIO_COLLECTIVE_F,hdferr)
+        if (hdferr /= 0) call fatal_error('Errror at h5pset_dxpl_mpio_f' &
+             ,'h5_output','h5_output.f90')
+#endif           
+        
         
         !   Now we need to create HDF datasets and then put them
         !   in the file, cycle all of our variables
@@ -368,19 +336,43 @@ subroutine h5_output(vtype)
                 (vtype == 'HIST' .and. vt_info(nv,ngr)%ihist == 1)) then
               
               varn= vt_info(nv,ngr)%name
-              
+
               ! Initialize global dimensions of the hyperslab
               
               call geth5dims(vt_info(nv,ngr)%idim_type,0,0,vt_info(nv,ngr)%var_len_global,dsetrank,varn,nrec,irec)
               
-              
+             
               call h5screate_simple_f(dsetrank, globdims, filespace, hdferr)
               if (hdferr /= 0) then
                  call fatal_error('Could not create the first filespace' &
                       ,'h5_output','h5_output.f90')
               end if
+
+#if USE_COLLECTIVE_MPIO             
               
-              if (collective_mpi) then
+              if (vt_info(nv,ngr)%dtype == 'r') then   ! real data type
+                 call h5dcreate_f(file_id,varn,H5T_NATIVE_REAL, filespace, &
+                      dset_id,hdferr)
+              else if (vt_info(nv,ngr)%dtype == 'i') then   ! integer data type
+                 call h5dcreate_f(file_id,varn,H5T_NATIVE_INTEGER, filespace, &
+                      dset_id,hdferr)
+              else if (vt_info(nv,ngr)%dtype == 'c') then   ! character data type
+                 call h5dcreate_f(file_id,varn,H5T_NATIVE_CHARACTER, filespace, &
+                      dset_id,hdferr)
+              else if (vt_info(nv,ngr)%dtype == 'd') then   ! character data type
+                 call h5dcreate_f(file_id,varn,H5T_NATIVE_DOUBLE, filespace, &
+                      dset_id,hdferr)
+              else
+                 print*,"YOU ARE ATTEMPTING TO WRITE AN UNDEFINED DATATYPE"
+                 print*,varn,vt_info(nv,ngr)%dtype
+                 stop
+                 
+              endif
+
+#else
+              
+              if (ping == 0 .and. new_file) then
+                 
                  if (vt_info(nv,ngr)%dtype == 'r') then   ! real data type
                     call h5dcreate_f(file_id,varn,H5T_NATIVE_REAL, filespace, &
                          dset_id,hdferr)
@@ -399,89 +391,68 @@ subroutine h5_output(vtype)
                     stop
                     
                  endif
-              else
+                    
+                 ! REMEMBER THESE COMMANDS
+                 !              h5pset_meta_block_size
+                 !              h5pget_meta_block_size
+                 !              h5pset_cache
                  
-                 if (ping == 0 .and. new_file) then
+                 ! If the user has decided to attach metadata
+                 ! to the datasets, assign that metadata as an 
+                 ! attribute here.  That attribute is a rank 1 vector
+                 ! of strings.  It is only necessary to do this
+                 ! on the master.
+                 ! Note that descriptors max out at 64 characters
+                 
+                 if (attach_metadata == 1) then
                     
-                    if (vt_info(nv,ngr)%dtype == 'r') then   ! real data type
-                       call h5dcreate_f(file_id,varn,H5T_NATIVE_REAL, filespace, &
-                            dset_id,hdferr)
-                    else if (vt_info(nv,ngr)%dtype == 'i') then   ! integer data type
-                       call h5dcreate_f(file_id,varn,H5T_NATIVE_INTEGER, filespace, &
-                            dset_id,hdferr)
-                    else if (vt_info(nv,ngr)%dtype == 'c') then   ! character data type
-                       call h5dcreate_f(file_id,varn,H5T_NATIVE_CHARACTER, filespace, &
-                            dset_id,hdferr)
-                    else if (vt_info(nv,ngr)%dtype == 'd') then   ! character data type
-                       call h5dcreate_f(file_id,varn,H5T_NATIVE_DOUBLE, filespace, &
-                            dset_id,hdferr)
-                    else
-                       print*,"YOU ARE ATTEMPTING TO WRITE AN UNDEFINED DATATYPE"
-                       print*,varn,vt_info(nv,ngr)%dtype
-                       stop
-                       
-                    endif
+                    arank = 1
+                    adims = 3
+                    attrlen = 64
+                    metadata(1) = trim('Long Name: '//trim(vt_info(nv,ngr)%lname))
+                    metadata(2) = trim('Units: '//trim(vt_info(nv,ngr)%units))
+                    metadata(3) = trim('Dimensions: '//trim(vt_info(nv,ngr)%dimlab))
                     
-                    ! REMEMBER THESE COMMANDS
-                    !              h5pset_meta_block_size
-                    !              h5pget_meta_block_size
-                    !              h5pset_cache
-                    
-                    ! If the user has decided to attach metadata
-                    ! to the datasets, assign that metadata as an 
-                    ! attribute here.  That attribute is a rank 1 vector
-                    ! of strings.  It is only necessary to do this
-                    ! on the master.
-                    ! Note that descriptors max out at 64 characters
-                    
-                    if (attach_metadata == 1) then
-                       
-                       arank = 1
-                       adims = 3
-                       attrlen = 64
-                       metadata(1) = trim('Long Name: '//trim(vt_info(nv,ngr)%lname))
-                       metadata(2) = trim('Units: '//trim(vt_info(nv,ngr)%units))
-                       metadata(3) = trim('Dimensions: '//trim(vt_info(nv,ngr)%dimlab))
-                       
-                       call h5screate_simple_f(arank,adims,aspace_id, hdferr)
-                       if (hdferr /= 0) then
-                          call fatal_error('Error calling h5screate_simple_f' &
-                               ,'h5_output','h5_output.F90')
-                       end if
-                       
-                       call h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, hdferr)
-                       if (hdferr /= 0) then
-                          call fatal_error('Error calling h5tcopy_f' &
-                               ,'h5_output','h5_output.F90')
-                       end if
-                       
-                       call h5tset_size_f(atype_id,attrlen,hdferr)
-                       if (hdferr /= 0) then
-                          call fatal_error('Error calling h5tset_size_f' &
-                               ,'h5_output','h5_output.F90')
-                       end if
-                       
-                       call h5acreate_f( dset_id,'Metadata',atype_id,aspace_id,attr_id,hdferr)
-                       if (hdferr /= 0) then
-                          call fatal_error('Error calling h5acreate_f' &
-                               ,'h5_output','h5_output.F90')
-                       end if
-                       
-                       call h5awrite_f( attr_id,atype_id,metadata,adims,hdferr )
-                       if (hdferr /= 0) then
-                          call fatal_error('Error calling h5awrite_f' &
-                               ,'h5_output','h5_output.F90')
-                       end if
-                       
-                       call h5aclose_f(attr_id,hdferr)
-                       call h5sclose_f(aspace_id,hdferr)
-                       
+                    call h5screate_simple_f(arank,adims,aspace_id, hdferr)
+                    if (hdferr /= 0) then
+                       call fatal_error('Error calling h5screate_simple_f' &
+                            ,'h5_output','h5_output.F90')
                     end if
-                                        
-                 else
-                    call h5dopen_f(file_id,varn,dset_id,hdferr)
+                    
+                    call h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, hdferr)
+                    if (hdferr /= 0) then
+                       call fatal_error('Error calling h5tcopy_f' &
+                            ,'h5_output','h5_output.F90')
+                    end if
+                    
+                    call h5tset_size_f(atype_id,attrlen,hdferr)
+                    if (hdferr /= 0) then
+                       call fatal_error('Error calling h5tset_size_f' &
+                            ,'h5_output','h5_output.F90')
+                    end if
+                    
+                    call h5acreate_f( dset_id,'Metadata',atype_id,aspace_id,attr_id,hdferr)
+                    if (hdferr /= 0) then
+                       call fatal_error('Error calling h5acreate_f' &
+                            ,'h5_output','h5_output.F90')
+                    end if
+                    
+                    call h5awrite_f( attr_id,atype_id,metadata,adims,hdferr )
+                    if (hdferr /= 0) then
+                       call fatal_error('Error calling h5awrite_f' &
+                            ,'h5_output','h5_output.F90')
+                    end if
+                    
+                    call h5aclose_f(attr_id,hdferr)
+                    call h5sclose_f(aspace_id,hdferr)
+                    
                  end if
+                 
+              else
+                 call h5dopen_f(file_id,varn,dset_id,hdferr)
               end if
+              
+#endif
               
               if (hdferr /= 0) then
                  write (unit=*,fmt=*) 'File name:        ',trim(anamel)
@@ -549,74 +520,74 @@ subroutine h5_output(vtype)
                        call fatal_error('Could not assign the hyperslabs filespace' &
                             ,'h5_output','h5_output.F90')
                     end if
-                    
-                    if (collective_mpi) then
-                       
-                       if (vt_info(nv,ngr)%dtype .eq. 'r') then   ! real data type
-                          call h5dwrite_f(dset_id,H5T_NATIVE_REAL,vtvec%var_rp,globdims, &
-                               hdferr,file_space_id = filespace, mem_space_id = memspace, &
-                               xfer_prp = plist_id)
-                       elseif(vt_info(nv,ngr)%dtype .eq. 'i') then ! integer data type
-                          
-                          call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER,vtvec%var_ip,globdims, &
-                               hdferr,file_space_id = filespace, mem_space_id = memspace, &
-                               xfer_prp = plist_id)
-                       elseif(vt_info(nv,ngr)%dtype .eq. 'c') then ! character data type
-                          
-                          call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER,vtvec%var_cp,globdims, &
-                               hdferr,file_space_id = filespace, mem_space_id = memspace, &
-                               xfer_prp = plist_id)
-                         
-                       elseif(vt_info(nv,ngr)%dtype .eq. 'd') then ! character data type
-                          
-                          call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%var_dp,globdims, &
-                               hdferr,file_space_id = filespace, mem_space_id = memspace, &
-                               xfer_prp = plist_id) 
-                       end if
-                       if (hdferr /= 0) then
-                          write (unit=*,fmt=*) 'Variable name:    ',varn
-                          write (unit=*,fmt=*) 'Global dimension: ',globdims
-                          write (unit=*,fmt=*) 'Chunk dimension:  ',chnkdims
-                          write (unit=*,fmt=*) 'Chunk offset:     ',chnkoffs
-                          write (unit=*,fmt=*) 'Count:            ',cnt
-                          write (unit=*,fmt=*) 'Stride:           ',stride
-                          call fatal_error('Could not write the real hyperslab into the dataset' &
-                               ,'h5_output','h5_output.F90')
-                       end if
-                       
-                    else
-                       
-                       if (vt_info(nv,ngr)%dtype .eq. 'r') then   ! real data type
-                          call h5dwrite_f(dset_id,H5T_NATIVE_REAL,vtvec%var_rp,globdims, &
-                               hdferr,file_space_id = filespace, mem_space_id = memspace)
-                       elseif(vt_info(nv,ngr)%dtype .eq. 'i') then ! integer data type
-                          
-                          call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER,vtvec%var_ip,globdims, &
-                               hdferr,file_space_id = filespace, mem_space_id = memspace)
-                          
-                       elseif(vt_info(nv,ngr)%dtype .eq. 'c') then ! character data type
-                          
-                          call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER,vtvec%var_cp,globdims, &
-                               hdferr,file_space_id = filespace, mem_space_id = memspace)
-                       elseif(vt_info(nv,ngr)%dtype .eq. 'd') then ! character data type
-                          
-                          call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%var_dp,globdims, &
-                               hdferr,file_space_id = filespace, mem_space_id = memspace)
-                          
-                       end if
-                       if (hdferr /= 0) then
-                          write (unit=*,fmt=*) 'Variable name:    ',varn
-                          write (unit=*,fmt=*) 'Global dimension: ',globdims
-                          write (unit=*,fmt=*) 'Chunk dimension:  ',chnkdims
-                          write (unit=*,fmt=*) 'Chunk offset:     ',chnkoffs
-                          write (unit=*,fmt=*) 'Count:            ',cnt
-                          write (unit=*,fmt=*) 'Stride:           ',stride
-                          call fatal_error('Could not write the real hyperslab into the dataset' &
-                               ,'h5_output','h5_output.F90')
-                       end if
-                    end if
-                    
 
+#if USE_COLLECTIVE_MPIO
+                       
+                    if (vt_info(nv,ngr)%dtype .eq. 'r') then   ! real data type
+                       call h5dwrite_f(dset_id,H5T_NATIVE_REAL,vtvec%var_rp,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace, &
+                            xfer_prp = plist_id)
+                    elseif(vt_info(nv,ngr)%dtype .eq. 'i') then ! integer data type
+                       
+                       call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER,vtvec%var_ip,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace, &
+                            xfer_prp = plist_id)
+                    elseif(vt_info(nv,ngr)%dtype .eq. 'c') then ! character data type
+                       
+                       call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER,vtvec%var_cp,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace, &
+                            xfer_prp = plist_id)
+                       
+                    elseif(vt_info(nv,ngr)%dtype .eq. 'd') then ! character data type
+                       
+                       call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%var_dp,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace, &
+                            xfer_prp = plist_id) 
+                    end if
+                    if (hdferr /= 0) then
+                       write (unit=*,fmt=*) 'Variable name:    ',varn
+                       write (unit=*,fmt=*) 'Global dimension: ',globdims
+                       write (unit=*,fmt=*) 'Chunk dimension:  ',chnkdims
+                       write (unit=*,fmt=*) 'Chunk offset:     ',chnkoffs
+                       write (unit=*,fmt=*) 'Count:            ',cnt
+                       write (unit=*,fmt=*) 'Stride:           ',stride
+                       call fatal_error('Could not write the real hyperslab into the dataset' &
+                            ,'h5_output','h5_output.F90')
+                    end if
+#else                       
+                    
+                    
+                    if (vt_info(nv,ngr)%dtype .eq. 'r') then   ! real data type
+                       call h5dwrite_f(dset_id,H5T_NATIVE_REAL,vtvec%var_rp,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace)
+                    elseif(vt_info(nv,ngr)%dtype .eq. 'i') then ! integer data type
+                       
+                       call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER,vtvec%var_ip,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace)
+                       
+                    elseif(vt_info(nv,ngr)%dtype .eq. 'c') then ! character data type
+                       
+                       call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER,vtvec%var_cp,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace)
+                    elseif(vt_info(nv,ngr)%dtype .eq. 'd') then ! character data type
+                       
+                       call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%var_dp,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace)
+                       
+                    end if
+                    if (hdferr /= 0) then
+                       write (unit=*,fmt=*) 'Variable name:    ',varn
+                       write (unit=*,fmt=*) 'Global dimension: ',globdims
+                       write (unit=*,fmt=*) 'Chunk dimension:  ',chnkdims
+                       write (unit=*,fmt=*) 'Chunk offset:     ',chnkoffs
+                       write (unit=*,fmt=*) 'Count:            ',cnt
+                       write (unit=*,fmt=*) 'Stride:           ',stride
+                       call fatal_error('Could not write the real hyperslab into the dataset' &
+                            ,'h5_output','h5_output.F90')
+                    end if
+
+#endif                    
+                    
                     call h5sclose_f(filespace,hdferr)
                     if (hdferr /= 0) then
                        call fatal_error('Could not close the hyperslabs filespace' &
@@ -643,13 +614,14 @@ subroutine h5_output(vtype)
         end do varloop
         
         
+#if USE_COLLECTIVE_MPIO
         
-        if (collective_mpi) then
-           call h5pclose_f(plist_id,hdferr)
-           if (hdferr /= 0) then
-              call fatal_error('could not close the plist,post write','h5_output','h5_output.F90')
-           end if
+        call h5pclose_f(plist_id,hdferr)
+        if (hdferr /= 0) then
+           call fatal_error('could not close the plist,post write','h5_output','h5_output.F90')
         end if
+        
+#endif
         
         call h5fclose_f(file_id,hdferr)
         if (hdferr /= 0) then
@@ -660,53 +632,56 @@ subroutine h5_output(vtype)
         if (hdferr /= 0) then
            call fatal_error('Could not close the hdf environment','h5_output','h5_output.F90')
         end if
-
+        
         ping = 1
         
      end if   ! END THE POLYGON CHECK LOOP - PING SHOULD STILL BE ZERO UNLESS THIS LOOP WAS ENTERED
+
+#if USE_COLLECTIVE_MPIO
      
-     if (.not. collective_mpi) then
+#else     
+
         if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,734+ngr,MPI_COMM_WORLD,ierr)
-        !     if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
+        if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
+
+#endif     
+        
+     enddo
+     
+     
+     
+     select case (vtype)
+     case ('LITE')
+        subaname='  Analysis lite HDF write'
+     case ('MEAN')
+        subaname='  Averaged analysis HDF write    '
+     case ('BOTH')
+        subaname='  Averaged analysis lite HDF write   '
+     case ('DAIL')
+        subaname='  Daily average analysis HDF write    '
+     case ('MONT')
+        subaname='  Monthly average analysis HDF write   '
+     case ('YEAR')
+        subaname='  Annual average analysis HDF write   '
+     case ('HIST')
+        subaname='  History HDF write   '
+     case default
+        subaname='  Analysis HDF write         '
+     end select
+     
+     if (mynum.eq.nnodetot .and. new_file) then
+        write(c0,'(F10.0)') time
+        write(*,"(/,a)") " === "//trim(adjustl(subaname))//" at Sim time "//trim(adjustl(c0))//" ==="
+        write(*,"(a,/)") " === wrote file "//&
+             &trim(adjustl(anamel))//" ==="
      end if
      
+     ! Reset the time back to the original
+     if(vtype == 'MEAN'.or.vtype == 'BOTH')  time=timeold
      
-  enddo
-    
-  
-
-  select case (vtype)
-  case ('LITE')
-     subaname='  Analysis lite HDF write'
-  case ('MEAN')
-     subaname='  Averaged analysis HDF write    '
-  case ('BOTH')
-     subaname='  Averaged analysis lite HDF write   '
-  case ('DAIL')
-     subaname='  Daily average analysis HDF write    '
-  case ('MONT')
-     subaname='  Monthly average analysis HDF write   '
-  case ('YEAR')
-     subaname='  Annual average analysis HDF write   '
-  case ('HIST')
-     subaname='  History HDF write   '
-  case default
-     subaname='  Analysis HDF write         '
-  end select
-  
-  if (mynum.eq.nnodetot .and. new_file) then
-     write(c0,'(F10.0)') time
-     write(*,"(/,a)") " === "//trim(adjustl(subaname))//" at Sim time "//trim(adjustl(c0))//" ==="
-     write(*,"(a,/)") " === wrote file "//&
-          &trim(adjustl(anamel))//" ==="
-  end if
-     
-  ! Reset the time back to the original
-  if(vtype == 'MEAN'.or.vtype == 'BOTH')  time=timeold
-  
-  return
-end subroutine h5_output
-!==========================================================================================!
+     return
+   end subroutine h5_output
+   !==========================================================================================!
 !==========================================================================================!
 
 

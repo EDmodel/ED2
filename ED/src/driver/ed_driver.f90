@@ -28,6 +28,8 @@ subroutine ed_driver
   use soil_coms, only: alloc_soilgrid
   use ed_node_coms , only: mynum,nnodetot,sendnum,recvnum
 
+  use hdf5_utils,only:init_hdf5_env
+
   implicit none
 
   real :: w1,w2,w3,wtime_start  ! wall time

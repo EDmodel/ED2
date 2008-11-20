@@ -299,7 +299,7 @@ contains
 
     use ed_state_vars,only:sitetype,patchtype,rk4patchtype,edgrid_g
     use consts_coms, only: day_sec,t3ple
-
+    use ed_misc_coms,only: fast_diagnostics
     use soil_coms, only: soil, slz
     use grid_coms, only: nzg, nzs
     use canopy_radiation_coms, only: lai_min, veg_temp_min
@@ -325,13 +325,6 @@ contains
     csite%can_temp(ipa) = initp%can_temp
     csite%can_shv(ipa) = initp%can_shv
     csite%can_co2(ipa) = initp%can_co2
-    csite%wbudget_loss2atm(ipa) = initp%wbudget_loss2atm
-    csite%ebudget_loss2atm(ipa) = initp%ebudget_loss2atm
-    csite%co2budget_loss2atm(ipa) = initp%co2budget_loss2atm
-    csite%ebudget_latent(ipa) = initp%ebudget_latent
-    csite%nlev_sfcwater(ipa) = initp%nlev_sfcwater
-
-!    csite%avg_gpp(ipa) = initp%avg_gpp
 
     csite%ustar(ipa) = initp%ustar
     csite%tstar(ipa) = initp%tstar
@@ -342,29 +335,51 @@ contains
     csite%wpwp(ipa) = initp%wpwp
     csite%tpwp(ipa) = initp%tpwp
     csite%rpwp(ipa) = initp%rpwp
-    
-    csite%avg_vapor_vc(ipa)       = initp%avg_vapor_vc  
-    csite%avg_dew_cg(ipa)         = initp%avg_dew_cg    
-    csite%avg_vapor_gc(ipa)       = initp%avg_vapor_gc  
-    csite%avg_wshed_vg(ipa)       = initp%avg_wshed_vg  
-    csite%avg_vapor_ac(ipa)       = initp%avg_vapor_ac
-    csite%avg_transp(ipa)         = initp%avg_transp
-    csite%avg_evap(ipa)           = initp%avg_evap
-    csite%aux(ipa)                = initp%aux
-    csite%avg_sensible_vc(ipa)    = initp%avg_sensible_vc  
-    csite%avg_sensible_2cas(ipa)  = initp%avg_sensible_2cas
-    csite%avg_qwshed_vg(ipa)      = initp%avg_qwshed_vg    
-    csite%avg_sensible_gc(ipa)    = initp%avg_sensible_gc  
-    csite%avg_sensible_ac(ipa)    = initp%avg_sensible_ac  
-    csite%avg_sensible_tot(ipa)   = initp%avg_sensible_tot
-    csite%avg_carbon_ac(ipa)      = initp%avg_carbon_ac
+
+    if(fast_diagnostics) then
+       
+       csite%wbudget_loss2atm(ipa) = initp%wbudget_loss2atm
+       csite%ebudget_loss2atm(ipa) = initp%ebudget_loss2atm
+       csite%co2budget_loss2atm(ipa) = initp%co2budget_loss2atm
+       csite%ebudget_latent(ipa) = initp%ebudget_latent
+       csite%nlev_sfcwater(ipa) = initp%nlev_sfcwater
+       !    csite%avg_gpp(ipa) = initp%avg_gpp
+       csite%avg_vapor_vc(ipa)       = initp%avg_vapor_vc  
+       csite%avg_dew_cg(ipa)         = initp%avg_dew_cg    
+       csite%avg_vapor_gc(ipa)       = initp%avg_vapor_gc  
+       csite%avg_wshed_vg(ipa)       = initp%avg_wshed_vg  
+       csite%avg_vapor_ac(ipa)       = initp%avg_vapor_ac
+       csite%avg_transp(ipa)         = initp%avg_transp
+       csite%avg_evap(ipa)           = initp%avg_evap
+       csite%aux(ipa)                = initp%aux
+       csite%avg_sensible_vc(ipa)    = initp%avg_sensible_vc  
+       csite%avg_sensible_2cas(ipa)  = initp%avg_sensible_2cas
+       csite%avg_qwshed_vg(ipa)      = initp%avg_qwshed_vg    
+       csite%avg_sensible_gc(ipa)    = initp%avg_sensible_gc  
+       csite%avg_sensible_ac(ipa)    = initp%avg_sensible_ac  
+       csite%avg_sensible_tot(ipa)   = initp%avg_sensible_tot
+       csite%avg_carbon_ac(ipa)      = initp%avg_carbon_ac
+
+       do k = lsl, nzg
+          csite%avg_sensible_gg(k,ipa) = initp%avg_sensible_gg(k)
+          csite%avg_smoist_gg(k,ipa)   = initp%avg_smoist_gg(k)
+          csite%avg_smoist_gc(k,ipa)   = initp%avg_smoist_gc(k)
+          csite%aux_s(k,ipa)  = initp%aux_s(k)
+       enddo
+
+    endif
+
+       
+    ! The following is not a pure diagnostic, it is used for phenology
+    ! and mortality functions, preserve this variable and its dependencies
+    ! in all contexts
 
     csite%avg_daily_temp(ipa) = csite%avg_daily_temp(ipa) + csite%can_temp(ipa)
 
     ! [KIM - 10-day average of plant available water - paw_avg10d
     ! MLO - Added after the return statement to avoid computations over water.
     !      Changed the name from theta to available_water
-
+    
     cpatch => csite%patch(ipa)
 
     do ico = 1,cpatch%ncohorts
@@ -393,11 +408,6 @@ contains
        csite%soil_energy(k,ipa) = initp%soil_energy(k)
        csite%soil_tempk(k,ipa) = initp%soil_tempk(k)
        csite%soil_fracliq(k,ipa) = initp%soil_fracliq(k)
-
-       csite%avg_sensible_gg(k,ipa) = initp%avg_sensible_gg(k)
-       csite%avg_smoist_gg(k,ipa)   = initp%avg_smoist_gg(k)
-       csite%avg_smoist_gc(k,ipa)   = initp%avg_smoist_gc(k)
-       csite%aux_s(k,ipa)  = initp%aux_s(k)
     enddo
     
 
@@ -417,6 +427,13 @@ contains
        ! temperature to the canopy air space
        if (cpatch%lai(ico) < lai_min) then
           cpatch%veg_temp(ico) = csite%can_temp(ipa)
+
+          ! TO DO: CHECK TO SEE IF VEG_WATER HAS BEEN INITIALIZED AS ZERO
+          ! FOR SMALL COHORTS. IF SO, THAT IS GOOD. ALSO CHECK TO SEE
+          ! IF IT IS EVER MODIFIED FOR SMALL PLANTS. IF SO, THAT IS BAD.
+          ! THE FOLLOWING LINE IS ACTUALLY NOT NEEDED IF THESE CONDITIONS
+          ! ARE MET.
+          ! cpatch%veg_water(ico) = 0.
        else 
           hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
           call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),hcapveg,cpatch%veg_temp(ico),fracliq)
