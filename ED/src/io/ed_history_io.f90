@@ -188,7 +188,7 @@ subroutine read_ed1_history_file_array
         ! Open file and read in patches
         open(12,file=trim(pss_name),form='formatted',status='old')
         read(12,*)  cdum ! skip header
-        
+
         !----- If running mixed ED-1/ED-2, check whether the file is ED1 or ED2. ----------!
         if (ied_init_mode == -1) then
            if (cdum == 'time') then
@@ -213,7 +213,6 @@ subroutine read_ed1_history_file_array
         ip = 1
         sitenum = 0
         count_patches: do
-           
            if (ip>huge_patch) call fatal_error('IP too high','read_ed1_history_file_array','ed_history_io.f90')
 
            select case (ied_init_mode_local)
@@ -279,7 +278,7 @@ subroutine read_ed1_history_file_array
            case default !Nearly bare ground
               exit count_patches
            end select
-           
+
            if (area(ip) > min_area) ip = ip + 1 ! This will remove patches with tiny area that often cause trouble
         
         enddo count_patches

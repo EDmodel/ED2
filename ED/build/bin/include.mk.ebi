@@ -125,7 +125,7 @@ C_LOADER=mpicc
 LIBS=
 MOD_EXT=mod
 #Compiler options
-F_OPTS= -g -Wall -W -ffpe-trap=invalid,zero,overflow -fbounds-check -Wconversion
+F_OPTS= -g -Wall -W -ffpe-trap=invalid,zero,overflow -Wconversion -fbounds-check #-fbacktrace -fdump-core
 #-O3 -static -fno-second-underscore
 C_OPTS=-O3 -DLITTLE
 LOADER_OPTS= -g -Wl,-rpath -Wl,/home/mdietze/hdf5-1.8.1/hdf5/lib

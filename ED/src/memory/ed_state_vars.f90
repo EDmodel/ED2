@@ -1986,7 +1986,6 @@ contains
     
     call nullify_sitetype(csite)
     csite%npatches = npatches
-
     allocate(csite%paco_id(npatches))
     allocate(csite%paco_n(npatches))
     allocate(csite%patch(npatches))
@@ -7034,8 +7033,8 @@ contains
 
     if (associated(csite%paco_id)) then
        nvar=nvar+1
-         call vtable_edio_i(csite%paco_id(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'PACO_ID :31:hist:dail:mont:year:mpti:mpt3') 
+       call vtable_edio_i(csite%paco_id(1),nvar,igr,init,csite%paglob_id, &
+            var_len,var_len_global,max_ptrs,'PACO_ID :31:hist:dail:mont:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 

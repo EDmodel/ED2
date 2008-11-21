@@ -26,6 +26,7 @@ contains
     ! when I ran with full interfacing...
     real :: h,htry,x,epsil,hdid,hnext,errmax,xnew,newh
     integer :: iflag1,iflag2
+    logical :: minstep
     real :: hmin
     real, intent(in) :: rhos
 
@@ -98,7 +99,11 @@ contains
 
           newh = safety * h * errmax**pshrnk
 
-!          print*,h,newh,safety,errmax,safety * errmax**pshrnk
+	  minstep = (newh .eq. h)
+
+	  if(minstep) then	
+            print*,h,newh,safety,errmax,safety * errmax**pshrnk
+	  endif
 
           if(newh < 0.1*h)then
              h = h * 0.1
@@ -107,7 +112,7 @@ contains
           endif
           xnew = x + h
 
-          if(xnew == x)then
+          if(xnew == x .or. minstep)then
 
              print*,'stepsize underflow in rkqs'
              print*,'Longitude:',edgrid_g(ifm)%lon(ipy)
@@ -121,6 +126,8 @@ contains
                 print*,'Likely to be an errmax problem.'
              else
                 print*,'Likely to be an iflag1 problem.'
+	        print*,'turn on print_diag in lsm_sanity_check'
+		print*,'for additional information'
              endif
 
              if(iflag1 == 1)then
