@@ -421,7 +421,7 @@ contains
     do ico = 1,cpatch%ncohorts
 
        cpatch%veg_water(ico) = initp%veg_water(ico)
-       cpatch%veg_energy(ico)  = initp%veg_energy(ico)
+       cpatch%veg_energy(ico) = initp%veg_energy(ico)
 
        ! For plants with minimal foliage, fix the vegetation
        ! temperature to the canopy air space
@@ -433,7 +433,8 @@ contains
           ! IF IT IS EVER MODIFIED FOR SMALL PLANTS. IF SO, THAT IS BAD.
           ! THE FOLLOWING LINE IS ACTUALLY NOT NEEDED IF THESE CONDITIONS
           ! ARE MET.
-          ! cpatch%veg_water(ico) = 0.
+          cpatch%veg_water(ico) = 0.
+
        else 
           hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
           call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),hcapveg,cpatch%veg_temp(ico),fracliq)

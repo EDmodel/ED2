@@ -783,6 +783,7 @@ subroutine ed_opspec_times
       ! wasn't aware of this, print an informative banner.                                 !
       !------------------------------------------------------------------------------------!
       elseif (outstate /= 0. .or. outstate > frqstate) then
+
          outstate = frqstate
          nrec_state = 1
          write (unit=*,fmt='(a)') ' '

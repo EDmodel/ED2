@@ -37,7 +37,7 @@ $(MAINOBJ):  $(MAIN)
 	@echo ""
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+#	rm -f $(<F:.f90=.f90) 
 
 $(LIBMODEL): $(OBJ_MODEL)
 	$(ARCHIVE) $(LIBMODEL) $(OBJ_MODEL)

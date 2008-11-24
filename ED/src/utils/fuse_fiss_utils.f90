@@ -214,11 +214,20 @@ end subroutine terminate_cohorts_ar
      real, parameter :: tolerance_max = 2.0
      integer :: ncohorts_old
 
-     if(csite%cohort_count(ipa) == 0)return ! return if there aren't any cohorts
+ 
      
      tolerance_mult = 1.0
 
      cpatch => csite%patch(ipa)
+
+
+     if(csite%cohort_count(ipa).ne.cpatch%ncohorts) then
+        print*,"COHORT COUNT DOES NOT EQUAL NCOHORTS,WTF."
+        stop
+     end if
+
+     if(csite%cohort_count(ipa) == 0)return ! return if there aren't any cohorts
+
 
      allocate(fuse_table(cpatch%ncohorts))
      fuse_table(:) = .true.

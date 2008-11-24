@@ -696,6 +696,7 @@ end subroutine read_ed1_history_file_array
 
 
 
+
 !==========================================================================================!
 !==========================================================================================!
 subroutine init_full_history_restart()
@@ -773,12 +774,26 @@ subroutine init_full_history_restart()
   
   ! Set the tolerance on a matched latitude or longitude (100 meters)
 
-  ll_tolerance = (1.0/115.0)*(1.0/10.0)   
+  ll_tolerance = (1.0/115.0)*(1.0/10.0)
+
+  ll_tolerance = (1.0/115.0)*(2.0/1.0)
+
+   
   ! at equator: (1 degree / 115 kilometers)  (1 km / 10 100-meter invervals)
 
   ! Open the HDF environment
 
   call h5open_f(hdferr)
+
+
+  ! Turn off automatic error printing. This is done because there
+  ! may be datasets that are not in the file, but it is OK. If
+  ! data is missing that should be there, ED2 error reporting
+  ! will detect it. If something is truly missing, the following
+  ! call can be bypassed. Note, that automatic error reporting
+  ! is turned back on at the end.
+  
+  call h5eset_auto_f(0,hdferr)
 
 
   ! Construct the file name for reinitiatlizing from
@@ -789,7 +804,7 @@ subroutine init_full_history_restart()
   do ngr=1,ngrids
      
      cgrid => edgrid_g(ngr)
- 
+
      print*,"================================================"
      print*,"      Entering Full History Initialization      "
      
@@ -811,7 +826,7 @@ subroutine init_full_history_restart()
         call fatal_error ('File '//trim(hnamel)//' not found.'         &
                          ,'init_full_history_restart','ed_history_io.f90')
      else
-        call h5fopen_f(hnamel, H5F_ACC_RDONLY_F, file_id, hdferr,H5P_DEFAULT_F)!plist_id)
+        call h5fopen_f(hnamel, H5F_ACC_RDONLY_F, file_id, hdferr)
         if (hdferr < 0) then
            print *, 'Error opening HDF5 file - error - ',hdferr
            print *, '   Filename: ',trim(hnamel)
@@ -929,9 +944,6 @@ subroutine init_full_history_restart()
      globdims(1) = cgrid%npolygons_global
      allocate(file_lats(cgrid%npolygons_global))
      allocate(file_lons(cgrid%npolygons_global))
-
-!     print*,cgrid%npolygons_global
-!     stop
      
      call h5dopen_f(file_id,'LATITUDE', dset_id, hdferr)
      call h5dget_space_f(dset_id, dspace_id, hdferr)
@@ -969,11 +981,11 @@ subroutine init_full_history_restart()
         if (py_index==0) then
            print*,"COULD NOT MATCH A POLYGON WITH THE DATASET"
            print*,"STOPPING"
+           print*,"THIS IS THE ",ipy,"th POLYGON"
            print*,"GRID LATS: ",cgrid%lat(ipy)
            print*,"GRID LONS: ",cgrid%lon(ipy)
-           print*,cgrid%npolygons_global
-           print*,"FILE LATS: ",file_lats(1:cgrid%npolygons_global)
-           print*,"FILE LONS: ",file_lons(1:cgrid%npolygons_global)
+!           print*,"FILE LATS: ",file_lats
+!           print*,"FILE LONS: ",file_lons
            call fatal_error('Mismatch between polygon and dataset'         &
                            ,'init_full_history_restart','ed_history_io.f90')
         endif
@@ -1106,6 +1118,13 @@ subroutine init_full_history_restart()
   !   enddo
   !   call update_polygon_derived_props_ar(cgrid)
   ! enddo
+  
+  ! Turn automatic error reporting back on.
+  ! This is probably unecessary, because the environment
+  ! is about to be flushed.
+  call h5eset_auto_f(1,hdferr)
+
+
 
   ! Close the HDF environment
   
@@ -1140,6 +1159,30 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
        memdims,memoffs,memsize
 
   implicit none
+  
+  interface
+     subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required_in)
+       use hdf5_coms,only:memsize
+       real,dimension(memsize(1),memsize(2),memsize(3),memsize(4)) :: buff
+       integer :: dsetrank,iparallel
+       character(len=*),intent(in) :: varn
+       logical,intent(in),optional :: required_in
+     end subroutine hdf_getslab_r
+     subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required_in)
+       use hdf5_coms,only:memsize
+       real(kind=8),dimension(memsize(1),memsize(2),memsize(3),memsize(4)) :: buff
+       integer :: dsetrank,iparallel
+       character(len=*),intent(in) :: varn
+       logical,intent(in),optional :: required_in
+     end subroutine hdf_getslab_d
+     subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required_in)
+       use hdf5_coms,only:memsize
+       integer,dimension(memsize(1),memsize(2),memsize(3),memsize(4)) :: buff
+       integer :: dsetrank,iparallel
+       character(len=*),intent(in) :: varn
+       logical,intent(in),optional :: required_in
+     end subroutine hdf_getslab_i
+  end interface
 
   type(edtype),target ::       cgrid
 
@@ -1178,7 +1221,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   memoffs(1)  = 0
   memsize(1)  = 1
 
-
   call hdf_getslab_i(cgrid%lsl(ipy),'LSL ',dsetrank,iparallel)
 
   call hdf_getslab_r(cgrid%wbar(ipy),'WBAR ',dsetrank,iparallel)
@@ -1200,81 +1242,81 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   ! All daily and monthly variables need to be retrieved if you are loading there...
   
   if(associated(cgrid%dmean_gpp         )) &
-       call hdf_getslab_r(cgrid%dmean_gpp(ipy)          ,'DMEAN_GPP '         ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%dmean_gpp(ipy)          ,'DMEAN_GPP '         ,dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_evap        )) &
-       call hdf_getslab_r(cgrid%dmean_evap(ipy)         ,'DMEAN_EVAP '        ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%dmean_evap(ipy)         ,'DMEAN_EVAP '        ,dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_transp      )) &
-       call hdf_getslab_r(cgrid%dmean_transp(ipy)       ,'DMEAN_TRANSP '      ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%dmean_transp(ipy)       ,'DMEAN_TRANSP '      ,dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_sensible_vc )) &
-       call hdf_getslab_r(cgrid%dmean_sensible_vc(ipy)  ,'DMEAN_SENSIBLE_VC ' ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%dmean_sensible_vc(ipy)  ,'DMEAN_SENSIBLE_VC ' ,dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_sensible_gc )) &
-       call hdf_getslab_r(cgrid%dmean_sensible_gc(ipy)  ,'DMEAN_SENSIBLE_GC ' ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%dmean_sensible_gc(ipy)  ,'DMEAN_SENSIBLE_GC ' ,dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_sensible_ac )) &
-       call hdf_getslab_r(cgrid%dmean_sensible_ac(ipy)  ,'DMEAN_SENSIBLE_AC ' ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%dmean_sensible_ac(ipy)  ,'DMEAN_SENSIBLE_AC ' ,dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_sensible    )) &
-       call hdf_getslab_r(cgrid%dmean_sensible(ipy)     ,'DMEAN_SENSIBLE '    ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%dmean_sensible(ipy)     ,'DMEAN_SENSIBLE '    ,dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_plresp      )) &
-       call hdf_getslab_r(cgrid%dmean_plresp(ipy)       ,'DMEAN_PLRESP '      ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%dmean_plresp(ipy)       ,'DMEAN_PLRESP '      ,dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_rh          )) &
-       call hdf_getslab_r(cgrid%dmean_rh(ipy)           ,'DMEAN_RH '          ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%dmean_rh(ipy)           ,'DMEAN_RH '          ,dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_leaf_resp   )) &
-       call hdf_getslab_r(cgrid%dmean_leaf_resp(ipy)    ,'DMEAN_LEAF_RESP '   ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%dmean_leaf_resp(ipy)    ,'DMEAN_LEAF_RESP '   ,dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_root_resp   )) &
-       call hdf_getslab_r(cgrid%dmean_root_resp(ipy)    ,'DMEAN_ROOT_RESP '   ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%dmean_root_resp(ipy)    ,'DMEAN_ROOT_RESP '   ,dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_growth_resp )) &
-       call hdf_getslab_r(cgrid%dmean_growth_resp(ipy)  ,'DMEAN_GROWTH_RESP ' ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%dmean_growth_resp(ipy)  ,'DMEAN_GROWTH_RESP ' ,dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_storage_resp)) &
-       call hdf_getslab_r(cgrid%dmean_storage_resp(ipy) ,'DMEAN_STORAGE_RESP ',dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%dmean_storage_resp(ipy) ,'DMEAN_STORAGE_RESP ',dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_vleaf_resp  )) &
-       call hdf_getslab_r(cgrid%dmean_vleaf_resp(ipy)   ,'DMEAN_VLEAF_RESP '  ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%dmean_vleaf_resp(ipy)   ,'DMEAN_VLEAF_RESP '  ,dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_nep         )) &
-       call hdf_getslab_r(cgrid%dmean_nep(ipy)          ,'DMEAN_NEP '         ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%dmean_nep(ipy)          ,'DMEAN_NEP '         ,dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_fsw         )) &
-       call hdf_getslab_r(cgrid%dmean_fsw(ipy)          ,'DMEAN_FSW '         ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%dmean_fsw(ipy)          ,'DMEAN_FSW '         ,dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_fsn         )) &
-       call hdf_getslab_r(cgrid%dmean_fsn(ipy)          ,'DMEAN_FSN '         ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%dmean_fsn(ipy)          ,'DMEAN_FSN '         ,dsetrank,iparallel,.false.)
   if(associated(cgrid%mmean_gpp         )) &
-       call hdf_getslab_r(cgrid%mmean_gpp(ipy)          ,'MMEAN_GPP '         ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%mmean_gpp(ipy)          ,'MMEAN_GPP '         ,dsetrank,iparallel,.false.)
   if(associated(cgrid%mmean_evap        )) &
-       call hdf_getslab_r(cgrid%mmean_evap(ipy)         ,'MMEAN_EVAP '        ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%mmean_evap(ipy)         ,'MMEAN_EVAP '        ,dsetrank,iparallel,.false.)
   if(associated(cgrid%mmean_transp      )) &
-       call hdf_getslab_r(cgrid%mmean_transp(ipy)       ,'MMEAN_TRANSP '      ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%mmean_transp(ipy)       ,'MMEAN_TRANSP '      ,dsetrank,iparallel,.false.)
   if(associated(cgrid%mmean_sensible    )) &
-       call hdf_getslab_r(cgrid%mmean_sensible(ipy)     ,'MMEAN_SENSIBLE '    ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%mmean_sensible(ipy)     ,'MMEAN_SENSIBLE '    ,dsetrank,iparallel,.false.)
   if(associated(cgrid%mmean_sensible_ac )) &
-       call hdf_getslab_r(cgrid%mmean_sensible_ac(ipy)  ,'MMEAN_SENSIBLE_AC ' ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%mmean_sensible_ac(ipy)  ,'MMEAN_SENSIBLE_AC ' ,dsetrank,iparallel,.false.)
   if(associated(cgrid%mmean_sensible_gc )) &
-       call hdf_getslab_r(cgrid%mmean_sensible_gc(ipy)  ,'MMEAN_SENSIBLE_GC ' ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%mmean_sensible_gc(ipy)  ,'MMEAN_SENSIBLE_GC ' ,dsetrank,iparallel,.false.)
   if(associated(cgrid%mmean_sensible_vc )) &
-       call hdf_getslab_r(cgrid%mmean_sensible_vc(ipy)  ,'MMEAN_SENSIBLE_VC ' ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%mmean_sensible_vc(ipy)  ,'MMEAN_SENSIBLE_VC ' ,dsetrank,iparallel,.false.)
   if(associated(cgrid%mmean_nep         )) &
-       call hdf_getslab_r(cgrid%mmean_nep(ipy)          ,'MMEAN_NEP '         ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%mmean_nep(ipy)          ,'MMEAN_NEP '         ,dsetrank,iparallel,.false.)
   if(associated(cgrid%mmean_plresp      )) &
-       call hdf_getslab_r(cgrid%mmean_plresp(ipy)       ,'MMEAN_PLRESP '      ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%mmean_plresp(ipy)       ,'MMEAN_PLRESP '      ,dsetrank,iparallel,.false.)
   if(associated(cgrid%mmean_rh          )) &
-       call hdf_getslab_r(cgrid%mmean_rh(ipy)           ,'MMEAN_RH '          ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%mmean_rh(ipy)           ,'MMEAN_RH '          ,dsetrank,iparallel,.false.)
   if(associated(cgrid%mmean_leaf_resp   )) &
-       call hdf_getslab_r(cgrid%mmean_leaf_resp(ipy)    ,'MMEAN_LEAF_RESP '   ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%mmean_leaf_resp(ipy)    ,'MMEAN_LEAF_RESP '   ,dsetrank,iparallel,.false.)
   if(associated(cgrid%mmean_root_resp   )) &
-       call hdf_getslab_r(cgrid%mmean_root_resp(ipy)    ,'MMEAN_ROOT_RESP '   ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%mmean_root_resp(ipy)    ,'MMEAN_ROOT_RESP '   ,dsetrank,iparallel,.false.)
   if(associated(cgrid%mmean_growth_resp )) &
-       call hdf_getslab_r(cgrid%mmean_growth_resp(ipy)  ,'MMEAN_GROWTH_RESP ' ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%mmean_growth_resp(ipy)  ,'MMEAN_GROWTH_RESP ' ,dsetrank,iparallel,.false.)
   if(associated(cgrid%mmean_storage_resp)) &
-       call hdf_getslab_r(cgrid%mmean_storage_resp(ipy) ,'MMEAN_STORAGE_RESP ',dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%mmean_storage_resp(ipy) ,'MMEAN_STORAGE_RESP ',dsetrank,iparallel,.false.)
   if(associated(cgrid%mmean_vleaf_resp  )) &
-       call hdf_getslab_r(cgrid%mmean_vleaf_resp(ipy)   ,'MMEAN_VLEAF_RESP '  ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%mmean_vleaf_resp(ipy)   ,'MMEAN_VLEAF_RESP '  ,dsetrank,iparallel,.false.)
   if(associated(cgrid%stdev_gpp         )) &
-       call hdf_getslab_r(cgrid%stdev_gpp(ipy)          ,'STDEV_GPP '         ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%stdev_gpp(ipy)          ,'STDEV_GPP '         ,dsetrank,iparallel,.false.)
   if(associated(cgrid%stdev_evap        )) &
-       call hdf_getslab_r(cgrid%stdev_evap(ipy)         ,'STDEV_EVAP '        ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%stdev_evap(ipy)         ,'STDEV_EVAP '        ,dsetrank,iparallel,.false.)
   if(associated(cgrid%stdev_transp      )) &
-       call hdf_getslab_r(cgrid%stdev_transp(ipy)       ,'STDEV_TRANSP '      ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%stdev_transp(ipy)       ,'STDEV_TRANSP '      ,dsetrank,iparallel,.false.)
   if(associated(cgrid%stdev_sensible    )) &
-       call hdf_getslab_r(cgrid%stdev_sensible(ipy)     ,'STDEV_SENSIBLE '    ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%stdev_sensible(ipy)     ,'STDEV_SENSIBLE '    ,dsetrank,iparallel,.false.)
   if(associated(cgrid%stdev_nep         )) &
-       call hdf_getslab_r(cgrid%stdev_nep(ipy)          ,'STDEV_NEP '         ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%stdev_nep(ipy)          ,'STDEV_NEP '         ,dsetrank,iparallel,.false.)
   if(associated(cgrid%stdev_rh          )) &
-       call hdf_getslab_r(cgrid%stdev_rh(ipy)           ,'STDEV_RH '          ,dsetrank,iparallel)
+       call hdf_getslab_r(cgrid%stdev_rh(ipy)           ,'STDEV_RH '          ,dsetrank,iparallel,.false.)
 
   ! Variables with 2 dimensions (nzg,npolygons)
   dsetrank    = 2
@@ -1292,16 +1334,15 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   memsize(2)   = 1
   memoffs(2)   = 0
 
-  ! Ryan - This one was (1,1) before, I changed to (1,ipy), is that correct?
-  call hdf_getslab_i(cgrid%ntext_soil(1,ipy)       ,'NTEXT_SOIL '       ,dsetrank,iparallel)
+  call hdf_getslab_i(cgrid%ntext_soil(1,ipy)       ,'NTEXT_SOIL '       ,dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_soil_temp)) &
-     call hdf_getslab_r(cgrid%dmean_soil_temp(1,ipy)  ,'DMEAN_SOIL_TEMP '  ,dsetrank,iparallel)
+     call hdf_getslab_r(cgrid%dmean_soil_temp(1,ipy)  ,'DMEAN_SOIL_TEMP '  ,dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_soil_water)) &
-     call hdf_getslab_r(cgrid%dmean_soil_water(1,ipy) ,'DMEAN_SOIL_WATER ' ,dsetrank,iparallel)
+     call hdf_getslab_r(cgrid%dmean_soil_water(1,ipy) ,'DMEAN_SOIL_WATER ' ,dsetrank,iparallel,.false.)
   if(associated(cgrid%mmean_soil_temp)) &
-     call hdf_getslab_r(cgrid%mmean_soil_temp(1,ipy)  ,'MMEAN_SOIL_TEMP '  ,dsetrank,iparallel)
+     call hdf_getslab_r(cgrid%mmean_soil_temp(1,ipy)  ,'MMEAN_SOIL_TEMP '  ,dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_soil_water)) &
-     call hdf_getslab_r(cgrid%mmean_soil_water(1,ipy) ,'MMEAN_SOIL_WATER ' ,dsetrank,iparallel)
+     call hdf_getslab_r(cgrid%mmean_soil_water(1,ipy) ,'MMEAN_SOIL_WATER ' ,dsetrank,iparallel,.false.)
 
 
   ! Variables with 2 dimensions (n_pft,npolygons)
@@ -1320,10 +1361,15 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   memsize(2)   = 1
   memoffs(2)   = 0
 
-  if(associated(cgrid%lai_pft)) call hdf_getslab_r(cgrid%lai_pft(1,ipy) ,'LAI_PFT '       ,dsetrank,iparallel)
-  if(associated(cgrid%lai_pft)) call hdf_getslab_r(cgrid%lai_pft(1,ipy) ,'MMEAN_LAI_PFT ' ,dsetrank,iparallel)
-  if(associated(cgrid%agb_pft)) call hdf_getslab_r(cgrid%agb_pft(1,ipy) ,'AGB_PFT '       ,dsetrank,iparallel)
-  if(associated(cgrid%ba_pft)) call hdf_getslab_r(cgrid%ba_pft(1,ipy) ,'BA_PFT '        ,dsetrank,iparallel)
+  ! THIS VARIABLE DOES NOT NEED TO BE IN THE HISTORY RE-START - RGK 11-05-08
+  if(associated(cgrid%lai_pft)) call hdf_getslab_r(cgrid%lai_pft(1,ipy) ,'LAI_PFT '       , &
+       dsetrank,iparallel,.false.)
+  if(associated(cgrid%mmean_lai_pft)) call hdf_getslab_r(cgrid%mmean_lai_pft(1,ipy) ,'MMEAN_LAI_PFT ' , &
+       dsetrank,iparallel,.false.)
+  if(associated(cgrid%agb_pft)) call hdf_getslab_r(cgrid%agb_pft(1,ipy) ,'AGB_PFT '       , &
+       dsetrank,iparallel)
+  if(associated(cgrid%ba_pft)) call hdf_getslab_r(cgrid%ba_pft(1,ipy) ,'BA_PFT '        ,   &
+       dsetrank,iparallel)
 
   ! Variables with 2 dimensions (n_pft,npolygons)
   dsetrank    = 2
@@ -1341,12 +1387,18 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   memsize(2)   = 1
   memoffs(2)   = 0
 
-  if(associated(cgrid%dmean_gpp_lu))  call hdf_getslab_r(cgrid%dmean_gpp_lu(1,ipy) ,'DMEAN_GPP_LU ' ,dsetrank,iparallel)
-  if(associated(cgrid%dmean_rh_lu ))  call hdf_getslab_r(cgrid%dmean_rh_lu(1,ipy)  ,'DMEAN_RH_LU '  ,dsetrank,iparallel)
-  if(associated(cgrid%dmean_nep_lu))  call hdf_getslab_r(cgrid%dmean_nep_lu(1,ipy) ,'DMEAN_NEP_LU ' ,dsetrank,iparallel)
-  if(associated(cgrid%mmean_gpp_lu))  call hdf_getslab_r(cgrid%mmean_gpp_lu(1,ipy) ,'MMEAN_GPP_LU ' ,dsetrank,iparallel)
-  if(associated(cgrid%mmean_rh_lu ))  call hdf_getslab_r(cgrid%mmean_rh_lu(1,ipy)  ,'MMEAN_RH_LU '  ,dsetrank,iparallel)
-  if(associated(cgrid%mmean_nep_lu))  call hdf_getslab_r(cgrid%mmean_nep_lu(1,ipy) ,'MMEAN_NEP_LU ' ,dsetrank,iparallel)
+  if(associated(cgrid%dmean_gpp_lu))  call hdf_getslab_r(cgrid%dmean_gpp_lu(1,ipy) , &
+       'DMEAN_GPP_LU ' ,dsetrank,iparallel,.false.)
+  if(associated(cgrid%dmean_rh_lu ))  call hdf_getslab_r(cgrid%dmean_rh_lu(1,ipy)  , &
+       'DMEAN_RH_LU '  ,dsetrank,iparallel,.false.)
+  if(associated(cgrid%dmean_nep_lu))  call hdf_getslab_r(cgrid%dmean_nep_lu(1,ipy) , &
+       'DMEAN_NEP_LU ' ,dsetrank,iparallel,.false.)
+  if(associated(cgrid%mmean_gpp_lu))  call hdf_getslab_r(cgrid%mmean_gpp_lu(1,ipy) , &
+       'MMEAN_GPP_LU ' ,dsetrank,iparallel,.false.)
+  if(associated(cgrid%mmean_rh_lu ))  call hdf_getslab_r(cgrid%mmean_rh_lu(1,ipy)  , &
+       'MMEAN_RH_LU '  ,dsetrank,iparallel,.false.)
+  if(associated(cgrid%mmean_nep_lu))  call hdf_getslab_r(cgrid%mmean_nep_lu(1,ipy) , &
+       'MMEAN_NEP_LU ' ,dsetrank,iparallel,.false.)
 
 
   ! Variables with 2 dimensions (n_dbh,npolygons)
@@ -1365,8 +1417,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   memsize(2)   = 1
   memoffs(2)   = 0
 
-  if(associated(cgrid%dmean_gpp_dbh)) call hdf_getslab_r(cgrid%dmean_gpp_dbh(1,ipy) ,'DMEAN_GPP_DBH ' ,dsetrank,iparallel)
-  if(associated(cgrid%mmean_gpp_dbh)) call hdf_getslab_r(cgrid%mmean_gpp_dbh(1,ipy) ,'MMEAN_GPP_DBH ' ,dsetrank,iparallel)
+  if(associated(cgrid%dmean_gpp_dbh)) call hdf_getslab_r(cgrid%dmean_gpp_dbh(1,ipy) , &
+       'DMEAN_GPP_DBH ' ,dsetrank,iparallel,.false.)
+  if(associated(cgrid%mmean_gpp_dbh)) call hdf_getslab_r(cgrid%mmean_gpp_dbh(1,ipy) , &
+       'MMEAN_GPP_DBH ' ,dsetrank,iparallel,.false.)
 
   ! SITE_ADJACENCY
 
@@ -1396,6 +1450,30 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global)
   
   implicit none
   
+    interface
+     subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required_in)
+       use hdf5_coms,only:memsize
+       real,dimension(memsize(1),memsize(2),memsize(3),memsize(4)) :: buff
+       integer :: dsetrank,iparallel
+       character(len=*),intent(in) :: varn
+       logical,intent(in),optional :: required_in
+     end subroutine hdf_getslab_r
+     subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required_in)
+       use hdf5_coms,only:memsize
+       real(kind=8),dimension(memsize(1),memsize(2),memsize(3),memsize(4)) :: buff
+       integer :: dsetrank,iparallel
+       character(len=*),intent(in) :: varn
+       logical,intent(in),optional :: required_in
+     end subroutine hdf_getslab_d
+     subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required_in)
+       use hdf5_coms,only:memsize
+       integer,dimension(memsize(1),memsize(2),memsize(3),memsize(4)) :: buff
+       integer :: dsetrank,iparallel
+       character(len=*),intent(in) :: varn
+       logical,intent(in),optional :: required_in
+     end subroutine hdf_getslab_i
+  end interface
+
   type(polygontype),target :: cpoly
   integer,intent(in) :: pysi_index
   integer,intent(in) :: nsites_global
@@ -1611,17 +1689,44 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
   use max_dims,only : n_pft,n_dbh
   use hdf5_coms,only:file_id,dset_id,dspace_id,plist_id, &
        globdims,chnkdims,chnkoffs,cnt,stride, &
-       memdims,memoffs,memsize
+       memdims,memoffs,memsize,datatype_id,setsize
   use fusion_fission_coms, only: ff_ndbh
+  use hdf5
 
   implicit none
+
+    interface
+     subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required_in)
+       use hdf5_coms,only:memsize
+       real,dimension(memsize(1),memsize(2),memsize(3),memsize(4)) :: buff
+       integer :: dsetrank,iparallel
+       character(len=*),intent(in) :: varn
+       logical,intent(in),optional :: required_in
+     end subroutine hdf_getslab_r
+     subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required_in)
+       use hdf5_coms,only:memsize
+       real(kind=8),dimension(memsize(1),memsize(2),memsize(3),memsize(4)) :: buff
+       integer :: dsetrank,iparallel
+       character(len=*),intent(in) :: varn
+       logical,intent(in),optional :: required_in
+     end subroutine hdf_getslab_d
+     subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required_in)
+       use hdf5_coms,only:memsize
+       integer,dimension(memsize(1),memsize(2),memsize(3),memsize(4)) :: buff
+       integer :: dsetrank,iparallel
+       character(len=*),intent(in) :: varn
+       logical,intent(in),optional :: required_in
+     end subroutine hdf_getslab_i
+  end interface
 
   type(sitetype),target :: csite
   integer,intent(in) :: sipa_index
   integer,intent(in) :: npatches_global
   integer :: iparallel
   integer :: dsetrank
-  
+  integer :: hdferr
+  real,allocatable :: buff(:,:)
+
   iparallel = 0
   
   dsetrank = 1
@@ -1766,7 +1871,38 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
 
   call hdf_getslab_i(csite%ntext_soil(1,1),'NTEXT_SOIL_PA ',dsetrank,iparallel)
   call hdf_getslab_r(csite%soil_energy(1,1),'SOIL_ENERGY_PA ',dsetrank,iparallel)
-  call hdf_getslab_d(csite%soil_water(1,1),'SOIL_WATER_PA ',dsetrank,iparallel)
+    
+  !-----------------------------------------------------------------------------------!
+  !  Soil water is double precision, although it may not be DP in the dataset
+  !  The following lines make provisions for this by testing the dataset.
+  
+  call h5dopen_f(file_id,'SOIL_WATER_PA ', dset_id, hdferr)
+  if (hdferr /= 0 ) then
+     call fatal_error('Dataset did not have soil water?' &
+          ,'fill_history_site','ed_history_io.f90')
+  endif
+  call h5dget_type_f(dset_id,datatype_id,hdferr)
+  call h5tget_size_f(datatype_id,setsize,hdferr)
+  call h5dclose_f(dset_id  , hdferr)
+  
+  if (setsize==4) then  !Old precision
+     allocate(buff(nzg,csite%npatches))
+     write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
+     write (unit=*,fmt='(a)') '  Loading 4-byte precision soil water and converting to 8-byte'
+     write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
+     call hdf_getslab_r(buff(1,1),'SOIL_WATER_PA ',dsetrank,iparallel)
+     csite%soil_water(1:nzg,1:csite%npatches) = dble(buff(1:nzg,1:csite%npatches))
+     deallocate(buff)
+  else if (setsize==8) then ! Newer precision
+     call hdf_getslab_d(csite%soil_water(1,1),'SOIL_WATER_PA ',dsetrank,iparallel)
+  else
+     call fatal_error('Soil water dataset is not real nor double?' &
+          ,'fill_history_site','ed_history_io.f90')
+  end if
+
+
+  !--------------------------------------------------------------------------------------------  
+  
   call hdf_getslab_r(csite%soil_tempk(1,1),'SOIL_TEMPK_PA ',dsetrank,iparallel)
   call hdf_getslab_r(csite%soil_fracliq(1,1),'SOIL_FRACLIQ_PA ',dsetrank,iparallel)
 
@@ -1851,13 +1987,46 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
        filespace,memspace, &
        globdims,chnkdims,chnkoffs,cnt,stride, &
        memdims,memoffs,memsize
+  use consts_coms, only: cliq,cice,alli,t3ple
+  use canopy_air_coms, only: hcapveg_ref,heathite_min
+  use canopy_radiation_coms, only:lai_min
 
   implicit none
+
+  interface
+     subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required_in)
+       use hdf5_coms,only:memsize
+       real,dimension(memsize(1),memsize(2),memsize(3),memsize(4)) :: buff
+       integer :: dsetrank,iparallel
+       character(len=*),intent(in) :: varn
+       logical,intent(in),optional :: required_in
+     end subroutine hdf_getslab_r
+     subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required_in)
+       use hdf5_coms,only:memsize
+       real(kind=8),dimension(memsize(1),memsize(2),memsize(3),memsize(4)) :: buff
+       integer :: dsetrank,iparallel
+       character(len=*),intent(in) :: varn
+       logical,intent(in),optional :: required_in
+     end subroutine hdf_getslab_d
+     subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required_in)
+       use hdf5_coms,only:memsize
+       integer,dimension(memsize(1),memsize(2),memsize(3),memsize(4)) :: buff
+       integer :: dsetrank,iparallel
+       character(len=*),intent(in) :: varn
+       logical,intent(in),optional :: required_in
+     end subroutine hdf_getslab_i
+  end interface
   
   type(patchtype),target :: cpatch
   integer,intent(in) :: paco_index
   integer,intent(in) :: ncohorts_global
   integer :: iparallel,dsetrank
+  
+  ! Needed for reconstructing veg_energy if using an old restart
+  ! ------------------------------------------------------------
+  real :: hcapveg,plai,veg_temp,fracliq
+  integer :: ico
+  ! ------------------------------------------------------------
 
   iparallel = 0
   
@@ -1877,85 +2046,141 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
   memsize(1)  = cpatch%ncohorts
   memoffs(1)  = 0
 
-  call hdf_getslab_i(cpatch%pft(1),'PFT ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%nplant(1),'NPLANT ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%hite(1),'HITE ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%dbh(1),'DBH ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%bdead(1),'BDEAD ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%bleaf(1),'BLEAF ',dsetrank,iparallel)
-  call hdf_getslab_i(cpatch%phenology_status(1),'PHENOLOGY_STATUS ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%balive(1),'BALIVE ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%lai(1),'LAI_CO ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%bstorage(1),'BSTORAGE ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%cbr_bar(1),'CBR_BAR ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%veg_energy(1),'VEG_ENERGY ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%veg_temp(1),'VEG_TEMP ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%veg_water(1),'VEG_WATER ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%mean_gpp(1),'MEAN_GPP ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%mean_leaf_resp(1),'MEAN_LEAF_RESP ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%mean_root_resp(1),'MEAN_ROOT_RESP ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%dmean_leaf_resp(1),'DMEAN_LEAF_RESP_CO ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%dmean_root_resp(1),'DMEAN_ROOT_RESP_CO ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%dmean_gpp(1),'DMEAN_GPP_CO ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%dmean_gpp_pot(1),'DMEAN_GPP_POT ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%dmean_gpp_max(1),'DMEAN_GPP_MAX ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%growth_respiration(1),'GROWTH_RESPIRATION ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%storage_respiration(1),'STORAGE_RESPIRATION ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%vleaf_respiration(1),'VLEAF_RESPIRATION ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%fsn(1),'FSN ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%monthly_dndt(1),'MONTHLY_DNDT ',dsetrank,iparallel)
+  if(cpatch%ncohorts>0) then
+
+     call hdf_getslab_i(cpatch%pft(1),'PFT ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%nplant(1),'NPLANT ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%hite(1),'HITE ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%dbh(1),'DBH ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%bdead(1),'BDEAD ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%bleaf(1),'BLEAF ',dsetrank,iparallel)
+     call hdf_getslab_i(cpatch%phenology_status(1),'PHENOLOGY_STATUS ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%balive(1),'BALIVE ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%lai(1),'LAI_CO ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%bstorage(1),'BSTORAGE ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%cbr_bar(1),'CBR_BAR ',dsetrank,iparallel)
+     
+     call hdf_getslab_r(cpatch%veg_temp(1),'VEG_TEMP ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%veg_water(1),'VEG_WATER ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%veg_energy(1),'VEG_ENERGY ',dsetrank,iparallel,.false.)
+     
+     ! ------------------------------------------------------------------------------------
+     ! ======= Older versions of the code did not have vegetation energy
+     ! ======= If the VEG_ENERGY variable was not there, and was initialized to 0._4
+     ! ======= then reconstruct those values from temperature, biomass and water
+     ! ======= This makes an assumption that may not exactly true in the model, but
+     ! ======= is an acceptable approximation if this process only occurs once.  It is
+     ! ======= assumed that the vegetation water is all liquid if the temperature is
+     ! ======= greater than or equal to 0, and all ice if it is less than zero.
+     
+     if ( sum(cpatch%veg_energy(1:cpatch%ncohorts),1) < 0.01 ) then
+        
+        write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
+        write (unit=*,fmt='(a)') 'Reconstructing VEG_ENERGY from HITE, LAI_CO, VEG_WATER and VEG_TEMP'
+        write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
+        
+        plai = sum(cpatch%lai(1:cpatch%ncohorts),1)
+
+        do ico=1,cpatch%ncohorts
+
+           if(cpatch%lai(ico)>lai_min) then
+              
+              hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)/plai
+              
+              if(cpatch%veg_temp(ico)>=t3ple) then
+                 
+                 cpatch%veg_energy(ico) = &
+                      cpatch%veg_water(ico)*alli + &         ! latent heat of fusion
+                      cpatch%veg_water(ico)*cliq*(cpatch%veg_temp(ico)-t3ple) + &   ! thermal energy of liquid
+                      hcapveg *(cpatch%veg_temp(ico)-t3ple)  ! thermal energy of plant tissue
+              else
+                 
+                 cpatch%veg_energy(ico) = &
+                      cpatch%veg_water(ico)*cice*(cpatch%veg_temp(ico)-t3ple) + &   ! thermal energy of ice
+                      hcapveg *(cpatch%veg_temp(ico)-t3ple)  ! thermal energy of plant tissue
+              endif
+              
+           else
+              cpatch%veg_energy(ico) = 0.0
+           endif
+              
+        enddo
+        
+     endif
+     
+     ! ------------------------------------------------------------------------------------------
+     
+     
+     call hdf_getslab_r(cpatch%mean_gpp(1),'MEAN_GPP ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%mean_leaf_resp(1),'MEAN_LEAF_RESP ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%mean_root_resp(1),'MEAN_ROOT_RESP ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%dmean_leaf_resp(1),'DMEAN_LEAF_RESP_CO ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%dmean_root_resp(1),'DMEAN_ROOT_RESP_CO ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%dmean_gpp(1),'DMEAN_GPP_CO ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%dmean_gpp_pot(1),'DMEAN_GPP_POT ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%dmean_gpp_max(1),'DMEAN_GPP_MAX ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%growth_respiration(1),'GROWTH_RESPIRATION ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%storage_respiration(1),'STORAGE_RESPIRATION ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%vleaf_respiration(1),'VLEAF_RESPIRATION ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%fsn(1),'FSN ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%monthly_dndt(1),'MONTHLY_DNDT ',dsetrank,iparallel)
+     
+     
+     call hdf_getslab_r(cpatch%Psi_open(1),'PSI_OPEN ',dsetrank,iparallel)
+     call hdf_getslab_i(cpatch%krdepth(1),'KRDEPTH ',dsetrank,iparallel)
+     call hdf_getslab_i(cpatch%first_census(1),'FIRST_CENSUS ',dsetrank,iparallel)
+     call hdf_getslab_i(cpatch%new_recruit_flag(1),'NEW_RECRUIT_FLAG ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%par_v(1),'PAR_V ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%par_v_beam(1),'PAR_V_BEAM ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%par_v_diffuse(1),'PAR_V_DIFFUSE ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%rshort_v(1),'RSHORT_V ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%rshort_v_beam(1),'RSHORT_V_BEAM ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%rshort_v_diffuse(1),'RSHORT_V_DIFFUSE ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%rlong_v(1),'RLONG_V ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%rlong_v_surf(1),'RLONG_V_SURF ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%rlong_v_incid(1),'RLONG_V_INCID ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%rb(1),'RB ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%A_open(1),'A_OPEN ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%A_closed(1),'A_CLOSED ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%Psi_closed(1),'PSI_CLOSED ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%rsw_open(1),'RSW_OPEN ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%rsw_closed(1),'RSW_CLOSED ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%fsw(1),'FSW ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%fs_open(1),'FS_OPEN ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%stomatal_resistance(1),'STOMATAL_RESISTANCE ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%maintenance_costs(1),'MAINTENANCE_COSTS ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%bseeds(1),'BSEEDS ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%leaf_respiration(1),'LEAF_RESPIRATION ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%root_respiration(1),'ROOT_RESPIRATION ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%hcapveg(1),'HCAPVEG ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%gpp(1),'GPP ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%paw_avg10d(1),'PAW_AVG10D ',dsetrank,iparallel)
+     
+     
+     dsetrank    = 2
+     globdims(1) = 13
+     chnkdims(1) = 13
+     chnkoffs(1) = 0
+     memdims(1)  = 13
+     memsize(1)  = 13
+     memoffs(2)  = 0
+     
+     globdims(2) = ncohorts_global
+     chnkdims(2) = cpatch%ncohorts
+     chnkoffs(2) = paco_index - 1
+     
+     memdims(2)  = cpatch%ncohorts
+     memsize(2)  = cpatch%ncohorts
+     memoffs(2)  = 0
+     
+     
+     call hdf_getslab_r(cpatch%cb(1,1),'CB ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%cb_max(1,1),'CB_MAX ',dsetrank,iparallel)
+     
+     
+  endif
   
-  call hdf_getslab_r(cpatch%Psi_open(1),'PSI_OPEN ',dsetrank,iparallel)
-  call hdf_getslab_i(cpatch%krdepth(1),'KRDEPTH ',dsetrank,iparallel)
-  call hdf_getslab_i(cpatch%first_census(1),'FIRST_CENSUS ',dsetrank,iparallel)
-  call hdf_getslab_i(cpatch%new_recruit_flag(1),'NEW_RECRUIT_FLAG ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%par_v(1),'PAR_V ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%par_v_beam(1),'PAR_V_BEAM ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%par_v_diffuse(1),'PAR_V_DIFFUSE ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%rshort_v(1),'RSHORT_V ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%rshort_v_beam(1),'RSHORT_V_BEAM ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%rshort_v_diffuse(1),'RSHORT_V_DIFFUSE ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%rlong_v(1),'RLONG_V ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%rlong_v_surf(1),'RLONG_V_SURF ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%rlong_v_incid(1),'RLONG_V_INCID ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%rb(1),'RB ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%A_open(1),'A_OPEN ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%A_closed(1),'A_CLOSED ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%Psi_closed(1),'PSI_CLOSED ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%rsw_open(1),'RSW_OPEN ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%rsw_closed(1),'RSW_CLOSED ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%fsw(1),'FSW ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%fs_open(1),'FS_OPEN ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%stomatal_resistance(1),'STOMATAL_RESISTANCE ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%maintenance_costs(1),'MAINTENANCE_COSTS ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%bseeds(1),'BSEEDS ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%leaf_respiration(1),'LEAF_RESPIRATION ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%root_respiration(1),'ROOT_RESPIRATION ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%hcapveg(1),'HCAPVEG ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%gpp(1),'GPP ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%paw_avg10d(1),'PAW_AVG10D ',dsetrank,iparallel)
-
-  dsetrank    = 2
-  globdims(1) = 13
-  chnkdims(1) = 13
-  chnkoffs(1) = 0
-  memdims(1)  = 13
-  memsize(1)  = 13
-  memoffs(2)  = 0
-
-  globdims(2) = ncohorts_global
-  chnkdims(2) = cpatch%ncohorts
-  chnkoffs(2) = paco_index - 1
-
-  memdims(2)  = cpatch%ncohorts
-  memsize(2)  = cpatch%ncohorts
-  memoffs(2)  = 0
-
-
-  call hdf_getslab_r(cpatch%cb(1,1),'CB ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%cb_max(1,1),'CB_MAX ',dsetrank,iparallel)
-
-!  call hdf_getslab_i(cpatch%old_stoma_data(1),' ',dsetrank,iparallel)
+  !  call hdf_getslab_i(cpatch%old_stoma_data(1),' ',dsetrank,iparallel)
 
   return
 end subroutine fill_history_patch
@@ -1969,7 +2194,7 @@ end subroutine fill_history_patch
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel)
+subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required_in)
   
   use hdf5
   use hdf5_coms,only:file_id,dset_id,dspace_id,plist_id, &
@@ -1986,143 +2211,121 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel)
   integer :: iparallel
   character(len=*),intent(in) :: varn
   
+  ! Some datasets are required during model initialization, such as the state
+  ! variables like soil, canopy and vegetation energy and mass, although some variables
+  ! are involved only in diagnostics.  If they are missing from the restart dataset,
+  ! that may compromise diagnostic variables that are being averaged over the current time
+  ! period, but they will not compromise the transition of the prognostic model state from one
+  ! simulation to the next.
+  ! If the dataset is not required, pass it in as a .true. argument
+
+  logical,intent(in),optional :: required_in
+  logical :: required
+
+  ! If the the optional argument is not present, take the conservative stance
+  ! and make sure that it is "not-not-not-not-required", "not-not-required", or "required".
+  required = .true.
+  if (present(required_in)) then
+     required = required_in
+  endif
 
   call h5dopen_f(file_id,trim(varn), dset_id, hdferr)
-  if (hdferr /= 0) then
+  if (hdferr /= 0 .and. required ) then
+
      write(unit=*,fmt=*) 'File_ID = ',file_id
      write(unit=*,fmt=*) 'Dset_ID = ',dset_id
      call fatal_error('Could not get the dataset for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_r','ed_history_io.f90')
-  end if
-  
-  call h5dget_space_f(dset_id,filespace,hdferr)
-  if (hdferr /= 0) then
-     call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_r','ed_history_io.f90')
-  end if
-
-  call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
-       chnkdims,hdferr)
-  if (hdferr /= 0) then
-     call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_r','ed_history_io.f90')
-  end if
-
-  call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
-  if (hdferr /= 0) then
-     write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
-     write(unit=*,fmt=*) 'Dsetrank = ',dsetrank
-     call fatal_error('Could not create the hyperslabs memspace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_r','ed_history_io.f90')
-  end if
-
-  call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
-       memdims,hdferr)
-  if (hdferr /= 0) then
-     call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_r','ed_history_io.f90')
-  end if
-
-  if (iparallel == 1) then
+          ,'hdf_getslab_r','ed_history_io.f90')
      
-     call h5dread_f(dset_id, H5T_NATIVE_REAL,buff,globdims, hdferr, &
-          mem_space_id = memspace, file_space_id = filespace, &
-          xfer_prp = plist_id)
-     if (hdferr /= 0) then
-        select case (trim(varn))
-        case('DMEAN_GPP','DMEAN_EVAP','DMEAN_TRANSP','DMEAN_SENSIBLE_VC','DMEAN_SENSIBLE_GC'    &
-            ,'DMEAN_SENSIBLE_AC','DMEAN_SENSIBLE','DMEAN_PLRESP','DMEAN_RH','DMEAN_LEAF_RESP'   &
-            ,'DMEAN_ROOT_RESP','DMEAN_GROWTH_RESP','DMEAN_STORAGE_RESP','DMEAN_VLEAF_RESP'      &
-            ,'DMEAN_NEP','DMEAN_FSW','DMEAN_FSN','DMEAN_SOIL_TEMP','DMEAN_SOIL_WATER'           &
-            ,'DMEAN_GPP_LU','DMEAN_RH_LU','DMEAN_NEP_LU','DMEAN_GPP_DBH')
-           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
-           write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-           write (unit=*,fmt='(a)') '                                                           '
-           write (unit=*,fmt='(a)') ' + Variable '//trim(varn)//' not found in your history.'
-           write (unit=*,fmt='(a)') ' + Initializing this variable with zero. '
-           write (unit=*,fmt='(a)') ' + This may cause your first daily and first monthly       '
-           write (unit=*,fmt='(a)') '   output to be incorrect for this variable.'
-           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
-           write (unit=*,fmt='(a)') '                                                           '
-           buff=0.
-        case('MMEAN_GPP','MMEAN_EVAP','MMEAN_TRANSP','MMEAN_SENSIBLE','MMEAN_NEP','MMEAN_PLRESP'&
-            ,'MMEAN_RH','MMEAN_LEAF_RESP','MMEAN_ROOT_RESP','MMEAN_GROWTH_RESP'                 &
-            ,'MMEAN_STORAGE_RESP','MMEAN_VLEAF_RESP','STDEV_GPP','STDEV_EVAP','STDEV_TRANSP'    &
-            ,'STDEV_SENSIBLE','STDEV_NEP','STDEV_RH','MMEAN_LAI_PFT','MMEAN_GPP_LU'             &
-            ,'MMEAN_SOIL_TEMP','MMEAN_SOIL_WATER'                                               &
-            ,'MMEAN_RH_LU','MMEAN_NEP_LU','MMEAN_GPP_DBH')
-           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
-           write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-           write (unit=*,fmt='(a)') '                                                           '
-           write (unit=*,fmt='(a)') ' + Variable '//trim(varn)//' not found in your history.'
-           write (unit=*,fmt='(a)') ' + Initializing this variable with zero. '
-           write (unit=*,fmt='(a)') ' + This may cause your first monthly output to be incorrect'
-           write (unit=*,fmt='(a)') '   for this variable.'
-           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
-           write (unit=*,fmt='(a)') '                                                           '
-           buff=0.
-        case default
-           call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                           ,'hdf_getslab_r','ed_history_io.f90')
-        end select
-     end if
+  else if (hdferr /= 0 .and. .not.required ) then
+
+     write(unit=*,fmt=*) 'File_ID = ',file_id
+     write(unit=*,fmt=*) 'Dset_ID = ',dset_id
+     write (unit=*,fmt='(a)') '-----------------------------------------------------------'
+     write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+     write (unit=*,fmt='(a)') '                                                           '
+     write (unit=*,fmt='(a)') ' + Variable '//trim(varn)//' not found in your history.'
+     write (unit=*,fmt='(a)') ' + Initializing this variable with zero. '
+     write (unit=*,fmt='(a)') ' + This may cause some of your diagnostic output related'
+     write (unit=*,fmt='(a)') '   to this variable to be incorrect the current period.'
+     write (unit=*,fmt='(a)') ''
+     write (unit=*,fmt='(a)') '   This variable has been specified as:'
+     write (unit=*,fmt='(a)') '   NOT ABSOLUTELY NECESSARY TO RESTART THE PROGNOSTIC STATE'
+     write (unit=*,fmt='(a)') '-----------------------------------------------------------'
+     write (unit=*,fmt='(a)') ''
+     
+     buff=0._4
+     return
      
   else
-     call h5dread_f(dset_id, H5T_NATIVE_REAL,buff,globdims, hdferr, &
-          mem_space_id = memspace, file_space_id = filespace )
+     
+     call h5dget_space_f(dset_id,filespace,hdferr)
      if (hdferr /= 0) then
-        select case (trim(varn))
-        case('DMEAN_GPP','DMEAN_EVAP','DMEAN_TRANSP','DMEAN_SENSIBLE_VC','DMEAN_SENSIBLE_GC'    &
-            ,'DMEAN_SENSIBLE_AC','DMEAN_SENSIBLE','DMEAN_PLRESP','DMEAN_RH','DMEAN_LEAF_RESP'   &
-            ,'DMEAN_ROOT_RESP','DMEAN_GROWTH_RESP','DMEAN_STORAGE_RESP','DMEAN_VLEAF_RESP'      &
-            ,'DMEAN_NEP','DMEAN_FSW','DMEAN_FSN','DMEAN_SOIL_TEMP','DMEAN_SOIL_WATER'           &
-            ,'DMEAN_GPP_LU','DMEAN_RH_LU','DMEAN_NEP_LU','DMEAN_GPP_DBH')
-           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
-           write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-           write (unit=*,fmt='(a)') '                                                           '
-           write (unit=*,fmt='(a)') ' + Variable '//trim(varn)//' not found in your history.'
-           write (unit=*,fmt='(a)') ' + Initializing this variable with zero. '
-           write (unit=*,fmt='(a)') ' + This may cause your first daily and first monthly       '
-           write (unit=*,fmt='(a)') '   output to be incorrect for this variable.'
-           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
-           write (unit=*,fmt='(a)') '                                                           '
-           buff=0.
-        case('MMEAN_GPP','MMEAN_EVAP','MMEAN_TRANSP','MMEAN_SENSIBLE','MMEAN_NEP','MMEAN_PLRESP'&
-            ,'MMEAN_RH','MMEAN_LEAF_RESP','MMEAN_ROOT_RESP','MMEAN_GROWTH_RESP'                 &
-            ,'MMEAN_STORAGE_RESP','MMEAN_VLEAF_RESP','STDEV_GPP','STDEV_EVAP','STDEV_TRANSP'    &
-            ,'STDEV_SENSIBLE','STDEV_NEP','STDEV_RH','MMEAN_LAI_PFT','MMEAN_GPP_LU'             &
-            ,'MMEAN_SOIL_TEMP','MMEAN_SOIL_WATER'                                               &
-            ,'MMEAN_RH_LU','MMEAN_NEP_LU','MMEAN_GPP_DBH')
-           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
-           write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-           write (unit=*,fmt='(a)') '                                                           '
-           write (unit=*,fmt='(a)') ' + Variable '//trim(varn)//' not found in your history.'
-           write (unit=*,fmt='(a)') ' + Initializing this variable with zero. '
-           write (unit=*,fmt='(a)') ' + This may cause your first monthly output to be incorrect'
-           write (unit=*,fmt='(a)') '   for this variable.'
-           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
-           write (unit=*,fmt='(a)') '                                                           '
-           buff=0.
-        case default
-           call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                           ,'hdf_getslab_r','ed_history_io.f90')
-        end select
+        call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!!!' &
+             ,'hdf_getslab_r','ed_history_io.f90')
      end if
+     
+     call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
+          chnkdims,hdferr)
+     if (hdferr /= 0) then
+        call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
+             ,'hdf_getslab_r','ed_history_io.f90')
+     end if
+     
+     call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
+     if (hdferr /= 0) then
+        write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
+        write(unit=*,fmt=*) 'Dsetrank = ',dsetrank
+        call fatal_error('Could not create the hyperslabs memspace for '//trim(varn)//'!!!' &
+             ,'hdf_getslab_r','ed_history_io.f90')
+     end if
+     
+     call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
+          memdims,hdferr)
+     if (hdferr /= 0) then
+        call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
+             ,'hdf_getslab_r','ed_history_io.f90')
+     end if
+     
+     if (iparallel == 1) then
+        
+        call h5dread_f(dset_id, H5T_NATIVE_REAL,buff,globdims, hdferr, &
+             mem_space_id = memspace, file_space_id = filespace, &
+             xfer_prp = plist_id)
+        
+        if (hdferr /= 0) then
+           call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
+                ,'hdf_getslab_r','ed_history_io.f90')
+        end if
+
+     else
+
+        call h5dread_f(dset_id, H5T_NATIVE_REAL,buff,globdims, hdferr, &
+             mem_space_id = memspace, file_space_id = filespace )
+
+        if (hdferr /= 0) then
+           call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
+                ,'hdf_getslab_r','ed_history_io.f90')
+        end if
+
+     endif
+     
+     !  write(unit=*,fmt='(a)') 'History start: Loading '//trim(varn)//'...'
+     
+     call h5sclose_f(filespace, hdferr)
+     call h5sclose_f(memspace , hdferr)
+     call h5dclose_f(dset_id  , hdferr)
+     
   endif
-
-!  write(unit=*,fmt='(a)') 'History start: Loading '//trim(varn)//'...'
-
-  call h5sclose_f(filespace, hdferr)
-  call h5sclose_f(memspace , hdferr)
-  call h5dclose_f(dset_id  , hdferr)
   
-
+  
   return
 end subroutine hdf_getslab_r
+
 !==========================================================================================!
 !==========================================================================================!
 
-subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel)
+subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required_in)
   
   use hdf5
   use hdf5_coms,only:file_id,dset_id,dspace_id,plist_id, &
@@ -2138,136 +2341,111 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel)
   integer :: hdferr,dsetrank
   integer :: iparallel
   character(len=*),intent(in) :: varn
-  
+
+  ! Some datasets are required during model initialization, such as the state
+  ! variables like soil, canopy and vegetation energy and mass, although some variables
+  ! are involved only in diagnostics.  If they are missing from the restart dataset,
+  ! that may compromise diagnostic variables that are being averaged over the current time
+  ! period, but they will not compromise the transition of the prognostic model state from one
+  ! simulation to the next.
+  ! If the dataset is not required, pass it in as a .true. argument
+
+  logical,intent(in),optional :: required_in
+  logical  :: required
+
+  ! If the the optional argument is not present, take the conservative stance
+  ! and make sure that it is "not-not-not-not-required", "not-not-required", or "required".
+
+  required = .true.
+  if (present(required_in)) then
+     required = required_in
+  endif
 
   call h5dopen_f(file_id,trim(varn), dset_id, hdferr)
-  if (hdferr /= 0) then
+  if (hdferr /= 0 .and. required ) then
+
      write(unit=*,fmt=*) 'File_ID = ',file_id
      write(unit=*,fmt=*) 'Dset_ID = ',dset_id
      call fatal_error('Could not get the dataset for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_r','ed_history_io.f90')
-  end if
-  
-  call h5dget_space_f(dset_id,filespace,hdferr)
-  if (hdferr /= 0) then
-     call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_r','ed_history_io.f90')
-  end if
-
-  call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
-       chnkdims,hdferr)
-  if (hdferr /= 0) then
-     call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_r','ed_history_io.f90')
-  end if
-
-  call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
-  if (hdferr /= 0) then
-     write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
-     write(unit=*,fmt=*) 'Dsetrank = ',dsetrank
-     call fatal_error('Could not create the hyperslabs memspace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_r','ed_history_io.f90')
-  end if
-
-  call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
-       memdims,hdferr)
-  if (hdferr /= 0) then
-     call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_r','ed_history_io.f90')
-  end if
-
-  if (iparallel == 1) then
+          ,'hdf_getslab_d','ed_history_io.f90')
      
-     call h5dread_f(dset_id, H5T_NATIVE_REAL,buff,globdims, hdferr, &
-          mem_space_id = memspace, file_space_id = filespace, &
-          xfer_prp = plist_id)
-     if (hdferr /= 0) then
-        select case (trim(varn))
-        case('DMEAN_GPP','DMEAN_EVAP','DMEAN_TRANSP','DMEAN_SENSIBLE_VC','DMEAN_SENSIBLE_GC'    &
-            ,'DMEAN_SENSIBLE_AC','DMEAN_SENSIBLE','DMEAN_PLRESP','DMEAN_RH','DMEAN_LEAF_RESP'   &
-            ,'DMEAN_ROOT_RESP','DMEAN_GROWTH_RESP','DMEAN_STORAGE_RESP','DMEAN_VLEAF_RESP'      &
-            ,'DMEAN_NEP','DMEAN_FSW','DMEAN_FSN','DMEAN_SOIL_TEMP','DMEAN_SOIL_WATER'           &
-            ,'DMEAN_GPP_LU','DMEAN_RH_LU','DMEAN_NEP_LU','DMEAN_GPP_DBH')
-           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
-           write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-           write (unit=*,fmt='(a)') '                                                           '
-           write (unit=*,fmt='(a)') ' + Variable '//trim(varn)//' not found in your history.'
-           write (unit=*,fmt='(a)') ' + Initializing this variable with zero. '
-           write (unit=*,fmt='(a)') ' + This may cause your first daily and first monthly       '
-           write (unit=*,fmt='(a)') '   output to be incorrect for this variable.'
-           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
-           write (unit=*,fmt='(a)') '                                                           '
-           buff=0.
-        case('MMEAN_GPP','MMEAN_EVAP','MMEAN_TRANSP','MMEAN_SENSIBLE','MMEAN_NEP','MMEAN_PLRESP'&
-            ,'MMEAN_RH','MMEAN_LEAF_RESP','MMEAN_ROOT_RESP','MMEAN_GROWTH_RESP'                 &
-            ,'MMEAN_STORAGE_RESP','MMEAN_VLEAF_RESP','STDEV_GPP','STDEV_EVAP','STDEV_TRANSP'    &
-            ,'STDEV_SENSIBLE','STDEV_NEP','STDEV_RH','MMEAN_LAI_PFT','MMEAN_GPP_LU'             &
-            ,'MMEAN_SOIL_TEMP','MMEAN_SOIL_WATER'                                               &
-            ,'MMEAN_RH_LU','MMEAN_NEP_LU','MMEAN_GPP_DBH')
-           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
-           write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-           write (unit=*,fmt='(a)') '                                                           '
-           write (unit=*,fmt='(a)') ' + Variable '//trim(varn)//' not found in your history.'
-           write (unit=*,fmt='(a)') ' + Initializing this variable with zero. '
-           write (unit=*,fmt='(a)') ' + This may cause your first monthly output to be incorrect'
-           write (unit=*,fmt='(a)') '   for this variable.'
-           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
-           write (unit=*,fmt='(a)') '                                                           '
-           buff=0.
-        case default
-           call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                           ,'hdf_getslab_r','ed_history_io.f90')
-        end select
-     end if
+  else if (hdferr /= 0 .and. .not.required ) then
+
+     write(unit=*,fmt=*) 'File_ID = ',file_id
+     write(unit=*,fmt=*) 'Dset_ID = ',dset_id
+     write (unit=*,fmt='(a)') '-----------------------------------------------------------'
+     write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+     write (unit=*,fmt='(a)') '                                                           '
+     write (unit=*,fmt='(a)') ' + Variable '//trim(varn)//' not found in your history.'
+     write (unit=*,fmt='(a)') ' + Initializing this variable with zero. '
+     write (unit=*,fmt='(a)') ' + This may cause some of your diagnostic output related'
+     write (unit=*,fmt='(a)') '   to this variable to be incorrect the current period.'
+     write (unit=*,fmt='(a)') ''
+     write (unit=*,fmt='(a)') '   This variable has been specified as:'
+     write (unit=*,fmt='(a)') '   NOT ABSOLUTELY NECESSARY TO RESTART THE PROGNOSTIC STATE'
+     write (unit=*,fmt='(a)') '-----------------------------------------------------------'
+     write (unit=*,fmt='(a)') ''
+     
+     buff=0._8
+     return
      
   else
-     call h5dread_f(dset_id, H5T_NATIVE_DOUBLE,buff,globdims, hdferr, &
-          mem_space_id = memspace, file_space_id = filespace )
+  
+     call h5dget_space_f(dset_id,filespace,hdferr)
      if (hdferr /= 0) then
-        select case (trim(varn))
-        case('DMEAN_GPP','DMEAN_EVAP','DMEAN_TRANSP','DMEAN_SENSIBLE_VC','DMEAN_SENSIBLE_GC'    &
-            ,'DMEAN_SENSIBLE_AC','DMEAN_SENSIBLE','DMEAN_PLRESP','DMEAN_RH','DMEAN_LEAF_RESP'   &
-            ,'DMEAN_ROOT_RESP','DMEAN_GROWTH_RESP','DMEAN_STORAGE_RESP','DMEAN_VLEAF_RESP'      &
-            ,'DMEAN_NEP','DMEAN_FSW','DMEAN_FSN','DMEAN_SOIL_TEMP','DMEAN_SOIL_WATER'           &
-            ,'DMEAN_GPP_LU','DMEAN_RH_LU','DMEAN_NEP_LU','DMEAN_GPP_DBH')
-           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
-           write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-           write (unit=*,fmt='(a)') '                                                           '
-           write (unit=*,fmt='(a)') ' + Variable '//trim(varn)//' not found in your history.'
-           write (unit=*,fmt='(a)') ' + Initializing this variable with zero. '
-           write (unit=*,fmt='(a)') ' + This may cause your first daily and first monthly       '
-           write (unit=*,fmt='(a)') '   output to be incorrect for this variable.'
-           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
-           write (unit=*,fmt='(a)') '                                                           '
-           buff=0.
-        case('MMEAN_GPP','MMEAN_EVAP','MMEAN_TRANSP','MMEAN_SENSIBLE','MMEAN_NEP','MMEAN_PLRESP'&
-            ,'MMEAN_RH','MMEAN_LEAF_RESP','MMEAN_ROOT_RESP','MMEAN_GROWTH_RESP'                 &
-            ,'MMEAN_STORAGE_RESP','MMEAN_VLEAF_RESP','STDEV_GPP','STDEV_EVAP','STDEV_TRANSP'    &
-            ,'STDEV_SENSIBLE','STDEV_NEP','STDEV_RH','MMEAN_LAI_PFT','MMEAN_GPP_LU'             &
-            ,'MMEAN_SOIL_TEMP','MMEAN_SOIL_WATER'                                               &
-            ,'MMEAN_RH_LU','MMEAN_NEP_LU','MMEAN_GPP_DBH')
-           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
-           write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-           write (unit=*,fmt='(a)') '                                                           '
-           write (unit=*,fmt='(a)') ' + Variable '//trim(varn)//' not found in your history.'
-           write (unit=*,fmt='(a)') ' + Initializing this variable with zero. '
-           write (unit=*,fmt='(a)') ' + This may cause your first monthly output to be incorrect'
-           write (unit=*,fmt='(a)') '   for this variable.'
-           write (unit=*,fmt='(a)') '-----------------------------------------------------------'
-           write (unit=*,fmt='(a)') '                                                           '
-           buff=0.
-        case default
-           call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                           ,'hdf_getslab_r','ed_history_io.f90')
-        end select
+        call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!!!' &
+             ,'hdf_getslab_r','ed_history_io.f90')
      end if
+     
+     call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
+          chnkdims,hdferr)
+     if (hdferr /= 0) then
+        call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
+             ,'hdf_getslab_r','ed_history_io.f90')
+     end if
+     
+     call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
+     if (hdferr /= 0) then
+        write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
+        write(unit=*,fmt=*) 'Dsetrank = ',dsetrank
+        call fatal_error('Could not create the hyperslabs memspace for '//trim(varn)//'!!!' &
+             ,'hdf_getslab_r','ed_history_io.f90')
+     end if
+     
+     call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
+          memdims,hdferr)
+     if (hdferr /= 0) then
+        call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
+             ,'hdf_getslab_r','ed_history_io.f90')
+     end if
+     
+     if (iparallel == 1) then
+        
+        call h5dread_f(dset_id, H5T_NATIVE_DOUBLE,buff,globdims, hdferr, &
+             mem_space_id = memspace, file_space_id = filespace, &
+             xfer_prp = plist_id)
+        if (hdferr /= 0) then
+           call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
+                ,'hdf_getslab_r','ed_history_io.f90')
+        end if
+        
+     else
+        call h5dread_f(dset_id, H5T_NATIVE_DOUBLE,buff,globdims, hdferr, &
+             mem_space_id = memspace, file_space_id = filespace )
+        
+        if (hdferr /= 0) then
+           call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
+                ,'hdf_getslab_r','ed_history_io.f90')
+        end if
+     endif
+     
+     !  write(unit=*,fmt='(a)') 'History start: Loading '//trim(varn)//'...'
+     
+     call h5sclose_f(filespace, hdferr)
+     call h5sclose_f(memspace , hdferr)
+     call h5dclose_f(dset_id  , hdferr)
+
   endif
-
-!  write(unit=*,fmt='(a)') 'History start: Loading '//trim(varn)//'...'
-
-  call h5sclose_f(filespace, hdferr)
-  call h5sclose_f(memspace , hdferr)
-  call h5dclose_f(dset_id  , hdferr)
   
 
   return
@@ -2280,7 +2458,7 @@ end subroutine hdf_getslab_d
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel)
+subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required_in)
   
   use hdf5
   use hdf5_coms,only:file_id,dset_id,dspace_id,plist_id, &
@@ -2295,68 +2473,110 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel)
   integer :: hdferr,dsetrank
   integer :: iparallel
   character(len=*),intent(in) :: varn
+  ! Some datasets are required during model initialization, such as the state
+  ! variables like soil, canopy and vegetation energy and mass, although some variables
+  ! are involved only in diagnostics.  If they are missing from the restart dataset,
+  ! that may compromise diagnostic variables that are being averaged over the current time
+  ! period, but they will not compromise the transition of the prognostic model state from one
+  ! simulation to the next.
+  ! If the dataset is not required, pass it in as a .true. argument
+
+  logical,intent(in),optional :: required_in
+  logical :: required
+  
+  ! If the the optional argument is not present, take the conservative stance
+  ! and make sure that it is "not-not-not-not-required", "not-not-required", or "required".
+
+  required = .true.
+  if (present(required_in)) then
+     required = required_in
+  endif
 
   call h5dopen_f(file_id,trim(varn), dset_id, hdferr)
-  if (hdferr /= 0) then
+  if (hdferr /= 0 .and. required ) then
+     
      write(unit=*,fmt=*) 'File_ID = ',file_id
      write(unit=*,fmt=*) 'Dset_ID = ',dset_id
      call fatal_error('Could not get the dataset for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_i','ed_history_io.f90')
-  endif
-  
-  call h5dget_space_f(dset_id,filespace,hdferr)
-  if (hdferr /= 0) then
-     call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_i','ed_history_io.f90')
-  endif
-
-  call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
-       chnkdims,hdferr)
-  if (hdferr /= 0) then
-     call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_i','ed_history_io.f90')
-  endif
-
-  call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
-  if (hdferr /= 0) then
-     write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
-     write(unit=*,fmt=*) 'Dsetrank = ',dsetrank
-     call fatal_error('Could not create the hyperslabs memspace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_i','ed_history_io.f90')
-  endif
-
-  call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
-       memdims,hdferr)
-  if (hdferr /= 0) then
-     call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_i','ed_history_io.f90')
-  end if
-
-  if (iparallel == 1) then
+          ,'hdf_getslab_i','ed_history_io.f90')
      
-     call h5dread_f(dset_id, H5T_NATIVE_INTEGER,buff,globdims, hdferr, &
-          mem_space_id = memspace, file_space_id = filespace, &
-          xfer_prp = plist_id)
-     if (hdferr /= 0) then
-        call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                        ,'hdf_getslab_i','ed_history_io.f90')
-     end if
+  else if (hdferr /= 0 .and. .not.required ) then
+     
+     write(unit=*,fmt=*) 'File_ID = ',file_id
+     write(unit=*,fmt=*) 'Dset_ID = ',dset_id
+     write (unit=*,fmt='(a)') '-----------------------------------------------------------'
+     write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+     write (unit=*,fmt='(a)') '                                                           '
+     write (unit=*,fmt='(a)') ' + Variable '//trim(varn)//' not found in your history.'
+     write (unit=*,fmt='(a)') ' + Initializing this variable with zero. '
+     write (unit=*,fmt='(a)') ' + This may cause some of your diagnostic output related'
+     write (unit=*,fmt='(a)') '   to this variable to be incorrect the current period.'
+     write (unit=*,fmt='(a)') ''
+     write (unit=*,fmt='(a)') '   This variable has been specified as:'
+     write (unit=*,fmt='(a)') '   NOT ABSOLUTELY NECESSARY TO RESTART THE PROGNOSTIC STATE'
+     write (unit=*,fmt='(a)') '-----------------------------------------------------------'
+     write (unit=*,fmt='(a)') ''
+     
+     buff=0
+     return
      
   else
-     call h5dread_f(dset_id, H5T_NATIVE_INTEGER,buff,globdims, hdferr, &
-          mem_space_id = memspace, file_space_id = filespace )
-     if (hdferr /= 0) then
-        call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                        ,'hdf_getslab_r','ed_history_io.f90')
-     end if
-  end if
-
-!  write(unit=*,fmt='(a)') 'History start: Loading '//trim(varn)//'...'
-
-  call h5sclose_f(filespace, hdferr)
-  call h5sclose_f(memspace, hdferr)
-  call h5dclose_f(dset_id, hdferr)
   
+     call h5dget_space_f(dset_id,filespace,hdferr)
+     if (hdferr /= 0) then
+        call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!!!' &
+             ,'hdf_getslab_i','ed_history_io.f90')
+     endif
+     
+     call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
+          chnkdims,hdferr)
+     if (hdferr /= 0) then
+        call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
+             ,'hdf_getslab_i','ed_history_io.f90')
+     endif
+     
+     call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
+     if (hdferr /= 0) then
+        write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
+        write(unit=*,fmt=*) 'Dsetrank = ',dsetrank
+        call fatal_error('Could not create the hyperslabs memspace for '//trim(varn)//'!!!' &
+             ,'hdf_getslab_i','ed_history_io.f90')
+     endif
+     
+     call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
+          memdims,hdferr)
+     if (hdferr /= 0) then
+        call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
+             ,'hdf_getslab_i','ed_history_io.f90')
+     end if
+
+     if (iparallel == 1) then
+        
+        call h5dread_f(dset_id, H5T_NATIVE_INTEGER,buff,globdims, hdferr, &
+             mem_space_id = memspace, file_space_id = filespace, &
+             xfer_prp = plist_id)
+        if (hdferr /= 0) then
+           call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
+                ,'hdf_getslab_i','ed_history_io.f90')
+        end if
+        
+     else
+        call h5dread_f(dset_id, H5T_NATIVE_INTEGER,buff,globdims, hdferr, &
+             mem_space_id = memspace, file_space_id = filespace )
+        if (hdferr /= 0) then
+           call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
+                ,'hdf_getslab_r','ed_history_io.f90')
+        end if
+     end if
+     
+     !  write(unit=*,fmt='(a)') 'History start: Loading '//trim(varn)//'...'
+     
+     call h5sclose_f(filespace, hdferr)
+     call h5sclose_f(memspace, hdferr)
+     call h5dclose_f(dset_id, hdferr)
+
+  endif
+     
   return
 end subroutine hdf_getslab_i
 !==========================================================================================!

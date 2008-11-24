@@ -258,7 +258,7 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
      targetp%veg_water(ico)     = cpatch%veg_water(ico)
      targetp%veg_energy(ico)    = cpatch%veg_energy(ico)
   enddo
-  nullify(cpatch)
+!  nullify(cpatch)
 
     ! Diagnostics
   if(fast_diagnostics) then
@@ -791,6 +791,7 @@ subroutine print_patch_pss_ar(csite, ipa, lsl)
   print*,'fs_open,fsw,fsn,lai'
 
   cpatch => csite%patch(ipa)
+
   do ico = 1,cpatch%ncohorts
      if(cpatch%lai(ico).gt.lai_min)then
         print*,4,cpatch%pft(ico),cpatch%krdepth(ico),cpatch%dbh(ico)
@@ -940,6 +941,11 @@ subroutine print_patch_ar(y, csite,ipa, lsl)
   print*,7,csite%rstar(ipa),csite%ustar(ipa),csite%tstar(ipa)
   print*,'cstar  can_co2  can_temp  can_shv'
   print*,8,csite%cstar(ipa),csite%can_co2(ipa),csite%can_temp(ipa),csite%can_shv(ipa)
+
+  print*,' irstar iustar itstar icstar'
+  print*,81,y%rstar,y%ustar,y%tstar,y%cstar
+
+
   print*,'soil class'
   print*,9,csite%ntext_soil(:,ipa)
   print*,'soil heat'

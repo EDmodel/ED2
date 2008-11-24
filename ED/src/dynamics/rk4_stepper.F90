@@ -68,9 +68,8 @@ contains
                integration_buff%y,integration_buff%ytemp)
           errmax = errmax/epsil
        else
-
           call get_errmax_ar(errmax, integration_buff%yerr,   &
-               integration_buff%yscal, csite%patch(ipa), lsl,  &
+               integration_buff%yscal, csite%patch(ipa), lsl, &
                integration_buff%y,integration_buff%ytemp)
           errmax = errmax/epsil
           if ( errmax < 1) then
@@ -247,6 +246,7 @@ contains
     call inc_rk4_patch_ar(ak7, dydx, b21*h, cpatch, lsl)
     call stabilize_snow_layers_ar(ak7, csite, ipa, b21*h, lsl)
     call lsm_sanity_check_ar(ak7, iflag1, csite, ipa, lsl ,dydx,h )
+
 
     if(iflag1 /= 1)return
 
@@ -438,6 +438,7 @@ contains
     do ico = 1,cpatch%ncohorts
     
        if (cpatch%lai(ico) > lai_min) then
+
           hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
           call qwtk(y%veg_energy(ico),y%veg_water(ico),hcapveg,veg_temp,fracliq)
 

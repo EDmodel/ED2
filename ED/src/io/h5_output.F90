@@ -642,7 +642,7 @@ subroutine h5_output(vtype)
 #else     
 
         if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,734+ngr,MPI_COMM_WORLD,ierr)
-        if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
+!        if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
 #endif     
         
