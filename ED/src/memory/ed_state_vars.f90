@@ -5121,10 +5121,10 @@ contains
 
           if(mynum == 1) then
              
-             print*,"Global Polygons: ",gdpy(1:nnodetot,igr),mynum
-             print*,"Global Site: "    ,gdsi(1:nnodetot,igr),mynum
-             print*,"Global Patches: " ,gdpa(1:nnodetot,igr),mynum
-             print*,"Global Cohorts: " ,gdco(1:nnodetot,igr),mynum
+             print*,"Global Polygons: ",gdpy(1:nnodetot,igr)
+             print*,"Global Site: "    ,gdsi(1:nnodetot,igr)
+             print*,"Global Patches: " ,gdpa(1:nnodetot,igr)
+             print*,"Global Cohorts: " ,gdco(1:nnodetot,igr)
 
           end if
 

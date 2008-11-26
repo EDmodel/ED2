@@ -578,7 +578,13 @@ end subroutine init_pft_nitro_params
 !==========================================================================================!
 subroutine init_pft_leaf_params()
 
-use pft_coms, only: phenology, clumping_factor, leaf_width
+use pft_coms, only:   &
+     phenology,       &
+     clumping_factor, &
+     leaf_width,      &
+     spec_hcap_leaf,  &
+     spec_hcap_stem,  &
+     hcap_stem_fraction
 
 implicit none
 
@@ -599,6 +605,28 @@ leaf_width(1:4) = 0.2
 leaf_width(5:11) = 0.05
 leaf_width(12:13) = 0.05
 leaf_width(14:15) = 0.2
+
+
+! Specific heat capacity of leaf biomass (J/K/kg)
+
+spec_hcap_leaf(1:15) = 3000.0   ! 3000 is an unproven first estimate with absolutely
+                                ! no experimental background of evidence. Please
+                                ! update with referenced values.  PFT specific if
+                                ! necessary.
+
+! Fraction of structural biomass included in calculation of veg. leaf heat capacity.
+
+hcap_stem_fraction = 0.05       ! This may eventually become a tuneable parameter.
+                                ! This parameter may also be most appropriate
+                                ! as zero.
+
+! Specific heat capacity of the stems and structural biomass.
+
+spec_hcap_stem(1:15) = 3000.0   ! 3000 is an unproven first estimate with absolutely
+                                ! no experimental background of evidence. Please
+                                ! update with referenced values.  PFT specific if
+                                ! necessary.
+
 
 return
 end subroutine init_pft_leaf_params

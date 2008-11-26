@@ -1988,8 +1988,9 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
        globdims,chnkdims,chnkoffs,cnt,stride, &
        memdims,memoffs,memsize
   use consts_coms, only: cliq,cice,alli,t3ple
-  use canopy_air_coms, only: hcapveg_ref,heathite_min
+!  use canopy_air_coms, only: hcapveg_ref,heathite_min
   use canopy_radiation_coms, only:lai_min
+  use therm_lib,only : calc_hcapveg
 
   implicit none
 
@@ -2076,7 +2077,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
      if ( sum(cpatch%veg_energy(1:cpatch%ncohorts),1) < 0.01 ) then
         
         write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
-        write (unit=*,fmt='(a)') 'Reconstructing VEG_ENERGY from HITE, LAI_CO, VEG_WATER and VEG_TEMP'
+        write (unit=*,fmt='(a)') 'Reconstructing VEG_ENERGY from BLEAF, BDEAD, VEG_WATER and VEG_TEMP'
         write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
         
         plai = sum(cpatch%lai(1:cpatch%ncohorts),1)
@@ -2085,8 +2086,9 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
 
            if(cpatch%lai(ico)>lai_min) then
               
-              hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)/plai
-              
+              hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                   cpatch%nplant(ico),cpatch%pft(ico))
+
               if(cpatch%veg_temp(ico)>=t3ple) then
                  
                  cpatch%veg_energy(ico) = &

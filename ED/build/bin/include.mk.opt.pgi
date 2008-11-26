@@ -87,10 +87,9 @@ F_COMP=mpif90
 # -tp athlonxp -fastsse
 F_OPTS= -fastsse -Mipa=fast,inline -tp amd64e \
 	-Mvect=sse -Mcache_align #-Mconcur -mp=numa
-#F_OPTS = 
-#F_OPTS= -Ktrap=divz,fp,inv,ovf,unf
+#F_OPTS= -g -C -Ktrap=divz,fp,inv,ovf,unf
 C_COMP=mpicc
-#C_OPTS= -Ktrap=divz,fp,inv,ovf,unf
+#C_OPTS= -g -C -Ktrap=divz,fp,inv,ovf,unf
 C_OPTS= -fastsse -Mipa=fast,inline -tp amd64e \
 	-Mvect=sse -Mcache_align
 USE_INTERF=1

@@ -304,8 +304,7 @@ contains
     use grid_coms, only: nzg, nzs
     use canopy_radiation_coms, only: lai_min, veg_temp_min
 
-    use canopy_air_coms, only: hcapveg_ref,heathite_min
-    use therm_lib, only: qwtk
+    use therm_lib, only: qwtk,calc_hcapveg
     implicit none
 
     integer, intent(in) :: lsl
@@ -426,20 +425,18 @@ contains
        ! For plants with minimal foliage, fix the vegetation
        ! temperature to the canopy air space
        if (cpatch%lai(ico) < lai_min) then
-          cpatch%veg_temp(ico) = csite%can_temp(ipa)
 
-          ! TO DO: CHECK TO SEE IF VEG_WATER HAS BEEN INITIALIZED AS ZERO
-          ! FOR SMALL COHORTS. IF SO, THAT IS GOOD. ALSO CHECK TO SEE
-          ! IF IT IS EVER MODIFIED FOR SMALL PLANTS. IF SO, THAT IS BAD.
-          ! THE FOLLOWING LINE IS ACTUALLY NOT NEEDED IF THESE CONDITIONS
-          ! ARE MET.
+          cpatch%veg_temp(ico) = csite%can_temp(ipa)
+          
           cpatch%veg_water(ico) = 0.
 
-       else 
-          hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
-          call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),hcapveg,cpatch%veg_temp(ico),fracliq)
-       end if
-  
+       endif
+
+       hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                 cpatch%nplant(ico),cpatch%pft(ico))
+
+       call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),hcapveg,cpatch%veg_temp(ico),fracliq)
+        
        
        if ( cpatch%veg_temp(ico) < veg_temp_min .or. cpatch%veg_temp(ico) > 360.0 ) then
 
@@ -620,6 +617,7 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
   use consts_coms, only: cp, cliq, cice, alli, t3ple
   use canopy_radiation_coms, only: lai_min
   use canopy_air_coms, only: hcapveg_ref,heathite_min
+  use therm_lib,only:calc_hcapveg
 
   implicit none
   
@@ -652,9 +650,16 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
      !!!!!! ASSUMES THAT THE TALLEST COHORT IS IN BIN 1 !!!!!!!!!
 
      if(csite%lai(ipa) > lai_min)then
-        veg_storage = veg_storage +   &
-             hcapveg_ref * max(csite%patch(ipa)%hite(1),heathite_min) * cpatch%lai(ico) &
-             / csite%lai(ipa) * (cpatch%veg_temp(ico) - t3ple)
+        !        veg_storage = veg_storage +   &
+        !             hcapveg_ref * max(csite%patch(ipa)%hite(1),heathite_min) * cpatch%lai(ico) &
+        !             / csite%lai(ipa) * (cpatch%veg_temp(ico) - t3ple)
+
+        veg_storage = veg_storage + &
+             calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+             cpatch%nplant(ico),cpatch%pft(ico)) &
+             * (cpatch%veg_temp(ico) - t3ple)
+        
+        
         if(cpatch%veg_temp(ico) > t3ple)then
            veg_storage = veg_storage + cpatch%veg_water(ico) *  &
                 (cliq * (cpatch%veg_temp(ico) - t3ple) + alli)

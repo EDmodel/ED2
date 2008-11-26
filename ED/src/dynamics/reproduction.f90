@@ -16,7 +16,7 @@ subroutine reproduction_ar(cgrid, month)
   
   use consts_coms, only: t3ple
   use canopy_air_coms, only: hcapveg_ref,heathite_min
-
+  use therm_lib,only : calc_hcapveg
 
   implicit none
 
@@ -242,11 +242,14 @@ subroutine reproduction_ar(cgrid, month)
               cpatch%veg_temp(ico)  = recruit_array(inew,9)
               cpatch%veg_water(ico) = 0.0
 
-              !----- Because we assigned no water, the internal energy is simply hcapveg*(T-T3)
-              hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)/csite%lai(ipa)
-              cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
+              !----- Because we assigned no water, the internal energy 
+              !      is simply hcapveg*(T-T3)
+              
+              hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                 cpatch%nplant(ico),cpatch%pft(ico))
 
-            
+              cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
+                          
               ! Setting new_recruit_flag to 1 indicates that 
               ! this cohort is included when we tally agb_recruit,
               ! basal_area_recruit.

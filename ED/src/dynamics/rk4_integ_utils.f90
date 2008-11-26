@@ -461,6 +461,14 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
         yscal%veg_water(ico) = 0.22
         yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
                                    + abs(dy%veg_energy(ico)*htry),0.22*alli)
+
+        ! Mike: Why not just use a nominal energy for the scaling? Is there really a need for the scaling to be
+        ! associated with a certain temperature? How about global avergage surface temperature? Signed Anonymous
+        ! -----------------------------------------------------------------------------------------------
+
+!        yscal%veg_energy(ico) = y%veg_water(ico)*alli + y%veg_water(ico)*cliq*(287.-t3ple) + hcapveg*(287.-t3ple) &
+!             + abs(dy%veg_energy(ico)*htry)
+
      else
         yscal%veg_water(ico) = 1.e30
         yscal%veg_energy(ico) = 1.e30

@@ -595,7 +595,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
 
   use pft_coms, only: q, qsw, water_conductance,leaf_width,rho
   use soil_coms, only : soil
-  use therm_lib, only : rslif,qwtk
+  use therm_lib, only : rslif,qwtk,calc_hcapveg
   use misc_coms, only: dtlsm
   use ed_misc_coms, only: fast_diagnostics
 
@@ -689,7 +689,16 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
      ! not intercept all of the water
      
      if(pcpg>0.0) then
-        intercepted  = pcpg * max(0.1,min(1.0,csite%lai(ipa)/lai_to_cover))
+
+        ! EAGERLY AWAITING THE CROWN AREA CALCULATION OF OPEN SPACE
+        ! SCHEME TO BE IMPLEMENTED BY MCD.
+        ! HERE, POTENTIALLY INTERCEPTABLE WATER (intercepted) WAS
+        ! CALCULATED AS A LINEAR FUNCTION OF PATCH LAI
+        
+        ! intercepted  = pcpg * max(0.1,min(1.0,csite%lai(ipa)/lai_to_cover))
+        
+        intercepted = pcpg
+
         qintercepted = (intercepted/pcpg)*qpcpg
         wshed_tot = pcpg-intercepted
         qwshed_tot = (wshed_tot/pcpg)*qpcpg
@@ -822,8 +831,10 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
      if(cpatch%lai(ico) > lai_min)then
         
         ! Effective heat capacity of vegetation [J K-1] = [m3] * [J m-3 K-1]
-        hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) * laii
         
+        hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+             cpatch%nplant(ico),cpatch%pft(ico))
+
         call qwtk (initp%veg_energy(ico),initp%veg_water(ico),hcapveg,veg_temp,fracliq)
         
         !  Calculate leaf-level flux

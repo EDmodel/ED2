@@ -520,8 +520,25 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
 
    subroutine  fuse_2_cohorts_ar(cpatch,ico1,ico2, newn,green_leaf_factor, lsl)
  
+     ! Changes made - RGK 11-26-2008
+     ! Will remove this message after changes have been confirmed and tested
+     ! The phenology condition really only effects vegetation water,
+     ! that said, it is kind of an arbitrary decision on how the water 
+     ! in the fused cohort is maintained anyway.
+     ! The vegetation temperature would probably benefit from doing weighting
+     ! on the heat-capacities.
+     ! The vegetation energy should be calculated after all quanities have been
+     ! updated, and should be calculated based on diagnosed heat capacity, water
+     ! mass and temperature of the cohort.
+     
+     ! Bug fix? When the phenology status was not less than two, cpatch%lai was
+     ! being set to zero, but bleaf was not being set to zero.  bleaf was added
+     ! for consistency sake.
+
      use ed_state_vars,only:patchtype
      use pft_coms, only: q, qsw, sla
+     use consts_coms,only:t3ple,alli,cliq,cice
+     use therm_lib,only:calc_hcapveg
 
      implicit none
      type(patchtype),target :: cpatch
@@ -529,8 +546,8 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      real, intent(in) :: newn
      real, intent(in) :: green_leaf_factor
      integer, intent(in) :: lsl
-
-
+     
+     real :: hcapveg
      real :: newni
      real :: cb_max
      real :: root_depth
@@ -564,6 +581,9 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
         ! write (unit=62,fmt='(a,i5,1x,a,1x,3(f13.2,1x))') 'PFT=',cpatch%pft(ico2),'(LAI1,LAI2,LAIM)=',cpatch%lai(ico1),laiold,cpatch%lai(ico2)
      else
         cpatch%lai(ico2) = 0.0
+        
+        ! BLEAF SHOULD BE UPDATED TO NO?
+        cpatch%bleaf(ico2) = 0.0
      endif
 
      cpatch%bstorage(ico2) = (cpatch%nplant(ico2) * cpatch%bstorage(ico2) + cpatch%nplant(ico1) *  &
@@ -572,34 +592,28 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      ! Do our best to conserve energy.  May be problematic
      ! if cohorts have different phenology_status codes.
      if(cpatch%phenology_status(ico2) < 2 .and. cpatch%phenology_status(ico1) < 2)then
-
-        cpatch%veg_temp(ico2) = (cpatch%veg_temp(ico2) * cpatch%nplant(ico2) +  &
-             cpatch%veg_temp(ico1) * cpatch%nplant(ico1)) /   &
-             (cpatch%nplant(ico2) + cpatch%nplant(ico1))
-
-!        cpatch%veg_temp = (cpatch%veg_temp * cpatch%nplant * cpatch%hcapveg +  &
-!             cpatch%veg_temp(ico1) * cpatch%nplant(ico1) * cpatch%hcapveg(ico1)) /   &
-!             (cpatch%hcapveg(ico2) * cpatch%nplant(ico2) + cpatch%hcapveg(ico1) * cpatch%nplant(ico1))
-
+        
         cpatch%veg_water(ico2) = (cpatch%veg_water(ico2) * cpatch%nplant(ico2) +   &
              cpatch%veg_water(ico1) * cpatch%nplant(ico1)) * newni
-
-        !---- Will this conserve energy? Is the total LAI conserved? I hope so...
-        ! I think this is fine because temperature is no longer prognostic, so temperature will be 
-        ! adjusted at the next fast step...
-        cpatch%veg_energy(ico2) = (cpatch%veg_energy(ico2) * cpatch%nplant(ico2) +   &
-             cpatch%veg_energy(ico1) * cpatch%nplant(ico1)) * newni
-        
-
-        ! Remember, phenology_status is determined solely by cc.
-        ! So if cc didn't have leaves before, it doesn't have
-        ! any now.
 
      elseif(cpatch%phenology_status(ico2) < 2)then
 
         cpatch%veg_water(ico2) = cpatch%veg_water(ico2) * cpatch%nplant(ico2) * newni
 
      endif
+
+     ! Take the average temperature among the two
+     cpatch%veg_temp(ico2) = (cpatch%veg_temp(ico2) * cpatch%nplant(ico2) +  &
+          cpatch%veg_temp(ico1) * cpatch%nplant(ico1)) /   &
+          (cpatch%nplant(ico2) + cpatch%nplant(ico1))
+     
+     ! This temperature average uses a weighting of their heat capacities.
+     ! Dont use this method unless we are actually tracking cpatch%hcapveg
+     ! At the time of this message, we probably are not tracking that quantity
+     !        cpatch%veg_temp = (cpatch%veg_temp * cpatch%nplant * cpatch%hcapveg +  &
+     !             cpatch%veg_temp(ico1) * cpatch%nplant(ico1) * cpatch%hcapveg(ico1)) /   &
+     !             (cpatch%hcapveg(ico2) * cpatch%nplant(ico2) + cpatch%hcapveg(ico1) * cpatch%nplant(ico1))
+     
 
      ! No need to modify hcapveg until the new implementation.
      
@@ -651,6 +665,34 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      cpatch%krdepth(ico2) = assign_root_depth(root_depth, lsl)
 
      cpatch%nplant(ico2) = newn
+
+     !---- Will this conserve energy? Is the total LAI conserved? I hope so...
+     ! I think this is fine because temperature is no longer prognostic, so temperature will be 
+     ! adjusted at the next fast step...
+     !cpatch%veg_energy(ico2) = (cpatch%veg_energy(ico2) * cpatch%nplant(ico2) +   &
+     !     cpatch%veg_energy(ico1) * cpatch%nplant(ico1)) * newni
+     
+     ! Think it is safer to give the fused cohort an energy that is based off of it's
+     ! new temperature
+     !=======================================================================================
+
+     hcapveg = calc_hcapveg(cpatch%bleaf(ico2),cpatch%bdead(ico2), &
+          cpatch%nplant(ico2),cpatch%pft(ico2))
+     
+     if(cpatch%veg_temp(ico2)>=t3ple) then
+        
+        cpatch%veg_energy(ico2) = &
+             cpatch%veg_water(ico2)*alli + &         ! latent heat of fusion
+             cpatch%veg_water(ico2)*cliq*(cpatch%veg_temp(ico2)-t3ple) + &   ! thermal energy of liquid
+             hcapveg *(cpatch%veg_temp(ico2)-t3ple)  ! thermal energy of plant tissue
+     else
+        
+        cpatch%veg_energy(ico2) = &
+             cpatch%veg_water(ico2)*cice*(cpatch%veg_temp(ico2)-t3ple) + &   ! thermal energy of ice
+             hcapveg *(cpatch%veg_temp(ico2)-t3ple)  ! thermal energy of plant tissue
+     endif
+     
+
 
      return
    end subroutine fuse_2_cohorts_ar
@@ -844,6 +886,19 @@ end subroutine fuse_patches_ar
 
    subroutine fuse_2_patches_ar(csite,dp,rp,rhos,lsl,green_leaf_factor)
 
+
+     ! Changes made - RGK 11-26-2008
+     ! Will remove this message after changes have been confirmed and tested
+     ! veg_energy of the cohorts int he fused patches must also be updated.
+     ! because...effectively, the number densities of the plants are changing,
+     ! becuase we are squeezing the cohorts from two patches into one. With
+     ! the number densities changing, all the cohort level variables that
+     ! are dependant on number density, must also be scaled, such as veg_water.
+     ! Veg temperature should remain the same for each cohort, because
+     ! none of the plant level variables actually change. But! veg_energy
+     ! is plant number dependant, and therefore it must be scaled by number density
+     ! (or as a proxy, the fractional area) like all the rest.
+
      use ed_state_vars,only:sitetype,patchtype
      
      use soil_coms, only: soil
@@ -864,8 +919,8 @@ end subroutine fuse_patches_ar
      type(patchtype), pointer :: newpatch
      
      !  This function fuses the two patches specified in the argument.
-     !  It fuses the first patch in the argument (the "donor" = ipa ) into the second
-     !  patch in the argument (the "recipient" = ipa_tp), and frees the memory 
+     !  It fuses the first patch in the argument (the "donor" = dp ) into the second
+     !  patch in the argument (the "recipient" = rp ), and frees the memory 
      !  associated with the second patch
 
      integer i,k
@@ -1005,6 +1060,7 @@ end subroutine fuse_patches_ar
                                      *  newareai
      csite%avg_sensible_ac(rp)       = (csite%avg_sensible_ac(rp)       * csite%area(rp)        &
                                      +  csite%avg_sensible_ac(dp)       * csite%area(dp))       &
+
                                      *  newareai
      csite%avg_sensible_tot(rp)      = (csite%avg_sensible_tot(rp)      * csite%area(rp)        &
                                      +  csite%avg_sensible_tot(dp)      * csite%area(dp))       &
@@ -1061,6 +1117,15 @@ end subroutine fuse_patches_ar
         cpatch%gpp(ico)              = cpatch%gpp(ico)              * csite%area(rp) * newareai
         cpatch%leaf_respiration(ico) = cpatch%leaf_respiration(ico) * csite%area(rp) * newareai
         cpatch%root_respiration(ico) = cpatch%root_respiration(ico) * csite%area(rp) * newareai
+
+        ! Now that the plant density and the amount of water has changed, there will
+        ! be an inconsistency in the energy. If the energy stays the same, but temperature
+        ! is diagnosed with a sudden drop in biomass or water, we will have sky-rocketing values
+        ! so we have to adjust the energy accordingly also.
+
+        cpatch%veg_energy(ico) = cpatch%veg_energy(ico) * csite%area(rp) * newareai
+
+
      enddo
 
      ! adjust densities of cohorts in donor patch 
@@ -1082,6 +1147,18 @@ end subroutine fuse_patches_ar
         cpatch%gpp(ico)      = cpatch%gpp(ico)                      * csite%area(dp) * newareai
         cpatch%leaf_respiration(ico) = cpatch%leaf_respiration(ico) * csite%area(dp) * newareai
         cpatch%root_respiration(ico) = cpatch%root_respiration(ico) * csite%area(dp) * newareai
+
+        
+        ! Now that the plant density and the amount of water has changed, there will
+        ! be an inconsistency in the energy. If the energy stays the same, but temperature
+        ! is diagnosed with a sudden drop in biomass or water, we will have sky-rocketing values
+        ! so we have to adjust the energy accordingly also.  This linear scaling should
+        ! be suitable, because vegetation energy is a linear combination of biomass and water
+        ! mutliplied by temperature.
+
+        cpatch%veg_energy(ico) = cpatch%veg_energy(ico) * csite%area(dp) * newareai
+
+
      enddo
      
      ! Fill a new patch with the donor and recipient cohort vectors

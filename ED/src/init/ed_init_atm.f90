@@ -720,6 +720,7 @@ end subroutine update_polygon_derived_props_ar
 subroutine initialize_vegetation_energy(cgrid)
    use ed_state_vars, only: edtype,polygontype,sitetype,patchtype
    use canopy_air_coms, only: hcapveg_ref, heathite_min
+   use therm_lib,only:calc_hcapveg
    use consts_coms, only: t3ple
    implicit none 
    !----- Argument ------------------------------------------------------------------------!
@@ -739,8 +740,10 @@ subroutine initialize_vegetation_energy(cgrid)
          do ipa=1,csite%npatches
             cpatch => csite%patch(ipa)
             do ico=1,cpatch%ncohorts
-               hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)  &
-                       / csite%lai(ipa)
+               
+               hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                    cpatch%nplant(ico),cpatch%pft(ico))
+
                cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
             end do
          end do

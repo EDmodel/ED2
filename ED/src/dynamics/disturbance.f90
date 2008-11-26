@@ -676,6 +676,14 @@ end subroutine apply_disturbances_ar
           tpatch%storage_respiration(nco) = tpatch%storage_respiration(nco) * cohort_area_fac
           tpatch%vleaf_respiration(nco)   = tpatch%vleaf_respiration(nco) * cohort_area_fac
           tpatch%Psi_open(nco)            = tpatch%Psi_open(nco) * cohort_area_fac
+
+          ! Adjust the vegetation energy - RGK 11-26-2008
+          ! Perhaps this should be diagnosed off of vegetation temperature?
+          ! I think it should be ok, because veg_energy is a linear function of
+          ! veg_water and nplant
+
+          tpatch%veg_energy(nco)  = tpatch%veg_energy(nco) * cohort_area_fac
+          
        endif
           
     enddo  ! end loop over cohorts
@@ -807,7 +815,8 @@ end subroutine apply_disturbances_ar
     use pft_coms, only: q, qsw, sla, hgt_min
     use misc_coms, only: dtlsm
     use fuse_fiss_utils_ar, only : sort_cohorts_ar
-    use canopy_air_coms, only: hcapveg_ref,heathite_min
+!    use canopy_air_coms, only: hcapveg_ref,heathite_min
+    use therm_lib,only : calc_hcapveg
     use consts_coms, only: t3ple
 
     implicit none
@@ -872,7 +881,10 @@ end subroutine apply_disturbances_ar
     cpatch%veg_water(nc) = 0.0
 
     !----- Because we assigned no water, the internal energy is simply hcapveg*(T-T3)
-    hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(nc)/csite%lai(np)
+
+    hcapveg = calc_hcapveg(cpatch%bleaf(nc),cpatch%bdead(nc), &
+         cpatch%nplant(nc),cpatch%pft(nc))
+    
     cpatch%veg_energy(nc) = hcapveg * (cpatch%veg_temp(nc)-t3ple)
     
     call init_ed_cohort_vars_array(cpatch, nc, lsl)
