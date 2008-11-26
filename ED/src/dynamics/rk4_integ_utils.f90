@@ -499,54 +499,54 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
   type(patchtype),target :: cpatch
   type(rk4patchtype),target :: yerr,yscal,y,ytemp
   integer :: ico
-  real :: errmax,errh2o,errene,err,errh2oMAX.erreneMAX
+  real :: errmax,errh2o,errene,err,errh2oMAX,erreneMAX
   integer :: k
   
   errmax = 0.0
 
   err = abs(yerr%can_temp/yscal%can_temp)
   errmax = max(errmax,err)
-  if(record_err) if(err .gt. 1) integ_err(1,1) = integ_err(1,1) + 1 
+  if(record_err .and. err .gt. 1) integ_err(1,1) = integ_err(1,1) + 1 
 
   err = abs(yerr%can_shv/yscal%can_shv)
   errmax = max(errmax,err)
-  if(record_err) if(err .gt. 1) integ_err(2,1) = integ_err(2,1) + 1 
+  if(record_err .and. err .gt. 1) integ_err(2,1) = integ_err(2,1) + 1 
 
   err = abs(yerr%can_co2/yscal%can_co2)
   errmax = max(errmax,err)
-  if(record_err) if(err .gt. 1) integ_err(3,1) = integ_err(3,1) + 1 
+  if(record_err .and. err .gt. 1) integ_err(3,1) = integ_err(3,1) + 1 
   
   do k=lsl,nzg
      err = abs(yerr%soil_water(k)/yscal%soil_water(k))
      errmax = max(errmax,err)
-     if(record_err) if(err .gt. 1) integ_err(3+k,1) = integ_err(3+k,1) + 1 
+     if(record_err .and. err .gt. 1) integ_err(3+k,1) = integ_err(3+k,1) + 1 
   end do
 
   do k=lsl,nzg
      err = abs(yerr%soil_energy(k)/yscal%soil_energy(k))
      errmax = max(errmax,err)
-     if(record_err) if(err .gt. 1) integ_err(15+k,1) = integ_err(15+k,1) + 1      
+     if(record_err .and. err .gt. 1) integ_err(15+k,1) = integ_err(15+k,1) + 1      
   enddo
 
   do k=1,ytemp%nlev_sfcwater
      err = abs(yerr%sfcwater_energy(k) / yscal%sfcwater_energy(k))
      errmax = max(errmax,err)
-     if(record_err) if(err .gt. 1) integ_err(27+k,1) = integ_err(27+k,1) + 1      
+     if(record_err .and. err .gt. 1) integ_err(27+k,1) = integ_err(27+k,1) + 1      
   enddo
 
   do k=1,ytemp%nlev_sfcwater
      err = abs(yerr%sfcwater_mass(k) / yscal%sfcwater_mass(k))
      errmax = max(errmax,err)
-     if(record_err) if(err .gt. 1) integ_err(32+k,1) = integ_err(32+k,1) + 1      
+     if(record_err .and. err .gt. 1) integ_err(32+k,1) = integ_err(32+k,1) + 1      
   enddo
 
   err = abs(yerr%virtual_heat/yscal%virtual_heat)
   errmax = max(errmax,err)
-  if(record_err) if(err .gt. 1) integ_err(38,1) = integ_err(38,1) + 1      
+  if(record_err .and. err .gt. 1) integ_err(38,1) = integ_err(38,1) + 1      
 
   err = abs(yerr%virtual_water/yscal%virtual_water)
   errmax = max(errmax,err)
-  if(record_err) if(err .gt. 1) integ_err(39,1) = integ_err(39,1) + 1      
+  if(record_err .and. err .gt. 1) integ_err(39,1) = integ_err(39,1) + 1      
 
 !  write (unit=40,fmt='(132a)') ('-',k=1,132)
 !  write (unit=40,fmt='(2(a5,1x),8(a14,1x))') &

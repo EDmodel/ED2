@@ -9,7 +9,8 @@ subroutine ed_model()
   use misc_coms, only: integration_scheme, current_time, frqfast, frqstate    &
                       , out_time_fast, dtlsm, ifoutput, isoutput, idoutput    &
                       , imoutput, iyoutput,frqsum,unitfast,unitstate, imontha &
-                      , iyeara, outstate,outfast, nrec_fast, nrec_state
+                      , iyeara, outstate,outfast, nrec_fast, nrec_state &
+                      , integ_err,record_err
   use ed_misc_coms, only: outputMonth
 
   use grid_coms, only : &
@@ -70,6 +71,7 @@ subroutine ed_model()
   
   wtime_start=walltime(0.)
   istp = 0
+  if(record_err) integ_err = 0
   
   writing_dail      = idoutput > 0
   writing_mont      = imoutput > 0
@@ -221,6 +223,12 @@ subroutine ed_model()
 
      ! Check if this is the beginning of a new simulated day.
      if(new_day)then
+        if(record_err) then
+           do i = 1,46
+              print*,i,integ_err(i,1:2)
+           enddo
+           integ_err = 0.0
+        endif
 
         ! Do phenology, growth, mortality, recruitment, disturbance.
         call vegetation_dynamics(new_month,new_year)

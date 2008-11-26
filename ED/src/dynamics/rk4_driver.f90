@@ -9,7 +9,7 @@ contains
     use ed_state_vars,only:integration_vars_ar,edtype,polygontype,sitetype,patchtype
     use grid_coms, only: nzg
     use max_dims, only : n_dbh
-    use misc_coms, only: dtlsm,integ_err,record_err
+    use misc_coms, only: dtlsm
     use consts_coms, only: umol_2_kgC
 
     implicit none
@@ -21,7 +21,7 @@ contains
     type(sitetype),pointer    :: csite
     type(patchtype),pointer   :: cpatch
     integer :: ifm,ipy,isi,ipa,ico
-    integer :: k,idbh
+    integer :: k,idbh,i
         
     integer, dimension(nzg) :: ed_ktrans
     real :: sum_lai_rbi,site_area_i
@@ -30,8 +30,6 @@ contains
     real, dimension(n_dbh) :: gpp_dbh
     real :: plant_respiration
     
-    if(record_err) integ_err = 0
-
     polygonloop: do ipy = 1,cgrid%npolygons
        
        cpoly => cgrid%polygon(ipy)
@@ -114,12 +112,6 @@ contains
        end do siteloop
 
     end do polygonloop
-
-    if(record_err) then
-       do i = 1,41
-          print*,integ_err(i,)
-       enddo
-    endif
 
     return
   end subroutine rk4_timestep_ar

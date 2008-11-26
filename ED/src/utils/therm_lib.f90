@@ -950,6 +950,48 @@ module therm_lib
    end subroutine qwtk8
    !=======================================================================================!
    !=======================================================================================!
+
+   real function calc_hcapveg(leaf_biomass,structural_biomass,nplants,pft)
+     
+     ! This function calculates the total heat capacity in (J/K) of the cohort
+     ! biomass.  This function is primarily used to calculate leaf temperatures
+     ! based on leaf energy.  At present, heat capacity is primarily based off
+     ! of leaf biomass, but is also accounting for a variable fraction of stems.
+     ! This is considered partially for stability.
+
+     ! Inputs:
+     ! leaf_biomass - the leaf biomass of the cohort in kg/m2 - NOTE
+     ! you are most likely going to be passing the variables bleaf and bdead
+     ! , but you must scale (multiply) them by the plant density (nplant) first.
+     ! structural_biomass - the biomass of live and dead hardwood in kg/m2
+     ! pft - the plant functional type of the current cohort, which may serve
+     ! for defining different parameterizations of specific heat capacity
+     
+     use pft_coms,only:spec_hcap_leaf,spec_hcap_stem,hcap_stem_fraction
+
+
+     implicit none
+     
+     real :: leaf_biomass        ! leaf biomass per plant
+     real :: structural_biomass  ! structural biomass per plant
+     real :: nplants             ! Number of plants per square meter
+     integer :: pft     
+
+     ! Old Method
+     !     calc_hcapveg = hcapveg_ref * max(canopy_height,heathite_min)*cohort_lai/patch_lai
+
+     ! New Method
+     calc_hcapveg = nplants * (leaf_biomass* spec_hcap_leaf(pft) + &
+          structural_biomass * hcap_stem_fraction * spec_hcap_stem(pft))
+
+     calc_hcapveg = max(calc_hcapveg,2.5*3000)
+     
+     
+     return
+     
+   end function calc_hcapveg
+   
+
 end module therm_lib
 !==========================================================================================!
 !==========================================================================================!

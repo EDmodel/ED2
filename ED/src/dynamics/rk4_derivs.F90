@@ -92,7 +92,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
 
   use ed_state_vars,only:sitetype,patchtype,rk4patchtype
   
-  use therm_lib, only : qtk, qwtk
+  use therm_lib, only : qtk, qwtk, qwtk8
 
   implicit none
 
@@ -204,19 +204,24 @@ if(debug) print*,"T1"
        initp%surface_ssh)
 
   ! Calculate water available to vegetation (in meters)
-  ! SLZ is specified in RAMSIN.  Each element of the array sets the value of the bottom of a corresponding soil layer.
-  ! Eg, SLZ = -2, -1, -0.5, -0.25.  There are four soil layers in this example; soil layer 1 goes from 2 meters below the 
+  ! SLZ is specified in RAMSIN.  Each element of the array sets the value 
+  ! of the bottom of a corresponding soil layer.
+  ! Eg, SLZ = -2, -1, -0.5, -0.25.  There are four soil layers in this example;
+  ! soil layer 1 goes from 2 meters below the 
   ! surface to 1 meter below the surface.
+  ! ---------------------------------------------------------------------------
+
   nsoil = csite%ntext_soil(nzg,ipa)
   initp%available_liquid_water(nzg) = dslz(nzg) * max(0.0,  &
-       initp%soil_fracliq(nzg) * (initp%soil_water(nzg) - soil(nsoil)%soilcp))
+       initp%soil_fracliq(nzg) * (sngl(initp%soil_water(nzg)) - soil(nsoil)%soilcp))
+
 
   ! initialized to zero
   initp%extracted_water(nzg) = 0.0
   do k = nzg - 1, lsl, -1
      nsoil = csite%ntext_soil(k,ipa)
      initp%available_liquid_water(k) = initp%available_liquid_water(k+1) +  &
-          dslz(k) * max(0.0, (initp%soil_water(k) - soil(nsoil)%soilcp) *  &
+          dslz(k) * max(0.0, (sngl(initp%soil_water(k)) - soil(nsoil)%soilcp) *  &
           initp%soil_fracliq(k))
      initp%extracted_water(k) = 0.0
   enddo
@@ -231,7 +236,7 @@ if(debug) print*,"T2"
   do k = lsl, nzg
      nsoil = csite%ntext_soil(k,ipa)
      if(nsoil <= 12)then
-        wgpfrac = min(initp%soil_water(k) / soil(nsoil)%slmsts,1.0)
+        wgpfrac = min(sngl(initp%soil_water(k)) / soil(nsoil)%slmsts,1.0)
         soilcond = soil(nsoil)%soilcond0 + wgpfrac * (soil(nsoil)%soilcond1  &
              + wgpfrac * soil(nsoil)%soilcond2)
      else
@@ -271,11 +276,27 @@ if(debug) print*,"T2"
              initp%sfcwater_tempk(k-1)) / &
              ((rfactor(nzg+k) + rfactor(nzg+k-1)) * .5)
      enddo
+     
+     ! We will need the liquid fraction of the surface water 
+     ! to partition the latent heat of sublimation
+     ! and evaporation
+     
+     call qtk(initp%sfcwater_energy(ksn),tempk,fracliq)
+     
+  else
+
+     ! We will need the liquid fraction of the soil water
+     ! to partition the latent heat of sublimation
+     ! and evaporation
+     
+     call qwtk8(initp%soil_energy(nzg),initp%soil_water(nzg)*1.d3, &
+          soil(nsoil)%slcpd,tempk,fracliq)
+
   endif
 
   !      heat flux (hfluxgsc) at soil or sfcwater top from longwave, sensible
   !      [W/m^2]
-  hfluxgsc(nzg+ksn+1) = hflxgc + wflxgc * alvi - csite%rlong_g(ipa) - csite%rlong_s(ipa)
+  hfluxgsc(nzg+ksn+1) = hflxgc + wflxgc * (fracliq*alvl+(1-fracliq)*alvi) - csite%rlong_g(ipa) - csite%rlong_s(ipa)
   
   dinitp%avg_sensible_gg(nzg)=hfluxgsc(nzg+ksn+1) ! Diagnostic
 if(debug) print*,"T3"  
@@ -308,7 +329,7 @@ if(debug) print*,"T4"
   ! factor is essentially the one used by default in RAMS 4.3.0.  I'd rather
   ! use a different factor, huh?
 
-  qw_flux(nzg+ksn+1) = - dewgnd * alvi - qwshed
+  qw_flux(nzg+ksn+1) = - dewgnd * (fracliq*alvl+(1-fracliq)*alvi) - qwshed
   w_flux(nzg+ksn+1) = - dewgnd - wshed
   d_flux(ksn+1) = w_flux(nzg+ksn+1) * 0.001
   
@@ -383,7 +404,7 @@ if(debug) print*,"T5"
      ! This requires multiplication of volumetric water content, m3(water)/m3
      ! must be multiplied by depth to get a depth of water.
 
-     soil_liq(k) = max(0.0, (initp%soil_water(k) - soil(nsoil)%soilcp) *  &
+     soil_liq(k) = max(0.0, (sngl(initp%soil_water(k)) - soil(nsoil)%soilcp) *  &
                             initp%soil_fracliq(k))
 
      soilair99(k) = 0.99 * soil(nsoil)%slmsts - initp%soil_water(k)
@@ -576,8 +597,9 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
 
   use pft_coms, only: q, qsw, water_conductance,leaf_width,rho
   use ed_misc_coms,only:diag_veg_heating
-  use therm_lib, only : rslif,qwtk
+  use therm_lib, only : rslif,qwtk,calc_hcapveg
   use misc_coms, only: dtlsm
+  use ed_misc_coms, only: fast_diagnostics
 
   implicit none
 
@@ -610,7 +632,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   real :: leaf_flux,plant_flux,qpcpg_k
   real :: leaf_flux_pot,plant_flux_pot,a_net_max
   real :: nitrogen_supply,nstepi
-
+  real :: lhpc
   integer :: first_cohort
   real :: potential_water,qwshed,laicum,deltamr,rho_ustar,rdi,gpp_tot
   real :: storage_decay,vertical_vel_flux
@@ -679,8 +701,10 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   endif
 
   wflx = (initp%surface_ssh - initp%can_shv) * rdi
-  !!! TESTING -> cap on dew flux
-  !  dewgndflx = max(0.,-wflx)
+  
+  ! Calculate the dew flux, and impose a dew cap
+  ! ---------------------------------------------------------------
+
   dewgndflx = min(dewmax, max(0.0, -wflx))
   
   ! Final evap check, make sure that the projected integrated 
@@ -747,12 +771,9 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
 
 
         ! Effective heat capacity of vegetation [J K-1] = [m3] * [J m-3 K-1]
-        hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) * laii
-!        hcapveg = 3.0e3 * max(cpatch%hite(1),1.5) * cpatch%lai(ico) * laii
         
-        ! Potential alternatives to the vegetation heat capacity
-!        hcapveg = 3.0e3 * ( cpatch%bdead(ico)/rho(cpatch%pft(ico)) + cpatch%lai(ico)*leaf_width(cpatch%pft(ico)) )
-!        hcapveg = 3.0e3 * cpatch%lai(ico) * leaf_width(cpatch%pft(ico))
+        hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+             cpatch%nplant(ico),cpatch%pft(ico))
 
         call qwtk (initp%veg_energy(ico),initp%veg_water(ico),hcapveg,veg_temp,fracliq)
         !write(unit=*,fmt='(3(a,1x,es12.5,1x))') 'ENERGY=',initp%veg_energy(ico),'WATER=',initp%veg_energy(ico),'TEMP=',veg_temp
@@ -809,7 +830,8 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
 
         if (c3 >= 0.) then  
            ! evapotranspiration
-           wflxvc = c3 * sigmaw * 2.2 * rbi
+           ! Evaporation area factor being changed to 1.2 - RGK 11-2008
+           wflxvc = c3 * sigmaw * 1.2 * rbi
            cpatch%Psi_open(ico)   = c3 / (cpatch%rb(ico) + cpatch%rsw_open(ico)  )
            cpatch%Psi_closed(ico) = c3 / (cpatch%rb(ico) + cpatch%rsw_closed(ico))
            if(initp%available_liquid_water(cpatch%krdepth(ico)) > 0.0)then
@@ -819,13 +841,15 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
            endif
         else   
            ! dew formation
-           wflxvc = c3 * 2.2 * rbi
+           ! Dew area factor being changed to 1.2 - RGK 11-2008
+           wflxvc = c3 * 1.2 * rbi
            transp = 0.0
            cpatch%Psi_open(ico) = 0.0
         endif
-
-        dinitp%ebudget_latent = dinitp%ebudget_latent  +   &
-             (wflxvc + transp) * alvl
+        
+        dinitp%ebudget_latent = dinitp%ebudget_latent     + &
+             wflxvc * (fracliq * alvl + (1.-fracliq) * alvi) + &
+             transp * alvl
 
         ! We need to extract water from the soil equal to the transpiration
         initp%extracted_water(cpatch%krdepth(ico)) =   &
@@ -839,6 +863,8 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         ! rhos is the air density
         ! cp is the specific heat
         ! 2.2 acpatchounts for stems and branches.
+        ! --------------------------------------------------------
+
         hflxvc = 2.2 * cpatch%lai(ico) * cp * rhos * rbi  &
              * (veg_temp - initp%can_temp)
 

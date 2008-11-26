@@ -78,7 +78,7 @@ Module misc_coms
   character(len=str_len) :: event_file
 
   ! integrator error statistics
-  integer(kind=8),dimensions(1:50,1:2):: integ_err
+  integer(kind=8),dimension(1:50,1:2):: integ_err
   logical,parameter :: record_err = .true.
 
 end Module misc_coms

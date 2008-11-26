@@ -778,7 +778,11 @@ subroutine init_full_history_restart()
   
   ! Set the tolerance on a matched latitude or longitude (100 meters)
 
-  ll_tolerance = (1.0/115.0)*(1.0/10.0)   
+  ll_tolerance = (1.0/115.0)*(1.0/10.0)
+
+  ll_tolerance = (1.0/115.0)*(2.0/1.0)
+
+   
   ! at equator: (1 degree / 115 kilometers)  (1 km / 10 100-meter invervals)
 
   ! Open the HDF environment
@@ -793,7 +797,7 @@ subroutine init_full_history_restart()
   
   do ngr=1,ngrids
      
-     cgrid => edgrid_g(1)
+     cgrid => edgrid_g(ngr)
 
      print*,"================================================"
      print*,"      Entering Full History Initialization      "
@@ -971,10 +975,11 @@ subroutine init_full_history_restart()
         if (py_index==0) then
            print*,"COULD NOT MATCH A POLYGON WITH THE DATASET"
            print*,"STOPPING"
-           print*,"GRID LATS: ",cgrid%lat
-           print*,"GRID LONS: ",cgrid%lon
-           print*,"FILE LATS: ",file_lats
-           print*,"FILE LONS: ",file_lons
+           print*,"THIS IS THE ",ipy,"th POLYGON"
+           print*,"GRID LATS: ",cgrid%lat(ipy)
+           print*,"GRID LONS: ",cgrid%lon(ipy)
+!           print*,"FILE LATS: ",file_lats
+!           print*,"FILE LONS: ",file_lons
            call fatal_error('Mismatch between polygon and dataset'         &
                            ,'init_full_history_restart','ed_history_io.f90')
         endif
@@ -1852,6 +1857,10 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
        filespace,memspace, &
        globdims,chnkdims,chnkoffs,cnt,stride, &
        memdims,memoffs,memsize
+  use consts_coms, only: cliq,cice,alli,t3ple
+!  use canopy_air_coms, only: hcapveg_ref,heathite_min
+  use canopy_radiation_coms, only:lai_min
+  use therm_lib,only : calc_hcapveg
 
   implicit none
   
@@ -1859,6 +1868,12 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
   integer,intent(in) :: paco_index
   integer,intent(in) :: ncohorts_global
   integer :: iparallel,dsetrank
+  
+  ! Needed for reconstructing veg_energy if using an old restart
+  ! ------------------------------------------------------------
+  real :: hcapveg,plai,veg_temp,fracliq
+  integer :: ico
+  ! ------------------------------------------------------------
 
   iparallel = 0
   
@@ -1889,9 +1904,59 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
   call hdf_getslab_r(cpatch%lai(1),'LAI_CO ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%bstorage(1),'BSTORAGE ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%cbr_bar(1),'CBR_BAR ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%veg_energy(1),'VEG_ENERGY ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%veg_temp(1),'VEG_TEMP ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%veg_water(1),'VEG_WATER ',dsetrank,iparallel)
+  call hdf_getslab_r(cpatch%veg_energy(1),'VEG_ENERGY ',dsetrank,iparallel)
+
+
+     ! ------------------------------------------------------------------------------------
+     ! ======= Older versions of the code did not have vegetation energy
+     ! ======= If the VEG_ENERGY variable was not there, and was initialized to 0._4
+     ! ======= then reconstruct those values from temperature, biomass and water
+     ! ======= This makes an assumption that may not exactly true in the model, but
+     ! ======= is an acceptable approximation if this process only occurs once.  It is
+     ! ======= assumed that the vegetation water is all liquid if the temperature is
+     ! ======= greater than or equal to 0, and all ice if it is less than zero.
+     
+     if ( sum(cpatch%veg_energy(1:cpatch%ncohorts),1) < 0.01 ) then
+        
+        write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
+        write (unit=*,fmt='(a)') 'Reconstructing VEG_ENERGY from BLEAF, BDEAD, VEG_WATER and VEG_TEMP'
+        write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
+        
+        plai = sum(cpatch%lai(1:cpatch%ncohorts),1)
+
+        do ico=1,cpatch%ncohorts
+
+           if(cpatch%lai(ico)>lai_min) then
+              
+              hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                   cpatch%nplant(ico),cpatch%pft(ico))
+
+              if(cpatch%veg_temp(ico)>=t3ple) then
+                 
+                 cpatch%veg_energy(ico) = &
+                      cpatch%veg_water(ico)*alli + &         ! latent heat of fusion
+                      cpatch%veg_water(ico)*cliq*(cpatch%veg_temp(ico)-t3ple) + &   ! thermal energy of liquid
+                      hcapveg *(cpatch%veg_temp(ico)-t3ple)  ! thermal energy of plant tissue
+              else
+                 
+                 cpatch%veg_energy(ico) = &
+                      cpatch%veg_water(ico)*cice*(cpatch%veg_temp(ico)-t3ple) + &   ! thermal energy of ice
+                      hcapveg *(cpatch%veg_temp(ico)-t3ple)  ! thermal energy of plant tissue
+              endif
+              
+           else
+              cpatch%veg_energy(ico) = 0.0
+           endif
+              
+        enddo
+        
+     endif
+     
+     ! ------------------------------------------------------------------------------------------
+     
+
   call hdf_getslab_r(cpatch%mean_gpp(1),'MEAN_GPP ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%mean_leaf_resp(1),'MEAN_LEAF_RESP ',dsetrank,iparallel)
   call hdf_getslab_r(cpatch%mean_root_resp(1),'MEAN_ROOT_RESP ',dsetrank,iparallel)

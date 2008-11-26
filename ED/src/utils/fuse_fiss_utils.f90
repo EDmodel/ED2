@@ -513,6 +513,8 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
  
      use ed_state_vars,only:patchtype
      use pft_coms, only: q, qsw, sla
+     use consts_coms,only:t3ple,alli,cliq,cice
+     use therm_lib,only:calc_hcapveg
 
      implicit none
      type(patchtype),target :: cpatch
@@ -520,8 +522,8 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      real, intent(in) :: newn
      real, intent(in) :: green_leaf_factor
      integer, intent(in) :: lsl
-
-
+     
+     real :: hcapveg
      real :: newni
      real :: cb_max
      real :: root_depth
@@ -642,6 +644,34 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      cpatch%krdepth(ico2) = assign_root_depth(root_depth, lsl)
 
      cpatch%nplant(ico2) = newn
+
+     !---- Will this conserve energy? Is the total LAI conserved? I hope so...
+     ! I think this is fine because temperature is no longer prognostic, so temperature will be 
+     ! adjusted at the next fast step...
+     !cpatch%veg_energy(ico2) = (cpatch%veg_energy(ico2) * cpatch%nplant(ico2) +   &
+     !     cpatch%veg_energy(ico1) * cpatch%nplant(ico1)) * newni
+     
+     ! Think it is safer to give the fused cohort an energy that is based off of it's
+     ! new temperature
+     !=======================================================================================
+
+     hcapveg = calc_hcapveg(cpatch%bleaf(ico2),cpatch%bdead(ico2), &
+          cpatch%nplant(ico2),cpatch%pft(ico2))
+     
+     if(cpatch%veg_temp(ico2)>=t3ple) then
+        
+        cpatch%veg_energy(ico2) = &
+             cpatch%veg_water(ico2)*alli + &         ! latent heat of fusion
+             cpatch%veg_water(ico2)*cliq*(cpatch%veg_temp(ico2)-t3ple) + &   ! thermal energy of liquid
+             hcapveg *(cpatch%veg_temp(ico2)-t3ple)  ! thermal energy of plant tissue
+     else
+        
+        cpatch%veg_energy(ico2) = &
+             cpatch%veg_water(ico2)*cice*(cpatch%veg_temp(ico2)-t3ple) + &   ! thermal energy of ice
+             hcapveg *(cpatch%veg_temp(ico2)-t3ple)  ! thermal energy of plant tissue
+     endif
+     
+
 
      return
    end subroutine fuse_2_cohorts_ar
@@ -855,8 +885,8 @@ end subroutine fuse_patches_ar
      type(patchtype), pointer :: newpatch
      
      !  This function fuses the two patches specified in the argument.
-     !  It fuses the first patch in the argument (the "donor" = ipa ) into the second
-     !  patch in the argument (the "recipient" = ipa_tp), and frees the memory 
+     !  It fuses the first patch in the argument (the "donor" = dp ) into the second
+     !  patch in the argument (the "recipient" = rp ), and frees the memory 
      !  associated with the second patch
 
      integer i,k
@@ -1052,6 +1082,15 @@ end subroutine fuse_patches_ar
         cpatch%gpp(ico)              = cpatch%gpp(ico)              * csite%area(rp) * newareai
         cpatch%leaf_respiration(ico) = cpatch%leaf_respiration(ico) * csite%area(rp) * newareai
         cpatch%root_respiration(ico) = cpatch%root_respiration(ico) * csite%area(rp) * newareai
+
+        ! Now that the plant density and the amount of water has changed, there will
+        ! be an inconsistency in the energy. If the energy stays the same, but temperature
+        ! is diagnosed with a sudden drop in biomass or water, we will have sky-rocketing values
+        ! so we have to adjust the energy accordingly also.
+
+        cpatch%veg_energy(ico) = cpatch%veg_energy(ico) * csite%area(rp) * newareai
+
+
      enddo
 
      ! adjust densities of cohorts in donor patch 

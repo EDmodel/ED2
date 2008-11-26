@@ -466,7 +466,7 @@ rk4_integ_utils.o : $(ED_DYNAMICS)/rk4_integ_utils.f90 ed_state_vars.o rk4_stepp
 	rm -f $(<F:.f90=.f90)
 
 rk4_stepper.o : $(ED_DYNAMICS)/rk4_stepper.F90 ed_state_vars.o grid_coms.o soil_coms.o     \
-	canopy_radiation_coms.o consts_coms.o canopy_air_coms.o therm_lib.o
+	canopy_radiation_coms.o consts_coms.o canopy_air_coms.o therm_lib.o misc_coms.o
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)
