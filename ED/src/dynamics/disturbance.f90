@@ -817,7 +817,7 @@ end subroutine apply_disturbances_ar
     type(sitetype),target   :: csite
 
     integer, intent(in) :: lsl
-    integer :: np,nc
+    integer :: np,nc,ico
     integer, intent(in) :: pft
     real, intent(in) :: density
     real, intent(in) :: height_factor
@@ -833,7 +833,7 @@ end subroutine apply_disturbances_ar
     ! planted plantation cohort.  It is unlikely but perhaps possible
     ! For this patch to have no cohorts yet.
     ! ------------------------------------------------------------
-
+    nc = cpatch%ncohorts + 1
     if ( cpatch%ncohorts>0) then
        
        allocate(tpatch)
@@ -848,11 +848,12 @@ end subroutine apply_disturbances_ar
        call allocate_patchtype(cpatch,1)
     endif
        
+    cpatch%ncohorts = nc
+    csite%paco_n(np)= nc
 
     ! Just make one cohort.  It will soon be split at the splitting call of
     ! apply_disturbances().  Place this cohort in the insertion point.
 
-    nc = cpatch%ncohorts
 
     cpatch%pft(nc) = pft
     cpatch%nplant(nc) = density
@@ -860,7 +861,7 @@ end subroutine apply_disturbances_ar
     cpatch%dbh(nc) = h2dbh(cpatch%hite,cpatch%pft)
     cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
     cpatch%bleaf(nc) = dbh2bl(cpatch%dbh(nc),cpatch%pft(nc))
-    
+    print*,"add",cpatch%hite(nc),cpatch%dbh(nc),cpatch%bdead(nc),cpatch%bleaf(nc)
     cpatch%phenology_status = 0
     cpatch%balive(nc) = cpatch%bleaf(nc) * &
          (1.0 + q(cpatch%pft(nc)) + qsw(cpatch%pft(nc)) * cpatch%hite(nc))
@@ -872,8 +873,14 @@ end subroutine apply_disturbances_ar
     cpatch%veg_water(nc) = 0.0
 
     !----- Because we assigned no water, the internal energy is simply hcapveg*(T-T3)
-    hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(nc)/csite%lai(np)
-    cpatch%veg_energy(nc) = hcapveg * (cpatch%veg_temp(nc)-t3ple)
+
+!! if update one LAI, have to update ALL energies
+    csite%lai(np) = sum(cpatch%lai(1:nc))
+    do ico = 1,nc
+       hcapveg = hcapveg_ref * max(cpatch%hite(1),cpatch%hite(nc),heathite_min) * cpatch%lai(ico)/csite%lai(np)
+       cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
+!       print*,"plant, energy", ico,cpatch%veg_energy(ico),cpatch%veg_temp(ico),cpatch%lai(ico)
+    enddo
     
     call init_ed_cohort_vars_array(cpatch, nc, lsl)
     

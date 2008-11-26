@@ -183,7 +183,7 @@ end subroutine terminate_cohorts_ar
    subroutine fuse_cohorts_ar(csite,ipa, green_leaf_factor, lsl)
 
      use ed_state_vars,only:sitetype,patchtype
-     use pft_coms            , only: rho, b1Ht, max_dbh, sla
+     use pft_coms            , only: rho, b1Ht, max_dbh, sla,hgt_ref
      use fusion_fission_coms , only: fusetol_h, fusetol, lai_fuse_tol
      use max_dims            , only: n_pft
      use mem_sites           , only: maxcohort
@@ -233,7 +233,7 @@ end subroutine terminate_cohorts_ar
 
            ! get fusion height threshold
            if(rho(cpatch%pft(ico1)) == 0.0)then
-              hite_threshold = b1Ht(cpatch%pft(ico1))
+              hite_threshold = b1Ht(cpatch%pft(ico1)) + hgt_ref(cpatch%pft(ico1))
            else
               hite_threshold = dbh2h(cpatch%pft(ico1), max_dbh(cpatch%pft(ico1)))
            end if

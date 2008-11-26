@@ -159,7 +159,7 @@ ed_misc_coms.o : $(ED_MEMORY)/ed_misc_coms.f90
 
 ed_model.o : $(ED_DRIVER)/ed_model.f90 misc_coms.o grid_coms.o ed_state_vars.o             \
 	rk4_driver.o ed_node_coms.o disturb_coms.o mem_sites.o consts_coms.o disturbance.o \
-	fuse_fiss_utils.o growth_balive.o ed_misc_coms.o consts_coms.o 
+	fuse_fiss_utils.o growth_balive.o ed_misc_coms.o consts_coms.o events.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -234,6 +234,12 @@ ename_coms.o : $(ED_MEMORY)/ename_coms.f90 max_dims.o
 
 euler_driver.o : $(ED_DYNAMICS)/euler_driver.f90 ed_state_vars.o misc_coms.o soil_coms.o   \
 	consts_coms.o grid_coms.o max_dims.o therm_lib.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+events.o : $(ED_DYNAMICS)/events.f90 misc_coms.o ed_state_vars.o grid_coms.o \
+	pft_coms.o ed_init_atm.o disturbance.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

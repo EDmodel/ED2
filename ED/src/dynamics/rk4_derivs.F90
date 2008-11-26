@@ -1,5 +1,5 @@
-subroutine leaf_derivs_ar(initp, dinitp, csite, ipa,isi,ipy, rhos, prss, pcpg, qpcpg,   &
-     atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
+subroutine leaf_derivs_ar(initp, dinitp, csite, ipa,isi,ipy, rhos, prss, &
+      pcpg, qpcpg, atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
   
   use ed_state_vars,only:sitetype,rk4patchtype
   use consts_coms, only : cp
@@ -138,6 +138,8 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
   real :: freezeCor !! correction to conductivity for partially frozen soil
   real :: sum_hflux
 
+  logical, parameter :: debug = .false.
+
 #if USE_INTERF
   interface
      subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc,   &
@@ -163,7 +165,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
      end subroutine canopy_derivs_two_ar
   end interface
 #endif
-  
+if(debug) print*,"T1"  
   ! Variables of convenience
   w_flux = 0.0
   qw_flux = 0.0
@@ -218,7 +220,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
           initp%soil_fracliq(k))
      initp%extracted_water(k) = 0.0
   enddo
-
+if(debug) print*,"T2"  
   ! Get derivatives of canopy variables
   call canopy_derivs_two_ar(initp, dinitp, csite, ipa,isi,ipy,hflxgc, wflxgc, dewgnd,  &
        wshed,qwshed, rhos, prss, pcpg, qpcpg, exner, geoht, atm_tmp, lsl)
@@ -238,7 +240,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
      rfactor(k) = dslz(k) / soilcond
   enddo
 
-  !        water
+  !        snow/surface water
   do k = 1, ksn
      if(initp%sfcwater_depth(k) > 0.0)then
         snden = initp%sfcwater_mass(k) / initp%sfcwater_depth(k)
@@ -276,7 +278,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
   hfluxgsc(nzg+ksn+1) = hflxgc + wflxgc * alvi - csite%rlong_g(ipa) - csite%rlong_s(ipa)
   
   dinitp%avg_sensible_gg(nzg)=hfluxgsc(nzg+ksn+1) ! Diagnostic
-
+if(debug) print*,"T3"  
   ! Update soil Q values [J/m3] from sensible heat, upward water vapor 
   ! (latent heat) and longwave fluxes. This excludes effects of dew/frost 
   ! formation, precipitation, shedding, and percolation
@@ -295,7 +297,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
      dinitp%sfcwater_energy(k) = hfluxgsc(k+nzg) - hfluxgsc(k+1+nzg) +   &
           csite%rshort_s(k,ipa)
   enddo
-
+if(debug) print*,"T4"  
   ! Calculate the fluxes of water with their associated heat fluxes.
   ! Update top soil or snow moisture from evaporation only.
 
@@ -335,7 +337,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
   !!     endif
   !  endif
 
-
+if(debug) print*,"T4"  
   dinitp%avg_vapor_gc  = wflxgc   ! Diagnostic
   dinitp%avg_dew_cg    = dewgnd   ! Diagnostic
   dinitp%avg_qwshed_vg = qwshed   ! Diagnostic
@@ -368,7 +370,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
   endif
 
   dinitp%avg_smoist_gg(nzg) = w_flux(nzg+ksn+1)  ! Diagnostic
-
+if(debug) print*,"T5"  
   ! Compute gravitational potential plus moisture potential,  
   ! psi + z (psiplusz) [m], liquid water content (soil_liq) [m], 
   ! and 99% the remaining water capacity (soilair99) [m].
@@ -475,7 +477,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
      dinitp%avg_smoist_gg(k-1) = w_flux(k)*1000   ! Diagnostic
 
   enddo
-
+if(debug) print*,"T6"  
   ! Finally, update soil moisture (impose minimum value of soilcp) and q value.
   do k = lsl,nzg
      dinitp%soil_water(k) = dinitp%soil_water(k) - dslzi(k) *   &
@@ -526,7 +528,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
      enddo
   enddo
      !  endif
-
+if(debug) print*,"T7"  
   ! If we have a thin layer of snow the heat derivatives will require 
   ! special treatment.
   if(initp%nlev_sfcwater == 1 .and.   &
@@ -551,6 +553,8 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
         endif
      enddo
   endif
+
+if(debug) print*,"TF"  
 
   return
 end subroutine leaftw_derivs_ar

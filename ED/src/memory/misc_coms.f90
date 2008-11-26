@@ -74,4 +74,11 @@ Module misc_coms
   ! XML configuration file
   character(len=str_len) :: iedcnfgf
 
+  ! XML event file
+  character(len=str_len) :: event_file
+
+  ! integrator error statistics
+  integer(kind=8),dimensions(1:50,1:2):: integ_err
+  logical,parameter :: record_err = .true.
+
 end Module misc_coms

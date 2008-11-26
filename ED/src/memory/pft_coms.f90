@@ -118,6 +118,7 @@ real, dimension(n_pft) :: SLA ! specific leaf area (m2 leaf / kg C)
 real, dimension(n_pft) :: q ! Ratio of (kg fine roots) / (kg leaves)
 real, dimension(n_pft) :: qsw ! Ratio of (kg sapwood) / (kg leaves)
 real, dimension(n_pft) :: hgt_min ! minimum height of an individual (m)
+real, dimension(n_pft) :: hgt_ref ! ref height for diam/ht allom (Temperate)
 real, dimension(n_pft) :: b1Ht  !  DBH-height allometry intercept (m).  Temperate PFTs only.
 real, dimension(n_pft) :: b2Ht  !  DBH-height allometry slope (1/cm).  Temperate PFTs only.
 real, dimension(n_pft) :: b1Bs  !  DBH-stem allometry intercept (kg stem biomass / plant * cm^{-b2Bs}).  Temperate PFTs only.

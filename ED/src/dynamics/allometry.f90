@@ -1,16 +1,17 @@
 real function h2dbh(h,ipft)
 
-  use pft_coms, only: rho, b1Ht, b2Ht
+  use pft_coms, only: rho, b1Ht, b2Ht,hgt_ref
 
   implicit none
   
   real :: h
   integer :: ipft
-
+  real :: hmax
+print*,h,ipft,hgt_ref(ipft)
   if(rho(ipft).ne.0.0)then  ! Tropical 
      h2dbh = 10.0**((log10(h)-0.37)/0.64)
   else ! Temperate
-     h2dbh = log(1.0-(h-1.3)/b1Ht(ipft))/b2Ht(ipft)
+     h2dbh = log(1.0-(h-hgt_ref(ipft))/b1Ht(ipft))/b2Ht(ipft)
   endif
 
   return
@@ -149,7 +150,7 @@ end function assign_root_depth
 
 real function dbh2h(ipft, dbh)
 
-  use pft_coms, only: rho, max_dbh, b1Ht, b2Ht
+  use pft_coms, only: rho, max_dbh, b1Ht, b2Ht,hgt_ref
 
   implicit none
 
@@ -174,7 +175,7 @@ real function dbh2h(ipft, dbh)
   else
 
      ! North America-type allometry
-     dbh2h = 1.3 + b1Ht(ipft) * (1.0 - exp(b2Ht(ipft) * dbh))
+     dbh2h = hgt_ref(ipft) + b1Ht(ipft) * (1.0 - exp(b2Ht(ipft) * dbh))
 
   endif
 

@@ -408,6 +408,7 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
   integer, intent(in) :: lsl
   real :: htry,tiny
   integer :: k
+  real, parameter :: sfc_min = 1.0
   
   yscal%can_temp = abs(y%can_temp) + abs(dy%can_temp*htry) + tiny
   yscal%can_shv = abs(y%can_shv)   &
@@ -434,8 +435,8 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
              + abs(dy%sfcwater_energy(k)*htry) + tiny
         yscal%sfcwater_depth(k) = abs(y%sfcwater_depth(k))  &
              + abs(dy%sfcwater_depth(k)*htry) + tiny
-        if(yscal%sfcwater_energy(k) < 0.1) then !! added by MCD (11/17/08)
-           yscal%sfcwater_energy(k) = 0.1          !! why were we allowing this term to go to tiny?
+        if(yscal%sfcwater_energy(k) < sfc_min)then !! added by MCD (11/17/08)
+           yscal%sfcwater_energy(k) = sfc_min          !! why were we allowing this term to go to tiny?
         endif
                                                                         
      enddo
@@ -490,6 +491,7 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
 
   use grid_coms, only: nzg
   use canopy_radiation_coms, only: lai_min
+  use misc_coms, only: integ_err, record_err
 
   implicit none
   
@@ -497,28 +499,54 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
   type(patchtype),target :: cpatch
   type(rk4patchtype),target :: yerr,yscal,y,ytemp
   integer :: ico
-  real :: errmax,errh2o,errene
+  real :: errmax,errh2o,errene,err,errh2oMAX.erreneMAX
   integer :: k
   
   errmax = 0.0
-  errmax = max(errmax,abs(yerr%can_temp/yscal%can_temp))
-  errmax = max(errmax,abs(yerr%can_shv/yscal%can_shv))
-  errmax = max(errmax,abs(yerr%can_co2/yscal%can_co2))
+
+  err = abs(yerr%can_temp/yscal%can_temp)
+  errmax = max(errmax,err)
+  if(record_err) if(err .gt. 1) integ_err(1,1) = integ_err(1,1) + 1 
+
+  err = abs(yerr%can_shv/yscal%can_shv)
+  errmax = max(errmax,err)
+  if(record_err) if(err .gt. 1) integ_err(2,1) = integ_err(2,1) + 1 
+
+  err = abs(yerr%can_co2/yscal%can_co2)
+  errmax = max(errmax,err)
+  if(record_err) if(err .gt. 1) integ_err(3,1) = integ_err(3,1) + 1 
   
   do k=lsl,nzg
-     errmax = max(errmax,abs(yerr%soil_water(k)/yscal%soil_water(k)))
-     errmax = max(errmax,abs(yerr%soil_energy(k)/yscal%soil_energy(k)))
+     err = abs(yerr%soil_water(k)/yscal%soil_water(k))
+     errmax = max(errmax,err)
+     if(record_err) if(err .gt. 1) integ_err(3+k,1) = integ_err(3+k,1) + 1 
+  end do
+
+  do k=lsl,nzg
+     err = abs(yerr%soil_energy(k)/yscal%soil_energy(k))
+     errmax = max(errmax,err)
+     if(record_err) if(err .gt. 1) integ_err(15+k,1) = integ_err(15+k,1) + 1      
   enddo
 
   do k=1,ytemp%nlev_sfcwater
-     errmax = max(errmax,abs(yerr%sfcwater_energy(k) /  &
-          yscal%sfcwater_energy(k)))
-     errmax = max(errmax,abs(yerr%sfcwater_mass(k) / &
-          yscal%sfcwater_mass(k)))
+     err = abs(yerr%sfcwater_energy(k) / yscal%sfcwater_energy(k))
+     errmax = max(errmax,err)
+     if(record_err) if(err .gt. 1) integ_err(27+k,1) = integ_err(27+k,1) + 1      
   enddo
 
-  errmax = max(errmax,abs(yerr%virtual_heat/yscal%virtual_heat))
-  errmax = max(errmax,abs(yerr%virtual_water/yscal%virtual_water))
+  do k=1,ytemp%nlev_sfcwater
+     err = abs(yerr%sfcwater_mass(k) / yscal%sfcwater_mass(k))
+     errmax = max(errmax,err)
+     if(record_err) if(err .gt. 1) integ_err(32+k,1) = integ_err(32+k,1) + 1      
+  enddo
+
+  err = abs(yerr%virtual_heat/yscal%virtual_heat)
+  errmax = max(errmax,err)
+  if(record_err) if(err .gt. 1) integ_err(38,1) = integ_err(38,1) + 1      
+
+  err = abs(yerr%virtual_water/yscal%virtual_water)
+  errmax = max(errmax,err)
+  if(record_err) if(err .gt. 1) integ_err(39,1) = integ_err(39,1) + 1      
 
 !  write (unit=40,fmt='(132a)') ('-',k=1,132)
 !  write (unit=40,fmt='(2(a5,1x),8(a14,1x))') &
@@ -526,6 +554,8 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
 !                   ,'  YERR%VEG_H2O',' YSCAL%VEG_H2O',' YERR%VEG_ENER','YSCAL%VEG_ENER'
   do ico = 1,cpatch%ncohorts
      
+     errh2oMAX = 0.0
+     erreneMAX = 0.0
      if(cpatch%lai(ico).gt.lai_min)then
         errh2o = abs(yerr%veg_water(ico)/yscal%veg_water(ico))
         errene = abs(yerr%veg_energy(ico)/yscal%veg_energy(ico))
@@ -534,8 +564,15 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
 !           ,yerr%veg_water(ico),yscal%veg_water(ico)                 &
 !           ,yerr%veg_energy(ico),yscal%veg_energy(ico)
         errmax = max(errmax,errh2o,errene)
+        errh2oMAX = max(errh2oMAX,errh2o)
+        erreneMAX = max(erreneMAX,errene)
      endif
   end do
+  if(record_err) then
+     if(errh2oMAX .gt. 1) integ_err(40,1) = integ_err(40,1) + 1      
+     if(erreneMAX .gt. 1) integ_err(41,1) = integ_err(41,1) + 1      
+  endif
+
 !  write (unit=40,fmt='(132a)') ('-',k=1,132)
 !  write (unit=40,fmt='(a)') ' '
 
@@ -1056,7 +1093,9 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   real :: snow_beg,soil_beg,virt_beg,snow_end,soil_end,virt_end
   real :: infilt,freezeCor
   integer :: nsoil
+  logical, parameter :: debug = .false.
 
+  !! run once at start
   if (ncall /= 40) then
      ncall = 40
      stretch = 2.0
@@ -1104,10 +1143,8 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
         ksnnew = 1
      endif
   endif
-
   ! Loop over layers
   do k = ksnnew,1,-1
-
      ! Update current state
      qw = initp%sfcwater_energy(k) * initp%sfcwater_mass(k) + qwfree
      w = initp%sfcwater_mass(k) + wfree
@@ -1206,7 +1243,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
           qwfree = 0.0
        endif
 
-     else
+    else
         qwfree = wfreeb * cliq * (initp%sfcwater_tempk(k)-tsupercool)
      endif
      depthloss = wfreeb * 1.0e-3
@@ -1249,7 +1286,6 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
      write (unit=*,fmt='(a)')            '----------------------------------------------------------------'
      call fatal_error('NaN in soil energy','redistribute_snow_ar','rk4_integ_utils.f90')
   end if
-
   ! Re-distribute snow layers to maintain prescribed distribution of mass
   if(totsnow < min_sfcwater_mass .or. ksnnew == 0)then
      initp%nlev_sfcwater = 0
@@ -1270,17 +1306,22 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
         endif
      enddo
      newlayers = min(newlayers, nzs, nlayers + 1)
-     
+if(debug) print*,"A",newlayers     
      initp%nlev_sfcwater = newlayers
      kold = 1
      wtnew = 1.0
      wtold = 1.0
      do k = 1,newlayers
-        vctr14(k) = totsnow * thick(k,newlayers)
-        vctr16(k) = 0.0
-        vctr18(k) = 0.0
+if(debug) print*,"k=",k
+        vctr14(k) = totsnow * thick(k,newlayers) !!mass?
+        vctr16(k) = 0.0                          !!energy?
+        vctr18(k) = 0.0                          !!depth?
         find_layer: do
-           wdiff = wtnew * vctr14(k) - wtold * initp%sfcwater_mass(kold)
+           wdiff = wtnew * vctr14(k) - wtold * initp%sfcwater_mass(kold)  
+           !!difference between old and new snow
+if(debug) print*,"wdiff=",wdiff,wtnew,wtold,kold
+if(debug) print*,"old=",initp%sfcwater_energy(kold), initp%sfcwater_depth(kold),initp%sfcwater_mass(kold)
+if(debug) print*,"new=",vctr14(k),vctr16(k),vctr18(k)
            if (wdiff > 0.0) then
               vctr16(k) = vctr16(k) + wtold * initp%sfcwater_energy(kold) * &
                    initp%sfcwater_mass(kold)
@@ -1293,16 +1334,21 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
            else
               vctr16(k) = vctr16(k) + wtnew * vctr14(k)   &
                    * initp%sfcwater_energy(kold)
+if(debug) print*,"."
               vctr18(k) = vctr18(k) + wtnew * vctr14(k)  &
                    * initp%sfcwater_depth(kold) / max(1.0e-12,  &
                    initp%sfcwater_mass(kold))
+if(debug) print*,"."
               wtold = wtold - wtnew * vctr14(k) /   &
-                   initp%sfcwater_mass(kold)
+                  max(1.0e-12,initp%sfcwater_mass(kold))
+!!                   initp%sfcwater_mass(kold)
               wtnew = 1.
               exit find_layer
            endif
         enddo find_layer
      enddo
+
+if(debug) print*,"B"
 
      do k = 1,newlayers
         initp%sfcwater_mass(k) = vctr14(k)
@@ -1315,7 +1361,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
              initp%sfcwater_fracliq(k))
         initp%sfcwater_depth(k) = vctr18(k)
      enddo
-        
+
      do k = newlayers + 1, nzs
         initp%sfcwater_mass(k) = 0.0
         initp%sfcwater_energy(k) = 0.0
@@ -1323,7 +1369,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
      enddo
 
   endif
-  
+
   return
 end subroutine redistribute_snow_ar
 
@@ -1396,7 +1442,7 @@ subroutine initialize_rk4patches_ar(init)
         enddo
      enddo
   enddo
-
+print*,"maxcohort = ",maxcohort
   ! Create new memory in each of the integration patches.
   call allocate_rk4_coh_ar(maxcohort,integration_buff_g%initp)
   call allocate_rk4_coh_ar(maxcohort,integration_buff_g%yscal)

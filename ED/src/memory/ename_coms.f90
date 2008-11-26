@@ -170,6 +170,9 @@ Module ename_coms
 !!    phenology file
       character(len=str_len) :: phenpath=''
 
+!!    XML EVENT FILE
+      character(len=str_len) :: event_file=''
+
 !!    VARIABLES THAT WILL EVENTUALLY DISAPPEAR
       integer :: maxpatch  = 12 ! Maximum # of patches
       integer :: maxcohort = 12 ! Maximum # of cohorts

@@ -272,7 +272,8 @@ subroutine read_ed1_history_file_array
               enddo
               if(.not.site_match) then
                  print*,"error reading from patch file",pss_name
-                 print*,"site number", sitenum,"not found"
+                 print*,"site number", sitenum(ip),"not found",ip
+                 print*,"in ::", cpoly%sitenum
                  stop
               endif
            case default !Nearly bare ground

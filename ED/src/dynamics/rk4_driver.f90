@@ -9,7 +9,7 @@ contains
     use ed_state_vars,only:integration_vars_ar,edtype,polygontype,sitetype,patchtype
     use grid_coms, only: nzg
     use max_dims, only : n_dbh
-    use misc_coms, only: dtlsm
+    use misc_coms, only: dtlsm,integ_err,record_err
     use consts_coms, only: umol_2_kgC
 
     implicit none
@@ -30,6 +30,8 @@ contains
     real, dimension(n_dbh) :: gpp_dbh
     real :: plant_respiration
     
+    if(record_err) integ_err = 0
+
     polygonloop: do ipy = 1,cgrid%npolygons
        
        cpoly => cgrid%polygon(ipy)
@@ -112,6 +114,12 @@ contains
        end do siteloop
 
     end do polygonloop
+
+    if(record_err) then
+       do i = 1,41
+          print*,integ_err(i,)
+       enddo
+    endif
 
     return
   end subroutine rk4_timestep_ar
@@ -405,6 +413,8 @@ contains
        csite%sfcwater_depth(k,ipa)  = initp%sfcwater_depth(k)
        csite%sfcwater_mass(k,ipa)   = initp%sfcwater_mass(k)
        csite%sfcwater_energy(k,ipa) = initp%sfcwater_energy(k)
+       csite%sfcwater_tempk(k,ipa) = initp%sfcwater_tempk(k)
+       csite%sfcwater_fracliq(k,ipa) = initp%sfcwater_fracliq(k)
     enddo
     
 

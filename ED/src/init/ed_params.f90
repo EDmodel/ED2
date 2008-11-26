@@ -42,6 +42,11 @@ subroutine load_ed_ecosystem_params()
    grass_pft(1)=1
    grass_pft(2)=5
 
+   grass_pft(3)=12
+   grass_pft(4)=13
+   grass_pft(5)=14
+   grass_pft(6)=15
+
    ! Include_pft: flag specifying to whether you want to include a plant functional 
    ! type (1) or whether you want it excluded (0) from the simulation.
    include_pft = 0
@@ -413,7 +418,7 @@ end subroutine init_pft_mort_params
 subroutine init_pft_alloc_params()
 
 use pft_coms, only: rho, SLA, q, qsw, hgt_min, b1Ht, b2Ht, b1Bs,  &
-     b2Bs, b1Bl, b2Bl, C2B, leaf_turnover_rate
+     b2Bs, b1Bl, b2Bl, C2B, leaf_turnover_rate, hgt_ref
 
 implicit none
 
@@ -452,6 +457,11 @@ qsw(14:15)  = SLA(14:15) / (3900.0*2.0/1000.0)
 qsw(5:13)    = SLA(5:13) / 3900.0 !KIM - ED1/ED2 codes and Moorcroft et al.'re wrong!
 
 hgt_min = 1.5
+hgt_min(5) = 0.2
+hgt_min(12:13) = 0.2
+
+hgt_ref = 0.0
+hgt_ref(6:11) = 1.3
 
 b1Ht(1:4) = 0.0
 b1Ht(5) = 0.4778
@@ -653,7 +663,7 @@ end subroutine init_pft_repro_params
 subroutine init_pft_derived_params()
 
 use pft_coms, only: root_turnover_rate, c2n_leaf, max_dbh, b1Ht, b2Ht,  &
-     hgt_min, q, qsw, c2n_recruit, c2n_stem
+     hgt_min, q, qsw, c2n_recruit, c2n_stem,hgt_ref
 use decomp_coms, only: f_labile
 use max_dims, only: n_pft
 
@@ -680,7 +690,7 @@ root_turnover_rate(14:15) = 2.0
 max_dbh(1) = 0.498
 max_dbh(2:4) = 68.31
 max_dbh(5) = 0.498
-max_dbh(6:11) = log(1.0-(0.999*b1Ht(6:11)-1.3)/b1Ht(6:11))/b2Ht(6:11)
+max_dbh(6:11) = log(1.0-(0.999*b1Ht(6:11)-hgt_ref(6:11))/b1Ht(6:11))/b2Ht(6:11)
 max_dbh(12:15) = 0.498
 
 do ipft = 1,n_pft

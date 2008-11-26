@@ -409,6 +409,9 @@ subroutine vegetation_dynamics(new_month,new_year)
   ! Time factor for averaging dailies 
   tfact2 = 1.0 / yr_day
 
+  !! Apply Events
+  call prescribed_event(current_time%year,doy)
+
   
   do ifm=1,ngrids
 

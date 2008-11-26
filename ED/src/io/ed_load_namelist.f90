@@ -47,7 +47,7 @@ subroutine copy_nl(copy_type)
        sfilin, ied_init_mode, current_time, ed_inputs_dir,   &
        end_time, radfrq, integration_scheme, ffilout, idoutput,imoutput,iyoutput, dtlsm, &
        frqstate,sfilout,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmax,ipmin, &
-       iedcnfgf, outfast, outstate,unitfast,unitstate
+       iedcnfgf, outfast, outstate,unitfast,unitstate,event_file
 
   use grid_coms, only: time,centlon,centlat,deltax,deltay,nnxp,nnyp,nstratx, &
                        nstraty,polelat,polelon,ngrids,timmax,time,nzg, nzs
@@ -159,6 +159,7 @@ subroutine copy_nl(copy_type)
      iphenyff      = nl%iphenyff
      
      iedcnfgf      = nl%iedcnfgf
+     event_file      = nl%event_file
      phenpath      = nl%phenpath
      maxpatch      = nl%maxpatch
      maxcohort     = nl%maxcohort

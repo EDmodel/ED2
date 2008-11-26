@@ -416,8 +416,8 @@ subroutine update_site_derived_props_ar(cpoly, census_flag, isi)
 
         ! Update basal area, agb
         if(census_flag == 0 .or. cpatch%first_census(ico) == 1)then
-           bdbh = min( int(cpatch%dbh(ico) * 0.1), 10) + 1
-           ba = cpatch%nplant(ico) * cpatch%dbh(ico)**2
+           bdbh = max(0,min( int(cpatch%dbh(ico) * 0.1), 10)) + 1
+           ba = cpatch%nplant(ico) * max(0.0,cpatch%dbh(ico))**2
            cpoly%basal_area(cpatch%pft(ico), bdbh,isi) = cpoly%basal_area(cpatch%pft(ico), bdbh,isi) &
                 +  csite%area(ipa) * ba * pi1 * 0.25
            cpoly%agb(cpatch%pft(ico), bdbh,isi) = cpoly%agb(cpatch%pft(ico), bdbh,isi) +  &
@@ -477,7 +477,6 @@ subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
 
   ! surface_ssh is the saturation mixing ratio of the top soil or snow surface
   ! and is used for dew formation and snow evaporation.
-
   if (nlev_sfcwater > 0) then
      call qtk(sfcwater_energy,tempk,fracliq)
      surface_ssh = rhovsil(tempk) / rhos
@@ -496,7 +495,6 @@ subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
      ground_shv = surface_ssh * alpha * beta + (1. - beta) * can_shv
      
   endif
-
   return
 end subroutine ed_grndvap
 !==========================================================================================!

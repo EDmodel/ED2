@@ -50,6 +50,7 @@ OBJ_MODEL =                        \
 	ed_xml_config.o            \
 	ename_coms.o               \
 	euler_driver.o             \
+	events.o		   \
 	farq_leuning.o             \
 	fatal_error.o              \
 	fire.o                     \

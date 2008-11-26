@@ -245,7 +245,7 @@ subroutine reproduction_ar(cgrid, month)
               !----- Because we assigned no water, the internal energy is simply hcapveg*(T-T3)
               hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)/csite%lai(ipa)
               cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
-
+!!!! THIS HAS THE POTENTIAL TO CAUSE AN ERROR, SEE PHENOLOGY
             
               ! Setting new_recruit_flag to 1 indicates that 
               ! this cohort is included when we tally agb_recruit,

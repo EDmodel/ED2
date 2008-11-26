@@ -310,7 +310,7 @@ subroutine update_vital_rates_ar(cpatch,ico, dbh_in, bdead_in, balive_in, hite_i
   real, dimension(n_pft, n_dbh) :: agb_mort
 
   ! Get dbh bin
-  bdbh = min(int(dbh_in*0.1),10)+1
+  bdbh = max(0,min(int(dbh_in*0.1),10))+1
 
   ! Update current basal area, agb
   basal_area(cpatch%pft(ico), bdbh) = basal_area(cpatch%pft(ico), bdbh) + area * cpatch%nplant(ico) *  &
