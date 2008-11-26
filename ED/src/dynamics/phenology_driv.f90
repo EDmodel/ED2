@@ -68,7 +68,7 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
        c2n_storage
   use decomp_coms, only: f_labile
   use phenology_coms, only: retained_carbon_fraction, theta_crit, iphen_scheme
-  use consts_coms, only: t3ple
+  use consts_coms, only: t3ple,cice,cliq,alli
   use therm_lib,only:calc_hcapveg
 
   implicit none
