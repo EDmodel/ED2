@@ -221,14 +221,9 @@ end subroutine terminate_cohorts_ar
      cpatch => csite%patch(ipa)
 
 
-     if(csite%cohort_count(ipa).ne.cpatch%ncohorts) then
-        print*,"COHORT COUNT DOES NOT EQUAL NCOHORTS,WTF."
-        stop
-     end if
+     ! COHORT COUNT IS DEPRICATED AND WILL BE REMOVED SOON - RGK 11-28-2008
 
      if(csite%cohort_count(ipa) == 0)return ! return if there aren't any cohorts
-
-
      allocate(fuse_table(cpatch%ncohorts))
      fuse_table(:) = .true.
 
