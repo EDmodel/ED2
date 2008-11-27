@@ -35,7 +35,7 @@ real, allocatable, dimension(:,:) :: topt1
 
 
 integer :: iyr,imn,idy,itm,ie,maxarr,maxarr2,ngr,maxx1,maxy1,maxz1
-character (len=80) :: hnameinh,prefix
+character (len=256) :: hnameinh,prefix
 character (len=2) :: cng
 integer, external :: cio_i,cio_f,cio_i_sca,cio_f_sca,cio_f8_sca
 integer,save :: iunhd=11,inhunt=10

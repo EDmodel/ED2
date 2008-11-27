@@ -569,8 +569,7 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
     
       leaf_g(ifm)%gpp(i,j)     = 0.0
       leaf_g(ifm)%resphet(i,j) = 0.0
-      leaf_g(ifm)%resproot(i,j) = 0.0
-      leaf_g(ifm)%respleaf(i,j) = 0.0
+      leaf_g(ifm)%plresp(i,j)  = 0.0
     enddo
   enddo
 
@@ -1074,25 +1073,32 @@ end subroutine int_met_avg
 !==========================================================================================!
 subroutine copy_avgvars_to_leaf(ifm)
 
-   use ed_state_vars , only: edgrid_g,edtype,polygontype,sitetype
+   use ed_state_vars , only: edgrid_g,edtype,polygontype,sitetype,patchtype
    use mem_leaf      , only: leaf_g
    use mem_grid      , only: nzg
    use rconstants    , only: t3ple,cliq1000,cice1000,alli1000
    use soil_coms     , only: soil
+   use misc_coms, only: frqsum
    implicit none
    
    !----- Argument ------------------------------------------------------------------------!
    integer, intent(in)  :: ifm
    !----- Local variables -----------------------------------------------------------------!
-   type(edtype),pointer :: cgrid
-   integer              :: ipy,isi
-   integer              :: ix,iy,k
+   type(edtype)     , pointer :: cgrid
+   type(polygontype), pointer :: cpoly
+   type(sitetype)   , pointer :: csite
+   type(patchtype)  , pointer :: cpatch
+   integer                    :: ipy,isi,ipa,ico
+   integer                    :: ix,iy,k
+   real                       :: frqsumi,site_area_i,poly_area_i
    !---------------------------------------------------------------------------------------!
 
    !----- Set the pointers ----------------------------------------------------------------!
    cgrid => edgrid_g(ifm)
 
+   frqsumi = 1.0 / frqsum
    do ipy=1,cgrid%npolygons
+      cpoly => cgrid%polygon(ipy)
 
       ix = cgrid%ilon(ipy)
       iy = cgrid%ilat(ipy)
@@ -1109,12 +1115,30 @@ subroutine copy_avgvars_to_leaf(ifm)
       leaf_g(ifm)%can_temp(ix,iy,2)  = cgrid%avg_can_temp(ipy)
       leaf_g(ifm)%can_rvap(ix,iy,2)  = cgrid%avg_can_shv(ipy)
       
-      leaf_g(ifm)%veg_lai(ix,iy,2)   = cgrid%lai(ipy)
       
-      leaf_g(ifm)%gpp(ix,iy)         = cgrid%avg_gpp(ipy)
-      leaf_g(ifm)%resphet(ix,iy)     = cgrid%avg_htroph_resp(ipy)
-      leaf_g(ifm)%respleaf(ix,iy)    = cgrid%avg_leaf_resp(ipy)
-      leaf_g(ifm)%resproot(ix,iy)    = cgrid%avg_root_resp(ipy)
+      leaf_g(ifm)%veg_lai(ix,iy,2)   = cgrid%lai(ipy)
+
+
+      
+      leaf_g(ifm)%gpp(ix,iy)         = 0.0
+      leaf_g(ifm)%resphet(ix,iy)     = 0.0
+      leaf_g(ifm)%plresp(ix,iy)      = 0.0
+
+      poly_area_i = 1./sum(cpoly%area)
+      do isi=1,cpoly%nsites
+         csite => cpoly%site(isi)
+         if (csite%npatches>0) then
+            site_area_i=1./sum(csite%area)
+            
+            leaf_g(ifm)%gpp(ix,iy) = leaf_g(ifm)%gpp(ix,iy) + &
+                 sum(csite%area*csite%co2budget_gpp)*cpoly%area(isi)   *frqsumi
+            leaf_g(ifm)%plresp(ix,iy) = leaf_g(ifm)%plresp(ix,iy) + &
+                 sum(csite%area*csite%co2budget_plresp)*cpoly%area(isi)*frqsumi
+           
+            leaf_g(ifm)%resphet(ix,iy) = leaf_g(ifm)%resphet(ix,iy) + &
+                 sum(csite%area*csite%co2budget_rh) *cpoly%area(isi)   *frqsumi
+         end if
+      end do
 
    end do
    return
