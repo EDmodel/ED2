@@ -599,6 +599,7 @@ end subroutine apply_disturbances_ar
   subroutine insert_survivors_ar(csite, np, cp, q, area_fac,nat_dist_type)
 
     use ed_state_vars, only: sitetype,patchtype
+    use therm_lib,only: update_veg_energy_ct
     
     implicit none
     type(sitetype),target    :: csite
@@ -678,11 +679,9 @@ end subroutine apply_disturbances_ar
           tpatch%Psi_open(nco)            = tpatch%Psi_open(nco) * cohort_area_fac
 
           ! Adjust the vegetation energy - RGK 11-26-2008
-          ! Perhaps this should be diagnosed off of vegetation temperature?
-          ! I think it should be ok, because veg_energy is a linear function of
-          ! veg_water and nplant
 
-          tpatch%veg_energy(nco)  = tpatch%veg_energy(nco) * cohort_area_fac
+          call update_veg_energy_ct(cpatch,ico)
+
           
        endif
           
@@ -875,17 +874,16 @@ end subroutine apply_disturbances_ar
          (1.0 + q(cpatch%pft(nc)) + qsw(cpatch%pft(nc)) * cpatch%hite(nc))
     cpatch%lai(nc) = cpatch%bleaf(nc) * cpatch%nplant(nc) * sla(cpatch%pft(nc))
     cpatch%bstorage(nc) = 0.0
-    cpatch%hcapveg(nc) =  3.e4 * max(1.,.025 * dtlsm)
 
     cpatch%veg_temp(nc) = csite%can_temp(np)
     cpatch%veg_water(nc) = 0.0
 
     !----- Because we assigned no water, the internal energy is simply hcapveg*(T-T3)
 
-    hcapveg = calc_hcapveg(cpatch%bleaf(nc),cpatch%bdead(nc), &
+    cpatch%hcapveg(nc) = calc_hcapveg(cpatch%bleaf(nc),cpatch%bdead(nc), &
          cpatch%nplant(nc),cpatch%pft(nc))
     
-    cpatch%veg_energy(nc) = hcapveg * (cpatch%veg_temp(nc)-t3ple)
+    cpatch%veg_energy(nc) = cpatch%hcapveg(nc) * (cpatch%veg_temp(nc)-t3ple)
     
     call init_ed_cohort_vars_array(cpatch, nc, lsl)
     

@@ -136,9 +136,14 @@ real, dimension(n_pft) :: clumping_factor ! 0-1 factor indicating degree of clum
 real, dimension(n_pft) :: leaf_width  ! leaf width used to compute the aerodynamic resistance (m).
 ! NEW PARAMETERS 11-26-08
 
-real, dimension(n_pft) :: spec_hcap_leaf ! Specific heat capacity of leaf biomass (J/K/kg)
+real, dimension(n_pft) :: c_grn_leaf_dry ! Specific heat capacity of dry leaf biomass (J/kg/K)
 
-real, dimension(n_pft) :: spec_hcap_stem ! Specific heat capacity of stem&struct biomass (J/K/kg)
+real, dimension(n_pft) :: c_ngrn_biom_dry! Specific heat capacity of dry non-green biomass(J/kg/K)
+
+real, dimension(n_pft) :: wat_dry_ratio_grn  ! Ratio of water to dry mass in green leaves
+
+real, dimension(n_pft) :: wat_dry_ratio_ngrn ! Ratio of water to dry mass in non-green biomass
+
 
 real :: hcap_stem_fraction               ! Fraction of structural biomass, that
                                          ! that is included in the calculation of vegetation

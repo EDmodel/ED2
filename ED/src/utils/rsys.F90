@@ -91,7 +91,7 @@ subroutine timing(icall,t1)
 #if defined(IBM)
  real,external :: mclock
 #else
- real,external :: etime
+ real :: etime
 #endif
 
  

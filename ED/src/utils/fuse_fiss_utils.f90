@@ -324,6 +324,7 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      use pft_coms             , only: q, qsw, sla
      use fusion_fission_coms  , only: lai_tol
      use max_dims             , only: n_pft
+     use therm_lib            , only: update_veg_energy_ct
 
      implicit none
      
@@ -392,7 +393,6 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
 
         if (split_mask(ico).eq.1) then
            
-
            ! Half the densities of the oringal cohort
 
            cpatch%nplant(ico)           = cpatch%nplant(ico) * 0.5
@@ -415,6 +415,11 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
            cpatch%gpp(ico)               = cpatch%gpp(ico)              * 0.5
            cpatch%leaf_respiration(ico)  = cpatch%leaf_respiration(ico) * 0.5
            cpatch%root_respiration(ico)  = cpatch%root_respiration(ico) * 0.5
+
+           ! Update the heat capacity and the vegetation energy
+           call update_veg_energy_ct(cpatch,ico)
+
+
            ! Apply those values to the new cohort
 
            inew = inew+1
@@ -430,6 +435,10 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
            cpatch%bdead(inew) = cpatch%bdead(inew) + epsilon
            cpatch%dbh(inew) = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
            cpatch%hite(inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
+
+           ! Update the vegetation energy again, due to tweaks
+
+           call update_veg_energy_ct(cpatch,inew)
 
 
         endif
@@ -463,6 +472,7 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      cpatch%lai(idt)    = cpatch%lai(isc)
      cpatch%bstorage(idt) = cpatch%bstorage(isc)
      cpatch%veg_energy(idt) = cpatch%veg_energy(isc)
+     cpatch%hcapveg(idt) = cpatch%hcapveg(isc)
      cpatch%veg_temp(idt) = cpatch%veg_temp(isc)
      cpatch%veg_water(idt) = cpatch%veg_water(isc)
      cpatch%mean_gpp(idt) = cpatch%mean_gpp(isc)
@@ -487,7 +497,8 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      cpatch%krdepth(idt) = cpatch%krdepth(isc)
      cpatch%first_census(idt) = cpatch%first_census(isc)
      cpatch%new_recruit_flag(idt) = cpatch%new_recruit_flag(isc)
-!================================================================================
+
+     !=====================================================================
 
      cpatch%par_v(idt) = cpatch%par_v(isc)
      cpatch%par_v_beam(idt) = cpatch%par_v_beam(isc)
@@ -533,7 +544,7 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      use ed_state_vars,only:patchtype
      use pft_coms, only: q, qsw, sla
      use consts_coms,only:t3ple,alli,cliq,cice
-     use therm_lib,only:calc_hcapveg
+     use therm_lib,only:calc_hcapveg,update_veg_energy_ct
 
      implicit none
      type(patchtype),target :: cpatch
@@ -573,11 +584,12 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
              (1.0 + q(cpatch%pft(ico2)) + cpatch%hite(ico2) * qsw(cpatch%pft(ico2)))
         laiold=cpatch%lai(ico2)
         cpatch%lai(ico2) = cpatch%bleaf(ico2) * sla(cpatch%pft(ico2)) * newn
-        ! write (unit=62,fmt='(a,i5,1x,a,1x,3(f13.2,1x))') 'PFT=',cpatch%pft(ico2),'(LAI1,LAI2,LAIM)=',cpatch%lai(ico1),laiold,cpatch%lai(ico2)
+        ! write (unit=62,fmt='(a,i5,1x,a,1x,3(f13.2,1x))') 'PFT=',cpatch%pft(ico2), &
+        ! '(LAI1,LAI2,LAIM)=',cpatch%lai(ico1),laiold,cpatch%lai(ico2)
      else
         cpatch%lai(ico2) = 0.0
         
-        ! BLEAF SHOULD BE UPDATED TO NO?
+        ! BLEAF SHOULD BE UPDATED TOO NO?
         cpatch%bleaf(ico2) = 0.0
      endif
 
@@ -667,25 +679,8 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      !cpatch%veg_energy(ico2) = (cpatch%veg_energy(ico2) * cpatch%nplant(ico2) +   &
      !     cpatch%veg_energy(ico1) * cpatch%nplant(ico1)) * newni
      
-     ! Think it is safer to give the fused cohort an energy that is based off of it's
-     ! new temperature
-     !=======================================================================================
 
-     hcapveg = calc_hcapveg(cpatch%bleaf(ico2),cpatch%bdead(ico2), &
-          cpatch%nplant(ico2),cpatch%pft(ico2))
-     
-     if(cpatch%veg_temp(ico2)>=t3ple) then
-        
-        cpatch%veg_energy(ico2) = &
-             cpatch%veg_water(ico2)*alli + &         ! latent heat of fusion
-             cpatch%veg_water(ico2)*cliq*(cpatch%veg_temp(ico2)-t3ple) + &   ! thermal energy of liquid
-             hcapveg *(cpatch%veg_temp(ico2)-t3ple)  ! thermal energy of plant tissue
-     else
-        
-        cpatch%veg_energy(ico2) = &
-             cpatch%veg_water(ico2)*cice*(cpatch%veg_temp(ico2)-t3ple) + &   ! thermal energy of ice
-             hcapveg *(cpatch%veg_temp(ico2)-t3ple)  ! thermal energy of plant tissue
-     endif
+     call update_veg_energy_ct(cpatch,ico2)
      
 
 
@@ -895,7 +890,7 @@ end subroutine fuse_patches_ar
      ! (or as a proxy, the fractional area) like all the rest.
 
      use ed_state_vars,only:sitetype,patchtype
-     
+     use therm_lib, only: update_veg_energy_ct
      use soil_coms, only: soil
      use grid_coms, only: nzg, nzs
      use fusion_fission_coms, only: ff_ndbh
@@ -1118,7 +1113,7 @@ end subroutine fuse_patches_ar
         ! is diagnosed with a sudden drop in biomass or water, we will have sky-rocketing values
         ! so we have to adjust the energy accordingly also.
 
-        cpatch%veg_energy(ico) = cpatch%veg_energy(ico) * csite%area(rp) * newareai
+        call update_veg_energy_ct(cpatch,ico)
 
 
      enddo
@@ -1151,8 +1146,7 @@ end subroutine fuse_patches_ar
         ! be suitable, because vegetation energy is a linear combination of biomass and water
         ! mutliplied by temperature.
 
-        cpatch%veg_energy(ico) = cpatch%veg_energy(ico) * csite%area(dp) * newareai
-
+        call update_veg_energy_ct(cpatch,ico)
 
      enddo
      

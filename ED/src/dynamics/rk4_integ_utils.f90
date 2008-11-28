@@ -466,8 +466,8 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
         ! associated with a certain temperature? How about global avergage surface temperature? Signed Anonymous
         ! -----------------------------------------------------------------------------------------------
 
-!        yscal%veg_energy(ico) = y%veg_water(ico)*alli + y%veg_water(ico)*cliq*(287.-t3ple) + hcapveg*(287.-t3ple) &
-!             + abs(dy%veg_energy(ico)*htry)
+!        yscal%veg_energy(ico) = y%veg_water(ico)*alli + y%veg_water(ico)*cliq*(287.-273.15) &
+!             + cpatch%hcapveg(ico)*(287.-273.15) + abs(dy%veg_energy(ico)*htry)
 
      else
         yscal%veg_water(ico) = 1.e30

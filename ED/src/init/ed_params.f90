@@ -582,9 +582,11 @@ use pft_coms, only:   &
      phenology,       &
      clumping_factor, &
      leaf_width,      &
-     spec_hcap_leaf,  &
-     spec_hcap_stem,  &
-     hcap_stem_fraction
+     hcap_stem_fraction, &
+     c_grn_leaf_dry,  &
+     c_ngrn_biom_dry, &
+     wat_dry_ratio_grn,&
+     wat_dry_ratio_ngrn
 
 implicit none
 
@@ -607,25 +609,20 @@ leaf_width(12:13) = 0.05
 leaf_width(14:15) = 0.2
 
 
-! Specific heat capacity of leaf biomass (J/K/kg)
+                            ! The following parameters are second sources found in 
+                            ! Gu et al. 2007
+c_grn_leaf_dry(1:15)      = 3218.0    ! Jones 1992
+c_ngrn_biom_dry(1:15)     = 1256.0    ! Forest Products Laboratory 
+wat_dry_ratio_grn(1:15)   = 1.5       ! Ceccato et al. 2001
+wat_dry_ratio_ngrn(1:15)  = 0.7       ! Forest Products Laboratory
 
-spec_hcap_leaf(1:15) = 3000.0   ! 3000 is an unproven first estimate with absolutely
-                                ! no experimental background of evidence. Please
-                                ! update with referenced values.  PFT specific if
-                                ! necessary.
 
 ! Fraction of structural biomass included in calculation of veg. leaf heat capacity.
 
-hcap_stem_fraction = 0.05       ! This may eventually become a tuneable parameter.
+hcap_stem_fraction = 0.05       
+                                ! This may eventually become a tuneable parameter.
                                 ! This parameter may also be most appropriate
                                 ! as zero.
-
-! Specific heat capacity of the stems and structural biomass.
-
-spec_hcap_stem(1:15) = 3000.0   ! 3000 is an unproven first estimate with absolutely
-                                ! no experimental background of evidence. Please
-                                ! update with referenced values.  PFT specific if
-                                ! necessary.
 
 
 return

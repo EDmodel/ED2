@@ -10,6 +10,7 @@ subroutine read_ed1_history_file_array
   use ed_state_vars,only:polygontype,sitetype,patchtype,edtype, &
        edgrid_g,allocate_sitetype,allocate_patchtype
   use grid_coms,only:ngrids
+  use therm_lib,only:calc_hcapveg
 
   implicit none
 
@@ -637,6 +638,10 @@ subroutine read_ed1_history_file_array
               
               cpatch => csite%patch(ipa)
               do ico = 1,cpatch%ncohorts
+                 
+                 cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                      cpatch%nplant(ico),cpatch%pft(ico))
+                 
                  call init_ed_cohort_vars_array(cpatch,ico,cpoly%lsl(isi))
               enddo
               
@@ -647,7 +652,7 @@ subroutine read_ed1_history_file_array
         enddo
         
         call init_ed_site_vars_array(cpoly,cgrid%lat(ipy))
-
+        
         !  Get a diagnostic on the polygon's vegetation
         
         poly_lai = 0.0
@@ -1970,16 +1975,10 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
 
   return
 end subroutine fill_history_site
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
 
 !==========================================================================================!
 !==========================================================================================!
+
 subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
   
   use ed_state_vars,only: patchtype
@@ -1990,7 +1989,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
   use consts_coms, only: cliq,cice,alli,t3ple
 !  use canopy_air_coms, only: hcapveg_ref,heathite_min
   use canopy_radiation_coms, only:lai_min
-  use therm_lib,only : calc_hcapveg
+  use therm_lib,only : update_veg_energy_ct
 
   implicit none
 
@@ -2081,31 +2080,14 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
         write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
         
         plai = sum(cpatch%lai(1:cpatch%ncohorts),1)
-
+        
         do ico=1,cpatch%ncohorts
-
-           if(cpatch%lai(ico)>lai_min) then
-              
-              hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-                   cpatch%nplant(ico),cpatch%pft(ico))
-
-              if(cpatch%veg_temp(ico)>=t3ple) then
-                 
-                 cpatch%veg_energy(ico) = &
-                      cpatch%veg_water(ico)*alli + &         ! latent heat of fusion
-                      cpatch%veg_water(ico)*cliq*(cpatch%veg_temp(ico)-t3ple) + &   ! thermal energy of liquid
-                      hcapveg *(cpatch%veg_temp(ico)-t3ple)  ! thermal energy of plant tissue
-              else
-                 
-                 cpatch%veg_energy(ico) = &
-                      cpatch%veg_water(ico)*cice*(cpatch%veg_temp(ico)-t3ple) + &   ! thermal energy of ice
-                      hcapveg *(cpatch%veg_temp(ico)-t3ple)  ! thermal energy of plant tissue
-              endif
-              
-           else
-              cpatch%veg_energy(ico) = 0.0
-           endif
-              
+           
+           ! Calculate the vegetation energy based on the leaf temperature
+           ! biomass and the stuff that is written in the banner above.
+           
+           call update_veg_energy_ct(cpatch,ico)
+           
         enddo
         
      endif

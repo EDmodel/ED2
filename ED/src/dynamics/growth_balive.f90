@@ -315,6 +315,7 @@ subroutine alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci, carbon_balance,
   use ed_state_vars,only:patchtype
   use pft_coms, only: c2n_storage, c2n_leaf, sla, c2n_stem
   use decomp_coms, only: f_labile
+  use therm_lib,only : update_veg_energy_cweh
 
   implicit none
   
@@ -398,11 +399,17 @@ subroutine alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci, carbon_balance,
         fsn_in = fsn_in - carbon_balance *  &
              (f_labile(cpatch%pft(ico)) / c2n_leaf(cpatch%pft(ico)) + (1.0 -   &
              f_labile(cpatch%pft(ico))) / c2n_stem) * cpatch%nplant(ico)
-
+        
      endif
   endif
-
+  
   cpatch%lai(ico) = cpatch%bleaf(ico) * cpatch%nplant(ico) * sla(cpatch%pft(ico))
+  
+  ! It is likely that the leaf biomass has changed, therefore, update vegetation
+  ! energy and heat capacity.
+  
+  call update_veg_energy_cweh(cpatch,ico)
+  
 
   return
 end subroutine alloc_plant_c_balance_ar
