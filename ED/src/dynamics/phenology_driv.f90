@@ -68,8 +68,8 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
        c2n_storage
   use decomp_coms, only: f_labile
   use phenology_coms, only: retained_carbon_fraction, theta_crit, iphen_scheme
-  use consts_coms, only: t3ple
-  use canopy_air_coms, only: hcapveg_ref,heathite_min
+  use consts_coms, only: t3ple,cice,cliq,alli
+  use therm_lib,only:calc_hcapveg
 
   implicit none
   
@@ -165,6 +165,28 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
               cpatch%lai(ico) = cpatch%bleaf(ico) * sla(cpatch%pft(ico)) * cpatch%nplant(ico)
               cpatch%cb(13,ico) = cpatch%cb(13,ico) - leaf_litter / cpatch%nplant(ico)
               cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - leaf_litter / cpatch%nplant(ico)
+
+              ! Added RGK 10-26-2008
+              ! The leaf biomass of the cohort has changed, update the vegetation
+              ! energy - using a constant temperature assumption
+
+              hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                   cpatch%nplant(ico),cpatch%pft(ico))
+              
+              if(cpatch%veg_temp(ico)>=t3ple) then
+                 
+                 cpatch%veg_energy(ico) = &
+                      cpatch%veg_water(ico)*alli + &         ! latent heat of fusion
+                      cpatch%veg_water(ico)*cliq*(cpatch%veg_temp(ico)-t3ple) + &   ! thermal energy of liquid
+                      hcapveg *(cpatch%veg_temp(ico)-t3ple)  ! thermal energy of plant tissue
+              else
+                 
+                 cpatch%veg_energy(ico) = &
+                      cpatch%veg_water(ico)*cice*(cpatch%veg_temp(ico)-t3ple) + &   ! thermal energy of ice
+                      hcapveg *(cpatch%veg_temp(ico)-t3ple)  ! thermal energy of plant tissue
+              endif
+
+
            endif
            ! Set status flag
            if(bl_max == 0.0 .or. cpoly%green_leaf_factor(cpatch%pft(ico),isi) < 0.02)then
@@ -179,7 +201,7 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
 !             cs%green_leaf_factor(cpatch%pft) > 0.02 .and. day < 210)then 
            
            ! Cold deciduous flushing? 
-!print*,'flushing ',cs%green_leaf_factor(cpatch%pft),cs%leaf_aging_factor(cpatch%pft)                      
+           !print*,'flushing ',cs%green_leaf_factor(cpatch%pft),cs%leaf_aging_factor(cpatch%pft)                      
            ! Update plant carbon pools
            cpatch%phenology_status(ico) = 1 ! 1 indicates leaves are growing
            cpatch%bleaf(ico) = cpoly%green_leaf_factor(cpatch%pft(ico),isi) * cpatch%balive(ico)   &
@@ -187,13 +209,14 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
            cpatch%lai(ico) = cpatch%nplant(ico) * cpatch%bleaf(ico) * sla(cpatch%pft(ico))
            cpatch%veg_temp(ico) = csite%can_temp(ipa)
            cpatch%veg_water(ico) = 0.0
-
-           !----- Because we assigned no water, the internal energy is simply hcapveg*(T-T3)
-           hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)/csite%lai(ipa)
+           
+           !----- Because we assigned no water, the internal energy is 
+           !      simply hcapveg*(T-T3)
+           
+           hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                cpatch%nplant(ico),cpatch%pft(ico))
+           
            cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
-           
-
-           
            
         elseif(phenology(cpatch%pft(ico)) == 1)then 
 
@@ -229,6 +252,24 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
                  cpatch%phenology_status(ico) = 2
                  cpatch%cb(13,ico) = cpatch%cb(13,ico) - leaf_litter / cpatch%nplant(ico)
                  cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - leaf_litter/cpatch%nplant(ico)
+
+
+                 ! Added RGK 10-26-2008
+                 ! IF the cohort drops it's leaves, then it is dropping the water also.
+                 ! And the vegetation energy must be updated.
+                 ! We will assume for simplicity, that the water enters a wormhole to another
+                 ! galaxy
+                 
+                 cpatch%veg_water(ico) = 0.0
+                 
+                 !----- Because we assigned no water, the internal energy is 
+                 !      simply hcapveg*(T-T3)
+                 
+                 hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                      cpatch%nplant(ico),cpatch%pft(ico))
+                 
+                 cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
+
                  
               endif
               
@@ -245,8 +286,11 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
               cpatch%veg_temp(ico) = csite%can_temp(ipa)
               cpatch%veg_water(ico) = 0.0
 
-              !----- Because we assigned no water, the internal energy is simply hcapveg*(T-T3)
-              hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)/csite%lai(ipa)
+              !----- Because we assigned no water, the internal energy 
+              !      is simply hcapveg*(T-T3)
+              
+              hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                 cpatch%nplant(ico),cpatch%pft(ico))
               cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
                  
            endif  ! critical moisture

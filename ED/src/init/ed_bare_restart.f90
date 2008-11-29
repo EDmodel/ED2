@@ -62,6 +62,7 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
    use max_dims, only: n_pft
    use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, include_these_pft,include_pft_ag
    use canopy_air_coms, only: hcapveg_ref, heathite_min
+   use therm_lib, only: calc_hcapveg
    ! This subroutine assigns a near-bare ground state for the given patch
    use consts_coms, only : t3ple
    implicit none
@@ -137,8 +138,9 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
             cpatch%veg_temp(ico)  = atm_tmp
             cpatch%veg_water(ico) = 0.0
             
-            ! I think this should be standardized, but I'm not sure what cpatch%hcapveg is doing...
-            hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / laisum
+            hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                 cpatch%nplant(ico),cpatch%pft(ico))
+            
             cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * (cpatch%veg_temp(ico)-t3ple)
          end if
       end do

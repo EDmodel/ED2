@@ -104,6 +104,8 @@
                                 ! 1 - save ascii (deprecated);
                                 ! 2 - save RAMS-vfm file (deprecated);
                                 ! 3 - save HDF5;
+				! Note: Performance gains may be significant when
+				! (IFOUTPUT and IDOUTPUT and IMOUTPUT) = 0
    
    
    NL%ATTACH_METADATA = 0       ! Flag for attaching metadata to HDF datasets

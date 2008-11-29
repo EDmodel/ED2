@@ -54,7 +54,14 @@ HDF5_INCS=-I/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/include
 HDF5C_INCS=-I/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/include
 HDF5_LIBS=-lz -L/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/lib \
 	-lhdf5_fortran -lhdf5 -lhdf5_hl
+#---------------------------------------------------------------
+# If you have a version of hdf5 compiled in parallel, then you
+# may benefit from collective I/O, then use this flag = 1
+# Otherwise, set it to zero.
 
+USE_COLLECTIVE_MPIO=0
+ 
+#---------------------------------------------------------------
 
 # netCDF libraries ---------------------------------------------
 # If you have netCDF set USENC=1 and type the lib folder

@@ -345,6 +345,7 @@ subroutine ed_opspec_times
                          nrec_fast,nrec_state,outfast,outstate,unitfast,unitstate
    use consts_coms, only : day_sec,hr_sec
    use grid_coms , only : timmax
+   use ed_misc_coms, only : fast_diagnostics
 
 
    implicit none
@@ -576,6 +577,27 @@ subroutine ed_opspec_times
 
 
    !---------------------------------------------------------------------------------------!
+   !     Checking if the user has indicated a need for any of the fast flux diagnostic
+   ! variables, these are used in conditions of ifoutput,idoutput and imoutput conditions.
+   ! If they are not >0, then set the logical, fast_diagnostics to false.
+   !---------------------------------------------------------------------------------------!
+   if (ifoutput .eq. 0 .and. idoutput .eq. 0 .and. imoutput .eq. 0) then
+
+      fast_diagnostics = .false.
+
+   else
+      
+      fast_diagnostics = .true.
+
+   endif
+
+
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
    !     Checking whether the user provided a valid combination of unitstate, frqstate,    !
    ! and outstate.                                                                         !
    !---------------------------------------------------------------------------------------!
@@ -761,6 +783,7 @@ subroutine ed_opspec_times
       ! wasn't aware of this, print an informative banner.                                 !
       !------------------------------------------------------------------------------------!
       elseif (outstate /= 0. .or. outstate > frqstate) then
+
          outstate = frqstate
          nrec_state = 1
          write (unit=*,fmt='(a)') ' '

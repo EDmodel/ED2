@@ -134,6 +134,18 @@ integer, dimension(n_pft) :: phenology ! Indicates leaf habit.  0 - evergreen co
 real, dimension(n_pft) :: clumping_factor ! 0-1 factor indicating degree of clumpiness of leaves and shoots.
 
 real, dimension(n_pft) :: leaf_width  ! leaf width used to compute the aerodynamic resistance (m).
+! NEW PARAMETERS 11-26-08
+
+real, dimension(n_pft) :: spec_hcap_leaf ! Specific heat capacity of leaf biomass (J/K/kg)
+
+real, dimension(n_pft) :: spec_hcap_stem ! Specific heat capacity of stem&struct biomass (J/K/kg)
+
+real :: hcap_stem_fraction               ! Fraction of structural biomass, that
+                                         ! that is included in the calculation of vegetation
+                                         ! heat capacity, used for dianosing leaf temerpatures
+                                         ! from vegetation energy. Ie %veg_energy(ico) and
+                                         ! %veg_temp(ico)
+
 
 !--------------------
 ! REPRODUCTION AND RECRUITMENT
