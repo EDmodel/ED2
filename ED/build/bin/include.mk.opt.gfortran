@@ -60,11 +60,20 @@ USE_HDF5=1
 #	/sw/hdf5-1.6.6-gfortran/lib/libhdf5.a \
 #	/sw/hdf5-1.6.6-gfortran/lib/libhdf5_hl.a
 
-HDF5_INCS=-I/usr/local/hdf5-1.8.0/include
-HDF5C_INCS=-I/usr/local/hdf5-1.8.0/include
-HDF5_LIBS=-lz /usr/local/hdf5-1.8.0/lib/libhdf5_fortran.a \
-        /usr/local/hdf5-1.8.0/lib/libhdf5.a \
-        /usr/local/hdf5-1.8.0/lib/libhdf5_hl.a
+HDF5_INCS=-I/usr/local/hdf5-1.8.2/include
+HDF5C_INCS=-I/usr/local/hdf5-1.8.2/include
+HDF5_LIBS=-lz /usr/local/hdf5-1.8.2/lib/libhdf5_fortran.a \
+        /usr/local/hdf5-1.8.2/lib/libhdf5.a \
+        /usr/local/hdf5-1.8.2/lib/libhdf5_hl.a
+
+#---------------------------------------------------------------
+# If you have a version of hdf5 compiled in parallel, then you
+# may benefit from collective I/O, then use this flag = 1
+# Otherwise, set it to zero.
+
+USE_COLLECTIVE_MPIO=0
+ 
+#---------------------------------------------------------------
 
 # netCDF libraries ---------------------------------------------
 # If you have netCDF set USENC=1 and type the lib folder
@@ -128,6 +137,7 @@ C_COMP=mpicc
 #C_OPTS=-g
 C_OPTS=-O3
 LOADER=mpif90
+LOADER_OPTS=${F_OPTS}
 C_LOADER=mpicc
 LIBS=
 MOD_EXT=mod

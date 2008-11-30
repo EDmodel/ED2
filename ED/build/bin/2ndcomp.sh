@@ -36,6 +36,7 @@ rm -fv ed_params.o             ed_params.mod
 rm -fv ed_para_coms.o          ed_para_coms.mod 
 rm -fv ed_para_init.o          ed_para_init.mod 
 rm -fv ed_state_vars.o         ed_state_vars.mod 
+rm -fv ed_therm_lib.o             ed_therm_lib.mod
 rm -fv ed_type_init.o          ed_type_init.mod 
 rm -fv ed_work_vars.o          ed_work_vars.mod 
 rm -fv ed_xml_config.o         ed_xml_config.mod 

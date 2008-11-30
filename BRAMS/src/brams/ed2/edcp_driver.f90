@@ -14,9 +14,7 @@ subroutine ed_coup_driver()
        timmax
   
   use mem_edcp,only:    &
-       wgridf_g,        &
-       wgridp_g,        &
-       wgrids_g,        &
+       wgrid_g,         &
        ed_fluxp_g,      &
        ed_fluxf_g,      &
        ed_precip_g
@@ -143,11 +141,9 @@ subroutine ed_coup_driver()
   ! STEP 16: Initialize the flux arrays that pass to the atmosphere
   !-----------------------------------------------------------------------!
   if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Allocating Transfer Arrays...'
-  allocate(wgridf_g(ngrids))
-  allocate(wgridp_g(ngrids))
-  allocate(ed_fluxp_g(ngrids))
+  allocate(wgrid_g(ngrids))
+ allocate(ed_fluxp_g(ngrids))
   allocate(ed_fluxf_g(ngrids))
-  allocate(wgrids_g(ngrids))
   allocate(ed_precip_g(ngrids))
   do ifm=1,ngrids
      call newgrid(ifm)
@@ -215,17 +211,6 @@ subroutine ed_coup_driver()
   call filltab_alltypes
 
   
-  !-----------------------------------------------------------------------!
-  ! STEP 12½. Initialize the vegetation internal energy. This needs to    !
-  !           be done after ed_init_coup_atm and update_derived_props so  !
-  !           we have all variables we need.                              !
-  !-----------------------------------------------------------------------!
-  if (trim(runtype) == 'INITIAL') then
-     if (mynum == 1) write(unit=*,fmt='(a)') ' [+] Finding veg. energy...'
-     do ifm=1,ngrids
-        call initialize_vegetation_energy(edgrid_g(ifm))
-     end do
-  end if
 
   !-----------------------------------------------------------------------!
   ! STEP 13. Checking how the output was configure and determining the    !

@@ -10,7 +10,7 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
    use grid_coms, only: nzg
    use misc_coms, only: radfrq
    use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
-   use ed_misc_coms,only:diag_veg_heating
+
    
 
    implicit none
@@ -87,15 +87,6 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
                cpatch%mean_root_resp(ico) = cpatch%mean_root_resp(ico) * tfact
                cpatch%mean_gpp(ico)       = cpatch%mean_gpp(ico)       * tfact
                
-               !  Normalize the vegetation heating/cooling rates
-               !  
-               if(diag_veg_heating) then
-                  cpatch%co_srad_h(ico) = cpatch%co_srad_h(ico) * frqsumi
-                  cpatch%co_lrad_h(ico) = cpatch%co_lrad_h(ico) * frqsumi
-                  cpatch%co_sens_h(ico) = cpatch%co_sens_h(ico) * frqsumi
-                  cpatch%co_evap_h(ico) = cpatch%co_evap_h(ico) * frqsumi
-                  cpatch%co_liqr_h(ico) = cpatch%co_liqr_h(ico) * frqsumi
-               endif
             end do
          end do
       end do
@@ -180,12 +171,6 @@ subroutine reset_averaged_vars(cgrid)
                !cpatch%mean_leaf_resp(ico)      = 0.0
                !cpatch%mean_root_resp(ico)      = 0.0
                cpatch%gpp(ico)                 = 0.0
-
-               cpatch%co_srad_h(ico) = 0.0
-               cpatch%co_lrad_h(ico) = 0.0
-               cpatch%co_sens_h(ico) = 0.0
-               cpatch%co_evap_h(ico) = 0.0
-               cpatch%co_liqr_h(ico) = 0.0
 
             end do
          end do

@@ -8,6 +8,7 @@ subroutine structural_growth_ar(cgrid, month)
        c2n_recruit, c2n_stem, l2n_stem
   use decomp_coms, only: f_labile
   use max_dims, only: n_pft, n_dbh
+  use ed_therm_lib,only: update_veg_energy_cweh
 
   implicit none
 
@@ -49,10 +50,10 @@ subroutine structural_growth_ar(cgrid, month)
      ! Initialization
      cpoly%basal_area(:,:,:) = 0.0
      cpoly%agb(:,:,:) = 0.0
-! cs%basal_area_growth  = 0.0
- ! cpoly%agb_growth  = 0.0
- ! cpoly%basal_area_mort = 0.0
- ! cpoly%agb_mort = 0.0
+     ! cs%basal_area_growth  = 0.0
+     ! cpoly%agb_growth  = 0.0
+     ! cpoly%basal_area_mort = 0.0
+     ! cpoly%agb_mort = 0.0
 
      do isi = 1,cpoly%nsites
         
@@ -138,6 +139,11 @@ subroutine structural_growth_ar(cgrid, month)
               ! Calculate the derived cohort properties
               call update_derived_cohort_props_ar(cpatch,ico,   &
                    cpoly%green_leaf_factor(cpatch%pft(ico),isi), cpoly%lsl(isi))
+              
+
+              ! Update the vegetation internal energy and heat capacity
+              call update_veg_energy_cweh(cpatch,ico)
+
 
               ! Update annual average carbon balances for mortality
               update_month = month - 1
@@ -411,7 +417,7 @@ subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
   real(kind=8) :: area_factor, this_carbon, this_nitrogen
   real(kind=8) :: soil_C8, soil_N8, veg_C8, veg_N8
   
-  real, parameter :: almostnothing=1.e-30
+  real(kind=8), parameter :: almostnothing=1.e-30
 
   ! Initialize C and N pools
   soil_C8 = 0.0

@@ -27,7 +27,7 @@ module therm_lib
    integer, parameter ::   maxlev = 16              ! Maximum # of levels for adaptive     
                                                     !   quadrature methods.    
 
-   logical, parameter ::   newthermo = .true.      ! Use new thermodynamics [T|F]
+   logical, parameter ::   newthermo = .false.      ! Use new thermodynamics [T|F]
 
    !---------------------------------------------------------------------------------------!
    !   This is the "level" variable, that used to be in micphys. Since it affects more the !
@@ -944,8 +944,5 @@ module therm_lib
      
       return
    end subroutine qwtk8
-   !=======================================================================================!
-   !=======================================================================================!
-end module therm_lib
-!==========================================================================================!
-!==========================================================================================!
+
+ end module therm_lib

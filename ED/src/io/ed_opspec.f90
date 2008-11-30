@@ -345,6 +345,7 @@ subroutine ed_opspec_times
                          nrec_fast,nrec_state,outfast,outstate,unitfast,unitstate
    use consts_coms, only : day_sec,hr_sec
    use grid_coms , only : timmax
+   use ed_misc_coms, only : fast_diagnostics
 
 
    implicit none
@@ -576,6 +577,27 @@ subroutine ed_opspec_times
 
 
    !---------------------------------------------------------------------------------------!
+   !     Checking if the user has indicated a need for any of the fast flux diagnostic
+   ! variables, these are used in conditions of ifoutput,idoutput and imoutput conditions.
+   ! If they are not >0, then set the logical, fast_diagnostics to false.
+   !---------------------------------------------------------------------------------------!
+   if (ifoutput .eq. 0 .and. idoutput .eq. 0 .and. imoutput .eq. 0) then
+
+      fast_diagnostics = .false.
+
+   else
+      
+      fast_diagnostics = .true.
+
+   endif
+
+
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
    !     Checking whether the user provided a valid combination of unitstate, frqstate,    !
    ! and outstate.                                                                         !
    !---------------------------------------------------------------------------------------!
@@ -761,6 +783,7 @@ subroutine ed_opspec_times
       ! wasn't aware of this, print an informative banner.                                 !
       !------------------------------------------------------------------------------------!
       elseif (outstate /= 0. .or. outstate > frqstate) then
+
          outstate = frqstate
          nrec_state = 1
          write (unit=*,fmt='(a)') ' '
@@ -947,7 +970,8 @@ subroutine ed_opspec_misc
    use max_dims, only : n_pft
    use misc_coms, only : ifoutput,idoutput,imoutput,iyoutput,isoutput,iclobber,runtype,ied_init_mode &
                         ,integration_scheme
-   use soil_coms, only : isoilflg, nslcon,isoilstateinit,isoildepthflg,zrough,runoff_time
+   use soil_coms, only : isoilflg, nslcon,isoilstateinit,isoildepthflg,isoilbc,zrough      &
+                        ,runoff_time
    use mem_sites, only : n_soi,n_ed_region,maxpatch,maxcohort
    use grid_coms , only : ngrids
    use physiology_coms, only : istoma_scheme,n_plant_lim
@@ -1059,6 +1083,13 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
 
+   if (isoilbc < 0 .or. isoilbc > 1) then
+      write (reason,fmt='(a,1x,i4,a)') &
+        'Invalid ISOILBC, it must be between 0 and 1. Yours is set to',isoilbc,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
    if (integration_scheme < 0 .or. integration_scheme > 1) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid INTEGRATION_SCHEME, it must be between 0 and 1. Yours is set to',integration_scheme,'...'
@@ -1135,19 +1166,19 @@ subroutine ed_opspec_misc
       call opspec_fatal(reason,'opspec_misc')  
    end if
    
-   if (maxpatch < 0) then
-      write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid MAXPATCH, it must be either 0 (no limit) or positive. Yours is set to',maxpatch,'...'
-      call opspec_fatal(reason,'opspec_misc')  
-      ifaterr = ifaterr +1
-   end if
-    
-   if (maxcohort < 0) then
-      write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid MAXCOHORT, it must be either 0 (no limit) or positive. Yours is set to',maxcohort,'...'
-      call opspec_fatal(reason,'opspec_misc')  
-      ifaterr = ifaterr +1
-   end if
+   !if (maxpatch < 0) then
+   !   write (reason,fmt='(a,1x,i4,a)') &
+   !     'Invalid MAXPATCH, it must be either 0 (no limit) or positive. Yours is set to',maxpatch,'...'
+   !   call opspec_fatal(reason,'opspec_misc')  
+   !   ifaterr = ifaterr +1
+   !end if
+   ! 
+   !if (maxcohort < 0) then
+   !   write (reason,fmt='(a,1x,i4,a)') &
+   !     'Invalid MAXCOHORT, it must be either 0 (no limit) or positive. Yours is set to',maxcohort,'...'
+   !   call opspec_fatal(reason,'opspec_misc')  
+   !   ifaterr = ifaterr +1
+   !end if
     
    if (zrough <= 0) then
       write (reason,fmt='(a,1x,es14.7,a)') &

@@ -1025,6 +1025,7 @@ subroutine prep_lphys_solution(photosyn_pathway, Vm0, met, Vm_low_temp,  &
   else
 
      ! C4 parameters
+
      apar%vm = Vm0 * arrhenius(met%tl, 1.0, 3000.0) / (  &
           (1.0 + exp(0.4 * (5.0    - met%tl))) *  &
           (1.0 + exp(0.4 * (met%tl - 100.0 ))) ) 

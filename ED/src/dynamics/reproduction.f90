@@ -16,7 +16,8 @@ subroutine reproduction_ar(cgrid, month)
   
   use consts_coms, only: t3ple
   use canopy_air_coms, only: hcapveg_ref,heathite_min
-
+  use mem_sites, only: maxcohort
+  use ed_therm_lib,only : calc_hcapveg
 
   implicit none
 
@@ -42,6 +43,8 @@ subroutine reproduction_ar(cgrid, month)
   real :: hcapveg
   integer :: inew,ncohorts_new
   real,dimension(n_pft,9) :: recruit_array
+  
+  logical, save :: first_time=.true.
 
   if(repro_scheme .eq. 0) seedling_mortality(1:n_pft) = 1.0
 
@@ -163,12 +166,8 @@ subroutine reproduction_ar(cgrid, month)
 
                     if(include_pft(pft) == 1) nplant = nplant + seed_rain(pft)
 
-!                    print*,"RECRUITING",pft,nplant,balive,bdead,nplant * (balive + bdead),csite%repro(pft,ipa),min_recruit_size
-
                     ! If there is enough carbon, form the recruits.
                     if( (nplant * (balive + bdead)) > min_recruit_size)then
-                       
- !                      print*,"RECRUITED",pft
                        
                        inew = inew + 1
                        
@@ -242,11 +241,14 @@ subroutine reproduction_ar(cgrid, month)
               cpatch%veg_temp(ico)  = recruit_array(inew,9)
               cpatch%veg_water(ico) = 0.0
 
-              !----- Because we assigned no water, the internal energy is simply hcapveg*(T-T3)
-              hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)/csite%lai(ipa)
-              cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
-
-            
+              !----- Because we assigned no water, the internal energy 
+              !      is simply hcapveg*(T-T3)
+              
+              cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                   cpatch%nplant(ico),cpatch%pft(ico))
+              
+              cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * (cpatch%veg_temp(ico)-t3ple)
+              
               ! Setting new_recruit_flag to 1 indicates that 
               ! this cohort is included when we tally agb_recruit,
               ! basal_area_recruit.
@@ -263,8 +265,6 @@ subroutine reproduction_ar(cgrid, month)
            
            call deallocate_patchtype(temppatch)
            
-           
-           
         enddo
         
         
@@ -274,7 +274,7 @@ subroutine reproduction_ar(cgrid, month)
         
         do ipa = 1,csite%npatches
            cpatch => csite%patch(ipa)
-           if(cpatch%ncohorts>0) then
+           if(cpatch%ncohorts>0 .and. maxcohort >= 0) then
               
               call terminate_cohorts_ar(csite,ipa)
               call fuse_cohorts_ar(csite,ipa, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
@@ -299,6 +299,8 @@ subroutine reproduction_ar(cgrid, month)
 
 
   deallocate(temppatch)
+  
+  first_time = .false.
 
   return
 end subroutine reproduction_ar

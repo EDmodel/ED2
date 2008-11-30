@@ -335,7 +335,7 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
    ! fill all soil levels with this value.
 
                      do k = 1,mzg
-                        soil_text(k,ir,jr,ipat) = float(jsoil)
+                        if (jsoil /= 0) soil_text(k,ir,jr,ipat) = float(jsoil)
                      enddo
 
                   endif

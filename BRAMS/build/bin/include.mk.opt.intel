@@ -50,7 +50,14 @@ HDF5_INCS=-I/n/Moorcroft_Lab/Lab/apps/i91/lib -I/n/Moorcroft_Lab/Lab/apps/i91/in
 HDF5_LIBS=-L/n/Moorcroft_Lab/Lab/apps/i91/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
           -L/n/Moorcroft_Lab/User/mlongo/util/hdflib/hdf5_64/zlib-1.2.1/lib -lz
 
+#---------------------------------------------------------------
+# If you have a version of hdf5 compiled in parallel, then you
+# may benefit from collective I/O, then use this flag = 1
+# Otherwise, set it to zero.
 
+USE_COLLECTIVE_MPIO=0
+ 
+#---------------------------------------------------------------
 # netCDF libraries ---------------------------------------------
 # If you have netCDF set USENC=1 and type the lib folder
 # at NC_LIBS, with the leading -L (e.g. -L/usr/local/lib).
@@ -228,13 +235,13 @@ MOD_EXT=mod
 #    Ideally, you should compile your code with this option whenever you make any changes. #
 #    Note, however, that if you change arguments you should first try A.                   #
 #------------------------------------------------------------------------------------------#
-#USE_INTERF=1
-#F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
-         -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
-#C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended
-#LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -debug extended        \
-              -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
-#C_LOADER_OPTS=-v -g -traceback
+USE_INTERF=1
+F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
+        -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended
+LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -debug extended        \
+             -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+C_LOADER_OPTS=-v -g -traceback
 #------------------------------------------------------------------------------------------#
 
 
@@ -244,13 +251,13 @@ MOD_EXT=mod
 #    You should use this if your run seems to be working fine at the beginning, but it is  #
 #    failing or giving instabilities, or funny results after a long time.                  #
 #------------------------------------------------------------------------------------------#
-USE_INTERF=1
-F_OPTS= -FR -O2 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
-        -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
-C_OPTS= -O2 -DLITTLE  -g -traceback -debug extended
-LOADER_OPTS= -FR -O2 -Vaxlib  -check all -g -fpe0 -ftz -debug extended        \
-             -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
-C_LOADER_OPTS=-v -g -traceback
+#USE_INTERF=1
+#F_OPTS= -FR -O2 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
+       -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+#C_OPTS= -O2 -DLITTLE  -g -traceback -debug extended
+#LOADER_OPTS= -FR -O2 -Vaxlib  -check all -g -fpe0 -ftz -debug extended        \
+            -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+#C_LOADER_OPTS=-v -g -traceback
 #------------------------------------------------------------------------------------------#
 
 
@@ -274,9 +281,9 @@ C_LOADER_OPTS=-v -g -traceback
 #           velopers.                                                                      #
 #------------------------------------------------------------------------------------------#
 #USE_INTERF=1
-#F_OPTS= -FR -O3 -recursive -Vaxlib -traceback
-#C_OPTS= -O3 -DLITTLE -traceback
-#LOADER_OPTS= -FR -O3 -Vaxlib  -traceback
+#F_OPTS= -FR -O2 -recursive -Vaxlib -traceback
+#C_OPTS= -O2 -DLITTLE -traceback
+#LOADER_OPTS= -FR -O2 -Vaxlib  -traceback
 #C_LOADER_OPTS=-v -traceback
 #------------------------------------------------------------------------------------------#
 

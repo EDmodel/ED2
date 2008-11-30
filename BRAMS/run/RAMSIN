@@ -730,12 +730,18 @@
    FFILOUT   = './ecoss/wetamc',       ! Fast-time scal analysis output prefix
    SFILOUT   = './ecoss/wetamc',       ! Output prefix for the state variables
 
-   IED_INIT_MODE   = 1,              ! 0 signifies a start from near-bare ground.   
+   IED_INIT_MODE   = 1,             ! 0 signifies a start from near-bare ground.   
                                     ! 1 allows you to do a history restart from ED1-type
                                     !   restart files
                                     ! 2 allows you to do a standard history restart from
                                     !   ED2-type restart files.
                                     ! 3 - initialize via ed-2 and site file restarts 
+                                    !
+                                    ! -1 - use a mix of ED-1 and ED-2 files. This should
+                                    !      be avoided by all means, unless:
+                                    !      a. You are absolute sure of what you're doing;
+                                    !      b. You have absolutely no idea about what 
+                                    !         you're doing;
 
    EDRES  = 1.0,                     ! ED2/ED1 restart grid resolution
 
@@ -765,6 +771,10 @@
 
    ISOILDEPTHFLG  = 0,  ! 0 -- use NZG, SLZ for each grid cell
                        ! 1 -- read file to get soil depth for each grid cell
+   
+   ISOILBC        = 0,  ! Soil boundary condition at lowest soil level
+                        ! 0 - Bedrock;
+                        ! 1 - Free drainage.
 !-------------------------------------------------------------------------!
 
 
