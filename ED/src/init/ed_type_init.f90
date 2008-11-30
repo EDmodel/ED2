@@ -60,17 +60,19 @@ subroutine init_ed_cohort_vars_array(cpatch,ico, lsl)
   cpatch%maintenance_costs(ico)   = 0.0
   cpatch%paw_avg10d(ico)          = 0.0
 
-  cpatch%co_srad_h(ico)        = 1.0
-  cpatch%co_lrad_h(ico)        = 1.0
-  cpatch%co_sens_h(ico)        = 1.0
-  cpatch%co_evap_h(ico)        = 1.0
-  cpatch%co_liqr_h(ico)        = 1.0
+  ! From the ed_state_vars comment, these variables are now deprecated, commenting
+  ! them so it will compile...
+  ! cpatch%co_srad_h(ico)        = 1.0
+  ! cpatch%co_lrad_h(ico)        = 1.0
+  ! cpatch%co_sens_h(ico)        = 1.0
+  ! cpatch%co_evap_h(ico)        = 1.0
+  ! cpatch%co_liqr_h(ico)        = 1.0
 
-  cpatch%co_srad_h(ico)  =   cpatch%co_srad_h(ico)  -      1.0
-  cpatch%co_lrad_h(ico)  =   cpatch%co_lrad_h(ico)  -      1.0
-  cpatch%co_sens_h(ico)  =   cpatch%co_sens_h(ico)  -      1.0
-  cpatch%co_evap_h(ico)  =   cpatch%co_evap_h(ico)  -      1.0
-  cpatch%co_liqr_h(ico)  =   cpatch%co_liqr_h(ico)  -      1.0
+  ! cpatch%co_srad_h(ico)  =   cpatch%co_srad_h(ico)  -      1.0
+  ! cpatch%co_lrad_h(ico)  =   cpatch%co_lrad_h(ico)  -      1.0
+  ! cpatch%co_sens_h(ico)  =   cpatch%co_sens_h(ico)  -      1.0
+  ! cpatch%co_evap_h(ico)  =   cpatch%co_evap_h(ico)  -      1.0
+  ! cpatch%co_liqr_h(ico)  =   cpatch%co_liqr_h(ico)  -      1.0
 
 
   cpatch%Psi_open(ico) = 0.0

@@ -10,7 +10,7 @@ subroutine read_ed1_history_file_array
   use ed_state_vars,only:polygontype,sitetype,patchtype,edtype, &
        edgrid_g,allocate_sitetype,allocate_patchtype
   use grid_coms,only:ngrids
-  use therm_lib,only:calc_hcapveg
+  use ed_therm_lib,only:calc_hcapveg
 
   implicit none
 
@@ -1164,7 +1164,9 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
        memdims,memoffs,memsize
 
   implicit none
+
   
+#if USE_INTERF
   interface
      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required)
        use hdf5_coms,only:memsize
@@ -1188,6 +1190,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
        logical,intent(in) :: required
      end subroutine hdf_getslab_i
   end interface
+#endif
 
   type(edtype),target ::       cgrid
 
@@ -1498,6 +1501,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    implicit none
 
+#if USE_INTERF
      interface
       subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required)
         use hdf5_coms,only:memsize
@@ -1521,6 +1525,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
         logical,intent(in) :: required
       end subroutine hdf_getslab_i
    end interface
+#endif
 
    type(polygontype),target :: cpoly
    integer,intent(in) :: pysi_index
@@ -1763,6 +1768,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    implicit none
 
+#if USE_INTERF
      interface
       subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required)
         use hdf5_coms,only:memsize
@@ -1786,6 +1792,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
         logical,intent(in) :: required
       end subroutine hdf_getslab_i
    end interface
+#endif
 
    type(sitetype),target :: csite
    integer,intent(in) :: sipa_index
@@ -2053,10 +2060,11 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
   use consts_coms, only: cliq,cice,alli,t3ple
 !  use canopy_air_coms, only: hcapveg_ref,heathite_min
   use canopy_radiation_coms, only:lai_min
-  use therm_lib,only : update_veg_energy_ct
+  use ed_therm_lib,only : update_veg_energy_ct
 
   implicit none
 
+#if USE_INTERF
   interface
      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required)
        use hdf5_coms,only:memsize
@@ -2080,7 +2088,8 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
        logical,intent(in) :: required
      end subroutine hdf_getslab_i
   end interface
-  
+#endif
+
   type(patchtype),target :: cpatch
   integer,intent(in) :: paco_index
   integer,intent(in) :: ncohorts_global

@@ -304,7 +304,8 @@ contains
     use grid_coms, only: nzg, nzs
     use canopy_radiation_coms, only: lai_min, veg_temp_min
 
-    use therm_lib, only: qwtk,calc_hcapveg
+    use therm_lib, only: qwtk
+    use ed_therm_lib, only: calc_hcapveg
     implicit none
 
     integer, intent(in) :: lsl
@@ -617,7 +618,7 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
   use consts_coms, only: cp, cliq, cice, alli, t3ple
   use canopy_radiation_coms, only: lai_min
   use canopy_air_coms, only: hcapveg_ref,heathite_min
-  use therm_lib,only:calc_hcapveg
+  use ed_therm_lib,only:calc_hcapveg
 
   implicit none
   

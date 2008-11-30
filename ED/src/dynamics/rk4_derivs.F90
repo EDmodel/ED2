@@ -614,7 +614,8 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
 
   use pft_coms, only: q, qsw, water_conductance,leaf_width,rho
   use soil_coms, only : soil
-  use therm_lib, only : rslif,qwtk,calc_hcapveg
+  use therm_lib, only : rslif,qwtk
+  use ed_therm_lib, only: calc_hcapveg
   use misc_coms, only: dtlsm
   use ed_misc_coms, only: fast_diagnostics
 
@@ -660,6 +661,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   real :: maxfluxrate
   real :: qveg_water
   real :: intercepted,qintercepted
+  real :: qwflxvc
 
   ! Canopies with LAI less than this number are assumed to be
   ! open, ie, some fraction of the rain-drops can reach
@@ -982,13 +984,13 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         endif
 
         !Latent heat of evap and dew
-        leflxvc = wflxvc * (fracliq * alvl + (1.-fracliq) * alvi)
+        qwflxvc = wflxvc * (fracliq * alvl + (1.-fracliq) * alvi)
 
         dinitp%veg_energy(ico) = &
              cpatch%rshort_v(ico)     &   ! Absorbed short wave radiation
              + cpatch%rlong_v(ico)    &   ! Net thermal radiation
              - hflxvc                 &   ! Sensible heat flux
-             - leflxvc                &   ! Evaporative phase cooling 
+             - qwflxvc                &   ! Evaporative phase cooling 
              - transp * alvl          &   ! Transpirative phase cooling
              + qveg_water                 ! Internal energy of intercepted water
 

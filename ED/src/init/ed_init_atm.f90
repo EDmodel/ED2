@@ -9,6 +9,7 @@ subroutine ed_init_atm_ar
   use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
   use pft_coms,only : sla
+  use ed_therm_lib,only : update_veg_energy_ct
   
   
   implicit none
@@ -88,11 +89,15 @@ subroutine ed_init_atm_ar
               ! change it here. It will be changed below.
               
               do ico = 1,cpatch%ncohorts
+
                  ! Initialize vegetation properties.
                  ! For now, set heat capacity for stability.
-                 cpatch%hcapveg(ico) = 4.5e4
+
                  cpatch%veg_temp(ico)  = cpoly%met(isi)%atm_tmp
                  cpatch%veg_water(ico) = 0.0
+
+                 call update_veg_energy_ct(cpatch,ico)
+
               enddo
            
            enddo
@@ -245,16 +250,10 @@ subroutine ed_init_atm_ar
 
   return
 end subroutine ed_init_atm_ar
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
 
 !==========================================================================================!
 !==========================================================================================!
+
 subroutine update_derived_props(cgrid)
   ! Update some of the derived quantities (this may be redundant)
   use ed_state_vars, only: edtype,polygontype,sitetype
@@ -698,7 +697,6 @@ end subroutine update_polygon_derived_props_ar
 
 
 
-
 !==========================================================================================!
 !==========================================================================================!
 !    This subroutine simply assigns the initial value for internal energy. The only reason !
@@ -709,7 +707,7 @@ end subroutine update_polygon_derived_props_ar
 subroutine initialize_vegetation_energy(cgrid)
    use ed_state_vars, only: edtype,polygontype,sitetype,patchtype
    use canopy_air_coms, only: hcapveg_ref, heathite_min
-   use therm_lib,only:calc_hcapveg
+   use ed_therm_lib,only:calc_hcapveg
    use consts_coms, only: t3ple
    implicit none 
    !----- Argument ------------------------------------------------------------------------!

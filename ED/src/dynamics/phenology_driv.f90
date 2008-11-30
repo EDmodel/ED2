@@ -69,7 +69,7 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
   use decomp_coms, only: f_labile
   use phenology_coms, only: retained_carbon_fraction, theta_crit, iphen_scheme
   use consts_coms, only: t3ple,cice,cliq,alli
-  use therm_lib,only:calc_hcapveg
+  use ed_therm_lib,only:update_veg_energy_cweh,calc_hcapveg
 
   implicit none
   
@@ -135,12 +135,13 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
         ! Is this a cold deciduous with leaves?
         if(cpatch%phenology_status(ico) < 2 .and. phenology(cpatch%pft(ico)) == 2 .and.   &
              drop_cold == 1)then
-!             day >= 210)then
-!print*,'dropping ',cs%green_leaf_factor(cpatch%pft(ico)),cs%leaf_aging_factor(cpatch%pft(ico))           
+           
+           !             day >= 210)then
+           !print*,'dropping ',cs%green_leaf_factor(cpatch%pft(ico)),cs%leaf_aging_factor(cpatch%pft(ico))           
            ! If dropping, compute litter inputs.
            delta_bleaf = cpatch%bleaf(ico) - bl_max
            if(delta_bleaf > 0.0)then
-
+              
               cpatch%phenology_status(ico) = 0
               leaf_litter = (1.0 - retained_carbon_fraction)  &
                    * delta_bleaf * cpatch%nplant(ico)
@@ -169,23 +170,8 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
               ! Added RGK 10-26-2008
               ! The leaf biomass of the cohort has changed, update the vegetation
               ! energy - using a constant temperature assumption
-
-              hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-                   cpatch%nplant(ico),cpatch%pft(ico))
               
-              if(cpatch%veg_temp(ico)>=t3ple) then
-                 
-                 cpatch%veg_energy(ico) = &
-                      cpatch%veg_water(ico)*alli + &         ! latent heat of fusion
-                      cpatch%veg_water(ico)*cliq*(cpatch%veg_temp(ico)-t3ple) + &   ! thermal energy of liquid
-                      hcapveg *(cpatch%veg_temp(ico)-t3ple)  ! thermal energy of plant tissue
-              else
-                 
-                 cpatch%veg_energy(ico) = &
-                      cpatch%veg_water(ico)*cice*(cpatch%veg_temp(ico)-t3ple) + &   ! thermal energy of ice
-                      hcapveg *(cpatch%veg_temp(ico)-t3ple)  ! thermal energy of plant tissue
-              endif
-
+              call update_veg_energy_cweh(cpatch,ico)
 
            endif
            ! Set status flag
@@ -213,10 +199,10 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
            !----- Because we assigned no water, the internal energy is 
            !      simply hcapveg*(T-T3)
            
-           hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+           cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
                 cpatch%nplant(ico),cpatch%pft(ico))
            
-           cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
+           cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * (cpatch%veg_temp(ico)-t3ple)
            
         elseif(phenology(cpatch%pft(ico)) == 1)then 
 
@@ -265,10 +251,10 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
                  !----- Because we assigned no water, the internal energy is 
                  !      simply hcapveg*(T-T3)
                  
-                 hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                 cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
                       cpatch%nplant(ico),cpatch%pft(ico))
                  
-                 cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
+                 cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * (cpatch%veg_temp(ico)-t3ple)
 
                  
               endif
@@ -289,10 +275,10 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
               !----- Because we assigned no water, the internal energy 
               !      is simply hcapveg*(T-T3)
               
-              hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-                 cpatch%nplant(ico),cpatch%pft(ico))
-              cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
-                 
+              cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                   cpatch%nplant(ico),cpatch%pft(ico))
+              cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * (cpatch%veg_temp(ico)-t3ple)
+              
            endif  ! critical moisture
            
         endif  ! phenology type
