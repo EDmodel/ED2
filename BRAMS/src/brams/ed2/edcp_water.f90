@@ -1,6 +1,6 @@
 !==========================================================================================!
 !==========================================================================================!
-subroutine simple_lake_model(dtlongest)
+subroutine simple_lake_model(time,dtlongest)
 
 
   use node_mod,only:ja,jz,ia,iz
@@ -10,6 +10,7 @@ subroutine simple_lake_model(dtlongest)
   use mem_edcp,only:wgrid_g
 
   !------- Transfer these arrays to the polygons --------------!
+  use io_params,  only: ssttime1,ssttime2,iupdsst
   use mem_leaf,   only: leaf_g
   use mem_basic,  only: basic_g
   use mem_radiate,only: radiate_g
@@ -21,6 +22,7 @@ subroutine simple_lake_model(dtlongest)
 
   implicit none
   real, intent(in) :: dtlongest
+  real(kind=8),intent(in) :: time
   real :: cosz
   real :: prss
   real :: ustar,tstar,rstar,thetacan,water_rsat,zts,water_rough
@@ -40,12 +42,12 @@ subroutine simple_lake_model(dtlongest)
   real :: canopy_water_vapor
   real :: canopy_tempk
   real :: sflux_u,sflux_v,sflux_w,sflux_t,sflux_r
-  integer :: niter_leaf,niter_can
-
+  integer :: niter_leaf
+  
   real :: dtll_factor,dtll,dtlc_factor,dtlc
   real :: dtllohcc,dtllowcc,dtlcohcc,dtlcowcc
   real :: gzotheta, patarea,vels
-
+  real :: timefac_sst,seatc
   real    :: ustaro,delz,d_vel,d_veln,vel_new
   integer :: ifixu
   real, parameter   :: co2_mean   = 370.00
@@ -61,12 +63,20 @@ subroutine simple_lake_model(dtlongest)
    ! use a timestep longer than about 15 seconds.  This allows values of
    ! hcapcan = 2.e4, wcapcan = 2.e1, and hcapveg = 3.e4 as are now defined below.
    niter_leaf  = max(1,nint(dtlongest/40.+.4))
-   niter_can   = max(1,nint(dtlongest/15.+.4))
    dtll_factor = 1. / float(niter_leaf)
    dtll        = dtlongest * dtll_factor
-   dtlc_factor = 1. / float(niter_can)
-   dtlc        = dtll * dtlc_factor
+  
+   
+   
+   ! Update the sea-surface temperature
+   
+   if (iupdsst == 0) then
+      timefac_sst = 0.
+   else
+      timefac_sst = sngl((time - ssttime1(ngrid)) / (ssttime2(ngrid) - ssttime1(ngrid)))
+   endif
 
+   
 
 
   ! Note: Water albedo from Atwater and Bell (1981), excerpted from the LEAF3 scheme
@@ -78,8 +88,7 @@ subroutine simple_lake_model(dtlongest)
 
   dtllohcc = dtll / hcapcan
   dtllowcc = dtll / wcapcan
-  dtlcohcc = dtlc / hcapcan
-  dtlcowcc = dtlc / wcapcan
+
   
   z0fac_water = .016 / grav
 
@@ -94,6 +103,9 @@ subroutine simple_lake_model(dtlongest)
   
   do j=ja,jz
      do i=ia,iz
+
+        seatc = leaf_g(ngrid)%seatp(i,j) + timefac_sst*(leaf_g(ngrid)%seatf(i,j) - leaf_g(ngrid)%seatp(i,j))
+
         if (if_adap == 1) then
            
            ! Shaved Eta coordinate system
@@ -185,7 +197,7 @@ subroutine simple_lake_model(dtlongest)
            
            prss = pis ** cpor * p00
 
-           water_rsat  = rslif(prss, leaf_g(ngrid)%seatp(i,j))
+           water_rsat  = rslif(prss,seatc)
            
            water_rough = max(z0fac_water * ustar ** 2,.0001)
            
@@ -223,7 +235,6 @@ subroutine simple_lake_model(dtlongest)
            
            gzotheta = grav * zts / theta_mean
            
-           
            sflux_w = sflux_w + vertical_vel_flux(gzotheta,tstar,ustar)
            
            ! Update the sea surface air temperature and water vapor mixing ratio
@@ -235,7 +246,7 @@ subroutine simple_lake_model(dtlongest)
 
            canopy_tempk  = canopy_tempk        &
                 + dtllohcc * dn0_mean * cp                          &
-                * ( (leaf_g(ngrid)%seatp(i,j) -  canopy_tempk) * rdi    &
+                * ( (seatc -  canopy_tempk) * rdi    &
                 + ustar * tstar * pis)
            
            bot = ( water_rsat - canopy_water_vapor) * rdi
@@ -256,7 +267,7 @@ subroutine simple_lake_model(dtlongest)
               write(unit=*,fmt=*) 'DN0_MEAN           : ',dn0_mean
               write(unit=*,fmt=*) 'THETA_MEAN         : ',theta_mean
               write(unit=*,fmt=*) 'RV_MEAN            : ',rv_mean
-              write(unit=*,fmt=*) 'SEATP              : ',leaf_g(ngrid)%seatp(i,j)
+              write(unit=*,fmt=*) 'SST                : ',seatc
               write(unit=*,fmt=*) 'CANOPY_TEMPK       : ',canopy_tempk
               write(unit=*,fmt=*) 'CANOPY_RVAP/RSAT   : ',canopy_water_vapor,water_rsat
               write(unit=*,fmt=*) 'RDI                : ',rdi
@@ -287,7 +298,7 @@ subroutine simple_lake_model(dtlongest)
         wgrid_g(ngrid)%sflux_r(i,j) = dn0_mean*sflux_r/real(niter_leaf)
 
         wgrid_g(ngrid)%albedt(i,j) = min(max(-.0139 + .0467 * tan(acos(cosz)),.03),.999)
-        wgrid_g(ngrid)%rlongup(i,j) = emiss_w * stefan * leaf_g(ngrid)%seatp(i,j)**4
+        wgrid_g(ngrid)%rlongup(i,j) = emiss_w * stefan * seatc**4
 
 
         leaf_g(ngrid)%can_temp(i,j,1) = canopy_tempk

@@ -646,6 +646,10 @@ module ed_state_vars
      ! Fast time flux diagnostic variables
      !-------------------------------------------
      
+     !----- Radiation ---------------------------
+     
+     real,pointer,dimension(:) :: avg_netrad        ! Net radiation of soil,surface water and vegetation sum
+
      !----- Moisture ----------------------------
      !                                              | Description
      real,pointer,dimension(:) :: avg_vapor_vc      ! Vegetation to canopy air latent heat flux
@@ -968,6 +972,9 @@ module ed_state_vars
 
      real,pointer,dimension(:) :: runoff
 
+
+
+
      !----- NACP intercomparison ---------------------------------------------!
      real,pointer,dimension(:) :: avg_snowdepth
      real,pointer,dimension(:) :: avg_snowmass
@@ -1236,7 +1243,12 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_atm_co2
      real,pointer,dimension(:) :: avg_albedt
      real,pointer,dimension(:) :: avg_rlongup
-
+     real,pointer,dimension(:,:,:) :: avg_lai_ebalvars   ! This diagnostic partitions energy flux
+                                                         ! variables into LAI regimes.
+                                                         ! The matrix is arranged as follows
+                                                         ! (LAI,VARIABLE,POLYGON)
+                                                         ! Where LAI is (<2.0,2-4,>4)
+                                                         ! Where Variable is (RNET,LHF,SHF,CANTEMP)
      real,pointer,dimension(:) :: avg_gpp
      real,pointer,dimension(:) :: avg_leaf_resp
      real,pointer,dimension(:) :: avg_root_resp
@@ -1412,7 +1424,7 @@ module ed_state_vars
      !-------------------------------------------
 
      real :: avg_gpp
-
+     real :: avg_netrad        ! Net radiation
      real :: avg_vapor_vc      ! Vegetation to canopy air latent heat flux
      real :: avg_dew_cg        ! Dew to ground flux
      real :: avg_vapor_gc      ! Ground to canopy air latent heat flux
@@ -1420,6 +1432,7 @@ module ed_state_vars
      real :: avg_vapor_ac      ! Canopy to atmosphere water flux
      real :: avg_transp        ! Transpiration
      real :: avg_evap          ! Evaporation
+
      real,pointer,dimension(:) :: avg_smoist_gg   ! Moisture flux between layers
      real,pointer,dimension(:) :: avg_smoist_gc     ! Trabspired soil moisture sink
      real :: aux               ! Auxillary surface variable
@@ -1701,6 +1714,8 @@ contains
        allocate(cgrid%avg_soil_temp (nzg,npolygons))
        allocate(cgrid%avg_soil_fracliq (nzg,npolygons))
 
+       allocate(cgrid%avg_lai_ebalvars (3,4,npolygons))
+
        allocate(cgrid%avg_gpp  (npolygons))
        allocate(cgrid%avg_leaf_resp  (npolygons))
        allocate(cgrid%avg_root_resp  (npolygons))
@@ -1939,6 +1954,7 @@ contains
     allocate(cpoly%avg_vapor_ac  (nsites))
     allocate(cpoly%avg_transp    (nsites))
     allocate(cpoly%avg_evap      (nsites))
+    
     allocate(cpoly%avg_smoist_gg (nzg,nsites))
     allocate(cpoly%avg_smoist_gc (nzg,nsites))
     allocate(cpoly%avg_runoff        (nsites))
@@ -2135,6 +2151,7 @@ contains
     allocate(csite%avg_vapor_ac  (npatches))
     allocate(csite%avg_transp    (npatches))
     allocate(csite%avg_evap      (npatches))
+    allocate(csite%avg_netrad    (npatches))
     allocate(csite%avg_smoist_gg (nzg,npatches))
     allocate(csite%avg_smoist_gc (nzg,npatches))
     allocate(csite%avg_runoff        (npatches))
@@ -2366,6 +2383,8 @@ contains
        nullify(cgrid%avg_soil_water          )
        nullify(cgrid%avg_soil_temp           )
        nullify(cgrid%avg_soil_fracliq           )
+
+       nullify(cgrid%avg_lai_ebalvars)
 
        nullify(cgrid%avg_gpp          )
        nullify(cgrid%avg_leaf_resp    )
@@ -2767,6 +2786,7 @@ contains
     nullify(csite%avg_vapor_ac  )
     nullify(csite%avg_transp    )
     nullify(csite%avg_evap      )
+    nullify(csite%avg_netrad    )
     nullify(csite%avg_smoist_gg )
     nullify(csite%avg_smoist_gc )
     nullify(csite%avg_runoff    )
@@ -2997,6 +3017,8 @@ contains
        if(associated(cgrid%avg_soil_temp           )) deallocate(cgrid%avg_soil_temp           )
        if(associated(cgrid%avg_soil_fracliq        )) deallocate(cgrid%avg_soil_fracliq           )
        
+       if(associated(cgrid%avg_lai_ebalvars        )) deallocate(cgrid%avg_lai_ebalvars   )
+
        if(associated(cgrid%avg_gpp                 )) deallocate(cgrid%avg_gpp          )
        if(associated(cgrid%avg_leaf_resp           )) deallocate(cgrid%avg_leaf_resp    )
        if(associated(cgrid%avg_root_resp           )) deallocate(cgrid%avg_root_resp    )
@@ -3394,6 +3416,7 @@ contains
     if(associated(csite%avg_vapor_ac                 )) deallocate(csite%avg_vapor_ac                 )
     if(associated(csite%avg_transp                   )) deallocate(csite%avg_transp                   )
     if(associated(csite%avg_evap                     )) deallocate(csite%avg_evap                     )
+    if(associated(csite%avg_netrad                   )) deallocate(csite%avg_netrad                   )
     if(associated(csite%avg_smoist_gg                )) deallocate(csite%avg_smoist_gg                )
     if(associated(csite%avg_smoist_gc                )) deallocate(csite%avg_smoist_gc                )
     if(associated(csite%avg_runoff                   )) deallocate(csite%avg_runoff                   )
@@ -3673,6 +3696,8 @@ contains
        if(associated(cgrid%avg_soil_water          )) cgrid%avg_soil_water           = large_real
        if(associated(cgrid%avg_soil_temp           )) cgrid%avg_soil_temp            = large_real
        if(associated(cgrid%avg_soil_fracliq           )) cgrid%avg_soil_fracliq            = large_real
+
+       if(associated(cgrid%avg_lai_ebalvars        )) cgrid%avg_lai_ebalvars         = large_real
 
        !!! added for NACP intercomparison (MCD)
        if(associated(cgrid%avg_snowdepth           )) cgrid%avg_snowdepth            = large_real
@@ -4100,6 +4125,7 @@ contains
     if(associated(csite%avg_vapor_ac                 )) csite%avg_vapor_ac                 = large_real
     if(associated(csite%avg_transp                   )) csite%avg_transp                   = large_real
     if(associated(csite%avg_evap                     )) csite%avg_evap                     = large_real
+    if(associated(csite%avg_netrad                   )) csite%avg_netrad                   = large_real
     if(associated(csite%avg_smoist_gg                )) csite%avg_smoist_gg                = large_real
     if(associated(csite%avg_smoist_gc                )) csite%avg_smoist_gc                = large_real
     if(associated(csite%avg_runoff                   )) csite%avg_runoff                   = large_real
@@ -4541,6 +4567,7 @@ contains
     siteout%avg_vapor_ac(1:inc)         = pack(sitein%avg_vapor_ac,logmask)
     siteout%avg_transp(1:inc)           = pack(sitein%avg_transp,logmask)
     siteout%avg_evap(1:inc)             = pack(sitein%avg_evap,logmask)
+    siteout%avg_netrad(1:inc)           = pack(sitein%avg_netrad,logmask)
     siteout%avg_runoff(1:inc)           = pack(sitein%avg_runoff,logmask)
     siteout%aux(1:inc)                  = pack(sitein%aux,logmask)
     siteout%avg_sensible_vc(1:inc)      = pack(sitein%avg_sensible_vc,logmask)
@@ -5792,6 +5819,13 @@ contains
     endif
         ! ---------------------------------------------
 
+    if (associated(cgrid%avg_lai_ebalvars)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_lai_ebalvars(1,1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_LAI_EBALVARS :17:anal') 
+       call metadata_edio(nvar,igr,'Polygon Average Energy Balance Variables','[variable]','ipoly - 4 - 3') 
+    endif
+    
     if (associated(cgrid%avg_gpp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_gpp(1),nvar,igr,init,cgrid%pyglob_id, &

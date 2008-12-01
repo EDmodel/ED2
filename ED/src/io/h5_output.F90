@@ -813,7 +813,23 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
      chnkoffs(2) = globid
      cnt(1:2)    = 1
      stride(1:2) = 1
+
+  case (17) ! (nlai,nvars,npolygons)  
      
+     ! Soil column type
+     dsetrank = 3
+     globdims(1) = 3
+     chnkdims(1) = 3
+     chnkoffs(1) = 0
+     globdims(2) = 4
+     chnkdims(2) = 4
+     chnkoffs(2) = 0
+     globdims(3) = var_len_global
+     chnkdims(3) = varlen
+     chnkoffs(3) = globid
+     cnt(1:3)    = 1
+     stride(1:3) = 1
+
   case (21) !(nsites)
      
      dsetrank = 1

@@ -279,6 +279,7 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
      targetp%avg_vapor_ac       = sourcesite%avg_vapor_ac(ipa)     !C
      targetp%avg_transp         = sourcesite%avg_transp(ipa)       !C
      targetp%avg_evap           = sourcesite%avg_evap(ipa)         !C
+     targetp%avg_netrad         = sourcesite%avg_netrad(ipa)       !C
      targetp%aux                = sourcesite%aux(ipa)              !C
      targetp%avg_sensible_vc    = sourcesite%avg_sensible_vc(ipa)   !C
      targetp%avg_sensible_2cas  = sourcesite%avg_sensible_2cas(ipa) !C
@@ -367,7 +368,8 @@ subroutine inc_rk4_patch_ar(rkp, inc, fac, cpatch, lsl)
      rkp%avg_wshed_vg       = rkp%avg_wshed_vg       + fac * inc%avg_wshed_vg
      rkp%avg_vapor_ac       = rkp%avg_vapor_ac       + fac * inc%avg_vapor_ac
      rkp%avg_transp         = rkp%avg_transp         + fac * inc%avg_transp  
-     rkp%avg_evap           = rkp%avg_evap           + fac * inc%avg_evap    
+     rkp%avg_evap           = rkp%avg_evap           + fac * inc%avg_evap  
+     rkp%avg_netrad         = rkp%avg_netrad         + fac * inc%avg_netrad      
      rkp%aux                = rkp%aux                + fac * inc%aux
      rkp%avg_sensible_vc    = rkp%avg_sensible_vc    + fac * inc%avg_sensible_vc  
      rkp%avg_sensible_2cas  = rkp%avg_sensible_2cas  + fac * inc%avg_sensible_2cas
@@ -736,7 +738,8 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch, lsl)
      targetp%avg_wshed_vg       = sourcep%avg_wshed_vg
      targetp%avg_vapor_ac       = sourcep%avg_vapor_ac
      targetp%avg_transp         = sourcep%avg_transp  
-     targetp%avg_evap           = sourcep%avg_evap    
+     targetp%avg_evap           = sourcep%avg_evap   
+     targetp%avg_netrad         = sourcep%avg_netrad   
      targetp%avg_sensible_vc    = sourcep%avg_sensible_vc  
      targetp%avg_sensible_2cas  = sourcep%avg_sensible_2cas
      targetp%avg_qwshed_vg      = sourcep%avg_qwshed_vg    
@@ -1551,6 +1554,7 @@ subroutine zero_rk4_patch(y)
   y%avg_vapor_ac                   = 0.
   y%avg_transp                     = 0.
   y%avg_evap                       = 0.
+  y%avg_netrad                     = 0.
   y%avg_smoist_gg                  = 0.
   y%avg_smoist_gc                  = 0.
   y%aux                            = 0.

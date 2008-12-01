@@ -352,6 +352,7 @@ contains
        csite%avg_vapor_ac(ipa)       = initp%avg_vapor_ac
        csite%avg_transp(ipa)         = initp%avg_transp
        csite%avg_evap(ipa)           = initp%avg_evap
+       csite%avg_netrad(ipa)         = initp%avg_netrad
        csite%aux(ipa)                = initp%aux
        csite%avg_sensible_vc(ipa)    = initp%avg_sensible_vc  
        csite%avg_sensible_2cas(ipa)  = initp%avg_sensible_2cas
