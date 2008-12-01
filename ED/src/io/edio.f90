@@ -149,16 +149,22 @@ subroutine spatial_averages
   type(patchtype),pointer :: cpatch
   integer :: igr,ipy,isi,ipa,ico
   integer :: k
+  integer :: lai_index
   real :: lai_sum,site_area_i,poly_area_i
   real :: frqsumi
   real :: snow_min = 0.0000001
+  real,dimension(3) :: area_sum
 
   frqsumi = 1.0 / frqsum
   do igr=1,ngrids
      cgrid => edgrid_g(igr)
-     
+
+     cgrid%avg_lai_ebalvars = 0.0
+
      do ipy=1,cgrid%npolygons
         cpoly => cgrid%polygon(ipy)
+
+        area_sum=0.0
 
         cgrid%avg_balive(ipy)      = 0.0
         cgrid%avg_bdead(ipy)       = 0.0
@@ -317,6 +323,28 @@ subroutine spatial_averages
               cgrid%avg_htroph_resp(ipy) = cgrid%avg_htroph_resp(ipy) + &
                    csite%area(ipa)*cpoly%area(isi)*csite%co2budget_rh(ipa)    *frqsumi
               
+
+              lai_index = min(3,max(1, floor(csite%lai(ipa)/2.0) + 1)  )
+              
+              area_sum(lai_index) = area_sum(lai_index) + csite%area(ipa)
+
+              ! Net radiation
+              cgrid%avg_lai_ebalvars(lai_index,1,ipy) = &
+                   cgrid%avg_lai_ebalvars(lai_index,1,ipy) + csite%avg_netrad(ipa)*csite%area(ipa)
+
+              ! Latent heat flux
+              cgrid%avg_lai_ebalvars(lai_index,2,ipy) = &
+                   cgrid%avg_lai_ebalvars(lai_index,2,ipy) + csite%avg_vapor_ac(ipa)*csite%area(ipa)
+
+              ! Sensible heat flux
+              cgrid%avg_lai_ebalvars(lai_index,3,ipy) = &
+                   cgrid%avg_lai_ebalvars(lai_index,3,ipy) + csite%avg_sensible_ac(ipa)*csite%area(ipa)
+
+              ! Canopy temperature
+              cgrid%avg_lai_ebalvars(lai_index,4,ipy) = &
+                   cgrid%avg_lai_ebalvars(lai_index,4,ipy) + csite%can_temp(ipa)*csite%area(ipa)
+
+
               
               do k=1,nzg
                  if ( csite%soil_tempk(k,ipa) > cgrid%max_soil_temp(ipy)) then
@@ -347,7 +375,34 @@ subroutine spatial_averages
         
 
      enddo
-        
+     
+     ! Normalize the lai specific quantities
+     if (area_sum(1)>0) then
+        cgrid%avg_lai_ebalvars(1,1,ipy) = cgrid%avg_lai_ebalvars(1,1,ipy)/area_sum(1)
+        cgrid%avg_lai_ebalvars(1,2,ipy) = cgrid%avg_lai_ebalvars(1,2,ipy)/area_sum(1)
+        cgrid%avg_lai_ebalvars(1,3,ipy) = cgrid%avg_lai_ebalvars(1,3,ipy)/area_sum(1)  
+        cgrid%avg_lai_ebalvars(1,4,ipy) = cgrid%avg_lai_ebalvars(1,4,ipy)/area_sum(1)
+     else
+        cgrid%avg_lai_ebalvars(1,:,ipy) = -9999.0
+     endif
+     if (area_sum(2)>0) then
+        cgrid%avg_lai_ebalvars(2,1,ipy) = cgrid%avg_lai_ebalvars(2,1,ipy)/area_sum(2)
+        cgrid%avg_lai_ebalvars(2,2,ipy) = cgrid%avg_lai_ebalvars(2,2,ipy)/area_sum(2)
+        cgrid%avg_lai_ebalvars(2,3,ipy) = cgrid%avg_lai_ebalvars(2,3,ipy)/area_sum(2)
+        cgrid%avg_lai_ebalvars(2,4,ipy) = cgrid%avg_lai_ebalvars(2,4,ipy)/area_sum(2)
+     else
+        cgrid%avg_lai_ebalvars(2,:,ipy) = -9999.0
+     endif
+     if (area_sum(3)>0) then
+        cgrid%avg_lai_ebalvars(3,1,ipy) = cgrid%avg_lai_ebalvars(3,1,ipy)/area_sum(3)
+        cgrid%avg_lai_ebalvars(3,2,ipy) = cgrid%avg_lai_ebalvars(3,2,ipy)/area_sum(3)
+        cgrid%avg_lai_ebalvars(3,3,ipy) = cgrid%avg_lai_ebalvars(3,3,ipy)/area_sum(3)
+        cgrid%avg_lai_ebalvars(3,4,ipy) = cgrid%avg_lai_ebalvars(3,4,ipy)/area_sum(3)
+     else
+        cgrid%avg_lai_ebalvars(3,:,ipy) = -9999.0
+     endif
+
+
         cgrid%lai(ipy)                = sum(cpoly%lai                * cpoly%area ) * poly_area_i
         
         ! Average Fast Time Flux Dynamics Over Polygons

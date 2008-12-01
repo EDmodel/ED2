@@ -305,7 +305,8 @@ contains
     use canopy_radiation_coms, only: lai_min, veg_temp_min
 
     use therm_lib, only: qwtk
-    use ed_therm_lib, only: calc_hcapveg
+    use ed_therm_lib, only: calc_hcapveg,ed_grndvap
+
     implicit none
 
     integer, intent(in) :: lsl
@@ -351,6 +352,7 @@ contains
        csite%avg_vapor_ac(ipa)       = initp%avg_vapor_ac
        csite%avg_transp(ipa)         = initp%avg_transp
        csite%avg_evap(ipa)           = initp%avg_evap
+       csite%avg_netrad(ipa)         = initp%avg_netrad
        csite%aux(ipa)                = initp%aux
        csite%avg_sensible_vc(ipa)    = initp%avg_sensible_vc  
        csite%avg_sensible_2cas(ipa)  = initp%avg_sensible_2cas

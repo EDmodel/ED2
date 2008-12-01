@@ -9,7 +9,7 @@ subroutine ed_init_atm_ar
   use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
   use pft_coms,only : sla
-  use ed_therm_lib,only : update_veg_energy_ct
+  use ed_therm_lib,only : update_veg_energy_ct,ed_grndvap
   
   
   implicit none
@@ -420,90 +420,18 @@ subroutine update_site_derived_props_ar(cpoly, census_flag, isi)
   
   return
 end subroutine update_site_derived_props_ar
-!==========================================================================================!
-!==========================================================================================!
+
+!==========================================================================!
 
 
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
-     sfcwater_energy, rhos, can_shv, ground_shv, surface_ssh)
-
-  use soil_coms,   only: ed_nstyp, soil
-  use grid_coms,   only: nzg
-  use consts_coms, only:  pi1, grav, rvap
-  use therm_lib  , only: rhovsil, qtk, qwtk8
-
-  implicit none
-
-  integer, intent(in) :: nlev_sfcwater ! # active levels of surface water
-  integer, intent(in) :: nts           ! soil textural class (local name)
-  
-  real(kind=8), intent(in)  :: soil_water      ! soil water content [vol_water/vol_tot]
-  real, intent(in)  :: soil_energy     ! [J/m^3]
-  real, intent(in)  :: sfcwater_energy ! [J/kg]
-  real, intent(in)  :: rhos            ! air density [kg/m^3]
-  real, intent(in)  :: can_shv         ! canopy vapor spec hum [kg_vap/kg_air]
-  real, intent(out) :: ground_shv      ! ground equilibrium spec hum [kg_vap/kg_air]
-  real, intent(out) :: surface_ssh     ! surface (saturation) spec hum [kg_vap/kg_air]
-
-
-  real, parameter :: gorvap = grav / rvap  ! gravity divided by vapor gas constant
-
-
-  ! Local variables
-
-  real :: slpotvn ! soil water potential [m]
-  real :: alpha   ! "alpha" term in Lee and Pielke (1993)
-  real :: beta    ! "beta" term in Lee and Pielke (1993)
-  real :: tempk   ! surface water temp [K]
-  real :: fracliq ! fraction of surface water in liquid phase
-
-  ! surface_ssh is the saturation mixing ratio of the top soil or snow surface
-  ! and is used for dew formation and snow evaporation.
-
-  if (nlev_sfcwater > 0) then
-     call qtk(sfcwater_energy,tempk,fracliq)
-     surface_ssh = rhovsil(tempk) / rhos
-  else
-     
-     ! Without snowcover, ground_shv is the effective saturation mixing
-     ! ratio of soil and is used for soil evaporation.  First, compute the
-     ! "alpha" term or soil "relative humidity" and the "beta" term.
-     
-     call qwtk8(soil_energy,soil_water*1.d3,soil(nts)%slcpd,tempk,fracliq)
-     surface_ssh = rhovsil(tempk) / rhos
-     
-     slpotvn = soil(nts)%slpots * (soil(nts)%slmsts / soil_water) ** soil(nts)%slbs
-     alpha = exp(gorvap * slpotvn / tempk)
-     beta = .25 * (1. - cos (min(1.,soil_water / soil(nts)%sfldcap) * pi1)) ** 2
-     ground_shv = surface_ssh * alpha * beta + (1. - beta) * can_shv
-     
-  endif
-
-  return
-end subroutine ed_grndvap
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
 subroutine read_soil_moist_temp_ar(cgrid)
 
   use ed_state_vars, only: edtype, polygontype, sitetype, patchtype
   use soil_coms, only: soilstate_db, soil,slz
   use consts_coms, only: alli1000, cliq1000, cice1000, t3ple
   use grid_coms, only: nzg, ngrids
-  
+  use ed_therm_lib,only:ed_grndvap
+
   implicit none
 
   type(edtype)      , target  :: cgrid  ! Alias for current ED grid

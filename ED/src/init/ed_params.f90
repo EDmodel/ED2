@@ -619,7 +619,7 @@ wat_dry_ratio_ngrn(1:15)  = 0.7       ! Forest Products Laboratory
 
 ! Fraction of structural biomass included in calculation of veg. leaf heat capacity.
 
-hcap_stem_fraction = 0.05       
+hcap_stem_fraction = 0.001       
                                 ! This may eventually become a tuneable parameter.
                                 ! This parameter may also be most appropriate
                                 ! as zero.

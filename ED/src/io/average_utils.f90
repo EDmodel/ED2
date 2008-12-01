@@ -41,7 +41,7 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
 
          do ipa = 1,csite%npatches
             cpatch => csite%patch(ipa)
-
+            csite%avg_netrad(ipa)       = csite%avg_netrad(ipa)        * frqsumi
             csite%aux(ipa)              = csite%aux(ipa)               * frqsumi
             csite%avg_vapor_vc(ipa)     = csite%avg_vapor_vc(ipa)      * frqsumi
             csite%avg_dew_cg(ipa)       = csite%avg_dew_cg(ipa)        * frqsumi
@@ -147,6 +147,7 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_vapor_ac(ipa)         = 0.0
             csite%avg_transp(ipa)           = 0.0
             csite%avg_evap(ipa)             = 0.0
+            csite%avg_netrad(ipa)           = 0.0
             csite%avg_smoist_gg(:,ipa)      = 0.0
             csite%avg_smoist_gc(:,ipa)      = 0.0
             csite%avg_runoff(ipa)           = 0.0

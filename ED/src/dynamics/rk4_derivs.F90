@@ -91,7 +91,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
   use canopy_radiation_coms, only: lai_min
 
   use ed_state_vars,only:sitetype,patchtype,rk4patchtype
-  
+  use ed_therm_lib,only: ed_grndvap
   use therm_lib, only : qtk, qwtk, qwtk8
 
   implicit none
@@ -1087,7 +1087,10 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
      dinitp%avg_transp        = alvl*transp_tot                        ! Transpiration
      dinitp%avg_evap          = alvl*(wflxgc - dewgndflx + wflxvc_tot) ! Evaporation
      dinitp%avg_sensible_tot  = (hflxgc + hflxvc_tot)                  ! Sensible heat
-     
+
+     dinitp%avg_netrad = csite%rlong_g(ipa) + csite%rlong_s(ipa) + csite%rshort_g(ipa) + &
+          sum(csite%rshort_s(1:initp%nlev_sfcwater,ipa),1)
+
      ! Auxillary variable
      
      !  dinitp%aux = dinitp%aux
