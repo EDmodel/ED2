@@ -211,10 +211,10 @@ end subroutine terminate_cohorts_ar
      logical , allocatable, dimension(:) :: fuse_table
      real    , external :: dbh2h
      real    , external :: dbh2bl
-     real, parameter :: tolerance_max = 2.0
+     real, parameter :: tolerance_max = 10.0  ! Original: 2.0
      integer :: ncohorts_old
      integer, parameter :: fuse_relax = 0
-
+     real :: mean_dbh,mean_hite,ntall,nshort
  
      
      tolerance_mult = 1.0
@@ -224,7 +224,39 @@ end subroutine terminate_cohorts_ar
 
      ! COHORT COUNT IS DEPRICATED AND WILL BE REMOVED SOON - RGK 11-28-2008
 
-     if(csite%cohort_count(ipa) == 0)return ! return if there aren't any cohorts
+     ! Return if we dont have many cohorts anyway
+     if(cpatch%ncohorts <= maxcohort)return
+
+
+     ! Calculate mean DBH and HITE to help with the normalization of differences
+     ! mean hite is not being used right now, but can be optioned in the future
+     ! if it seems advantageous
+     ! -------------------------------------------------------------------------
+     mean_dbh  = 0.0
+     mean_hite = 0.0
+     nshort    = 0.0
+     ntall     = 0.0
+     do ico1 = 1,cpatch%ncohorts
+        ! get fusion height threshold
+        if(rho(cpatch%pft(ico1)) == 0.0)then
+           hite_threshold = b1Ht(cpatch%pft(ico1))
+        else
+           hite_threshold = dbh2h(cpatch%pft(ico1), max_dbh(cpatch%pft(ico1)))
+        end if
+
+        if(cpatch%hite(ico1) < (0.95 * hite_threshold ))then
+           mean_hite = mean_hite + cpatch%hite(ico1)
+           nshort = nshort+1.0
+        else
+           mean_dbh = mean_dbh + cpatch%dbh(ico1)
+           ntall=ntall+1.0
+        endif
+     end do
+     mean_dbh = mean_dbh/ntall
+     mean_hite= mean_hite/nshort
+
+
+
      allocate(fuse_table(cpatch%ncohorts))
      fuse_table(:) = .true.
 
@@ -252,7 +284,7 @@ end subroutine terminate_cohorts_ar
               end if
            else
               fusion_test = (abs(cpatch%dbh(ico1) - cpatch%dbh(ico2)) /   &
-                   (0.5*(cpatch%dbh(ico1) + cpatch%dbh(ico2))) < fusetol * tolerance_mult)
+                   mean_dbh  ) < fusetol * tolerance_mult
            end if
 
            if(fusion_test)then
@@ -450,12 +482,19 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
            cpatch%hite(ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
            cpatch%bdead(ico) = dbh2bd(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico))
  
+           ! Yeonjoo, can you confirm please, that there should be no
+           ! tweaking of bdead for cohort index inew.
+           ! Please erase this message - RGK
+
            cpatch%dbh(inew) = cpatch%dbh(inew) + epsilon
            cpatch%hite(inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
+           cpatch%bdead(inew) = cpatch%bdead(inew) + epsilon
 
            ! Update the vegetation energy again, due to tweaks
 
+           call update_veg_energy_ct(cpatch,ico)
            call update_veg_energy_ct(cpatch,inew)
+           call update_veg_energy_ct(cpatch,ico)
 
 
         endif
@@ -704,10 +743,10 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      return
    end subroutine fuse_2_cohorts_ar
 
-!-----------------------------------------------------------------------------
-
+   !-----------------------------------------------------------------------------
+   
    subroutine fuse_patches_ar(cgrid)
-
+     
      use ed_state_vars,only : edtype,polygontype,sitetype,patchtype
      use fusion_fission_coms, only : ff_ndbh, ntol, profile_tol
      use max_dims, only: n_pft
@@ -720,12 +759,14 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      type(sitetype),pointer :: csite
      type(patchtype),pointer :: cpatch
      type(sitetype),pointer  :: tempsite
-     integer :: ipy,isi,ipa,ico,ipa_next,ipa_tp
+     integer :: ipy,isi,ipa,ico,ipa_next
      integer :: i,j,istop,npatches
      real :: norm,tolerance_mult
      integer,allocatable :: fuse_table(:)
-     real, parameter :: tolerance_max=2.0
+     real, parameter :: tolerance_max=100.0
      integer :: npatches_old
+     integer :: fuse_flag
+     real,dimension(n_pft,ff_ndbh) :: mean_nplant
 
      ! Allocate the swapper patches in the site type
 
@@ -750,20 +791,31 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      ! find next older patch with same dist_type
      ! check fusion criterion
      ! if within criterion, fuse, otherwise, skip
-
-
      ! Loop from the youngest to oldest patch
 
+     if (csite%npatches > maxpatch) then
+
+        mean_nplant = 0.0
      do ipa = csite%npatches,1,-1
         call patch_pft_size_profile_ar(csite,ipa,ff_ndbh,cpoly%green_leaf_factor(:,isi))
-     end do
-     
+        
+        ! Get a mean density profile for all of the patches
+        ! This will be used for normalization
+        do i=1,n_pft          ! loop over pft 
+           do j=1,ff_ndbh !      loop over hgt bins
+              
+              mean_nplant(i,j) = mean_nplant(i,j) + csite%pft_density_profile(i,j,ipa)/real(csite%npatches)
+              
+           end do
+        end do
+        
+     enddo
+
  
      ! loop over sites
      tolerance_mult = 1.0
      max_patch: do
         npatches_old = sum(fuse_table)
-        csite%fuse_flag(:) = 1
         
         ! Loop from youngest to the second oldest patch
         do ipa = csite%npatches,2,-1
@@ -772,87 +824,97 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
 
            if (fuse_table(ipa).ne.0) then
               
-              ! Look at the next patch which is immediately older and 
-              ! of the same disturbance type
-              ipa_next = ipa - 1
-              istop = 0
-              ipa_tp = -1
-              do while ((ipa_next > 0) .and. (istop == 0))
+              ! Cycle through the next patches and compare densities
+              ! But only compare densities if the patches have the 
+              ! same disturbance types
+              ! Of course, dont compare a 
+              
+              next_patch: do ipa_next = ipa-1,1,-1
 
                  if( csite%dist_type(ipa) == csite%dist_type(ipa_next) .and. &
-                    fuse_table(ipa_next).ne.0 ) then
-                    istop  = 1
-                    ipa_tp = ipa_next
-                 endif
-                 ipa_next = ipa_next - 1
-              enddo
-
-
-              ! Once we have identified the patch with the same disturbance type
-              ! and closest age (ipa_tp), determine if it is similar enough to average (fuse)
-              ! the two together.
-              
-              if (ipa_tp > 0 ) then ! found a fusion candidate?
-                 
-                 !  fusion criterion
-                 do i=1,n_pft          ! loop over pft 
-                    do j=1,ff_ndbh !      loop over hgt bins
+                      fuse_table(ipa_next).ne.0 ) then
+                    
+                    ! Once we have identified the patch with the same disturbance type
+                    ! and closest age (ipa_next), determine if it is similar enough to average (fuse)
+                    ! the two together.
                        
-                       if(csite%pft_density_profile(i,j,ipa) > tolerance_mult * ntol  &
-                            .or. csite%pft_density_profile(i,j,ipa_tp) >   &
-                            tolerance_mult * ntol)then
-                          
-                          ! This is the normalized difference in their biodensity profiles
-                          ! If the normalized difference is greater than the tolerance
-                          ! for any of the pfts and dbh classes, then reject them as similar
-                          norm = abs(csite%pft_density_profile(i,j,ipa)  &
-                                  -csite%pft_density_profile(i,j,ipa_tp))  &
-                                  /(0.5*(csite%pft_density_profile(i,j,ipa)  &
-                                  +csite%pft_density_profile(i,j,ipa_tp)))
+                    fuse_flag = 1
 
-                          if(norm > profile_tol) csite%fuse_flag(ipa)=0   ! reject
-                          
-                       endif
-                    enddo
-                 enddo
+                    !  fusion criterion
+                    fuseloop:do i=1,n_pft          ! loop over pft 
+                       do j=1,ff_ndbh !      loop over hgt bins
+                         
+                          if(csite%pft_density_profile(i,j,ipa)>0.) then
+!                             print*,ipa,ipa_next,i,j,csite%pft_density_profile(i,j,ipa)
+                          endif
 
-          
-                               
-                 ! Create a mapping of the patches that fuse together
-                 if(csite%fuse_flag(ipa) == 1)then
-                                    
+                          if(csite%pft_density_profile(i,j,ipa) > ntol  &
+                               .or. csite%pft_density_profile(i,j,ipa_next) > ntol)then
+                             
+                             ! This is the normalized difference in their biodensity profiles
+                             ! If the normalized difference is greater than the tolerance
+                             ! for any of the pfts and dbh classes, then reject them as similar
+                             ! Note: If one of the patches is missing any member of the profile
+                             ! it will force the norm to be 2.0.
+                             ! That is the highest the norm should be able to go.
 
-                    ! Take an average of the patch properties at index ipa and ipa_tp
-                    ! assign the average to index ipa_tp
 
-                    call fuse_2_patches_ar(csite,ipa,ipa_tp,cpoly%met(isi)%rhos, &
-                         cpoly%lsl(isi),cpoly%green_leaf_factor(:,isi))
+                             norm = abs(csite%pft_density_profile(i,j,ipa)  &
+                                  -csite%pft_density_profile(i,j,ipa_next))  &
+                                  /mean_nplant(i,j)
+                             
+                             if(norm > tolerance_mult*profile_tol) then
+                                fuse_flag = 0   ! reject
+!                                print*,csite%pft_density_profile(i,j,ipa),csite%pft_density_profile(i,j,ipa_next) &
+!                                     ,norm,tolerance_mult*profile_tol
+                                exit fuseloop
+                             endif
 
-                    ! Recalculate the pft size profile for the averaged patch at ipa_tp
-                    call patch_pft_size_profile_ar(csite,ipa_tp,ff_ndbh,cpoly%green_leaf_factor(:,isi))
+                          endif
+                       enddo
+                    enddo fuseloop
 
-                    ! The patch at index ipa is no longer valid, it should be flagged as such
-                    fuse_table(ipa) = 0
+                    ! Create a mapping of the patches that fuse together
+                    if( fuse_flag == 1)then
+                       
+                       ! Take an average of the patch properties at index ipa and ipa_tp
+                       ! assign the average to index ipa_tp
+                       
+                       call fuse_2_patches_ar(csite,ipa,ipa_next,cpoly%met(isi)%rhos, &
+                            cpoly%lsl(isi),cpoly%green_leaf_factor(:,isi))
+                       
+                       ! Recalculate the pft size profile for the averaged patch at ipa_tp
+                       call patch_pft_size_profile_ar(csite,ipa_next,ff_ndbh,cpoly%green_leaf_factor(:,isi))
+                       
+                       ! The patch at index ipa is no longer valid, it should be flagged as such
+                       fuse_table(ipa) = 0
+
+                       ! If we have gotten to this point, we have found our donor patch
+                       ! and have performed the fusion. Exit the patch loop.
+                       
+                       exit next_patch
+                       
+                    endif ! if( fuse_flag == 1)
+
                     
-                 endif
+                 endif    ! if( csite%dist_type(ipa) == csite%dist_type(ipa_next) .and. &
+                 
+                 
+              enddo next_patch       ! do ipa_next
+           
 
-              endif
-                    
-           endif
+           endif          ! if (fuse_table(ipa).ne.0) then
            
-           
-           
-        enddo
-        
-        
+           npatches = sum(fuse_table)
+           if(npatches <= maxpatch)exit max_patch
+
+        enddo          ! do ipa = csite%npatches,2,-1
+
         npatches = sum(fuse_table)
-
-        if(npatches <= abs(maxpatch))exit max_patch
         if((npatches == npatches_old) .and. (tolerance_mult > tolerance_max)) exit max_patch
+        
         tolerance_mult = tolerance_mult * 1.01
-        npatches_old = npatches
      enddo max_patch
-     
      
      ! Set the number of patches in the site to "npatches"
      tempsite%npatches = npatches
@@ -878,9 +940,11 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      deallocate(fuse_table)
 
      call deallocate_sitetype(tempsite)
+
+  endif
      
 
-  enddo
+enddo
   
 enddo
 deallocate(tempsite)
@@ -888,8 +952,6 @@ deallocate(tempsite)
 
   return
 end subroutine fuse_patches_ar
-!-----------------------------------------------------------------------------
-
    !===============================================================
 
    subroutine fuse_2_patches_ar(csite,dp,rp,rhos,lsl,green_leaf_factor)

@@ -26,7 +26,7 @@ subroutine ed_timestep(timel,dtlong)
   ! later.
   do ifm=1,ngrids
      call newgrid(ifm)
-     call simple_lake_model(dtlong)
+     call simple_lake_model(timel,dtlong)
   end do
     
   if ( mod(timel+dble(dtlong),dble(dtlsm)) < dble(dtlong) .or. first ) then

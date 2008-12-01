@@ -339,6 +339,7 @@ subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
   use grid_coms, only: nzg, nzs
   use soil_coms, only: soil,slz
   use therm_lib, only: qwtk8,qtk
+  use ed_therm_lib,only:ed_grndvap
   
   implicit none
   integer :: ipa,ico
