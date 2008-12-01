@@ -452,9 +452,11 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
  
            cpatch%dbh(inew) = cpatch%dbh(inew) + epsilon
            cpatch%hite(inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
+           cpatch%bdead(inew) = cpatch%bdead(inew) + epsilon
 
            ! Update the vegetation energy again, due to tweaks
 
+           call update_veg_energy_ct(cpatch,ico)
            call update_veg_energy_ct(cpatch,inew)
 
 
