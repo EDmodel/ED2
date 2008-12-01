@@ -482,6 +482,10 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
            cpatch%hite(ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
            cpatch%bdead(ico) = dbh2bd(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico))
  
+           ! Yeonjoo, can you confirm please, that there should be no
+           ! tweaking of bdead for cohort index inew.
+           ! Please erase this message - RGK
+
            cpatch%dbh(inew) = cpatch%dbh(inew) + epsilon
            cpatch%hite(inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
 
