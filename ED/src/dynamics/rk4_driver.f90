@@ -305,7 +305,8 @@ contains
     use canopy_radiation_coms, only: lai_min, veg_temp_min
 
     use therm_lib, only: qwtk
-    use ed_therm_lib, only: calc_hcapveg
+    use ed_therm_lib, only: calc_hcapveg,ed_grndvap
+
     implicit none
 
     integer, intent(in) :: lsl

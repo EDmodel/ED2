@@ -326,7 +326,6 @@ contains
     use soil_coms, only: soil
     use canopy_radiation_coms, only: lai_min
     use consts_coms, only : t3ple
-    use canopy_air_coms, only: hcapveg_ref,heathite_min
     use therm_lib, only: qwtk
     use ed_therm_lib, only: calc_hcapveg
 

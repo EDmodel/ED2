@@ -108,6 +108,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
   use misc_coms, only: dtlsm
   use max_dims, only: n_pft
   use therm_lib, only: qtk,qwtk8
+  use ed_therm_lib,only:ed_grndvap
 
   implicit none
 

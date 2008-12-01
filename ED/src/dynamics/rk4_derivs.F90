@@ -91,7 +91,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
   use canopy_radiation_coms, only: lai_min
 
   use ed_state_vars,only:sitetype,patchtype,rk4patchtype
-  
+  use ed_therm_lib,only: ed_grndvap
   use therm_lib, only : qtk, qwtk, qwtk8
 
   implicit none

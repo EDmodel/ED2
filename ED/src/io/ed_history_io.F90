@@ -118,7 +118,7 @@ subroutine read_ed1_history_file_array
   real                  , dimension(maxfiles)           :: slon_list,slat_list
   real                  , dimension(maxfiles)           :: plon_list,plat_list
   real                  , dimension(maxfiles)           :: clon_list,clat_list
-  real                  , dimension(maxfiles)           :: file_dist
+  real                  , dimension(maxfiles)           :: file_pdist,file_cdist
   !----------------------------------------------------------------------------------------!
   
   real, external :: ed_biomass
@@ -163,126 +163,169 @@ subroutine read_ed1_history_file_array
            cgrid%ntext_soil(4,ipy) = 3
         end if
 
+        ! Intialize the distances as very large
+        file_pdist = 1e20
+        file_cdist = 1e20
+        
+
         ! =================================
         ! Part I: Find the restart files
         ! =================================
         do nf=1,nflpss
-           file_dist(nf)=dist_gc(cgrid%lon(ipy),plon_list(nf),cgrid%lat(ipy),plat_list(nf))
+           file_pdist(nf)=dist_gc(cgrid%lon(ipy),plon_list(nf),cgrid%lat(ipy),plat_list(nf))
         end do
-        ! nclosest is the file with the closest information. 
-        nclosest=minloc(file_dist(1:nflpss),dim=1)
-        pss_name = trim(pss_list(nclosest))
 
         do nf=1,nflcss
-           file_dist(nf)=dist_gc(cgrid%lon(ipy),clon_list(nf),cgrid%lat(ipy),clat_list(nf))
+           file_cdist(nf)=dist_gc(cgrid%lon(ipy),clon_list(nf),cgrid%lat(ipy),clat_list(nf))
         end do
-        ! nclosest is the file with the closest information. 
-        nclosest=minloc(file_dist(1:nflcss),dim=1)
-        css_name = trim(css_list(nclosest))
-        
-        
-        ! =================================
-        ! Part II: Add the patches
-        ! =================================
 
+        ! ===================================
+        ! Loop through the closest files
+        ! until one is determined suitable. 
+        ! Non suitable files are likely those 
+        ! that are water patches.
+        ! ===================================
 
-        ! Open file and read in patches
-        open(12,file=trim(pss_name),form='formatted',status='old')
-        read(12,*)  cdum ! skip header
-        
-        !----- If running mixed ED-1/ED-2, check whether the file is ED1 or ED2. ----------!
-        if (ied_init_mode == -1) then
-           if (cdum == 'time') then
-              ied_init_mode_local = 2
-           else
-              ied_init_mode_local = 1
+        find_nonwater: do nf=1,nflpss
+
+           ! nclosest is the file with the closest information. 
+           nclosest=minloc(file_pdist,dim=1)
+           pss_name = trim(pss_list(nclosest))
+           
+           print*,trim(pss_name)
+           
+           ! =================================
+           ! Part II: Add the patches
+           ! =================================
+           
+           
+           ! Open file and read in patches
+           open(12,file=trim(pss_name),form='formatted',status='old')
+           read(12,'(a4)')  cdum ! skip header
+           
+           !----- If running mixed ED-1/ED-2, check whether the file is ED1 or ED2. ----------!
+           if (ied_init_mode == -1) then
+              if (trim(cdum) == 'time') then
+                 ied_init_mode_local = 2
+              else
+                 ied_init_mode_local = 1
+              end if
            end if
-        end if
-        
-        nwater = 1
-        if(ied_init_mode_local == 1) then
-           read(12,*)cdum,nwater
-           read(12,*)cdum,depth(1:nwater)
-           read(12,*)
-        elseif(ied_init_mode_local == 2) then
-           read(12,*)!water patch
-        endif
-
-        ! Note that if we are doing an ED1 restart we can 
-        ! assume 1 site?
-        
-        ip = 1
-        sitenum = 0
-        count_patches: do
            
-           if (ip>huge_patch) call fatal_error('IP too high','read_ed1_history_file_array','ed_history_io.f90')
-
-           select case (ied_init_mode_local)
-           case (1) !! read ED1 format files
+           nwater = 1
+           if(ied_init_mode_local == 1) then
+              read(12,*)cdum,nwater
+              read(12,*)cdum,depth(1:nwater)
+              read(12,*)
+           elseif(ied_init_mode_local == 2) then
+              read(12,*)!water patch
+           endif
+           
+           ! Note that if we are doing an ED1 restart we can 
+           ! assume 1 site?
+           
+           ip = 1
+           sitenum = 0
+           count_patches: do
               
-              read(12,*,iostat=ierr)  time(ip),pname(ip),trk(ip),dage,darea,dfsc,dstsc,  &
-                                      dstsl,dssc,dpsc,dmsn,dfsn,dwater(1:nwater)
-              if(ierr /= 0)exit count_patches
-              area(ip)   = sngl(max(snglmin,darea  ))
-              age(ip)    = sngl(max(min_ok ,dage   ))
-              fsc(ip)    = sngl(max(min_ok ,dfsc   ))
-              stsc(ip)   = sngl(max(min_ok ,dstsc  ))
-              stsl(ip)   = sngl(max(min_ok ,dstsl  ))
-              ssc(ip)    = sngl(max(min_ok ,dssc   ))
-              psc(ip)    = sngl(max(min_ok ,dpsc   ))
-              msn(ip)    = sngl(max(min_ok ,dmsn   ))
-              fsn(ip)    = sngl(max(min_ok ,dfsn   ))
-              do nw=1,nwater
-                 water(nw,ip)  = sngl(max(min_ok ,dwater(nw) ))
-              end do
+              if (ip>huge_patch) call fatal_error('IP too high,increase array size huge_patch', &
+                   'read_ed1_history_file_array','ed_history_io.f90')
               
-           case(2)  !! read ED2 format files
-              read(12,*,iostat=ierr)time(ip),pname(ip),trk(ip),dage,darea,dwater(1),dfsc,dstsc  &
-                                   ,dstsl,dssc,dummy,dmsn,dfsn,dummy,dummy,dummy             
-              if(ierr /= 0)exit count_patches
-              area(ip)   = sngl(max(snglmin,darea  ))
-              age(ip)    = sngl(max(min_ok ,dage   ))
-              fsc(ip)    = sngl(max(min_ok ,dfsc   ))
-              stsc(ip)   = sngl(max(min_ok ,dstsc  ))
-              stsl(ip)   = sngl(max(min_ok ,dstsl  ))
-              ssc(ip)    = sngl(max(min_ok ,dssc   ))
-              msn(ip)    = sngl(max(min_ok ,dmsn   ))
-              fsn(ip)    = sngl(max(min_ok ,dfsn   ))
-              water(1,ip)  = sngl(max(min_ok ,dwater(1) ))
+              select case (ied_init_mode_local)
+              case (1) !! read ED1 format files
+                 
+                 read(12,*,iostat=ierr)  time(ip),pname(ip),trk(ip),dage,darea,dfsc,dstsc,  &
+                      dstsl,dssc,dpsc,dmsn,dfsn,dwater(1:nwater)
+                 if(ierr /= 0)exit count_patches
+             
+                 area(ip)   = sngl(max(snglmin,darea  ))
+                 age(ip)    = sngl(max(min_ok ,dage   ))
+                 fsc(ip)    = sngl(max(min_ok ,dfsc   ))
+                 stsc(ip)   = sngl(max(min_ok ,dstsc  ))
+                 stsl(ip)   = sngl(max(min_ok ,dstsl  ))
+                 ssc(ip)    = sngl(max(min_ok ,dssc   ))
+                 psc(ip)    = sngl(max(min_ok ,dpsc   ))
+                 msn(ip)    = sngl(max(min_ok ,dmsn   ))
+                 fsn(ip)    = sngl(max(min_ok ,dfsn   ))
+                 do nw=1,nwater
+                    water(nw,ip)  = sngl(max(min_ok ,dwater(nw) ))
+                 end do
+                 
+              case(2)  !! read ED2 format files
+                 read(12,*,iostat=ierr)time(ip),pname(ip),trk(ip),dage,darea,dwater(1),dfsc,dstsc  &
+                      ,dstsl,dssc,dummy,dmsn,dfsn,dummy,dummy,dummy 
+                 
+                 if(ierr /= 0)exit count_patches
               
-           case(3)
+                 area(ip)   = sngl(max(snglmin,darea  ))
+                 age(ip)    = sngl(max(min_ok ,dage   ))
+                 fsc(ip)    = sngl(max(min_ok ,dfsc   ))
+                 stsc(ip)   = sngl(max(min_ok ,dstsc  ))
+                 stsl(ip)   = sngl(max(min_ok ,dstsl  ))
+                 ssc(ip)    = sngl(max(min_ok ,dssc   ))
+                 msn(ip)    = sngl(max(min_ok ,dmsn   ))
+                 fsn(ip)    = sngl(max(min_ok ,dfsn   ))
+                 water(1,ip)  = sngl(max(min_ok ,dwater(1) ))
+                 
+              case(3)
+                 
+                 read(12,*,iostat=ierr) sitenum(ip),time(ip),pname(ip),trk(ip),age(ip), &
+                      darea,water(1,ip),fsc(ip),stsc(ip),stsl(ip),ssc(ip),psc(ip),msn(ip),fsn(ip)
+                 if(ierr /= 0)exit count_patches
               
-              read(12,*,iostat=ierr) sitenum(ip),time(ip),pname(ip),trk(ip),age(ip), &
-                   darea,water(1,ip),fsc(ip),stsc(ip),stsl(ip),ssc(ip),psc(ip),msn(ip),fsn(ip)
-              if(ierr /= 0)exit count_patches
-              area(ip)=sngl(max(snglmin,darea))
-              
-              if(sitenum(ip)<= 0) continue !! check for valid site number
-              
-              !! check for valid year
-              year = int(time(ip))
-              if(use_target_year.eq.1 .and. year .ne. restart_target_year) continue
-              
-              site_match = .false.
-              do isi = 1,cpoly%nsites
-                 if(sitenum(ip).eq.cpoly%sitenum(isi)) then
-                    site_match=.true.
+                 area(ip)=sngl(max(snglmin,darea))
+                 
+                 if(sitenum(ip)<= 0) continue !! check for valid site number
+                 
+                 !! check for valid year
+                 year = int(time(ip))
+                 if(use_target_year.eq.1 .and. year .ne. restart_target_year) continue
+                 
+                 site_match = .false.
+                 do isi = 1,cpoly%nsites
+                    if(sitenum(ip).eq.cpoly%sitenum(isi)) then
+                       site_match=.true.
+                    endif
+                 enddo
+                 if(.not.site_match) then
+                    print*,"error reading from patch file",pss_name
+                    print*,"site number", sitenum,"not found"
+                    stop
                  endif
-              enddo
-              if(.not.site_match) then
-                 print*,"error reading from patch file",pss_name
-                 print*,"site number", sitenum,"not found"
-                 stop
-              endif
-           case default !Nearly bare ground
-              exit count_patches
-           end select
+              case default !Nearly bare ground
+                 exit count_patches
+              end select
+              
+              if (area(ip) > min_area) ip = ip + 1 ! This will remove patches with tiny area that often cause trouble
+              
+           enddo count_patches
            
-           if (area(ip) > min_area) ip = ip + 1 ! This will remove patches with tiny area that often cause trouble
-        
-        enddo count_patches
+           npatches = max(ip-1,0)
+           
+           ! If there are no patches, that is really strange, or, it is possible that
+           ! the file it grabbed from was all water.. In that case, then we should use
+           ! The next closest file.
 
-        npatches = max(ip-1,0)
+           close(12)
+
+           if (npatches>0) then
+
+              ! We have found a suitable file, we will break from the 
+              ! loop, and find the name of the corresponding cohort file
+
+              nclosest=minloc( abs(file_pdist(nclosest)-file_cdist),dim=1)
+              css_name = trim(css_list(nclosest))
+              print*,trim(css_name)
+              exit find_nonwater
+           else
+              file_pdist(nclosest) = 1e20  !The closest file was no good, so we make it far away for now
+           endif
+           
+           
+
+        enddo find_nonwater
+
+
         ! Allocate memory
         
         if(ied_init_mode == 3) then
@@ -370,14 +413,32 @@ subroutine read_ed1_history_file_array
         ! Part III: Add the cohorts
         ! =================================
         
-        
         open(12,file=trim(css_name),form='formatted',status='old')
-        read(12,*)  ! skip header
-        if(ied_init_mode_local /= 3) then
-           read(12,*)  ! skip header
+        read(12,'(a4)')  cdum ! skip header
+
+        !----- If running mixed ED-1/ED-2, check whether the file is ED1 or ED2. ----------!
+        if (ied_init_mode == -1) then
+           if (trim(cdum) == 'time') then
+              ied_init_mode_local = 2
+           else
+              ied_init_mode_local = 1
+           end if
+        else
+           ied_init_mode_local = ied_init_mode
         end if
-        
+
+        if (ied_init_mode_local == 1) then
+           read(12,*) ! Skip second line.
+        end if
         ic = 0
+
+!        open(12,file=trim(css_name),form='formatted',status='old')
+!        read(12,*)  ! skip header
+!        if(ied_init_mode_local /= 3) then
+!           read(12,*)  ! skip header
+!        end if
+!        
+!        ic = 0
         
         read_cohorts: do
 
