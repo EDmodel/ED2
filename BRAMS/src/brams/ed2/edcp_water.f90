@@ -83,11 +83,18 @@ subroutine simple_lake_model(time,dtlongest)
   
   ! The target step size for the water body suface flux is about 30 seconds
 
-  hcapcan = 2.0e4
-  wcapcan = 2.0e1
+!  hcapcan = 2.0e4
+!  wcapcan = 2.0e1
 
-  dtllohcc = dtll / hcapcan
-  dtllowcc = dtll / wcapcan
+!  hcapcan = 2.0e4
+!  wcapcan = 2.0e1
+
+   
+
+
+
+!  dtllohcc = dtll / hcapcan
+!  dtllowcc = dtll / wcapcan
 
   
   z0fac_water = .016 / grav
@@ -239,13 +246,24 @@ subroutine simple_lake_model(time,dtlongest)
            
            ! Update the sea surface air temperature and water vapor mixing ratio
            ! -------------------------------------------------------------------
+
+           ! In calculating the water capacity and heat capacity of the
+           ! sea surface air space
+           ! We will assume a layer that is 10 meters thick
            
+           wcapcan = 10.0 * dn0_mean
+           hcapcan = cp * 10.0 * dn0_mean
+
+           dtllohcc = dtll/hcapcan
+           dtllowcc = dtll/wcapcan
+
+
            rdi = .2 * ustar
            
            last_th = canopy_tempk
 
            canopy_tempk  = canopy_tempk        &
-                + dtllohcc * dn0_mean * cp                          &
+                + dtllohcc * dn0_mean * cp                    &
                 * ( (seatc -  canopy_tempk) * rdi    &
                 + ustar * tstar * pis)
            
