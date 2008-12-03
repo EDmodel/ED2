@@ -92,7 +92,7 @@ subroutine read_site_file_array(cgrid)
 
       else
 
-print*,trim(site_name)
+!print*,trim(site_name)
 
          !! Read data from site file
          open(unit=12,file=trim(site_name),form='formatted',status='old')
@@ -101,7 +101,7 @@ print*,trim(site_name)
          read(unit=12,fmt=*)cdummy,nsites,cdummy2,fformat
          !/*line format: "nsites <nsites> format <fformat>" */   
          
-         print*,"reading",nsites,"sites using file format",fformat
+!         print*,"reading",nsites,"sites using file format",fformat
 
          call allocate_polygontype(cpoly,nsites)
      
@@ -175,7 +175,7 @@ print*,trim(site_name)
                
             end select
 
-            print*,"line indicators",get_site_line,get_mat_line,get_header
+!            print*,"line indicators",get_site_line,get_mat_line,get_header
     
             if(get_site_line == 1)then   !/********** READ SITE LINE ***************/
                
@@ -183,7 +183,7 @@ print*,trim(site_name)
                read(unit=12,fmt=*,iostat=ierr)sitenum,area,TCI,elevation,slope,aspect,soilclass(1:nsc)
                if(ierr == 0) then
                   !/*create data object for each new site */
-                  print*,sitenum, area, TCI, elevation,slope,aspect,soilclass(1:nsc)
+!                  print*,sitenum, area, TCI, elevation,slope,aspect,soilclass(1:nsc)
                   
                   cpoly%lsl(isi)  = cgrid%lsl(ipy)  ! Initialize lowest soil layer
                   cpoly%area(isi) = area            ! Initialize the area to all

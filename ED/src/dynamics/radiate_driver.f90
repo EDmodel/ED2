@@ -174,8 +174,6 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
   real :: upward_lw_below_incid
   real :: upward_lw_above_surf
   real :: upward_lw_above_incid
-  real :: total_rshort_v
-  real :: total_rlong_v
   real :: downward_rshort_below_beam
   real :: downward_rshort_below_diffuse
   real :: surface_absorbed_longwave_surf

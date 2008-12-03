@@ -4,7 +4,7 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,ifm,  &
 
   use ed_state_vars,only:integration_vars_ar,sitetype,patchtype
   use rk4_stepper_ar, only: rkqs_ar
-
+  use ed_misc_coms,only:fast_diagnostics
   use hydrology_coms, only: useRUNOFF
   use grid_coms, only: nzg
   use soil_coms, only: dslz,min_sfcwater_mass,runoff_time
@@ -136,15 +136,16 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,ifm,  &
                    0.0, lsl)
 
               ! Compute runoff for output 
-           
-              csite%runoff(ipa) = csite%runoff(ipa) + wfreeb/(x2-x1)
-           
-              csite%avg_runoff(ipa) = csite%avg_runoff(ipa) + wfreeb
-           
-              csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa) + qwfree
-           
-              csite%wbudget_loss2runoff(ipa) = wfreeb
-              csite%ebudget_loss2runoff(ipa) = qwfree
+
+              if(fast_diagnostics) then
+                 csite%runoff(ipa) = csite%runoff(ipa) + wfreeb/(x2-x1)
+                 csite%avg_runoff(ipa) = csite%avg_runoff(ipa) + wfreeb
+                 csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa) + qwfree
+                 csite%wbudget_loss2runoff(ipa) = wfreeb
+                 csite%ebudget_loss2runoff(ipa) = qwfree
+              endif
+              
+
            else
               csite%runoff(ipa) = 0.0
               csite%avg_runoff(ipa) = 0.0
@@ -187,8 +188,8 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
   use ed_state_vars,only: sitetype,rk4patchtype,patchtype
   use grid_coms, only: nzg, nzs
   use soil_coms, only: water_stab_thresh, min_sfcwater_mass
-  use ed_misc_coms,only: diag_veg_heating
-  
+  use ed_misc_coms,only:fast_diagnostics,diag_veg_heating
+
   implicit none
 
   integer, intent(in) :: lsl
@@ -202,21 +203,15 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
   targetp%can_temp = sourcesite%can_temp(ipa)
   targetp%can_shv = sourcesite%can_shv(ipa)
   targetp%can_co2 = sourcesite%can_co2(ipa)
-  targetp%wbudget_loss2atm = sourcesite%wbudget_loss2atm(ipa)
-  targetp%ebudget_loss2atm = sourcesite%ebudget_loss2atm(ipa)
-  targetp%co2budget_loss2atm = sourcesite%co2budget_loss2atm(ipa)
-  targetp%ebudget_latent = sourcesite%ebudget_latent(ipa)
+
+
+
+
   do k = lsl, nzg
      targetp%soil_water(k) = sourcesite%soil_water(k,ipa)
      targetp%soil_energy(k) = sourcesite%soil_energy(k,ipa)
      targetp%soil_tempk(k) = sourcesite%soil_tempk(k,ipa)
      targetp%soil_fracliq(k) = sourcesite%soil_fracliq(k,ipa)
-
-     ! Diagnostic
-     targetp%avg_sensible_gg(k) = sourcesite%avg_sensible_gg(k,ipa) !C
-     targetp%avg_smoist_gg(k)   = sourcesite%avg_smoist_gg(k,ipa)   !C
-     targetp%avg_smoist_gc(k)   = sourcesite%avg_smoist_gc(k,ipa)   !C
-     targetp%aux_s(k)           = sourcesite%aux_s(k,ipa)           !C
   enddo
 
   do k = 1, nzs
@@ -235,30 +230,16 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
   targetp%tstar = sourcesite%tstar(ipa)
   targetp%rstar = sourcesite%rstar(ipa)
 
-  targetp%avg_carbon_ac = sourcesite%avg_carbon_ac(ipa)
+
   targetp%upwp = sourcesite%upwp(ipa)
   targetp%wpwp = sourcesite%wpwp(ipa)
   targetp%tpwp = sourcesite%tpwp(ipa)
   targetp%rpwp = sourcesite%rpwp(ipa)
 
-  !   targetp%avg_gpp = sourcesite%avg_gpp(ipa)
+  
   targetp%nlev_sfcwater = sourcesite%nlev_sfcwater(ipa)
 
-  ! Diagnostics
-  targetp%avg_vapor_vc       = sourcesite%avg_vapor_vc(ipa)     !C
-  targetp%avg_dew_cg         = sourcesite%avg_dew_cg(ipa)       !C
-  targetp%avg_vapor_gc       = sourcesite%avg_vapor_gc(ipa)     !C
-  targetp%avg_wshed_vg       = sourcesite%avg_wshed_vg(ipa)     !C
-  targetp%avg_vapor_ac       = sourcesite%avg_vapor_ac(ipa)     !C
-  targetp%avg_transp         = sourcesite%avg_transp(ipa)       !C
-  targetp%avg_evap           = sourcesite%avg_evap(ipa)         !C
-  targetp%aux                = sourcesite%aux(ipa)              !C
-  targetp%avg_sensible_vc    = sourcesite%avg_sensible_vc(ipa)   !C
-  targetp%avg_sensible_2cas  = sourcesite%avg_sensible_2cas(ipa) !C
-  targetp%avg_qwshed_vg      = sourcesite%avg_qwshed_vg(ipa)     !C
-  targetp%avg_sensible_gc    = sourcesite%avg_sensible_gc(ipa)   !C
-  targetp%avg_sensible_ac    = sourcesite%avg_sensible_ac(ipa)   !C
-  targetp%avg_sensible_tot   = sourcesite%avg_sensible_tot(ipa)  !C
+
 
   if(targetp%nlev_sfcwater >= 1)then
      if(targetp%sfcwater_mass(1) < min_sfcwater_mass)then
@@ -277,20 +258,42 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
      targetp%veg_water(ico)     = cpatch%veg_water(ico)
      targetp%veg_energy(ico)    = cpatch%veg_energy(ico)
   enddo
+!  nullify(cpatch)
 
-  if (diag_veg_heating) then
-     do ico = 1,cpatch%ncohorts
-        targetp%co_srad_h(ico)     = cpatch%co_srad_h(ico)
-        targetp%co_lrad_h(ico)     = cpatch%co_lrad_h(ico) 
-        targetp%co_sens_h(ico)     = cpatch%co_sens_h(ico)
-        targetp%co_evap_h(ico)     = cpatch%co_evap_h(ico)
-        targetp%co_liqr_h(ico)     = cpatch%co_liqr_h(ico)
+    ! Diagnostics
+  if(fast_diagnostics) then
+
+     targetp%wbudget_loss2atm = sourcesite%wbudget_loss2atm(ipa)
+     targetp%ebudget_loss2atm = sourcesite%ebudget_loss2atm(ipa)
+     targetp%co2budget_loss2atm = sourcesite%co2budget_loss2atm(ipa)
+     targetp%ebudget_latent = sourcesite%ebudget_latent(ipa)
+     targetp%avg_carbon_ac = sourcesite%avg_carbon_ac(ipa)
+
+     ! WHY IS THIS COMMENTED OUT? RGK
+     !   targetp%avg_gpp = sourcesite%avg_gpp(ipa)
+
+     targetp%avg_vapor_vc       = sourcesite%avg_vapor_vc(ipa)     !C
+     targetp%avg_dew_cg         = sourcesite%avg_dew_cg(ipa)       !C
+     targetp%avg_vapor_gc       = sourcesite%avg_vapor_gc(ipa)     !C
+     targetp%avg_wshed_vg       = sourcesite%avg_wshed_vg(ipa)     !C
+     targetp%avg_vapor_ac       = sourcesite%avg_vapor_ac(ipa)     !C
+     targetp%avg_transp         = sourcesite%avg_transp(ipa)       !C
+     targetp%avg_evap           = sourcesite%avg_evap(ipa)         !C
+     targetp%aux                = sourcesite%aux(ipa)              !C
+     targetp%avg_sensible_vc    = sourcesite%avg_sensible_vc(ipa)   !C
+     targetp%avg_sensible_2cas  = sourcesite%avg_sensible_2cas(ipa) !C
+     targetp%avg_qwshed_vg      = sourcesite%avg_qwshed_vg(ipa)     !C
+     targetp%avg_sensible_gc    = sourcesite%avg_sensible_gc(ipa)   !C
+     targetp%avg_sensible_ac    = sourcesite%avg_sensible_ac(ipa)   !C
+     targetp%avg_sensible_tot   = sourcesite%avg_sensible_tot(ipa)  !C
+
+     do k = lsl, nzg
+        targetp%avg_sensible_gg(k) = sourcesite%avg_sensible_gg(k,ipa) !C
+        targetp%avg_smoist_gg(k)   = sourcesite%avg_smoist_gg(k,ipa)   !C
+        targetp%avg_smoist_gc(k)   = sourcesite%avg_smoist_gc(k,ipa)   !C
+        targetp%aux_s(k)           = sourcesite%aux_s(k,ipa)           !C
      enddo
   endif
-
-  !  Now that we are not re-allocating with every step,
-  !  It may be wise to nullify the last rk4cohorts next cohort
-  !  It may have a left-over pointer from the last patch
 
   return
 end subroutine copy_patch_init_ar
@@ -300,7 +303,7 @@ subroutine inc_rk4_patch_ar(rkp, inc, fac, cpatch, lsl)
 
   use ed_state_vars,only:sitetype,patchtype,rk4patchtype
   use grid_coms, only: nzg, nzs
-  use ed_misc_coms,only: diag_veg_heating
+  use ed_misc_coms,only:fast_diagnostics
   
   implicit none
 
@@ -314,24 +317,14 @@ subroutine inc_rk4_patch_ar(rkp, inc, fac, cpatch, lsl)
   integer :: k
 
   rkp%can_temp = rkp%can_temp + fac * inc%can_temp
-  rkp%can_shv = rkp%can_shv   &
-       + fac * inc%can_shv
-  rkp%can_co2 = rkp%can_co2 + fac * inc%can_co2
-  rkp%wbudget_loss2atm = rkp%wbudget_loss2atm + fac * inc%wbudget_loss2atm
-  rkp%ebudget_loss2atm = rkp%ebudget_loss2atm + fac * inc%ebudget_loss2atm
-  rkp%co2budget_loss2atm = rkp%co2budget_loss2atm +   &
-       fac * inc%co2budget_loss2atm
-  rkp%ebudget_latent = rkp%ebudget_latent + fac * inc%ebudget_latent
-  
+  rkp%can_shv = rkp%can_shv   + fac * inc%can_shv
+  rkp%can_co2 = rkp%can_co2   + fac * inc%can_co2
+
   do k=lsl,nzg
      rkp%soil_water(k)       = rkp%soil_water(k) + fac * inc%soil_water(k)
      rkp%soil_energy(k)      = rkp%soil_energy(k) + fac * inc%soil_energy(k)
-     ! Diagnostics
-     rkp%avg_sensible_gg(k)  = rkp%avg_sensible_gg(k)  + fac * inc%avg_sensible_gg(k)
-     rkp%avg_smoist_gg(k)    = rkp%avg_smoist_gg(k)    + fac * inc%avg_smoist_gg(k)  
-     rkp%avg_smoist_gc(k)    = rkp%avg_smoist_gc(k)    + fac * inc%avg_smoist_gc(k)  
-     rkp%aux_s(k) = rkp%aux_s(k) + fac * inc%aux_s(k)
   enddo
+
   do k=1,rkp%nlev_sfcwater
      rkp%sfcwater_mass(k) = rkp%sfcwater_mass(k)   &
           + fac * inc%sfcwater_mass(k)
@@ -339,34 +332,17 @@ subroutine inc_rk4_patch_ar(rkp, inc, fac, cpatch, lsl)
           inc%sfcwater_energy(k)
      rkp%sfcwater_depth(k) = rkp%sfcwater_depth(k) + fac * inc%sfcwater_depth(k)
   end do
-  rkp%virtual_heat = rkp%virtual_heat + fac * inc%virtual_heat
+
+  rkp%virtual_heat  = rkp%virtual_heat  + fac * inc%virtual_heat
   rkp%virtual_water = rkp%virtual_water + fac * inc%virtual_water
   rkp%virtual_depth = rkp%virtual_depth + fac * inc%virtual_depth
 
-  rkp%avg_carbon_ac = rkp%avg_carbon_ac + fac * inc%avg_carbon_ac
+  
   rkp%upwp = rkp%upwp + fac * inc%upwp
   rkp%wpwp = rkp%wpwp + fac * inc%wpwp
   rkp%tpwp = rkp%tpwp + fac * inc%tpwp
   rkp%rpwp = rkp%rpwp + fac * inc%rpwp
 
-  rkp%avg_gpp = rkp%avg_gpp + fac * inc%avg_gpp
-
-  ! Diagnostics
-
-  rkp%avg_vapor_vc       = rkp%avg_vapor_vc       + fac * inc%avg_vapor_vc
-  rkp%avg_dew_cg         = rkp%avg_dew_cg         + fac * inc%avg_dew_cg  
-  rkp%avg_vapor_gc       = rkp%avg_vapor_gc       + fac * inc%avg_vapor_gc
-  rkp%avg_wshed_vg       = rkp%avg_wshed_vg       + fac * inc%avg_wshed_vg
-  rkp%avg_vapor_ac       = rkp%avg_vapor_ac       + fac * inc%avg_vapor_ac
-  rkp%avg_transp         = rkp%avg_transp         + fac * inc%avg_transp  
-  rkp%avg_evap           = rkp%avg_evap           + fac * inc%avg_evap    
-  rkp%aux                = rkp%aux                + fac * inc%aux
-  rkp%avg_sensible_vc    = rkp%avg_sensible_vc    + fac * inc%avg_sensible_vc  
-  rkp%avg_sensible_2cas  = rkp%avg_sensible_2cas  + fac * inc%avg_sensible_2cas
-  rkp%avg_qwshed_vg      = rkp%avg_qwshed_vg      + fac * inc%avg_qwshed_vg    
-  rkp%avg_sensible_gc    = rkp%avg_sensible_gc    + fac * inc%avg_sensible_gc  
-  rkp%avg_sensible_ac    = rkp%avg_sensible_ac    + fac * inc%avg_sensible_ac  
-  rkp%avg_sensible_tot   = rkp%avg_sensible_tot   + fac * inc%avg_sensible_tot 
   
   do ico = 1,cpatch%ncohorts
      rkp%veg_water(ico)     = rkp%veg_water(ico) + fac * inc%veg_water(ico)
@@ -374,18 +350,40 @@ subroutine inc_rk4_patch_ar(rkp, inc, fac, cpatch, lsl)
      rkp%veg_energy(ico)    = rkp%veg_energy(ico) + fac * inc%veg_energy(ico)
   enddo
 
-  ! Increment the heating/cooling rates over analfrq
-  if (diag_veg_heating) then
-     do ico = 1,cpatch%ncohorts
-        rkp%co_srad_h(ico)  = rkp%co_srad_h(ico) + fac * inc%co_srad_h(ico)
-        rkp%co_lrad_h(ico)  = rkp%co_lrad_h(ico) + fac * inc%co_lrad_h(ico)
-        rkp%co_sens_h(ico)  = rkp%co_sens_h(ico) + fac * inc%co_sens_h(ico)
-        rkp%co_evap_h(ico)  = rkp%co_evap_h(ico) + fac * inc%co_evap_h(ico)
-        rkp%co_liqr_h(ico)  = rkp%co_liqr_h(ico) + fac * inc%co_liqr_h(ico)
+  if(fast_diagnostics) then
+
+     rkp%wbudget_loss2atm = rkp%wbudget_loss2atm + fac * inc%wbudget_loss2atm
+     rkp%ebudget_loss2atm = rkp%ebudget_loss2atm + fac * inc%ebudget_loss2atm
+     rkp%co2budget_loss2atm = rkp%co2budget_loss2atm +   &
+          fac * inc%co2budget_loss2atm
+     rkp%ebudget_latent = rkp%ebudget_latent + fac * inc%ebudget_latent
+
+     rkp%avg_carbon_ac = rkp%avg_carbon_ac + fac * inc%avg_carbon_ac
+     rkp%avg_gpp = rkp%avg_gpp + fac * inc%avg_gpp
+     
+     rkp%avg_vapor_vc       = rkp%avg_vapor_vc       + fac * inc%avg_vapor_vc
+     rkp%avg_dew_cg         = rkp%avg_dew_cg         + fac * inc%avg_dew_cg  
+     rkp%avg_vapor_gc       = rkp%avg_vapor_gc       + fac * inc%avg_vapor_gc
+     rkp%avg_wshed_vg       = rkp%avg_wshed_vg       + fac * inc%avg_wshed_vg
+     rkp%avg_vapor_ac       = rkp%avg_vapor_ac       + fac * inc%avg_vapor_ac
+     rkp%avg_transp         = rkp%avg_transp         + fac * inc%avg_transp  
+     rkp%avg_evap           = rkp%avg_evap           + fac * inc%avg_evap    
+     rkp%aux                = rkp%aux                + fac * inc%aux
+     rkp%avg_sensible_vc    = rkp%avg_sensible_vc    + fac * inc%avg_sensible_vc  
+     rkp%avg_sensible_2cas  = rkp%avg_sensible_2cas  + fac * inc%avg_sensible_2cas
+     rkp%avg_qwshed_vg      = rkp%avg_qwshed_vg      + fac * inc%avg_qwshed_vg    
+     rkp%avg_sensible_gc    = rkp%avg_sensible_gc    + fac * inc%avg_sensible_gc  
+     rkp%avg_sensible_ac    = rkp%avg_sensible_ac    + fac * inc%avg_sensible_ac  
+     rkp%avg_sensible_tot   = rkp%avg_sensible_tot   + fac * inc%avg_sensible_tot 
+
+     do k=lsl,nzg
+        rkp%avg_sensible_gg(k)  = rkp%avg_sensible_gg(k)  + fac * inc%avg_sensible_gg(k)
+        rkp%avg_smoist_gg(k)    = rkp%avg_smoist_gg(k)    + fac * inc%avg_smoist_gg(k)  
+        rkp%avg_smoist_gc(k)    = rkp%avg_smoist_gc(k)    + fac * inc%avg_smoist_gc(k)  
+        rkp%aux_s(k)            = rkp%aux_s(k)            + fac * inc%aux_s(k)
      enddo
-  end if
 
-
+  endif
 
   return
 end subroutine inc_rk4_patch_ar
@@ -417,7 +415,8 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
   
   yscal%upwp = max(abs(y%upwp) + abs(dy%upwp*htry),1.0)
   yscal%wpwp = max(abs(y%wpwp) + abs(dy%wpwp*htry),1.0)
-  yscal%avg_carbon_ac   = max(abs(y%avg_carbon_ac) + abs(dy%avg_carbon_ac*htry), 1.0)
+
+
   
   do k=lsl,nzg
      yscal%soil_water(k) = abs(y%soil_water(k))   &
@@ -461,31 +460,36 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
   yscal%virtual_water = 0.1
   yscal%virtual_heat = cliq * 110.0 * yscal%virtual_water
   
-!  write (unit=31,fmt='(87a)') ('-',k=1,87)
-!  write (unit=31,fmt='(2(a5,1x),5(a14,1x))') &
-!        '  ICO','  PFT','LAI','ENERGY','D_ENERGY','HTRY','SCALE'
+
   do ico = 1,cpatch%ncohorts
      if (cpatch%lai(ico) > lai_min) then
         yscal%veg_water(ico) = 0.22
+!        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
+!                                   + abs(dy%veg_energy(ico)*htry),0.22*alli)
         yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
-                                   + abs(dy%veg_energy(ico)*htry),0.22*alli)
+                                   + abs(dy%veg_energy(ico)*htry),0.22*alli*cpatch%lai(ico),1.0)
+
+        ! Mike: Why not just use a nominal energy for the scaling? Is there really a need for the scaling to be
+        ! associated with a certain temperature? How about global avergage surface temperature? Signed Anonymous
+        ! -----------------------------------------------------------------------------------------------
+
+!        yscal%veg_energy(ico) = y%veg_water(ico)*alli + y%veg_water(ico)*cliq*(287.-273.15) &
+!             + cpatch%hcapveg(ico)*(287.-273.15) + abs(dy%veg_energy(ico)*htry)
+
      else
         yscal%veg_water(ico) = 1.e30
         yscal%veg_energy(ico) = 1.e30
      end if
-!     write (unit=31,fmt='(2(i5,1x),5(es14.7,1x))') &
-!       ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_energy(ico),dy%veg_energy(ico),htry &
-!          ,yscal%veg_energy(ico)
+
   end do
-!  write (unit=31,fmt='(87a)') ('-',k=1,87)
-!  write (unit=31,fmt='(a)') ' '
+
 
   return
 end subroutine get_yscal_ar
 
 !=================================================================
 
-subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
+subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp,epsilon)
 
   use ed_state_vars,only:patchtype,rk4patchtype
 
@@ -501,52 +505,53 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
   integer :: ico
   real :: errmax,errh2o,errene,err,errh2oMAX,erreneMAX
   integer :: k
-  
+  real, intent(in) :: epsilon
+
   errmax = 0.0
 
   err = abs(yerr%can_temp/yscal%can_temp)
   errmax = max(errmax,err)
-  if(record_err .and. err .gt. 1) integ_err(1,1) = integ_err(1,1) + 1 
+  if(record_err .and. err .gt. epsilon) integ_err(1,1) = integ_err(1,1) + 1 
 
   err = abs(yerr%can_shv/yscal%can_shv)
   errmax = max(errmax,err)
-  if(record_err .and. err .gt. 1) integ_err(2,1) = integ_err(2,1) + 1 
+  if(record_err .and. err .gt. epsilon) integ_err(2,1) = integ_err(2,1) + 1 
 
   err = abs(yerr%can_co2/yscal%can_co2)
   errmax = max(errmax,err)
-  if(record_err .and. err .gt. 1) integ_err(3,1) = integ_err(3,1) + 1 
+  if(record_err .and. err .gt. epsilon) integ_err(3,1) = integ_err(3,1) + 1 
   
   do k=lsl,nzg
      err = abs(yerr%soil_water(k)/yscal%soil_water(k))
      errmax = max(errmax,err)
-     if(record_err .and. err .gt. 1) integ_err(3+k,1) = integ_err(3+k,1) + 1 
+     if(record_err .and. err .gt. epsilon) integ_err(3+k,1) = integ_err(3+k,1) + 1 
   end do
 
   do k=lsl,nzg
      err = abs(yerr%soil_energy(k)/yscal%soil_energy(k))
      errmax = max(errmax,err)
-     if(record_err .and. err .gt. 1) integ_err(15+k,1) = integ_err(15+k,1) + 1      
+     if(record_err .and. err .gt. epsilon) integ_err(15+k,1) = integ_err(15+k,1) + 1      
   enddo
 
   do k=1,ytemp%nlev_sfcwater
      err = abs(yerr%sfcwater_energy(k) / yscal%sfcwater_energy(k))
      errmax = max(errmax,err)
-     if(record_err .and. err .gt. 1) integ_err(27+k,1) = integ_err(27+k,1) + 1      
+     if(record_err .and. err .gt. epsilon) integ_err(27+k,1) = integ_err(27+k,1) + 1      
   enddo
 
   do k=1,ytemp%nlev_sfcwater
      err = abs(yerr%sfcwater_mass(k) / yscal%sfcwater_mass(k))
      errmax = max(errmax,err)
-     if(record_err .and. err .gt. 1) integ_err(32+k,1) = integ_err(32+k,1) + 1      
+     if(record_err .and. err .gt. epsilon) integ_err(32+k,1) = integ_err(32+k,1) + 1      
   enddo
 
   err = abs(yerr%virtual_heat/yscal%virtual_heat)
   errmax = max(errmax,err)
-  if(record_err .and. err .gt. 1) integ_err(38,1) = integ_err(38,1) + 1      
+  if(record_err .and. err .gt. epsilon) integ_err(38,1) = integ_err(38,1) + 1      
 
   err = abs(yerr%virtual_water/yscal%virtual_water)
   errmax = max(errmax,err)
-  if(record_err .and. err .gt. 1) integ_err(39,1) = integ_err(39,1) + 1      
+  if(record_err .and. err .gt. epsilon) integ_err(39,1) = integ_err(39,1) + 1      
 
 !  write (unit=40,fmt='(132a)') ('-',k=1,132)
 !  write (unit=40,fmt='(2(a5,1x),8(a14,1x))') &
@@ -569,8 +574,8 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
      endif
   end do
   if(record_err) then
-     if(errh2oMAX .gt. 1) integ_err(40,1) = integ_err(40,1) + 1      
-     if(erreneMAX .gt. 1) integ_err(41,1) = integ_err(41,1) + 1      
+     if(errh2oMAX .gt. epsilon) integ_err(40,1) = integ_err(40,1) + 1      
+     if(erreneMAX .gt. epsilon) integ_err(41,1) = integ_err(41,1) + 1      
   endif
 
 !  write (unit=40,fmt='(132a)') ('-',k=1,132)
@@ -718,7 +723,7 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch, lsl)
   use ed_state_vars,only:sitetype,patchtype,rk4patchtype
   use grid_coms, only: nzg, nzs
   use max_dims, only: n_pft
-  use ed_misc_coms,only: diag_veg_heating
+  use ed_misc_coms,only:fast_diagnostics
 
   implicit none
 
@@ -733,11 +738,6 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch, lsl)
   targetp%can_temp = sourcep%can_temp
   targetp%can_shv = sourcep%can_shv
   targetp%can_co2 = sourcep%can_co2
-  targetp%wbudget_loss2atm = sourcep%wbudget_loss2atm
-  targetp%co2budget_loss2atm = sourcep%co2budget_loss2atm
-  targetp%ebudget_loss2atm = sourcep%ebudget_loss2atm
-  targetp%ebudget_latent = sourcep%ebudget_latent
-
 
   do k=lsl,nzg
      
@@ -747,11 +747,7 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch, lsl)
      targetp%soil_fracliq(k) = sourcep%soil_fracliq(k)
      targetp%available_liquid_water(k) = sourcep%available_liquid_water(k)
      targetp%extracted_water(k) = sourcep%extracted_water(k)
-     ! Diagnostics
-     targetp%avg_sensible_gg(k) = sourcep%avg_sensible_gg(k)
-     targetp%avg_smoist_gg(k)   = sourcep%avg_smoist_gg(k)  
-     targetp%avg_smoist_gc(k)   = sourcep%avg_smoist_gc(k)  
-     targetp%aux_s(k) = sourcep%aux_s(k)
+
   enddo
 
   do k=1,nzs
@@ -768,28 +764,11 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch, lsl)
 
 
   targetp%rough = sourcep%rough
-  targetp%avg_carbon_ac = sourcep%avg_carbon_ac
+ 
   targetp%upwp = sourcep%upwp
   targetp%wpwp = sourcep%wpwp
   targetp%tpwp = sourcep%tpwp
   targetp%rpwp = sourcep%rpwp
-
-  !    targetp%avg_gpp = sourcep%avg_gpp
-  
-  ! Diagnostics
-  targetp%avg_vapor_vc       = sourcep%avg_vapor_vc
-  targetp%avg_dew_cg         = sourcep%avg_dew_cg  
-  targetp%avg_vapor_gc       = sourcep%avg_vapor_gc
-  targetp%avg_wshed_vg       = sourcep%avg_wshed_vg
-  targetp%avg_vapor_ac       = sourcep%avg_vapor_ac
-  targetp%avg_transp         = sourcep%avg_transp  
-  targetp%avg_evap           = sourcep%avg_evap    
-  targetp%avg_sensible_vc    = sourcep%avg_sensible_vc  
-  targetp%avg_sensible_2cas  = sourcep%avg_sensible_2cas
-  targetp%avg_qwshed_vg      = sourcep%avg_qwshed_vg    
-  targetp%avg_sensible_gc    = sourcep%avg_sensible_gc  
-  targetp%avg_sensible_ac    = sourcep%avg_sensible_ac  
-  targetp%avg_sensible_tot   = sourcep%avg_sensible_tot 
 
   targetp%ground_shv = sourcep%ground_shv
   targetp%surface_ssh = sourcep%surface_ssh
@@ -817,16 +796,41 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch, lsl)
   
   enddo
 
-  if (diag_veg_heating) then
-     do k=1,nco
-        targetp%co_srad_h(k)  = sourcep%co_srad_h(k)
-        targetp%co_lrad_h(k)  = sourcep%co_lrad_h(k)
-        targetp%co_sens_h(k)  = sourcep%co_sens_h(k)
-        targetp%co_evap_h(k)  = sourcep%co_evap_h(k)
-        targetp%co_liqr_h(k)  = sourcep%co_liqr_h(k)
-     enddo
-  end if
+  if (fast_diagnostics) then
      
+     targetp%wbudget_loss2atm = sourcep%wbudget_loss2atm
+     targetp%co2budget_loss2atm = sourcep%co2budget_loss2atm
+     targetp%ebudget_loss2atm = sourcep%ebudget_loss2atm
+     targetp%ebudget_latent = sourcep%ebudget_latent
+     targetp%avg_carbon_ac = sourcep%avg_carbon_ac
+     targetp%avg_vapor_vc       = sourcep%avg_vapor_vc
+     targetp%avg_dew_cg         = sourcep%avg_dew_cg  
+     targetp%avg_vapor_gc       = sourcep%avg_vapor_gc
+     targetp%avg_wshed_vg       = sourcep%avg_wshed_vg
+     targetp%avg_vapor_ac       = sourcep%avg_vapor_ac
+     targetp%avg_transp         = sourcep%avg_transp  
+     targetp%avg_evap           = sourcep%avg_evap    
+     targetp%avg_sensible_vc    = sourcep%avg_sensible_vc  
+     targetp%avg_sensible_2cas  = sourcep%avg_sensible_2cas
+     targetp%avg_qwshed_vg      = sourcep%avg_qwshed_vg    
+     targetp%avg_sensible_gc    = sourcep%avg_sensible_gc  
+     targetp%avg_sensible_ac    = sourcep%avg_sensible_ac  
+     targetp%avg_sensible_tot   = sourcep%avg_sensible_tot 
+     
+     !  WHY IS THIS COMMENTED OUT? IS IT NOT INTEGRATED? REMEMBER
+     !  TO DOUBLE CHECK AND THEN REMOVE THESE COMMENTS IF SO.
+     !    targetp%avg_gpp = sourcep%avg_gpp
+     
+     do k=lsl,nzg
+        ! Diagnostics
+        targetp%avg_sensible_gg(k) = sourcep%avg_sensible_gg(k)
+        targetp%avg_smoist_gg(k)   = sourcep%avg_smoist_gg(k)  
+        targetp%avg_smoist_gc(k)   = sourcep%avg_smoist_gc(k)  
+        targetp%aux_s(k) = sourcep%aux_s(k)
+     enddo
+  endif
+
+
 
   return
 end subroutine copy_rk4_patch_ar
@@ -868,6 +872,7 @@ subroutine print_patch_pss_ar(csite, ipa, lsl)
   print*,'fs_open,fsw,fsn,lai'
 
   cpatch => csite%patch(ipa)
+
   do ico = 1,cpatch%ncohorts
      if(cpatch%lai(ico).gt.lai_min)then
         print*,4,cpatch%pft(ico),cpatch%krdepth(ico),cpatch%dbh(ico)
@@ -1017,6 +1022,11 @@ subroutine print_patch_ar(y, csite,ipa, lsl)
   print*,7,csite%rstar(ipa),csite%ustar(ipa),csite%tstar(ipa)
   print*,'cstar  can_co2  can_temp  can_shv'
   print*,8,csite%cstar(ipa),csite%can_co2(ipa),csite%can_temp(ipa),csite%can_shv(ipa)
+
+  print*,' irstar iustar itstar icstar'
+  print*,81,y%rstar,y%ustar,y%tstar,y%cstar
+
+
   print*,'soil class'
   print*,9,csite%ntext_soil(:,ipa)
   print*,'soil heat'
@@ -1145,6 +1155,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   endif
   ! Loop over layers
   do k = ksnnew,1,-1
+
      ! Update current state
      qw = initp%sfcwater_energy(k) * initp%sfcwater_mass(k) + qwfree
      w = initp%sfcwater_mass(k) + wfree
@@ -1205,11 +1216,11 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
        if(.true.) then
           !! do "greedy" infiltration
           nsoil = csite%ntext_soil(nzg,ipa)
-          free_surface_water_demand = max(0.0,  &
-               (soil(nsoil)%slmsts   &
-               - initp%soil_water(nzg)))   &
-               * 1000.0 * dslz(nzg)
+
+          free_surface_water_demand = dmax1(dble(0.0),dble(soil(nsoil)%slmsts) - initp%soil_water(nzg)) * 1000.0 * dslz(nzg)
+
           wfreeb = min(wfreeb,free_surface_water_demand)
+
           qwfree = wfreeb * cliq * (initp%sfcwater_tempk(k)-tsupercool)
           initp%soil_water(nzg) = initp%soil_water(nzg)   &
                + wfreeb * 0.001 * dslzi(nzg) 
@@ -1243,7 +1254,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
           qwfree = 0.0
        endif
 
-    else
+     else
         qwfree = wfreeb * cliq * (initp%sfcwater_tempk(k)-tsupercool)
      endif
      depthloss = wfreeb * 1.0e-3
@@ -1286,6 +1297,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
      write (unit=*,fmt='(a)')            '----------------------------------------------------------------'
      call fatal_error('NaN in soil energy','redistribute_snow_ar','rk4_integ_utils.f90')
   end if
+
   ! Re-distribute snow layers to maintain prescribed distribution of mass
   if(totsnow < min_sfcwater_mass .or. ksnnew == 0)then
      initp%nlev_sfcwater = 0
@@ -1493,7 +1505,7 @@ subroutine allocate_rk4_patch(y)
   allocate(y%sfcwater_fracliq(nzs))
   allocate(y%sfcwater_tempk(nzs))
 
-  ! Diagnostics
+  ! Diagnostics - for now we will always allocate the diagnostics, even if they arent used
   allocate(y%avg_smoist_gg(nzg))
   allocate(y%avg_smoist_gc(nzg))
   allocate(y%aux_s(nzg))
@@ -1535,7 +1547,7 @@ subroutine nullify_rk4_patch(y)
   nullify(y%sfcwater_fracliq)
   nullify(y%sfcwater_tempk)
   
-  ! Diagnostics
+  ! Diagnostics- for now we will always allocate the diagnostics, even if they arent used
   nullify(y%avg_smoist_gg)
   nullify(y%avg_smoist_gc)
   nullify(y%aux_s)

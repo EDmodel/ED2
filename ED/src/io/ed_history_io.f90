@@ -10,6 +10,7 @@ subroutine read_ed1_history_file_array
   use ed_state_vars,only:polygontype,sitetype,patchtype,edtype, &
        edgrid_g,allocate_sitetype,allocate_patchtype
   use grid_coms,only:ngrids
+  use therm_lib,only:calc_hcapveg
 
   implicit none
 
@@ -188,7 +189,7 @@ subroutine read_ed1_history_file_array
         ! Open file and read in patches
         open(12,file=trim(pss_name),form='formatted',status='old')
         read(12,*)  cdum ! skip header
-
+        
         !----- If running mixed ED-1/ED-2, check whether the file is ED1 or ED2. ----------!
         if (ied_init_mode == -1) then
            if (cdum == 'time') then
@@ -213,6 +214,7 @@ subroutine read_ed1_history_file_array
         ip = 1
         sitenum = 0
         count_patches: do
+           
            if (ip>huge_patch) call fatal_error('IP too high','read_ed1_history_file_array','ed_history_io.f90')
 
            select case (ied_init_mode_local)
@@ -642,6 +644,10 @@ subroutine read_ed1_history_file_array
               
               cpatch => csite%patch(ipa)
               do ico = 1,cpatch%ncohorts
+                 
+                 cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                      cpatch%nplant(ico),cpatch%pft(ico))
+                 
                  call init_ed_cohort_vars_array(cpatch,ico,cpoly%lsl(isi))
               enddo
               
@@ -1860,7 +1866,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
   use consts_coms, only: cliq,cice,alli,t3ple
 !  use canopy_air_coms, only: hcapveg_ref,heathite_min
   use canopy_radiation_coms, only:lai_min
-  use therm_lib,only : calc_hcapveg
+  use therm_lib,only : update_veg_energy_ct
 
   implicit none
   
@@ -1893,22 +1899,24 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
   memsize(1)  = cpatch%ncohorts
   memoffs(1)  = 0
 
-  call hdf_getslab_i(cpatch%pft(1),'PFT ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%nplant(1),'NPLANT ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%hite(1),'HITE ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%dbh(1),'DBH ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%bdead(1),'BDEAD ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%bleaf(1),'BLEAF ',dsetrank,iparallel)
-  call hdf_getslab_i(cpatch%phenology_status(1),'PHENOLOGY_STATUS ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%balive(1),'BALIVE ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%lai(1),'LAI_CO ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%bstorage(1),'BSTORAGE ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%cbr_bar(1),'CBR_BAR ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%veg_temp(1),'VEG_TEMP ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%veg_water(1),'VEG_WATER ',dsetrank,iparallel)
-  call hdf_getslab_r(cpatch%veg_energy(1),'VEG_ENERGY ',dsetrank,iparallel)
+  if(cpatch%ncohorts>0) then
 
-
+     call hdf_getslab_i(cpatch%pft(1),'PFT ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%nplant(1),'NPLANT ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%hite(1),'HITE ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%dbh(1),'DBH ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%bdead(1),'BDEAD ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%bleaf(1),'BLEAF ',dsetrank,iparallel)
+     call hdf_getslab_i(cpatch%phenology_status(1),'PHENOLOGY_STATUS ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%balive(1),'BALIVE ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%lai(1),'LAI_CO ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%bstorage(1),'BSTORAGE ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%cbr_bar(1),'CBR_BAR ',dsetrank,iparallel)
+     
+     call hdf_getslab_r(cpatch%veg_temp(1),'VEG_TEMP ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%veg_water(1),'VEG_WATER ',dsetrank,iparallel)
+     call hdf_getslab_r(cpatch%veg_energy(1),'VEG_ENERGY ',dsetrank,iparallel,.false.)
+     
      ! ------------------------------------------------------------------------------------
      ! ======= Older versions of the code did not have vegetation energy
      ! ======= If the VEG_ENERGY variable was not there, and was initialized to 0._4
@@ -1927,33 +1935,16 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
         plai = sum(cpatch%lai(1:cpatch%ncohorts),1)
 
         do ico=1,cpatch%ncohorts
-
-           if(cpatch%lai(ico)>lai_min) then
-              
-              hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-                   cpatch%nplant(ico),cpatch%pft(ico))
-
-              if(cpatch%veg_temp(ico)>=t3ple) then
-                 
-                 cpatch%veg_energy(ico) = &
-                      cpatch%veg_water(ico)*alli + &         ! latent heat of fusion
-                      cpatch%veg_water(ico)*cliq*(cpatch%veg_temp(ico)-t3ple) + &   ! thermal energy of liquid
-                      hcapveg *(cpatch%veg_temp(ico)-t3ple)  ! thermal energy of plant tissue
-              else
-                 
-                 cpatch%veg_energy(ico) = &
-                      cpatch%veg_water(ico)*cice*(cpatch%veg_temp(ico)-t3ple) + &   ! thermal energy of ice
-                      hcapveg *(cpatch%veg_temp(ico)-t3ple)  ! thermal energy of plant tissue
-              endif
-              
-           else
-              cpatch%veg_energy(ico) = 0.0
-           endif
-              
+           
+           ! Calculate the vegetation energy based on the leaf temperature
+           ! biomass and the stuff that is written in the banner above.
+           
+           call update_veg_energy_ct(cpatch,ico)
+           
         enddo
         
      endif
-     
+  
      ! ------------------------------------------------------------------------------------------
      
 
@@ -2022,7 +2013,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
   call hdf_getslab_r(cpatch%cb_max(1,1),'CB_MAX ',dsetrank,iparallel)
 
 !  call hdf_getslab_i(cpatch%old_stoma_data(1),' ',dsetrank,iparallel)
-
+  endif
   return
 end subroutine fill_history_patch
 !==========================================================================================!

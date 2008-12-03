@@ -315,6 +315,7 @@ subroutine alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci, carbon_balance,
   use ed_state_vars,only:patchtype
   use pft_coms, only: c2n_storage, c2n_leaf, sla, c2n_stem
   use decomp_coms, only: f_labile
+  use therm_lib,only : update_veg_energy_cweh
 
   implicit none
   
@@ -340,9 +341,6 @@ subroutine alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci, carbon_balance,
           carbon_balance / c2n_storage
      cpatch%bleaf(ico) = cpatch%balive(ico) * salloci * green_leaf_factor
 
-!     DIAGNOSTICS, WILL BE GONE SOON RGK     
-!     print*,ico,cpatch%phenology_status(ico),carbon_balance,"FULL"
-
   else
 
      ! are there leaves?
@@ -367,8 +365,7 @@ subroutine alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci, carbon_balance,
                 increment * (f_labile(cpatch%pft(ico)) / c2n_leaf(cpatch%pft(ico)) +  &
                 (1.0 - f_labile(cpatch%pft(ico))) / c2n_stem)
            cpatch%bleaf(ico) = bl_max
-           !     DIAGNOSTICS, WILL BE GONE SOON RGK    
-!           print*,ico,carbon_balance,bl_pot,bl_max,salloci,"HIGH"
+
            cpatch%phenology_status(ico) = 0
 
         else
@@ -380,8 +377,6 @@ subroutine alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci, carbon_balance,
            cpatch%bleaf(ico) = cpatch%balive(ico) * salloci *   &
                 green_leaf_factor
 
-           !     DIAGNOSTICS, WILL BE GONE SOON RGK    
- !          print*,cpatch%pft(ico)  ,carbon_balance,cpatch%bleaf(ico),bl_pot,bl_max,salloci,"NORM"
 
            if(carbon_balance < 0.0)then
               fsn_in = fsn_in - carbon_balance *  &
@@ -404,11 +399,17 @@ subroutine alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci, carbon_balance,
         fsn_in = fsn_in - carbon_balance *  &
              (f_labile(cpatch%pft(ico)) / c2n_leaf(cpatch%pft(ico)) + (1.0 -   &
              f_labile(cpatch%pft(ico))) / c2n_stem) * cpatch%nplant(ico)
-
+        
      endif
   endif
-
+  
   cpatch%lai(ico) = cpatch%bleaf(ico) * cpatch%nplant(ico) * sla(cpatch%pft(ico))
+  
+  ! It is likely that the leaf biomass has changed, therefore, update vegetation
+  ! energy and heat capacity.
+  
+  call update_veg_energy_cweh(cpatch,ico)
+  
 
   return
 end subroutine alloc_plant_c_balance_ar

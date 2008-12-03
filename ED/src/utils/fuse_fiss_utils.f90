@@ -211,7 +211,7 @@ end subroutine terminate_cohorts_ar
      logical , allocatable, dimension(:) :: fuse_table
      real    , external :: dbh2h
      real    , external :: dbh2bl
-     real, parameter :: tolerance_max = 2.0
+     real, parameter :: tolerance_max = 2.5
      integer :: ncohorts_old
 
      if(csite%cohort_count(ipa) == 0)return ! return if there aren't any cohorts
@@ -320,6 +320,7 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      use pft_coms             , only: q, qsw, sla
      use fusion_fission_coms  , only: lai_tol
      use max_dims             , only: n_pft
+     use therm_lib            , only: update_veg_energy_ct
 
      implicit none
      
@@ -411,6 +412,11 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
            cpatch%gpp(ico)               = cpatch%gpp(ico)              * 0.5
            cpatch%leaf_respiration(ico)  = cpatch%leaf_respiration(ico) * 0.5
            cpatch%root_respiration(ico)  = cpatch%root_respiration(ico) * 0.5
+
+           ! Update the heat capacity and the vegetation energy
+           call update_veg_energy_ct(cpatch,ico)
+
+
            ! Apply those values to the new cohort
 
            inew = inew+1
@@ -426,6 +432,10 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
            cpatch%bdead(inew) = cpatch%bdead(inew) + epsilon
            cpatch%dbh(inew) = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
            cpatch%hite(inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
+
+           ! Update the vegetation energy again, due to tweaks
+
+           call update_veg_energy_ct(cpatch,inew)
 
 
         endif
@@ -459,6 +469,7 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      cpatch%lai(idt)    = cpatch%lai(isc)
      cpatch%bstorage(idt) = cpatch%bstorage(isc)
      cpatch%veg_energy(idt) = cpatch%veg_energy(isc)
+     cpatch%hcapveg(idt) = cpatch%hcapveg(isc)
      cpatch%veg_temp(idt) = cpatch%veg_temp(isc)
      cpatch%veg_water(idt) = cpatch%veg_water(isc)
      cpatch%mean_gpp(idt) = cpatch%mean_gpp(isc)
@@ -514,7 +525,7 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      use ed_state_vars,only:patchtype
      use pft_coms, only: q, qsw, sla
      use consts_coms,only:t3ple,alli,cliq,cice
-     use therm_lib,only:calc_hcapveg
+     use therm_lib,only:calc_hcapveg,update_veg_energy_ct
 
      implicit none
      type(patchtype),target :: cpatch
@@ -565,28 +576,9 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      ! Do our best to conserve energy.  May be problematic
      ! if cohorts have different phenology_status codes.
      if(cpatch%phenology_status(ico2) < 2 .and. cpatch%phenology_status(ico1) < 2)then
-
-        cpatch%veg_temp(ico2) = (cpatch%veg_temp(ico2) * cpatch%nplant(ico2) +  &
-             cpatch%veg_temp(ico1) * cpatch%nplant(ico1)) /   &
-             (cpatch%nplant(ico2) + cpatch%nplant(ico1))
-
-!        cpatch%veg_temp = (cpatch%veg_temp * cpatch%nplant * cpatch%hcapveg +  &
-!             cpatch%veg_temp(ico1) * cpatch%nplant(ico1) * cpatch%hcapveg(ico1)) /   &
-!             (cpatch%hcapveg(ico2) * cpatch%nplant(ico2) + cpatch%hcapveg(ico1) * cpatch%nplant(ico1))
-
+        
         cpatch%veg_water(ico2) = (cpatch%veg_water(ico2) * cpatch%nplant(ico2) +   &
              cpatch%veg_water(ico1) * cpatch%nplant(ico1)) * newni
-
-        !---- Will this conserve energy? Is the total LAI conserved? I hope so...
-        ! I think this is fine because temperature is no longer prognostic, so temperature will be 
-        ! adjusted at the next fast step...
-        cpatch%veg_energy(ico2) = (cpatch%veg_energy(ico2) * cpatch%nplant(ico2) +   &
-             cpatch%veg_energy(ico1) * cpatch%nplant(ico1)) * newni
-        
-
-        ! Remember, phenology_status is determined solely by cc.
-        ! So if cc didn't have leaves before, it doesn't have
-        ! any now.
 
      elseif(cpatch%phenology_status(ico2) < 2)then
 
@@ -655,21 +647,7 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      ! new temperature
      !=======================================================================================
 
-     hcapveg = calc_hcapveg(cpatch%bleaf(ico2),cpatch%bdead(ico2), &
-          cpatch%nplant(ico2),cpatch%pft(ico2))
-     
-     if(cpatch%veg_temp(ico2)>=t3ple) then
-        
-        cpatch%veg_energy(ico2) = &
-             cpatch%veg_water(ico2)*alli + &         ! latent heat of fusion
-             cpatch%veg_water(ico2)*cliq*(cpatch%veg_temp(ico2)-t3ple) + &   ! thermal energy of liquid
-             hcapveg *(cpatch%veg_temp(ico2)-t3ple)  ! thermal energy of plant tissue
-     else
-        
-        cpatch%veg_energy(ico2) = &
-             cpatch%veg_water(ico2)*cice*(cpatch%veg_temp(ico2)-t3ple) + &   ! thermal energy of ice
-             hcapveg *(cpatch%veg_temp(ico2)-t3ple)  ! thermal energy of plant tissue
-     endif
+     call update_veg_energy_ct(cpatch,ico2)
      
 
 
@@ -866,7 +844,7 @@ end subroutine fuse_patches_ar
    subroutine fuse_2_patches_ar(csite,dp,rp,rhos,lsl,green_leaf_factor)
 
      use ed_state_vars,only:sitetype,patchtype
-     
+     use therm_lib, only: update_veg_energy_ct
      use soil_coms, only: soil
      use grid_coms, only: nzg, nzs
      use fusion_fission_coms, only: ff_ndbh
@@ -1088,7 +1066,7 @@ end subroutine fuse_patches_ar
         ! is diagnosed with a sudden drop in biomass or water, we will have sky-rocketing values
         ! so we have to adjust the energy accordingly also.
 
-        cpatch%veg_energy(ico) = cpatch%veg_energy(ico) * csite%area(rp) * newareai
+        call update_veg_energy_ct(cpatch,ico)
 
 
      enddo
@@ -1112,6 +1090,17 @@ end subroutine fuse_patches_ar
         cpatch%gpp(ico)      = cpatch%gpp(ico)                      * csite%area(dp) * newareai
         cpatch%leaf_respiration(ico) = cpatch%leaf_respiration(ico) * csite%area(dp) * newareai
         cpatch%root_respiration(ico) = cpatch%root_respiration(ico) * csite%area(dp) * newareai
+
+        
+        ! Now that the plant density and the amount of water has changed, there will
+        ! be an inconsistency in the energy. If the energy stays the same, but temperature
+        ! is diagnosed with a sudden drop in biomass or water, we will have sky-rocketing values
+        ! so we have to adjust the energy accordingly also.  This linear scaling should
+        ! be suitable, because vegetation energy is a linear combination of biomass and water
+        ! mutliplied by temperature.
+
+        call update_veg_energy_ct(cpatch,ico)
+
      enddo
      
      ! Fill a new patch with the donor and recipient cohort vectors

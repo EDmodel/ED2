@@ -10,7 +10,7 @@ subroutine ed_model()
                       , out_time_fast, dtlsm, ifoutput, isoutput, idoutput    &
                       , imoutput, iyoutput,frqsum,unitfast,unitstate, imontha &
                       , iyeara, outstate,outfast, nrec_fast, nrec_state &
-                      , integ_err,record_err
+                      , integ_err,record_err,err_label,ffilout
   use ed_misc_coms, only: outputMonth
 
   use grid_coms, only : &
@@ -48,6 +48,7 @@ subroutine ed_model()
   character(len=10) :: c0, c1, c2
   character(len=*), parameter :: h="**(model)**"
   character(len=512) :: header_ext
+  character(len=512) :: integ_fname
   real           :: timefac_sst
   real           :: dtwater
   real, external :: update_sst_factor
@@ -71,8 +72,13 @@ subroutine ed_model()
   
   wtime_start=walltime(0.)
   istp = 0
-  if(record_err) integ_err = 0
-  
+  if(record_err) then
+     integ_err = 0
+     integ_fname = trim(ffilout)//"integrator.log"
+     open(217,file=trim(integ_fname),form="formatted",status="replace")     
+     write(217,'(a)') "num  name  ERMAX  IFLAG"
+     close(217)
+  endif
   writing_dail      = idoutput > 0
   writing_mont      = imoutput > 0
   writing_year      = iyoutput > 0
@@ -224,9 +230,15 @@ subroutine ed_model()
      ! Check if this is the beginning of a new simulated day.
      if(new_day)then
         if(record_err) then
+           open(unit=217,file=trim(integ_fname),form="formatted",access="append",status="old")
            do i = 1,46
-              print*,i,integ_err(i,1:2)
+              if(sum(integ_err(i,1:2)) .gt. 0)then                 
+                 write(217,'(i3,2a,2i5)') i," ",trim(err_label(i)),integ_err(i,1:2)
+                 print*,i,trim(err_label(i)),integ_err(i,1:2)
+                 
+              endif
            enddo
+           close(217)
            integ_err = 0.0
         endif
 

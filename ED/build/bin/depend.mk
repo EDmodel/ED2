@@ -63,7 +63,7 @@ decomp_coms.o : $(ED_MEMORY)/decomp_coms.f90 max_dims.o
 
 disturbance.o : $(ED_DYNAMICS)/disturbance.f90 ed_state_vars.o fuse_fiss_utils.o           \
 	misc_coms.o disturb_coms.o max_dims.o pft_coms.o consts_coms.o grid_coms.o         \
-	decomp_coms.o canopy_air_coms.o
+	decomp_coms.o canopy_air_coms.o therm_lib.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -85,7 +85,7 @@ ed_1st.o : $(ED_DRIVER)/ed_1st.f90 ed_para_coms.o misc_coms.o ed_state_vars.o me
 	rm -f $(<F:.f90=.f90)
 
 ed_bare_restart.o : $(ED_INIT)/ed_bare_restart.f90 ed_state_vars.o max_dims.o pft_coms.o   \
-	consts_coms.o canopy_air_coms.o
+	consts_coms.o canopy_air_coms.o therm_lib.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -274,7 +274,7 @@ fusion_fission_coms.o : $(ED_MEMORY)/fusion_fission_coms.f90
 
 fuse_fiss_utils.o : $(ED_UTILS)/fuse_fiss_utils.f90 ed_state_vars.o pft_coms.o             \
 	decomp_coms.o fusion_fission_coms.o disturb_coms.o max_dims.o mem_sites.o          \
-	soil_coms.o grid_coms.o consts_coms.o
+	soil_coms.o grid_coms.o consts_coms.o therm_lib.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -404,7 +404,7 @@ phenology_coms.o : $(ED_MEMORY)/phenology_coms.f90
 
 phenology_driv.o : $(ED_DYNAMICS)/phenology_driv.f90 \
 	soil_coms.o pft_coms.o decomp_coms.o phenology_coms.o \
-	ed_state_vars.o grid_coms.o canopy_air_coms.o
+	ed_state_vars.o grid_coms.o canopy_air_coms.o therm_lib.o
 	cp -f $< $(<F:.f90=.f90) 
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -439,7 +439,7 @@ radiate_driver.o : $(ED_DYNAMICS)/radiate_driver.f90 misc_coms.o ed_state_vars.o
 
 reproduction.o : $(ED_DYNAMICS)/reproduction.f90 ed_state_vars.o misc_coms.o pft_coms.o    \
 	decomp_coms.o fusion_fission_coms.o max_dims.o fuse_fiss_utils.o \
-	phenology_coms.o consts_coms.o canopy_air_coms.o
+	phenology_coms.o consts_coms.o canopy_air_coms.o therm_lib.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

@@ -90,6 +90,7 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
            !                   (0.01 * sqrt(max(0.1,min(pss%ustar,4.)) * const1))
            !           else
            cpatch%rb(ico) = min(25.0 * csite%lai(ipa), 1.0/(  &
+!           cpatch%rb(ico) = min(25.0, 1.0/(  &
                 0.003*sqrt(vels/leaf_width(cpatch%pft(ico)))  &
                 + 1.03e-5   &
                 * ( 1.6e8 * abs(cpatch%veg_temp(ico)-csite%can_temp(ipa))  &

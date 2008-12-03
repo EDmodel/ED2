@@ -61,7 +61,6 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
                            ,allocate_sitetype,allocate_patchtype
    use max_dims, only: n_pft
    use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, include_these_pft,include_pft_ag
-   use canopy_air_coms, only: hcapveg_ref, heathite_min
    use therm_lib, only: calc_hcapveg
    ! This subroutine assigns a near-bare ground state for the given patch
    use consts_coms, only : t3ple
@@ -124,6 +123,7 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
                ed_biomass(cpatch%bdead(ico),cpatch%balive(ico), cpatch%bleaf(ico)        &
                          ,cpatch%pft(ico), cpatch%hite(ico),cpatch%bstorage(ico))        &
               * cpatch%nplant(ico)           
+         
          ! Initialize cohort-level variables
          call init_ed_cohort_vars_array(cpatch,ico,lsl)
          
@@ -131,17 +131,18 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
       end do
 
 
-         ! If this is not the initial time, set heat capacity for stability.
+      ! If this is not the initial time, set heat capacity for stability.
       do ico = 1,mypfts
          if (.not. zero_time) then
-            cpatch%hcapveg(ico) = 4.5e4
+            
             cpatch%veg_temp(ico)  = atm_tmp
             cpatch%veg_water(ico) = 0.0
             
-            hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+            cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
                  cpatch%nplant(ico),cpatch%pft(ico))
             
-            cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
+            cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * (cpatch%veg_temp(ico)-t3ple)
+
          end if
       end do
    end do

@@ -9,6 +9,7 @@ subroutine ed_init_atm_ar
   use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
   use pft_coms,only : sla
+  use therm_lib,only : update_veg_energy_ct
   
   
   implicit none
@@ -88,11 +89,15 @@ subroutine ed_init_atm_ar
               ! change it here. It will be changed below.
               
               do ico = 1,cpatch%ncohorts
+
                  ! Initialize vegetation properties.
                  ! For now, set heat capacity for stability.
-                 cpatch%hcapveg(ico) = 4.5e4
+
                  cpatch%veg_temp(ico)  = cpoly%met(isi)%atm_tmp
                  cpatch%veg_water(ico) = 0.0
+
+                 call update_veg_energy_ct(cpatch,ico)
+
               enddo
            
            enddo
@@ -256,16 +261,10 @@ subroutine ed_init_atm_ar
 
   return
 end subroutine ed_init_atm_ar
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
 
 !==========================================================================================!
 !==========================================================================================!
+
 subroutine update_derived_props(cgrid)
   ! Update some of the derived quantities (this may be redundant)
   use ed_state_vars, only: edtype,polygontype,sitetype
@@ -477,6 +476,7 @@ subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
 
   ! surface_ssh is the saturation mixing ratio of the top soil or snow surface
   ! and is used for dew formation and snow evaporation.
+
   if (nlev_sfcwater > 0) then
      call qtk(sfcwater_energy,tempk,fracliq)
      surface_ssh = rhovsil(tempk) / rhos
@@ -495,6 +495,7 @@ subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
      ground_shv = surface_ssh * alpha * beta + (1. - beta) * can_shv
      
   endif
+
   return
 end subroutine ed_grndvap
 !==========================================================================================!

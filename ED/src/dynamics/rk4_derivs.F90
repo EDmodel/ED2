@@ -638,7 +638,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   real :: storage_decay,vertical_vel_flux
   real :: heat_intercept_rate,dew_evap_latent_heat_loss
   real :: w_demand,w_supply,wcapcani,hcapcani,broot
-  real :: sat_shv,veg_temp,fracliq
+  real :: sat_shv,sat_temp,veg_temp,fracliq
   real :: minfluxrate
   real :: leflxvc,leflxvc_tot
 
@@ -770,7 +770,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
      if(cpatch%lai(ico) > lai_min)then
 
 
-        ! Effective heat capacity of vegetation [J K-1] = [m3] * [J m-3 K-1]
+        ! Effective heat capacity of vegetation [J K-1] = [kg] * [J kg-1 K-1]
         
         hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
              cpatch%nplant(ico),cpatch%pft(ico))
@@ -789,8 +789,9 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         else
            sigmaw = 0.0
         endif
-        
-        if (veg_temp < 183.15) then
+ 
+        if(.false.) then       
+!        if (veg_temp < 183.15) then
            write (unit=*,fmt='(a)') '================================================================'
            write (unit=*,fmt='(a)') ' Oh no, am I guessing an ice age mixed with global warming?'
            write (unit=*,fmt='(a)') '================================================================'
@@ -808,6 +809,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
            write(unit=*,fmt='(a)')           ' '
            write(unit=*,fmt='(a,1x,es14.7)') ' rshort_v  :',cpatch%rshort_v(ico)
            write(unit=*,fmt='(a,1x,es14.7)') ' rlong_v   :',cpatch%rlong_v(ico)
+           write(unit=*,fmt='(a,1x,es14.7)') ' rlong_v_incid   :',cpatch%rlong_v_incid(ico)
            write(unit=*,fmt='(a)')           ' '
            write(unit=*,fmt='(a,1x,es14.7)') ' can_temp  :',initp%can_temp
            write(unit=*,fmt='(a,1x,es14.7)') ' can_shv   :',initp%can_shv
@@ -822,7 +824,12 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
            write(unit=*,fmt='(a,1x,es14.7)') ' rb        :',cpatch%rb(ico)
            write(unit=*,fmt='(a)')           ' '
         end if
-        sat_shv=rslif(prss,veg_temp)
+
+        !! limit from RYAN 
+        !! (may not want this since it may prevent the rejection of a bad step)
+        sat_temp = max(min(180.0,initp%can_temp),min(veg_temp,max(320.0,initp%can_temp)))
+        
+        sat_shv=rslif(prss,sat_temp)
         c3 = cpatch%lai(ico) * rhos * (sat_shv - initp%can_shv)
 
         
@@ -847,6 +854,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
            cpatch%Psi_open(ico) = 0.0
         endif
         
+
         dinitp%ebudget_latent = dinitp%ebudget_latent     + &
              wflxvc * (fracliq * alvl + (1.-fracliq) * alvi) + &
              transp * alvl
@@ -867,6 +875,8 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
 
         hflxvc = 2.2 * cpatch%lai(ico) * cp * rhos * rbi  &
              * (veg_temp - initp%can_temp)
+!print*,"hflxvc =",2.2 , cpatch%lai(ico) , cp , rhos , rbi  &
+!             , veg_temp , initp%can_temp
 
         ! How much precipitation is intercepted?
 
@@ -915,6 +925,15 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
              + heat_intercept_rate    !   !
              !- wflxvc * (fracliq * alvl + (1.-fracliq) * alvi) & ! Evaporative phase cooling
              !+ intr_energy_dewevap    !
+
+!print*,"dVegE",cpatch%rshort_v(ico)     &   ! Absorbed short wave radiation
+!             , cpatch%rlong_v(ico)    &   ! Net thermal radiation
+!             , hflxvc                 &   ! Sensible heat flux
+!             , leflxvc                &   ! Evaporative phase cooling 
+!             , transp * alvl          &   ! Transpirative phase cooling
+!             , heat_intercept_rate    !   !
+
+
 
         wflxvc_tot=wflxvc_tot+wflxvc
         hflxvc_tot=hflxvc_tot+hflxvc
