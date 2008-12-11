@@ -31,6 +31,7 @@ Module ed_node_coms
   integer, target, dimension(maxgrds) :: mmxp,mmyp,mmzp
   integer, dimension(maxgrds) :: mia,miz,mja,mjz  &
                                 ,mi0,mj0,mibcon,mnestflg,mfeednode
+  integer, dimension(maxgrds) :: iwest,jsouth
   !---------------------------------------------------------------------------
   integer                                 :: nmachs,nnodetot
   integer, dimension(maxmach)             :: machs

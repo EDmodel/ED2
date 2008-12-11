@@ -4,7 +4,7 @@ module ed_therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
-   real function calc_hcapveg(leaf_biomass,structural_biomass,nplants,pft)
+   real function calc_hcapveg(leaf_carbon,structural_carbon,nplants,pft)
      
      ! This function calculates the total heat capacity in (J/K) of the cohort
      ! biomass.  This function is primarily used to calculate leaf temperatures
@@ -33,20 +33,25 @@ module ed_therm_lib
           c_ngrn_biom_dry,    &
           wat_dry_ratio_grn,  &
           wat_dry_ratio_ngrn, &
-          hcap_stem_fraction
+          hcap_stem_fraction, &
+          C2B
 
 
      implicit none
      
-     real :: leaf_biomass        ! leaf biomass per plant
-     real :: structural_biomass  ! structural biomass per plant
+     real :: leaf_carbon         ! leaf biomass per plant
+     real :: structural_carbon   ! structural biomass per plant
      real :: nplants             ! Number of plants per square meter
      real :: spec_hcap_leaf
      real :: spec_hcap_stem
+     
 
-     real,parameter :: biomass_factor = 1.0 ! This is a biomass kluge factor
+     real,parameter :: biomass_factor = 10.0 ! This is a biomass kluge factor
                                              ! The model is much faster and more stable
                                              ! When heat capacity is high.
+                                             ! It was also found that when net-radiation
+                                             ! matched tower observations, the dynamic
+                                             ! range of the 
 
      real,parameter :: min_hcapveg = 1000.0  ! This is roughly 1/3 kg of biomass at 3000 J/kg/K
                                              ! Dont be fooled, this is quite high
@@ -71,8 +76,8 @@ module ed_therm_lib
      
      
      ! New Method
-     calc_hcapveg = biomass_factor * nplants * (leaf_biomass* spec_hcap_leaf + &
-          structural_biomass * hcap_stem_fraction * spec_hcap_stem )
+     calc_hcapveg = biomass_factor * nplants * (leaf_carbon*C2B*spec_hcap_leaf + &
+          structural_carbon*C2B * hcap_stem_fraction * spec_hcap_stem )
 
 
 !     print*,nplants*leaf_biomass,nplants*structural_biomass,spec_hcap_leaf,spec_hcap_stem,calc_hcapveg

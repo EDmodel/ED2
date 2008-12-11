@@ -1368,7 +1368,8 @@ vtab_fill.o : $(MEMORY)/vtab_fill.f90 var_tables.o io_params.o
 #------------------------------------------------------------------------------------------#
 
 edcp_driver.o : $(ED_MIXED)/edcp_driver.f90 grid_coms.o mem_edcp.o ed_state_vars.o         \
-	misc_coms.o soil_coms.o ed_node_coms.o consts_coms.o ed_work_vars.o
+	misc_coms.o soil_coms.o ed_node_coms.o consts_coms.o ed_work_vars.o \
+	ed_misc_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

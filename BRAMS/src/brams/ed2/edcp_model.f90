@@ -486,7 +486,7 @@ subroutine vegetation_dynamics(new_month,new_year)
 
         if(new_year) then
 !           write (unit=*,fmt='(a)') '### Apply_disturbances_ar...'
-           call apply_disturbances_ar(cgrid)
+!           call apply_disturbances_ar(cgrid)
         end if
         
      end if

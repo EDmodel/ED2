@@ -252,10 +252,17 @@ end subroutine terminate_cohorts_ar
            ntall=ntall+1.0
         endif
      end do
-     mean_dbh = mean_dbh/ntall
-     mean_hite= mean_hite/nshort
 
-
+     if (ntall>0) then
+        mean_dbh = mean_dbh/ntall
+     else
+        mean_dbh = 0.0
+     endif
+     if (nshort>0) then
+        mean_hite= mean_hite/nshort
+     else
+        mean_hite= 0.0
+     endif
 
      allocate(fuse_table(cpatch%ncohorts))
      fuse_table(:) = .true.
@@ -997,6 +1004,7 @@ end subroutine fuse_patches_ar
      
      ! new area
      newarea = csite%area(dp) + csite%area(rp)
+
      newareai = 1.0/newarea
 
      csite%age(rp)                   = (csite%age(dp) * csite%area(dp)                          &
@@ -1060,19 +1068,19 @@ end subroutine fuse_patches_ar
 
      csite%mean_rh(rp) = (csite%mean_rh(rp) * csite%area(rp)                                   &
                        +  csite%mean_rh(dp) * csite%area(dp)) * newareai
-     
+
      csite%dmean_A_decomp(rp) = (csite%dmean_A_decomp(rp) * csite%area(rp)                     &
                               +  csite%dmean_A_decomp(dp) * csite%area(dp)) * newareai
-     
+
      csite%dmean_Af_decomp(rp) = (csite%dmean_Af_decomp(rp) * csite%area(rp)                   &
                                + csite%dmean_Af_decomp(dp) * csite%area(dp)) * newareai
-     
+
      csite%repro(1:n_pft,rp) = (csite%repro(1:n_pft,rp) * csite%area(rp)                       &
                              +  csite%repro(1:n_pft,dp) * csite%area(dp)) * newareai
-     
-     csite%watertable(rp) = (csite%watertable(rp) * csite%area(rp)                             &
-                          +  csite%watertable(dp)*csite%area(dp)) *newareai
-     
+
+!     csite%watertable(rp) = (csite%watertable(rp) * csite%area(rp)                             &
+!                          +  csite%watertable(dp)*csite%area(dp)) *newareai
+  
      ! Even though these variables are not prognostic, they need to be copied so the output will have the values.
      ! Other variables will probably be scaled here as well
      csite%avg_carbon_ac(rp)         = (csite%avg_carbon_ac(rp)         * csite%area(rp)        &
@@ -1108,6 +1116,7 @@ end subroutine fuse_patches_ar
      csite%avg_runoff(rp)            = (csite%avg_runoff(rp)            * csite%area(rp)        &
                                      +  csite%avg_runoff(dp)            * csite%area(dp))       &
                                      *  newareai
+
      csite%aux(rp)                   = (csite%aux(rp)                   * csite%area(rp)        &
                                      +  csite%aux(dp)                   * csite%area(dp))       &
                                      *  newareai
@@ -1227,7 +1236,7 @@ end subroutine fuse_patches_ar
         call update_veg_energy_ct(cpatch,ico)
 
      enddo
-     
+
      ! Fill a new patch with the donor and recipient cohort vectors
 
 
