@@ -197,7 +197,7 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
 
         leaf%soil_energy(mzg,i,j,1) = alli  &
              + cliq * (leaf%seatp(i,j) + (leaf%seatf(i,j) - leaf%seatp(i,j)) &
-             * timefac_sst - t00)
+             * timefac_sst)
 
         ! Fill surface precipitation arrays for input to SiB
 
@@ -528,7 +528,7 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
                     !calculate back soil energy 
                     do k=1,mzg
                        nsoil = nint(leaf%soil_text(k,i,j,ip))
-                       leaf%soil_energy(k,i,j,ip) = (tempk(k)- t00)  &
+                       leaf%soil_energy(k,i,j,ip) = tempk(k)  &
                             *(slcpd(nsoil)+leaf%soil_water(k,i,j,ip)*cliq1000) &
                             + leaf%soil_water(k,i,j,ip)*alli1000
                     enddo

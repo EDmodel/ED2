@@ -329,7 +329,7 @@ do j = 1,n3
 
       soil_energy(mzg,i,j,1) = alli  &
          + cliq * (seatp(i,j) + (seatf(i,j) - seatp(i,j))  &
-         * timefac_sst - t3ple)
+         * timefac_sst )
 
       do ipat = 2,npat
 
@@ -374,7 +374,7 @@ do j = 1,n3
 ! to reflect the reduced heat capacity of ice compared to liquid.  These
 ! changes may be alternatively be done in subroutine sfcinit_user in ruser.f
 
-            soil_energy(k,i,j,ipat) = (airtemp - t3ple + stgoff(k))  &
+            soil_energy(k,i,j,ipat) = (airtemp + stgoff(k))  &
                * (slcpd(nsoil) + soil_water(k,i,j,ipat) * cliq1000)  &
                + soil_water(k,i,j,ipat) * alli1000
 
@@ -403,7 +403,7 @@ do j = 1,n3
                   sfcwater_mass(k,i,j,ipat) = sfcwater_mass(k,i,j,ipat)  &
                      + snow_mass(i,j)
                   sfcwater_energy(k,i,j,ipat) = sfcwater_energy(k,i,j,ipat)  &
-                     + min(0., (airtemp - t3ple) * cice)
+                     + min(t3ple,airtemp) * cice
                   sfcwater_depth(k,i,j,ipat) = sfcwater_depth(k,i,j,ipat)  &
                      + snow_mass(i,j) * 5.e-3   ! 5x equivalent liquid depth
                endif

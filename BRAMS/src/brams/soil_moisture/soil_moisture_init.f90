@@ -268,7 +268,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,mzs,npat,ifm   &
                       slmstr(k)*slmsts(nsoil))
                  !              print*,soil_water(k,i,j,ipat)
 
-                 soil_energy(k,i,j,ipat) = (airtemp - t00 + stgoff(k))   &
+                 soil_energy(k,i,j,ipat) = (airtemp + stgoff(k))   &
                       * (slcpd(nsoil) + soil_water(k,i,j,ipat)  * cliq1000)  &
                       + soil_water(k,i,j,ipat)  * alli1000
               enddo
@@ -502,7 +502,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,mzs,npat,ifm   &
            do k = 1,mzg
               nsoil = nint(soil_text(k,i,j,ipat))
 
-              soil_energy(k,i,j,ipat) = (airtemp - t00 + stgoff(k))   &
+              soil_energy(k,i,j,ipat) = (airtemp + stgoff(k))   &
                    * (slcpd(nsoil) + soil_water(k,i,j,ipat)  * cliq1000)  &
                    + soil_water(k,i,j,ipat)  * alli1000
            enddo

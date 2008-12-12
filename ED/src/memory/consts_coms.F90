@@ -21,7 +21,8 @@ Module consts_coms
      , b_es3plei    => es3plei    , b_epes3ple   => epes3ple   , b_alvl       => alvl      &
      , b_alvi       => alvi       , b_alli       => alli       , b_alli1000   => alli1000  &
      , b_allii      => allii      , b_tsupercool => tsupercool , b_erad2      => erad2     &
-     , b_sqrtpii    => sqrtpii    , b_onesixth   => onesixth
+     , b_sqrtpii    => sqrtpii    , b_onesixth   => onesixth   , b_cicet3     => cicet3    &
+     , b_cliqt3     => cliqt3
 
    implicit none
 
@@ -51,7 +52,8 @@ Module consts_coms
    real, parameter :: alli       = b_alli       , alli1000   = b_alli1000
    real, parameter :: allii      = b_allii      , tsupercool = b_tsupercool
    real, parameter :: erad2      = b_erad2      , sqrtpii    = b_sqrtpii
-   real, parameter :: onesixth   = b_onesixth
+   real, parameter :: onesixth   = b_onesixth   , cicet3     = b_cicet3
+   real, parameter :: cliqt3     = b_cliqt3
 
 #else
    implicit none
@@ -175,13 +177,15 @@ Module consts_coms
    real, parameter :: alli     = 3.34e5       ! Latent heat - fusion       (Lf) [     J/kg]
    real, parameter :: alli1000 = 1000. * alli ! Latent heat - fusion       (Lf) [     J/m³]
    real, parameter :: allii    = 1./alli      ! 1/Latent heat - fusion     (Lf) [     J/kg]
+   real, parameter :: cicet3   = cice * t3ple ! C_ice × T3                      [     J/kg]
+   real, parameter :: cliqt3   = cliq * t3ple ! C_liquid × T3                   [     J/kg]
 
    !---------------------------------------------------------------------------------------!
-   !     Internal energy-related variable. QL = Cl×(T-T3)+Lf, which can also be written    !
+   !     Internal energy-related variable. QL = Cl×T+Lf, which can also be written         !
    ! as:QL = Cl×(T-TLow), where TLow is the temperature that liquid water would have       !
-   ! if it was supercooled (i.e. cooled without without freezing), until QL became 0.      !
+   ! if it was supercooled (i.e. cooled without without freezing), until QL became cice×T3 !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: tsupercool = t3ple - alli/cliq 
+   real, parameter :: tsupercool = - alli/cliq 
    !---------------------------------------------------------------------------------------!
 
 #endif

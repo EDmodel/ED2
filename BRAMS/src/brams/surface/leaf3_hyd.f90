@@ -328,7 +328,7 @@ do ngd = 1,ngrps
             sfcwater_mass(1,i,j,ip) = sfcwater_mass(1,i,j,ip) - wfreeb
             sfcwater_energy(1,i,j,ip) = (qw - qwfree)  &
                / (max(1.e-4,sfcwater_mass(1,i,j,ip)))
-            sfcwater_energy(1,i,j,ip) = max (-1.6e5, min (4.8e5,  &
+            sfcwater_energy(1,i,j,ip) = max (0., min (6.4e5,  &
                sfcwater_energy(1,i,j,ip)))
 
             runoff = runoff + wfreeb * patch_area(i,j,ip)

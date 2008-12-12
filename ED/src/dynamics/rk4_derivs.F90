@@ -874,7 +874,9 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         ! Removed the check on vegetation temperature - RGK 11-2008
         ! Reason: State variables will be strange during partial steps, best to look
         ! at veg temperatures after integrations are complete.
-        ! if (veg_temp < 183.15) then
+        
+        ! Here we need to be cautious though. The temperature may be off, but it can't be too off, like
+        ! below 0K because this violates the basic laws of thermodynamics, and that does not make any sense.
         
         sat_shv=rslif(prss,veg_temp)
         c3 = cpatch%lai(ico) * rhos * (sat_shv - initp%can_shv)
@@ -888,7 +890,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
            wflxvc = c3 * sigmaw * 1.2 * rbi
            cpatch%Psi_open(ico)   = c3 / (cpatch%rb(ico) + cpatch%rsw_open(ico)  )
            cpatch%Psi_closed(ico) = c3 / (cpatch%rb(ico) + cpatch%rsw_closed(ico))
-           if(initp%available_liquid_water(cpatch%krdepth(ico)) > 0.0)then
+           if(initp%available_liquid_water(cpatch%krdepth(ico)) > 0.0 .and. veg_temp >= t3ple )then
               transp = cpatch%fsw(ico) * cpatch%Psi_open(ico) + (1.0 - cpatch%fsw(ico)) * cpatch%Psi_closed(ico)
            else
               transp = 0.0
@@ -985,7 +987,6 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
 
         !Latent heat of evap and dew
         qwflxvc = wflxvc * (fracliq * alvl + (1.-fracliq) * alvi)
-
         dinitp%veg_energy(ico) = &
              cpatch%rshort_v(ico)     &   ! Absorbed short wave radiation
              + cpatch%rlong_v(ico)    &   ! Net thermal radiation
@@ -1016,6 +1017,47 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
                    heat_intercept_rate
            call fatal_error('dinitp%veg_energy is NaN','canopy_derivs_two_ar','rk4_derivs.F90')
         endif
+
+        if (ipy == 21 .and. ipa == 14) then
+           write (unit=62,fmt='(a)') '----------------------------------------------------------------------'
+           write (unit=62,fmt='(a,1x,i12)')    ' - PFT:             ',cpatch%pft(ico)
+           write (unit=62,fmt='(a,1x,es12.5)') ' - NPLANT:          ',cpatch%nplant(ico)
+           write (unit=62,fmt='(a,1x,es12.5)') ' - BDEAD:           ',cpatch%bdead(ico)
+           write (unit=62,fmt='(a,1x,es12.5)') ' - BALIVE:          ',cpatch%balive(ico)
+           write (unit=62,fmt='(a,1x,es12.5)') ' - LAI:             ',cpatch%lai(ico)
+           write (unit=62,fmt='(a,1x,es12.5)') ' - DBH:             ',cpatch%dbh(ico)
+           write (unit=62,fmt='(a,1x,es12.5)') ' - HEIGHT:          ',cpatch%hite(ico)
+           write (unit=62,fmt='(a)') ' '
+           write (unit=62,fmt='(a,1x,es12.5)') ' - RHOS:            ',rhos
+           write (unit=62,fmt='(a,1x,es12.5)') ' - PRSS:            ',prss
+           write (unit=62,fmt='(a,1x,es12.5)') ' - ATM_TEMP:        ',atm_tmp
+           write (unit=62,fmt='(a)') ' '
+           write (unit=62,fmt='(a,1x,es12.5)') ' - CAN_TEMP:        ',initp%can_temp
+           write (unit=62,fmt='(a,1x,es12.5)') ' - CAN_SHV:         ',initp%can_shv
+           write (unit=62,fmt='(a)') ' '
+           write (unit=62,fmt='(a,1x,es12.5)') ' - SIGMAW:          ',sigmaw
+           write (unit=62,fmt='(a,1x,es12.5)') ' - VEG_WATER:       ',initp%veg_water(ico)
+           write (unit=62,fmt='(a,1x,es12.5)') ' - D(VEG_WATER)/DT: ',dinitp%veg_water(ico)
+           write (unit=62,fmt='(a,1x,es12.5)') ' - RBI(CONDUC):     ',rbi
+           write (unit=62,fmt='(a,1x,es12.5)') ' - TRANSP:          ',transp
+           write (unit=62,fmt='(a,1x,es12.5)') ' - WFLXVC:          ',wflxvc
+           write (unit=62,fmt='(a,1x,es12.5)') ' - WSHED:           ',wshed
+           write (unit=62,fmt='(a,1x,es12.5)') ' - INTERCEPTED:     ',intercepted*cpatch%lai(ico)*laii
+           write (unit=62,fmt='(a)') ' '
+           write (unit=62,fmt='(a,1x,es12.5)') ' - HCAPVEG:         ',hcapveg
+           write (unit=62,fmt='(a,1x,es12.5)') ' - VEG_TEMP:        ',veg_temp
+           write (unit=62,fmt='(a,1x,es12.5)') ' - VEG_ENERGY:      ',initp%veg_energy(ico)
+           write (unit=62,fmt='(a,1x,es12.5)') ' - D(VEG_ENERGY)/DT:',dinitp%veg_energy(ico)
+           write (unit=62,fmt='(a,1x,es12.5)') ' - RSHORT_V:        ',cpatch%rshort_v(ico)
+           write (unit=62,fmt='(a,1x,es12.5)') ' - RLONG_V:         ',cpatch%rlong_v(ico)
+           write (unit=62,fmt='(a,1x,es12.5)') ' - HFLXVC:          ',hflxvc
+           write (unit=62,fmt='(a,1x,es12.5)') ' - QWFLXVC:         ',qwflxvc
+           write (unit=62,fmt='(a,1x,es12.5)') ' - QTRANSP:         ',transp*alvl
+           write (unit=62,fmt='(a,1x,es12.5)') ' - QWSHED:          ',qwshed
+           write (unit=62,fmt='(a,1x,es12.5)') ' - QINTERCEPT:      ',qintercepted*cpatch%lai(ico)*laii
+           write (unit=62,fmt='(a)') '----------------------------------------------------------------------'
+           write (unit=62,fmt='(a)') ' '
+        end if
 
      else
 

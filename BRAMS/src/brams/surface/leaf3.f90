@@ -221,7 +221,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz  &
 
          leaf%soil_energy(mzg,i,j,1) = alli  &
             + cliq * (leaf%seatp(i,j) + (leaf%seatf(i,j) - leaf%seatp(i,j))  &
-            * timefac_sst - t3ple)
+            * timefac_sst)
 
    ! Fill surface precipitation arrays for input to leaf
 
@@ -752,7 +752,7 @@ subroutine leaftw(mzg,mzs,np  &
 
          totsnow = totsnow + sfcwater_mass(k)
          sfcwater_energy(k) = (qw - qwfree) / (max(1.e-9,sfcwater_mass(k)))
-         sfcwater_energy(k) = max (-1.6e5, min (4.8e5, sfcwater_energy(k)))
+         sfcwater_energy(k) = max (0., min (6.4e5, sfcwater_energy(k)))
 
    ! Temporary simple evolution of snow layer depth and density
 
@@ -779,7 +779,7 @@ subroutine leaftw(mzg,mzs,np  &
          newlayers = 1
          do k = 2,mzs
             if (snowmin * thicknet(k) <= totsnow .and.  &
-               sfcwater_energy(k) < alli) newlayers = newlayers + 1
+               sfcwater_energy(k) < alli + cliq*t3ple) newlayers = newlayers + 1
          enddo
          newlayers = min (newlayers, mzs, nlayers+1)
          sfcwater_nlev = float(newlayers)
@@ -896,7 +896,7 @@ subroutine leaftw(mzg,mzs,np  &
 
    soil_water(ktrans) = soil_water(ktrans) - wloss
    soil_energy(ktrans) = soil_energy(ktrans)  &
-      - wloss * cliq1000 * (tempk(ktrans) - tsupercool)
+      - wloss * cliq1000 * (tempk(ktrans) -tsupercool)
 
    4044 continue
 

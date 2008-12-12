@@ -145,7 +145,7 @@ subroutine ed_init_atm_ar
                        csite%soil_fracliq(k,ipa) = 1.0
                        csite%soil_water(k,ipa) = max(soil(nsoil)%soilcp,   &
                             slmstr(k) * soil(nsoil)%slmsts)
-                       csite%soil_energy(k,ipa) = (csite%soil_tempk(k,ipa) - t3ple) *   &
+                       csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa) *   &
                             (soil(nsoil)%slcpd + csite%soil_water(k,ipa) *   &
                             cliq1000) + csite%soil_water(k,ipa) * alli1000
                     enddo
@@ -155,7 +155,7 @@ subroutine ed_init_atm_ar
                        csite%soil_fracliq(k,ipa) = 0.0
                        csite%soil_water(k,ipa) = max(soil(nsoil)%soilcp,             &
                             slmstr(k) * soil(nsoil)%slmsts)
-                       csite%soil_energy(k,ipa) = (csite%soil_tempk(k,ipa) - t3ple) *   &
+                       csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa) *   &
                             (soil(nsoil)%slcpd + csite%soil_water(k,ipa) * cice1000)
                     enddo
                  endif
@@ -537,12 +537,12 @@ subroutine read_soil_moist_temp_ar(cgrid)
                                   soilw2 * soil(ntext)%slmsts)
                           endif
                           if(soil_tempaux > 0.0)then
-                             csite%soil_energy(k,ipa) = soil_tempaux * (soil(ntext)%slcpd   &
+                             csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa) * (soil(ntext)%slcpd   &
                                   + csite%soil_water(k,ipa) * cliq1000) +   &
                                     csite%soil_water(k,ipa) * alli1000
                              csite%soil_fracliq(k,ipa) = 1.0
                           else
-                             csite%soil_energy(k,ipa) = soil_tempaux * (soil(ntext)%slcpd   &
+                             csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa) * (soil(ntext)%slcpd   &
                                   + csite%soil_water(k,ipa) * cice1000)
                              csite%soil_fracliq(k,ipa) = 0.0
                           end if
@@ -659,7 +659,7 @@ subroutine initialize_vegetation_energy(cgrid)
                hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
                     cpatch%nplant(ico),cpatch%pft(ico))
 
-               cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
+               cpatch%veg_energy(ico) = hcapveg * cpatch%veg_temp(ico)
             end do
          end do
       end do

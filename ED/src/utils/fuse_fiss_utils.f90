@@ -211,7 +211,7 @@ end subroutine terminate_cohorts_ar
      logical , allocatable, dimension(:) :: fuse_table
      real    , external :: dbh2h
      real    , external :: dbh2bl
-     real, parameter :: tolerance_max = 10.0  ! Original: 2.0
+     real, parameter :: tolerance_max = 2.0  ! Original: 2.0
      integer :: ncohorts_old
      integer, parameter :: fuse_relax = 0
      real :: mean_dbh,mean_hite,ntall,nshort
@@ -252,8 +252,8 @@ end subroutine terminate_cohorts_ar
            ntall=ntall+1.0
         endif
      end do
-     mean_dbh = mean_dbh/ntall
-     mean_hite= mean_hite/nshort
+     if (ntall  > 0) mean_dbh = mean_dbh/ntall
+     if (nshort > 0) mean_hite= mean_hite/nshort
 
 
 
@@ -283,8 +283,13 @@ end subroutine terminate_cohorts_ar
                    (0.5*(cpatch%hite(ico1) + cpatch%hite(ico2)))  < fusetol * tolerance_mult)  
               end if
            else
-              fusion_test = (abs(cpatch%dbh(ico1) - cpatch%dbh(ico2)) /   &
-                   mean_dbh  ) < fusetol * tolerance_mult
+!              ! Defining mean_dbh the old way, because mean_dbh can be zero if ntall is 0.
+!              fusion_test = ( abs(cpatch%dbh(ico1) - cpatch%dbh(ico2)) &
+!                              < fusetol * tolerance_mult * mean_dbh )  &
+!                            .and. (ntall > 0) 
+              mean_dbh=0.5*(cpatch%dbh(ico1)+cpatch%dbh(ico2))
+              fusion_test = ( abs(cpatch%dbh(ico1) - cpatch%dbh(ico2)))/mean_dbh &
+                              < fusetol * tolerance_mult
            end if
 
            if(fusion_test)then

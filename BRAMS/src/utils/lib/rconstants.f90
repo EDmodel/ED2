@@ -159,13 +159,15 @@ Module rconstants
    real, parameter :: lsorvap  = alvi / rm    ! Ls/Rv                           [        K]
    real, parameter :: lvt3ple  = alvl * t3ple ! Lv × T3                         [   K J/kg]
    real, parameter :: lst3ple  = alvi * t3ple ! Ls × T3                         [   K J/kg]
+   real, parameter :: cicet3   = cice * t3ple ! C_ice × T3                      [     J/kg]
+   real, parameter :: cliqt3   = cliq * t3ple ! C_liquid × T3                   [     J/kg]
 
    !---------------------------------------------------------------------------------------!
-   !     Internal energy-related variable. QL = Cl×(T-T3)+Lf, which can also be written    !
+   !     Internal energy-related variable. QL = Cl×T+Lf, which can also be written         !
    ! as:QL = Cl×(T-TLow), where TLow is the temperature that liquid water would have       !
-   ! if it was supercooled (i.e. cooled without without freezing), until QL became 0.      !
+   ! if it was supercooled (i.e. cooled without without freezing), until QL became cice*T3.!
    !---------------------------------------------------------------------------------------!
-   real, parameter :: tsupercool = t3ple - alli/cliq 
+   real, parameter :: tsupercool = - alli/cliq 
    !---------------------------------------------------------------------------------------!
 
 

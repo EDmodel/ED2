@@ -397,7 +397,7 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
   use ed_state_vars,only : patchtype,rk4patchtype
   use grid_coms, only: nzg, nzs
   use soil_coms, only: min_sfcwater_mass
-  use consts_coms, only: cliq,alli
+  use consts_coms, only: cliq,alli,cliqt3,cicet3
   use canopy_radiation_coms, only: lai_min
 
   implicit none
@@ -422,8 +422,8 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
   do k=lsl,nzg
      yscal%soil_water(k) = abs(y%soil_water(k))   &
           + abs(dy%soil_water(k)*htry) + tiny
-     yscal%soil_energy(k) = max(abs(y%soil_energy(k))   &
-          + abs(dy%soil_energy(k)*htry),3.0e5)
+     yscal%soil_energy(k) = abs(y%soil_energy(k))   &
+          + abs(dy%soil_energy(k)*htry)
   enddo
 
   if(y%sfcwater_mass(1) > 0.1 .or. y%nlev_sfcwater > 1)then
@@ -441,9 +441,9 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
      do k=1,nzs
         yscal%sfcwater_mass(k) = 0.1
         if(y%sfcwater_mass(k) > min_sfcwater_mass)then
-           if(y%sfcwater_energy(k) <= 0.0)then
+           if(y%sfcwater_energy(k) <= cicet3)then
               yscal%sfcwater_energy(k) = 1.0e4
-           elseif(y%sfcwater_energy(k) >= alli)then
+           elseif(y%sfcwater_energy(k) >= alli + cliqt3)then
               yscal%sfcwater_energy(k) = cliq*110.0
            else
               yscal%sfcwater_energy(k) = 3350.0
@@ -461,12 +461,13 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
   do ico = 1,cpatch%ncohorts
      if (cpatch%lai(ico) > lai_min) then
         yscal%veg_water(ico) = 0.22
-        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
-                                   + abs(dy%veg_energy(ico)*htry),0.22*alli)
+        yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico)*htry)
 
         ! Mike: Why not just use a nominal energy for the scaling? Is there really a need for the scaling to be
         ! associated with a certain temperature? How about global avergage surface temperature? Signed Anonymous
         ! -----------------------------------------------------------------------------------------------
+        ! No need to answer this if the absolute temperature works.... Signed: another anonymous. Lots of mysteries
+        !  around in this code.
 
 !        yscal%veg_energy(ico) = y%veg_water(ico)*alli + y%veg_water(ico)*cliq*(287.-273.15) &
 !             + cpatch%hcapveg(ico)*(287.-273.15) + abs(dy%veg_energy(ico)*htry)
@@ -1241,7 +1242,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
      do k = 1,nzs
         if(initp%sfcwater_mass(k) >= min_sfcwater_mass)then
            if(snowmin * thicknet(k) <= totsnow .and.  &
-                initp%sfcwater_energy(k) < alli)then
+                initp%sfcwater_energy(k) < alli+cliq*t3ple)then
               newlayers = newlayers + 1
            endif
         endif

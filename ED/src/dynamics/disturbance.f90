@@ -882,12 +882,12 @@ end subroutine apply_disturbances_ar
     cpatch%veg_temp(nc) = csite%can_temp(np)
     cpatch%veg_water(nc) = 0.0
 
-    !----- Because we assigned no water, the internal energy is simply hcapveg*(T-T3)
+    !----- Because we assigned no water, the internal energy is simply hcapveg*T
 
     cpatch%hcapveg(nc) = calc_hcapveg(cpatch%bleaf(nc),cpatch%bdead(nc), &
          cpatch%nplant(nc),cpatch%pft(nc))
     
-    cpatch%veg_energy(nc) = cpatch%hcapveg(nc) * (cpatch%veg_temp(nc)-t3ple)
+    cpatch%veg_energy(nc) = cpatch%hcapveg(nc) * cpatch%veg_temp(nc)
     
     call init_ed_cohort_vars_array(cpatch, nc, lsl)
     

@@ -447,7 +447,7 @@ real, dimension(n2,n3,npat) :: ustar        ,tstar         ,rstar        &
 ! to reflect the reduced heat capacity of ice compared to liquid.  These
 ! changes may be alternatively be done in subroutine sfcinit_user in ruser.f
 
-!                 soil_energy(k,i,j,ipat) = (airtemp - t3ple + stgoff(k))  &
+!                 soil_energy(k,i,j,ipat) = (airtemp  + stgoff(k))  &
 !                    * (slcpd(nsoil) + soil_water(k,i,j,ipat) * cliq1000)  &
 !                    + soil_water(k,i,j,ipat) * alli1000
 
