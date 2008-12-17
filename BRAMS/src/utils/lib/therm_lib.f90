@@ -24,7 +24,7 @@ module therm_lib
    integer, parameter ::   maxit  = 150             ! Maximum # of iterations before crash-
                                                     !   ing, for other methods.
 
-   integer, parameter ::   maxlev = 16             ! Maximum # of levels for adaptive     
+   integer, parameter ::   maxlev = 16              ! Maximum # of levels for adaptive     
                                                     !   quadrature methods.    
 
 
@@ -452,6 +452,8 @@ module therm_lib
       real   , intent(in)           :: temp
       logical, intent(in), optional :: useice
       logical                       :: brrr_cold
+
+      ! USE ICE IS FALSE, BUT TEMP IS LESS THAN t3ple
 
       if (present(useice)) then
          brrr_cold = useice  .and. temp < t3ple
@@ -2514,6 +2516,7 @@ module therm_lib
       logical             :: zside      ! Aux. flag, to check sides for Regula Falsi
       !----- Other local variables --------------------------------------------------------!
       logical             :: brrr_cold ! This requires ice thermodynamics         [    T|F]
+
       !------------------------------------------------------------------------------------!
       ! (*) This is the most general variable. Thil is exactly theta for no condensation   !
       !     condition, and it is the liquid potential temperature if no ice is present.    !
@@ -2544,8 +2547,11 @@ module therm_lib
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
       tlclz     = 55. + 2840. / (3.5 * log(temp) - log(0.01*pvap) - 4.805) ! pvap in hPa.
+
       pvap      = eslif(tlclz,brrr_cold)
+
       funnow    = tlclz * (es00/pvap)**rocp - thil
+
       deriv     = (funnow+thil)*(1./tlclz - rocp*eslifp(tlclz,brrr_cold)/pvap) 
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
@@ -2559,6 +2565,7 @@ module therm_lib
       !------------------------------------------------------------------------------------!
       !     Looping: Newton's method.                                                      !
       !------------------------------------------------------------------------------------!
+
       newloop: do itn=1,maxfpo/6
          if (abs(deriv) < toler) exit newloop !----- Too dangerous, skip to bisection -----!
          !----- Updating guesses ----------------------------------------------------------!
@@ -2566,6 +2573,7 @@ module therm_lib
          funa   = funnow
          
          tlclz  = tlcla - funnow/deriv
+         
          pvap   = eslif(tlclz,brrr_cold)
          funnow = tlclz * (es00/pvap)**rocp - thil
          deriv  = (funnow+thil)*(1./tlclz - rocp*eslifp(tlclz,brrr_cold)/pvap)
@@ -2606,6 +2614,7 @@ module therm_lib
             zside = .true.
          !----- They have the same sign, seeking the other guess --------------------------!
          else
+
             !----- We fix funa, and try a funz that will work as 2nd guess ----------------!
             if (abs(funnow-funa) < toler*tlcla) then
                delta = 100.*toler*tlcla
@@ -2623,6 +2632,7 @@ module therm_lib
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
             zside = .false.
             zgssloop: do itb=1,maxfpo
+
                !----- So the first time tlclz = tlcla - 2*delta ---------------------------!
                tlclz = tlcla + real((-1)**itb * (itb+3)/2) * delta
                pvap  = eslif(tlclz,brrr_cold)
@@ -2649,8 +2659,11 @@ module therm_lib
          end if
          !---- Continue iterative method --------------------------------------------------!
          fpoloop: do itb=itn+1,maxfpo
+
             tlcl = (funz*tlcla-funa*tlclz)/(funz-funa)
+
             pvap = eslif(tlcl,brrr_cold)
+
             funnow = tlcl * (es00/pvap)**rocp - thil
 
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!

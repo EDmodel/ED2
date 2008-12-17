@@ -143,7 +143,7 @@ subroutine copy_in_bramsmpi(master_num_b,mchnum_b,mynum_b,nmachs_b,machs_b,ipara
   mchnum     = mchnum_b
   mynum      = mynum_b
   nmachs     = nmachs_b
-  machs      = machs_b
+  machs(1:nmachs)      = machs_b(1:nmachs)
   nnodetot   = nmachs_b
 
   recvnum = mynum-1
@@ -163,7 +163,8 @@ subroutine init_node_work
   
   use grid_coms, only : ngrids
 
-  use ed_node_coms, only: mynum,nmachs,nnodetot,mchnum,machs,master_num,sendnum,recvnum,mmxp,mmyp
+  use ed_node_coms, only: mynum,nmachs,nnodetot,mchnum,machs,master_num,sendnum,recvnum,mmxp,mmyp, &
+       iwest,jsouth
 
   use rpara,only : mainnum
   
@@ -198,6 +199,10 @@ subroutine init_node_work
            
            call MPI_Recv(mmxp(ifm),1,MPI_INTEGER,mainnum,190,MPI_COMM_WORLD,status,ierr)
            call MPI_Recv(mmyp(ifm),1,MPI_INTEGER,mainnum,191,MPI_COMM_WORLD,status,ierr)
+
+           call MPI_Recv(iwest(ifm),1,MPI_INTEGER,mainnum,1900,MPI_COMM_WORLD,status,ierr)
+           call MPI_Recv(jsouth(ifm),1,MPI_INTEGER,mainnum,1901,MPI_COMM_WORLD,status,ierr)
+
            
            call ed_nullify_work(work_e(ifm))
            call ed_alloc_work(work_e(ifm),mmxp(ifm),mmyp(ifm))
@@ -285,8 +290,17 @@ subroutine init_master_work(ipara)
               jl=jl+1
               work_e(ifm)%glon(il,jl) = grid_g(ifm)%glon(i,j)
               work_e(ifm)%glat(il,jl) = grid_g(ifm)%glat(i,j)
+              
+              ! The following will give you the tile (local) coordinates
               work_e(ifm)%xatm(il,jl)  = i - iwest  + 2       ! Remember that all tiles have a 
               work_e(ifm)%yatm(il,jl)  = j - jsouth + 2       ! buffer cell so add one extra 
+
+              ! The following will give you the global coordinates
+              !work_e(ifm)%xatm(il,jl)  = i       ! Remember that all tiles have a 
+              !work_e(ifm)%yatm(il,jl)  = j       ! buffer cell so add one extra 
+            
+
+
            end do
         enddo
         
@@ -307,6 +321,9 @@ subroutine init_master_work(ipara)
 
            call MPI_Send(xmax,1,MPI_INTEGER,machnum(nm),190,MPI_COMM_WORLD,ierr)
            call MPI_Send(ymax,1,MPI_INTEGER,machnum(nm),191,MPI_COMM_WORLD,ierr)
+           
+           call MPI_Send(iwest,1,MPI_INTEGER,machnum(nm),1900,MPI_COMM_WORLD,ierr)
+           call MPI_Send(jsouth,1,MPI_INTEGER,machnum(nm),1901,MPI_COMM_WORLD,ierr)
 
            call MPI_Send(work_e(ifm)%glat,xmax*ymax,MPI_REAL,machnum(nm),192,MPI_COMM_WORLD,ierr)
            call MPI_Send(work_e(ifm)%glon,xmax*ymax,MPI_REAL,machnum(nm),193,MPI_COMM_WORLD,ierr)

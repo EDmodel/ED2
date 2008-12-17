@@ -5,7 +5,7 @@ subroutine simple_lake_model(time,dtlongest)
 
   use node_mod,only:ja,jz,ia,iz
 
-  use consts_coms,only:stefan,cpi,vonk,cp,grav,p00,rocp,cpor
+  use consts_coms,only:stefan,cpi,vonk,cp,grav,p00,rocp,cpor,alvl
   use canopy_air_coms, only : ubmin
   use mem_edcp,only:wgrid_g
 
@@ -30,13 +30,12 @@ subroutine simple_lake_model(time,dtlongest)
   real :: bot,top,last_rv,last_th
   real :: hcapcan,wcapcan
   real :: z0fac_water,pis,rdi,idt
-
   real,external :: vertical_vel_flux
 
 
   integer :: i,j,n
   integer :: k1w,k2w,k3w,k2u,k2u_1,k2v,k2v_1
-  real :: up_mean,vp_mean,pi0_mean,dn0_mean
+  real :: up_mean,vp_mean,exner_mean,dn0_mean
   real :: rv_mean,theta_mean
   real :: topma_t,wtw,wtu1,wtu2,wtv1,wtv2
   real :: canopy_water_vapor
@@ -83,11 +82,18 @@ subroutine simple_lake_model(time,dtlongest)
   
   ! The target step size for the water body suface flux is about 30 seconds
 
-  hcapcan = 2.0e4
-  wcapcan = 2.0e1
+!  hcapcan = 2.0e4
+!  wcapcan = 2.0e1
 
-  dtllohcc = dtll / hcapcan
-  dtllowcc = dtll / wcapcan
+!  hcapcan = 2.0e4
+!  wcapcan = 2.0e1
+
+   
+
+
+
+!  dtllohcc = dtll / hcapcan
+!  dtllowcc = dtll / wcapcan
 
   
   z0fac_water = .016 / grav
@@ -147,14 +153,14 @@ subroutine simple_lake_model(time,dtlongest)
                 +  (1. - wtv2) * basic_g(ngrid)%vp(k2v+1,i,j)) * .5
            
            if (wtw >= .5) then
-              pi0_mean   = ((wtw - .5) * (basic_g(ngrid)%pp(k1w,i,j) + basic_g(ngrid)%pi0(k1w,i,j))  &
+              exner_mean   = ((wtw - .5) * (basic_g(ngrid)%pp(k1w,i,j) + basic_g(ngrid)%pi0(k1w,i,j))  &
                    + (1.5 - wtw) * (basic_g(ngrid)%pp(k2w,i,j) + basic_g(ngrid)%pi0(k2w,i,j)))
-              dn0_mean   = (wtw - .5)  * basic_g(ngrid)%dn0(k1w,i,j)  &
+              dn0_mean     = (wtw - .5)  * basic_g(ngrid)%dn0(k1w,i,j)  &
                    + (1.5 - wtw) * basic_g(ngrid)%dn0(k2w,i,j)
            else
-              pi0_mean  = ((wtw + .5) * (basic_g(ngrid)%pp(k2w,i,j) + basic_g(ngrid)%pi0(k2w,i,j))  &
+              exner_mean  = ((wtw + .5) * (basic_g(ngrid)%pp(k2w,i,j) + basic_g(ngrid)%pi0(k2w,i,j))  &
                    + (.5 - wtw) * (basic_g(ngrid)%pp(k3w,i,j) + basic_g(ngrid)%pi0(k3w,i,j)))
-              dn0_mean  = (wtw + .5) * basic_g(ngrid)%dn0(k2w,i,j)  &
+              dn0_mean    = (wtw + .5) * basic_g(ngrid)%dn0(k2w,i,j)  &
                    + (.5 - wtw) * basic_g(ngrid)%dn0(k3w,i,j)
            endif
            
@@ -169,7 +175,7 @@ subroutine simple_lake_model(time,dtlongest)
            
            up_mean       = (basic_g(ngrid)%up(2,i,j) + basic_g(ngrid)%up(2,i-1,j))     * 0.5
            vp_mean       = (basic_g(ngrid)%vp(2,i,j) + basic_g(ngrid)% vp(2,i,j-jdim)) * 0.5
-           pi0_mean      = (basic_g(ngrid)%pp(1,i,j) + basic_g(ngrid)%pp(2,i,j) & 
+           exner_mean    = (basic_g(ngrid)%pp(1,i,j) + basic_g(ngrid)%pp(2,i,j) & 
                          +  basic_g(ngrid)%pi0(1,i,j)+basic_g(ngrid)%pi0(2,i,j))       * 0.5
            
            
@@ -193,7 +199,7 @@ subroutine simple_lake_model(time,dtlongest)
         idt = 0
         do n = 1,niter_leaf
 
-           pis =  pi0_mean * cpi
+           pis =  exner_mean * cpi
            
            prss = pis ** cpor * p00
 
@@ -214,16 +220,16 @@ subroutine simple_lake_model(time,dtlongest)
                         ,ustar,rstar,tstar,cstar,canopy_water_vapor,canopy_co2)
            
            !----- This part is on LEAF, but not on ED, don't know how necessary this is. --!
-           ifixu=0
-           ustaro=ustar
-           delz = 2.*zts
-           d_vel =  - ustar * ustar *dtlongest / delz
-           vel_new = vels_pat + d_vel
-           if (vel_new < .5 * vels_pat) then
-              ifixu=1
-              d_veln = .5 * vels_pat
-              ustar=sqrt(d_veln*delz/dtlongest)
-           end if
+!           ifixu=0
+!           ustaro=ustar
+!           delz = 2.*zts
+!           d_vel =  - ustar * ustar *dtlongest / delz
+!           vel_new = vels_pat + d_vel
+!           if (vel_new < .5 * vels_pat) then
+!              ifixu=1
+!              d_veln = .5 * vels_pat
+!              ustar=sqrt(d_veln*delz/dtlongest)
+!           end if
 
            ! Calculate the heat,moisture and momentum fluxes
            ! -----------------------------------------------
@@ -239,13 +245,24 @@ subroutine simple_lake_model(time,dtlongest)
            
            ! Update the sea surface air temperature and water vapor mixing ratio
            ! -------------------------------------------------------------------
+
+           ! In calculating the water capacity and heat capacity of the
+           ! sea surface air space
+           ! We will assume a layer that is 20 meters thick
            
+           wcapcan = 20.0 * dn0_mean
+           hcapcan = cp * 20.0 * dn0_mean
+
+           dtllohcc = dtll/hcapcan
+           dtllowcc = dtll/wcapcan
+
+
            rdi = .2 * ustar
            
            last_th = canopy_tempk
 
            canopy_tempk  = canopy_tempk        &
-                + dtllohcc * dn0_mean * cp                          &
+                + dtllohcc * dn0_mean * cp                    &
                 * ( (seatc -  canopy_tempk) * rdi    &
                 + ustar * tstar * pis)
            
@@ -263,7 +280,7 @@ subroutine simple_lake_model(time,dtlongest)
               write(unit=*,fmt='(3(a,1x,i5,1x))') 'i=',i,'j=',j,'n=',n
               write(unit=*,fmt='(2(a,1x,f8.2,1x))') 'Lon: ',grid_g(ngrid)%glon(i,j) &
                                                    ,'Lat: ',grid_g(ngrid)%glat(i,j)
-              write(unit=*,fmt=*) 'EXNER (PIO)        : ',pi0_mean
+              write(unit=*,fmt=*) 'EXNER (PIO)        : ',exner_mean
               write(unit=*,fmt=*) 'DN0_MEAN           : ',dn0_mean
               write(unit=*,fmt=*) 'THETA_MEAN         : ',theta_mean
               write(unit=*,fmt=*) 'RV_MEAN            : ',rv_mean
@@ -279,6 +296,15 @@ subroutine simple_lake_model(time,dtlongest)
               write(unit=*,fmt=*) 'TOP                : ',top
               write(unit=*,fmt=*) 'LAST_RV            : ',last_rv
               write(unit=*,fmt=*) 'LAST_TH            : ',last_th
+
+              write(unit=*,fmt='(a)') '=======FLUXES======='
+              
+              write(unit=*,fmt=*) 'U momentum flux:    ',wgrid_g(ngrid)%sflux_u(i,j)
+              write(unit=*,fmt=*) 'V momentum flux:    ',wgrid_g(ngrid)%sflux_v(i,j)
+              write(unit=*,fmt=*) 'W momentum flux:    ',wgrid_g(ngrid)%sflux_w(i,j)
+              write(unit=*,fmt=*) 'Sensible Heat flux: ',wgrid_g(ngrid)%sflux_t(i,j)
+              write(unit=*,fmt=*) 'Latent Heat flux:   ',alvl*wgrid_g(ngrid)%sflux_r(i,j)
+
               call fatal_error('Lake model failed','simple_lake_model','edcp_water.f90')
            end if
      

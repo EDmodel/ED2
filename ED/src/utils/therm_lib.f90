@@ -14,7 +14,7 @@ module therm_lib
    !---------------------------------------------------------------------------------------!
    ! Constants that control the convergence for iterative methods                          !
    !---------------------------------------------------------------------------------------!
-   real   , parameter ::   toler  = 2.* epsilon(1.) ! Relative tolerance for iterative 
+   real   , parameter ::   toler  = 10.* epsilon(1.) ! Relative tolerance for iterative 
                                                     !   methods. The smaller the value, the
                                                     !   more accurate the result, but it
                                                     !   will slow down the run.
@@ -255,10 +255,6 @@ module therm_lib
    end function rsif
    !=======================================================================================!
    !=======================================================================================!
-
-
-
-
 
 
    !=======================================================================================!

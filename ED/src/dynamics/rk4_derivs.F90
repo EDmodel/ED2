@@ -662,6 +662,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   real :: qveg_water
   real :: intercepted,qintercepted
   real :: qwflxvc
+  real :: sat_temp
 
   ! Canopies with LAI less than this number are assumed to be
   ! open, ie, some fraction of the rain-drops can reach
@@ -716,9 +717,9 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         ! HERE, POTENTIALLY INTERCEPTABLE WATER (intercepted) WAS
         ! CALCULATED AS A LINEAR FUNCTION OF PATCH LAI
         
-        ! intercepted  = pcpg * max(0.1,min(1.0,csite%lai(ipa)/lai_to_cover))
+        intercepted  = pcpg * max(0.1,min(1.0,csite%lai(ipa)/lai_to_cover))
         
-        intercepted = pcpg
+!        intercepted = pcpg
 
         qintercepted = (intercepted/pcpg)*qpcpg
         wshed_tot = pcpg-intercepted
@@ -858,6 +859,15 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
 
         call qwtk (initp%veg_energy(ico),initp%veg_water(ico),hcapveg,veg_temp,fracliq)
         
+
+!        if(veg_temp<t3ple-80.0) then
+!
+!           print*,ico,veg_temp,initp%veg_energy(ico),initp%veg_water(ico),&
+!                cpatch%rshort_v(ico),cpatch%rlong_v(ico)
+!           print*,cpatch%veg_energy(ico),cpatch%veg_water(ico)
+!
+!        endif
+
         !  Calculate leaf-level flux
         leaf_flux = cpatch%gpp(ico) - cpatch%leaf_respiration(ico)
         
@@ -871,6 +881,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
            sigmaw = 0.0
         endif
         
+
         ! Removed the check on vegetation temperature - RGK 11-2008
         ! Reason: State variables will be strange during partial steps, best to look
         ! at veg temperatures after integrations are complete.
@@ -878,9 +889,24 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         ! Here we need to be cautious though. The temperature may be off, but it can't be too off, like
         ! below 0K because this violates the basic laws of thermodynamics, and that does not make any sense.
         
-        sat_shv=rslif(prss,veg_temp)
-        c3 = cpatch%lai(ico) * rhos * (sat_shv - initp%can_shv)
+        ! Use a temperature to calculate leaf surface saturation vapor pressure
+        ! This conditioning prevents craziness with hot or cold leaves during 
+        ! half-steps.  The vapor pressure sky-rockets when temperatures exceed
+        ! the boiling point, and if this happens, it is possible to get extremely
+        ! high evaporation rates, and then extremely high cooling rates, and then
+        ! wild temperature fluctuations in small cohorts.
+        ! So dont let the vapor pressure exceed that for nominal min and max temps
+        ! But do not let the temperatures be capped below or above the canopy
+        ! temperature, because if that happens, we will innapropriately chnage the sign of
+        ! the fluxes.
         
+        !MLO: I will leave this commented temporarily, because I want the run to crash if
+        !     the temperature is off. But if we can't figure out what is happening, add it
+        !     back to prevent non-sense stuff. 
+        sat_temp = max( min(180.0,initp%can_temp)  ,  min(veg_temp,max(320.0,initp%can_temp)))
+        !sat_temp=veg_temp
+        sat_shv=rslif(prss,sat_temp)
+        c3 = cpatch%lai(ico) * rhos * (sat_shv - initp%can_shv)
            
         rbi = 1.0 / cpatch%rb(ico)
         
@@ -895,6 +921,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
            else
               transp = 0.0
            endif
+
         else   
            ! dew formation
            ! Dew area factor being changed to 1.2 - RGK 11-2008
@@ -918,7 +945,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         ! rbi is the conductance
         ! rhos is the air density
         ! cp is the specific heat
-        ! 2.2 acpatchounts for stems and branches.
+        ! 2.2 accounts for stems and branches.
         ! --------------------------------------------------------
 
         hflxvc = 2.2 * cpatch%lai(ico) * cp * rhos * rbi  &
@@ -1018,7 +1045,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
            call fatal_error('dinitp%veg_energy is NaN','canopy_derivs_two_ar','rk4_derivs.F90')
         endif
 
-        if (ipy == 21 .and. ipa == 14) then
+        if (ipy == 36 .and. ipa == 3) then
            write (unit=62,fmt='(a)') '----------------------------------------------------------------------'
            write (unit=62,fmt='(a,1x,i12)')    ' - PFT:             ',cpatch%pft(ico)
            write (unit=62,fmt='(a,1x,es12.5)') ' - NPLANT:          ',cpatch%nplant(ico)

@@ -162,7 +162,8 @@ visible_fraction_dir = 0.43
 visible_fraction_dif = 0.52
 leaf_reflect_nir = 0.577
 leaf_trans_nir = 0.248
-lai_min = 1.0e-5
+
+lai_min = 1.0e-4
 
 
 leaf_scatter_nir = leaf_reflect_nir + leaf_trans_nir

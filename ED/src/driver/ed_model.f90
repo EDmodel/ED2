@@ -10,7 +10,7 @@ subroutine ed_model()
                       , out_time_fast, dtlsm, ifoutput, isoutput, idoutput    &
                       , imoutput, iyoutput,frqsum,unitfast,unitstate, imontha &
                       , iyeara, outstate,outfast, nrec_fast, nrec_state
-  use ed_misc_coms, only: outputMonth
+  use ed_misc_coms, only: outputMonth,fast_diagnostics
 
   use grid_coms, only : &
        ngrids,          &
@@ -76,6 +76,13 @@ subroutine ed_model()
   writing_year      = iyoutput > 0
   out_time_fast     = current_time
   out_time_fast%month = -1
+
+  !---------------------------------------------------------------------------------------!
+  !     Checking if the user has indicated a need for any of the fast flux diagnostic
+  ! variables, these are used in conditions of ifoutput,idoutput and imoutput conditions.
+  ! If they are not >0, then set the logical, fast_diagnostics to false.
+  !---------------------------------------------------------------------------------------!
+  fast_diagnostics = ifoutput .ne. 0 .or. idoutput .ne. 0 .or. imoutput .ne. 0
 
   if (writing_mont) then
      do ifm=1,ngrids
