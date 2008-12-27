@@ -131,11 +131,13 @@ USE_INTERF=1
 #----------------- gfortran on Linux x86_64 --------------------
 CMACH=PC_LINUX1
 F_COMP=mpif90
-F_OPTS=-O3
+#F_OPTS=-O3
 #F_OPTS=-g -ffpe-trap=invalid,zero,overflow -fbounds-check
+F_OPTS=-O3 -march=native
 C_COMP=mpicc
 #C_OPTS=-g
-C_OPTS=-O3
+#C_OPTS=-O3
+C_OPTS=-O3 -march=native
 LOADER=mpif90
 LOADER_OPTS=${F_OPTS}
 C_LOADER=mpicc

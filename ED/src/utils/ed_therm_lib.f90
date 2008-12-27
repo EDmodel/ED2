@@ -1,6 +1,28 @@
 module ed_therm_lib
 
-   contains
+  
+  
+  !---------------------------------------------------------------------------------------!
+  !     These constants came from the paper in which the saturation vapour pressure is    !
+  ! based on:                                                                             !
+  !                                                                                       !
+  !  Murphy, D. M.; Koop, T., 2005: Review of the vapour pressures of ice and supercooled !
+  !     water for atmospheric applications. Q. J. Royal Meteor. Soc., vol. 31, pp. 1539-  !
+  !     1565 (hereafter MK05).                                                            !
+  !                                                                                       !
+  !  These equations give the triple point at t3ple, with vapour pressure being es3ple.   !
+  !---------------------------------------------------------------------------------------!
+  !----- Coefficients based on equation (7): ---------------------------------------------!
+  real, dimension(0:3), parameter :: iii_7 = (/ 9.550426,-5723.265, 3.53068,-0.00728332 /)
+  !----- Coefficients based on equation (10), first fit ----------------------------------!
+  real, dimension(0:3), parameter :: l01_10= (/54.842763,-6763.22 ,-4.210  , 0.000367   /)
+  !----- Coefficients based on equation (10), second fit ---------------------------------!
+  real, dimension(0:3), parameter :: l02_10= (/53.878   ,-1331.22 ,-9.44523, 0.014025   /)
+  !----- Coefficients based on the hyperbolic tangent ------------------------------------!
+  real, dimension(2)  , parameter :: ttt_10= (/0.0415,218.8/)
+  !---------------------------------------------------------------------------------------!
+  
+contains
 
    !=======================================================================================!
    !=======================================================================================!
@@ -46,14 +68,14 @@ module ed_therm_lib
      real :: spec_hcap_stem
      
 
-     real,parameter :: biomass_factor = 10.0 ! This is a biomass kluge factor
+     real,parameter :: biomass_factor = 1.0 ! This is a biomass kluge factor
                                              ! The model is much faster and more stable
                                              ! When heat capacity is high.
                                              ! It was also found that when net-radiation
                                              ! matched tower observations, the dynamic
                                              ! range of the 
 
-     real,parameter :: min_hcapveg = 1000.0  ! This is roughly 1/3 kg of biomass at 3000 J/kg/K
+     real,parameter :: min_hcapveg = 30.0    ! This is roughly 1/3 kg of biomass at 3000 J/kg/K
                                              ! Dont be fooled, this is quite high
      integer :: pft     
      real,parameter :: veg_temp = 285.0      ! RIght now we are using a nominal vegetation
@@ -64,23 +86,23 @@ module ed_therm_lib
 
      ! Specific heat capacity of leaf biomass (J/kg/K)
      ! The calculation of leaf heat capacity follows Gu et al. 2007
-     spec_hcap_leaf  = (c_grn_leaf_dry(pft) + cliq*wat_dry_ratio_grn(pft))/(1.+wat_dry_ratio_grn(pft))
+!     spec_hcap_leaf  = (c_grn_leaf_dry(pft) + cliq*wat_dry_ratio_grn(pft))/(1.+wat_dry_ratio_grn(pft))
      
      
      ! Specific heat capacity of the stems and structural biomass.
      ! Also following Gu et al. 2007
      
-     spec_hcap_stem  = (c_ngrn_biom_dry(pft) + cliq*wat_dry_ratio_ngrn(pft))/(1+wat_dry_ratio_ngrn(pft))&
-          + 100. * wat_dry_ratio_ngrn(pft) * &
-          (-0.06191 + 2.36*1.0e-4*veg_temp - 1.33*1.0e-2*wat_dry_ratio_ngrn(pft))
+!     spec_hcap_stem  = (c_ngrn_biom_dry(pft) + cliq*wat_dry_ratio_ngrn(pft))/(1+wat_dry_ratio_ngrn(pft))&
+!          + 100. * wat_dry_ratio_ngrn(pft) * &
+!          (-0.06191 + 2.36*1.0e-4*veg_temp - 1.33*1.0e-2*wat_dry_ratio_ngrn(pft))
      
      
      ! New Method
-     calc_hcapveg = biomass_factor * nplants * (leaf_carbon*C2B*spec_hcap_leaf + &
-          structural_carbon*C2B * hcap_stem_fraction * spec_hcap_stem )
+!     calc_hcapveg = biomass_factor * nplants * (leaf_carbon*C2B*spec_hcap_leaf + &
+!          structural_carbon *C2B * hcap_stem_fraction * spec_hcap_stem )
 
+     calc_hcapveg = nplants * (leaf_carbon*C2B*c_grn_leaf_dry(pft) + wat_dry_ratio_grn(pft)*leaf_carbon*C2B*cliq)
 
-!     print*,nplants*leaf_biomass,nplants*structural_biomass,spec_hcap_leaf,spec_hcap_stem,calc_hcapveg
 
 
 
@@ -267,6 +289,31 @@ module ed_therm_lib
      return
    end subroutine ed_grndvap
    
-   
-   
+   !================================================================================
+
+  real function fast_svp(pres,temp)
+     
+     use consts_coms, only: t3ple,ep
+     implicit none
+     real,intent(in) :: temp
+     real,intent(in) :: pres
+     real            :: ttfun,fun2,fun1
+     real :: esz
+
+     if(temp<t3ple) then
+        !----- Updated method, using MK05 ------------------------------------------------!
+        fun1 = iii_7(0) + iii_7(1)/temp + iii_7(2) * log(temp) + iii_7(3) * temp
+        esz  = exp(fun1)
+     else
+        fun1 = l01_10(0) + l01_10(1)/temp + l01_10(2)*log(temp) + l01_10(3) * temp
+        fun2 = l02_10(0) + l02_10(1)/temp + l02_10(2)*log(temp) + l02_10(3) * temp
+        ttfun = tanh(ttt_10(1) * (temp - ttt_10(2)))
+        esz  = exp(fun1 + ttfun*fun2)
+     endif
+     
+     fast_svp = ep * esz / (pres - esz)
+     
+   end function fast_svp
+
+
  end module ed_therm_lib

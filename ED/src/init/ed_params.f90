@@ -6,7 +6,6 @@ subroutine load_ed_ecosystem_params()
    use pft_coms, only: include_pft, include_pft_ag,C2B,frost_mort,include_these_pft,grass_pft
    use disturb_coms,only:min_new_patch_area,num_lu_trans
 
-
    implicit none
    integer :: p
 
