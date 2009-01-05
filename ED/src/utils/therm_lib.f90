@@ -257,10 +257,6 @@ module therm_lib
    !=======================================================================================!
 
 
-
-
-
-
    !=======================================================================================!
    !=======================================================================================!
    !     This function calculates the saturation vapour mixing ratio, over liquid or ice   !
@@ -882,7 +878,11 @@ module therm_lib
          tempk   = (qw - qwliq0) / (cliq * w + dryhcap) + t3ple
       !----- Changing phase, it must be at triple point -----------------------------------!
       else
-         fracliq = qw / qwliq0
+         if(w>0.) then
+            fracliq = qw / qwliq0
+         else
+            fracliq = 0.5
+         endif
          tempk = t3ple
       end if
       !------------------------------------------------------------------------------------!

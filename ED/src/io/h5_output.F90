@@ -149,8 +149,8 @@ subroutine h5_output(vtype)
 
   do ngr=1,ngrids
 
-     call h5garbage_collect_f(hdferr) 
-
+!     call h5garbage_collect_f(hdferr) 
+     
      ping = 0 
 
 #if USE_COLLECTIVE_MPIO

@@ -7,7 +7,7 @@ subroutine copy_atm2lsm(ifm,init)
        master_num,mmzp,mmxp,mmyp,  &
        ia,iz,ja,jz,ia_1,iz1,ja_1,jz1
   
-  use rconstants,only:cpi,cp,p00,rocp,rgas,cliq,alli,cice,t3ple
+  use rconstants,only:cpi,cp,p00,rocp,rgas,cliq,alli,cice,t3ple,cpor
   use met_driver_coms, only: have_co2,initial_co2
   use ed_state_vars,only: edgrid_g,edtype,polygontype
   use ed_node_coms,only:mynum
@@ -136,7 +136,7 @@ subroutine copy_atm2lsm(ifm,init)
            print*,'bad pi0 mean'
            print*,i,j,basic_g(ifm)%pp(1,i,j),basic_g(ifm)%pp(2,i,j), &
                 basic_g(ifm)%pi0(1,i,j),basic_g(ifm)%pi0(2,i,j)
-           stop
+           call fatal_error('Bad pi0_mean','copy_atm2lsm','edcp_met.f90')
         endif
         
         dn0_mean(i,j) = (basic_g(ifm)%dn0(1,i,j) + basic_g(ifm)%dn0(2,i,j)) * 0.5
@@ -171,9 +171,10 @@ subroutine copy_atm2lsm(ifm,init)
      cgrid%met(ipy)%par_diffuse  =  0.55*(rshortd(ix,iy))
 
      cgrid%met(ipy)%rlong    = radiate_g(ifm)%rlong(ix,iy)
-     cgrid%met(ipy)%prss     = pi0_mean(ix,iy)*100.0    ! Convert from millibars -> Pascals
-     cgrid%met(ipy)%geoht    = zt(2) + grid_g(ifm)%rtgt(ix,iy)
-     cgrid%met(ipy)%vels     = sqrt( up_mean(ix,iy)**2 + vp_mean(ix,iy)**2)
+     cgrid%met(ipy)%prss     = p00 * (cpi * pi0_mean(ix,iy))**cpor
+     cgrid%met(ipy)%geoht    = zt(2) * grid_g(ifm)%rtgt(ix,iy)
+
+     cgrid%met(ipy)%vels     = max(0.65,sqrt( up_mean(ix,iy)**2 + vp_mean(ix,iy)**2))
 
      cgrid%met(ipy)%atm_shv  = rv_mean(ix,iy)
      cgrid%met(ipy)%atm_tmp  = theta_mean(ix,iy)*pi0_mean(ix,iy) * cpi
@@ -215,7 +216,7 @@ subroutine copy_atm2lsm(ifm,init)
         if (.not.have_co2) cpoly%met(isi)%atm_co2 = initial_co2
         
         ! exner
-        cpoly%met(isi)%exner = cp * (cpoly%met(isi)%prss / p00)**rocp
+        cpoly%met(isi)%exner = pi0_mean(ix,iy) 
         ! solar radiation
         cpoly%met(isi)%rshort_diffuse = cpoly%met(isi)%par_diffuse +   &
              cpoly%met(isi)%nir_diffuse
@@ -430,6 +431,39 @@ subroutine copy_fluxes_lsm2atm(ifm)
      do isi=1,cpoly%nsites
         csite => cpoly%site(isi)
         
+
+        if(sum(csite%area * csite%ustar) /= sum(csite%area * csite%ustar)) then
+           call fatal_error('Bad USTAR','copy_fluxes_lsm2atm','edcp_met.f90')
+        end if
+
+        if(sum(csite%area * csite%tstar) /= sum(csite%area * csite%tstar)) then
+           call fatal_error('Bad TSTAR','copy_fluxes_lsm2atm','edcp_met.f90')
+        end if
+        
+        if(sum(csite%area * csite%rstar) /= sum(csite%area * csite%rstar)) then
+           call fatal_error('Bad RSTAR','copy_fluxes_lsm2atm','edcp_met.f90')
+        end if
+
+        if(sum(csite%area * csite%upwp) /= sum(csite%area * csite%upwp)) then
+           call fatal_error('Bad MOMENTUM FLUX','copy_fluxes_lsm2atm','edcp_met.f90')
+        end if
+        
+        if(sum(csite%area * csite%tpwp) /= sum(csite%area * csite%tpwp)) then
+           call fatal_error('Bad HEAT FLUX','copy_fluxes_lsm2atm','edcp_met.f90')
+        end if
+
+        if(sum(csite%area * csite%rpwp) /= sum(csite%area * csite%rpwp)) then
+           call fatal_error('Bad MOISTURE FLUX','copy_fluxes_lsm2atm','edcp_met.f90')
+        end if
+
+        if(cpoly%rlongup(isi) /= cpoly%rlongup(isi)) then
+           call fatal_error('Bad RLONGUP','copy_fluxes_lsm2atm','edcp_met.f90')
+        end if
+
+        if(cpoly%albedt(isi) /= cpoly%albedt(isi)) then
+           call fatal_error('Bad ALBEDT','copy_fluxes_lsm2atm','edcp_met.f90')
+        end if
+
         fluxp%ustar(ix,iy) = fluxp%ustar(ix,iy) + cpoly%area(isi)*sum(csite%area * csite%ustar)
 
         fluxp%tstar(ix,iy) = fluxp%tstar(ix,iy) + cpoly%area(isi)*sum(csite%area * csite%tstar)
@@ -446,7 +480,10 @@ subroutine copy_fluxes_lsm2atm(ifm)
 
         fluxp%sflux_r(ix,iy) = fluxp%sflux_r(ix,iy) + cpoly%area(isi)*sum(csite%area * csite%rpwp)
 
-        fluxp%rlongup(ix,iy) = fluxp%rlongup(ix,iy) + cpoly%area(isi)*cpoly%rlongup(isi)
+        ! INCLUDE BOTH SURFACE AND REFLECTED INCIDENT
+        
+        fluxp%rlongup(ix,iy) = fluxp%rlongup(ix,iy) + cpoly%area(isi)*cpoly%rlongup(isi) + &
+             cgrid%met(ipy)%rlong *cpoly%area(isi)*cpoly%rlong_albedo(isi)
 
         fluxp%albedt(ix,iy)  = fluxp%albedt(ix,iy)  + &
              cpoly%area(isi)*0.5*(cpoly%albedo_beam(isi) + cpoly%albedo_diffuse(isi))
@@ -604,7 +641,7 @@ subroutine transfer_ed2leaf(ifm,timel)
 
   integer :: ifm
   real(kind=8) :: timel
-  real :: tfact
+  real :: tfact,la
   logical,save :: first=.true.
   integer :: ic,jc,ici,jci,i,j
   integer :: m2,m3
@@ -632,18 +669,36 @@ subroutine transfer_ed2leaf(ifm,timel)
   leaf_g(ifm)%rstar(ia:iz,ja:jz,1) = wgrid_g(ifm)%rstar(ia:iz,ja:jz)
 
 
-  ! Interpolate and blend the albedo, upwelling longwave, and turbulent fluxes
+  do i=ia,iz
+     do j=ja,jz
+        
+        la = leaf_g(ifm)%patch_area(i,j,2)+leaf_g(ifm)%patch_area(i,j,1) 
+
+        if( la>1.01 .or. la<0.99) then
+           
+           print*,"LEAF AREA NOT UNITY:",la
+           print*,i,j
+           call fatal_error('LEAF AREA NOT UNITY','transfer_ed2leaf','edcp_met.f90')
+        endif
+
+     enddo
+  enddo
+
+
+  ! Interpolate and blend the albedo, upwelling longwave, and turbut fluxes
   
   radiate_g(ifm)%albedt(ia:iz,ja:jz) = &
        leaf_g(ifm)%patch_area(ia:iz,ja:jz,2)* &
        ((1-tfact)*ed_fluxp_g(ifm)%albedt(ia:iz,ja:jz) + tfact*ed_fluxf_g(ifm)%albedt(ia:iz,ja:jz)) + &
        leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)*wgrid_g(ifm)%albedt(ia:iz,ja:jz)
   
-  radiate_g(ifm)%rlongup(ia:iz,ja:jz) = &
-       leaf_g(ifm)%patch_area(ia:iz,ja:jz,2)* &
-       ((1-tfact)*ed_fluxp_g(ifm)%rlongup(ia:iz,ja:jz) + tfact*ed_fluxf_g(ifm)%rlongup(ia:iz,ja:jz)) + &
-       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)*wgrid_g(ifm)%rlongup(ia:iz,ja:jz)
+!  radiate_g(ifm)%rlongup(ia:iz,ja:jz) = &
+!       leaf_g(ifm)%patch_area(ia:iz,ja:jz,2)* &
+!       ((1-tfact)*ed_fluxp_g(ifm)%rlongup(ia:iz,ja:jz) + tfact*ed_fluxf_g(ifm)%rlongup(ia:iz,ja:jz)) + &
+!       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)*wgrid_g(ifm)%rlongup(ia:iz,ja:jz)
   
+  radiate_g(ifm)%rlongup(ia:iz,ja:jz) =  wgrid_g(ifm)%rlongup(ia:iz,ja:jz)
+
   turb_g(ifm)%sflux_u(ia:iz,ja:jz) = &
        leaf_g(ifm)%patch_area(ia:iz,ja:jz,2)* &
        ((1-tfact)*ed_fluxp_g(ifm)%sflux_u(ia:iz,ja:jz) + tfact*ed_fluxf_g(ifm)%sflux_u(ia:iz,ja:jz)) + &

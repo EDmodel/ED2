@@ -293,7 +293,6 @@ subroutine spatial_averages
                  cgrid%avg_bdead(ipy)     = cgrid%avg_bdead(ipy) + &
                       csite%area(ipa)*cpoly%area(isi)*sum(cpatch%bdead*cpatch%nplant)
 
-
                  ! Check the extremes
                  
                  if (maxval(cpatch%veg_temp) > cgrid%max_veg_temp(ipy)) then
@@ -312,9 +311,6 @@ subroutine spatial_averages
                  csite%avg_veg_energy(ipa)  = 0.0          
                  csite%avg_veg_temp(ipa)  = csite%can_temp(ipa)
                  csite%avg_veg_water(ipa) = 0.0
-                 
-                 
-
 
               endif
 
@@ -327,6 +323,7 @@ subroutine spatial_averages
               lai_index = min(3,max(1, floor(csite%lai(ipa)/2.0) + 1)  )
               
               area_sum(lai_index) = area_sum(lai_index) + csite%area(ipa)
+
 
               ! Net radiation
               cgrid%avg_lai_ebalvars(lai_index,1,ipy) = &

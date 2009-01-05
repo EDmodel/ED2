@@ -55,6 +55,7 @@ subroutine ed_driver
   !---------------------------------------------------------------------------!
   ! STEP 1: Set the ED model parameters                                       !
   !---------------------------------------------------------------------------!
+
   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Load_Ed_Ecosystem_Params...'
   call load_ed_ecosystem_params()
   

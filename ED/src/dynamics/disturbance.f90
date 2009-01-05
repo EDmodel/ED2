@@ -682,9 +682,9 @@ end subroutine apply_disturbances_ar
           tpatch%vleaf_respiration(nco)   = tpatch%vleaf_respiration(nco) * cohort_area_fac
           tpatch%Psi_open(nco)            = tpatch%Psi_open(nco) * cohort_area_fac
 
-          ! Adjust the vegetation energy - RGK 11-26-2008
+          ! Adjust the vegetation energy 
 
-          call update_veg_energy_ct(cpatch,ico)
+          call update_veg_energy_ct(tpatch,nco)
 
           
        endif

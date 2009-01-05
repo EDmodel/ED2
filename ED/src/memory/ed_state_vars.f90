@@ -5472,7 +5472,7 @@ contains
     if (associated(cgrid%xatm)) then
        nvar=nvar+1
        call vtable_edio_i(cgrid%xatm(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'XATM :11:hist:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'XATM :11:hist:anal:mpti:mpt3') 
 
        call metadata_edio(nvar,igr,'Atm. cell x-indices of polygon','NA','ipoly')
 
@@ -5481,12 +5481,12 @@ contains
     if (associated(cgrid%yatm)) then
        nvar=nvar+1
        call vtable_edio_i(cgrid%yatm(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'YATM :11:hist:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'YATM :11:hist:anal:mpti:mpt3') 
 
        call metadata_edio(nvar,igr,'Atm cell y-indices of polygon','NA','ipoly')
 
     endif
-    
+
     if (associated(cgrid%ntext_soil)) then
        nvar=nvar+1
        call vtable_edio_i(cgrid%ntext_soil(1,1),nvar,igr,init,cgrid%pyglob_id, &
@@ -6556,6 +6556,10 @@ contains
             var_len,var_len_global,max_ptrs,'STDEV_RH :11:hist:mont:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
+
+
+
+
     
     if (init == 0) niogrid=nvar-nioglobal
     

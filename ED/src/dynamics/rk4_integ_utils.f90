@@ -461,15 +461,23 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
   do ico = 1,cpatch%ncohorts
      if (cpatch%lai(ico) > lai_min) then
         yscal%veg_water(ico) = 0.22
-        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
-                                   + abs(dy%veg_energy(ico)*htry),0.22*alli)
+        
+!        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
+!             + abs(dy%veg_energy(ico)*htry),0.22*alli)
+        
+        yscal%veg_energy(ico) = 10.0*(y%veg_water(ico)*alli + y%veg_water(ico)*cliq*(317.-273.15) &
+             + cpatch%hcapveg(ico)*(317.-273.15))! + abs(dy%veg_energy(ico)*htry)
 
-        ! Mike: Why not just use a nominal energy for the scaling? Is there really a need for the scaling to be
-        ! associated with a certain temperature? How about global avergage surface temperature? Signed Anonymous
-        ! -----------------------------------------------------------------------------------------------
+!        yscal%veg_energy(ico) = (1/60)*cpatch%hcapveg(ico)*htry
 
-!        yscal%veg_energy(ico) = y%veg_water(ico)*alli + y%veg_water(ico)*cliq*(287.-273.15) &
-!             + cpatch%hcapveg(ico)*(287.-273.15) + abs(dy%veg_energy(ico)*htry)
+        
+!        print*,"O1: ",y%veg_water(ico)*alli + y%veg_water(ico)*cliq*(287.-273.15) &
+!             + cpatch%hcapveg(ico)*(287.-273.15) + abs(dy%veg_energy(ico)*htry), &
+!             "O2: ",(1./60.)*cpatch%hcapveg(ico)*htry, &
+!             "absf:",abs(dy%veg_energy(ico)*htry), &
+!             "htry:",htry
+
+
 
      else
         yscal%veg_water(ico) = 1.e30
@@ -499,6 +507,18 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
   integer :: ico
   real :: errmax,errh2o,errene
   integer :: k
+  
+  integer,save:: count
+  real,save ::   errctemp
+  real,save ::  errcvap
+  real,save ::  errcco2
+  real,save ::  errswat(12)
+  real,save ::  errseng(12)
+  real,save ::  errvh
+  real,save ::  errvw
+  real,save ::  errvegw(50)
+  real,save ::  errvege(50)
+
   
   errmax = 0.0
   errmax = max(errmax,abs(yerr%can_temp/yscal%can_temp))
@@ -538,6 +558,46 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
   end do
 !  write (unit=40,fmt='(132a)') ('-',k=1,132)
 !  write (unit=40,fmt='(a)') ' '
+
+  ! If the errror was high, lets log what was the bad egg slowing everyone down
+!  if (errmax/(1.0e-2)>1.0) then
+!     print*,""
+!     print*,"============================================="
+!     print*,"CANTEMP:", errctemp
+!     errctemp=errctemp+abs(yerr%can_temp/yscal%can_temp)
+!     print*,"CANSHV:", errcvap
+!     errcvap=errcvap+abs(yerr%can_shv/yscal%can_shv)
+!     print*,"CANCO2:",errcco2
+!     errcco2=errcco2+abs(yerr%can_co2/yscal%can_co2)
+!     do k=lsl,nzg
+!        print*,"SOILWAT(",k,"):",errswat(k)
+!        errswat(k)=errswat(k) + real(dabs(yerr%soil_water(k)/yscal%soil_water(k)))
+!        print*,"SOILENG(",k,"):",errseng(k)
+!        errseng(k)=errseng(k) + abs(yerr%soil_energy(k)/yscal%soil_energy(k))
+!     enddo
+!     print*,"VIRTUAL HEAT:",errvh
+!     errvh = errvh + abs(yerr%virtual_heat/yscal%virtual_heat)
+!     print*,"VIRTUAL WATER:",errvw
+!     errvw = errvw + abs(yerr%virtual_water/yscal%virtual_water)
+!     do ico = 1,cpatch%ncohorts
+!        if(cpatch%lai(ico).gt.lai_min)then
+!           print*,"VEGWAT:(",ico,"):",errvegw(ico)
+!           errvegw(ico) = errvegw(ico) + abs(yerr%veg_water(ico)/yscal%veg_water(ico))
+!           print*,"VEGENG:(",ico,"):",errvege(ico)
+!           errvege(ico) = errvege(ico) + abs(yerr%veg_energy(ico)/yscal%veg_energy(ico))
+!        endif
+!     end do
+!    print*,"============================================="
+
+!    count=count+1
+!    if(count==500)stop
+!  endif
+
+
+
+
+
+
 
   return
 end subroutine get_errmax_ar
