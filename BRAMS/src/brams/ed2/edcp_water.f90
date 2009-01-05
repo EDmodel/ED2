@@ -5,7 +5,7 @@ subroutine simple_lake_model(time,dtlongest)
 
   use node_mod,only:ja,jz,ia,iz
 
-  use consts_coms,only:stefan,cpi,vonk,cp,grav,p00,rocp,cpor
+  use consts_coms,only:stefan,cpi,vonk,cp,grav,p00,rocp,cpor,alvl
   use canopy_air_coms, only : ubmin
   use mem_edcp,only:wgrid_g
 
@@ -30,7 +30,6 @@ subroutine simple_lake_model(time,dtlongest)
   real :: bot,top,last_rv,last_th
   real :: hcapcan,wcapcan
   real :: z0fac_water,pis,rdi,idt
-
   real,external :: vertical_vel_flux
 
 
@@ -83,11 +82,18 @@ subroutine simple_lake_model(time,dtlongest)
   
   ! The target step size for the water body suface flux is about 30 seconds
 
-  hcapcan = 2.0e4
-  wcapcan = 2.0e1
+!  hcapcan = 2.0e4
+!  wcapcan = 2.0e1
 
-  dtllohcc = dtll / hcapcan
-  dtllowcc = dtll / wcapcan
+!  hcapcan = 2.0e4
+!  wcapcan = 2.0e1
+
+   
+
+
+
+!  dtllohcc = dtll / hcapcan
+!  dtllowcc = dtll / wcapcan
 
   
   z0fac_water = .016 / grav
@@ -214,16 +220,16 @@ subroutine simple_lake_model(time,dtlongest)
                         ,ustar,rstar,tstar,cstar,canopy_water_vapor,canopy_co2)
            
            !----- This part is on LEAF, but not on ED, don't know how necessary this is. --!
-           ifixu=0
-           ustaro=ustar
-           delz = 2.*zts
-           d_vel =  - ustar * ustar *dtlongest / delz
-           vel_new = vels_pat + d_vel
-           if (vel_new < .5 * vels_pat) then
-              ifixu=1
-              d_veln = .5 * vels_pat
-              ustar=sqrt(d_veln*delz/dtlongest)
-           end if
+!           ifixu=0
+!           ustaro=ustar
+!           delz = 2.*zts
+!           d_vel =  - ustar * ustar *dtlongest / delz
+!           vel_new = vels_pat + d_vel
+!           if (vel_new < .5 * vels_pat) then
+!              ifixu=1
+!              d_veln = .5 * vels_pat
+!              ustar=sqrt(d_veln*delz/dtlongest)
+!           end if
 
            ! Calculate the heat,moisture and momentum fluxes
            ! -----------------------------------------------
@@ -239,13 +245,24 @@ subroutine simple_lake_model(time,dtlongest)
            
            ! Update the sea surface air temperature and water vapor mixing ratio
            ! -------------------------------------------------------------------
+
+           ! In calculating the water capacity and heat capacity of the
+           ! sea surface air space
+           ! We will assume a layer that is 20 meters thick
            
+           wcapcan = 20.0 * dn0_mean
+           hcapcan = cp * 20.0 * dn0_mean
+
+           dtllohcc = dtll/hcapcan
+           dtllowcc = dtll/wcapcan
+
+
            rdi = .2 * ustar
            
            last_th = canopy_tempk
 
            canopy_tempk  = canopy_tempk        &
-                + dtllohcc * dn0_mean * cp                          &
+                + dtllohcc * dn0_mean * cp                    &
                 * ( (seatc -  canopy_tempk) * rdi    &
                 + ustar * tstar * pis)
            
@@ -279,6 +296,15 @@ subroutine simple_lake_model(time,dtlongest)
               write(unit=*,fmt=*) 'TOP                : ',top
               write(unit=*,fmt=*) 'LAST_RV            : ',last_rv
               write(unit=*,fmt=*) 'LAST_TH            : ',last_th
+
+              write(unit=*,fmt='(a)') '=======FLUXES======='
+              
+              write(unit=*,fmt=*) 'U momentum flux:    ',wgrid_g(ngrid)%sflux_u(i,j)
+              write(unit=*,fmt=*) 'V momentum flux:    ',wgrid_g(ngrid)%sflux_v(i,j)
+              write(unit=*,fmt=*) 'W momentum flux:    ',wgrid_g(ngrid)%sflux_w(i,j)
+              write(unit=*,fmt=*) 'Sensible Heat flux: ',wgrid_g(ngrid)%sflux_t(i,j)
+              write(unit=*,fmt=*) 'Latent Heat flux:   ',alvl*wgrid_g(ngrid)%sflux_r(i,j)
+
               call fatal_error('Lake model failed','simple_lake_model','edcp_water.f90')
            end if
      

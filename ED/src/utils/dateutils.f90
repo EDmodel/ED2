@@ -7,7 +7,7 @@ subroutine date_abs_secs2 (year1,month1,date1,hour1,seconds)
    implicit none
    real(kind=8) :: seconds
 
-   ! compute number of seconds past 1 January 1900 12:00 am
+   ! compute number of seconds past 1 January 1583 12:00 am
 
    real(kind=8) :: s1,s2,s3,s4
    integer :: year1,month1,date1,hour1,iy,ndays

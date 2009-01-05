@@ -23,13 +23,16 @@ subroutine ed_coup_driver()
        allocate_edglobals, &    ! implicitly interfaced subroutine
        filltab_alltypes, &
        edgrid_g
-  
+
+  use ed_misc_coms, only: fast_diagnostics
+
   use misc_coms, only: &
        iyeara,          &
        imontha,         &
        idatea,          &
        itimea,          &
        runtype,         &
+       ifoutput,        &
        idoutput,        &
        imoutput,        &
        integration_scheme
@@ -60,6 +63,16 @@ subroutine ed_coup_driver()
   wtime_start=walltime(0.)
   w1=walltime(wtime_start)
 
+  !---------------------------------------------------------------------------!
+  ! STEP (Classified): Set the special diagnostic parameter                   !
+  !                                                                           !
+  !     Checking if the user has indicated a need for any of the fast flux    !
+  ! diagnostic variables, these are used in conditions of ifoutput,idoutput   !
+  ! and imoutput conditions.                                                  !
+  ! If they are not >0, then set the logical, fast_diagnostics to false.      !
+  !---------------------------------------------------------------------------!
+  fast_diagnostics = ifoutput /= 0 .or. idoutput /= 0 .or. imoutput /= 0
+
 
   !---------------------------------------------------------------------------!
   ! STEP 1: Set the ED model parameters                                       !
@@ -78,7 +91,6 @@ subroutine ed_coup_driver()
   
   if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,602,MPI_COMM_WORLD,ierr)
 
-!  if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
   
   !---------------------------------------------------------------------------!
   ! STEP 3: Allocate soil grid arrays                                         !

@@ -6,7 +6,6 @@ subroutine load_ed_ecosystem_params()
    use pft_coms, only: include_pft, include_pft_ag,C2B,frost_mort,include_these_pft,grass_pft
    use disturb_coms,only:min_new_patch_area,num_lu_trans
 
-
    implicit none
    integer :: p
 
@@ -162,7 +161,8 @@ visible_fraction_dir = 0.43
 visible_fraction_dif = 0.52
 leaf_reflect_nir = 0.577
 leaf_trans_nir = 0.248
-lai_min = 1.0e-5
+
+lai_min = 1.0e-4
 
 
 leaf_scatter_nir = leaf_reflect_nir + leaf_trans_nir

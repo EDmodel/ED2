@@ -68,15 +68,15 @@ contains
                integration_buff%y,integration_buff%ytemp)
           errmax = errmax/epsil
        else
-          call get_errmax_ar(errmax, integration_buff%yerr,   &
-               integration_buff%yscal, csite%patch(ipa), lsl, &
-               integration_buff%y,integration_buff%ytemp)
-          errmax = errmax/epsil
-          if ( errmax < 1) then
+!          call get_errmax_ar(errmax, integration_buff%yerr,   &
+!               integration_buff%yscal, csite%patch(ipa), lsl, &
+!               integration_buff%y,integration_buff%ytemp)
+!          errmax = errmax/epsil
+!          if ( errmax < 1) then
 !             print*,"INTEGRATOR DID NOT GIVE SANE RESULTS"
 !             print*,"YET IT PASSED THE ERROR CRITERIA"
 !             print*,"THIS SHOULD NOT BE. STOPPING"
-          endif
+!          endif
 
           errmax = 10.0
        endif
@@ -327,7 +327,6 @@ contains
     use canopy_radiation_coms, only: lai_min
     use consts_coms, only : t3ple
     use therm_lib, only: qwtk
-    use ed_therm_lib, only: calc_hcapveg
 
     implicit none
     integer, intent(in) :: lsl
@@ -442,12 +441,12 @@ contains
     
        if (cpatch%lai(ico) > lai_min) then
           
-          hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-                 cpatch%nplant(ico),cpatch%pft(ico))
+!          hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+!                 cpatch%nplant(ico),cpatch%pft(ico))
 
-          call qwtk(y%veg_energy(ico),y%veg_water(ico),hcapveg,veg_temp,fracliq)
+          call qwtk(y%veg_energy(ico),y%veg_water(ico),cpatch%hcapveg(ico),veg_temp,fracliq)
 
-          if(veg_temp > 380.0)then
+          if(veg_temp > 380.0 .or. veg_temp < 200.0 )then
              iflag1 = 0
              if(print_diags==1) print*,'leaf temp too high',veg_temp,y%veg_energy(ico),  &
                   cpatch%lai(ico),cpatch%pft(ico),cpatch%veg_temp(ico)
@@ -456,6 +455,7 @@ contains
        end if
     end do
     
+
     return
   end subroutine lsm_sanity_check_ar
 

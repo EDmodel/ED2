@@ -98,6 +98,7 @@ subroutine ed_init_coup_atm
                  cpatch%veg_water(ico) = 0.0
 
                  call update_veg_energy_ct(cpatch,ico)
+
               enddo
            
            enddo
