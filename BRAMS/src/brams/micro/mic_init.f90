@@ -307,7 +307,7 @@ subroutine initqin(n1,n2,n3,q2,q6,q7,pi0,pp,theta,dn0,cccnp,cifnp)
         igraup,        & ! intent(in)
         ihail,         & ! intent(in)
         ipris            ! intent(in)
-   use rconstants, only : cpi,t3ple,tsupercool !intent(in)
+   use rconstants, only : cpi,t3ple,tsupercool,cliq,cice,alli !intent(in)
 
    implicit none
 
@@ -327,9 +327,9 @@ subroutine initqin(n1,n2,n3,q2,q6,q7,pi0,pp,theta,dn0,cccnp,cifnp)
             exner(k) = pi0(k,i,j) + pp(k,i,j)
             tair(k)  = theta(k,i,j) * exner(k) * cpi
 
-            if (irain  >= 1) q2(k,i,j)    = tair(k) - tsupercool
-            if (igraup >= 1) q6(k,i,j)    = 0.5 * min(0.,tair(k) - t3ple)
-            if (ihail  >= 1) q7(k,i,j)    = 0.5 * min(0.,tair(k) - t3ple)
+            if (irain  >= 1) q2(k,i,j)    = 0. ! cliq*tair(k) + alli
+            if (igraup >= 1) q6(k,i,j)    = 0. ! 0.5 * (cliq+cice)*min(t3ple,tair(k)) + 0.5*alli
+            if (ihail  >= 1) q7(k,i,j)    = 0. !0.5 * (cliq+cice)*min(t3ple,tair(k)) + 0.5*alli
             !----- Making up something, but not sure about this one. ----------------------!
             if (icloud == 7) cccnp(k,i,j) = 6.66e9
             if (ipris  == 7) cifnp(k,i,j) = 1.e5 * dn0(k,i,j) ** 5.4

@@ -46,14 +46,14 @@ module ed_therm_lib
      real :: spec_hcap_stem
      
 
-     real,parameter :: biomass_factor = 10.0 ! This is a biomass kluge factor
+     real,parameter :: biomass_factor = 1.00 ! This is a biomass kluge factor
                                              ! The model is much faster and more stable
                                              ! When heat capacity is high.
                                              ! It was also found that when net-radiation
                                              ! matched tower observations, the dynamic
                                              ! range of the 
 
-     real,parameter :: min_hcapveg = 1000.0  ! This is roughly 1/3 kg of biomass at 3000 J/kg/K
+     real,parameter :: min_hcapveg = 0. !1000.0  ! This is roughly 1/3 kg of biomass at 3000 J/kg/K
                                              ! Dont be fooled, this is quite high
      integer :: pft     
      real,parameter :: veg_temp = 285.0      ! RIght now we are using a nominal vegetation
@@ -113,7 +113,7 @@ module ed_therm_lib
      ! The "cwe" mean "consistent water&energy&hcap" assumption
      
      use ed_state_vars,only: patchtype
-     use consts_coms,only:cliq,cice,alli,t3ple
+     use consts_coms,only:cliq,cice,alli
      use therm_lib, only : qwtk
      
      implicit none
@@ -138,10 +138,10 @@ module ed_therm_lib
      
      ! Now, calculate the new energy, based on the updated quantities
      
-     cpatch%veg_energy(ico) = ( cpatch%veg_temp(ico)-t3ple)*cpatch%hcapveg(ico) + & ! U of the leaf tissue
-          fracliq*cpatch%veg_water(ico)*alli + &                                    ! latent heat of fusion
-          fracliq*cpatch%veg_water(ico)*cliq*( cpatch%veg_temp(ico) -t3ple) + &     ! thermal energy of any liquid
-          (1-fracliq)*cpatch%veg_water(ico)*cice*( cpatch%veg_temp(ico) -t3ple)     ! thermal energy of any ice
+     cpatch%veg_energy(ico) = cpatch%veg_temp(ico)*cpatch%hcapveg(ico) + &                ! U of the leaf tissue
+                              fracliq*cpatch%veg_water(ico)*alli + &                      ! latent heat of fusion
+                              fracliq*cpatch%veg_water(ico)*cliq*cpatch%veg_temp(ico) + & ! thermal energy of any liquid
+                          (1-fracliq)*cpatch%veg_water(ico)*cice*cpatch%veg_temp(ico)     ! thermal energy of any ice
      
      return
    end subroutine update_veg_energy_cweh
@@ -192,14 +192,14 @@ module ed_therm_lib
      
      if(cpatch%veg_temp(ico)>=t3ple) then
         
-        cpatch%veg_energy(ico) = ( cpatch%veg_temp(ico)-t3ple)*cpatch%hcapveg(ico) + & ! U of the leaf tissue
-             cpatch%veg_water(ico)*alli + &                                    ! latent heat of fusion
-             cpatch%veg_water(ico)*cliq*( cpatch%veg_temp(ico) -t3ple)       ! thermal energy of any liquid
+        cpatch%veg_energy(ico) = cpatch%veg_temp(ico)*cpatch%hcapveg(ico) + &    ! U of the leaf tissue
+                                 cpatch%veg_water(ico)*alli + &                  ! latent heat of fusion
+                                 cpatch%veg_water(ico)*cliq*cpatch%veg_temp(ico) ! thermal energy of any liquid
         
      else
         
-        cpatch%veg_energy(ico) = ( cpatch%veg_temp(ico)-t3ple)*cpatch%hcapveg(ico) + & ! U of the leaf tissue
-             cpatch%veg_water(ico)*cice*( cpatch%veg_temp(ico) -t3ple)     ! thermal energy of any ice
+        cpatch%veg_energy(ico) = cpatch%veg_temp(ico)*cpatch%hcapveg(ico) + &    ! U of the leaf tissue
+                                 cpatch%veg_water(ico)*cice*cpatch%veg_temp(ico) ! thermal energy of any ice
         
      endif
      

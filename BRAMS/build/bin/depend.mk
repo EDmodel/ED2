@@ -626,7 +626,7 @@ mic_coll.o : $(MICRO)/mic_coll.f90  micphys.o rconstants.o therm_lib.o micro_com
 	rm -f $(<F:.f90=.f90) 
 
 mic_driv.o : $(MICRO)/mic_driv.f90 grid_dims.o mem_basic.o mem_micro.o mem_grid.o          \
-	node_mod.o micro_coms.o micphys.o mem_scratch.o
+	node_mod.o micro_coms.o micphys.o mem_scratch.o rconstants.o therm_lib.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

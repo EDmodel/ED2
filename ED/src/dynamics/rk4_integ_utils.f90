@@ -1098,13 +1098,9 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
         call qwtk8(qwt,wt,soilhcap  &
              ,initp%sfcwater_tempk(k),initp%sfcwater_fracliq(k))
         ! portion out the heat to the snow
-        if(initp%sfcwater_fracliq(k) == 0.)then
-           qw = (initp%sfcwater_tempk(k) - t3ple) * cice * w
-        elseif(initp%sfcwater_fracliq(k) == 1.)then
-           qw = (initp%sfcwater_tempk(k) - tsupercool) * cliq * w
-        else
-           qw = initp%sfcwater_fracliq(k) * alli * w
-        endif
+        qw = w * (   initp%sfcwater_fracliq(k)  * (cliq*initp%sfcwater_tempk(k) + alli) +  &
+                  (1-initp%sfcwater_fracliq(k)) *  cice*initp%sfcwater_tempk(k)            &
+                 )
         ! set the properties of top soil layer.
         initp%soil_tempk(nzg) = initp%sfcwater_tempk(k)
         initp%soil_fracliq(nzg) = initp%sfcwater_fracliq(k)

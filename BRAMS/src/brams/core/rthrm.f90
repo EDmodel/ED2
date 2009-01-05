@@ -71,13 +71,15 @@ subroutine thermo(mzp,mxp,myp,ia,iz,ja,jz)
        availcat           ! ! intent(in) - Flag: the hydrometeor is available [T|F]
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer, intent(in)  :: mzp  ! # of points in Z                                [   ----]
-   integer, intent(in)  :: mxp  ! # of points in X                                [   ----]
-   integer, intent(in)  :: myp  ! # of points in Y                                [   ----]
-   integer, intent(in)  :: ia   ! Node Western edge                               [   ----]
-   integer, intent(in)  :: iz   ! Node Eastern edge                               [   ----]
-   integer, intent(in)  :: ja   ! Node Southern edge                              [   ----]
-   integer, intent(in)  :: jz   ! Node Northern edge                              [   ----]
+   integer, intent(in)  :: mzp   ! # of points in Z                               [   ----]
+   integer, intent(in)  :: mxp   ! # of points in X                               [   ----]
+   integer, intent(in)  :: myp   ! # of points in Y                               [   ----]
+   integer, intent(in)  :: ia    ! Node Western edge                              [   ----]
+   integer, intent(in)  :: iz    ! Node Eastern edge                              [   ----]
+   integer, intent(in)  :: ja    ! Node Southern edge                             [   ----]
+   integer, intent(in)  :: jz    ! Node Northern edge                             [   ----]
+   !----- Local variables -----------------------------------------------------------------!
+   integer              :: mzxyp ! # of points                                    [   ----]
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -103,15 +105,32 @@ subroutine thermo(mzp,mxp,myp,ia,iz,ja,jz)
 
    !----- All three phases of water are allowed -------------------------------------------!
    case (3)
+      mzxyp = mzp*mxp*myp
+      call azero3(mzxyp,scratch%vt3da,scratch%vt3db,scratch%vt3dc)
+      call azero3(mzxyp,scratch%vt3dd,scratch%vt3de,scratch%vt3df)
+      call azero3(mzxyp,scratch%vt3dg,scratch%vt3dh,scratch%vt3di)
+      if (availcat(1)) call atob(mzxyp,micro_g(ngrid)%rcp,scratch%vt3da)
+      if (availcat(2)) call atob(mzxyp,micro_g(ngrid)%rrp,scratch%vt3db)
+      if (availcat(3)) call atob(mzxyp,micro_g(ngrid)%rpp,scratch%vt3dc)
+      if (availcat(4)) call atob(mzxyp,micro_g(ngrid)%rsp,scratch%vt3dd)
+      if (availcat(5)) call atob(mzxyp,micro_g(ngrid)%rap,scratch%vt3de)
+      if (availcat(6)) then
+         call atob(mzxyp,micro_g(ngrid)%rgp,scratch%vt3df)
+         call atob(mzxyp,micro_g(ngrid)%q6,scratch%vt3dh)
+      end if
+      if (availcat(7)) then
+         call atob(mzxyp,micro_g(ngrid)%rhp,scratch%vt3dg)
+         call atob(mzxyp,micro_g(ngrid)%q7,scratch%vt3di)
+      end if
       call wetthrm3(mzp,mxp,myp,ia,iz,ja,jz,availcat                                       &
            ,basic_g(ngrid)%pi0                     ,basic_g(ngrid)%pp                      &
            ,basic_g(ngrid)%thp                     ,basic_g(ngrid)%theta                   &
            ,basic_g(ngrid)%rtp                     ,basic_g(ngrid)%rv                      &
-           ,micro_g(ngrid)%rcp                     ,micro_g(ngrid)%rrp                     &
-           ,micro_g(ngrid)%rpp                     ,micro_g(ngrid)%rsp                     &
-           ,micro_g(ngrid)%rap                     ,micro_g(ngrid)%rgp                     &
-           ,micro_g(ngrid)%rhp                     ,micro_g(ngrid)%q6                      &
-           ,micro_g(ngrid)%q7                      ,vctr5 ,vctr6                           )
+           ,scratch%vt3da                          ,scratch%vt3db                          &
+           ,scratch%vt3dc                          ,scratch%vt3dd                          &
+           ,scratch%vt3de                          ,scratch%vt3df                          &
+           ,scratch%vt3dg                          ,scratch%vt3dh                          &
+           ,scratch%vt3di                          ,vctr5 ,vctr6                           )
 
    case default
       call abort_run('Thermo option not supported...LEVEL out of bounds'                   &

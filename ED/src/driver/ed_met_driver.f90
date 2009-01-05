@@ -881,12 +881,10 @@ subroutine update_met_drivers_array(cgrid)
         
         ! qpcpg, dpcpg
         if(cpoly%met(isi)%atm_tmp > t3ple)then
-           cpoly%met(isi)%qpcpg = (cliq * (cpoly%met(isi)%atm_tmp - t3ple) +   &
-                alli) * cpoly%met(isi)%pcpg
+           cpoly%met(isi)%qpcpg = (cliq * cpoly%met(isi)%atm_tmp + alli) * cpoly%met(isi)%pcpg
            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg * 0.001)
         else
-           cpoly%met(isi)%qpcpg = cice * (cpoly%met(isi)%atm_tmp - t3ple) *  &
-                cpoly%met(isi)%pcpg
+           cpoly%met(isi)%qpcpg = cice * cpoly%met(isi)%atm_tmp * cpoly%met(isi)%pcpg
            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg * 0.01)
         endif
         !! note: dpcpg currently never gets used

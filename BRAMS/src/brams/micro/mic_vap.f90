@@ -23,7 +23,7 @@ subroutine thrmstr(m1)
 
    use rconstants
    use micphys
-   use therm_lib, only: qtk,thil2temp,dtempdrs
+   use therm_lib, only: qreltk,thil2temp,dtempdrs
 
    implicit none
    !----- Argument ------------------------------------------------------------------------!
@@ -74,7 +74,7 @@ subroutine thrmstr(m1)
    !----- Graupel and Hail have both phases, figure out how much of each ------------------!
    do lcat = 6,7
       do k = k1(lcat),k2(lcat)
-         call qtk(qx(k,lcat),tcoal,fracliq)
+         call qreltk(qx(k,lcat),tcoal,fracliq)
          rliq(k) = rliq(k) + rx(k,lcat) * fracliq
          rice(k) = rice(k) + rx(k,lcat) * (1. - fracliq)
       end do

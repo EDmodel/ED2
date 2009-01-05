@@ -546,8 +546,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
               
               dinitp%soil_water(k2) = dinitp%soil_water(k2) - wloss
               
-              qwloss = wloss * (cliq1000 * (initp%soil_tempk(k2) - t3ple) + &
-                   alli1000)
+              qwloss = wloss * (cliq1000 *initp%soil_tempk(k2) + alli1000)
               dinitp%soil_energy(k2) = dinitp%soil_energy(k2) - qwloss
               
               dinitp%avg_smoist_gc(k2)=dinitp%avg_smoist_gc(k2)-1000*wloss
@@ -1045,7 +1044,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
            call fatal_error('dinitp%veg_energy is NaN','canopy_derivs_two_ar','rk4_derivs.F90')
         endif
 
-        if (ipy == 36 .and. ipa == 3) then
+        if (.false.) then !ipy == 1 .and. ipa == 1 .and. ico == 1) then
            write (unit=62,fmt='(a)') '----------------------------------------------------------------------'
            write (unit=62,fmt='(a,1x,i12)')    ' - PFT:             ',cpatch%pft(ico)
            write (unit=62,fmt='(a,1x,es12.5)') ' - NPLANT:          ',cpatch%nplant(ico)

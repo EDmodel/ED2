@@ -645,7 +645,7 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
           csite%sfcwater_mass(k,ipa)
   enddo
 
-  cas_storage = cp * rhos * csite%veg_height(ipa) * (csite%can_temp(ipa) - t3ple)
+  cas_storage = cp * rhos * csite%veg_height(ipa) * csite%can_temp(ipa)
 
   veg_storage = 0.0
   do ico = 1,cpatch%ncohorts
@@ -653,23 +653,28 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
      !!!!!! ASSUMES THAT THE TALLEST COHORT IS IN BIN 1 !!!!!!!!!
 
      if(csite%lai(ipa) > lai_min)then
+        ! MLO: I think we can simply add the vegetation energy instead of recalculating
+        !      it from the temperature. This will avoid problems when veg_temp is t3ple
+        !      and water and ice coexist.
+               
         !        veg_storage = veg_storage +   &
         !             hcapveg_ref * max(csite%patch(ipa)%hite(1),heathite_min) * cpatch%lai(ico) &
-        !             / csite%lai(ipa) * (cpatch%veg_temp(ico) - t3ple)
+        !             / csite%lai(ipa) * cpatch%veg_temp(ico)
 
-        veg_storage = veg_storage + &
-             calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-             cpatch%nplant(ico),cpatch%pft(ico)) &
-             * (cpatch%veg_temp(ico) - t3ple)
+        !veg_storage = veg_storage + &
+        !     calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+        !     cpatch%nplant(ico),cpatch%pft(ico)) &
+        !     * cpatch%veg_temp(ico)
         
         
-        if(cpatch%veg_temp(ico) > t3ple)then
-           veg_storage = veg_storage + cpatch%veg_water(ico) *  &
-                (cliq * (cpatch%veg_temp(ico) - t3ple) + alli)
-        else
-           veg_storage = veg_storage + cpatch%veg_water(ico) *  &
-                cice * (cpatch%veg_temp(ico) - t3ple)
-        endif
+        !if(cpatch%veg_temp(ico) > t3ple)then
+        !   veg_storage = veg_storage + cpatch%veg_water(ico) *  &
+        !        (cliq *cpatch%veg_temp(ico) + alli)
+        !else
+        !   veg_storage = veg_storage + cpatch%veg_water(ico) *  &
+        !        cice * cpatch%veg_temp(ico) 
+        !endif
+        veg_storage = veg_storage + cpatch%veg_energy(ico)
      endif
 
   enddo

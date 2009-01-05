@@ -721,7 +721,7 @@ subroutine leaftw(mzg,mzs,np  &
             call qwtk(qwt,wt,soilhcap,tempk(k+mzg),fracliq(k+mzg))
             fac = cliq
             if (fracliq(k+mzg) <= .0001) fac = cice
-            qw = (fac * (tempk(k+mzg) - t3ple) + fracliq(k+mzg) * alli) * w
+            qw = (fac * tempk(k+mzg) + fracliq(k+mzg) * alli) * w
             tempk(mzg) = tempk(k+mzg)
             fracliq(mzg) = fracliq(k+mzg)
             soil_energy(mzg) = (qwt - qw) * dslzi(mzg)
@@ -750,9 +750,14 @@ subroutine leaftw(mzg,mzs,np  &
 
          sfcwater_depth(k) = sfcwater_depth(k) + depthgain - depthloss
 
-         totsnow = totsnow + sfcwater_mass(k)
-         sfcwater_energy(k) = (qw - qwfree) / (max(1.e-9,sfcwater_mass(k)))
-         sfcwater_energy(k) = max (0., min (6.4e5, sfcwater_energy(k)))
+         if (sfcwater_mass(k) < 1e-9) then
+            sfcwater_energy(k) = 0.
+            sfcwater_mass(k) = 0.
+         else
+            totsnow = totsnow + sfcwater_mass(k)
+            sfcwater_energy(k) = (qw - qwfree) / sfcwater_mass(k)
+            sfcwater_energy(k) = max (0., min (6.4e5, sfcwater_energy(k)))
+         end if
 
    ! Temporary simple evolution of snow layer depth and density
 
@@ -779,7 +784,7 @@ subroutine leaftw(mzg,mzs,np  &
          newlayers = 1
          do k = 2,mzs
             if (snowmin * thicknet(k) <= totsnow .and.  &
-               sfcwater_energy(k) < alli + cliq*t3ple) newlayers = newlayers + 1
+               sfcwater_energy(k) < alli + cliqt3) newlayers = newlayers + 1
          enddo
          newlayers = min (newlayers, mzs, nlayers+1)
          sfcwater_nlev = float(newlayers)
@@ -943,7 +948,7 @@ subroutine canopy(mzg,mzs,ksn,nveg  &
 
    real :: aux,brad,bswp,bthi,btlo,bvpd,c2,c3,c4,dsm,es,fac,factv         &
       ,fracliqv,fthi,ftlo,frad,fswp,fvpd,qwtot,rasgnd,rasveg,rleaf,rsatveg     &
-      ,sigmaw ,slai,stai,slpotv,srad,sswp,sthi,stlo,svpd,swp,tveg,tvegc,tvegk  &
+      ,sigmaw ,slai,stai,slpotv,srad,sswp,sthi,stlo,svpd,swp,tveg,tvegk         &
       ,vpd,wtemp,wtroot,x,zognd,zoveg,zdisp,zveg,wflx,dewgndflx,ustar0         &
       ,transp_test,rc,rc_inf
    ! From RAMS 6.0
@@ -1136,19 +1141,18 @@ subroutine canopy(mzg,mzs,ksn,nveg  &
    ! to the heat capacity of a layer of water 7.5 mm thick.
 
          ! From RAMS 6.0
-         tvegc = veg_temp - t00 + dtlcohcv  &
+         tvegk = veg_temp  + dtlcohcv  &
             * (rshort_v + rlonga_v + rlonggs_v - rlongv_gs  &
             -  rlongv_a - hflxvc - (wflxvc + transp0) * alvl)
 
    ! Exchange heat between vegetation and precipitation in implicit scheme
 
-         qwtot = qpcpgc * vf + hcapveg * tvegc
-         call qwtk(qwtot,pcpgc * vf,hcapveg,tvegk,fracliqv)
-         veg_temp = tvegk
+         qwtot = qpcpgc * vf + hcapveg * tvegk
+         call qwtk(qwtot,pcpgc * vf,hcapveg,veg_temp,fracliqv)
          fac = cliq
          if (fracliqv <= .0001) fac = cice
          ! From RAMS 6.0
-         qwshed = qwshed + (fac * (tvegk - t3ple) + fracliqv * alli) * wshed0
+         qwshed = qwshed + (fac * tvegk - + fracliqv * alli) * wshed0
 
    ! Update temperature and moisture of canopy.  hcapcan [J/m2/K] and
    ! wcapcan [kg_air/m2] are

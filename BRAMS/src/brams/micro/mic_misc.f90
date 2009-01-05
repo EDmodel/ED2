@@ -148,7 +148,8 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
        ,cccnx          & ! intent(out)
        ,cifnx          ! ! intent(out)
 
-   use rconstants, only : p00, cpi, cpor,toodry
+   use rconstants, only : p00, cpi, cpor,toodry,cliq,cice,alli,t3ple
+   use therm_lib , only : qtk
 
    implicit none
 
@@ -159,7 +160,7 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
    type (micro_vars)               , intent(in ) :: micro 
    !----- Local Variables -----------------------------------------------------------------!
    integer                             :: k, lcatt, lcat, jcat,lhcat
-   real                                :: rhomin, frac
+   real                                :: rhomin, frac, tcoal, fracliq
    !---------------------------------------------------------------------------------------!
 
    !----- Initialising the scratch structures ---------------------------------------------!
@@ -240,7 +241,8 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
             k2(2) = k
             rx(k,2)    = micro%rrp(k,i,j)
             totcond(k) = totcond(k)        + rx(k,2)
-            qx(k,2)    = micro%q2(k,i,j)
+            call qtk(micro%q2(k,i,j),tcoal,fracliq)
+            qx(k,2)    = cliq*(tcoal-t3ple)+alli
             qr(k,2)    = qx(k,2) * rx(k,2)
             if (progncat(2)) cx(k,2) = micro%crp(k,i,j)
          else
@@ -315,7 +317,8 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
             k2(6)      = k
             rx(k,6)    = micro%rgp(k,i,j)
             totcond(k) = totcond(k)       + rx(k,6)
-            qx(k,6)    = micro%q6(k,i,j)
+            call qtk(micro%q6(k,i,j),tcoal,fracliq)
+            qx(k,6)    = fracliq*(cliq*(tcoal-t3ple)+alli) + (1.-fracliq)*(tcoal-t3ple)
             qr(k,6)    = qx(k,6)          * rx(k,6)
             if (progncat(6)) cx(k,6) = micro%cgp(k,i,j)
          else
@@ -335,7 +338,8 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
             k2(7)      = k
             rx(k,7)    = micro%rhp(k,i,j)
             totcond(k) = totcond(k)       + rx(k,7)
-            qx(k,7)    = micro%q7(k,i,j)
+            call qtk(micro%q7(k,i,j),tcoal,fracliq)
+            qx(k,7)    = fracliq*(cliq*(tcoal-t3ple)+alli) + (1.-fracliq)*(tcoal-t3ple)
             qr(k,7)    = qx(k,7)          * rx(k,7)
             if (progncat(7)) cx(k,7) = micro%chp(k,i,j)
          else
@@ -697,7 +701,7 @@ subroutine x02(lcat)
         gnu,           & ! INTENT(IN)
         shedtab          ! INTENT(IN)
 
-   use therm_lib, only : qtk
+   use therm_lib, only : qreltk
 
    implicit none
 
@@ -753,7 +757,7 @@ subroutine x02(lcat)
             rinv       = 1. / rx(k,lcat)
             qx(k,lcat) = qr(k,lcat) * rinv
 
-            call qtk(qx(k,lcat),tcoal,fracliq)
+            call qreltk(qx(k,lcat),tcoal,fracliq)
 
             rmelt = rx(k,lcat) * fracliq
             cmelt = cx(k,lcat) * fracliq
@@ -773,7 +777,7 @@ subroutine x02(lcat)
 
             rinv = 1. / rx(k,lcat)
             qx(k,lcat) = qr(k,lcat) * rinv
-            call qtk(qx(k,lcat),tcoal,fracliq)
+            call qreltk(qx(k,lcat),tcoal,fracliq)
 
             if (fracliq > 1.e-6) then
                rmelt = rx(k,lcat) * fracliq
@@ -802,7 +806,7 @@ subroutine x02(lcat)
          if (rx(k,lcat) >= rxmin(lcat)) then
             rxinv = 1. / rx(k,lcat)
             qx(k,lcat) = qr(k,lcat) * rxinv
-            call qtk(qx(k,lcat),tcoal,fracliq)
+            call qreltk(qx(k,lcat),tcoal,fracliq)
 
             if (fracliq > 0.95) then
                rx(k,2) = rx(k,2) + rx(k,6)
@@ -821,7 +825,7 @@ subroutine x02(lcat)
          if (rx(k,lcat) >= rxmin(lcat)) then
             rxinv = 1. / rx(k,lcat)
             qx(k,lcat) = qr(k,lcat) * rxinv
-            call qtk(qx(k,lcat),tcoal,fracliq)
+            call qreltk(qx(k,lcat),tcoal,fracliq)
 
             if (fracliq > 0.95) then
                rx(k,2) = rx(k,2) + rx(k,7)
@@ -915,7 +919,7 @@ end subroutine pc03
 subroutine sedim(m1,lcat,if_adap,mynum,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,pcpfillr,sfcpcp,dzt)
 
    use rconstants, only : cpi,ttripoli,alvl,alvi,alli,cp  ! intent(in)
-   use therm_lib , only : qtk,dthil_sedimentation
+   use therm_lib , only : qreltk,dthil_sedimentation
    use micphys   , only : &
            k1             & ! intent(in   )
           ,k2             & ! intent(in   )

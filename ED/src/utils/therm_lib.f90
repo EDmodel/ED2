@@ -777,7 +777,7 @@ module therm_lib
    ! internal energy .                                                                     !
    !---------------------------------------------------------------------------------------!
    subroutine qtk(q,tempk,fracliq)
-      use rconstants, only: cliqi,cicei,cliq,cice,alli,tsupercool,t3ple
+      use rconstants, only: cliqi,cicei,cliq,cice,alli,tsupercool,t3ple,cicet3,cliqt3
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)  :: q        ! Internal energy                             [   J/kg]
@@ -787,13 +787,13 @@ module therm_lib
 
 
       !----- Negative internal energy, frozen, all ice ------------------------------------!
-      if (q <= cice*t3ple) then
+      if (q <= cicet3) then
          fracliq = 0.
          tempk   = q * cicei 
       !----- Positive internal energy, over latent heat of melting, all liquid ------------!
-      elseif (q > alli) then
+      elseif (q >= cliqt3+alli) then
          fracliq = 1.
-         tempk   = q * cliqi + tsupercool
+         tempk   = (q - alli)* cliqi
       !----- Changing phase, it must be at triple point -----------------------------------!
       else
          fracliq = (q - cice*t3ple)/((cliq-cice)*t3ple + alli)

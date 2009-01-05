@@ -132,20 +132,24 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
 
 ! Vegetation layers intercept precipitation in proportion to their LAI
            lai_fraction = cpatch%lai(ico) * laii
-           if(tvegaux > 0.0)then
-              qwtot = cpatch%hcapveg(ico) * hcapveg_factor * tvegaux + qpcpg *   &
-                   lai_fraction + cpatch%veg_water(ico) * (cliq * tvegaux + alli)
-           else
-              qwtot = cpatch%hcapveg(ico) * hcapveg_factor * tvegaux +   &
-                   qpcpg * lai_fraction + cpatch%veg_water(ico) * cice * tvegaux
-           endif
-           cpatch%veg_water(ico) = cpatch%veg_water(ico) + pcpg * lai_fraction
+           !MLO - I guess we can use vegetation energy instead of recalculating qwtot
+           !      from temperature. Please, let me know whether there is any problem 
+           !      with this...
+           
+           !if(tvegaux > 0.0)then
+           !   qwtot = cpatch%hcapveg(ico) * hcapveg_factor * tvegaux + qpcpg *   &
+           !        lai_fraction + cpatch%veg_water(ico) * (cliq * tvegaux + alli)
+           !else
+           !   qwtot = cpatch%hcapveg(ico) * hcapveg_factor * tvegaux +   &
+           !        qpcpg * lai_fraction + cpatch%veg_water(ico) * cice * tvegaux
+           !endif
+           cpatch%veg_energy(ico) = cpatch%veg_energy(ico) + qpcpg * lai_fraction
+           cpatch%veg_water(ico)  = cpatch%veg_water(ico) + pcpg * lai_fraction
 
 ! Compute equilbrium temperature of veg + precipitation
 
-           call qwtk(qwtot, cpatch%veg_water(ico), cpatch%hcapveg(ico) * hcapveg_factor,   &
+           call qwtk(cpatch%veg_energy(ico), cpatch%veg_water(ico), cpatch%hcapveg(ico) * hcapveg_factor,   &
                 cpatch%veg_temp(ico), fracliqv)
-           tvegaux = cpatch%veg_temp(ico) - t3ple
       
 ! Shed any excess intercepted precipitation and its energy
 
@@ -154,10 +158,10 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
               wshed_canopy = wshed_canopy + wshed_layer
 
               if (fracliqv <= .0001) then
-                 qwshed_canopy = qwshed_canopy + cice * tvegaux * wshed_layer
+                 qwshed_canopy = qwshed_canopy + cice * cpatch%veg_temp(ico) * wshed_layer
               else
                  qwshed_canopy = qwshed_canopy +   &
-                      (cliq * tvegaux + fracliqv * alli) * wshed_layer
+                      (cliq * cpatch%veg_temp(ico) + fracliqv * alli) * wshed_layer
               endif
               
               cpatch%veg_water(ico) = cpatch%veg_water(ico) - wshed_layer
@@ -638,14 +642,14 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
         if(tvegaux > 0)then
            csite%mean_latflux(ipa) = csite%mean_latflux(ipa) +   &
                 vp_gradient * et_conductance * alvl -   &
-                (cliq * tvegaux + alli) * explicit_deriv_portion(ind2)
+                (cliq *cpatch%veg_temp(ico)  + alli) * explicit_deriv_portion(ind2)
            explicit_deriv_portion(ind1) = dQdt / (cpatch%hcapveg(ico) * cpatch%lai(ico) /   &
                 csite%lai(ipa) + cliq *   &
                 cpatch%veg_water(ico))
         else
            csite%mean_latflux(ipa) = csite%mean_latflux(ipa) +   &
                 vp_gradient * et_conductance * alvl -   &
-                cice * tvegaux * explicit_deriv_portion(ind2)
+                cice * cpatch%veg_temp(ico)* explicit_deriv_portion(ind2)
            explicit_deriv_portion(ind1) = dQdt / (cpatch%hcapveg(ico) * cpatch%lai(ico) /   &
                 csite%lai(ipa) + cice * cpatch%veg_water(ico))
         endif

@@ -186,18 +186,23 @@ subroutine initlz (name_name)
         call thermo(nzp,nxp,nyp,1,nxp,1,nyp)
 
         if (level  ==  3) then
+           call azero3(nzp*nxp*nyp,scratch%vt3da,scratch%vt3dg,scratch%vt3dh)
+           call azero2(nzp*nxp*nyp,scratch%vt3dc,scratch%vt3di)
            !----- Using scratch variables to define cccnp and cifnp -----------------------!
-           call initqin(nzp,nxp,nyp          &
-                ,micro_g(ifm)%q2    (1,1,1)  &
-                ,micro_g(ifm)%q6    (1,1,1)  &
-                ,micro_g(ifm)%q7    (1,1,1)  &
-                ,basic_g(ifm)%pi0   (1,1,1)  &
-                ,basic_g(ifm)%pp    (1,1,1)  &
-                ,basic_g(ifm)%theta (1,1,1)  &
-                ,basic_g(ifm)%dn0   (1,1,1)  &
-                ,scratch%vt3dc          (1)  &
-                ,scratch%vt3di          (1)  )
+           call initqin(nzp,nxp,nyp   &
+                ,scratch%vt3da        &
+                ,scratch%vt3dg        &
+                ,scratch%vt3dh        &
+                ,basic_g(ifm)%pi0     &
+                ,basic_g(ifm)%pp      &
+                ,basic_g(ifm)%theta   &
+                ,basic_g(ifm)%dn0     &
+                ,scratch%vt3dc        &
+                ,scratch%vt3di        )
            !----- Copying them to the micro arrays if they are allocated ------------------!
+           if (irain  >= 1) call atob(nzp*nxp*nyp,scratch%vt3da,micro_g(ifm)%rrp)
+           if (igraup >= 1) call atob(nzp*nxp*nyp,scratch%vt3dg,micro_g(ifm)%rgp)
+           if (ihail  >= 1) call atob(nzp*nxp*nyp,scratch%vt3dh,micro_g(ifm)%rhp)
            if (icloud == 7) call atob(nzp*nxp*nyp,scratch%vt3dc,micro_g(ifm)%cccnp)
            if (ipris  == 7) call atob(nzp*nxp*nyp,scratch%vt3di,micro_g(ifm)%cifnp)
         end if
