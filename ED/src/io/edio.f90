@@ -159,13 +159,22 @@ subroutine spatial_averages
   do igr=1,ngrids
      cgrid => edgrid_g(igr)
 
-     cgrid%avg_lai_ebalvars = 0.0
-
+     !-------------------------------------------------------------------------------------!
+     !    WARNING! cgrid variables should never be initialized outside the                 !
+     !             "do ipy=1,cgrid%npolygons" loop. npolygons is often 0 for some nodes on !
+     !             coupled runs (sudomains entirely over ocean), and initializing here     !
+     !             will cause either a crash or even worse, a memory leak.                 !
+     !-------------------------------------------------------------------------------------!
      do ipy=1,cgrid%npolygons
         cpoly => cgrid%polygon(ipy)
 
         area_sum=0.0
 
+        !----------------------------------------------------------------------------------!
+        !    Here is the safe place to initialize cgrid-level variables.                   !
+        !----------------------------------------------------------------------------------!
+        cgrid%avg_lai_ebalvars(:,:,ipy) = 0.0
+  
         cgrid%avg_balive(ipy)      = 0.0
         cgrid%avg_bdead(ipy)       = 0.0
 
