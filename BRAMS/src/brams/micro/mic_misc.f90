@@ -318,7 +318,8 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
             rx(k,6)    = micro%rgp(k,i,j)
             totcond(k) = totcond(k)       + rx(k,6)
             call qtk(micro%q6(k,i,j),tcoal,fracliq)
-            qx(k,6)    = fracliq*(cliq*(tcoal-t3ple)+alli) + (1.-fracliq)*(tcoal-t3ple)
+            qx(k,6)    = fracliq*(cliq*(tcoal-t3ple)+alli)                                 &
+                       + (1.-fracliq)*cice*(tcoal-t3ple)
             qr(k,6)    = qx(k,6)          * rx(k,6)
             if (progncat(6)) cx(k,6) = micro%cgp(k,i,j)
          else
@@ -339,7 +340,8 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
             rx(k,7)    = micro%rhp(k,i,j)
             totcond(k) = totcond(k)       + rx(k,7)
             call qtk(micro%q7(k,i,j),tcoal,fracliq)
-            qx(k,7)    = fracliq*(cliq*(tcoal-t3ple)+alli) + (1.-fracliq)*(tcoal-t3ple)
+            qx(k,7)    = fracliq*(cliq*(tcoal-t3ple)+alli)                                 &
+                       + (1.-fracliq)*cice*(tcoal-t3ple)
             qr(k,7)    = qx(k,7)          * rx(k,7)
             if (progncat(7)) cx(k,7) = micro%chp(k,i,j)
          else

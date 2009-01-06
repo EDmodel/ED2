@@ -490,7 +490,7 @@ subroutine copyback(m1,i,j,thp,btheta,rtp,dn0,micro)
       micro%pcprg(i,j) = pcprx(6)
       do k=lpw,k2(10)
          call qreltk(qx(k,6),tcoal,fracliq)
-         micro%q6(k,i,j)  = fracliq*(cliq*tcoal+alli) + (1-fracliq)*tcoal
+         micro%q6(k,i,j)  = fracliq*(cliq*tcoal+alli) + (1-fracliq)*cice*tcoal
          micro%rgp(k,i,j) = rx(k,6)
          if (progncat(6)) micro%cgp(k,i,j) = cx(k,6)
       end do
@@ -505,7 +505,7 @@ subroutine copyback(m1,i,j,thp,btheta,rtp,dn0,micro)
       micro%pcprh(i,j) = pcprx(7)
       do k=lpw,k2(10)
          call qreltk(qx(k,7),tcoal,fracliq)
-         micro%q7(k,i,j)  = fracliq*(cliq*tcoal+alli) + (1-fracliq)*tcoal
+         micro%q7(k,i,j)  = fracliq*(cliq*tcoal+alli) + (1-fracliq)*cice*tcoal
          micro%rhp(k,i,j) = rx(k,7)
          if (progncat(7)) micro%chp(k,i,j) = cx(k,7)
       end do
