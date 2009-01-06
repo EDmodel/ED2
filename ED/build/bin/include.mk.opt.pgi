@@ -85,16 +85,17 @@ F_COMP=mpif90
 #       -Mfree
 #  -Mbyteswapio
 # -tp athlonxp -fastsse
-#F_OPTS= -fastsse -Mipa=fast,inline -tp amd64e -Mvect=sse -Mcache_align
+#F_OPTS= -fastsse -Mipa=fast,inline -tp amd64e -Mvect=sse \
+#	-Mcache_align -Mconcur=nonuma -Msmartalloc
 F_OPTS= -g -Ktrap=divz,fp,inv,ovf,unf
 C_COMP=mpicc
 C_OPTS= -g -Ktrap=divz,fp,inv,ovf,unf
-#C_OPTS= -fastsse -Mipa=fast,inline -tp amd64e \
-#	-Mvect=sse -Mcache_align
+#C_OPTS= -fastsse -Mipa=fast,inline -tp amd64e -Mvect=sse \
+#	-Mcache_align -Msmartalloc
 USE_INTERF=1
 CPP_OPTS=
 LOADER=$(F_COMP)
-LOADER_OPTS=
+LOADER_OPTS=$(F_OPTS)
 C_LOADER=$(C_COMP)
 C_LOADER_OPTS=
 LIBS=

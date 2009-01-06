@@ -252,6 +252,7 @@ end subroutine terminate_cohorts_ar
            ntall=ntall+1.0
         endif
      end do
+
      if (ntall  > 0) mean_dbh = mean_dbh/ntall
      if (nshort > 0) mean_hite= mean_hite/nshort
 
@@ -646,9 +647,8 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
         ! write (unit=62,fmt='(a,i5,1x,a,1x,3(f13.2,1x))') 'PFT=',cpatch%pft(ico2), &
         ! '(LAI1,LAI2,LAIM)=',cpatch%lai(ico1),laiold,cpatch%lai(ico2)
      else
+
         cpatch%lai(ico2) = 0.0
-        
-        ! BLEAF SHOULD BE UPDATED TOO NO?
         cpatch%bleaf(ico2) = 0.0
      endif
 

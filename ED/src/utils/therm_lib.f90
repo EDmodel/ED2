@@ -268,11 +268,20 @@ module therm_lib
       real   , intent(in)           :: pres,temp
       logical, intent(in), optional :: useice
       real                          :: esz
-    
+      logical                       :: brrr_cold
+
+      !----- Checking which saturation (liquid or ice) I should use here ------------------!
       if (present(useice)) then
-         esz = eslif(temp,useice)
+         brrr_cold = useice  .and. temp < t3ple
+      else 
+         brrr_cold = bulk_on .and. temp < t3ple
+      end if
+    
+      !----- Finding the saturation vapour pressure ---------------------------------------!
+      if (brrr_cold) then
+         esz = esif(temp)
       else
-         esz = eslif(temp)
+         esz = eslf(temp)
       end if
 
       rslif = ep * esz / (pres - esz)
@@ -878,9 +887,13 @@ module therm_lib
          fracliq = 1.
          tempk   = (qw - w*alli) / (cliq * w + dryhcap)
       !----- Changing phase, it must be at triple point -----------------------------------!
-      else
+      elseif (w > 0.) then
          fracliq = (qw - (dryhcap+w*cice)*t3ple) / (w*((cliq-cice)*t3ple+alli))
          tempk = t3ple
+      !----- No water, but it must be at triple point (qw = qwfroz = qwmelt) --------------!
+      else
+         fracliq = 0.5
+         tempk   = t3ple
       end if
       !------------------------------------------------------------------------------------!
 

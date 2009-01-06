@@ -1,6 +1,6 @@
 module ed_therm_lib
-
-   contains
+  
+contains
 
    !=======================================================================================!
    !=======================================================================================!
@@ -53,7 +53,7 @@ module ed_therm_lib
                                              ! matched tower observations, the dynamic
                                              ! range of the 
 
-     real,parameter :: min_hcapveg = 0. !1000.0  ! This is roughly 1/3 kg of biomass at 3000 J/kg/K
+     real,parameter :: min_hcapveg = 30.0    ! This is roughly 10 g of biomass at 3000 J/kg/K
                                              ! Dont be fooled, this is quite high
      integer :: pft     
      real,parameter :: veg_temp = 285.0      ! RIght now we are using a nominal vegetation
@@ -64,23 +64,22 @@ module ed_therm_lib
 
      ! Specific heat capacity of leaf biomass (J/kg/K)
      ! The calculation of leaf heat capacity follows Gu et al. 2007
-     spec_hcap_leaf  = (c_grn_leaf_dry(pft) + cliq*wat_dry_ratio_grn(pft))/(1.+wat_dry_ratio_grn(pft))
+!     spec_hcap_leaf  = (c_grn_leaf_dry(pft) + cliq*wat_dry_ratio_grn(pft))/(1.+wat_dry_ratio_grn(pft))
      
      
      ! Specific heat capacity of the stems and structural biomass.
      ! Also following Gu et al. 2007
      
-     spec_hcap_stem  = (c_ngrn_biom_dry(pft) + cliq*wat_dry_ratio_ngrn(pft))/(1+wat_dry_ratio_ngrn(pft))&
-          + 100. * wat_dry_ratio_ngrn(pft) * &
-          (-0.06191 + 2.36*1.0e-4*veg_temp - 1.33*1.0e-2*wat_dry_ratio_ngrn(pft))
+!     spec_hcap_stem  = (c_ngrn_biom_dry(pft) + cliq*wat_dry_ratio_ngrn(pft))/(1+wat_dry_ratio_ngrn(pft))&
+!          + 100. * wat_dry_ratio_ngrn(pft) * &
+!          (-0.06191 + 2.36*1.0e-4*veg_temp - 1.33*1.0e-2*wat_dry_ratio_ngrn(pft))
      
      
-     ! New Method
-     calc_hcapveg = biomass_factor * nplants * (leaf_carbon*C2B*spec_hcap_leaf + &
-          structural_carbon*C2B * hcap_stem_fraction * spec_hcap_stem )
 
-
-!     print*,nplants*leaf_biomass,nplants*structural_biomass,spec_hcap_leaf,spec_hcap_stem,calc_hcapveg
+     calc_hcapveg = nplants *                                                              &
+                  (  leaf_carbon*C2B*c_grn_leaf_dry(pft)                                   &
+                   + wat_dry_ratio_grn(pft)*leaf_carbon*C2B*cliq                           &
+                  )
 
 
 
@@ -266,7 +265,6 @@ module ed_therm_lib
      
      return
    end subroutine ed_grndvap
-   
-   
-   
+
+
  end module ed_therm_lib

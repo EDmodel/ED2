@@ -142,6 +142,10 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
            delta_bleaf = cpatch%bleaf(ico) - bl_max
            if(delta_bleaf > 0.0)then
               
+              !THIS IS INCORRECT - PHEN_STATUS 0 INDICATES LEAVES ARE FULLY FLUSHED
+              !BUT IN THIS CASE, LEAVES WERE JUST DROPPED, SHOULD BE 1 OR 2
+              !UNLESS IT IS EXCESS LEAF TRIMMING - AND THE RESULTING LEAF BIOMASS IS 
+              !JUST THE CARRYING CAPACITY OF THE TREE
               cpatch%phenology_status(ico) = 0
               leaf_litter = (1.0 - retained_carbon_fraction)  &
                    * delta_bleaf * cpatch%nplant(ico)
@@ -174,6 +178,7 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
               call update_veg_energy_cweh(cpatch,ico)
 
            endif
+
            ! Set status flag
            if(bl_max == 0.0 .or. cpoly%green_leaf_factor(cpatch%pft(ico),isi) < 0.02)then
               cpatch%phenology_status(ico) = 2 

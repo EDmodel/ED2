@@ -78,11 +78,12 @@ subroutine ed_model()
   out_time_fast%month = -1
 
   !---------------------------------------------------------------------------------------!
-  !     Checking if the user has indicated a need for any of the fast flux diagnostic
-  ! variables, these are used in conditions of ifoutput,idoutput and imoutput conditions.
-  ! If they are not >0, then set the logical, fast_diagnostics to false.
+  !     Checking if the user has indicated a need for any of the fast flux diagnostic     !
+  ! variables, these are used in conditions of ifoutput,idoutput and imoutput conditions. !
+  ! If they are not >0, then set the logical, fast_diagnostics to false.                  !
   !---------------------------------------------------------------------------------------!
-  fast_diagnostics = ifoutput .ne. 0 .or. idoutput .ne. 0 .or. imoutput .ne. 0
+  fast_diagnostics = ifoutput /= 0 .or. idoutput /= 0 .or. imoutput /= 0
+
 
   if (writing_mont) then
      do ifm=1,ngrids
