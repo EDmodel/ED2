@@ -873,35 +873,29 @@ end subroutine init_phen_coms
 !==========================================================================================!
 subroutine init_ff_coms
 
-  use fusion_fission_coms,only:min_recruit_size,min_dbh_class,maxdbh,min_hgt_class, &
-       fusetol,fusetol_h,lai_fuse_tol,lai_tol,ntol,profile_tol,max_patch_age
+   use fusion_fission_coms , only :  min_recruit_size, min_dbh_class, maxdbh               &
+                                   , min_hgt_class, fusetol, fusetol_h, lai_fuse_tol       &
+                                   , lai_tol, ntol, profile_tol,max_patch_age, ff_ndbh     &
+                                   , coh_tolerance_max, pat_tolerance_max, fuse_relax
 
-  implicit none
+   implicit none
 
-  min_recruit_size  = 1.0e-3
-  
-  min_dbh_class = 0.0  
-  
-  maxdbh = 200.0 
-  
-  min_hgt_class = 0.0
-  
-  fusetol = 0.4
-  
-  fusetol_h = 0.5
-  
-  lai_fuse_tol = 0.8
-  
-  lai_tol = 1.0
-  
-  ntol = 0.001
-  
-  profile_tol = 0.2
-
-  max_patch_age = 500.0
-  
-
-  return
+   min_recruit_size  = 1.0e-3
+   min_dbh_class     = 0.0  
+   maxdbh            = 200.0 
+   min_hgt_class     = 0.0
+   fusetol           = 0.4
+   fusetol_h         = 0.5
+   lai_fuse_tol      = 0.8
+   lai_tol           = 1.0
+   ntol              = 0.001
+   profile_tol       = 0.2
+   max_patch_age     = 500.0
+   ff_ndbh           = 20
+   coh_tolerance_max = 10.0 ! Original 2.0
+   pat_tolerance_max = 100.0
+   fuse_relax        = .false.
+   return
 
 end subroutine init_ff_coms
 !==========================================================================================!

@@ -41,7 +41,7 @@ module disturbance_utils_ar
     real, dimension(n_pft, n_dbh) :: initial_agb
     real, dimension(n_pft, n_dbh) :: initial_basal_area
 
-    integer,allocatable :: disturb_mask(:)
+    logical,allocatable, dimension(:) :: disturb_mask
     integer :: onsp
     logical, save :: first_time=.true.
 
@@ -88,12 +88,12 @@ module disturbance_utils_ar
         call allocate_sitetype(tsite,onsp)
 
         allocate(disturb_mask(onsp + n_dist_types))
-        disturb_mask = 0
-        disturb_mask(1:onsp) = 1
+        disturb_mask = .false.
+        disturb_mask(1:onsp) = .true.
 
         ! Transfer the origial patch values into the front end of the temp's space
         call copy_sitetype_mask(csite,tsite,disturb_mask(1:onsp), &
-             sum(disturb_mask),sum(disturb_mask))
+             count(disturb_mask),count(disturb_mask))
 
         ! Reallocate and transfer them back
         
@@ -102,7 +102,7 @@ module disturbance_utils_ar
         call allocate_sitetype(csite,onsp + n_dist_types)
         
         call copy_sitetype_mask(tsite,csite,disturb_mask(1:onsp), &
-             sum(disturb_mask),sum(disturb_mask))
+             count(disturb_mask),count(disturb_mask))
        
         call deallocate_sitetype(tsite)
 
@@ -145,7 +145,7 @@ module disturbance_utils_ar
 
               ! Set the flag that this patch should be kept as a newly created
               ! transition patch.
-              disturb_mask(onsp+q) = 1   
+              disturb_mask(onsp+q) = .true.   
  
               csite%dist_type(onsp+q)  = q
               csite%plantation(onsp+q) = 0
@@ -253,17 +253,17 @@ module disturbance_utils_ar
         ! are disturb_mask.  This mask should be ones for all original patches, and 
         ! sparse from there after.
         ! --------------------------------------------------------------------------
-        call allocate_sitetype(tsite,sum(disturb_mask))
+        call allocate_sitetype(tsite,count(disturb_mask))
         
-        call copy_sitetype_mask(csite,tsite,disturb_mask,size(disturb_mask),sum(disturb_mask))
+        call copy_sitetype_mask(csite,tsite,disturb_mask,size(disturb_mask),count(disturb_mask))
         
         call deallocate_sitetype(csite)
         
-        call allocate_sitetype(csite,sum(disturb_mask))
+        call allocate_sitetype(csite,count(disturb_mask))
         
-        disturb_mask = 0
-        disturb_mask(1:csite%npatches) = 1
-        call copy_sitetype_mask(tsite,csite,disturb_mask(1:csite%npatches),sum(disturb_mask),sum(disturb_mask))
+        disturb_mask = .false.
+        disturb_mask(1:csite%npatches) = .true.
+        call copy_sitetype_mask(tsite,csite,disturb_mask(1:csite%npatches),count(disturb_mask),count(disturb_mask))
         
         call deallocate_sitetype(tsite)
         deallocate(disturb_mask)

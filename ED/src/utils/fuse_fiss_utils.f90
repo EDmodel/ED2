@@ -1,1354 +1,1606 @@
 module fuse_fiss_utils_ar
 
-  use ed_state_vars,only : copy_patchtype,deallocate_patchtype,allocate_patchtype, &
-       allocate_sitetype,deallocate_sitetype,copy_sitetype_mask,copy_sitetype, &
-       copy_patchtype_mask
+   use ed_state_vars,only :   copy_patchtype        & ! subroutine
+                            , deallocate_patchtype  & ! subroutine
+                            , allocate_patchtype    & ! subroutine
+                            , allocate_sitetype     & ! subroutine
+                            , deallocate_sitetype   & ! subroutine
+                            , copy_sitetype_mask    & ! subroutine
+                            , copy_sitetype         & ! subroutine
+                            , copy_patchtype_mask   ! ! subroutine
 
    contains
-
-   !===================================================
+   !=======================================================================================!
+   !=======================================================================================!
+   !   This subroutine will sort the cohorts by size (1st = tallest, last = shortest.)     !
+   !---------------------------------------------------------------------------------------!
    subroutine sort_cohorts_ar(cpatch)
 
-     use ed_state_vars,only : patchtype,patchswap_g
+      use ed_state_vars,only :  patchtype   ! ! Structure
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(patchtype), target  :: cpatch     ! Current patch, to have cohorts sorted.
+      !----- Local variables --------------------------------------------------------------!
+      type(patchtype), pointer :: temppatch  ! Scratch patch structure
+      integer                  :: ico, iico  ! Counters
+      integer, dimension(1)    :: tallid     ! Identity of tallest cohort
+      !------------------------------------------------------------------------------------!
+      
+      !----- Assigning a scratch patch ----------------------------------------------------!
+      nullify(temppatch)
+      allocate(temppatch)
+      call allocate_patchtype(temppatch,cpatch%ncohorts)
+      
+      iico = 1
+      !---- Loop until all cohorts were sorted --------------------------------------------!
+      do while(iico <= cpatch%ncohorts)
+      
+         !----- Finding the tallest cohort ------------------------------------------------!
+         tallid = maxloc(cpatch%hite)
+         
+         !----- Copying to the scratch structure ------------------------------------------!
+         call copy_patchtype(cpatch,temppatch,tallid(1),tallid(1),iico,iico)
+         
+         !----- Putting a non-sense height so this will never "win" again. ----------------!
+         cpatch%hite(tallid) = -1.0
 
-     implicit none
-     type(patchtype),target :: cpatch
-     type(patchtype),pointer :: temppatch
-     integer :: ico,iico
-     integer,dimension(1):: tallid
-     real :: tallest
-     
-     allocate(temppatch)
-     call allocate_patchtype(temppatch,cpatch%ncohorts)
-     
-     iico = 1
-     do while(iico.le.cpatch%ncohorts)
-        
-        tallid = maxloc(cpatch%hite)
+         iico = iico + 1
+      end do
 
-        call copy_patchtype(cpatch,temppatch,tallid(1),tallid(1),iico,iico)
-        cpatch%hite(tallid) = -1.0
-        iico = iico + 1
-     enddo
+      !------ Copying the scratch patch to the regular one and deallocating it ------------!
+      call copy_patchtype(temppatch,cpatch,1,cpatch%ncohorts,1,cpatch%ncohorts)
+      call deallocate_patchtype(temppatch)
+      deallocate(temppatch)
 
-     call copy_patchtype(temppatch,cpatch,1,cpatch%ncohorts,1,cpatch%ncohorts)
-
-     call deallocate_patchtype(temppatch)
-     deallocate(temppatch)
-
-     return
+      return
 
    end subroutine sort_cohorts_ar
+   !=======================================================================================!
+   !=======================================================================================!
 
-   !---------------------------------------------------------
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine will eliminate cohorts based on their sizes. This is intended to   !
+   ! eliminate cohorts that have little contribution and thus we can speed up the run.     !
+   !---------------------------------------------------------------------------------------!
    subroutine terminate_cohorts_ar(csite,ipa)
 
-     use fusion_fission_coms, only : min_recruit_size
-     use pft_coms, only: l2n_stem,c2n_stem,c2n_storage, c2n_leaf
-     use decomp_coms, only : f_labile
-     use ed_state_vars,only : patchtype,sitetype
-     implicit none
-     
-     type(sitetype),target   :: csite
-     type(patchtype),pointer :: cpatch,temppatch
-     logical,allocatable :: remain_table(:)
-     integer :: ico,ipa,inew
-     real :: csize
+      use fusion_fission_coms, only :  min_recruit_size ! ! intent(in)
 
-     cpatch => csite%patch(ipa)
+      use pft_coms           , only :  l2n_stem         & ! intent(in)
+                                     , c2n_stem         & ! intent(in)
+                                     , c2n_storage      & ! intent(in), lookup table
+                                     , c2n_leaf         ! ! intent(in), lookup table
 
-     allocate(temppatch)
+      use decomp_coms        , only :  f_labile         ! ! intent(in), lookup table
 
-     allocate(remain_table(cpatch%ncohorts))
-     remain_table = .true.
-     
-     do ico = 1,cpatch%ncohorts
-     
-        csize = cpatch%nplant(ico) * (cpatch%balive(ico) + cpatch%bdead(ico) + cpatch%bstorage(ico))
-        
-        if(csize < (0.1 * min_recruit_size) )then
-           
-           remain_table(ico) = .false.
+      use ed_state_vars      , only :  patchtype        & ! structure
+                                     , sitetype         ! ! structure
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(sitetype)       , target      :: csite        ! Current site
+      integer              , intent(in)  :: ipa          ! Current patch ID
+      !----- Local variables --------------------------------------------------------------!
+      type(patchtype)      , pointer     :: cpatch       ! Current patch
+      type(patchtype)      , pointer     :: temppatch    ! Scratch patch structure
+      logical, dimension(:), allocatable :: remain_table ! Flag: this cohort will remain.
+      integer                            :: ico, inew    ! Counters
+      real                               :: csize        ! Size of current cohort
+      !------------------------------------------------------------------------------------!
+      
+      cpatch => csite%patch(ipa)
 
-           ! Update litter pools
-           
-           csite%fsc_in(ipa) = csite%fsc_in(ipa) + cpatch%nplant(ico) * &
-                (f_labile(cpatch%pft(ico)) * cpatch%balive(ico) + cpatch%bstorage(ico))                                           
-           
-           csite%fsn_in(ipa) = csite%fsn_in(ipa) + cpatch%nplant(ico) * &
-                (f_labile(cpatch%pft(ico)) * cpatch%balive(ico) /       &
-                c2n_leaf(cpatch%pft(ico)) + cpatch%bstorage(ico) / c2n_storage)                      
-           
-           csite%ssc_in(ipa) = csite%ssc_in(ipa) + cpatch%nplant(ico) * &
-                ((1.0 - f_labile(cpatch%pft(ico))) * cpatch%balive(ico) + cpatch%bdead(ico))
-           
-           csite%ssl_in(ipa) = csite%ssl_in(ipa) + cpatch%nplant(ico) * &
-                ( (1.0 - f_labile(cpatch%pft(ico))) *  &     
-                cpatch%balive(ico) + cpatch%bdead(ico) ) * l2n_stem / c2n_stem                       
-           
-        endif
-        
-     enddo
+      !----- Initialize the temporary patch structures and the remain/terminate table -----!
+      nullify(temppatch)
+      allocate(temppatch)
+      allocate(remain_table(cpatch%ncohorts))
+      remain_table(:) = .true.
+     
+      !----- Main loop --------------------------------------------------------------------!
+      do ico = 1,cpatch%ncohorts
 
-     ! Reallocate the patch via the remain table
+         !----- Checking whether the cohort size is too small -----------------------------!
+         csize = cpatch%nplant(ico)                                                        &
+               * (cpatch%balive(ico) + cpatch%bdead(ico) + cpatch%bstorage(ico))
 
-     call allocate_patchtype(temppatch,count(remain_table))
-     
-     call copy_patchtype_mask(cpatch,temppatch,remain_table,size(remain_table),count(remain_table))
-     
-     call deallocate_patchtype(cpatch)
-     
-     call allocate_patchtype(cpatch,count(remain_table))
-     
-     call copy_patchtype(temppatch,cpatch,1,cpatch%ncohorts,1,cpatch%ncohorts)
-     
-     ! Remove the temporary patch
-     
-     call deallocate_patchtype(temppatch)
-     deallocate(temppatch)
-     deallocate(remain_table)
-     csite%cohort_count(ipa) = cpatch%ncohorts
+         if( csize < (0.1 * min_recruit_size) )then
+            !----- Cohort is indeed too small, it won't remain ----------------------------!
+            remain_table(ico) = .false.
 
-  return
-end subroutine terminate_cohorts_ar
-!====================================================================
+            !----- Update litter pools ----------------------------------------------------!
+            csite%fsc_in(ipa) = csite%fsc_in(ipa) + cpatch%nplant(ico)                     &
+                              * (f_labile(cpatch%pft(ico)) * cpatch%balive(ico)            &
+                                + cpatch%bstorage(ico))
 
+            csite%fsn_in(ipa) = csite%fsn_in(ipa) + cpatch%nplant(ico)                     &
+                              * (f_labile(cpatch%pft(ico)) * cpatch%balive(ico)            &
+                                 / c2n_leaf(cpatch%pft(ico))                               &
+                                 + cpatch%bstorage(ico) / c2n_storage)
+            
+            csite%ssc_in(ipa) = csite%ssc_in(ipa) + cpatch%nplant(ico)                     &
+                              * ((1.0 - f_labile(cpatch%pft(ico))) * cpatch%balive(ico)    &
+                                 + cpatch%bdead(ico))
+            
+            csite%ssl_in(ipa) = csite%ssl_in(ipa) + cpatch%nplant(ico)                     &
+                              * ((1.0 - f_labile(cpatch%pft(ico)))                         &
+                                 *cpatch%balive(ico) + cpatch%bdead(ico))                  &
+                              * l2n_stem/c2n_stem
+
+         end if
+      end do
+
+      !----- Copy the remaining cohorts to a temporary patch ------------------------------!
+      call allocate_patchtype(temppatch,count(remain_table))
+      call copy_patchtype_mask(cpatch,temppatch,remain_table,size(remain_table)            &
+                              ,count(remain_table))
+
+      !----- Reallocate the new patch and populate with the saved cohorts -----------------!
+      call deallocate_patchtype(cpatch)
+      call allocate_patchtype(cpatch,count(remain_table))
+      call copy_patchtype(temppatch,cpatch,1,cpatch%ncohorts,1,cpatch%ncohorts)
+     
+      !----- Deallocate the temporary patch -----------------------------------------------!     
+      call deallocate_patchtype(temppatch)
+      deallocate(temppatch)
+      deallocate(remain_table)
+
+      !----- Update the cohort census at the site level -----------------------------------!
+      csite%cohort_count(ipa) = cpatch%ncohorts
+
+      return
+   end subroutine terminate_cohorts_ar
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine will eliminate tiny or empty patches. This is intended to          !
+   ! eliminate patches that have little contribution and thus we can speed up the run.     !
+   !---------------------------------------------------------------------------------------!
    subroutine terminate_patches_ar(csite)
 
-     use ed_state_vars,only:polygontype,sitetype,patchtype
-     use disturb_coms, only : min_new_patch_area
-     
-     implicit none
-     
-     type(sitetype),target   :: csite
-     type(sitetype),pointer  :: tsite
-     type(patchtype),pointer :: cpatch
-     integer :: ipa
-     integer,dimension(csite%npatches) :: mask
-     real :: epsilon
-     
+      use ed_state_vars, only :  polygontype       & ! Structure
+                               , sitetype          & ! Structure
+                               , patchtype         ! ! Structure
+      use disturb_coms,  only : min_new_patch_area ! ! intent(in)
 
-     ! Loop through all the patches in this site and determine
-     ! which of these patches is too small in area to be valid
-     ! Remove these patches via the mask function. Realocate a 
-     ! new site with only the valid patches, and normalize
-     ! their areas and plant densities to reflect the area loss
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(sitetype)       , target      :: csite        ! Current site
+      !----- Local variables --------------------------------------------------------------!
+      type(sitetype)       , pointer     :: tempsite     ! Scratch site
+      type(patchtype)      , pointer     :: cpatch       ! Pointer to current site
+      integer                            :: ipa,ico      ! Counters
+      logical, dimension(:), allocatable :: remain_table ! Flag: this patch will remain.
+      real                               :: elim_area    ! Area of removed patches
+      !------------------------------------------------------------------------------------!
 
-     mask = 1
-     epsilon = 0.0
-     
-     do ipa = 1,csite%npatches
-        if(csite%area(ipa) .lt. min_new_patch_area .or. csite%patch(ipa)%ncohorts == 0) then
-           epsilon = epsilon + csite%area(ipa)
-           mask(ipa) = 0
-        endif
-        
-     enddo
+      allocate (remain_table(csite%npatches))
+      remain_table(:) = .true.
 
-     ! use the mask to resize the patch vectors in the current site
-     ! ------------------------------------------------------------
-     allocate(tsite)
-     call allocate_sitetype(tsite,sum(mask))
-     
-     call copy_sitetype_mask(csite,tsite,mask,size(mask),sum(mask))
+      !------------------------------------------------------------------------------------!
+      !     Loop through all the patches in this site and determine which of these patches !
+      ! is too small in area to be valid. Remove these patches via the mask function.      !
+      ! Realocate a new site with only the valid patches, and normalize their areas and    !
+      ! plant densities to reflect the area loss.                                          !
+      !------------------------------------------------------------------------------------!
+      elim_area = 0.0
+      do ipa = 1,csite%npatches
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         !!! MLO - Should empty patches be always removed? I'm just wondering how bare   !!!
+         !!!       ground regions/desert areas are represented (or are they represented  !!!
+         !!!       at all?)                                                              !!!
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         if (csite%area(ipa) < min_new_patch_area .or. csite%patch(ipa)%ncohorts == 0 )    &
+         then
+            elim_area = elim_area + csite%area(ipa)
+            remain_table(ipa) = .false.
+         end if
+      end do
 
-     call deallocate_sitetype(csite)
+      !----- Use the mask to resize the patch vectors in the current site. ----------------!
+      allocate(tempsite)
+      call allocate_sitetype(tempsite,count(remain_table))
+      call copy_sitetype_mask(csite,tempsite,remain_table,size(remain_table)               &
+                             ,count(remain_table))
+      call deallocate_sitetype(csite)
+      call allocate_sitetype(csite,count(remain_table))
 
-     call allocate_sitetype(csite,sum(mask))
+      remain_table(:)                   = .false.
+      remain_table(1:tempsite%npatches) = .true.
+      call copy_sitetype_mask(tempsite,csite,remain_table(1:tempsite%npatches)             &
+                             ,count(remain_table),count(remain_table))
+      call deallocate_sitetype(tempsite)
+      deallocate(tempsite)
 
-     mask = 0
-     mask(1:tsite%npatches) = 1
-     call copy_sitetype_mask(tsite,csite,mask(1:tsite%npatches),sum(mask),sum(mask))
+      !----- Renormalize the number of plants and the total area to reflect the deletions. !
+      do ipa = 1,csite%npatches
+         csite%area(ipa) = csite%area(ipa) / (1.-elim_area)
 
-     call deallocate_sitetype(tsite)
-     deallocate(tsite)
-     ! ------------------------------------------------------------
+         cpatch => csite%patch(ipa)
+         do ico = 1, cpatch%ncohorts
+            cpatch%nplant(ico) = cpatch%nplant(ico) / (1.-elim_area)
+         end do
+      end do
 
-
-     ! Renormalize the number of plants and the total area to reflect
-     ! the deletions
-
-     do ipa = 1,csite%npatches
-        csite%area(:) = csite%area(:) / (1-epsilon)
-        cpatch => csite%patch(ipa)
-        cpatch%nplant(:) = cpatch%nplant(:) / (1-epsilon)
-     enddo
-
-     return
+      return
    end subroutine terminate_patches_ar
+   !=======================================================================================!
+   !=======================================================================================!
 
 
-   !----------------------------------------------------------
 
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !   This subroutine will perform cohort fusion based on various similarity criteria to  !
+   ! determine whether they can be fused with no significant loss of information. The user !
+   ! is welcome to set up a benchmark, but should be aware that no miracles will happen    !
+   ! here. If there are more very distinct cohorts than maxcohort, then the user will need !
+   ! to live with that and accept life is not always fair with those with limited          !
+   ! computational resources.                                                              !
+   !---------------------------------------------------------------------------------------!
    subroutine fuse_cohorts_ar(csite,ipa, green_leaf_factor, lsl)
 
-     use ed_state_vars,only:sitetype,patchtype
-     use pft_coms            , only: rho, b1Ht, max_dbh, sla
-     use fusion_fission_coms , only: fusetol_h, fusetol, lai_fuse_tol
-     use max_dims            , only: n_pft
-     use mem_sites           , only: maxcohort
+      use ed_state_vars       , only :  sitetype           & ! Structure
+                                      , patchtype          ! ! Structure
+      use pft_coms            , only :  rho                & ! intent(in)
+                                      , b1Ht               & ! intent(in)
+                                      , max_dbh            & ! intent(in)
+                                      , sla                ! ! intent(in)
+      use fusion_fission_coms , only :  fusetol_h          & ! intent(in)
+                                      , fusetol            & ! intent(in)
+                                      , lai_fuse_tol       & ! intent(in)
+                                      , fuse_relax         & ! intent(in)
+                                      , coh_tolerance_max  ! ! intent(in)
+      use max_dims            , only :  n_pft              ! ! intent(in)
+      use mem_sites           , only :  maxcohort          ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(sitetype)         , target      :: csite             ! Current site
+      integer                , intent(in)  :: ipa               ! Current patch ID
+      real, dimension(n_pft) , intent(in)  :: green_leaf_factor ! 
+      integer                , intent(in)  :: lsl               ! Lowest soil level
+      !----- Local variables --------------------------------------------------------------!
+      logical, dimension(:)  , allocatable :: fuse_table     ! Flag, remaining cohorts
+      type(patchtype)        , pointer     :: cpatch         ! Current patch
+      type(patchtype)        , pointer     :: temppatch      ! Scratch patch
+      integer                              :: ico1, ico2     ! Counters
+      logical                              :: fusion_test    ! Flag: proceed with fusion?
+      real                                 :: hite_threshold ! Height threshold
+      real                                 :: newn           ! new nplants of merged coh.
+      real                                 :: total_lai      ! Total LAI
+      real                                 :: tolerance_mult ! Multiplication factor
+      integer                              :: ncohorts_old   ! # of coh. before fusion test
+      real                                 :: mean_dbh       ! Mean DBH           (???)
+      real                                 :: mean_hite      ! Mean height        (???)
+      integer                              :: ntall          ! # of tall cohorts  (???)
+      integer                              :: nshort         ! # of short cohorts (???)
+      !----- Functions --------------------------------------------------------------------!
+      real                   , external    :: dbh2h
+      real                   , external    :: dbh2bl
+      !------------------------------------------------------------------------------------!
 
-     implicit none
+      !----- Return if maxcohort is 0 (flag for no cohort fusion). ------------------------!
+      if (maxcohort == 0) return
 
-     type(sitetype),target :: csite
-     type(patchtype),pointer :: cpatch
-     integer :: ipa,ico1,ico2
-     real         , dimension(n_pft) , intent(in) :: green_leaf_factor
-     integer      ,                    intent(in) :: lsl
+      !----- Start with no factor ---------------------------------------------------------!
+      tolerance_mult = 1.0
 
-     type(patchtype),pointer :: temppatch
 
-     logical :: fusion_test
-     real    :: hite_threshold
-     real    :: newn
-     real    :: total_lai
-     integer :: icc
-     integer :: jcc
-     integer :: icc1
-     integer :: icc2
-     integer :: icc3
-     real :: tolerance_mult
-     logical , allocatable, dimension(:) :: fuse_table
-     real    , external :: dbh2h
-     real    , external :: dbh2bl
-     real, parameter :: tolerance_max = 2.0  ! Original: 2.0
-     integer :: ncohorts_old
-     integer, parameter :: fuse_relax = 0
-     real :: mean_dbh,mean_hite,ntall,nshort
- 
+      cpatch => csite%patch(ipa)
      
-     tolerance_mult = 1.0
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!! COHORT COUNT IS DEPRICATED AND WILL BE REMOVED SOON - RGK 11-28-2008           !!!
+      !!! MLO - Why?                                                                     !!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     
+      !------------------------------------------------------------------------------------!
+      !     Return if we don't have many cohorts anyway. Cohort fusion is just for         !
+      ! computational efficiency.                                                          !
+      !------------------------------------------------------------------------------------!
+      if(cpatch%ncohorts <= abs(maxcohort))return
 
-     cpatch => csite%patch(ipa)
+      !------------------------------------------------------------------------------------!
+      !    Calculate mean DBH and HITE to help with the normalization of differences mean  !
+      ! hite is not being used right now, but can be optioned in the future if it seems    !
+      ! advantageous.                                                                      !
+      !------------------------------------------------------------------------------------!
+      mean_dbh  = 0.0
+      mean_hite = 0.0
+      nshort    = 0
+      ntall     = 0
+      do ico1 = 1,cpatch%ncohorts
+         !----- Get fusion height threshold -----------------------------------------------!
+         if (rho(cpatch%pft(ico1)) == 0.0)then
+            hite_threshold = b1Ht(cpatch%pft(ico1))
+         else
+            hite_threshold = dbh2h(cpatch%pft(ico1),max_dbh(cpatch%pft(ico1)))
+         end if
 
+         if (cpatch%hite(ico1) < (0.95 * hite_threshold) ) then
+            mean_hite = mean_hite + cpatch%hite(ico1)
+            nshort    = nshort + 1
+         else
+            mean_dbh  = mean_dbh + cpatch%dbh(ico1)
+            ntall     = ntall + 1
+         end if
+      end do
+      !------------------------------------------------------------------------------------!
+      if (ntall  > 0) mean_dbh = mean_dbh   / ntall
+      if (nshort > 0) mean_hite= mean_hite  / nshort
 
-     ! COHORT COUNT IS DEPRICATED AND WILL BE REMOVED SOON - RGK 11-28-2008
+      !----- Initialize table. In principle, all cohorts stay. ----------------------------!
+      allocate(fuse_table(cpatch%ncohorts))
+      fuse_table(:) = .true.
 
-     ! Return if we dont have many cohorts anyway
-     if(cpatch%ncohorts <= maxcohort)return
-
-
-     ! Calculate mean DBH and HITE to help with the normalization of differences
-     ! mean hite is not being used right now, but can be optioned in the future
-     ! if it seems advantageous
-     ! -------------------------------------------------------------------------
-     mean_dbh  = 0.0
-     mean_hite = 0.0
-     nshort    = 0.0
-     ntall     = 0.0
-     do ico1 = 1,cpatch%ncohorts
-        ! get fusion height threshold
-        if(rho(cpatch%pft(ico1)) == 0.0)then
-           hite_threshold = b1Ht(cpatch%pft(ico1))
-        else
-           hite_threshold = dbh2h(cpatch%pft(ico1), max_dbh(cpatch%pft(ico1)))
-        end if
-
-        if(cpatch%hite(ico1) < (0.95 * hite_threshold ))then
-           mean_hite = mean_hite + cpatch%hite(ico1)
-           nshort = nshort+1.0
-        else
-           mean_dbh = mean_dbh + cpatch%dbh(ico1)
-           ntall=ntall+1.0
-        endif
-     end do
-
-     if (ntall  > 0) mean_dbh = mean_dbh/ntall
-     if (nshort > 0) mean_hite= mean_hite/nshort
-
-     allocate(fuse_table(cpatch%ncohorts))
-     fuse_table(:) = .true.
-
-     force_fusion: do
-     ncohorts_old =  count(fuse_table)
-     donloop:do ico1 = 1,cpatch%ncohorts-1
-        if (.not. fuse_table(ico1)) cycle donloop !This one is gone
+      force_fusion: do
          
-        recloop: do ico2 = ico1+1,cpatch%ncohorts
-           if (.not. fuse_table(ico2)) cycle recloop !This one is gone
+         ncohorts_old =  count(fuse_table) ! Save current number of cohorts ---------------!
+         
+         donloop:do ico1 = 1,cpatch%ncohorts-1
+            if (.not. fuse_table(ico1)) cycle donloop ! This one is gone, move to next.
 
-           ! get fusion height threshold
-           if(rho(cpatch%pft(ico1)) == 0.0)then
-              hite_threshold = b1Ht(cpatch%pft(ico1))
-           else
-              hite_threshold = dbh2h(cpatch%pft(ico1), max_dbh(cpatch%pft(ico1)))
-           end if
+            recloop: do ico2 = ico1+1,cpatch%ncohorts
+               if (.not. fuse_table(ico2)) cycle recloop ! This one is gone, move to next.
 
-           ! test for similarity
-           if(cpatch%hite(ico1) < (0.95 * hite_threshold ))then
-              fusion_test = (abs(cpatch%hite(ico1) - cpatch%hite(ico2)) < fusetol_h * tolerance_mult)
-              if(fuse_relax == 1)then
-                 fusion_test = (abs(cpatch%hite(ico1) - cpatch%hite(ico2)) / &
-                   (0.5*(cpatch%hite(ico1) + cpatch%hite(ico2)))  < fusetol * tolerance_mult)  
-              end if
-           else
-!              ! Defining mean_dbh the old way, because mean_dbh can be zero if ntall is 0.
-!              fusion_test = ( abs(cpatch%dbh(ico1) - cpatch%dbh(ico2)) &
-!                              < fusetol * tolerance_mult * mean_dbh )  &
-!                            .and. (ntall > 0) 
-              mean_dbh=0.5*(cpatch%dbh(ico1)+cpatch%dbh(ico2))
-              fusion_test = ( abs(cpatch%dbh(ico1) - cpatch%dbh(ico2)))/mean_dbh &
+               !----- Get fusion height threshold. ----------------------------------------!
+               if(rho(cpatch%pft(ico1)) == 0.0) then
+                  hite_threshold = b1Ht(cpatch%pft(ico1))
+               else
+                  hite_threshold = dbh2h(cpatch%pft(ico1), max_dbh(cpatch%pft(ico1)))
+               end if
+
+               !----- Test for similarity -------------------------------------------------!
+               if (fuse_relax .or. cpatch%hite(ico1) >= (0.95 * hite_threshold )) then
+                  mean_dbh=0.5*(cpatch%dbh(ico1)+cpatch%dbh(ico2))
+                  fusion_test = ( abs(cpatch%dbh(ico1) - cpatch%dbh(ico2)))/mean_dbh       &
                               < fusetol * tolerance_mult
-           end if
+               else
+                  fusion_test = (abs(cpatch%hite(ico1) - cpatch%hite(ico2))                &
+                                 < fusetol_h * tolerance_mult)
+               end if
 
-           if(fusion_test)then
+               if (fusion_test) then
 
-           ! Cohorts have a similar size
-              
-              newn = cpatch%nplant(ico1) + cpatch%nplant(ico2)
+                  !----- Cohorts have a similar size. -------------------------------------!
+                  newn = cpatch%nplant(ico1) + cpatch%nplant(ico2)
 
-              total_lai = ( cpatch%nplant(ico2) * dbh2bl(cpatch%dbh(ico2),cpatch%pft(ico2))  &
-                   + cpatch%nplant(ico1) * dbh2bl(cpatch%dbh(ico1),cpatch%pft(ico1))) * sla(cpatch%pft(ico2))
+                  total_lai = sla(cpatch%pft(ico2))                                        &
+                            * ( cpatch%nplant(ico2)                                        &
+                              * dbh2bl(cpatch%dbh(ico2),cpatch%pft(ico2))                  &
+                              + cpatch%nplant(ico1)                                        &
+                              * dbh2bl(cpatch%dbh(ico1),cpatch%pft(ico1)) )
 
-              if(  cpatch%pft(ico1)      ==     cpatch%pft(ico2)     .and. &  ! cohorts are the same PFT and
-                   total_lai             <       lai_fuse_tol*tolerance_mult     .and. &  ! LAI won't be too big and
-                   cpatch%first_census(ico1)     == cpatch%first_census(ico2)     .and. &  ! won't mess
-                   cpatch%new_recruit_flag(ico1) == cpatch%new_recruit_flag(ico2) )then    ! up output
+                  !------------------------------------------------------------------------!
+                  !    Four conditions must be met to allow two cohorts to be fused:       !
+                  ! 1. Both cohorts must have the same PFT;                                !
+                  ! 2. Combined LAI won't be too large.                                    !
+                  ! 3. Both cohorts must have the same status with respect to the first    !
+                  !    census.                                                             !
+                  ! 4. Both cohorts must the same recruit status with respect to the first !
+                  !    census.                                                             !
+                  !------------------------------------------------------------------------!
+                  if (     cpatch%pft(ico1)              == cpatch%pft(ico2)               &     
+                     .and. total_lai                      < lai_fuse_tol*tolerance_mult    &
+                     .and. cpatch%first_census(ico1)     == cpatch%first_census(ico2)      &
+                     .and. cpatch%new_recruit_flag(ico1) == cpatch%new_recruit_flag(ico2)  &
+                     ) then
 
-                 call fuse_2_cohorts_ar(cpatch,ico1,ico2, newn,green_leaf_factor(cpatch%pft(ico1)), lsl)
+                     !----- Proceed with fusion -------------------------------------------!
+                     call fuse_2_cohorts_ar(cpatch,ico1,ico2,newn                          &
+                                           ,green_leaf_factor(cpatch%pft(ico1)),lsl)
 
-                 fuse_table(ico1) = .false.
-                 cycle donloop
-              end if
-           end if
-        end do recloop
-     end do donloop
+                     !----- Flag donating cohort as gone, so it won't be checked again. ---!
+                     fuse_table(ico1) = .false.
+                     cycle donloop
+                  end if
+                  !------------------------------------------------------------------------!
+               end if
+            end do recloop
+         end do donloop
 
-     
-     if( count(fuse_table) <= abs(maxcohort))exit force_fusion
-     if( (count(fuse_table) == ncohorts_old) .and. (tolerance_mult > tolerance_max) ) exit force_fusion
-     
-     tolerance_mult = tolerance_mult * 1.01
-     ncohorts_old = count(fuse_table)
+         !------ If we are under maxcohort, no need to continue fusing. -------------------!
+         if ( count(fuse_table) <= abs(maxcohort)) exit force_fusion
+         !------ If no fusion happened and the tolerance exceeded the maximum, I give up. -!
+         if ( count(fuse_table) == ncohorts_old .and. tolerance_mult > coh_tolerance_max ) &
+            exit force_fusion
 
-  enddo force_fusion
+         tolerance_mult = tolerance_mult * 1.01
+         ncohorts_old = count(fuse_table)
+      end do force_fusion
 
-  ! If fusion didn't happen at all, return
-  if (all(fuse_table)) then
-     deallocate(fuse_table)
-     return
-  endif
+      !----- If any fusion has happened, then we need to rearrange cohorts. ---------------!
+      if (.not. all(fuse_table)) then
 
+         !---------------------------------------------------------------------------------!
+         !     Now copy the merged patch to a temporary patch using the fuse_table as a    !
+         ! mask.  Then allocate a temporary patch, copy the remaining cohorts there.       !
+         !---------------------------------------------------------------------------------!
+         nullify (temppatch)
+         allocate(temppatch)
+         call allocate_patchtype(temppatch,cpatch%ncohorts)
+         call copy_patchtype_mask(cpatch,temppatch,fuse_table,size(fuse_table)             &
+                                 ,count(fuse_table))
 
-  ! Now copy the merged patch to a temporary patch using the fuse_table
-  ! as a mask.  Then deallocate the patch, copy the values from the temp
-  ! and deallocate the temp.
-
-  allocate(temppatch)
-  call allocate_patchtype(temppatch,cpatch%ncohorts)
-
-  call copy_patchtype_mask(cpatch,temppatch,fuse_table,size(fuse_table),count(fuse_table))
-
-  call deallocate_patchtype(cpatch)
+         !----- Now I reallocate the current patch with its new reduced size. -------------!
+         call deallocate_patchtype(cpatch)  
+         call allocate_patchtype(cpatch,count(fuse_table))
   
-  call allocate_patchtype(cpatch,count(fuse_table))
+         !----- Make fuse_table true to all remaining cohorts. ----------------------------!
+         fuse_table(:)                 = .false.
+         fuse_table(1:cpatch%ncohorts) = .true.
+         call copy_patchtype_mask(temppatch,cpatch,fuse_table,size(fuse_table)             &
+                                 ,count(fuse_table))
 
-  fuse_table = .false.
-  fuse_table(1:cpatch%ncohorts) = .true.
+         !----- Discard the scratch patch. ------------------------------------------------!
+         call deallocate_patchtype(temppatch)
+         deallocate(temppatch)  
 
-  call copy_patchtype_mask(temppatch,cpatch,fuse_table,size(fuse_table),count(fuse_table))
-
-  call deallocate_patchtype(temppatch)
-  deallocate(temppatch)  
-  
-  call sort_cohorts_ar(cpatch)
-  csite%cohort_count(ipa) = count(fuse_table)
-
-  deallocate(fuse_table)
-
-  return
-end subroutine fuse_cohorts_ar
-
-!=============================================================
-
-subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
-
-     use ed_state_vars,only : patchtype
-     use pft_coms             , only: q, qsw, sla
-     use fusion_fission_coms  , only: lai_tol
-     use max_dims             , only: n_pft
-     use ed_therm_lib         , only: update_veg_energy_ct
-
-     implicit none
+         !----- Sort cohorts by size again, and update the cohort census for this patch. --!
+         call sort_cohorts_ar(cpatch)
+         csite%cohort_count(ipa) = count(fuse_table)
+      end if
      
-     type(patchtype),target :: cpatch
-     type(patchtype),pointer :: temppatch
+      !----- Deallocate the aux. table ----------------------------------------------------!
+      deallocate(fuse_table)
      
-     integer :: ipa,ico,inew
-     real        , dimension(n_pft), intent(in) :: green_leaf_factor
-
-     real         , parameter :: epsilon=0.0001
-     integer                  :: i,ncohorts_new
-     real    :: slai 
-
-     real, external :: dbh2h
-!     real, external :: bd2dbh
-     real, external :: dbh2bd
-     integer, intent(in) :: lsl
-     integer,allocatable :: split_mask(:)
-
-     allocate(temppatch)
-     allocate(split_mask(cpatch%ncohorts))
-
-     split_mask = 0
-
-     do ico = 1,cpatch%ncohorts
-
-        slai =  cpatch%nplant(ico) * cpatch%balive(ico) * green_leaf_factor(cpatch%pft(ico))   &
-             /(1.0 + q(cpatch%pft(ico)) + qsw(cpatch%pft(ico)) * &
-             cpatch%hite(ico)) * sla(cpatch%pft(ico))
-
-        if(slai > lai_tol)then
-
-           ! Determine the split list
-           split_mask(ico) = 1
-
-        endif
-     enddo
-
-     ncohorts_new = cpatch%ncohorts + sum(split_mask)
-
-     ! Allocate the temppatch
-     
-     call allocate_patchtype(temppatch,cpatch%ncohorts)
-     
-     ! Fill the temp space with the current patches
-     
-     call copy_patchtype(cpatch,temppatch,1,cpatch%ncohorts,1,cpatch%ncohorts)
-     
-     ! Deallocate the current patch
-     
-     call deallocate_patchtype(cpatch)
-     
-     ! Re-allocate the current patch
-     
-     call allocate_patchtype(cpatch,ncohorts_new)
-     
-     ! Transfer the temp values back in
-     
-     call copy_patchtype(temppatch,cpatch,1,temppatch%ncohorts,1,temppatch%ncohorts)
-     
-     ! Remove the temporary patch
-     
-     call deallocate_patchtype(temppatch)
-     
-     inew = size(split_mask)
-     do ico = 1,size(split_mask)
-
-        if (split_mask(ico).eq.1) then
-           
-           ! Half the densities of the oringal cohort
-
-           cpatch%nplant(ico)           = cpatch%nplant(ico) * 0.5
-           cpatch%lai(ico)              = cpatch%lai(ico) * 0.5   
-           cpatch%veg_water(ico)        = cpatch%veg_water(ico) * 0.5
-           cpatch%mean_gpp(ico)         = cpatch%mean_gpp(ico) * 0.5
-           cpatch%mean_leaf_resp(ico)   = cpatch%mean_leaf_resp(ico) * 0.5
-           cpatch%mean_root_resp(ico)   = cpatch%mean_root_resp(ico) * 0.5
-           cpatch%dmean_leaf_resp(ico)  = cpatch%dmean_leaf_resp(ico) * 0.5
-           cpatch%dmean_root_resp(ico)  = cpatch%dmean_root_resp(ico) * 0.5
-           cpatch%dmean_gpp(ico)        = cpatch%dmean_gpp(ico) * 0.5
-           cpatch%dmean_gpp_pot(ico)    = cpatch%dmean_gpp_pot(ico) * 0.5
-           cpatch%dmean_gpp_max(ico)    = cpatch%dmean_gpp_max(ico) * 0.5
-           cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico) * 0.5
-           cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico) * 0.5
-           cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico) * 0.5
-           cpatch%monthly_dndt(ico)     = cpatch%monthly_dndt(ico) * 0.5
-           cpatch%Psi_open(ico)         = cpatch%Psi_open(ico) * 0.5
-
-           cpatch%gpp(ico)               = cpatch%gpp(ico)              * 0.5
-           cpatch%leaf_respiration(ico)  = cpatch%leaf_respiration(ico) * 0.5
-           cpatch%root_respiration(ico)  = cpatch%root_respiration(ico) * 0.5
-
-           ! Update the heat capacity and the vegetation energy
-           call update_veg_energy_ct(cpatch,ico)
+      return
+   end subroutine fuse_cohorts_ar
+   !=======================================================================================!
+   !=======================================================================================!
 
 
-           ! Apply those values to the new cohort
-
-           inew = inew+1
-!           cpatch%maker(inew) = 1
-           
-           call copy_cohort_ar(cpatch,ico,inew)
-
-           ! Tweak the heights and DBHs
-!KIM - leading to negative bdead!
-!KIM - tweak the dbh, following ED2.0
-!!$           cpatch%bdead(ico) = cpatch%bdead(ico) - epsilon
-!!$           cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
-!!$           cpatch%hite(ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
-!!$
-!!$           cpatch%bdead(inew) = cpatch%bdead(inew) + epsilon
-!!$           cpatch%dbh(inew) = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
-!!$           cpatch%hite(inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
-
-           cpatch%dbh(ico) = cpatch%dbh(ico) - epsilon
-           cpatch%hite(ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
-           cpatch%bdead(ico) = dbh2bd(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico))
- 
-           ! Yeonjoo, can you confirm please, that there should be no
-           ! tweaking of bdead for cohort index inew.
-           ! Please erase this message - RGK
-
-           cpatch%dbh(inew) = cpatch%dbh(inew) + epsilon
-           cpatch%hite(inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
-           cpatch%bdead(inew) = cpatch%bdead(inew) + epsilon
-
-           ! Update the vegetation energy again, due to tweaks
-
-           call update_veg_energy_ct(cpatch,ico)
-           call update_veg_energy_ct(cpatch,inew)
-           call update_veg_energy_ct(cpatch,ico)
 
 
-        endif
 
-     enddo
-     deallocate(split_mask)
-     deallocate(temppatch)
-     return
-   end subroutine split_cohorts_ar
 
-   !===================================================================
+   !=======================================================================================!
+   !=======================================================================================!
+   !   This subroutine will split two cohorts if its LAI has become too large.             !
+   !---------------------------------------------------------------------------------------!
+   subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
 
-   subroutine copy_cohort_ar(cpatch,isc,idt)
+      use ed_state_vars        , only :  patchtype             ! ! structure
+      use pft_coms             , only :  q                     & ! intent(in), lookup table
+                                       , qsw                   & ! intent(in), lookup table
+                                       , sla                   ! ! intent(in), lookup table
+      use fusion_fission_coms  , only :  lai_tol               ! ! intent(in)
+      use max_dims             , only :  n_pft                 ! ! intent(in)
+      use ed_therm_lib         , only :  update_veg_energy_ct  ! ! subroutine
 
-     use ed_state_vars,only:patchtype
+      implicit none
+      !----- Constants --------------------------------------------------------------------!
+      real                   , parameter   :: epsilon=0.0001    ! Tweak factor...
+      !----- Arguments --------------------------------------------------------------------!
+      type(patchtype)        , target      :: cpatch            ! Current patch
+      real, dimension(n_pft) , intent(in)  :: green_leaf_factor !
+      integer                , intent(in)  :: lsl               ! Lowest soil level
+      !----- Local variables --------------------------------------------------------------!
+      type(patchtype)        , pointer     :: temppatch         ! Temporary patch
+      logical, dimension(:)  , allocatable :: split_mask        ! Flag: split this cohort
+      integer                              :: ipa,ico,inew      ! Counters
+      integer                              :: ncohorts_new      ! New # of cohorts
+      integer                              :: tobesplit         ! # of cohorts to be split
+      real                                 :: slai              ! LAI
+      !----- Functions --------------------------------------------------------------------!
+      real                   , external    :: dbh2h
+      real                   , external    :: dbh2bd
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Initialize the vector with splitting table -----------------------------------!
+      allocate(split_mask(cpatch%ncohorts))
+      split_mask(:) = .false.
+
+      !----- Loop through cohorts ---------------------------------------------------------!
+      do ico = 1,cpatch%ncohorts
+
+         slai = cpatch%nplant(ico)                                                         &
+              * cpatch%balive(ico)                                                         &
+              * green_leaf_factor(cpatch%pft(ico))                                         &
+              / ( 1.0 + q(cpatch%pft(ico)) + qsw(cpatch%pft(ico)) * cpatch%hite(ico) )     &
+              * sla(cpatch%pft(ico))
+
+         !----- If the resulting LAI is too large, split this cohort. ---------------------!
+         split_mask(ico) = slai > lai_tol
+      end do
+
+      !----- Compute the new number of cohorts. -------------------------------------------!
+      tobesplit    = count(split_mask)
+      ncohorts_new = cpatch%ncohorts + tobesplit
       
-     implicit none
+      if (tobesplit > 0) then
 
-     type(patchtype),target :: cpatch
-     integer :: isc,idt
-     integer :: imonth
+         !----- Allocate the temppatch. ---------------------------------------------------!
+         nullify(temppatch)
+         allocate(temppatch)
+         call allocate_patchtype(temppatch,cpatch%ncohorts)
 
-     cpatch%pft(idt)    = cpatch%pft(isc)
-     cpatch%nplant(idt) = cpatch%nplant(isc)
-     cpatch%hite(idt)   = cpatch%hite(isc)
-     cpatch%dbh(idt)    = cpatch%dbh(isc)
-     cpatch%bdead(idt)  = cpatch%bdead(isc)
-     cpatch%bleaf(idt)  = cpatch%bleaf(isc)
-     cpatch%phenology_status(idt) = cpatch%phenology_status(isc)
-     cpatch%balive(idt) = cpatch%balive(isc)
-     cpatch%lai(idt)    = cpatch%lai(isc)
-     cpatch%bstorage(idt) = cpatch%bstorage(isc)
-     cpatch%veg_energy(idt) = cpatch%veg_energy(isc)
-     cpatch%hcapveg(idt) = cpatch%hcapveg(isc)
-     cpatch%veg_temp(idt) = cpatch%veg_temp(isc)
-     cpatch%veg_water(idt) = cpatch%veg_water(isc)
-     cpatch%mean_gpp(idt) = cpatch%mean_gpp(isc)
-     cpatch%mean_leaf_resp(idt) = cpatch%mean_leaf_resp(isc)
-     cpatch%mean_root_resp(idt) = cpatch%mean_root_resp(isc)
-     cpatch%dmean_leaf_resp(idt) = cpatch%dmean_leaf_resp(isc)
-     cpatch%dmean_root_resp(idt) = cpatch%dmean_root_resp(isc)
-     cpatch%dmean_gpp(idt) = cpatch%dmean_gpp(isc)
-     cpatch%dmean_gpp_pot(idt) = cpatch%dmean_gpp_pot(isc)
-     cpatch%dmean_gpp_max(idt) = cpatch%dmean_gpp_max(isc)
-     cpatch%growth_respiration(idt) = cpatch%growth_respiration(isc)
-     cpatch%storage_respiration(idt) = cpatch%storage_respiration(isc)
-     cpatch%vleaf_respiration(idt) = cpatch%vleaf_respiration(isc)
-     cpatch%fsn(idt) = cpatch%fsn(isc)
-     cpatch%monthly_dndt(idt) = cpatch%monthly_dndt(isc)
-     cpatch%Psi_open(idt) = cpatch%Psi_open(isc)
-     do imonth = 1,13
-        cpatch%cb(imonth,idt) = cpatch%cb(imonth,isc)
-        cpatch%cb_max(imonth,idt) = cpatch%cb_max(imonth,isc)
-     enddo
-     cpatch%cbr_bar(idt) = cpatch%cbr_bar(isc)
-     cpatch%krdepth(idt) = cpatch%krdepth(isc)
-     cpatch%first_census(idt) = cpatch%first_census(isc)
-     cpatch%new_recruit_flag(idt) = cpatch%new_recruit_flag(isc)
+         !----- Fill the temp space with the current patches. -----------------------------!
+         call copy_patchtype(cpatch,temppatch,1,cpatch%ncohorts,1,cpatch%ncohorts)
 
-     !=====================================================================
+         !----- Deallocate the current patch. ---------------------------------------------!
+         call deallocate_patchtype(cpatch)
 
-     cpatch%par_v(idt) = cpatch%par_v(isc)
-     cpatch%par_v_beam(idt) = cpatch%par_v_beam(isc)
-     cpatch%par_v_diffuse(idt) = cpatch%par_v_diffuse(isc)
-     cpatch%rshort_v(idt) = cpatch%rshort_v(isc)
-     cpatch%rshort_v_beam(idt) = cpatch%rshort_v_beam(isc)
-     cpatch%rshort_v_diffuse(idt) = cpatch%rshort_v_diffuse(isc)
-     cpatch%rlong_v(idt) = cpatch%rlong_v(isc)
-     cpatch%rlong_v_surf(idt) = cpatch%rlong_v_surf(isc)
-     cpatch%rlong_v_incid(idt) = cpatch%rlong_v_incid(isc)
-     cpatch%rb(idt) = cpatch%rb(isc)
-     cpatch%A_open(idt) = cpatch%A_open(isc)
-!     cpatch%status(idt) = cpatch%status(isc)
+         !----- Re-allocate the current patch. --------------------------------------------!
+         call allocate_patchtype(cpatch,ncohorts_new)
 
-     cpatch%gpp(idt)               = cpatch%gpp(isc)
-     cpatch%leaf_respiration(idt)  = cpatch%leaf_respiration(isc)
-     cpatch%root_respiration(idt)  = cpatch%root_respiration(isc)
+         !----- Transfer the temp values back in. -----------------------------------------!
+         call copy_patchtype(temppatch,cpatch,1,temppatch%ncohorts,1,temppatch%ncohorts)
+
+         !----- Remove the temporary patch. -----------------------------------------------!
+         call deallocate_patchtype(temppatch)
      
-     return
-   end subroutine copy_cohort_ar
+         inew = size(split_mask)
+         do ico = 1,size(split_mask)
+
+            if (split_mask(ico)) then
+
+               !----- Half the densities of the oringal cohort. ---------------------------!
+               cpatch%nplant(ico)              = cpatch%nplant(ico)              * 0.5
+               cpatch%lai(ico)                 = cpatch%lai(ico)                 * 0.5
+               cpatch%veg_water(ico)           = cpatch%veg_water(ico)           * 0.5
+               cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)            * 0.5
+               cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)      * 0.5
+               cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)      * 0.5
+               cpatch%dmean_leaf_resp(ico)     = cpatch%dmean_leaf_resp(ico)     * 0.5
+               cpatch%dmean_root_resp(ico)     = cpatch%dmean_root_resp(ico)     * 0.5
+               cpatch%dmean_gpp(ico)           = cpatch%dmean_gpp(ico)           * 0.5
+               cpatch%dmean_gpp_pot(ico)       = cpatch%dmean_gpp_pot(ico)       * 0.5
+               cpatch%dmean_gpp_max(ico)       = cpatch%dmean_gpp_max(ico)       * 0.5
+               cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)  * 0.5
+               cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico) * 0.5
+               cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)   * 0.5
+               cpatch%monthly_dndt(ico)        = cpatch%monthly_dndt(ico)        * 0.5
+               cpatch%Psi_open(ico)            = cpatch%Psi_open(ico)            * 0.5
+               cpatch%gpp(ico)                 = cpatch%gpp(ico)                 * 0.5
+               cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)    * 0.5
+               cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)    * 0.5
+
+               !---------------------------------------------------------------------------!
+               !     Update the heat capacity and the vegetation energy.                   !
+               ! MLO: Ryan, Is this one really necessary? The vegetation is updated later  !!!
+               !      anyway...                                                            !
+               !---------------------------------------------------------------------------!
+               call update_veg_energy_ct(cpatch,ico)
+
+               !----- Apply those values to the new cohort. -------------------------------!
+               inew = inew+1
+               call copy_cohort_ar(cpatch,ico,inew)
+
+               !----- Tweak the heights and DBHs. -----------------------------------------!
+               cpatch%dbh(ico)    = cpatch%dbh(ico) - epsilon
+               cpatch%hite(ico)   = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
+               cpatch%bdead(ico)  = dbh2bd(cpatch%dbh(ico),cpatch%hite(ico)                &
+                                          ,cpatch%pft(ico))
+
+               cpatch%dbh(inew)   = cpatch%dbh(inew) + epsilon
+               cpatch%hite(inew)  = dbh2h(cpatch%pft(inew),cpatch%dbh(inew))
+               cpatch%bdead(inew) = dbh2bd(cpatch%dbh(inew),cpatch%hite(inew)              &
+                                          ,cpatch%pft(inew))
+
+               !----- Update the vegetation energy again, due to tweaks -------------------!
+               call update_veg_energy_ct(cpatch,inew)
+               call update_veg_energy_ct(cpatch,ico)
+            end if
+         end do
+         deallocate(temppatch)
+      end if
+      deallocate(split_mask)
+      return
+   end subroutine split_cohorts_ar
+   !=======================================================================================!
+   !=======================================================================================!
 
 
 
-   !===========================================================================
-
-   subroutine  fuse_2_cohorts_ar(cpatch,ico1,ico2, newn,green_leaf_factor, lsl)
- 
-     ! Changes made - RGK 11-26-2008
-     ! Will remove this message after changes have been confirmed and tested
-     ! The phenology condition really only effects vegetation water,
-     ! that said, it is kind of an arbitrary decision on how the water 
-     ! in the fused cohort is maintained anyway.
-     ! The vegetation temperature would probably benefit from doing weighting
-     ! on the heat-capacities.
-     ! The vegetation energy should be calculated after all quanities have been
-     ! updated, and should be calculated based on diagnosed heat capacity, water
-     ! mass and temperature of the cohort.
-     
-     ! Bug fix? When the phenology status was not less than two, cpatch%lai was
-     ! being set to zero, but bleaf was not being set to zero.  bleaf was added
-     ! for consistency sake.
-
-     use ed_state_vars,only:patchtype
-     use pft_coms, only: q, qsw, sla
-     use consts_coms,only:t3ple,alli,cliq,cice
-     use ed_therm_lib,only:calc_hcapveg,update_veg_energy_ct
-
-     implicit none
-     type(patchtype),target :: cpatch
-     integer :: ico1,ico2
-     real, intent(in) :: newn
-     real, intent(in) :: green_leaf_factor
-     integer, intent(in) :: lsl
-     
-     real :: hcapveg
-     real :: newni
-     real :: cb_max
-     real :: root_depth
-     
-     real    , external :: calc_root_depth
-     integer , external :: assign_root_depth
-     real    , external :: bd2dbh
-     real    , external :: dbh2h
-
-     real :: laiold
-     
-     newni = 1.0 / newn
-     
-
-     ! Conserve carbon by calculating bdead first.
-     cpatch%bdead(ico2) = (cpatch%nplant(ico2) * cpatch%bdead(ico2) + cpatch%nplant(ico1) * cpatch%bdead(ico1)) * newni
-
-     ! Then get dbh and hite from bdead.
-     cpatch%dbh(ico2) = bd2dbh(cpatch%pft(ico2), cpatch%bdead(ico2))
-     cpatch%hite(ico2) = dbh2h(cpatch%pft(ico2), cpatch%dbh(ico2))
-
-     ! keep the phenology_status of cc and conserve carbon to get balive.
-     cpatch%balive(ico2) = (cpatch%nplant(ico2) * cpatch%balive(ico2) + cpatch%nplant(ico1) * cpatch%balive(ico1)) *newni
-
-     ! Update bleaf and lai.
-     if(cpatch%phenology_status(ico2) < 2)then
-        cpatch%bleaf(ico2) = green_leaf_factor * cpatch%balive(ico2) /   &
-             (1.0 + q(cpatch%pft(ico2)) + cpatch%hite(ico2) * qsw(cpatch%pft(ico2)))
-        laiold=cpatch%lai(ico2)
-        cpatch%lai(ico2) = cpatch%bleaf(ico2) * sla(cpatch%pft(ico2)) * newn
-        ! write (unit=62,fmt='(a,i5,1x,a,1x,3(f13.2,1x))') 'PFT=',cpatch%pft(ico2), &
-        ! '(LAI1,LAI2,LAIM)=',cpatch%lai(ico1),laiold,cpatch%lai(ico2)
-     else
-
-        cpatch%lai(ico2) = 0.0
-        cpatch%bleaf(ico2) = 0.0
-     endif
-
-     cpatch%bstorage(ico2) = (cpatch%nplant(ico2) * cpatch%bstorage(ico2) + cpatch%nplant(ico1) *  &
-          cpatch%bstorage(ico1)) * newni
-
-     ! Do our best to conserve energy.  May be problematic
-     ! if cohorts have different phenology_status codes.
-     if(cpatch%phenology_status(ico2) < 2 .and. cpatch%phenology_status(ico1) < 2)then
-        
-        cpatch%veg_water(ico2) = (cpatch%veg_water(ico2) * cpatch%nplant(ico2) +   &
-             cpatch%veg_water(ico1) * cpatch%nplant(ico1)) * newni
-
-     elseif(cpatch%phenology_status(ico2) < 2)then
-
-        cpatch%veg_water(ico2) = cpatch%veg_water(ico2) * cpatch%nplant(ico2) * newni
-
-     endif
-
-     ! Take the average temperature among the two
-     cpatch%veg_temp(ico2) = (cpatch%veg_temp(ico2) * cpatch%nplant(ico2) +  &
-          cpatch%veg_temp(ico1) * cpatch%nplant(ico1)) /   &
-          (cpatch%nplant(ico2) + cpatch%nplant(ico1))
-     
-     ! This temperature average uses a weighting of their heat capacities.
-     ! Dont use this method unless we are actually tracking cpatch%hcapveg
-     ! At the time of this message, we probably are not tracking that quantity
-     !        cpatch%veg_temp = (cpatch%veg_temp * cpatch%nplant * cpatch%hcapveg +  &
-     !             cpatch%veg_temp(ico1) * cpatch%nplant(ico1) * cpatch%hcapveg(ico1)) /   &
-     !             (cpatch%hcapveg(ico2) * cpatch%nplant(ico2) + cpatch%hcapveg(ico1) * cpatch%nplant(ico1))
-     
-
-     ! No need to modify hcapveg until the new implementation.
-     
-     cpatch%mean_gpp(ico2) = (cpatch%mean_gpp(ico2) * cpatch%nplant(ico2) + cpatch%mean_gpp(ico1) *   &
-          cpatch%nplant(ico1)) * newni
-
-     cpatch%mean_leaf_resp(ico2) = (cpatch%mean_leaf_resp(ico2) * cpatch%nplant(ico2) +   &
-          cpatch%mean_leaf_resp(ico1) * cpatch%nplant(ico1)) * newni
-
-     cpatch%mean_root_resp(ico2) = (cpatch%mean_root_resp(ico2) * cpatch%nplant(ico2) +   &
-          cpatch%mean_root_resp(ico1) * cpatch%nplant(ico1)) * newni
-     
-     cpatch%growth_respiration(ico2) = (cpatch%growth_respiration(ico2) * cpatch%nplant(ico2) +  &
-          cpatch%growth_respiration(ico1) * cpatch%nplant(ico1)) * newni
-     
-     cpatch%storage_respiration(ico2) = (cpatch%storage_respiration(ico2) * cpatch%nplant(ico2) +  &
-          cpatch%storage_respiration(ico1) * cpatch%nplant(ico1)) * newni
-     
-     cpatch%vleaf_respiration(ico2) = (cpatch%vleaf_respiration(ico2) * cpatch%nplant(ico2) +  &
-          cpatch%vleaf_respiration(ico1) * cpatch%nplant(ico1)) * newni
-     
-     cpatch%fsn(ico2) = (cpatch%fsn(ico2) * cpatch%nplant(ico2) + cpatch%fsn(ico1) * cpatch%nplant(ico1)) * newni
-
-     cpatch%Psi_open(ico2) = (cpatch%Psi_open(ico2) * cpatch%nplant(ico2) + cpatch%Psi_open(ico1) *   &
-          cpatch%nplant(ico1)) * newni
-
-     cpatch%cb(1:13,ico2) = (cpatch%cb(1:13,ico2) * cpatch%nplant(ico2) + cpatch%nplant(ico1) *   &
-          cpatch%cb(1:13,ico1)) * newni
-
-     cpatch%cb_max(1:13,ico2) = (cpatch%cb_max(1:13,ico2) * cpatch%nplant(ico2) +   &
-          cpatch%nplant(ico1) * cpatch%cb_max(1:13,ico1)) * newni
-
-     cpatch%gpp(ico2)              = ( cpatch%gpp(ico2)              * cpatch%nplant(ico2) &
-                                   +   cpatch%gpp(ico1)              * cpatch%nplant(ico1) )* newni
-     cpatch%leaf_respiration(ico2) = ( cpatch%leaf_respiration(ico2) * cpatch%nplant(ico2) &
-                                   +   cpatch%leaf_respiration(ico1) * cpatch%nplant(ico1) )* newni
-     cpatch%root_respiration(ico2) = ( cpatch%root_respiration(ico2) * cpatch%nplant(ico2) &
-                                   +   cpatch%root_respiration(ico1) * cpatch%nplant(ico1) )* newni
 
 
-     cb_max = sum(cpatch%cb_max(1:12,ico2))
-     if(cb_max > 0.0)then
-        cpatch%cbr_bar(ico2) = sum(cpatch%cb(1:12,ico2)) / cb_max
-     else
-        cpatch%cbr_bar(ico2) = 0.0
-     endif
-     
-     root_depth = calc_root_depth(cpatch%hite(ico2), cpatch%dbh(ico2), cpatch%pft(ico2))
-     cpatch%krdepth(ico2) = assign_root_depth(root_depth, lsl)
 
-     cpatch%nplant(ico2) = newn
-
-     !---- Will this conserve energy? Is the total LAI conserved? I hope so...
-     ! I think this is fine because temperature is no longer prognostic, so temperature will be 
-     ! adjusted at the next fast step...
-     !cpatch%veg_energy(ico2) = (cpatch%veg_energy(ico2) * cpatch%nplant(ico2) +   &
-     !     cpatch%veg_energy(ico1) * cpatch%nplant(ico1)) * newni
-     
-
-     call update_veg_energy_ct(cpatch,ico2)
-     
-
-
-     return
-   end subroutine fuse_2_cohorts_ar
-
-   !-----------------------------------------------------------------------------
+   !=======================================================================================!
+   !=======================================================================================!
+   !   This subroutine will clone one cohort.                                              !
+   !---------------------------------------------------------------------------------------!
+   subroutine copy_cohort_ar(cpatch,isc,idt)
    
+      use ed_state_vars, only : patchtype ! Subroutine
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(patchtype) , target     :: cpatch ! Current patch
+      integer         , intent(in) :: isc    ! Index of "Source" cohort
+      integer         , intent(in) :: idt    ! Index of "Destination" cohort"
+      !----- Local variables --------------------------------------------------------------!
+      integer                      :: imonth
+      !------------------------------------------------------------------------------------!
+
+      cpatch%pft(idt)                 = cpatch%pft(isc)
+      cpatch%nplant(idt)              = cpatch%nplant(isc)
+      cpatch%hite(idt)                = cpatch%hite(isc)
+      cpatch%dbh(idt)                 = cpatch%dbh(isc)
+      cpatch%bdead(idt)               = cpatch%bdead(isc)
+      cpatch%bleaf(idt)               = cpatch%bleaf(isc)
+      cpatch%phenology_status(idt)    = cpatch%phenology_status(isc)
+      cpatch%balive(idt)              = cpatch%balive(isc)
+      cpatch%lai(idt)                 = cpatch%lai(isc)
+      cpatch%bstorage(idt)            = cpatch%bstorage(isc)
+      cpatch%veg_energy(idt)          = cpatch%veg_energy(isc)
+      cpatch%hcapveg(idt)             = cpatch%hcapveg(isc)
+      cpatch%veg_temp(idt)            = cpatch%veg_temp(isc)
+      cpatch%veg_water(idt)           = cpatch%veg_water(isc)
+      cpatch%mean_gpp(idt)            = cpatch%mean_gpp(isc)
+      cpatch%mean_leaf_resp(idt)      = cpatch%mean_leaf_resp(isc)
+      cpatch%mean_root_resp(idt)      = cpatch%mean_root_resp(isc)
+      cpatch%dmean_leaf_resp(idt)     = cpatch%dmean_leaf_resp(isc)
+      cpatch%dmean_root_resp(idt)     = cpatch%dmean_root_resp(isc)
+      cpatch%dmean_gpp(idt)           = cpatch%dmean_gpp(isc)
+      cpatch%dmean_gpp_pot(idt)       = cpatch%dmean_gpp_pot(isc)
+      cpatch%dmean_gpp_max(idt)       = cpatch%dmean_gpp_max(isc)
+      cpatch%growth_respiration(idt)  = cpatch%growth_respiration(isc)
+      cpatch%storage_respiration(idt) = cpatch%storage_respiration(isc)
+      cpatch%vleaf_respiration(idt)   = cpatch%vleaf_respiration(isc)
+      cpatch%fsn(idt)                 = cpatch%fsn(isc)
+      cpatch%monthly_dndt(idt)        = cpatch%monthly_dndt(isc)
+      cpatch%Psi_open(idt)            = cpatch%Psi_open(isc)
+
+      do imonth = 1,13
+         cpatch%cb(imonth,idt)        = cpatch%cb(imonth,isc)
+         cpatch%cb_max(imonth,idt)    = cpatch%cb_max(imonth,isc)
+      enddo
+
+      cpatch%cbr_bar(idt)             = cpatch%cbr_bar(isc)
+      cpatch%krdepth(idt)             = cpatch%krdepth(isc)
+      cpatch%first_census(idt)        = cpatch%first_census(isc)
+      cpatch%new_recruit_flag(idt)    = cpatch%new_recruit_flag(isc)
+      cpatch%par_v(idt)               = cpatch%par_v(isc)
+      cpatch%par_v_beam(idt)          = cpatch%par_v_beam(isc)
+      cpatch%par_v_diffuse(idt)       = cpatch%par_v_diffuse(isc)
+      cpatch%rshort_v(idt)            = cpatch%rshort_v(isc)
+      cpatch%rshort_v_beam(idt)       = cpatch%rshort_v_beam(isc)
+      cpatch%rshort_v_diffuse(idt)    = cpatch%rshort_v_diffuse(isc)
+      cpatch%rlong_v(idt)             = cpatch%rlong_v(isc)
+      cpatch%rlong_v_surf(idt)        = cpatch%rlong_v_surf(isc)
+      cpatch%rlong_v_incid(idt)       = cpatch%rlong_v_incid(isc)
+      cpatch%rb(idt)                  = cpatch%rb(isc)
+      cpatch%A_open(idt)              = cpatch%A_open(isc)
+      cpatch%gpp(idt)                 = cpatch%gpp(isc)
+      cpatch%leaf_respiration(idt)    = cpatch%leaf_respiration(isc)
+      cpatch%root_respiration(idt)    = cpatch%root_respiration(isc)
+
+      !cpatch%status(idt)              = cpatch%status(isc)
+     
+      return
+   end subroutine copy_cohort_ar
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !   This subroutine will merge two cohorts into 1.                                      !
+   !                                                                                       !
+   !   CHANGES MADE - RGK 11-26-2008                                                       !
+   !       Will remove this message after changes have been confirmed and tested.          !
+   !       The phenology condition really only affects vegetation water, that said, it is  !
+   !    kind of an arbitrary decision on how the water in the fused cohort is maintained   !
+   !    anyway. The vegetation temperature would probably benefit from doing weighting on  !
+   !    the heat-capacities. The vegetation energy should be calculated after all quanti-  !
+   !    ties have been updated, and should be calculated based on diagnosed heat capacity, !
+   !    water mass and temperature of the cohort.                                          !
+   !                                                                                       !
+   !    Bug fix? When the phenology status was not less than two, cpatch%lai was being set !
+   !    to zero, but bleaf was not being set to zero.  bleaf was added for consistency     !
+   !    sake.                                                                              !
+   !---------------------------------------------------------------------------------------!
+   subroutine fuse_2_cohorts_ar(cpatch,ibye,ifus, newn,green_leaf_factor, lsl)
+      use ed_state_vars , only :  patchtype             ! ! Structure
+      use pft_coms      , only :  q                     & ! intent(in), lookup table
+                                , qsw                   & ! intent(in), lookup table
+                                , sla                   ! ! intent(in), lookup table
+      use ed_therm_lib  , only :  calc_hcapveg          & ! subroutine
+                                , update_veg_energy_ct  ! ! subroutine
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(patchtype) , target     :: cpatch            ! Current patch
+      integer                      :: ibye              ! The cohort to be removed
+      integer                      :: ifus              ! The resulting cohort after fusion.
+      real            , intent(in) :: newn              ! New nplant
+      real            , intent(in) :: green_leaf_factor ! Green leaf factor
+      integer         , intent(in) :: lsl               ! Lowest soil level
+      !----- Local variables --------------------------------------------------------------!
+      real                         :: newni             ! Inverse of new nplants
+      real                         :: cb_max            !
+      real                         :: root_depth        !
+      !----- Functions --------------------------------------------------------------------!
+      real            , external   :: calc_root_depth
+      integer         , external   :: assign_root_depth
+      real            , external   :: bd2dbh
+      real            , external   :: dbh2h
+      !------------------------------------------------------------------------------------!
+
+      newni = 1.0 / newn
+     
+
+      !----- Conserve carbon by calculating bdead first. ----------------------------------!
+      cpatch%bdead(ifus) = ( cpatch%nplant(ifus) * cpatch%bdead(ifus)                      &
+                           + cpatch%nplant(ibye) * cpatch%bdead(ibye) ) * newni
+
+      !----- Then get dbh and hite from bdead. --------------------------------------------!
+      cpatch%dbh(ifus)   = bd2dbh(cpatch%pft(ifus), cpatch%bdead(ifus))
+      cpatch%hite(ifus)  = dbh2h(cpatch%pft(ifus),  cpatch%dbh(ifus))
+
+      !----- Keep the phenology_status of cc and conserve carbon to get balive. -----------!
+      cpatch%balive(ifus) = ( cpatch%nplant(ifus) * cpatch%balive(ifus)                    &
+                            + cpatch%nplant(ibye) * cpatch%balive(ibye) ) *newni
+
+      !----- Update bleaf and LAI. --------------------------------------------------------!
+      if ( cpatch%phenology_status(ifus) < 2 ) then
+         cpatch%bleaf(ifus) = green_leaf_factor * cpatch%balive(ifus)                      &
+                            / (1.0 + q(cpatch%pft(ifus))                                   &
+                                   + cpatch%hite(ifus) * qsw(cpatch%pft(ifus)) )
+         cpatch%lai(ifus)   = cpatch%bleaf(ifus) * sla(cpatch%pft(ifus)) * newn
+      else
+         cpatch%lai(ifus)   = 0.0
+         cpatch%bleaf(ifus) = 0.0
+      end if
+
+      cpatch%bstorage(ifus) = ( cpatch%nplant(ifus) * cpatch%bstorage(ifus)                &
+                              + cpatch%nplant(ibye) * cpatch%bstorage(ibye) ) * newni
+
+      !------------------------------------------------------------------------------------!
+      !    Do our best to conserve energy.  May be problematic if cohorts have different   !
+      ! phenology_status codes.                                                            !
+      !------------------------------------------------------------------------------------!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!! MLO. It is probably a stupid question, but if the cohorts have different       !!!
+      !!!      phenology_status, despite being in the same patch, should we still allow  !!!
+      !!!      fusion?                                                                   !!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      if ( cpatch%phenology_status(ifus) < 2 .and. cpatch%phenology_status(ibye) < 2 ) then
+         cpatch%veg_water(ifus) = ( cpatch%veg_water(ifus) * cpatch%nplant(ifus)           &
+                                  + cpatch%veg_water(ibye) * cpatch%nplant(ibye)) * newni
+      elseif( cpatch%phenology_status(ifus) < 2 ) then
+         cpatch%veg_water(ifus) = cpatch%veg_water(ifus) * cpatch%nplant(ifus) * newni
+      end if
+
+      !----- Take the average temperature among the two. ----------------------------------!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!! MLO: Ryan, David, I'm just thinking loud now, but because internal energy is   !!!
+      !!!      an extensive variable, don't you think we should simply add the cohorts   !!!
+      !!!      veg_energy (not weighted average) and that would be the new energy?       !!!
+      !!!      Then we find the new temperature and heat capacity based on the new bio-  !!!
+      !!!      mass? My concerns of using temperature are that we will not conserve      !!!
+      !!!      energy and that we are mixing what is prognostic and what is diagnostic.  !!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      cpatch%veg_temp(ifus) = ( cpatch%veg_temp(ifus) * cpatch%nplant(ifus)                &
+                              + cpatch%veg_temp(ibye) * cpatch%nplant(ibye) ) * newni
+     
+      
+      !------------------------------------------------------------------------------------!
+      !     This temperature average uses a weighting of their heat capacities. Don't use  !
+      ! this method unless we are actually tracking cpatch%hcapveg. At the time of this    !
+      ! message, we probably are not tracking that quantity.                               !
+      !------------------------------------------------------------------------------------!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!! MLO - In any case, we should be able to recalculate the heat capacity after    !!!
+      !!!       the fusion took place. And we don't really need the temperature at this  !!!
+      !!!       point, since this is after the output and before the next fast time      !!!
+      !!!       step, when energy will be updated and the temperature will be diagnos-   !!!
+      !!!       tically determined.                                                      !!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! cpatch%veg_temp(ifus) =                                                            &
+      !       ( cpatch%veg_temp(ifus) * cpatch%nplant(ifus) * cpatch%hcapveg(ifus)         &
+      !       + cpatch%veg_temp(ibye) * cpatch%nplant(ibye) * cpatch%hcapveg(ibye))        &
+      !       / ( cpatch%hcapveg(ifus) * cpatch%nplant(ifus)                               &
+      !         + cpatch%hcapveg(ibye) * cpatch%nplant(ibye) )                             &
+      !------------------------------------------------------------------------------------!
+
+      cpatch%mean_gpp(ifus) = ( cpatch%mean_gpp(ifus) * cpatch%nplant(ifus)                &
+                              + cpatch%mean_gpp(ibye) * cpatch%nplant(ibye)) * newni
+
+      cpatch%mean_leaf_resp(ifus) = ( cpatch%mean_leaf_resp(ifus) * cpatch%nplant(ifus)    &
+                                    + cpatch%mean_leaf_resp(ibye) * cpatch%nplant(ibye) )  &
+                                    * newni
+
+      cpatch%mean_root_resp(ifus) = ( cpatch%mean_root_resp(ifus) * cpatch%nplant(ifus)    &
+                                    + cpatch%mean_root_resp(ibye) * cpatch%nplant(ibye) )  &
+                                    * newni
+     
+      cpatch%growth_respiration(ifus) =                                                    &
+            ( cpatch%growth_respiration(ifus) * cpatch%nplant(ifus)                        &
+            + cpatch%growth_respiration(ibye) * cpatch%nplant(ibye) ) * newni
+     
+      cpatch%storage_respiration(ifus) =                                                   &
+            ( cpatch%storage_respiration(ifus) * cpatch%nplant(ifus)                       &
+            + cpatch%storage_respiration(ibye) * cpatch%nplant(ibye) ) * newni
+     
+      cpatch%vleaf_respiration(ifus) =                                                     &
+            ( cpatch%vleaf_respiration(ifus) * cpatch%nplant(ifus)                         &
+            + cpatch%vleaf_respiration(ibye) * cpatch%nplant(ibye) ) * newni
+     
+      cpatch%fsn(ifus) = ( cpatch%fsn(ifus) * cpatch%nplant(ifus)                          &
+                         + cpatch%fsn(ibye) * cpatch%nplant(ibye) ) * newni
+
+      cpatch%Psi_open(ifus) = ( cpatch%Psi_open(ifus) * cpatch%nplant(ifus)                &
+                              + cpatch%Psi_open(ibye) * cpatch%nplant(ibye) ) * newni
+
+      cpatch%cb(1:13,ifus) = ( cpatch%cb(1:13,ifus) * cpatch%nplant(ifus)                  &
+                             + cpatch%cb(1:13,ibye) * cpatch%nplant(ibye) ) * newni
+
+      cpatch%cb_max(1:13,ifus) = ( cpatch%cb_max(1:13,ifus) * cpatch%nplant(ifus)          &
+                                 + cpatch%nplant(ibye) * cpatch%cb_max(1:13,ibye)) * newni
+
+      cpatch%gpp(ifus) = ( cpatch%gpp(ifus) * cpatch%nplant(ifus)                          &
+                         + cpatch%gpp(ibye) * cpatch%nplant(ibye) ) * newni
+
+      cpatch%leaf_respiration(ifus) =                                                      &
+            ( cpatch%leaf_respiration(ifus) * cpatch%nplant(ifus)                          &
+            + cpatch%leaf_respiration(ibye) * cpatch%nplant(ibye) ) * newni
+      cpatch%root_respiration(ifus) =                                                      &
+            ( cpatch%root_respiration(ifus) * cpatch%nplant(ifus)                          &
+            + cpatch%root_respiration(ibye) * cpatch%nplant(ibye) ) * newni
+
+      cb_max = sum(cpatch%cb_max(1:12,ifus))
+      if(cb_max > 0.0)then
+         cpatch%cbr_bar(ifus) = sum(cpatch%cb(1:12,ifus)) / cb_max
+      else
+         cpatch%cbr_bar(ifus) = 0.0
+      end if
+     
+      root_depth = calc_root_depth(cpatch%hite(ifus), cpatch%dbh(ifus), cpatch%pft(ifus))
+      cpatch%krdepth(ifus) = assign_root_depth(root_depth, lsl)
+
+      cpatch%nplant(ifus) = newn
+
+      call update_veg_energy_ct(cpatch,ifus)
+
+      return
+   end subroutine fuse_2_cohorts_ar
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !   This subroutine will perform patch fusion based on some similarity criteria to      !
+   ! determine whether they can be fused with no significant loss of information. The user !
+   ! is welcome to set up a benchmark, but they should be aware that no miracles will      !
+   ! happen here. If there are more very distinct patches than maxpatch, then the user     !
+   ! will need to live with that and accept life is not always fair with those with        !
+   ! limited computational resources.                                                      !
+   !---------------------------------------------------------------------------------------!
    subroutine fuse_patches_ar(cgrid)
      
-     use ed_state_vars,only : edtype,polygontype,sitetype,patchtype
-     use fusion_fission_coms, only : ff_ndbh, ntol, profile_tol
-     use max_dims, only: n_pft
-     use mem_sites, only: maxpatch,maxcohort
+      use ed_state_vars       , only :  edtype            & ! structure
+                                      , polygontype       & ! structure
+                                      , sitetype          & ! structure
+                                      , patchtype         ! ! structure
+      use fusion_fission_coms , only :  ff_ndbh           & ! intent(in)
+                                      , ntol              & ! intent(in)
+                                      , profile_tol       & ! intent(in)
+                                      , pat_tolerance_max ! ! intent(in)
+      use max_dims            , only :  n_pft             ! ! intent(in)
+      use mem_sites           , only :  maxpatch          & ! intent(in)
+                                      , maxcohort         ! ! intent(in)
 
-     implicit none
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(edtype)         , target      :: cgrid          ! Current grid
+      !----- Local variables --------------------------------------------------------------!
+      type(polygontype)    , pointer     :: cpoly          ! Current polygon
+      type(sitetype)       , pointer     :: csite          ! Current site
+      type(patchtype)      , pointer     :: cpatch         ! Current patch
+      type(sitetype)       , pointer     :: tempsite       ! Temporary site
+      logical, dimension(:), allocatable :: fuse_table     ! Flag: this will remain.
+      real   , dimension(n_pft,ff_ndbh)  :: mean_nplant    ! Mean # of plants
+      integer                            :: ipy,isi        ! Counters
+      integer                            :: ipa,ico        ! Counters
+      integer                            :: ipa_next       ! Counters
+      integer                            :: ipft,idbh      ! Counters
+      integer                            :: npatches_new   ! New # of patches
+      integer                            :: npatches_old   ! Old # of patches
+      logical                            :: fuse_flag      ! Flag: I will perform fusion.
+      real                               :: norm           !
+      real                               :: tolerance_mult ! Multiplying factor for tol.
+      !------------------------------------------------------------------------------------!
 
-     type(edtype),target :: cgrid
-     type(polygontype),pointer :: cpoly
-     type(sitetype),pointer :: csite
-     type(patchtype),pointer :: cpatch
-     type(sitetype),pointer  :: tempsite
-     integer :: ipy,isi,ipa,ico,ipa_next
-     integer :: i,j,istop,npatches
-     real :: norm,tolerance_mult
-     integer,allocatable :: fuse_table(:)
-     real, parameter :: tolerance_max=100.0
-     integer :: npatches_old
-     integer :: fuse_flag
-     real,dimension(n_pft,ff_ndbh) :: mean_nplant
+      !----- Return if maxpatch is 0, this is a flag for no patch fusion. -----------------!
+      if (maxpatch == 0) return
 
-     ! Allocate the swapper patches in the site type
+      polyloop: do ipy = 1,cgrid%npolygons
+         cpoly => cgrid%polygon(ipy)
+         
+         siteloop: do isi = 1,cpoly%nsites
+            csite => cpoly%site(isi)
 
-     allocate(tempsite)
+            !----- Allocate the swapper patches in the site type and the fusion table. ----!
+            nullify(tempsite)
+            allocate(tempsite)
+            call allocate_sitetype(tempsite, csite%npatches )
+            allocate(fuse_table(csite%npatches))
+            fuse_table(:) = .true.
 
-     do ipy = 1,cgrid%npolygons
+            !------------------------------------------------------------------------------!
+            ! ALGORITHM                                                                    !
+            !                                                                              !
+            ! 1. Set all fusion flags to true                                              !
+            ! 2. Create size profiles                                                      !
+            ! 3. Go to every patch                                                         !
+            ! 4. Find next older patch with same dist_type                                 !
+            ! 5. Check fusion criterion. If within criterion, fuse, otherwise, skip        !
+            ! 6. Loop from the youngest to oldest patch                                    !
+            !------------------------------------------------------------------------------!
+            if (csite%npatches > abs(maxpatch)) then
 
-     cpoly => cgrid%polygon(ipy)
-        
-     do isi = 1,cpoly%nsites
-
-     csite => cpoly%site(isi)
-
-     call allocate_sitetype(tempsite, csite%npatches )
-     allocate(fuse_table(csite%npatches))
-     fuse_table(:) = 1
-
-     ! ALGORITHM
-     ! set all fusion flags to true
-     ! create size profiles
-     ! goto every patch
-     ! find next older patch with same dist_type
-     ! check fusion criterion
-     ! if within criterion, fuse, otherwise, skip
-     ! Loop from the youngest to oldest patch
-
-     if (csite%npatches > maxpatch) then
-
-        mean_nplant = 0.0
-     do ipa = csite%npatches,1,-1
-        call patch_pft_size_profile_ar(csite,ipa,ff_ndbh,cpoly%green_leaf_factor(:,isi))
-        
-        ! Get a mean density profile for all of the patches
-        ! This will be used for normalization
-        do i=1,n_pft          ! loop over pft 
-           do j=1,ff_ndbh !      loop over hgt bins
-              
-              mean_nplant(i,j) = mean_nplant(i,j) + csite%pft_density_profile(i,j,ipa)/real(csite%npatches)
-              
-           end do
-        end do
-        
-     enddo
-
+               mean_nplant = 0.0
+               do ipa = csite%npatches,1,-1
+                  call patch_pft_size_profile_ar(csite,ipa,ff_ndbh                         &
+                                                ,cpoly%green_leaf_factor(:,isi))
+               
+                  !------------------------------------------------------------------------!
+                  !    Get a mean density profile for all of the patches. This will be     !
+                  ! used for normalization.                                                !
+                  !------------------------------------------------------------------------!
+                  do ipft=1,n_pft
+                     do idbh=1,ff_ndbh 
+                        mean_nplant(ipft,idbh) = mean_nplant(ipft,idbh)                    &
+                                               + csite%pft_density_profile(ipft,idbh,ipa)  &
+                                               / real(csite%npatches)
+                     end do
+                  end do
+               end do
  
-     ! loop over sites
-     tolerance_mult = 1.0
-     max_patch: do
-        npatches_old = sum(fuse_table)
-        
-        ! Loop from youngest to the second oldest patch
-        do ipa = csite%npatches,2,-1
-           
-           cpatch => csite%patch(ipa)
+               !----- Start with no multiplication factor. --------------------------------!
+               tolerance_mult = 1.0
+               max_patch: do
+                  npatches_old = count(fuse_table)
+               
+                  !----- Loop from youngest to the second oldest patch --------------------!
+                  do ipa = csite%npatches,2,-1
+                     cpatch => csite%patch(ipa)
 
-           if (fuse_table(ipa).ne.0) then
-              
-              ! Cycle through the next patches and compare densities
-              ! But only compare densities if the patches have the 
-              ! same disturbance types
-              ! Of course, dont compare a 
-              
-              next_patch: do ipa_next = ipa-1,1,-1
+                     !----- If this patch was already merged, skip it. --------------------!
+                     if (.not. fuse_table(ipa)) then
+                        !------------------------------------------------------------------!
+                        !    Cycle through the next patches and compare densities, but     !
+                        ! only compare densities if the patches have the same disturbance  !
+                        ! types. Of course, only existing patches (i.e. that weren't       !
+                        ! merged yet) are compared.                                        !
+                        !------------------------------------------------------------------!
+                        next_patch: do ipa_next = ipa-1,1,-1
 
-                 if( csite%dist_type(ipa) == csite%dist_type(ipa_next) .and. &
-                      fuse_table(ipa_next).ne.0 ) then
-                    
-                    ! Once we have identified the patch with the same disturbance type
-                    ! and closest age (ipa_next), determine if it is similar enough to average (fuse)
-                    ! the two together.
-                       
-                    fuse_flag = 1
+                           if ( csite%dist_type(ipa) == csite%dist_type(ipa_next)          &
+                              .and. (.not. fuse_table(ipa_next)) ) then
+                           
+                              !------------------------------------------------------------!
+                              !    Once we have identified the patch with the same         !
+                              ! disturbance type and closest age (ipa_next), determine if  !
+                              ! it is similar enough to average (fuse) the two together.   !
+                              !------------------------------------------------------------!
+                              fuse_flag = .true.
 
-                    !  fusion criterion
-                    fuseloop:do i=1,n_pft          ! loop over pft 
-                       do j=1,ff_ndbh !      loop over hgt bins
-                         
-                          if(csite%pft_density_profile(i,j,ipa)>0.) then
-!                             print*,ipa,ipa_next,i,j,csite%pft_density_profile(i,j,ipa)
-                          endif
+                              !-----  Fusion criterion. -----------------------------------!
+                              fuseloop:do ipft=1,n_pft
+                                 do idbh=1,ff_ndbh
 
-                          if(csite%pft_density_profile(i,j,ipa) > ntol  &
-                               .or. csite%pft_density_profile(i,j,ipa_next) > ntol)then
-                             
-                             ! This is the normalized difference in their biodensity profiles
-                             ! If the normalized difference is greater than the tolerance
-                             ! for any of the pfts and dbh classes, then reject them as similar
-                             ! Note: If one of the patches is missing any member of the profile
-                             ! it will force the norm to be 2.0.
-                             ! That is the highest the norm should be able to go.
+                                    if (csite%pft_density_profile(ipft,idbh,ipa)>ntol .or. &
+                                        csite%pft_density_profile(ipft,idbh,ipa_next)>ntol &
+                                       ) then
+                                       !---------------------------------------------------!
+                                       !     This is the normalized difference in their    !
+                                       ! biodensity profiles. If the normalized difference !
+                                       ! is greater than the tolerance for any of the pfts !
+                                       ! and dbh classes, then reject them as similar.     !
+                                       !                                                   !
+                                       ! Note: If one of the patches is missing any member !
+                                       !       of the profile it will force the norm to be !
+                                       !       2.0. That is the highest the norm should be !
+                                       !       able to go.                                 !
+                                       !---------------------------------------------------!
+                                       norm = abs(csite%pft_density_profile(ipft,idbh,ipa) &
+                                          - csite%pft_density_profile(ipft,idbh,ipa_next)) &
+                                          / mean_nplant(ipft,idbh)
+                                    
+                                       if (norm > tolerance_mult*profile_tol) then
+                                          fuse_flag = .false.   ! reject
+                                          exit fuseloop
+                                       end if
+                                    end if
+                                 end do
+                              end do fuseloop
 
+                              !----- Create a mapping of the patches that fuse together. --!
+                              if (fuse_flag) then
 
-                             norm = abs(csite%pft_density_profile(i,j,ipa)  &
-                                  -csite%pft_density_profile(i,j,ipa_next))  &
-                                  /mean_nplant(i,j)
-                             
-                             if(norm > tolerance_mult*profile_tol) then
-                                fuse_flag = 0   ! reject
-!                                print*,csite%pft_density_profile(i,j,ipa),csite%pft_density_profile(i,j,ipa_next) &
-!                                     ,norm,tolerance_mult*profile_tol
-                                exit fuseloop
-                             endif
+                                 !---------------------------------------------------------!
+                                 !     Take an average of the patch properties at index    !
+                                 ! ipa and ipa_tp assign the average to index ipa_tp.      !
+                                 !---------------------------------------------------------!
+                                 call fuse_2_patches_ar(csite,ipa,ipa_next                 &
+                                                       ,cpoly%met(isi)%rhos,cpoly%lsl(isi) &
+                                                       ,cpoly%green_leaf_factor(:,isi))
 
-                          endif
-                       enddo
-                    enddo fuseloop
+                                 !---------------------------------------------------------!
+                                 !     Recalculate the pft size profile for the averaged   !
+                                 ! patch at ipa_tp.                                        !
+                                 !---------------------------------------------------------!
+                                 call patch_pft_size_profile_ar(csite,ipa_next,ff_ndbh     &
+                                                          ,cpoly%green_leaf_factor(:,isi) )
 
-                    ! Create a mapping of the patches that fuse together
-                    if( fuse_flag == 1)then
-                       
-                       ! Take an average of the patch properties at index ipa and ipa_tp
-                       ! assign the average to index ipa_tp
-                       
-                       call fuse_2_patches_ar(csite,ipa,ipa_next,cpoly%met(isi)%rhos, &
-                            cpoly%lsl(isi),cpoly%green_leaf_factor(:,isi))
-                       
-                       ! Recalculate the pft size profile for the averaged patch at ipa_tp
-                       call patch_pft_size_profile_ar(csite,ipa_next,ff_ndbh,cpoly%green_leaf_factor(:,isi))
-                       
-                       ! The patch at index ipa is no longer valid, it should be flagged as such
-                       fuse_table(ipa) = 0
+                                 !---------------------------------------------------------!
+                                 !     The patch at index ipa is no longer valid, it       !
+                                 ! should be flagged as such.                              !
+                                 !---------------------------------------------------------!
+                                 fuse_table(ipa) = .false.
 
-                       ! If we have gotten to this point, we have found our donor patch
-                       ! and have performed the fusion. Exit the patch loop.
-                       
-                       exit next_patch
-                       
-                    endif ! if( fuse_flag == 1)
+                                 !---------------------------------------------------------!
+                                 !     If we have gotten to this point, we have found our  !
+                                 ! donor patch and have performed the fusion. Exit the     !
+                                 ! patch loop.                                             !
+                                 !---------------------------------------------------------!
+                                 exit next_patch
+                              end if ! if( fuse_flag)
+                           end if ! if(csite%dist_type(ipa) == csite%dist_type(ipa_next)...
+                        end do next_patch       ! do ipa_next
+                     end if          ! if (.not. fuse_table(ipa)) then
 
-                    
-                 endif    ! if( csite%dist_type(ipa) == csite%dist_type(ipa_next) .and. &
-                 
-                 
-              enddo next_patch       ! do ipa_next
-           
+                     npatches_new = count(fuse_table)
+                     if (npatches_new <= abs(maxpatch)) exit max_patch
+                  end do          ! do ipa = csite%npatches,2,-1
 
-           endif          ! if (fuse_table(ipa).ne.0) then
-           
-           npatches = sum(fuse_table)
-           if(npatches <= maxpatch)exit max_patch
-
-        enddo          ! do ipa = csite%npatches,2,-1
-
-        npatches = sum(fuse_table)
-        if((npatches == npatches_old) .and. (tolerance_mult > tolerance_max)) exit max_patch
-        
-        tolerance_mult = tolerance_mult * 1.01
-     enddo max_patch
+                  !------------------------------------------------------------------------!
+                  !    If no fusion happened and it exceed the maximum tolerance, give up. !
+                  !------------------------------------------------------------------------!
+                  npatches_new = count(fuse_table)
+                  if(npatches_new == npatches_old   .and.                                  &
+                     tolerance_mult > pat_tolerance_max ) exit max_patch
+                  
+                  !----- Increment tolerance ----------------------------------------------!
+                  tolerance_mult = tolerance_mult * 1.01
+               end do max_patch
      
-     ! Set the number of patches in the site to "npatches"
-     tempsite%npatches = npatches
-     
-     ! Copy the selected data into the temporary space, args 1 and 3 must be dimension of arg 4
-     ! argument 2 must be the dimension of the sum of the 3rd argument.
-     
-     call copy_sitetype_mask(csite,tempsite,fuse_table,size(fuse_table),npatches)
-     
-     call deallocate_sitetype(csite)
-     
-     ! Reallocate the current site
-     call allocate_sitetype(csite,npatches)
+               !----- Set the number of patches in the site to "npatches_new" -------------!
+               tempsite%npatches = npatches_new
 
-     ! Copy the selected temporary data into the orignal site vectors
-     fuse_table = 0
-     fuse_table(1:npatches) = 1
+               !----- If there was any patch fusion, need to shrink csite -----------------!
+               if (npatches_new < csite%npatches) then
+                  !------------------------------------------------------------------------!
+                  !    Copy the selected data into the temporary space, args 1 and 3 must  !
+                  ! be dimension of arg 4. Argument 2 must be the dimension of the sum of  !
+                  ! the 3rd argument.                                                      !
+                  !------------------------------------------------------------------------!
+                  call copy_sitetype_mask(csite,tempsite,fuse_table,size(fuse_table)       &
+                                         ,npatches_new)
+                  call deallocate_sitetype(csite)
+
+                  !----- Reallocate the current site. -------------------------------------!
+                  call allocate_sitetype(csite,npatches_new)
+
+                  !----- Copy the selected temporary data into the orignal site vectors. --!
+                  fuse_table(:)              = .false.
+                  fuse_table(1:npatches_new) = .true.
+                  call copy_sitetype_mask(tempsite,csite,fuse_table,size(fuse_table)       &
+                                         ,npatches_new)
+                  !------------------------------------------------------------------------!
+                  !     The new and fused csite is now complete, clean up the temporary    !
+                  ! data. Deallocate it afterwards.                                        !
+                  !------------------------------------------------------------------------!
+                  call deallocate_sitetype(tempsite)
+               end if
+            end if
+            !----- Deallocation should happen outside the "if" statement ------------------!
+            deallocate(tempsite)
+            deallocate(fuse_table)
+
+         end do siteloop
+      end do polyloop
+      return
+   end subroutine fuse_patches_ar
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !   This subroutine will merge two cohorts into 1.                                      !
+   !                                                                                       !
+   !   CHANGES MADE - RGK 11-26-2008                                                       !
+   !       Will remove this message after changes have been confirmed and tested.          !
+   !    veg_energy of the cohorts int the fused patches must also be updated because...    !
+   !    effectively, the number densities of the plants are changing, because we are       !
+   !    squeezing the cohorts from two patches into one. With the number densities         !
+   !    changing, all the cohort level variables that are dependant on number density      !
+   !    must also be scaled, such as veg_water. Veg temperature should remain the          !
+   !    same for each cohort, because none of the plant level variables actually change.   !
+   !    But veg_energy is plant number dependant, and therefore it must be scaled by       !
+   !    number density (or as a proxy, the fractional area) like all the rest.             !
+   !                                                                                       !
+   !    MLO. Ryan, I'm not sure about this. For me, the total veg_energy for each cohort   !
+   !         should remain the same. If nplants change, then the heat capacity should be   !
+   !         adjusted accordingly. By doing this, we ensure energy conservation and we     !
+   !         will still have the correct temperature. But we need to remember that the     !
+   !         energy, not the temperature, is the conserved (and because of this, the       !
+   !         prognostic) variable.                                                         !
+   !---------------------------------------------------------------------------------------!
+   subroutine fuse_2_patches_ar(csite,donp,recp,rhos,lsl,green_leaf_factor)
+      use ed_state_vars      , only :  sitetype              & ! Structure 
+                                     , patchtype             ! ! Structure
+      use ed_therm_lib       , only :  update_veg_energy_ct  ! ! Subroutine
+      use soil_coms          , only :  soil                  ! ! intent(in), lookup table
+      use grid_coms          , only :  nzg                   & ! intent(in)
+                                     , nzs                   ! ! intent(in)
+      use fusion_fission_coms, only :  ff_ndbh               ! ! intent(in)
+      use max_dims           , only :  n_pft                 & ! intent(in)
+                                     , n_dbh                 ! ! intent(in)
+      use consts_coms        , only :  cpi                   & ! intent(in)
+                                     , cpor                  & ! intent(in)
+                                     , p00                   ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(sitetype)         , target     :: csite             ! Current site
+      integer                , intent(in) :: donp              ! Donating patch
+      integer                , intent(in) :: recp              ! Receptor patch
+      integer                , intent(in) :: lsl               ! Lowest soil level
+      real, dimension(n_pft) , intent(in) :: green_leaf_factor ! Green leaf factor...
+      real                   , intent(in) :: rhos              ! Sfc. air density
+      !----- Local variables --------------------------------------------------------------!
+      type(patchtype)        , pointer    :: cpatch            ! Current patch
+      type(patchtype)        , pointer    :: temppatch         ! Temporary patch
+      integer                             :: ico,iii           ! Counters
+      integer                             :: ndc               ! # of cohorts - donp patch
+      integer                             :: nrc               ! # of cohorts - recp patch
+      real                                :: newarea,newareai  ! New patch area and inverse
+      real                                :: area_scale        ! Cohort rescaling factor.
+      !------------------------------------------------------------------------------------!
      
-     call copy_sitetype_mask(tempsite,csite,fuse_table,size(fuse_table),npatches)
+      !------------------------------------------------------------------------------------!
+      !     This function fuses the two patches specified in the argument. It fuses the    !
+      ! first patch in the argument (the "donor" = donp ) into the second patch in the     !
+      ! argument (the "recipient" = recp ), and frees the memory associated with the donor !
+      ! patch.                                                                             !
+      !------------------------------------------------------------------------------------!
+    
+      !----- The new area is simply the sum of each patch area. ---------------------------!
+      newarea  = csite%area(donp) + csite%area(recp)
+      newareai = 1.0/newarea
 
-     ! The new and fused csite is now complete, clean up the temporary data
-     
-     deallocate(fuse_table)
+      !----- We now take the weighted average, scale by the individual patch area. --------!
+      csite%age(recp)                = newareai *                                          &
+                                     ( csite%age(donp)                * csite%area(donp)   &
+                                     + csite%age(recp)                * csite%area(recp) )
 
-     call deallocate_sitetype(tempsite)
+      csite%fast_soil_C(recp)        = newareai *                                          &
+                                     ( csite%fast_soil_C(donp)        * csite%area(donp)   &
+                                     + csite%fast_soil_C(recp)        * csite%area(recp) )
 
-  endif
-     
+      csite%slow_soil_C(recp)        = newareai *                                          &
+                                     ( csite%slow_soil_C(donp)        * csite%area(donp)   &
+                                     + csite%slow_soil_C(recp)        * csite%area(recp) )
 
-enddo
+      csite%structural_soil_C(recp)  = newareai *                                          &
+                                     ( csite%structural_soil_C(donp)  * csite%area(donp)   &
+                                     + csite%structural_soil_C(recp)  * csite%area(recp) )
+                                     
+
+      csite%structural_soil_L(recp)  = newareai *                                          &
+                                     ( csite%structural_soil_L(donp)  * csite%area(donp)   &
+                                     + csite%structural_soil_L(recp)  * csite%area(recp) )
+                                     
+
+      csite%mineralized_soil_N(recp) = newareai *                                          &
+                                     ( csite%mineralized_soil_N(donp) * csite%area(donp)   &
+                                     + csite%mineralized_soil_N(recp) * csite%area(recp) )
+
+      csite%fast_soil_N(recp)        = newareai *                                          &
+                                     ( csite%fast_soil_N(donp)        * csite%area(donp)   &
+                                     + csite%fast_soil_N(recp)        * csite%area(recp) )
+
+      csite%sum_dgd(recp)            = newareai *                                          &
+                                     ( csite%sum_dgd(donp)            * csite%area(donp)   &
+                                     + csite%sum_dgd(recp)            * csite%area(recp) )
+
+      csite%sum_chd(recp)            = newareai *                                          &
+                                     ( csite%sum_chd(donp)            * csite%area(donp)   &
+                                     + csite%sum_chd(recp)            * csite%area(recp) )
+
+      csite%can_co2(recp)            = newareai *                                          &
+                                     ( csite%can_co2(donp)            * csite%area(donp)   &
+                                     + csite%can_co2(recp)            * csite%area(recp) )
+
+      csite%can_temp(recp)           = newareai *                                          &
+                                     ( csite%can_temp(donp)           * csite%area(donp)   &
+                                     + csite%can_temp(recp)           * csite%area(recp) )
+
+      csite%can_shv(recp)            = newareai *                                          &
+                                     ( csite%can_shv(donp)            * csite%area(donp)   &
+                                     + csite%can_shv(recp)            * csite%area(recp) )
+
+      do iii=1,nzs
+         csite%sfcwater_energy(iii,recp) = newareai *                                      &
+              ( csite%sfcwater_energy(iii,recp)     * csite%area(recp)                     &
+                                                    * csite%sfcwater_mass(iii,recp)        &
+              + csite%sfcwater_energy(iii,donp)     * csite%area(donp)                     &
+                                                    * csite%sfcwater_mass(iii,donp))
+
+         csite%sfcwater_mass(iii,recp)   = newareai *                                      &
+              ( csite%sfcwater_mass(iii,recp)       * csite%area(recp)                     &
+              + csite%sfcwater_mass(iii,donp)       * csite%area(donp) )
+
+         csite%sfcwater_depth(iii,recp)  = newareai *                                      &
+              ( csite%sfcwater_depth(iii,recp)      * csite%area(recp)                     &
+              + csite%sfcwater_depth(iii,donp)      * csite%area(donp) )
+      end do
+
+      do iii=1,nzg
+         csite%soil_energy(iii,recp)     = newareai *                                      &
+              ( csite%soil_energy(iii,donp)         * csite%area(donp)                     &
+              + csite%soil_energy(iii,recp)         * csite%area(recp) )
+
+         csite%soil_water(iii,recp)      = newareai *                                      &
+              ( csite%soil_water(iii,recp)          * csite%area(recp)                     &
+              + csite%soil_water(iii,donp)          * csite%area(donp) )
+      end do
+
+      !------------------------------------------------------------------------------------!
+      !    This subroutine takes care of filling:                                          !
+      !                                                                                    !
+      ! + csite%ground_shv(recp)                                                           !
+      ! + csite%surface_ssh(recp)                                                          !
+      ! + csite%soil_tempk(k,recp)                                                         !
+      ! + csite%soil_fracliq(k,recp)                                                       !
+      ! + csite%nlev_sfcwater(recp)                                                        !
+      ! + csite%sfcwater_energy(k,recp)                                                    !
+      ! + csite%csite%sfcwater_tempk(k,recp)                                               !
+      ! + csite%sfcwater_fracliq(k,recp)                                                   !
+      !------------------------------------------------------------------------------------!
+      call new_patch_sfc_props_ar(csite,recp,rhos)
+      !------------------------------------------------------------------------------------!
+
+      csite%mean_rh(recp)                = newareai *                                      &
+                                         ( csite%mean_rh(donp)        * csite%area(donp)   &
+                                         + csite%mean_rh(recp)        * csite%area(recp) )
+
+      csite%dmean_A_decomp(recp)         = newareai *                                      &
+                                         ( csite%dmean_A_decomp(donp) * csite%area(donp)   &
+                                         + csite%dmean_A_decomp(recp) * csite%area(recp) )
+
+      csite%dmean_Af_decomp(recp)        = newareai *                                      &
+                                         ( csite%dmean_Af_decomp(donp)* csite%area(donp)   &
+                                         + csite%dmean_Af_decomp(recp)* csite%area(recp) )
+
+      do iii = 1,n_pft
+         csite%repro(iii,recp)           = newareai *                                      &
+                                         ( csite%repro(iii,donp)      * csite%area(donp)   &
+                                         + csite%repro(iii,recp)      * csite%area(recp) )
+      end do
   
-enddo
-deallocate(tempsite)
+      !------------------------------------------------------------------------------------!
+      !    Even though these variables are not prognostic, they need to be copied so the   !
+      ! output will have the values.  Other variables will probably be scaled here as      !
+      ! well.                                                                              !
+      !------------------------------------------------------------------------------------!
+      csite%avg_carbon_ac(recp)       = newareai *                                         &
+                                      ( csite%avg_carbon_ac(donp)     * csite%area(donp)   &
+                                      + csite%avg_carbon_ac(recp)     * csite%area(recp) )
+
+      csite%avg_vapor_vc(recp)        = newareai *                                         &
+                                      ( csite%avg_vapor_vc(donp)      * csite%area(donp)   &
+                                      + csite%avg_vapor_vc(recp)      * csite%area(recp) )  
+
+      csite%avg_dew_cg(recp)          = newareai *                                         &
+                                      ( csite%avg_dew_cg(donp)        * csite%area(donp)   &
+                                      + csite%avg_dew_cg(recp)        * csite%area(recp) )  
+
+      csite%avg_vapor_gc(recp)        = newareai *                                         &
+                                      ( csite%avg_vapor_gc(donp)      * csite%area(donp)   &
+                                      + csite%avg_vapor_gc(recp)      * csite%area(recp) )  
+
+      csite%avg_wshed_vg(recp)        = newareai *                                         &
+                                      ( csite%avg_wshed_vg(donp)      * csite%area(donp)   &
+                                      + csite%avg_wshed_vg(recp)      * csite%area(recp) )  
+
+      csite%avg_vapor_ac(recp)        = newareai *                                         &
+                                      ( csite%avg_vapor_ac(donp)      * csite%area(donp)   &
+                                      + csite%avg_vapor_ac(recp)      * csite%area(recp) )  
+
+      csite%avg_transp(recp)          = newareai *                                         &
+                                      ( csite%avg_transp(donp)        * csite%area(donp)   &
+                                      + csite%avg_transp(recp)        * csite%area(recp) )  
+
+      csite%avg_evap(recp)            = newareai *                                         &
+                                      ( csite%avg_evap(donp)          * csite%area(donp)   &
+                                      + csite%avg_evap(recp)          * csite%area(recp) )  
+
+      csite%avg_runoff(recp)          = newareai *                                         &
+                                      ( csite%avg_runoff(donp)        * csite%area(donp)   &
+                                      + csite%avg_runoff(recp)        * csite%area(recp) )  
+
+      csite%aux(recp)                 = newareai *                                         &
+                                      ( csite%aux(donp)               * csite%area(donp)   &
+                                      + csite%aux(recp)               * csite%area(recp) )  
+
+      csite%avg_sensible_vc(recp)     = newareai *                                         &
+                                      ( csite%avg_sensible_vc(donp)   * csite%area(donp)   &
+                                      + csite%avg_sensible_vc(recp)   * csite%area(recp) )  
+
+      csite%avg_sensible_2cas(recp)   = newareai *                                         &
+                                      ( csite%avg_sensible_2cas(donp) * csite%area(donp)   &
+                                      + csite%avg_sensible_2cas(recp) * csite%area(recp) )  
+
+      csite%avg_qwshed_vg(recp)       = newareai *                                         &
+                                      ( csite%avg_qwshed_vg(donp)     * csite%area(donp)   &
+                                      + csite%avg_qwshed_vg(recp)     * csite%area(recp) )  
+
+      csite%avg_sensible_gc(recp)     = newareai *                                         &
+                                      ( csite%avg_sensible_gc(donp)   * csite%area(donp)   &
+                                      + csite%avg_sensible_gc(recp)   * csite%area(recp) )  
+
+      csite%avg_sensible_ac(recp)     = newareai *                                         &
+                                      ( csite%avg_sensible_ac(donp)   * csite%area(donp)   &
+                                      + csite%avg_sensible_ac(recp)   * csite%area(recp) )  
+
+      csite%avg_sensible_tot(recp)    = newareai *                                         &
+                                      ( csite%avg_sensible_tot(donp)  * csite%area(donp)   &
+                                      + csite%avg_sensible_tot(recp)  * csite%area(recp) )  
+
+      csite%avg_runoff_heat(recp)     = newareai *                                         &
+                                      ( csite%avg_runoff_heat(donp)   * csite%area(donp)   &
+                                      + csite%avg_runoff_heat(recp)   * csite%area(recp) )  
+
+      csite%avg_heatstor_veg(recp)    = newareai *                                         &
+                                      ( csite%avg_heatstor_veg(donp)  * csite%area(donp)   &
+                                      + csite%avg_heatstor_veg(recp)  * csite%area(recp) )  
+
+      csite%avg_veg_energy(recp)      = newareai *                                         &
+                                      ( csite%avg_veg_energy(donp)    * csite%area(donp)   &
+                                      + csite%avg_veg_energy(recp)    * csite%area(recp) )  
+
+      csite%avg_veg_temp(recp)        = newareai *                                         &
+                                      ( csite%avg_veg_temp(donp)      * csite%area(donp)   &
+                                      + csite%avg_veg_temp(recp)      * csite%area(recp) )  
+
+      csite%avg_veg_water(recp)       = newareai *                                         &
+                                      ( csite%avg_veg_water(donp)     * csite%area(donp)   &
+                                      + csite%avg_veg_water(recp)     * csite%area(recp) )  
+
+      csite%co2budget_gpp(recp)       = newareai *                                         &
+                                      ( csite%co2budget_gpp(donp)     * csite%area(donp)   &
+                                      + csite%co2budget_gpp(recp)     * csite%area(recp) )  
+
+      csite%co2budget_plresp(recp)    = newareai *                                         &
+                                      ( csite%co2budget_plresp(donp)  * csite%area(donp)   &
+                                      + csite%co2budget_plresp(recp)  * csite%area(recp) )  
+
+      csite%co2budget_rh(recp)        = newareai *                                         &
+                                      ( csite%co2budget_rh(donp)      * csite%area(donp)   &
+                                      + csite%co2budget_rh(recp)      * csite%area(recp) )  
+
+      do iii=1,nzg
+         csite%avg_smoist_gg(iii,recp)   = newareai *                                      &
+              ( csite%avg_smoist_gg(iii,donp)       * csite%area(donp)                     &
+              + csite%avg_smoist_gg(iii,recp)       * csite%area(recp) )
+
+         csite%avg_smoist_gc(iii,recp)   = newareai *                                      &
+              ( csite%avg_smoist_gc(iii,donp)       * csite%area(donp)                     &
+              + csite%avg_smoist_gc(iii,recp)       * csite%area(recp) )
+
+         csite%aux_s(iii,recp)           = newareai *                                      &
+              ( csite%aux_s(iii,donp)               * csite%area(donp)                     &
+              + csite%aux_s(iii,recp)               * csite%area(recp) )
+
+         csite%avg_sensible_gg(iii,recp) = newareai *                                      &
+              ( csite%avg_sensible_gg(iii,donp)     * csite%area(donp)                     &
+              + csite%avg_sensible_gg(iii,recp)     * csite%area(recp) )
+      end do
+
+      do iii=1,n_dbh
+         csite%co2budget_gpp_dbh(iii,recp) = newareai *                                    &
+              ( csite%co2budget_gpp_dbh(iii,donp)   * csite%area(donp)                     &
+              + csite%co2budget_gpp_dbh(iii,recp)   * csite%area(recp) )
+      end do
+      !------------------------------------------------------------------------------------!
 
 
-  return
-end subroutine fuse_patches_ar
-   !===============================================================
-
-   subroutine fuse_2_patches_ar(csite,dp,rp,rhos,lsl,green_leaf_factor)
-
-
-     ! Changes made - RGK 11-26-2008
-     ! Will remove this message after changes have been confirmed and tested
-     ! veg_energy of the cohorts int he fused patches must also be updated.
-     ! because...effectively, the number densities of the plants are changing,
-     ! becuase we are squeezing the cohorts from two patches into one. With
-     ! the number densities changing, all the cohort level variables that
-     ! are dependant on number density, must also be scaled, such as veg_water.
-     ! Veg temperature should remain the same for each cohort, because
-     ! none of the plant level variables actually change. But! veg_energy
-     ! is plant number dependant, and therefore it must be scaled by number density
-     ! (or as a proxy, the fractional area) like all the rest.
-
-     use ed_state_vars,only:sitetype,patchtype
-     use ed_therm_lib, only: update_veg_energy_ct
-     use soil_coms, only: soil
-     use grid_coms, only: nzg, nzs
-     use fusion_fission_coms, only: ff_ndbh
-     use max_dims, only: n_pft,n_dbh
-     use consts_coms, only: cpi, cpor, p00
-     
-     implicit none
-     
-     integer :: dp,rp
-     real, intent(in) :: rhos
-     integer :: ico,ndc,nrc
-     real, dimension(n_pft), intent(in) :: green_leaf_factor
-     integer :: lsl
-     type(sitetype),target :: csite
-     type(patchtype),pointer :: cpatch
-     type(patchtype), pointer :: newpatch
-     
-     !  This function fuses the two patches specified in the argument.
-     !  It fuses the first patch in the argument (the "donor" = dp ) into the second
-     !  patch in the argument (the "recipient" = rp ), and frees the memory 
-     !  associated with the second patch
-
-     integer i,k
-     real :: newarea,newareai,norm_fac
-     integer :: nls, nlsw1
-     
-     ! new area
-     newarea = csite%area(dp) + csite%area(rp)
-
-     newareai = 1.0/newarea
-
-     csite%age(rp)                   = (csite%age(dp) * csite%area(dp)                          &
-                                     +  csite%age(rp) * csite%area(rp)) * newareai
-     csite%fast_soil_C(rp)           = (csite%fast_soil_C(dp)*csite%area(dp)                    &
-                                     +  csite%fast_soil_C(rp)*csite%area(rp))  * newareai  
-     csite%slow_soil_C(rp)           = (csite%slow_soil_C(dp)*csite%area(dp)                    &
-                                     +  csite%slow_soil_C(rp)*csite%area(rp))  * newareai  
-     csite%structural_soil_C(rp)     = (csite%structural_soil_C(dp)*csite%area(dp)              &
-                                     +  csite%structural_soil_C(rp)*csite%area(rp)) * newareai  
-     csite%structural_soil_L(rp)     = (csite%structural_soil_L(dp)*csite%area(dp)              &
-                                     +  csite%structural_soil_L(rp)*csite%area(rp)) * newareai  
-     csite%mineralized_soil_N(rp)    = (csite%mineralized_soil_N(dp)*csite%area(dp)             &
-                                     +  csite%mineralized_soil_N(rp)*csite%area(rp)) * newareai 
-     csite%fast_soil_N(rp)           = (csite%fast_soil_N(dp)*csite%area(dp)                    &
-                                     +  csite%fast_soil_N(rp)*csite%area(rp)) * newareai  
-     csite%sum_dgd(rp)               = (csite%sum_dgd(dp) * csite%area(dp)                      &
-                                     +  csite%sum_dgd(rp) * csite%area(rp)) * newareai
-
-     csite%sum_chd(rp)               = (csite%sum_chd(dp) * csite%area(dp)                      &
-                                     +  csite%sum_chd(rp) * csite%area(rp)) * newareai
-     csite%can_co2(rp)               = (csite%can_co2(dp) * csite%area(dp)                      &
-                                     +  csite%can_co2(rp) * csite%area(rp)) * newareai
-
-     csite%can_temp(rp)              = (csite%can_temp(dp) * csite%area(dp)                     &
-                                     +  csite%can_temp(rp) * csite%area(rp)) * newareai
-     csite%can_shv(rp)               = (csite%can_shv(dp) * csite%area(dp)                      &
-                                     +  csite%can_shv(rp) * csite%area(rp))                     &
-                                     *  newareai
-
-     csite%sfcwater_energy(1:nzs,rp) &
-            = (csite%sfcwater_energy(1:nzs,rp) * csite%sfcwater_mass(1:nzs,rp) * csite%area(rp) &
-            +  csite%sfcwater_energy(1:nzs,dp) * csite%sfcwater_mass(1:nzs,dp) * csite%area(dp))&
-            * newareai
-     csite%sfcwater_mass(1:nzs,rp)   = (csite%sfcwater_mass(1:nzs,rp) * csite%area(rp)          &
-                                     +  csite%sfcwater_mass(1:nzs,dp) * csite%area(dp))         &
-                                     * newareai
-     csite%sfcwater_depth(1:nzs,rp)  = (csite%sfcwater_depth(1:nzs,rp) * csite%area(rp)         &
-                                     +  csite%sfcwater_depth(1:nzs,dp) * csite%area(dp))        &
-                                     * newareai
-
-     csite%soil_energy(1:nzg,rp)     = (csite%soil_energy(1:nzg,dp) * csite%area(dp)            &
-                                     +  csite%soil_energy(1:nzg,rp) * csite%area(rp)) * newareai
-
-     csite%soil_water(1:nzg,rp)      = (csite%soil_water(1:nzg,rp) * csite%area(rp)             &
-                                     +  csite%soil_water(1:nzg,dp) * csite%area(dp)) * newareai
-
-     !-----------------------------------------------------!
-     ! This subroutine takes care of filling:              !
-     !                                                     !
-     ! + csite%ground_shv(rp)                              !
-     ! + csite%surface_ssh(rp)                             !
-     ! + csite%soil_tempk(k,rp)                            !
-     ! + csite%soil_fracliq(k,rp)                          !
-     ! + csite%nlev_sfcwater(rp)                           !
-     ! + csite%sfcwater_energy(k,rp)                       !
-     ! + csite%csite%sfcwater_tempk(k,rp)                  !
-     ! + csite%sfcwater_fracliq(k,rp)                      !
-     call new_patch_sfc_props_ar(csite,rp,rhos)            !
-     !-----------------------------------------------------!
-
-     csite%mean_rh(rp) = (csite%mean_rh(rp) * csite%area(rp)                                   &
-                       +  csite%mean_rh(dp) * csite%area(dp)) * newareai
-
-     csite%dmean_A_decomp(rp) = (csite%dmean_A_decomp(rp) * csite%area(rp)                     &
-                              +  csite%dmean_A_decomp(dp) * csite%area(dp)) * newareai
-
-     csite%dmean_Af_decomp(rp) = (csite%dmean_Af_decomp(rp) * csite%area(rp)                   &
-                               + csite%dmean_Af_decomp(dp) * csite%area(dp)) * newareai
-
-     csite%repro(1:n_pft,rp) = (csite%repro(1:n_pft,rp) * csite%area(rp)                       &
-                             +  csite%repro(1:n_pft,dp) * csite%area(dp)) * newareai
-
-!     csite%watertable(rp) = (csite%watertable(rp) * csite%area(rp)                             &
-!                          +  csite%watertable(dp)*csite%area(dp)) *newareai
-  
-     ! Even though these variables are not prognostic, they need to be copied so the output will have the values.
-     ! Other variables will probably be scaled here as well
-     csite%avg_carbon_ac(rp)         = (csite%avg_carbon_ac(rp)         * csite%area(rp)        &
-                                     +  csite%avg_carbon_ac(dp)         * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_vapor_vc(rp)          = (csite%avg_vapor_vc(rp)          * csite%area(rp)        &
-                                     +  csite%avg_vapor_vc(dp)          * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_dew_cg(rp)            = (csite%avg_dew_cg(rp)            * csite%area(rp)        &
-                                     +  csite%avg_dew_cg(dp)            * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_vapor_gc(rp)          = (csite%avg_vapor_gc(rp)          * csite%area(rp)        &
-                                     +  csite%avg_vapor_gc(dp)          * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_wshed_vg(rp)          = (csite%avg_wshed_vg(rp)          * csite%area(rp)        &
-                                     +  csite%avg_wshed_vg(dp)          * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_vapor_ac(rp)          = (csite%avg_vapor_ac(rp)          * csite%area(rp)        &
-                                     +  csite%avg_vapor_ac(dp)          * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_transp(rp)            = (csite%avg_transp(rp)            * csite%area(rp)        &
-                                     +  csite%avg_transp(dp)            * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_evap(rp)              = (csite%avg_evap(rp)              * csite%area(rp)        &
-                                     +  csite%avg_evap(dp)              * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_smoist_gg(1:nzg,rp)   = (csite%avg_smoist_gg(1:nzg,rp)   * csite%area(rp)        &
-                                     +  csite%avg_smoist_gg(1:nzg,dp)   * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_smoist_gc(1:nzg,rp)   = (csite%avg_smoist_gc(1:nzg,rp)   * csite%area(rp)        &
-                                     +  csite%avg_smoist_gc(1:nzg,dp)   * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_runoff(rp)            = (csite%avg_runoff(rp)            * csite%area(rp)        &
-                                     +  csite%avg_runoff(dp)            * csite%area(dp))       &
-                                     *  newareai
-
-     csite%aux(rp)                   = (csite%aux(rp)                   * csite%area(rp)        &
-                                     +  csite%aux(dp)                   * csite%area(dp))       &
-                                     *  newareai
-     csite%aux_s(1:nzg,rp)           = (csite%aux_s(1:nzg,rp)           * csite%area(rp)        &
-                                     +  csite%aux_s(1:nzg,dp)           * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_sensible_vc(rp)       = (csite%avg_sensible_vc(rp)       * csite%area(rp)        &
-                                     +  csite%avg_sensible_vc(dp)       * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_sensible_2cas(rp)     = (csite%avg_sensible_2cas(rp)     * csite%area(rp)        &
-                                     +  csite%avg_sensible_2cas(dp)     * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_qwshed_vg(rp)         = (csite%avg_qwshed_vg(rp)         * csite%area(rp)        &
-                                     +  csite%avg_qwshed_vg(dp)         * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_sensible_gc(rp)       = (csite%avg_sensible_gc(rp)       * csite%area(rp)        &
-                                     +  csite%avg_sensible_gc(dp)       * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_sensible_ac(rp)       = (csite%avg_sensible_ac(rp)       * csite%area(rp)        &
-                                     +  csite%avg_sensible_ac(dp)       * csite%area(dp))       &
-
-                                     *  newareai
-     csite%avg_sensible_tot(rp)      = (csite%avg_sensible_tot(rp)      * csite%area(rp)        &
-                                     +  csite%avg_sensible_tot(dp)      * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_sensible_gg(1:nzg,rp) = (csite%avg_sensible_gg(1:nzg,rp) * csite%area(rp)        &
-                                     +  csite%avg_sensible_gg(1:nzg,dp) * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_runoff_heat(rp)       = (csite%avg_runoff_heat(rp)       * csite%area(rp)        &
-                                     +  csite%avg_runoff_heat(dp)       * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_heatstor_veg(rp)      = (csite%avg_heatstor_veg(rp)      * csite%area(rp)        &
-                                     +  csite%avg_heatstor_veg(dp)      * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_veg_energy(rp)        = (csite%avg_veg_energy(rp)        * csite%area(rp)        &
-                                     +  csite%avg_veg_energy(dp)        * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_veg_temp(rp)          = (csite%avg_veg_temp(rp)          * csite%area(rp)        &
-                                     +  csite%avg_veg_temp(dp)          * csite%area(dp))       &
-                                     *  newareai
-     csite%avg_veg_water(rp)         = (csite%avg_veg_water(rp)         * csite%area(rp)        &
-                                     +  csite%avg_veg_water(dp)         * csite%area(dp))       &
-                                     *  newareai
-
-     csite%co2budget_gpp(rp)             = (csite%co2budget_gpp(rp)              * csite%area(rp)  &
-                                         +  csite%co2budget_gpp(dp)              * csite%area(dp)) &
-                                         *  newareai
-     csite%co2budget_gpp_dbh(1:n_dbh,rp) = (csite%co2budget_gpp_dbh(1:n_dbh,rp)  * csite%area(rp)  &
-                                         +  csite%co2budget_gpp_dbh(1:n_dbh,dp)  * csite%area(dp)) &
-                                         *  newareai
-     csite%co2budget_plresp(rp)          = (csite%co2budget_plresp(rp)           * csite%area(rp)  &
-                                         +  csite%co2budget_plresp(dp)           * csite%area(dp)) &
-                                         *  newareai
-     csite%co2budget_rh(rp)              = (csite%co2budget_rh(rp)               * csite%area(rp)  &
-                                         +  csite%co2budget_rh(dp)               * csite%area(dp)) &
-                                         *  newareai
-
-     ! adjust densities of cohorts in recipient patch
-
-     cpatch => csite%patch(rp)
-     nrc = cpatch%ncohorts
-     do ico = 1,nrc
-        cpatch%lai(ico) = cpatch%lai(ico) * csite%area(rp) * newareai
-        cpatch%nplant(ico) = cpatch%nplant(ico) * csite%area(rp) * newareai
-        cpatch%veg_water(ico) = cpatch%veg_water(ico) * csite%area(rp) * newareai
-        cpatch%mean_gpp(ico) = cpatch%mean_gpp(ico) * csite%area(rp) * newareai
-        cpatch%mean_leaf_resp(ico) = cpatch%mean_leaf_resp(ico) * csite%area(rp) * newareai
-        cpatch%mean_root_resp(ico) = cpatch%mean_root_resp(ico) * csite%area(rp) * newareai
-        cpatch%growth_respiration(ico) = cpatch%growth_respiration(ico) * csite%area(rp) * newareai
-        cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico) * csite%area(rp) * newareai
-        cpatch%vleaf_respiration(ico) = cpatch%vleaf_respiration(ico) * csite%area(rp) * newareai
-        cpatch%Psi_open(ico) = cpatch%Psi_open(ico) * csite%area(rp) * newareai
-        
-        ! These were giving problem at new year
-        cpatch%gpp(ico)              = cpatch%gpp(ico)              * csite%area(rp) * newareai
-        cpatch%leaf_respiration(ico) = cpatch%leaf_respiration(ico) * csite%area(rp) * newareai
-        cpatch%root_respiration(ico) = cpatch%root_respiration(ico) * csite%area(rp) * newareai
-
-        ! Now that the plant density and the amount of water has changed, there will
-        ! be an inconsistency in the energy. If the energy stays the same, but temperature
-        ! is diagnosed with a sudden drop in biomass or water, we will have sky-rocketing values
-        ! so we have to adjust the energy accordingly also.
-
-        call update_veg_energy_ct(cpatch,ico)
+      !------------------------------------------------------------------------------------!
+      !     Now we need to adjust the densities of cohorts. Because the patch area         !
+      ! increased we want to retain the same total amount of mass and energy.              !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Adjust densities of cohorts in recipient patch ----------------------------!
+      cpatch => csite%patch(recp)
+      nrc = cpatch%ncohorts
+      area_scale = csite%area(recp) * newareai
+      do ico = 1,nrc
+         cpatch%lai(ico)                 = cpatch%lai(ico)                  * area_scale
+         cpatch%nplant(ico)              = cpatch%nplant(ico)               * area_scale
+         cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * area_scale
+         cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * area_scale
+         cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * area_scale
+         cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)       * area_scale
+         cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)   * area_scale
+         cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico)  * area_scale
+         cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)    * area_scale
+         cpatch%Psi_open(ico)            = cpatch%Psi_open(ico)             * area_scale
+         cpatch%gpp(ico)                 = cpatch%gpp(ico)                  * area_scale
+         cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)     * area_scale
+         cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)     * area_scale
+         !---------------------------------------------------------------------------------!
+         !    Now that the plant density and the amount of water has changed, there will   !
+         ! be an inconsistency in the energy. If the energy stays the same, but            !
+         ! temperature is diagnosed with a sudden drop in biomass or water, we will have   !
+         ! sky-rocketing values so we have to adjust the energy accordingly also.          !
+         !---------------------------------------------------------------------------------!
+         ! MLO: But this shouldn't happen. In fact, the energy should remain the same      !
+         !      (i.e., it shouldn't be even rescaled), and because nplants and veg_water   !
+         !      changed, the heat capacity should decrease in such a way that the temper-  !
+         !      ature next time step wouldn't be affected by the patch fusion.             !
+         !---------------------------------------------------------------------------------!
+         call update_veg_energy_ct(cpatch,ico)
+      end do
+      !----- 2. Adjust densities of cohorts in donor patch --------------------------------!
+      cpatch => csite%patch(donp)
+      ndc = cpatch%ncohorts
+      area_scale = csite%area(donp) * newareai
+      do ico = 1,nrc
+         cpatch%lai(ico)                 = cpatch%lai(ico)                  * area_scale
+         cpatch%nplant(ico)              = cpatch%nplant(ico)               * area_scale
+         cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * area_scale
+         cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * area_scale
+         cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * area_scale
+         cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)       * area_scale
+         cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)   * area_scale
+         cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico)  * area_scale
+         cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)    * area_scale
+         cpatch%Psi_open(ico)            = cpatch%Psi_open(ico)             * area_scale
+         cpatch%gpp(ico)                 = cpatch%gpp(ico)                  * area_scale
+         cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)     * area_scale
+         cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)     * area_scale
+         !---------------------------------------------------------------------------------!
+         !    Now that the plant density and the amount of water has changed, there will   !
+         ! be an inconsistency in the energy. If the energy stays the same, but            !
+         ! temperature is diagnosed with a sudden drop in biomass or water, we will have   !
+         ! sky-rocketing values so we have to adjust the energy accordingly also.          !
+         !---------------------------------------------------------------------------------!
+         ! MLO: But this shouldn't happen. In fact, the energy should remain the same      !
+         !      (i.e., it shouldn't be even rescaled), and because nplants and veg_water   !
+         !      changed, the heat capacity should decrease in such a way that the temper-  !
+         !      ature next time step wouldn't be affected by the patch fusion.             !
+         !---------------------------------------------------------------------------------!
+         call update_veg_energy_ct(cpatch,ico)
+      end do
+      !------------------------------------------------------------------------------------!
 
 
-     enddo
-
-     ! adjust densities of cohorts in donor patch 
-     cpatch => csite%patch(dp)
-     ndc = cpatch%ncohorts
-     do ico = 1,ndc
-
-        cpatch%nplant(ico) = cpatch%nplant(ico) * csite%area(dp) * newareai
-        cpatch%lai(ico) = cpatch%lai(ico) * csite%area(dp) * newareai
-        cpatch%veg_water(ico) = cpatch%veg_water(ico) * csite%area(dp) * newareai
-        cpatch%mean_gpp(ico) = cpatch%mean_gpp(ico) * csite%area(dp) * newareai
-        cpatch%mean_leaf_resp(ico) = cpatch%mean_leaf_resp(ico) * csite%area(dp) * newareai
-        cpatch%mean_root_resp(ico) = cpatch%mean_root_resp(ico) * csite%area(dp) * newareai
-        cpatch%growth_respiration(ico) = cpatch%growth_respiration(ico) * csite%area(dp) * newareai
-        cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico) * csite%area(dp) * newareai
-        cpatch%vleaf_respiration(ico) = cpatch%vleaf_respiration(ico) * csite%area(dp) * newareai
-        cpatch%Psi_open(ico) = cpatch%Psi_open(ico) * csite%area(dp) * newareai
-
-        cpatch%gpp(ico)      = cpatch%gpp(ico)                      * csite%area(dp) * newareai
-        cpatch%leaf_respiration(ico) = cpatch%leaf_respiration(ico) * csite%area(dp) * newareai
-        cpatch%root_respiration(ico) = cpatch%root_respiration(ico) * csite%area(dp) * newareai
-
-        
-        ! Now that the plant density and the amount of water has changed, there will
-        ! be an inconsistency in the energy. If the energy stays the same, but temperature
-        ! is diagnosed with a sudden drop in biomass or water, we will have sky-rocketing values
-        ! so we have to adjust the energy accordingly also.  This linear scaling should
-        ! be suitable, because vegetation energy is a linear combination of biomass and water
-        ! mutliplied by temperature.
-
-        call update_veg_energy_ct(cpatch,ico)
-
-     enddo
-
-     ! Fill a new patch with the donor and recipient cohort vectors
+      !------------------------------------------------------------------------------------!
+      !    Fill a new patch with the donor and recipient cohort vectors.                   !
+      !------------------------------------------------------------------------------------!
+      !----- Allocate the temporary patch with room for all cohorts. ----------------------!
+      nullify(temppatch)
+      allocate(temppatch)
+      call allocate_patchtype(temppatch,ndc + nrc )
+      !----- Copy the recipient and donor cohorts to the temporary patch. -----------------!
+      call copy_patchtype(csite%patch(recp),temppatch,1,nrc,1,nrc)
+      call copy_patchtype(csite%patch(donp),temppatch,1,ndc,nrc+1,nrc+ndc)
+      !----- Reallocate the current recipient patch with all cohorts ----------------------!
+      call deallocate_patchtype(csite%patch(recp))
+      call allocate_patchtype(csite%patch(recp),ndc+nrc)
+      !----- Copy the temporary patch back to the recipient patch. ------------------------!
+      call copy_patchtype(temppatch,csite%patch(recp),1,nrc+ndc,1,nrc+ndc)
+      !----- Get rid of the temporary patch -----------------------------------------------!
+      call deallocate_patchtype(temppatch)
+      deallocate(temppatch)
+      !------------------------------------------------------------------------------------!
 
 
-     ! Allocate the new patch and its cohorts
-     nullify(newpatch)
-     allocate(newpatch)
-     call allocate_patchtype(newpatch,ndc + nrc )
+      !------------------------------------------------------------------------------------!
+      !    Now we update some variables that depend on cohort statistics, namely:          !
+      ! + csite%veg_height(recp)                                                           !
+      ! + csite%lai(recp)                                                                  !
+      ! + csite%veg_rough(recp)                                                            !
+      ! + csite%wbudget_initialstorage(recp)                                               !
+      ! + csite%ebudget_initialstorage(recp)                                               !
+      ! + csite%co2budget_initialstorage(recp)                                             !
+      !------------------------------------------------------------------------------------!
+      call update_patch_derived_props_ar(csite,lsl, rhos,recp)
+      !------------------------------------------------------------------------------------!
 
+      !------------------------------------------------------------------------------------!
+      !    This subroutine will update the size profile within patch.                      !
+      ! + csite%pft_density_profile(:,:,recp)                                              !
+      !------------------------------------------------------------------------------------!
+      call patch_pft_size_profile_ar(csite,recp,ff_ndbh,green_leaf_factor)
+      !------------------------------------------------------------------------------------!
 
-     call copy_patchtype(csite%patch(rp),newpatch,1,nrc,1,nrc)
- 
-     call copy_patchtype(csite%patch(dp),newpatch,1,ndc,nrc+1,nrc+ndc)
+      !----- Last, but not the least, we update the patch area ----------------------------!
+      csite%area(recp) = newarea
 
-!     call deallocate_patchtype(csite%patch(dp))
+      return
 
-     call deallocate_patchtype(csite%patch(rp))
-
-     call allocate_patchtype(csite%patch(rp),ndc+nrc)
-
-     call copy_patchtype(newpatch,csite%patch(rp),1,nrc+ndc,1,nrc+ndc)
-
-
-     call deallocate_patchtype(newpatch)
-     deallocate(newpatch)
-
-
-     !-----------------------------------------------------!
-     ! This subroutine takes care of filling:              !
-     !                                                     !
-     ! + csite%veg_height(rp)                              !
-     ! + csite%lai(rp)                                     !
-     ! + csite%veg_rough(rp)                               !
-     ! + csite%wbudget_initialstorage(rp)                  !
-     ! + csite%ebudget_initialstorage(rp)                  !
-     ! + csite%co2budget_initialstorage(rp)                !
-     call update_patch_derived_props_ar(csite,lsl, rhos,rp)
-     !-----------------------------------------------------!
-
-     !-----------------------------------------------------!
-     !    This subroutine takes care of updating size      !
-     ! profile within patch.                               !
-     !                                                     !
-     ! + csite%pft_density_profile(:,:,rp)                 !
-     call patch_pft_size_profile_ar(csite,rp,ff_ndbh,green_leaf_factor)
-     !-----------------------------------------------------!
-
-     ! update patch area
-     csite%area(rp) = newarea
-
-
-     return
    end subroutine fuse_2_patches_ar
-   !=====================================================================
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    subroutine patch_pft_size_profile_ar(csite,ipa,nbins,green_leaf_factor)
+      use ed_state_vars      , only :  sitetype   & ! structure
+                                     , patchtype  ! ! structure
+      use fusion_fission_coms, only :  maxdbh     ! ! intent(in)
+      use max_dims           , only :  n_pft      ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(sitetype)         , target     :: csite             ! Current site
+      real, dimension(n_pft) , intent(in) :: green_leaf_factor ! Green leaf factor
+      integer                , intent(in) :: ipa               ! Current patch ID
+      integer                , intent(in) :: nbins             ! # of DBH classes
+      !----- Local variables --------------------------------------------------------------!
+      type(patchtype)        , pointer    :: cpatch        ! Current patch
+      integer                             :: ipft,idbh,ico ! Counters
+      real                                :: ddbh          ! Class interval size
+      !------------------------------------------------------------------------------------!
 
-     use ed_state_vars,only:sitetype,patchtype
+      !----- Finding the size of each DBH class interval ----------------------------------!
+      ddbh = maxdbh/nbins
 
-     use fusion_fission_coms, only : maxdbh
-     use max_dims, only : n_pft
-      
-     implicit none
+      !----- Initialize bins --------------------------------------------------------------!
+      do ipft=1,n_pft
+         do idbh=1,nbins
+            csite%pft_density_profile(ipft,idbh,ipa)=0.0
+         end do
+      end do
 
-     type(sitetype),target :: csite
-     type(patchtype),pointer :: cpatch
+      !----- Update bins ------------------------------------------------------------------!
+      cpatch => csite%patch(ipa)
+      do ico = 1,cpatch%ncohorts
 
-     integer :: ipa,ndc,nrc
-     real, dimension(n_pft), intent(in) :: green_leaf_factor
-     integer :: nbins
-     
-     real    :: rmin,rmax,dh,bleaf,babove
-     integer :: i,j,ico
-     real    :: elong
+         ipft = cpatch%pft(ico)
+         idbh = min(nbins,max(1,ceiling(cpatch%dbh(ico)/ddbh)))
+         csite%pft_density_profile(ipft,idbh,ipa) = cpatch%nplant(ico)                     &
+                                                  + csite%pft_density_profile(ipft,idbh,ipa)
+      end do
 
-     dh = maxdbh/nbins
-
-     ! initialize bins
-     do i=1,n_pft
-        do j=1,nbins
-           csite%pft_density_profile(i,j,ipa)=0.0
-        enddo
-     enddo
-
-     ! update bins
-     cpatch => csite%patch(ipa)
-     do ico = 1,cpatch%ncohorts
-
-        elong = green_leaf_factor(cpatch%pft(ico))
-        do j=1,nbins
-           if (j == 1)then
-              rmin = 0.0
-           else
-              rmin = real((j-1))*dh
-           endif
-           rmax = real(j)*dh
-
-           if(cpatch%dbh(ico) > rmin .and. cpatch%dbh(ico) <= rmax)then
-              csite%pft_density_profile(cpatch%pft(ico),j,ipa) =   &
-                   csite%pft_density_profile(cpatch%pft(ico),j,ipa) + cpatch%nplant(ico)
-           endif
-        enddo
-        
-        ! deal with largest dbh bin
-        j = nbins
-        rmin = j*dh
-        if(cpatch%dbh(ico) > rmin)then
-           csite%pft_density_profile(cpatch%pft(ico),j,ipa) =   &
-                csite%pft_density_profile(cpatch%pft(ico),j,ipa) + cpatch%nplant(ico)
-        endif
-        
-     enddo
-     
-     return
-     
+      return
    end subroutine patch_pft_size_profile_ar
-   
-
- end module fuse_fiss_utils_ar
+   !=======================================================================================!
+   !=======================================================================================!
+end module fuse_fiss_utils_ar
+!==========================================================================================!
+!==========================================================================================!

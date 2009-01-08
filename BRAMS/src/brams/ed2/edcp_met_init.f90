@@ -22,7 +22,7 @@ subroutine ed_init_coup_atm
   integer :: nsoil
   integer :: nls
   integer :: nlsw1
-  integer :: ncohorts
+  integer :: ncohorts, npatches
   real    :: poly_lai,p_lai
   integer :: ix,iy
   real    :: hcapveg
@@ -201,12 +201,14 @@ subroutine ed_init_coup_atm
      do ipy = 1,cgrid%npolygons
         
         ncohorts = 0
+        npatches = 0
         poly_lai = 0.0
         
         cpoly => cgrid%polygon(ipy)
         
         do isi = 1,cpoly%nsites
            
+           npatches = npatches + 1
            csite => cpoly%site(isi)
            
            do ipa = 1,csite%npatches
@@ -223,8 +225,8 @@ subroutine ed_init_coup_atm
            enddo
            
         enddo
-        write(*,'(2(a,1x,i4,1x),2(a,1x,f9.4,1x),a,1x,f5.2,1x,a,1x,i4)')   &
-            'Grid:',igr,'Poly:',ipy,'Lon:',cgrid%lon(ipy),'Lat: ',cgrid%lat(ipy),'Avg. LAI:',poly_lai,'NCohorts:',ncohorts
+        write(*,'(2(a,1x,i4,1x),2(a,1x,f9.4,1x),a,1x,f5.2,2(1x,a,1x,i4))')   &
+            'Grid:',igr,'Poly:',ipy,'Lon:',cgrid%lon(ipy),'Lat: ',cgrid%lat(ipy),'Avg. LAI:',poly_lai,'NPatches:',npatches,'NCohorts:',ncohorts
 
      enddo
 

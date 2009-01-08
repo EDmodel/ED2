@@ -4430,7 +4430,7 @@ contains
 
 !============================================================================!
 !============================================================================!
-  subroutine copy_sitetype_mask(sitein,siteout,mask,masksz,newsz)
+  subroutine copy_sitetype_mask(sitein,siteout,logmask,masksz,newsz)
 
     ! This subroutine assumes that the size of vectors in siteout
     ! are the number of true elements in mask, while the size of the
@@ -4449,21 +4449,18 @@ contains
 
     type(sitetype),target :: sitein,siteout
     integer :: masksz,newsz
-    integer,dimension(masksz) :: mask
     integer,dimension(newsz) :: incmask
     logical,dimension(masksz)           :: logmask
     integer :: i,k,m,inc,ipft
     type(stoma_data),pointer :: osdi,osdo
 
-    logmask = .false.
     inc = 0
     do i=1,masksz
-       if (mask(i)>0) then
+       if (logmask(i)) then
           inc = inc + 1
           incmask(inc) = i
-          logmask(i) = .true.
-       endif
-    enddo
+       end if
+    end do
 
     ! First do all of the true vectors
 
