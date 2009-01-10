@@ -198,13 +198,13 @@ module fuse_fiss_utils_ar
       do ipa = 1,csite%npatches
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !!! MLO - Should empty patches be always removed? I'm just wondering how bare   !!!
-         !!!       ground regions/desert areas are represented (or are they represented  !!!
-         !!!       at all?)                                                              !!!
+         !!! MLO - Should patches with no cohorts be always removed?                     !!!
+         !!!       I am just concerned how desert areas would be represented...          !!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         if (csite%area(ipa) < min_new_patch_area .or. csite%patch(ipa)%ncohorts == 0 )    &
-         then
+         !if (csite%area(ipa) < min_new_patch_area .or. csite%patch(ipa)%ncohorts == 0 )    &
+         !then
+         if (csite%area(ipa) < min_new_patch_area) then
             elim_area = elim_area + csite%area(ipa)
             remain_table(ipa) = .false.
          end if
@@ -394,13 +394,15 @@ module fuse_fiss_utils_ar
                   ! 2. Combined LAI won't be too large.                                    !
                   ! 3. Both cohorts must have the same status with respect to the first    !
                   !    census.                                                             !
-                  ! 4. Both cohorts must the same recruit status with respect to the first !
-                  !    census.                                                             !
+                  ! 4. Both cohorts must have the same recruit status with respect to the  !
+                  !    first census.                                                       !
+                  ! 5. Both cohorts must have the same phenology status.                   !
                   !------------------------------------------------------------------------!
                   if (     cpatch%pft(ico1)              == cpatch%pft(ico2)               &     
                      .and. total_lai                      < lai_fuse_tol*tolerance_mult    &
                      .and. cpatch%first_census(ico1)     == cpatch%first_census(ico2)      &
                      .and. cpatch%new_recruit_flag(ico1) == cpatch%new_recruit_flag(ico2)  &
+                     .and. cpatch%phenology_status(ico1) == cpatch%phenology_status(ico2)  &
                      ) then
 
                      !----- Proceed with fusion -------------------------------------------!
@@ -477,13 +479,12 @@ module fuse_fiss_utils_ar
    !---------------------------------------------------------------------------------------!
    subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
 
-      use ed_state_vars        , only :  patchtype             ! ! structure
-      use pft_coms             , only :  q                     & ! intent(in), lookup table
-                                       , qsw                   & ! intent(in), lookup table
-                                       , sla                   ! ! intent(in), lookup table
-      use fusion_fission_coms  , only :  lai_tol               ! ! intent(in)
-      use max_dims             , only :  n_pft                 ! ! intent(in)
-      use ed_therm_lib         , only :  update_veg_energy_ct  ! ! subroutine
+      use ed_state_vars        , only :  patchtype              ! ! structure
+      use pft_coms             , only :  q                      & ! intent(in), lookup table
+                                       , qsw                    & ! intent(in), lookup table
+                                       , sla                    ! ! intent(in), lookup table
+      use fusion_fission_coms  , only :  lai_tol                ! ! intent(in)
+      use max_dims             , only :  n_pft                  ! ! intent(in)
 
       implicit none
       !----- Constants --------------------------------------------------------------------!
@@ -499,6 +500,7 @@ module fuse_fiss_utils_ar
       integer                              :: ncohorts_new      ! New # of cohorts
       integer                              :: tobesplit         ! # of cohorts to be split
       real                                 :: slai              ! LAI
+      real                                 :: old_hcapveg       ! Old hcapveg
       !----- Functions --------------------------------------------------------------------!
       real                   , external    :: dbh2h
       real                   , external    :: dbh2bd
@@ -553,10 +555,9 @@ module fuse_fiss_utils_ar
 
             if (split_mask(ico)) then
 
-               !----- Half the densities of the oringal cohort. ---------------------------!
+               !----- Half the densities of the original cohort. --------------------------!
                cpatch%nplant(ico)              = cpatch%nplant(ico)              * 0.5
                cpatch%lai(ico)                 = cpatch%lai(ico)                 * 0.5
-               cpatch%veg_water(ico)           = cpatch%veg_water(ico)           * 0.5
                cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)            * 0.5
                cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)      * 0.5
                cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)      * 0.5
@@ -575,11 +576,12 @@ module fuse_fiss_utils_ar
                cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)    * 0.5
 
                !---------------------------------------------------------------------------!
-               !     Update the heat capacity and the vegetation energy.                   !
-               ! MLO: Ryan, Is this one really necessary? The vegetation is updated later  !!!
-               !      anyway...                                                            !
+               !     Since water and plants were evenly split, hcapveg and veg_energy, we  !
+               ! can do the same with veg_energy and veg heat capacity.                    !
                !---------------------------------------------------------------------------!
-               call update_veg_energy_ct(cpatch,ico)
+               cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)             * 0.5
+               cpatch%veg_water(ico)           = cpatch%veg_water(ico)           * 0.5
+               cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)          * 0.5
 
                !----- Apply those values to the new cohort. -------------------------------!
                inew = inew+1
@@ -596,9 +598,6 @@ module fuse_fiss_utils_ar
                cpatch%bdead(inew) = dbh2bd(cpatch%dbh(inew),cpatch%hite(inew)              &
                                           ,cpatch%pft(inew))
 
-               !----- Update the vegetation energy again, due to tweaks -------------------!
-               call update_veg_energy_ct(cpatch,inew)
-               call update_veg_energy_ct(cpatch,ico)
             end if
          end do
          deallocate(temppatch)
@@ -697,33 +696,23 @@ module fuse_fiss_utils_ar
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine will merge two cohorts into 1.                                      !
+   !     This subroutine will merge two cohorts into 1. The donating cohort (donc) is the  !
+   ! one that will be deallocated, while the receptor cohort (recc) will contain the       !
+   !  information from both cohorts.                                                       !
    !                                                                                       !
-   !   CHANGES MADE - RGK 11-26-2008                                                       !
-   !       Will remove this message after changes have been confirmed and tested.          !
-   !       The phenology condition really only affects vegetation water, that said, it is  !
-   !    kind of an arbitrary decision on how the water in the fused cohort is maintained   !
-   !    anyway. The vegetation temperature would probably benefit from doing weighting on  !
-   !    the heat-capacities. The vegetation energy should be calculated after all quanti-  !
-   !    ties have been updated, and should be calculated based on diagnosed heat capacity, !
-   !    water mass and temperature of the cohort.                                          !
-   !                                                                                       !
-   !    Bug fix? When the phenology status was not less than two, cpatch%lai was being set !
-   !    to zero, but bleaf was not being set to zero.  bleaf was added for consistency     !
-   !    sake.                                                                              !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_2_cohorts_ar(cpatch,ibye,ifus, newn,green_leaf_factor, lsl)
+   subroutine fuse_2_cohorts_ar(cpatch,donc,recc, newn,green_leaf_factor, lsl)
       use ed_state_vars , only :  patchtype             ! ! Structure
       use pft_coms      , only :  q                     & ! intent(in), lookup table
                                 , qsw                   & ! intent(in), lookup table
                                 , sla                   ! ! intent(in), lookup table
-      use ed_therm_lib  , only :  calc_hcapveg          & ! subroutine
-                                , update_veg_energy_ct  ! ! subroutine
+      use ed_therm_lib  , only :  calc_hcapveg          ! ! subroutine
+      use therm_lib     , only : qwtk
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype) , target     :: cpatch            ! Current patch
-      integer                      :: ibye              ! The cohort to be removed
-      integer                      :: ifus              ! The resulting cohort after fusion.
+      integer                      :: donc              ! Donating cohort.
+      integer                      :: recc              ! Receptor cohort.
       real            , intent(in) :: newn              ! New nplant
       real            , intent(in) :: green_leaf_factor ! Green leaf factor
       integer         , intent(in) :: lsl               ! Lowest soil level
@@ -731,6 +720,7 @@ module fuse_fiss_utils_ar
       real                         :: newni             ! Inverse of new nplants
       real                         :: cb_max            !
       real                         :: root_depth        !
+      real                         :: fracliq           ! Scratch var., liquid fraction
       !----- Functions --------------------------------------------------------------------!
       real            , external   :: calc_root_depth
       integer         , external   :: assign_root_depth
@@ -742,144 +732,118 @@ module fuse_fiss_utils_ar
      
 
       !----- Conserve carbon by calculating bdead first. ----------------------------------!
-      cpatch%bdead(ifus) = ( cpatch%nplant(ifus) * cpatch%bdead(ifus)                      &
-                           + cpatch%nplant(ibye) * cpatch%bdead(ibye) ) * newni
+      cpatch%bdead(recc) = ( cpatch%nplant(recc) * cpatch%bdead(recc)                      &
+                           + cpatch%nplant(donc) * cpatch%bdead(donc) ) * newni
 
       !----- Then get dbh and hite from bdead. --------------------------------------------!
-      cpatch%dbh(ifus)   = bd2dbh(cpatch%pft(ifus), cpatch%bdead(ifus))
-      cpatch%hite(ifus)  = dbh2h(cpatch%pft(ifus),  cpatch%dbh(ifus))
+      cpatch%dbh(recc)   = bd2dbh(cpatch%pft(recc), cpatch%bdead(recc))
+      cpatch%hite(recc)  = dbh2h(cpatch%pft(recc),  cpatch%dbh(recc))
 
       !----- Keep the phenology_status of cc and conserve carbon to get balive. -----------!
-      cpatch%balive(ifus) = ( cpatch%nplant(ifus) * cpatch%balive(ifus)                    &
-                            + cpatch%nplant(ibye) * cpatch%balive(ibye) ) *newni
-
-      !----- Update bleaf and LAI. --------------------------------------------------------!
-      if ( cpatch%phenology_status(ifus) < 2 ) then
-         cpatch%bleaf(ifus) = green_leaf_factor * cpatch%balive(ifus)                      &
-                            / (1.0 + q(cpatch%pft(ifus))                                   &
-                                   + cpatch%hite(ifus) * qsw(cpatch%pft(ifus)) )
-         cpatch%lai(ifus)   = cpatch%bleaf(ifus) * sla(cpatch%pft(ifus)) * newn
-      else
-         cpatch%lai(ifus)   = 0.0
-         cpatch%bleaf(ifus) = 0.0
-      end if
-
-      cpatch%bstorage(ifus) = ( cpatch%nplant(ifus) * cpatch%bstorage(ifus)                &
-                              + cpatch%nplant(ibye) * cpatch%bstorage(ibye) ) * newni
+      cpatch%balive(recc) = ( cpatch%nplant(recc) * cpatch%balive(recc)                    &
+                            + cpatch%nplant(donc) * cpatch%balive(donc) ) *newni
 
       !------------------------------------------------------------------------------------!
-      !    Do our best to conserve energy.  May be problematic if cohorts have different   !
-      ! phenology_status codes.                                                            !
+      !   Update bleaf and LAI.                                                            !
       !------------------------------------------------------------------------------------!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!! MLO. It is probably a stupid question, but if the cohorts have different       !!!
-      !!!      phenology_status, despite being in the same patch, should we still allow  !!!
-      !!!      fusion?                                                                   !!!
+      !!! CONTROVERSIAL POINT... I modified here based on the e-mail discussion, but I'd !!!
+      !!!    like to make sure I got this right. If it is not, let me know...            !!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if ( cpatch%phenology_status(ifus) < 2 .and. cpatch%phenology_status(ibye) < 2 ) then
-         cpatch%veg_water(ifus) = ( cpatch%veg_water(ifus) * cpatch%nplant(ifus)           &
-                                  + cpatch%veg_water(ibye) * cpatch%nplant(ibye)) * newni
-      elseif( cpatch%phenology_status(ifus) < 2 ) then
-         cpatch%veg_water(ifus) = cpatch%veg_water(ifus) * cpatch%nplant(ifus) * newni
-      end if
+      !----- Original method, which respects allometry but may not conserve carbon. -------!
+      !if ( cpatch%phenology_status(recc) < 2 ) then
+      !   cpatch%bleaf(recc) = green_leaf_factor * cpatch%balive(recc)                     &
+      !                      / (1.0 + q(cpatch%pft(recc))                                  &
+      !                             + cpatch%hite(recc) * qsw(cpatch%pft(recc)) )
+      !   cpatch%lai(recc)   = cpatch%bleaf(recc) * sla(cpatch%pft(recc)) * newn
+      !else
+      !   cpatch%lai(recc)   = 0.0
+      !   cpatch%bleaf(recc) = 0.0
+      !end if
+      !----- Alternative method, which conserves carbon, but may put the allometry off ----!
+      cpatch%bleaf(recc)  = ( cpatch%nplant(recc) * cpatch%bleaf(recc)                     &
+                            + cpatch%nplant(donc) * cpatch%bleaf(donc) ) *newni
+      cpatch%lai(recc)    = cpatch%lai(recc) + cpatch%lai(donc)
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      !----- Take the average temperature among the two. ----------------------------------!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!! MLO: Ryan, David, I'm just thinking loud now, but because internal energy is   !!!
-      !!!      an extensive variable, don't you think we should simply add the cohorts   !!!
-      !!!      veg_energy (not weighted average) and that would be the new energy?       !!!
-      !!!      Then we find the new temperature and heat capacity based on the new bio-  !!!
-      !!!      mass? My concerns of using temperature are that we will not conserve      !!!
-      !!!      energy and that we are mixing what is prognostic and what is diagnostic.  !!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      cpatch%veg_temp(ifus) = ( cpatch%veg_temp(ifus) * cpatch%nplant(ifus)                &
-                              + cpatch%veg_temp(ibye) * cpatch%nplant(ibye) ) * newni
-     
-      
+
+      cpatch%bstorage(recc) = ( cpatch%nplant(recc) * cpatch%bstorage(recc)                &
+                              + cpatch%nplant(donc) * cpatch%bstorage(donc) ) * newni
+
       !------------------------------------------------------------------------------------!
-      !     This temperature average uses a weighting of their heat capacities. Don't use  !
-      ! this method unless we are actually tracking cpatch%hcapveg. At the time of this    !
-      ! message, we probably are not tracking that quantity.                               !
+      !     Updating the mean carbon fluxes. They are fluxes per unit of area, so they     !
+      ! should be added, not scaled.                                                       !
       !------------------------------------------------------------------------------------!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!! MLO - In any case, we should be able to recalculate the heat capacity after    !!!
-      !!!       the fusion took place. And we don't really need the temperature at this  !!!
-      !!!       point, since this is after the output and before the next fast time      !!!
-      !!!       step, when energy will be updated and the temperature will be diagnos-   !!!
-      !!!       tically determined.                                                      !!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! cpatch%veg_temp(ifus) =                                                            &
-      !       ( cpatch%veg_temp(ifus) * cpatch%nplant(ifus) * cpatch%hcapveg(ifus)         &
-      !       + cpatch%veg_temp(ibye) * cpatch%nplant(ibye) * cpatch%hcapveg(ibye))        &
-      !       / ( cpatch%hcapveg(ifus) * cpatch%nplant(ifus)                               &
-      !         + cpatch%hcapveg(ibye) * cpatch%nplant(ibye) )                             &
+      cpatch%mean_gpp(recc) = cpatch%mean_gpp(recc) + cpatch%mean_gpp(donc)
+
+      cpatch%mean_leaf_resp(recc) = cpatch%mean_leaf_resp(recc)                            &
+                                  + cpatch%mean_leaf_resp(donc)
+
+      cpatch%mean_root_resp(recc) = cpatch%mean_root_resp(recc)                            &
+                                  + cpatch%mean_root_resp(donc)
       !------------------------------------------------------------------------------------!
 
-      cpatch%mean_gpp(ifus) = ( cpatch%mean_gpp(ifus) * cpatch%nplant(ifus)                &
-                              + cpatch%mean_gpp(ibye) * cpatch%nplant(ibye)) * newni
-
-      cpatch%mean_leaf_resp(ifus) = ( cpatch%mean_leaf_resp(ifus) * cpatch%nplant(ifus)    &
-                                    + cpatch%mean_leaf_resp(ibye) * cpatch%nplant(ibye) )  &
-                                    * newni
-
-      cpatch%mean_root_resp(ifus) = ( cpatch%mean_root_resp(ifus) * cpatch%nplant(ifus)    &
-                                    + cpatch%mean_root_resp(ibye) * cpatch%nplant(ibye) )  &
-                                    * newni
+      cpatch%growth_respiration(recc) =                                                    &
+            ( cpatch%growth_respiration(recc) * cpatch%nplant(recc)                        &
+            + cpatch%growth_respiration(donc) * cpatch%nplant(donc) ) * newni
      
-      cpatch%growth_respiration(ifus) =                                                    &
-            ( cpatch%growth_respiration(ifus) * cpatch%nplant(ifus)                        &
-            + cpatch%growth_respiration(ibye) * cpatch%nplant(ibye) ) * newni
+      cpatch%storage_respiration(recc) =                                                   &
+            ( cpatch%storage_respiration(recc) * cpatch%nplant(recc)                       &
+            + cpatch%storage_respiration(donc) * cpatch%nplant(donc) ) * newni
      
-      cpatch%storage_respiration(ifus) =                                                   &
-            ( cpatch%storage_respiration(ifus) * cpatch%nplant(ifus)                       &
-            + cpatch%storage_respiration(ibye) * cpatch%nplant(ibye) ) * newni
+      cpatch%vleaf_respiration(recc) =                                                     &
+            ( cpatch%vleaf_respiration(recc) * cpatch%nplant(recc)                         &
+            + cpatch%vleaf_respiration(donc) * cpatch%nplant(donc) ) * newni
      
-      cpatch%vleaf_respiration(ifus) =                                                     &
-            ( cpatch%vleaf_respiration(ifus) * cpatch%nplant(ifus)                         &
-            + cpatch%vleaf_respiration(ibye) * cpatch%nplant(ibye) ) * newni
-     
-      cpatch%fsn(ifus) = ( cpatch%fsn(ifus) * cpatch%nplant(ifus)                          &
-                         + cpatch%fsn(ibye) * cpatch%nplant(ibye) ) * newni
+      cpatch%fsn(recc) = ( cpatch%fsn(recc) * cpatch%nplant(recc)                          &
+                         + cpatch%fsn(donc) * cpatch%nplant(donc) ) * newni
 
-      cpatch%Psi_open(ifus) = ( cpatch%Psi_open(ifus) * cpatch%nplant(ifus)                &
-                              + cpatch%Psi_open(ibye) * cpatch%nplant(ibye) ) * newni
+      cpatch%Psi_open(recc) = ( cpatch%Psi_open(recc) * cpatch%nplant(recc)                &
+                              + cpatch%Psi_open(donc) * cpatch%nplant(donc) ) * newni
 
-      cpatch%cb(1:13,ifus) = ( cpatch%cb(1:13,ifus) * cpatch%nplant(ifus)                  &
-                             + cpatch%cb(1:13,ibye) * cpatch%nplant(ibye) ) * newni
+      cpatch%cb(1:13,recc) = ( cpatch%cb(1:13,recc) * cpatch%nplant(recc)                  &
+                             + cpatch%cb(1:13,donc) * cpatch%nplant(donc) ) * newni
 
-      cpatch%cb_max(1:13,ifus) = ( cpatch%cb_max(1:13,ifus) * cpatch%nplant(ifus)          &
-                                 + cpatch%nplant(ibye) * cpatch%cb_max(1:13,ibye)) * newni
+      cpatch%cb_max(1:13,recc) = ( cpatch%cb_max(1:13,recc) * cpatch%nplant(recc)          &
+                                 + cpatch%nplant(donc) * cpatch%cb_max(1:13,donc)) * newni
 
-      cpatch%gpp(ifus) = ( cpatch%gpp(ifus) * cpatch%nplant(ifus)                          &
-                         + cpatch%gpp(ibye) * cpatch%nplant(ibye) ) * newni
 
-      cpatch%leaf_respiration(ifus) =                                                      &
-            ( cpatch%leaf_respiration(ifus) * cpatch%nplant(ifus)                          &
-            + cpatch%leaf_respiration(ibye) * cpatch%nplant(ibye) ) * newni
-      cpatch%root_respiration(ifus) =                                                      &
-            ( cpatch%root_respiration(ifus) * cpatch%nplant(ifus)                          &
-            + cpatch%root_respiration(ibye) * cpatch%nplant(ibye) ) * newni
+      !------------------------------------------------------------------------------------!
+      !     Updating the carbon fluxes. They are fluxes per unit of area, so they should   !
+      ! be added, not scaled.                                                              !
+      !------------------------------------------------------------------------------------!
+      cpatch%gpp(recc) = cpatch%gpp(recc) + cpatch%gpp(donc)
 
-      cb_max = sum(cpatch%cb_max(1:12,ifus))
+      cpatch%leaf_respiration(recc) = cpatch%leaf_respiration(recc)                        &
+                                    + cpatch%leaf_respiration(donc)
+      cpatch%root_respiration(recc) = cpatch%root_respiration(recc)                        &
+                                    + cpatch%root_respiration(donc)
+
+      cb_max = sum(cpatch%cb_max(1:12,recc))
       if(cb_max > 0.0)then
-         cpatch%cbr_bar(ifus) = sum(cpatch%cb(1:12,ifus)) / cb_max
+         cpatch%cbr_bar(recc) = sum(cpatch%cb(1:12,recc)) / cb_max
       else
-         cpatch%cbr_bar(ifus) = 0.0
+         cpatch%cbr_bar(recc) = 0.0
       end if
      
-      root_depth = calc_root_depth(cpatch%hite(ifus), cpatch%dbh(ifus), cpatch%pft(ifus))
-      cpatch%krdepth(ifus) = assign_root_depth(root_depth, lsl)
+      root_depth = calc_root_depth(cpatch%hite(recc), cpatch%dbh(recc), cpatch%pft(recc))
+      cpatch%krdepth(recc) = assign_root_depth(root_depth, lsl)
 
-      cpatch%nplant(ifus) = newn
+      cpatch%nplant(recc) = newn
 
-      call update_veg_energy_ct(cpatch,ifus)
-
+      !------------------------------------------------------------------------------------!
+      !    Energy, water mass and heat capacity are extensive properties, and area         !
+      ! dependent. Therefore, the updated value will be simply the sum of each cohort.     !
+      !------------------------------------------------------------------------------------!
+      cpatch%veg_energy(recc) = cpatch%veg_energy(recc) + cpatch%veg_energy(donc)
+      cpatch%veg_water(recc)  = cpatch%veg_water(recc)  + cpatch%veg_water(donc)
+      cpatch%hcapveg(recc)    = cpatch%hcapveg(recc)    + cpatch%hcapveg(donc)
+      !----- Updating temperature ---------------------------------------------------------!
+      call qwtk(cpatch%veg_energy(recc),cpatch%veg_water(recc),cpatch%hcapveg(recc)        &
+               ,cpatch%veg_temp(recc),fracliq)
       return
    end subroutine fuse_2_cohorts_ar
    !=======================================================================================!
@@ -1137,29 +1101,10 @@ module fuse_fiss_utils_ar
    !=======================================================================================!
    !=======================================================================================!
    !   This subroutine will merge two cohorts into 1.                                      !
-   !                                                                                       !
-   !   CHANGES MADE - RGK 11-26-2008                                                       !
-   !       Will remove this message after changes have been confirmed and tested.          !
-   !    veg_energy of the cohorts int the fused patches must also be updated because...    !
-   !    effectively, the number densities of the plants are changing, because we are       !
-   !    squeezing the cohorts from two patches into one. With the number densities         !
-   !    changing, all the cohort level variables that are dependant on number density      !
-   !    must also be scaled, such as veg_water. Veg temperature should remain the          !
-   !    same for each cohort, because none of the plant level variables actually change.   !
-   !    But veg_energy is plant number dependant, and therefore it must be scaled by       !
-   !    number density (or as a proxy, the fractional area) like all the rest.             !
-   !                                                                                       !
-   !    MLO. Ryan, I'm not sure about this. For me, the total veg_energy for each cohort   !
-   !         should remain the same. If nplants change, then the heat capacity should be   !
-   !         adjusted accordingly. By doing this, we ensure energy conservation and we     !
-   !         will still have the correct temperature. But we need to remember that the     !
-   !         energy, not the temperature, is the conserved (and because of this, the       !
-   !         prognostic) variable.                                                         !
    !---------------------------------------------------------------------------------------!
    subroutine fuse_2_patches_ar(csite,donp,recp,rhos,lsl,green_leaf_factor)
       use ed_state_vars      , only :  sitetype              & ! Structure 
                                      , patchtype             ! ! Structure
-      use ed_therm_lib       , only :  update_veg_energy_ct  ! ! Subroutine
       use soil_coms          , only :  soil                  ! ! intent(in), lookup table
       use grid_coms          , only :  nzg                   & ! intent(in)
                                      , nzs                   ! ! intent(in)
@@ -1446,7 +1391,6 @@ module fuse_fiss_utils_ar
       do ico = 1,nrc
          cpatch%lai(ico)                 = cpatch%lai(ico)                  * area_scale
          cpatch%nplant(ico)              = cpatch%nplant(ico)               * area_scale
-         cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * area_scale
          cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * area_scale
          cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * area_scale
          cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)       * area_scale
@@ -1457,27 +1401,23 @@ module fuse_fiss_utils_ar
          cpatch%gpp(ico)                 = cpatch%gpp(ico)                  * area_scale
          cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)     * area_scale
          cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)     * area_scale
+         
          !---------------------------------------------------------------------------------!
-         !    Now that the plant density and the amount of water has changed, there will   !
-         ! be an inconsistency in the energy. If the energy stays the same, but            !
-         ! temperature is diagnosed with a sudden drop in biomass or water, we will have   !
-         ! sky-rocketing values so we have to adjust the energy accordingly also.          !
+         !    Because both nplant and veg_water were scaled, we can simply apply the same  !
+         ! metrics to the heat capacity and energy, and the temperature will remain the    !
+         ! same.                                                                           !
          !---------------------------------------------------------------------------------!
-         ! MLO: But this shouldn't happen. In fact, the energy should remain the same      !
-         !      (i.e., it shouldn't be even rescaled), and because nplants and veg_water   !
-         !      changed, the heat capacity should decrease in such a way that the temper-  !
-         !      ature next time step wouldn't be affected by the patch fusion.             !
-         !---------------------------------------------------------------------------------!
-         call update_veg_energy_ct(cpatch,ico)
+         cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * area_scale
+         cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)              * area_scale
+         cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)           * area_scale
       end do
       !----- 2. Adjust densities of cohorts in donor patch --------------------------------!
       cpatch => csite%patch(donp)
       ndc = cpatch%ncohorts
       area_scale = csite%area(donp) * newareai
-      do ico = 1,nrc
+      do ico = 1,ndc
          cpatch%lai(ico)                 = cpatch%lai(ico)                  * area_scale
          cpatch%nplant(ico)              = cpatch%nplant(ico)               * area_scale
-         cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * area_scale
          cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * area_scale
          cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * area_scale
          cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)       * area_scale
@@ -1489,17 +1429,13 @@ module fuse_fiss_utils_ar
          cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)     * area_scale
          cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)     * area_scale
          !---------------------------------------------------------------------------------!
-         !    Now that the plant density and the amount of water has changed, there will   !
-         ! be an inconsistency in the energy. If the energy stays the same, but            !
-         ! temperature is diagnosed with a sudden drop in biomass or water, we will have   !
-         ! sky-rocketing values so we have to adjust the energy accordingly also.          !
+         !    Because both nplant and veg_water were scaled, we can simply apply the same  !
+         ! metrics to the heat capacity and energy, and the temperature will remain the    !
+         ! same.                                                                           !
          !---------------------------------------------------------------------------------!
-         ! MLO: But this shouldn't happen. In fact, the energy should remain the same      !
-         !      (i.e., it shouldn't be even rescaled), and because nplants and veg_water   !
-         !      changed, the heat capacity should decrease in such a way that the temper-  !
-         !      ature next time step wouldn't be affected by the patch fusion.             !
-         !---------------------------------------------------------------------------------!
-         call update_veg_energy_ct(cpatch,ico)
+         cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * area_scale
+         cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)              * area_scale
+         cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)           * area_scale
       end do
       !------------------------------------------------------------------------------------!
 

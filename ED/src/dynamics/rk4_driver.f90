@@ -323,7 +323,7 @@ contains
     real :: hdid,qwt,wt,soilhcap,fac
     real :: available_water
     real, parameter :: tendays_sec=10.*day_sec
-    real :: hcapveg,fracliq
+    real :: fracliq
 
     csite%can_temp(ipa) = initp%can_temp
     csite%can_shv(ipa) = initp%can_shv
@@ -437,10 +437,8 @@ contains
 
        endif
 
-       hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-                 cpatch%nplant(ico),cpatch%pft(ico))
-
-       call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),hcapveg,cpatch%veg_temp(ico),fracliq)
+       call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)          &
+                ,cpatch%veg_temp(ico),fracliq)
         
        
        if ( cpatch%veg_temp(ico) < veg_temp_min .or. cpatch%veg_temp(ico) > 360.0 ) then
@@ -621,8 +619,6 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
   use soil_coms, only: dslz
   use consts_coms, only: cp, cliq, cice, alli, t3ple
   use canopy_radiation_coms, only: lai_min
-  use canopy_air_coms, only: hcapveg_ref,heathite_min
-  use ed_therm_lib,only:calc_hcapveg
 
   implicit none
   
@@ -658,28 +654,10 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
         ! MLO: I think we can simply add the vegetation energy instead of recalculating
         !      it from the temperature. This will avoid problems when veg_temp is t3ple
         !      and water and ice coexist.
-               
-        !        veg_storage = veg_storage +   &
-        !             hcapveg_ref * max(csite%patch(ipa)%hite(1),heathite_min) * cpatch%lai(ico) &
-        !             / csite%lai(ipa) * cpatch%veg_temp(ico)
-
-        !veg_storage = veg_storage + &
-        !     calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-        !     cpatch%nplant(ico),cpatch%pft(ico)) &
-        !     * cpatch%veg_temp(ico)
-        
-        
-        !if(cpatch%veg_temp(ico) > t3ple)then
-        !   veg_storage = veg_storage + cpatch%veg_water(ico) *  &
-        !        (cliq *cpatch%veg_temp(ico) + alli)
-        !else
-        !   veg_storage = veg_storage + cpatch%veg_water(ico) *  &
-        !        cice * cpatch%veg_temp(ico) 
-        !endif
         veg_storage = veg_storage + cpatch%veg_energy(ico)
-     endif
+     end if
 
-  enddo
+  end do
 
   compute_energy_storage_ar = soil_storage + sfcwater_storage + cas_storage + &
        veg_storage

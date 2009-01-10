@@ -115,14 +115,17 @@ module ed_state_vars
      ! Annual average ratio of cb/cb_max
      real ,pointer,dimension(:) :: cbr_bar
 
-     ! Vegetation internal energy (J/kg)
+     ! Vegetation internal energy (J/m2 ground)
      real ,pointer,dimension(:) :: veg_energy
 
      ! Vegetation temperature (K)
      real ,pointer,dimension(:) :: veg_temp
 
-     ! Vegetation surface water (kg/m2)
+     ! Vegetation surface water (kg/m2 ground)
      real ,pointer,dimension(:) :: veg_water
+
+     ! Leaf (vegetation) heat capacity [ J/m2/K]
+     real, pointer,dimension(:) :: hcapveg
 
      ! Gross primary productivity (GPP) [umol/m2/s], averaged over the 
      ! output frequency (FRQSTATE)
@@ -257,8 +260,6 @@ module ed_state_vars
      ! Instantaneous values of leaf and root respiration [umol/m2/s]
      real ,pointer,dimension(:) :: leaf_respiration
      real ,pointer,dimension(:) :: root_respiration
-
-     real, pointer,dimension(:) :: hcapveg
 
      ! Gross Primary Productivity [umol/m2/s]
      real, pointer,dimension(:) :: gpp

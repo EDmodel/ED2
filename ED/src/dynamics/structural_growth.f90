@@ -8,7 +8,7 @@ subroutine structural_growth_ar(cgrid, month)
        c2n_recruit, c2n_stem, l2n_stem
   use decomp_coms, only: f_labile
   use max_dims, only: n_pft, n_dbh
-  use ed_therm_lib,only: update_veg_energy_cweh
+  use ed_therm_lib,only: calc_hcapveg,update_veg_energy_cweh
 
   implicit none
 
@@ -40,6 +40,7 @@ subroutine structural_growth_ar(cgrid, month)
   real :: cb_act
   real :: cb_max
   integer :: imonth
+  real :: old_hcapveg
 
  
 
@@ -139,10 +140,20 @@ subroutine structural_growth_ar(cgrid, month)
               ! Calculate the derived cohort properties
               call update_derived_cohort_props_ar(cpatch,ico,   &
                    cpoly%green_leaf_factor(cpatch%pft(ico),isi), cpoly%lsl(isi))
-              
 
-              ! Update the vegetation internal energy and heat capacity
-              call update_veg_energy_cweh(cpatch,ico)
+              !----------------------------------------------------------------------------!
+              ! MLO. We now update the heat capacity and the vegetation internal energy.   !
+              !      Since no energy or water balance is done here, we simply update the   !
+              !      energy in order to keep the same temperature and water as before.     !
+              !      Internal energy is an extensive variable, we just account for the     !
+              !      difference in the heat capacity to update it.                         !
+              !----------------------------------------------------------------------------!
+              old_hcapveg = cpatch%hcapveg(ico)
+              cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)       &
+                                                ,cpatch%nplant(ico),cpatch%pft(ico))
+              call update_veg_energy_cweh(cpatch%veg_energy(ico),cpatch%veg_temp(ico)      &
+                                         ,old_hcapveg,cpatch%hcapveg(ico))
+              !----------------------------------------------------------------------------!
 
 
               ! Update annual average carbon balances for mortality

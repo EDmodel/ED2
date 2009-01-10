@@ -280,10 +280,10 @@ subroutine spatial_averages
                  
                  
                  lai_sum = max(lai_min,sum(cpatch%lai, cpatch%lai > lai_min))
-                 csite%avg_veg_energy(ipa)  = sum(cpatch%veg_energy * cpatch%lai,cpatch%lai > lai_min)   / lai_sum
                  csite%avg_veg_temp(ipa)  = sum(cpatch%veg_temp * cpatch%lai,cpatch%lai > lai_min)   / lai_sum
-                 csite%avg_veg_water(ipa) = sum(cpatch%veg_water * cpatch%lai,cpatch%lai > lai_min)  / lai_sum
-                 
+                 csite%avg_veg_energy(ipa) = sum(cpatch%veg_energy)
+                 csite%avg_veg_water(ipa)  = sum(cpatch%veg_water)
+
                  if (lai_sum > lai_min) then
                     csite%laiarea(ipa) = csite%area(ipa)
                  else

@@ -561,9 +561,11 @@ end subroutine apply_disturbances_ar
 
        !!!! IS THE FOLLOWING LINE CORRECT? IT SEEMS TO BE ADDING AN EXTRA AND UNECESARY
        !!!! MASS TERM FROM THE DONOR PATCH  !!!
-
+       !!!! MLO: I don't think it's correct, it should be cp, shouldn't it? I switched it.
+       !csite%sfcwater_energy(k,np) = csite%sfcwater_energy(k,np) +   &
+       !     csite%sfcwater_energy(k,np) * csite%sfcwater_mass(k,cp) * area_fac
        csite%sfcwater_energy(k,np) = csite%sfcwater_energy(k,np) +   &
-            csite%sfcwater_energy(k,np) * csite%sfcwater_mass(k,cp) * area_fac
+            csite%sfcwater_energy(k,cp) * csite%sfcwater_mass(k,cp) * area_fac
        csite%sfcwater_depth(k,np) = csite%sfcwater_depth(k,np) + csite%sfcwater_depth(k,cp) *   &
             area_fac
     enddo
@@ -603,7 +605,6 @@ end subroutine apply_disturbances_ar
   subroutine insert_survivors_ar(csite, np, cp, q, area_fac,nat_dist_type)
 
     use ed_state_vars, only: sitetype,patchtype
-    use ed_therm_lib,only: update_veg_energy_ct
     
     implicit none
     type(sitetype),target    :: csite
@@ -619,7 +620,7 @@ end subroutine apply_disturbances_ar
 
     real :: cohort_area_fac
 
-    integer,allocatable :: mask(:)
+    logical, dimension(:), allocatable :: mask
 
     cpatch => csite%patch(cp)
     npatch => csite%patch(np)
@@ -627,7 +628,7 @@ end subroutine apply_disturbances_ar
     allocate(tpatch)
 
     allocate(mask(cpatch%ncohorts))
-    mask = 0
+    mask(:) = .false.
     
     do ico = 1,cpatch%ncohorts
        
@@ -635,7 +636,7 @@ end subroutine apply_disturbances_ar
        n_survivors = cpatch%nplant(ico) * cohort_area_fac
        
        ! If something survived, make a new cohort
-       if(n_survivors > 0.0) mask(ico) = 1
+       mask(ico) = n_survivors > 0.0
        
     enddo
 
@@ -647,14 +648,14 @@ end subroutine apply_disturbances_ar
        ! those already applied previously in the loop calling this
        
        nco = npatch%ncohorts
-       call allocate_patchtype(tpatch,sum(mask) + npatch%ncohorts)
+       call allocate_patchtype(tpatch,count(mask) + npatch%ncohorts)
        call copy_patchtype(npatch,tpatch,1,npatch%ncohorts,1,npatch%ncohorts)
        call deallocate_patchtype(npatch)
        
     else
        
        nco = 0
-       call allocate_patchtype(tpatch,sum(mask))
+       call allocate_patchtype(tpatch,count(mask))
 
     endif
 
@@ -664,7 +665,7 @@ end subroutine apply_disturbances_ar
        cohort_area_fac = survivorship_ar(q,nat_dist_type, csite, cp, ico) * area_fac
        n_survivors = cpatch%nplant(ico) * cohort_area_fac
        
-       if(mask(ico) > 0.0) then
+       if(mask(ico)) then
 
           nco = nco + 1
           
@@ -682,9 +683,10 @@ end subroutine apply_disturbances_ar
           tpatch%vleaf_respiration(nco)   = tpatch%vleaf_respiration(nco) * cohort_area_fac
           tpatch%Psi_open(nco)            = tpatch%Psi_open(nco) * cohort_area_fac
 
-          ! Adjust the vegetation energy 
-
-          call update_veg_energy_ct(tpatch,nco)
+          !    Because both nplant and water were scaled by a factor, and bleaf/bdead 
+          ! didn't change, energy and heat capacity are updated by the same metrics.
+          tpatch%hcapveg(nco)    = tpatch%hcapveg(nco)    * cohort_area_fac
+          tpatch%veg_energy(nco) = tpatch%veg_energy(nco) * cohort_area_fac
 
           
        endif

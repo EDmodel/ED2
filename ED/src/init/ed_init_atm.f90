@@ -9,7 +9,7 @@ subroutine ed_init_atm_ar
   use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
   use pft_coms,only : sla
-  use ed_therm_lib,only : update_veg_energy_ct,ed_grndvap
+  use ed_therm_lib,only : calc_hcapveg,ed_grndvap
   
   
   implicit none
@@ -93,18 +93,15 @@ subroutine ed_init_atm_ar
                  ! Initialize vegetation properties.
                  ! For now, set heat capacity for stability.
 
-                 cpatch%veg_temp(ico)  = cpoly%met(isi)%atm_tmp
-                 cpatch%veg_water(ico) = 0.0
-
-                 call update_veg_energy_ct(cpatch,ico)
-
-              enddo
-           
-           enddo
-           
-        enddo
-        
-     enddo
+                 cpatch%veg_temp(ico)   = cpoly%met(isi)%atm_tmp
+                 cpatch%veg_water(ico)  = 0.0
+                 cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico) &
+                                                      ,cpatch%nplants(ico),cpatch%pft(ico))
+                 cpatch%veg_energy(ico) = cpatch%hcapveg(ico)*cpatch%veg_temp(ico)
+              end do
+           end do
+        end do
+     end do
      ! Initialize remaining soil properties.
      if(isoilstateinit == 1)then
         ! Initialize soil moisture, temperature, etc. from file specified in 
@@ -620,54 +617,5 @@ subroutine update_polygon_derived_props_ar(cgrid)
 
   return
 end subroutine update_polygon_derived_props_ar
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!    This subroutine simply assigns the initial value for internal energy. The only reason !
-! to do it separatedly is that we first load atmospheric-based variables, then we assign   !
-! LAI and height. This should be called just at the initialization, during the run energy  !
-! is what defines the temperature, not the other way.                                      !
-!------------------------------------------------------------------------------------------!
-subroutine initialize_vegetation_energy(cgrid)
-   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype
-   use canopy_air_coms, only: hcapveg_ref, heathite_min
-   use ed_therm_lib,only:calc_hcapveg
-   use consts_coms, only: t3ple
-   implicit none 
-   !----- Argument ------------------------------------------------------------------------!
-   type(edtype), target :: cgrid
-   !----- Local variables -----------------------------------------------------------------!
-   integer :: ipy,isi,ipa,ico
-   type(polygontype), pointer :: cpoly
-   type(sitetype)   , pointer :: csite
-   type(patchtype)  , pointer :: cpatch
-   real                       :: hcapveg
-   !---------------------------------------------------------------------------------------!
-
-   do ipy=1,cgrid%npolygons
-      cpoly => cgrid%polygon(ipy)
-      do isi=1,cpoly%nsites
-         csite => cpoly%site(isi)
-         do ipa=1,csite%npatches
-            cpatch => csite%patch(ipa)
-            do ico=1,cpatch%ncohorts
-               
-               hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-                    cpatch%nplant(ico),cpatch%pft(ico))
-
-               cpatch%veg_energy(ico) = hcapveg * cpatch%veg_temp(ico)
-            end do
-         end do
-      end do
-   end do
-
-   return
-end subroutine initialize_vegetation_energy
 !==========================================================================================!
 !==========================================================================================!

@@ -274,7 +274,7 @@ fusion_fission_coms.o : $(ED_MEMORY)/fusion_fission_coms.f90
 
 fuse_fiss_utils.o : $(ED_UTILS)/fuse_fiss_utils.f90 ed_state_vars.o pft_coms.o             \
 	decomp_coms.o fusion_fission_coms.o disturb_coms.o max_dims.o mem_sites.o          \
-	soil_coms.o grid_coms.o consts_coms.o ed_therm_lib.o
+	soil_coms.o grid_coms.o consts_coms.o ed_therm_lib.o therm_lib.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

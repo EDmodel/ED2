@@ -301,11 +301,15 @@ subroutine integrate_ed_daily_output_state(cgrid)
          patchloop: do ipa=1, csite%npatches
             cpatch => csite%patch(ipa)
             
-            patch_lai_i = 1./max(tiny(1.),sum(cpatch%lai,cpatch%lai > lai_min))
+            if (cpatch%ncohorts > 0) then
+               patch_lai_i = 1./max(tiny(1.),sum(cpatch%lai,cpatch%lai > lai_min))
             
-            patchsum_fsn = patchsum_fsn + (sum(cpatch%fsn * cpatch%lai,cpatch%lai > lai_min) * patch_lai_i) * csite%area(ipa)
-            patchsum_fsw = patchsum_fsw + (sum(cpatch%fsw * cpatch%lai,cpatch%lai > lai_min) * patch_lai_i) * csite%area(ipa)
-
+               patchsum_fsn = patchsum_fsn + (sum(cpatch%fsn * cpatch%lai,cpatch%lai > lai_min) * patch_lai_i) * csite%area(ipa)
+               patchsum_fsw = patchsum_fsw + (sum(cpatch%fsw * cpatch%lai,cpatch%lai > lai_min) * patch_lai_i) * csite%area(ipa)
+            else
+               patchsum_fsn = 0.
+               patchsum_fsw = 0.
+            end if
          end do patchloop
          
          ! Variables already average at the sitetype level, just add them to polygontype level

@@ -595,61 +595,57 @@ subroutine read_ed1_history_file_array
                                      ,cpatch%bstorage(ic2))* cpatch%nplant(ic2)
                     endif
                  enddo
-              else ! if (csite%cohort_count(ipa) == 0) then
-
-           ! Mike, ED1 restart files are plenty of patches with no cohorts, and they bug us 
-           !   too, but we cannot avoid them when we run regional runs at least for now
-           !   (too many patches like that...).
-           !   If you really want to stop the run in this case, make a special if here for
-           !   ied_init_mode_local == 3 or something like that...
-            
-           !      print*,"WARNING: found patch with no cohorts: poly",ip,"patch",ipa
-           !      stop
-
-           ! MLO 5-27-08. Force the patch to have one cohort of each pft that should be included
-           !              Considers whether this is agricultural or forest.
+              else ! if (csite%cohort_count(ipa) == 0) then                  
+                 write (unit=*,fmt='(2(a,1x,i5,1x))') &
+                    "WARNING: found patch with no cohorts: poly",ip,"patch",ipa
+                 !      stop
+                ! MLO - 1-8-09. Now I think empty patches may exist, and the right way to
+                !               deal with them is to leave them empty... I am commenting
+                !               this for the time being, hopefully the code will survive...
+                
+                ! ! MLO 5-27-08. Force the patch to have one cohort of each pft that should be included
+                ! !              Considers whether this is agricultural or forest.
               
-                 if (csite%dist_type(ipa) == 1) then
-                   include_pft_ep = include_pft_ag
-                 else 
-                   include_pft_ep = include_pft
-                end if
-                ic = sum(include_pft_ep)
-                 ! MLO - 5-27-08. "Phylosophical" question. If the patch has no cohort, shouldn't we 
-                 !                reset its age to zero? It will behave as a near-bare ground patch...
-                 !                I just set it up to zero here, if this is wrong please remove it...
-                 csite%age(ipa) = 0.
-                 ! MLO - 5-27-08. Another "phylosophical" question. If the patch has no cohort and 
-                 !                it is not water, should it even exist?
-                 ! Initialize aboveground biomass for this site.
-                 csite%plant_ag_biomass(ipa) = 0.
-                 call allocate_patchtype(cpatch,ic)
-                 csite%cohort_count(ipa) = ic
-                 ic = 0
-                 do pft = 1,n_pft
-                    if(include_pft_ep(pft) == 1)then
-                       
-                       ic = ic + 1
-                       
-                       ! Define the near-bare ground
-                       cpatch%pft(ic)     = pft
-                       cpatch%hite(ic)    = hgt_min(pft)
-                       cpatch%dbh(ic)     = h2dbh(cpatch%hite(ic),pft)
-                       cpatch%bdead(ic)   = dbh2bd(cpatch%dbh(ic),cpatch%hite(ic),pft)
-                       cpatch%bleaf(ic)   = dbh2bl(cpatch%dbh(ic),pft)
-                       cpatch%nplant(ic)  = 0.1
-                       cpatch%phenology_status(ic) = 0
-                       cpatch%balive(ic)  = cpatch%bleaf(ic) * (1.0 + q(pft) +  &
-                            qsw(pft) * cpatch%hite(ic))
-                       cpatch%lai(ic)      = cpatch%bleaf(ic) * cpatch%nplant(ic) * SLA(pft)
-                       cpatch%bstorage(ic) = 0.0
-                       csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa) +         &
-                           ed_biomass(cpatch%bdead(ic),cpatch%balive(ic), cpatch%bleaf(ic) &
-                                     ,cpatch%pft(ic), cpatch%hite(ic),cpatch%bstorage(ic)) &
-                          * cpatch%nplant(ic)
-                    endif
-                 enddo
-              
+                ! if (csite%dist_type(ipa) == 1) then
+                !    include_pft_ep = include_pft_ag
+                ! else 
+                !    include_pft_ep = include_pft
+                ! end if
+                ! ic = sum(include_pft_ep)
+                ! ! MLO - 5-27-08. "Phylosophical" question. If the patch has no cohort, shouldn't we 
+                ! !                reset its age to zero? It will behave as a near-bare ground patch...
+                ! !                I just set it up to zero here, if this is wrong please remove it...
+                ! csite%age(ipa) = 0.
+                ! ! MLO - 5-27-08. Another "phylosophical" question. If the patch has no cohort and 
+                ! !                it is not water, should it even exist?
+                ! ! Initialize aboveground biomass for this site.
+                ! csite%plant_ag_biomass(ipa) = 0.
+                ! call allocate_patchtype(cpatch,ic)
+                ! csite%cohort_count(ipa) = ic
+                ! ic = 0
+                ! do pft = 1,n_pft
+                !    if(include_pft_ep(pft) == 1)then
+                !       
+                !       ic = ic + 1
+                !       
+                !       ! Define the near-bare ground
+                !       cpatch%pft(ic)     = pft
+                !       cpatch%hite(ic)    = hgt_min(pft)
+                !       cpatch%dbh(ic)     = h2dbh(cpatch%hite(ic),pft)
+                !       cpatch%bdead(ic)   = dbh2bd(cpatch%dbh(ic),cpatch%hite(ic),pft)
+                !       cpatch%bleaf(ic)   = dbh2bl(cpatch%dbh(ic),pft)
+                !       cpatch%nplant(ic)  = 0.1
+                !       cpatch%phenology_status(ic) = 0
+                !       cpatch%balive(ic)  = cpatch%bleaf(ic) * (1.0 + q(pft) +  &
+                !            qsw(pft) * cpatch%hite(ic))
+                !       cpatch%lai(ic)      = cpatch%bleaf(ic) * cpatch%nplant(ic) * SLA(pft)
+                !       cpatch%bstorage(ic) = 0.0
+                !       csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa) +         &
+                !           ed_biomass(cpatch%bdead(ic),cpatch%balive(ic), cpatch%bleaf(ic) &
+                !                     ,cpatch%pft(ic), cpatch%hite(ic),cpatch%bstorage(ic)) &
+                !          * cpatch%nplant(ic)
+                !    endif
+                ! enddo
               end if
            enddo loop_patches
         enddo loop_sites
@@ -700,8 +696,9 @@ subroutine read_ed1_history_file_array
               cpatch => csite%patch(ipa)
               do ico = 1,cpatch%ncohorts
                  
-                 cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-                      cpatch%nplant(ico),cpatch%pft(ico))
+                 ! This shouldn't be defined here
+                 !cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                 !     cpatch%nplant(ico),cpatch%pft(ico))
                  
                  call init_ed_cohort_vars_array(cpatch,ico,cpoly%lsl(isi))
               enddo
@@ -2120,8 +2117,8 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
        memdims,memoffs,memsize
   use consts_coms, only: cliq,cice,alli,t3ple
 !  use canopy_air_coms, only: hcapveg_ref,heathite_min
+  use ed_therm_lib, only : calc_hcapveg
   use canopy_radiation_coms, only:lai_min
-  use ed_therm_lib,only : update_veg_energy_ct
 
   implicit none
 
@@ -2196,7 +2193,6 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
      
      call hdf_getslab_r(cpatch%veg_temp,'VEG_TEMP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%veg_water,'VEG_WATER ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%veg_energy,'VEG_ENERGY ',dsetrank,iparallel,.false.)
      
      ! ------------------------------------------------------------------------------------
      ! ======= Older versions of the code did not have vegetation energy
@@ -2206,21 +2202,32 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
      ! ======= is an acceptable approximation if this process only occurs once.  It is
      ! ======= assumed that the vegetation water is all liquid if the temperature is
      ! ======= greater than or equal to 0, and all ice if it is less than zero.
+     call hdf_getslab_r(cpatch%veg_energy,'VEG_ENERGY ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%hcapveg,'HCAPVEG ',dsetrank,iparallel,.false.)
      
-     if ( sum(cpatch%veg_energy(1:cpatch%ncohorts),1) == 0.0 ) then
+     if ( sum(cpatch%veg_energy(1:cpatch%ncohorts),1) == 0.0 .or.                          &
+          sum(cpatch%hcapveg(1:cpatch%ncohorts),1)    == 0.0 ) then
         
-        write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
-        write (unit=*,fmt='(a)') 'Reconstructing VEG_ENERGY from BLEAF, BDEAD, VEG_WATER and VEG_TEMP'
-        write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
-        
-        plai = sum(cpatch%lai(1:cpatch%ncohorts),1)
-        
+        write (unit=*,fmt='(a)') '---------------------------------------------------------'
+        write (unit=*,fmt='(a)') ' - Reconstructing HCAPVEG from BLEAF and BDEAD...'
+        write (unit=*,fmt='(a)') ' - Reconstructing VEG_ENERGY from VEG_WATER & VEG_TEMP...'
+        write (unit=*,fmt='(a)') '---------------------------------------------------------'
+
         do ico=1,cpatch%ncohorts
            
            ! Calculate the vegetation energy based on the leaf temperature
            ! biomass and the stuff that is written in the banner above.
            
-           call update_veg_energy_ct(cpatch,ico)
+           cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)          &
+                                    ,cpatch%nplant(ico),cpatch%pft(ico))
+           if (cpatch%veg_temp(ico) >= t3ple) then
+              cpatch%veg_energy(ico) = cpatch%veg_water(ico)*alli                          &
+                                     + (cpatch%hcapveg(ico) + cpatch%veg_water(ico)*cliq)  &
+                                     * cpatch%veg_temp(ico)
+           else
+              cpatch%veg_energy(ico) = (cpatch%hcapveg(ico) + cpatch%veg_water(ico)*cice)  &
+                                     * cpatch%veg_temp(ico)
+           end if
            
         enddo
         
@@ -2270,7 +2277,6 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
      call hdf_getslab_r(cpatch%bseeds,'BSEEDS ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%leaf_respiration,'LEAF_RESPIRATION ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%root_respiration,'ROOT_RESPIRATION ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%hcapveg,'HCAPVEG ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%gpp,'GPP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%paw_avg10d,'PAW_AVG10D ',dsetrank,iparallel,.true.)
      
