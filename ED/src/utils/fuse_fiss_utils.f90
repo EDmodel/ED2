@@ -14,9 +14,8 @@ module fuse_fiss_utils_ar
      implicit none
      type(patchtype),target :: cpatch
      type(patchtype),pointer :: temppatch
-     integer :: ico,iico
+     integer :: iico
      integer,dimension(1):: tallid
-     real :: tallest
      
      allocate(temppatch)
      call allocate_patchtype(temppatch,cpatch%ncohorts)
@@ -52,7 +51,7 @@ module fuse_fiss_utils_ar
      type(sitetype),target   :: csite
      type(patchtype),pointer :: cpatch,temppatch
      logical,allocatable :: remain_table(:)
-     integer :: ico,ipa,inew
+     integer :: ico,ipa
      real :: csize
 
      cpatch => csite%patch(ipa)
@@ -169,9 +168,9 @@ end subroutine terminate_cohorts_ar
      ! the deletions
 
      do ipa = 1,csite%npatches
-        csite%area(:) = csite%area(:) / (1-epsilon)
+        csite%area(:) = csite%area(:) / (1.0-epsilon)
         cpatch => csite%patch(ipa)
-        cpatch%nplant(:) = cpatch%nplant(:) / (1-epsilon)
+        cpatch%nplant(:) = cpatch%nplant(:) / (1.0-epsilon)
      enddo
 
      return
@@ -202,11 +201,6 @@ end subroutine terminate_cohorts_ar
      real    :: hite_threshold
      real    :: newn
      real    :: total_lai
-     integer :: icc
-     integer :: jcc
-     integer :: icc1
-     integer :: icc2
-     integer :: icc3
      real :: tolerance_mult
      logical , allocatable, dimension(:) :: fuse_table
      real    , external :: dbh2h
@@ -327,12 +321,12 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      type(patchtype),target :: cpatch
      type(patchtype),pointer :: temppatch
      
-     integer :: ipa,ico,inew
+     integer :: ico,inew
      real        , dimension(n_pft), intent(in) :: green_leaf_factor
 
      real         , parameter :: epsilon=0.0001
-     integer                  :: i,ncohorts_new
-     real    :: slai 
+     integer                  :: ncohorts_new
+     real    :: slai
 
      real, external :: dbh2h
      real, external :: bd2dbh
@@ -351,7 +345,6 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
              cpatch%hite(ico)) * sla(cpatch%pft(ico))
 
         if(slai > lai_tol)then
-
            ! Determine the split list
            split_mask(ico) = 1
 
@@ -388,8 +381,9 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      do ico = 1,size(split_mask)
 
         if (split_mask(ico).eq.1) then
-           
 
+           inew = inew+1
+           
            ! Half the densities of the oringal cohort
 
            cpatch%nplant(ico)           = cpatch%nplant(ico) * 0.5
@@ -419,25 +413,32 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
 
            ! Apply those values to the new cohort
 
-           inew = inew+1
+
 !           cpatch%maker(inew) = 1
            
            call copy_cohort_ar(cpatch,ico,inew)
 
            ! Tweak the heights and DBHs
-           cpatch%bdead(ico) = cpatch%bdead(ico) - epsilon
+           cpatch%bdead(ico) = cpatch%bdead(ico)*(1.0 - epsilon)
            cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
            cpatch%hite(ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
 
-           cpatch%bdead(inew) = cpatch%bdead(inew) + epsilon
+           cpatch%bdead(inew) = 2.0*cpatch%bdead(inew)-cpatch%bdead(ico)
            cpatch%dbh(inew) = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
            cpatch%hite(inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
+
 
            ! Update the vegetation energy again, due to tweaks
 
            call update_veg_energy_ct(cpatch,inew)
 
 
+        endif
+
+        !! SANITY CHECK
+        if(cpatch%balive(ico) < 0.0) then
+           print*," -- ERROR IN SPLIT COHORTS -- "
+           stop
         endif
 
      enddo
@@ -534,7 +535,6 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      real, intent(in) :: green_leaf_factor
      integer, intent(in) :: lsl
      
-     real :: hcapveg
      real :: newni
      real :: cb_max
      real :: root_depth
@@ -670,7 +670,7 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      type(sitetype),pointer :: csite
      type(patchtype),pointer :: cpatch
      type(sitetype),pointer  :: tempsite
-     integer :: ipy,isi,ipa,ico,ipa_next,ipa_tp
+     integer :: ipy,isi,ipa,ipa_next,ipa_tp
      integer :: i,j,istop,npatches
      real :: norm,tolerance_mult
      integer,allocatable :: fuse_table(:)
@@ -867,9 +867,7 @@ end subroutine fuse_patches_ar
      !  patch in the argument (the "recipient" = rp ), and frees the memory 
      !  associated with the second patch
 
-     integer i,k
-     real :: newarea,newareai,norm_fac
-     integer :: nls, nlsw1
+     real :: newarea,newareai
      
      ! new area
      newarea = csite%area(dp) + csite%area(rp)
@@ -917,8 +915,8 @@ end subroutine fuse_patches_ar
      csite%soil_energy(1:nzg,rp)     = (csite%soil_energy(1:nzg,dp) * csite%area(dp)            &
                                      +  csite%soil_energy(1:nzg,rp) * csite%area(rp)) * newareai
 
-     csite%soil_water(1:nzg,rp)      = (csite%soil_water(1:nzg,rp) * csite%area(rp)             &
-                                     +  csite%soil_water(1:nzg,dp) * csite%area(dp)) * newareai
+     csite%soil_water(1:nzg,rp)      = (csite%soil_water(1:nzg,rp) * dble(csite%area(rp))             &
+                                     +  csite%soil_water(1:nzg,dp) * dble(csite%area(dp))) * dble(newareai)
 
      !-----------------------------------------------------!
      ! This subroutine takes care of filling:              !
@@ -1168,15 +1166,15 @@ end subroutine fuse_patches_ar
      type(sitetype),target :: csite
      type(patchtype),pointer :: cpatch
 
-     integer :: ipa,ndc,nrc
+     integer :: ipa
      real, dimension(n_pft), intent(in) :: green_leaf_factor
      integer :: nbins
      
-     real    :: rmin,rmax,dh,bleaf,babove
+     real    :: rmin,rmax,dh
      integer :: i,j,ico
      real    :: elong
 
-     dh = maxdbh/nbins
+     dh = maxdbh/real(nbins)
 
      ! initialize bins
      do i=1,n_pft
@@ -1206,7 +1204,7 @@ end subroutine fuse_patches_ar
         
         ! deal with largest dbh bin
         j = nbins
-        rmin = j*dh
+        rmin = real(j)*dh
         if(cpatch%dbh(ico) > rmin)then
            csite%pft_density_profile(cpatch%pft(ico),j,ipa) =   &
                 csite%pft_density_profile(cpatch%pft(ico),j,ipa) + cpatch%nplant(ico)

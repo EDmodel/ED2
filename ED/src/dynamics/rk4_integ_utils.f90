@@ -397,6 +397,7 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
   use soil_coms, only: min_sfcwater_mass
   use consts_coms, only: cliq,alli
   use canopy_radiation_coms, only: lai_min
+  use pft_coms, only: sla
 
   implicit none
 
@@ -466,8 +467,12 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
         yscal%veg_water(ico) = 0.22
 !        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
 !                                   + abs(dy%veg_energy(ico)*htry),0.22*alli)
-        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
-                                   + abs(dy%veg_energy(ico)*htry),0.22*alli*cpatch%lai(ico),1.0)
+!        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
+!                                   + abs(dy%veg_energy(ico)*htry),0.22*alli*cpatch%lai(ico),1.0)
+
+       yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
+                                   + abs(dy%veg_energy(ico)*htry)+cpatch%lai(ico)/sla(cpatch%pft(ico))*700000,1.0) 
+       !last term is ~ bleaf*dry_hcap*273.15, an offset from 0K
 
         ! Mike: Why not just use a nominal energy for the scaling? Is there really a need for the scaling to be
         ! associated with a certain temperature? How about global avergage surface temperature? Signed Anonymous

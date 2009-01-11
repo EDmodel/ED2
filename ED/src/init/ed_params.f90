@@ -629,7 +629,7 @@ wat_dry_ratio_ngrn(1:15)  = 0.7       ! Forest Products Laboratory
 
 ! Fraction of structural biomass included in calculation of veg. leaf heat capacity.
 
-hcap_stem_fraction = 0.05       
+hcap_stem_fraction = 0.0       
                                 ! This may eventually become a tuneable parameter.
                                 ! This parameter may also be most appropriate
                                 ! as zero.
@@ -961,6 +961,7 @@ subroutine overwrite_with_xml_config(thisnode)
 
          !! FINALLY, write out copy of settings
          call write_ed_xml_config()
+   !      stop
       elseif (thisnode == 1) then
             write(unit=*,fmt='(a)') '*********************************************'
             write(unit=*,fmt='(a)') '**               WARNING!                  **'

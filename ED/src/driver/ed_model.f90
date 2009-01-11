@@ -38,32 +38,25 @@ subroutine ed_model()
 
   include 'mpif.h'
 
-  integer :: npass,nndtflg,icm,ifm,nfeed,i
+  integer :: ifm,i
   real :: wtime_start,t1,wtime1,wtime2,t2,wtime_tot
-  integer :: doy,ierr
+  integer :: ierr
 
   integer,external :: julday
   
   real, external :: walltime
-  character(len=10) :: c0, c1, c2
+  character(len=10) :: c0
   character(len=*), parameter :: h="**(model)**"
-  character(len=512) :: header_ext
   character(len=512) :: integ_fname
-  real           :: timefac_sst
-  real           :: dtwater
   real, external :: update_sst_factor
-  real :: ccont,ctemp,stemp,swat,lai
 
-  real :: tfact1
-  integer :: ipa,ico
   logical :: analysis_time, new_day, new_month, new_year, the_end
   logical :: writing_dail,writing_mont,writing_year,history_time, annual_time
   logical :: mont_analy_time,dail_analy_time,reset_time
   logical :: past_one_day,past_one_month
   logical :: printbanner
   integer :: ndays
-  integer, external :: num_days
-  
+  integer, external :: num_days  
   past_one_day   = .false.
   past_one_month = .false.
   
@@ -73,7 +66,7 @@ subroutine ed_model()
   wtime_start=walltime(0.)
   istp = 0
   if(record_err) then
-     integ_err = 0
+     integ_err = 0_8
      integ_fname = trim(ffilout)//"integrator.log"
      open(217,file=trim(integ_fname),form="formatted",status="replace")     
      write(217,'(a)') "num  name  ERMAX  IFLAG"
@@ -160,7 +153,7 @@ subroutine ed_model()
         end do
      end if
      
-     time=time+dtlsm
+     time=time+dble(dtlsm)
      call update_model_time_dm(current_time, dtlsm)
 
      !----- Checking whether it is some special time... -----------------------------------!
@@ -173,8 +166,8 @@ subroutine ed_model()
      new_year        = current_time%month == 1 .and. new_month
      mont_analy_time = new_month .and. writing_mont
      dail_analy_time = new_day   .and. writing_dail
-     reset_time      = mod(time,dble(frqsum)) < dtlsm
-     the_end         = mod(time,timmax) < dtlsm
+     reset_time      = mod(time,dble(frqsum)) < dble(dtlsm)
+     the_end         = mod(time,timmax) < dble(dtlsm)
      annual_time     = new_month .and. writing_year .and. current_time%month == outputMonth
 
      !----- Checking whether this is time to write fast analysis output or not. -----------!
@@ -209,8 +202,8 @@ subroutine ed_model()
      !-------------------------------------------------------------------------------------!
      if (new_month) then
         ndays=num_days(current_time%month,current_time%year)
-        if (outfast  == -2.) nrec_fast  = ndays*day_sec/frqfast
-        if (outstate == -2.) nrec_state = ndays*day_sec/frqstate
+        if (outfast  == -2.) nrec_fast  = ndays*ceiling(day_sec/frqfast)
+        if (outstate == -2.) nrec_state = ndays*ceiling(day_sec/frqstate)
      end if
 
      !   Call the model output driver 
@@ -232,14 +225,14 @@ subroutine ed_model()
         if(record_err) then
            open(unit=217,file=trim(integ_fname),form="formatted",access="append",status="old")
            do i = 1,46
-              if(sum(integ_err(i,1:2)) .gt. 0)then                 
-                 write(217,'(i3,2a,2i5)') i," ",trim(err_label(i)),integ_err(i,1:2)
+              if(sum(integ_err(i,1:2)) .gt. 0_8)then                 
+                 write(217,'(i3,2a,2i7)') i," ",trim(err_label(i)),integ_err(i,1:2)
                  print*,i,trim(err_label(i)),integ_err(i,1:2)
                  
               endif
            enddo
            close(217)
-           integ_err = 0.0
+           integ_err = 0_8
         endif
 
         ! Do phenology, growth, mortality, recruitment, disturbance.
@@ -339,7 +332,7 @@ subroutine update_model_time_dm(ctime,dtlong)
    type(simtime) :: ctime
    real, intent(in) :: dtlong
    logical, external :: isleap
-   real, dimension(12) :: daymax
+   integer, dimension(12) :: daymax
   
    daymax=(/31,28,31,30,31,30,31,31,30,31,30,31/)
 
@@ -415,8 +408,6 @@ subroutine vegetation_dynamics(new_month,new_year)
   integer               :: doy
   integer, external     :: julday
   real                  :: tfact1,tfact2
-  integer               :: ip
-  integer               :: isite
   integer               :: ifm
   type(edtype), pointer :: cgrid
 

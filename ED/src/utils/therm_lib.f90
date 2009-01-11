@@ -1008,6 +1008,9 @@ module therm_lib
 
 !     print*,nplants*leaf_biomass,nplants*structural_biomass,spec_hcap_leaf,spec_hcap_stem,calc_hcapveg
 
+     !! Ryan's Kluge
+!     calc_hcapveg = max(10.0*calc_hcapveg,1000.)
+
 
 
      calc_hcapveg = max(calc_hcapveg,min_hcapveg)

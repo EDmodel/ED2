@@ -6,7 +6,7 @@ real function h2dbh(h,ipft)
   
   real :: h
   integer :: ipft
-  real :: hmax
+
 print*,h,ipft,hgt_ref(ipft)
   if(rho(ipft).ne.0.0)then  ! Tropical 
      h2dbh = 10.0**((log10(h)-0.37)/0.64)
@@ -42,12 +42,12 @@ real function dbh2bd(dbh,h,ipft)
      if(dbh .gt. max_dbh(ipft))then
         p  = a1 + c1 * log(h) + d1 * log(rho(ipft))
         r  = ((a2 - a1) + (c2 - c1)*log(h) + log(rho(ipft))  &
-             * (d2 - d1)) * (1/log(dcrit))
+             * (d2 - d1)) * (1.0/log(dcrit))
         qq = 2.0 * b2 + r
      else
         p  = a1 + c1 * g * log(10.0) + d1 * log(rho(ipft))
         r  = ((a2 - a1) + g * log(10.0) * (c2 - c1) + log(rho(ipft))  &
-             * (d2 - d1)) * (1/log(dcrit))
+             * (d2 - d1)) * (1.0/log(dcrit))
         qq = 2.0 * b2 + c2 * f + r
      endif
   
@@ -88,7 +88,7 @@ real function dbh2bl(dbh,ipft)
      ! Tropics
      p  = a1 + c1 * g * log(10.0) + d1 * log(rho(ipft))
      r  = ((a2 - a1) + g * log(10.0) * (c2 - c1) + log(rho(ipft))   &
-          * (d2 - d1)) * (1/log(dcrit))
+          * (d2 - d1)) * (1.0/log(dcrit))
      qq = 2.0 * b2 + c2 * f + r  
 
      if(dbh .le. max_dbh(ipft))then
@@ -105,6 +105,23 @@ real function dbh2bl(dbh,ipft)
 
   return
 end function dbh2bl
+
+!========================================================================
+
+real function dbh2ca(dbh,ipft)
+  !! Canopy Area allometry
+  !! from Dietze and Clark 2008
+  implicit none
+  real :: dbh
+  integer :: ipft
+  if(dbh < tiny(1.0)) then
+     dbh2ca = 0.0
+  else
+     dbh2ca = 2.490154*dbh**0.8068806
+  end if
+  return
+end function dbh2ca
+
 
 !========================================================================
 
@@ -249,7 +266,7 @@ real function bd2dbh(ipft, bdead)
         p = a1 + c1 * log(h_max) + d1 * log(rho(ipft))
         r = ((a2 - a1) + (c2 - c1) * log(h_max) + log(rho(ipft)) *   &
              (d2 - d1))/log(dcrit)
-        q = 2 * b2 + r
+        q = 2.0 * b2 + r
         bd2dbh = (bdead * 2.0 * exp(-p))**(1.0/q)
      endif
 

@@ -8,7 +8,7 @@ subroutine set_polygon_coordinates_ar()
   use ed_state_vars, only: edgrid_g,gdpy
   
    implicit none 
-   integer                :: ifm,ipy,x,y,npoly,error
+   integer                :: ifm,ipy,x,y,npoly
    
    gloop: do ifm=1,ngrids
       call ed_newgrid(ifm)
@@ -61,7 +61,7 @@ subroutine set_polygon_coordinates_ar()
   integer, intent(in) :: igr
   integer :: ilat_bin
   integer :: ilon_bin
-  integer :: ifm,ipy
+  integer :: ipy
     
   do ipy = 1,cgrid%npolygons
      ilat_bin = min(180,int(90.0 - cgrid%lat(ipy)) + 1)

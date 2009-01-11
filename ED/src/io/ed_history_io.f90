@@ -26,26 +26,13 @@ subroutine read_ed1_history_file_array
   real :: dbh2bd
   real :: dbh2bl
   
-  integer :: ii,pft
-  character(len=str_len) :: ed_fname
-  real :: flat,lat
-  real :: flon,lon
-  integer :: ilat,ilon
+  integer :: pft
   
   logical :: renumber_pfts
   character(len=str_len) :: pss_name
   character(len=str_len) :: css_name
-  character(len=str_len) :: site_name
 
-  real :: dist
-  real :: best_dist
-
-  character(len=str_len) :: best_pss_name
-  character(len=str_len) :: best_css_name
-  logical :: restart_exist
-
-  integer :: nsites
-  integer :: igr,ipy,ipy2,isi,ipa,ico
+  integer :: igr,ipy,isi,ipa,ico
   integer :: ip,ip2,ic,ic2
 
   character(len=str_len) :: cdum
@@ -358,8 +345,8 @@ subroutine read_ed1_history_file_array
               csite%pname(ip)              = trim(pname(ip))
               csite%sum_dgd(ip)            = 0.0+tiny(1.)
               csite%sum_chd(ip)            = 0.0+tiny(1.)
-              csite%plantation(ip)         = 0.0+tiny(1.)
-              csite%cohort_count(ip)       = 0.0+tiny(1.)
+              csite%plantation(ip)         = 0
+              csite%cohort_count(ip)       = 0
            enddo
            
            
@@ -385,16 +372,20 @@ subroutine read_ed1_history_file_array
         read_cohorts: do
 
            ic = ic + 1
+           add_this_cohort(ic) = .false.
            
            if (ic>huge_cohort) call fatal_error('IC too high','read_ed1_history_file_array','ed_history_io.f90')
 
            select case (ied_init_mode_local)
            case (1)
-              read(12,*,iostat=ierr)ctime(ic),cpname(ic),cname(ic),dbh(ic),hite(ic),ipft(ic),nplant(ic),  &
-                   bdead(ic),balive(ic),avgRg(ic),leaves_on(ic),cb(1:12,ic),cb_max(1:12,ic)
-              if(ierr /= 0)exit read_cohorts  
+              read(12,*,iostat=ierr)ctime(ic),cpname(ic),cname(ic),&
+                   dbh(ic),hite(ic),ipft(ic),nplant(ic),  &
+                   bdead(ic),balive(ic),avgRg(ic),leaves_on(ic),&
+                   cb(1:12,ic),cb_max(1:12,ic)
+              if(ierr /= 0) exit read_cohorts  
            case (2,3)
-              read(12,*,iostat=ierr)ctime(ic),cpname(ic),cname(ic),dbh(ic),hite(ic),ipft(ic),nplant(ic),  &
+              read(12,*,iostat=ierr)ctime(ic),cpname(ic),cname(ic),&
+                   dbh(ic),hite(ic),ipft(ic),nplant(ic),  &
                    bdead(ic),balive(ic),avgRg(ic)
               if(ierr /= 0)exit read_cohorts
               cb(1:12,ic) = 1.0
@@ -415,8 +406,10 @@ subroutine read_ed1_history_file_array
 
            !! check if the year matches
            year = int(ctime(ic))
-           if(use_target_year == 1 .and. year .ne. restart_target_year) continue
-           
+           if(use_target_year == 1 .and. year .ne. restart_target_year)then
+              add_this_cohort(ic) = .false. 
+              continue
+           endif
 
            ! Find site and patch and start counting how many to allocate
            
@@ -453,6 +446,7 @@ subroutine read_ed1_history_file_array
               enddo
            enddo put_cohort
            
+
         enddo read_cohorts
         
         ncohorts = max(ic-1,0)
@@ -485,10 +479,9 @@ subroutine read_ed1_history_file_array
                        
                        cpatch%dbh(ic2) = dbh(ic)
                        
-                       
                        if(hite(ic) > 0.0)then
                           cpatch%hite(ic2) = hite(ic)
-                       else
+                      else
                           cpatch%hite(ic2) = dbh2h(ipft(ic), dbh(ic))
                        endif
                        
@@ -555,11 +548,11 @@ subroutine read_ed1_history_file_array
            !              Considers whether this is agricultural or forest.
               
                  if (csite%dist_type(ipa) == 1) then
-                   include_pft_ep = include_pft_ag
+                    include_pft_ep = include_pft_ag
                  else 
-                   include_pft_ep = include_pft
-                end if
-                ic = sum(include_pft_ep)
+                    include_pft_ep = include_pft
+                 end if
+                 ic = sum(include_pft_ep)
                  ! MLO - 5-27-08. "Phylosophical" question. If the patch has no cohort, shouldn't we 
                  !                reset its age to zero? It will behave as a near-bare ground patch...
                  !                I just set it up to zero here, if this is wrong please remove it...
@@ -729,7 +722,6 @@ subroutine init_full_history_restart()
 
   implicit none
   
-  integer :: year
   real, external :: dbh2h
   character(len=1)  :: vnam
   character(len=2)  :: cgr
@@ -747,15 +739,12 @@ subroutine init_full_history_restart()
   real :: ll_tolerance
 
   integer :: ngr,ifpy,ipft
-  integer :: ipy,isi,ipa,ico
+  integer :: ipy,isi,ipa
   integer :: py_index,si_index,pa_index
 
   ! HDF5 types are defined here
   integer :: hdferr
   include 'mpif.h'
-  integer,       dimension(MPI_STATUS_SIZE) :: status
-  integer                                   :: ierr
-  integer :: igr
   real(kind=8) :: dbletime
 
  
@@ -815,7 +804,7 @@ subroutine init_full_history_restart()
 
      write(cgr,'(a1,i1)') 'g',ngr
 
-     dbletime=current_time%time
+     dbletime=dble(current_time%time)
      
      call makefnam(hnamel,sfilin,dbletime,current_time%year, &
           current_time%month,current_time%date,0,vnam,cgr,'h5 ')
@@ -851,11 +840,11 @@ subroutine init_full_history_restart()
 
 
      
-     globdims = 0
-     chnkdims = 0
-     chnkoffs = 0
+     globdims = 0_8
+     chnkdims = 0_8
+     chnkoffs = 0_8
 
-     globdims(1) = 1
+     globdims(1) = 1_8
 
      call h5dopen_f(file_id,'NPOLYGONS_GLOBAL', dset_id, hdferr)
      call h5dget_space_f(dset_id, dspace_id, hdferr)
@@ -885,8 +874,8 @@ subroutine init_full_history_restart()
      ! 3) Retrieve the mapping of the data tree
      !=======================================
      
-     globdims = 0
-     globdims(1) = cgrid%npolygons_global
+     globdims = 0_8
+     globdims(1) = int(cgrid%npolygons_global,8)
      
      allocate(pysi_n(cgrid%npolygons_global))
      allocate(pysi_id(cgrid%npolygons_global))
@@ -903,7 +892,7 @@ subroutine init_full_history_restart()
      call h5sclose_f(dspace_id, hdferr)
      call h5dclose_f(dset_id, hdferr)
      
-     globdims(1) = cgrid%nsites_global
+     globdims(1) = int(cgrid%nsites_global,8)
      
      allocate(sipa_n(cgrid%nsites_global))
      allocate(sipa_id(cgrid%nsites_global))
@@ -920,7 +909,7 @@ subroutine init_full_history_restart()
      call h5sclose_f(dspace_id, hdferr)
      call h5dclose_f(dset_id, hdferr)
 
-     globdims(1) = cgrid%npatches_global
+     globdims(1) = int(cgrid%npatches_global,8)
      
      allocate(paco_n(cgrid%npatches_global))
      allocate(paco_id(cgrid%npatches_global))
@@ -941,7 +930,7 @@ subroutine init_full_history_restart()
      ! ======================================
      ! 4) Retrieve the polygon coordinates data
 
-     globdims(1) = cgrid%npolygons_global
+     globdims(1) = int(cgrid%npolygons_global,8)
      allocate(file_lats(cgrid%npolygons_global))
      allocate(file_lons(cgrid%npolygons_global))
      
@@ -1161,12 +1150,12 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   iparallel = 0
   
   
-  globdims = 0
-  chnkdims = 0
-  chnkoffs = 0
-  memoffs  = 0
-  memdims  = 0
-  memsize  = 1
+  globdims = 0_8
+  chnkdims = 0_8
+  chnkoffs = 0_8
+  memoffs  = 0_8
+  memdims  = 0_8
+  memsize  = 1_8
 
   dsetrank = 1
 
@@ -1176,9 +1165,9 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   ! are going to read.  Chnkdims is the size
   ! of the slab that is to be read.
   
-  globdims(1) = cgrid%npolygons_global
-  chnkdims(1) = 1
-  chnkoffs(1) = py_index - 1
+  globdims(1) = int(cgrid%npolygons_global,8)
+  chnkdims(1) = 1_8
+  chnkoffs(1) = int(py_index - 1,8)
 
   ! These are the dimensions for the memory space
   ! this should essentially be the same dimensioning
@@ -1186,9 +1175,9 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   ! is just filling a scalar point in a vector
   ! of polygons.
 
-  memdims(1)  = 1
-  memoffs(1)  = 0
-  memsize(1)  = 1
+  memdims(1)  = 1_8
+  memoffs(1)  = 0_8
+  memsize(1)  = 1_8
 
 
   call hdf_getslab_i(cgrid%lsl(ipy),'LSL ',dsetrank,iparallel)
@@ -1290,19 +1279,19 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
   ! Variables with 2 dimensions (nzg,npolygons)
   dsetrank    = 2
-  globdims(1) = nzg
-  chnkdims(1) = nzg
-  memdims(1)  = nzg
-  memsize(1)  = nzg
-  chnkoffs(1) = 0
-  memoffs(1)  = 0
+  globdims(1) = int(nzg,8)
+  chnkdims(1) = int(nzg,8)
+  memdims(1)  = int(nzg,8)
+  memsize(1)  = int(nzg,8)
+  chnkoffs(1) = 0_8
+  memoffs(1)  = 0_8
 
-  globdims(2)  = cgrid%npolygons_global
-  chnkdims(2)  = 1
-  chnkoffs(2)  = py_index - 1
-  memdims(2)   = 1
-  memsize(2)   = 1
-  memoffs(2)   = 0
+  globdims(2)  = int(cgrid%npolygons_global,8)
+  chnkdims(2)  = 1_8
+  chnkoffs(2)  = int(py_index - 1,8)
+  memdims(2)   = 1_8
+  memsize(2)   = 1_8
+  memoffs(2)   = 0_8
 
   ! Ryan - This one was (1,1) before, I changed to (1,ipy), is that correct?
   call hdf_getslab_i(cgrid%ntext_soil(1,ipy)       ,'NTEXT_SOIL '       ,dsetrank,iparallel)
@@ -1318,19 +1307,19 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
   ! Variables with 2 dimensions (n_pft,npolygons)
   dsetrank    = 2
-  globdims(1) = n_pft
-  chnkdims(1) = n_pft
-  memdims(1)  = n_pft
-  memsize(1)  = n_pft
-  chnkoffs(1) = 0
-  memoffs(1)  = 0
+  globdims(1) = int(n_pft,8)
+  chnkdims(1) = int(n_pft,8)
+  memdims(1)  = int(n_pft,8)
+  memsize(1)  = int(n_pft,8)
+  chnkoffs(1) = 0_8
+  memoffs(1)  = 0_8
 
-  globdims(2)  = cgrid%npolygons_global
-  chnkdims(2)  = 1
-  chnkoffs(2)  = py_index - 1
-  memdims(2)   = 1
-  memsize(2)   = 1
-  memoffs(2)   = 0
+  globdims(2)  = int(cgrid%npolygons_global,8)
+  chnkdims(2)  = 1_8
+  chnkoffs(2)  = int(py_index - 1,8)
+  memdims(2)   = 1_8
+  memsize(2)   = 1_8
+  memoffs(2)   = 0_8
 
   if(associated(cgrid%lai_pft)) call hdf_getslab_r(cgrid%lai_pft(1,ipy) ,'LAI_PFT '       ,dsetrank,iparallel)
   if(associated(cgrid%lai_pft)) call hdf_getslab_r(cgrid%lai_pft(1,ipy) ,'MMEAN_LAI_PFT ' ,dsetrank,iparallel)
@@ -1339,19 +1328,19 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
   ! Variables with 2 dimensions (n_pft,npolygons)
   dsetrank    = 2
-  globdims(1) = n_dist_types
-  chnkdims(1) = n_dist_types
-  memdims(1)  = n_dist_types
-  memsize(1)  = n_dist_types
-  chnkoffs(1) = 0
-  memoffs(1)  = 0
+  globdims(1) = int(n_dist_types,8)
+  chnkdims(1) = int(n_dist_types,8)
+  memdims(1)  = int(n_dist_types,8)
+  memsize(1)  = int(n_dist_types,8)
+  chnkoffs(1) = 0_8
+  memoffs(1)  = 0_8
 
-  globdims(2)  = cgrid%npolygons_global
-  chnkdims(2)  = 1
-  chnkoffs(2)  = py_index - 1
-  memdims(2)   = 1
-  memsize(2)   = 1
-  memoffs(2)   = 0
+  globdims(2)  = int(cgrid%npolygons_global,8)
+  chnkdims(2)  = 1_8
+  chnkoffs(2)  = int(py_index - 1,8)
+  memdims(2)   = 1_8
+  memsize(2)   = 1_8
+  memoffs(2)   = 0_8
 
   if(associated(cgrid%dmean_gpp_lu))  call hdf_getslab_r(cgrid%dmean_gpp_lu(1,ipy) ,'DMEAN_GPP_LU ' ,dsetrank,iparallel)
   if(associated(cgrid%dmean_rh_lu ))  call hdf_getslab_r(cgrid%dmean_rh_lu(1,ipy)  ,'DMEAN_RH_LU '  ,dsetrank,iparallel)
@@ -1363,19 +1352,19 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
   ! Variables with 2 dimensions (n_dbh,npolygons)
   dsetrank    = 2
-  globdims(1) = n_dbh
-  chnkdims(1) = n_dbh
-  memdims(1)  = n_dbh
-  memsize(1)  = n_dbh
-  chnkoffs(1) = 0
-  memoffs(1)  = 0
+  globdims(1) = int(n_dbh,8)
+  chnkdims(1) = int(n_dbh,8)
+  memdims(1)  = int(n_dbh,8)
+  memsize(1)  = int(n_dbh,8)
+  chnkoffs(1) = 0_8
+  memoffs(1)  = 0_8
 
-  globdims(2)  = cgrid%npolygons_global
-  chnkdims(2)  = 1
-  chnkoffs(2)  = py_index - 1
-  memdims(2)   = 1
-  memsize(2)   = 1
-  memoffs(2)   = 0
+  globdims(2)  = int(cgrid%npolygons_global,8)
+  chnkdims(2)  = 1_8
+  chnkoffs(2)  = int(py_index - 1,8)
+  memdims(2)   = 1_8
+  memsize(2)   = 1_8
+  memoffs(2)   = 0_8
 
   if(associated(cgrid%dmean_gpp_dbh)) call hdf_getslab_r(cgrid%dmean_gpp_dbh(1,ipy) ,'DMEAN_GPP_DBH ' ,dsetrank,iparallel)
   if(associated(cgrid%mmean_gpp_dbh)) call hdf_getslab_r(cgrid%mmean_gpp_dbh(1,ipy) ,'MMEAN_GPP_DBH ' ,dsetrank,iparallel)
@@ -1417,19 +1406,19 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global)
   iparallel = 0
   
   dsetrank = 1
-  globdims = 0
-  chnkdims = 0
-  chnkoffs = 0
-  memoffs  = 0
-  memdims  = 0
-  memsize  = 1
+  globdims = 0_8
+  chnkdims = 0_8
+  chnkoffs = 0_8
+  memoffs  = 0_8
+  memdims  = 0_8
+  memsize  = 1_8
   
-  globdims(1) = nsites_global
-  chnkdims(1) = cpoly%nsites
-  chnkoffs(1) = pysi_index - 1
-  memdims(1)  = cpoly%nsites
-  memsize(1)  = cpoly%nsites
-  memoffs(1)  = 0
+  globdims(1) = int(nsites_global,8)
+  chnkdims(1) = int(cpoly%nsites,8)
+  chnkoffs(1) = int(pysi_index - 1,8)
+  memdims(1)  = int(cpoly%nsites,8)
+  memsize(1)  = int(cpoly%nsites,8)
+  memoffs(1)  = 0_8
   
   call hdf_getslab_i(cpoly%patch_count(1),'PATCH_COUNT ',dsetrank,iparallel)  
   call hdf_getslab_i(cpoly%sitenum(1),'SITENUM ',dsetrank,iparallel)
@@ -1487,18 +1476,18 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global)
   call hdf_getslab_r(cpoly%disturbance_rate(1),'DISTURBANCE_RATE ',dsetrank,iparallel)
 
   dsetrank    = 2
-  globdims(1) = n_pft
-  chnkdims(1) = n_pft
-  memdims(1)  = n_pft
-  memsize(1)  = n_pft
-  chnkoffs(1) = 0
-  memoffs(1)  = 0
-  globdims(2)  = nsites_global
-  chnkdims(2)  = cpoly%nsites
-  chnkoffs(2)  = pysi_index - 1
-  memdims(2)   = cpoly%nsites
-  memsize(2)   = cpoly%nsites
-  memoffs(2)   = 0
+  globdims(1) = int(n_pft,8)
+  chnkdims(1) = int(n_pft,8)
+  memdims(1)  = int(n_pft,8)
+  memsize(1)  = int(n_pft,8)
+  chnkoffs(1) = 0_8
+  memoffs(1)  = 0_8
+  globdims(2)  = int(nsites_global,8)
+  chnkdims(2)  = int(cpoly%nsites,8)
+  chnkoffs(2)  = int(pysi_index - 1,8)
+  memdims(2)   = int(cpoly%nsites,8)
+  memsize(2)   = int(cpoly%nsites,8)
+  memoffs(2)   = 0_8
 
   call hdf_getslab_r(cpoly%elongation_factor(1,1),'ELONGATION_FACTOR ',dsetrank,iparallel)
   call hdf_getslab_r(cpoly%delta_elongf(1,1),'DELTA_ELONGF ',dsetrank,iparallel)
@@ -1508,91 +1497,91 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global)
   call hdf_getslab_r(cpoly%leaf_aging_factor(1,1),'LEAF_AGING_FACTOR ',dsetrank,iparallel)
 
   dsetrank    = 2
-  globdims(1) = nzg
-  chnkdims(1) = nzg
-  memdims(1)  = nzg
-  memsize(1)  = nzg
-  chnkoffs(1) = 0
-  memoffs(1)  = 0
-  globdims(2)  = nsites_global
-  chnkdims(2)  = cpoly%nsites
-  chnkoffs(2)  = pysi_index - 1
-  memdims(2)   = cpoly%nsites
-  memsize(2)   = cpoly%nsites
-  memoffs(2)   = 0
+  globdims(1) = int(nzg,8)
+  chnkdims(1) = int(nzg,8)
+  memdims(1)  = int(nzg,8)
+  memsize(1)  = int(nzg,8)
+  chnkoffs(1) = 0_8
+  memoffs(1)  = 0_8
+  globdims(2)  = int(nsites_global,8)
+  chnkdims(2)  = int(cpoly%nsites,8)
+  chnkoffs(2)  = int(pysi_index - 1,8)
+  memdims(2)   = int(cpoly%nsites,8)
+  memsize(2)   = int(cpoly%nsites,8)
+  memoffs(2)   = 0_8
 
   call hdf_getslab_i(cpoly%ntext_soil(1,1),'NTEXT_SOIL_SI ',dsetrank,iparallel)
 
   dsetrank    = 2
-  globdims(1) = 12
-  chnkdims(1) = 12
-  memdims(1)  = 12
-  memsize(1)  = 12
-  chnkoffs(1) = 0
-  memoffs(1)  = 0
-  globdims(2)  = nsites_global
-  chnkdims(2)  = cpoly%nsites
-  chnkoffs(2)  = pysi_index - 1
-  memdims(2)   = cpoly%nsites
-  memsize(2)   = cpoly%nsites
-  memoffs(2)   = 0
+  globdims(1) = 12_8
+  chnkdims(1) = 12_8
+  memdims(1)  = 12_8
+  memsize(1)  = 12_8
+  chnkoffs(1) = 0_8
+  memoffs(1)  = 0_8
+  globdims(2)  = int(nsites_global,8)
+  chnkdims(2)  = int(cpoly%nsites,8)
+  chnkoffs(2)  = int(pysi_index - 1,8)
+  memdims(2)   = int(cpoly%nsites,8)
+  memsize(2)   = int(cpoly%nsites,8)
+  memoffs(2)   = 0_8
 
   call hdf_getslab_r(cpoly%lambda1(1,1),'LAMBDA1 ',dsetrank,iparallel)
   call hdf_getslab_r(cpoly%lambda_fire(1,1),'LAMBDA_FIRE ',dsetrank,iparallel)
 
   dsetrank    = 2
-  globdims(1) = n_dist_types
-  chnkdims(1) = n_dist_types
-  memdims(1)  = n_dist_types
-  memsize(1)  = n_dist_types
-  chnkoffs(1) = 0
-  memoffs(1)  = 0
-  globdims(2)  = nsites_global
-  chnkdims(2)  = cpoly%nsites
-  chnkoffs(2)  = pysi_index - 1
-  memdims(2)   = cpoly%nsites
-  memsize(2)   = cpoly%nsites
-  memoffs(2)   = 0
+  globdims(1) = int(n_dist_types,8)
+  chnkdims(1) = int(n_dist_types,8)
+  memdims(1)  = int(n_dist_types,8)
+  memsize(1)  = int(n_dist_types,8)
+  chnkoffs(1) = 0_8
+  memoffs(1)  = 0_8
+  globdims(2)  = int(nsites_global,8)
+  chnkdims(2)  = int(cpoly%nsites,8)
+  chnkoffs(2)  = int(pysi_index - 1,8)
+  memdims(2)   = int(cpoly%nsites,8)
+  memsize(2)   = int(cpoly%nsites,8)
+  memoffs(2)   = 0_8
 
   call hdf_getslab_r(cpoly%lu_dist_area(1,1),'LU_DIST_AREA ',dsetrank,iparallel)
   call hdf_getslab_r(cpoly%loss_fraction(1,1),'LOSS_FRACTION ',dsetrank,iparallel)
 
   dsetrank    = 3
-  globdims(1:2) = n_dist_types
-  chnkdims(1:2) = n_dist_types
-  memdims(1:2)  = n_dist_types
-  memsize(1:2)  = n_dist_types
-  chnkoffs(1:2) = 0
-  memoffs(1:2)  = 0
-  globdims(3)  = nsites_global
-  chnkdims(3)  = cpoly%nsites
-  chnkoffs(3)  = pysi_index - 1
-  memdims(3)   = cpoly%nsites
-  memsize(3)   = cpoly%nsites
-  memoffs(3)   = 0
+  globdims(1:2) = int(n_dist_types,8)
+  chnkdims(1:2) = int(n_dist_types,8)
+  memdims(1:2)  = int(n_dist_types,8)
+  memsize(1:2)  = int(n_dist_types,8)
+  chnkoffs(1:2) = 0_8
+  memoffs(1:2)  = 0_8
+  globdims(3)  = int(nsites_global,8)
+  chnkdims(3)  = int(cpoly%nsites,8)
+  chnkoffs(3)  = int(pysi_index - 1,8)
+  memdims(3)   = int(cpoly%nsites,8)
+  memsize(3)   = int(cpoly%nsites,8)
+  memoffs(3)   = 0_8
   
   call hdf_getslab_r(cpoly%disturbance_memory(1,1,1),'DISTURBANCE_MEMORY ',dsetrank,iparallel)
   call hdf_getslab_r(cpoly%disturbance_rates(1,1,1),'DISTURBANCE_RATES ',dsetrank,iparallel)
   
   dsetrank    = 3
-  globdims(3) = nsites_global
-  chnkdims(3) = cpoly%nsites
-  chnkoffs(3) = pysi_index - 1
-  memdims(3)  = cpoly%nsites
-  memsize(3)  = cpoly%nsites
-  memoffs(3)  = 0
-  globdims(2) = n_dbh
-  chnkdims(2) = n_dbh
-  memdims(2)  = n_dbh
-  memsize(2)  = n_dbh
-  chnkoffs(2) = 0
-  memoffs(2)  = 0
-  globdims(1) = n_pft
-  chnkdims(1) = n_pft
-  memdims(1)  = n_pft
-  memsize(1)  = n_pft
-  chnkoffs(1) = 0
-  memoffs(1)  = 0
+  globdims(3) = int(nsites_global,8)
+  chnkdims(3) = int(cpoly%nsites,8)
+  chnkoffs(3) = int(pysi_index - 1,8)
+  memdims(3)  = int(cpoly%nsites,8)
+  memsize(3)  = int(cpoly%nsites,8)
+  memoffs(3)  = 0_8
+  globdims(2) = int(n_dbh,8)
+  chnkdims(2) = int(n_dbh,8)
+  memdims(2)  = int(n_dbh,8)
+  memsize(2)  = int(n_dbh,8)
+  chnkoffs(2) = 0_8
+  memoffs(2)  = 0_8
+  globdims(1) = int(n_pft,8)
+  chnkdims(1) = int(n_pft,8)
+  memdims(1)  = int(n_pft,8)
+  memsize(1)  = int(n_pft,8)
+  chnkoffs(1) = 0_8
+  memoffs(1)  = 0_8
 
   call hdf_getslab_r(cpoly%basal_area(1,1,1),'BASAL_AREA_SI ',dsetrank,iparallel)
   call hdf_getslab_r(cpoly%agb(1,1,1),'AGB_SI ',dsetrank,iparallel)
@@ -1637,12 +1626,12 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
   iparallel = 0
   
   dsetrank = 1
-  globdims = 0
-  chnkdims = 0
-  chnkoffs = 0
-  memoffs  = 0
-  memdims  = 0
-  memsize  = 1
+  globdims = 0_8
+  chnkdims = 0_8
+  chnkoffs = 0_8
+  memoffs  = 0_8
+  memdims  = 0_8
+  memsize  = 1_8
 
   ! These are the dimensions in the filespace
   ! itself. Global is the size of the dataset,
@@ -1650,13 +1639,13 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
   ! are going to read.  Chnkdims is the size
   ! of the slab that is to be read.
   
-  globdims(1) = npatches_global
-  chnkdims(1) = csite%npatches
-  chnkoffs(1) = sipa_index - 1
+  globdims(1) = int(npatches_global,8)
+  chnkdims(1) = int(csite%npatches,8)
+  chnkoffs(1) = int(sipa_index - 1,8)
 
-  memdims(1)  = csite%npatches
-  memsize(1)  = csite%npatches
-  memoffs(1)  = 0
+  memdims(1)  = int(csite%npatches,8)
+  memsize(1)  = int(csite%npatches,8)
+  memoffs(1)  = 0_8
 
   call hdf_getslab_i(csite%dist_type(1),'DIST_TYPE ',dsetrank,iparallel)
   call hdf_getslab_r(csite%age(1),'AGE ',dsetrank,iparallel)
@@ -1740,18 +1729,18 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
   call hdf_getslab_r(csite%htry(1),'HTRY ',dsetrank,iparallel)
 
   dsetrank    = 2
-  globdims(1) = nzs
-  chnkdims(1) = nzs
-  memdims(1)  = nzs
-  memsize(1)  = nzs  
-  chnkoffs(1) = 0
-  memoffs(1)  = 0
-  globdims(2) = npatches_global
-  chnkdims(2) = csite%npatches
-  chnkoffs(2) = sipa_index - 1
-  memdims(2)  = csite%npatches
-  memsize(2)  = csite%npatches
-  memoffs(2)  = 0
+  globdims(1) = int(nzs,8)
+  chnkdims(1) = int(nzs,8)
+  memdims(1)  = int(nzs,8)
+  memsize(1)  = int(nzs,8)  
+  chnkoffs(1) = 0_8
+  memoffs(1)  = 0_8
+  globdims(2) = int(npatches_global,8)
+  chnkdims(2) = int(csite%npatches,8)
+  chnkoffs(2) = int(sipa_index - 1,8)
+  memdims(2)  = int(csite%npatches,8)
+  memsize(2)  = int(csite%npatches,8)
+  memoffs(2)  = 0_8
 
   call hdf_getslab_r(csite%sfcwater_mass(1,1),'SFCWATER_MASS ',dsetrank,iparallel)
   call hdf_getslab_r(csite%sfcwater_energy(1,1),'SFCWATER_ENERGY ',dsetrank,iparallel)
@@ -1763,18 +1752,18 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
   call hdf_getslab_r(csite%sfcwater_fracliq(1,1),'SFCWATER_FRACLIQ ',dsetrank,iparallel)
 
   dsetrank    = 2
-  globdims(1) = nzg
-  chnkdims(1) = nzg
-  memdims(1)  = nzg
-  memsize(1)  = nzg
-  chnkoffs(1) = 0
-  memoffs(1)  = 0
-  globdims(2) = npatches_global
-  chnkdims(2) = csite%npatches
-  chnkoffs(2) = sipa_index - 1
-  memdims(2)  = csite%npatches
-  memsize(2)  = csite%npatches
-  memoffs(2)  = 0
+  globdims(1) = int(nzg,8)
+  chnkdims(1) = int(nzg,8)
+  memdims(1)  = int(nzg,8)
+  memsize(1)  = int(nzg,8)
+  chnkoffs(1) = 0_8
+  memoffs(1)  = 0_8
+  globdims(2) = int(npatches_global,8)
+  chnkdims(2) = int(csite%npatches,8)
+  chnkoffs(2) = int(sipa_index - 1,8)
+  memdims(2)  = int(csite%npatches,8)
+  memsize(2)  = int(csite%npatches,8)
+  memoffs(2)  = 0_8
 
   call hdf_getslab_i(csite%ntext_soil(1,1),'NTEXT_SOIL_PA ',dsetrank,iparallel)
   call hdf_getslab_r(csite%soil_energy(1,1),'SOIL_ENERGY_PA ',dsetrank,iparallel)
@@ -1783,18 +1772,18 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
   call hdf_getslab_r(csite%soil_fracliq(1,1),'SOIL_FRACLIQ_PA ',dsetrank,iparallel)
 
   dsetrank    = 2
-  globdims(1) = n_pft
-  chnkdims(1) = n_pft
-  memdims(1)  = n_pft
-  memsize(1)  = n_pft
-  chnkoffs(1) = 0
-  memoffs(1)  = 0
-  globdims(2) = npatches_global
-  chnkdims(2) = csite%npatches
-  chnkoffs(2) = sipa_index - 1
-  memdims(2)  = csite%npatches
-  memsize(2)  = csite%npatches
-  memoffs(2)  = 0
+  globdims(1) = int(n_pft,8)
+  chnkdims(1) = int(n_pft,8)
+  memdims(1)  = int(n_pft,8)
+  memsize(1)  = int(n_pft,8)
+  chnkoffs(1) = 0_8
+  memoffs(1)  = 0_8
+  globdims(2) = int(npatches_global,8)
+  chnkdims(2) = int(csite%npatches,8)
+  chnkoffs(2) = int(sipa_index - 1,8)
+  memdims(2)  = int(csite%npatches,8)
+  memsize(2)  = int(csite%npatches,8)
+  memoffs(2)  = 0_8
   
   call hdf_getslab_r(csite%A_o_max(1,1),'A_O_MAX ',dsetrank,iparallel) 
   call hdf_getslab_r(csite%A_c_max(1,1),'A_C_MAX ',dsetrank,iparallel) 
@@ -1802,45 +1791,45 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
 
 
   dsetrank    = 2
-  globdims(1) = n_dbh
-  chnkdims(1) = n_dbh
-  memdims(1)  = n_dbh
-  memsize(1)  = n_dbh
-  chnkoffs(1) = 0
-  memoffs(1)  = 0
-  globdims(2) = npatches_global
-  chnkdims(2) = csite%npatches
-  chnkoffs(2) = sipa_index - 1
-  memdims(2)  = csite%npatches
-  memsize(2)  = csite%npatches
-  memoffs(2)  = 0
+  globdims(1) = int(n_dbh,8)
+  chnkdims(1) = int(n_dbh,8)
+  memdims(1)  = int(n_dbh,8)
+  memsize(1)  = int(n_dbh,8)
+  chnkoffs(1) = 0_8
+  memoffs(1)  = 0_8
+  globdims(2) = int(npatches_global,8)
+  chnkdims(2) = int(csite%npatches,8)
+  chnkoffs(2) = int(sipa_index - 1,8)
+  memdims(2)  = int(csite%npatches,8)
+  memsize(2)  = int(csite%npatches,8)
+  memoffs(2)  = 0_8
   call hdf_getslab_r(csite%co2budget_gpp_dbh(1,1),'CO2BUDGET_GPP_DBH ',dsetrank,iparallel)
 
 !!!! MAY NEED TO ADD THIS ONE
 !  call hdf_getslab_r(csite%old_stoma_data_max(1,1),'OLD ',dsetrank,iparallel)
 
   dsetrank    = 3
-  globdims(3) = npatches_global
-  chnkdims(3) = csite%npatches
-  chnkoffs(3) = sipa_index - 1
+  globdims(3) = int(npatches_global,8)
+  chnkdims(3) = int(csite%npatches,8)
+  chnkoffs(3) = int(sipa_index - 1,8)
 
-  memdims(3)  = csite%npatches
-  memsize(3)  = csite%npatches
-  memoffs(3)  = 0
+  memdims(3)  = int(csite%npatches,8)
+  memsize(3)  = int(csite%npatches,8)
+  memoffs(3)  = 0_8
   
-  globdims(2) = ff_ndbh
-  chnkdims(2) = ff_ndbh
-  memdims(2)  = ff_ndbh
-  memsize(2)  = ff_ndbh
-  chnkoffs(2) = 0
-  memoffs(2)  = 0
+  globdims(2) = int(ff_ndbh,8)
+  chnkdims(2) = int(ff_ndbh,8)
+  memdims(2)  = int(ff_ndbh,8)
+  memsize(2)  = int(ff_ndbh,8)
+  chnkoffs(2) = 0_8
+  memoffs(2)  = 0_8
 
-  globdims(1) = n_pft
-  chnkdims(1) = n_pft
-  memdims(1)  = n_pft
-  memsize(1)  = n_pft
-  chnkoffs(1) = 0
-  memoffs(1)  = 0
+  globdims(1) = int(n_pft,8)
+  chnkdims(1) = int(n_pft,8)
+  memdims(1)  = int(n_pft,8)
+  memsize(1)  = int(n_pft,8)
+  chnkoffs(1) = 0_8
+  memoffs(1)  = 0_8
 
   call hdf_getslab_r(csite%pft_density_profile,'PFT_DENSITY_PROFILE ',dsetrank,iparallel)
 
@@ -1877,27 +1866,27 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
   
   ! Needed for reconstructing veg_energy if using an old restart
   ! ------------------------------------------------------------
-  real :: hcapveg,plai,veg_temp,fracliq
+  real :: plai
   integer :: ico
   ! ------------------------------------------------------------
 
   iparallel = 0
   
   dsetrank = 1
-  globdims = 0
-  chnkdims = 0
-  chnkoffs = 0
-  memoffs  = 0
-  memdims  = 0
-  memsize  = 1
+  globdims = 0_8
+  chnkdims = 0_8
+  chnkoffs = 0_8
+  memoffs  = 0_8
+  memdims  = 0_8
+  memsize  = 1_8
   
-  globdims(1) = ncohorts_global
-  chnkdims(1) = cpatch%ncohorts
-  chnkoffs(1) = paco_index - 1
+  globdims(1) = int(ncohorts_global,8)
+  chnkdims(1) = int(cpatch%ncohorts,8)
+  chnkoffs(1) = int(paco_index - 1,8)
 
-  memdims(1)  = cpatch%ncohorts
-  memsize(1)  = cpatch%ncohorts
-  memoffs(1)  = 0
+  memdims(1)  = int(cpatch%ncohorts,8)
+  memsize(1)  = int(cpatch%ncohorts,8)
+  memoffs(1)  = 0_8
 
   if(cpatch%ncohorts>0) then
 
@@ -1993,20 +1982,20 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
   call hdf_getslab_r(cpatch%paw_avg10d(1),'PAW_AVG10D ',dsetrank,iparallel)
 
   dsetrank    = 2
-  globdims(1) = 13
-  chnkdims(1) = 13
-  chnkoffs(1) = 0
-  memdims(1)  = 13
-  memsize(1)  = 13
-  memoffs(2)  = 0
+  globdims(1) = 13_8
+  chnkdims(1) = 13_8
+  chnkoffs(1) = 0_8
+  memdims(1)  = 13_8
+  memsize(1)  = 13_8
+  memoffs(2)  = 0_8
 
-  globdims(2) = ncohorts_global
-  chnkdims(2) = cpatch%ncohorts
-  chnkoffs(2) = paco_index - 1
+  globdims(2) = int(ncohorts_global,8)
+  chnkdims(2) = int(cpatch%ncohorts,8)
+  chnkoffs(2) = int(paco_index - 1,8)
 
-  memdims(2)  = cpatch%ncohorts
-  memsize(2)  = cpatch%ncohorts
-  memoffs(2)  = 0
+  memdims(2)  = int(cpatch%ncohorts,8)
+  memsize(2)  = int(cpatch%ncohorts,8)
+  memoffs(2)  = 0_8
 
 
   call hdf_getslab_r(cpatch%cb(1,1),'CB ',dsetrank,iparallel)
@@ -2202,20 +2191,20 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel)
      write(unit=*,fmt=*) 'File_ID = ',file_id
      write(unit=*,fmt=*) 'Dset_ID = ',dset_id
      call fatal_error('Could not get the dataset for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_r','ed_history_io.f90')
+                    & ,'hdf_getslab_r','ed_history_io.f90')
   end if
   
   call h5dget_space_f(dset_id,filespace,hdferr)
   if (hdferr /= 0) then
      call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_r','ed_history_io.f90')
+                    & ,'hdf_getslab_r','ed_history_io.f90')
   end if
 
   call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
        chnkdims,hdferr)
   if (hdferr /= 0) then
      call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_r','ed_history_io.f90')
+                     &,'hdf_getslab_r','ed_history_io.f90')
   end if
 
   call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
@@ -2223,14 +2212,14 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel)
      write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
      write(unit=*,fmt=*) 'Dsetrank = ',dsetrank
      call fatal_error('Could not create the hyperslabs memspace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_r','ed_history_io.f90')
+                     &,'hdf_getslab_r','ed_history_io.f90')
   end if
 
   call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
        memdims,hdferr)
   if (hdferr /= 0) then
      call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_r','ed_history_io.f90')
+                     &,'hdf_getslab_r','ed_history_io.f90')
   end if
 
   if (iparallel == 1) then
@@ -2241,10 +2230,10 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel)
      if (hdferr /= 0) then
         select case (trim(varn))
         case('DMEAN_GPP','DMEAN_EVAP','DMEAN_TRANSP','DMEAN_SENSIBLE_VC','DMEAN_SENSIBLE_GC'    &
-            ,'DMEAN_SENSIBLE_AC','DMEAN_SENSIBLE','DMEAN_PLRESP','DMEAN_RH','DMEAN_LEAF_RESP'   &
-            ,'DMEAN_ROOT_RESP','DMEAN_GROWTH_RESP','DMEAN_STORAGE_RESP','DMEAN_VLEAF_RESP'      &
-            ,'DMEAN_NEP','DMEAN_FSW','DMEAN_FSN','DMEAN_SOIL_TEMP','DMEAN_SOIL_WATER'           &
-            ,'DMEAN_GPP_LU','DMEAN_RH_LU','DMEAN_NEP_LU','DMEAN_GPP_DBH')
+            &,'DMEAN_SENSIBLE_AC','DMEAN_SENSIBLE','DMEAN_PLRESP','DMEAN_RH','DMEAN_LEAF_RESP'   &
+            &,'DMEAN_ROOT_RESP','DMEAN_GROWTH_RESP','DMEAN_STORAGE_RESP','DMEAN_VLEAF_RESP'      &
+            &,'DMEAN_NEP','DMEAN_FSW','DMEAN_FSN','DMEAN_SOIL_TEMP','DMEAN_SOIL_WATER'           &
+            &,'DMEAN_GPP_LU','DMEAN_RH_LU','DMEAN_NEP_LU','DMEAN_GPP_DBH')
            write (unit=*,fmt='(a)') '-----------------------------------------------------------'
            write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
            write (unit=*,fmt='(a)') '                                                           '
@@ -2254,13 +2243,13 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel)
            write (unit=*,fmt='(a)') '   output to be incorrect for this variable.'
            write (unit=*,fmt='(a)') '-----------------------------------------------------------'
            write (unit=*,fmt='(a)') '                                                           '
-           buff=0.
+           buff=0.0d+0
         case('MMEAN_GPP','MMEAN_EVAP','MMEAN_TRANSP','MMEAN_SENSIBLE','MMEAN_NEP','MMEAN_PLRESP'&
-            ,'MMEAN_RH','MMEAN_LEAF_RESP','MMEAN_ROOT_RESP','MMEAN_GROWTH_RESP'                 &
-            ,'MMEAN_STORAGE_RESP','MMEAN_VLEAF_RESP','STDEV_GPP','STDEV_EVAP','STDEV_TRANSP'    &
-            ,'STDEV_SENSIBLE','STDEV_NEP','STDEV_RH','MMEAN_LAI_PFT','MMEAN_GPP_LU'             &
-            ,'MMEAN_SOIL_TEMP','MMEAN_SOIL_WATER'                                               &
-            ,'MMEAN_RH_LU','MMEAN_NEP_LU','MMEAN_GPP_DBH')
+            &,'MMEAN_RH','MMEAN_LEAF_RESP','MMEAN_ROOT_RESP','MMEAN_GROWTH_RESP'                 &
+            &,'MMEAN_STORAGE_RESP','MMEAN_VLEAF_RESP','STDEV_GPP','STDEV_EVAP','STDEV_TRANSP'    &
+            &,'STDEV_SENSIBLE','STDEV_NEP','STDEV_RH','MMEAN_LAI_PFT','MMEAN_GPP_LU'             &
+            &,'MMEAN_SOIL_TEMP','MMEAN_SOIL_WATER'                                               &
+            &,'MMEAN_RH_LU','MMEAN_NEP_LU','MMEAN_GPP_DBH')
            write (unit=*,fmt='(a)') '-----------------------------------------------------------'
            write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
            write (unit=*,fmt='(a)') '                                                           '
@@ -2270,10 +2259,10 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel)
            write (unit=*,fmt='(a)') '   for this variable.'
            write (unit=*,fmt='(a)') '-----------------------------------------------------------'
            write (unit=*,fmt='(a)') '                                                           '
-           buff=0.
+           buff=0.0d+0
         case default
            call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                           ,'hdf_getslab_r','ed_history_io.f90')
+                           &,'hdf_getslab_r','ed_history_io.f90')
         end select
      end if
      
@@ -2283,10 +2272,10 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel)
      if (hdferr /= 0) then
         select case (trim(varn))
         case('DMEAN_GPP','DMEAN_EVAP','DMEAN_TRANSP','DMEAN_SENSIBLE_VC','DMEAN_SENSIBLE_GC'    &
-            ,'DMEAN_SENSIBLE_AC','DMEAN_SENSIBLE','DMEAN_PLRESP','DMEAN_RH','DMEAN_LEAF_RESP'   &
-            ,'DMEAN_ROOT_RESP','DMEAN_GROWTH_RESP','DMEAN_STORAGE_RESP','DMEAN_VLEAF_RESP'      &
-            ,'DMEAN_NEP','DMEAN_FSW','DMEAN_FSN','DMEAN_SOIL_TEMP','DMEAN_SOIL_WATER'           &
-            ,'DMEAN_GPP_LU','DMEAN_RH_LU','DMEAN_NEP_LU','DMEAN_GPP_DBH')
+            &,'DMEAN_SENSIBLE_AC','DMEAN_SENSIBLE','DMEAN_PLRESP','DMEAN_RH','DMEAN_LEAF_RESP'   &
+            &,'DMEAN_ROOT_RESP','DMEAN_GROWTH_RESP','DMEAN_STORAGE_RESP','DMEAN_VLEAF_RESP'      &
+            &,'DMEAN_NEP','DMEAN_FSW','DMEAN_FSN','DMEAN_SOIL_TEMP','DMEAN_SOIL_WATER'           &
+            &,'DMEAN_GPP_LU','DMEAN_RH_LU','DMEAN_NEP_LU','DMEAN_GPP_DBH')
            write (unit=*,fmt='(a)') '-----------------------------------------------------------'
            write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
            write (unit=*,fmt='(a)') '                                                           '
@@ -2296,13 +2285,13 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel)
            write (unit=*,fmt='(a)') '   output to be incorrect for this variable.'
            write (unit=*,fmt='(a)') '-----------------------------------------------------------'
            write (unit=*,fmt='(a)') '                                                           '
-           buff=0.
+           buff=0.0d+0
         case('MMEAN_GPP','MMEAN_EVAP','MMEAN_TRANSP','MMEAN_SENSIBLE','MMEAN_NEP','MMEAN_PLRESP'&
-            ,'MMEAN_RH','MMEAN_LEAF_RESP','MMEAN_ROOT_RESP','MMEAN_GROWTH_RESP'                 &
-            ,'MMEAN_STORAGE_RESP','MMEAN_VLEAF_RESP','STDEV_GPP','STDEV_EVAP','STDEV_TRANSP'    &
-            ,'STDEV_SENSIBLE','STDEV_NEP','STDEV_RH','MMEAN_LAI_PFT','MMEAN_GPP_LU'             &
-            ,'MMEAN_SOIL_TEMP','MMEAN_SOIL_WATER'                                               &
-            ,'MMEAN_RH_LU','MMEAN_NEP_LU','MMEAN_GPP_DBH')
+            &,'MMEAN_RH','MMEAN_LEAF_RESP','MMEAN_ROOT_RESP','MMEAN_GROWTH_RESP'                 &
+            &,'MMEAN_STORAGE_RESP','MMEAN_VLEAF_RESP','STDEV_GPP','STDEV_EVAP','STDEV_TRANSP'    &
+            &,'STDEV_SENSIBLE','STDEV_NEP','STDEV_RH','MMEAN_LAI_PFT','MMEAN_GPP_LU'             &
+            &,'MMEAN_SOIL_TEMP','MMEAN_SOIL_WATER'                                               &
+            &,'MMEAN_RH_LU','MMEAN_NEP_LU','MMEAN_GPP_DBH')
            write (unit=*,fmt='(a)') '-----------------------------------------------------------'
            write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
            write (unit=*,fmt='(a)') '                                                           '
@@ -2312,10 +2301,10 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel)
            write (unit=*,fmt='(a)') '   for this variable.'
            write (unit=*,fmt='(a)') '-----------------------------------------------------------'
            write (unit=*,fmt='(a)') '                                                           '
-           buff=0.
+           buff=0.0d+0
         case default
            call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                           ,'hdf_getslab_r','ed_history_io.f90')
+                           &,'hdf_getslab_r','ed_history_io.f90')
         end select
      end if
   endif
@@ -2358,20 +2347,20 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel)
      write(unit=*,fmt=*) 'File_ID = ',file_id
      write(unit=*,fmt=*) 'Dset_ID = ',dset_id
      call fatal_error('Could not get the dataset for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_i','ed_history_io.f90')
+                    & ,'hdf_getslab_i','ed_history_io.f90')
   endif
   
   call h5dget_space_f(dset_id,filespace,hdferr)
   if (hdferr /= 0) then
      call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_i','ed_history_io.f90')
+                     &,'hdf_getslab_i','ed_history_io.f90')
   endif
 
   call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
        chnkdims,hdferr)
   if (hdferr /= 0) then
      call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_i','ed_history_io.f90')
+                     &,'hdf_getslab_i','ed_history_io.f90')
   endif
 
   call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
@@ -2379,14 +2368,14 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel)
      write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
      write(unit=*,fmt=*) 'Dsetrank = ',dsetrank
      call fatal_error('Could not create the hyperslabs memspace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_i','ed_history_io.f90')
+                     &,'hdf_getslab_i','ed_history_io.f90')
   endif
 
   call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
        memdims,hdferr)
   if (hdferr /= 0) then
      call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-                     ,'hdf_getslab_i','ed_history_io.f90')
+                     &,'hdf_getslab_i','ed_history_io.f90')
   end if
 
   if (iparallel == 1) then
@@ -2396,7 +2385,7 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel)
           xfer_prp = plist_id)
      if (hdferr /= 0) then
         call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                        ,'hdf_getslab_i','ed_history_io.f90')
+                       & ,'hdf_getslab_i','ed_history_io.f90')
      end if
      
   else
@@ -2404,7 +2393,7 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel)
           mem_space_id = memspace, file_space_id = filespace )
      if (hdferr /= 0) then
         call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                        ,'hdf_getslab_r','ed_history_io.f90')
+                        &,'hdf_getslab_r','ed_history_io.f90')
      end if
   end if
 
@@ -2443,15 +2432,15 @@ subroutine create_ed1_fname(lat, ed_res, lon, sfilin, pss_name, css_name,   &
  
   ! Make file name
   if(lat >= 0.0)then
-     flat = ed_res * int(lat / ed_res) + 0.5 * ed_res 
+     flat = ed_res * real(int(lat / ed_res)) + 0.5 * ed_res 
   else
-     flat = - ed_res * int(-lat / ed_res) - 0.5 * ed_res
+     flat = - ed_res * real(int(-lat / ed_res)) - 0.5 * ed_res
   endif
   
   if(lon >= 0.0)then
-     flon = ed_res * int(lon / ed_res) + 0.5 * ed_res 
+     flon = ed_res * real(int(lon / ed_res)) + 0.5 * ed_res 
   else
-     flon = - ed_res * int(-lon / ed_res) - 0.5 * ed_res
+     flon = - ed_res * real(int(-lon / ed_res)) - 0.5 * ed_res
   endif
 
   if(ed_res > 0.999 .and. ed_res < 1.001)then

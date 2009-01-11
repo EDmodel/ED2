@@ -28,8 +28,9 @@ module ed_state_vars
   ! well off the acceptable range for most variables. That way all of them !
   ! must be initialised properly afterwards.                               !
   !------------------------------------------------------------------------!
-  real    , parameter :: large_real=1.e34
-  integer , parameter :: large_integer=huge(1)-huge(1)/10
+  real    , parameter     :: large_real=1.e34
+  real(kind=8), parameter :: large_double=1.d+34
+  integer , parameter     :: large_integer=huge(1)-huge(1)/10
 !============================================================================!
 !============================================================================!
 
@@ -1061,7 +1062,7 @@ module ed_state_vars
      integer,pointer,dimension(:) :: lsl            ! Layer of lowest soil
      
      ! matrix of site hydrologic adjacency
-     integer,pointer,dimension(:,:,:) :: site_adjacency
+     real,pointer,dimension(:,:,:) :: site_adjacency
 
      real,pointer,dimension(:) :: wbar
      real,pointer,dimension(:) :: Te
@@ -1587,7 +1588,7 @@ contains
     
     implicit none
 
-    integer :: npolygons,igr,init
+    integer :: npolygons
     type(edtype),target :: cgrid
 
     call nullify_edtype(cgrid)
@@ -2621,7 +2622,6 @@ contains
     implicit none
 
     type(sitetype),target :: csite
-    integer :: ipa
     
     nullify(csite%paco_id)
     nullify(csite%paco_n)
@@ -2881,7 +2881,7 @@ contains
     
     implicit none
     
-    integer :: npolygons,igr,init
+    integer :: npolygons,igr
     type(edtype),target :: cgrid
 
        if(associated(cgrid%polygon                 )) deallocate(cgrid%polygon                 )
@@ -3420,7 +3420,6 @@ contains
     implicit none
 
     type(patchtype),target :: cpatch
-    integer :: ico
     
     if(associated(cpatch%pft))    deallocate(cpatch%pft)
     if(associated(cpatch%nplant))    deallocate(cpatch%nplant)
@@ -3520,7 +3519,7 @@ contains
        if(associated(cgrid%pysi_n                  )) cgrid%pysi_n                   = large_integer  ! Integer
        if(associated(cgrid%pysi_id                 )) cgrid%pysi_id                  = large_integer  ! Integer
        if(associated(cgrid%sensflux_py             )) cgrid%sensflux_py              = large_real
-       if(associated(cgrid%site_adjacency          )) cgrid%site_adjacency           = large_integer  ! Integer
+       if(associated(cgrid%site_adjacency          )) cgrid%site_adjacency           = large_real
        if(associated(cgrid%wbar                    )) cgrid%wbar                     = large_real
        if(associated(cgrid%Te                      )) cgrid%Te                       = large_real
        if(associated(cgrid%zbar                    )) cgrid%zbar                     = large_real
@@ -3963,7 +3962,7 @@ contains
     if(associated(csite%nlev_sfcwater                )) csite%nlev_sfcwater                = large_integer ! Integer
     if(associated(csite%ntext_soil                   )) csite%ntext_soil                   = large_integer ! Integer
     if(associated(csite%soil_energy                  )) csite%soil_energy                  = large_real
-    if(associated(csite%soil_water                   )) csite%soil_water                   = large_real
+    if(associated(csite%soil_water                   )) csite%soil_water                   = large_double
     if(associated(csite%soil_tempk                   )) csite%soil_tempk                   = large_real
     if(associated(csite%soil_fracliq                 )) csite%soil_fracliq                 = large_real
     if(associated(csite%ground_shv                   )) csite%ground_shv                   = large_real
@@ -4212,7 +4211,7 @@ contains
   ! =====================================================
 
     implicit none
-    integer :: ifm,ipin,ipout
+    integer :: ipin,ipout
 
     type(edtype) :: edin,edout
 
@@ -4246,7 +4245,6 @@ contains
     type(edtype),target :: edin
     integer :: oldsize,newsize,i
     real, dimension(oldsize) :: edout_real
-    integer, dimension(oldsize) :: edout_int
     integer, dimension(oldsize),intent(IN) :: water_site
     integer, dimension(oldsize) :: water_site_new
 
@@ -4637,7 +4635,7 @@ contains
     integer,dimension(newsz) :: incmask
     integer,dimension(masksz):: imask
     logical,dimension(masksz)  :: mask
-    integer :: i,k,m,inc,ipft
+    integer :: i,k,m,inc
     type(stoma_data),pointer :: osdi,osdo
 
     do i=1,masksz
@@ -4980,10 +4978,10 @@ contains
     
     include 'mpif.h'
 
-    integer :: ncohorts_g,npatches_g,nsites_g,npolygons_g
-    integer :: igr,ipy,isi,ipa,ico,nv,ierr,nm
+    integer :: ncohorts_g,npatches_g,nsites_g
+    integer :: igr,ipy,isi,ipa,nv,ierr,nm
     integer,       dimension(MPI_STATUS_SIZE) :: status
-    integer :: request,ping,uniqueid
+    integer :: ping,uniqueid
     logical,save :: model_start = .true.
    
     type(edtype),pointer      :: cgrid
@@ -5249,7 +5247,6 @@ contains
 
     implicit none
     
-    integer :: init
     integer, intent(in) :: igr
     integer :: var_len,max_ptrs,var_len_global
     integer :: nvar
@@ -8237,7 +8234,6 @@ contains
     integer :: ipy,isi
     type(edtype),target           :: cgrid
     type(polygontype),pointer     :: cpoly
-    type(sitetype),pointer        :: csite
 
     get_nsites = 0
 
@@ -8268,7 +8264,6 @@ contains
     type(edtype),target           :: cgrid
     type(polygontype),pointer     :: cpoly
     type(sitetype),pointer        :: csite
-    type(patchtype),pointer       :: cpatch
 
     get_npatches = 0
 

@@ -24,7 +24,7 @@ subroutine ed_init_atm_ar
   integer :: nls
   integer :: nlsw1
   integer :: ncohorts
-  real    :: poly_lai,p_lai
+  real    :: poly_lai
   integer, parameter :: harvard_override = 0
   include 'mpif.h'
   integer :: ping,ierr
@@ -143,20 +143,20 @@ subroutine ed_init_atm_ar
                     do k = 1, nzg
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 1.0
-                       csite%soil_water(k,ipa) = max(soil(nsoil)%soilcp,   &
-                            slmstr(k) * soil(nsoil)%slmsts)
+                       csite%soil_water(k,ipa) = dble(max(soil(nsoil)%soilcp,   &
+                            slmstr(k) * soil(nsoil)%slmsts))
                        csite%soil_energy(k,ipa) = (csite%soil_tempk(k,ipa) - t3ple) *   &
-                            (soil(nsoil)%slcpd + csite%soil_water(k,ipa) *   &
-                            cliq1000) + csite%soil_water(k,ipa) * alli1000
+                            (soil(nsoil)%slcpd + real(csite%soil_water(k,ipa)) *   &
+                            cliq1000) + real(csite%soil_water(k,ipa)) * alli1000
                     enddo
                  else
                     do k = 1, nzg
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 0.0
-                       csite%soil_water(k,ipa) = max(soil(nsoil)%soilcp,             &
-                            slmstr(k) * soil(nsoil)%slmsts)
+                       csite%soil_water(k,ipa) = max(dble(soil(nsoil)%soilcp),             &
+                            dble(slmstr(k) * soil(nsoil)%slmsts))
                        csite%soil_energy(k,ipa) = (csite%soil_tempk(k,ipa) - t3ple) *   &
-                            (soil(nsoil)%slcpd + csite%soil_water(k,ipa) * cice1000)
+                            (soil(nsoil)%slcpd + real(csite%soil_water(k,ipa)) * cice1000)
                     enddo
                  endif
               
@@ -317,6 +317,7 @@ subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
   real            , external   :: compute_energy_storage_ar
   real            , external   :: compute_co2_storage_ar
   real            , external   :: ed_biomass
+  real,parameter               :: veg_height_min = 1.0 !was 0.2
 
   ! call derived patch-level structural quantities.  These depend
   ! on the results from reproduction, which in turn depends on 
@@ -359,11 +360,11 @@ subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
 
   
   ! Update vegetation height
-  if(norm_fac > 0.0)then
-     csite%veg_height(ipa) = csite%veg_height(ipa) / norm_fac
+  if(norm_fac > tiny(1.0))then
+     csite%veg_height(ipa) = max(veg_height_min,csite%veg_height(ipa) / norm_fac)
   else
      ! this branch if there aren't any cohorts
-     csite%veg_height(ipa) = 0.2
+     csite%veg_height(ipa) = veg_height_min
   endif
   csite%veg_rough(ipa) = 0.13 * csite%veg_height(ipa)
   
@@ -489,9 +490,9 @@ subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
      call qwtk8(soil_energy,soil_water*1.d3,soil(nts)%slcpd,tempk,fracliq)
      surface_ssh = rhovsil(tempk) / rhos
      
-     slpotvn = soil(nts)%slpots * (soil(nts)%slmsts / soil_water) ** soil(nts)%slbs
+     slpotvn = soil(nts)%slpots * (soil(nts)%slmsts / real(soil_water)) ** soil(nts)%slbs
      alpha = exp(gorvap * slpotvn / tempk)
-     beta = .25 * (1. - cos (min(1.,soil_water / soil(nts)%sfldcap) * pi1)) ** 2
+     beta = .25 * (1. - cos (min(1.,real(soil_water) / soil(nts)%sfldcap) * pi1)) ** 2
      ground_shv = surface_ssh * alpha * beta + (1. - beta) * can_shv
      
   endif
@@ -522,13 +523,8 @@ subroutine read_soil_moist_temp_ar(cgrid)
   type(sitetype)    , pointer :: csite  ! Alias for current site
   type(patchtype)   , pointer :: cpatch ! Alias for current patch
   integer :: ntext
-  integer :: iland
-  real :: xe_mean
-  real :: ye_mean
-  real :: ze_mean
   real :: glat
   real :: glon
-  integer :: ipt
   integer :: ilat
   integer :: ilon
   integer :: ilatf
@@ -542,8 +538,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
   real :: soilw1
   real :: soilw2
   logical :: l1
-  integer :: ip
-  integer :: ipy, isi, ipa, ico !Counters for all structures
+  integer :: ipy, isi, ipa !Counters for all structures
   integer, parameter :: harvard_override = 0
 
 ! Putting these numbers as parameters, but we should think in a way to provide this info so we can make it more general.
@@ -611,22 +606,22 @@ subroutine read_soil_moist_temp_ar(cgrid)
                           if(abs(slz(k)) < 0.1)then
                              csite%soil_tempk(k,ipa) = tmp1
                              soil_tempaux = tmp1 - t3ple
-                             csite%soil_water(k,ipa) = max(soil(ntext)%soilcp,   &
-                                  soilw1 * soil(ntext)%slmsts)
+                             csite%soil_water(k,ipa) = dble(max(soil(ntext)%soilcp,   &
+                                  soilw1 * soil(ntext)%slmsts))
                           else
                              csite%soil_tempk(k,ipa) = tmp2
                              soil_tempaux = tmp2 - t3ple
-                             csite%soil_water(k,ipa) = max(soil(ntext)%soilcp,   &
-                                  soilw2 * soil(ntext)%slmsts)
+                             csite%soil_water(k,ipa) = dble(max(soil(ntext)%soilcp,   &
+                                  soilw2 * soil(ntext)%slmsts))
                           endif
                           if(soil_tempaux > 0.0)then
                              csite%soil_energy(k,ipa) = soil_tempaux * (soil(ntext)%slcpd   &
-                                  + csite%soil_water(k,ipa) * cliq1000) +   &
-                                    csite%soil_water(k,ipa) * alli1000
+                                  + real(csite%soil_water(k,ipa)) * cliq1000) +   &
+                                    real(csite%soil_water(k,ipa)) * alli1000
                              csite%soil_fracliq(k,ipa) = 1.0
                           else
                              csite%soil_energy(k,ipa) = soil_tempaux * (soil(ntext)%slcpd   &
-                                  + csite%soil_water(k,ipa) * cice1000)
+                                  + real(csite%soil_water(k,ipa)) * cice1000)
                              csite%soil_fracliq(k,ipa) = 0.0
                           end if
                        end do
@@ -636,7 +631,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
                           csite%soil_energy(1,ipa)    =   1.5293664e8
                           csite%soil_energy(2,ipa)    =   1.4789957e8
                           csite%soil_energy(3:4,ipa)  =   1.4772002e8
-                          csite%soil_water(1:4,ipa)   =   0.41595
+                          csite%soil_water(1:4,ipa)   =   0.41595d+0
                           csite%soil_fracliq(1:4,ipa) =   1.0
                        endif
                        

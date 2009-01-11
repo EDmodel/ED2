@@ -39,7 +39,6 @@ subroutine reproduction_ar(cgrid, month)
   real, external :: dbh2bd
   real, external :: dbh2bl
   real, external :: h2dbh
-  real :: hcapveg
   integer :: inew,ncohorts_new
   real,dimension(n_pft,9) :: recruit_array
 
@@ -275,16 +274,17 @@ subroutine reproduction_ar(cgrid, month)
         
         do ipa = 1,csite%npatches
            cpatch => csite%patch(ipa)
+
            if(cpatch%ncohorts>0) then
-              
+
               call terminate_cohorts_ar(csite,ipa)
-              call fuse_cohorts_ar(csite,ipa, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
+              call fuse_cohorts_ar(csite,ipa, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))                         
               call split_cohorts_ar(cpatch, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
               
            endif
-           
+
            csite%cohort_count(ipa) = cpatch%ncohorts !THIS IS REDUNDANT
-           
+
            call update_patch_derived_props_ar(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos, ipa)
 
         enddo

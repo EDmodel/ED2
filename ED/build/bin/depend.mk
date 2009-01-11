@@ -239,7 +239,8 @@ euler_driver.o : $(ED_DYNAMICS)/euler_driver.f90 ed_state_vars.o misc_coms.o soi
 	rm -f $(<F:.f90=.f90)
 
 events.o : $(ED_DYNAMICS)/events.f90 misc_coms.o ed_state_vars.o grid_coms.o \
-	pft_coms.o ed_init_atm.o disturbance.o
+	pft_coms.o ed_init_atm.o disturbance.o therm_lib.o decomp_coms.o \
+	fuse_fiss_utils.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -446,7 +447,8 @@ reproduction.o : $(ED_DYNAMICS)/reproduction.f90 ed_state_vars.o misc_coms.o pft
 
 rk4_derivs.o : $(ED_DYNAMICS)/rk4_derivs.F90 ed_state_vars.o consts_coms.o grid_coms.o     \
 	max_dims.o consts_coms.o grid_coms.o soil_coms.o misc_coms.o                       \
-	canopy_radiation_coms.o therm_lib.o pft_coms.o ed_misc_coms.o canopy_air_coms.o
+	canopy_radiation_coms.o therm_lib.o pft_coms.o ed_misc_coms.o canopy_air_coms.o    \
+	allometry.o
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)

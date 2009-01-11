@@ -45,6 +45,8 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
   real, dimension(nzg) :: available_liquid_water
   real, intent(out) :: sum_lai_rbi
   logical :: las
+  real,parameter :: vels_min = 1.0
+  real :: rb_min
 
   las = .false.
 
@@ -89,13 +91,28 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
            !              cpatch%rb = (1.0 + 5.5 * pss%lai) /   &
            !                   (0.01 * sqrt(max(0.1,min(pss%ustar,4.)) * const1))
            !           else
-           cpatch%rb(ico) = min(25.0 * csite%lai(ipa), 1.0/(  &
-!           cpatch%rb(ico) = min(25.0, 1.0/(  &
+
+!! calc resistance based on nominal windspeed rather than lai
+!! THIS IS A KLUGE - mcd
+           rb_min = 1.0/(  &
+                0.003*sqrt(vels_min/leaf_width(cpatch%pft(ico)))  &
+                + 1.03e-5   &
+                * ( 1.6e8 * abs(cpatch%veg_temp(ico)-csite%can_temp(ipa))  &
+                * leaf_width(cpatch%pft(ico))**3 )**0.25 &
+                / leaf_width(cpatch%pft(ico)))
+           
+!           cpatch%rb(ico) = min(25.0 * csite%lai(ipa), 1.0/(  &
+           cpatch%rb(ico) = min(rb_min, 1.0/(  &
                 0.003*sqrt(vels/leaf_width(cpatch%pft(ico)))  &
                 + 1.03e-5   &
                 * ( 1.6e8 * abs(cpatch%veg_temp(ico)-csite%can_temp(ipa))  &
                 * leaf_width(cpatch%pft(ico))**3 )**0.25 &
                 / leaf_width(cpatch%pft(ico))))
+
+if(abs(cpatch%rb(ico)) < tiny(1.0))then
+   print*,"WARNING, small RB"
+   print*,vels,leaf_width(cpatch%pft(ico)),cpatch%veg_temp(ico),csite%can_temp(ipa),cpatch%pft(ico),ico
+end if
 
               call lphysiol_full(  &
                    cpatch%veg_temp(ico)-t00  &  ! Vegetation temperature (C)

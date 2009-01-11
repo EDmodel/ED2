@@ -29,6 +29,8 @@ contains
     real :: gpp
     real, dimension(n_dbh) :: gpp_dbh
     real :: plant_respiration
+
+   ! print*,cgrid%polygon(1)%site(1)%patch(1)%lai(1)
     
     polygonloop: do ipy = 1,cgrid%npolygons
        
@@ -41,7 +43,8 @@ contains
           patchloop: do ipa = 1,csite%npatches
              
              cpatch => csite%patch(ipa)
-             
+
+
              ! Get velocity for aerodynamic resistance
              if(csite%can_temp(ipa) < cpoly%met(isi)%atm_tmp)then
                 cpoly%met(isi)%vels = cpoly%met(isi)%vels_stab
@@ -321,7 +324,7 @@ contains
     real :: hdid,qwt,wt,soilhcap,fac
     real :: available_water
     real, parameter :: tendays_sec=10.*day_sec
-    real :: hcapveg,fracliq,veg_temp
+    real :: fracliq,veg_temp
 
     csite%can_temp(ipa) = initp%can_temp
     csite%can_shv(ipa) = initp%can_shv
@@ -443,7 +446,7 @@ contains
 
        else
 
-          call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),hcapveg,veg_temp,fracliq)
+          call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico),veg_temp,fracliq)
         
           if ( veg_temp < veg_temp_min .or. veg_temp > 360.0  ) then
              print*,"==========================================================="
