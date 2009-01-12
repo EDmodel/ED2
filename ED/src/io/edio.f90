@@ -6,8 +6,6 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
   use ed_state_vars,only:edgrid_g
 
   use grid_coms, only: ngrids,nzg  ! INTENT(IN)
-  
-  use ed_misc_coms,only:diag_veg_heating
 
   use ed_node_coms,only : mynum,nnodetot
 
@@ -65,17 +63,6 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
         enddo
      endif
 
-     ! Diagnose the heating and cooling rates of the vegetation
-     ! This is used to help troubleshoot hot leaves.  If the
-     ! model fails from overheated or really cold leaves, then
-     ! record the cohort,patch,site and polygon index and apply
-     ! them below.  Then turn on the diag_veg_heating flag
-     ! in ed_commons. This printing may soon be depricated.
-
-     if (diag_veg_heating) then
-        call print_veg_heating
-     endif
-     
   endif
 
   ! Daily analysis output and monthly integration
@@ -162,16 +149,22 @@ subroutine spatial_averages
   type(patchtype),pointer :: cpatch
   integer :: igr,ipy,isi,ipa,ico
   integer :: k
+  integer :: lai_index
   real :: lai_sum,site_area_i,poly_area_i
   real :: frqsumi
   real :: snow_min = 0.0000001
+  real,dimension(3) :: area_sum
 
   frqsumi = 1.0 / frqsum
   do igr=1,ngrids
      cgrid => edgrid_g(igr)
-     
+
+     cgrid%avg_lai_ebalvars = 0.0
+
      do ipy=1,cgrid%npolygons
         cpoly => cgrid%polygon(ipy)
+
+        area_sum=0.0
 
         cgrid%avg_balive(ipy)      = 0.0
         cgrid%avg_bdead(ipy)       = 0.0
@@ -183,6 +176,11 @@ subroutine spatial_averages
         cgrid%avg_root_resp(ipy)   = 0.0
         cgrid%avg_plant_resp(ipy)  = 0.0
         cgrid%avg_htroph_resp(ipy) = 0.0
+
+        cgrid%max_veg_temp(ipy)    = -10.0
+        cgrid%min_veg_temp(ipy)    = 390.0
+        cgrid%max_soil_temp(ipy)    = -10.0
+        cgrid%min_soil_temp(ipy)    = 390.0
 
         poly_area_i = 1./sum(cpoly%area)
 
@@ -295,13 +293,25 @@ subroutine spatial_averages
                  cgrid%avg_bdead(ipy)     = cgrid%avg_bdead(ipy) + &
                       csite%area(ipa)*cpoly%area(isi)*sum(cpatch%bdead*cpatch%nplant)
 
+                 ! Check the extremes
+                 
+                 if (maxval(cpatch%veg_temp) > cgrid%max_veg_temp(ipy)) then
+                    cgrid%max_veg_temp(ipy) = maxval(cpatch%veg_temp)
+                 endif
+
+                 if (minval(cpatch%veg_temp) < cgrid%min_veg_temp(ipy)) then
+                    cgrid%min_veg_temp(ipy) = minval(cpatch%veg_temp)
+                 endif
+
+                 
+
                  
               else
                  ! Set veg-temp to air temp
                  csite%avg_veg_energy(ipa)  = 0.0          
                  csite%avg_veg_temp(ipa)  = csite%can_temp(ipa)
                  csite%avg_veg_water(ipa) = 0.0
-                 
+
               endif
 
               cgrid%avg_plant_resp(ipy)  = cgrid%avg_plant_resp(ipy)  + &
@@ -310,8 +320,42 @@ subroutine spatial_averages
                    csite%area(ipa)*cpoly%area(isi)*csite%co2budget_rh(ipa)    *frqsumi
               
 
-           enddo
+              lai_index = min(3,max(1, floor(csite%lai(ipa)/2.0) + 1)  )
+              
+              area_sum(lai_index) = area_sum(lai_index) + csite%area(ipa)
 
+
+              ! Net radiation
+              cgrid%avg_lai_ebalvars(lai_index,1,ipy) = &
+                   cgrid%avg_lai_ebalvars(lai_index,1,ipy) + csite%avg_netrad(ipa)*csite%area(ipa)
+
+              ! Latent heat flux
+              cgrid%avg_lai_ebalvars(lai_index,2,ipy) = &
+                   cgrid%avg_lai_ebalvars(lai_index,2,ipy) + csite%avg_vapor_ac(ipa)*csite%area(ipa)
+
+              ! Sensible heat flux
+              cgrid%avg_lai_ebalvars(lai_index,3,ipy) = &
+                   cgrid%avg_lai_ebalvars(lai_index,3,ipy) + csite%avg_sensible_ac(ipa)*csite%area(ipa)
+
+              ! Canopy temperature
+              cgrid%avg_lai_ebalvars(lai_index,4,ipy) = &
+                   cgrid%avg_lai_ebalvars(lai_index,4,ipy) + csite%can_temp(ipa)*csite%area(ipa)
+
+
+              
+              do k=1,nzg
+                 if ( csite%soil_tempk(k,ipa) > cgrid%max_soil_temp(ipy)) then
+                    cgrid%max_soil_temp(ipy) = csite%soil_tempk(k,ipa)
+                 endif
+                 
+                 if ( csite%soil_tempk(k,ipa) < cgrid%min_soil_temp(ipy)) then
+                    cgrid%min_soil_temp(ipy) = csite%soil_tempk(k,ipa)
+                 endif
+              enddo
+                 
+
+           enddo
+           
            csite%laiarea = csite%laiarea / max(sum(csite%laiarea),1.0)
 
            cpoly%avg_veg_energy(isi) = sum(csite%avg_veg_energy   * csite%laiarea)
@@ -325,10 +369,37 @@ subroutine spatial_averages
            call fatal_error('No patches in this site, impossible','spatial_averages','edio.f90')
         endif
 
-
+        
 
      enddo
-        
+     
+     ! Normalize the lai specific quantities
+     if (area_sum(1)>0) then
+        cgrid%avg_lai_ebalvars(1,1,ipy) = cgrid%avg_lai_ebalvars(1,1,ipy)/area_sum(1)
+        cgrid%avg_lai_ebalvars(1,2,ipy) = cgrid%avg_lai_ebalvars(1,2,ipy)/area_sum(1)
+        cgrid%avg_lai_ebalvars(1,3,ipy) = cgrid%avg_lai_ebalvars(1,3,ipy)/area_sum(1)  
+        cgrid%avg_lai_ebalvars(1,4,ipy) = cgrid%avg_lai_ebalvars(1,4,ipy)/area_sum(1)
+     else
+        cgrid%avg_lai_ebalvars(1,:,ipy) = -9999.0
+     endif
+     if (area_sum(2)>0) then
+        cgrid%avg_lai_ebalvars(2,1,ipy) = cgrid%avg_lai_ebalvars(2,1,ipy)/area_sum(2)
+        cgrid%avg_lai_ebalvars(2,2,ipy) = cgrid%avg_lai_ebalvars(2,2,ipy)/area_sum(2)
+        cgrid%avg_lai_ebalvars(2,3,ipy) = cgrid%avg_lai_ebalvars(2,3,ipy)/area_sum(2)
+        cgrid%avg_lai_ebalvars(2,4,ipy) = cgrid%avg_lai_ebalvars(2,4,ipy)/area_sum(2)
+     else
+        cgrid%avg_lai_ebalvars(2,:,ipy) = -9999.0
+     endif
+     if (area_sum(3)>0) then
+        cgrid%avg_lai_ebalvars(3,1,ipy) = cgrid%avg_lai_ebalvars(3,1,ipy)/area_sum(3)
+        cgrid%avg_lai_ebalvars(3,2,ipy) = cgrid%avg_lai_ebalvars(3,2,ipy)/area_sum(3)
+        cgrid%avg_lai_ebalvars(3,3,ipy) = cgrid%avg_lai_ebalvars(3,3,ipy)/area_sum(3)
+        cgrid%avg_lai_ebalvars(3,4,ipy) = cgrid%avg_lai_ebalvars(3,4,ipy)/area_sum(3)
+     else
+        cgrid%avg_lai_ebalvars(3,:,ipy) = -9999.0
+     endif
+
+
         cgrid%lai(ipy)                = sum(cpoly%lai                * cpoly%area ) * poly_area_i
         
         ! Average Fast Time Flux Dynamics Over Polygons
@@ -757,34 +828,3 @@ subroutine fillvar_l(pvar_l,vt_ptr,npts_out,npts_in,out1,in1,in2)
   return
 end subroutine fillvar_l
 
-! =========================================================
-
-subroutine print_veg_heating
-  
-  use ed_state_vars,only: edgrid_g
-  use misc_coms, only: dtlsm, current_time
-  
-  implicit none
-  integer :: sigr,sipy,sisi,sipa,sico
-  
-  
-  sigr = 1
-  sipy = 1
-  sisi = 1
-  sipa = 1
-  sico = 1
-  write(*,"(i3,i3,i5,f8.1,10(f10.5))") &
-       current_time%month,current_time%date,           &
-       current_time%year,current_time%time,           &
-       edgrid_g(sigr)%polygon(sipy)%site(sisi)%patch(sipa)%co_srad_h(sico), &
-       edgrid_g(sigr)%polygon(sipy)%site(sisi)%patch(sipa)%co_lrad_h(sico), &
-       edgrid_g(sigr)%polygon(sipy)%site(sisi)%patch(sipa)%co_sens_h(sico), &
-       edgrid_g(sigr)%polygon(sipy)%site(sisi)%patch(sipa)%co_liqr_h(sico), &
-       edgrid_g(sigr)%polygon(sipy)%site(sisi)%patch(sipa)%co_evap_h(sico), &
-       edgrid_g(sigr)%polygon(sipy)%site(sisi)%patch(sipa)%veg_temp(sico), &
-       edgrid_g(sigr)%polygon(sipy)%site(sisi)%patch(sipa)%veg_water(sico),&
-       edgrid_g(sigr)%polygon(sipy)%met(sisi)%rshort, &
-       edgrid_g(sigr)%polygon(sipy)%site(sisi)%patch(sipa)%hite(sico),&
-       edgrid_g(sigr)%polygon(sipy)%site(sisi)%patch(sipa)%lai(sico)
-  return
-end subroutine print_veg_heating

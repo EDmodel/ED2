@@ -134,6 +134,23 @@ integer, dimension(n_pft) :: phenology ! Indicates leaf habit.  0 - evergreen co
 real, dimension(n_pft) :: clumping_factor ! 0-1 factor indicating degree of clumpiness of leaves and shoots.
 
 real, dimension(n_pft) :: leaf_width  ! leaf width used to compute the aerodynamic resistance (m).
+! NEW PARAMETERS 11-26-08
+
+real, dimension(n_pft) :: c_grn_leaf_dry ! Specific heat capacity of dry leaf biomass (J/kg/K)
+
+real, dimension(n_pft) :: c_ngrn_biom_dry! Specific heat capacity of dry non-green biomass(J/kg/K)
+
+real, dimension(n_pft) :: wat_dry_ratio_grn  ! Ratio of water to dry mass in green leaves
+
+real, dimension(n_pft) :: wat_dry_ratio_ngrn ! Ratio of water to dry mass in non-green biomass
+
+
+real :: hcap_stem_fraction               ! Fraction of structural biomass, that
+                                         ! that is included in the calculation of vegetation
+                                         ! heat capacity, used for dianosing leaf temerpatures
+                                         ! from vegetation energy. Ie %veg_energy(ico) and
+                                         ! %veg_temp(ico)
+
 
 !--------------------
 ! REPRODUCTION AND RECRUITMENT

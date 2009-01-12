@@ -180,8 +180,10 @@ contains
     ! end time.  what is important is tend-tbeg.  this should get moved to 
     ! the namelist.
     tend = dtlsm 
+
     ! desired accuracy.
     eps = 1.0e-2
+
     ! initial step size.  experience has shown that giving this too large a 
     ! value causes the integrator to fail (e.g., soil layers become
     ! supersaturated).
@@ -297,15 +299,16 @@ contains
 
   subroutine initp2modelp_ar(hdid, initp, csite, ipa,isi,ipy, rhos, lsl)
 
-    use ed_state_vars,only:sitetype,patchtype,rk4patchtype
+    use ed_state_vars,only:sitetype,patchtype,rk4patchtype,edgrid_g
     use consts_coms, only: day_sec,t3ple
+    use ed_misc_coms,only: fast_diagnostics
     use soil_coms, only: soil, slz
     use grid_coms, only: nzg, nzs
     use canopy_radiation_coms, only: lai_min, veg_temp_min
-    use ed_misc_coms,only:diag_veg_heating
 
-    use canopy_air_coms, only: hcapveg_ref,heathite_min
     use therm_lib, only: qwtk
+    use ed_therm_lib, only: calc_hcapveg,ed_grndvap
+
     implicit none
 
     integer, intent(in) :: lsl
@@ -325,13 +328,6 @@ contains
     csite%can_temp(ipa) = initp%can_temp
     csite%can_shv(ipa) = initp%can_shv
     csite%can_co2(ipa) = initp%can_co2
-    csite%wbudget_loss2atm(ipa) = initp%wbudget_loss2atm
-    csite%ebudget_loss2atm(ipa) = initp%ebudget_loss2atm
-    csite%co2budget_loss2atm(ipa) = initp%co2budget_loss2atm
-    csite%ebudget_latent(ipa) = initp%ebudget_latent
-    csite%nlev_sfcwater(ipa) = initp%nlev_sfcwater
-
-!    csite%avg_gpp(ipa) = initp%avg_gpp
 
     csite%ustar(ipa) = initp%ustar
     csite%tstar(ipa) = initp%tstar
@@ -342,29 +338,52 @@ contains
     csite%wpwp(ipa) = initp%wpwp
     csite%tpwp(ipa) = initp%tpwp
     csite%rpwp(ipa) = initp%rpwp
-    
-    csite%avg_vapor_vc(ipa)       = initp%avg_vapor_vc  
-    csite%avg_dew_cg(ipa)         = initp%avg_dew_cg    
-    csite%avg_vapor_gc(ipa)       = initp%avg_vapor_gc  
-    csite%avg_wshed_vg(ipa)       = initp%avg_wshed_vg  
-    csite%avg_vapor_ac(ipa)       = initp%avg_vapor_ac
-    csite%avg_transp(ipa)         = initp%avg_transp
-    csite%avg_evap(ipa)           = initp%avg_evap
-    csite%aux(ipa)                = initp%aux
-    csite%avg_sensible_vc(ipa)    = initp%avg_sensible_vc  
-    csite%avg_sensible_2cas(ipa)  = initp%avg_sensible_2cas
-    csite%avg_qwshed_vg(ipa)      = initp%avg_qwshed_vg    
-    csite%avg_sensible_gc(ipa)    = initp%avg_sensible_gc  
-    csite%avg_sensible_ac(ipa)    = initp%avg_sensible_ac  
-    csite%avg_sensible_tot(ipa)   = initp%avg_sensible_tot
-    csite%avg_carbon_ac(ipa)      = initp%avg_carbon_ac
+
+    if(fast_diagnostics) then
+       
+       csite%wbudget_loss2atm(ipa) = initp%wbudget_loss2atm
+       csite%ebudget_loss2atm(ipa) = initp%ebudget_loss2atm
+       csite%co2budget_loss2atm(ipa) = initp%co2budget_loss2atm
+       csite%ebudget_latent(ipa) = initp%ebudget_latent
+       csite%nlev_sfcwater(ipa) = initp%nlev_sfcwater
+       !    csite%avg_gpp(ipa) = initp%avg_gpp
+       csite%avg_vapor_vc(ipa)       = initp%avg_vapor_vc  
+       csite%avg_dew_cg(ipa)         = initp%avg_dew_cg    
+       csite%avg_vapor_gc(ipa)       = initp%avg_vapor_gc  
+       csite%avg_wshed_vg(ipa)       = initp%avg_wshed_vg  
+       csite%avg_vapor_ac(ipa)       = initp%avg_vapor_ac
+       csite%avg_transp(ipa)         = initp%avg_transp
+       csite%avg_evap(ipa)           = initp%avg_evap
+       csite%avg_netrad(ipa)         = initp%avg_netrad
+       csite%aux(ipa)                = initp%aux
+       csite%avg_sensible_vc(ipa)    = initp%avg_sensible_vc  
+       csite%avg_sensible_2cas(ipa)  = initp%avg_sensible_2cas
+       csite%avg_qwshed_vg(ipa)      = initp%avg_qwshed_vg    
+       csite%avg_sensible_gc(ipa)    = initp%avg_sensible_gc  
+       csite%avg_sensible_ac(ipa)    = initp%avg_sensible_ac  
+       csite%avg_sensible_tot(ipa)   = initp%avg_sensible_tot
+       csite%avg_carbon_ac(ipa)      = initp%avg_carbon_ac
+
+       do k = lsl, nzg
+          csite%avg_sensible_gg(k,ipa) = initp%avg_sensible_gg(k)
+          csite%avg_smoist_gg(k,ipa)   = initp%avg_smoist_gg(k)
+          csite%avg_smoist_gc(k,ipa)   = initp%avg_smoist_gc(k)
+          csite%aux_s(k,ipa)  = initp%aux_s(k)
+       enddo
+
+    endif
+
+       
+    ! The following is not a pure diagnostic, it is used for phenology
+    ! and mortality functions, preserve this variable and its dependencies
+    ! in all contexts
 
     csite%avg_daily_temp(ipa) = csite%avg_daily_temp(ipa) + csite%can_temp(ipa)
 
     ! [KIM - 10-day average of plant available water - paw_avg10d
     ! MLO - Added after the return statement to avoid computations over water.
     !      Changed the name from theta to available_water
-
+    
     cpatch => csite%patch(ipa)
 
     do ico = 1,cpatch%ncohorts
@@ -393,11 +412,6 @@ contains
        csite%soil_energy(k,ipa) = initp%soil_energy(k)
        csite%soil_tempk(k,ipa) = initp%soil_tempk(k)
        csite%soil_fracliq(k,ipa) = initp%soil_fracliq(k)
-
-       csite%avg_sensible_gg(k,ipa) = initp%avg_sensible_gg(k)
-       csite%avg_smoist_gg(k,ipa)   = initp%avg_smoist_gg(k)
-       csite%avg_smoist_gc(k,ipa)   = initp%avg_smoist_gc(k)
-       csite%aux_s(k,ipa)  = initp%aux_s(k)
     enddo
     
 
@@ -409,30 +423,35 @@ contains
     
 
     do ico = 1,cpatch%ncohorts
-       cpatch%veg_water(ico)  = initp%veg_water(ico)
+
+       cpatch%veg_water(ico) = initp%veg_water(ico)
        cpatch%veg_energy(ico) = initp%veg_energy(ico)
-    
+
        ! For plants with minimal foliage, fix the vegetation
        ! temperature to the canopy air space
        if (cpatch%lai(ico) < lai_min) then
+
           cpatch%veg_temp(ico) = csite%can_temp(ipa)
-       else 
-          hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
-          call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),hcapveg,cpatch%veg_temp(ico),fracliq)
-       end if
-  
+          
+          cpatch%veg_water(ico) = 0.
+
+       endif
+
+       hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                 cpatch%nplant(ico),cpatch%pft(ico))
+
+       call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),hcapveg,cpatch%veg_temp(ico),fracliq)
+        
        
-       if ( cpatch%veg_temp(ico) < veg_temp_min .or. cpatch%veg_temp(ico) > 360.0  ) then
+       if ( cpatch%veg_temp(ico) < veg_temp_min .or. cpatch%veg_temp(ico) > 360.0 ) then
+
           print*,"==========================================================="
-          print*,"Vegetation Temperature",cpatch%veg_temp(ico)
+          
+          write(unit=*,fmt='(a,1x,es14.7)') 'veg temperature  :',cpatch%veg_temp(ico)
+          write(unit=*,fmt='(a,1x,es14.7)') 'veg_temp min :',veg_temp_min
+
           print*,"Polygon:",ipy," Site:",isi," Patch:",ipa," Cohort:",ico," of",cpatch%ncohorts
-          print*,"Check misc_commons to see if heating rate diagnostics are on"
-          print*,"Solar Heating Rate",initp%co_srad_h(ico)
-          print*,"L-Wave Heating Rate",initp%co_lrad_h(ico)
-          print*,"Sensible Heating Rate",initp%co_sens_h(ico)
-          print*,"Evapotranspirative Heating Rate",initp%co_evap_h(ico)
-          print*,"Liquid deposition Heating Rate",initp%co_liqr_h(ico)
-          print*,"Internal Energy",initp%veg_energy(ico)
+
           print*,"LAI",cpatch%lai
           print*,"Height",cpatch%hite
           print*,"DBH",cpatch%dbh
@@ -443,20 +462,42 @@ contains
           print*,"Patch LAI",csite%lai(ipa)
           print*,"Patch Disturbance Type",csite%dist_type(ipa)
           print*,"Patch Canopy Temperature",csite%can_temp(ipa)
-          call fatal_error('extreme vegetation temperature','initp2modelp','rk4_driver.f90')
+          
+          write(unit=*,fmt='(a,1x,i5)')     '================== FATAL ERROR =================='
+          write(unit=*,fmt='(a,1x,i5)')     ' IPY:',ipy
+          write(unit=*,fmt='(a,1x,i5)')     ' ISI:',isi
+          write(unit=*,fmt='(a,1x,i5)')     ' IPA:',ipa
+          write(unit=*,fmt='(a,1x,i5)')     ' ICO:',ico
+          write(unit=*,fmt='(a,1x,f14.5)')  ' Longitude:',edgrid_g(1)%lon(ipy)
+          write(unit=*,fmt='(a,1x,f14.5)')  ' Latitude: ',edgrid_g(1)%lat(ipy)
+          write(unit=*,fmt='(a)')           ' '
+          write(unit=*,fmt='(a,1x,es14.7)') ' PRSS:     ',edgrid_g(1)%polygon(ipy)%met(isi)%prss
+          write(unit=*,fmt='(a,1x,es14.7)') ' ATM_TMP:  ',edgrid_g(1)%polygon(ipy)%met(isi)%atm_tmp
+          write(unit=*,fmt='(a,1x,es14.7)') ' RHOS:     ',edgrid_g(1)%polygon(ipy)%met(isi)%rhos
+          write(unit=*,fmt='(a,1x,es14.7)') ' PCPG:     ',edgrid_g(1)%polygon(ipy)%met(isi)%pcpg
+          write(unit=*,fmt='(a,1x,es14.7)') ' SHV:g/kg  ',edgrid_g(1)%polygon(ipy)%met(isi)%atm_shv*1000
+          write(unit=*,fmt='(a,1x,es14.7)') ' VELS:     ',edgrid_g(1)%polygon(ipy)%met(isi)%vels
+          write(unit=*,fmt='(a)')           ' '
+          write(unit=*,fmt='(a,1x,es14.7)') ' rshort_v: ',cpatch%rshort_v(ico)
+          write(unit=*,fmt='(a,1x,es14.7)') ' rlong_v:  ',cpatch%rlong_v(ico)
+          write(unit=*,fmt='(a)')           ' '
+          write(unit=*,fmt='(a,1x,es14.7)') ' can_temp :',csite%can_temp(ipa)
+          write(unit=*,fmt='(a,1x,es14.7)') ' can_shv g/kg :',csite%can_shv(ipa)*1000.
+          write(unit=*,fmt='(a,1x,es14.7)') ' gnd_shv g/kg :',csite%ground_shv(ipa)*1000.
+          write(unit=*,fmt='(a)')           ' '
+          write(unit=*,fmt='(a,1x,es14.7)') 'Lai_coh   :',cpatch%lai(ico)
+          
+          write(unit=*,fmt='(a,1x,es14.7)') 'veg_water :',cpatch%veg_water(ico)
+          write(unit=*,fmt='(a,1x,es14.7)') 'rb        :',cpatch%rb(ico)
+          write(unit=*,fmt='(a)')           ' '
+
+          call print_patch_ar(initp, csite,ipa, lsl)
+
+       call fatal_error('extreme vegetation temperature','initp2modelp','rk4_driver.f90')
+
        endif       
     enddo
 
-    if (diag_veg_heating) then
-       do ico = 1,cpatch%ncohorts
-          cpatch%co_srad_h(ico) = initp%co_srad_h(ico)
-          cpatch%co_lrad_h(ico) = initp%co_lrad_h(ico)
-          cpatch%co_sens_h(ico) = initp%co_sens_h(ico)
-          cpatch%co_evap_h(ico) = initp%co_evap_h(ico)
-          cpatch%co_liqr_h(ico) = initp%co_liqr_h(ico)
-       enddo
-    endif
- 
     ksn = csite%nlev_sfcwater(ipa)
     nsoil = csite%ntext_soil(nzg,ipa)
     nlsw1 = max(1, ksn)
@@ -581,6 +622,7 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
   use consts_coms, only: cp, cliq, cice, alli, t3ple
   use canopy_radiation_coms, only: lai_min
   use canopy_air_coms, only: hcapveg_ref,heathite_min
+  use ed_therm_lib,only:calc_hcapveg
 
   implicit none
   
@@ -613,9 +655,16 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
      !!!!!! ASSUMES THAT THE TALLEST COHORT IS IN BIN 1 !!!!!!!!!
 
      if(csite%lai(ipa) > lai_min)then
-        veg_storage = veg_storage +   &
-             hcapveg_ref * max(csite%patch(ipa)%hite(1),heathite_min) * cpatch%lai(ico) &
-             / csite%lai(ipa) * (cpatch%veg_temp(ico) - t3ple)
+        !        veg_storage = veg_storage +   &
+        !             hcapveg_ref * max(csite%patch(ipa)%hite(1),heathite_min) * cpatch%lai(ico) &
+        !             / csite%lai(ipa) * (cpatch%veg_temp(ico) - t3ple)
+
+        veg_storage = veg_storage + &
+             calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+             cpatch%nplant(ico),cpatch%pft(ico)) &
+             * (cpatch%veg_temp(ico) - t3ple)
+        
+        
         if(cpatch%veg_temp(ico) > t3ple)then
            veg_storage = veg_storage + cpatch%veg_water(ico) *  &
                 (cliq * (cpatch%veg_temp(ico) - t3ple) + alli)

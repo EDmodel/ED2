@@ -14,9 +14,7 @@ subroutine ed_coup_driver()
        timmax
   
   use mem_edcp,only:    &
-       wgridf_g,        &
-       wgridp_g,        &
-       wgrids_g,        &
+       wgrid_g,         &
        ed_fluxp_g,      &
        ed_fluxf_g,      &
        ed_precip_g
@@ -25,13 +23,16 @@ subroutine ed_coup_driver()
        allocate_edglobals, &    ! implicitly interfaced subroutine
        filltab_alltypes, &
        edgrid_g
-  
+
+  use ed_misc_coms, only: fast_diagnostics
+
   use misc_coms, only: &
        iyeara,          &
        imontha,         &
        idatea,          &
        itimea,          &
        runtype,         &
+       ifoutput,        &
        idoutput,        &
        imoutput,        &
        integration_scheme
@@ -62,6 +63,16 @@ subroutine ed_coup_driver()
   wtime_start=walltime(0.)
   w1=walltime(wtime_start)
 
+  !---------------------------------------------------------------------------!
+  ! STEP (Classified): Set the special diagnostic parameter                   !
+  !                                                                           !
+  !     Checking if the user has indicated a need for any of the fast flux    !
+  ! diagnostic variables, these are used in conditions of ifoutput,idoutput   !
+  ! and imoutput conditions.                                                  !
+  ! If they are not >0, then set the logical, fast_diagnostics to false.      !
+  !---------------------------------------------------------------------------!
+  fast_diagnostics = ifoutput /= 0 .or. idoutput /= 0 .or. imoutput /= 0
+
 
   !---------------------------------------------------------------------------!
   ! STEP 1: Set the ED model parameters                                       !
@@ -80,7 +91,6 @@ subroutine ed_coup_driver()
   
   if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,602,MPI_COMM_WORLD,ierr)
 
-!  if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
   
   !---------------------------------------------------------------------------!
   ! STEP 3: Allocate soil grid arrays                                         !
@@ -143,11 +153,9 @@ subroutine ed_coup_driver()
   ! STEP 16: Initialize the flux arrays that pass to the atmosphere
   !-----------------------------------------------------------------------!
   if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Allocating Transfer Arrays...'
-  allocate(wgridf_g(ngrids))
-  allocate(wgridp_g(ngrids))
-  allocate(ed_fluxp_g(ngrids))
+  allocate(wgrid_g(ngrids))
+ allocate(ed_fluxp_g(ngrids))
   allocate(ed_fluxf_g(ngrids))
-  allocate(wgrids_g(ngrids))
   allocate(ed_precip_g(ngrids))
   do ifm=1,ngrids
      call newgrid(ifm)
@@ -215,17 +223,6 @@ subroutine ed_coup_driver()
   call filltab_alltypes
 
   
-  !-----------------------------------------------------------------------!
-  ! STEP 12½. Initialize the vegetation internal energy. This needs to    !
-  !           be done after ed_init_coup_atm and update_derived_props so  !
-  !           we have all variables we need.                              !
-  !-----------------------------------------------------------------------!
-  if (trim(runtype) == 'INITIAL') then
-     if (mynum == 1) write(unit=*,fmt='(a)') ' [+] Finding veg. energy...'
-     do ifm=1,ngrids
-        call initialize_vegetation_energy(edgrid_g(ifm))
-     end do
-  end if
 
   !-----------------------------------------------------------------------!
   ! STEP 13. Checking how the output was configure and determining the    !

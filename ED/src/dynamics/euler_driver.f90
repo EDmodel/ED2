@@ -108,6 +108,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
   use misc_coms, only: dtlsm
   use max_dims, only: n_pft
   use therm_lib, only: qtk,qwtk8
+  use ed_therm_lib,only:ed_grndvap
 
   implicit none
 
@@ -676,7 +677,7 @@ data thick(1:10,10)/ .02, .03, .06, .13, .26, .26, .13, .06, .03, .02/
 ! Compute soil heat resistance times HALF layer depth (soil_rfactor).
 
 do k = lsl,nzg
-   waterfrac = sngl(soil_water(k)) / soil(ntext_soil(k))%slmsts
+   waterfrac = soil_water(k) / soil(ntext_soil(k))%slmsts
    soilcond =        soil(ntext_soil(k))%soilcond0  &
       + waterfrac * (soil(ntext_soil(k))%soilcond1  &
       + waterfrac *  soil(ntext_soil(k))%soilcond2  )

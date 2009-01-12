@@ -11,7 +11,8 @@ include include.mk.$(OPT)
 INCLUDES    = $(PAR_INCS) -I$(ED_INCS)
 F90_COMMAND = $(F_COMP) -c $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
 FPP_COMMAND = $(F_COMP) -c -DUSE_INTERF=$(USE_INTERF) -DUSENC=$(USENC) -D$(CMACH)          \
-              -DUSE_HDF5=$(USE_HDF5) $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
+              -DUSE_HDF5=$(USE_HDF5) -DUSE_COLLECTIVE_MPIO=$(USE_COLLECTIVE_MPIO)          \
+              $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
 CXX_COMMAND = $(C_COMP) -c $(C_OPTS) -D$(CMACH) $(HDF5_INCS) $(INCLUDES) $(PAR_DEFS)
 
 #----- Define archive and executable names. -----------------------------------------------#
@@ -36,7 +37,7 @@ $(MAINOBJ):  $(MAIN)
 	@echo ""
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+#	rm -f $(<F:.f90=.f90) 
 
 $(LIBMODEL): $(OBJ_MODEL)
 	$(ARCHIVE) $(LIBMODEL) $(OBJ_MODEL)

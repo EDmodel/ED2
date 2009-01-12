@@ -54,7 +54,14 @@ USE_HDF4=0
 HDF4_LIBS=
 #HDF4_LIBS=-L./.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
 # --------------------------------------------------------------
+#---------------------------------------------------------------
+# If you have a version of hdf5 compiled in parallel, then you
+# may benefit from collective I/O, then use this flag = 1
+# Otherwise, set it to zero.
 
+USE_COLLECTIVE_MPIO=0
+ 
+#---------------------------------------------------------------
 
 #----------------- SGI -n32 ------------------------------------
 #CMACH=SGI

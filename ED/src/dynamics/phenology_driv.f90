@@ -68,8 +68,8 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
        c2n_storage
   use decomp_coms, only: f_labile
   use phenology_coms, only: retained_carbon_fraction, theta_crit, iphen_scheme
-  use consts_coms, only: t3ple
-  use canopy_air_coms, only: hcapveg_ref,heathite_min
+  use consts_coms, only: t3ple,cice,cliq,alli
+  use ed_therm_lib,only:update_veg_energy_cweh,calc_hcapveg
 
   implicit none
   
@@ -90,7 +90,6 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
   real, dimension(nzg) :: theta
   real :: leaf_litter
   real :: bl_max, laii
-  logical :: lai_recompute = .false.
   ! Level to evaluate the soil temperature
 
   isoil_lev = nzg 
@@ -105,8 +104,6 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
 
   do ipa = 1,csite%npatches
      
-     lai_recompute = .false.
-
      cpatch => csite%patch(ipa)
 
      ! Re-initialize litter inputs
@@ -139,12 +136,16 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
         ! Is this a cold deciduous with leaves?
         if(cpatch%phenology_status(ico) < 2 .and. phenology(cpatch%pft(ico)) == 2 .and.   &
              drop_cold == 1)then
-!             day >= 210)then
-print*,'dropping ',cpoly%green_leaf_factor(cpatch%pft(ico),isi),cpoly%leaf_aging_factor(cpatch%pft(ico),isi)           
+           !             day >= 210)then
+           !print*,'dropping ',cs%green_leaf_factor(cpatch%pft(ico)),cs%leaf_aging_factor(cpatch%pft(ico))           
            ! If dropping, compute litter inputs.
            delta_bleaf = cpatch%bleaf(ico) - bl_max
            if(delta_bleaf > 0.0)then
-
+              
+              !THIS IS INCORRECT - PHEN_STATUS 0 INDICATES LEAVES ARE FULLY FLUSHED
+              !BUT IN THIS CASE, LEAVES WERE JUST DROPPED, SHOULD BE 1 OR 2
+              !UNLESS IT IS EXCESS LEAF TRIMMING - AND THE RESULTING LEAF BIOMASS IS 
+              !JUST THE CARRYING CAPACITY OF THE TREE
               cpatch%phenology_status(ico) = 0
               leaf_litter = (1.0 - retained_carbon_fraction)  &
                    * delta_bleaf * cpatch%nplant(ico)
@@ -169,7 +170,15 @@ print*,'dropping ',cpoly%green_leaf_factor(cpatch%pft(ico),isi),cpoly%leaf_aging
               cpatch%lai(ico) = cpatch%bleaf(ico) * sla(cpatch%pft(ico)) * cpatch%nplant(ico)
               cpatch%cb(13,ico) = cpatch%cb(13,ico) - leaf_litter / cpatch%nplant(ico)
               cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - leaf_litter / cpatch%nplant(ico)
+
+              ! Added RGK 10-26-2008
+              ! The leaf biomass of the cohort has changed, update the vegetation
+              ! energy - using a constant temperature assumption
+              
+              call update_veg_energy_cweh(cpatch,ico)
+
            endif
+
            ! Set status flag
            if(bl_max == 0.0 .or. cpoly%green_leaf_factor(cpatch%pft(ico),isi) < 0.02)then
               cpatch%phenology_status(ico) = 2 
@@ -183,8 +192,8 @@ print*,'dropping ',cpoly%green_leaf_factor(cpatch%pft(ico),isi),cpoly%leaf_aging
 !             cs%green_leaf_factor(cpatch%pft) > 0.02 .and. day < 210)then 
            
            ! Cold deciduous flushing? 
-print*,'flushing ',cpoly%green_leaf_factor(cpatch%pft(ico),isi), &
-     & cpoly%leaf_aging_factor(cpatch%pft(ico),isi),cpatch%pft(ico),ico,isi                      
+           !print*,'flushing ',cs%green_leaf_factor(cpatch%pft),cs%leaf_aging_factor(cpatch%pft)                      
+
            ! Update plant carbon pools
            cpatch%phenology_status(ico) = 1 ! 1 indicates leaves are growing
            cpatch%bleaf(ico) = cpoly%green_leaf_factor(cpatch%pft(ico),isi) * cpatch%balive(ico)   &
@@ -192,9 +201,15 @@ print*,'flushing ',cpoly%green_leaf_factor(cpatch%pft(ico),isi), &
            cpatch%lai(ico) = cpatch%nplant(ico) * cpatch%bleaf(ico) * sla(cpatch%pft(ico))
            cpatch%veg_temp(ico) = csite%can_temp(ipa)
            cpatch%veg_water(ico) = 0.0
-           lai_recompute = .true.
-           cpatch%veg_energy(ico) = huge(1.0)
-  
+           
+           !----- Because we assigned no water, the internal energy is 
+           !      simply hcapveg*(T-T3)
+           
+           cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                cpatch%nplant(ico),cpatch%pft(ico))
+           
+           cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * (cpatch%veg_temp(ico)-t3ple)
+           
         elseif(phenology(cpatch%pft(ico)) == 1)then 
 
            ! Drought deciduous?
@@ -229,6 +244,24 @@ print*,'flushing ',cpoly%green_leaf_factor(cpatch%pft(ico),isi), &
                  cpatch%phenology_status(ico) = 2
                  cpatch%cb(13,ico) = cpatch%cb(13,ico) - leaf_litter / cpatch%nplant(ico)
                  cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - leaf_litter/cpatch%nplant(ico)
+
+
+                 ! Added RGK 10-26-2008
+                 ! IF the cohort drops it's leaves, then it is dropping the water also.
+                 ! And the vegetation energy must be updated.
+                 ! We will assume for simplicity, that the water enters a wormhole to another
+                 ! galaxy
+                 
+                 cpatch%veg_water(ico) = 0.0
+                 
+                 !----- Because we assigned no water, the internal energy is 
+                 !      simply hcapveg*(T-T3)
+                 
+                 cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                      cpatch%nplant(ico),cpatch%pft(ico))
+                 
+                 cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * (cpatch%veg_temp(ico)-t3ple)
+
                  
               endif
               
@@ -244,33 +277,19 @@ print*,'flushing ',cpoly%green_leaf_factor(cpatch%pft(ico),isi), &
               cpatch%lai(ico) = cpatch%nplant(ico) * cpatch%bleaf(ico) * sla(cpatch%pft(ico))
               cpatch%veg_temp(ico) = csite%can_temp(ipa)
               cpatch%veg_water(ico) = 0.0
-              lai_recompute = .true.
-              cpatch%veg_energy(ico) = huge(1.0)
-              !----- Because we assigned no water, the internal energy is simply hcapveg*(T-T3)
-!              hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)/csite%lai(ipa)
-!              cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
-                 
+
+              !----- Because we assigned no water, the internal energy 
+              !      is simply hcapveg*(T-T3)
+              
+              cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                   cpatch%nplant(ico),cpatch%pft(ico))
+              cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * (cpatch%veg_temp(ico)-t3ple)
+              
            endif  ! critical moisture
            
         endif  ! phenology type
 
      enddo  ! cohorts
-
-     if(lai_recompute) then ! lai changed during the calculation, need to adjust leaf energy
-        csite%lai(ipa) = sum(cpatch%lai(1:cpatch%ncohorts))
-        laii = 1.0/csite%lai(ipa)
-        do ico = 1,cpatch%ncohorts
-           !if(cpatch%veg_energy(ico) .ge. huge(1.0)) then
-
-              !----- Because we assigned no water, the internal energy is simply hcapveg*(T-T3)
-              hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico)*laii
-              cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
-          !    print*,cpatch%veg_energy(ico),hcapveg,cpatch%lai(ico),laii
-          !    stop
-          ! endif
-        end do
-     endif
-
 
   enddo  ! patches
   return

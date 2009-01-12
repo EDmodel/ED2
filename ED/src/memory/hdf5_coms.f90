@@ -10,6 +10,7 @@ module hdf5_coms
 
   integer(HSIZE_T),dimension(6) :: memsize,memdims,memoffs !EQUIV IN MEM
 
-
+  integer(HID_T)  :: datatype_id ! Datatype identifier 
+  integer(SIZE_T) :: setsize  ! Datatype size
 
 end module hdf5_coms

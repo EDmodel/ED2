@@ -265,15 +265,13 @@ module ed_state_vars
 
      real, pointer, dimension(:) :: paw_avg10d
 
-     ! THIS VARIABLE IS DEPRICATED RGK 6-30-08
-     !real, pointer, dimension(:) :: transpiration
-
      ! Vegetation heating/cooling rates
-     real,pointer,dimension(:) :: co_srad_h
-     real,pointer,dimension(:) :: co_lrad_h
-     real,pointer,dimension(:) :: co_sens_h
-     real,pointer,dimension(:) :: co_evap_h
-     real,pointer,dimension(:) :: co_liqr_h
+     ! These diagnostics are now depricated RGK 11-2008
+     !real,pointer,dimension(:) :: co_srad_h
+     !real,pointer,dimension(:) :: co_lrad_h
+     !real,pointer,dimension(:) :: co_sens_h
+     !real,pointer,dimension(:) :: co_evap_h
+     !real,pointer,dimension(:) :: co_liqr_h
 
      
   end type patchtype
@@ -648,6 +646,10 @@ module ed_state_vars
      ! Fast time flux diagnostic variables
      !-------------------------------------------
      
+     !----- Radiation ---------------------------
+     
+     real,pointer,dimension(:) :: avg_netrad        ! Net radiation of soil,surface water and vegetation sum
+
      !----- Moisture ----------------------------
      !                                              | Description
      real,pointer,dimension(:) :: avg_vapor_vc      ! Vegetation to canopy air latent heat flux
@@ -970,6 +972,9 @@ module ed_state_vars
 
      real,pointer,dimension(:) :: runoff
 
+
+
+
      !----- NACP intercomparison ---------------------------------------------!
      real,pointer,dimension(:) :: avg_snowdepth
      real,pointer,dimension(:) :: avg_snowmass
@@ -1186,6 +1191,12 @@ module ed_state_vars
 
      !----- Mass and Energy --------------------------------------------------!
 
+     ! New variables for testing the model stability
+     real,pointer,dimension(:) :: max_veg_temp
+     real,pointer,dimension(:) :: min_veg_temp
+     real,pointer,dimension(:) :: max_soil_temp
+     real,pointer,dimension(:) :: min_soil_temp
+
      real,pointer,dimension(:) :: avg_veg_energy
      real,pointer,dimension(:) :: avg_veg_temp
      real,pointer,dimension(:) :: avg_veg_water
@@ -1232,7 +1243,12 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_atm_co2
      real,pointer,dimension(:) :: avg_albedt
      real,pointer,dimension(:) :: avg_rlongup
-
+     real,pointer,dimension(:,:,:) :: avg_lai_ebalvars   ! This diagnostic partitions energy flux
+                                                         ! variables into LAI regimes.
+                                                         ! The matrix is arranged as follows
+                                                         ! (LAI,VARIABLE,POLYGON)
+                                                         ! Where LAI is (<2.0,2-4,>4)
+                                                         ! Where Variable is (RNET,LHF,SHF,CANTEMP)
      real,pointer,dimension(:) :: avg_gpp
      real,pointer,dimension(:) :: avg_leaf_resp
      real,pointer,dimension(:) :: avg_root_resp
@@ -1344,12 +1360,10 @@ module ed_state_vars
   
   type rk4patchtype
      
-     real :: wbudget_loss2atm
-     real :: ebudget_loss2atm
-     real :: ebudget_latent
-     real :: co2budget_loss2atm
-     
+
      ! Prognostic variables
+     ! ---------------------------------------
+     
      real :: can_temp
      real :: can_shv
      real :: can_co2
@@ -1388,7 +1402,7 @@ module ed_state_vars
      real :: tpwp
      real :: wpwp
 
-     real :: avg_gpp
+     
      
      real, dimension(n_pft) :: a_o_max
      real, dimension(n_pft) :: a_c_max
@@ -1400,15 +1414,17 @@ module ed_state_vars
      real,pointer,dimension(:) :: veg_energy
      real,pointer,dimension(:) :: veg_water
 
-     real,pointer,dimension(:) :: co_srad_h
-     real,pointer,dimension(:) :: co_lrad_h
-     real,pointer,dimension(:) :: co_sens_h
-     real,pointer,dimension(:) :: co_evap_h
-     real,pointer,dimension(:) :: co_liqr_h
 
      ! ------------------------------------------
      ! Fast time flux diagnostic variables
+     ! These variables are not used for any prognostic
+     ! purpose. This should not be changed without carefull
+     ! consideration.  These variables may be turned off
+     ! under different conditions.
      !-------------------------------------------
+
+     real :: avg_gpp
+     real :: avg_netrad        ! Net radiation
      real :: avg_vapor_vc      ! Vegetation to canopy air latent heat flux
      real :: avg_dew_cg        ! Dew to ground flux
      real :: avg_vapor_gc      ! Ground to canopy air latent heat flux
@@ -1416,9 +1432,10 @@ module ed_state_vars
      real :: avg_vapor_ac      ! Canopy to atmosphere water flux
      real :: avg_transp        ! Transpiration
      real :: avg_evap          ! Evaporation
+
      real,pointer,dimension(:) :: avg_smoist_gg   ! Moisture flux between layers
      real,pointer,dimension(:) :: avg_smoist_gc     ! Trabspired soil moisture sink
-      real :: aux               ! Auxillary surface variable
+     real :: aux               ! Auxillary surface variable
      real,pointer,dimension(:) :: aux_s           ! Auxillary soil variable
      real :: avg_sensible_vc   ! Vegetation to Canopy sensible heat flux
      real :: avg_sensible_2cas ! Sensible heat flux to canopy air space
@@ -1429,6 +1446,13 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_sensible_gg ! Net soil heat flux between layers
      real :: avg_heatstor_veg  ! Heat storage in vegetation
      
+     real :: wbudget_loss2atm
+     real :: ebudget_loss2atm
+     real :: ebudget_latent
+     real :: co2budget_loss2atm
+
+
+
   end type rk4patchtype
 !============================================================================!
 !============================================================================!
@@ -1674,6 +1698,11 @@ contains
        allocate(cgrid%avg_runoff_heat  (npolygons))
        allocate(cgrid%avg_heatstor_veg (npolygons))
 
+       allocate(cgrid%max_veg_temp(npolygons))
+       allocate(cgrid%min_veg_temp(npolygons))
+       allocate(cgrid%max_soil_temp(npolygons))
+       allocate(cgrid%min_soil_temp(npolygons))
+
        ! Fast time state diagnostics
        allocate(cgrid%avg_veg_energy(npolygons))
        allocate(cgrid%avg_veg_temp  (npolygons))
@@ -1684,6 +1713,8 @@ contains
        allocate(cgrid%avg_soil_water(nzg,npolygons))
        allocate(cgrid%avg_soil_temp (nzg,npolygons))
        allocate(cgrid%avg_soil_fracliq (nzg,npolygons))
+
+       allocate(cgrid%avg_lai_ebalvars (3,4,npolygons))
 
        allocate(cgrid%avg_gpp  (npolygons))
        allocate(cgrid%avg_leaf_resp  (npolygons))
@@ -1796,7 +1827,7 @@ contains
           allocate(cgrid%stdev_rh           (             npolygons))
        end if
        ! Initialize the variables with a non-sense number.
-       call huge_edtype(cgrid)
+       !call huge_edtype(cgrid)
     end if
     return
   end subroutine allocate_edtype
@@ -1923,6 +1954,7 @@ contains
     allocate(cpoly%avg_vapor_ac  (nsites))
     allocate(cpoly%avg_transp    (nsites))
     allocate(cpoly%avg_evap      (nsites))
+    
     allocate(cpoly%avg_smoist_gg (nzg,nsites))
     allocate(cpoly%avg_smoist_gc (nzg,nsites))
     allocate(cpoly%avg_runoff        (nsites))
@@ -1964,7 +1996,7 @@ contains
 
 
     ! Initialize the variables with a non-sense number.
-    call huge_polygontype(cpoly)
+    !call huge_polygontype(cpoly)
     
     return
   end subroutine allocate_polygontype
@@ -2118,6 +2150,7 @@ contains
     allocate(csite%avg_vapor_ac  (npatches))
     allocate(csite%avg_transp    (npatches))
     allocate(csite%avg_evap      (npatches))
+    allocate(csite%avg_netrad    (npatches))
     allocate(csite%avg_smoist_gg (nzg,npatches))
     allocate(csite%avg_smoist_gc (nzg,npatches))
     allocate(csite%avg_runoff        (npatches))
@@ -2150,7 +2183,7 @@ contains
     allocate(csite%runoff          (npatches))
 
     ! Initialize the variables with a non-sense number.
-    call huge_sitetype(csite)
+    !call huge_sitetype(csite)
 
     return
   end subroutine allocate_sitetype
@@ -2233,15 +2266,15 @@ contains
     allocate(cpatch%gpp(ncohorts))
     allocate(cpatch%paw_avg10d(ncohorts))
 
-
-    allocate(cpatch%co_srad_h(ncohorts))
-    allocate(cpatch%co_lrad_h(ncohorts))
-    allocate(cpatch%co_sens_h(ncohorts))
-    allocate(cpatch%co_evap_h(ncohorts))
-    allocate(cpatch%co_liqr_h(ncohorts))
+    ! Depricated
+!    allocate(cpatch%co_srad_h(ncohorts))
+!    allocate(cpatch%co_lrad_h(ncohorts))
+!    allocate(cpatch%co_sens_h(ncohorts))
+!    allocate(cpatch%co_evap_h(ncohorts))
+!    allocate(cpatch%co_liqr_h(ncohorts))
 
     ! Initialize the variables with a non-sense number.
-    call huge_patchtype(cpatch)
+    !call huge_patchtype(cpatch)
 
     return
   end subroutine allocate_patchtype
@@ -2349,6 +2382,8 @@ contains
        nullify(cgrid%avg_soil_water          )
        nullify(cgrid%avg_soil_temp           )
        nullify(cgrid%avg_soil_fracliq           )
+
+       nullify(cgrid%avg_lai_ebalvars)
 
        nullify(cgrid%avg_gpp          )
        nullify(cgrid%avg_leaf_resp    )
@@ -2750,6 +2785,7 @@ contains
     nullify(csite%avg_vapor_ac  )
     nullify(csite%avg_transp    )
     nullify(csite%avg_evap      )
+    nullify(csite%avg_netrad    )
     nullify(csite%avg_smoist_gg )
     nullify(csite%avg_smoist_gc )
     nullify(csite%avg_runoff    )
@@ -2857,11 +2893,13 @@ contains
     nullify(cpatch%hcapveg)
     nullify(cpatch%gpp)
     nullify(cpatch%paw_avg10d)
-    nullify(cpatch%co_srad_h)
-    nullify(cpatch%co_lrad_h)
-    nullify(cpatch%co_sens_h)
-    nullify(cpatch%co_evap_h)
-    nullify(cpatch%co_liqr_h)
+
+! Depricated
+!    nullify(cpatch%co_srad_h)
+!    nullify(cpatch%co_lrad_h)
+!    nullify(cpatch%co_sens_h)
+!    nullify(cpatch%co_evap_h)
+!    nullify(cpatch%co_liqr_h)
 
     return
   end subroutine nullify_patchtype
@@ -2962,6 +3000,11 @@ contains
        if(associated(cgrid%avg_runoff_heat         )) deallocate(cgrid%avg_runoff_heat         )
        if(associated(cgrid%avg_heatstor_veg        )) deallocate(cgrid%avg_heatstor_veg        )
 
+       if(associated(cgrid%max_veg_temp          )) deallocate(cgrid%max_veg_temp          )
+       if(associated(cgrid%min_veg_temp          )) deallocate(cgrid%min_veg_temp          )
+       if(associated(cgrid%max_soil_temp          )) deallocate(cgrid%max_soil_temp          )
+       if(associated(cgrid%min_soil_temp          )) deallocate(cgrid%min_soil_temp          )
+
        ! Fast time state diagnostics
        if(associated(cgrid%avg_veg_energy          )) deallocate(cgrid%avg_veg_energy          )
        if(associated(cgrid%avg_veg_temp            )) deallocate(cgrid%avg_veg_temp            )
@@ -2973,6 +3016,8 @@ contains
        if(associated(cgrid%avg_soil_temp           )) deallocate(cgrid%avg_soil_temp           )
        if(associated(cgrid%avg_soil_fracliq        )) deallocate(cgrid%avg_soil_fracliq           )
        
+       if(associated(cgrid%avg_lai_ebalvars        )) deallocate(cgrid%avg_lai_ebalvars   )
+
        if(associated(cgrid%avg_gpp                 )) deallocate(cgrid%avg_gpp          )
        if(associated(cgrid%avg_leaf_resp           )) deallocate(cgrid%avg_leaf_resp    )
        if(associated(cgrid%avg_root_resp           )) deallocate(cgrid%avg_root_resp    )
@@ -3370,6 +3415,7 @@ contains
     if(associated(csite%avg_vapor_ac                 )) deallocate(csite%avg_vapor_ac                 )
     if(associated(csite%avg_transp                   )) deallocate(csite%avg_transp                   )
     if(associated(csite%avg_evap                     )) deallocate(csite%avg_evap                     )
+    if(associated(csite%avg_netrad                   )) deallocate(csite%avg_netrad                   )
     if(associated(csite%avg_smoist_gg                )) deallocate(csite%avg_smoist_gg                )
     if(associated(csite%avg_smoist_gc                )) deallocate(csite%avg_smoist_gc                )
     if(associated(csite%avg_runoff                   )) deallocate(csite%avg_runoff                   )
@@ -3481,11 +3527,13 @@ contains
     if(associated(cpatch%hcapveg))          deallocate(cpatch%hcapveg)
     if(associated(cpatch%gpp))              deallocate(cpatch%gpp)
     if(associated(cpatch%paw_avg10d))       deallocate(cpatch%paw_avg10d)
-    if(associated(cpatch%co_srad_h))          deallocate(cpatch%co_srad_h)
-    if(associated(cpatch%co_lrad_h))          deallocate(cpatch%co_lrad_h)
-    if(associated(cpatch%co_sens_h))          deallocate(cpatch%co_sens_h)
-    if(associated(cpatch%co_evap_h))          deallocate(cpatch%co_evap_h)
-    if(associated(cpatch%co_liqr_h))          deallocate(cpatch%co_liqr_h)
+
+!Depricated
+!    if(associated(cpatch%co_srad_h))          deallocate(cpatch%co_srad_h)
+!    if(associated(cpatch%co_lrad_h))          deallocate(cpatch%co_lrad_h)
+!    if(associated(cpatch%co_sens_h))          deallocate(cpatch%co_sens_h)
+!    if(associated(cpatch%co_evap_h))          deallocate(cpatch%co_evap_h)
+!    if(associated(cpatch%co_liqr_h))          deallocate(cpatch%co_liqr_h)
 
 
     return
@@ -3632,6 +3680,11 @@ contains
        if(associated(cgrid%avg_runoff_heat         )) cgrid%avg_runoff_heat          = large_real
        if(associated(cgrid%avg_heatstor_veg        )) cgrid%avg_heatstor_veg         = large_real
 
+       if(associated(cgrid%max_veg_temp          )) cgrid%max_veg_temp           = large_real
+       if(associated(cgrid%min_veg_temp          )) cgrid%min_veg_temp           = large_real
+       if(associated(cgrid%max_soil_temp          )) cgrid%max_soil_temp           = large_real
+       if(associated(cgrid%min_soil_temp          )) cgrid%min_soil_temp           = large_real
+
        ! Fast time state diagnostics
        if(associated(cgrid%avg_veg_energy          )) cgrid%avg_veg_energy           = large_real
        if(associated(cgrid%avg_veg_temp            )) cgrid%avg_veg_temp             = large_real
@@ -3642,6 +3695,8 @@ contains
        if(associated(cgrid%avg_soil_water          )) cgrid%avg_soil_water           = large_real
        if(associated(cgrid%avg_soil_temp           )) cgrid%avg_soil_temp            = large_real
        if(associated(cgrid%avg_soil_fracliq           )) cgrid%avg_soil_fracliq            = large_real
+
+       if(associated(cgrid%avg_lai_ebalvars        )) cgrid%avg_lai_ebalvars         = large_real
 
        !!! added for NACP intercomparison (MCD)
        if(associated(cgrid%avg_snowdepth           )) cgrid%avg_snowdepth            = large_real
@@ -4069,6 +4124,7 @@ contains
     if(associated(csite%avg_vapor_ac                 )) csite%avg_vapor_ac                 = large_real
     if(associated(csite%avg_transp                   )) csite%avg_transp                   = large_real
     if(associated(csite%avg_evap                     )) csite%avg_evap                     = large_real
+    if(associated(csite%avg_netrad                   )) csite%avg_netrad                   = large_real
     if(associated(csite%avg_smoist_gg                )) csite%avg_smoist_gg                = large_real
     if(associated(csite%avg_smoist_gc                )) csite%avg_smoist_gc                = large_real
     if(associated(csite%avg_runoff                   )) csite%avg_runoff                   = large_real
@@ -4189,11 +4245,13 @@ contains
     if(associated(cpatch%hcapveg))              cpatch%hcapveg             = large_real
     if(associated(cpatch%gpp))                  cpatch%gpp                 = large_real
     if(associated(cpatch%paw_avg10d))           cpatch%paw_avg10d          = large_real
-    if(associated(cpatch%co_srad_h))            cpatch%co_srad_h           = large_real
-    if(associated(cpatch%co_lrad_h))            cpatch%co_lrad_h           = large_real
-    if(associated(cpatch%co_sens_h))            cpatch%co_sens_h           = large_real
-    if(associated(cpatch%co_evap_h))            cpatch%co_evap_h           = large_real
-    if(associated(cpatch%co_liqr_h))            cpatch%co_liqr_h           = large_real 
+
+    ! Depricated
+!    if(associated(cpatch%co_srad_h))            cpatch%co_srad_h           = large_real
+!    if(associated(cpatch%co_lrad_h))            cpatch%co_lrad_h           = large_real
+!    if(associated(cpatch%co_sens_h))            cpatch%co_sens_h           = large_real
+!    if(associated(cpatch%co_evap_h))            cpatch%co_evap_h           = large_real
+!    if(associated(cpatch%co_liqr_h))            cpatch%co_liqr_h           = large_real 
 
     return
   end subroutine huge_patchtype
@@ -4508,6 +4566,7 @@ contains
     siteout%avg_vapor_ac(1:inc)         = pack(sitein%avg_vapor_ac,logmask)
     siteout%avg_transp(1:inc)           = pack(sitein%avg_transp,logmask)
     siteout%avg_evap(1:inc)             = pack(sitein%avg_evap,logmask)
+    siteout%avg_netrad(1:inc)           = pack(sitein%avg_netrad,logmask)
     siteout%avg_runoff(1:inc)           = pack(sitein%avg_runoff,logmask)
     siteout%aux(1:inc)                  = pack(sitein%aux,logmask)
     siteout%avg_sensible_vc(1:inc)      = pack(sitein%avg_sensible_vc,logmask)
@@ -4829,11 +4888,12 @@ contains
        patchout%gpp(iout)              = patchin%gpp(iin)
        patchout%paw_avg10d(iout)       = patchin%paw_avg10d(iin)
 
-       patchout%co_srad_h(iout)        = patchin%co_srad_h(iin)
-       patchout%co_lrad_h(iout)        = patchin%co_lrad_h(iin)
-       patchout%co_sens_h(iout)        = patchin%co_sens_h(iin)
-       patchout%co_evap_h(iout)        = patchin%co_evap_h(iin)
-       patchout%co_liqr_h(iout)        = patchin%co_liqr_h(iin)
+       ! Depricated
+!       patchout%co_srad_h(iout)        = patchin%co_srad_h(iin)
+!       patchout%co_lrad_h(iout)        = patchin%co_lrad_h(iin)
+!       patchout%co_sens_h(iout)        = patchin%co_sens_h(iin)
+!       patchout%co_evap_h(iout)        = patchin%co_evap_h(iin)
+!       patchout%co_liqr_h(iout)        = patchin%co_liqr_h(iin)
 
        osdo => patchout%old_stoma_data(iout)
        osdi => patchin%old_stoma_data(iin)
@@ -5087,10 +5147,10 @@ contains
 
           if(mynum == 1) then
              
-             print*,"Global Polygons: ",gdpy(1:nnodetot,igr),mynum
-             print*,"Global Site: "    ,gdsi(1:nnodetot,igr),mynum
-             print*,"Global Patches: " ,gdpa(1:nnodetot,igr),mynum
-             print*,"Global Cohorts: " ,gdco(1:nnodetot,igr),mynum
+             print*,"Global Polygons: ",gdpy(1:nnodetot,igr)
+             print*,"Global Site: "    ,gdsi(1:nnodetot,igr)
+             print*,"Global Patches: " ,gdpa(1:nnodetot,igr)
+             print*,"Global Cohorts: " ,gdco(1:nnodetot,igr)
 
           end if
 
@@ -5411,7 +5471,7 @@ contains
     if (associated(cgrid%xatm)) then
        nvar=nvar+1
        call vtable_edio_i(cgrid%xatm(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'XATM :11:hist:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'XATM :11:hist:anal:mpti:mpt3') 
 
        call metadata_edio(nvar,igr,'Atm. cell x-indices of polygon','NA','ipoly')
 
@@ -5420,12 +5480,12 @@ contains
     if (associated(cgrid%yatm)) then
        nvar=nvar+1
        call vtable_edio_i(cgrid%yatm(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'YATM :11:hist:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'YATM :11:hist:anal:mpti:mpt3') 
 
        call metadata_edio(nvar,igr,'Atm cell y-indices of polygon','NA','ipoly')
 
     endif
-    
+
     if (associated(cgrid%ntext_soil)) then
        nvar=nvar+1
        call vtable_edio_i(cgrid%ntext_soil(1,1),nvar,igr,init,cgrid%pyglob_id, &
@@ -5758,6 +5818,13 @@ contains
     endif
         ! ---------------------------------------------
 
+    if (associated(cgrid%avg_lai_ebalvars)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_lai_ebalvars(1,1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_LAI_EBALVARS :17:anal') 
+       call metadata_edio(nvar,igr,'Polygon Average Energy Balance Variables','[variable]','ipoly - 4 - 3') 
+    endif
+    
     if (associated(cgrid%avg_gpp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_gpp(1),nvar,igr,init,cgrid%pyglob_id, &
@@ -6005,6 +6072,34 @@ contains
             var_len,var_len_global,max_ptrs,'AVG_RLONGUP :11:hist:anal:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon Average Upwelling Longwave Radiation','[W/m2]','ipoly') 
     endif
+
+    if (associated(cgrid%max_veg_temp)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%max_veg_temp(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MAX_VEG_TEMP :11:anal') 
+       call metadata_edio(nvar,igr,'Temp of the hottest cohort in the polygon','[K]','ipoly') 
+    endif     
+
+    if (associated(cgrid%min_veg_temp)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%min_veg_temp(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MIN_VEG_TEMP :11:anal') 
+       call metadata_edio(nvar,igr,'Temp of the coldest cohort in the polygon','[K]','ipoly') 
+    endif
+
+    if (associated(cgrid%max_soil_temp)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%max_soil_temp(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MAX_SOIL_TEMP :11:anal') 
+       call metadata_edio(nvar,igr,'Temp of the hottest soil layer in the polygon','[K]','ipoly') 
+    endif    
+
+    if (associated(cgrid%min_soil_temp)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%min_soil_temp(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MIN_SOIL_TEMP :11:anal') 
+       call metadata_edio(nvar,igr,'Temp of the coldest soil layer in the polygon','[K]','ipoly') 
+    endif    
     
     if (associated(cgrid%avg_veg_energy)) then
        nvar=nvar+1
@@ -6012,7 +6107,7 @@ contains
             var_len,var_len_global,max_ptrs,'AVG_VEG_ENERGY :11:hist:anal:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon Average Internal Energy of Vegetation','[J/kg]','ipoly') 
     endif
-    
+
     if (associated(cgrid%avg_veg_temp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_veg_temp(1),nvar,igr,init,cgrid%pyglob_id, &
@@ -6462,6 +6557,10 @@ contains
             var_len,var_len_global,max_ptrs,'STDEV_RH :11:hist:mont:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
+
+
+
+
     
     if (init == 0) niogrid=nvar-nioglobal
     

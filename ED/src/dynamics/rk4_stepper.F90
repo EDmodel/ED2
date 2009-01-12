@@ -69,16 +69,15 @@ contains
                integration_buff%y,integration_buff%ytemp)
           errmax = errmax/epsil
        else
-
-          call get_errmax_ar(errmax, integration_buff%yerr,   &
-               integration_buff%yscal, csite%patch(ipa), lsl,  &
-               integration_buff%y,integration_buff%ytemp)
-          errmax = errmax/epsil
-          if ( errmax < 1) then
+!          call get_errmax_ar(errmax, integration_buff%yerr,   &
+!               integration_buff%yscal, csite%patch(ipa), lsl, &
+!               integration_buff%y,integration_buff%ytemp)
+!          errmax = errmax/epsil
+!          if ( errmax < 1) then
 !             print*,"INTEGRATOR DID NOT GIVE SANE RESULTS"
 !             print*,"YET IT PASSED THE ERROR CRITERIA"
 !             print*,"THIS SHOULD NOT BE. STOPPING"
-          endif
+!          endif
 
           errmax = 10.0
        endif
@@ -255,6 +254,7 @@ contains
     call stabilize_snow_layers_ar(ak7, csite, ipa, b21*h, lsl)
     call lsm_sanity_check_ar(ak7, iflag1, csite, ipa, lsl ,dydx,h )
 
+
     if(iflag1 /= 1)return
 
     call leaf_derivs_ar(ak7, ak2, csite, ipa,isi,ipy, rhos, prss, pcpg, qpcpg, atm_tmp,   &
@@ -333,7 +333,6 @@ contains
     use soil_coms, only: soil
     use canopy_radiation_coms, only: lai_min
     use consts_coms, only : t3ple
-    use canopy_air_coms, only: hcapveg_ref,heathite_min
     use therm_lib, only: qwtk
 
     implicit none
@@ -342,9 +341,12 @@ contains
     type(patchtype),pointer :: cpatch
     type(rk4patchtype), target :: y,dydx
     integer iflag1,k
-    real :: atm_tempk,h,hcapveg,veg_temp,fracliq
+    real :: atm_tempk,h,veg_temp,fracliq
+    real :: hcapveg
     integer :: ipa,ico
     integer, parameter :: print_diags=0
+    real :: hite1,hitem,cplai,silai
+    integer :: npatches
 
     if(y%soil_tempk(nzg) /= y%soil_tempk(nzg))then
        print*,'in the sanity check'
@@ -446,10 +448,13 @@ contains
     do ico = 1,cpatch%ncohorts
     
        if (cpatch%lai(ico) > lai_min) then
-          hcapveg = hcapveg_ref * max(cpatch%hite(1),heathite_min) * cpatch%lai(ico) / csite%lai(ipa)
-          call qwtk(y%veg_energy(ico),y%veg_water(ico),hcapveg,veg_temp,fracliq)
+          
+!          hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+!                 cpatch%nplant(ico),cpatch%pft(ico))
 
-          if(veg_temp > 380.0)then
+          call qwtk(y%veg_energy(ico),y%veg_water(ico),cpatch%hcapveg(ico),veg_temp,fracliq)
+
+          if(veg_temp > 380.0 .or. veg_temp < 200.0 )then
              iflag1 = 0
              if(print_diags==1) print*,'leaf temp too high',veg_temp,y%veg_energy(ico),  &
                   cpatch%lai(ico),cpatch%pft(ico),cpatch%veg_temp(ico)
@@ -459,6 +464,7 @@ contains
     end do
 
     
+
     return
   end subroutine lsm_sanity_check_ar
 

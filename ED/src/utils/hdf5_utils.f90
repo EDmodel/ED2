@@ -2,7 +2,25 @@ module hdf5_utils
 
 
 contains
+
+! =============================================================================
+
+subroutine init_hdf5_env()
+  use hdf5_coms
+  implicit none
   
+  integer :: hdferr
+  
+
+  call h5open_f(hdferr)
+  if (hdferr /= 0) then
+     print*,'HDF5 Open error #:',hdferr
+     call fatal_error('Could not initialize the hdf environment' &
+          ,'h5_output','h5_output.F90')
+  endif
+
+end subroutine init_hdf5_env
+
 !===============================================================================
 
 subroutine shdf5_info_f(dsetname,ndims,dims)

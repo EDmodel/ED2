@@ -683,10 +683,20 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
              if (zside) exit zgssloop
          end do zgssloop
          if (.not. zside) then
-            write (unit=*,fmt='(a)') ' No second guess for you...'
-            write (unit=*,fmt='(2(a,1x,es14.7))') 'tempa=',tempa,'funa=',funa
-            write (unit=*,fmt='(2(a,1x,es14.7))') 'tempz=',tempz,'func=',funz
-            write (unit=*,fmt='(1(a,1x,es14.7))') 'delta=',delta
+            write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
+            write (unit=*,fmt='(a)')           ' THIL2TQALL: NO SECOND GUESS FOR YOU!'
+            write (unit=*,fmt='(a)')           ' '
+            write (unit=*,fmt='(a)')           ' -> Input: '
+            write (unit=*,fmt='(a,1x,f12.5)')  '    THETA_IL [     K]:',thil
+            write (unit=*,fmt='(a,1x,f12.5)')  '    EXNER    [J/kg/K]:',exner
+            write (unit=*,fmt='(a,1x,f12.5)')  '    RTOT     [  g/kg]:',1000.*rtot
+            write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPA    [  degC]:',tempa-t00
+            write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPZ    [  degC]:',tempz-t00
+            write (unit=*,fmt='(a,1x,f12.5)')  '    FUNA     [     K]:',funa
+            write (unit=*,fmt='(a,1x,f12.5)')  '    FUNZ     [     K]:',funz
+            write (unit=*,fmt='(a,1x,f12.5)')  '    DELTA    [     K]:',delta
+            write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
+
             call abort_run('Failed finding the second guess for regula falsi'              &
                           ,'thil2tqall','rthrm.f90')
          end if

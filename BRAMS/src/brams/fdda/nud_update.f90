@@ -25,7 +25,7 @@ implicit none
 
 integer :: iswap,nnud
 
-integer :: ngrids1,ioutput1,nzg1,nzs1,npatch1
+integer :: ngrids1,ioutput1,nzg1,nzs1,npatch1,nclouds1
 real :: ztop1
 real(kind=8) :: time1
 integer, allocatable, dimension(:) :: nnxp1,nnyp1,nnzp1
@@ -35,7 +35,7 @@ real, allocatable, dimension(:,:) :: topt1
 
 
 integer :: iyr,imn,idy,itm,ie,maxarr,maxarr2,ngr,maxx1,maxy1,maxz1
-character (len=80) :: hnameinh,prefix
+character (len=256) :: hnameinh,prefix
 character (len=2) :: cng
 integer, external :: cio_i,cio_f,cio_i_sca,cio_f_sca,cio_f8_sca
 integer,save :: iunhd=11,inhunt=10
@@ -88,6 +88,7 @@ ie=cio_i(iunhd,1,'nnxp',nnxp1,ngrids1)
 ie=cio_i(iunhd,1,'nnyp',nnyp1,ngrids1)
 ie=cio_i(iunhd,1,'nnzp',nnzp1,ngrids1)
 ie=cio_i_sca(iunhd,1,'npatch',npatch1,1)
+ie=cio_i_sca(iunhd,1,'nclouds',nclouds1,1)
 ie=cio_i_sca(iunhd,1,'nzg',nzg1,1)
 ie=cio_i_sca(iunhd,1,'nzs',nzs1,1)
 ie=cio_i_sca(iunhd,1,'ioutput',ioutput1,1)
@@ -107,7 +108,8 @@ maxz1=maxval(nnzp1(1:ngrids1))
 do ngr=1,ngrids1
    maxarr=max(maxarr,nnxp1(ngr)*nnyp1(ngr)*nnzp1(ngr)  &
          ,nnxp1(ngr)*nnyp1(ngr)*nzg1*npatch1 &
-         ,nnxp1(ngr)*nnyp1(ngr)*nzs1*npatch1)
+         ,nnxp1(ngr)*nnyp1(ngr)*nzs1*npatch1 &
+         ,nnzp1(ngr)*nnxp1(ngr)*nnyp1(ngr)*nclouds1)
 
    !For use with CATT
    maxarr=max(maxarr,nnxp1(ngr)*nnyp1(ngr)*nwave)

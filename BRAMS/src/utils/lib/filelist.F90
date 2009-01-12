@@ -18,7 +18,7 @@ character(len=30) :: tmpname
 
 integer :: iflag,iprelen,nc,nf,iun
 
-integer,parameter :: maxlist=6666,maxlen=200
+integer,parameter :: maxlist=12000,maxlen=200
 character(len=maxlist*maxlen) :: filelist
 character(len=256)::dir,filetemp
 character(len=256)::prefix
