@@ -414,7 +414,7 @@ subroutine par_model(master_num)
         pwall=pwall+ptimes(n,2)
      enddo
 
-     write(*,'(a,i6,a,f9.1,2(a,f6.2),a)') &
+     write(*,'(a,i6,a,f12.1,2(a,f12.2),a)') &
           ' Timestep ',istp,&
           '; Sim Time',time,&
           's; Wall',wtime2-wtime1,&

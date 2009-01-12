@@ -20,6 +20,8 @@ Module soil_coms
   integer, parameter :: ed_nvtyp = 21
 #endif
 
+  integer :: isoilbc ! Bottom layer boundary condition (0. bedrock or 1. free drainage)
+
   real, parameter :: soil_rough = 0.05 ! soil roughness height [m]
   real, parameter :: snow_rough = 0.01 ! snowcover roughness height [m]
   real :: water_stab_thresh            ! stability threshold for RK4

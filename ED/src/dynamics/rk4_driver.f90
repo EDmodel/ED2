@@ -183,8 +183,10 @@ contains
     ! end time.  what is important is tend-tbeg.  this should get moved to 
     ! the namelist.
     tend = dtlsm 
+
     ! desired accuracy.
     eps = 1.0e-2
+
     ! initial step size.  experience has shown that giving this too large a 
     ! value causes the integrator to fail (e.g., soil layers become
     ! supersaturated).
@@ -300,16 +302,15 @@ contains
 
   subroutine initp2modelp_ar(hdid, initp, csite, ipa,isi,ipy, rhos, lsl)
 
-    use ed_state_vars,only:sitetype,patchtype,rk4patchtype
+    use ed_state_vars,only:sitetype,patchtype,rk4patchtype,edgrid_g
     use consts_coms, only: day_sec,t3ple
+    use ed_misc_coms,only: fast_diagnostics
     use soil_coms, only: soil, slz
     use ed_misc_coms,only: fast_diagnostics
     use grid_coms, only: nzg, nzs
     use canopy_radiation_coms, only: lai_min, veg_temp_min
-    use ed_misc_coms,only:diag_veg_heating
-
-    use canopy_air_coms, only: hcapveg_ref,heathite_min
-    use therm_lib, only: qwtk, calc_hcapveg
+    use therm_lib, only: qwtk
+    use ed_therm_lib, only: calc_hcapveg,ed_grndvap
     implicit none
 
     integer, intent(in) :: lsl
@@ -355,6 +356,7 @@ contains
        csite%avg_vapor_ac(ipa)       = initp%avg_vapor_ac
        csite%avg_transp(ipa)         = initp%avg_transp
        csite%avg_evap(ipa)           = initp%avg_evap
+       csite%avg_netrad(ipa)         = initp%avg_netrad
        csite%aux(ipa)                = initp%aux
        csite%avg_sensible_vc(ipa)    = initp%avg_sensible_vc  
        csite%avg_sensible_2cas(ipa)  = initp%avg_sensible_2cas
@@ -383,7 +385,7 @@ contains
     ! [KIM - 10-day average of plant available water - paw_avg10d
     ! MLO - Added after the return statement to avoid computations over water.
     !      Changed the name from theta to available_water
-
+    
     cpatch => csite%patch(ipa)
 
     do ico = 1,cpatch%ncohorts
@@ -412,11 +414,6 @@ contains
        csite%soil_energy(k,ipa) = initp%soil_energy(k)
        csite%soil_tempk(k,ipa) = initp%soil_tempk(k)
        csite%soil_fracliq(k,ipa) = initp%soil_fracliq(k)
-
-       csite%avg_sensible_gg(k,ipa) = initp%avg_sensible_gg(k)
-       csite%avg_smoist_gg(k,ipa)   = initp%avg_smoist_gg(k)
-       csite%avg_smoist_gc(k,ipa)   = initp%avg_smoist_gc(k)
-       csite%aux_s(k,ipa)  = initp%aux_s(k)
     enddo
     
 
@@ -430,17 +427,17 @@ contains
     
 
     do ico = 1,cpatch%ncohorts
-       cpatch%veg_water(ico)  = initp%veg_water(ico)
+
+       cpatch%veg_water(ico) = initp%veg_water(ico)
        cpatch%veg_energy(ico) = initp%veg_energy(ico)
        cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
                  cpatch%nplant(ico),cpatch%pft(ico))
-    
+
        ! For plants with minimal foliage, fix the vegetation
        ! temperature to the canopy air space
        if (cpatch%lai(ico) < lai_min) then
 
           cpatch%veg_temp(ico) = csite%can_temp(ipa)
-          
           cpatch%veg_water(ico) = 0. 
           cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * (cpatch%veg_temp(ico)-t3ple)
 
@@ -507,20 +504,11 @@ contains
 
           endif
           cpatch%veg_temp(ico) = veg_temp
-       endif
 
- enddo
+       endif   
+    enddo
 
-    if (diag_veg_heating) then
-       do ico = 1,cpatch%ncohorts
-          cpatch%co_srad_h(ico) = initp%co_srad_h(ico)
-          cpatch%co_lrad_h(ico) = initp%co_lrad_h(ico)
-          cpatch%co_sens_h(ico) = initp%co_sens_h(ico)
-          cpatch%co_evap_h(ico) = initp%co_evap_h(ico)
-          cpatch%co_liqr_h(ico) = initp%co_liqr_h(ico)
-       enddo
-    endif
- 
+
     ksn = csite%nlev_sfcwater(ipa)
     nsoil = csite%ntext_soil(nzg,ipa)
     nlsw1 = max(1, ksn)
@@ -645,7 +633,7 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
   use consts_coms, only: cp, cliq, cice, alli, t3ple
   use canopy_radiation_coms, only: lai_min
   use canopy_air_coms, only: hcapveg_ref,heathite_min
-  use therm_lib, only: calc_hcapveg
+  use ed_therm_lib,only:calc_hcapveg
 
   implicit none
   

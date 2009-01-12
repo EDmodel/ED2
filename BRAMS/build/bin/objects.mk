@@ -263,6 +263,7 @@ OBJ_MODEL =                         \
 	edcp_met_init.o             \
 	edcp_model.o                \
 	edcp_mpiutils.o             \
+	edcp_water.o                \
 	mem_edcp.o                  \
 	allometry.o                 \
 	average_utils.o             \
@@ -289,6 +290,7 @@ OBJ_MODEL =                         \
 	ed_params.o                 \
 	ed_state_vars.o             \
 	ed_type_init.o              \
+	ed_therm_lib.o              \
 	ed_work_vars.o              \
 	ed_xml_config.o             \
 	edio.o                      \

@@ -188,8 +188,7 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
   use ed_state_vars,only: sitetype,rk4patchtype,patchtype
   use grid_coms, only: nzg, nzs
   use soil_coms, only: water_stab_thresh, min_sfcwater_mass
-  use ed_misc_coms,only:fast_diagnostics,diag_veg_heating
-
+  use ed_misc_coms,only:fast_diagnostics
   implicit none
 
   integer, intent(in) :: lsl
@@ -279,6 +278,7 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
      targetp%avg_vapor_ac       = sourcesite%avg_vapor_ac(ipa)     !C
      targetp%avg_transp         = sourcesite%avg_transp(ipa)       !C
      targetp%avg_evap           = sourcesite%avg_evap(ipa)         !C
+     targetp%avg_netrad         = sourcesite%avg_netrad(ipa)       !C
      targetp%aux                = sourcesite%aux(ipa)              !C
      targetp%avg_sensible_vc    = sourcesite%avg_sensible_vc(ipa)   !C
      targetp%avg_sensible_2cas  = sourcesite%avg_sensible_2cas(ipa) !C
@@ -367,7 +367,8 @@ subroutine inc_rk4_patch_ar(rkp, inc, fac, cpatch, lsl)
      rkp%avg_wshed_vg       = rkp%avg_wshed_vg       + fac * inc%avg_wshed_vg
      rkp%avg_vapor_ac       = rkp%avg_vapor_ac       + fac * inc%avg_vapor_ac
      rkp%avg_transp         = rkp%avg_transp         + fac * inc%avg_transp  
-     rkp%avg_evap           = rkp%avg_evap           + fac * inc%avg_evap    
+     rkp%avg_evap           = rkp%avg_evap           + fac * inc%avg_evap  
+     rkp%avg_netrad         = rkp%avg_netrad         + fac * inc%avg_netrad      
      rkp%aux                = rkp%aux                + fac * inc%aux
      rkp%avg_sensible_vc    = rkp%avg_sensible_vc    + fac * inc%avg_sensible_vc  
      rkp%avg_sensible_2cas  = rkp%avg_sensible_2cas  + fac * inc%avg_sensible_2cas
@@ -465,21 +466,19 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
   do ico = 1,cpatch%ncohorts
      if (cpatch%lai(ico) > lai_min) then
         yscal%veg_water(ico) = 0.22
+
 !        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
 !                                   + abs(dy%veg_energy(ico)*htry),0.22*alli)
-!        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
-!                                   + abs(dy%veg_energy(ico)*htry),0.22*alli*cpatch%lai(ico),1.0)
 
        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
                                    + abs(dy%veg_energy(ico)*htry)+cpatch%lai(ico)/sla(cpatch%pft(ico))*700000,1.0) 
-       !last term is ~ bleaf*dry_hcap*273.15, an offset from 0K
+       ! MCD 01-2009
+       ! last term is ~ bleaf*dry_hcap*273.15, a dry-leaf offset from 0K 
+       ! additional offset term for veg_water deliberately not included 
 
-        ! Mike: Why not just use a nominal energy for the scaling? Is there really a need for the scaling to be
-        ! associated with a certain temperature? How about global avergage surface temperature? Signed Anonymous
-        ! -----------------------------------------------------------------------------------------------
+!        yscal%veg_energy(ico) = 10.0*(y%veg_water(ico)*alli + y%veg_water(ico)*cliq*(317.-273.15) &
+!             + cpatch%hcapveg(ico)*(317.-273.15))! + abs(dy%veg_energy(ico)*htry)
 
-!        yscal%veg_energy(ico) = y%veg_water(ico)*alli + y%veg_water(ico)*cliq*(287.-273.15) &
-!             + cpatch%hcapveg(ico)*(287.-273.15) + abs(dy%veg_energy(ico)*htry)
 
      else
         yscal%veg_water(ico) = 1.e30
@@ -511,6 +510,16 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp,epsilon)
   real :: errmax,errh2o,errene,err,errh2oMAX,erreneMAX
   integer :: k
   real, intent(in) :: epsilon
+  integer,save:: count
+  real,save ::   errctemp
+  real,save ::  errcvap
+  real,save ::  errcco2
+  real,save ::  errswat(12)
+  real,save ::  errseng(12)
+  real,save ::  errvh
+  real,save ::  errvw
+  real,save ::  errvegw(50)
+  real,save ::  errvege(50)
 
   errmax = 0.0
 
@@ -586,6 +595,46 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp,epsilon)
 !  write (unit=40,fmt='(132a)') ('-',k=1,132)
 !  write (unit=40,fmt='(a)') ' '
 
+  ! If the errror was high, lets log what was the bad egg slowing everyone down
+!  if (errmax/(1.0e-2)>1.0) then
+!     print*,""
+!     print*,"============================================="
+!     print*,"CANTEMP:", errctemp
+!     errctemp=errctemp+abs(yerr%can_temp/yscal%can_temp)
+!     print*,"CANSHV:", errcvap
+!     errcvap=errcvap+abs(yerr%can_shv/yscal%can_shv)
+!     print*,"CANCO2:",errcco2
+!     errcco2=errcco2+abs(yerr%can_co2/yscal%can_co2)
+!     do k=lsl,nzg
+!        print*,"SOILWAT(",k,"):",errswat(k)
+!        errswat(k)=errswat(k) + real(dabs(yerr%soil_water(k)/yscal%soil_water(k)))
+!        print*,"SOILENG(",k,"):",errseng(k)
+!        errseng(k)=errseng(k) + abs(yerr%soil_energy(k)/yscal%soil_energy(k))
+!     enddo
+!     print*,"VIRTUAL HEAT:",errvh
+!     errvh = errvh + abs(yerr%virtual_heat/yscal%virtual_heat)
+!     print*,"VIRTUAL WATER:",errvw
+!     errvw = errvw + abs(yerr%virtual_water/yscal%virtual_water)
+!     do ico = 1,cpatch%ncohorts
+!        if(cpatch%lai(ico).gt.lai_min)then
+!           print*,"VEGWAT:(",ico,"):",errvegw(ico)
+!           errvegw(ico) = errvegw(ico) + abs(yerr%veg_water(ico)/yscal%veg_water(ico))
+!           print*,"VEGENG:(",ico,"):",errvege(ico)
+!           errvege(ico) = errvege(ico) + abs(yerr%veg_energy(ico)/yscal%veg_energy(ico))
+!        endif
+!     end do
+!    print*,"============================================="
+
+!    count=count+1
+!    if(count==500)stop
+!  endif
+
+
+
+
+
+
+
   return
 end subroutine get_errmax_ar
 
@@ -623,7 +672,7 @@ subroutine print_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp,epsil)
   call print_errmax_flag(yerr%can_co2,yscal%can_co2,epsil)
 
   do k=lsl,nzg
-     errmax = max(errmax,abs(yerr%soil_water(k)/yscal%soil_water(k)))
+     errmax = real(dmax1(dble(errmax),dabs(yerr%soil_water(k)/yscal%soil_water(k))))
      print*,'soil water, level',k,errmax,yerr%soil_water(k),yscal%soil_water(k)
      call print_errmax_flag(yerr%soil_water(k),yscal%soil_water(k),epsil)
 
@@ -814,7 +863,8 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch, lsl)
      targetp%avg_wshed_vg       = sourcep%avg_wshed_vg
      targetp%avg_vapor_ac       = sourcep%avg_vapor_ac
      targetp%avg_transp         = sourcep%avg_transp  
-     targetp%avg_evap           = sourcep%avg_evap    
+     targetp%avg_evap           = sourcep%avg_evap   
+     targetp%avg_netrad         = sourcep%avg_netrad   
      targetp%avg_sensible_vc    = sourcep%avg_sensible_vc  
      targetp%avg_sensible_2cas  = sourcep%avg_sensible_2cas
      targetp%avg_qwshed_vg      = sourcep%avg_qwshed_vg    
@@ -1084,13 +1134,13 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   real :: wdiff
   real :: totsnow
   real :: depthgain
-  real(kind=8) :: wfree
+  real :: wfree
   real :: qwfree
   type(rk4patchtype), target :: initp
   real :: qw
   real :: w
-  real(kind=8) :: wfreeb
-  real(kind=8) :: depthloss
+  real :: wfreeb
+  real :: depthloss
   real :: snden
   real :: sndenmin
   real :: sndenmax
@@ -1103,7 +1153,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   real :: fac
   type(sitetype),target :: csite
   type(patchtype),pointer :: cpatch
-  real(kind=8) :: free_surface_water_demand
+  real :: free_surface_water_demand
   real :: total_water_before,total_water_after
   real :: snow_beg,soil_beg,virt_beg,snow_end,soil_end,virt_end
   real :: infilt,freezeCor
@@ -1147,7 +1197,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
         ksnnew = ksn
      endif
   else
-     if((initp%sfcwater_mass(1)+initp%virtual_water) < min_sfcwater_mass)then
+     if((initp%virtual_water) < min_sfcwater_mass)then
         ksnnew = 0
      else
         wfree = initp%virtual_water
@@ -1640,6 +1690,7 @@ subroutine zero_rk4_patch(y)
   y%avg_vapor_ac                   = 0.
   y%avg_transp                     = 0.
   y%avg_evap                       = 0.
+  y%avg_netrad                     = 0.
   y%avg_smoist_gg                  = 0.
   y%avg_smoist_gc                  = 0.
   y%aux                            = 0.
@@ -1708,7 +1759,7 @@ end subroutine deallocate_rk4_patch
 subroutine allocate_rk4_coh_ar(maxcohort,y)
   
   use ed_state_vars,only:rk4patchtype
-  use ed_misc_coms,only:diag_veg_heating
+
   implicit none
   
   type(rk4patchtype) :: y
@@ -1719,14 +1770,6 @@ subroutine allocate_rk4_coh_ar(maxcohort,y)
   allocate(y%veg_energy(maxcohort))
   allocate(y%veg_water(maxcohort))
 
-  if (diag_veg_heating) then
-     allocate(y%co_srad_h (maxcohort))
-     allocate(y%co_lrad_h (maxcohort))
-     allocate(y%co_sens_h (maxcohort))
-     allocate(y%co_evap_h (maxcohort))
-     allocate(y%co_liqr_h (maxcohort))
-  endif
-  
   call zero_rk4_cohort(y)
 
   return
@@ -1752,12 +1795,6 @@ subroutine nullify_rk4_cohort(y)
   nullify(y%veg_energy)
   nullify(y%veg_water)
 
-  nullify(y%co_srad_h )
-  nullify(y%co_lrad_h )
-  nullify(y%co_sens_h )
-  nullify(y%co_evap_h )
-  nullify(y%co_liqr_h )
-
   return
 end subroutine nullify_rk4_cohort
 !==========================================================================================!
@@ -1773,20 +1810,13 @@ end subroutine nullify_rk4_cohort
 subroutine zero_rk4_cohort(y)
   
   use ed_state_vars,only:rk4patchtype
-  use ed_misc_coms,only:diag_veg_heating
+
   implicit none
   
   type(rk4patchtype) :: y
 
   if(associated(y%veg_energy    ))  y%veg_energy    = 0.
   if(associated(y%veg_water     ))  y%veg_water     = 0.
-
-  if(associated(y%co_srad_h     ))  y%co_srad_h     = 0.
-  if(associated(y%co_lrad_h     ))  y%co_lrad_h     = 0.
-  if(associated(y%co_sens_h     ))  y%co_sens_h     = 0.
-  if(associated(y%co_evap_h     ))  y%co_evap_h     = 0.
-  if(associated(y%co_liqr_h     ))  y%co_liqr_h     = 0.
-
 
   return
 end subroutine zero_rk4_cohort
@@ -1811,12 +1841,6 @@ subroutine deallocate_rk4_coh_ar(y)
   if(associated(y%veg_energy))     deallocate(y%veg_energy)
   if(associated(y%veg_water))      deallocate(y%veg_water)
   
-  if(associated(y%co_srad_h ))     deallocate(y%co_srad_h )
-  if(associated(y%co_lrad_h ))     deallocate(y%co_lrad_h )
-  if(associated(y%co_sens_h ))     deallocate(y%co_sens_h )
-  if(associated(y%co_evap_h ))     deallocate(y%co_evap_h )
-  if(associated(y%co_liqr_h ))     deallocate(y%co_liqr_h )
-
   return
 end subroutine deallocate_rk4_coh_ar
 !==========================================================================================!

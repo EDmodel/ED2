@@ -8,7 +8,7 @@ subroutine structural_growth_ar(cgrid, month)
        c2n_recruit, c2n_stem, l2n_stem
   use decomp_coms, only: f_labile
   use max_dims, only: n_pft, n_dbh
-  use therm_lib,only: update_veg_energy_cweh
+  use ed_therm_lib,only: update_veg_energy_cweh
 
   implicit none
 

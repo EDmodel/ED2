@@ -16,7 +16,8 @@ subroutine reproduction_ar(cgrid, month)
   
   use consts_coms, only: t3ple
   use canopy_air_coms, only: hcapveg_ref,heathite_min
-  use therm_lib,only : calc_hcapveg
+  use mem_sites, only: maxcohort
+  use ed_therm_lib,only : calc_hcapveg
 
   implicit none
 
@@ -41,6 +42,8 @@ subroutine reproduction_ar(cgrid, month)
   real, external :: h2dbh
   integer :: inew,ncohorts_new
   real,dimension(n_pft,9) :: recruit_array
+  
+  logical, save :: first_time=.true.
 
   if(repro_scheme .eq. 0) seedling_mortality(1:n_pft) = 1.0
 
@@ -162,12 +165,8 @@ subroutine reproduction_ar(cgrid, month)
 
                     if(include_pft(pft) == 1) nplant = nplant + seed_rain(pft)
 
-!                    print*,"RECRUITING",pft,nplant,balive,bdead,nplant * (balive + bdead),csite%repro(pft,ipa),min_recruit_size
-
                     ! If there is enough carbon, form the recruits.
                     if( (nplant * (balive + bdead)) > min_recruit_size)then
-                       
- !                      print*,"RECRUITED",pft
                        
                        inew = inew + 1
                        
@@ -275,7 +274,7 @@ subroutine reproduction_ar(cgrid, month)
         do ipa = 1,csite%npatches
            cpatch => csite%patch(ipa)
 
-           if(cpatch%ncohorts>0) then
+           if(cpatch%ncohorts>0 .and. maxcohort >= 0) then
 
               call terminate_cohorts_ar(csite,ipa)
               call fuse_cohorts_ar(csite,ipa, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))                         
@@ -300,6 +299,8 @@ subroutine reproduction_ar(cgrid, month)
 
 
   deallocate(temppatch)
+  
+  first_time = .false.
 
   return
 end subroutine reproduction_ar

@@ -88,7 +88,8 @@ Module ename_coms
       integer, dimension(maxgrds) :: isoilflg = (/ (2,i=1,maxgrds) /)
       integer :: nslcon   = 6
       integer :: isoilstateinit = 0
-      integer :: isoildepthflg = 0
+      integer :: isoildepthflg  = 0
+      integer :: isoilbc        = 0
 
       real, dimension(nzgmax) :: slz = (/ -1.00, -.85, -.70, -.60, -.50, -.40, &
            -.30, -.20, -.15, -.10, -.05, (0.0, i=12,nzgmax) /)

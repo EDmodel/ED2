@@ -1806,6 +1806,11 @@ subroutine ReadNamelist(fileName)
   call date_2_seconds (iyearh,imonthh,idateh,itimeh*100, &
   iyeara,imontha,idatea,itimea*100,timstr)
 
+  !---- If this is a coupled run, make npatch = 2 and nvegpat= 1 --------------------------!
+  if (isfcl == 5) then
+     npatch = 2
+     nvegpat = 1
+  end if
   !----------------------------------------------------------------------------------------!
   !    Saving the moisture complexity level into logical variables. Note that vapour_on is !
   ! not level == 1, it will be true when level is 1, 2, and 3. (whenever vapour is on).    !

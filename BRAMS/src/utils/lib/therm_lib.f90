@@ -14,7 +14,7 @@ module therm_lib
    !---------------------------------------------------------------------------------------!
    ! Constants that control the convergence for iterative methods                          !
    !---------------------------------------------------------------------------------------!
-   real   , parameter ::   toler  = 2.* epsilon(1.) ! Relative tolerance for iterative 
+   real   , parameter ::   toler  = 10.* epsilon(1.) ! Relative tolerance for iterative 
                                                     !   methods. The smaller the value, the
                                                     !   more accurate the result, but it
                                                     !   will slow down the run.
@@ -2707,7 +2707,7 @@ module therm_lib
          write (unit=*,fmt='(a)') ' Input values.'
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a,1x,f12.4)' ) 'theta_il        [     K] =',thil
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'Pressure        [   hPa] =',100.*pres
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'Pressure        [   hPa] =',0.01*pres
          write (unit=*,fmt='(a,1x,f12.4)' ) 'Temperature     [    °C] =',temp-t00
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rtot            [  g/kg] =',1000.*rtot
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rvap            [  g/kg] =',1000.*rvap

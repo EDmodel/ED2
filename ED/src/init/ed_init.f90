@@ -4,7 +4,7 @@ subroutine set_polygon_coordinates_ar()
   use grid_coms, only: ngrids,nzg
   use ed_work_vars, only: work_e
   use soil_coms, only: isoilflg
-  use ed_node_coms, only: mxp, myp,mynum
+  use ed_node_coms, only: mxp, myp,mynum,iwest,jsouth
   use ed_state_vars, only: edgrid_g,gdpy
   
    implicit none 
@@ -29,10 +29,11 @@ subroutine set_polygon_coordinates_ar()
                ipy = ipy + 1
                edgrid_g(ifm)%lon(ipy) = work_e(ifm)%glon(x,y)
                edgrid_g(ifm)%lat(ipy) = work_e(ifm)%glat(x,y)
+
                edgrid_g(ifm)%ntext_soil(1:nzg,ipy) = work_e(ifm)%ntext(x,y)
                
-               edgrid_g(ifm)%xatm(ipy) = work_e(ifm)%xatm(x,y)
-               edgrid_g(ifm)%yatm(ipy) = work_e(ifm)%yatm(x,y)
+               edgrid_g(ifm)%xatm(ipy) = work_e(ifm)%xatm(x,y) + iwest(ifm)  - 2
+               edgrid_g(ifm)%yatm(ipy) = work_e(ifm)%yatm(x,y) + jsouth(ifm) - 2
                edgrid_g(ifm)%natm(ipy) = 1
                
             end if

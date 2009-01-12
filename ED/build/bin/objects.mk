@@ -45,6 +45,7 @@ OBJ_MODEL =                        \
 	ed_para_coms.o             \
 	ed_para_init.o             \
 	ed_state_vars.o            \
+	ed_therm_lib.o             \
 	ed_type_init.o             \
 	ed_work_vars.o             \
 	ed_xml_config.o            \

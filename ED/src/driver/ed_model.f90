@@ -11,7 +11,7 @@ subroutine ed_model()
                       , imoutput, iyoutput,frqsum,unitfast,unitstate, imontha &
                       , iyeara, outstate,outfast, nrec_fast, nrec_state &
                       , integ_err,record_err,err_label,ffilout
-  use ed_misc_coms, only: outputMonth
+  use ed_misc_coms, only: outputMonth,fast_diagnostics
 
   use grid_coms, only : &
        ngrids,          &
@@ -31,7 +31,7 @@ subroutine ed_model()
   use rk4_driver_ar,only: rk4_timestep_ar
   use ed_node_coms,only:mynum,nnodetot
   use disturb_coms, only: include_fire
-  use mem_sites, only : n_ed_region
+  use mem_sites, only : n_ed_region,maxpatch,maxcohort
   use consts_coms, only: day_sec
 
   implicit none
@@ -77,6 +77,14 @@ subroutine ed_model()
   writing_year      = iyoutput > 0
   out_time_fast     = current_time
   out_time_fast%month = -1
+
+  !---------------------------------------------------------------------------------------!
+  !     Checking if the user has indicated a need for any of the fast flux diagnostic
+  ! variables, these are used in conditions of ifoutput,idoutput and imoutput conditions.
+  ! If they are not >0, then set the logical, fast_diagnostics to false.
+  !---------------------------------------------------------------------------------------!
+  fast_diagnostics = ifoutput /= 0 .or. idoutput /= 0 .or. imoutput /= 0
+
 
   if (writing_mont) then
      do ifm=1,ngrids
@@ -246,13 +254,16 @@ subroutine ed_model()
            ! vectors must be updated, and the global definitions
            ! of the total numbers must be exported to all nodes
            
-           call filltab_alltypes
+           ! If maxpatch and maxcohort are both negative, the number of patches and 
+           ! cohorts remain the same throughout the run, no need to call it.
+           if (maxcohort >= 0 .or. maxpatch >= 0) call filltab_alltypes
 
            ! Read new met driver files only if this is the first timestep 
            call read_met_drivers_array()
            
            ! Re-allocate integration buffer
-           if(integration_scheme == 1) call initialize_rk4patches_ar(0)
+           if(integration_scheme == 1 .and. (maxcohort >= 0 .or. maxpatch >= 0)) &
+              call initialize_rk4patches_ar(0)
         endif
         
      endif
@@ -402,6 +413,7 @@ subroutine vegetation_dynamics(new_month,new_year)
   use ed_state_vars,only : edgrid_g,filltab_alltypes,edtype
   use growth_balive_ar,only : dbalive_dt_ar
   use consts_coms, only : day_sec,yr_day
+  use mem_sites, only: maxpatch
   implicit none
 
   logical, intent(in)   :: new_month,new_year
@@ -410,6 +422,8 @@ subroutine vegetation_dynamics(new_month,new_year)
   real                  :: tfact1,tfact2
   integer               :: ifm
   type(edtype), pointer :: cgrid
+  
+  logical, save         :: first_time = .true.
 
   ! find the day of year
   doy = julday(current_time%month, current_time%date, current_time%year)
@@ -474,7 +488,8 @@ subroutine vegetation_dynamics(new_month,new_year)
      ! the number of patch variables that actually need to be fused.  
      if(new_year) then
 !        write (unit=*,fmt='(a)') '### Fuse_patchesar...'
-        call fuse_patches_ar(cgrid)
+        if (maxpatch >= 0) call fuse_patches_ar(cgrid)
+        first_time =.false.
      end if
 
      ! Recalculate the agb and basal area at the polygon level

@@ -324,7 +324,7 @@ subroutine alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci, carbon_balance,
   use ed_state_vars,only:patchtype
   use pft_coms, only: c2n_storage, c2n_leaf, sla, c2n_stem
   use decomp_coms, only: f_labile
-  use therm_lib,only : update_veg_energy_cweh
+  use ed_therm_lib,only : update_veg_energy_cweh
 
   implicit none
   

@@ -38,14 +38,7 @@ module mem_edcp
      real, pointer, dimension(:,:) :: albedt
   end type water_grid
 
-  type(water_grid),pointer,dimension(:) :: wgridf_g,wgridp_g
-
-  type water_grid_state
-     real, pointer,dimension(:,:) :: canopy_tempk
-     real, pointer,dimension(:,:) :: canopy_water_vapor
-  end type water_grid_state
-
-  type(water_grid_state),pointer,dimension(:) :: wgrids_g
+  type(water_grid),pointer,dimension(:) :: wgrid_g
 
   !    These variables are needed because the microphysics, cumulus, and ED
   ! have different update frequency, so we store the total accumulated precipitation
@@ -221,58 +214,6 @@ contains
     if (associated(wg%sflux_w   ))  deallocate(wg%sflux_w   )
     return
   end subroutine dealloc_wgrid
-
-  ! =============================================================
-
-  subroutine alloc_wgrid_s(wg,n2,n3)
-    implicit none
-    type(water_grid_state) :: wg
-    integer, intent(in) :: n2,n3
-    
-    call nullify_wgrid_s(wg)
-
-    allocate(wg%canopy_tempk       (n2,n3)   )
-    allocate(wg%canopy_water_vapor (n2,n3)   )
-    
-    return
-  end subroutine alloc_wgrid_s
-  
-  !---------------------------------------------------------!
-  
-  subroutine nullify_wgrid_s(wg)
-    implicit none
-    type(water_grid_state) :: wg
-    
-    if (associated(wg%canopy_tempk        ))  nullify(wg%canopy_tempk   )
-    if (associated(wg%canopy_water_vapor  ))  nullify(wg%canopy_water_vapor   )
-
-    return
-  end subroutine nullify_wgrid_s
-  
-  !---------------------------------------------------------!
-
-  subroutine zero_wgrid_s(wg)
-    implicit none
-    type(water_grid_state) :: wg
-    
-    if (associated(wg%canopy_tempk       ))  wg%canopy_tempk        = 0.0
-    if (associated(wg%canopy_water_vapor ))  wg%canopy_water_vapor  = 0.0
-
-    return
-  end subroutine zero_wgrid_s
-  
-  !---------------------------------------------------------!
-  
-  subroutine dealloc_wgrid_s(wg)
-    implicit none
-    
-    type(water_grid_state) :: wg
-    
-    if (associated(wg%canopy_tempk       ))deallocate(wg%canopy_tempk  )
-    if (associated(wg%canopy_water_vapor ))deallocate(wg%canopy_water_vapor  )
-    
-    return
-  end subroutine dealloc_wgrid_s
   
   !---------------------------------------------------------!
   

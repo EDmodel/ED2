@@ -61,7 +61,8 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
                            ,allocate_sitetype,allocate_patchtype
    use max_dims, only: n_pft
    use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, include_these_pft,include_pft_ag
-   use therm_lib, only: calc_hcapveg
+   use ed_therm_lib, only: calc_hcapveg
+
    ! This subroutine assigns a near-bare ground state for the given patch
    use consts_coms, only : t3ple
    implicit none

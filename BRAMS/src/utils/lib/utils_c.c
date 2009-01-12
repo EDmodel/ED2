@@ -36,7 +36,7 @@ void *free(void *);
 
 /*********************************************************/
 
-#define nlocrams 1000
+#define nlocrams 6666
 void *iaddrams[nlocrams];
 
 int iralloc(int *memtot,int *ia,int *ioff)

@@ -6,7 +6,6 @@ subroutine load_ed_ecosystem_params()
    use pft_coms, only: include_pft, include_pft_ag,C2B,frost_mort,include_these_pft,grass_pft
    use disturb_coms,only:min_new_patch_area,num_lu_trans
 
-
    implicit none
    integer :: p
 
@@ -167,7 +166,8 @@ visible_fraction_dir = 0.43
 visible_fraction_dif = 0.52
 leaf_reflect_nir = 0.577
 leaf_trans_nir = 0.248
-lai_min = 1.0e-5
+
+lai_min = 1.0e-4
 
 
 leaf_scatter_nir = leaf_reflect_nir + leaf_trans_nir
@@ -618,7 +618,6 @@ leaf_width(5:11) = 0.05
 leaf_width(12:13) = 0.05
 leaf_width(14:15) = 0.2
 
-
                             ! The following parameters are second sources found in 
                             ! Gu et al. 2007
 c_grn_leaf_dry(1:15)      = 3218.0    ! Jones 1992
@@ -629,12 +628,10 @@ wat_dry_ratio_ngrn(1:15)  = 0.7       ! Forest Products Laboratory
 
 ! Fraction of structural biomass included in calculation of veg. leaf heat capacity.
 
-hcap_stem_fraction = 0.0       
+hcap_stem_fraction = 0.001       
                                 ! This may eventually become a tuneable parameter.
                                 ! This parameter may also be most appropriate
                                 ! as zero.
-
-
 return
 end subroutine init_pft_leaf_params
 !==========================================================================================!

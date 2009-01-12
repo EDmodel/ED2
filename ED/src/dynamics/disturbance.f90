@@ -22,6 +22,7 @@ module disturbance_utils_ar
     use disturb_coms, only: treefall_age_threshold,  &
          min_new_patch_area
     use max_dims, only: n_dist_types, n_pft, n_dbh
+    use mem_sites, only: maxcohort
 
     implicit none
 
@@ -42,6 +43,7 @@ module disturbance_utils_ar
 
     integer,allocatable :: disturb_mask(:)
     integer :: onsp
+    logical, save :: first_time=.true.
 
     allocate(tsite)  ! The disturbance site
     
@@ -186,7 +188,7 @@ module disturbance_utils_ar
               qpatch => csite%patch(q+onsp)
 
               !  fuse then terminate cohorts
-              if (csite%patch(q+onsp)%ncohorts > 0) then
+              if (csite%patch(q+onsp)%ncohorts > 0 .and. maxcohort >= 0) then
                  call fuse_cohorts_ar(csite,q+onsp, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
                  call terminate_cohorts_ar(csite,q+onsp)
                  call split_cohorts_ar(qpatch, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
@@ -272,6 +274,8 @@ module disturbance_utils_ar
   enddo
 
   deallocate(tsite)
+  
+  first_time = .false.
   
   return
 end subroutine apply_disturbances_ar
@@ -597,7 +601,7 @@ end subroutine apply_disturbances_ar
   subroutine insert_survivors_ar(csite, np, cp, q, area_fac,nat_dist_type)
 
     use ed_state_vars, only: sitetype,patchtype
-    use therm_lib,only: update_veg_energy_ct
+    use ed_therm_lib,only: update_veg_energy_ct
     
     implicit none
     type(sitetype),target    :: csite
@@ -676,11 +680,10 @@ end subroutine apply_disturbances_ar
           tpatch%vleaf_respiration(nco)   = tpatch%vleaf_respiration(nco) * cohort_area_fac
           tpatch%Psi_open(nco)            = tpatch%Psi_open(nco) * cohort_area_fac
 
-          ! Adjust the vegetation energy - RGK 11-26-2008
+          ! Adjust the vegetation energy 
 
-          call update_veg_energy_ct(cpatch,ico)
+          call update_veg_energy_ct(tpatch,nco)
 
-          
        endif
           
     enddo  ! end loop over cohorts
@@ -813,7 +816,7 @@ end subroutine apply_disturbances_ar
     use misc_coms, only: dtlsm
     use fuse_fiss_utils_ar, only : sort_cohorts_ar
 !    use canopy_air_coms, only: hcapveg_ref,heathite_min
-    use therm_lib,only : calc_hcapveg
+    use ed_therm_lib,only : calc_hcapveg
     use consts_coms, only: t3ple
 
     implicit none
