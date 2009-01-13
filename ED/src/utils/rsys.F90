@@ -80,18 +80,20 @@ subroutine timing(icall,t1)
   implicit none
   integer :: icall
   real :: t1
+#if defined(VAX)
+  integer :: iad0
+#endif
 
   !     Routine returns CPU time.  Called with ICALL=1 at beginning
   !     of timestep, ICALL=2 at end of timestep.
 
-  real :: et(2),aaa
-  integer :: iad0
+  real :: et(2)
 !!$      real, external :: second,cputim,mclock,etime
 
 #if defined(IBM)
  real,external :: mclock
 #else
- real :: etime
+ real, external :: etime
 #endif
 
  

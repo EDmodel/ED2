@@ -19,8 +19,6 @@ subroutine landuse_init_array
   real :: lu_area
   logical :: exans
   integer :: iyear,igr,ipy,isi
-  type(lutime), pointer :: newlutime
-
 
   do igr = 1,ngrids
 
@@ -123,14 +121,14 @@ subroutine landuse_file_name(lat, lon, file_lat, file_lon, fname)
   character(len=6) :: file_lon_string
   
   if(lat > 0.0)then
-     file_lat = 0.5 + 1.0 * int(lat)
+     file_lat = 0.5 + real(int(lat))
      if(file_lat < 10.0)then
         write(file_lat_string,'(f3.1)')file_lat
      else
         write(file_lat_string,'(f4.1)')file_lat
      endif
   else
-     file_lat = - (0.5 + 1.0 * int(-lat))
+     file_lat = - (0.5 + real(int(-lat)))
      if(file_lat > -10.0)then
         write(file_lat_string,'(f4.1)')file_lat
      else
@@ -139,7 +137,7 @@ subroutine landuse_file_name(lat, lon, file_lat, file_lon, fname)
   endif
 
   if(lon > 0.0)then
-     file_lon = 0.5 + 1.0 * int(lon)
+     file_lon = 0.5 + real(int(lon))
      if(file_lon < 10.0)then
         write(file_lon_string,'(f3.1)')file_lon
      elseif(lon < 100.0)then
@@ -148,7 +146,7 @@ subroutine landuse_file_name(lat, lon, file_lat, file_lon, fname)
         write(file_lon_string,'(f5.1)')file_lon
      endif
   else
-     file_lon = - (0.5 + 1.0 * int(-lon))
+     file_lon = - (0.5 + real(int(-lon)))
      if(lon > -10.0)then
         write(file_lon_string,'(f4.1)')file_lon
      elseif(lon > -100.0)then

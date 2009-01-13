@@ -42,6 +42,7 @@ rm -fv ed_work_vars.o          ed_work_vars.mod
 rm -fv ed_xml_config.o         ed_xml_config.mod 
 rm -fv ename_coms.o            ename_coms.mod 
 rm -fv euler_driver.o          euler_driver.mod 
+rm -fv events.o                   events.mod
 rm -fv farq_leuning.o          farq_leuning.mod 
 rm -fv fatal_error.o           fatal_error.mod 
 rm -fv fire.o                  fire.mod 

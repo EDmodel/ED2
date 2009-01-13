@@ -18,7 +18,8 @@ subroutine reproduction_ar(cgrid, month)
   use canopy_air_coms, only: hcapveg_ref,heathite_min
   use mem_sites, only: maxcohort
   use ed_therm_lib,only : calc_hcapveg
-
+  use allometry, only: dbh2bd, dbh2bl, h2dbh
+  
   implicit none
 
   type(edtype),target       :: cgrid
@@ -37,10 +38,6 @@ subroutine reproduction_ar(cgrid, month)
   real :: hite
   integer :: pft
 
-  real, external :: dbh2bd
-  real, external :: dbh2bl
-  real, external :: h2dbh
-  real :: hcapveg
   integer :: inew,ncohorts_new
   real,dimension(n_pft,9) :: recruit_array
   
@@ -274,16 +271,17 @@ subroutine reproduction_ar(cgrid, month)
         
         do ipa = 1,csite%npatches
            cpatch => csite%patch(ipa)
+
            if(cpatch%ncohorts>0 .and. maxcohort >= 0) then
-              
+
               call terminate_cohorts_ar(csite,ipa)
-              call fuse_cohorts_ar(csite,ipa, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
+              call fuse_cohorts_ar(csite,ipa, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))                         
               call split_cohorts_ar(cpatch, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
               
            endif
-           
+
            csite%cohort_count(ipa) = cpatch%ncohorts !THIS IS REDUNDANT
-           
+
            call update_patch_derived_props_ar(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos, ipa)
 
         enddo

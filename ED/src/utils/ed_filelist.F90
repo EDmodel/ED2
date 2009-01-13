@@ -16,17 +16,13 @@ subroutine ed_filelist(fnames,file_prefix,nfile)
    integer                        , intent(out)    :: nfile
    character(len=*), dimension(*) , intent(out)    :: fnames
    character(len=str_len)         , intent(inout)  :: file_prefix
-
-   character(len=str_len)                          :: file,command,cdir
-   integer                                         :: iflag,iprelen,nc,nf,iun,lndir
+   integer                                         :: iprelen,nf
 
    character(len=maxfiles*str_len)                 :: filelist
-   character(len=str_len)                          :: dir
    character(len=str_len)                          :: prefix
    character(len=str_len)                          :: myform
    integer, dimension(maxfiles)                    :: indices
-   integer                                         :: n,i,j,ierr
-   logical                                         :: foundbslash
+   integer                                         :: n
 
    nfile = 0
    write(myform,fmt='(a,i3.3,a)') '(a',str_len,')'

@@ -28,8 +28,9 @@ module ed_state_vars
   ! well off the acceptable range for most variables. That way all of them !
   ! must be initialised properly afterwards.                               !
   !------------------------------------------------------------------------!
-  real    , parameter :: large_real=1.e34
-  integer , parameter :: large_integer=huge(1)-huge(1)/10
+  real    , parameter     :: large_real=1.e34
+  real(kind=8), parameter :: large_double=1.d+34
+  integer , parameter     :: large_integer=huge(1)-huge(1)/10
 !============================================================================!
 !============================================================================!
 
@@ -1066,7 +1067,7 @@ module ed_state_vars
      integer,pointer,dimension(:) :: lsl            ! Layer of lowest soil
      
      ! matrix of site hydrologic adjacency
-     integer,pointer,dimension(:,:,:) :: site_adjacency
+     real,pointer,dimension(:,:,:) :: site_adjacency
 
      real,pointer,dimension(:) :: wbar
      real,pointer,dimension(:) :: Te
@@ -1611,7 +1612,7 @@ contains
     
     implicit none
 
-    integer :: npolygons,igr,init
+    integer :: npolygons
     type(edtype),target :: cgrid
 
     call nullify_edtype(cgrid)
@@ -2018,7 +2019,6 @@ contains
     
     call nullify_sitetype(csite)
     csite%npatches = npatches
-
     allocate(csite%paco_id(npatches))
     allocate(csite%paco_n(npatches))
     allocate(csite%patch(npatches))
@@ -2657,7 +2657,6 @@ contains
     implicit none
 
     type(sitetype),target :: csite
-    integer :: ipa
     
     nullify(csite%paco_id)
     nullify(csite%paco_n)
@@ -2920,7 +2919,6 @@ contains
     
     implicit none
     
-    integer :: npolygons,igr,init
     type(edtype),target :: cgrid
 
        if(associated(cgrid%polygon                 )) deallocate(cgrid%polygon                 )
@@ -3467,7 +3465,6 @@ contains
     implicit none
 
     type(patchtype),target :: cpatch
-    integer :: ico
     
     if(associated(cpatch%pft))    deallocate(cpatch%pft)
     if(associated(cpatch%nplant))    deallocate(cpatch%nplant)
@@ -3569,7 +3566,7 @@ contains
        if(associated(cgrid%pysi_n                  )) cgrid%pysi_n                   = large_integer  ! Integer
        if(associated(cgrid%pysi_id                 )) cgrid%pysi_id                  = large_integer  ! Integer
        if(associated(cgrid%sensflux_py             )) cgrid%sensflux_py              = large_real
-       if(associated(cgrid%site_adjacency          )) cgrid%site_adjacency           = large_integer  ! Integer
+       if(associated(cgrid%site_adjacency          )) cgrid%site_adjacency           = large_real
        if(associated(cgrid%wbar                    )) cgrid%wbar                     = large_real
        if(associated(cgrid%Te                      )) cgrid%Te                       = large_real
        if(associated(cgrid%zbar                    )) cgrid%zbar                     = large_real
@@ -4019,7 +4016,7 @@ contains
     if(associated(csite%nlev_sfcwater                )) csite%nlev_sfcwater                = large_integer ! Integer
     if(associated(csite%ntext_soil                   )) csite%ntext_soil                   = large_integer ! Integer
     if(associated(csite%soil_energy                  )) csite%soil_energy                  = large_real
-    if(associated(csite%soil_water                   )) csite%soil_water                   = large_real
+    if(associated(csite%soil_water                   )) csite%soil_water                   = large_double
     if(associated(csite%soil_tempk                   )) csite%soil_tempk                   = large_real
     if(associated(csite%soil_fracliq                 )) csite%soil_fracliq                 = large_real
     if(associated(csite%ground_shv                   )) csite%ground_shv                   = large_real
@@ -4271,7 +4268,7 @@ contains
   ! =====================================================
 
     implicit none
-    integer :: ifm,ipin,ipout
+    integer :: ipin,ipout
 
     type(edtype) :: edin,edout
 
@@ -4304,8 +4301,6 @@ contains
 
     type(edtype),target :: edin
     integer :: oldsize,newsize,i
-    real, dimension(oldsize) :: edout_real
-    integer, dimension(oldsize) :: edout_int
     integer, dimension(oldsize),intent(IN) :: water_site
     integer, dimension(oldsize) :: water_site_new
 
@@ -4697,7 +4692,7 @@ contains
     integer,dimension(newsz) :: incmask
     integer,dimension(masksz):: imask
     logical,dimension(masksz)  :: mask
-    integer :: i,k,m,inc,ipft
+    integer :: i,k,m,inc
     type(stoma_data),pointer :: osdi,osdo
 
     do i=1,masksz
@@ -5041,17 +5036,17 @@ contains
     
     include 'mpif.h'
 
-    integer :: ncohorts_g,npatches_g,nsites_g,npolygons_g
-    integer :: igr,ipy,isi,ipa,ico,nv,ierr,nm
+    integer :: ncohorts_g,npatches_g,nsites_g
+    integer :: igr,ipy,isi,ipa,nv,ierr,nm
     integer,       dimension(MPI_STATUS_SIZE) :: status
-    integer :: request,ping,uniqueid
+    integer :: ping,uniqueid
     logical,save :: model_start = .true.
    
     type(edtype),pointer      :: cgrid
     type(polygontype),pointer :: cpoly
     type(sitetype),pointer    :: csite
     type(patchtype),pointer   :: cpatch
-    
+    logical :: verbose = .false.    
 
 
     ! The first loop through populates the info tables
@@ -5279,7 +5274,7 @@ contains
           
        enddo
       
-       if (mynum.eq.1 .and. model_start) then
+       if (mynum.eq.1 .and. model_start .and. verbose) then
           model_start = .false.
           do nv=1,num_var(igr)
 !             write(*,"(a,i4,a,i4,a,a)")'Registering: ',nv,' of',num_var(igr),'  ',vt_info(nv,igr)%name
@@ -5310,7 +5305,6 @@ contains
 
     implicit none
     
-    integer :: init
     integer, intent(in) :: igr
     integer :: var_len,max_ptrs,var_len_global
     integer :: nvar
@@ -6321,8 +6315,10 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%dmean_nep_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'DMEAN_NEP_LU :15:hist:dail:mpti:mpt3') 
+
        call metadata_edio(nvar,igr,'Polygon Averaged by Landuse, Daily Integrated Net Ecosystem Production' &
             ,'[tC/ha/d]','ipoly - lu') 
+
     endif
     
     if(associated(cgrid%dmean_gpp_dbh)) then
@@ -7131,8 +7127,8 @@ contains
 
     if (associated(csite%paco_id)) then
        nvar=nvar+1
-         call vtable_edio_i(csite%paco_id(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'PACO_ID :31:hist:dail:mont:year:mpti:mpt3') 
+       call vtable_edio_i(csite%paco_id(1),nvar,igr,init,csite%paglob_id, &
+            var_len,var_len_global,max_ptrs,'PACO_ID :31:hist:dail:mont:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -8335,7 +8331,6 @@ contains
     integer :: ipy,isi
     type(edtype),target           :: cgrid
     type(polygontype),pointer     :: cpoly
-    type(sitetype),pointer        :: csite
 
     get_nsites = 0
 
@@ -8366,7 +8361,6 @@ contains
     type(edtype),target           :: cgrid
     type(polygontype),pointer     :: cpoly
     type(sitetype),pointer        :: csite
-    type(patchtype),pointer       :: cpatch
 
     get_npatches = 0
 
