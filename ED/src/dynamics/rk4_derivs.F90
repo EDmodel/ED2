@@ -121,6 +121,9 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
   !  real, parameter :: taui = 1.0/30.0 !!!!  Standard
   real, parameter :: taui = 1.0/300.0
   !----------
+  ! This is the exponent in the frozen soil hydraulic conductivity correction
+  real, parameter :: freezeCoef = 7.0
+
   real :: wgpmid,wloss
   real :: dqwt
 
@@ -465,7 +468,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
 
         wgpmid = 0.5 * real(initp%soil_water(k) + initp%soil_water(k-1))
         freezeCor = 0.5 * (initp%soil_fracliq(k)+ initp%soil_fracliq(k-1))
-        if(freezeCor .lt. 1.0)freezeCor = 10.0**(-7.0*(1.0-freezeCor))
+        if(freezeCor .lt. 1.0) freezeCor = 10.0**(-freezeCoef*(1.0-freezeCor))
         w_flux(k) = dslzti(k) * slcons1(k,nsoil)  &
              * (wgpmid / soil(nsoil)%slmsts)**(2. * soil(nsoil)%slbs + 3.)  &
              * (psiplusz(k-1) - psiplusz(k)) * freezeCor
@@ -502,9 +505,9 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
   nsoil = csite%ntext_soil(lsl,ipa)
   if (nsoil /= 13 .and. isoilbc == 1) then
      !----- Free drainage -----------------------------------------------------------------!
-     wgpmid      = initp%soil_water(lsl)
+     wgpmid      = real(initp%soil_water(lsl))
      freezeCor   = initp%soil_fracliq(lsl)
-     if(freezeCor .lt. 1.0) freezeCor = 10**(-7*(1-freezeCor))
+     if(freezeCor .lt. 1.0) freezeCor = 10.0**(-freezeCoef*(1.0-freezeCor))
      w_flux(lsl) = dslzti(lsl) * slcons1(lsl,nsoil)  &
                  * (wgpmid / soil(nsoil)%slmsts)**(2. * soil(nsoil)%slbs + 3.)  &
                  * freezeCor
@@ -525,31 +528,32 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
 
   enddo
 
-  ! Update soil moisture from transpiration
+  ! Update soil moisture from transpiration/root uptake
   if(csite%lai(ipa) > lai_min)then
-  do k1 = lsl, nzg    ! loop over extracted water
+     do k1 = lsl, nzg    ! loop over extracted water
      
-     do k2=k1,nzg
-        if(csite%ntext_soil(k2,ipa) /= 13) then
-           if(initp%available_liquid_water(k1) > 0.0)then
-              
-              wloss = 0.001 * initp%extracted_water(k1)   &
-                   * soil_liq(k2) / initp%available_liquid_water(k1)
-              
-              dinitp%soil_water(k2) = dinitp%soil_water(k2) - dble(wloss)
-              
-              qwloss = wloss * (cliq1000 * (initp%soil_tempk(k2) - t3ple) + &
-                   alli1000)
-
-              dinitp%soil_energy(k2) = dinitp%soil_energy(k2) - qwloss
-              
-              dinitp%avg_smoist_gc(k2)=dinitp%avg_smoist_gc(k2)-1000.0*wloss
-              
-              dinitp%ebudget_latent = dinitp%ebudget_latent + qwloss
-        endif              
-        endif
+        do k2=k1,nzg
+           if(csite%ntext_soil(k2,ipa) /= 13) then
+              if(initp%available_liquid_water(k1) > 0.0)then
+                 
+                 wloss = 0.001 * initp%extracted_water(k1)   &
+                      * soil_liq(k2) / initp%available_liquid_water(k1)
+                 
+                 dinitp%soil_water(k2) = dinitp%soil_water(k2) - dble(wloss)
+                 
+                 qwloss = wloss * (cliq1000 * (initp%soil_tempk(k2) - t3ple) + &
+                      alli1000)
+                 
+                 dinitp%soil_energy(k2) = dinitp%soil_energy(k2) - qwloss
+                 
+                 dinitp%avg_smoist_gc(k2)=dinitp%avg_smoist_gc(k2)-1000.0*wloss
+                 
+                 dinitp%ebudget_latent = dinitp%ebudget_latent + qwloss
+              endif
+           endif
+        enddo
      enddo
-  enddo
+  end if
 
   ! If we have a thin layer of snow the heat derivatives will require 
   ! special treatment.
@@ -575,7 +579,6 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
         endif
      enddo
   endif
-
 
   return
 end subroutine leaftw_derivs_ar
@@ -627,8 +630,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   real :: c2,c3
 
   real :: hflxvc
-  real :: rasgnd	
-  real :: rasveg
+  real :: rasgnd
   real :: rbi
   real :: rd
   real :: sigmaw
@@ -638,7 +640,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   real :: qwshed
   real :: zoveg,zveg
   
-  real :: wcapcan,hcapcan
+  real :: wcapcan
   real :: wcapcani,hcapcani
   real :: cflxgc
   real :: laii
@@ -653,8 +655,6 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
 
   real :: leaf_flux
   real,external :: vertical_vel_flux
-
-  real :: nominal_veg_energy
 
   real :: sat_shv
   real :: veg_temp,fracliq

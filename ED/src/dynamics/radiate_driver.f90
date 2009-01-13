@@ -12,10 +12,8 @@ subroutine radiate_driver_ar(cgrid)
   type(sitetype),pointer :: csite
   type(patchtype),pointer :: cpatch
   real :: total_beam_radiation
-  integer :: isite,maxcohort
-  integer :: ip
-  integer :: ipat
-  integer :: igr,ipy,isi,ipa,ico
+  integer :: maxcohort
+  integer :: ipy,isi,ipa
   real :: hrangl
 
   ! Check whether it is time to update radiative fluxes and heating rates
@@ -38,7 +36,7 @@ subroutine radiate_driver_ar(cgrid)
 
            
            if(cpoly%met(isi)%rlong < rlong_min ) then
-              print*,"STRANGE DATA",cpoly%met(isi)%rlong,ipy,isi,int(real(isi)/4),rlong_min
+              print*,"STRANGE DATA",cpoly%met(isi)%rlong,ipy,isi,int(real(isi)/4.0),rlong_min
               print*,cpoly%met(isi)
               stop
            endif
@@ -242,7 +240,7 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
      csite%rshort_s_diffuse(:,ipa) = 0.0
      csite%rshort_s_beam(:,ipa) = 0.0
 
-     fcpct = csite%soil_water(nzg,ipa) / soil(csite%ntext_soil(nzg,ipa))%slmsts ! soil water fraction
+     fcpct = real(csite%soil_water(nzg,ipa) / dble(soil(csite%ntext_soil(nzg,ipa))%slmsts)) ! soil water fraction
 
      if (fcpct > .5) then
         alg = .14                ! ground albedo
@@ -455,7 +453,6 @@ subroutine solar_zenith_ar(cgrid)
   real :: d02
   real :: solfac
   real :: dayhr
-  integer :: ip
   real :: radlat
   real :: cslcsd
   real :: snlsnd
@@ -467,7 +464,7 @@ subroutine solar_zenith_ar(cgrid)
 
   ! sdec - sine of declination, cdec - cosine of declination
   
-  declin = -23.5 * cos(twopi / 365. * (jday + 9)) * pio180
+  declin = -23.5 * cos(twopi / 365. * real(jday + 9)) * pio180
   sdec = sin(declin)
   cdec = cos(declin)
 
@@ -667,14 +664,11 @@ subroutine short2diff(swdown,sunang,radvdc)
   !------------------------------------------------------------------
   !---
 
-  integer nsib
   real swdown
   real sunang, stemp
-  real radvbc,radvdc
-  real radnbc,radndc,c1,c2,c3,c4,c5,cloud,difrat
+  real radvdc
+  real c1,c2,c3,c4,c5,cloud,difrat
   real vnrat
-
-  integer i
 
   ! Arguments:
   ! nsib:

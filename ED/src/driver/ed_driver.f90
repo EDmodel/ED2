@@ -30,21 +30,16 @@ subroutine ed_driver
 
   implicit none
 
-  real :: w1,w2,w3,wtime_start  ! wall time
+  real :: w1,w2,wtime_start  ! wall time
   real, external :: walltime    ! wall time
-  real :: t1,t2                 ! cpu time
   character(len=12) :: c0
   character(len=12) :: c1
-  integer :: i,j,ifm,nndtflg,ipy
-
-  integer :: id1,id2,jd1,jd2
-  character(len=24) :: fmts1
+  integer :: ifm,t1
 
   !   MPI header
   include 'mpif.h'
 
-  integer                                   :: ierr
-  integer :: igr
+  integer :: ierr
   integer :: ping 
 
   ping = 741776

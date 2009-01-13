@@ -277,7 +277,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   use pft_coms, only:sla,qsw,q,hgt_min, agf_bs
   use misc_coms, only: integration_scheme
   use disturbance_utils_ar,only: plant_patch_ar
-  use therm_lib, only: update_veg_energy_cweh
+  use ed_therm_lib, only: update_veg_energy_cweh
   use fuse_fiss_utils_ar, only: terminate_cohorts_ar
   real(8),intent(in) :: agb_frac8
   real(8),intent(in) :: bgb_frac8
@@ -463,7 +463,7 @@ subroutine event_fertilize(rval8)
   use pft_coms, only:sla,qsw,q,hgt_min, agf_bs
   use misc_coms, only: integration_scheme
   use disturbance_utils_ar,only: plant_patch_ar
-  use therm_lib, only: update_veg_energy_cweh
+  use ed_therm_lib, only: update_veg_energy_cweh
   real(8),intent(in),dimension(5) :: rval8
 
   real :: nh4,no3,p,k,ca
@@ -545,7 +545,7 @@ subroutine event_till(rval8)
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
   use pft_coms, only: c2n_structural, c2n_slow, c2n_storage,c2n_leaf,c2n_stem,l2n_stem
   use decomp_coms, only: f_labile
-  use therm_lib, only: update_veg_energy_cweh
+  use ed_therm_lib, only: update_veg_energy_cweh
   use fuse_fiss_utils_ar, only: terminate_cohorts_ar
   
   real(8),intent(in) :: rval8

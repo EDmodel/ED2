@@ -33,7 +33,7 @@ subroutine ed_mem_alloc(proc_type)
    integer       , intent(in)                :: proc_type
 !----- Local Variables: -------------------------------------------------------------------!
    integer       , pointer    , dimension(:) :: nmxp,nmyp
-   integer                                   :: ng,nv,imean,np,ncohort
+   integer                                   :: ng
 !------------------------------------------------------------------------------------------!
 
 

@@ -361,10 +361,10 @@ subroutine ed_masterput_grid_dimens(par_run)
 
   implicit none
   include 'mpif.h'
-  integer :: nm,ng,zzz
-  integer :: nxpts,nypts,nzpts
+  integer :: nm,ng
+  integer :: nxpts,nypts
   integer :: ierr
-  integer :: par_run,nmiii
+  integer :: par_run
 
   if (par_run == 0 ) return
   do nm=1,nmachs
@@ -960,8 +960,7 @@ subroutine ed_nodeget_grid_dimens()
 
    include 'mpif.h'
 
-   integer :: ierr,ng,nm,zzz
-   integer, dimension(MPI_STATUS_SIZE) :: status
+   integer :: ierr,ng,nm
   
    do nm=1,nmachs
       do ng=1,ngrids

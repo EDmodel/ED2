@@ -357,9 +357,6 @@ subroutine print_C_and_N_budgets(cgrid)
   implicit none
 
   type(edtype),target :: cgrid
-  type(polygontype),pointer :: cpoly
-  type(sitetype),pointer    :: csite
-  type(patchtype),pointer   :: cpatch
   integer :: ipy
   real :: soil_C
   real :: soil_N
@@ -417,13 +414,13 @@ subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
   real(kind=8) :: area_factor, this_carbon, this_nitrogen
   real(kind=8) :: soil_C8, soil_N8, veg_C8, veg_N8
   
-  real(kind=8), parameter :: almostnothing=1.e-30
+  real(kind=8), parameter :: almostnothing=1.d-30
 
   ! Initialize C and N pools
-  soil_C8 = 0.0
-  soil_N8 = 0.0
-  veg_C8 = 0.0
-  veg_N8 = 0.0
+  soil_C8 = 0.0d0
+  soil_N8 = 0.0d0
+  veg_C8 = 0.0d0
+  veg_N8 = 0.0d0
 
   cpoly => cgrid%polygon(ipy)
 

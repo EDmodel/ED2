@@ -20,11 +20,10 @@ contains
     type(polygontype),pointer :: cpoly
     type(sitetype),pointer    :: csite
     type(patchtype),pointer   :: cpatch
-    integer :: ifm,ipy,isi,ipa,ico
-    integer :: k,idbh,i
+    integer :: ifm,ipy,isi,ipa
         
     integer, dimension(nzg) :: ed_ktrans
-    real :: sum_lai_rbi,site_area_i
+    real :: sum_lai_rbi
     real, external :: compute_netrad_ar
     real :: gpp
     real, dimension(n_dbh) :: gpp_dbh
@@ -134,8 +133,7 @@ contains
     implicit none
 
     type(sitetype),target   :: csite
-    type(patchtype),pointer :: cpatch
-    integer :: ifm,ipy,isi,ipa,ico
+    integer :: ifm,ipy,isi,ipa
     integer, intent(in) :: lsl
     type(integration_vars_ar), target :: integration_buff
 
@@ -322,7 +320,7 @@ contains
 
     integer :: ipa,ico,ipy,isi
     integer :: k,ksn,nsoil, nlsw1
-    real :: hdid,qwt,wt,soilhcap,fac
+    real :: hdid
     real :: available_water
     real, parameter :: tendays_sec=10.*day_sec
     real :: fracliq,veg_temp
@@ -393,15 +391,15 @@ contains
        available_water = 0.0
        do k = cpatch%krdepth(ico), nzg - 1
           available_water = available_water                               &
-               + (initp%soil_water(k)-soil(csite%ntext_soil(k,ipa))%soilcp)        &
-               * (slz(k+1)-slz(k))/(soil(csite%ntext_soil(k,ipa))%slmsts &
-               - soil(csite%ntext_soil(k,ipa))%soilcp) 
+               + real((initp%soil_water(k)-dble(soil(csite%ntext_soil(k,ipa))%soilcp))        &
+               * dble(slz(k+1)-slz(k))/dble(soil(csite%ntext_soil(k,ipa))%slmsts &
+               - soil(csite%ntext_soil(k,ipa))%soilcp) )
        enddo
-       available_water = available_water + (initp%soil_water(nzg)  &
-            -soil(csite%ntext_soil(nzg,ipa))%soilcp) &
-            *(-1.0*slz(nzg))              &
-            /(soil(csite%ntext_soil(nzg,ipa))%slmsts &
-            -soil(csite%ntext_soil(nzg,ipa))%soilcp) 
+       available_water = available_water + real((initp%soil_water(nzg)  &
+            -dble(soil(csite%ntext_soil(nzg,ipa))%soilcp)) &
+            *dble(-1.0*slz(nzg))              &
+            /dble(soil(csite%ntext_soil(nzg,ipa))%slmsts &
+            -soil(csite%ntext_soil(nzg,ipa))%soilcp)) 
        available_water = available_water/(-1.0*slz(cpatch%krdepth(ico)))
        cpatch%paw_avg10d(ico) = cpatch%paw_avg10d(ico)*(1.0-hdid/tendays_sec)  &
             + available_water*hdid/tendays_sec
@@ -532,9 +530,7 @@ contains
 
     type(polygontype),target :: cpoly
     type(sitetype),target :: csite
-    type(patchtype),pointer :: cpatch
     integer :: ipa,isi
-    real :: thetacan,pis
 
     print*,'decide how to set vels in canopy_atm_fluxes.'
     stop
@@ -574,8 +570,8 @@ real function compute_water_storage_ar(csite, lsl, rhos,ipa)
   cpatch => csite%patch(ipa)
 
   do k = lsl, nzg
-     compute_water_storage_ar = compute_water_storage_ar +  &
-          csite%soil_water(k,ipa) * dslz(k) * 1000.0
+     compute_water_storage_ar = compute_water_storage_ar + &
+          real(csite%soil_water(k,ipa)) * dslz(k) * 1000.0
   enddo
 
   do k = 1, csite%nlev_sfcwater(ipa)
@@ -709,7 +705,7 @@ subroutine sum_plant_cfluxes_ar(csite,ipa, gpp, gpp_dbh,plresp)
   real, intent(out) :: gpp
   real, dimension(n_dbh), intent(out) :: gpp_dbh
   real, intent(out) :: plresp
-  real, parameter             :: ddbh=1./(n_dbh-1)
+  real, parameter             :: ddbh=1./real(n_dbh-1)
   real :: lrresp ! leaf and root respiration
   real :: sresp ! storage, growth, vleaf respiration
   logical :: forest

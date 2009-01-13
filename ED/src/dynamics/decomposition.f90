@@ -79,7 +79,7 @@ subroutine resp_index(nsoil,tempk,theta,slmsts,resp_weight)
        (tempk-318.15)))
 
   ! moisture dependence
-  Ws = theta/slmsts
+  Ws = real(theta/dble(slmsts))
 
 
 
@@ -183,7 +183,7 @@ subroutine update_C_and_N_pools_ar(cgrid)
   type(edtype),target :: cgrid
   type(polygontype),pointer :: cpoly
   type(sitetype),pointer    :: csite
-  integer :: ipy,isi,ipa,ico
+  integer :: ipy,isi,ipa
   real :: Lc
   real :: fast_C_loss
   real :: fast_N_loss
@@ -193,8 +193,6 @@ subroutine update_C_and_N_pools_ar(cgrid)
   real :: slow_C_loss
   real :: mineralized_N_input
   real :: mineralized_N_loss
-  integer :: ipat
-
 
   do ipy = 1,cgrid%npolygons
 

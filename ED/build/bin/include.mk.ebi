@@ -62,6 +62,7 @@ HDF_LIBS=-L./.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
 
 # For 64-bit 
 USE_HDF5=1
+USE_COLLECTIVE_MPIO=0
 HDF5_INCS=-I/home/mdietze/hdf5-1.8.1/hdf5/include
 HDF5_LIBS=-L/home/mdietze/hdf5-1.8.1/hdf5/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
           -lz

@@ -132,7 +132,7 @@ real, dimension(n_pft) :: max_dbh !  Maximum DBH attainable by this PFT (cm)
 !--------------------
 integer, dimension(n_pft) :: phenology ! Indicates leaf habit.  0 - evergreen coniferous; 1 - drought deciduous; 2 - cold deciduous.
 
-real, dimension(n_pft) :: clumping_factor ! 0-1 factor indicating degree of clumpiness of leaves and shoots.
+real(kind=8), dimension(n_pft) :: clumping_factor ! 0-1 factor indicating degree of clumpiness of leaves and shoots.
 
 real, dimension(n_pft) :: leaf_width  ! leaf width used to compute the aerodynamic resistance (m).
 ! NEW PARAMETERS 11-26-08

@@ -54,12 +54,12 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
 
   ! calculate liquid water available for transpiration
   available_liquid_water(nzg) = max(0.0, 1.0e3 * dslz(nzg) *   &
-       soil_fracliq(nzg) * (soil_water(nzg) - soil(ntext_soil(nzg))%soilcp))
+       soil_fracliq(nzg) * real(soil_water(nzg) - dble(soil(ntext_soil(nzg))%soilcp)))
 
   do k1 = nzg-1, lsl, -1
      available_liquid_water(k1) = available_liquid_water(k1+1) +  &
-          dslz(k1) * 1.0e3 * soil_fracliq(k1) * max(0.0, soil_water(k1) -  &
-          soil(ntext_soil(k1))%soilcp)
+          dslz(k1) * 1.0e3 * soil_fracliq(k1) * max(0.0, real(soil_water(k1) -  &
+          dble(soil(ntext_soil(k1))%soilcp)))
   enddo
 
   ! Initialize the array of maximum photosynthesis rates used in the 
@@ -309,12 +309,12 @@ end if
      if(root_depth_indices(k1) == 1)then
         do k2 = k1, nzg
            nts = ntext_soil(k2)
-           slpotv = soil(nts)%slpots * (soil(nts)%slmsts / soil_water(k2)) ** soil(nts)%slbs
+           slpotv = soil(nts)%slpots * real(dble(soil(nts)%slmsts) / soil_water(k2)) ** soil(nts)%slbs
            ! Multiply by liquid fraction (ice is unavailable for transpiration)
            slpotv = slpotv * soil_fracliq(k2)
            ! Find layer in root zone with highest slpotv AND soil_water 
            ! above minimum soilcp.  Set ktrans to this layer.
-           if (slpotv > swp .and. soil_water(k2) > soil(nts)%soilcp) then
+           if (slpotv > swp .and. soil_water(k2) > dble(soil(nts)%soilcp)) then
               swp = slpotv
               ed_ktrans(k1) = k2
            endif

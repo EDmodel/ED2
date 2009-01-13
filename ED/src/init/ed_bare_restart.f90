@@ -77,9 +77,7 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
    type(patchtype), pointer :: cpatch
    real, external :: h2dbh,dbh2bd,dbh2bl,ed_biomass
    integer :: ipa,ico,mypfts,ipft
-   real :: hcapveg ! Not sure if we should merge it with cpatch%hcapveg...
    real :: laisum
-   
 
    do ipa=ipa_a,ipa_z
       cpatch => csite%patch(ipa)

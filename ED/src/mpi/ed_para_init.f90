@@ -17,12 +17,8 @@ subroutine ed_node_decomp(init,standalone,masterworks)
 
   integer , intent(in) :: init
   logical , intent(in) :: standalone,masterworks
-  integer :: ngr,idn,isn,ng,mp_nzp,numbuff,icm,nsiz,jnode,ncols,ifm &
-       ,nestvar,nc,nf,npvar2,npvar3,nv,num_lbc_buff,num_nest_buff &
-       ,num_feed_buff,itype,i1,i2,j1,j2,ixy,ixyz,memf &
+  integer :: ngr,nsiz &
        ,ntotmachs
-
-  logical :: failed
 
   !    This is a logical flag to test wheter the master should also do some
   ! processing
@@ -121,8 +117,8 @@ subroutine get_grid
      do ifm=1,n_ed_region
         do i=1,nnxp(ifm)
            do j=1,nnyp(ifm)
-              work_e(ifm)%glon(i,j) = ed_reg_lonmin(ifm) + (float(i) - 0.5) * grid_res/nstratx(ifm)
-              work_e(ifm)%glat(i,j) = ed_reg_latmin(ifm) + (float(j) - 0.5) * grid_res/nstraty(ifm)
+              work_e(ifm)%glon(i,j) = ed_reg_lonmin(ifm) + (float(i) - 0.5) * grid_res/real(nstratx(ifm))
+              work_e(ifm)%glat(i,j) = ed_reg_latmin(ifm) + (float(j) - 0.5) * grid_res/real(nstraty(ifm))
            end do
         end do
      end do
@@ -176,8 +172,7 @@ subroutine get_work(ifm,nxp,nyp)
   integer, allocatable, dimension(:) :: leaf_class_list
   integer, allocatable, dimension(:) :: ntext_soil_list
   integer, allocatable,dimension(:) :: ipcent_land
-  integer :: datq,datsoil,ipy,i,j
-  integer :: ioff,joff
+  integer :: datsoil,ipy,i,j
   integer :: jboff,jtoff,iloff,iroff
   integer,parameter :: min_land_pcent = 10
   real,   parameter :: soi_edge_deg = 0.05   ! 100th of a degree, about 5.5 km at the equator.
@@ -354,7 +349,7 @@ subroutine ed_PAR_decomp(nxp,nyp,nsiz,nodes,work,ixb,ixe,iyb,iye)
   real :: relspeed(256)
   data relspeed/256*1./
 
-  integer :: inode,i,j,islab,jnodes,nslabs,min_blocks,nbigslabs,iblock &
+  integer :: inode,i,j,islab,nslabs,min_blocks,nbigslabs,iblock &
        ,jnode,knode
   real :: anodes,aslabs,totspeed,workdom,workaccum,worksofar &
        ,slabspeed,workslab

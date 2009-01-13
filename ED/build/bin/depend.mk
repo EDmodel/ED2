@@ -246,7 +246,7 @@ euler_driver.o : $(ED_DYNAMICS)/euler_driver.f90 ed_state_vars.o misc_coms.o soi
 	rm -f $(<F:.f90=.f90)
 
 events.o : $(ED_DYNAMICS)/events.f90 misc_coms.o ed_state_vars.o grid_coms.o \
-	pft_coms.o ed_init_atm.o disturbance.o therm_lib.o decomp_coms.o \
+	pft_coms.o ed_init_atm.o disturbance.o therm_lib.o ed_therm_lib.o decomp_coms.o \
 	fuse_fiss_utils.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -358,7 +358,8 @@ libxml2f90.f90_pp.o : $(ED_UTILS)/libxml2f90.f90_pp.f90
 	rm -f $(<F:.f90=.f90)
 
 lsm_hyd.o : $(ED_DYNAMICS)/lsm_hyd.f90 hydrology_constants.o grid_coms.o hydrology_coms.o  \
-	ed_state_vars.o ed_node_coms.o soil_coms.o misc_coms.o therm_lib.o consts_coms.o
+	ed_state_vars.o ed_node_coms.o soil_coms.o misc_coms.o therm_lib.o consts_coms.o \
+	pft_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

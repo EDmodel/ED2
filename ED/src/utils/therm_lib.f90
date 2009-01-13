@@ -539,7 +539,6 @@ module therm_lib
       implicit none
       real   , intent(in)           :: pres,temp
       logical, intent(in), optional :: useice
-      real                          :: desdt
       logical                       :: brrr_cold
 
       if (present(useice)) then

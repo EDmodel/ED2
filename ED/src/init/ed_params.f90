@@ -153,13 +153,12 @@ use pft_coms, only: phenology
 
 implicit none
 
-integer :: ipft
 real :: leaf_scatter_vis_temperate
 real :: leaf_scatter_vis_tropics
 real :: diffuse_bscat_vis_temp
 real :: diffuse_bscat_vis_trop
 
-mubar     = 1.0 
+mubar     = 1.0d0 
 
 visible_fraction = 0.45
 visible_fraction_dir = 0.43
@@ -605,13 +604,13 @@ phenology(6:8) = 0
 phenology(9:11) = 2
 phenology(12:15) = 1
 
-clumping_factor(1) = 1.0
-clumping_factor(2:4) = 0.735
-clumping_factor(5) = 0.84
-clumping_factor(6:8) = 0.735
-clumping_factor(9:11) = 0.84
-clumping_factor(12:13) = 0.84
-clumping_factor(14:15) = 1.0
+clumping_factor(1) = 1.0d0
+clumping_factor(2:4) = 0.735d0
+clumping_factor(5) = 0.84d0
+clumping_factor(6:8) = 0.735d0
+clumping_factor(9:11) = 0.84d0
+clumping_factor(12:13) = 0.84d0
+clumping_factor(14:15) = 1.0d0
 
 leaf_width(1:4) = 0.2
 leaf_width(5:11) = 0.05

@@ -75,7 +75,6 @@ recursive subroutine read_ed_xml_config(filename)
   use misc_coms, only: ied_init_mode,ffilout,integration_scheme,ed_inputs_dir,sfilin,sfilout
   implicit none
   integer(4) :: i,npft,ntag,myPFT,ival = 0
-  integer :: size
   logical(4) :: texist = .false.
   real(8) :: rval
   character*(*) :: filename
@@ -185,119 +184,119 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) include_pft_ag(myPFT) = ival
            call getConfigSTRING('name','pft',i,cval,texist)
            call getConfigREAL  ('SLA','pft',i,rval,texist)
-           if(texist) SLA(myPFT) = rval
+           if(texist) SLA(myPFT) = real(rval)
            call getConfigREAL  ('b1Bl','pft',i,rval,texist)
-           if(texist) b1Bl(myPFT) = rval
+           if(texist) b1Bl(myPFT) = real(rval)
            call getConfigREAL  ('b2Bl','pft',i,rval,texist)
-           if(texist) b2Bl(myPFT) = rval
+           if(texist) b2Bl(myPFT) = real(rval)
            call getConfigREAL  ('b1Bs','pft',i,rval,texist)
-           if(texist) b1Bs(myPFT) = rval
+           if(texist) b1Bs(myPFT) = real(rval)
            call getConfigREAL  ('b2Bs','pft',i,rval,texist)
-           if(texist) b2Bs(myPFT) = rval
+           if(texist) b2Bs(myPFT) = real(rval)
            call getConfigREAL  ('b1Ht','pft',i,rval,texist)
-           if(texist) b1Ht(myPFT) = rval
+           if(texist) b1Ht(myPFT) = real(rval)
            call getConfigREAL  ('b2Ht','pft',i,rval,texist)
-           if(texist) b2Ht(myPFT) = rval
+           if(texist) b2Ht(myPFT) = real(rval)
            call getConfigREAL  ('Vm0','pft',i,rval,texist)
-           if(texist) Vm0(myPFT) = rval
+           if(texist) Vm0(myPFT) = real(rval)
            call getConfigINT   ('phenology','pft',i,ival,texist)
            if(texist) phenology(myPFT) = ival
            call getConfigREAL  ('q','pft',i,rval,texist)
-           if(texist) q(myPFT) = rval
+           if(texist) q(myPFT) = real(rval)
            call getConfigREAL  ('clumping','pft',i,rval,texist)
            if(texist) clumping_factor(myPFT) = rval
 !!$           call getConfigREAL  ('beta0','pft',i,rval,texist)
-!!$           if(texist) beta(myPFT,0) = rval
+!!$           if(texist) beta(myPFT,0) = real(rval)
 !!$           call getConfigREAL  ('beta1','pft',i,rval,texist)
-!!$           if(texist) beta(myPFT,1) = rval
+!!$           if(texist) beta(myPFT,1) = real(rval)
 !!$           call getConfigREAL  ('beta2','pft',i,rval,texist)
-!!$           if(texist) beta(myPFT,2) = rval
+!!$           if(texist) beta(myPFT,2) = real(rval)
 !!$           call getConfigREAL  ('beta3','pft',i,rval,texist)
-!!$           if(texist) beta(myPFT,3) = rval
+!!$           if(texist) beta(myPFT,3) = real(rval)
 !!$           call getConfigREAL  ('beta4','pft',i,rval,texist)
-!!$           if(texist) beta(myPFT,4) = rval
+!!$           if(texist) beta(myPFT,4) = real(rval)
            call getConfigREAL  ('leaf_width','pft',i,rval,texist)
-           if(texist) leaf_width(myPFT) = rval
+           if(texist) leaf_width(myPFT) = real(rval)
            call getConfigREAL  ('hgt_min','pft',i,rval,texist)
-           if(texist) hgt_min(myPFT) = rval
+           if(texist) hgt_min(myPFT) = real(rval)
            call getConfigREAL  ('plant_min_temp','pft',i,rval,texist)
-           if(texist) plant_min_temp(myPFT) = rval
+           if(texist) plant_min_temp(myPFT) = real(rval)
            call getConfigREAL  ('mort3','pft',i,rval,texist)
-           if(texist) mort3(myPFT) = rval
+           if(texist) mort3(myPFT) = real(rval)
            call getConfigREAL  ('nonlocal_dispersal','pft',i,rval,texist)
-           if(texist) nonlocal_dispersal(myPFT) = rval
+           if(texist) nonlocal_dispersal(myPFT) = real(rval)
            call getConfigREAL  ('seed_rain','pft',i,rval,texist)
-           if(texist) seed_rain(myPFT) = rval
+           if(texist) seed_rain(myPFT) = real(rval)
 !!$           call getConfigREAL  ('init_dens','pft',i,rval,texist)
-!!$           if(texist) init_dens(myPFT) = rval
+!!$           if(texist) init_dens(myPFT) = real(rval)
            call getConfigREAL  ('stomatal_slope','pft',i,rval,texist)
-           if(texist) stomatal_slope(myPFT) = rval
+           if(texist) stomatal_slope(myPFT) = real(rval)
            call getConfigREAL  ('growth_resp_factor','pft',i,rval,texist)
-           if(texist) growth_resp_factor(myPFT) = rval
+           if(texist) growth_resp_factor(myPFT) = real(rval)
            call getConfigREAL  ('r_fract','pft',i,rval,texist)
-           if(texist) r_fract(myPFT) = rval
+           if(texist) r_fract(myPFT) = real(rval)
 !!$           call getConfigREAL  ('c_fract','pft',i,rval,texist)
-!!$           if(texist) c_fract(myPFT) = rval
+!!$           if(texist) c_fract(myPFT) = real(rval)
            call getConfigREAL  ('repro_min_h','pft',i,rval,texist)
-           if(texist) repro_min_h(myPFT) = rval
+           if(texist) repro_min_h(myPFT) = real(rval)
            call getConfigREAL  ('treefall_gt','pft',i,rval,texist)
-           if(texist) treefall_s_gtht(myPFT) = rval
+           if(texist) treefall_s_gtht(myPFT) = real(rval)
            call getConfigREAL  ('treefall_lt','pft',i,rval,texist)
-           if(texist) treefall_s_ltht(myPFT) = rval
+           if(texist) treefall_s_ltht(myPFT) = real(rval)
            call getConfigREAL  ('dark_respiration_factor','pft',i,rval,texist)
-           if(texist) dark_respiration_factor(myPFT) = rval
+           if(texist) dark_respiration_factor(myPFT) = real(rval)
            call getConfigREAL  ('qsw','pft',i,rval,texist)
-           if(texist) qsw(myPFT) = rval
+           if(texist) qsw(myPFT) = real(rval)
            call getConfigREAL  ('c2n_leaf','pft',i,rval,texist)
-           if(texist) c2n_leaf(myPFT) = rval
+           if(texist) c2n_leaf(myPFT) = real(rval)
            call getConfigREAL  ('c2n_recruit','pft',i,rval,texist)
-           if(texist) c2n_recruit(myPFT) = rval
+           if(texist) c2n_recruit(myPFT) = real(rval)
 !!$           call getConfigREAL  ('c2n_storage','pft',i,rval,texist)
-!!$           if(texist) c2n_storage(myPFT) = rval
+!!$           if(texist) c2n_storage(myPFT) = real(rval)
            call getConfigREAL  ('max_dbh','pft',i,rval,texist)
-           if(texist) max_dbh(myPFT) = rval
+           if(texist) max_dbh(myPFT) = real(rval)
            call getConfigREAL  ('rho','pft',i,rval,texist)
-           if(texist) rho(myPFT) = rval
+           if(texist) rho(myPFT) = real(rval)
            call getConfigREAL  ('D0','pft',i,rval,texist)
-           if(texist) D0(myPFT) = rval
+           if(texist) D0(myPFT) = real(rval)
            call getConfigREAL  ('mort1','pft',i,rval,texist)
-           if(texist) mort1(myPFT) = rval
+           if(texist) mort1(myPFT) = real(rval)
            call getConfigREAL  ('mort2','pft',i,rval,texist)
-           if(texist) mort2(myPFT) = rval
+           if(texist) mort2(myPFT) = real(rval)
 
            call getConfigREAL  ('Vm_low_temp','pft',i,rval,texist)
-           if(texist) Vm_low_temp(myPFT) = rval
+           if(texist) Vm_low_temp(myPFT) = real(rval)
            call getConfigREAL  ('cuticular_cond','pft',i,rval,texist)
-           if(texist) cuticular_cond(myPFT) = rval
+           if(texist) cuticular_cond(myPFT) = real(rval)
            call getConfigREAL  ('quantum_efficiency','pft',i,rval,texist)
-           if(texist) quantum_efficiency(myPFT) = rval
-           call getConfigREAL  ('photosyn_pathway','pft',i,rval,texist)
-           if(texist) photosyn_pathway(myPFT) = rval
+           if(texist) quantum_efficiency(myPFT) = real(rval)
+           call getConfigINT  ('photosyn_pathway','pft',i,ival,texist)
+           if(texist) photosyn_pathway(myPFT) = ival
            call getConfigREAL  ('leaf_turnover_rate','pft',i,rval,texist)
-           if(texist) leaf_turnover_rate(myPFT) = rval
+           if(texist) leaf_turnover_rate(myPFT) = real(rval)
            call getConfigREAL  ('root_turnover_rate','pft',i,rval,texist)
-           if(texist) root_turnover_rate(myPFT) = rval
+           if(texist) root_turnover_rate(myPFT) = real(rval)
            call getConfigREAL  ('storage_turnover_rate','pft',i,rval,texist)
-           if(texist) storage_turnover_rate(myPFT) = rval
+           if(texist) storage_turnover_rate(myPFT) = real(rval)
            call getConfigREAL  ('root_respiration_factor','pft',i,rval,texist)
-           if(texist) root_respiration_factor(myPFT) = rval
+           if(texist) root_respiration_factor(myPFT) = real(rval)
            call getConfigREAL  ('seedling_mortality','pft',i,rval,texist)
-           if(texist) seedling_mortality(myPFT) = rval
+           if(texist) seedling_mortality(myPFT) = real(rval)
            call getConfigREAL  ('water_conductance','pft',i,rval,texist)
-           if(texist) water_conductance(myPFT) = rval
+           if(texist) water_conductance(myPFT) = real(rval)
 
 !!! PFT VARIABLES THAT ARE ACTUALLY IN CANOPY_RADIATION
            call getConfigREAL  ('leaf_scatter_vis','pft',i,rval,texist)
-           if(texist) leaf_scatter_vis(myPFT) = rval
+           if(texist) leaf_scatter_vis(myPFT) = real(rval)
            call getConfigREAL  ('diffuse_backscatter_vis','pft',i,rval,texist)
-           if(texist) diffuse_backscatter_vis(myPFT) = rval
+           if(texist) diffuse_backscatter_vis(myPFT) = real(rval)
            call getConfigREAL  ('emis_v','pft',i,rval,texist)
            if(texist) emis_v(myPFT) = rval
            
 
 !!! PFT VARIABLES THAT ARE ACTUALLY IN DECOMP
            call getConfigREAL  ('f_labile','pft',i,rval,texist)
-           if(texist) f_labile(myPFT) = rval
+           if(texist) f_labile(myPFT) = real(rval)
 
            print*,i,myPFT,trim(cval),SLA(myPFT)
         else
@@ -317,19 +316,19 @@ recursive subroutine read_ed_xml_config(filename)
         call libxml2f90__ll_selecttag('DOWN','pftconst',i)
         
         call getConfigREAL  ('c2n_slow','pftconst',i,rval,texist)
-        if(texist) c2n_slow = rval
+        if(texist) c2n_slow = real(rval)
         call getConfigREAL  ('c2n_structural','pftconst',i,rval,texist)
-        if(texist) c2n_structural = rval
+        if(texist) c2n_structural = real(rval)
         call getConfigREAL  ('c2n_stem','pftconst',i,rval,texist)
-        if(texist) c2n_stem = rval
+        if(texist) c2n_stem = real(rval)
         call getConfigREAL  ('l2n_stem','pftconst',i,rval,texist)
-        if(texist) l2n_stem = rval
+        if(texist) l2n_stem = real(rval)
         call getConfigREAL  ('C2B','pftconst',i,rval,texist)
-        if(texist) C2B = rval
+        if(texist) C2B = real(rval)
         call getConfigREAL  ('agf_bs','pftconst',i,rval,texist)
-        if(texist) agf_bs = rval
+        if(texist) agf_bs = real(rval)
         call getConfigREAL  ('frost_mort','pftconst',i,rval,texist)
-        if(texist) frost_mort = rval
+        if(texist) frost_mort = real(rval)
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
@@ -352,17 +351,17 @@ recursive subroutine read_ed_xml_config(filename)
          call getConfigINT  ('outputPeriod','hydro',i,ival,texist)
          if(texist) HydroOutputPeriod = ival
          call getConfigREAL  ('MoistRateTuning','hydro',i,rval,texist)
-         if(texist) MoistRateTuning = rval
+         if(texist) MoistRateTuning = real(rval)
          call getConfigREAL  ('MoistSatThresh','hydro',i,rval,texist)
-         if(texist) MoistSatThresh = rval
+         if(texist) MoistSatThresh = real(rval)
          call getConfigREAL  ('MoistdWT','hydro',i,rval,texist)
-         if(texist) Moist_dWT = rval
+         if(texist) Moist_dWT = real(rval)
          call getConfigREAL  ('FracLiqRunoff','hydro',i,rval,texist)
-         if(texist) FracLiqRunoff = rval
+         if(texist) FracLiqRunoff = real(rval)
          call getConfigREAL  ('runoff_vmax','hydro',i,rval,texist)
-         if(texist) runoff_vmax = rval
+         if(texist) runoff_vmax = real(rval)
          call getConfigREAL  ('GrassLAImax','hydro',i,rval,texist)
-         if(texist) GrassLAImax = rval
+         if(texist) GrassLAImax = real(rval)
 !! redundant with SOIL runoff_time 
          call getConfigREAL  ('inverse_runoff_time','hydro',i,rval,texist)
          if(texist) then
@@ -386,29 +385,29 @@ recursive subroutine read_ed_xml_config(filename)
         call libxml2f90__ll_selecttag('DOWN','lapse',i)
 
          call getConfigREAL  ('geoht','lapse',i,rval,texist)
-         if(texist) lapse%geoht = rval
+         if(texist) lapse%geoht = real(rval)
          call getConfigREAL  ('vels','lapse',i,rval,texist)
-         if(texist) lapse%vels = rval
+         if(texist) lapse%vels = real(rval)
          call getConfigREAL  ('atm_tmp','lapse',i,rval,texist)
-         if(texist) lapse%atm_tmp = rval
+         if(texist) lapse%atm_tmp = real(rval)
          call getConfigREAL  ('rv','lapse',i,rval,texist)
-         if(texist) lapse%atm_shv = rval
+         if(texist) lapse%atm_shv = real(rval)
          call getConfigREAL  ('prss','lapse',i,rval,texist)
-         if(texist) lapse%prss = rval
+         if(texist) lapse%prss = real(rval)
          call getConfigREAL  ('pcpg','lapse',i,rval,texist)
-         if(texist) lapse%pcpg = rval
+         if(texist) lapse%pcpg = real(rval)
          call getConfigREAL  ('atm_co2','lapse',i,rval,texist)
-         if(texist) lapse%atm_co2 = rval
+         if(texist) lapse%atm_co2 = real(rval)
          call getConfigREAL  ('rlong','lapse',i,rval,texist)
-         if(texist) lapse%rlong = rval
+         if(texist) lapse%rlong = real(rval)
          call getConfigREAL  ('par_diffuse','lapse',i,rval,texist)
-         if(texist) lapse%par_diffuse = rval
+         if(texist) lapse%par_diffuse = real(rval)
          call getConfigREAL  ('par_beam','lapse',i,rval,texist)
-         if(texist) lapse%par_beam = rval
+         if(texist) lapse%par_beam = real(rval)
          call getConfigREAL  ('nir_diffuse','lapse',i,rval,texist)
-         if(texist) lapse%nir_diffuse = rval
+         if(texist) lapse%nir_diffuse = real(rval)
          call getConfigREAL  ('nir_beam','lapse',i,rval,texist)
-         if(texist) lapse%nir_beam = rval
+         if(texist) lapse%nir_beam = real(rval)
 
 
          call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
@@ -426,29 +425,29 @@ recursive subroutine read_ed_xml_config(filename)
         call libxml2f90__ll_selecttag('DOWN','radiation',i)
         
         call getConfigREAL  ('rlong_min','radiation',i,rval,texist)
-        if(texist) rlong_min = rval 
+        if(texist) rlong_min = real(rval) 
         call getConfigREAL  ('veg_temp_min','radiation',i,rval,texist)
-        if(texist) veg_temp_min = rval 
+        if(texist) veg_temp_min = real(rval) 
         call getConfigREAL  ('lai_min','radiation',i,rval,texist)
-        if(texist) lai_min = rval       
+        if(texist) lai_min = real(rval)       
         call getConfigREAL  ('mubar','radiation',i,rval,texist)
         if(texist) mubar = rval
         call getConfigREAL  ('visible_fraction','radiation',i,rval,texist)
-        if(texist) visible_fraction = rval
+        if(texist) visible_fraction = real(rval)
         call getConfigREAL  ('visible_fraction_dir','radiation',i,rval,texist)
-        if(texist) visible_fraction_dir = rval
+        if(texist) visible_fraction_dir = real(rval)
         call getConfigREAL  ('visible_fraction_dif','radiation',i,rval,texist)
-        if(texist) visible_fraction_dif = rval
+        if(texist) visible_fraction_dif = real(rval)
         call getConfigREAL  ('leaf_scatter_nir','radiation',i,rval,texist)
-        if(texist) leaf_scatter_nir = rval
+        if(texist) leaf_scatter_nir = real(rval)
         call getConfigREAL  ('leaf_reflect_nir','radiation',i,rval,texist)
-        if(texist) leaf_reflect_nir = rval
+        if(texist) leaf_reflect_nir = real(rval)
         call getConfigREAL  ('leaf_trans_nir','radiation',i,rval,texist)
-        if(texist) leaf_trans_nir = rval
+        if(texist) leaf_trans_nir = real(rval)
         call getConfigREAL  ('diffuse_backscatter_vis','radiation',i,rval,texist)
-        if(texist) diffuse_backscatter_vis = rval
+        if(texist) diffuse_backscatter_vis = real(rval)
         call getConfigREAL  ('diffuse_backscatter_nir','radiation',i,rval,texist)
-        if(texist) diffuse_backscatter_nir = rval
+        if(texist) diffuse_backscatter_nir = real(rval)
         
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
@@ -467,11 +466,11 @@ recursive subroutine read_ed_xml_config(filename)
         call libxml2f90__ll_selecttag('DOWN','soil',i)
         
         call getConfigREAL  ('water_stab_thresh','soil',i,rval,texist)
-        if(texist) water_stab_thresh = rval
+        if(texist) water_stab_thresh = real(rval)
         call getConfigINT  ('infiltration_method','soil',i,ival,texist)
          if(texist) infiltration_method = ival
          call getConfigREAL  ('dewmax','soil',i,rval,texist)
-         if(texist) dewmax = rval
+         if(texist) dewmax = real(rval)
          call getConfigSTRING  ('vegetation_database','soil',i,cval,texist)
          if(texist) veg_database = trim(cval)
          call getConfigSTRING  ('soil_database','soil',i,cval,texist)
@@ -487,7 +486,7 @@ recursive subroutine read_ed_xml_config(filename)
 
          !!CHECK FOR CONFLICT WITH INVERSE_RUNOFF_TIME
          call getConfigREAL  ('runoff_time','soil',i,rval,texist) 
-         if(texist) runoff_time = rval
+         if(texist) runoff_time = real(rval)
       
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
@@ -506,30 +505,30 @@ recursive subroutine read_ed_xml_config(filename)
         call libxml2f90__ll_selecttag('DOWN','decomposition',i)
         
         call getConfigREAL  ('cwd_frac','decomposition',i,rval,texist)
-        if(texist) cwd_frac = rval
+        if(texist) cwd_frac = real(rval)
 
         call getConfigREAL  ('resp_opt_water','decomposition',i,rval,texist)
-        if(texist)  resp_opt_water = rval
+        if(texist)  resp_opt_water = real(rval)
         call getConfigREAL  ('resp_water_below_opt','decomposition',i,rval,texist)
-        if(texist) resp_water_below_opt = rval
+        if(texist) resp_water_below_opt = real(rval)
         call getConfigREAL  ('resp_water_above_opt','decomposition',i,rval,texist)
-        if(texist) resp_water_above_opt = rval
+        if(texist) resp_water_above_opt = real(rval)
         call getConfigREAL  ('resp_tempoerature_increase','decomposition',i,rval,texist)
-        if(texist) resp_temperature_increase = rval
+        if(texist) resp_temperature_increase = real(rval)
         call getConfigREAL  ('N_immobil_supply_scale','decomposition',i,rval,texist)
-        if(texist) N_immobil_supply_scale = rval
+        if(texist) N_immobil_supply_scale = real(rval)
         call getConfigREAL  ('r_fsc','decomposition',i,rval,texist)
-        if(texist)  r_fsc = rval
+        if(texist)  r_fsc = real(rval)
         call getConfigREAL  ('r_stsc','decomposition',i,rval,texist)
-        if(texist)  r_stsc = rval
+        if(texist)  r_stsc = real(rval)
         call getConfigREAL  ('r_ssc','decomposition',i,rval,texist)
-        if(texist)  r_ssc = rval
+        if(texist)  r_ssc = real(rval)
         call getConfigREAL  ('K1','decomposition',i,rval,texist)
-        if(texist)  K1 = rval
+        if(texist)  K1 = real(rval)
         call getConfigREAL  ('K2','decomposition',i,rval,texist)
-        if(texist)  K2 = rval
+        if(texist)  K2 = real(rval)
         call getConfigREAL  ('K3','decomposition',i,rval,texist)
-        if(texist)  K3 = rval
+        if(texist)  K3 = real(rval)
         call getConfigINT   ('N_decomp_lim','decomposition',i,ival,texist)
         if(texist)  N_decomp_lim= ival
 
@@ -550,27 +549,27 @@ recursive subroutine read_ed_xml_config(filename)
         call libxml2f90__ll_selecttag('DOWN','fusefiss',i)
         
         call getConfigREAL  ('min_recruit_size','fusefiss',i,rval,texist)
-        if(texist) min_recruit_size = rval
+        if(texist) min_recruit_size = real(rval)
         call getConfigREAL  ('min_dbh_class','fusefiss',i,rval,texist)
-        if(texist) min_dbh_class = rval
+        if(texist) min_dbh_class = real(rval)
         call getConfigREAL  ('min_hgt_class','fusefiss',i,rval,texist)
-        if(texist) min_hgt_class = rval
+        if(texist) min_hgt_class = real(rval)
         call getConfigREAL  ('maxdbh','fusefiss',i,rval,texist)
-        if(texist) maxdbh = rval
+        if(texist) maxdbh = real(rval)
         call getConfigREAL  ('fusetol','fusefiss',i,rval,texist)
-        if(texist) fusetol = rval
+        if(texist) fusetol = real(rval)
         call getConfigREAL  ('fusetol_h','fusefiss',i,rval,texist)
-        if(texist) fusetol_h = rval
+        if(texist) fusetol_h = real(rval)
         call getConfigREAL  ('lai_fuse_tol','fusefiss',i,rval,texist)
-        if(texist) lai_fuse_tol = rval
+        if(texist) lai_fuse_tol = real(rval)
         call getConfigREAL  ('lai_tol','fusefiss',i,rval,texist)
-        if(texist) lai_tol = rval
+        if(texist) lai_tol = real(rval)
         call getConfigREAL  ('ntol','fusefiss',i,rval,texist)
-        if(texist) ntol = rval
+        if(texist) ntol = real(rval)
         call getConfigREAL  ('profile_tol','fusefiss',i,rval,texist)
-        if(texist) profile_tol = rval
+        if(texist) profile_tol = real(rval)
         call getConfigREAL  ('max_patch_age','fusefiss',i,rval,texist)
-        if(texist) max_patch_age = rval
+        if(texist) max_patch_age = real(rval)
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
@@ -591,7 +590,7 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigINT  ('patch_dynamics','disturbance',i,ival,texist)
         if(texist) patch_dynamics = ival
         call getConfigREAL  ('min_new_patch_area','disturbance',i,rval,texist)
-        if(texist) min_new_patch_area = rval
+        if(texist) min_new_patch_area = real(rval)
         call getConfigINT  ('include_fire','disturbance',i,ival,texist)
         if(texist) include_fire = ival
         call getConfigINT  ('ianth_disturb','disturbance',i,ival,texist)
@@ -599,20 +598,20 @@ recursive subroutine read_ed_xml_config(filename)
  
         !! TREEFALL
         call getConfigREAL  ('treefall_disturbance_rate','disturbance',i,rval,texist)
-        if(texist) treefall_disturbance_rate = rval
+        if(texist) treefall_disturbance_rate = real(rval)
 
         call getConfigREAL  ('treefall_hite_threshold','disturbance',i,rval,texist)
-        if(texist) treefall_hite_threshold = rval
+        if(texist) treefall_hite_threshold = real(rval)
         call getConfigREAL  ('treefall_age_theshold','disturbance',i,rval,texist)
-        if(texist) treefall_age_threshold = rval
+        if(texist) treefall_age_threshold = real(rval)
 
         !! FORESTRY
         call getConfigINT  ('plantation_year','disturbance',i,ival,texist)
         if(texist) plantation_year = ival
         call getConfigREAL  ('plantation_rotation','disturbance',i,rval,texist)
-        if(texist) plantation_rotation = rval
+        if(texist) plantation_rotation = real(rval)
         call getConfigREAL  ('mature_harvest_age','disturbance',i,rval,texist)
-        if(texist) mature_harvest_age = rval
+        if(texist) mature_harvest_age = real(rval)
         !! Possibly DEPRECATED 
         call getConfigINT  ('forestry_on','disturbance',i,ival,texist)
         if(texist) forestry_on = ival
@@ -621,9 +620,9 @@ recursive subroutine read_ed_xml_config(filename)
         
         !! FIRE
         call getConfigREAL  ('fire_dryness_threshold','disturbance',i,rval,texist)
-        if(texist) fire_dryness_threshold = rval
+        if(texist) fire_dryness_threshold = real(rval)
         call getConfigREAL  ('fire_parameter','disturbance',i,rval,texist)
-        if(texist) fire_parameter = rval
+        if(texist) fire_parameter = real(rval)
 
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
@@ -641,32 +640,32 @@ recursive subroutine read_ed_xml_config(filename)
         call libxml2f90__ll_selecttag('DOWN','phenology',i)
         
         call getConfigREAL  ('retained_carbon_fraction','phenology',i,rval,texist)
-        if(texist)  retained_carbon_fraction = rval
+        if(texist)  retained_carbon_fraction = real(rval)
         call getConfigREAL  ('theta_crit','phenology',i,rval,texist)
-        if(texist)  theta_crit= rval
+        if(texist)  theta_crit= real(rval)
         call getConfigREAL  ('dl_tr','phenology',i,rval,texist)
-        if(texist)  dl_tr = rval
+        if(texist)  dl_tr = real(rval)
         call getConfigREAL  ('st_tr1','phenology',i,rval,texist)
-        if(texist)  st_tr1 = rval
+        if(texist)  st_tr1 = real(rval)
         call getConfigREAL  ('st_tr2','phenology',i,rval,texist)
-        if(texist)  st_tr2 = rval
+        if(texist)  st_tr2 = real(rval)
         call getConfigREAL  ('phen_a','phenology',i,rval,texist)
-        if(texist)  phen_a = rval
+        if(texist)  phen_a = real(rval)
         call getConfigREAL  ('phen_b','phenology',i,rval,texist)
-        if(texist)  phen_b = rval
+        if(texist)  phen_b = real(rval)
         call getConfigREAL  ('phen_c','phenology',i,rval,texist)
-        if(texist)  phen_c = rval
+        if(texist)  phen_c = real(rval)
         call getConfigINT  ('iphen_scheme','phenology',i,ival,texist)
         if(texist) iphen_scheme = ival
 
-        call getConfigREAL  ('iphenys1','phenology',i,rval,texist)
-        if(texist) iphenys1 = rval
-        call getConfigREAL  ('iphenysf','phenology',i,rval,texist)
-        if(texist) iphenysf = rval
-        call getConfigREAL  ('iphenyf1','phenology',i,rval,texist)
-        if(texist) iphenyf1 = rval
-        call getConfigREAL  ('iphenyff','phenology',i,rval,texist)
-        if(texist) iphenyff = rval
+        call getConfigINT  ('iphenys1','phenology',i,ival,texist)
+        if(texist) iphenys1 = ival
+        call getConfigINT  ('iphenysf','phenology',i,ival,texist)
+        if(texist) iphenysf = ival
+        call getConfigINT  ('iphenyf1','phenology',i,ival,texist)
+        if(texist) iphenyf1 = ival
+        call getConfigINT  ('iphenyff','phenology',i,ival,texist)
+        if(texist) iphenyff = ival
 
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
@@ -699,57 +698,57 @@ recursive subroutine read_ed_xml_config(filename)
 !!$         call getConfigINT  ('estimator','numerics',i,ival,texist)
 !!$         if(texist) data%estimator = ival
 !!$         call getConfigREAL  ('Vm_amp','numerics',i,rval,texist)
-!!$         if(texist) data%Vm_amp = rval
+!!$         if(texist) data%Vm_amp = real(rval)
 !!$         call getConfigINT  ('n_soi','numerics',i,ival,texist)
 !!$         if(texist) data%n_soi = ival
 !!$         call getConfigINT  ('max_cohorts','numerics',i,ival,texist)
 !!$         if(texist) data%max_cohorts = ival
 !!$         call getConfigREAL  ('dbhmax','numerics',i,rval,texist)
-!!$         if(texist) data%dbhmax = rval
+!!$         if(texist) data%dbhmax = real(rval)
 !!$         call getConfigREAL  ('f_area','community',i,rval,texist)
-!!$         if(texist) data%f_area = rval
+!!$         if(texist) data%f_area = real(rval)
 !!$         call getConfigINT  ('forecast_beg_year','community',i,ival,texist)
 !!$         if(texist) data%forecast_beg_year = ival
 !!$         call getConfigINT  ('project_landuse_rates','community',i,ival,texist)
 !!$         if(texist) data%project_landuse_rates = ival
 !!$         call getConfigREAL  ('k_fw','community',i,rval,texist)
-!!$         if(texist) data%k_fw = rval
+!!$         if(texist) data%k_fw = real(rval)
 !!$         call getConfigREAL  ('fp1','community',i,rval,texist)
-!!$         if(texist) data%fp1 = rval
+!!$         if(texist) data%fp1 = real(rval)
 !!$         call getConfigREAL  ('btol','community',i,rval,texist)
-!!$         if(texist) data%btol = rval
+!!$         if(texist) data%btol = real(rval)
 !!$         call getConfigREAL  (' theta_crit_lo','community',i,rval,texist)
-!!$         if(texist) data%theta_crit_lo = rval
+!!$         if(texist) data%theta_crit_lo = real(rval)
 !!$         call getConfigREAL  (' theta_crit_hi','community',i,rval,texist)
-!!$         if(texist) data%theta_crit_hi= rval
+!!$         if(texist) data%theta_crit_hi= real(rval)
 !!$         call getConfigREAL  ('gee_delay_time','community',i,rval,texist)
-!!$         if(texist) data%gee_delay_time= rval
+!!$         if(texist) data%gee_delay_time= real(rval)
 !!$         call getConfigREAL  ('k_nlr','ecosystem',i,rval,texist)
-!!$         if(texist) data%k_nlr = rval
+!!$         if(texist) data%k_nlr = real(rval)
 !!$         call getConfigREAL  ('nlr_low_temp','ecosystem',i,rval,texist)
-!!$         if(texist) data%nlr_low_temp = rval
+!!$         if(texist) data%nlr_low_temp = real(rval)
 !!$         call getConfigREAL  ('nlr_slope','ecosystem',i,rval,texist)
-!!$         if(texist) data%nlr_slope = rval
+!!$         if(texist) data%nlr_slope = real(rval)
 !!$         call getConfigINT  ('winter_decay','ecosystem',i,ival,texist)
 !!$         if(texist) data%winter_decay = ival
 !!$         call getConfigREAL  ('resp_opt_temp','ecosystem',i,rval,texist)
-!!$         if(texist) data%resp_opt_temp = rval
+!!$         if(texist) data%resp_opt_temp = real(rval)
 !!$         call getConfigREAL  ('resp_tshr','ecosystem',i,rval,texist)
-!!$         if(texist) data%resp_tshr = rval
+!!$         if(texist) data%resp_tshr = real(rval)
 !!$         call getConfigREAL  ('resp_tshl','ecosystem',i,rval,texist)
-!!$         if(texist) data%resp_tshl = rval
+!!$         if(texist) data%resp_tshl = real(rval)
 !!$         call getConfigREAL  ('resp_max_temp','ecosystem',i,rval,texist)
-!!$         if(texist) data%resp_max_temp = rval
+!!$         if(texist) data%resp_max_temp = real(rval)
 !!$         call getConfigREAL  ('resp_opt_water','ecosystem',i,rval,texist)
-!!$         if(texist) data%resp_opt_water = rval
+!!$         if(texist) data%resp_opt_water = real(rval)
 !!$         call getConfigREAL  ('resp_water_decay','ecosystem',i,rval,texist)
-!!$         if(texist) data%resp_water_decay = rval
+!!$         if(texist) data%resp_water_decay = real(rval)
 !!$         call getConfigREAL  ('resp_water_growth','ecosystem',i,rval,texist)
-!!$         if(texist) data%resp_water_growth = rval
+!!$         if(texist) data%resp_water_growth = real(rval)
 !!$         call getConfigREAL  ('nitrogen2','ecosystem',i,rval,texist)
-!!$         if(texist) data%nitrogen2 = rval
+!!$         if(texist) data%nitrogen2 = real(rval)
 !!$         call getConfigREAL  ('nitrogen1','ecosystem',i,rval,texist)
-!!$         if(texist) data%nitrogen1 = rval
+!!$         if(texist) data%nitrogen1 = real(rval)
 !!$
 !!$         call getConfigINT  ('phenol_spring_firstyear','settings',i,ival,texist)
 !!$         if(texist) data%phenol_spring_firstyear = ival
@@ -775,7 +774,7 @@ recursive subroutine read_ed_xml_config(filename)
 !!$         call getConfigSTRING  ('optimizer_filepath','settings',i,cval,texist)
 !!$         if(texist) data%opt_inputs_fn = trim(cval)
 !!$         call getConfigREAL  ('grid_resolution','settings',i,rval,texist)
-!!$         if(texist) data%grid_resolution = rval
+!!$         if(texist) data%grid_resolution = real(rval)
 
 
        

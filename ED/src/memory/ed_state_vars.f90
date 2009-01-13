@@ -2919,7 +2919,6 @@ contains
     
     implicit none
     
-    integer :: npolygons,igr
     type(edtype),target :: cgrid
 
        if(associated(cgrid%polygon                 )) deallocate(cgrid%polygon                 )
@@ -4302,7 +4301,6 @@ contains
 
     type(edtype),target :: edin
     integer :: oldsize,newsize,i
-    real, dimension(oldsize) :: edout_real
     integer, dimension(oldsize),intent(IN) :: water_site
     integer, dimension(oldsize) :: water_site_new
 

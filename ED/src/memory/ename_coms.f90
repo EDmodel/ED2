@@ -75,8 +75,8 @@ Module ename_coms
       real    :: deltax = 0.0
       integer, dimension(maxgrds) :: nstratx = (/ (0, i=1,maxgrds) /)
       integer, dimension(maxgrds) :: nstraty = (/ (0, i=1,maxgrds) /)
-      real    :: polelat = 0
-      real    :: polelon = 0
+      real    :: polelat = 0.
+      real    :: polelon = 0.
       real, dimension(maxgrds)    :: centlat = (/ (0.0, i=1,maxgrds) /)
       real, dimension(maxgrds)    :: centlon = (/ (0.0, i=1,maxgrds) /)
       integer, dimension(maxgrds)    :: ninest = (/ (0, i=1,maxgrds) /)

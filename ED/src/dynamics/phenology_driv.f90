@@ -83,7 +83,6 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
   integer :: isoil_lev
   real :: daylight
   real, external :: daylength
-  real :: hcapveg
 
   integer :: drop_cold
   integer :: leaf_out_cold

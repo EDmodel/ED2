@@ -46,16 +46,11 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, name_name)
   
   !   CPU Timing variables
 
-  real :: w1,w2,w3,wtime_start  ! wall time
+  real :: w1,wtime_start  ! wall time
   real, external :: walltime    ! wall time
-  real :: t1,t2                 ! cpu time
 
-  character(len=12) :: c1
-  integer :: i,j,ifm,nndtflg
+  integer :: nndtflg
   integer :: ierr
-  
-  integer :: id1,id2,jd1,jd2
-  character(len=24) :: fmts1
 
   !   MPI header
   

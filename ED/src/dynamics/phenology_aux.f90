@@ -46,9 +46,9 @@ subroutine prescribed_leaf_state(lat, imonth, iyear, doy,   &
 
      ! calculate the factors
      ! precalc denominator and limit rate in order to increase numerical stability (MCD 10/23/08)
-     elonDen = real((phen_pars%flush_a(my_year) * doy),kind=8)**max(phen_pars%flush_b(my_year),-100.)
-     elonDen = 1.0 / (1.0 + elonDen)
-     if(elonDen < 0.0001) then
+     elonDen = real((phen_pars%flush_a(my_year) * real(doy)),kind=8)**dble(max(phen_pars%flush_b(my_year),-100.))
+     elonDen = 1.0d0 / (1.0d0 + elonDen)
+     if(elonDen < 0.0001d0) then
         elongf = 0.0
      else
         elongf = sngl(elonDen)
@@ -69,10 +69,10 @@ subroutine prescribed_leaf_state(lat, imonth, iyear, doy,   &
 
      ! calculate the factors
      elongf = 1.0 / (1.0 +   &
-          (phen_pars%color_a(my_year) * doy)**phen_pars%color_b(my_year))
+          (phen_pars%color_a(my_year) * real(doy))**phen_pars%color_b(my_year))
      delay = 1.0 / (1.0 +   &
           (phen_pars%color_a(my_year) *   &
-          doy * 1.095)**phen_pars%color_b(my_year))
+          real(doy) * 1.095)**phen_pars%color_b(my_year))
   endif
   print*,"elongf",elongf
   if(elongf < elonMin) elongf = 0.0

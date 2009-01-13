@@ -25,10 +25,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
   logical, intent(in)  :: the_end,analysis_time,dail_analy_time
   logical, intent(in)  :: writing_dail,writing_mont
   logical, intent(in) :: mont_analy_time,history_time,new_day,annual_time
-  real :: time_frqa,time_frql,time_frqm
-  integer :: ngr,ifm
-  integer :: sigr,sipy,sisi,sipa,sico
-
+  integer :: ifm
 
   if(analysis_time .or. history_time .or. (new_day .and. (writing_dail .or. writing_mont))) then
      do ifm=1,ngrids
@@ -147,7 +144,7 @@ subroutine spatial_averages
   type(polygontype),pointer :: cpoly
   type(sitetype),pointer :: csite
   type(patchtype),pointer :: cpatch
-  integer :: igr,ipy,isi,ipa,ico
+  integer :: igr,ipy,isi,ipa
   integer :: k
   integer :: lai_index
   real :: lai_sum,site_area_i,poly_area_i
@@ -256,7 +253,7 @@ subroutine spatial_averages
               cpoly%aux_s(k,isi)            = sum(csite%aux_s(k,:)            * csite%area ) * site_area_i
 
               cpoly%avg_soil_energy(k,isi)  = sum(csite%soil_energy(k,:)      * csite%area ) * site_area_i
-              cpoly%avg_soil_water(k,isi)   = sum(csite%soil_water(k,:)       * csite%area ) * site_area_i
+              cpoly%avg_soil_water(k,isi)   = real(sum(csite%soil_water(k,:)       * dble(csite%area) )) * site_area_i
               cpoly%avg_soil_temp(k,isi)    = sum(csite%soil_tempk(k,:)       * csite%area ) * site_area_i
               cpoly%avg_soil_fracliq(k,isi) = sum(csite%soil_fracliq(k,:)     * csite%area ) * site_area_i
 
@@ -374,7 +371,7 @@ subroutine spatial_averages
      enddo
      
      ! Normalize the lai specific quantities
-     if (area_sum(1)>0) then
+     if (area_sum(1)>0.) then
         cgrid%avg_lai_ebalvars(1,1,ipy) = cgrid%avg_lai_ebalvars(1,1,ipy)/area_sum(1)
         cgrid%avg_lai_ebalvars(1,2,ipy) = cgrid%avg_lai_ebalvars(1,2,ipy)/area_sum(1)
         cgrid%avg_lai_ebalvars(1,3,ipy) = cgrid%avg_lai_ebalvars(1,3,ipy)/area_sum(1)  
@@ -382,7 +379,7 @@ subroutine spatial_averages
      else
         cgrid%avg_lai_ebalvars(1,:,ipy) = -9999.0
      endif
-     if (area_sum(2)>0) then
+     if (area_sum(2)>0.) then
         cgrid%avg_lai_ebalvars(2,1,ipy) = cgrid%avg_lai_ebalvars(2,1,ipy)/area_sum(2)
         cgrid%avg_lai_ebalvars(2,2,ipy) = cgrid%avg_lai_ebalvars(2,2,ipy)/area_sum(2)
         cgrid%avg_lai_ebalvars(2,3,ipy) = cgrid%avg_lai_ebalvars(2,3,ipy)/area_sum(2)
@@ -390,7 +387,7 @@ subroutine spatial_averages
      else
         cgrid%avg_lai_ebalvars(2,:,ipy) = -9999.0
      endif
-     if (area_sum(3)>0) then
+     if (area_sum(3)>0.) then
         cgrid%avg_lai_ebalvars(3,1,ipy) = cgrid%avg_lai_ebalvars(3,1,ipy)/area_sum(3)
         cgrid%avg_lai_ebalvars(3,2,ipy) = cgrid%avg_lai_ebalvars(3,2,ipy)/area_sum(3)
         cgrid%avg_lai_ebalvars(3,3,ipy) = cgrid%avg_lai_ebalvars(3,3,ipy)/area_sum(3)
@@ -544,11 +541,8 @@ subroutine print_array(ifm,cgrid)
   integer  :: node_idmin,node_idmax
   integer  :: mast_idmin,mast_idmax
   integer  :: g_id,g_ln,nm
-  integer  :: vec_len,vec_start
   integer  :: ncols,row,maxrows,col
   integer,parameter :: maxcols = 10
-
-  real                  :: pvar1,pvar2,sum_lai,sum_area
 
   real,pointer,dimension(:) :: pvar_l
   real,pointer,dimension(:) :: pvar_g
@@ -558,9 +552,7 @@ subroutine print_array(ifm,cgrid)
   
   ! Linked structures
   type(edtype),target     :: cgrid
-  type(polygontype),pointer :: cpoly
   
-
   logical :: pvartrue
   logical :: ptr_recv
   logical :: ptr_send

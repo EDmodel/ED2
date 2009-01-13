@@ -261,7 +261,7 @@ subroutine ed_opspec_grid
      write (unit=*,fmt='(a,1x,i5)') ' Fatal errors:',ifaterr
      write (unit=*,fmt='(a)')       ' ----------------------------------------------------'
      call fatal_error('Fatal errors at namelist - Grid settings '&
-                     ,'ed_opspec_grid','ed_opspec.f90')
+                    & ,'ed_opspec_grid','ed_opspec.f90')
   end if
   return
 end subroutine ed_opspec_grid
@@ -320,7 +320,7 @@ subroutine ed_opspec_par
       write (unit=*,fmt='(a,1x,i5)') ' Fatal errors:',ifaterr
       write (unit=*,fmt='(a)')       ' ----------------------------------------------------'
       call fatal_error('Fatal errors at namelist - Grid settings '&
-                      ,'ed_opspec_grid','ed_opspec.f90')
+                     & ,'ed_opspec_grid','ed_opspec.f90')
    end if
 
    return
@@ -350,11 +350,8 @@ subroutine ed_opspec_times
 
    implicit none
    character(len=222)           :: reason
-   integer :: ifaterr,n
+   integer :: ifaterr
    ifaterr=0
-
-
-
 
    !---------------------------------------------------------------------------------------!
    !     Checking whether the user provided a valid combination of unitfast, frqfast, and  !
@@ -388,7 +385,7 @@ subroutine ed_opspec_times
          nrec_fast  = 1
       elseif (outfast == -1.) then
          outfast = day_sec
-         nrec_fast  = outfast/frqfast
+         nrec_fast  = int(outfast/frqfast)
       elseif (outfast == -2.) then
          nrec_fast = 0 !---- This must be reset every month.
       !----- User set outfast < frqfast. Resetting it and printing a warning --------------!
@@ -411,7 +408,7 @@ subroutine ed_opspec_times
          call opspec_fatal('OUTFAST must be a multiple of FRQFAST','opspec_times')
          ifaterr = ifaterr + 1
       else
-         nrec_fast = outfast/frqfast
+         nrec_fast = int(outfast/frqfast)
       end if
 
    !---------------------------------------------------------------------------------------!
@@ -441,7 +438,7 @@ subroutine ed_opspec_times
          nrec_fast  = 1
       elseif (outfast == -1.) then
          outfast    = 1.
-         nrec_fast  = outfast/frqfast
+         nrec_fast  = int(outfast/frqfast)
       elseif (outfast == -2.) then
          nrec_fast = 0 !---- This must be reset every month.
       !----- User set outfast < frqfast. Resetting it and printing a warning --------------!
@@ -464,7 +461,7 @@ subroutine ed_opspec_times
          call opspec_fatal('OUTFAST must be a multiple of FRQFAST','opspec_times')
          ifaterr = ifaterr + 1
       else
-         nrec_fast = outfast/frqfast
+         nrec_fast = int(outfast/frqfast)
       end if
 
       !----- Since days are always 86,400 sec, use seconds instead. -----------------------!
@@ -481,7 +478,7 @@ subroutine ed_opspec_times
       !------------------------------------------------------------------------------------!
       !    If unifrq is monthly, it needs to be a round number.                            !
       !------------------------------------------------------------------------------------!
-      elseif (mod(frqfast,1.) /= 0) then
+      elseif (mod(frqfast,1.) /= 0.0) then
          write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
              'FRQFAST must be a round number when unitfast is ',unitfast,                  &
              '(months). Yours is currently set to ',frqfast
@@ -492,7 +489,7 @@ subroutine ed_opspec_times
       ! This could be softened at some point, but that would require more calculations.    !
       !  Therefore, the only values accepted now are 1,2,3,4,6, and 12.                    !
       !------------------------------------------------------------------------------------!
-      elseif (mod(12.,frqfast) /= 0) then
+      elseif (mod(12.,frqfast) /= 0.0) then
          write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
              'FRQFAST must be a divisor of 12 (one year) when unitfast is ',unitfast,      &
              '(months). Yours is currently set to ',frqfast
@@ -531,7 +528,7 @@ subroutine ed_opspec_times
       if (ifoutput == 0) then
          nrec_fast = 1 ! Useless, no output will be created.
       ! If unifrq is yearly, then frqfast must be integer ---------------------------------!
-      elseif (mod(frqfast,1.) /= 0) then
+      elseif (mod(frqfast,1.) /= 0.0) then
          write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
              'FRQFAST must be a round number when unitfast is ',unitfast,                  &
              '(years). Yours is currently set to ',frqfast
@@ -627,7 +624,7 @@ subroutine ed_opspec_times
          nrec_state  = 1
       elseif (outstate == -1.) then
          outstate = day_sec
-         nrec_state  = outstate/frqstate
+         nrec_state  = int(outstate/frqstate)
       elseif (outstate == -2.) then
          nrec_state = 0 !---- This must be reset every month.
       !----- User set outstate < frqstate. Resetting it and printing a warning ------------!
@@ -650,7 +647,7 @@ subroutine ed_opspec_times
          call opspec_fatal('OUTSTATE must be a multiple of FRQSTATE','opspec_times')
          ifaterr = ifaterr + 1
       else
-         nrec_state = outstate/frqstate
+         nrec_state = int(outstate/frqstate)
       end if
 
    !---------------------------------------------------------------------------------------!
@@ -680,7 +677,7 @@ subroutine ed_opspec_times
          nrec_state  = 1
       elseif (outstate == -1.) then
          outstate    = 1.
-         nrec_state  = outstate/frqstate
+         nrec_state  = int(outstate/frqstate)
       elseif (outstate == -2.) then
          nrec_state = 0 !---- This must be reset every month.
       !----- User set outstate < frqstate. Resetting it and printing a warning --------------!
@@ -703,7 +700,7 @@ subroutine ed_opspec_times
          call opspec_fatal('OUTSTATE must be a multiple of FRQSTATE','opspec_times')
          ifaterr = ifaterr + 1
       else
-         nrec_state = outstate/frqstate
+         nrec_state = int(outstate/frqstate)
       end if
 
       !----- Since days are always 86,400 sec, use seconds instead. -----------------------!
@@ -720,7 +717,7 @@ subroutine ed_opspec_times
       !------------------------------------------------------------------------------------!
       !    If unifrq is monthly, it needs to be a round number.                            !
       !------------------------------------------------------------------------------------!
-      elseif (mod(frqstate,1.) /= 0) then
+      elseif (mod(frqstate,1.) /= 0.) then
          write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
              'FRQSTATE must be a round number when unitstate is ',unitstate,               &
              '(months). Yours is currently set to ',frqstate
@@ -731,7 +728,7 @@ subroutine ed_opspec_times
       ! cycle. This could be softened at some point, but that would require more           !
       ! calculations.  Therefore, the only values accepted now are 1,2,3,4,6, and 12.      !
       !------------------------------------------------------------------------------------!
-      elseif (mod(12.,frqstate) /= 0) then
+      elseif (mod(12.,frqstate) /= 0.) then
          write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
              'FRQSTATE must be a divisor of 12 (one year) when unitstate is ',unitstate,   &
              '(months). Yours is currently set to ',frqstate
@@ -770,7 +767,7 @@ subroutine ed_opspec_times
       if (isoutput == 0) then
          nrec_state = 1 ! Useless, no output will be created.
       ! If unifrq is yearly, then frqstate must be integer ---------------------------------!
-      elseif (mod(frqstate,1.) /= 0) then
+      elseif (mod(frqstate,1.) /= 0.0) then
          write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
              'FRQSTATE must be a round number when unitstate is ',unitstate,                  &
              '(years). Yours is currently set to ',frqstate
@@ -829,7 +826,7 @@ subroutine ed_opspec_times
    ! time, so that the integrated variables reported in the history file are integrated    !
    ! over the history period.                                                              !
    !---------------------------------------------------------------------------------------!
-   if (isoutput /= 0. .and. ifoutput /= 0.) then
+   if (isoutput /= 0 .and. ifoutput /= 0) then
       if (unitfast == unitstate .and. mod(frqstate,frqfast) /= 0.0 ) then
          write(reason,fmt='(a,1x,2(a,1x,f10.2,1x))')                                       &
               'FRQFAST must be a divisor of FRQSTATE if both are outputing data.',         &
@@ -881,7 +878,7 @@ subroutine ed_opspec_times
                'currently UNITSTATE=',unitstate
       
          case (3) !---- State years, frqfast must be divisor ------------------------------!
-            if (mod(frqstate*12,frqfast) /= 0.) then
+            if (mod(frqstate*12.,frqfast) /= 0.) then
                write(reason,fmt='(a,1x,2(a,1x,f10.2,1x),a)')                               &
                     'FRQFAST must be a divisor of FRQSTATE if both are outputing data.',   &
                     'Yours is set to FRQFAST=',frqfast,'mon and FRQSTATE=',frqstate,'yrs!'
@@ -897,7 +894,7 @@ subroutine ed_opspec_times
                'currently UNITSTATE=',unitstate
       
          case (2) !---- State months, frqfast must be divisor -----------------------------!
-            if (mod(frqstate,frqfast*12) /= 0.) then
+            if (mod(frqstate,frqfast*12.) /= 0.) then
                write(reason,fmt='(a,1x,2(a,1x,f10.2,1x),a)')                               &
                     'FRQFAST must be a divisor of FRQSTATE if both are outputing data.',   &
                     'Yours is set to FRQFAST=',frqfast,'yrs and FRQSTATE=',frqstate,'mon!'
@@ -908,7 +905,7 @@ subroutine ed_opspec_times
 
 
    !Check if this simulation has a positive timmax.
-   if (timmax < 0.0) then
+   if (timmax < 0.0d0) then
       write(reason,fmt='(a,2(a,1x,2(i2.2,a),i4.4,1x,i4.4,a,1x))')     &
          'Your end time is before the initial time.'                  &
          ,'Initial:',imontha,'/',idatea,'/',iyeara,itimea,'GMT'       &
@@ -946,7 +943,7 @@ subroutine ed_opspec_times
       write (unit=*,fmt='(a,1x,i5)') ' Fatal errors:',ifaterr
       write (unit=*,fmt='(a)')       ' ----------------------------------------------------'
       call fatal_error('Fatal errors at namelist - Time settings '&
-                      ,'ed_opspec_times','ed_opspec.f90')
+                     & ,'ed_opspec_times','ed_opspec.f90')
    end if
    return
 end subroutine ed_opspec_times
@@ -1178,14 +1175,14 @@ subroutine ed_opspec_misc
    !   ifaterr = ifaterr +1
    !end if
     
-   if (zrough <= 0) then
+   if (zrough <= 0.0) then
       write (reason,fmt='(a,1x,es14.7,a)') &
         'Invalid ZROUGH, it must be positive. Yours is set to',zrough,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if
     
-   if (treefall_disturbance_rate < 0) then
+   if (treefall_disturbance_rate < 0.0) then
       write (reason,fmt='(a,1x,es14.7,a)') &
         'Invalid TREEFALL_DISTURBANCE_RATE, it must be non-negative. Yours is set to' &
         ,treefall_disturbance_rate,'...'
@@ -1193,7 +1190,7 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
     
-   if (runoff_time < 0) then
+   if (runoff_time < 0.0) then
       write (reason,fmt='(a,1x,es14.7,a)') &
         'Invalid RUNOFF_TIME, it must be non-negative. Yours is set to',runoff_time,'...'
       call opspec_fatal(reason,'opspec_misc')  
@@ -1206,7 +1203,7 @@ subroutine ed_opspec_misc
       write (unit=*,fmt='(a,1x,i5)') ' Fatal errors:',ifaterr
       write (unit=*,fmt='(a)')       ' ----------------------------------------------------'
       call fatal_error('Fatal errors at namelist - Misc settings '&
-                      ,'ed_opspec_misc','ed_opspec.f90')
+                     & ,'ed_opspec_misc','ed_opspec.f90')
    end if
    return
 end subroutine ed_opspec_misc

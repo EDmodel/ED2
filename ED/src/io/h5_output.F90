@@ -53,12 +53,6 @@ subroutine h5_output(vtype)
 
   character*(*) vtype
 
-  type(edtype),pointer      :: egrid
-  type(polygontype),pointer :: cpoly
-  type(sitetype),pointer    :: csite
-  type(patchtype),pointer   :: cpatch
-  integer :: ipy,isi,ipa,ico
-
   character(len=128) :: anamel
   character(len=2)  :: cgrid
   character(len=25) :: subaname
@@ -67,16 +61,12 @@ subroutine h5_output(vtype)
   character(len=10) :: c0
   character(len=64),dimension(3) :: metadata
   logical exans
-  integer, save :: ncall_head=0,nvtota=0,nvtotl=0  &
-       ,nvtot
-  !  HDF specific data types
 
-  integer, save :: ihdfinit = 0
+  !  HDF specific data types
   integer       :: hdferr
   integer       :: dsetrank
   integer(HID_T):: file_id,dset_id
   integer(HID_T):: memspace,filespace
-  integer(HID_T):: plist_id
   integer(HID_T) :: attr_id
 
   ! Attribute types
@@ -88,11 +78,10 @@ subroutine h5_output(vtype)
   
   integer :: ngr,nv,nvcnt,lenl,iptr
   real(kind=8) :: timeold
-  real(kind=8),parameter :: zero = 0.0
+  real(kind=8),parameter :: zero = 0.0d0
 
-  integer :: outyear,outmonth,outdate,outhour,outminu,outseco
+  integer :: outyear,outmonth,outdate,outhour
   real, external :: dbh2bl
-  type(var_table),pointer        :: vtinfo
   type(var_table_vector),pointer :: vtvec
   integer :: irec, nrec
 
@@ -170,7 +159,7 @@ subroutine h5_output(vtype)
            
            !Return the current year,month and day of the last 24hrs
            call date_add_to (iyeara,imontha,idatea,itimea*100,  &
-                time-21600,'s',outyear,outmonth,outdate,outhour)
+                time-21600.0d0,'s',outyear,outmonth,outdate,outhour)
            
            call makefnam(anamel,ffilout,zero,outyear,outmonth,outdate, &
                 0,vnam,cgrid,'h5 ')
@@ -178,7 +167,7 @@ subroutine h5_output(vtype)
         case('MONT')
            
            call date_add_to (iyeara,imontha,idatea,itimea*100,  &
-                time-21600,'s',outyear,outmonth,outdate,outhour)
+                time-21600.0d0,'s',outyear,outmonth,outdate,outhour)
            
            
            call makefnam(anamel,ffilout,zero,outyear,outmonth,0, &
@@ -186,7 +175,7 @@ subroutine h5_output(vtype)
         case('YEAR')
            
            call date_add_to (iyeara,imontha,idatea,itimea*100,  &
-                time-21600,'s',outyear,outmonth,outdate,outhour)
+                time-21600.0d0,'s',outyear,outmonth,outdate,outhour)
            
            call makefnam(anamel,ffilout,zero,outyear,0,0, &
                 0,vnam,cgrid,'h5 ')
@@ -208,18 +197,18 @@ subroutine h5_output(vtype)
               call date_2_seconds(out_time_fast%year,out_time_fast%month, &
                    out_time_fast%date,int(out_time_fast%time), &
                    iyeara,imontha,idatea,itimea*100,dsec)
-              if(time >= (dsec+outfast) .or. outmonth /= out_time_fast%month) then
+              if(time >= (dsec+dble(outfast)) .or. outmonth /= out_time_fast%month) then
                  out_time_fast%year  = outyear
                  out_time_fast%month = outmonth
                  out_time_fast%date  = outdate
-                 out_time_fast%time  = outhour*1.
+                 out_time_fast%time  = real(outhour)
 
                  !!(3600.*int(outhour/10000)+60.*int(mod(outhour,10000)/100)+mod(outhour,100)*1.)   !! DOUBLE CHECK
                  dsec = time
                  new_file = .true.
               endif
 
-              irec_fast = ((time-dsec)/frqfast) + 1
+              irec_fast = int(((time-dsec)/dble(frqfast))) + 1
               nrec = nrec_fast
               irec = irec_fast
 !              print*,irec,nrec,outmonth,out_time_fast,dsec,time
@@ -407,8 +396,8 @@ subroutine h5_output(vtype)
                  if (attach_metadata == 1) then
                     
                     arank = 1
-                    adims = 3
-                    attrlen = 64
+                    adims = 3_8
+                    attrlen = 64_8
                     metadata(1) = trim('Long Name: '//trim(vt_info(nv,ngr)%lname))
                     metadata(2) = trim('Units: '//trim(vt_info(nv,ngr)%units))
                     metadata(3) = trim('Dimensions: '//trim(vt_info(nv,ngr)%dimlab))
@@ -704,11 +693,11 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
   
   ! Initialize the size of the memory and file-space dimensioning
   
-  globdims = 0
-  chnkdims = 0
-  chnkoffs = 0
-  cnt      = 0
-  stride   = 0
+  globdims = 0_8
+  chnkdims = 0_8
+  chnkoffs = 0_8
+  cnt      = 0_8
+  stride   = 0_8
   ! No assumption, I am adding it to all cases.
 
   ! Determine the array sizes here
@@ -717,308 +706,308 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
   case(90) ! No polygon-site-patch or cohort dimension
      
      dsetrank = 1
-     chnkdims(1) = varlen
-     chnkoffs(1) = globid
-     globdims(1) = var_len_global
-     cnt(1)      = 1
-     stride(1)   = 1
+     chnkdims(1) = int(varlen,8)
+     chnkoffs(1) = int(globid,8)
+     globdims(1) = int(var_len_global,8)
+     cnt(1)      = 1_8
+     stride(1)   = 1_8
 
   case(92) ! single vector soil info
      
      dsetrank = 2
-     globdims(1) = nzg
-     chnkdims(1) = nzg
-     chnkoffs(1) = 0
-     globdims(2) = var_len_global
-     chnkdims(2) = varlen
-     chnkoffs(2) = globid
-     cnt(1:2)    = 1
-     stride(1:2) = 1
+     globdims(1) = int(nzg,8)
+     chnkdims(1) = int(nzg,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
      
   case (11) ! (npolygons) 
      
      ! Vector type,dimensions set
      
      dsetrank = 1
-     chnkdims(1) = varlen
-     chnkoffs(1) = globid
-     globdims(1) = var_len_global
-     cnt(1)      = 1
-     stride(1)   = 1
+     chnkdims(1) = int(varlen,8)
+     chnkoffs(1) = int(globid,8)
+     globdims(1) = int(var_len_global,8)
+     cnt(1)      = 1_8
+     stride(1)   = 1_8
      
   case (12) ! (nzg,npolygons)  
      
      ! Soil column type
      dsetrank = 2
-     globdims(1) = nzg
-     chnkdims(1) = nzg
-     chnkoffs(1) = 0
-     globdims(2) = var_len_global
-     chnkdims(2) = varlen
-     chnkoffs(2) = globid
-     cnt(1:2)    = 1
-     stride(1:2) = 1
+     globdims(1) = int(nzg,8)
+     chnkdims(1) = int(nzg,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
      
   case (14) ! (n_pft,npolygons)  
      
      ! Soil column type
      dsetrank = 2
-     globdims(1) = n_pft
-     chnkdims(1) = n_pft
-     chnkoffs(1) = 0
-     globdims(2) = var_len_global
-     chnkdims(2) = varlen
-     chnkoffs(2) = globid
-     cnt(1:2)    = 1
-     stride(1:2) = 1
+     globdims(1) = int(n_pft,8)
+     chnkdims(1) = int(n_pft,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
 
   case (146) ! (n_pft,n_dbh,npolygons)
      
      dsetrank = 3
      
-     globdims(1) = n_pft
-     chnkdims(1) = n_pft
-     chnkoffs(1) = 0
-     globdims(2) = n_dbh
-     chnkdims(2) = n_dbh
-     chnkoffs(2) = 0
-     globdims(3) = var_len_global
-     chnkdims(3) = varlen
-     chnkoffs(3) = globid
-     cnt(1:3)      = 1
-     stride(1:3)   = 1
+     globdims(1) = int(n_pft,8)
+     chnkdims(1) = int(n_pft,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(n_dbh,8)
+     chnkdims(2) = int(n_dbh,8)
+     chnkoffs(2) = 0_8
+     globdims(3) = int(var_len_global,8)
+     chnkdims(3) = int(varlen,8)
+     chnkoffs(3) = int(globid,8)
+     cnt(1:3)      = 1_8
+     stride(1:3)   = 1_8
 
   case (15) ! (n_dist_types,npolygons)  
      
      ! Soil column type
      dsetrank = 2
-     globdims(1) = n_dist_types
-     chnkdims(1) = n_dist_types
-     chnkoffs(1) = 0
-     globdims(2) = var_len_global
-     chnkdims(2) = varlen
-     chnkoffs(2) = globid
-     cnt(1:2)    = 1
-     stride(1:2) = 1
+     globdims(1) = int(n_dist_types,8)
+     chnkdims(1) = int(n_dist_types,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
 
   case (16) ! (n_dbh,npolygons)  
      
      ! Soil column type
      dsetrank = 2
-     globdims(1) = n_dbh
-     chnkdims(1) = n_dbh
-     chnkoffs(1) = 0
-     globdims(2) = var_len_global
-     chnkdims(2) = varlen
-     chnkoffs(2) = globid
-     cnt(1:2)    = 1
-     stride(1:2) = 1
+     globdims(1) = int(n_dbh,8)
+     chnkdims(1) = int(n_dbh,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
 
   case (17) ! (nlai,nvars,npolygons)  
      
      ! Soil column type
      dsetrank = 3
-     globdims(1) = 3
-     chnkdims(1) = 3
-     chnkoffs(1) = 0
-     globdims(2) = 4
-     chnkdims(2) = 4
-     chnkoffs(2) = 0
-     globdims(3) = var_len_global
-     chnkdims(3) = varlen
-     chnkoffs(3) = globid
-     cnt(1:3)    = 1
-     stride(1:3) = 1
+     globdims(1) = 3_8
+     chnkdims(1) = 3_8
+     chnkoffs(1) = 0_8
+     globdims(2) = 4_8
+     chnkdims(2) = 4_8
+     chnkoffs(2) = 0_8
+     globdims(3) = int(var_len_global,8)
+     chnkdims(3) = int(varlen,8)
+     chnkoffs(3) = int(globid,8)
+     cnt(1:3)    = 1_8
+     stride(1:3) = 1_8
 
   case (21) !(nsites)
      
      dsetrank = 1
-     chnkdims(1) = varlen
-     chnkoffs(1) = globid
-     globdims(1) = var_len_global
-     cnt(1)      = 1
-     stride(1)   = 1
+     chnkdims(1) = int(varlen,8)
+     chnkoffs(1) = int(globid,8)
+     globdims(1) = int(var_len_global,8)
+     cnt(1)      = 1_8
+     stride(1)   = 1_8
 
   case(22) !(nzg,nsites)
               
      ! Soil column type
      dsetrank = 2
-     globdims(1) = nzg
-     chnkdims(1) = nzg
-     chnkoffs(1) = 0
-     globdims(2) = var_len_global
-     chnkdims(2) = varlen
-     chnkoffs(2) = globid
-     cnt(1:2)    = 1
-     stride(1:2) = 1
+     globdims(1) = int(nzg,8)
+     chnkdims(1) = int(nzg,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
 
   case (24) !(n_pft,nsites)
      
      ! PFT type
      dsetrank = 2
-     globdims(1) = n_pft
-     chnkdims(1) = n_pft
-     chnkoffs(1) = 0
-     globdims(2) = var_len_global
-     chnkdims(2) = varlen
-     chnkoffs(2) = globid
-     cnt(1:2)    = 1
-     stride(1:2) = 1
+     globdims(1) = int(n_pft,8)
+     chnkdims(1) = int(n_pft,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
 
   case (246) !(n_pft,n_dbh,nsites)
        
      dsetrank = 3
 
-     globdims(1) = n_pft
-     chnkdims(1) = n_pft
-     chnkoffs(1) = 0
-     globdims(2) = n_dbh
-     chnkdims(2) = n_dbh
-     chnkoffs(2) = 0
-     globdims(3) = var_len_global
-     chnkdims(3) = varlen
-     chnkoffs(3) = globid
-     cnt(1:3)      = 1
-     stride(1:3)   = 1
+     globdims(1) = int(n_pft,8)
+     chnkdims(1) = int(n_pft,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(n_dbh,8)
+     chnkdims(2) = int(n_dbh,8)
+     chnkoffs(2) = 0_8
+     globdims(3) = int(var_len_global,8)
+     chnkdims(3) = int(varlen,8)
+     chnkoffs(3) = int(globid,8)
+     cnt(1:3)      = 1_8
+     stride(1:3)   = 1_8
      
   case (25) !(n_dist_types,nsites)
   
      dsetrank = 2
-     globdims(1) = n_dist_types
-     chnkdims(1) = n_dist_types
-     chnkoffs(1) = 0
-     globdims(2) = var_len_global
-     chnkdims(2) = varlen
-     chnkoffs(2) = globid
-     cnt(1:2)    = 1
-     stride(1:2) = 1
+     globdims(1) = int(n_dist_types,8)
+     chnkdims(1) = int(n_dist_types,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
 
   case (255) !(n_dist_types,n_dist_types,nsites)
               
      dsetrank = 3
      
-     globdims(1) = n_dist_types
-     chnkdims(1) = n_dist_types
-     chnkoffs(1) = 0
-     globdims(2) = n_dist_types
-     chnkdims(2) = n_dist_types
-     chnkoffs(2) = 0
-     globdims(3) = var_len_global
-     chnkdims(3) = varlen
-     chnkoffs(3) = globid
-     cnt(1:3)      = 1
-     stride(1:3)   = 1
+     globdims(1) = int(n_dist_types,8)
+     chnkdims(1) = int(n_dist_types,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(n_dist_types,8)
+     chnkdims(2) = int(n_dist_types,8)
+     chnkoffs(2) = 0_8
+     globdims(3) = int(var_len_global,8)
+     chnkdims(3) = int(varlen,8)
+     chnkoffs(3) = int(globid,8)
+     cnt(1:3)      = 1_8
+     stride(1:3)   = 1_8
 
   case (28) ! (n_months,nsites)
      dsetrank = 2
-     globdims(1) = 12
-     chnkdims(1) = 12
-     chnkoffs(1) = 0
-     globdims(2) = var_len_global
-     chnkdims(2) = varlen
-     chnkoffs(2) = globid
-     cnt(1:2)    = 1
-     stride(1:2) = 1
+     globdims(1) = 12_8
+     chnkdims(1) = 12_8
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
      
   case (31) !(npatches)
      
      dsetrank = 1            
-     chnkdims(1) = varlen
-     chnkoffs(1) = globid
-     globdims(1) = var_len_global
-     cnt(1)      = 1
-     stride(1)   = 1
+     chnkdims(1) = int(varlen,8)
+     chnkoffs(1) = int(globid,8)
+     globdims(1) = int(var_len_global,8)
+     cnt(1)      = 1_8
+     stride(1)   = 1_8
      
   case (32) ! (nzg,npatches)
      
      ! Soil column type
      dsetrank = 2
-     globdims(1) = nzg
-     chnkdims(1) = nzg
-     chnkoffs(1) = 0
-     globdims(2) = var_len_global
-     chnkdims(2) = varlen
-     chnkoffs(2) = globid
-     cnt(1:2)    = 1
-     stride(1:2) = 1
+     globdims(1) = int(nzg,8)
+     chnkdims(1) = int(nzg,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
      
   case (33) !(nzs,npatches)
      
      ! Surface water column type
      dsetrank = 2
-     globdims(1) = nzs
-     chnkdims(1) = nzs
-     chnkoffs(1) = 0
-     globdims(2) = var_len_global
-     chnkdims(2) = varlen
-     chnkoffs(2) = globid
-     cnt(1:2)    = 1
-     stride(1:2) = 1
+     globdims(1) = int(nzs,8)
+     chnkdims(1) = int(nzs,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
 
   case (34) !(n_pft,npatches)
      
      ! PFT type
      dsetrank = 2
-     globdims(1) = n_pft
-     chnkdims(1) = n_pft
-     chnkoffs(1) = 0
-     globdims(2) = var_len_global
-     chnkdims(2) = varlen
-     chnkoffs(2) = globid
-     cnt(1:2)    = 1
-     stride(1:2) = 1
+     globdims(1) = int(n_pft,8)
+     chnkdims(1) = int(n_pft,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
            
   case (347) ! (n_pft,ff_ndbh,npatched)
 
      dsetrank = 3
-     globdims(1) = n_pft
-     chnkdims(1) = n_pft
-     chnkoffs(1) = 0
+     globdims(1) = int(n_pft,8)
+     chnkdims(1) = int(n_pft,8)
+     chnkoffs(1) = 0_8
      
-     globdims(2) = ff_ndbh
-     chnkdims(2) = ff_ndbh
-     chnkoffs(2) = 0
+     globdims(2) = int(ff_ndbh,8)
+     chnkdims(2) = int(ff_ndbh,8)
+     chnkoffs(2) = 0_8
 
-     globdims(3) = var_len_global
-     chnkdims(3) = varlen
-     chnkoffs(3) = globid
-     cnt(1:3)      = 1
-     stride(1:3)   = 1
+     globdims(3) = int(var_len_global,8)
+     chnkdims(3) = int(varlen,8)
+     chnkoffs(3) = int(globid,8)
+     cnt(1:3)      = 1_8
+     stride(1:3)   = 1_8
 
   case (36) !(n_dbh,npatches)
      
      ! DBH type
      dsetrank = 2
-     globdims(1) = n_dbh
-     chnkdims(1) = n_dbh
-     chnkoffs(1) = 0
-     globdims(2) = var_len_global
-     chnkdims(2) = varlen
-     chnkoffs(2) = globid
-     cnt(1:2)    = 1
-     stride(1:2) = 1
+     globdims(1) = int(n_dbh,8)
+     chnkdims(1) = int(n_dbh,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
               
   case (41) !(ncohorts)
      
      dsetrank = 1
-     chnkdims(1) = varlen
-     chnkoffs(1) = globid
-     globdims(1) = var_len_global
-     cnt(1)      = 1
-     stride(1)   = 1
+     chnkdims(1) = int(varlen,8)
+     chnkoffs(1) = int(globid,8)
+     globdims(1) = int(var_len_global,8)
+     cnt(1)      = 1_8
+     stride(1)   = 1_8
      
   case (49) !(13,ncohorts)
      
      ! 13 Months type
      dsetrank = 2
-     globdims(1) = 13
-     chnkdims(1) = 13
-     chnkoffs(1) = 0
-     globdims(2) = var_len_global
-     chnkdims(2) = varlen
-     chnkoffs(2) = globid
-     cnt(1:2)    = 1
-     stride(1:2) = 1
+     globdims(1) = 13_8
+     chnkdims(1) = 13_8
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
   case default
      write (unit=*,fmt='(a)')       '--------------------------------------------------'
      write (unit=*,fmt='(a)')       ' I can''t recognize this type of variable...'
@@ -1031,12 +1020,12 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
   !!! add TIME if writing multiple observations/file
   if(nrec .gt. 1) then
      dsetrank = dsetrank + 1
-     globdims(dsetrank) = nrec
-     chnkdims(dsetrank) = 1
-     chnkoffs(dsetrank) = irec-1
-     if(chnkoffs(dsetrank) .lt. 0) chnkoffs(dsetrank) = 0
-     cnt(dsetrank)      = 1
-     stride(dsetrank)   = 1
+     globdims(dsetrank) = int(nrec,8)
+     chnkdims(dsetrank) = 1_8
+     chnkoffs(dsetrank) = int(irec-1,8)
+     if(chnkoffs(dsetrank) .lt. 0_8) chnkoffs(dsetrank) = 0_8
+     cnt(dsetrank)      = 1_8
+     stride(dsetrank)   = 1_8
   endif
 
   return

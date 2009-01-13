@@ -247,12 +247,12 @@ end subroutine terminate_cohorts_ar
         endif
      end do
 
-     if (ntall>0) then
+     if (ntall>0.) then
         mean_dbh = mean_dbh/ntall
      else
         mean_dbh = 0.0
      endif
-     if (nshort>0) then
+     if (nshort>0.) then
         mean_hite= mean_hite/nshort
      else
         mean_hite= 0.0
@@ -379,8 +379,7 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      real    :: slai
 
      real, external :: dbh2h
-!     real, external :: bd2dbh
-     real, external :: dbh2bd
+     real, external :: bd2dbh
      integer, intent(in) :: lsl
      integer,allocatable :: split_mask(:)
 
@@ -748,7 +747,7 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      type(patchtype),pointer :: cpatch
      type(sitetype),pointer  :: tempsite
      integer :: ipy,isi,ipa,ipa_next
-     integer :: i,j,istop,npatches
+     integer :: i,j,npatches
      real :: norm,tolerance_mult
      integer,allocatable :: fuse_table(:)
      real, parameter :: tolerance_max=100.0
