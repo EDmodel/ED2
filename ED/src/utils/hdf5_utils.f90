@@ -131,8 +131,6 @@ subroutine shdf5_open_f(locfn,access,idelete)
   ! Only needed when access='W'
 
   integer :: hdferr ! Error flag for HDF5
-  integer :: mpierr ! Error flag for MPI
-  integer :: iaccess ! int access flag
   character(len=2) :: caccess ! File access ('R ','W ','RW')
   
   logical :: exists ! File existence
@@ -265,10 +263,10 @@ subroutine shdf5_orec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
   endif
   
   dimsh(1:ndims) = dims(1:ndims)
-  dimshf = 0
-  chunksize = 0
-  dimshf(1:ndims) = dimsh(1:ndims)
-  chunksize(1:ndims) = dimsh(1:ndims)
+  dimshf = 0_8
+  chunksize = 0_8
+  dimshf(1:ndims) = int(dimsh(1:ndims),8)
+  chunksize(1:ndims) = int(dimsh(1:ndims),8)
   
   ! Prepare memory and options for the write
   
@@ -416,8 +414,6 @@ subroutine shdf5_irec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
   real(kind=8),     optional :: dvara(*),dvars
   logical,          optional :: lvara(*),lvars
   
-  integer:: h5_type   ! Local type designator
-  
   integer, dimension(4) :: dimsh ! Dataset dimensions.
   
   integer(HSIZE_T),dimension(4) :: dimshf
@@ -454,8 +450,8 @@ subroutine shdf5_irec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
   endif
   
   dimsh(1:ndims) = dims(1:ndims)
-  dimshf = 0
-  dimshf(1:ndims) = dimsh(1:ndims)
+  dimshf = 0_8
+  dimshf(1:ndims) = int(dimsh(1:ndims),8)
   
   call h5dopen_f(fileid_f,trim(dsetname)//char(0), dsetid_f, hdferr)
   call h5dget_space_f(dsetid_f, dspaceid_f, hdferr)

@@ -106,9 +106,9 @@ contains
     integer(4),intent(in)        :: i
     character(256)               :: string
     integer(4)                   :: ibase
-    real(8)                      :: rbase=10
+    real(8)                      :: rbase=10_8
     integer(4)                   :: ibasemax=10
-    integer(4)                   :: j,ifl
+    integer(4)                   :: ifl
     real(8)                      :: rbj
     real(8)                      :: iact
     integer(4)                   :: iwrite
@@ -120,7 +120,7 @@ contains
     tzero=.true.
     
     !checks
-    if(i.gt.rbase**(ibasemax-1)) then
+    if(dble(i).gt.rbase**(ibasemax-1)) then
        print*, 'ERROR STOP IN INTEGER TO STRING'
        print*, 'YOUR INTEGER NUMBER IS LARGER THAN IMPLEMENTED'
     end if

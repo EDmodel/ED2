@@ -62,6 +62,7 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
    use max_dims, only: n_pft
    use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, include_these_pft,include_pft_ag
    use ed_therm_lib, only: calc_hcapveg
+
    ! This subroutine assigns a near-bare ground state for the given patch
    use consts_coms, only : t3ple
    implicit none
@@ -76,9 +77,7 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
    type(patchtype), pointer :: cpatch
    real, external :: h2dbh,dbh2bd,dbh2bl,ed_biomass
    integer :: ipa,ico,mypfts,ipft
-   real :: hcapveg ! Not sure if we should merge it with cpatch%hcapveg...
    real :: laisum
-   
 
    do ipa=ipa_a,ipa_z
       cpatch => csite%patch(ipa)

@@ -539,7 +539,6 @@ module therm_lib
       implicit none
       real   , intent(in)           :: pres,temp
       logical, intent(in), optional :: useice
-      real                          :: desdt
       logical                       :: brrr_cold
 
       if (present(useice)) then
@@ -856,7 +855,6 @@ module therm_lib
       real, intent(out) :: fracliq ! Liquid fraction (0-1)                         [   ---]
       !----- Local variable ---------------------------------------------------------------!
       real              :: qwliq0  ! qw of liquid at triple point      [  J/m²] or [  J/m³]
-      real              :: ch2ow   ! heat capacity of water            [  J/m²] or [  J/m³]
       !------------------------------------------------------------------------------------!
 
       !----- Converting melting heat to J/m² or J/m³ --------------------------------------!
@@ -878,10 +876,10 @@ module therm_lib
          tempk   = (qw - qwliq0) / (cliq * w + dryhcap) + t3ple
       !----- Changing phase, it must be at triple point -----------------------------------!
       else
-         if(w>0.) then
+         if(w > 0.) then
             fracliq = qw / qwliq0
          else
-            fracliq = 0.5
+            fracliq = 0.0
          endif
          tempk = t3ple
       end if
@@ -891,7 +889,6 @@ module therm_lib
    end subroutine qwtk
    !=======================================================================================!
    !=======================================================================================!
-
 
 
 
@@ -915,7 +912,6 @@ module therm_lib
       real        , intent(out) :: fracliq ! Liquid fraction (0-1)                 [   ---]
       !----- Local variable ---------------------------------------------------------------!
       real              :: qwliq0  ! qw of liquid at triple point      [  J/m²] or [  J/m³]
-      real              :: ch2ow   ! heat capacity of water            [  J/m²] or [  J/m³]
       !------------------------------------------------------------------------------------!
      
       !----- Converting melting heat to J/m² or J/m³ --------------------------------------!
@@ -946,3 +942,4 @@ module therm_lib
    end subroutine qwtk8
 
  end module therm_lib
+

@@ -83,13 +83,13 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
   integer :: isoil_lev
   real :: daylight
   real, external :: daylength
-  real :: hcapveg
 
   integer :: drop_cold
   integer :: leaf_out_cold
   real, dimension(nzg) :: theta
   real :: leaf_litter
-  real :: bl_max, laii
+  real :: bl_max
+
   ! Level to evaluate the soil temperature
 
   isoil_lev = nzg 
@@ -103,7 +103,7 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
   csite => cpoly%site(isi)
 
   do ipa = 1,csite%npatches
-     
+
      cpatch => csite%patch(ipa)
 
      ! Re-initialize litter inputs
@@ -130,8 +130,6 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
                 cpoly%leaf_aging_factor(cpatch%pft(ico),isi), cpatch%dbh(ico), cpatch%pft(ico),   &
                 drop_cold, leaf_out_cold, bl_max)
         endif
-
-!        print*,"phenStat",cpatch%phenology_status(ico),phenology(cpatch%pft(ico)),leaf_out_cold,drop_cold
 
         ! Is this a cold deciduous with leaves?
         if(cpatch%phenology_status(ico) < 2 .and. phenology(cpatch%pft(ico)) == 2 .and.   &

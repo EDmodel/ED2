@@ -8,7 +8,6 @@ subroutine lastmonthdate(time,lastmonth,ndaysi)
   type(simtime), intent(in)  :: time
   type(simtime), intent(out) :: lastmonth
   real,          intent(out) :: ndaysi
-  integer :: last_yr, last_mo
   integer, dimension(12) :: ndays
   logical, external :: isleap
 
@@ -26,7 +25,7 @@ subroutine lastmonthdate(time,lastmonth,ndaysi)
 !----- Changing the number of days in February for leap years -----------------------------!
   if(isleap(lastmonth%year)) ndays(2)=29
 
-  ndaysi=1.0/ndays(lastmonth%month)
+  ndaysi=1.0/real(ndays(lastmonth%month))
   return
 end subroutine lastmonthdate
 !------------------------------------------------------------------------------------------!

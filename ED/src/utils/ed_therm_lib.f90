@@ -64,8 +64,8 @@ contains
      real :: leaf_carbon         ! leaf biomass per plant
      real :: structural_carbon   ! structural biomass per plant
      real :: nplants             ! Number of plants per square meter
-     real :: spec_hcap_leaf
-     real :: spec_hcap_stem
+!     real :: spec_hcap_leaf
+!     real :: spec_hcap_stem
      
 
      real,parameter :: biomass_factor = 1.0 ! This is a biomass kluge factor
@@ -141,9 +141,9 @@ contains
      implicit none
      
      type(patchtype),target :: cpatch
-     real :: fracliq,veg_temp
      integer,intent(in) :: ico
-     
+     real :: fracliq
+
      ! First lets use the existing vegetation energy, to calculate the
      ! liquid fraction of leaf water
      
@@ -163,7 +163,7 @@ contains
      cpatch%veg_energy(ico) = ( cpatch%veg_temp(ico)-t3ple)*cpatch%hcapveg(ico) + & ! U of the leaf tissue
           fracliq*cpatch%veg_water(ico)*alli + &                                    ! latent heat of fusion
           fracliq*cpatch%veg_water(ico)*cliq*( cpatch%veg_temp(ico) -t3ple) + &     ! thermal energy of any liquid
-          (1-fracliq)*cpatch%veg_water(ico)*cice*( cpatch%veg_temp(ico) -t3ple)     ! thermal energy of any ice
+          (1.-fracliq)*cpatch%veg_water(ico)*cice*( cpatch%veg_temp(ico) -t3ple)     ! thermal energy of any ice
      
      return
    end subroutine update_veg_energy_cweh
@@ -202,7 +202,6 @@ contains
      implicit none
      
      type(patchtype),target :: cpatch
-     real :: fracliq,veg_temp
      integer,intent(in) :: ico
      
      ! Update the vegetation heat capacity based on these new values

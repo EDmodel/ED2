@@ -62,6 +62,7 @@ HDF_LIBS=-L./.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
 
 # For 64-bit 
 USE_HDF5=1
+USE_COLLECTIVE_MPIO=0
 HDF5_INCS=-I/home/mdietze/hdf5-1.8.1/hdf5/include
 HDF5_LIBS=-L/home/mdietze/hdf5-1.8.1/hdf5/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
           -lz
@@ -119,8 +120,15 @@ USE_INTERF=1
 #-----------------  LINUX G95 compiler g95/gcc  ------------------
 CMACH=PC_LINUX1
 F_COMP=mpif90
+#F_COMP=/home/mdietze/bin/gcc-build/bin/gfortran \
+#	-I/usr/include/openmpi/1.2.3-gcc/64 \
+#	-I/usr/include/openmpi/1.2.3-gcc -m64 -pthread \
+#	-I/usr/lib64/openmpi/1.2.3-gcc -L/usr/lib64/openmpi/1.2.3-gcc \
+#	-lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl \
+#	-Wl,--export-dynamic -lnsl -lutil -lm -ldl
 C_COMP=mpicc
 LOADER=mpif90
+#LOADER=$(FCOMP)
 C_LOADER=mpicc
 LIBS=
 MOD_EXT=mod

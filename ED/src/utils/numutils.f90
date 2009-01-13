@@ -54,37 +54,37 @@ subroutine izerov(n1)
   integer :: ijk1(n1),ijk2(n1),ijk3(n1),ijk4(n1),ijk5(n1)
   entry izero(n1,ijk1)
      do n=1,n1
-        ijk1(n)=0.
+        ijk1(n)=0
      enddo
   return
   entry izero2(n1,ijk1,ijk2)
      do n=1,n1
-        ijk1(n)=0.
-        ijk2(n)=0.
+        ijk1(n)=0
+        ijk2(n)=0
      enddo
   return
   entry izero3(n1,ijk1,ijk2,ijk3)
      do n=1,n1
-        ijk1(n)=0.
-        ijk2(n)=0.
-        ijk3(n)=0.
+        ijk1(n)=0
+        ijk2(n)=0
+        ijk3(n)=0
      enddo
   return
   entry izero4(n1,ijk1,ijk2,ijk3,ijk4)
      do n=1,n1
-        ijk1(n)=0.
-        ijk2(n)=0.
-        ijk3(n)=0.
-        ijk4(n)=0.
+        ijk1(n)=0
+        ijk2(n)=0
+        ijk3(n)=0
+        ijk4(n)=0
      enddo
   return
   entry izero5(n1,ijk1,ijk2,ijk3,ijk4,ijk5)
      do n=1,n1
-        ijk1(n)=0.
-        ijk2(n)=0.
-        ijk3(n)=0.
-        ijk4(n)=0.
-        ijk5(n)=0.
+        ijk1(n)=0
+        ijk2(n)=0
+        ijk3(n)=0
+        ijk4(n)=0
+        ijk5(n)=0
      enddo
   return
 end subroutine izerov
@@ -657,14 +657,14 @@ integer function ivalugp(n1,n2,n3,k,i,j,ia)
 implicit none
 integer :: n1,n2,n3,k,i,j
 real :: ia(n1,n2,n3)
-  ivalugp=ia(k,i,j)
+  ivalugp=int(ia(k,i,j))
 return
 end
 
 integer function ibindec(str)
 implicit none
 character(len=*) :: str
-integer :: inc,i,ic,l
+integer :: inc,ic,l
 ibindec=0
 inc=1
 l=len(str)
@@ -894,7 +894,7 @@ real(kind=8) function dssum(nn,vctr,inc)
   real(kind=8) :: vctr(*)
   integer :: n,nnn
   real(kind=8) :: sum
-  sum=0.
+  sum=0.d0
   nnn=nn*inc
   do n=1,nnn,inc
     sum=sum+vctr(n)
@@ -979,7 +979,7 @@ end
 real function cvmgp(vct1,vct2,vct3)
 implicit none
 real :: vct1,vct2,vct3
-if(vct3.ge.0)then
+if(vct3.ge.0.0)then
 cvmgp=vct1
 else
 cvmgp=vct2
@@ -993,7 +993,7 @@ end
 real function cvmgm(vct1,vct2,vct3)
 implicit none
 real :: vct1,vct2,vct3
-if(vct3.lt.0)then
+if(vct3.lt.0.0)then
 cvmgm=vct1
 else
 cvmgm=vct2
@@ -1008,7 +1008,7 @@ end
 real(kind=8) function dcvmgp(vct1,vct2,vct3)
   implicit none
   real(kind=8) :: vct1,vct2,vct3
-  if(vct3.ge.0)then
+  if(vct3.ge.0.0d0)then
     dcvmgp=vct1
   else
     dcvmgp=vct2
@@ -1022,7 +1022,7 @@ end function dcvmgp
 real(kind=8) function dcvmgm(vct1,vct2,vct3)
   implicit none
   real(kind=8) :: vct1,vct2,vct3
-  if(vct3.lt.0)then
+  if(vct3.lt.0.0d0)then
     dcvmgm=vct1
   else
     dcvmgm=vct2
@@ -1036,7 +1036,7 @@ end function dcvmgm
 real function cvmgz(vct1,vct2,vct3)
 implicit none
 real :: vct1,vct2,vct3
-if(vct3.eq.0)then
+if(vct3.eq.0.0)then
 cvmgz=vct1
 else
 cvmgz=vct2
@@ -1050,7 +1050,7 @@ end
 real function cvmgn(vct1,vct2,vct3)
 implicit none
 real :: vct1,vct2,vct3
-if(vct3.ne.0)then
+if(vct3.ne.0.0)then
 cvmgn=vct1
 else
 cvmgn=vct2
@@ -1079,7 +1079,7 @@ real function cdf2normal(mycdf)
    !----- Local variables -----------------------------------------------------------------!
    logical             :: converged          ! Convergence handle
    logical             :: bisection          ! Bisection check
-   integer             :: it,i               ! Iteration counter
+   integer             :: it                 ! Iteration counter
    real                :: delta              ! Aux. variable for 2nd guess.
    real                :: normala            ! Aux. variables with previous guess
    real                :: normalz            ! Aux. variables with previous guess
@@ -1358,7 +1358,7 @@ real function cbrt(x)
    use consts_coms, only: onethird
    implicit none
    real, intent(in) :: x
-   if (x > 0) then
+   if (x > 0.0) then
      cbrt=x**onethird
    else
      cbrt=-((-x)**onethird)
@@ -1411,7 +1411,7 @@ real function errorfun(x)
 
 
    !----- Initialise integral and integration limits --------------------------------------!
-   app           = 0            !----- This is the integral's approximate value
+   app           = 0.0            !----- This is the integral's approximate value
    a0            = min(0.,x)    !----- Lower bound
    b0            = max(0.,x)    !----- Upper bound 
    toomanylevels = real(maxlev) !----- Just for if test.
@@ -1429,7 +1429,7 @@ real function errorfun(x)
    fb(i)  = expmsq(b0)
    !----- Approximation from Simpson's method for entire interval -------------------------!
    ss(i)  = onethird * hh(i) * (fa(i) + 4.*fc(i) + fb(i)) 
-   ll(i)  = 1
+   ll(i)  = 1.0
    !---------------------------------------------------------------------------------------!
 
 

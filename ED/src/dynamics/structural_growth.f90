@@ -316,7 +316,7 @@ subroutine update_vital_rates_ar(cpatch,ico, dbh_in, bdead_in, balive_in, hite_i
   real, dimension(n_pft, n_dbh) :: agb_mort
 
   ! Get dbh bin
-  bdbh = min(int(dbh_in*0.1),10)+1
+  bdbh = max(0,min(int(dbh_in*0.1),10))+1
 
   ! Update current basal area, agb
   basal_area(cpatch%pft(ico), bdbh) = basal_area(cpatch%pft(ico), bdbh) + area * cpatch%nplant(ico) *  &
@@ -357,9 +357,6 @@ subroutine print_C_and_N_budgets(cgrid)
   implicit none
 
   type(edtype),target :: cgrid
-  type(polygontype),pointer :: cpoly
-  type(sitetype),pointer    :: csite
-  type(patchtype),pointer   :: cpatch
   integer :: ipy
   real :: soil_C
   real :: soil_N
@@ -417,13 +414,13 @@ subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
   real(kind=8) :: area_factor, this_carbon, this_nitrogen
   real(kind=8) :: soil_C8, soil_N8, veg_C8, veg_N8
   
-  real(kind=8), parameter :: almostnothing=1.e-30
+  real(kind=8), parameter :: almostnothing=1.d-30
 
   ! Initialize C and N pools
-  soil_C8 = 0.0
-  soil_N8 = 0.0
-  veg_C8 = 0.0
-  veg_N8 = 0.0
+  soil_C8 = 0.0d0
+  soil_N8 = 0.0d0
+  veg_C8 = 0.0d0
+  veg_N8 = 0.0d0
 
   cpoly => cgrid%polygon(ipy)
 

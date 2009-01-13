@@ -47,9 +47,7 @@ subroutine lphysiol_full(T_L,  &
   type(glim) :: apar
   integer :: ilimit
 
-  real :: co2cp,arrhenius
-  real :: gsw_update
-  integer :: success
+  real :: co2cp
 
   ! load physiological parameters into structure
   gsdata%D0 = D0(pft)
@@ -442,7 +440,7 @@ subroutine zbrak_c3(gsdata,met,apar,x1,x2,n,xb1,xb2,nb)
   nbb = nb
   nb = 0
   x = x1
-  dx = (x2-x1)/n
+  dx = (x2-x1)/real(n)
   fp = residual_c3(gsdata,met,apar,x)
   do i=1,n
      x = x + dx
@@ -471,7 +469,7 @@ real function zbrent_c3(gsdata,met,apar,x1,x2,tol,success_flag)
   integer, parameter :: itmax = 100
   real, parameter :: eps = 3.0e-8
   real :: x1,x2,tol,a,b,fa,fb,fc,c,d,e,tol1,s,q,p,r,xm
-  integer :: iter,it,success_flag
+  integer :: iter,success_flag
   real, external :: residual_c3
 
   a = x1
@@ -564,7 +562,7 @@ subroutine zbrak_c4(gsdata,met,apar,x1,x2,n,xb1,xb2,nb)
   nbb = nb
   nb = 0
   x = x1
-  dx = (x2-x1)/n
+  dx = (x2-x1)/real(n)
   fp = residual_c4(gsdata,met,apar,x)
   do i=1,n
      x = x + dx
@@ -593,7 +591,7 @@ real function zbrent_c4(gsdata,met,apar,x1,x2,tol,success_flag)
   integer, parameter :: itmax = 100
   real, parameter :: eps = 3.0e-8
   real :: x1,x2,tol,a,b,fa,fb,fc,c,d,e,tol1,s,q,p,r,xm
-  integer :: iter,it,success_flag
+  integer :: iter,success_flag
   real, external :: residual_c4
 
   a = x1
@@ -665,7 +663,7 @@ real function zbrent_c4(gsdata,met,apar,x1,x2,tol,success_flag)
      endif
      fb = residual_c4(gsdata,met,apar,b)
   enddo
-  pause 'ZBRENT_C4 exceeding maximum iterations.'
+  print*, 'ZBRENT_C4 exceeding maximum iterations.'  !! pause removed, obsolescent in Fortran 90
   zbrent_c4=b
   return
 end function zbrent_c4
@@ -681,8 +679,8 @@ subroutine solve_closed_case_c3(gsdata,met,apar,sol,ilimit)
   type(farqdata) :: gsdata
   type(metdat) :: met
   type(solution) :: sol
-  real :: b,c,x1,x2,q
-  real, dimension(2) :: ci,cs,a
+  real :: b,c,q
+  real, dimension(2) :: ci
   integer :: j
   
 
@@ -874,9 +872,9 @@ real function quad4ci(gsdata,met,apar,x,success)
   type(glim) :: apar
   type(farqdata) :: gsdata
   type(metdat) :: met
-  real :: b,c,x1,x2,q,x,ciout,q_1
+  real :: b,c,q,x
   real, dimension(2) :: ci
-  integer :: j,success
+  integer :: success
   integer, dimension(2) :: sol_flag  
   integer :: isol
   logical,external :: isnan_ext
@@ -962,7 +960,7 @@ subroutine testsolution(gsdata,met,apar,x)
   type(farqdata) :: gsdata
   type(metdat) :: met
   type(glim) :: apar
-  real :: tl,cs,psi,ci,eta,vm,gamma,arrhenius,co2cp,a,aflux,csc
+  real :: cs,ci,eta,gamma,co2cp,a
   real :: x,es
 
   eta = 1.0 + (met%el-met%ea)/gsdata%d0

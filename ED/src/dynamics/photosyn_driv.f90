@@ -45,6 +45,8 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
   real, dimension(nzg) :: available_liquid_water
   real, intent(out) :: sum_lai_rbi
   logical :: las
+  real,parameter :: vels_min = 1.0
+  real :: rb_min
 
   las = .false.
 
@@ -52,12 +54,12 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
 
   ! calculate liquid water available for transpiration
   available_liquid_water(nzg) = max(0.0, 1.0e3 * dslz(nzg) *   &
-       soil_fracliq(nzg) * (soil_water(nzg) - soil(ntext_soil(nzg))%soilcp))
+       soil_fracliq(nzg) * real(soil_water(nzg) - dble(soil(ntext_soil(nzg))%soilcp)))
 
   do k1 = nzg-1, lsl, -1
      available_liquid_water(k1) = available_liquid_water(k1+1) +  &
-          dslz(k1) * 1.0e3 * soil_fracliq(k1) * max(0.0, soil_water(k1) -  &
-          soil(ntext_soil(k1))%soilcp)
+          dslz(k1) * 1.0e3 * soil_fracliq(k1) * max(0.0, real(soil_water(k1) -  &
+          dble(soil(ntext_soil(k1))%soilcp)))
   enddo
 
   ! Initialize the array of maximum photosynthesis rates used in the 
@@ -89,12 +91,28 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
            !              cpatch%rb = (1.0 + 5.5 * pss%lai) /   &
            !                   (0.01 * sqrt(max(0.1,min(pss%ustar,4.)) * const1))
            !           else
-           cpatch%rb(ico) = min(25.0 * csite%lai(ipa), 1.0/(  &
+
+!! calc resistance based on nominal windspeed rather than lai
+!! THIS IS A KLUGE - mcd
+           rb_min = 1.0/(  &
+                0.003*sqrt(vels_min/leaf_width(cpatch%pft(ico)))  &
+                + 1.03e-5   &
+                * ( 1.6e8 * abs(cpatch%veg_temp(ico)-csite%can_temp(ipa))  &
+                * leaf_width(cpatch%pft(ico))**3 )**0.25 &
+                / leaf_width(cpatch%pft(ico)))
+           
+!           cpatch%rb(ico) = min(25.0 * csite%lai(ipa), 1.0/(  &
+           cpatch%rb(ico) = min(rb_min, 1.0/(  &
                 0.003*sqrt(vels/leaf_width(cpatch%pft(ico)))  &
                 + 1.03e-5   &
                 * ( 1.6e8 * abs(cpatch%veg_temp(ico)-csite%can_temp(ipa))  &
                 * leaf_width(cpatch%pft(ico))**3 )**0.25 &
                 / leaf_width(cpatch%pft(ico))))
+
+if(abs(cpatch%rb(ico)) < tiny(1.0))then
+   print*,"WARNING, small RB"
+   print*,vels,leaf_width(cpatch%pft(ico)),cpatch%veg_temp(ico),csite%can_temp(ipa),cpatch%pft(ico),ico
+end if
 
               call lphysiol_full(  &
                    cpatch%veg_temp(ico)-t00  &  ! Vegetation temperature (C)
@@ -291,12 +309,12 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
      if(root_depth_indices(k1) == 1)then
         do k2 = k1, nzg
            nts = ntext_soil(k2)
-           slpotv = soil(nts)%slpots * (soil(nts)%slmsts / soil_water(k2)) ** soil(nts)%slbs
+           slpotv = soil(nts)%slpots * real(dble(soil(nts)%slmsts) / soil_water(k2)) ** soil(nts)%slbs
            ! Multiply by liquid fraction (ice is unavailable for transpiration)
            slpotv = slpotv * soil_fracliq(k2)
            ! Find layer in root zone with highest slpotv AND soil_water 
            ! above minimum soilcp.  Set ktrans to this layer.
-           if (slpotv > swp .and. soil_water(k2) > soil(nts)%soilcp) then
+           if (slpotv > swp .and. soil_water(k2) > dble(soil(nts)%soilcp)) then
               swp = slpotv
               ed_ktrans(k1) = k2
            endif

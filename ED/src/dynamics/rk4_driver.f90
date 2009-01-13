@@ -20,15 +20,16 @@ contains
     type(polygontype),pointer :: cpoly
     type(sitetype),pointer    :: csite
     type(patchtype),pointer   :: cpatch
-    integer :: ifm,ipy,isi,ipa,ico
-    integer :: k,idbh
+    integer :: ifm,ipy,isi,ipa
         
     integer, dimension(nzg) :: ed_ktrans
-    real :: sum_lai_rbi,site_area_i
+    real :: sum_lai_rbi
     real, external :: compute_netrad_ar
     real :: gpp
     real, dimension(n_dbh) :: gpp_dbh
     real :: plant_respiration
+
+   ! print*,cgrid%polygon(1)%site(1)%patch(1)%lai(1)
     
     polygonloop: do ipy = 1,cgrid%npolygons
        
@@ -41,7 +42,8 @@ contains
           patchloop: do ipa = 1,csite%npatches
              
              cpatch => csite%patch(ipa)
-             
+
+
              ! Get velocity for aerodynamic resistance
              if(csite%can_temp(ipa) < cpoly%met(isi)%atm_tmp)then
                 cpoly%met(isi)%vels = cpoly%met(isi)%vels_stab
@@ -131,8 +133,7 @@ contains
     implicit none
 
     type(sitetype),target   :: csite
-    type(patchtype),pointer :: cpatch
-    integer :: ifm,ipy,isi,ipa,ico
+    integer :: ifm,ipy,isi,ipa
     integer, intent(in) :: lsl
     type(integration_vars_ar), target :: integration_buff
 
@@ -303,12 +304,11 @@ contains
     use consts_coms, only: day_sec,t3ple
     use ed_misc_coms,only: fast_diagnostics
     use soil_coms, only: soil, slz
+    use ed_misc_coms,only: fast_diagnostics
     use grid_coms, only: nzg, nzs
     use canopy_radiation_coms, only: lai_min, veg_temp_min
-
     use therm_lib, only: qwtk
     use ed_therm_lib, only: calc_hcapveg,ed_grndvap
-
     implicit none
 
     integer, intent(in) :: lsl
@@ -320,10 +320,10 @@ contains
 
     integer :: ipa,ico,ipy,isi
     integer :: k,ksn,nsoil, nlsw1
-    real :: hdid,qwt,wt,soilhcap,fac
+    real :: hdid
     real :: available_water
     real, parameter :: tendays_sec=10.*day_sec
-    real :: hcapveg,fracliq
+    real :: fracliq,veg_temp
 
     csite%can_temp(ipa) = initp%can_temp
     csite%can_shv(ipa) = initp%can_shv
@@ -391,15 +391,15 @@ contains
        available_water = 0.0
        do k = cpatch%krdepth(ico), nzg - 1
           available_water = available_water                               &
-               + (initp%soil_water(k)-soil(csite%ntext_soil(k,ipa))%soilcp)        &
-               * (slz(k+1)-slz(k))/(soil(csite%ntext_soil(k,ipa))%slmsts &
-               - soil(csite%ntext_soil(k,ipa))%soilcp) 
+               + real((initp%soil_water(k)-dble(soil(csite%ntext_soil(k,ipa))%soilcp))        &
+               * dble(slz(k+1)-slz(k))/dble(soil(csite%ntext_soil(k,ipa))%slmsts &
+               - soil(csite%ntext_soil(k,ipa))%soilcp) )
        enddo
-       available_water = available_water + (initp%soil_water(nzg)  &
-            -soil(csite%ntext_soil(nzg,ipa))%soilcp) &
-            *(-1.0*slz(nzg))              &
-            /(soil(csite%ntext_soil(nzg,ipa))%slmsts &
-            -soil(csite%ntext_soil(nzg,ipa))%soilcp) 
+       available_water = available_water + real((initp%soil_water(nzg)  &
+            -dble(soil(csite%ntext_soil(nzg,ipa))%soilcp)) &
+            *dble(-1.0*slz(nzg))              &
+            /dble(soil(csite%ntext_soil(nzg,ipa))%slmsts &
+            -soil(csite%ntext_soil(nzg,ipa))%soilcp)) 
        available_water = available_water/(-1.0*slz(cpatch%krdepth(ico)))
        cpatch%paw_avg10d(ico) = cpatch%paw_avg10d(ico)*(1.0-hdid/tendays_sec)  &
             + available_water*hdid/tendays_sec
@@ -419,6 +419,8 @@ contains
        csite%sfcwater_depth(k,ipa)  = initp%sfcwater_depth(k)
        csite%sfcwater_mass(k,ipa)   = initp%sfcwater_mass(k)
        csite%sfcwater_energy(k,ipa) = initp%sfcwater_energy(k)
+       csite%sfcwater_tempk(k,ipa) = initp%sfcwater_tempk(k)
+       csite%sfcwater_fracliq(k,ipa) = initp%sfcwater_fracliq(k)
     enddo
     
 
@@ -426,77 +428,84 @@ contains
 
        cpatch%veg_water(ico) = initp%veg_water(ico)
        cpatch%veg_energy(ico) = initp%veg_energy(ico)
+       cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                 cpatch%nplant(ico),cpatch%pft(ico))
 
        ! For plants with minimal foliage, fix the vegetation
        ! temperature to the canopy air space
        if (cpatch%lai(ico) < lai_min) then
 
           cpatch%veg_temp(ico) = csite%can_temp(ipa)
-          
-          cpatch%veg_water(ico) = 0.
+          cpatch%veg_water(ico) = 0. 
+          cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * (cpatch%veg_temp(ico)-t3ple)
 
-       endif
+       else
 
-       hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-                 cpatch%nplant(ico),cpatch%pft(ico))
-
-       call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),hcapveg,cpatch%veg_temp(ico),fracliq)
+          call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico),veg_temp,fracliq)
         
-       
-       if ( cpatch%veg_temp(ico) < veg_temp_min .or. cpatch%veg_temp(ico) > 360.0 ) then
+          if ( veg_temp < veg_temp_min .or. veg_temp > 360.0  ) then
+             print*,"==========================================================="
+             
+             write(unit=*,fmt='(a,1x,es14.7)') 'veg temp prev :',cpatch%veg_temp(ico)
+             write(unit=*,fmt='(a,1x,es14.7)') 'veg_temp curr :',veg_temp
+             write(unit=*,fmt='(a,1x,es14.7)') 'veg_temp min  :',veg_temp_min
+             write(unit=*,fmt='(a,1x,es14.7)') 'lai           :',cpatch%lai(ico)
+             write(unit=*,fmt='(a,1x,es14.7)') 'lai_min       :', lai_min
+             print*,"veg_water",cpatch%veg_water(ico),cpatch%veg_water(ico)/cpatch%lai(ico)
+             print*,"veg_energy",cpatch%veg_energy(ico),cpatch%veg_energy(ico)/cpatch%lai(ico)
+             print*,"hcapveg",cpatch%hcapveg(ico),cpatch%hcapveg(ico)/cpatch%lai(ico)
 
-          print*,"==========================================================="
-          
-          write(unit=*,fmt='(a,1x,es14.7)') 'veg temperature  :',cpatch%veg_temp(ico)
-          write(unit=*,fmt='(a,1x,es14.7)') 'veg_temp min :',veg_temp_min
+             print*,"Polygon:",ipy," Site:",isi," Patch:",ipa," Cohort:",ico," of",cpatch%ncohorts
+             
+             print*,"LAI",cpatch%lai(ico)
+             print*,"Height",cpatch%hite(ico)
+             print*,"DBH",cpatch%dbh(ico)
+             print*,"Phenology Status",cpatch%phenology_status(ico)
+             print*,"PFT",cpatch%pft(ico)
+             print*,"Leaf Biomass",cpatch%bleaf(ico)
+             print*,"Density",cpatch%nplant(ico)
+             print*,"Patch LAI",csite%lai(ipa)
+             print*,"Patch Disturbance Type",csite%dist_type(ipa)
+             print*,"Patch Canopy Temperature",csite%can_temp(ipa)
+             
+             write(unit=*,fmt='(a,1x,i5)')     '================== FATAL ERROR =================='
+             write(unit=*,fmt='(a,1x,i5)')     ' IPY:',ipy
+             write(unit=*,fmt='(a,1x,i5)')     ' ISI:',isi
+             write(unit=*,fmt='(a,1x,i5)')     ' IPA:',ipa
+             write(unit=*,fmt='(a,1x,i5)')     ' ICO:',ico
+!!$          write(unit=*,fmt='(a,1x,f14.5)')  ' Longitude:',edgrid_g(1)%lon(ipy)
+!!$          write(unit=*,fmt='(a,1x,f14.5)')  ' Latitude: ',edgrid_g(1)%lat(ipy)
+!!$          write(unit=*,fmt='(a)')           ' '
+!!$          write(unit=*,fmt='(a,1x,es14.7)') ' PRSS:     ',edgrid_g(1)%polygon(ipy)%met(isi)%prss
+!!$          write(unit=*,fmt='(a,1x,es14.7)') ' ATM_TMP:  ',edgrid_g(1)%polygon(ipy)%met(isi)%atm_tmp
+!!$          write(unit=*,fmt='(a,1x,es14.7)') ' RHOS:     ',edgrid_g(1)%polygon(ipy)%met(isi)%rhos
+!!$          write(unit=*,fmt='(a,1x,es14.7)') ' PCPG:     ',edgrid_g(1)%polygon(ipy)%met(isi)%pcpg
+!!$          write(unit=*,fmt='(a,1x,es14.7)') ' SHV:g/kg  ',edgrid_g(1)%polygon(ipy)%met(isi)%atm_shv*1000
+!!$          write(unit=*,fmt='(a,1x,es14.7)') ' VELS:     ',edgrid_g(1)%polygon(ipy)%met(isi)%vels
+!!$          write(unit=*,fmt='(a)')           ' '
+!!$          write(unit=*,fmt='(a,1x,es14.7)') ' rshort_v: ',cpatch%rshort_v(ico)
+!!$          write(unit=*,fmt='(a,1x,es14.7)') ' rlong_v:  ',cpatch%rlong_v(ico)
+!!$          write(unit=*,fmt='(a)')           ' '
+!!$          write(unit=*,fmt='(a,1x,es14.7)') ' can_temp :',csite%can_temp(ipa)
+!!$          write(unit=*,fmt='(a,1x,es14.7)') ' can_shv g/kg :',csite%can_shv(ipa)*1000.
+!!$          write(unit=*,fmt='(a,1x,es14.7)') ' gnd_shv g/kg :',csite%ground_shv(ipa)*1000.
+!!$          write(unit=*,fmt='(a)')           ' '
+!!$          write(unit=*,fmt='(a,1x,es14.7)') 'Lai_coh   :',cpatch%lai(ico)
+!!$          
+!!$          write(unit=*,fmt='(a,1x,es14.7)') 'veg_water :',cpatch%veg_water(ico)
+!!$          write(unit=*,fmt='(a,1x,es14.7)') 'rb        :',cpatch%rb(ico)
+!!$          write(unit=*,fmt='(a)')           ' '
+!!$
+             call print_patch_ar(initp, csite,ipa, lsl)
+             
+             call fatal_error('extreme vegetation temperature','initp2modelp','rk4_driver.f90')
 
-          print*,"Polygon:",ipy," Site:",isi," Patch:",ipa," Cohort:",ico," of",cpatch%ncohorts
+          endif
+          cpatch%veg_temp(ico) = veg_temp
 
-          print*,"LAI",cpatch%lai
-          print*,"Height",cpatch%hite
-          print*,"DBH",cpatch%dbh
-          print*,"Phenology Status",cpatch%phenology_status
-          print*,"PFT",cpatch%pft
-          print*,"DBH",cpatch%dbh
-          print*,"Leaf Biomass",cpatch%bleaf
-          print*,"Patch LAI",csite%lai(ipa)
-          print*,"Patch Disturbance Type",csite%dist_type(ipa)
-          print*,"Patch Canopy Temperature",csite%can_temp(ipa)
-          
-          write(unit=*,fmt='(a,1x,i5)')     '================== FATAL ERROR =================='
-          write(unit=*,fmt='(a,1x,i5)')     ' IPY:',ipy
-          write(unit=*,fmt='(a,1x,i5)')     ' ISI:',isi
-          write(unit=*,fmt='(a,1x,i5)')     ' IPA:',ipa
-          write(unit=*,fmt='(a,1x,i5)')     ' ICO:',ico
-          write(unit=*,fmt='(a,1x,f14.5)')  ' Longitude:',edgrid_g(1)%lon(ipy)
-          write(unit=*,fmt='(a,1x,f14.5)')  ' Latitude: ',edgrid_g(1)%lat(ipy)
-          write(unit=*,fmt='(a)')           ' '
-          write(unit=*,fmt='(a,1x,es14.7)') ' PRSS:     ',edgrid_g(1)%polygon(ipy)%met(isi)%prss
-          write(unit=*,fmt='(a,1x,es14.7)') ' ATM_TMP:  ',edgrid_g(1)%polygon(ipy)%met(isi)%atm_tmp
-          write(unit=*,fmt='(a,1x,es14.7)') ' RHOS:     ',edgrid_g(1)%polygon(ipy)%met(isi)%rhos
-          write(unit=*,fmt='(a,1x,es14.7)') ' PCPG:     ',edgrid_g(1)%polygon(ipy)%met(isi)%pcpg
-          write(unit=*,fmt='(a,1x,es14.7)') ' SHV:g/kg  ',edgrid_g(1)%polygon(ipy)%met(isi)%atm_shv*1000
-          write(unit=*,fmt='(a,1x,es14.7)') ' VELS:     ',edgrid_g(1)%polygon(ipy)%met(isi)%vels
-          write(unit=*,fmt='(a)')           ' '
-          write(unit=*,fmt='(a,1x,es14.7)') ' rshort_v: ',cpatch%rshort_v(ico)
-          write(unit=*,fmt='(a,1x,es14.7)') ' rlong_v:  ',cpatch%rlong_v(ico)
-          write(unit=*,fmt='(a)')           ' '
-          write(unit=*,fmt='(a,1x,es14.7)') ' can_temp :',csite%can_temp(ipa)
-          write(unit=*,fmt='(a,1x,es14.7)') ' can_shv g/kg :',csite%can_shv(ipa)*1000.
-          write(unit=*,fmt='(a,1x,es14.7)') ' gnd_shv g/kg :',csite%ground_shv(ipa)*1000.
-          write(unit=*,fmt='(a)')           ' '
-          write(unit=*,fmt='(a,1x,es14.7)') 'Lai_coh   :',cpatch%lai(ico)
-          
-          write(unit=*,fmt='(a,1x,es14.7)') 'veg_water :',cpatch%veg_water(ico)
-          write(unit=*,fmt='(a,1x,es14.7)') 'rb        :',cpatch%rb(ico)
-          write(unit=*,fmt='(a)')           ' '
-
-          call print_patch_ar(initp, csite,ipa, lsl)
-
-       call fatal_error('extreme vegetation temperature','initp2modelp','rk4_driver.f90')
-
-       endif       
+       endif   
     enddo
+
 
     ksn = csite%nlev_sfcwater(ipa)
     nsoil = csite%ntext_soil(nzg,ipa)
@@ -521,9 +530,7 @@ contains
 
     type(polygontype),target :: cpoly
     type(sitetype),target :: csite
-    type(patchtype),pointer :: cpatch
     integer :: ipa,isi
-    real :: thetacan,pis
 
     print*,'decide how to set vels in canopy_atm_fluxes.'
     stop
@@ -563,8 +570,8 @@ real function compute_water_storage_ar(csite, lsl, rhos,ipa)
   cpatch => csite%patch(ipa)
 
   do k = lsl, nzg
-     compute_water_storage_ar = compute_water_storage_ar +  &
-          csite%soil_water(k,ipa) * dslz(k) * 1000.0
+     compute_water_storage_ar = compute_water_storage_ar + &
+          real(csite%soil_water(k,ipa)) * dslz(k) * 1000.0
   enddo
 
   do k = 1, csite%nlev_sfcwater(ipa)
@@ -698,7 +705,7 @@ subroutine sum_plant_cfluxes_ar(csite,ipa, gpp, gpp_dbh,plresp)
   real, intent(out) :: gpp
   real, dimension(n_dbh), intent(out) :: gpp_dbh
   real, intent(out) :: plresp
-  real, parameter             :: ddbh=1./(n_dbh-1)
+  real, parameter             :: ddbh=1./real(n_dbh-1)
   real :: lrresp ! leaf and root respiration
   real :: sresp ! storage, growth, vleaf respiration
   logical :: forest

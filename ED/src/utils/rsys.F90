@@ -84,8 +84,7 @@ subroutine timing(icall,t1)
   !     Routine returns CPU time.  Called with ICALL=1 at beginning
   !     of timestep, ICALL=2 at end of timestep.
 
-  real :: et(2),aaa
-  integer :: iad0
+  real :: et(2)
 !!$      real, external :: second,cputim,mclock,etime
 
 #if defined(IBM)
