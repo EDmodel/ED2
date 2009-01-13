@@ -148,7 +148,7 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
        ,cccnx          & ! intent(out)
        ,cifnx          ! ! intent(out)
 
-   use rconstants, only : p00, cpi, cpor,toodry,cliq,cice,alli,t3ple
+   use rconstants, only : p00, cpi, cpor,toodry,cliq,cice,alli,t3ple,cliqt3
    use therm_lib , only : qtk
 
    implicit none
@@ -241,8 +241,8 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
             k2(2) = k
             rx(k,2)    = micro%rrp(k,i,j)
             totcond(k) = totcond(k)        + rx(k,2)
-            call qtk(micro%q2(k,i,j),tcoal,fracliq)
-            qx(k,2)    = cliq*(tcoal-t3ple)+alli
+            !call qtk(micro%q2(k,i,j),tcoal,fracliq)
+            qx(k,2)    = micro%q2(k,i,j) - cliqt3
             qr(k,2)    = qx(k,2) * rx(k,2)
             if (progncat(2)) cx(k,2) = micro%crp(k,i,j)
          else
@@ -921,7 +921,7 @@ end subroutine pc03
 subroutine sedim(m1,lcat,if_adap,mynum,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,pcpfillr,sfcpcp,dzt)
 
    use rconstants, only : cpi,ttripoli,alvl,alvi,alli,cp  ! intent(in)
-   use therm_lib , only : qreltk,dthil_sedimentation
+   use therm_lib , only : dthil_sedimentation
    use micphys   , only : &
            k1             & ! intent(in   )
           ,k2             & ! intent(in   )

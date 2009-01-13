@@ -1216,8 +1216,8 @@ module fuse_fiss_utils_ar
               + csite%soil_energy(iii,recp)         * csite%area(recp) )
 
          csite%soil_water(iii,recp)      = newareai *                                      &
-              ( csite%soil_water(iii,recp)          * csite%area(recp)                     &
-              + csite%soil_water(iii,donp)          * csite%area(donp) )
+              ( csite%soil_water(iii,recp)          * dble(csite%area(recp))                     &
+              + csite%soil_water(iii,donp)          * dble(csite%area(donp)) )
       end do
 
       !------------------------------------------------------------------------------------!

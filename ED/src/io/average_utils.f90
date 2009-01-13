@@ -306,9 +306,6 @@ subroutine integrate_ed_daily_output_state(cgrid)
             
                patchsum_fsn = patchsum_fsn + (sum(cpatch%fsn * cpatch%lai,cpatch%lai > lai_min) * patch_lai_i) * csite%area(ipa)
                patchsum_fsw = patchsum_fsw + (sum(cpatch%fsw * cpatch%lai,cpatch%lai > lai_min) * patch_lai_i) * csite%area(ipa)
-            else
-               patchsum_fsn = 0.
-               patchsum_fsw = 0.
             end if
          end do patchloop
          
@@ -411,9 +408,10 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          ! Looping through the patches to normalize the sum of all cohorts.
          patchloop: do ipa=1, csite%npatches
             cpatch => csite%patch(ipa)
-
-            patchsum_leaf_resp = patchsum_leaf_resp + sum(cpatch%mean_leaf_resp, cpatch%lai > lai_min)  * csite%area(ipa) 
-            patchsum_root_resp = patchsum_root_resp + sum(cpatch%mean_root_resp                      )  * csite%area(ipa) 
+            if (cpatch%ncohorts > 0) then
+               patchsum_leaf_resp = patchsum_leaf_resp + sum(cpatch%mean_leaf_resp, cpatch%lai > lai_min)  * csite%area(ipa) 
+               patchsum_root_resp = patchsum_root_resp + sum(cpatch%mean_root_resp                      )  * csite%area(ipa) 
+            end if
 
          end do patchloop
          

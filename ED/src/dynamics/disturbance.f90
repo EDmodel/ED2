@@ -871,7 +871,7 @@ end subroutine apply_disturbances_ar
     cpatch%pft(nc) = pft
     cpatch%nplant(nc) = density
     cpatch%hite(nc) = hgt_min(cpatch%pft(nc)) * height_factor
-    cpatch%dbh(nc) = h2dbh(cpatch%hite,cpatch%pft)
+    cpatch%dbh(nc) = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
     cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
     cpatch%bleaf(nc) = dbh2bl(cpatch%dbh(nc),cpatch%pft(nc))
     
