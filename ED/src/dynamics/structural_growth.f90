@@ -235,20 +235,16 @@ subroutine update_derived_cohort_props_ar(cpatch,ico, green_leaf_factor, lsl)
 
   use ed_state_vars,only:patchtype
   use pft_coms, only: phenology, sla, q, qsw
+  use allometry, only: bd2dbh, dbh2h, dbh2bl, assign_root_depth, calc_root_depth
 
   implicit none
 
   type(patchtype),target :: cpatch
   integer :: ico
   real, intent(in) :: green_leaf_factor
-  real, external :: bd2dbh
-  real, external :: dbh2h
   real :: bl
   real :: bl_max
-  real, external :: dbh2bl
   real :: rootdepth
-  real :: calc_root_depth
-  integer, external :: assign_root_depth
   integer, intent(in) :: lsl
 
   cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico)) 
@@ -291,7 +287,7 @@ subroutine update_vital_rates_ar(cpatch,ico, dbh_in, bdead_in, balive_in, hite_i
   use max_dims, only: n_pft, n_dbh
   use consts_coms, only: pi1
   use pft_coms, only: agf_bs,q,qsw
-  
+  use allometry, only: ed_biomass
   implicit none
 
   real, intent(in) :: dbh_in
@@ -306,7 +302,6 @@ subroutine update_vital_rates_ar(cpatch,ico, dbh_in, bdead_in, balive_in, hite_i
   integer :: ico
 
   integer :: bdbh
-  real, external :: ed_biomass
   real, intent(in) :: area
   real, dimension(n_pft, n_dbh) :: basal_area
   real, dimension(n_pft, n_dbh) :: agb
@@ -316,7 +311,7 @@ subroutine update_vital_rates_ar(cpatch,ico, dbh_in, bdead_in, balive_in, hite_i
   real, dimension(n_pft, n_dbh) :: agb_mort
 
   ! Get dbh bin
-  bdbh = min(int(dbh_in*0.1),10)+1
+  bdbh = max(0,min(int(dbh_in*0.1),10))+1
 
   ! Update current basal area, agb
   basal_area(cpatch%pft(ico), bdbh) = basal_area(cpatch%pft(ico), bdbh) + area * cpatch%nplant(ico) *  &
@@ -357,9 +352,6 @@ subroutine print_C_and_N_budgets(cgrid)
   implicit none
 
   type(edtype),target :: cgrid
-  type(polygontype),pointer :: cpoly
-  type(sitetype),pointer    :: csite
-  type(patchtype),pointer   :: cpatch
   integer :: ipy
   real :: soil_C
   real :: soil_N
@@ -417,13 +409,13 @@ subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
   real(kind=8) :: area_factor, this_carbon, this_nitrogen
   real(kind=8) :: soil_C8, soil_N8, veg_C8, veg_N8
   
-  real(kind=8), parameter :: almostnothing=1.e-30
+  real(kind=8), parameter :: almostnothing=1.d-30
 
   ! Initialize C and N pools
-  soil_C8 = 0.0
-  soil_N8 = 0.0
-  veg_C8 = 0.0
-  veg_N8 = 0.0
+  soil_C8 = 0.0d0
+  soil_N8 = 0.0d0
+  veg_C8 = 0.0d0
+  veg_N8 = 0.0d0
 
   cpoly => cgrid%polygon(ipy)
 

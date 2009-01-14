@@ -84,12 +84,14 @@ subroutine timing(icall,t1)
   !     Routine returns CPU time.  Called with ICALL=1 at beginning
   !     of timestep, ICALL=2 at end of timestep.
 
-  real :: et(2),aaa
+  real :: et(2)
+#if defined(VAX)
   integer :: iad0
+#endif
 !!$      real, external :: second,cputim,mclock,etime
 
 #if defined(IBM)
- real :: etime
+ real, external :: mclock
 #else
  real,external :: etime
 #endif
@@ -131,11 +133,14 @@ subroutine timing(icall,t1)
 !#if defined(IBM)
 !     T1=MCLOCK(AAA)/100.
 !#endif
-#if defined(IBM) || defined(SGI) || defined(PC_NT1) || defined(NEC_SX)
+#if defined(SGI) || defined(PC_NT1) || defined(NEC_SX)
      T1=ETIME(et)
 #endif
 #if defined(HP) || defined(PC_LINUX1) || defined(ALPHA) 
      T1=ETIME(et)
+#endif
+#if defined(IBM)
+     T1=mclock(et)/100.
 #endif
 
   elseif(ICALL.eq.2) then
@@ -156,7 +161,7 @@ subroutine timing(icall,t1)
 !#if defined(IBM)
 !     T1=MCLOCK(AAA)/100.
 !#endif
-#if defined(IBM) || defined(SGI) || defined(PC_NT1) || defined(NEC_SX)
+#if defined(SGI) || defined(PC_NT1) || defined(NEC_SX)
      T1=ETIME(et)
 #endif
 #if defined(HP) || defined(PC_LINUX1)
@@ -164,6 +169,9 @@ subroutine timing(icall,t1)
 #endif
 #if defined(ALPHA) 
      T1=ETIME(et)
+#endif
+#if defined(IBM)
+     T1=mclock(et)/100.
 #endif
   endif
 

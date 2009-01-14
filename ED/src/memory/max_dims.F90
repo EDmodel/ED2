@@ -114,8 +114,8 @@ Module max_dims
   integer, parameter :: max_met_vars = 22
   
   ! Maximum number of patches and cohorts possibly allowed initially
-  integer, parameter :: huge_patch  = 200
-  integer, parameter :: huge_cohort = 3000
+  integer, parameter :: huge_patch  = 2000
+  integer, parameter :: huge_cohort = 20000
   integer, parameter :: max_water = 100
   
   integer,parameter :: maxpvars = 50     ! The maximum number of printable variables
