@@ -2057,7 +2057,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   memdims(2)  = int(csite%npatches,8)
   memsize(2)  = int(csite%npatches,8)
   memoffs(2)  = 0_8
-  call hdf_getslab_r(csite%co2budget_gpp_dbh(1,1),'CO2BUDGET_GPP_DBH ',dsetrank,iparallel,.true.)
+  call hdf_getslab_r(csite%co2budget_gpp_dbh,'CO2BUDGET_GPP_DBH ',dsetrank,iparallel,.true.)
 
 !!!! MAY NEED TO ADD THIS ONE
 !  call hdf_getslab_r(csite%old_stoma_data_max,'OLD ',dsetrank,iparallel,.true.)
