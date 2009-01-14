@@ -664,11 +664,6 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   real :: qwflxvc
   real :: sat_temp
 
-  ! Canopies with LAI less than this number are assumed to be
-  ! open, ie, some fraction of the rain-drops can reach
-  ! the soil/litter layer unimpeded. 
-  real,parameter :: lai_to_cover = 1.5
-
   ! Fluxes from atmosphere to canopy
 
   rho_ustar = rhos * initp%ustar
