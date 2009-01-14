@@ -4,18 +4,26 @@
 !------------------------------------------------------------------------------------------!
 module allometry
 
-   !----- Constants -----------------------------------------------------------------------!
-   real, parameter :: a1    = -1.981
-   real, parameter :: b1    = 1.047
-   real, parameter :: c1    = 0.572
-   real, parameter :: d1    = 0.931
+   !----- Constants shared by both bdead and bleaf ------------------------------------------!
+   real, parameter :: a1    =  -1.981
+   real, parameter :: b1    =   1.047
    real, parameter :: dcrit = 100.0
-   real, parameter :: a2    = -1.086
-   real, parameter :: b2    = 0.876
-   real, parameter :: c2    = 0.604
-   real, parameter :: d2    = 0.871
-   real, parameter :: ff    = 0.64
-   real, parameter :: gg    = 0.37
+   real, parameter :: ff    =   0.640
+   real, parameter :: gg    =   0.370
+   !----- Constants used by bdead only ------------------------------------------------------!
+   real, parameter :: c1d   =   0.572
+   real, parameter :: d1d   =   0.931
+   real, parameter :: a2d   =  -1.086
+   real, parameter :: b2d   =   0.876
+   real, parameter :: c2d   =   0.604
+   real, parameter :: d2d   =   0.871
+   !----- Constants used by bleaf only ------------------------------------------------------!
+   real, parameter :: c1l   =  -0.584
+   real, parameter :: d1l   =   0.550
+   real, parameter :: a2l   =  -4.111
+   real, parameter :: b2l   =   0.605
+   real, parameter :: c2l   =   0.848
+   real, parameter :: d2l   =   0.438
    !---------------------------------------------------------------------------------------!
 
    contains
@@ -70,15 +78,15 @@ module allometry
       if (rho(ipft) /= 0.0) then !----- Tropical PFT --------------------------------------!
 
          if (dbh > max_dbh(ipft)) then
-            p  = a1 + c1 * log(h) + d1 * log(rho(ipft))
-            r  = ( (a2 - a1) + (c2 - c1)*log(h) + log(rho(ipft))                           &
-                 * (d2 - d1)) * (1.0/log(dcrit))
-            qq = 2.0 * b2 + r
+            p  = a1 + c1d * log(h) + d1d * log(rho(ipft))
+            r  = ( (a2d - a1) + (c2d - c1d)*log(h) + log(rho(ipft))                        &
+                 * (d2d - d1d)) * (1.0/log(dcrit))
+            qq = 2.0 * b2d + r
          else
-            p  = a1 + c1 * gg * log(10.0) + d1 * log(rho(ipft))
-            r  = ( (a2 - a1) + gg * log(10.0) * (c2 - c1) + log(rho(ipft))                 &
-                 * (d2 - d1)) * (1.0/log(dcrit))
-            qq = 2.0 * b2 + c2 * ff + r
+            p  = a1 + c1d * gg * log(10.0) + d1d * log(rho(ipft))
+            r  = ( (a2d - a1) + gg * log(10.0) * (c2d - c1d) + log(rho(ipft))              &
+                 * (d2d - d1d)) * (1.0/log(dcrit))
+            qq = 2.0 * b2d + c2d * ff + r
          end if
          dbh2bd = exp(p) / C2B * dbh**qq
       else !----- Temperate PFT -----------------------------------------------------------!
@@ -114,10 +122,10 @@ module allometry
       !------------------------------------------------------------------------------------!
 
       if (rho(ipft) /= 0.0) then !----- Tropical PFT --------------------------------------!
-         p  = a1 + c1 * gg * log(10.0) + d1 * log(rho(ipft))
-         r  = ( (a2 - a1) + gg * log(10.0) * (c2 - c1) + log(rho(ipft))                    &
-              * (d2 - d1)) * (1.0/log(dcrit))
-         qq = 2.0 * b2 + c2 * ff + r  
+         p  = a1 + c1l * gg * log(10.0) + d1l * log(rho(ipft))
+         r  = ( (a2l - a1) + gg * log(10.0) * (c2l - c1l) + log(rho(ipft))                 &
+              * (d2l - d1l)) * (1.0/log(dcrit))
+         qq = 2.0 * b2l + c2l * ff + r  
 
          if(dbh <= max_dbh(ipft))then
             dbh2bl = exp(p) / C2B * dbh**qq
@@ -314,20 +322,20 @@ module allometry
 
       if (rho(ipft) /= 0.0) then !----- Tropical PFT --------------------------------------!
 
-         p = a1 + c1 * gg * log(10.0) + d1 * log(rho(ipft))
-         r = ( (a2 - a1) + gg * log(10.0) * (c2 - c1) + log(rho(ipft))                     &
-             * (d2 - d1)) /log(dcrit)
-         q = 2.0 * b2 + c2 * ff + r
+         p = a1 + c1d * gg * log(10.0) + d1d * log(rho(ipft))
+         r = ( (a2d - a1 ) + gg * log(10.0) * (c2d - c1d) + log(rho(ipft))                 &
+             * (d2d - d1d)) /log(dcrit)
+         q = 2.0 * b2d + c2d * ff + r
          dbh_pot = (bdead * 2.0 * exp(-p))**(1.0/q)     
          
          if (dbh_pot <= max_dbh(ipft)) then
             bd2dbh = dbh_pot
          else
             h_max = dbh2h(ipft, max_dbh(ipft))
-            p = a1 + c1 * log(h_max) + d1 * log(rho(ipft))
-            r = ( (a2 - a1) + (c2 - c1) * log(h_max) + log(rho(ipft))                      &
-                * (d2 - d1))/log(dcrit)
-            q = 2.0 * b2 + r
+            p = a1 + c1d * log(h_max) + d1d * log(rho(ipft))
+            r = ( (a2d - a1 ) + (c2d - c1d) * log(h_max) + log(rho(ipft))                  &
+                * (d2d - d1d))/log(dcrit)
+            q = 2.0 * b2d + r
             bd2dbh = (bdead * 2.0 * exp(-p))**(1.0/q)
          endif
       else !----- Temperate PFT -----------------------------------------------------------!
