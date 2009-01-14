@@ -211,7 +211,7 @@ subroutine ed_coup_model()
      end do
   end if
 
-  time=time+dtlsm
+  time=time+dble(dtlsm)
 
   call update_model_time_dm(current_time, dtlsm)
   
@@ -226,8 +226,8 @@ subroutine ed_coup_model()
   mont_analy_time = new_month .and. writing_mont
   annual_time     = new_month .and. writing_year .and. current_time%month == outputMonth
   dail_analy_time = new_day   .and. writing_dail
-  reset_time      = mod(time,dble(frqsum)) < dtlsm
-  the_end         = mod(time,timmax) < dtlsm
+  reset_time      = mod(time,dble(frqsum)) < dble(dtlsm)
+  the_end         = mod(time,timmax) < dble(dtlsm)
 
   !----- Checking whether this is time to write fast analysis output or not. -----------!
   select case (unitfast)
@@ -261,8 +261,8 @@ subroutine ed_coup_model()
   !-------------------------------------------------------------------------------------!
   if (new_month) then
      ndays=num_days(current_time%month,current_time%year)
-     if (outfast  == -2.) nrec_fast  = ndays*day_sec/frqfast
-     if (outstate == -2.) nrec_state = ndays*day_sec/frqstate
+     if (outfast  == -2.) nrec_fast  = ndays*ceiling(day_sec/frqfast)
+     if (outstate == -2.) nrec_state = ndays*ceiling(day_sec/frqstate)
   end if
   
     
@@ -359,7 +359,7 @@ subroutine update_model_time_dm(ctime,dtlong)
    type(simtime) :: ctime
    real, intent(in) :: dtlong
    logical, external :: isleap
-   real, dimension(12) :: daymax
+   integer, dimension(12) :: daymax
   
    daymax=(/31,28,31,30,31,30,31,31,30,31,30,31/)
 
@@ -449,6 +449,9 @@ subroutine vegetation_dynamics(new_month,new_year)
 
   ! Time factor for averaging dailies 
   tfact2 = 1.0 / yr_day
+
+  !! Apply Events
+  call prescribed_event(current_time%year,doy)
 
   
   do ifm=1,ngrids

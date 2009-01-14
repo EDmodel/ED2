@@ -7,7 +7,7 @@ Module canopy_radiation_coms
 use max_dims, only: n_pft
 
 implicit none 
-real :: mubar            ! Leaf angle distribution parameter (dimensionless).
+real(kind=8) :: mubar            ! Leaf angle distribution parameter (dimensionless).
                          !Let mu' be the cosine of leaf angle and G(mu') be the 
                          !distribution of mu'.  Then, mubar = (integral from 0 to 1) 
                          !(d mu'   mu' / G(mu')).  See, for example, Dickinson 1983.

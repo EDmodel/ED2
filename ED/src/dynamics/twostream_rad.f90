@@ -28,19 +28,19 @@ subroutine sw_twostream_clump(salb,   &
 
   integer :: il,ncoh,nfcoh,ipft,ncoh2,iband,i,j
   integer, dimension(2*ncoh) :: indx
-  real :: salb,scosz,scosaoi,sLAIm,srshort,srshortd,UW_nirhi_beam,UW_nirhi_diffuse
-  real :: DW_vislo_diffuse,UW_vishi_beam,DW_nirlo_beam,DW_nirlo_diffuse
+  real :: salb,scosz,scosaoi,sLAIm,UW_nirhi_beam,UW_nirhi_diffuse
+  real :: DW_vislo_diffuse,UW_vishi_beam
+  real :: DW_nirlo_beam,DW_nirlo_diffuse
   real :: DW_vislo_beam, UW_vishi_diffuse
   integer, dimension(ncoh) :: pft
   real, dimension(ncoh+1) :: SW_abs_beam_flip,PAR_beam_flip
   real, dimension(ncoh+1) :: SW_abs_diffuse_flip,PAR_diffuse_flip
-  real(kind=8) :: alb,cosz,cosaoi,LAIm,rshort,rshortd,lambda,lambda_tot,LAI_reduction
-  real(kind=8) :: beam_backscatter,eta,zeta,raddiff,diffuse_band
+  real(kind=8) :: alb,cosz,cosaoi,LAIm,lambda,lambda_tot,LAI_reduction
+  real(kind=8) :: beam_backscatter,eta,zeta
   real(kind=8), dimension(n_pft) :: leaf_scatter
   real(kind=8) :: exk,exki,zetai
   real(kind=8) :: d,rhoo,sigma,source_bot,source_top
   real(kind=8), dimension(n_pft) :: diffuse_backscatter
-  real(kind=8) :: cumulative_lai
   
   real(kind=8), dimension(ncoh) :: LAI_in
   real(kind=8), dimension(ncoh) :: expkl_top,expkl_bot,expamk_top,expamk_bot
@@ -66,8 +66,8 @@ subroutine sw_twostream_clump(salb,   &
 
   ! Calculate factors common for NIR, PAR
   ncoh2 = 2*ncoh
-  lambda = 0.5/cosaoi
-  lambda_tot = 0.0
+  lambda = 0.5d0/cosaoi
+  lambda_tot = 0.0d0
   nfcoh = 0
   do il=1,ncoh
      nfcoh = nfcoh + 1
@@ -75,9 +75,9 @@ subroutine sw_twostream_clump(salb,   &
      lambda_tot = lambda_tot + clumping_factor(ipft)
   enddo
   
-  lambda_tot = lambda_tot * lambda / float(nfcoh)
+  lambda_tot = lambda_tot * lambda / dble(nfcoh)
   LAI_reduction = dble(min(1.0,sLAIm))
-  beam_backscatter = (0.5 + cosz) * (1.0 - cosz*log(1.0+1.0/cosz))
+  beam_backscatter = (0.5d0 + cosz) * (1.0d0 - cosz*log(1.0d0+1.0d0/cosz))
  
   ! Loop over bands
   do iband = 1,2
@@ -110,13 +110,13 @@ subroutine sw_twostream_clump(salb,   &
      
      do il=1,ncoh
         ipft = pft(il)
-        eta = (1.0 - (1.0-diffuse_backscatter(ipft)) * leaf_scatter(ipft))  &
+        eta = (1.0d0 - (1.0d0-diffuse_backscatter(ipft)) * leaf_scatter(ipft))  &
              * clumping_factor(ipft)
         zeta = leaf_scatter(ipft) * diffuse_backscatter(ipft) *   &
              clumping_factor(ipft)
         exk = sqrt(eta**2 - zeta**2)
-        exki = 1.0/exk
-        zetai = 1.0/zeta
+        exki = 1.0d0/exk
+        zetai = 1.0d0/zeta
         ! sources
         source_bot = clumping_factor(ipft)*lambda*leaf_scatter(ipft)  &
              * beam_backscatter * beam_bot(il)
@@ -130,31 +130,31 @@ subroutine sw_twostream_clump(salb,   &
              * beam_bot(il)
         sigma = clumping_factor(ipft) * lambda
         ! calculate exponentials only once
-        expkl_bot(il)=1.0
+        expkl_bot(il)=1.0d0
         expkl_top(il)=exp(exk*LAI_in(il))
-        expamk_bot(il) = 1.0
+        expamk_bot(il) = 1.0d0
         expamk_top(il) = exp((sigma-exk)*LAI_in(il))
-        expapk_bot(il) = 1.0
+        expapk_bot(il) = 1.0d0
         expapk_top(il) = exp((sigma+exk)*LAI_in(il))
         A_bot(il) = -source_bot*zetai
         A_top(il) = -source_top*zetai &
-             +0.5*zetai*(eta*exki-1.0)*expkl_top(il)*rhoo/(sigma-exk) &
+             +0.5d0*zetai*(eta*exki-1.0d0)*expkl_top(il)*rhoo/(sigma-exk) &
              *(expamk_top(il)-expamk_bot(il))  &
-             -0.5*zetai*(eta*exki+1.0)/expkl_top(il)*rhoo/(sigma+exk) &
+             -0.5d0*zetai*(eta*exki+1.0d0)/expkl_top(il)*rhoo/(sigma+exk) &
              *(expapk_top(il)-expapk_bot(il))
-        B_bot(il) = 0.5*zetai*(eta*exki-1.0)
-        B_top(il) = 0.5*zetai*(eta*exki-1.0)*expkl_top(il)
-        C_bot(il) = -0.5*zetai*(eta*exki+1.0)
-        C_top(il) = -0.5*zetai*(eta*exki+1.0)/expkl_top(il)
-        F_bot(il) = 0.0
-        F_top(il) = 0.5*exki*expkl_top(il)*rhoo/(sigma-exk)  &
+        B_bot(il) = 0.5d0*zetai*(eta*exki-1.0d0)
+        B_top(il) = 0.5d0*zetai*(eta*exki-1.0d0)*expkl_top(il)
+        C_bot(il) = -0.5d0*zetai*(eta*exki+1.0d0)
+        C_top(il) = -0.5d0*zetai*(eta*exki+1.0d0)/expkl_top(il)
+        F_bot(il) = 0.0d0
+        F_top(il) = 0.5d0*exki*expkl_top(il)*rhoo/(sigma-exk)  &
              *(expamk_top(il)-expamk_bot(il))  &
-             -0.5*exki/expkl_top(il)*rhoo/(sigma+exk)  &
+             -0.5d0*exki/expkl_top(il)*rhoo/(sigma+exk)  &
              *(expapk_top(il)-expapk_bot(il))
-        G_bot(il) = 0.5*exki
-        G_top(il) = 0.5*exki*expkl_top(il)
-        H_bot(il) = -0.5*exki
-        H_top(il) = -0.5*exki/expkl_top(il)
+        G_bot(il) = 0.5d0*exki
+        G_top(il) = 0.5d0*exki*expkl_top(il)
+        H_bot(il) = -0.5d0*exki
+        H_top(il) = -0.5d0*exki/expkl_top(il)
      enddo
 
      
@@ -162,57 +162,57 @@ subroutine sw_twostream_clump(salb,   &
      
      do j=1,ncoh2
         do i=1,ncoh2
-           masmatcp(i,j)=0.0
+           masmatcp(i,j)=0.0d0
         enddo
-        mastervec_beam(j)=0.0
-        masveccp_beam(j)=0.0
-        mastervec_diffuse(j)=0.0
-        masveccp_diffuse(j)=0.0
+        mastervec_beam(j)=0.0d0
+        masveccp_beam(j)=0.0d0
+        mastervec_diffuse(j)=0.0d0
+        masveccp_diffuse(j)=0.0d0
      enddo
      
      masmatcp(1,1)=G_top(ncoh)
      masmatcp(1,2)=H_top(ncoh)
      mastervec_beam(1)=-F_top(ncoh)
-     mastervec_diffuse(1)=1.0
+     mastervec_diffuse(1)=1.0d0
      masveccp_beam(1)=mastervec_beam(1)
      masveccp_diffuse(1)=mastervec_diffuse(1)
 
      do i=2,ncoh2-2,2
-        masmatcp(i,i-1)=G_bot(nint((ncoh2-i+2)*0.5))
-        masmatcp(i,i)=H_bot(nint((ncoh2-i+2)*0.5))
-        masmatcp(i,i+1)=-G_top(nint((ncoh2-i)*0.5))
-        masmatcp(i,i+2)=-H_top(nint((ncoh2-i)*0.5))
-        mastervec_beam(i)=-F_bot(nint((ncoh2-i+2)*0.5))+F_top(nint((ncoh2-i)*0.5))
-        mastervec_diffuse(i)=0.0
+        masmatcp(i,i-1)=G_bot(nint(real(ncoh2-i+2)*0.5))
+        masmatcp(i,i)=H_bot(nint(real(ncoh2-i+2)*0.5))
+        masmatcp(i,i+1)=-G_top(nint(real(ncoh2-i)*0.5))
+        masmatcp(i,i+2)=-H_top(nint(real(ncoh2-i)*0.5))
+        mastervec_beam(i)=-F_bot(nint(real(ncoh2-i+2)*0.5))+F_top(nint(real(ncoh2-i)*0.5))
+        mastervec_diffuse(i)=0.0d0
         masveccp_beam(i)=mastervec_beam(i)
         masveccp_diffuse(i)=mastervec_diffuse(i)
      enddo
      do i=3,ncoh2-1,2
-        masmatcp(i,i-2)=B_bot(nint((ncoh2-i+3)*0.5))
-        masmatcp(i,i-1)=C_bot(nint((ncoh2-i+3)*0.5))
-        masmatcp(i,i)=-B_top(nint((ncoh2-i+1)*0.5))
-        masmatcp(i,i+1)=-C_top(nint((ncoh2-i+1)*0.5))
-        mastervec_beam(i)=-A_bot(nint((ncoh2-i+3)*0.5))+A_top(nint((ncoh2-i+1)*0.5))
+        masmatcp(i,i-2)=B_bot(nint(real(ncoh2-i+3)*0.5))
+        masmatcp(i,i-1)=C_bot(nint(real(ncoh2-i+3)*0.5))
+        masmatcp(i,i)=-B_top(nint(real(ncoh2-i+1)*0.5))
+        masmatcp(i,i+1)=-C_top(nint(real(ncoh2-i+1)*0.5))
+        mastervec_beam(i)=-A_bot(nint(real(ncoh2-i+3)*0.5))+A_top(nint(real(ncoh2-i+1)*0.5))
         masveccp_beam(i)=mastervec_beam(i)
-        mastervec_diffuse(i)=0.0
+        mastervec_diffuse(i)=0.0d0
         masveccp_diffuse(i)=mastervec_diffuse(i)
      enddo
      masmatcp(ncoh2,ncoh2-1)=B_bot(1)-alb*G_bot(1)
      masmatcp(ncoh2,ncoh2)=C_bot(1)-alb*H_bot(1)
      mastervec_beam(ncoh2)= -A_bot(1)+alb*beam_bot(1)
      masveccp_beam(ncoh2)= mastervec_beam(ncoh2)
-     mastervec_diffuse(ncoh2)= 0.0
+     mastervec_diffuse(ncoh2)= 0.0d0
      masveccp_diffuse(ncoh2)= mastervec_diffuse(ncoh2)
      
      ! Prep for inversion
      
-     mastermat(1,1)=0.
-     mastermat(1,2)=0.
+     mastermat(1,1)=0.d0
+     mastermat(1,2)=0.d0
      mastermat(1,3)=masmatcp(1,1)
      mastermat(1,4)=masmatcp(1,2)
-     mastermat(1,5)=0.
+     mastermat(1,5)=0.d0
      do i=2,ncoh2-2,2
-        mastermat(i,1)=0.
+        mastermat(i,1)=0.d0
         mastermat(i,2)=masmatcp(i,i-1)
         mastermat(i,3)=masmatcp(i,i)
         mastermat(i,4)=masmatcp(i,i+1)
@@ -223,13 +223,13 @@ subroutine sw_twostream_clump(salb,   &
         mastermat(i,2)=masmatcp(i,i-1)
         mastermat(i,3)=masmatcp(i,i)
         mastermat(i,4)=masmatcp(i,i+1)
-        mastermat(i,5)=0.
+        mastermat(i,5)=0.d0
      enddo
-     mastermat(ncoh2,1)=0.
+     mastermat(ncoh2,1)=0.d0
      mastermat(ncoh2,2)=masmatcp(ncoh2,ncoh2-1)
      mastermat(ncoh2,3)=masmatcp(ncoh2,ncoh2)
-     mastermat(ncoh2,4)=0.
-     mastermat(ncoh2,5)=0.
+     mastermat(ncoh2,4)=0.d0
+     mastermat(ncoh2,5)=0.d0
      
      ! Invert the matrix
      call bandec(mastermat,ncoh2,2,2,matal,indx,d)
@@ -245,14 +245,14 @@ subroutine sw_twostream_clump(salb,   &
 
      if(iband.eq.1)then
         do i=3,ncoh2-1,2
-           ind = nint((ncoh2-i+1)*0.5)+1
+           ind = nint(real(ncoh2-i+1)*0.5)+1
            upward_vis_beam(ind) = A_bot(ind) + B_bot(ind) *  &
                 mastervec_beam(i-2) + C_bot(ind) * mastervec_beam(i-1)
            upward_vis_diffuse(ind) = B_bot(ind) * mastervec_diffuse(i-2)   &
                 + C_bot(ind) * mastervec_diffuse(i-1)
         enddo
         do i=2,ncoh2-2,2
-           ind = nint((ncoh2-i)*0.5)+1
+           ind = nint(real(ncoh2-i)*0.5)+1
            downward_vis_beam(ind) = beam_bot(ind) + F_bot(ind)  &
                 + H_bot(ind) * mastervec_beam(i)  &
                 + G_bot(ind) * mastervec_beam(i-1)
@@ -263,8 +263,8 @@ subroutine sw_twostream_clump(salb,   &
              + C_top(ncoh) * mastervec_beam(2) + A_top(ncoh)
         upward_vis_diffuse(ncoh+1) = B_top(ncoh) * mastervec_diffuse(1)  &
              + C_top(ncoh) * mastervec_diffuse(2)
-        downward_vis_beam(ncoh+1) = 1.0
-        downward_vis_diffuse(ncoh+1) = 1.0
+        downward_vis_beam(ncoh+1) = 1.0d0
+        downward_vis_diffuse(ncoh+1) = 1.0d0
         downward_vis_beam(1) = G_bot(1) * mastervec_beam(ncoh2-1) +   &
              H_bot(1) * mastervec_beam(ncoh2) + F_bot(1) + beam_bot(1)
         downward_vis_diffuse(1) = G_bot(1) * mastervec_diffuse(ncoh2-1) +  &
@@ -273,14 +273,14 @@ subroutine sw_twostream_clump(salb,   &
         upward_vis_diffuse(1) = alb * downward_vis_diffuse(1)
      elseif(iband.eq.2)then
         do i=3,ncoh2-1,2
-           ind = nint((ncoh2-i+1)*0.5)+1
+           ind = nint(real(ncoh2-i+1)*0.5)+1
            upward_nir_beam(ind) = A_bot(ind) + B_bot(ind) *   &
                 mastervec_beam(i-2) + C_bot(ind) * mastervec_beam(i-1)
            upward_nir_diffuse(ind) = B_bot(ind) * mastervec_diffuse(i-2) +  &
                 C_bot(ind) * mastervec_diffuse(i-1)
         enddo
         do i=2,ncoh2-2,2
-           ind = nint((ncoh2-i)*0.5)+1
+           ind = nint(real(ncoh2-i)*0.5)+1
            downward_nir_beam(ind) = beam_bot(ind) + F_bot(ind) +   &
                 H_bot(ind) * mastervec_beam(i) + G_bot(ind) *   &
                 mastervec_beam(i-1)
@@ -291,8 +291,8 @@ subroutine sw_twostream_clump(salb,   &
              C_top(ncoh) * mastervec_beam(2) + A_top(ncoh)
         upward_nir_diffuse(ncoh+1) = B_top(ncoh) * mastervec_diffuse(1) +  &
              C_top(ncoh) * mastervec_diffuse(2)
-        downward_nir_beam(ncoh+1) = 1.0
-        downward_nir_diffuse(ncoh+1) = 1.0
+        downward_nir_beam(ncoh+1) = 1.0d0
+        downward_nir_diffuse(ncoh+1) = 1.0d0
         downward_nir_beam(1) = G_bot(1) * mastervec_beam(ncoh2-1) +  &
              H_bot(1) * mastervec_beam(ncoh2) + F_bot(1) + beam_bot(1)
         downward_nir_diffuse(1) = G_bot(1) * mastervec_diffuse(ncoh2-1) +  &
@@ -339,7 +339,7 @@ end subroutine sw_twostream_clump
 subroutine bandec(a,n,m1,m2,al,indx,d)
 implicit none
 
-real(kind=8), parameter :: tiny=1.0e-20
+real(kind=8), parameter :: tiny_offset=1.0d-20
 integer :: n,m1,m2
 real(kind=8), dimension(n,m1+m2+1) :: a
 real(kind=8), dimension(n,m1) :: al
@@ -358,10 +358,10 @@ do i=1,m1
    enddo
    l=l-1
    do j=mm-l,mm
-      a(i,j)=0.
+      a(i,j)=0.d0
    enddo
 enddo
-d=1.0
+d=1.0d0
 l=m1
 do k=1,n
    dum=a(k,1)
@@ -374,7 +374,7 @@ do k=1,n
       endif
    enddo
    indx(k)=i
-   if(dum.eq.0.0)a(k,1)=tiny
+   if(dum.eq.0.0d0)a(k,1)=tiny_offset
    if(i.ne.k)then
       d=-d
       do j=1,mm
@@ -389,7 +389,7 @@ do k=1,n
       do j=2,mm
          a(i,j-1)=a(i,j)-dum*a(k,j)
       enddo
-      a(i,mm)=0.0
+      a(i,mm)=0.0d0
    enddo
 enddo
 return
@@ -540,39 +540,39 @@ subroutine lw_twostream(ncoh, semgs, sT_grnd, pft, LAI, T_veg,   &
   ncoh2 = 2*ncoh
 
   do il=1,ncoh
-     zeta=2.0*(1.0-emis_v(pft(il)))/(3.0*mubar)
-     eta=(2.0+emis_v(pft(il)))/(3.0*mubar)
+     zeta=2.0d0*(1.0d0-emis_v(pft(il)))/(3.0d0*mubar)
+     eta=(2.0d0+emis_v(pft(il)))/(3.0d0*mubar)
      exk=sqrt(eta**2-zeta**2)
-     exki=1.0/exk
-     zetai=1.0/zeta
-     source(il) = emis_v(pft(il))*stefan*T_veg(il)**4
+     exki=1.0d0/exk
+     zetai=1.0d0/zeta
+     source(il) = emis_v(pft(il))*dble(stefan)*T_veg(il)**4
      forcing(il) = -(zeta+eta)*source(il)
      explai(il)=exp(exk*LAI(il))
      exmlai(il)=exp(-exk*LAI(il))
 
      ! coefficient of lambda1 (and minus the coefficient of lambda2) for the bottom of a layer, downwelling radiation.
-     A_dw(il) = 0.5 * exki
+     A_dw(il) = 0.5d0 * exki
 
      ! coefficient of lambda1, top of layer, downwelling radiation
-     B_dw(il) = 0.5*exki*explai(il)
+     B_dw(il) = 0.5d0*exki*explai(il)
 
      ! coefficient of lambda2, top of layer, downwelling radiation
-     C_dw(il) = -0.5*exki*exmlai(il)
+     C_dw(il) = -0.5d0*exki*exmlai(il)
 
      ! term of downwelling radiation not multiplying a lambda
-     D_dw(il) = 0.5*(exki**2)*forcing(il) * (explai(il) + exmlai(il) - 2.0)
+     D_dw(il) = 0.5d0*(exki**2)*forcing(il) * (explai(il) + exmlai(il) - 2.0d0)
 
-     A_uw(il) = 0.5*zetai*(eta*exki-1.0)
-     B_uw(il) = -0.5*zetai*(eta*exki+1.0)
+     A_uw(il) = 0.5d0*zetai*(eta*exki-1.0d0)
+     B_uw(il) = -0.5d0*zetai*(eta*exki+1.0d0)
      C_uw(il) =  -source(il)*zetai
      D_uw(il) = A_uw(il) * explai(il)
      E_uw(il) = B_uw(il) * exmlai(il)
      F_uw(il) = -source(il)*zetai  &
-          +0.5*zetai*(eta*exki-1.0)*explai(il)  &
-          *(forcing(il)*exki*(1.0           &
+          +0.5d0*zetai*(eta*exki-1.0d0)*explai(il)  &
+          *(forcing(il)*exki*(1.0d0           &
           -exmlai(il)))  &
-          -0.5*zetai*(eta*exki+1.0)*exmlai(il)  &
-          *(forcing(il)*exki*(explai(il)-1.0))
+          -0.5d0*zetai*(eta*exki+1.0d0)*exmlai(il)  &
+          *(forcing(il)*exki*(explai(il)-1.0d0))
   enddo
 
 !  print*,"ncoh:",ncoh
@@ -589,10 +589,10 @@ subroutine lw_twostream(ncoh, semgs, sT_grnd, pft, LAI, T_veg,   &
 
   do j=1,ncoh2
      do i=1,ncoh2
-        masmatcp(i,j)=0.0
+        masmatcp(i,j)=0.0d0
      enddo
-     mastervec_surf(j)=0.0
-     mastervec_incid(j)=0.0
+     mastervec_surf(j)=0.0d0
+     mastervec_incid(j)=0.0d0
   enddo
 
   ! Vector is of the form: (lambda_N, lambda_{N-1},...,lambda_1)
@@ -600,38 +600,38 @@ subroutine lw_twostream(ncoh, semgs, sT_grnd, pft, LAI, T_veg,   &
   masmatcp(1,1)=B_dw(ncoh)
   masmatcp(1,2)=C_dw(ncoh)
   mastervec_surf(1)=-D_dw(ncoh)
-  mastervec_incid(1)=1.0
+  mastervec_incid(1)=1.0d0
 
   do i=2,ncoh2-2,2
-     ind = nint((ncoh2-i)*0.5)
+     ind = nint(real(ncoh2-i)*0.5)
      masmatcp(i,i-1)=-A_dw(ind+1)
      masmatcp(i,i)=A_dw(ind+1)
      masmatcp(i,i+1)=B_dw(ind)
      masmatcp(i,i+2)=C_dw(ind)
      mastervec_surf(i)=-D_dw(ind)
-     mastervec_incid(i)=0.0
+     mastervec_incid(i)=0.0d0
   enddo
   do i=3,ncoh2-1,2
-     ind = nint((ncoh2-i+1)*0.5)
+     ind = nint(real(ncoh2-i+1)*0.5)
      masmatcp(i,i-2)=-A_uw(ind+1)
      masmatcp(i,i-1)=-B_uw(ind+1)
      masmatcp(i,i)=D_uw(ind)
      masmatcp(i,i+1)=E_uw(ind)
      mastervec_surf(i)=C_uw(ind+1)-F_uw(ind)
-     mastervec_incid(i)=0.0
+     mastervec_incid(i)=0.0d0
   enddo
-  masmatcp(ncoh2,ncoh2-1)=A_uw(1)-(1.0-emgs)*A_dw(1)
-  masmatcp(ncoh2,ncoh2)=B_uw(1)+(1.0-emgs)*A_dw(1)
-  mastervec_surf(ncoh2)=emgs*stefan*T_grnd**4 - C_uw(1)
-  mastervec_incid(ncoh2)=0.0
+  masmatcp(ncoh2,ncoh2-1)=A_uw(1)-(1.0d0-emgs)*A_dw(1)
+  masmatcp(ncoh2,ncoh2)=B_uw(1)+(1.0d0-emgs)*A_dw(1)
+  mastervec_surf(ncoh2)=emgs*dble(stefan)*T_grnd**4 - C_uw(1)
+  mastervec_incid(ncoh2)=0.0d0
 
-  mastermat(1,1)=0.
-  mastermat(1,2)=0.
+  mastermat(1,1)=0.d0
+  mastermat(1,2)=0.d0
   mastermat(1,3)=masmatcp(1,1)
   mastermat(1,4)=masmatcp(1,2)
-  mastermat(1,5)=0.
+  mastermat(1,5)=0.d0
   do i=2,ncoh2-2,2
-     mastermat(i,1)=0.
+     mastermat(i,1)=0.d0
      mastermat(i,2)=masmatcp(i,i-1)
      mastermat(i,3)=masmatcp(i,i)
      mastermat(i,4)=masmatcp(i,i+1)
@@ -642,13 +642,13 @@ subroutine lw_twostream(ncoh, semgs, sT_grnd, pft, LAI, T_veg,   &
      mastermat(i,2)=masmatcp(i,i-1)
      mastermat(i,3)=masmatcp(i,i)
      mastermat(i,4)=masmatcp(i,i+1)
-     mastermat(i,5)=0.
+     mastermat(i,5)=0.d0
   enddo
-  mastermat(ncoh2,1)=0.
+  mastermat(ncoh2,1)=0.d0
   mastermat(ncoh2,2)=masmatcp(ncoh2,ncoh2-1)
   mastermat(ncoh2,3)=masmatcp(ncoh2,ncoh2)
-  mastermat(ncoh2,4)=0.
-  mastermat(ncoh2,5)=0.
+  mastermat(ncoh2,4)=0.d0
+  mastermat(ncoh2,5)=0.d0
   
   ! Invert matrix
   call bandec(mastermat,ncoh2,2,2,matal,indx,d)
@@ -660,14 +660,14 @@ subroutine lw_twostream(ncoh, semgs, sT_grnd, pft, LAI, T_veg,   &
   call banbks(mastermat,ncoh2,2,2,matal,indx,mastervec_incid)
 
   do i=3,ncoh2-1,2
-     ind = nint((ncoh2-i+1)*0.5)
+     ind = nint(real(ncoh2-i+1)*0.5)
      UW_surf(ind+1)=masmatcp(i,i)*mastervec_surf(i)   &
           +masmatcp(i,i+1)*mastervec_surf(i+1)+F_uw(ind)
      UW_incid(ind+1)=masmatcp(i,i)*mastervec_incid(i)   &
           +masmatcp(i,i+1)*mastervec_incid(i+1)
   enddo
   do i=2,ncoh2-2,2
-     ind = nint((ncoh2-i)*0.5)
+     ind = nint(real(ncoh2-i)*0.5)
      DW_surf(ind+1)=masmatcp(i,i+1)*mastervec_surf(i+1)   &
           +masmatcp(i,i+2)*mastervec_surf(i+2)+D_dw(ind)
      DW_incid(ind+1)=masmatcp(i,i+1)*mastervec_incid(i+1)   &
@@ -677,12 +677,12 @@ subroutine lw_twostream(ncoh, semgs, sT_grnd, pft, LAI, T_veg,   &
   UW_surf(ncoh+1)=D_uw(ncoh)*mastervec_surf(1)+E_uw(ncoh)*mastervec_surf(2)  &
        + F_uw(ncoh)
   UW_incid(ncoh+1)=D_uw(ncoh)*mastervec_incid(1)+E_uw(ncoh)*mastervec_incid(2)
-  DW_surf(ncoh+1)=0.0
-  DW_incid(ncoh+1)=1.0
+  DW_surf(ncoh+1)=0.0d0
+  DW_incid(ncoh+1)=1.0d0
   DW_surf(1)=A_dw(1)*(mastervec_surf(ncoh2-1)-mastervec_surf(ncoh2))
   DW_incid(1)=A_dw(1)*(mastervec_incid(ncoh2-1)-mastervec_incid(ncoh2))
-  UW_surf(1)=(1.0-emgs)*DW_surf(1)+emgs*stefan*T_grnd**4
-  UW_incid(1)=(1.0-emgs)*DW_incid(1)
+  UW_surf(1)=(1.0d0-emgs)*DW_surf(1)+emgs*dble(stefan)*T_grnd**4
+  UW_incid(1)=(1.0d0-emgs)*DW_incid(1)
 
   do il = 1,ncoh
      lw_v_surf(il) = sngl(DW_surf(il+1) - DW_surf(il) + UW_surf(il) -   &
@@ -716,7 +716,7 @@ subroutine sw_beers_law(ncoh,rshort,SW_abs_flip,PAR_flip,DW_vislo,DW_nirlo  &
   UW_vishi = 0.0
   UW_nirhi = 0.0
 
-  beam = 1.0 * rshort
+  beam = rshort
   downward(ncoh+1) = beam
   do il=ncoh,1,-1
      downward(il) = downward(il+1)*exp(-0.5*lai_in(il))
@@ -751,7 +751,7 @@ subroutine sw_beers_law_crown(ncoh,rshort,SW_abs_flip,PAR_flip,DW_vislo,DW_nirlo
   beam = 1.0 * rshort
   downward(ncoh+1) = beam
   do il=ncoh,1,-1
-     downward(il) = downward(il+1)*(1-CA(il)*(1-exp(-0.5*clumping_factor(pft(il))*lai_in(il)/CA(il))))
+     downward(il) = downward(il+1)*(1.0-CA(il)*real(1.0d0-exp(-0.5d0*clumping_factor(pft(il))*dble(lai_in(il)/CA(il)))))
      SW_abs_flip(il) = downward(il+1) - downward(il)
      PAR_flip(il) = visible_fraction * SW_abs_flip(il)
   enddo

@@ -106,9 +106,9 @@ contains
     integer(4),intent(in)        :: i
     character(256)               :: string
     integer(4)                   :: ibase
-    real(8)                      :: rbase=10
+    real(8)                      :: rbase=10_8
     integer(4)                   :: ibasemax=10
-    integer(4)                   :: j,ifl
+    integer(4)                   :: ifl
     real(8)                      :: rbj
     real(8)                      :: iact
     integer(4)                   :: iwrite
@@ -120,7 +120,7 @@ contains
     tzero=.true.
     
     !checks
-    if(i.gt.rbase**(ibasemax-1)) then
+    if(dble(i).gt.rbase**(ibasemax-1)) then
        print*, 'ERROR STOP IN INTEGER TO STRING'
        print*, 'YOUR INTEGER NUMBER IS LARGER THAN IMPLEMENTED'
     end if
@@ -961,6 +961,8 @@ subroutine libxml2f90_readin_file(nfil,ll_id)
   filelines=0
   if(allocated(readstring)) deallocate(readstring)
   allocate(readstring(arraystep))
+  deallocate(readstring)
+  allocate(readstring(arraystep))
   if(allocated(lineposa)) deallocate(lineposa)
   allocate(lineposa(arraystep))
   lineposa(:)=0
@@ -1025,7 +1027,7 @@ subroutine libxml2f90_readin_file(nfil,ll_id)
 
         !ensure that readstring is large enough
         if(nwrite+is.gt.ubound(readstring,1)) then
-           allocate(tempstringa(ubound(readstring,1)))
+            allocate(tempstringa(ubound(readstring,1)))
            tempstringa(:)=readstring(:)
            deallocate(readstring)
            allocate(readstring(ubound(tempstringa,1)+arraystep))
@@ -1117,21 +1119,21 @@ subroutine libxml2f90_readin_file(nfil,ll_id)
      
      if(eos.eq.-1) exit 
   end do
-  
+
   !cut the unneeded rest
   allocate(tempstringa(nwrite-2))!-2 because we have a blank at the end
-  tempstringa(:)=readstring(:)
+!  tempstringa(:)=readstring(:)
+  tempstringa(1:(nwrite-2))=readstring(1:(nwrite-2))
   deallocate(readstring)
   allocate(readstring(ubound(tempstringa,1)))
   readstring(:)=tempstringa(:)
   deallocate(tempstringa)
   
-  if(ttransform_paw) call libxml2f90_transform_paw()
-  
-  call libxml2f90__set_default_ll_id(ll_id)
 
+  if(ttransform_paw) call libxml2f90_transform_paw()
+  call libxml2f90__set_default_ll_id(ll_id)
   call libxml2f90_parse_file()
-  
+
 end subroutine libxml2f90_readin_file
 
 
@@ -1234,7 +1236,7 @@ subroutine libxml2f90_parse_file()
   tsh=.false.
   tflex=.false.
 
-!print*,readstring
+
   !init the linklist (don't forget to set the default_llid first)
   call libxml2f90_ll_add_list(default_llid)
   pcl=0

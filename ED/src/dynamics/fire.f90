@@ -5,6 +5,7 @@ subroutine fire_frequency_ar(month, cgrid)
   use grid_coms, only: nzg
   use soil_coms, only: dslz
   use disturb_coms, only: fire_dryness_threshold, fire_parameter
+  use allometry, only: ed_biomass
 
   implicit none
 
@@ -18,7 +19,6 @@ subroutine fire_frequency_ar(month, cgrid)
   real :: babove
   real :: patch_water_depth
   integer :: k
-  real, external :: ed_biomass
   real :: fuel
 
   ! Loop over polygons and sites.
@@ -54,8 +54,8 @@ subroutine fire_frequency_ar(month, cgrid)
            patch_water_depth = sum(csite%sfcwater_depth(1:csite%nlev_sfcwater(ipa),ipa)) *  &
                 0.001
            do k = cpoly%lsl(isi), nzg
-              patch_water_depth = patch_water_depth + csite%soil_water(k,ipa) *   &
-                   dslz(k)
+              patch_water_depth = patch_water_depth + real(csite%soil_water(k,ipa) *   &
+                   dble(dslz(k)))
            enddo
            
            ! calculate patch contribution to the ignition rate

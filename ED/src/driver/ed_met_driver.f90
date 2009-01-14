@@ -3,7 +3,7 @@ subroutine read_met_driver_head()
   use met_driver_coms, only: nformats, met_names, met_nlon,   &
        met_nlat, met_dx, met_dy, met_xmin, met_ymin, met_nv,   &
        met_vars, met_frq, met_interp, ed_met_driver_db, no_ll
-  implicit none
+  implicit none  
   logical :: l1
   logical :: yes_lat     ! Logical for determining if latitude grids are present
   logical :: yes_lon     ! Logical for determining if longitude grids are present
@@ -23,7 +23,6 @@ subroutine read_met_driver_head()
 
   ! Read the number of different file formats
   read(unit=12,fmt=*) nformats
-
   ! Allocate the header information for each format
   allocate(met_names(nformats))
   allocate(met_nlon(nformats))
@@ -89,6 +88,7 @@ subroutine init_met_drivers_array
        met_vars, met_frq, met_interp, ed_met_driver_db,no_ll,have_co2
   use ed_state_vars,only : edgrid_g,edtype,polygontype
   use grid_coms,only:ngrids
+  use consts_coms, only: day_sec
 
   implicit none
 
@@ -97,9 +97,8 @@ subroutine init_met_drivers_array
 
   integer :: ipy,igr
   integer :: iformat
-  integer :: iv,n
+  integer :: iv
   integer :: mem_size
-  logical :: l1
 
   ! Set the lapse rates
   
@@ -123,9 +122,9 @@ subroutine init_met_drivers_array
            if( no_ll .and. &
                 (cgrid%lon(ipy) < (met_xmin(iformat) - 0.5 * met_dx(iformat)) .or.  &
                 cgrid%lat(ipy) < (met_ymin(iformat) - 0.5 * met_dy(iformat)) .or.  &
-                cgrid%lon(ipy) > (met_xmin(iformat) + (met_nlon(iformat)-1) *  &
+                cgrid%lon(ipy) > (met_xmin(iformat) + real(met_nlon(iformat)-1) *  &
                 met_dx(iformat) + 0.5 * met_dx(iformat)) .or.  &
-                cgrid%lat(ipy) > (met_ymin(iformat) + (met_nlat(iformat)-1) *  &
+                cgrid%lat(ipy) > (met_ymin(iformat) + real(met_nlat(iformat)-1) *  &
                 met_dy(iformat) + 0.5 * met_dy(iformat)) ))then
               print*
               print*,'========================================================'
@@ -134,11 +133,12 @@ subroutine init_met_drivers_array
               print*,iformat,trim(met_names(iformat))
               print*,cgrid%lon(ipy), met_xmin(iformat) - 0.5 * met_dx(iformat)
               print*,cgrid%lat(ipy), met_ymin(iformat) - 0.5 * met_dy(iformat)
-              print*,cgrid%lon(ipy), met_xmin(iformat) + (met_nlon(iformat)-1) *  &
+              print*,cgrid%lon(ipy), met_xmin(iformat) + real(met_nlon(iformat)-1) *  &
                    met_dx(iformat) + 0.5 * met_dx(iformat)
-              print*,cgrid%lat(ipy), met_ymin(iformat) + (met_nlat(iformat)-1) *  &
+              print*,cgrid%lat(ipy), met_ymin(iformat) + real(met_nlat(iformat)-1) *  &
                    met_dy(iformat) + 0.5 * met_dy(iformat)
-              stop
+              call fatal_error('Site is outside the domain of the meteorological drivers' &
+                              ,'init_met_drivers_array','ed_met_driver.f90')
            endif
            
            ! Allocate memory
@@ -154,7 +154,7 @@ subroutine init_met_drivers_array
                  !  Variable - type 0,1,3
               else
                  ! Calculate number of points in a month
-                 mem_size = nint(86400.0 / met_frq(iformat,iv)) * 31
+                 mem_size = nint(day_sec / met_frq(iformat,iv)) * 31
               endif
               
               ! If this is an interpolated variable, read two months in.
@@ -247,13 +247,13 @@ subroutine read_met_drivers_init_array
   use mem_sites, only: grid_type
   use misc_coms, only: current_time
   use grid_coms,only: ngrids
+  use consts_coms, only: day_sec
 
   implicit none
 
-  type(polygontype), pointer :: cpoly
   type(edtype), pointer      :: cgrid
 
-  integer :: igr,ipy,isi
+  integer :: igr
   integer :: year_use
   integer :: ncyc
   integer :: iformat
@@ -267,7 +267,6 @@ subroutine read_met_drivers_init_array
   integer :: y2
   integer :: year_use_2
   logical,external :: isleap
-  integer :: nday
 
   ! If we need to recycle over years, find the appropriate year to apply.
   year_use = current_time%year
@@ -287,7 +286,7 @@ subroutine read_met_drivers_init_array
   do igr = 1,ngrids
 
      cgrid => edgrid_g(igr)
-     
+
      ! Loop over the different file formats
      do iformat = 1, nformats
         
@@ -298,8 +297,8 @@ subroutine read_met_drivers_init_array
         if(exans)then
            call shdf5_open_f(trim(infile),'R')
         else
-           print*,'Cannot open met driver input file',trim(infile)
-           stop
+           call fatal_error('Cannot open met driver input file '//trim(infile)//'!' &
+                           ,'read_met_drivers_init_array','ed_met_driver.f90')
         endif
         
         ! The following subroutine determines grid indices
@@ -351,8 +350,8 @@ subroutine read_met_drivers_init_array
         if(exans)then
            call shdf5_open_f(trim(infile),'R')
         else
-           print*,'Cannot open met driver input file',trim(infile)
-           stop
+           call fatal_error('Cannot open met driver input file '//trim(infile)//'!' &
+                           ,'read_met_drivers_init_array','ed_met_driver.f90')
         endif
         
         ! Loop over variables
@@ -360,7 +359,7 @@ subroutine read_met_drivers_init_array
            
            if(met_interp(iformat,iv) == 1)then
 
-              offset = nint(86400.0 / met_frq(iformat,iv)) * 31
+              offset = nint(day_sec / met_frq(iformat,iv)) * 31
 
               ! Read the file.
 
@@ -377,8 +376,6 @@ subroutine read_met_drivers_init_array
 
   enddo
   
-
-!  stop
 
   return
 end subroutine read_met_drivers_init_array
@@ -402,6 +399,7 @@ subroutine read_met_drivers_array
   use hdf5_utils, only: shdf5_open_f, shdf5_close_f
   use ed_state_vars,only:edtype,edgrid_g
   use grid_coms,only : ngrids
+  use consts_coms, only : day_sec
 
   implicit none
   type(edtype),pointer :: cgrid
@@ -418,7 +416,6 @@ subroutine read_met_drivers_array
   integer :: m2
   integer :: y2
   integer :: year_use_2
-  integer :: nday
   logical, external :: isleap
 
   ! If we need to recycle over years, find the appropriate year to apply.
@@ -450,8 +447,8 @@ subroutine read_met_drivers_array
         if(exans)then
            call shdf5_open_f(trim(infile),'R')
         else
-           print*,'Cannot open met driver input file',trim(infile)
-           stop
+           call fatal_error('Cannot open met driver input file '//trim(infile)//'!'&
+                           &,'read_met_drivers_array','ed_met_driver.f90')
         endif
         
         !  Get the mapping between the polygons and the gridded variables
@@ -514,8 +511,8 @@ subroutine read_met_drivers_array
         if(exans)then
            call shdf5_open_f(trim(infile),'R')
         else
-           print*,'Cannot open met driver input file',trim(infile)
-           stop
+           call fatal_error ('Cannot open met driver input file '//trim(infile)//'!' &
+                            ,'read_met_drivers_array','ed_met_driver.f90')
         endif
      
         ! Loop over variables
@@ -523,7 +520,7 @@ subroutine read_met_drivers_array
            
            if(met_interp(iformat,iv) == 1)then
 
-              offset = nint(86400.0 / met_frq(iformat,iv)) * 31
+              offset = nint(day_sec / met_frq(iformat,iv)) * 31
               call read_ol_file_ar(iformat, iv, year_use_2, mname(m2),  &
                    y2, offset,cgrid)
               
@@ -572,7 +569,6 @@ subroutine update_met_drivers_array(cgrid)
   real :: t2
   integer :: iformat
   integer :: iv
-  real    :: hillshade
   integer :: ipy,isi
   logical, external :: isleap
 
@@ -602,7 +598,7 @@ subroutine update_met_drivers_array(cgrid)
               ! If this is not an interpolation variable, just find the time
               ! point.
               ndays_elapsed = current_time%date - 1
-              nseconds_elapsed = nint(current_time%time) + ndays_elapsed * 86400
+              nseconds_elapsed = nint(current_time%time) + ndays_elapsed * nint(day_sec)
               mlo = int(float(nseconds_elapsed) / met_frq(iformat,iv)) + 1
               
            endif
@@ -693,7 +689,7 @@ subroutine update_met_drivers_array(cgrid)
            
            ! In this case, we need to interpolate.
            ndays_elapsed = current_time%date - 1
-           nseconds_elapsed = nint(current_time%time) + ndays_elapsed * day_sec
+           nseconds_elapsed = nint(current_time%time) + ndays_elapsed * nint(day_sec)
            
            ! First, get the number of points per day and per month.
            points_per_day = nint(day_sec/met_frq(iformat,iv))
@@ -719,7 +715,7 @@ subroutine update_met_drivers_array(cgrid)
            ! If this is not an interpolation variable, just find the time
            ! point.
            ndays_elapsed = current_time%date - 1
-           nseconds_elapsed = nint(current_time%time) + ndays_elapsed * day_sec
+           nseconds_elapsed = nint(current_time%time) + ndays_elapsed * nint(day_sec)
            mlo = int(float(nseconds_elapsed) / met_frq(iformat,iv)) + 1
            
            
@@ -728,7 +724,7 @@ subroutine update_met_drivers_array(cgrid)
            mhi = mlo + 1
            
            if(mhi > np)then
-              mhi = 1 + nint(86400.0 / met_frq(iformat,iv)) * 31
+              mhi = 1 + nint(day_sec / met_frq(iformat,iv)) * 31
            endif
            
            ! Get interpolation factors
@@ -867,6 +863,7 @@ subroutine update_met_drivers_array(cgrid)
         
         ! exner
         cpoly%met(isi)%exner = cp * (cpoly%met(isi)%prss / p00)**rocp
+
         ! solar radiation
         cpoly%met(isi)%rshort_diffuse = cpoly%met(isi)%par_diffuse +   &
              cpoly%met(isi)%nir_diffuse
@@ -928,7 +925,7 @@ subroutine read_ol_file_ar(iformat, iv, year_use, mname, year, offset, cgrid)
   character(len=3), intent(in) :: mname
   integer, intent(in) :: year
   integer, intent(in) :: offset
-  integer :: ipy,isi
+  integer :: ipy
   integer :: points_per_day
   integer :: nday,nday_dset
   integer :: np,ip,np_dset
@@ -940,9 +937,6 @@ subroutine read_ol_file_ar(iformat, iv, year_use, mname, year, offset, cgrid)
   integer :: ilon
   integer :: ilat
   logical, external :: isleap
-  integer :: hdferr
- 
-
 
   ! This subroutine reads in the meteorogolical data
   ! subroutine shdf5_irec_f uses HDF5 routines to extract the data from the archive
@@ -953,8 +947,6 @@ subroutine read_ol_file_ar(iformat, iv, year_use, mname, year, offset, cgrid)
   ! during leap years, and the number of days in February during the model year may not match
   ! that of the simulation year
 
-  
-  
   ! Geoposition variables do not apply
   if (met_vars(iformat,iv).eq.'lat' .or. met_vars(iformat,iv).eq.'lon') return
   
@@ -1061,7 +1053,8 @@ subroutine read_ol_file_ar(iformat, iv, year_use, mname, year, offset, cgrid)
         print*,"DOES NOT HAVE DIMENSIONS THAT MATCH THE"
         print*,"SPECIFIED INPUT, OR LAT/LON GRID"
         print*,ndims,np,met_nlon(iformat),met_nlat(iformat),idims
-        stop
+        call fatal_error('Mismatch between dataset and specified input' &
+                        ,'read_ol_file_ar','ed_met_driver.f90')
      endif
 
      call shdf5_irec_f(ndims, idims, trim(met_vars(iformat,iv)),  &
@@ -1080,8 +1073,11 @@ subroutine read_ol_file_ar(iformat, iv, year_use, mname, year, offset, cgrid)
         print*,"DATASET: ",trim(met_vars(iformat,iv))
         print*,"DOES NOT HAVE DIMENSIONS THAT MATCH THE"
         print*,"SPECIFIED INPUT, OR LAT/LON GRID"
-        print*,ndims,np_dset,met_nlon(iformat),met_nlat(iformat),idims
-        stop
+        print*,ndims
+        print*,np_dset,met_nlon(iformat),met_nlat(iformat)
+        print*,idims
+        call fatal_error('Mismatch between dataset and specified input' &
+                        ,'read_ol_file_ar','ed_met_driver.f90')
      endif
 
      if (np < np_dset) then     ! No interpolation is needed, but we
@@ -1211,6 +1207,7 @@ end subroutine read_ol_file_ar
 subroutine transfer_ol_month_ar(vname, frq, cgrid)
   
   use ed_state_vars,only : edtype
+  use consts_coms, only: day_sec
 
   implicit none
 
@@ -1220,7 +1217,7 @@ subroutine transfer_ol_month_ar(vname, frq, cgrid)
   integer :: mem_size
   integer :: ipy
 
-  mem_size = nint(86400.0 / frq) * 31
+  mem_size = nint(day_sec / frq) * 31
 
   do ipy = 1,cgrid%npolygons
 
@@ -1315,9 +1312,9 @@ subroutine match_poly_grid_array(cgrid,nlon,nlat,lon,lat)
               offlon = -1
            endif
 
-           if (lon(ilon,ilat)>180) lon(ilon,ilat) = lon(ilon,ilat) - 360.0
-           if (lon(ilon+offlon,ilat)>180) lon(ilon+offlon,ilat) = lon(ilon+offlon,ilat) - 360.0
-           if (lon(ilon,ilat+offlat)>180) lon(ilon,ilat+offlat) = lon(ilon,ilat+offlat) - 360.0
+           if (lon(ilon,ilat)>180.0) lon(ilon,ilat) = lon(ilon,ilat) - 360.0
+           if (lon(ilon+offlon,ilat)>180.0) lon(ilon+offlon,ilat) = lon(ilon+offlon,ilat) - 360.0
+           if (lon(ilon,ilat+offlat)>180.0) lon(ilon,ilat+offlat) = lon(ilon,ilat+offlat) - 360.0
 
            deltay = 0.50*abs( lat(ilon,ilat+offlat) - lat(ilon,ilat) )
            deltax = 0.50*abs( lon(ilon+offlon,ilat) - lon(ilon,ilat) )
@@ -1326,8 +1323,8 @@ subroutine match_poly_grid_array(cgrid,nlon,nlat,lon,lat)
                 abs(cgrid%lon(ipy) - lon(ilon,ilat)).lt.deltax  ) then
 
               if(located.eq.1) then
-                 print*,"OVERLAP PROBLEM"
-                 stop
+                 call fatal_error('OVERLAP PROBLEM','match_poly_grid_array' &
+                                 ,'ed_met_driver.f90')
               endif
               
               cgrid%ilon(ipy) = ilon
@@ -1348,7 +1345,8 @@ subroutine match_poly_grid_array(cgrid,nlon,nlat,lon,lat)
         print*,""
         print*,lon
 
-        stop
+        call fatal_error('Failed finding a corresponding grid space' &
+                        ,'match_poly_grid_array','ed_met_driver.f90')
      endif
      
   enddo
@@ -1385,8 +1383,6 @@ subroutine getll_array(cgrid,iformat)
   implicit none
   
   integer :: iformat
-  integer :: iv,i,j
-  logical :: yes_lat,yes_lon  
   integer :: ndims
   integer, dimension(3) :: idims
   type(edtype),target :: cgrid
@@ -1400,8 +1396,8 @@ subroutine getll_array(cgrid,iformat)
      call shdf5_info_f('lat',ndims,idims)
      
      if(ndims /= 2) then
-        print*,"NOT SET UP TO HAVE TIME VARYING LAT/LON"
-        stop
+        call fatal_error ('NOT SET UP TO HAVE TIME VARYING LAT/LON' &
+                         ,'getll_array','ed_met_driver.f90')
      endif
      
      !  Transfer the dimensions into the met_nlon array
@@ -1420,8 +1416,8 @@ subroutine getll_array(cgrid,iformat)
      call shdf5_info_f('lon',ndims,idims)
      
      if(ndims /= 2) then
-        print*,"NOT SET UP TO HAVE TIME VARYING LAT/LON"
-        stop
+        call fatal_error("NOT SET UP TO HAVE TIME VARYING LAT/LON" &
+                         ,'getll_array','ed_met_driver.f90')
      endif
      
      !  Allocate the latitude array
@@ -1489,7 +1485,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
         cpoly%met(isi)%nir_diffuse = cgrid%met(ipy)%nir_diffuse
         cpoly%met(isi)%nir_beam    = cgrid%met(ipy)%nir_beam
         cpoly%met(isi)%vels        = cgrid%met(ipy)%vels
-      
+
 !        if ( cpoly%met(isi)%rlong < rlong_min) then
 !           print*,"Problems with RLONG A"  
 !           print*,cpoly%met(isi)%rlong,cgrid%met(ipy)%rlong,rlong_min
@@ -1557,6 +1553,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
         
      enddo
   endif
+
   return
 end subroutine calc_met_lapse_ar
 !==========================================================================================!
@@ -1571,7 +1568,10 @@ subroutine MetDiagnostics(cpoly,ipy,isi)
   integer, intent(in) :: ipy
   integer, intent(in) :: isi
   type(polygontype),target :: cpoly
-  
+
+  logical, parameter :: fixRad = .true.
+
+
   if(cpoly%met(isi)%geoht .le. 0.)  then
      print*,cpoly%met(isi)%geoht
      call fatal_error('Problems with GEOHT','MetDiagnostics','ed_met_driver.f90')
@@ -1588,7 +1588,7 @@ subroutine MetDiagnostics(cpoly,ipy,isi)
      print*,cpoly%met(isi)%prss
      call fatal_error('Problems with prss','MetDiagnostics','ed_met_driver.f90')
   endif
-  if(cpoly%met(isi)%pcpg .lt. 0. .or. cpoly%met(isi)%pcpg .gt. 0.01)  then
+  if(cpoly%met(isi)%pcpg .lt. 0. .or. cpoly%met(isi)%pcpg .gt. 0.1)  then
      print*,cpoly%met(isi)%pcpg
      call fatal_error('Problems with precipitation','MetDiagnostics','ed_met_driver.f90')
   endif
@@ -1601,20 +1601,37 @@ subroutine MetDiagnostics(cpoly,ipy,isi)
      call fatal_error('Problems with LONGWAVE RADIATION','MetDiagnostics','ed_met_driver.f90')
   endif
   if(cpoly%met(isi)%par_diffuse .lt. 0. .or. cpoly%met(isi)%par_diffuse .gt. 1400.)  then
-     print*,cpoly%met(isi)%par_diffuse
-     call fatal_error('Problems with DIFFUSE PAR','MetDiagnostics','ed_met_driver.f90')
+     if(cpoly%met(isi)%par_diffuse .lt. 0. .and. fixRad) then
+        cpoly%met(isi)%par_diffuse = 0.0
+     else
+        print*,cpoly%met(isi)%par_diffuse
+        call fatal_error('Problems with DIFFUSE PAR','MetDiagnostics','ed_met_driver.f90')
+     endif
   endif
   if(cpoly%met(isi)%par_beam .lt. 0. .or. cpoly%met(isi)%par_beam .gt. 1400.)  then
-     print*,cpoly%met(isi)%par_beam
-     call fatal_error('Problems with DIRECT BEAM PAR','MetDiagnostics','ed_met_driver.f90')
+     if(cpoly%met(isi)%par_beam .lt. 0. .and. fixRad) then
+        cpoly%met(isi)%par_beam = 0.0
+     else
+        print*,cpoly%met(isi)%par_beam
+        call fatal_error('Problems with DIRECT BEAM PAR','MetDiagnostics','ed_met_driver.f90')
+     end if
   endif
   if(cpoly%met(isi)%nir_diffuse .lt. 0. .or. cpoly%met(isi)%nir_diffuse .gt. 1400.)  then
-     print*,cpoly%met(isi)%nir_diffuse
-     call fatal_error('Problems with DIFUSE NIR','MetDiagnostics','ed_met_driver.f90')
-  endif
+     if(cpoly%met(isi)%nir_diffuse .lt. 0. .and. fixRad) then
+        cpoly%met(isi)%nir_diffuse = 0.0
+     else
+        print*,cpoly%met(isi)%nir_diffuse
+        call fatal_error('Problems with DIFUSE NIR','MetDiagnostics','ed_met_driver.f90')
+     endif
+  end if
+
   if(cpoly%met(isi)%nir_beam .lt. 0. .or. cpoly%met(isi)%nir_beam .gt. 1400.)  then
-     print*,cpoly%met(isi)%nir_beam
-     call fatal_error('Problems with DIRECT BEAM NIR','MetDiagnostics','ed_met_driver.f90')
+     if(cpoly%met(isi)%nir_beam .lt. 0. .and. fixRad) then
+        cpoly%met(isi)%nir_beam = 0.0
+     else
+        print*,cpoly%met(isi)%nir_beam
+        call fatal_error('Problems with DIRECT BEAM NIR','MetDiagnostics','ed_met_driver.f90')
+     end if
   endif
   if(cpoly%met(isi)%vels .lt. 0.)  then
      print*,cpoly%met(isi)%vels
@@ -1636,8 +1653,6 @@ subroutine setLapseParms_ar(cgrid)
 
   implicit none
 
-  
-  integer :: init
   integer :: ipy
   type(edtype), target :: cgrid
 
@@ -1688,10 +1703,8 @@ subroutine int_met_avg(cgrid)
 
   type(edtype), target :: cgrid
   type(polygontype),pointer :: cpoly
-  type(sitetype),pointer :: csite
-  type(patchtype),pointer :: cpatch
 
-  integer :: ipy,isi,ipa,ico
+  integer :: ipy,isi
   real :: frqfasti,tfact
 
   frqfasti = 1.0 / frqfast

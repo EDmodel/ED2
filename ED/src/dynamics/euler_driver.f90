@@ -408,64 +408,16 @@ real, parameter :: bswp = -1.07e6, sswp = 7.42e-6 ! for soil water potential
 
 ! Local variables
 
-integer :: k        ! loop index over soil layers
-integer :: nts      ! soil textural class for current soil layer
-
 real :: factv       ! for computing rasveg
 real :: aux         ! for computing rasveg
 real :: rasveg      ! full-veg value of rd [s/m]
 real :: wtveg       ! weighting of rasveg in computing rd
-real :: rasgnd      ! not used
-real :: c3          ! veg_sfc-to-can_air vapor density difference [kg_vap/m^3]
-real :: fracliqv    ! fraction of veg surface water in liquid phase
-real :: fthi        ! high-temp environ factor for stomatal resist
-real :: ftlo        ! low-temp environ factor for stomatal resist
-real :: frad        ! s/w radiative environ factor for stomatal resist
-real :: fswp        ! soil water potential environ factor for stomatal resist
-real :: fvpd        ! vap press deficit environ factor for stomatal resist
-real :: qwtot       ! total internal energy of veg plus new precip on veg [J/m^2]
-real :: esat_veg    ! saturation vapor pressure at veg temp [Pa]
-real :: veg_rhovs   ! saturation vapor density at veg temp [kg_vap/m^3]
-real :: veg_rhovsp  ! saturation vapor density gradient at veg temp [kg_vap/(K m^3)]
-real :: e_can       ! vapor pressure of canopy air [Pa]
-real :: e_leaf      ! vapor pressure at leaf surface [Pa]
-real :: vpd         ! vapor pressure deficit across stomata [Pa]
-real :: rc_inf      ! asymptotic stomatal resistance at current veg environment [s/m]
-real :: sigmaw      ! fractional coverage of leaf surface by veg_water
-real :: slai        ! effective veg lai uncovered by surface water (snowcover)
-real :: stai        ! effective veg tai uncovered by surface water (snowcover)
-real :: slpotv      ! soil water potential [m]
-real :: swp         ! soil water potential factor for stomatal control
-real :: tvegc       ! vegetation temperature (deg C)
-real :: tvegk       ! vegetation temperature (K)
-real :: wtroot      ! not used
 real :: zognd       ! soil roughness height [m]
 real :: zoveg       ! vegetation roughness height [m]
 real :: zdisp       ! vegetation displacement height remaining after snowcover [m]
 real :: zveg        ! vegetation height remaining after snowcover [m]
-real :: wxfer       ! (saturated soil or sfc water)-to-can_air vap xfer this step [kg_vap/m^2]
-real :: transp_test ! test value of transpiration flux [kg_vap/(m^2 s)]
-real :: rc          ! stomatal resistance [s/m]
-
 real :: canair
 real :: canhcap
-real :: f1
-real :: f2
-real :: f3
-real :: a1
-real :: a2
-real :: a3
-real :: a4
-real :: b1
-real :: b2
-real :: b3
-real :: b4
-real :: b5
-real :: b6
-real :: b7
-real :: b8
-real :: b9
-real :: evapotransp
 
 integer, intent(in) :: lsl
 
@@ -631,7 +583,6 @@ integer :: nlev_new  ! new number of sfcwater layers after adjustment
 real :: hxfergs   ! energy transfer from soil to sfcwater this step [J/m^2]
 real :: rfac      ! bounded sfcwater thermal resistivity at k=1 [K m^2/W]
 real :: snden     ! sfcwater density [kg/m^3]
-real :: vegfracc  ! 1 minus veg fractional area
 real :: wfree     ! free liquid in sfcwater layer that can percolate out [kg/m^2]
 real :: qwfree    ! energy carried by wfree [J/m^2]
 real :: dwfree    ! depth carried by wfree [m]
@@ -641,7 +592,6 @@ real :: wt        ! sfcwater(1) + soil(nzg) water masses (impl balance) [kg/m^2]
 real :: qwt       ! sfcwater(1) + soil(nzg) energies (impl balance) [J/m^2]
 real :: soilhcap  ! soil(nzg) heat capacity [J/(m^2 K)]
 real :: soilcap   ! capacity of top soil layer to accept surface water [kg/m^2]
-real :: sndenmin  ! minimum sfcwater density [kg/m^3]
 real :: wtnew     ! weight for new sfcwater layer when adjusting layer thickness
 real :: wtold     ! weight for old sfcwater layer when adjusting layer thickness
 real :: dwtold    ! change in wtold for partial mass transfer from old layer
@@ -677,7 +627,7 @@ data thick(1:10,10)/ .02, .03, .06, .13, .26, .26, .13, .06, .03, .02/
 ! Compute soil heat resistance times HALF layer depth (soil_rfactor).
 
 do k = lsl,nzg
-   waterfrac = soil_water(k) / soil(ntext_soil(k))%slmsts
+   waterfrac = real(soil_water(k)) / soil(ntext_soil(k))%slmsts
    soilcond =        soil(ntext_soil(k))%soilcond0  &
       + waterfrac * (soil(ntext_soil(k))%soilcond1  &
       + waterfrac *  soil(ntext_soil(k))%soilcond2  )
@@ -802,7 +752,7 @@ sfcwater_depth(nlev_sfcwater) = sfcwater_depth(nlev_sfcwater)  &
 
 ! First, prepare to sum sfcwater mass over all existing layers
 
-totsnow = 0
+totsnow = 0.0
 
 ! Loop downward through all existing sfcwater layers beginning with top layer
 
@@ -1224,8 +1174,6 @@ integer :: k     ! vertical index over soil layers
 integer :: nts   ! soil textural class
 
 real :: watermid ! soil water content midway between layers [vol_water/vol_tot]
-real :: availwat ! soil water available for transpiration
-real :: wg       ! for finding soil layer with max availwat
 real :: wloss    ! soil water loss from transpiration [vol_water/vol_tot]
 real :: qwloss   ! soil energy loss from transpiration [J/vol_tot]
 real, dimension(nzg) :: ed_transp

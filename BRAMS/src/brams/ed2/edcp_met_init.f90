@@ -327,6 +327,7 @@ end subroutine update_derived_props
 subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
   
   use ed_state_vars,only:sitetype,patchtype
+  use allometry, only: ed_biomass
 
   implicit none
   integer         , intent(in) :: ipa
@@ -340,7 +341,6 @@ subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
   real            , external   :: compute_water_storage_ar
   real            , external   :: compute_energy_storage_ar
   real            , external   :: compute_co2_storage_ar
-  real            , external   :: ed_biomass
 
   ! call derived patch-level structural quantities.  These depend
   ! on the results from reproduction, which in turn depends on 
@@ -415,7 +415,7 @@ end subroutine update_patch_derived_props_ar
 subroutine update_site_derived_props_ar(cpoly, census_flag, isi)
   
   use ed_state_vars,only: polygontype,sitetype,patchtype
-
+  use allometry, only: ed_biomass
   use rconstants,    only : pi1
   implicit none
   
@@ -425,7 +425,6 @@ subroutine update_site_derived_props_ar(cpoly, census_flag, isi)
   integer :: isi,ipa,ico
   real :: ba
   integer :: bdbh
-  real, external :: ed_biomass
   integer, intent(in) :: census_flag
 
   cpoly%basal_area(:,:,isi) = 0.0

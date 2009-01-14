@@ -5,7 +5,7 @@ subroutine read_site_file_array(cgrid)
    ! function for loading sites within polygons and initializing polygon parms
    ! call prior to loading pss/css files but after basic polygon established
   
-   use soil_coms, only: soil
+   use soil_coms, only: soil,slz
    use grid_coms, only: nzg
    use misc_coms, only: ied_init_mode,sfilin
    use mem_sites, only: edres
@@ -18,19 +18,18 @@ subroutine read_site_file_array(cgrid)
   
    type(edtype) :: cgrid
    type(polygontype),pointer :: cpoly
-   type(sitetype),pointer :: cs,head,new_site
 
-   character(len=200) :: dummy,cdummy,cdummy2
+   character(len=200) :: cdummy,cdummy2
    integer :: i,nsc,nsites=1
-   real(kind=8) :: area_sum = 0.0
+   real(kind=8) :: area_sum = 0.0d+0
    integer :: sc             ! soil classa
    integer :: fformat = 0    ! file format
    logical :: fexist         ! file exists
-   real :: Te,T0,K0,water_area = 0.0
+   real :: Te,T0,K0
+   real :: fa,fb,zmin=-2.0
    integer :: sitenum,get_site_line,get_mat_line,get_header,found_mat_header=0,lcount=0,mcount=0
    real :: area,TCI,elevation,slope,aspect
    integer,allocatable :: soilclass(:)
-   logical :: haveWater = .false.
    integer :: ipy,isi,k
    integer :: ierr
 
@@ -71,11 +70,21 @@ subroutine read_site_file_array(cgrid)
          do k=1,nzg
             cpoly%ntext_soil(k,1) = cgrid%ntext_soil(k,ipy)
          enddo
-         
+
          ! Set soil moisture decay function, based on second layer's K value
          ! use the second layer instead of the top in case top is organic/peat
          sc = cpoly%ntext_soil(nzg-1,1)
          cpoly%moist_f(1) = -log(soil(sc)%slcons / soil(sc)%slcons0) / 2.0
+
+         !! derive adjustments to f
+         zmin = slz(cpoly%lsl(1))
+         fa = -1.0/zmin !! should be 1/(depth to bedrock)
+         if(cpoly%moist_f(1)*zmin < 0.0) then
+            fb = cpoly%moist_f(1)/(1.0-exp(cpoly%moist_f(1)*zmin))
+            cpoly%moist_f(1) = max(fa,fb)
+         else
+            cpoly%moist_f(1) = fa
+         endif
 
          cpoly%sitenum(1)   = 1
          cpoly%elevation(1) = 0.0
@@ -92,7 +101,7 @@ subroutine read_site_file_array(cgrid)
          read(unit=12,fmt=*)cdummy,nsites,cdummy2,fformat
          !/*line format: "nsites <nsites> format <fformat>" */   
          
-         print*,"reading",nsites,"sites using file format",fformat
+!         print*,"reading",nsites,"sites using file format",fformat
 
          call allocate_polygontype(cpoly,nsites)
      
@@ -112,7 +121,7 @@ subroutine read_site_file_array(cgrid)
          allocate(soilclass(nzg))
          
          isi = 0
-         area_sum = 0
+         area_sum = 0.0d+0
          count_sites: do
 
             isi = isi + 1  ! The site counter
@@ -166,7 +175,7 @@ subroutine read_site_file_array(cgrid)
                
             end select
 
-            print*,"line indicators",get_site_line,get_mat_line,get_header
+!            print*,"line indicators",get_site_line,get_mat_line,get_header
     
             if(get_site_line == 1)then   !/********** READ SITE LINE ***************/
                
@@ -174,7 +183,7 @@ subroutine read_site_file_array(cgrid)
                read(unit=12,fmt=*,iostat=ierr)sitenum,area,TCI,elevation,slope,aspect,soilclass(1:nsc)
                if(ierr == 0) then
                   !/*create data object for each new site */
-                  print*,sitenum, area, TCI, elevation,slope,aspect,soilclass(1:nsc)
+!                  print*,sitenum, area, TCI, elevation,slope,aspect,soilclass(1:nsc)
                   
                   cpoly%lsl(isi)  = cgrid%lsl(ipy)  ! Initialize lowest soil layer
                   cpoly%area(isi) = area            ! Initialize the area to all
@@ -184,8 +193,7 @@ subroutine read_site_file_array(cgrid)
                      cpoly%ntext_soil(k,isi) = cgrid%ntext_soil(k,ipy)
                   enddo
 
-                  area_sum = area_sum + area
-
+                  area_sum = area_sum + dble(area)
                   cpoly%sitenum(isi)      = sitenum
                   cpoly%elevation(isi)    = area
                   cpoly%slope(isi)        = TCI+13.96962
@@ -201,11 +209,19 @@ subroutine read_site_file_array(cgrid)
                         cpoly%ntext_soil(i,isi) = soilclass(1)
                      end do
                   end if
-
                   !//Currently do nothing with setting site-level soils
+
                   sc = cpoly%ntext_soil(nzg-1,1)
                   cpoly%moist_f(isi) = -log(soil(sc)%slcons / soil(sc)%slcons0) / 2.0
-
+                  !! derive adjustments to f
+                  zmin = slz(cpoly%lsl(isi))
+                  fa = -1.0/zmin !! should be 1/(depth to bedrock)
+                  if(cpoly%moist_f(isi)*zmin < 0.0) then
+                     fb = cpoly%moist_f(isi)/(1.0-exp(cpoly%moist_f(isi)*zmin))
+                     cpoly%moist_f(isi) = max(fa,fb)
+                  else
+                     cpoly%moist_f(isi) = fa
+                  endif
                end if  ! end valid line
             end if        !//********** END READ SITE LINE**************
 
@@ -221,7 +237,6 @@ subroutine read_site_file_array(cgrid)
                mcount = mcount+1
                
             endif
-        
             if(ierr /= 0) exit count_sites
         
          end do count_sites
@@ -235,10 +250,9 @@ subroutine read_site_file_array(cgrid)
 
       !adjust areas
       !assume that if area_sum ~ 1 need to renormalize terrestrial
-      if( area_sum > 0.995) then
-         cpoly%area(:) = cpoly%area(:)/area_sum
+      if( area_sum > 0.995d+0) then
+         cpoly%area(:) = real(dble(cpoly%area(:))/area_sum)
       end if
-
 
       ! Mike, could you check this part out? 
       if(cgrid%load_adjacency(ipy) /= 0) then  !RGK
@@ -248,16 +262,16 @@ subroutine read_site_file_array(cgrid)
       ! calculate summary stats - pass 1: Te
       ! On terrestrial site still
       Te = 0.0 
-      area_sum = 0.0
+      area_sum = 0.0d+0
       do isi = 1,cpoly%nsites
          sc = cpoly%ntext_soil(nzg-1,isi)
          K0 = soil(sc)%slcons0
          T0 = K0/cpoly%moist_f(isi)
          Te = Te + T0*cpoly%area(isi)
-         area_sum = area_sum + cpoly%area(isi)
+         area_sum = area_sum + dble(cpoly%area(isi))
       end do
 
-      Te = Te/area_sum
+      Te = Te/real(area_sum)
       cgrid%Te(ipy) = Te
 
       !pass 2: W, Wbar
@@ -269,7 +283,7 @@ subroutine read_site_file_array(cgrid)
          K0 = soil(sc)%slcons0
          T0 = K0/cpoly%moist_f(isi)
          cpoly%moist_W(isi) = cpoly%TCI(isi) + log(Te) - log(T0)
-         cgrid%wbar(ipy) = cgrid%wbar(ipy) + cpoly%moist_W(isi)*cpoly%area(isi)/area_sum
+         cgrid%wbar(ipy) = cgrid%wbar(ipy) + real(dble(cpoly%moist_W(isi))*dble(cpoly%area(isi))/area_sum)
       end do
 
       !call dump_ed(myPolygon)
@@ -292,7 +306,7 @@ subroutine calc_flow_routing(cgrid,ipy)
    use ed_state_vars, only: polygontype, edtype
    type(edtype), target :: cgrid ! Alias for current grid
    integer, intent(in) :: ipy    ! Current polygon Polygon ID
-   integer :: i,j,ihys,ines ! ihys -> current hydro site ID. ines-> next hydro site ID
+   integer :: i,ihys,ines ! ihys -> current hydro site ID. ines-> next hydro site ID
    type(polygontype),pointer :: cpoly ! Alias for current polygon
    real :: side = 10.0  !cell side length (m) used for calculating adjacency
    real(kind=8) :: row_sum
@@ -322,21 +336,21 @@ subroutine calc_flow_routing(cgrid,ipy)
    do i=1,nsites-1
       ihys=find_rank(i,nsites,hyrank)
       ines=find_rank(i+1,nsites,hyrank)
-      cgrid%site_adjacency(ihys,ihys,ipy) = 2*side*(side-1)*cpoly%area(ihys) &
-               + side/2*cpoly%area(ihys)/(cpoly%area(ihys)+cpoly%area(ines))
+      cgrid%site_adjacency(ihys,ihys,ipy) = 2.0*side*(side-1.0)*cpoly%area(ihys) &
+               + side/2.0*cpoly%area(ihys)/(cpoly%area(ihys)+cpoly%area(ines))
       cgrid%site_adjacency(ihys,ines,ipy) = side*cpoly%area(ines)/(cpoly%area(ihys)+cpoly%area(ihys))
    end do
    !Now find the adjacency for the last rank site:
    ihys=find_rank(nsites,nsites,hyrank)
    ines=find_rank(1,nsites,hyrank)
-   cgrid%site_adjacency(ihys,ihys,ipy) = 2*side*(side-1)*cpoly%area(ihys) &
-            + side/2*cpoly%area(ihys)/(cpoly%area(ihys)+cpoly%area(ines))
+   cgrid%site_adjacency(ihys,ihys,ipy) = 2.0*side*(side-1.0)*cpoly%area(ihys) &
+            + side/2.0*cpoly%area(ihys)/(cpoly%area(ihys)+cpoly%area(ines))
    cgrid%site_adjacency(ihys,ines,ipy) = side*cpoly%area(ines)/(cpoly%area(ihys)+cpoly%area(ihys))
 
    !normalize routing (rows sum to 1)  
    do ihys=1,nsites
-      row_sum=sum(cgrid%site_adjacency(ihys,:,ipy))
-      cgrid%site_adjacency(ihys,:,ipy)=cgrid%site_adjacency(ihys,:,ipy)/row_sum
+      row_sum=sum(dble(cgrid%site_adjacency(ihys,:,ipy)))
+      cgrid%site_adjacency(ihys,:,ipy)=real(dble(cgrid%site_adjacency(ihys,:,ipy))/row_sum)
    end do
 
    !check routing

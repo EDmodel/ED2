@@ -20,7 +20,6 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
    type(patchtype)   , pointer :: cpatch
    integer                     :: ipy,isi,ipa,ico
    real                        :: frqsum,dtlsm,tfact,frqsumi
-   real                        :: gpp_sum
    integer                     :: k
 
    !-------------------------------------------------------------------------!
@@ -256,7 +255,7 @@ subroutine integrate_ed_daily_output_state(cgrid)
    type(polygontype) , pointer :: cpoly
    type(sitetype)    , pointer :: csite
    type(patchtype)   , pointer :: cpatch
-   integer                     :: ipy, isi, ipa, ico, k,lu,dbh
+   integer                     :: ipy, isi, ipa
    real                        :: poly_area_i,site_area_i, patch_lai_i
    real                        :: forest_site,forest_site_i, forest_poly
    ! These are auxiliary variables for averaging sitetype variables
@@ -265,8 +264,6 @@ subroutine integrate_ed_daily_output_state(cgrid)
    ! These are auxiliary variables for averaging patchtype variables
    !----------------------------------------------------------------------------------------
    real :: patchsum_fsn, patchsum_fsw
-   real, dimension(n_dbh)        :: patchsum_gpp_dbh
-
          
    polyloop: do ipy=1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
@@ -349,10 +346,10 @@ subroutine integrate_ed_daily_output_flux(cgrid)
    type(polygontype) , pointer :: cpoly
    type(sitetype)    , pointer :: csite
    type(patchtype)   , pointer :: cpatch
-   integer                     :: ipy, isi, ipa, ico, k,lu,dbh
+   integer                     :: ipy, isi, ipa, k,lu,dbh
    real                        :: poly_area_i,site_area_i
    real                        :: forest_site,forest_site_i, forest_poly
-   real, parameter             :: ddbh=1./(n_dbh-1)
+   real, parameter             :: ddbh=1./real(n_dbh-1)
    ! These are auxiliary variables for averaging sitetype variables
    !----------------------------------------------------------------------------------------
    real :: sitesum_leaf_resp, sitesum_root_resp 
@@ -497,8 +494,7 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
    type(sitetype)    , pointer :: csite
    type(patchtype)   , pointer :: cpatch
    
-   integer                  :: ipy,isi,ipa,ipft
-   real                     :: polygon_area_i, site_area_i
+   integer                  :: ipy,isi,ipa
    real, dimension(n_pft)   :: patchsum_lai
    
    polyloop: do ipy=1,cgrid%npolygons
@@ -734,9 +730,7 @@ subroutine zero_ed_daily_output_vars(cgrid)
    implicit none
    type(edtype)     , target  :: cgrid
    type(polygontype), pointer :: cpoly
-   type(sitetype)   , pointer :: csite
-   type(patchtype)  , pointer :: cpatch
-   integer                    :: ipy,isi,ipa,ico
+   integer                    :: ipy,isi
    
 
    do ipy = 1,cgrid%npolygons
@@ -920,7 +914,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       !                                                                                    !
       ! srnonm1 is the square root of 1 / (1 - 1/N)                                        !
       !------------------------------------------------------------------------------------!
-      srnonm1 = sqrt(1./(1-ndaysi))
+      srnonm1 = sqrt(1./(1.0-ndaysi))
       !------------------------------------------------------------------------------------!
       cgrid%stdev_gpp     (ipy) = srnonm1 * sqrt(cgrid%stdev_gpp     (ipy) * ndaysi - cgrid%mmean_gpp     (ipy) ** 2)
       cgrid%stdev_evap    (ipy) = srnonm1 * sqrt(cgrid%stdev_evap    (ipy) * ndaysi - cgrid%mmean_evap    (ipy) ** 2)
@@ -1016,6 +1010,7 @@ subroutine update_ed_yearly_vars_ar(cgrid)
    use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
    use max_dims, only: n_pft, n_dbh
    use consts_coms, only: pi1
+   use allometry, only: ed_biomass
   
    implicit none
 
@@ -1024,7 +1019,6 @@ subroutine update_ed_yearly_vars_ar(cgrid)
    type(sitetype),pointer    :: csite
    type(patchtype),pointer   :: cpatch
    integer :: ipy,isi,ipa,ico
-   real, external :: ed_biomass
 
    ! All agb's are in tC/ha/y; all basal areas are in m2/ha/y.
   

@@ -28,7 +28,7 @@ Module soil_coms
                                               ! integrator
 
   integer, dimension(maxgrds) :: isoilflg
-  integer, parameter :: pctlcon = 1.
+  integer, parameter :: pctlcon = 1
   integer, parameter :: nvgcon = 7 ! I don't think it is been used...
 
   real, parameter :: min_sfcwater_mass = 1.0e-10 ! minimum allowed mass

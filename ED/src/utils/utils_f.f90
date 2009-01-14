@@ -76,7 +76,7 @@ subroutine makefnam (fname,prefix,tinc,iyr,imn,idy,itm,type,post,fmt)
   character(len=40) :: dstring
 
   !   print*,iyr,imn,idy,itm,tinc
-  if(tinc == 0.) then
+  if(tinc == 0.d0) then
      oyr=iyr ; omn=imn ; ody=idy ; otm=itm
   else
      call date_add_to(iyr,imn,idy,itm,tinc,'s',oyr,omn,ody,otm)
@@ -119,8 +119,7 @@ subroutine parsefnam (fname,prefix,iyr,imn,idy,itm,type,post,fmt)
 
   integer, parameter :: ndash=5
   integer :: idash(ndash)
-  character(len=40) :: dstring
-  integer :: ib1,ib2,n,lch  !,ndash  !Declare two times
+  integer :: ib1,n,lch
 
   ib1=index(fname,'.',.true.)
   fmt=fname(ib1+1:ib1+3)
@@ -157,7 +156,7 @@ subroutine rams_f_open(iunit, filenm, formt, stat, act, iclob)
 
   integer :: iunit, iclob
   character(len=*) :: filenm, formt, stat, act
-  logical :: exans,opnd
+  logical :: exans
 
   inquire(FILE=filenm,EXIST=exans)
 

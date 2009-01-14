@@ -19,9 +19,11 @@ subroutine prescribed_leaf_state(lat, imonth, iyear, doy,   &
   integer, intent(in) :: doy
   real :: elongf
   real :: delay
+  real(kind=8) :: elonDen
   integer :: pft
   real, dimension(n_pft), intent(out) :: green_leaf_factor
   real, dimension(n_pft), intent(out) :: leaf_aging_factor
+  real, parameter :: elonMin = 0.02
   
   if( (lat >= 0.0 .and. imonth <= 7) .or.   & ! in northern hemisphere, 
        ! this assumes dropping between August 1 and December 31 and flushing
@@ -39,14 +41,19 @@ subroutine prescribed_leaf_state(lat, imonth, iyear, doy,   &
      else
         my_year = iyear - iphenys1 + 1
      endif
-     
-     ! calculate the factors
-     elongf = 1.0 / (1.0 +   &
-          (phen_pars%flush_a(my_year) * doy)**phen_pars%flush_b(my_year))
-     delay = elongf
 
-!     print*,phen_pars%flush_a(my_year),phen_pars%flush_b(my_year),elongf
-     
+!     print*,"phenA",phen_pars%flush_a(my_year),max(phen_pars%flush_b(my_year),-100.),doy
+
+     ! calculate the factors
+     ! precalc denominator and limit rate in order to increase numerical stability (MCD 10/23/08)
+     elonDen = real((phen_pars%flush_a(my_year) * real(doy)),kind=8)**dble(max(phen_pars%flush_b(my_year),-100.))
+     elonDen = 1.0d0 / (1.0d0 + elonDen)
+     if(elonDen < 0.0001d0) then
+        elongf = 0.0
+     else
+        elongf = sngl(elonDen)
+     end if
+     delay = elongf     
   else
      ! leaves turning color
      
@@ -59,16 +66,17 @@ subroutine prescribed_leaf_state(lat, imonth, iyear, doy,   &
      else
         my_year = iyear - iphenyf1 + 1
      endif
-     
+
      ! calculate the factors
      elongf = 1.0 / (1.0 +   &
-          (phen_pars%color_a(my_year) * doy)**phen_pars%color_b(my_year))
+          (phen_pars%color_a(my_year) * real(doy))**phen_pars%color_b(my_year))
      delay = 1.0 / (1.0 +   &
           (phen_pars%color_a(my_year) *   &
-          doy * 1.095)**phen_pars%color_b(my_year))
- !    print*,phen_pars%color_a(my_year),phen_pars%color_b(my_year),elongf,doy
+          real(doy) * 1.095)**phen_pars%color_b(my_year))
   endif
-  
+  !print*,"elongf",elongf
+  if(elongf < elonMin) elongf = 0.0
+
   ! load the values for each PFT
   do pft = 1, n_pft
      if(phenology(pft) == 2)then

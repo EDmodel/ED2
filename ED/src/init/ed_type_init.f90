@@ -4,6 +4,7 @@
 subroutine init_ed_cohort_vars_array(cpatch,ico, lsl)
   
   use ed_state_vars,only : patchtype
+  use allometry, only: calc_root_depth, assign_root_depth
 
   implicit none
 
@@ -11,8 +12,6 @@ subroutine init_ed_cohort_vars_array(cpatch,ico, lsl)
   integer :: ico
   real :: root_depth
   integer, intent(in) :: lsl
-  real, external :: calc_root_depth
-  integer, external :: assign_root_depth
 
   cpatch%mean_gpp(ico) = 0.0
   cpatch%mean_leaf_resp(ico) = 0.0
@@ -232,7 +231,6 @@ subroutine init_ed_site_vars_array(cpoly, lat)
   type(polygontype),target :: cpoly
   real, intent(in) :: lat
   integer, external :: julday
-  integer :: doy
 
   cpoly%basal_area(1:n_pft, 1:n_dbh,:) = 0.0
   cpoly%basal_area_growth(1:n_pft, 1:n_dbh,:) = 0.0
@@ -349,7 +347,7 @@ subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
   real, intent(in) :: rhos
   
   do k = 1, nzg
-     call qwtk8(csite%soil_energy(k,ipa), csite%soil_water(k,ipa)*1.e3,  &
+     call qwtk8(csite%soil_energy(k,ipa), csite%soil_water(k,ipa)*1.d3,  &
           soil(csite%ntext_soil(k,ipa))%slcpd, csite%soil_tempk(k,ipa), csite%soil_fracliq(k,ipa))
   enddo
 
@@ -375,12 +373,12 @@ subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
      cpatch%paw_avg10d(ico) = 0.0
      do k = cpatch%krdepth(ico), nzg - 1
         cpatch%paw_avg10d(ico) = cpatch%paw_avg10d(ico)                           &
-             + (csite%soil_water(k,ipa)-soil(csite%ntext_soil(k,ipa))%soilcp)     &
+             + real(csite%soil_water(k,ipa)-dble(soil(csite%ntext_soil(k,ipa))%soilcp))     &
              * (slz(k+1)-slz(k))/(soil(csite%ntext_soil(k,ipa))%slmsts            &
              - soil(csite%ntext_soil(k,ipa))%soilcp) 
      end do
-     cpatch%paw_avg10d(ico)= cpatch%paw_avg10d(ico) + (csite%soil_water(nzg,ipa)  &
-          -soil(csite%ntext_soil(nzg,ipa))%soilcp) &
+     cpatch%paw_avg10d(ico)= cpatch%paw_avg10d(ico) + real(csite%soil_water(nzg,ipa)  &
+          -dble(soil(csite%ntext_soil(nzg,ipa))%soilcp)) &
           *(-1.0*slz(nzg))              &
           /(soil(csite%ntext_soil(nzg,ipa))%slmsts &
           -soil(csite%ntext_soil(nzg,ipa))%soilcp) 

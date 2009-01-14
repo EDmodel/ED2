@@ -32,6 +32,7 @@ rm -fv dted.o                     dted.mod
 rm -fv eenviron.o                 eenviron.mod
 rm -fv emission_source_map.o      emission_source_map.mod
 rm -fv error_mess.o               error_mess.mod
+rm -fv events.o                   events.mod
 rm -fv extra.o                    extra.mod
 rm -fv file_inv.o                 file_inv.mod
 rm -fv filelist.o                 filelist.mod
