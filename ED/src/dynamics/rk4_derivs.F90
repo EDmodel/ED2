@@ -877,9 +877,10 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         ! temperature, because if that happens, we will innapropriately chnage the sign of
         ! the fluxes.
 
-        !! may not want this since it may prevent the rejection of a bad step -- MCD 01-2009
+        sat_temp = initp%can_temp
 
-        sat_temp = max( min(180.0,initp%can_temp),min(veg_temp,max(320.0,initp%can_temp)))
+        !! may not want this since it may prevent the rejection of a bad step -- MCD 01-2009
+        !        sat_temp = max( min(180.0,initp%can_temp),min(veg_temp,max(320.0,initp%can_temp)))
 
 
 	sat_shv=fast_svp(prss,sat_temp)
