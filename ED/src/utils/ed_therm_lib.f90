@@ -42,8 +42,8 @@ contains
      real :: leaf_carbon         ! leaf biomass per plant
      real :: structural_carbon   ! structural biomass per plant
      real :: nplants             ! Number of plants per square meter
-     real :: spec_hcap_leaf
-     real :: spec_hcap_stem
+!     real :: spec_hcap_leaf
+!     real :: spec_hcap_stem
      
 
      real,parameter :: biomass_factor = 1.00 ! This is a biomass kluge factor

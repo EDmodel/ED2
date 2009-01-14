@@ -26,8 +26,8 @@ subroutine leaf_database(ofn, nlandsea, iaction, lat, lon, idatp)
   real :: wlon1
   real :: rio_full
   real :: rjo_full
-  integer :: io_full
   integer :: jo_full
+  integer :: io_full
   integer :: ind
   integer, dimension(4*nlandsea) :: ptable
   integer, dimension(4*nlandsea) :: ictable,jctable
@@ -48,18 +48,8 @@ subroutine leaf_database(ofn, nlandsea, iaction, lat, lon, idatp)
   integer :: ndims
   integer, dimension(2) :: idims
   character(len=*), intent(in) :: iaction
-  integer :: io1
-  integer :: io2
-  integer :: jo1
-  integer :: jo2
-  real :: wio1
-  real :: wjo1
-  real :: wio2
-  real :: wjo2
-  integer :: io
-  integer :: jo
   integer :: i,j,i0,i1,j0,j1,ic,jc,dj,di
-  integer :: nt,alt
+  integer :: nt
   integer :: ilandsea
   integer :: dq
   integer :: stext,best
@@ -132,8 +122,8 @@ subroutine leaf_database(ofn, nlandsea, iaction, lat, lon, idatp)
            if(wlon1 < -180.) wlon1 = wlon1 + 360.
            wlon1 = max(-179.9999,min(179.9999,wlon1))
            
-           rio_full = (wlon1 + 180.) * nperdeg ! must ignore pixel offset here
-           rjo_full = (wlat1 +  90.) * nperdeg ! must ignore pixel offset here
+           rio_full = (wlon1 + 180.) * real(nperdeg) ! must ignore pixel offset here
+           rjo_full = (wlat1 +  90.) * real(nperdeg) ! must ignore pixel offset here
            
            io_full = int(rio_full)
            jo_full = int(rjo_full)
@@ -175,8 +165,8 @@ subroutine leaf_database(ofn, nlandsea, iaction, lat, lon, idatp)
            if(wlon1 < -180.) wlon1 = wlon1 + 360.
            wlon1 = max(-179.9999,min(179.9999,wlon1))
            
-           rio_full = (wlon1 + 180.) * nperdeg ! must ignore pixel offset here
-           rjo_full = (wlat1 +  90.) * nperdeg ! must ignore pixel offset here
+           rio_full = (wlon1 + 180.) * real(nperdeg) ! must ignore pixel offset here
+           rjo_full = (wlat1 +  90.) * real(nperdeg) ! must ignore pixel offset here
            
            io_full = int(rio_full)
            jo_full = int(rjo_full)
@@ -204,9 +194,9 @@ subroutine leaf_database(ofn, nlandsea, iaction, lat, lon, idatp)
         
         if (ind2 > ind1) then
            ! SW longitude of current file
-           iwoc = (ifile - 1) * niosh / nperdeg - 180
+           iwoc = (ifile - 1) * niosh/nperdeg - 180
            ! SW latitude of current file
-           isoc = (jfile - 1) * njosh / nperdeg -  90
+           isoc = (jfile - 1) * njosh/nperdeg -  90
 
            ! Construct filename
            isocpt = abs(isoc) / 10
@@ -350,7 +340,7 @@ subroutine leaf_database(ofn, nlandsea, iaction, lat, lon, idatp)
   if (trim(iaction) == 'leaf_class' ) then
      
      do i=1,nlandsea
-        idatp(i) = int(100* real(sum(hgramtypes(2:20,i))) /real(sum(hgramtypes(:,i))))
+        idatp(i) = int(100.* real(sum(hgramtypes(2:20,i))) /real(sum(hgramtypes(:,i))))
      enddo
      
   elseif(trim(iaction) == 'soil_text') then
@@ -396,7 +386,7 @@ subroutine lat2index(jo,nperdeg,njosh,offpix,nthtile,alt,lat)
 
   wlat1 = max(-89.9999,min(89.9999,lat))
   
-  rjo_full = (wlat1 +  90.) * nperdeg ! must ignore pixel offset here
+  rjo_full = (wlat1 +  90.) * real(nperdeg) ! must ignore pixel offset here
 
   jo_full = int(rjo_full + 0.001)
 
@@ -469,12 +459,12 @@ subroutine lon2index(io,nperdeg,niosh,offpix,nthtile,alt,lon)
   real    :: wio1,wio2
   integer,intent(out) :: io
   integer :: nthtile,thistile
-  integer :: alt,niosh,jo_full
+  integer :: alt,niosh
 
   if (lon >=  180.) lon = lon - 360.
   if (lon <= -180.) lon = lon + 360.
   
-  rio_full = (lon + 180.) * nperdeg ! must ignore pixel offset here
+  rio_full = (lon + 180.) * real(nperdeg) ! must ignore pixel offset here
   
   io_full = int(rio_full + 0.001)
 

@@ -82,19 +82,19 @@ contains
     ! current and past year data for this month.
     select case (imontha)
     case(1,3,5,7,8,10,12)
-       partial_month_fraction = (real(idatea-1) + itimea * 0.01 /   &
+       partial_month_fraction = (real(idatea-1) + real(itimea) * 0.01 /   &
             24.0) / 31.0
 
     case(4,6,9,11)
-       partial_month_fraction = (real(idatea-1) + itimea * 0.01 /   &
+       partial_month_fraction = (real(idatea-1) + real(itimea) * 0.01 /   &
             24.0) / 30.0
 
     case(2)
        if (isleap(iyeara)) then
-          partial_month_fraction = (real(idatea-1) + itimea * 0.01 /   &
+          partial_month_fraction = (real(idatea-1) + real(itimea) * 0.01 /   &
                24.0) / 29.0
       else
-          partial_month_fraction = (real(idatea-1) + itimea * 0.01 /   &
+          partial_month_fraction = (real(idatea-1) + real(itimea) * 0.01 /   &
                24.0) / 28.0
        end if
 
@@ -302,7 +302,6 @@ contains
 
     type(edtype),pointer :: cgrid
     type(polygontype),pointer :: cpoly
-    type(sitetype),pointer :: csite
     integer :: igr,isi,ipy
     integer :: doy
     integer, external :: julday
@@ -442,7 +441,6 @@ contains
 
     type(edtype),pointer :: cgrid
     type(polygontype),pointer :: cpoly
-    type(sitetype),pointer :: csite
     type(prescribed_phen) :: phen_temp
     integer :: igr,isi,ipy,iyr
     integer :: doy
@@ -476,7 +474,7 @@ contains
              write(clon,'(f5.1)')cgrid%lon(ipy)
           elseif(cgrid%lon(ipy) < 0.0) then
              write(clon,'(f4.1)')cgrid%lon(ipy)
-          elseif(cgrid%lon(ipy) < 10) then
+          elseif(cgrid%lon(ipy) < 10.) then
              write(clon,'(f3.1)')cgrid%lon(ipy)
           else
              write(clon,'(f4.1)')cgrid%lon(ipy)

@@ -548,7 +548,6 @@ module therm_lib
       implicit none
       real   , intent(in)           :: pres,temp
       logical, intent(in), optional :: useice
-      real                          :: desdt
       logical                       :: brrr_cold
 
       if (present(useice)) then
@@ -892,7 +891,7 @@ module therm_lib
          tempk = t3ple
       !----- No water, but it must be at triple point (qw = qwfroz = qwmelt) --------------!
       else
-         fracliq = 0.5
+         fracliq = 0.0
          tempk   = t3ple
       end if
       !------------------------------------------------------------------------------------!
@@ -901,7 +900,6 @@ module therm_lib
    end subroutine qwtk
    !=======================================================================================!
    !=======================================================================================!
-
 
 
 
@@ -930,7 +928,7 @@ module therm_lib
       !------------------------------------------------------------------------------------!
 
       !----- Converting melting heat to J/m² or J/m³ --------------------------------------!
-      w = sngl(w8)
+      w      = sngl(w8)
       qwfroz = (dryhcap + w*cice) * t3ple
       qwmelt = (dryhcap + w*cliq) * t3ple + w*alli
       !------------------------------------------------------------------------------------!
@@ -949,9 +947,13 @@ module therm_lib
          fracliq = 1.
          tempk   = (qw - w*alli) / (cliq * w + dryhcap)
       !----- Changing phase, it must be at triple point -----------------------------------!
-      else
+      elseif (w > 0.) then
          fracliq = (qw - (dryhcap+w*cice)*t3ple) / (w*((cliq-cice)*t3ple+alli))
          tempk = t3ple
+      !----- No water, but it must be at triple point (qw = qwfroz = qwmelt) --------------!
+      else
+         fracliq = 0.0
+         tempk   = t3ple
       end if
       !------------------------------------------------------------------------------------!
       
@@ -961,3 +963,4 @@ module therm_lib
    !=======================================================================================!
 
  end module therm_lib
+

@@ -30,8 +30,8 @@ subroutine read_ednl(iunit)
        ied_init_mode, current_time,ed_inputs_dir,                     &
        end_time, integration_scheme, ffilout,  dtlsm,                 &
        iprintpolys,printvars,npvars,pfmtstr,ipmax,ipmin,              &
-       iedcnfgf,ffilout,sfilout,sfilin
-  
+       iedcnfgf,ffilout,sfilout,sfilin,event_file
+
   use grid_coms, only: timmax,time
   
   use ed_misc_coms,only: attach_metadata
@@ -65,7 +65,8 @@ subroutine read_ednl(iunit)
        n_decomp_lim,include_fire,ianth_disturb,include_these_pft,            &
        pft_1st_check,maxpatch,maxcohort,treefall_disturbance_rate,           &
        runoff_time,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax,         &
-       initial_co2,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf,phenpath
+       initial_co2,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf,event_file,  &
+       phenpath
 
   read (iunit, iostat=err, NML=ED2_INFO)
   if (err /= 0) then
@@ -121,6 +122,7 @@ subroutine read_ednl(iunit)
      write(*,*) "iphenyf1=",iphenyf1
      write(*,*) "iphenyff=",iphenyff
      write(*,*) "iedcnfgf=",iedcnfgf
+     write(*,*) "event_file=",event_file
      write(*,*) "phenpath =",phenpath 
      call abort_run('Error reading namelist, ED2_INFO block.' &
           ,'read_ednl','ed_load_namelist.f90')

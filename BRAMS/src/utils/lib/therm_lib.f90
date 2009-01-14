@@ -2997,7 +2997,7 @@ module therm_lib
          tempk = t3ple
       !----- No water, but it must be at triple point (qw = qwfroz = qwmelt) --------------!
       else
-         fracliq = 0.5
+         fracliq = 0.0
          tempk   = t3ple
       end if
       !------------------------------------------------------------------------------------!
@@ -3054,8 +3054,11 @@ module therm_lib
          fracliq = 1.
          tempk   = (qw - w*alli) / (cliq * w + dryhcap)
       !----- Changing phase, it must be at triple point -----------------------------------!
-      else
+      elseif (w > 0.0d0) then
          fracliq = (qw - (dryhcap+w*cice)*t3ple) / (w*((cliq-cice)*t3ple+alli))
+         tempk = t3ple
+      else
+         fracliq = 0.0
          tempk = t3ple
       end if
       !------------------------------------------------------------------------------------!

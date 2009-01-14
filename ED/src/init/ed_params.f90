@@ -41,6 +41,11 @@ subroutine load_ed_ecosystem_params()
    grass_pft(1)=1
    grass_pft(2)=5
 
+   grass_pft(3)=12
+   grass_pft(4)=13
+   grass_pft(5)=14
+   grass_pft(6)=15
+
    ! Include_pft: flag specifying to whether you want to include a plant functional 
    ! type (1) or whether you want it excluded (0) from the simulation.
    include_pft = 0
@@ -148,13 +153,12 @@ use pft_coms, only: phenology
 
 implicit none
 
-integer :: ipft
 real :: leaf_scatter_vis_temperate
 real :: leaf_scatter_vis_tropics
 real :: diffuse_bscat_vis_temp
 real :: diffuse_bscat_vis_trop
 
-mubar     = 1.0 
+mubar     = 1.0d0 
 
 visible_fraction = 0.45
 visible_fraction_dir = 0.43
@@ -413,7 +417,7 @@ end subroutine init_pft_mort_params
 subroutine init_pft_alloc_params()
 
 use pft_coms, only: rho, SLA, q, qsw, hgt_min, b1Ht, b2Ht, b1Bs,  &
-     b2Bs, b1Bl, b2Bl, C2B, leaf_turnover_rate
+     b2Bs, b1Bl, b2Bl, C2B, leaf_turnover_rate, hgt_ref
 
 implicit none
 
@@ -452,6 +456,11 @@ qsw(14:15)  = SLA(14:15) / (3900.0*2.0/1000.0)
 qsw(5:13)    = SLA(5:13) / 3900.0 !KIM - ED1/ED2 codes and Moorcroft et al.'re wrong!
 
 hgt_min = 1.5
+hgt_min(5) = 0.2
+hgt_min(12:13) = 0.2
+
+hgt_ref = 0.0
+hgt_ref(6:11) = 1.3
 
 b1Ht(1:4) = 0.0
 b1Ht(5) = 0.4778
@@ -595,19 +604,18 @@ phenology(6:8) = 0
 phenology(9:11) = 2
 phenology(12:15) = 1
 
-clumping_factor(1) = 1.0
-clumping_factor(2:4) = 0.735
-clumping_factor(5) = 0.84
-clumping_factor(6:8) = 0.735
-clumping_factor(9:11) = 0.84
-clumping_factor(12:13) = 0.84
-clumping_factor(14:15) = 1.0
+clumping_factor(1) = 1.0d0
+clumping_factor(2:4) = 0.735d0
+clumping_factor(5) = 0.84d0
+clumping_factor(6:8) = 0.735d0
+clumping_factor(9:11) = 0.84d0
+clumping_factor(12:13) = 0.84d0
+clumping_factor(14:15) = 1.0d0
 
 leaf_width(1:4) = 0.2
 leaf_width(5:11) = 0.05
 leaf_width(12:13) = 0.05
 leaf_width(14:15) = 0.2
-
 
                             ! The following parameters are second sources found in 
                             ! Gu et al. 2007
@@ -623,8 +631,6 @@ hcap_stem_fraction = 0.001
                                 ! This may eventually become a tuneable parameter.
                                 ! This parameter may also be most appropriate
                                 ! as zero.
-
-
 return
 end subroutine init_pft_leaf_params
 !==========================================================================================!
@@ -678,15 +684,14 @@ end subroutine init_pft_repro_params
 subroutine init_pft_derived_params()
 
 use pft_coms, only: root_turnover_rate, c2n_leaf, max_dbh, b1Ht, b2Ht,  &
-     hgt_min, q, qsw, c2n_recruit, c2n_stem
+     hgt_min, q, qsw, c2n_recruit, c2n_stem,hgt_ref
 use decomp_coms, only: f_labile
 use max_dims, only: n_pft
-
+use allometry, only: h2dbh,dbh2bl,dbh2bd
 implicit none
 
 integer :: ipft
 real :: dbh,balive,bleaf,bdead
-real, external :: h2dbh,dbh2bl,dbh2bd
 
 root_turnover_rate(1) = 2.0
 root_turnover_rate(2) = 1.0
@@ -705,7 +710,7 @@ root_turnover_rate(14:15) = 2.0
 max_dbh(1) = 0.498
 max_dbh(2:4) = 68.31
 max_dbh(5) = 0.498
-max_dbh(6:11) = log(1.0-(0.999*b1Ht(6:11)-1.3)/b1Ht(6:11))/b2Ht(6:11)
+max_dbh(6:11) = log(1.0-(0.999*b1Ht(6:11)-hgt_ref(6:11))/b1Ht(6:11))/b2Ht(6:11)
 max_dbh(12:15) = 0.498
 
 do ipft = 1,n_pft
@@ -945,6 +950,7 @@ subroutine overwrite_with_xml_config(thisnode)
 
          !! FINALLY, write out copy of settings
          call write_ed_xml_config()
+   !      stop
       elseif (thisnode == 1) then
             write(unit=*,fmt='(a)') '*********************************************'
             write(unit=*,fmt='(a)') '**               WARNING!                  **'

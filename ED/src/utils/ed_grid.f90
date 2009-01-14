@@ -45,38 +45,15 @@ subroutine ed_gridset(ngra)
 
   integer, intent(in) :: ngra
 
-  integer :: nhemgrds
   integer :: ifm
   integer :: icm
-  integer :: k
-  integer :: nestza1
-  integer :: nestza2
-  integer :: iinc
-  integer :: icnt
-  integer :: if1
-  integer :: jinc
-  integer :: jcnt
-  integer :: jf
-  integer :: kinc
-  integer :: kcnt
-  integer :: kf
-  integer :: nrat
   integer :: i
   integer :: j
   integer :: ngrb
-  integer :: kcy
-  integer :: kcw
-  integer :: kk
   real :: centx1
   real :: centy1
   real :: centx
   real :: centy
-  real :: dzr
-  real :: dsum
-  real :: dzrcm
-  real :: dzrfm
-  real :: tsum
-  real :: zmnvc(-1:nzpmax+1,maxgrds)
 
   ! Grid initialization:
 
@@ -245,7 +222,7 @@ subroutine ed_newgrid(ngr)
    implicit none
    integer :: ngr
 
-   integer :: i,j,k
+   integer :: i,j
 
    !     +----------------------------------------------------------------
    !     !    Fill the single and 1D variables that the rest of the model

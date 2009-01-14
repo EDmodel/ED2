@@ -80,7 +80,7 @@ subroutine ed_masterput_nl(par_run)
                              ,integration_scheme,end_time,current_time,sfilout,frqstate     &
                              ,isoutput,iprintpolys,printvars,pfmtstr,ipmin,ipmax,iedcnfgf   &
                              ,outfast,outstate,out_time_fast,out_time_state,nrec_fast       &
-                             ,nrec_state,irec_fast,irec_state,unitfast,unitstate
+                             ,nrec_state,irec_fast,irec_state,unitfast,unitstate,event_file
 
    use ed_misc_coms,only: attach_metadata
    use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,deltax,deltay,polelat,polelon       &
@@ -237,6 +237,7 @@ subroutine ed_masterput_nl(par_run)
 
    call MPI_Bcast(iedcnfgf,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(phenpath,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(event_file,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(maxpatch,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(maxcohort,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -360,10 +361,10 @@ subroutine ed_masterput_grid_dimens(par_run)
 
   implicit none
   include 'mpif.h'
-  integer :: nm,ng,zzz
-  integer :: nxpts,nypts,nzpts
+  integer :: nm,ng
+  integer :: nxpts,nypts
   integer :: ierr
-  integer :: par_run,nmiii
+  integer :: par_run
 
   if (par_run == 0 ) return
   do nm=1,nmachs
@@ -663,7 +664,7 @@ subroutine ed_nodeget_nl
                              ,integration_scheme,end_time,current_time,isoutput,sfilout    &
                              ,frqstate,iprintpolys,printvars,pfmtstr,ipmin,ipmax,iedcnfgf  &
                              ,outfast,outstate,out_time_fast,out_time_state,nrec_fast      &
-                             ,nrec_state,irec_fast,irec_state,unitfast,unitstate
+                             ,nrec_state,irec_fast,irec_state,unitfast,unitstate,event_file
 
    use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,deltax,deltay,polelat,polelon       &
                              ,centlat,centlon,time,timmax,nstratx,nstraty
@@ -818,6 +819,7 @@ subroutine ed_nodeget_nl
 
    call MPI_Bcast(iedcnfgf,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(phenpath,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(event_file,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(maxpatch,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(maxcohort,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
@@ -958,8 +960,7 @@ subroutine ed_nodeget_grid_dimens()
 
    include 'mpif.h'
 
-   integer :: ierr,ng,nm,zzz
-   integer, dimension(MPI_STATUS_SIZE) :: status
+   integer :: ierr,ng,nm
   
    do nm=1,nmachs
       do ng=1,ngrids

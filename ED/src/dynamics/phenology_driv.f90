@@ -83,7 +83,6 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
   integer :: isoil_lev
   real :: daylight
   real, external :: daylength
-  real :: hcapveg
 
   integer :: drop_cold
   integer :: leaf_out_cold
@@ -136,7 +135,6 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
         ! Is this a cold deciduous with leaves?
         if(cpatch%phenology_status(ico) < 2 .and. phenology(cpatch%pft(ico)) == 2 .and.   &
              drop_cold == 1)then
-           
            !             day >= 210)then
            !print*,'dropping ',cs%green_leaf_factor(cpatch%pft(ico)),cs%leaf_aging_factor(cpatch%pft(ico))           
            ! If dropping, compute litter inputs.
@@ -197,6 +195,7 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
            
            ! Cold deciduous flushing? 
            !print*,'flushing ',cs%green_leaf_factor(cpatch%pft),cs%leaf_aging_factor(cpatch%pft)                      
+
            ! Update plant carbon pools
            cpatch%phenology_status(ico) = 1 ! 1 indicates leaves are growing
            cpatch%bleaf(ico) = cpoly%green_leaf_factor(cpatch%pft(ico),isi) * cpatch%balive(ico)   &
@@ -286,7 +285,6 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
 
      enddo  ! cohorts
 
-     
   enddo  ! patches
   return
 end subroutine update_phenology_ar
@@ -349,13 +347,13 @@ subroutine phenology_thresholds(daylight, soil_temp, soil_water, soil_class,  &
   theta(1:nzg) = 0.0
   do k1 = lsl, nzg
      do k2 = k1,nzg-1
-        theta(k1) = theta(k1) + soil_water(k2) *   &
+        theta(k1) = theta(k1) + real(soil_water(k2)) *   &
              (slz(k2+1)-slz(k2)) / soil(soil_class(k2))%slmsts
      enddo
-     theta(k1) = theta(k1) - soil_water(nzg) * slz(nzg) /  &
+     theta(k1) = theta(k1) - real(soil_water(nzg)) * slz(nzg) /  &
           soil(soil_class(nzg))%slmsts
      theta(k1) = - theta(k1) / slz(k1)
-  enddo
+  enddo  !! added real() to eliminate implict type casting (MCD)
 
   return
 end subroutine phenology_thresholds
@@ -364,6 +362,8 @@ end subroutine phenology_thresholds
 
 subroutine cohort_phen_thresholds(green_leaf_factor, leaf_aging_factor,   &
      dbh, pft, drop_cold, leaf_out_cold, bl_max)
+  
+  use allometry, only: dbh2bl
   implicit none
 
   integer, intent(out) :: drop_cold
@@ -371,7 +371,6 @@ subroutine cohort_phen_thresholds(green_leaf_factor, leaf_aging_factor,   &
   real, intent(out) :: bl_max
   real, intent(in) :: green_leaf_factor
   real, intent(in) :: leaf_aging_factor
-  real, external :: dbh2bl
   real, intent(in) :: dbh
   integer, intent(in) :: pft
 

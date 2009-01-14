@@ -11,7 +11,6 @@ subroutine ed_init_atm_ar
   use pft_coms,only : sla
   use ed_therm_lib,only : calc_hcapveg,ed_grndvap
   
-  
   implicit none
 
   type(edtype)     ,pointer :: cgrid
@@ -23,8 +22,9 @@ subroutine ed_init_atm_ar
   integer :: nsoil
   integer :: nls
   integer :: nlsw1
-  integer :: ncohorts, npatches
-  real    :: poly_lai,p_lai
+  integer :: ncohorts
+  real    :: site_area_i, poly_area_i
+  real    :: poly_lai, poly_nplant
   integer, parameter :: harvard_override = 0
   include 'mpif.h'
   integer :: ping,ierr
@@ -96,7 +96,7 @@ subroutine ed_init_atm_ar
                  cpatch%veg_temp(ico)   = cpoly%met(isi)%atm_tmp
                  cpatch%veg_water(ico)  = 0.0
                  cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico) &
-                                                      ,cpatch%nplants(ico),cpatch%pft(ico))
+                                                      ,cpatch%nplant(ico),cpatch%pft(ico))
                  cpatch%veg_energy(ico) = cpatch%hcapveg(ico)*cpatch%veg_temp(ico)
               end do
            end do
@@ -140,22 +140,26 @@ subroutine ed_init_atm_ar
                     do k = 1, nzg
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 1.0
-                       csite%soil_water(k,ipa) = max(soil(nsoil)%soilcp,   &
-                            slmstr(k) * soil(nsoil)%slmsts)
-                       csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa) *   &
-                            (soil(nsoil)%slcpd + csite%soil_water(k,ipa) *   &
-                            cliq1000) + csite%soil_water(k,ipa) * alli1000
-                    enddo
+                       csite%soil_water(k,ipa)  = dble(max(soil(nsoil)%soilcp              &
+                                                          ,slmstr(k) * soil(nsoil)%slmsts))
+                       csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa)                  &
+                                                * ( soil(nsoil)%slcpd                      &
+                                                  + sngl(csite%soil_water(k,ipa))          &
+                                                  * cliq1000 )                             &
+                                                + sngl(csite%soil_water(k,ipa)) * alli1000
+                    end do
                  else
                     do k = 1, nzg
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 0.0
-                       csite%soil_water(k,ipa) = max(soil(nsoil)%soilcp,             &
-                            slmstr(k) * soil(nsoil)%slmsts)
-                       csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa) *   &
-                            (soil(nsoil)%slcpd + csite%soil_water(k,ipa) * cice1000)
-                    enddo
-                 endif
+                       csite%soil_water(k,ipa)  = max(dble(soil(nsoil)%soilcp,             &
+                                                          ,slmstr(k) * soil(nsoil)%slmsts))
+                       csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa)                  &
+                                                * ( soil(nsoil)%slcpd                      &
+                                                  + sngl(csite%soil_water(k,ipa))          &
+                                                  * cice1000)
+                    end do
+                 end if
               
                  nls   = csite%nlev_sfcwater(ipa)
                  nlsw1 = max(nls,1)
@@ -193,56 +197,43 @@ subroutine ed_init_atm_ar
 
 
      call fuse_patches_ar(cgrid)
-     do ipy = 1,cgrid%npolygons
-        
-        cpoly => cgrid%polygon(ipy)
-        
-        do isi = 1,cpoly%nsites
-           
-           csite => cpoly%site(isi)
-           
-           do ipa = 1,csite%npatches
-              
-              cpatch => csite%patch(ipa)
-
-           enddo
-
-        enddo
-     enddo
 
      do ipy = 1,cgrid%npolygons
         
         ncohorts = 0
         npatches = 0
         poly_lai = 0.0
-        
+        poly_nplant = 0.0
+
         cpoly => cgrid%polygon(ipy)
-        
+        poly_area_i = 1./sum(cpoly%area(:))
+
         do isi = 1,cpoly%nsites
            
            csite => cpoly%site(isi)
+           site_area_i = 1./sum(csite%area(:))
            
            do ipa = 1,csite%npatches
               npatches = npatches + 1
-              
               cpatch => csite%patch(ipa)
 
               call fuse_cohorts_ar(csite,ipa,cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
               
               do ico = 1,cpatch%ncohorts
                  ncohorts=ncohorts+1
-                 poly_lai = poly_lai + cpatch%lai(ico) * csite%area(ipa)*cpoly%area(isi)
-              enddo
-              
-           enddo
-           
-        enddo
-        write(*,'(2(a,1x,i4,1x),2(a,1x,f9.4,1x),a,1x,f5.2,2(1x,a,1x,i4))')   &
-            'Grid:',igr,'Poly:',ipy,'Lon:',cgrid%lon(ipy),'Lat: ',cgrid%lat(ipy),'Avg. LAI:',poly_lai,'NPatches:',npatches,'NCohorts:',ncohorts
-
-     enddo
-  
-  enddo
+                 poly_lai    = poly_lai + cpatch%lai(ico) * csite%area(ipa)                &
+                                        * cpoly%area(isi) * site_area_i * poly_area_i
+                 poly_nplant = poly_nplant + cpatch%nplant(ico) * csite%area(ipa)          &
+                                           * cpoly%area(isi) * site_area_i * poly_area_i
+              end do
+           end do
+        end do
+        write(unit=*,fmt='(2(a,1x,i4,1x),2(a,1x,f9.4,1x),2(a,1x,f7.2,1x),2(a,1x,i4,1x))')  &
+            'Grid:',igr,'Poly:',ipy,'Lon:',cgrid%lon(ipy),'Lat: ',cgrid%lat(ipy)           &
+           ,'Nplants:',poly_nplant,'Avg. LAI:',poly_lai                                    &
+           ,'NPatches:',npatches,'NCohorts:',ncohorts
+     end do
+  end do
 
   ! Energy needs to be done after LAI and Hite are loaded
   call initialize_vegetation_energy(cgrid)
@@ -291,6 +282,7 @@ end subroutine update_derived_props
 subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
   
   use ed_state_vars,only:sitetype,patchtype
+  use allometry, only: ed_biomass
 
   implicit none
   integer         , intent(in) :: ipa
@@ -304,7 +296,7 @@ subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
   real            , external   :: compute_water_storage_ar
   real            , external   :: compute_energy_storage_ar
   real            , external   :: compute_co2_storage_ar
-  real            , external   :: ed_biomass
+  real,parameter               :: veg_height_min = 1.0 !was 0.2
 
   ! call derived patch-level structural quantities.  These depend
   ! on the results from reproduction, which in turn depends on 
@@ -347,11 +339,11 @@ subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
 
   
   ! Update vegetation height
-  if(norm_fac > 0.0)then
-     csite%veg_height(ipa) = csite%veg_height(ipa) / norm_fac
+  if(norm_fac > tiny(1.0))then
+     csite%veg_height(ipa) = max(veg_height_min,csite%veg_height(ipa) / norm_fac)
   else
      ! this branch if there aren't any cohorts
-     csite%veg_height(ipa) = 0.2
+     csite%veg_height(ipa) = veg_height_min
   endif
   csite%veg_rough(ipa) = 0.13 * csite%veg_height(ipa)
   
@@ -377,7 +369,7 @@ end subroutine update_patch_derived_props_ar
 subroutine update_site_derived_props_ar(cpoly, census_flag, isi)
   
   use ed_state_vars,only: polygontype,sitetype,patchtype
-
+  use allometry, only: ed_biomass
   use consts_coms,    only : pi1
   implicit none
   
@@ -387,7 +379,6 @@ subroutine update_site_derived_props_ar(cpoly, census_flag, isi)
   integer :: isi,ipa,ico
   real :: ba
   integer :: bdbh
-  real, external :: ed_biomass
   integer, intent(in) :: census_flag
 
   cpoly%basal_area(:,:,isi) = 0.0
@@ -403,8 +394,8 @@ subroutine update_site_derived_props_ar(cpoly, census_flag, isi)
 
         ! Update basal area, agb
         if(census_flag == 0 .or. cpatch%first_census(ico) == 1)then
-           bdbh = min( int(cpatch%dbh(ico) * 0.1), 10) + 1
-           ba = cpatch%nplant(ico) * cpatch%dbh(ico)**2
+           bdbh = max(0,min( int(cpatch%dbh(ico) * 0.1), 10)) + 1
+           ba = cpatch%nplant(ico) * max(0.0,cpatch%dbh(ico))**2
            cpoly%basal_area(cpatch%pft(ico), bdbh,isi) = cpoly%basal_area(cpatch%pft(ico), bdbh,isi) &
                 +  csite%area(ipa) * ba * pi1 * 0.25
            cpoly%agb(cpatch%pft(ico), bdbh,isi) = cpoly%agb(cpatch%pft(ico), bdbh,isi) +  &
@@ -438,13 +429,8 @@ subroutine read_soil_moist_temp_ar(cgrid)
   type(sitetype)    , pointer :: csite  ! Alias for current site
   type(patchtype)   , pointer :: cpatch ! Alias for current patch
   integer :: ntext
-  integer :: iland
-  real :: xe_mean
-  real :: ye_mean
-  real :: ze_mean
   real :: glat
   real :: glon
-  integer :: ipt
   integer :: ilat
   integer :: ilon
   integer :: ilatf
@@ -458,8 +444,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
   real :: soilw1
   real :: soilw2
   logical :: l1
-  integer :: ip
-  integer :: ipy, isi, ipa, ico !Counters for all structures
+  integer :: ipy, isi, ipa !Counters for all structures
   integer, parameter :: harvard_override = 0
 
 ! Putting these numbers as parameters, but we should think in a way to provide this info so we can make it more general.
@@ -527,22 +512,27 @@ subroutine read_soil_moist_temp_ar(cgrid)
                           if(abs(slz(k)) < 0.1)then
                              csite%soil_tempk(k,ipa) = tmp1
                              soil_tempaux = tmp1 - t3ple
-                             csite%soil_water(k,ipa) = max(soil(ntext)%soilcp,   &
-                                  soilw1 * soil(ntext)%slmsts)
+                             csite%soil_water(k,ipa) = dble(max(soil(ntext)%soilcp,   &
+                                  soilw1 * soil(ntext)%slmsts))
                           else
                              csite%soil_tempk(k,ipa) = tmp2
                              soil_tempaux = tmp2 - t3ple
-                             csite%soil_water(k,ipa) = max(soil(ntext)%soilcp,   &
-                                  soilw2 * soil(ntext)%slmsts)
+                             csite%soil_water(k,ipa) = dble(max(soil(ntext)%soilcp,   &
+                                  soilw2 * soil(ntext)%slmsts))
                           endif
                           if(soil_tempaux > 0.0)then
-                             csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa) * (soil(ntext)%slcpd   &
-                                  + csite%soil_water(k,ipa) * cliq1000) +   &
-                                    csite%soil_water(k,ipa) * alli1000
+                             csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa)            &
+                                                      * ( soil(ntext)%slcpd                &
+                                                        + sngl(csite%soil_water(k,ipa))    &
+                                                        * cliq1000)                        &
+                                                      + csite%soil_water(k,ipa)            &
+                                                      * alli1000
                              csite%soil_fracliq(k,ipa) = 1.0
                           else
-                             csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa) * (soil(ntext)%slcpd   &
-                                  + csite%soil_water(k,ipa) * cice1000)
+                             csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa)            &
+                                                      * (soil(ntext)%slcpd                 &
+                                                      + sngl(csite%soil_water(k,ipa))      &
+                                                      * cice1000)
                              csite%soil_fracliq(k,ipa) = 0.0
                           end if
                        end do
@@ -552,7 +542,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
                           csite%soil_energy(1,ipa)    =   1.5293664e8
                           csite%soil_energy(2,ipa)    =   1.4789957e8
                           csite%soil_energy(3:4,ipa)  =   1.4772002e8
-                          csite%soil_water(1:4,ipa)   =   0.41595
+                          csite%soil_water(1:4,ipa)   =   0.41595d+0
                           csite%soil_fracliq(1:4,ipa) =   1.0
                        endif
                        

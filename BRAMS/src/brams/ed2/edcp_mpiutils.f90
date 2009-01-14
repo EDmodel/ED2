@@ -7,7 +7,8 @@ subroutine masterput_ednl(mainnum)
                            ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir    &
                            ,integration_scheme,end_time,current_time,sfilout,frqstate      &
                            ,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmin,ipmax      &
-                           ,iedcnfgf,iyoutput,outfast,outstate,unitfast,unitstate
+                           ,iedcnfgf,event_file,iyoutput,outfast,outstate,unitfast         &
+                           ,unitstate
   use ed_misc_coms,only: attach_metadata
   use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,time,timmax
   use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database  &
@@ -98,6 +99,7 @@ subroutine masterput_ednl(mainnum)
   call MPI_Bcast(iphenyf1,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(iphenyff,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(iedcnfgf,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(event_file,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(phenpath,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
   
   ! These are ED2 variables that have the same function as certain BRAMS
@@ -152,7 +154,8 @@ subroutine nodeget_ednl(master_num)
                            ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir   &
                            ,integration_scheme,end_time,current_time,sfilout,frqstate     &
                            ,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmin,ipmax     &
-                           ,iedcnfgf,iyoutput,outfast,outstate,unitfast,unitstate
+                           ,iedcnfgf,event_file,iyoutput,outfast,outstate,unitfast        &
+                           ,unitstate
   use ed_misc_coms,only: attach_metadata
   use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,time,timmax
   use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database &
@@ -242,6 +245,7 @@ subroutine nodeget_ednl(master_num)
   call MPI_Bcast(iphenyf1,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(iphenyff,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(iedcnfgf,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(event_file,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(phenpath,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
   
   ! These are ED2 variables that have the same function as certain BRAMS

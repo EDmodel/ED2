@@ -23,7 +23,8 @@ subroutine ed_init_coup_atm
   integer :: nls
   integer :: nlsw1
   integer :: ncohorts, npatches
-  real    :: poly_lai,p_lai
+  real    :: site_area_i, poly_area_i
+  real    :: poly_lai,poly_nplant
   integer :: ix,iy
   real    :: hcapveg
   integer, parameter :: harvard_override = 0
@@ -196,32 +197,37 @@ subroutine ed_init_coup_atm
      call fuse_patches_ar(cgrid)
 
      do ipy = 1,cgrid%npolygons
-        
-        ncohorts = 0
-        npatches = 0
-        poly_lai = 0.0
-        
+        ncohorts     = 0
+        npatches     = 0
+        poly_lai     = 0.0
+        poly_nplant  = 0.0
+
         cpoly => cgrid%polygon(ipy)
-        
+        poly_area_i = 1./sum(cpoly%area(:))
+
         do isi = 1,cpoly%nsites
-           
-           npatches = npatches + 1
+
            csite => cpoly%site(isi)
-           
+           site_area_i = 1./sum(csite%area(:))
            do ipa = 1,csite%npatches
-              
+              npatches = npatches + 1
               cpatch => csite%patch(ipa)
 
               call fuse_cohorts_ar(csite,ipa,cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
-              
+
               do ico = 1,cpatch%ncohorts
                  ncohorts=ncohorts+1
-                 poly_lai = poly_lai + cpatch%lai(ico) * csite%area(ipa)*cpoly%area(isi)
+                 poly_lai    = poly_lai + cpatch%lai(ico) * csite%area(ipa)                &
+                                        * cpoly%area(isi) * site_area_i * poly_area_i
+                 poly_nplant = poly_nplant + cpatch%nplant(ico) * csite%area(ipa)          &
+                                           * cpoly%area(isi) * site_area_i * poly_area_i
               end do
            end do
         end do
-        write(*,'(2(a,1x,i4,1x),2(a,1x,f9.4,1x),a,1x,f5.2,2(1x,a,1x,i4))')   &
-            'Grid:',igr,'Poly:',ipy,'Lon:',cgrid%lon(ipy),'Lat: ',cgrid%lat(ipy),'Avg. LAI:',poly_lai,'NPatches:',npatches,'NCohorts:',ncohorts
+        write(unit=*,fmt='(2(a,1x,i4,1x),2(a,1x,f9.4,1x),2(a,1x,f7.2,1x),2(a,1x,i4,1x))')  &
+            'Grid:',igr,'Poly:',ipy,'Lon:',cgrid%lon(ipy),'Lat: ',cgrid%lat(ipy)           &
+           ,'Nplants:',poly_nplant,'Avg. LAI:',poly_lai                                    &
+           ,'NPatches:',npatches,'NCohorts:',ncohorts
      end do
   end do
 
@@ -318,6 +324,7 @@ end subroutine update_derived_props
 subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
   
   use ed_state_vars,only:sitetype,patchtype
+  use allometry, only: ed_biomass
 
   implicit none
   integer         , intent(in) :: ipa
@@ -331,7 +338,6 @@ subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
   real            , external   :: compute_water_storage_ar
   real            , external   :: compute_energy_storage_ar
   real            , external   :: compute_co2_storage_ar
-  real            , external   :: ed_biomass
 
   ! call derived patch-level structural quantities.  These depend
   ! on the results from reproduction, which in turn depends on 
@@ -406,7 +412,7 @@ end subroutine update_patch_derived_props_ar
 subroutine update_site_derived_props_ar(cpoly, census_flag, isi)
   
   use ed_state_vars,only: polygontype,sitetype,patchtype
-
+  use allometry, only: ed_biomass
   use rconstants,    only : pi1
   implicit none
   
@@ -416,7 +422,6 @@ subroutine update_site_derived_props_ar(cpoly, census_flag, isi)
   integer :: isi,ipa,ico
   real :: ba
   integer :: bdbh
-  real, external :: ed_biomass
   integer, intent(in) :: census_flag
 
   cpoly%basal_area(:,:,isi) = 0.0

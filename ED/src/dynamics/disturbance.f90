@@ -298,7 +298,7 @@ end subroutine apply_disturbances_ar
     integer, intent(in) :: month
     integer, intent(in) :: year
 
-    integer :: im,iyear,useyear
+    integer :: iyear,useyear
     type(lutime), pointer :: clutime
     real :: fire_dist_rate
 
@@ -421,10 +421,9 @@ end subroutine apply_disturbances_ar
 
     implicit none
     type(sitetype),target    :: csite
-    type(patchtype),pointer  :: cpatch
     real, intent(in)         :: atm_tmp,atm_shv
     integer, intent(in)      :: np,dp
-    integer                  :: ipa,k
+    integer                  :: k
 
 
     ! SHOULD WE CONSIDER USING A DONOR PATCH
@@ -487,7 +486,7 @@ end subroutine apply_disturbances_ar
 
     csite%soil_energy(1:nzg,np) = 0.0
 
-    csite%soil_water(1:nzg,np) = 0.0
+    csite%soil_water(1:nzg,np) = 0.0d+0
 
     csite%sfcwater_mass(1:nzs,np) =  0.0
 
@@ -524,7 +523,6 @@ end subroutine apply_disturbances_ar
 
     implicit none
     type(sitetype),target    :: csite
-    type(patchtype),pointer  :: cpatch
     integer :: np,cp
 
     real :: area_fac
@@ -573,7 +571,7 @@ end subroutine apply_disturbances_ar
     do k = 1, nzg
        csite%ntext_soil(k,np) = csite%ntext_soil(k,np)
        csite%soil_energy(k,np) = csite%soil_energy(k,np) +csite%soil_energy(k,cp) * area_fac
-       csite%soil_water(k,np) = csite%soil_water(k,np) + csite%soil_water(k,cp) * area_fac
+       csite%soil_water(k,np) = csite%soil_water(k,np) + csite%soil_water(k,cp) * dble(area_fac)
     enddo
 
     csite%rough(np) = csite%rough(np) + csite%rough(cp) * area_fac
@@ -688,7 +686,6 @@ end subroutine apply_disturbances_ar
           tpatch%hcapveg(nco)    = tpatch%hcapveg(nco)    * cohort_area_fac
           tpatch%veg_energy(nco) = tpatch%veg_energy(nco) * cohort_area_fac
 
-          
        endif
           
     enddo  ! end loop over cohorts
@@ -720,7 +717,7 @@ end subroutine apply_disturbances_ar
     type(sitetype),target    :: csite
     type(patchtype),pointer  :: cpatch
     type(patchtype),pointer  :: npatch
-    integer :: np,cp,ico,nco,isi
+    integer :: np,cp,ico
     real,intent(in) :: loss_fraction
 
     integer, intent(in) :: q
@@ -823,6 +820,7 @@ end subroutine apply_disturbances_ar
 !    use canopy_air_coms, only: hcapveg_ref,heathite_min
     use ed_therm_lib,only : calc_hcapveg
     use consts_coms, only: t3ple
+    use allometry, only : h2dbh, dbh2bd, dbh2bl
 
     implicit none
 
@@ -835,11 +833,6 @@ end subroutine apply_disturbances_ar
     integer, intent(in) :: pft
     real, intent(in) :: density
     real, intent(in) :: height_factor
-    real :: h2dbh
-    real :: dbh2bd
-    real :: dbh2bl
-    real :: hcapveg
-
     
     cpatch => csite%patch(np)
 
@@ -847,7 +840,7 @@ end subroutine apply_disturbances_ar
     ! planted plantation cohort.  It is unlikely but perhaps possible
     ! For this patch to have no cohorts yet.
     ! ------------------------------------------------------------
-
+    nc = cpatch%ncohorts + 1
     if ( cpatch%ncohorts>0) then
        
        allocate(tpatch)
@@ -862,24 +855,25 @@ end subroutine apply_disturbances_ar
        call allocate_patchtype(cpatch,1)
     endif
        
+    cpatch%ncohorts = nc
+    csite%paco_n(np)= nc
 
     ! Just make one cohort.  It will soon be split at the splitting call of
     ! apply_disturbances().  Place this cohort in the insertion point.
 
-    nc = cpatch%ncohorts
 
     cpatch%pft(nc) = pft
     cpatch%nplant(nc) = density
-    cpatch%hite(nc) = hgt_min(cpatch%pft(nc)) * height_factor
-    cpatch%dbh(nc) = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
-    cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
-    cpatch%bleaf(nc) = dbh2bl(cpatch%dbh(nc),cpatch%pft(nc))
-    
+    cpatch%hite(nc)   = hgt_min(cpatch%pft(nc)) * min(1.0,height_factor)
+    cpatch%dbh(nc)    = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
+    cpatch%bdead(nc)  = dbh2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
+    cpatch%bleaf(nc)  = dbh2bl(cpatch%dbh(nc),cpatch%pft(nc))
+    print*,"add",cpatch%hite(nc),cpatch%dbh(nc),cpatch%bdead(nc),cpatch%bleaf(nc)
     cpatch%phenology_status = 0
     cpatch%balive(nc) = cpatch%bleaf(nc) * &
          (1.0 + q(cpatch%pft(nc)) + qsw(cpatch%pft(nc)) * cpatch%hite(nc))
     cpatch%lai(nc) = cpatch%bleaf(nc) * cpatch%nplant(nc) * sla(cpatch%pft(nc))
-    cpatch%bstorage(nc) = 0.0
+    cpatch%bstorage(nc) = 0.1*(cpatch%bdead(nc)+cpatch%balive(nc)) !! changed by MCD, was 0.0
 
     cpatch%veg_temp(nc) = csite%can_temp(np)
     cpatch%veg_water(nc) = 0.0

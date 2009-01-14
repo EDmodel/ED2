@@ -562,8 +562,6 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
   real :: a10
   real, dimension(ndims) :: explicit_new_state
   integer :: idim
-  real :: qwtot
-  real :: fracliqv
   real :: dQdt
 
   ! Initialize time evolution matrix and the explicit contribution
@@ -639,7 +637,7 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
              a10 * (cpatch%veg_temp(ico) - csite%can_temp(ipa)) -   &
              alvl * et_conductance * vp_gradient
         tvegaux = cpatch%veg_temp(ico) - t3ple
-        if(tvegaux > 0)then
+        if(tvegaux > 0.)then
            csite%mean_latflux(ipa) = csite%mean_latflux(ipa) +   &
                 vp_gradient * et_conductance * alvl -   &
                 (cliq *cpatch%veg_temp(ico)  + alli) * explicit_deriv_portion(ind2)
@@ -713,7 +711,7 @@ subroutine ludcmp(a,n,np,indx,d)
 
   implicit none
   
-  real, parameter :: tiny=1.0e-20
+  real, parameter :: tiny_offset=1.0e-20
   integer :: n
   integer :: np
   real :: d
@@ -782,14 +780,14 @@ subroutine ludcmp(a,n,np,indx,d)
      endif
      indx(j) = imax
      if(j /= n)then
-        if(a(j,j) == 0.0) a(j,j) = tiny
+        if(a(j,j) == 0.0) a(j,j) = tiny_offset
         dum = 1.0 / a(j,j)
         do i=j+1,n
            a(i,j) = a(i,j)*dum
         enddo
      endif
   enddo
-  if(a(n,n) == 0.0)a(n,n) = tiny
+  if(a(n,n) == 0.0)a(n,n) = tiny_offset
 
   return
 end subroutine ludcmp
@@ -800,7 +798,7 @@ subroutine ludcmp_dble(a,n,np,indx,d)
 
   implicit none
   
-  real, parameter :: tiny = 1.0d-20
+  real(kind=8), parameter :: tiny_offset = 1.0d-20
   integer, intent(in) :: n
   integer, intent(in) :: np
   real, intent(out) :: d
@@ -873,14 +871,14 @@ subroutine ludcmp_dble(a,n,np,indx,d)
      endif
      indx(j) = imax
      if(j /= n)then
-        if(ad(j,j) == 0.0d0) ad(j,j) = tiny
+        if(ad(j,j) == 0.0d0) ad(j,j) = tiny_offset
         dum = 1.0d0 / ad(j,j)
         do i = j + 1, n
            ad(i,j) = ad(i,j) * dum
         enddo
      endif
   enddo
-  if(ad(n,n) == 0.0d0)ad(n,n) = tiny
+  if(ad(n,n) == 0.0d0)ad(n,n) = tiny_offset
 
   a = real(ad)
 

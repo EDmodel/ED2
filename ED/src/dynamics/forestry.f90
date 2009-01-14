@@ -214,14 +214,14 @@ subroutine inventory_mat_forests_ar(cpoly,isi, area_mature_primary,   &
   
   use ed_state_vars,only:polygontype,sitetype,patchtype
   use disturb_coms, only: plantation_rotation, mature_harvest_age
-
+  use allometry, only: ed_biomass
   implicit none
 
 
   type(polygontype),target :: cpoly
   type(sitetype),pointer   :: csite
   type(patchtype),pointer  :: cpatch
-  integer :: ipy,isi,ipa,ico
+  integer :: isi,ipa,ico
 
   real, intent(out) :: area_mature_primary
   real, intent(out) :: agb_mature_primary
@@ -230,7 +230,6 @@ subroutine inventory_mat_forests_ar(cpoly,isi, area_mature_primary,   &
   real, intent(out) :: area_mature_plantation
   real, intent(out) :: agb_mature_plantation
 
-  real, external :: ed_biomass
 
   ! Initialize inventory
   area_mature_primary = 0.0
@@ -412,7 +411,6 @@ subroutine harv_immat_patches_ar(cpoly,isi, np, harvest_deficit,   &
 
   type(polygontype),target :: cpoly
   type(sitetype),pointer   :: csite
-  type(patchtype),pointer  :: cpatch
   integer :: isi,ipa,np
   real, intent(inout) :: harvest_deficit
 
@@ -523,7 +521,6 @@ subroutine norm_harv_patch_ar(csite,np)
 
   implicit none
   type(sitetype),target   :: csite
-  type(patchtype),pointer  :: cpatch
   integer :: np
   real :: area_fac
   integer :: k
@@ -568,7 +565,7 @@ subroutine norm_harv_patch_ar(csite,np)
 
   do k = 1, nzg
      csite%soil_energy(k,np) = csite%soil_energy(k,np) * area_fac
-     csite%soil_water(k,np) = csite%soil_water(k,np) * area_fac
+     csite%soil_water(k,np) = csite%soil_water(k,np) * dble(area_fac)
   enddo
 
   csite%rough(np) = csite%rough(np) * area_fac

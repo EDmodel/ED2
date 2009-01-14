@@ -377,8 +377,9 @@
 !------------------------------------------------------------------------------------------!
 ! XML configuration file                                                                   !
 !------------------------------------------------------------------------------------------!
-   NL%IEDCNFGF = 'config.xml'
-   NL%PHENPATH = '/n/Moorcroft_Lab/Users/mlongo/EDBRAMS/ed-test/inputs'
+   NL%IEDCNFGF   = 'config.xml'
+   NL%EVENT_FILE = 'myevents.xml'
+   NL%PHENPATH   = '/n/Moorcroft_Lab/Users/mlongo/EDBRAMS/ed-test/inputs'
 !------------------------------------------------------------------------------------------!
 
 

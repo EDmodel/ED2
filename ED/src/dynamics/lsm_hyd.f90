@@ -10,7 +10,7 @@
 !!  cp%ntext_soil = array of patch soil classes (see surfdata.f90)
 !!  cp%watertable = soil water table depth (m)
 !!  cp%soil_water = soil volumetric water content (m3/m3)
-!!  cp%soil_energy  = soil energy (units??)
+!!  cp%soil_energy  = soil energy (J/m3)
 !!  soil(k)%slmsts = maximum volumetric soil moisture for soil type k (m2 water/m2 soil)
 !!  soil(k)%soilcp = minimum volumetric soil moisture (m2/m2)
 !!  soil(nsoil)%slcpd = dry soil heat capacity (units??)
@@ -166,18 +166,19 @@ subroutine initHydroSubsurface()
               !!set soil moisture at specified height
               !!loop from bottom up 
               do k = cpoly%lsl(isi),nzg
-                 nsoil = csite%ntext_soil(k,ipa)
+!                 nsoil = csite%ntext_soil(k,ipa)
+                 nsoil = cpoly%ntext_soil(k,isi) !! mcd [9/30/08]
                  if(cpoly%moist_zi(isi) < slz(k+1)) then
-                    csite%soil_water(k,ipa) = max(soil(nsoil)%soilcp, &
-                         soil(nsoil)%slmsts*(cpoly%moist_zi(isi)-slz(k))*dslzi(k))
+                    csite%soil_water(k,ipa) = dble(max(soil(nsoil)%soilcp, &
+                         soil(nsoil)%slmsts*(cpoly%moist_zi(isi)-slz(k))*dslzi(k)))
                     exit 
                  else
-                    csite%soil_water(k,ipa) = soil(nsoil)%slmsts 
+                    csite%soil_water(k,ipa) = dble(soil(nsoil)%slmsts) 
                  endif
               end do
               call calcWatertable(cpoly,isi,ipa)
            enddo
-           cpoly%moist_tau(isi) = 100*dtlsm !!set to some small rate initially
+           cpoly%moist_tau(isi) = 100.0*dtlsm !!set to some small rate initially
         enddo
      enddo
   enddo
@@ -313,7 +314,7 @@ subroutine calcHydroSubsurface()
         !!  If there is no saturated water or if saturated soil is more than threshold
         !!  frozen, skip over soil hydrology.
         if(soil_sat_water > 1.e-6 .and. fracliqtotal > FracLiqRunoff) then 
-           cgrid%swliq(ipy) = 1
+           cgrid%swliq(ipy) = 1.0
            dzadd = 0.0
            ! First, remove water
            soil_sat_energy = 0.0  !total energy in removed water
@@ -335,7 +336,7 @@ subroutine calcHydroSubsurface()
               
               !! calculate base flow
               cpoly%baseflow(isi) = soil(cpoly%ntext_soil(nzg-1,isi))%slmsts/ &
-                   (MoistRateTuning*cpoly%moist_f(isi)*cpoly%moist_tau(isi))*1000 !kg/m2/s
+                   (MoistRateTuning*cpoly%moist_f(isi)*cpoly%moist_tau(isi))*1000.0 !kg/m2/s
               bf_site = 0.0
               
               do ipa=1,csite%npatches
@@ -371,7 +372,7 @@ subroutine calcHydroSubsurface()
            cgrid%sheat(ipy) = sheat
 
            !temperature and liquid fraction of water in flux
-           call qtk(sheat/1000,tempk,fracliq)
+           call qtk(sheat/1000.0,tempk,fracliq)
 
            !Next, add water to other patches
            do isi=1,cpoly%nsites
@@ -391,7 +392,7 @@ subroutine calcHydroSubsurface()
            end do
         else
            !! if soil water too frozen, set flag
-           cgrid%swliq(ipy) = 0
+           cgrid%swliq(ipy) = 0.0
         endif
         !! normalize fluxes
         cgrid%baseflow(ipy) = cgrid%baseflow(ipy)/area_land
@@ -509,7 +510,6 @@ subroutine calcWatertable(cpoly,isi,ipa)
   integer :: k            ! soil layer counter
   integer :: nsoil        ! soil class
   real :: fracw           ! fraction of saturation (m/m)
-  real :: dz              ! soil layer thickness (m)
   real :: WTold           ! previous water table estimate (m)
 
   !  Compute water table depth starting at the bottom of the lowest soil layer and
@@ -528,17 +528,17 @@ subroutine calcWatertable(cpoly,isi,ipa)
   csite%soil_sat_heat(ipa)   = 0.0
 
   layerloop: do k = cpoly%lsl(isi),nzg
-     nsoil = csite%ntext_soil(k,ipa)  !look up soil type
-     fracw = csite%soil_water(k,ipa) / soil(nsoil)%slmsts  !calculate fraction of moisture capacity
+     nsoil = cpoly%ntext_soil(k,isi)  !look up soil type (switched to using SITE level soils [mcd 9/30/08]
+!     nsoil = csite%ntext_soil(k,ipa)  !look up soil type
+     fracw = real(csite%soil_water(k,ipa) / dble(soil(nsoil)%slmsts))  !calculate fraction of moisture capacity
      csite%watertable(ipa)      = csite%watertable(ipa)      + fracw *dslz(k)
      csite%soil_sat_energy(ipa) = csite%soil_sat_energy(ipa) + csite%soil_energy(k,ipa)*dslz(k)
-     csite%soil_sat_water(ipa)  = csite%soil_sat_water(ipa)  + csite%soil_water(k,ipa)*dslz(k)
+     csite%soil_sat_water(ipa)  = csite%soil_sat_water(ipa)  + real(csite%soil_water(k,ipa)*dble(dslz(k)))
      csite%soil_sat_heat(ipa)   = csite%soil_sat_heat(ipa)   + soil(nsoil)%slcpd*dslz(k)
      if (fracw < MoistSatThresh) exit layerloop!change from original version to go one layer up
   end do layerloop
-
   !!store watertable depth integer
-  csite%ksat(ipa) = max(cpoly%lsl(isi),k-1)
+  csite%ksat(ipa) = real(max(cpoly%lsl(isi),k-1))
 
   if(k > nzg) then
      !!soil completely saturated, add surface water too
@@ -613,19 +613,19 @@ subroutine updateWatertableAdd(cpoly,isi,ipa,dw,sheat)
 
    layerloop: do k = cpoly%lsl(isi),nzg
       nsoil = csite%ntext_soil(k,ipa)  !look up soil type
-      fracw = csite%soil_water(k,ipa) / soil(nsoil)%slmsts  !calculate fraction of moisture capacity
+      fracw = real(csite%soil_water(k,ipa) / dble(soil(nsoil)%slmsts))  !calculate fraction of moisture capacity
       if(fracw < 1.0) then
 
-         wcap = (soil(nsoil)%slmsts-csite%soil_water(k,ipa))*dslz(k) !!m3/m2
+         wcap = real(dble(soil(nsoil)%slmsts)-csite%soil_water(k,ipa))*dslz(k) !!m3/m2
          if(dw > wcap) then
             !! saturate layer
             dw_layer = wcap
-            csite%soil_water(k,ipa) = soil(nsoil)%slmsts
+            csite%soil_water(k,ipa) = dble(soil(nsoil)%slmsts)
             dw = dw - wcap
          else
             !! add all the water
             dw_layer = dw
-            csite%soil_water(k,ipa) = csite%soil_water(k,ipa)+dw*dslzi(k)
+            csite%soil_water(k,ipa) = csite%soil_water(k,ipa)+dble(dw*dslzi(k))
             dw = 0.0
             done = .true.
          endif
@@ -634,7 +634,7 @@ subroutine updateWatertableAdd(cpoly,isi,ipa,dw,sheat)
          csite%soil_energy(k,ipa)  = csite%soil_energy(k,ipa) + dw_layer*sheat
 
          !!update soil temperature
-         call qwtk8(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*1.e3,soil(nsoil)%slcpd,tempk,fracliq)
+         call qwtk8(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*1.d3,soil(nsoil)%slcpd,tempk,fracliq)
          csite%soil_tempk(k,ipa) = tempk
          if(done) exit layerloop
       end if
@@ -648,7 +648,7 @@ subroutine updateWatertableAdd(cpoly,isi,ipa,dw,sheat)
       if(csite%nlev_sfcwater(ipa) == 0) then
          !!currently no surface water, create as liquid water
          csite%sfcwater_depth(1,ipa) = dw
-         csite%sfcwater_mass(1,ipa) = dw*1000
+         csite%sfcwater_mass(1,ipa) = dw*1000.0
          csite%sfcwater_energy(1,ipa) = 0.001 * sheat
          csite%nlev_sfcwater(ipa) = 1
       else
@@ -661,7 +661,7 @@ subroutine updateWatertableAdd(cpoly,isi,ipa,dw,sheat)
          ! still in J/m2
          csite%sfcwater_energy(1,ipa) = csite%sfcwater_energy(1,ipa) + sheat*dw
          ! get new mass
-         csite%sfcwater_mass(1,ipa) = csite%sfcwater_mass(1,ipa) + dw*1000
+         csite%sfcwater_mass(1,ipa) = csite%sfcwater_mass(1,ipa) + dw*1000.0
          ! convert back to J/kg
          if(csite%sfcwater_mass(1,ipa) > 1.0e-10)then
             csite%sfcwater_energy(1,ipa) = csite%sfcwater_energy(1,ipa) / csite%sfcwater_mass(1,ipa)
@@ -740,31 +740,31 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
    swater = 0.0
 
    !!start by finding top of saturated layer
-   k = csite%ksat(ipa)
+   k = int(csite%ksat(ipa))
 
    nsoil = csite%ntext_soil(k,ipa)  !look up soil type
-   fracw = csite%soil_water(k,ipa) / soil(nsoil)%slmsts  !calculate fraction of moisture capacity
+   fracw = real(csite%soil_water(k,ipa) / dble(soil(nsoil)%slmsts))  !calculate fraction of moisture capacity
    if(fracw > MoistSatThresh) then  !if layer above threshold, move up one
       k = k+1
       nsoil = csite%ntext_soil(k,ipa)
-      fracw = csite%soil_water(k,ipa)
+      fracw = real(csite%soil_water(k,ipa))
    end if
 
    if(k > nzg) then
       !! soil completely saturated, reset to top layer
       k = nzg
       nsoil = csite%ntext_soil(k,ipa)  !look up soil type
-      fracw = csite%soil_water(k,ipa) / soil(nsoil)%slmsts  !calculate fraction of moisture capacity
+      fracw = real(csite%soil_water(k,ipa) / dble(soil(nsoil)%slmsts))  !calculate fraction of moisture capacity
    end if
 
    !!work down from saturation layer, removing water & heat
    do while (k >= cpoly%lsl(isi))
       !capacity for layer to loose moisture (unit = meters)
       wcap = (fracw - soil(nsoil)%soilcp/soil(nsoil)%slmsts) * dslz(k)  
-      wtmp = csite%soil_water(k,ipa)
+      wtmp = real(csite%soil_water(k,ipa))
       if(wcap > dzl) then 
          !!empty soil layer completely 
-         dw = -(csite%soil_water(k,ipa) - soil(nsoil)%soilcp)
+         dw = -1.0*real(csite%soil_water(k,ipa) - dble(soil(nsoil)%soilcp))
          dzl = dzl + wcap
       else
          !!reduce water by dz
@@ -774,9 +774,9 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
       end if
 
       !!update soil water
-      csite%soil_water(k,ipa) = csite%soil_water(k,ipa) + dw
+      csite%soil_water(k,ipa) = csite%soil_water(k,ipa) + dble(dw)
       !! error message for positive dw or soil below capacity
-      if(dw .gt. 1.0E-9 .or. (csite%soil_water(k,ipa)+1.0E-8) < soil(nsoil)%soilcp) then 
+      if(dw .gt. 1.0E-9 .or. (csite%soil_water(k,ipa)+1.0d-8) < dble(soil(nsoil)%soilcp)) then 
          print*," "
          print*,"dw = ",dw," in updateWatertableSubtract"
          print*,dzl,wcap,k,csite%watertable(ipa),done,fracw,nsoil
@@ -791,7 +791,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
       swater = swater - dw*dslz(k)
 
       !!update soil temperature
-      call qwtk8(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*1.e3,soil(nsoil)%slcpd,tempk,fracliq)
+      call qwtk8(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*1.d3,soil(nsoil)%slcpd,tempk,fracliq)
       csite%soil_tempk(k,ipa) = tempk
 
       !!iterate
@@ -800,7 +800,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
       else
          k = k-1
          nsoil = csite%ntext_soil(k,ipa)  !look up soil type
-         fracw = csite%soil_water(k,ipa) / soil(nsoil)%slmsts
+         fracw = real(csite%soil_water(k,ipa) / dble(soil(nsoil)%slmsts))
       endif
    enddo
    return
@@ -839,9 +839,9 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
    nsoil = csite%ntext_soil(slsl,ipa)
    potn_fd = -dslzi(slsl)+soil(nsoil)%slpots* &
         ((soil(nsoil)%slmsts/soil(nsoil)%soilcp)**soil(nsoil)%slbs - &
-        (soil(nsoil)%slmsts/csite%soil_water(slsl,ipa))**soil(nsoil)%slbs)
+        real(dble(soil(nsoil)%slmsts)/csite%soil_water(slsl,ipa))**soil(nsoil)%slbs)
    wflux_fd = slcons1(slsl,nsoil)  &
-                 * (csite%soil_water(1,ipa)/ soil(nsoil)%slmsts)**(2. * soil(nsoil)%slbs + 3.)  &
+                 * real(csite%soil_water(1,ipa)/ dble(soil(nsoil)%slmsts))**(2. * soil(nsoil)%slbs + 3.)  &
                  * potn_fd
    bf = min(-wflux_fd,baseflow)*dtlsm*0.001
 
@@ -851,15 +851,15 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
    end if
 
    !! first, remove baseflow water and heat
-   csite%soil_water(slsl,ipa) = csite%soil_water(slsl,ipa)-bf*dslzi(slsl)
-   if(csite%soil_water(slsl,ipa) < soil(nsoil)%soilcp) then
+   csite%soil_water(slsl,ipa) = csite%soil_water(slsl,ipa)-dble(bf*dslzi(slsl))
+   if(csite%soil_water(slsl,ipa) < dble(soil(nsoil)%soilcp)) then
       write(unit=*,fmt=*) 'Bottom dry:',csite%soil_water(1,ipa),bf,soil(nsoil)%soilcp
-      bf = bf + (csite%soil_water(slsl,ipa)-soil(nsoil)%soilcp)*dslz(slsl)
-      csite%soil_water(slsl,ipa) = soil(nsoil)%soilcp
+      bf = bf + real(csite%soil_water(slsl,ipa)-dble(soil(nsoil)%soilcp))*dslz(slsl)
+      csite%soil_water(slsl,ipa) = dble(soil(nsoil)%soilcp)
    end if
    csite%soil_energy(slsl,ipa) = csite%soil_energy(slsl,ipa)-bf*cliq1000*(csite%soil_tempk(slsl,ipa)-tsupercool)
 
-   baseflow = bf*1000/dtlsm !! reassign for return (m/step->mm/sec)
+   baseflow = bf*1000.0/dtlsm !! reassign for return (m/step->mm/sec)
    return
 end subroutine updateWatertableBaseflow
 !==========================================================================================!
@@ -904,8 +904,6 @@ subroutine writeHydro()
   integer            , save            :: count = 1                          !function calls since last output
   logical            , save            :: first = .true.                     !indicator for first time called
   integer                              :: igr, ipy, isi, ipa                 !Grid, Polygon, Site and Patch counters.
-  integer                              :: pcount                             !polygon counter
-  integer                              :: scount                             !site counter
   integer                              :: k                                  !soil layer counter
   real                                 :: WTbar                              !site-mean water table depth (meters)
   real                                 :: DZbar                              !site-mean change in water table height (meters)
@@ -917,6 +915,10 @@ subroutine writeHydro()
   real                                 :: area_land
   character(len=255)                   :: format_str
   real                                 :: tpw,tsw !! total site and patch water
+
+  return  
+!!! ALL variables in this section of code that are NOT for debugging should be migrated to the analysis files
+!!! MCD
 
   if(useTOPMODEL == 0) return
 
@@ -978,7 +980,7 @@ subroutine writeHydro()
 
                   tpw = 0.0
                   do k = cpoly%lsl(isi),nzg
-                     tpw = tpw + csite%soil_water(k,ipa)*dslzi(k)
+                     tpw = tpw + real(csite%soil_water(k,ipa)*dble(dslzi(k)))
                   enddo
                   tsw = tsw + tpw*csite%area(ipa)
 
@@ -990,7 +992,7 @@ subroutine writeHydro()
                   SSH   = SSH   + csite%soil_sat_heat(ipa)            * csite%area(ipa)
                   ksat  = ksat  + csite%ksat(ipa)                     * csite%area(ipa)
                   do k =cpoly%lsl(isi),nzg
-                     WPbar(k)  = WPbar(k)  + csite%soil_water(k,ipa)  * csite%area(ipa)
+                     WPbar(k)  = WPbar(k)  + real(csite%soil_water(k,ipa)*dble(csite%area(ipa)))
                      WPTbar(k) = WPTbar(k) + csite%soil_tempk(k,ipa)  * csite%area(ipa)
                   end do
                end do
@@ -1124,7 +1126,7 @@ subroutine calcHydroSurface()
                     endif
 
                     !! calculate flow velocity (m/s)
-                    flow_denom = 1+csite%runoff_a(2,ipa)*surf_water_depth**(4/3) & 
+                    flow_denom = 1.0+csite%runoff_a(2,ipa)*surf_water_depth**(4/3) & 
                          - csite%runoff_a(3,ipa)*surf_water_depth**(7/3)
                     if(flow_denom > 1.0) then
                        flow_vel = surf_water_depth**(2/3)*csite%runoff_a(1,ipa)/sqrt(flow_denom)
@@ -1134,7 +1136,7 @@ subroutine calcHydroSurface()
                     flow_vel = min(flow_vel,runoff_vmax) !! clamp runoff velocity to maximum sensible value
 
                     !!patch level flux out (kg/m2/s)
-                    patch_water_out = flow_vel*surf_water_depth*1000
+                    patch_water_out = flow_vel*surf_water_depth*1000.0
                     patch_heat_out  = flow_vel*surf_water_heat  !energy/m2/s
 
                     !!update vars
@@ -1155,8 +1157,8 @@ subroutine calcHydroSurface()
         !! SECOND PASS: CALCULATE RUN-IN
         do isi=1,cpoly%nsites
            !!calc NET site-level run-in rate (adjusts patch net water, prev calc was gross patch runoff)
-           site_water_in = 0
-           site_heat_in = 0
+           site_water_in = 0.0
+           site_heat_in = 0.0
 
            do ines=1,isi-1
               site_water_in = site_water_in + qwout(ines)*cgrid%site_adjacency(ines,isi,ipy)
@@ -1183,8 +1185,8 @@ subroutine calcHydroSurface()
            do ipa=1,csite%npatches
               !! adjust runoff rates for run-on
               !! negative values indicate a net gain of water from overland flow
-              csite%runoff(ipa)          = (1-cgrid%site_adjacency(isi,isi,ipy))*csite%runoff(ipa)          - site_water_in 
-              csite%avg_runoff_heat(ipa) = (1-cgrid%site_adjacency(isi,isi,ipy))*csite%avg_runoff_heat(ipa) - site_heat_in
+              csite%runoff(ipa)          = (1.-cgrid%site_adjacency(isi,isi,ipy))*csite%runoff(ipa)          - site_water_in 
+              csite%avg_runoff_heat(ipa) = (1.-cgrid%site_adjacency(isi,isi,ipy))*csite%avg_runoff_heat(ipa) - site_heat_in
               ! changed runoff code to assume recycled runoff occurrs at a patch level, not a intra-site level
               ! less realistic, but testing whether can avoid putting intersite runoff in the integrator
 
@@ -1212,7 +1214,7 @@ subroutine calcHydroSurface()
                  end if
 
                  !!runoff sanity checks
-                 if(csite%sfcwater_mass(i,ipa) > 100) then !!layer > 10cm
+                 if(csite%sfcwater_mass(i,ipa) > 100.0) then !!layer > 10cm
                     print*,"PREFLOOD"
                     print*,"patch water",csite%sfcwater_mass(i,ipa)
                     print*,"patch energy [J/kg]",csite%sfcwater_energy(i,ipa)
@@ -1224,7 +1226,7 @@ subroutine calcHydroSurface()
                     print*,"surf_water_depth",surf_water_depth
                  end if
                  !! if surface water =< 0, there is no more surface water
-                 if(csite%sfcwater_mass(i,ipa) <= 0) then
+                 if(csite%sfcwater_mass(i,ipa) <= 0.0) then
                     csite%sfcwater_mass(i,ipa)   = 0.0
                     csite%sfcwater_energy(i,ipa) = 0.0
                     csite%sfcwater_depth(i,ipa)  = 0.0
@@ -1634,6 +1636,7 @@ subroutine updateHydroParms (cgrid)
   use hydrology_constants
   use hydrology_coms, only: useRUNOFF, grassLAImax
   use consts_coms, only: grav
+  use pft_coms, only: include_pft_ag
   implicit none
   type(edtype)      , target  :: cgrid           ! Alias for current grid
   type(polygontype) , pointer :: cpoly           ! Alias for current polygon
@@ -1644,7 +1647,6 @@ subroutine updateHydroParms (cgrid)
   real                        :: n3              ! obstruction correction (e.g. CWD)
   real                        :: n4              ! non-woody vegetation correction
   real                        :: n0              ! total non-tree roughness
-  real                        :: a0              ! 
   real                        :: beta            ! slope (degrees)
   real                        :: sigma           ! patch 
 !  integer :: ifm ! grid counter
@@ -1673,8 +1675,7 @@ subroutine updateHydroParms (cgrid)
            n4    = 0.0   
            sigma = 0.0
            do ico=1,cpatch%ncohorts
-              ! MIKE, Should this be pft = 1 or 5 instead of 0? 
-              if(cpatch%pft(ico) == 0) then
+              if(include_pft_ag(cpatch%pft(ico)) == 1) then
                  !! update non-woody correction
                  n4 = n4 + 0.01*cpatch%LAI(ico)/GrassLAImax
               else
@@ -1685,8 +1686,8 @@ subroutine updateHydroParms (cgrid)
            n0 = nb + n3 + n4 
 !           cp%runoff_a(1) = 1.486*m2f**(-1/3)*sqrt(tan(beta))/n0
            csite%runoff_a(1,ipa) = m2f**(-1/3)*sqrt(tan(beta))/n0
-           csite%runoff_a(2,ipa) = c1 * m2f**(4/3)*sigma*1.49*1.49/(2*grav*m2f*n0*n0)
-           csite%runoff_a(3,ipa) = c2 * m2f**(7/3)*sigma*1.49*1.49/(2*grav*m2f*n0*n0)
+           csite%runoff_a(2,ipa) = c1 * m2f**(4/3)*sigma*1.49*1.49/(2.*grav*m2f*n0*n0)
+           csite%runoff_a(3,ipa) = c2 * m2f**(7/3)*sigma*1.49*1.49/(2.*grav*m2f*n0*n0)
         end do !patch
      end do !site 
   end do !polygon

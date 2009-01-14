@@ -47,7 +47,7 @@ subroutine copy_nl(copy_type)
        sfilin, ied_init_mode, current_time, ed_inputs_dir,   &
        end_time, radfrq, integration_scheme, ffilout, idoutput,imoutput,iyoutput, dtlsm, &
        frqstate,sfilout,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmax,ipmin, &
-       iedcnfgf, outfast, outstate,unitfast,unitstate
+       iedcnfgf, outfast, outstate,unitfast,unitstate,event_file
 
   use grid_coms, only: time,centlon,centlat,deltax,deltay,nnxp,nnyp,nstratx, &
                        nstraty,polelat,polelon,ngrids,timmax,time,nzg, nzs
@@ -160,6 +160,7 @@ subroutine copy_nl(copy_type)
      iphenyff      = nl%iphenyff
      
      iedcnfgf      = nl%iedcnfgf
+     event_file    = nl%event_file
      phenpath      = nl%phenpath
      maxpatch      = nl%maxpatch
      maxcohort     = nl%maxcohort
@@ -206,8 +207,8 @@ subroutine copy_nl(copy_type)
      end_time%year = iyearz
      end_time%month = imonthz
      end_time%date = idatez
-     end_time%time = int(itimez * 0.01) * 3600.0   &
-          + (itimez * 0.01 - int(itimez*0.01))*100.0*60.0
+     end_time%time = real(int(real(itimez) * 0.01)) * 3600.0   &
+          + (real(itimez) * 0.01 - real(int(real(itimez)*0.01)))*100.0*60.0
 
   elseif (copy_type == 'NOT_HISTORY') then
         
@@ -230,10 +231,10 @@ subroutine copy_nl(copy_type)
      current_time%year = iyeara
      current_time%month = imontha
      current_time%date = idatea
-     current_time%time = int(itimea * 0.01) * 3600.0   &
-          + (itimea * 0.01 - int(itimea*0.01))*100.0*60.0
+     current_time%time = real(int(real(itimea) * 0.01)) * 3600.0   &
+          + (real(itimea) * 0.01 - real(int(real(itimea)*0.01)))*100.0*60.0
      
-     time = 0.0
+     time = 0.0d0
   elseif (copy_type == 'HISTORY') then
         
      ! The namelist variables in this section either must not be changed on a
@@ -256,8 +257,8 @@ subroutine copy_nl(copy_type)
      current_time%year  = nl%iyearh
      current_time%month = nl%imonthh
      current_time%date  = nl%idateh
-     current_time%time  = int(nl%itimeh * 0.01) * 3600.0   &
-          + (nl%itimeh * 0.01 - int(nl%itimeh*0.01))*100.0*60.0
+     current_time%time  = real(int(real(nl%itimeh) * 0.01)) * 3600.0   &
+          + (real(nl%itimeh) * 0.01 - real(int(real(nl%itimeh)*0.01)))*100.0*60.0
 
      ! Calculate the current time
      call date_2_seconds (nl%iyearh,nl%imonthh,nl%idateh,nl%itimeh*100, &

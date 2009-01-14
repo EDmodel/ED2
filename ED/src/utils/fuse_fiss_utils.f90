@@ -269,6 +269,9 @@ module fuse_fiss_utils_ar
                                       , coh_tolerance_max  ! ! intent(in)
       use max_dims            , only :  n_pft              ! ! intent(in)
       use mem_sites           , only :  maxcohort          ! ! intent(in)
+      use allometry           , only :  dbh2h              & ! function
+                                      , dbh2bl             ! ! function
+
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target      :: csite             ! Current site
@@ -290,9 +293,11 @@ module fuse_fiss_utils_ar
       real                                 :: mean_hite      ! Mean height        (???)
       integer                              :: ntall          ! # of tall cohorts  (???)
       integer                              :: nshort         ! # of short cohorts (???)
-      !----- Functions --------------------------------------------------------------------!
-      real                   , external    :: dbh2h
-      real                   , external    :: dbh2bl
+      integer                              :: old_ncohorts   ! # of cohorts before fusion
+      integer                              :: new_ncohorts   ! # of cohorts after fusion
+      real                                 :: old_lai        ! Patch LAI before fusion
+      real                                 :: new_lai        ! Patch LAI after fusion
+      logical                              :: any_fusion     ! Flag: was there any fusion?
       !------------------------------------------------------------------------------------!
 
       !----- Return if maxcohort is 0 (flag for no cohort fusion). ------------------------!
@@ -301,9 +306,8 @@ module fuse_fiss_utils_ar
       !----- Start with no factor ---------------------------------------------------------!
       tolerance_mult = 1.0
 
-
       cpatch => csite%patch(ipa)
-     
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!! COHORT COUNT IS DEPRICATED AND WILL BE REMOVED SOON - RGK 11-28-2008           !!!
@@ -316,6 +320,14 @@ module fuse_fiss_utils_ar
       ! computational efficiency.                                                          !
       !------------------------------------------------------------------------------------!
       if(cpatch%ncohorts <= abs(maxcohort))return
+
+      
+      !----- Debugging variables, may be removed after check ------------------------------!
+      old_ncohorts = cpatch%ncohorts
+      old_lai      = 0.0
+      do ico1=1,cpatch%ncohorts
+         old_lai = old_lai + cpatch%lai(ico1)
+      end do
 
       !------------------------------------------------------------------------------------!
       !    Calculate mean DBH and HITE to help with the normalization of differences mean  !
@@ -429,7 +441,8 @@ module fuse_fiss_utils_ar
       end do force_fusion
 
       !----- If any fusion has happened, then we need to rearrange cohorts. ---------------!
-      if (.not. all(fuse_table)) then
+      any_fusion = .not. all(fuse_table)
+      if (any_fusion) then
 
          !---------------------------------------------------------------------------------!
          !     Now copy the merged patch to a temporary patch using the fuse_table as a    !
@@ -459,7 +472,14 @@ module fuse_fiss_utils_ar
          call sort_cohorts_ar(cpatch)
          csite%cohort_count(ipa) = count(fuse_table)
       end if
-     
+
+      !----- Calculate the new LAI --------------------------------------------------------!
+      new_ncohorts = cpatch%ncohorts
+      new_lai = 0.0
+      do ico1=1,cpatch%ncohorts
+         new_lai = new_lai + cpatch%lai(ico1)
+      end do
+
       !----- Deallocate the aux. table ----------------------------------------------------!
       deallocate(fuse_table)
      
@@ -485,7 +505,8 @@ module fuse_fiss_utils_ar
                                        , sla                    ! ! intent(in), lookup table
       use fusion_fission_coms  , only :  lai_tol                ! ! intent(in)
       use max_dims             , only :  n_pft                  ! ! intent(in)
-
+      use allometry            , only :  dbh2h                  & ! function
+                                       , dbh2bd                 ! ! function
       implicit none
       !----- Constants --------------------------------------------------------------------!
       real                   , parameter   :: epsilon=0.0001    ! Tweak factor...
@@ -501,9 +522,6 @@ module fuse_fiss_utils_ar
       integer                              :: tobesplit         ! # of cohorts to be split
       real                                 :: slai              ! LAI
       real                                 :: old_hcapveg       ! Old hcapveg
-      !----- Functions --------------------------------------------------------------------!
-      real                   , external    :: dbh2h
-      real                   , external    :: dbh2bd
       !------------------------------------------------------------------------------------!
 
 
@@ -706,8 +724,12 @@ module fuse_fiss_utils_ar
       use pft_coms      , only :  q                     & ! intent(in), lookup table
                                 , qsw                   & ! intent(in), lookup table
                                 , sla                   ! ! intent(in), lookup table
-      use ed_therm_lib  , only :  calc_hcapveg          ! ! subroutine
-      use therm_lib     , only : qwtk
+      use ed_therm_lib  , only :  calc_hcapveg          ! ! function
+      use therm_lib     , only :  qwtk                  ! ! subroutine
+      use allometry     , only :  calc_root_depth       & ! function
+                                , assign_root_depth     & ! function
+                                , bd2dbh                & ! function
+                                , dbh2h                 ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype) , target     :: cpatch            ! Current patch
@@ -721,11 +743,6 @@ module fuse_fiss_utils_ar
       real                         :: cb_max            !
       real                         :: root_depth        !
       real                         :: fracliq           ! Scratch var., liquid fraction
-      !----- Functions --------------------------------------------------------------------!
-      real            , external   :: calc_root_depth
-      integer         , external   :: assign_root_depth
-      real            , external   :: bd2dbh
-      real            , external   :: dbh2h
       !------------------------------------------------------------------------------------!
 
       newni = 1.0 / newn
