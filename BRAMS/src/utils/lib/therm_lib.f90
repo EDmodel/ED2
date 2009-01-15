@@ -2891,7 +2891,7 @@ module therm_lib
    ! internal energy .                                                                     !
    !---------------------------------------------------------------------------------------!
    subroutine qtk(q,tempk,fracliq)
-      use rconstants, only: cliqi,cicei,cliq,cice,alli,tsupercool,t3ple,cicet3,cliqt3
+      use rconstants, only: cliqi,cicei,cliq,cice,alli,t3ple,cicet3,cliqt3
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)  :: q        ! Internal energy                             [   J/kg]

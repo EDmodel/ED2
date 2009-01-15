@@ -8,7 +8,7 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,ifm,  &
   use hydrology_coms, only: useRUNOFF
   use grid_coms, only: nzg
   use soil_coms, only: dslz,min_sfcwater_mass,runoff_time
-  use consts_coms, only: tsupercool,cliq,t3ple
+  use consts_coms, only: alli,cliq,t3ple
 
   implicit none
 
@@ -106,8 +106,8 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,ifm,  &
               wfreeb = integration_buff%y%sfcwater_mass(ksn)  &
                    * (integration_buff%y%sfcwater_fracliq(ksn) - .1)  &
                    / 0.9 * min(1.0,runoff_time*hdid) 
-              qwfree = wfreeb * cliq   &
-                   * (integration_buff%y%sfcwater_tempk(ksn) - tsupercool)
+              qwfree = wfreeb * (cliq   &
+                   * integration_buff%y%sfcwater_tempk(ksn) + alli)
            
               ! Convert to J/m2
               integration_buff%y%sfcwater_energy(ksn) =   &
@@ -1088,7 +1088,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   use grid_coms, only: nzs, nzg
   use soil_coms, only: soil, water_stab_thresh, dslz, dslzi, &
        min_sfcwater_mass
-  use consts_coms, only: cice, cliq, alli,tsupercool,t3ple
+  use consts_coms, only: cice, cliq, alli,t3ple
   use therm_lib, only : qtk,qwtk,qwtk8
 
   implicit none
@@ -1246,7 +1246,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
 
           wfreeb = min(wfreeb,free_surface_water_demand)
 
-          qwfree = wfreeb * cliq * (initp%sfcwater_tempk(k)-tsupercool)
+          qwfree = wfreeb * (cliq * initp%sfcwater_tempk(k)+alli)
           initp%soil_water(nzg) = initp%soil_water(nzg)   &
                + dble(wfreeb * 0.001 * dslzi(nzg)) 
           initp%soil_energy(nzg) = initp%soil_energy(nzg) + qwfree   &
@@ -1280,7 +1280,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
        endif
 
      else
-        qwfree = wfreeb * cliq * (initp%sfcwater_tempk(k)-tsupercool)
+        qwfree = wfreeb * (cliq * initp%sfcwater_tempk(k)+alli)
      endif
      depthloss = wfreeb * 1.0e-3
      

@@ -81,7 +81,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
      atm_tmp, exner, geoht, lsl)
 
   use max_dims, only : nzgmax,nzsmax
-  use consts_coms, only : alvl, cliq1000, cpi, alvi, alli1000, t3ple,tsupercool
+  use consts_coms, only : alvl, cliq1000, cpi, alvi, alli1000, t3ple
   use grid_coms, only: nzg,nzs
   use soil_coms, only : soil, slz, dslz, dslzi, water_stab_thresh,  &
        infiltration_method, dslzti, slcons1, slzt, min_sfcwater_mass,ss,isoilbc
@@ -434,15 +434,15 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
 
            !! adjust other rates accordingly
            w_flux(nzg+1) = w_flux(nzg+1) + infilt
-           qw_flux(nzg+1)= qw_flux(nzg+1)+ infilt * cliq1000 * (tempk - tsupercool)
+           qw_flux(nzg+1)= qw_flux(nzg+1)+ infilt * (cliq1000 * tempk + alli1000)
            dinitp%virtual_water = dinitp%virtual_water - infilt*1000.
-           dinitp%virtual_heat  = dinitp%virtual_heat  - infilt*cliq1000 * (tempk - tsupercool)
+           dinitp%virtual_heat  = dinitp%virtual_heat  - infilt*(cliq1000 * tempk + alli1000)
         endif
      endif  !! end virtual water pool
      if(initp%nlev_sfcwater .ge. 1) then   !!process "snow" water pool 
         call qtk(initp%sfcwater_energy(1),tempk,fracliq)
         surface_water = initp%sfcwater_mass(1)*fracliq*0.001 !(m/m2)
-        !        surface_heat  = surface_water*(tempk - tsupercool)*cliq1000
+        !        surface_heat  = surface_water* (cliq1000*tempk + alli1000)
         nsoil = csite%ntext_soil(nzg,ipa)
         if(nsoil.ne.13) then
            !! calculate infiltration rate (m/s?)
@@ -452,9 +452,9 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
                 * .5 * (initp%soil_fracliq(nzg)+ fracliq)  !! mean liquid fraction
            !! adjust other rates accordingly
            w_flux(nzg+1) = w_flux(nzg+1) + infilt
-           qw_flux(nzg+1)= qw_flux(nzg+1)+ infilt * cliq1000 * (tempk - tsupercool)
+           qw_flux(nzg+1)= qw_flux(nzg+1)+ infilt * (cliq1000 * tempk + alli1000)
            dinitp%sfcwater_mass(1) = dinitp%sfcwater_mass(1) - infilt*1000.0
-           dinitp%sfcwater_energy(1) = dinitp%sfcwater_energy(1) - infilt * cliq1000 * (tempk - tsupercool) 
+           dinitp%sfcwater_energy(1) = dinitp%sfcwater_energy(1) - infilt * (cliq1000 * tempk + alli1000) 
            dinitp%sfcwater_depth(1) = dinitp%sfcwater_depth(1) - infilt
         endif
      endif  !! end snow water pool
@@ -496,7 +496,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
      endif
      
 
-     qw_flux(k) = w_flux(k) * cliq1000 * (initp%soil_tempk(k) - tsupercool)
+     qw_flux(k) = w_flux(k) * (cliq1000 * initp%soil_tempk(k) + alli1000)
      
      dinitp%avg_smoist_gg(k-1) = w_flux(k)*1000.0   ! Diagnostic
 
@@ -512,7 +512,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
                  * (wgpmid / soil(nsoil)%slmsts)**(2. * soil(nsoil)%slbs + 3.)  &
                  * freezeCor
      if (soil_liq(lsl) == 0.) w_flux(lsl) = 0.
-     qw_flux(lsl) = w_flux(lsl) * cliq1000 * (initp%soil_tempk(lsl) - tsupercool)
+     qw_flux(lsl) = w_flux(lsl) * (cliq1000 * initp%soil_tempk(lsl) + alli1000)
   else
      !----- Bedrock -----------------------------------------------------------------------!
      w_flux(lsl) = 0.

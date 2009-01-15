@@ -393,7 +393,7 @@ do j = 1,n3
                 nint(leaf_class(i,j,ipat)) == 20) then
                if (k .eq. 1) then
                   sfcwater_mass(k,i,j,ipat) = 100.
-                  sfcwater_energy(k,i,j,ipat) = (airtemp - tsupercool) * cliq
+                  sfcwater_energy(k,i,j,ipat) = cliq * airtemp + alli
                   sfcwater_depth(k,i,j,ipat) = .1
                endif
             endif

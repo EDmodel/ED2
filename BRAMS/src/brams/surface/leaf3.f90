@@ -710,38 +710,36 @@ subroutine leaftw(mzg,mzs,np  &
          qw = sfcwater_energy(k) * sfcwater_mass(k) + qwfree
          w = sfcwater_mass(k) + wfree
 
-   ! If (only) snow layer is too thin for computational stability, bring
-   ! it to thermal equilibrium with the top soil layer by exchanging
-   ! heat between them.
+         ! If (only) snow layer is too thin for computational stability, bring
+         ! it to thermal equilibrium with the top soil layer by exchanging
+         ! heat between them.
 
          if (ksnnew == 1 .and. sfcwater_mass(k) < 3.) then
             qwt = qw + soil_energy(mzg) * dslz(mzg)
             wt = w + soil_water(mzg) * 1.e3 * dslz(mzg)
             soilhcap = slcpd(nsoil) * dslz(mzg)
             call qwtk(qwt,wt,soilhcap,tempk(k+mzg),fracliq(k+mzg))
-            fac = cliq
-            if (fracliq(k+mzg) <= .0001) fac = cice
-            qw = (fac * tempk(k+mzg) + fracliq(k+mzg) * alli) * w
-            tempk(mzg) = tempk(k+mzg)
-            fracliq(mzg) = fracliq(k+mzg)
+            qw = w * (fracliq(k+mzg)*(cliq*tempk(k+mzg)+alli) &
+                     +(1.-fracliq(k+mzg))*(cice*tempk(k+mzg)))
+            tempk(mzg)       = tempk(k+mzg)
+            fracliq(mzg)     = fracliq(k+mzg)
             soil_energy(mzg) = (qwt - qw) * dslzi(mzg)
          else
-            call qwtk(qw,w,100.,tempk(k+mzg),fracliq(k+mzg))
+            call qwtk(qw,w,0.,tempk(k+mzg),fracliq(k+mzg))
          endif
 
-   ! Shed liquid in excess of a 1:9 liquid-to-ice ratio.  Limit this shed amount
-   ! (wfreeb) in lowest snow layer to amount top soil layer can hold.
-
+         ! Shed liquid in excess of a 1:9 liquid-to-ice ratio.  Limit this shed amount
+         ! (wfreeb) in lowest snow layer to amount top soil layer can hold.
          wfreeb = max (0.,w * (fracliq(k+mzg) - .1) / 0.9)
          depthloss = wfreeb * 1.e-3
          if (k == 1) then
             soilcap = 1.e3 * max (0.,-slz(mzg) * (slmsts(nsoil) - soil_water(mzg)))
             wfreeb = min (wfreeb, soilcap)
-            qwfree = wfreeb * cliq * (tempk(k+mzg) - tsupercool)
+            qwfree = wfreeb * (cliq * tempk(k+mzg) + alli)
             soil_water(mzg) = soil_water(mzg) + 1.e-3 * wfreeb * dslzi(mzg)
             soil_energy(mzg) = soil_energy(mzg) + qwfree * dslzi(mzg)
          endif
-         qwfree = wfreeb * cliq * (tempk(k+mzg) - tsupercool)
+         qwfree = wfreeb * (cliq * tempk(k+mzg) + alli)
 
          !srf-25/02/2005
          sfcwater_mass(k) = w - wfreeb ! from RAMS 6.0
@@ -756,7 +754,6 @@ subroutine leaftw(mzg,mzs,np  &
          else
             totsnow = totsnow + sfcwater_mass(k)
             sfcwater_energy(k) = (qw - qwfree) / sfcwater_mass(k)
-            sfcwater_energy(k) = max (0., min (6.4e5, sfcwater_energy(k)))
          end if
 
    ! Temporary simple evolution of snow layer depth and density
@@ -774,10 +771,10 @@ subroutine leaftw(mzg,mzs,np  &
    ! Re-distribute snow layers to maintain prescribed distribution of mass
 
       if (totsnow < 1.e-9) then
-         sfcwater_nlev = 0.
-         sfcwater_mass(1) = 0.
+         sfcwater_nlev      = 0.
+         sfcwater_mass(1)   = 0.
          sfcwater_energy(1) = 0.
-         sfcwater_depth(1) = 0.
+         sfcwater_depth(1)  = 0.
       else
          nlayers = ksnnew
          snowmin = 3.0
@@ -785,7 +782,7 @@ subroutine leaftw(mzg,mzs,np  &
          do k = 2,mzs
             if (snowmin * thicknet(k) <= totsnow .and.  &
                sfcwater_energy(k) < alli + cliqt3) newlayers = newlayers + 1
-         enddo
+         end do
          newlayers = min (newlayers, mzs, nlayers+1)
          sfcwater_nlev = float(newlayers)
          kold = 1
@@ -795,29 +792,31 @@ subroutine leaftw(mzg,mzs,np  &
             vctr14(k) = totsnow * thick(k,newlayers)
             vctr16(k) = 0.
             vctr18(k) = 0.
-   10       continue
-            wdiff = wtnew * vctr14(k) - wtold * sfcwater_mass(kold)
-            if (wdiff > 0.) then
-               vctr16(k) = vctr16(k) + wtold * sfcwater_mass(kold)  &
-                  * sfcwater_energy(kold)
-               vctr18(k) = vctr18(k) + wtold * sfcwater_depth(kold)
-               wtnew = wtnew - wtold * sfcwater_mass(kold) / vctr14(k)
-               kold = kold + 1
-               wtold = 1.
-               if (kold <= ksn) go to 10
-            else
-               vctr16(k) = vctr16(k) + wtnew * vctr14(k) * sfcwater_energy(kold)
-               vctr18(k) = vctr18(k) + wtnew * vctr14(k) * sfcwater_depth(kold)  &
-                  / max(1.e-9,sfcwater_mass(kold))
-               wtold = wtold - wtnew * vctr14(k) / sfcwater_mass(kold)
-               wtnew = 1.
-            endif
+            inner_loop: do
+               wdiff = wtnew * vctr14(k) - wtold * sfcwater_mass(kold)
+               if (wdiff > 0.) then
+                  vctr16(k) = vctr16(k) + wtold * sfcwater_mass(kold)  &
+                            * sfcwater_energy(kold)
+                  vctr18(k) = vctr18(k) + wtold * sfcwater_depth(kold)
+                  wtnew = wtnew - wtold * sfcwater_mass(kold) / vctr14(k)
+                  kold = kold + 1
+                  wtold = 1.
+                  if (kold <= ksn) cycle inner_loop
+               else
+                  vctr16(k) = vctr16(k) + wtnew * vctr14(k) * sfcwater_energy(kold)
+                  vctr18(k) = vctr18(k) + wtnew * vctr14(k) * sfcwater_depth(kold)  &
+                            / max(1.e-9,sfcwater_mass(kold))
+                  wtold = wtold - wtnew * vctr14(k) / sfcwater_mass(kold)
+                  wtnew = 1.
+               end if
+               exit inner_loop
+            end do inner_loop
          enddo
 
          do k = 1,newlayers
-            sfcwater_mass(k) = vctr14(k)
+            sfcwater_mass(k)   = vctr14(k)
             sfcwater_energy(k) = vctr16(k) / sfcwater_mass(k)
-            sfcwater_depth(k) = vctr18(k)
+            sfcwater_depth(k)  = vctr18(k)
          enddo
 
       endif
@@ -859,7 +858,7 @@ subroutine leaftw(mzg,mzs,np  &
          wflux(k) = - min(-wflux(k),soil_liq(k),half_soilair(k-1))
       endif
 
-      qwflux(k) = wflux(k) * cliq1000 * (tempk(k) - tsupercool)
+      qwflux(k) = wflux(k) * (cliq1000 * tempk(k) + alli1000)
 
    enddo
 
@@ -901,15 +900,15 @@ subroutine leaftw(mzg,mzs,np  &
 
    soil_water(ktrans) = soil_water(ktrans) - wloss
    soil_energy(ktrans) = soil_energy(ktrans)  &
-      - wloss * cliq1000 * (tempk(ktrans) -tsupercool)
+      - wloss * (cliq1000 * tempk(ktrans) + alli1000)
 
    4044 continue
 
    ! Compute ground vap mxrat for availability on next timestep; put into
    ! ground_rsat.
-
-   call grndvap(soil_energy(mzg),soil_water(mzg),soil_text(mzg)  &
-      ,sfcwater_energy(mzs),sfcwater_nlev,ground_rsat            &
+   newlayers = max(1,nint(sfcwater_nlev))
+   call grndvap(soil_energy(mzg),soil_water(mzg),soil_text(mzg)        &
+      ,sfcwater_energy(newlayers),sfcwater_nlev,ground_rsat            &
       ,ground_rvap,can_temp,can_rvap,prss                        )
 
    return
@@ -1739,7 +1738,7 @@ subroutine sfc_pcp(nqparm,level,i,j,cuparm,micro)
    use mem_micro
    use mem_cuparm
    use leaf_coms
-   use rconstants, only : cliq,tsupercool
+   use rconstants, only : cliq,alli
 
    implicit none
 
@@ -1753,7 +1752,7 @@ subroutine sfc_pcp(nqparm,level,i,j,cuparm,micro)
          pcpgl  = pcpgl + cuparm%conprr(i,j,icld)
       end do
       pcpgl  = pcpgl  * dtll 
-      qpcpgl = pcpgl  * cliq * (ths * pis - tsupercool)
+      qpcpgl = pcpgl  * (cliq * ths * pis + alli)
       dpcpgl = pcpgl  * .001
       pcpgc  = dtlc_factor * pcpgl
       qpcpgc = dtlc_factor * qpcpgl

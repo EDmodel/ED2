@@ -147,7 +147,7 @@ subroutine spatial_averages
   integer :: igr,ipy,isi,ipa
   integer :: k
   integer :: lai_index
-  real :: lai_sum,site_area_i,poly_area_i
+  real :: lai_patch,laiarea_site,site_area_i,poly_area_i
   real :: frqsumi
   real :: snow_min = 0.0000001
   real,dimension(3) :: area_sum
@@ -273,19 +273,20 @@ subroutine spatial_averages
            do ipa=1,csite%npatches
               cpatch => csite%patch(ipa)
               
-              if (cpatch%ncohorts>0) then
+              if (cpatch%ncohorts > 0) then
+                 lai_patch = sum(cpatch%lai, cpatch%lai > lai_min)
+              else
+                 lai_patch = 0.
+              end if
+              
+              if (lai_patch > 0.) then
                  
-                 
-                 lai_sum = max(lai_min,sum(cpatch%lai, cpatch%lai > lai_min))
-                 csite%avg_veg_temp(ipa)  = sum(cpatch%veg_temp * cpatch%lai,cpatch%lai > lai_min)   / lai_sum
+                 csite%laiarea(ipa) = csite%area(ipa)
+
+                 csite%avg_veg_temp(ipa)   = sum(cpatch%veg_temp * cpatch%lai,cpatch%lai > lai_min)   &
+                                           / lai_patch
                  csite%avg_veg_energy(ipa) = sum(cpatch%veg_energy)
                  csite%avg_veg_water(ipa)  = sum(cpatch%veg_water)
-
-                 if (lai_sum > lai_min) then
-                    csite%laiarea(ipa) = csite%area(ipa)
-                 else
-                    csite%laiarea(ipa) = 0.0
-                 end if
 
                  cgrid%avg_gpp(ipy)       = cgrid%avg_gpp(ipy)       + &
                       csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_gpp)
@@ -314,9 +315,10 @@ subroutine spatial_averages
                  
               else
                  ! Set veg-temp to air temp
-                 csite%avg_veg_energy(ipa)  = 0.0          
-                 csite%avg_veg_temp(ipa)  = csite%can_temp(ipa)
-                 csite%avg_veg_water(ipa) = 0.0
+                 csite%laiarea(ipa)         = 0.0
+                 !csite%avg_veg_energy(ipa)  = 0.0          
+                 csite%avg_veg_temp(ipa)    = csite%can_temp(ipa)
+                 !csite%avg_veg_water(ipa)  = 0.0
 
               endif
 
@@ -362,11 +364,17 @@ subroutine spatial_averages
 
            enddo
            
-           csite%laiarea = csite%laiarea / max(sum(csite%laiarea),1.0)
+           laiarea_site  = sum(csite%laiarea)
+           if (laiarea_site == 0.0) then
+              csite%laiarea = 0.0
+           else
+              csite%laiarea = csite%laiarea / sum(csite%laiarea)
+           end if
 
-           cpoly%avg_veg_energy(isi) = sum(csite%avg_veg_energy   * csite%laiarea)
-           cpoly%avg_veg_temp(isi)   = sum(csite%avg_veg_temp     * csite%laiarea)
-           cpoly%avg_veg_water(isi)  = sum(csite%avg_veg_water    * csite%laiarea)
+           ! Energy and water should be averaged including areas where they are zero.
+           cpoly%avg_veg_energy(isi) = sum(csite%avg_veg_energy   * csite%area)
+           cpoly%avg_veg_temp(isi)   = sum(csite%avg_veg_temp     * csite%area)
+           cpoly%avg_veg_water(isi)  = sum(csite%avg_veg_water    * csite%area)
            cpoly%avg_can_temp(isi)   = sum(csite%can_temp         * csite%area)
            cpoly%avg_can_shv(isi)    = sum(csite%can_shv          * csite%area)
 

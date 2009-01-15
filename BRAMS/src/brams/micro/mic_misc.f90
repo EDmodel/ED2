@@ -241,7 +241,6 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
             k2(2) = k
             rx(k,2)    = micro%rrp(k,i,j)
             totcond(k) = totcond(k)        + rx(k,2)
-            !call qtk(micro%q2(k,i,j),tcoal,fracliq)
             qx(k,2)    = micro%q2(k,i,j) - cliqt3
             qr(k,2)    = qx(k,2) * rx(k,2)
             if (progncat(2)) cx(k,2) = micro%crp(k,i,j)
