@@ -69,7 +69,7 @@ contains
                                              ! The model is much faster and more stable
                                              ! When heat capacity is high.
 
-     real,parameter :: min_hcapveg = 30.0    
+     real,parameter :: min_hcapveg = 300.0    
 
      integer :: pft     
      real,parameter :: veg_temp = 285.0      ! RIght now we are using a nominal vegetation
