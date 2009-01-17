@@ -100,7 +100,7 @@ module micphys
    real, dimension(nhcat)              :: cfmasft,dnfac,sipfac,cfmasi,pwmasi,ch1,ch3,cdp1
    real, dimension(nhcat)              :: pwvtmasi,emb2,cxmin
 
-   real, dimension(nzpmax)             :: tair,tairc,tairstrc,til,rvstr,press,exner
+   real, dimension(nzpmax)             :: tair,tairc,tairstr,til,rvstr,press,exner
    real, dimension(nzpmax)             :: rhoa,rhoi,rtot,rvap,rliq,rice,qhydm
    real, dimension(nzpmax)             :: rvlsair,rvisair,thrmcon
    real, dimension(nzpmax)             :: vapdif,dynvisc,rdynvsci,denfac,dn0i,colfacr

@@ -81,7 +81,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
      atm_tmp, exner, geoht, lsl)
 
   use max_dims, only : nzgmax,nzsmax
-  use consts_coms, only : alvl, cliq1000, cpi, alvi, alli1000, t3ple
+  use consts_coms, only : alvl, cliqvlme, cpi, alvi, allivlme, t3ple,wdns, wdnsi
   use grid_coms, only: nzg,nzs
   use soil_coms, only : soil, slz, dslz, dslzi, water_stab_thresh,  &
        infiltration_method, dslzti, slcons1, slzt, min_sfcwater_mass,ss,isoilbc
@@ -288,8 +288,8 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
      ! to partition the latent heat of sublimation
      ! and evaporation
      
-     call qwtk8(initp%soil_energy(nzg),initp%soil_water(nzg)*1.d3, &
-          soil(nsoil)%slcpd,tempk,fracliq)
+     call qwtk8(initp%soil_energy(nzg),initp%soil_water(nzg)*dble(wdns)                    &
+               ,soil(nsoil)%slcpd,tempk,fracliq)
 
   endif
 
@@ -332,7 +332,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
 
   qw_flux(nzg+ksn+1) = - dewgnd * (fracliq*alvl+(1.0-fracliq)*alvi) - qwshed
   w_flux(nzg+ksn+1) = - dewgnd - wshed
-  d_flux(ksn+1) = w_flux(nzg+ksn+1) * 0.001
+  d_flux(ksn+1) = w_flux(nzg+ksn+1) * wdnsi
   
   !! account for SNOW DENSITY
   !! fcn derived from CLM3.0 documentation which is based on
@@ -349,7 +349,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
         tempk = atm_tmp !! set temperature to atm
         if(tempk > 275.15)tempk=275.15
         if(tempk > 258.15)snowdens=50.0+1.5*(tempk-258.15)**1.5
-        d_flux(ksn+1) = d_flux(ksn+1)*1000.0/snowdens
+        d_flux(ksn+1) = d_flux(ksn+1)*wdns/snowdens
      endif
   endif
   !!  else  !! loosing water
@@ -434,15 +434,15 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
 
            !! adjust other rates accordingly
            w_flux(nzg+1) = w_flux(nzg+1) + infilt
-           qw_flux(nzg+1)= qw_flux(nzg+1)+ infilt * (cliq1000 * tempk + alli1000)
-           dinitp%virtual_water = dinitp%virtual_water - infilt*1000.
-           dinitp%virtual_heat  = dinitp%virtual_heat  - infilt*(cliq1000 * tempk + alli1000)
+           qw_flux(nzg+1)= qw_flux(nzg+1)+ infilt * (cliqvlme * tempk + allivlme)
+           dinitp%virtual_water = dinitp%virtual_water - infilt*wdns
+           dinitp%virtual_heat  = dinitp%virtual_heat  - infilt*(cliqvlme * tempk + allivlme)
         endif
      endif  !! end virtual water pool
      if(initp%nlev_sfcwater .ge. 1) then   !!process "snow" water pool 
         call qtk(initp%sfcwater_energy(1),tempk,fracliq)
-        surface_water = initp%sfcwater_mass(1)*fracliq*0.001 !(m/m2)
-        !        surface_heat  = surface_water* (cliq1000*tempk + alli1000)
+        surface_water = initp%sfcwater_mass(1)*fracliq*wdnsi !(m/m2)
+        !        surface_heat  = surface_water* (cliqvlme*tempk + allivlme)
         nsoil = csite%ntext_soil(nzg,ipa)
         if(nsoil.ne.13) then
            !! calculate infiltration rate (m/s?)
@@ -452,9 +452,9 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
                 * .5 * (initp%soil_fracliq(nzg)+ fracliq)  !! mean liquid fraction
            !! adjust other rates accordingly
            w_flux(nzg+1) = w_flux(nzg+1) + infilt
-           qw_flux(nzg+1)= qw_flux(nzg+1)+ infilt * (cliq1000 * tempk + alli1000)
-           dinitp%sfcwater_mass(1) = dinitp%sfcwater_mass(1) - infilt*1000.0
-           dinitp%sfcwater_energy(1) = dinitp%sfcwater_energy(1) - infilt * (cliq1000 * tempk + alli1000) 
+           qw_flux(nzg+1)= qw_flux(nzg+1)+ infilt * (cliqvlme * tempk + allivlme)
+           dinitp%sfcwater_mass(1) = dinitp%sfcwater_mass(1) - infilt*wdns
+           dinitp%sfcwater_energy(1) = dinitp%sfcwater_energy(1) - infilt * (cliqvlme * tempk + allivlme) 
            dinitp%sfcwater_depth(1) = dinitp%sfcwater_depth(1) - infilt
         endif
      endif  !! end snow water pool
@@ -496,9 +496,9 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
      endif
      
 
-     qw_flux(k) = w_flux(k) * (cliq1000 * initp%soil_tempk(k) + alli1000)
+     qw_flux(k) = w_flux(k) * (cliqvlme * initp%soil_tempk(k) + allivlme)
      
-     dinitp%avg_smoist_gg(k-1) = w_flux(k)*1000.0   ! Diagnostic
+     dinitp%avg_smoist_gg(k-1) = w_flux(k)*wdns   ! Diagnostic
 
   enddo
 
@@ -512,7 +512,7 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
                  * (wgpmid / soil(nsoil)%slmsts)**(2. * soil(nsoil)%slbs + 3.)  &
                  * freezeCor
      if (soil_liq(lsl) == 0.) w_flux(lsl) = 0.
-     qw_flux(lsl) = w_flux(lsl) * (cliq1000 * initp%soil_tempk(lsl) + alli1000)
+     qw_flux(lsl) = w_flux(lsl) * (cliqvlme * initp%soil_tempk(lsl) + allivlme)
   else
      !----- Bedrock -----------------------------------------------------------------------!
      w_flux(lsl) = 0.
@@ -535,16 +535,16 @@ subroutine leaftw_derivs_ar(initp, dinitp, csite,ipa,isi,ipy, rhos, prss, pcpg, 
            if (csite%ntext_soil(k2,ipa) /= 13) then
               if (initp%available_liquid_water(k1) > 0.0) then
                  
-                 wloss = 0.001 * initp%extracted_water(k1)                                 &
+                 wloss = wdnsi * initp%extracted_water(k1)                                 &
                        * soil_liq(k2) / initp%available_liquid_water(k1)
                  
                  dinitp%soil_water(k2) = dinitp%soil_water(k2) - dble(wloss)
                  
-                 qwloss = wloss * (cliq1000 * initp%soil_tempk(k2) + alli1000)
+                 qwloss = wloss * (cliqvlme * initp%soil_tempk(k2) + allivlme)
                  
                  dinitp%soil_energy(k2) = dinitp%soil_energy(k2) - qwloss
                  
-                 dinitp%avg_smoist_gc(k2)=dinitp%avg_smoist_gc(k2)-1000.0*wloss
+                 dinitp%avg_smoist_gc(k2)=dinitp%avg_smoist_gc(k2)-wdns*wloss
                  
                  dinitp%ebudget_latent = dinitp%ebudget_latent + qwloss
               end if
@@ -587,7 +587,8 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
      geoht, atm_tmp, lsl)
   
   use ed_state_vars,only: rk4patchtype,sitetype,patchtype
-  use consts_coms, only : alvl, cp, cpi, day_sec, grav, alvi, umol_2_kgC, mmdry, mmdryi,t3ple
+  use consts_coms, only :  alvl, cp, cpi, day_sec, grav, alvi, umol_2_kgC &
+                         , mmdry, mmdryi, t3ple, wdns
   use grid_coms, only : nzg
   use soil_coms, only : soil, dewmax
   use canopy_radiation_coms, only: lai_min
@@ -782,7 +783,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   ! should make the model more stable.
   ! ----------------------------------------------------------------
 
-  maxfluxrate = 0.55 * 1000. * initp%available_liquid_water(nzg)/dtlsm
+  maxfluxrate = 0.55 * wdns * initp%available_liquid_water(nzg)/dtlsm
   ! IF NO SURFACE WATER AND NOT DRY - EVAPORATE FROM SOIL PORES
   if(initp%nlev_sfcwater == 0 .and. initp%soil_water(nzg)  &
        > dble(soil(csite%ntext_soil(nzg,ipa))%soilcp)) then
@@ -995,18 +996,6 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
              - qwflxvc                &   ! Evaporative phase cooling 
              - transp * alvl          &   ! Transpirative phase cooling
              + qveg_water                 ! Internal energy of intercepted water
-
-!!$if(abs(dinitp%veg_energy(ico))>1000.0) then 
-!!$   print*,"dVegE",dinitp%veg_energy(ico),&
-!!$   cpatch%rshort_v(ico)&   ! Absorbed short wave radiation
-!!$             , cpatch%rlong_v(ico)    &   ! Net thermal radiation
-!!$             , -hflxvc                 &   ! Sensible heat flux
-!!$             , -leflxvc                &   ! Evaporative phase cooling 
-!!$             , -transp * alvl          &   ! Transpirative phase cooling
-!!$             , heat_intercept_rate    !   ! Precipitation
-!!$   print*,"hflxvc =",2.2 , cpatch%lai(ico) , cp , rhos , rbi  &
-!!$        , veg_temp , initp%can_temp
-!!$endif
 
 
         wflxvc_tot=wflxvc_tot+wflxvc

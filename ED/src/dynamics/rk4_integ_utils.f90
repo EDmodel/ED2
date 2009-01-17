@@ -425,23 +425,14 @@ subroutine get_yscal_ar(y, dy, htry, tiny_offset, yscal, cpatch, lsl)
              + abs(dy%sfcwater_energy(k)*htry) + tiny_offset
         yscal%sfcwater_depth(k) = abs(y%sfcwater_depth(k))  &
              + abs(dy%sfcwater_depth(k)*htry) + tiny_offset
-        if(yscal%sfcwater_energy(k) < sfc_min)then !! added by MCD (11/17/08)
-           yscal%sfcwater_energy(k) = sfc_min          !! why were we allowing this term to go to tiny?
-        endif
-                                                                        
      enddo
   else
      ! Low stability threshold
      do k=1,nzs
         yscal%sfcwater_mass(k) = 0.1
         if(y%sfcwater_mass(k) > min_sfcwater_mass)then
-           if(y%sfcwater_energy(k) <= cicet3)then
-              yscal%sfcwater_energy(k) = 1.0e4
-           elseif(y%sfcwater_energy(k) >= alli + cliqt3)then
-              yscal%sfcwater_energy(k) = cliq*110.0
-           else
-              yscal%sfcwater_energy(k) = 3350.0
-           endif
+           yscal%sfcwater_energy(k) = abs( y%sfcwater_energy(k))                           &
+                                    + abs(dy%sfcwater_energy(k))
         else
            yscal%sfcwater_energy(k) = 1.0e30
         endif
@@ -724,6 +715,7 @@ subroutine stabilize_snow_layers_ar(initp, csite,ipa, step, lsl)
   use soil_coms, only: soil
   use grid_coms, only: nzg, nzs
   use therm_lib, only: qwtk8, qtk
+  use consts_coms, only: wdns
   implicit none
 
   integer, intent(in) :: lsl
@@ -735,15 +727,15 @@ subroutine stabilize_snow_layers_ar(initp, csite,ipa, step, lsl)
   
   do k = lsl, nzg - 1
      soilhcap = soil(csite%ntext_soil(k,ipa))%slcpd
-     call qwtk8(initp%soil_energy(k),initp%soil_water(k)*1000.0d0  &
+     call qwtk8(initp%soil_energy(k),initp%soil_water(k)*dble(wdns)   &
           ,soilhcap,initp%soil_tempk(k),initp%soil_fracliq(k))
-  enddo
+  end do
 
   do k = 2, nzs
      if(initp%sfcwater_mass(k) > 0.0)  &
           call qtk(initp%sfcwater_energy(k),  &
           initp%sfcwater_tempk(k),initp%sfcwater_fracliq(k))
-  enddo
+  end do
   
   call redistribute_snow_ar(initp,csite,ipa,step)
   
@@ -1088,7 +1080,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   use grid_coms, only: nzs, nzg
   use soil_coms, only: soil, water_stab_thresh, dslz, dslzi, &
        min_sfcwater_mass
-  use consts_coms, only: cice, cliq, alli,t3ple
+  use consts_coms, only: cice, cliq, alli,t3ple,wdns
   use therm_lib, only : qtk,qwtk,qwtk8
 
   implicit none
@@ -1222,7 +1214,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
         end if
      else
         call qwtk8(initp%soil_energy(nzg)  &
-             ,initp%soil_water(nzg)*1000.0d0  &
+             ,initp%soil_water(nzg)*dble(wdns) &
              ,soil(csite%ntext_soil(nzg,ipa))%slcpd,  &
              initp%soil_tempk(nzg),initp%soil_fracliq(nzg))
         call qtk(qw/w,initp%sfcwater_tempk(k),  &
@@ -1270,7 +1262,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
              call fatal_error('NaN in soil energy','redistribute_snow_ar','rk4_integ_utils.f90')
           end if
           call qwtk8(initp%soil_energy(nzg)  &
-               ,initp%soil_water(nzg)*1000.0d0  &
+               ,initp%soil_water(nzg)*dble(wdns)  &
                ,soil(csite%ntext_soil(nzg,ipa))%slcpd,  &
                initp%soil_tempk(nzg),initp%soil_fracliq(nzg))
        else
@@ -1327,7 +1319,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   if(totsnow < min_sfcwater_mass .or. ksnnew == 0)then
      initp%nlev_sfcwater = 0
      call qwtk8(initp%soil_energy(nzg),  &
-          initp%soil_water(nzg) * 1000.0d0, &
+          initp%soil_water(nzg) * dble(wdns), &
           soil(csite%ntext_soil(nzg,ipa))%slcpd,  &
           initp%soil_tempk(nzg),initp%soil_fracliq(nzg))
   else

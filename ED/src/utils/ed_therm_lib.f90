@@ -132,7 +132,7 @@ contains
      
      use soil_coms,   only: ed_nstyp, soil
      use grid_coms,   only: nzg
-     use consts_coms, only:  pi1, grav, rvap
+     use consts_coms, only:  pi1, grav, rvap, wdns
      use therm_lib  , only: rhovsil, qtk, qwtk8
      
      implicit none
@@ -172,7 +172,7 @@ contains
         ! ratio of soil and is used for soil evaporation.  First, compute the
         ! "alpha" term or soil "relative humidity" and the "beta" term.
         
-        call qwtk8(soil_energy,soil_water*1.d3,soil(nts)%slcpd,tempk,fracliq)
+        call qwtk8(soil_energy,soil_water*dble(wdns),soil(nts)%slcpd,tempk,fracliq)
         surface_ssh = rhovsil(tempk) / rhos
         
         slpotvn = soil(nts)%slpots * (soil(nts)%slmsts / sngl(soil_water)) ** soil(nts)%slbs

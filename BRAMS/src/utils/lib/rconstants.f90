@@ -119,8 +119,10 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Liquid water properties                                                               !
    !---------------------------------------------------------------------------------------!
+   real, parameter :: wdns     = 1.000e3    ! Liquid water density              [    kg/m³]
+   real, parameter :: wdnsi    = 1./wdns    ! Inverse of liquid water density   [    m³/kg]
    real, parameter :: cliq     = 4.186e3    ! Liquid water specific heat (Cl)   [   J/kg/K]
-   real, parameter :: cliq1000 = 1000.*cliq ! Water heat capacity*water density [   J/m³/K]
+   real, parameter :: cliqvlme = wdns*cliq  ! Water heat capacity × water dens. [   J/m³/K]
    real, parameter :: cliqi    = 1./cliq    ! Inverse of water heat capacity    [   kg K/J]
    !---------------------------------------------------------------------------------------!
 
@@ -130,7 +132,7 @@ Module rconstants
    ! Ice properties                                                                        !
    !---------------------------------------------------------------------------------------!
    real, parameter :: cice     = 2.093e3      ! Ice specific heat (Ci)          [   J/kg/K]
-   real, parameter :: cice1000 = 1000. * cice ! Heat capacity*water density     [   J/m³/K]
+   real, parameter :: cicevlme = wdns * cice  ! Heat capacity × water density   [   J/m³/K]
    real, parameter :: cicei    = 1. / cice    ! Inverse of ice heat capacity    [   kg K/J]
    !---------------------------------------------------------------------------------------!
 
@@ -148,7 +150,7 @@ Module rconstants
    real, parameter :: alvl     = 2.50e6       ! Latent heat - vaporisation (Lv) [     J/kg]
    real, parameter :: alvi     = 2.834e6      ! Latent heat - sublimation  (Ls) [     J/kg]
    real, parameter :: alli     = 3.34e5       ! Latent heat - fusion       (Lf) [     J/kg]
-   real, parameter :: alli1000 = 1000. * alli ! Latent heat - fusion       (Lf) [     J/kg]
+   real, parameter :: allivlme = wdns * alli  ! Latent heat × water density     [     J/m³]
    real, parameter :: alvl2    = alvl*alvl    ! Lv²                             [   J²/kg²]
    real, parameter :: alvi2    = alvi*alvi    ! Ls²                             [   J²/kg²]
    real, parameter :: allii    = 1. / alli    ! 1./Lf                           [     kg/J]
@@ -161,13 +163,6 @@ Module rconstants
    real, parameter :: lst3ple  = alvi * t3ple ! Ls × T3                         [   K J/kg]
    real, parameter :: cicet3   = cice * t3ple ! C_ice × T3                      [     J/kg]
    real, parameter :: cliqt3   = cliq * t3ple ! C_liquid × T3                   [     J/kg]
-
-   !---------------------------------------------------------------------------------------!
-   !     Internal energy-related variable. QL = Cl×T+Lf, which can also be written         !
-   ! as:QL = Cl×(T-TLow), where TLow is the temperature that liquid water would have       !
-   ! if it was supercooled (i.e. cooled without without freezing), until QL became cice*T3.!
-   !---------------------------------------------------------------------------------------!
-   real, parameter :: tsupercool = - alli/cliq 
    !---------------------------------------------------------------------------------------!
 
 

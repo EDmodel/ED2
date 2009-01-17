@@ -448,8 +448,8 @@ real, dimension(n2,n3,npat) :: ustar        ,tstar         ,rstar        &
 ! changes may be alternatively be done in subroutine sfcinit_user in ruser.f
 
 !                 soil_energy(k,i,j,ipat) = (airtemp  + stgoff(k))  &
-!                    * (slcpd(nsoil) + soil_water(k,i,j,ipat) * cliq1000)  &
-!                    + soil_water(k,i,j,ipat) * alli1000
+!                    * (slcpd(nsoil) + soil_water(k,i,j,ipat) * cliqvlme)  &
+!                    + soil_water(k,i,j,ipat) * allivlme
 
 !              enddo
 

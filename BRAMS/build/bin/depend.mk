@@ -658,7 +658,7 @@ mic_tabs.o : $(MICRO)/mic_tabs.f90 micphys.o rconstants.o micro_coms.o
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
-mic_vap.o : $(MICRO)/mic_vap.f90 rconstants.o micphys.o therm_lib.o
+mic_vap.o : $(MICRO)/mic_vap.f90 rconstants.o micphys.o therm_lib.o micro_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
@@ -1591,7 +1591,7 @@ ed_therm_lib.o : $(ED_UTILS)/ed_therm_lib.f90 consts_coms.o pft_coms.o ed_state_
 	rm -f $(<F:.f90=.f90)
 
 ed_type_init.o : $(ED_INIT)/ed_type_init.f90 ed_state_vars.o max_dims.o grid_coms.o        \
-	soil_coms.o therm_lib.o allometry.o
+	soil_coms.o therm_lib.o allometry.o consts_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

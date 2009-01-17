@@ -671,7 +671,7 @@ subroutine leaftw(mzg,mzs,np  &
    enddo
 
    if (ksn == 0) then
-      soil_water(mzg) = soil_water(mzg) - 1.e-3 * wflxgc * dslzidt(mzg)
+      soil_water(mzg) = soil_water(mzg) - wdnsi * wflxgc * dslzidt(mzg)
    else
       sfcwater_mass(ksn) = max(0.,sfcwater_mass(ksn) - wflxgc * dtll)
    endif
@@ -686,7 +686,7 @@ subroutine leaftw(mzg,mzs,np  &
       vegfracc = 1. - veg_fracarea
       qwfree = dewgnd * alvl + qpcpgl * vegfracc + qwshed * veg_fracarea
       wfree = dewgnd + pcpgl * vegfracc + wshed * veg_fracarea
-      depthgain = dpcpgl * vegfracc + (dewgnd + wshed) * veg_fracarea * .001
+      depthgain = dpcpgl * vegfracc + (dewgnd + wshed) * veg_fracarea * wdnsi
    else
       ksnnew = ksn
       qwfree = 0.
@@ -716,34 +716,33 @@ subroutine leaftw(mzg,mzs,np  &
 
          if (ksnnew == 1 .and. sfcwater_mass(k) < 3.) then
             qwt = qw + soil_energy(mzg) * dslz(mzg)
-            wt = w + soil_water(mzg) * 1.e3 * dslz(mzg)
+            wt = w + soil_water(mzg) * wdns * dslz(mzg)
             soilhcap = slcpd(nsoil) * dslz(mzg)
             call qwtk(qwt,wt,soilhcap,tempk(k+mzg),fracliq(k+mzg))
             qw = w * (fracliq(k+mzg)*(cliq*tempk(k+mzg)+alli) &
-                     +(1.-fracliq(k+mzg))*(cice*tempk(k+mzg)))
+                     +(1.-fracliq(k+mzg))*cice*tempk(k+mzg))
             tempk(mzg)       = tempk(k+mzg)
             fracliq(mzg)     = fracliq(k+mzg)
             soil_energy(mzg) = (qwt - qw) * dslzi(mzg)
          else
-            call qwtk(qw,w,0.,tempk(k+mzg),fracliq(k+mzg))
+            call qwtk(qw,w,100.,tempk(k+mzg),fracliq(k+mzg))
          endif
 
          ! Shed liquid in excess of a 1:9 liquid-to-ice ratio.  Limit this shed amount
          ! (wfreeb) in lowest snow layer to amount top soil layer can hold.
          wfreeb = max (0.,w * (fracliq(k+mzg) - .1) / 0.9)
-         depthloss = wfreeb * 1.e-3
+         depthloss = wfreeb * wdnsi
          if (k == 1) then
-            soilcap = 1.e3 * max (0.,-slz(mzg) * (slmsts(nsoil) - soil_water(mzg)))
+            soilcap = wdns * max (0.,-slz(mzg) * (slmsts(nsoil) - soil_water(mzg)))
             wfreeb = min (wfreeb, soilcap)
             qwfree = wfreeb * (cliq * tempk(k+mzg) + alli)
-            soil_water(mzg) = soil_water(mzg) + 1.e-3 * wfreeb * dslzi(mzg)
+            soil_water(mzg) = soil_water(mzg) + wdnsi * wfreeb * dslzi(mzg)
             soil_energy(mzg) = soil_energy(mzg) + qwfree * dslzi(mzg)
          endif
          qwfree = wfreeb * (cliq * tempk(k+mzg) + alli)
 
          !srf-25/02/2005
          sfcwater_mass(k) = w - wfreeb ! from RAMS 6.0
-         !sfcwater_energy(k) = w - wfreeb ! old way
 
 
          sfcwater_depth(k) = sfcwater_depth(k) + depthgain - depthloss
@@ -760,7 +759,7 @@ subroutine leaftw(mzg,mzs,np  &
 
          sfcwater_depth(k) = sfcwater_depth(k) * (1. - dtll / 1.e5)
          snden = sfcwater_mass(k) / max(1.e-6,sfcwater_depth(k))
-         sndenmax = 1000.
+         sndenmax = wdns
          sndenmin = max(30.,200. * (wfree + wfreeb) / max(1.e-9,sfcwater_mass(k)))
          snden = min (sndenmax, max (sndenmin, snden))
          sfcwater_depth(k) = sfcwater_mass(k) / snden
@@ -858,7 +857,7 @@ subroutine leaftw(mzg,mzs,np  &
          wflux(k) = - min(-wflux(k),soil_liq(k),half_soilair(k-1))
       endif
 
-      qwflux(k) = wflux(k) * (cliq1000 * tempk(k) + alli1000)
+      qwflux(k) = wflux(k) * (cliqvlme * tempk(k) + allivlme)
 
    enddo
 
@@ -877,10 +876,6 @@ subroutine leaftw(mzg,mzs,np  &
    ! profile function and water extractibility function, and
    ! improved minimum value are being considered.
    ! Units of wloss are m3/m3, of transp are kg/m2/s.
-   !
-   !cccccccccccccccccccccccccccccc  TRANSPIRATION bypass  ccccccccccccccccc
-   !      go to 4044
-   !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
    wg = 0.
    nsl = nint(soil_text(mzg))
@@ -895,14 +890,12 @@ subroutine leaftw(mzg,mzs,np  &
       endif
    enddo
 
-   wloss = min(transp * dslzidt(ktrans) * 1.e-3,wg   &
+   wloss = min(transp * dslzidt(ktrans) * wdnsi,wg   &
           ,soil_water(ktrans) - soilcp(nsl))
 
    soil_water(ktrans) = soil_water(ktrans) - wloss
    soil_energy(ktrans) = soil_energy(ktrans)  &
-      - wloss * (cliq1000 * tempk(ktrans) + alli1000)
-
-   4044 continue
+      - wloss * (cliqvlme * tempk(ktrans) + allivlme)
 
    ! Compute ground vap mxrat for availability on next timestep; put into
    ! ground_rsat.
@@ -1061,7 +1054,7 @@ subroutine canopy(mzg,mzs,ksn,nveg  &
    !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
          if (slpotv > swp) swp = slpotv
       enddo
-      swp = swp * g * 1000.
+      swp = swp * g * wdns
 
    ! Begin canopy time-split iterations
 
@@ -1148,10 +1141,9 @@ subroutine canopy(mzg,mzs,ksn,nveg  &
 
          qwtot = qpcpgc * vf + hcapveg * tvegk
          call qwtk(qwtot,pcpgc * vf,hcapveg,veg_temp,fracliqv)
-         fac = cliq
-         if (fracliqv <= .0001) fac = cice
          ! From RAMS 6.0
-         qwshed = qwshed + (fac * tvegk - + fracliqv * alli) * wshed0
+         qwshed = qwshed + wshed0 * ( fracliqv *(cliq *tvegk + alli) &
+                                    + (1.-fracliqv) * cice * tvegk )
 
    ! Update temperature and moisture of canopy.  hcapcan [J/m2/K] and
    ! wcapcan [kg_air/m2] are
@@ -1411,7 +1403,7 @@ subroutine grndvap(soil_energy,soil_water,soil_text,sfcwater_energy  &
 
      nsoil = nint(soil_text)
 
-     call qwtk(soil_energy,soil_water*1.e3,slcpd(nsoil),tempkk,fracliqq)
+     call qwtk(soil_energy,soil_water*wdns,slcpd(nsoil),tempkk,fracliqq)
      ground_rsat = rslif(prsg,tempkk)
 
      slpotvn = slpots(nsoil) * (slmsts(nsoil) / soil_water) ** slbs(nsoil)
@@ -1738,7 +1730,7 @@ subroutine sfc_pcp(nqparm,level,i,j,cuparm,micro)
    use mem_micro
    use mem_cuparm
    use leaf_coms
-   use rconstants, only : cliq,alli
+   use rconstants, only : cliq,alli,wdnsi
 
    implicit none
 
@@ -1753,7 +1745,7 @@ subroutine sfc_pcp(nqparm,level,i,j,cuparm,micro)
       end do
       pcpgl  = pcpgl  * dtll 
       qpcpgl = pcpgl  * (cliq * ths * pis + alli)
-      dpcpgl = pcpgl  * .001
+      dpcpgl = pcpgl  * wdnsi
       pcpgc  = dtlc_factor * pcpgl
       qpcpgc = dtlc_factor * qpcpgl
 
@@ -1968,7 +1960,7 @@ subroutine sfcrad(mzg,mzs,ip  &
 
       do k = 1,mzg
          nsoil = nint(soil_text(k))
-         call qwtk(soil_energy(k),soil_water(k)*1.e3  &
+         call qwtk(soil_energy(k),soil_water(k)*wdns  &
             ,slcpd(nsoil),tempk(k),fracliq(k))
       enddo
 

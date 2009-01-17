@@ -307,7 +307,7 @@ subroutine initqin(n1,n2,n3,q2,q6,q7,pi0,pp,theta,dn0,cccnp,cifnp)
         igraup,        & ! intent(in)
         ihail,         & ! intent(in)
         ipris            ! intent(in)
-   use rconstants, only : cpi,t3ple,tsupercool,cliq,cice,alli !intent(in)
+   use rconstants, only : cpi,t3ple,cliq,cice,alli !intent(in)
 
    implicit none
 

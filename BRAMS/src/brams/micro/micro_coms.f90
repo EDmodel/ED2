@@ -7,7 +7,7 @@
 !==========================================================================================!
 module micro_coms
 
-   use rconstants, only : boltzmann,pi1,t00
+   use rconstants, only : boltzmann,pi1,t00,cliq,alli,cice,t3ple
    use micphys   , only : ncat,nhcat
 
    implicit none
@@ -23,17 +23,19 @@ module micro_coms
    !---------------------------------------------------------------------------------------!
    !   Nucleation-related variables.                                                       !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: mfp     = 6.6e-8  ! Mean free path at ref temp and press.   [    1/m]
-   real, parameter :: retempc = 25.0    ! Reference temperature                   [      K]
-   real, parameter :: repres  = 101325. ! Reference pressure                      [     Pa]
-   real, parameter :: raros   = 3.e-7   ! Aerosol radius, (Cotton et al. 1986)    [      m]
-   real, parameter :: aka     = 5.39e-3 ! Aerosol thermal conductivity 
-   !----- Combination of fac tors for Walko et. al (1995) equation 58 ---------------------!
-   real, parameter :: w95_58 = mfp*repres/ (retempc+t00)
+   real, parameter :: mfp      = 6.6e-8  ! Mean free path at ref temp and press.  [    1/m]
+   real, parameter :: retempk  = 298.15  ! Reference temperature                  [      K]
+   real, parameter :: dtempmax = 25.0    ! Maximum reduction for ref. temperature [      K]
+   real, parameter :: repres   = 101325. ! Reference pressure                     [     Pa]
+   real, parameter :: raros    = 3.e-7   ! Aerosol radius, (Cotton et al. 1986)   [      m]
+   real, parameter :: aka      = 5.39e-3 ! Aerosol thermal conductivity 
+   !----- Combination of factors for Walko et. al (1995) equation 58 ----------------------!
+   real, parameter :: w95_58 = mfp*repres/ retempk
    !----- Boltzmann over 6 pi -------------------------------------------------------------!
    real, parameter :: boltzo6pi = boltzmann/(6.*pi1) 
-   !----- Minimum temperature for ice nucleation [ °C] ------------------------------------!
-   real, parameter :: ticenucmin = -2.0
+   !----- Minimum temperature for ice nucleation and ice growth [ K] ----------------------!
+   real, parameter :: ticenucmin = t00 - 2.0
+   real, parameter :: ticegrowth = t00 - 14.0
    !---------------------------------------------------------------------------------------!
    !    Maximum supersaturation with respect to ice for determining total number of IFN    !
    ! that can nucleate in Meyers' formula
@@ -41,7 +43,15 @@ module micro_coms
    real, parameter ::  ssi0 = 0.40
    !---------------------------------------------------------------------------------------!
 
-
+   !----- Minimum and maximum energy for rain ---------------------------------------------!
+   real, parameter :: qrainmin = cliq * (t00 - 80.) + alli ! Minimum -80°C
+   real, parameter :: qrainmax = cliq * (t00 + 48.) + alli ! Maximum  48°C
+   !----- Minimum and maximum energy for mixed phases -------------------------------------!
+   real, parameter :: qmixedmin = cice * (t00 - 4.)        ! Minimum, full ice at -4°C
+   real, parameter :: qmixedmax = cliq * (t00 + 4.) + alli ! Minimum, full liquid at 4°C
+   !----- Maximum energy for pristine ice before it completely disappears -----------------!
+   real, parameter :: qprismax  = 0.99*(cliq*t3ple+alli)+0.01*cice*t3ple ! 99% is gone
+   !---------------------------------------------------------------------------------------!
 
    !----- Coefficients to compute the thermal conductivity --------------------------------!
    real, dimension(3), parameter :: ckcoeff = (/ -4.818544e-3, 1.407892e-4, -1.249986e-7 /)

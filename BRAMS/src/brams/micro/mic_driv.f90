@@ -76,7 +76,7 @@ subroutine micro_driver()
    implicit none
 
    !----- Local Variables: ----------------------------------------------------------------!
-   integer                            :: ngr,lhcat,i,j,k
+   integer                            :: ngr,lhcat,i,j
    logical, dimension(maxgrds), save  :: ncall2g = .true.
    real                               :: dtlti 
    !---------------------------------------------------------------------------------------!
@@ -399,7 +399,7 @@ subroutine copyback(m1,i,j,thp,btheta,rtp,dn0,micro)
            vctr11        ! ! intent(out)
    
    use rconstants, only: t00,cliqt3,cliq,cice,alli
-   use therm_lib , only: qreltk
+   use therm_lib , only: qtk
 
    implicit none
 
@@ -436,7 +436,7 @@ subroutine copyback(m1,i,j,thp,btheta,rtp,dn0,micro)
       micro%accpr(i,j) = micro%accpr(i,j) + accpx(2)
       micro%pcprr(i,j) = pcprx(2)
       do k=lpw,k2(10)
-         micro%q2(k,i,j)  = qx(k,2) + cliqt3
+         micro%q2(k,i,j)  = qx(k,2)
          micro%rrp(k,i,j) = rx(k,2)
          if (progncat(2)) micro%crp(k,i,j) = cx(k,2)
       end do
@@ -489,8 +489,7 @@ subroutine copyback(m1,i,j,thp,btheta,rtp,dn0,micro)
       micro%accpg(i,j) = micro%accpg(i,j) + accpx(6)
       micro%pcprg(i,j) = pcprx(6)
       do k=lpw,k2(10)
-         call qreltk(qx(k,6),tcoal,fracliq)
-         micro%q6(k,i,j)  = fracliq*(cliq*tcoal+alli) + (1-fracliq)*cice*tcoal
+         micro%q6(k,i,j)  = qx(k,6)
          micro%rgp(k,i,j) = rx(k,6)
          if (progncat(6)) micro%cgp(k,i,j) = cx(k,6)
       end do
@@ -504,8 +503,7 @@ subroutine copyback(m1,i,j,thp,btheta,rtp,dn0,micro)
       micro%accph(i,j) = micro%accph(i,j) + accpx(7)
       micro%pcprh(i,j) = pcprx(7)
       do k=lpw,k2(10)
-         call qreltk(qx(k,7),tcoal,fracliq)
-         micro%q7(k,i,j)  = fracliq*(cliq*tcoal+alli) + (1-fracliq)*cice*tcoal
+         micro%q7(k,i,j)  = qx(k,7)
          micro%rhp(k,i,j) = rx(k,7)
          if (progncat(7)) micro%chp(k,i,j) = cx(k,7)
       end do

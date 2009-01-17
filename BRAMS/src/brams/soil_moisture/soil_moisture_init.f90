@@ -25,7 +25,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,mzs,npat,ifm   &
 
   use io_params, only : timstr
 
-  use rconstants, only : cpi,alli1000,cliq1000,t00       ! INTENT(IN)
+  use rconstants, only : cpi,allivlme,cliqvlme,t00       ! INTENT(IN)
 
   use leaf_coms, only : soilcp,  & ! INTENT(IN)
        slmsts,                   & ! INTENT(IN)
@@ -269,8 +269,8 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,mzs,npat,ifm   &
                  !              print*,soil_water(k,i,j,ipat)
 
                  soil_energy(k,i,j,ipat) = (airtemp + stgoff(k))   &
-                      * (slcpd(nsoil) + soil_water(k,i,j,ipat)  * cliq1000)  &
-                      + soil_water(k,i,j,ipat)  * alli1000
+                      * (slcpd(nsoil) + soil_water(k,i,j,ipat)  * cliqvlme)  &
+                      + soil_water(k,i,j,ipat)  * allivlme
               enddo
            enddo
         enddo
@@ -503,8 +503,8 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,mzs,npat,ifm   &
               nsoil = nint(soil_text(k,i,j,ipat))
 
               soil_energy(k,i,j,ipat) = (airtemp + stgoff(k))   &
-                   * (slcpd(nsoil) + soil_water(k,i,j,ipat)  * cliq1000)  &
-                   + soil_water(k,i,j,ipat)  * alli1000
+                   * (slcpd(nsoil) + soil_water(k,i,j,ipat)  * cliqvlme)  &
+                   + soil_water(k,i,j,ipat)  * allivlme
            enddo
         enddo
      enddo

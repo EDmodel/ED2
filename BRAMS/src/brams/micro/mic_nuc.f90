@@ -327,7 +327,8 @@ subroutine contnuc (rx,cx,tx,vap,press,dynvisc,thrmcon,tair,tairc,pbvi,ptvi,pdvi
           ,ticenucmin ! ! Minimum temperature for ice to nucleate (C)
    
    use rconstants, only : &
-          twopi       ! ! 2*pi
+           t00        & ! zero Celsius
+          ,twopi      ! ! 2*pi
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -339,12 +340,12 @@ subroutine contnuc (rx,cx,tx,vap,press,dynvisc,thrmcon,tair,tairc,pbvi,ptvi,pdvi
    ptotvi = 0.
 
    if (tx <= ticenucmin .and. rx > rxmin) then
-      ana = exp(4.11 - 0.262 * tx)
+      ana = exp(4.11 - 0.262 * (tx-t00))
       akn = w95_58 * tair / (press * raros)
       dfar = boltzo6pi * tair * (1.+ akn) / (raros * dynvisc)
 
       f1 = twopi * dn1 * cx * ana * dtlt
-      f2 = thrmcon * (tairc - tx) / press
+      f2 = thrmcon * (tair - tx) / press
 
       ft = 0.4 * (1. + 1.45 * akn + 0.4 * akn * exp(-1. / akn))                            &
          * (thrmcon + 2.5 * akn * aka) / ((1. + 3. * akn)                                  &

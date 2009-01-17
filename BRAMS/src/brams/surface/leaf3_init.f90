@@ -369,14 +369,14 @@ do j = 1,n3
 ! temperature is initially below triple point, this will immediately adjust to soil
 ! at triple point with part ice.  In order to begin with partially or totally frozen
 ! soil, reduce or remove the latent-heat-of-fusion term (the one with the
-! factor of alli1000) from soil_energy below.  If the soil is totally frozen and the
-! temperature is below zero C, the factor of cliq1000 should be changed to cice1000
+! factor of allivlme) from soil_energy below.  If the soil is totally frozen and the
+! temperature is below zero C, the factor of cliqvlme should be changed to cicevlme
 ! to reflect the reduced heat capacity of ice compared to liquid.  These
 ! changes may be alternatively be done in subroutine sfcinit_user in ruser.f
 
             soil_energy(k,i,j,ipat) = (airtemp + stgoff(k))  &
-               * (slcpd(nsoil) + soil_water(k,i,j,ipat) * cliq1000)  &
-               + soil_water(k,i,j,ipat) * alli1000
+               * (slcpd(nsoil) + soil_water(k,i,j,ipat) * cliqvlme)  &
+               + soil_water(k,i,j,ipat) * allivlme
 
          enddo
 

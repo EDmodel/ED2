@@ -4,7 +4,7 @@ subroutine ed_init_coup_atm
   use misc_coms,     only: ied_init_mode,runtype
   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype,edgrid_g
   use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr
-  use rconstants,    only: alli1000, cliq1000, cice1000, t3ple
+  use rconstants,    only: allivlme, cliqvlme, cicevlme, t3ple
   use grid_coms,      only: nzs, nzg, ngrids
   use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
@@ -145,23 +145,27 @@ subroutine ed_init_coup_atm
                     do k = 1, nzg
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 1.0
-                       csite%soil_water(k,ipa) = max(soil(nsoil)%soilcp,   &
-                            slmstr(k) * soil(nsoil)%slmsts)
-                       csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa) *   &
-                            (soil(nsoil)%slcpd + csite%soil_water(k,ipa) *   &
-                            cliq1000) + csite%soil_water(k,ipa) * alli1000
-                    enddo
+                       csite%soil_water(k,ipa) = max( soil(nsoil)%soilcp                   &
+                                                    , slmstr(k) * soil(nsoil)%slmsts)
+                       csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
+                                                * csite%soil_tempk(k,ipa)                  &
+                                                + sngl(csite%soil_water(k,ipa))            &
+                                                * ( cliqvlme * csite%soil_water(k,ipa)     &
+                                                  + allivlme)
+                    end do
                  else
                     do k = 1, nzg
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 0.0
-                       csite%soil_water(k,ipa) = max(soil(nsoil)%soilcp,             &
-                            slmstr(k) * soil(nsoil)%slmsts)
-                       csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa) *   &
-                            (soil(nsoil)%slcpd + csite%soil_water(k,ipa) * cice1000)
-                    enddo
-                 endif
-              
+                       csite%soil_water(k,ipa) = max( soil(nsoil)%soilcp                   &
+                                                    , slmstr(k) * soil(nsoil)%slmsts)
+                       csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
+                                                * csite%soil_tempk(k,ipa)                  &
+                                                + sngl(csite%soil_water(k,ipa))            &
+                                                * cicevlme * csite%soil_water(k,ipa)
+                    end do
+                 end if
+
                  nls   = csite%nlev_sfcwater(ipa)
                  nlsw1 = max(nls,1)
                  
@@ -462,7 +466,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
 
   use ed_state_vars, only: edtype, polygontype, sitetype, patchtype
   use soil_coms, only: soilstate_db, soil,slz
-  use rconstants, only: alli1000, cliq1000, cice1000, t3ple
+  use rconstants, only: allivlme, cliqvlme, cicevlme, t3ple
   use grid_coms, only: nzg, ngrids
   use ed_therm_lib,only:ed_grndvap
   
@@ -561,23 +565,25 @@ subroutine read_soil_moist_temp_ar(cgrid)
 
                           if(abs(slz(k)) < 0.1)then
                              csite%soil_tempk(k,ipa) = tmp1
-                             soil_tempaux = tmp1 - t3ple
-                             csite%soil_water(k,ipa) = max(soil(ntext)%soilcp,   &
-                                  soilw1 * soil(ntext)%slmsts)
+                             csite%soil_water(k,ipa) = max( soil(ntext)%soilcp             &
+                                                          , soilw1 * soil(ntext)%slmsts)
                           else
                              csite%soil_tempk(k,ipa) = tmp2
-                             soil_tempaux = tmp2 - t3ple
-                             csite%soil_water(k,ipa) = max(soil(ntext)%soilcp,   &
-                                  soilw2 * soil(ntext)%slmsts)
+                             csite%soil_water(k,ipa) = max( soil(ntext)%soilcp             &
+                                                          , soilw2 * soil(ntext)%slmsts)
                           endif
-                          if(soil_tempaux > 0.0)then
-                             csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa) * (soil(ntext)%slcpd   &
-                                  + csite%soil_water(k,ipa) * cliq1000) +   &
-                                    csite%soil_water(k,ipa) * alli1000
+                          if (csite%soil_tempk(k,ipa) > t3ple) then
+                             csite%soil_energy(k,ipa) = soil(ntext)%slcpd                  &
+                                                      * csite%soil_tempk(k,ipa)            &
+                                                      + sngl(csite%soil_water(k,ipa))      &
+                                                      * ( cliqvlme*csite%soil_tempk(k,ipa) &
+                                                        + allivlme)
                              csite%soil_fracliq(k,ipa) = 1.0
                           else
-                             csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa) * (soil(ntext)%slcpd   &
-                                  + csite%soil_water(k,ipa) * cice1000)
+                             csite%soil_energy(k,ipa) = soil(ntext)%slcpd                  &
+                                                      * csite%soil_tempk(k,ipa)            &
+                                                      + sngl(csite%soil_water(k,ipa))      &
+                                                      * cicevlme*csite%soil_tempk(k,ipa)
                              csite%soil_fracliq(k,ipa) = 0.0
                           end if
                        end do
@@ -594,7 +600,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
                        nls   = csite%nlev_sfcwater(ipa)
                        nlsw1 = max(nls,1)
                  
-                       call ed_grndvap(nls,                                &
+                       call ed_grndvap(nls,                    &
                             csite%ntext_soil       (nzg,ipa),  &
                             csite%soil_water       (nzg,ipa),  &
                             csite%soil_energy      (nzg,ipa),  &

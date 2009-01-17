@@ -1839,27 +1839,28 @@ module therm_lib
    ! ature and temperature in Kelvin, the old and new mixing ratio [kg/kg] and the old and !
    ! new enthalpy [J/kg].                                                                  !
    !---------------------------------------------------------------------------------------!
-   real function dthil_sedimentation(thil,theta,temp,rold,rnew,qrold,qrnew)
-      use rconstants, only: ttripoli,cp,alvi
+   real function dthil_sedimentation(thil,theta,temp,rliqold,rliqnew,riceold,ricenew)
+      use rconstants, only: ttripoli,cp,alvi,alvl
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real, intent(in) :: thil  ! Ice-liquid potential temperature                 [     K]
-      real, intent(in) :: theta ! Potential temperature                            [     K]
-      real, intent(in) :: temp  ! Temperature                                      [     K]
-      real, intent(in) :: rold  ! Old hydrometeor mixing ratio                     [ kg/kg]
-      real, intent(in) :: rnew  ! New hydrometeor mixing ratio                     [ kg/kg]
-      real, intent(in) :: qrold ! Old hydrometeor latent enthalpy                  [  J/kg]
-      real, intent(in) :: qrnew ! New hydrometeor latent enthalpy                  [  J/kg]
+      real, intent(in) :: thil    ! Ice-liquid potential temperature               [     K]
+      real, intent(in) :: theta   ! Potential temperature                          [     K]
+      real, intent(in) :: temp    ! Temperature                                    [     K]
+      real, intent(in) :: rliqold ! Old liquid mixing ratio                        [ kg/kg]
+      real, intent(in) :: rliqnew ! New liquid mixing ratio                        [ kg/kg]
+      real, intent(in) :: riceold ! Old hydrometeor latent enthalpy                [  J/kg]
+      real, intent(in) :: ricenew ! New hydrometeor latent enthalpy                [  J/kg]
       !------------------------------------------------------------------------------------!
 
 
       if (newthermo) then
-         dthil_sedimentation = - thil * (alvi*(rnew-rold) - (qrnew-qrold))          &
+         dthil_sedimentation = - thil * (alvi*(ricenew-riceold) + alvl*(rliqnew-rliqold))  &
                                         / (cp * max(temp,ttripoli))
       else
-         dthil_sedimentation = - thil*thil * (alvi*(rnew-rold) - (qrnew-qrold))     &
-                                        / (cp * max(temp,ttripoli) * theta)
+         dthil_sedimentation = - thil * thil                                               &
+                                      * (alvi*(ricenew-riceold) + alvl*(rliqnew-rliqold))  &
+                                      / (cp * max(temp,ttripoli) * theta)
       end if
       return
    end function dthil_sedimentation

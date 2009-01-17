@@ -15,14 +15,14 @@ Module consts_coms
      , b_cp         => cp         , b_cpog       => cpog       , b_rocp       => rocp      &
      , b_cpor       => cpor       , b_cpi        => cpi        , b_rm         => rm        &
      , b_ep         => ep         , b_epi        => epi        , b_toodry     => toodry    &
-     , b_cliq       => cliq       , b_cliq1000   => cliq1000   , b_cliqi      => cliqi     &
-     , b_cice       => cice       , b_cice1000   => cice1000   , b_cicei      => cicei     &
+     , b_cliq       => cliq       , b_cliqvlme   => cliqvlme   , b_cliqi      => cliqi     &
+     , b_cice       => cice       , b_cicevlme   => cicevlme   , b_cicei      => cicei     &
      , b_t3ple      => t3ple      , b_t3plei     => t3plei     , b_es3ple     => es3ple    &
      , b_es3plei    => es3plei    , b_epes3ple   => epes3ple   , b_alvl       => alvl      &
-     , b_alvi       => alvi       , b_alli       => alli       , b_alli1000   => alli1000  &
-     , b_allii      => allii      , b_tsupercool => tsupercool , b_erad2      => erad2     &
+     , b_alvi       => alvi       , b_alli       => alli       , b_allivlme   => allivlme  &
+     , b_allii      => allii      , b_wdns       => wdns       , b_erad2      => erad2     &
      , b_sqrtpii    => sqrtpii    , b_onesixth   => onesixth   , b_cicet3     => cicet3    &
-     , b_cliqt3     => cliqt3
+     , b_cliqt3     => cliqt3     , b_wdnsi      => wdnsi
 
    implicit none
 
@@ -43,17 +43,17 @@ Module consts_coms
    real, parameter :: cpi        = b_cpi        , rvap       = b_rm
    real, parameter :: ep         = b_ep         , epi        = b_epi
    real, parameter :: toodry     = b_toodry     , cliq       = b_cliq
-   real, parameter :: cliq1000   = b_cliq1000   , cliqi      = b_cliqi
-   real, parameter :: cice       = b_cice       , cice1000   = b_cice1000
+   real, parameter :: cliqvlme   = b_cliqvlme   , cliqi      = b_cliqi
+   real, parameter :: cice       = b_cice       , cicevlme   = b_cicevlme
    real, parameter :: cicei      = b_cicei      , t3ple      = b_t3ple
    real, parameter :: t3plei     = b_t3plei     , es3ple     = b_es3ple
    real, parameter :: es3plei    = b_es3plei    , epes3ple   = b_epes3ple
    real, parameter :: alvl       = b_alvl       , alvi       = b_alvi
-   real, parameter :: alli       = b_alli       , alli1000   = b_alli1000
-   real, parameter :: allii      = b_allii      , tsupercool = b_tsupercool
+   real, parameter :: alli       = b_alli       , allivlme   = b_allivlme
+   real, parameter :: allii      = b_allii      , wdns       = b_wdns
    real, parameter :: erad2      = b_erad2      , sqrtpii    = b_sqrtpii
    real, parameter :: onesixth   = b_onesixth   , cicet3     = b_cicet3
-   real, parameter :: cliqt3     = b_cliqt3
+   real, parameter :: cliqt3     = b_cliqt3     , wdnsi      = b_wdnsi
 
 #else
    implicit none
@@ -146,8 +146,10 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    ! Liquid water properties                                                               !
    !---------------------------------------------------------------------------------------!
+   real, parameter :: wdns     = 1.000e3    ! Liquid water density              [    kg/m³]
+   real, parameter :: wdnsi    = 1./wdns    ! Inverse of liquid water density   [    m³/kg]
    real, parameter :: cliq     = 4.186e3    ! Liquid water specific heat (Cl)   [   J/kg/K]
-   real, parameter :: cliq1000 = 1000.*cliq ! Water heat capacity*water density [   J/m³/K]
+   real, parameter :: cliqvlme = wdns*cliq  ! Water heat capacity × water dens. [   J/m³/K]
    real, parameter :: cliqi    = 1./cliq    ! Inverse of water heat capacity    [   kg K/J]
    !---------------------------------------------------------------------------------------!
 
@@ -157,7 +159,7 @@ Module consts_coms
    ! Ice properties                                                                        !
    !---------------------------------------------------------------------------------------!
    real, parameter :: cice     = 2.093e3      ! Ice specific heat (Ci)          [   J/kg/K]
-   real, parameter :: cice1000 = 1000. * cice ! Heat capacity*water density     [   J/m³/K]
+   real, parameter :: cicevlme = wdns * cice  ! Heat capacity × water density   [   J/m³/K]
    real, parameter :: cicei    = 1. / cice    ! Inverse of ice heat capacity    [   kg K/J]
    !---------------------------------------------------------------------------------------!
 
@@ -175,17 +177,10 @@ Module consts_coms
    real, parameter :: alvl     = 2.50e6       ! Latent heat - vaporisation (Lv) [     J/kg]
    real, parameter :: alvi     = 2.834e6      ! Latent heat - sublimation  (Ls) [     J/kg]
    real, parameter :: alli     = 3.34e5       ! Latent heat - fusion       (Lf) [     J/kg]
-   real, parameter :: alli1000 = 1000. * alli ! Latent heat - fusion       (Lf) [     J/m³]
+   real, parameter :: allivlme = wdns * alli  ! Latent heat × water density     [     J/m³]
    real, parameter :: allii    = 1./alli      ! 1/Latent heat - fusion     (Lf) [     J/kg]
    real, parameter :: cicet3   = cice * t3ple ! C_ice × T3                      [     J/kg]
    real, parameter :: cliqt3   = cliq * t3ple ! C_liquid × T3                   [     J/kg]
-
-   !---------------------------------------------------------------------------------------!
-   !     Internal energy-related variable. QL = Cl×T+Lf, which can also be written         !
-   ! as:QL = Cl×(T-TLow), where TLow is the temperature that liquid water would have       !
-   ! if it was supercooled (i.e. cooled without without freezing), until QL became cice×T3 !
-   !---------------------------------------------------------------------------------------!
-   real, parameter :: tsupercool = - alli/cliq 
    !---------------------------------------------------------------------------------------!
 
 #endif

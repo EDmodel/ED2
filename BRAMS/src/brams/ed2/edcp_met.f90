@@ -1170,7 +1170,7 @@ subroutine copy_avgvars_to_leaf(ifm)
    use ed_state_vars , only: edgrid_g,edtype,polygontype,sitetype,patchtype
    use mem_leaf      , only: leaf_g
    use mem_grid      , only: nzg
-   use rconstants    , only: t3ple,cliq1000,cice1000,alli1000
+   use rconstants    , only: t3ple,cliqvlme,cicevlme,allivlme
    use soil_coms     , only: soil
    use misc_coms, only: frqsum
    implicit none

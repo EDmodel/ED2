@@ -189,6 +189,7 @@ subroutine sfcprt(n2,n3,mzg,mzs,npat,leaf,vnam,lprt)
 
 use mem_leaf
 use leaf_coms
+use rconstants, only: wdns
 use therm_lib, only: qtk, qwtk
 type (leaf_vars) :: leaf
 
@@ -318,7 +319,7 @@ do k = k1,k2
                   else
                      nsoil = nint(leaf%soil_text(k,i,j,ipat))
                      call qwtk(leaf%soil_energy(k,i,j,ipat)       &
-                              ,leaf%soil_water (k,i,j,ipat)*1.e3  &
+                              ,leaf%soil_water (k,i,j,ipat)*wdns  &
                               ,slcpd(nsoil),tempkk(i+1-i1),fracliqq(i+1-i1))
                   endif
                enddo
@@ -342,7 +343,7 @@ do k = k1,k2
                do i = i1,i2
                   nsoil = nint(leaf%soil_text(k,i,j,ipat))
                   call qwtk(leaf%soil_energy(k,i,j,ipat)       &
-                           ,leaf%soil_water (k,i,j,ipat)*1.e3  &
+                           ,leaf%soil_water (k,i,j,ipat)*wdns  &
                            ,slcpd(nsoil),tempkk(i+1-i1),fracliqq(i+1-i1))
                enddo
                call plin(nc,j,ipat,2,1.               &

@@ -403,7 +403,7 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
                     do k = 1,mzg
                        nsoil = nint(leaf%soil_text(k,i,j,ip))
                        call qwtk(leaf%soil_energy(k,i,j,ip),  &
-                            leaf%soil_water(k,i,j,ip)*1.e3,   &
+                            leaf%soil_water(k,i,j,ip)*wdns,   &
                             slcpd(nsoil), tempk(k), fracliq(k))
                     enddo
                     ! Diagnose snow temperature.
@@ -529,8 +529,8 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
                     do k=1,mzg
                        nsoil = nint(leaf%soil_text(k,i,j,ip))
                        leaf%soil_energy(k,i,j,ip) = tempk(k)  &
-                            *(slcpd(nsoil)+leaf%soil_water(k,i,j,ip)*cliq1000) &
-                            + leaf%soil_water(k,i,j,ip)*alli1000
+                            *(slcpd(nsoil)+leaf%soil_water(k,i,j,ip)*cliqvlme) &
+                            + leaf%soil_water(k,i,j,ip)*allivlme
                     enddo
 
                  endif

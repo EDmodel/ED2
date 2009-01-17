@@ -23,14 +23,14 @@ subroutine thrmstr(m1)
 
    use rconstants
    use micphys
-   use therm_lib, only: qreltk,thil2temp,dtempdrs
+   use therm_lib, only: qtk,thil2temp,dtempdrs
 
    implicit none
    !----- Argument ------------------------------------------------------------------------!
    integer, intent(in) :: m1
    !----- Local variables -----------------------------------------------------------------!
    integer :: k,lcat
-   real :: fracliq,tcoal,tairstr,t1stguess
+   real :: fracliq,tcoal,t1stguess
    !---------------------------------------------------------------------------------------!
 
    do k = lpw,m1
@@ -74,7 +74,7 @@ subroutine thrmstr(m1)
    !----- Graupel and Hail have both phases, figure out how much of each ------------------!
    do lcat = 6,7
       do k = k1(lcat),k2(lcat)
-         call qreltk(qx(k,lcat),tcoal,fracliq)
+         call qtk(qx(k,lcat),tcoal,fracliq)
          rliq(k) = rliq(k) + rx(k,lcat) * fracliq
          rice(k) = rice(k) + rx(k,lcat) * (1. - fracliq)
       end do
@@ -88,9 +88,8 @@ subroutine thrmstr(m1)
 
    !----- Finding the air temperature and -dT/drs for this temperature --------------------!
    do k = k1(10),k2(10)
-      tairstr = thil2temp(thil(k),exner(k),press(k),rliq(k),rice(k),tair(k))
-      sa(k,1) = (-1) * dtempdrs(exner(k),thil(k),tairstr,rliq(k),rice(k),1.e-12)
-      tairstrc(k) = tairstr - t00
+      tairstr(k) = thil2temp(thil(k),exner(k),press(k),rliq(k),rice(k),tair(k))
+      sa(k,1) = (-1) * dtempdrs(exner(k),thil(k),tairstr(k),rliq(k),rice(k),1.e-12)
    end do
 
    return
@@ -267,7 +266,8 @@ end subroutine vapdiff
 subroutine vapflux(lcat)
 
    use micphys
-   use rconstants, only : alli,t3ple,t00
+   use rconstants, only : alli,t3ple,t00,cliqt3
+   use micro_coms, only : qmixedmin,qmixedmax,qprismax
    implicit none
 
    integer, intent(in) :: lcat
@@ -293,7 +293,8 @@ subroutine vapflux(lcat)
       ! we then compute the first term of the RHS of equation (9) [vap(k,lcat)]            !
       ! sa(k,if4) has rs'(Ref)*T(Ref) - rs(Ref).                                           !
       !------------------------------------------------------------------------------------!
-      tx(k,lcat)  = (ss(k,lcat) * rvap(k) + sw(k,lcat)) * sm(k,lcat)
+      tx(k,lcat)  = (ss(k,lcat) * rvap(k) + sw(k,lcat)) * sm(k,lcat)                       &
+                  + t3ple * (1.-sm(k,lcat))
       vap(k,lcat) = su(k,lcat) * (rvap(k) + sa(k,if4) - rvsrefp(k,if1) * tx(k,lcat))
 
 
@@ -307,9 +308,10 @@ subroutine vapflux(lcat)
             qx(k,lcat) = sc(if1) * tx(k,lcat) + sk(if1)
             qr(k,lcat) = qx(k,lcat) * rxx
          else
-            qx(k,lcat) = (rvap(k)*sf(k,lcat)+sg(k,lcat)-tx(k,lcat)*se(k,lcat)) / sd(k,lcat)
-            !----- It seems a bound sanity check, not sure what 35000 and -10000 mean. ----!
-            qx(k,lcat) = min(350000.,max(-100000.,qx(k,lcat)))
+            qx(k,lcat) = (rvap(k)*sf(k,lcat)+sg(k,lcat)-tx(k,lcat)*se(k,lcat))       &
+                       / sd(k,lcat)
+            !----- It seems a bound sanity check, not sure what 350000 and -100000 mean. --!
+            !qx(k,lcat) = min(qmixedmax,max(qmixedmin,qx(k,lcat)))
             qr(k,lcat) = qx(k,lcat) * rxx
          end if
       end if
@@ -320,10 +322,8 @@ subroutine vapflux(lcat)
       !                                                                                    ! 
       ! Bob - Now also do the following section if pristine ice totally melts:evaporate it !
       !       too.                                                                         !
-      ! THERMODYNAMIC DILEMMA - what is written as 0.988*alli used to be 330000., which is !
-      !     equivalent. However, shouldn't it be alli (334000.)???
       !------------------------------------------------------------------------------------!
-      if ((lcat == 3 .and. qx(k,lcat) > 0.988*alli) .or. vap(k,lcat) <= -rx(k,lcat)) then
+      if ((lcat == 3 .and. qx(k,lcat) > qprismax) .or. vap(k,lcat) <= -rx(k,lcat)) then
          sumuy(k) = sumuy(k) - su(k,lcat) * sy(k,lcat)
          sumuz(k) = sumuz(k) - su(k,lcat) * sz(k,lcat)
          sumvr(k) = sumvr(k) + rx(k,lcat)
@@ -453,7 +453,8 @@ subroutine psxfer()
          rx(k,4) = rx(k,4) + sngl(dvap)
          cx(k,4) = cx(k,4) + sngl(dnum)
          qr(k,4) = qr(k,4) + sngl(dqr)
-
+         if (rx(k,3) > rxmin(3)) qx(k,3) = qr(k,3) / rx(k,3)
+         if (rx(k,4) > rxmin(4)) qx(k,4) = qr(k,4) / rx(k,4)
       end if
 
    end do mainloop
@@ -485,8 +486,8 @@ subroutine newtemp()
    !---------------------------------------------------------------------------------------!
 
    do k = k1(10),k2(10)
-      tairc(k)   = tairstrc(k) + sa(k,1) * (rvstr(k) - rvap(k))
-      tair(k)    = tairc(k)    + t00
+      tair(k)    = tairstr(k) + sa(k,1) * (rvstr(k) - rvap(k))
+      tairc(k)   = tair(k)    - t00
       pottemp(k) = tair(k) * cp / exner(k)
 
       rvlsair(k) = rslf(press(k),tair(k))

@@ -4,7 +4,7 @@ subroutine ed_init_atm_ar
   use misc_coms,     only: ied_init_mode,runtype
   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype,edgrid_g
   use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr
-  use consts_coms,    only: alli1000, cliq1000, cice1000, t3ple
+  use consts_coms,    only: allivlme, cliqvlme, cicevlme, t3ple
   use grid_coms,      only: nzs, nzg, ngrids
   use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
@@ -142,11 +142,11 @@ subroutine ed_init_atm_ar
                        csite%soil_fracliq(k,ipa) = 1.0
                        csite%soil_water(k,ipa)  = dble(max(soil(nsoil)%soilcp              &
                                                           ,slmstr(k) * soil(nsoil)%slmsts))
-                       csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa)                  &
-                                                * ( soil(nsoil)%slcpd                      &
-                                                  + sngl(csite%soil_water(k,ipa))          &
-                                                  * cliq1000 )                             &
-                                                + sngl(csite%soil_water(k,ipa)) * alli1000
+                       csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
+                                                * csite%soil_tempk(k,ipa)                  &
+                                                + sngl(csite%soil_water(k,ipa))            &
+                                                * ( cliqvlme * csite%soil_tempk(k,ipa)     &
+                                                  + allivlme)
                     end do
                  else
                     do k = 1, nzg
@@ -154,10 +154,10 @@ subroutine ed_init_atm_ar
                        csite%soil_fracliq(k,ipa) = 0.0
                        csite%soil_water(k,ipa)  = max(dble(soil(nsoil)%soilcp,             &
                                                           ,slmstr(k) * soil(nsoil)%slmsts))
-                       csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa)                  &
-                                                * ( soil(nsoil)%slcpd                      &
-                                                  + sngl(csite%soil_water(k,ipa))          &
-                                                  * cice1000)
+                       csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
+                                                * csite%soil_tempk(k,ipa)                  &
+                                                + sngl(csite%soil_water(k,ipa))            &
+                                                * cicevlme * csite%soil_tempk(k,ipa)
                     end do
                  end if
               
@@ -418,7 +418,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
 
   use ed_state_vars, only: edtype, polygontype, sitetype, patchtype
   use soil_coms, only: soilstate_db, soil,slz
-  use consts_coms, only: alli1000, cliq1000, cice1000, t3ple
+  use consts_coms, only: allivlme, cliqvlme, cicevlme, t3ple
   use grid_coms, only: nzg, ngrids
   use ed_therm_lib,only:ed_grndvap
 
@@ -511,28 +511,25 @@ subroutine read_soil_moist_temp_ar(cgrid)
 
                           if(abs(slz(k)) < 0.1)then
                              csite%soil_tempk(k,ipa) = tmp1
-                             soil_tempaux = tmp1 - t3ple
                              csite%soil_water(k,ipa) = dble(max(soil(ntext)%soilcp,   &
                                   soilw1 * soil(ntext)%slmsts))
                           else
                              csite%soil_tempk(k,ipa) = tmp2
-                             soil_tempaux = tmp2 - t3ple
                              csite%soil_water(k,ipa) = dble(max(soil(ntext)%soilcp,   &
                                   soilw2 * soil(ntext)%slmsts))
                           endif
-                          if(soil_tempaux > 0.0)then
-                             csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa)            &
-                                                      * ( soil(ntext)%slcpd                &
-                                                        + sngl(csite%soil_water(k,ipa))    &
-                                                        * cliq1000)                        &
-                                                      + csite%soil_water(k,ipa)            &
-                                                      * alli1000
+                          if(csite%soil_tempk(k,ipa) > t3ple)then
+                             csite%soil_energy(k,ipa) = soil(ntext)%slcpd                  &
+                                                      * csite%soil_tempk(k,ipa)            &
+                                                      + sngl(csite%soil_water(k,ipa))      &
+                                                      * ( cliqvlme*csite%soil_tempk(k,ipa) &
+                                                        + allivlme)
                              csite%soil_fracliq(k,ipa) = 1.0
                           else
-                             csite%soil_energy(k,ipa) = csite%soil_tempk(k,ipa)            &
-                                                      * (soil(ntext)%slcpd                 &
+                             csite%soil_energy(k,ipa) = soil(ntext)%slcpd                  &
+                                                      * csite%soil_tempk(k,ipa)            &
                                                       + sngl(csite%soil_water(k,ipa))      &
-                                                      * cice1000)
+                                                      * cicevlme * csite%soil_tempk(k,ipa)
                              csite%soil_fracliq(k,ipa) = 0.0
                           end if
                        end do
