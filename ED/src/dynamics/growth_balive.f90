@@ -179,7 +179,7 @@ subroutine transfer_C_from_storage_ar(cpatch,ico, salloc, nitrogen_uptake, N_upt
 
   use pft_coms, only: c2n_leaf, c2n_storage, c2n_stem
   use decomp_coms, only: f_labile
-
+  use allometry, only: dbh2bl
   implicit none
 
   type(patchtype),target :: cpatch
@@ -188,7 +188,6 @@ subroutine transfer_C_from_storage_ar(cpatch,ico, salloc, nitrogen_uptake, N_upt
   real, intent(inout) :: nitrogen_uptake
   real, intent(inout) :: N_uptake_pot
   real :: off_allometry_cb
-  real, external :: dbh2bl
   real :: increment
 
   ! Only do the transfer there are supposed to be leaves
@@ -325,7 +324,7 @@ subroutine alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci, carbon_balance,
   use pft_coms, only: c2n_storage, c2n_leaf, sla, c2n_stem
   use decomp_coms, only: f_labile
   use ed_therm_lib,only : update_veg_energy_cweh
-
+  use allometry, only: dbh2bl
   implicit none
   
   type(patchtype),target :: cpatch
@@ -338,7 +337,6 @@ subroutine alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci, carbon_balance,
   real, intent(inout) :: fsn_in
   real :: bl_max
   real :: bl_pot
-  real, external :: dbh2bl
   real :: increment
 
   if(cpatch%phenology_status(ico) == 0 .and. carbon_balance > 0.0 )then
@@ -430,7 +428,7 @@ subroutine potential_N_uptake_ar(cpatch,ico, salloc, salloci, balive_in,   &
   use ed_state_vars,only:patchtype
   use pft_coms, only: c2n_storage, c2n_leaf, c2n_stem
   use decomp_coms, only: f_labile
-
+  use allometry, only: dbh2bl
   implicit none
   type(patchtype),target :: cpatch
   integer :: ico
@@ -442,7 +440,6 @@ subroutine potential_N_uptake_ar(cpatch,ico, salloc, salloci, balive_in,   &
   real, intent(in) :: green_leaf_factor
   real :: bl_max
   real :: bl_pot
-  real, external :: dbh2bl
   real :: increment
 
   if(cpatch%phenology_status(ico) == 0 .and. carbon_balance_pot > 0.0 )then

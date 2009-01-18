@@ -11,20 +11,15 @@ subroutine read_ed1_history_file_array
        edgrid_g,allocate_sitetype,allocate_patchtype
   use grid_coms,only:ngrids
   use ed_therm_lib,only:calc_hcapveg
-
+  use allometry, only: dbh2h,h2dbh,dbh2bd,dbh2bl, ed_biomass
   implicit none
 
   integer :: year
-  real, external :: dbh2h
 
   type(edtype),pointer      :: cgrid
   type(polygontype),pointer :: cpoly
   type(sitetype),pointer    :: csite
   type(patchtype),pointer   :: cpatch
-
-  real :: h2dbh
-  real :: dbh2bd
-  real :: dbh2bl
   
   integer :: pft
   logical :: renumber_pfts
@@ -106,7 +101,6 @@ subroutine read_ed1_history_file_array
   real                  , dimension(maxfiles)           :: file_pdist,file_cdist
   !----------------------------------------------------------------------------------------!
   
-  real, external :: ed_biomass
   
   ied_init_mode_local = ied_init_mode 
 
@@ -773,10 +767,10 @@ subroutine init_full_history_restart()
   use hdf5
   use hdf5_coms,only:file_id,dset_id,dspace_id,plist_id, &
        globdims,chnkdims,chnkoffs
+  use allometry, only: dbh2h
 
   implicit none
   
-  real, external :: dbh2h
   character(len=1)  :: vnam
   character(len=2)  :: cgr
   character(len=128) :: hnamel
@@ -2063,7 +2057,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   memdims(2)  = int(csite%npatches,8)
   memsize(2)  = int(csite%npatches,8)
   memoffs(2)  = 0_8
-  call hdf_getslab_r(csite%co2budget_gpp_dbh(1,1),'CO2BUDGET_GPP_DBH ',dsetrank,iparallel,.true.)
+  call hdf_getslab_r(csite%co2budget_gpp_dbh,'CO2BUDGET_GPP_DBH ',dsetrank,iparallel,.true.)
 
 !!!! MAY NEED TO ADD THIS ONE
 !  call hdf_getslab_r(csite%old_stoma_data_max,'OLD ',dsetrank,iparallel,.true.)

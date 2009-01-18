@@ -645,6 +645,7 @@ subroutine print_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp,epsil)
   type(rk4patchtype), target :: yerr,yscal,y,ytemp
   real :: errmax
   integer :: k
+  real :: error_soil_water,scale_soil_water
 
   print*,'------------------------------------------------'
   print*,'----   PRINTING ERRMAX INFO --------------------'
@@ -664,9 +665,11 @@ subroutine print_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp,epsil)
   call print_errmax_flag(yerr%can_co2,yscal%can_co2,epsil)
 
   do k=lsl,nzg
-     errmax = real(dmax1(dble(errmax),dabs(yerr%soil_water(k)/yscal%soil_water(k))))
+     errmax = sngl(dmax1(dble(errmax),dabs(yerr%soil_water(k)/yscal%soil_water(k))))
      print*,'soil water, level',k,errmax,yerr%soil_water(k),yscal%soil_water(k)
-     call print_errmax_flag(yerr%soil_water(k),yscal%soil_water(k),epsil)
+     error_soil_water = sngl(yerr%soil_water(k))
+     scale_soil_water = sngl(yscal%soil_water(k))
+     call print_errmax_flag(error_soil_water,scale_soil_water,epsil)
 
      errmax = max(errmax,abs(yerr%soil_energy(k)/yscal%soil_energy(k)))
      print*,'soil energy, level',k,errmax,yerr%soil_energy(k),yscal%soil_energy(k)

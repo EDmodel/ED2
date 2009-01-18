@@ -63,6 +63,8 @@ contains
       allocate (turb%sigw(n1,n2,n3))
       allocate (turb%pblhgt(n2,n3))
       allocate (turb%lmo(n2,n3))
+    elseif (idiffk(ng) == 1) then
+      allocate (turb%sigw(n1,n2,n3))
     end if
     allocate (turb%kpbl(n2,n3))
 

@@ -38,10 +38,10 @@ subroutine prescribed_event(year,doy)
   integer,save :: next_year = 100000
   integer,save :: next_doy = 367
   integer :: curr_year, curr_doy
-  integer(4) :: i,j,nevent,nrep
-  integer(4),dimension(20) ::pft
-  real(8),dimension(20):: rval
-  logical(4) :: texist = .false.
+  integer(kind=4) :: i,j,nevent,nrep
+  integer(kind=4),dimension(20) ::pft
+  real(kind=8),dimension(20):: rval
+  logical(kind=4) :: texist = .false.
   
 
 
@@ -279,10 +279,11 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   use disturbance_utils_ar,only: plant_patch_ar
   use ed_therm_lib, only: update_veg_energy_cweh
   use fuse_fiss_utils_ar, only: terminate_cohorts_ar
-  real(8),intent(in) :: agb_frac8
-  real(8),intent(in) :: bgb_frac8
-  real(8),intent(in) :: fol_frac8
-  real(8),intent(in) :: stor_frac8
+  use allometry, only : bd2dbh, dbh2h
+  real(kind=8),intent(in) :: agb_frac8
+  real(kind=8),intent(in) :: bgb_frac8
+  real(kind=8),intent(in) :: fol_frac8
+  real(kind=8),intent(in) :: stor_frac8
   real :: ialloc,bdead_new,bsw_new,bleaf_new,bfr_new,bstore_new
   real :: agb_frac,bgb_frac,fol_frac,stor_frac
   integer :: ifm,ipy,isi,ipa,pft
@@ -327,7 +328,6 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
               do ico=1,cpatch%ncohorts
                  
                  pft = cpatch%pft(ico)                 
-print*,"pft",pft
                  !! calc new pool sizes
                  ialloc =  1.0 / (1.0 + q(pft) + qsw(pft) * cpatch%hite(ico))
                  bdead_new = cpatch%bdead(ico)*&
@@ -402,8 +402,8 @@ subroutine event_planting(pft,density8)
   use misc_coms, only: integration_scheme
   use disturbance_utils_ar,only: plant_patch_ar
 
-  integer(4),intent(in) :: pft
-  real(8),intent(in) :: density8
+  integer(kind=4),intent(in) :: pft
+  real(kind=8),intent(in) :: density8
   real :: density
   integer :: ifm,ipy,isi,ipa
   type(edtype), pointer :: cgrid
@@ -464,7 +464,7 @@ subroutine event_fertilize(rval8)
   use misc_coms, only: integration_scheme
   use disturbance_utils_ar,only: plant_patch_ar
   use ed_therm_lib, only: update_veg_energy_cweh
-  real(8),intent(in),dimension(5) :: rval8
+  real(kind=8),intent(in),dimension(5) :: rval8
 
   real :: nh4,no3,p,k,ca
   integer :: ifm,ipy,isi,ipa
@@ -548,7 +548,7 @@ subroutine event_till(rval8)
   use ed_therm_lib, only: update_veg_energy_cweh
   use fuse_fiss_utils_ar, only: terminate_cohorts_ar
   
-  real(8),intent(in) :: rval8
+  real(kind=8),intent(in) :: rval8
 
   real :: depth
   integer :: ifm,ipy,isi,ipa,pft

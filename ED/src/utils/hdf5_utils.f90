@@ -469,35 +469,39 @@ subroutine shdf5_irec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
   endif
 
 
-  if(convert .eqv. .false.) then 
-     if (ctype == 'is') then
+  if(.not. convert) then 
+     select case (ctype)
+     case ('is')
         call h5dread_f(dsetid_f, H5T_NATIVE_INTEGER, ivars, dimshf, hdferr)
-     elseif (ctype == 'rs') then
+     case ('rs') 
         call h5dread_f(dsetid_f, H5T_NATIVE_REAL,rvars, dimshf, hdferr )
-     elseif (ctype == 'cs') then
+     case ('cs') 
         call h5dread_f(dsetid_f,H5T_NATIVE_CHARACTER,cvars, dimshf, hdferr )
-     elseif (ctype == 'ds') then
+     case ('ds') 
         call h5dread_f(dsetid_f,H5T_NATIVE_DOUBLE,dvars, dimshf, hdferr )
-     elseif (ctype == 'ls') then
+     case ('ls') 
         !      call h5dread_f(dsetid_f,H5T_NATIVE_HBOOL,lvars, dimsh, hdferr )
         print*,"THERE IS NO HDF5 FORTRAN API DATATYPE FOR BOOLEAN"
         print*,"YOU MUST CHANGE BACK TO C IO FOR THIS"
-        print*,"STOPPING"
-        stop
-     elseif (ctype == 'ia') then
+        call fatal_error ('Attempt to convert logical variables'&
+                         &,'shdf5_irec_f','hdf5_utils.f90')
+     case ('ia') 
         call h5dread_f(dsetid_f,H5T_NATIVE_INTEGER,ivara, dimshf, hdferr )
-     elseif (ctype == 'ra') then
+     case ('ra') 
         call h5dread_f(dsetid_f,H5T_NATIVE_REAL,rvara, dimshf, hdferr )
-     elseif (ctype == 'ca') then
+     case ('ca') 
         call h5dread_f(dsetid_f,H5T_NATIVE_CHARACTER,cvara, dimshf, hdferr )
-     elseif (ctype == 'da') then
+     case ('da') 
         call h5dread_f(dsetid_f,H5T_NATIVE_DOUBLE,dvara, dimshf, hdferr )
-     elseif (ctype == 'la') then
+     case ('la') 
         print*,"THERE IS NO HDF5 FORTRAN API DATATYPE FOR BOOLEAN"
         print*,"YOU MUST CHANGE BACK TO C IO FOR THIS"
-        print*,"STOPPING"
-        stop
-     endif
+        call fatal_error ('Attempt to convert logical variables'&
+                         &,'shdf5_irec_f','hdf5_utils.f90')
+     case default
+        call fatal_error ('Invalid ctype '//trim(ctype)//'!'&
+                         &,'shdf5_irec_f','hdf5_utils.f90')
+     end select
   endif
   
   

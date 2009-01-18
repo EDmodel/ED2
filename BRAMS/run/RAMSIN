@@ -904,10 +904,11 @@
 
 
 !-------------------------------------------------------------------------!
-! XML configuration file                                                                   !
+! XML configuration file                                                  !
 !-------------------------------------------------------------------------!
-   IEDCNFGF = 'config.xml',
-   PHENPATH = '/n/Moorcroft_Lab/Users/mlongo/EDBRAMS/ed-test/inputs',
+   IEDCNFGF   = 'config.xml',
+   EVENT_FILE = 'my_events.xml',
+   PHENPATH   = '/n/Moorcroft_Lab/Users/mlongo/EDBRAMS/ed-test/inputs',
 !-------------------------------------------------------------------------!
 
  $END

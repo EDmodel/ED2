@@ -1010,6 +1010,7 @@ subroutine update_ed_yearly_vars_ar(cgrid)
    use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
    use max_dims, only: n_pft, n_dbh
    use consts_coms, only: pi1
+   use allometry, only: ed_biomass
   
    implicit none
 
@@ -1018,7 +1019,6 @@ subroutine update_ed_yearly_vars_ar(cgrid)
    type(sitetype),pointer    :: csite
    type(patchtype),pointer   :: cpatch
    integer :: ipy,isi,ipa,ico
-   real, external :: ed_biomass
 
    ! All agb's are in tC/ha/y; all basal areas are in m2/ha/y.
   

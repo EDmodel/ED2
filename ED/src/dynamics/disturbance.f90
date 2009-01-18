@@ -818,6 +818,7 @@ end subroutine apply_disturbances_ar
 !    use canopy_air_coms, only: hcapveg_ref,heathite_min
     use ed_therm_lib,only : calc_hcapveg
     use consts_coms, only: t3ple
+    use allometry, only : h2dbh, dbh2bd, dbh2bl
 
     implicit none
 
@@ -830,9 +831,6 @@ end subroutine apply_disturbances_ar
     integer, intent(in) :: pft
     real, intent(in) :: density
     real, intent(in) :: height_factor
-    real :: h2dbh
-    real :: dbh2bd
-    real :: dbh2bl
     
     cpatch => csite%patch(np)
 
@@ -865,7 +863,7 @@ end subroutine apply_disturbances_ar
     cpatch%pft(nc) = pft
     cpatch%nplant(nc) = density
     cpatch%hite(nc) = hgt_min(cpatch%pft(nc)) * min(1.0,height_factor)
-    cpatch%dbh(nc) = h2dbh(cpatch%hite,cpatch%pft)
+    cpatch%dbh(nc) = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
     cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
     cpatch%bleaf(nc) = dbh2bl(cpatch%dbh(nc),cpatch%pft(nc))
     print*,"add",cpatch%hite(nc),cpatch%dbh(nc),cpatch%bdead(nc),cpatch%bleaf(nc)

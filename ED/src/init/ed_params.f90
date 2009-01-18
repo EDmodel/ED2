@@ -687,12 +687,11 @@ use pft_coms, only: root_turnover_rate, c2n_leaf, max_dbh, b1Ht, b2Ht,  &
      hgt_min, q, qsw, c2n_recruit, c2n_stem,hgt_ref
 use decomp_coms, only: f_labile
 use max_dims, only: n_pft
-
+use allometry, only: h2dbh,dbh2bl,dbh2bd
 implicit none
 
 integer :: ipft
 real :: dbh,balive,bleaf,bdead
-real, external :: h2dbh,dbh2bl,dbh2bd
 
 root_turnover_rate(1) = 2.0
 root_turnover_rate(2) = 1.0

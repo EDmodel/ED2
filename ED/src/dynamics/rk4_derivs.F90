@@ -597,10 +597,9 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   use ed_therm_lib, only: fast_svp
   use misc_coms, only: dtlsm
   use ed_misc_coms, only: fast_diagnostics
-
+  use allometry, only: dbh2ca
   implicit none
 
-  real, external :: dbh2ca
 
   type(sitetype),target :: csite
   type(patchtype),pointer :: cpatch

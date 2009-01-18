@@ -160,7 +160,7 @@ subroutine copy_nl(copy_type)
      iphenyff      = nl%iphenyff
      
      iedcnfgf      = nl%iedcnfgf
-     event_file      = nl%event_file
+     event_file    = nl%event_file
      phenpath      = nl%phenpath
      maxpatch      = nl%maxpatch
      maxcohort     = nl%maxcohort

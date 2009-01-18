@@ -34,7 +34,8 @@ subroutine ed_driver
   real, external :: walltime    ! wall time
   character(len=12) :: c0
   character(len=12) :: c1
-  integer :: ifm,t1
+  integer           :: ifm
+  real              :: t1
 
   !   MPI header
   include 'mpif.h'

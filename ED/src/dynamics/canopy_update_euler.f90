@@ -707,7 +707,7 @@ subroutine ludcmp(a,n,np,indx,d)
 
   implicit none
   
-  real, parameter :: tiny=1.0e-20
+  real, parameter :: tiny_offset=1.0e-20
   integer :: n
   integer :: np
   real :: d
@@ -776,14 +776,14 @@ subroutine ludcmp(a,n,np,indx,d)
      endif
      indx(j) = imax
      if(j /= n)then
-        if(a(j,j) == 0.0) a(j,j) = tiny
+        if(a(j,j) == 0.0) a(j,j) = tiny_offset
         dum = 1.0 / a(j,j)
         do i=j+1,n
            a(i,j) = a(i,j)*dum
         enddo
      endif
   enddo
-  if(a(n,n) == 0.0)a(n,n) = tiny
+  if(a(n,n) == 0.0)a(n,n) = tiny_offset
 
   return
 end subroutine ludcmp
@@ -794,7 +794,7 @@ subroutine ludcmp_dble(a,n,np,indx,d)
 
   implicit none
   
-  real(kind=8), parameter :: tiny = 1.0d-20
+  real(kind=8), parameter :: tiny_offset = 1.0d-20
   integer, intent(in) :: n
   integer, intent(in) :: np
   real, intent(out) :: d
@@ -867,14 +867,14 @@ subroutine ludcmp_dble(a,n,np,indx,d)
      endif
      indx(j) = imax
      if(j /= n)then
-        if(ad(j,j) == 0.0d0) ad(j,j) = tiny
+        if(ad(j,j) == 0.0d0) ad(j,j) = tiny_offset
         dum = 1.0d0 / ad(j,j)
         do i = j + 1, n
            ad(i,j) = ad(i,j) * dum
         enddo
      endif
   enddo
-  if(ad(n,n) == 0.0d0)ad(n,n) = tiny
+  if(ad(n,n) == 0.0d0)ad(n,n) = tiny_offset
 
   a = real(ad)
 

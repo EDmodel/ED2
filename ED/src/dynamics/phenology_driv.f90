@@ -366,6 +366,8 @@ end subroutine phenology_thresholds
 
 subroutine cohort_phen_thresholds(green_leaf_factor, leaf_aging_factor,   &
      dbh, pft, drop_cold, leaf_out_cold, bl_max)
+  
+  use allometry, only: dbh2bl
   implicit none
 
   integer, intent(out) :: drop_cold
@@ -373,7 +375,6 @@ subroutine cohort_phen_thresholds(green_leaf_factor, leaf_aging_factor,   &
   real, intent(out) :: bl_max
   real, intent(in) :: green_leaf_factor
   real, intent(in) :: leaf_aging_factor
-  real, external :: dbh2bl
   real, intent(in) :: dbh
   integer, intent(in) :: pft
 

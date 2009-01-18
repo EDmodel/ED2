@@ -235,20 +235,16 @@ subroutine update_derived_cohort_props_ar(cpatch,ico, green_leaf_factor, lsl)
 
   use ed_state_vars,only:patchtype
   use pft_coms, only: phenology, sla, q, qsw
+  use allometry, only: bd2dbh, dbh2h, dbh2bl, assign_root_depth, calc_root_depth
 
   implicit none
 
   type(patchtype),target :: cpatch
   integer :: ico
   real, intent(in) :: green_leaf_factor
-  real, external :: bd2dbh
-  real, external :: dbh2h
   real :: bl
   real :: bl_max
-  real, external :: dbh2bl
   real :: rootdepth
-  real :: calc_root_depth
-  integer, external :: assign_root_depth
   integer, intent(in) :: lsl
 
   cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico)) 
@@ -291,7 +287,7 @@ subroutine update_vital_rates_ar(cpatch,ico, dbh_in, bdead_in, balive_in, hite_i
   use max_dims, only: n_pft, n_dbh
   use consts_coms, only: pi1
   use pft_coms, only: agf_bs,q,qsw
-  
+  use allometry, only: ed_biomass
   implicit none
 
   real, intent(in) :: dbh_in
@@ -306,7 +302,6 @@ subroutine update_vital_rates_ar(cpatch,ico, dbh_in, bdead_in, balive_in, hite_i
   integer :: ico
 
   integer :: bdbh
-  real, external :: ed_biomass
   real, intent(in) :: area
   real, dimension(n_pft, n_dbh) :: basal_area
   real, dimension(n_pft, n_dbh) :: agb

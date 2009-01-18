@@ -68,9 +68,9 @@ subroutine ed_model()
   if(record_err) then
      integ_err = 0_8
      integ_fname = trim(ffilout)//"integrator.log"
-     open(217,file=trim(integ_fname),form="formatted",status="replace")     
-     write(217,'(a)') "num  name  ERMAX  IFLAG"
-     close(217)
+     open  (unit=77,file=trim(integ_fname),form="formatted",status="replace")     
+     write (unit=77,fmt='(a)') "num  name  ERMAX  IFLAG"
+     close (unit=77,status='keep')
   endif
   writing_dail      = idoutput > 0
   writing_mont      = imoutput > 0
@@ -231,15 +231,15 @@ subroutine ed_model()
      ! Check if this is the beginning of a new simulated day.
      if(new_day)then
         if(record_err) then
-           open(unit=217,file=trim(integ_fname),form="formatted",access="append",status="old")
+           open(unit=77,file=trim(integ_fname),form="formatted",access="append",status="old")
            do i = 1,46
               if(sum(integ_err(i,1:2)) .gt. 0_8)then                 
-                 write(217,'(i3,2a,2i7)') i," ",trim(err_label(i)),integ_err(i,1:2)
+                 write(unit=77,fmt='(i3,2a,2i7)') i," ",trim(err_label(i)),integ_err(i,1:2)
                  print*,i,trim(err_label(i)),integ_err(i,1:2)
                  
               endif
            enddo
-           close(217)
+           close(unit=77,status='keep')
            integ_err = 0_8
         endif
 
