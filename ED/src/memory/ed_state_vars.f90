@@ -5372,15 +5372,17 @@ contains
 !         var_len,var_len_global,max_ptrs,'SOIL_POROSITY :90:hist:anal:dail:mont:mpti:mpt3')
 !    call metadata_edio(nvar,igr,'Porosity of s-ls-sl-sil-l-scl-sicl-cl-sc-sic-c-p','m3/m3','12 classes')
 
-    
-    nvar=nvar+1
-    var_len = len(expnme)
-    var_len_global= len(expnme)
-    call vtable_edio_c(expnme,nvar,igr,0,0, &
-         var_len,var_len_global,max_ptrs,'EXPNME :90:hist:anal:dail:mont:mpti:mpt3')
 
-    call vtable_edio_c(expnme,nvar,igr,1,0, &
-         var_len,var_len_global,max_ptrs,'EXPNME :90:hist:anal:dail:mont:mpti:mpt3')
+!! Including the expnme make hdf5 files difficult to deal with in R
+!! removed by MCD (01/19/09)    
+!!$    nvar=nvar+1
+!!$    var_len = len(expnme)
+!!$    var_len_global= len(expnme)
+!!$    call vtable_edio_c(expnme,nvar,igr,0,0, &
+!!$         var_len,var_len_global,max_ptrs,'EXPNME :90:hist:anal:dail:mont:mpti:mpt3')
+!!$
+!!$    call vtable_edio_c(expnme,nvar,igr,1,0, &
+!!$         var_len,var_len_global,max_ptrs,'EXPNME :90:hist:anal:dail:mont:mpti:mpt3')
     
 
     nioglobal=nvar

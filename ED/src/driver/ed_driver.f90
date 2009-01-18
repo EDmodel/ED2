@@ -203,7 +203,7 @@ subroutine ed_driver
   !-----------------------------------------------------------------------!
   call timing(1,t1)
   w2=walltime(wtime_start)
-  write(c0,'(f12.2)') t1
+  write(c0,'(i12)') t1
   write(c1,'(f12.2)') w2-w1
   write(*,'(/,a,/)') ' === Finish initialization; CPU(sec)='//&
        trim(adjustl(c0))//'; Wall(sec)='//trim(adjustl(c1))//&
