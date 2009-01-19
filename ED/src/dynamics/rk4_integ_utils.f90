@@ -93,7 +93,7 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,ifm,  &
         csite%ebudget_loss2runoff(ipa) = 0.0
         ksn = integration_buff%y%nlev_sfcwater
         
-        !----------------------------------------------------------------------------------!
+        !---------------------------------------------------------------------------------!
         !    I had to split the following if into two tests. When ksn is 0, then we cannot !
         ! test sfcwater_???(ksn) otherwise the compiler complains about out of bounds      !
         ! problem.                                                                         !
