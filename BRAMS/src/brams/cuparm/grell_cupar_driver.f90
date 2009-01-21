@@ -166,11 +166,11 @@ subroutine grell_cupar_driver(banneron,icld)
    !    scratch%vt3di => ice-liquid potential temperature forcing.                         !
    !    scratch%vt3dj => total mixing ratio forcing.                                       !
    !---------------------------------------------------------------------------------------!
-   call azero(mzp*mxp*myp,scratch%vt3di(1))
-   call azero(mzp*mxp*myp,scratch%vt3dj(1))
+   call azero(mzp*mxp*myp,scratch%vt3di)
+   call azero(mzp*mxp*myp,scratch%vt3dj)
    do ccc=icld+1,nclouds
-      call accum(mxp*myp*mzp, scratch%vt3di(1), cuparm_g(ngrid)%thsrc(1,1,1,ccc))
-      call accum(mxp*myp*mzp, scratch%vt3dj(1), cuparm_g(ngrid)%rtsrc(1,1,1,ccc))
+      call accum(mxp*myp*mzp, scratch%vt3di, cuparm_g(ngrid)%thsrc(:,:,:,ccc))
+      call accum(mxp*myp*mzp, scratch%vt3dj, cuparm_g(ngrid)%rtsrc(:,:,:,ccc))
    end do
    
    
@@ -180,16 +180,16 @@ subroutine grell_cupar_driver(banneron,icld)
    !---------------------------------------------------------------------------------------!
    if (catt == 1) then
        dti = confrq(icld) / frqanl
-       call azero(mzp*mxp*myp,scratch%scr1(1))
+       call azero(mzp*mxp*myp,scratch%scr1)
        select case (icld)
        case (1)
-          call azero(mzp*mxp*myp,extra3d(1,ngrid)%d3(1,1,1))
+          call azero(mzp*mxp*myp,extra3d(1,ngrid)%d3)
           if(mod(time,dble(frqanl)) < dtlongn(1) ) then
-             call azero(mxp*myp*mzp,extra3d(4,ngrid)%d3(1,1,1)  )  
+             call azero(mxp*myp*mzp,extra3d(4,ngrid)%d3  )
           end if
        case (2)
-          call azero(mzp*mxp*myp,extra3d(2,ngrid)%d3(1,1,1))
-          call azero(mzp*mxp*myp,scratch%vt3dp(1))
+          call azero(mzp*mxp*myp,extra3d(2,ngrid)%d3)
+          call azero(mzp*mxp*myp,scratch%vt3dp)
        end select
    end if
    !---------------------------------------------------------------------------------------!
@@ -200,8 +200,8 @@ subroutine grell_cupar_driver(banneron,icld)
    !    array before the grid loop, so they are safely stored.                             !
    !---------------------------------------------------------------------------------------!
    if (iupstrm == 1) then
-      call atob(mxp*myp,cuparm_g(ngrid)%dnmf(1,1,icld),scratch%vt2de(1))
-      call atob(mxp*myp,cuparm_g(ngrid)%xierr(1,1,icld),scratch%vt2df(1))
+      call atob(mxp*myp,cuparm_g(ngrid)%dnmf(:,:,icld),scratch%vt2de)
+      call atob(mxp*myp,cuparm_g(ngrid)%xierr(:,:,icld),scratch%vt2df)
    end if
 
    !---------------------------------------------------------------------------------------!
@@ -209,8 +209,8 @@ subroutine grell_cupar_driver(banneron,icld)
    !    subroutine requires some scratch 3D arrays even though we'll be solving column by  !
    !    column).                                                                           !
    !---------------------------------------------------------------------------------------!
-   call azero(mzp*mxp*myp,scratch%vt3dm(1))
-   call azero(mzp*mxp*myp,scratch%vt3dn(1))
+   call azero(mzp*mxp*myp,scratch%vt3dm)
+   call azero(mzp*mxp*myp,scratch%vt3dn)
 
 
    !---------------------------------------------------------------------------------------!
@@ -252,15 +252,15 @@ subroutine grell_cupar_driver(banneron,icld)
             call azero(mzp,vctr7)
          !----- Liquid condensation only, use saturation adjustment -----------------------!
          case (2)
-             call atob(mzp,micro_g(ngrid)%rcp(1,i,j),vctr6)
+             call atob(mzp,micro_g(ngrid)%rcp(:,i,j),vctr6)
              call azero(mzp,vctr7)
          case (3)
             call integ_liq_ice(mzp,availcat                                                &
-              , micro_g(ngrid)%rcp           (1,1,1), micro_g(ngrid)%rrp           (1,1,1) &
-              , micro_g(ngrid)%rpp           (1,1,1), micro_g(ngrid)%rsp           (1,1,1) &
-              , micro_g(ngrid)%rap           (1,1,1), micro_g(ngrid)%rgp           (1,1,1) &
-              , micro_g(ngrid)%rhp           (1,1,1), micro_g(ngrid)%q6            (1,1,1) &
-              , micro_g(ngrid)%q7            (1,1,1), vctr6                        (1:mzp) &
+              , micro_g(ngrid)%rcp                  , micro_g(ngrid)%rrp                   &
+              , micro_g(ngrid)%rpp                  , micro_g(ngrid)%rsp                   &
+              , micro_g(ngrid)%rap                  , micro_g(ngrid)%rgp                   &
+              , micro_g(ngrid)%rhp                  , micro_g(ngrid)%q6                    &
+              , micro_g(ngrid)%q7                   , vctr6                        (1:mzp) &
               , vctr7                        (1:mzp))
          end select
 
@@ -272,7 +272,7 @@ subroutine grell_cupar_driver(banneron,icld)
          !---------------------------------------------------------------------------------!
          select case (idiffk(ngrid))
          case (1,7)
-            call atob(mzp,turb_g(ngrid)%sigw(1,i,j),vctr9(1:mzp))
+            call atob(mzp,turb_g(ngrid)%sigw(:,i,j),vctr9(1:mzp))
          case default
             call azero(mzp,vctr9(1:mzp))
          end select
@@ -283,8 +283,8 @@ subroutine grell_cupar_driver(banneron,icld)
          !---------------------------------------------------------------------------------!
          if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                         &
                              '       [~] Calling initial_tend_grell... i=',i,'j=',j
-         call initial_tend_grell(mzp,mxp,myp,i,j,tend%tht(1),tend%tket(1),tend%rtt(1)      &
-                                   ,scratch%vt3di(1),scratch%vt3dj(1))
+         call initial_tend_grell(mzp,mxp,myp,i,j,tend%tht,tend%tket,tend%rtt               &
+                                   ,scratch%vt3di,scratch%vt3dj)
 
 
          !---------------------------------------------------------------------------------!
@@ -295,11 +295,11 @@ subroutine grell_cupar_driver(banneron,icld)
          !---------------------------------------------------------------------------------!
          if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                         &
                              '       [~] Calling initial_thermo_grell... i=',i,'j=',j
-         call initial_thermo_grell(mzp,dtlt         , basic_g(ngrid)%thp           (1,i,j) &
-              , basic_g(ngrid)%theta         (1,i,j), basic_g(ngrid)%rtp           (1,i,j) &
-              , basic_g(ngrid)%pi0           (1,i,j), basic_g(ngrid)%pp            (1,i,j) &
-              , basic_g(ngrid)%pc            (1,i,j), basic_g(ngrid)%wp            (1,i,j) &
-              , basic_g(ngrid)%dn0           (1,i,j), turb_g(ngrid)%tkep           (1,i,j) &
+         call initial_thermo_grell(mzp,dtlt         , basic_g(ngrid)%thp           (:,i,j) &
+              , basic_g(ngrid)%theta         (:,i,j), basic_g(ngrid)%rtp           (:,i,j) &
+              , basic_g(ngrid)%pi0           (:,i,j), basic_g(ngrid)%pp            (:,i,j) &
+              , basic_g(ngrid)%pc            (:,i,j), basic_g(ngrid)%wp            (:,i,j) &
+              , basic_g(ngrid)%dn0           (:,i,j), turb_g(ngrid)%tkep           (:,i,j) &
               , vctr6                        (1:mzp), vctr7                        (1:mzp) &
               , vctr9                        (1:mzp))
 
@@ -312,8 +312,8 @@ subroutine grell_cupar_driver(banneron,icld)
          if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                         &
                              '       [~] Calling initial_upstream_grell... i=',i,'j=',j
          call initial_upstream_grell(comp_down(icld),iupstrm,mzp,mxp,myp,i,j,jdim          &
-              , scratch%vt2de                    (1), scratch%vt2df                    (1) &
-              , basic_g(ngrid)%up            (1,1,1), basic_g(ngrid)%vp            (1,1,1) )
+              , scratch%vt2de                       , scratch%vt2df                        &
+              , basic_g(ngrid)%up                   , basic_g(ngrid)%vp                    )
          
          !---------------------------------------------------------------------------------!
          ! 6h. Call the main cumulus parameterization subroutine, which will deal with the !
@@ -329,10 +329,10 @@ subroutine grell_cupar_driver(banneron,icld)
             ,dtlt,depth_min(icld),depth_max(icld),edtmax,edtmin,inv_ensdim(icld)           &
             ,masstol,max_heat(icld),pmass_left,radius(icld),relheight_down,zkbmax(icld)    &
             ,zcutdown(icld),z_detr(icld)                                                   &
-            ,ensemble_e(icld)%edt_eff        (1,1), ensemble_e(icld)%dellatheiv_eff(1,1,1) &
-            ,ensemble_e(icld)%dellathil_eff(1,1,1), ensemble_e(icld)%dellaqtot_eff(1,1,1)  &
-            ,ensemble_e(icld)%pw_eff       (1,1,1), ensemble_e(icld)%dnmf_ens   (1,1,1,1)  &
-            ,ensemble_e(icld)%upmf_ens   (1,1,1,1), cuparm_g(ngrid)%aadn       (i,j,icld)  &
+            ,ensemble_e(icld)%edt_eff             , ensemble_e(icld)%dellatheiv_eff        &
+            ,ensemble_e(icld)%dellathil_eff       , ensemble_e(icld)%dellaqtot_eff         &
+            ,ensemble_e(icld)%pw_eff              , ensemble_e(icld)%dnmf_ens              &
+            ,ensemble_e(icld)%upmf_ens            , cuparm_g(ngrid)%aadn       (i,j,icld)  &
             ,cuparm_g(ngrid)%aaup       (i,j,icld), cuparm_g(ngrid)%edt        (i,j,icld)  &
             ,cuparm_g(ngrid)%dnmf       (i,j,icld), cuparm_g(ngrid)%upmf       (i,j,icld)  &
             ,mynum                                )
@@ -348,10 +348,10 @@ subroutine grell_cupar_driver(banneron,icld)
               , cuparm_g(ngrid)%xierr     (i,j,icld), cuparm_g(ngrid)%zjmin     (i,j,icld) &
               , cuparm_g(ngrid)%zk22      (i,j,icld), cuparm_g(ngrid)%zkbcon    (i,j,icld) &
               , cuparm_g(ngrid)%zkdt      (i,j,icld), cuparm_g(ngrid)%zktop     (i,j,icld) &
-              , cuparm_g(ngrid)%conprr    (i,j,icld), cuparm_g(ngrid)%thsrc   (1,i,j,icld) &
-              , cuparm_g(ngrid)%rtsrc   (1,i,j,icld), cuparm_g(ngrid)%areadn  (1,i,j,icld) &
-              , cuparm_g(ngrid)%areaup  (1,i,j,icld), cuparm_g(ngrid)%cuprliq (1,i,j,icld) &
-              , cuparm_g(ngrid)%cuprice (1,i,j,icld))
+              , cuparm_g(ngrid)%conprr    (i,j,icld), cuparm_g(ngrid)%thsrc   (:,i,j,icld) &
+              , cuparm_g(ngrid)%rtsrc   (:,i,j,icld), cuparm_g(ngrid)%areadn  (:,i,j,icld) &
+              , cuparm_g(ngrid)%areaup  (:,i,j,icld), cuparm_g(ngrid)%cuprliq (:,i,j,icld) &
+              , cuparm_g(ngrid)%cuprice (:,i,j,icld))
 
          !---------------------------------------------------------------------------------!
          ! 6j. If the user needs the full mass flux information to drive Lagrangian models !
@@ -362,9 +362,9 @@ subroutine grell_cupar_driver(banneron,icld)
          if (imassflx == 1) then
             call prep_convflx_to_mass(mzp                                                  &
                   , cuparm_g(ngrid)%dnmf    (i,j,icld), cuparm_g(ngrid)%upmf    (i,j,icld) &
-                  , mass_g(ngrid)%cfxdn   (1,i,j,icld), mass_g(ngrid)%cfxup   (1,i,j,icld) &
-                  , mass_g(ngrid)%dfxdn   (1,i,j,icld), mass_g(ngrid)%dfxup   (1,i,j,icld) &
-                  , mass_g(ngrid)%efxdn   (1,i,j,icld), mass_g(ngrid)%efxup   (1,i,j,icld) )
+                  , mass_g(ngrid)%cfxdn   (:,i,j,icld), mass_g(ngrid)%cfxup   (:,i,j,icld) &
+                  , mass_g(ngrid)%dfxdn   (:,i,j,icld), mass_g(ngrid)%dfxup   (:,i,j,icld) &
+                  , mass_g(ngrid)%efxdn   (:,i,j,icld), mass_g(ngrid)%efxup   (:,i,j,icld) )
          end if
 
          !---------------------------------------------------------------------------------!
@@ -378,22 +378,22 @@ subroutine grell_cupar_driver(banneron,icld)
             if (icld == 1) then
                call grell_massflx_stats(mzp,icld,.true.,dti,maxens_dyn(icld)               &
                   , maxens_lsf(icld),maxens_eff(icld),maxens_cap(icld),inv_ensdim(icld)    &
-                  , closure_type(icld)                , ensemble_e(icld)%upmf_ens(1,1,1,1) &
-                  , extra3d(1,ngrid)%d3        (1,i,j), extra3d(4,ngrid)%d3        (1,i,j) )
+                  , closure_type(icld)                , ensemble_e(icld)%upmf_ens          &
+                  , extra3d(1,ngrid)%d3        (:,i,j), extra3d(4,ngrid)%d3        (:,i,j) )
                call grell_massflx_stats(mzp,icld,.false.,dti,maxens_dyn(icld)              &
                   , maxens_lsf(icld),maxens_eff(icld),maxens_cap(icld),inv_ensdim(icld)    &
-                  , closure_type(icld)                , ensemble_e(icld)%upmf_ens(1,1,1,1) &
-                  , extra3d(1,ngrid)%d3        (1,i,j), extra3d(4,ngrid)%d3        (1,i,j) )
+                  , closure_type(icld)                , ensemble_e(icld)%upmf_ens          &
+                  , extra3d(1,ngrid)%d3        (:,i,j), extra3d(4,ngrid)%d3        (:,i,j) )
             elseif (icld == 2) then
                call grell_massflx_stats(mzp,icld,.true.,dti,maxens_dyn(icld)               &
                   , maxens_lsf(icld), maxens_eff(icld),maxens_cap(icld),inv_ensdim(icld)   &
-                  , closure_type(icld)                , ensemble_e(icld)%upmf_ens(1,1,1,1) &
-                  , extra3d(2,ngrid)%d3        (1,i,j), scratch%vt3dp                  (1) )
+                  , closure_type(icld)                , ensemble_e(icld)%upmf_ens          &
+                  , extra3d(2,ngrid)%d3        (:,i,j), scratch%vt3dp                      )
             end if
             do iscl=1,naddsc
                call trans_conv_mflx(icld,iscl,mzp,mxp,myp,i,j                              &
                   , cuparm_g(ngrid)%edt     (i,j,icld), cuparm_g(ngrid)%upmf    (i,j,icld) &
-                  , scalar_g(iscl,ngrid)%sclt(1)                                           )
+                  , scalar_g(iscl,ngrid)%sclt                                              )
             end do
          end if
 

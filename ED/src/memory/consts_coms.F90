@@ -22,7 +22,8 @@ Module consts_coms
      , b_alvi       => alvi       , b_alli       => alli       , b_allivlme   => allivlme  &
      , b_allii      => allii      , b_wdns       => wdns       , b_erad2      => erad2     &
      , b_sqrtpii    => sqrtpii    , b_onesixth   => onesixth   , b_cicet3     => cicet3    &
-     , b_cliqt3     => cliqt3     , b_wdnsi      => wdnsi
+     , b_cliqt3     => cliqt3     , b_wdnsi      => wdnsi      , b_clt3lf     => clt3lf    &
+     , b_gorm       => gorm       , b_idns       => idns       , b_idnsi      => idnsi
 
    implicit none
 
@@ -54,6 +55,8 @@ Module consts_coms
    real, parameter :: erad2      = b_erad2      , sqrtpii    = b_sqrtpii
    real, parameter :: onesixth   = b_onesixth   , cicet3     = b_cicet3
    real, parameter :: cliqt3     = b_cliqt3     , wdnsi      = b_wdnsi
+   real, parameter :: clt3lf     = b_clt3lf     , gorvap     = b_gorm
+   real, parameter :: idns       = b_idns       , idnsi      = b_idnsi
 
 #else
    implicit none
@@ -136,6 +139,7 @@ Module consts_coms
    ! Water vapour properties                                                               !
    !---------------------------------------------------------------------------------------!
    real, parameter :: rvap   = 461.5       ! Gas constant for water vapour (Rv) [   J/kg/K]
+   real, parameter :: gorvap = g / rvap    ! g/Rv                               [      K/m]
    real, parameter :: ep     = rdry / rvap ! Ra/Rv, epsilon, used to find rv    [    kg/kg]
    real, parameter :: epi    = rvap / rdry ! Rv/Ra, 1/epsilon                   [    kg/kg]
    real, parameter :: toodry = 1.e-8       ! Minimum acceptable mixing ratio.   [    kg/kg]
@@ -158,6 +162,8 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    ! Ice properties                                                                        !
    !---------------------------------------------------------------------------------------!
+   real, parameter :: idns     = 9.167e2      ! "Hard" ice density              [    kg/m³]
+   real, parameter :: idnsi    = 1./idns      ! Inverse of ice density          [    m³/kg]
    real, parameter :: cice     = 2.093e3      ! Ice specific heat (Ci)          [   J/kg/K]
    real, parameter :: cicevlme = wdns * cice  ! Heat capacity × water density   [   J/m³/K]
    real, parameter :: cicei    = 1. / cice    ! Inverse of ice heat capacity    [   kg K/J]
@@ -169,18 +175,19 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    ! Phase change properties                                                               !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: t3ple    = 273.16       ! Water triple point temp. (T3)   [        K]
-   real, parameter :: t3plei   = 1./t3ple     ! 1./T3                           [      1/K]
-   real, parameter :: es3ple   = 611.65685464 ! Vapour pressure at T3 (es3)     [       Pa]
-   real, parameter :: es3plei  = 1./es3ple    ! 1./es3                          [     1/Pa]
-   real, parameter :: epes3ple = ep * es3ple  ! epsilon × es3                   [ Pa kg/kg]
-   real, parameter :: alvl     = 2.50e6       ! Latent heat - vaporisation (Lv) [     J/kg]
-   real, parameter :: alvi     = 2.834e6      ! Latent heat - sublimation  (Ls) [     J/kg]
-   real, parameter :: alli     = 3.34e5       ! Latent heat - fusion       (Lf) [     J/kg]
-   real, parameter :: allivlme = wdns * alli  ! Latent heat × water density     [     J/m³]
-   real, parameter :: allii    = 1./alli      ! 1/Latent heat - fusion     (Lf) [     J/kg]
-   real, parameter :: cicet3   = cice * t3ple ! C_ice × T3                      [     J/kg]
-   real, parameter :: cliqt3   = cliq * t3ple ! C_liquid × T3                   [     J/kg]
+   real, parameter :: t3ple    = 273.16        ! Water triple point temp. (T3)  [        K]
+   real, parameter :: t3plei   = 1./t3ple      ! 1./T3                          [      1/K]
+   real, parameter :: es3ple   = 611.65685464  ! Vapour pressure at T3 (es3)    [       Pa]
+   real, parameter :: es3plei  = 1./es3ple     ! 1./es3                         [     1/Pa]
+   real, parameter :: epes3ple = ep * es3ple   ! epsilon × es3                  [ Pa kg/kg]
+   real, parameter :: alvl     = 2.50e6        ! Lat. heat - vaporisation (Lv)  [     J/kg]
+   real, parameter :: alvi     = 2.834e6       ! Lat. heat - sublimation  (Ls)  [     J/kg]
+   real, parameter :: alli     = 3.34e5        ! Lat. heat - fusion       (Lf)  [     J/kg]
+   real, parameter :: allivlme = wdns * alli   ! Lat. heat × water density      [     J/m³]
+   real, parameter :: allii    = 1./alli       ! 1/Latent heat - fusion         [     kg/J]
+   real, parameter :: cicet3   = cice * t3ple  ! C_ice × T3                     [     J/kg]
+   real, parameter :: cliqt3   = cliq * t3ple  ! C_liquid × T3                  [     J/kg]
+   real, parameter :: clt3lf   = cliqt3 + alli ! C_liquid × T3 + Lf             [     J/kg]
    !---------------------------------------------------------------------------------------!
 
 #endif

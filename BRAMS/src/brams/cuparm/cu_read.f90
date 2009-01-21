@@ -208,23 +208,23 @@ do ngr=1,ngrids
          call rams_f_open(iun,cunamein,'FORMATTED','OLD','READ',0)
 
          npts=nnzp(ngr)*nnxp(ngr)*nnyp(ngr)
-         call vfirec(iun,cuparm_g(ngr)%thsrcf(1,1,1),npts,'LIN')
-         call vfirec(iun,cuparm_g(ngr)%rtsrcf(1,1,1),npts,'LIN')
+         call vfirec(iun,cuparm_g(ngr)%thsrcf,npts,'LIN')
+         call vfirec(iun,cuparm_g(ngr)%rtsrcf,npts,'LIN')
 
          npts=nnxp(ngr)*nnyp(ngr)
-         call vfirec(iun,cuparm_g(ngr)%conprrf(1,1),npts,'LIN')
+         call vfirec(iun,cuparm_g(ngr)%conprrf,npts,'LIN')
       else
-         call fmint4(cuparm_g(icm)%thsrcf(1,1,1)  &
-                    ,cuparm_g(ifm)%thsrcf(1,1,1)  &
-                    ,basic_g(icm)%dn0(1,1,1),basic_g(ifm)%dn0(1,1,1)  &
-                    ,grid_g(icm)%topt(1,1),ifm,icm,'t',1)
-         call fmint4(cuparm_g(icm)%rtsrcf(1,1,1)  &
-                    ,cuparm_g(ifm)%thsrcf(1,1,1)  &
-                    ,basic_g(icm)%dn0(1,1,1),basic_g(ifm)%dn0(1,1,1)  &
-                    ,grid_g(icm)%topt(1,1),ifm,icm,'t',1)
+         call fmint4(cuparm_g(icm)%thsrcf  &
+                    ,cuparm_g(ifm)%thsrcf  &
+                    ,basic_g(icm)%dn0,basic_g(ifm)%dn0  &
+                    ,grid_g(icm)%topt,ifm,icm,'t',1)
+         call fmint4(cuparm_g(icm)%rtsrcf  &
+                    ,cuparm_g(ifm)%thsrcf  &
+                    ,basic_g(icm)%dn0,basic_g(ifm)%dn0  &
+                    ,grid_g(icm)%topt,ifm,icm,'t',1)
          call fmint2d(icm,ifm,'t'  &
-                     ,cuparm_g(icm)%conprrf(1,1)  &
-                     ,cuparm_g(ifm)%conprrf(1,1) )
+                     ,cuparm_g(icm)%conprrf  &
+                     ,cuparm_g(ifm)%conprrf )
       endif
    endif
 

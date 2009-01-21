@@ -277,7 +277,7 @@ contains
     ! Go into the integrator
     call odeint_ar(tbeg, tend, eps, hbeg, hmin, csite,ipa,isi,ipy,ifm,  &
          integration_buff, rhos, vels, atm_tmp, atm_shv, atm_co2, geoht,  &
-         exner, pcpg, qpcpg, prss, lsl)
+         exner, pcpg, qpcpg, dpcpg, prss, lsl)
 
     ! Normalize canopy-atmosphere flux values.  These values are updated
     ! every dtlsm, so they must be normalized every time.
@@ -322,6 +322,7 @@ contains
     integer :: k,ksn,nsoil, nlsw1
     real :: hdid
     real :: available_water
+    real :: surface_temp, surface_fliq
     real, parameter :: tendays_sec=10.*day_sec
     real :: fracliq
 
@@ -508,7 +509,8 @@ contains
     call ed_grndvap(ksn, nsoil, csite%soil_water(nzg,ipa),   &
          csite%soil_energy(nzg,ipa), csite%sfcwater_energy(nlsw1,ipa), &
          rhos, &
-         csite%can_shv(ipa),csite%ground_shv(ipa),csite%surface_ssh(ipa))
+         csite%can_shv(ipa),csite%ground_shv(ipa),csite%surface_ssh(ipa), &
+         surface_temp,surface_fliq)
 
     return
   end subroutine initp2modelp_ar

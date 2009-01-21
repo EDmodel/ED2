@@ -3,7 +3,7 @@ subroutine ed_init_coup_atm
   
   use misc_coms,     only: ied_init_mode,runtype
   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype,edgrid_g
-  use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr
+  use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr,dslz
   use rconstants,    only: allivlme, cliqvlme, cicevlme, t3ple
   use grid_coms,      only: nzs, nzg, ngrids
   use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar
@@ -26,7 +26,7 @@ subroutine ed_init_coup_atm
   real    :: site_area_i, poly_area_i
   real    :: poly_lai,poly_nplant
   integer :: ix,iy
-  real    :: hcapveg
+  real    :: surface_temp,surface_fliq
   integer, parameter :: harvard_override = 0
   include 'mpif.h'
   integer :: ping,ierr
@@ -177,7 +177,9 @@ subroutine ed_init_coup_atm
                       cpoly%met(isi)%rhos,  &
                       csite%can_shv(ipa),  &
                       csite%ground_shv(ipa),  &
-                      csite%surface_ssh(ipa))
+                      csite%surface_ssh(ipa), &
+                      surface_temp,&
+                      surface_fliq)
               endif
               
               ! Compute patch-level LAI, vegetation height, and roughness
@@ -496,6 +498,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
   real :: tmp2
   real :: soilw1
   real :: soilw2
+  real :: surface_temp, surface_fliq
   logical :: l1
   integer :: ip
   integer :: ipy, isi, ipa, ico !Counters for all structures
@@ -608,7 +611,9 @@ subroutine read_soil_moist_temp_ar(cgrid)
                             cpoly%met(isi)%rhos,  &
                             csite%can_shv(ipa),  &
                             csite%ground_shv(ipa),  &
-                            csite%surface_ssh(ipa))
+                            csite%surface_ssh(ipa), &
+                            surface_temp, &
+                            surface_fliq )
 
                     end do patchloop
                  end do siteloop

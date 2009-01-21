@@ -4,7 +4,7 @@ contains
 
   subroutine rkqs_ar(integration_buff, x, htry, hmin, epsil, hdid, hnext, csite, &
        ipa,isi,ipy,ifm,rhos, vels, atm_tmp, atm_shv, atm_co2, geoht, exner, pcpg, qpcpg, &
-       prss, lsl)
+       dpcpg, prss, lsl)
 
     use ed_state_vars,only:sitetype,patchtype,rk4patchtype,integration_vars_ar &
                           ,edgrid_g
@@ -38,6 +38,7 @@ contains
     real, intent(in) :: exner
     real, intent(in) :: pcpg
     real, intent(in) :: qpcpg
+    real, intent(in) :: dpcpg
     real, intent(in) :: prss
 
     h = htry
@@ -57,7 +58,7 @@ contains
             integration_buff%ak7,  &
             x, h, csite, ipa,isi,ipy, iflag1,  &
             rhos, vels, atm_tmp, atm_shv, atm_co2, geoht, exner,   &
-            pcpg, qpcpg, prss, lsl)
+            pcpg, qpcpg, dpcpg, prss, lsl)
 
        !2) Check to see how accurate the step was.  Errors
        !   were calculated by integrating the derivative
@@ -170,7 +171,7 @@ contains
   subroutine rkck_ar(y, dydx, yout, yerr, ak2, ak3, ak4, ak5, ak6, ak7,  &
        x, h, csite, ipa,isi,ipy, iflag1,   &
        rhos, vels, atm_tmp, atm_shv, atm_co2, geoht, exner, pcpg, qpcpg, &
-       prss, lsl)
+       dpcpg, prss, lsl)
     
     use ed_state_vars, only: sitetype,patchtype,rk4patchtype,integration_vars_ar
 !    use lsm_integ_utils, only: stabilize_snow_layers, inc_rk4_patch, copy_rk4_patch
@@ -203,6 +204,7 @@ contains
     real, intent(in) :: exner
     real, intent(in) :: pcpg
     real, intent(in) :: qpcpg
+    real, intent(in) :: dpcpg
     real, intent(in) :: prss
 
     real, parameter :: a2=0.2,a3=0.3,a4=0.6,a5=1.0,a6=0.875,b21=0.2,  &
@@ -219,7 +221,7 @@ contains
 #if USE_INTERF
     interface
        subroutine leaf_derivs_ar(initp, dydx, csite, ipa,isi,ipy, rhos, prss, pcpg, qpcpg,   &
-            atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
+            dpcpg, atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
          
          use ed_state_vars,only:sitetype,rk4patchtype,patchtype
          implicit none
@@ -233,6 +235,7 @@ contains
          real, intent(in) :: prss
          real, intent(in) :: pcpg
          real, intent(in) :: qpcpg
+         real, intent(in) :: dpcpg
          real, intent(in) :: atm_tmp
          real, intent(in) :: exner
          real, intent(in) :: geoht
@@ -256,8 +259,8 @@ contains
 
     if(iflag1 /= 1)return
 
-    call leaf_derivs_ar(ak7, ak2, csite, ipa,isi,ipy, rhos, prss, pcpg, qpcpg, atm_tmp,   &
-         exner, geoht, vels, atm_shv, atm_co2, lsl)
+    call leaf_derivs_ar(ak7, ak2, csite, ipa,isi,ipy, rhos, prss, pcpg, qpcpg, dpcpg &
+                       ,atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
     call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, dydx, b31*h, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, ak2, b32*h, cpatch, lsl)
@@ -266,8 +269,8 @@ contains
 
     if(iflag1 /= 1)return
 
-    call leaf_derivs_ar(ak7, ak3, csite,ipa,isi,ipy, rhos, prss, pcpg, qpcpg, atm_tmp,   &
-         exner, geoht, vels, atm_shv, atm_co2, lsl)
+    call leaf_derivs_ar(ak7, ak3, csite,ipa,isi,ipy, rhos, prss, pcpg, qpcpg, dpcpg &
+                       , atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
     call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, dydx, b41*h, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, ak2, b42*h, cpatch, lsl)
@@ -277,8 +280,8 @@ contains
 
     if(iflag1 /= 1)return
 
-    call leaf_derivs_ar(ak7, ak4, csite, ipa,isi,ipy, rhos, prss, pcpg, qpcpg, atm_tmp,   &
-         exner, geoht, vels, atm_shv, atm_co2, lsl)
+    call leaf_derivs_ar(ak7, ak4, csite, ipa,isi,ipy, rhos, prss, pcpg, qpcpg, dpcpg &
+                       , atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
     call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, dydx, b51*h, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, ak2, b52*h, cpatch, lsl)
@@ -289,8 +292,8 @@ contains
 
     if(iflag1 /= 1)return
 
-    call leaf_derivs_ar(ak7, ak5, csite, ipa,isi,ipy, rhos, prss, pcpg, qpcpg, atm_tmp,   &
-         exner, geoht, vels, atm_shv, atm_co2, lsl)
+    call leaf_derivs_ar(ak7, ak5, csite, ipa,isi,ipy, rhos, prss, pcpg, qpcpg, dpcpg &
+                       , atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
     call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, dydx, b61*h, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, ak2, b62*h, cpatch, lsl)
@@ -302,8 +305,8 @@ contains
     
     if(iflag1 /= 1)return
 
-    call leaf_derivs_ar(ak7, ak6, csite,ipa,isi,ipy, rhos, prss, pcpg, qpcpg, atm_tmp,   &
-         exner, geoht, vels, atm_shv, atm_co2, lsl)
+    call leaf_derivs_ar(ak7, ak6, csite,ipa,isi,ipy, rhos, prss, pcpg, qpcpg, dpcpg &
+                       , atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
     call copy_rk4_patch_ar(y, yout, cpatch, lsl)
     call inc_rk4_patch_ar(yout, dydx, c1*h, cpatch, lsl)
     call inc_rk4_patch_ar(yout, ak3, c3*h, cpatch, lsl)

@@ -1,6 +1,6 @@
 subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,ifm,  &
      integration_buff, rhos, vels, atm_tmp, atm_shv, atm_co2, geoht,  &
-     exner, pcpg, qpcpg, prss, lsl)
+     exner, pcpg, qpcpg, dpcpg, prss, lsl)
 
   use ed_state_vars,only:integration_vars_ar,sitetype,patchtype
   use rk4_stepper_ar, only: rkqs_ar
@@ -36,6 +36,7 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,ifm,  &
   real, intent(in) :: exner
   real, intent(in) :: pcpg
   real, intent(in) :: qpcpg
+  real, intent(in) :: dpcpg
   real, intent(in) :: prss
 
 
@@ -68,7 +69,7 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,ifm,  &
 
      ! Get initial derivatives
      call leaf_derivs_ar(integration_buff%y, integration_buff%dydx, &
-          csite,ipa,isi,ipy, rhos, prss, pcpg, qpcpg, atm_tmp, exner, geoht, vels,  &
+          csite,ipa,isi,ipy, rhos, prss, pcpg, qpcpg, dpcpg, atm_tmp, exner, geoht, vels,  &
           atm_shv, atm_co2, lsl)
 
      ! Get scalings used to determine stability
@@ -81,7 +82,7 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,ifm,  &
      ! Take the step
      call rkqs_ar(integration_buff, x, h, hmin, epsi, hdid, hnext,  &
           csite,ipa,isi,ipy,ifm, rhos, vels, atm_tmp, atm_shv, atm_co2,  &
-          geoht, exner, pcpg, qpcpg, prss, lsl)
+          geoht, exner, pcpg, qpcpg, dpcpg, prss, lsl)
 
      ! Re-calculate tempks, fracliqs, surface water flags.
      call stabilize_snow_layers_ar(integration_buff%y, csite,ipa, 0.0, lsl)
@@ -169,7 +170,7 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,ifm,  &
   enddo
   print*,'Too many steps in routine odeint'
   call print_patch_ar(integration_buff%y, csite,ipa, lsl)
-  stop
+  call fatal_error('Too many steps, I give up!','odeint_ar','rk4_integ_utils.f90')
   
 end subroutine odeint_ar
 
@@ -976,9 +977,9 @@ subroutine print_patch_ar(y, csite,ipa, lsl)
 
   print*,''
   print*,'soil state'
-  print*,'level  soil_water  soil_tempk  soil_fracliq  ntext_soil'
+  print*,'level  soil_energy  soil_water  soil_tempk  soil_fracliq  ntext_soil'
   do k=lsl,nzg
-     print*,k,y%soil_water(k),y%soil_tempk(k),y%soil_fracliq(k)  &
+     print*,k,y%soil_energy(k),y%soil_water(k),y%soil_tempk(k),y%soil_fracliq(k)  &
           ,csite%ntext_soil(k,ipa)
   enddo
 
@@ -1080,7 +1081,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   use grid_coms, only: nzs, nzg
   use soil_coms, only: soil, water_stab_thresh, dslz, dslzi, &
        min_sfcwater_mass
-  use consts_coms, only: cice, cliq, alli,t3ple,wdns
+  use consts_coms, only: cice, cliq, alli,t3ple,wdns,clt3lf
   use therm_lib, only : qtk,qwtk,qwtk8
 
   implicit none
@@ -1182,7 +1183,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
      if( ksnnew == 1 .and. initp%sfcwater_mass(k) < &
           water_stab_thresh )then
         qwt = qw + initp%soil_energy(nzg) * dslz(nzg)
-        wt = dble(w) + initp%soil_water(nzg) * dble(dslz(nzg)) * 1000.0d0
+        wt = dble(w) + initp%soil_water(nzg) * dble(dslz(nzg)) * dble(wdns)
 
         soilhcap = soil(csite%ntext_soil(nzg,ipa))%slcpd * dslz(nzg)
         call qwtk8(qwt,wt,soilhcap  &
@@ -1329,7 +1330,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
      do k = 1,nzs
         if(initp%sfcwater_mass(k) >= min_sfcwater_mass)then
            if(snowmin * thicknet(k) <= totsnow .and.  &
-                initp%sfcwater_energy(k) < alli+cliq*t3ple)then
+                initp%sfcwater_energy(k) < clt3lf)then
               newlayers = newlayers + 1
            endif
         endif

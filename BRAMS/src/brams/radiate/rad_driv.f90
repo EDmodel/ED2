@@ -90,7 +90,7 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
    call rad_copy2scratch(mzp,mxp,myp,npatch)
 
    !----- Updating the temperature tendency -----------------------------------------------!
-   call tend_accum(mzp,mxp,myp,ia,iz,ja,jz,tend%tht(1),radiate_g(ngrid)%fthrd(1,1,1))
+   call tend_accum(mzp,mxp,myp,ia,iz,ja,jz,tend%tht,radiate_g(ngrid)%fthrd)
 
    !----- If this is the first time Harrington is called, run initialization. -------------!  
    if ((iswrtyp == 3 .or. ilwrtyp == 3) .and. ncall_i == 0) then
@@ -128,8 +128,8 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
                   ,radiate_g(ngrid)%cosz               )
                                                       
       !----- Resetting the radiative forcing ----------------------------------------------!
-      call azero(mzp*mxp*myp,radiate_g(ngrid)%fthrd(1,1,1))
-      call azero(mzp*mxp*myp,radiate_g(ngrid)%fthrd_lw(1,1,1))
+      call azero(mzp*mxp*myp,radiate_g(ngrid)%fthrd)
+      call azero(mzp*mxp*myp,radiate_g(ngrid)%fthrd_lw)
 
       !----- CARMA radiation --------------------------------------------------------------!
       if (ilwrtyp == 4 .or. iswrtyp == 4) then
@@ -367,11 +367,11 @@ subroutine rad_copy2scratch(mzp,mxp,myp,mpp)
    ! scheme. This will happen only if the user is running Harrington scheme, though.       !
    !---------------------------------------------------------------------------------------!
    if (nnqparm(ngrid) > 0) then
-      call atob(mzp*mxp*myp*nclouds,cuparm_g(ngrid)%cuprliq(1,1,1,1),scratch%vt4da(1))
-      call atob(mzp*mxp*myp*nclouds,cuparm_g(ngrid)%cuprice(1,1,1,1),scratch%vt4dc(1))
+      call atob(mzp*mxp*myp*nclouds,cuparm_g(ngrid)%cuprliq,scratch%vt4da)
+      call atob(mzp*mxp*myp*nclouds,cuparm_g(ngrid)%cuprice,scratch%vt4dc)
    else
-      call azero(mzp*mxp*myp*nclouds,scratch%vt4da(1))
-      call azero(mzp*mxp*myp*nclouds,scratch%vt4dc(1))
+      call azero(mzp*mxp*myp*nclouds,scratch%vt4da)
+      call azero(mzp*mxp*myp*nclouds,scratch%vt4dc)
    end if
 
    !---------------------------------------------------------------------------------------!
@@ -552,6 +552,11 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,fthrd,rtgt,f
 
    do j = ja,jz
       do i = ia,iz
+         !------ Initialising the fluxes, this way they will be zero if not called --------!
+         do k = 1,m1
+            fthrl(k) = 0.
+            fthrs(k) = 0.
+         end do
          do k = 1,m1
             !---- Computing some basic thermodynamic variables (pressure, temperature) ----!
             pird(k) = (pp(k,i,j) + pi0(k,i,j)) * cpi
@@ -604,7 +609,7 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,fthrd,rtgt,f
          case (1) !----- Chen-Cotton (1983) -----------------------------------------------!
             call lwradc(m1,rvr,rvr,dn0r,temprd,prd,dztr,fthrl,rlong(i,j))
          case (2) !----- Mahrer-Pielke (1977) ---------------------------------------------!
-            call lwradp(m1,temprd,rvr,dn0r,dztr,pird,scratch%vt3dq(1),fthrl,rlong(i,j))
+            call lwradp(m1,temprd,rvr,dn0r,dztr,pird,scratch%vt3dq,fthrl,rlong(i,j))
          end select
 
          !---------------------------------------------------------------------------------!
@@ -618,7 +623,7 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,fthrd,rtgt,f
                call shradc(m1,rvr,rtr,dn0r,dztr,prd,albedt(i,j),solar*1.e3*solfac          &
                           ,cosz(i,j),fthrs,rshort(i,j))
             case (2) !----- Mahrer-Pielke (1977) ------------------------------------------!
-               call shradp(m1,rvr,dn0r,dzmr,scratch%vt3dq(1),pird,cosz(i,j),albedt(i,j)    &
+               call shradp(m1,rvr,dn0r,dzmr,scratch%vt3dq,pird,cosz(i,j),albedt(i,j)       &
                           ,solar*1e3*solfac,fthrs,rshort(i,j))
             end select
 
@@ -667,11 +672,6 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,fthrd,rtgt,f
             rshort(i,j) = 0.
          end if
 
-         !------ Updating the fluxes ------------------------------------------------------!
-         do k = 2,m1-1
-            fthrd(k,i,j)    = fthrl(k) + fthrs(k)
-            fthrd_lw(k,i,j) = fthrl(k)
-         end do
          fthrd(1,i,j)    = fthrd(2,i,j)
          fthrd_lw(1,i,j) = fthrd_lw(2,i,j)
 

@@ -85,8 +85,8 @@ subroutine micro_driver()
    !----- Sedimentation and homogeneous freezing table are build only once per grid -------!
    if (ncall2g(ngrid)) then
 
-      call mksedim_tab(mzp,zm,dzt                       , pcp_tab(ngrid)%pcpfillc(1,1,1,1) &
-                      ,pcp_tab(ngrid)%pcpfillr(1,1,1,1), pcp_tab(ngrid)%sfcpcp     (1,1,1) )
+      call mksedim_tab(mzp,zm,dzt                       , pcp_tab(ngrid)%pcpfillc          &
+                      ,pcp_tab(ngrid)%pcpfillr          , pcp_tab(ngrid)%sfcpcp             )
 
       call homfrzcl(dtlt,ngrid)
 
@@ -104,21 +104,21 @@ subroutine micro_driver()
       do i = ia,iz
 
          call range_check(mzp,i,j                        , grid_g(ngr)%flpw       (i,j)    &
-                         ,basic_g(ngr)%thp     (1,i,j)   , basic_g(ngr)%theta   (1,i,j)    &
-                         ,basic_g(ngr)%pp      (1,i,j)   , basic_g(ngr)%rtp     (1,i,j)    &
-                         ,basic_g(ngr)%rv      (1,i,j)   , basic_g(ngr)%wp      (1,i,j)    &
-                         ,basic_g(ngr)%dn0     (1,i,j)   , basic_g(ngr)%pi0     (1,i,j)    &
+                         ,basic_g(ngr)%thp     (:,i,j)   , basic_g(ngr)%theta   (:,i,j)    &
+                         ,basic_g(ngr)%pp      (:,i,j)   , basic_g(ngr)%rtp     (:,i,j)    &
+                         ,basic_g(ngr)%rv      (:,i,j)   , basic_g(ngr)%wp      (:,i,j)    &
+                         ,basic_g(ngr)%dn0     (:,i,j)   , basic_g(ngr)%pi0     (:,i,j)    &
                          ,micro_g(ngr))
 
          call mcphys_main(mzp,ngr,mynum,if_adap,dtlt,dtlti,time,zm,dzt,zt                  &
                          ,grid_g(ngr)%rtgt          (i,j), micro_g(ngr)%pcpg         (i,j) &
                          ,micro_g(ngr)%qpcpg        (i,j), micro_g(ngr)%dpcpg        (i,j) &
-                         ,pcp_tab(ngr)%pcpfillc (1,1,1,1), pcp_tab(ngr)%pcpfillr (1,1,1,1) &
-                         ,pcp_tab(ngr)%sfcpcp     (1,1,1))
+                         ,pcp_tab(ngr)%pcpfillc          , pcp_tab(ngr)%pcpfillr           &
+                         ,pcp_tab(ngr)%sfcpcp            )
 
-         call copyback(mzp,i,j                        ,basic_g(ngr)%thp     (1,i,j)        &
-                      ,basic_g(ngr)%theta   (1,i,j)   ,basic_g(ngr)%rtp     (1,i,j)        &
-                      ,basic_g(ngr)%dn0     (1,i,j)   ,micro_g(ngr)                        )
+         call copyback(mzp,i,j                        ,basic_g(ngr)%thp     (:,i,j)        &
+                      ,basic_g(ngr)%theta   (:,i,j)   ,basic_g(ngr)%rtp     (:,i,j)        &
+                      ,basic_g(ngr)%dn0     (:,i,j)   ,micro_g(ngr)                        )
 
       end do
    end do

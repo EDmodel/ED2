@@ -1128,8 +1128,8 @@ subroutine negadj1(m1,m2,m3,ia,iz,ja,jz)
    if (.not. vapour_on) return
 
    call adj1(m1,m2,m3,ia,iz,ja,jz                                                          &
-            , grid_g(ngrid)%flpw   (1,1)          , basic_g(ngrid)%rv  (1,1,1)             &
-            , basic_g(ngrid)%rtp (1,1,1)          , basic_g(ngrid)%dn0 (1,1,1)             &
+            , grid_g(ngrid)%flpw                  , basic_g(ngrid)%rv                      &
+            , basic_g(ngrid)%rtp                  , basic_g(ngrid)%dn0                     &
             , micro_g(ngrid)                      )
 
    return

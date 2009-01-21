@@ -94,17 +94,17 @@ subroutine rconv_driver(banneron)
       !----- If I have TKE available, I may use it to define PBL top ----------------------!
       select case (idiffk(ngrid))
       case (1,4,5,6,7)
-         call atob(mzp*mxp*myp,turb_g(ngrid)%tkep(1,1,1),scratch%vt3de(1))
+         call atob(mzp*mxp*myp,turb_g(ngrid)%tkep,scratch%vt3de)
       case default
-         call azero(mzp*mxp*myp,scratch%vt3de(1))
+         call azero(mzp*mxp*myp,scratch%vt3de)
       end select
       
       !----- This is just temporary, it is not working properly ---------------------------!
       call cloud_sketch(mzp,mxp,myp,ia,iz,ja,jz,dtlt                                       &
-         , grid_g(ngrid)%flpw              (1,1), grid_g(ngrid)%rtgt                 (1,1) &
-         , turb_g(ngrid)%kpbl              (1,1), scratch%vt3de                        (1) &
-         , cuparm_g(ngrid)%upmf    (1,1,nclouds), cuparm_g(ngrid)%rtsrc    (1,1,1,nclouds) &
-         , cuparm_g(ngrid)%conprr  (1,1,nclouds), cuparm_g(ngrid)%cuprliq  (1,1,1,nclouds) )
+         , grid_g(ngrid)%flpw                   , grid_g(ngrid)%rtgt                       &
+         , turb_g(ngrid)%kpbl                   , scratch%vt3de                            &
+         , cuparm_g(ngrid)%upmf    (:,:,nclouds), cuparm_g(ngrid)%rtsrc    (:,:,:,nclouds) &
+         , cuparm_g(ngrid)%conprr  (:,:,nclouds), cuparm_g(ngrid)%cuprliq  (:,:,:,nclouds) )
    end if
 
 
@@ -134,17 +134,17 @@ subroutine rconv_driver(banneron)
        !----- If I have TKE available, I may use it to define PBL top ---------------------!
        select case (idiffk(ngrid))
        case (1,4,5,6,7)
-          call atob(mzp*mxp*myp,turb_g(ngrid)%tkep(1,1,1),scratch%vt3de(1))
+          call atob(mzp*mxp*myp,turb_g(ngrid)%tkep,scratch%vt3de)
        case default
-          call azero(mzp*mxp*myp,scratch%vt3de(1))
+          call azero(mzp*mxp*myp,scratch%vt3de)
        end select
        
        !----- This is temporary, it is not working properly -------------------------------!
        call cloud_sketch(mzp,mxp,myp,ia,iz,ja,jz,dtlt                                      &
-         , grid_g(ngrid)%flpw               (1,1) , grid_g(ngrid)%rtgt               (1,1) &
-         , turb_g(ngrid)%kpbl               (1,1) , scratch%vt3de                      (1) &
-         , cuparm_g(ngrid)%upmf           (1,1,1) , cuparm_g(ngrid)%rtsrc        (1,1,1,1) &
-         , cuparm_g(ngrid)%conprr         (1,1,1) , cuparm_g(ngrid)%cuprliq      (1,1,1,1) )
+         , grid_g(ngrid)%flpw                     , grid_g(ngrid)%rtgt                     &
+         , turb_g(ngrid)%kpbl                     , scratch%vt3de                          &
+         , cuparm_g(ngrid)%upmf           (:,:,1) , cuparm_g(ngrid)%rtsrc        (:,:,:,1) &
+         , cuparm_g(ngrid)%conprr         (:,:,1) , cuparm_g(ngrid)%cuprliq      (:,:,:,1) )
    end if
 
    !---------------------------------------------------------------------------------------!
@@ -152,10 +152,10 @@ subroutine rconv_driver(banneron)
    !---------------------------------------------------------------------------------------!
    do icld=1,nclouds
       !----- Accumulating the tendencies --------------------------------------------------!
-      call accum(mxp*myp*mzp,tend%tht(1),cuparm_g(ngrid)%thsrc(1,1,1,icld)    )
-      call accum(mxp*myp*mzp,tend%rtt(1),cuparm_g(ngrid)%rtsrc(1,1,1,icld)    )
+      call accum(mxp*myp*mzp,tend%tht,cuparm_g(ngrid)%thsrc(:,:,:,icld)    )
+      call accum(mxp*myp*mzp,tend%rtt,cuparm_g(ngrid)%rtsrc(:,:,:,icld)    )
       !----- Updating total precipitation -------------------------------------------------!
-      call update(mxp*myp,cuparm_g(ngrid)%aconpr(1,1),cuparm_g(ngrid)%conprr(1,1,icld),dtlt)
+      call update(mxp*myp,cuparm_g(ngrid)%aconpr,cuparm_g(ngrid)%conprr(:,:,icld),dtlt)
    end do
 
 

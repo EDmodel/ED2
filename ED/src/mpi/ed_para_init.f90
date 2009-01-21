@@ -60,8 +60,8 @@ subroutine ed_node_decomp(init,standalone,masterworks)
      
      ! Here we decompose the domain into different working nodes, which may 
      ! include the master node.
-     call ed_PAR_decomp(nnxp(ngr),nnyp(ngr),nsiz,ntotmachs,work_e(ngr)%work(1,1)  &
-          ,ixb(1,ngr),ixe(1,ngr),iyb(1,ngr),iye(1,ngr))
+     call ed_PAR_decomp(nnxp(ngr),nnyp(ngr),nsiz,ntotmachs,work_e(ngr)%work  &
+          ,ixb(:,ngr),ixe(:,ngr),iyb(:,ngr),iye(:,ngr))
      
   enddo
 
@@ -126,7 +126,7 @@ subroutine get_grid
      call ed_gridset(1)
      do ifm=1,n_ed_region
         call ed_newgrid(ifm)
-        call ed_polarst(nnxp(ifm),nnyp(ifm),work_e(ifm)%glat(1,1),work_e(ifm)%glon(1,1))
+        call ed_polarst(nnxp(ifm),nnyp(ifm),work_e(ifm)%glat,work_e(ifm)%glon)
      end do
      
   case default

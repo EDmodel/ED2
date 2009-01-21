@@ -190,7 +190,7 @@ subroutine timestep()
      !! New version of SiB-BRAMS
      if (banneron) write(unit=*,fmt='(a)') '     [-] Calling CO2_biosource...'
      call co2_biosource(mzp,mxp,myp,ia,iz,ja,jz,ngrid,  &
-          scalar_g(1,ngrid)%sclt(1),basic_g(ngrid)%dn0,grid_g(ngrid)%rtgt)
+          scalar_g(1,ngrid)%sclt,basic_g(ngrid)%dn0,grid_g(ngrid)%rtgt)
      if (acct) call acctimes('accu',7,'co2_biosource',t1,w1)
   endif
   !----------------------------------------

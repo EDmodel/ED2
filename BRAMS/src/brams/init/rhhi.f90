@@ -37,30 +37,30 @@ do ifm = 1,ngrids
       call refs1d
 
       call refs3d(nzp,nxp,nyp  &
-         ,basic_g(ifm)%pi0  (1,1,1)  ,basic_g(ifm)%dn0  (1,1,1)  &
-         ,basic_g(ifm)%dn0u (1,1,1)  ,basic_g(ifm)%dn0v (1,1,1)  &
-         ,basic_g(ifm)%th0  (1,1,1)  ,grid_g(ifm)%topt  (1,1)    &
-         ,grid_g(ifm)%rtgt  (1,1)                                )
+         ,basic_g(ifm)%pi0    ,basic_g(ifm)%dn0    &
+         ,basic_g(ifm)%dn0u   ,basic_g(ifm)%dn0v   &
+         ,basic_g(ifm)%th0    ,grid_g(ifm)%topt    &
+         ,grid_g(ifm)%rtgt                         )
 
       if (if_adap == 0) then
  
          call flds3d(nzp,nxp,nyp  &
-            ,basic_g(ifm)%uc  (1,1,1)  ,basic_g(ifm)%vc    (1,1,1)  &
-            ,basic_g(ifm)%pi0 (1,1,1)  ,basic_g(ifm)%theta (1,1,1)  &
-            ,basic_g(ifm)%thp (1,1,1)  ,basic_g(ifm)%rtp   (1,1,1)  &
-            ,basic_g(ifm)%pc  (1,1,1)  ,basic_g(ifm)%rv    (1,1,1)  &
-            ,grid_g(ifm)%topt (1,1)    ,grid_g(ifm)%topu   (1,1)    &
-            ,grid_g(ifm)%topv (1,1)    ,grid_g(ifm)%rtgt   (1,1)    &
-            ,grid_g(ifm)%rtgu (1,1)    ,grid_g(ifm)%rtgv   (1,1)    )
+            ,basic_g(ifm)%uc    ,basic_g(ifm)%vc      &
+            ,basic_g(ifm)%pi0   ,basic_g(ifm)%theta   &
+            ,basic_g(ifm)%thp   ,basic_g(ifm)%rtp     &
+            ,basic_g(ifm)%pc    ,basic_g(ifm)%rv      &
+            ,grid_g(ifm)%topt   ,grid_g(ifm)%topu     &
+            ,grid_g(ifm)%topv   ,grid_g(ifm)%rtgt     &
+            ,grid_g(ifm)%rtgu   ,grid_g(ifm)%rtgv     )
 
       else
 
-         call flds3d_adap(nzp,nxp,nyp  ,grid_g(ifm)%flpu    (1,1)    &
-            ,grid_g(ifm)%flpv  (1,1)    ,grid_g(ifm)%flpw    (1,1)    &
-            ,basic_g(ifm)%uc  (1,1,1)  ,basic_g(ifm)%vc    (1,1,1)  &
-            ,basic_g(ifm)%pi0 (1,1,1)  ,basic_g(ifm)%theta (1,1,1)  &
-            ,basic_g(ifm)%thp (1,1,1)  ,basic_g(ifm)%rtp   (1,1,1)  &
-            ,basic_g(ifm)%pc  (1,1,1)  ,basic_g(ifm)%rv    (1,1,1)  )
+         call flds3d_adap(nzp,nxp,nyp  ,grid_g(ifm)%flpu     &
+            ,grid_g(ifm)%flpv          ,grid_g(ifm)%flpw     &
+            ,basic_g(ifm)%uc           ,basic_g(ifm)%vc      &
+            ,basic_g(ifm)%pi0          ,basic_g(ifm)%theta   &
+            ,basic_g(ifm)%thp          ,basic_g(ifm)%rtp     &
+            ,basic_g(ifm)%pc           ,basic_g(ifm)%rv      )
 
       endif
 

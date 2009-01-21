@@ -239,7 +239,8 @@ subroutine copy_atm2lsm(ifm,init)
         endif
         !! note: dpcpg currently never gets used
         !! snow density is calculated in the integrator (grep snowdens)
-        
+        !! Now it does, and we should make energy and density to be exactly what it comes 
+        !! from the microphysics scheme (plus a simple conversion for convective precipitation)
      enddo
      
   enddo

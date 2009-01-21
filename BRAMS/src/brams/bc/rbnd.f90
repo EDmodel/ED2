@@ -27,12 +27,12 @@ if (nxtnest(ngrid) .eq. 0) then
 
    if (ibnd .le. 3 .or. jbnd .le. 3) then
 
-      call latnormv(mzp,mxp,myp,ia,iz,ja,jz,ibcon                  &
-         ,grid_g(ngrid)%flpu  (1,1)    ,grid_g(ngrid)%flpv(1,1)      &
-         ,basic_g(ngrid)%up  (1,1,1)  ,basic_g(ngrid)%uc  (1,1,1)  &
-         ,tend%ut            (1)      ,basic_g(ngrid)%vp  (1,1,1)  &
-         ,basic_g(ngrid)%vc  (1,1,1)  ,tend%vt            (1)      &
-         ,grid_g(ngrid)%dxt  (1,1)    ,grid_g(ngrid)%dyt  (1,1)    )
+      call latnormv(mzp,mxp,myp,ia,iz,ja,jz,ibcon    &
+         ,grid_g(ngrid)%flpu   ,grid_g(ngrid)%flpv   &
+         ,basic_g(ngrid)%up    ,basic_g(ngrid)%uc    &
+         ,tend%ut              ,basic_g(ngrid)%vp    &
+         ,basic_g(ngrid)%vc    ,tend%vt              &
+         ,grid_g(ngrid)%dxt    ,grid_g(ngrid)%dyt    )
 
    endif
 
@@ -219,131 +219,112 @@ use node_mod
 implicit none
 
 if (nxtnest(ngrid) .eq. 0) then
-   call latset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,'U'              &
-      ,basic_g(ngrid)%up (1,1,1)  ,basic_g(ngrid)%up (1,1,1)  &
-      ,basic_g(ngrid)%vp (1,1,1)  ,grid_g(ngrid)%dxu (1,1)    &
-      ,grid_g(ngrid)%dxm (1,1)    ,grid_g(ngrid)%dyv (1,1)    &
-      ,grid_g(ngrid)%dym (1,1)    )
-   call latset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,'V'              &
-      ,basic_g(ngrid)%vp (1,1,1)  ,basic_g(ngrid)%up (1,1,1)  &
-      ,basic_g(ngrid)%vp (1,1,1)  ,grid_g(ngrid)%dxu (1,1)    &
-      ,grid_g(ngrid)%dxm (1,1)    ,grid_g(ngrid)%dyv (1,1)    &
-      ,grid_g(ngrid)%dym (1,1)    )
-   call latset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,'W'              &
-      ,basic_g(ngrid)%wp (1,1,1)  ,basic_g(ngrid)%up (1,1,1)  &
-      ,basic_g(ngrid)%vp (1,1,1)  ,grid_g(ngrid)%dxu (1,1)    &
-      ,grid_g(ngrid)%dxm (1,1)    ,grid_g(ngrid)%dyv (1,1)    &
-      ,grid_g(ngrid)%dym (1,1)    )
-   call latset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,'P'              &
-      ,basic_g(ngrid)%pp (1,1,1)  ,basic_g(ngrid)%up (1,1,1)  &
-      ,basic_g(ngrid)%vp (1,1,1)  ,grid_g(ngrid)%dxu (1,1)    &
-      ,grid_g(ngrid)%dxm (1,1)    ,grid_g(ngrid)%dyv (1,1)    &
-      ,grid_g(ngrid)%dym (1,1)    )
+   call latset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,'U'  &
+      ,basic_g(ngrid)%up   ,basic_g(ngrid)%up     &
+      ,basic_g(ngrid)%vp   ,grid_g(ngrid)%dxu     &
+      ,grid_g(ngrid)%dxm   ,grid_g(ngrid)%dyv     &
+      ,grid_g(ngrid)%dym   )
+   call latset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,'V'  &
+      ,basic_g(ngrid)%vp   ,basic_g(ngrid)%up     &
+      ,basic_g(ngrid)%vp   ,grid_g(ngrid)%dxu     &
+      ,grid_g(ngrid)%dxm   ,grid_g(ngrid)%dyv     &
+      ,grid_g(ngrid)%dym   )
+   call latset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,'W'  &
+      ,basic_g(ngrid)%wp   ,basic_g(ngrid)%up     &
+      ,basic_g(ngrid)%vp   ,grid_g(ngrid)%dxu     &
+      ,grid_g(ngrid)%dxm   ,grid_g(ngrid)%dyv     &
+      ,grid_g(ngrid)%dym   )
+   call latset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,'P'  &
+      ,basic_g(ngrid)%pp   ,basic_g(ngrid)%up     &
+      ,basic_g(ngrid)%vp   ,grid_g(ngrid)%dxu     &
+      ,grid_g(ngrid)%dxm   ,grid_g(ngrid)%dyv     &
+      ,grid_g(ngrid)%dym   )                      
 endif
 
 if (nsttop .eq. 1) then
-   call topset(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-      ,basic_g(ngrid)%up(1,1,1)  ,basic_g(ngrid)%up(1,1,1),'U')
-   call topset(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-      ,basic_g(ngrid)%vp(1,1,1)  ,basic_g(ngrid)%vp(1,1,1),'V')
+   call topset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,basic_g(ngrid)%up,basic_g(ngrid)%up,'U')
+   call topset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,basic_g(ngrid)%vp,basic_g(ngrid)%vp,'V')
 endif
 
 if (nstbot .eq. 1) then
    if (if_adap == 0) then
-      call botset(mzp,mxp,myp,ia,iz,ja,jz,ibcon   &
-         ,basic_g(ngrid)%up(1,1,1),'U')
-      call botset(mzp,mxp,myp,ia,iz,ja,jz,ibcon   &
-         ,basic_g(ngrid)%vp(1,1,1),'V')
+      call botset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,basic_g(ngrid)%up,'U')
+      call botset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,basic_g(ngrid)%vp,'V')
    else
-      call botset_adap(mzp,mxp,myp,ia,iz,ja,jz,ibcon,grid_g(ngrid)%flpu(1,1)  &
-         ,basic_g(ngrid)%up(1,1,1),'U')
-      call botset_adap(mzp,mxp,myp,ia,iz,ja,jz,ibcon,grid_g(ngrid)%flpv(1,1)  &
-         ,basic_g(ngrid)%vp(1,1,1),'V')
+      call botset_adap(mzp,mxp,myp,ia,iz,ja,jz,ibcon,grid_g(ngrid)%flpu  &
+                      ,basic_g(ngrid)%up,'U')
+      call botset_adap(mzp,mxp,myp,ia,iz,ja,jz,ibcon,grid_g(ngrid)%flpv  &
+                      ,basic_g(ngrid)%vp,'V')
    endif
-endif
+end if
 
-call topset(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-      ,basic_g(ngrid)%pp(1,1,1)  ,basic_g(ngrid)%pp(1,1,1),'P')
+call topset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,basic_g(ngrid)%pp,basic_g(ngrid)%pp,'P')
 
 if (if_adap == 0) then
-   call botset(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-      ,basic_g(ngrid)%pp(1,1,1),'P')
+   call botset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,basic_g(ngrid)%pp,'P')
 else
-   call botset_adap(mzp,mxp,myp,ia,iz,ja,jz,ibcon,grid_g(ngrid)%flpw(1,1)  &
-      ,basic_g(ngrid)%pp(1,1,1),'P')
-endif
+   call botset_adap(mzp,mxp,myp,ia,iz,ja,jz,ibcon,grid_g(ngrid)%flpw  &
+                   ,basic_g(ngrid)%pp,'P')
+end if
 
-call dumset(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-      ,basic_g(ngrid)%wp(1,1,1),'W')
+call dumset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,basic_g(ngrid)%wp,'W')
 
-call dumset(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-      ,basic_g(ngrid)%up(1,1,1),'U')
-call dumset(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-      ,basic_g(ngrid)%vp(1,1,1),'V')
+call dumset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,basic_g(ngrid)%up,'U')
+call dumset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,basic_g(ngrid)%vp,'V')
 
 if (nxtnest(ngrid) .eq. 0) then
    call latset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,'U'  &
-      ,basic_g(ngrid)%uc (1,1,1)  ,basic_g(ngrid)%up (1,1,1)  &
-      ,basic_g(ngrid)%vp (1,1,1)  ,grid_g(ngrid)%dxu (1,1)    &
-      ,grid_g(ngrid)%dxm (1,1)    ,grid_g(ngrid)%dyv (1,1)    &
-      ,grid_g(ngrid)%dym (1,1)    )
+      ,basic_g(ngrid)%uc   ,basic_g(ngrid)%up     &
+      ,basic_g(ngrid)%vp   ,grid_g(ngrid)%dxu     &
+      ,grid_g(ngrid)%dxm   ,grid_g(ngrid)%dyv     &
+      ,grid_g(ngrid)%dym   )
    call latset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,'V'  &
-      ,basic_g(ngrid)%vc (1,1,1)  ,basic_g(ngrid)%up (1,1,1)  &
-      ,basic_g(ngrid)%vp (1,1,1)  ,grid_g(ngrid)%dxu (1,1)    &
-      ,grid_g(ngrid)%dxm (1,1)    ,grid_g(ngrid)%dyv (1,1)    &
-      ,grid_g(ngrid)%dym (1,1)    )
+      ,basic_g(ngrid)%vc   ,basic_g(ngrid)%up     &
+      ,basic_g(ngrid)%vp   ,grid_g(ngrid)%dxu     &
+      ,grid_g(ngrid)%dxm   ,grid_g(ngrid)%dyv     &
+      ,grid_g(ngrid)%dym   )
    call latset(mzp,mxp,myp,ia,iz,ja,jz,ibcon ,'W' &
-      ,basic_g(ngrid)%wc (1,1,1)  ,basic_g(ngrid)%up (1,1,1)  &
-      ,basic_g(ngrid)%vp (1,1,1)  ,grid_g(ngrid)%dxu (1,1)    &
-      ,grid_g(ngrid)%dxm (1,1)    ,grid_g(ngrid)%dyv (1,1)    &
-      ,grid_g(ngrid)%dym (1,1)    )
+      ,basic_g(ngrid)%wc   ,basic_g(ngrid)%up     &
+      ,basic_g(ngrid)%vp   ,grid_g(ngrid)%dxu     &
+      ,grid_g(ngrid)%dxm   ,grid_g(ngrid)%dyv     &
+      ,grid_g(ngrid)%dym   )
    call latset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,'P'  &
-      ,basic_g(ngrid)%pc (1,1,1)  ,basic_g(ngrid)%up (1,1,1)  &
-      ,basic_g(ngrid)%vp (1,1,1)  ,grid_g(ngrid)%dxu (1,1)    &
-      ,grid_g(ngrid)%dxm (1,1)    ,grid_g(ngrid)%dyv (1,1)    &
-      ,grid_g(ngrid)%dym (1,1)    )
-endif
+      ,basic_g(ngrid)%pc   ,basic_g(ngrid)%up     &
+      ,basic_g(ngrid)%vp   ,grid_g(ngrid)%dxu     &
+      ,grid_g(ngrid)%dxm   ,grid_g(ngrid)%dyv     &
+      ,grid_g(ngrid)%dym   )
+end if
 
 if (nsttop .eq. 1) then
-   call topset(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-      ,basic_g(ngrid)%uc(1,1,1)  ,basic_g(ngrid)%uc(1,1,1),'U')
-   call topset(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-      ,basic_g(ngrid)%vc(1,1,1)  ,basic_g(ngrid)%vc(1,1,1),'V')
-endif
+   call topset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,basic_g(ngrid)%uc,basic_g(ngrid)%uc,'U')
+   call topset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,basic_g(ngrid)%vc,basic_g(ngrid)%vc,'V')
+end if
 
 if (nstbot .eq. 1) then
    if (if_adap == 0) then
-      call botset(mzp,mxp,myp,ia,iz,ja,jz,ibcon   &
-         ,basic_g(ngrid)%uc(1,1,1),'U')
-      call botset(mzp,mxp,myp,ia,iz,ja,jz,ibcon   &
-         ,basic_g(ngrid)%vc(1,1,1),'V')
+      call botset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,basic_g(ngrid)%uc,'U')
+      call botset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,basic_g(ngrid)%vc,'V')
    else
-      call botset_adap(mzp,mxp,myp,ia,iz,ja,jz,ibcon,grid_g(ngrid)%flpu(1,1)  &
-         ,basic_g(ngrid)%uc(1,1,1),'U')
-      call botset_adap(mzp,mxp,myp,ia,iz,ja,jz,ibcon,grid_g(ngrid)%flpv(1,1)  &
-         ,basic_g(ngrid)%vc(1,1,1),'V')
-   endif
-endif
+      call botset_adap(mzp,mxp,myp,ia,iz,ja,jz,ibcon,grid_g(ngrid)%flpu  &
+                      ,basic_g(ngrid)%uc,'U')
+      call botset_adap(mzp,mxp,myp,ia,iz,ja,jz,ibcon,grid_g(ngrid)%flpv  &
+                      ,basic_g(ngrid)%vc,'V')
+   end if
+end if
 
 
-call topset(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-      ,basic_g(ngrid)%pc(1,1,1)  &
-      ,basic_g(ngrid)%pc(1,1,1),'P')
+call topset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,basic_g(ngrid)%pc,basic_g(ngrid)%pc,'P')
 
 if (if_adap == 0) then
-   call botset(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-      ,basic_g(ngrid)%pc(1,1,1),'P')
+   call botset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,basic_g(ngrid)%pc,'P')
 else
-   call botset_adap(mzp,mxp,myp,ia,iz,ja,jz,ibcon,grid_g(ngrid)%flpw(1,1)  &
-      ,basic_g(ngrid)%pc(1,1,1),'P')
+   call botset_adap(mzp,mxp,myp,ia,iz,ja,jz,ibcon,grid_g(ngrid)%flpw  &
+                   ,basic_g(ngrid)%pc,'P')
 endif
 
-call dumset(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-      ,basic_g(ngrid)%wc(1,1,1),'W')
-call dumset(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-      ,basic_g(ngrid)%uc(1,1,1),'U')
-call dumset(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-      ,basic_g(ngrid)%vc(1,1,1),'V')
+call dumset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,basic_g(ngrid)%wc,'W')
+call dumset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,basic_g(ngrid)%uc,'U')
+call dumset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,basic_g(ngrid)%vc,'V')
 
 return
 end
@@ -380,23 +361,23 @@ do n = 1,num_scalar(ngrid)
 	  if(n .le. (num_scalar(ngrid) - NADDSC) ) then
 
             call latset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,'TR'   &
-            ,scalar_tab(n,ngrid)%var_p  ,basic_g(ngrid)%up (1,1,1)  &
-            ,basic_g(ngrid)%vp (1,1,1)  ,grid_g(ngrid)%dxu (1,1)    &
-            ,grid_g(ngrid)%dxm (1,1)    ,grid_g(ngrid)%dyv (1,1)    &
-            ,grid_g(ngrid)%dym (1,1)    )
+            ,scalar_tab(n,ngrid)%var_p  ,basic_g(ngrid)%up   &
+            ,basic_g(ngrid)%vp   ,grid_g(ngrid)%dxu          & 
+            ,grid_g(ngrid)%dxm   ,grid_g(ngrid)%dyv          & 
+            ,grid_g(ngrid)%dym   )
 	  else
-            call latset_tracer(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-            ,scalar_tab(n,ngrid)%var_p  ,basic_g(ngrid)%up (:,:,:)  &
-            ,basic_g(ngrid)%vp (:,:,:)  ,grid_g(ngrid)%dxu (:,:)    &
-            ,grid_g(ngrid)%dxm (:,:)    ,grid_g(ngrid)%dyv (:,:)    &
-            ,grid_g(ngrid)%dym (:,:)    )
+            call latset_tracer(mzp,mxp,myp,ia,iz,ja,jz,ibcon &
+            ,scalar_tab(n,ngrid)%var_p  ,basic_g(ngrid)%up   &
+            ,basic_g(ngrid)%vp          ,grid_g(ngrid)%dxu   &
+            ,grid_g(ngrid)%dxm          ,grid_g(ngrid)%dyv   &
+            ,grid_g(ngrid)%dym          )
 	 endif
 	else
             call latset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,'TR'   &
-            ,scalar_tab(n,ngrid)%var_p  ,basic_g(ngrid)%up (1,1,1)  &
-            ,basic_g(ngrid)%vp (1,1,1)  ,grid_g(ngrid)%dxu (1,1)    &
-            ,grid_g(ngrid)%dxm (1,1)    ,grid_g(ngrid)%dyv (1,1)    &
-            ,grid_g(ngrid)%dym (1,1)    )
+            ,scalar_tab(n,ngrid)%var_p  ,basic_g(ngrid)%up   &
+            ,basic_g(ngrid)%vp          ,grid_g(ngrid)%dxu   &
+            ,grid_g(ngrid)%dxm          ,grid_g(ngrid)%dyv   &
+            ,grid_g(ngrid)%dym          )
         endif
        !srf
 
@@ -410,7 +391,7 @@ do n = 1,num_scalar(ngrid)
          call botset(mzp,mxp,myp,ia,iz,ja,jz,ibcon,scalar_tab(n,ngrid)%var_p  ,'T')
       else
          call botset_adap(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-            ,grid_g(ngrid)%flpw(1,1),scalar_tab(n,ngrid)%var_p  ,'T')
+            ,grid_g(ngrid)%flpw,scalar_tab(n,ngrid)%var_p  ,'T')
       endif
    endif
 enddo
@@ -784,23 +765,23 @@ if (vapour_on) then
       enddo
    enddo
 else
-  call atob(mxyzp,basic_g(ngrid)%theta(1,1,1),scratch%vt3da(1))
+  call atob(mxyzp,basic_g(ngrid)%theta,scratch%vt3da)
 endif
 
 !     Now get rayleigh friction tendency
 
 if (if_adap == 0) then
 
-   call rayf(4,mzp,mxp,myp,ia,iz,ja,jz,ibcon                  &
-      ,scratch%vt3da      (1)    ,basic_g(ngrid)%th0 (1,1,1)  &
-      ,tend%tht           (1)    ,grid_g(ngrid)%rtgt (1,1)    &
-      ,grid_g(ngrid)%topt (1,1)                               )
+   call rayf(4,mzp,mxp,myp,ia,iz,ja,jz,ibcon      &
+      ,scratch%vt3da        ,basic_g(ngrid)%th0   &
+      ,tend%tht             ,grid_g(ngrid)%rtgt   &
+      ,grid_g(ngrid)%topt                         )
 
 else
 
-   call rayf_adap(4,mzp,mxp,myp,ia,iz,ja,jz,ibcon     &
-      ,grid_g(ngrid)%flpw  (1,1)   ,scratch%vt3da (1)  &
-      ,basic_g(ngrid)%th0 (1,1,1) ,tend%tht      (1)  )
+   call rayf_adap(4,mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
+      ,grid_g(ngrid)%flpw          ,scratch%vt3da  &
+      ,basic_g(ngrid)%th0         ,tend%tht        )
 
 endif
 

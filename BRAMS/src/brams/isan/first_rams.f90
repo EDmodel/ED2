@@ -83,10 +83,10 @@ do ng=1,ngridsx
    !ierr=cio_f(iun,irw,'rt01dn'//cng,rt01dn(1,ng),nnzp(ng))
 
    ! 1d reference state filled in the new arrays
-   ierr=cio_f(iun,irw,'pi01dn'//cng,piref(1,ng),nnzp(ng))
-   ierr=cio_f(iun,irw,'th01dn'//cng,thref(1,ng),nnzp(ng))
-   ierr=cio_f(iun,irw,'dn01dn'//cng,dnref(1,ng),nnzp(ng))
-   ierr=cio_f(iun,irw,'rt01dn'//cng,rtref(1,ng),nnzp(ng))
+   ierr=cio_f(iun,irw,'pi01dn'//cng,piref(:,ng),nnzp(ng))
+   ierr=cio_f(iun,irw,'th01dn'//cng,thref(:,ng),nnzp(ng))
+   ierr=cio_f(iun,irw,'dn01dn'//cng,dnref(:,ng),nnzp(ng))
+   ierr=cio_f(iun,irw,'rt01dn'//cng,rtref(:,ng),nnzp(ng))
 enddo
 
 close(10)
@@ -133,38 +133,38 @@ if(ngrid <= ngridsx)then
    print*,'READING from file current grid=',ngrid,nxp,nyp,nzp
    print*,'READING from file current grid=',trim(innpr)
    ! UE_AVG and VE_AVG
-   ierr=RAMS_getvar('UP',ngrid,ui2(1,1,1),rr_scr1(1),innpr(1:lenf))
-   ierr=RAMS_getvar('VP',ngrid,vi2(1,1,1),rr_scr1(1),innpr(1:lenf))
-   call comp_avgu(nnxp(ngrid),nnyp(ngrid),nnzp(ngrid),ui2(1,1,1))
-   call comp_avgv(nnxp(ngrid),nnyp(ngrid),nnzp(ngrid),vi2(1,1,1))
+   ierr=RAMS_getvar('UP',ngrid,ui2,rr_scr1,innpr(1:lenf))
+   ierr=RAMS_getvar('VP',ngrid,vi2,rr_scr1,innpr(1:lenf))
+   call comp_avgu(nnxp(ngrid),nnyp(ngrid),nnzp(ngrid),ui2)
+   call comp_avgv(nnxp(ngrid),nnyp(ngrid),nnzp(ngrid),vi2)
 print*,'222'
    ! RELHUM and THETA
-   ierr=RAMS_getvar('RV',ngrid,ri2(1,1,1),rr_scr1(1),innpr(1:lenf))
-   ierr=RAMS_getvar('PI',ngrid,pi2(1,1,1),rr_scr1(1),innpr(1:lenf))
-   ierr=RAMS_getvar('THETA',ngrid,ti2(1,1,1),rr_scr1(1),innpr(1:lenf))
+   ierr=RAMS_getvar('RV',ngrid,ri2,rr_scr1,innpr(1:lenf))
+   ierr=RAMS_getvar('PI',ngrid,pi2,rr_scr1,innpr(1:lenf))
+   ierr=RAMS_getvar('THETA',ngrid,ti2,rr_scr1,innpr(1:lenf))
    call comp_rhfrac(nnxp(ngrid),nnyp(ngrid),nnzp(ngrid)  &
-                   ,ri2(1,1,1),pi2(1,1,1),ti2(1,1,1))
+                   ,ri2,pi2,ti2)
 print*,'333'
 
    ! PRESS
-   call comp_press(nnxp(ngrid),nnyp(ngrid),nnzp(ngrid),pi2(1,1,1))
-   call ae1t0(nnxp(ngrid)*nnyp(ngrid)*nnzp(ngrid),pi2(1,1,1),pi2(1,1,1),100.)
+   call comp_press(nnxp(ngrid),nnyp(ngrid),nnzp(ngrid),pi2)
+   call ae1t0(nnxp(ngrid)*nnyp(ngrid)*nnzp(ngrid),pi2,pi2,100.)
 print*,'444'
 
    ! Write analysis fields to model vars in case need to interpolate from them
    ! rearrange(nzp,nxp,nyp,a,b) is b(i,j,k)=a(k,i,j)
    ! unarrange(nzp,nxp,nyp,a,b) is b(k,i,j)=a(i,j,k)
    call unarrange(nnzp(ngrid),nnxp(ngrid),nnyp(ngrid)  &
-                  ,ui2(1,1,1),is_grids(ngrid)%rr_ug(1,1,1))
+                  ,ui2,is_grids(ngrid)%rr_ug)
    call unarrange(nnzp(ngrid),nnxp(ngrid),nnyp(ngrid)  &
-                  ,vi2(1,1,1),is_grids(ngrid)%rr_vg(1,1,1))
+                  ,vi2,is_grids(ngrid)%rr_vg)
    call unarrange(nnzp(ngrid),nnxp(ngrid),nnyp(ngrid)  &
-                  ,ri2(1,1,1),is_grids(ngrid)%rr_rg(1,1,1))
+                  ,ri2,is_grids(ngrid)%rr_rg)
    call unarrange(nnzp(ngrid),nnxp(ngrid),nnyp(ngrid)  &
-                  ,ti2(1,1,1),is_grids(ngrid)%rr_tg(1,1,1))
+                  ,ti2,is_grids(ngrid)%rr_tg)
    call unarrange(nnzp(ngrid),nnxp(ngrid),nnyp(ngrid)  &
-                  ,pi2(1,1,1),is_grids(ngrid)%rr_pg(1,1,1))
-   print*,"ngrid,theta(1,1,1)=",ngrid,is_grids(ngrid)%rr_tg(1,1,1)
+                  ,pi2,is_grids(ngrid)%rr_pg)
+   print*,"ngrid,theta(1,1,1)=",ngrid,is_grids(ngrid)%rr_tg
 print*,'555'
 
    ! Compute reference state density in case we need it
@@ -172,35 +172,35 @@ print*,'555'
    
    if (ngrid == 1) then
       call isan_comp_dn0(nnzp(ngrid),nnxp(ngrid),nnyp(ngrid) &
-                        ,is_grids(ngrid)%rr_pi0(1,1,1) &
-                        ,is_grids(ngrid)%rr_th0(1,1,1) &
-                        ,is_grids(ngrid)%rr_dn0(1,1,1) &
-                        ,is_grids(ngrid)%rr_dn0u(1,1,1) &
-                        ,is_grids(ngrid)%rr_dn0v(1,1,1) &
-                        ,grid_g(ngrid)%topta(1,1),ngrid)
+                        ,is_grids(ngrid)%rr_pi0 &
+                        ,is_grids(ngrid)%rr_th0 &
+                        ,is_grids(ngrid)%rr_dn0 &
+                        ,is_grids(ngrid)%rr_dn0u &
+                        ,is_grids(ngrid)%rr_dn0v &
+                        ,grid_g(ngrid)%topta,ngrid)
    else
    
       ifm=ngrid
       icm=nxtnest(ifm)
       call nest_interpolated_topo(nnxp(icm),nnyp(icm),nnxp(ifm),nnyp(ifm) &
-            ,maxix,maxiy,ifm,grid_g(icm)%topt(1,1),rr_vt2da(1)  &
-            ,rr_scr1(1),rr_scr2(1))
+            ,maxix,maxiy,ifm,grid_g(icm)%topt,rr_vt2da  &
+            ,rr_scr1,rr_scr2)
       call fmrefs3d_isan(ifm,icm,nnzp(ifm),nnxp(ifm),nnyp(ifm) &
             ,nnzp(icm),nnxp(icm),nnyp(icm),maxiz,maxix,maxiy  &
             ,nnstbot(ifm),nnsttop(ifm),jdim  &
-            ,rr_scr1(1),rr_scr2(1),rr_vt2da(1)  &
-            ,grid_g(ifm)%topt(1,1),grid_g(icm)%topt(1,1) &
-            ,is_grids(icm)%rr_dn0(1,1,1),is_grids(ifm)%rr_dn0(1,1,1) &
-            ,is_grids(icm)%rr_th0(1,1,1),is_grids(ifm)%rr_th0(1,1,1) &
-            ,is_grids(ifm)%rr_pi0(1,1,1),is_grids(ifm)%rr_dn0u(1,1,1) &
-            ,is_grids(ifm)%rr_dn0v(1,1,1),ztn(1,ifm),ztop )
+            ,rr_scr1,rr_scr2,rr_vt2da  &
+            ,grid_g(ifm)%topt,grid_g(icm)%topt &
+            ,is_grids(icm)%rr_dn0,is_grids(ifm)%rr_dn0  &
+            ,is_grids(icm)%rr_th0,is_grids(ifm)%rr_th0  &
+            ,is_grids(ifm)%rr_pi0,is_grids(ifm)%rr_dn0u &
+            ,is_grids(ifm)%rr_dn0v,ztn(:,ifm),ztop )
          
       call fmdn0_isan(ifm,icm,nnzp(ifm),nnxp(ifm),nnyp(ifm) &
             ,nnzp(icm),nnxp(icm),nnyp(icm),maxiz,maxix,maxiy &
-            ,rr_scr1(1),rr_scr2(1)  &
-            ,grid_g(ifm)%topt(1,1),grid_g(icm)%topt(1,1) &
-            ,is_grids(ifm)%rr_dn0(1,1,1),is_grids(ifm)%rr_dn0u(1,1,1) &
-            ,is_grids(ifm)%rr_dn0v(1,1,1),ztn(1,ifm),ztop )
+            ,rr_scr1,rr_scr2  &
+            ,grid_g(ifm)%topt,grid_g(icm)%topt &
+            ,is_grids(ifm)%rr_dn0,is_grids(ifm)%rr_dn0u &
+            ,is_grids(ifm)%rr_dn0v,ztn(:,ifm),ztop )
    endif
    
 else
@@ -219,30 +219,30 @@ else
 
    ! Calculate the 3D base state
    call fmrefs1d_isan(ifm,icm,maxsigz,nnzp(ifm) &
-                     ,piref(1,1),thref(1,1),dnref(1,1),rtref(1,1))
+                     ,piref,thref,dnref,rtref)
 
    call nest_interpolated_topo(nnxp(icm),nnyp(icm),nnxp(ifm),nnyp(ifm) &
-         ,maxix,maxiy,ifm,grid_g(icm)%topt(1,1),rr_vt2da(1)  &
-         ,rr_scr1(1),rr_scr2(1))
+         ,maxix,maxiy,ifm,grid_g(icm)%topt,rr_vt2da  &
+         ,rr_scr1,rr_scr2)
    call fmrefs3d_isan(ifm,icm,nnzp(ifm),nnxp(ifm),nnyp(ifm) &
          ,nnzp(icm),nnxp(icm),nnyp(icm),maxiz,maxix,maxiy  &
          ,nnstbot(ifm),nnsttop(ifm),jdim  &
-         ,rr_scr1(1),rr_scr2(1),rr_vt2da(1)  &
-         ,grid_g(ifm)%topt(1,1),grid_g(icm)%topt(1,1) &
-         ,is_grids(icm)%rr_dn0(1,1,1),is_grids(ifm)%rr_dn0(1,1,1) &
-         ,is_grids(icm)%rr_th0(1,1,1),is_grids(ifm)%rr_th0(1,1,1) &
-         ,is_grids(ifm)%rr_pi0(1,1,1),is_grids(ifm)%rr_dn0u(1,1,1) &
-         ,is_grids(ifm)%rr_dn0v(1,1,1)  &
-         ,ztn(1,ifm),ztop )
+         ,rr_scr1(1),rr_scr2,rr_vt2da  &
+         ,grid_g(ifm)%topt,grid_g(icm)%topt &
+         ,is_grids(icm)%rr_dn0,is_grids(ifm)%rr_dn0 &
+         ,is_grids(icm)%rr_th0,is_grids(ifm)%rr_th0 &
+         ,is_grids(ifm)%rr_pi0,is_grids(ifm)%rr_dn0u &
+         ,is_grids(ifm)%rr_dn0v  &
+         ,ztn(:,ifm),ztop )
          
 
-   call fmint4_isan(is_grids(icm)%rr_tg(1,1,1)  ,is_grids(ifm)%rr_tg(1,1,1)  &
-                   ,is_grids(icm)%rr_dn0(1,1,1),is_grids(ifm)%rr_dn0(1,1,1) &
+   call fmint4_isan(is_grids(icm)%rr_tg  ,is_grids(ifm)%rr_tg  &
+                   ,is_grids(icm)%rr_dn0,is_grids(ifm)%rr_dn0 &
                    ,ifm,icm,'t',1)
    print*,"....icm,theta(1,1,1)=",icm,is_grids(icm)%rr_tg(1,1,1),is_grids(icm)%rr_dn0(1,1,1)
    print*,"....ifm,theta(1,1,1)=",ifm,is_grids(ifm)%rr_tg(1,1,1),is_grids(ifm)%rr_dn0(1,1,1)
    call rearrange(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-                 ,is_grids(ifm)%rr_tg(1,1,1),ti2(1,1,1))
+                 ,is_grids(ifm)%rr_tg,ti2)
    print*,'done with th,ti2(1,1,1)=',ti2(1,1,1)
 
    pltc(1:nnxp(icm),1:nnyp(icm)) = is_grids(icm)%rr_tg(2,1:nnxp(icm),1:nnyp(icm))
@@ -250,53 +250,52 @@ else
    call ezcntr(ti2(1,1,2),nnxp(ifm),nnyp(ifm))
 
 
-   call fmint4_isan(is_grids(icm)%rr_pg(1,1,1),is_grids(ifm)%rr_pg(1,1,1)  &
-                   ,is_grids(icm)%rr_dn0(1,1,1),is_grids(ifm)%rr_dn0(1,1,1) &
+   call fmint4_isan(is_grids(icm)%rr_pg,is_grids(ifm)%rr_pg  &
+                   ,is_grids(icm)%rr_dn0,is_grids(ifm)%rr_dn0 &
                    ,ifm,icm,'t',0)
-   print*,"....icm,p(1,1,1)=",icm,is_grids(icm)%rr_pg(1,1,1),is_grids(icm)%rr_dn0(1,1,1)
-   print*,"....ifm,p(1,1,1)=",ifm,is_grids(ifm)%rr_pg(1,1,1),is_grids(ifm)%rr_dn0(1,1,1)
+   print*,"....icm,p(1,1,1)=",icm,is_grids(icm)%rr_pg,is_grids(icm)%rr_dn0
+   print*,"....ifm,p(1,1,1)=",ifm,is_grids(ifm)%rr_pg,is_grids(ifm)%rr_dn0
    print*,"....icm,p(1,1,1)max=",maxval(is_grids(icm)%rr_pg(1:nnzp(icm),1:nnxp(icm),1:nnyp(icm)))
    print*,"....ifm,p(1,1,1)max=",maxval(is_grids(ifm)%rr_pg(1:nnzp(ifm),1:nnxp(ifm),1:nnyp(ifm)))
    print*,"....icm,p(1,1,1)min=",minval(is_grids(icm)%rr_pg(1:nnzp(icm),1:nnxp(icm),1:nnyp(icm)))
    print*,"....ifm,p(1,1,1)min=",minval(is_grids(ifm)%rr_pg(1:nnzp(ifm),1:nnxp(ifm),1:nnyp(ifm)))
    call rearrange(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-                 ,is_grids(ifm)%rr_pg(1,1,1),pi2(1,1,1))
+                 ,is_grids(ifm)%rr_pg,pi2)
 
 
-   call fmint4_isan(is_grids(icm)%rr_rg(1,1,1),  is_grids(ifm)%rr_rg(1,1,1)  &
-                   ,is_grids(icm)%rr_dn0(1,1,1),is_grids(ifm)%rr_dn0(1,1,1) &
+   call fmint4_isan(is_grids(icm)%rr_rg,  is_grids(ifm)%rr_rg  &
+                   ,is_grids(icm)%rr_dn0,is_grids(ifm)%rr_dn0 &
                    ,ifm,icm,'t',1)
-   print*,"....icm,rr(1,1,1)=",icm,is_grids(icm)%rr_r(1,1,1),is_grids(icm)%rr_dn0(1,1,1)
-   print*,"....ifm,rr(1,1,1)=",ifm,is_grids(ifm)%rr_r(1,1,1),is_grids(ifm)%rr_dn0(1,1,1)
+   print*,"....icm,rr(1,1,1)=",icm,is_grids(icm)%rr_r,is_grids(icm)%rr_dn0
+   print*,"....ifm,rr(1,1,1)=",ifm,is_grids(ifm)%rr_r,is_grids(ifm)%rr_dn0
    print*,"....icm,rr(1,1,1)max=",maxval(is_grids(icm)%rr_rg(1:nnzp(icm),1:nnxp(icm),1:nnyp(icm)))
    print*,"....ifm,rr(1,1,1)max=",maxval(is_grids(ifm)%rr_rg(1:nnzp(ifm),1:nnxp(ifm),1:nnyp(ifm)))
    print*,"....icm,rr(1,1,1)min=",minval(is_grids(icm)%rr_rg(1:nnzp(icm),1:nnxp(icm),1:nnyp(icm)))
    print*,"....ifm,rr(1,1,1)min=",minval(is_grids(ifm)%rr_rg(1:nnzp(ifm),1:nnxp(ifm),1:nnyp(ifm)))
-   call rearrange(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-                      ,is_grids(ifm)%rr_rg(1,1,1),ri2(1,1,1))
+   call rearrange(nnzp(ifm),nnxp(ifm),nnyp(ifm),is_grids(ifm)%rr_rg,ri2)
 
 
 
 
-   call fmint4_isan(is_grids(icm)%rr_ug(1,1,1),is_grids(ifm)%rr_ug(1,1,1)  &
-                   ,is_grids(icm)%rr_dn0u(1,1,1),is_grids(ifm)%rr_dn0u(1,1,1) &
+   call fmint4_isan(is_grids(icm)%rr_ug,is_grids(ifm)%rr_ug  &
+                   ,is_grids(icm)%rr_dn0u,is_grids(ifm)%rr_dn0u &
                    ,ifm,icm,'u',1)
    call rearrange(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-                 ,is_grids(ifm)%rr_ug(1,1,1),ui2(1,1,1))
+                 ,is_grids(ifm)%rr_ug,ui2)
 
 
-   call fmint4_isan(is_grids(icm)%rr_vg(1,1,1),is_grids(ifm)%rr_vg(1,1,1)  &
-                   ,is_grids(icm)%rr_dn0v(1,1,1),is_grids(ifm)%rr_dn0v(1,1,1) &
+   call fmint4_isan(is_grids(icm)%rr_vg,is_grids(ifm)%rr_vg  &
+                   ,is_grids(icm)%rr_dn0v,is_grids(ifm)%rr_dn0v &
                    ,ifm,icm,'v',1)
    call rearrange(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-                 ,is_grids(ngrid)%rr_vg(1,1,1),vi2(1,1,1))
+                 ,is_grids(ngrid)%rr_vg,vi2)
 
    call fmdn0_isan(ifm,icm,nnzp(ifm),nnxp(ifm),nnyp(ifm) &
          ,nnzp(icm),nnxp(icm),nnyp(icm),maxiz,maxix,maxiy &
-         ,rr_scr1(1),rr_scr2(1)  &
-         ,grid_g(ifm)%topt(1,1),grid_g(icm)%topt(1,1) &
-         ,is_grids(ifm)%rr_dn0(1,1,1),is_grids(ifm)%rr_dn0u(1,1,1) &
-         ,is_grids(ifm)%rr_dn0v(1,1,1),ztn(1,ifm),ztop )
+         ,rr_scr1,rr_scr2  &
+         ,grid_g(ifm)%topt,grid_g(icm)%topt &
+         ,is_grids(ifm)%rr_dn0,is_grids(ifm)%rr_dn0u &
+         ,is_grids(ifm)%rr_dn0v,ztn(:,ifm),ztop )
 endif
 
 
@@ -501,21 +500,21 @@ call ezcntr(rr_vt2da(1),nnxp(ifm),nnyp(ifm))
 allocate (plt(nnxp(ifm),nnyp(ifm)))
 allocate (plt3(nnzp(ifm),nnxp(ifm),nnyp(ifm)))
 allocate (plt3b(nnzp(ifm),nnxp(ifm),nnyp(ifm)))
-call ae1m1(nnxp(ifm)*nnyp(ifm),plt(1,1),grid_g(ifm)%topta(1,1),rr_vt2da(1))
+call ae1m1(nnxp(ifm)*nnyp(ifm),plt(1,1),grid_g(ifm)%topta,rr_vt2da)
 call ezcntr(plt(1,1),nnxp(ifm),nnyp(ifm))
 
 ! interp field
-call ae1(nnzp(ifm)*nnxp(ifm)*nnyp(ifm),plt3(1,1,1),var2(1))
+call ae1(nnzp(ifm)*nnxp(ifm)*nnyp(ifm),plt3,var2)
 plt(1:nnxp(ifm),1:nnyp(ifm)) =plt3(12,1:nnxp(ifm),1:nnyp(ifm))
 call ezcntr(plt(1,1),nnxp(ifm),nnyp(ifm))
 
 !------------------
-call rtgintrp(nnzp(ifm),nnxp(ifm),nnyp(ifm),var2(1),rr_vt2da(1)  &
-             ,grid_g(ifm)%topta(1,1),ifm,vpnt)
+call rtgintrp(nnzp(ifm),nnxp(ifm),nnyp(ifm),var2,rr_vt2da  &
+             ,grid_g(ifm)%topta,ifm,vpnt)
 !------------------
 
 ! after rtgint
-call ae1(nnzp(ifm)*nnxp(ifm)*nnyp(ifm),plt3(1,1,1),var2(1))
+call ae1(nnzp(ifm)*nnxp(ifm)*nnyp(ifm),plt3,var2)
 plt(1:nnxp(ifm),1:nnyp(ifm)) =plt3(12,1:nnxp(ifm),1:nnyp(ifm))
 call ezcntr(plt(1,1),nnxp(ifm),nnyp(ifm))
 

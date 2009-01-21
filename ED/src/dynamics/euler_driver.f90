@@ -162,6 +162,8 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
   real :: psiplusz    (nzg)   ! soil water potential (including grav) [m]
   real :: hydraul_cond(nzg)   ! soil hydraulic conductivity [m/s]
 
+  real :: surface_temp,surface_fliq
+
   integer :: k     ! vertical index over soil layers
   integer :: nlsw1 ! maximum of (1,nlev_sfcwater)
   
@@ -272,7 +274,8 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
        rhos,  &
        can_shv,  &
        ground_shv,  &
-       surface_ssh)
+       surface_ssh, &
+       surface_temp,surface_fliq)
   
   do k = lsl,nzg
      call qwtk8(soil_energy(k),soil_water(k)*dble(wdns),  &

@@ -27,97 +27,97 @@ subroutine exevolve(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,key)
   select case (trim(key))
   case ('ADV')
      ! Initialization
-     call thvlastzero(m1,m2,m3,ia,iz,ja,jz,mass_g(ifm)%thvlast(1,1,1))
+     call thvlastzero(m1,m2,m3,ia,iz,ja,jz,mass_g(ifm)%thvlast)
 
      ! Calculate advective term
-     call exadvlf(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,itopo                    &
-       ,grid_g(ifm)%rtgu          (1,1)   ,grid_g(ifm)%fmapui        (1,1)   &
-       ,grid_g(ifm)%rtgv          (1,1)   ,grid_g(ifm)%fmapvi        (1,1)   &
-       ,grid_g(ifm)%f13t          (1,1)   ,grid_g(ifm)%f23t          (1,1)   &
-       ,grid_g(ifm)%rtgt          (1,1)   ,grid_g(ifm)%fmapt         (1,1)   &
-       ,grid_g(ifm)%dxt           (1,1)   ,grid_g(ifm)%dyt           (1,1)   &
-       ,basic_g(ifm)%uc           (1,1,1) ,basic_g(ifm)%dn0u         (1,1,1) &
-       ,basic_g(ifm)%vc           (1,1,1) ,basic_g(ifm)%dn0v         (1,1,1) &
-       ,basic_g(ifm)%dn0          (1,1,1) ,basic_g(ifm)%wc           (1,1,1) &
-       ,basic_g(ifm)%pc           (1,1,1) ,tend%pt                   (1)     )
+     call exadvlf(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,itopo      &
+       ,grid_g(ifm)%rtgu           ,grid_g(ifm)%fmapui         &
+       ,grid_g(ifm)%rtgv           ,grid_g(ifm)%fmapvi         &
+       ,grid_g(ifm)%f13t           ,grid_g(ifm)%f23t           &
+       ,grid_g(ifm)%rtgt           ,grid_g(ifm)%fmapt          &
+       ,grid_g(ifm)%dxt            ,grid_g(ifm)%dyt            &
+       ,basic_g(ifm)%uc            ,basic_g(ifm)%dn0u          &
+       ,basic_g(ifm)%vc            ,basic_g(ifm)%dn0v          &
+       ,basic_g(ifm)%dn0           ,basic_g(ifm)%wc            &
+       ,basic_g(ifm)%pc            ,tend%pt                    )
      ! Calculate compression term
-     call excondiv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,itopo                   &
-         ,basic_g(ifm)%uc         (1,1,1) ,basic_g(ifm)%vc           (1,1,1) &
-         ,basic_g(ifm)%wc         (1,1,1) ,basic_g(ifm)%pc           (1,1,1) &
-         ,tend%pt                 (1)     ,grid_g(ifm)%dxt           (1,1)   &
-         ,grid_g(ifm)%dyt         (1,1)   ,grid_g(ifm)%rtgt          (1,1)   &
-         ,grid_g(ifm)%rtgu        (1,1)   ,grid_g(ifm)%rtgv          (1,1)   &
-         ,grid_g(ifm)%f13t        (1,1)   ,grid_g(ifm)%f23t          (1,1)   &
-         ,grid_g(ifm)%fmapt       (1,1)   ,grid_g(ifm)%fmapui        (1,1)   &
-         ,grid_g(ifm)%fmapvi      (1,1)   )
+     call excondiv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,itopo     &
+         ,basic_g(ifm)%uc          ,basic_g(ifm)%vc            &
+         ,basic_g(ifm)%wc          ,basic_g(ifm)%pc            &
+         ,tend%pt                  ,grid_g(ifm)%dxt            &
+         ,grid_g(ifm)%dyt          ,grid_g(ifm)%rtgt           &
+         ,grid_g(ifm)%rtgu         ,grid_g(ifm)%rtgv           &
+         ,grid_g(ifm)%f13t         ,grid_g(ifm)%f23t           &
+         ,grid_g(ifm)%fmapt        ,grid_g(ifm)%fmapui         &
+         ,grid_g(ifm)%fmapvi       )
      ! Put theta_v from last timestep into memory
      if (vapour_on) then
-        call fill_thvlast(m1,m2,m3,ia,iz,ja,jz                          &
-            ,mass_g(ifm)%thvlast (1,1,1) ,basic_g(ifm)%theta   (1,1,1) &
-            ,basic_g(ifm)%rtp     (1,1,1) ,basic_g(ifm)%rv      (1,1,1) )
+        call fill_thvlast(m1,m2,m3,ia,iz,ja,jz           &
+            ,mass_g(ifm)%thvlast  ,basic_g(ifm)%theta    &
+            ,basic_g(ifm)%rtp     ,basic_g(ifm)%rv       )
      else
         !MLO - If this is a dry run, then send a dummy array of zeroes to avoid
         !      segmentation violation.
-        call azero(m1*m2*m3,scratch%vt3dq(1))
-        call fill_thvlast(m1,m2,m3,ia,iz,ja,jz                          &
-            ,mass_g(ifm)%thvlast (1,1,1) ,basic_g(ifm)%theta   (1,1,1) &
-            ,scratch%vt3dq        (1)     ,scratch%vt3dq        (1)     )
+        call azero(m1*m2*m3,scratch%vt3dq)
+        call fill_thvlast(m1,m2,m3,ia,iz,ja,jz           &
+            ,mass_g(ifm)%thvlast  ,basic_g(ifm)%theta    &
+            ,scratch%vt3dq         ,scratch%vt3dq        )
      end if
      
   case ('THA')
      if (vapour_on) then
         call advect_theta(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt   &
-            ,basic_g(ifm)%up      (1,1,1) ,basic_g(ifm)%uc      (1,1,1) &
-            ,basic_g(ifm)%vp      (1,1,1) ,basic_g(ifm)%vc      (1,1,1) &
-            ,basic_g(ifm)%wp      (1,1,1) ,basic_g(ifm)%wc      (1,1,1) &
-            ,basic_g(ifm)%pi0     (1,1,1) ,basic_g(ifm)%pc      (1,1,1) &
-            ,tend%pt              (1)     ,basic_g(ifm)%theta   (1,1,1) &
-            ,basic_g(ifm)%rtp     (1,1,1) ,basic_g(ifm)%rv      (1,1,1) &
-            ,basic_g(ifm)%dn0     (1,1,1) ,basic_g(ifm)%dn0u    (1,1,1) &
-            ,basic_g(ifm)%dn0v    (1,1,1) ,grid_g(ifm)%rtgt     (1,1)   &
-            ,grid_g(ifm)%rtgu     (1,1)   ,grid_g(ifm)%rtgv     (1,1)   &
-            ,grid_g(ifm)%fmapt    (1,1)   ,grid_g(ifm)%fmapui   (1,1)   &
-            ,grid_g(ifm)%fmapvi   (1,1)   ,grid_g(ifm)%f13t     (1,1)   &
-            ,grid_g(ifm)%f23t     (1,1)   ,grid_g(ifm)%dxu      (1,1)   &
-            ,grid_g(ifm)%dyv      (1,1)   ,grid_g(ifm)%dxt      (1,1)   &
-            ,grid_g(ifm)%dyt      (1,1)   ,mass_g(ifm)%thvadv  (1,1,1)  &
-            ,mass_g(ifm)%thetav  (1,1,1) )
+            ,basic_g(ifm)%up              ,basic_g(ifm)%uc              &
+            ,basic_g(ifm)%vp              ,basic_g(ifm)%vc              &
+            ,basic_g(ifm)%wp              ,basic_g(ifm)%wc              &
+            ,basic_g(ifm)%pi0             ,basic_g(ifm)%pc              &
+            ,tend%pt                      ,basic_g(ifm)%theta           &
+            ,basic_g(ifm)%rtp             ,basic_g(ifm)%rv              &
+            ,basic_g(ifm)%dn0             ,basic_g(ifm)%dn0u            &
+            ,basic_g(ifm)%dn0v            ,grid_g(ifm)%rtgt             &
+            ,grid_g(ifm)%rtgu             ,grid_g(ifm)%rtgv             &
+            ,grid_g(ifm)%fmapt            ,grid_g(ifm)%fmapui           &
+            ,grid_g(ifm)%fmapvi           ,grid_g(ifm)%f13t             &
+            ,grid_g(ifm)%f23t             ,grid_g(ifm)%dxu              &
+            ,grid_g(ifm)%dyv              ,grid_g(ifm)%dxt              &
+            ,grid_g(ifm)%dyt              ,mass_g(ifm)%thvadv           &
+            ,mass_g(ifm)%thetav           )
 
      else
-        call azero(m1*m2*m3,scratch%vt3dq(1))
+        call azero(m1*m2*m3,scratch%vt3dq)
         call advect_theta(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt   &
-            ,basic_g(ifm)%up      (1,1,1) ,basic_g(ifm)%uc      (1,1,1) &
-            ,basic_g(ifm)%vp      (1,1,1) ,basic_g(ifm)%vc      (1,1,1) &
-            ,basic_g(ifm)%wp      (1,1,1) ,basic_g(ifm)%wc      (1,1,1) &
-            ,basic_g(ifm)%pi0     (1,1,1) ,basic_g(ifm)%pc      (1,1,1) &
-            ,tend%pt              (1)     ,basic_g(ifm)%theta   (1,1,1) &
-            ,scratch%vt3dq        (1)     ,scratch%vt3dq        (1)     &
-            ,basic_g(ifm)%dn0     (1,1,1) ,basic_g(ifm)%dn0u    (1,1,1) &
-            ,basic_g(ifm)%dn0v    (1,1,1) ,grid_g(ifm)%rtgt     (1,1)   &
-            ,grid_g(ifm)%rtgu     (1,1)   ,grid_g(ifm)%rtgv     (1,1)   &
-            ,grid_g(ifm)%fmapt    (1,1)   ,grid_g(ifm)%fmapui   (1,1)   &
-            ,grid_g(ifm)%fmapvi   (1,1)   ,grid_g(ifm)%f13t     (1,1)   &
-            ,grid_g(ifm)%f23t     (1,1)   ,grid_g(ifm)%dxu      (1,1)   &
-            ,grid_g(ifm)%dyv      (1,1)   ,grid_g(ifm)%dxt      (1,1)   &
-            ,grid_g(ifm)%dyt      (1,1)   ,mass_g(ifm)%thvadv  (1,1,1) &
-            ,mass_g(ifm)%thetav  (1,1,1) )
+            ,basic_g(ifm)%up              ,basic_g(ifm)%uc              &
+            ,basic_g(ifm)%vp              ,basic_g(ifm)%vc              &
+            ,basic_g(ifm)%wp              ,basic_g(ifm)%wc              &
+            ,basic_g(ifm)%pi0             ,basic_g(ifm)%pc              &
+            ,tend%pt                      ,basic_g(ifm)%theta           &
+            ,scratch%vt3dq                ,scratch%vt3dq                &
+            ,basic_g(ifm)%dn0             ,basic_g(ifm)%dn0u            &
+            ,basic_g(ifm)%dn0v            ,grid_g(ifm)%rtgt             &
+            ,grid_g(ifm)%rtgu             ,grid_g(ifm)%rtgv             &
+            ,grid_g(ifm)%fmapt            ,grid_g(ifm)%fmapui           &
+            ,grid_g(ifm)%fmapvi           ,grid_g(ifm)%f13t             &
+            ,grid_g(ifm)%f23t             ,grid_g(ifm)%dxu              &
+            ,grid_g(ifm)%dyv              ,grid_g(ifm)%dxt              &
+            ,grid_g(ifm)%dyt              ,mass_g(ifm)%thvadv           &
+            ,mass_g(ifm)%thetav           )
 
     end if
     
   case ('THS')
      if (vapour_on) then
         call storage_theta(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,mynum,edt   &
-            ,basic_g(ifm)%pi0     (1,1,1) ,basic_g(ifm)%pc      (1,1,1) &
-            ,basic_g(ifm)%rtp     (1,1,1) ,basic_g(ifm)%rv      (1,1,1) &
-            ,basic_g(ifm)%theta   (1,1,1) ,mass_g(ifm)%thvlast (1,1,1)  &
-            ,mass_g(ifm)%thvtend (1,1,1) ,tend%pt              (1)     )
+            ,basic_g(ifm)%pi0             ,basic_g(ifm)%pc              &
+            ,basic_g(ifm)%rtp             ,basic_g(ifm)%rv              &
+            ,basic_g(ifm)%theta           ,mass_g(ifm)%thvlast          &
+            ,mass_g(ifm)%thvtend          ,tend%pt                      )
      else
-        call azero(m1*m2*m3,scratch%vt3dq(1))
+        call azero(m1*m2*m3,scratch%vt3dq)
         call storage_theta(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,mynum,edt   &
-            ,basic_g(ifm)%pi0     (1,1,1) ,basic_g(ifm)%pc      (1,1,1) &
-            ,scratch%vt3dq        (1)     ,scratch%vt3dq        (1)     &
-            ,basic_g(ifm)%theta   (1,1,1) ,mass_g(ifm)%thvlast (1,1,1) &
-            ,mass_g(ifm)%thvtend (1,1,1) ,tend%pt              (1)     )
+            ,basic_g(ifm)%pi0             ,basic_g(ifm)%pc              &
+            ,scratch%vt3dq                ,scratch%vt3dq                &
+            ,basic_g(ifm)%theta           ,mass_g(ifm)%thvlast          &
+            ,mass_g(ifm)%thvtend          ,tend%pt                      )
      end if
   case default
      call abort_run('Unexpected key'//trim(key)//'!!!'                  &
@@ -416,39 +416,39 @@ subroutine exthvadv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt                 
   !----- Local variables ------------------------------------------------------------------!
   integer :: i,j,k
 
-  call prep_vt3dabc(m1,m2,m3,edt,up,uc,vp,vc,wp,wc &
-                   ,scratch%vt3da(1),scratch%vt3db(1),scratch%vt3dc(1))
+  call prep_vt3dabc(m1,m2,m3,edt,up,uc,vp,vc,wp,wc            &
+                   ,scratch%vt3da,scratch%vt3db,scratch%vt3dc )
   
   call prep_thetv(m1,m2,m3,ia,iz,ja,jz,theta,rtp,rv,thetav)
   
-  call fa_preptc(m1,m2,m3 &
-                ,scratch%vt3da(1),scratch%vt3db(1),scratch%vt3dc(1) &
-                ,scratch%vt3dd(1),scratch%vt3de(1),scratch%vt3df(1) &
-                ,scratch%vt3dh(1),scratch%vt3di(1),scratch%vt3dj(1) &
-                ,scratch%vt3dk(1)                                   &
-                ,dn0,dn0u,dn0v,rtgt,rtgu,rtgv,fmapt,fmapui,fmapvi   &
+  call fa_preptc(m1,m2,m3                                         &
+                ,scratch%vt3da   ,scratch%vt3db   ,scratch%vt3dc  &
+                ,scratch%vt3dd   ,scratch%vt3de   ,scratch%vt3df  &
+                ,scratch%vt3dh   ,scratch%vt3di   ,scratch%vt3dj  &
+                ,scratch%vt3dk                                    &
+                ,dn0,dn0u,dn0v,rtgt,rtgu,rtgv,fmapt,fmapui,fmapvi &
                 ,f13t,f23t,dxu,dyv,dxt,dyt,mynum)
 
-  call atob(m1*m2*m3,thetav,scratch%scr1(1))
+  call atob(m1*m2*m3,thetav,scratch%scr1)
 
 
   call fa_xc(m1,m2,m3,ia,iz,1,m3,thetav                          &
-            ,scratch%scr1(1) ,scratch%vt3da(1),scratch%vt3dd(1)  &
-            ,scratch%vt3dg(1),scratch%vt3dh(1),scratch%vt3di(1)  &
+            ,scratch%scr1    ,scratch%vt3da   ,scratch%vt3dd     &
+            ,scratch%vt3dg   ,scratch%vt3dh   ,scratch%vt3di     &
             ,mynum)
 
   if (jdim == 1)  &
-    call fa_yc(m1,m2,m3,ia,iz,ja,jz,thetav                        &
-            ,scratch%scr1(1) ,scratch%vt3db(1),scratch%vt3de(1)  &
-            ,scratch%vt3dg(1),scratch%vt3dj(1),scratch%vt3di(1)  &
+    call fa_yc(m1,m2,m3,ia,iz,ja,jz,thetav                       &
+            ,scratch%scr1    ,scratch%vt3db   ,scratch%vt3de     &
+            ,scratch%vt3dg   ,scratch%vt3dj   ,scratch%vt3di     &
             ,jdim,mynum)
   
   call fa_zc(m1,m2,m3,ia,iz,ja,jz,thetav                         &
-            ,scratch%scr1(1) ,scratch%vt3dc(1),scratch%vt3df(1)  &
-            ,scratch%vt3dg(1),scratch%vt3dk(1),vctr1,vctr2,mynum )
+            ,scratch%scr1    ,scratch%vt3dc   ,scratch%vt3df     &
+            ,scratch%vt3dg   ,scratch%vt3dk   ,vctr1,vctr2,mynum )
 
   call azero(m1*m2*m3,thvadv)
-  call advtndc(m1,m2,m3,ia,iz,ja,jz,thetav,scratch%scr1(1),thvadv,edt,mynum)
+  call advtndc(m1,m2,m3,ia,iz,ja,jz,thetav,scratch%scr1,thvadv,edt,mynum)
   do i=1,m2
     do j=1,m3
       do k=1,m1

@@ -29,18 +29,18 @@ subroutine kuo_cupar_driver()
          !    Zero out tendencies initially. This has been moved to the initialization at  !
          ! rams_mem_alloc.f90.                                                             !
          !---------------------------------------------------------------------------------!
-         call azero(mxp*myp*mzp,cuparm_g(ngrid)%thsrc(1,1,1,icld))
-         call azero(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(1,1,1,icld))
-         call azero(mxp*myp,cuparm_g(ngrid)%conprr(1,1,icld))
+         call azero(mxp*myp*mzp,cuparm_g(ngrid)%thsrc(:,:,:,icld))
+         call azero(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(:,:,:,icld))
+         call azero(mxp*myp,cuparm_g(ngrid)%conprr(:,:,icld))
          !----- Call the main subroutine --------------------------------------------------!
          call conpar(mzp,mxp,myp,ia,iz,ja,jz,ibcon                                         &
-             ,basic_g(ngrid)%up        (1,1,1     ) ,basic_g(ngrid)%vp        (1,1,1     ) &
-             ,basic_g(ngrid)%wp        (1,1,1     ) ,basic_g(ngrid)%theta     (1,1,1     ) &
-             ,basic_g(ngrid)%pp        (1,1,1     ) ,basic_g(ngrid)%pi0       (1,1,1     ) &
-             ,basic_g(ngrid)%dn0       (1,1,1     ) ,basic_g(ngrid)%rv        (1,1,1     ) &
-             ,cuparm_g(ngrid)%thsrc    (1,1,1,icld) ,cuparm_g(ngrid)%rtsrc    (1,1,1,icld) &
-             ,grid_g(ngrid)%rtgt       (  1,1     ) ,cuparm_g(ngrid)%conprr   (  1,1,icld) &
-             ,grid_g(ngrid)%flpw       (  1,1     ) )
+             ,basic_g(ngrid)%up                     ,basic_g(ngrid)%vp                     &
+             ,basic_g(ngrid)%wp                     ,basic_g(ngrid)%theta                  &
+             ,basic_g(ngrid)%pp                     ,basic_g(ngrid)%pi0                    &
+             ,basic_g(ngrid)%dn0                    ,basic_g(ngrid)%rv                     &
+             ,cuparm_g(ngrid)%thsrc    (:,:,:,icld) ,cuparm_g(ngrid)%rtsrc    (:,:,:,icld) &
+             ,grid_g(ngrid)%rtgt                    ,cuparm_g(ngrid)%conprr   (  :,:,icld) &
+             ,grid_g(ngrid)%flpw                    )
 
    case (1) !----- This is the cumulus inversion method -----------------------------------!
       !------------------------------------------------------------------------------------!
@@ -48,11 +48,11 @@ subroutine kuo_cupar_driver()
       ! thsrc,rtscr,conprr arrays.                                                         !
       !------------------------------------------------------------------------------------!
       call cu_inv_tend(mzp,mxp,myp,ia,iz,ja,jz                                             &
-             ,cuparm_g(ngrid)%thsrc    (1,1,1,icld) ,cuparm_g(ngrid)%thsrcp   (1,1,1     ) &
-             ,cuparm_g(ngrid)%thsrcf   (1,1,1     ) ,cuparm_g(ngrid)%rtsrc    (1,1,1,icld) &
-             ,cuparm_g(ngrid)%rtsrcp   (1,1,1     ) ,cuparm_g(ngrid)%rtsrcf   (1,1,1     ) &
-             ,cuparm_g(ngrid)%conprr   (  1,1,icld) ,cuparm_g(ngrid)%conprrp  (  1,1     ) &
-             ,cuparm_g(ngrid)%conprrf  (  1,1     ) )
+             ,cuparm_g(ngrid)%thsrc    (:,:,:,icld) ,cuparm_g(ngrid)%thsrcp                &
+             ,cuparm_g(ngrid)%thsrcf                ,cuparm_g(ngrid)%rtsrc    (:,:,:,icld) &
+             ,cuparm_g(ngrid)%rtsrcp                ,cuparm_g(ngrid)%rtsrcf                &
+             ,cuparm_g(ngrid)%conprr   (  :,:,icld) ,cuparm_g(ngrid)%conprrp               &
+             ,cuparm_g(ngrid)%conprrf               )
    end select
 
    return

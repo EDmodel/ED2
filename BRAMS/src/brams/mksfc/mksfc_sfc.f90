@@ -46,15 +46,15 @@ read(25,*) dummy
 read(25,*) dummy
 
 do ipat = 1,npatch
-   call vfirec(25,leaf_g(ifm)%patch_area(1,1,ipat),nnxp(ifm)*nnyp(ifm),'LIN')
+   call vfirec(25,leaf_g(ifm)%patch_area(:,:,ipat),nnxp(ifm)*nnyp(ifm),'LIN')
 enddo
 
 do ipat = 1,npatch
-   call vfirec(25,leaf_g(ifm)%leaf_class(1,1,ipat),nnxp(ifm)*nnyp(ifm),'LIN')
+   call vfirec(25,leaf_g(ifm)%leaf_class(:,:,ipat),nnxp(ifm)*nnyp(ifm),'LIN')
 enddo
 
 do ipat = 1,npatch
-   call vfirec(25,leaf_g(ifm)%soil_text(1,1,1,ipat),nzg*nnxp(ifm)*nnyp(ifm),'LIN')
+   call vfirec(25,leaf_g(ifm)%soil_text(:,:,:,ipat),nzg*nnxp(ifm)*nnyp(ifm),'LIN')
 enddo
 
 close (25)
@@ -195,15 +195,15 @@ write(25,101) ivegtflg(ifm),isoilflg(ifm),nofilflg(ifm)
 
 
 do ip = 1,npatch
-   call vforec(25,sfcfile_p(ifm)%patch_area(1,1,ip),nnxyp(ifm),24,scrx,'LIN')
+   call vforec(25,sfcfile_p(ifm)%patch_area(:,:,ip),nnxyp(ifm),24,scrx,'LIN')
 enddo
 
 do ip = 1,npatch
-   call vforec(25,sfcfile_p(ifm)%leaf_class(1,1,ip),nnxyp(ifm),24,scrx,'LIN')
+   call vforec(25,sfcfile_p(ifm)%leaf_class(:,:,ip),nnxyp(ifm),24,scrx,'LIN')
 enddo
 
 do ip = 1,npatch
-   call vforec(25,sfcfile_p(ifm)%soil_text(1,1,1,ip),nzg*nnxyp(ifm),24,scrx,'LIN')
+   call vforec(25,sfcfile_p(ifm)%soil_text(:,:,:,ip),nzg*nnxyp(ifm),24,scrx,'LIN')
 enddo
 
 close(25)

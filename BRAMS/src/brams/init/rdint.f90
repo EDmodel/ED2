@@ -109,7 +109,7 @@ subroutine initlz (name_name)
 
      do ifm = 1,ngrids
         call snowinit(nnxp(ifm),nnyp(ifm)  &
-             ,leaf_g(ifm)%snow_mass(1,1),leaf_g(ifm)%snow_depth(1,1))
+             ,leaf_g(ifm)%snow_mass,leaf_g(ifm)%snow_depth)
      enddo
 
      ! TEB_SPM
@@ -242,56 +242,55 @@ subroutine initlz (name_name)
 
         do ifm = 1,ngrids
            call TEBC_INIT(ifm,nnxp(ifm),nnyp(ifm),npatch &
-                ,leaf_g(ifm)%leaf_class   (1,1,1)        &
-                ,leaf_g(ifm)%G_URBAN      (1,1,1)        &
-                ,tebc_g(ifm)%EMIS_TOWN    (1,1)          &
-                ,tebc_g(ifm)%ALB_TOWN     (1,1)          &
-                ,tebc_g(ifm)%TS_TOWN      (1,1)          )
+                ,leaf_g(ifm)%leaf_class                  &
+                ,leaf_g(ifm)%G_URBAN                     &
+                ,tebc_g(ifm)%EMIS_TOWN                   &
+                ,tebc_g(ifm)%ALB_TOWN                    &
+                ,tebc_g(ifm)%TS_TOWN                     )
         enddo
 
         if (iteb==1) then
            do ifm = 1,ngrids
-              call TEB_INIT(ifm,nnzp(ifm),nnxp(ifm),nnyp(ifm),npatch         &
-                   ,leaf_g(ifm)%leaf_class(1,1,1),basic_g(ifm)%theta  (1,1,1)&
-                   ,basic_g(ifm)%rv       (1,1,1),basic_g(ifm)%pi0    (1,1,1)&
-                   ,basic_g(ifm)%pp       (1,1,1)                            &
-                   ,teb_g(ifm)%T_ROOF     (1,1,1),teb_g(ifm)%T_ROAD   (1,1,1)&
-                   ,teb_g(ifm)%T_WALL     (1,1,1),teb_g(ifm)%TI_BLD     (1,1)&
-                   ,teb_g(ifm)%TI_ROAD    (1,1)  ,teb_g(ifm)%T_CANYON   (1,1)&
-                   ,teb_g(ifm)%R_CANYON   (1,1)  ,teb_g(ifm)%TS_ROOF    (1,1)&
-                   ,teb_g(ifm)%TS_ROAD    (1,1)  ,teb_g(ifm)%TS_WALL    (1,1)&
-                   ,teb_g(ifm)%H_TRAFFIC  (1,1)  ,teb_g(ifm)%LE_TRAFFIC (1,1)&
-                   ,teb_g(ifm)%H_INDUSTRY (1,1)  ,teb_g(ifm)%LE_INDUSTRY(1,1)&
-                   ,teb_g(ifm)%WS_ROOF    (1,1)  ,teb_g(ifm)%WS_ROAD    (1,1)&
-                   ,tebc_g(ifm)%EMIS_TOWN (1,1)  ,tebc_g(ifm)%ALB_TOWN  (1,1)&
-                   ,tebc_g(ifm)%TS_TOWN   (1,1)  ,leaf_g(ifm)%G_URBAN   (1,1,1))
+              call TEB_INIT(ifm,nnzp(ifm),nnxp(ifm),nnyp(ifm),npatch          &
+                   ,leaf_g(ifm)%leaf_class        ,basic_g(ifm)%theta         &
+                   ,basic_g(ifm)%rv               ,basic_g(ifm)%pi0           &
+                   ,basic_g(ifm)%pp                                           &
+                   ,teb_g(ifm)%T_ROOF             ,teb_g(ifm)%T_ROAD          &
+                   ,teb_g(ifm)%T_WALL             ,teb_g(ifm)%TI_BLD          &
+                   ,teb_g(ifm)%TI_ROAD            ,teb_g(ifm)%T_CANYON        &
+                   ,teb_g(ifm)%R_CANYON           ,teb_g(ifm)%TS_ROOF         &
+                   ,teb_g(ifm)%TS_ROAD            ,teb_g(ifm)%TS_WALL         &
+                   ,teb_g(ifm)%H_TRAFFIC          ,teb_g(ifm)%LE_TRAFFIC      &
+                   ,teb_g(ifm)%H_INDUSTRY         ,teb_g(ifm)%LE_INDUSTRY     &
+                   ,teb_g(ifm)%WS_ROOF            ,teb_g(ifm)%WS_ROAD         &
+                   ,tebc_g(ifm)%EMIS_TOWN         ,tebc_g(ifm)%ALB_TOWN       &
+                   ,tebc_g(ifm)%TS_TOWN           ,leaf_g(ifm)%G_URBAN        )
            enddo
         endif
 
         ! Initialize gases and particulate matter
         if (isource==1) then
            do ifm = 1,ngrids
-              call init_conc1(1,ifm,nnzp(ifm),nnxp(ifm),nnyp(ifm),npatch    &
-                   ,leaf_g(ifm)%G_URBAN(1,1,1)  ,gaspart_g(ifm)%pno(1,1,1)  &
-                   ,gaspart_g(ifm)%pno2(1,1,1)  ,gaspart_g(ifm)%ppm25(1,1,1)&
-                   ,gaspart_g(ifm)%pco(1,1,1)   ,gaspart_g(ifm)%pvoc(1,1,1) & 
-                   ,gaspart_g(ifm)%pso2(1,1,1)  ,gaspart_g(ifm)%pso4(1,1,1) &
-                   ,gaspart_g(ifm)%paer(1,1,1)  ,zt                         )
+              call init_conc1(1,ifm,nnzp(ifm),nnxp(ifm),nnyp(ifm),npatch     &
+                   ,leaf_g(ifm)%G_URBAN         ,gaspart_g(ifm)%pno          &
+                   ,gaspart_g(ifm)%pno2         ,gaspart_g(ifm)%ppm25        &
+                   ,gaspart_g(ifm)%pco          ,gaspart_g(ifm)%pvoc         &
+                   ,gaspart_g(ifm)%pso2         ,gaspart_g(ifm)%pso4         &
+                   ,gaspart_g(ifm)%paer         ,zt                          )
               if (ichemi==1) then       !calling more added scalars for chemistry
                  if (ichemi_in==1) then !reading init.values from a previous run
                     call init_conc_prev(name_name)
                  else
-                    call init_conc2(1,ifm,nnzp(ifm),nnxp(ifm),nnyp(ifm),npatch,&
-                         leaf_g(ifm)%G_URBAN(1,1,1),gaspart_g(ifm)%po3(1,1,1), &
-                         gaspart_g(ifm)%prhco(1,1,1),                          &
-                         gaspart_g(ifm)%pho2(1,1,1),                           &
-                         gaspart_g(ifm)%po3p(1,1,1),gaspart_g(ifm)%po1d(1,1,1),&
-                         gaspart_g(ifm)%pho(1,1,1),gaspart_g(ifm)%proo(1,1,1), &
-                         zt)
-                 endif
-              endif
-           enddo
-        endif
+                    call init_conc2(1,ifm,nnzp(ifm),nnxp(ifm),nnyp(ifm),npatch &
+                         ,leaf_g(ifm)%G_URBAN    ,gaspart_g(ifm)%po3           &
+                         ,gaspart_g(ifm)%prhco   ,gaspart_g(ifm)%pho2          &
+                         ,gaspart_g(ifm)%po3p    ,gaspart_g(ifm)%po1d          &
+                         ,gaspart_g(ifm)%pho     ,gaspart_g(ifm)%proo          &
+                         ,zt)
+                 end if
+              end if
+           end do
+        end if
 
      endif
 
@@ -376,11 +375,11 @@ subroutine initlz (name_name)
         icm = nxtnest(ifm)
         if (icm  ==  0) then
            call newgrid(ifm)
-           call refs3d (nzp,nxp,nyp  &
-                ,basic_g(ifm)%pi0  (1,1,1),basic_g(ifm)%dn0  (1,1,1)  &
-                ,basic_g(ifm)%dn0u (1,1,1),basic_g(ifm)%dn0v (1,1,1)  &
-                ,basic_g(ifm)%th0  (1,1,1),grid_g(ifm)%topt  (1,1)    &
-                ,grid_g(ifm)%rtgt  (1,1)  )
+           call refs3d (nzp,nxp,nyp                     &
+                ,basic_g(ifm)%pi0  ,basic_g(ifm)%dn0    &
+                ,basic_g(ifm)%dn0u ,basic_g(ifm)%dn0v   &
+                ,basic_g(ifm)%th0  ,grid_g(ifm)%topt    &
+                ,grid_g(ifm)%rtgt  )
         endif
      enddo
 
@@ -403,19 +402,14 @@ subroutine initlz (name_name)
 
         do ifm = 1,min(ngrids,ngridsh)
            call newgrid(ifm)
-           call soil_moisture_init(nnzp(ifm),nnxp(ifm),nnyp(ifm)       &
-                ,nzg,nzs,npatch,ifm              &
-                ,basic_g(ifm)%theta (1,1,1) ,basic_g(ifm)%pi0 (1,1,1)  &
-                ,basic_g(ifm)%pp    (1,1,1)  &
-                ,leaf_g(ifm)%soil_water      (1,1,1,1)  &
-                ,leaf_g(ifm)%soil_energy     (1,1,1,1)  &
-                ,leaf_g(ifm)%soil_text       (1,1,1,1)  &
-                ,leaf_g(ifm)%sfcwater_mass   (1,1,1,1)  &
-                ,leaf_g(ifm)%sfcwater_energy (1,1,1,1)  &
-                ,leaf_g(ifm)%sfcwater_depth  (1,1,1,1)  &
-                ,grid_g(ifm)%glat   (1,1)       &
-                ,grid_g(ifm)%glon (1,1)         &
-                ,grid_g(ifm)%flpw (1,1)        )
+           call soil_moisture_init(nnzp(ifm),nnxp(ifm),nnyp(ifm)              &
+                ,nzg,nzs,npatch,ifm                                           &
+                ,basic_g(ifm)%theta            ,basic_g(ifm)%pi0              &
+                ,basic_g(ifm)%pp               ,leaf_g(ifm)%soil_water        &
+                ,leaf_g(ifm)%soil_energy       ,leaf_g(ifm)%soil_text         &
+                ,leaf_g(ifm)%sfcwater_mass     ,leaf_g(ifm)%sfcwater_energy   &
+                ,leaf_g(ifm)%sfcwater_depth    ,grid_g(ifm)%glat              &
+                ,grid_g(ifm)%glon              ,grid_g(ifm)%flpw              )
         enddo
 
      endif
@@ -449,34 +443,25 @@ subroutine initlz (name_name)
            call negadj1(nzp,nxp,nyp,1,nxp,1,nyp)
            call thermo(nzp,nxp,nyp,1,nxp,1,nyp)
            if (level  ==  3) then
-              call initqin(nzp,nxp,nyp        &
-                   ,micro_g(ifm)%q2    (1,1,1)  &
-                   ,micro_g(ifm)%q6    (1,1,1)  &
-                   ,micro_g(ifm)%q7    (1,1,1)  &
-                   ,basic_g(ifm)%pi0   (1,1,1)  &
-                   ,basic_g(ifm)%pp    (1,1,1)  &
-                   ,basic_g(ifm)%theta (1,1,1)  &
-                   ,basic_g(ifm)%dn0   (1,1,1)  &
-                   ,micro_g(ifm)%cccnp (1,1,1)  &
-                   ,micro_g(ifm)%cifnp (1,1,1)  )
+              call initqin(nzp,nxp,nyp                         &
+                   ,micro_g(ifm)%q2      ,micro_g(ifm)%q6      &
+                   ,micro_g(ifm)%q7      ,basic_g(ifm)%pi0     &
+                   ,basic_g(ifm)%pp      ,basic_g(ifm)%theta   &
+                   ,basic_g(ifm)%dn0     ,micro_g(ifm)%cccnp   &
+                   ,micro_g(ifm)%cifnp   )
            endif
 
            ! Heterogenous Soil Moisture Init.
            if ((SOIL_MOIST == 'h').or.(SOIL_MOIST == 'H').or.  &
               (SOIL_MOIST == 'a').or.(SOIL_MOIST == 'A')) then
-              call soil_moisture_init(nnzp(ifm),nnxp(ifm),nnyp(ifm)       &
-                   ,nzg,nzs,npatch,ifm              &
-                   ,basic_g(ifm)%theta (1,1,1) ,basic_g(ifm)%pi0 (1,1,1)  &
-                   ,basic_g(ifm)%pp    (1,1,1)  &
-                   ,leaf_g(ifm)%soil_water      (1,1,1,1)  &
-                   ,leaf_g(ifm)%soil_energy     (1,1,1,1)  &
-                   ,leaf_g(ifm)%soil_text       (1,1,1,1)  &
-                   ,leaf_g(ifm)%sfcwater_mass   (1,1,1,1)  &
-                   ,leaf_g(ifm)%sfcwater_energy (1,1,1,1)  &
-                   ,leaf_g(ifm)%sfcwater_depth  (1,1,1,1)  &
-                   ,grid_g(ifm)%glat   (1,1)       &
-                   ,grid_g(ifm)%glon (1,1)         &
-                   ,grid_g(ifm)%flpw (1,1)        )
+              call soil_moisture_init(nnzp(ifm),nnxp(ifm),nnyp(ifm)            &
+                   ,nzg,nzs,npatch,ifm                                         &
+                   ,basic_g(ifm)%theta          ,basic_g(ifm)%pi0              &
+                   ,basic_g(ifm)%pp             ,leaf_g(ifm)%soil_water        &
+                   ,leaf_g(ifm)%soil_energy     ,leaf_g(ifm)%soil_text         &
+                   ,leaf_g(ifm)%sfcwater_mass   ,leaf_g(ifm)%sfcwater_energy   &
+                   ,leaf_g(ifm)%sfcwater_depth  ,grid_g(ifm)%glat              &
+                   ,grid_g(ifm)%glon            ,grid_g(ifm)%flpw              )
            endif
 
         enddo
@@ -516,9 +501,10 @@ subroutine initlz (name_name)
 
   call newgrid(1)
   ihm = nnxyp(1)
-  call hemintrp_cof (nnxp(1),nnyp(1)  &
-       ,scratch%scr1(1)      ,scratch%scr1(1+ihm)  ,scratch%scr1(1+2*ihm)  &
-       ,scratch%scr1(1+3*ihm),scratch%scr1(1+4*ihm),scratch%scr1(1+5*ihm))
+  call hemintrp_cof (nnxp(1),nnyp(1)                                                       &
+                    ,scratch%scr1((1+0*ihm):(1*ihm))      ,scratch%scr1((1+1*ihm):(2*ihm)) &
+                    ,scratch%scr1((1+2*ihm):(3*ihm))      ,scratch%scr1((1+3*ihm):(4*ihm)) &
+                    ,scratch%scr1((1+4*ihm):(5*ihm))      ,scratch%scr1((1+5*ihm):(6*ihm)) )
 
   !----------------------------------------------------------------------------------------!
   !    Initialise a bunch of microphysics parameters. The new input is the density at the  !
@@ -531,10 +517,10 @@ subroutine initlz (name_name)
 
   do ifm = 1,ngrids
      call newgrid(ifm)
-     call fcorio(nxp,nyp           &
-          ,basic_g(ifm)%fcoru (1,1)  &
-          ,basic_g(ifm)%fcorv (1,1)  &
-          ,grid_g(ifm)%glat   (1,1)  )
+     call fcorio(nxp,nyp        &
+          ,basic_g(ifm)%fcoru   &
+          ,basic_g(ifm)%fcorv   &
+          ,grid_g(ifm)%glat     )
   enddo
 
 

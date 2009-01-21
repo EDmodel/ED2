@@ -104,7 +104,7 @@ subroutine inithis()
        any(nnqparm(1:ngrmin) /= nnqparm1(1:ngrmin))) then
       write(unit=*,fmt='(a)') 'Cumulus scheme status has changed in at least 1 grid!'
       do ngr=1,ngrmin
-         write(unit=*,fmt='(3(a,1x,i5,1x))') 'Grid        :',ngr                                  &
+         write(unit=*,fmt='(3(a,1x,i5,1x))') 'Grid        :',ngr                           &
                                             ,'Your nnqparm:',nnqparm(ngr)                  &
                                             ,'Hist nnqparm:',nnqparm1(ngr)
       end do
@@ -147,12 +147,12 @@ subroutine inithis()
 
    do ngr=1,ngrids1
       write(cng,'(i2.2)') ngr
-      ie=cio_f(iunhd,1,'xmn'//cng,xmn1(1,ngr),nnxp1(ngr))
-      ie=cio_f(iunhd,1,'xtn'//cng,xtn1(1,ngr),nnxp1(ngr))
-      ie=cio_f(iunhd,1,'ymn'//cng,ymn1(1,ngr),nnyp1(ngr))
-      ie=cio_f(iunhd,1,'ytn'//cng,ytn1(1,ngr),nnyp1(ngr))
-      ie=cio_f(iunhd,1,'zmn'//cng,zmn1(1,ngr),nnzp1(ngr))
-      ie=cio_f(iunhd,1,'ztn'//cng,ztn1(1,ngr),nnzp1(ngr))
+      ie=cio_f(iunhd,1,'xmn'//cng,xmn1(:,ngr),nnxp1(ngr))
+      ie=cio_f(iunhd,1,'xtn'//cng,xtn1(:,ngr),nnxp1(ngr))
+      ie=cio_f(iunhd,1,'ymn'//cng,ymn1(:,ngr),nnyp1(ngr))
+      ie=cio_f(iunhd,1,'ytn'//cng,ytn1(:,ngr),nnyp1(ngr))
+      ie=cio_f(iunhd,1,'zmn'//cng,zmn1(:,ngr),nnzp1(ngr))
+      ie=cio_f(iunhd,1,'ztn'//cng,ztn1(:,ngr),nnzp1(ngr))
    enddo
 
    allocate (topt1(maxarr2,ngrids1))
@@ -186,9 +186,9 @@ subroutine inithis()
       read(unit=inhunt)(scr(i),i=1,nptsh)
       select case(trim(hr_table(nvh)%string))
       case ('TOPT')
-         call atob(nptsh, scr(1),topt1(1,ngr))
+         call atob(nptsh, scr,topt1(:,ngr))
       case ('PATCH_AREA')
-         call atob(nptsh, scr(1),parea(1,ngr))
+         call atob(nptsh, scr,parea(:,ngr))
       end select
    end do
 
@@ -222,24 +222,24 @@ subroutine inithis()
             !----- 2D variables (nxp,nyp) that can be interpolated ------------------------!
             if (vtab_r(nv,1)%idim_type == 2     .and. hr_table(nvh)%string /= 'TOPT' .and. &
                 hr_table(nvh)%string /= 'TOPTA' .and. hr_table(nvh)%string /= 'TOPMA') then
-               call hi_interp(1,nnxp1(ngr),nnyp1(ngr),1,scr(1),xmn1(1,ngr),xtn1(1,ngr)     &
-                             ,ymn1(1,ngr),ytn1(1,ngr),zmn1(1,ngr),ztn1(1,ngr)              &
-                             ,platn1(ngr),plonn1(ngr),topt1(1,ngr),ztop1,1,nnxp(1),nnyp(1) &
+               call hi_interp(1,nnxp1(ngr),nnyp1(ngr),1,scr,xmn1(:,ngr),xtn1(:,ngr)        &
+                             ,ymn1(:,ngr),ytn1(:,ngr),zmn1(:,ngr),ztn1(:,ngr)              &
+                             ,platn1(ngr),plonn1(ngr),topt1(:,ngr),ztop1,1,nnxp(1),nnyp(1) &
                              ,1,vtab_r(nv,1)%var_p,1,ngr,vtab_r(nv,1)%name,2)
             !----- 3D variables (nzp,nxp,nyp) ---------------------------------------------!
             elseif (vtab_r(nv,1)%idim_type == 3) then
-               call hi_interp(nnzp1(ngr),nnxp1(ngr),nnyp1(ngr),1,scr(1),xmn1(1,ngr)        &
-                             ,xtn1(1,ngr),ymn1(1,ngr),ytn1(1,ngr),zmn1(1,ngr),ztn1(1,ngr)  &
-                             ,platn1(ngr),plonn1(ngr),topt1(1,ngr),ztop1,nnzp(1),nnxp(1)   &
+               call hi_interp(nnzp1(ngr),nnxp1(ngr),nnyp1(ngr),1,scr,xmn1(:,ngr)           &
+                             ,xtn1(:,ngr),ymn1(:,ngr),ytn1(:,ngr),zmn1(:,ngr),ztn1(:,ngr)  &
+                             ,platn1(ngr),plonn1(ngr),topt1(:,ngr),ztop1,nnzp(1),nnxp(1)   &
                              ,nnyp(1),1,vtab_r(nv,1)%var_p,1,ngr,vtab_r(nv,1)%name,3)
 
             !----- 4D variables (nzg,nxp,nyp,npatch) that can be interpolated -------------!
             elseif (vtab_r(nv,1)%idim_type == 4 .and. hr_table(nvh)%string /= 'SOIL_TEXT') &
             then
                !----- First, interpolate patch 1. -----------------------------------------!
-               call hi_interp(nzg1,nnxp1(ngr),nnyp1(ngr),1,scr(1),xmn1(1,ngr),xtn1(1,ngr)  &
-                             ,ymn1(1,ngr),ytn1(1,ngr),zmn1(1,ngr),ztn1(1,ngr),platn1(ngr)  &
-                             ,plonn1(ngr),topt1(1,ngr),ztop1,nzg,nnxp(1),nnyp(1),1         &
+               call hi_interp(nzg1,nnxp1(ngr),nnyp1(ngr),1,scr,xmn1(:,ngr),xtn1(:,ngr)     &
+                             ,ymn1(:,ngr),ytn1(:,ngr),zmn1(:,ngr),ztn1(:,ngr),platn1(ngr)  &
+                             ,plonn1(ngr),topt1(:,ngr),ztop1,nzg,nnxp(1),nnyp(1),1         &
                              ,vtab_r(nv,1)%var_p,1,ngr,vtab_r(nv,1)%name,4)
 
                !---------------------------------------------------------------------------!
@@ -248,69 +248,68 @@ subroutine inithis()
                ! polated from the coarser grids. We will overwrite points as we inter-     !
                ! polate from finer grids.                                                  !
                !---------------------------------------------------------------------------!
-               call patch_land_copy2(nzg,nnxp(1),nnyp(1),npatch,vtab_r(nv,1)%var_p,scr3(1))
+               call patch_land_copy2(nzg,nnxp(1),nnyp(1),npatch,vtab_r(nv,1)%var_p,scr3)
 
                !----- Then average over history grid patches and interpolate --------------!
-               call patch_land_average(nzg1,nnxp1(ngr),nnyp1(ngr),npatch1,parea(1,ngr)     &
-                                      ,scr(1),scr2(1))
-               call hi_interp(nzg1,nnxp1(ngr),nnyp1(ngr),1,scr2(1),xmn1(1,ngr),xtn1(1,ngr) &
-                             ,ymn1(1,ngr),ytn1(1,ngr),zmn1(1,ngr),ztn1(1,ngr),platn1(ngr)  &
-                             ,plonn1(ngr),topt1(1,ngr),ztop1,nzg,nnxp(1),nnyp(1),1,scr3(1) &
+               call patch_land_average(nzg1,nnxp1(ngr),nnyp1(ngr),npatch1,parea(:,ngr)     &
+                                      ,scr,scr2)
+               call hi_interp(nzg1,nnxp1(ngr),nnyp1(ngr),1,scr2,xmn1(:,ngr),xtn1(:,ngr)    &
+                             ,ymn1(:,ngr),ytn1(:,ngr),zmn1(:,ngr),ztn1(:,ngr),platn1(ngr)  &
+                             ,plonn1(ngr),topt1(:,ngr),ztop1,nzg,nnxp(1),nnyp(1),1,scr3    &
                              ,1,ngr,vtab_r(nv,ngr)%name,4)
-               call patch_land_unaverage(nzg,nnxp(ngr),nnyp(ngr),npatch,scr3(1)            &
+               call patch_land_unaverage(nzg,nnxp(ngr),nnyp(ngr),npatch,scr3               &
                                         ,vtab_r(nv,1)%var_p)
 
             !----- 4D variables (nzs,nxp,nyp,npatch) --------------------------------------!
             elseif (vtab_r(nv,1)%idim_type == 5 ) then
-               call hi_interp(nzs1,nnxp1(ngr),nnyp1(ngr),1,scr(1),xmn1(1,ngr),xtn1(1,ngr)  &
-                             ,ymn1(1,ngr),ytn1(1,ngr),zmn1(1,ngr),ztn1(1,ngr),platn1(ngr)  &
-                             ,plonn1(ngr),topt1(1,ngr),ztop1,nzs,nnxp(1),nnyp(1),1         &
+               call hi_interp(nzs1,nnxp1(ngr),nnyp1(ngr),1,scr,xmn1(:,ngr),xtn1(:,ngr)     &
+                             ,ymn1(:,ngr),ytn1(:,ngr),zmn1(:,ngr),ztn1(:,ngr),platn1(ngr)  &
+                             ,plonn1(ngr),topt1(:,ngr),ztop1,nzs,nnxp(1),nnyp(1),1         &
                              ,vtab_r(nv,1)%var_p,1,ngr,vtab_r(nv,1)%name,5)
 
                !----- Copy patch 2 to scr3 - This will contain the land average -----------!
-               call patch_land_copy2(nzs,nnxp(1),nnyp(1),npatch,vtab_r(nv,1)%var_p,scr3(1))
-               call patch_land_average(nzs1,nnxp1(ngr),nnyp1(ngr),npatch1,parea(1,ngr)     &
-                                      ,scr(1),scr2(1))
-               call hi_interp(nzs1,nnxp1(ngr),nnyp1(ngr),1,scr2(1),xmn1(1,ngr),xtn1(1,ngr) &
-                             ,ymn1(1,ngr),ytn1(1,ngr),zmn1(1,ngr),ztn1(1,ngr)              &
-                             ,platn1(ngr),plonn1(ngr),topt1(1,ngr),ztop1,nzs,nnxp(1)       &
-                             ,nnyp(1),1,scr3(1),1,ngr,vtab_r(nv,1)%name,5)
-               call patch_land_unaverage(nzs,nnxp(1),nnyp(1),npatch,scr3(1)                &
+               call patch_land_copy2(nzs,nnxp(1),nnyp(1),npatch,vtab_r(nv,1)%var_p,scr3)
+               call patch_land_average(nzs1,nnxp1(ngr),nnyp1(ngr),npatch1,parea(:,ngr)     &
+                                      ,scr,scr2)
+               call hi_interp(nzs1,nnxp1(ngr),nnyp1(ngr),1,scr2,xmn1(1,ngr),xtn1(1,ngr)    &
+                             ,ymn1(:,ngr),ytn1(:,ngr),zmn1(:,ngr),ztn1(:,ngr)              &
+                             ,platn1(ngr),plonn1(ngr),topt1(:,ngr),ztop1,nzs,nnxp(1)       &
+                             ,nnyp(1),1,scr3,1,ngr,vtab_r(nv,1)%name,5)
+               call patch_land_unaverage(nzs,nnxp(1),nnyp(1),npatch,scr3                   &
                                         ,vtab_r(nv,1)%var_p)
 
             !----- 3D variables (nzp,nxp,npatch) that can be interpolated -----------------!
             elseif (vtab_r(nv,1)%idim_type == 6 .and. hr_table(nvh)%string /= 'LEAF_CLASS' &
                    .and. hr_table(nvh)%string /= 'PATCH_AREA' ) then
 
-               call hi_interp(1,nnxp1(ngr),nnyp1(ngr),1,scr(1),xmn1(1,ngr),xtn1(1,ngr)     &
-                             ,ymn1(1,ngr),ytn1(1,ngr),zmn1(1,ngr),ztn1(1,ngr)              &
-                             ,platn1(ngr),plonn1(ngr),topt1(1,ngr),ztop1,1,nnxp(1),nnyp(1) &
+               call hi_interp(1,nnxp1(ngr),nnyp1(ngr),1,scr,xmn1(:,ngr),xtn1(:,ngr)        &
+                             ,ymn1(:,ngr),ytn1(:,ngr),zmn1(:,ngr),ztn1(:,ngr)              &
+                             ,platn1(ngr),plonn1(ngr),topt1(:,ngr),ztop1,1,nnxp(1),nnyp(1) &
                              ,1,vtab_r(nv,1)%var_p,1,ngr,vtab_r(nv,1)%name,6)
 
                !----- Copy patch 2 to scr3 - This will contain the land average -----------!
-               call patch_land_copy2(1,nnxp(1),nnyp(1),npatch,vtab_r(nv,1)%var_p,scr3(1))
+               call patch_land_copy2(1,nnxp(1),nnyp(1),npatch,vtab_r(nv,1)%var_p,scr3)
 
-               call patch_land_average(1,nnxp1(ngr),nnyp1(ngr),npatch1,parea(1,ngr),scr(1) &
-                                      ,scr2(1))
-               call hi_interp(1,nnxp1(ngr),nnyp1(ngr),1,scr2(1),xmn1(1,ngr),xtn1(1,ngr)    &
-                             ,ymn1(1,ngr),ytn1(1,ngr),zmn1(1,ngr),ztn1(1,ngr),platn1(ngr)  &
-                             ,plonn1(ngr),topt1(1,ngr),ztop1,1,nnxp(1),nnyp(1),1,scr3(1)   &
+               call patch_land_average(1,nnxp1(ngr),nnyp1(ngr),npatch1,parea(1,ngr),scr    &
+                                      ,scr2)
+               call hi_interp(1,nnxp1(ngr),nnyp1(ngr),1,scr2,xmn1(:,ngr),xtn1(:,ngr)       &
+                             ,ymn1(:,ngr),ytn1(:,ngr),zmn1(:,ngr),ztn1(:,ngr),platn1(ngr)  &
+                             ,plonn1(ngr),topt1(:,ngr),ztop1,1,nnxp(1),nnyp(1),1,scr3      &
                              ,1,ngr,vtab_r(nv,1)%name,6)
-               call patch_land_unaverage(1,nnxp(1),nnyp(1),npatch,scr3(1)                  &
-                                        ,vtab_r(nv,1)%var_p)
+               call patch_land_unaverage(1,nnxp(1),nnyp(1),npatch,scr3,vtab_r(nv,1)%var_p)
 
             !----- 3D variables (nzp,nxp,nwave) -------------------------------------------!
             elseif (vtab_r(nv,1)%idim_type == 7) then
-               call hi_interp(nnzp1(ngr),nnxp1(ngr),nnyp1(ngr),nwave,scr(1),xmn1(1,ngr)    &
-                             ,xtn1(1,ngr),ymn1(1,ngr),ytn1(1,ngr),zmn1(1,ngr),ztn1(1,ngr)  &
-                             ,platn1(ngr),plonn1(ngr),topt1(1,ngr),ztop1,nnzp(1),nnxp(1)   &
+               call hi_interp(nnzp1(ngr),nnxp1(ngr),nnyp1(ngr),nwave,scr,xmn1(:,ngr)       &
+                             ,xtn1(:,ngr),ymn1(:,ngr),ytn1(:,ngr),zmn1(:,ngr),ztn1(:,ngr)  &
+                             ,platn1(ngr),plonn1(ngr),topt1(:,ngr),ztop1,nnzp(1),nnxp(1)   &
                              ,nnyp(1),nwave,vtab_r(nv,1)%var_p,1,ngr,vtab_r(nv,1)%name,7)
 
             !----- 4D variables (nzp,nxp,nyp,nclouds) -------------------------------------!
             elseif (vtab_r(nv,1)%idim_type == 8) then
-               call hi_interp(nnzp1(ngr),nnxp1(ngr),nnyp1(ngr),nclouds,scr(1),xmn1(1,ngr)  &
-                             ,xtn1(1,ngr),ymn1(1,ngr),ytn1(1,ngr),zmn1(1,ngr),ztn1(1,ngr)  &
-                             ,platn1(ngr),plonn1(ngr),topt1(1,ngr),ztop1,nnzp(1),nnxp(1)   &
+               call hi_interp(nnzp1(ngr),nnxp1(ngr),nnyp1(ngr),nclouds,scr,xmn1(:,ngr)     &
+                             ,xtn1(:,ngr),ymn1(:,ngr),ytn1(:,ngr),zmn1(:,ngr),ztn1(:,ngr)  &
+                             ,platn1(ngr),plonn1(ngr),topt1(:,ngr),ztop1,nnzp(1),nnxp(1)   &
                              ,nnyp(1),nclouds,vtab_r(nv,1)%var_p,1,ngr,vtab_r(nv,1)%name,8)
 
             !----- 3D variables (nzp,nxp,nclouds) that can be interpolated ----------------!
@@ -320,9 +319,9 @@ subroutine inithis()
                     .and. hr_table(nvh)%string /= 'XK22'                                   &
                     .and. hr_table(nvh)%string /= 'XKBCON'                                 &
                     .and. hr_table(nvh)%string /= 'XKTOP' ) then
-               call hi_interp(1,nnxp1(ngr),nnyp1(ngr),nclouds,scr(1),xmn1(1,ngr)           &
-                             ,xtn1(1,ngr),ymn1(1,ngr),ytn1(1,ngr),zmn1(1,ngr),ztn1(1,ngr)  &
-                             ,platn1(ngr),plonn1(ngr),topt1(1,ngr),ztop1,1,nnxp(1),nnyp(1) &
+               call hi_interp(1,nnxp1(ngr),nnyp1(ngr),nclouds,scr,xmn1(:,ngr)              &
+                             ,xtn1(:,ngr),ymn1(:,ngr),ytn1(:,ngr),zmn1(:,ngr),ztn1(:,ngr)  &
+                             ,platn1(ngr),plonn1(ngr),topt1(:,ngr),ztop1,1,nnxp(1),nnyp(1) &
                              ,1,vtab_r(nv,1)%var_p,nclouds,ngr,vtab_r(nv,1)%name,9)
             end if
             exit
@@ -342,12 +341,12 @@ subroutine inithis()
            ,dn01dn1(nzpg1) )
 
    cng='01'
-   ie=cio_f(iunhd,1,'u01dn'//cng,  u01dn1(1),nnzp1(1))
-   ie=cio_f(iunhd,1,'v01dn'//cng,  v01dn1(1),nnzp1(1))
-   ie=cio_f(iunhd,1,'pi01dn'//cng,pi01dn1(1),nnzp1(1))
-   ie=cio_f(iunhd,1,'th01dn'//cng,th01dn1(1),nnzp1(1))
-   ie=cio_f(iunhd,1,'dn01dn'//cng,dn01dn1(1),nnzp1(1))
-   ie=cio_f(iunhd,1,'rt01dn'//cng,rt01dn1(1),nnzp1(1))
+   ie=cio_f(iunhd,1,'u01dn'//cng,  u01dn1,nnzp1(1))
+   ie=cio_f(iunhd,1,'v01dn'//cng,  v01dn1,nnzp1(1))
+   ie=cio_f(iunhd,1,'pi01dn'//cng,pi01dn1,nnzp1(1))
+   ie=cio_f(iunhd,1,'th01dn'//cng,th01dn1,nnzp1(1))
+   ie=cio_f(iunhd,1,'dn01dn'//cng,dn01dn1,nnzp1(1))
+   ie=cio_f(iunhd,1,'rt01dn'//cng,rt01dn1,nnzp1(1))
 
 
    call htint(nzpg1,th01dn1,ztn1(1,1),nnzp(1),vctr1,ztn(1,1))
@@ -389,10 +388,10 @@ subroutine inithis()
 
    !----- Compute 3d reference state for grid 1 -------------------------------------------!
    call newgrid(1)
-   call refs3d(nnzp(1),nnxp(1),nnyp(1) ,basic_g(1)%pi0  (1,1,1)  ,basic_g(1)%dn0  (1,1,1)  &
-                                       ,basic_g(1)%dn0u (1,1,1)  ,basic_g(1)%dn0v (1,1,1)  &
-                                       ,basic_g(1)%th0  (1,1,1)  ,grid_g(1)%topt  (  1,1)  &
-                                       ,grid_g(1)%rtgt  (  1,1)  )
+   call refs3d(nnzp(1),nnxp(1),nnyp(1) , basic_g(1)%pi0    ,basic_g(1)%dn0    &
+                                       , basic_g(1)%dn0u   ,basic_g(1)%dn0v   &
+                                       , basic_g(1)%th0    ,grid_g(1)%topt    &
+                                       , grid_g(1)%rtgt    )
 
    return
 end subroutine inithis

@@ -173,9 +173,9 @@ subroutine dry_dep(ngrid,m1,m2,m3,npatch,ia,iz,ja,jz,jdim,dt       &
      ! deposited mass on surface
      ! **(JP)** Pass to subroutine first pointer element,copy are not necessary
      call apply_drydep(m1,m2,m3,ia,iz,ja,jz,V_dep(:,:,iscl), &
-          scalar_g(iscl,ngrid)%drydep(1,1),                  &
-          scalar_g(iscl,ngrid)%sclp(1,1,1),                  &
-          scalar_g(iscl,ngrid)%sclt(1),                      &
+          scalar_g(iscl,ngrid)%drydep,                       &
+          scalar_g(iscl,ngrid)%sclp,                         &
+          scalar_g(iscl,ngrid)%sclt,                         &
           dens,rtgt,dzt,dt                                   )
    
   enddo

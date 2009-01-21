@@ -128,11 +128,12 @@ contains
    !==========================================================================================!
    
    subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
-        sfcwater_energy, rhos, can_shv, ground_shv, surface_ssh)
+        sfcwater_energy, rhos, can_shv, ground_shv, surface_ssh, &
+        surface_tempk,surface_fracliq)
      
      use soil_coms,   only: ed_nstyp, soil
      use grid_coms,   only: nzg
-     use consts_coms, only:  pi1, grav, rvap, wdns
+     use consts_coms, only:  pi1, wdns, gorvap
      use therm_lib  , only: rhovsil, qtk, qwtk8
      
      implicit none
@@ -147,36 +148,33 @@ contains
      real, intent(in)  :: can_shv         ! canopy vapor spec hum [kg_vap/kg_air]
      real, intent(out) :: ground_shv      ! ground equilibrium spec hum [kg_vap/kg_air]
      real, intent(out) :: surface_ssh     ! surface (saturation) spec hum [kg_vap/kg_air]
-     
-     
-     real, parameter :: gorvap = grav / rvap  ! gravity divided by vapor gas constant
-
+     real, intent(out) :: surface_tempk   ! Surface water temperature
+     real, intent(out) :: surface_fracliq ! fraction of surface water in liquid phase
      
      ! Local variables
 
      real :: slpotvn ! soil water potential [m]
      real :: alpha   ! "alpha" term in Lee and Pielke (1993)
      real :: beta    ! "beta" term in Lee and Pielke (1993)
-     real :: tempk   ! surface water temp [K]
-     real :: fracliq ! fraction of surface water in liquid phase
      
      ! surface_ssh is the saturation mixing ratio of the top soil or snow surface
      ! and is used for dew formation and snow evaporation.
      
-     if (nlev_sfcwater > 0) then
-        call qtk(sfcwater_energy,tempk,fracliq)
-        surface_ssh = rhovsil(tempk) / rhos
+     if (nlev_sfcwater > 0 .and. sfcwater_energy > 0.) then
+        call qtk(sfcwater_energy,surface_tempk,surface_fracliq)
+        surface_ssh = rhovsil(surface_tempk) / rhos
      else
         
         ! Without snowcover, ground_shv is the effective saturation mixing
         ! ratio of soil and is used for soil evaporation.  First, compute the
         ! "alpha" term or soil "relative humidity" and the "beta" term.
         
-        call qwtk8(soil_energy,soil_water*dble(wdns),soil(nts)%slcpd,tempk,fracliq)
-        surface_ssh = rhovsil(tempk) / rhos
+        call qwtk8(soil_energy,soil_water*dble(wdns),soil(nts)%slcpd &
+                  ,surface_tempk,surface_fracliq)
+        surface_ssh = rhovsil(surface_tempk) / rhos
         
         slpotvn = soil(nts)%slpots * (soil(nts)%slmsts / sngl(soil_water)) ** soil(nts)%slbs
-        alpha = exp(gorvap * slpotvn / tempk)
+        alpha = exp(gorvap * slpotvn / surface_tempk)
         beta = .25 * (1. - cos (min(1.,sngl(soil_water) / soil(nts)%sfldcap) * pi1)) ** 2
         ground_shv = surface_ssh * alpha * beta + (1. - beta) * can_shv
         

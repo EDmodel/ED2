@@ -42,9 +42,9 @@ subroutine prep_advflx_to_mass(mzp,mxp,myp,ia,iz,ja,jz,ng)
    frqmassi = 1./frqmassave
 
    call compute_mass_flux(mzp,mxp,myp,ia,iz,ja,jz,dtlti,frqmassi                           &
-           ,scratch%vt3da(1)         , scratch%vt3db(1)        , scratch%vt3dc(1)          &
-           ,mass_g(ng)%afxu  (1,1,1) , mass_g(ng)%afxv  (1,1,1), mass_g(ng)%afxw  (1,1,1)  &
-           ,mass_g(ng)%afxub (1,1,1) , mass_g(ng)%afxvb (1,1,1), mass_g(ng)%afxwb (1,1,1)  )
+           ,scratch%vt3da            , scratch%vt3db           , scratch%vt3dc             &
+           ,mass_g(ng)%afxu          , mass_g(ng)%afxv         , mass_g(ng)%afxw           &
+           ,mass_g(ng)%afxub         , mass_g(ng)%afxvb        , mass_g(ng)%afxwb          )
 
    return
 end subroutine prep_advflx_to_mass
@@ -242,6 +242,58 @@ subroutine prep_convflx_to_mass(m1,dnmf,upmf,cfxdn,cfxup,dfxdn,dfxup,efxdn,efxup
    efxdn(kr) =-dnmf*entdo           !edt already is at entdo
    return
 end subroutine prep_convflx_to_mass
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine prepare_timeavg_driver(mzp,mxp,myp,ia,iz,ja,jz,dtlt,ifm,idiffkk)
+   use mem_mass , only : imassflx & ! intent(in)
+                       , mass_g   ! ! intent(inout)
+   use mem_turb , only : turb_g   ! ! intent(in)
+   implicit none
+   !------ Arguments ----------------------------------------------------------------------!
+   integer, intent(in) :: mzp, mxp, myp, ia, iz, ja, jz, ifm, idiffkk
+   real   , intent(in) :: dtlt
+   !---------------------------------------------------------------------------------------!
+   
+   !---------------------------------------------------------------------------------------!
+   !     Skip this if the user doesn't want to store time averages or if the turbulence    !
+   ! closure is not TKE-based.                                                             !
+   !---------------------------------------------------------------------------------------!
+   if (imassflx /= 1 .or. idiffkk == 2 .or. idiffkk == 3) return
+
+   !----- Checking which closure ----------------------------------------------------------!
+   select case (idiffkk)
+   case (1) !----- Helfand-Labraga, only TKE and sig-W are available. ---------------------!
+      call prepare_timeavg_to_mass(mzp,mxp,myp,ia,iz,ja,jz,dtlt                            &
+                                  ,turb_g(ifm)%tkep,mass_g(ifm)%tkepb                      )
+
+      call prepare_timeavg_to_mass(mzp,mxp,myp,ia,iz,ja,jz,dtlt                            &
+                                  ,turb_g(ifm)%sigw     ,mass_g(ifm)%sigwb                 )
+
+   case (4,5,6) !----- LES closures, only TKE is available --------------------------------!
+      call prepare_timeavg_to_mass(mzp,mxp,myp,ia,iz,ja,jz,dtlt                            &
+                                  ,turb_g(ifm)%tkep     ,mass_g(ifm)%tkepb                 )
+
+   case (7) !----- Nakanishi-Niino closure, TKE, sig-W and Lagrangian time scale exist. ---!
+      call prepare_timeavg_to_mass(mzp,mxp,myp,ia,iz,ja,jz,dtlt                            &
+                                  ,turb_g(ifm)%tkep     ,mass_g(ifm)%tkepb                 )
+
+      call prepare_timeavg_to_mass(mzp,mxp,myp,ia,iz,ja,jz,dtlt                            &
+                                  ,turb_g(ifm)%sigw     ,mass_g(ifm)%sigwb                 )
+
+      call prepare_timeavg_to_mass(mzp,mxp,myp,ia,iz,ja,jz,dtlt                            &
+                                  ,turb_g(ifm)%ltscale  ,mass_g(ifm)%ltscaleb              )
+   end select
+
+   return
+end subroutine prepare_timeavg_driver
 !==========================================================================================!
 !==========================================================================================!
 

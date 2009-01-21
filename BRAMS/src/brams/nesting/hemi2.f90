@@ -324,32 +324,32 @@ if (nhemgrd2 .le. 1) return
 ! Interpolate grid 1 interior values to grid nhemgrd2 boundaries.
 
 call hemintuv(nnzp(1),nnxp(1),nnyp(1)  &
-   ,basic_g(1)%up(1,1,1)         &
-   ,basic_g(1)%vp(1,1,1)         &
-   ,basic_g(nhemgrd2)%up(1,1,1)  &
-   ,basic_g(nhemgrd2)%vp(1,1,1)  )
+   ,basic_g(1)%up         &
+   ,basic_g(1)%vp         &
+   ,basic_g(nhemgrd2)%up  &
+   ,basic_g(nhemgrd2)%vp  )
 
 call hemintuv(nnzp(1),nnxp(1),nnyp(1)  &
-   ,basic_g(1)%uc(1,1,1)         &
-   ,basic_g(1)%vc(1,1,1)         &
-   ,basic_g(nhemgrd2)%uc(1,1,1)  &
-   ,basic_g(nhemgrd2)%vc(1,1,1)  )
+   ,basic_g(1)%uc         &
+   ,basic_g(1)%vc         &
+   ,basic_g(nhemgrd2)%uc  &
+   ,basic_g(nhemgrd2)%vc  )
 
 call hemintt(nnzp(1),nnxp(1),nnyp(1)  &
-   ,basic_g(1)%wp(1,1,1)         &
-   ,basic_g(nhemgrd2)%wp(1,1,1)  )
+   ,basic_g(1)%wp         &
+   ,basic_g(nhemgrd2)%wp  )
 
 call hemintt(nnzp(1),nnxp(1),nnyp(1)  &
-   ,basic_g(1)%wc(1,1,1)         &
-   ,basic_g(nhemgrd2)%wc(1,1,1)  )
+   ,basic_g(1)%wc         &
+   ,basic_g(nhemgrd2)%wc  )
 
 call hemintt(nnzp(1),nnxp(1),nnyp(1)  &
-   ,basic_g(1)%pp(1,1,1)         &
-   ,basic_g(nhemgrd2)%pp(1,1,1)  )
+   ,basic_g(1)%pp         &
+   ,basic_g(nhemgrd2)%pp  )
 
 call hemintt(nnzp(1),nnxp(1),nnyp(1)  &
-   ,basic_g(1)%pc(1,1,1)         &
-   ,basic_g(nhemgrd2)%pc(1,1,1)  )
+   ,basic_g(1)%pc        &
+   ,basic_g(nhemgrd2)%pc  )
 
 do nscal = 1,num_scalar(1)
    call hemintt(nnzp(1),nnxp(1),nnyp(1)  &
@@ -360,32 +360,32 @@ enddo
 ! Interpolate grid nhemgrd2 interior values to grid 1 boundaries.
 
 call hemintuv(nnzp(1),nnxp(1),nnyp(1)  &
-   ,basic_g(nhemgrd2)%up(1,1,1)  &
-   ,basic_g(nhemgrd2)%vp(1,1,1)  &
-   ,basic_g(1)%up(1,1,1)         &
-   ,basic_g(1)%vp(1,1,1)         )
+   ,basic_g(nhemgrd2)%up  &
+   ,basic_g(nhemgrd2)%vp  &
+   ,basic_g(1)%up         &
+   ,basic_g(1)%vp         )
 
 call hemintuv(nnzp(1),nnxp(1),nnyp(1)  &
-   ,basic_g(nhemgrd2)%uc(1,1,1)  &
-   ,basic_g(nhemgrd2)%vc(1,1,1)  &
-   ,basic_g(1)%uc(1,1,1)         &
-   ,basic_g(1)%vc(1,1,1)         )
+   ,basic_g(nhemgrd2)%uc  &
+   ,basic_g(nhemgrd2)%vc  &
+   ,basic_g(1)%uc         &
+   ,basic_g(1)%vc         )
 
 call hemintt(nnzp(1),nnxp(1),nnyp(1)  &
-   ,basic_g(nhemgrd2)%wp(1,1,1)  &
-   ,basic_g(1)%wp(1,1,1)         )
+   ,basic_g(nhemgrd2)%wp  &
+   ,basic_g(1)%wp         )
 
 call hemintt(nnzp(1),nnxp(1),nnyp(1)  &
-   ,basic_g(nhemgrd2)%wc(1,1,1)  &
-   ,basic_g(1)%wc(1,1,1)         )
+   ,basic_g(nhemgrd2)%wc  &
+   ,basic_g(1)%wc         )
 
 call hemintt(nnzp(1),nnxp(1),nnyp(1)  &
-   ,basic_g(nhemgrd2)%pp(1,1,1)  &
-   ,basic_g(1)%pp(1,1,1)         )
+   ,basic_g(nhemgrd2)%pp  &
+   ,basic_g(1)%pp         )
 
 call hemintt(nnzp(1),nnxp(1),nnyp(1)  &
-   ,basic_g(nhemgrd2)%pc(1,1,1)  &
-   ,basic_g(1)%pc(1,1,1)         )
+   ,basic_g(nhemgrd2)%pc  &
+   ,basic_g(1)%pc         )
 
 do nscal = 1,num_scalar(1)
    call hemintt(nnzp(1),nnxp(1),nnyp(1)  &

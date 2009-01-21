@@ -264,18 +264,18 @@ subroutine plumerise_driver(mzp,mxp,myp,ia,iz,ja,jz,k_CO_smold,k_PM25_smold)!,bl
      DO ib=1,nob
         !print*,'------------- ib=',ib,nob,maxblock_size
         CALL Plumerise(mzp,mxp,myp,ibcon,mynum  &
-             ,Tplume(ib)%theta_b(1,1)   &
-             ,Tplume(ib)%pp_b(1,1)      &
-             ,Tplume(ib)%pi0_b(1,1)     &
-             ,Tplume(ib)%dn0_b(1,1)     &
-             ,Tplume(ib)%rv_b(1,1)      &
-             ,Tplume(ib)%rtgt_b(1)    &
-             ,Tplume(ib)%lpw_b(1)     &
-             ,zt_rams(1) &
-             ,zm_rams(1) &
-             ,Tplume(ib)%plume_b(1,1)   & ! plume array
-             ,Tplume(ib)%srcCO_b(1,1)   & ! CO source
-             ,Tplume(ib)%srcPM25_b(1,1) & ! PM25 source
+             ,Tplume(ib)%theta_b   &
+             ,Tplume(ib)%pp_b      &
+             ,Tplume(ib)%pi0_b     &
+             ,Tplume(ib)%dn0_b     &
+             ,Tplume(ib)%rv_b      &
+             ,Tplume(ib)%rtgt_b    &
+             ,Tplume(ib)%lpw_b     &
+             ,zt_rams              &
+             ,zm_rams              &
+             ,Tplume(ib)%plume_b   & ! plume array
+             ,Tplume(ib)%srcCO_b   & ! CO source
+             ,Tplume(ib)%srcPM25_b & ! PM25 source
              ,k_CO_smold,k_PM25_smold,&
              1,block_end(ib), &
              nkp,ntime,mdur,iveg,im, &

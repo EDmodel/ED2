@@ -1139,7 +1139,8 @@ rio.o : $(IO)/rio.f90 grid_dims.o var_tables.o io_params.o mem_grid.o ref_soundi
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
-rmass.o: $(MASS)/rmass.f90 mem_grid.o mem_scratch.o mem_mass.o mem_scratch_grell.o
+rmass.o: $(MASS)/rmass.f90 mem_grid.o mem_scratch.o mem_mass.o mem_scratch_grell.o         \
+	mem_turb.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
@@ -1290,7 +1291,7 @@ turb_diff_adap.o : $(TURB)/turb_diff_adap.f90 mem_grid.o mem_scratch.o
 
 turb_k.o : $(TURB)/turb_k.f90 mem_tend.o mem_basic.o var_tables.o mem_turb.o mem_grid.o    \
 	mem_leaf.o mem_micro.o mem_scratch.o node_mod.o ke_coms.o mem_turb_scalar.o        \
-	catt_start.o mem_cuparm.o mem_mass.o therm_lib.o
+	catt_start.o mem_mass.o therm_lib.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
