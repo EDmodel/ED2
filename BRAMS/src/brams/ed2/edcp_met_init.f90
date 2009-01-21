@@ -150,7 +150,7 @@ subroutine ed_init_coup_atm
                        csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
                                                 * csite%soil_tempk(k,ipa)                  &
                                                 + sngl(csite%soil_water(k,ipa))            &
-                                                * ( cliqvlme * csite%soil_water(k,ipa)     &
+                                                * ( cliqvlme * csite%soil_tempk(k,ipa)     &
                                                   + allivlme)
                     end do
                  else
@@ -162,7 +162,7 @@ subroutine ed_init_coup_atm
                        csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
                                                 * csite%soil_tempk(k,ipa)                  &
                                                 + sngl(csite%soil_water(k,ipa))            &
-                                                * cicevlme * csite%soil_water(k,ipa)
+                                                * cicevlme * csite%soil_tempk(k,ipa)
                     end do
                  end if
 

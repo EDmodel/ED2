@@ -1081,7 +1081,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   use grid_coms, only: nzs, nzg
   use soil_coms, only: soil, water_stab_thresh, dslz, dslzi, &
        min_sfcwater_mass
-  use consts_coms, only: cice, cliq, alli,t3ple,wdns,clt3lf
+  use consts_coms, only: cice, cliq, alli,t3ple,wdns,clt3lf, wdnsi
   use therm_lib, only : qtk,qwtk,qwtk8
 
   implicit none
@@ -1180,8 +1180,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
      ! Update current state
      qw = initp%sfcwater_energy(k) * initp%sfcwater_mass(k) + qwfree
      w = initp%sfcwater_mass(k) + wfree
-     if( ksnnew == 1 .and. initp%sfcwater_mass(k) < &
-          water_stab_thresh )then
+     if( ksnnew == 1 .and. initp%sfcwater_mass(k) < water_stab_thresh )then
         qwt = qw + initp%soil_energy(nzg) * dslz(nzg)
         wt = dble(w) + initp%soil_water(nzg) * dble(dslz(nzg)) * dble(wdns)
 
@@ -1190,8 +1189,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
              ,initp%sfcwater_tempk(k),initp%sfcwater_fracliq(k))
         ! portion out the heat to the snow
         qw = w * (   initp%sfcwater_fracliq(k)  * (cliq*initp%sfcwater_tempk(k) + alli) +  &
-                  (1-initp%sfcwater_fracliq(k)) *  cice*initp%sfcwater_tempk(k)            &
-                 )
+                  (1.-initp%sfcwater_fracliq(k)) *  cice*initp%sfcwater_tempk(k)          )
         ! set the properties of top soil layer.
         initp%soil_tempk(nzg) = initp%sfcwater_tempk(k)
         initp%soil_fracliq(nzg) = initp%sfcwater_fracliq(k)
@@ -1275,7 +1273,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
      else
         qwfree = wfreeb * (cliq * initp%sfcwater_tempk(k)+alli)
      endif
-     depthloss = wfreeb * 1.0e-3
+     depthloss = wfreeb * wdnsi
      
      ! Remove percolation
      initp%sfcwater_mass(k) = w - wfreeb
@@ -1291,7 +1289,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
      totsnow = totsnow + initp%sfcwater_mass(k)
      ! Calculate density, depth of snow
      snden = initp%sfcwater_mass(k) / max(1.0e-6,initp%sfcwater_depth(k))
-     sndenmax = 1000.0
+     sndenmax = wdns
      sndenmin = max(30.0, 200.0 * (wfree + wfreeb) / &
           max(1.0e-12,initp%sfcwater_mass(k)))
      snden = min(sndenmax, max(sndenmin,snden))

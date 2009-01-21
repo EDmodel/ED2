@@ -156,8 +156,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
                                    , rk4patchtype         ! ! structure
    use ed_therm_lib         , only : ed_grndvap           ! ! subroutine
    use therm_lib            , only : qtk                  & ! subroutine
-                                   , qwtk                 & ! subroutine
-                                   , qwtk8                ! ! subroutine
+                                   , qwtk                 ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype)  , target     :: initp         ! RK4 structure, intermediate step
@@ -190,6 +189,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
    real                             :: ddewgnd       ! Dew/frost density flux to ground
    real                             :: wshed         ! Water shedding flux
    real                             :: qwshed        ! Energy flux due to water shedding
+   real                             :: dwshed        ! Density flux due to water shedding
    real, dimension(nzgmax+nzsmax)   :: rfactor       ! 
    real, dimension(nzgmax+nzsmax+1) :: hfluxgsc      ! Surface -> canopy heat flux
    real, dimension(nzgmax)          :: soil_liq      ! Soil liquid water (i.e. not frozen)
@@ -230,8 +230,8 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
    interface
       subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxgc &
                                      ,dewgndflx,qdewgndflx,ddewgndflx,wshed_tot,qwshed_tot &
-                                     ,rhos,prss,pcpg,qpcpg,exner,geoht,atm_tmp             &
-                                     ,surface_temp,surface_fliq,lsl)
+                                     ,dwshed_tot,rhos,prss,pcpg,qpcpg,dpcpg,exner,geoht    &
+                                     ,atm_tmp,surface_temp,surface_fliq,lsl)
          use ed_state_vars, only: rk4patchtype  & ! structure
                                 , sitetype      & ! structure
                                 , patchtype     ! ! structure
@@ -239,12 +239,12 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
          type (rk4patchtype) , target      :: initp, dinitp
          type (sitetype)     , target      :: csite
          integer             , intent(in)  :: ipa, isi, ipy, lsl
-         real                , intent(in)  :: rhos, atm_tmp, prss, pcpg
-         real                , intent(in)  :: qpcpg, exner, geoht
+         real                , intent(in)  :: rhos, atm_tmp, prss, exner, geoht 
+         real                , intent(in)  :: pcpg, qpcpg, dpcpg
          real                , intent(in)  :: surface_temp, surface_fliq
          real                , intent(out) :: hflxgc, wflxgc, qwflxgc
          real                , intent(out) :: dewgndflx, qdewgndflx, ddewgndflx
-         real                , intent(out) :: wshed_tot, qwshed_tot
+         real                , intent(out) :: wshed_tot, qwshed_tot, dwshed_tot
       end subroutine canopy_derivs_two_ar
    end interface
 #endif
@@ -295,8 +295,8 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
  
    !----- Get derivatives of canopy variables. --------------------------------------------!
    call canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxgc,dewgnd   &
-                            ,qdewgnd,ddewgnd,wshed,qwshed,rhos,prss,pcpg,qpcpg,exner,geoht &
-                            ,atm_tmp,surface_temp,surface_fliq,lsl)
+                            ,qdewgnd,ddewgnd,wshed,qwshed,dwshed,rhos,prss,pcpg,qpcpg      &
+                            ,dpcpg,exner,geoht,atm_tmp,surface_temp,surface_fliq,lsl)
 
 
    !---------------------------------------------------------------------------------------!
@@ -394,13 +394,9 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
    ! temporary "snow" layer.  This weird factor is essentially the one used by default in  !
    ! RAMS 4.3.0.  I'd rather use a different factor, huh?                                  !
    !---------------------------------------------------------------------------------------!
-   qw_flux(nzg+ksn+1) = - qdewgnd  - qwshed
-   w_flux(nzg+ksn+1)  = - dewgnd - wshed
-   if (w_flux(nzg+ksn+1) > 0. ) then
-      d_flux(ksn+1)      = - (dpcpg * wshed + ddewgnd * dewgnd)  / w_flux(nzg+ksn+1)
-   else
-      d_flux(ksn+1)      = 0.0
-   end if
+   w_flux(nzg+ksn+1)  = -  dewgnd -  wshed
+   qw_flux(nzg+ksn+1) = - qdewgnd - qwshed
+   d_flux(ksn+1)      =   ddewgnd + dwshed
 
    dinitp%avg_vapor_gc  = wflxgc   ! Diagnostic
    dinitp%avg_dew_cg    = dewgnd   ! Diagnostic
@@ -637,9 +633,9 @@ end subroutine leaftw_derivs_ar
 !==========================================================================================!
 !==========================================================================================!
 subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxgc       &
-                               ,dewgndflx,qdewgndflx,ddewgndflx,wshed_tot,qwshed_tot,rhos  &
-                               ,prss,pcpg,qpcpg,exner,geoht,atm_tmp,surface_temp           &
-                               ,surface_fliq,lsl)
+                               ,dewgndflx,qdewgndflx,ddewgndflx,wshed_tot,qwshed_tot       &
+                               ,dwshed_tot,rhos,prss,pcpg,qpcpg,dpcpg,exner,geoht,atm_tmp  &
+                               ,surface_temp,surface_fliq,lsl)
    use ed_state_vars         , only : rk4patchtype      & ! Structure
                                     , sitetype          & ! Structure
                                     , patchtype         ! ! Structure
@@ -680,6 +676,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    real               , intent(in)  :: prss           ! Air pressure
    real               , intent(in)  :: pcpg           ! Precipitation rate
    real               , intent(in)  :: qpcpg          ! Precipitation heat
+   real               , intent(in)  :: dpcpg          ! Precipitation density
    real               , intent(in)  :: exner          ! Air Exner function
    real               , intent(in)  :: geoht          ! Geopotential
    real               , intent(in)  :: surface_temp   ! Free surface temperature
@@ -689,54 +686,58 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    real               , intent(out) :: qwflxgc        ! Ground->canopy latent heat flux
    real               , intent(out) :: wshed_tot      ! Water shedding rate
    real               , intent(out) :: qwshed_tot     ! Water shedding energy flux
+   real               , intent(out) :: dwshed_tot     ! Water shedding density flux
    real               , intent(out) :: dewgndflx      ! Dew/frost water flux
    real               , intent(out) :: qdewgndflx     ! Dew/frost heat flux
    real               , intent(out) :: ddewgndflx     ! Dew/frost density
    !----- Local variables -----------------------------------------------------------------!
-   type(patchtype)    , pointer     :: cpatch         ! Current patch
-   integer                          :: ico            ! Current cohort ID
-   real                             :: can_frac       ! total fractional canopy coverage
-   real                             :: transp         ! Cohort transpiration
-   real                             :: cflxac         ! Air->canopy carbon flux
-   real                             :: wflxac         ! Air->canopy water flux
-   real                             :: hflxac         ! Air->canopy heat flux
-   real                             :: c2             ! Coefficient (????)
-   real                             :: c3             ! Coefficient (????)
-   real                             :: hflxvc         ! Leaf->canopy heat flux
-   real                             :: rasgnd         ! 
-   real                             :: rbi            ! 
-   real                             :: rd             !
-   real                             :: sigmaw         !
-   real                             :: wflxvc         !
-   real                             :: wshed          !
-   real                             :: qwshed         !
-   real                             :: zoveg,zveg     !
-   real                             :: wcapcan        !
-   real                             :: wcapcani       !
-   real                             :: hcapcani       !
-   real                             :: cflxgc         !
-   real                             :: laii           !
-   real                             :: wflx           !
-   real                             :: qwflx          !
-   real                             :: hflxvc_tot     !
-   real                             :: transp_tot     !
-   real                             :: cflxvc_tot     !
-   real                             :: wflxvc_tot     !
-   real                             :: qwflxvc_tot    !
-   real                             :: rho_ustar      !
-   real                             :: rdi            !
-   real                             :: gpp_tot        !
-   real                             :: storage_decay  !
-   real                             :: leaf_flux      !
-   real                             :: sat_shv        !
-   real                             :: veg_temp       !
-   real                             :: fracliq        !
-   real                             :: max_leaf_water !
-   real                             :: maxfluxrate    !
-   real                             :: qveg_water     !
-   real                             :: intercepted    !
-   real                             :: qintercepted   !
-   real                             :: qwflxvc        !
+   type(patchtype)    , pointer     :: cpatch           ! Current patch
+   integer                          :: ico              ! Current cohort ID
+   real                             :: can_frac         ! total fractional canopy coverage
+   real                             :: transp           ! Cohort transpiration
+   real                             :: cflxac           ! Air->canopy carbon flux
+   real                             :: wflxac           ! Air->canopy water flux
+   real                             :: hflxac           ! Air->canopy heat flux
+   real                             :: c2               ! Coefficient (????)
+   real                             :: c3               ! Coefficient (????)
+   real                             :: hflxvc           ! Leaf->canopy heat flux
+   real                             :: rasgnd           ! 
+   real                             :: rbi              ! 
+   real                             :: rd               !
+   real                             :: sigmaw           !
+   real                             :: wflxvc           !
+   real                             :: wshed            !
+   real                             :: qwshed           !
+   real                             :: dwshed           !
+   real                             :: zoveg,zveg       !
+   real                             :: wcapcan          !
+   real                             :: wcapcani         !
+   real                             :: hcapcani         !
+   real                             :: cflxgc           !
+   real                             :: laii             !
+   real                             :: wflx             !
+   real                             :: qwflx            !
+   real                             :: hflxvc_tot       !
+   real                             :: transp_tot       !
+   real                             :: cflxvc_tot       !
+   real                             :: wflxvc_tot       !
+   real                             :: qwflxvc_tot      !
+   real                             :: rho_ustar        !
+   real                             :: rdi              !
+   real                             :: gpp_tot          !
+   real                             :: storage_decay    !
+   real                             :: leaf_flux        !
+   real                             :: sat_shv          !
+   real                             :: veg_temp         !
+   real                             :: fracliq          !
+   real                             :: max_leaf_water   !
+   real                             :: maxfluxrate      !
+   real                             :: intercepted_tot  !
+   real                             :: qintercepted_tot !
+   real                             :: dintercepted_tot !
+   real                             :: intercepted      !
+   real                             :: qintercepted     !
+   real                             :: qwflxvc          !
    !----- Constants -----------------------------------------------------------------------!
    real   , parameter :: leaf_h2o_thick = 0.11 ! mm
    logical, parameter :: debug  = .true.       ! Verbose output for debug (T|F)
@@ -823,16 +824,21 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
       !------------------------------------------------------------------------------------!
       if (pcpg>0.0) then
          !----- Scale interception by canopy openess (MCD 01-12-09). ----------------------!
-         intercepted  = pcpg  * can_frac
-         qintercepted = qpcpg * can_frac
-         wshed_tot    = pcpg - intercepted
-         qwshed_tot    = (wshed_tot/pcpg)*qpcpg
+         intercepted_tot  = pcpg  * can_frac
+         qintercepted_tot = qpcpg * can_frac
+         dintercepted_tot = dpcpg * can_frac
+         !----- Energy and mass are extensive, this guarantees conservation ---------------!
+         wshed_tot    = pcpg  - intercepted_tot
+         qwshed_tot   = qpcpg - qintercepted_tot
+         dwshed_tot   = dpcpg - dintercepted_tot
       else
          !----- No precipitation, nothing to be intercepted... ----------------------------!
-         intercepted  = 0.0
-         qintercepted = 0.0
-         wshed_tot    = 0.0
-         qwshed_tot   = 0.0
+         intercepted_tot  = 0.0
+         qintercepted_tot = 0.0
+         dintercepted_tot = 0.0
+         wshed_tot        = 0.0
+         qwshed_tot       = 0.0
+         dwshed_tot       = 0.0
       endif
 
    else
@@ -842,11 +848,13 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
       ! "canopy" and snow or soil surface to its bare soil value. Set shed precipitation   !
       ! heat and moisture to unintercepted values.                                         !
       !------------------------------------------------------------------------------------!
-      rd           = rasgnd
-      wshed_tot    = pcpg
-      qwshed_tot   = qpcpg
-      intercepted  = 0.0
-      qintercepted = 0.0
+      rd               = rasgnd
+      wshed_tot        = pcpg
+      qwshed_tot       = qpcpg
+      dwshed_tot       = dpcpg
+      intercepted_tot  = 0.0
+      qintercepted_tot = 0.0
+      dintercepted_tot = 0.0
 
       !------------------------------------------------------------------------------------!
       ! Note: If the condition of low LAI for the entire patch was met, then it does not   !
@@ -1070,65 +1078,32 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          ! than the carrying capacity, then it must flux all precipitation and dew. The    !
          ! leaf may evaporate in every condition.                                          !
          !---------------------------------------------------------------------------------!
-
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !!!!  For a saturated leaf, why does the energy from dew transfer but not from !!!!
-         !!!!  rain? Seems like we should do both or not worry about either -- MCD      !!!!
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         
-         if (initp%veg_water(ico) >= max_leaf_water  .and. wflxvc >= 0. ) then
+         if (initp%veg_water(ico) >= max_leaf_water) then
             !------------------------------------------------------------------------------!
-            ! Case 1: Leaf has no space for rain - evaporation dominates. Assumptions:     !
-            !         cooling from evaporation is removed from leaf and leaf water.        !
-            !         Evaporation comes off of leaf water.  Rainfall and its internal      !
-            !         energy immediately bypasses the leaf towards the ground.             !
+            ! Case 1: Leaf has no space for rain. All rain/snow falls with the same        !
+            !         density it fell. Dew and frost and old precipitation that were       !
+            !         already there will not fall and new dew/frost is allowed. It may     !
+            !         seem a bad assumption, but it considerably simplifies things and we  !
+            !         don't need to wonder what will happen with the dew/frost energy.     !
             !------------------------------------------------------------------------------!
-            wshed                 = intercepted*cpatch%lai(ico)*laii
-            qwshed                = qintercepted*cpatch%lai(ico)*laii
-            dinitp%veg_water(ico) = - wflxvc
-            qveg_water = 0. 
-
-        else if(initp%veg_water(ico) >= max_leaf_water  .and. wflxvc < 0. )then
-            !------------------------------------------------------------------------------!
-            ! Case 2: Leaf has no space for rain - dew dominates. Assumptions: heating     !
-            !         from the dew goes directly into the leaf and the leaf water, BUT,    !
-            !         the mass of the dew goes into the shed water.  Rainfall and its      !
-            !         internal energy bypass the leaf.                                     !
-            !------------------------------------------------------------------------------!
-            wshed = intercepted*cpatch%lai(ico)*laii - wflxvc
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            !!!  MLO: My concern here is that the water/ice from dew/frost would leave   !!!
-            !!!       the leaf, but it is not carrying its internal energy... That can   !!!
-            !!!       be a problem, and I am wondering if we should even allow dew or    !!!
-            !!!       frost to form if there is no room for it, since the dew/frost will !!!
-            !!!       never be attached to the leaf...                                   !!!
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            qwshed = qintercepted*cpatch%lai(ico)*laii ! The heat from dew is not shed
-            dinitp%veg_water(ico) = 0.
-            qveg_water = 0.
-
-            !------------------------------------------------------------------------------!
-            ! Case 3: Leaf has space for rain - evaporation dominates. Assumptions:        !
-            !         evaporation is removed from the leaf water, its cooling effects the  !
-            !         leaf.  Rainfall and its internal energy accumulate on the leaf.      !
-            !                                                                              !
-            !                                      AND                                     !
-            !                                                                              !
-            ! Case 4: Leaf has space for rain - dew dominates. Assumptions: dew and its    !
-            !         heating are applied to the leaf. Rainfall and its internal energy    !
-            !         are applied to the leaf.                                             !
-            !------------------------------------------------------------------------------!
+            wshed                 = intercepted_tot  * cpatch%lai(ico) * laii
+            qwshed                = qintercepted_tot * cpatch%lai(ico) * laii
+            dwshed                = dintercepted_tot * cpatch%lai(ico) * laii
+            intercepted           = 0.
+            qintercepted          = 0.
          else
-            wshed = 0.0
-            qwshed = 0.0
-            dinitp%veg_water(ico) = -wflxvc + intercepted*cpatch%lai(ico)*laii
-            qveg_water = qintercepted*cpatch%lai(ico)*laii
-
+            !------------------------------------------------------------------------------!
+            ! Case 2: Leaf has space for rain. Rainfall and its internal energy accumulate !
+            !         on the leaf.                                                         !
+            !------------------------------------------------------------------------------!
+            wshed                 = 0.0
+            qwshed                = 0.0
+            dwshed                = 0.0
+            intercepted           = intercepted_tot  * cpatch%lai(ico) * laii
+            qintercepted          = qintercepted_tot * cpatch%lai(ico) * laii
          end if
+         
+         dinitp%veg_water(ico) = - wflxvc + intercepted
 
          !----- Latent heat of evap and dew. ----------------------------------------------!
          dinitp%veg_energy(ico) = cpatch%rshort_v(ico) & ! Absorbed short wave radiation
@@ -1136,7 +1111,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
                                 - hflxvc               & ! Sensible heat flux
                                 - qwflxvc              & ! Evaporative phase cooling 
                                 - transp * alvl        & ! Transpirative phase cooling
-                                + qveg_water           ! ! Int. energy of intercepted water
+                                + qintercepted         ! ! Int. energy of intercepted water
 
 
          !----- Add the contribution of this cohort to total heat and evapotranspiration. -!
@@ -1149,8 +1124,9 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          ! wshed:  Water passing through vegetated canopy to soil surface                  !
          !         (enters virtual layer first), [kg/m2/s]                                 !
          !---------------------------------------------------------------------------------!
-         wshed_tot = wshed_tot + wshed
+         wshed_tot  = wshed_tot  + wshed
          qwshed_tot = qwshed_tot + qwshed
+         dwshed_tot = dwshed_tot + dwshed
 
 
       else
@@ -1169,8 +1145,9 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          !      the threshold of lai_min make up an appreciable fraction of the total LAI, !
          !      then we better account for it.                                             !
          !---------------------------------------------------------------------------------!
-         wshed_tot  = wshed_tot  + intercepted*cpatch%lai(ico)  * laii
-         qwshed_tot = qwshed_tot + qintercepted*cpatch%lai(ico) * laii
+         wshed_tot  = wshed_tot  + intercepted_tot*cpatch%lai(ico)  * laii
+         qwshed_tot = qwshed_tot + qintercepted_tot*cpatch%lai(ico) * laii
+         dwshed_tot = dwshed_tot + dintercepted_tot*cpatch%lai(ico) * laii
 
       end if
 

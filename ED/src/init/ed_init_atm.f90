@@ -25,6 +25,7 @@ subroutine ed_init_atm_ar
   integer :: ncohorts
   real    :: site_area_i, poly_area_i
   real    :: poly_lai, poly_nplant
+  real    :: surface_temp, surface_fliq
   integer, parameter :: harvard_override = 0
   include 'mpif.h'
   integer :: ping,ierr
@@ -172,7 +173,7 @@ subroutine ed_init_atm_ar
                       cpoly%met(isi)%rhos,  &
                       csite%can_shv(ipa),  &
                       csite%ground_shv(ipa),  &
-                      csite%surface_ssh(ipa))
+                      csite%surface_ssh(ipa), surface_temp, surface_fliq)
               endif
               
               ! Compute patch-level LAI, vegetation height, and roughness
