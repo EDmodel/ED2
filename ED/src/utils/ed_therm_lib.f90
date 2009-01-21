@@ -61,15 +61,12 @@ contains
      real :: leaf_carbon         ! leaf biomass per plant
      real :: structural_carbon   ! structural biomass per plant
      real :: nplants             ! Number of plants per square meter
-!     real :: spec_hcap_leaf
-!     real :: spec_hcap_stem
-     
 
      real,parameter :: biomass_factor = 1.0 ! This is a biomass kluge factor
                                              ! The model is much faster and more stable
                                              ! When heat capacity is high.
 
-     real,parameter :: min_hcapveg = 300.0    
+     real,parameter :: min_hcapveg = 200.0    
 
      integer :: pft     
      real,parameter :: veg_temp = 285.0      ! RIght now we are using a nominal vegetation
