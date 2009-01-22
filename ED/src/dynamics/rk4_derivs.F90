@@ -127,11 +127,10 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
                                    , cliqvlme             & ! intent(in)
                                    , cpi                  & ! intent(in)
                                    , alvi                 & ! intent(in)
-                                   , allivlme             & ! intent(in)
                                    , t3ple                & ! intent(in)
                                    , cliq                 & ! intent(in)
                                    , cice                 & ! intent(in)
-                                   , alli                 & ! intent(in)
+                                   , tsupercool           & ! intent(in)
                                    , wdns                 & ! intent(in)
                                    , wdnsi                ! ! intent(in)
    use grid_coms            , only : nzg                  & ! intent(in)
@@ -475,7 +474,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
                      **(2. * soil(nsoil)%slbs + 3.)                                        &
                    * (psiplusz(nzg) - sngl(initp%virtual_water)/2000.0) & !diff. in pot.
                    * .5 * (initp%soil_fracliq(nzg)+ fracliq)         ! mean liquid fraction
-            qinfilt = infilt * (cliqvlme * tempk + allivlme)
+            qinfilt = infilt * cliqvlme * (tempk - tsupercool)
             !----- Adjust other rates accordingly -----------------------------------------!
             w_flux(nzg+1)  = w_flux(nzg+1) + infilt
             qw_flux(nzg+1) = qw_flux(nzg+1)+ qinfilt
@@ -494,7 +493,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
                      **(2. * soil(nsoil)%slbs + 3.)                                        &
                    * (psiplusz(nzg) - surface_water/2.0)     &  !difference in potentials
                    * .5 * (initp%soil_fracliq(nzg)+ fracliq)    ! mean liquid fraction
-            qinfilt = infilt * (cliqvlme * tempk + allivlme)
+            qinfilt = infilt * cliqvlme * (tempk - tsupercool)
             !----- Adjust other rates accordingly -----------------------------------------!
             w_flux(nzg+1)             = w_flux(nzg+1) + infilt
             qw_flux(nzg+1)            = qw_flux(nzg+1)+ qinfilt 
@@ -539,7 +538,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
          end if
       end if
       !----- Only liquid water is allowed to flow, find qw accordingly --------------------!
-      qw_flux(k) = w_flux(k) * (cliqvlme * initp%soil_tempk(k) + allivlme)
+      qw_flux(k) = w_flux(k) * cliqvlme * (initp%soil_tempk(k) - tsupercool)
       dinitp%avg_smoist_gg(k-1) = w_flux(k)*wdns   ! Diagnostic
    end do
 
@@ -555,7 +554,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
                   * freezeCor
       if (soil_liq(lsl) == 0.) w_flux(lsl) = 0.
       !----- Only  liquid water is allowed to flow, find qw accordingly -------------------!
-      qw_flux(lsl) = w_flux(lsl) * (cliqvlme * initp%soil_tempk(lsl) + allivlme)
+      qw_flux(lsl) = w_flux(lsl) * cliqvlme * (initp%soil_tempk(lsl) - tsupercool)
    else
       !----- Bedrock, no flux accross it. -------------------------------------------------!
       w_flux(lsl)  = 0.
@@ -583,7 +582,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
                   dinitp%soil_water(k2) = dinitp%soil_water(k2) - dble(wloss)
                   
                   !----- Energy: only liquid water is lost through transpiration. ---------!
-                  qwloss = wloss * (cliqvlme * initp%soil_tempk(k2) + allivlme)
+                  qwloss = wloss * cliqvlme * (initp%soil_tempk(k2) - tsupercool)
                   dinitp%soil_energy(k2)   = dinitp%soil_energy(k2)   - qwloss
                   dinitp%avg_smoist_gc(k2) = dinitp%avg_smoist_gc(k2) - wdns*wloss
                   dinitp%ebudget_latent    = dinitp%ebudget_latent    + qwloss

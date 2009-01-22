@@ -25,7 +25,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,mzs,npat,ifm   &
 
   use io_params, only : timstr
 
-  use rconstants, only : cpi,allivlme,cliqvlme,t00       ! INTENT(IN)
+  use rconstants, only : cpi,tsupercool,cicevlme,cliqvlme,t00,t3ple       ! INTENT(IN)
 
   use leaf_coms, only : soilcp,  & ! INTENT(IN)
        slmsts,                   & ! INTENT(IN)
@@ -39,7 +39,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,mzs,npat,ifm   &
   !---------
   integer :: n1,n2,n3,mzg,mzs,npat,ifm,i,j,k,ipat,nveg,nsoil
 
-  real :: c1,airtemp, pis
+  real :: c1,airtemp, pis,tsoil
 
   real(kind=8) :: dif_time
   real :: seconds
@@ -267,10 +267,15 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,mzs,npat,ifm   &
                  soil_water(k,i,j,ipat) = max(soilcp(nsoil),  &
                       slmstr(k)*slmsts(nsoil))
                  !              print*,soil_water(k,i,j,ipat)
-
-                 soil_energy(k,i,j,ipat) = (airtemp + stgoff(k))   &
-                      * (slcpd(nsoil) + soil_water(k,i,j,ipat)  * cliqvlme)  &
-                      + soil_water(k,i,j,ipat)  * allivlme
+                 tsoil = airtemp + stgoff(k)
+                 if (tsoil >= t3ple) then
+                    soil_energy(k,i,j,ipat) = slcpd(nsoil) * tsoil                         &
+                                            + soil_water(k,i,j,ipat) * cliqvlme            &
+                                            * (tsoil-tsupercool)
+                 else
+                    soil_energy(k,i,j,ipat) = tsoil  * ( slcpd(nsoil)                      &
+                                                       + soil_water(k,i,j,ipat) * cicevlme)
+                 end if
               enddo
            enddo
         enddo
@@ -502,9 +507,15 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,mzs,npat,ifm   &
            do k = 1,mzg
               nsoil = nint(soil_text(k,i,j,ipat))
 
-              soil_energy(k,i,j,ipat) = (airtemp + stgoff(k))   &
-                   * (slcpd(nsoil) + soil_water(k,i,j,ipat)  * cliqvlme)  &
-                   + soil_water(k,i,j,ipat)  * allivlme
+              tsoil = airtemp + stgoff(k)
+              if (tsoil >= t3ple) then
+                 soil_energy(k,i,j,ipat) = slcpd(nsoil) * tsoil                         &
+                                         + soil_water(k,i,j,ipat) * cliqvlme            &
+                                         * (tsoil-tsupercool)
+              else
+                 soil_energy(k,i,j,ipat) = tsoil  * ( slcpd(nsoil)                      &
+                                                    + soil_water(k,i,j,ipat) * cicevlme)
+              end if
            enddo
         enddo
      enddo

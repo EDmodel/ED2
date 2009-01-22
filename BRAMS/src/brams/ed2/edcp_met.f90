@@ -7,7 +7,7 @@ subroutine copy_atm2lsm(ifm,init)
        master_num,mmzp,mmxp,mmyp,  &
        ia,iz,ja,jz,ia_1,iz1,ja_1,jz1
   
-  use rconstants,only:cpi,cp,p00,rocp,rgas,cliq,alli,cice,t3ple,cpor
+  use rconstants,only:cpi,cp,p00,rocp,rgas,cliq,alli,cice,t3ple,cpor,tsupercool
   use met_driver_coms, only: have_co2,initial_co2
   use ed_state_vars,only: edgrid_g,edtype,polygontype
   use ed_node_coms,only:mynum
@@ -231,7 +231,8 @@ subroutine copy_atm2lsm(ifm,init)
         
         ! qpcpg, dpcpg
         if(cpoly%met(isi)%atm_tmp > t3ple)then
-           cpoly%met(isi)%qpcpg = (cliq * cpoly%met(isi)%atm_tmp + alli) * cpoly%met(isi)%pcpg
+           cpoly%met(isi)%qpcpg = cliq * (cpoly%met(isi)%atm_tmp - tsupercool)             &
+                                * cpoly%met(isi)%pcpg
            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg * 0.001)
         else
            cpoly%met(isi)%qpcpg = cice * cpoly%met(isi)%atm_tmp * cpoly%met(isi)%pcpg

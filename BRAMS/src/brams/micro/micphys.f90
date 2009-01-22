@@ -130,7 +130,7 @@ module micphys
    real, dimension(ninc)               :: rmlttab
    real, dimension(ninc,nhcat)         :: enmlttab
    real, dimension(ninc,ndns)          :: shedtab
-   real, dimension(2)                  :: sc,sk,sl
+   real, dimension(2)                  :: sc,sk,sl,sq
    real, dimension(7)                  :: sj,pcprx,accpx
 
    real, dimension(nd1cc)              :: r1tabcc,c1tabcc,c2tabcc

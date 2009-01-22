@@ -272,7 +272,7 @@ implicit none
 
 integer :: n1,n2,n3,mzg,mzs,npat,ifm,i,j,k,ipat,nveg,nsoil
 
-real :: c1,airtemp
+real :: c1,airtemp,tsoil
 
 real, dimension(n1,n2,n3) :: theta,pi0,pp,rv
 real, dimension(n2,n3)    :: rvv,prsv,piv,vt2da,vt2db,glat,glon,zot  &
@@ -327,9 +327,8 @@ do j = 1,n3
       can_temp(i,j,1) = airtemp
       can_rvap(i,j,1) = rv(k2,i,j)
 
-      soil_energy(mzg,i,j,1) = alli  &
-         + cliq * (seatp(i,j) + (seatf(i,j) - seatp(i,j))  &
-         * timefac_sst )
+      soil_energy(mzg,i,j,1) =  cliq * (seatp(i,j) + (seatf(i,j) - seatp(i,j))  &
+         * timefac_sst  - tsupercool)
 
       do ipat = 2,npat
 
@@ -373,10 +372,11 @@ do j = 1,n3
 ! temperature is below zero C, the factor of cliqvlme should be changed to cicevlme
 ! to reflect the reduced heat capacity of ice compared to liquid.  These
 ! changes may be alternatively be done in subroutine sfcinit_user in ruser.f
-
-            soil_energy(k,i,j,ipat) = (airtemp + stgoff(k))  &
-               * (slcpd(nsoil) + soil_water(k,i,j,ipat) * cliqvlme)  &
-               + soil_water(k,i,j,ipat) * allivlme
+            tsoil = airtemp + stgoff(k)
+            soil_energy(k,i,j,ipat) = slcpd(nsoil) * tsoil   &
+                                    + soil_water(k,i,j,ipat) &
+                                    * cliqvlme * (tsoil - tsupercool)
+               
 
          enddo
 
@@ -393,7 +393,7 @@ do j = 1,n3
                 nint(leaf_class(i,j,ipat)) == 20) then
                if (k .eq. 1) then
                   sfcwater_mass(k,i,j,ipat) = 100.
-                  sfcwater_energy(k,i,j,ipat) = cliq * airtemp + alli
+                  sfcwater_energy(k,i,j,ipat) = cliq * (airtemp -tsupercool)
                   sfcwater_depth(k,i,j,ipat) = .1
                endif
             endif

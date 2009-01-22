@@ -704,7 +704,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
    use hydrology_constants
    use hydrology_coms, only: MoistSatThresh
    use ed_state_vars,  only: polygontype, sitetype 
-   use consts_coms, only : cliqvlme,allivlme,wdns
+   use consts_coms, only : cliqvlme,wdns,tsupercool
    use soil_coms, only: soil,slz,dslz,dslzi
    use grid_coms, only: nzg
    use therm_lib, only : qwtk8
@@ -788,7 +788,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
       endif
 
       !!update soil heat
-      dh = dw*(cliqvlme*csite%soil_tempk(k,ipa)+allivlme)
+      dh = dw*cliqvlme*(csite%soil_tempk(k,ipa)-tsupercool)
       csite%soil_energy(k,ipa) = csite%soil_energy(k,ipa) + dh
       sheat = sheat - dh*dslz(k)   !cumulative sum as return value
       swater = swater - dw*dslz(k)
@@ -823,7 +823,7 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
    use ed_state_vars, only: polygontype, sitetype
    use soil_coms, only: soil,slz,dslz,dslzi,slcons1
    use misc_coms, only: dtlsm
-   use consts_coms, only: cliqvlme, allivlme
+   use consts_coms, only: cliqvlme, tsupercool
    implicit none
 
    type(polygontype) , target        :: cpoly
@@ -861,7 +861,7 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
       bf = bf + real(csite%soil_water(slsl,ipa)-dble(soil(nsoil)%soilcp))*dslz(slsl)
       csite%soil_water(slsl,ipa) = dble(soil(nsoil)%soilcp)
    end if
-   csite%soil_energy(slsl,ipa) = csite%soil_energy(slsl,ipa)-bf*(cliqvlme*csite%soil_tempk(slsl,ipa)+allivlme)
+   csite%soil_energy(slsl,ipa) = csite%soil_energy(slsl,ipa)-bf*cliqvlme*(csite%soil_tempk(slsl,ipa)-tsupercool)
 
    baseflow = bf*1000.0/dtlsm !! reassign for return (m/step->mm/sec)
    return
@@ -1049,7 +1049,7 @@ subroutine calcHydroSurface()
   use grid_coms, only: ngrids, nzg
   use misc_coms, only: dtlsm
   use grid_coms,only:ngrids
-  use consts_coms, only : cliqvlme,cliq,t3ple,allivlme,alli,cicet3,cliqt3
+  use consts_coms, only : cliqvlme,cliq,t3ple,alli,cicet3,tsupercool
   use soil_coms, only: water_stab_thresh
   use therm_lib, only: qtk
   implicit none
@@ -1111,12 +1111,12 @@ subroutine calcHydroSurface()
                     !! calculate water depth
                     swd_i = csite%sfcwater_mass(top_surf_water,ipa)*0.001*fracliq !convert liquid fraction from kg to meters
                     surf_water_depth = swd_i
-                    surf_water_heat = swd_i*(cliqvlme*tempk+allivlme)
+                    surf_water_heat = swd_i*cliqvlme*(tempk-tsupercool)
                     do i=(top_surf_water-1),1,-1
                        call qtk(csite%sfcwater_energy(i,ipa),tempk,fracliq)
                        swd_i = csite%sfcwater_mass(top_surf_water,ipa)*0.001*fracliq
                        surf_water_depth = surf_water_depth + swd_i
-                       surf_water_heat = surf_water_heat + swd_i*(cliqvlme*tempk+allivlme)
+                       surf_water_heat = surf_water_heat + swd_i*cliqvlme*(tempk-tsupercool)
                     end do
                     !!sanity check
                     if(surf_water_depth > 1.0) then  !!if there's more than 1 m of standing water
@@ -1239,7 +1239,7 @@ subroutine calcHydroSurface()
                     !!if surface water is too small, keep in equilibrium with soil
                     if(csite%sfcwater_mass(i,ipa) < water_stab_thresh   &
                          .and. i == 1) then
-                       csite%sfcwater_energy(i,ipa) = cliq * csite%soil_tempk(nzg,ipa)+alli
+                       csite%sfcwater_energy(i,ipa) = cliq * (csite%soil_tempk(nzg,ipa)-tsupercool)
                     end if
                  end if
                  !! if sfcwater_depth < amount of water, set to water depth
@@ -1248,7 +1248,7 @@ subroutine calcHydroSurface()
                  end if
                  !! if sfcwater_energy < 0, set to freezing
                  if(csite%sfcwater_energy(i,ipa) < cicet3) then
-                    csite%sfcwater_energy(i,ipa) = cliqt3+alli
+                    csite%sfcwater_energy(i,ipa) = cicet3+alli
                  end if
                  !!check for NaN
                  if(csite%sfcwater_energy(i,ipa) /= csite%sfcwater_energy(i,ipa))then
@@ -1471,12 +1471,12 @@ end subroutine calcHydroSurface
 !!!!!!               !! water depth
 !!!!!!               swd_i = cpatch%sfcwater_mass(top_surf_water)*0.001*fracliq
 !!!!!!               surf_water_depth = swd_i
-!!!!!!               surf_water_heat = swd_i*(cliqvlme*tempk+allivlme)
+!!!!!!               surf_water_heat = swd_i*cliqvlme*(tempk-tsupercool)
 !!!!!!               do i=(top_surf_water-1),1,-1
 !!!!!!                  call qtk(cpatch%sfcwater_energy(i),tempk,fracliq)
 !!!!!!                  swd_i = cpatch%sfcwater_mass(top_surf_water)*0.001*fracliq
 !!!!!!                  surf_water_depth = surf_water_depth + swd_i
-!!!!!!                  surf_water_heat = surf_water_heat + swd_i*(cliqvlme*tempk+allivlme)
+!!!!!!                  surf_water_heat = surf_water_heat + swd_i*cliqvlme*(tempk-tsupercool)
 !!!!!!               enddo
 !!!!!!               
 !!!!!!               !! calculate flow velocity (m/s)                 

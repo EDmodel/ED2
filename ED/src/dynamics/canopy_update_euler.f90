@@ -85,7 +85,7 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
   use ed_state_vars,only:sitetype,patchtype
 
   use canopy_radiation_coms, only: lai_min
-  use consts_coms, only: cice, cliq, alli, t3ple
+  use consts_coms, only: cice, cliq, alli, t3ple, tsupercool
   use therm_lib, only: qwtk
 
   implicit none
@@ -160,8 +160,9 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
               if (fracliqv <= .0001) then
                  qwshed_canopy = qwshed_canopy + cice * cpatch%veg_temp(ico) * wshed_layer
               else
-                 qwshed_canopy = qwshed_canopy +   &
-                      (cliq * cpatch%veg_temp(ico) + fracliqv * alli) * wshed_layer
+                 qwshed_canopy = qwshed_canopy + wshed_layer &
+                               * ( fracliqv*cliq*(cpatch%veg_temp(ico)-tsupercool) &
+                                 + (1.-fracliqv)*cice*cpatch%veg_temp(ico))
               endif
               
               cpatch%veg_water(ico) = cpatch%veg_water(ico) - wshed_layer
@@ -516,7 +517,7 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
 
   use ed_state_vars,only:sitetype,patchtype
   use canopy_radiation_coms, only: lai_min
-  use consts_coms, only: cp, alvl, alvi, cliq, cice, alli, t3ple
+  use consts_coms, only: cp, alvl, alvi, cliq, cice, alli, t3ple,tsupercool
   use grid_coms, only: nzg
   use therm_lib, only: rhovsil,rhovsilp
 
@@ -640,7 +641,7 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
         if(tvegaux > 0.)then
            csite%mean_latflux(ipa) = csite%mean_latflux(ipa) +   &
                 vp_gradient * et_conductance * alvl -   &
-                (cliq *cpatch%veg_temp(ico)  + alli) * explicit_deriv_portion(ind2)
+                (cliq *(cpatch%veg_temp(ico)  -tsupercool)) * explicit_deriv_portion(ind2)
            explicit_deriv_portion(ind1) = dQdt / (cpatch%hcapveg(ico) * cpatch%lai(ico) /   &
                 csite%lai(ipa) + cliq *   &
                 cpatch%veg_water(ico))

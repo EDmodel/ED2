@@ -219,9 +219,8 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz  &
 
    ! Update water internal energy from time-dependent SST
 
-         leaf%soil_energy(mzg,i,j,1) = alli  &
-            + cliq * (leaf%seatp(i,j) + (leaf%seatf(i,j) - leaf%seatp(i,j))  &
-            * timefac_sst)
+         leaf%soil_energy(mzg,i,j,1) =  cliq * (leaf%seatp(i,j) - tsupercool               & 
+                                     + (leaf%seatf(i,j) - leaf%seatp(i,j)) * timefac_sst)
 
    ! Fill surface precipitation arrays for input to leaf
 
@@ -727,7 +726,7 @@ subroutine leaftw(mzg,mzs,np  &
             wt       = w + soil_water(mzg) * wdns * dslz(mzg)
             soilhcap = slcpd(nsoil) * dslz(mzg)
             call qwtk(qwt,wt,soilhcap,tempk(k+mzg),fracliq(k+mzg))
-            qw = w * ( fracliq(k+mzg)*(cliq*tempk(k+mzg)+alli)                             &
+            qw = w * ( fracliq(k+mzg)*cliq*(tempk(k+mzg)-tsupercool)                       &
                      + (1.-fracliq(k+mzg))*cice*tempk(k+mzg)  )
             tempk(mzg)       = tempk(k+mzg)
             fracliq(mzg)     = fracliq(k+mzg)
@@ -750,11 +749,11 @@ subroutine leaftw(mzg,mzs,np  &
             soilcap = wdns * max (0.,-slz(mzg) * (slmsts(nsoil) - soil_water(mzg)))
             wfreeb  = min(wfreeb, soilcap)
             
-            qwfree  = wfreeb * (cliq * tempk(k+mzg) + alli)
+            qwfree  = wfreeb * cliq * (tempk(k+mzg) - tsupercool)
             soil_water(mzg) = soil_water(mzg) + wdnsi * wfreeb * dslzi(mzg)
             soil_energy(mzg) = soil_energy(mzg) + qwfree * dslzi(mzg)
          else
-            qwfree = wfreeb * (cliq * tempk(k+mzg) + alli)
+            qwfree = wfreeb * cliq * (tempk(k+mzg) - tsupercool)
          end if
 
          sfcwater_mass(k)  = w - wfreeb
@@ -791,7 +790,8 @@ subroutine leaftw(mzg,mzs,np  &
          snowmin = 3.0
          newlayers = 1
          do k = 2,mzs
-            if (snowmin * thicknet(k) <= totsnow .and. sfcwater_energy(k) < clt3lf) then
+            if (snowmin * thicknet(k) <= totsnow .and. sfcwater_energy(k) < cicet3+alli)   &
+            then
                newlayers = newlayers + 1
             end if
          end do
@@ -870,7 +870,7 @@ subroutine leaftw(mzg,mzs,np  &
       else
          wflux(k) = - min(-wflux(k),soil_liq(k),half_soilair(k-1))
       endif
-      qwflux(k) = wflux(k) * (cliqvlme * tempk(k) + allivlme)
+      qwflux(k) = wflux(k) * cliqvlme * (tempk(k) - tsupercool)
 
    end do
 
@@ -903,7 +903,8 @@ subroutine leaftw(mzg,mzs,np  &
 
    wloss = min(transp * dslzidt(ktrans) * wdnsi, wg, soil_water(ktrans) - soilcp(nsl))
    soil_water(ktrans)  = soil_water(ktrans)  - wloss
-   soil_energy(ktrans) = soil_energy(ktrans) - wloss * (cliqvlme*tempk(ktrans) + allivlme)
+   soil_energy(ktrans) = soil_energy(ktrans)                                               &
+                       - wloss * cliqvlme * (tempk(ktrans) - tsupercool)
 
    !---------------------------------------------------------------------------------------!
    ! Compute ground vap mxrat for availability on next timestep; put into ground_rsat.     !
@@ -1150,7 +1151,7 @@ subroutine canopy(mzg,mzs,ksn,nveg  &
          qwtot = qpcpgc * vf + hcapveg * tvegk
          call qwtk(qwtot,pcpgc * vf,hcapveg,veg_temp,fracliqv)
          ! From RAMS 6.0
-         qwshed = qwshed + wshed0 * ( fracliqv *(cliq *tvegk + alli) &
+         qwshed = qwshed + wshed0 * ( fracliqv * cliq * (tvegk - tsupercool) &
                                     + (1.-fracliqv) * cice * tvegk )
 
    ! Update temperature and moisture of canopy.  hcapcan [J/m2/K] and
@@ -1738,7 +1739,7 @@ subroutine sfc_pcp(nqparm,level,i,j,cuparm,micro)
    use mem_micro
    use mem_cuparm
    use leaf_coms
-   use rconstants, only : cliq,alli,wdnsi
+   use rconstants, only : cliq,tsupercool,wdnsi
 
    implicit none
 
@@ -1752,7 +1753,7 @@ subroutine sfc_pcp(nqparm,level,i,j,cuparm,micro)
          pcpgl  = pcpgl + cuparm%conprr(i,j,icld)
       end do
       pcpgl  = pcpgl  * dtll 
-      qpcpgl = pcpgl  * (cliq * ths * pis + alli)
+      qpcpgl = pcpgl  * cliq * (ths * pis - tsupercool)
       dpcpgl = pcpgl  * wdnsi
       pcpgc  = dtlc_factor * pcpgl
       qpcpgc = dtlc_factor * qpcpgl

@@ -496,7 +496,7 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
    type(sitetype)    , pointer :: csite
    type(patchtype)   , pointer :: cpatch
    
-   integer                  :: ipy,isi,ipa
+   integer                  :: ipy,isi,ipa,ico
    real, dimension(n_pft)   :: patchsum_lai
    
    polyloop: do ipy=1,cgrid%npolygons
@@ -511,13 +511,14 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
          patchsum_lai = 0.
          patchloop: do ipa=1,csite%npatches
             cpatch => csite%patch(ipa)
-            
-            cpatch%dmean_gpp       = cpatch%dmean_gpp       * timefac1
-            cpatch%dmean_gpp_pot   = cpatch%dmean_gpp_pot   * timefac1
-            cpatch%dmean_gpp_max   = cpatch%dmean_gpp_max   * timefac1
-            cpatch%dmean_leaf_resp = cpatch%dmean_leaf_resp * timefac1
-            cpatch%dmean_root_resp = cpatch%dmean_root_resp * timefac1
-         
+            !----- Included a loop so it won't crash with empty cohorts... ----------------!
+            cohortloop: do ico=1,cpatch%ncohorts
+               cpatch%dmean_gpp(ico)       = cpatch%dmean_gpp(ico)       * timefac1
+               cpatch%dmean_gpp_pot(ico)   = cpatch%dmean_gpp_pot(ico)   * timefac1
+               cpatch%dmean_gpp_max(ico)   = cpatch%dmean_gpp_max(ico)   * timefac1
+               cpatch%dmean_leaf_resp(ico) = cpatch%dmean_leaf_resp(ico) * timefac1
+               cpatch%dmean_root_resp(ico) = cpatch%dmean_root_resp(ico) * timefac1
+            end do cohortloop
          end do patchloop
       end do siteloop
    
@@ -630,15 +631,20 @@ subroutine normalize_ed_daily_output_vars(cgrid)
          patchloop: do ipa=1,csite%npatches
             cpatch => csite%patch(ipa)
             
-            ! These are in kg/plant/day, converting to kg/m²/day
-            patchsum_growth_resp  = patchsum_growth_resp  + sum(cpatch%growth_respiration  * cpatch%nplant) * csite%area(ipa)
-            patchsum_storage_resp = patchsum_storage_resp + sum(cpatch%storage_respiration * cpatch%nplant) * csite%area(ipa)
-            patchsum_vleaf_resp   = patchsum_vleaf_resp   + sum(cpatch%vleaf_respiration   * cpatch%nplant) * csite%area(ipa)
-
-            do ipft=1,n_pft
-               cpoly%lai_pft(ipft,isi) = cpoly%lai_pft(ipft,isi) + &
-                    sum(cpatch%lai,cpatch%pft == ipft) * csite%area(ipa) * site_area_i
-            end do
+            if (cpatch%ncohorts > 0) then
+               ! These are in kg/plant/day, converting to kg/m²/day
+               patchsum_growth_resp  = patchsum_growth_resp + csite%area(ipa)              &
+                                     * sum(cpatch%growth_respiration  * cpatch%nplant)
+               patchsum_storage_resp = patchsum_storage_resp + csite%area(ipa)             &
+                                     * sum(cpatch%storage_respiration * cpatch%nplant)
+               patchsum_vleaf_resp   = patchsum_vleaf_resp   + csite%area(ipa)             &
+                                     * sum(cpatch%vleaf_respiration   * cpatch%nplant)
+               do ipft=1,n_pft
+                  cpoly%lai_pft(ipft,isi) = cpoly%lai_pft(ipft,isi)                        &
+                                          + sum(cpatch%lai,cpatch%pft == ipft)             &
+                                          * csite%area(ipa) * site_area_i
+               end do
+            end if
          end do patchloop
 
          sitesum_growth_resp  = sitesum_growth_resp  + (patchsum_growth_resp    *site_area_i) * cpoly%area(isi)

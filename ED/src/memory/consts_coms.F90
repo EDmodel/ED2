@@ -22,8 +22,8 @@ Module consts_coms
      , b_alvi       => alvi       , b_alli       => alli       , b_allivlme   => allivlme  &
      , b_allii      => allii      , b_wdns       => wdns       , b_erad2      => erad2     &
      , b_sqrtpii    => sqrtpii    , b_onesixth   => onesixth   , b_cicet3     => cicet3    &
-     , b_cliqt3     => cliqt3     , b_wdnsi      => wdnsi      , b_clt3lf     => clt3lf    &
-     , b_gorm       => gorm       , b_idns       => idns       , b_idnsi      => idnsi
+     , b_wdnsi      => wdnsi      , b_gorm       => gorm       , b_idns       => idns      &
+     , b_idnsi      => idnsi      , b_tsupercool => tsupercool
 
    implicit none
 
@@ -54,10 +54,9 @@ Module consts_coms
    real, parameter :: allii      = b_allii      , wdns       = b_wdns
    real, parameter :: erad2      = b_erad2      , sqrtpii    = b_sqrtpii
    real, parameter :: onesixth   = b_onesixth   , cicet3     = b_cicet3
-   real, parameter :: cliqt3     = b_cliqt3     , wdnsi      = b_wdnsi
-   real, parameter :: clt3lf     = b_clt3lf     , gorvap     = b_gorm
+   real, parameter :: wdnsi      = b_wdnsi      , gorvap     = b_gorm
    real, parameter :: idns       = b_idns       , idnsi      = b_idnsi
-
+   real, parameter :: tsupercool = b_tsupercool
 #else
    implicit none
 
@@ -186,8 +185,26 @@ Module consts_coms
    real, parameter :: allivlme = wdns * alli   ! Lat. heat × water density      [     J/m³]
    real, parameter :: allii    = 1./alli       ! 1/Latent heat - fusion         [     kg/J]
    real, parameter :: cicet3   = cice * t3ple  ! C_ice × T3                     [     J/kg]
-   real, parameter :: cliqt3   = cliq * t3ple  ! C_liquid × T3                  [     J/kg]
-   real, parameter :: clt3lf   = cliqt3 + alli ! C_liquid × T3 + Lf             [     J/kg]
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Tsupercool is the temperature of supercooled water that will cause the energy to   !
+   ! be the same as ice at 0K. It can be used as an offset for temperature when defining   !
+   ! internal energy. The next two methods of defining the internal energy for the liquid  !
+   ! part:                                                                                 !
+   !                                                                                       !
+   !   Uliq = Mliq × [ Cice × T3 + Cliq × (T - T3) + Lf]                                   !
+   !   Uliq = Mliq × Cliq × (T - Tsupercool)                                               !
+   !                                                                                       !
+   !     You may be asking yourself why would we have the ice term in the internal energy  !
+   ! definition. The reason is that we can think that internal energy is the amount of     !
+   ! energy a parcel received to leave the 0K state to reach the current state (or if you  !
+   ! prefer the inverse way, Uliq is the amount of energy the parcel would need to lose to !
+   ! become solid at 0K.)                                                                  !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: tsupercool = t3ple - (cicet3+alli)/cliq
    !---------------------------------------------------------------------------------------!
 
 #endif

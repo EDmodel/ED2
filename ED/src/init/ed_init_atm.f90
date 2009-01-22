@@ -4,7 +4,7 @@ subroutine ed_init_atm_ar
   use misc_coms,     only: ied_init_mode,runtype
   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype,edgrid_g
   use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr
-  use consts_coms,    only: allivlme, cliqvlme, cicevlme, t3ple
+  use consts_coms,    only: cliqvlme, cicevlme, t3ple, tsupercool
   use grid_coms,      only: nzs, nzg, ngrids
   use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
@@ -145,9 +145,8 @@ subroutine ed_init_atm_ar
                                                           ,slmstr(k) * soil(nsoil)%slmsts))
                        csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
                                                 * csite%soil_tempk(k,ipa)                  &
-                                                + sngl(csite%soil_water(k,ipa))            &
-                                                * ( cliqvlme * csite%soil_tempk(k,ipa)     &
-                                                  + allivlme)
+                                                + sngl(csite%soil_water(k,ipa)) * cliqvlme &
+                                                * (csite%soil_tempk(k,ipa) - tsupercool)
                     end do
                  else
                     do k = 1, nzg
@@ -419,7 +418,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
 
   use ed_state_vars, only: edtype, polygontype, sitetype, patchtype
   use soil_coms, only: soilstate_db, soil,slz
-  use consts_coms, only: allivlme, cliqvlme, cicevlme, t3ple
+  use consts_coms, only: cliqvlme, cicevlme, t3ple, tsupercool
   use grid_coms, only: nzg, ngrids
   use ed_therm_lib,only:ed_grndvap
 
@@ -523,8 +522,8 @@ subroutine read_soil_moist_temp_ar(cgrid)
                              csite%soil_energy(k,ipa) = soil(ntext)%slcpd                  &
                                                       * csite%soil_tempk(k,ipa)            &
                                                       + sngl(csite%soil_water(k,ipa))      &
-                                                      * ( cliqvlme*csite%soil_tempk(k,ipa) &
-                                                        + allivlme)
+                                                      * cliqvlme *(csite%soil_tempk(k,ipa) &
+                                                                 - tsupercool)
                              csite%soil_fracliq(k,ipa) = 1.0
                           else
                              csite%soil_energy(k,ipa) = soil(ntext)%slcpd                  &

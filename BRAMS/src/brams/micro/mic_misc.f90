@@ -30,7 +30,8 @@ subroutine each_call(m1,dtlt)
           ,alvi           & ! intent(in)
           ,alli           & ! intent(in)
           ,cliq           & ! intent(in)
-          ,cice           ! ! intent(in)
+          ,cice           & ! intent(in)
+          ,tsupercool     ! ! intent(in)
 
    use micphys, only :    &
            jnmb           & ! intent(in)
@@ -46,7 +47,8 @@ subroutine each_call(m1,dtlt)
           ,sk             & ! intent(out)
           ,jhcat          & ! intent(out)
           ,sh             & ! intent(out)
-          ,sm             ! ! intent(out)
+          ,sm             & ! intent(out)
+          ,sq             ! ! intent(out)
 
    implicit none
 
@@ -75,6 +77,8 @@ subroutine each_call(m1,dtlt)
    sj(7) = 1
    sk(1) = alli
    sk(2) = 0.
+   sq(1) = tsupercool
+   sq(2) = 0.
 
    do lcat = 1,7
       if (jnmb(lcat) == 2) then
@@ -148,7 +152,7 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
        ,cccnx          & ! intent(out)
        ,cifnx          ! ! intent(out)
 
-   use rconstants, only : p00, cpi, cpor,toodry,cliq,cice,alli,t3ple,cliqt3
+   use rconstants, only : p00, cpi, cpor,toodry,cliq,cice,alli,t3ple,cicet3
    use therm_lib , only : qtk
 
    implicit none
@@ -674,7 +678,6 @@ end subroutine enemb
 subroutine x02(lcat)
 
    use rconstants, only: &
-        cliqt3,          & ! INTENT(IN)
         cicet3,          & ! INTENT(IN)
         alli               ! INTENT(IN)
 
@@ -797,9 +800,11 @@ subroutine x02(lcat)
                ricetor6   = min(rx(k,lcat) - rmelt,rmelt)
                rx(k,lcat) = rx(k,lcat) - rmelt - ricetor6
                rx(k,6)    = rx(k,6) + rmelt + ricetor6
-               qr(k,6)    = qr(k,6) + rmelt * (cliqt3 + alli) + ricetor6 * cicet3
+               qr(k,lcat) = qr(k,lcat) - rmelt * (cicet3 + alli) - ricetor6 * cicet3
+               qr(k,6)    = qr(k,6) + rmelt * (cicet3 + alli) + ricetor6 * cicet3
                qx(k,lcat) = cicet3
-               if (rx(k,6) > rxmin(6)) qx(k,6)    = qr(k,6) / rx(k,6)
+               if (rx(k,6) > rxmin(6))       qx(k,6)    = qr(k,6)    / rx(k,6)
+               if (rx(k,lcat) > rxmin(lcat)) qx(k,lcat) = qr(k,lcat) / rx(k,lcat)
 
                !----- Keep the above the same with ricetor6 -------------------------------!
                fracmloss  = (rmelt + ricetor6) * rinv
@@ -819,7 +824,7 @@ subroutine x02(lcat)
 
             if (fracliq > 0.95) then
                rx(k,2) = rx(k,2) + rx(k,6)
-               qr(k,2) = qr(k,2) + rx(k,6) * (fracliq*(cliqt3+alli)+(1.-fracliq)*cicet3)
+               qr(k,2) = qr(k,2) + qr(k,6)
                cx(k,2) = cx(k,2) + cx(k,6)
                qx(k,2) = qr(k,2) / rx(k,2)
                rx(k,6) = 0.
@@ -840,7 +845,7 @@ subroutine x02(lcat)
 
             if (fracliq > 0.95) then
                rx(k,2) = rx(k,2) + rx(k,7)
-               qr(k,2) = qr(k,2) + rx(k,7) * (fracliq*(cliqt3+alli)+(1.-fracliq)*cicet3)
+               qr(k,2) = qr(k,2) + qr(k,7)
                cx(k,2) = cx(k,2) + cx(k,7)
                qx(k,2) = qr(k,2) / rx(k,2)
                rx(k,7) = 0.
@@ -856,7 +861,7 @@ subroutine x02(lcat)
                idns       = max(1,nint(1.e3 * dn * gnu(lcat)))
                rshed      = rx(k,lcat) * shedtab(inc,idns)
                rmltshed   = rshed
-               qrmltshed  = rmltshed * (cliqt3+alli)
+               qrmltshed  = rmltshed * (cicet3+alli)
 
                rx(k,2)    = rx(k,2)    + rmltshed
                qr(k,2)    = qr(k,2)    + qrmltshed
@@ -987,7 +992,6 @@ subroutine sedim(m1,lcat,if_adap,mynum,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,pcpfillr,
    integer :: k,lhcat,iemb,iemb2,kkf,kk,jcat,ee
    real    :: dispemb,riemb,wt2,psfc,qfall
    real    :: tcoal,fracliq,dqlat,coldrhoa,roldrhoa,qroldrhoa
-   real    :: rliqnew,rliqold,ricenew,riceold
    !---------------------------------------------------------------------------------------!
 
    !----- Zero out any "fall" cells that might accumulate precipitation -------------------!
@@ -1053,28 +1057,13 @@ subroutine sedim(m1,lcat,if_adap,mynum,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,pcpfillr,
 
       qfall = qrfall(k) / max(1.e-20, rfall(k))
 
-      select case(lcat)
-      case (1,2) !----- Pure liquid categories --------------------------------------------!
-         rliqnew = rfall(k)
-         rliqold = rx(k,lcat)
-         ricenew = 0.
-         riceold = 0.
-      case (3,4,5) !---- Pure ice categories ----------------------------------------------!
-         rliqnew = 0.
-         rliqold = 0.
-         ricenew = rfall(k)
-         riceold = rx(k,lcat)
-      case (6,7) !----- Mixed phase categories --------------------------------------------!
-         call qtk (qfall,tcoal,fracliq)
-         rliqnew = fracliq*rfall(k)
-         ricenew = (1.-fracliq)*rfall(k)
-         call qtk (qx(k,lcat),tcoal,fracliq)
-         rliqold = fracliq*rx(k,lcat)
-         riceold = (1.-fracliq)*rx(k,lcat)
-      end select
+
+      !----- I guess this is already computed, but I don't want trouble... ----------------!
+      qr(k,lcat) = qx(k,lcat) * rx(k,lcat) 
+
       dsed_thil(k)   = dsed_thil(k)                                                        &
-                     + dthil_sedimentation(thil(k),pottemp(k),tair(k),rliqold,rliqnew      &
-                                                                     ,riceold,ricenew)
+                     + dthil_sedimentation(thil(k),pottemp(k),tair(k),rx(k,lcat),rfall(k)  &
+                                          ,qr(k,lcat),qrfall(k))
 
       rx(k,lcat) = rfall(k)
       cx(k,lcat) = cfall(k)

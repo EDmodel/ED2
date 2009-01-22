@@ -164,8 +164,26 @@ Module rconstants
    real, parameter :: lvt3ple  = alvl * t3ple  ! Lv × T3                        [   K J/kg]
    real, parameter :: lst3ple  = alvi * t3ple  ! Ls × T3                        [   K J/kg]
    real, parameter :: cicet3   = cice * t3ple  ! C_ice × T3                     [     J/kg]
-   real, parameter :: cliqt3   = cliq * t3ple  ! C_liquid × T3                  [     J/kg]
-   real, parameter :: clt3lf   = cliqt3 + alli ! C_liquid × T3 + Lf             [     J/kg]
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Tsupercool is the temperature of supercooled water that will cause the energy to   !
+   ! be the same as ice at 0K. It can be used as an offset for temperature when defining   !
+   ! internal energy. The next two methods of defining the internal energy for the liquid  !
+   ! part:                                                                                 !
+   !                                                                                       !
+   !   Uliq = Mliq × [ Cice × T3 + Cliq × (T - T3) + Lf]                                   !
+   !   Uliq = Mliq × Cliq × (T - Tsupercool)                                               !
+   !                                                                                       !
+   !     You may be asking yourself why would we have the ice term in the internal energy  !
+   ! definition. The reason is that we can think that internal energy is the amount of     !
+   ! energy a parcel received to leave the 0K state to reach the current state (or if you  !
+   ! prefer the inverse way, Uliq is the amount of energy the parcel would need to lose to !
+   ! become solid at 0K.)                                                                  !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: tsupercool = t3ple - (cicet3+alli)/cliq
    !---------------------------------------------------------------------------------------!
 
 

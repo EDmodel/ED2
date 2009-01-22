@@ -398,7 +398,7 @@ subroutine copyback(m1,i,j,thp,btheta,rtp,dn0,micro)
    use mem_scratch, only : &
            vctr11        ! ! intent(out)
    
-   use rconstants, only: t00,cliqt3,cliq,cice,alli
+   use rconstants, only: t00,cliq,cice,alli
    use therm_lib , only: qtk
 
    implicit none

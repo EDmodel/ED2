@@ -2097,7 +2097,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
        filespace,memspace, &
        globdims,chnkdims,chnkoffs,cnt,stride, &
        memdims,memoffs,memsize
-  use consts_coms, only: cliq,cice,alli,t3ple
+  use consts_coms, only: cliq,cice,t3ple,tsupercool
 !  use canopy_air_coms, only: hcapveg_ref,heathite_min
   use ed_therm_lib, only : calc_hcapveg
   use canopy_radiation_coms, only:lai_min
@@ -2203,9 +2203,10 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
            cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)          &
                                     ,cpatch%nplant(ico),cpatch%pft(ico))
            if (cpatch%veg_temp(ico) >= t3ple) then
-              cpatch%veg_energy(ico) = cpatch%veg_water(ico)*alli                          &
-                                     + (cpatch%hcapveg(ico) + cpatch%veg_water(ico)*cliq)  &
-                                     * cpatch%veg_temp(ico)
+              cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)          &
+                                     + cpatch%veg_water(ico)                               &
+                                     * cliq * (cpatch%veg_temp(ico) - tsupercool)
+                                     
            else
               cpatch%veg_energy(ico) = (cpatch%hcapveg(ico) + cpatch%veg_water(ico)*cice)  &
                                      * cpatch%veg_temp(ico)

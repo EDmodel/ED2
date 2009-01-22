@@ -8,7 +8,7 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,ifm,  &
   use hydrology_coms, only: useRUNOFF
   use grid_coms, only: nzg
   use soil_coms, only: dslz,min_sfcwater_mass,runoff_time
-  use consts_coms, only: alli,cliq,t3ple
+  use consts_coms, only: cliq,t3ple,tsupercool
 
   implicit none
 
@@ -107,8 +107,8 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,ifm,  &
               wfreeb = integration_buff%y%sfcwater_mass(ksn)  &
                    * (integration_buff%y%sfcwater_fracliq(ksn) - .1)  &
                    / 0.9 * min(1.0,runoff_time*hdid) 
-              qwfree = wfreeb * (cliq   &
-                   * integration_buff%y%sfcwater_tempk(ksn) + alli)
+              qwfree = wfreeb                                                              &
+                     * cliq * (integration_buff%y%sfcwater_tempk(ksn) - tsupercool )
            
               ! Convert to J/m2
               integration_buff%y%sfcwater_energy(ksn) =   &
@@ -389,7 +389,7 @@ subroutine get_yscal_ar(y, dy, htry, tiny_offset, yscal, cpatch, lsl)
   use ed_state_vars,only : patchtype,rk4patchtype
   use grid_coms, only: nzg, nzs
   use soil_coms, only: min_sfcwater_mass
-  use consts_coms, only: cliq,alli,cliqt3,cicet3
+  use consts_coms, only: cliq,cicet3
   use canopy_radiation_coms, only: lai_min
   use pft_coms, only: sla
 
@@ -1081,7 +1081,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   use grid_coms, only: nzs, nzg
   use soil_coms, only: soil, water_stab_thresh, dslz, dslzi, &
        min_sfcwater_mass
-  use consts_coms, only: cice, cliq, alli,t3ple,wdns,clt3lf, wdnsi
+  use consts_coms, only: cice, cliq, alli,t3ple,wdns,tsupercool,cicet3, wdnsi
   use therm_lib, only : qtk,qwtk,qwtk8
 
   implicit none
@@ -1188,8 +1188,8 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
         call qwtk8(qwt,wt,soilhcap  &
              ,initp%sfcwater_tempk(k),initp%sfcwater_fracliq(k))
         ! portion out the heat to the snow
-        qw = w * (   initp%sfcwater_fracliq(k)  * (cliq*initp%sfcwater_tempk(k) + alli) +  &
-                  (1.-initp%sfcwater_fracliq(k)) *  cice*initp%sfcwater_tempk(k)          )
+        qw = w * (     initp%sfcwater_fracliq(k)  * cliq *(initp%sfcwater_tempk(k) - tsupercool) &
+                 + (1.-initp%sfcwater_fracliq(k)) * cice * initp%sfcwater_tempk(k)              )
         ! set the properties of top soil layer.
         initp%soil_tempk(nzg) = initp%sfcwater_tempk(k)
         initp%soil_fracliq(nzg) = initp%sfcwater_fracliq(k)
@@ -1233,11 +1233,11 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
           nsoil = csite%ntext_soil(nzg,ipa)
 
           free_surface_water_demand = real(dmax1(dble(0.0), &
-               & dble(soil(nsoil)%slmsts) - initp%soil_water(nzg)) * 1000.0d0 * dble(dslz(nzg)))
+               & dble(soil(nsoil)%slmsts) - initp%soil_water(nzg)) * dble(wdns) * dble(dslz(nzg)))
 
           wfreeb = min(wfreeb,free_surface_water_demand)
 
-          qwfree = wfreeb * (cliq * initp%sfcwater_tempk(k)+alli)
+          qwfree = wfreeb * cliq * (initp%sfcwater_tempk(k)-tsupercool)
           initp%soil_water(nzg) = initp%soil_water(nzg)   &
                + dble(wfreeb * 0.001 * dslzi(nzg)) 
           initp%soil_energy(nzg) = initp%soil_energy(nzg) + qwfree   &
@@ -1271,7 +1271,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
        endif
 
      else
-        qwfree = wfreeb * (cliq * initp%sfcwater_tempk(k)+alli)
+        qwfree = wfreeb * cliq * (initp%sfcwater_tempk(k)-tsupercool)
      endif
      depthloss = wfreeb * wdnsi
      
@@ -1328,7 +1328,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
      do k = 1,nzs
         if(initp%sfcwater_mass(k) >= min_sfcwater_mass)then
            if(snowmin * thicknet(k) <= totsnow .and.  &
-                initp%sfcwater_energy(k) < clt3lf)then
+                initp%sfcwater_energy(k) < cicet3+alli)then
               newlayers = newlayers + 1
            endif
         endif

@@ -7,7 +7,7 @@
 !==========================================================================================!
 module micro_coms
 
-   use rconstants, only : boltzmann,pi1,t00,cliq,alli,cice,t3ple
+   use rconstants, only : boltzmann,pi1,t00,cliq,alli,cicet3,tsupercool
    use micphys   , only : ncat,nhcat
 
    implicit none
@@ -44,13 +44,13 @@ module micro_coms
    !---------------------------------------------------------------------------------------!
 
    !----- Minimum and maximum energy for rain ---------------------------------------------!
-   real, parameter :: qrainmin = cliq * (t00 - 80.) + alli ! Minimum -80°C
-   real, parameter :: qrainmax = cliq * (t00 + 48.) + alli ! Maximum  48°C
+   real, parameter :: qrainmin = cliq * (193.16 - tsupercool)  ! Minimum -80°C
+   real, parameter :: qrainmax = cliq * (321.16 - tsupercool) ! Maximum  48°C
    !----- Minimum and maximum energy for mixed phases -------------------------------------!
-   real, parameter :: qmixedmin = cice * (t00 - 4.)        ! Minimum, full ice at -4°C
-   real, parameter :: qmixedmax = cliq * (t00 + 4.) + alli ! Minimum, full liquid at 4°C
+   real, parameter :: qmixedmin = cicet3-100000.     ! Equivalent to former -100000 J/kg 
+   real, parameter :: qmixedmax = cicet3+350000.     ! Equivalent to former  350000 J/kg
    !----- Maximum energy for pristine ice before it completely disappears -----------------!
-   real, parameter :: qprismax  = 0.99*(cliq*t3ple+alli)+0.01*cice*t3ple ! 99% is gone
+   real, parameter :: qprismax  = cicet3 + 0.99*alli ! 99% is gone
    !---------------------------------------------------------------------------------------!
 
    !----- Coefficients to compute the thermal conductivity --------------------------------!

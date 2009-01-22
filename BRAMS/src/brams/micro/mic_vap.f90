@@ -266,7 +266,7 @@ end subroutine vapdiff
 subroutine vapflux(lcat)
 
    use micphys
-   use rconstants, only : alli,t3ple,t00,cliqt3
+   use rconstants, only : alli,t3ple,t00
    use micro_coms, only : qmixedmin,qmixedmax,qprismax
    implicit none
 
@@ -293,8 +293,11 @@ subroutine vapflux(lcat)
       ! we then compute the first term of the RHS of equation (9) [vap(k,lcat)]            !
       ! sa(k,if4) has rs'(Ref)*T(Ref) - rs(Ref).                                           !
       !------------------------------------------------------------------------------------!
-      tx(k,lcat)  = (ss(k,lcat) * rvap(k) + sw(k,lcat)) * sm(k,lcat)                       &
-                  + t3ple * (1.-sm(k,lcat))
+      if (sm(k,lcat) > .5) then
+         tx(k,lcat)  = (ss(k,lcat) * rvap(k) + sw(k,lcat))
+      else
+         tx(k,lcat)  = t3ple
+      end if
       vap(k,lcat) = su(k,lcat) * (rvap(k) + sa(k,if4) - rvsrefp(k,if1) * tx(k,lcat))
 
 
@@ -303,15 +306,19 @@ subroutine vapflux(lcat)
       !------------------------------------------------------------------------------------!
       if (vap(k,lcat) > -rx(k,lcat)) then
          rxx = rx(k,lcat) + vap(k,lcat) ! New mixing ratio.
-         !----- 
+         !---------------------------------------------------------------------------------! 
+         !   Finding energy for all-ice or all-liquid categories.                          !
+         !  + sc is the heat capacity (cice for all ice, cliq for all liquid);             !
+         !  + sq is the phase offset (0 for all ice, tsupercool for all liquid).           !
+         !---------------------------------------------------------------------------------!
          if (sm(k,lcat) > .5) then
-            qx(k,lcat) = sc(if1) * tx(k,lcat) + sk(if1)
+            qx(k,lcat) = sc(if1) * (tx(k,lcat) - sq(if1))
             qr(k,lcat) = qx(k,lcat) * rxx
          else
             qx(k,lcat) = (rvap(k)*sf(k,lcat)+sg(k,lcat)-tx(k,lcat)*se(k,lcat))       &
                        / sd(k,lcat)
-            !----- It seems a bound sanity check, not sure what 350000 and -100000 mean. --!
-            !qx(k,lcat) = min(qmixedmax,max(qmixedmin,qx(k,lcat)))
+            !----- Preventing excessive evaporation ---------------------------------------!
+            qx(k,lcat) = min(qmixedmax,max(qmixedmin,qx(k,lcat)))
             qr(k,lcat) = qx(k,lcat) * rxx
          end if
       end if
