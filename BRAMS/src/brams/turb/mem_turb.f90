@@ -58,7 +58,7 @@ contains
     
     if(idiffk(ng) == 6) allocate (turb%epsp(n1,n2,n3))
 
-    if (idiffk(ng) == 7) then
+    if (idiffk(ng) == 7 .or. idiffk(ng) == 1) then
       allocate (turb%ltscale(n1,n2,n3))
       allocate (turb%sigw(n1,n2,n3))
       allocate (turb%pblhgt(n2,n3))

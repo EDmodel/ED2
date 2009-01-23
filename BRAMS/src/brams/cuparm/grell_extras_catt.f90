@@ -30,9 +30,12 @@ subroutine trans_conv_mflx(icld,iscl,m1,m2,m3,i,j,edt,upmf,sttend)
   integer                                  :: k,kr,iconv,iwet
   real, dimension(2) :: c0
 
-  data (c0(i),i=1,2)  &
-       /0.002 &  
-       ,0.000 /  
+  c0(1) = 0.002
+  c0(2) = 0.000
+
+!  data (c0(i),i=1,2)  &
+!       /0.002 &  
+!       ,0.000 /  
 
   if(.not. trans_conv_alloc) then
      call alloc_trans_conv(mgmzp)

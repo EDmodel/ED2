@@ -21,6 +21,15 @@ module ed_therm_lib
   !----- Coefficients based on the hyperbolic tangent ------------------------------------!
   real, dimension(2)  , parameter :: ttt_10= (/0.0415,218.8/)
   !---------------------------------------------------------------------------------------!
+
+  !---------------------------------------------------------------------------------------!
+  !
+  ! Coefficients for Hayland and Wexler - used for extremely high temperatures
+  !
+  real,dimension(0:5), parameter :: &
+       hw0 = (/-5800.2206, 1.3914993, -0.48640239e-1, 0.41764768e-4, -0.14452093e-7, 6.5459673/)
+  ! ---------------------------------------------------------------------------------------
+
   
 contains
 
@@ -282,23 +291,46 @@ contains
    !================================================================================
 
   real function fast_svp(pres,temp)
+
+    ! MK05 is only valid up to 332 K
+    ! If the temperature is greater than 332, switch to Hyland and Wexler
+
      
      use consts_coms, only: t3ple,ep
      implicit none
      real,intent(in) :: temp
      real,intent(in) :: pres
-     real            :: ttfun,fun2,fun1
+     real            :: ttfun,fun2,fun1,fun3
+     real :: frac_hw
      real :: esz
+     real,parameter :: hwtemp0 = 315.0
+     real,parameter :: hwtemp1 = 332.0
 
      if(temp<t3ple) then
         !----- Updated method, using MK05 ------------------------------------------------!
         fun1 = iii_7(0) + iii_7(1)/temp + iii_7(2) * log(temp) + iii_7(3) * temp
         esz  = exp(fun1)
-     else
+     else if(temp>t3ple .and. temp<hwtemp0) then
         fun1 = l01_10(0) + l01_10(1)/temp + l01_10(2)*log(temp) + l01_10(3) * temp
         fun2 = l02_10(0) + l02_10(1)/temp + l02_10(2)*log(temp) + l02_10(3) * temp
         ttfun = tanh(ttt_10(1) * (temp - ttt_10(2)))
         esz  = exp(fun1 + ttfun*fun2)
+     else
+
+        ! Perform a linear combination of MK05 and Hayland and Wexler to make the transition seamless
+        fun1 = l01_10(0) + l01_10(1)/temp + l01_10(2)*log(temp) + l01_10(3) * temp
+        fun2 = l02_10(0) + l02_10(1)/temp + l02_10(2)*log(temp) + l02_10(3) * temp
+        ttfun = tanh(ttt_10(1) * (temp - ttt_10(2)))
+        
+        fun3 = hw0(0)/temp + hw0(1) + hw0(2)*temp + hw0(3)*temp**2.0 + hw0(4)*temp**3.0 + hw0(5)*log(temp)
+        
+        frac_hw = 1.0 - (hwtemp1 - min(temp,hwtemp1) )/(hwtemp1-hwtemp0)
+
+!        esz  = (1.0-frac_hw)*exp(fun1 + ttfun*fun2) + frac_hw*exp(fun3)
+
+        esz = min(0.95*pres,exp(fun1 + ttfun*fun2))
+
+
      endif
      
      fast_svp = ep * esz / (pres - esz)

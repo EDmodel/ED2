@@ -152,16 +152,21 @@ subroutine spatial_averages
   real :: snow_min = 0.0000001
   real,dimension(3) :: area_sum
 
+  print*,"C-01"
+
   frqsumi = 1.0 / frqsum
+
+  print*,"C-02"
+
   do igr=1,ngrids
      cgrid => edgrid_g(igr)
-
-     cgrid%avg_lai_ebalvars = 0.0
 
      do ipy=1,cgrid%npolygons
         cpoly => cgrid%polygon(ipy)
 
         area_sum=0.0
+
+        cgrid%avg_lai_ebalvars(:,:,ipy) = 0.0
 
         cgrid%avg_balive(ipy)      = 0.0
         cgrid%avg_bdead(ipy)       = 0.0
@@ -178,6 +183,7 @@ subroutine spatial_averages
         cgrid%min_veg_temp(ipy)    = 390.0
         cgrid%max_soil_temp(ipy)    = -10.0
         cgrid%min_soil_temp(ipy)    = 390.0
+
 
         poly_area_i = 1./sum(cpoly%area)
 
@@ -206,6 +212,7 @@ subroutine spatial_averages
            cpoly%avg_sensible_ac(isi)    = sum(csite%avg_sensible_ac    * csite%area ) * site_area_i
            cpoly%avg_sensible_tot(isi)   = sum(csite%avg_sensible_tot   * csite%area ) * site_area_i
 
+
            !! for NACP intercomparision (MCD)
            cpoly%avg_fsc(isi)            = sum(csite%fast_soil_C        * csite%area ) * site_area_i
            cpoly%avg_ssc(isi)            = sum(csite%slow_soil_C        * csite%area ) * site_area_i
@@ -216,6 +223,8 @@ subroutine spatial_averages
            cpoly%avg_snowmass(isi)    = 0.0
            cpoly%avg_snowtempk(isi)   = 0.0
            cpoly%avg_snowfracliq(isi) = 0.0
+
+
            do k=1,csite%npatches
               if(csite%nlev_sfcwater(k) > 0 .and. csite%sfcwater_mass(1,k) > snow_min) then
                  !! if snow is present, sum mass and depth over layers
@@ -237,6 +246,7 @@ subroutine spatial_averages
                  cpoly%avg_snowtempk(isi)   = cpoly%avg_snowtempk(isi) + csite%soil_fracliq(nzg,k) * csite%area(k)
               endif
            enddo
+
            cpoly%avg_snowfracliq(isi) = cpoly%avg_snowfracliq(isi) * site_area_i
            cpoly%avg_snowdepth(isi)   = cpoly%avg_snowdepth(isi)   * site_area_i
            cpoly%avg_snowmass(isi)    = cpoly%avg_snowmass(isi)    * site_area_i
@@ -258,7 +268,7 @@ subroutine spatial_averages
               cpoly%avg_soil_fracliq(k,isi) = sum(csite%soil_fracliq(k,:)     * csite%area ) * site_area_i
 
            enddo
-           
+
            ! Average over patches
            
            do ipa=1,csite%npatches
@@ -313,6 +323,7 @@ subroutine spatial_averages
 
               cgrid%avg_plant_resp(ipy)  = cgrid%avg_plant_resp(ipy)  + &
                    csite%area(ipa)*cpoly%area(isi)*csite%co2budget_plresp(ipa)*frqsumi
+
               cgrid%avg_htroph_resp(ipy) = cgrid%avg_htroph_resp(ipy) + &
                    csite%area(ipa)*cpoly%area(isi)*csite%co2budget_rh(ipa)    *frqsumi
               
@@ -361,7 +372,6 @@ subroutine spatial_averages
            cpoly%avg_can_temp(isi)   = sum(csite%can_temp         * csite%area)
            cpoly%avg_can_shv(isi)    = sum(csite%can_shv          * csite%area)
 
-
         else
            call fatal_error('No patches in this site, impossible','spatial_averages','edio.f90')
         endif
@@ -370,6 +380,7 @@ subroutine spatial_averages
 
      enddo
      
+
      ! Normalize the lai specific quantities
      if (area_sum(1)>0.) then
         cgrid%avg_lai_ebalvars(1,1,ipy) = cgrid%avg_lai_ebalvars(1,1,ipy)/area_sum(1)
@@ -379,6 +390,8 @@ subroutine spatial_averages
      else
         cgrid%avg_lai_ebalvars(1,:,ipy) = -9999.0
      endif
+
+
      if (area_sum(2)>0.) then
         cgrid%avg_lai_ebalvars(2,1,ipy) = cgrid%avg_lai_ebalvars(2,1,ipy)/area_sum(2)
         cgrid%avg_lai_ebalvars(2,2,ipy) = cgrid%avg_lai_ebalvars(2,2,ipy)/area_sum(2)
@@ -395,6 +408,7 @@ subroutine spatial_averages
      else
         cgrid%avg_lai_ebalvars(3,:,ipy) = -9999.0
      endif
+
 
 
         cgrid%lai(ipy)                = sum(cpoly%lai                * cpoly%area ) * poly_area_i
@@ -415,9 +429,6 @@ subroutine spatial_averages
         cgrid%avg_snowfracliq(ipy)    = sum(cpoly%avg_snowfracliq    * cpoly%area ) * poly_area_i
         cgrid%avg_snowdepth(ipy)      = sum(cpoly%avg_snowdepth      * cpoly%area ) * poly_area_i
 
-        ! I REMOVED THE FOLLOWING SCALING BY ALVL. THIS VARIABLE IS ALREADY IN ENERGY UNITS, SEE
-        ! RK4_DERIVS.F90. RGK-6-30-08
-
         cgrid%avg_vapor_ac(ipy)       = sum(cpoly%avg_vapor_ac       * cpoly%area ) * poly_area_i !* alvl
         cgrid%avg_transp(ipy)         = sum(cpoly%avg_transp         * cpoly%area ) * poly_area_i
         cgrid%avg_evap(ipy)           = sum(cpoly%avg_evap           * cpoly%area ) * poly_area_i
@@ -435,6 +446,7 @@ subroutine spatial_averages
         cgrid%avg_veg_water(ipy)      = sum(cpoly%avg_veg_water      * cpoly%area ) * poly_area_i
         cgrid%avg_can_temp(ipy)       = sum(cpoly%avg_can_temp       * cpoly%area ) * poly_area_i
         cgrid%avg_can_shv(ipy)        = sum(cpoly%avg_can_shv        * cpoly%area ) * poly_area_i
+
 
         do k=cgrid%lsl(ipy),nzg
 

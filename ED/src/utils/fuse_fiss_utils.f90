@@ -192,7 +192,7 @@ end subroutine terminate_cohorts_ar
 
      type(sitetype),target :: csite
      type(patchtype),pointer :: cpatch
-     integer :: ipa,ico1,ico2
+     integer :: ipa,ico1,ico2,ico3
      real         , dimension(n_pft) , intent(in) :: green_leaf_factor
      integer      ,                    intent(in) :: lsl
 
@@ -214,9 +214,6 @@ end subroutine terminate_cohorts_ar
 
      cpatch => csite%patch(ipa)
 
-
-     ! COHORT COUNT IS DEPRICATED AND WILL BE REMOVED SOON - RGK 11-28-2008
-
      ! Return if we dont have many cohorts anyway
      if(cpatch%ncohorts <= maxcohort)return
 
@@ -230,6 +227,7 @@ end subroutine terminate_cohorts_ar
      nshort    = 0.0
      ntall     = 0.0
      do ico1 = 1,cpatch%ncohorts
+        
         ! get fusion height threshold
         if(rho(cpatch%pft(ico1)) == 0.0)then
            hite_threshold = b1Ht(cpatch%pft(ico1))
@@ -241,9 +239,19 @@ end subroutine terminate_cohorts_ar
            mean_hite = mean_hite + cpatch%hite(ico1)
            nshort = nshort+1.0
         else
+
+           if(cpatch%dbh(ico1).eq.0. ) then
+              print*,"dbh(ico1) is zero",cpatch%dbh(ico1)
+              stop
+           end if
+
            mean_dbh = mean_dbh + cpatch%dbh(ico1)
            ntall=ntall+1.0
         endif
+        
+!        print*,ico1,cpatch%pft(ico1),rho(cpatch%pft(ico1)),hite_threshold,cpatch%hite(ico1),cpatch%dbh(ico1)
+
+
      end do
 
      if (ntall>0.) then
@@ -270,7 +278,7 @@ end subroutine terminate_cohorts_ar
 
            ! get fusion height threshold
            if(rho(cpatch%pft(ico1)) == 0.0)then
-              hite_threshold = b1Ht(cpatch%pft(ico1)) + hgt_ref(cpatch%pft(ico1))
+              hite_threshold = b1Ht(cpatch%pft(ico1)) !+ hgt_ref(cpatch%pft(ico1))
            else
               hite_threshold = dbh2h(cpatch%pft(ico1), max_dbh(cpatch%pft(ico1)))
            end if
@@ -283,6 +291,9 @@ end subroutine terminate_cohorts_ar
                    (0.5*(cpatch%hite(ico1) + cpatch%hite(ico2)))  < fusetol * tolerance_mult)  
               end if
            else
+              
+!              print*,cpatch%dbh(ico1) - cpatch%dbh(ico2),mean_dbh,ntall,cpatch%dbh(ico1),cpatch%dbh(ico2)
+
               fusion_test = (abs(cpatch%dbh(ico1) - cpatch%dbh(ico2)) /   &
                    mean_dbh  ) < fusetol * tolerance_mult
            end if
@@ -304,6 +315,35 @@ end subroutine terminate_cohorts_ar
                  call fuse_2_cohorts_ar(cpatch,ico1,ico2, newn,green_leaf_factor(cpatch%pft(ico1)), lsl)
 
                  fuse_table(ico1) = .false.
+
+                 ! Recalculate the means 
+                 ! ======================================================
+                 mean_dbh  = 0.0
+                 mean_hite = 0.0
+                 nshort    = 0.0
+                 ntall     = 0.0
+                 recalcloop: do ico3 = 1,cpatch%ncohorts
+                    if (.not. fuse_table(ico3)) cycle recalcloop
+                    ! get fusion height threshold
+                    if(rho(cpatch%pft(ico3)) == 0.0)then
+                       hite_threshold = b1Ht(cpatch%pft(ico3))
+                    else
+                       hite_threshold = dbh2h(cpatch%pft(ico3), max_dbh(cpatch%pft(ico3)))
+                    end if
+                    if(cpatch%hite(ico3) < (0.95 * hite_threshold ))then
+                       mean_hite = mean_hite + cpatch%hite(ico3)
+                       nshort = nshort+1.0
+                    else
+                       if(cpatch%dbh(ico3).eq.0. ) then
+                          print*,"dbh(ico1) is zero",cpatch%dbh(ico3)
+                          stop
+                       end if
+                       mean_dbh = mean_dbh + cpatch%dbh(ico3)
+                       ntall=ntall+1.0
+                    endif
+                 end do recalcloop
+                 ! ========================================================
+
                  cycle donloop
               end if
            end if
