@@ -215,6 +215,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
                                                      !    partially frozen soil.
    real                             :: surface_temp  ! Surface temperature.
    real                             :: surface_fliq  ! Liquid fraction at surface.
+   real                             :: int_sfcw_u    ! Intensive sfc. water internal en.
    !----- Constants -----------------------------------------------------------------------!
    logical , parameter  :: debug = .false.  ! Debugging output flag (T/F)
    real    , parameter  :: freezeCoef = 7.0 ! Exponent in the frozen soil hydraulic 
@@ -261,7 +262,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
    dinitp%soil_energy(:)     = 0.0
    dinitp%soil_water(:)      = 0.0d+0
    dinitp%sfcwater_depth(:)  = 0.0
-   dinitp%sfcwater_energy(:) = 0.0    ! This is in W/m2, it will be converted in the end.
+   dinitp%sfcwater_energy(:) = 0.0 ! sfcwater_energy is in J/m² inside the RK4 integrator.
    dinitp%sfcwater_mass(:)   = 0.0
    dinitp%virtual_heat       = 0.0
    dinitp%virtual_water      = 0.0
@@ -271,9 +272,16 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
 
    !----- Copying the soil texture flag to a shortcut -------------------------------------!
    nsoil = csite%ntext_soil(nzg,ipa)
-   call ed_grndvap(ksn,nsoil,initp%soil_water(nzg),initp%soil_energy(nzg)                  &
-                  ,initp%sfcwater_energy(max(1,ksn)),rhos,initp%can_shv,initp%ground_shv   &
-                  ,initp%surface_ssh,surface_temp,surface_fliq)
+   k = max(1,ksn)
+   if (initp%sfcwater_mass(k) > min_sfcwater_mass) then
+      int_sfcw_u = initp%sfcwater_energy(k)/initp%sfcwater_mass(k)
+   else
+      int_sfcw_u = 0.
+   end if
+   
+   call ed_grndvap(ksn,nsoil,initp%soil_water(nzg),initp%soil_energy(nzg),int_sfcw_u,rhos  &
+                  ,initp%can_shv,initp%ground_shv,initp%surface_ssh,surface_temp           &
+                  ,surface_fliq)
 
 
    !---------------------------------------------------------------------------------------!
@@ -351,7 +359,6 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
          hfluxgsc(nzg+k) = - (initp%sfcwater_tempk(k) - initp%sfcwater_tempk(k-1))         &
                          /   ((rfactor(nzg+k) + rfactor(nzg+k-1)) * .5)
       end do
-   else
    end if
 
    !----- Heat flux (hfluxgsc) at soil or sfcwater top from longwave, sensible [W/m^2] ----!
@@ -361,7 +368,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
    dinitp%avg_sensible_gg(nzg) = hfluxgsc(nzg+ksn+1) ! Diagnostic
 
    !---------------------------------------------------------------------------------------!
-   !    Update soil Q values [J/m3] from sensible heat, upward water vapor (latent heat)   !
+   !    Update soil U values [J/m³] from sensible heat, upward water vapor (latent heat)   !
    ! and longwave fluxes. This excludes effects of dew/frost formation, precipitation,     !
    ! shedding, and percolation.                                                            !
    !---------------------------------------------------------------------------------------!
@@ -369,12 +376,12 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
       dinitp%soil_energy(k) = dslzi(k) * (hfluxgsc(k)- hfluxgsc(k+1))
    end do
 
-   !----- Update soil Q values [J/m3] from shortwave flux. --------------------------------!
+   !----- Update soil Q values [J/m³] from shortwave flux. --------------------------------!
    dinitp%soil_energy(nzg) = dinitp%soil_energy(nzg) + dslzi(nzg) * csite%rshort_g(ipa)
 
 
    !---------------------------------------------------------------------------------------!
-   !    Update surface water Q values [J/kg] from sensible heat, upward water vapor        !
+   !    Update surface water U values [J/m²] from sensible heat, upward water vapor        !
    ! (latent heat), longwave, and shortwave fluxes.  This excludes effects of dew/frost    !
    ! formation, precipitation, shedding and percolation.                                   !
    !---------------------------------------------------------------------------------------!
@@ -483,7 +490,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
          end if
       end if  !! end virtual water pool
       if (initp%nlev_sfcwater >= 1) then !----- Process "snow" water pool -----------------! 
-         call qtk(initp%sfcwater_energy(1),tempk,fracliq)
+         call qtk(initp%sfcwater_energy(1)/initp%sfcwater_mass(1),tempk,fracliq)
          surface_water = initp%sfcwater_mass(1)*fracliq*wdnsi !(m/m2)
          nsoil = csite%ntext_soil(nzg,ipa)
          if (nsoil /= 13) then
@@ -592,30 +599,16 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
       end do
    end if
 
-   if (initp%nlev_sfcwater == 1 .and. initp%sfcwater_mass(1) < water_stab_thresh) then
-      !------------------------------------------------------------------------------------!
-      !    If we have a thin layer of snow the heat derivatives will require a special     !
-      ! treatment. We must ensure that thin layers are in thermal equilibrium. If this is  !
-      ! not the case, force this by effectively exchanging heat between these layers.      !
-      !------------------------------------------------------------------------------------!
-      dqwt = dinitp%soil_energy(nzg) * dslz(nzg) + dinitp%sfcwater_energy(1)
-      dinitp%soil_energy(nzg)   = dqwt * dslzi(nzg)
-      dinitp%sfcwater_energy(1) = 0.0
-   else
-      !------------------------------------------------------------------------------------!      
-      !    Otherwise, the layer is computationally stable. All we need to do is to convert !      
-      ! dinitp%sfcwater_energy to W/kg using the quotient rule:                            !      
-      !    J/kg = J/m2 / kg/m2                                                             !      
-      !  D(J/kg) = (  kg/m2 D(J/m2) - J/m2 D(kg/m2)   ) / (kg/m2)**2                       !      
-      !------------------------------------------------------------------------------------!      
-      do k = 1, initp%nlev_sfcwater                                                               
-         if (initp%sfcwater_mass(k) >= min_sfcwater_mass) then                                    
-            dinitp%sfcwater_energy(k) = (initp%sfcwater_mass(k)*dinitp%sfcwater_energy(k)  &
-                                      -  initp%sfcwater_energy(k)*dinitp%sfcwater_mass(k)) &   
-                                      / (initp%sfcwater_mass(k)*initp%sfcwater_mass(k))           
-         end if                                                                                   
-      end do                                                                                      
-   end if
+   !if (initp%nlev_sfcwater == 1 .and. initp%sfcwater_mass(1) < water_stab_thresh) then
+   !   !------------------------------------------------------------------------------------!
+   !   !    If we have a thin layer of snow the heat derivatives will require a special     !
+   !   ! treatment. We must ensure that thin layers are in thermal equilibrium. If this is  !
+   !   ! not the case, force this by effectively exchanging heat between these layers.      !
+   !   !------------------------------------------------------------------------------------!
+   !   dqwt = dinitp%soil_energy(nzg) * dslz(nzg) + dinitp%sfcwater_energy(1)
+   !   dinitp%soil_energy(nzg)   = dqwt * dslzi(nzg)
+   !   dinitp%sfcwater_energy(1) = 0.0
+   !end if
 
 
 

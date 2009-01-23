@@ -128,27 +128,26 @@ contains
    !==========================================================================================!
    
    subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
-        sfcwater_energy, rhos, can_shv, ground_shv, surface_ssh, &
+        sfcwater_energy,rhos, can_shv, ground_shv, surface_ssh, &
         surface_tempk,surface_fracliq)
      
      use soil_coms,   only: ed_nstyp, soil
      use grid_coms,   only: nzg
      use consts_coms, only:  pi1, wdns, gorvap
-     use therm_lib  , only: rhovsil, qtk, qwtk8
+     use therm_lib  , only: rhovsil, qtk, qwtk, qwtk8
      
      implicit none
-     
      integer, intent(in) :: nlev_sfcwater ! # active levels of surface water
      integer, intent(in) :: nts           ! soil textural class (local name)
      
      real(kind=8), intent(in)  :: soil_water      ! soil water content [vol_water/vol_tot]
-     real, intent(in)  :: soil_energy     ! [J/m^3]
+     real, intent(in)  :: soil_energy     ! [J/m³]
      real, intent(in)  :: sfcwater_energy ! [J/kg]
-     real, intent(in)  :: rhos            ! air density [kg/m^3]
+     real, intent(in)  :: rhos            ! air density [kg/m³]
      real, intent(in)  :: can_shv         ! canopy vapor spec hum [kg_vap/kg_air]
      real, intent(out) :: ground_shv      ! ground equilibrium spec hum [kg_vap/kg_air]
      real, intent(out) :: surface_ssh     ! surface (saturation) spec hum [kg_vap/kg_air]
-     real, intent(out) :: surface_tempk   ! Surface water temperature
+     real, intent(out) :: surface_tempk   ! Surface water temperature [K]
      real, intent(out) :: surface_fracliq ! fraction of surface water in liquid phase
      
      ! Local variables

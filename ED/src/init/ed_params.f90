@@ -829,7 +829,7 @@ subroutine init_soil_coms
 
   implicit none
 
-  water_stab_thresh = 60.0
+  water_stab_thresh = 3.0
 
   dewmax = 3.0e-5
 

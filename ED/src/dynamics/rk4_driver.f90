@@ -129,6 +129,7 @@ contains
     use misc_coms, only: dtlsm
     use soil_coms, only: soil_rough
     use consts_coms, only: vonk, cp
+    use rk4_coms, only: tbeg,tend,dtrk4,dtrk4i
 
     implicit none
 
@@ -152,17 +153,24 @@ contains
     real, intent(in) :: geoht
 
     type(rk4patchtype), pointer :: initp
-    real :: tbeg
-    real :: tend
-    real :: eps
     real :: hbeg
-    real :: hmin
     real :: factv
     real :: aux
     real, parameter :: exar=2.5
     real :: zveg
     real :: zdisp
     real, parameter :: snowrough=0.001
+    
+    logical, save :: first_time=.true.
+    
+    
+    if (first_time) then
+       first_time = .false.
+       tbeg   = 0.0
+       tend   = dtlsm
+       dtrk4  = tend - tbeg
+       dtrk4i = 1./dtrk4
+    end if
 
     !---------------------------------
     ! Set up the integration patch
@@ -172,68 +180,11 @@ contains
 
     call copy_patch_init_ar(csite,ipa, initp, lsl)
 
-    !---------------------------------
-    ! Set the integration parameters
-    !---------------------------------
-    ! initial time.  note 'derivs' do not explicitly depend on time so it 
-    ! doesn't really matter what this is.
-    tbeg = 0.0 
-    ! end time.  what is important is tend-tbeg.  this should get moved to 
-    ! the namelist.
-    tend = dtlsm 
-
-    ! desired accuracy.
-    eps = 1.0e-2
-
     ! initial step size.  experience has shown that giving this too large a 
     ! value causes the integrator to fail (e.g., soil layers become
     ! supersaturated).
     hbeg = csite%htry(ipa)
 
-    ! minimum step size.  
-    hmin = 1.0e-9
-
-    ! Calculation of soil-canopy air space resistance factor
-    ! Switching two types of estimation strategies.
-    ! Both follow methods described in Lee 198? (Thesis)
-    ! And Garrat 199?
-    ! ------------------------------------------------------
-    
-!    if (resistance_type .eq. 0 ) then 
-       
-       ! Following leaf3 formulation (new version)
-       ! Note: c1=261.5*sqrt((1.-exp(-2.*exar))/(2.*exar))
-       ! from Lee's dissertation, Eq. 3.36.  The factor of 261.5 is
-       ! 100 * ln((h-d)/zo) / vonk   where d = .63 * h and zo = .13 * h.
-       ! The factor of 100 is 1/L in Eq. 3.37.  Thus, c1 * ustar is the
-       ! total expression inside the radical in Eq. 3.37.
-       ! bob  parameter(exar=3.5,covr=2.16,c1=98.8)
-       
-       ! Right now assuming no snow factor
-
-!       snowfac = 0
-
-!       zognd = csite%soil_rough_len 
-!       zoveg = csite%veg_rough * (1.-snowfac) + zognd * snowfac
-!       zdisp = csite%veg_height * (1.-snowfac)
-!       zveg  =  zdisp / 0.63
-!       zts = cpoly%zoff          ! This is the reference height "z" (I think its weird)
-
-       ! If vegetation is sufficiently abundant and not covered by snow, compute
-       ! heat and moisture fluxes from vegetation to canopy, and flux resistance
-       ! from soil or snow to canopy.
-       
-       ! Question: vels is from the previous formulation..valid still?
-
-!       factv = log(zts / zoveg) / (vonk * vonk * vels)
-!       aux = exp(exar * (1. - (zdisp + zoveg) / zveg))
-!       initp%rasveg = factv * zveg / (exar * (zveg - zdisp)) * (exp(exar) - aux)
-!    else
-       ! Following the legacy methodology in ED2
-!       aux = exp(0.925-1.575*csite%veg_rough/csite%veg_height)
-!       initp%rasveg = 1.081 * log(cpoly%zoff/csite%veg_rough) * (12.182 - aux)  &
-!            / (vonk**2 * vels) 
-!    endif
 
     ! This is Bob Walko's recommended way of calculating the resistance.
     ! Note that temperature, not potential temperature, is input here.
@@ -275,7 +226,7 @@ contains
 
 
     ! Go into the integrator
-    call odeint_ar(tbeg, tend, eps, hbeg, hmin, csite,ipa,isi,ipy,ifm,  &
+    call odeint_ar(hbeg, csite,ipa,isi,ipy,ifm,  &
          integration_buff, rhos, vels, atm_tmp, atm_shv, atm_co2, geoht,  &
          exner, pcpg, qpcpg, dpcpg, prss, lsl)
 
@@ -303,7 +254,7 @@ contains
     use ed_state_vars,only:sitetype,patchtype,rk4patchtype,edgrid_g
     use consts_coms, only: day_sec,t3ple
     use ed_misc_coms,only: fast_diagnostics
-    use soil_coms, only: soil, slz
+    use soil_coms, only: soil, slz, min_sfcwater_mass
     use ed_misc_coms,only: fast_diagnostics
     use grid_coms, only: nzg, nzs
     use canopy_radiation_coms, only: lai_min, veg_temp_min
@@ -417,11 +368,29 @@ contains
     
 
     do k = 1, csite%nlev_sfcwater(ipa)
-       csite%sfcwater_depth(k,ipa)  = initp%sfcwater_depth(k)
-       csite%sfcwater_mass(k,ipa)   = initp%sfcwater_mass(k)
-       csite%sfcwater_energy(k,ipa) = initp%sfcwater_energy(k)
-       csite%sfcwater_tempk(k,ipa) = initp%sfcwater_tempk(k)
-       csite%sfcwater_fracliq(k,ipa) = initp%sfcwater_fracliq(k)
+       !-----------------------------------------------------------------------------------!
+       !    Surface water energy is computed in J/m² inside the integrator. Converting it  !
+       ! back to J/kg.                                                                     !
+       !-----------------------------------------------------------------------------------!
+       if (initp%sfcwater_mass(k) > min_sfcwater_mass) then
+           csite%sfcwater_depth(k,ipa)   = initp%sfcwater_depth(k)
+           csite%sfcwater_mass(k,ipa)    = initp%sfcwater_mass(k)
+           csite%sfcwater_tempk(k,ipa)   = initp%sfcwater_tempk(k)
+           csite%sfcwater_fracliq(k,ipa) = initp%sfcwater_fracliq(k)
+           csite%sfcwater_energy(k,ipa)  = initp%sfcwater_energy(k)/initp%sfcwater_mass(k)
+       elseif (k == 1) then
+          csite%sfcwater_energy(k,ipa)  = 0.
+          csite%sfcwater_mass(k,ipa)    = 0.
+          csite%sfcwater_depth(k,ipa)   = 0.
+          csite%sfcwater_fracliq(k,ipa) = csite%soil_fracliq(nzg,ipa)
+          csite%sfcwater_tempk(k,ipa)   = csite%soil_tempk(nzg,ipa)
+       else
+          csite%sfcwater_energy(k,ipa)  = 0.
+          csite%sfcwater_mass(k,ipa)    = 0.
+          csite%sfcwater_depth(k,ipa)   = 0.
+          csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(k-1,ipa)
+          csite%sfcwater_tempk(k,ipa)   = csite%sfcwater_tempk(k-1,ipa)
+       end if
     enddo
     
 

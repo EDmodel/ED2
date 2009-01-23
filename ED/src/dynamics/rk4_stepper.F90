@@ -2,12 +2,13 @@ module rk4_stepper_ar
 
 contains 
 
-  subroutine rkqs_ar(integration_buff, x, htry, hmin, epsil, hdid, hnext, csite, &
+  subroutine rkqs_ar(integration_buff, x, htry, hdid, hnext, csite, &
        ipa,isi,ipy,ifm,rhos, vels, atm_tmp, atm_shv, atm_co2, geoht, exner, pcpg, qpcpg, &
        dpcpg, prss, lsl)
 
     use ed_state_vars,only:sitetype,patchtype,rk4patchtype,integration_vars_ar &
                           ,edgrid_g
+    use rk4_coms, only: hmin,rk4eps,rk4epsi,safety,pgrow,pshrnk,errcon
 !    use lsm_integ_utils, only: print_patch, copy_rk4_patch, get_errmax, &
 !         print_errmax
 
@@ -18,16 +19,9 @@ contains
     integer :: ipa,isi,ipy,ifm
     type(integration_vars_ar), target :: integration_buff
 
-    real, parameter :: safety = 0.9
-    real, parameter :: pgrow = -0.2
-    real, parameter :: pshrnk = -0.25
-    real, parameter :: errcon = 1.89e-4
-    ! Changed eps by epsil and iflag by iflag1 because ifort didn't like these names
-    ! when I ran with full interfacing...
-    real :: h,htry,x,epsil,hdid,hnext,errmax,xnew,newh
+    real :: h,htry,x,hdid,hnext,errmax,xnew,newh
     integer :: iflag1,iflag2
     logical :: minstep
-    real :: hmin
     real, intent(in) :: rhos
 
     real, intent(in) :: vels
@@ -67,13 +61,13 @@ contains
        if(iflag1.eq.1)then
           call get_errmax_ar(errmax, integration_buff%yerr,   &
                integration_buff%yscal, csite%patch(ipa), lsl,  &
-               integration_buff%y,integration_buff%ytemp,epsil)
-          errmax = errmax/epsil
+               integration_buff%y,integration_buff%ytemp)
+          errmax = errmax * rk4epsi
        else
 !          call get_errmax_ar(errmax, integration_buff%yerr,   &
 !               integration_buff%yscal, csite%patch(ipa), lsl, &
 !               integration_buff%y,integration_buff%ytemp)
-!          errmax = errmax/epsil
+!          errmax = errmax * rk4epsi
 !          if ( errmax < 1) then
 !             print*,"INTEGRATOR DID NOT GIVE SANE RESULTS"
 !             print*,"YET IT PASSED THE ERROR CRITERIA"
@@ -91,7 +85,7 @@ contains
        !   a new step is calculated based on the size of that
        !   error.  Hopefully, those new steps should be less
        !   then the previous h.
-       !   If the error was small, ie less then epsil, then
+       !   If the error was small, ie less then rk4eps, then
        !   we are done with this step, and we can move forward
        !   time: x = x + h
 
@@ -133,8 +127,8 @@ contains
              if(iflag1 == 1)then
                 call print_errmax_ar(errmax, integration_buff%yerr,  &
                      integration_buff%yscal, csite%patch(ipa), lsl,  &
-                     integration_buff%y,integration_buff%ytemp,epsil)
-                print*,'errmax',errmax/epsil,'raw',errmax,'epsilon',epsil
+                     integration_buff%y,integration_buff%ytemp)
+                print*,'errmax',errmax*rk4epsi,'raw',errmax,'epsilon',rk4eps
              else
                 call print_sanity_check_ar(integration_buff%y,  &
                      iflag2, csite,ipa, lsl)

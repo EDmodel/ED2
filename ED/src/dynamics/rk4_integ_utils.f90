@@ -1,392 +1,459 @@
-subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,ifm,  &
-     integration_buff, rhos, vels, atm_tmp, atm_shv, atm_co2, geoht,  &
-     exner, pcpg, qpcpg, dpcpg, prss, lsl)
+!==========================================================================================!
+!==========================================================================================!
+! Subroutine odeint_ar                                                                     !
+!                                                                                          !
+!     This subroutine will drive the integration of several ODEs that drive the fast-scale !
+! state variables.                                                                         !
+!------------------------------------------------------------------------------------------!
+subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff,rhos,vels   &
+                    ,atm_tmp,atm_shv,atm_co2,geoht,exner,pcpg,qpcpg,dpcpg,prss,lsl)
 
-  use ed_state_vars,only:integration_vars_ar,sitetype,patchtype
-  use rk4_stepper_ar, only: rkqs_ar
-  use ed_misc_coms,only:fast_diagnostics
-  use hydrology_coms, only: useRUNOFF
-  use grid_coms, only: nzg
-  use soil_coms, only: dslz,min_sfcwater_mass,runoff_time
-  use consts_coms, only: cliq,t3ple,tsupercool
-
-  implicit none
-
-  integer, intent(in) :: lsl
-  type(integration_vars_ar), target :: integration_buff
-  type(sitetype),target :: csite
-  type(patchtype),pointer :: cpatch
-  integer :: ipa,isi,ipy,ifm
-
-  integer, parameter :: maxstp=100000000
-  real, parameter :: tiny_offset=1.0e-20
-
-  real :: x1,x2,x,h,h1,epsi,hnext,hdid,hmin,qwfree,wfreeb
-  integer :: i,ksn
-  !integer, parameter :: isoaking=0
-  integer :: irunoff
-!    real, parameter :: inverse_runoff_time = 0.1  <defined in soil_coms> [[MCD]]
-  real, intent(in) :: rhos
-
-  real, intent(in) :: vels
-  real, intent(in) :: atm_tmp
-  real, intent(in) :: atm_shv
-  real, intent(in) :: atm_co2
-  real, intent(in) :: geoht
-  real, intent(in) :: exner
-  real, intent(in) :: pcpg
-  real, intent(in) :: qpcpg
-  real, intent(in) :: dpcpg
-  real, intent(in) :: prss
-
-
-  irunoff = 1 - useRUNOFF
-
-  ! If top snow layer is too thin for computational stability, have it evolve in thermal equilibrium with top soil layer.
-  call stabilize_snow_layers_ar(integration_buff%initp, csite,ipa, 0.0, lsl)
-
-  !----------------------------------
-  ! Create temporary patches
-  !----------------------------------
-
-  cpatch => csite%patch(ipa)
-
-  call copy_rk4_patch_ar(integration_buff%initp, integration_buff%y,   &
-       cpatch, lsl)
-
-
-  !--------------------------------
-  ! Set initial time and stepsize.
-  !--------------------------------
-  x = x1
-  h = h1
-  if((x2-x1).lt.0.0)then
-     h = -h1
-  endif
-
-  ! Begin timestep loop
-  do i=1,maxstp
-
-     ! Get initial derivatives
-     call leaf_derivs_ar(integration_buff%y, integration_buff%dydx, &
-          csite,ipa,isi,ipy, rhos, prss, pcpg, qpcpg, dpcpg, atm_tmp, exner, geoht, vels,  &
-          atm_shv, atm_co2, lsl)
-
-     ! Get scalings used to determine stability
-     call get_yscal_ar(integration_buff%y, integration_buff%dydx,   &
-          h, tiny_offset, integration_buff%yscal, cpatch, lsl)
-
-     ! Be sure not to overstep
-     if((x+h-x2)*(x+h-x1).gt.0.0) h=x2-x
-
-     ! Take the step
-     call rkqs_ar(integration_buff, x, h, hmin, epsi, hdid, hnext,  &
-          csite,ipa,isi,ipy,ifm, rhos, vels, atm_tmp, atm_shv, atm_co2,  &
-          geoht, exner, pcpg, qpcpg, dpcpg, prss, lsl)
-
-     ! Re-calculate tempks, fracliqs, surface water flags.
-     call stabilize_snow_layers_ar(integration_buff%y, csite,ipa, 0.0, lsl)
-     
-     if((x-x2)*(x2-x1).ge.0.0)then
-        
-        ! Make temporary surface liquid water disappear
-        csite%wbudget_loss2runoff(ipa) = 0.0
-        csite%ebudget_loss2runoff(ipa) = 0.0
-        ksn = integration_buff%y%nlev_sfcwater
-        
-        !----------------------------------------------------------------------------------!
-        !    I had to split the following if into two tests. When ksn is 0, then we cannot !
-        ! test sfcwater_???(ksn) otherwise the compiler complains about out of bounds      !
-        ! problem.                                                                         !
-        !----------------------------------------------------------------------------------!
-        
-        if (irunoff == 1 .and. ksn >= 1) then
-           if (integration_buff%y%sfcwater_mass(ksn) > 0.0 .and. &
-               integration_buff%y%sfcwater_fracliq(ksn) > 0.1) then
-
-              wfreeb = integration_buff%y%sfcwater_mass(ksn)  &
-                   * (integration_buff%y%sfcwater_fracliq(ksn) - .1)  &
-                   / 0.9 * min(1.0,runoff_time*hdid) 
-              qwfree = wfreeb                                                              &
-                     * cliq * (integration_buff%y%sfcwater_tempk(ksn) - tsupercool )
-           
-              ! Convert to J/m2
-              integration_buff%y%sfcwater_energy(ksn) =   &
-                   integration_buff%y%sfcwater_energy(ksn) *  &
-                   integration_buff%y%sfcwater_mass(ksn)
-              integration_buff%y%sfcwater_mass(ksn) =  &
-                   integration_buff%y%sfcwater_mass(ksn) - wfreeb
-              integration_buff%y%sfcwater_depth(ksn) =  &
-                   integration_buff%y%sfcwater_depth(ksn) - wfreeb*0.001
-              if(integration_buff%y%sfcwater_mass(ksn) >= min_sfcwater_mass)then
-                 integration_buff%y%sfcwater_energy(ksn) =  ( &
-                      integration_buff%y%sfcwater_energy(ksn)-qwfree)/ &
-                      integration_buff%y%sfcwater_mass(ksn)
-              else
-                 integration_buff%y%sfcwater_energy(ksn) = 0.0
-              endif
-           
-              call stabilize_snow_layers_ar(integration_buff%y, csite,ipa,  &
-                   0.0, lsl)
-
-              ! Compute runoff for output 
-
-              if(fast_diagnostics) then
-                 csite%runoff(ipa) = csite%runoff(ipa) + wfreeb/(x2-x1)
-                 csite%avg_runoff(ipa) = csite%avg_runoff(ipa) + wfreeb
-                 csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa) + qwfree
-                 csite%wbudget_loss2runoff(ipa) = wfreeb
-                 csite%ebudget_loss2runoff(ipa) = qwfree
-              endif
-              
-
-           else
-              csite%runoff(ipa) = 0.0
-              csite%avg_runoff(ipa) = 0.0
-              csite%avg_runoff_heat(ipa) = 0.0
-              csite%wbudget_loss2runoff(ipa) = 0.0
-              csite%ebudget_loss2runoff(ipa) = 0.0
-           end if
-           
-        else
-
-           csite%runoff(ipa) = 0.0
-           csite%avg_runoff(ipa) = 0.0
-           csite%avg_runoff_heat(ipa) = 0.0
-           csite%wbudget_loss2runoff(ipa) = 0.0
-           csite%ebudget_loss2runoff(ipa) = 0.0
-
-        end if
+   use ed_state_vars  , only : integration_vars_ar & ! structure
+                             , sitetype            & ! structure
+                             , patchtype           ! ! structure
+   use rk4_coms       , only : maxstp              & ! intent(in)
+                             , tbeg                & ! intent(in)
+                             , tend                & ! intent(in)
+                             , dtrk4               & ! intent(in)
+                             , dtrk4i              ! ! intent(in)
+   use rk4_stepper_ar , only : rkqs_ar             ! ! subroutine
+   use ed_misc_coms   , only : fast_diagnostics    ! ! intent(in)
+   use hydrology_coms , only : useRUNOFF           ! ! intent(in)
+   use grid_coms      , only : nzg                 ! ! intent(in)
+   use soil_coms      , only : dslz                & ! intent(in)
+                             , min_sfcwater_mass   & ! intent(in)
+                             , runoff_time         ! ! intent(in)
+   use consts_coms    , only : cliq                & ! intent(in)
+                             , t3ple               & ! intent(in)
+                             , tsupercool          & ! intent(in)
+                             , wdnsi               ! ! intent(in)
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   type(integration_vars_ar) , target      :: integration_buff ! RK4 variables
+   type(sitetype)            , target      :: csite            ! Current site
+   integer                   , intent(in)  :: ipa              ! Current patch ID
+   integer                   , intent(in)  :: isi              ! Current site ID
+   integer                   , intent(in)  :: ipy              ! Current polygon ID
+   integer                   , intent(in)  :: ifm              ! Current grid ID
+   integer                   , intent(in)  :: lsl              ! Lowest soil point
+   real                      , intent(in)  :: rhos             ! Air density
+   real                      , intent(in)  :: vels             ! Air wind speed
+   real                      , intent(in)  :: atm_tmp          ! Air temperature
+   real                      , intent(in)  :: atm_shv          ! Air specific humidity
+   real                      , intent(in)  :: atm_co2          ! Air CO2 mixing ratio
+   real                      , intent(in)  :: geoht            ! Geopotential height
+   real                      , intent(in)  :: exner            ! Exner function
+   real                      , intent(in)  :: pcpg             ! Precipitation rate
+   real                      , intent(in)  :: qpcpg            ! Precipitation heat rate
+   real                      , intent(in)  :: dpcpg            ! Precipitation "depth flux"
+   real                      , intent(in)  :: prss             ! Air pressure
+   real                                    :: h1               ! First guess of delta-t
+   !----- Local variables -----------------------------------------------------------------!
+   type(patchtype)           , pointer     :: cpatch           ! Current patch
+   integer                                 :: i                ! Step counter
+   integer                                 :: ksn              ! # of snow/water layers
+   real                                    :: x                ! Elapsed time
+   real                                    :: h                ! Current delta-t attempt
+   real                                    :: hnext            ! Next delta-t
+   real                                    :: hdid             ! delta-t that worked (???)
+   real                                    :: qwfree           ! Free water internal energy
+   real                                    :: wfreeb           ! Free water 
+   !----- Saved variables -----------------------------------------------------------------!
+   logical, save    :: first_time=.true.
+   logical, save    :: skiprunoff
+   !---------------------------------------------------------------------------------------!
+   
+   !----- Checking whether we will use runoff or not, and saving this check to save time. -!
+   if (first_time) then
+      skiprunoff = .false. ! useRUNOFF == 0
+      first_time = .false.
+   end if
 
 
-        call copy_rk4_patch_ar(integration_buff%y,   &
-             integration_buff%initp, cpatch, lsl)
-        csite%htry(ipa) = hnext
+   !---------------------------------------------------------------------------------------!
+   !    If top snow layer is too thin for computational stability, have it evolve in       !
+   ! thermal equilibrium with top soil layer.                                              !
+   !---------------------------------------------------------------------------------------!
+   call stabilize_snow_layers_ar(integration_buff%initp, csite,ipa, 0.0, lsl)
 
-        return
-     endif
 
-     h = hnext
-  enddo
-  print*,'Too many steps in routine odeint'
-  call print_patch_ar(integration_buff%y, csite,ipa, lsl)
-  call fatal_error('Too many steps, I give up!','odeint_ar','rk4_integ_utils.f90')
-  
+
+   !---------------------------------------------------------------------------------------!
+   !     Create temporary patches.                                                         !
+   !---------------------------------------------------------------------------------------!
+   cpatch => csite%patch(ipa)
+   call copy_rk4_patch_ar(integration_buff%initp, integration_buff%y,cpatch,lsl)
+
+
+   !---------------------------------------------------------------------------------------!
+   ! Set initial time and stepsize.                                                        !
+   !---------------------------------------------------------------------------------------!
+   x = tbeg
+   h = h1
+   if (dtrk4 < 0.0) h = -h1
+
+   !---------------------------------------------------------------------------------------!
+   ! Begin timestep loop                                                                   !
+   !---------------------------------------------------------------------------------------!
+   timesteploop: do i=1,maxstp
+
+      !----- Get initial derivatives ------------------------------------------------------!
+      call leaf_derivs_ar(integration_buff%y,integration_buff%dydx,csite,ipa,isi,ipy,rhos  &
+                         ,prss,pcpg,qpcpg,dpcpg,atm_tmp,exner,geoht,vels,atm_shv,atm_co2   &
+                         ,lsl)
+
+      !----- Get scalings used to determine stability -------------------------------------!
+      call get_yscal_ar(integration_buff%y, integration_buff%dydx,h,integration_buff%yscal &
+                       ,cpatch,lsl)
+
+      !----- Be sure not to overstep ------------------------------------------------------!
+      if((x+h-tend)*(x+h-tbeg) > 0.0) h=tend-x
+
+      !----- Take the step ----------------------------------------------------------------!
+      call rkqs_ar(integration_buff,x,h,hdid,hnext,csite,ipa,isi,ipy,ifm,rhos,vels,atm_tmp &
+                  ,atm_shv,atm_co2,geoht,exner,pcpg,qpcpg,dpcpg,prss,lsl)
+
+      !----- Re-calculate tempks, fracliqs, surface water flags. --------------------------!
+      call stabilize_snow_layers_ar(integration_buff%y, csite,ipa, 0.0, lsl)
+
+      !----- If the integration reached the next step, make some final adjustments --------!
+      if((x-tend)*dtrk4 >= 0.0)then
+
+         csite%wbudget_loss2runoff(ipa) = 0.0
+         csite%ebudget_loss2runoff(ipa) = 0.0
+         ksn = integration_buff%y%nlev_sfcwater
+
+         !---------------------------------------------------------------------------------!
+         !   Make temporary surface liquid water disappear.                                !
+         !---------------------------------------------------------------------------------!
+         !!!!!    Do we really want to get rid of these ponds? Especially thinking in a !!!!
+         !!!!! coupled run, this causes mass violation. I can see this making sense in  !!!!
+         !!!!! SOI runs, perhaps this should be the condition to apply this. Regional   !!!!
+         !!!!! runs perhaps, because it is not really coupled to the atmosphere, but in !!!!
+         !!!!! coupled runs this definitely looks like a problem...                     !!!!
+         !---------------------------------------------------------------------------------!
+         if (skiprunoff .and. ksn >= 1) then
+         
+            if (integration_buff%y%sfcwater_mass(ksn) > 0.0   .and.                        &
+                integration_buff%y%sfcwater_fracliq(ksn) > 0.1) then
+
+               wfreeb = integration_buff%y%sfcwater_mass(ksn)                              &
+                      * (integration_buff%y%sfcwater_fracliq(ksn) - .1)                    &
+                      / 0.9 * min(1.0,runoff_time*hdid) 
+               qwfree = wfreeb                                                             &
+                      * cliq * (integration_buff%y%sfcwater_tempk(ksn) - tsupercool )
+
+               integration_buff%y%sfcwater_mass(ksn) =                                     &
+                                   integration_buff%y%sfcwater_mass(ksn)                   &
+                                 - wfreeb
+
+               integration_buff%y%sfcwater_depth(ksn) =                                    &
+                                   integration_buff%y%sfcwater_depth(ksn)                  &
+                                 - wfreeb*wdnsi
+
+               !----- Recompute the energy removing runoff --------------------------------!
+               if (integration_buff%y%sfcwater_mass(ksn) >= min_sfcwater_mass) then
+                  integration_buff%y%sfcwater_energy(ksn) =                                &
+                                     integration_buff%y%sfcwater_energy(ksn) - qwfree
+                                    
+               else
+                  integration_buff%y%sfcwater_energy(ksn) = 0.0
+               end if
+            
+               call stabilize_snow_layers_ar(integration_buff%y,csite,ipa,0.0,lsl)
+
+               !----- Compute runoff for output -------------------------------------------!
+               if(fast_diagnostics) then
+                  csite%runoff(ipa) = csite%runoff(ipa) + wfreeb * dtrk4i
+                  csite%avg_runoff(ipa) = csite%avg_runoff(ipa) + wfreeb
+                  csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa) + qwfree
+                  csite%wbudget_loss2runoff(ipa) = wfreeb
+                  csite%ebudget_loss2runoff(ipa) = qwfree
+               end if
+
+            else
+               csite%runoff(ipa)              = 0.0
+               csite%avg_runoff(ipa)          = 0.0
+               csite%avg_runoff_heat(ipa)     = 0.0
+               csite%wbudget_loss2runoff(ipa) = 0.0
+               csite%ebudget_loss2runoff(ipa) = 0.0
+            end if
+         else
+            csite%runoff(ipa)              = 0.0
+            csite%avg_runoff(ipa)          = 0.0
+            csite%avg_runoff_heat(ipa)     = 0.0
+            csite%wbudget_loss2runoff(ipa) = 0.0
+            csite%ebudget_loss2runoff(ipa) = 0.0
+         end if
+
+         !------ Copying the temporary patch to the next intermediate step ----------------!
+         call copy_rk4_patch_ar(integration_buff%y,integration_buff%initp, cpatch, lsl)
+         !------ Updating the substep for next time and leave -----------------------------!
+         csite%htry(ipa) = hnext
+
+         return
+      end if
+      
+      !----- Use hnext as the next substep ------------------------------------------------!
+      h = hnext
+   end do timesteploop
+
+   !----- If it reached this point, that is really bad news... ----------------------------!
+   print*,'Too many steps in routine odeint'
+   call print_patch_ar(integration_buff%y, csite,ipa, lsl)
+   call fatal_error('Too many steps, I give up!','odeint_ar','rk4_integ_utils.f90')
+
+   return
 end subroutine odeint_ar
+!==========================================================================================!
+!==========================================================================================!
 
-!===================================================================
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine copies that variables that are integrated by the Runge-Kutta solver   !
+! to a buffer structure.                                                                   !
+!------------------------------------------------------------------------------------------!
 subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
+   use ed_state_vars , only :  sitetype           & ! structure
+                            ,  rk4patchtype       & ! structure
+                            ,  patchtype          ! ! structure
+   use grid_coms     , only :  nzg                & ! integer(in)
+                            ,  nzs                ! ! integer(in) 
+   use soil_coms     , only :  water_stab_thresh  & ! integer(in)
+                            , min_sfcwater_mass   ! ! integer(in)
+   use ed_misc_coms  , only :  fast_diagnostics   ! ! integer(in)
+   implicit none
+
+   !----- Arguments -----------------------------------------------------------------------!
+   type(rk4patchtype) , target     :: targetp
+   type(sitetype)     , target     :: sourcesite
+   integer            , intent(in) :: lsl
+   integer            , intent(in) :: ipa
+   !----- Local variables -----------------------------------------------------------------!
+   type(patchtype)    , pointer    :: cpatch
+   integer                         :: ico
+   integer                         :: k
+   !---------------------------------------------------------------------------------------!
 
 
-  use ed_state_vars,only: sitetype,rk4patchtype,patchtype
-  use grid_coms, only: nzg, nzs
-  use soil_coms, only: water_stab_thresh, min_sfcwater_mass
-  use ed_misc_coms,only:fast_diagnostics
-  implicit none
 
-  integer, intent(in) :: lsl
-  integer :: ipa,ico
-  type(sitetype),target   :: sourcesite
-  type(patchtype),pointer :: cpatch
-  type(rk4patchtype), target :: targetp
-  integer :: k
+   targetp%can_temp  = sourcesite%can_temp(ipa)
+   targetp%can_shv   = sourcesite%can_shv(ipa)
+   targetp%can_co2   = sourcesite%can_co2(ipa)
+
+   do k = lsl, nzg
+      targetp%soil_water(k)   = sourcesite%soil_water(k,ipa)
+      targetp%soil_energy(k)  = sourcesite%soil_energy(k,ipa)
+      targetp%soil_tempk(k)   = sourcesite%soil_tempk(k,ipa)
+      targetp%soil_fracliq(k) = sourcesite%soil_fracliq(k,ipa)
+   end do
+
+   do k = 1, nzs
+      targetp%sfcwater_mass(k)    = sourcesite%sfcwater_mass(k,ipa)
+      targetp%sfcwater_depth(k)   = sourcesite%sfcwater_depth(k,ipa)
+      !----- Converting sfcwater_energy to J/m² inside the Runge-Kutta integrator. --------!
+      targetp%sfcwater_energy(k)  = sourcesite%sfcwater_energy(k,ipa)                      &
+                                  * sourcesite%sfcwater_mass(k,ipa)
+      targetp%sfcwater_tempk(k)   = sourcesite%sfcwater_tempk(k,ipa)
+      targetp%sfcwater_fracliq(k) = sourcesite%sfcwater_fracliq(k,ipa)
+   end do
 
 
-  targetp%can_temp = sourcesite%can_temp(ipa)
-  targetp%can_shv = sourcesite%can_shv(ipa)
-  targetp%can_co2 = sourcesite%can_co2(ipa)
+   targetp%ustar = sourcesite%ustar(ipa)
+   targetp%cstar = sourcesite%cstar(ipa)
+   targetp%tstar = sourcesite%tstar(ipa)
+   targetp%rstar = sourcesite%rstar(ipa)
 
 
+   targetp%upwp = sourcesite%upwp(ipa)
+   targetp%wpwp = sourcesite%wpwp(ipa)
+   targetp%tpwp = sourcesite%tpwp(ipa)
+   targetp%rpwp = sourcesite%rpwp(ipa)
 
-
-  do k = lsl, nzg
-     targetp%soil_water(k) = sourcesite%soil_water(k,ipa)
-     targetp%soil_energy(k) = sourcesite%soil_energy(k,ipa)
-     targetp%soil_tempk(k) = sourcesite%soil_tempk(k,ipa)
-     targetp%soil_fracliq(k) = sourcesite%soil_fracliq(k,ipa)
-  enddo
-
-  do k = 1, nzs
-     targetp%sfcwater_mass(k) = sourcesite%sfcwater_mass(k,ipa)
-     targetp%sfcwater_energy(k) = sourcesite%sfcwater_energy(k,ipa)
-     targetp%sfcwater_depth(k) = sourcesite%sfcwater_depth(k,ipa)
-  enddo
   
-  targetp%virtual_water = 0.0
-  targetp%virtual_heat = 0.0
-  targetp%virtual_depth = 0.0
+   targetp%nlev_sfcwater = sourcesite%nlev_sfcwater(ipa)
 
 
-  targetp%ustar = sourcesite%ustar(ipa)
-  targetp%cstar = sourcesite%cstar(ipa)
-  targetp%tstar = sourcesite%tstar(ipa)
-  targetp%rstar = sourcesite%rstar(ipa)
+   !----- The virtual pools should be always zero, they are temporary entities ------------!
+   targetp%virtual_water = 0.0
+   targetp%virtual_heat  = 0.0
+   targetp%virtual_depth = 0.0
 
+   if (targetp%nlev_sfcwater == 0) then
+      targetp%virtual_flag = 2
+   else
+      if (targetp%sfcwater_mass(1) < min_sfcwater_mass) then
+         targetp%virtual_flag = 2
+      elseif (targetp%sfcwater_mass(1) < water_stab_thresh) then
+         targetp%virtual_flag = 1
+      else
+         targetp%virtual_flag = 0
+      end if
+   end if
 
-  targetp%upwp = sourcesite%upwp(ipa)
-  targetp%wpwp = sourcesite%wpwp(ipa)
-  targetp%tpwp = sourcesite%tpwp(ipa)
-  targetp%rpwp = sourcesite%rpwp(ipa)
+   cpatch => sourcesite%patch(ipa)
+   do ico = 1,cpatch%ncohorts
+      targetp%veg_water(ico)     = cpatch%veg_water(ico)
+      targetp%veg_energy(ico)    = cpatch%veg_energy(ico)
+   enddo
 
-  
-  targetp%nlev_sfcwater = sourcesite%nlev_sfcwater(ipa)
+   !----- Diagnostics variables -----------------------------------------------------------!
+   if(fast_diagnostics) then
 
+      targetp%wbudget_loss2atm   = sourcesite%wbudget_loss2atm(ipa)
+      targetp%ebudget_loss2atm   = sourcesite%ebudget_loss2atm(ipa)
+      targetp%co2budget_loss2atm = sourcesite%co2budget_loss2atm(ipa)
+      targetp%ebudget_latent     = sourcesite%ebudget_latent(ipa)
+      targetp%avg_carbon_ac      = sourcesite%avg_carbon_ac(ipa)
 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!! WHY IS THIS COMMENTED OUT? RGK                                             !!!!!
+      !   targetp%avg_gpp = sourcesite%avg_gpp(ipa)
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  if(targetp%nlev_sfcwater >= 1)then
-     if(targetp%sfcwater_mass(1) < min_sfcwater_mass)then
-        targetp%virtual_flag = 2
-     elseif(targetp%sfcwater_mass(1) < water_stab_thresh)then
-        targetp%virtual_flag = 1
-     else
-        targetp%virtual_flag = 0
-     endif
-  elseif(targetp%nlev_sfcwater.eq.0)then
-     targetp%virtual_flag = 2
-  endif
+      targetp%avg_vapor_vc       = sourcesite%avg_vapor_vc(ipa)
+      targetp%avg_dew_cg         = sourcesite%avg_dew_cg(ipa)
+      targetp%avg_vapor_gc       = sourcesite%avg_vapor_gc(ipa)
+      targetp%avg_wshed_vg       = sourcesite%avg_wshed_vg(ipa)
+      targetp%avg_vapor_ac       = sourcesite%avg_vapor_ac(ipa)
+      targetp%avg_transp         = sourcesite%avg_transp(ipa)
+      targetp%avg_evap           = sourcesite%avg_evap(ipa)
+      targetp%avg_netrad         = sourcesite%avg_netrad(ipa)
+      targetp%aux                = sourcesite%aux(ipa)
+      targetp%avg_sensible_vc    = sourcesite%avg_sensible_vc(ipa)
+      targetp%avg_sensible_2cas  = sourcesite%avg_sensible_2cas(ipa)
+      targetp%avg_qwshed_vg      = sourcesite%avg_qwshed_vg(ipa)
+      targetp%avg_sensible_gc    = sourcesite%avg_sensible_gc(ipa)
+      targetp%avg_sensible_ac    = sourcesite%avg_sensible_ac(ipa)
+      targetp%avg_sensible_tot   = sourcesite%avg_sensible_tot(ipa)
 
-  cpatch => sourcesite%patch(ipa)
-  do ico = 1,cpatch%ncohorts
-     targetp%veg_water(ico)     = cpatch%veg_water(ico)
-     targetp%veg_energy(ico)    = cpatch%veg_energy(ico)
-  enddo
-!  nullify(cpatch)
+      do k = lsl, nzg
+         targetp%avg_sensible_gg(k) = sourcesite%avg_sensible_gg(k,ipa)
+         targetp%avg_smoist_gg(k)   = sourcesite%avg_smoist_gg(k,ipa)
+         targetp%avg_smoist_gc(k)   = sourcesite%avg_smoist_gc(k,ipa)
+         targetp%aux_s(k)           = sourcesite%aux_s(k,ipa)
+      end do
+   end if
 
-    ! Diagnostics
-  if(fast_diagnostics) then
-
-     targetp%wbudget_loss2atm = sourcesite%wbudget_loss2atm(ipa)
-     targetp%ebudget_loss2atm = sourcesite%ebudget_loss2atm(ipa)
-     targetp%co2budget_loss2atm = sourcesite%co2budget_loss2atm(ipa)
-     targetp%ebudget_latent = sourcesite%ebudget_latent(ipa)
-     targetp%avg_carbon_ac = sourcesite%avg_carbon_ac(ipa)
-
-     ! WHY IS THIS COMMENTED OUT? RGK
-     !   targetp%avg_gpp = sourcesite%avg_gpp(ipa)
-
-     targetp%avg_vapor_vc       = sourcesite%avg_vapor_vc(ipa)     !C
-     targetp%avg_dew_cg         = sourcesite%avg_dew_cg(ipa)       !C
-     targetp%avg_vapor_gc       = sourcesite%avg_vapor_gc(ipa)     !C
-     targetp%avg_wshed_vg       = sourcesite%avg_wshed_vg(ipa)     !C
-     targetp%avg_vapor_ac       = sourcesite%avg_vapor_ac(ipa)     !C
-     targetp%avg_transp         = sourcesite%avg_transp(ipa)       !C
-     targetp%avg_evap           = sourcesite%avg_evap(ipa)         !C
-     targetp%avg_netrad         = sourcesite%avg_netrad(ipa)       !C
-     targetp%aux                = sourcesite%aux(ipa)              !C
-     targetp%avg_sensible_vc    = sourcesite%avg_sensible_vc(ipa)   !C
-     targetp%avg_sensible_2cas  = sourcesite%avg_sensible_2cas(ipa) !C
-     targetp%avg_qwshed_vg      = sourcesite%avg_qwshed_vg(ipa)     !C
-     targetp%avg_sensible_gc    = sourcesite%avg_sensible_gc(ipa)   !C
-     targetp%avg_sensible_ac    = sourcesite%avg_sensible_ac(ipa)   !C
-     targetp%avg_sensible_tot   = sourcesite%avg_sensible_tot(ipa)  !C
-
-     do k = lsl, nzg
-        targetp%avg_sensible_gg(k) = sourcesite%avg_sensible_gg(k,ipa) !C
-        targetp%avg_smoist_gg(k)   = sourcesite%avg_smoist_gg(k,ipa)   !C
-        targetp%avg_smoist_gc(k)   = sourcesite%avg_smoist_gc(k,ipa)   !C
-        targetp%aux_s(k)           = sourcesite%aux_s(k,ipa)           !C
-     enddo
-  endif
-
-  return
+   return
 end subroutine copy_patch_init_ar
+!==========================================================================================!
+!==========================================================================================!
 
-!=====================================================================
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutines increment the derivative into the previous guess to create the new   !
+! guess.                                                                                   !
+!------------------------------------------------------------------------------------------!
 subroutine inc_rk4_patch_ar(rkp, inc, fac, cpatch, lsl)
-
-  use ed_state_vars,only:sitetype,patchtype,rk4patchtype
-  use grid_coms, only: nzg, nzs
-  use ed_misc_coms,only:fast_diagnostics
+   use ed_state_vars , only : sitetype          & ! structure
+                            , patchtype         & ! structure
+                            , rk4patchtype      ! ! structure
+   use grid_coms     , only : nzg               & ! intent(in)
+                            , nzs               ! ! intent(in)
+   use ed_misc_coms  , only : fast_diagnostics  ! ! intent(in)
   
-  implicit none
+   implicit none
 
-  integer, intent(in) :: lsl
-  type(patchtype),target :: cpatch
-  type(rk4patchtype),target :: rkp,inc
-  integer :: ico
+   !----- Arguments -----------------------------------------------------------------------!
+   type(rk4patchtype) , target     :: rkp    ! Temporary patch with previous state
+   type(rk4patchtype) , target     :: inc    ! Temporary patch with its derivatives
+   type(patchtype)    , target     :: cpatch ! Current patch (for characteristics)
+   real               , intent(in) :: fac    ! Increment factor
+   integer            , intent(in) :: lsl    ! Lowest soil level
+   !----- Local variables -----------------------------------------------------------------!
+   integer                         :: ico    ! Cohort ID
+   integer                         :: k      ! Counter
+   !---------------------------------------------------------------------------------------!
 
-  real, intent(in) :: fac
-  integer :: k
 
-  rkp%can_temp = rkp%can_temp + fac * inc%can_temp
-  rkp%can_shv = rkp%can_shv   + fac * inc%can_shv
-  rkp%can_co2 = rkp%can_co2   + fac * inc%can_co2
+   rkp%can_temp = rkp%can_temp  + fac * inc%can_temp
+   rkp%can_shv  = rkp%can_shv   + fac * inc%can_shv
+   rkp%can_co2  = rkp%can_co2   + fac * inc%can_co2
 
-  do k=lsl,nzg
-     rkp%soil_water(k)       = rkp%soil_water(k) + dble(fac) * inc%soil_water(k)
-     rkp%soil_energy(k)      = rkp%soil_energy(k) + fac * inc%soil_energy(k)
-  enddo
+   do k=lsl,nzg
+      rkp%soil_water(k)       = rkp%soil_water(k)  + dble(fac) * inc%soil_water(k)
+      rkp%soil_energy(k)      = rkp%soil_energy(k) + fac * inc%soil_energy(k)
+   end do
 
-  do k=1,rkp%nlev_sfcwater
-     rkp%sfcwater_mass(k) = rkp%sfcwater_mass(k)   &
-          + fac * inc%sfcwater_mass(k)
-     rkp%sfcwater_energy(k) = rkp%sfcwater_energy(k) + fac *   &
-          inc%sfcwater_energy(k)
-     rkp%sfcwater_depth(k) = rkp%sfcwater_depth(k) + fac * inc%sfcwater_depth(k)
-  end do
+   do k=1,rkp%nlev_sfcwater
+      rkp%sfcwater_mass(k)   = max(0.0,rkp%sfcwater_mass(k)   + fac * inc%sfcwater_mass(k))
+      rkp%sfcwater_energy(k) = rkp%sfcwater_energy(k) + fac * inc%sfcwater_energy(k)
+      rkp%sfcwater_depth(k)  = rkp%sfcwater_depth(k)  + fac * inc%sfcwater_depth(k)
+   end do
 
-  rkp%virtual_heat  = rkp%virtual_heat  + fac * inc%virtual_heat
-  rkp%virtual_water = rkp%virtual_water + fac * inc%virtual_water
-  rkp%virtual_depth = rkp%virtual_depth + fac * inc%virtual_depth
-
-  
-  rkp%upwp = rkp%upwp + fac * inc%upwp
-  rkp%wpwp = rkp%wpwp + fac * inc%wpwp
-  rkp%tpwp = rkp%tpwp + fac * inc%tpwp
-  rkp%rpwp = rkp%rpwp + fac * inc%rpwp
+   rkp%virtual_heat  = rkp%virtual_heat  + fac * inc%virtual_heat
+   rkp%virtual_water = rkp%virtual_water + fac * inc%virtual_water
+   rkp%virtual_depth = rkp%virtual_depth + fac * inc%virtual_depth
 
   
-  do ico = 1,cpatch%ncohorts
-     rkp%veg_water(ico)     = rkp%veg_water(ico) + fac * inc%veg_water(ico)
-     rkp%veg_water(ico)     = max(rkp%veg_water(ico),0.0)
-     rkp%veg_energy(ico)    = rkp%veg_energy(ico) + fac * inc%veg_energy(ico)
-  enddo
+   rkp%upwp = rkp%upwp + fac * inc%upwp
+   rkp%wpwp = rkp%wpwp + fac * inc%wpwp
+   rkp%tpwp = rkp%tpwp + fac * inc%tpwp
+   rkp%rpwp = rkp%rpwp + fac * inc%rpwp
 
-  if(fast_diagnostics) then
+  
+   do ico = 1,cpatch%ncohorts
+      rkp%veg_water(ico)     = max(0.0,rkp%veg_water(ico) + fac * inc%veg_water(ico))
+      rkp%veg_energy(ico)    = rkp%veg_energy(ico) + fac * inc%veg_energy(ico)
+   enddo
 
-     rkp%wbudget_loss2atm = rkp%wbudget_loss2atm + fac * inc%wbudget_loss2atm
-     rkp%ebudget_loss2atm = rkp%ebudget_loss2atm + fac * inc%ebudget_loss2atm
-     rkp%co2budget_loss2atm = rkp%co2budget_loss2atm +   &
-          fac * inc%co2budget_loss2atm
-     rkp%ebudget_latent = rkp%ebudget_latent + fac * inc%ebudget_latent
+   if(fast_diagnostics) then
 
-     rkp%avg_carbon_ac = rkp%avg_carbon_ac + fac * inc%avg_carbon_ac
-     rkp%avg_gpp = rkp%avg_gpp + fac * inc%avg_gpp
-     
-     rkp%avg_vapor_vc       = rkp%avg_vapor_vc       + fac * inc%avg_vapor_vc
-     rkp%avg_dew_cg         = rkp%avg_dew_cg         + fac * inc%avg_dew_cg  
-     rkp%avg_vapor_gc       = rkp%avg_vapor_gc       + fac * inc%avg_vapor_gc
-     rkp%avg_wshed_vg       = rkp%avg_wshed_vg       + fac * inc%avg_wshed_vg
-     rkp%avg_vapor_ac       = rkp%avg_vapor_ac       + fac * inc%avg_vapor_ac
-     rkp%avg_transp         = rkp%avg_transp         + fac * inc%avg_transp  
-     rkp%avg_evap           = rkp%avg_evap           + fac * inc%avg_evap  
-     rkp%avg_netrad         = rkp%avg_netrad         + fac * inc%avg_netrad      
-     rkp%aux                = rkp%aux                + fac * inc%aux
-     rkp%avg_sensible_vc    = rkp%avg_sensible_vc    + fac * inc%avg_sensible_vc  
-     rkp%avg_sensible_2cas  = rkp%avg_sensible_2cas  + fac * inc%avg_sensible_2cas
-     rkp%avg_qwshed_vg      = rkp%avg_qwshed_vg      + fac * inc%avg_qwshed_vg    
-     rkp%avg_sensible_gc    = rkp%avg_sensible_gc    + fac * inc%avg_sensible_gc  
-     rkp%avg_sensible_ac    = rkp%avg_sensible_ac    + fac * inc%avg_sensible_ac  
-     rkp%avg_sensible_tot   = rkp%avg_sensible_tot   + fac * inc%avg_sensible_tot 
+      rkp%wbudget_loss2atm   = rkp%wbudget_loss2atm   + fac * inc%wbudget_loss2atm
+      rkp%ebudget_loss2atm   = rkp%ebudget_loss2atm   + fac * inc%ebudget_loss2atm
+      rkp%co2budget_loss2atm = rkp%co2budget_loss2atm + fac * inc%co2budget_loss2atm
+      rkp%ebudget_latent     = rkp%ebudget_latent     + fac * inc%ebudget_latent
 
-     do k=lsl,nzg
-        rkp%avg_sensible_gg(k)  = rkp%avg_sensible_gg(k)  + fac * inc%avg_sensible_gg(k)
-        rkp%avg_smoist_gg(k)    = rkp%avg_smoist_gg(k)    + fac * inc%avg_smoist_gg(k)  
-        rkp%avg_smoist_gc(k)    = rkp%avg_smoist_gc(k)    + fac * inc%avg_smoist_gc(k)  
-        rkp%aux_s(k)            = rkp%aux_s(k)            + fac * inc%aux_s(k)
-     enddo
+      rkp%avg_carbon_ac      = rkp%avg_carbon_ac      + fac * inc%avg_carbon_ac
+      rkp%avg_gpp            = rkp%avg_gpp            + fac * inc%avg_gpp
+      
+      rkp%avg_vapor_vc       = rkp%avg_vapor_vc       + fac * inc%avg_vapor_vc
+      rkp%avg_dew_cg         = rkp%avg_dew_cg         + fac * inc%avg_dew_cg  
+      rkp%avg_vapor_gc       = rkp%avg_vapor_gc       + fac * inc%avg_vapor_gc
+      rkp%avg_wshed_vg       = rkp%avg_wshed_vg       + fac * inc%avg_wshed_vg
+      rkp%avg_vapor_ac       = rkp%avg_vapor_ac       + fac * inc%avg_vapor_ac
+      rkp%avg_transp         = rkp%avg_transp         + fac * inc%avg_transp  
+      rkp%avg_evap           = rkp%avg_evap           + fac * inc%avg_evap  
+      rkp%avg_netrad         = rkp%avg_netrad         + fac * inc%avg_netrad      
+      rkp%aux                = rkp%aux                + fac * inc%aux
+      rkp%avg_sensible_vc    = rkp%avg_sensible_vc    + fac * inc%avg_sensible_vc  
+      rkp%avg_sensible_2cas  = rkp%avg_sensible_2cas  + fac * inc%avg_sensible_2cas
+      rkp%avg_qwshed_vg      = rkp%avg_qwshed_vg      + fac * inc%avg_qwshed_vg    
+      rkp%avg_sensible_gc    = rkp%avg_sensible_gc    + fac * inc%avg_sensible_gc  
+      rkp%avg_sensible_ac    = rkp%avg_sensible_ac    + fac * inc%avg_sensible_ac  
+      rkp%avg_sensible_tot   = rkp%avg_sensible_tot   + fac * inc%avg_sensible_tot 
 
-  endif
+      do k=lsl,nzg
+         rkp%avg_sensible_gg(k)  = rkp%avg_sensible_gg(k)  + fac * inc%avg_sensible_gg(k)
+         rkp%avg_smoist_gg(k)    = rkp%avg_smoist_gg(k)    + fac * inc%avg_smoist_gg(k)  
+         rkp%avg_smoist_gc(k)    = rkp%avg_smoist_gc(k)    + fac * inc%avg_smoist_gc(k)  
+         rkp%aux_s(k)            = rkp%aux_s(k)            + fac * inc%aux_s(k)
+      end do
 
-  return
+   end if
+
+   return
 end subroutine inc_rk4_patch_ar
 
 !==============================================================
 
-subroutine get_yscal_ar(y, dy, htry, tiny_offset, yscal, cpatch, lsl)
+subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, lsl)
   
   use ed_state_vars,only : patchtype,rk4patchtype
+  use rk4_coms, only : tiny_offset
   use grid_coms, only: nzg, nzs
   use soil_coms, only: min_sfcwater_mass
   use consts_coms, only: cliq,cicet3
@@ -399,7 +466,7 @@ subroutine get_yscal_ar(y, dy, htry, tiny_offset, yscal, cpatch, lsl)
   type(rk4patchtype),target :: y,dy,yscal
   integer :: ico
   integer, intent(in) :: lsl
-  real :: htry,tiny_offset
+  real :: htry
   integer :: k
   real, parameter :: sfc_min = 1.0
   
@@ -432,8 +499,9 @@ subroutine get_yscal_ar(y, dy, htry, tiny_offset, yscal, cpatch, lsl)
      do k=1,nzs
         yscal%sfcwater_mass(k) = 0.1
         if(y%sfcwater_mass(k) > min_sfcwater_mass)then
-           yscal%sfcwater_energy(k) = abs( y%sfcwater_energy(k))                           &
-                                    + abs(dy%sfcwater_energy(k))
+           yscal%sfcwater_energy(k) = ( yscal%sfcwater_mass(k) / y%sfcwater_mass(k))       &
+                                    * ( abs( y%sfcwater_energy(k))                         &
+                                      + abs(dy%sfcwater_energy(k)))
         else
            yscal%sfcwater_energy(k) = 1.0e30
         endif
@@ -461,9 +529,10 @@ end subroutine get_yscal_ar
 
 !=================================================================
 
-subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp,epsilon)
+subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
 
   use ed_state_vars,only:patchtype,rk4patchtype
+  use rk4_coms, only: rk4eps
 
   use grid_coms, only: nzg
   use canopy_radiation_coms, only: lai_min
@@ -477,7 +546,6 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp,epsilon)
   integer :: ico
   real :: errmax,errh2o,errene,err,errh2oMAX,erreneMAX
   integer :: k
-  real, intent(in) :: epsilon
 !  integer,save:: count
 !  real,save ::   errctemp
 !  real,save ::  errcvap
@@ -493,47 +561,47 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp,epsilon)
 
   err = abs(yerr%can_temp/yscal%can_temp)
   errmax = max(errmax,err)
-  if(record_err .and. err .gt. epsilon) integ_err(1,1) = integ_err(1,1) + 1_8 
+  if(record_err .and. err .gt. rk4eps) integ_err(1,1) = integ_err(1,1) + 1_8 
 
   err = abs(yerr%can_shv/yscal%can_shv)
   errmax = max(errmax,err)
-  if(record_err .and. err .gt. epsilon) integ_err(2,1) = integ_err(2,1) + 1_8 
+  if(record_err .and. err .gt. rk4eps) integ_err(2,1) = integ_err(2,1) + 1_8 
 
   err = abs(yerr%can_co2/yscal%can_co2)
   errmax = max(errmax,err)
-  if(record_err .and. err .gt. epsilon) integ_err(3,1) = integ_err(3,1) + 1_8 
+  if(record_err .and. err .gt. rk4eps) integ_err(3,1) = integ_err(3,1) + 1_8 
   
   do k=lsl,nzg
      err = real(abs(yerr%soil_water(k)/yscal%soil_water(k)))
      errmax = max(errmax,err)
-     if(record_err .and. err .gt. epsilon) integ_err(3+k,1) = integ_err(3+k,1) + 1_8 
+     if(record_err .and. err .gt. rk4eps) integ_err(3+k,1) = integ_err(3+k,1) + 1_8 
   end do
 
   do k=lsl,nzg
      err = abs(yerr%soil_energy(k)/yscal%soil_energy(k))
      errmax = max(errmax,err)
-     if(record_err .and. err .gt. epsilon) integ_err(15+k,1) = integ_err(15+k,1) + 1_8      
+     if(record_err .and. err .gt. rk4eps) integ_err(15+k,1) = integ_err(15+k,1) + 1_8      
   enddo
 
   do k=1,ytemp%nlev_sfcwater
      err = abs(yerr%sfcwater_energy(k) / yscal%sfcwater_energy(k))
      errmax = max(errmax,err)
-     if(record_err .and. err .gt. epsilon) integ_err(27+k,1) = integ_err(27+k,1) + 1_8      
+     if(record_err .and. err .gt. rk4eps) integ_err(27+k,1) = integ_err(27+k,1) + 1_8      
   enddo
 
   do k=1,ytemp%nlev_sfcwater
      err = abs(yerr%sfcwater_mass(k) / yscal%sfcwater_mass(k))
      errmax = max(errmax,err)
-     if(record_err .and. err .gt. epsilon) integ_err(32+k,1) = integ_err(32+k,1) + 1_8      
+     if(record_err .and. err .gt. rk4eps) integ_err(32+k,1) = integ_err(32+k,1) + 1_8      
   enddo
 
   err = abs(yerr%virtual_heat/yscal%virtual_heat)
   errmax = max(errmax,err)
-  if(record_err .and. err .gt. epsilon) integ_err(38,1) = integ_err(38,1) + 1_8      
+  if(record_err .and. err .gt. rk4eps) integ_err(38,1) = integ_err(38,1) + 1_8      
 
   err = abs(yerr%virtual_water/yscal%virtual_water)
   errmax = max(errmax,err)
-  if(record_err .and. err .gt. epsilon) integ_err(39,1) = integ_err(39,1) + 1_8      
+  if(record_err .and. err .gt. rk4eps) integ_err(39,1) = integ_err(39,1) + 1_8      
 
 !  write (unit=40,fmt='(132a)') ('-',k=1,132)
 !  write (unit=40,fmt='(2(a5,1x),8(a14,1x))') &
@@ -556,8 +624,8 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp,epsilon)
      endif
   end do
   if(cpatch%ncohorts > 0 .and. record_err) then
-     if(errh2oMAX > epsilon) integ_err(40,1) = integ_err(40,1) + 1_8      
-     if(erreneMAX > epsilon) integ_err(41,1) = integ_err(41,1) + 1_8      
+     if(errh2oMAX > rk4eps) integ_err(40,1) = integ_err(40,1) + 1_8      
+     if(erreneMAX > rk4eps) integ_err(41,1) = integ_err(41,1) + 1_8      
   endif
 
 !  write (unit=40,fmt='(132a)') ('-',k=1,132)
@@ -607,15 +675,15 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp,epsilon)
 end subroutine get_errmax_ar
 
 !==================================================================
-subroutine print_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp,epsil)
+subroutine print_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp)
       
   use ed_state_vars,only:patchtype,rk4patchtype
+  use rk4_coms, only: rk4eps
   use grid_coms, only: nzg, nzs
   use canopy_radiation_coms, only: lai_min
   implicit none
 
   integer, intent(in) :: lsl
-  real, intent(in) :: epsil
   type(patchtype), target :: cpatch
   integer :: ico
   type(rk4patchtype), target :: yerr,yscal,y,ytemp
@@ -629,48 +697,48 @@ subroutine print_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp,epsil)
 
   errmax = max(0.0,abs(yerr%can_temp/yscal%can_temp))
   print*,'can_temp',errmax,yerr%can_temp,yscal%can_temp
-  call print_errmax_flag(yerr%can_temp,yscal%can_temp,epsil)
+  call print_errmax_flag(yerr%can_temp,yscal%can_temp)
 
   errmax = max(errmax,abs(yerr%can_shv/yscal%can_shv))
   print*,'can_shv',errmax,yerr%can_shv  &
        ,yscal%can_shv
-  call print_errmax_flag(yerr%can_shv,yscal%can_shv,epsil)
+  call print_errmax_flag(yerr%can_shv,yscal%can_shv)
 
   errmax = max(errmax,abs(yerr%can_co2/yscal%can_co2))
   print*,'can_co2',errmax,yerr%can_co2,yscal%can_co2
-  call print_errmax_flag(yerr%can_co2,yscal%can_co2,epsil)
+  call print_errmax_flag(yerr%can_co2,yscal%can_co2)
 
   do k=lsl,nzg
      errmax = sngl(dmax1(dble(errmax),dabs(yerr%soil_water(k)/yscal%soil_water(k))))
      print*,'soil water, level',k,errmax,yerr%soil_water(k),yscal%soil_water(k)
      error_soil_water = sngl(yerr%soil_water(k))
      scale_soil_water = sngl(yscal%soil_water(k))
-     call print_errmax_flag(error_soil_water,scale_soil_water,epsil)
+     call print_errmax_flag(error_soil_water,scale_soil_water)
 
      errmax = max(errmax,abs(yerr%soil_energy(k)/yscal%soil_energy(k)))
      print*,'soil energy, level',k,errmax,yerr%soil_energy(k),yscal%soil_energy(k)
-     call print_errmax_flag(yerr%soil_energy(k),yscal%soil_energy(k),epsil)
+     call print_errmax_flag(yerr%soil_energy(k),yscal%soil_energy(k))
   enddo
   
   do k=1,yerr%nlev_sfcwater
      errmax = max(errmax,abs(yerr%sfcwater_energy(k)/yscal%sfcwater_energy(k)))
      print*,'sfcwater_energy, level',k,errmax,yerr%sfcwater_energy(k),yscal%sfcwater_energy(k)
-     call print_errmax_flag(yerr%sfcwater_energy(k),yscal%sfcwater_energy(k),epsil)
+     call print_errmax_flag(yerr%sfcwater_energy(k),yscal%sfcwater_energy(k))
 
      errmax = max(errmax,abs(yerr%sfcwater_mass(k)  &
           /yscal%sfcwater_mass(k)))
      print*,'sfcwater_mass, level',k,errmax,yerr%sfcwater_mass(k),yscal%sfcwater_mass(k), &
           y%sfcwater_mass(k),ytemp%sfcwater_mass(k),ytemp%nlev_sfcwater
-     call print_errmax_flag(yerr%sfcwater_mass(k),yscal%sfcwater_mass(k),epsil)
+     call print_errmax_flag(yerr%sfcwater_mass(k),yscal%sfcwater_mass(k))
   enddo
   
   errmax = max(errmax,abs(yerr%virtual_heat/yscal%virtual_heat))
   print*,'virtual heat',errmax,yerr%virtual_heat,yscal%virtual_heat
-  call print_errmax_flag(yerr%virtual_heat,yscal%virtual_heat,epsil)
+  call print_errmax_flag(yerr%virtual_heat,yscal%virtual_heat)
 
   errmax = max(errmax,abs(yerr%virtual_water/yscal%virtual_water))
   print*,'virtual heat',errmax,yerr%virtual_water,yscal%virtual_water
-  call print_errmax_flag(yerr%virtual_water,yscal%virtual_water,epsil)
+  call print_errmax_flag(yerr%virtual_water,yscal%virtual_water)
   
   !  errmax = max(errmax,abs(yerr%fast_soil_C/yscal%fast_soil_C))
   !  print*,'fast C',errmax,yerr%fast_soil_C,yscal%fast_soil_C
@@ -686,22 +754,24 @@ subroutine print_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp,epsil)
         errmax = max(errmax,abs(yerr%veg_water(ico)/yscal%veg_water(ico)))
         print*,'veg_water',errmax,yerr%veg_water(ico),yscal%veg_water(ico), &
              cpatch%lai(ico),cpatch%pft(ico)
-        call print_errmax_flag(yerr%veg_water(ico),yscal%veg_water(ico),epsil)
+        call print_errmax_flag(yerr%veg_water(ico),yscal%veg_water(ico))
 
         errmax = max(errmax,abs(yerr%veg_energy(ico)/yscal%veg_energy(ico)))
         print*,'veg_energy',errmax,yerr%veg_energy(ico),yscal%veg_energy(ico), &
              cpatch%lai(ico),cpatch%pft(ico)
-        call print_errmax_flag(yerr%veg_energy(ico),yscal%veg_energy(ico),epsil)
+        call print_errmax_flag(yerr%veg_energy(ico),yscal%veg_energy(ico))
      endif
   enddo
 
   return
 end subroutine print_errmax_ar
 
-subroutine print_errmax_flag(err,scal,epsil)
-  real, intent(in)::err,scal,epsil
-  if(epsil > 0.0 .and. scal > 0.0) then
-     if(abs(err/scal)/epsil > 1.0) then
+subroutine print_errmax_flag(err,scal)
+  use rk4_coms, only: rk4eps
+  implicit none
+  real, intent(in)::err,scal
+  if(scal > 0.0) then
+     if(abs(err/scal)/rk4eps > 1.0) then
         print*,"*******"
      endif
   endif
@@ -713,7 +783,7 @@ end subroutine print_errmax_flag
 subroutine stabilize_snow_layers_ar(initp, csite,ipa, step, lsl)
   
   use ed_state_vars,only:sitetype,patchtype,rk4patchtype
-  use soil_coms, only: soil
+  use soil_coms, only: soil, min_sfcwater_mass
   use grid_coms, only: nzg, nzs
   use therm_lib, only: qwtk8, qtk
   use consts_coms, only: wdns
@@ -733,9 +803,12 @@ subroutine stabilize_snow_layers_ar(initp, csite,ipa, step, lsl)
   end do
 
   do k = 2, nzs
-     if(initp%sfcwater_mass(k) > 0.0)  &
-          call qtk(initp%sfcwater_energy(k),  &
+     if(initp%sfcwater_mass(k) > min_sfcwater_mass)  then
+          call qtk(initp%sfcwater_energy(k)/initp%sfcwater_mass(k),  &
           initp%sfcwater_tempk(k),initp%sfcwater_fracliq(k))
+      else
+         initp%sfcwater_energy(k)  = 0.
+      end if
   end do
   
   call redistribute_snow_ar(initp,csite,ipa,step)
@@ -985,7 +1058,7 @@ subroutine print_patch_ar(y, csite,ipa, lsl)
 
   print*,''
   print*,'sfcwater state'
-  print*,'level  sfcwater_mass  sfcwater_energy'
+  print*,'level  sfcwater_mass  sfcwater_energy[J/m2]'
   do k=1,nzs
      print*,k,y%sfcwater_mass(k),y%sfcwater_energy(k)
   enddo
@@ -1065,7 +1138,7 @@ subroutine print_patch_ar(y, csite,ipa, lsl)
   print*,11,csite%soil_water(:,ipa)
   print*,'nlev_sfcwater  sfcwater_mass'
   print*,12,csite%nlev_sfcwater(ipa),csite%sfcwater_mass(:,ipa)
-  print*,'sfcwater_energy  rlong_g  rshort_g  rlong_s'
+  print*,'sfcwater_energy[J/kg]  rlong_g  rshort_g  rlong_s'
   print*,13,csite%sfcwater_energy(:,ipa),csite%rlong_g(ipa),csite%rshort_g(ipa),csite%rlong_s(ipa)
   print*,'rshort_s  htry'
   print*,14,csite%rshort_s(:,ipa),csite%htry(ipa)
@@ -1087,7 +1160,6 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   implicit none
   integer :: ipa
   real :: step
-  integer, save :: ncall = 0
   real :: stretch
   integer :: kzs
   real :: thik
@@ -1125,10 +1197,12 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   real :: free_surface_water_demand
   integer :: nsoil
   logical, parameter :: debug = .false.
+  logical, save :: first_call = .true.
 
   !! run once at start
-  if (ncall /= 40) then
-     ncall = 40
+  if (first_call) then
+     first_call = .false.
+
      stretch = 2.0
      do kzs = 1,nzs
         thik = 1.0
@@ -1178,7 +1252,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
   do k = ksnnew,1,-1
 
      ! Update current state
-     qw = initp%sfcwater_energy(k) * initp%sfcwater_mass(k) + qwfree
+     qw = initp%sfcwater_energy(k) + qwfree
      w = initp%sfcwater_mass(k) + wfree
      if( ksnnew == 1 .and. initp%sfcwater_mass(k) < water_stab_thresh )then
         qwt = qw + initp%soil_energy(nzg) * dslz(nzg)
@@ -1194,23 +1268,6 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
         initp%soil_tempk(nzg) = initp%sfcwater_tempk(k)
         initp%soil_fracliq(nzg) = initp%sfcwater_fracliq(k)
         initp%soil_energy(nzg) = (qwt - qw) * dslzi(nzg)
-        if(initp%soil_energy(nzg) /= initp%soil_energy(nzg))then
-           write (unit=*,fmt='(a)')            '----------------------------------------------------------------'
-           write (unit=*,fmt='(a)')            '| The top soil energy is screwed - AAA !!! '
-           write (unit=*,fmt='(a,1x,i5)')      '| patch             =',ipa
-           write (unit=*,fmt='(a,1x,i5)')      '| nzg               =',nzg
-           write (unit=*,fmt='(a,1x,i5)')      '| k                 =',k
-           write (unit=*,fmt='(a,1x,es12.5)')  '| Soil_energy       =',initp%soil_energy(nzg)
-           write (unit=*,fmt='(a,1x,es12.5)')  '| Soil_water        =',initp%soil_water(nzg)
-           write (unit=*,fmt='(a,1x,es12.5)')  '| Soil_tempk        =',initp%soil_tempk(nzg)
-           write (unit=*,fmt='(a,1x,es12.5)')  '| qwt               =',qwt
-           write (unit=*,fmt='(a,1x,es12.5)')  '| qw                =',qw
-           write (unit=*,fmt='(a,1x,es12.5)')  '| Sfcwater_tempk    =',initp%sfcwater_Tempk(k)
-           write (unit=*,fmt='(a,1x,es12.5)')  '| Sfcwater_fracliq  =',initp%sfcwater_Tempk(k)
-           write (unit=*,fmt='(a,1x,es12.5)')  '| dslzi             =',dslzi(nzg)
-           write (unit=*,fmt='(a)')            '----------------------------------------------------------------'
-           call fatal_error('NaN in soil energy','redistribute_snow_ar','rk4_integ_utils.f90')
-        end if
      else
         call qwtk8(initp%soil_energy(nzg)  &
              ,initp%soil_water(nzg)*dble(wdns) &
@@ -1242,25 +1299,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
                + dble(wfreeb * 0.001 * dslzi(nzg)) 
           initp%soil_energy(nzg) = initp%soil_energy(nzg) + qwfree   &
                * dslzi(nzg)
-          if(initp%soil_energy(nzg) /= initp%soil_energy(nzg))then
-             write (unit=*,fmt='(a)')            '----------------------------------------------------------------'
-             write (unit=*,fmt='(a)')            '| The top soil energy is screwed - BBB !!! '
-             write (unit=*,fmt='(a,1x,i5)')      '| patch             =',ipa
-             write (unit=*,fmt='(a,1x,i5)')      '| nzg               =',nzg
-             write (unit=*,fmt='(a,1x,i5)')      '| k                 =',k
-             write (unit=*,fmt='(a,1x,i5)')      '| nsoil             =',nsoil
-             write (unit=*,fmt='(a,1x,es12.5)')  '| Soil_energy       =',initp%soil_energy(nzg)
-             write (unit=*,fmt='(a,1x,es12.5)')  '| Soil_water        =',initp%soil_water(nzg)
-             write (unit=*,fmt='(a,1x,es12.5)')  '| Soil_tempk        =',initp%soil_tempk(nzg)
-             write (unit=*,fmt='(a,1x,es12.5)')  '| free_sfc_water_d  =',free_surface_water_demand
-             write (unit=*,fmt='(a,1x,es12.5)')  '| qwfree            =',qwfree
-             write (unit=*,fmt='(a,1x,es12.5)')  '| Sfcwater_tempk    =',initp%sfcwater_Tempk(k)
-             write (unit=*,fmt='(a,1x,es12.5)')  '| Sfcwater_fracliq  =',initp%sfcwater_Tempk(k)
-             write (unit=*,fmt='(a,1x,es12.5)')  '| dslzi             =',dslzi(nzg)
-             write (unit=*,fmt='(a)')            '----------------------------------------------------------------'
-             call fatal_error('NaN in soil energy','redistribute_snow_ar','rk4_integ_utils.f90')
-          end if
-          call qwtk8(initp%soil_energy(nzg)  &
+         call qwtk8(initp%soil_energy(nzg)  &
                ,initp%soil_water(nzg)*dble(wdns)  &
                ,soil(csite%ntext_soil(nzg,ipa))%slcpd,  &
                initp%soil_tempk(nzg),initp%soil_fracliq(nzg))
@@ -1280,12 +1319,13 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
      initp%sfcwater_depth(k) = initp%sfcwater_depth(k) +   &
           depthgain - depthloss
      if(initp%sfcwater_mass(k) >= min_sfcwater_mass)then
-        initp%sfcwater_energy(k) = (qw - qwfree) / initp%sfcwater_mass(k)
+        initp%sfcwater_energy(k) = qw - qwfree
+        call qtk(initp%sfcwater_energy(k)/initp%sfcwater_mass(k),initp%sfcwater_tempk(k)  &
+                ,initp%sfcwater_fracliq(k))
      else
         initp%sfcwater_energy(k) = 0.0
+        
      endif
-     call qtk(initp%sfcwater_energy(k),initp%sfcwater_tempk(k),  &
-          initp%sfcwater_fracliq(k))
      totsnow = totsnow + initp%sfcwater_mass(k)
      ! Calculate density, depth of snow
      snden = initp%sfcwater_mass(k) / max(1.0e-6,initp%sfcwater_depth(k))
@@ -1299,20 +1339,6 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
      wfree = wfreeb
      depthgain = depthloss
   enddo
-
-  !!check for NaN
-  if(initp%soil_energy(nzg) /= initp%soil_energy(nzg))then
-     write (unit=*,fmt='(a)')            '----------------------------------------------------------------'
-     write (unit=*,fmt='(a)')            '| The top soil energy is screwed - CCC !!! '
-     write (unit=*,fmt='(a,1x,i5)')      '| patch             =',ipa
-     write (unit=*,fmt='(a,1x,i5)')      '| nzg               =',nzg
-     write (unit=*,fmt='(a,1x,es12.5)')  '| Soil_energy       =',initp%soil_energy(nzg)
-     write (unit=*,fmt='(a,1x,es12.5)')  '| Soil_water        =',initp%soil_water(nzg)
-     write (unit=*,fmt='(a,1x,es12.5)')  '| Soil_tempk        =',initp%soil_tempk(nzg)
-     write (unit=*,fmt='(a,1x,es12.5)')  '| dslzi             =',dslzi(nzg)
-     write (unit=*,fmt='(a)')            '----------------------------------------------------------------'
-     call fatal_error('NaN in soil energy','redistribute_snow_ar','rk4_integ_utils.f90')
-  end if
 
   ! Re-distribute snow layers to maintain prescribed distribution of mass
   if(totsnow < min_sfcwater_mass .or. ksnnew == 0)then
@@ -1328,7 +1354,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa,step)
      do k = 1,nzs
         if(initp%sfcwater_mass(k) >= min_sfcwater_mass)then
            if(snowmin * thicknet(k) <= totsnow .and.  &
-                initp%sfcwater_energy(k) < cicet3+alli)then
+                initp%sfcwater_energy(k) < initp%sfcwater_mass(k)*(cicet3+alli))then
               newlayers = newlayers + 1
            endif
         endif
@@ -1351,8 +1377,7 @@ if(debug) print*,"wdiff=",wdiff,wtnew,wtold,kold
 if(debug) print*,"old=",initp%sfcwater_energy(kold), initp%sfcwater_depth(kold),initp%sfcwater_mass(kold)
 if(debug) print*,"new=",vctr14(k),vctr16(k),vctr18(k)
            if (wdiff > 0.0) then
-              vctr16(k) = vctr16(k) + wtold * initp%sfcwater_energy(kold) * &
-                   initp%sfcwater_mass(kold)
+              vctr16(k) = vctr16(k) + wtold * initp%sfcwater_energy(kold)
               vctr18(k) = vctr18(k) + wtold * initp%sfcwater_depth(kold)
               wtnew = wtnew - wtold * initp%sfcwater_mass(kold) &
                    / vctr14(k)
@@ -1360,15 +1385,14 @@ if(debug) print*,"new=",vctr14(k),vctr16(k),vctr18(k)
               wtold = 1.0
               if (kold > nlayers) exit find_layer
            else
-              vctr16(k) = vctr16(k) + wtnew * vctr14(k)   &
-                   * initp%sfcwater_energy(kold)
+              vctr16(k) = vctr16(k) + wtnew * initp%sfcwater_energy(kold)
 if(debug) print*,"."
               vctr18(k) = vctr18(k) + wtnew * vctr14(k)  &
                    * initp%sfcwater_depth(kold) / max(1.0e-12,  &
                    initp%sfcwater_mass(kold))
 if(debug) print*,"."
               wtold = wtold - wtnew * vctr14(k) /   &
-                  max(1.0e-12,initp%sfcwater_mass(kold))
+                  max(min_sfcwater_mass,initp%sfcwater_mass(kold))
 !!                   initp%sfcwater_mass(kold)
               wtnew = 1.
               exit find_layer
@@ -1380,13 +1404,14 @@ if(debug) print*,"B"
 
      do k = 1,newlayers
         initp%sfcwater_mass(k) = vctr14(k)
+        initp%sfcwater_energy(k) = vctr16(k)
         if(vctr14(k) >= min_sfcwater_mass)then
-           initp%sfcwater_energy(k) = vctr16(k) / vctr14(k)
+        call qtk(initp%sfcwater_energy(k)/initp%sfcwater_mass(k),initp%sfcwater_tempk(k)  &
+                ,initp%sfcwater_fracliq(k))
         else
-           initp%sfcwater_energy(k) = 0.0
-        endif
-        call qtk(initp%sfcwater_energy(k),initp%sfcwater_tempk(k),  &
-             initp%sfcwater_fracliq(k))
+           initp%sfcwater_tempk(k) = t3ple
+           initp%sfcwater_fracliq(k) = 0.
+        end if
         initp%sfcwater_depth(k) = vctr18(k)
      enddo
 
