@@ -8,6 +8,9 @@ subroutine leaf_database(ofn, nlandsea, iaction, lat, lon, idatp)
 
   character(len=*), intent(in) :: ofn
   integer, intent(in) :: nlandsea
+
+  ! Variables describing the files
+  ! ------------------------------
   integer :: nio
   integer :: njo
   integer :: nperdeg
@@ -16,23 +19,9 @@ subroutine leaf_database(ofn, nlandsea, iaction, lat, lon, idatp)
   integer :: njosh
   integer :: ifiles
   integer :: jfiles
-  integer, allocatable, dimension(:,:) :: nump
-  integer, allocatable, dimension(:,:) :: numpind1
-  integer, allocatable, dimension(:,:) :: numpind2
-  integer(kind=4), allocatable, dimension(:,:) :: idato
-  integer :: ifile
-  integer :: jfile
-  real :: wlat1
-  real :: wlon1
-  real :: rio_full
-  real :: rjo_full
-  integer :: jo_full
-  integer :: io_full
-  integer :: ind
-  integer, dimension(4*nlandsea) :: ptable
-  integer, dimension(4*nlandsea) :: ictable,jctable
-  integer :: ind1
-  integer :: ind2
+
+  ! Variables for file handling
+  ! ---------------------------
   integer :: iwoc
   integer :: isoc
   integer :: isocpt
@@ -48,11 +37,33 @@ subroutine leaf_database(ofn, nlandsea, iaction, lat, lon, idatp)
   integer :: ndims
   integer, dimension(2) :: idims
   character(len=*), intent(in) :: iaction
-  integer :: i,j,i0,i1,j0,j1,ic,jc,dj,di
+
+  ! Variables for file indexing
+  ! ---------------------------
+  integer, allocatable, dimension(:,:) :: nump
+  integer, allocatable, dimension(:,:,:) :: cnr_ind
+  integer(kind=4), allocatable, dimension(:,:) :: idato
+  integer :: ifile,ifile2
+  integer :: jfile,jfile2
+  real :: rio_full
+  real :: rjo_full
+  integer :: jo_full
+  integer :: io_full
+  integer :: ind
+  integer :: io_loc,jo_loc
+  integer, dimension(4*nlandsea) :: cnr_i1
+  integer, dimension(4*nlandsea) :: cnr_i2
+  integer, dimension(4*nlandsea) :: cnr_j1
+  integer, dimension(4*nlandsea) :: cnr_j2
+  integer, dimension(4*nlandsea) :: cnr_ipoly
+  integer :: max_per_file
+  integer :: cid,i,j,i1,i2,j1,j2,ic,jc
+
   integer :: nt
   integer :: ilandsea
   integer :: dq
   integer :: stext,best
+
   real, dimension(3,nlandsea), intent(in) :: lat
   real, dimension(3,nlandsea), intent(in) :: lon
   
@@ -60,18 +71,17 @@ subroutine leaf_database(ofn, nlandsea, iaction, lat, lon, idatp)
   
   integer, intent(out), dimension(nlandsea) :: idatp
 
+
   ! Initialize idatp
   hgramtypes = 0
 
   ! Read header file
 
   print*,trim(ofn)//'HEADER'
-  
-
   open(29,file=trim(ofn)//'HEADER',form='formatted',status='old')
   read(29,*) nio, njo, nperdeg
   close(29)
-
+  
   ! Compute number of pixels in a shift to adjacent file (niosh and njosh).
   ! Compute number of files in database that span all latitudes and
   ! longitudes on earth. [This algorithm will change when multiple resolutions
@@ -96,246 +106,226 @@ subroutine leaf_database(ofn, nlandsea, iaction, lat, lon, idatp)
   ! Allocate 5 arrays.
   
   allocate (nump    (ifiles,jfiles))
-  allocate (numpind1(ifiles,jfiles))
-  allocate (numpind2(ifiles,jfiles))
   allocate (idato   (nio,njo))
-  
+
   do jfile = 1,jfiles
      do ifile = 1,ifiles
         nump(ifile,jfile) = 0
      enddo
   enddo
-
-  ! Get file index (ifile,jfile) within full dataset and count number of p 
-  ! points (nump) that occur in each file
-
+  
+  ! Get file index (ifile,jfile) within full dataset and count
+  ! the number of corners that appear in every file
+  max_per_file=0
   do ilandsea = 1, nlandsea
+     do ic=2,3
+        do jc=2,3
+           call get_file_indices(lat(jc,ilandsea),lon(ic,ilandsea), &
+                nperdeg,niosh,njosh, &
+                io_full,jo_full,     &
+                io_loc,jo_loc,       &
+                ifile,jfile)
 
+           nump(ifile,jfile) = nump(ifile,jfile) + 1
+           if(nump(ifile,jfile)>max_per_file) max_per_file=nump(ifile,jfile)
+
+        enddo
+     enddo
+  enddo
+  
+  ! Allocate the mapping of file indices to global indices
+  allocate (cnr_ind(ifiles,jfiles,max_per_file))
+  
+  ! Re-zero nump
+  nump = 0
+  ind  = 0
+  do ilandsea = 1, nlandsea
+     
      ! Add all four corners to the search process
      do ic=2,3
         do jc=2,3
 
-           ! Set the lat and lon for file lookup
-           wlat1 = max(-89.9999,min(89.9999,lat(jc,ilandsea)))
-           wlon1 = lon(ic,ilandsea)
-           if(wlon1 >= 180.) wlon1 = wlon1 - 360.
-           if(wlon1 < -180.) wlon1 = wlon1 + 360.
-           wlon1 = max(-179.9999,min(179.9999,wlon1))
+           ind = ind+1
+           i2 = 5-ic
+           j2 = 5-jc
            
-           rio_full = (wlon1 + 180.) * real(nperdeg) ! must ignore pixel offset here
-           rjo_full = (wlat1 +  90.) * real(nperdeg) ! must ignore pixel offset here
+           ! Get the file indices and the local indices within the file
            
-           io_full = int(rio_full)
-           jo_full = int(rjo_full)
-           
-           ifile = io_full / niosh + 1
-           jfile = jo_full / njosh + 1
-           
-           ! Summation to # pts filled by file (ifile,jfile) in dataset 
-           nump(ifile,jfile) = nump(ifile,jfile) + 1  
-           
-        enddo
-     enddo
-     
-  enddo
-  
-  ! Set up array index values for ptable array
-  
-  ind = 1
-  do jfile = 1,jfiles
-     do ifile = 1,ifiles
-        numpind1(ifile,jfile) = ind
-        numpind2(ifile,jfile) = ind
-        ind = ind + nump(ifile,jfile)
-     enddo
-  enddo
-  
-  ! Fill ptable array
+           call get_file_indices(lat(jc,ilandsea),lon(ic,ilandsea), &
+                nperdeg,niosh,njosh, &
+                io_full,jo_full,     &
+                io_loc,jo_loc,       &
+                ifile,jfile)
 
-  do ilandsea = 1, nlandsea
-     
-     ! Add all four corners
-     do ic=2,3
-        do jc=2,3
+           nump(ifile,jfile) = nump(ifile,jfile) + 1
+
+           cnr_ind(ifile,jfile,nump(ifile,jfile)) = ind
+
+           cnr_ipoly(ind) = ilandsea
            
-           wlat1 = max(-89.9999,min(89.9999,lat(jc,ilandsea)))
-           wlon1 = lon(ic,ilandsea)
+           ! This is the local index where you find the starting point
            
-           if(wlon1 >= 180.) wlon1 = wlon1 - 360.
-           if(wlon1 < -180.) wlon1 = wlon1 + 360.
-           wlon1 = max(-179.9999,min(179.9999,wlon1))
+           cnr_i1(ind) = io_loc
+           cnr_j1(ind) = jo_loc
            
-           rio_full = (wlon1 + 180.) * real(nperdeg) ! must ignore pixel offset here
-           rjo_full = (wlat1 +  90.) * real(nperdeg) ! must ignore pixel offset here
+           ! Get the local indices of the other corner
+
+           call get_file_indices(lat(j2,ilandsea),lon(i2,ilandsea), &
+                nperdeg,niosh,njosh, &
+                io_full,jo_full,     &
+                io_loc,jo_loc,       &
+                ifile2,jfile2)
+
+           ! This is the local index where you find the second i point
            
-           io_full = int(rio_full)
-           jo_full = int(rjo_full)
+           if (ifile2==ifile) then
+              cnr_i2(ind) = io_loc
+           else if (ifile2>ifile) then
+              cnr_i2(ind) = niosh+1
+           else
+              cnr_i2(ind) = 2
+           endif
+
+           ! This is the local index where you find the second j point
            
-           ifile = io_full / niosh + 1
-           jfile = jo_full / njosh + 1
+           if (jfile2==jfile) then
+              cnr_j2(ind) = jo_loc
+           else if (jfile2>jfile) then
+              cnr_j2(ind) = njosh+1
+           else
+              cnr_j2(ind) = 2
+           endif
            
-           ind = numpind2(ifile,jfile)
-           ptable(ind) = ilandsea
-           ictable(ind)  = ic
-           jctable(ind)  = jc
-           numpind2(ifile,jfile) = numpind2(ifile,jfile) + 1 ! Sums to ending index
+
            
         enddo
      enddo
+     
   enddo
+
 
   ! Read files and extract data
   
   do jfile = 1,jfiles
      do ifile = 1,ifiles
-
-        ind1 = numpind1(ifile,jfile)
-        ind2 = numpind2(ifile,jfile)
         
-        if (ind2 > ind1) then
-           ! SW longitude of current file
-           iwoc = (ifile - 1) * niosh/nperdeg - 180
-           ! SW latitude of current file
-           isoc = (jfile - 1) * njosh/nperdeg -  90
-
-           ! Construct filename
-           isocpt = abs(isoc) / 10
-           isocpo = abs(isoc) - isocpt*10
-           iwocph = abs(iwoc) / 100
-           iwocpt = (abs(iwoc) - iwocph * 100) / 10
-           iwocpo = abs(iwoc) - iwocph * 100 - iwocpt * 10
+        if(nump(ifile,jfile)>0) then
            
-           if (isoc >= 0) then
-              write(title1,'(2i1,a1)') isocpt,isocpo,'N'
-           else
-              write(title1,'(2i1,a1)') isocpt,isocpo,'S'
-           endif
-           
-           if (iwoc >= 0) then
-              write(title2,'(3i1,a1)') iwocph,iwocpt,iwocpo,'E'
-           else
-              write(title2,'(3i1,a1)') iwocph,iwocpt,iwocpo,'W'
-           endif
-           
-           title3 = trim(ofn)//title1//title2//'.h5'
-           inquire(file=trim(title3),exist=l1,opened=l2)
 
-           ! Read file
-
-           if (l1) then
-              print*, 'getting file ',trim(title3)    
-              
-              call shdf5_open_f(trim(title3),'R')
-
-              ndims = 2
-              idims(1) = nio
-              idims(2) = njo
-              
-              if (trim(iaction) == 'leaf_class') then
-                 call shdf5_irec_f(ndims,idims,'oge2',ivara=idato)
-              elseif (trim(iaction) == 'soil_text') then
-                 call shdf5_irec_f(ndims,idims,'fao',ivara=idato)
-              else
-                 print*, 'incorrect action specified in leaf_database'
-                 print*, 'stopping run'
-                 stop 'stop landuse_input1'
-              endif
-
-              call shdf5_close_f()
-           else
-              print*, 'In landuse_input, ',iaction,' file is missing'
-              print*, 'Filename = ',trim(title3)
-              print*, 'Stopping model run'
-              stop 'stop_landuse_input2'
-           endif
-
-           do ind = ind1,ind2-1
-
-              ilandsea = ptable(ind)
-              ic       = ictable(ind)
-              jc       = jctable(ind)
-              
-              ! ic=2,jc=2 Top Left
-              if (ic==2 .and. jc==2) then
-                 nt=0
-                 call lat2index(j0,nperdeg,njosh,offpix,nt,0     ,lat(2,ilandsea))
-                 call lat2index(j1,nperdeg,njosh,offpix,nt,1     ,lat(3,ilandsea))
-                 nt=0
-                 call lon2index(i0,nperdeg,niosh,offpix,nt,0     ,lon(2,ilandsea))
-                 call lon2index(i1,nperdeg,niosh,offpix,nt,niosh ,lon(3,ilandsea))
-                 
-              ! ic=2,jc=3 Bot Left  - Go up    (j then i)
-              elseif (ic==2 .and. jc==3) then
-                 nt=0;
-                 call lat2index(j0,nperdeg,njosh,offpix,nt,0    ,lat(3,ilandsea))
-                 call lat2index(j1,nperdeg,njosh,offpix,nt,njosh,lat(2,ilandsea))
-                 nt=0;
-                 call lon2index(i0,nperdeg,niosh,offpix,nt,0    ,lon(2,ilandsea))
-                 call lon2index(i1,nperdeg,niosh,offpix,nt,niosh,lon(3,ilandsea))
-          
-              ! ic=3,jc=2 Top Right - Go left  (i then j)
-              elseif (ic==3 .and. jc==2) then
-                 nt=0;
-                 call lat2index(j0,nperdeg,njosh,offpix,nt,0,lat(2,ilandsea))
-                 call lat2index(j1,nperdeg,njosh,offpix,nt,1,lat(3,ilandsea))
-                 nt=0;
-                 call lon2index(i0,nperdeg,niosh,offpix,nt,0,lon(3,ilandsea))
-                 call lon2index(i1,nperdeg,niosh,offpix,nt,1,lon(2,ilandsea))
-          
-              ! ic=3,jc=3 Bottom Right  - Go down  (j then i)
-              elseif (ic==3 .and. jc==3) then
-                 nt=0;
-                 call lat2index(j0,nperdeg,njosh,offpix,nt,0,lat(3,ilandsea))
-                 call lat2index(j1,nperdeg,njosh,offpix,nt,njosh,lat(2,ilandsea))
-                 nt=0;
-                 call lon2index(i0,nperdeg,niosh,offpix,nt,0    ,lon(3,ilandsea))
-                 call lon2index(i1,nperdeg,niosh,offpix,nt,1    ,lon(2,ilandsea))
-                 
-
-              else
-                 print*,"INDEXING IS FLAWED"
-                 print*,"ABORTING"
-                 stop
-
-              endif
-
-              if (trim(iaction) == 'leaf_class' ) then
-
-                 dj=1
-                 di=1
-                 if(j0>j1)dj=-1
-                 if(i0>i1)di=-1
-
-                 do j=j0,j1,dj
-                    do i=i0,i1,di
-                       call datp2datq(idato(i,j),dq)
-                       hgramtypes(dq,ilandsea) = hgramtypes(dq,ilandsea) + 1
-                    enddo
-                 enddo
-                 
-              elseif(trim(iaction) == 'soil_text') then
-                 dj=1
-                 di=1
-                 if(j0>j1)dj=-1
-                 if(i0>i1)di=-1
-                 do j=j0,j1,dj
-                    do i=i0,i1,di
-                       call datp2datsoil(idato(i,j),dq)
-                       hgramtypes(dq,ilandsea) = hgramtypes(dq,ilandsea) + 1
-                    enddo
-                 enddo
-              endif
-              
-!              print*,"POLY: ",ilandsea," IC: ",ic," JC: ",jc
-!              print*,"I:  ",i0,"-",i1,niosh," J ",j0,"-",j1,njosh
-!              print*,"LON:",lon(2,ilandsea),lon(3,ilandsea)," LAT: ",lat(2,ilandsea),lat(3,ilandsea)
-
-           enddo
-
+        ! SW longitude of current file
+        iwoc = (ifile - 1) * niosh/nperdeg - 180
+        ! SW latitude of current file
+        isoc = (jfile - 1) * njosh/nperdeg -  90
+        
+        ! Construct filename
+        isocpt = abs(isoc) / 10
+        isocpo = abs(isoc) - isocpt*10
+        iwocph = abs(iwoc) / 100
+        iwocpt = (abs(iwoc) - iwocph * 100) / 10
+        iwocpo = abs(iwoc) - iwocph * 100 - iwocpt * 10
+        
+        if (isoc >= 0) then
+           write(title1,'(2i1,a1)') isocpt,isocpo,'N'
+        else
+           write(title1,'(2i1,a1)') isocpt,isocpo,'S'
         endif
-     enddo
-  enddo
+        
+        if (iwoc >= 0) then
+           write(title2,'(3i1,a1)') iwocph,iwocpt,iwocpo,'E'
+        else
+           write(title2,'(3i1,a1)') iwocph,iwocpt,iwocpo,'W'
+        endif
+        
+        title3 = trim(ofn)//title1//title2//'.h5'
+        inquire(file=trim(title3),exist=l1,opened=l2)
+        
+        ! Read file
+        
+        if (l1) then
+           print*, 'getting file ',trim(title3)    
+           
+           call shdf5_open_f(trim(title3),'R')
+           
+           ndims = 2
+           idims(1) = nio
+           idims(2) = njo
+           
+           if (trim(iaction) == 'leaf_class') then
+              call shdf5_irec_f(ndims,idims,'oge2',ivara=idato)
+           elseif (trim(iaction) == 'soil_text') then
+              call shdf5_irec_f(ndims,idims,'fao',ivara=idato)
+           else
+              print*, 'incorrect action specified in leaf_database'
+              print*, 'stopping run'
+              stop 'stop landuse_input1'
+           endif
+           
+           call shdf5_close_f()
+        else
+           print*, 'In landuse_input, ',iaction,' file is missing'
+           print*, 'Filename = ',trim(title3)
+           print*, 'Stopping model run'
+           stop 'stop_landuse_input2'
+        endif
 
+
+        ! Loop through all of the corner points that are inside this
+        ! file
+
+        do cid = 1,nump(ifile,jfile)
+
+           ! get the global index of this point
+           
+           ind = cnr_ind(ifile,jfile,cid)
+           
+           ! get the polygon index of this corner
+
+           ilandsea = cnr_ipoly(ind)
+
+           if (cnr_i1(ind)<cnr_i2(ind)) then
+              i1 = cnr_i1(ind)
+              i2 = cnr_i2(ind)
+           else
+              i1 = cnr_i2(ind)
+              i2 = cnr_i1(ind)
+           endif
+           
+           if (cnr_j1(ind)<cnr_j2(ind)) then
+              j1 = cnr_j1(ind)
+              j2 = cnr_j2(ind)
+           else
+              j1 = cnr_j2(ind)
+              j2 = cnr_j1(ind)
+           endif
+
+           ! now walk throught he point spaces for soil and vegetation class
+           
+           if (trim(iaction) == 'leaf_class' ) then
+
+              do i=i1,i2
+                 do j=j1,j2
+                    call datp2datq(idato(i,j),dq)
+                    hgramtypes(dq,ilandsea) = hgramtypes(dq,ilandsea) + 1
+                 enddo
+              enddo
+                 
+           elseif(trim(iaction) == 'soil_text') then
+
+              do j=j1,j2
+                 do i=i1,i2
+                    call datp2datsoil(idato(i,j),dq)
+                    hgramtypes(dq,ilandsea) = hgramtypes(dq,ilandsea) + 1
+                 enddo
+              enddo
+           endif
+
+        end do
+     endif
+  end do
+end do
+
+
+  
   ! If this is a land percentage calculation then compare the first two classes to all others
   if (trim(iaction) == 'leaf_class' ) then
      
@@ -356,11 +346,10 @@ subroutine leaf_database(ofn, nlandsea, iaction, lat, lon, idatp)
         enddo
         idatp(i) = stext
      enddo
-
+     
   endif
-
-
-  deallocate(nump,numpind1,numpind2,idato)
+  
+  deallocate(nump,idato,cnr_ind)
 
   return
 end subroutine leaf_database
@@ -368,163 +357,44 @@ end subroutine leaf_database
 !==========================================================================================!
 !==========================================================================================!
 
-subroutine lat2index(jo,nperdeg,njosh,offpix,nthtile,alt,lat)
+subroutine get_file_indices(lat,lon,nper,ni,nj,io_full,jo_full,io_loc,jo_loc,ifile,jfile)
   
   implicit none
-
-  real :: lat,wlat1
-  real :: rjo_full
-  real :: offpix
-  integer :: alt
-  integer :: nperdeg,njosh
-  integer :: jo_full
-  integer :: jo1,jo2
-  real    :: wjo1,wjo2
-  integer,intent(out) :: jo
-  integer :: nthtile,thistile
   
-
-  wlat1 = max(-89.9999,min(89.9999,lat))
+  real,intent(in)     :: lat,lon
+  integer,intent(in)  :: nper,ni,nj
+  integer,intent(out) :: io_full,jo_full
+  integer,intent(out) :: io_loc,jo_loc
+  integer,intent(out) :: ifile,jfile
   
-  rjo_full = (wlat1 +  90.) * real(nperdeg) ! must ignore pixel offset here
-
-  jo_full = int(rjo_full + 0.001)
-
-  thistile = ceiling(rjo_full/real(njosh))
-
-  if(nthtile==0) then
-     
-     nthtile = ceiling(rjo_full/real(njosh))
-     
-     jo1 = mod(jo_full,njosh) + 1
-     
-  else
-
-     if(thistile/=nthtile) then
-        jo = alt
-        return
-     else
-        jo1 = mod(jo_full,njosh) + 1
-     end if
-     
-  endif
-
+  real :: wlat,wlon
+  real :: rio_full,rjo_full
   
-  wjo2 = rjo_full - real(jo_full) + offpix
+  ! Set the lat and lon for file lookup
+  wlat = max(-89.9999,min(89.9999,lat))
+  wlon = lon
+  if(wlon >= 180.) wlon = wlon - 360.
+  if(wlon < -180.) wlon = wlon + 360.
+  wlon = max(-179.9999,min(179.9999,wlon))
   
-  ! At this point, io1, jo1, wio2, and wjo2 are correct if offpix = 0,
-  ! but need correction if offpix = .5
-              
-  if (wjo2 > 1.) then
-     wjo2 = wjo2 - 1.
-     jo1 = jo1 + 1
-  endif
+  rio_full = (wlon + 180.) * real(nper) ! must ignore pixel offset here
+  rjo_full = (wlat +  90.) * real(nper) ! must ignore pixel offset here
   
-  ! This is end of correction
-  jo2 = jo1 + 1
-
-  wjo1 = 1. - wjo2
+  io_full = int(rio_full)
+  jo_full = int(rjo_full)
   
-  jo = jo2
+  ifile = io_full / ni + 1
+  jfile = jo_full / nj + 1
   
-  if (wjo2 < .5) jo = jo1
-
-  if (jo==njosh+1) jo=njosh
-
-  if (jo .lt. 1 .or. jo .gt. njosh) then
-     print*,"JO IS MESSED UP",jo,njosh,lat,wlat1,rjo_full,alt 
-     print*,"TRY SHIFTING YOUR GRID CENTER EVER SO SLIGHTLY, IE +-0.01"
-     print*,"THIS ALGORITHM DOES NOT LIKE IT WHEN GRID POINTS"
-     print*,"LIE EXACTLY ON TILE BOUNDARIES"
-     stop
-  endif
-
-
+  io_loc = mod(io_full,ni) + 1
+  jo_loc = mod(jo_full,nj) + 1
   
-  return 
-end subroutine lat2index
-
-!=========================================================================================!
-
-subroutine lon2index(io,nperdeg,niosh,offpix,nthtile,alt,lon)
-  
-  implicit none
-
-  real    :: lon
-  real    :: rio_full
-  real    :: offpix
-  integer :: nperdeg
-  integer :: io_full
-  integer :: io1,io2
-  real    :: wio1,wio2
-  integer,intent(out) :: io
-  integer :: nthtile,thistile
-  integer :: alt,niosh
-
-  if (lon >=  180.) lon = lon - 360.
-  if (lon <= -180.) lon = lon + 360.
-  
-  rio_full = (lon + 180.) * real(nperdeg) ! must ignore pixel offset here
-  
-  io_full = int(rio_full + 0.001)
-
-  thistile = ceiling(rio_full/real(niosh))
-
-  if(nthtile==0) then
-     
-     nthtile = ceiling(rio_full/real(niosh))
-     
-     io1 = mod(io_full,niosh) + 1
-     
-  else
-
-     if(thistile/=nthtile) then
-        io = alt
-        return
-     else
-        io1 = mod(io_full,niosh) + 1
-     end if
-     
-  endif
-
-  wio2 = rio_full - real(io_full) + offpix
-
-
-  ! At this point, io1, jo1, wio2, and wjo2 are correct if offpix = 0,
-  ! but need correction if offpix = .5
-  
-  if (wio2 > 1.) then
-     wio2 = wio2 - 1.
-     io1 = io1 + 1
-  endif
-  
-  ! This is end of correction
-  
-  io2 = io1 + 1
-  
-  wio1 = 1. - wio2
-  
-  ! Use nearest data point - do not interpolate
-  
-  io = io2
-  
-  if (wio2 < .5) io = io1
-
-  if (io==niosh+1) io=niosh
-
-  if (io .lt. 1 .or. io .gt. niosh) then
-     print*,"IO IS MESSED UP",io,niosh,lon,rio_full,io_full,nthtile,alt
-     print*,"TRY SHIFTING YOUR GRID CENTER EVER SO SLIGHTLY, IE +-0.01"
-     print*,"THIS ALGORITHM DOES NOT LIKE IT WHEN GRID POINTS"
-     print*,"LIE EXACTLY ON TILE BOUNDARIES"
-     stop
-  endif
   return
-end subroutine lon2index
-
+end subroutine get_file_indices
 
 !==========================================================================================!
 !==========================================================================================!
+
 subroutine datp2datq(datp,datq)
 
 ! This subroutine maps the input datp classes to a smaller set datq

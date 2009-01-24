@@ -664,11 +664,6 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   real :: qwflxvc
   real :: sat_temp
 
-  ! Canopies with LAI less than this number are assumed to be
-  ! open, ie, some fraction of the rain-drops can reach
-  ! the soil/litter layer unimpeded. 
-  real,parameter :: lai_to_cover = 1.5
-
   ! Fluxes from atmosphere to canopy
 
   rho_ustar = rhos * initp%ustar
@@ -882,9 +877,10 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         ! temperature, because if that happens, we will innapropriately chnage the sign of
         ! the fluxes.
 
-        !! may not want this since it may prevent the rejection of a bad step -- MCD 01-2009
+        sat_temp = veg_temp
 
-        sat_temp = max( min(180.0,initp%can_temp),min(veg_temp,max(320.0,initp%can_temp)))
+        !! may not want this since it may prevent the rejection of a bad step -- MCD 01-2009
+        !        sat_temp = max( min(180.0,initp%can_temp),min(veg_temp,max(320.0,initp%can_temp)))
 
 
 	sat_shv=fast_svp(prss,sat_temp)

@@ -284,11 +284,11 @@ subroutine get_work(ifm,nxp,nyp)
      do j = 1,nyp
         ipy = ipy + 1
 
-        work_e(ifm)%land(i,j)      = ipcent_land(ipy) > min_land_pcent
-        work_e(ifm)%landfrac(i,j)  = real(ipcent_land(ipy))/100.0
+        work_e(ifm)%land(i,j) = ipcent_land(ipy) > min_land_pcent
 
         if (work_e(ifm)%land(i,j)) then
-           work_e(ifm)%work(i,j) = 1.0
+           work_e(ifm)%work(i,j)      = 1.0
+           work_e(ifm)%landfrac(i,j)  = real(ipcent_land(ipy))/100.0
 
            if (isoilflg(ifm) == 1) then
               datsoil = ntext_soil_list(ipy)
@@ -300,11 +300,13 @@ subroutine get_work(ifm,nxp,nyp)
               work_e(ifm)%ntext(i,j) = nslcon
            end if
         else
-           work_e(ifm)%work(i,j) = epsilon(0.0)
-           work_e(ifm)%ntext(i,j) = 0
+           !----- Making this grid point 100% water ---------------------------------------!
+           work_e(ifm)%landfrac(i,j)  = 0.
+           work_e(ifm)%work(i,j)      = epsilon(0.0)
+           work_e(ifm)%ntext(i,j)     = 0
         end if
-     enddo
-  enddo
+     end do
+  end do
 
   ! PRINT OUT THE ARRAYS !
 !  do j = nyp,1,-1

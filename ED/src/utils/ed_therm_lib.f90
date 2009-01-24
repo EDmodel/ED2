@@ -31,14 +31,11 @@ contains
      ! This function calculates the total heat capacity in (J/K) of the cohort
      ! biomass.  This function is primarily used to calculate leaf temperatures
      ! based on leaf energy.  At present, heat capacity is primarily based off
-     ! of leaf biomass, but is also accounting for a variable fraction of stems.
+     ! of leaf biomass, but is also can account for a variable fraction of stems.
      ! This is considered partially for stability.
 
      ! Inputs:
      ! leaf_biomass - the leaf biomass of the cohort in kg/m2 - NOTE
-     ! you are most likely going to be passing the variables bleaf and bdead
-     ! , but you must scale (multiply) them by the plant density (nplant) first.
-     ! structural_biomass - the biomass of live and dead hardwood in kg/m2
      ! pft - the plant functional type of the current cohort, which may serve
      ! for defining different parameterizations of specific heat capacity
 
@@ -71,12 +68,9 @@ contains
      real,parameter :: biomass_factor = 1.0 ! This is a biomass kluge factor
                                              ! The model is much faster and more stable
                                              ! When heat capacity is high.
-                                             ! It was also found that when net-radiation
-                                             ! matched tower observations, the dynamic
-                                             ! range of the 
 
-     real,parameter :: min_hcapveg = 30.0    ! This is roughly 1/3 kg of biomass at 3000 J/kg/K
-                                             ! Dont be fooled, this is quite high
+     real,parameter :: min_hcapveg = 30.0    
+
      integer :: pft     
      real,parameter :: veg_temp = 285.0      ! RIght now we are using a nominal vegetation
                                              ! temperature, but 
@@ -86,21 +80,21 @@ contains
 
      ! Specific heat capacity of leaf biomass (J/kg/K)
      ! The calculation of leaf heat capacity follows Gu et al. 2007
-!     spec_hcap_leaf  = (c_grn_leaf_dry(pft) + cliq*wat_dry_ratio_grn(pft))/(1.+wat_dry_ratio_grn(pft))
+     !     spec_hcap_leaf  = (c_grn_leaf_dry(pft) + cliq*wat_dry_ratio_grn(pft))/(1.+wat_dry_ratio_grn(pft))
      
      
      ! Specific heat capacity of the stems and structural biomass.
      ! Also following Gu et al. 2007
      
-!     spec_hcap_stem  = (c_ngrn_biom_dry(pft) + cliq*wat_dry_ratio_ngrn(pft))/(1+wat_dry_ratio_ngrn(pft))&
-!          + 100. * wat_dry_ratio_ngrn(pft) * &
-!          (-0.06191 + 2.36*1.0e-4*veg_temp - 1.33*1.0e-2*wat_dry_ratio_ngrn(pft))
+     !     spec_hcap_stem  = (c_ngrn_biom_dry(pft) + cliq*wat_dry_ratio_ngrn(pft))/(1+wat_dry_ratio_ngrn(pft))&
+     !          + 100. * wat_dry_ratio_ngrn(pft) * &
+     !          (-0.06191 + 2.36*1.0e-4*veg_temp - 1.33*1.0e-2*wat_dry_ratio_ngrn(pft))
      
      
      ! New Method
-!     calc_hcapveg = biomass_factor * nplants * (leaf_carbon*C2B*spec_hcap_leaf + &
-!          structural_carbon *C2B * hcap_stem_fraction * spec_hcap_stem )
-
+     !     calc_hcapveg = biomass_factor * nplants * (leaf_carbon*C2B*spec_hcap_leaf + &
+     !          structural_carbon *C2B * hcap_stem_fraction * spec_hcap_stem )
+     
      calc_hcapveg = nplants * (leaf_carbon*C2B*c_grn_leaf_dry(pft) + wat_dry_ratio_grn(pft)*leaf_carbon*C2B*cliq)
 
 
