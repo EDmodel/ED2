@@ -116,7 +116,9 @@ subroutine leaf_database(ofn, nlandsea, iaction, lat, lon, idatp)
   
   ! Get file index (ifile,jfile) within full dataset and count
   ! the number of corners that appear in every file
-  max_per_file=0
+
+  max_per_file = 0
+
   do ilandsea = 1, nlandsea
      do ic=2,3
         do jc=2,3

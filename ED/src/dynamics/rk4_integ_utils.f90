@@ -93,7 +93,7 @@ subroutine odeint_ar(x1, x2, epsi, h1, hmin, csite,ipa,isi,ipy,ifm,  &
         csite%ebudget_loss2runoff(ipa) = 0.0
         ksn = integration_buff%y%nlev_sfcwater
         
-        !----------------------------------------------------------------------------------!
+        !---------------------------------------------------------------------------------!
         !    I had to split the following if into two tests. When ksn is 0, then we cannot !
         ! test sfcwater_???(ksn) otherwise the compiler complains about out of bounds      !
         ! problem.                                                                         !
@@ -461,15 +461,16 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
 !        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
 !                                   + abs(dy%veg_energy(ico)*htry),0.22*alli)
 
-        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
-             & + abs(dy%veg_energy(ico)*htry) &
-             & + cpatch%lai(ico)/sla(cpatch%pft(ico))*700000.0,1.0) 
+!        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
+!             & + abs(dy%veg_energy(ico)*htry) &
+!             & + cpatch%lai(ico)/sla(cpatch%pft(ico))*700000.0,1.0) 
+
        ! MCD 01-2009
        ! last term is ~ bleaf*dry_hcap*273.15, a dry-leaf offset from 0K 
        ! additional offset term for veg_water deliberately not included 
 
-!        yscal%veg_energy(ico) = 10.0*(y%veg_water(ico)*alli + y%veg_water(ico)*cliq*(317.-273.15) &
-!             + cpatch%hcapveg(ico)*(317.-273.15))! + abs(dy%veg_energy(ico)*htry)
+        yscal%veg_energy(ico) = 10.0*(y%veg_water(ico)*alli + y%veg_water(ico)*cliq*(317.-273.15) &
+             + cpatch%hcapveg(ico)*(317.-273.15))! + abs(dy%veg_energy(ico)*htry)
 
 
      else

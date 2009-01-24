@@ -563,6 +563,10 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,fthrd,rtgt,f
             dn0r(k) = dn0(k,i,j) * 1.e-3
             dzmr(k) = dzm(k) / rtgt(i,j) * 1.e-2
             dztr(k) = dzt(k) / rtgt(i,j) * 1.e-2
+
+            fthrl(k) = 0.
+            fthrs(k) = 0.
+
          end do
          temprd(1) = (rlongup(i,j) / stefan) ** 0.25
 

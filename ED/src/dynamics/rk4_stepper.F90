@@ -390,7 +390,7 @@ contains
        return
     endif
 
-    if(y%can_temp.lt.200.0)then
+    if(y%can_temp.lt.0.0)then
        iflag1 = 0
        if(record_err) integ_err(1,2) = integ_err(1,2) + 1_8
        if(print_diags==1) print*,'canopy tempk too low',y%can_temp,dydx%can_temp,h
@@ -468,8 +468,8 @@ contains
     
        if (cpatch%lai(ico) > lai_min) then
           
-          cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-                 cpatch%nplant(ico),cpatch%pft(ico))
+!          cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+!                 cpatch%nplant(ico),cpatch%pft(ico))
 
           call qwtk(y%veg_energy(ico),y%veg_water(ico),cpatch%hcapveg(ico),veg_temp,fracliq)
 
