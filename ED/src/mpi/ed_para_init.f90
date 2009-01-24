@@ -174,7 +174,7 @@ subroutine get_work(ifm,nxp,nyp)
   integer, allocatable,dimension(:) :: ipcent_land
   integer :: datsoil,ipy,i,j
   integer :: jboff,jtoff,iloff,iroff
-  integer,parameter :: min_land_pcent = 10
+  integer,parameter :: min_land_pcent = 25
   real,   parameter :: soi_edge_deg = 0.05   ! 100th of a degree, about 5.5 km at the equator.
 
   npoly = nxp*nyp
@@ -285,10 +285,10 @@ subroutine get_work(ifm,nxp,nyp)
         ipy = ipy + 1
 
         work_e(ifm)%land(i,j)      = ipcent_land(ipy) > min_land_pcent
-        work_e(ifm)%landfrac(i,j)  = real(ipcent_land(ipy))/100.0
 
         if (work_e(ifm)%land(i,j)) then
-           work_e(ifm)%work(i,j) = 1.0
+           work_e(ifm)%work(i,j)      = 1.0
+           work_e(ifm)%landfrac(i,j)  = real(ipcent_land(ipy))/100.0
 
            if (isoilflg(ifm) == 1) then
               datsoil = ntext_soil_list(ipy)
@@ -300,25 +300,27 @@ subroutine get_work(ifm,nxp,nyp)
               work_e(ifm)%ntext(i,j) = nslcon
            end if
         else
-           work_e(ifm)%work(i,j) = epsilon(0.0)
-           work_e(ifm)%ntext(i,j) = 0
+           !----- Making this grid point 100% water ---------------------------------------!
+           work_e(ifm)%landfrac(i,j)  = 0.
+           work_e(ifm)%work(i,j)      = epsilon(0.0)
+           work_e(ifm)%ntext(i,j)     = 0
         end if
-     enddo
-  enddo
+     end do
+  end do
 
   ! PRINT OUT THE ARRAYS !
-!  do j = nyp,1,-1
-!     print*,(work_e(ifm)%glat(i,j),i=1,nxp)
-!  enddo
-
-!  do j = nyp,1,-1
-!     print*,(work_e(ifm)%glon(i,j),i=1,nxp)
-!  enddo
-
-!  do j = nyp,1,-1
-!     print*,(work_e(ifm)%landfrac(i,j),i=1,nxp)
-!  enddo
- 
+  !  do j = nyp,1,-1
+  !     print*,(work_e(ifm)%glat(i,j),i=1,nxp)
+  !  enddo
+  
+  !  do j = nyp,1,-1
+  !     print*,(work_e(ifm)%glon(i,j),i=1,nxp)
+  !  enddo
+  
+  !  do j = nyp,1,-1
+  !     print*,(work_e(ifm)%landfrac(i,j),i=1,nxp)
+  !  enddo
+  
   
   deallocate(lat_list)
   deallocate(lon_list)

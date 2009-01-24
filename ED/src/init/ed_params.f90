@@ -166,7 +166,7 @@ visible_fraction_dif = 0.52
 leaf_reflect_nir = 0.577
 leaf_trans_nir = 0.248
 
-lai_min = 1.0e-4
+lai_min = 1.0e-5
 
 
 leaf_scatter_nir = leaf_reflect_nir + leaf_trans_nir
@@ -619,7 +619,7 @@ leaf_width(14:15) = 0.2
 
                             ! The following parameters are second sources found in 
                             ! Gu et al. 2007
-c_grn_leaf_dry(1:15)      = 3218.0    ! Jones 1992
+c_grn_leaf_dry(1:15)      = 3218.0    ! Jones 1992  J/(kg K)
 c_ngrn_biom_dry(1:15)     = 1256.0    ! Forest Products Laboratory 
 wat_dry_ratio_grn(1:15)   = 1.5       ! Ceccato et al. 2001
 wat_dry_ratio_ngrn(1:15)  = 0.7       ! Forest Products Laboratory

@@ -662,12 +662,6 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
   real :: qveg_water
   real :: intercepted,qintercepted
   real :: qwflxvc
-  real :: sat_temp
-
-  ! Canopies with LAI less than this number are assumed to be
-  ! open, ie, some fraction of the rain-drops can reach
-  ! the soil/litter layer unimpeded. 
-  real,parameter :: lai_to_cover = 1.5
 
   ! Fluxes from atmosphere to canopy
 
@@ -883,11 +877,10 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         ! the fluxes.
 
         !! may not want this since it may prevent the rejection of a bad step -- MCD 01-2009
+        !        sat_temp = max( min(180.0,initp%can_temp),min(veg_temp,max(320.0,initp%can_temp)))
 
-        sat_temp = max( min(180.0,initp%can_temp),min(veg_temp,max(320.0,initp%can_temp)))
 
-
-	sat_shv=fast_svp(prss,sat_temp)
+	sat_shv=fast_svp(prss,veg_temp)
 
         c3 = cpatch%lai(ico) * rhos * (sat_shv - initp%can_shv)
         if(cpatch%rb(ico) < tiny(1.0)) then 
@@ -955,8 +948,8 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         ! evaporation in every condition.
         ! ---------------------------------------------------------------
 
-!! for a saturated leaf, why does the energy from dew transfer but not from rain?
-!! seems like we should do both or not worry about either -- MCD
+        !Latent heat of evap and dew
+        qwflxvc = wflxvc * (fracliq * alvl + (1.-fracliq) * alvi)
         
         ! Case 1: Leaf has no space for rain - evaporation dominates
         ! Assumptions: cooling from evaporation is removed from leaf and
@@ -969,25 +962,28 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
            dinitp%veg_water(ico) = - wflxvc
            qveg_water = 0.
 
-           ! Case 2: Leaf has no space for rain - dew dominates
-           ! Assumptions: heating from the dew goes directly into the leaf
-           ! and the leaf water, BUT, the mass of the dew goes into the
-           ! shed water.  Rainfall and its internal energy bypass the leaf.
+        ! Case 2: Leaf has no space for rain - dew dominates
+        ! Assumptions: heating from the dew goes directly into the leaf
+        ! and the leaf water, BUT, the mass of the dew goes into the
+        ! shed water.  Rainfall and its internal energy bypass the leaf.
         else if(initp%veg_water(ico) >= max_leaf_water  .and. wflxvc < 0. )then
            
            wshed = intercepted*cpatch%lai(ico)*laii - wflxvc
-           qwshed = qintercepted*cpatch%lai(ico)*laii ! The heat from dew is not shed
+           qwshed = qintercepted*cpatch%lai(ico)*laii &
+                - wflxvc * (fracliq * alvl + (1.-fracliq) * alvi)
+           qwflxvc = 0.0
+
            dinitp%veg_water(ico) = 0.
            qveg_water = 0.
 
-           ! Case 3: Leaf has space for rain - evaporation dominates
-           ! Assumptions: Evaporation is removed from the leaf water, its cooling
-           ! effects the leaf.  Rainfall and its internal energy accumulate
-           ! on the leaf.
-	   ! AND
-	   ! Case 4: Leaf has space for rain - dew dominates
-           ! Assumptions: Dew and its heating are applied to the leaf. Rainfall
-           ! and its internal energy are applied to the leaf.
+        ! Case 3: Leaf has space for rain - evaporation dominates
+        ! Assumptions: Evaporation is removed from the leaf water, its cooling
+        ! effects the leaf.  Rainfall and its internal energy accumulate
+        ! on the leaf.
+	! AND
+	! Case 4: Leaf has space for rain - dew dominates
+        ! Assumptions: Dew and its heating are applied to the leaf. Rainfall
+        ! and its internal energy are applied to the leaf.
         else
            
            wshed = 0.0
@@ -996,9 +992,6 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
            qveg_water = qintercepted*cpatch%lai(ico)*laii
            
         endif
-
-        !Latent heat of evap and dew
-        qwflxvc = wflxvc * (fracliq * alvl + (1.-fracliq) * alvi)
 
         dinitp%veg_energy(ico) = &
              cpatch%rshort_v(ico)     &   ! Absorbed short wave radiation
