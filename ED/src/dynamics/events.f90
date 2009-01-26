@@ -365,7 +365,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                     cpatch%phenology_status(ico) = 2
                     cpatch%lai(ico)        = 0.0
                     cpatch%bleaf(ico)      = 0.0
-                    cpatch%veg_energy      = 0.0
+                    cpatch%veg_energy(ico) = 0.0
                     cpatch%veg_water(ico)  = 0.0
                     cpatch%veg_temp(ico)   = 0.0
                  else

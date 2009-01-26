@@ -21,6 +21,15 @@ module ed_therm_lib
   !----- Coefficients based on the hyperbolic tangent ------------------------------------!
   real, dimension(2)  , parameter :: ttt_10= (/0.0415,218.8/)
   !---------------------------------------------------------------------------------------!
+
+  !---------------------------------------------------------------------------------------!
+  !
+  ! Coefficients for Hayland and Wexler - used for extremely high temperatures
+  !
+  real,dimension(0:5), parameter :: &
+       hw0 = (/-5800.2206, 1.3914993, -0.48640239e-1, 0.41764768e-4, -0.14452093e-7, 6.5459673/)
+  ! ---------------------------------------------------------------------------------------
+
   
 contains
 
@@ -31,14 +40,11 @@ contains
      ! This function calculates the total heat capacity in (J/K) of the cohort
      ! biomass.  This function is primarily used to calculate leaf temperatures
      ! based on leaf energy.  At present, heat capacity is primarily based off
-     ! of leaf biomass, but is also accounting for a variable fraction of stems.
+     ! of leaf biomass, but is also can account for a variable fraction of stems.
      ! This is considered partially for stability.
 
      ! Inputs:
      ! leaf_biomass - the leaf biomass of the cohort in kg/m2 - NOTE
-     ! you are most likely going to be passing the variables bleaf and bdead
-     ! , but you must scale (multiply) them by the plant density (nplant) first.
-     ! structural_biomass - the biomass of live and dead hardwood in kg/m2
      ! pft - the plant functional type of the current cohort, which may serve
      ! for defining different parameterizations of specific heat capacity
 
@@ -64,19 +70,13 @@ contains
      real :: leaf_carbon         ! leaf biomass per plant
      real :: structural_carbon   ! structural biomass per plant
      real :: nplants             ! Number of plants per square meter
-!     real :: spec_hcap_leaf
-!     real :: spec_hcap_stem
-     
 
      real,parameter :: biomass_factor = 1.0 ! This is a biomass kluge factor
                                              ! The model is much faster and more stable
                                              ! When heat capacity is high.
-                                             ! It was also found that when net-radiation
-                                             ! matched tower observations, the dynamic
-                                             ! range of the 
 
-     real,parameter :: min_hcapveg = 90.0    ! 30.0 is roughly 1/3 kg of biomass at 3000 J/kg/K
-                                             ! Dont be fooled, this is quite high
+     real,parameter :: min_hcapveg = 200.0    
+
      integer :: pft     
      real,parameter :: veg_temp = 285.0      ! RIght now we are using a nominal vegetation
                                              ! temperature, but 
@@ -86,21 +86,21 @@ contains
 
      ! Specific heat capacity of leaf biomass (J/kg/K)
      ! The calculation of leaf heat capacity follows Gu et al. 2007
-!     spec_hcap_leaf  = (c_grn_leaf_dry(pft) + cliq*wat_dry_ratio_grn(pft))/(1.+wat_dry_ratio_grn(pft))
+     !     spec_hcap_leaf  = (c_grn_leaf_dry(pft) + cliq*wat_dry_ratio_grn(pft))/(1.+wat_dry_ratio_grn(pft))
      
      
      ! Specific heat capacity of the stems and structural biomass.
      ! Also following Gu et al. 2007
      
-!     spec_hcap_stem  = (c_ngrn_biom_dry(pft) + cliq*wat_dry_ratio_ngrn(pft))/(1+wat_dry_ratio_ngrn(pft))&
-!          + 100. * wat_dry_ratio_ngrn(pft) * &
-!          (-0.06191 + 2.36*1.0e-4*veg_temp - 1.33*1.0e-2*wat_dry_ratio_ngrn(pft))
+     !     spec_hcap_stem  = (c_ngrn_biom_dry(pft) + cliq*wat_dry_ratio_ngrn(pft))/(1+wat_dry_ratio_ngrn(pft))&
+     !          + 100. * wat_dry_ratio_ngrn(pft) * &
+     !          (-0.06191 + 2.36*1.0e-4*veg_temp - 1.33*1.0e-2*wat_dry_ratio_ngrn(pft))
      
      
      ! New Method
-!     calc_hcapveg = biomass_factor * nplants * (leaf_carbon*C2B*spec_hcap_leaf + &
-!          structural_carbon *C2B * hcap_stem_fraction * spec_hcap_stem )
-
+     !     calc_hcapveg = biomass_factor * nplants * (leaf_carbon*C2B*spec_hcap_leaf + &
+     !          structural_carbon *C2B * hcap_stem_fraction * spec_hcap_stem )
+     
      calc_hcapveg = nplants * (leaf_carbon*C2B*c_grn_leaf_dry(pft) + wat_dry_ratio_grn(pft)*leaf_carbon*C2B*cliq)
 
 
@@ -291,23 +291,46 @@ contains
    !================================================================================
 
   real function fast_svp(pres,temp)
+
+    ! MK05 is only valid up to 332 K
+    ! If the temperature is greater than 332, switch to Hyland and Wexler
+
      
      use consts_coms, only: t3ple,ep
      implicit none
      real,intent(in) :: temp
      real,intent(in) :: pres
-     real            :: ttfun,fun2,fun1
+     real            :: ttfun,fun2,fun1,fun3
+     real :: frac_hw
      real :: esz
+     real,parameter :: hwtemp0 = 315.0
+     real,parameter :: hwtemp1 = 332.0
 
      if(temp<t3ple) then
         !----- Updated method, using MK05 ------------------------------------------------!
         fun1 = iii_7(0) + iii_7(1)/temp + iii_7(2) * log(temp) + iii_7(3) * temp
         esz  = exp(fun1)
-     else
+     else if(temp>t3ple .and. temp<hwtemp0) then
         fun1 = l01_10(0) + l01_10(1)/temp + l01_10(2)*log(temp) + l01_10(3) * temp
         fun2 = l02_10(0) + l02_10(1)/temp + l02_10(2)*log(temp) + l02_10(3) * temp
         ttfun = tanh(ttt_10(1) * (temp - ttt_10(2)))
         esz  = exp(fun1 + ttfun*fun2)
+     else
+
+        ! Perform a linear combination of MK05 and Hayland and Wexler to make the transition seamless
+        fun1 = l01_10(0) + l01_10(1)/temp + l01_10(2)*log(temp) + l01_10(3) * temp
+        fun2 = l02_10(0) + l02_10(1)/temp + l02_10(2)*log(temp) + l02_10(3) * temp
+        ttfun = tanh(ttt_10(1) * (temp - ttt_10(2)))
+        
+        fun3 = hw0(0)/temp + hw0(1) + hw0(2)*temp + hw0(3)*temp**2.0 + hw0(4)*temp**3.0 + hw0(5)*log(temp)
+        
+        frac_hw = 1.0 - (hwtemp1 - min(temp,hwtemp1) )/(hwtemp1-hwtemp0)
+
+!        esz  = (1.0-frac_hw)*exp(fun1 + ttfun*fun2) + frac_hw*exp(fun3)
+
+        esz = min(0.95*pres,exp(fun1 + ttfun*fun2))
+
+
      endif
      
      fast_svp = ep * esz / (pres - esz)

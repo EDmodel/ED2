@@ -235,8 +235,7 @@ subroutine ed_model()
            do i = 1,46
               if(sum(integ_err(i,1:2)) .gt. 0_8)then                 
                  write(unit=77,fmt='(i3,2a,2i7)') i," ",trim(err_label(i)),integ_err(i,1:2)
-                 print*,i,trim(err_label(i)),integ_err(i,1:2)
-                 
+!                 print*,i,trim(err_label(i)),integ_err(i,1:2)
               endif
            enddo
            close(unit=77,status='keep')
