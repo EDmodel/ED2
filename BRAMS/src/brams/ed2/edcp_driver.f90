@@ -150,19 +150,6 @@ subroutine ed_coup_driver()
   call initHydrology()
 
   !-----------------------------------------------------------------------!
-  ! STEP 16: Initialize the flux arrays that pass to the atmosphere
-  !-----------------------------------------------------------------------!
-  if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Allocating Transfer Arrays...'
-  allocate(wgrid_g(ngrids))
- allocate(ed_fluxp_g(ngrids))
-  allocate(ed_fluxf_g(ngrids))
-  allocate(ed_precip_g(ngrids))
-  do ifm=1,ngrids
-     call newgrid(ifm)
-     call initialize_ed2leaf(ifm,mmxp(ifm),mmyp(ifm))
-  enddo
-
-  !-----------------------------------------------------------------------!
   ! STEP 8: Inform edtypes which atmospheric cell to look at
   !          
   !-----------------------------------------------------------------------!
@@ -170,6 +157,21 @@ subroutine ed_coup_driver()
   do ifm=1,ngrids
      call set_edtype_atm(ifm)
   enddo
+
+  !-----------------------------------------------------------------------!
+  ! STEP 16: Initialize the flux arrays that pass to the atmosphere
+  !-----------------------------------------------------------------------!
+  if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Allocating Transfer Arrays...'
+  allocate(wgrid_g(ngrids))
+  allocate(ed_fluxp_g(ngrids))
+  allocate(ed_fluxf_g(ngrids))
+  allocate(ed_precip_g(ngrids))
+  do ifm=1,ngrids
+     call newgrid(ifm)
+     call initialize_ed2leaf(ifm,mmxp(ifm),mmyp(ifm))
+  enddo
+
+  
 
   !-----------------------------------------------------------------------!
   ! STEP 9: Initialize meteorology                                        !
