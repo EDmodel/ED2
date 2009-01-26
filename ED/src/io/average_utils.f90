@@ -445,6 +445,7 @@ subroutine integrate_ed_daily_output_flux(cgrid)
       
       cgrid%dmean_rh(ipy)           = cgrid%dmean_rh(ipy)           + sitesum_rh           * poly_area_i
       cgrid%dmean_gpp(ipy)          = cgrid%dmean_gpp(ipy)          + sitesum_gpp          * poly_area_i
+!print*,"dgpp",cgrid%dmean_gpp(ipy),sitesum_gpp
       cgrid%dmean_plresp(ipy)       = cgrid%dmean_plresp(ipy)       + sitesum_plresp       * poly_area_i
       cgrid%dmean_nep(ipy)          = cgrid%dmean_nep(ipy)          + (sitesum_gpp-sitesum_rh-sitesum_plresp)     &
                                                                                            * poly_area_i
@@ -604,7 +605,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_gpp        (ipy)  = cgrid%dmean_gpp       (ipy)   * umol_2_kgC
       cgrid%dmean_plresp     (ipy)  = cgrid%dmean_plresp    (ipy)   * umol_2_kgC
       cgrid%dmean_nep        (ipy)  = cgrid%dmean_nep       (ipy)   * umol_2_kgC
-   
+!print*,"dbar",cgrid%dmean_gpp,cgrid%dmean_plresp,cgrid%dmean_rh,cgrid%dmean_nep
       cgrid%dmean_gpp_lu     (:,ipy)  = cgrid%dmean_gpp_lu    (:,ipy)   * umol_2_kgC
       cgrid%dmean_rh_lu      (:,ipy)  = cgrid%dmean_rh_lu     (:,ipy)   * umol_2_kgC
       cgrid%dmean_nep_lu     (:,ipy)  = cgrid%dmean_nep_lu    (:,ipy)   * umol_2_kgC
@@ -678,7 +679,7 @@ subroutine zero_ed_daily_vars(cgrid)
    type(polygontype), pointer :: cpoly
    type(sitetype)   , pointer :: csite
    type(patchtype)  , pointer :: cpatch
-   integer                    :: ipy,isi,ipa,ico
+   integer                    :: ipy,isi,ipa
    
    do ipy = 1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
@@ -699,13 +700,12 @@ subroutine zero_ed_daily_vars(cgrid)
             !-------------------------------------!
             ! Reset variables stored in patchtype !
             !-------------------------------------!
-            do ico = 1, cpatch%ncohorts
-               cpatch%dmean_gpp      (ico) = 0.0
-               cpatch%dmean_gpp_pot  (ico) = 0.0
-               cpatch%dmean_gpp_max  (ico) = 0.0
-               cpatch%dmean_leaf_resp(ico) = 0.0
-               cpatch%dmean_root_resp(ico) = 0.0
-            end do
+            cpatch%dmean_gpp       = 0.0
+            cpatch%dmean_gpp_pot   = 0.0
+            cpatch%dmean_gpp_max   = 0.0
+            cpatch%dmean_leaf_resp = 0.0
+            cpatch%dmean_root_resp = 0.0
+
          end do
       end do
    end do
@@ -792,7 +792,7 @@ end subroutine zero_ed_daily_output_vars
 subroutine integrate_ed_monthly_output_vars(cgrid)
 !------------------------------------------------------------------------------------------!
 !    This subroutine integrates the monthly average. This is called after the daily means  !
-! were integrated and normalized.                                                          !
+!    were integrated and normalized.                                                       !
 !------------------------------------------------------------------------------------------!
    use ed_state_vars, only : edtype
    use      max_dims, only : n_dbh,n_pft, n_dist_types
