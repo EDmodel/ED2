@@ -5,6 +5,7 @@ subroutine fire_frequency_ar(month, cgrid)
   use grid_coms, only: nzg
   use soil_coms, only: dslz
   use disturb_coms, only: fire_dryness_threshold, fire_parameter
+  use allometry, only: ed_biomass
 
   implicit none
 
@@ -18,7 +19,6 @@ subroutine fire_frequency_ar(month, cgrid)
   real :: babove
   real :: patch_water_depth
   integer :: k
-  real, external :: ed_biomass
   real :: fuel
 
   ! Loop over polygons and sites.

@@ -4,6 +4,7 @@
 subroutine init_ed_cohort_vars_array(cpatch,ico, lsl)
   
   use ed_state_vars,only : patchtype
+  use allometry, only: calc_root_depth, assign_root_depth
 
   implicit none
 
@@ -11,8 +12,6 @@ subroutine init_ed_cohort_vars_array(cpatch,ico, lsl)
   integer :: ico
   real :: root_depth
   integer, intent(in) :: lsl
-  real, external :: calc_root_depth
-  integer, external :: assign_root_depth
 
   cpatch%mean_gpp(ico) = 0.0
   cpatch%mean_leaf_resp(ico) = 0.0
@@ -24,6 +23,7 @@ subroutine init_ed_cohort_vars_array(cpatch,ico, lsl)
   cpatch%dmean_gpp_pot(ico) = 0.0
   cpatch%dmean_gpp_max(ico) = 0.0
   
+  cpatch%gpp(ico) = 0.0
   cpatch%leaf_respiration(ico) = 0.0
   cpatch%root_respiration(ico) = 0.0
   cpatch%growth_respiration(ico) = 0.0

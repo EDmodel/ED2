@@ -75,7 +75,7 @@ contains
                                              ! matched tower observations, the dynamic
                                              ! range of the 
 
-     real,parameter :: min_hcapveg = 30.0    ! This is roughly 1/3 kg of biomass at 3000 J/kg/K
+     real,parameter :: min_hcapveg = 90.0    ! 30.0 is roughly 1/3 kg of biomass at 3000 J/kg/K
                                              ! Dont be fooled, this is quite high
      integer :: pft     
      real,parameter :: veg_temp = 285.0      ! RIght now we are using a nominal vegetation

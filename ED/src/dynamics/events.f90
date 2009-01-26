@@ -38,10 +38,10 @@ subroutine prescribed_event(year,doy)
   integer,save :: next_year = 100000
   integer,save :: next_doy = 367
   integer :: curr_year, curr_doy
-  integer(4) :: i,j,nevent,nrep
-  integer(4),dimension(20) ::pft
-  real(8),dimension(20):: rval
-  logical(4) :: texist = .false.
+  integer(kind=4) :: i,j,nevent,nrep
+  integer(kind=4),dimension(20) ::pft
+  real(kind=8),dimension(20):: rval
+  logical(kind=4) :: texist = .false.
   
 
 
@@ -172,6 +172,19 @@ subroutine prescribed_event(year,doy)
                  enddo
               end if
 
+              call libxml2f90__ll_exist('DOWN','irrigate',nrep)
+              if(nrep .gt. 0) then
+                 print*,"IRRIGATE"
+                 do j = 1,nrep
+                    
+                    call getConfigREAL ('irrigate','event',j,rval(1),texist)
+                    if(.not.texist) rval(1) = 0.0d+0
+                    
+                    call event_irrigate(rval(1))
+                   
+                 enddo
+              endif
+
               call libxml2f90__ll_exist('DOWN','pesticide',nrep)
               if(nrep .gt. 0) print*,"PESTICIDE"
               
@@ -279,10 +292,11 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   use disturbance_utils_ar,only: plant_patch_ar
   use ed_therm_lib, only: update_veg_energy_cweh
   use fuse_fiss_utils_ar, only: terminate_cohorts_ar
-  real(8),intent(in) :: agb_frac8
-  real(8),intent(in) :: bgb_frac8
-  real(8),intent(in) :: fol_frac8
-  real(8),intent(in) :: stor_frac8
+  use allometry, only : bd2dbh, dbh2h
+  real(kind=8),intent(in) :: agb_frac8
+  real(kind=8),intent(in) :: bgb_frac8
+  real(kind=8),intent(in) :: fol_frac8
+  real(kind=8),intent(in) :: stor_frac8
   real :: ialloc,bdead_new,bsw_new,bleaf_new,bfr_new,bstore_new
   real :: agb_frac,bgb_frac,fol_frac,stor_frac
   integer :: ifm,ipy,isi,ipa,pft
@@ -327,7 +341,6 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
               do ico=1,cpatch%ncohorts
                  
                  pft = cpatch%pft(ico)                 
-print*,"pft",pft
                  !! calc new pool sizes
                  ialloc =  1.0 / (1.0 + q(pft) + qsw(pft) * cpatch%hite(ico))
                  bdead_new = cpatch%bdead(ico)*&
@@ -397,13 +410,14 @@ subroutine event_planting(pft,density8)
   use grid_coms, only : ngrids
   use ed_state_vars,only: edgrid_g, &
        edtype,polygontype,sitetype, &
-       patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
+       patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype, &
+       filltab_alltypes 
   use pft_coms, only:sla,qsw,q,hgt_min
   use misc_coms, only: integration_scheme
   use disturbance_utils_ar,only: plant_patch_ar
 
-  integer(4),intent(in) :: pft
-  real(8),intent(in) :: density8
+  integer(kind=4),intent(in) :: pft
+  real(kind=8),intent(in) :: density8
   real :: density
   integer :: ifm,ipy,isi,ipa
   type(edtype), pointer :: cgrid
@@ -440,6 +454,7 @@ subroutine event_planting(pft,density8)
               call plant_patch_ar(csite,ipa,pft,density,planting_ht,cpoly%lsl(isi))            
               call update_patch_derived_props_ar(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,ipa)
               call new_patch_sfc_props_ar(csite, ipa, cpoly%met(isi)%rhos)
+
            enddo
 
            ! Update site properties. ## THINK ABOUT WHAT TO SET FLAG##########
@@ -453,6 +468,9 @@ subroutine event_planting(pft,density8)
   ! Re-allocate integration buffer
   if(integration_scheme == 1) call initialize_rk4patches_ar(0)
 
+  ! Reset hdf vars since number of cohorts changed mid-month
+  call filltab_alltypes
+
 end subroutine event_planting
 
 subroutine event_fertilize(rval8)
@@ -464,7 +482,7 @@ subroutine event_fertilize(rval8)
   use misc_coms, only: integration_scheme
   use disturbance_utils_ar,only: plant_patch_ar
   use ed_therm_lib, only: update_veg_energy_cweh
-  real(8),intent(in),dimension(5) :: rval8
+  real(kind=8),intent(in),dimension(5) :: rval8
 
   real :: nh4,no3,p,k,ca
   integer :: ifm,ipy,isi,ipa
@@ -521,6 +539,93 @@ subroutine event_fertilize(rval8)
 
 end subroutine
 
+subroutine event_irrigate(rval8)
+  use grid_coms, only : ngrids,nzg
+  use ed_state_vars,only: edgrid_g, &
+       edtype,polygontype,sitetype, &
+       patchtype
+  use therm_lib, only: qtk
+  real(kind=8),intent(in) :: rval8
+
+  real :: iwater,ienergy,fliq,soil_temp
+  integer :: ifm,ipy,isi,ipa,k
+  type(edtype), pointer :: cgrid
+  type(polygontype), pointer :: cpoly
+  type(sitetype),pointer :: csite
+  type(patchtype),pointer :: cpatch
+
+  iwater = real(rval8)     
+
+  print*,"----------------------------"
+  print*,"----------------------------"
+  print*,"----------------------------"
+  print*,"----------------------------"
+  print*,"         IRRIGATE           "
+  print*,"----------------------------"
+  print*,"----------------------------"
+  print*,"----------------------------"
+  print*,"----------------------------"
+  print*,""
+  print*,rval8
+
+  if(iwater .lt. 0.0) then
+     print*,"INVALID IRRIGATION VALUE"
+     stop
+  end if
+
+  do ifm = 1,ngrids
+     cgrid => edgrid_g(ifm) 
+     do ipy = 1,cgrid%npolygons
+        
+        cpoly => cgrid%polygon(ipy)
+        
+        do isi = 1,cpoly%nsites
+           
+           csite => cpoly%site(isi)
+
+           do ipa=1,csite%npatches
+              
+              cpatch => csite%patch(ipa)
+
+              !! note, assume irrigation water is at same temperature as soil
+              soil_temp = csite%soil_tempk(nzg,ipa) - 273.15
+              if(soil_temp > 0.0)then
+                 ienergy = soil_temp * cliq1000 + alli1000
+                 fliq = 1.0
+              else
+                 ienergy = soil_temp*cice1000
+                 fliq = 0.0
+              end if
+
+              k = csite%nlev_sfcwater(ipa)
+              if(k .eq. 0) then
+                 csite%sfcwater_mass(1,ipa)    = iwater
+                 csite%sfcwater_tempk(1,ipa)   = soil_temp
+                 csite%sfcwater_energy(1,ipa)  = ienergy
+                 csite%sfcwater_depth(1,ipa)   = iwater*0.001 
+                 csite%sfcwater_fracliq(1,ipa) = fracliq
+                 csite%nlev_sfcwater(ipa)      = 1
+              else
+                 csite%sfcwater_energy(k,ipa) = (csite%sfcwater_energy(k,ipa)*csite%sfcwater_mass(k,ipa) &
+                      + ienergy*iwater)/(csite%sfcwater_mass(k,ipa) + iwater)
+                 csite%sfcwater_mass(k,ipa)   = csite%sfcwater_mass(k,ipa) + iwater
+                 csite%sfcwater_depth(k,ipa)  = csite%sfcwater_depth(k,ipa) + iwater*0.001 
+                 call qtk( csite%sfcwater_energy(k,ipa) &
+                      & ,csite%sfcwater_tempk(k,ipa),csite%sfcwater_fracliq(k,ipa))
+              endif
+
+              !! do we need to call infiltration?
+              !! redistribute_snow takes a rk4 patch, not a normal patch
+
+           enddo
+
+        end do
+     end do
+
+  end do
+
+end subroutine
+
 subroutine event_fire()
 
   print*,"----------------------------"
@@ -548,7 +653,7 @@ subroutine event_till(rval8)
   use ed_therm_lib, only: update_veg_energy_cweh
   use fuse_fiss_utils_ar, only: terminate_cohorts_ar
   
-  real(8),intent(in) :: rval8
+  real(kind=8),intent(in) :: rval8
 
   real :: depth
   integer :: ifm,ipy,isi,ipa,pft

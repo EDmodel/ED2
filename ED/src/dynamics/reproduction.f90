@@ -18,7 +18,8 @@ subroutine reproduction_ar(cgrid, month)
   use canopy_air_coms, only: hcapveg_ref,heathite_min
   use mem_sites, only: maxcohort
   use ed_therm_lib,only : calc_hcapveg
-
+  use allometry, only: dbh2bd, dbh2bl, h2dbh
+  
   implicit none
 
   type(edtype),target       :: cgrid
@@ -37,9 +38,6 @@ subroutine reproduction_ar(cgrid, month)
   real :: hite
   integer :: pft
 
-  real, external :: dbh2bd
-  real, external :: dbh2bl
-  real, external :: h2dbh
   integer :: inew,ncohorts_new
   real,dimension(n_pft,9) :: recruit_array
   

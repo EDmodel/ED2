@@ -880,7 +880,7 @@ subroutine write_ed_xml_config
         call putConfigREAL("Vm0",Vm0(i))
         call putConfigINT("phenology",phenology(i))
         call putConfigREAL("q",q(i))
-        call putConfigREAL("clumping",clumping_factor(i))
+        call putConfigREAL8("clumping",clumping_factor(i))
         call putConfigREAL("leaf_width",leaf_width(i))
         call putConfigREAL("hgt_min",hgt_min(i))
         call putConfigREAL("plant_min_temp",plant_min_temp(i))

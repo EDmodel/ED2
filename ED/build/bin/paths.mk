@@ -2,7 +2,7 @@
 
 # RAMS root directory.
 
-#ED_ROOT=/n/Moorcroft_Lab/Users/mlongo/repository/EDBRAMS/ED
+#ED_ROOT=/n/Moorcroft_Lab/Users/mlongo/main-edbrams/ED
 
 # MCD: ED_ROOT=/n/Moorcroft_Lab/Users/mcd/EDBRAMS/ED
 ED_ROOT=/home/mdietze/EDBRAMS/ED

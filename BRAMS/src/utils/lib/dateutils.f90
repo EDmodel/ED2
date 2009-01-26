@@ -50,9 +50,9 @@ subroutine date_abs_secs (indate1,seconds)
    
    ndays = elapdays + julday(month1,date1,year1)
 
-   s1= dble(ndays) *day_sec
-   s2= dble(hour1/10000)*hr_sec
-   s3= dble(mod(hour1,10000)/100)*min_sec
+   s1= dble(ndays) *dble(day_sec)
+   s2= dble(hour1/10000)*dble(hr_sec)
+   s3= dble(mod(hour1,10000)/100)*dble(min_sec)
    s4= dble(mod(hour1,100))
    seconds= s1+s2+s3+s4
 
@@ -73,7 +73,7 @@ subroutine date_abs_secs2 (year1,month1,date1,hour1,seconds)
    implicit none
    real(kind=8) :: seconds
 
-   ! compute number of seconds past 1 January 1900 12:00 am
+   ! compute number of seconds past 1 January 1583 12:00 am
 
    real(kind=8) :: s1,s2,s3,s4
    integer :: year1,month1,date1,hour1,iy,ndays
@@ -105,9 +105,9 @@ subroutine date_abs_secs2 (year1,month1,date1,hour1,seconds)
    end if
    
    ndays = elapdays + julday(month1,date1,year1)
-   s1= dble(ndays) * day_sec
-   s2= dble(hour1/10000) * hr_sec
-   s3= dble(mod(hour1,10000)/100)*min_sec
+   s1= dble(ndays) * dble(day_sec)
+   s2= dble(hour1/10000) * dble(hr_sec)
+   s3= dble(mod(hour1,10000)/100)*dble(min_sec)
    s4= dble(mod(hour1,100))
    seconds= s1+s2+s3+s4
 
@@ -170,7 +170,7 @@ subroutine date_secs_ymdt (seconds,iyear1,imonth1,idate1,ihour1)
 
    ! compute real time given number of seconds past 1 January 1583 12:00 am  
 
-   integer :: ny,nyr,ileap,nm,nd,ihr,imn,isc
+   integer :: ny,nyr,ileap,nm,ihr,imn,isc
 
    integer :: mondays(12)
    data mondays/31,28,31,30,31,30,31,31,30,31,30,31/
@@ -180,10 +180,10 @@ subroutine date_secs_ymdt (seconds,iyear1,imonth1,idate1,ihour1)
    do ny=0,10000
       ileap=0
       if(isleap(firstyear+ny)) ileap=1
-      s1=s1-(365.+ileap)* day_sec
-      if(s1 < 0.) then
+      s1=s1-(365.d0+dble(ileap))* dble(day_sec)
+      if(s1 < 0.d0) then
          nyr=ny
-         s1=s1+(365.+ileap)* day_sec
+         s1=s1+(365.d0+dble(ileap))* dble(day_sec)
          exit
       endif
    enddo
@@ -194,9 +194,9 @@ subroutine date_secs_ymdt (seconds,iyear1,imonth1,idate1,ihour1)
    do nm=1,12
       ileap=0
       if(isleap(firstyear+ny) .and. nm == 2) ileap=1
-      s1=s1-(mondays(nm)+ileap)* day_sec
-      if(s1 < 0.) then
-         s1=s1+(mondays(nm)+ileap)* day_sec
+      s1=s1-dble(mondays(nm)+ileap)* dble(day_sec)
+      if(s1 < 0.d0) then
+         s1=s1+dble(mondays(nm)+ileap)* dble(day_sec)
          exit
       endif
    enddo
@@ -205,8 +205,8 @@ subroutine date_secs_ymdt (seconds,iyear1,imonth1,idate1,ihour1)
    ! s1 is now number of secs into the month
    !   Get date and time
 
-   idate1=int(s1/day_sec)
-   s1=s1-idate1*day_sec
+   idate1=int(s1/dble(day_sec))
+   s1=s1-dble(idate1)*dble(day_sec)
    !---- Don't know if this is right. idate1 should not be +1. Although days start
    ! at idate1, idate =0 means that it is still running the last day of previous month,
    ! just that it is past midnight so the previous test gave a negative. 
@@ -222,11 +222,11 @@ subroutine date_secs_ymdt (seconds,iyear1,imonth1,idate1,ihour1)
      idate1=mondays(imonth1)+ileap
    end if
 
-   ihr=int(s1/hr_sec)
-   s1=s1-ihr*hr_sec
-   imn=int(s1/min_sec)
-   s1=s1-imn*min_sec
-   isc=s1
+   ihr=int(s1/dble(hr_sec))
+   s1=s1-dble(ihr)*dble(hr_sec)
+   imn=int(s1/dble(min_sec))
+   s1=s1-dble(imn)*dble(min_sec)
+   isc=int(s1)
    ihour1=ihr*10000+imn*100+isc
 
    return
@@ -301,9 +301,9 @@ subroutine date_add_to (inyear,inmonth,indate,inhour  &
    ! convert input time to seconds
 
    ttinc=tinc
-   if(tunits.eq.'m') ttinc=tinc*min_sec
-   if(tunits.eq.'h') ttinc=tinc*hr_sec
-   if(tunits.eq.'d') ttinc=tinc*day_sec
+   if(tunits.eq.'m') ttinc=tinc*dble(min_sec)
+   if(tunits.eq.'h') ttinc=tinc*dble(hr_sec)
+   if(tunits.eq.'d') ttinc=tinc*dble(day_sec)
    !print*,'inc:',tinc,tunits,ttinc
 
 

@@ -186,6 +186,7 @@ end subroutine terminate_cohorts_ar
      use fusion_fission_coms , only: fusetol_h, fusetol, lai_fuse_tol
      use max_dims            , only: n_pft
      use mem_sites           , only: maxcohort
+     use allometry           , only: dbh2h, dbh2bl
 
      implicit none
 
@@ -203,8 +204,6 @@ end subroutine terminate_cohorts_ar
      real    :: total_lai
      real :: tolerance_mult
      logical , allocatable, dimension(:) :: fuse_table
-     real    , external :: dbh2h
-     real    , external :: dbh2bl
      real, parameter :: tolerance_max = 10.0  ! Original: 2.0
      integer :: ncohorts_old
      integer, parameter :: fuse_relax = 0
@@ -365,7 +364,7 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      use fusion_fission_coms  , only: lai_tol
      use max_dims             , only: n_pft
      use ed_therm_lib         , only: update_veg_energy_ct
-
+     use allometry            , only: dbh2h, bd2dbh
      implicit none
      
      type(patchtype),target :: cpatch
@@ -378,8 +377,6 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      integer                  :: ncohorts_new
      real    :: slai
 
-     real, external :: dbh2h
-     real, external :: bd2dbh
      integer, intent(in) :: lsl
      integer,allocatable :: split_mask(:)
 
@@ -593,6 +590,7 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      use pft_coms, only: q, qsw, sla
      use consts_coms,only:t3ple,alli,cliq,cice
      use ed_therm_lib,only:calc_hcapveg,update_veg_energy_ct
+     use allometry, only: calc_root_depth, assign_root_depth, bd2dbh, dbh2h
 
      implicit none
      type(patchtype),target :: cpatch
@@ -604,10 +602,6 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      real :: cb_max
      real :: root_depth
      
-     real    , external :: calc_root_depth
-     integer , external :: assign_root_depth
-     real    , external :: bd2dbh
-     real    , external :: dbh2h
 
      real :: laiold
      
@@ -924,11 +918,11 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
 
      ! The new and fused csite is now complete, clean up the temporary data
      
-     deallocate(fuse_table)
 
      call deallocate_sitetype(tempsite)
 
   endif
+  deallocate(fuse_table)
      
 
 enddo

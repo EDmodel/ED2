@@ -57,14 +57,16 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
    !
    ! This subroutine assigns a near-bare ground state for the given patch
    !
-   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype &
-                           ,allocate_sitetype,allocate_patchtype
-   use max_dims, only: n_pft
-   use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, include_these_pft,include_pft_ag
-   use ed_therm_lib, only: calc_hcapveg
+   use ed_state_vars, only : edtype,polygontype,sitetype,patchtype                         &
+                            ,allocate_sitetype,allocate_patchtype
+   use max_dims     , only : n_pft
+   use pft_coms     , only : SLA, q, qsw, hgt_min, include_pft, include_these_pft          &
+                            ,include_pft_ag
+   use ed_therm_lib , only : calc_hcapveg
+   use allometry    , only : h2dbh,dbh2bd,dbh2bl,ed_biomass
+   use consts_coms, only : t3ple
 
    ! This subroutine assigns a near-bare ground state for the given patch
-   use consts_coms, only : t3ple
    implicit none
    logical, intent(in)      :: zero_time   ! This is a call done at initialisation.
    type(sitetype), target   :: csite
@@ -75,7 +77,6 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
 
 
    type(patchtype), pointer :: cpatch
-   real, external :: h2dbh,dbh2bd,dbh2bl,ed_biomass
    integer :: ipa,ico,mypfts,ipft
    real :: laisum
 

@@ -104,7 +104,7 @@ contains
     integer :: var_len,var_len_global,max_ptrs,glob_id,iptr,igr
     character (len=*) :: tabstr
     
-    character (len=1) ::toksep=':'
+    character (len=1), parameter ::toksep=':'
     character (len=128) ::tokens(10)
     character (len=8) :: ctab
     integer :: ntok,nt,nv
@@ -242,7 +242,7 @@ contains
     integer :: var_len,var_len_global,max_ptrs,glob_id,iptr,igr
     character (len=*) :: tabstr
     
-    character (len=1) ::toksep=':'
+    character (len=1), parameter ::toksep=':'
     character (len=128) ::tokens(10)
     character (len=8) :: ctab
     integer :: ntok,nt,nv
@@ -382,7 +382,7 @@ contains
     integer :: var_len,var_len_global,max_ptrs,glob_id,iptr,igr
     character (len=*) :: tabstr
     
-    character (len=1) ::toksep=':'
+    character (len=1), parameter ::toksep=':'
     character (len=128) ::tokens(10)
     character (len=8) :: ctab
     
@@ -519,7 +519,7 @@ contains
     integer :: var_len,var_len_global,max_ptrs,glob_id,iptr,igr
     character (len=*) :: tabstr
     
-    character (len=1) ::toksep=':'
+    character (len=1), parameter ::toksep=':'
     character (len=128) ::tokens(10)
     character (len=8) :: ctab
     integer :: ntok,nt,nv

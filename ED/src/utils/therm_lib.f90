@@ -27,7 +27,7 @@ module therm_lib
    integer, parameter ::   maxlev = 16              ! Maximum # of levels for adaptive     
                                                     !   quadrature methods.    
 
-   logical, parameter ::   newthermo = .false.      ! Use new thermodynamics [T|F]
+   logical, parameter ::   newthermo = .true.      ! Use new thermodynamics [T|F]
 
    !---------------------------------------------------------------------------------------!
    !   This is the "level" variable, that used to be in micphys. Since it affects more the !
@@ -933,7 +933,11 @@ module therm_lib
          tempk   = (qw - qwliq0) / (cliq * sngl(w) + dryhcap) + t3ple
       !----- Changing phase, it must be at triple point -----------------------------------!
       else
-         fracliq = qw / qwliq0
+         if(w > 0.d0) then
+            fracliq = qw / qwliq0
+         else
+            fracliq = 0.0
+         endif
          tempk = t3ple
       end if
       !------------------------------------------------------------------------------------!

@@ -287,7 +287,7 @@ subroutine tokenize1(str1,tokens,ntok,toksep)
 implicit none
 integer :: ntok
 character(len=*) :: str1,tokens(*)
-character(len=1) :: toksep
+character(len=1), intent(in) :: toksep
 
 character(len=256) :: str
 integer :: nch,ist,npt,nc

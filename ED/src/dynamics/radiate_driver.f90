@@ -38,7 +38,8 @@ subroutine radiate_driver_ar(cgrid)
            if(cpoly%met(isi)%rlong < rlong_min ) then
               print*,"STRANGE DATA",cpoly%met(isi)%rlong,ipy,isi,int(real(isi)/4.0),rlong_min
               print*,cpoly%met(isi)
-              stop
+              call fatal_error('Rlong is too low!','radiate_driver_ar'&
+                              &,'radiate_driver.f90')
            endif
 
 
@@ -376,7 +377,7 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
                  print*,""
                  print*,lw_v_surf_array
                  call fatal_error('NaN found in LWSURF' &
-                                 ,'sfcrad_ed_ar','radiate_driver.f90')
+                                 &,'sfcrad_ed_ar','radiate_driver.f90')
               endif
 
               if (cpatch%rlong_v_incid(ico).ne.cpatch%rlong_v_incid(ico)) then
@@ -384,7 +385,7 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
                  print*,""
                  print*,lw_v_incid_array
                  call fatal_error('NaN found in LW_INCID' &
-                                 ,'sfcrad_ed_ar','radiate_driver.f90')
+                                 &,'sfcrad_ed_ar','radiate_driver.f90')
                  
               endif
            endif
@@ -583,15 +584,17 @@ subroutine scale_ed_radiation_ar(rshort, rshort_diffuse, rlong, csite)
               print*,"cpatch%long_v(ico) is nan"
               print*,cpatch%rlong_v(ico),cpatch%rlong_v_incid(ico),cpatch%rlong_v_surf(ico),rlong
               print*,"ico:",ico
-              stop
+              call fatal_error('Rlong_v is NaN','scale_ed_radiation_ar' &
+                              &,'radiate_driver.f90')
            end if
 
         endif
 
         if (cpatch%rlong_v(ico) .ne. cpatch%rlong_v(ico)) then
-           print*,"cpatch%long_v(ico) is nan but not calculated"
+           print*,"cpatch%rlong_v(ico) is nan but not calculated"
            print*,cpatch%rlong_v(ico),cpatch%rlong_v_incid(ico),cpatch%rlong_v_surf(ico)
-           stop
+           call fatal_error('cpatch%rlong_v(ico) is nan but not calculated!'&
+                           &,'scale_ed_radiation_ar','radiate_driver.f90')
         end if
 
 

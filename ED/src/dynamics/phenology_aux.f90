@@ -74,7 +74,7 @@ subroutine prescribed_leaf_state(lat, imonth, iyear, doy,   &
           (phen_pars%color_a(my_year) *   &
           real(doy) * 1.095)**phen_pars%color_b(my_year))
   endif
-  print*,"elongf",elongf
+  !print*,"elongf",elongf
   if(elongf < elonMin) elongf = 0.0
 
   ! load the values for each PFT

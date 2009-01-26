@@ -571,22 +571,6 @@ subroutine ed_opspec_times
    end select
 
 
-   !---------------------------------------------------------------------------------------!
-   !     Checking if the user has indicated a need for any of the fast flux diagnostic
-   ! variables, these are used in conditions of ifoutput,idoutput and imoutput conditions.
-   ! If they are not >0, then set the logical, fast_diagnostics to false.
-   !---------------------------------------------------------------------------------------!
-   if (ifoutput .eq. 0 .and. idoutput .eq. 0 .and. imoutput .eq. 0) then
-
-      fast_diagnostics = .false.
-
-   else
-      
-      fast_diagnostics = .true.
-
-   endif
-
-
 
 
 

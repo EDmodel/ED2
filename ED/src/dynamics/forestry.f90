@@ -214,7 +214,7 @@ subroutine inventory_mat_forests_ar(cpoly,isi, area_mature_primary,   &
   
   use ed_state_vars,only:polygontype,sitetype,patchtype
   use disturb_coms, only: plantation_rotation, mature_harvest_age
-
+  use allometry, only: ed_biomass
   implicit none
 
 
@@ -230,7 +230,6 @@ subroutine inventory_mat_forests_ar(cpoly,isi, area_mature_primary,   &
   real, intent(out) :: area_mature_plantation
   real, intent(out) :: agb_mature_plantation
 
-  real, external :: ed_biomass
 
   ! Initialize inventory
   area_mature_primary = 0.0

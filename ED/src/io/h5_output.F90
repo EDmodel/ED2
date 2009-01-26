@@ -13,8 +13,6 @@ subroutine h5_output(vtype)
        var_table_vector,     &
        num_var
 
-  use mem_sites,only : maxcohort
-
   use misc_coms, only : ffilout, &
                         sfilout, &
 	                itimea,  &
@@ -81,7 +79,6 @@ subroutine h5_output(vtype)
   real(kind=8),parameter :: zero = 0.0d0
 
   integer :: outyear,outmonth,outdate,outhour
-  real, external :: dbh2bl
   type(var_table_vector),pointer :: vtvec
   integer :: irec, nrec
 

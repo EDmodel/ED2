@@ -339,7 +339,7 @@ end subroutine sw_twostream_clump
 subroutine bandec(a,n,m1,m2,al,indx,d)
 implicit none
 
-real(kind=8), parameter :: tiny=1.0d-20
+real(kind=8), parameter :: tiny_offset=1.0d-20
 integer :: n,m1,m2
 real(kind=8), dimension(n,m1+m2+1) :: a
 real(kind=8), dimension(n,m1) :: al
@@ -374,7 +374,7 @@ do k=1,n
       endif
    enddo
    indx(k)=i
-   if(dum.eq.0.0d0)a(k,1)=tiny
+   if(dum.eq.0.0d0)a(k,1)=tiny_offset
    if(i.ne.k)then
       d=-d
       do j=1,mm
