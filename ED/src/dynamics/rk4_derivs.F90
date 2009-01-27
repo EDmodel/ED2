@@ -93,14 +93,8 @@ subroutine leaf_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,dp
    call ed_stars(atm_tmp,atm_shv,atm_co2,initp%can_temp,geoht,vels,initp%rough,initp%ustar &
                 ,initp%rstar,initp%tstar,initp%cstar,initp%can_shv,initp%can_co2)
 
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   !!!!     I'm not sure that we need to convert tstar like this... Shouldn't it be     !!!!
-   !!!! simply tstar?                                                                   !!!! 
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    initp%tstar = initp%tstar * cp / exner
-  
+
    call leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,dpcpg,atm_tmp &
                         ,exner,geoht,lsl)
 
@@ -599,19 +593,6 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
       end do
    end if
 
-   !if (initp%nlev_sfcwater == 1 .and. initp%sfcwater_mass(1) < water_stab_thresh) then
-   !   !------------------------------------------------------------------------------------!
-   !   !    If we have a thin layer of snow the heat derivatives will require a special     !
-   !   ! treatment. We must ensure that thin layers are in thermal equilibrium. If this is  !
-   !   ! not the case, force this by effectively exchanging heat between these layers.      !
-   !   !------------------------------------------------------------------------------------!
-   !   dqwt = dinitp%soil_energy(nzg) * dslz(nzg) + dinitp%sfcwater_energy(1)
-   !   dinitp%soil_energy(nzg)   = dqwt * dslzi(nzg)
-   !   dinitp%sfcwater_energy(1) = 0.0
-   !end if
-
-
-
    return
 end subroutine leaftw_derivs_ar
 !==========================================================================================!
@@ -634,16 +615,18 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    use consts_coms           , only : alvl              & ! intent(in)
                                     , cp                & ! intent(in)
                                     , cpi               & ! intent(in)
+                                    , twothirds         & ! intent(in)
                                     , day_sec           & ! intent(in)
                                     , grav              & ! intent(in)
                                     , alvi              & ! intent(in)
+                                    , alli              & ! intent(in)
                                     , umol_2_kgC        & ! intent(in)
                                     , mmdry             & ! intent(in)
                                     , mmdryi            & ! intent(in)
                                     , t3ple             & ! intent(in)
                                     , wdns              & ! intent(in)
                                     , wdnsi             & ! intent(in)
-                                    , idnsi             ! ! intent(in)
+                                    , idns              ! ! intent(in)
    use grid_coms             , only : nzg               ! ! intent(in)
    use soil_coms             , only : soil              & ! intent(in)
                                     , dewmax            ! ! intent(in)
@@ -653,7 +636,10 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    use misc_coms             , only : dtlsm             ! ! intent(in)
    use ed_misc_coms          , only : fast_diagnostics  ! ! intent(in)
    use allometry             , only : dbh2ca            ! ! function
-   
+   use pft_coms              , only : water_conductance & ! intent(in)
+                                    , q                 & ! intent(in)
+                                    , qsw               ! ! intent(in)
+
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)     , target      :: csite          ! Current site
@@ -685,6 +671,8 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)    , pointer     :: cpatch           ! Current patch
    integer                          :: ico              ! Current cohort ID
+   integer                          :: ipft             ! Shortcut for PFT type
+   integer                          :: kroot            ! Level in which the root bottom is
    real                             :: can_frac         ! total fractional canopy coverage
    real                             :: transp           ! Cohort transpiration
    real                             :: cflxac           ! Air->canopy carbon flux
@@ -730,14 +718,17 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    real                             :: intercepted      !
    real                             :: qintercepted     !
    real                             :: qwflxvc          !
+   real                             :: qtransp          !
+   real                             :: water_demand     !
+   real                             :: water_supply     !
    !----- Constants -----------------------------------------------------------------------!
-   real   , parameter :: leaf_h2o_thick = 0.11 ! mm
+   real   , parameter :: leaf_h2o_thick = 0.22 ! mm
    logical, parameter :: debug  = .true.       ! Verbose output for debug (T|F)
    real   , parameter :: lai_to_cover = 1.5    ! Canopies with LAI less than this number 
                                                !    are assumed to be open, ie, some 
                                                !    fraction of the rain-drops can reach
                                                !    the soil/litter layer unimpeded.
-   real   , parameter :: evap_area_one = 1.2   ! Evaporation are factor (1 side of leaves 
+   real   , parameter :: evap_area_one = 2.2   ! Evaporation are factor (1 side of leaves 
                                                !    + branches + stems) 
    real   , parameter :: evap_area_two = 2.2   ! Evaporation are factor (2 sides of leaves 
                                                !    + branches + stems) 
@@ -785,7 +776,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    cpatch => csite%patch(ipa)
    can_frac = 1.0
    do ico = 1,cpatch%ncohorts
-      if(cpatch%lai(ico) .gt. lai_min) then
+      if(cpatch%lai(ico) > lai_min) then
          can_frac = can_frac                                                               &
                   * (1.0 - min(1.0                                                         &
                               ,cpatch%nplant(ico)*dbh2ca(cpatch%dbh(ico),cpatch%pft(ico))))
@@ -875,31 +866,25 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    end if
   
    wflx  = (initp%surface_ssh - initp%can_shv) * rdi
-   qwflx = wflx * (surface_fliq*alvl + (1.-surface_fliq)*alvi)
+   qwflx = wflx * (alvi - surface_fliq * alli)
    !---------------------------------------------------------------------------------------!
 
 
  
    !---------------------------------------------------------------------------------------!
    !     Calculate the dew flux, and impose a dew cap. Here the decision on whether dew or !
-   ! frost will form depends on the surface_temperature. Since this is a air->surface flow !
-   ! it's either all ice or all liquid.                                                    !
+   ! frost will form depends on the surface_temperature.                                   !
    !---------------------------------------------------------------------------------------!
-   dewgndflx = min(dewmax, max(0.0, -wflx))
-   if (surface_temp >= t3ple) then !----- Dew ---------------------------------------------!
-      qdewgndflx = dewgndflx * alvl
-      ddewgndflx = dewgndflx * wdnsi
-   else !----- Frost ----------------------------------------------------------------------!
-      qdewgndflx = dewgndflx * alvi
-      !------------------------------------------------------------------------------------!
-      !    I know this is a lame way to define frost density, however I couldn't find a    !
-      ! good parametrisation for frost over leaves (just a bunch of engineering papers on  !
-      ! frost formation over flat metal surfaces), so I decided to keep it simple and      !
-      ! stupid. I will leave this as the first attempt, so if you know a better way to do  !
-      ! it, feel free to add it here.                                                      !
-      !------------------------------------------------------------------------------------!
-      ddewgndflx = dewgndflx * idnsi
-   end if
+   dewgndflx  = min(dewmax, max(0.0, -wflx))
+   qdewgndflx = dewgndflx * (alvi - surface_fliq * alli)
+   !---------------------------------------------------------------------------------------!
+   !    I know this is a lame way to define frost density, however I couldn't find a good  !
+   ! parametrisation for frost over leaves (just a bunch of engineering papers on frost    !
+   ! formation over flat metal surfaces), so I decided to keep it simple and stupid. I     !
+   ! will leave this as the first attempt, so if you know a better way to do it, feel free !
+   ! to add it here.                                                                       !
+   !---------------------------------------------------------------------------------------!
+   ddewgndflx = dewgndflx / (surface_fliq * wdns + (1.-surface_fliq) * idns)
 
 
    !---------------------------------------------------------------------------------------!
@@ -908,6 +893,11 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    ! this because it imposes layer thickness dependence, but this should make the model    !
    ! more stable.                                                                          !
    !---------------------------------------------------------------------------------------!
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   !!!! Shouldn't this be the htry instead of dtlsm???                                  !!!!
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    maxfluxrate = 0.55 * wdns * initp%available_liquid_water(nzg)/dtlsm
    !----- Temporary water/snow layers exist. ----------------------------------------------!
    if (initp%nlev_sfcwater > 0) then
@@ -917,7 +907,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    else if (initp%soil_water(nzg) > dble(soil(csite%ntext_soil(nzg,ipa))%soilcp)) then
       wflxgc = min(maxfluxrate , max( 0.0, (initp%ground_shv - initp%can_shv) * rdi) )
       !----- Adjusting the flux accordingly to the surface fraction (no phase bias) -------!
-      qwflxgc = wflxgc * ( surface_fliq * alvl + (1.-surface_fliq) * alvi)
+      qwflxgc = wflxgc * ( alvi - surface_fliq * alli)
    !----- No surface water and really dry: don't evaporate at all -------------------------!
    else 
       wflxgc  = 0.0
@@ -979,6 +969,11 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
       !------------------------------------------------------------------------------------!
       if (cpatch%lai(ico) > lai_min) then
 
+         !------ Defining some shortcuts to indices ---------------------------------------!
+         ipft  = cpatch%pft(ico)
+         kroot = cpatch%krdepth(ico)
+
+
          !------ Finding previous leaf temperature and fraction of liquid water. ----------!
          call qwtk (initp%veg_energy(ico),initp%veg_water(ico),cpatch%hcapveg(ico)         &
                    ,veg_temp,fracliq)
@@ -987,32 +982,27 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          !------  Calculate leaf-level CO2 flux -------------------------------------------!
          leaf_flux = cpatch%gpp(ico) - cpatch%leaf_respiration(ico)
          
+         !---------------------------------------------------------------------------------!
+         !     If there is more leaf water (kg/m² leaf) than this threshold then no more   !
+         ! water may be allowed to collect on the leaf.                                    !
+         !---------------------------------------------------------------------------------!
+         max_leaf_water = leaf_h2o_thick*cpatch%lai(ico)
+         
          !------ Update CO2 flux from vegetation to canopy air space. ---------------------!
          cflxvc_tot = cflxvc_tot - leaf_flux
          
          !------ Calculate fraction of leaves covered with water. -------------------------!
          if(initp%veg_water(ico) > 1.0e-12)then
-            sigmaw = min( 1.0 ,                                                            &
-                         ((initp%veg_water(ico)/leaf_h2o_thick*cpatch%lai(ico))**0.6667) )
+            sigmaw = min(1.0, (initp%veg_water(ico)/max_leaf_water)**twothirds )
          else
             sigmaw = 0.0
          end if
-                 
+
+
          !------ Finding the saturation mixing ratio associated with leaf temperature -----!
          sat_shv=rslif(prss,veg_temp)
 
          c3 = cpatch%lai(ico) * rhos * (sat_shv - initp%can_shv)
-         !---------------------------------------------------------------------------------!
-         !    This should never happen, and if it happens, this check will not always work !
-         ! because depending on the compiler, variables aren't all set to zero. If this    !
-         ! keeps happening, then the best thing to do is to figure out how it can reach    !
-         ! this point without being defined, and fix it...                                 !
-         !---------------------------------------------------------------------------------!
-         ! if (cpatch%rb(ico) < tiny(1.0)) then 
-         !    cpatch%rb(ico) = 25.0*csite%lai(ipa)
-         !    print*,"***WARNING*** uninitialized RB, setting to",cpatch%rb(ico)
-         ! end if
-         !---------------------------------------------------------------------------------!
          rbi = 1.0 / cpatch%rb(ico)
 
 
@@ -1020,35 +1010,83 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          !    Computing the evapotranspiration or dew/frost deposition.                    !
          !---------------------------------------------------------------------------------!
          if (c3 >= 0.) then  
-            !----- Evapotranspiration -----------------------------------------------------!
-            wflxvc = c3 * sigmaw * evap_area_one * rbi
+            !------------------------------------------------------------------------------!
+            !    Evapotranspiration                                                        !
+            !------------------------------------------------------------------------------!
+            !------ Evaporation, energy is scaled by liquid/ice partition (no phase bias) -!
+            wflxvc  = c3 * sigmaw * evap_area_one * rbi
+            qwflxvc = wflxvc * (alvi - fracliq * alli)
 
             cpatch%Psi_open(ico)   = c3 / (cpatch%rb(ico) + cpatch%rsw_open(ico)  )
             cpatch%Psi_closed(ico) = c3 / (cpatch%rb(ico) + cpatch%rsw_closed(ico))
-            if(initp%available_liquid_water(cpatch%krdepth(ico)) > 0.0) then
-               transp = cpatch%fsw(ico) * cpatch%Psi_open(ico)                             &
-                      + (1.0 - cpatch%fsw(ico)) * cpatch%Psi_closed(ico)
+
+            !------------------------------------------------------------------------------!
+            !    Computing the transpiration, now updating water_demand and water_supply   !
+            ! whenever transpiration is computed. This is essentially doing what used to   !
+            ! be done in the past.                                                         !
+            !------------------------------------------------------------------------------!
+            !----- Demand for water -------------------------------------------------------!
+            water_demand = cpatch%Psi_open(ico)
+
+            !----- Supply of water --------------------------------------------------------!
+            water_supply = cpatch%nplant(ico) * water_conductance(ipft) * wdnsi * q(ipft)  &
+                         * initp%available_liquid_water(kroot) * cpatch%balive(ico)        &
+                         / (1.0 + q(ipft) + cpatch%hite(ico) * qsw(ipft))
+
+            !----- Weighting between open/closed stomata ----------------------------------!
+            cpatch%fsw(ico) = water_supply / max(1.0e-30,water_supply + water_demand)
+
+            !----- Account for nitrogen limitation ----------------------------------------!
+            cpatch%fs_open(ico) = cpatch%fsw(ico) * cpatch%fsn(ico)
+
+
+            if (cpatch%A_open(ico) < cpatch%A_closed(ico)) then
+               !---------------------------------------------------------------------------! 
+               !      Photorespiration can become important at high temperatures.  If so,  ! 
+               ! close down the stomata.                                                   ! 
+               !---------------------------------------------------------------------------! 
+               cpatch%fs_open(ico) = 0.0
+            elseif (cpatch%par_v(ico) < cpatch%lai(ico)*1.e-3) then
+               !---------------------------------------------------------------------------!
+               !    Nighttime, close the stomata. The following statement may be false if  !
+               ! we include CAM plants in this model someday...                            !
+               !---------------------------------------------------------------------------!
+               cpatch%fs_open(ico) = 0.0
+            end if
+
+
+            if(initp%available_liquid_water(kroot) > 0.0) then
+               transp = cpatch%fs_open(ico) * cpatch%Psi_open(ico)                         &
+                      + (1.0 - cpatch%fs_open(ico)) * cpatch%Psi_closed(ico)
             else
                transp = 0.0
             end if
+            qtransp = transp * alvl
+         elseif (initp%veg_water(ico) < 0.99*max_leaf_water) then
+            !------ Dew/frost formation ---------------------------------------------------!
+            wflxvc                 = c3 * evap_area_one * rbi
+            qwflxvc                = wflxvc * (alvi - fracliq*alli)
+            transp                 = 0.0
+            qtransp                = 0.0
+            cpatch%Psi_open(ico)   = 0.0
+            cpatch%Psi_closed(ico) = 0.0
+         else
+            !----- Leaf cannot hold more water, forbid dew/frost to develop ---------------!
+            wflxvc                 = 0.0
+            qwflxvc                = 0.0
+            transp                 = 0.0
+            qtransp                = 0.0
+            cpatch%Psi_open(ico)   = 0.0
+            cpatch%Psi_closed(ico) = 0.0
 
-         else  
-            !------ Dew formation ---------------------------------------------------------!
-            wflxvc               = c3 * evap_area_one * rbi
-            transp               = 0.0
-            cpatch%Psi_open(ico) = 0.0
          end if
 
-         !----- Latent heat associated with leaf water ------------------------------------!
-         qwflxvc = wflxvc * (fracliq * alvl + (1.-fracliq) * alvi)
-
          !----- Diagnostic ----------------------------------------------------------------!
-         dinitp%ebudget_latent = dinitp%ebudget_latent + qwflxvc + transp * alvl
+         dinitp%ebudget_latent = dinitp%ebudget_latent + qwflxvc + qtransp
 
 
          !----- We need to extract water from the soil equal to the transpiration. --------!
-         initp%extracted_water(cpatch%krdepth(ico)) = &
-                              initp%extracted_water(cpatch%krdepth(ico)) + transp
+         initp%extracted_water(kroot) = initp%extracted_water(kroot) + transp
 
 
          !---------------------------------------------------------------------------------!
@@ -1056,19 +1094,13 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          !---------------------------------------------------------------------------------!
          hflxvc = evap_area_two * cpatch%lai(ico) * cp * rhos * rbi                        &
                 * (veg_temp - initp%can_temp)
-         
-         !---------------------------------------------------------------------------------!
-         !     If there is more leaf water (kg) than this threshold then no more water may !
-         ! be allowed to collect on the leaf.                                              !
-         !---------------------------------------------------------------------------------!
-         max_leaf_water = leaf_h2o_thick*cpatch%lai(ico)
 
          !---------------------------------------------------------------------------------!
          !     Calculate interception by leaves. Added RGK 11-2008, comments welcomed      !
          !                                                                                 !
          !  wflxvc accounts for evaporation and dew formation.  If the leaf has more water !
          ! than the carrying capacity, then it must flux all precipitation and dew. The    !
-         ! leaf may evaporate in every condition.                                          !
+         ! leaf water may evaporate in every condition.                                    !
          !---------------------------------------------------------------------------------!
          if (initp%veg_water(ico) >= max_leaf_water) then
             !------------------------------------------------------------------------------!
@@ -1101,8 +1133,8 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          dinitp%veg_energy(ico) = cpatch%rshort_v(ico) & ! Absorbed short wave radiation
                                 + cpatch%rlong_v(ico)  & ! Net thermal radiation
                                 - hflxvc               & ! Sensible heat flux
-                                - qwflxvc              & ! Evaporative phase cooling 
-                                - transp * alvl        & ! Transpirative phase cooling
+                                - qwflxvc              & ! Evaporative
+                                - qtransp              & ! Transpiration.
                                 + qintercepted         ! ! Int. energy of intercepted water
 
 
@@ -1126,7 +1158,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          !     If there are no leaves, leaf fluxes and interception don't exist.           !
          !---------------------------------------------------------------------------------!
          dinitp%veg_energy(ico) = 0.0
-         dinitp%veg_water(ico) = 0.0
+         dinitp%veg_water(ico)  = 0.0
 
          !---------------------------------------------------------------------------------!
          !     Allow the complete bypass of precipitation if there are no leaves.          !
@@ -1166,7 +1198,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
 
       dinitp%wbudget_loss2atm = - wflxac
       dinitp%ebudget_loss2atm = - hflxac
-      dinitp%ebudget_latent   = dinitp%ebudget_latent + (-dewgndflx + wflxgc) * alvi
+      dinitp%ebudget_latent   = dinitp%ebudget_latent -qdewgndflx + qwflxgc
       
       dinitp%co2budget_loss2atm = - cflxac * mmdryi
       dinitp%avg_gpp            = gpp_tot

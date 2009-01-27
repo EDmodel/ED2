@@ -733,12 +733,12 @@ subroutine transfer_ed2leaf(ifm,timel)
        ((1-tfact)*ed_fluxp_g(ifm)%albedt(ia:iz,ja:jz) + tfact*ed_fluxf_g(ifm)%albedt(ia:iz,ja:jz)) + &
        leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)*wgrid_g(ifm)%albedt(ia:iz,ja:jz)
   
-!  radiate_g(ifm)%rlongup(ia:iz,ja:jz) = &
-!       leaf_g(ifm)%patch_area(ia:iz,ja:jz,2)* &
-!       ((1-tfact)*ed_fluxp_g(ifm)%rlongup(ia:iz,ja:jz) + tfact*ed_fluxf_g(ifm)%rlongup(ia:iz,ja:jz)) + &
-!       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)*wgrid_g(ifm)%rlongup(ia:iz,ja:jz)
+  radiate_g(ifm)%rlongup(ia:iz,ja:jz) = &
+       leaf_g(ifm)%patch_area(ia:iz,ja:jz,2)* &
+       ((1-tfact)*ed_fluxp_g(ifm)%rlongup(ia:iz,ja:jz) + tfact*ed_fluxf_g(ifm)%rlongup(ia:iz,ja:jz)) + &
+       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)*wgrid_g(ifm)%rlongup(ia:iz,ja:jz)
   
-  radiate_g(ifm)%rlongup(ia:iz,ja:jz) =  wgrid_g(ifm)%rlongup(ia:iz,ja:jz)
+!  radiate_g(ifm)%rlongup(ia:iz,ja:jz) =  wgrid_g(ifm)%rlongup(ia:iz,ja:jz)
 
   turb_g(ifm)%sflux_u(ia:iz,ja:jz) = &
        leaf_g(ifm)%patch_area(ia:iz,ja:jz,2)* &

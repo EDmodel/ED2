@@ -1,7 +1,15 @@
+!==========================================================================================!
+!==========================================================================================!
+!    This module contains some subroutines used to compute the stages for advancing the    !
+! Runge-Kutta step.                                                                        !
+!------------------------------------------------------------------------------------------!
 module rk4_stepper_ar
 
-contains 
-
+   contains 
+   !=======================================================================================!
+   !=======================================================================================!
+   !   This subroutine is the main Runge-Kutta step driver.                                !
+   !---------------------------------------------------------------------------------------!
   subroutine rkqs_ar(integration_buff, x, htry, hdid, hnext, csite, &
        ipa,isi,ipy,ifm,rhos, vels, atm_tmp, atm_shv, atm_co2, geoht, exner, pcpg, qpcpg, &
        dpcpg, prss, lsl)
@@ -168,7 +176,6 @@ contains
        dpcpg, prss, lsl)
     
     use ed_state_vars, only: sitetype,patchtype,rk4patchtype,integration_vars_ar
-!    use lsm_integ_utils, only: stabilize_snow_layers, inc_rk4_patch, copy_rk4_patch
 
     implicit none
 
@@ -214,7 +221,7 @@ contains
 
 #if USE_INTERF
     interface
-       subroutine leaf_derivs_ar(initp, dydx, csite, ipa,isi,ipy, rhos, prss, pcpg, qpcpg,   &
+       subroutine leaf_derivs_ar(initp, dydx, csite, ipa,isi,ipy, rhos, prss, pcpg, qpcpg, &
             dpcpg, atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
          
          use ed_state_vars,only:sitetype,rk4patchtype,patchtype
@@ -247,7 +254,7 @@ contains
 
     call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, dydx, b21*h, cpatch, lsl)
-    call stabilize_snow_layers_ar(ak7, csite, ipa, b21*h, lsl)
+    call stabilize_snow_layers_ar(ak7, csite, ipa, lsl)
     call lsm_sanity_check_ar(ak7, iflag1, csite, ipa, lsl ,dydx,h )
 
 
@@ -258,7 +265,7 @@ contains
     call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, dydx, b31*h, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, ak2, b32*h, cpatch, lsl)
-    call stabilize_snow_layers_ar(ak7, csite,ipa,(b31+b32)*h, lsl)
+    call stabilize_snow_layers_ar(ak7, csite,ipa, lsl)
     call lsm_sanity_check_ar(ak7, iflag1,csite,ipa, lsl,dydx,h )
 
     if(iflag1 /= 1)return
@@ -269,7 +276,7 @@ contains
     call inc_rk4_patch_ar(ak7, dydx, b41*h, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, ak2, b42*h, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, ak3, b43*h, cpatch, lsl)
-    call stabilize_snow_layers_ar(ak7, csite,ipa, (b41+b42+b43)*h, lsl)
+    call stabilize_snow_layers_ar(ak7, csite,ipa, lsl)
     call lsm_sanity_check_ar(ak7, iflag1, csite,ipa, lsl,dydx,h )
 
     if(iflag1 /= 1)return
@@ -281,7 +288,7 @@ contains
     call inc_rk4_patch_ar(ak7, ak2, b52*h, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, ak3, b53*h, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, ak4, b54*h, cpatch, lsl)
-    call stabilize_snow_layers_ar(ak7, csite, ipa, (b51+b52+b53+b54)*h, lsl)
+    call stabilize_snow_layers_ar(ak7, csite, ipa, lsl)
     call lsm_sanity_check_ar(ak7, iflag1, csite, ipa, lsl,dydx,h )
 
     if(iflag1 /= 1)return
@@ -294,7 +301,7 @@ contains
     call inc_rk4_patch_ar(ak7, ak3, b63*h, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, ak4, b64*h, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, ak5, b65*h, cpatch, lsl)
-    call stabilize_snow_layers_ar(ak7, csite,ipa, (b61+b62+b63+b64+b65)*h, lsl)
+    call stabilize_snow_layers_ar(ak7, csite,ipa, lsl)
     call lsm_sanity_check_ar(ak7, iflag1, csite,ipa, lsl,dydx,h )
     
     if(iflag1 /= 1)return
@@ -306,7 +313,7 @@ contains
     call inc_rk4_patch_ar(yout, ak3, c3*h, cpatch, lsl)
     call inc_rk4_patch_ar(yout, ak4, c4*h, cpatch, lsl)
     call inc_rk4_patch_ar(yout, ak6, c6*h, cpatch, lsl)
-    call stabilize_snow_layers_ar(yout, csite,ipa, h, lsl)
+    call stabilize_snow_layers_ar(yout, csite,ipa, lsl)
     call lsm_sanity_check_ar(yout, iflag1, csite,ipa, lsl,dydx,h )
 
     if(iflag1 /= 1)return

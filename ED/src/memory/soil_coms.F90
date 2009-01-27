@@ -32,6 +32,9 @@ Module soil_coms
   integer, parameter :: nvgcon = 7 ! I don't think it is been used...
 
   real, parameter :: min_sfcwater_mass = 1.0e-10 ! minimum allowed mass
+  
+  
+  real, parameter :: snowmin = 3.0 ! Not sure what it means, looks like mass
   ! for sfcwater water.  Quantities below this threshold are ignored.
 
   integer :: infiltration_method=0

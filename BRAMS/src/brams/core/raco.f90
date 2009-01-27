@@ -127,7 +127,7 @@ subroutine acoust_new(m1,m2,m3,scr1,scr2,vt3da,vt3db,vt3dc,vt3dd,vt3de,vt3df,vt3
 
       dts = 2. * dtlt / nnacoust(ngrid)
 
-      if (iter .eq. 1)  &
+      if (iter == 1)  &
            call coefz(mzp,mxp,myp,ia,iz,ja,jz,vt3dc,vt3dd,vt3de,dn0    &
                      ,pi0,th0,rtgt,a1da2,vt3df,vt3dg,scr2,vctr1,vctr2  )
 
@@ -181,7 +181,7 @@ subroutine acoust_new(m1,m2,m3,scr1,scr2,vt3da,vt3db,vt3dc,vt3dd,vt3de,vt3df,vt3
             if (ngrid == 1) call node_getcyclic(3)
          else
             call node_getst(5)
-            if (ngrid .eq. 1) call node_getcyclic(5)
+            if (ngrid == 1) call node_getcyclic(5)
          end if
       end if
 

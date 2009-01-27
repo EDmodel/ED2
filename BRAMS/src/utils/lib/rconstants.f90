@@ -34,6 +34,7 @@ Module rconstants
    real, parameter :: srtwoi    = 1./srtwo          ! 1./ Square root of 2.     [      ---]
    real, parameter :: srthreei  = 1./srthree        ! 1./ Square root of 3.     [      ---]
    real, parameter :: onethird  = 1./3.             ! 1/3                       [      ---]
+   real, parameter :: twothirds = 2./3.             ! 2/3                       [      ---]
    real, parameter :: onesixth  = 1./6.             ! 1/6                       [      ---]
    !---------------------------------------------------------------------------------------!
 

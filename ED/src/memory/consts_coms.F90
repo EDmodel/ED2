@@ -23,7 +23,7 @@ Module consts_coms
      , b_allii      => allii      , b_wdns       => wdns       , b_erad2      => erad2     &
      , b_sqrtpii    => sqrtpii    , b_onesixth   => onesixth   , b_cicet3     => cicet3    &
      , b_wdnsi      => wdnsi      , b_gorm       => gorm       , b_idns       => idns      &
-     , b_idnsi      => idnsi      , b_tsupercool => tsupercool
+     , b_idnsi      => idnsi      , b_tsupercool => tsupercool , b_twothirds  => twothirds
 
    implicit none
 
@@ -32,7 +32,8 @@ Module consts_coms
    real, parameter :: pio4       = b_pio4       , srtwo      = b_srtwo
    real, parameter :: srthree    = b_srthree    , srtwoi     = b_srtwoi
    real, parameter :: srthreei   = b_srthreei   , onethird   = b_onethird
-   real, parameter :: stefan     = b_stefan     , boltzmann  = b_boltzmann
+   real, parameter :: twothirds  = b_twothirds  , stefan     = b_stefan
+   real, parameter :: boltzmann  = b_boltzmann  , tsupercool = b_tsupercool
    real, parameter :: t00        = b_t00        , yr_day     = b_yr_day
    real, parameter :: day_sec    = b_day_sec    , day_hr     = b_day_hr
    real, parameter :: hr_sec     = b_hr_sec     , min_sec    = b_min_sec
@@ -56,7 +57,6 @@ Module consts_coms
    real, parameter :: onesixth   = b_onesixth   , cicet3     = b_cicet3
    real, parameter :: wdnsi      = b_wdnsi      , gorvap     = b_gorm
    real, parameter :: idns       = b_idns       , idnsi      = b_idnsi
-   real, parameter :: tsupercool = b_tsupercool
 #else
    implicit none
 
@@ -81,6 +81,7 @@ Module consts_coms
    real, parameter :: srtwoi    = 1./srtwo          ! 1./ Square root of 2.     [      ---]
    real, parameter :: srthreei  = 1./srthree        ! 1./ Square root of 3.     [      ---]
    real, parameter :: onethird  = 1./3.             ! 1/3                       [      ---]
+   real, parameter :: twothirds = 2./3.             ! 2/3                       [      ---]
    real, parameter :: onesixth  = 1./6.             ! 1/6                       [      ---]
    !---------------------------------------------------------------------------------------!
 
