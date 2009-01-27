@@ -152,7 +152,7 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
        ,cccnx          & ! intent(out)
        ,cifnx          ! ! intent(out)
 
-   use rconstants, only : p00, cpi, cpor,toodry,cliq,cice,alli,t3ple,cicet3
+   use rconstants, only : p00, cpi, cpor,toodry,cliq,cice,alli,t3ple,qicet3
    use therm_lib , only : qtk
 
    implicit none
@@ -678,7 +678,8 @@ end subroutine enemb
 subroutine x02(lcat)
 
    use rconstants, only: &
-        cicet3,          & ! INTENT(IN)
+        qicet3,          & ! INTENT(IN)
+        qliqt3,          & ! INTENT(IN)
         alli               ! INTENT(IN)
 
    use micphys, only:  &
@@ -753,6 +754,8 @@ subroutine x02(lcat)
             qx(k,lcat) = qr(k,lcat) * rxinv
             !----- Limit rain to under 48C and over -80C ----------------------------------!
             qx(k,lcat) = max(qrainmin,min(qrainmax,qx(k,lcat)))
+            !----- To avoid mass and total energy inconsistencies -------------------------!
+            qr(k,lcat) = qx(k,lcat) * rx(k,lcat)
          end if
       end do
 
@@ -764,9 +767,9 @@ subroutine x02(lcat)
 
             call qtk(qx(k,lcat),tcoal,fracliq)
 
-            rmelt  = rx(k,lcat) * fracliq
-            cmelt  = cx(k,lcat) * fracliq
-            qrmelt = qx(k,lcat) * rmelt
+            rmelt  = rx(k,lcat)    * fracliq
+            cmelt  = cx(k,lcat)    * fracliq
+            qrmelt = qliqt3        * rmelt
 
             rx(k,lcat) = rx(k,lcat) - rmelt
             rx(k,1)    = rx(k,1)    + rmelt
@@ -800,11 +803,10 @@ subroutine x02(lcat)
                ricetor6   = min(rx(k,lcat) - rmelt,rmelt)
                rx(k,lcat) = rx(k,lcat) - rmelt - ricetor6
                rx(k,6)    = rx(k,6) + rmelt + ricetor6
-               qr(k,lcat) = qr(k,lcat) - rmelt * (cicet3 + alli) - ricetor6 * cicet3
-               qr(k,6)    = qr(k,6) + rmelt * (cicet3 + alli) + ricetor6 * cicet3
-               qx(k,lcat) = cicet3
-               if (rx(k,6) > rxmin(6))       qx(k,6)    = qr(k,6)    / rx(k,6)
-               if (rx(k,lcat) > rxmin(lcat)) qx(k,lcat) = qr(k,lcat) / rx(k,lcat)
+               qr(k,6)    = qr(k,6) + rmelt * qliqt3 + ricetor6 * qicet3
+               qx(k,lcat) = qicet3 !---- All water is gone, leave ice at 0°C only ---------!
+               qr(k,lcat) = qx(k,lcat) * rx(k,lcat)
+               if (rx(k,6) > rxmin(6)) qx(k,6)    = qr(k,6)    / rx(k,6)
 
                !----- Keep the above the same with ricetor6 -------------------------------!
                fracmloss  = (rmelt + ricetor6) * rinv
@@ -824,7 +826,7 @@ subroutine x02(lcat)
 
             if (fracliq > 0.95) then
                rx(k,2) = rx(k,2) + rx(k,6)
-               qr(k,2) = qr(k,2) + qr(k,6)
+               qr(k,2) = qr(k,2) + rx(k,6) * qliqt3
                cx(k,2) = cx(k,2) + cx(k,6)
                qx(k,2) = qr(k,2) / rx(k,2)
                rx(k,6) = 0.
@@ -845,7 +847,7 @@ subroutine x02(lcat)
 
             if (fracliq > 0.95) then
                rx(k,2) = rx(k,2) + rx(k,7)
-               qr(k,2) = qr(k,2) + qr(k,7)
+               qr(k,2) = qr(k,2) + rx(k,7) * qliqt3
                cx(k,2) = cx(k,2) + cx(k,7)
                qx(k,2) = qr(k,2) / rx(k,2)
                rx(k,7) = 0.
@@ -861,7 +863,7 @@ subroutine x02(lcat)
                idns       = max(1,nint(1.e3 * dn * gnu(lcat)))
                rshed      = rx(k,lcat) * shedtab(inc,idns)
                rmltshed   = rshed
-               qrmltshed  = rmltshed * (cicet3+alli)
+               qrmltshed  = rmltshed * qliqt3
 
                rx(k,2)    = rx(k,2)    + rmltshed
                qr(k,2)    = qr(k,2)    + qrmltshed

@@ -164,7 +164,8 @@ Module rconstants
    real, parameter :: lsorvap  = alvi / rm     ! Ls/Rv                          [        K]
    real, parameter :: lvt3ple  = alvl * t3ple  ! Lv × T3                        [   K J/kg]
    real, parameter :: lst3ple  = alvi * t3ple  ! Ls × T3                        [   K J/kg]
-   real, parameter :: cicet3   = cice * t3ple  ! C_ice × T3                     [     J/kg]
+   real, parameter :: qicet3   = cice * t3ple  ! q at triple point, only ice    [     J/kg]
+   real, parameter :: qliqt3   = qicet3 + alli ! q at triple point, only liquid [     J/kg]
    !---------------------------------------------------------------------------------------!
 
 
@@ -184,7 +185,7 @@ Module rconstants
    ! prefer the inverse way, Uliq is the amount of energy the parcel would need to lose to !
    ! become solid at 0K.)                                                                  !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: tsupercool = t3ple - (cicet3+alli)/cliq
+   real, parameter :: tsupercool = t3ple - (qicet3+alli) * cliqi
    !---------------------------------------------------------------------------------------!
 
 

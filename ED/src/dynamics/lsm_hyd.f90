@@ -1049,7 +1049,7 @@ subroutine calcHydroSurface()
   use grid_coms, only: ngrids, nzg
   use misc_coms, only: dtlsm
   use grid_coms,only:ngrids
-  use consts_coms, only : cliqvlme,cliq,t3ple,alli,cicet3,tsupercool
+  use consts_coms, only : cliqvlme,cliq,t3ple,qicet3,qliqt3,tsupercool
   use soil_coms, only: water_stab_thresh
   use therm_lib, only: qtk
   implicit none
@@ -1247,8 +1247,8 @@ subroutine calcHydroSurface()
                     csite%sfcwater_depth(i,ipa) = csite%sfcwater_mass(i,ipa)*0.001
                  end if
                  !! if sfcwater_energy < 0, set to freezing
-                 if(csite%sfcwater_energy(i,ipa) < cicet3) then
-                    csite%sfcwater_energy(i,ipa) = cicet3+alli
+                 if(csite%sfcwater_energy(i,ipa) < qicet3) then
+                    csite%sfcwater_energy(i,ipa) = qliqt3
                  end if
                  !!check for NaN
                  if(csite%sfcwater_energy(i,ipa) /= csite%sfcwater_energy(i,ipa))then
@@ -1588,14 +1588,14 @@ end subroutine calcHydroSurface
 !!!!!!            else
 !!!!!!               !!if surface water is too small, keep in equilibrium with soil
 !!!!!!               if(cpatch%sfcwater_mass(i) .lt. water_stab_thresh .and. i .eq. 1) then
-!!!!!!                  cpatch%sfcwater_energy(i) = cliq*cpatch%soil_tempk(nzg)+alli
+!!!!!!                  cpatch%sfcwater_energy(i) = cliq*(cpatch%soil_tempk(nzg)-tsupercool)
 !!!!!!               endif
 !!!!!!            endif
 !!!!!!            if(cpatch%sfcwater_depth(i) .lt. cpatch%sfcwater_mass(i)*0.001) then
 !!!!!!               cpatch%sfcwater_depth(i) = cpatch%sfcwater_mass(i)*0.001
 !!!!!!            endif
 !!!!!!            if(cpatch%sfcwater_energy(i) .lt. 0.0) then
-!!!!!!               cpatch%sfcwater_energy(i) = cliq*t3ple+alli
+!!!!!!               cpatch%sfcwater_energy(i) = qliqt3
 !!!!!!            endif
 !!!!!!            !!check for NaN
 !!!!!!            if(cpatch%sfcwater_energy(i) /= cpatch%sfcwater_energy(i))then

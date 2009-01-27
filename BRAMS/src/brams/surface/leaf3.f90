@@ -790,7 +790,7 @@ subroutine leaftw(mzg,mzs,np  &
          snowmin = 3.0
          newlayers = 1
          do k = 2,mzs
-            if (snowmin * thicknet(k) <= totsnow .and. sfcwater_energy(k) < cicet3+alli)   &
+            if (snowmin * thicknet(k) <= totsnow .and. sfcwater_energy(k) < qliqt3)   &
             then
                newlayers = newlayers + 1
             end if

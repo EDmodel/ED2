@@ -175,7 +175,7 @@ end subroutine auto_accret
 subroutine effxy(m1)
 
    use micphys
-   use rconstants, only : cicet3,t00
+   use rconstants, only : qliqt3,t00
    use micro_coms, only : ticegrowth
 
    implicit none
@@ -279,7 +279,7 @@ subroutine effxy(m1)
    if (availcat(6)) then
       graupelloop: do k = k1(6),k2(6)
          if (rx(k,6) < rxmin(6)) cycle graupelloop
-         if (qr(k,6) > rx(k,6)*cicet3) then
+         if (qr(k,6) > rx(k,6)*qliqt3) then
             eff(k,7) = 1.0
          else
             eff(k,7) = min(0.2,10. ** (0.035 * (tx(k,6)-t00) - 0.7))
@@ -293,7 +293,7 @@ subroutine effxy(m1)
       hailloop:do k = k1(7),k2(7)
          if (rx(k,7) < rxmin(7)) cycle hailloop
 
-         if (qr(k,7) > rx(k,7)*cicet3) then
+         if (qr(k,7) > rx(k,7)*qliqt3) then
             eff(k,8) = 1.0
          else
             eff(k,8) = min(0.2,10. ** (0.035 * (tx(k,7)-t00) - 0.7))

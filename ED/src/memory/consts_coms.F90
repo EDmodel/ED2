@@ -21,9 +21,10 @@ Module consts_coms
      , b_es3plei    => es3plei    , b_epes3ple   => epes3ple   , b_alvl       => alvl      &
      , b_alvi       => alvi       , b_alli       => alli       , b_allivlme   => allivlme  &
      , b_allii      => allii      , b_wdns       => wdns       , b_erad2      => erad2     &
-     , b_sqrtpii    => sqrtpii    , b_onesixth   => onesixth   , b_cicet3     => cicet3    &
+     , b_sqrtpii    => sqrtpii    , b_onesixth   => onesixth   , b_qicet3     => qicet3    &
      , b_wdnsi      => wdnsi      , b_gorm       => gorm       , b_idns       => idns      &
-     , b_idnsi      => idnsi      , b_tsupercool => tsupercool , b_twothirds  => twothirds
+     , b_idnsi      => idnsi      , b_tsupercool => tsupercool , b_twothirds  => twothirds &
+     , b_qliqt3     => qliqt3
 
    implicit none
 
@@ -54,9 +55,10 @@ Module consts_coms
    real, parameter :: alli       = b_alli       , allivlme   = b_allivlme
    real, parameter :: allii      = b_allii      , wdns       = b_wdns
    real, parameter :: erad2      = b_erad2      , sqrtpii    = b_sqrtpii
-   real, parameter :: onesixth   = b_onesixth   , cicet3     = b_cicet3
+   real, parameter :: onesixth   = b_onesixth   , qicet3     = b_qicet3
    real, parameter :: wdnsi      = b_wdnsi      , gorvap     = b_gorm
    real, parameter :: idns       = b_idns       , idnsi      = b_idnsi
+   real, parameter :: qliqt3     = b_qliqt3
 #else
    implicit none
 
@@ -185,7 +187,8 @@ Module consts_coms
    real, parameter :: alli     = 3.34e5        ! Lat. heat - fusion       (Lf)  [     J/kg]
    real, parameter :: allivlme = wdns * alli   ! Lat. heat × water density      [     J/m³]
    real, parameter :: allii    = 1./alli       ! 1/Latent heat - fusion         [     kg/J]
-   real, parameter :: cicet3   = cice * t3ple  ! C_ice × T3                     [     J/kg]
+   real, parameter :: qicet3   = cice * t3ple  ! q at triple point, only ice    [     J/kg]
+   real, parameter :: qliqt3   = qicet3 + alli ! q at triple point, only liquid [     J/kg]
    !---------------------------------------------------------------------------------------!
 
 
@@ -205,7 +208,7 @@ Module consts_coms
    ! prefer the inverse way, Uliq is the amount of energy the parcel would need to lose to !
    ! become solid at 0K.)                                                                  !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: tsupercool = t3ple - (cicet3+alli)/cliq
+   real, parameter :: tsupercool = t3ple - (qicet3+alli) * cliqi
    !---------------------------------------------------------------------------------------!
 
 #endif

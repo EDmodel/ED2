@@ -538,7 +538,7 @@ subroutine sfcwater(nlev_sfcwater,ntext_soil,                       &
 use soil_coms, only: slz, dslz, dslzi, dslzo2, soil
 use grid_coms, only: nzg, nzs                       
 use misc_coms, only: dtlsm
-use consts_coms, only: alvi, cice, cliq, alli, t3ple, cicet3, tsupercool, wdns, wdnsi
+use consts_coms, only: alvi, cice, cliq, alli, t3ple, qicet3, qliqt3, tsupercool, wdns, wdnsi
 use therm_lib, only: qwtk
 
 implicit none
@@ -829,7 +829,7 @@ do k = nlev_sfcwater,1,-1
 
 ! Diagnose new energy value for sfcwater based on qwt value.
 
-      if (qwt < cicet3) then
+      if (qwt < wt*qicet3) then
       
 ! Case of equilibrium temperature below 0 deg C.  Sfcwater fracliq = 0.
 
@@ -837,7 +837,7 @@ do k = nlev_sfcwater,1,-1
          sfcwater_tempk(1) = tempk
          energy_per_m2(1) = sfcwater_mass(1) * cice * tempk 
 
-      elseif (qwt > wt * (cicet3+alli)) then
+      elseif (qwt > wt * qliqt3) then
       
 ! Case of equilibrium temperature above 0 deg C.  Sfcwater fracliq = 1.
 
@@ -864,7 +864,7 @@ do k = nlev_sfcwater,1,-1
 
          sfcwater_fracliq(1) = max(0.,flmin,min(1.0,flmax,sfcwater_fracliq(1)))
          sfcwater_tempk(1) = t3ple
-         energy_per_m2(1) = sfcwater_mass(1) * (sfcwater_fracliq(1) * alli + cicet3)
+         energy_per_m2(1) = sfcwater_mass(1) * sfcwater_fracliq(1) * qliqt3
 
       endif
 

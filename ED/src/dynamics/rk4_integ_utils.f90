@@ -460,8 +460,7 @@ subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, lsl)
    use grid_coms            , only : nzg                & ! intent(in)
                                    , nzs                ! ! intent(in)
    use soil_coms            , only : min_sfcwater_mass  ! ! intent(in)
-   use consts_coms          , only : cliq               & ! intent(in)
-                                   , cicet3             ! ! intent(in)
+   use consts_coms          , only : cliq               ! ! intent(in)
    use canopy_radiation_coms, only : lai_min            ! ! intent(in)
    use pft_coms             , only : sla                ! ! intent(in)
    implicit none
@@ -912,11 +911,10 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
                             , min_sfcwater_mass ! ! intent(in)
    use consts_coms   , only : cice              & ! intent(in)
                             , cliq              & ! intent(in)
-                            , alli              & ! intent(in)
                             , t3ple             & ! intent(in)
                             , wdns              & ! intent(in)
                             , tsupercool        & ! intent(in)
-                            , cicet3            & ! intent(in)
+                            , qliqt3            & ! intent(in)
                             , wdnsi             ! ! intent(in)
    use therm_lib     , only : qtk               & ! subroutine
                             , qwtk              & ! subroutine
@@ -1143,7 +1141,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
          !----- Checking whether we need 
          if (      initp%sfcwater_mass(k)   >= min_sfcwater_mass                           &
              .and. snowmin * thicknet(k)    <= totsnow                                     &
-             .and. initp%sfcwater_energy(k) <  initp%sfcwater_mass(k)*(cicet3+alli) ) then
+             .and. initp%sfcwater_energy(k) <  initp%sfcwater_mass(k)*qliqt3 ) then
 
             newlayers = newlayers + 1
          end if

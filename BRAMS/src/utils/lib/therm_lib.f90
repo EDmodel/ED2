@@ -2847,51 +2847,10 @@ module therm_lib
    !=======================================================================================!
    !=======================================================================================!
    !    This subroutine computes the temperature and fraction of liquid water from the     !
-   ! internal energy using the old definition of internal energy. This shouldn't be used   !
-   ! anywhere but at the microphysic package.                                              !
-   !---------------------------------------------------------------------------------------!
-   subroutine qreltk(q,tempk,fracliq)
-      use rconstants, only: cliqi,cicei,cliq,cice,alli,allii,t3ple,cicet3
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      real, intent(in)  :: q        ! Internal energy                             [   J/kg]
-      real, intent(out) :: tempk    ! Temperature                                 [      K]
-      real, intent(out) :: fracliq  ! Liquid Fraction (0-1)                       [    ---]
-      !------------------------------------------------------------------------------------!
-
-
-      !----- Negative internal energy, frozen, all ice ------------------------------------!
-      if (q <= 0) then
-         fracliq = 0.
-         tempk   = q * cicei + t3ple
-      !----- Positive internal energy, over latent heat of melting, all liquid ------------!
-      elseif (q >= alli) then
-         fracliq = 1.
-         tempk   = (q - alli)* cliqi + t3ple
-      !----- Changing phase, it must be at triple point -----------------------------------!
-      else
-         fracliq = q * allii
-         tempk   = t3ple
-      endif
-      !------------------------------------------------------------------------------------!
-
-      return
-   end subroutine qreltk
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    This subroutine computes the temperature and fraction of liquid water from the     !
    ! internal energy .                                                                     !
    !---------------------------------------------------------------------------------------!
    subroutine qtk(q,tempk,fracliq)
-      use rconstants, only: cliqi,cicei,cliq,cice,alli,allii,t3ple,cicet3,tsupercool
+      use rconstants, only: cliqi,cicei,allii,t3ple,qicet3,qliqt3,tsupercool
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)  :: q        ! Internal energy                             [   J/kg]
@@ -2901,16 +2860,16 @@ module therm_lib
 
 
       !----- Negative internal energy, frozen, all ice ------------------------------------!
-      if (q <= cicet3) then
+      if (q <= qicet3) then
          fracliq = 0.
          tempk   = q * cicei 
       !----- Positive internal energy, over latent heat of melting, all liquid ------------!
-      elseif (q >= cicet3+alli) then
+      elseif (q >= qliqt3) then
          fracliq = 1.
          tempk   = q * cliqi + tsupercool
       !----- Changing phase, it must be at triple point -----------------------------------!
       else
-         fracliq = (q-cicet3) * allii
+         fracliq = (q-qicet3) * allii
          tempk   = t3ple
       endif
       !------------------------------------------------------------------------------------!

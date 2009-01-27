@@ -721,14 +721,17 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    real                             :: qtransp          !
    real                             :: water_demand     !
    real                             :: water_supply     !
+   real                             :: veg_temp_sat     !
    !----- Constants -----------------------------------------------------------------------!
-   real   , parameter :: leaf_h2o_thick = 0.22 ! mm
+   real   , parameter :: leaf_h2o_thick = 0.11 ! mm
    logical, parameter :: debug  = .true.       ! Verbose output for debug (T|F)
+   real   , parameter :: toocold = 193.15      ! Minimum temperature for sat., -80°C
+   real   , parameter :: toohot  = 333.15      ! Maximum temperature for sat.,  60°C
    real   , parameter :: lai_to_cover = 1.5    ! Canopies with LAI less than this number 
                                                !    are assumed to be open, ie, some 
                                                !    fraction of the rain-drops can reach
                                                !    the soil/litter layer unimpeded.
-   real   , parameter :: evap_area_one = 2.2   ! Evaporation are factor (1 side of leaves 
+   real   , parameter :: evap_area_one = 1.2   ! Evaporation are factor (1 side of leaves 
                                                !    + branches + stems) 
    real   , parameter :: evap_area_two = 2.2   ! Evaporation are factor (2 sides of leaves 
                                                !    + branches + stems) 
@@ -1000,7 +1003,8 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
 
 
          !------ Finding the saturation mixing ratio associated with leaf temperature -----!
-         sat_shv=rslif(prss,veg_temp)
+         veg_temp_sat = max(toocold,min(toohot,veg_temp))
+         sat_shv=rslif(prss,veg_temp_sat)
 
          c3 = cpatch%lai(ico) * rhos * (sat_shv - initp%can_shv)
          rbi = 1.0 / cpatch%rb(ico)
@@ -1020,46 +1024,46 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
             cpatch%Psi_open(ico)   = c3 / (cpatch%rb(ico) + cpatch%rsw_open(ico)  )
             cpatch%Psi_closed(ico) = c3 / (cpatch%rb(ico) + cpatch%rsw_closed(ico))
 
-            !------------------------------------------------------------------------------!
-            !    Computing the transpiration, now updating water_demand and water_supply   !
-            ! whenever transpiration is computed. This is essentially doing what used to   !
-            ! be done in the past.                                                         !
-            !------------------------------------------------------------------------------!
-            !----- Demand for water -------------------------------------------------------!
-            water_demand = cpatch%Psi_open(ico)
-
-            !----- Supply of water --------------------------------------------------------!
-            water_supply = cpatch%nplant(ico) * water_conductance(ipft) * wdnsi * q(ipft)  &
-                         * initp%available_liquid_water(kroot) * cpatch%balive(ico)        &
-                         / (1.0 + q(ipft) + cpatch%hite(ico) * qsw(ipft))
-
-            !----- Weighting between open/closed stomata ----------------------------------!
-            cpatch%fsw(ico) = water_supply / max(1.0e-30,water_supply + water_demand)
-
-            !----- Account for nitrogen limitation ----------------------------------------!
-            cpatch%fs_open(ico) = cpatch%fsw(ico) * cpatch%fsn(ico)
 
 
-            if (cpatch%A_open(ico) < cpatch%A_closed(ico)) then
-               !---------------------------------------------------------------------------! 
-               !      Photorespiration can become important at high temperatures.  If so,  ! 
-               ! close down the stomata.                                                   ! 
-               !---------------------------------------------------------------------------! 
-               cpatch%fs_open(ico) = 0.0
-            elseif (cpatch%par_v(ico) < cpatch%lai(ico)*1.e-3) then
+            if (cpatch%A_open(ico) >= cpatch%A_closed(ico)  .and.                          &
+                cpatch%par_v(ico)  >= cpatch%lai(ico)*1.e-3       ) then
                !---------------------------------------------------------------------------!
-               !    Nighttime, close the stomata. The following statement may be false if  !
-               ! we include CAM plants in this model someday...                            !
+               !    Computing the transpiration, now updating water_demand and             !
+               ! water_supply whenever transpiration is computed. This is essentially do-  !
+               ! ing what used to be done in the past.                                     !
+               !---------------------------------------------------------------------------!
+               !----- Demand for water ----------------------------------------------------!
+               water_demand = cpatch%Psi_open(ico)
+
+               !----- Supply of water -----------------------------------------------------!
+               water_supply = cpatch%nplant(ico) * water_conductance(ipft)*wdnsi * q(ipft) &
+                            * initp%available_liquid_water(kroot) * cpatch%balive(ico)     &
+                            / (1.0 + q(ipft) + cpatch%hite(ico) * qsw(ipft))
+
+               !----- Weighting between open/closed stomata -------------------------------!
+               if (water_supply + water_demand > 1.e30) then
+                  cpatch%fsw(ico) = water_supply / (water_supply + water_demand)
+               else
+                  cpatch%fsw(ico) = 0.
+               end if
+               !----- Account for nitrogen limitation -------------------------------------!
+               cpatch%fs_open(ico) = cpatch%fsw(ico) * cpatch%fsn(ico)
+            else
+               !---------------------------------------------------------------------------!
+               !      Photorespiration can become important at high temperatures.  If so,  !
+               ! close down the stomata. Also, if itis night time, close the stomata. The  !
+               ! latter statement may be false if we include CAM plants in this model      !
+               ! someday...                                                                !
                !---------------------------------------------------------------------------!
                cpatch%fs_open(ico) = 0.0
             end if
-
 
             if(initp%available_liquid_water(kroot) > 0.0) then
                transp = cpatch%fs_open(ico) * cpatch%Psi_open(ico)                         &
                       + (1.0 - cpatch%fs_open(ico)) * cpatch%Psi_closed(ico)
             else
-               transp = 0.0
+              transp = 0.0
             end if
             qtransp = transp * alvl
          elseif (initp%veg_water(ico) < 0.99*max_leaf_water) then
@@ -1078,7 +1082,6 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
             qtransp                = 0.0
             cpatch%Psi_open(ico)   = 0.0
             cpatch%Psi_closed(ico) = 0.0
-
          end if
 
          !----- Diagnostic ----------------------------------------------------------------!
