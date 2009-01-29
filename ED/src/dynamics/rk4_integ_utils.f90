@@ -1377,7 +1377,7 @@ subroutine print_patch_pss_ar(csite, ipa, lsl)
 
    write(unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(a,1x,2(i2.2,a),i4.4,1x,i6.6,1x,a)')                                 &
+   write (unit=*,fmt='(a,1x,2(i2.2,a),i4.4,1x,f12.0,1x,a)')                                &
          'Time:',current_time%month,'/',current_time%date,'/',current_time%year            &
                 ,current_time%time,'UTC'
    write(unit=*,fmt='(a,1x,es12.5)') 'Attempted step size:',csite%htry(ipa)
@@ -1502,9 +1502,9 @@ subroutine print_patch_ar(y, csite,ipa, lsl)
 
    write(unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(a,1x,2(i2.2,a),i4.4,1x,i6.6,1x,a)')                                 &
+   write (unit=*,fmt='(a,1x,2(i2.2,a),i4.4,1x,f12.0,1x,a)')                                &
          'Time:',current_time%month,'/',current_time%date,'/',current_time%year            &
-                ,current_time%time,'UTC'
+                ,current_time%time,'s'
    write(unit=*,fmt='(a,1x,es12.5)') 'Attempted step size:',csite%htry(ipa)
    write (unit=*,fmt='(a,1x,i6)')    'Ncohorts: ',cpatch%ncohorts
 

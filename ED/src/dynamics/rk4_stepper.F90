@@ -559,12 +559,13 @@ module rk4_stepper_ar
 
     write(unit=*,fmt='(a)') ' '
     write(unit=*,fmt='(64a)') ('-',k=1,64)
-    write (unit=*,fmt='(2(a5,1x),3(a12,1x))') &
-       '  COH','  PFT','         LAI','   VEG_WATER',' OLD_VEG_H2O'
+    write (unit=*,fmt='(2(a5,1x),4(a12,1x))') &
+       '  COH','  PFT','         LAI','   VEG_WATER',' OLD_VEG_H2O','HEAT_CAP'
     do ico = 1,cpatch%ncohorts
        if(cpatch%lai(ico) > lai_min) then
-          write(unit=*,fmt='(2(i5,1x),3(es12.5,1x))') &
-             ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_water(ico),cpatch%veg_water(ico)
+          write(unit=*,fmt='(2(i5,1x),4(es12.5,1x))') &
+             ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_water(ico),cpatch%veg_water(ico) &
+                ,cpatch%hcapveg(ico)
        end if
     end do
     write(unit=*,fmt='(64a)') ('-',k=1,64)

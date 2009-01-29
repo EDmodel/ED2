@@ -726,7 +726,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    real   , parameter :: leaf_h2o_thick = 0.11 ! mm
    logical, parameter :: debug  = .true.       ! Verbose output for debug (T|F)
    real   , parameter :: toocold = 193.15      ! Minimum temperature for sat., -80°C
-   real   , parameter :: toohot  = 333.15      ! Maximum temperature for sat.,  60°C
+   real   , parameter :: toohot  = 353.15      ! Maximum temperature for sat.,  80°C
    real   , parameter :: lai_to_cover = 1.5    ! Canopies with LAI less than this number 
                                                !    are assumed to be open, ie, some 
                                                !    fraction of the rain-drops can reach
