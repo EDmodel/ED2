@@ -11,35 +11,25 @@ subroutine set_polygon_coordinates_ar()
    integer                :: ifm,ipy,x,y,npoly
    
    gloop: do ifm=1,ngrids
-      call ed_newgrid(ifm)
-      ipy = 0
-      !----- Setting npoly as an upper bound 
+
       npoly=gdpy(mynum,ifm)
 
-      xloop: do x=1,mxp
-         yloop: do y=1,myp
+      do ipy=1,npoly
+         
+         edgrid_g(ifm)%lon(ipy) = work_e(ifm)%vec_glon(ipy)
+         edgrid_g(ifm)%lat(ipy) = work_e(ifm)%vec_glat(ipy)
+         edgrid_g(ifm)%ntext_soil(1:nzg,ipy) = work_e(ifm)%vec_ntext(ipy)
+         
+         print*,mynum,edgrid_g(ifm)%lat(ipy),edgrid_g(ifm)%ntext_soil(nzg,ipy)
 
- 
-            if (ipy > npoly) then
-               call fatal_error('Trying to define more polygons than it should! Weird...' &
-                    ,'set_polygon_coordinates'                                 &
-                    ,'ed_init.f90')
-            end if
-            if (work_e(ifm)%land(x,y)) then
-               ipy = ipy + 1
-               edgrid_g(ifm)%lon(ipy) = work_e(ifm)%glon(x,y)
-               edgrid_g(ifm)%lat(ipy) = work_e(ifm)%glat(x,y)
-
-               edgrid_g(ifm)%ntext_soil(1:nzg,ipy) = work_e(ifm)%ntext(x,y)
-               
-               edgrid_g(ifm)%xatm(ipy) = work_e(ifm)%xatm(x,y) + iwest(ifm)  - 2
-               edgrid_g(ifm)%yatm(ipy) = work_e(ifm)%yatm(x,y) + jsouth(ifm) - 2
-               edgrid_g(ifm)%natm(ipy) = 1
-               
-            end if
-         end do yloop
-      end do xloop
+         ! This should be meaningless right now
+         !         edgrid_g(ifm)%xatm(ipy) = work_e(ifm)%xatm(x,y) + iwest(ifm)  - 2
+         !         edgrid_g(ifm)%yatm(ipy) = work_e(ifm)%yatm(x,y) + jsouth(ifm) - 2
+         
+         
+      end do
    end do gloop
+
    
    return
  end subroutine set_polygon_coordinates_ar
@@ -48,14 +38,15 @@ subroutine set_polygon_coordinates_ar()
  
  subroutine soil_depth_fill_ar(cgrid,igr)
    !---------------------------------------------------------------------------------------!
-!    This subroutine fills the lsl variables based on the soil_depth file. In case         !
-! isoildepthflg was zero, then the layer_index matrix was filled with zeroes, so we do not !
-! need to worry about this here.                                                           !
-!------------------------------------------------------------------------------------------!
-  use soil_coms, only: soildepth_db, slz, isoildepthflg,layer_index
-  use grid_coms,only:ngrids, nzg
-  use ed_state_vars,only: edtype
-
+   !    This subroutine fills the lsl variables based on the soil_depth file. In case         !
+   ! isoildepthflg was zero, then the layer_index matrix was filled with zeroes, so we do not !
+   ! need to worry about this here.                                                           !
+   !------------------------------------------------------------------------------------------!
+   
+   use soil_coms, only: soildepth_db, slz, isoildepthflg,layer_index
+   use grid_coms,only:ngrids, nzg
+   use ed_state_vars,only: edtype
+  
   implicit none
 
   type(edtype),target  :: cgrid
@@ -114,15 +105,6 @@ subroutine load_ecosystem_state
 
 
   if (mynum .eq. 1)print'(/,a)','    Doing sequential initialization over nodes'
-
-
-
-!  if (nnodetot /= 1) then
-!     call MPI_Barrier(MPI_COMM_WORLD,ierr)
-!  endif
-  
-
-
   !----------------------------------------------------
   ! STEP 0: Find lowest soil layer for each site 
   !         (derived from soil depth)!

@@ -89,9 +89,9 @@ USE_INTERF=1
 #----------------- gcc and gfortran compiler on tormenta
 CMACH=PC_LINUX1
 F_COMP=mpif90
-F_OPTS= -g -ffpe-trap=invalid,zero
+F_OPTS= -g -ffpe-trap=invalid,zero# -fbounds-check
 C_COMP=mpicc
-C_OPTS= -g -ffpe-trap=invalid,zero
+C_OPTS= -g -ffpe-trap=invalid,zero# -fbounds-check
 USE_INTERF=1
 CPP_OPTS=
 LOADER=$(F_COMP)
