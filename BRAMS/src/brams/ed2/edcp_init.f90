@@ -296,11 +296,8 @@ subroutine init_master_work(ipara)
               work_e(ifm)%yatm(il,jl)  = j - jsouth + 2       ! buffer cell so add one extra 
 
               ! The following will give you the global coordinates
-              !work_e(ifm)%xatm(il,jl)  = i       ! Remember that all tiles have a 
+              !work_e(ifm)%xatm(il,jl)  = i       ! Remember that all tiles have a            
               !work_e(ifm)%yatm(il,jl)  = j       ! buffer cell so add one extra 
-            
-
-
            end do
         enddo
         
