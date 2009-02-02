@@ -27,7 +27,8 @@ subroutine ed_model()
        integration_buff_g,          &
        edtype,                      &
        patchtype,                   &
-       filltab_alltypes
+       filltab_alltypes,            &
+       filltables
   use rk4_driver_ar,only: rk4_timestep_ar
   use ed_node_coms,only:mynum,nnodetot
   use disturb_coms, only: include_fire
@@ -59,6 +60,7 @@ subroutine ed_model()
   integer, external :: num_days  
   past_one_day   = .false.
   past_one_month = .false.
+  filltables = .false.
   
   ! This should keep both SOI and regional runners happy...
   printbanner = n_ed_region > 0 .and. mynum == 1
@@ -257,7 +259,12 @@ subroutine ed_model()
            
            ! If maxpatch and maxcohort are both negative, the number of patches and 
            ! cohorts remain the same throughout the run, no need to call it.
-           if (maxcohort >= 0 .or. maxpatch >= 0) call filltab_alltypes
+
+           ! Also, if we do not need to fill the tables until we do I/O, so instead of
+           ! running this routine every time the demographics change, we set this flag
+           ! and run the routine when the next IO occurs.
+
+           if (maxcohort >= 0 .or. maxpatch >= 0) filltables=.true.   ! call filltab_alltypes
 
            ! Read new met driver files only if this is the first timestep 
            call read_met_drivers_array()
@@ -411,7 +418,7 @@ subroutine vegetation_dynamics(new_month,new_year)
   use disturb_coms, only: include_fire
   use disturbance_utils_ar, only: apply_disturbances_ar, site_disturbance_rates_ar
   use fuse_fiss_utils_ar, only : fuse_patches_ar
-  use ed_state_vars,only : edgrid_g,filltab_alltypes,edtype
+  use ed_state_vars,only : edgrid_g,edtype
   use growth_balive_ar,only : dbalive_dt_ar
   use consts_coms, only : day_sec,yr_day
   use mem_sites, only: maxpatch

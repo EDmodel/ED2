@@ -1550,7 +1550,12 @@ module ed_state_vars
 !------------------------------------------------------------------------------------------!
   integer :: nioglobal, niogrid, niopoly, niosite
 
-  
+!------------------------------------------------------------------------------------------!
+! Logical switch that decides if the pointer tables for IO need to be updated
+! The number and allocation of cohorts and patches dictates this, and they 
+! change at a monthly frequency typically.
+!------------------------------------------------------------------------------------------!
+  logical :: filltables
   
 contains
 !============================================================================!
@@ -5051,8 +5056,6 @@ contains
 
     ! The first loop through populates the info tables
 
-!    write (unit=*,fmt='(a,i4,a,i4,a)') ' + Initializing Variable I/O Tables ',mynum,' of ',nnodetot,';'
-
     do igr = 1,ngrids
        cgrid => edgrid_g(igr)
        
@@ -5078,13 +5081,7 @@ contains
 
        if (nnodetot /= 1) then
 
-          ! CHANGED RGK 7-30-08 - ROOT MAY NOT BE INVOLVED.  NEW METHOD, SEND ALL INFO TO NODE ONE,
-          ! AND THEN HAVE NODE 1 DO A LOOPED SEND.  In both coupled and stand-alone modes, node
-          ! 1 is involved as a worker.  In the coupled version, root node is not running this script
-          ! because it is acting like a master.
-
-          ! Send all them sizes to root (CHANGED, NODE 1)
-          
+          ! Send all them sizes to root (CHANGED, NODE 1)          
 
           if (mynum == 1) then
           
@@ -5114,6 +5111,7 @@ contains
              enddo
 
          else
+
             ! Set the blocking recieve to allow ordering, start with machine 1
             call MPI_Recv(ping,1,MPI_INTEGER,recvnum,242,MPI_COMM_WORLD,status,ierr)
 
@@ -5136,68 +5134,63 @@ contains
          end if
 
 
-          ! The barriers complicate cases when the model is not in stand-alone, or when all
-          ! of the nodes are not undergoing this process - continue testing if this poses problems rgk 7-30-08
+         if(mynum == 1.and.model_start) then
+            
+            print*,"Global Polygons: ",gdpy(1:nnodetot,igr)
+            print*,"Global Site: "    ,gdsi(1:nnodetot,igr)
+            print*,"Global Patches: " ,gdpa(1:nnodetot,igr)
+            print*,"Global Cohorts: " ,gdco(1:nnodetot,igr)
+            
+         end if
          
-!          call MPI_Barrier(MPI_COMM_WORLD,ierr)
-
-          if(mynum == 1) then
-             
-             print*,"Global Polygons: ",gdpy(1:nnodetot,igr)
-             print*,"Global Site: "    ,gdsi(1:nnodetot,igr)
-             print*,"Global Patches: " ,gdpa(1:nnodetot,igr)
-             print*,"Global Cohorts: " ,gdco(1:nnodetot,igr)
-
-          end if
-
-          ! Calculate the offsets that each machine has
-          
-          py_off(1,igr) = 0
-          si_off(1,igr) = 0
-          pa_off(1,igr) = 0
-          co_off(1,igr) = 0
-          do nm=2,nnodetot
-             py_off(nm,igr) = py_off(nm-1,igr) + gdpy(nm-1,igr)
-             si_off(nm,igr) = si_off(nm-1,igr) + gdsi(nm-1,igr)
-             pa_off(nm,igr) = pa_off(nm-1,igr) + gdpa(nm-1,igr)
-             co_off(nm,igr) = co_off(nm-1,igr) + gdco(nm-1,igr)
-          end do
-          
-          ! Calculate the total sizes of the arrays
-          
-          cgrid%npolygons_global = sum(gdpy(1:nnodetot,igr))
-          cgrid%nsites_global    = sum(gdsi(1:nnodetot,igr))
-          cgrid%npatches_global  = sum(gdpa(1:nnodetot,igr))
-          cgrid%ncohorts_global  = sum(gdco(1:nnodetot,igr))
-          
-
-          ! Calculate the local offsets
-          
-          cgrid%mach_polygon_offset_index = py_off(mynum,igr)
-          cgrid%mach_site_offset_index    = si_off(mynum,igr)
-          cgrid%mach_patch_offset_index   = pa_off(mynum,igr)
-          cgrid%mach_cohort_offset_index  = co_off(mynum,igr)
-
-          
-       endif
-
-       call filltab_globtype(igr)
-
+         ! Calculate the offsets that each machine has
+         
+         py_off(1,igr) = 0
+         si_off(1,igr) = 0
+         pa_off(1,igr) = 0
+         co_off(1,igr) = 0
+         do nm=2,nnodetot
+            py_off(nm,igr) = py_off(nm-1,igr) + gdpy(nm-1,igr)
+            si_off(nm,igr) = si_off(nm-1,igr) + gdsi(nm-1,igr)
+            pa_off(nm,igr) = pa_off(nm-1,igr) + gdpa(nm-1,igr)
+            co_off(nm,igr) = co_off(nm-1,igr) + gdco(nm-1,igr)
+         end do
+         
+         ! Calculate the total sizes of the arrays
+         
+         cgrid%npolygons_global = sum(gdpy(1:nnodetot,igr))
+         cgrid%nsites_global    = sum(gdsi(1:nnodetot,igr))
+         cgrid%npatches_global  = sum(gdpa(1:nnodetot,igr))
+         cgrid%ncohorts_global  = sum(gdco(1:nnodetot,igr))
+         
+         
+         ! Calculate the local offsets
+         
+         cgrid%mach_polygon_offset_index = py_off(mynum,igr)
+         cgrid%mach_site_offset_index    = si_off(mynum,igr)
+         cgrid%mach_patch_offset_index   = pa_off(mynum,igr)
+         cgrid%mach_cohort_offset_index  = co_off(mynum,igr)
+         
+         
+      endif
+      
+      call filltab_globtype(igr)
+      
        call filltab_edtype(igr,0)
-
+       
        if (gdpy(mynum,igr)>0) then
           call filltab_polygontype(igr,1,0)
-
-!          if (gdsi(mynum,igr)>0) then
-             call filltab_sitetype(igr,1,1,0)
-
- !            if (gdpa(mynum,igr)>0) then
-                call filltab_patchtype(igr,1,1,1,0)
-  !           endif
- !         endif
+          
+          !          if (gdsi(mynum,igr)>0) then
+          call filltab_sitetype(igr,1,1,0)
+          
+          !            if (gdpa(mynum,igr)>0) then
+          call filltab_patchtype(igr,1,1,1,0)
+          !           endif
+          !         endif
        endif
        
-          
+       
     enddo
 
 

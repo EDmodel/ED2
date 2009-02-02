@@ -20,8 +20,6 @@ subroutine set_polygon_coordinates_ar()
          edgrid_g(ifm)%lat(ipy) = work_e(ifm)%vec_glat(ipy)
          edgrid_g(ifm)%ntext_soil(1:nzg,ipy) = work_e(ifm)%vec_ntext(ipy)
          
-         print*,mynum,edgrid_g(ifm)%lat(ipy),edgrid_g(ifm)%ntext_soil(nzg,ipy)
-
          ! This should be meaningless right now
          !         edgrid_g(ifm)%xatm(ipy) = work_e(ifm)%xatm(x,y) + iwest(ifm)  - 2
          !         edgrid_g(ifm)%yatm(ipy) = work_e(ifm)%yatm(x,y) + jsouth(ifm) - 2
