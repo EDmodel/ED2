@@ -127,7 +127,9 @@ subroutine ed_model()
      !   ===================================================
 
 
-     if (nnodetot>1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
+     ! This MPI barrier slows down massively parallel runs
+     ! Removing unless someone has an objection RGK 2-2009
+     !     if (nnodetot>1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
      call timing(1,t1)
 
