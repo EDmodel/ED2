@@ -458,8 +458,8 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
      if (cpatch%lai(ico) > lai_min) then
         yscal%veg_water(ico) = 0.22
 
-!        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
-!                                   + abs(dy%veg_energy(ico)*htry),0.22*alli)
+        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
+                                   + abs(dy%veg_energy(ico)*htry),0.22*alli)
 
 !        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
 !             & + abs(dy%veg_energy(ico)*htry) &
@@ -469,8 +469,8 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
        ! last term is ~ bleaf*dry_hcap*273.15, a dry-leaf offset from 0K 
        ! additional offset term for veg_water deliberately not included 
 
-        yscal%veg_energy(ico) = 10.0*(y%veg_water(ico)*alli + y%veg_water(ico)*cliq*(317.-273.15) &
-             + cpatch%hcapveg(ico)*(317.-273.15))! + abs(dy%veg_energy(ico)*htry)
+!        yscal%veg_energy(ico) = 10.0*(y%veg_water(ico)*alli + y%veg_water(ico)*cliq*(317.-273.15) &
+!             + cpatch%hcapveg(ico)*(317.-273.15))! + abs(dy%veg_energy(ico)*htry)
 
 
      else
