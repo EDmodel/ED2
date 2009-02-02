@@ -957,7 +957,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         ! Assumptions: cooling from evaporation is removed from leaf and
         ! leaf water. Evaporation comes off of leaf water.  Rainfall
         ! and its internal energy immediately bypasses the leaf towards the ground.
-        if(initp%veg_water(ico) >= max_leaf_water  .and. wflxvc >= 0. )then
+        if(cpatch%veg_water(ico) >= max_leaf_water  .and. wflxvc >= 0. )then
            
            wshed = intercepted*cpatch%lai(ico)*laii
            qwshed = qintercepted*cpatch%lai(ico)*laii
@@ -968,7 +968,7 @@ subroutine canopy_derivs_two_ar(initp, dinitp, csite,ipa,isi,ipy, hflxgc, wflxgc
         ! Assumptions: heating from the dew goes directly into the leaf
         ! and the leaf water, BUT, the mass of the dew goes into the
         ! shed water.  Rainfall and its internal energy bypass the leaf.
-        else if(initp%veg_water(ico) >= max_leaf_water  .and. wflxvc < 0. )then
+        else if(cpatch%veg_water(ico) >= max_leaf_water  .and. wflxvc < 0. )then
            
            wshed = intercepted*cpatch%lai(ico)*laii - wflxvc
            qwshed = qintercepted*cpatch%lai(ico)*laii &
