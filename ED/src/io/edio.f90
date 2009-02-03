@@ -152,11 +152,7 @@ subroutine spatial_averages
   real :: snow_min = 0.0000001
   real,dimension(3) :: area_sum
 
-  print*,"C-01"
-
   frqsumi = 1.0 / frqsum
-
-  print*,"C-02"
 
   do igr=1,ngrids
      cgrid => edgrid_g(igr)
