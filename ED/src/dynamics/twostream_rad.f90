@@ -5,6 +5,7 @@ subroutine sw_twostream_clump(salb,   &
      ncoh,  &
      pft,  &
      LAI_in,  &
+     CA,  &
      PAR_beam_flip,  &
      PAR_diffuse_flip,  &
      SW_abs_beam_flip,   &
@@ -22,7 +23,7 @@ subroutine sw_twostream_clump(salb,   &
   use canopy_radiation_coms, only: diffuse_backscatter_nir,   &
        diffuse_backscatter_vis, &
        leaf_scatter_nir, leaf_scatter_vis,   &
-       visible_fraction_dir, visible_fraction_dif
+       visible_fraction_dir, visible_fraction_dif, crown_mod
 
   implicit none
 
@@ -43,10 +44,11 @@ subroutine sw_twostream_clump(salb,   &
   real(kind=8), dimension(n_pft) :: diffuse_backscatter
   
   real(kind=8), dimension(ncoh) :: LAI_in
+  real(kind=8), dimension(ncoh) :: CA !! Canopy area (m2/m2)
   real(kind=8), dimension(ncoh) :: expkl_top,expkl_bot,expamk_top,expamk_bot
   real(kind=8), dimension(ncoh) :: expapk_top,expapk_bot,A_top,A_bot,B_top
   real(kind=8), dimension(ncoh) :: B_bot,C_top,C_bot,F_top,F_bot,G_top,G_bot
-  real(kind=8), dimension(ncoh) :: H_top,H_bot,beam_bot
+  real(kind=8), dimension(ncoh) :: H_top,H_bot,beam_bot,beam_bot_crown
   real(kind=8), dimension(ncoh+1) :: upward_vis_beam,upward_vis_diffuse
   real(kind=8), dimension(ncoh+1) :: upward_nir_beam, upward_nir_diffuse
   real(kind=8), dimension(ncoh+1) :: downward_nir_beam, downward_nir_diffuse
@@ -102,11 +104,26 @@ subroutine sw_twostream_clump(salb,   &
      ! Calculate more factors for this band
      
      ! Calculate the forcings
-     beam_bot(ncoh) = exp(-lambda*clumping_factor(pft(ncoh))*LAI_in(ncoh))
-     do il=ncoh-1,1,-1
-        beam_bot(il) = beam_bot(il+1)  &
-             *exp(-lambda*clumping_factor(pft(il))*LAI_in(il))
-     enddo
+     if(crown_mod .eq. 1) then
+        !! adjust for crown clumping  [[MCD]]
+        !! distinguishes between the light underneath a crown (beam_bot_crown) 
+        !! and the total light passing through a layer (beam_bot)
+        beam_bot_crown(ncoh) = exp(-lambda*clumping_factor(pft(ncoh))*LAI_in(ncoh)/CA(ncoh))
+        beam_bot(ncoh) = (1.0-CA(ncoh))+CA(ncoh)*beam_bot_crown(ncoh)
+        do il=ncoh-1,1,-1
+           beam_bot_crown(il) = beam_bot(il+1)  &
+                *exp(-lambda*clumping_factor(pft(il))*LAI_in(il)/CA(il))
+           beam_bot(il) = beam_bot(il+1)*(1.0-CA(il)) & 
+                +CA(il)*beam_bot_crown(il)
+        enddo
+     else
+        beam_bot(ncoh) = exp(-lambda*clumping_factor(pft(ncoh))*LAI_in(ncoh))
+        do il=ncoh-1,1,-1
+           beam_bot(il) = beam_bot(il+1)  &
+                *exp(-lambda*clumping_factor(pft(il))*LAI_in(il))
+        enddo
+        beam_bot_crown = beam_bot
+     endif
      
      do il=1,ncoh
         ipft = pft(il)
@@ -119,7 +136,7 @@ subroutine sw_twostream_clump(salb,   &
         zetai = 1.0d0/zeta
         ! sources
         source_bot = clumping_factor(ipft)*lambda*leaf_scatter(ipft)  &
-             * beam_backscatter * beam_bot(il)
+             * beam_backscatter * beam_bot_crown(il)
 
         source_top = source_bot   &
              * exp(lambda*clumping_factor(ipft)*LAI_in(il))
@@ -127,7 +144,7 @@ subroutine sw_twostream_clump(salb,   &
         rhoo = - (zeta + eta + clumping_factor(ipft)*lambda)   &
              * clumping_factor(ipft) * lambda    &
              * leaf_scatter(ipft) * beam_backscatter   &
-             * beam_bot(il)
+             * beam_bot_crown(il)
         sigma = clumping_factor(ipft) * lambda
         ! calculate exponentials only once
         expkl_bot(il)=1.0d0
@@ -180,6 +197,7 @@ subroutine sw_twostream_clump(salb,   &
      do i=2,ncoh2-2,2
         masmatcp(i,i-1)=G_bot(nint(real(ncoh2-i+2)*0.5))
         masmatcp(i,i)=H_bot(nint(real(ncoh2-i+2)*0.5))
+
         masmatcp(i,i+1)=-G_top(nint(real(ncoh2-i)*0.5))
         masmatcp(i,i+2)=-H_top(nint(real(ncoh2-i)*0.5))
         mastervec_beam(i)=-F_bot(nint(real(ncoh2-i+2)*0.5))+F_top(nint(real(ncoh2-i)*0.5))
@@ -472,7 +490,7 @@ return
 end subroutine mprove
 
 !=====================================================================
-subroutine lw_twostream(ncoh, semgs, sT_grnd, pft, LAI, T_veg,   &
+subroutine lw_twostream(ncoh, semgs, sT_grnd, pft, LAI, CA, T_veg,   &
      lw_v_surf, lw_v_incid, downward_lw_below_surf, downward_lw_below_incid,  &
      upward_lw_below_surf, upward_lw_below_incid, upward_lw_above_surf,  &
      upward_lw_above_incid)
@@ -488,6 +506,7 @@ subroutine lw_twostream(ncoh, semgs, sT_grnd, pft, LAI, T_veg,   &
   integer, dimension(ncoh) :: pft
   real(kind=8), dimension(ncoh) :: LAI
   real(kind=8), dimension(ncoh) :: T_veg
+  real(kind=8), dimension(ncoh) :: CA  !! canopy area
   real, dimension(ncoh) :: lw_v_surf
   real, dimension(ncoh) :: lw_v_incid
   real :: downward_lw_below_surf
@@ -574,6 +593,22 @@ subroutine lw_twostream(ncoh, semgs, sT_grnd, pft, LAI, T_veg,   &
           -0.5d0*zetai*(eta*exki+1.0d0)*exmlai(il)  &
           *(forcing(il)*exki*(explai(il)-1.0d0))
   enddo
+  
+!!$  if (crown) then 
+!!$     !! if using tree crown mixing model [[MCD]]
+!!$     !! use calculated "bot" terms as equivalent "open" term
+!!$     !! to adjust "top" terms as appropriate
+!!$     do il=1,ncoh
+!!$        F_uw(il) = F_uw(il)*CA(il)
+!!$        D_uw(il) = D_uw(il)*CA(il) + (1-CA(il))*A_uw
+!!$        E_uw(il) = E_uw(il)*CA(il) + (1-CA(il))*B_uw
+!!$        D_dw(il) = D_dw(il)*CA(il)
+!!$        B_dw(il) = B_dw(il)*CA(il) + (1-CA(il))*A_dw
+!!$        C_dw(il) = C_dw(il)*CA(il) - (1-CA(il))*A_dw  ! note minus
+!!$        !! adjust source terms on "bot"
+!!$        C_uw(il) = C_uw(il)*CA(il)     
+!!$     enddo
+!!$  endif
 
 !  print*,"ncoh:",ncoh
 !  print*,"A_dw",A_dw(1:ncoh)

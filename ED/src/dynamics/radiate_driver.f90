@@ -127,6 +127,7 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
   use consts_coms, only: stefan
   use max_dims, only: n_pft
   use pft_coms,only:sla
+  use allometry, only : dbh2ca
 
   implicit none
 
@@ -153,6 +154,7 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
   real, dimension(maxcohort) :: rshort_v_diffuse_array
   real(kind=8), dimension(maxcohort) :: veg_temp_array
   real(kind=8), dimension(maxcohort) ::  lai_array
+  real(kind=8), dimension(maxcohort) ::  CA_array
   integer, dimension(maxcohort) :: pft_array
   real :: downward_par_below_beam
   real :: upward_par_above_beam
@@ -177,9 +179,6 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
   real :: downward_rshort_below_diffuse
   real :: surface_absorbed_longwave_surf
   real :: surface_absorbed_longwave_incid
-  real :: carea
-  real(kind=8), dimension(maxcohort) :: CA_array
-
 
   ! Loop over the patches
 
@@ -226,9 +225,9 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
            cohort_count = cohort_count + 1
            pft_array(cohort_count) = cpatch%pft(ico)
            lai_array(cohort_count) = dble(cpatch%lai(ico))
-           carea = cpatch%nplant(ico)*2.490154*cpatch%dbh(ico)**0.8068806 
            !! crown area allom from Dietze and Clark 2008
-           CA_array(cohort_count)  = dble(min(1.0,carea))
+           CA_array(cohort_count)  = dble(min(1.0,&
+                cpatch%nplant(ico)*dbh2ca(cpatch%dbh(ico),cpatch%pft(ico))))
            veg_temp_array(cohort_count) = dble(cpatch%veg_temp(ico))
            rshort_v_beam_array(cohort_count) = 0.0
            par_v_beam_array(cohort_count) = 0.0
@@ -299,7 +298,8 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
         
         ! Long wave first.
         call lw_twostream(cohort_count, emissivity, T_surface,  &
-             pft_array(1:cohort_count), lai_array(1:cohort_count),   &
+             pft_array(1:cohort_count), lai_array(1:cohort_count), & 
+             CA_array(1:cohort_count),  &
              veg_temp_array(1:cohort_count), lw_v_surf_array(1:cohort_count),  &
              lw_v_incid_array(1:cohort_count), downward_lw_below_surf,  &
              downward_lw_below_incid, upward_lw_below_surf,   &
@@ -326,6 +326,7 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
                 cohort_count,   &
                 pft_array(1:cohort_count),  &
                 lai_array(1:cohort_count),   &
+                CA_array(1:cohort_count),    &
                 par_v_beam_array(1:cohort_count),  &
                 par_v_diffuse_array(1:cohort_count),  &
                 rshort_v_beam_array(1:cohort_count), &

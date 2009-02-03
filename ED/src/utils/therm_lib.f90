@@ -111,6 +111,10 @@ module therm_lib
       real, intent(out), optional :: l1funout,ttfunout,l2funout
       real                        :: l1fun,ttfun,l2fun,x
 
+      if(temp <= 0.0) then
+         print*,"temp < 0K in eslf",temp
+         stop
+      endif
       if (newthermo) then
          !----- Updated method, using MK05 ------------------------------------------------!
          l1fun = l01_10(0) + l01_10(1)/temp + l01_10(2)*log(temp) + l01_10(3) * temp

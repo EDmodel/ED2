@@ -346,8 +346,9 @@ contains
     real :: h,veg_temp,fracliq
     integer :: ipa,ico
     integer, parameter :: print_diags=0
-    logical :: cflag1 = .false.
-    logical :: cflag2 = .false.
+
+    logical :: cflag1
+    logical :: cflag2
 
     if(y%soil_tempk(nzg) /= y%soil_tempk(nzg))then
        print*,'in the sanity check'
@@ -355,28 +356,37 @@ contains
        stop
     endif
 
+    ! Set the failure flag to "not failed" or 1
+    
     iflag1 = 1
+
+
+    ! Initialize the error reporting flags
+
+    cflag1 = .false.
+    cflag2 = .false.
+
 
     do k = lsl, nzg
        if(y%soil_tempk(k) < (t3ple-0.01) .and. y%soil_fracliq(k).gt.0.001)then
           iflag1 = 0
           if(record_err) cflag1 = .true.      
           if(print_diags==1)print*,'too much liquid',iflag1,  &
-               y%soil_tempk(k),y%soil_fracliq(k)    
-          return
+               y%soil_tempk(k),y%soil_fracliq(k)
+          if(.not.record_err) return
        endif
        if(y%soil_tempk(k) > (t3ple+0.01) .and. y%soil_fracliq(k).lt.0.999)then
           iflag1 = 0
           if(record_err) cflag1 = .true.
           if(print_diags==1)print*,'too much ice',iflag1,  &
                y%soil_tempk(k),y%soil_fracliq(k)    
-          return
+          if(.not.record_err) return
        endif
        if(y%soil_fracliq(k).gt.1.0 .or. y%soil_fracliq(k).lt.0.0)then
           iflag1 = 0
           if(record_err) cflag2 = .true.   
           if(print_diags==1) print*,'bad fracliq',iflag1,y%soil_fracliq(k)    
-          return
+          if(.not.record_err) return
        endif
     enddo
     if(record_err .and. cflag1) integ_err(42,2) = integ_err(42,2) + 1_8
@@ -387,35 +397,35 @@ contains
        iflag1 = 0
        if(record_err) integ_err(1,2) = integ_err(1,2) + 1_8
        if(print_diags==1)print*,'canopy tempk too high',y%can_temp,dydx%can_temp,h
-       return
+       if(.not.record_err) return
     endif
 
     if(y%can_temp.lt.0.0)then
        iflag1 = 0
        if(record_err) integ_err(1,2) = integ_err(1,2) + 1_8
        if(print_diags==1) print*,'canopy tempk too low',y%can_temp,dydx%can_temp,h
-       return
+       if(.not.record_err) return
     endif
 
     if(y%nlev_sfcwater.eq.1.and.y%sfcwater_tempk(1).lt.205.0)then
        iflag1 = 0
        if(record_err) integ_err(44,2) = integ_err(44,2) + 1_8
        if(print_diags==1) print*,'sfcwater_tempk too low',y%sfcwater_tempk(1)
-       return
+       if(.not.record_err) return
     endif
 
     if(y%can_shv > 1.0)then
        iflag1 = 0
        if(record_err) integ_err(2,2) = integ_err(2,2) + 1_8
        if(print_diags==1)print*,'canopy water vapor too high',y%can_shv,dydx%can_shv,h
-       return
+       if(.not.record_err) return
     endif
 
     if(y%can_shv <= 0.0)then
        iflag1 = 0
        if(record_err) integ_err(2,2) = integ_err(2,2) + 1_8
        if(print_diags==1)print*,'canopy water vapor too low',y%can_shv,dydx%can_shv,h
-       return
+       if(.not.record_err) return
     endif
 
     cflag1 = .false.
@@ -425,20 +435,25 @@ contains
           if(record_err) integ_err(3+k,2) = integ_err(3+k,2) + 1_8
           if(print_diags==1) print*,'soil water too low',k,  &
                y%soil_water(k),csite%ntext_soil(k,ipa)
+          if(.not.record_err) return
        endif
        if(y%soil_water(k).gt.1.0d0)then
           iflag1 = 0
           if(record_err) integ_err(3+k,2) = integ_err(3+k,2) + 1_8
           if(print_diags==1) print*,'soil water too high',k,  &
                y%soil_water(k),csite%ntext_soil(k,ipa)
+          if(.not.record_err) return
        endif
        if(y%soil_tempk(k) > 350.0)then
           iflag1 = 0
           if(record_err) cflag1 = .true.
           if(print_diags==1) print*,'soil_tempk too high',k,y%soil_tempk(k)
+          if(.not.record_err) return
        endif       
     enddo
     if(record_err .and. cflag1) integ_err(45,2) = integ_err(45,2) + 1_8
+
+
 
     if(y%nlev_sfcwater >= 1)then
        if(y%sfcwater_mass(y%nlev_sfcwater).lt.-1.0e-3)then
@@ -446,7 +461,7 @@ contains
           if(record_err) integ_err(32+k,2) = integ_err(32+k,2) + 1_8
           if(print_diags==1) print*,'sfcwater_mass too low',  &
                y%nlev_sfcwater,y%sfcwater_mass(y%nlev_sfcwater)
-          return
+          if(.not.record_err) return
        endif
     endif
 
@@ -458,7 +473,7 @@ contains
        iflag1 = 0
        if(record_err) integ_err(39,2) = integ_err(39,2) + 1_8
        if(print_diags==1)print*,'virtual water too low',y%virtual_water
-       return
+       if(.not.record_err) return
     endif
 
     cpatch => csite%patch(ipa)
@@ -468,9 +483,6 @@ contains
     
        if (cpatch%lai(ico) > lai_min) then
           
-!          cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-!                 cpatch%nplant(ico),cpatch%pft(ico))
-
           call qwtk(y%veg_energy(ico),y%veg_water(ico),cpatch%hcapveg(ico),veg_temp,fracliq)
 
           if(veg_temp > 380.0 .or. veg_temp < veg_temp_min )then
@@ -478,7 +490,7 @@ contains
              if(record_err) cflag1 = .true.
              if(print_diags==1) print*,'leaf temp too high or low',veg_temp,y%veg_energy(ico),  &
                   cpatch%lai(ico),cpatch%pft(ico),cpatch%veg_temp(ico)
-             return
+             if(.not.record_err) return
           end if
        end if
     end do

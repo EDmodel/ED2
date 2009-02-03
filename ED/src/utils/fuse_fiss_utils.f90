@@ -209,7 +209,6 @@ end subroutine terminate_cohorts_ar
      integer, parameter :: fuse_relax = 0
      real :: mean_dbh,mean_hite,ntall,nshort
  
-     
      tolerance_mult = 1.0
 
      cpatch => csite%patch(ipa)
@@ -241,7 +240,6 @@ end subroutine terminate_cohorts_ar
         else
 
            if(cpatch%dbh(ico1).eq.0. ) then
-              print*,"dbh(ico1) is zero",cpatch%dbh(ico1)
               call fatal_error('Zero DBH!','fuse_cohorts_ar','fuse_fiss_utils.f90')
            end if
 
@@ -349,7 +347,6 @@ end subroutine terminate_cohorts_ar
            end if
         end do recloop
      end do donloop
-
      
      if( count(fuse_table) <= abs(maxcohort))exit force_fusion
      if( (count(fuse_table) == ncohorts_old) .and. (tolerance_mult > tolerance_max) ) exit force_fusion
