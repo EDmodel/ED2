@@ -25,6 +25,8 @@ subroutine ed_coup_driver()
        edgrid_g
 
   use ed_misc_coms, only: fast_diagnostics
+  
+  use ed_work_vars,only:ed_dealloc_work,work_e
 
   use misc_coms, only: &
        iyeara,          &
@@ -255,6 +257,16 @@ subroutine ed_coup_driver()
   do ifm=1,ngrids
      call reset_averaged_vars(edgrid_g(ifm))
   end do
+
+  
+  !-----------------------------------------------------------------------!
+  ! STEP 16: Deallocate the work arrays
+  !-----------------------------------------------------------------------!
+  do ifm=1,ngrids
+     call ed_dealloc_work(work_e(ifm))
+  enddo
+
+
 
   !-----------------------------------------------------------------------!
   ! STEP 17. Getting the CPU time and printing the banner                 !

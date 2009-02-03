@@ -50,16 +50,16 @@ HDF4_LIBS=
 
 USE_HDF5=1
 
-HDF5_INCS=-I/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/include
-HDF5C_INCS=-I/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/include
-HDF5_LIBS=-lz -L/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/lib \
-	-lhdf5_fortran -lhdf5 -lhdf5_hl
-
-
-#HDF5_INCS=-I/opt/hdf5/1.8.1/ompi-tcp-gnu41/include
-#HDF5C_INCS=-I/opt/hdf5/1.8.1/ompi-tcp-gnu41/include
-#HDF5_LIBS=-lz -L/opt/hdf5/1.8.1/ompi-tcp-gnu41/lib \
+#HDF5_INCS=-I/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/include
+#HDF5C_INCS=-I/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/include
+#HDF5_LIBS=-lz -L/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/lib \
 #	-lhdf5_fortran -lhdf5 -lhdf5_hl
+
+
+HDF5_INCS=-I/opt/hdf5/1.8.1/ompi-tcp-gnu41/include
+HDF5C_INCS=-I/opt/hdf5/1.8.1/ompi-tcp-gnu41/include
+HDF5_LIBS=-lz -L/opt/hdf5/1.8.1/ompi-tcp-gnu41/lib \
+	-lhdf5_fortran -lhdf5 -lhdf5_hl
 
 #---------------------------------------------------------------
 # If you have a version of hdf5 compiled in parallel, then you
@@ -107,11 +107,13 @@ USE_INTERF=1
 #----------------- PGI Compiler on Linux x86_64 ----------------
 CMACH=PC_LINUX1
 F_COMP=mpif90
-F_OPTS= -fastsse
-#F_OPTS= -g -Ktrap=divz,fp,inv
+#F_OPTS= -fastsse
+#F_OPTS=-O2
+F_OPTS= -g #-Ktrap=divz,fp,inv
 C_COMP=mpicc
-#C_OPTS= -g -Ktrap=divz,fp,inv
-C_OPTS= -fastsse
+C_OPTS= -g #-Ktrap=divz,fp,inv
+#C_OPTS=-O2
+#C_OPTS= -fastsse
 USE_INTERF=1
 CPP_OPTS=
 LOADER=$(F_COMP)

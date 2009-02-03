@@ -177,6 +177,7 @@ subroutine init_node_work
   implicit none
   include 'mpif.h'
   integer :: ifm,nm,nm2,ierr,i,j
+  integer :: ipy
   integer,       dimension(MPI_STATUS_SIZE) :: status
 
   allocate(work_e(ngrids))
@@ -219,6 +220,40 @@ subroutine init_node_work
         endif
 
      enddo
+
+
+     ! Fill the work vectors - these will be used in the ed2 initialization procedures
+     ! to populate the first polygons
+     ! -------------------------------------------------------------------------------
+     ipy = 0
+     do j = 1,mmyp(ifm)
+        do i = 1,mmxp(ifm)
+           if(work_e(ifm)%land(i,j)) then
+              ipy = ipy + 1
+           endif
+        enddo
+     enddo
+     
+     allocate(work_e(ifm)%vec_glon(ipy))
+     allocate(work_e(ifm)%vec_glat(ipy))
+     allocate(work_e(ifm)%vec_landfrac(ipy))
+     allocate(work_e(ifm)%vec_ntext(ipy))
+     ! Making sure I use the same order as set_edtype_atm
+     ! or else we will get our wires crossed
+     ipy = 0
+     do i=1,mmxp(ifm)
+        do j = 1,mmyp(ifm)
+           if (work_e(ifm)%land(i,j)) then
+              ipy = ipy + 1
+              work_e(ifm)%vec_glon(ipy) = work_e(ifm)%glon(i,j)
+              work_e(ifm)%vec_glat(ipy) = work_e(ifm)%glat(i,j)
+              work_e(ifm)%vec_landfrac(ipy) = work_e(ifm)%landfrac(i,j)
+              work_e(ifm)%vec_ntext(ipy) = work_e(ifm)%ntext(i,j)
+           endif
+        enddo
+     enddo
+
+
   enddo
   call MPI_Barrier(MPI_COMM_WORLD,ierr)
   
