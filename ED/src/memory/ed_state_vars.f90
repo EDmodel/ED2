@@ -5053,7 +5053,10 @@ contains
     type(patchtype),pointer   :: cpatch
     logical :: verbose = .false.    
 
-
+    if (mynum.eq.1) then
+       write(*,"(a)")'--- Re-hashing the IO pointer tables and mapping arrays'
+    endif
+       
     ! The first loop through populates the info tables
 
     do igr = 1,ngrids
@@ -5134,7 +5137,7 @@ contains
          end if
 
 
-         if(mynum == 1.and.model_start) then
+         if(mynum == 1.and.model_start.and. verbose) then
             
             print*,"Global Polygons: ",gdpy(1:nnodetot,igr)
             print*,"Global Site: "    ,gdsi(1:nnodetot,igr)
@@ -5266,7 +5269,10 @@ contains
           enddo
           
        enddo
-      
+       if (mynum.eq.1) then
+          write(*,"(a)")'--- Mapping Completed'
+       endif
+
        if (mynum.eq.1 .and. model_start .and. verbose) then
           model_start = .false.
           do nv=1,num_var(igr)
