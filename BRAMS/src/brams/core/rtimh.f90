@@ -158,7 +158,7 @@ subroutine timestep()
      call exevolve(mzp,mxp,myp,ngrid,ia,iz,ja,jz,izu,jzv,jdim,mynum,dtlt,'ADV')
      if (acct) call acctimes('accu',4,'EXEVOLVE_ADV',t1,w1)
   end if
-  !------------------------------------------------------- MLO - SRF]
+  !-------------------------------------------------------
   
   !  Radiation parameterization
   !--------------------------------
@@ -267,19 +267,18 @@ subroutine timestep()
   !  Get the overlap region between parallel nodes
   !---------------------------------------------------
   if(ipara == 1) then      
+     t1=cputime(w1)
      if (banneron) write(unit=*,fmt='(a)') '     [-] Calling node_getlbc...'
      call node_getlbc()  
      if (banneron) write(unit=*,fmt='(a)') '     [-] Calling node_getcyclic...'
      if (ngrid  ==  1) call node_getcyclic(1)
+     if (acct) call acctimes('accu',16,'GETlbc',t1,w1)
   endif
-  if (acct) call acctimes('accu',16,'GETlbc',t1,w1)
 
   ! Exner function correction
   !----------------------------------------
   if (iexev == 2) then
      t1=cputime(w1)
-     if (banneron) write(unit=*,fmt='(a)') '     [-] Calling thermo(micro)...'
-     call thermo(mzp,mxp,myp,1,mxp,1,myp) 
      if (banneron) write(unit=*,fmt='(a)') '     [-] Calling exevolve(tha)...'
      call exevolve(mzp,mxp,myp,ngrid,ia,iz,ja,jz,izu,jzv,jdim,mynum,dtlt,'THA')
      if (acct) call acctimes('accu',17,'EXEVOLVE_THA',t1,w1)

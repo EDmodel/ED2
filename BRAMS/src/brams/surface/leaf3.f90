@@ -1178,7 +1178,7 @@ subroutine canopy(mzg,mzs,ksn,nveg  &
    endif
 
    return
-end
+end subroutine canopy
 
 !*****************************************************************************
 
