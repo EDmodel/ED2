@@ -94,12 +94,15 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
 
 !! calc resistance based on nominal windspeed rather than lai
 !! THIS IS A KLUGE - mcd
-           rb_min = 1.0/(  &
-                0.003*sqrt(vels_min/leaf_width(cpatch%pft(ico)))  &
-                + 1.03e-5   &
-                * ( 1.6e8 * abs(cpatch%veg_temp(ico)-csite%can_temp(ipa))  &
-                * leaf_width(cpatch%pft(ico))**3 )**0.25 &
-                / leaf_width(cpatch%pft(ico)))
+!           rb_min = 1.0/(  &
+!                0.003*sqrt(vels_min/leaf_width(cpatch%pft(ico)))  &
+!                + 1.03e-5   &
+!                * ( 1.6e8 * abs(cpatch%veg_temp(ico)-csite%can_temp(ipa))  &
+!                * leaf_width(cpatch%pft(ico))**3 )**0.25 &
+!                / leaf_width(cpatch%pft(ico)))
+
+           rb_min = 1.e6
+
            
 !           cpatch%rb(ico) = min(25.0 * csite%lai(ipa), 1.0/(  &
            cpatch%rb(ico) = min(rb_min, 1.0/(  &
@@ -177,8 +180,11 @@ end if
         
         if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))then
         
+           !rb_min = 25.0*csite%lai(ipa)
+           rb_min = 1.e6
+
         ! Aerodynamic resistance [s/m]
-        cpatch%rb(ico) = min(25.0 * csite%lai(ipa), 1.0/ &
+        cpatch%rb(ico) = min(rb_min, 1.0/ &
              (0.003*sqrt(vels*exp(-0.5*cumulative_lai)  &
              /leaf_width(cpatch%pft(ico)))  &
              + 0.5 * 2.06e-5   &

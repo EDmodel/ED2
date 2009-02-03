@@ -87,29 +87,13 @@ NC_LIBS=-L/dev/null
 USE_INTERF=1
 
 #----------------- gcc and gfortran compiler on tormenta
-CMACH=PC_LINUX1
-F_COMP=mpif90
-F_OPTS= -g -ffpe-trap=invalid,zero
-C_COMP=mpicc
-C_OPTS= -g -ffpe-trap=invalid,zero
-USE_INTERF=1
-CPP_OPTS=
-LOADER=$(F_COMP)
-LOADER_OPTS=$(F_OPTS)
-C_LOADER=$(C_COMP)
-C_LOADER_OPTS=$(C_OPTS)
-LIBS=
-MOD_EXT=mod
-PAR_DEFS=-DRAMS_MPI
-
-#----------------- PGI Compiler on Linux x86_64 ----------------
 #CMACH=PC_LINUX1
 #F_COMP=mpif90
-#F_OPTS= -fastsse
-#F_OPTS= -g -Ktrap=divz,fp,inv
+#F_OPTS=-O2 #-march=native
+#F_OPTS= -g -ffpe-trap=invalid,zero# -fbounds-check
 #C_COMP=mpicc
-#C_OPTS= -g -Ktrap=divz,fp,inv
-#C_OPTS= -fastsse
+#C_OPTS=-O2 #-march=native
+#C_OPTS= -g -ffpe-trap=invalid,zero# -fbounds-check
 #USE_INTERF=1
 #CPP_OPTS=
 #LOADER=$(F_COMP)
@@ -119,6 +103,26 @@ PAR_DEFS=-DRAMS_MPI
 #LIBS=
 #MOD_EXT=mod
 #PAR_DEFS=-DRAMS_MPI
+
+#----------------- PGI Compiler on Linux x86_64 ----------------
+CMACH=PC_LINUX1
+F_COMP=mpif90
+#F_OPTS= -fastsse
+#F_OPTS=-O2
+F_OPTS= -g #-Ktrap=divz,fp,inv
+C_COMP=mpicc
+C_OPTS= -g #-Ktrap=divz,fp,inv
+#C_OPTS=-O2
+#C_OPTS= -fastsse
+USE_INTERF=1
+CPP_OPTS=
+LOADER=$(F_COMP)
+LOADER_OPTS=$(F_OPTS)
+C_LOADER=$(C_COMP)
+C_LOADER_OPTS=$(C_OPTS)
+LIBS=
+MOD_EXT=mod
+PAR_DEFS=-DRAMS_MPI
 
 #---------------LINUX Portland Group pgf77/gcc--------------------
 #MPI_PATH=/n/Moorcroft_Lab/Users/mlongo/util/mpich-1.2.7p1/intel_9.1.036_64

@@ -53,7 +53,7 @@ Module max_dims
   integer, parameter :: nxyzpm=nzpmax*nxpmax*nypmax
 
   !   MAXMACH - the maximum number of processors on a parallel run
-  integer, parameter :: maxmach=128
+  integer, parameter :: maxmach=3000
 #endif
 
   ! Maximum number of temporary water layers
