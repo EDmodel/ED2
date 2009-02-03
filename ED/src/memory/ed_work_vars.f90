@@ -13,7 +13,13 @@ module ed_work_vars
      integer, pointer :: xatm(:,:)
      integer, pointer :: yatm(:,:)
 
+     ! Polygon vectors
 
+     real,    pointer :: vec_glon(:)
+     real,    pointer :: vec_glat(:)
+     real,    pointer :: vec_landfrac(:)
+     integer, pointer :: vec_ntext(:)
+     
   end type work_vars
 
 
@@ -79,6 +85,12 @@ contains
     if (associated(worke%ntext) )    deallocate (worke%ntext)
     if (associated(worke%xatm)  )    deallocate (worke%xatm)
     if (associated(worke%yatm)  )    deallocate (worke%yatm)
+
+    if (associated(worke%vec_glon)  )    deallocate (worke%vec_glon)
+    if (associated(worke%vec_glat)  )    deallocate (worke%vec_glat)  
+    if (associated(worke%vec_ntext)  )    deallocate (worke%vec_ntext)
+    if (associated(worke%vec_landfrac)  )    deallocate (worke%vec_landfrac)
+
     return
   end subroutine ed_dealloc_work
 

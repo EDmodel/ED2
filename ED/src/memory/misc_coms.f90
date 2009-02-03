@@ -79,7 +79,7 @@ Module misc_coms
 
   ! integrator error statistics
   integer(kind=8),dimension(1:50,1:2):: integ_err
-  logical,parameter :: record_err = .true.
+  logical,parameter :: record_err = .false.
 
 contains
   function err_label(i) result(lab)

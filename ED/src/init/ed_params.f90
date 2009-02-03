@@ -621,7 +621,8 @@ leaf_width(14:15) = 0.2
                             ! Gu et al. 2007
 c_grn_leaf_dry(1:15)      = 3218.0    ! Jones 1992  J/(kg K)
 c_ngrn_biom_dry(1:15)     = 1256.0    ! Forest Products Laboratory 
-wat_dry_ratio_grn(1:15)   = 1.5       ! Ceccato et al. 2001
+wat_dry_ratio_grn(1:15)   = 2.5       ! 
+!wat_dry_ratio_grn(1:15)   = 1.5       ! Ceccato et al. 2001
 wat_dry_ratio_ngrn(1:15)  = 0.7       ! Forest Products Laboratory
 
 
