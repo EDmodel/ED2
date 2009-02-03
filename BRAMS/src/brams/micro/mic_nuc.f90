@@ -149,7 +149,7 @@ subroutine icenuc(m1,ngr,dtlt)
    !    Implement Paul's immersion freezing of rain here.  This would replace Mike's homo- !
    ! geneous freezing of rain which was in h03.                                            !
    !---------------------------------------------------------------------------------------!
-   do k = k1(1),k1(2)
+   do k = k1(1),k2(1)
    !----- Homogeneous ice nucleation of cloud droplets ------------------------------------!
       dn1 = dnfac(1) * emb(k,1) ** pwmasi(1)
 

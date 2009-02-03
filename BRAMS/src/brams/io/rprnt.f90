@@ -1758,13 +1758,12 @@ use ref_sounding
 use rconstants
 use mem_turb
 use ref_sounding
-use therm_lib, only: mrsl,virtt
+use therm_lib, only: rehuil,tv2temp
 
 IF(INITIAL.NE.2)THEN
-  call mrsl(nsndg,ps(1),ts(1),vctr5(1))
   do k=1,nsndg
-     vctr1(k) = 100. * rts(k) / vctr5(k)
-  enddo
+     vctr1(k) = 100. *rehuil(ps(k),ts(k),rts(k))
+  end do
   WRITE(M,41)
 41      FORMAT(/,'------------------------------SOUNDING INPUT-------'  &
    ,'---------------------------',//,7X,'PS',9X,'HS',7X,'TS',6X  &
@@ -1778,7 +1777,7 @@ ENDIF
 !
 DO K=1,NNZP(1)
   VCTR1(K)=P00*(PI01DN(K,1)/CP)**CPOR
-  VCTR2(K)=virtt(TH01DN(K,1),RT01DN(K,1))
+  VCTR2(K)=tv2temp(TH01DN(K,1),RT01DN(K,1))
 ENDDO
 WRITE(M,310)IREF,JREF,TOPREF,(ZTN(K,1),U01DN(K,1),V01DN(K,1)  &
   ,DN01DN(K,1),PI01DN(K,1),VCTR1(K),TH01DN(K,1),VCTR2(K)  &

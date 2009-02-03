@@ -730,7 +730,7 @@ subroutine grell_most_thermo_updraft(comp_down,mkx,mgmzp,kbcon,ktop,cdu,mentru_r
          qtotup = qtotua
          funp   = funa
          !------ Finding the current guess ------------------------------------------------!
-         qtotuc = qeverything - 0.5 * leftu_cld(k) * denomini
+         qtotuc = max(toodry,qeverything - 0.5 * leftu_cld(k) * denomini)
          thilu_cld(k) = thetaeiv2thil(theivu_cld(k),p_cup(k),qtotuc)
          call thil2tqall(thilu_cld(k),exner_cup(k),p_cup(k),qtotuc,qliqu_cld(k)            &
                         ,qiceu_cld(k),tu_cld(k),qvapu_cld(k),qsatu_cld(k))

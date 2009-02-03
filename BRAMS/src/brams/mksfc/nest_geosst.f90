@@ -278,9 +278,9 @@ subroutine geonest_nofile(ngra,ngrb)
           , leaf_g(ifm)%can_rvap                  , leaf_g(ifm)%can_temp                   &
           , leaf_g(ifm)%veg_ndvip                 , leaf_g(ifm)%veg_ndvic                  &
           , leaf_g(ifm)%veg_ndvif                 , leaf_g(ifm)%snow_mass                  &
-          , leaf_g(ifm)%snow_depth                , scratch%scr1    ((1+0*isiz):(1*isiz))  &
-          , scratch%scr1    ((1+1*isiz):(2*isiz)) , scratch%scr1    ((1+2*isiz):(3*isiz))  &
-          , scratch%scr1    ((1+3*isiz):(4*isiz)) , scratch%scr1    ((1+4*isiz):(5*isiz))  &
+          , leaf_g(ifm)%snow_depth                , scratch%vt2da                          &
+          , scratch%vt2db                         , scratch%vt2dc                          &
+          , scratch%vt2dd                         , scratch%vt2de                          &
           , grid_g(ifm)%glat                      , grid_g(ifm)%glon                       &
           , grid_g(ifm)%topzo                     , grid_g(ifm)%flpw                       )
 
@@ -399,9 +399,9 @@ subroutine geonest_nofile(ngra,ngrb)
                , leaf_g(ifm)%can_rvap                , leaf_g(ifm)%can_temp                & 
                , leaf_g(ifm)%veg_ndvip               , leaf_g(ifm)%veg_ndvic               & 
                , leaf_g(ifm)%veg_ndvif               , leaf_g(ifm)%snow_mass               &
-               , leaf_g(ifm)%snow_depth              , scratch%scr1  ((1+0*isiz):(1*isiz)) &
-               , scratch%scr1  ((1+1*isiz):(2*isiz)) , scratch%scr1  ((1+2*isiz):(3*isiz)) &
-               , scratch%scr1  ((1+3*isiz):(4*isiz)) , scratch%scr1  ((1+4*isiz):(5*isiz)) &
+               , leaf_g(ifm)%snow_depth              , scratch%vt2da                       &
+               , scratch%vt2db                       , scratch%vt2dc                       &
+               , scratch%vt2dd                       , scratch%vt2de                       &
                , grid_g(ifm)%glat                    , grid_g(ifm)%glon                    &
                , grid_g(ifm)%topzo                   , grid_g(ifm)%flpw                    )
 

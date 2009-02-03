@@ -102,13 +102,12 @@ subroutine micro_driver()
 
    do j = ja,jz
       do i = ia,iz
-
-         call range_check(mzp,i,j                        , grid_g(ngr)%flpw       (i,j)    &
-                         ,basic_g(ngr)%thp     (:,i,j)   , basic_g(ngr)%theta   (:,i,j)    &
-                         ,basic_g(ngr)%pp      (:,i,j)   , basic_g(ngr)%rtp     (:,i,j)    &
-                         ,basic_g(ngr)%rv      (:,i,j)   , basic_g(ngr)%wp      (:,i,j)    &
-                         ,basic_g(ngr)%dn0     (:,i,j)   , basic_g(ngr)%pi0     (:,i,j)    &
-                         ,micro_g(ngr))
+         call fill_thermovars(mzp,i,j                      , grid_g(ngr)%flpw       (i,j)  &
+                             ,basic_g(ngr)%thp   (:,i,j)   , basic_g(ngr)%theta   (:,i,j)  &
+                             ,basic_g(ngr)%pp    (:,i,j)   , basic_g(ngr)%rtp     (:,i,j)  &
+                             ,basic_g(ngr)%rv    (:,i,j)   , basic_g(ngr)%wp      (:,i,j)  &
+                             ,basic_g(ngr)%dn0   (:,i,j)   , basic_g(ngr)%pi0     (:,i,j)  &
+                             ,micro_g(ngr))
 
          call mcphys_main(mzp,ngr,mynum,if_adap,dtlt,dtlti,time,zm,dzt,zt                  &
                          ,grid_g(ngr)%rtgt          (i,j), micro_g(ngr)%pcpg         (i,j) &
@@ -118,7 +117,7 @@ subroutine micro_driver()
 
          call copyback(mzp,i,j                        ,basic_g(ngr)%thp     (:,i,j)        &
                       ,basic_g(ngr)%theta   (:,i,j)   ,basic_g(ngr)%rtp     (:,i,j)        &
-                      ,basic_g(ngr)%dn0     (:,i,j)   ,micro_g(ngr)                        )
+                      ,basic_g(ngr)%rv      (:,i,j)   ,micro_g(ngr)                        )
 
       end do
    end do
@@ -154,10 +153,8 @@ subroutine mcphys_main(m1,ngr,mynum,if_adap,dtlt,dtlti,time,zm,dzt,zt,rtgt,pcpg,
           ,nhcat           & ! intent(in)
           ,jnmb            & ! intent(in)
           ,ncat            & ! intent(in)
-          ,thil            & ! intent(out)
           ,ch1             & ! intent(out)
           ,cfvt            & ! intent(in)
-          ,dsed_thil       & ! intent(out)
           ,accpx           & ! intent(out)
           ,pcprx           & ! intent(out)
           ,k1cnuc          & ! intent(inout)
@@ -191,10 +188,10 @@ subroutine mcphys_main(m1,ngr,mynum,if_adap,dtlt,dtlti,time,zm,dzt,zt,rtgt,pcpg,
    !----- Local Variables: ----------------------------------------------------------------!
    integer :: k,jflag,lcat,icv,icx,mc1,mc2,mc3,mc4,mcat
    integer :: lhcat,j1,j2
+   real    :: fracliq,tcoal
    !---------------------------------------------------------------------------------------!
 
    !----- Initialisation of some thermodynamic properties ---------------------------------!
-   call thrmstr(m1)
    call each_column(m1,dtlt)
 
    !----- Diagnose hydrometeor mean mass emb, and if necessary, number concentration. -----!
@@ -344,9 +341,6 @@ subroutine mcphys_main(m1,ngr,mynum,if_adap,dtlt,dtlti,time,zm,dzt,zt,rtgt,pcpg,
       ch1(lhcat) = dtlt * cfvt(lhcat) / rtgt
    enddo
 
-   !----- Zero out array for accumulating sedim changes to thil ---------------------------!
-   dsed_thil(:) = 0.
-
    do lcat = 2,7
       if (availcat(lcat) .and. k2(lcat) >= k1(lcat)) then
          !------ Compute sedimentation for all 6 precipitating categories -----------------!
@@ -354,12 +348,11 @@ subroutine mcphys_main(m1,ngr,mynum,if_adap,dtlt,dtlti,time,zm,dzt,zt,rtgt,pcpg,
                     ,dzt)
       end if
    enddo
-   !----- Dsed_thil is the tendency on theta_il due to sedimentation ----------------------!
-   do k = lpw,m1
-      thil(k) = thil(k) + dsed_thil(k)
-   end do
 
-  return
+   !----- Update the thermodynamic variables (except pressure) ----------------------------!
+   call update_thermo(m1)
+
+   return
 end subroutine mcphys_main
 !==========================================================================================!
 !==========================================================================================!
@@ -371,7 +364,7 @@ end subroutine mcphys_main
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine copyback(m1,i,j,thp,btheta,rtp,dn0,micro)
+subroutine copyback(m1,i,j,thp,btheta,rtp,rv,micro)
 
    use mem_micro, only: &
            micro_vars   ! ! INTENT(IN) ! Only a type structure
@@ -390,8 +383,8 @@ subroutine copyback(m1,i,j,thp,btheta,rtp,dn0,micro)
           ,qx           & ! intent(in)
           ,pottemp      & ! intent(in)
           ,thil         & ! intent(in)
+          ,rvap         & ! intent(in)
           ,rtot         & ! intent(in)
-          ,rhoa         & ! intent(in)
           ,accpx        & ! intent(in)
           ,pcprx        ! ! intent(in)
 
@@ -405,7 +398,7 @@ subroutine copyback(m1,i,j,thp,btheta,rtp,dn0,micro)
 
    !----- Arguments: ----------------------------------------------------------------------!
    integer                         , intent(in)    :: m1,i,j
-   real             , dimension(m1), intent(inout) :: thp,rtp,dn0,btheta
+   real             , dimension(m1), intent(inout) :: thp,rtp,rv,btheta
    type (micro_vars)               , intent(inout) :: micro
    !----- Local variables -----------------------------------------------------------------!
    integer                                         :: k,lcat
@@ -415,9 +408,9 @@ subroutine copyback(m1,i,j,thp,btheta,rtp,dn0,micro)
   
    do k =lpw,m1-1
       thp(k)    = thil(k)
-      !btheta(k) = pottemp(k)
-      !dn0(k)    = rhoa(k)
       rtp(k)    = rtot(k)
+      rv(k)     = rvap(k)
+      btheta(k) = pottemp(k)
    end do
 
    !----- 1. Cloud ------------------------------------------------------------------------!

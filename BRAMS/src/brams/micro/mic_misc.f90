@@ -113,7 +113,7 @@ end subroutine each_call
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
+subroutine fill_thermovars(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
 
    use mem_micro, only : micro_vars ! INTENT(IN) - micro structure
 
@@ -122,16 +122,6 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
        ,availcat       & ! intent(in)
        ,progncat       & ! intent(in)
        ,jnmb           & ! intent(in)
-       ,thil           & ! intent(in)
-       ,pottemp        & ! intent(in)
-       ,press          & ! intent(in)
-       ,exner          & ! intent(in)
-       ,vertvelo       & ! intent(in)
-       ,rhoa           & ! intent(in)
-       ,rhoi           & ! intent(in)
-       ,rvap           & ! intent(in)
-       ,rtot           & ! intent(in)
-       ,totcond        & ! intent(in)
        ,rxmin          & ! intent(in)
        ,cxmin          & ! intent(in)
        ,jhcat          & ! intent(in)
@@ -143,6 +133,26 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
        ,cx             & ! intent(out)
        ,qr             & ! intent(out)
        ,qx             & ! intent(out)
+       ,sa             & ! intent(out)
+       ,thil           & ! intent(out)
+       ,pottemp        & ! intent(out)
+       ,til            & ! intent(out)
+       ,theiv          & ! intent(out)
+       ,rvstr          & ! intent(out)
+       ,tair           & ! intent(out)
+       ,tairstr        & ! intent(out)
+       ,pottemp        & ! intent(out)
+       ,qhydm          & ! intent(out)
+       ,press          & ! intent(out)
+       ,exner          & ! intent(out)
+       ,vertvelo       & ! intent(out)
+       ,rhoa           & ! intent(out)
+       ,rhoi           & ! intent(out)
+       ,rvap           & ! intent(out)
+       ,rtot           & ! intent(out)
+       ,rliq           & ! intent(out)
+       ,rice           & ! intent(out)
+       ,totcond        & ! intent(out)
        ,vap            & ! intent(out)
        ,tx             & ! intent(out)
        ,emb            & ! intent(out)
@@ -152,8 +162,8 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
        ,cccnx          & ! intent(out)
        ,cifnx          ! ! intent(out)
 
-   use rconstants, only : p00, cpi, cpor,toodry,cliq,cice,alli,t3ple,qicet3
-   use therm_lib , only : qtk
+   use rconstants, only : p00, cpi, cp, cpor,alvi,alvl
+   use therm_lib , only : qtk,thil2temp,dtempdrs,thetaeiv
 
    implicit none
 
@@ -167,26 +177,25 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
    real                                :: rhomin, frac, tcoal, fracliq
    !---------------------------------------------------------------------------------------!
 
+   !----- Finding the lowest level above ground -------------------------------------------!
+   lpw=nint(flpw)
+
    !----- Initialising the scratch structures ---------------------------------------------!
    do k=1,m1
       thil     (k) = thp   (k)
-      pottemp  (k) = btheta(k)
       exner    (k) = pi0   (k) + pp (k)
       press    (k) = p00 * (cpi * exner(k))**cpor
       vertvelo (k) = wp    (k)
       rhoa     (k) = dn0   (k)
       rhoi     (k) = 1./ rhoa(k)
       rtot     (k) = rtp   (k)
-      rvap     (k) = rv    (k)
-      totcond  (k) = 0.
+      rliq     (k) = 0.
+      rice     (k) = 0.
    end do
-
-   !----- Finding the lowest level above ground -------------------------------------------!
-   lpw=nint(flpw)
 
    !----- Zero out microphysics scratch arrays for the present i,j column -----------------!
    do lcat = 1,ncat
-      do k = 2,m1-1
+      do k = 1,m1-1
          rx(k,lcat)  = 0.
          cx(k,lcat)  = 0.
          qr(k,lcat)  = 0.
@@ -196,13 +205,13 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
       end do
 
       if (jnmb(lcat) >= 3) then
-         do k = 2,m1-1
+         do k = 1,m1-1
             emb(k,lcat) = 0.
          end do
       end if
 
       do jcat = 1,ncat
-         do k = 2,m1-1
+         do k = 1,m1-1
             rxfer (k,lcat,jcat) = 0.
             qrxfer(k,lcat,jcat) = 0.
             enxfer(k,lcat,jcat) = 0.
@@ -226,6 +235,7 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
          if (micro%rcp(k,i,j) >= rxmin(1)) then
             k2(1) = k
             rx(k,1) = micro%rcp(k,i,j)
+            rliq(k) = rliq(k) + rx(k,1)
             if (progncat(1))  cx(k,1)  = micro%ccp(k,i,j)
             if (jnmb(1) == 7) cccnx(k) = micro%cccnp(k,i,j)
          else
@@ -244,7 +254,7 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
          if (micro%rrp(k,i,j) >= rxmin(2)) then
             k2(2) = k
             rx(k,2)    = micro%rrp(k,i,j)
-            totcond(k) = totcond(k)        + rx(k,2)
+            rliq(k)    = rliq(k) + rx(k,2)
             qx(k,2)    = micro%q2(k,i,j)
             qr(k,2)    = qx(k,2) * rx(k,2)
             if (progncat(2)) cx(k,2) = micro%crp(k,i,j)
@@ -264,7 +274,7 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
          if (micro%rpp(k,i,j) >= rxmin(3)) then
             k2(3)      = k
             rx(k,3)    = micro%rpp(k,i,j)
-            totcond(k) = totcond(k) + rx(k,3)
+            rice(k)    = rice(k) + rx(k,3)
             cx(k,3)    = micro%cpp(k,i,j)
             if (jnmb(3) == 7) cifnx(k) = micro%cifnp(k,i,j)
          else
@@ -283,7 +293,7 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
          if (micro%rsp(k,i,j) >= rxmin(4)) then
             k2(4)      = k
             rx(k,4)    = micro%rsp(k,i,j)
-            totcond(k) = totcond(k) + rx(k,4)
+            rice(k)    = rice(k) + rx(k,4)
             if (progncat(4)) cx(k,4) = micro%csp(k,i,j)
          else
             if (k2(4) == 1) k1(4) = k + 1
@@ -301,7 +311,7 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
          if (micro%rap(k,i,j) >= rxmin(5)) then
             k2(5)      = k
             rx(k,5)    = micro%rap(k,i,j)
-            totcond(k) = totcond(k)       + rx(k,5)
+            rice(k)    = rice(k) + rx(k,5)
             if (progncat(5)) cx(k,5) = micro%cap(k,i,j)
          else
             if (k2(5) == 1) k1(5) = k + 1
@@ -319,8 +329,10 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
          if (micro%rgp(k,i,j) >= rxmin(6)) then
             k2(6)      = k
             rx(k,6)    = micro%rgp(k,i,j)
-            totcond(k) = totcond(k)       + rx(k,6)
             qx(k,6)    = micro%q6(k,i,j)
+            call qtk(qx(k,6),tcoal,fracliq)
+            rliq(k)    = rliq(k) + rx(k,6)*fracliq
+            rice(k)    = rice(k) + rx(k,6)*(1.-fracliq)
             qr(k,6)    = qx(k,6)          * rx(k,6)
             if (progncat(6)) cx(k,6) = micro%cgp(k,i,j)
          else
@@ -339,8 +351,10 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
          if (micro%rhp(k,i,j) >= rxmin(7)) then
             k2(7)      = k
             rx(k,7)    = micro%rhp(k,i,j)
-            totcond(k) = totcond(k)       + rx(k,7)
             qx(k,7)    = micro%q7(k,i,j)
+            call qtk(qx(k,7),tcoal,fracliq)
+            rliq(k)    = rliq(k) + rx(k,7)*fracliq
+            rice(k)    = rice(k) + rx(k,7)*(1.-fracliq)
             qr(k,7)    = qx(k,7)          * rx(k,7)
             if (progncat(7)) cx(k,7) = micro%chp(k,i,j)
          else
@@ -350,52 +364,148 @@ subroutine range_check(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
    endif
    !---------------------------------------------------------------------------------------!
 
-
-   !---------------------------------------------------------------------------------------!
-   !     Adjust condensate amounts downward if their sum exceeds rhow (this replaces       !
-   ! negadj call in subroutine timestep).                                                  !
-   !---------------------------------------------------------------------------------------!
-   negadjloop: do k = lpw,m1-1
-      totcond(k) = 1.001*totcond(k)
-      rtot(k) = max(0.,rtot(k))
-      !----- Vapour would be less than the minimum, rescale condensates -------------------!
-      if (totcond(k) > rtot(k)) then 
-         frac = rtot(k) / totcond(k)
-      !----- The setting is fine, move on -------------------------------------------------!
-      else
-         cycle negadjloop
-      end if
+   !----- Setting the limits in which hydrometeors exist ----------------------------------!
+   k3(1)  = k2(1) ! k3 saves this initial value for copyback
+   k3(3)  = k2(3) ! k3 saves this initial value for copyback
    
-      !----- Rescaling the condensates, always checking whether they are above minimum. ---!
-      totcond(k) = 0.
-      do lcat = 1,ncat
-         lhcat = jhcat(k,lcat)
-         rx(k,lcat) = rx(k,lcat) * frac
-         if (rx(k,lcat) < rxmin(lcat)) then
-           rx(k,lcat) = 0.
-           cx(k,lcat) = 0.
-         else
-            cx(k,lcat) = cx(k,lcat) * frac
-         end if
-         totcond(k) = totcond(k) + rx(k,lcat)
-      end do
-      rvap (k) = rtot(k) - totcond(k)
-   end do negadjloop
-   !---------------------------------------------------------------------------------------!
-
-
-   k3(1) = k2(1) ! k3 saves this initial value for copyback
-   k3(3) = k2(3) ! k3 saves this initial value for copyback
-   
-   k1(8) = min(k1(1),k1(2))
-   k2(8) = max(k2(1),k2(2))
-   k1(9) = min(k1(3),k1(4),k1(5),k1(6),k1(7))
-   k2(9) = max(k2(3),k2(4),k2(5),k2(6),k2(7))
+   k1(8)  = min(k1(1),k1(2))
+   k2(8)  = max(k2(1),k2(2))
+   k1(9)  = min(k1(3),k1(4),k1(5),k1(6),k1(7))
+   k2(9)  = max(k2(3),k2(4),k2(5),k2(6),k2(7))
    k1(10) = min(k1(8),k1(9))
    k2(10) = max(k2(8),k2(9))
+   
+   !---------------------------------------------------------------------------------------!
+   !    Doing a thermodynamic adjustment. Theta-il and rtp were recently updated, but the  !
+   ! other thermodynamic variables (such as theta, rvap) were not and may be off by this   !
+   ! time. Defining this values, and also the ice-vapour equivalent potential temperature, !
+   ! which will be used to update thil after precipitation (sedimentation) takes place.    !
+   !---------------------------------------------------------------------------------------!
+   do k=1,m1
+      til(k)     = thil(k) * exner(k) * cpi
+      totcond(k) = rliq(k) + rice(k)
+      rvap(k)    = rtot(k)-totcond(k)
+      rvstr(k)   = rvap(k)
+      qhydm(k)   = alvl*rliq(k) + alvi *rice(k)
+      !----- 1st guess for temperature, then temperature from theta-il and condensates. ---!
+      tcoal      = btheta(k) * exner(k) * cpi
+      tair(k)    = thil2temp(thil(k),exner(k),press(k),rliq(k),rice(k),tcoal)
+      tairstr(k) = tair(k)
+      pottemp(k) = cp * tair(k) / exner(k)
+      !----- The A1 term in Walko et al. (2000) according to the new thermodynamics. ------!
+      sa(k,1) = (-1) * dtempdrs(exner(k),thil(k),tairstr(k),rliq(k),rice(k),1.e-12)
+
+      !------------------------------------------------------------------------------------!
+      !    Ice-vapour equivalent potential temperature. This variable is conserved even    !
+      ! when sedimentation (aka rain, snow, hail, etc.) occurs. This will be used to       !
+      ! compute the new theta-il (ice-liquid potential temperature) in the end of this     !
+      ! subroutine.                                                                        !
+      !------------------------------------------------------------------------------------!
+      theiv(k)   = thetaeiv(thil(k),press(k),tair(k),rvap(k),rtot(k),.true.)
+   end do
 
    return
-end subroutine range_check
+end subroutine fill_thermovars
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine will update the temperature- and water-related variables, as the      !
+! "thermo" would do. Here we also double check the mixing ratio of all hydrometeors to     !
+! ensure they will not lead to negative vapour mixing ratio, and theta-il will be also     !
+! updated to account sedimentation.                                                        !
+!------------------------------------------------------------------------------------------!
+subroutine update_thermo(m1)
+   use micphys    , only : theiv         & ! intent(in)    
+                         , press         & ! intent(in)    
+                         , exner         & ! intent(in)    
+                         , ncat          & ! intent(in)    
+                         , lpw           & ! intent(in)    
+                         , qx            & ! intent(in)    
+                         , rxmin         & ! intent(in)    
+                         , rtot          & ! intent(inout) 
+                         , rx            & ! intent(inout) 
+                         , rvap          & ! intent(inout) 
+                         , totcond       & ! intent(out)   
+                         , rliq          & ! intent(out)   
+                         , rice          & ! intent(out)   
+                         , thil          & ! intent(out)   
+                         , pottemp       & ! intent(out)   
+                         , tair          ! ! intent(out)   
+   use therm_lib  , only : qtk           & ! subroutine    
+                         , thetaeiv2thil & ! function
+                         , thil2temp     ! ! function
+   use rconstants , only : cp            ! ! intent(in)
+   !----- Argument ------------------------------------------------------------------------!
+   integer, intent(in) :: m1
+   !----- Local variables -----------------------------------------------------------------!
+   integer             :: k,lcat
+   real                :: tcoal, fracliq
+   !---------------------------------------------------------------------------------------!
+   !     Make sure that vapour and total water are above a minimum, and rescaling mixing   !
+   ! ratio and count number if needed.                                                     !
+   !---------------------------------------------------------------------------------------!
+   totcond(:) = 0.
+   do lcat=1,ncat
+      do k = lpw,m1
+         totcond(k) = totcond(k) + rx(k,lcat)
+      end do
+   end do
+   call minvap_1d_adj(m1,lpw,m1,rtot(1:m1),rvap(1:m1),totcond(1:m1))
+
+   !---------------------------------------------------------------------------------------!
+   !    Finding the amount of ice and liquid 
+   !---------------------------------------------------------------------------------------!
+   rliq(:) = 0.
+   rice(:) = 0.
+   !----- All liquid hydrometeors ---------------------------------------------------------!
+   do lcat=1,2
+      do k = lpw,m1
+         if (rx(k,lcat) > rxmin(lcat)) rliq(k) = rliq(k) + rx(k,lcat)
+      end do
+   end do
+   !----- All ice hydrometeors ------------------------------------------------------------!
+   do lcat=3,5
+      do k = lpw,m1
+         if (rx(k,lcat) > rxmin(lcat)) rice(k) = rice(k) + rx(k,lcat)
+      end do
+   end do
+   !----- Mixed phase hydrometeors --------------------------------------------------------!
+   do lcat=6,7
+      do k = lpw,m1
+         if (rx(k,lcat) > rxmin(lcat)) then
+            call qtk(qx(k,lcat),tcoal,fracliq)
+            rliq(k) = rliq(k) + rx(k,lcat)*fracliq
+            rice(k) = rice(k) + rx(k,lcat)*(1.-fracliq)
+         end if
+      end do
+   end do
+
+   !---------------------------------------------------------------------------------------!
+   !    Theta-E_iv is conserved even with sedimentation. Note this is not exactly the same !
+   ! variable as Tripoli and Cotton (1981). Their theta-E_iv is more like a saturation     !
+   ! value, so it is not conserved in saturated processes in case sedimentation occurs.    !
+   ! This one is based on the saturation point, so in principle this should be conserved   !
+   ! even in precipitation events. The only possible caveat is with mixed phases and       !
+   ! supercooled water, but I think it should be okay as long as they exist only in excess !
+   ! of saturation.                                                                        !
+   !    After thil is updated, we also update the potential temperature because it is used !
+   ! in the acoustic time step.                                                            !
+   !---------------------------------------------------------------------------------------!
+   do k = lpw,m1
+      thil(k)    = thetaeiv2thil(theiv(k),press(k),rtot(k),.true.)
+      tair(k)    = thil2temp(thil(k),exner(k),press(k),rliq(k),rice(k),tair(k))
+      pottemp(k) = cp * tair(k) / exner(k)
+   end do
+
+   return
+end subroutine update_thermo
 !==========================================================================================!
 !==========================================================================================!
 
@@ -941,7 +1051,6 @@ end subroutine pc03
 subroutine sedim(m1,lcat,if_adap,mynum,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,pcpfillr,sfcpcp,dzt)
 
    use rconstants, only : cpi,ttripoli,alvl,alvi,alli,cp  ! intent(in)
-   use therm_lib , only : dthil_sedimentation,qtk
    use micphys   , only : &
            k1             & ! intent(in   )
           ,k2             & ! intent(in   )
@@ -972,7 +1081,6 @@ subroutine sedim(m1,lcat,if_adap,mynum,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,pcpfillr,
           ,cxmin          & ! intent(inout)
           ,qx             & ! intent(inout)
           ,qr             & ! intent(inout)
-          ,dsed_thil      & ! intent(inout)
           ,cfall          & ! intent(  out)
           ,rfall          & ! intent(  out)
           ,qrfall         & ! intent(  out)
@@ -992,7 +1100,7 @@ subroutine sedim(m1,lcat,if_adap,mynum,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,pcpfillr,
    real                                       , intent(inout) :: pcpg, qpcpg, dpcpg
    !----- Local Variables -----------------------------------------------------------------!
    integer :: k,lhcat,iemb,iemb2,kkf,kk,jcat,ee
-   real    :: dispemb,riemb,wt2,psfc,qfall
+   real    :: dispemb,riemb,wt2,psfc
    real    :: tcoal,fracliq,dqlat,coldrhoa,roldrhoa,qroldrhoa
    !---------------------------------------------------------------------------------------!
 
@@ -1057,19 +1165,9 @@ subroutine sedim(m1,lcat,if_adap,mynum,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,pcpfillr,
    do k = lpw,k2(lcat) ! From RAMS 6.0
       rtot(k) = rtot(k) + rfall(k) - rx(k,lcat)
 
-      qfall = qrfall(k) / max(1.e-20, rfall(k))
-
-
-      !----- I guess this is already computed, but I don't want trouble... ----------------!
-      qr(k,lcat) = qx(k,lcat) * rx(k,lcat) 
-
-      dsed_thil(k)   = dsed_thil(k)                                                        &
-                     + dthil_sedimentation(thil(k),pottemp(k),tair(k),rx(k,lcat),rfall(k)  &
-                                          ,qr(k,lcat),qrfall(k))
-
       rx(k,lcat) = rfall(k)
       cx(k,lcat) = cfall(k)
-      qx(k,lcat) = qfall
+      qx(k,lcat) = qrfall(k) / max(1.e-20, rfall(k))
 
 
       if (rx(k,lcat) < rxmin(lcat)) then
@@ -1151,11 +1249,7 @@ subroutine adj1(m1,m2,m3,ia,iz,ja,jz,flpw,rv,rtp,dn0,micro)
           ,availcat        ! ! intent(in)
 
    use mem_scratch, only : &
-           vctr6           & ! intent(out)
-          ,vctr9           & ! intent(out)
-          ,vctr11          & ! intent(out)
-          ,vctr21          & ! intent(out)
-          ,vctr37          ! ! intent(out)
+           vctr6           ! ! intent(out)
 
    use rconstants , only : &
            toodry          ! ! intent(in)
@@ -1226,68 +1320,25 @@ subroutine adj1(m1,m2,m3,ia,iz,ja,jz,flpw,rv,rtp,dn0,micro)
                end if
             end do
          end do
-         
          !---------------------------------------------------------------------------------!
-         ! 4. This is somewhat a sanity check. We don't want rtp to be zero or too small,  !
-         !    so we fix the minimum possible to be the "toodry" variable. Here we check    !
-         !    this and also sum all hydrometeors, and check whether this amount of hydro-  !
-         !    meteors can exist. Not only rtp must be >= toodry, vapour mixing ratio       !
-         !    should also be. If these criteria are not met, then we scale down the hydro- !
-         !    meteor mixing ratio and make them consistent.                                !
+         ! 4. Finding the total condensate mixing ratio.                                   !
          !---------------------------------------------------------------------------------!
-         do k = ka,m1
-            rtp(k,i,j) = max(0.,rtp(k,i,j))
-            !----- vctr9 is the total condensed mixing ratio ------------------------------!
-            vctr9(k)   = 1.001*sum(rx(k,1:7))
-            !----- vctr6 is the temporary vapour mixing ratio -----------------------------!
-            vctr6(k)   = rtp(k,i,j)-vctr9(k)
-         enddo
+         vctr6(:) = 0.
+         do lcat=1,ncat
+            do k = ka,m1
+               vctr6(k) = vctr6(k) + rx(k,lcat)
+            end do
+         end do
 
          !---------------------------------------------------------------------------------!
          ! 5. Check whether the condensates would make either rtp or rv fall below toodry. !
-         !    If needed, rescale the condensate mixing ratio. vctr37(k) has the rescaling  !
-         !    factor that will then be used to rescale the concentration in case the run   !
-         !    is prognostic.                                                               !
+         !    If needed, rescale the condensate mixing ratio. rx and cx will be updated    !
+         !    as needed inside this subroutine.                                            !
          !---------------------------------------------------------------------------------!
-         scaleloop: do k = ka,m1
-            !----- a. This is as dry as it can be, no condensation allowed ----------------!
-            if (rtp(k,i,j) == 0.) then
-               vctr37(k) = 0.
-            !----- b. rv would be too small, rescale it. vctr37 is the scaling factor -----!
-            else if (vctr6(k) < 0.) then
-               vctr37(k) = rtp(k,i,j)/vctr9(k)
-            !----- c. Good combination, keep it. ------------------------------------------!
-            else
-               vctr37(k) = 1.0
-               cycle scaleloop
-            end if
-            !----- d. Rescale rx, and check if it is still more than rxmin ----------------!
-            do lcat = 1,ncat
-               rx(k,lcat) = rx(k,lcat) * vctr37(k)
-               if (progncat(lcat)) cx(k,lcat) = cx(k,lcat) * vctr37(k)
-               if (rx(k,lcat) < rxmin(lcat)) then
-                  rx(k,lcat) = 0.
-                  if(progncat(lcat)) cx(k,lcat) = 0.
-               end if
-            end do
-         end do scaleloop
-         
-         !---------------------------------------------------------------------------------!
-         ! 6. Make sure that the total mixing ratio is the actual total                    !
-         !---------------------------------------------------------------------------------!
-         do k=ka,m1
-            !----- vctr21 is the new condensed mixing ratio -------------------------------!
-            vctr21(k) = 0.
-            do lcat = 1,ncat
-               vctr21(k) = vctr21(k) + rx(k,lcat)
-            end do
-            rv(k,i,j) = max(0.,rtp(k,i,j) - vctr21(k))
-         end do
-         !---------------------------------------------------------------------------------!
-
+         call minvap_1d_adj(m1,ka,m1,rtp(1:m1,i,j),rv(1:m1,i,j),vctr6(1:m1))
 
          !---------------------------------------------------------------------------------!
-         ! 7. Copy back to the original structures.                                        !
+         ! 6. Copy back to the original structures.                                        !
          !---------------------------------------------------------------------------------!
          do k=ka,m1
             !----- 1. Cloud ---------------------------------------------------------------!
@@ -1316,5 +1367,63 @@ subroutine adj1(m1,m2,m3,ia,iz,ja,jz,flpw,rv,rtp,dn0,micro)
   end do
   return
 end subroutine adj1
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This is somewhat a sanity check. We don't want rtp to be zero or too small, so we fix !
+! the minimum possible to be the "toodry" variable. Here we check this and also sum all    !
+! hydrometeors, and check whether this amount of hydrometeors can exist. Not only rtp must !
+! be >= toodry, vapour mixing ratio should also be. If these criteria are not met, then we !
+! scale down the hydrometeor mixing ratio and count number.                                !
+!------------------------------------------------------------------------------------------!
+subroutine minvap_1d_adj(m1,ka,kz,rtot,rvap,totcond)
+   use micphys    , only : rx     & ! intent(inout)
+                         , cx     & ! intent(inout)
+                         , rxmin  & ! intent(inout)
+                         , ncat   ! ! intent(in)
+   use rconstants , only : toodry ! ! intent(in)
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   integer               , intent(in)    :: m1,ka,kz
+   real   , dimension(m1), intent(inout) :: rtot,totcond,rvap
+   !----- Local Variables -----------------------------------------------------------------!
+   integer :: k,lcat
+   real    :: frac
+   !---------------------------------------------------------------------------------------!
+
+   negadjloop: do k = ka,kz
+      rtot(k) = max(toodry,rtot(k))
+      if (rtot(k) == toodry) then
+         frac    = 0.
+      elseif (rtot(k) - totcond(k) <= toodry) then
+         frac    = max(0., min(1.,(rtot(k)-toodry)/max(1.e-20,totcond(k)) ) )
+      else
+         rvap (k) = rtot(k) - totcond(k)
+         cycle negadjloop
+      end if
+      !----- Rescaling the condensates, always checking whether they are above minimum. ---!
+      totcond(k) = 0.
+      do lcat = 1,ncat
+         rx(k,lcat) = rx(k,lcat) * frac
+         if (rx(k,lcat) < rxmin(lcat)) then
+           rx(k,lcat) = 0.
+           cx(k,lcat) = 0.
+         else
+            cx(k,lcat) = cx(k,lcat) * frac
+         end if
+         totcond(k) = totcond(k) + rx(k,lcat)
+      end do
+      rvap (k) = rtot(k) - totcond(k)
+   end do negadjloop
+
+   return
+end subroutine minvap_1d_adj
 !==========================================================================================!
 !==========================================================================================!

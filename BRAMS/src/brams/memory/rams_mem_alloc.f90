@@ -519,9 +519,9 @@ subroutine rams_mem_alloc(proc_type)
    !---------------------------------------------------------------------------------------!
    call nullify_scratch()
    write (unit=*,fmt=*) ' [+] Scratch allocation on node ',mynum,'...'
-   call alloc_scratch(nmzp,nmxp,nmyp,nnzp,nnxp,nnyp,ngrids,nzg,nzs,npatch,nclouds          &
-                     ,proc_type,maxnxp,maxnyp,maxnzp)
-   call filltab_scratch()
+   call alloc_scratch(ngrids,nmzp(1:ngrids),nmxp(1:ngrids),nmyp(1:ngrids)                  &
+                            ,nnzp(1:ngrids),nnxp(1:ngrids),nnyp(1:ngrids)                  &
+                            ,nzg,nzs,npatch,nclouds,maxnxp,maxnyp,maxnzp)
    !---------------------------------------------------------------------------------------!
 
 

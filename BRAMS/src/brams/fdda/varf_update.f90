@@ -165,7 +165,7 @@ if(initflag == 1 .and. ngrid == 1)  &
          ,grid_g(ngrid)%topt           , grid_g(ngrid)%topu      &
          ,grid_g(ngrid)%topv           , grid_g(ngrid)%rtgt      &
          ,grid_g(ngrid)%rtgu           , grid_g(ngrid)%rtgv      &
-         ,grid_g(ngrid)%topta          , level                   )
+         ,grid_g(ngrid)%topta          )
 
 varinit_g(ngrid)%varpf(1:nzp,1:nxp,1:nyp)=  &
            varinit_g(ngrid)%varpf(1:nzp,1:nxp,1:nyp)  &
@@ -247,16 +247,16 @@ end
 !     **************************************************************
 
 subroutine varref(n1,n2,n3,thp,pc,pi0,th0,rtp,dn0,dn0u,dn0v,uc  &
-                 ,vc,topt,topu,topv,rtgt,rtgu,rtgv,topta,level)
+                 ,vc,topt,topu,topv,rtgt,rtgu,rtgv,topta)
 
 use mem_grid
 use ref_sounding
 use mem_scratch
 use rconstants
-use therm_lib, only: virtt
+use therm_lib, only: virtt,vapour_on
                  
 implicit none
-integer :: n1,n2,n3,level          
+integer :: n1,n2,n3
 real :: thp(n1,n2,n3),pc(n1,n2,n3),pi0(n1,n2,n3)  &
          ,rtp(n1,n2,n3),dn0(n1,n2,n3)  &
          ,dn0u(n1,n2,n3),dn0v(n1,n2,n3)  &
@@ -287,7 +287,7 @@ if (if_adap == 0) then
    call htint2(nzp,thp(:,iref,jref),vctr2,nzp,vctr1,zt)
    call htint2(nzp,uc (:,iref,jref),vctr2,nzp,u01dn(:,ngrid),zt)
    call htint2(nzp,vc (:,iref,jref),vctr2,nzp,v01dn(:,ngrid),zt)
-   if (level >= 1) then
+   if (vapour_on) then
       call htint2(nzp,rtp(:,iref,jref),vctr2,nzp,rt01dn(:,ngrid),zt)
    else
       rt01dn(1:nzp,ngrid) = 0.
@@ -297,9 +297,12 @@ else
    vctr1(1:nzp)  =thp(1:nzp,iref,jref)
    u01dn(1:nzp,ngrid)=uc(1:nzp,iref,jref)
    v01dn(1:nzp,ngrid)=vc(1:nzp,iref,jref)
-   rt01dn(1:nzp,ngrid) = 0.
-   if (level >= 1) rt01dn(1:nzp,ngrid)=rtp(1:nzp,iref,jref)
-endif
+   if (vapour_on) then
+      rt01dn(1:nzp,ngrid)=rtp(1:nzp,iref,jref)
+   else
+      rt01dn(1:nzp,ngrid) = 0.
+   end if
+end if
 
 
 do k = 1,nzp

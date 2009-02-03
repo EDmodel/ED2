@@ -24,6 +24,15 @@ subroutine exevolve(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,key)
   !---- Local variables -------------------------------------------------------------------!
   integer :: i,j,k
 
+  call azero2(m1*m2*m3,scratch%vt3dp,scratch%vt3dq)
+  if (vapour_on) then
+     !----- If water is allowed, copy them to scratch arrays ------------------------------!
+     call atob(m1*m2*m3,basic_g(ifm)%rtp,scratch%vt3dp)
+     call atob(m1*m2*m3,basic_g(ifm)%rv,scratch%vt3dq)
+  end if
+
+
+
   select case (trim(key))
   case ('ADV')
      ! Initialization
@@ -50,75 +59,35 @@ subroutine exevolve(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,key)
          ,grid_g(ifm)%f13t         ,grid_g(ifm)%f23t           &
          ,grid_g(ifm)%fmapt        ,grid_g(ifm)%fmapui         &
          ,grid_g(ifm)%fmapvi       )
-     ! Put theta_v from last timestep into memory
-     if (vapour_on) then
-        call fill_thvlast(m1,m2,m3,ia,iz,ja,jz           &
-            ,mass_g(ifm)%thvlast  ,basic_g(ifm)%theta    &
-            ,basic_g(ifm)%rtp     ,basic_g(ifm)%rv       )
-     else
-        !MLO - If this is a dry run, then send a dummy array of zeroes to avoid
-        !      segmentation violation.
-        call azero(m1*m2*m3,scratch%vt3dq)
-        call fill_thvlast(m1,m2,m3,ia,iz,ja,jz           &
-            ,mass_g(ifm)%thvlast  ,basic_g(ifm)%theta    &
-            ,scratch%vt3dq         ,scratch%vt3dq        )
-     end if
+     !----- Put theta_v from last timestep into memory ------------------------------------!
+     call fill_thvlast(m1,m2,m3,ia,iz,ja,jz                    &
+            ,mass_g(ifm)%thvlast  ,basic_g(ifm)%theta          &
+            ,scratch%vt3dp         ,scratch%vt3dq              )
      
   case ('THA')
-     if (vapour_on) then
-        call advect_theta(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt   &
-            ,basic_g(ifm)%up              ,basic_g(ifm)%uc              &
-            ,basic_g(ifm)%vp              ,basic_g(ifm)%vc              &
-            ,basic_g(ifm)%wp              ,basic_g(ifm)%wc              &
-            ,basic_g(ifm)%pi0             ,basic_g(ifm)%pc              &
-            ,tend%pt                      ,basic_g(ifm)%theta           &
-            ,basic_g(ifm)%rtp             ,basic_g(ifm)%rv              &
-            ,basic_g(ifm)%dn0             ,basic_g(ifm)%dn0u            &
-            ,basic_g(ifm)%dn0v            ,grid_g(ifm)%rtgt             &
-            ,grid_g(ifm)%rtgu             ,grid_g(ifm)%rtgv             &
-            ,grid_g(ifm)%fmapt            ,grid_g(ifm)%fmapui           &
-            ,grid_g(ifm)%fmapvi           ,grid_g(ifm)%f13t             &
-            ,grid_g(ifm)%f23t             ,grid_g(ifm)%dxu              &
-            ,grid_g(ifm)%dyv              ,grid_g(ifm)%dxt              &
-            ,grid_g(ifm)%dyt              ,mass_g(ifm)%thvadv           &
-            ,mass_g(ifm)%thetav           )
-
-     else
-        call azero(m1*m2*m3,scratch%vt3dq)
-        call advect_theta(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt   &
-            ,basic_g(ifm)%up              ,basic_g(ifm)%uc              &
-            ,basic_g(ifm)%vp              ,basic_g(ifm)%vc              &
-            ,basic_g(ifm)%wp              ,basic_g(ifm)%wc              &
-            ,basic_g(ifm)%pi0             ,basic_g(ifm)%pc              &
-            ,tend%pt                      ,basic_g(ifm)%theta           &
-            ,scratch%vt3dq                ,scratch%vt3dq                &
-            ,basic_g(ifm)%dn0             ,basic_g(ifm)%dn0u            &
-            ,basic_g(ifm)%dn0v            ,grid_g(ifm)%rtgt             &
-            ,grid_g(ifm)%rtgu             ,grid_g(ifm)%rtgv             &
-            ,grid_g(ifm)%fmapt            ,grid_g(ifm)%fmapui           &
-            ,grid_g(ifm)%fmapvi           ,grid_g(ifm)%f13t             &
-            ,grid_g(ifm)%f23t             ,grid_g(ifm)%dxu              &
-            ,grid_g(ifm)%dyv              ,grid_g(ifm)%dxt              &
-            ,grid_g(ifm)%dyt              ,mass_g(ifm)%thvadv           &
-            ,mass_g(ifm)%thetav           )
-
-    end if
+     call advect_theta(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt   &
+         ,basic_g(ifm)%up              ,basic_g(ifm)%uc              &
+         ,basic_g(ifm)%vp              ,basic_g(ifm)%vc              &
+         ,basic_g(ifm)%wp              ,basic_g(ifm)%wc              &
+         ,basic_g(ifm)%pi0             ,basic_g(ifm)%pc              &
+         ,tend%pt                      ,basic_g(ifm)%theta           &
+         ,scratch%vt3dp                ,scratch%vt3dq                &
+         ,basic_g(ifm)%dn0             ,basic_g(ifm)%dn0u            &
+         ,basic_g(ifm)%dn0v            ,grid_g(ifm)%rtgt             &
+         ,grid_g(ifm)%rtgu             ,grid_g(ifm)%rtgv             &
+         ,grid_g(ifm)%fmapt            ,grid_g(ifm)%fmapui           &
+         ,grid_g(ifm)%fmapvi           ,grid_g(ifm)%f13t             &
+         ,grid_g(ifm)%f23t             ,grid_g(ifm)%dxu              &
+         ,grid_g(ifm)%dyv              ,grid_g(ifm)%dxt              &
+         ,grid_g(ifm)%dyt              ,mass_g(ifm)%thvadv           &
+         ,mass_g(ifm)%thetav           )
     
   case ('THS')
-     if (vapour_on) then
-        call storage_theta(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,mynum,edt   &
-            ,basic_g(ifm)%pi0             ,basic_g(ifm)%pc              &
-            ,basic_g(ifm)%rtp             ,basic_g(ifm)%rv              &
-            ,basic_g(ifm)%theta           ,mass_g(ifm)%thvlast          &
-            ,mass_g(ifm)%thvtend          ,tend%pt                      )
-     else
-        call azero(m1*m2*m3,scratch%vt3dq)
-        call storage_theta(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,mynum,edt   &
-            ,basic_g(ifm)%pi0             ,basic_g(ifm)%pc              &
-            ,scratch%vt3dq                ,scratch%vt3dq                &
-            ,basic_g(ifm)%theta           ,mass_g(ifm)%thvlast          &
-            ,mass_g(ifm)%thvtend          ,tend%pt                      )
-     end if
+     call storage_theta(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,mynum,edt      &
+         ,basic_g(ifm)%pi0             ,basic_g(ifm)%pc                 &
+         ,scratch%vt3dp                ,scratch%vt3dq                   &
+         ,basic_g(ifm)%theta           ,mass_g(ifm)%thvlast             &
+         ,mass_g(ifm)%thvtend          ,tend%pt                         )
   case default
      call abort_run('Unexpected key'//trim(key)//'!!!'                  &
                    ,'exevolve','rexev.f90')

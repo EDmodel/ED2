@@ -107,7 +107,7 @@ module micphys
    real, dimension(nzpmax)             :: colfacr2,colfacc,colfacc2,sumuy,sumuz,sumvr
    real, dimension(nzpmax)             :: scrmic1,scrmic2,scrmic3,cccnx,cifnx
    real, dimension(nzpmax)             :: dsed_thil,totcond,thil,pottemp,vertvelo,rloss
-   real, dimension(nzpmax)             :: enloss,rfall,cfall,qrfall
+   real, dimension(nzpmax)             :: enloss,rfall,cfall,qrfall,theiv
    real, dimension(nzpmax,ncat)        :: rx,cx,qr,qx,tx,emb,vterm,vap,ttest,wct1
    real, dimension(nzpmax,ncat)        :: wct2,sb,sd,se,sf,sg,sh,sm,ss,su,sw,sy,sz
 

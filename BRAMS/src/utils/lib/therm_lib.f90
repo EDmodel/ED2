@@ -2220,6 +2220,13 @@ module therm_lib
                if (zside) exit zgssloop
             end do zgssloop
             if (.not. zside)                                                               &
+               write (unit=*,fmt='(a)') ' No second guess for you...'
+               write (unit=*,fmt='(2(a,1x,i14,1x))')    'itn   =',itn   ,'itb   =',itb
+               write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'theiv =',theiv ,'rtot  =',rtot
+               write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'pres  =',pres  ,'pvap  =',pvap
+               write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'theta =',theta ,'delta =',delta
+               write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tlcla =',tlcla ,'funa  =',funa
+               write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tlclz =',tlclz ,'funz  =',funz
                call abort_run('Failed finding the second guess for regula falsi'           &
                              ,'thetaeiv2thil','rthrm.f90')
          end if

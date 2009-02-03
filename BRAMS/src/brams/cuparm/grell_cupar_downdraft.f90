@@ -460,7 +460,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,mentrd_rate,cdd,p_cup
          qtotdp = qtotda
          funp   = funa
          !------ Finding the current guess ------------------------------------------------!
-         qtotdc = qtotd_0_evap - 0.5 * evapd_cld(k) * denomini
+         qtotdc = max(toodry,qtotd_0_evap - 0.5 * evapd_cld(k) * denomini)
          thild_cld(k) = thetaeiv2thil(theivd_cld(k),p_cup(k),qtotdc)
          call thil2tqall(thild_cld(k),exner_cup(k),p_cup(k),qtotdc,qliqd_cld(k)            &
                         ,qiced_cld(k),td_cld(k),qvapd_cld(k),qsatd_cld(k))

@@ -1169,7 +1169,9 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
                wtold  = 1.0
                if (kold > nlayers) exit find_layer
             else
-               newsfcw_energy(k) = newsfcw_energy(k) + wtnew * initp%sfcwater_energy(kold)
+               newsfcw_energy(k) = newsfcw_energy(k) + wtnew * newsfcw_mass(k)             &
+                                 * initp%sfcwater_energy(kold)                             &
+                                 / max(min_sfcwater_mass,initp%sfcwater_mass(kold))
                newsfcw_depth(k)  = newsfcw_depth(k)  + wtnew * newsfcw_mass(k)             &
                                  * initp%sfcwater_depth(kold)                              &
                                  / max(min_sfcwater_mass,initp%sfcwater_mass(kold))

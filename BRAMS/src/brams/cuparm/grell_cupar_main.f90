@@ -104,7 +104,7 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
       ,qiceu_cld    & ! intent(out) - Updraft ice mixing ratio                    [  kg/kg]
       ,wbuoymin     ! ! intent(out) - Minimum buoyant vertical velocity           [    m/s]
 
-   use rconstants, only: cp,cpi,alvl,alvi,ep,epi,rgas,g,ttripoli,t3ple,day_sec
+   use rconstants, only: cp,cpi,alvl,alvi,ep,epi,rgas,g,ttripoli,t3ple,day_sec,toodry
 
    implicit none
    
@@ -920,7 +920,7 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
             !------------------------------------------------------------------------------!
             do k=1,mkx-1
                x_theiv(k) = theiv(k)          + mbprime*dtime * dellatheiv_eff(k,iedt,icap)
-               x_qtot(k)  = max(1.e-8,qtot(k) + mbprime*dtime * dellaqtot_eff(k,iedt,icap))
+               x_qtot(k)  = max(toodry,qtot(k)+ mbprime*dtime * dellaqtot_eff(k,iedt,icap))
                x_thil(k)  = thil(k)           + mbprime*dtime * dellathil_eff(k,iedt,icap)
             end do
             !----- Boundary condition at mkx, just use environment ------------------------!

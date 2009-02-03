@@ -149,7 +149,8 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
                                    , rk4patchtype         ! ! structure
    use ed_therm_lib         , only : ed_grndvap           ! ! subroutine
    use therm_lib            , only : qtk                  & ! subroutine
-                                   , qwtk                 ! ! subroutine
+                                   , qwtk                 & ! subroutine
+                                   , qwtk8                ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype)  , target     :: initp         ! RK4 structure, intermediate step
@@ -277,6 +278,25 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
                   ,initp%can_shv,initp%ground_shv,initp%surface_ssh,surface_temp           &
                   ,surface_fliq)
 
+   !---------------------------------------------------------------------------------------!
+   !    It may be redundant, but calculating soil temperature and fraction of liquid water !
+   ! again.                                                                                !
+   !---------------------------------------------------------------------------------------!
+   initp%soil_tempk(:)       = t3ple
+   initp%soil_fracliq(:)     = 0.0
+   initp%sfcwater_tempk(:)   = t3ple
+   initp%sfcwater_fracliq(:) = 0.0
+   do k = lsl,nzg
+      nsoil = csite%ntext_soil(k,ipa)
+      call qwtk8(initp%soil_energy(k),initp%soil_water(k)*dble(wdns),soil(nsoil)%slcpd     &
+                ,initp%soil_tempk(k),initp%soil_fracliq(k))
+   end do
+   do k = 1,ksn
+      if (initp%sfcwater_mass(k) > min_sfcwater_mass) then
+         call qtk(initp%sfcwater_energy(k)/initp%sfcwater_mass(k),initp%sfcwater_tempk(k)  &
+                 ,initp%sfcwater_fracliq(k))
+      end if
+   end do
 
    !---------------------------------------------------------------------------------------!
    !     Calculate water available to vegetation (in meters). SLZ is specified in RAMSIN.  !

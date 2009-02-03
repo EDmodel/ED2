@@ -219,8 +219,9 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz  &
 
    ! Update water internal energy from time-dependent SST
 
-         leaf%soil_energy(mzg,i,j,1) =  cliq * (leaf%seatp(i,j) - tsupercool               & 
-                                     + (leaf%seatf(i,j) - leaf%seatp(i,j)) * timefac_sst)
+         leaf%soil_energy(mzg,i,j,1) =  cliq * (leaf%seatp(i,j)                            &
+                                     + (leaf%seatf(i,j) - leaf%seatp(i,j)) * timefac_sst   &
+                                     - tsupercool)
 
    ! Fill surface precipitation arrays for input to leaf
 
@@ -731,12 +732,12 @@ subroutine leaftw(mzg,mzs,np  &
             tempk(mzg)       = tempk(k+mzg)
             fracliq(mzg)     = fracliq(k+mzg)
             soil_energy(mzg) = (qwt - qw) * dslzi(mzg)
-         elseif (w > 0.) then
+         elseif (w > 1.e-9) then
             call qtk(qw/w,tempk(k+mzg),fracliq(k+mzg))
          else
             !----- Putting anything, this shouldn't be used -------------------------------!
-            tempk(k+mzg)   = t3ple
-            fracliq(k+mzg) = 0.
+            tempk(k+mzg)   = tempk(mzg)
+            fracliq(k+mzg) = fracliq(mzg)
          end if
 
          !---------------------------------------------------------------------------------!
@@ -790,8 +791,7 @@ subroutine leaftw(mzg,mzs,np  &
          snowmin = 3.0
          newlayers = 1
          do k = 2,mzs
-            if (snowmin * thicknet(k) <= totsnow .and. sfcwater_energy(k) < qliqt3)   &
-            then
+            if (snowmin * thicknet(k) <= totsnow .and. sfcwater_energy(k) < qliqt3) then
                newlayers = newlayers + 1
             end if
          end do

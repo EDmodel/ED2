@@ -71,15 +71,15 @@ subroutine thermo(mzp,mxp,myp,ia,iz,ja,jz)
        availcat           ! ! intent(in) - Flag: the hydrometeor is available [T|F]
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer, intent(in)  :: mzp   ! # of points in Z                               [   ----]
-   integer, intent(in)  :: mxp   ! # of points in X                               [   ----]
-   integer, intent(in)  :: myp   ! # of points in Y                               [   ----]
-   integer, intent(in)  :: ia    ! Node Western edge                              [   ----]
-   integer, intent(in)  :: iz    ! Node Eastern edge                              [   ----]
-   integer, intent(in)  :: ja    ! Node Southern edge                             [   ----]
-   integer, intent(in)  :: jz    ! Node Northern edge                             [   ----]
+   integer, intent(in)  :: mzp    ! # of points in Z                              [   ----]
+   integer, intent(in)  :: mxp    ! # of points in X                              [   ----]
+   integer, intent(in)  :: myp    ! # of points in Y                              [   ----]
+   integer, intent(in)  :: ia     ! Node Western edge                             [   ----]
+   integer, intent(in)  :: iz     ! Node Eastern edge                             [   ----]
+   integer, intent(in)  :: ja     ! Node Southern edge                            [   ----]
+   integer, intent(in)  :: jz     ! Node Northern edge                            [   ----]
    !----- Local variables -----------------------------------------------------------------!
-   integer              :: mzxyp ! # of points                                    [   ----]
+   integer              :: mzxyp  ! # of points                                   [   ----]
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -87,12 +87,16 @@ subroutine thermo(mzp,mxp,myp,ia,iz,ja,jz)
    ! how many phases H20 will be allowed to exist).                                        !
    !---------------------------------------------------------------------------------------!
    select case (level)
+   case (0)
+   !----- No water substance, copying theta-il to theta. ----------------------------------!
+      call drythrm(mzp,mxp,myp,ia,iz,ja,jz                                                 &
+           ,basic_g(ngrid)%thp                     ,basic_g(ngrid)%theta                   )
+
    !----- No condensation, if super-saturation happens, then it will be supersaturated... -!
    case (1)
-      call drythrm(mzp,mxp,myp,ia,iz,ja,jz                                                 &
+      call vapthrm(mzp,mxp,myp,ia,iz,ja,jz                                                 &
            ,basic_g(ngrid)%thp                     ,basic_g(ngrid)%theta                   &
-           ,basic_g(ngrid)%rtp                     ,basic_g(ngrid)%rv                      &
-           ,level                                  )
+           ,basic_g(ngrid)%rtp                     ,basic_g(ngrid)%rv                      )
 
    !----- Liquid phase only: cloud droplets can develop, but no ice -----------------------!
    case (2)
@@ -150,7 +154,7 @@ end subroutine thermo
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine drythrm(m1,m2,m3,ia,iz,ja,jz,thil,theta,rt,rv,level)
+subroutine drythrm(m1,m2,m3,ia,iz,ja,jz,thil,theta)
   !----------------------------------------------------------------------------------------!
   !    This routine calculates theta and rv for the case where no condensate is allowed.   !
   !----------------------------------------------------------------------------------------!
@@ -160,7 +164,45 @@ subroutine drythrm(m1,m2,m3,ia,iz,ja,jz,thil,theta,rt,rv,level)
    integer                  , intent(in)    :: m1,m2,m3 ! Grid dimensions          [  ----]
    integer                  , intent(in)    :: ia,iz    ! Lateral boundaries       [  ----]
    integer                  , intent(in)    :: ja,jz    ! Lateral boundaries       [  ----]
-   integer                  , intent(in)    :: level    ! # of H2O phases          [  ----]
+   real, dimension(m1,m2,m3), intent(in)    :: thil     ! Ice-liquid pot. temper.  [     K]
+   real, dimension(m1,m2,m3), intent(inout) :: theta    ! Potential temperature    [     K]
+   !----- Local Variables -----------------------------------------------------------------!
+   integer                                  :: i,j,k    ! Counters
+   !---------------------------------------------------------------------------------------!
+  
+   !---------------------------------------------------------------------------------------!
+   !   Here it's just a matter of copying the "potentially wet" variables to the dry ones, !
+   ! they are all the same...                                                              !
+   !---------------------------------------------------------------------------------------!
+   do j = ja,jz
+      do i = ia,iz
+         do k = 1,m1
+            theta(k,i,j) = thil(k,i,j)
+         end do
+      end do
+   end do
+   return
+end subroutine drythrm
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine vapthrm(m1,m2,m3,ia,iz,ja,jz,thil,theta,rt,rv)
+  !----------------------------------------------------------------------------------------!
+  !    This routine calculates theta and rv for the case where no condensate is allowed.   !
+  !----------------------------------------------------------------------------------------!
+
+   implicit none
+   !----- Arguments: ----------------------------------------------------------------------!
+   integer                  , intent(in)    :: m1,m2,m3 ! Grid dimensions          [  ----]
+   integer                  , intent(in)    :: ia,iz    ! Lateral boundaries       [  ----]
+   integer                  , intent(in)    :: ja,jz    ! Lateral boundaries       [  ----]
    real, dimension(m1,m2,m3), intent(in)    :: thil     ! Ice-liquid pot. temper.  [     K]
    real, dimension(m1,m2,m3), intent(in)    :: rt       ! Total mixing ratio       [ kg/kg]
    real, dimension(m1,m2,m3), intent(inout) :: theta    ! Potential temperature    [     K]
@@ -177,16 +219,12 @@ subroutine drythrm(m1,m2,m3,ia,iz,ja,jz,thil,theta,rt,rv,level)
       do i = ia,iz
          do k = 1,m1
             theta(k,i,j) = thil(k,i,j)
+            rv(k,i,j)    = rt(k,i,j)
          end do
-         if (level == 1) then
-            do k = 1,m1
-               rv(k,i,j) = rt(k,i,j)
-            end do
-         end if
       end do
    end do
    return
-end subroutine drythrm
+end subroutine vapthrm
 !==========================================================================================!
 !==========================================================================================!
 
