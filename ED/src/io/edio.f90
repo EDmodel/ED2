@@ -48,8 +48,10 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
     
      !  Write out analysis fields - mostly polygon averages
      if (ifoutput.eq.3) then
-        call h5_output('INST')
+!       call h5_output('INST')
+        call h5_output('OPTI')
      endif
+
      
      ! If printpolys is on then print this info to
      ! the screen

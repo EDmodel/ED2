@@ -5698,7 +5698,7 @@ contains
     if (associated(cgrid%avg_vapor_ac)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_vapor_ac(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_VAPOR_AC :11:hist:anal:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'AVG_VAPOR_AC :11:hist:anal:opti:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon averaged latent heat flux from atmosphere to canopy air','[W/m2]','ipoly') 
     endif
     
@@ -5782,7 +5782,7 @@ contains
     if (associated(cgrid%avg_sensible_ac)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_sensible_ac(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_SENSIBLE_AC :11:hist:anal:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'AVG_SENSIBLE_AC :11:hist:anal:opti:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon averaged sensible heat flux atmosphere  to canopy','[W/m2]','ipoly') 
     endif
     
@@ -5825,7 +5825,7 @@ contains
     if (associated(cgrid%avg_gpp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_gpp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_GPP :11:hist:anal:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'AVG_GPP :11:hist:anal:opti:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon Average GPP','[umol/m2/s]','ipoly') 
     endif
 
@@ -5839,28 +5839,28 @@ contains
     if (associated(cgrid%avg_leaf_resp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_leaf_resp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_LEAF_RESP :11:hist:anal:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'AVG_LEAF_RESP :11:hist:anal:opti:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon Average Leaf Respiration','[umol/m2/s]','ipoly') 
     endif
 
     if (associated(cgrid%avg_root_resp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_root_resp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_ROOT_RESP :11:hist:anal:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'AVG_ROOT_RESP :11:hist:anal:opti:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon Average Root Respiration','[umol/m2/s]','ipoly') 
     endif
 
     if (associated(cgrid%avg_plant_resp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_plant_resp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_PLANT_RESP :11:hist:anal:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'AVG_PLANT_RESP :11:hist:anal:opti:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon Average Plant Respiration','[umol/m2/s]','ipoly') 
     endif
 
     if (associated(cgrid%avg_htroph_resp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_htroph_resp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_HTROPH_RESP :11:hist:anal:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'AVG_HTROPH_RESP :11:hist:anal:opti:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon Average Heterotrohic Respiration','[umol/m2/s]','ipoly') 
     endif
 
