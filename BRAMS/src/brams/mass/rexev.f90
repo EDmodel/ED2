@@ -116,8 +116,8 @@ subroutine exevolve(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,key)
                        ,grid_g(ifm)%fmapvi               ,grid_g(ifm)%f13t                 &
                        ,grid_g(ifm)%f23t                 ,grid_g(ifm)%dxu                  &
                        ,grid_g(ifm)%dyv                  ,grid_g(ifm)%dxt                  &
-                       ,grid_g(ifm)%dyt                  ,mass_g(ifm)%thvadv               &
-                       ,mass_g(ifm)%thetav               )
+                       ,grid_g(ifm)%dyt                  ,mass_g(ifm)%lnthvadv             &
+                       ,mass_g(ifm)%lnthetav             )
      
    case ('THS')
       !------------------------------------------------------------------------------------!
@@ -127,7 +127,7 @@ subroutine exevolve(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,key)
                         ,basic_g(ifm)%pi0                ,basic_g(ifm)%pc                  &
                         ,scratch%vt3dp                   ,scratch%vt3dq                    &
                         ,basic_g(ifm)%theta              ,mass_g(ifm)%thvlast              &
-                        ,mass_g(ifm)%thvtend             ,tend%pt                          )
+                        ,mass_g(ifm)%lnthvtend           ,tend%pt                          )
    
    case default
       !------------------------------------------------------------------------------------!
@@ -427,7 +427,7 @@ end subroutine fill_thvlast
 !------------------------------------------------------------------------------------------!
 subroutine advect_theta(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,up,uc,vp,vc,wp,wc,pi0  &
                        ,pc,pt,theta,rtp,rv,dn0,dn0u,dn0v,rtgt,rtgu,rtgv,fmapt,fmapui       &
-                       ,fmapvi,f13t,f23t,dxu,dyv,dxt,dyt,thvadv,thetav)
+                       ,fmapvi,f13t,f23t,dxu,dyv,dxt,dyt,lnthvadv,lnthetav)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                       , intent(in)    :: m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum
@@ -436,14 +436,14 @@ subroutine advect_theta(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,up,uc,vp,vc,
    real    , dimension(m1,m2,m3) , intent(in)    :: dn0,dn0u,dn0v
    real    , dimension(   m2,m3) , intent(in)    :: rtgt,rtgu,rtgv,fmapt,fmapui,fmapvi
    real    , dimension(   m2,m3) , intent(in)    :: f13t,f23t,dxu,dyv,dxt,dyt
-   real    , dimension(m1,m2,m3) , intent(out)   :: thvadv,thetav
+   real    , dimension(m1,m2,m3) , intent(out)   :: lnthvadv,lnthetav
    real    , dimension(m1,m2,m3) , intent(inout) :: pt
    !---------------------------------------------------------------------------------------!
 
    call exthvadv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,up,uc,vp,vc,wp,wc,theta,rtp   &
                 ,rv,dn0,dn0u,dn0v,rtgt,rtgu,rtgv,fmapt,fmapui,fmapvi,f13t,f23t,dxu,dyv,dxt &
-                ,dyt,thvadv,thetav)
-   call exhtend_ad(m1,m2,m3,ia,iz,ja,jz,pi0,pc,theta,rtp,rv,pt,thvadv)
+                ,dyt,lnthvadv,lnthetav)
+   call exhtend_ad(m1,m2,m3,ia,iz,ja,jz,pi0,pc,pt,lnthvadv)
 
    return
 end subroutine advect_theta
@@ -462,7 +462,7 @@ end subroutine advect_theta
 !------------------------------------------------------------------------------------------!
 subroutine exthvadv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,up,uc,vp,vc,wp,wc,theta    &
                    ,rtp,rv,dn0,dn0u,dn0v,rtgt,rtgu,rtgv,fmapt,fmapui,fmapvi,f13t,f23t,dxu  &
-                   ,dyv,dxt,dyt,thvadv,thetav)
+                   ,dyv,dxt,dyt,lnthvadv,lnthetav)
    use mem_scratch , only : scratch & ! intent(in)
                           , vctr1   & ! intent(in)
                           , vctr2   ! ! intent(in)
@@ -474,7 +474,7 @@ subroutine exthvadv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,up,uc,vp,vc,wp,w
    real    , dimension(m1,m2,m3), intent(in)   :: dn0,dn0u,dn0v
    real    , dimension(   m2,m3), intent(in)   :: rtgt,rtgu,rtgv,fmapt,fmapui,fmapvi
    real    , dimension(   m2,m3), intent(in)   :: f13t,f23t,dxu,dyv,dxt,dyt
-   real    , dimension(m1,m2,m3), intent(out)  :: thvadv,thetav
+   real    , dimension(m1,m2,m3), intent(out)  :: lnthvadv,lnthetav
    !----- Local variables -----------------------------------------------------------------!
    integer                                     :: i,j,k,isiz
    !---------------------------------------------------------------------------------------!
@@ -485,27 +485,27 @@ subroutine exthvadv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,up,uc,vp,vc,wp,w
    call prep_timeave(m1,m2,m3,edt,up,uc,vp,vc,wp,wc,scratch%vt3da,scratch%vt3db            &
                     ,scratch%vt3dc)
   
-   call prep_thetv(m1,m2,m3,ia,iz,ja,jz,theta,rtp,rv,thetav)
+   call prep_lnthetv(m1,m2,m3,ia,iz,ja,jz,theta,rtp,rv,lnthetav)
   
    call fa_preptc(m1,m2,m3,scratch%vt3da,scratch%vt3db,scratch%vt3dc,scratch%vt3dd         &
                  ,scratch%vt3de,scratch%vt3df,scratch%vt3dh,scratch%vt3di,scratch%vt3dj    &
                  ,scratch%vt3dk,dn0,dn0u,dn0v,rtgt,rtgu,rtgv,fmapt,fmapui,fmapvi,f13t,f23t &
                  ,dxu,dyv,dxt,dyt,mynum)
-   call atob(m1*m2*m3,thetav,scratch%scr1)
+   call atob(m1*m2*m3,lnthetav,scratch%scr1)
 
 
-   call fa_xc(m1,m2,m3,ia,iz,1,m3,thetav,scratch%scr1,scratch%vt3da,scratch%vt3dd          &
+   call fa_xc(m1,m2,m3,ia,iz,1,m3,lnthetav,scratch%scr1,scratch%vt3da,scratch%vt3dd        &
              ,scratch%vt3dg,scratch%vt3dh,scratch%vt3di,mynum)
 
    if (jdim == 1)                                                                          &
-      call fa_yc(m1,m2,m3,ia,iz,ja,jz,thetav,scratch%scr1,scratch%vt3db,scratch%vt3de      &
+      call fa_yc(m1,m2,m3,ia,iz,ja,jz,lnthetav,scratch%scr1,scratch%vt3db,scratch%vt3de    &
                 ,scratch%vt3dg,scratch%vt3dj,scratch%vt3di,jdim,mynum)
   
-   call fa_zc(m1,m2,m3,ia,iz,ja,jz,thetav,scratch%scr1,scratch%vt3dc,scratch%vt3df         &
+   call fa_zc(m1,m2,m3,ia,iz,ja,jz,lnthetav,scratch%scr1,scratch%vt3dc,scratch%vt3df       &
              ,scratch%vt3dg,scratch%vt3dk,vctr1,vctr2,mynum)
 
-   call azero(m1*m2*m3,thvadv)
-   call advtndc(m1,m2,m3,ia,iz,ja,jz,thetav,scratch%scr1,thvadv,edt,mynum)
+   call azero(m1*m2*m3,lnthvadv)
+   call advtndc(m1,m2,m3,ia,iz,ja,jz,lnthetav,scratch%scr1,lnthvadv,edt,mynum)
    
    !---------------------------------------------------------------------------------------!
    !     Switching the sign of the advection term... This is because we need to total      !
@@ -514,7 +514,7 @@ subroutine exthvadv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,up,uc,vp,vc,wp,w
    do j=1,m3
       do i=1,m2
          do k=1,m1
-            thvadv(k,i,j)=-1.0*thvadv(k,i,j)
+            lnthvadv(k,i,j)=-1.0*lnthvadv(k,i,j)
          end do
       end do
    end do 
@@ -564,27 +564,27 @@ end subroutine prep_timeave
 
 !==========================================================================================!
 !==========================================================================================!
-!    Finding the virtual temperature (this could be merged with the other subroutine...)   !
+!    Finding the log of virtual potential temperature.                                     !
 !------------------------------------------------------------------------------------------!
-subroutine prep_thetv(m1,m2,m3,ia,iz,ja,jz,theta,rtp,rv,thetav)
+subroutine prep_lnthetv(m1,m2,m3,ia,iz,ja,jz,theta,rtp,rv,lnthetav)
    use therm_lib , only : virtt
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                       , intent(in)  :: m1,m2,m3,ia,iz,ja,jz
    real    , dimension(m1,m2,m3) , intent(in)  :: theta,rtp,rv
-   real    , dimension(m1,m2,m3) , intent(out) :: thetav
+   real    , dimension(m1,m2,m3) , intent(out) :: lnthetav
    !----- Local variables -----------------------------------------------------------------!
    integer                                     :: i,j,k
    !---------------------------------------------------------------------------------------!
    do j=1,m3
       do i=1,m2
          do k=1,m1
-              thetav(k,i,j)=virtt(theta(k,i,j),rv(k,i,j),rtp(k,i,j))
+              lnthetav(k,i,j)=log(virtt(theta(k,i,j),rv(k,i,j),rtp(k,i,j)))
          end do
       end do
    end do
    return
-end subroutine prep_thetv
+end subroutine prep_lnthetv
 !==========================================================================================!
 !==========================================================================================!
 
@@ -598,13 +598,12 @@ end subroutine prep_thetv
 !    Adding the contribution of advection in the heating term to the Exner function        !
 ! tendency.                                                                                !
 !------------------------------------------------------------------------------------------!
-subroutine exhtend_ad(m1,m2,m3,ia,iz,ja,jz,pi0,pc,theta,rtp,rv,pt,thvadv)
+subroutine exhtend_ad(m1,m2,m3,ia,iz,ja,jz,pi0,pc,pt,lnthvadv)
    use rconstants , only : rocv  ! intent(in)
-   use therm_lib  , only : virtt ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                       , intent(in)    :: m1,m2,m3,ia,iz,ja,jz
-   real    , dimension(m1,m2,m3) , intent(in)    :: pi0,pc,rtp,theta,thvadv,rv
+   real    , dimension(m1,m2,m3) , intent(in)    :: pi0,pc,lnthvadv
    real    , dimension(m1,m2,m3) , intent(inout) :: pt
    !----- Local variables -----------------------------------------------------------------!
    integer                                       :: i,j,k
@@ -613,8 +612,7 @@ subroutine exhtend_ad(m1,m2,m3,ia,iz,ja,jz,pi0,pc,theta,rtp,rv,pt,thvadv)
    do j=ja,jz
       do i=ia,iz
          do k=2,m1-1
-            pt(k,i,j) = pt(k,i,j) + rocv * (pi0(k,i,j) + pc(k,i,j)) * thvadv(k,i,j)        &
-                                  / virtt(theta(k,i,j),rv(k,i,j),rtp(k,i,j))
+            pt(k,i,j) = pt(k,i,j) + rocv * (pi0(k,i,j) + pc(k,i,j)) * lnthvadv(k,i,j)
          end do
       end do
    end do
@@ -646,20 +644,20 @@ end subroutine exhtend_ad
 !    This is a mini-driver for the tendency part of the heating term.                      !
 !------------------------------------------------------------------------------------------!
 subroutine storage_theta(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,mynum,edt,pi0,pc,rtp,rv,theta    &
-                        ,thvlast,thvtend,pt)
+                        ,thvlast,lnthvtend,pt)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                       , intent(in)    :: m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,mynum
    real                          , intent(in)    :: edt
    real    , dimension(m1,m2,m3) , intent(in)    :: pi0,pc,rtp,rv,theta,thvlast
-   real    , dimension(m1,m2,m3) , intent(out)   :: thvtend
+   real    , dimension(m1,m2,m3) , intent(out)   :: lnthvtend
    real    , dimension(m1,m2,m3) , intent(inout) :: pt
    !---------------------------------------------------------------------------------------!
   
    !----- Computing the tendency of theta-V -----------------------------------------------!
-   call prep_thvtend(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,edt,theta,thvlast,rtp,rv,thvtend)
+   call prep_lnthvtend(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,edt,theta,thvlast,rtp,rv,lnthvtend)
    !----- Computing the tendency part of the heating term ---------------------------------!
-   call exhtend_st(m1,m2,m3,ia,iz,ja,jz,pi0,pc,rtp,theta,thvtend,rv,pt)
+   call exhtend_st(m1,m2,m3,ia,iz,ja,jz,pi0,pc,rtp,theta,lnthvtend,rv,pt)
    
    return
 end subroutine storage_theta
@@ -675,7 +673,8 @@ end subroutine storage_theta
 !==========================================================================================!
 !    This routine computes the local time derivative of theta-V.                           !
 !------------------------------------------------------------------------------------------!
-subroutine prep_thvtend(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,edt,theta,thvlast,rtp,rv,thvtend)
+subroutine prep_lnthvtend(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,edt,theta,thvlast,rtp,rv        &
+                       ,lnthvtend)
    use mem_grid  , only : time     & ! intent(in)
                         , dtlongn  ! ! intent(in)
    use therm_lib , only : virtt    ! ! Function
@@ -684,7 +683,7 @@ subroutine prep_thvtend(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,edt,theta,thvlast,rtp,r
    integer                       , intent(in)  :: m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv
    real                          , intent(in)  :: edt
    real    , dimension(m1,m2,m3) , intent(in)  :: theta,rv,rtp,thvlast
-   real    , dimension(m1,m2,m3) , intent(out) :: thvtend
+   real    , dimension(m1,m2,m3) , intent(out) :: lnthvtend
    !----- Local variables -----------------------------------------------------------------!
    integer                                     :: i,j,k
    real                                        :: edti
@@ -695,7 +694,7 @@ subroutine prep_thvtend(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,edt,theta,thvlast,rtp,r
       do j=ja,jz
          do i=ia,iz
             do k=2,m1-1
-               thvtend(k,i,j) = 0.0
+               lnthvtend(k,i,j) = 0.0
             end do
          end do
       end do
@@ -705,15 +704,15 @@ subroutine prep_thvtend(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,edt,theta,thvlast,rtp,r
       do j=ja,jz
          do i=ia,iz
             do k=2,m1-1
-               thvtend(k,i,j) = edti * log( virtt(theta(k,i,j),rv(k,i,j),rtp(k,i,j))       &
-                                          / thvlast(k,i,j))
+               lnthvtend(k,i,j) = edti * log( virtt(theta(k,i,j),rv(k,i,j),rtp(k,i,j))     &
+                                            / thvlast(k,i,j))
             end do
          end do
       end do
    end if
   
    return
-end subroutine prep_thvtend
+end subroutine prep_lnthvtend
 !==========================================================================================!
 !==========================================================================================!
 
@@ -726,13 +725,13 @@ end subroutine prep_thvtend
 !==========================================================================================!
 !   This will compute the tendency part of the heating term.                               !
 !------------------------------------------------------------------------------------------!
-subroutine exhtend_st(m1,m2,m3,ia,iz,ja,jz,pi0,pc,rtp,theta,thvtend,rv,pt)
+subroutine exhtend_st(m1,m2,m3,ia,iz,ja,jz,pi0,pc,rtp,theta,lnthvtend,rv,pt)
    use rconstants , only : rocv  ! ! intent(in)
    use therm_lib  , only : virtt ! ! Function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                       , intent(in)    :: m1,m2,m3,ia,iz,ja,jz
-   real    , dimension(m1,m2,m3) , intent(in)    :: pi0,pc,rtp,theta,thvtend,rv
+   real    , dimension(m1,m2,m3) , intent(in)    :: pi0,pc,rtp,theta,lnthvtend,rv
    real    , dimension(m1,m2,m3) , intent(inout) :: pt
    !----- Local variables -----------------------------------------------------------------!
    integer                                       :: i,j,k
@@ -741,8 +740,8 @@ subroutine exhtend_st(m1,m2,m3,ia,iz,ja,jz,pi0,pc,rtp,theta,thvtend,rv,pt)
    do j=ja,jz
       do i=ia,iz
          do k=2,m1-1
-            !----- Thvtend is the log of the theta-v tendency -----------------------------!
-            pt(k,i,j) = pt(k,i,j) + rocv * (pi0(k,i,j) + pc(k,i,j)) * thvtend(k,i,j)
+            !----- LnThvtend is the log of the theta-v tendency ---------------------------!
+            pt(k,i,j) = pt(k,i,j) + rocv * (pi0(k,i,j) + pc(k,i,j)) * lnthvtend(k,i,j)
          end do
       end do
    end do

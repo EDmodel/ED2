@@ -1551,6 +1551,13 @@ module ed_state_vars
 !------------------------------------------------------------------------------------------!
   integer :: nioglobal, niogrid, niopoly, niosite
 
+!------------------------------------------------------------------------------------------!
+! Logical switch that decides if the pointer tables for IO need to be updated
+! The number and allocation of cohorts and patches dictates this, and they 
+! change at a monthly frequency typically.
+!------------------------------------------------------------------------------------------!
+  logical :: filltables
+
   
   
 contains
@@ -5046,10 +5053,12 @@ contains
     type(patchtype),pointer   :: cpatch
     logical :: verbose = .false.    
 
+    if (mynum.eq.1) then
+       write(*,"(a)")'--- Re-hashing the IO pointer tables and mapping arrays'
+    endif
+
 
     ! The first loop through populates the info tables
-
-!    write (unit=*,fmt='(a,i4,a,i4,a)') ' + Initializing Variable I/O Tables ',mynum,' of ',nnodetot,';'
 
     do igr = 1,ngrids
        cgrid => edgrid_g(igr)
@@ -5075,11 +5084,6 @@ contains
        cgrid%mach_polygon_offset_index= 0
 
        if (nnodetot /= 1) then
-
-          ! CHANGED RGK 7-30-08 - ROOT MAY NOT BE INVOLVED.  NEW METHOD, SEND ALL INFO TO NODE ONE,
-          ! AND THEN HAVE NODE 1 DO A LOOPED SEND.  In both coupled and stand-alone modes, node
-          ! 1 is involved as a worker.  In the coupled version, root node is not running this script
-          ! because it is acting like a master.
 
           ! Send all them sizes to root (CHANGED, NODE 1)
           
@@ -5134,12 +5138,7 @@ contains
          end if
 
 
-          ! The barriers complicate cases when the model is not in stand-alone, or when all
-          ! of the nodes are not undergoing this process - continue testing if this poses problems rgk 7-30-08
-         
-!          call MPI_Barrier(MPI_COMM_WORLD,ierr)
-
-          if(mynum == 1) then
+          if(mynum == 1 .and. model_start .and. verbose) then
              
              print*,"Global Polygons: ",gdpy(1:nnodetot,igr)
              print*,"Global Site: "    ,gdsi(1:nnodetot,igr)
@@ -5185,14 +5184,8 @@ contains
 
        if (gdpy(mynum,igr)>0) then
           call filltab_polygontype(igr,1,0)
-
-!          if (gdsi(mynum,igr)>0) then
-             call filltab_sitetype(igr,1,1,0)
-
- !            if (gdpa(mynum,igr)>0) then
-                call filltab_patchtype(igr,1,1,1,0)
-  !           endif
- !         endif
+          call filltab_sitetype(igr,1,1,0)
+          call filltab_patchtype(igr,1,1,1,0)
        endif
        
           
@@ -5271,6 +5264,9 @@ contains
           enddo
           
        enddo
+       if (mynum.eq.1) then
+          write(*,"(a)")'--- Mapping Completed'
+       endif
       
        if (mynum.eq.1 .and. model_start .and. verbose) then
           model_start = .false.

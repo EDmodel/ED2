@@ -3,7 +3,7 @@
 subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time&
                     ,writing_dail,writing_mont,history_time,the_end)
   
-  use ed_state_vars,only:edgrid_g
+  use ed_state_vars,only:filltab_alltypes,edgrid_g,filltables
 
   use grid_coms, only: ngrids,nzg  ! INTENT(IN)
 
@@ -26,6 +26,25 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
   logical, intent(in)  :: writing_dail,writing_mont
   logical, intent(in) :: mont_analy_time,history_time,new_day,annual_time
   integer :: ifm
+
+
+  ! If there is any IO, then we need to check if the pointer tables
+  ! need to be rehashed, they will need to be rehashed if their has been 
+  ! a change in the number of cohorts or patches, ie if a monthly event had
+  ! just happened.
+
+  if(analysis_time .or. history_time .or. dail_analy_time .or. mont_analy_time .or. annual_time ) then
+     if(filltables) then
+        
+        ! Rehash the tables
+        call filltab_alltypes
+        ! Reset the rehash flag
+        filltables=.false.
+
+     endif
+  endif
+
+
 
   if(analysis_time .or. history_time .or. (new_day .and. (writing_dail .or. writing_mont))) then
      do ifm=1,ngrids

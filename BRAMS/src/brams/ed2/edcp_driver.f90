@@ -39,7 +39,7 @@ subroutine ed_coup_driver()
 
   use soil_coms, only: alloc_soilgrid
   use ed_node_coms , only: mynum,nnodetot,sendnum,recvnum,mmxp,mmyp
-
+  use ed_work_vars , only: ed_dealloc_work,work_e
   implicit none
   real :: w1,w2,w3,wtime_start  ! wall time
   real, external :: walltime    ! wall time
@@ -253,8 +253,16 @@ subroutine ed_coup_driver()
      call reset_averaged_vars(edgrid_g(ifm))
   end do
 
+  
   !-----------------------------------------------------------------------!
-  ! STEP 19. Getting the CPU time and printing the banner                 !
+  ! STEP 19: Deallocate the work arrays
+  !-----------------------------------------------------------------------!
+  do ifm=1,ngrids
+     call ed_dealloc_work(work_e(ifm))
+  enddo
+
+  !-----------------------------------------------------------------------!
+  ! STEP 20. Getting the CPU time and printing the banner                 !
   !-----------------------------------------------------------------------!
   if (mynum == nnodetot) then
      call timing(1,t1)

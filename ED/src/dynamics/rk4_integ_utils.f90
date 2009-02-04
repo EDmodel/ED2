@@ -1594,6 +1594,7 @@ subroutine initialize_rk4patches_ar(init)
                             , edtype              & ! structure
                             , polygontype         & ! structure
                             , sitetype            & ! structure
+                            , patchtype           & ! structure
                             , integration_buff_g  ! ! intent(inout)
    use grid_coms     , only : ngrids              ! ! intent(in)
    implicit none
@@ -1603,6 +1604,7 @@ subroutine initialize_rk4patches_ar(init)
    type(edtype)      , pointer    :: cgrid
    type(polygontype) , pointer    :: cpoly
    type(sitetype)    , pointer    :: csite
+   type(patchtype)   , pointer    :: cpatch
    integer                        :: maxcohort
    integer                        :: igr
    integer                        :: ipy
@@ -1654,12 +1656,13 @@ subroutine initialize_rk4patches_ar(init)
          do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
             do ipa = 1,csite%npatches
-               maxcohort = max(maxcohort,csite%paco_n(ipa))
+               cpatch => csite%patch(ipa)
+               maxcohort = max(maxcohort,cpatch%ncohorts)
             end do
          end do
       end do
    end do
-   write (unit=*,fmt='(a,1x,i5)') 'Maxcohort = ',maxcohort
+   ! write (unit=*,fmt='(a,1x,i5)') 'Maxcohort = ',maxcohort
 
    !----- Create new memory in each of the integration patches. ---------------------------!
    call allocate_rk4_coh_ar(maxcohort,integration_buff_g%initp)

@@ -231,12 +231,11 @@ subroutine ed_1st_node(init)
   call ed_nodeget_met_header()
   call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
-  call ed_nodeget_grid_dimens()
   call ed_nodeget_poly_dims()
   call ed_mem_alloc(2)
   call MPI_Barrier(MPI_COMM_WORLD,ierr)
   
-  call ed_nodeget_gridded_info()
+  call ed_nodeget_worklist_info()
   call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
   return

@@ -27,7 +27,8 @@ subroutine ed_model()
        integration_buff_g,          &
        edtype,                      &
        patchtype,                   &
-       filltab_alltypes
+       filltab_alltypes,            &
+       filltables
   use rk4_driver_ar,only: rk4_timestep_ar
   use ed_node_coms,only:mynum,nnodetot
   use disturb_coms, only: include_fire
@@ -59,10 +60,15 @@ subroutine ed_model()
   integer, external :: num_days  
   past_one_day   = .false.
   past_one_month = .false.
+  filltables = .false.
   
   ! This should keep both SOI and regional runners happy...
   printbanner = n_ed_region > 0 .and. mynum == 1
+
+  ! If the run is massively parallel then dont print the banner
+  printbanner = edgrid_g(1)%npolygons > 50 .and. mynum == 1
   
+
   wtime_start=walltime(0.)
   istp = 0
   if(record_err) then
@@ -79,9 +85,9 @@ subroutine ed_model()
   out_time_fast%month = -1
 
   !---------------------------------------------------------------------------------------!
-  !     Checking if the user has indicated a need for any of the fast flux diagnostic     !
-  ! variables, these are used in conditions of ifoutput,idoutput and imoutput conditions. !
-  ! If they are not >0, then set the logical, fast_diagnostics to false.                  !
+  !     Checking if the user has indicated a need for any of the fast flux diagnostic
+  ! variables, these are used in conditions of ifoutput,idoutput and imoutput conditions.
+  ! If they are not >0, then set the logical, fast_diagnostics to false.
   !---------------------------------------------------------------------------------------!
   fast_diagnostics = ifoutput /= 0 .or. idoutput /= 0 .or. imoutput /= 0
 
@@ -127,7 +133,9 @@ subroutine ed_model()
      !   ===================================================
 
 
-     if (nnodetot>1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
+     ! This MPI barrier slows down massively parallel runs
+     ! Removing unless someone has an objection RGK 2-2009
+     !     if (nnodetot>1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
      call timing(1,t1)
 
@@ -235,8 +243,7 @@ subroutine ed_model()
            do i = 1,46
               if(sum(integ_err(i,1:2)) .gt. 0_8)then                 
                  write(unit=77,fmt='(i3,2a,2i7)') i," ",trim(err_label(i)),integ_err(i,1:2)
-                 !print*,i,trim(err_label(i)),integ_err(i,1:2)
-                 
+!                 print*,i,trim(err_label(i)),integ_err(i,1:2)
               endif
            enddo
            close(unit=77,status='keep')
@@ -256,7 +263,20 @@ subroutine ed_model()
            
            ! If maxpatch and maxcohort are both negative, the number of patches and 
            ! cohorts remain the same throughout the run, no need to call it.
-           if (maxcohort >= 0 .or. maxpatch >= 0) call filltab_alltypes
+
+           ! Also, if we do not need to fill the tables until we do I/O, so instead of
+           ! running this routine every time the demographics change, we set this flag
+           ! and run the routine when the next IO occurs.
+
+           if (nnodetot>1) then
+              if ( mynum == 1) write(*,"(a)")'-- Monthly node synchronization - waiting'
+              call MPI_Barrier(MPI_COMM_WORLD,ierr)
+              if ( mynum == 1) write(*,"(a)")'-- Synchronized'
+           endif
+
+!           call filltab_alltypes
+
+           if (maxcohort >= 0 .or. maxpatch >= 0) filltables=.true.   ! call filltab_alltypes
 
            ! Read new met driver files only if this is the first timestep 
            call read_met_drivers_array()
@@ -283,6 +303,7 @@ subroutine ed_model()
         if(new_month .and. new_day)then
            if(current_time%month == 6)then
               do ifm = 1,ngrids
+                    
                  call update_ed_yearly_vars_ar(edgrid_g(ifm))
                  enddo
                  !call zero_ed_yearly_vars(polygon_list_g(1)%first_polygon)
@@ -405,24 +426,26 @@ subroutine vegetation_dynamics(new_month,new_year)
   !      (2) Do not change the order of the subroutine calls below.  The 
   !          calculation of budgets depends on the order.
 
+  use ed_node_coms,only:mynum,nnodetot
   use grid_coms, only: ngrids
   use misc_coms, only: current_time, dtlsm,frqsum
   use disturb_coms, only: include_fire
   use disturbance_utils_ar, only: apply_disturbances_ar, site_disturbance_rates_ar
   use fuse_fiss_utils_ar, only : fuse_patches_ar
-  use ed_state_vars,only : edgrid_g,filltab_alltypes,edtype
+  use ed_state_vars,only : edgrid_g,edtype
   use growth_balive_ar,only : dbalive_dt_ar
   use consts_coms, only : day_sec,yr_day
   use mem_sites, only: maxpatch
-  implicit none
 
+  implicit none
+  include 'mpif.h'
   logical, intent(in)   :: new_month,new_year
   integer               :: doy
   integer, external     :: julday
   real                  :: tfact1,tfact2
   integer               :: ifm
   type(edtype), pointer :: cgrid
-  
+  integer               :: ierr
   logical, save         :: first_time = .true.
 
   ! find the day of year
@@ -472,6 +495,10 @@ subroutine vegetation_dynamics(new_month,new_year)
              current_time%year, cgrid)
 
         if(new_year) then
+
+  
+
+
 !           write (unit=*,fmt='(a)') '### Apply_disturbances_ar...'
            call apply_disturbances_ar(cgrid)
         end if

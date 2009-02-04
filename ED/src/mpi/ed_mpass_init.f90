@@ -346,60 +346,11 @@ end subroutine ed_masterput_met_header
 !==========================================================================================!
 !==========================================================================================!
 
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine ed_masterput_grid_dimens(par_run)
-
-  use grid_coms   , only : ngrids
-  use ed_para_coms, only : nmachs, nxbeg,nxend,nybeg,nyend,nxbegc,nxendc,nybegc,nyendc     &
-                          ,ixoff,iyoff,ibcflg,machnum,mainnum
-
-  implicit none
-  include 'mpif.h'
-  integer :: nm,ng
-  integer :: nxpts,nypts
-  integer :: ierr
-  integer :: par_run
-
-  if (par_run == 0 ) return
-  do nm=1,nmachs
-     do ng=1,ngrids
-        nxpts=nxend(nm,ng)-nxbeg(nm,ng)+1
-        nypts=nyend(nm,ng)-nybeg(nm,ng)+1
-        call MPI_Bcast(nxpts,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-        call MPI_Bcast(nypts,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-        call MPI_Bcast(nxbegc(nm,ng),1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-        call MPI_Bcast(nxendc(nm,ng),1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-        call MPI_Bcast(nybegc(nm,ng),1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-        call MPI_Bcast(nyendc(nm,ng),1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-        call MPI_Bcast(ixoff(nm,ng),1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-        call MPI_Bcast(iyoff(nm,ng),1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-        call MPI_Bcast(ibcflg(nm,ng),1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-     enddo
-     call MPI_Bcast(machnum(nm),1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  enddo
-  return
-end subroutine ed_masterput_grid_dimens
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
 subroutine ed_masterput_poly_dims(par_run)
    use ed_state_vars , only : gdpy,py_off
    use grid_coms     , only : nnxp,nnyp,ngrids
    use ed_work_vars  , only : work_e
-   use ed_para_coms  , only : nxbeg,nxend,nybeg,nyend,mainnum,nmachs
+   use ed_para_coms  , only : mainnum,nmachs
    use mem_sites     , only : n_ed_region, n_soi
    implicit none
 
@@ -407,6 +358,7 @@ subroutine ed_masterput_poly_dims(par_run)
    integer             :: ierr
    integer, intent(in) :: par_run
    integer             :: ifm,nm,npolys,offset
+   integer             :: polys_per_node,extras,extra1
 
    if (par_run == 1 .and. n_soi > 0 ) then
       write (unit=*,fmt='(a)') '--------------------------------------------------------------------'
@@ -447,21 +399,48 @@ subroutine ed_masterput_poly_dims(par_run)
      end do
    else
       do ifm=1,ngrids
-        npolys=0
-        offset=0
-        do nm=1,nmachs 
-           offset=offset+npolys
-           npolys=count(work_e(ifm)%land(nxbeg(nm,ifm):nxend(nm,ifm),nybeg(nm,ifm):nyend(nm,ifm)))
-           gdpy(nm,ifm)   = npolys
-           py_off(nm,ifm) = offset
-           call MPI_Bcast(npolys,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-           call MPI_Bcast(offset,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-        end do
-        nm=nmachs+1
-        offset=offset+npolys
-        npolys=count(work_e(ifm)%land(nxbeg(nm,ifm):nxend(nm,ifm),nybeg(nm,ifm):nyend(nm,ifm)))
-        gdpy(nm,ifm)   = npolys
-        py_off(nm,ifm) = offset
+
+         ! Essentially, the domain decomposition is 
+         ! determined in the next sequence of lines
+         ! ----------------------------------------
+
+         polys_per_node = floor(real(count(work_e(ifm)%land))/real(nmachs+1))
+         extras = count(work_e(ifm)%land)-polys_per_node*real(nmachs+1)
+
+         if (extras>0) then
+            extra1=1
+         else
+            extra1=0
+         endif
+         ! ----------------------------------------
+         
+         npolys=0
+         offset=0
+         do nm=1,nmachs 
+            offset=offset+npolys
+            npolys = polys_per_node + extra1
+
+            gdpy(nm,ifm)   = npolys
+            py_off(nm,ifm) = offset
+            call MPI_Bcast(npolys,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+            call MPI_Bcast(offset,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+
+            extras = extras - 1
+            if (extras>0) then
+               extra1=1
+            else
+               extra1=0
+            endif
+            
+           
+         end do
+         nm=nmachs+1
+         offset=offset+npolys
+         npolys = polys_per_node + extra1
+
+         gdpy(nm,ifm)   = npolys
+         py_off(nm,ifm) = offset
+
       end do
    end if
 
@@ -470,147 +449,136 @@ end subroutine ed_masterput_poly_dims
 !==========================================================================================!
 !==========================================================================================!
 
+subroutine ed_masterput_worklist_info(par_run)
 
+  use max_dims, only: maxmach
+  use grid_coms, only: ngrids
+  use ed_work_vars, only: work_e,work_vars,ed_alloc_work,ed_nullify_work,ed_dealloc_work
+  use ed_para_coms, only: nmachs,mainnum,machnum
+  use soil_coms, only: isoilflg
+  use ed_node_coms, only: mxp,myp,i0,j0
+  use ed_state_vars, only: gdpy,py_off
 
+  implicit none
+  include 'mpif.h'
+  integer, intent(in) :: par_run
+  integer :: npoly
+  integer :: offset
+  integer :: nm
+  integer :: ifm
+  integer :: mpiid
+  integer :: ierr
 
+  type(work_vars), allocatable, dimension(:)   :: sc_work
 
+  real,            allocatable, dimension(:) :: rscratch
+  integer,         allocatable, dimension(:) :: iscratch
 
-!==========================================================================================!
-!==========================================================================================!
-subroutine ed_masterput_gridded_info(par_run)
-!------------------------------------------------------------------------------------------!
-!   This subroutine sends the gridded latitude and longitude to the nodes, as well as the  !
-! water/land flag, to be used to remove polygons over water before they are even allocated.!
-! After the information is sent, the head node deallocates the matrices for the entire     !
-! domain, and remains with the area corresponding to its polygons only. That way we can    !
-! use the same routines for every node.                                                    !
-!------------------------------------------------------------------------------------------!
-   use max_dims, only: maxmach
-   use grid_coms, only: nxp,nyp,ngrids
-   use ed_work_vars, only: work_e,work_vars,ed_alloc_work,ed_nullify_work,ed_dealloc_work
-   use ed_para_coms, only: nxbeg,nxend,nybeg,nyend,nmachs,mainnum,machnum
-   use soil_coms, only: isoilflg
-   use ed_node_coms, only: mxp,myp,i0,j0
-   
-   implicit none
-   include 'mpif.h'
-   integer, intent(in)                          :: par_run
-   integer                                      :: ierr,xa,xz,ya,yz,xmax,ymax,nsize,nm,ifm
-   integer                                      :: mpiid
-   type(work_vars), allocatable, dimension(:)   :: sc_work
-   real,            allocatable, dimension(:,:) :: rscratch
-   logical,         allocatable, dimension(:,:) :: lscratch
-   integer,         allocatable, dimension(:,:) :: iscratch
-   
+  
 
-   if (par_run == 1) then
-      do nm=1,nmachs
+  if (par_run == 1) then
+     
+     do nm=1,nmachs
         do ifm=1,ngrids
-           xa=nxbeg(nm,ifm)
-           xz=nxend(nm,ifm)
-           ya=nybeg(nm,ifm)
-           yz=nyend(nm,ifm)
-           xmax=xz-xa+1
-           ymax=yz-ya+1
-           nsize=xmax*ymax
-           allocate(rscratch(xmax,ymax), lscratch(xmax,ymax), iscratch(xmax,ymax))
-
-           rscratch(1:xmax,1:ymax)=work_e(ifm)%glon(xa:xz,ya:yz)
-           mpiid=5000+maxmach*(ifm-1)+nm
-           call MPI_Send(rscratch,nsize,MPI_REAL,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
-
-           rscratch(1:xmax,1:ymax)=work_e(ifm)%glat(xa:xz,ya:yz)
-           mpiid=6000+maxmach*(ifm-1)+nm
-           call MPI_Send(rscratch,nsize,MPI_REAL,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
-
-           rscratch(1:xmax,1:ymax)=work_e(ifm)%work(xa:xz,ya:yz)
-           mpiid=7000+maxmach*(ifm-1)+nm
-           call MPI_Send(rscratch,nsize,MPI_REAL,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
-
-           lscratch(1:xmax,1:ymax)=work_e(ifm)%land(xa:xz,ya:yz)
-           mpiid=8000+maxmach*(ifm-1)+nm
-           call MPI_Send(lscratch,nsize,MPI_LOGICAL,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
            
-           iscratch(1:xmax,1:ymax)=work_e(ifm)%ntext(xa:xz,ya:yz)
-           mpiid=9000+maxmach*(ifm-1)+nm
-           call MPI_Send(iscratch,nsize,MPI_INTEGER,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+           npoly  = gdpy(nm,ifm)
+           offset = py_off(nm,ifm)
+           
+           allocate(rscratch(npoly),iscratch(npoly))
 
-           deallocate(rscratch,lscratch,iscratch)
-        end do
-      end do
-  end if
-!------------------------------------------------------------------------------------------!
-!    Here is the moment in which the structured variables in the head node will disappear  !
-! and they will be switched by structures with the size coincident with the polygon domain.!
-! We used work_e instead of the scratch arrays in the previous stages just to              !
-! avoid including things in the memory modules that are also part of RAMS/BRAMS.           !
-!    In a serial run, this will be a really silly thing, I will copy to scratch and paste  !
-! the same thing.                                                                          !
-!------------------------------------------------------------------------------------------!
-   allocate(sc_work(ngrids))
-   nm=nmachs+1
-   do ifm=1,ngrids
-      call ed_newgrid(ifm)
+           rscratch(1:npoly) = work_e(ifm)%vec_glon(offset+1:offset+npoly)
+           mpiid=0000+maxmach*(ifm-1)+nm
+           call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+  
+           rscratch(1:npoly) = work_e(ifm)%vec_glat(offset+1:offset+npoly)
+           mpiid=10000+maxmach*(ifm-1)+nm
+           call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+           
+           rscratch(1:npoly) = work_e(ifm)%vec_landfrac(offset+1:offset+npoly)
+           mpiid=20000+maxmach*(ifm-1)+nm
+           call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+           
+           iscratch(1:npoly) = work_e(ifm)%vec_ntext(offset+1:offset+npoly)
+           mpiid=30000+maxmach*(ifm-1)+nm
+           call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
 
-!----- 1. Allocate scratch structure ------------------------------------------------------!
-      call ed_nullify_work(sc_work(ifm))
-      call ed_alloc_work(sc_work(ifm),nxp,nyp)
+           deallocate(rscratch,iscratch)
 
-!----- 2. Copy the structures to the scratch ----------------------------------------------!
-      sc_work(ifm)%glon(1:nxp,1:nyp)=work_e(ifm)%glon(1:nxp,1:nyp)
-      sc_work(ifm)%glat(1:nxp,1:nyp)=work_e(ifm)%glat(1:nxp,1:nyp)
-      sc_work(ifm)%work(1:nxp,1:nyp)=work_e(ifm)%work(1:nxp,1:nyp)
-      sc_work(ifm)%land(1:nxp,1:nyp)=work_e(ifm)%land(1:nxp,1:nyp)
-      sc_work(ifm)%ntext(1:nxp,1:nyp)=work_e(ifm)%ntext(1:nxp,1:nyp)
+        enddo
+     enddo
+     
+  endif
+  
+  ! Deallocate each of the global vectors, and reallocate (and fill) as local vectors
 
-!----- 3. Deallocate the structures -------------------------------------------------------!
-      call ed_dealloc_work(work_e(ifm))
+  nm=nmachs+1
+  allocate(sc_work(ngrids))
+
+  do ifm=1,ngrids
+     
+     npoly  = gdpy(nm,ifm)
+     offset = py_off(nm,ifm)
+
+     allocate(sc_work(ifm)%vec_glon(npoly))
+     allocate(sc_work(ifm)%vec_glat(npoly))
+     allocate(sc_work(ifm)%vec_landfrac(npoly))
+     allocate(sc_work(ifm)%vec_ntext(npoly))
+
+     sc_work(ifm)%vec_glon(1:npoly) = work_e(ifm)%vec_glon(offset+1:offset+npoly)
+     sc_work(ifm)%vec_glat(1:npoly) = work_e(ifm)%vec_glat(offset+1:offset+npoly)
+     sc_work(ifm)%vec_landfrac(1:npoly) = work_e(ifm)%vec_landfrac(offset+1:offset+npoly)
+     sc_work(ifm)%vec_ntext(1:npoly) = work_e(ifm)%vec_ntext(offset+1:offset+npoly)
+
+     call ed_dealloc_work(work_e(ifm))
+     
+
+  enddo
+
+  deallocate(work_e)
+
+  ! So here it will be 2 (node-style) if it is a parallel run, and 0 if it is a serial run
+  call ed_mem_alloc(2*par_run) 
+
+  do ifm=1,ngrids
+
+     npoly  = gdpy(nm,ifm)
+     
+     ! Longitudes
+     allocate(work_e(ifm)%vec_glon(npoly))
+     work_e(ifm)%vec_glon(1:npoly) = sc_work(ifm)%vec_glon(1:npoly)
+     
+     ! Latitudes
+     allocate(work_e(ifm)%vec_glat(npoly))
+     work_e(ifm)%vec_glat(1:npoly) = sc_work(ifm)%vec_glat(1:npoly)
+     
+     ! Land fractions
+     allocate(work_e(ifm)%vec_landfrac(npoly))
+     work_e(ifm)%vec_landfrac(1:npoly) = sc_work(ifm)%vec_landfrac(1:npoly)
+     
+     ! Soil Textures
+     allocate(work_e(ifm)%vec_ntext(npoly))
+     work_e(ifm)%vec_ntext(1:npoly) = sc_work(ifm)%vec_ntext(1:npoly)
+
+     ! Need we say more
+     deallocate(sc_work(ifm)%vec_glon)
+     deallocate(sc_work(ifm)%vec_glat)
+     deallocate(sc_work(ifm)%vec_landfrac)
+     deallocate(sc_work(ifm)%vec_ntext)
+
    end do
-!----- 4. Allocate all the structures to the head node ------------------------------------!
-   deallocate(work_e)
-   ! So here it will be 2 (node-style) if it is a parallel run, and 0 if it is a serial run
-   call ed_mem_alloc(2*par_run) 
-
-   do ifm=1,ngrids
-     ! SOI grids always have one point only. Since the structure will be sent
-     ! I am filling the structures. It is just 4 extra numbers that will reach
-     ! the other side anyway
-      call ed_newgrid(ifm)
-      xa=nxbeg(nm,ifm)
-      xz=nxend(nm,ifm)
-      ya=nybeg(nm,ifm)
-      yz=nyend(nm,ifm)
-      xmax=xz-xa+1
-      ymax=yz-ya+1
-      nsize=xmax*ymax
-!----- 5. Copy the information that matters to the structures -----------------------------!
-      work_e(ifm)%glon(1:xmax,1:ymax) = sc_work(ifm)%glon(xa:xz,ya:yz)
-      work_e(ifm)%glat(1:xmax,1:ymax) = sc_work(ifm)%glat(xa:xz,ya:yz)
-      work_e(ifm)%work(1:xmax,1:ymax) = sc_work(ifm)%work(xa:xz,ya:yz)
-      work_e(ifm)%land(1:xmax,1:ymax) = sc_work(ifm)%land(xa:xz,ya:yz)
-      work_e(ifm)%ntext(1:xmax,1:ymax) = sc_work(ifm)%ntext(xa:xz,ya:yz)
-!----- 6. Deallocate the scratch structures -----------------------------------------------!
-      call ed_dealloc_work(sc_work(ifm))
-      
-!      call dump_gridwork(ifm,mxp,myp,i0,j0                                                 &
-!                        ,work_e(ifm)%glon(1,1), work_e(ifm)%glat(1,1)                      &
-!                        ,work_e(ifm)%work(1,1), work_e(ifm)%ntext(1,1)                     &
-!                        ,work_e(ifm)%land(1,1))
-   end do
+   
    deallocate(sc_work)
 
-   return
-end subroutine ed_masterput_gridded_info
-!==========================================================================================!
-!==========================================================================================!
 
-
-
-
+  
+  return
+end subroutine ed_masterput_worklist_info
 
 
 !==========================================================================================!
 !==========================================================================================!
+
+
 subroutine ed_nodeget_processid(init)
 
   use max_dims
@@ -917,90 +885,10 @@ subroutine ed_nodeget_met_header()
    call MPI_Bcast(met_frq,nsize,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(met_interp,nsize,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
-!! Just double checking:
-!   write(unit=60+mynum,fmt='(a,1x,i5)') 'nformats=',nformats
-!   write(unit=60+mynum,fmt='(a,1x,l1)') 'no_ll=',no_ll
-!   do f=1,nformats
-!     write (unit=60+mynum,fmt='(a,i5,a)')     ' + Format: ',f,':'
-!     write (unit=60+mynum,fmt='(2a)')         '   - Name    : ',trim(met_names(f))
-!     write (unit=60+mynum,fmt='(a,i5)')       '   - Nlon    : ',met_nlon(f) 
-!     write (unit=60+mynum,fmt='(a,i5)')       '   - Nlat    : ',met_nlat(f) 
-!     write (unit=60+mynum,fmt='(a,es12.5)')   '   - dx      : ',met_dx(f) 
-!     write (unit=60+mynum,fmt='(a,es12.5)')   '   - dy      : ',met_dy(f) 
-!     write (unit=60+mynum,fmt='(a,es12.5)')   '   - xmin    : ',met_xmin(f) 
-!     write (unit=60+mynum,fmt='(a,es12.5)')   '   - ymin    : ',met_ymin(f) 
-!     write (unit=60+mynum,fmt='(a,i5)')       '   - nv      : ',met_nv(f) 
-!     do v=1,met_nv(f)
-!        write (unit=60+mynum,fmt='(a,i5)')       '   - Variable: ',v
-!        write (unit=60+mynum,fmt='(2a)')         '     ~ vars    : ',trim(met_vars(f,v))
-!        write (unit=60+mynum,fmt='(a,es12.5)')   '     ~ frq     : ',met_frq(f,v)
-!        write (unit=60+mynum,fmt='(a,i5)')       '     ~ interp  : ',met_interp(f,v)
-!     end do
-!   end do
-!!
    return
 end subroutine ed_nodeget_met_header
 !==========================================================================================!
 !==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine ed_nodeget_grid_dimens()
-
-   use grid_coms, only : ngrids
-   use ed_node_coms, only : nodemxp,nodemyp,nodeia,nodeiz,nodeja,nodejz,nodei0,nodej0 &
-                        ,nodeibcon,machs,master_num,nmachs,mmxp,mmyp               &
-                        ,mia,miz,mja,mjz,mi0,mj0,mibcon,mynum
-   implicit none
-
-   include 'mpif.h'
-
-   integer :: ierr,ng,nm
-  
-   do nm=1,nmachs
-      do ng=1,ngrids
-         call MPI_Bcast(nodemxp(nm,ng),1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-         call MPI_Bcast(nodemyp(nm,ng),1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-
-
-         call MPI_Bcast(nodeia(nm,ng),1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-         call MPI_Bcast(nodeiz(nm,ng),1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-         call MPI_Bcast(nodeja(nm,ng),1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-         call MPI_Bcast(nodejz(nm,ng),1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-         call MPI_Bcast(nodei0(nm,ng),1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-         call MPI_Bcast(nodej0(nm,ng),1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-         call MPI_Bcast(nodeibcon(nm,ng),1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-      end do
-      call MPI_Bcast(machs(nm),1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   end do
-
-
-
-  do ng=1,ngrids
-     mmxp(ng)=nodemxp(mynum,ng)
-     mmyp(ng)=nodemyp(mynum,ng)
-     mia(ng)=nodeia(mynum,ng)
-     miz(ng)=nodeiz(mynum,ng)
-     mja(ng)=nodeja(mynum,ng)
-     mjz(ng)=nodejz(mynum,ng)
-     mi0(ng)=nodei0(mynum,ng)
-     mj0(ng)=nodej0(mynum,ng)
-     mibcon(ng)=nodeibcon(mynum,ng)
-  enddo
-
-  return
-end subroutine ed_nodeget_grid_dimens
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
 
 
 !==========================================================================================!
@@ -1026,56 +914,57 @@ end subroutine ed_nodeget_poly_dims
 !==========================================================================================!
 
 
-
-
-
-
 !==========================================================================================!
 !==========================================================================================!
-subroutine ed_nodeget_gridded_info
-   use max_dims, only: maxmach
-   use grid_coms,  only: ngrids
-   use ed_work_vars,  only: work_e
-   use ed_node_coms,  only: mxp,myp,mynum,i0,j0,nmachs,master_num
-   use soil_coms, only: isoilflg
-   
-   implicit none
-   include 'mpif.h'
-   integer,                      dimension(MPI_STATUS_SIZE) :: status
-   integer                                                  :: ierr,ifm,nsize,mpiid
-   real,            allocatable, dimension(:,:)             :: rscratch
-   logical,         allocatable, dimension(:,:)             :: lscratch
-   integer,         allocatable, dimension(:,:)             :: iscratch
+subroutine ed_nodeget_worklist_info
+
+  use max_dims, only: maxmach
+  use grid_coms,  only: ngrids
+  use ed_work_vars,  only: work_e
+  use ed_node_coms,  only: mynum,nmachs,master_num
+  use ed_state_vars, only: gdpy
+
+  implicit none
+  include 'mpif.h'
   
- do ifm=1,ngrids
-      call ed_newgrid(ifm)
-      allocate(rscratch(mxp,myp),lscratch(mxp,myp),iscratch(mxp,myp))      
-      nsize=mxp*myp
-      mpiid=5000+maxmach*(ifm-1)+mynum
-      call MPI_Recv(rscratch,nsize,MPI_REAL,0,mpiid,MPI_COMM_WORLD,status,ierr)
-      work_e(ifm)%glon(1:mxp,1:myp)=rscratch(1:mxp,1:myp)
+  integer,dimension(MPI_STATUS_SIZE) :: status
+  integer :: ierr
+  integer :: npolygons
+  integer :: mpiid
+  integer :: ifm
+  
+  do ifm=1,ngrids
+     
+     npolygons = gdpy(mynum,ifm)
+     
+     ! Allocate the work vectors
+     
+     allocate(work_e(ifm)%vec_glon(npolygons))
+     allocate(work_e(ifm)%vec_glat(npolygons))
+     allocate(work_e(ifm)%vec_landfrac(npolygons))
+     allocate(work_e(ifm)%vec_ntext(npolygons))
 
-      mpiid=6000+maxmach*(ifm-1)+mynum
-      call MPI_Recv(rscratch,nsize,MPI_REAL,0,mpiid,MPI_COMM_WORLD,status,ierr)
-      work_e(ifm)%glat(1:mxp,1:myp)=rscratch(1:mxp,1:myp)
+     mpiid=0000+maxmach*(ifm-1)+mynum
+     call MPI_Recv(work_e(ifm)%vec_glon(1:npolygons),npolygons, &
+          MPI_REAL,0,mpiid,MPI_COMM_WORLD,status,ierr)
+     
+     mpiid=10000+maxmach*(ifm-1)+mynum
+     call MPI_Recv(work_e(ifm)%vec_glat(1:npolygons),npolygons, &
+          MPI_REAL,0,mpiid,MPI_COMM_WORLD,status,ierr)
+     
+     mpiid=20000+maxmach*(ifm-1)+mynum
+     call MPI_Recv(work_e(ifm)%vec_landfrac(1:npolygons),npolygons, &
+          MPI_REAL,0,mpiid,MPI_COMM_WORLD,status,ierr)
+     
+     mpiid=30000+maxmach*(ifm-1)+mynum
+     call MPI_Recv(work_e(ifm)%vec_ntext(1:npolygons),npolygons, &
+          MPI_INTEGER,0,mpiid,MPI_COMM_WORLD,status,ierr)
 
-      mpiid=7000+maxmach*(ifm-1)+mynum
-      call MPI_Recv(rscratch,nsize,MPI_REAL,0,mpiid,MPI_COMM_WORLD,status,ierr)
-      work_e(ifm)%work(1:mxp,1:myp)=rscratch(1:mxp,1:myp)
+     
+  end do
 
-      mpiid=8000+maxmach*(ifm-1)+mynum
-      call MPI_Recv(lscratch,nsize,MPI_LOGICAL,0,mpiid,MPI_COMM_WORLD,status,ierr)
-      work_e(ifm)%land(1:mxp,1:myp)=lscratch(1:mxp,1:myp)
-
-      mpiid=9000+maxmach*(ifm-1)+mynum
-      call MPI_Recv(iscratch,nsize,MPI_INTEGER,0,mpiid,MPI_COMM_WORLD,status,ierr)
-      work_e(ifm)%ntext(1:mxp,1:myp)=iscratch(1:mxp,1:myp)
-
-      deallocate(rscratch,lscratch,iscratch)
-
-   end do
-   return
-end subroutine ed_nodeget_gridded_info
+  return
+end subroutine ed_nodeget_worklist_info
 !==========================================================================================!
 !==========================================================================================!
 

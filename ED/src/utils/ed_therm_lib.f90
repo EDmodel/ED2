@@ -6,25 +6,22 @@ contains
    !=======================================================================================!
    real function calc_hcapveg(leaf_carbon,structural_carbon,nplants,pft)
      
-     ! This function calculates the total heat capacity in (J/K) of the cohort
-     ! biomass.  This function is primarily used to calculate leaf temperatures
-     ! based on leaf energy.  At present, heat capacity is primarily based off
-     ! of leaf biomass, but is also accounting for a variable fraction of stems.
-     ! This is considered partially for stability.
+     ! This function calculates the total heat capacity in (J/K/m2) of the cohort
+     ! leaf biomass.  This function is primarily used to calculate leaf temperatures
+     ! based on leaf energy.
 
      ! Inputs:
      ! leaf_biomass - the leaf biomass of the cohort in kg/m2 - NOTE
-     ! you are most likely going to be passing the variables bleaf and bdead
-     ! , but you must scale (multiply) them by the plant density (nplant) first.
-     ! structural_biomass - the biomass of live and dead hardwood in kg/m2
+     ! this is constructed by the product of leaf_carbon in units kg/plant
+     ! and number of plants per square meter, and the conversion of carbon to 
+     ! total biomass.  The right hand side of the main equation accounts for 
+     ! the mass of insterstitial water and its ability to hold energy.
      ! pft - the plant functional type of the current cohort, which may serve
      ! for defining different parameterizations of specific heat capacity
 
      ! These methods follow the ways of Gu et al. 2007. See the module pft_coms.f90
      ! for a description of the parameters, and see ed_params.f90 for the setting
-     ! of these parameters.  The parameters are derived from secondary sources
-     ! used by Gu et al. 2007 and the references are listed where parameters
-     ! are defined.
+     ! of these parameters.
 
      use consts_coms,only : cliq
 
@@ -42,46 +39,11 @@ contains
      real :: leaf_carbon         ! leaf biomass per plant
      real :: structural_carbon   ! structural biomass per plant
      real :: nplants             ! Number of plants per square meter
-!     real :: spec_hcap_leaf
-!     real :: spec_hcap_stem
+     integer :: pft
+     real,parameter :: min_hcapveg = 200.0    
+
      
-
-     real,parameter :: biomass_factor = 1.00 ! This is a biomass kluge factor
-                                             ! The model is much faster and more stable
-                                             ! When heat capacity is high.
-                                             ! It was also found that when net-radiation
-                                             ! matched tower observations, the dynamic
-                                             ! range of the 
-
-     real,parameter :: min_hcapveg = 30.0
-
-     integer :: pft     
-     real,parameter :: veg_temp = 285.0      ! RIght now we are using a nominal vegetation
-                                             ! temperature, but 
-
-     ! Old Method
-     ! calc_hcapveg = hcapveg_ref * max(canopy_height,heathite_min)*cohort_lai/patch_lai
-
-     ! Specific heat capacity of leaf biomass (J/kg/K)
-     ! The calculation of leaf heat capacity follows Gu et al. 2007
-!     spec_hcap_leaf  = (c_grn_leaf_dry(pft) + cliq*wat_dry_ratio_grn(pft))/(1.+wat_dry_ratio_grn(pft))
-     
-     
-     ! Specific heat capacity of the stems and structural biomass.
-     ! Also following Gu et al. 2007
-     
-!     spec_hcap_stem  = (c_ngrn_biom_dry(pft) + cliq*wat_dry_ratio_ngrn(pft))/(1+wat_dry_ratio_ngrn(pft))&
-!          + 100. * wat_dry_ratio_ngrn(pft) * &
-!          (-0.06191 + 2.36*1.0e-4*veg_temp - 1.33*1.0e-2*wat_dry_ratio_ngrn(pft))
-     
-     
-
-     calc_hcapveg = nplants *                                                              &
-                  (  leaf_carbon*C2B*c_grn_leaf_dry(pft)                                   &
-                   + wat_dry_ratio_grn(pft)*leaf_carbon*C2B*cliq                           &
-                  )
-
-
+     calc_hcapveg = nplants*leaf_carbon*C2B*( c_grn_leaf_dry(pft) + wat_dry_ratio_grn(pft)*cliq)
 
      calc_hcapveg = max(calc_hcapveg,min_hcapveg)
      
