@@ -458,8 +458,8 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
      if (cpatch%lai(ico) > lai_min) then
         yscal%veg_water(ico) = 0.22
 
-!        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
-!                                   + abs(dy%veg_energy(ico)*htry),0.22*alli)
+        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
+                                   + abs(dy%veg_energy(ico)*htry),0.22*alli)
 
 !        yscal%veg_energy(ico) = max(abs(y%veg_energy(ico))   &
 !             & + abs(dy%veg_energy(ico)*htry) &
@@ -469,8 +469,8 @@ subroutine get_yscal_ar(y, dy, htry, tiny, yscal, cpatch, lsl)
        ! last term is ~ bleaf*dry_hcap*273.15, a dry-leaf offset from 0K 
        ! additional offset term for veg_water deliberately not included 
 
-        yscal%veg_energy(ico) = 10.0*(y%veg_water(ico)*alli + y%veg_water(ico)*cliq*(317.-273.15) &
-             + cpatch%hcapveg(ico)*(317.-273.15))! + abs(dy%veg_energy(ico)*htry)
+!        yscal%veg_energy(ico) = 10.0*(y%veg_water(ico)*alli + y%veg_water(ico)*cliq*(317.-273.15) &
+!             + cpatch%hcapveg(ico)*(317.-273.15))! + abs(dy%veg_energy(ico)*htry)
 
 
      else
@@ -1436,7 +1436,7 @@ end subroutine redistribute_snow_ar
 subroutine initialize_rk4patches_ar(init)
 
   use ed_state_vars,only:edgrid_g,edtype,polygontype, &
-       sitetype,integration_buff_g
+       sitetype,integration_buff_g,patchtype
   use grid_coms, only: ngrids
   
   implicit none
@@ -1446,11 +1446,13 @@ subroutine initialize_rk4patches_ar(init)
   type(edtype),pointer :: cgrid
   type(polygontype),pointer :: cpoly
   type(sitetype),pointer :: csite
+  type(patchtype),pointer :: cpatch
 
   integer :: maxcohort
   integer :: igr,ipy,isi,ipa
 
   if(init == 0)then
+
      ! If this is not initialization, deallocate cohort memory from
      ! integration patches.
 
@@ -1493,14 +1495,17 @@ subroutine initialize_rk4patches_ar(init)
         do isi = 1,cpoly%nsites
            csite => cpoly%site(isi)
            do ipa = 1,csite%npatches
-              if (csite%paco_n(ipa)>maxcohort) then
-                 maxcohort = csite%paco_n(ipa)
+              cpatch => csite%patch(ipa)
+              if (cpatch%ncohorts > maxcohort) then
+                 maxcohort = cpatch%ncohorts
               endif
            enddo
         enddo
      enddo
   enddo
-print*,"maxcohort = ",maxcohort
+
+  !print*,"maxcohort = ",maxcohort
+
   ! Create new memory in each of the integration patches.
   call allocate_rk4_coh_ar(maxcohort,integration_buff_g%initp)
   call allocate_rk4_coh_ar(maxcohort,integration_buff_g%yscal)

@@ -682,8 +682,8 @@ subroutine h5_output(vtype)
      if (mynum.eq.nnodetot .and. new_file) then
         write(c0,'(F10.0)') time
         write(*,"(/,a)") " === "//trim(adjustl(subaname))//" at Sim time "//trim(adjustl(c0))//" ==="
-        write(*,"(a,/)") " === wrote file "//&
-             &trim(adjustl(anamel))//" ==="
+!        write(*,"(a,/)") " === wrote file "//&
+!             &trim(adjustl(anamel))//" ==="
      end if
      
      ! Reset the time back to the original

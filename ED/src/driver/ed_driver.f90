@@ -110,7 +110,6 @@ subroutine ed_driver
      if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,606,MPI_COMM_WORLD,ierr)
      if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
      
-     
   else
      
      !------------------------------------------------------------------------!
