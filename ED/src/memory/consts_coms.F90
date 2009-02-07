@@ -141,7 +141,7 @@ Module consts_coms
    ! Water vapour properties                                                               !
    !---------------------------------------------------------------------------------------!
    real, parameter :: rvap   = 461.5       ! Gas constant for water vapour (Rv) [   J/kg/K]
-   real, parameter :: gorvap = g / rvap    ! g/Rv                               [      K/m]
+   real, parameter :: gorvap = grav / rvap ! g/Rv                               [      K/m]
    real, parameter :: ep     = rdry / rvap ! Ra/Rv, epsilon, used to find rv    [    kg/kg]
    real, parameter :: epi    = rvap / rdry ! Rv/Ra, 1/epsilon                   [    kg/kg]
    real, parameter :: toodry = 1.e-8       ! Minimum acceptable mixing ratio.   [    kg/kg]

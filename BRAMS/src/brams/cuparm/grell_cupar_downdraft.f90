@@ -165,7 +165,7 @@ subroutine grell_nms_downdraft(mkx,mgmzp,kdet,jmin,mentrd_rate,cdd,z_cup,dzd_cld
    real, dimension(mgmzp), intent(in)    :: cdd         ! Dndraft detrainment function;
    real, dimension(mgmzp), intent(in)    :: z_cup       ! Height @ cloud levels;
    real, dimension(mgmzp), intent(in)    :: dzd_cld     ! Delta-z for downdrafts
-   real, dimension(mgmzp), intent(out)   :: etad_cld    ! Normalized updraft flux
+   real, dimension(mgmzp), intent(inout) :: etad_cld    ! Normalized updraft flux
 
    integer                               :: k           ! Counter
    
@@ -229,7 +229,7 @@ subroutine grell_theiv_downdraft(mkx,mgmzp,jmin,cdd,mentrd_rate,theiv,theiv_cup,
    real, dimension(mgmzp), intent(in)    :: theiv_cup   ! Thetae_iv @ cloud levels;
    real, dimension(mgmzp), intent(in)    :: theivs_cup  ! Sat. thetae_iv @ cloud levels;
    real, dimension(mgmzp), intent(in)    :: dzd_cld     ! Delta-z for downdrafts;
-   real, dimension(mgmzp), intent(out)   :: theivd_cld  ! Downdraft thetae_iv;
+   real, dimension(mgmzp), intent(inout) :: theivd_cld  ! Downdraft thetae_iv;
 
    integer                               :: k           ! Counter
    
@@ -316,7 +316,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,mentrd_rate,cdd,p_cup
    real, dimension(mgmzp), intent(inout) :: rhod_cld    ! Density                  [ kg/m³]
    real, dimension(mgmzp), intent(inout) :: dbyd        ! Buoyancy acceleration    [  m/s²]
    !----- Output variables ----------------------------------------------------------------!
-   real, dimension(mgmzp), intent(out)   :: pwd_cld     ! Normal. evap. flux       [ kg/kg]
+   real, dimension(mgmzp), intent(inout) :: pwd_cld     ! Normal. evap. flux       [ kg/kg]
    real                  , intent(out)   :: pwev        ! Total evaporation flux   [ kg/kg]
    !----- Transit variable ----------------------------------------------------------------!
    integer               , intent(inout) :: ierr        ! Error flag

@@ -889,7 +889,7 @@ subroutine update_met_drivers_array(cgrid)
            !  which I have yet to find   <mcd>                                             !
            !-------------------------------------------------------------------------------!
            cpoly%met(isi)%dpcpg = cpoly%met(isi)%pcpg &
-                                / (50.0+1.5*max(cpoly%met(isi)%atm_tmp-258.15,0.)**1.5
+              / (50.0+1.5*max(cpoly%met(isi)%atm_tmp-258.15,0.))**1.5
            !-------------------------------------------------------------------------------!
         endif
         !! note: dpcpg currently never gets used

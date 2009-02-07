@@ -206,10 +206,6 @@ subroutine icenuc(m1,ngr,dtlt)
    k2pnuc = 1
 
    do k = lpw,m1-1
-      !------------------------------------------------------------------------------------!
-      ! THERMODYNAMIC DILEMMA: Shouldn't it be rehuil instead of rehul here, since we      !
-      !     seek haze nucleation at cold temperatures?                                     !
-      !------------------------------------------------------------------------------------!
       rhhz = rehuil(press(k),tair(k),rvap(k))
       haznuc = 0.
       if (rhhz > 0.82 .and. tairc(k) <= -35.01) then

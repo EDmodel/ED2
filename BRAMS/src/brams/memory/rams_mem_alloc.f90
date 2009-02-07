@@ -337,6 +337,8 @@ subroutine rams_mem_alloc(proc_type)
       elseif (imean == 0) then
          call alloc_micro(microm_g(ng),1,1,1,ng,isfcl)
       end if
+      call zero_micro(micro_g(ng))
+      call zero_micro(microm_g(ng))
       call filltab_micro(micro_g(ng),microm_g(ng),imean  &
            ,nmzp(ng),nmxp(ng),nmyp(ng),ng)
    end do

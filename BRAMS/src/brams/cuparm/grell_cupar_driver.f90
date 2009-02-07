@@ -95,14 +95,8 @@ subroutine grell_cupar_driver(banneron,icld)
 
    use mem_scratch       , only: &
            scratch       & ! intent(out) - Scratch array, to save old info.
-          ,vctr1         & ! intent(out) - Scratch only, no actual use in the routine.
-          ,vctr2         & ! intent(out) - Scratch only, no actual use in the routine.
-          ,vctr3         & ! intent(out) - Scratch only, no actual use in the routine.
-          ,vctr4         & ! intent(out) - Scratch only, no actual use in the routine.
-          ,vctr5         & ! intent(out) - Scratch only, no actual use in the routine.
           ,vctr6         & ! intent(out) - Scratch, contains the liquid water mix. ratio.
           ,vctr7         & ! intent(out) - Scratch, contains the ice mixing ratio.
-          ,vctr8         & ! intent(out) - Scratch only, no actual use in the routine.
           ,vctr9         ! ! intent(out) - Scratch, contains the vertical velocity sigma.
    
    use mem_scratch_grell , only: &
@@ -226,8 +220,7 @@ subroutine grell_cupar_driver(banneron,icld)
          !---------------------------------------------------------------------------------!
          call zero_scratch_grell()
          call zero_ensemble(ensemble_e(icld))
-         call azero5(mzp,vctr1(1:mzp),vctr2(1:mzp),vctr3(1:mzp),vctr4(1:mzp),vctr5(1:mzp))
-         call azero4(mzp,vctr6(1:mzp),vctr7(1:mzp),vctr8(1:mzp),vctr9(1:mzp))
+         call azero3(mzp,vctr6(1:mzp),vctr7(1:mzp),vctr9(1:mzp))
          
          !---------------------------------------------------------------------------------!
          ! 6b. Initialise grid-related variables (how many levels, offset, etc.)           !
@@ -248,20 +241,20 @@ subroutine grell_cupar_driver(banneron,icld)
          select case (level)
          !------ No condensed phase, simply set up both to zero. --------------------------!
          case (0,1)
-            call azero(mzp,vctr6)
-            call azero(mzp,vctr7)
+            call azero(mzp,vctr6(1:mzp))
+            call azero(mzp,vctr7(1:mzp))
          !----- Liquid condensation only, use saturation adjustment -----------------------!
          case (2)
-             call atob(mzp,micro_g(ngrid)%rcp(:,i,j),vctr6)
-             call azero(mzp,vctr7)
+             call atob(mzp,micro_g(ngrid)%rcp(:,i,j),vctr6(1:mzp))
+             call azero(mzp,vctr7(1:mzp))
          case (3)
             call integ_liq_ice(mzp,availcat                                                &
-              , micro_g(ngrid)%rcp                  , micro_g(ngrid)%rrp                   &
-              , micro_g(ngrid)%rpp                  , micro_g(ngrid)%rsp                   &
-              , micro_g(ngrid)%rap                  , micro_g(ngrid)%rgp                   &
-              , micro_g(ngrid)%rhp                  , micro_g(ngrid)%q6                    &
-              , micro_g(ngrid)%q7                   , vctr6                        (1:mzp) &
-              , vctr7                        (1:mzp))
+              , micro_g(ngrid)%rcp           (:,i,j), micro_g(ngrid)%rrp           (:,i,j) &
+              , micro_g(ngrid)%rpp           (:,i,j), micro_g(ngrid)%rsp           (:,i,j) &
+              , micro_g(ngrid)%rap           (:,i,j), micro_g(ngrid)%rgp           (:,i,j) &
+              , micro_g(ngrid)%rhp           (:,i,j), micro_g(ngrid)%q6            (:,i,j) &
+              , micro_g(ngrid)%q7            (:,i,j), vctr6(1:mzp)                         &
+              , vctr7(1:mzp)                        )
          end select
 
          !---------------------------------------------------------------------------------!

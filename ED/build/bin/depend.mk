@@ -452,9 +452,9 @@ reproduction.o : $(ED_DYNAMICS)/reproduction.f90 ed_state_vars.o misc_coms.o pft
 	rm -f $(<F:.f90=.f90)
 
 rk4_coms.o : $(ED_MEMORY)/rk4_coms.f90
-	cp -f $< $(<F:.F90=.F90)
-	$(FPP_COMMAND) $(<F:.F90=.F90)
-	rm -f $(<F:.F90=.F90)
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
 
 rk4_derivs.o : $(ED_DYNAMICS)/rk4_derivs.F90 ed_state_vars.o consts_coms.o grid_coms.o     \
 	max_dims.o consts_coms.o grid_coms.o soil_coms.o misc_coms.o                       \

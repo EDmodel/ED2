@@ -378,7 +378,7 @@ subroutine timestep()
   t1=cputime(w1)
   if (.not. bulk_on) then
      if (banneron) write(unit=*,fmt='(a)') '     [-] Calling thermo(micro)...'
-     call thermo(mzp,mxp,myp,1,mxp,1,myp) 
+     call thermo(mzp,mxp,myp,ia,iz,ja,jz) 
   endif
   if (acct) call acctimes('accu',27,'THERMO',t1,w1)
 

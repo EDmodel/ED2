@@ -390,11 +390,12 @@ subroutine initlz (name_name)
      enddo
 
      ! ALF - For use with SiB
-     if (isfcl <= 2) then
+     select case (isfcl)
+     case (1,2,5)
         call sfcdata
-     elseif (isfcl == 3) then
+     case (3)
         call sfcdata_sib_driver
-     endif
+     end select
 
      ! Heterogenous Soil Moisture Init.
      if ((SOIL_MOIST == 'h').or.(SOIL_MOIST == 'H').or.  &

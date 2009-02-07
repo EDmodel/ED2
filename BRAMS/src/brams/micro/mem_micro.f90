@@ -254,6 +254,63 @@ module mem_micro
 
    !=======================================================================================!
    !=======================================================================================!
+   !    This subroutine deallocates all pointers when they are no longer needed.           !
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_micro(micro)
+
+      implicit none
+      !----- Argument ---------------------------------------------------------------------!
+      type (micro_vars) :: micro
+      !------------------------------------------------------------------------------------!
+   
+      if (associated(micro%rcp   )) micro%rcp   = 0.0
+      if (associated(micro%rrp   )) micro%rrp   = 0.0
+      if (associated(micro%rpp   )) micro%rpp   = 0.0
+      if (associated(micro%rsp   )) micro%rsp   = 0.0
+      if (associated(micro%rap   )) micro%rap   = 0.0
+      if (associated(micro%rgp   )) micro%rgp   = 0.0
+      if (associated(micro%rhp   )) micro%rhp   = 0.0
+      if (associated(micro%ccp   )) micro%ccp   = 0.0
+      if (associated(micro%crp   )) micro%crp   = 0.0
+      if (associated(micro%cpp   )) micro%cpp   = 0.0
+      if (associated(micro%csp   )) micro%csp   = 0.0
+      if (associated(micro%cap   )) micro%cap   = 0.0
+      if (associated(micro%cgp   )) micro%cgp   = 0.0
+      if (associated(micro%chp   )) micro%chp   = 0.0
+      if (associated(micro%cccnp )) micro%cccnp = 0.0
+      if (associated(micro%cifnp )) micro%cifnp = 0.0
+      if (associated(micro%q2    )) micro%q2    = 0.0
+      if (associated(micro%q6    )) micro%q6    = 0.0
+      if (associated(micro%q7    )) micro%q7    = 0.0
+
+      if (associated(micro%accpr )) micro%accpr = 0.0
+      if (associated(micro%accpp )) micro%accpp = 0.0
+      if (associated(micro%accps )) micro%accps = 0.0
+      if (associated(micro%accpa )) micro%accpa = 0.0
+      if (associated(micro%accpg )) micro%accpg = 0.0
+      if (associated(micro%accph )) micro%accph = 0.0
+      if (associated(micro%pcprr )) micro%pcprr = 0.0
+      if (associated(micro%pcprp )) micro%pcprp = 0.0
+      if (associated(micro%pcprs )) micro%pcprs = 0.0
+      if (associated(micro%pcpra )) micro%pcpra = 0.0
+      if (associated(micro%pcprg )) micro%pcprg = 0.0
+      if (associated(micro%pcprh )) micro%pcprh = 0.0
+      if (associated(micro%pcpg  )) micro%pcpg  = 0.0
+      if (associated(micro%qpcpg )) micro%qpcpg = 0.0
+      if (associated(micro%dpcpg )) micro%dpcpg = 0.0
+
+      return
+   end subroutine zero_micro
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !    This subroutine fills the variable table information for each microphysics vari-   !
    ! able.                                                                                 !
    !---------------------------------------------------------------------------------------!

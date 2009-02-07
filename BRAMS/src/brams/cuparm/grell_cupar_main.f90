@@ -151,7 +151,7 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
    real, dimension(maxens_eff,maxens_cap)      , intent(out) :: & 
                            edt_eff          ! Grell's epsilon                     [    ---]
    !----- Ensemble variables, changes of the thermodynamic properties per unit of mass. ---!
-   real, dimension(mgmzp,maxens_eff,maxens_cap), intent(out) :: &
+   real, dimension(mgmzp,maxens_eff,maxens_cap), intent(inout) :: &
                            dellatheiv_eff & ! Ice-vapour equiv. pot. temperature  [      K]
                           ,dellathil_eff  & ! Ice-liquid potential temperature    [      K]
                           ,dellaqtot_eff  & ! Total mixing ratio                  [  kg/kg]
@@ -701,6 +701,9 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
          !---------------------------------------------------------------------------------!
          etad_cld     = 0.
          dbyd         = 0.
+         thild_cld    = thil_cup
+         theivd_cld   = theiv_cup
+         qtotd_cld    = qtot_cup
          qliqd_cld    = qliq_cup
          qiced_cld    = qice_cup
          pwd_cld      = 0.
@@ -918,6 +921,24 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
             !------------------------------------------------------------------------------!
             ! 6c. Applying the fudging to some thermodynamic variables                     !
             !------------------------------------------------------------------------------!
+
+            !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+            !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+            ! write(unit=30+mynum,fmt='(a)')                '-------------------------------------------------------------------------------------------------'
+            ! write(unit=30+mynum,fmt='(3(a,1x,f10.4,1x))') '§§§§ mbprime  =',  mbprime,'edt     =',        edt,'tscal_kf =',  tscal_kf
+            ! write(unit=30+mynum,fmt='(3(a,1x,f10.4,1x))') '     dens_curr=',dens_curr,'cap_max =',    cap_max,'dtime    =',     dtime
+            ! write(unit=30+mynum,fmt='(4(a,1x,i10,1x))')   '     k22      =',      k22,'kbcon   =',      kbcon,'jmin     =',      jmin,'ktop    =',      ktop
+            ! write(unit=30+mynum,fmt='(3(a,1x,f10.4,1x))') '     aa0d     =',     aa0d,'aa0u    =',       aa0u,'aatot0   =',    aatot0
+            ! write(unit=30+mynum,fmt='(3(a,1x,f10.4,1x))') '     aad      =',      aad,'aau     =',        aau,'aatot    =',     aatot
+            ! write(unit=30+mynum,fmt='(a)'               ) ' '
+            ! write(unit=30+mynum,fmt='(a5,1x,6(a12,1x))') '    K','       THEIV','        QTOT','        THIL','    DELTHEIV','     DELQTOT','     DELTHIL'
+            ! do k=1,mkx-1
+            !    write(unit=30+mynum,fmt='(i5,1x,6(es12.5,1x))') k,qtot(k),qtot_cup(k),qtotd_cld(k),
+            ! end do
+            ! write(unit=30+mynum,fmt='(a)')                '-------------------------------------------------------------------------------------------------'
+            ! write(unit=30+mynum,fmt='(a)')                ' '
+            !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+            !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
             do k=1,mkx-1
                x_theiv(k) = theiv(k)          + mbprime*dtime * dellatheiv_eff(k,iedt,icap)
                x_qtot(k)  = max(toodry,qtot(k)+ mbprime*dtime * dellaqtot_eff(k,iedt,icap))

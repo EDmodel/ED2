@@ -131,13 +131,11 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, name_name)
   call ed_node_decomp(1,standalone,masterworks)
   if (iparallel == 1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
   
-  call ed_masterput_grid_dimens(iparallel)
   call ed_masterput_poly_dims(iparallel)
-  call ed_dump_Domain_Decomposition(masterworks)
   
   if (iparallel == 1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
   
-  call ed_masterput_gridded_info(iparallel)
+  call ed_masterput_worklist_info(iparallel)
 
   if (iparallel == 1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
   

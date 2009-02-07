@@ -290,14 +290,15 @@ subroutine init_master_work(ipara)
   integer :: xmax,ymax
   integer :: i,j,il,jl
   integer :: iwest,ieast,jsouth,jnorth
-  
+  integer :: ipy
+
   allocate(work_e(ngrids))
   
-  do ifm = 1,ngrids
+  gridloop: do ifm = 1,ngrids
      call newgrid(ifm)
      npolys=0
      offset=0
-     do nm=1,nmachs 
+     machloop: do nm=1,nmachs 
         
         if (ipara == 1) then
            iwest  = ixb(nm,ifm)
@@ -318,10 +319,10 @@ subroutine init_master_work(ipara)
         call ed_alloc_work(work_e(ifm),xmax,ymax)
 
         il=0
-        do i=iwest,ieast
+        iloop: do i=iwest,ieast
            jl=0
            il=il+1
-           do j=jsouth,jnorth
+           jloop: do j=jsouth,jnorth
               jl=jl+1
               work_e(ifm)%glon(il,jl) = grid_g(ifm)%glon(i,j)
               work_e(ifm)%glat(il,jl) = grid_g(ifm)%glat(i,j)
@@ -333,8 +334,8 @@ subroutine init_master_work(ipara)
               ! The following will give you the global coordinates
               !work_e(ifm)%xatm(il,jl)  = i       ! Remember that all tiles have a            
               !work_e(ifm)%yatm(il,jl)  = j       ! buffer cell so add one extra 
-           end do
-        enddo
+           end do jloop
+        end do iloop
         
         call get_work(ifm,xmax,ymax)
         
@@ -370,12 +371,45 @@ subroutine init_master_work(ipara)
         else
            mmxp(ifm) = xmax
            mmyp(ifm) = ymax
-        end if
 
-     end do
+
+           ! Fill the work vectors - these will be used in the ed2 initialization procedures
+           ! to populate the first polygons
+           ! -------------------------------------------------------------------------------
+           ipy = 0
+           do j = 1,mmyp(ifm)
+              do i = 1,mmxp(ifm)
+                 if(work_e(ifm)%land(i,j)) then
+                    ipy = ipy + 1
+                 endif
+              enddo
+           enddo
+          
+           allocate(work_e(ifm)%vec_glon(ipy))
+           allocate(work_e(ifm)%vec_glat(ipy))
+           allocate(work_e(ifm)%vec_landfrac(ipy))
+           allocate(work_e(ifm)%vec_ntext(ipy))
+           ! Making sure I use the same order as set_edtype_atm
+           ! or else we will get our wires crossed
+           ipy = 0
+           do i=1,mmxp(ifm)
+              do j = 1,mmyp(ifm)
+                 if (work_e(ifm)%land(i,j)) then
+                    ipy = ipy + 1
+                    work_e(ifm)%vec_glon(ipy)     = work_e(ifm)%glon(i,j)
+                    work_e(ifm)%vec_glat(ipy)     = work_e(ifm)%glat(i,j)
+                    work_e(ifm)%vec_landfrac(ipy) = work_e(ifm)%landfrac(i,j)
+                    work_e(ifm)%vec_ntext(ipy)    = work_e(ifm)%ntext(i,j)
+                 endif
+              end do
+           end do
+          
      
+        end if
+     
+     end do machloop
       
-  enddo
+  end do gridloop
   if (ipara == 1) then
      call MPI_Barrier(MPI_COMM_WORLD,ierr)
      deallocate(work_e)

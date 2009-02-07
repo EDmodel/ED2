@@ -29,6 +29,7 @@ subroutine ed_init_atm_ar
   integer, parameter :: harvard_override = 0
   include 'mpif.h'
   integer :: ping,ierr
+  integer :: npatches
   ping = 6 ! Just any rubbish for MPI Send/Recv
 
   ! This subroutine fills the ED2 fields which depend on current 
@@ -64,10 +65,10 @@ subroutine ed_init_atm_ar
               csite%can_shv(ipa)  =   cpoly%met(isi)%atm_shv
               
               ! Initialize stars
-              !csite%tstar(ipa)  = 0.
-              !csite%ustar(ipa)  = 0.
-              !csite%rstar(ipa)  = 0.
-              !csite%cstar(ipa)  = 0.
+              csite%tstar(ipa)  = 0.
+              csite%ustar(ipa)  = 0.
+              csite%rstar(ipa)  = 0.
+              csite%cstar(ipa)  = 0.
               
               ! For now, choose heat/vapor capacities for stability
               csite%can_depth(ipa) = 30.0
@@ -152,8 +153,8 @@ subroutine ed_init_atm_ar
                     do k = 1, nzg
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 0.0
-                       csite%soil_water(k,ipa)  = max(dble(soil(nsoil)%soilcp,             &
-                                                          ,slmstr(k) * soil(nsoil)%slmsts))
+                       csite%soil_water(k,ipa)  = dble(max(soil(nsoil)%soilcp             &
+                                                         ,slmstr(k) * soil(nsoil)%slmsts))
                        csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
                                                 * csite%soil_tempk(k,ipa)                  &
                                                 + sngl(csite%soil_water(k,ipa))            &
@@ -191,9 +192,6 @@ subroutine ed_init_atm_ar
      enddo
      
      call update_polygon_derived_props_ar(cgrid)
-
-     ! Energy needs to be done after LAI and Hite are loaded
-     call initialize_vegetation_energy(cgrid)
 
 
      call fuse_patches_ar(cgrid)
@@ -234,9 +232,6 @@ subroutine ed_init_atm_ar
            ,'NPatches:',npatches,'NCohorts:',ncohorts
      end do
   end do
-
-  ! Energy needs to be done after LAI and Hite are loaded
-  call initialize_vegetation_energy(cgrid)
 
   return
 end subroutine ed_init_atm_ar
@@ -446,7 +441,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
   logical :: l1
   integer :: ipy, isi, ipa !Counters for all structures
   integer, parameter :: harvard_override = 0
-
+  real    :: surface_temp, surface_fliq
 ! Putting these numbers as parameters, but we should think in a way to provide this info so we can make it more general.
   integer , parameter :: nlon=144, nlat=73
   real    , parameter :: dlon=2.5, dlat=2.5
@@ -554,7 +549,8 @@ subroutine read_soil_moist_temp_ar(cgrid)
                             cpoly%met(isi)%rhos,  &
                             csite%can_shv(ipa),  &
                             csite%ground_shv(ipa),  &
-                            csite%surface_ssh(ipa))
+                            csite%surface_ssh(ipa), &
+                            surface_temp, surface_fliq)
 
                     end do patchloop
                  end do siteloop
