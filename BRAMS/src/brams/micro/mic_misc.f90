@@ -44,7 +44,6 @@ subroutine each_call(m1,dtlt)
           ,sl             & ! intent(out)
           ,sc             & ! intent(out)
           ,sj             & ! intent(out)
-          ,sk             & ! intent(out)
           ,jhcat          & ! intent(out)
           ,sh             & ! intent(out)
           ,sm             & ! intent(out)
@@ -75,8 +74,6 @@ subroutine each_call(m1,dtlt)
    sj(5) = 0
    sj(6) = 1
    sj(7) = 1
-   sk(1) = alli
-   sk(2) = 0.
    sq(1) = tsupercool
    sq(2) = 0.
 

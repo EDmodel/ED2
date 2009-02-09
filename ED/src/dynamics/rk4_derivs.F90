@@ -729,7 +729,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    real                             :: leaf_flux        !
    real                             :: sat_shv          !
    real                             :: veg_temp         !
-   real                             :: fracliq          !
+   real                             :: veg_fliq         !
    real                             :: max_leaf_water   !
    real                             :: maxfluxrate      !
    real                             :: intercepted_tot  !
@@ -921,14 +921,15 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    !!!! Shouldn't this be the htry instead of dtlsm???                                  !!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   maxfluxrate = 0.55 * wdns * initp%available_liquid_water(nzg)/dtlsm
+   !maxfluxrate = 0.55 * wdns * initp%available_liquid_water(nzg)/dtlsm
    !----- Temporary water/snow layers exist. ----------------------------------------------!
    if (initp%nlev_sfcwater > 0) then
       wflxgc  = max(0.,wflx)
       qwflxgc = max(0.,qwflx)
    !----- No surface water and not dry: evaporate from soil pores -------------------------!
    else if (initp%soil_water(nzg) > dble(soil(csite%ntext_soil(nzg,ipa))%soilcp)) then
-      wflxgc = min(maxfluxrate , max( 0.0, (initp%ground_shv - initp%can_shv) * rdi) )
+        wflxgc = max( 0.0, (initp%ground_shv - initp%can_shv) * rdi)
+        wflxgc = min(maxfluxrate , max( 0.0, (initp%ground_shv - initp%can_shv) * rdi) )
       !----- Adjusting the flux accordingly to the surface fraction (no phase bias) -------!
       qwflxgc = wflxgc * ( alvi - surface_fliq * alli)
    !----- No surface water and really dry: don't evaporate at all -------------------------!
@@ -953,7 +954,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    !                                                                                       !
    !     The next few lines will be removed pending sensitivity analysis                   !
    !---------------------------------------------------------------------------------------!
-   if (initp%available_liquid_water(nzg) <= 0.01 .and. wflxgc > 0.0) then
+   if (initp%available_liquid_water(nzg) <= 0.001 .and. wflxgc > 0.0) then
       wflxgc  = 0.0
       qwflxgc = 0.0
    end if
@@ -999,7 +1000,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
 
          !------ Finding previous leaf temperature and fraction of liquid water. ----------!
          call qwtk (initp%veg_energy(ico),initp%veg_water(ico),cpatch%hcapveg(ico)         &
-                   ,veg_temp,fracliq)
+                   ,veg_temp,veg_fliq)
 
 
          !------  Calculate leaf-level CO2 flux -------------------------------------------!
@@ -1039,7 +1040,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
             !------------------------------------------------------------------------------!
             !------ Evaporation, energy is scaled by liquid/ice partition (no phase bias) -!
             wflxvc  = c3 * sigmaw * evap_area_one * rbi
-            qwflxvc = wflxvc * (alvi - fracliq * alli)
+            qwflxvc = wflxvc * (alvi - veg_fliq * alli)
 
             cpatch%Psi_open(ico)   = c3 / (cpatch%rb(ico) + cpatch%rsw_open(ico)  )
             cpatch%Psi_closed(ico) = c3 / (cpatch%rb(ico) + cpatch%rsw_closed(ico))
@@ -1089,7 +1090,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          elseif (initp%veg_water(ico) < 0.99*max_leaf_water) then
             !------ Dew/frost formation ---------------------------------------------------!
             wflxvc                 = c3 * evap_area_one * rbi
-            qwflxvc                = wflxvc * (alvi - fracliq*alli)
+            qwflxvc                = wflxvc * (alvi - veg_fliq*alli)
             transp                 = 0.0
             qtransp                = 0.0
             cpatch%Psi_open(ico)   = 0.0

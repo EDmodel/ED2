@@ -212,7 +212,7 @@ subroutine reproduction_ar(cgrid, month)
            
            ! Deallocate the current patch
            
-           call deallocate_patchtype(cpatch)
+           if (cpatch%ncohorts > 0) call deallocate_patchtype(cpatch)
 
            ! Reallocate the current site
 
@@ -259,7 +259,7 @@ subroutine reproduction_ar(cgrid, month)
 
            ! Remove the temporary patch
            
-           call deallocate_patchtype(temppatch)
+           if (temppatch%ncohorts > 0) call deallocate_patchtype(temppatch)
            
         enddo
         

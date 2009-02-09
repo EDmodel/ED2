@@ -65,7 +65,7 @@ subroutine diffprep(lcat)
       
       scdei         = 1. / (sc(if1) * sd(k,lcat) + se(k,lcat))
       ss(k,lcat)    = sf(k,lcat) * scdei
-      sw(k,lcat)    = (sg(k,lcat) - sk(if1) * sd(k,lcat)) * scdei
+      sw(k,lcat)    = (sg(k,lcat) + sc(if1) * sq(if1) * sd(k,lcat)) * scdei
       ttest(k,lcat) = ss(k,lcat) * rvap(k) + sw(k,lcat)
    end do mainloop
 
@@ -85,13 +85,13 @@ subroutine diffprep(lcat)
          ! variable is switched to 1 in case temperature is greater than triple point.     !
          ! (as explained in Walko et al. (2000) between equations 16 and 17).              !
          !---------------------------------------------------------------------------------!
-         if (ttest(k,lcat) >= t3ple-t00 ) then
+         if (ttest(k,lcat) >= t3ple ) then
             sm(k,lcat) = 0.
             sh(k,lcat) = 1.
             sd(k,lcat) = sh(k,lcat) * rx(k,lcat)
             scdei = 1. / (sc(if1) * sd(k,lcat) + se(k,lcat))
             ss(k,lcat) = sf(k,lcat) * scdei
-            sw(k,lcat) = (sg(k,lcat) - sk(if1) * sd(k,lcat)) * scdei
+            sw(k,lcat) = (sg(k,lcat) + sc(if1) * sq(if1) * sd(k,lcat)) * scdei
          else
             sm(k,lcat) = 1.
          end if
@@ -100,7 +100,7 @@ subroutine diffprep(lcat)
       mixloop: do k = k1(lcat),k2(lcat)
          if (rx(k,lcat) < rxmin(lcat)) cycle mixloop
 
-         if (ttest(k,lcat) >= t3ple-t00) then
+         if (ttest(k,lcat) >= t3ple) then
             sm(k,lcat) = 0.
          else
             sm(k,lcat) = 1.
@@ -178,7 +178,7 @@ end subroutine vapdiff
 subroutine vapflux(lcat)
 
    use micphys
-   use rconstants, only : alli,t3ple,t00
+   use rconstants, only : alli,t3ple
    use micro_coms, only : qmixedmin,qmixedmax,qprismax
    implicit none
 
