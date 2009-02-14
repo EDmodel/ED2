@@ -929,7 +929,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    !----- No surface water and not dry: evaporate from soil pores -------------------------!
    else if (initp%soil_water(nzg) > dble(soil(csite%ntext_soil(nzg,ipa))%soilcp)) then
         wflxgc = max( 0.0, (initp%ground_shv - initp%can_shv) * rdi)
-        wflxgc = min(maxfluxrate , max( 0.0, (initp%ground_shv - initp%can_shv) * rdi) )
+        !wflxgc = min(maxfluxrate , max( 0.0, (initp%ground_shv - initp%can_shv) * rdi) )
       !----- Adjusting the flux accordingly to the surface fraction (no phase bias) -------!
       qwflxgc = wflxgc * ( alvi - surface_fliq * alli)
    !----- No surface water and really dry: don't evaporate at all -------------------------!

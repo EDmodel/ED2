@@ -150,9 +150,11 @@ subroutine grell_cupar_driver(banneron,icld)
    !---------------------------------------------------------------------------------------!
    ! 1.  Flushing the feedback to zero, so the default is no convection happened.          !
    !---------------------------------------------------------------------------------------!
-   cuparm_g(ngrid)%thsrc(1:mzp,ia:iz,ja:jz,icld)  = 0.
-   cuparm_g(ngrid)%rtsrc(1:mzp,ia:iz,ja:jz,icld)  = 0.
-   cuparm_g(ngrid)%conprr(ia:iz,ja:jz,icld)       = 0.
+   call azero(mzp*mxp*myp,cuparm_g(ngrid)%thsrc  (:,:,:,icld))
+   call azero(mzp*mxp*myp,cuparm_g(ngrid)%rtsrc  (:,:,:,icld))
+   call azero(mzp*mxp*myp,cuparm_g(ngrid)%cuprliq(:,:,:,icld))
+   call azero(mzp*mxp*myp,cuparm_g(ngrid)%cuprice(:,:,:,icld))
+   call azero(    mxp*myp,cuparm_g(ngrid)%conprr (  :,:,icld))
 
    !---------------------------------------------------------------------------------------!
    ! 2. Accumulate all convection sources into scratch arrays. This is to remove           !
@@ -342,8 +344,8 @@ subroutine grell_cupar_driver(banneron,icld)
               , cuparm_g(ngrid)%zk22      (i,j,icld), cuparm_g(ngrid)%zkbcon    (i,j,icld) &
               , cuparm_g(ngrid)%zkdt      (i,j,icld), cuparm_g(ngrid)%zktop     (i,j,icld) &
               , cuparm_g(ngrid)%conprr    (i,j,icld), cuparm_g(ngrid)%thsrc   (:,i,j,icld) &
-              , cuparm_g(ngrid)%rtsrc   (:,i,j,icld), cuparm_g(ngrid)%areadn  (:,i,j,icld) &
-              , cuparm_g(ngrid)%areaup  (:,i,j,icld), cuparm_g(ngrid)%cuprliq (:,i,j,icld) &
+              , cuparm_g(ngrid)%rtsrc   (:,i,j,icld), cuparm_g(ngrid)%areadn    (i,j,icld) &
+              , cuparm_g(ngrid)%areaup    (i,j,icld), cuparm_g(ngrid)%cuprliq (:,i,j,icld) &
               , cuparm_g(ngrid)%cuprice (:,i,j,icld))
 
          !---------------------------------------------------------------------------------!

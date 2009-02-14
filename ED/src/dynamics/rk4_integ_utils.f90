@@ -193,7 +193,8 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff,rhos,vels   &
 
    !----- If it reached this point, that is really bad news... ----------------------------!
    print*,'Too many steps in routine odeint'
-   call print_patch_ar(integration_buff%y, csite,ipa, lsl)
+   call print_patch_ar(integration_buff%y, csite,ipa, lsl,atm_tmp,atm_shv,atm_co2,prss     &
+                      ,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg)
    call fatal_error('Too many steps, I give up!','odeint_ar','rk4_integ_utils.f90')
 
    return
@@ -460,7 +461,8 @@ subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, lsl)
    use grid_coms            , only : nzg                & ! intent(in)
                                    , nzs                ! ! intent(in)
    use soil_coms            , only : min_sfcwater_mass  ! ! intent(in)
-   use consts_coms          , only : cliq               ! ! intent(in)
+   use consts_coms          , only : cliq               & ! intent(in)
+                                   , qliqt3             ! ! intent(in)
    use canopy_radiation_coms, only : lai_min            ! ! intent(in)
    use pft_coms             , only : sla                ! ! intent(in)
    implicit none
@@ -518,7 +520,7 @@ subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, lsl)
 
    !----- Scale for the virtual water pools -----------------------------------------------!
    yscal%virtual_water = 0.1
-   yscal%virtual_heat = cliq * 110.0 * yscal%virtual_water
+   yscal%virtual_heat  = qliqt3 * yscal%virtual_water
 
    !---------------------------------------------------------------------------------------!
    !    Scale for leaf water and energy. In case the plants have few or no leaves, we      !
@@ -875,6 +877,7 @@ subroutine stabilize_snow_layers_ar(initp, csite,ipa, lsl)
    ! the temporary layer is way too thin.                                                  !
    !---------------------------------------------------------------------------------------!
    call redistribute_snow_ar(initp,csite,ipa)
+   
   
    return
 end subroutine stabilize_snow_layers_ar
@@ -1009,13 +1012,17 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
    !----- No temporary layer, nothing in the virtual pool, keep it dry --------------------!
    elseif (initp%virtual_water < min_sfcwater_mass) then
       ksnnew = 0
+      initp%virtual_water = 0.0
+      initp%virtual_heat  = 0.0
+      initp%virtual_depth = 0.0
    !----- No temporary layer, significant mass to add, create one layer -------------------!
    else
       wfree = initp%virtual_water
       qwfree = initp%virtual_heat
       depthgain = initp%virtual_depth
       initp%virtual_water = 0.0
-      initp%virtual_heat = 0.0
+      initp%virtual_heat  = 0.0
+      initp%virtual_depth = 0.0
       ksnnew = 1
    end if
    !---------------------------------------------------------------------------------------!
@@ -1384,7 +1391,7 @@ subroutine print_patch_pss_ar(csite, ipa, lsl)
                 ,current_time%time,'UTC'
    write(unit=*,fmt='(a,1x,es12.5)') 'Attempted step size:',csite%htry(ipa)
    write (unit=*,fmt='(a,1x,i6)')    'Ncohorts: ',cpatch%ncohorts
-
+ 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(a)'  ) 'Cohort information (only those with LAI > LAI_MIN shown): '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
@@ -1394,7 +1401,7 @@ subroutine print_patch_pss_ar(csite, ipa, lsl)
                            &,'     FS_OPEN','         FSW','         FSN'
    do ico = 1,cpatch%ncohorts
       if(cpatch%lai(ico) > lai_min)then
-         write(unit=*,fmt='(2(i7,1x),10(es12.5,1x))') cpatch%pft(ico), cpatch%krdepth(ico) &
+         write(unit=*,fmt='(2(i7,1x),11(es12.5,1x))') cpatch%pft(ico), cpatch%krdepth(ico) &
               ,cpatch%nplant(ico),cpatch%lai(ico),cpatch%dbh(ico),cpatch%bdead(ico)        &
               ,cpatch%balive(ico),cpatch%veg_energy(ico),cpatch%veg_temp(ico)              &
               ,cpatch%veg_water(ico),cpatch%fs_open(ico),cpatch%fsw(ico),cpatch%fsn(ico)
@@ -1475,24 +1482,39 @@ end subroutine print_patch_pss_ar
 !    This subroutine is similar to print_patch_pss_ar, except that it also prints the      !
 ! outcome of the Runge-Kutta integrator.                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine print_patch_ar(y, csite,ipa, lsl)
-   use ed_state_vars         , only : sitetype      & ! intent(in)
-                                    , patchtype     & ! intent(in)
-                                    , rk4patchtype  ! ! intent(in)
-   use grid_coms             , only : nzg           & ! intent(in)
-                                    , nzs           ! ! intent(in)
-   use canopy_radiation_coms , only : lai_min       ! ! intent(in)
-   use misc_coms             , only : current_time  ! ! intent(in)
+subroutine print_patch_ar(y,csite,ipa, lsl,atm_tmp,atm_shv,atm_co2,prss,exner,rhos,vels    &
+                         ,geoht,pcpg,qpcpg,dpcpg)
+   use ed_state_vars         , only : sitetype          & ! intent(in) 
+                                    , patchtype         & ! intent(in) 
+                                    , rk4patchtype      ! ! intent(in) 
+   use grid_coms             , only : nzg               & ! intent(in) 
+                                    , nzs               ! ! intent(in) 
+   use canopy_radiation_coms , only : lai_min           ! ! intent(in) 
+   use misc_coms             , only : current_time      ! ! intent(in) 
+   use therm_lib             , only : qtk               ! ! subroutine 
+   use soil_coms             , only : min_sfcwater_mass ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype) , target     :: y
    type(sitetype)     , target     :: csite
    integer            , intent(in) :: lsl
    integer            , intent(in) :: ipa
+   real               , intent(in) :: atm_tmp
+   real               , intent(in) :: atm_shv
+   real               , intent(in) :: atm_co2
+   real               , intent(in) :: prss
+   real               , intent(in) :: exner
+   real               , intent(in) :: rhos
+   real               , intent(in) :: vels
+   real               , intent(in) :: geoht
+   real               , intent(in) :: pcpg
+   real               , intent(in) :: qpcpg
+   real               , intent(in) :: dpcpg
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)    , pointer    :: cpatch
    integer                         :: k
    integer                         :: ico
+   real                            :: virtual_temp, virtual_fliq
    !---------------------------------------------------------------------------------------!
 
    cpatch => csite%patch(ipa)
@@ -1509,6 +1531,21 @@ subroutine print_patch_ar(y, csite,ipa, lsl)
                 ,current_time%time,'s'
    write(unit=*,fmt='(a,1x,es12.5)') 'Attempted step size:',csite%htry(ipa)
    write (unit=*,fmt='(a,1x,i6)')    'Ncohorts: ',cpatch%ncohorts
+   write (unit=*,fmt='(80a)') ('-',k=1,80)
+
+   write (unit=*,fmt='(80a)')         ('-',k=1,80)
+   write (unit=*,fmt='(a)')           ' ATMOSPHERIC CONDITIONS: '
+   write (unit=*,fmt='(a,1x,es12.5)') ' Air temperature    : ',atm_tmp
+   write (unit=*,fmt='(a,1x,es12.5)') ' H2Ov mixing ratio  : ',atm_shv
+   write (unit=*,fmt='(a,1x,es12.5)') ' CO2  mixing ratio  : ',atm_co2
+   write (unit=*,fmt='(a,1x,es12.5)') ' Pressure           : ',prss
+   write (unit=*,fmt='(a,1x,es12.5)') ' Exner function     : ',exner
+   write (unit=*,fmt='(a,1x,es12.5)') ' Air density        : ',rhos
+   write (unit=*,fmt='(a,1x,es12.5)') ' Wind speed         : ',vels
+   write (unit=*,fmt='(a,1x,es12.5)') ' Height             : ',geoht
+   write (unit=*,fmt='(a,1x,es12.5)') ' Precip. mass  flux : ',pcpg
+   write (unit=*,fmt='(a,1x,es12.5)') ' Precip. heat  flux : ',qpcpg
+   write (unit=*,fmt='(a,1x,es12.5)') ' Precip. depth flux : ',dpcpg
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(a)'  ) 'Cohort information (only those with LAI > LAI_MIN shown): '
@@ -1540,11 +1577,22 @@ subroutine print_patch_ar(y, csite,ipa, lsl)
    write (unit=*,fmt='(4(es12.5,1x))') y%ustar,y%rstar,y%cstar,y%tstar
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
+   if (y%virtual_water /= 0.) then
+      call qtk(y%virtual_heat/y%virtual_water,virtual_temp,virtual_fliq)
+   else
+      virtual_temp = y%soil_tempk(nzg)
+      virtual_fliq = y%soil_fracliq(nzg)
+   end if
+
 
    write (unit=*,fmt='(5(a12,1x))')  'VIRTUAL_FLAG','VIRTUAL_HEAT','  VIRT_WATER'          &
-                                   &,'  GROUND_SHV',' SURFACE_SSH'
+                                   &,'VIRTUAL_TEMP','VIRTUAL_FLIQ'
    write (unit=*,fmt='(i12,1x,4(es12.5,1x))') y%virtual_flag,y%virtual_heat                &
-                                             ,y%virtual_water,y%ground_shv, y%surface_ssh
+                                             ,y%virtual_water,virtual_temp,virtual_fliq
+   write (unit=*,fmt='(80a)') ('-',k=1,80)
+
+   write (unit=*,fmt='(2(a12,1x))')    '  GROUND_SHV',' SURFACE_SSH'
+   write (unit=*,fmt='(2(es12.5,1x))') y%ground_shv, y%surface_ssh
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
@@ -1573,6 +1621,8 @@ subroutine print_patch_ar(y, csite,ipa, lsl)
    !----- Printing the corresponding patch information (with some redundancy) -------------!
    call print_patch_pss_ar(csite, ipa, lsl)
 
+   call abort_run('IFLAG1 problem. The model didn''t converge!','print_patch_ar'&
+                 &,'rk4_integ_utils.f90')
    return
 end subroutine print_patch_ar
 !==========================================================================================!

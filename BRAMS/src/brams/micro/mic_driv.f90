@@ -1,8 +1,6 @@
 !====================================== Change Log ========================================!
 ! 5.0.0                                                                                    !
 !                                                                                          !
-!   08/31/08 - MLO - Switching micro by OLAM equivalent, which uses densities rather than  !
-!                    mixing ratio.                                                         !
 !==========================================================================================!
 !  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved                       !
 !  Regional Atmospheric Modeling System - RAMS                                             !
@@ -391,7 +389,7 @@ subroutine copyback(m1,i,j,thp,btheta,rtp,rv,micro)
    use mem_scratch, only : &
            vctr11        ! ! intent(out)
    
-   use rconstants, only: cliq,cice,alli
+   use rconstants, only: t00,cliq,cice,alli
    use therm_lib , only: qtk
 
    implicit none

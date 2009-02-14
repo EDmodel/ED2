@@ -37,29 +37,20 @@
 ! or Roni Avissar (avissar@duke.edu).
 !===============================================================================
 !MLO - Adapted to ED-BRAMS
-subroutine rad_mclat(m1,nrad,koff,glat,rtgt,dl,pl,rl,tl,o3l,zml,ztl,dzl)
+subroutine rad_mclat(m1,nrad,koff,glat,rtgt)
 
   use mem_mclat,   only: sslat, mclat, ypp_mclat, mcol
   use mem_radiate, only: nadd_rad, zmrad
   use rconstants,  only: gordry
   use mem_grid,    only: zm
+  use harr_coms,   only: dl,pl,rl,tl,o3l,zml,ztl,dzl
 
   implicit none
   integer, intent(in) :: m1
   integer, intent(in) :: nrad     ! # of vertical radiation levels
   integer, intent(in) :: koff     ! offset between model and radiation levels
-
-  real, intent(in) :: glat
-  real, intent(in) :: rtgt
-
-  real, intent(inout) :: dl (nrad)
-  real, intent(inout) :: pl (nrad)
-  real, intent(inout) :: rl (nrad)
-  real, intent(inout) :: tl (nrad)
-  real, intent(inout) :: o3l(nrad)
-  real, intent(inout) :: zml(nrad)
-  real, intent(inout) :: ztl(nrad)
-  real, intent(inout) :: dzl(nrad)
+  real, intent(in)    :: glat
+  real, intent(in)    :: rtgt
 
   integer :: lv, lf, k, kadd
   real    :: deltaz, tavg
@@ -75,14 +66,14 @@ subroutine rad_mclat(m1,nrad,koff,glat,rtgt,dl,pl,rl,tl,o3l,zml,ztl,dzl)
   do lv = 1,33    ! Loop over number of vertical levels
      do lf = 1,6  ! Loop over number of data types
 
-        if (lf == 2) cycle                      ! no need for pressure
+        if (lf == 2) cycle                                    ! no need for pressure
         if (nadd_rad == 0 .and. lf /= 5 .and. lf /= 1) cycle  ! only o3 needed if nadd_rad=0
 
-        call spline2(13,sslat,mclat(1,lv,lf),ypp_mclat(1,lv,lf),glat,mcol(lv,lf))
-     enddo
-  enddo
+        call spline2(13,sslat,mclat(1:13,lv,lf),ypp_mclat(1:13,lv,lf),glat,mcol(lv,lf))
+     end do
+  end do
 
-  ! Model values of dl, pl, tl, rl, zml, and ztl were filled in harr_radcomp
+  ! Model values of dl, pl, tl, rl, zml, and ztl were filled in harr_raddriv
   ! from k = 1 to k = mza - 1 - koff
 
   if (nadd_rad > 0) then
@@ -112,7 +103,7 @@ subroutine rad_mclat(m1,nrad,koff,glat,rtgt,dl,pl,rl,tl,o3l,zml,ztl,dzl)
 
   ! Interpolate O3 from Mclatchy sounding to all levels in radiation column,
 
-  call hintrp_cc(33, mcol(1,5), mcol(1,1), nrad, o3l, ztl)
+  call hintrp_cc(33, mcol(1:33,5), mcol(1:33,1), nrad, o3l(1:nrad), ztl(1:nrad))
 
   if (nadd_rad > 0) then
 
@@ -120,9 +111,9 @@ subroutine rad_mclat(m1,nrad,koff,glat,rtgt,dl,pl,rl,tl,o3l,zml,ztl,dzl)
      ! to added levels.
 
      kadd = m1 - koff
-     call hintrp_cc(33, mcol(1,3), mcol(1,1), nadd_rad, tl(kadd), ztl(kadd))
-     call hintrp_cc(33, mcol(1,4), mcol(1,1), nadd_rad, rl(kadd), ztl(kadd))
-     call hintrp_cc(33, mcol(1,6), mcol(1,1), nadd_rad, dl(kadd), ztl(kadd))
+     call hintrp_cc(33, mcol(1:33,3), mcol(1:33,1), nadd_rad, tl(kadd:nrad), ztl(kadd:nrad))
+     call hintrp_cc(33, mcol(1:33,4), mcol(1:33,1), nadd_rad, rl(kadd:nrad), ztl(kadd:nrad))
+     call hintrp_cc(33, mcol(1:33,6), mcol(1:33,1), nadd_rad, dl(kadd:nrad), ztl(kadd:nrad))
 
      ! Compute pressure of added levels by hydrostatic integration.
      
@@ -131,7 +122,7 @@ subroutine rad_mclat(m1,nrad,koff,glat,rtgt,dl,pl,rl,tl,o3l,zml,ztl,dzl)
         pl(k) = pl(k-1) * exp( -gordry * (ztl(k) - ztl(k-1))*rtgt / tavg )
      enddo
 
-  endif
+  end if
 
   return
 end subroutine rad_mclat
@@ -141,9 +132,9 @@ end subroutine rad_mclat
 subroutine spline1(n,xdat,ydat,yppdat)
   !MLO Imported from OLAM 2.5.1 
   implicit none
-  integer , intent(in)                :: n
-  real    , intent(in) , dimension(n) :: xdat,ydat
-  real    , intent(out), dimension(n) :: yppdat
+  integer , intent(in)                  :: n
+  real    , intent(in)   , dimension(n) :: xdat,ydat
+  real    , intent(inout), dimension(n) :: yppdat
   !Local variables
   integer :: i,j
   real    :: fx,fy

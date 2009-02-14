@@ -11,6 +11,7 @@ subroutine rams_mem_alloc(proc_type)
 
    use mem_all
    use node_mod
+   use leaf_coms, only : alloc_leafcol
 
    use io_params, only : maxlite,lite_vars,nlite_vars,frqlite,frqanl
 

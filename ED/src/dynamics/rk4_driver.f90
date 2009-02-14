@@ -242,14 +242,16 @@ contains
     !------------------------
     ! Move the state variables from the integrated patch to the model patch
     !------------------------
-    call initp2modelp_ar(tend-tbeg, initp, csite, ipa,isi,ipy, rhos, lsl)
+    call initp2modelp_ar(tend-tbeg, initp, csite, ipa,isi,ipy,lsl,atm_tmp,atm_shv,atm_co2 &
+                        ,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg)
 
     return
   end subroutine integrate_patch_ar
 
   !====================================================================
 
-  subroutine initp2modelp_ar(hdid, initp, csite, ipa,isi,ipy, rhos, lsl)
+  subroutine initp2modelp_ar(hdid, initp, csite, ipa,isi,ipy,lsl,atm_tmp,atm_shv,atm_co2   &
+                            ,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg)
 
     use ed_state_vars,only:sitetype,patchtype,rk4patchtype,edgrid_g
     use consts_coms, only: day_sec,t3ple
@@ -263,7 +265,8 @@ contains
     implicit none
 
     integer, intent(in) :: lsl
-    real, intent(in) :: rhos
+    real   , intent(in) :: atm_tmp,atm_shv,atm_co2
+    real   , intent(in) :: prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg
 
     type(sitetype),target :: csite
     type(patchtype),pointer :: cpatch
@@ -463,7 +466,8 @@ contains
 !!$       write(unit=*,fmt='(a,1x,es14.7)') 'rb        :',cpatch%rb(ico)
 !!$       write(unit=*,fmt='(a)')           ' '
 !!$
-          call print_patch_ar(initp, csite,ipa, lsl)
+          call print_patch_ar(initp, csite,ipa, lsl,atm_tmp,atm_shv,atm_co2,prss           &
+                             ,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg)
           
           call fatal_error('extreme vegetation temperature','initp2modelp','rk4_driver.f90')
 

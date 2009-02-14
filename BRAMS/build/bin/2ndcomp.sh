@@ -52,6 +52,7 @@ rm -fv grell_extras_catt.o        grell_extras_catt.mod
 rm -fv grid_dims.o                grid_dims.mod
 rm -fv grid_struct.o              grid_struct.mod
 rm -fv gridset.o                  gridset.mod
+rm -fv harr_coms.o                harr_coms.mod
 rm -fv harr_rad.o                 harr_rad.mod
 rm -fv harr_raddriv.o             harr_raddriv.mod
 rm -fv harr_radinit.o             harr_radinit.mod

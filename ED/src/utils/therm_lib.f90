@@ -887,7 +887,7 @@ module therm_lib
          tempk   = (qw + w * cliq * tsupercool) / (dryhcap + w*cliq)
       !----- Changing phase, it must be at triple point -----------------------------------!
       elseif (w > 0.) then
-         fracliq = (qw - qwfroz) * allii
+         fracliq = (qw - qwfroz) * allii / w
          tempk = t3ple
       !----- No water, but it must be at triple point (qw = qwfroz = qwmelt) --------------!
       else
@@ -913,7 +913,6 @@ module therm_lib
    ! This routine requires an 8-byte double precision floating point value for density.    !
    !---------------------------------------------------------------------------------------!
    subroutine qwtk8(qw,w8,dryhcap,tempk,fracliq)
-      use consts_coms, only: cliqi,cliq,cicei,cice,allii,alli,t3ple,tsupercool
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real        , intent(in)  :: qw      ! Internal energy           [  J/m²] or [  J/m³]
@@ -922,41 +921,13 @@ module therm_lib
       real        , intent(out) :: tempk   ! Temperature                           [     K]
       real        , intent(out) :: fracliq ! Liquid fraction (0-1)                 [   ---]
       !----- Local variable ---------------------------------------------------------------!
-      real              :: qwfroz  ! qw of ice at triple point         [  J/m²] or [  J/m³] 
-      real              :: qwmelt  ! qw of liquid at triple point      [  J/m²] or [  J/m³]
       real              :: w       ! Density                           [ kg/m²] or [ kg/m³]
       !------------------------------------------------------------------------------------!
 
-      !----- Converting melting heat to J/m² or J/m³ --------------------------------------!
+      !----- Converting water mass to single precision ------------------------------------!
       w      = sngl(w8)
-      qwfroz = (dryhcap + w*cice) * t3ple
-      qwmelt = qwfroz   + w*alli
-      !------------------------------------------------------------------------------------!
-      
-      !------------------------------------------------------------------------------------!
-      !    This is analogous to the qtk computation, we should analyse the sign and        !
-      ! magnitude of the internal energy to choose between liquid, ice, or both.           !
-      !------------------------------------------------------------------------------------!
+      call qwtk(qw,w,dryhcap,tempk,fracliq)
 
-      !----- Negative internal energy, frozen, all ice ------------------------------------!
-      if (qw < qwfroz) then
-         fracliq = 0.
-         tempk   = qw  / (cice * w + dryhcap)
-      !----- Positive internal energy, over latent heat of melting, all liquid ------------!
-      elseif (qw > qwmelt) then
-         fracliq = 1.
-         tempk   = (qw + w * cliq * tsupercool) / (dryhcap + w*cliq)
-      !----- Changing phase, it must be at triple point -----------------------------------!
-      elseif (w > 0.) then
-         fracliq = (qw - qwfroz) * allii
-         tempk = t3ple
-      !----- No water, but it must be at triple point (qw = qwfroz = qwmelt) --------------!
-      else
-         fracliq = 0.0
-         tempk   = t3ple
-      end if
-      !------------------------------------------------------------------------------------!
-      
       return
    end subroutine qwtk8
    !=======================================================================================!

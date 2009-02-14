@@ -55,7 +55,7 @@ subroutine each_call(m1,dtlt)
    integer, intent(in) :: m1
    real   , intent(in) :: dtlt
    !----- Local Variables -----------------------------------------------------------------!
-   integer :: lcat, k
+   integer :: lcat, lhcat, k
    !---------------------------------------------------------------------------------------!
 
 
@@ -159,7 +159,7 @@ subroutine fill_thermovars(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
        ,cccnx          & ! intent(out)
        ,cifnx          ! ! intent(out)
 
-   use rconstants, only : p00, cpi, cp, cpor,alvi,alvl
+   use rconstants, only : p00, cpi, cp, cpor,alvi,alvl, tsupercool, cliqi
    use therm_lib , only : qtk,thil2temp,dtempdrs,thetaeiv
 
    implicit none
@@ -192,13 +192,12 @@ subroutine fill_thermovars(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
 
    !----- Zero out microphysics scratch arrays for the present i,j column -----------------!
    do lcat = 1,ncat
-      do k = 1,m1-1
+      do k = 1,m1
          rx(k,lcat)  = 0.
          cx(k,lcat)  = 0.
          qr(k,lcat)  = 0.
          qx(k,lcat)  = 0.
          vap(k,lcat) = 0.
-         tx(k,lcat)  = 0.
       end do
 
       if (jnmb(lcat) >= 3) then
@@ -253,6 +252,7 @@ subroutine fill_thermovars(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
             rx(k,2)    = micro%rrp(k,i,j)
             rliq(k)    = rliq(k) + rx(k,2)
             qx(k,2)    = micro%q2(k,i,j)
+            tx(k,2)    = tsupercool + cliqi * qx(k,2)
             qr(k,2)    = qx(k,2) * rx(k,2)
             if (progncat(2)) cx(k,2) = micro%crp(k,i,j)
          else
@@ -327,7 +327,7 @@ subroutine fill_thermovars(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
             k2(6)      = k
             rx(k,6)    = micro%rgp(k,i,j)
             qx(k,6)    = micro%q6(k,i,j)
-            call qtk(qx(k,6),tcoal,fracliq)
+            call qtk(qx(k,6),tx(k,6),fracliq)
             rliq(k)    = rliq(k) + rx(k,6)*fracliq
             rice(k)    = rice(k) + rx(k,6)*(1.-fracliq)
             qr(k,6)    = qx(k,6)          * rx(k,6)
@@ -349,7 +349,7 @@ subroutine fill_thermovars(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
             k2(7)      = k
             rx(k,7)    = micro%rhp(k,i,j)
             qx(k,7)    = micro%q7(k,i,j)
-            call qtk(qx(k,7),tcoal,fracliq)
+            call qtk(qx(k,7),tx(k,7),fracliq)
             rliq(k)    = rliq(k) + rx(k,7)*fracliq
             rice(k)    = rice(k) + rx(k,7)*(1.-fracliq)
             qr(k,7)    = qx(k,7)          * rx(k,7)
@@ -399,6 +399,34 @@ subroutine fill_thermovars(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
       ! subroutine.                                                                        !
       !------------------------------------------------------------------------------------!
       theiv(k)   = thetaeiv(thil(k),press(k),tair(k),rvap(k),rtot(k),.true.)
+   end do
+   
+   !---------------------------------------------------------------------------------------!
+   !    Initialise temperature for cloud and pristine ice, because they can nucleate and   !
+   ! that will require an initial temperature. Snow and aggregates would not need this     !
+   ! in principle, but we will play it safe anyway. For rain, graupel, and hail, we use    !
+   ! their actual temperature if they already exist, otherwise assume environment          !
+   ! temperature. Again, this is probably unecessary but we are just trying to play it     !
+   ! safe.                                                                                 !
+   !---------------------------------------------------------------------------------------!
+   do lcat=1,7
+      select case (lcat)
+      case (1,3,4,5)
+         !----- Hydrometeors with no known temperature. Assume tair. ----------------------!
+         do k=1,m1
+            tx(k,lcat) = tair(k)
+         end do
+      case (2,6,7)
+         !---------------------------------------------------------------------------------!
+         !    The levels with hydrometeors were already initialised using the internal     !
+         ! energy. Therefore we only to fill the other levels with tair.                   !
+         !---------------------------------------------------------------------------------!
+         do k=1,m1
+            if (rx(k,lcat) < rxmin(lcat)) then
+               tx(k,lcat) = tair(k)
+            end if
+         end do
+      end select
    end do
 
    return
@@ -545,7 +573,6 @@ subroutine each_column(m1,dtlt)
          ,colf             & ! intent(out)
          ,pi4dt            & ! intent(out)
          ,tairc            & ! intent(out)
-         ,tx               & ! intent(out)
          ,thrmcon          & ! intent(out)
          ,dynvisc          & ! intent(out)
          ,jhcat            & ! intent(out)
@@ -597,7 +624,6 @@ subroutine each_column(m1,dtlt)
       rvisair(k) = rsif(press(k),tair(k))
 
       tairc(k)   = tair(k) - t00
-      tx(k,1)    = tair(k)
       thrmcon(k) = ckcoeff(1) + (ckcoeff(2) + ckcoeff(3) * tair(k)) * tair(k)
       dynvisc(k) = dvcoeff(1) + dvcoeff(2) * tairc(k)
       denfac(k)  = sqrt(rhoi(k))
@@ -733,11 +759,6 @@ subroutine enemb(lcat,jflag)
       case (1)
          do k = lk1,lk2
              lhcat = jhcat(k,lcat)
-             !-----------------------------------------------------------------------------!
-             ! Leaving cxmin commented out for now, I will check the impact later.         !
-             !-----------------------------------------------------------------------------!
-             ! emb(k,lcat) = max(emb0(lcat),min(emb1(lcat)                                   &
-             !                                 ,rx(k,lcat)/max(cxmin(lhcat),cx(k,lcat)) ) )
              emb(k,lcat) = max(emb0(lcat),min(emb1(lcat)                                   &
                                              ,rx(k,lcat)/max(1.e-9,cx(k,lcat)) ) )
              cx(k,lcat) = rx(k,lcat) / emb(k,lcat)
@@ -1162,12 +1183,11 @@ subroutine sedim(m1,lcat,if_adap,mynum,pcpg,qpcpg,dpcpg,dtlti,pcpfillc,pcpfillr,
    do k = lpw,k2(lcat) ! From RAMS 6.0
       rtot(k) = rtot(k) + rfall(k) - rx(k,lcat)
 
-      rx(k,lcat) = rfall(k)
-      cx(k,lcat) = cfall(k)
-      qx(k,lcat) = qrfall(k) / max(1.e-20, rfall(k))
-
-
-      if (rx(k,lcat) < rxmin(lcat)) then
+      if (rfall(k) > rxmin(lcat)) then
+         rx(k,lcat) = rfall(k)
+         cx(k,lcat) = cfall(k)
+         qx(k,lcat) = qrfall(k) / rfall(k)
+      else
          rx(k,lcat) = 0.
          cx(k,lcat) = 0.
          qx(k,lcat) = 0.

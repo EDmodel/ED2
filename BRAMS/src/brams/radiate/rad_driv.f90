@@ -107,29 +107,30 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
    time_rfrq = real(dmod(time + 0.001,dble(radfrq)))
 
    if ( time_rfrq  < dtlt .or. time < 0.001) then
-      !------------------------------------------------------------------------------------!
-      !    Compute solar zenith angle, multiplier for solar constant, surface albedo, and  !
-      ! surface upward longwave radiation.                                                 !
-      !------------------------------------------------------------------------------------!
-      call radprep(mxp,myp,nzg,nzs,npatch,ia,iz,ja,jz,iswrtyp,ilwrtyp                      &
-                  ,leaf_g(ngrid)%soil_water            ,leaf_g(ngrid)%soil_energy          &
-                  ,leaf_g(ngrid)%soil_text             ,leaf_g(ngrid)%sfcwater_energy      &
-                  ,leaf_g(ngrid)%sfcwater_depth        ,leaf_g(ngrid)%leaf_class           &
-                  ,leaf_g(ngrid)%veg_fracarea          ,leaf_g(ngrid)%veg_height           &
-                  ,leaf_g(ngrid)%veg_albedo            ,leaf_g(ngrid)%patch_area           &
-                  ,leaf_g(ngrid)%sfcwater_nlev         ,leaf_g(ngrid)%veg_temp             &
-                  ,leaf_g(ngrid)%can_temp              ,scratch%vt2da                      &
-                  ,scratch%vt2db                       ,scratch%vt2dc                      &
-                  ,scratch%vt3do                       ,grid_g(ngrid)%glat                 &
-                  ,grid_g(ngrid)%glon                  ,radiate_g(ngrid)%rlongup           &
-                  ,radiate_g(ngrid)%rlong_albedo       ,radiate_g(ngrid)%albedt            &
-                  ,radiate_g(ngrid)%rshort             ,radiate_g(ngrid)%rlong             &
-                  ,radiate_g(ngrid)%rshort_top         ,radiate_g(ngrid)%rshortup_top      &
-                  ,radiate_g(ngrid)%cosz               )
                                                       
       !----- Resetting the radiative forcing ----------------------------------------------!
       call azero(mzp*mxp*myp,radiate_g(ngrid)%fthrd)
       call azero(mzp*mxp*myp,radiate_g(ngrid)%fthrd_lw)
+
+      !------------------------------------------------------------------------------------!
+      !    Compute solar zenith angle, multiplier for solar constant, surface albedo, and  !
+      ! surface upward longwave radiation.                                                 !
+      !------------------------------------------------------------------------------------!
+      call radprep( mxp,myp,nzg,nzs,npatch,ia,iz,ja,jz,iswrtyp,ilwrtyp                     &
+                  , leaf_g(ngrid)%soil_water           , leaf_g(ngrid)%soil_energy         &
+                  , leaf_g(ngrid)%soil_text            , leaf_g(ngrid)%sfcwater_energy     &
+                  , leaf_g(ngrid)%sfcwater_mass        , leaf_g(ngrid)%sfcwater_depth      &
+                  , leaf_g(ngrid)%leaf_class           , leaf_g(ngrid)%veg_fracarea        &
+                  , leaf_g(ngrid)%veg_height           , leaf_g(ngrid)%veg_albedo          &
+                  , leaf_g(ngrid)%patch_area           , leaf_g(ngrid)%sfcwater_nlev       &
+                  , leaf_g(ngrid)%veg_temp             , leaf_g(ngrid)%can_temp            &
+                  , scratch%vt2da                      , scratch%vt2db                     &
+                  , scratch%vt2dc                      , scratch%vt3do                     &
+                  , grid_g(ngrid)%glat                 , grid_g(ngrid)%glon                &
+                  , radiate_g(ngrid)%rlongup           , radiate_g(ngrid)%rlong_albedo     &
+                  , radiate_g(ngrid)%albedt            , radiate_g(ngrid)%rshort           &
+                  , radiate_g(ngrid)%rlong             , radiate_g(ngrid)%rshort_top       &
+                  , radiate_g(ngrid)%rshortup_top      , radiate_g(ngrid)%cosz             )
 
       !----- CARMA radiation --------------------------------------------------------------!
       if (ilwrtyp == 4 .or. iswrtyp == 4) then
@@ -440,10 +441,10 @@ end subroutine tend_accum
 ! thought as the external or boundary conditions.                                          !
 !------------------------------------------------------------------------------------------!
 subroutine radprep(m2,m3,mzg,mzs,np,ia,iz,ja,jz,iswrtyp,ilwrtyp,soil_water,soil_energy     &
-                  ,soil_text,sfcwater_energy,sfcwater_depth,leaf_class,veg_fracarea        &
-                  ,veg_height,veg_albedo,patch_area,sfcwater_nlev,veg_temp,can_temp        &
-                  ,emis_town,alb_town,ts_town,g_urban,glat,glon,rlongup,rlong_albedo       &
-                  ,albedt,rshort,rlong,rshort_top,rshortup_top,cosz                        )
+                  ,soil_text,sfcwater_energy,sfcwater_mass,sfcwater_depth,leaf_class       &
+                  ,veg_fracarea,veg_height,veg_albedo,patch_area,sfcwater_nlev,veg_temp    &
+                  ,can_temp,emis_town,alb_town,ts_town,g_urban,glat,glon,rlongup           &
+                  ,rlong_albedo,albedt,rshort,rlong,rshort_top,rshortup_top,cosz           )
   
    use teb_spm_start, only : TEB_SPM
    use mem_leaf     , only : isfcl
@@ -451,18 +452,19 @@ subroutine radprep(m2,m3,mzg,mzs,np,ia,iz,ja,jz,iswrtyp,ilwrtyp,soil_water,soil_
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
-   integer                      , intent(in)  :: m2,m3,mzg,mzs,np,ia,iz,ja,jz
-   integer                      , intent(in)  :: iswrtyp,ilwrtyp
-   real, dimension(mzg,m2,m3,np), intent(in)  :: soil_water,soil_energy,soil_text
-   real, dimension(mzs,m2,m3,np), intent(in)  :: sfcwater_energy,sfcwater_depth
-   real, dimension(    m2,m3,np), intent(in)  :: leaf_class,veg_fracarea,veg_height
-   real, dimension(    m2,m3,np), intent(in)  :: veg_albedo,patch_area,sfcwater_nlev
-   real, dimension(    m2,m3,np), intent(in)  :: veg_temp  ,can_temp
-   real, dimension(    m2,m3   ), intent(in)  :: emis_town,alb_town,ts_town
-   real, dimension(    m2,m3,np), intent(in)  :: g_urban
-   real, dimension(    m2,m3   ), intent(in)  :: glat,glon,rlong_albedo,rshort
-   real, dimension(    m2,m3   ), intent(in)  :: rlong,rshort_top,rshortup_top
-   real, dimension(    m2,m3   ), intent(out) :: rlongup,albedt,cosz
+   integer                      , intent(in)    :: m2,m3,mzg,mzs,np,ia,iz,ja,jz
+   integer                      , intent(in)    :: iswrtyp,ilwrtyp
+   real, dimension(mzg,m2,m3,np), intent(in)    :: soil_water,soil_energy,soil_text
+   real, dimension(mzs,m2,m3,np), intent(in)    :: sfcwater_energy,sfcwater_mass
+   real, dimension(mzs,m2,m3,np), intent(in)    :: sfcwater_depth
+   real, dimension    (m2,m3,np), intent(in)    :: leaf_class,veg_fracarea,veg_height
+   real, dimension    (m2,m3,np), intent(in)    :: veg_albedo,patch_area,sfcwater_nlev
+   real, dimension    (m2,m3,np), intent(in)    :: veg_temp  ,can_temp
+   real, dimension    (m2,m3)   , intent(in)    :: emis_town,alb_town,ts_town
+   real, dimension    (m2,m3,np), intent(in)    :: g_urban
+   real, dimension    (m2,m3)   , intent(in)    :: glat,glon,rlong_albedo,rshort
+   real, dimension    (m2,m3)   , intent(in)    :: rlong,rshort_top,rshortup_top
+   real, dimension    (m2,m3)   , intent(inout) :: rlongup,albedt,cosz
    !----- Local variables -----------------------------------------------------------------!
    integer                                    :: ip,i,j
    !---------------------------------------------------------------------------------------!
@@ -488,18 +490,19 @@ subroutine radprep(m2,m3,mzg,mzs,np,ia,iz,ja,jz,iswrtyp,ilwrtyp,soil_water,soil_
       do ip = 1,np
          do j = ja,jz
             do i = ia,iz
-               call sfcrad(mzg,mzs,ip                                                      &
-                          ,soil_energy    (1:mzg,i,j,ip)  ,soil_water      (1:mzg,i,j,ip)  &
-                          ,soil_text      (1:mzg,i,j,ip)  ,sfcwater_energy (1:mzs,i,j,ip)  &
-                          ,sfcwater_depth (1:mzs,i,j,ip)  ,patch_area      (      i,j,ip)  &
-                          ,can_temp       (      i,j,ip)  ,veg_temp        (      i,j,ip)  &
-                          ,leaf_class     (      i,j,ip)  ,veg_height      (      i,j,ip)  &
-                          ,veg_fracarea   (      i,j,ip)  ,veg_albedo      (      i,j,ip)  &
-                          ,sfcwater_nlev  (      i,j,ip)  ,rshort          (      i,j   )  &
-                          ,rlong          (      i,j   )  ,albedt          (      i,j   )  &
-                          ,rlongup        (      i,j   )  ,cosz            (      i,j   )  &
-                          ,g_urban        (      i,j,ip)  ,emis_town       (      i,j   )  &
-                          ,alb_town       (      i,j   )  ,ts_town         (      i,j   )  )
+               call sfcrad( mzg,mzs,ip                                                          &
+                           , soil_energy     (:,i,j,ip)    , soil_water      (:,i,j,ip)    &
+                           , soil_text       (:,i,j,ip)    , sfcwater_energy (:,i,j,ip)    &
+                           , sfcwater_mass   (:,i,j,ip)    , sfcwater_depth  (:,i,j,ip)    &
+                           , patch_area        (i,j,ip)    , can_temp          (i,j,ip)    &
+                           , veg_temp          (i,j,ip)    , leaf_class        (i,j,ip)    &
+                           , veg_height        (i,j,ip)    , veg_fracarea      (i,j,ip)    &
+                           , veg_albedo        (i,j,ip)    , sfcwater_nlev     (i,j,ip)    &
+                           , rshort            (i,j)       , rlong             (i,j)       &
+                           , albedt            (i,j)       , rlongup           (i,j)       &
+                           , cosz              (i,j)       , g_urban           (i,j,ip)    &
+                           , emis_town         (i,j)       , alb_town          (i,j)       &
+                           , ts_town           (i,j)       )
             end do
          end do
       end do
@@ -535,8 +538,8 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,fthrd,rtgt,f
    real        , dimension(m1,m2,m3), intent(in)   :: theta,pi0,pp,rv,dn0,rtp
    real        , dimension(   m2,m3), intent(in)   :: rtgt,f13t,f23t,glon
    real        , dimension(   m2,m3), intent(in)   :: cosz,albedt,rlongup
-   real        , dimension(m1,m2,m3), intent(out)  :: fthrd,fthrd_lw
-   real        , dimension(   m2,m3), intent(out)  :: rshort,rlong
+   real        , dimension(m1,m2,m3), intent(inout):: fthrd,fthrd_lw
+   real        , dimension(   m2,m3), intent(inout):: rshort,rlong
    !----- Local variables -----------------------------------------------------------------!
    integer                                     :: i,j,k,kk
    real(kind=8)                                :: dzsdx,dzsdy,dlon,a1,a2,hrangl,sinz
@@ -704,11 +707,11 @@ subroutine zen(m2,m3,ia,iz,ja,jz,iswrtyp,ilwrtyp,glon,glat,cosz)
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
-   integer, intent(in)                    :: m2,m3           ! Grid dimensions
-   integer, intent(in)                    :: ia,iz,ja,jz     ! Node dimensions
-   integer, intent(in)                    :: iswrtyp,ilwrtyp ! Radiation scheme flag
-   real   , intent(in) , dimension(m2,m3) :: glon,glat       ! Grid coordinates
-   real   , intent(out), dimension(m2,m3) :: cosz
+   integer, intent(in)                      :: m2,m3           ! Grid dimensions
+   integer, intent(in)                      :: ia,iz,ja,jz     ! Node dimensions
+   integer, intent(in)                      :: iswrtyp,ilwrtyp ! Radiation scheme flag
+   real   , intent(in)   , dimension(m2,m3) :: glon,glat       ! Grid coordinates
+   real   , intent(inout), dimension(m2,m3) :: cosz
    !----- Local variables -----------------------------------------------------------------!
    integer             :: i,j            ! Grid counters
    integer             :: is             ! counter over solar bands in Harrington radiation

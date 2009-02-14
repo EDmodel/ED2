@@ -138,10 +138,15 @@ module rk4_stepper_ar
                      integration_buff%y,integration_buff%ytemp)
                 print*,'errmax',errmax*rk4epsi,'raw',errmax,'epsilon',rk4eps
              else
+                call print_errmax_ar(errmax, integration_buff%yerr,  &
+                     integration_buff%yscal, csite%patch(ipa), lsl,  &
+                     integration_buff%y,integration_buff%ytemp)
+                print*,'errmax',errmax*rk4epsi,'raw',errmax,'epsilon',rk4eps
                 call print_sanity_check_ar(integration_buff%y,  &
                      iflag2, csite,ipa, lsl)
              endif
-             call print_patch_ar(integration_buff%y, csite,ipa, lsl)
+             call print_patch_ar(integration_buff%y, csite,ipa, lsl,atm_tmp,atm_shv        &
+                                ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg)
              stop                 ! TIME TO DEBUG
           endif
 
@@ -255,7 +260,8 @@ module rk4_stepper_ar
     call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, dydx, b21*h, cpatch, lsl)
     call stabilize_snow_layers_ar(ak7, csite, ipa, lsl)
-    call lsm_sanity_check_ar(ak7, iflag1, csite, ipa, lsl ,dydx,h )
+    call lsm_sanity_check_ar(ak7, iflag1, csite, ipa, lsl ,dydx,h,atm_tmp,atm_shv,atm_co2  &
+                            ,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg )
 
 
     if(iflag1 /= 1)return
@@ -266,7 +272,8 @@ module rk4_stepper_ar
     call inc_rk4_patch_ar(ak7, dydx, b31*h, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, ak2, b32*h, cpatch, lsl)
     call stabilize_snow_layers_ar(ak7, csite,ipa, lsl)
-    call lsm_sanity_check_ar(ak7, iflag1,csite,ipa, lsl,dydx,h )
+    call lsm_sanity_check_ar(ak7, iflag1,csite,ipa, lsl,dydx,h,atm_tmp,atm_shv,atm_co2  &
+                            ,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg)
 
     if(iflag1 /= 1)return
 
@@ -277,7 +284,8 @@ module rk4_stepper_ar
     call inc_rk4_patch_ar(ak7, ak2, b42*h, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, ak3, b43*h, cpatch, lsl)
     call stabilize_snow_layers_ar(ak7, csite,ipa, lsl)
-    call lsm_sanity_check_ar(ak7, iflag1, csite,ipa, lsl,dydx,h )
+    call lsm_sanity_check_ar(ak7, iflag1, csite,ipa, lsl,dydx,h,atm_tmp,atm_shv,atm_co2  &
+                            ,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg )
 
     if(iflag1 /= 1)return
 
@@ -289,7 +297,8 @@ module rk4_stepper_ar
     call inc_rk4_patch_ar(ak7, ak3, b53*h, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, ak4, b54*h, cpatch, lsl)
     call stabilize_snow_layers_ar(ak7, csite, ipa, lsl)
-    call lsm_sanity_check_ar(ak7, iflag1, csite, ipa, lsl,dydx,h )
+    call lsm_sanity_check_ar(ak7, iflag1, csite, ipa, lsl,dydx,h ,atm_tmp,atm_shv,atm_co2  &
+                            ,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg)
 
     if(iflag1 /= 1)return
 
@@ -302,7 +311,8 @@ module rk4_stepper_ar
     call inc_rk4_patch_ar(ak7, ak4, b64*h, cpatch, lsl)
     call inc_rk4_patch_ar(ak7, ak5, b65*h, cpatch, lsl)
     call stabilize_snow_layers_ar(ak7, csite,ipa, lsl)
-    call lsm_sanity_check_ar(ak7, iflag1, csite,ipa, lsl,dydx,h )
+    call lsm_sanity_check_ar(ak7, iflag1, csite,ipa, lsl,dydx,h,atm_tmp,atm_shv,atm_co2  &
+                            ,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg )
     
     if(iflag1 /= 1)return
 
@@ -314,7 +324,8 @@ module rk4_stepper_ar
     call inc_rk4_patch_ar(yout, ak4, c4*h, cpatch, lsl)
     call inc_rk4_patch_ar(yout, ak6, c6*h, cpatch, lsl)
     call stabilize_snow_layers_ar(yout, csite,ipa, lsl)
-    call lsm_sanity_check_ar(yout, iflag1, csite,ipa, lsl,dydx,h )
+    call lsm_sanity_check_ar(yout, iflag1, csite,ipa, lsl,dydx,h,atm_tmp,atm_shv,atm_co2  &
+                            ,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg )
 
     if(iflag1 /= 1)return
 
@@ -329,7 +340,8 @@ module rk4_stepper_ar
   end subroutine rkck_ar
 
   !=====================================================================
-  subroutine lsm_sanity_check_ar(y, iflag1, csite,ipa, lsl,dydx,h )
+  subroutine lsm_sanity_check_ar(y, iflag1, csite,ipa, lsl,dydx,h,atm_tmp,atm_shv,atm_co2  &
+                            ,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg )
 
     use ed_state_vars, only: sitetype,patchtype,rk4patchtype,integration_vars_ar
     use grid_coms, only: nzg
@@ -343,6 +355,8 @@ module rk4_stepper_ar
 
     implicit none
     integer, intent(in) :: lsl
+    real, intent(in) :: atm_tmp,atm_shv,atm_co2
+    real, intent(in) :: prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg
     type(sitetype), target :: csite
     type(patchtype),pointer :: cpatch
     type(rk4patchtype), target :: y,dydx
@@ -356,7 +370,8 @@ module rk4_stepper_ar
 
     if(y%soil_tempk(nzg) /= y%soil_tempk(nzg))then
        print*,'in the sanity check'
-       call print_patch_ar(y, csite,ipa, lsl)
+       call print_patch_ar(y, csite,ipa, lsl,atm_tmp,atm_shv,atm_co2  &
+                            ,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg)
        stop
     endif
 
@@ -498,40 +513,42 @@ module rk4_stepper_ar
     use grid_coms, only: nzg
     use soil_coms, only: soil
     use canopy_radiation_coms, only: lai_min
+    use therm_lib, only: qwtk
 
     implicit none
     integer, intent(in) :: lsl
     type(sitetype),target :: csite
     type(patchtype),pointer :: cpatch
     type(rk4patchtype), target :: y
+    real :: veg_temp, veg_fliq
     integer :: ipa,ico
     integer iflag1,k
 
-    write(unit=*,fmt='(64a)') ('=',k=1,64)
-    write(unit=*,fmt='(64a)') ('=',k=1,64)
+    write(unit=*,fmt='(78a)') ('=',k=1,78)
+    write(unit=*,fmt='(78a)') ('=',k=1,78)
     write(unit=*,fmt='(a,20x,a,20x,a)') '======','SANITY CHECK','======'
-    write(unit=*,fmt='(64a)') ('=',k=1,64)
+    write(unit=*,fmt='(78a)') ('=',k=1,78)
 
     write(unit=*,fmt='(a)') ' '
-    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write(unit=*,fmt='(78a)') ('-',k=1,78)
     write(unit=*,fmt='(a5,3(1x,a12))') 'LEVEL','  SOIL_TEMPK','SOIL_FRACLIQ','  SOIL_WATER'
     do k=lsl,nzg
        write(unit=*,fmt='(i5,3(1x,es12.5))') &
             k, y%soil_tempk(k), y%soil_fracliq(k), y%soil_water(k)
     end do
-    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write(unit=*,fmt='(78a)') ('-',k=1,78)
 
     write(unit=*,fmt='(a)') ' '
-    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write(unit=*,fmt='(78a)') ('-',k=1,78)
     write(unit=*,fmt='(a5,3(1x,a12))') 'LEVEL','  OLD_SOIL_T','OLD_SOIL_FLQ','OLD_SOIL_H2O'
     do k=lsl,nzg
        write(unit=*,fmt='(i5,3(1x,es12.5))') &
             k, csite%soil_tempk(k,ipa), csite%soil_fracliq(k,ipa), csite%soil_water(k,ipa)
     end do
-    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write(unit=*,fmt='(78a)') ('-',k=1,78)
 
     write(unit=*,fmt='(a)') ' '
-    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write(unit=*,fmt='(78a)') ('-',k=1,78)
     write (unit=*,fmt='(a,1x,es12.5)') ' CAN_TEMP=     ',y%can_temp
     write (unit=*,fmt='(a,1x,es12.5)') ' OLD_CAN_TEMP= ',csite%can_temp(ipa)
     write (unit=*,fmt='(a,1x,es12.5)') ' CAN_VAPOR=    ',y%can_shv
@@ -541,38 +558,44 @@ module rk4_stepper_ar
     if(y%nlev_sfcwater == 1) then
        write(unit=*,fmt='(a,1x,es12.5)') ,'SFCWATER_TEMPK=',y%sfcwater_tempk(1)
     end if
-    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write(unit=*,fmt='(78a)') ('-',k=1,78)
 
     write(unit=*,fmt='(a)') ' '
-    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write(unit=*,fmt='(78a)') ('-',k=1,78)
     cpatch => csite%patch(ipa)
-    write (unit=*,fmt='(2(a5,1x),4(a12,1x))') &
-       '  COH','  PFT','         LAI','  VEG_ENERGY','OLD_VEG_ENER','OLD_VEG_TEMP'
+    write (unit=*,fmt='(2(a5,1x),5(a12,1x))') &
+       '  COH','  PFT','         LAI','  VEG_ENERGY','OLD_VEG_ENER','    VEG_TEMP'&
+       &,'OLD_VEG_TEMP'
     do ico = 1,cpatch%ncohorts
        if(cpatch%lai(ico) > lai_min) then
-          write(unit=*,fmt='(2(i5,1x),4(es12.5,1x))') &
+          call qwtk(y%veg_energy(ico),y%veg_water(ico),cpatch%hcapveg(ico)                 &
+                   ,veg_temp,veg_fliq)
+          write(unit=*,fmt='(2(i5,1x),5(es12.5,1x))') &
              ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_energy(ico),cpatch%veg_energy(ico)  &
-                                ,cpatch%veg_temp(ico)
+                                ,veg_temp,cpatch%veg_temp(ico)
        end if
     end do
-    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write(unit=*,fmt='(78a)') ('-',k=1,78)
 
     write(unit=*,fmt='(a)') ' '
-    write(unit=*,fmt='(64a)') ('-',k=1,64)
-    write (unit=*,fmt='(2(a5,1x),4(a12,1x))') &
-       '  COH','  PFT','         LAI','   VEG_WATER',' OLD_VEG_H2O','HEAT_CAP'
+    write(unit=*,fmt='(78a)') ('-',k=1,78)
+    write (unit=*,fmt='(2(a5,1x),5(a12,1x))') &
+       '  COH','  PFT','         LAI','   VEG_WATER',' OLD_VEG_H2O','    HEAT_CAP'&
+       ,'     FRACLIQ'
     do ico = 1,cpatch%ncohorts
        if(cpatch%lai(ico) > lai_min) then
-          write(unit=*,fmt='(2(i5,1x),4(es12.5,1x))') &
-             ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_water(ico),cpatch%veg_water(ico) &
-                ,cpatch%hcapveg(ico)
+          call qwtk(y%veg_energy(ico),y%veg_water(ico),cpatch%hcapveg(ico)                 &
+                   ,veg_temp,veg_fliq)
+          write(unit=*,fmt='(2(i5,1x),5(es12.5,1x))') &
+             ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_water(ico),cpatch%veg_water(ico)    &
+                ,cpatch%hcapveg(ico),veg_fliq
        end if
     end do
-    write(unit=*,fmt='(64a)') ('-',k=1,64)
+    write(unit=*,fmt='(78a)') ('-',k=1,78)
     write(unit=*,fmt='(a)') ' '
     
-    write(unit=*,fmt='(64a)') ('=',k=1,64)
-    write(unit=*,fmt='(64a)') ('=',k=1,64)
+    write(unit=*,fmt='(78a)') ('=',k=1,78)
+    write(unit=*,fmt='(78a)') ('=',k=1,78)
     write(unit=*,fmt='(a)') ' '
 
     return

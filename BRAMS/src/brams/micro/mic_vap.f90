@@ -249,7 +249,7 @@ subroutine vapflux(lcat)
          rvap(k)  = (rvstr(k) + sumuy(k) + sumvr(k)) / (1.0 + sumuz(k))
 
          vap(k,lcat) = - rx(k,lcat)
-         tx(k,lcat)  = 0.
+         tx(k,lcat)  = tair(k)
          rx(k,lcat)  = 0.
          qx(k,lcat)  = 0.
          qr(k,lcat)  = 0.

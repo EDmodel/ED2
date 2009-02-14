@@ -208,10 +208,7 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
       ! account the friction, which is defined based on the constant entrainment rate,     !
       ! following Zhang and Fritsch (1986) parametrisation).                               !
       !------------------------------------------------------------------------------------!
-      wbuoymin=sqrt(max(0.,                                                                &
-               (wbuoymin*wbuoymin*(1.+mentru_rate(k+1)*dzd_cld(k))                         &
-                - (dbyu(k+1)+dbyu(k))*dzd_cld(k))                                          &
-               / (1.-mentru_rate(k+1)*dzd_cld(k)) ) )
+      wbuoymin=sqrt(max(0., wbuoymin*wbuoymin - (dbyu(k+1)+dbyu(k))*dzd_cld(k)))
    end do
    !---------------------------------------------------------------------------------------!
    !    Now I use either cap_max or wnorm_max to decide whether convection can happen with !

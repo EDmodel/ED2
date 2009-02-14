@@ -145,18 +145,12 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
   dtlc_factor = 1. / float(niter_can)
   dtlc        = dtll * dtlc_factor
 
-  hcapcan = 2.0e4
-  wcapcan = 2.0e1
-  hcapveg = 3.e4
-
   dtllohcc = dtll / hcapcan
   dtllowcc = dtll / wcapcan
   dtlcohcc = dtlc / hcapcan
   dtlcowcc = dtlc / wcapcan
   dtlcohcv = dtlc / hcapveg
 
-  z0fac_water = .016 / g
-  snowrough = .001
 
   ! Copy surface atmospheric variables into 2d arrays for input to leaf
 
@@ -261,11 +255,12 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
                     L_TS_TOWN   = 0.
 
                     call sfcrad(mzg,mzs,ip                 &
-                         ,leaf%soil_energy     (1:mzg,i,j,ip)  &
-                         ,leaf%soil_water      (1:mzg,i,j,ip)  &
-                         ,leaf%soil_text       (1:mzg,i,j,ip)  &
-                         ,leaf%sfcwater_energy (1:mzs,i,j,ip)  &
-                         ,leaf%sfcwater_depth  (1:mzs,i,j,ip)  &
+                         ,leaf%soil_energy     (:,i,j,ip)  &
+                         ,leaf%soil_water      (:,i,j,ip)  &
+                         ,leaf%soil_text       (:,i,j,ip)  &
+                         ,leaf%sfcwater_energy (:,i,j,ip)  &
+                         ,leaf%sfcwater_mass   (:,i,j,ip)  &
+                         ,leaf%sfcwater_depth  (:,i,j,ip)  &
                          ,leaf%patch_area      (i,j,ip)    &
                          ,leaf%can_temp        (i,j,ip)    &
                          ,leaf%veg_temp        (i,j,ip)    &

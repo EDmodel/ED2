@@ -692,8 +692,8 @@ subroutine grell_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxen
    kmax = maxloc(outthil,dim=1)
    
    !----- If excessive heat happens, scale down -------------------------------------------!
-   if (kmax > 2 .and. outthil(kmax) > 2.0 * max_heat) then
-      rescale = 2.0*max_heat / outthil(kmax)
+   if (kmax > 2 .and. outthil(kmax) > max_heat) then
+      rescale = max_heat / outthil(kmax)
       upmf = upmf * rescale
       do k=1,ktop
          outthil(k) = outthil(k) * rescale

@@ -103,9 +103,9 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
    real     , intent(in)    , dimension(m1,m2,m3) :: vt3dj, rv, rtp, dn0, up, vp
    real     , intent(in)    , dimension(m2,m3,m4) :: vegz0, patchz0, ustar
    real     , intent(in)    , dimension(m2,m3,m4) :: tstar, patch_area 
-   integer  , intent(out)   , dimension(m2,m3)    :: kpbl
-   real     , intent(out)   , dimension(m2,m3)    :: pblhgt, lmo
-   real     , intent(out)   , dimension(m1,m2,m3) :: vt3dh, scr1, tl, sigw
+   integer  , intent(inout) , dimension(m2,m3)    :: kpbl
+   real     , intent(inout) , dimension(m2,m3)    :: pblhgt, lmo
+   real     , intent(inout) , dimension(m1,m2,m3) :: vt3dh, scr1, tl, sigw
    real     , intent(inout) , dimension(m1,m2,m3) :: vt3di,tket
    !----- Internal variables --------------------------------------------------------------!
    integer                                        :: i,j,k,p,k2u,k2um1,k2v,k2vm1,k2w 

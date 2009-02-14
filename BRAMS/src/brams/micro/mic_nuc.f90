@@ -40,7 +40,16 @@ subroutine cldnuc(m1)
          rcnew = 0.
          if (excessrv > 0.) then
             rcnew = min(rnuc,.5*excessrv)
-            rx(k,1) = rx(k,1) + rcnew
+            !------------------------------------------------------------------------------!
+            !    If there were no cloud droplets in this level before, we must also assign !
+            ! a temperature. Using the environment temperature.                            ! 
+            !------------------------------------------------------------------------------!
+            if (rx(k,1) >= rxmin(1)) then
+               rx(k,1) = rx(k,1) + rcnew
+            else
+               rx(k,1) = rx(k,1) + rcnew
+               tx(k,1) = tair(k)
+            end if
             rvap(k) = rvap(k) - rcnew
             k2cnuc = k
             cx(k,1) = min(parm(1),rx(k,1) / emb0(1))
@@ -100,7 +109,16 @@ subroutine cldnuc(m1)
                cxadd = concen_tab - cx(k,1)
                if (cxadd > excessrv / emb0(1)) cxadd = excessrv / emb0(1)
                cx(k,1) = cx(k,1) + cxadd
-               rx(k,1) = rx(k,1) + excessrv
+               !---------------------------------------------------------------------------!
+               !    If there were no cloud droplets in this level before, we must also     !
+               ! assign a temperature. Using the environment temperature.                  ! 
+               !---------------------------------------------------------------------------!
+               if (rx(k,1) >= rxmin(1)) then
+                  rx(k,1) = rx(k,1) + excessrv
+               else
+                  rx(k,1) = rx(k,1) + excessrv
+                  tx(k,1) = tair(k)
+               end if
                k2cnuc = k
             end if
 
@@ -190,8 +208,16 @@ subroutine icenuc(m1,ngr,dtlt)
       cldnuc = ptotvi + max(0.,fraccld * cx(k,1) - cx(k,3))
       !cldnucr = cldnuc * emb(k,1)
       cldnucr = min(rx(k,1),ptotvi * emb(k,1) + fraccld * rx(k,1))
-
-      rx(k,3) = rx(k,3) + cldnucr
+      !------------------------------------------------------------------------------------!
+      !    Being cautious, in case new pristine ice is formed, we need to set up some      !
+      ! temperature... Using air temperature.                                              !
+      !------------------------------------------------------------------------------------!
+      if (rx(k,3) >= rxmin(3)) then
+         rx(k,3) = rx(k,3) + cldnucr
+      else
+         rx(k,3) = rx(k,3) + cldnucr
+         tx(k,3) = tair(k)
+      end if
       rx(k,1) = rx(k,1) - cldnucr
       cx(k,3) = cx(k,3) + cldnuc
       cx(k,1) = cx(k,1) - cldnuc
@@ -267,7 +293,12 @@ subroutine icenuc(m1,ngr,dtlt)
       end if
       vapnuc = vapnucr / emb0(3)
 
-      rx(k,3) = rx(k,3) + vapnucr
+      if (rx(k,3) >= rxmin(3)) then
+         rx(k,3) = rx(k,3) + vapnucr
+      else
+         rx(k,3) = rx(k,3) + vapnucr
+         tx(k,3) = tair(k)
+      end if
       cx(k,3) = cx(k,3) + vapnuc
 
       if (rx(k,3) > rxmin(3)) k2pnuc = k

@@ -69,11 +69,12 @@ subroutine rconv_driver(banneron)
    !---------------------------------------------------------------------------------------!
    if (first_time) then
       do ifm=1,ngrids
-         cuparm_g(ifm)%rtsrc  = 0.
-         cuparm_g(ifm)%thsrc  = 0.
-         cuparm_g(ifm)%conprr = 0.
-         if (associated(cuparm_g(ifm)%dnmf))   cuparm_g(ifm)%dnmf  = 0.
-         if (associated(cuparm_g(ifm)%xierr))  cuparm_g(ifm)%xierr = 1.
+         call azero(mzp*mxp*myp*nclouds,cuparm_g(ifm)%rtsrc)
+         call azero(mzp*mxp*myp*nclouds,cuparm_g(ifm)%thsrc)
+         call azero(mxp*myp*nclouds,cuparm_g(ifm)%conprr)
+
+         if (associated(cuparm_g(ifm)%dnmf)) call azero(mxp*myp*nclouds,cuparm_g(ifm)%dnmf)
+         if (associated(cuparm_g(ifm)%xierr)) call aone(mxp*myp*nclouds,cuparm_g(ifm)%xierr)
       end do
       first_time=.false.
    end if
@@ -98,13 +99,6 @@ subroutine rconv_driver(banneron)
       case default
          call azero(mzp*mxp*myp,scratch%vt3de)
       end select
-      
-      !----- This is just temporary, it is not working properly ---------------------------!
-      call cloud_sketch(mzp,mxp,myp,ia,iz,ja,jz,dtlt                                       &
-         , grid_g(ngrid)%flpw                   , grid_g(ngrid)%rtgt                       &
-         , turb_g(ngrid)%kpbl                   , scratch%vt3de                            &
-         , cuparm_g(ngrid)%upmf    (:,:,nclouds), cuparm_g(ngrid)%rtsrc    (:,:,:,nclouds) &
-         , cuparm_g(ngrid)%conprr  (:,:,nclouds), cuparm_g(ngrid)%cuprliq  (:,:,:,nclouds) )
    end if
 
 
@@ -138,13 +132,6 @@ subroutine rconv_driver(banneron)
        case default
           call azero(mzp*mxp*myp,scratch%vt3de)
        end select
-       
-       !----- This is temporary, it is not working properly -------------------------------!
-       call cloud_sketch(mzp,mxp,myp,ia,iz,ja,jz,dtlt                                      &
-         , grid_g(ngrid)%flpw                     , grid_g(ngrid)%rtgt                     &
-         , turb_g(ngrid)%kpbl                     , scratch%vt3de                          &
-         , cuparm_g(ngrid)%upmf           (:,:,1) , cuparm_g(ngrid)%rtsrc        (:,:,:,1) &
-         , cuparm_g(ngrid)%conprr         (:,:,1) , cuparm_g(ngrid)%cuprliq      (:,:,:,1) )
    end if
 
    !---------------------------------------------------------------------------------------!

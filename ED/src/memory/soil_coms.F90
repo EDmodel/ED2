@@ -31,7 +31,20 @@ Module soil_coms
   integer, parameter :: pctlcon = 1
   integer, parameter :: nvgcon = 7 ! I don't think it is been used...
 
-  real, parameter :: min_sfcwater_mass = 1.0e-10 ! minimum allowed mass
+  real, parameter :: min_sfcwater_mass = 1.0e-6 ! minimum allowed mass
+                                                ! Increased this 10000... 1.0e-10 corresponds
+                                                ! to a water layer of 10^-13 m, and we can't
+                                                ! guarantee stability with the top layer
+                                                ! simply because of numerical precision 
+                                                ! (1. + 1E-13 = 1.)
+                                                ! 1.e-6 corresponds to a 1nm water layer, or
+                                                ! 10nm snow layer. It is still really thin
+                                                ! and such layer is probably far from being
+                                                ! accurate (since for such a thin layer we
+                                                ! would need to consider temperature-dependent
+                                                ! density and all that stuff that we usually
+                                                ! neglect), but at least can be solved together
+                                                ! with the top layer.
   
   
   real, parameter :: snowmin = 3.0 ! Not sure what it means, looks like mass

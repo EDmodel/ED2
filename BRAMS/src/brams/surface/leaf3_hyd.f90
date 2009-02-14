@@ -39,11 +39,6 @@ use mem_leaf
 use leaf_coms
 
 implicit none
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-real, dimension(nzgmax,nstyp) :: slcons1
-real, dimension(nstyp) :: slcons0,fhydraul
-common/efold/slcons1,slcons0,fhydraul
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 integer, parameter :: maxpatch=15,maxgrp=200
 integer :: m2,m3,mzg,mzs,np,ngrp,ng,l,i,j,ip
