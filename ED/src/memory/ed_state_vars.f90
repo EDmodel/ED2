@@ -135,6 +135,16 @@ module ed_state_vars
      ! Mean root respiration rate (umol/m2 ground/s), averaged over FRQSTATE
      real ,pointer,dimension(:) :: mean_root_resp
 
+     ! Mean growth respiration rate (umol/m2 ground/s), averaged over FRQSTATE
+     real ,pointer,dimension(:) :: mean_growth_resp
+
+     ! Mean storage respiration rate (umol/m2 ground/s), averaged over FRQSTATE
+     real ,pointer,dimension(:) :: mean_storage_resp
+
+     ! Mean vleaf respiration rate (umol/m2 ground/s), averaged over FRQSTATE
+     real ,pointer,dimension(:) :: mean_vleaf_resp
+
+
      ! Mean leaf respiration rate (umol/m2 ground/s), averaged over 1 day
      real ,pointer,dimension(:) :: dmean_leaf_resp
 
@@ -784,6 +794,8 @@ module ed_state_vars
 
      integer,pointer,dimension(:) :: lsl    ! Lowest soil layer
 
+     real,pointer,dimension(:) :: pptweight       ! lapse weight for precip
+
      ! The Following variables used to point to structures
      ! Now they point to the array index of the site
      !   type(site), pointer :: hydro_next  !site run-off goes to
@@ -1254,6 +1266,9 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_leaf_resp
      real,pointer,dimension(:) :: avg_root_resp
      real,pointer,dimension(:) :: avg_plant_resp
+     real,pointer,dimension(:) :: avg_growth_resp
+     real,pointer,dimension(:) :: avg_vleaf_resp
+     real,pointer,dimension(:) :: avg_storage_resp
      real,pointer,dimension(:) :: avg_htroph_resp
 
      !-------------------------------------------------------------------!
@@ -1726,6 +1741,9 @@ contains
        allocate(cgrid%avg_leaf_resp  (npolygons))
        allocate(cgrid%avg_root_resp  (npolygons))
        allocate(cgrid%avg_plant_resp  (npolygons))
+       allocate(cgrid%avg_growth_resp  (npolygons))
+       allocate(cgrid%avg_storage_resp  (npolygons))
+       allocate(cgrid%avg_vleaf_resp  (npolygons))
        allocate(cgrid%avg_htroph_resp  (npolygons))
 
        !! added MCD for NACP intercomparison
@@ -1890,6 +1908,7 @@ contains
     allocate(cpoly%soi(nsites))
     allocate(cpoly%soi_name(nsites))
     allocate(cpoly%TCI(nsites))      
+    allocate(cpoly%pptweight(nsites))      
     allocate(cpoly%hydro_next(nsites))
     allocate(cpoly%hydro_prev(nsites))
     allocate(cpoly%moist_W(nsites))
@@ -2231,6 +2250,9 @@ contains
     allocate(cpatch%mean_gpp(ncohorts))
     allocate(cpatch%mean_leaf_resp(ncohorts))
     allocate(cpatch%mean_root_resp(ncohorts))
+    allocate(cpatch%mean_growth_resp(ncohorts))
+    allocate(cpatch%mean_storage_resp(ncohorts))
+    allocate(cpatch%mean_vleaf_resp(ncohorts))
     allocate(cpatch%dmean_leaf_resp(ncohorts))
     allocate(cpatch%dmean_root_resp(ncohorts))
     allocate(cpatch%dmean_gpp(ncohorts))
@@ -2395,6 +2417,9 @@ contains
        nullify(cgrid%avg_leaf_resp    )
        nullify(cgrid%avg_root_resp    )
        nullify(cgrid%avg_plant_resp   )
+       nullify(cgrid%avg_vleaf_resp   )
+       nullify(cgrid%avg_storage_resp   )
+       nullify(cgrid%avg_growth_resp   )
        nullify(cgrid%avg_htroph_resp  )
 
 
@@ -2539,6 +2564,7 @@ contains
     nullify(cpoly%soi)
     nullify(cpoly%soi_name)
     nullify(cpoly%TCI)   
+    nullify(cpoly%pptweight)   
     nullify(cpoly%lsl)   
     nullify(cpoly%hydro_next)
     nullify(cpoly%hydro_prev)
@@ -2858,6 +2884,9 @@ contains
     nullify(cpatch%mean_gpp)
     nullify(cpatch%mean_leaf_resp)
     nullify(cpatch%mean_root_resp)
+    nullify(cpatch%mean_storage_resp)
+    nullify(cpatch%mean_growth_resp)
+    nullify(cpatch%mean_vleaf_resp)
     nullify(cpatch%dmean_leaf_resp)
     nullify(cpatch%dmean_root_resp)
     nullify(cpatch%dmean_gpp)
@@ -3026,6 +3055,9 @@ contains
        if(associated(cgrid%avg_leaf_resp           )) deallocate(cgrid%avg_leaf_resp    )
        if(associated(cgrid%avg_root_resp           )) deallocate(cgrid%avg_root_resp    )
        if(associated(cgrid%avg_plant_resp          )) deallocate(cgrid%avg_plant_resp   )
+       if(associated(cgrid%avg_growth_resp         )) deallocate(cgrid%avg_growth_resp  )
+       if(associated(cgrid%avg_vleaf_resp          )) deallocate(cgrid%avg_vleaf_resp   )
+       if(associated(cgrid%avg_storage_resp        )) deallocate(cgrid%avg_storage_resp )
        if(associated(cgrid%avg_htroph_resp         )) deallocate(cgrid%avg_htroph_resp  )
 
 
@@ -3171,6 +3203,7 @@ contains
     if(associated(cpoly%soi                         )) deallocate(cpoly%soi                         )
     if(associated(cpoly%soi_name                    )) deallocate(cpoly%soi_name                    )
     if(associated(cpoly%TCI                         )) deallocate(cpoly%TCI                         )
+    if(associated(cpoly%pptweight                   )) deallocate(cpoly%pptweight                         )
     if(associated(cpoly%lsl                         )) deallocate(cpoly%lsl                         )
     if(associated(cpoly%hydro_next                  )) deallocate(cpoly%hydro_next                  )
     if(associated(cpoly%hydro_prev                  )) deallocate(cpoly%hydro_prev                  )
@@ -3490,6 +3523,9 @@ contains
     if(associated(cpatch%mean_gpp))  deallocate(cpatch%mean_gpp)
     if(associated(cpatch%mean_leaf_resp))   deallocate(cpatch%mean_leaf_resp)
     if(associated(cpatch%mean_root_resp))   deallocate(cpatch%mean_root_resp)
+    if(associated(cpatch%mean_growth_resp)) deallocate(cpatch%mean_growth_resp)
+    if(associated(cpatch%mean_storage_resp)) deallocate(cpatch%mean_storage_resp)
+    if(associated(cpatch%mean_vleaf_resp))   deallocate(cpatch%mean_vleaf_resp)
     if(associated(cpatch%dmean_leaf_resp))  deallocate(cpatch%dmean_leaf_resp)
     if(associated(cpatch%dmean_root_resp))  deallocate(cpatch%dmean_root_resp)
     if(associated(cpatch%dmean_gpp))        deallocate(cpatch%dmean_gpp)
@@ -3837,6 +3873,7 @@ contains
     if(associated(cpoly%soi                         )) cpoly%soi                         = large_integer  ! Integer
     if(associated(cpoly%soi_name                    )) cpoly%soi_name                    = ''       ! Character
     if(associated(cpoly%TCI                         )) cpoly%TCI                         = large_real
+    if(associated(cpoly%pptweight                   )) cpoly%pptweight                   = large_real
     if(associated(cpoly%lsl                         )) cpoly%lsl                         = large_integer  ! Integer
     if(associated(cpoly%hydro_next                  )) cpoly%hydro_next                  = large_integer  ! Integer
     if(associated(cpoly%hydro_prev                  )) cpoly%hydro_prev                  = large_integer  ! Integer
@@ -4191,6 +4228,9 @@ contains
     if(associated(cpatch%mean_gpp))             cpatch%mean_gpp            = large_real
     if(associated(cpatch%mean_leaf_resp))       cpatch%mean_leaf_resp      = large_real
     if(associated(cpatch%mean_root_resp))       cpatch%mean_root_resp      = large_real
+    if(associated(cpatch%mean_growth_resp))     cpatch%mean_growth_resp      = large_real
+    if(associated(cpatch%mean_storage_resp))    cpatch%mean_storage_resp      = large_real
+    if(associated(cpatch%mean_vleaf_resp))      cpatch%mean_vleaf_resp      = large_real
     if(associated(cpatch%dmean_leaf_resp))      cpatch%dmean_leaf_resp     = large_real
     if(associated(cpatch%dmean_root_resp))      cpatch%dmean_root_resp     = large_real
     if(associated(cpatch%dmean_gpp))            cpatch%dmean_gpp           = large_real
@@ -4376,6 +4416,7 @@ contains
     polyout%slope(isout)                     = polyin%slope(isin)
     polyout%aspect(isout)                    = polyin%aspect(isin)
     polyout%TCI(isout)                       = polyin%TCI(isin)
+    polyout%pptweight(isout)                 = polyin%pptweight(isin)
     polyout%elongation_factor(1:n_pft,isout) = polyin%elongation_factor(1:n_pft,isin)
     polyout%delta_elongf(1:n_pft,isout)      = polyin%delta_elongf(1:n_pft,isin)
     polyout%gee_phen_delay(1:n_pft,isout)    = polyin%gee_phen_delay(1:n_pft,isin)
@@ -4724,6 +4765,9 @@ contains
     patchout%mean_gpp(1:inc)         = pack(patchin%mean_gpp,mask)
     patchout%mean_leaf_resp(1:inc)   = pack(patchin%mean_leaf_resp,mask)
     patchout%mean_root_resp(1:inc)   = pack(patchin%mean_root_resp,mask)
+    patchout%mean_growth_resp(1:inc) = pack(patchin%mean_growth_resp,mask)
+    patchout%mean_storage_resp(1:inc)= pack(patchin%mean_storage_resp,mask)
+    patchout%mean_vleaf_resp(1:inc)  = pack(patchin%mean_vleaf_resp,mask)
     patchout%dmean_leaf_resp(1:inc)  = pack(patchin%dmean_leaf_resp,mask)
     patchout%dmean_root_resp(1:inc)  = pack(patchin%dmean_root_resp,mask)
     patchout%dmean_gpp(1:inc)        = pack(patchin%dmean_gpp,mask)
@@ -4848,6 +4892,9 @@ contains
        patchout%mean_gpp(iout)         = patchin%mean_gpp(iin)
        patchout%mean_leaf_resp(iout)   = patchin%mean_leaf_resp(iin)
        patchout%mean_root_resp(iout)   = patchin%mean_root_resp(iin)
+       patchout%mean_growth_resp(iout) = patchin%mean_growth_resp(iin)
+       patchout%mean_storage_resp(iout)= patchin%mean_storage_resp(iin)
+       patchout%mean_vleaf_resp(iout)  = patchin%mean_vleaf_resp(iin)
        patchout%dmean_leaf_resp(iout)  = patchin%dmean_leaf_resp(iin)
        patchout%dmean_root_resp(iout)  = patchin%dmean_root_resp(iin)
        patchout%dmean_gpp(iout)        = patchin%dmean_gpp(iin)
@@ -5667,7 +5714,7 @@ contains
     if (associated(cgrid%avg_vapor_vc)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_vapor_vc(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_VAPOR_VC :11:hist:anal:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'AVG_VAPOR_VC :11:hist:anal:opti:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon Averaged vegetation to canopy air latent heat flux','[W/m2]','ipoly') 
 
 
@@ -5676,14 +5723,14 @@ contains
     if (associated(cgrid%avg_dew_cg)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_dew_cg(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_DEW_CG :11:hist:anal:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'AVG_DEW_CG :11:hist:anal:opti:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon averaged dew to ground flux','[kg/m2/s]','ipoly') 
     endif
     
     if (associated(cgrid%avg_vapor_gc)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_vapor_gc(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_VAPOR_GC :11:hist:anal:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'AVG_VAPOR_GC :11:hist:anal:opti:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon averaged moisture flux ground to canopy air','[kg/m2/s]','ipoly') 
     endif
     
@@ -5704,14 +5751,14 @@ contains
     if (associated(cgrid%avg_transp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_transp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_TRANSP :11:hist:anal:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'AVG_TRANSP :11:hist:anal:opti:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon averaged transpiration from stomata to canopy air space','[W/m2]','ipoly') 
     endif
     
     if (associated(cgrid%avg_evap)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_evap(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_EVAP :11:hist:anal:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'AVG_EVAP :11:hist:anal:mpti:opti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon averaged net evap/dew from ground and leaves to CAS','[W/m2]','ipoly') 
     endif
     
@@ -5854,6 +5901,27 @@ contains
        call vtable_edio_r(cgrid%avg_plant_resp(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_PLANT_RESP :11:hist:anal:opti:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon Average Plant Respiration','[umol/m2/s]','ipoly') 
+    endif
+
+    if (associated(cgrid%avg_growth_resp)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_growth_resp(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_GROWTH_RESP :11:opti:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Polygon Average Growth Respiration','[umol/m2/s]','ipoly') 
+    endif
+
+    if (associated(cgrid%avg_storage_resp)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_storage_resp(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_STORAGE_RESP :11:opti:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Polygon Average Storage Respiration','[umol/m2/s]','ipoly') 
+    endif
+
+    if (associated(cgrid%avg_vleaf_resp)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_vleaf_resp(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_VLEAF_RESP :11:opti:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Polygon Average VLeaf Respiration','[umol/m2/s]','ipoly') 
     endif
 
     if (associated(cgrid%avg_htroph_resp)) then
@@ -6128,7 +6196,7 @@ contains
     if (associated(cgrid%avg_can_shv)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_can_shv(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_CAN_SHV :11:hist:anal:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'AVG_CAN_SHV :11:hist:anal:opti:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon Average Specific Humidity of Canopy Air','[kg/kg]','NA') 
     endif
     
@@ -6743,7 +6811,14 @@ contains
        nvar=nvar+1
          call vtable_edio_r(cpoly%TCI(1),nvar,igr,init,cpoly%siglob_id, &
          var_len,var_len_global,max_ptrs,'TCI :21:hist:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+       call metadata_edio(nvar,igr,'Topographic moisture index','[NA]','NA') 
+    endif      
+
+    if (associated(cpoly%pptweight)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpoly%TCI(1),nvar,igr,init,cpoly%siglob_id, &
+         var_len,var_len_global,max_ptrs,'pptweight :21:hist:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'precip lapse weighting','[NA]','NA') 
     endif      
 
     if (associated(cpoly%hydro_next)) then

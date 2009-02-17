@@ -14,6 +14,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
        imoutput, &
        iyoutput, &
        isoutput, &
+       itoutput, &
        ifoutput, &
        iprintpolys, &
        frqsum
@@ -65,7 +66,9 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
     
      !  Write out analysis fields - mostly polygon averages
      if (ifoutput.eq.3) then
-!       call h5_output('INST')
+        call h5_output('INST')
+     endif
+     if (itoutput.eq.3) then
         call h5_output('OPTI')
      endif
 
@@ -192,6 +195,9 @@ subroutine spatial_averages
         cgrid%avg_leaf_resp(ipy)   = 0.0
         cgrid%avg_root_resp(ipy)   = 0.0
         cgrid%avg_plant_resp(ipy)  = 0.0
+        cgrid%avg_growth_resp(ipy)  = 0.0
+        cgrid%avg_storage_resp(ipy)  = 0.0
+        cgrid%avg_vleaf_resp(ipy)  = 0.0
         cgrid%avg_htroph_resp(ipy) = 0.0
 
         cgrid%max_veg_temp(ipy)    = -10.0
@@ -310,6 +316,14 @@ subroutine spatial_averages
                       csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_leaf_resp)
                  cgrid%avg_root_resp(ipy) = cgrid%avg_root_resp(ipy) + &
                       csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_root_resp)
+
+                 cgrid%avg_growth_resp(ipy) = cgrid%avg_growth_resp(ipy) + &
+                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_growth_resp)
+                 cgrid%avg_storage_resp(ipy) = cgrid%avg_storage_resp(ipy) + &
+                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_storage_resp)
+                 cgrid%avg_vleaf_resp(ipy) = cgrid%avg_vleaf_resp(ipy) + &
+                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_vleaf_resp)
+
                  cgrid%avg_balive(ipy)    = cgrid%avg_balive(ipy) + &
                       csite%area(ipa)*cpoly%area(isi)*sum(cpatch%balive*cpatch%nplant)
                  cgrid%avg_bdead(ipy)     = cgrid%avg_bdead(ipy) + &

@@ -520,7 +520,8 @@ subroutine get_errmax_ar(errmax, yerr, yscal, cpatch, lsl, y, ytemp,epsilon)
   errmax = max(errmax,err)
   if(record_err .and. err .gt. epsilon) integ_err(1,1) = integ_err(1,1) + 1_8 
 
-  err = abs(yerr%can_shv/yscal%can_shv)
+  err = 1.0*abs(yerr%can_shv/yscal%can_shv)
+!  err = 100.0*abs(yerr%can_shv)
   errmax = max(errmax,err)
   if(record_err .and. err .gt. epsilon) integ_err(2,1) = integ_err(2,1) + 1_8 
 

@@ -43,6 +43,7 @@ Module ename_coms
       integer :: idoutput  = 1
       integer :: imoutput  = 1
       integer :: iyoutput  = 0
+      integer :: itoutput  = 0
       integer :: isoutput  = 1
       
       integer :: attach_metadata=0

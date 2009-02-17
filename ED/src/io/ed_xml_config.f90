@@ -408,6 +408,8 @@ recursive subroutine read_ed_xml_config(filename)
          if(texist) lapse%nir_diffuse = real(rval)
          call getConfigREAL  ('nir_beam','lapse',i,rval,texist)
          if(texist) lapse%nir_beam = real(rval)
+         call getConfigREAL  ('pptnorm','lapse',i,rval,texist)
+         if(texist) lapse%pptnorm = real(rval)
 
 
          call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level

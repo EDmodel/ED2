@@ -1524,7 +1524,6 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
         cpoly%met(isi)%atm_tmp = cgrid%met(ipy)%atm_tmp + cgrid%lapse(ipy)%atm_tmp*delE
         cpoly%met(isi)%atm_shv = cgrid%met(ipy)%atm_shv + cgrid%lapse(ipy)%atm_shv*delE
         cpoly%met(isi)%prss    = cgrid%met(ipy)%prss    + cgrid%lapse(ipy)%prss*delE
-        cpoly%met(isi)%pcpg    = cgrid%met(ipy)%pcpg    + cgrid%lapse(ipy)%pcpg*delE
         cpoly%met(isi)%atm_co2 = cgrid%met(ipy)%atm_co2 + cgrid%lapse(ipy)%atm_co2*delE
         cpoly%met(isi)%rlong   = cgrid%met(ipy)%rlong   + cgrid%lapse(ipy)%rlong*delE
         cpoly%met(isi)%par_diffuse = cgrid%met(ipy)%par_diffuse + cgrid%lapse(ipy)%par_diffuse*delE
@@ -1532,6 +1531,9 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
         cpoly%met(isi)%nir_diffuse = cgrid%met(ipy)%nir_diffuse + cgrid%lapse(ipy)%nir_diffuse*delE
         cpoly%met(isi)%nir_beam    = cgrid%met(ipy)%nir_beam    + cgrid%lapse(ipy)%nir_beam*delE
         cpoly%met(isi)%vels    = cgrid%met(ipy)%vels    + cgrid%lapse(ipy)%vels*delE
+        !! PROPORTIONAL ADJUSTMENTS
+        cpoly%met(isi)%pcpg    = cgrid%met(ipy)%pcpg*cpoly%pptweight(isi)
+
         !! note: at this point VELS is vel^2.  Thus this lapse preserves mean wind ENERGY
         !! not wind SPEED
 !        if ( cpoly%met(isi)%rlong < 200.0) then
@@ -1648,13 +1650,15 @@ end subroutine MetDiagnostics
 !==========================================================================================!
 subroutine setLapseParms_ar(cgrid)
   
-  use ed_state_vars,only:edtype
+  use ed_state_vars,only:edtype,polygontype
   use met_driver_coms, only: lapse
 
   implicit none
 
-  integer :: ipy
+  integer :: ipy,isi
   type(edtype), target :: cgrid
+  type(polygontype),pointer :: cpoly
+  real :: ebar, aterr
 
   !! right now, simply transfer lapse rates from ed_data
   !! in future, could set parms based on spatial maps of parms
@@ -1673,6 +1677,23 @@ subroutine setLapseParms_ar(cgrid)
      cgrid%lapse(ipy)%nir_diffuse = lapse%nir_diffuse
      cgrid%lapse(ipy)%par_beam    = lapse%par_beam
      cgrid%lapse(ipy)%par_diffuse = lapse%par_diffuse
+     cgrid%lapse(ipy)%pptnorm = lapse%pptnorm
+
+     !!! PRECIP WEIGHTS !!!
+     cpoly => cgrid%polygon(ipy)
+     ebar = 0.0
+     aterr = 0.0
+     do isi = 1,cpoly%nsites
+        ebar = ebar + cpoly%area(isi)*cpoly%elevation(isi)
+        aterr = aterr + cpoly%area(isi)
+     enddo
+     ebar = ebar/aterr
+     do isi = 1,cpoly%nsites
+        cpoly%pptweight(isi) = (cgrid%lapse(ipy)%pptnorm + &
+             cgrid%lapse(ipy)%pcpg*(cpoly%elevation(isi) - ebar))&
+             /cgrid%lapse(ipy)%pptnorm
+     enddo
+
   enddo
 
   return

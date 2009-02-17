@@ -734,8 +734,17 @@ subroutine sum_plant_cfluxes_ar(csite,ipa, gpp, gpp_dbh,plresp)
      lrresp = lrresp + cpatch%root_respiration(ico)
      sresp = sresp + (cpatch%growth_respiration(ico) + cpatch%storage_respiration(ico)   &
           + cpatch%vleaf_respiration(ico)) * cpatch%nplant(ico) / (day_sec * umol_2_kgC)
+
+     cpatch%mean_growth_resp(ico)  = cpatch%mean_growth_resp(ico)  + &
+          cpatch%growth_respiration(ico) * cpatch%nplant(ico)/ (day_sec * umol_2_kgC)
+     cpatch%mean_storage_resp(ico) = cpatch%mean_storage_resp(ico) + &
+          cpatch%storage_respiration(ico) * cpatch%nplant(ico) / (day_sec * umol_2_kgC)
+     cpatch%mean_vleaf_resp(ico)   = cpatch%mean_vleaf_resp(ico)   + &
+          cpatch%vleaf_respiration(ico) * cpatch%nplant(ico) / (day_sec * umol_2_kgC)
+
   enddo
   plresp = lrresp + sresp
+
 
   return
 end subroutine sum_plant_cfluxes_ar

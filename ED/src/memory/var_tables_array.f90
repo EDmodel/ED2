@@ -47,7 +47,8 @@ Module var_tables_array
      
      integer :: idim_type
      integer :: nptrs
-     integer :: ihist,ianal,imean,ilite,impti,impt1,impt2,impt3,irecycle,iyear
+     integer :: ihist,ianal,imean,ilite,impti,impt1,impt2,impt3,irecycle
+     integer :: iyear,iopti
      character (len=64) :: name
      character (len=2) :: dtype
      integer :: imont,idail
@@ -150,6 +151,7 @@ contains
        vt_info(nv,igr)%imont=0
        vt_info(nv,igr)%idail=0
        vt_info(nv,igr)%iyear=0
+       vt_info(nv,igr)%iopti=0
        
        do nt=3,ntok
           ctab=tokens(nt)
@@ -177,6 +179,8 @@ contains
              vt_info(nv,igr)%idail=1
           case('year') 
              vt_info(nv,igr)%iyear=1
+          case('opti') 
+             vt_info(nv,igr)%iopti=1
           case default
              print*, 'Illegal table specification for var:', tokens(1),ctab
              call fatal_error('Bad var table','vtable_edio_r','var_tables_array.f90')
@@ -288,6 +292,7 @@ contains
        vt_info(nv,igr)%imont=0
        vt_info(nv,igr)%idail=0
        vt_info(nv,igr)%iyear=0
+       vt_info(nv,igr)%iopti=0
        
        do nt=3,ntok
           ctab=tokens(nt)
@@ -315,6 +320,8 @@ contains
              vt_info(nv,igr)%idail=1
           case('year') 
              vt_info(nv,igr)%iyear=1
+          case('opti') 
+             vt_info(nv,igr)%iopti=1
           case default
              print*, 'Illegal table specification for var:', tokens(1),ctab
              call fatal_error('Bad var table','vtable_edio_r','var_tables_array.f90')
@@ -428,6 +435,7 @@ contains
        vt_info(nv,igr)%imont=0
        vt_info(nv,igr)%idail=0
        vt_info(nv,igr)%iyear=0
+       vt_info(nv,igr)%iopti=0
        
        do nt=3,ntok
           ctab=tokens(nt)
@@ -455,6 +463,8 @@ contains
              vt_info(nv,igr)%idail=1
           case('year') 
              vt_info(nv,igr)%iyear=1
+          case('opti') 
+             vt_info(nv,igr)%iopti=1
           case default
              print*, 'Illegal table specification for var:', tokens(1),ctab
              call fatal_error('Bad var table','vtable_edio_i','var_tables_array.f90')
@@ -565,6 +575,7 @@ contains
        vt_info(nv,igr)%imont=0
        vt_info(nv,igr)%idail=0
        vt_info(nv,igr)%iyear=0
+       vt_info(nv,igr)%iopti=0
        
        do nt=3,ntok
           ctab=tokens(nt)
@@ -592,6 +603,8 @@ contains
              vt_info(nv,igr)%idail=1
           case('year') 
              vt_info(nv,igr)%iyear=1
+          case('opti') 
+             vt_info(nv,igr)%iopti=1
           case default
              print*, 'Illegal table specification for var:', tokens(1),ctab
              call fatal_error('Bad var table','vtable_edio_c','var_tables_array.f90')

@@ -476,6 +476,9 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
            cpatch%mean_gpp(ico)         = cpatch%mean_gpp(ico) * 0.5
            cpatch%mean_leaf_resp(ico)   = cpatch%mean_leaf_resp(ico) * 0.5
            cpatch%mean_root_resp(ico)   = cpatch%mean_root_resp(ico) * 0.5
+           cpatch%mean_growth_resp(ico) = cpatch%mean_growth_resp(ico) * 0.5
+           cpatch%mean_storage_resp(ico)= cpatch%mean_storage_resp(ico) * 0.5
+           cpatch%mean_vleaf_resp(ico)  = cpatch%mean_vleaf_resp(ico) * 0.5
            cpatch%dmean_leaf_resp(ico)  = cpatch%dmean_leaf_resp(ico) * 0.5
            cpatch%dmean_root_resp(ico)  = cpatch%dmean_root_resp(ico) * 0.5
            cpatch%dmean_gpp(ico)        = cpatch%dmean_gpp(ico) * 0.5
@@ -559,6 +562,9 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
      cpatch%mean_gpp(idt) = cpatch%mean_gpp(isc)
      cpatch%mean_leaf_resp(idt) = cpatch%mean_leaf_resp(isc)
      cpatch%mean_root_resp(idt) = cpatch%mean_root_resp(isc)
+     cpatch%mean_storage_resp(idt) = cpatch%mean_storage_resp(isc)
+     cpatch%mean_growth_resp(idt)= cpatch%mean_growth_resp(isc)
+     cpatch%mean_vleaf_resp(idt) = cpatch%mean_vleaf_resp(isc)
      cpatch%dmean_leaf_resp(idt) = cpatch%dmean_leaf_resp(isc)
      cpatch%dmean_root_resp(idt) = cpatch%dmean_root_resp(isc)
      cpatch%dmean_gpp(idt) = cpatch%dmean_gpp(isc)
@@ -707,6 +713,15 @@ subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
 
      cpatch%mean_root_resp(ico2) = (cpatch%mean_root_resp(ico2) * cpatch%nplant(ico2) +   &
           cpatch%mean_root_resp(ico1) * cpatch%nplant(ico1)) * newni
+
+     cpatch%mean_storage_resp(ico2) = (cpatch%mean_storage_resp(ico2) * cpatch%nplant(ico2) +   &
+          cpatch%mean_storage_resp(ico1) * cpatch%nplant(ico1)) * newni
+
+     cpatch%mean_growth_resp(ico2) = (cpatch%mean_growth_resp(ico2) * cpatch%nplant(ico2) +   &
+          cpatch%mean_growth_resp(ico1) * cpatch%nplant(ico1)) * newni
+
+     cpatch%mean_vleaf_resp(ico2) = (cpatch%mean_vleaf_resp(ico2) * cpatch%nplant(ico2) +   &
+          cpatch%mean_vleaf_resp(ico1) * cpatch%nplant(ico1)) * newni
      
      cpatch%growth_respiration(ico2) = (cpatch%growth_respiration(ico2) * cpatch%nplant(ico2) +  &
           cpatch%growth_respiration(ico1) * cpatch%nplant(ico1)) * newni
@@ -1195,6 +1210,9 @@ end subroutine fuse_patches_ar
         cpatch%mean_gpp(ico) = cpatch%mean_gpp(ico) * csite%area(rp) * newareai
         cpatch%mean_leaf_resp(ico) = cpatch%mean_leaf_resp(ico) * csite%area(rp) * newareai
         cpatch%mean_root_resp(ico) = cpatch%mean_root_resp(ico) * csite%area(rp) * newareai
+        cpatch%mean_growth_resp(ico)  = cpatch%mean_growth_resp(ico) * csite%area(rp) * newareai
+        cpatch%mean_storage_resp(ico) = cpatch%mean_storage_resp(ico) * csite%area(rp) * newareai
+        cpatch%mean_vleaf_resp(ico)   = cpatch%mean_vleaf_resp(ico) * csite%area(rp) * newareai
         cpatch%growth_respiration(ico) = cpatch%growth_respiration(ico) * csite%area(rp) * newareai
         cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico) * csite%area(rp) * newareai
         cpatch%vleaf_respiration(ico) = cpatch%vleaf_respiration(ico) * csite%area(rp) * newareai
@@ -1226,6 +1244,9 @@ end subroutine fuse_patches_ar
         cpatch%mean_gpp(ico) = cpatch%mean_gpp(ico) * csite%area(dp) * newareai
         cpatch%mean_leaf_resp(ico) = cpatch%mean_leaf_resp(ico) * csite%area(dp) * newareai
         cpatch%mean_root_resp(ico) = cpatch%mean_root_resp(ico) * csite%area(dp) * newareai
+        cpatch%mean_growth_resp(ico)  = cpatch%mean_growth_resp(ico) * csite%area(dp) * newareai
+        cpatch%mean_storage_resp(ico) = cpatch%mean_storage_resp(ico) * csite%area(dp) * newareai
+        cpatch%mean_vleaf_resp(ico)   = cpatch%mean_vleaf_resp(ico) * csite%area(dp) * newareai
         cpatch%growth_respiration(ico) = cpatch%growth_respiration(ico) * csite%area(dp) * newareai
         cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico) * csite%area(dp) * newareai
         cpatch%vleaf_respiration(ico) = cpatch%vleaf_respiration(ico) * csite%area(dp) * newareai

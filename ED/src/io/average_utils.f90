@@ -31,7 +31,7 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
    
    frqsumi = 1.0 / frqsum
    tfact = dtlsm * frqsumi
-
+   print*,"tfact",tfact
    do ipy = 1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
 
@@ -85,6 +85,10 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
                cpatch%mean_leaf_resp(ico) = cpatch%mean_leaf_resp(ico) * tfact
                cpatch%mean_root_resp(ico) = cpatch%mean_root_resp(ico) * tfact
                cpatch%mean_gpp(ico)       = cpatch%mean_gpp(ico)       * tfact
+
+               cpatch%mean_storage_resp(ico) = cpatch%mean_storage_resp(ico) * tfact
+               cpatch%mean_growth_resp(ico)  = cpatch%mean_growth_resp(ico)  * tfact
+               cpatch%mean_vleaf_resp(ico)   = cpatch%mean_vleaf_resp(ico)   * tfact
                
             end do
          end do
@@ -171,6 +175,15 @@ subroutine reset_averaged_vars(cgrid)
                !cpatch%mean_leaf_resp(ico)      = 0.0
                !cpatch%mean_root_resp(ico)      = 0.0
                cpatch%gpp(ico)                 = 0.0
+
+!! added MCD -- is this nessisary?
+cpatch%storage_respiration(ico) = 0.0
+cpatch%vleaf_respiration(ico) = 0.0
+cpatch%growth_respiration(ico) = 0.0
+cpatch%mean_storage_resp(ico) = 0.0
+cpatch%mean_growth_resp(ico) = 0.0
+cpatch%mean_vleaf_resp(ico) = 0.0
+
 
             end do
          end do

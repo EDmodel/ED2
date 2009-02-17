@@ -75,7 +75,7 @@ subroutine ed_masterput_nl(par_run)
    use ed_para_coms,    only: mainnum
    use max_dims,        only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
    use misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
-                             ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput,iyoutput &
+                             ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput,iyoutput,itoutput &
                              ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir   &
                              ,integration_scheme,end_time,current_time,sfilout,frqstate     &
                              ,isoutput,iprintpolys,printvars,pfmtstr,ipmin,ipmax,iedcnfgf   &
@@ -144,6 +144,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(idoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(imoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iyoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(itoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(iclobber,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -627,7 +628,7 @@ subroutine ed_nodeget_nl
 !------------------------------------------------------------------------------------------!
    use max_dims,        only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
    use misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
-                             ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput, iyoutput &
+                             ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput, iyoutput,itoutput &
                              ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir   &
                              ,integration_scheme,end_time,current_time,isoutput,sfilout    &
                              ,frqstate,iprintpolys,printvars,pfmtstr,ipmin,ipmax,iedcnfgf  &
@@ -694,6 +695,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(idoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(imoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iyoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(itoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(iclobber,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

@@ -16,6 +16,9 @@ subroutine init_ed_cohort_vars_array(cpatch,ico, lsl)
   cpatch%mean_gpp(ico) = 0.0
   cpatch%mean_leaf_resp(ico) = 0.0
   cpatch%mean_root_resp(ico) = 0.0
+  cpatch%mean_growth_resp(ico) = 0.0
+  cpatch%mean_storage_resp(ico) = 0.0
+  cpatch%mean_vleaf_resp(ico) = 0.0
   
   cpatch%dmean_leaf_resp(ico) = 0.0
   cpatch%dmean_root_resp(ico) = 0.0

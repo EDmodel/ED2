@@ -75,6 +75,7 @@ Module met_driver_coms
      real :: exner
      real :: geoht
      real :: atm_co2
+     real :: pptnorm
 
   end Type met_driv_state
 

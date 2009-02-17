@@ -379,9 +379,13 @@ subroutine calcHydroSubsurface()
               csite => cpoly%site(isi)
               do ipa=1,csite%npatches
                  !change in water table depth
-                 if(csite%moist_dz(ipa) > 0.0) then
+                 if(csite%moist_dz(ipa) > 0.0 .and. dzadd > tiny(1.0)) then
 !!                    dw = cp%moist_dz*cp%area*cs%area/dzadd*soil_sat_water
                     dw = csite%moist_dz(ipa)/dzadd*soil_sat_water
+                    if(dw /= dw) then
+                       print*,csite%moist_dz(ipa),dzadd,soil_sat_water
+                       call fatal_error('NaN in water table','calcHydroSubsurface','lsm_hyd.f90')
+                    endif
                     csite%moist_dz(ipa) = dw/0.435 !! approximation for output
                     call updateWatertableAdd(cpoly,isi,ipa,dw,sheat)
                  end if
@@ -632,6 +636,14 @@ subroutine updateWatertableAdd(cpoly,isi,ipa,dw,sheat)
 
          !!update soil heat
          csite%soil_energy(k,ipa)  = csite%soil_energy(k,ipa) + dw_layer*sheat
+         if(csite%soil_energy(k,ipa) /= csite%soil_energy(k,ipa)) then
+            print*,"dw_layer",dw_layer
+            print*,"sheat",sheat
+            print*,"k= ",k," ipa= ",ipa
+            print*,"wcap",wcap," dw", dw
+            call fatal_error('Failed soil_energy sanity check in lsm_hyd' &
+                 ,'updateWatertableAdd','lsm_hyd.f90')
+         end if
 
          !!update soil temperature
          call qwtk8(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*1.d3,soil(nsoil)%slcpd,tempk,fracliq)
@@ -789,6 +801,11 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
       csite%soil_energy(k,ipa) = csite%soil_energy(k,ipa) + dh
       sheat = sheat - dh*dslz(k)   !cumulative sum as return value
       swater = swater - dw*dslz(k)
+      if(csite%soil_energy(k,ipa) /= csite%soil_energy(k,ipa)) then
+         call fatal_error('Failed soil_energy sanity check in lsm_hyd' &
+              ,'updateWatertableSubtract','lsm_hyd.f90')
+      end if
+
 
       !!update soil temperature
       call qwtk8(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*1.d3,soil(nsoil)%slcpd,tempk,fracliq)
@@ -858,6 +875,11 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
       csite%soil_water(slsl,ipa) = dble(soil(nsoil)%soilcp)
    end if
    csite%soil_energy(slsl,ipa) = csite%soil_energy(slsl,ipa)-bf*cliq1000*(csite%soil_tempk(slsl,ipa)-tsupercool)
+
+   if(csite%soil_energy(slsl,ipa) /= csite%soil_energy(slsl,ipa)) then
+                    call fatal_error('Failed soil_energy sanity check in lsm_hyd' &
+                                    ,'updateWatertableBaseflow','lsm_hyd.f90')
+                 end if
 
    baseflow = bf*1000.0/dtlsm !! reassign for return (m/step->mm/sec)
    return
