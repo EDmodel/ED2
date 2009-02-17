@@ -48,36 +48,37 @@ if (varn .eq. 'V' .or. varn .eq. 'ALL') then
    if (if_adap == 0) then
 
       call vel_advectc(mzp,mxp,myp,ia,iz,ja,jz,izu,jzv  &
-         ,basic_g(ngrid)%uc    (1,1,1) ,basic_g(ngrid)%vc    (1,1,1)  &
-         ,basic_g(ngrid)%wc    (1,1,1) ,tend%ut              (1)      &
-         ,tend%vt              (1)     ,tend%wt              (1)      &
-         ,basic_g(ngrid)%dn0   (1,1,1) ,basic_g(ngrid)%dn0u  (1,1,1)  &
-         ,basic_g(ngrid)%dn0v  (1,1,1) ,scratch%vt3da        (1)      &
-         ,scratch%vt3db        (1)     ,scratch%vt3dc        (1)      &
-         ,grid_g(ngrid)%dxt    (1,1)   ,grid_g(ngrid)%dxu    (1,1)    &
-         ,grid_g(ngrid)%dxv    (1,1)   ,grid_g(ngrid)%dyt    (1,1)    &
-         ,grid_g(ngrid)%dyu    (1,1)   ,grid_g(ngrid)%dyv    (1,1)    &
-         ,grid_g(ngrid)%rtgt   (1,1)   ,grid_g(ngrid)%rtgu   (1,1)    &
-         ,grid_g(ngrid)%rtgv   (1,1)   ,grid_g(ngrid)%f13t   (1,1)    &
-         ,grid_g(ngrid)%f23t   (1,1)   ,grid_g(ngrid)%fmapt  (1,1)    &
-         ,grid_g(ngrid)%fmapu  (1,1)   ,grid_g(ngrid)%fmapv  (1,1)    &
-         ,grid_g(ngrid)%fmapui (1,1)   ,grid_g(ngrid)%fmapvi (1,1)    )
+         ,basic_g(ngrid)%uc     ,basic_g(ngrid)%vc      &
+         ,basic_g(ngrid)%wc     ,tend%ut                &
+         ,tend%vt               ,tend%wt                &
+         ,basic_g(ngrid)%dn0    ,basic_g(ngrid)%dn0u    &
+         ,basic_g(ngrid)%dn0v   ,scratch%vt3da          &
+         ,scratch%vt3db         ,scratch%vt3dc          &
+         ,grid_g(ngrid)%dxt     ,grid_g(ngrid)%dxu      &
+         ,grid_g(ngrid)%dxv     ,grid_g(ngrid)%dyt      &
+         ,grid_g(ngrid)%dyu     ,grid_g(ngrid)%dyv      &
+         ,grid_g(ngrid)%rtgt    ,grid_g(ngrid)%rtgu     &
+         ,grid_g(ngrid)%rtgv    ,grid_g(ngrid)%f13t     &
+         ,grid_g(ngrid)%f23t    ,grid_g(ngrid)%fmapt    &
+         ,grid_g(ngrid)%fmapu   ,grid_g(ngrid)%fmapv    &
+         ,grid_g(ngrid)%fmapui  ,grid_g(ngrid)%fmapvi   )
 
    else
 
       call vel_advectc_adap(mzp,mxp,myp,ia,iz,ja,jz,izu,jzv,jdim    &
-         ,grid_g(ngrid)%flpu   (1,1)   ,grid_g(ngrid)%flpv   (1,1)    &
-         ,grid_g(ngrid)%flpw   (1,1)   ,basic_g(ngrid)%uc   (1,1,1)  &
-         ,basic_g(ngrid)%vc   (1,1,1) ,basic_g(ngrid)%wc   (1,1,1)  &
-         ,tend%ut             (1)     ,tend%vt             (1)      &
-         ,tend%wt             (1)     ,basic_g(ngrid)%dn0  (1,1,1)  &
-         ,basic_g(ngrid)%dn0u (1,1,1) ,basic_g(ngrid)%dn0v (1,1,1)  &
-         ,grid_g(ngrid)%aru   (1,1,1) ,grid_g(ngrid)%arv   (1,1,1)  &
-         ,grid_g(ngrid)%arw   (1,1,1) ,grid_g(ngrid)%volu  (1,1,1)  &
-         ,grid_g(ngrid)%volv  (1,1,1) ,grid_g(ngrid)%volw  (1,1,1)  &
-         ,scratch%vt3da       (1)     ,scratch%vt3db       (1)      &
-         ,scratch%vt3dc       (1)     ,scratch%vt3dd       (1)      &
-         ,scratch%vt3de       (1)     ,scratch%vt3df       (1) ,sngl(time))
+         ,grid_g(ngrid)%flpu   ,grid_g(ngrid)%flpv    &
+         ,grid_g(ngrid)%flpw   ,basic_g(ngrid)%uc     &
+         ,basic_g(ngrid)%vc    ,basic_g(ngrid)%wc     &
+         ,tend%ut              ,tend%vt               &
+         ,tend%wt              ,basic_g(ngrid)%dn0    &
+         ,basic_g(ngrid)%dn0u  ,basic_g(ngrid)%dn0v   &
+         ,grid_g(ngrid)%aru    ,grid_g(ngrid)%arv     &
+         ,grid_g(ngrid)%arw    ,grid_g(ngrid)%volu    &
+         ,grid_g(ngrid)%volv   ,grid_g(ngrid)%volw    &
+         ,scratch%vt3da        ,scratch%vt3db         &
+         ,scratch%vt3dc        ,scratch%vt3dd         &
+         ,scratch%vt3de        ,scratch%vt3df         &
+         ,sngl(time))
 
    endif
 
@@ -109,92 +110,91 @@ if (varn .eq. 'T' .or. varn .eq. 'ALL') THEN
    if (if_adap == 0) then
 
       call fa_preptc(mzp,mxp,myp        &
-         ,scratch%vt3da        (1)     ,scratch%vt3db        (1)      &
-         ,scratch%vt3dc        (1)     ,scratch%vt3dd        (1)      &
-         ,scratch%vt3de        (1)     ,scratch%vt3df        (1)      &
-         ,scratch%vt3dh        (1)     ,scratch%vt3di        (1)      &
-         ,scratch%vt3dj        (1)     ,scratch%vt3dk        (1)      &
-         ,basic_g(ngrid)%dn0   (1,1,1) ,basic_g(ngrid)%dn0u  (1,1,1)  &
-         ,basic_g(ngrid)%dn0v  (1,1,1) ,grid_g(ngrid)%rtgt   (1,1)    &
-         ,grid_g(ngrid)%rtgu   (1,1)   ,grid_g(ngrid)%rtgv   (1,1)    &
-         ,grid_g(ngrid)%fmapt  (1,1)   ,grid_g(ngrid)%fmapui (1,1)    &
-         ,grid_g(ngrid)%fmapvi (1,1)   ,grid_g(ngrid)%f13t   (1,1)    &
-         ,grid_g(ngrid)%f23t   (1,1)   ,grid_g(ngrid)%dxu    (1,1)    &
-         ,grid_g(ngrid)%dyv    (1,1)   ,grid_g(ngrid)%dxt    (1,1)    &
-         ,grid_g(ngrid)%dyt    (1,1)   ,mynum                         )
+         ,scratch%vt3da         ,scratch%vt3db          &
+         ,scratch%vt3dc         ,scratch%vt3dd          &
+         ,scratch%vt3de         ,scratch%vt3df          &
+         ,scratch%vt3dh         ,scratch%vt3di          &
+         ,scratch%vt3dj         ,scratch%vt3dk          &
+         ,basic_g(ngrid)%dn0    ,basic_g(ngrid)%dn0u    &
+         ,basic_g(ngrid)%dn0v   ,grid_g(ngrid)%rtgt     &
+         ,grid_g(ngrid)%rtgu    ,grid_g(ngrid)%rtgv     &
+         ,grid_g(ngrid)%fmapt   ,grid_g(ngrid)%fmapui   &
+         ,grid_g(ngrid)%fmapvi  ,grid_g(ngrid)%f13t     &
+         ,grid_g(ngrid)%f23t    ,grid_g(ngrid)%dxu      &
+         ,grid_g(ngrid)%dyv     ,grid_g(ngrid)%dxt      &
+         ,grid_g(ngrid)%dyt     ,mynum                  )
 
    else
 
-      call fa_preptc_adap(mzp,mxp,myp                               &
-         ,scratch%vt3da       (1)     ,scratch%vt3db       (1)      &
-         ,scratch%vt3dc       (1)     ,scratch%vt3dd       (1)      &
-         ,scratch%vt3de       (1)     ,scratch%vt3df       (1)      &
-         ,scratch%vt3dh       (1)     ,basic_g(ngrid)%dn0  (1,1,1)  &
-         ,basic_g(ngrid)%dn0u (1,1,1) ,basic_g(ngrid)%dn0v (1,1,1)  &
-         ,grid_g(ngrid)%aru   (1,1,1) ,grid_g(ngrid)%arv   (1,1,1)  &
-         ,grid_g(ngrid)%arw   (1,1,1) ,grid_g(ngrid)%volt  (1,1,1)  &
-         ,grid_g(ngrid)%dxu   (1,1)   ,grid_g(ngrid)%dyv   (1,1)    &
-         ,grid_g(ngrid)%dxt   (1,1)   ,grid_g(ngrid)%dyt   (1,1)    &
-         ,zt,zm,dzm,vctr1,vctr2,jdim,mynum                          )
+      call fa_preptc_adap(mzp,mxp,myp                 &
+         ,scratch%vt3da        ,scratch%vt3db         &
+         ,scratch%vt3dc        ,scratch%vt3dd         &
+         ,scratch%vt3de        ,scratch%vt3df         &
+         ,scratch%vt3dh        ,basic_g(ngrid)%dn0    &
+         ,basic_g(ngrid)%dn0u  ,basic_g(ngrid)%dn0v   &
+         ,grid_g(ngrid)%aru    ,grid_g(ngrid)%arv     &
+         ,grid_g(ngrid)%arw    ,grid_g(ngrid)%volt    &
+         ,grid_g(ngrid)%dxu    ,grid_g(ngrid)%dyv     &
+         ,grid_g(ngrid)%dxt    ,grid_g(ngrid)%dyt     &
+         ,zt,zm,dzm,vctr1,vctr2,jdim,mynum            )
 
    endif
 
    do n=1,num_scalar(ngrid)
       
-      call atob(mxyzp,scalar_tab(n,ngrid)%var_p,scratch%scr1(1))
+      call atob(mxyzp,scalar_tab(n,ngrid)%var_p,scratch%scr1)
 
       if (if_adap == 0) then
 
-         call fa_xc(mzp,mxp,myp,ia,iz,1,myp        &
-            ,scalar_tab(n,ngrid)%var_p ,scratch%scr1  (1)  &
-            ,scratch%vt3da (1)         ,scratch%vt3dd (1)  &
-            ,scratch%vt3dg (1)         ,scratch%vt3dh (1)  &
-            ,scratch%vt3di (1)         ,mynum              )
+         call fa_xc(mzp,mxp,myp,ia,iz,1,myp             &
+            ,scalar_tab(n,ngrid)%var_p ,scratch%scr1    &
+            ,scratch%vt3da             ,scratch%vt3dd   &
+            ,scratch%vt3dg             ,scratch%vt3dh   &
+            ,scratch%vt3di             ,mynum           )
 
-         if (jdim .eq. 1)  &
-         call fa_yc(mzp,mxp,myp,ia,iz,ja,jz        &
-            ,scalar_tab(n,ngrid)%var_p ,scratch%scr1  (1)  &
-            ,scratch%vt3db (1)         ,scratch%vt3de (1)  &
-            ,scratch%vt3dg (1)         ,scratch%vt3dj (1)  &
-            ,scratch%vt3di (1)         ,jdim,mynum         )
+         if (jdim == 1)  &
+         call fa_yc(mzp,mxp,myp,ia,iz,ja,jz          &
+            ,scalar_tab(n,ngrid)%var_p ,scratch%scr1 &
+            ,scratch%vt3db          ,scratch%vt3de   &
+            ,scratch%vt3dg          ,scratch%vt3dj   &
+            ,scratch%vt3di          ,jdim,mynum      )
 
-         call fa_zc(mzp,mxp,myp,ia,iz,ja,jz        &
-            ,scalar_tab(n,ngrid)%var_p ,scratch%scr1  (1)  &
-            ,scratch%vt3dc (1)         ,scratch%vt3df (1)  &
-            ,scratch%vt3dg (1)         ,scratch%vt3dk (1)  &
-            ,vctr1,vctr2,mynum                             )
+         call fa_zc(mzp,mxp,myp,ia,iz,ja,jz             &
+            ,scalar_tab(n,ngrid)%var_p ,scratch%scr1    &
+            ,scratch%vt3dc             ,scratch%vt3df   &
+            ,scratch%vt3dg             ,scratch%vt3dk   &
+            ,vctr1,vctr2,mynum                          )
 
-         call advtndc(mzp,mxp,myp,ia,iz,ja,jz    &
-            ,scalar_tab(n,ngrid)%var_p ,scratch%scr1 (1)  &
-            ,scalar_tab(n,ngrid)%var_t ,dtlt,mynum        )
+         call advtndc(mzp,mxp,myp,ia,iz,ja,jz          &
+            ,scalar_tab(n,ngrid)%var_p ,scratch%scr1   &
+            ,scalar_tab(n,ngrid)%var_t ,dtlt,mynum     )
 
       else
 
-         call fa_xc_adap(mzp,mxp,myp,ia,iz,1,myp         &
-            ,grid_g(ngrid)%flpw (1,1) ,scalar_tab(n,ngrid)%var_p &
-            ,scratch%scr1      (1)   ,scratch%vt3da (1)  &
-            ,scratch%vt3dd     (1)   ,scratch%vt3dg (1)  &
-            ,scratch%vt3dh     (1)   ,mynum              )
+         call fa_xc_adap(mzp,mxp,myp,ia,iz,1,myp            &
+            ,grid_g(ngrid)%flpw  ,scalar_tab(n,ngrid)%var_p &
+            ,scratch%scr1        ,scratch%vt3da             &
+            ,scratch%vt3dd       ,scratch%vt3dg             &
+            ,scratch%vt3dh       ,mynum                     )
 
-         if (jdim .eq. 1)                                &
-         call fa_yc_adap(mzp,mxp,myp,ia,iz,ja,jz         &
-            ,grid_g(ngrid)%flpw (1,1) ,scalar_tab(n,ngrid)%var_p &
-            ,scratch%scr1      (1)   ,scratch%vt3db (1)  &
-            ,scratch%vt3de     (1)   ,scratch%vt3dg (1)  &
-            ,scratch%vt3dh (1)  &
-            ,jdim                    ,mynum              )
+         if (jdim == 1)                                    &
+         call fa_yc_adap(mzp,mxp,myp,ia,iz,ja,jz           &
+            ,grid_g(ngrid)%flpw ,scalar_tab(n,ngrid)%var_p &
+            ,scratch%scr1       ,scratch%vt3db             &
+            ,scratch%vt3de      ,scratch%vt3dg             &
+            ,scratch%vt3dh      ,jdim,mynum                )
 
-         call fa_zc_adap(mzp,mxp,myp,ia,iz,ja,jz         &
-            ,grid_g(ngrid)%flpw (1,1) ,scalar_tab(n,ngrid)%var_p &
-            ,scratch%scr1      (1)   ,scratch%vt3dc (1)  &
-            ,scratch%vt3df     (1)   ,scratch%vt3dg (1)  &
-            ,scratch%vt3dh     (1)   ,vctr1              &
-            ,vctr2                   ,mynum              )
+         call fa_zc_adap(mzp,mxp,myp,ia,iz,ja,jz           &
+            ,grid_g(ngrid)%flpw ,scalar_tab(n,ngrid)%var_p &
+            ,scratch%scr1       ,scratch%vt3dc             &
+            ,scratch%vt3df      ,scratch%vt3dg             &
+            ,scratch%vt3dh      ,vctr1                     &
+            ,vctr2              ,mynum                     )
 
-         call advtndc_adap(mzp,mxp,myp,ia,iz,ja,jz  &
-            ,grid_g(ngrid)%flpw (1,1) ,scalar_tab(n,ngrid)%var_p &
-            ,scratch%scr1      (1)   ,scalar_tab(n,ngrid)%var_t &
-            ,dtlt                    ,mynum         )
+         call advtndc_adap(mzp,mxp,myp,ia,iz,ja,jz          &
+            ,grid_g(ngrid)%flpw  ,scalar_tab(n,ngrid)%var_p &
+            ,scratch%scr1        ,scalar_tab(n,ngrid)%var_t &
+            ,dtlt                ,mynum                     )
 
       endif
 

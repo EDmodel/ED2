@@ -22,10 +22,10 @@ integer :: n,mxyzp
 !     First u,v tendencies
 
 mxyzp = mxp * myp * mzp
-call azero(mxyzp,tend%ut(1))
-call azero(mxyzp,tend%vt(1))
-call azero(mxyzp,tend%wt(1))
-call azero(mxyzp,tend%pt(1))
+call azero(mxyzp,tend%ut)
+call azero(mxyzp,tend%vt)
+call azero(mxyzp,tend%wt)
+call azero(mxyzp,tend%pt)
 
 !     Now sclrr tendencies
 
@@ -61,18 +61,14 @@ eps = .2
 
 !     For both IAC=1 and IAC=2, call PREDICT for U, V, W, and P.
 
-call predict(mxyzp,basic_g(ngrid)%uc(1,1,1)   &
-   ,basic_g(ngrid)%up(1,1,1),tend%ut(1),scratch%vt3da(1),iac,dtlv)
+call predict(mxyzp,basic_g(ngrid)%uc,basic_g(ngrid)%up,tend%ut,scratch%vt3da,iac,dtlv)
 
 if (icorflg .eq. 1 .or. jdim .eq. 1) then
-   call predict(mxyzp,basic_g(ngrid)%vc(1,1,1)  &
-      ,basic_g(ngrid)%vp(1,1,1),tend%vt(1),scratch%vt3da(1),iac,dtlv)
+   call predict(mxyzp,basic_g(ngrid)%vc,basic_g(ngrid)%vp,tend%vt,scratch%vt3da,iac,dtlv)
 endif
 
-call predict(mxyzp,basic_g(ngrid)%wc(1,1,1),basic_g(ngrid)%wp(1,1,1)  &
-   ,tend%wt(1),scratch%vt3da(1),iac,dtlv)
-call predict(mxyzp,basic_g(ngrid)%pc(1,1,1),basic_g(ngrid)%pp(1,1,1)  &
-   ,tend%pt(1),scratch%vt3da(1),iac,dtlv)
+call predict(mxyzp,basic_g(ngrid)%wc,basic_g(ngrid)%wp,tend%wt,scratch%vt3da,iac,dtlv)
+call predict(mxyzp,basic_g(ngrid)%pc,basic_g(ngrid)%pp,tend%pt,scratch%vt3da,iac,dtlv)
 
 return
 end

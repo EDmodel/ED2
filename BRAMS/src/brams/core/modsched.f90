@@ -315,10 +315,10 @@ subroutine cfl(n1,n2,n3,i0,j0,mynum)
   integer :: n1,n2,n3,i0,j0,mynum
 
   call cfll(n1,n2,n3,i0,j0,mynum  &
-       ,basic_g(ngrid)%up   (1,1,1)  ,basic_g(ngrid)%vp   (1,1,1)  &
-       ,basic_g(ngrid)%wp   (1,1,1)  ,grid_g(ngrid)%rtgt    (1,1)  &
-       ,grid_g(ngrid)%f13t    (1,1)  ,grid_g(ngrid)%f23t    (1,1)  &
-       ,grid_g(ngrid)%dxt     (1,1)  ,grid_g(ngrid)%dyt     (1,1)  )
+       ,basic_g(ngrid)%up     ,basic_g(ngrid)%vp     &
+       ,basic_g(ngrid)%wp     ,grid_g(ngrid)%rtgt    &
+       ,grid_g(ngrid)%f13t    ,grid_g(ngrid)%f23t    &
+       ,grid_g(ngrid)%dxt     ,grid_g(ngrid)%dyt     )
   return
 end subroutine cfl
 

@@ -81,14 +81,15 @@ subroutine old_grell_cupar_driver(icld)
 
      !----- Remove part of the instability due to shallow cumulus action ---------------------!
      call include_shal_effect(mzp,mxp,myp,ia,iz,ja,jz,dtlt                                    &
-                   ,sc1_grell_g(ngrid)%thetasta(1,1,1) , sc1_grell_g(ngrid)%rvsta(1,1,1)      &
-                   ,basic_g(ngrid)%theta(1,1,1), basic_g(ngrid)%rv(1,1,1)                     &
-                   ,basic_g(ngrid)%pi0(1,1,1)  , basic_g(ngrid)%pp(1,1,1)                     &
-                   ,cuparm_g(ngrid)%thsrc(1,1,1,nclouds), cuparm_g(ngrid)%rtsrc(1,1,1,nclouds))
+                   ,sc1_grell_g(ngrid)%thetasta , sc1_grell_g(ngrid)%rvsta      &
+                   ,basic_g(ngrid)%theta, basic_g(ngrid)%rv                     &
+                   ,basic_g(ngrid)%pi0  , basic_g(ngrid)%pp                     &
+                   ,cuparm_g(ngrid)%thsrc(:,:,:,nclouds)                        &
+                   ,cuparm_g(ngrid)%rtsrc(:,:,:,nclouds))
 
-     call azero(mxp*myp*mzp,cuparm_g(ngrid)%thsrc(1,1,1,icld))
-     call azero(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(1,1,1,icld))
-     call azero(mxp*myp,cuparm_g(ngrid)%conprr(1,1,icld))
+     call azero(mxp*myp*mzp,cuparm_g(ngrid)%thsrc(:,:,:,icld))
+     call azero(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(:,:,:,icld))
+     call azero(mxp*myp,cuparm_g(ngrid)%conprr(:,:,icld))
 
      call cuparth(mynum,mgmxp,mgmyp,mgmzp,mzp,mxp,myp,ia,iz,ja,jz,i0,j0,maxiens         &
                  ,icld,iupmethod,depth_min(icld),cap_maxs(icld),radius(icld)            &
@@ -139,8 +140,8 @@ subroutine old_grell_cupar_driver(icld)
   else if (icld == 2) then
 
 
-     call azero(mxp*myp*mzp,cuparm_g(ngrid)%thsrc(1,1,1,icld))
-     call azero(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(1,1,1,icld))
+     call azero(mxp*myp*mzp,cuparm_g(ngrid)%thsrc(:,:,:,icld))
+     call azero(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(:,:,:,icld))
 
      call cuparth_shal(mynum,mgmxp,mgmyp,mgmzp,mzp,mxp,myp,ia,iz,ja,jz,i0,j0,maxiens,icld &
                       ,iupmethod,depth_min(icld),cap_maxs(icld),radius(icld),zkbmax(icld) &
@@ -273,12 +274,12 @@ integer :: i, j
 
 
 !zero out all convflx
-  call azero(m1*m2*m3,mass_g(ifm)%cfxup(1,1,1,iens))
-  call azero(m1*m2*m3,mass_g(ifm)%cfxdn(1,1,1,iens))
-  call azero(m1*m2*m3,mass_g(ifm)%dfxup(1,1,1,iens))
-  call azero(m1*m2*m3,mass_g(ifm)%efxup(1,1,1,iens))
-  call azero(m1*m2*m3,mass_g(ifm)%dfxdn(1,1,1,iens))
-  call azero(m1*m2*m3,mass_g(ifm)%efxdn(1,1,1,iens))
+  call azero(m1*m2*m3,mass_g(ifm)%cfxup(:,:,:,iens))
+  call azero(m1*m2*m3,mass_g(ifm)%cfxdn(:,:,:,iens))
+  call azero(m1*m2*m3,mass_g(ifm)%dfxup(:,:,:,iens))
+  call azero(m1*m2*m3,mass_g(ifm)%efxup(:,:,:,iens))
+  call azero(m1*m2*m3,mass_g(ifm)%dfxdn(:,:,:,iens))
+  call azero(m1*m2*m3,mass_g(ifm)%efxdn(:,:,:,iens))
 
 do j=ja,jz
   do i=ia,iz
@@ -294,9 +295,9 @@ do j=ja,jz
                   ,deup5d(1:m1,i,j,iens),enup5d(1:m1,i,j,iens)                 &
                   ,dedn5d(1:m1,i,j,iens),endn5d(1:m1,i,j,iens)                 &
                   , zup5d(1:m1,i,j,iens), zdn5d(1:m1,i,j,iens)                 &
-                  ,mass_g(ifm)%cfxup(1,1,1,iens),mass_g(ifm)%cfxdn(1,1,1,iens) &
-                  ,mass_g(ifm)%dfxup(1,1,1,iens),mass_g(ifm)%efxup(1,1,1,iens) &
-                  ,mass_g(ifm)%dfxdn(1,1,1,iens),mass_g(ifm)%efxdn(1,1,1,iens))
+                  ,mass_g(ifm)%cfxup(:,:,:,iens),mass_g(ifm)%cfxdn(:,:,:,iens) &
+                  ,mass_g(ifm)%dfxup(:,:,:,iens),mass_g(ifm)%efxup(:,:,:,iens) &
+                  ,mass_g(ifm)%dfxdn(:,:,:,iens),mass_g(ifm)%efxdn(:,:,:,iens))
     endif 
   enddo 
 enddo  

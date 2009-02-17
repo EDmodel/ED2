@@ -210,18 +210,18 @@ subroutine diffvel(m1,m2,m3,ia,iz,ja,jz,jd  &
      !        average the dn0*hkh to the velocity points
      call avgvel(m1,m2,m3,ia,izu,ja,jz,'xdir',jd,vt3da,scr2)
 
-     call truhor(m1,m2,m3,ia,izu,ja,jz  &
-          ,              up,vt3dj,'xdir','dxt',grid_g(ngrid)%dxt(1,1)  &
-          ,grid_g(ngrid)%topu(1,1),grid_g(ngrid)%rtgu(1,1)  &
-          ,              zt,vctr1,vctr2,vctr3,vctr4,vctr5  &
-          ,              vctr6,vctr7,jd,vt3da,dn0,dtlv,ngrid)
+     call truhor(m1,m2,m3,ia,izu,ja,jz                   &
+                ,up,vt3dj,'xdir','dxt',grid_g(ngrid)%dxt &
+                ,grid_g(ngrid)%topu,grid_g(ngrid)%rtgu   &
+                ,zt,vctr1,vctr2,vctr3,vctr4,vctr5        &
+                ,vctr6,vctr7,jd,vt3da,dn0,dtlv,ngrid)
 
      call avgvel(m1,m2,m3,ia,izu,ja,jz,'ydir',jd,vt3da,scr2)
-     call truhor(m1,m2,m3,ia,izu,ja,jz  &
-          ,              up,vt3dk,'ydir','dym',grid_g(ngrid)%dym(1,1)  &
-          ,grid_g(ngrid)%topu(1,1),grid_g(ngrid)%rtgu(1,1)  &
-          ,              zt,vctr1,vctr2,vctr3,vctr4,vctr5  &
-          ,              vctr6,vctr7,jd,vt3da,dn0,dtlv,ngrid)
+     call truhor(m1,m2,m3,ia,izu,ja,jz                    &
+                ,up,vt3dk,'ydir','dym',grid_g(ngrid)%dym  &
+                ,grid_g(ngrid)%topu,grid_g(ngrid)%rtgu    &
+                ,zt,vctr1,vctr2,vctr3,vctr4,vctr5         &
+                ,vctr6,vctr7,jd,vt3da,dn0,dtlv,ngrid)
 
   endif
 
@@ -307,19 +307,18 @@ subroutine diffvel(m1,m2,m3,ia,iz,ja,jz,jd  &
   elseif(ihorgrad.eq.2)then
      !        average the dn0*hkh to the velocity points
      call avgvel(m1,m2,m3,ia,iz,ja,jzv,'ydir',jd,vt3da,scr2)
-     call truhor(m1,m2,m3,ia,iz,ja,jzv  &
-          ,              vp,vt3dj,'ydir','dyt',grid_g(ngrid)%dyt(1,1)  &
-          ,grid_g(ngrid)%topv(1,1),grid_g(ngrid)%rtgv(1,1)  &
-          ,              zt,vctr1,vctr2,vctr3,vctr4,vctr5  &
-          ,              vctr6,vctr7,jd,vt3da,dn0,dtlv,ngrid)
+     call truhor(m1,m2,m3,ia,iz,ja,jzv                    &
+                ,vp,vt3dj,'ydir','dyt',grid_g(ngrid)%dyt  &
+                ,grid_g(ngrid)%topv,grid_g(ngrid)%rtgv    &
+                ,zt,vctr1,vctr2,vctr3,vctr4,vctr5         &
+                ,vctr6,vctr7,jd,vt3da,dn0,dtlv,ngrid      )
 
-     call avgvel(m1,m2,m3,ia,iz,ja,jzv,'xdir',jd  &
-          ,              vt3da,scr2)
+     call avgvel(m1,m2,m3,ia,iz,ja,jzv,'xdir',jd,vt3da,scr2)
      call truhor(m1,m2,m3,ia,iz,ja,jzv  &
-          ,              vp,vt3dk,'xdir','dxm',grid_g(ngrid)%dxm(1,1)  &
-          ,grid_g(ngrid)%topv(1,1),grid_g(ngrid)%rtgv(1,1)  &
-          ,              zt,vctr1,vctr2,vctr3,vctr4,vctr5  &
-          ,              vctr6,vctr7,jd,vt3da,dn0,dtlv,ngrid)
+                ,vp,vt3dk,'xdir','dxm',grid_g(ngrid)%dxm  &
+                ,grid_g(ngrid)%topv,grid_g(ngrid)%rtgv    &
+                ,zt,vctr1,vctr2,vctr3,vctr4,vctr5         &
+                ,vctr6,vctr7,jd,vt3da,dn0,dtlv,ngrid      )
 
   endif
 
@@ -388,17 +387,17 @@ subroutine diffvel(m1,m2,m3,ia,iz,ja,jz,jd  &
         call divcart(m1,m2,m3,ia,iz,ja,jz,vt3de,vt3dk,'YDIR','NPNT')
 
      elseif(ihorgrad.eq.2)then
-        call truhor(m1,m2,m3,ia,iz,ja,jz  &
-             ,                 wp,vt3dj,'xdir','dxu',grid_g(ngrid)%dxu(1,1)  &
-             ,grid_g(ngrid)%topt(1,1),grid_g(ngrid)%rtgt(1,1)  &
-             ,                 zm,vctr1,vctr2,vctr3,vctr4,vctr5  &
-             ,                 vctr6,vctr7,jd,scr2,dn0,dtlv,ngrid)
+        call truhor(m1,m2,m3,ia,iz,ja,jz                     &
+                   ,wp,vt3dj,'xdir','dxu',grid_g(ngrid)%dxu  &
+                   ,grid_g(ngrid)%topt,grid_g(ngrid)%rtgt    &
+                   ,zm,vctr1,vctr2,vctr3,vctr4,vctr5         &
+                   ,vctr6,vctr7,jd,scr2,dn0,dtlv,ngrid)
 
-        call truhor(m1,m2,m3,ia,iz,ja,jz  &
-             ,                 wp,vt3dk,'ydir','dyv',grid_g(ngrid)%dyv(1,1)  &
-             ,grid_g(ngrid)%topt(1,1),grid_g(ngrid)%rtgt(1,1)  &
-             ,                 zm,vctr1,vctr2,vctr3,vctr4,vctr5  &
-             ,                 vctr6,vctr7,jd,scr2,dn0,dtlv,ngrid)
+        call truhor(m1,m2,m3,ia,iz,ja,jz                    &
+                   ,wp,vt3dk,'ydir','dyv',grid_g(ngrid)%dyv &
+                   ,grid_g(ngrid)%topt,grid_g(ngrid)%rtgt   &
+                   ,zm,vctr1,vctr2,vctr3,vctr4,vctr5        &
+                   ,vctr6,vctr7,jd,scr2,dn0,dtlv,ngrid)
 
      endif
 
@@ -408,16 +407,16 @@ subroutine diffvel(m1,m2,m3,ia,iz,ja,jz,jd  &
         call divcart(m1,m2,m3,ia,iz,ja,jz,vt3dg,vt3dk,'YDIR','NPNT')
 
      elseif(ihorgrad.eq.2)then
-        call truhor(m1,m2,m3,ia,iz,ja,jz  &
-             ,wp,vt3dj,'xdir','dxu',grid_g(ngrid)%dxu(1,1)  &
-             ,grid_g(ngrid)%topt(1,1),grid_g(ngrid)%rtgt(1,1)  &
-             ,zm,vctr1,vctr2,vctr3,vctr4,vctr5  &
+        call truhor(m1,m2,m3,ia,iz,ja,jz                  &
+             ,wp,vt3dj,'xdir','dxu',grid_g(ngrid)%dxu     &
+             ,grid_g(ngrid)%topt,grid_g(ngrid)%rtgt       &
+             ,zm,vctr1,vctr2,vctr3,vctr4,vctr5            &
              ,vctr6,vctr7,jd,scr2,dn0,dtlv,ngrid)
 
-        call truhor(m1,m2,m3,ia,iz,ja,jz  &
-             ,wp,vt3dk,'ydir','dyv',grid_g(ngrid)%dyv(1,1)  &
-             ,grid_g(ngrid)%topt(1,1),grid_g(ngrid)%rtgt(1,1)  &
-             ,zm,vctr1,vctr2,vctr3,vctr4,vctr5  &
+        call truhor(m1,m2,m3,ia,iz,ja,jz                  &
+             ,wp,vt3dk,'ydir','dyv',grid_g(ngrid)%dyv     &
+             ,grid_g(ngrid)%topt,grid_g(ngrid)%rtgt       &
+             ,zm,vctr1,vctr2,vctr3,vctr4,vctr5            &
              ,vctr6,vctr7,jd,scr2,dn0,dtlv,ngrid)
 
      endif
@@ -698,16 +697,16 @@ subroutine diffsclr(m1,m2,m3,ia,iz,ja,jz,jd  &
 
   elseif (ihorgrad .eq. 2) then
      call truhor(m1,m2,m3,ia,iz,ja,jz  &
-          ,              scp,vt3da,'xdir','dxu',grid_g(ngrid)%dxu(1,1)  &
-          ,grid_g(ngrid)%topt(1,1),grid_g(ngrid)%rtgt(1,1)  &
-          ,              zt,vctr1,vctr2,vctr3,vctr4,vctr5  &
-          ,              vctr6,vctr7,jd,hkkh,dn0,dtlt,ngrid)
+                ,scp,vt3da,'xdir','dxu',grid_g(ngrid)%dxu  &
+                ,grid_g(ngrid)%topt,grid_g(ngrid)%rtgt     &
+                ,zt,vctr1,vctr2,vctr3,vctr4,vctr5  &
+                ,vctr6,vctr7,jd,hkkh,dn0,dtlt,ngrid)
 
-     call truhor(m1,m2,m3,ia,iz,ja,jz  &
-          ,              scp,vt3db,'ydir','dyv',grid_g(ngrid)%dyv(1,1)  &
-          ,grid_g(ngrid)%topt(1,1),grid_g(ngrid)%rtgt(1,1)  &
-          ,              zt,vctr1,vctr2,vctr3,vctr4,vctr5  &
-          ,              vctr6,vctr7,jd,hkkh,dn0,dtlt,ngrid)
+     call truhor(m1,m2,m3,ia,iz,ja,jz                      &
+                ,scp,vt3db,'ydir','dyv',grid_g(ngrid)%dyv  &
+                ,grid_g(ngrid)%topt,grid_g(ngrid)%rtgt     &
+                ,zt,vctr1,vctr2,vctr3,vctr4,vctr5          &
+                ,vctr6,vctr7,jd,hkkh,dn0,dtlt,ngrid)
   endif
 
   !         finish matrix coefficients
@@ -1311,14 +1310,14 @@ subroutine truhor_opt(m1,m2,m3,ia,iz,ja,jz                   &
            htint_j = j-jaa+1
 
            call htint_inter(nz, dxytem, nz, zintl,  &
-                opt%ind1_x_a(1,htint_i,htint_j),    &
-                opt%ind2_x_a(1,htint_i,htint_j),    &
-                opt%weight_x_a(1,htint_i,htint_j))
+                opt%ind1_x_a(:,htint_i,htint_j),    &
+                opt%ind2_x_a(:,htint_i,htint_j),    &
+                opt%weight_x_a(:,htint_i,htint_j))
 
            call htint_inter(nz, dxynu,  nz, zintr,  &
-                opt%ind1_x_b(1,htint_i,htint_j),    &
-                opt%ind2_x_b(1,htint_i,htint_j),    &
-                opt%weight_x_b(1,htint_i,htint_j))
+                opt%ind1_x_b(:,htint_i,htint_j),    &
+                opt%ind2_x_b(:,htint_i,htint_j),    &
+                opt%weight_x_b(:,htint_i,htint_j))
 
            !  check intersection of cartesian sfc. on left side of mtn.
            call topobnd(m1,m2,m3,i,j, 1,0,'l',vc3da,dxy(i+je,j)  &
@@ -1391,13 +1390,13 @@ subroutine truhor_opt(m1,m2,m3,ia,iz,ja,jz                   &
            htint_j = j-jaa+1
 
            call htint_inter(nz, dxytem, nz, zintl,  &
-                opt%ind1_y_a(1,htint_i,htint_j),    &
-                opt%ind2_y_a(1,htint_i,htint_j),    &
-                opt%weight_y_a(1,htint_i,htint_j))
+                opt%ind1_y_a(:,htint_i,htint_j),    &
+                opt%ind2_y_a(:,htint_i,htint_j),    &
+                opt%weight_y_a(:,htint_i,htint_j))
            call htint_inter(nz, dxynu,  nz, zintr,  &
-                opt%ind1_y_b(1,htint_i,htint_j),    &
-                opt%ind2_y_b(1,htint_i,htint_j),    &
-                opt%weight_y_b(1,htint_i,htint_j))
+                opt%ind1_y_b(:,htint_i,htint_j),    &
+                opt%ind2_y_b(:,htint_i,htint_j),    &
+                opt%weight_y_b(:,htint_i,htint_j))
 
            !         check intersection of cartesian sfc. on left side of mtn.
            call topobnd(m1,m2,m3,i,j,0, 1,'l',vc3da,dxy(i,j+je)  &

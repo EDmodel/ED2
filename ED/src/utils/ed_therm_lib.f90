@@ -1,35 +1,4 @@
 module ed_therm_lib
-
-  
-  
-  !---------------------------------------------------------------------------------------!
-  !     These constants came from the paper in which the saturation vapour pressure is    !
-  ! based on:                                                                             !
-  !                                                                                       !
-  !  Murphy, D. M.; Koop, T., 2005: Review of the vapour pressures of ice and supercooled !
-  !     water for atmospheric applications. Q. J. Royal Meteor. Soc., vol. 31, pp. 1539-  !
-  !     1565 (hereafter MK05).                                                            !
-  !                                                                                       !
-  !  These equations give the triple point at t3ple, with vapour pressure being es3ple.   !
-  !---------------------------------------------------------------------------------------!
-  !----- Coefficients based on equation (7): ---------------------------------------------!
-  real, dimension(0:3), parameter :: iii_7 = (/ 9.550426,-5723.265, 3.53068,-0.00728332 /)
-  !----- Coefficients based on equation (10), first fit ----------------------------------!
-  real, dimension(0:3), parameter :: l01_10= (/54.842763,-6763.22 ,-4.210  , 0.000367   /)
-  !----- Coefficients based on equation (10), second fit ---------------------------------!
-  real, dimension(0:3), parameter :: l02_10= (/53.878   ,-1331.22 ,-9.44523, 0.014025   /)
-  !----- Coefficients based on the hyperbolic tangent ------------------------------------!
-  real, dimension(2)  , parameter :: ttt_10= (/0.0415,218.8/)
-  !---------------------------------------------------------------------------------------!
-
-  !---------------------------------------------------------------------------------------!
-  !
-  ! Coefficients for Hayland and Wexler - used for extremely high temperatures
-  !
-  real,dimension(0:5), parameter :: &
-       hw0 = (/-5800.2206, 1.3914993, -0.48640239e-1, 0.41764768e-4, -0.14452093e-7, 6.5459673/)
-  ! ---------------------------------------------------------------------------------------
-
   
 contains
    real function calc_hcapveg(leaf_carbon,structural_carbon,nplants,pft)
@@ -85,50 +54,22 @@ contains
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine update_veg_energy_cweh(cpatch,ico)
-
-     ! Update the vegetation energy and heat capacity
-     ! This version is usefull if the previous leaf water leaf energy
-     ! and leaf heat capacities have not been updated or changed, ie
-     ! they are still in balance. This is usefull, because we can use
-     ! the previous quanitities to diagnose the leaf temperature, and 
-     ! especially the leaf liquid fraction; and then use those quantities
-     ! to re-calculate the leaf energy and heat capacity after
-     ! we incorporate a change in biomass.
-     ! The "cwe" mean "consistent water&energy&hcap" assumption
-     
-     use ed_state_vars,only: patchtype
-     use consts_coms,only:cliq,cice,alli,t3ple
-     use therm_lib, only : qwtk
-     
-     implicit none
-     
-     type(patchtype),target :: cpatch
-     integer,intent(in) :: ico
-     real :: fracliq
-
-     ! First lets use the existing vegetation energy, to calculate the
-     ! liquid fraction of leaf water
-     
-     
-     call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico), &
-          cpatch%hcapveg(ico),cpatch%veg_temp(ico),fracliq)
-     
-     
-     ! Next, we assume that the leaf's biophysical quantities have changed, so
-     ! we update the vegetation heat capacity based on these new values
-     
-     cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-          cpatch%nplant(ico),cpatch%pft(ico))
-     
-     ! Now, calculate the new energy, based on the updated quantities
-     
-     cpatch%veg_energy(ico) = ( cpatch%veg_temp(ico)-t3ple)*cpatch%hcapveg(ico) + & ! U of the leaf tissue
-          fracliq*cpatch%veg_water(ico)*alli + &                                    ! latent heat of fusion
-          fracliq*cpatch%veg_water(ico)*cliq*( cpatch%veg_temp(ico) -t3ple) + &     ! thermal energy of any liquid
-          (1.-fracliq)*cpatch%veg_water(ico)*cice*( cpatch%veg_temp(ico) -t3ple)     ! thermal energy of any ice
-     
-     return
+   !    This subroutine updates the vegetation energy when the plant heat capacity has     !
+   ! changed. This routine should be used only when leaf or structural biomass has         !
+   ! changed, it should never be used in fast time steps.                                  !
+   !                                                                                       !
+   !    The "cweh" mean "consistent water&energy&hcap" assumption                          !
+   !---------------------------------------------------------------------------------------!
+   subroutine update_veg_energy_cweh(veg_energy,veg_temp,old_hcapveg,new_hcapveg)     
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real, intent(inout) :: veg_energy
+      real, intent(in)    :: veg_temp
+      real, intent(in)    :: old_hcapveg
+      real, intent(in)    :: new_hcapveg
+      !------------------------------------------------------------------------------------!
+      veg_energy = veg_energy + (new_hcapveg-old_hcapveg) * veg_temp
+      return
    end subroutine update_veg_energy_cweh
    !=======================================================================================!
    !=======================================================================================!
@@ -138,111 +79,56 @@ contains
 
 
 
-   !=======================================================================================!
-   !=======================================================================================!
-   subroutine update_veg_energy_ct(cpatch,ico)
-
-     ! Update the vegetation energy and heat capacity
-     ! This version is usefull if man cohort level quanities
-     ! have changed. If the biomass quanities have been updated, and the
-     ! leaf water has changed, then we must use this version.
-     ! This method is not as robust as the "cweh" version, and makes the following
-     ! two assumptions:
-     ! 1) That the temperature of the cohort is still representative of the actual
-     ! termperature given that there may have been all sorts of changes to the cohort
-     ! 2) That if the temperature is above or equal to the triple point, 
-     ! than the liquid fraction is 1.0, if the temperature is below the triple point
-     ! then there is no liquid at all.
-     ! Again the other method is more robust, because it handles energies continuously
-     ! whereas this scheme can not produce vegetation energies with mixed liquid
-     ! fractions
-     ! the "ct" means it makes a "consistent temperature" assumption
-     
-     
-     use ed_state_vars,only:patchtype
-     use consts_coms,only:cliq,cice,alli,t3ple
-     
-     implicit none
-     
-     type(patchtype),target :: cpatch
-     integer,intent(in) :: ico
-     
-     ! Update the vegetation heat capacity based on these new values
-     
-     cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-          cpatch%nplant(ico),cpatch%pft(ico))
-     
-     ! Now, calculate the new energy, based on the updated quantities
-     
-     if(cpatch%veg_temp(ico)>=t3ple) then
-        
-        cpatch%veg_energy(ico) = ( cpatch%veg_temp(ico)-t3ple)*cpatch%hcapveg(ico) + & ! U of the leaf tissue
-             cpatch%veg_water(ico)*alli + &                                    ! latent heat of fusion
-             cpatch%veg_water(ico)*cliq*( cpatch%veg_temp(ico) -t3ple)       ! thermal energy of any liquid
-        
-     else
-        
-        cpatch%veg_energy(ico) = ( cpatch%veg_temp(ico)-t3ple)*cpatch%hcapveg(ico) + & ! U of the leaf tissue
-             cpatch%veg_water(ico)*cice*( cpatch%veg_temp(ico) -t3ple)     ! thermal energy of any ice
-        
-     endif
-     
-     return
-   end subroutine update_veg_energy_ct
-
    !==========================================================================================!
    !==========================================================================================!
    
    subroutine ed_grndvap(nlev_sfcwater, nts, soil_water, soil_energy,    &
-        sfcwater_energy, rhos, can_shv, ground_shv, surface_ssh)
+        sfcwater_energy,rhos, can_shv, ground_shv, surface_ssh, &
+        surface_tempk,surface_fracliq)
      
      use soil_coms,   only: ed_nstyp, soil
      use grid_coms,   only: nzg
-     use consts_coms, only:  pi1, grav, rvap
-     use therm_lib  , only: rhovsil, qtk, qwtk8
+     use consts_coms, only:  pi1, wdns, gorvap
+     use therm_lib  , only: rhovsil, qtk, qwtk, qwtk8
      
      implicit none
-     
      integer, intent(in) :: nlev_sfcwater ! # active levels of surface water
      integer, intent(in) :: nts           ! soil textural class (local name)
      
      real(kind=8), intent(in)  :: soil_water      ! soil water content [vol_water/vol_tot]
-     real, intent(in)  :: soil_energy     ! [J/m^3]
+     real, intent(in)  :: soil_energy     ! [J/m³]
      real, intent(in)  :: sfcwater_energy ! [J/kg]
-     real, intent(in)  :: rhos            ! air density [kg/m^3]
+     real, intent(in)  :: rhos            ! air density [kg/m³]
      real, intent(in)  :: can_shv         ! canopy vapor spec hum [kg_vap/kg_air]
      real, intent(out) :: ground_shv      ! ground equilibrium spec hum [kg_vap/kg_air]
      real, intent(out) :: surface_ssh     ! surface (saturation) spec hum [kg_vap/kg_air]
-     
-     
-     real, parameter :: gorvap = grav / rvap  ! gravity divided by vapor gas constant
-
+     real, intent(out) :: surface_tempk   ! Surface water temperature [K]
+     real, intent(out) :: surface_fracliq ! fraction of surface water in liquid phase
      
      ! Local variables
 
      real :: slpotvn ! soil water potential [m]
      real :: alpha   ! "alpha" term in Lee and Pielke (1993)
      real :: beta    ! "beta" term in Lee and Pielke (1993)
-     real :: tempk   ! surface water temp [K]
-     real :: fracliq ! fraction of surface water in liquid phase
      
      ! surface_ssh is the saturation mixing ratio of the top soil or snow surface
      ! and is used for dew formation and snow evaporation.
      
-     if (nlev_sfcwater > 0) then
-        call qtk(sfcwater_energy,tempk,fracliq)
-        surface_ssh = rhovsil(tempk) / rhos
+     if (nlev_sfcwater > 0 .and. sfcwater_energy > 0.) then
+        call qtk(sfcwater_energy,surface_tempk,surface_fracliq)
+        surface_ssh = rhovsil(surface_tempk) / rhos
      else
         
         ! Without snowcover, ground_shv is the effective saturation mixing
         ! ratio of soil and is used for soil evaporation.  First, compute the
         ! "alpha" term or soil "relative humidity" and the "beta" term.
         
-        call qwtk8(soil_energy,soil_water*1.d3,soil(nts)%slcpd,tempk,fracliq)
-        surface_ssh = rhovsil(tempk) / rhos
+        call qwtk8(soil_energy,soil_water*dble(wdns),soil(nts)%slcpd &
+                  ,surface_tempk,surface_fracliq)
+        surface_ssh = rhovsil(surface_tempk) / rhos
         
         slpotvn = soil(nts)%slpots * (soil(nts)%slmsts / sngl(soil_water)) ** soil(nts)%slbs
-        alpha = exp(gorvap * slpotvn / tempk)
+        alpha = exp(gorvap * slpotvn / surface_tempk)
         beta = .25 * (1. - cos (min(1.,sngl(soil_water) / soil(nts)%sfldcap) * pi1)) ** 2
         ground_shv = surface_ssh * alpha * beta + (1. - beta) * can_shv
         
@@ -250,55 +136,6 @@ contains
      
      return
    end subroutine ed_grndvap
-   
-   !================================================================================
-
-  real function fast_svp(pres,temp)
-
-    ! MK05 is only valid up to 332 K
-    ! If the temperature is greater than 332, switch to Hyland and Wexler
-
-     
-     use consts_coms, only: t3ple,ep
-     implicit none
-     real,intent(in) :: temp
-     real,intent(in) :: pres
-     real            :: ttfun,fun2,fun1,fun3
-     real :: frac_hw
-     real :: esz
-     real,parameter :: hwtemp0 = 315.0
-     real,parameter :: hwtemp1 = 332.0
-
-     if(temp<t3ple) then
-        !----- Updated method, using MK05 ------------------------------------------------!
-        fun1 = iii_7(0) + iii_7(1)/temp + iii_7(2) * log(temp) + iii_7(3) * temp
-        esz  = exp(fun1)
-     else if(temp>t3ple .and. temp<hwtemp0) then
-        fun1 = l01_10(0) + l01_10(1)/temp + l01_10(2)*log(temp) + l01_10(3) * temp
-        fun2 = l02_10(0) + l02_10(1)/temp + l02_10(2)*log(temp) + l02_10(3) * temp
-        ttfun = tanh(ttt_10(1) * (temp - ttt_10(2)))
-        esz  = exp(fun1 + ttfun*fun2)
-     else
-
-        ! Perform a linear combination of MK05 and Hayland and Wexler to make the transition seamless
-        fun1 = l01_10(0) + l01_10(1)/temp + l01_10(2)*log(temp) + l01_10(3) * temp
-        fun2 = l02_10(0) + l02_10(1)/temp + l02_10(2)*log(temp) + l02_10(3) * temp
-        ttfun = tanh(ttt_10(1) * (temp - ttt_10(2)))
-        
-        fun3 = hw0(0)/temp + hw0(1) + hw0(2)*temp + hw0(3)*temp**2.0 + hw0(4)*temp**3.0 + hw0(5)*log(temp)
-        
-        frac_hw = 1.0 - (hwtemp1 - min(temp,hwtemp1) )/(hwtemp1-hwtemp0)
-
-!        esz  = (1.0-frac_hw)*exp(fun1 + ttfun*fun2) + frac_hw*exp(fun3)
-
-        esz = min(0.95*pres,exp(fun1 + ttfun*fun2))
-
-
-     endif
-     
-     fast_svp = ep * esz / (pres - esz)
-     
-   end function fast_svp
 
 
  end module ed_therm_lib

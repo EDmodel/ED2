@@ -39,6 +39,7 @@
 Module mem_harr
 
 integer, parameter :: mb = 8          ! max allowed number of bands
+integer, parameter :: mpb = 6         ! max number of pseudo-bands?
 integer, parameter :: mg = 3          ! max allowed number of gases
 integer, parameter :: mk = 7          ! max # of pseudobands allowed for any gas
 integer, parameter :: ncog = 5        ! # of fit coefficients (omega and asym)
@@ -54,32 +55,33 @@ integer :: ng       ! active number of gases
 integer :: npsb(mg,mb) ! number of pseudo bands
 integer :: nuum  (mb)  ! continuum flags
 
-real :: ralcs (mb)  ! rayleigh scattering integration constants
-real :: solar1(mb)  ! solar fluxes at top of atmosphere - corrected for ES distance
-real :: solar0(mb)  ! solar fluxes at top of atmosphere - uncorrected for ES distance
-real :: a0    (mb)  ! Planck function fit coefficient
-real :: a1    (mb)  ! Planck function fit coefficient
-real :: a2    (mb)  ! Planck function fit coefficient
-real :: a3    (mb)  ! Planck function fit coefficient
-real :: wlenlo(mb)  !
-real :: wlenhi(mb)  !
+real, dimension(mb) :: ralcs   ! rayleigh scattering integration constants
+real, dimension(mb) :: solar1  ! solar fluxes at top of atmosphere - corrected for ES distance
+real, dimension(mb) :: solar0  ! solar fluxes at top of atmosphere - uncorrected for ES distance
+real, dimension(mb) :: a0      ! Planck function fit coefficient
+real, dimension(mb) :: a1      ! Planck function fit coefficient
+real, dimension(mb) :: a2      ! Planck function fit coefficient
+real, dimension(mb) :: a3      ! Planck function fit coefficient
+real, dimension(mb) :: wlenlo  !
+real, dimension(mb) :: wlenhi  !
 
-real :: exptabc(150) ! table of exponential function values
+real, dimension(150) :: exptabc ! table of exponential function values
 
-real :: prf (mg,mb)  ! reference pressure for xp and wght coefficients
-real :: trf (mg,mb)  ! reference temperature for xp and wght coefficients
-real :: ulim(mg,mb)  ! upper bound on pathlength for gases
+real, dimension(mg,mb) :: prf   ! reference pressure for xp and wght coefficients
+real, dimension(mg,mb) :: trf   ! reference temperature for xp and wght coefficients
+real, dimension(mg,mb) :: ulim  ! upper bound on pathlength for gases
 
-real :: wght (mg,mk,mb)  ! pseudo band weight
-real :: xp   (mg,mk,mb)  ! coefficient used in computing gaseous optical depth
-real :: alpha(mg,mk,mb)  ! pressure correction factor exponent
-real :: beta (mg,mk,mb)  ! temperature correction factor exponent
+real, dimension(mg,mk,mb) :: wght   ! pseudo band weight
+real, dimension(mg,mk,mb) :: xp     ! coefficient used in computing gaseous optical depth
+real, dimension(mg,mk,mb) :: alpha  ! pressure correction factor exponent
+real, dimension(mg,mk,mb) :: beta   ! temperature correction factor exponent
 
-real :: ocoef(ncog,mb,npartob)  ! fit coeffs for hydrom single scatter.
-real :: bcoef(ncb ,mb,npartob)  ! fit coeffs for hydrom extinction coeff
-real :: gcoef(ncog,mb,npartg)   ! fit coeffs for hydrom asymmetry parameter.
+real, dimension(ncog,mb,npartob) :: ocoef  ! fit coeffs for hydrom single scatter.
+real, dimension(ncb ,mb,npartob) :: bcoef  ! fit coeffs for hydrom extinction coeff
+real, dimension(ncog,mb,npartg)  :: gcoef  ! fit coeffs for hydrom asymmetry parameter.
 
-real, save :: solara(1440), solarb(2910)
+real, dimension(1440), save :: solara
+real, dimension(2910), save :: solarb
 
 ! SOLAR SPECTRUM FROM      0 TO    800 CM-1,  IN STEPS OF 20 CM-
 data (solara(i), i=1,41) /                                    &

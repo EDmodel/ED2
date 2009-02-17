@@ -124,22 +124,22 @@ if(nxp.ne.nxpx.or.  &
    stop 'bad-vfile'
 endif
 
-call vfirec(iun,varinit_g(ngrid)%varuf(1,1,1),nxyzp,'LIN')
-call vfirec(iun,varinit_g(ngrid)%varvf(1,1,1),nxyzp,'LIN')
-call vfirec(iun,varinit_g(ngrid)%varpf(1,1,1),nxyzp,'LIN')
-call vfirec(iun,varinit_g(ngrid)%vartf(1,1,1),nxyzp,'LIN')
-call vfirec(iun,varinit_g(ngrid)%varrf(1,1,1),nxyzp,'LIN')
+call vfirec(iun,varinit_g(ngrid)%varuf,nxyzp,'LIN')
+call vfirec(iun,varinit_g(ngrid)%varvf,nxyzp,'LIN')
+call vfirec(iun,varinit_g(ngrid)%varpf,nxyzp,'LIN')
+call vfirec(iun,varinit_g(ngrid)%vartf,nxyzp,'LIN')
+call vfirec(iun,varinit_g(ngrid)%varrf,nxyzp,'LIN')
 
 varinit_g(ngrid)%varrf(1:nzp,1:nxp,1:nyp)=  &
            max(1.e-8,varinit_g(ngrid)%varrf(1:nzp,1:nxp,1:nyp) )
          
 if(initflag == 1 .and. iver_var == 2) then
    ! Extract snow depth from the varfile. Ignore other 2D fields for now.
-   call vfirec(iun,scratch%vt2da(1),nxyp,'LIN')
-   call vfirec(iun,scratch%vt2da(1),nxyp,'LIN')
-   call vfirec(iun,scratch%vt2da(1),nxyp,'LIN')
-   call vfirec(iun,leaf_g(ngrid)%snow_mass(1,1),nxyp,'LIN')
-   call vfirec(iun,scratch%vt2da(1),nxyp,'LIN')
+   call vfirec(iun,scratch%vt2da,nxyp,'LIN')
+   call vfirec(iun,scratch%vt2da,nxyp,'LIN')
+   call vfirec(iun,scratch%vt2da,nxyp,'LIN')
+   call vfirec(iun,leaf_g(ngrid)%snow_mass,nxyp,'LIN')
+   call vfirec(iun,scratch%vt2da,nxyp,'LIN')
 endif
 
 close(iun)
@@ -147,25 +147,25 @@ close(iun)
 ! If running ADAP coord, do interpolation to Cartesian levels
 
 if (if_adap == 1) then
-   call varf_adap(nnzp(ngrid),nnxp(ngrid),nnyp(ngrid)  &
-         ,varinit_g(ngrid)%varuf(1,1,1),varinit_g(ngrid)%varvf(1,1,1)  &
-         ,varinit_g(ngrid)%varpf(1,1,1),varinit_g(ngrid)%vartf(1,1,1)  &
-         ,varinit_g(ngrid)%varrf(1,1,1),grid_g(ngrid)%topta(1,1) )
+   call varf_adap(nnzp(ngrid),nnxp(ngrid),nnyp(ngrid)   &
+         ,varinit_g(ngrid)%varuf,varinit_g(ngrid)%varvf &
+         ,varinit_g(ngrid)%varpf,varinit_g(ngrid)%vartf &
+         ,varinit_g(ngrid)%varrf,grid_g(ngrid)%topta    )
 endif
 
 ! Find the reference state
 
 if(initflag == 1 .and. ngrid == 1)  &
      call varref(nzp,nxp,nyp &
-         ,varinit_g(ngrid)%vartf(1,1,1) ,varinit_g(ngrid)%varpf(1,1,1)  &
-         ,basic_g(ngrid)%pi0(1,1,1),     basic_g(ngrid)%th0(1,1,1)  &
-         ,varinit_g(ngrid)%varrf(1,1,1), basic_g(ngrid)%dn0(1,1,1)  &
-         ,basic_g(ngrid)%dn0u(1,1,1),    basic_g(ngrid)%dn0v(1,1,1)  &
-         ,varinit_g(ngrid)%varuf(1,1,1), varinit_g(ngrid)%varvf(1,1,1)  &
-         ,grid_g(ngrid)%topt(1,1),       grid_g(ngrid)%topu(1,1)  &
-         ,grid_g(ngrid)%topv(1,1),       grid_g(ngrid)%rtgt(1,1)  &
-         ,grid_g(ngrid)%rtgu(1,1),       grid_g(ngrid)%rtgv(1,1)  &
-         ,grid_g(ngrid)%topta(1,1), level)
+         ,varinit_g(ngrid)%vartf       , varinit_g(ngrid)%varpf  &
+         ,basic_g(ngrid)%pi0           , basic_g(ngrid)%th0      &
+         ,varinit_g(ngrid)%varrf       , basic_g(ngrid)%dn0      &
+         ,basic_g(ngrid)%dn0u          , basic_g(ngrid)%dn0v     &
+         ,varinit_g(ngrid)%varuf       , varinit_g(ngrid)%varvf  &
+         ,grid_g(ngrid)%topt           , grid_g(ngrid)%topu      &
+         ,grid_g(ngrid)%topv           , grid_g(ngrid)%rtgt      &
+         ,grid_g(ngrid)%rtgu           , grid_g(ngrid)%rtgv      &
+         ,grid_g(ngrid)%topta          )
 
 varinit_g(ngrid)%varpf(1:nzp,1:nxp,1:nyp)=  &
            varinit_g(ngrid)%varpf(1:nzp,1:nxp,1:nyp)  &
@@ -174,11 +174,11 @@ varinit_g(ngrid)%varpf(1:nzp,1:nxp,1:nyp)=  &
 ! If this is an initialization, put data into regular arrays
 
 if(initflag == 1 ) then
-   call atob(nxyzp,varinit_g(ngrid)%varuf(1,1,1),basic_g(ngrid)%uc(1,1,1))
-   call atob(nxyzp,varinit_g(ngrid)%varvf(1,1,1),basic_g(ngrid)%vc(1,1,1))
-   call atob(nxyzp,varinit_g(ngrid)%varpf(1,1,1),basic_g(ngrid)%pc(1,1,1))
-   call atob(nxyzp,varinit_g(ngrid)%vartf(1,1,1),basic_g(ngrid)%thp(1,1,1))
-   call atob(nxyzp,varinit_g(ngrid)%varrf(1,1,1),basic_g(ngrid)%rtp(1,1,1))
+   call atob(nxyzp,varinit_g(ngrid)%varuf,basic_g(ngrid)%uc  )
+   call atob(nxyzp,varinit_g(ngrid)%varvf,basic_g(ngrid)%vc  )
+   call atob(nxyzp,varinit_g(ngrid)%varpf,basic_g(ngrid)%pc  )
+   call atob(nxyzp,varinit_g(ngrid)%vartf,basic_g(ngrid)%thp )
+   call atob(nxyzp,varinit_g(ngrid)%varrf,basic_g(ngrid)%rtp )
 endif
 
 
@@ -215,10 +215,10 @@ do j=1,n3
       vctr2(1:n1)=varv(1:n1,i,j)
       vctr3(1:n1)=vart(1:n1,i,j)
       vctr4(1:n1)=varr(1:n1,i,j)
-      call htint2(n1,vctr1(1),vctr10,n1,vctr11(1),ztn(1,ngrid))
-      call htint2(n1,vctr2(1),vctr10,n1,vctr12(1),ztn(1,ngrid))
-      call htint2(n1,vctr3(1),vctr10,n1,vctr13(1),ztn(1,ngrid))
-      call htint2(n1,vctr4(1),vctr10,n1,vctr14(1),ztn(1,ngrid))
+      call htint2(n1,vctr1,vctr10,n1,vctr11,ztn(:,ngrid))
+      call htint2(n1,vctr2,vctr10,n1,vctr12,ztn(:,ngrid))
+      call htint2(n1,vctr3,vctr10,n1,vctr13,ztn(:,ngrid))
+      call htint2(n1,vctr4,vctr10,n1,vctr14,ztn(:,ngrid))
 
       ! Do hydrostatic balance
       do k=1,n1
@@ -247,16 +247,16 @@ end
 !     **************************************************************
 
 subroutine varref(n1,n2,n3,thp,pc,pi0,th0,rtp,dn0,dn0u,dn0v,uc  &
-                 ,vc,topt,topu,topv,rtgt,rtgu,rtgv,topta,level)
+                 ,vc,topt,topu,topv,rtgt,rtgu,rtgv,topta)
 
 use mem_grid
 use ref_sounding
 use mem_scratch
 use rconstants
-use therm_lib, only: virtt
+use therm_lib, only: virtt,vapour_on
                  
 implicit none
-integer :: n1,n2,n3,level          
+integer :: n1,n2,n3
 real :: thp(n1,n2,n3),pc(n1,n2,n3),pi0(n1,n2,n3)  &
          ,rtp(n1,n2,n3),dn0(n1,n2,n3)  &
          ,dn0u(n1,n2,n3),dn0v(n1,n2,n3)  &
@@ -284,11 +284,11 @@ if (if_adap == 0) then
    do k=1,nzp
       vctr2(k)=ztn(k,ngrid)*(1.-topref/ztop)+topref
    enddo
-   call htint2(nzp,thp(1,iref,jref),vctr2,nzp,vctr1,zt)
-   call htint2(nzp,uc(1,iref,jref),vctr2,nzp,u01dn(1,ngrid),zt)
-   call htint2(nzp,vc(1,iref,jref),vctr2,nzp,v01dn(1,ngrid),zt)
-   if (level >= 1) then
-      call htint2(nzp,rtp(1,iref,jref),vctr2,nzp,rt01dn(1,ngrid),zt)
+   call htint2(nzp,thp(:,iref,jref),vctr2,nzp,vctr1,zt)
+   call htint2(nzp,uc (:,iref,jref),vctr2,nzp,u01dn(:,ngrid),zt)
+   call htint2(nzp,vc (:,iref,jref),vctr2,nzp,v01dn(:,ngrid),zt)
+   if (vapour_on) then
+      call htint2(nzp,rtp(:,iref,jref),vctr2,nzp,rt01dn(:,ngrid),zt)
    else
       rt01dn(1:nzp,ngrid) = 0.
    endif
@@ -297,9 +297,12 @@ else
    vctr1(1:nzp)  =thp(1:nzp,iref,jref)
    u01dn(1:nzp,ngrid)=uc(1:nzp,iref,jref)
    v01dn(1:nzp,ngrid)=vc(1:nzp,iref,jref)
-   rt01dn(1:nzp,ngrid) = 0.
-   if (level >= 1) rt01dn(1:nzp,ngrid)=rtp(1:nzp,iref,jref)
-endif
+   if (vapour_on) then
+      rt01dn(1:nzp,ngrid)=rtp(1:nzp,iref,jref)
+   else
+      rt01dn(1:nzp,ngrid) = 0.
+   end if
+end if
 
 
 do k = 1,nzp

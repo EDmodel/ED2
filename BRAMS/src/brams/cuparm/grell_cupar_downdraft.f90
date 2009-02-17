@@ -165,7 +165,7 @@ subroutine grell_nms_downdraft(mkx,mgmzp,kdet,jmin,mentrd_rate,cdd,z_cup,dzd_cld
    real, dimension(mgmzp), intent(in)    :: cdd         ! Dndraft detrainment function;
    real, dimension(mgmzp), intent(in)    :: z_cup       ! Height @ cloud levels;
    real, dimension(mgmzp), intent(in)    :: dzd_cld     ! Delta-z for downdrafts
-   real, dimension(mgmzp), intent(out)   :: etad_cld    ! Normalized updraft flux
+   real, dimension(mgmzp), intent(inout) :: etad_cld    ! Normalized updraft flux
 
    integer                               :: k           ! Counter
    
@@ -229,7 +229,7 @@ subroutine grell_theiv_downdraft(mkx,mgmzp,jmin,cdd,mentrd_rate,theiv,theiv_cup,
    real, dimension(mgmzp), intent(in)    :: theiv_cup   ! Thetae_iv @ cloud levels;
    real, dimension(mgmzp), intent(in)    :: theivs_cup  ! Sat. thetae_iv @ cloud levels;
    real, dimension(mgmzp), intent(in)    :: dzd_cld     ! Delta-z for downdrafts;
-   real, dimension(mgmzp), intent(out)   :: theivd_cld  ! Downdraft thetae_iv;
+   real, dimension(mgmzp), intent(inout) :: theivd_cld  ! Downdraft thetae_iv;
 
    integer                               :: k           ! Counter
    
@@ -316,7 +316,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,mentrd_rate,cdd,p_cup
    real, dimension(mgmzp), intent(inout) :: rhod_cld    ! Density                  [ kg/m³]
    real, dimension(mgmzp), intent(inout) :: dbyd        ! Buoyancy acceleration    [  m/s²]
    !----- Output variables ----------------------------------------------------------------!
-   real, dimension(mgmzp), intent(out)   :: pwd_cld     ! Normal. evap. flux       [ kg/kg]
+   real, dimension(mgmzp), intent(inout) :: pwd_cld     ! Normal. evap. flux       [ kg/kg]
    real                  , intent(out)   :: pwev        ! Total evaporation flux   [ kg/kg]
    !----- Transit variable ----------------------------------------------------------------!
    integer               , intent(inout) :: ierr        ! Error flag
@@ -460,7 +460,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,mentrd_rate,cdd,p_cup
          qtotdp = qtotda
          funp   = funa
          !------ Finding the current guess ------------------------------------------------!
-         qtotdc = qtotd_0_evap - 0.5 * evapd_cld(k) * denomini
+         qtotdc = max(toodry,qtotd_0_evap - 0.5 * evapd_cld(k) * denomini)
          thild_cld(k) = thetaeiv2thil(theivd_cld(k),p_cup(k),qtotdc)
          call thil2tqall(thild_cld(k),exner_cup(k),p_cup(k),qtotdc,qliqd_cld(k)            &
                         ,qiced_cld(k),td_cld(k),qvapd_cld(k),qsatd_cld(k))

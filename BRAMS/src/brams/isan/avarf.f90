@@ -21,24 +21,24 @@ integer :: ng
 
 !            Vertically interpolate isentropic data to sigma-z levels
 
-call isnsig(nnzp(ng),nnxp(ng),nnyp(ng) ,is_grids(ng)%rr_u(1,1,1)  &
-        ,is_grids(ng)%rr_v(1,1,1)      ,is_grids(ng)%rr_t(1,1,1)  &
-        ,is_grids(ng)%rr_r(1,1,1)      ,is_grids(ng)%rr_p(1,1,1)  &
-        ,grid_g(ng)%topt(1,1),ztn(1,ng),ztop)
+call isnsig(nnzp(ng),nnxp(ng),nnyp(ng) ,is_grids(ng)%rr_u  &
+        ,is_grids(ng)%rr_v      ,is_grids(ng)%rr_t  &
+        ,is_grids(ng)%rr_r      ,is_grids(ng)%rr_p  &
+        ,grid_g(ng)%topt,ztn(:,ng),ztop)
 
 !            Compute Exner function on model sigma-z surfaces
 !              and change relative humidity to mixing ratio.
 
-call vshyd(nnzp(ng),nnxp(ng),nnyp(ng),is_grids(ng)%rr_p(1,1,1)  &
-     ,is_grids(ng)%rr_t(1,1,1)       ,is_grids(ng)%rr_r(1,1,1)  &
-     ,grid_g(ng)%topt(1,1),grid_g(ng)%rtgt(1,1),ztn(1,ng))
+call vshyd(nnzp(ng),nnxp(ng),nnyp(ng),is_grids(ng)%rr_p  &
+     ,is_grids(ng)%rr_t              ,is_grids(ng)%rr_r  &
+     ,grid_g(ng)%topt,grid_g(ng)%rtgt,ztn(:,ng))
 
 !          Combine surface analysis with the upper air data.
 
-call visurf(nnzp(ng),nnxp(ng),nnyp(ng) ,is_grids(ng)%rr_u(1,1,1)  &
-      ,is_grids(ng)%rr_v(1,1,1)        ,is_grids(ng)%rr_t(1,1,1)  &
-      ,is_grids(ng)%rr_r(1,1,1)        ,is_grids(ng)%rr_p(1,1,1)  &
-      ,grid_g(ng)%topt(1,1),grid_g(ng)%rtgt(1,1),ztn(1,ng))
+call visurf(nnzp(ng),nnxp(ng),nnyp(ng) ,is_grids(ng)%rr_u  &
+      ,is_grids(ng)%rr_v        ,is_grids(ng)%rr_t  &
+      ,is_grids(ng)%rr_r        ,is_grids(ng)%rr_p  &
+      ,grid_g(ng)%topt,grid_g(ng)%rtgt,ztn(:,ng))
 
 is_grids(ng)%rr_slp (1:nnxp(ng),1:nnyp(ng)) =rs_slp (1:nnxp(ng),1:nnyp(ng))
 is_grids(ng)%rr_sfp (1:nnxp(ng),1:nnyp(ng)) =rs_sfp (1:nnxp(ng),1:nnyp(ng))
@@ -49,8 +49,8 @@ is_grids(ng)%rr_sst (1:nnxp(ng),1:nnyp(ng)) =rs_sst (1:nnxp(ng),1:nnyp(ng))
 !          average the velocities to the correct points in the stagger
 !             and rotate for polar stereographic transformation.
 
-call varuv(nnzp(ng),nnxp(ng),nnyp(ng),is_grids(ng)%rr_u(1,1,1)  &
-                      ,is_grids(ng)%rr_v(1,1,1))
+call varuv(nnzp(ng),nnxp(ng),nnyp(ng),is_grids(ng)%rr_u  &
+                      ,is_grids(ng)%rr_v)
 
 return
 end
@@ -105,10 +105,10 @@ do j=1,n3
             endif
          enddo
 
-         call htint(nki,v3,v2,n1,uu(1,i,j),v1)
-         call htint(nki,v4,v2,n1,vv(1,i,j),v1)
-         call htint(nki,v5,v2,n1,tt(1,i,j),v1)
-         call htint(nki,v6,v2,n1,rr(1,i,j),v1)
+         call htint(nki,v3,v2,n1,uu(:,i,j),v1)
+         call htint(nki,v4,v2,n1,vv(:,i,j),v1)
+         call htint(nki,v5,v2,n1,tt(:,i,j),v1)
+         call htint(nki,v6,v2,n1,rr(:,i,j),v1)
 
       endif
 
@@ -426,51 +426,41 @@ integer :: ifm,icm,n1f,n2f,n3f,n1c,n2c,n3c,nbot,ntop
 
 !     Feed back the finer mesh to the coarser mesh.
 
-call fdback(is_grids(icm)%rr_u   (1,1,1),is_grids(ifm)%rr_u   (1,1,1) &
-           ,is_grids(icm)%rr_dn0u(1,1,1),is_grids(ifm)%rr_dn0u(1,1,1) &
-           ,n1c,n2c,n3c,n1f,n2f,n3f,ifm,'u',rr_scr1(1))
+call fdback(is_grids(icm)%rr_u   ,is_grids(ifm)%rr_u    &
+           ,is_grids(icm)%rr_dn0u,is_grids(ifm)%rr_dn0u &
+           ,n1c,n2c,n3c,n1f,n2f,n3f,ifm,'u',rr_scr1)
 
-call fdback(is_grids(icm)%rr_v   (1,1,1),is_grids(ifm)%rr_v   (1,1,1) &
-           ,is_grids(icm)%rr_dn0v(1,1,1),is_grids(ifm)%rr_dn0v(1,1,1) &
-           ,n1c,n2c,n3c,n1f,n2f,n3f,ifm,'v',rr_scr1(1))
+call fdback(is_grids(icm)%rr_v   ,is_grids(ifm)%rr_v    &
+           ,is_grids(icm)%rr_dn0v,is_grids(ifm)%rr_dn0v &
+           ,n1c,n2c,n3c,n1f,n2f,n3f,ifm,'v',rr_scr1)
 
-call fdback(is_grids(icm)%rr_p  (1,1,1),is_grids(ifm)%rr_p  (1,1,1) &
-           ,is_grids(icm)%rr_dn0(1,1,1),is_grids(ifm)%rr_dn0(1,1,1) &
-           ,n1c,n2c,n3c,n1f,n2f,n3f,ifm,'p',rr_scr1(1))
+call fdback(is_grids(icm)%rr_p  ,is_grids(ifm)%rr_p   &
+           ,is_grids(icm)%rr_dn0,is_grids(ifm)%rr_dn0 &
+           ,n1c,n2c,n3c,n1f,n2f,n3f,ifm,'p',rr_scr1)
 
-call fdback(is_grids(icm)%rr_t  (1,1,1),is_grids(ifm)%rr_t  (1,1,1) &
-           ,is_grids(icm)%rr_dn0(1,1,1),is_grids(ifm)%rr_dn0(1,1,1) &
-           ,n1c,n2c,n3c,n1f,n2f,n3f,ifm,'t',rr_scr1(1))
+call fdback(is_grids(icm)%rr_t  ,is_grids(ifm)%rr_t   &
+           ,is_grids(icm)%rr_dn0,is_grids(ifm)%rr_dn0 &
+           ,n1c,n2c,n3c,n1f,n2f,n3f,ifm,'t',rr_scr1   )
 
-call fdback(is_grids(icm)%rr_r  (1,1,1),is_grids(ifm)%rr_r  (1,1,1) &
-           ,is_grids(icm)%rr_dn0(1,1,1),is_grids(ifm)%rr_dn0(1,1,1) &
-           ,n1c,n2c,n3c,n1f,n2f,n3f,ifm,'t',rr_scr1(1))
+call fdback(is_grids(icm)%rr_r  ,is_grids(ifm)%rr_r   &
+           ,is_grids(icm)%rr_dn0,is_grids(ifm)%rr_dn0 &
+           ,n1c,n2c,n3c,n1f,n2f,n3f,ifm,'t',rr_scr1   )
 
 
 if(nbot == 1) then
-   call botset(n1c,n2c,n3c,1,n2c,1,n3c  &
-        ,15 ,is_grids(icm)%rr_u(1,1,1),'U')
-   call botset(n1c,n2c,n3c,1,n2c,1,n3c  &
-        ,15 ,is_grids(icm)%rr_v(1,1,1),'V')
-   call botset(n1c,n2c,n3c,1,n2c,1,n3c  &
-        ,15 ,is_grids(icm)%rr_p(1,1,1),'P')
-   call botset(n1c,n2c,n3c,1,n2c,1,n3c  &
-        ,15 ,is_grids(icm)%rr_t(1,1,1),'T')
-   call botset(n1c,n2c,n3c,1,n2c,1,n3c  &
-        ,15 ,is_grids(icm)%rr_r(1,1,1),'T')
+   call botset(n1c,n2c,n3c,1,n2c,1,n3c,15 ,is_grids(icm)%rr_u,'U')
+   call botset(n1c,n2c,n3c,1,n2c,1,n3c,15 ,is_grids(icm)%rr_v,'V')
+   call botset(n1c,n2c,n3c,1,n2c,1,n3c,15 ,is_grids(icm)%rr_p,'P')
+   call botset(n1c,n2c,n3c,1,n2c,1,n3c,15 ,is_grids(icm)%rr_t,'T')
+   call botset(n1c,n2c,n3c,1,n2c,1,n3c,15 ,is_grids(icm)%rr_r,'T')
 endif
 
 if(ntop == 1) then
-   call topset(n1c,n2c,n3c,1,n2c,1,n3c  &
-        ,15,is_grids(icm)%rr_u(1,1,1),is_grids(icm)%rr_u(1,1,1),'U')
-   call topset(n1c,n2c,n3c,1,n2c,1,n3c  &
-        ,15,is_grids(icm)%rr_v(1,1,1),is_grids(icm)%rr_v(1,1,1),'V')
-   call topset(n1c,n2c,n3c,1,n2c,1,n3c  &
-        ,15,is_grids(icm)%rr_p(1,1,1),is_grids(icm)%rr_p(1,1,1),'P')
-   call topset(n1c,n2c,n3c,1,n2c,1,n3c  &
-        ,15,is_grids(icm)%rr_t(1,1,1),is_grids(icm)%rr_t(1,1,1),'T')
-   call topset(n1c,n2c,n3c,1,n2c,1,n3c  &
-        ,15,is_grids(icm)%rr_r(1,1,1),is_grids(icm)%rr_r(1,1,1),'T')
+   call topset(n1c,n2c,n3c,1,n2c,1,n3c,15,is_grids(icm)%rr_u,is_grids(icm)%rr_u,'U')
+   call topset(n1c,n2c,n3c,1,n2c,1,n3c,15,is_grids(icm)%rr_v,is_grids(icm)%rr_v,'V')
+   call topset(n1c,n2c,n3c,1,n2c,1,n3c,15,is_grids(icm)%rr_p,is_grids(icm)%rr_p,'P')
+   call topset(n1c,n2c,n3c,1,n2c,1,n3c,15,is_grids(icm)%rr_t,is_grids(icm)%rr_t,'T')
+   call topset(n1c,n2c,n3c,1,n2c,1,n3c,15,is_grids(icm)%rr_r,is_grids(icm)%rr_r,'T')
 endif
 
 

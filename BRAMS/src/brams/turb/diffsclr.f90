@@ -117,19 +117,19 @@ subroutine diffsclr_brams31(m1,m2,m3,ia,iz,ja,jz,jd,  &
   endif
 
      !truhor_opt
-     call truhor_opt(m1,m2,m3,ia,iz,ja,jz                           & ! truhor_opt
-          ,          scp,vt3da,'xdir','dxu',grid_g(ngrid)%dxu(1,1)  &
-          ,          grid_g(ngrid)%topt(1,1)                        &
-          ,          grid_g(ngrid)%rtgt(1,1)                        &
-          ,          zt,vctr1,vctr2,vctr3,vctr4,vctr5               &
+     call truhor_opt(m1,m2,m3,ia,iz,ja,jz                      & ! truhor_opt
+          ,          scp,vt3da,'xdir','dxu',grid_g(ngrid)%dxu  &
+          ,          grid_g(ngrid)%topt                        &
+          ,          grid_g(ngrid)%rtgt                        &
+          ,          zt,vctr1,vctr2,vctr3,vctr4,vctr5          &
           ,          vctr6,vctr7,jd,hkkh,dn0,dtlt,ngrid)
 
      !truhor_opt
-     call truhor_opt(m1,m2,m3,ia,iz,ja,jz                           & ! truhor_opt
-          ,          scp,vt3db,'ydir','dyv',grid_g(ngrid)%dyv(1,1)  &
-          ,          grid_g(ngrid)%topt(1,1)                        &
-          ,          grid_g(ngrid)%rtgt(1,1)                        &
-          ,          zt,vctr1,vctr2,vctr3,vctr4,vctr5               &
+     call truhor_opt(m1,m2,m3,ia,iz,ja,jz                      & ! truhor_opt
+          ,          scp,vt3db,'ydir','dyv',grid_g(ngrid)%dyv  &
+          ,          grid_g(ngrid)%topt                        &
+          ,          grid_g(ngrid)%rtgt                        &
+          ,          zt,vctr1,vctr2,vctr3,vctr4,vctr5          &
           ,          vctr6,vctr7,jd,hkkh,dn0,dtlt,ngrid)
 
   ! finish matrix coefficients

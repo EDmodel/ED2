@@ -29,21 +29,21 @@ subroutine souza_cupar_driver()
    integer :: icld
    icld = nclouds ! Just to make it similar to other methods
 
-   call azero(mxp*myp*mzp,cuparm_g(ngrid)%thsrc(1,1,1,icld))
-   call azero(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(1,1,1,icld))
-   call azero(mxp*myp,cuparm_g(ngrid)%upmf(1,1,icld))
+   call azero(mxp*myp*mzp,cuparm_g(ngrid)%thsrc(:,:,:,icld))
+   call azero(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(:,:,:,icld))
+   call azero(mxp*myp,cuparm_g(ngrid)%upmf(:,:,icld))
 
    call shcupar(mzp,mxp,myp,ia,iz,ja,jz,i0,j0,                   &
-        basic_g(ngrid)%wp(1,1,1), basic_g(ngrid)%theta(1,1,1),   &
-        basic_g(ngrid)%pp(1,1,1), basic_g(ngrid)%pi0(1,1,1),     &
-        basic_g(ngrid)%dn0(1,1,1), basic_g(ngrid)%rv(1,1,1),     &
-        cuparm_g(ngrid)%thsrc(1,1,1,icld),                       &
-        cuparm_g(ngrid)%rtsrc(1,1,1,icld),                       &
-        cuparm_g(ngrid)%upmf(1,1,icld), grid_g(ngrid)%rtgt(1,1), &
-        turb_g(ngrid)%sflux_t(1,1),                              &
-        turb_g(ngrid)%sflux_r(1,1),                              &
-        turb_g(ngrid)%vkh(1,1,1),                                &
-        micro_g(ngrid)%rcp(1,1,1))
+        basic_g(ngrid)%wp, basic_g(ngrid)%theta,   &
+        basic_g(ngrid)%pp, basic_g(ngrid)%pi0,     &
+        basic_g(ngrid)%dn0, basic_g(ngrid)%rv,     &
+        cuparm_g(ngrid)%thsrc(:,:,:,icld),                       &
+        cuparm_g(ngrid)%rtsrc(:,:,:,icld),                       &
+        cuparm_g(ngrid)%upmf(:,:,icld), grid_g(ngrid)%rtgt, &
+        turb_g(ngrid)%sflux_t,                              &
+        turb_g(ngrid)%sflux_r,                              &
+        turb_g(ngrid)%vkh,                                &
+        micro_g(ngrid)%rcp)
    return
 end subroutine souza_cupar_driver
 !==========================================================================================!

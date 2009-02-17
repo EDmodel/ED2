@@ -134,6 +134,7 @@ contains
        
        vt_info(nv,igr)%var_len_global = var_len_global
 
+       nullify(vt_info(nv,igr)%vt_vector)
        allocate(vt_info(nv,igr)%vt_vector(max_ptrs))
        
        read(tokens(2),*) vt_info(nv,igr)%idim_type
@@ -201,6 +202,8 @@ contains
          write (unit=*,fmt='(a,1x,i4,1x,a,1x,i2,1x,a)')  &
                                   '! Vt_vector for variable',nv,'of grid',igr,'is not associated                !'
          write (unit=*,fmt='(a)') '! I will allocate it now.                                                 !'
+         write (unit=*,fmt='(a,1x,i20,1x,a)') '! MAX_PTRS=',max_ptrs,'...'
+         write (unit=*,fmt='(a,1x,a,1x,a)') '! Tabstr=',tabstr,'...'
          write (unit=*,fmt='(a)') '!-------------------------------------------------------------------------!'
          write (unit=*,fmt='(a)') ' '
          call vtable_edio_r(var,nv,igr,0,glob_id,var_len,var_len_global,max_ptrs,tabstr)
@@ -272,6 +275,7 @@ contains
        
        vt_info(nv,igr)%var_len_global = var_len_global
 
+       nullify(vt_info(nv,igr)%vt_vector)
        allocate(vt_info(nv,igr)%vt_vector(max_ptrs))
        
        read(tokens(2),*) vt_info(nv,igr)%idim_type
@@ -412,6 +416,7 @@ contains
        
        vt_info(nv,igr)%var_len_global = var_len_global
 
+       nullify(vt_info(nv,igr)%vt_vector)
        allocate(vt_info(nv,igr)%vt_vector(max_ptrs))
        
        read(tokens(2),*) vt_info(nv,igr)%idim_type
@@ -549,6 +554,7 @@ contains
        
        vt_info(nv,igr)%var_len_global = var_len_global
 
+       nullify(vt_info(nv,igr)%vt_vector)
        allocate(vt_info(nv,igr)%vt_vector(max_ptrs))
        
        read(tokens(2),*) vt_info(nv,igr)%idim_type

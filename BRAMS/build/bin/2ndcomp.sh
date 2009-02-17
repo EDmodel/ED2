@@ -52,6 +52,7 @@ rm -fv grell_extras_catt.o        grell_extras_catt.mod
 rm -fv grid_dims.o                grid_dims.mod
 rm -fv grid_struct.o              grid_struct.mod
 rm -fv gridset.o                  gridset.mod
+rm -fv harr_coms.o                harr_coms.mod
 rm -fv harr_rad.o                 harr_rad.mod
 rm -fv harr_raddriv.o             harr_raddriv.mod
 rm -fv harr_radinit.o             harr_radinit.mod
@@ -321,6 +322,7 @@ rm -fv physiology_coms.o          physiology_coms.mod
 rm -fv pft_coms.o                 pft_coms.mod
 rm -fv radiate_driver.o           radiate_driver.mod
 rm -fv reproduction.o             reproduction.mod
+rm -fv rk4_coms.o              rk4_coms.mod 
 rm -fv rk4_derivs.o               rk4_derivs.mod
 rm -fv rk4_driver.o               rk4_driver.mod
 rm -fv rk4_integ_utils.o          rk4_integ_utils.mod

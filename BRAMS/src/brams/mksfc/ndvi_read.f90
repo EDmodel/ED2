@@ -393,7 +393,7 @@ do ng=1,ngrids
    read(iun,*) dummy
    read(iun,*) dummy
    do ip = 1,npatch
-      call vfirec(iun,leaf_g(ng)%veg_ndvif(1,1,ip),nnxp(ng)*nnyp(ng),'LIN')
+      call vfirec(iun,leaf_g(ng)%veg_ndvif(:,:,ip),nnxp(ng)*nnyp(ng),'LIN')
    enddo
 
    ! Close the input file

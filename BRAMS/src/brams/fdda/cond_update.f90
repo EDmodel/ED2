@@ -158,7 +158,7 @@ do nvh=1,nvbtab
    read(inhunt)(scr(i),i=1,nptsh)
 
    if (hr_table(nvh)%string == 'TOPTA') then
-      call atob(nptsh, scr(1),topt1(1,ngr))
+      call atob(nptsh, scr,topt1(:,ngr))
       if (ngr == ngrids1) exit
    endif
 enddo
@@ -178,15 +178,15 @@ do ngr=1,ngrids1
    call alloc_grid_def( grdefh(ngr),nnxp1(ngr),nnyp1(ngr),nnzp1(ngr) )
    call  fill_grid_def( grdefh(ngr),nnxp1(ngr),nnyp1(ngr),nnzp1(ngr) &
                        ,nzg1,nzs1,npatch1,platn1(1),plonn1(1)  &
-                       ,xtn1(1,ngr),xmn1(1,ngr),ytn1(1,ngr),ymn1(1,ngr)  &
-                       ,ztn1(1,ngr),zmn1(1,ngr),topt1(1,ngr) )
+                       ,xtn1(:,ngr),xmn1(:,ngr),ytn1(:,ngr),ymn1(:,ngr)  &
+                       ,ztn1(:,ngr),zmn1(:,ngr),topt1(:,ngr) )
 enddo
 do ngr=1,ngrids
    call alloc_grid_def( grdefn(ngr),nnxp(ngr),nnyp(ngr),nnzp(ngr) )
    call  fill_grid_def( grdefn(ngr),nnxp(ngr),nnyp(ngr),nnzp(ngr) &
                        ,nzg,nzs,npatch,platn(1),plonn(1)  &
-                       ,xtn(1,ngr),xmn(1,ngr),ytn(1,ngr),ymn(1,ngr)  &
-                       ,ztn(1,ngr),zmn(1,ngr),grid_g(ngr)%topta )
+                       ,xtn(:,ngr),xmn(:,ngr),ytn(:,ngr),ymn(:,ngr)  &
+                       ,ztn(:,ngr),zmn(:,ngr),grid_g(ngr)%topta )
 enddo
 
 ! See if the history grids match any of the new grids...assuming 1:1 grid number
@@ -263,19 +263,19 @@ read_loop2: do nvh=1,nvbtab
                if ( igrid_match(ngr) == ng ) then
                   print 33,'cond_update: filling: ',ngr &
                     ,ng,vtab_r(nv,ng)%name,npts
-                  call atob(nptsh,scr(1),varinit_g(ng)%varrfh(1,1,1))
+                  call atob(nptsh,scr,varinit_g(ng)%varrfh)
 
                else
                   print 33,'cond_update: interpolating: ',ngr &
                        ,ng,vtab_r(nv,ng)%name,npts
-                  call hi_interp(nnzp1(ngr),nnxp1(ngr),nnyp1(ngr),1,scr(1)  &
-                                ,xmn1(1,ngr),xtn1(1,ngr)  &
-                                ,ymn1(1,ngr),ytn1(1,ngr)  &
-                                ,zmn1(1,ngr),ztn1(1,ngr)  &
+                  call hi_interp(nnzp1(ngr),nnxp1(ngr),nnyp1(ngr),1,scr  &
+                                ,xmn1(:,ngr),xtn1(:,ngr)  &
+                                ,ymn1(:,ngr),ytn1(:,ngr)  &
+                                ,zmn1(:,ngr),ztn1(:,ngr)  &
                                 ,platn1(ngr),plonn1(ngr)  &
-                                ,topt1(1,ngr),ztop1  &
+                                ,topt1(:,ngr),ztop1  &
                                 ,nnzp(ng),nnxp(ng),nnyp(ng),1  &
-                                ,varinit_g(ng)%varrfh(1,1,1)  &
+                                ,varinit_g(ng)%varrfh  &
                                 ,ng,ngr,vtab_r(nv,ng)%name,3)
                endif
                cycle grid_loop2
@@ -291,21 +291,21 @@ read_loop2: do nvh=1,nvbtab
                   print 33,'cond_update: filling: ',ngr &
                     ,ng,vtab_r(nv,ng)%name,npts
                   call nud_cond_accum(nnzp(ng),nnxp(ng),nnyp(ng)  &
-                                     ,varinit_g(ng)%varcfh(1,1,1),scr(1) )
+                                     ,varinit_g(ng)%varcfh(:,:,:),scr )
                else
                   print 33,'cond_update: interpolating: ',ngr &
                        ,ng,vtab_r(nv,ng)%name,npts
-                  call hi_interp(nnzp1(ngr),nnxp1(ngr),nnyp1(ngr),1,scr(1)  &
-                                ,xmn1(1,ngr),xtn1(1,ngr)  &
-                                ,ymn1(1,ngr),ytn1(1,ngr)  &
-                                ,zmn1(1,ngr),ztn1(1,ngr)  &
+                  call hi_interp(nnzp1(ngr),nnxp1(ngr),nnyp1(ngr),1,scr  &
+                                ,xmn1(:,ngr),xtn1(:,ngr)  &
+                                ,ymn1(:,ngr),ytn1(:,ngr)  &
+                                ,zmn1(:,ngr),ztn1(:,ngr)  &
                                 ,platn1(ngr),plonn1(ngr)  &
-                                ,topt1(1,ngr),ztop1  &
+                                ,topt1(:,ngr),ztop1  &
                                 ,nnzp(ng),nnxp(ng),nnyp(ng),1  &
-                                ,scr2(1)  &
+                                ,scr2  &
                                 ,ng,ngr,vtab_r(nv,ng)%name,3)                         
                   call nud_cond_accum(nnzp(ng),nnxp(ng),nnyp(ng)  &
-                                     ,varinit_g(ng)%varcfh(1,1,1),scr2(1) )
+                                     ,varinit_g(ng)%varcfh(:,:,:),scr2 )
                endif
                cycle grid_loop2
                

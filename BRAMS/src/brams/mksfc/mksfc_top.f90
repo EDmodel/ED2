@@ -43,8 +43,8 @@ read(25,*) dummy
 read(25,*) dummy
 read(25,*) dummy
 
-call vfirec(25,grid_g(ifm)%topta(1,1),nnxp(ifm)*nnyp(ifm),'LIN')
-call vfirec(25,grid_g(ifm)%topzo(1,1),nnxp(ifm)*nnyp(ifm),'LIN')
+call vfirec(25,grid_g(ifm)%topta,nnxp(ifm)*nnyp(ifm),'LIN')
+call vfirec(25,grid_g(ifm)%topzo,nnxp(ifm)*nnyp(ifm),'LIN')
 
 close (25)
 
@@ -211,8 +211,8 @@ write(25,101) itoptflg(ifm),itopsflg(ifm),toptenh(ifm),toptwvl(ifm)  &
 101  format(2i5,2f11.5,i5,2f11.5)
 
 
-call vforec(25,sfcfile_p(ifm)%topt(1,1),nnxyp(ifm),24,scrx,'LIN')
-call vforec(25,sfcfile_p(ifm)%topzo(1,1),nnxyp(ifm),24,scrx,'LIN')
+call vforec(25,sfcfile_p(ifm)%topt,nnxyp(ifm),24,scrx,'LIN')
+call vforec(25,sfcfile_p(ifm)%topzo,nnxyp(ifm),24,scrx,'LIN')
 
 close(25)
 

@@ -37,29 +37,29 @@ endif
 
 ! Basic boundary and analysis nudging scheme
 
-call nudge(mzp,mxp,myp,il,ir,jl,jr,varinit_g(ngrid)%varwts(1,1,1)  &
+call nudge(mzp,mxp,myp,il,ir,jl,jr,varinit_g(ngrid)%varwts  &
 
-     ,varinit_g(ngrid)%varup(1,1,1),varinit_g(ngrid)%varvp(1,1,1)  &
-     ,varinit_g(ngrid)%varpp(1,1,1),varinit_g(ngrid)%vartp(1,1,1)  &
-     ,varinit_g(ngrid)%varrp(1,1,1) &
+     ,varinit_g(ngrid)%varup,varinit_g(ngrid)%varvp  &
+     ,varinit_g(ngrid)%varpp,varinit_g(ngrid)%vartp  &
+     ,varinit_g(ngrid)%varrp &
      
-     ,varinit_g(ngrid)%varuf(1,1,1),varinit_g(ngrid)%varvf(1,1,1)  &
-     ,varinit_g(ngrid)%varpf(1,1,1),varinit_g(ngrid)%vartf(1,1,1)  &
-     ,varinit_g(ngrid)%varrf(1,1,1)  &
+     ,varinit_g(ngrid)%varuf,varinit_g(ngrid)%varvf  &
+     ,varinit_g(ngrid)%varpf,varinit_g(ngrid)%vartf  &
+     ,varinit_g(ngrid)%varrf  &
      
-     ,basic_g(ngrid)%up(1,1,1)   ,basic_g(ngrid)%vp(1,1,1)  &
-     ,basic_g(ngrid)%theta(1,1,1),basic_g(ngrid)%rtp(1,1,1)  &
-     ,basic_g(ngrid)%pp(1,1,1)  &
-     ,tend%ut(1),tend%vt(1),tend%tht(1),tend%rtt(1),tend%pt(1))
+     ,basic_g(ngrid)%up   ,basic_g(ngrid)%vp  &
+     ,basic_g(ngrid)%theta,basic_g(ngrid)%rtp  &
+     ,basic_g(ngrid)%pp  &
+     ,tend%ut,tend%vt,tend%tht,tend%rtt,tend%pt)
 
 
 ! Condensate nudging scheme
 
 if (nud_cond == 1 .and. time >= tcond_beg .and. time <= tcond_end) &
-call nudge_cond(mzp,mxp,myp,il,ir,jl,jr,varinit_g(ngrid)%varwts(1,1,1)  &
-        ,varinit_g(ngrid)%varrph(1,1,1),varinit_g(ngrid)%varcph(1,1,1) &
-        ,varinit_g(ngrid)%varrfh(1,1,1),varinit_g(ngrid)%varcfh(1,1,1)  &
-        ,basic_g(ngrid)%rtp(1,1,1),tend%rtt(1))
+call nudge_cond(mzp,mxp,myp,il,ir,jl,jr,varinit_g(ngrid)%varwts    &
+        ,varinit_g(ngrid)%varrph,varinit_g(ngrid)%varcph           &
+        ,varinit_g(ngrid)%varrfh,varinit_g(ngrid)%varcfh           &
+        ,basic_g(ngrid)%rtp,tend%rtt)
 
 return
 end
@@ -268,20 +268,20 @@ if (icm == 0) return
 !    Temporarily fill VT2DA with interpolated topography from coarser grid
 
 call fillscr(1,maxnxp,maxnyp,1,nnxp(icm),nnyp(icm),1,1  &
-   ,scratch%scr1(1),grid_g(icm)%topt(1,1))
-call eintp(scratch%scr1(1),scratch%scr2(1)  &
+   ,scratch%scr1,grid_g(icm)%topt)
+call eintp(scratch%scr1,scratch%scr2  &
    ,1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),ifm,2,'t',0,0)
 call fillvar(1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),1,1  &
-   ,scratch%scr2(1),scratch%vt2da(1))
+   ,scratch%scr2,scratch%vt2da)
 
 if (ifflag == 1) then
 
 !     Interpolate varwts
 
-   call fmint4(varinit_g(icm)%varwts(1,1,1)  &
-              ,varinit_g(ifm)%varwts(1,1,1)  &
-              ,basic_g(icm)%dn0(1,1,1),basic_g(ifm)%dn0(1,1,1)  &
-              ,scratch%vt2da(1),ifm,icm,'t',0)
+   call fmint4(varinit_g(icm)%varwts  &
+              ,varinit_g(ifm)%varwts  &
+              ,basic_g(icm)%dn0,basic_g(ifm)%dn0  &
+              ,scratch%vt2da,ifm,icm,'t',0)
 
 endif
 
@@ -290,21 +290,16 @@ if (ifflag == 2) then
 
 !     Interpolate future level atmospheric variables
 
-   call fmint4(varinit_g(icm)%varuf(1,1,1),varinit_g(ifm)%varuf(1,1,1)  &
-      ,basic_g(icm)%dn0u(1,1,1),basic_g(ifm)%dn0u(1,1,1)  &
-      ,scratch%vt2da(1),ifm,icm,'u',1)
-   call fmint4(varinit_g(icm)%varvf(1,1,1),varinit_g(ifm)%varvf(1,1,1)  &
-      ,basic_g(icm)%dn0v(1,1,1),basic_g(ifm)%dn0v(1,1,1)  &
-      ,scratch%vt2da(1),ifm,icm,'v',1)
-   call fmint4(varinit_g(icm)%varpf(1,1,1),varinit_g(ifm)%varpf(1,1,1)  &
-      ,basic_g(icm)%dn0v(1,1,1),basic_g(ifm)%dn0v(1,1,1)  &
-      ,scratch%vt2da(1),ifm,icm,'t',1)
-   call fmint4(varinit_g(icm)%vartf(1,1,1),varinit_g(ifm)%vartf(1,1,1)  &
-      ,basic_g(icm)%dn0(1,1,1),basic_g(ifm)%dn0(1,1,1)  &
-      ,scratch%vt2da(1),ifm,icm,'t',1)
-   call fmint4(varinit_g(icm)%varrf(1,1,1),varinit_g(ifm)%varrf(1,1,1)  &
-      ,basic_g(icm)%dn0(1,1,1),basic_g(ifm)%dn0(1,1,1)  &
-      ,scratch%vt2da(1),ifm,icm,'t',1)
+   call fmint4(varinit_g(icm)%varuf,varinit_g(ifm)%varuf  &
+      ,basic_g(icm)%dn0u,basic_g(ifm)%dn0u,scratch%vt2da,ifm,icm,'u',1)
+   call fmint4(varinit_g(icm)%varvf,varinit_g(ifm)%varvf  &
+      ,basic_g(icm)%dn0v,basic_g(ifm)%dn0v,scratch%vt2da,ifm,icm,'v',1)
+   call fmint4(varinit_g(icm)%varpf,varinit_g(ifm)%varpf  &
+      ,basic_g(icm)%dn0v,basic_g(ifm)%dn0v,scratch%vt2da,ifm,icm,'t',1)
+   call fmint4(varinit_g(icm)%vartf,varinit_g(ifm)%vartf  &
+      ,basic_g(icm)%dn0,basic_g(ifm)%dn0,scratch%vt2da,ifm,icm,'t',1)
+   call fmint4(varinit_g(icm)%varrf,varinit_g(ifm)%varrf  &
+      ,basic_g(icm)%dn0,basic_g(ifm)%dn0,scratch%vt2da,ifm,icm,'t',1)
 
 endif
 

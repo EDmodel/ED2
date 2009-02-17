@@ -15,13 +15,16 @@ Module consts_coms
      , b_cp         => cp         , b_cpog       => cpog       , b_rocp       => rocp      &
      , b_cpor       => cpor       , b_cpi        => cpi        , b_rm         => rm        &
      , b_ep         => ep         , b_epi        => epi        , b_toodry     => toodry    &
-     , b_cliq       => cliq       , b_cliq1000   => cliq1000   , b_cliqi      => cliqi     &
-     , b_cice       => cice       , b_cice1000   => cice1000   , b_cicei      => cicei     &
+     , b_cliq       => cliq       , b_cliqvlme   => cliqvlme   , b_cliqi      => cliqi     &
+     , b_cice       => cice       , b_cicevlme   => cicevlme   , b_cicei      => cicei     &
      , b_t3ple      => t3ple      , b_t3plei     => t3plei     , b_es3ple     => es3ple    &
      , b_es3plei    => es3plei    , b_epes3ple   => epes3ple   , b_alvl       => alvl      &
-     , b_alvi       => alvi       , b_alli       => alli       , b_alli1000   => alli1000  &
-     , b_allii      => allii      , b_tsupercool => tsupercool , b_erad2      => erad2     &
-     , b_sqrtpii    => sqrtpii    , b_onesixth   => onesixth
+     , b_alvi       => alvi       , b_alli       => alli       , b_allivlme   => allivlme  &
+     , b_allii      => allii      , b_wdns       => wdns       , b_erad2      => erad2     &
+     , b_sqrtpii    => sqrtpii    , b_onesixth   => onesixth   , b_qicet3     => qicet3    &
+     , b_wdnsi      => wdnsi      , b_gorm       => gorm       , b_idns       => idns      &
+     , b_idnsi      => idnsi      , b_tsupercool => tsupercool , b_twothirds  => twothirds &
+     , b_qliqt3     => qliqt3
 
    implicit none
 
@@ -30,7 +33,8 @@ Module consts_coms
    real, parameter :: pio4       = b_pio4       , srtwo      = b_srtwo
    real, parameter :: srthree    = b_srthree    , srtwoi     = b_srtwoi
    real, parameter :: srthreei   = b_srthreei   , onethird   = b_onethird
-   real, parameter :: stefan     = b_stefan     , boltzmann  = b_boltzmann
+   real, parameter :: twothirds  = b_twothirds  , stefan     = b_stefan
+   real, parameter :: boltzmann  = b_boltzmann  , tsupercool = b_tsupercool
    real, parameter :: t00        = b_t00        , yr_day     = b_yr_day
    real, parameter :: day_sec    = b_day_sec    , day_hr     = b_day_hr
    real, parameter :: hr_sec     = b_hr_sec     , min_sec    = b_min_sec
@@ -42,17 +46,19 @@ Module consts_coms
    real, parameter :: cpi        = b_cpi        , rvap       = b_rm
    real, parameter :: ep         = b_ep         , epi        = b_epi
    real, parameter :: toodry     = b_toodry     , cliq       = b_cliq
-   real, parameter :: cliq1000   = b_cliq1000   , cliqi      = b_cliqi
-   real, parameter :: cice       = b_cice       , cice1000   = b_cice1000
+   real, parameter :: cliqvlme   = b_cliqvlme   , cliqi      = b_cliqi
+   real, parameter :: cice       = b_cice       , cicevlme   = b_cicevlme
    real, parameter :: cicei      = b_cicei      , t3ple      = b_t3ple
    real, parameter :: t3plei     = b_t3plei     , es3ple     = b_es3ple
    real, parameter :: es3plei    = b_es3plei    , epes3ple   = b_epes3ple
    real, parameter :: alvl       = b_alvl       , alvi       = b_alvi
-   real, parameter :: alli       = b_alli       , alli1000   = b_alli1000
-   real, parameter :: allii      = b_allii      , tsupercool = b_tsupercool
+   real, parameter :: alli       = b_alli       , allivlme   = b_allivlme
+   real, parameter :: allii      = b_allii      , wdns       = b_wdns
    real, parameter :: erad2      = b_erad2      , sqrtpii    = b_sqrtpii
-   real, parameter :: onesixth   = b_onesixth
-
+   real, parameter :: onesixth   = b_onesixth   , qicet3     = b_qicet3
+   real, parameter :: wdnsi      = b_wdnsi      , gorvap     = b_gorm
+   real, parameter :: idns       = b_idns       , idnsi      = b_idnsi
+   real, parameter :: qliqt3     = b_qliqt3
 #else
    implicit none
 
@@ -77,6 +83,7 @@ Module consts_coms
    real, parameter :: srtwoi    = 1./srtwo          ! 1./ Square root of 2.     [      ---]
    real, parameter :: srthreei  = 1./srthree        ! 1./ Square root of 3.     [      ---]
    real, parameter :: onethird  = 1./3.             ! 1/3                       [      ---]
+   real, parameter :: twothirds = 2./3.             ! 2/3                       [      ---]
    real, parameter :: onesixth  = 1./6.             ! 1/6                       [      ---]
    !---------------------------------------------------------------------------------------!
 
@@ -134,6 +141,7 @@ Module consts_coms
    ! Water vapour properties                                                               !
    !---------------------------------------------------------------------------------------!
    real, parameter :: rvap   = 461.5       ! Gas constant for water vapour (Rv) [   J/kg/K]
+   real, parameter :: gorvap = grav / rvap ! g/Rv                               [      K/m]
    real, parameter :: ep     = rdry / rvap ! Ra/Rv, epsilon, used to find rv    [    kg/kg]
    real, parameter :: epi    = rvap / rdry ! Rv/Ra, 1/epsilon                   [    kg/kg]
    real, parameter :: toodry = 1.e-8       ! Minimum acceptable mixing ratio.   [    kg/kg]
@@ -144,8 +152,10 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    ! Liquid water properties                                                               !
    !---------------------------------------------------------------------------------------!
+   real, parameter :: wdns     = 1.000e3    ! Liquid water density              [    kg/m³]
+   real, parameter :: wdnsi    = 1./wdns    ! Inverse of liquid water density   [    m³/kg]
    real, parameter :: cliq     = 4.186e3    ! Liquid water specific heat (Cl)   [   J/kg/K]
-   real, parameter :: cliq1000 = 1000.*cliq ! Water heat capacity*water density [   J/m³/K]
+   real, parameter :: cliqvlme = wdns*cliq  ! Water heat capacity × water dens. [   J/m³/K]
    real, parameter :: cliqi    = 1./cliq    ! Inverse of water heat capacity    [   kg K/J]
    !---------------------------------------------------------------------------------------!
 
@@ -154,8 +164,10 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    ! Ice properties                                                                        !
    !---------------------------------------------------------------------------------------!
+   real, parameter :: idns     = 9.167e2      ! "Hard" ice density              [    kg/m³]
+   real, parameter :: idnsi    = 1./idns      ! Inverse of ice density          [    m³/kg]
    real, parameter :: cice     = 2.093e3      ! Ice specific heat (Ci)          [   J/kg/K]
-   real, parameter :: cice1000 = 1000. * cice ! Heat capacity*water density     [   J/m³/K]
+   real, parameter :: cicevlme = wdns * cice  ! Heat capacity × water density   [   J/m³/K]
    real, parameter :: cicei    = 1. / cice    ! Inverse of ice heat capacity    [   kg K/J]
    !---------------------------------------------------------------------------------------!
 
@@ -165,23 +177,38 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    ! Phase change properties                                                               !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: t3ple    = 273.16       ! Water triple point temp. (T3)   [        K]
-   real, parameter :: t3plei   = 1./t3ple     ! 1./T3                           [      1/K]
-   real, parameter :: es3ple   = 611.65685464 ! Vapour pressure at T3 (es3)     [       Pa]
-   real, parameter :: es3plei  = 1./es3ple    ! 1./es3                          [     1/Pa]
-   real, parameter :: epes3ple = ep * es3ple  ! epsilon × es3                   [ Pa kg/kg]
-   real, parameter :: alvl     = 2.50e6       ! Latent heat - vaporisation (Lv) [     J/kg]
-   real, parameter :: alvi     = 2.834e6      ! Latent heat - sublimation  (Ls) [     J/kg]
-   real, parameter :: alli     = 3.34e5       ! Latent heat - fusion       (Lf) [     J/kg]
-   real, parameter :: alli1000 = 1000. * alli ! Latent heat - fusion       (Lf) [     J/m³]
-   real, parameter :: allii    = 1./alli      ! 1/Latent heat - fusion     (Lf) [     J/kg]
+   real, parameter :: t3ple    = 273.16        ! Water triple point temp. (T3)  [        K]
+   real, parameter :: t3plei   = 1./t3ple      ! 1./T3                          [      1/K]
+   real, parameter :: es3ple   = 611.65685464  ! Vapour pressure at T3 (es3)    [       Pa]
+   real, parameter :: es3plei  = 1./es3ple     ! 1./es3                         [     1/Pa]
+   real, parameter :: epes3ple = ep * es3ple   ! epsilon × es3                  [ Pa kg/kg]
+   real, parameter :: alvl     = 2.50e6        ! Lat. heat - vaporisation (Lv)  [     J/kg]
+   real, parameter :: alvi     = 2.834e6       ! Lat. heat - sublimation  (Ls)  [     J/kg]
+   real, parameter :: alli     = 3.34e5        ! Lat. heat - fusion       (Lf)  [     J/kg]
+   real, parameter :: allivlme = wdns * alli   ! Lat. heat × water density      [     J/m³]
+   real, parameter :: allii    = 1./alli       ! 1/Latent heat - fusion         [     kg/J]
+   real, parameter :: qicet3   = cice * t3ple  ! q at triple point, only ice    [     J/kg]
+   real, parameter :: qliqt3   = qicet3 + alli ! q at triple point, only liquid [     J/kg]
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
-   !     Internal energy-related variable. QL = Cl×(T-T3)+Lf, which can also be written    !
-   ! as:QL = Cl×(T-TLow), where TLow is the temperature that liquid water would have       !
-   ! if it was supercooled (i.e. cooled without without freezing), until QL became 0.      !
+   !    Tsupercool is the temperature of supercooled water that will cause the energy to   !
+   ! be the same as ice at 0K. It can be used as an offset for temperature when defining   !
+   ! internal energy. The next two methods of defining the internal energy for the liquid  !
+   ! part:                                                                                 !
+   !                                                                                       !
+   !   Uliq = Mliq × [ Cice × T3 + Cliq × (T - T3) + Lf]                                   !
+   !   Uliq = Mliq × Cliq × (T - Tsupercool)                                               !
+   !                                                                                       !
+   !     You may be asking yourself why would we have the ice term in the internal energy  !
+   ! definition. The reason is that we can think that internal energy is the amount of     !
+   ! energy a parcel received to leave the 0K state to reach the current state (or if you  !
+   ! prefer the inverse way, Uliq is the amount of energy the parcel would need to lose to !
+   ! become solid at 0K.)                                                                  !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: tsupercool = t3ple - alli/cliq 
+   real, parameter :: tsupercool = t3ple - (qicet3+alli) * cliqi
    !---------------------------------------------------------------------------------------!
 
 #endif

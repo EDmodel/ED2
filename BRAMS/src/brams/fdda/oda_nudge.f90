@@ -80,8 +80,7 @@ if ( (ngrid == 1 .and. time >= todabeg .and. time <= todaend)  &
       ! Process observations and call krigging 
 
       call oda_proc_obs(mmzp(ng),mmxp(ng),mmyp(ng),mi0(ng),mj0(ng)  &
-            ,basic_g(ng)%pp(1,1,1),basic_g(ng)%pi0(1,1,1)  &
-            ,scratch%scr1(1),ng,nobs)
+            ,basic_g(ng)%pp,basic_g(ng)%pi0,scratch%scr1,ng,nobs)
             
             !!!!print*,'oda-sfc nobs:',ng,nobs
 
@@ -93,16 +92,15 @@ if ( (ngrid == 1 .and. time >= todabeg .and. time <= todaend)  &
       call krig(mmzp(ng),mmxp(ng),mmyp(ng)  &
                ,xtn(1+mi0(ng),ng),ytn(1+mj0(ng),ng),ztn(1,ng)  &
                ,nobs,xkobs,ykobs,zkobs,ekobs,ukobs  &
-               ,ng,nnzp(ng),grid_g(ng)%topt(1,1)  &
-               ,oda_g(ng)%uk(1,1,1),oda_g(ng)%ukv(1,1,1),1.)
+               ,ng,nnzp(ng),grid_g(ng)%topt  &
+               ,oda_g(ng)%uk,oda_g(ng)%ukv,1.)
 
       oda_g(ng)%vk(1:mmzp(ng),1:mmxp(ng),1:mmyp(ng))=0.
       oda_g(ng)%vkv(1:mmzp(ng),1:mmxp(ng),1:mmyp(ng))=0.
       call krig(mmzp(ng),mmxp(ng),mmyp(ng)  &
                ,xtn(1+mi0(ng),ng),ytn(1+mj0(ng),ng),ztn(1,ng)  &
                ,nobs,xkobs,ykobs,zkobs,ekobs,vkobs  &
-               ,ng,nnzp(ng),grid_g(ng)%topt(1,1)  &
-               ,oda_g(ng)%vk(1,1,1),oda_g(ng)%vkv(1,1,1),1.)
+               ,ng,nnzp(ng),grid_g(ng)%topt,oda_g(ng)%vk,oda_g(ng)%vkv,1.)
 
       !do i=1,nobs
       !if(tkobs(i) > 200. .and. tkobs(i) < 273.) print*,'tobs:',ng,i,tkobs(i)
@@ -112,8 +110,8 @@ if ( (ngrid == 1 .and. time >= todabeg .and. time <= todaend)  &
       call krig(mmzp(ng),mmxp(ng),mmyp(ng)  &
                ,xtn(1+mi0(ng),ng),ytn(1+mj0(ng),ng),ztn(1,ng)  &
                ,nobs,xkobs,ykobs,zkobs,ekobs,tkobs  &
-               ,ng,nnzp(ng),grid_g(ng)%topt(1,1)  &
-               ,oda_g(ng)%tk(1,1,1),oda_g(ng)%tkv(1,1,1),1.)
+               ,ng,nnzp(ng),grid_g(ng)%topt  &
+               ,oda_g(ng)%tk,oda_g(ng)%tkv,1.)
     
       !if(mynum == 2) then
       !print*,'nobs:',nobs,xtn(1+mi0(ng),ng),ytn(1+mj0(ng),ng)
@@ -150,8 +148,8 @@ if ( (ngrid == 1 .and. time >= todabeg .and. time <= todaend)  &
       call krig(mmzp(ng),mmxp(ng),mmyp(ng)  &
                ,xtn(1+mi0(ng),ng),ytn(1+mj0(ng),ng),ztn(1,ng)  &
                ,nobs,xkobs,ykobs,zkobs,ekobs,rkobs  &
-               ,ng,nnzp(ng),grid_g(ng)%topt(1,1)  &
-               ,oda_g(ng)%rk(1,1,1),oda_g(ng)%rkv(1,1,1),1.)
+               ,ng,nnzp(ng),grid_g(ng)%topt  &
+               ,oda_g(ng)%rk,oda_g(ng)%rkv,1.)
       endif
       
    enddo
@@ -167,8 +165,7 @@ if (wt_oda_grid(ng) > 0.0 .and. time >= todabeg .and. time <= todaend) then
       if(allocated(plt)) deallocate(plt);allocate(plt(nnxp(ng),nnyp(ng)))
 
 call oda_tendency(mmzp(ng),mmxp(ng),mmyp(ng),mia(ng),miz(ng),mja(ng),mjz(ng)  &
-                 ,basic_g(ng)%up(1,1,1)  &
-                 ,tend%ut(1),oda_g(ng)%uk(1,1,1),oda_g(ng)%ukv(1,1,1)  &
+                 ,basic_g(ng)%up,tend%ut,oda_g(ng)%uk,oda_g(ng)%ukv  &
                  ,wt_oda_uv * wt_oda_grid(ng)/tnudoda,time,mi0(ng),mj0(ng))
 !      do j=1,nnyp(ng)
 !      do i=1,nnxp(ng)
@@ -178,8 +175,7 @@ call oda_tendency(mmzp(ng),mmxp(ng),mmyp(ng),mia(ng),miz(ng),mja(ng),mjz(ng)  &
 !      enddo
     !  call ezcntr(plt,nnxp(ng),nnyp(ng))
 call oda_tendency(mmzp(ng),mmxp(ng),mmyp(ng),mia(ng),miz(ng),mja(ng),mjz(ng)  &
-                 ,basic_g(ng)%vp(1,1,1)  &
-                 ,tend%vt(1),oda_g(ng)%vk(1,1,1),oda_g(ng)%vkv(1,1,1)  &
+                 ,basic_g(ng)%vp,tend%vt,oda_g(ng)%vk,oda_g(ng)%vkv  &
                  ,wt_oda_uv * wt_oda_grid(ng)/tnudoda,time,mi0(ng),mj0(ng))
 !      do j=1,nnyp(ng)
 !      do i=1,nnxp(ng)
@@ -189,8 +185,7 @@ call oda_tendency(mmzp(ng),mmxp(ng),mmyp(ng),mia(ng),miz(ng),mja(ng),mjz(ng)  &
 !      enddo
    !   call ezcntr(plt,nnxp(ng),nnyp(ng))
 call oda_tendency(mmzp(ng),mmxp(ng),mmyp(ng),mia(ng),miz(ng),mja(ng),mjz(ng)  &
-                 ,basic_g(ng)%theta(1,1,1)  &
-                 ,tend%tht(1),oda_g(ng)%tk(1,1,1),oda_g(ng)%tkv(1,1,1)  &
+                 ,basic_g(ng)%theta,tend%tht,oda_g(ng)%tk,oda_g(ng)%tkv  &
                  ,wt_oda_th * wt_oda_grid(ng)/tnudoda,time,mi0(ng),mj0(ng))
 !print*,'ttttt tend:',time,minval(tend%tht(1:mmzp(ng)*mmxp(ng)*mmyp(ng))) &
 !                     ,maxval(tend%tht(1:mmzp(ng)*mmxp(ng)*mmyp(ng)))
@@ -202,8 +197,7 @@ call oda_tendency(mmzp(ng),mmxp(ng),mmyp(ng),mia(ng),miz(ng),mja(ng),mjz(ng)  &
       !enddo
       !call ezcntr(plt,nnxp(ng),nnyp(ng))
 call oda_tendency(mmzp(ng),mmxp(ng),mmyp(ng),mia(ng),miz(ng),mja(ng),mjz(ng)  &
-                 ,basic_g(ng)%rtp(1,1,1)  &
-                 ,tend%rtt(1),oda_g(ng)%rk(1,1,1),oda_g(ng)%rkv(1,1,1)  &
+                 ,basic_g(ng)%rtp,tend%rtt,oda_g(ng)%rk,oda_g(ng)%rkv         &
                  ,wt_oda_rt * wt_oda_grid(ng)/tnudoda,time,mi0(ng),mj0(ng))
 
 

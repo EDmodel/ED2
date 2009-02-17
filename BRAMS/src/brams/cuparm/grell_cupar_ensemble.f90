@@ -39,7 +39,7 @@ subroutine grell_dellabot_ensemble(mgmzp,checkmass,masstol,edt,this,p_cup,this_c
    real, dimension(mgmzp), intent(in)    :: dzd_cld     ! Delta-z for downdrafts;
    real, dimension(mgmzp), intent(in)    :: etad_cld    ! Normalized dndraft mass flux;
    real, dimension(mgmzp), intent(in)    :: thisd_cld   ! Thermo variable at downdraft;
-   real, dimension(mgmzp), intent(inout) :: dellathis   ! Change of thermo per unit of mass
+   real                  , intent(inout) :: dellathis   ! Change of thermo per unit of mass
 
    real                                :: subin       ! Subsidence from level aloft;
    real                                :: detdo1      ! 1st downdraft detrainment term
@@ -65,8 +65,8 @@ subroutine grell_dellabot_ensemble(mgmzp,checkmass,masstol,edt,this,p_cup,this_c
       end if
    end if
    
-   dellathis(1) = (detdo1 * .5*(thisd_cld(1)+thisd_cld(2)) + detdo2 * thisd_cld(1)         &
-                  + subin * this_cup(2) - entdo * this(1) ) * g /(p_cup(1)-p_cup(2))
+   dellathis = (detdo1 * .5*(thisd_cld(1)+thisd_cld(2)) + detdo2 * thisd_cld(1)            &
+             + subin * this_cup(2) - entdo * this(1) ) * g /(p_cup(1)-p_cup(2))
    
    return
 end subroutine grell_dellabot_ensemble
@@ -637,8 +637,8 @@ subroutine grell_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxen
    real                  , intent(out)   :: upmf        ! Ref. upward mass flx (Grell's mb)
    real                  , intent(out)   :: dnmf        ! Ref. dnward mass flx (Grell's m0)
    real                  , intent(out)   :: edt         ! m0/mb, Grell's epsilon
-   real, dimension(mgmzp), intent(out)   :: outthil     ! Change in temperature profile
-   real, dimension(mgmzp), intent(out)   :: outqtot     ! Change in total mixing ratio
+   real, dimension(mgmzp), intent(inout) :: outthil     ! Change in temperature profile
+   real, dimension(mgmzp), intent(inout) :: outqtot     ! Change in total mixing ratio
    real                  , intent(out)   :: precip      ! Precipitation rate
 
    integer                               :: k,l               ! Counter
@@ -692,8 +692,8 @@ subroutine grell_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxen
    kmax = maxloc(outthil,dim=1)
    
    !----- If excessive heat happens, scale down -------------------------------------------!
-   if (kmax > 2 .and. outthil(kmax) > 2.0 * max_heat) then
-      rescale = 2.0*max_heat / outthil(kmax)
+   if (kmax > 2 .and. outthil(kmax) > max_heat) then
+      rescale = max_heat / outthil(kmax)
       upmf = upmf * rescale
       do k=1,ktop
          outthil(k) = outthil(k) * rescale

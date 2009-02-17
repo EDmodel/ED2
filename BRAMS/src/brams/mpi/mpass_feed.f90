@@ -78,7 +78,7 @@ itype = 6
 do nm=1,nmachs
    irecv_req(nm)=0
    if (iget_paths(itype,ifm,nm).ne.0) then
-      call MPI_Irecv(node_buffs(nm)%lbc_recv_buff(1),  &
+      call MPI_Irecv(node_buffs(nm)%lbc_recv_buff,  &
            node_buffs(nm)%nrecv*f_ndmd_size,MPI_PACKED,machs(nm),  &
            5500+icm,MPI_COMM_WORLD,irecv_req(nm),ierr )
    endif
@@ -119,39 +119,39 @@ do nm=1,nmachs
       j2f=ipaths(4,itypef,ifm,nm)
 
       iptr=0
-      call fdbackp(1,basic_g(ifm)%uc(1,1,1),pbuff(1+iptr),mtp  &
-          ,basic_g(ifm)%dn0(1,1,1),basic_g(ifm)%dn0u(1,1,1)  &
-          ,basic_g(ifm)%dn0v(1,1,1)  &
+      call fdbackp(1,basic_g(ifm)%uc,pbuff(1+iptr:),mtp  &
+          ,basic_g(ifm)%dn0,basic_g(ifm)%dn0u  &
+          ,basic_g(ifm)%dn0v  &
           ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
           ,ifm,icm,i1f-i0,i2f-i0,j1f-j0,j2f-j0  &
           ,i0,j0,mibcon(ifm) ,nstratx(ifm),nstraty(ifm),mynum,i1s,i2s)
       iptr=iptr+mtp
-      call fdbackp(2,basic_g(ifm)%vc(1,1,1),pbuff(1+iptr),mtp  &
-          ,basic_g(ifm)%dn0(1,1,1),basic_g(ifm)%dn0u(1,1,1)  &
-          ,basic_g(ifm)%dn0v(1,1,1)  &
+      call fdbackp(2,basic_g(ifm)%vc,pbuff(1+iptr:),mtp  &
+          ,basic_g(ifm)%dn0,basic_g(ifm)%dn0u  &
+          ,basic_g(ifm)%dn0v  &
           ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
           ,ifm,icm,i1f-i0,i2f-i0,j1f-j0,j2f-j0  &
           ,i0,j0,mibcon(ifm) ,nstratx(ifm),nstraty(ifm),mynum,j1s,j2s)
       iptr=iptr+mtp
-      call fdbackp(3,basic_g(ifm)%wc(1,1,1),pbuff(1+iptr),mtp  &
-          ,basic_g(ifm)%dn0(1,1,1),basic_g(ifm)%dn0u(1,1,1)  &
-          ,basic_g(ifm)%dn0v(1,1,1)  &
+      call fdbackp(3,basic_g(ifm)%wc,pbuff(1+iptr:),mtp  &
+          ,basic_g(ifm)%dn0,basic_g(ifm)%dn0u  &
+          ,basic_g(ifm)%dn0v  &
           ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
           ,ifm,icm,i1f-i0,i2f-i0,j1f-j0,j2f-j0  &
           ,i0,j0,mibcon(ifm) ,nstratx(ifm),nstraty(ifm),mynum,i1,i2)
       iptr=iptr+mtp
-      call fdbackp(4,basic_g(ifm)%pc(1,1,1),pbuff(1+iptr),mtp  &
-          ,basic_g(ifm)%dn0(1,1,1),basic_g(ifm)%dn0u(1,1,1)  &
-          ,basic_g(ifm)%dn0v(1,1,1)  &
+      call fdbackp(4,basic_g(ifm)%pc,pbuff(1+iptr:),mtp  &
+          ,basic_g(ifm)%dn0,basic_g(ifm)%dn0u  &
+          ,basic_g(ifm)%dn0v  &
           ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
           ,ifm,icm,i1f-i0,i2f-i0,j1f-j0,j2f-j0  &
           ,i0,j0,mibcon(ifm) ,nstratx(ifm),nstraty(ifm),mynum,i1,i2)
       iptr=iptr+mtp
 
       do nv=1,num_scalar(ifm)
-         call fdbackp(5,scalar_tab(nv,ifm)%var_p,pbuff(1+iptr),mtp  &
-             ,basic_g(ifm)%dn0(1,1,1),basic_g(ifm)%dn0u(1,1,1)  &
-             ,basic_g(ifm)%dn0v(1,1,1)  &
+         call fdbackp(5,scalar_tab(nv,ifm)%var_p,pbuff(1+iptr:),mtp  &
+             ,basic_g(ifm)%dn0,basic_g(ifm)%dn0u  &
+             ,basic_g(ifm)%dn0v  &
              ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
              ,ifm,icm,i1f-i0,i2f-i0,j1f-j0,j2f-j0  &
              ,i0,j0,mibcon(ifm) ,nstratx(ifm),nstraty(ifm),mynum,i1,i2)
@@ -160,36 +160,36 @@ do nm=1,nmachs
 
 !     We will send master coarse grid indices to nodes.
       ipos = 1
-      call MPI_Pack(i1f,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1),node_buffs(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(i1f,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(i2f,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1),node_buffs(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(i2f,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(j1f,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1),node_buffs(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(j1f,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(j2f,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1),node_buffs(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(j2f,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(i1s,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1),node_buffs(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(i1s,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(i2s,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1),node_buffs(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(i2s,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(j1s,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1),node_buffs(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(j1s,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(j2s,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1),node_buffs(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(j2s,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(k1s,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1),node_buffs(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(k1s,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(k2s,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1),node_buffs(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(k2s,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(mynum,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1),node_buffs(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(mynum,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(nvar,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1),node_buffs(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(nvar,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(iptr,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1),node_buffs(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(iptr,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &
            MPI_COMM_WORLD,ierr)
 
-      call MPI_Pack(pbuff(1),iptr,MPI_REAL,node_buffs(nm)%lbc_send_buff(1),node_buffs(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(pbuff(1),iptr,MPI_REAL,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Isend(node_buffs(nm)%lbc_send_buff(1),  &
+      call MPI_Isend(node_buffs(nm)%lbc_send_buff,  &
            ipos-1,  &
            MPI_PACKED,ipaths(5,itype,ifm,nm),5500+icm,MPI_COMM_WORLD,isend_req(nm),ierr)
 
@@ -305,31 +305,31 @@ do nm=1,nmachs
 !                         ,node_buffs(nm)%nrecv)
 
       ipos = 1
-      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size  &
                       ,ipos,i1f,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size  &
                       ,ipos,i2f,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size  &
                       ,ipos,j1f,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size  &
                       ,ipos,j2f,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size  &
                       ,ipos,i1s,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size  &
                       ,ipos,i2s,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size  &
                       ,ipos,j1s,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size  &
                       ,ipos,j2s,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size  &
                       ,ipos,k1s,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size  &
                       ,ipos,k2s,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size  &
                       ,ipos,machf,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size  &
                       ,ipos,nvar,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size  &
                       ,ipos,nwds,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
       ! Make sure buffer for floating point info big enough
       
@@ -345,7 +345,7 @@ do nm=1,nmachs
          nbuff_save=nwds
       endif      
       
-      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
+      call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
                     pbuff,nwds,MPI_REAL,MPI_COMM_WORLD,ierr)
       if(icall) then
          icall=.false.
@@ -363,18 +363,18 @@ do nm=1,nmachs
 
          i2zu = min(ipm(nnxp(ifm)-1-nstratx(ifm),ifm)  &
                    ,mmxp(icm)+mi0(icm))
-         call zeroout(basic_g(icm)%uc(1,1,1),mmzp(icm),mmxp(icm),mmyp(icm) &
+         call zeroout(basic_g(icm)%uc,mmzp(icm),mmxp(icm),mmyp(icm) &
                  ,mi0(icm),mj0(icm),i1z,i2zu,j1z,j2z,k1z,k2z)
          j2zv = min(jpm(nnyp(ifm)-1-nstraty(ifm),ifm)  &
                    ,mmyp(icm)+mj0(icm))
-         call zeroout(basic_g(icm)%vc(1,1,1),mmzp(icm),mmxp(icm),mmyp(icm) &
+         call zeroout(basic_g(icm)%vc,mmzp(icm),mmxp(icm),mmyp(icm) &
                  ,mi0(icm),mj0(icm),i1z,i2z,j1z,j2zv,k1z,k2z)
          k2zw = kpm(nnzp(ifm)-1-nrz(kpm(nnzp(ifm)-1,ifm)  &
                    ,ifm),ifm)
-         call zeroout(basic_g(icm)%wc(1,1,1),mmzp(icm),mmxp(icm),mmyp(icm) &
+         call zeroout(basic_g(icm)%wc,mmzp(icm),mmxp(icm),mmyp(icm) &
                  ,mi0(icm),mj0(icm),i1z,i2z,j1z,j2z,k1z,k2zw)
 
-         call zeroout(basic_g(icm)%pc(1,1,1),mmzp(icm),mmxp(icm),mmyp(icm) &
+         call zeroout(basic_g(icm)%pc,mmzp(icm),mmxp(icm),mmyp(icm) &
                  ,mi0(icm),mj0(icm),i1z,i2z,j1z,j2z,k1z,k2z)
 
          do nv=1,num_scalar(ifm)
@@ -385,9 +385,9 @@ do nm=1,nmachs
 
       endif
 
-      call unfpack1(pbuff,scratch1%vtu(1),scratch1%vtv(1) &
-           ,scratch1%vtw(1),scratch1%vtp(1) &
-           ,scratch1%vtscalar(1),num_scalar(ifm) &
+      call unfpack1(pbuff,scratch1%vtu,scratch1%vtv &
+           ,scratch1%vtw,scratch1%vtp &
+           ,scratch1%vtscalar,num_scalar(ifm) &
            ,nodebounds(ifm,1),nodebounds(ifm,2),nodebounds(ifm,3) &
            ,nodebounds(ifm,4),2,mmzp(ifm)-1,nodebounds(icm,5) &
            ,nodebounds(icm,6),nodebounds(icm,7),nodebounds(icm,8),k1s,k2s  &
@@ -414,10 +414,10 @@ if (.not. icall) then
     k2f = mmzp(ifm)-1
 
     ! New Sub-Routine - bugs fixed
-    call unfdbackp_fixed(1,basic_g(icm)%uc(1,1,1),scratch1%vtu(1) &
+    call unfdbackp_fixed(1,basic_g(icm)%uc,scratch1%vtu &
          ,i1s,i2s,j1f,j2f,k1f,k2f &
-         ,basic_g(icm)%dn0(1,1,1),basic_g(icm)%dn0u(1,1,1) &
-         ,basic_g(icm)%dn0v(1,1,1)  &
+         ,basic_g(icm)%dn0,basic_g(icm)%dn0u &
+         ,basic_g(icm)%dn0v  &
          ,mmzp(icm),mmxp(icm),mmyp(icm),mi0(icm),mj0(icm)  &
          ,i2u,j2v,k2w,i1s,i2s,j1s,j2s  &
          ,k1s,k2s  &
@@ -427,10 +427,10 @@ if (.not. icall) then
          ,mynum)
 
     ! New Sub-Routine by Alvaro L.Fazenda
-    call unfdbackp_fixed(2,basic_g(icm)%vc(1,1,1),scratch1%vtv(1) &
+    call unfdbackp_fixed(2,basic_g(icm)%vc,scratch1%vtv &
          ,i1f,i2f,j1s,j2s,k1f,k2f &
-         ,basic_g(icm)%dn0(1,1,1),basic_g(icm)%dn0u(1,1,1) &
-         ,basic_g(icm)%dn0v(1,1,1)  &
+         ,basic_g(icm)%dn0,basic_g(icm)%dn0u &
+         ,basic_g(icm)%dn0v  &
          ,mmzp(icm),mmxp(icm),mmyp(icm),mi0(icm),mj0(icm)  &
          ,i2u,j2v,k2w,i1s,i2s,j1s,j2s  &
          ,k1s,k2s  &
@@ -440,10 +440,10 @@ if (.not. icall) then
          ,mynum)
 
     ! New Sub-Routine by Alvaro L.Fazenda
-    call unfdbackp_fixed(3,basic_g(icm)%wc(1,1,1),scratch1%vtw(1) &
+    call unfdbackp_fixed(3,basic_g(icm)%wc,scratch1%vtw &
          ,i1f,i2f,j1f,j2f,k1s,k2s &
-         ,basic_g(icm)%dn0(1,1,1),basic_g(icm)%dn0u(1,1,1) &
-         ,basic_g(icm)%dn0v(1,1,1)  &
+         ,basic_g(icm)%dn0,basic_g(icm)%dn0u &
+         ,basic_g(icm)%dn0v  &
          ,mmzp(icm),mmxp(icm),mmyp(icm),mi0(icm),mj0(icm)  &
          ,i2u,j2v,k2w,i1s,i2s,j1s,j2s  &
          ,k1s,k2s  &
@@ -453,10 +453,10 @@ if (.not. icall) then
          ,mynum)
 
     ! New Sub-Routine by Alvaro L.Fazenda
-    call unfdbackp_fixed(4,basic_g(icm)%pc(1,1,1),scratch1%vtp(1) &
+    call unfdbackp_fixed(4,basic_g(icm)%pc,scratch1%vtp &
          ,i1f,i2f,j1f,j2f,k1f,k2f &
-         ,basic_g(icm)%dn0(1,1,1),basic_g(icm)%dn0u(1,1,1) &
-         ,basic_g(icm)%dn0v(1,1,1)  &
+         ,basic_g(icm)%dn0,basic_g(icm)%dn0u &
+         ,basic_g(icm)%dn0v  &
          ,mmzp(icm),mmxp(icm),mmyp(icm),mi0(icm),mj0(icm)  &
          ,i2u,j2v,k2w,i1s,i2s,j1s,j2s  &
          ,k1s,k2s  &
@@ -471,10 +471,10 @@ if (.not. icall) then
     do nv=1,num_scalar(ifm)
        ! New Sub-Routine by Alvaro L.Fazenda
        call unfdbackp_fixed(5,scalar_tab(nv,icm)%var_p  &
-            ,scratch1%vtscalar(1+iptr) &
+            ,scratch1%vtscalar(1+iptr:) &
             ,i1f,i2f,j1f,j2f,k1f,k2f &
-            ,basic_g(icm)%dn0(1,1,1),basic_g(icm)%dn0u(1,1,1) &
-            ,basic_g(icm)%dn0v(1,1,1)  &
+            ,basic_g(icm)%dn0,basic_g(icm)%dn0u &
+            ,basic_g(icm)%dn0v  &
             ,mmzp(icm),mmxp(icm),mmyp(icm),mi0(icm),mj0(icm)  &
             ,i2u,j2v,k2w,i1s,i2s,j1s,j2s  &
             ,k1s,k2s  &
@@ -490,24 +490,24 @@ end if
 if (nnstbot(icm) == 1) then
    call botset(mmzp(icm),mmxp(icm),mmyp(icm)  &
        ,1,mmxp(icm),1,mmyp(icm),mibcon(icm)  &
-       ,basic_g(icm)%uc(1,1,1),'U')
+       ,basic_g(icm)%uc,'U')
    call botset(mmzp(icm),mmxp(icm),mmyp(icm)  &
        ,1,mmxp(icm),1,mmyp(icm),mibcon(icm)  &
-       ,basic_g(icm)%vc(1,1,1),'V')
+       ,basic_g(icm)%vc,'V')
    call botset(mmzp(icm),mmxp(icm),mmyp(icm)  &
        ,1,mmxp(icm),1,mmyp(icm),mibcon(icm)  &
-       ,basic_g(icm)%pc(1,1,1),'P')
+       ,basic_g(icm)%pc,'P')
 endif
 if (nnsttop(icm) == 1) then
    call topset(mmzp(icm),mmxp(icm),mmyp(icm)  &
      ,1,mmxp(icm),1,mmyp(icm),mibcon(icm)  &
-     ,basic_g(icm)%uc(1,1,1),basic_g(icm)%uc(1,1,1),'U')
+     ,basic_g(icm)%uc,basic_g(icm)%uc,'U')
    call topset(mmzp(icm),mmxp(icm),mmyp(icm)  &
      ,1,mmxp(icm),1,mmyp(icm),mibcon(icm)  &
-     ,basic_g(icm)%vc(1,1,1),basic_g(icm)%vc(1,1,1),'V')
+     ,basic_g(icm)%vc,basic_g(icm)%vc,'V')
    call topset(mmzp(icm),mmxp(icm),mmyp(icm)  &
      ,1,mmxp(icm),1,mmyp(icm),mibcon(icm)  &
-     ,basic_g(icm)%pc(1,1,1),basic_g(icm)%pc(1,1,1),'P')
+     ,basic_g(icm)%pc,basic_g(icm)%pc,'P')
 endif
 
 do nv=1,num_scalar(ifm)
