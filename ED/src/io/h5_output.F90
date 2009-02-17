@@ -13,8 +13,6 @@ subroutine h5_output(vtype)
        var_table_vector,     &
        num_var
 
-  use mem_sites,only : maxcohort
-
   use misc_coms, only : ffilout, &
                         sfilout, &
 	                itimea,  &

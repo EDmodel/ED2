@@ -56,6 +56,7 @@ subroutine copy_nl(copy_type)
 
   use optimiz_coms, only : ioptinpt
 
+  use canopy_radiation_coms, only : crown_mod
 
 
   implicit none
@@ -130,6 +131,7 @@ subroutine copy_nl(copy_type)
      iphen_scheme  = nl%iphen_scheme
      repro_scheme  = nl%repro_scheme
      lapse_scheme  = nl%lapse_scheme
+     crown_mod     = nl%crown_mod
      n_plant_lim   = nl%n_plant_lim
      n_decomp_lim  = nl%n_decomp_lim
      include_fire  = nl%include_fire

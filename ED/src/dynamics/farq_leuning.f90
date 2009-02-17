@@ -1006,8 +1006,8 @@ subroutine prep_lphys_solution(photosyn_pathway, Vm0, met, Vm_low_temp,  &
 
      ! C3 parameters
      vmdble = dble(Vm0) * dble(arrhenius(met%tl, 1.0, 3000.0)) / &
-              ( (dble(1.0) + dexp(dble(0.4)*dble(Vm_low_temp - met%tl) )) * &
-                (dble(1.0) + dexp(dble(0.4)*dble(met%tl - 45.0 ))) )
+              ( (1.0d+0 + dexp(0.4d+0*dble(Vm_low_temp - met%tl) )) * &
+                (1.0d+0 + dexp(0.4d+0*dble(met%tl - 45.0 ))) )
      apar%vm = sngl(vmdble)
 
      ! Adjust Vm according to the aging factor.

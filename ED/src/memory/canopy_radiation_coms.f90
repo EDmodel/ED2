@@ -58,4 +58,8 @@ real(kind=8), dimension(n_pft) :: emis_v  ! Emissivity of the vegetation
 real :: rlong_min     !! minimum allowed downward longwave radiation (w/m2)
 real :: veg_temp_min  !! minimum allowed vegetation temperature
 
+integer :: crown_mod  !! Crown model
+                      !! 0 = Original
+                      !! 1 = finite-crown mixing model
+
 End Module canopy_radiation_coms
