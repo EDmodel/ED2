@@ -411,6 +411,7 @@
    IUPMETHOD   = 1,          ! How to find the level in which updrafts originate:
                              ! 1. Maximum moist static energy;
                              ! 2. PBL top (if IDIFFK=7, uses the pblhgt from turbulence)
+                             ! 3. Most turbulent layer (max. TKE);
    
    IUPSTRM     = 0,          ! Check for previous upstream downdraft?
                              ! 0. No, thanks

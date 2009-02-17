@@ -118,6 +118,8 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
    real                                           :: dlsmdz,d2q3dz2,janjc,janjd,janjg
    real                                           :: janjh,janji,janjp1,janjt1
    logical                                        :: stable,neutral
+   !----- Constants -----------------------------------------------------------------------!
+   real, parameter                                :: ustarmin=0.1
    !----- Function ------------------------------------------------------------------------!
    real, external                                 :: cbrt
    !---------------------------------------------------------------------------------------!
@@ -155,8 +157,6 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
             vctr32(k)=vctr33(k)*vctr1(k)
             !----- Deriving some variables that are needed for PBL depth estimation -------!
             vctr21(k)=virtt(theta(k,i,j),rv(k,i,j),rtp(k,i,j))
-            vctr29(k)=up(k,i,j)
-            vctr31(k)=vp(k,i,j)
             vctr29(k)=0.5*(up(k,i,j)+up(k,i-1,j)) 
             vctr31(k)=0.5*(vp(k,i,j)+vp(k,i,j-jd))
          end do !----- k=k2,m1-1 !
@@ -186,6 +186,7 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
             ustarw = ustarw + ustar(i,j,p)                     * patch_area(i,j,p)
             tstarw = tstarw + tstar(i,j,p)                     * patch_area(i,j,p)
          end do
+         ustarw = max(ustarw,ustarmin)
          !---------------------------------------------------------------------------------!
          ! Here I'll find the <w'Theta'>g and truncate for small values                    !
          !---------------------------------------------------------------------------------!

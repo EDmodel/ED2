@@ -35,27 +35,33 @@ subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,tke,qice,qliq,t
    integer               , intent(inout)  :: ierr      ! Error flag
    integer               , intent(out)    :: k22       ! Updraft origin level
    !----- Constant. Avoding using too levels too close to the surface ---------------------!
-   integer               , parameter      :: kstart=3  ! Minimum level
+   integer               , parameter      :: kstart=2  ! Minimum level
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   !    Three possibilities, depending on the user's preference:                           !
+   !    Four possibilities, depending on the user's preference:                            !
    !    a. The user wants to use the PBL height (iupmethod=2), and the user is running     !
    !       Nakanishi/Niino turbulence (positive pblidx, previously computed);              !
    !    b. The user wants to use the PBL height (iupmethod=2), other turbulence was used   !
    !    (pblidx is always zero in this case). Find PBL here.                               !
    !    c. The user wants to use the maximum thetae_iv as the first guess, for maximum     !
    !       instability.                                                                    !
+   !    d. The user wants to use the most turbulent level as the updraft origin.           !
    !---------------------------------------------------------------------------------------!
-   if (iupmethod == 2 .and. kpbl /= 0) then
-      k22 = kpbl
-   elseif (iupmethod == 2 .and. kpbl == 0) then
-      call grell_find_pbl_height(mkx,mgmzp,z,tke,qliq,qice,k22)
-   else
+   select case (iupmethod)
+   case (1) ! Maximum Thetae_iv
       k22 = (kstart-1) + maxloc(theiv_cup(kstart:kbmax),dim=1)
-   end if
+   case (2) ! PBL top  
+      if (kpbl /= 0) then
+         k22 = kpbl
+      else
+         call grell_find_pbl_height(mkx,mgmzp,z,tke,qliq,qice,k22)
+      end if
+   case (3) ! Most turbulent
+      k22 = (kstart-1) + maxloc(tke(kstart:kbmax),dim=1)
+   end select
    !---------------------------------------------------------------------------------------!
 
 

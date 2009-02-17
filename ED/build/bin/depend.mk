@@ -128,7 +128,8 @@ ed_init_atm.o : $(ED_INIT)/ed_init_atm.f90 misc_coms.o ed_state_vars.o soil_coms
 
 ed_load_namelist.o : $(ED_IO)/ed_load_namelist.f90 ename_coms.o max_dims.o soil_coms.o     \
 	met_driver_coms.o mem_sites.o physiology_coms.o phenology_coms.o decomp_coms.o     \
-	disturb_coms.o pft_coms.o misc_coms.o grid_coms.o ed_misc_coms.o optimiz_coms.o
+	disturb_coms.o pft_coms.o misc_coms.o grid_coms.o ed_misc_coms.o optimiz_coms.o    \
+	canopy_radiation_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

@@ -566,7 +566,7 @@ subroutine col2(mx,my,mz,mc2,j1,j2,dtlt)
 
    use rconstants
    use micphys
-   use therm_lib, only : qtc
+   use therm_lib, only : qtk
    use micro_coms, only : alpha_coll2,beta_coll2
 
    implicit none
@@ -631,7 +631,8 @@ subroutine col2(mx,my,mz,mc2,j1,j2,dtlt)
       qrcoal = qrcx + qrcy
       qcoal  = qrcoal / max(1.e-13,rcoal)
 
-      call qtc(qcoal,tcoal,fracliq)
+      call qtk(qcoal,tcoal,fracliq)
+      tcoal = tcoal - t00
 
       coalliq = rcoal * fracliq
       coalice = rcoal - coalliq
@@ -711,8 +712,9 @@ end subroutine col2
 subroutine col3(mx,my,mz,j1,j2)
 
    use micphys
-   use therm_lib, only : qtc
+   use therm_lib, only : qtk
    use micro_coms, only : alpha_coll3,beta_coll3
+   use rconstants, only : t00
 
    implicit none
 
@@ -764,7 +766,8 @@ subroutine col3(mx,my,mz,j1,j2)
       qrcoal = qrcx + qrcy
       qcoal  = qrcoal / (1.e-20 + rcoal)
 
-      call qtc(qcoal,tcoal,fracliq)
+      call qtk(qcoal,tcoal,fracliq)
+      tcoal = tcoal - t00
 
       coalliq = rcoal * fracliq
       coalice = rcoal - coalliq

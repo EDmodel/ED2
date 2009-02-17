@@ -2866,15 +2866,15 @@ module therm_lib
       !------------------------------------------------------------------------------------!
 
 
-      !----- Negative internal energy, frozen, all ice ------------------------------------!
+      !----- Internal energy below qwfroz, all ice  ---------------------------------------!
       if (q <= qicet3) then
          fracliq = 0.
          tempk   = q * cicei 
-      !----- Positive internal energy, over latent heat of melting, all liquid ------------!
+      !----- Internal energy, above qwmelt, all liquid ------------------------------------!
       elseif (q >= qliqt3) then
          fracliq = 1.
          tempk   = q * cliqi + tsupercool
-      !----- Changing phase, it must be at triple point -----------------------------------!
+      !----- Changing phase, it must be at freezing point ---------------------------------!
       else
          fracliq = (q-qicet3) * allii
          tempk   = t3ple
@@ -2883,34 +2883,6 @@ module therm_lib
 
       return
    end subroutine qtk
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    This subroutine computes the temperature, and the fraction of liquid water from    !
-   ! the internal energy. The only difference from qtk (which is actually called here) is  !
-   ! that the temperature is returned in Celsius.                                          !
-   !---------------------------------------------------------------------------------------!
-   subroutine qtc(q,tempc,fracliq)
-      use rconstants, only: t00
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      real, intent(in)  :: q        ! Internal energy                             [   J/kg]
-      real, intent(out) :: tempc    ! Temperature                                 [      K]
-      real, intent(out) :: fracliq  ! Liquid Fraction (0-1)                       [    ---]
-      !------------------------------------------------------------------------------------!
-
-      call qtk(q,tempc,fracliq)
-      tempc = tempc - t00
-
-      return
-   end subroutine qtc
    !=======================================================================================!
    !=======================================================================================!
 
@@ -2945,25 +2917,29 @@ module therm_lib
       !------------------------------------------------------------------------------------!
       
       !------------------------------------------------------------------------------------!
-      !    This is analogous to the qtk computation, we should analyse the sign and        !
-      ! magnitude of the internal energy to choose between liquid, ice, or both.           !
+      !    This is analogous to the qtk computation, we should analyse the magnitude of    !
+      ! the internal energy to choose between liquid, ice, or both by comparing with our.  !
+      ! know boundaries.                                                                   !
       !------------------------------------------------------------------------------------!
 
-      !----- Negative internal energy, frozen, all ice ------------------------------------!
+      !----- Internal energy below qwfroz, all ice  ---------------------------------------!
       if (qw < qwfroz) then
          fracliq = 0.
          tempk   = qw  / (cice * w + dryhcap)
-      !----- Positive internal energy, over latent heat of melting, all liquid ------------!
+      !----- Internal energy, above qwmelt, all liquid ------------------------------------!
       elseif (qw > qwmelt) then
          fracliq = 1.
          tempk   = (qw + w * cliq * tsupercool) / (dryhcap + w*cliq)
-      !----- Changing phase, it must be at triple point -----------------------------------!
+      !------------------------------------------------------------------------------------!
+      !    Changing phase, it must be at freezing point.  The max and min are here just to !
+      ! avoid tiny deviations beyond 0. and 1. due to floating point arithmetics.          !
+      !------------------------------------------------------------------------------------!
       elseif (w > 0.) then
-         fracliq = (qw - qwfroz) * allii / w
+         fracliq = min(1.,max(0.,(qw - qwfroz) * allii / w))
          tempk = t3ple
-      !----- No water, but it must be at triple point (qw = qwfroz = qwmelt) --------------!
+      !----- No water, but it must be at freezing point (qw = qwfroz = qwmelt) ------------!
       else
-         fracliq = 0.0
+         fracliq = 0.
          tempk   = t3ple
       end if
       !------------------------------------------------------------------------------------!

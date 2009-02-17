@@ -195,7 +195,6 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff,rhos,vels   &
    print*,'Too many steps in routine odeint'
    call print_patch_ar(integration_buff%y, csite,ipa, lsl,atm_tmp,atm_shv,atm_co2,prss     &
                       ,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg)
-   call fatal_error('Too many steps, I give up!','odeint_ar','rk4_integ_utils.f90')
 
    return
 end subroutine odeint_ar
@@ -726,7 +725,7 @@ subroutine print_errmax_ar(errmax,yerr,yscal,cpatch,lsl,y,ytemp)
    write(unit=*,fmt='(a)'  ) 
    write(unit=*,fmt='(80a)') ('-',k=1,80)
    write(unit=*,fmt='(a)'      ) ' Patch level variables, soil layers:'
-   write(unit=*,fmt='(6(a,1x))')  'Name            ','       Level','   Max.Error'         &
+   write(unit=*,fmt='(6(a,1x))')  'Name            ',' Level','   Max.Error'         &
                                 &,'   Abs.Error','       Scale','Problem(T|F)'
 
    do k=lsl,nzg
@@ -734,7 +733,8 @@ subroutine print_errmax_ar(errmax,yerr,yscal,cpatch,lsl,y,ytemp)
       error_soil_water = sngl(yerr%soil_water(k))
       scale_soil_water = sngl(yscal%soil_water(k))
       troublemaker = large_error(error_soil_water,scale_soil_water)
-      print*,'SOIL_WATER:',k,errmax,yerr%soil_water(k),yscal%soil_water(k),troublemaker
+      write(unit=*,fmt=lyrfmt) 'SOIL_WATER:',k,errmax,sngl(yerr%soil_water(k))             &
+                                            ,sngl(yscal%soil_water(k)),troublemaker
 
       errmax       = max(errmax,abs(yerr%soil_energy(k)/yscal%soil_energy(k)))
       troublemaker = large_error(yerr%soil_energy(k),yscal%soil_energy(k))
@@ -746,7 +746,7 @@ subroutine print_errmax_ar(errmax,yerr,yscal,cpatch,lsl,y,ytemp)
       write(unit=*,fmt='(a)'  ) 
       write(unit=*,fmt='(80a)') ('-',k=1,80)
       write(unit=*,fmt='(a)'      ) ' Patch level variables, water/snow layers:'
-      write(unit=*,fmt='(6(a,1x))')  'Name            ','       Level','   Max.Error'      &
+      write(unit=*,fmt='(6(a,1x))')  'Name            ',' Level','   Max.Error'      &
                                 &,'   Abs.Error','       Scale','Problem(T|F)'
       do k=1,yerr%nlev_sfcwater
          errmax       = max(errmax,abs(yerr%sfcwater_energy(k)/yscal%sfcwater_energy(k)))
@@ -1491,7 +1491,8 @@ subroutine print_patch_ar(y,csite,ipa, lsl,atm_tmp,atm_shv,atm_co2,prss,exner,rh
                                     , nzs               ! ! intent(in) 
    use canopy_radiation_coms , only : lai_min           ! ! intent(in) 
    use misc_coms             , only : current_time      ! ! intent(in) 
-   use therm_lib             , only : qtk               ! ! subroutine 
+   use therm_lib             , only : qtk               & ! subroutine 
+                                    , qwtk              ! ! subroutine
    use soil_coms             , only : min_sfcwater_mass ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -1514,7 +1515,7 @@ subroutine print_patch_ar(y,csite,ipa, lsl,atm_tmp,atm_shv,atm_co2,prss,exner,rh
    type(patchtype)    , pointer    :: cpatch
    integer                         :: k
    integer                         :: ico
-   real                            :: virtual_temp, virtual_fliq
+   real                            :: virtual_temp, virtual_fliq, veg_temp, veg_fliq
    !---------------------------------------------------------------------------------------!
 
    cpatch => csite%patch(ipa)
@@ -1547,21 +1548,32 @@ subroutine print_patch_ar(y,csite,ipa, lsl,atm_tmp,atm_shv,atm_co2,prss,exner,rh
    write (unit=*,fmt='(a,1x,es12.5)') ' Precip. heat  flux : ',qpcpg
    write (unit=*,fmt='(a,1x,es12.5)') ' Precip. depth flux : ',dpcpg
 
-   write (unit=*,fmt='(80a)') ('-',k=1,80)
+   write (unit=*,fmt='(80a)') ('=',k=1,80)
    write (unit=*,fmt='(a)'  ) 'Cohort information (only those with LAI > LAI_MIN shown): '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
-   write (unit=*,fmt='(2(a7,1x),10(a12,1x))')                                              &
+   write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
          '    PFT','KRDEPTH','      NPLANT','         LAI','         DBH','       BDEAD'   &
-                           &,'      BALIVE','  VEG_ENERGY','   VEG_WATER'                  &
-                           &,'     FS_OPEN','         FSW','         FSN'
+                           &,'      BALIVE','     FS_OPEN','         FSW','         FSN'
    do ico = 1,cpatch%ncohorts
-      if(cpatch%lai(ico) > lai_min)then
-         write(unit=*,fmt='(2(i7,1x),10(es12.5,1x))') cpatch%pft(ico), cpatch%krdepth(ico) &
+      if (cpatch%lai(ico) > lai_min) then
+         write(unit=*,fmt='(2(i7,1x),8(es12.5,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
               ,cpatch%nplant(ico),cpatch%lai(ico),cpatch%dbh(ico),cpatch%bdead(ico)        &
-              ,cpatch%balive(ico),y%veg_energy(ico),y%veg_water(ico),cpatch%fs_open(ico)   &
-              ,cpatch%fsw(ico),cpatch%fsn(ico)
+              ,cpatch%balive(ico),cpatch%fs_open(ico),cpatch%fsw(ico),cpatch%fsn(ico)
       end if
    end do
+   write (unit=*,fmt='(80a)') ('-',k=1,80)
+   write (unit=*,fmt='(2(a7,1x),5(a12,1x))')                                               &
+         '    PFT','KRDEPTH','  VEG_ENERGY','   VEG_WATER' ,'   VEG_HCAP'                  &
+                           &,'    VEG_TEMP','    VEG_FLIQ'
+   do ico = 1,cpatch%ncohorts
+      if (cpatch%lai(ico) > lai_min) then
+         call qwtk(y%veg_energy(ico),y%veg_water(ico),cpatch%hcapveg(ico)                  &
+                  ,veg_temp,veg_fliq)
+         write(unit=*,fmt='(2(i7,1x),5(es12.5,1x))') cpatch%pft(ico), cpatch%krdepth(ico) &
+               ,y%veg_energy(ico),y%veg_water(ico),cpatch%hcapveg(ico),veg_temp,veg_fliq
+      end if
+   end do
+   write (unit=*,fmt='(80a)') ('=',k=1,80)
    write (unit=*,fmt='(a)'  ) ' '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
