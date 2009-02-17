@@ -109,54 +109,54 @@ subroutine node_sendnbc(ifm,icm)
   ! Put variables into buffer. All need coarse grid density weighting first.
 
         iptr=0
-        call mknest_buff(1,basic_g(icm)%uc(1,1,1),buffnest(1+iptr)  &
-            ,basic_g(icm)%dn0(1,1,1),mmzp(icm),mmxp(icm),mmyp(icm)  &
+        call mknest_buff(1,basic_g(icm)%uc,buffnest(1+iptr:)  &
+            ,basic_g(icm)%dn0,mmzp(icm),mmxp(icm),mmyp(icm)   &
             ,mi0(icm),mj0(icm),i1,i2,j1,j2,k1,k2,mynum,nm,nv)
         iptr=iptr+mtp
-        call mknest_buff(2,basic_g(icm)%vc(1,1,1),buffnest(1+iptr)  &
-            ,basic_g(icm)%dn0(1,1,1),mmzp(icm),mmxp(icm),mmyp(icm)  &
+        call mknest_buff(2,basic_g(icm)%vc,buffnest(1+iptr:)  &
+            ,basic_g(icm)%dn0,mmzp(icm),mmxp(icm),mmyp(icm)   &
             ,mi0(icm),mj0(icm),i1,i2,j1,j2,k1,k2,mynum,nm,nv)
         iptr=iptr+mtp
-        call mknest_buff(3,basic_g(icm)%wc(1,1,1),buffnest(1+iptr)  &
-            ,basic_g(icm)%dn0(1,1,1),mmzp(icm),mmxp(icm),mmyp(icm)  &
+        call mknest_buff(3,basic_g(icm)%wc,buffnest(1+iptr:)  &
+            ,basic_g(icm)%dn0,mmzp(icm),mmxp(icm),mmyp(icm)   &
             ,mi0(icm),mj0(icm),i1,i2,j1,j2,k1,k2,mynum,nm,nv)
         iptr=iptr+mtp
-        call mknest_buff(4,basic_g(icm)%pc(1,1,1),buffnest(1+iptr)  &
-            ,basic_g(icm)%dn0(1,1,1),mmzp(icm),mmxp(icm),mmyp(icm)  &
+        call mknest_buff(4,basic_g(icm)%pc,buffnest(1+iptr:)  &
+            ,basic_g(icm)%dn0,mmzp(icm),mmxp(icm),mmyp(icm)   &
             ,mi0(icm),mj0(icm),i1,i2,j1,j2,k1,k2,mynum,nm,nv)
         iptr=iptr+mtp
 
         do nv=1,num_scalar(ifm)
-           call mknest_buff(5,scalar_tab(nv,icm)%var_p,buffnest(1+iptr)  &
-               ,basic_g(icm)%dn0(1,1,1),mmzp(icm),mmxp(icm),mmyp(icm)  &
-               ,mi0(icm),mj0(icm),i1,i2,j1,j2,k1,k2,mynum,nm,nv)         
+           call mknest_buff(5,scalar_tab(nv,icm)%var_p,buffnest(1+iptr:)  &
+               ,basic_g(icm)%dn0,mmzp(icm),mmxp(icm),mmyp(icm)            &
+               ,mi0(icm),mj0(icm),i1,i2,j1,j2,k1,k2,mynum,nm,nv)
            iptr=iptr+mtp
         enddo
 
 
         ipos = 1
-        call MPI_Pack(i1,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(i1,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-        call MPI_Pack(i2,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(i2,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-        call MPI_Pack(j1,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(j1,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-        call MPI_Pack(j2,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(j2,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-        call MPI_Pack(k1,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(k1,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-        call MPI_Pack(k2,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(k2,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-        call MPI_Pack(mynum,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(mynum,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-        call MPI_Pack(nvar,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(nvar,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-        call MPI_Pack(iptr,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(iptr,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
 
-        call MPI_Pack(buffnest,iptr,MPI_REAL,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(buffnest,iptr,MPI_REAL,node_buffs(nm)%lbc_send_buff, &
                       node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-        call MPI_Isend(node_buffs(nm)%lbc_send_buff(1),  &
+        call MPI_Isend(node_buffs(nm)%lbc_send_buff,  &
              ipos - 1,  &
              MPI_PACKED,ipaths(5,itype,ifm,nm),5000+icm,MPI_COMM_WORLD,isend_req(nm),ierr)
      endif
@@ -297,27 +297,27 @@ subroutine node_getnbc(ifm,icm)
 
      if(iget_paths(itype,ifm,nm).ne.0) then
         ipos = 1
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,  &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,     &
                         ipos,i1c(nm),1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,  &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,     &
                         ipos,i2c(nm),1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,  &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,     &
                         ipos,j1c(nm),1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,  &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,     &
                         ipos,j2c(nm),1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,  &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,     &
                         ipos,k1c(nm),1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,  &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,     &
                         ipos,k2c(nm),1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,  &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,     &
                         ipos,machf,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,  &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,     &
                         ipos,nvar,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,  &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,     &
                         ipos,nwords,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
 
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
-                      buffnest(1+iptr),nwords,MPI_REAL,MPI_COMM_WORLD,ierr)
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,     &
+                        ipos,buffnest(1+iptr:),nwords,MPI_REAL,MPI_COMM_WORLD,ierr)
         iptc(nm)=1+iptr
         iptv(nm)=0
 
@@ -331,15 +331,15 @@ subroutine node_getnbc(ifm,icm)
 
   !            First, construct coarse grid variable in scr1.
 
-     call azero(ubound(scratch%scr1,1),scratch%scr1(1))
-     call azero(ubound(scratch%scr2,1),scratch%scr2(1))
+     call azero(ubound(scratch%scr1,1),scratch%scr1)
+     call azero(ubound(scratch%scr2,1),scratch%scr2)
      do nm=1,nmachs
         if(iget_paths(itype,ifm,nm).ne.0) then
            nzc=k2c(nm)-k1c(nm)+1
            nxc=i2c(nm)-i1c(nm)+1
            nyc=j2c(nm)-j1c(nm)+1
            mtp=nzc*nxc*nyc
-           call unmkbuff(scratch%scr1(1),buffnest(iptc(nm)+iptv(nm))  &
+           call unmkbuff(scratch%scr1,buffnest(iptc(nm)+iptv(nm):)  &
                 ,maxnzp,maxnxp,maxnyp,nzc,nxc,nyc  &
                 ,i1c(nm),i2c(nm),j1c(nm),j2c(nm),k1c(nm),k2c(nm),mynum)
 
@@ -350,45 +350,45 @@ subroutine node_getnbc(ifm,icm)
   !            Do the actual interpolation and put stuff into the "b" array
 
      if(nv.eq.1) then
-        call par_bintp(scratch%scr1(1),scratch%scr2(1)  &
-             ,basic_g(ifm)%dn0(1,1,1)  &
+        call par_bintp(scratch%scr1,scratch%scr2  &
+             ,basic_g(ifm)%dn0  &
              ,maxnzp,maxnxp,maxnyp,nnzp(ifm)  &
              ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
              ,ifm,1,mi0(ifm),mj0(ifm),mibcon(ifm)  &
-             ,nbounds(ifm)%bux(1,1,1),nbounds(ifm)%buy(1,1,1)  &
-             ,nbounds(ifm)%buz(1,1,1),mynum)
+             ,nbounds(ifm)%bux,nbounds(ifm)%buy  &
+             ,nbounds(ifm)%buz,mynum)
      elseif(nv.eq.2) then
-        call par_bintp(scratch%scr1(1),scratch%scr2(1)  &
-             ,basic_g(ifm)%dn0(1,1,1)  &
+        call par_bintp(scratch%scr1,scratch%scr2  &
+             ,basic_g(ifm)%dn0  &
              ,maxnzp,maxnxp,maxnyp,nnzp(ifm)  &
              ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
              ,ifm,2,mi0(ifm),mj0(ifm),mibcon(ifm)  &
-             ,nbounds(ifm)%bvx(1,1,1),nbounds(ifm)%bvy(1,1,1)  &
-             ,nbounds(ifm)%bvz(1,1,1),mynum)
+             ,nbounds(ifm)%bvx,nbounds(ifm)%bvy  &
+             ,nbounds(ifm)%bvz,mynum)
      elseif(nv.eq.3) then
-        call par_bintp(scratch%scr1(1),scratch%scr2(1)  &
-             ,basic_g(ifm)%dn0(1,1,1)  &
+        call par_bintp(scratch%scr1,scratch%scr2  &
+             ,basic_g(ifm)%dn0  &
              ,maxnzp,maxnxp,maxnyp,nnzp(ifm)  &
              ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
              ,ifm,3,mi0(ifm),mj0(ifm),mibcon(ifm)  &
-             ,nbounds(ifm)%bwx(1,1,1),nbounds(ifm)%bwy(1,1,1)  &
-             ,nbounds(ifm)%bwz(1,1,1),mynum)
+             ,nbounds(ifm)%bwx,nbounds(ifm)%bwy  &
+             ,nbounds(ifm)%bwz,mynum)
      elseif(nv.eq.4) then
-        call par_bintp(scratch%scr1(1),scratch%scr2(1)  &
-             ,basic_g(ifm)%dn0(1,1,1)  &
+        call par_bintp(scratch%scr1,scratch%scr2  &
+             ,basic_g(ifm)%dn0  &
              ,maxnzp,maxnxp,maxnyp,nnzp(ifm)  &
              ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
              ,ifm,4,mi0(ifm),mj0(ifm),mibcon(ifm)  &
-             ,nbounds(ifm)%bpx(1,1,1),nbounds(ifm)%bpy(1,1,1)  &
-             ,nbounds(ifm)%bpz(1,1,1),mynum)
+             ,nbounds(ifm)%bpx,nbounds(ifm)%bpy  &
+             ,nbounds(ifm)%bpz,mynum)
      else
-        call par_bintp(scratch%scr1(1),scratch%scr2(1)  &
-             ,basic_g(ifm)%dn0(1,1,1)  &
+        call par_bintp(scratch%scr1,scratch%scr2  &
+             ,basic_g(ifm)%dn0  &
              ,maxnzp,maxnxp,maxnyp,nnzp(ifm)  &
              ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
              ,ifm,5,mi0(ifm),mj0(ifm),mibcon(ifm)  &
-             ,nbounds(ifm)%bsx(1,1,1,nv-4),nbounds(ifm)%bsy(1,1,1,nv-4)  &
-             ,nbounds(ifm)%bsz(1,1,1,nv-4),mynum)
+             ,nbounds(ifm)%bsx(:,:,:,nv-4),nbounds(ifm)%bsy(:,:,:,nv-4)  &
+             ,nbounds(ifm)%bsz(:,:,:,nv-4),mynum)
      endif
 
 

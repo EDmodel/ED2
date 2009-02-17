@@ -57,22 +57,22 @@ integer :: mzp,mxp,myp,i0,j0,ia,iz,ja,jz,izu,jzv
 if(icorflg.eq.0) return
 
 call corlsu(mzp,mxp,myp,i0,j0,ia,izu,ja,jz  &
-     ,basic_g(ngrid)%uc(1,1,1)   &
-     ,basic_g(ngrid)%vc(1,1,1)   &
-     ,tend%ut(1)                 &
-     ,scratch%scr1(1)            &
-     ,grid_g(ngrid)%topu(1,1)    &
-     ,grid_g(ngrid)%rtgu(1,1)    &
-     ,basic_g(ngrid)%fcoru(1,1)  )
+     ,basic_g(ngrid)%uc   &
+     ,basic_g(ngrid)%vc   &
+     ,tend%ut                 &
+     ,scratch%scr1            &
+     ,grid_g(ngrid)%topu    &
+     ,grid_g(ngrid)%rtgu    &
+     ,basic_g(ngrid)%fcoru  )
 
 call corlsv(mzp,mxp,myp,i0,j0,ia,iz,ja,jzv  &
-     ,basic_g(ngrid)%uc(1,1,1)   &
-     ,basic_g(ngrid)%vc(1,1,1)   &
-     ,tend%vt(1)                 &
-     ,scratch%scr1(1)            &
-     ,grid_g(ngrid)%topv(1,1)    &
-     ,grid_g(ngrid)%rtgv(1,1)    &
-     ,basic_g(ngrid)%fcorv(1,1)  )
+     ,basic_g(ngrid)%uc   &
+     ,basic_g(ngrid)%vc   &
+     ,tend%vt                 &
+     ,scratch%scr1            &
+     ,grid_g(ngrid)%topv    &
+     ,grid_g(ngrid)%rtgv    &
+     ,basic_g(ngrid)%fcorv  )
 !
 return
 end

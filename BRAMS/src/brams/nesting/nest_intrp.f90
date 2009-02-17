@@ -74,23 +74,17 @@ if (icm .eq. 0) return
 
 !   Don't need B components here, so just pass in bux, etc.
 
-call fmint3(nnzp(icm),nnxp(icm),nnyp(icm),nnzp(ifm),nnxp(ifm),nnyp(ifm)   &
-   ,maxnzp,maxnxp,maxnyp,ifm,icm,nnstbot(ifm),nnsttop(ifm),jdim,1,0,0,'t' &
-   ,basic_g(icm)%dn0(1,1,1),basic_g(ifm)%dn0(1,1,1)  &
-   ,basic_g(icm)%dn0(1,1,1),basic_g(ifm)%dn0(1,1,1)  &
-   ,scratch%scr1(1),scratch%scr2(1)  &
-   ,grid_g(ifm)%topt(1,1),scratch%vt2da(1)  &
-   ,nbounds(ifm)%bux(1,1,1),nbounds(ifm)%buy(1,1,1)  &
-   ,nbounds(ifm)%buz(1,1,1),mynum)
+call fmint3(nnzp(icm),nnxp(icm),nnyp(icm),nnzp(ifm),nnxp(ifm),nnyp(ifm)                    &
+           ,maxnzp,maxnxp,maxnyp,ifm,icm,nnstbot(ifm),nnsttop(ifm),jdim,1,0,0,'t'          &
+           ,basic_g(icm)%dn0,basic_g(ifm)%dn0,basic_g(icm)%dn0,basic_g(ifm)%dn0            &
+           ,scratch%scr1,scratch%scr2,grid_g(ifm)%topt,scratch%vt2da                       &
+           ,nbounds(ifm)%bux,nbounds(ifm)%buy,nbounds(ifm)%buz,mynum)
 
-call fmint3(nnzp(icm),nnxp(icm),nnyp(icm),nnzp(ifm),nnxp(ifm),nnyp(ifm)   &
-   ,maxnzp,maxnxp,maxnyp,ifm,icm,nnstbot(ifm),nnsttop(ifm),jdim,1,1,0,'t' &
-   ,basic_g(icm)%th0(1,1,1),basic_g(ifm)%th0(1,1,1)  &
-   ,basic_g(icm)%dn0(1,1,1),basic_g(ifm)%dn0(1,1,1)  &
-   ,scratch%scr1(1),scratch%scr2(1)  &
-   ,grid_g(ifm)%topt(1,1),scratch%vt2da(1)  &
-   ,nbounds(ifm)%bux(1,1,1),nbounds(ifm)%buy(1,1,1)  &
-   ,nbounds(ifm)%buz(1,1,1),mynum)
+call fmint3(nnzp(icm),nnxp(icm),nnyp(icm),nnzp(ifm),nnxp(ifm),nnyp(ifm)                    &
+           ,maxnzp,maxnxp,maxnyp,ifm,icm,nnstbot(ifm),nnsttop(ifm),jdim,1,1,0,'t'          &
+           ,basic_g(icm)%th0,basic_g(ifm)%th0,basic_g(icm)%dn0,basic_g(ifm)%dn0            &
+           ,scratch%scr1,scratch%scr2,grid_g(ifm)%topt,scratch%vt2da                       &
+           ,nbounds(ifm)%bux,nbounds(ifm)%buy,nbounds(ifm)%buz,mynum)
 
 c1 = rgas / (cp - rgas)
 c2 = cp * (rgas / p00) ** c1
@@ -103,26 +97,20 @@ do j = 1,nnyp(ifm)
    enddo
 enddo
 
-call fillscr(1,maxnxp,maxnyp,1,nnxp(icm),nnyp(icm),1,1  &
-   ,scratch%scr1(1),grid_g(icm)%topt(1,1))
-call eintp(scratch%scr1(1),scratch%scr2(1)  &
-   ,1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),ifm,2,'t',0,0)
-call fillvar(1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),1,1  &
-   ,scratch%scr2(1),scratch%scr1(1))
+call fillscr(1,maxnxp,maxnyp,1,nnxp(icm),nnyp(icm),1,1,scratch%scr1,grid_g(icm)%topt)
+call eintp(scratch%scr1,scratch%scr2,1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),ifm,2,'t',0,0)
+call fillvar(1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),1,1,scratch%scr2,scratch%scr1)
 
-call rtgintrp(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-   ,basic_g(ifm)%th0(1,1,1)  &
-   ,scratch%scr1(1),grid_g(ifm)%topt(1,1),ifm,'t')
-call rtgintrp(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-   ,basic_g(ifm)%pi0(1,1,1)  &
-   ,scratch%scr1(1),grid_g(ifm)%topt(1,1),ifm,'t')
+call rtgintrp(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%th0,scratch%scr1                  &
+             ,grid_g(ifm)%topt,ifm,'t')
+call rtgintrp(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%pi0,scratch%scr1                  &
+             ,grid_g(ifm)%topt,ifm,'t')
 
 
 ! Define dn0u and dn0v
 
-call fill_dn0uv(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-   ,basic_g(ifm)%dn0(1,1,1) &
-   ,basic_g(ifm)%dn0u(1,1,1),basic_g(ifm)%dn0v(1,1,1))
+call fill_dn0uv(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%dn0,basic_g(ifm)%dn0u           &
+               ,basic_g(ifm)%dn0v )
 
 return
 end
@@ -144,22 +132,17 @@ integer :: ifm,icm
 
 icm = nxtnest(ifm)
 if (icm .eq. 0) return
-call fillscr(1,maxnxp,maxnyp,1,nnxp(icm),nnyp(icm),1,1  &
-   ,scratch%scr1(1),grid_g(icm)%topt(1,1))
-call eintp(scratch%scr1(1),scratch%scr2(1)  &
-   ,1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),ifm,2,'t',0,0)
-call fillvar(1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),1,1  &
-   ,scratch%scr2(1),scratch%scr1(1))
+call fillscr(1,maxnxp,maxnyp,1,nnxp(icm),nnyp(icm),1,1,scratch%scr1,grid_g(icm)%topt)
+call eintp(scratch%scr1,scratch%scr2,1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),ifm,2,'t',0,0)
+call fillvar(1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),1,1,scratch%scr2,scratch%scr1)
 
-call rtgintrp(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-   ,basic_g(ifm)%dn0(1,1,1)  &
-   ,scratch%scr1(1),grid_g(ifm)%topt(1,1),ifm,'t')
+call rtgintrp(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%dn0,scratch%scr1                  &
+             ,grid_g(ifm)%topt,ifm,'t')
 
 ! Define dn0u and dn0v
 
-call fill_dn0uv(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-   ,basic_g(ifm)%dn0(1,1,1)  &
-   ,basic_g(ifm)%dn0u(1,1,1),basic_g(ifm)%dn0v(1,1,1))
+call fill_dn0uv(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%dn0,basic_g(ifm)%dn0u           &
+               ,basic_g(ifm)%dn0v)
 
 return
 end
@@ -826,25 +809,25 @@ subroutine fmint4(var1,var2,dn0xc,dn0xf,vt2da,ifm,icm,vpnt,idwt)
   if (icm .eq. 0) return
 
   call fillscr(maxnzp,maxnxp,maxnyp,nnzp(icm),nnxp(icm),nnyp(icm)  &
-       ,1,nnzp(icm),scratch%scr1(1),var1)
+              ,1,nnzp(icm),scratch%scr1,var1)
 
 
   if (idwt .eq. 1) then
      call dnswt2(maxnzp,maxnxp,maxnyp,nnzp(icm),nnxp(icm),nnyp(icm)  &
-          ,scratch%scr1(1),dn0xc,vpnt,1)
+                ,scratch%scr1,dn0xc,vpnt,1)
   endif
 
-  call eintp(scratch%scr1(1),scratch%scr2(1),maxnzp,maxnxp,maxnyp  &
+  call eintp(scratch%scr1,scratch%scr2,maxnzp,maxnxp,maxnyp  &
        ,nnzp(ifm),nnxp(ifm),nnyp(ifm),ifm,3,vpnt,0,0)
 
   call fillvar(maxnzp,maxnxp,maxnyp,nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-       ,1,nnzp(ifm),scratch%scr2(1),var2)
+       ,1,nnzp(ifm),scratch%scr2,var2)
 
   if (idwt .eq. 1) call dnswt2(nnzp(ifm),nnxp(ifm),nnyp(ifm),nnzp(ifm)  &
        ,nnxp(ifm),nnyp(ifm),var2,dn0xf,vpnt,2)
 
   call rtgintrp(nnzp(ifm),nnxp(ifm),nnyp(ifm),var2,vt2da  &
-       ,grid_g(ifm)%topt(1,1),ifm,vpnt)
+       ,grid_g(ifm)%topt,ifm,vpnt)
 
   return
 end subroutine fmint4
@@ -865,14 +848,12 @@ subroutine fmint2d(icm,ifm,vpnt,var1,var2)
 
   if (icm == 0) return
 
-  call fillscr(1,maxnxp,maxnyp,1,nnxp(icm),nnyp(icm)  &
-       ,1,1,scratch%scr1(1),var1)
+  call fillscr(1,maxnxp,maxnyp,1,nnxp(icm),nnyp(icm),1,1,scratch%scr1,var1)
 
-  call eintp(scratch%scr1(1),scratch%scr2(1),1,maxnxp,maxnyp  &
-       ,1,nnxp(ifm),nnyp(ifm),ifm,2,vpnt,0,0)
+  call eintp(scratch%scr1,scratch%scr2,1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm)               &
+            ,ifm,2,vpnt,0,0)
 
-  call fillvar(1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm)  &
-       ,1,1,scratch%scr2(1),var2)
+  call fillvar(1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),1,1,scratch%scr2,var2)
 
   return
 end subroutine fmint2d

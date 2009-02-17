@@ -41,7 +41,7 @@ subroutine ed_coup_driver()
 
   use soil_coms, only: alloc_soilgrid
   use ed_node_coms , only: mynum,nnodetot,sendnum,recvnum,mmxp,mmyp
-
+  use ed_work_vars , only: ed_dealloc_work,work_e
   implicit none
   real :: w1,w2,w3,wtime_start  ! wall time
   real, external :: walltime    ! wall time
@@ -66,7 +66,7 @@ subroutine ed_coup_driver()
   w1=walltime(wtime_start)
 
   !---------------------------------------------------------------------------!
-  ! STEP (Classified): Set the special diagnostic parameter                   !
+  ! STEP 1: Set the special diagnostic parameter                              !
   !                                                                           !
   !     Checking if the user has indicated a need for any of the fast flux    !
   ! diagnostic variables, these are used in conditions of ifoutput,idoutput   !
@@ -75,15 +75,14 @@ subroutine ed_coup_driver()
   !---------------------------------------------------------------------------!
   fast_diagnostics = ifoutput /= 0 .or. idoutput /= 0 .or. imoutput /= 0
 
-
   !---------------------------------------------------------------------------!
-  ! STEP 1: Set the ED model parameters                                       !
+  ! STEP 2: Set the ED model parameters                                       !
   !---------------------------------------------------------------------------!
   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Load_Ed_Ecosystem_Params...'
   call load_ed_ecosystem_params()
   
   !---------------------------------------------------------------------------!
-  ! STEP 2: Overwrite the parameters in case a XML file is provided           !
+  ! STEP 3: Overwrite the parameters in case a XML file is provided           !
   !---------------------------------------------------------------------------!
 
   if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,602,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
@@ -95,21 +94,21 @@ subroutine ed_coup_driver()
 
   
   !---------------------------------------------------------------------------!
-  ! STEP 3: Allocate soil grid arrays                                         !
+  ! STEP 4: Allocate soil grid arrays                                         !
   !---------------------------------------------------------------------------!
   
   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Alloc_Soilgrid...'
   call alloc_soilgrid()
   
   !---------------------------------------------------------------------------------!
-  ! STEP 4: Set some polygon-level basic information, such as lon/lat/soil texture  !
+  ! STEP 5: Set some polygon-level basic information, such as lon/lat/soil texture  !
   !---------------------------------------------------------------------------------!
   
   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Set_Polygon_Coordinates_Ar...'
   call set_polygon_coordinates_ar()
   
   !---------------------------------------------------------------------------!
-  ! STEP 5: Initialize inherent soil and vegetation properties.               !
+  ! STEP 6: Initialize inherent soil and vegetation properties.               !
   !---------------------------------------------------------------------------!
   
   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Sfcdata_ED...'
@@ -120,7 +119,7 @@ subroutine ed_coup_driver()
        
  
      !-----------------------------------------------------------------------!
-     ! STEP 6A: Initialize the model state as a replicate image of a previous
+     ! STEP 7A: Initialize the model state as a replicate image of a previous
      !          state.
      !-----------------------------------------------------------------------!
 
@@ -136,7 +135,7 @@ subroutine ed_coup_driver()
   else
      
      !------------------------------------------------------------------------!
-     ! STEP 6B: Initialize state properties of polygons/sites/patches/cohorts !
+     ! STEP 7B: Initialize state properties of polygons/sites/patches/cohorts !
      !------------------------------------------------------------------------!
      
      if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Load_Ecosystem_State...'
@@ -145,23 +144,23 @@ subroutine ed_coup_driver()
   end if
 
   !--------------------------------------------------------------------------------!
-  ! STEP 7: Initialize hydrology related variables                                 !
+  ! STEP 8: Initialize hydrology related variables                                 !
   !--------------------------------------------------------------------------------!
 
   if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Initializing Hydrology...'
   call initHydrology()
 
   !-----------------------------------------------------------------------!
-  ! STEP 8: Inform edtypes which atmospheric cell to look at
+  ! STEP 9: Inform edtypes which atmospheric cell to look at
   !          
   !-----------------------------------------------------------------------!
   if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Setting the correspondent atmospheric cells...'
   do ifm=1,ngrids
      call set_edtype_atm(ifm)
-  enddo
+  end do
 
   !-----------------------------------------------------------------------!
-  ! STEP 16: Initialize the flux arrays that pass to the atmosphere
+  ! STEP 10: Initialize the flux arrays that pass to the atmosphere
   !-----------------------------------------------------------------------!
   if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Allocating Transfer Arrays...'
   allocate(wgrid_g(ngrids))
@@ -173,10 +172,8 @@ subroutine ed_coup_driver()
      call initialize_ed2leaf(ifm,mmxp(ifm),mmyp(ifm))
   enddo
 
-  
-
   !-----------------------------------------------------------------------!
-  ! STEP 9: Initialize meteorology                                        !
+  ! STEP 11: Initialize meteorology                                       !
   !-----------------------------------------------------------------------!
   
   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Initializing meteorology...'
@@ -187,7 +184,7 @@ subroutine ed_coup_driver()
 
      
   !-----------------------------------------------------------------------!
-  ! STEP 10. Initialize ed fields that depend on the atmosphere
+  ! STEP 12. Initialize ed fields that depend on the atmosphere
   !-----------------------------------------------------------------------!
   
   if (trim(runtype) /= 'HISTORY') then
@@ -196,7 +193,7 @@ subroutine ed_coup_driver()
   endif
 
   !-----------------------------------------------------------------------!
-  ! STEP 10.5. Initialize upwelling long wave and albedo
+  ! STEP 13. Initialize upwelling long wave and albedo
   !            from sst and air temperature.
   !-----------------------------------------------------------------------!
   
@@ -205,7 +202,7 @@ subroutine ed_coup_driver()
 
 
   !-----------------------------------------------------------------------!
-  ! STEP 11. Initialized some derived variables. This must be done        !
+  ! STEP 14. Initialized some derived variables. This must be done        !
   !          outside init_full_history_restart because it depends on some !
   !          meteorological variables that are initialized at step 9.     !
   !-----------------------------------------------------------------------!
@@ -216,7 +213,7 @@ subroutine ed_coup_driver()
   end if
   
   !-----------------------------------------------------------------------!
-  ! STEP 12. Fill the variable data-tables with all of the state          !
+  ! STEP 15. Fill the variable data-tables with all of the state          !
   !          data.  Also calculate the indexing of the vectors            !
   !          to allow for segmented I/O of hyperslabs and referencing     !
   !          of high level hierarchical data types with their parent      !
@@ -229,14 +226,14 @@ subroutine ed_coup_driver()
   
 
   !-----------------------------------------------------------------------!
-  ! STEP 13. Checking how the output was configure and determining the    !
+  ! STEP 16. Checking how the output was configure and determining the    !
   !          averaging frequency.                                         !
   !-----------------------------------------------------------------------!
   if (mynum == 1) write(unit=*,fmt='(a)') ' [+] Finding frqsum...'
   call find_frqsum()
 
   !-----------------------------------------------------------------------!
-  ! STEP 14. Zero and initialize diagnostic output variables              !
+  ! STEP 17. Zero and initialize diagnostic output variables              !
   !-----------------------------------------------------------------------!
 
   if (imoutput > 0) then
@@ -251,7 +248,7 @@ subroutine ed_coup_driver()
   end if
 
   !-----------------------------------------------------------------------!
-  ! STEP 15: Allocate memory to the integration patch
+  ! STEP 18: Allocate memory to the integration patch
   !-----------------------------------------------------------------------!
   if(integration_scheme == 1) call initialize_rk4patches_ar(1)
   do ifm=1,ngrids
@@ -260,16 +257,14 @@ subroutine ed_coup_driver()
 
   
   !-----------------------------------------------------------------------!
-  ! STEP 16: Deallocate the work arrays
+  ! STEP 19: Deallocate the work arrays
   !-----------------------------------------------------------------------!
   do ifm=1,ngrids
      call ed_dealloc_work(work_e(ifm))
   enddo
 
-
-
   !-----------------------------------------------------------------------!
-  ! STEP 17. Getting the CPU time and printing the banner                 !
+  ! STEP 20. Getting the CPU time and printing the banner                 !
   !-----------------------------------------------------------------------!
   if (mynum == nnodetot) then
      call timing(1,t1)

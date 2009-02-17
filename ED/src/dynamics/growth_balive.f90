@@ -323,7 +323,7 @@ subroutine alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci, carbon_balance,
   use ed_state_vars,only:patchtype
   use pft_coms, only: c2n_storage, c2n_leaf, sla, c2n_stem
   use decomp_coms, only: f_labile
-  use ed_therm_lib,only : update_veg_energy_cweh
+  use ed_therm_lib,only : calc_hcapveg, update_veg_energy_cweh
   use allometry, only: dbh2bl
   implicit none
   
@@ -338,7 +338,9 @@ subroutine alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci, carbon_balance,
   real :: bl_max
   real :: bl_pot
   real :: increment
-
+  real :: old_hcapveg
+  
+  
   if(cpatch%phenology_status(ico) == 0 .and. carbon_balance > 0.0 )then
 
      ! Simply update monthly carbon gain.  This will be 
@@ -411,10 +413,17 @@ subroutine alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci, carbon_balance,
   
   cpatch%lai(ico) = cpatch%bleaf(ico) * cpatch%nplant(ico) * sla(cpatch%pft(ico))
   
-  ! It is likely that the leaf biomass has changed, therefore, update vegetation
-  ! energy and heat capacity.
   
-  call update_veg_energy_cweh(cpatch,ico)
+  !----------------------------------------------------------------------------------------!
+  !     It is likely that the leaf biomass has changed, therefore, update vegetation       !
+  ! energy and heat capacity.                                                              !
+  !----------------------------------------------------------------------------------------!
+  old_hcapveg = cpatch%hcapveg(ico)
+  cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)                   &
+                                    ,cpatch%nplant(ico),cpatch%pft(ico))
+  call update_veg_energy_cweh(cpatch%veg_energy(ico),cpatch%veg_temp(ico)                  &
+                             ,old_hcapveg,cpatch%hcapveg(ico))
+  !----------------------------------------------------------------------------------------!
   
 
   return

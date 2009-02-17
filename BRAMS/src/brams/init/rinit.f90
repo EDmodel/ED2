@@ -22,41 +22,41 @@ integer :: initflg
 !         finish initializing past time level variables
 
 if (initial /= 3) then
-   call atob(nxyzp,basic_g(ngrid)%uc(1,1,1),basic_g(ngrid)%up(1,1,1))
-   call atob(nxyzp,basic_g(ngrid)%vc(1,1,1),basic_g(ngrid)%vp(1,1,1))
-   call atob(nxyzp,basic_g(ngrid)%wc(1,1,1),basic_g(ngrid)%wp(1,1,1))
-   call atob(nxyzp,basic_g(ngrid)%pc(1,1,1),basic_g(ngrid)%pp(1,1,1))
+   call atob(nxyzp,basic_g(ngrid)%uc,basic_g(ngrid)%up)
+   call atob(nxyzp,basic_g(ngrid)%vc,basic_g(ngrid)%vp)
+   call atob(nxyzp,basic_g(ngrid)%wc,basic_g(ngrid)%wp)
+   call atob(nxyzp,basic_g(ngrid)%pc,basic_g(ngrid)%pp)
 
    if(initflg.eq.1) then
-      if(icloud >= 1) call azero(nxyzp,micro_g(ngrid)%rcp(1,1,1))
-      if(irain  >= 1) call azero(nxyzp,micro_g(ngrid)%rrp(1,1,1))
-      if(ipris  >= 1) call azero(nxyzp,micro_g(ngrid)%rpp(1,1,1))
-      if(isnow  >= 1) call azero(nxyzp,micro_g(ngrid)%rsp(1,1,1))
-      if(iaggr  >= 1) call azero(nxyzp,micro_g(ngrid)%rap(1,1,1))
-      if(igraup >= 1) call azero(nxyzp,micro_g(ngrid)%rgp(1,1,1))
-      if(ihail  >= 1) call azero(nxyzp,micro_g(ngrid)%rhp(1,1,1))
+      if(icloud >= 1) call azero(nxyzp,micro_g(ngrid)%rcp)
+      if(irain  >= 1) call azero(nxyzp,micro_g(ngrid)%rrp)
+      if(ipris  >= 1) call azero(nxyzp,micro_g(ngrid)%rpp)
+      if(isnow  >= 1) call azero(nxyzp,micro_g(ngrid)%rsp)
+      if(iaggr  >= 1) call azero(nxyzp,micro_g(ngrid)%rap)
+      if(igraup >= 1) call azero(nxyzp,micro_g(ngrid)%rgp)
+      if(ihail  >= 1) call azero(nxyzp,micro_g(ngrid)%rhp)
 
-      if(icloud >= 5) call azero(nxyzp,micro_g(ngrid)%ccp(1,1,1))
-      if(irain  >= 5) call azero(nxyzp,micro_g(ngrid)%crp(1,1,1))
-      if(ipris  >= 5) call azero(nxyzp,micro_g(ngrid)%cpp(1,1,1))
-      if(isnow  >= 5) call azero(nxyzp,micro_g(ngrid)%csp(1,1,1))
-      if(iaggr  >= 5) call azero(nxyzp,micro_g(ngrid)%cap(1,1,1))
-      if(igraup >= 5) call azero(nxyzp,micro_g(ngrid)%cgp(1,1,1))
-      if(ihail  >= 5) call azero(nxyzp,micro_g(ngrid)%chp(1,1,1))
+      if(icloud >= 5) call azero(nxyzp,micro_g(ngrid)%ccp)
+      if(irain  >= 5) call azero(nxyzp,micro_g(ngrid)%crp)
+      if(ipris  >= 5) call azero(nxyzp,micro_g(ngrid)%cpp)
+      if(isnow  >= 5) call azero(nxyzp,micro_g(ngrid)%csp)
+      if(iaggr  >= 5) call azero(nxyzp,micro_g(ngrid)%cap)
+      if(igraup >= 5) call azero(nxyzp,micro_g(ngrid)%cgp)
+      if(ihail  >= 5) call azero(nxyzp,micro_g(ngrid)%chp)
 
-      call azero(nxyzp,basic_g(ngrid)%wp(1,1,1))
+      call azero(nxyzp,basic_g(ngrid)%wp)
    endif
 
    call tkeinit(nzp,nxp,nyp,1,nxp,1,nyp)
 
 endif
 
-call dumset(nzp,nxp,nyp,1,nxp,1,nyp,15,basic_g(ngrid)%uc(1,1,1),'U')
-call dumset(nzp,nxp,nyp,1,nxp,1,nyp,15,basic_g(ngrid)%vc(1,1,1),'V')
-call dumset(nzp,nxp,nyp,1,nxp,1,nyp,15,basic_g(ngrid)%wc(1,1,1),'W')
-call dumset(nzp,nxp,nyp,1,nxp,1,nyp,15,basic_g(ngrid)%up(1,1,1),'U')
-call dumset(nzp,nxp,nyp,1,nxp,1,nyp,15,basic_g(ngrid)%vp(1,1,1),'V')
-call dumset(nzp,nxp,nyp,1,nxp,1,nyp,15,basic_g(ngrid)%wp(1,1,1),'W')
+call dumset(nzp,nxp,nyp,1,nxp,1,nyp,15,basic_g(ngrid)%uc,'U')
+call dumset(nzp,nxp,nyp,1,nxp,1,nyp,15,basic_g(ngrid)%vc,'V')
+call dumset(nzp,nxp,nyp,1,nxp,1,nyp,15,basic_g(ngrid)%wc,'W')
+call dumset(nzp,nxp,nyp,1,nxp,1,nyp,15,basic_g(ngrid)%up,'U')
+call dumset(nzp,nxp,nyp,1,nxp,1,nyp,15,basic_g(ngrid)%vp,'V')
+call dumset(nzp,nxp,nyp,1,nxp,1,nyp,15,basic_g(ngrid)%wp,'W')
 
 return
 end

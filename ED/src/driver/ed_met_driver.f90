@@ -551,7 +551,7 @@ subroutine update_met_drivers_array(cgrid)
   use met_driver_coms, only: met_frq, nformats, met_nv, met_interp, met_vars &
                             ,have_co2,initial_co2
   use misc_coms, only: current_time
-  use consts_coms, only: rdry, cice, cliq, alli, rocp, p00, cp,day_sec,t3ple
+  use consts_coms, only: rdry, cice, cliq, alli, rocp, p00, cp,day_sec,t3ple, wdnsi
   use therm_lib, only: virtt
 
   implicit none
@@ -878,17 +878,25 @@ subroutine update_met_drivers_array(cgrid)
         
         ! qpcpg, dpcpg
         if(cpoly%met(isi)%atm_tmp > t3ple)then
-           cpoly%met(isi)%qpcpg = (cliq * (cpoly%met(isi)%atm_tmp - t3ple) +   &
-                alli) * cpoly%met(isi)%pcpg
-           cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg * 0.001)
+           cpoly%met(isi)%qpcpg = (cliq * cpoly%met(isi)%atm_tmp + alli) * cpoly%met(isi)%pcpg
+           cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg * wdnsi)
         else
-           cpoly%met(isi)%qpcpg = cice * (cpoly%met(isi)%atm_tmp - t3ple) *  &
-                cpoly%met(isi)%pcpg
-           cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg * 0.01)
+           cpoly%met(isi)%qpcpg = cice * cpoly%met(isi)%atm_tmp * cpoly%met(isi)%pcpg
+           
+           !-------------------------------------------------------------------------------!
+           !  fcn derived from CLM3.0 documentation which is based on                      !
+           !  Anderson 1975 NWS Technical Doc # 19                                         !
+           !  which I have yet to find   <mcd>                                             !
+           !-------------------------------------------------------------------------------!
+           cpoly%met(isi)%dpcpg = cpoly%met(isi)%pcpg &
+              / (50.0+1.5*max(cpoly%met(isi)%atm_tmp-258.15,0.))**1.5
+           !-------------------------------------------------------------------------------!
         endif
         !! note: dpcpg currently never gets used
         !! snow density is calculated in the integrator (grep snowdens)
-        
+        !! MLO 1/20/2009: Now dpcpg is used, because we do not need to estimate density
+        !                 for coupled runs, we can get this information from the 
+        !                 microphysics.         
      enddo
           
   enddo

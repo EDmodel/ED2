@@ -45,36 +45,36 @@ do ng=1,ngrids
 				,' npts:', vtab_r(nvars,ng)%npts
 
          ierr=RAMS_getvar(vtab_r(nvars,ng)%name,ng  &
-                         ,scratch%scr1(1),scratch%scr2(1),flnm)
+                         ,scratch%scr1,scratch%scr2,flnm)
 
 
          if(vtab_r(nvars,ng)%idim_type == 4) then
             call unarrange_p(nnxp(ng),nnyp(ng),nzg,npatch  &
-                         ,scratch%scr1(1),vtab_r(nvars,ng)%var_p)
+                         ,scratch%scr1,vtab_r(nvars,ng)%var_p)
          elseif(vtab_r(nvars,ng)%idim_type == 5) then
             call unarrange_p(nnxp(ng),nnyp(ng),nzs,npatch  &
-                         ,scratch%scr1(1),vtab_r(nvars,ng)%var_p)
+                         ,scratch%scr1,vtab_r(nvars,ng)%var_p)
 
 !srf
 !use this for 3d atmospheric fields
          elseif(vtab_r(nvars,ng)%idim_type == 3) then
             call unarrange(nnzp(ng),nnxp(ng),nnyp(ng)  &
-                         ,scratch%scr1(1),vtab_r(nvars,ng)%var_p)
+                         ,scratch%scr1,vtab_r(nvars,ng)%var_p)
 !srf
 !use this for 3d (NX,NY,NWAVE) CARMA AOT fields
 	 elseif(vtab_r(nvars,ng)%idim_type == 7) then
 	    call rearrange_aot(nwave,nnxp(ng),nnyp(ng)  &
-			 ,scratch%scr1(1),vtab_r(nvars,ng)%var_p)
+			 ,scratch%scr1,vtab_r(nvars,ng)%var_p)
 
 ! Cumulus parameterization variables with profile and spectrum
          elseif(vtab_r(nvars,ng)%idim_type == 8) then
             call unarrange_p(nnxp(ng),nnyp(ng),nnzp(ng),nclouds  &
-                         ,scratch%scr1(1),vtab_r(nvars,ng)%var_p)
+                         ,scratch%scr1,vtab_r(nvars,ng)%var_p)
 
 !use this for leaf 3, horizontal cumulus variables, or 2 dim:
          else
             call atob(vtab_r(nvars,ng)%npts  &
-                     ,scratch%scr1(1),vtab_r(nvars,ng)%var_p)
+                     ,scratch%scr1,vtab_r(nvars,ng)%var_p)
 
          endif
              

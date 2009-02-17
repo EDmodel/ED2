@@ -278,18 +278,24 @@ gridset.o : $(INIT)/gridset.f90 mem_grid.o grid_dims.o rconstants.o
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-harr_rad.o : $(RADIATE)/harr_rad.f90 mem_harr.o rconstants.o
+harr_coms.o : $(RADIATE)/harr_coms.f90 mem_harr.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+harr_rad.o : $(RADIATE)/harr_rad.f90 mem_harr.o rconstants.o harr_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
 harr_raddriv.o : $(RADIATE)/harr_raddriv.f90 mem_harr.o mem_grid.o rconstants.o micphys.o  \
-	mem_leaf.o therm_lib.o
+	mem_leaf.o therm_lib.o harr_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
-harr_radinit.o : $(RADIATE)/harr_radinit.f90 mem_harr.o mem_radiate.o micphys.o mem_grid.o
+harr_radinit.o : $(RADIATE)/harr_radinit.f90 mem_harr.o mem_radiate.o micphys.o mem_grid.o \
+	harr_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
@@ -347,7 +353,7 @@ landuse_input.o : $(MKSFC)/landuse_input.F90 rconstants.o mem_mksfc.o
 	$(FPP_COMMAND) $(<F:.f90=.F90)
 	rm -f $(<F:.f90=.F90)
 
-leaf_coms.o : $(SURFACE)/leaf_coms.f90 grid_dims.o
+leaf_coms.o : $(SURFACE)/leaf_coms.f90 grid_dims.o rconstants.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
@@ -626,7 +632,7 @@ mic_coll.o : $(MICRO)/mic_coll.f90  micphys.o rconstants.o therm_lib.o micro_com
 	rm -f $(<F:.f90=.f90) 
 
 mic_driv.o : $(MICRO)/mic_driv.f90 grid_dims.o mem_basic.o mem_micro.o mem_grid.o          \
-	node_mod.o micro_coms.o micphys.o mem_scratch.o
+	node_mod.o micro_coms.o micphys.o mem_scratch.o rconstants.o therm_lib.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -658,7 +664,7 @@ mic_tabs.o : $(MICRO)/mic_tabs.f90 micphys.o rconstants.o micro_coms.o
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
-mic_vap.o : $(MICRO)/mic_vap.f90 rconstants.o micphys.o therm_lib.o
+mic_vap.o : $(MICRO)/mic_vap.f90 rconstants.o micphys.o therm_lib.o micro_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
@@ -977,8 +983,8 @@ rad_driv.o : $(RADIATE)/rad_driv.f90 mem_tend.o mem_grid.o mem_leaf.o mem_radiat
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
-
-rad_mclat.o : $(RADIATE)/rad_mclat.f90 mem_mclat.o mem_radiate.o rconstants.o mem_grid.o
+rad_mclat.o : $(RADIATE)/rad_mclat.f90 mem_mclat.o mem_radiate.o rconstants.o mem_grid.o   \
+	harr_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
@@ -1023,7 +1029,7 @@ rams_mem_alloc.o : $(MEMORY)/rams_mem_alloc.f90 mem_all.o node_mod.o grell_coms.
 	teb_spm_start.o mem_emiss.o mem_gaspart.o mem_teb_common.o mem_teb_vars_const.o    \
 	mem_teb.o mem_mass.o turb_constants.o mem_grell_param2.o mem_scratch1_grell.o      \
 	mem_scratch2_grell.o mem_scratch3_grell.o mem_scratch2_grell_sh.o                  \
-	mem_scratch3_grell_sh.o
+	mem_scratch3_grell_sh.o leaf_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
@@ -1139,7 +1145,8 @@ rio.o : $(IO)/rio.f90 grid_dims.o var_tables.o io_params.o mem_grid.o ref_soundi
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
-rmass.o: $(MASS)/rmass.f90 mem_grid.o mem_scratch.o mem_mass.o mem_scratch_grell.o
+rmass.o: $(MASS)/rmass.f90 mem_grid.o mem_scratch.o mem_mass.o mem_scratch_grell.o         \
+	mem_turb.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
@@ -1290,7 +1297,7 @@ turb_diff_adap.o : $(TURB)/turb_diff_adap.f90 mem_grid.o mem_scratch.o
 
 turb_k.o : $(TURB)/turb_k.f90 mem_tend.o mem_basic.o var_tables.o mem_turb.o mem_grid.o    \
 	mem_leaf.o mem_micro.o mem_scratch.o node_mod.o ke_coms.o mem_turb_scalar.o        \
-	catt_start.o mem_cuparm.o mem_mass.o therm_lib.o
+	catt_start.o mem_mass.o therm_lib.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
@@ -1384,7 +1391,7 @@ edcp_init.o : $(ED_MIXED)/edcp_init.f90 node_mod.o mem_grid.o rpara.o soil_coms.
 edcp_load_namelist.o : $(ED_MIXED)/edcp_load_namelist.f90 max_dims.o soil_coms.o           \
 	met_driver_coms.o mem_sites.o physiology_coms.o phenology_coms.o decomp_coms.o     \
 	disturb_coms.o pft_coms.o misc_coms.o grid_coms.o ed_misc_coms.o optimiz_coms.o    \
-	mem_grid.o io_params.o mem_leaf.o mem_radiate.o grid_dims.o
+	mem_grid.o io_params.o mem_leaf.o mem_radiate.o grid_dims.o canopy_radiation_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -1415,7 +1422,8 @@ edcp_model.o : $(ED_MIXED)/edcp_model.f90 mem_grid.o mem_leaf.o ed_node_coms.o m
 
 edcp_mpiutils.o : $(ED_MIXED)/edcp_mpiutils.f90 max_dims.o misc_coms.o ed_misc_coms.o      \
 	grid_coms.o soil_coms.o met_driver_coms.o mem_sites.o physiology_coms.o            \
-	phenology_coms.o decomp_coms.o pft_coms.o disturb_coms.o optimiz_coms.o 
+	phenology_coms.o decomp_coms.o pft_coms.o disturb_coms.o optimiz_coms.o            \
+	canopy_radiation_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -1591,7 +1599,7 @@ ed_therm_lib.o : $(ED_UTILS)/ed_therm_lib.f90 consts_coms.o pft_coms.o ed_state_
 	rm -f $(<F:.f90=.f90)
 
 ed_type_init.o : $(ED_INIT)/ed_type_init.f90 ed_state_vars.o max_dims.o grid_coms.o        \
-	soil_coms.o therm_lib.o allometry.o
+	soil_coms.o therm_lib.o allometry.o consts_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -1661,7 +1669,7 @@ fusion_fission_coms.o : $(ED_MEMORY)/fusion_fission_coms.f90
 
 fuse_fiss_utils.o : $(ED_UTILS)/fuse_fiss_utils.f90 ed_state_vars.o pft_coms.o             \
 	decomp_coms.o fusion_fission_coms.o disturb_coms.o max_dims.o mem_sites.o          \
-	soil_coms.o grid_coms.o consts_coms.o ed_therm_lib.o allometry.o
+	soil_coms.o grid_coms.o consts_coms.o ed_therm_lib.o therm_lib.o allometry.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -1827,31 +1835,36 @@ reproduction.o : $(ED_DYNAMICS)/reproduction.f90 ed_state_vars.o misc_coms.o pft
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+rk4_coms.o : $(ED_MEMORY)/rk4_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 rk4_derivs.o : $(ED_DYNAMICS)/rk4_derivs.F90 ed_state_vars.o consts_coms.o grid_coms.o     \
 	max_dims.o consts_coms.o grid_coms.o soil_coms.o misc_coms.o                       \
 	canopy_radiation_coms.o therm_lib.o pft_coms.o ed_misc_coms.o canopy_air_coms.o    \
-	ed_therm_lib.o allometry.o
+	ed_therm_lib.o allometry.o rk4_coms.o
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)
 
 rk4_driver.o : $(ED_DYNAMICS)/rk4_driver.f90 ed_state_vars.o grid_coms.o max_dims.o        \
 	misc_coms.o consts_coms.o soil_coms.o canopy_radiation_coms.o ed_misc_coms.o       \
-	canopy_air_coms.o therm_lib.o ed_therm_lib.o
+	canopy_air_coms.o therm_lib.o ed_therm_lib.o rk4_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
 rk4_integ_utils.o : $(ED_DYNAMICS)/rk4_integ_utils.f90 ed_state_vars.o rk4_stepper.o       \
 	hydrology_coms.o grid_coms.o soil_coms.o consts_coms.o grid_coms.o ed_misc_coms.o  \
-	canopy_radiation_coms.o therm_lib.o max_dims.o misc_coms.o
+	canopy_radiation_coms.o therm_lib.o max_dims.o misc_coms.o rk4_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
 rk4_stepper.o : $(ED_DYNAMICS)/rk4_stepper.F90 ed_state_vars.o grid_coms.o soil_coms.o     \
 	canopy_radiation_coms.o consts_coms.o canopy_air_coms.o therm_lib.o ed_therm_lib.o \
-	misc_coms.o
+	misc_coms.o rk4_coms.o
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)

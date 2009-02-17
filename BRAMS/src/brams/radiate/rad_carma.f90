@@ -29,7 +29,7 @@ MODULE rad_carma
   			   plonn,	  & !INTENT()
   			   time 	    !INTENT()
   
-    USE mem_scratch, ONLY: nzpmax	    !INTENT()
+    USE grid_dims, ONLY: nzpmax	    !INTENT()
     USE mem_radiate, ONLY: lonrad	    !INTENT()
   
     USE rconstants,  ONLY: cp,  	  & !INTENT()

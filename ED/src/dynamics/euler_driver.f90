@@ -109,6 +109,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
   use max_dims, only: n_pft
   use therm_lib, only: qtk,qwtk8
   use ed_therm_lib,only:ed_grndvap
+  use consts_coms, only: wdns
 
   implicit none
 
@@ -160,6 +161,8 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
   real :: qwxfer      (nzg+1) ! soil energy xfer from water xfer [J/m^2] 
   real :: psiplusz    (nzg)   ! soil water potential (including grav) [m]
   real :: hydraul_cond(nzg)   ! soil hydraulic conductivity [m/s]
+
+  real :: surface_temp,surface_fliq
 
   integer :: k     ! vertical index over soil layers
   integer :: nlsw1 ! maximum of (1,nlev_sfcwater)
@@ -271,10 +274,11 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
        rhos,  &
        can_shv,  &
        ground_shv,  &
-       surface_ssh)
+       surface_ssh, &
+       surface_temp,surface_fliq)
   
   do k = lsl,nzg
-     call qwtk8(soil_energy(k),soil_water(k)*1.d3,  &
+     call qwtk8(soil_energy(k),soil_water(k)*dble(wdns),  &
           soil(ntext_soil(k))%slcpd,soil_tempk(k),soil_fracliq(k))
   enddo
   
@@ -534,7 +538,7 @@ subroutine sfcwater(nlev_sfcwater,ntext_soil,                       &
 use soil_coms, only: slz, dslz, dslzi, dslzo2, soil
 use grid_coms, only: nzg, nzs                       
 use misc_coms, only: dtlsm
-use consts_coms, only: alvi, cice, cliq, alli, t3ple
+use consts_coms, only: alvi, cice, cliq, alli, t3ple, qicet3, qliqt3, tsupercool, wdns, wdnsi
 use therm_lib, only: qwtk
 
 implicit none
@@ -606,7 +610,7 @@ real :: specvol   ! specific volume of sfcwater involved in vapor xfer [m^3/kg]
 
 ! Local parameters
 
-real, parameter :: sndenmax = 1000.   ! max sfcwater density [kg/m^3]
+real, parameter :: sndenmax = wdns     ! max sfcwater density [kg/m^3]
 real, parameter :: snowmin = 11.       ! min sfcwater layer mass with multiple layers [kg/m^2] 
 real, parameter :: snowmin_expl = 10.  ! min sfcwater mass for explicit heat xfer [kg/m^2]
 real, parameter :: rfac_snowmin = .01 ! min sfcwater rfactor [K m^2/W]
@@ -726,7 +730,7 @@ if (nlev_sfcwater < 1) return
 ! precipitation, shedding of water from vegetation, and vapor flux with 
 ! canopy air.  Get value for specific volume of sfcwater involved in vapor xfer.
 
-specvol = .001
+specvol = wdnsi
 if (wxfersc > 0.) specvol =  &
    sfcwater_depth(nlev_sfcwater) / sfcwater_mass(nlev_sfcwater)
 
@@ -739,7 +743,7 @@ energy_per_m2(nlev_sfcwater) = energy_per_m2(nlev_sfcwater)  &
    - wxfersc * alvi 
 
 sfcwater_depth(nlev_sfcwater) = sfcwater_depth(nlev_sfcwater)  &
-   + wshed * .001                               &
+   + wshed * wdnsi                              &
    - wxfersc * specvol
 
 ! Prepare to transfer water downward through snow layers by percolation.
@@ -825,21 +829,21 @@ do k = nlev_sfcwater,1,-1
 
 ! Diagnose new energy value for sfcwater based on qwt value.
 
-      if (qwt < 0.) then
+      if (qwt < wt*qicet3) then
       
 ! Case of equilibrium temperature below 0 deg C.  Sfcwater fracliq = 0.
 
          sfcwater_fracliq(1) = 0.
          sfcwater_tempk(1) = tempk
-         energy_per_m2(1) = sfcwater_mass(1) * cice * (tempk - t3ple)
+         energy_per_m2(1) = sfcwater_mass(1) * cice * tempk 
 
-      elseif (qwt > wt * alli) then
+      elseif (qwt > wt * qliqt3) then
       
 ! Case of equilibrium temperature above 0 deg C.  Sfcwater fracliq = 1.
 
          sfcwater_fracliq(1) = 1.
          sfcwater_tempk(1) = tempk
-         energy_per_m2(1) = sfcwater_mass(1) * (cliq * (tempk - t3ple) + alli)
+         energy_per_m2(1) = sfcwater_mass(1) * cliq * (tempk - tsupercool)
 
       else
       
@@ -849,7 +853,7 @@ do k = nlev_sfcwater,1,-1
 
 ! Lower bound on sfcwater_fracliq(1): case with soil_water(nzg) all liquid
 
-         flmin = (fracliq * wt - sngl(soil_water(nzg)) * 1.e3 * dslz(nzg))  &
+         flmin = (fracliq * wt - sngl(soil_water(nzg)) * wdns * dslz(nzg))  &
                / sfcwater_mass(1)         
 
 ! Upper bound on sfcwater_fracliq(1): case with soil_water(nzg) all ice
@@ -860,7 +864,7 @@ do k = nlev_sfcwater,1,-1
 
          sfcwater_fracliq(1) = max(0.,flmin,min(1.0,flmax,sfcwater_fracliq(1)))
          sfcwater_tempk(1) = t3ple
-         energy_per_m2(1) = sfcwater_mass(1) * sfcwater_fracliq(1) * alli
+         energy_per_m2(1) = sfcwater_mass(1) * sfcwater_fracliq(1) * qliqt3
 
       endif
 
@@ -909,8 +913,8 @@ do k = nlev_sfcwater,1,-1
 
 ! Evaluate energy and depth transferred in wfree (which is in liquid phase)
 
-      qwfree = wfree * (cliq * (sfcwater_tempk(k) - t3ple) + alli)
-      dwfree = wfree * .001
+      qwfree = wfree * cliq * (sfcwater_tempk(k) - tsupercool)
+      dwfree = wfree * wdnsi
 
 ! Check if essentially all of sfcwater_mass(k) will drain from layer
 
@@ -1130,7 +1134,7 @@ subroutine soil_euler_ar(nlev_sfcwater, ntext_soil, ktrans,    &
 
 use soil_coms, only: dslz, dslzi, slzt, dslzidt, dslztidt, soil, slcons1 
 use grid_coms, only: nzg
-use consts_coms, only: cliq1000, alli1000, alvi,t3ple
+use consts_coms, only: cliqvlme, allivlme, alvi,t3ple, tsupercool
 
 use ed_state_vars,only:sitetype,patchtype
 
@@ -1183,7 +1187,7 @@ real, dimension(nzg) :: ed_transp
 
 do k = lsl, nzg
    wloss = ed_transp(k) * dslzi(k) * 1.e-3
-   qwloss = wloss * (cliq1000 * (soil_tempk(k) - t3ple) + alli1000)
+   qwloss = wloss * cliqvlme * (soil_tempk(k) - tsupercool)
    soil_water(k) = soil_water(k) - dble(wloss)
    soil_energy(k) = soil_energy(k) - qwloss
    csite%mean_latflux(ipa) =   &
@@ -1275,7 +1279,7 @@ do k = lsl+1,nzg
       wxfer(k) = - min(-wxfer(k),soil_liq(k),half_soilair(k-1))
    endif
 
-   qwxfer(k) = wxfer(k) * (cliq1000 * (soil_tempk(k) - t3ple) + alli1000)
+   qwxfer(k) = wxfer(k) * cliqvlme * (soil_tempk(k) - tsupercool)
 
 enddo
 
@@ -1303,7 +1307,7 @@ subroutine remove_runoff(ksn, sfcwater_fracliq, sfcwater_mass,   &
 
   use soil_coms, only: runoff_time
   use grid_coms, only: nzs
-  use consts_coms, only: alli, cliq,t3ple
+  use consts_coms, only: alli, cliq,t3ple, wdnsi, tsupercool
   use misc_coms, only: dtlsm
   use therm_lib, only: qtk
 
@@ -1330,12 +1334,12 @@ subroutine remove_runoff(ksn, sfcwater_fracliq, sfcwater_mass,   &
              sfcwater_fracliq(ksn))
         runoff = sfcwater_mass(ksn) * (sfcwater_fracliq(ksn) - 0.1) /   &
              (0.9 * runoff_time) * dtlsm
-        qrunoff = runoff * (cliq * (sfcwater_tempk(ksn) - t3ple) +  alli)
+        qrunoff = runoff * cliq * (sfcwater_tempk(ksn) - tsupercool)
         
         sfcwater_energy(ksn) = (sfcwater_energy(ksn) *   &
              sfcwater_mass(ksn) - qrunoff ) / (sfcwater_mass(ksn) - runoff)
         sfcwater_mass(ksn) = sfcwater_mass(ksn) - runoff
-        sfcwater_depth(ksn) = sfcwater_depth(ksn) - 0.001 * runoff
+        sfcwater_depth(ksn) = sfcwater_depth(ksn) - wdnsi * runoff
      endif
   endif
   

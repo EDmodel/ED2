@@ -41,7 +41,7 @@ module disturbance_utils_ar
     real, dimension(n_pft, n_dbh) :: initial_agb
     real, dimension(n_pft, n_dbh) :: initial_basal_area
 
-    integer,allocatable :: disturb_mask(:)
+    logical,allocatable, dimension(:) :: disturb_mask
     integer :: onsp
     logical, save :: first_time=.true.
 
@@ -88,12 +88,12 @@ module disturbance_utils_ar
         call allocate_sitetype(tsite,onsp)
 
         allocate(disturb_mask(onsp + n_dist_types))
-        disturb_mask = 0
-        disturb_mask(1:onsp) = 1
+        disturb_mask = .false.
+        disturb_mask(1:onsp) = .true.
 
         ! Transfer the origial patch values into the front end of the temp's space
         call copy_sitetype_mask(csite,tsite,disturb_mask(1:onsp), &
-             sum(disturb_mask),sum(disturb_mask))
+             count(disturb_mask),count(disturb_mask))
 
         ! Reallocate and transfer them back
         
@@ -102,7 +102,7 @@ module disturbance_utils_ar
         call allocate_sitetype(csite,onsp + n_dist_types)
         
         call copy_sitetype_mask(tsite,csite,disturb_mask(1:onsp), &
-             sum(disturb_mask),sum(disturb_mask))
+             count(disturb_mask),count(disturb_mask))
        
         call deallocate_sitetype(tsite)
 
@@ -145,7 +145,7 @@ module disturbance_utils_ar
 
               ! Set the flag that this patch should be kept as a newly created
               ! transition patch.
-              disturb_mask(onsp+q) = 1   
+              disturb_mask(onsp+q) = .true.   
  
               csite%dist_type(onsp+q)  = q
               csite%plantation(onsp+q) = 0
@@ -253,17 +253,17 @@ module disturbance_utils_ar
         ! are disturb_mask.  This mask should be ones for all original patches, and 
         ! sparse from there after.
         ! --------------------------------------------------------------------------
-        call allocate_sitetype(tsite,sum(disturb_mask))
+        call allocate_sitetype(tsite,count(disturb_mask))
         
-        call copy_sitetype_mask(csite,tsite,disturb_mask,size(disturb_mask),sum(disturb_mask))
+        call copy_sitetype_mask(csite,tsite,disturb_mask,size(disturb_mask),count(disturb_mask))
         
         call deallocate_sitetype(csite)
         
-        call allocate_sitetype(csite,sum(disturb_mask))
+        call allocate_sitetype(csite,count(disturb_mask))
         
-        disturb_mask = 0
-        disturb_mask(1:csite%npatches) = 1
-        call copy_sitetype_mask(tsite,csite,disturb_mask(1:csite%npatches),sum(disturb_mask),sum(disturb_mask))
+        disturb_mask = .false.
+        disturb_mask(1:csite%npatches) = .true.
+        call copy_sitetype_mask(tsite,csite,disturb_mask(1:csite%npatches),count(disturb_mask),count(disturb_mask))
         
         call deallocate_sitetype(tsite)
         deallocate(disturb_mask)
@@ -559,9 +559,11 @@ end subroutine apply_disturbances_ar
 
        !!!! IS THE FOLLOWING LINE CORRECT? IT SEEMS TO BE ADDING AN EXTRA AND UNECESARY
        !!!! MASS TERM FROM THE DONOR PATCH  !!!
-
+       !!!! MLO: I don't think it's correct, it should be cp, shouldn't it? I switched it.
+       !csite%sfcwater_energy(k,np) = csite%sfcwater_energy(k,np) +   &
+       !     csite%sfcwater_energy(k,np) * csite%sfcwater_mass(k,cp) * area_fac
        csite%sfcwater_energy(k,np) = csite%sfcwater_energy(k,np) +   &
-            csite%sfcwater_energy(k,np) * csite%sfcwater_mass(k,cp) * area_fac
+            csite%sfcwater_energy(k,cp) * csite%sfcwater_mass(k,cp) * area_fac
        csite%sfcwater_depth(k,np) = csite%sfcwater_depth(k,np) + csite%sfcwater_depth(k,cp) *   &
             area_fac
     enddo
@@ -601,7 +603,6 @@ end subroutine apply_disturbances_ar
   subroutine insert_survivors_ar(csite, np, cp, q, area_fac,nat_dist_type)
 
     use ed_state_vars, only: sitetype,patchtype
-    use ed_therm_lib,only: update_veg_energy_ct
     
     implicit none
     type(sitetype),target    :: csite
@@ -617,7 +618,7 @@ end subroutine apply_disturbances_ar
 
     real :: cohort_area_fac
 
-    integer,allocatable :: mask(:)
+    logical, dimension(:), allocatable :: mask
 
     cpatch => csite%patch(cp)
     npatch => csite%patch(np)
@@ -625,7 +626,7 @@ end subroutine apply_disturbances_ar
     allocate(tpatch)
 
     allocate(mask(cpatch%ncohorts))
-    mask = 0
+    mask(:) = .false.
     
     do ico = 1,cpatch%ncohorts
        
@@ -633,7 +634,7 @@ end subroutine apply_disturbances_ar
        n_survivors = cpatch%nplant(ico) * cohort_area_fac
        
        ! If something survived, make a new cohort
-       if(n_survivors > 0.0) mask(ico) = 1
+       mask(ico) = n_survivors > 0.0
        
     enddo
 
@@ -645,14 +646,14 @@ end subroutine apply_disturbances_ar
        ! those already applied previously in the loop calling this
        
        nco = npatch%ncohorts
-       call allocate_patchtype(tpatch,sum(mask) + npatch%ncohorts)
+       call allocate_patchtype(tpatch,count(mask) + npatch%ncohorts)
        call copy_patchtype(npatch,tpatch,1,npatch%ncohorts,1,npatch%ncohorts)
        call deallocate_patchtype(npatch)
        
     else
        
        nco = 0
-       call allocate_patchtype(tpatch,sum(mask))
+       call allocate_patchtype(tpatch,count(mask))
 
     endif
 
@@ -662,7 +663,7 @@ end subroutine apply_disturbances_ar
        cohort_area_fac = survivorship_ar(q,nat_dist_type, csite, cp, ico) * area_fac
        n_survivors = cpatch%nplant(ico) * cohort_area_fac
        
-       if(mask(ico) > 0) then
+       if(mask(ico)) then
 
           nco = nco + 1
           
@@ -680,9 +681,10 @@ end subroutine apply_disturbances_ar
           tpatch%vleaf_respiration(nco)   = tpatch%vleaf_respiration(nco) * cohort_area_fac
           tpatch%Psi_open(nco)            = tpatch%Psi_open(nco) * cohort_area_fac
 
-          ! Adjust the vegetation energy 
-
-          call update_veg_energy_ct(tpatch,nco)
+          !    Because both nplant and water were scaled by a factor, and bleaf/bdead 
+          ! didn't change, energy and heat capacity are updated by the same metrics.
+          tpatch%hcapveg(nco)    = tpatch%hcapveg(nco)    * cohort_area_fac
+          tpatch%veg_energy(nco) = tpatch%veg_energy(nco) * cohort_area_fac
 
        endif
           
@@ -875,26 +877,24 @@ end subroutine apply_disturbances_ar
        cpatch%dbh(nc)   = max_dbh(pft)
        cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
        cpatch%hite(nc)  = dbh2h(pft,max_dbh(pft))
-    endif
+    end if
 
-    print*,"add",cpatch%hite(nc),cpatch%dbh(nc),cpatch%bdead(nc),cpatch%bleaf(nc),hgt_min(cpatch%pft(nc)),height_factor
     cpatch%phenology_status = 0
     cpatch%balive(nc) = cpatch%bleaf(nc) * &
          (1.0 + q(cpatch%pft(nc)) + qsw(cpatch%pft(nc)) * cpatch%hite(nc))
     cpatch%lai(nc) = cpatch%bleaf(nc) * cpatch%nplant(nc) * sla(cpatch%pft(nc))
     cpatch%bstorage(nc) = 1.0*(cpatch%balive(nc)) !! changed by MCD, was 0.0
 
-    print*,"BSTORE = ",cpatch%bstorage(nc), cpatch%lai(nc)
 
     cpatch%veg_temp(nc) = csite%can_temp(np)
     cpatch%veg_water(nc) = 0.0
 
-    !----- Because we assigned no water, the internal energy is simply hcapveg*(T-T3)
+    !----- Because we assigned no water, the internal energy is simply hcapveg*T
 
     cpatch%hcapveg(nc) = calc_hcapveg(cpatch%bleaf(nc),cpatch%bdead(nc), &
          cpatch%nplant(nc),cpatch%pft(nc))
     
-    cpatch%veg_energy(nc) = cpatch%hcapveg(nc) * (cpatch%veg_temp(nc)-t3ple)
+    cpatch%veg_energy(nc) = cpatch%hcapveg(nc) * cpatch%veg_temp(nc)
     
     call init_ed_cohort_vars_array(cpatch, nc, lsl)
     

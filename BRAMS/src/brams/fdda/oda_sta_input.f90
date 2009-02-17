@@ -227,7 +227,7 @@ do nf=1,nupafiles
                endif
             enddo
 
-            call upa_get_profile(oda_upa_obs(ns)%zz(1,ntimes),nlevs,'zz','z')
+            call upa_get_profile(oda_upa_obs(ns)%zz(:,ntimes),nlevs,'zz','z')
             oda_upa_obs(ns)%us(1:nlevs,ntimes)=varp1(1:nlevs)
             oda_upa_obs(ns)%vs(1:nlevs,ntimes)=varp2(1:nlevs)
             oda_upa_obs(ns)%lz(ntimes)=nlevs

@@ -7,7 +7,7 @@ subroutine copy_atm2lsm(ifm,init)
        master_num,mmzp,mmxp,mmyp,  &
        ia,iz,ja,jz,ia_1,iz1,ja_1,jz1
   
-  use rconstants,only:cpi,cp,p00,rocp,rgas,cliq,alli,cice,t3ple,cpor
+  use rconstants,only:cpi,cp,p00,rocp,rgas,cliq,alli,cice,t3ple,cpor,tsupercool
   use met_driver_coms, only: have_co2,initial_co2
   use ed_state_vars,only: edgrid_g,edtype,polygontype
   use ed_node_coms,only:mynum
@@ -231,17 +231,18 @@ subroutine copy_atm2lsm(ifm,init)
         
         ! qpcpg, dpcpg
         if(cpoly%met(isi)%atm_tmp > t3ple)then
-           cpoly%met(isi)%qpcpg = (cliq * (cpoly%met(isi)%atm_tmp - t3ple) +   &
-                alli) * cpoly%met(isi)%pcpg
+           cpoly%met(isi)%qpcpg = cliq * (cpoly%met(isi)%atm_tmp - tsupercool)             &
+                                * cpoly%met(isi)%pcpg
            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg * 0.001)
         else
-           cpoly%met(isi)%qpcpg = cice * (cpoly%met(isi)%atm_tmp - t3ple) *  &
-                cpoly%met(isi)%pcpg
+           cpoly%met(isi)%qpcpg = cice * cpoly%met(isi)%atm_tmp * cpoly%met(isi)%pcpg
            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg * 0.01)
         endif
         !! note: dpcpg currently never gets used
         !! snow density is calculated in the integrator (grep snowdens)
-        
+        !! Now it does, and we should make energy and density to be consistent with what
+        !! is coming out from the microphysics. The approximation above should be applied 
+        !! only on the cumulus parameterization, where we don't really have these values.
      enddo
      
   enddo
@@ -431,38 +432,29 @@ subroutine copy_fluxes_lsm2atm(ifm)
      do isi=1,cpoly%nsites
         csite => cpoly%site(isi)
         
-
-        if(sum(csite%area * csite%ustar) /= sum(csite%area * csite%ustar)) then
+        if(sum(csite%area * csite%ustar) /= sum(csite%area * csite%ustar)) &
            call fatal_error('Bad USTAR','copy_fluxes_lsm2atm','edcp_met.f90')
-        end if
 
-        if(sum(csite%area * csite%tstar) /= sum(csite%area * csite%tstar)) then
+        if(sum(csite%area * csite%tstar) /= sum(csite%area * csite%tstar)) &
            call fatal_error('Bad TSTAR','copy_fluxes_lsm2atm','edcp_met.f90')
-        end if
         
-        if(sum(csite%area * csite%rstar) /= sum(csite%area * csite%rstar)) then
+        if(sum(csite%area * csite%rstar) /= sum(csite%area * csite%rstar)) &
            call fatal_error('Bad RSTAR','copy_fluxes_lsm2atm','edcp_met.f90')
-        end if
 
-        if(sum(csite%area * csite%upwp) /= sum(csite%area * csite%upwp)) then
+        if(sum(csite%area * csite%upwp) /= sum(csite%area * csite%upwp)) &
            call fatal_error('Bad MOMENTUM FLUX','copy_fluxes_lsm2atm','edcp_met.f90')
-        end if
         
-        if(sum(csite%area * csite%tpwp) /= sum(csite%area * csite%tpwp)) then
+        if(sum(csite%area * csite%tpwp) /= sum(csite%area * csite%tpwp)) &
            call fatal_error('Bad HEAT FLUX','copy_fluxes_lsm2atm','edcp_met.f90')
-        end if
 
-        if(sum(csite%area * csite%rpwp) /= sum(csite%area * csite%rpwp)) then
+        if(sum(csite%area * csite%rpwp) /= sum(csite%area * csite%rpwp)) &
            call fatal_error('Bad MOISTURE FLUX','copy_fluxes_lsm2atm','edcp_met.f90')
-        end if
 
-        if(cpoly%rlongup(isi) /= cpoly%rlongup(isi)) then
+        if(cpoly%rlongup(isi) /= cpoly%rlongup(isi)) &
            call fatal_error('Bad RLONGUP','copy_fluxes_lsm2atm','edcp_met.f90')
-        end if
 
-        if(cpoly%albedt(isi) /= cpoly%albedt(isi)) then
+        if(cpoly%albedt(isi) /= cpoly%albedt(isi)) &
            call fatal_error('Bad ALBEDT','copy_fluxes_lsm2atm','edcp_met.f90')
-        end if
 
         fluxp%ustar(ix,iy) = fluxp%ustar(ix,iy) + cpoly%area(isi)*sum(csite%area * csite%ustar)
 
@@ -629,13 +621,15 @@ subroutine transfer_ed2leaf(ifm,timel)
        edtime1,       &
        edtime2
   use mem_turb,only: turb_g
-  use rconstants,only:stefan
-  use mem_leaf,only:leaf_g
+  use rconstants,only:stefan,g
+  use mem_leaf,only:leaf_g, zrough
   use mem_radiate,only:radiate_g
   use node_mod, only : &
        master_num,mmzp,mmxp,mmyp,  &
        ia,iz,ja,jz,ia_1,iz1,ja_1,jz1,ibcon
-  use mem_grid,only:jdim
+  use mem_grid,only:jdim, grid_g
+  use ed_state_vars, only : edgrid_g,edtype, polygontype, sitetype
+  use soil_coms, only : soil_rough
 
   implicit none
 
@@ -645,7 +639,14 @@ subroutine transfer_ed2leaf(ifm,timel)
   logical,save :: first=.true.
   integer :: ic,jc,ici,jci,i,j
   integer :: m2,m3
-
+  integer :: ipy, isi
+  type(edtype)     , pointer   :: cgrid
+  type(polygontype), pointer   :: cpoly
+  type(sitetype)   , pointer   :: csite
+  real                         :: site_area_i, polygon_area_i
+  real             , parameter :: z0fac_water  = 0.016/g
+  real             , parameter :: snowrough    = 0.001
+  real             , parameter :: z0_min_water = 0.0001
 
   m2 = mmxp(ifm)
   m3 = mmyp(ifm)
@@ -669,8 +670,8 @@ subroutine transfer_ed2leaf(ifm,timel)
   leaf_g(ifm)%rstar(ia:iz,ja:jz,1) = wgrid_g(ifm)%rstar(ia:iz,ja:jz)
 
 
-  do i=ia,iz
-     do j=ja,jz
+  do j=ja,jz
+     do i=ia,iz
         
         la = leaf_g(ifm)%patch_area(i,j,2)+leaf_g(ifm)%patch_area(i,j,1) 
 
@@ -679,25 +680,66 @@ subroutine transfer_ed2leaf(ifm,timel)
            print*,"LEAF AREA NOT UNITY:",la
            print*,i,j
            call fatal_error('LEAF AREA NOT UNITY','transfer_ed2leaf','edcp_met.f90')
-        endif
+        end if
 
-     enddo
-  enddo
+     end do
+  end do
 
+  do j=ja,jz
+     do i=ia,iz
+        !----- Find roughness scales for water bodies -------------------------------------!
+        leaf_g(ifm)%patch_rough(i,j,1) = max(z0fac_water * leaf_g(ifm)%ustar(i,j,1) ** 2   &
+                                            ,z0_min_water)
+        leaf_g(ifm)%soil_rough(i,j,1)  = 0.0
+        leaf_g(ifm)%veg_rough(i,j,1)   = 0.0
+        
+        !----- Initializing the land bodies. They will remain 0 over the ocean. -----------!
+        leaf_g(ifm)%veg_rough(i,j,2)   = 0.0
+        leaf_g(ifm)%soil_rough(i,j,2)  = soil_rough
+        leaf_g(ifm)%patch_rough(i,j,2)  = 0.0
+     end do
+  end do
+  cgrid => edgrid_g(ifm)
+  do ipy=1,cgrid%npolygons
+     cpoly => cgrid%polygon(ipy)
+     i     = cgrid%ilon(ipy)
+     j     = cgrid%ilat(ipy)     
 
-  ! Interpolate and blend the albedo, upwelling longwave, and turbut fluxes
+     polygon_area_i = 1. / sum(cpoly%area(:))
+     do isi = 1, cpoly%nsites
+        csite => cpoly%site(isi)
+        site_area_i = 1. / sum(csite%area(:))
+        leaf_g(ifm)%veg_rough(i,j,2) = leaf_g(ifm)%veg_rough(i,j,2)                        &
+                                     + sum(csite%veg_rough(:)*csite%area(:)) * site_area_i &
+                                     * cpoly%area(isi) *polygon_area_i
+        leaf_g(ifm)%patch_rough(i,j,2) = leaf_g(ifm)%patch_rough(i,j,2)                    &
+                                       + sum(csite%rough(:)*csite%area(:)) * site_area_i   &
+                                       * cpoly%area(isi) *polygon_area_i
+     end do
+  end do
   
+  do j=ja,jz
+     do i=ia,iz
+        !----- Not sure about this one, but this is consistent with LEAF-3 ----------------!
+        leaf_g(ifm)%patch_rough(i,j,2) = max(leaf_g(ifm)%patch_rough(i,j,2)                &
+                                            ,leaf_g(ifm)%soil_rough(i,j,2)                 &
+                                            ,grid_g(ifm)%topzo(i,j))
+     end do
+  end do
+  !----------------------------------------------------------------------------------------!
+
+  ! Interpolate and blend the albedo, upwelling longwave, and turbulent fluxes  
   radiate_g(ifm)%albedt(ia:iz,ja:jz) = &
        leaf_g(ifm)%patch_area(ia:iz,ja:jz,2)* &
        ((1-tfact)*ed_fluxp_g(ifm)%albedt(ia:iz,ja:jz) + tfact*ed_fluxf_g(ifm)%albedt(ia:iz,ja:jz)) + &
        leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)*wgrid_g(ifm)%albedt(ia:iz,ja:jz)
   
-!  radiate_g(ifm)%rlongup(ia:iz,ja:jz) = &
-!       leaf_g(ifm)%patch_area(ia:iz,ja:jz,2)* &
-!       ((1-tfact)*ed_fluxp_g(ifm)%rlongup(ia:iz,ja:jz) + tfact*ed_fluxf_g(ifm)%rlongup(ia:iz,ja:jz)) + &
-!       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)*wgrid_g(ifm)%rlongup(ia:iz,ja:jz)
+  radiate_g(ifm)%rlongup(ia:iz,ja:jz) = &
+       leaf_g(ifm)%patch_area(ia:iz,ja:jz,2)* &
+       ((1-tfact)*ed_fluxp_g(ifm)%rlongup(ia:iz,ja:jz) + tfact*ed_fluxf_g(ifm)%rlongup(ia:iz,ja:jz)) + &
+       leaf_g(ifm)%patch_area(ia:iz,ja:jz,1)*wgrid_g(ifm)%rlongup(ia:iz,ja:jz)
   
-  radiate_g(ifm)%rlongup(ia:iz,ja:jz) =  wgrid_g(ifm)%rlongup(ia:iz,ja:jz)
+!  radiate_g(ifm)%rlongup(ia:iz,ja:jz) =  wgrid_g(ifm)%rlongup(ia:iz,ja:jz)
 
   turb_g(ifm)%sflux_u(ia:iz,ja:jz) = &
        leaf_g(ifm)%patch_area(ia:iz,ja:jz,2)* &
@@ -1131,7 +1173,7 @@ subroutine copy_avgvars_to_leaf(ifm)
    use ed_state_vars , only: edgrid_g,edtype,polygontype,sitetype,patchtype
    use mem_leaf      , only: leaf_g
    use mem_grid      , only: nzg
-   use rconstants    , only: t3ple,cliq1000,cice1000,alli1000
+   use rconstants    , only: t3ple,cliqvlme,cicevlme,allivlme
    use soil_coms     , only: soil
    use misc_coms, only: frqsum
    implicit none

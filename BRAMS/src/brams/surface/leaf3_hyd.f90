@@ -39,11 +39,6 @@ use mem_leaf
 use leaf_coms
 
 implicit none
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-real, dimension(nzgmax,nstyp) :: slcons1
-real, dimension(nstyp) :: slcons0,fhydraul
-common/efold/slcons1,slcons0,fhydraul
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 integer, parameter :: maxpatch=15,maxgrp=200
 integer :: m2,m3,mzg,mzs,np,ngrp,ng,l,i,j,ip
@@ -119,7 +114,7 @@ subroutine hydrol(m2,m3,mzg,mzs,np,maxpatch,ngrps          &
    ,slz,ig,jg,ipg,lpg,slmsts,zi,fa,wi,finv                 &
    ,rhow,rhowi,dtlt,slcons0,slcpd,wateradd,time)
 
-use rconstants, only: cliq,cliq1000, tsupercool
+use rconstants, only: cliq,cliqvlme, alli, wdns,wdnsi, tsupercool
 use therm_lib, only: qwtk,qtk
 implicit none
 integer :: m2,m3,mzg,mzs,np,maxpatch,ngrps,ngd,i,j,k,lp,l,ip,nsoil,ibotpatch
@@ -209,7 +204,7 @@ do ngd = 1,ngrps
 
    enddo
 
-   call qwtk(energysum,watersum*1.e3,slcpdsum,tempktopm,fracliq)
+   call qwtk(energysum,watersum*wdns,slcpdsum,tempktopm,fracliq)
 
 !  If there is no saturated water or if saturated soil is more than half
 !  frozen, skip over soil hydrology.
@@ -248,14 +243,14 @@ do ngd = 1,ngrps
          ip = ipg(l,ngd)
          nsoil = nint(soil_text(ksat(l),i,j,ip))
          call qwtk(soil_energy(ksat(l),i,j,ip)  &
-                  ,soil_water (ksat(l),i,j,ip)*1.e3  &
+                  ,soil_water (ksat(l),i,j,ip)*wdns  &
                   ,slcpd(nsoil),tempk,fracliq)
          delta_water = wateradd(l) / (slz(ksat(l)+1) - slz(ksat(l)))
          soil_water(ksat(l),i,j,ip) = soil_water(ksat(l),i,j,ip) + delta_water
-         delta_energy = delta_water * cliq1000 * (tempk - tsupercool)
+         delta_energy = delta_water * cliqvlme * (tempk - tsupercool)
          soil_energy(ksat(l),i,j,ip) = soil_energy(ksat(l),i,j,ip) + delta_energy
          wsum = wsum + wateradd(l) * fa(l)
-         qwsum = qwsum + wateradd(l) * cliq1000 * (tempk - tsupercool) * fa(l)
+         qwsum = qwsum + wateradd(l) * cliqvlme * (tempk - tsupercool) * fa(l)
       endif
    enddo
 
@@ -328,7 +323,7 @@ do ngd = 1,ngrps
             sfcwater_mass(1,i,j,ip) = sfcwater_mass(1,i,j,ip) - wfreeb
             sfcwater_energy(1,i,j,ip) = (qw - qwfree)  &
                / (max(1.e-4,sfcwater_mass(1,i,j,ip)))
-            sfcwater_energy(1,i,j,ip) = max (-1.6e5, min (4.8e5,  &
+            sfcwater_energy(1,i,j,ip) = max (0., min (6.4e5,  &
                sfcwater_energy(1,i,j,ip)))
 
             runoff = runoff + wfreeb * patch_area(i,j,ip)
@@ -342,9 +337,9 @@ do ngd = 1,ngrps
 ! Add overland flow and runoff to bottomland patch.  First convert each
 ! to kg/m2 for bottomland patch.
 
-   olflow = olflow * 1.e3 / patch_area(i,j,ibotpatch)
+   olflow = olflow * wdns / patch_area(i,j,ibotpatch)
    runoff = runoff / patch_area(i,j,ibotpatch)
-   qolflow = olflow * q * 1.e-3
+   qolflow = olflow * q * wdnsi
    qrunoff = qrunoff / patch_area(i,j,ibotpatch)
 
    qw = sfcwater_energy(1,i,j,ibotpatch) * sfcwater_mass(1,i,j,ibotpatch)  &

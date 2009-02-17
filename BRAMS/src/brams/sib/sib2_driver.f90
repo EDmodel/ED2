@@ -35,32 +35,32 @@ subroutine sfclyr_sib(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
   ng=ngrid
 
   call sib_driver(mzp,mxp,myp,nzg,nzs,npatch,ia,iz,ja,jz           &
-       ,leaf_g (ng), basic_g (ng), turb_g (ng), radiate_g(ng)   &
-       ,grid_g (ng), cuparm_g(ng), micro_g(ng)                  &
-       ,scratch%vt2da (1) ,scratch%vt2db(1) ,scratch%vt2dc (1)  &
-       ,scratch%vt2dd(1)  ,scratch%vt2de (1) ,scratch%vt2df(1)  &
-       ,scratch%vt3da (1)                                       &
+       ,leaf_g (ng), basic_g (ng), turb_g (ng), radiate_g(ng)      &
+       ,grid_g (ng), cuparm_g(ng), micro_g(ng)                     &
+       ,scratch%vt2da  ,scratch%vt2db  ,scratch%vt2dc              &
+       ,scratch%vt2dd  ,scratch%vt2de  ,scratch%vt2df              &
+       ,scratch%vt3da                                              &
        ,ng)
 
   ! Apply lateral boundary conditions to leaf3/SiB arrays
 
-  call leaf_bcond(mxp,myp,nzg,nzs,npatch,jdim     &
-       ,leaf_g(ng)%soil_water (1,1,1,1) ,leaf_g(ng)%sfcwater_mass  (1,1,1,1)  &
-       ,leaf_g(ng)%soil_energy(1,1,1,1) ,leaf_g(ng)%sfcwater_energy(1,1,1,1)  &
-       ,leaf_g(ng)%soil_text  (1,1,1,1) ,leaf_g(ng)%sfcwater_depth (1,1,1,1)  &
-       ,leaf_g(ng)%ustar        (1,1,1) ,leaf_g(ng)%tstar            (1,1,1)  &
-       ,leaf_g(ng)%rstar        (1,1,1) ,leaf_g(ng)%veg_albedo       (1,1,1)  &
-       ,leaf_g(ng)%veg_fracarea (1,1,1) ,leaf_g(ng)%veg_lai          (1,1,1)  &
-       ,leaf_g(ng)%veg_tai      (1,1,1)                                       &
-       ,leaf_g(ng)%veg_rough    (1,1,1) ,leaf_g(ng)%veg_height       (1,1,1)  &
-       ,leaf_g(ng)%patch_area   (1,1,1) ,leaf_g(ng)%patch_rough      (1,1,1)  &
-       ,leaf_g(ng)%patch_wetind (1,1,1) ,leaf_g(ng)%leaf_class       (1,1,1)  &
-       ,leaf_g(ng)%soil_rough   (1,1,1) ,leaf_g(ng)%sfcwater_nlev    (1,1,1)  &
-       ,leaf_g(ng)%stom_resist  (1,1,1) ,leaf_g(ng)%ground_rsat      (1,1,1)  &
-       ,leaf_g(ng)%ground_rvap  (1,1,1) ,leaf_g(ng)%veg_water        (1,1,1)  &
-       ,leaf_g(ng)%veg_temp     (1,1,1) ,leaf_g(ng)%can_rvap         (1,1,1)  &
-       ,leaf_g(ng)%can_temp     (1,1,1) ,leaf_g(ng)%veg_ndvip        (1,1,1)  &
-       ,leaf_g(ng)%veg_ndvic    (1,1,1) ,leaf_g(ng)%veg_ndvif        (1,1,1)  )
+  call leaf_bcond(mxp,myp,nzg,nzs,npatch,jdim                        &
+       ,leaf_g(ng)%soil_water           ,leaf_g(ng)%sfcwater_mass    &
+       ,leaf_g(ng)%soil_energy          ,leaf_g(ng)%sfcwater_energy  &
+       ,leaf_g(ng)%soil_text            ,leaf_g(ng)%sfcwater_depth   &
+       ,leaf_g(ng)%ustar                ,leaf_g(ng)%tstar            &
+       ,leaf_g(ng)%rstar                ,leaf_g(ng)%veg_albedo       &
+       ,leaf_g(ng)%veg_fracarea         ,leaf_g(ng)%veg_lai          &
+       ,leaf_g(ng)%veg_tai                                           &
+       ,leaf_g(ng)%veg_rough            ,leaf_g(ng)%veg_height       &
+       ,leaf_g(ng)%patch_area           ,leaf_g(ng)%patch_rough      &
+       ,leaf_g(ng)%patch_wetind         ,leaf_g(ng)%leaf_class       &
+       ,leaf_g(ng)%soil_rough           ,leaf_g(ng)%sfcwater_nlev    &
+       ,leaf_g(ng)%stom_resist          ,leaf_g(ng)%ground_rsat      &
+       ,leaf_g(ng)%ground_rvap          ,leaf_g(ng)%veg_water        &
+       ,leaf_g(ng)%veg_temp             ,leaf_g(ng)%can_rvap         &
+       ,leaf_g(ng)%can_temp             ,leaf_g(ng)%veg_ndvip        &
+       ,leaf_g(ng)%veg_ndvic            ,leaf_g(ng)%veg_ndvif        )
 
   return
 end subroutine sfclyr_sib
@@ -145,35 +145,29 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
   dtlc_factor = 1. / float(niter_can)
   dtlc        = dtll * dtlc_factor
 
-  hcapcan = 2.0e4
-  wcapcan = 2.0e1
-  hcapveg = 3.e4
-
   dtllohcc = dtll / hcapcan
   dtllowcc = dtll / wcapcan
   dtlcohcc = dtlc / hcapcan
   dtlcowcc = dtlc / wcapcan
   dtlcohcv = dtlc / hcapveg
 
-  z0fac_water = .016 / g
-  snowrough = .001
 
   ! Copy surface atmospheric variables into 2d arrays for input to leaf
 
   if (if_adap == 1) then
-     call sfc_fields_adap(m1,m2,m3,ia,iz,ja,jz,jdim             &
-          ,grid%flpu   (1,1)   ,grid%flpv (1,1)   ,grid%flpw(1,1)    &
-          ,grid%topma (1,1)   ,grid%aru (1,1,1) ,grid%arv(1,1,1)  &
-          ,basic%theta(1,1,1) ,basic%rv (1,1,1) ,basic%up(1,1,1)  &
-          ,basic%vp   (1,1,1) ,basic%dn0(1,1,1) ,basic%pp(1,1,1)  &
-          ,basic%pi0  (1,1,1) ,zt,zm,dzt                          &
+     call sfc_fields_adap(m1,m2,m3,ia,iz,ja,jz,jdim               &
+          ,grid%flpu          ,grid%flpv        ,grid%flpw        &
+          ,grid%topma         ,grid%aru         ,grid%arv         &
+          ,basic%theta        ,basic%rv         ,basic%up         &
+          ,basic%vp           ,basic%dn0        ,basic%pp         &
+          ,basic%pi0          ,zt,zm,dzt                          &
           ,ths2,rvs2,ups2,vps2,pis2,dens2,zts2                    )
   else
-     call sfc_fields(m1,m2,m3,ia,iz,ja,jz,jdim                  &
-          ,basic%theta(1,1,1) ,basic%rv (1,1,1) ,basic%up(1,1,1)  &
-          ,basic%vp   (1,1,1) ,basic%dn0(1,1,1) ,basic%pp(1,1,1)  &
-          ,basic%pi0  (1,1,1) ,grid%rtgt(1,1)   ,zt               &
-          ,ths2,rvs2,ups2,vps2,pis2,dens2,zts2                    )
+     call sfc_fields(m1,m2,m3,ia,iz,ja,jz,jdim             &
+          ,basic%theta        ,basic%rv         ,basic%up  &
+          ,basic%vp           ,basic%dn0        ,basic%pp  &
+          ,basic%pi0          ,grid%rtgt        ,zt        &
+          ,ths2,rvs2,ups2,vps2,pis2,dens2,zts2             )
   endif
 
   do j = ja,jz
@@ -197,7 +191,7 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
 
         leaf%soil_energy(mzg,i,j,1) = alli  &
              + cliq * (leaf%seatp(i,j) + (leaf%seatf(i,j) - leaf%seatp(i,j)) &
-             * timefac_sst - t00)
+             * timefac_sst - tsupercool)
 
         ! Fill surface precipitation arrays for input to SiB
 
@@ -261,11 +255,12 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
                     L_TS_TOWN   = 0.
 
                     call sfcrad(mzg,mzs,ip                 &
-                         ,leaf%soil_energy     (1:mzg,i,j,ip)  &
-                         ,leaf%soil_water      (1:mzg,i,j,ip)  &
-                         ,leaf%soil_text       (1:mzg,i,j,ip)  &
-                         ,leaf%sfcwater_energy (1:mzs,i,j,ip)  &
-                         ,leaf%sfcwater_depth  (1:mzs,i,j,ip)  &
+                         ,leaf%soil_energy     (:,i,j,ip)  &
+                         ,leaf%soil_water      (:,i,j,ip)  &
+                         ,leaf%soil_text       (:,i,j,ip)  &
+                         ,leaf%sfcwater_energy (:,i,j,ip)  &
+                         ,leaf%sfcwater_mass   (:,i,j,ip)  &
+                         ,leaf%sfcwater_depth  (:,i,j,ip)  &
                          ,leaf%patch_area      (i,j,ip)    &
                          ,leaf%can_temp        (i,j,ip)    &
                          ,leaf%veg_temp        (i,j,ip)    &
@@ -403,7 +398,7 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
                     do k = 1,mzg
                        nsoil = nint(leaf%soil_text(k,i,j,ip))
                        call qwtk(leaf%soil_energy(k,i,j,ip),  &
-                            leaf%soil_water(k,i,j,ip)*1.e3,   &
+                            leaf%soil_water(k,i,j,ip)*wdns,   &
                             slcpd(nsoil), tempk(k), fracliq(k))
                     enddo
                     ! Diagnose snow temperature.
@@ -528,9 +523,9 @@ subroutine sib_driver(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz   &
                     !calculate back soil energy 
                     do k=1,mzg
                        nsoil = nint(leaf%soil_text(k,i,j,ip))
-                       leaf%soil_energy(k,i,j,ip) = (tempk(k)- t00)  &
-                            *(slcpd(nsoil)+leaf%soil_water(k,i,j,ip)*cliq1000) &
-                            + leaf%soil_water(k,i,j,ip)*alli1000
+                       leaf%soil_energy(k,i,j,ip) = tempk(k) * slcpd(nsoil)                &
+                                                  + leaf%soil_water(k,i,j,ip) * cliqvlme   &
+                                                  * (tempk(k) - tsupercool)
                     enddo
 
                  endif

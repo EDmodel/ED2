@@ -710,8 +710,14 @@ do j=ja,jz
               +0.03156)),0.16)
          shr=aux2*(rf-rf2)/(rf-rf1)
          smr=aux1*(rf-rf4)/(rf-rf3)*shr
+
+         aux=vctr9(k)*vctr9(k)/tkep2(k)
+         gm=aux*vt3di(k,i,j)
+         gh=-aux*vt3dj(k,i,j)
+
          tker=max(16.6*vctr9(k)*vctr9(k)*(smr*vt3di(k,i,j)  &
             -shr*vt3dj(k,i,j)),2.*tkmin)
+
          if(tker.gt.tkep2(k) )then
             qq=sqrt(tkep2(k)/tker)
             ssmf=qq*smr
@@ -721,10 +727,6 @@ do j=ja,jz
          else
 
 ! --- for decaying turbulence use mellor and yamada's sm and sh (sh0)
-
-            aux=vctr9(k)*vctr9(k)/tkep2(k)
-            gm=aux*vt3di(k,i,j)
-            gh=-aux*vt3dj(k,i,j)
             sm1=0.6992-9.33948672*gh
             sm2=1.-(36.7188-187.4408515*gh+88.83949824*gm)*gh  &
                  +5.0784*gm

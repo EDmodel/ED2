@@ -59,25 +59,25 @@ contains
 
     ! ALF - Putting Zero on all nest variables
 
-    call azero((nz*ny*2), nbounds(ng)%bux(1,1,1))
-    call azero((nz*nx*2), nbounds(ng)%buy(1,1,1))
-    call azero((nx*ny*2), nbounds(ng)%buz(1,1,1))
+    call azero((nz*ny*2), nbounds(ng)%bux)
+    call azero((nz*nx*2), nbounds(ng)%buy)
+    call azero((nx*ny*2), nbounds(ng)%buz)
 
-    call azero((nz*ny*2), nbounds(ng)%bvx(1,1,1))
-    call azero((nz*nx*2), nbounds(ng)%bvy(1,1,1))
-    call azero((nx*ny*2), nbounds(ng)%bvz(1,1,1))
+    call azero((nz*ny*2), nbounds(ng)%bvx)
+    call azero((nz*nx*2), nbounds(ng)%bvy)
+    call azero((nx*ny*2), nbounds(ng)%bvz)
 
-    call azero((nz*ny*2), nbounds(ng)%bwx(1,1,1))
-    call azero((nz*nx*2), nbounds(ng)%bwy(1,1,1))
-    call azero((nx*ny*2), nbounds(ng)%bwz(1,1,1))
+    call azero((nz*ny*2), nbounds(ng)%bwx)
+    call azero((nz*nx*2), nbounds(ng)%bwy)
+    call azero((nx*ny*2), nbounds(ng)%bwz)
 
-    call azero((nz*ny*2), nbounds(ng)%bpx(1,1,1))
-    call azero((nz*nx*2), nbounds(ng)%bpy(1,1,1))
-    call azero((nx*ny*2), nbounds(ng)%bpz(1,1,1))
+    call azero((nz*ny*2), nbounds(ng)%bpx)
+    call azero((nz*nx*2), nbounds(ng)%bpy)
+    call azero((nx*ny*2), nbounds(ng)%bpz)
 
-    call azero((nz*ny*2*num_scalar(ng)), nbounds(ng)%bsx(1,1,1,1))
-    call azero((nz*nx*2*num_scalar(ng)), nbounds(ng)%bsy(1,1,1,1))
-    call azero((nx*ny*2*num_scalar(ng)), nbounds(ng)%bsz(1,1,1,1))
+    call azero((nz*ny*2*num_scalar(ng)), nbounds(ng)%bsx)
+    call azero((nz*nx*2*num_scalar(ng)), nbounds(ng)%bsy)
+    call azero((nx*ny*2*num_scalar(ng)), nbounds(ng)%bsz)
 
     return
   end subroutine alloc_nestb

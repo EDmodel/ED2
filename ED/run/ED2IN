@@ -249,9 +249,9 @@
                               !  1  --  Fourth-order Runge Kutta
 
    NL%ISTOMA_SCHEME   = 0  ! This is the scheme used to compute stomatal 
-                         ! conductance and photosynthesis.  Set to 0 to do 
-                         ! the full, exact calculation each time.  Set to 1 
-                         ! to do the 'small perturbation' scheme.
+                           ! conductance and photosynthesis.  Set to 0 to do 
+                           ! the full, exact calculation each time.  Set to 1 
+                           ! to do the 'small perturbation' scheme.
 
    NL%IPHEN_SCHEME    = 0  ! This specifies the phenology scheme:
                            !  0 is for the Botta et al scheme
@@ -259,22 +259,22 @@
                            !  Other options coming soon.
   
    NL%REPRO_SCHEME    = 0  ! This specifies the reproduction scheme:
-                         !  0 -- reproduction off (useful for short runs)
-                         !  1 -- original ED1 default
+                           !  0 -- reproduction off (useful for short runs)
+                           !  1 -- original ED1 default
 
    NL%LAPSE_SCHEME    = 0  ! This specifies the met lapse rate scheme:
-			 !  0 -- lapse rates off
-			 !  1 -- phenomenological, global
-			 !  2 -- phenomenological, local (not yet implemented)
-			 !  3 -- mechanistic(not yet implemented)
+                           !  0 -- lapse rates off
+                           !  1 -- phenomenological, global
+                           !  2 -- phenomenological, local (not yet implemented)
+                           !  3 -- mechanistic(not yet implemented)
   
-   NL%CROWN_MOD       = 0 ! Specifies how tree crowns are represent in the 
-			  ! canopy radiation model
-			  !  0  - ED1 default (continuous horizontal)
-			  !  1  - finite radius mixing model (Dietze)`
+   NL%CROWN_MOD       = 0  ! Specifies how tree crowns are represent in the 
+                           ! canopy radiation model
+                           !  0  - ED1 default (continuous horizontal)
+                           !  1  - finite radius mixing model (Dietze)
 
    NL%N_PLANT_LIM     = 1  ! Determines whether (1) or not (0) plants can
-                         ! be limited by nitrogen
+                           ! be limited by nitrogen
 
    NL%N_DECOMP_LIM    = 1  ! Determines whether (1) or not (0) decomposition
                          ! can be limited by nitrogen

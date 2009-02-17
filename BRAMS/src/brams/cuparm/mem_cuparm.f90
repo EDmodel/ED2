@@ -21,8 +21,6 @@ module mem_cuparm
      real, pointer, dimension(:,:,:,:) :: &
            thsrc                          & ! Heating rate due to this cloud
           ,rtsrc                          & ! Moistening rate due to this cloud
-          ,areadn                         & ! Downdraft relative area.
-          ,areaup                         & ! Updraft relative area.
           ,cuprliq                        & ! Param. cumulus liquid water mixing ratio
           ,cuprice                        ! ! Param. cumulus ice mixing ratio
 
@@ -33,6 +31,8 @@ module mem_cuparm
      real, pointer, dimension(:,:,:) :: &
            aadn                         & ! Downdraft cloud work (not always computed)
           ,aaup                         & ! Updraft cloud work (not always computed)
+          ,areadn                       & ! Downdraft relative area.
+          ,areaup                       & ! Updraft relative area.
           ,conprr                       & ! Convective precipitation rate
           ,dnmf                         & ! Reference downdraft mass flux
           ,edt                          & ! dnmf/upmf (cloud work related)
@@ -200,8 +200,6 @@ contains
     !--------------------------------------------------------------------------------------!
     allocate (cuparm%thsrc   (n1,n2,n3,nclouds))
     allocate (cuparm%rtsrc   (n1,n2,n3,nclouds))
-    allocate (cuparm%areadn  (n1,n2,n3,nclouds))
-    allocate (cuparm%areaup  (n1,n2,n3,nclouds))
     allocate (cuparm%cuprliq (n1,n2,n3,nclouds))
     allocate (cuparm%cuprice (n1,n2,n3,nclouds))
     allocate (cuparm%aconpr     (n2,n3)        )
@@ -209,6 +207,8 @@ contains
     allocate (cuparm%conprr     (n2,n3,nclouds))
     allocate (cuparm%xiact_c    (n2,n3,nclouds))
     allocate (cuparm%xiact_p    (n2,n3,nclouds))
+    allocate (cuparm%areadn     (n2,n3,nclouds))
+    allocate (cuparm%areaup     (n2,n3,nclouds))
 
 
     !----- If cumulus inversion is on, include extra variables. ---------------------------!
@@ -400,16 +400,6 @@ contains
          ,ng, npts, imean,  &
          'RTSRC :8:hist:anal:mpti:mpt3')
 
-    if (associated(cuparm%areadn))  &
-         call vtables2 (cuparm%areadn(1,1,1,1),cuparmm%areadn(1,1,1,1)  &
-         ,ng, npts, imean,  &
-         'AREADN :8:hist:anal:mpti:mpt3')
-
-    if (associated(cuparm%areaup))  &
-         call vtables2 (cuparm%areaup(1,1,1,1),cuparmm%areaup(1,1,1,1)  &
-         ,ng, npts, imean,  &
-         'AREAUP :8:hist:anal:mpti:mpt3')
-
     if (associated(cuparm%cuprliq))  &
          call vtables2 (cuparm%cuprliq(1,1,1,1),cuparmm%cuprliq(1,1,1,1)  &
          ,ng, npts, imean,  &
@@ -460,6 +450,16 @@ contains
          call vtables2 (cuparm%aaup(1,1,1),cuparmm%aaup(1,1,1)  &
          ,ng, npts, imean,  &
          'AAUP :9:hist:anal:mpti:mpt3')
+
+    if (associated(cuparm%areadn))  &
+         call vtables2 (cuparm%areadn(1,1,1),cuparmm%areadn(1,1,1)  &
+         ,ng, npts, imean,  &
+         'AREADN :9:hist:anal:mpti:mpt3')
+
+    if (associated(cuparm%areaup))  &
+         call vtables2 (cuparm%areaup(1,1,1),cuparmm%areaup(1,1,1)  &
+         ,ng, npts, imean,  &
+         'AREAUP :9:hist:anal:mpti:mpt3')
 
     if (associated(cuparm%conprr))  &
          call vtables2 (cuparm%conprr(1,1,1),cuparmm%conprr(1,1,1)  &

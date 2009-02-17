@@ -227,7 +227,8 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,pi0,pp,pc,wp,dn0,tkep,rli
          ,tke          & ! intent(out) - Forced Turbulent kinetic energy          [   J/kg]
          ,sigw         & ! intent(out) - Vertical velocity standard deviation     [    m/s]
          ,wwind        ! ! intent(out) - Mean vertical velocity                   [    m/s]
-   use rconstants, only : cp,cpi,cpor,p00,g,alvl,rgas,t00,epi,aklv,akiv,toodry,sigwmin
+   use rconstants, only : cp,cpi,cpor,p00,g,alvl,rgas,t00,epi,aklv,akiv,toodry             &
+                         ,sigwmin,tkmin
 
    !------ External functions -------------------------------------------------------------!
    use therm_lib, only: &
@@ -326,7 +327,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,pi0,pp,pc,wp,dn0,tkep,rli
       !------ 6. Finding the ice-vapour equivalent potential temperature ------------------!
       theiv(k) = thetaeiv(thil(k),p(k),t(k),qvap(k),qtot(k))
       !------ 7. Turbulent kinetic energy -------------------------------------------------!
-      tke(k)   = tkep(kr) + dtkedt(k) * dtime
+      tke(k)   = max(tkmin,tkep(kr) + dtkedt(k) * dtime)
       !------ 8. Air density --------------------------------------------------------------!
       rho(k)   = idealdens(p(k),t(k),qvap(k),qtot(k))
       !------------------------------------------------------------------------------------!
@@ -630,8 +631,8 @@ subroutine grell_output(comp_down,m1,mgmzp,rtgt,zt,zm,dnmf,upmf,xierr,zjmin,zk22
    real, dimension(m1), intent(out) :: rtsrc     ! Total mixing ratio feedback    [kg/kg/s]
    real, dimension(m1), intent(out) :: cuprliq   ! Cumulus water mixing ratio     [  kg/kg]
    real, dimension(m1), intent(out) :: cuprice   ! Cumulus ice mixing ratio       [  kg/kg]
-   real, dimension(m1), intent(out) :: areadn    ! Fractional downdraft area      [    ---]
-   real, dimension(m1), intent(out) :: areaup    ! Fractional updraft area        [    ---]
+   real               , intent(out) :: areadn    ! Fractional downdraft area      [    ---]
+   real               , intent(out) :: areaup    ! Fractional updraft area        [    ---]
    real               , intent(out) :: conprr    ! Rate of convective precip.     [kg/m²/s]
    real               , intent(out) :: xierr     ! Error flag
    real               , intent(out) :: zjmin     ! Downdraft originating level    [      m]
@@ -647,13 +648,16 @@ subroutine grell_output(comp_down,m1,mgmzp,rtgt,zt,zm,dnmf,upmf,xierr,zjmin,zk22
    !---------------------------------------------------------------------------------------!
    !    Flushing all variables to zero in case convection didn't happen.                   !
    !---------------------------------------------------------------------------------------!
-   thsrc   = 0.
-   rtsrc   = 0.
+   do k=1,m1
+      thsrc  (k) = 0.
+      rtsrc  (k) = 0.
+      cuprliq(k) = 0.
+      cuprice(k) = 0.
+   end do
+
    areadn  = 0.
    areaup  = 0.
    conprr  = 0.
-   cuprliq = 0.
-   cuprice = 0.
    zkdt    = 0.
    zk22    = 0.
    zkbcon  = 0.
@@ -709,8 +713,8 @@ subroutine grell_output(comp_down,m1,mgmzp,rtgt,zt,zm,dnmf,upmf,xierr,zjmin,zk22
    !---------------------------------------------------------------------------------------!
    do k=1,ktop
       kr=k+kgoff
-      cuprliq(kr) = max(0.,qliqd_cld(k) * areadn(kr) + qliqu_cld(k) * areaup(kr))
-      cuprice(kr) = max(0.,qiced_cld(k) * areadn(kr) + qiceu_cld(k) * areaup(kr))
+      cuprliq(kr) = max(0.,qliqd_cld(k) * areadn + qliqu_cld(k) * areaup)
+      cuprice(kr) = max(0.,qiced_cld(k) * areadn + qiceu_cld(k) * areaup)
    end do
 
    return
@@ -781,8 +785,8 @@ subroutine grell_draft_area(comp_down,m1,mgmzp,kgoff,jmin,k22,kbcon,ktop,dzu_cld
    real, dimension(mgmzp), intent(in)  :: rhou_cld    ! Density                   [  kg/m³]
    real                  , intent(in)  :: upmf        ! Reference mass flux       [kg/m²/s]
    !----- Output variables ----------------------------------------------------------------!
-   real, dimension(m1)   , intent(out) :: areadn      ! Downdraft relative area   [    ---]
-   real, dimension(m1)   , intent(out) :: areaup      ! Updraft   relative area   [    ---]
+   real                  , intent(out) :: areadn      ! Downdraft relative area   [    ---]
+   real                  , intent(out) :: areaup      ! Updraft   relative area   [    ---]
    !----- Local variables -----------------------------------------------------------------!
    integer                             :: k         ! Cloud level counter
    integer                             :: kr        ! BRAMS level counter
@@ -794,6 +798,7 @@ subroutine grell_draft_area(comp_down,m1,mgmzp,kgoff,jmin,k22,kbcon,ktop,dzu_cld
    real, parameter                     :: min_downdraft2      = 0.01
    real, parameter                     :: min_updraft         = 0.60
    real, parameter                     :: min_updraft2        = min_updraft*min_updraft
+   real, parameter                     :: max_areaup          = 0.50
    !----- External functions --------------------------------------------------------------!
    real, external                      :: cdf
    real, external                      :: cdf2normal
@@ -818,54 +823,26 @@ subroutine grell_draft_area(comp_down,m1,mgmzp,kgoff,jmin,k22,kbcon,ktop,dzu_cld
    if (comp_down) then
       w_cld = 0.
       do k=2,jmin
-         kr = k + kgoff
-         lske2 = wwind(k-1)*wwind(k-1) + sigw(k-1)*sigw(k-1)
-         w_cld = sqrt(max(min_downdraft2,                                                  &
-                 (w_cld*w_cld*(1.+(1.5*mentrd_rate(k-1)-0.5*cdd(k-1))*dzu_cld(k-1))        &
-                  -(dbyd(k-1)+dbyd(k))*dzu_cld(k-1)-mentrd_rate(k-1)*lske2)                &
-                 / (1.-0.5*(mentrd_rate(k-1)+cdd(k-1))*dzu_cld(k-1))))
-         areadn(kr) = dnmf * etad_cld(k) / (rhod_cld(k) * w_cld)
+         kr     = k + kgoff
+         lske2  = wwind(k-1)*wwind(k-1) + sigw(k-1)*sigw(k-1)                        
+         w_cld  = sqrt(max(min_downdraft2,                                                 &
+                  (w_cld*w_cld*(1.+(1.5*mentrd_rate(k-1)-0.5*cdd(k-1))*dzu_cld(k-1))       &
+                   -(dbyd(k-1)+dbyd(k))*dzu_cld(k-1)-mentrd_rate(k-1)*lske2)               &
+                  / (1.-0.5*(mentrd_rate(k-1)+cdd(k-1))*dzu_cld(k-1))))              
       end do
+      areadn = dnmf * etad_cld(jmin) / (rhod_cld(jmin) * w_cld)
    end if
    
    !---------------------------------------------------------------------------------------!
    !   Updraft. Since I know the minimum vertical velocity needed at the updraft origin, I !
-   ! can will use it to define the expected updraft at k22. To do this I will find the CDF !
-   ! corresponding to the minimum buoyant kinetic energy. Then I will assume that the      !
-   ! expected updraft would the one whose CDF is halfway between the CDF of the minimum    !
-   ! and 1. As in the downdraft case, the friction is related to the entrainment following !
-   ! Zhang and Fritsch (1986).                                                             !
+   ! can will use it to define the expected updraft at k22. We already found wbuoymin, the !
+   ! minimum vertical velocity that will make w>0 at the LFC. Using the PDF again, we can  !
+   ! assume that the updraft area at k22 corresponds to the fractional area in which       !
+   ! w > wbuoymin. From this area we can estimate w_cld at the updraft origin level and    !
+   ! find the distribution of area.                                                        !
    !---------------------------------------------------------------------------------------!
    wnorm   = (wbuoymin-wwind(k22))/sigw(k22)
-   cdfval  = cdf(wnorm)
-   cdfval  = 1. - 0.5*cdfval
-   wnorm   = cdf2normal(cdfval)
-   w_cld   = max(min_updraft,wwind(k22)+sigw(k22)*wnorm)
-   areaup(k22+kgoff) = upmf * etau_cld(k22) / (rhou_cld(k22) * w_cld)
-   !---------------------------------------------------------------------------------------!
-   !    Updraft below the LFC, there is no entrainment or detrainment. But it has the      !
-   ! friction, which is conveniently chosen as the entrainment rate, following Zhang and   !
-   ! Fritsch (1986).                                                                       !
-   !---------------------------------------------------------------------------------------!
-   do k=k22+1,kbcon
-      kr=k+kgoff
-      w_cld = sqrt(max(min_updraft2                                                        &
-                  ,(w_cld*w_cld*(1.-0.5*mentru_rate(k)*dzu_cld(k))                         &
-                   + (dbyu(k-1)+dbyu(k))*dzu_cld(k))                                       &
-                   / (1. + mentru_rate(k)*dzu_cld(k))))
-      areaup(kr) = upmf*etau_cld(k) / (rhou_cld(k) * w_cld)
-   end do
-   !----- Above the LFC, consider entrainment and detrainment -----------------------------!
-   do k=kbcon+1,ktop
-      kr=k+kgoff
-      lske2 = wwind(k)*wwind(k) + sigw(k)*sigw(k)
-      w_cld = sqrt(max(min_updraft2,                                                       &
-              (w_cld*w_cld*(1.-0.5*(mentru_rate(k)+cdd(k))*dzu_cld(k))                     &
-               + (dbyu(k-1)+dbyu(k))*dzu_cld(k)+mentru_rate(k)*lske2*dzu_cld(k))           &
-              / (1. + 1.5*mentru_rate(k)*dzu_cld(k) - 0.5*cdd(k)*dzu_cld(k))))
-      areaup(kr) = upmf*etau_cld(k) / (rhou_cld(k) * w_cld)
-   end do
-
+   areaup  = 1. - cdf(wnorm)
 
    return
 end subroutine grell_draft_area

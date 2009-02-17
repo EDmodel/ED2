@@ -35,27 +35,33 @@ subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,tke,qice,qliq,t
    integer               , intent(inout)  :: ierr      ! Error flag
    integer               , intent(out)    :: k22       ! Updraft origin level
    !----- Constant. Avoding using too levels too close to the surface ---------------------!
-   integer               , parameter      :: kstart=3  ! Minimum level
+   integer               , parameter      :: kstart=2  ! Minimum level
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   !    Three possibilities, depending on the user's preference:                           !
+   !    Four possibilities, depending on the user's preference:                            !
    !    a. The user wants to use the PBL height (iupmethod=2), and the user is running     !
    !       Nakanishi/Niino turbulence (positive pblidx, previously computed);              !
    !    b. The user wants to use the PBL height (iupmethod=2), other turbulence was used   !
    !    (pblidx is always zero in this case). Find PBL here.                               !
    !    c. The user wants to use the maximum thetae_iv as the first guess, for maximum     !
    !       instability.                                                                    !
+   !    d. The user wants to use the most turbulent level as the updraft origin.           !
    !---------------------------------------------------------------------------------------!
-   if (iupmethod == 2 .and. kpbl /= 0) then
-      k22 = kpbl
-   elseif (iupmethod == 2 .and. kpbl == 0) then
-      call grell_find_pbl_height(mkx,mgmzp,z,tke,qliq,qice,k22)
-   else
+   select case (iupmethod)
+   case (1) ! Maximum Thetae_iv
       k22 = (kstart-1) + maxloc(theiv_cup(kstart:kbmax),dim=1)
-   end if
+   case (2) ! PBL top  
+      if (kpbl /= 0) then
+         k22 = kpbl
+      else
+         call grell_find_pbl_height(mkx,mgmzp,z,tke,qliq,qice,k22)
+      end if
+   case (3) ! Most turbulent
+      k22 = (kstart-1) + maxloc(tke(kstart:kbmax),dim=1)
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -113,16 +119,16 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
    real, dimension(mgmzp), intent(in)   :: dzd_cld    ! Top-bottom cloud thickness [     m]
    real, dimension(mgmzp), intent(in)   :: mentru_rate! Entrainment rate           [   1/m]
    !----- Updraft variables. These will are scratch now, they will be adjusted later on ---!
-   real, dimension(mgmzp), intent(out)  :: theivu_cld ! Updraft theta_il           [     K]
-   real, dimension(mgmzp), intent(out)  :: thilu_cld  ! Updraft theta_il           [     K]
-   real, dimension(mgmzp), intent(out)  :: tu_cld     ! Updraft temperature        [     K]
-   real, dimension(mgmzp), intent(out)  :: qtotu_cld  ! Updraft total mixing ratio [ kg/kg]
-   real, dimension(mgmzp), intent(out)  :: qvapu_cld  ! Updraft vapour mix. ratio  [ kg/kg]
-   real, dimension(mgmzp), intent(out)  :: qliqu_cld  ! Updraft liquid mix.  ratio [ kg/kg]
-   real, dimension(mgmzp), intent(out)  :: qiceu_cld  ! Updraft ice    mix.  ratio [ kg/kg]
-   real, dimension(mgmzp), intent(out)  :: qsatu_cld  ! Updraft satur. mix. ratio  [ kg/kg]
-   real, dimension(mgmzp), intent(out)  :: rhou_cld   ! Updraft density            [ kg/m設
-   real, dimension(mgmzp), intent(out)  :: dbyu       ! Buoyancy acceleration      [  m/s淫
+   real, dimension(mgmzp), intent(inout):: theivu_cld ! Updraft theta_il           [     K]
+   real, dimension(mgmzp), intent(inout):: thilu_cld  ! Updraft theta_il           [     K]
+   real, dimension(mgmzp), intent(inout):: tu_cld     ! Updraft temperature        [     K]
+   real, dimension(mgmzp), intent(inout):: qtotu_cld  ! Updraft total mixing ratio [ kg/kg]
+   real, dimension(mgmzp), intent(inout):: qvapu_cld  ! Updraft vapour mix. ratio  [ kg/kg]
+   real, dimension(mgmzp), intent(inout):: qliqu_cld  ! Updraft liquid mix.  ratio [ kg/kg]
+   real, dimension(mgmzp), intent(inout):: qiceu_cld  ! Updraft ice    mix.  ratio [ kg/kg]
+   real, dimension(mgmzp), intent(inout):: qsatu_cld  ! Updraft satur. mix. ratio  [ kg/kg]
+   real, dimension(mgmzp), intent(inout):: rhou_cld   ! Updraft density            [ kg/m設
+   real, dimension(mgmzp), intent(inout):: dbyu       ! Buoyancy acceleration      [  m/s淫
    !----- These variables may or may not be assigned here so use inout --------------------!
    integer               , intent(inout):: k22        ! Level of origin of updrafts
    integer               , intent(inout):: ierr       ! Error flag
@@ -208,10 +214,7 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
       ! account the friction, which is defined based on the constant entrainment rate,     !
       ! following Zhang and Fritsch (1986) parametrisation).                               !
       !------------------------------------------------------------------------------------!
-      wbuoymin=sqrt(max(0.,                                                                &
-               (wbuoymin*wbuoymin*(1.+mentru_rate(k+1)*dzd_cld(k))                         &
-                - (dbyu(k+1)+dbyu(k))*dzd_cld(k))                                          &
-               / (1.-mentru_rate(k+1)*dzd_cld(k)) ) )
+      wbuoymin=sqrt(max(0., wbuoymin*wbuoymin - (dbyu(k+1)+dbyu(k))*dzd_cld(k)))
    end do
    !---------------------------------------------------------------------------------------!
    !    Now I use either cap_max or wnorm_max to decide whether convection can happen with !
@@ -286,16 +289,16 @@ subroutine grell_buoy_below_lfc(mkx,mgmzp,k22,kbcon,exner_cup,p_cup,theiv_cup,th
    real, dimension(mgmzp), intent(in)   :: qsat_cup   ! Sat. vapour mixing ratio   [ kg/kg]
    real, dimension(mgmzp), intent(in)   :: rho_cup    ! Density                    [ kg/m設
    !----- Updraft variables. --------------------------------------------------------------!
-   real, dimension(mgmzp), intent(out)  :: theivu_cld ! Updraft theta_il           [     K]
-   real, dimension(mgmzp), intent(out)  :: thilu_cld  ! Updraft theta_il           [     K]
-   real, dimension(mgmzp), intent(out)  :: tu_cld     ! Updraft temperature        [     K]
-   real, dimension(mgmzp), intent(out)  :: qtotu_cld  ! Updraft total mixing ratio [ kg/kg]
-   real, dimension(mgmzp), intent(out)  :: qvapu_cld  ! Updraft vapour mix. ratio  [ kg/kg]
-   real, dimension(mgmzp), intent(out)  :: qliqu_cld  ! Updraft liquid mix.  ratio [ kg/kg]
-   real, dimension(mgmzp), intent(out)  :: qiceu_cld  ! Updraft ice    mix.  ratio [ kg/kg]
-   real, dimension(mgmzp), intent(out)  :: qsatu_cld  ! Updraft satur. mix. ratio  [ kg/kg]
-   real, dimension(mgmzp), intent(out)  :: rhou_cld   ! Updraft density            [ kg/m設
-   real, dimension(mgmzp), intent(out)  :: dbyu       ! Buoyancy acceleration      [  m/s淫
+   real, dimension(mgmzp), intent(inout):: theivu_cld ! Updraft theta_il           [     K]
+   real, dimension(mgmzp), intent(inout):: thilu_cld  ! Updraft theta_il           [     K]
+   real, dimension(mgmzp), intent(inout):: tu_cld     ! Updraft temperature        [     K]
+   real, dimension(mgmzp), intent(inout):: qtotu_cld  ! Updraft total mixing ratio [ kg/kg]
+   real, dimension(mgmzp), intent(inout):: qvapu_cld  ! Updraft vapour mix. ratio  [ kg/kg]
+   real, dimension(mgmzp), intent(inout):: qliqu_cld  ! Updraft liquid mix.  ratio [ kg/kg]
+   real, dimension(mgmzp), intent(inout):: qiceu_cld  ! Updraft ice    mix.  ratio [ kg/kg]
+   real, dimension(mgmzp), intent(inout):: qsatu_cld  ! Updraft satur. mix. ratio  [ kg/kg]
+   real, dimension(mgmzp), intent(inout):: rhou_cld   ! Updraft density            [ kg/m設
+   real, dimension(mgmzp), intent(inout):: dbyu       ! Buoyancy acceleration      [  m/s淫
    !----- External functions --------------------------------------------------------------!
    real   , external                    :: buoyancy_acc ! Buoyancy acceleration funtion.
    !----- Local variables -----------------------------------------------------------------!
@@ -435,16 +438,16 @@ end subroutine grell_find_cloud_top
 subroutine grell_theiv_updraft(mkx,mgmzp,k22,kbcon,cdu,mentru_rate,theiv,theiv_cup,dzu_cld &
                               ,theivu_cld)
    implicit none
-   integer               , intent(in)  :: mkx, mgmzp  ! Grid dimesnsions
-   integer               , intent(in)  :: k22         ! Level in which updrafts begin
-   integer               , intent(in)  :: kbcon       ! Level of free convection
+   integer               , intent(in)    :: mkx, mgmzp  ! Grid dimesnsions
+   integer               , intent(in)    :: k22         ! Level in which updrafts begin
+   integer               , intent(in)    :: kbcon       ! Level of free convection
 
-   real, dimension(mgmzp), intent(in)  :: cdu         ! Updraft detrainment function;
-   real, dimension(mgmzp), intent(in)  :: mentru_rate ! Updraft entrainment rate
-   real, dimension(mgmzp), intent(in)  :: theiv       ! Thetae_iv @ model levels;
-   real, dimension(mgmzp), intent(in)  :: theiv_cup   ! Thetae_iv @ cloud levels;
-   real, dimension(mgmzp), intent(in)  :: dzu_cld     ! Delta-z for updrafts;
-   real, dimension(mgmzp), intent(out) :: theivu_cld  ! Cloud thetae_iv
+   real, dimension(mgmzp), intent(in)    :: cdu         ! Updraft detrainment function;
+   real, dimension(mgmzp), intent(in)    :: mentru_rate ! Updraft entrainment rate
+   real, dimension(mgmzp), intent(in)    :: theiv       ! Thetae_iv @ model levels;
+   real, dimension(mgmzp), intent(in)    :: theiv_cup   ! Thetae_iv @ cloud levels;
+   real, dimension(mgmzp), intent(in)    :: dzu_cld     ! Delta-z for updrafts;
+   real, dimension(mgmzp), intent(inout) :: theivu_cld  ! Cloud thetae_iv
 
    integer                             :: k           ! Counter
    !---------------------------------------------------------------------------------------!
@@ -475,15 +478,15 @@ end subroutine grell_theiv_updraft
 subroutine grell_nms_updraft(mkx,mgmzp,k22,kbcon,ktop,mentru_rate,cdu,dzu_cld,etau_cld)
    implicit none
 
-   integer               , intent(in)  :: mkx, mgmzp  ! Grid dimesnsions
-   integer               , intent(in)  :: k22         ! Level in which updrafts begin
-   integer               , intent(in)  :: kbcon       ! Level of free convection
-   integer               , intent(in)  :: ktop        ! Cloud top
-   
-   real, dimension(mgmzp), intent(in)  :: mentru_rate ! Updraft entrainment rate
-   real, dimension(mgmzp), intent(in)  :: cdu         ! Updraft detrainment function;
-   real, dimension(mgmzp), intent(in)  :: dzu_cld     ! Delta-z for clouds
-   real, dimension(mgmzp), intent(out) :: etau_cld    ! Normalized updraft flux
+   integer               , intent(in)    :: mkx, mgmzp  ! Grid dimesnsions
+   integer               , intent(in)    :: k22         ! Level in which updrafts begin
+   integer               , intent(in)    :: kbcon       ! Level of free convection
+   integer               , intent(in)    :: ktop        ! Cloud top
+                                        
+   real, dimension(mgmzp), intent(in)    :: mentru_rate ! Updraft entrainment rate
+   real, dimension(mgmzp), intent(in)    :: cdu         ! Updraft detrainment function;
+   real, dimension(mgmzp), intent(in)    :: dzu_cld     ! Delta-z for clouds           
+   real, dimension(mgmzp), intent(inout) :: etau_cld    ! Normalized updraft flux
 
    integer                             :: k           ! Counter
 
@@ -576,7 +579,7 @@ subroutine grell_most_thermo_updraft(comp_down,mkx,mgmzp,kbcon,ktop,cdu,mentru_r
    real, dimension(mgmzp), intent(inout) :: rhou_cld    ! Density                  [ kg/m設
    real, dimension(mgmzp), intent(inout) :: dbyu        ! Buoyancy acceleration    [  m/s淫
    !----- Output variables ----------------------------------------------------------------!
-   real, dimension(mgmzp), intent(out)   :: pwu_cld     ! Fall-out rain            [ kg/kg]
+   real, dimension(mgmzp), intent(inout) :: pwu_cld     ! Fall-out rain            [ kg/kg]
    real                  , intent(out)   :: pwavu       ! Total normalized integrated cond.
    !----- Local variables -----------------------------------------------------------------!
    integer                :: k              ! Counter                              [  ----]
@@ -730,7 +733,7 @@ subroutine grell_most_thermo_updraft(comp_down,mkx,mgmzp,kbcon,ktop,cdu,mentru_r
          qtotup = qtotua
          funp   = funa
          !------ Finding the current guess ------------------------------------------------!
-         qtotuc = qeverything - 0.5 * leftu_cld(k) * denomini
+         qtotuc = max(toodry,qeverything - 0.5 * leftu_cld(k) * denomini)
          thilu_cld(k) = thetaeiv2thil(theivu_cld(k),p_cup(k),qtotuc)
          call thil2tqall(thilu_cld(k),exner_cup(k),p_cup(k),qtotuc,qliqu_cld(k)            &
                         ,qiceu_cld(k),tu_cld(k),qvapu_cld(k),qsatu_cld(k))

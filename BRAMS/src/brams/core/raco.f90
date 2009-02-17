@@ -1,321 +1,237 @@
-!############################# Change Log ##################################
-! 5.0.0
-!
-!###########################################################################
-!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved
-!  Regional Atmospheric Modeling System - RAMS
-!###########################################################################
+!===================================== Change Log =========================================!
+! 5.0.0                                                                                    !
+!                                                                                          !
+!                                                                                          !
+!==========================================================================================!
+!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved                       !
+!  Regional Atmospheric Modeling System - RAMS                                             !
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     Acoustic terms small time-step driver: this routine calls all the necessary routines !
+! to march the model through the small timesteps.                                          !
+!------------------------------------------------------------------------------------------!
 subroutine acoustic_new()
-  !--------------------------------------------------------------------
-  !                  Acoustic terms small time-step driver
-  !
-  !     This routine calls all the necessary routines to march the model
-  !     through the small timesteps.
-  !-----------------------------------------------------------------------
-  use mem_tend
-  use mem_grid
-  use mem_basic
-  use mem_scratch
-  use node_mod
+   use mem_tend
+   use mem_grid
+   use mem_basic
+   use mem_scratch
+   use node_mod
 
-  implicit none
+   implicit none
 
-  ! CALL writep(basic_g(ngrid)%wp(1,1,1),mzp,mxp,myp,33,mxp-1,9,mynum)
+   if (if_adap == 0) then
+      call acoust_new(mzp,mxp,myp                                                          &
+                     , scratch%scr1         , scratch%scr2         , scratch%vt3da         &
+                     , scratch%vt3db        , scratch%vt3dc        , scratch%vt3dd         &
+                     , scratch%vt3de        , scratch%vt3df        , scratch%vt3dg         &
+                     , scratch%vt3dh        , scratch%vt2da        , basic_g(ngrid)%dn0    &
+                     , basic_g(ngrid)%pi0   , basic_g(ngrid)%th0   , basic_g(ngrid)%up     &
+                     , basic_g(ngrid)%vp    , basic_g(ngrid)%wp    , basic_g(ngrid)%pp     &
+                     , tend%ut              , tend%vt              , tend%wt               &
+                     , tend%pt              , grid_g(ngrid)%topt   , grid_g(ngrid)%topu    &
+                     , grid_g(ngrid)%topv   , grid_g(ngrid)%rtgt   , grid_g(ngrid)%rtgu    &
+                     , grid_g(ngrid)%f13u   , grid_g(ngrid)%dxu    , grid_g(ngrid)%rtgv    &
+                     , grid_g(ngrid)%dyv    , grid_g(ngrid)%f23v   , grid_g(ngrid)%f13t    &
+                     , grid_g(ngrid)%f23t   , grid_g(ngrid)%fmapui , grid_g(ngrid)%fmapvi  &
+                     , grid_g(ngrid)%dxt    , grid_g(ngrid)%dyt    , grid_g(ngrid)%fmapt   )
+   else
+      call acoust_adap(mzp,mxp,myp                                                         &
+                     , grid_g(ngrid)%flpu   , grid_g(ngrid)%flpv   , grid_g(ngrid)%flpw    &
+                     , scratch%scr1         , scratch%scr2         , scratch%vt3da         &
+                     , scratch%vt3db        , scratch%vt3dc        , scratch%vt3dd         &
+                     , scratch%vt3de        , scratch%vt3df        , scratch%vt3dg         &
+                     , scratch%vt3dh        , scratch%vt2da        , basic_g(ngrid)%dn0    &
+                     , basic_g(ngrid)%pi0   , basic_g(ngrid)%th0   , basic_g(ngrid)%up     &
+                     , basic_g(ngrid)%vp    , basic_g(ngrid)%wp    , basic_g(ngrid)%pp     &
+                     , tend%ut              , tend%vt              , tend%wt               &
+                     , tend%pt              , grid_g(ngrid)%dxu    , grid_g(ngrid)%dyv     &
+                     , grid_g(ngrid)%fmapui , grid_g(ngrid)%fmapvi , grid_g(ngrid)%dxt     &
+                     , grid_g(ngrid)%dyt    , grid_g(ngrid)%fmapt  , grid_g(ngrid)%aru     &
+                     , grid_g(ngrid)%arv    , grid_g(ngrid)%arw    , grid_g(ngrid)%volt    &
+                     , grid_g(ngrid)%volu   , grid_g(ngrid)%volv   , grid_g(ngrid)%volw    )
+   end if
 
-  if (if_adap == 0) then
-
-     call acoust_new(mzp,mxp,myp,scratch%scr1(1),scratch%scr2(1) &
-          ,scratch%vt3da(1)&
-          ,scratch%vt3db(1),scratch%vt3dc(1),scratch%vt3dd(1)  &
-          ,scratch%vt3de(1),scratch%vt3df(1),scratch%vt3dg(1)  &
-          ,scratch%vt3dh(1),scratch%vt2da(1)  &
-          ,basic_g(ngrid)%dn0(1,1,1),basic_g(ngrid)%pi0(1,1,1)  &
-          ,basic_g(ngrid)%th0(1,1,1),basic_g(ngrid)%up(1,1,1)  &
-          ,basic_g(ngrid)%vp(1,1,1),basic_g(ngrid)%wp(1,1,1)  &
-          ,basic_g(ngrid)%pp(1,1,1)  &
-          ,tend%ut(1),tend%vt(1),tend%wt(1),tend%pt(1)  &
-          ,grid_g(ngrid)%topt(1,1),grid_g(ngrid)%topu(1,1)  &
-          ,grid_g(ngrid)%topv(1,1),grid_g(ngrid)%rtgt(1,1)  &
-          ,grid_g(ngrid)%rtgu(1,1),grid_g(ngrid)%f13u(1,1)  &
-          ,grid_g(ngrid)%dxu(1,1),grid_g(ngrid)%rtgv(1,1)  &
-
-!!$          ,grid_g(ngrid)%f23u(1,1),grid_g(ngrid)%dyv(1,1)  &
-          ,grid_g(ngrid)%dyv(1,1)  &
-
-          ,grid_g(ngrid)%f23v(1,1),grid_g(ngrid)%f13t(1,1)  &
-          ,grid_g(ngrid)%f23t(1,1),grid_g(ngrid)%fmapui(1,1)  &
-          ,grid_g(ngrid)%fmapvi(1,1),grid_g(ngrid)%dxt(1,1)  &
-          ,grid_g(ngrid)%dyt(1,1),grid_g(ngrid)%fmapt(1,1))
-
-
-!!$     call acoust(mzp,mxp,myp,scratch%scr1(1),scratch%scr2(1),scratch%vt3da(1)&
-!!$          ,scratch%vt3db(1),scratch%vt3dc(1),scratch%vt3dd(1)  &
-!!$          ,scratch%vt3de(1),scratch%vt3df(1),scratch%vt3dg(1)  &
-!!$          ,scratch%vt3dh(1),scratch%vt2da(1)  &
-!!$          ,basic_g(ngrid)%dn0(1,1,1),basic_g(ngrid)%pi0(1,1,1)  &
-!!$          ,basic_g(ngrid)%th0(1,1,1),basic_g(ngrid)%up(1,1,1)  &
-!!$          ,basic_g(ngrid)%vp(1,1,1),basic_g(ngrid)%wp(1,1,1)  &
-!!$          ,basic_g(ngrid)%pp(1,1,1)  &
-!!$          ,tend%ut(1),tend%vt(1),tend%wt(1),tend%pt(1)  &
-!!$          ,grid_g(ngrid)%topt(1,1),grid_g(ngrid)%topu(1,1)  &
-!!$          ,grid_g(ngrid)%topv(1,1),grid_g(ngrid)%rtgt(1,1)  &
-!!$          ,grid_g(ngrid)%rtgu(1,1),grid_g(ngrid)%f13u(1,1)  &
-!!$          ,grid_g(ngrid)%dxu(1,1),grid_g(ngrid)%rtgv(1,1)  &
-!!$          ,grid_g(ngrid)%f23u(1,1),grid_g(ngrid)%dyv(1,1)  &
-!!$          ,grid_g(ngrid)%f23v(1,1),grid_g(ngrid)%f13t(1,1)  &
-!!$          ,grid_g(ngrid)%f23t(1,1),grid_g(ngrid)%fmapui(1,1)  &
-!!$          ,grid_g(ngrid)%fmapvi(1,1),grid_g(ngrid)%dxt(1,1)  &
-!!$          ,grid_g(ngrid)%dyt(1,1),grid_g(ngrid)%fmapt(1,1))
-
-  else
-
-     call acoust_adap(mzp,mxp,myp   &
-          ,grid_g(ngrid)%flpu   (1,1)   ,grid_g(ngrid)%flpv   (1,1)    &
-          ,grid_g(ngrid)%flpw   (1,1)   ,scratch%scr1        (1)      &
-          ,scratch%scr2        (1)     ,scratch%vt3da       (1)      &
-          ,scratch%vt3db       (1)     ,scratch%vt3dc       (1)      &
-          ,scratch%vt3dd       (1)     ,scratch%vt3de       (1)      &
-          ,scratch%vt3df       (1)     ,scratch%vt3dg       (1)      &
-          ,scratch%vt3dh       (1)     ,scratch%vt2da       (1)      &
-          ,basic_g(ngrid)%dn0  (1,1,1) ,basic_g(ngrid)%pi0  (1,1,1)  &
-          ,basic_g(ngrid)%th0  (1,1,1) ,basic_g(ngrid)%up   (1,1,1)  &
-          ,basic_g(ngrid)%vp   (1,1,1) ,basic_g(ngrid)%wp   (1,1,1)  &
-          ,basic_g(ngrid)%pp   (1,1,1) ,tend%ut             (1)      &
-          ,tend%vt             (1)     ,tend%wt             (1)      &
-          ,tend%pt             (1)     ,grid_g(ngrid)%dxu   (1,1)    &
-          ,grid_g(ngrid)%dyv   (1,1)   ,grid_g(ngrid)%fmapui(1,1)    &
-          ,grid_g(ngrid)%fmapvi(1,1)   ,grid_g(ngrid)%dxt   (1,1)    &
-          ,grid_g(ngrid)%dyt   (1,1)   ,grid_g(ngrid)%fmapt (1,1)    &
-          ,grid_g(ngrid)%aru   (1,1,1) ,grid_g(ngrid)%arv   (1,1,1)  &
-          ,grid_g(ngrid)%arw   (1,1,1) ,grid_g(ngrid)%volt  (1,1,1)  &
-          ,grid_g(ngrid)%volu  (1,1,1) ,grid_g(ngrid)%volv  (1,1,1)  &
-          ,grid_g(ngrid)%volw  (1,1,1)                               )
-
-  endif
-
-  ! CALL writep(basic_g(ngrid)%wp(1,1,1),mzp,mxp,myp,33,mxp-1,9,mynum)
-
-  return
+   return
 end subroutine acoustic_new
+!==========================================================================================!
+!==========================================================================================!
 
 
-subroutine acoust_new(m1,m2,m3,  &
-     scr1,scr2,vt3da,vt3db,vt3dc,vt3dd  &
-     ,vt3de,vt3df,vt3dg,vt3dh,vt2da  &
-     ,dn0,pi0,th0,up,vp,wp,pp,ut,vt,wt,pt  &
-     ,topt,topu,topv,rtgt,rtgu,f13u,dxu,rtgv  &
-!!$     ,f23u  &
-     ,dyv  &
-     ,f23v,f13t,f23t,fmapui,fmapvi,dxt,dyt,fmapt)
-  !--------------------------------------------------------------------
-  !                  Acoustic terms small time-step driver
-  !
-  !     This routine calls all the necessary routines to march the model
-  !     through the small timesteps.
-  !-----------------------------------------------------------------------
-  use mem_grid, only : nnacoust, & ! intent(in)
-       ngrid,                    & ! intent(in)
-       dts,                      & ! intent(out)
-       dtlt,                     & ! intent(in)
-       nxtnest,                  & ! intent(in)
-       nzp, nxp, nyp,            & ! intent(in)
-       impl
-       
-  use mem_scratch, only : vctr1, vctr2
 
-  use node_mod, only : mynum,    & ! intent(in)
-       ipara,                    & ! intent(in)
-       mzp,                      & ! intent(in)
-       mxp,                      & ! intent(in)
-       myp,                      & ! intent(in)
-       ia,                       & ! intent(in)
-       iz,                       & ! intent(in)
-       ja,                       & ! intent(in)
-       jz,                       & ! intent(in)
-       i0,                       & ! intent(in)
-       j0,                       & ! intent(in)
-       izu, ibcon, jzv
 
-  implicit none
 
-  integer :: m1,m2,m3
-  real, dimension(m1,m2,m3) ::dn0,pi0,th0,up,vp,wp,pp
-  real, dimension(m2,m3) ::   topt,topu,topv,rtgt,rtgu,f13u,dxu,rtgv  &
-!!$       ,f23u  &
-       ,dyv &
-!!$       ,f23v,f13t,f23t,fmapui,fmapvi,dxt,dyt,fmapt,cputime
-       ,f23v,f13t,f23t,fmapui,fmapvi,dxt,dyt,fmapt
-  real, dimension(*) ::       scr1,scr2,vt3da,vt3db,vt3dc,vt3dd  &
-       ,vt3de,vt3df,vt3dg,vt3dh,vt2da,ut,vt,wt,pt
 
-!!$  real :: t1,w1,a1da2
-  real :: a1da2
+!==========================================================================================!
+!==========================================================================================!
+!     Acoustic terms small time-step driver: this routine calls all the necessary routines !
+! to march the model through the small timesteps.                                          !
+!------------------------------------------------------------------------------------------!
+subroutine acoust_new(m1,m2,m3,scr1,scr2,vt3da,vt3db,vt3dc,vt3dd,vt3de,vt3df,vt3dg,vt3dh   &
+                     ,vt2da,dn0,pi0,th0,up,vp,wp,pp,ut,vt,wt,pt,topt,topu,topv,rtgt,rtgu   &
+                     ,f13u,dxu,rtgv,dyv,f23v,f13t,f23t,fmapui,fmapvi,dxt,dyt,fmapt         )
+   use mem_grid, only :       & 
+                    nnacoust  & ! intent(in)
+                  , ngrid     & ! intent(in)
+                  , dts       & ! intent(out) 
+                  , dtlt      & ! intent(in)  
+                  , nxtnest   & ! intent(in)  
+                  , nzp       & ! intent(in)
+                  , nxp       & ! intent(in)
+                  , nyp       & ! intent(out)
+                  , impl      ! ! intent(in)                        
+        
+   use mem_scratch, only :    &
+                    vctr1     & ! intent(out)
+                  , vctr2     ! ! intent(in)   
 
-  integer :: iter
+   use node_mod, only :       &
+                    mynum     & ! intent(in)
+                   ,ipara     & ! intent(in)
+                   ,mzp       & ! intent(in)
+                   ,mxp       & ! intent(in)
+                   ,myp       & ! intent(in)
+                   ,ia        & ! intent(in)
+                   ,iz        & ! intent(in)
+                   ,ja        & ! intent(in)
+                   ,jz        & ! intent(in)
+                   ,i0        & ! intent(in)
+                   ,j0        & ! intent(in)
+                   ,izu       & ! intent(in)
+                   ,ibcon     & ! intent(in)
+                   ,jzv       ! ! intent(in)
 
-  do iter=1,nnacoust(ngrid)
+   implicit none
 
-     !     Get coefficients for computations
+   !------ Arguments ----------------------------------------------------------------------!
+   integer                   :: m1,m2,m3
+   real, dimension(m1,m2,m3) :: dn0,pi0,th0,up,vp,wp,pp
+   real, dimension(   m2,m3) :: topt,topu,topv,rtgt,rtgu,f13u,dxu,rtgv
+   real, dimension(   m2,m3) :: dyv,f23v,f13t,f23t,fmapui,fmapvi,dxt,dyt,fmapt
+   real, dimension(*)        :: scr1,scr2,vt3da,vt3db,vt3dc,vt3dd,vt3de,vt3df
+   real, dimension(*)        :: vt3dg,vt3dh,vt2da,ut,vt,wt,pt
+   real                      :: a1da2
+   integer                   :: iter
+   !---------------------------------------------------------------------------------------!
 
-     dts = 2. * dtlt / nnacoust(ngrid)
+   do iter=1,nnacoust(ngrid)
 
-     if (iter .eq. 1)  &
-          call coefz(mzp,mxp,myp,ia,iz,ja,jz  &
-          ,vt3dc(1),vt3dd(1)  &
-          ,vt3de(1),dn0(1,1,1)  &
-          ,pi0(1,1,1),th0(1,1,1)  &
-          ,rtgt(1,1),a1da2,vt3df(1)  &
-          ,vt3dg(1),scr2(1)  &
-          ,vctr1,vctr2)
+      !-----  Get coefficients for computations. ------------------------------------------!
 
-     if (ipara .eq. 1) then
-        if (iter .ne. 1) then
-           call node_getst(4)
-           if (ngrid .eq. 1) call node_getcyclic(4)
-        endif
-     endif
+      dts = 2. * dtlt / nnacoust(ngrid)
 
-     call prdctu(mzp,mxp,myp,ia,izu,ja,jz,ibcon  &
-          ,up(1,1,1),ut(1)  &
-          ,pp(1,1,1),vt3da(1)  &
-          ,th0(1,1,1),vt3db(1)  &
-          ,f13u(1,1),rtgu(1,1)  &
-          ,rtgt(1,1),dxu(1,1)  &
-          ,vt3dh(1),topu(1,1),mynum)
+      if (iter == 1)  &
+           call coefz(mzp,mxp,myp,ia,iz,ja,jz,vt3dc,vt3dd,vt3de,dn0    &
+                     ,pi0,th0,rtgt,a1da2,vt3df,vt3dg,scr2,vctr1,vctr2  )
 
-     if (ipara .eq. 1) then
-        if (iter .ne. nnacoust(ngrid)) then
-           call node_sendst(2)
-           if (ngrid .eq. 1) call node_sendcyclic(2)
-        endif
-     endif
+      if (ipara == 1) then
+         if (iter /= 1) then
+            call node_getst(4)
+            if (ngrid == 1) call node_getcyclic(4)
+         end if
+      end if
 
-     !     ---------------------------------------------------------------
-     if (nxtnest(ngrid) .eq. 0 .and. ipara .eq. 0)  &
-          call cyclic_set (nzp,nxp,nyp,up(1,1,1),'U')
-     !     ---------------------------------------------------------------
+      call prdctu(mzp,mxp,myp,ia,izu,ja,jz,ibcon,up,ut,pp,vt3da,th0,vt3db,f13u,rtgu,rtgt   &
+                 ,dxu,vt3dh,topu,mynum)
 
-     call prdctv(mzp,mxp,myp,ia,iz,ja,jzv,ibcon  &
-          ,vp(1,1,1),vt(1)  &
-          ,pp(1,1,1),vt3da(1)  &
-          ,th0(1,1,1),vt3db(1)  &
-          ,f23v(1,1),rtgv(1,1)  &
-          ,rtgt(1,1),dyv(1,1)  &
-          ,vt3dh(1),topv(1,1))
+      if (ipara == 1) then
+         if (iter /= nnacoust(ngrid)) then
+            call node_sendst(2)
+            if (ngrid == 1) call node_sendcyclic(2)
+         endif
+      endif
 
-     if (ipara .eq. 1) then
-        if (iter .ne. nnacoust(ngrid)) then
+      !------------------------------------------------------------------------------------!
+      if (nxtnest(ngrid) .eq. 0 .and. ipara .eq. 0)  &
+           call cyclic_set (nzp,nxp,nyp,up(1,1,1),'U')
+      !------------------------------------------------------------------------------------!
 
-           call node_sendst(3)
+      call prdctv(mzp,mxp,myp,ia,iz,ja,jzv,ibcon,vp,vt,pp,vt3da,th0,vt3db,f23v,rtgv,rtgt   &
+                ,dyv,vt3dh,topv)
 
-           if (ngrid .eq. 1) call node_sendcyclic(3)
+      if (ipara == 1) then
+         if (iter /= nnacoust(ngrid)) then
+            call node_sendst(3)
+            if (ngrid == 1) call node_sendcyclic(3)
+         else
+            call node_sendst(5)
+            if (ngrid == 1) call node_sendcyclic(5)
+         endif
+      endif
 
-        else
-           call node_sendst(5)
-           if (ngrid .eq. 1) call node_sendcyclic(5)
-        endif
-     endif
+      !------------------------------------------------------------------------------------!
+      if (nxtnest(ngrid) .eq. 0 .and. ipara .eq. 0)  &
+           call cyclic_set (nzp,nxp,nyp,vp,'V')
+      !------------------------------------------------------------------------------------!
 
-     !     ---------------------------------------------------------------
-     if (nxtnest(ngrid) .eq. 0 .and. ipara .eq. 0)  &
-          call cyclic_set (nzp,nxp,nyp,vp(1,1,1),'V')
-     !     ---------------------------------------------------------------
+      call prdctw1(mzp,mxp,myp,ia,iz,ja,jz,ibcon,wp,wt,pp,vt3dc,a1da2,vt3dh,rtgt,topt)
 
-     call prdctw1(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-          ,wp(1,1,1),wt(1)  &
-          ,pp(1,1,1),vt3dc(1)  &
-          ,a1da2,vt3dh(1),rtgt(1,1)  &
-          ,topt(1,1))
+      if (ipara == 1) then
+         if (iter /= nnacoust(ngrid)) then
+            call node_getst(2)
+            if (ngrid == 1) call node_getcyclic(2)
+            call node_getst(3)
+            if (ngrid == 1) call node_getcyclic(3)
+         else
+            call node_getst(5)
+            if (ngrid == 1) call node_getcyclic(5)
+         end if
+      end if
 
-     if (ipara .eq. 1) then
-        if (iter .ne. nnacoust(ngrid)) then
-           call node_getst(2)
-           if (ngrid .eq. 1) call node_getcyclic(2)
+      call prdctp1_new(mzp,mxp,myp,ia,iz,ja,jz,pp,up,vp,pi0,dn0,th0,pt,vt3da,vt3db,f13t    &
+                      ,f23t,rtgt,rtgu,rtgv,vt2da,fmapui,fmapvi,dxt,dyt,fmapt,mynum)
+      call prdctw2(mzp,mxp,myp,ia,iz,ja,jz,mynum,wp,pp,vt3dc,vt3dd,vt3de,vt3dg,scr1,scr2   &
+                  ,rtgt,vt2da)
+      call prdctw3(mzp,mxp,myp,ia,iz,ja,jz,wp,scr1,vt3df,vt3dg,vt3dc,vt3dd,pp,impl)
 
-           call node_getst(3)
+      !------------------------------------------------------------------------------------!
+      if (nxtnest(ngrid) == 0 .and. ipara == 0)  &
+           call cyclic_set (nzp,nxp,nyp,wp,'W')
+      !------------------------------------------------------------------------------------!
 
-           if (ngrid .eq. 1) call node_getcyclic(3)
+      call prdctp2(mzp,mxp,myp,ia,iz,ja,jz,ibcon,pp,wp,vt3dd,vt3de,rtgt,mynum)
 
-        else
-           call node_getst(5)
-           if (ngrid .eq. 1) call node_getcyclic(5)
-        endif
-     endif
+      !------------------------------------------------------------------------------------!
+      if (nxtnest(ngrid) == 0 .and. ipara == 0)  &
+           call cyclic_set (nzp,nxp,nyp,pp(1,1,1),'T')
+      !------------------------------------------------------------------------------------!
 
-!!$     call prdctp1(mzp,mxp,myp,ia,iz,ja,jz  &
-!!$          ,pp(1,1,1),up(1,1,1)  &
-!!$          ,vp(1,1,1),pi0(1,1,1)  &
-!!$          ,dn0(1,1,1),th0(1,1,1)  &
-!!$          ,pt(1),vt3da(1)  &
-!!$          ,vt3db(1),f13t(1,1)  &
-!!$          ,f23t(1,1),rtgt(1,1)  &
-!!$          ,rtgu(1,1),rtgv(1,1)  &
-!!$          ,vt2da(1),fmapui(1,1)  &
-!!$          ,fmapvi(1,1),dxt(1,1)  &
-!!$          ,dyt(1,1),fmapt(1,1),mynum)
+      if (ipara == 1) then
+         if (iter /= nnacoust(ngrid)) then
+            call node_sendst(4)
+            if (ngrid == 1) call node_sendcyclic(4)
+         else
+            call node_sendst(6)
+            if (ngrid == 1) call node_sendcyclic(6)
+            call node_getst(6)
+            if (ngrid == 1) call node_getcyclic(6)
+         end if
+      end if
 
-     call prdctp1_new(mzp,mxp,myp,ia,iz,ja,jz  &
-          ,pp(1,1,1),up(1,1,1)  &
-          ,vp(1,1,1),pi0(1,1,1)  &
-          ,dn0(1,1,1),th0(1,1,1)  &
-          ,pt(1),vt3da(1)  &
-          ,vt3db(1),f13t(1,1)  &
-          ,f23t(1,1),rtgt(1,1)  &
-          ,rtgu(1,1),rtgv(1,1)  &
-          ,vt2da(1),fmapui(1,1)  &
-          ,fmapvi(1,1),dxt(1,1)  &
-          ,dyt(1,1),fmapt(1,1),mynum)
+   end do
 
-     call prdctw2(mzp,mxp,myp,ia,iz,ja,jz,mynum  &
-          ,wp(1,1,1),pp(1,1,1)  &
-          ,vt3dc(1),vt3dd(1)  &
-          ,vt3de(1),vt3dg(1)  &
-          ,scr1(1),scr2(1)  &
-          ,rtgt(1,1),vt2da(1))
-
-     call prdctw3(mzp,mxp,myp,ia,iz,ja,jz  &
-          ,wp(1,1,1),scr1(1)  &
-          ,vt3df(1),vt3dg(1)  &
-          ,vt3dc(1),vt3dd(1)  &
-          ,pp(1,1,1),impl)
-
-     !     ---------------------------------------------------------------
-     if (nxtnest(ngrid) .eq. 0 .and. ipara .eq. 0)  &
-          call cyclic_set (nzp,nxp,nyp,wp(1,1,1),'W')
-     !     ---------------------------------------------------------------
-
-     call prdctp2(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-          ,pp(1,1,1),wp(1,1,1)  &
-          ,vt3dd(1),vt3de(1)  &
-          ,rtgt(1,1),mynum)
-
-     if (nxtnest(ngrid) .eq. 0 .and. ipara .eq. 0)  &
-          call cyclic_set (nzp,nxp,nyp,pp(1,1,1),'T')
-
-     if (ipara .eq. 1) then
-        if (iter .ne. nnacoust(ngrid)) then
-           call node_sendst(4)
-           if (ngrid .eq. 1) call node_sendcyclic(4)
-        else
-           call node_sendst(6)
-           if (ngrid .eq. 1) call node_sendcyclic(6)
-           call node_getst(6)
-           if (ngrid .eq. 1) call node_getcyclic(6)
-        endif
-     endif
-
-  enddo
-
-  return
+   return
 end subroutine acoust_new
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************
 
-subroutine prdctu(m1,m2,m3,ia,iz,ja,jz,ibcon  &
-     ,up,ut,pp,vt3da,th0,dpdx,f13u,rtgu,rtgt,dxu,vt3dh,topu,mynum)
 
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine prdctu(m1,m2,m3,ia,iz,ja,jz,ibcon,up,ut,pp,vt3da,th0,dpdx,f13u,rtgu,rtgt,dxu    &
+                 ,vt3dh,topu,mynum)
   use mem_grid
-
   implicit none
 
   integer :: m1,m2,m3,ia,iz,ja,jz,i,j,k,ibcon,mynum
@@ -792,11 +708,11 @@ subroutine buoyancy()
 
   implicit none
 
-  call boyanc(mzp,mxp,myp,ia,iz,ja,jz                           &
-       ,grid_g(ngrid)%flpw   (1,1)   ,tend%wt           (1)     &
-       ,basic_g(ngrid)%theta(1,1,1) ,basic_g(ngrid)%rtp(1,1,1)  &
-       ,basic_g(ngrid)%rv   (1,1,1) ,basic_g(ngrid)%th0(1,1,1)  &
-       ,scratch%vt3da       (1)     ,mynum                      )
+  call boyanc(mzp,mxp,myp,ia,iz,ja,jz             &
+       ,grid_g(ngrid)%flpw    ,tend%wt            &
+       ,basic_g(ngrid)%theta ,basic_g(ngrid)%rtp  &
+       ,basic_g(ngrid)%rv    ,basic_g(ngrid)%th0  &
+       ,scratch%vt3da        ,mynum               )
 
   return
 end subroutine buoyancy

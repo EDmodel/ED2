@@ -35,7 +35,7 @@ subroutine simple_lake_model(time,dtlongest)
 
   integer :: i,j,n
   integer :: k1w,k2w,k3w,k2u,k2u_1,k2v,k2v_1
-  real :: up_mean,vp_mean,pi0_mean,dn0_mean
+  real :: up_mean,vp_mean,exner_mean,dn0_mean
   real :: rv_mean,theta_mean
   real :: topma_t,wtw,wtu1,wtu2,wtv1,wtv2
   real :: canopy_water_vapor
@@ -153,14 +153,14 @@ subroutine simple_lake_model(time,dtlongest)
                 +  (1. - wtv2) * basic_g(ngrid)%vp(k2v+1,i,j)) * .5
            
            if (wtw >= .5) then
-              pi0_mean   = ((wtw - .5) * (basic_g(ngrid)%pp(k1w,i,j) + basic_g(ngrid)%pi0(k1w,i,j))  &
+              exner_mean   = ((wtw - .5) * (basic_g(ngrid)%pp(k1w,i,j) + basic_g(ngrid)%pi0(k1w,i,j))  &
                    + (1.5 - wtw) * (basic_g(ngrid)%pp(k2w,i,j) + basic_g(ngrid)%pi0(k2w,i,j)))
-              dn0_mean   = (wtw - .5)  * basic_g(ngrid)%dn0(k1w,i,j)  &
+              dn0_mean     = (wtw - .5)  * basic_g(ngrid)%dn0(k1w,i,j)  &
                    + (1.5 - wtw) * basic_g(ngrid)%dn0(k2w,i,j)
            else
-              pi0_mean  = ((wtw + .5) * (basic_g(ngrid)%pp(k2w,i,j) + basic_g(ngrid)%pi0(k2w,i,j))  &
+              exner_mean  = ((wtw + .5) * (basic_g(ngrid)%pp(k2w,i,j) + basic_g(ngrid)%pi0(k2w,i,j))  &
                    + (.5 - wtw) * (basic_g(ngrid)%pp(k3w,i,j) + basic_g(ngrid)%pi0(k3w,i,j)))
-              dn0_mean  = (wtw + .5) * basic_g(ngrid)%dn0(k2w,i,j)  &
+              dn0_mean    = (wtw + .5) * basic_g(ngrid)%dn0(k2w,i,j)  &
                    + (.5 - wtw) * basic_g(ngrid)%dn0(k3w,i,j)
            endif
            
@@ -175,7 +175,7 @@ subroutine simple_lake_model(time,dtlongest)
            
            up_mean       = (basic_g(ngrid)%up(2,i,j) + basic_g(ngrid)%up(2,i-1,j))     * 0.5
            vp_mean       = (basic_g(ngrid)%vp(2,i,j) + basic_g(ngrid)% vp(2,i,j-jdim)) * 0.5
-           pi0_mean      = (basic_g(ngrid)%pp(1,i,j) + basic_g(ngrid)%pp(2,i,j) & 
+           exner_mean    = (basic_g(ngrid)%pp(1,i,j) + basic_g(ngrid)%pp(2,i,j) & 
                          +  basic_g(ngrid)%pi0(1,i,j)+basic_g(ngrid)%pi0(2,i,j))       * 0.5
            
            
@@ -199,7 +199,7 @@ subroutine simple_lake_model(time,dtlongest)
         idt = 0
         do n = 1,niter_leaf
 
-           pis =  pi0_mean * cpi
+           pis =  exner_mean * cpi
            
            prss = pis ** cpor * p00
 
@@ -280,7 +280,7 @@ subroutine simple_lake_model(time,dtlongest)
               write(unit=*,fmt='(3(a,1x,i5,1x))') 'i=',i,'j=',j,'n=',n
               write(unit=*,fmt='(2(a,1x,f8.2,1x))') 'Lon: ',grid_g(ngrid)%glon(i,j) &
                                                    ,'Lat: ',grid_g(ngrid)%glat(i,j)
-              write(unit=*,fmt=*) 'EXNER (PIO)        : ',pi0_mean
+              write(unit=*,fmt=*) 'EXNER (PIO)        : ',exner_mean
               write(unit=*,fmt=*) 'DN0_MEAN           : ',dn0_mean
               write(unit=*,fmt=*) 'THETA_MEAN         : ',theta_mean
               write(unit=*,fmt=*) 'RV_MEAN            : ',rv_mean

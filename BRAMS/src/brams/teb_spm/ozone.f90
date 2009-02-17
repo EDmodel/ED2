@@ -27,26 +27,26 @@ subroutine ozone(mzp,mxp,myp,ia,iz,ja,jz,ng,deltat)
   !90   FORMAT('   chemical reactions tendencies updated    time =',f10.1,  &
   !          '  UTC TIME (HRS) =',F6.1)
 
-  call chemistry (mzp, mxp, myp, ia, iz, ja, jz,                         &
-       gaspart_g(ng)%pno(1,1,1)   ,gaspart_g(ng)%pno2(1,1,1),      &
-       gaspart_g(ng)%pco(1,1,1)   ,gaspart_g(ng)%pvoc(1,1,1),      &
-       gaspart_g(ng)%po3(1,1,1)   ,gaspart_g(ng)%pso2(1,1,1),      &
-       gaspart_g(ng)%pso4(1,1,1)  ,                              &
-       gaspart_g(ng)%prhco(1,1,1) ,gaspart_g(ng)%pho2(1,1,1),      &
-       gaspart_g(ng)%po3p(1,1,1)  ,gaspart_g(ng)%po1d(1,1,1),      &
-       gaspart_g(ng)%pho(1,1,1)   ,gaspart_g(ng)%proo(1,1,1),      &
-       basic_g(ng)%theta(1,1,1) ,basic_g(ng)%dn0(1,1,1),       &
-       basic_g(ng)%pi0(1,1,1)   ,basic_g(ng)%pp(1,1,1),       &
-       basic_g(ng)%rv(1,1,1),                                  &
-       radiate_g(ng)%rshort(1,1),radiate_g(ng)%cosz(1,1),      &
-       grid_g(ng)%rtgt(1,1),grid_g(ng)%topma (1,1),deltat,cpi,cpor,p00,zt, &
-       gaspart_g(ng)%pnot(1)   ,gaspart_g(ng)%pno2t(1),           &
-       gaspart_g(ng)%pcot(1)   ,gaspart_g(ng)%pvoct(1),           &
-       gaspart_g(ng)%po3t(1)   ,gaspart_g(ng)%pso2t(1),           &
-       gaspart_g(ng)%pso4t(1)  ,                                &
-       gaspart_g(ng)%prhcot(1) ,gaspart_g(ng)%pho2t(1),           &
-       gaspart_g(ng)%po3pt(1)  ,gaspart_g(ng)%po1dt(1),           &
-       gaspart_g(ng)%phot(1)   ,gaspart_g(ng)%proot(1))   
+  call chemistry (mzp, mxp, myp, ia, iz, ja, jz,     &
+       gaspart_g(ng)%pno   ,gaspart_g(ng)%pno2,      &
+       gaspart_g(ng)%pco   ,gaspart_g(ng)%pvoc,      &
+       gaspart_g(ng)%po3   ,gaspart_g(ng)%pso2,      &
+       gaspart_g(ng)%pso4  ,                         &
+       gaspart_g(ng)%prhco ,gaspart_g(ng)%pho2,      &
+       gaspart_g(ng)%po3p  ,gaspart_g(ng)%po1d,      &
+       gaspart_g(ng)%pho   ,gaspart_g(ng)%proo,      &
+       basic_g(ng)%theta   ,basic_g(ng)%dn0,         &
+       basic_g(ng)%pi0     ,basic_g(ng)%pp,          &
+       basic_g(ng)%rv      ,radiate_g(ng)%rshort,    &
+       radiate_g(ng)%cosz  ,grid_g(ng)%rtgt,         &
+       grid_g(ng)%topma    ,deltat,cpi,cpor,p00,zt,  &
+       gaspart_g(ng)%pnot  ,gaspart_g(ng)%pno2t,     &
+       gaspart_g(ng)%pcot  ,gaspart_g(ng)%pvoct,     &
+       gaspart_g(ng)%po3t  ,gaspart_g(ng)%pso2t,     &
+       gaspart_g(ng)%pso4t ,gaspart_g(ng)%prhcot,    &
+       gaspart_g(ng)%pho2t ,gaspart_g(ng)%po3pt,     &
+       gaspart_g(ng)%po1dt ,gaspart_g(ng)%phot,      &
+       gaspart_g(ng)%proot )   
 
 
   !endif

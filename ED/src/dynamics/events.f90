@@ -290,7 +290,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   use pft_coms, only:sla,qsw,q,hgt_min, agf_bs
   use misc_coms, only: integration_scheme
   use disturbance_utils_ar,only: plant_patch_ar
-  use ed_therm_lib, only: update_veg_energy_cweh
+  use ed_therm_lib, only: calc_hcapveg,update_veg_energy_cweh
   use fuse_fiss_utils_ar, only: terminate_cohorts_ar
   use allometry, only : bd2dbh, dbh2h
   real(kind=8),intent(in) :: agb_frac8
@@ -299,6 +299,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   real(kind=8),intent(in) :: stor_frac8
   real :: ialloc,bdead_new,bsw_new,bleaf_new,bfr_new,bstore_new
   real :: agb_frac,bgb_frac,fol_frac,stor_frac
+  real :: old_hcapveg
   integer :: ifm,ipy,isi,ipa,pft
   type(edtype), pointer :: cgrid
   type(polygontype), pointer :: cpoly
@@ -370,10 +371,15 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                     cpatch%veg_temp(ico)   = 0.0
                  else
                     cpatch%phenology_status(ico) = 1
-                    cpatch%lai(ico) = bleaf_new * cpatch%nplant(ico) * sla(cpatch%pft(ico))
-                    cpatch%bleaf(ico) = bleaf_new
-                    call update_veg_energy_cweh(cpatch,ico)
-                 endif
+                    cpatch%lai(ico)     = bleaf_new * cpatch%nplant(ico) * sla(cpatch%pft(ico))
+                    cpatch%bleaf(ico)   = bleaf_new
+                    old_hcapveg         = cpatch%hcapveg(ico)
+                    cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico) &
+                                                      ,cpatch%nplant(ico),cpatch%pft(ico))
+                    call update_veg_energy_cweh(cpatch%veg_energy(ico)                     &
+                                               ,cpatch%veg_temp(ico)                       &
+                                               ,old_hcapveg,cpatch%hcapveg(ico))
+                 end if
 
                  if(cpatch%bdead(ico) .gt. tiny(1.0)) then
                     cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico)) 
@@ -481,7 +487,6 @@ subroutine event_fertilize(rval8)
   use pft_coms, only:sla,qsw,q,hgt_min, agf_bs
   use misc_coms, only: integration_scheme
   use disturbance_utils_ar,only: plant_patch_ar
-  use ed_therm_lib, only: update_veg_energy_cweh
   real(kind=8),intent(in),dimension(5) :: rval8
 
   real :: nh4,no3,p,k,ca
@@ -650,7 +655,6 @@ subroutine event_till(rval8)
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
   use pft_coms, only: c2n_structural, c2n_slow, c2n_storage,c2n_leaf,c2n_stem,l2n_stem
   use decomp_coms, only: f_labile
-  use ed_therm_lib, only: update_veg_energy_cweh
   use fuse_fiss_utils_ar, only: terminate_cohorts_ar
   
   real(kind=8),intent(in) :: rval8
