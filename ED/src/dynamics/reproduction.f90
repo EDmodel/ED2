@@ -212,7 +212,7 @@ subroutine reproduction_ar(cgrid, month)
            
            ! Deallocate the current patch
            
-           call deallocate_patchtype(cpatch)
+           if (cpatch%ncohorts > 0) call deallocate_patchtype(cpatch)
 
            ! Reallocate the current site
 
@@ -239,12 +239,11 @@ subroutine reproduction_ar(cgrid, month)
               cpatch%veg_water(ico) = 0.0
 
               !----- Because we assigned no water, the internal energy 
-              !      is simply hcapveg*(T-T3)
+              !      is simply hcapveg*T
               
               cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
                    cpatch%nplant(ico),cpatch%pft(ico))
-              
-              cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * (cpatch%veg_temp(ico)-t3ple)
+              cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
               
               ! Setting new_recruit_flag to 1 indicates that 
               ! this cohort is included when we tally agb_recruit,
@@ -260,7 +259,7 @@ subroutine reproduction_ar(cgrid, month)
 
            ! Remove the temporary patch
            
-           call deallocate_patchtype(temppatch)
+           if (temppatch%ncohorts > 0) call deallocate_patchtype(temppatch)
            
         enddo
         

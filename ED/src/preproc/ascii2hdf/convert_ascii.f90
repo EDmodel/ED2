@@ -168,14 +168,21 @@ subroutine make_the_month(process_year, findir, foutdir, frqin, frqin_rad)
         do looplon=1,nlon
            do itime = 1,times_per_day_nr * maxday
               read(12,*)var_in(1:11)
-              hgt(itime,looplon,looplat) = max(10.0,var_in(1))
-              uwnd(itime,looplon,looplat) = var_in(2)
-              vwnd(itime,looplon,looplat) = var_in(3)
-              air(itime,looplon,looplat) = var_in(4)
-              shum(itime,looplon,looplat) = max(0.0,var_in(5))
-              prss(itime,looplon,looplat) = p00 * (var_in(6) * cpi)**cpor
-              prate(itime,looplon,looplat) = max(0.0,var_in(8)+var_in(9)) !! modified to include pcpg in prate sum (mcd)
-              dlwrf(itime,looplon,looplat) = max(0.0,var_in(11))
+              hgt(itime,looplon,looplat)  = max(10.0,var_in(1)) ! Height
+              uwnd(itime,looplon,looplat) = var_in(2)           ! Zonal wind
+              vwnd(itime,looplon,looplat) = var_in(3)           ! Meridional wind
+
+              ! MLO - Question, is the input variable really specific humidity or it is mixing ratio?
+              shum(itime,looplon,looplat) = max(0.0,var_in(5))  ! Specific humidity
+
+              !KIM - var_in(4): potential temperature
+              !      var_in(6): Exner function
+              !            air: temperature
+              !           prss: Atmospheric pressure
+              air(itime,looplon,looplat)   = var_in(4) * var_in(6) * cpi    ! Air temperature
+              prss(itime,looplon,looplat)  = p00 * (var_in(6) * cpi)**cpor  ! Pressure
+              prate(itime,looplon,looplat) = max(0.0,var_in(8)+var_in(9))   ! Modified to include pcpg in prate sum (mcd)
+              dlwrf(itime,looplon,looplat) = max(0.0,var_in(11))            ! Downwelling longwave radiation flux
            enddo
            do itime = 1,times_per_day_r * maxday
               read(13,*)var_in(1:2)

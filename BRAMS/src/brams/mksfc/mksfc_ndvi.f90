@@ -92,7 +92,7 @@ icm = nxtnest(ifm)
 ! Initialize SEATP and SEATF in subroutine ndviinit
 
 call ndviinit(nnxp(ifm),nnyp(ifm),npatch,ifm  &
-   ,sfcfile_p(ifm)%veg_ndvif(1,1,1))
+   ,sfcfile_p(ifm)%veg_ndvif)
 
 if (icm >= 1 .and. ndviflg(ifm) == 0) then
 
@@ -127,10 +127,10 @@ elseif (ndviflg(ifm) == 1) then
       ,ivegtflg(ifm),ivegtfn(ifm),isoilflg(ifm),isoilfn(ifm) &
       ,ndviflg(ifm),ndvifn(ifm),vndvifil(ivtime,ifm)  &
       ,'ndvi',platn(ifm),plonn(ifm)        &
-      ,sfcfile_p(ifm)%soil_text(1,1,1,1)  &
-      ,sfcfile_p(ifm)%patch_area(1,1,1)   &
-      ,sfcfile_p(ifm)%leaf_class(1,1,1)   &
-      ,sfcfile_p(ifm)%veg_ndvif(1,1,1))
+      ,sfcfile_p(ifm)%soil_text  &
+      ,sfcfile_p(ifm)%patch_area   &
+      ,sfcfile_p(ifm)%leaf_class   &
+      ,sfcfile_p(ifm)%veg_ndvif)
 else
 
    iyearvn (1,ifm) = iyeara ; imonthvn(1,ifm) = imontha
@@ -143,7 +143,7 @@ endif
 ! changes to subroutine ndviinit_user in the file ruser.f.
 
 call ndviinit_user(nnxp(ifm),nnyp(ifm),npatch,ifm  &
-   ,sfcfile_p(ifm)%veg_ndvif(1,1,1))
+   ,sfcfile_p(ifm)%veg_ndvif)
 
 return
 end
@@ -222,7 +222,7 @@ write(25,102) deltaxn(ifm),deltayn(ifm),platn(ifm),plonn(ifm)  &
 102  format(6f16.5)
 
 do ip = 1,npatch
-   call vforec(25,sfcfile_p(ifm)%veg_ndvif(1,1,ip),nnxyp(ifm),24,scrx,'LIN')
+   call vforec(25,sfcfile_p(ifm)%veg_ndvif(:,:,ip),nnxyp(ifm),24,scrx,'LIN')
 enddo
 
 close(25)

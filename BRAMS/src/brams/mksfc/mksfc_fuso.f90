@@ -50,7 +50,7 @@ read(25,*) dummy
 read(25,*) dummy
 
 if(iteb==1) &
-call vfirec(25,teb_g(ifm)%fuso(1,1),nnxp(ifm)*nnyp(ifm),'LIN')
+call vfirec(25,teb_g(ifm)%fuso,nnxp(ifm)*nnyp(ifm),'LIN')
 
 if(isource==1) &
 gaspart_g(ifm)%fusog(1,1)=teb_g(ifm)%fuso(1,1)
@@ -204,7 +204,7 @@ write(25,100) nnxp(ifm),nnyp(ifm)  &
 write(25,101) ifusflg(ifm)
 101  format(i5)
 
-call vforec(25,sfcfile_p(ifm)%fuso(1,1),nnxyp(ifm),24,scrx,'LIN')
+call vforec(25,sfcfile_p(ifm)%fuso,nnxyp(ifm),24,scrx,'LIN')
 
 close(25)
 

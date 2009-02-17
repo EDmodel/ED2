@@ -342,16 +342,18 @@ subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
   use soil_coms, only: soil,slz
   use therm_lib, only: qwtk8,qtk
   use ed_therm_lib,only:ed_grndvap
+  use consts_coms, only: wdns
   
   implicit none
   integer :: ipa,ico
   type(sitetype), target :: csite
   type(patchtype), pointer :: cpatch
   integer :: k
+  real :: surface_temp, surface_fliq
   real, intent(in) :: rhos
   
   do k = 1, nzg
-     call qwtk8(csite%soil_energy(k,ipa), csite%soil_water(k,ipa)*1.d3,  &
+     call qwtk8(csite%soil_energy(k,ipa), csite%soil_water(k,ipa)*dble(wdns),  &
           soil(csite%ntext_soil(k,ipa))%slcpd, csite%soil_tempk(k,ipa), csite%soil_fracliq(k,ipa))
   enddo
 
@@ -368,7 +370,8 @@ subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
   call ed_grndvap(csite%nlev_sfcwater(ipa), csite%ntext_soil(nzg,ipa),   &
        csite%soil_water(nzg,ipa), csite%soil_energy(nzg,ipa),    &
        csite%sfcwater_energy(max(1,csite%nlev_sfcwater(ipa)),ipa), rhos,   &
-       csite%can_shv(ipa), csite%ground_shv(ipa), csite%surface_ssh(ipa))
+       csite%can_shv(ipa), csite%ground_shv(ipa), csite%surface_ssh(ipa), &
+       surface_temp, surface_fliq)
   
   
   !---- paw_avg10d is a 10-day running average of available water. Initialize it with the current value.

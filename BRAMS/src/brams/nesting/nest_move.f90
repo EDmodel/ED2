@@ -111,11 +111,11 @@ if (idi .ne. 0 .or. idj .ne. 0) then
 
    call gridset(ifm)
    CALL POLARST(NXP,NYP  &
-      ,grid_g(ifm)%GLAT  (1,1) ,grid_g(ifm)%GLON  (1,1)  & 
-      ,grid_g(ifm)%FMAPU (1,1) ,grid_g(ifm)%FMAPV (1,1)  &
-      ,grid_g(ifm)%FMAPT (1,1) ,grid_g(ifm)%FMAPM (1,1)  & 
-      ,grid_g(ifm)%FMAPUI(1,1) ,grid_g(ifm)%FMAPVI(1,1)  &
-      ,grid_g(ifm)%FMAPTI(1,1) ,grid_g(ifm)%FMAPMI(1,1)  )
+      ,grid_g(ifm)%GLAT   ,grid_g(ifm)%GLON    & 
+      ,grid_g(ifm)%FMAPU  ,grid_g(ifm)%FMAPV   &
+      ,grid_g(ifm)%FMAPT  ,grid_g(ifm)%FMAPM   & 
+      ,grid_g(ifm)%FMAPUI ,grid_g(ifm)%FMAPVI  &
+      ,grid_g(ifm)%FMAPTI ,grid_g(ifm)%FMAPMI  )
 
    ibeg = 1
    iend = nnxp(ifm)
@@ -143,25 +143,25 @@ if (idi .ne. 0 .or. idj .ne. 0) then
 
 ! TOPT
    call fillscr(1,maxnxp,maxnyp,1,nnxp(icm),nnyp(icm),1,1  &
-      ,scratch%scr1(1),grid_g(icm)%topt(1,1))
-   call eintp(scratch%scr1(1),scratch%scr2(1)  &
+      ,scratch%scr1,grid_g(icm)%topt)
+   call eintp(scratch%scr1,scratch%scr2  &
       ,1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),ifm,2,'t',0,0)
    call fillvar(1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),1,1  &
-      ,scratch%scr2(1),grid_g(ifm)%topt(1,1))
+               ,scratch%scr2,grid_g(ifm)%topt)
 
-   call transfm(nnxp(ifm),nnyp(ifm)  &
-      ,grid_g(ifm)%topt (1,1) ,grid_g(ifm)%topu (1,1)  &
-      ,grid_g(ifm)%topv (1,1) ,grid_g(ifm)%topm (1,1)  &
-      ,grid_g(ifm)%rtgt (1,1) ,grid_g(ifm)%rtgu (1,1)  &
-      ,grid_g(ifm)%rtgv (1,1) ,grid_g(ifm)%rtgm (1,1)  &
-      ,grid_g(ifm)%f13u (1,1) ,grid_g(ifm)%f13v (1,1)  &
-      ,grid_g(ifm)%f13t (1,1) ,grid_g(ifm)%f13m (1,1)  &
-      ,grid_g(ifm)%f23u (1,1) ,grid_g(ifm)%f23v (1,1)  &
-      ,grid_g(ifm)%f23t (1,1) ,grid_g(ifm)%f23m (1,1)  &
-      ,grid_g(ifm)%dxu  (1,1) ,grid_g(ifm)%dxv  (1,1)  &
-      ,grid_g(ifm)%dxt  (1,1) ,grid_g(ifm)%dxm  (1,1)  &
-      ,grid_g(ifm)%dyu  (1,1) ,grid_g(ifm)%dyv  (1,1)  &
-      ,grid_g(ifm)%dyt  (1,1) ,grid_g(ifm)%dym  (1,1)  )
+   call transfm(nnxp(ifm),nnyp(ifm)                   &
+               ,grid_g(ifm)%topt  ,grid_g(ifm)%topu   &
+               ,grid_g(ifm)%topv  ,grid_g(ifm)%topm   &
+               ,grid_g(ifm)%rtgt  ,grid_g(ifm)%rtgu   &
+               ,grid_g(ifm)%rtgv  ,grid_g(ifm)%rtgm   &
+               ,grid_g(ifm)%f13u  ,grid_g(ifm)%f13v   &
+               ,grid_g(ifm)%f13t  ,grid_g(ifm)%f13m   &
+               ,grid_g(ifm)%f23u  ,grid_g(ifm)%f23v   &
+               ,grid_g(ifm)%f23t  ,grid_g(ifm)%f23m   &
+               ,grid_g(ifm)%dxu   ,grid_g(ifm)%dxv    &
+               ,grid_g(ifm)%dxt   ,grid_g(ifm)%dxm    &
+               ,grid_g(ifm)%dyu   ,grid_g(ifm)%dyv    &
+               ,grid_g(ifm)%dyt   ,grid_g(ifm)%dym    )
 
    call fmrefs3d(ifm,0)
 
@@ -286,10 +286,10 @@ if (idi .ne. 0 .or. idj .ne. 0) then
 
 !3  Prognostic 3-D atmospheric variables
 
-   call ae1(nnxyzp(ifm),tend%ut(1),basic_g(ifm)%up(1,1,1))
-   call ae1(nnxyzp(ifm),tend%vt(1),basic_g(ifm)%vp(1,1,1))
-   call ae1(nnxyzp(ifm),tend%wt(1),basic_g(ifm)%wp(1,1,1))
-   call ae1(nnxyzp(ifm),tend%pt(1),basic_g(ifm)%pp(1,1,1))
+   call ae1(nnxyzp(ifm),tend%ut,basic_g(ifm)%up)
+   call ae1(nnxyzp(ifm),tend%vt,basic_g(ifm)%vp)
+   call ae1(nnxyzp(ifm),tend%wt,basic_g(ifm)%wp)
+   call ae1(nnxyzp(ifm),tend%pt,basic_g(ifm)%pp)
 
 do nf = 1,num_scalar(ifm)
    do nc = 1,num_scalar(icm)
@@ -304,41 +304,41 @@ do nf = 1,num_scalar(ifm)
       ,nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
       ,maxnzp,maxnxp,maxnyp,ifm,icm  &
       ,nnstbot(ifm),nnsttop(ifm),jdim,1,1,0,'u'  &
-      ,basic_g(icm)%up(1,1,1),basic_g(ifm)%up(1,1,1)  &
-      ,basic_g(icm)%dn0u(1,1,1),basic_g(ifm)%dn0u(1,1,1)  &
-      ,scratch%scr1(1),scratch%scr2(1)  &
-      ,grid_g(ifm)%topt(1,1),scratch%vt2da(1)  &
-      ,scratch%scr1(1),scratch%scr1(1),scratch%scr1(1),0)
+      ,basic_g(icm)%up,basic_g(ifm)%up  &
+      ,basic_g(icm)%dn0u,basic_g(ifm)%dn0u  &
+      ,scratch%scr1,scratch%scr2  &
+      ,grid_g(ifm)%topt,scratch%vt2da  &
+      ,scratch%scr1,scratch%scr1,scratch%scr1,0)
 
    call fmint3(nnzp(icm),nnxp(icm),nnyp(icm)  &
       ,nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
       ,maxnzp,maxnxp,maxnyp,ifm,icm  &
       ,nnstbot(ifm),nnsttop(ifm),jdim,1,1,0,'v'  &
-      ,basic_g(icm)%vp(1,1,1),basic_g(ifm)%vp(1,1,1)  &
-      ,basic_g(icm)%dn0v(1,1,1),basic_g(ifm)%dn0v(1,1,1)  &
-      ,scratch%scr1(1),scratch%scr2(1)  &
-      ,grid_g(ifm)%topt(1,1),scratch%vt2da(1)  &
-      ,scratch%scr1(1),scratch%scr1(1),scratch%scr1(1),0)
+      ,basic_g(icm)%vp,basic_g(ifm)%vp  &
+      ,basic_g(icm)%dn0v,basic_g(ifm)%dn0v  &
+      ,scratch%scr1,scratch%scr2  &
+      ,grid_g(ifm)%topt,scratch%vt2da  &
+      ,scratch%scr1,scratch%scr1,scratch%scr1,0)
 
    call fmint3(nnzp(icm),nnxp(icm),nnyp(icm)  &
       ,nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
       ,maxnzp,maxnxp,maxnyp,ifm,icm  &
       ,nnstbot(ifm),nnsttop(ifm),jdim,1,1,0,'w'  &
-      ,basic_g(icm)%wp(1,1,1),basic_g(ifm)%wp(1,1,1)  &
-      ,basic_g(icm)%dn0(1,1,1),basic_g(ifm)%dn0(1,1,1)  &
-      ,scratch%scr1(1),scratch%scr2(1)  &
-      ,grid_g(ifm)%topt(1,1),scratch%vt2da(1)  &
-      ,scratch%scr1(1),scratch%scr1(1),scratch%scr1(1),0)
+      ,basic_g(icm)%wp,basic_g(ifm)%wp  &
+      ,basic_g(icm)%dn0,basic_g(ifm)%dn0  &
+      ,scratch%scr1,scratch%scr2  &
+      ,grid_g(ifm)%topt,scratch%vt2da  &
+      ,scratch%scr1,scratch%scr1,scratch%scr1,0)
 
    call fmint3(nnzp(icm),nnxp(icm),nnyp(icm)  &
       ,nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
       ,maxnzp,maxnxp,maxnyp,ifm,icm  &
       ,nnstbot(ifm),nnsttop(ifm),jdim,1,0,0,'t'  &
-      ,basic_g(icm)%pp(1,1,1),basic_g(ifm)%pp(1,1,1)  &
-      ,basic_g(icm)%dn0(1,1,1),basic_g(ifm)%dn0(1,1,1)  &
-      ,scratch%scr1(1),scratch%scr2(1)  &
-      ,grid_g(ifm)%topt(1,1),scratch%vt2da(1)  &
-      ,scratch%scr1(1),scratch%scr1(1),scratch%scr1(1),0)
+      ,basic_g(icm)%pp,basic_g(ifm)%pp  &
+      ,basic_g(icm)%dn0,basic_g(ifm)%dn0  &
+      ,scratch%scr1,scratch%scr2  &
+      ,grid_g(ifm)%topt,scratch%vt2da  &
+      ,scratch%scr1,scratch%scr1,scratch%scr1,0)
 
 do nf = 1,num_scalar(ifm)
    do nc = 1,num_scalar(icm)
@@ -350,27 +350,23 @@ do nf = 1,num_scalar(ifm)
                ,nnstbot(ifm),nnsttop(ifm),jdim,1,1,0,'t'  &
                ,scalar_tab(nc,icm)%var_p &
                ,scalar_tab(nf,ifm)%var_p  &
-               ,basic_g(icm)%dn0(1,1,1),basic_g(ifm)%dn0(1,1,1)  &
-               ,scratch%scr1(1),scratch%scr2(1)  &
-               ,grid_g(ifm)%topt(1,1),scratch%vt2da(1)  &
-               ,scratch%scr1(1),scratch%scr1(1),scratch%scr1(1),0)
+               ,basic_g(icm)%dn0,basic_g(ifm)%dn0  &
+               ,scratch%scr1,scratch%scr2  &
+               ,grid_g(ifm)%topt,scratch%vt2da  &
+               ,scratch%scr1,scratch%scr1,scratch%scr1,0)
 
          endif
       enddo
    enddo
 
-   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-      ,basic_g(ifm)%up(1,1,1),tend%ut(1)  &
-      ,ibeg,iend,ishft,jbeg,jend,jshft)
-   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-      ,basic_g(ifm)%vp(1,1,1),tend%vt(1)  &
-      ,ibeg,iend,ishft,jbeg,jend,jshft)
-   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-      ,basic_g(ifm)%wp(1,1,1),tend%wt(1)  &
-      ,ibeg,iend,ishft,jbeg,jend,jshft)
-   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-      ,basic_g(ifm)%pp(1,1,1),tend%pt(1)  &
-      ,ibeg,iend,ishft,jbeg,jend,jshft)
+   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%up,tend%ut  &
+               ,ibeg,iend,ishft,jbeg,jend,jshft)
+   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%vp,tend%vt  &
+               ,ibeg,iend,ishft,jbeg,jend,jshft)
+   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%wp,tend%wt  &
+               ,ibeg,iend,ishft,jbeg,jend,jshft)
+   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%pp,tend%pt  &
+               ,ibeg,iend,ishft,jbeg,jend,jshft)
 
 do nf = 1,num_scalar(ifm)
    do nc = 1,num_scalar(icm)
@@ -383,77 +379,52 @@ do nf = 1,num_scalar(ifm)
       enddo
    enddo
 
-   call ae1(nnxyzp(ifm),tend%ut(1),basic_g(ifm)%uc(1,1,1))
-   call ae1(nnxyzp(ifm),tend%vt(1),basic_g(ifm)%vc(1,1,1))
-   call ae1(nnxyzp(ifm),tend%wt(1),basic_g(ifm)%wc(1,1,1))
-   call ae1(nnxyzp(ifm),tend%pt(1),basic_g(ifm)%pc(1,1,1))
-   call ae1(nnxyzp(ifm),tend%tht(1),basic_g(ifm)%theta(1,1,1))
+   call ae1(nnxyzp(ifm), tend%ut  , basic_g(ifm)%uc   )
+   call ae1(nnxyzp(ifm), tend%vt  , basic_g(ifm)%vc   )
+   call ae1(nnxyzp(ifm), tend%wt  , basic_g(ifm)%wc   )
+   call ae1(nnxyzp(ifm), tend%pt  , basic_g(ifm)%pc   )
+   call ae1(nnxyzp(ifm), tend%tht , basic_g(ifm)%theta)
 
-   call fmint3(nnzp(icm),nnxp(icm),nnyp(icm)  &
-      ,nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-      ,maxnzp,maxnxp,maxnyp,ifm,icm  &
-      ,nnstbot(ifm),nnsttop(ifm),jdim,1,1,0,'u'  &
-      ,basic_g(icm)%uc(1,1,1),basic_g(ifm)%uc(1,1,1)  &
-      ,basic_g(icm)%dn0u(1,1,1),basic_g(ifm)%dn0u(1,1,1)  &
-      ,scratch%scr1(1),scratch%scr2(1)  &
-      ,grid_g(ifm)%topt(1,1),scratch%vt2da(1)  &
-      ,scratch%scr1(1),scratch%scr1(1),scratch%scr1(1),0)
+   call fmint3(nnzp(icm),nnxp(icm),nnyp(icm),nnzp(ifm),nnxp(ifm),nnyp(ifm)              &
+              ,maxnzp,maxnxp,maxnyp,ifm,icm,nnstbot(ifm),nnsttop(ifm),jdim,1,1,0,'u'    &
+              ,basic_g(icm)%uc,basic_g(ifm)%uc,basic_g(icm)%dn0u,basic_g(ifm)%dn0u      &
+              ,scratch%scr1,scratch%scr2,grid_g(ifm)%topt,scratch%vt2da                 &
+              ,scratch%scr1,scratch%scr1,scratch%scr1,0)
 
-   call fmint3(nnzp(icm),nnxp(icm),nnyp(icm)  &
-      ,nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-      ,maxnzp,maxnxp,maxnyp,ifm,icm  &
-      ,nnstbot(ifm),nnsttop(ifm),jdim,1,1,0,'v'  &
-      ,basic_g(icm)%vc(1,1,1),basic_g(ifm)%vc(1,1,1)  &
-      ,basic_g(icm)%dn0v(1,1,1),basic_g(ifm)%dn0v(1,1,1)  &
-      ,scratch%scr1(1),scratch%scr2(1)  &
-      ,grid_g(ifm)%topt(1,1),scratch%vt2da(1)  &
-      ,scratch%scr1(1),scratch%scr1(1),scratch%scr1(1),0)
+   call fmint3(nnzp(icm),nnxp(icm),nnyp(icm),nnzp(ifm),nnxp(ifm),nnyp(ifm)              &
+              ,maxnzp,maxnxp,maxnyp,ifm,icm,nnstbot(ifm),nnsttop(ifm),jdim,1,1,0,'v'    &
+              ,basic_g(icm)%vc,basic_g(ifm)%vc,basic_g(icm)%dn0v,basic_g(ifm)%dn0v      &
+              ,scratch%scr1,scratch%scr2,grid_g(ifm)%topt,scratch%vt2da                 &
+              ,scratch%scr1,scratch%scr1,scratch%scr1,0)
 
-   call fmint3(nnzp(icm),nnxp(icm),nnyp(icm)  &
-      ,nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-      ,maxnzp,maxnxp,maxnyp,ifm,icm  &
-      ,nnstbot(ifm),nnsttop(ifm),jdim,1,1,0,'w'  &
-      ,basic_g(icm)%wc(1,1,1),basic_g(ifm)%wc(1,1,1)  &
-      ,basic_g(icm)%dn0(1,1,1),basic_g(ifm)%dn0(1,1,1)  &
-      ,scratch%scr1(1),scratch%scr2(1)  &
-      ,grid_g(ifm)%topt(1,1),scratch%vt2da(1)  &
-      ,scratch%scr1(1),scratch%scr1(1),scratch%scr1(1),0)
+   call fmint3(nnzp(icm),nnxp(icm),nnyp(icm),nnzp(ifm),nnxp(ifm),nnyp(ifm)              &
+              ,maxnzp,maxnxp,maxnyp,ifm,icm,nnstbot(ifm),nnsttop(ifm),jdim,1,1,0,'w'    &
+              ,basic_g(icm)%wc,basic_g(ifm)%wc,basic_g(icm)%dn0,basic_g(ifm)%dn0        &
+              ,scratch%scr1,scratch%scr2,grid_g(ifm)%topt,scratch%vt2da                 &
+              ,scratch%scr1,scratch%scr1,scratch%scr1,0)
 
-   call fmint3(nnzp(icm),nnxp(icm),nnyp(icm)  &
-      ,nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-      ,maxnzp,maxnxp,maxnyp,ifm,icm  &
-      ,nnstbot(ifm),nnsttop(ifm),jdim,1,0,0,'t'  &
-      ,basic_g(icm)%pc(1,1,1),basic_g(ifm)%pc(1,1,1)  &
-      ,basic_g(icm)%dn0(1,1,1),basic_g(ifm)%dn0(1,1,1)  &
-      ,scratch%scr1(1),scratch%scr2(1)  &
-      ,grid_g(ifm)%topt(1,1),scratch%vt2da(1)  &
-      ,scratch%scr1(1),scratch%scr1(1),scratch%scr1(1),0)
+   call fmint3(nnzp(icm),nnxp(icm),nnyp(icm),nnzp(ifm),nnxp(ifm),nnyp(ifm)              &
+              ,maxnzp,maxnxp,maxnyp,ifm,icm,nnstbot(ifm),nnsttop(ifm),jdim,1,0,0,'t'    &
+              ,basic_g(icm)%pc,basic_g(ifm)%pc,basic_g(icm)%dn0,basic_g(ifm)%dn0        &
+              ,scratch%scr1,scratch%scr2,grid_g(ifm)%topt,scratch%vt2da                 &
+              ,scratch%scr1,scratch%scr1,scratch%scr1,0)
 
-   call fmint3(nnzp(icm),nnxp(icm),nnyp(icm)  &
-      ,nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-      ,maxnzp,maxnxp,maxnyp,ifm,icm  &
-      ,nnstbot(ifm),nnsttop(ifm),jdim,1,1,0,'t'  &
-      ,basic_g(icm)%theta(1,1,1),basic_g(ifm)%theta(1,1,1)  &
-      ,basic_g(icm)%dn0(1,1,1),basic_g(ifm)%dn0(1,1,1)  &
-      ,scratch%scr1(1),scratch%scr2(1)  &
-      ,grid_g(ifm)%topt(1,1),scratch%vt2da(1)  &
-      ,scratch%scr1(1),scratch%scr1(1),scratch%scr1(1),0)
+   call fmint3(nnzp(icm),nnxp(icm),nnyp(icm),nnzp(ifm),nnxp(ifm),nnyp(ifm)              &
+              ,maxnzp,maxnxp,maxnyp,ifm,icm,nnstbot(ifm),nnsttop(ifm),jdim,1,1,0,'t'    &
+              ,basic_g(icm)%theta,basic_g(ifm)%theta,basic_g(icm)%dn0,basic_g(ifm)%dn0  &
+              ,scratch%scr1,scratch%scr2,grid_g(ifm)%topt,scratch%vt2da                 &
+              ,scratch%scr1,scratch%scr1,scratch%scr1,0)
 
-   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-      ,basic_g(ifm)%uc(1,1,1),tend%ut(1)  &
-      ,ibeg,iend,ishft,jbeg,jend,jshft)
-   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-      ,basic_g(ifm)%vc(1,1,1),tend%vt(1)  &
-      ,ibeg,iend,ishft,jbeg,jend,jshft)
-   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-      ,basic_g(ifm)%wc(1,1,1),tend%wt(1)  &
-      ,ibeg,iend,ishft,jbeg,jend,jshft)
-   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-      ,basic_g(ifm)%pc(1,1,1),tend%pt(1)  &
-      ,ibeg,iend,ishft,jbeg,jend,jshft)
-   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-      ,basic_g(ifm)%theta(1,1,1),tend%tht(1)  &
-      ,ibeg,iend,ishft,jbeg,jend,jshft)
+   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%uc,tend%ut                   &
+               ,ibeg,iend,ishft,jbeg,jend,jshft)
+   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%vc,tend%vt                   &
+               ,ibeg,iend,ishft,jbeg,jend,jshft)
+   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%wc,tend%wt                   &
+               ,ibeg,iend,ishft,jbeg,jend,jshft)
+   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%pc,tend%pt                   &
+               ,ibeg,iend,ishft,jbeg,jend,jshft)
+   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%theta,tend%tht               &
+               ,ibeg,iend,ishft,jbeg,jend,jshft)
 
    i1 = 2
    i2 = nnx(ifm)
@@ -472,45 +443,57 @@ do nf = 1,num_scalar(ifm)
 endif
 return
 end
+!==========================================================================================!
+!==========================================================================================!
 
-!     *****************************************************************
 
-subroutine fmpmove(n1,n2,n3,anew,aold  &
-   ,ibeg,iend,ishft,jbeg,jend,jshft)
-implicit none
-integer :: n1,n2,n3 ,ibeg,iend,ishft,jbeg,jend,jshft
-real :: anew(n1,n2,n3),aold(n1,n2,n3)
 
-integer :: i,j,k
 
-do j = jbeg,jend
-   do i = ibeg,iend
-      do k = 1,n1
-         anew(k,i,j) = aold(k,i+ishft,j+jshft)
-      enddo
-   enddo
-enddo
-return
-end
 
-!     *****************************************************************
 
-subroutine fmpmoves(n2,n3,n4,n5,anew,aold  &
-   ,ibeg,iend,ishft,jbeg,jend,jshft,kbeg,kend)
-implicit none
-integer :: n2,n3,n4,n5 ,ibeg,iend,ishft,jbeg,jend,jshft,kbeg,kend
-real :: anew(n2,n3,n4,n5),aold(n2,n3,n4,n5)
+!==========================================================================================!
+!==========================================================================================!
+subroutine fmpmove(n1,n2,n3,anew,aold,ibeg,iend,ishft,jbeg,jend,jshft)
+   implicit none
+   integer :: n1,n2,n3 ,ibeg,iend,ishft,jbeg,jend,jshft
+   real :: anew(n1,n2,n3),aold(n1,n2,n3)
 
-integer :: i,j,k,ip
+   integer :: i,j,k
 
-do ip = 1,n5
-   do k = kbeg,kend
-      do j = jbeg,jend
-         do i = ibeg,iend
-            anew(i,j,k,ip) = aold(i+ishft,j+jshft,k,ip)
-         enddo
-      enddo
-   enddo
-enddo
-return
-end
+   do j = jbeg,jend
+      do i = ibeg,iend
+         do k = 1,n1
+            anew(k,i,j) = aold(k,i+ishft,j+jshft)
+         end do
+      end do
+   end do
+   return
+end subroutine fmpmove
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine fmpmoves(n2,n3,n4,n5,anew,aold,ibeg,iend,ishft,jbeg,jend,jshft,kbeg,kend)
+   implicit none
+   integer :: n2,n3,n4,n5 ,ibeg,iend,ishft,jbeg,jend,jshft,kbeg,kend
+   real :: anew(n2,n3,n4,n5),aold(n2,n3,n4,n5)
+
+   integer :: i,j,k,ip
+
+   do ip = 1,n5
+      do k = kbeg,kend
+         do j = jbeg,jend
+            do i = ibeg,iend
+               anew(i,j,k,ip) = aold(i+ishft,j+jshft,k,ip)
+            end do
+         end do
+      end do
+   end do
+   return
+end subroutine fmpmoves

@@ -65,12 +65,12 @@ subroutine history_start(name_name)
    !----- Get the 1-d reference state -----------------------------------------------------!
    do ngr=1,ngridsh
       write(cng,fmt='(i2.2)') ngr
-      ie=cio_f(iunhd,1,'u01dn'//cng,u01dn(1,ngr),nnzp(ngr))
-      ie=cio_f(iunhd,1,'v01dn'//cng,v01dn(1,ngr),nnzp(ngr))
-      ie=cio_f(iunhd,1,'pi01dn'//cng,pi01dn(1,ngr),nnzp(ngr))
-      ie=cio_f(iunhd,1,'th01dn'//cng,th01dn(1,ngr),nnzp(ngr))
-      ie=cio_f(iunhd,1,'dn01dn'//cng,dn01dn(1,ngr),nnzp(ngr))
-      ie=cio_f(iunhd,1,'rt01dn'//cng,rt01dn(1,ngr),nnzp(ngr))
+      ie=cio_f(iunhd,1,'u01dn'//cng,u01dn(:,ngr),nnzp(ngr))
+      ie=cio_f(iunhd,1,'v01dn'//cng,v01dn(:,ngr),nnzp(ngr))
+      ie=cio_f(iunhd,1,'pi01dn'//cng,pi01dn(:,ngr),nnzp(ngr))
+      ie=cio_f(iunhd,1,'th01dn'//cng,th01dn(:,ngr),nnzp(ngr))
+      ie=cio_f(iunhd,1,'dn01dn'//cng,dn01dn(:,ngr),nnzp(ngr))
+      ie=cio_f(iunhd,1,'rt01dn'//cng,rt01dn(:,ngr),nnzp(ngr))
    end do
 
    !----- Put these into regular arrays (for moving grids) --------------------------------!
@@ -575,31 +575,28 @@ subroutine anlwrt(restart,vtype)
             !----- Exner perturbation, save full Exner function instead -------------------!
             if (varn == 'PP') then
               !----- Output total Exner function ------------------------------------------!
-              call RAMS_aprep_p (nnxyzp(ngr),vtab_r(nv,ngr)%var_p,basic_g(ngr)%pi0(1,1,1)  &
-                                ,scratch%scr1(1))
+              call RAMS_aprep_p (nnxyzp(ngr),vtab_r(nv,ngr)%var_p,basic_g(ngr)%pi0         &
+                                ,scratch%scr1)
               varn='PI'
               !----- Rearrange 3-d variables to (x,y,z) -----------------------------------!
-              call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),scratch%scr1(1),scratch%scr2(1))
+              call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),scratch%scr1,scratch%scr2)
 
             !----- Removing density from the coefficient ----------------------------------!
             elseif(varn == 'HKM') then
                !----- Convert to HKM to HKH (note that VKH is HKH for Deardorff) ----------!
-               call RAMS_aprep_hkh (nnxyzp(ngr),vtab_r(nv,ngr)%var_p                       &
-                                   ,turb_g(ngr)%vkh(1,1,1),basic_g(ngr)%dn0(1,1,1)         &
-                                   ,scratch%scr1(1),idiffk(ngr),xkhkm(ngr))
+               call RAMS_aprep_hkh (nnxyzp(ngr),vtab_r(nv,ngr)%var_p,turb_g(ngr)%vkh       &
+                                   ,basic_g(ngr)%dn0,scratch%scr1,idiffk(ngr),xkhkm(ngr))
                varn='HKH'
                !-----  Rearrange 3-d variables to (x,y,z) ---------------------------------!
-               call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),scratch%scr1(1)                &
-                             ,scratch%scr2(1))
+               call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),scratch%scr1,scratch%scr2)
 
             !----- Removing density from the coefficient ----------------------------------!
             elseif(varn == 'VKH') then
                !----- Un-density weight VKH -----------------------------------------------!
-               call RAMS_aprep_vkh (nnxyzp(ngr),vtab_r(nv,ngr)%var_p                       &
-                                   ,basic_g(ngr)%dn0(1,1,1),scratch%scr1(1))
+               call RAMS_aprep_vkh (nnxyzp(ngr),vtab_r(nv,ngr)%var_p,basic_g(ngr)%dn0      &
+                                   ,scratch%scr1)
                !----- Rearrange 3-d variables to (x,y,z) ----------------------------------!
-               call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),scratch%scr1(1)                &
-                             ,scratch%scr2(1))
+               call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),scratch%scr1,scratch%scr2)
 
             !------------------------------------------------------------------------------!
             !    Now, the ordinary variables                                               !
@@ -607,22 +604,22 @@ subroutine anlwrt(restart,vtype)
             !-----  Rearrange 3-d variables to (x,y,z) ------------------------------------!
             elseif(vtab_r(nv,ngr)%idim_type == 3) then
                call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),vtab_r(nv,ngr)%var_p           &
-                             ,scratch%scr2(1))
+                             ,scratch%scr2)
 
             !----- Rearrange 4-d leaf%soil variables to (x,y,z,patch) ---------------------!
             elseif(vtab_r(nv,ngr)%idim_type == 4) then
                call rearrange_p(nnxp(ngr),nnyp(ngr),nzg,npatch,vtab_r(nv,ngr)%var_p        &
-                               ,scratch%scr2(1))
+                               ,scratch%scr2)
 
             !----- Rearrange 4-d leaf%sfcwater variables to (x,y,z,patch) -----------------!
             elseif(vtab_r(nv,ngr)%idim_type == 5) then
                call rearrange_p(nnxp(ngr),nnyp(ngr),nzs,npatch,vtab_r(nv,ngr)%var_p        &
-                               ,scratch%scr2(1))
+                               ,scratch%scr2)
 
             !----- Rearrange 4-d cuparm variables to (x,y,z,cloud) ------------------------!
             elseif (vtab_r(nv,ngr)%idim_type == 8) then
                call rearrange_p(nnxp(ngr),nnyp(ngr),nnzp(ngr),nclouds,vtab_r(nv,ngr)%var_p &
-                               ,scratch%scr2(1))
+                               ,scratch%scr2)
 
             !------------------------------------------------------------------------------!
             !     For types 2, 6, 7, and 9 we don't need to change the order, but I need   !
@@ -631,22 +628,22 @@ subroutine anlwrt(restart,vtype)
             !----- Copy 2-d (x,y,1) -------------------------------------------------------!
             elseif (vtab_r(nv,ngr)%idim_type == 2) then
                call rearrange_dum(nnxp(ngr),nnyp(ngr),1,vtab_r(nv,ngr)%var_p               &
-                                 ,scratch%scr2(1))
+                                 ,scratch%scr2)
 
             !----- Copy 3-d (x,y,patch) ---------------------------------------------------!
             elseif (vtab_r(nv,ngr)%idim_type == 6) then
                call rearrange_dum(nnxp(ngr),nnyp(ngr),npatch,vtab_r(nv,ngr)%var_p          &
-                                 ,scratch%scr2(1))
+                                 ,scratch%scr2)
 
             !----- Copy 3-d (x,y,wave) ----------------------------------------------------!
             elseif (vtab_r(nv,ngr)%idim_type == 7) then
                call rearrange_dum(nnxp(ngr),nnyp(ngr),nwave,vtab_r(nv,ngr)%var_p           &
-                                 ,scratch%scr2(1))
+                                 ,scratch%scr2)
 
             !----- Copy 3-d (x,y,cloud) ---------------------------------------------------!
             elseif (vtab_r(nv,ngr)%idim_type == 9) then
                call rearrange_dum(nnxp(ngr),nnyp(ngr),nclouds,vtab_r(nv,ngr)%var_p         &
-                                 ,scratch%scr2(1))
+                                 ,scratch%scr2)
             end if
             
             !------------------------------------------------------------------------------!
@@ -660,8 +657,8 @@ subroutine anlwrt(restart,vtype)
             aw_table(nvcnt)%ngrid     = ngr
             aw_table(nvcnt)%nvalues   = vtab_r(nv,ngr)%npts
             !----- Writing ----------------------------------------------------------------!
-            call vforecr(ioaunt,scratch%scr2(1),vtab_r(nv,ngr)%npts,18,scratch%scr1(1)     &
-                        ,scratch%scr1(1),'LIN',npointer)
+            call vforecr(ioaunt,scratch%scr2 ,vtab_r(nv,ngr)%npts,18,scratch%scr1          &
+                        ,scratch%scr1,'LIN',npointer)
             !------------------------------------------------------------------------------!
 
 
@@ -680,31 +677,29 @@ subroutine anlwrt(restart,vtype)
             !----- Exner perturbation, save full Exner function instead -------------------!
             if (varn == 'PP') then
               !----- Output total Exner function ------------------------------------------!
-              call RAMS_aprep_p (nnxyzp(ngr),vtab_r(nv,ngr)%var_m,basic_g(ngr)%pi0(1,1,1)  &
-                                ,scratch%scr1(1))
+              call RAMS_aprep_p (nnxyzp(ngr),vtab_r(nv,ngr)%var_m,basic_g(ngr)%pi0         &
+                                ,scratch%scr1)
               varn='PI'
               !----- Rearrange 3-d variables to (x,y,z) -----------------------------------!
-              call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),scratch%scr1(1),scratch%scr2(1))
+              call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),scratch%scr1,scratch%scr2)
 
             !----- Removing density from the coefficient ----------------------------------!
             elseif(varn == 'HKM') then
                !----- Convert to HKM to HKH (note that VKH is HKH for Deardorff) ----------!
                call RAMS_aprep_hkh (nnxyzp(ngr),vtab_r(nv,ngr)%var_m                       &
-                                   ,turb_g(ngr)%vkh(1,1,1),basic_g(ngr)%dn0(1,1,1)         &
-                                   ,scratch%scr1(1),idiffk(ngr),xkhkm(ngr))
+                                   ,turb_g(ngr)%vkh,basic_g(ngr)%dn0,scratch%scr1          &
+                                   ,idiffk(ngr),xkhkm(ngr))
                varn='HKH'
                !-----  Rearrange 3-d variables to (x,y,z) ---------------------------------!
-               call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),scratch%scr1(1)                &
-                             ,scratch%scr2(1))
+               call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),scratch%scr1,scratch%scr2)
 
             !----- Removing density from the coefficient ----------------------------------!
             elseif(varn == 'VKH') then
                !----- Un-density weight VKH -----------------------------------------------!
                call RAMS_aprep_vkh (nnxyzp(ngr),vtab_r(nv,ngr)%var_m                       &
-                                   ,basic_g(ngr)%dn0(1,1,1),scratch%scr1(1))
+                                   ,basic_g(ngr)%dn0,scratch%scr1)
                !----- Rearrange 3-d variables to (x,y,z) ----------------------------------!
-               call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),scratch%scr1(1)                &
-                             ,scratch%scr2(1))
+               call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),scratch%scr1,scratch%scr2)
 
             !------------------------------------------------------------------------------!
             !    Now, the ordinary variables                                               !
@@ -712,22 +707,22 @@ subroutine anlwrt(restart,vtype)
             !-----  Rearrange 3-d variables to (x,y,z) ------------------------------------!
             elseif(vtab_r(nv,ngr)%idim_type == 3) then
                call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),vtab_r(nv,ngr)%var_m           &
-                             ,scratch%scr2(1))
+                             ,scratch%scr2)
 
             !----- Rearrange 4-d leaf%soil variables to (x,y,z,patch) ---------------------!
             elseif(vtab_r(nv,ngr)%idim_type == 4) then
                call rearrange_p(nnxp(ngr),nnyp(ngr),nzg,npatch,vtab_r(nv,ngr)%var_m        &
-                               ,scratch%scr2(1))
+                               ,scratch%scr2)
 
             !----- Rearrange 4-d leaf%sfcwater variables to (x,y,z,patch) -----------------!
             elseif(vtab_r(nv,ngr)%idim_type == 5) then
                call rearrange_p(nnxp(ngr),nnyp(ngr),nzs,npatch,vtab_r(nv,ngr)%var_m        &
-                               ,scratch%scr2(1))
+                               ,scratch%scr2)
 
             !----- Rearrange 4-d cuparm variables to (x,y,z,cloud) ------------------------!
             elseif (vtab_r(nv,ngr)%idim_type == 8) then
                call rearrange_p(nnxp(ngr),nnyp(ngr),nnzp(ngr),nclouds,vtab_r(nv,ngr)%var_m &
-                               ,scratch%scr2(1))
+                               ,scratch%scr2)
 
             !------------------------------------------------------------------------------!
             !     For types 2, 6, 7, and 9 we don't need to change the order, but I need   !
@@ -736,22 +731,22 @@ subroutine anlwrt(restart,vtype)
             !----- Copy 2-d (x,y,1) -------------------------------------------------------!
             elseif (vtab_r(nv,ngr)%idim_type == 2) then
                call rearrange_dum(nnxp(ngr),nnyp(ngr),1,vtab_r(nv,ngr)%var_m               &
-                                 ,scratch%scr2(1))
+                                 ,scratch%scr2)
 
             !----- Copy 3-d (x,y,patch) ---------------------------------------------------!
             elseif (vtab_r(nv,ngr)%idim_type == 6) then
                call rearrange_dum(nnxp(ngr),nnyp(ngr),npatch,vtab_r(nv,ngr)%var_m          &
-                                 ,scratch%scr2(1))
+                                 ,scratch%scr2)
 
             !----- Copy 3-d (x,y,wave) ----------------------------------------------------!
             elseif (vtab_r(nv,ngr)%idim_type == 7) then
                call rearrange_dum(nnxp(ngr),nnyp(ngr),nwave,vtab_r(nv,ngr)%var_m           &
-                                 ,scratch%scr2(1))
+                                 ,scratch%scr2)
 
             !----- Copy 3-d (x,y,cloud) ---------------------------------------------------!
             elseif (vtab_r(nv,ngr)%idim_type == 9) then
                call rearrange_dum(nnxp(ngr),nnyp(ngr),nclouds,vtab_r(nv,ngr)%var_m         &
-                                 ,scratch%scr2(1))
+                                 ,scratch%scr2)
             end if
             
             !------------------------------------------------------------------------------!
@@ -765,8 +760,8 @@ subroutine anlwrt(restart,vtype)
             aw_table(nvcnt)%ngrid     = ngr
             aw_table(nvcnt)%nvalues   = vtab_r(nv,ngr)%npts
             !----- Writing ----------------------------------------------------------------!
-            call vforecr(ioaunt,scratch%scr2(1),vtab_r(nv,ngr)%npts,18,scratch%scr1(1)     &
-                        ,scratch%scr1(1),'LIN',npointer)
+            call vforecr(ioaunt,scratch%scr2(1),vtab_r(nv,ngr)%npts,18,scratch%scr1        &
+                        ,scratch%scr1,'LIN',npointer)
             !------------------------------------------------------------------------------!
          end if
       end do

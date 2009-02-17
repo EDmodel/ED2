@@ -43,60 +43,60 @@ subroutine grid_setup(num)
      do ifm = 1,ngrids
         call newgrid(ifm)
 
-        call polarst(nnxp(ifm),nnyp(ifm)                      &
-             ,grid_g(ifm)%glat  (1,1) ,grid_g(ifm)%glon  (1,1)  &
-             ,grid_g(ifm)%fmapu (1,1) ,grid_g(ifm)%fmapv (1,1)  &
-             ,grid_g(ifm)%fmapt (1,1) ,grid_g(ifm)%fmapm (1,1)  &
-             ,grid_g(ifm)%fmapui(1,1) ,grid_g(ifm)%fmapvi(1,1)  &
-             ,grid_g(ifm)%fmapti(1,1) ,grid_g(ifm)%fmapmi(1,1)  )
+        call polarst(nnxp(ifm),nnyp(ifm)              &
+             ,grid_g(ifm)%glat   ,grid_g(ifm)%glon    &
+             ,grid_g(ifm)%fmapu  ,grid_g(ifm)%fmapv   &
+             ,grid_g(ifm)%fmapt  ,grid_g(ifm)%fmapm   &
+             ,grid_g(ifm)%fmapui ,grid_g(ifm)%fmapvi  &
+             ,grid_g(ifm)%fmapti ,grid_g(ifm)%fmapmi  )
 
-        call grdspc(nnxp(ifm),nnyp(ifm)                      &
-             ,grid_g(ifm)%dxu  (1,1)  ,grid_g(ifm)%dxv  (1,1)  &
-             ,grid_g(ifm)%dxt  (1,1)  ,grid_g(ifm)%dxm  (1,1)  &
-             ,grid_g(ifm)%dyu  (1,1)  ,grid_g(ifm)%dyv  (1,1)  &
-             ,grid_g(ifm)%dyt  (1,1)  ,grid_g(ifm)%dym  (1,1)  &
-             ,grid_g(ifm)%fmapu(1,1)  ,grid_g(ifm)%fmapv(1,1)  &
-             ,grid_g(ifm)%fmapt(1,1)  ,grid_g(ifm)%fmapm(1,1)  )
+        call grdspc(nnxp(ifm),nnyp(ifm)             &
+             ,grid_g(ifm)%dxu   ,grid_g(ifm)%dxv    &
+             ,grid_g(ifm)%dxt   ,grid_g(ifm)%dxm    &
+             ,grid_g(ifm)%dyu   ,grid_g(ifm)%dyv    &
+             ,grid_g(ifm)%dyt   ,grid_g(ifm)%dym    &
+             ,grid_g(ifm)%fmapu ,grid_g(ifm)%fmapv  &
+             ,grid_g(ifm)%fmapt ,grid_g(ifm)%fmapm  )
 
         ! Define transformation Jacobians for all grids
 
-        call fill_toptuvm(nnxp(ifm),nnyp(ifm)               &
-             ,grid_g(ifm)%topt (1,1) ,grid_g(ifm)%topu (1,1)  &
-             ,grid_g(ifm)%topv (1,1) ,grid_g(ifm)%topm (1,1)  &
-             ,grid_g(ifm)%topta(1,1) ,grid_g(ifm)%topma(1,1)  )
+        call fill_toptuvm(nnxp(ifm),nnyp(ifm)       &
+             ,grid_g(ifm)%topt  ,grid_g(ifm)%topu   &
+             ,grid_g(ifm)%topv  ,grid_g(ifm)%topm   &
+             ,grid_g(ifm)%topta ,grid_g(ifm)%topma  )
 
-        call transfm(nnxp(ifm),nnyp(ifm)                  &
-             ,grid_g(ifm)%topt(1,1) ,grid_g(ifm)%topu(1,1)  &
-             ,grid_g(ifm)%topv(1,1) ,grid_g(ifm)%topm(1,1)  &
-             ,grid_g(ifm)%rtgt(1,1) ,grid_g(ifm)%rtgu(1,1)  &
-             ,grid_g(ifm)%rtgv(1,1) ,grid_g(ifm)%rtgm(1,1)  &
-             ,grid_g(ifm)%f13u(1,1) ,grid_g(ifm)%f13v(1,1)  &
-             ,grid_g(ifm)%f13t(1,1) ,grid_g(ifm)%f13m(1,1)  &
-             ,grid_g(ifm)%f23u(1,1) ,grid_g(ifm)%f23v(1,1)  &
-             ,grid_g(ifm)%f23t(1,1) ,grid_g(ifm)%f23m(1,1)  &
-             ,grid_g(ifm)%dxu (1,1) ,grid_g(ifm)%dxv (1,1)  &
-             ,grid_g(ifm)%dxt (1,1) ,grid_g(ifm)%dxm (1,1)  &
-             ,grid_g(ifm)%dyu (1,1) ,grid_g(ifm)%dyv (1,1)  &
-             ,grid_g(ifm)%dyt (1,1) ,grid_g(ifm)%dym (1,1)  )
+        call transfm(nnxp(ifm),nnyp(ifm)          &
+             ,grid_g(ifm)%topt ,grid_g(ifm)%topu  &
+             ,grid_g(ifm)%topv ,grid_g(ifm)%topm  &
+             ,grid_g(ifm)%rtgt ,grid_g(ifm)%rtgu  &
+             ,grid_g(ifm)%rtgv ,grid_g(ifm)%rtgm  &
+             ,grid_g(ifm)%f13u ,grid_g(ifm)%f13v  &
+             ,grid_g(ifm)%f13t ,grid_g(ifm)%f13m  &
+             ,grid_g(ifm)%f23u ,grid_g(ifm)%f23v  &
+             ,grid_g(ifm)%f23t ,grid_g(ifm)%f23m  &
+             ,grid_g(ifm)%dxu  ,grid_g(ifm)%dxv   &
+             ,grid_g(ifm)%dxt  ,grid_g(ifm)%dxm   &
+             ,grid_g(ifm)%dyu  ,grid_g(ifm)%dyv   &
+             ,grid_g(ifm)%dyt  ,grid_g(ifm)%dym   )
 
-        call lpuvw_init(nnxp(ifm),nnyp(ifm),grid_g(ifm)%flpu(1,1)  &
-             ,grid_g(ifm)%flpv(1,1),grid_g(ifm)%flpw(1,1)  )
+        call lpuvw_init(nnxp(ifm),nnyp(ifm),grid_g(ifm)%flpu  &
+             ,grid_g(ifm)%flpv,grid_g(ifm)%flpw  )
 
         if (if_adap == 1) then
            call ctrlvols (nnzp(ifm),nnxp(ifm),nnyp(ifm),nnstbot(ifm)  &
-                ,dztn(1,ifm),xmn(1,ifm),ymn(1,ifm),zmn(1,ifm)           &
-                ,platn(ifm),plonn(ifm)                                  &
-                ,grid_g(ifm)%aru  (1,1,1) ,grid_g(ifm)%arv (1,1,1)      &
-                ,grid_g(ifm)%arw  (1,1,1) ,grid_g(ifm)%volt(1,1,1)      &
-                ,grid_g(ifm)%volu (1,1,1) ,grid_g(ifm)%volv(1,1,1)      &
-                ,grid_g(ifm)%volw (1,1,1) ,grid_g(ifm)%flpu (1,1)        &
-                ,grid_g(ifm)%flpv  (1,1)   ,grid_g(ifm)%flpw (1,1)        &
-                ,grid_g(ifm)%dxu  (1,1)   ,grid_g(ifm)%dxv (1,1)        &
-                ,grid_g(ifm)%dxt  (1,1)   ,grid_g(ifm)%dyu (1,1)        &
-                ,grid_g(ifm)%dyv  (1,1)   ,grid_g(ifm)%dyt (1,1)        &
-                ,grid_g(ifm)%topma(1,1)   ,grid_g(ifm)%topm(1,1)        &
+                ,dztn(:,ifm),xmn(:,ifm),ymn(:,ifm),zmn(:,ifm)         &
+                ,platn(ifm),plonn(ifm)                                &
+                ,grid_g(ifm)%aru               ,grid_g(ifm)%arv       &
+                ,grid_g(ifm)%arw               ,grid_g(ifm)%volt      &
+                ,grid_g(ifm)%volu              ,grid_g(ifm)%volv      &
+                ,grid_g(ifm)%volw              ,grid_g(ifm)%flpu      &
+                ,grid_g(ifm)%flpv              ,grid_g(ifm)%flpw      &
+                ,grid_g(ifm)%dxu               ,grid_g(ifm)%dxv       &
+                ,grid_g(ifm)%dxt               ,grid_g(ifm)%dyu       &
+                ,grid_g(ifm)%dyv               ,grid_g(ifm)%dyt       &
+                ,grid_g(ifm)%topma             ,grid_g(ifm)%topm      &
                 ,ifm, nzg, npatch  )
-        endif
+        end if
 
      enddo
   endif

@@ -41,16 +41,17 @@ subroutine harr_radinit(m1)  ! Bob's interface subroutine
   use mem_harr, only: ng,nb,nsolb,npsb,nuum,prf,alpha,trf,beta  &
                       ,xp,wght,wlenlo,wlenhi,solar0,ralcs,a0,a1,a2,a3  &
                       ,exptabc,ulim,npartob,npartg,ncog,ncb  &
-                      ,ocoef,bcoef,gcoef,solara,solarb
+                      ,ocoef,bcoef,gcoef,solara,solarb,mb,mpb,mg
 
   use mem_radiate, only: maxadd_rad, nadd_rad, zmrad
-  use micphys,  only: gnu
+  use micphys,  only: gnu,ncat
   use mem_grid,    only: zm
-
+  use harr_coms, only : nradmax,alloc_harr_scratch
   implicit none
 
   real :: deltaz
   integer, intent(in) :: m1
+  integer             :: nrad
 
   !------------------------------------------------------------------------------
   ! This subroutine initializes some constants for the Harrington radiation
@@ -94,6 +95,11 @@ subroutine harr_radinit(m1)  ! Bob's interface subroutine
      nadd_rad = min(nadd_rad,maxadd_rad)
 
   endif
+
+  nradmax = m1 + nadd_rad
+  
+  ! Perform the allocation of several scratch variables
+  call alloc_harr_scratch(m1,ncat,nradmax,mg,mb,mpb)
 
   return
 end subroutine harr_radinit
@@ -141,7 +147,8 @@ subroutine harr_radinit1(ng,nb,ns,npsb,nuum,prf,alpha,trf,beta,xp,  &
       ,gcoef1(5,8,7,2)
 
   integer :: ib,icog,icb,ig,ik,ngb,ip,icat,ignu,ic1,ic2,ic3,i,is
-  real :: sunavg,temp
+  real :: temp
+  real, external :: sunavg
 
   integer :: kkat(13)
   data kkat /1,2,3,3,3,4,4,4,5,5,5,6,7/

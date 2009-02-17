@@ -235,7 +235,6 @@ subroutine bruvais(ibruvais,m1,m2,m3,ia,iz,ja,jz,pi0,pp,theta,rtp,rv,rtgt,flpw,e
                vctr12(k) = virtt(vctr11(k),rv(k,i,j),rtp(k,i,j))
             end do
          else
-            vctr11(k1:m1) = theta(k1:m1,i,j)
             !----- No water substance, theta_v = theta ------------------------------------!
             do k = k1,m1
                vctr11(k) = theta(k,i,j)

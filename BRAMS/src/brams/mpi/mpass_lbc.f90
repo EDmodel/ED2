@@ -88,19 +88,19 @@ subroutine node_sendlbc()
            if ( vtab_r(nv,ngrid)%impt1 == 1) then
               if ( vtab_r(nv,ngrid)%idim_type == 3) then
                  call mkstbuff(mzp,mxp,myp,vtab_r(nv,ngrid)%var_p  &
-                     ,scratch%vt3dp(1),i1-i0,i2-i0,j1-j0,j2-j0,mtp)
-                 call MPI_Pack(scratch%vt3dp(1),mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff(1),  &
+                     ,scratch%vt3dp,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+                 call MPI_Pack(scratch%vt3dp,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff,  &
                       node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
               elseif ( vtab_r(nv,ngrid)%idim_type == 2) then
                  call mkstbuff(1,mxp,myp,vtab_r(nv,ngrid)%var_p  &
-                     ,scratch%vt3dp(1),i1-i0,i2-i0,j1-j0,j2-j0,mtp)
-                 call MPI_Pack(scratch%vt3dp(1),mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff(1),  &
+                     ,scratch%vt3dp,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+                 call MPI_Pack(scratch%vt3dp,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff,  &
                       node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
               endif
            endif
         enddo
 
-        call MPI_Isend(node_buffs(nm)%lbc_send_buff(1),  &
+        call MPI_Isend(node_buffs(nm)%lbc_send_buff,  &
              ipos-1,  &
              MPI_Packed,ipaths(5,itype,ngrid,nm),200+ngrid,MPI_COMM_WORLD,  &
              isend_req(nm),ierr)
@@ -168,15 +168,15 @@ subroutine node_getlbc()
 
 
         ipos = 1
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos, &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos, &
                         i1,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos, &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos, &
                         i2,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos, &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos, &
                         j1,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos, &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos, &
                         j2,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos, &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos, &
                         node_src,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
 
         nptsxy=(i2-i1+1)*(j2-j1+1)
@@ -185,16 +185,16 @@ subroutine node_getlbc()
            if ( vtab_r(nv,ngrid)%impt1 == 1) then
               if ( vtab_r(nv,ngrid)%idim_type == 3) then
                  mtp=nnzp(ngrid) * nptsxy
-                 call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
-                      scratch%vt3dp(1),mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+                 call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
+                      scratch%vt3dp,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
                  call exstbuff(mzp,mxp,myp,vtab_r(nv,ngrid)%var_p  &
-                     ,scratch%vt3dp(1),i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+                     ,scratch%vt3dp,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
               elseif ( vtab_r(nv,ngrid)%idim_type == 2) then
                  mtp= nptsxy
-                 call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
+                 call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
                       scratch%vt3dp(1),mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
                  call exstbuff(1,mxp,myp,vtab_r(nv,ngrid)%var_p  &
-                     ,scratch%vt3dp(1),i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+                     ,scratch%vt3dp,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
               endif
            endif
         enddo

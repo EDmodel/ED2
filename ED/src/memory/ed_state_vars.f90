@@ -116,14 +116,17 @@ module ed_state_vars
      ! Annual average ratio of cb/cb_max
      real ,pointer,dimension(:) :: cbr_bar
 
-     ! Vegetation internal energy (J/kg)
+     ! Vegetation internal energy (J/m2 ground)
      real ,pointer,dimension(:) :: veg_energy
 
      ! Vegetation temperature (K)
      real ,pointer,dimension(:) :: veg_temp
 
-     ! Vegetation surface water (kg/m2)
+     ! Vegetation surface water (kg/m2 ground)
      real ,pointer,dimension(:) :: veg_water
+
+     ! Leaf (vegetation) heat capacity [ J/m2/K]
+     real, pointer,dimension(:) :: hcapveg
 
      ! Gross primary productivity (GPP) [umol/m2/s], averaged over the 
      ! output frequency (FRQSTATE)
@@ -268,8 +271,6 @@ module ed_state_vars
      ! Instantaneous values of leaf and root respiration [umol/m2/s]
      real ,pointer,dimension(:) :: leaf_respiration
      real ,pointer,dimension(:) :: root_respiration
-
-     real, pointer,dimension(:) :: hcapveg
 
      ! Gross Primary Productivity [umol/m2/s]
      real, pointer,dimension(:) :: gpp
@@ -1571,6 +1572,8 @@ module ed_state_vars
 ! change at a monthly frequency typically.
 !------------------------------------------------------------------------------------------!
   logical :: filltables
+
+  
   
 contains
 !============================================================================!
@@ -4471,7 +4474,7 @@ contains
 
 !============================================================================!
 !============================================================================!
-  subroutine copy_sitetype_mask(sitein,siteout,mask,masksz,newsz)
+  subroutine copy_sitetype_mask(sitein,siteout,logmask,masksz,newsz)
 
     ! This subroutine assumes that the size of vectors in siteout
     ! are the number of true elements in mask, while the size of the
@@ -4490,21 +4493,18 @@ contains
 
     type(sitetype),target :: sitein,siteout
     integer :: masksz,newsz
-    integer,dimension(masksz) :: mask
     integer,dimension(newsz) :: incmask
     logical,dimension(masksz)           :: logmask
     integer :: i,k,m,inc,ipft
     type(stoma_data),pointer :: osdi,osdo
 
-    logmask = .false.
     inc = 0
     do i=1,masksz
-       if (mask(i)>0) then
+       if (logmask(i)) then
           inc = inc + 1
           incmask(inc) = i
-          logmask(i) = .true.
-       endif
-    enddo
+       end if
+    end do
 
     ! First do all of the true vectors
 
@@ -5100,10 +5100,11 @@ contains
     type(patchtype),pointer   :: cpatch
     logical :: verbose = .false.    
 
-    if (mynum.eq.1) then
+    if (mynum == 1) then
        write(*,"(a)")'--- Re-hashing the IO pointer tables and mapping arrays'
     endif
-       
+
+
     ! The first loop through populates the info tables
 
     do igr = 1,ngrids
@@ -5131,7 +5132,8 @@ contains
 
        if (nnodetot /= 1) then
 
-          ! Send all them sizes to root (CHANGED, NODE 1)          
+          ! Send all them sizes to root (CHANGED, NODE 1)
+          
 
           if (mynum == 1) then
           
@@ -5184,15 +5186,15 @@ contains
          end if
 
 
-         if(mynum == 1.and.model_start.and. verbose) then
+         if(mynum == 1 .and. model_start .and. verbose) then
             
             print*,"Global Polygons: ",gdpy(1:nnodetot,igr)
             print*,"Global Site: "    ,gdsi(1:nnodetot,igr)
             print*,"Global Patches: " ,gdpa(1:nnodetot,igr)
             print*,"Global Cohorts: " ,gdco(1:nnodetot,igr)
-            
+
          end if
-         
+
          ! Calculate the offsets that each machine has
          
          py_off(1,igr) = 0
@@ -5213,31 +5215,25 @@ contains
          cgrid%npatches_global  = sum(gdpa(1:nnodetot,igr))
          cgrid%ncohorts_global  = sum(gdco(1:nnodetot,igr))
          
-         
+
          ! Calculate the local offsets
          
          cgrid%mach_polygon_offset_index = py_off(mynum,igr)
          cgrid%mach_site_offset_index    = si_off(mynum,igr)
          cgrid%mach_patch_offset_index   = pa_off(mynum,igr)
          cgrid%mach_cohort_offset_index  = co_off(mynum,igr)
-         
-         
-      endif
-      
-      call filltab_globtype(igr)
-      
+
+          
+       endif
+
+       call filltab_globtype(igr)
+
        call filltab_edtype(igr,0)
        
        if (gdpy(mynum,igr)>0) then
           call filltab_polygontype(igr,1,0)
-          
-          !          if (gdsi(mynum,igr)>0) then
           call filltab_sitetype(igr,1,1,0)
-          
-          !            if (gdpa(mynum,igr)>0) then
           call filltab_patchtype(igr,1,1,1,0)
-          !           endif
-          !         endif
        endif
        
        

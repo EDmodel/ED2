@@ -33,9 +33,9 @@ subroutine ipaths_cyc_alloc(nxp,nyp,ibnd,jbnd)
   allocate (ipathsu_cyc(8,npts_cyc))
   allocate (ipathsv_cyc(8,npts_cyc))
 
-  call izero(8*npts_cyc,ipathst_cyc(1,1))
-  call izero(8*npts_cyc,ipathsu_cyc(1,1))
-  call izero(8*npts_cyc,ipathsv_cyc(1,1))
+  call izero(8*npts_cyc,ipathst_cyc)
+  call izero(8*npts_cyc,ipathsu_cyc)
+  call izero(8*npts_cyc,ipathsv_cyc)
 
 
   return
@@ -298,8 +298,8 @@ subroutine node_sendcyclic(isflag)
         call MPI_Pack(nijsendt_cyc(ndn),1,MPI_INTEGER,  &                                                      
              node_buffs_cyc(ndn)%buffsend_cyc(1),  &                                                           
              nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)                                                           
-        call MPI_Pack(ijsendt_cyc(1,1,ndn),6*nijsendt_cyc(ndn),MPI_INTEGER,  &                                 
-             node_buffs_cyc(ndn)%buffsend_cyc(1),  &                                                           
+        call MPI_Pack(ijsendt_cyc(:,:,ndn),6*nijsendt_cyc(ndn),MPI_INTEGER,  &                                 
+             node_buffs_cyc(ndn)%buffsend_cyc,  &                                                           
              nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)                                                           
 
         do icycpts = 1,nijsendt_cyc(ndn)                                                                       
@@ -313,7 +313,7 @@ subroutine node_sendcyclic(isflag)
                  if ( vtab_r(nv,1)%impt1 == 1) then                                                            
                     if ( vtab_r(nv,1)%idim_type == 3) then                                                     
                        call mkcycbuff(mmzp(1),mmxp(1),mmyp(1)  &                                               
-                          ,vtab_r(nv,1)%var_p,scratch%vt3dp(1)  &                                              
+                          ,vtab_r(nv,1)%var_p,scratch%vt3dp  &                                              
                           ,isn,jsn)                                                                            
 
                        call MPI_Pack(scratch%vt3dp(1),mmzp(1),MPI_REAL,  &                                     
@@ -322,10 +322,10 @@ subroutine node_sendcyclic(isflag)
                                                                                                                
                     elseif ( vtab_r(nv,1)%idim_type == 2) then                                                 
                        call mkcycbuff(1,mmxp(1),mmyp(1)  &                                                     
-                          ,vtab_r(nv,1)%var_p,scratch%vt3dp(1)  &                                              
+                          ,vtab_r(nv,1)%var_p,scratch%vt3dp  &                                              
                           ,isn,jsn)                                                                            
-                       call MPI_Pack(scratch%vt3dp(1),1,MPI_REAL,  &                                           
-                            node_buffs_cyc(ndn)%buffsend_cyc(1),  &                                            
+                       call MPI_Pack(scratch%vt3dp,1,MPI_REAL,  &                                           
+                            node_buffs_cyc(ndn)%buffsend_cyc,  &                                            
                             nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)                                            
                     endif                                                                                      
                  endif                                                                                         
@@ -334,23 +334,23 @@ subroutine node_sendcyclic(isflag)
            elseif (isflag == 4) then                                                                           
 
               call mkcycbuff(mmzp(1),mmxp(1),mmyp(1)  &                                                        
-                 ,basic_g(1)%pp(1,1,1),scratch%vt3dp(1)  &                                                     
+                 ,basic_g(1)%pp,scratch%vt3dp  &                                                     
                  ,isn,jsn)                                                                                     
-              call MPI_Pack(scratch%vt3dp(1),mmzp(1),MPI_REAL,  &                                              
-                   node_buffs_cyc(ndn)%buffsend_cyc(1),  &                                                     
+              call MPI_Pack(scratch%vt3dp,mmzp(1),MPI_REAL,  &                                              
+                   node_buffs_cyc(ndn)%buffsend_cyc,  &                                                     
                    nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)                                                     
 
            elseif (isflag == 6) then                                                                           
 
               call mkcycbuff(mmzp(1),mmxp(1),mmyp(1)   &                                                       
-                 ,basic_g(1)%wp(1,1,1),scratch%vt3dp(1)  &                                                     
+                 ,basic_g(1)%wp,scratch%vt3dp  &                                                     
                  ,isn,jsn)                                                                                     
-              call MPI_Pack(scratch%vt3dp(1),mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc(1),  &          
+              call MPI_Pack(scratch%vt3dp,mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc,  &          
                    nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)                                                     
               call mkcycbuff(mmzp(1),mmxp(1),mmyp(1)  &                                                        
-                 ,basic_g(1)%pp(1,1,1),scratch%vt3dp(1)  &                                                     
+                 ,basic_g(1)%pp,scratch%vt3dp  &                                                     
                  ,isn,jsn)                                                                                     
-              call MPI_Pack(scratch%vt3dp(1),mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc(1),  &          
+              call MPI_Pack(scratch%vt3dp,mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc,  &          
                    nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)                                                     
 
            endif                                                                                               
@@ -359,9 +359,9 @@ subroutine node_sendcyclic(isflag)
      elseif (isflag == 2) then                                                                                 
 
 
-        call MPI_Pack(nijsendu_cyc(ndn),1,MPI_INTEGER,node_buffs_cyc(ndn)%buffsend_cyc(1),  &                  
+        call MPI_Pack(nijsendu_cyc(ndn),1,MPI_INTEGER,node_buffs_cyc(ndn)%buffsend_cyc,  &                  
              nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)                                                           
-      call MPI_Pack(ijsendu_cyc(1,1,ndn),6*nijsendu_cyc(ndn),MPI_INTEGER,node_buffs_cyc(ndn)%buffsend_cyc(1),  &
+      call MPI_Pack(ijsendu_cyc(:,:,ndn),6*nijsendu_cyc(ndn),MPI_INTEGER,node_buffs_cyc(ndn)%buffsend_cyc,  &
              nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)                                                           
 
         do icycpts = 1,nijsendu_cyc(ndn)                                                                       
@@ -370,18 +370,17 @@ subroutine node_sendcyclic(isflag)
            jsn = ijsendu_cyc(2,icycpts,ndn) - mj0(1)                                                           
 
            call mkcycbuff(mmzp(1),mmxp(1),mmyp(1)  &                                                           
-              ,basic_g(1)%up(1,1,1),scratch%vt3dp(1)  &                                                        
-              ,isn,jsn)                                                                                        
-           call MPI_Pack(scratch%vt3dp(1),mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc(1),  &             
+              ,basic_g(1)%up,scratch%vt3dp,isn,jsn)                                                                                        
+           call MPI_Pack(scratch%vt3dp,mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc,  &             
                 nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)                                                        
 
         enddo                                                                                                  
 
      elseif (isflag == 3) then                                                                                 
 
-        call MPI_Pack(nijsendv_cyc(ndn),1,MPI_INTEGER,node_buffs_cyc(ndn)%buffsend_cyc(1),  &                  
+        call MPI_Pack(nijsendv_cyc(ndn),1,MPI_INTEGER,node_buffs_cyc(ndn)%buffsend_cyc,  &                  
              nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)                                                           
-      call MPI_Pack(ijsendv_cyc(1,1,ndn),6*nijsendv_cyc(ndn),MPI_INTEGER,node_buffs_cyc(ndn)%buffsend_cyc(1),  &
+      call MPI_Pack(ijsendv_cyc(:,:,ndn),6*nijsendv_cyc(ndn),MPI_INTEGER,node_buffs_cyc(ndn)%buffsend_cyc,  &
              nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)                                                           
 
         do icycpts = 1,nijsendv_cyc(ndn)                                                                       
@@ -390,18 +389,17 @@ subroutine node_sendcyclic(isflag)
            jsn = ijsendv_cyc(2,icycpts,ndn) - mj0(1)                                                           
 
            call mkcycbuff(mmzp(1),mmxp(1),mmyp(1)  &                                                           
-              ,basic_g(1)%vp(1,1,1),scratch%vt3dp(1)  &                                                        
-              ,isn,jsn)                                                                                        
-           call MPI_Pack(scratch%vt3dp(1),mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc(1),  &             
+              ,basic_g(1)%vp,scratch%vt3dp,isn,jsn)                                                                                        
+           call MPI_Pack(scratch%vt3dp,mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc,  &             
                 nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)                                                        
 
         enddo                                                                                                  
 
      elseif (isflag == 5) then                                                                                 
 
-        call MPI_Pack(nijsendu_cyc(ndn),1,MPI_INTEGER,node_buffs_cyc(ndn)%buffsend_cyc(1),  &                  
+        call MPI_Pack(nijsendu_cyc(ndn),1,MPI_INTEGER,node_buffs_cyc(ndn)%buffsend_cyc,  &                  
              nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)                                                           
-      call MPI_Pack(ijsendu_cyc(1,1,ndn),6*nijsendu_cyc(ndn),MPI_INTEGER,node_buffs_cyc(ndn)%buffsend_cyc(1),  &
+      call MPI_Pack(ijsendu_cyc(:,:,ndn),6*nijsendu_cyc(ndn),MPI_INTEGER,node_buffs_cyc(ndn)%buffsend_cyc,  &
              nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)                                                           
 
         do icycpts = 1,nijsendu_cyc(ndn)                                                                       
@@ -410,17 +408,16 @@ subroutine node_sendcyclic(isflag)
            jsn = ijsendu_cyc(2,icycpts,ndn) - mj0(1)                                                           
 
            call mkcycbuff(mmzp(1),mmxp(1),mmyp(1)  &                                                           
-              ,basic_g(1)%up(1,1,1),scratch%vt3dp(1)  &                                                        
-              ,isn,jsn)                                                                                        
-           call MPI_Pack(scratch%vt3dp(1),mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc(1),  &             
+              ,basic_g(1)%up,scratch%vt3dp,isn,jsn)                                                                                        
+           call MPI_Pack(scratch%vt3dp,mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc,  &             
                 nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)                                                        
 
         enddo                                                                                                  
                                                                                                                
 
-        call MPI_Pack(nijsendv_cyc(ndn),1,MPI_INTEGER,node_buffs_cyc(ndn)%buffsend_cyc(1),  &                  
+        call MPI_Pack(nijsendv_cyc(ndn),1,MPI_INTEGER,node_buffs_cyc(ndn)%buffsend_cyc,  &                  
              nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)                                                           
-      call MPI_Pack(ijsendv_cyc(1,1,ndn),6*nijsendv_cyc(ndn),MPI_INTEGER,node_buffs_cyc(ndn)%buffsend_cyc(1),  &
+      call MPI_Pack(ijsendv_cyc(:,:,ndn),6*nijsendv_cyc(ndn),MPI_INTEGER,node_buffs_cyc(ndn)%buffsend_cyc,  &
              nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)                                                           
 
         do icycpts = 1,nijsendv_cyc(ndn)                                                                       
@@ -429,16 +426,15 @@ subroutine node_sendcyclic(isflag)
            jsn = ijsendv_cyc(2,icycpts,ndn) - mj0(1)                                                           
 
            call mkcycbuff(mmzp(1),mmxp(1),mmyp(1)  &                                                           
-              ,basic_g(1)%vp(1,1,1),scratch%vt3dp(1)  &                                                        
-              ,isn,jsn)                                                                                        
-           call MPI_Pack(scratch%vt3dp(1),mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc(1),  &             
+              ,basic_g(1)%vp,scratch%vt3dp,isn,jsn)                                                                                        
+           call MPI_Pack(scratch%vt3dp,mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc,  &             
                 nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)                                                        
 
         enddo                                                                                                  
 
      endif                                                                                                     
                                                                                                                
-     call MPI_Isend(node_buffs_cyc(ndn)%buffsend_cyc(1), ipos-1,  &                                            
+     call MPI_Isend(node_buffs_cyc(ndn)%buffsend_cyc, ipos-1,  &                                            
           MPI_Packed,mdn, 26000+100*machs(mynum)+10*machs(mdn)+isflag,  &                                      
           MPI_COMM_WORLD, isend_req_cyc(isflag,mdn), ierr)                                                     
                                                                                                                
@@ -499,10 +495,10 @@ subroutine node_getcyclic(isflag)
 
      ipos = 1
      if (isflag == 1 .or. isflag == 4 .or. isflag == 6) then   
-        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,  &
+        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,  &
              ipos,mijrecv,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,  &
-             ipos,ijrecv_cyc(1,1),6*mijrecv,MPI_INTEGER,MPI_COMM_WORLD,ierr)
+        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,  &
+             ipos,ijrecv_cyc,6*mijrecv,MPI_INTEGER,MPI_COMM_WORLD,ierr)
         do ijr = 1,mijrecv
 
            if (isflag == 1) then
@@ -512,87 +508,87 @@ subroutine node_getcyclic(isflag)
                  if ( vtab_r(nv,1)%impt1 == 1) then
                     ivar = ivar + 1
                     if ( vtab_r(nv,1)%idim_type == 3) then
-                     call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,ipos,  &
-                     scratch%vt3dp(1),mtp,MPI_REAL,MPI_COMM_WORLD,ierr)                  
+                     call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos,  &
+                     scratch%vt3dp,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)                  
                     call cyclic_para(mmzp(1),mmxp(1),mmyp(1)  &                          
-                        ,vtab_r(nv,ngrid)%var_p,scratch%vt3dp(1)  &                      
+                        ,vtab_r(nv,ngrid)%var_p,scratch%vt3dp  &                      
                         ,ijr,mi0(1),mj0(1),ivar,mynum)                                   
                   elseif ( vtab_r(nv,1)%idim_type == 2) then                             
-                     call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,ipos,  &
-                       scratch%vt3dp(1),1,MPI_REAL,MPI_COMM_WORLD,ierr)
+                     call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos,  &
+                       scratch%vt3dp,1,MPI_REAL,MPI_COMM_WORLD,ierr)
                        call cyclic_para(1,mmxp(1),mmyp(1)  &
-                          ,vtab_r(nv,ngrid)%var_p,scratch%vt3dp(1)  &
+                          ,vtab_r(nv,ngrid)%var_p,scratch%vt3dp  &
                           ,ijr,mi0(1),mj0(1),ivar,mynum)
                     endif
                  endif
               enddo
            elseif (isflag == 4) then
-              call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,ipos,  &
-                       scratch%vt3dp(1),mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+              call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos,  &
+                       scratch%vt3dp,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
               call cyclic_para(mmzp(1),mmxp(1),mmyp(1)  &
-                 ,basic_g(1)%pp(1,1,1),scratch%vt3dp(1),ijr,mi0(1),mj0(1),4,mynum)
+                 ,basic_g(1)%pp,scratch%vt3dp,ijr,mi0(1),mj0(1),4,mynum)
            elseif (isflag == 6) then
-              call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,ipos,  &
-                       scratch%vt3dp(1),mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+              call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos,  &
+                       scratch%vt3dp,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
               call cyclic_para(mmzp(1),mmxp(1),mmyp(1)  &
-                 ,basic_g(1)%wp(1,1,1),scratch%vt3dp(1),ijr,mi0(1),mj0(1),3,mynum)
-              call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,ipos,  &
-                       scratch%vt3dp(1),mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+                 ,basic_g(1)%wp,scratch%vt3dp,ijr,mi0(1),mj0(1),3,mynum)
+              call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos,  &
+                       scratch%vt3dp,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
               call cyclic_para(mmzp(1),mmxp(1),mmyp(1)  &
-              ,basic_g(1)%pp(1,1,1),scratch%vt3dp(1),ijr,mi0(1),mj0(1),4,mynum)
+              ,basic_g(1)%pp,scratch%vt3dp,ijr,mi0(1),mj0(1),4,mynum)
            endif
         enddo
    
      elseif (isflag == 2) then
 
-        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,ipos,  &
+        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos,  &
                        mijrecv,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,ipos,  &
-                       ijrecv_cyc(1,1),6*mijrecv,MPI_INTEGER,MPI_COMM_WORLD,ierr)
+        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos,  &
+                       ijrecv_cyc,6*mijrecv,MPI_INTEGER,MPI_COMM_WORLD,ierr)
 
         do ijr = 1,mijrecv
-           call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,ipos,  &
-                       scratch%vt3dp(1),mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+           call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos,  &
+                       scratch%vt3dp,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
            call cyclic_para(mmzp(1),mmxp(1),mmyp(1)  &
-              ,basic_g(1)%up(1,1,1),scratch%vt3dp(1),ijr,mi0(1),mj0(1),1,mynum)
+              ,basic_g(1)%up,scratch%vt3dp,ijr,mi0(1),mj0(1),1,mynum)
         enddo
 
      elseif (isflag .eq. 3) then
-        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,ipos,  &
+        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos,  &
                        mijrecv,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,ipos,  &
-                       ijrecv_cyc(1,1),6*mijrecv,MPI_INTEGER,MPI_COMM_WORLD,ierr)
+        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos,  &
+                       ijrecv_cyc,6*mijrecv,MPI_INTEGER,MPI_COMM_WORLD,ierr)
 
         do ijr = 1,mijrecv
-           call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,ipos,  &
-                       scratch%vt3dp(1),mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+           call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos,  &
+                       scratch%vt3dp,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
            call cyclic_para(mmzp(1),mmxp(1),mmyp(1)  &
-              ,basic_g(1)%vp(1,1,1),scratch%vt3dp(1),ijr,mi0(1),mj0(1),2,mynum)
+              ,basic_g(1)%vp,scratch%vt3dp,ijr,mi0(1),mj0(1),2,mynum)
         enddo
         
      elseif (isflag .eq. 5) then
-        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,ipos,  &
+        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos,  &
                        mijrecv,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,ipos,  &
-                       ijrecv_cyc(1,1),6*mijrecv,MPI_INTEGER,MPI_COMM_WORLD,ierr)
+        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos,  &
+                       ijrecv_cyc,6*mijrecv,MPI_INTEGER,MPI_COMM_WORLD,ierr)
 
         do ijr = 1,mijrecv
-           call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,ipos,  &
-                       scratch%vt3dp(1),mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+           call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos,  &
+                       scratch%vt3dp,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
            call cyclic_para(mmzp(1),mmxp(1),mmyp(1)  &
-              ,basic_g(1)%up(1,1,1),scratch%vt3dp(1),ijr,mi0(1),mj0(1),1,mynum)
+              ,basic_g(1)%up,scratch%vt3dp,ijr,mi0(1),mj0(1),1,mynum)
         enddo
 
-        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,ipos,  &
+        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos,  &
                        mijrecv,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,ipos,  &
-                       ijrecv_cyc(1,1),6*mijrecv,MPI_INTEGER,MPI_COMM_WORLD,ierr)
+        call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos,  &
+                       ijrecv_cyc,6*mijrecv,MPI_INTEGER,MPI_COMM_WORLD,ierr)
 
         do ijr = 1,mijrecv
-           call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc(1),nbuffrecv_cyc,ipos,  &
-                       scratch%vt3dp(1),mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+           call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos,  &
+                       scratch%vt3dp,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
            call cyclic_para(mmzp(1),mmxp(1),mmyp(1)  &
-              ,basic_g(1)%vp(1,1,1),scratch%vt3dp(1),ijr,mi0(1),mj0(1),2,mynum)
+              ,basic_g(1)%vp,scratch%vt3dp,ijr,mi0(1),mj0(1),2,mynum)
         enddo
      endif
 

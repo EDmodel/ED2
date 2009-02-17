@@ -23,10 +23,10 @@ implicit none
 ! vt = -c abs(spd) v
 
 
-call urb_tend(mzp,mxp,myp,ia,iz,ja,jz,jdim  &
-             ,basic_g(ngrid)%up(1,1,1),basic_g(ngrid)%vp(1,1,1)  &
-             ,turb_g(ngrid)%cdrag(1,1,1),scratch%scr2(1)  &
-             ,tend%ut(1),tend%vt(1),dtlv)
+call urb_tend(mzp,mxp,myp,ia,iz,ja,jz,jdim         &
+             ,basic_g(ngrid)%up,basic_g(ngrid)%vp  &
+             ,turb_g(ngrid)%cdrag,scratch%scr2     &
+             ,tend%ut,tend%vt,dtlv                 )
              
 return
 end
@@ -99,9 +99,8 @@ real, allocatable :: plt(:,:)
 
 do ng = 1,ngrids
 
-   call getdrag(nnzp(ng),nnxp(ng),nnyp(ng)  &
-               ,xmn(1,ng),ymn(1,ng),zmn(1,ng)  &
-               ,turb_g(ng)%cdrag(1,1,1))
+   call getdrag(nnzp(ng),nnxp(ng),nnyp(ng),xmn(:,ng),ymn(:,ng),zmn(:,ng)  &
+               ,turb_g(ng)%cdrag)
    
 allocate (plt(nnxp(ng),nnyp(ng)))
    do k=1,10

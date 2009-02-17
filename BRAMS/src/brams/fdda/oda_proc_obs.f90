@@ -89,7 +89,7 @@ subroutine oda_proc_obs(m1,m2,m3,i0,j0,pp,pi0,prs,ng,nobs)
      !    the current simulation time
 
      nobs = nobs + 1
-     ntpast=findtime(time, oda_sfc_obs(ns)%time(1), ntimes)
+     ntpast=findtime(time, oda_sfc_obs(ns)%time, ntimes)
      if(ntpast == 0 ) cycle
 
      if(nobs == 1) print*,'ntpast:',ntpast,time,ntimes
@@ -100,18 +100,18 @@ subroutine oda_proc_obs(m1,m2,m3,i0,j0,pp,pi0,prs,ng,nobs)
      ikobs(nobs)=oda_sfc_info(ns)%xista(ng)-i0
      jkobs(nobs)=oda_sfc_info(ns)%xjsta(ng)-j0
 
-     call get_obs_value(ntpast,time, oda_sfc_obs(ns)%time(1), ntimes  &
-          ,oda_sfc_obs(ns)%u(1), oda_sfc_til, oda_sfc_tel, oval)
+     call get_obs_value(ntpast,time, oda_sfc_obs(ns)%time, ntimes  &
+          ,oda_sfc_obs(ns)%u, oda_sfc_til, oda_sfc_tel, oval)
 
      ukobs(nobs)=oval
 
-     call get_obs_value(ntpast, time, oda_sfc_obs(ns)%time(1), ntimes  &
-          ,oda_sfc_obs(ns)%v(1), oda_sfc_til, oda_sfc_tel, oval)
+     call get_obs_value(ntpast, time, oda_sfc_obs(ns)%time, ntimes  &
+          ,oda_sfc_obs(ns)%v, oda_sfc_til, oda_sfc_tel, oval)
 
      vkobs(nobs)=oval
 
-     call get_obs_value(ntpast, time, oda_sfc_obs(ns)%time(1), ntimes  &
-          ,oda_sfc_obs(ns)%temp(1), oda_sfc_til, oda_sfc_tel, oval)  !(OUT:oval)
+     call get_obs_value(ntpast, time, oda_sfc_obs(ns)%time, ntimes  &
+          ,oda_sfc_obs(ns)%temp, oda_sfc_til, oda_sfc_tel, oval)  !(OUT:oval)
 
      tkobs(nobs)=oval
 
@@ -120,8 +120,8 @@ subroutine oda_proc_obs(m1,m2,m3,i0,j0,pp,pi0,prs,ng,nobs)
      !if(nobs == 1) print*,'oval:',oval,oda_sfc_obs(ns)%time(1:ntimes)
      !if(nobs == 1) print*,'oval:',oval,oda_sfc_obs(ns)%temp(1:ntimes)
 
-     call get_obs_value(ntpast, time,oda_sfc_obs(ns)%time(1), ntimes  &
-          ,oda_sfc_obs(ns)%dewpt(1), oda_sfc_til, oda_sfc_tel, oval)
+     call get_obs_value(ntpast, time,oda_sfc_obs(ns)%time, ntimes  &
+          ,oda_sfc_obs(ns)%dewpt, oda_sfc_til, oda_sfc_tel, oval)
 
      rkobs(nobs)=oval
 
@@ -161,7 +161,7 @@ subroutine oda_proc_obs(m1,m2,m3,i0,j0,pp,pi0,prs,ng,nobs)
 
      nobsp = nobs + 1
      nobs  = nobs + m1
-     ntpast=findtime(time, oda_upa_obs(ns)%time(1), ntimes)
+     ntpast=findtime(time, oda_upa_obs(ns)%time, ntimes)
      print*,'afterntp',ntpast,time,oda_upa_obs(ns)%time(1:ntimes)
      if(ntpast == 0 ) cycle
 
@@ -203,69 +203,69 @@ subroutine oda_proc_obs(m1,m2,m3,i0,j0,pp,pi0,prs,ng,nobs)
      ! Processing theta.....
 
      call upa_interp(oda_upa_obs(ns)%lp(ntpast)  &
-          ,oda_upa_obs(ns)%theta(1,ntpast)  &
-          ,oda_upa_obs(ns)%zgeo(1,ntpast)  &
-          ,nnzp(ng), dat1(1), zkobs(nobsp) )
+          ,oda_upa_obs(ns)%theta(:,ntpast)  &
+          ,oda_upa_obs(ns)%zgeo(:,ntpast)  &
+          ,nnzp(ng), dat1, zkobs(nobsp) )
 
      call upa_interp(oda_upa_obs(ns)%lp(ntfutr)  &
-          ,oda_upa_obs(ns)%theta(1,ntfutr)  &
-          ,oda_upa_obs(ns)%zgeo(1,ntfutr)  &
-          ,nnzp(ng), dat2(1), zkobs(nobsp) )
+          ,oda_upa_obs(ns)%theta(:,ntfutr)  &
+          ,oda_upa_obs(ns)%zgeo(:,ntfutr)  &
+          ,nnzp(ng), dat2, zkobs(nobsp) )
 
      call get_upaobs_value(time,oda_upa_obs(ns)%time(ntpast)  &
           ,oda_upa_obs(ns)%time(ntfutr)   &
-          ,nnzp(ng), dat1(1), dat2(1),tkobs(nobsp)  &
+          ,nnzp(ng), dat1, dat2,tkobs(nobsp)  &
           ,oda_upa_til, oda_upa_tel )
 
      ! Processing rv.....
 
      call upa_interp(oda_upa_obs(ns)%lp(ntpast)  &
-          ,oda_upa_obs(ns)%rv(1,ntpast)  &
-          ,oda_upa_obs(ns)%zgeo(1,ntpast)  &
-          ,nnzp(ng), dat1(1), zkobs(nobsp) )
+          ,oda_upa_obs(ns)%rv(:,ntpast)  &
+          ,oda_upa_obs(ns)%zgeo(:,ntpast)  &
+          ,nnzp(ng), dat1, zkobs(nobsp) )
 
      call upa_interp(oda_upa_obs(ns)%lp(ntfutr)  &
-          ,oda_upa_obs(ns)%rv(1,ntfutr)  &
-          ,oda_upa_obs(ns)%zgeo(1,ntfutr)  &
-          ,nnzp(ng), dat2(1), zkobs(nobsp) )
+          ,oda_upa_obs(ns)%rv(:,ntfutr)  &
+          ,oda_upa_obs(ns)%zgeo(:,ntfutr)  &
+          ,nnzp(ng), dat2, zkobs(nobsp) )
 
      call get_upaobs_value(time,oda_upa_obs(ns)%time(ntpast)  &
           ,oda_upa_obs(ns)%time(ntfutr)   &
-          ,nnzp(ng), dat1(1), dat2(1),rkobs(nobsp)  &
+          ,nnzp(ng), dat1, dat2,rkobs(nobsp)  &
           ,oda_upa_til, oda_upa_tel )
 
      ! Processing u.....
 
      call upa_interp(oda_upa_obs(ns)%lz(ntpast)  &
-          ,oda_upa_obs(ns)%u(1,ntpast)  &
-          ,oda_upa_obs(ns)%zz(1,ntpast)  &
-          ,nnzp(ng), dat1(1), zkobs(nobsp) )
+          ,oda_upa_obs(ns)%u(:,ntpast)  &
+          ,oda_upa_obs(ns)%zz(:,ntpast)  &
+          ,nnzp(ng), dat1, zkobs(nobsp) )
 
      call upa_interp(oda_upa_obs(ns)%lz(ntfutr)  &
-          ,oda_upa_obs(ns)%u(1,ntfutr)  &
-          ,oda_upa_obs(ns)%zz(1,ntfutr)  &
-          ,nnzp(ng), dat2(1), zkobs(nobsp) )
+          ,oda_upa_obs(ns)%u(:,ntfutr)  &
+          ,oda_upa_obs(ns)%zz(:,ntfutr)  &
+          ,nnzp(ng), dat2, zkobs(nobsp) )
 
      call get_upaobs_value(time,oda_upa_obs(ns)%time(ntpast)  &
           ,oda_upa_obs(ns)%time(ntfutr)   &
-          ,nnzp(ng), dat1(1), dat2(1),ukobs(nobsp)  &
+          ,nnzp(ng), dat1, dat2,ukobs(nobsp)  &
           ,oda_upa_til, oda_upa_tel )
 
      ! Processing v.....
 
      call upa_interp(oda_upa_obs(ns)%lz(ntpast)  &
-          ,oda_upa_obs(ns)%v(1,ntpast)  &
-          ,oda_upa_obs(ns)%zz(1,ntpast)  &
-          ,nnzp(ng), dat1(1), zkobs(nobsp) )
+          ,oda_upa_obs(ns)%v(:,ntpast)  &
+          ,oda_upa_obs(ns)%zz(:,ntpast)  &
+          ,nnzp(ng), dat1, zkobs(nobsp) )
 
      call upa_interp(oda_upa_obs(ns)%lz(ntfutr)  &
-          ,oda_upa_obs(ns)%v(1,ntfutr)  &
-          ,oda_upa_obs(ns)%zz(1,ntfutr)  &
-          ,nnzp(ng), dat2(1), zkobs(nobsp) )
+          ,oda_upa_obs(ns)%v(:,ntfutr)  &
+          ,oda_upa_obs(ns)%zz(:,ntfutr)  &
+          ,nnzp(ng), dat2, zkobs(nobsp) )
 
      call get_upaobs_value(time,oda_upa_obs(ns)%time(ntpast)  &
           ,oda_upa_obs(ns)%time(ntfutr)   &
-          ,nnzp(ng), dat1(1), dat2(1),vkobs(nobsp)  &
+          ,nnzp(ng), dat1, dat2,vkobs(nobsp)  &
           ,oda_upa_til, oda_upa_tel )
 
 

@@ -23,6 +23,7 @@ subroutine masterput_ednl(mainnum)
   use pft_coms,        only: include_these_pft,pft_1st_check
   use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
   use optimiz_coms,    only: ioptinpt
+  use canopy_radiation_coms, only: crown_mod
 
 
 
@@ -75,6 +76,7 @@ subroutine masterput_ednl(mainnum)
   call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(repro_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(lapse_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(crown_mod,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(include_fire,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -170,6 +172,7 @@ subroutine nodeget_ednl(master_num)
   use pft_coms,        only: include_these_pft,pft_1st_check
   use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
   use optimiz_coms,    only: ioptinpt
+  use canopy_radiation_coms, only: crown_mod
 
 
   implicit none
@@ -221,6 +224,7 @@ subroutine nodeget_ednl(master_num)
   call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(repro_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(lapse_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(crown_mod,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(include_fire,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

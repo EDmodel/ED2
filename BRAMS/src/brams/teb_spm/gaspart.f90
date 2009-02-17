@@ -61,15 +61,15 @@ subroutine le_fontes(ng,n1,n2,n3,np,ia,iz,ja,jz)
      len1 = len_trim(tracer)+ 1
 
 
-     call read_sources_teb(ng,n1,n2,n3,np,ia,iz,ja,jz,gaspart_g(ng)%gasr(1,1,1),gaspart_g(ng)%fusog(1,1),&
-          tracer(1:len1),kgas(ig),leaf_g(ng)%G_URBAN(1,1,1),grid_g(ng)%dxt(1,1), &
-          grid_g(ng)%dyt(1,1),time)
-     call reorganize_sources_teb(n1,n2,n3,ia,iz,ja,jz,gaspart_g(ng)%gasr(1,1,1),kgas(ig))
+     call read_sources_teb(ng,n1,n2,n3,np,ia,iz,ja,jz,gaspart_g(ng)%gasr,gaspart_g(ng)%fusog,&
+          tracer(1:len1),kgas(ig),leaf_g(ng)%G_URBAN,grid_g(ng)%dxt, &
+          grid_g(ng)%dyt,time)
+     call reorganize_sources_teb(n1,n2,n3,ia,iz,ja,jz,gaspart_g(ng)%gasr,kgas(ig))
 
 
-     call convert_to_misture_ratio_teb(ng,n1,n2,n3,zt,ia,iz,ja,jz,kgas(ig),gaspart_g(ng)%gasr(1,1,1),    &
-          basic_g(ng)%dn0(1,1,1),grid_g(ng)%rtgt(1,1), &
-          grid_g(ng)%dxt(1,1),grid_g(ng)%dyt(1,1),dzt)
+     call convert_to_misture_ratio_teb(ng,n1,n2,n3,zt,ia,iz,ja,jz,kgas(ig),gaspart_g(ng)%gasr,    &
+          basic_g(ng)%dn0,grid_g(ng)%rtgt, &
+          grid_g(ng)%dxt,grid_g(ng)%dyt,dzt)
 
 
   enddo !end of gases' looping
@@ -361,12 +361,12 @@ subroutine EMISSAO(n1,n2,n3,ia,iz,ja,jz,gaspart,deltat,ng)
 
   real :: deltat
 
-  call tendgas(n1,n2,n3,ia,iz,ja,jz,gaspart%pnot  (1),gaspart%gasr(1,1,1),2)
-  call tendgas(n1,n2,n3,ia,iz,ja,jz,gaspart%pno2t (1),gaspart%gasr(1,1,1),5)
-  call tendgas(n1,n2,n3,ia,iz,ja,jz,gaspart%ppm25t(1),gaspart%gasr(1,1,1),8)
-  call tendgas(n1,n2,n3,ia,iz,ja,jz,gaspart%pcot  (1),gaspart%gasr(1,1,1),11)
-  call tendgas(n1,n2,n3,ia,iz,ja,jz,gaspart%pso2t (1),gaspart%gasr(1,1,1),14)
-  call tendgas(n1,n2,n3,ia,iz,ja,jz,gaspart%pvoct (1),gaspart%gasr(1,1,1),17)
+  call tendgas(n1,n2,n3,ia,iz,ja,jz,gaspart%pnot  ,gaspart%gasr,2)
+  call tendgas(n1,n2,n3,ia,iz,ja,jz,gaspart%pno2t ,gaspart%gasr,5)
+  call tendgas(n1,n2,n3,ia,iz,ja,jz,gaspart%ppm25t,gaspart%gasr,8)
+  call tendgas(n1,n2,n3,ia,iz,ja,jz,gaspart%pcot  ,gaspart%gasr,11)
+  call tendgas(n1,n2,n3,ia,iz,ja,jz,gaspart%pso2t ,gaspart%gasr,14)
+  call tendgas(n1,n2,n3,ia,iz,ja,jz,gaspart%pvoct ,gaspart%gasr,17)
 
   return
 end subroutine EMISSAO

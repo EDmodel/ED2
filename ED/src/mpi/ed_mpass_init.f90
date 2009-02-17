@@ -98,7 +98,8 @@ subroutine ed_masterput_nl(par_run)
    use pft_coms,        only: include_these_pft,pft_1st_check
    use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
    use optimiz_coms,    only: ioptinpt
-  
+   use canopy_radiation_coms, only : crown_mod
+
    implicit none
    include 'mpif.h'
    integer :: ierr
@@ -208,6 +209,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(repro_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(lapse_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(crown_mod,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_fire,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -651,6 +653,7 @@ subroutine ed_nodeget_nl
    use optimiz_coms,    only: ioptinpt
    use ed_misc_coms,only: attach_metadata
    use pft_coms,        only: include_these_pft,pft_1st_check
+   use canopy_radiation_coms, only: crown_mod
 
    implicit none
    include 'mpif.h'
@@ -759,6 +762,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(repro_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(lapse_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(crown_mod,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_fire,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

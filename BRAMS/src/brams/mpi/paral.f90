@@ -188,35 +188,35 @@ subroutine master_getanl(vtype)
       case ('LITE') 
          select case (idim_type)
          case (2) !----- 2D variable (nxp,nyp) --------------------------------------------!
-            call ex_2_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nnxp(ng),nnyp(ng),mxp,myp   &
+            call ex_2_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnxp(ng),nnyp(ng),mxp,myp      &
                           ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (3) !----- 3D variable (nzp,nxp,nyp) ----------------------------------------!
-            call ex_3_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nnzp(ng),nnxp(ng),nnyp(ng)  &
+            call ex_3_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnzp(ng),nnxp(ng),nnyp(ng)     &
                           ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (4) !----- 4D variable (nzg,nxp,nyp,npatch) ---------------------------------!
-            call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nzg,nnxp(ng),nnyp(ng)       &
+            call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nzg,nnxp(ng),nnyp(ng)          &
                           ,npatch,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (5) !----- 4D variable (nzs,nxp,nyp,npatch) ---------------------------------!
-            call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nzs,nnxp(ng),nnyp(ng)       &
+            call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nzs,nnxp(ng),nnyp(ng)          &
                           ,npatch,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (6) !----- 3D variable (nxp,nyp,npatch) -------------------------------------!
-            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nnxp(ng),nnyp(ng),npatch   &
+            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnxp(ng),nnyp(ng),npatch      &
                            ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (7) !----- 3D variable (nxp,nyp,nwave) --------------------------------------!
-            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nnxp(ng),nnyp(ng),nwave    &
+            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnxp(ng),nnyp(ng),nwave       &
                            ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (8) !----- 4D variable (nzp,nxp,nyp,nclouds) --------------------------------!
-            call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nnzp(ng),nnxp(ng),nnyp(ng)  &
+            call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnzp(ng),nnxp(ng),nnyp(ng)     &
                           ,nclouds,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (9) !----- 3D variable (nxp,nyp,nclouds) ------------------------------------!
-            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nnxp(ng),nnyp(ng),nclouds  &
+            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnxp(ng),nnyp(ng),nclouds     &
                            ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
          end select
       !------------------------------------------------------------------------------------!
@@ -225,35 +225,35 @@ subroutine master_getanl(vtype)
       case ('MEAN','BOTH') 
          select case (idim_type)
          case (2) !----- 2D variable (nxp,nyp) --------------------------------------------!
-            call ex_2_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1),nnxp(ng),nnyp(ng),mxp,myp   &
+            call ex_2_buff(vtab_r(nv,ng)%var_m,scratch%scr1,nnxp(ng),nnyp(ng),mxp,myp      &
                           ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (3) !----- 3D variable (nzp,nxp,nyp) ----------------------------------------!
-            call ex_3_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1),nnzp(ng),nnxp(ng),nnyp(ng)  &
+            call ex_3_buff(vtab_r(nv,ng)%var_m,scratch%scr1,nnzp(ng),nnxp(ng),nnyp(ng)     &
                           ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (4) !----- 4D variable (nzg,nxp,nyp,npatch) ---------------------------------!
-            call ex_4_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1),nzg,nnxp(ng),nnyp(ng)       &
+            call ex_4_buff(vtab_r(nv,ng)%var_m,scratch%scr1,nzg,nnxp(ng),nnyp(ng)          &
                           ,npatch,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (5) !----- 4D variable (nzs,nxp,nyp,npatch) ---------------------------------!
-            call ex_4_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1),nzs,nnxp(ng),nnyp(ng)       &
+            call ex_4_buff(vtab_r(nv,ng)%var_m,scratch%scr1,nzs,nnxp(ng),nnyp(ng)          &
                           ,npatch,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (6) !----- 3D variable (nxp,nyp,npatch) -------------------------------------!
-            call ex_2p_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1),nnxp(ng),nnyp(ng),npatch   &
+            call ex_2p_buff(vtab_r(nv,ng)%var_m,scratch%scr1,nnxp(ng),nnyp(ng),npatch      &
                            ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (7) !----- 3D variable (nxp,nyp,nwave) --------------------------------------!
-            call ex_2p_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1),nnxp(ng),nnyp(ng),nwave    &
+            call ex_2p_buff(vtab_r(nv,ng)%var_m,scratch%scr1,nnxp(ng),nnyp(ng),nwave       &
                            ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (8) !----- 4D variable (nzp,nxp,nyp,nclouds) --------------------------------!
-            call ex_4_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1),nnzp(ng),nnxp(ng),nnyp(ng)  &
+            call ex_4_buff(vtab_r(nv,ng)%var_m,scratch%scr1,nnzp(ng),nnxp(ng),nnyp(ng)     &
                           ,nclouds,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (9) !----- 3D variable (nxp,nyp,nclouds) ------------------------------------!
-            call ex_2p_buff(vtab_r(nv,ng)%var_m,scratch%scr1(1),nnxp(ng),nnyp(ng),nclouds  &
+            call ex_2p_buff(vtab_r(nv,ng)%var_m,scratch%scr1,nnxp(ng),nnyp(ng),nclouds     &
                            ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
          end select
       !------------------------------------------------------------------------------------!

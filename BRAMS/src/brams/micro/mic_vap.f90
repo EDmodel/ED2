@@ -16,95 +16,6 @@
 
 !==========================================================================================!
 !==========================================================================================!
-!    This subroutine computes some thermodynamic properties (such as temperature and its   !
-! derivative with respect to the mixing ratio) for a moist process.                        !
-!------------------------------------------------------------------------------------------!
-subroutine thrmstr(m1)
-
-   use rconstants
-   use micphys
-   use therm_lib, only: qtk,thil2temp,dtempdrs
-
-   implicit none
-   !----- Argument ------------------------------------------------------------------------!
-   integer, intent(in) :: m1
-   !----- Local variables -----------------------------------------------------------------!
-   integer :: k,lcat
-   real :: fracliq,tcoal,tairstr,t1stguess
-   !---------------------------------------------------------------------------------------!
-
-   do k = lpw,m1
-      tair(k) = pottemp(k) * exner(k) * cpi
-   end do
-
-   !----- Outside the levels in which condensation happens, use non-condensation thermo ---!
-   do k = 1,k1(10)-1
-      pottemp(k) = thil(k)
-      til(k)     = tair(k)
-      rvap(k)    = rtot(k)
-   end do
-   do k = k2(10)+1,m1
-      pottemp(k) = thil(k)
-      til(k)     = tair(k)
-      rvap(k)    = rtot(k)
-   end do
-   !---------------------------------------------------------------------------------------!
-
-   !----- Initialise til, rliq and rice at the levels in which condensates exist ----------!
-   do k = k1(10),k2(10)
-      til(k) = thil(k) * exner(k) * cpi
-      rliq(k) = 0.
-      rice(k) = 0.
-   end do
-
-   !----- Cloud and rain are all liquid ---------------------------------------------------!
-   do lcat = 1,2
-      do k = k1(lcat),k2(lcat)
-         rliq(k) = rliq(k) + rx(k,lcat)
-      end do
-   end do
-
-   !----- Pristine ice, snow, and aggregates are all ice ----------------------------------!
-   do lcat = 3,5
-      do k = k1(lcat),k2(lcat)
-         rice(k) = rice(k) + rx(k,lcat)
-      end do
-   end do
-
-   !----- Graupel and Hail have both phases, figure out how much of each ------------------!
-   do lcat = 6,7
-      do k = k1(lcat),k2(lcat)
-         call qtk(qx(k,lcat),tcoal,fracliq)
-         rliq(k) = rliq(k) + rx(k,lcat) * fracliq
-         rice(k) = rice(k) + rx(k,lcat) * (1. - fracliq)
-      end do
-   end do
-
-   !----- Find the vapour pressure and the total enthalpy due to phase change -------------!
-   do k = k1(10),k2(10)
-      qhydm(k) = alvl * rliq(k) + alvi * rice(k)
-      rvstr(k) = rtot(k) - rliq(k) - rice(k)
-   end do
-
-   !----- Finding the air temperature and -dT/drs for this temperature --------------------!
-   do k = k1(10),k2(10)
-      tairstr = thil2temp(thil(k),exner(k),press(k),rliq(k),rice(k),tair(k))
-      sa(k,1) = (-1) * dtempdrs(exner(k),thil(k),tairstr,rliq(k),rice(k),1.e-12)
-      tairstrc(k) = tairstr - t00
-   end do
-
-   return
-end subroutine thrmstr
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
 subroutine diffprep(lcat)
 
    use rconstants
@@ -154,7 +65,7 @@ subroutine diffprep(lcat)
       
       scdei         = 1. / (sc(if1) * sd(k,lcat) + se(k,lcat))
       ss(k,lcat)    = sf(k,lcat) * scdei
-      sw(k,lcat)    = (sg(k,lcat) - sk(if1) * sd(k,lcat)) * scdei
+      sw(k,lcat)    = (sg(k,lcat) + sc(if1) * sq(if1) * sd(k,lcat)) * scdei
       ttest(k,lcat) = ss(k,lcat) * rvap(k) + sw(k,lcat)
    end do mainloop
 
@@ -174,13 +85,13 @@ subroutine diffprep(lcat)
          ! variable is switched to 1 in case temperature is greater than triple point.     !
          ! (as explained in Walko et al. (2000) between equations 16 and 17).              !
          !---------------------------------------------------------------------------------!
-         if (ttest(k,lcat) >= t3ple-t00 ) then
+         if (ttest(k,lcat) >= t3ple ) then
             sm(k,lcat) = 0.
             sh(k,lcat) = 1.
             sd(k,lcat) = sh(k,lcat) * rx(k,lcat)
             scdei = 1. / (sc(if1) * sd(k,lcat) + se(k,lcat))
             ss(k,lcat) = sf(k,lcat) * scdei
-            sw(k,lcat) = (sg(k,lcat) - sk(if1) * sd(k,lcat)) * scdei
+            sw(k,lcat) = (sg(k,lcat) + sc(if1) * sq(if1) * sd(k,lcat)) * scdei
          else
             sm(k,lcat) = 1.
          end if
@@ -189,7 +100,7 @@ subroutine diffprep(lcat)
       mixloop: do k = k1(lcat),k2(lcat)
          if (rx(k,lcat) < rxmin(lcat)) cycle mixloop
 
-         if (ttest(k,lcat) >= t3ple-t00) then
+         if (ttest(k,lcat) >= t3ple) then
             sm(k,lcat) = 0.
          else
             sm(k,lcat) = 1.
@@ -267,7 +178,8 @@ end subroutine vapdiff
 subroutine vapflux(lcat)
 
    use micphys
-   use rconstants, only : alli,t3ple,t00
+   use rconstants, only : alli,t3ple
+   use micro_coms, only : qmixedmin,qmixedmax,qprismax
    implicit none
 
    integer, intent(in) :: lcat
@@ -293,7 +205,11 @@ subroutine vapflux(lcat)
       ! we then compute the first term of the RHS of equation (9) [vap(k,lcat)]            !
       ! sa(k,if4) has rs'(Ref)*T(Ref) - rs(Ref).                                           !
       !------------------------------------------------------------------------------------!
-      tx(k,lcat)  = (ss(k,lcat) * rvap(k) + sw(k,lcat)) * sm(k,lcat)
+      if (sm(k,lcat) > .5) then
+         tx(k,lcat)  = (ss(k,lcat) * rvap(k) + sw(k,lcat))
+      else
+         tx(k,lcat)  = t3ple
+      end if
       vap(k,lcat) = su(k,lcat) * (rvap(k) + sa(k,if4) - rvsrefp(k,if1) * tx(k,lcat))
 
 
@@ -302,14 +218,19 @@ subroutine vapflux(lcat)
       !------------------------------------------------------------------------------------!
       if (vap(k,lcat) > -rx(k,lcat)) then
          rxx = rx(k,lcat) + vap(k,lcat) ! New mixing ratio.
-         !----- 
+         !---------------------------------------------------------------------------------! 
+         !   Finding energy for all-ice or all-liquid categories.                          !
+         !  + sc is the heat capacity (cice for all ice, cliq for all liquid);             !
+         !  + sq is the phase offset (0 for all ice, tsupercool for all liquid).           !
+         !---------------------------------------------------------------------------------!
          if (sm(k,lcat) > .5) then
-            qx(k,lcat) = sc(if1) * tx(k,lcat) + sk(if1)
+            qx(k,lcat) = sc(if1) * (tx(k,lcat) - sq(if1))
             qr(k,lcat) = qx(k,lcat) * rxx
          else
-            qx(k,lcat) = (rvap(k)*sf(k,lcat)+sg(k,lcat)-tx(k,lcat)*se(k,lcat)) / sd(k,lcat)
-            !----- It seems a bound sanity check, not sure what 35000 and -10000 mean. ----!
-            qx(k,lcat) = min(350000.,max(-100000.,qx(k,lcat)))
+            qx(k,lcat) = (rvap(k)*sf(k,lcat)+sg(k,lcat)-tx(k,lcat)*se(k,lcat))       &
+                       / sd(k,lcat)
+            !----- Preventing excessive evaporation ---------------------------------------!
+            qx(k,lcat) = min(qmixedmax,max(qmixedmin,qx(k,lcat)))
             qr(k,lcat) = qx(k,lcat) * rxx
          end if
       end if
@@ -320,17 +241,15 @@ subroutine vapflux(lcat)
       !                                                                                    ! 
       ! Bob - Now also do the following section if pristine ice totally melts:evaporate it !
       !       too.                                                                         !
-      ! THERMODYNAMIC DILEMMA - what is written as 0.988*alli used to be 330000., which is !
-      !     equivalent. However, shouldn't it be alli (334000.)???
       !------------------------------------------------------------------------------------!
-      if ((lcat == 3 .and. qx(k,lcat) > 0.988*alli) .or. vap(k,lcat) <= -rx(k,lcat)) then
+      if ((lcat == 3 .and. qx(k,lcat) > qprismax) .or. vap(k,lcat) <= -rx(k,lcat)) then
          sumuy(k) = sumuy(k) - su(k,lcat) * sy(k,lcat)
          sumuz(k) = sumuz(k) - su(k,lcat) * sz(k,lcat)
          sumvr(k) = sumvr(k) + rx(k,lcat)
          rvap(k)  = (rvstr(k) + sumuy(k) + sumvr(k)) / (1.0 + sumuz(k))
 
          vap(k,lcat) = - rx(k,lcat)
-         tx(k,lcat)  = 0.
+         tx(k,lcat)  = tair(k)
          rx(k,lcat)  = 0.
          qx(k,lcat)  = 0.
          qr(k,lcat)  = 0.
@@ -453,7 +372,8 @@ subroutine psxfer()
          rx(k,4) = rx(k,4) + sngl(dvap)
          cx(k,4) = cx(k,4) + sngl(dnum)
          qr(k,4) = qr(k,4) + sngl(dqr)
-
+         if (rx(k,3) > rxmin(3)) qx(k,3) = qr(k,3) / rx(k,3)
+         if (rx(k,4) > rxmin(4)) qx(k,4) = qr(k,4) / rx(k,4)
       end if
 
    end do mainloop
@@ -485,8 +405,8 @@ subroutine newtemp()
    !---------------------------------------------------------------------------------------!
 
    do k = k1(10),k2(10)
-      tairc(k)   = tairstrc(k) + sa(k,1) * (rvstr(k) - rvap(k))
-      tair(k)    = tairc(k)    + t00
+      tair(k)    = tairstr(k) + sa(k,1) * (rvstr(k) - rvap(k))
+      tairc(k)   = tair(k)    - t00
       pottemp(k) = tair(k) * cp / exner(k)
 
       rvlsair(k) = rslf(press(k),tair(k))

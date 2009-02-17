@@ -7,7 +7,7 @@
 !==========================================================================================!
 module micro_coms
 
-   use rconstants, only : boltzmann,pi1,t00
+   use rconstants, only : boltzmann,pi1,t00,cliq,alli,qicet3,tsupercool
    use micphys   , only : ncat,nhcat
 
    implicit none
@@ -23,17 +23,19 @@ module micro_coms
    !---------------------------------------------------------------------------------------!
    !   Nucleation-related variables.                                                       !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: mfp     = 6.6e-8  ! Mean free path at ref temp and press.   [    1/m]
-   real, parameter :: retempc = 25.0    ! Reference temperature                   [      K]
-   real, parameter :: repres  = 101325. ! Reference pressure                      [     Pa]
-   real, parameter :: raros   = 3.e-7   ! Aerosol radius, (Cotton et al. 1986)    [      m]
-   real, parameter :: aka     = 5.39e-3 ! Aerosol thermal conductivity 
-   !----- Combination of fac tors for Walko et. al (1995) equation 58 ---------------------!
-   real, parameter :: w95_58 = mfp*repres/ (retempc+t00)
+   real, parameter :: mfp      = 6.6e-8  ! Mean free path at ref temp and press.  [    1/m]
+   real, parameter :: retempk  = 298.15  ! Reference temperature                  [      K]
+   real, parameter :: dtempmax = 25.0    ! Maximum reduction for ref. temperature [      K]
+   real, parameter :: repres   = 101325. ! Reference pressure                     [     Pa]
+   real, parameter :: raros    = 3.e-7   ! Aerosol radius, (Cotton et al. 1986)   [      m]
+   real, parameter :: aka      = 5.39e-3 ! Aerosol thermal conductivity 
+   !----- Combination of factors for Walko et. al (1995) equation 58 ----------------------!
+   real, parameter :: w95_58 = mfp*repres/ retempk
    !----- Boltzmann over 6 pi -------------------------------------------------------------!
    real, parameter :: boltzo6pi = boltzmann/(6.*pi1) 
-   !----- Minimum temperature for ice nucleation [ °C] ------------------------------------!
-   real, parameter :: ticenucmin = -2.0
+   !----- Minimum temperature for ice nucleation and ice growth [ K] ----------------------!
+   real, parameter :: ticenucmin = t00 - 2.0
+   real, parameter :: ticegrowth = t00 - 14.0
    !---------------------------------------------------------------------------------------!
    !    Maximum supersaturation with respect to ice for determining total number of IFN    !
    ! that can nucleate in Meyers' formula
@@ -41,7 +43,15 @@ module micro_coms
    real, parameter ::  ssi0 = 0.40
    !---------------------------------------------------------------------------------------!
 
-
+   !----- Minimum and maximum energy for rain ---------------------------------------------!
+   real, parameter :: qrainmin = cliq * (193.16 - tsupercool)  ! Minimum -80°C
+   real, parameter :: qrainmax = cliq * (321.16 - tsupercool) ! Maximum  48°C
+   !----- Minimum and maximum energy for mixed phases -------------------------------------!
+   real, parameter :: qmixedmin = qicet3-100000.     ! Equivalent to former -100000 J/kg 
+   real, parameter :: qmixedmax = qicet3+350000.     ! Equivalent to former  350000 J/kg
+   !----- Maximum energy for pristine ice before it completely disappears -----------------!
+   real, parameter :: qprismax  = qicet3 + 0.99*alli ! 99% is gone
+   !---------------------------------------------------------------------------------------!
 
    !----- Coefficients to compute the thermal conductivity --------------------------------!
    real, dimension(3), parameter :: ckcoeff = (/ -4.818544e-3, 1.407892e-4, -1.249986e-7 /)
@@ -86,21 +96,21 @@ module micro_coms
   !----------------------------------------------------------------------------------------!
   !  shape     cfmas  pwmas     cfvt   pwvt     dmb0     dmb1   parm   rxmin               !
   !----------------------------------------------------------------------------------------!
-     .5000,     524.,    3.,   3173.,    2.,   2.e-6,  40.e-6,  .3e9, 1.e-12 &  !cloud
+     .5000,     524.,    3.,   3173.,    2.,   2.e-6,  40.e-6,  .3e9, 1.e-09 &  !cloud
    , .5000,     524.,    3.,    149.,    .5,   .1e-3,   5.e-3, .1e-2, 1.e-09 &  !rain
-   , .1790,    110.8,  2.91, 5.769e5,  1.88,  15.e-6, 125.e-6,  .1e4, 1.e-12 &  !pris col
+   , .1790,    110.8,  2.91, 5.769e5,  1.88,  15.e-6, 125.e-6,  .1e4, 1.e-09 &  !pris col
    , .1790, 2.739e-3,  1.74, 188.146,  .933,   .1e-3,  10.e-3, .1e-2, 1.e-09 &  !snow col
    , .5000,     .496,   2.4,   3.084,    .2,   .1e-3,  10.e-3, .1e-2, 1.e-09 &  !aggreg
    , .5000,     157.,    3.,    93.3,    .5,   .1e-3,   5.e-3, .1e-2, 1.e-09 &  !graup
    , .5000,     471.,    3.,    161.,    .5,   .8e-3,  10.e-3, .3e-2, 1.e-09 &  !hail 
-   , .0429,    .8854,   2.5,    316.,  1.01,      0.0,      0.0,    0.0,     0.0 &  !pris hex
-   , .3183,  .377e-2,    2.,    316.,  1.01,      0.0,      0.0,    0.0,     0.0 &  !pris den
-   , .1803,  1.23e-3,   1.8, 5.769e5,  1.88,      0.0,      0.0,    0.0,     0.0 &  !pris ndl
-   , .5000,    .1001, 2.256,  3.19e4,  1.66,      0.0,      0.0,    0.0,     0.0 &  !pris ros
-   , .0429,    .8854,   2.5,   4.836,   .25,      0.0,      0.0,    0.0,     0.0 &  !snow hex
-   , .3183,  .377e-2,    2.,   4.836,   .25,      0.0,      0.0,    0.0,     0.0 &  !snow den
-   , .1803,  1.23e-3,   1.8, 188.146,  .933,      0.0,      0.0,    0.0,     0.0 &  !snow ndl
-   , .5000,    .1001, 2.256, 1348.38, 1.241,      0.0,      0.0,    0.0,     0.0 /) & !snow ros
+   , .0429,    .8854,   2.5,    316.,  1.01,     0.0,     0.0,   0.0,    0.0 &  !pris hex
+   , .3183,  .377e-2,    2.,    316.,  1.01,     0.0,     0.0,   0.0,    0.0 &  !pris den
+   , .1803,  1.23e-3,   1.8, 5.769e5,  1.88,     0.0,     0.0,   0.0,    0.0 &  !pris ndl
+   , .5000,    .1001, 2.256,  3.19e4,  1.66,     0.0,     0.0,   0.0,    0.0 &  !pris ros
+   , .0429,    .8854,   2.5,   4.836,   .25,     0.0,     0.0,   0.0,    0.0 &  !snow hex
+   , .3183,  .377e-2,    2.,   4.836,   .25,     0.0,     0.0,   0.0,    0.0 &  !snow den
+   , .1803,  1.23e-3,   1.8, 188.146,  .933,     0.0,     0.0,   0.0,    0.0 &  !snow ndl
+   , .5000,    .1001, 2.256, 1348.38, 1.241,     0.0,     0.0,   0.0,    0.0 /) & !snow ros
    , (/9,15/))
 
   real, dimension(15,15), parameter :: jpairr = reshape((/                         &

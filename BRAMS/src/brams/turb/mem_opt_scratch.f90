@@ -83,18 +83,18 @@ contains
     ! ALF - Putting zero in all variables
     npts = maxz*maxx*maxy
     ![MLO - Changing the call for integers
-    call izero(npts, opt%ind1_x_a(1,1,1))
-    call izero(npts, opt%ind1_x_b(1,1,1))
-    call izero(npts, opt%ind2_x_a(1,1,1))
-    call izero(npts, opt%ind2_x_b(1,1,1))
-    call azero(npts, opt%weight_x_a(1,1,1))
-    call azero(npts, opt%weight_x_b(1,1,1))
-    call izero(npts, opt%ind1_y_a(1,1,1))
-    call izero(npts, opt%ind1_y_b(1,1,1))
-    call izero(npts, opt%ind2_y_a(1,1,1))
-    call izero(npts, opt%ind2_y_b(1,1,1))
-    call azero(npts, opt%weight_y_a(1,1,1))
-    call azero(npts, opt%weight_y_b(1,1,1))
+    call izero(npts, opt%ind1_x_a)
+    call izero(npts, opt%ind1_x_b)
+    call izero(npts, opt%ind2_x_a)
+    call izero(npts, opt%ind2_x_b)
+    call azero(npts, opt%weight_x_a)
+    call azero(npts, opt%weight_x_b)
+    call izero(npts, opt%ind1_y_a)
+    call izero(npts, opt%ind1_y_b)
+    call izero(npts, opt%ind2_y_a)
+    call izero(npts, opt%ind2_y_b)
+    call azero(npts, opt%weight_y_a)
+    call azero(npts, opt%weight_y_b)
 
     return
   end subroutine alloc_opt_scratch

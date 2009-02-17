@@ -100,14 +100,14 @@ module micphys
    real, dimension(nhcat)              :: cfmasft,dnfac,sipfac,cfmasi,pwmasi,ch1,ch3,cdp1
    real, dimension(nhcat)              :: pwvtmasi,emb2,cxmin
 
-   real, dimension(nzpmax)             :: tair,tairc,tairstrc,til,rvstr,press,exner
+   real, dimension(nzpmax)             :: tair,tairc,tairstr,til,rvstr,press,exner
    real, dimension(nzpmax)             :: rhoa,rhoi,rtot,rvap,rliq,rice,qhydm
    real, dimension(nzpmax)             :: rvlsair,rvisair,thrmcon
    real, dimension(nzpmax)             :: vapdif,dynvisc,rdynvsci,denfac,dn0i,colfacr
    real, dimension(nzpmax)             :: colfacr2,colfacc,colfacc2,sumuy,sumuz,sumvr
    real, dimension(nzpmax)             :: scrmic1,scrmic2,scrmic3,cccnx,cifnx
    real, dimension(nzpmax)             :: dsed_thil,totcond,thil,pottemp,vertvelo,rloss
-   real, dimension(nzpmax)             :: enloss,rfall,cfall,qrfall
+   real, dimension(nzpmax)             :: enloss,rfall,cfall,qrfall,theiv
    real, dimension(nzpmax,ncat)        :: rx,cx,qr,qx,tx,emb,vterm,vap,ttest,wct1
    real, dimension(nzpmax,ncat)        :: wct2,sb,sd,se,sf,sg,sh,sm,ss,su,sw,sy,sz
 
@@ -130,7 +130,7 @@ module micphys
    real, dimension(ninc)               :: rmlttab
    real, dimension(ninc,nhcat)         :: enmlttab
    real, dimension(ninc,ndns)          :: shedtab
-   real, dimension(2)                  :: sc,sk,sl
+   real, dimension(2)                  :: sc,sl,sq
    real, dimension(7)                  :: sj,pcprx,accpx
 
    real, dimension(nd1cc)              :: r1tabcc,c1tabcc,c2tabcc

@@ -40,7 +40,16 @@ subroutine cldnuc(m1)
          rcnew = 0.
          if (excessrv > 0.) then
             rcnew = min(rnuc,.5*excessrv)
-            rx(k,1) = rx(k,1) + rcnew
+            !------------------------------------------------------------------------------!
+            !    If there were no cloud droplets in this level before, we must also assign !
+            ! a temperature. Using the environment temperature.                            ! 
+            !------------------------------------------------------------------------------!
+            if (rx(k,1) >= rxmin(1)) then
+               rx(k,1) = rx(k,1) + rcnew
+            else
+               rx(k,1) = rx(k,1) + rcnew
+               tx(k,1) = tair(k)
+            end if
             rvap(k) = rvap(k) - rcnew
             k2cnuc = k
             cx(k,1) = min(parm(1),rx(k,1) / emb0(1))
@@ -100,7 +109,16 @@ subroutine cldnuc(m1)
                cxadd = concen_tab - cx(k,1)
                if (cxadd > excessrv / emb0(1)) cxadd = excessrv / emb0(1)
                cx(k,1) = cx(k,1) + cxadd
-               rx(k,1) = rx(k,1) + excessrv
+               !---------------------------------------------------------------------------!
+               !    If there were no cloud droplets in this level before, we must also     !
+               ! assign a temperature. Using the environment temperature.                  ! 
+               !---------------------------------------------------------------------------!
+               if (rx(k,1) >= rxmin(1)) then
+                  rx(k,1) = rx(k,1) + excessrv
+               else
+                  rx(k,1) = rx(k,1) + excessrv
+                  tx(k,1) = tair(k)
+               end if
                k2cnuc = k
             end if
 
@@ -149,7 +167,7 @@ subroutine icenuc(m1,ngr,dtlt)
    !    Implement Paul's immersion freezing of rain here.  This would replace Mike's homo- !
    ! geneous freezing of rain which was in h03.                                            !
    !---------------------------------------------------------------------------------------!
-   do k = k1(1),k1(2)
+   do k = k1(1),k2(1)
    !----- Homogeneous ice nucleation of cloud droplets ------------------------------------!
       dn1 = dnfac(1) * emb(k,1) ** pwmasi(1)
 
@@ -190,8 +208,16 @@ subroutine icenuc(m1,ngr,dtlt)
       cldnuc = ptotvi + max(0.,fraccld * cx(k,1) - cx(k,3))
       !cldnucr = cldnuc * emb(k,1)
       cldnucr = min(rx(k,1),ptotvi * emb(k,1) + fraccld * rx(k,1))
-
-      rx(k,3) = rx(k,3) + cldnucr
+      !------------------------------------------------------------------------------------!
+      !    Being cautious, in case new pristine ice is formed, we need to set up some      !
+      ! temperature... Using air temperature.                                              !
+      !------------------------------------------------------------------------------------!
+      if (rx(k,3) >= rxmin(3)) then
+         rx(k,3) = rx(k,3) + cldnucr
+      else
+         rx(k,3) = rx(k,3) + cldnucr
+         tx(k,3) = tair(k)
+      end if
       rx(k,1) = rx(k,1) - cldnucr
       cx(k,3) = cx(k,3) + cldnuc
       cx(k,1) = cx(k,1) - cldnuc
@@ -206,10 +232,6 @@ subroutine icenuc(m1,ngr,dtlt)
    k2pnuc = 1
 
    do k = lpw,m1-1
-      !------------------------------------------------------------------------------------!
-      ! THERMODYNAMIC DILEMMA: Shouldn't it be rehuil instead of rehul here, since we      !
-      !     seek haze nucleation at cold temperatures?                                     !
-      !------------------------------------------------------------------------------------!
       rhhz = rehuil(press(k),tair(k),rvap(k))
       haznuc = 0.
       if (rhhz > 0.82 .and. tairc(k) <= -35.01) then
@@ -271,7 +293,12 @@ subroutine icenuc(m1,ngr,dtlt)
       end if
       vapnuc = vapnucr / emb0(3)
 
-      rx(k,3) = rx(k,3) + vapnucr
+      if (rx(k,3) >= rxmin(3)) then
+         rx(k,3) = rx(k,3) + vapnucr
+      else
+         rx(k,3) = rx(k,3) + vapnucr
+         tx(k,3) = tair(k)
+      end if
       cx(k,3) = cx(k,3) + vapnuc
 
       if (rx(k,3) > rxmin(3)) k2pnuc = k
@@ -327,7 +354,8 @@ subroutine contnuc (rx,cx,tx,vap,press,dynvisc,thrmcon,tair,tairc,pbvi,ptvi,pdvi
           ,ticenucmin ! ! Minimum temperature for ice to nucleate (C)
    
    use rconstants, only : &
-          twopi       ! ! 2*pi
+           t00        & ! zero Celsius
+          ,twopi      ! ! 2*pi
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -339,12 +367,12 @@ subroutine contnuc (rx,cx,tx,vap,press,dynvisc,thrmcon,tair,tairc,pbvi,ptvi,pdvi
    ptotvi = 0.
 
    if (tx <= ticenucmin .and. rx > rxmin) then
-      ana = exp(4.11 - 0.262 * tx)
+      ana = exp(4.11 - 0.262 * (tx-t00))
       akn = w95_58 * tair / (press * raros)
       dfar = boltzo6pi * tair * (1.+ akn) / (raros * dynvisc)
 
       f1 = twopi * dn1 * cx * ana * dtlt
-      f2 = thrmcon * (tairc - tx) / press
+      f2 = thrmcon * (tair - tx) / press
 
       ft = 0.4 * (1. + 1.45 * akn + 0.4 * akn * exp(-1. / akn))                            &
          * (thrmcon + 2.5 * akn * aka) / ((1. + 3. * akn)                                  &

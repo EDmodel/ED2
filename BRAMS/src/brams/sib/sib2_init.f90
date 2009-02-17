@@ -13,11 +13,6 @@ subroutine sfcdata_sib_driver
   use leaf_coms
 
   implicit none
-  !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-  real, dimension(nzgmax,nstyp) :: slcons1
-  real, dimension(nstyp) :: slcons0,fhydraul
-  common/efold/slcons1,slcons0,fhydraul
-  !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
   integer :: k,nnn
 

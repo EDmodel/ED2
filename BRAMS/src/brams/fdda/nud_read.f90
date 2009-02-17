@@ -51,8 +51,8 @@ if (initflag == 1) then   ! Initialization
 
    ! Calculate varweights just like var init
    
-   call varweight(nnzp(1),nnxp(1),nnyp(1),varinit_g(1)%varwts(1,1,1)  &
-       ,grid_g(1)%topt(1,1),grid_g(1)%rtgt(1,1))
+   call varweight(nnzp(1),nnxp(1),nnyp(1),varinit_g(1)%varwts &
+       ,grid_g(1)%topt,grid_g(1)%rtgt)
    
    ! Read and interpolate files to new grid 1. Put stuff in varinit arrays.
    

@@ -175,6 +175,8 @@ end subroutine auto_accret
 subroutine effxy(m1)
 
    use micphys
+   use rconstants, only : qliqt3,t00
+   use micro_coms, only : ticegrowth
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -235,10 +237,10 @@ subroutine effxy(m1)
    !---- 4 = pp,ps,pa ---------------------------------------------------------------------!
    if (availcat(5)) then
       do k = k1(3),k2(3)
-         if (abs(tx(k,3)+14.) .le. 2.) then
+         if (abs(tx(k,3)-ticegrowth) <= 2.) then
             eff(k,4) = 1.4
          else
-            eff(k,4) = min(0.2,10. ** (0.035 * tx(k,3) - 0.7))
+            eff(k,4) = min(0.2,10. ** (0.035 * (tx(k,3)-t00) - 0.7))
          endif
 
       enddo
@@ -247,10 +249,10 @@ subroutine effxy(m1)
 
       !----- 5 = ss,sa --------------------------------------------------------------------!
       do k = k1(4),k2(4)
-         if (abs(tx(k,4)+14.) <= 2.) then
+         if (abs(tx(k,4)-ticegrowth) <= 2.) then
             eff(k,5) = 1.4
          else
-            eff(k,5) = min(0.2,10. ** (0.035 * tx(k,4) - 0.7))
+            eff(k,5) = min(0.2,10. ** (0.035 * (tx(k,4)-t00) - 0.7))
          end if
       end do
       !------------------------------------------------------------------------------------!
@@ -261,12 +263,12 @@ subroutine effxy(m1)
 
          if (rx(k,5) < rxmin(5)) cycle aggrloop
 
-         if (abs(tx(k,5)+14.) <= 2.) then
+         if (abs(tx(k,5)-ticegrowth) <= 2.) then
             eff(k,6) = 1.4
          elseif (tx(k,5) >= -1.) then
             eff(k,6) = 1.
          else
-            eff(k,6) = min(0.2,10. ** (0.035 * tx(k,5) - 0.7))
+            eff(k,6) = min(0.2,10. ** (0.035 * (tx(k,5)-t00) - 0.7))
          end if
       end do aggrloop
       !------------------------------------------------------------------------------------!
@@ -275,13 +277,14 @@ subroutine effxy(m1)
 
    !----- 7 = pg,sg,ag,gg,gh --------------------------------------------------------------!
    if (availcat(6)) then
-      do k = k1(6),k2(6)
-         if (qr(k,6) > 0.) then
+      graupelloop: do k = k1(6),k2(6)
+         if (rx(k,6) < rxmin(6)) cycle graupelloop
+         if (qr(k,6) > rx(k,6)*qliqt3) then
             eff(k,7) = 1.0
          else
-            eff(k,7) = min(0.2,10. ** (0.035 * tx(k,6) - 0.7))
+            eff(k,7) = min(0.2,10. ** (0.035 * (tx(k,6)-t00) - 0.7))
          end if
-      end do
+      end do graupelloop
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -290,10 +293,10 @@ subroutine effxy(m1)
       hailloop:do k = k1(7),k2(7)
          if (rx(k,7) < rxmin(7)) cycle hailloop
 
-         if (qr(k,7) > 0.) then
+         if (qr(k,7) > rx(k,7)*qliqt3) then
             eff(k,8) = 1.0
          else
-            eff(k,8) = min(0.2,10. ** (0.035 * tx(k,7) - 0.7))
+            eff(k,8) = min(0.2,10. ** (0.035 * (tx(k,7)-t00) - 0.7))
          end if
       end do hailloop
    end if
@@ -321,7 +324,7 @@ subroutine effxy(m1)
    !---- 10 = hh (trial) ------------------------------------------------------------------!
    if (availcat(7)) then
       do k = k1(7),k2(7)
-         eff(k,10) = max(0.,.1 + .005 * tx(k,7))
+         eff(k,10) = max(0.,.1 + .005 * (tx(k,7)-t00))
       enddo
    endif
    !---------------------------------------------------------------------------------------!
@@ -563,7 +566,7 @@ subroutine col2(mx,my,mz,mc2,j1,j2,dtlt)
 
    use rconstants
    use micphys
-   use therm_lib, only : qtc
+   use therm_lib, only : qtk
    use micro_coms, only : alpha_coll2,beta_coll2
 
    implicit none
@@ -628,7 +631,8 @@ subroutine col2(mx,my,mz,mc2,j1,j2,dtlt)
       qrcoal = qrcx + qrcy
       qcoal  = qrcoal / max(1.e-13,rcoal)
 
-      call qtc(qcoal,tcoal,fracliq)
+      call qtk(qcoal,tcoal,fracliq)
+      tcoal = tcoal - t00
 
       coalliq = rcoal * fracliq
       coalice = rcoal - coalliq
@@ -708,8 +712,9 @@ end subroutine col2
 subroutine col3(mx,my,mz,j1,j2)
 
    use micphys
-   use therm_lib, only : qtc
+   use therm_lib, only : qtk
    use micro_coms, only : alpha_coll3,beta_coll3
+   use rconstants, only : t00
 
    implicit none
 
@@ -761,7 +766,8 @@ subroutine col3(mx,my,mz,j1,j2)
       qrcoal = qrcx + qrcy
       qcoal  = qrcoal / (1.e-20 + rcoal)
 
-      call qtc(qcoal,tcoal,fracliq)
+      call qtk(qcoal,tcoal,fracliq)
+      tcoal = tcoal - t00
 
       coalliq = rcoal * fracliq
       coalice = rcoal - coalliq
