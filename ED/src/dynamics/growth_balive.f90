@@ -162,7 +162,7 @@ subroutine dbalive_dt_ar(cgrid, tfact)
            csite%avg_daily_temp(ipa) = 0.0 
            
         enddo
-
+!!        print*,"LAI= ",csite%lai
      enddo
 
   enddo

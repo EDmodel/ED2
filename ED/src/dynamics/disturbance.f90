@@ -812,13 +812,13 @@ end subroutine apply_disturbances_ar
 
     use ed_state_vars,only : sitetype,patchtype
 
-    use pft_coms, only: q, qsw, sla, hgt_min
+    use pft_coms, only: q, qsw, sla, hgt_min, max_dbh
     use misc_coms, only: dtlsm
     use fuse_fiss_utils_ar, only : sort_cohorts_ar
 !    use canopy_air_coms, only: hcapveg_ref,heathite_min
     use ed_therm_lib,only : calc_hcapveg
     use consts_coms, only: t3ple
-    use allometry, only : h2dbh, dbh2bd, dbh2bl
+    use allometry, only : h2dbh, dbh2bd, dbh2bl, dbh2h
 
     implicit none
 
@@ -859,19 +859,30 @@ end subroutine apply_disturbances_ar
     ! Just make one cohort.  It will soon be split at the splitting call of
     ! apply_disturbances().  Place this cohort in the insertion point.
 
-
     cpatch%pft(nc) = pft
     cpatch%nplant(nc) = density
     cpatch%hite(nc) = hgt_min(cpatch%pft(nc)) * min(1.0,height_factor)
-    cpatch%dbh(nc) = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
-    cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
-    cpatch%bleaf(nc) = dbh2bl(cpatch%dbh(nc),cpatch%pft(nc))
-    print*,"add",cpatch%hite(nc),cpatch%dbh(nc),cpatch%bdead(nc),cpatch%bleaf(nc)
+    if(.false.) then !! it's a tree
+       cpatch%dbh(nc) = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
+       cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
+       cpatch%bleaf(nc) = dbh2bl(cpatch%dbh(nc),cpatch%pft(nc))
+    else
+       !! set actual bleaf
+       cpatch%dbh(nc)   = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
+       cpatch%bleaf(nc) = dbh2bl(cpatch%dbh(nc),cpatch%pft(nc))
+
+       !! reset allometry to make it grow
+       cpatch%dbh(nc)   = max_dbh(pft)
+       cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
+       cpatch%hite(nc)  = dbh2h(pft,max_dbh(pft))
+    endif
+
     cpatch%phenology_status = 0
     cpatch%balive(nc) = cpatch%bleaf(nc) * &
          (1.0 + q(cpatch%pft(nc)) + qsw(cpatch%pft(nc)) * cpatch%hite(nc))
     cpatch%lai(nc) = cpatch%bleaf(nc) * cpatch%nplant(nc) * sla(cpatch%pft(nc))
-    cpatch%bstorage(nc) = 0.1*(cpatch%bdead(nc)+cpatch%balive(nc)) !! changed by MCD, was 0.0
+    cpatch%bstorage(nc) = 1.0*(cpatch%balive(nc)) !! changed by MCD, was 0.0
+
 
     cpatch%veg_temp(nc) = csite%can_temp(np)
     cpatch%veg_water(nc) = 0.0

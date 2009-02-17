@@ -1,4 +1,4 @@
-!!
+!
 !! Code for reading XML format config files for ED2
 !!
 !! Original code by Mike Dietze
@@ -173,7 +173,7 @@ recursive subroutine read_ed_xml_config(filename)
         call libxml2f90__ll_selecttag('DOWN','pft',i) !select pft
 
         call getConfigINT   ('num','pft',i,myPFT,texist)
-        if(myPFT .lt. n_pft .and. myPFT .ge. 1) then
+        if(myPFT .le. n_pft .and. myPFT .ge. 1) then
            call getConfigINT('include_pft','pft',i,ival,texist)
            if(texist) then
               include_pft(myPFT) = ival

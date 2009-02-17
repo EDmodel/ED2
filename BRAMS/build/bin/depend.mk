@@ -1384,7 +1384,7 @@ edcp_init.o : $(ED_MIXED)/edcp_init.f90 node_mod.o mem_grid.o rpara.o soil_coms.
 edcp_load_namelist.o : $(ED_MIXED)/edcp_load_namelist.f90 max_dims.o soil_coms.o           \
 	met_driver_coms.o mem_sites.o physiology_coms.o phenology_coms.o decomp_coms.o     \
 	disturb_coms.o pft_coms.o misc_coms.o grid_coms.o ed_misc_coms.o optimiz_coms.o    \
-	mem_grid.o io_params.o mem_leaf.o mem_radiate.o grid_dims.o
+	mem_grid.o io_params.o mem_leaf.o mem_radiate.o grid_dims.o canopy_radiation_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -1415,7 +1415,8 @@ edcp_model.o : $(ED_MIXED)/edcp_model.f90 mem_grid.o mem_leaf.o ed_node_coms.o m
 
 edcp_mpiutils.o : $(ED_MIXED)/edcp_mpiutils.f90 max_dims.o misc_coms.o ed_misc_coms.o      \
 	grid_coms.o soil_coms.o met_driver_coms.o mem_sites.o physiology_coms.o            \
-	phenology_coms.o decomp_coms.o pft_coms.o disturb_coms.o optimiz_coms.o 
+	phenology_coms.o decomp_coms.o pft_coms.o disturb_coms.o optimiz_coms.o            \
+	canopy_radiation_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

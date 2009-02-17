@@ -802,10 +802,15 @@
                          !  1 -- original ED1 default
 
    LAPSE_SCHEME    = 0,  ! This specifies the met lapse rate scheme:
-			 !  0 -- lapse rates off
-			 !  1 -- phenomenological, global
-			 !  2 -- phenomenological, local (not yet implemented)
-			 !  2 -- mechanistic(not yet implemented)
+                         !  0 -- lapse rates off
+                         !  1 -- phenomenological, global
+                         !  2 -- phenomenological, local (not yet implemented)
+                         !  2 -- mechanistic(not yet implemented)
+  
+   CROWN_MOD       = 0,  ! Specifies how tree crowns are represent in the 
+                         ! canopy radiation model                    
+                         !  0  - ED1 default (continuous horizontal) 
+                         !  1  - finite radius mixing model (Dietze) 
 
    N_PLANT_LIM     = 1,  ! Determines whether (1) or not (0) plants can
                          ! be limited by nitrogen
