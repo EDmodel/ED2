@@ -395,97 +395,97 @@ contains
 
    if (associated(tend%rtt)) then
       call vtables_scalar (basic%rtp(1,1,1),tend%rtt(1),ng,'RTP')
-      call vtables_scalar_new (basic%rtp(1,1,1),tend%rtt(1),ng,'RTP',elements)
+      call vtables_scalar_new (basic%rtp,tend%rtt,ng,'RTP',elements)
    endif
 
    if (associated(tend%rct)) then
       call vtables_scalar (micro%rcp(1,1,1),tend%rct(1),ng,'RCP')
-      call vtables_scalar_new (micro%rcp(1,1,1),tend%rct(1),ng,'RCP',elements)
+      call vtables_scalar_new (micro%rcp,tend%rct,ng,'RCP',elements)
    endif
 
    if (associated(tend%rrt)) then
       call vtables_scalar (micro%rrp(1,1,1),tend%rrt(1),ng,'RRP')
-      call vtables_scalar_new (micro%rrp(1,1,1),tend%rrt(1),ng,'RRP',elements)
+      call vtables_scalar_new (micro%rrp,tend%rrt,ng,'RRP',elements)
    endif
 
    if (associated(tend%rpt)) then
       call vtables_scalar (micro%rpp(1,1,1),tend%rpt(1),ng,'RPP')
-      call vtables_scalar_new (micro%rpp(1,1,1),tend%rpt(1),ng,'RPP',elements)
+      call vtables_scalar_new (micro%rpp,tend%rpt,ng,'RPP',elements)
    endif
 
    if (associated(tend%rst)) then
       call vtables_scalar (micro%rsp(1,1,1),tend%rst(1),ng,'RSP')
-      call vtables_scalar_new (micro%rsp(1,1,1),tend%rst(1),ng,'RSP',elements)
+      call vtables_scalar_new (micro%rsp,tend%rst,ng,'RSP',elements)
    endif
 
    if (associated(tend%rat)) then
       call vtables_scalar (micro%rap(1,1,1),tend%rat(1),ng,'RAP')
-      call vtables_scalar_new (micro%rap(1,1,1),tend%rat(1),ng,'RAP',elements)
+      call vtables_scalar_new (micro%rap,tend%rat,ng,'RAP',elements)
    endif
 
    if (associated(tend%rgt)) then
       call vtables_scalar (micro%rgp(1,1,1),tend%rgt(1),ng,'RGP')
-      call vtables_scalar_new (micro%rgp(1,1,1),tend%rgt(1),ng,'RGP',elements)
+      call vtables_scalar_new (micro%rgp,tend%rgt,ng,'RGP',elements)
    endif
 
    if (associated(tend%rht)) then
       call vtables_scalar (micro%rhp(1,1,1),tend%rht(1),ng,'RHP')
-      call vtables_scalar_new (micro%rhp(1,1,1),tend%rht(1),ng,'RHP',elements)
+      call vtables_scalar_new (micro%rhp,tend%rht,ng,'RHP',elements)
    endif
 
    if (associated(tend%cct)) then
       call vtables_scalar (micro%ccp(1,1,1),tend%cct(1),ng,'CCP')
-      call vtables_scalar_new (micro%ccp(1,1,1),tend%cct(1),ng,'CCP',elements)
+      call vtables_scalar_new (micro%ccp,tend%cct,ng,'CCP',elements)
    endif
 
    if (associated(tend%crt)) then
       call vtables_scalar (micro%crp(1,1,1),tend%crt(1),ng,'CRP')
-      call vtables_scalar_new (micro%crp(1,1,1),tend%crt(1),ng,'CRP',elements)
+      call vtables_scalar_new (micro%crp,tend%crt,ng,'CRP',elements)
    endif
 
    if (associated(tend%cpt)) then
       call vtables_scalar (micro%cpp(1,1,1),tend%cpt(1),ng,'CPP')
-      call vtables_scalar_new (micro%cpp(1,1,1),tend%cpt(1),ng,'CPP',elements)
+      call vtables_scalar_new (micro%cpp,tend%cpt,ng,'CPP',elements)
    endif
 
    if (associated(tend%cst)) then
       call vtables_scalar (micro%csp(1,1,1),tend%cst(1),ng,'CSP')
-      call vtables_scalar_new (micro%csp(1,1,1),tend%cst(1),ng,'CSP',elements)
+      call vtables_scalar_new (micro%csp,tend%cst,ng,'CSP',elements)
    endif
 
    if (associated(tend%cat)) then
       call vtables_scalar (micro%cap(1,1,1),tend%cat(1),ng,'CAP')
-      call vtables_scalar_new (micro%cap(1,1,1),tend%cat(1),ng,'CAP',elements)
+      call vtables_scalar_new (micro%cap,tend%cat,ng,'CAP',elements)
    endif
 
    if (associated(tend%cgt)) then
       call vtables_scalar (micro%cgp(1,1,1),tend%cgt(1),ng,'CGP')
-      call vtables_scalar_new (micro%cgp(1,1,1),tend%cgt(1),ng,'CGP',elements)
+      call vtables_scalar_new (micro%cgp,tend%cgt,ng,'CGP',elements)
    endif
 
    if (associated(tend%cht)) then
       call vtables_scalar (micro%chp(1,1,1),tend%cht(1),ng,'CHP')
-      call vtables_scalar_new (micro%chp(1,1,1),tend%cht(1),ng,'CHP',elements)
+      call vtables_scalar_new (micro%chp,tend%cht,ng,'CHP',elements)
    endif
 
    if (associated(tend%cccnt)) then
       call vtables_scalar (micro%cccnp(1,1,1),tend%cccnt(1),ng,'CCCNP')
-      call vtables_scalar_new (micro%cccnp(1,1,1),tend%cccnt(1),ng,'CCCNP',elements)
+      call vtables_scalar_new (micro%cccnp,tend%cccnt,ng,'CCCNP',elements)
    endif
 
    if (associated(tend%cifnt)) then
       call vtables_scalar (micro%cifnp(1,1,1),tend%cifnt(1),ng,'CIFNP')
-      call vtables_scalar_new (micro%cifnp(1,1,1),tend%cifnt(1),ng,'CIFNP',elements)
+      call vtables_scalar_new (micro%cifnp,tend%cifnt,ng,'CIFNP',elements)
    endif
 
    if( associated(tend%tket)) then
       call vtables_scalar (turb%tkep(1,1,1),tend%tket(1),ng,'TKEP')
-      call vtables_scalar_new (turb%tkep(1,1,1),tend%tket(1),ng,'TKEP',elements)
+      call vtables_scalar_new (turb%tkep,tend%tket,ng,'TKEP',elements)
    endif
 
    if( associated(tend%epst)) then
       call vtables_scalar (turb%epsp(1,1,1),tend%epst(1),ng,'EPSP')
-      call vtables_scalar_new (turb%epsp(1,1,1),tend%epst(1),ng,'EPSP',elements)
+      call vtables_scalar_new (turb%epsp,tend%epst,ng,'EPSP',elements)
    endif
 
    ! TEB_SPM
@@ -496,107 +496,107 @@ contains
             call vtables_scalar (gaspart%pno(1,1,1)  &
                  ,gaspart%pnot(1),ng,'PNO')
             elements = size(gaspart%pno)
-            call vtables_scalar_new (gaspart%pno(1,1,1)  &
-                 ,gaspart%pnot(1),ng,'PNO',elements)
+            call vtables_scalar_new (gaspart%pno  &
+                 ,gaspart%pnot,ng,'PNO',elements)
          endif
 
          if (associated(gaspart%pno2t)) then
             call vtables_scalar (gaspart%pno2(1,1,1)  &
                  ,gaspart%pno2t(1),ng,'PNO2')
-            call vtables_scalar_new (gaspart%pno2(1,1,1)  &
-                 ,gaspart%pno2t(1),ng,'PNO2',elements)
+            call vtables_scalar_new (gaspart%pno2  &
+                 ,gaspart%pno2t,ng,'PNO2',elements)
          endif
 
          if (associated(gaspart%ppm25t)) then
             call vtables_scalar (gaspart%ppm25(1,1,1)  &
                  ,gaspart%ppm25t(1),ng,'PM25')
-            call vtables_scalar_new (gaspart%ppm25(1,1,1)  &
-                 ,gaspart%ppm25t(1),ng,'PM25',elements)
+            call vtables_scalar_new (gaspart%ppm25  &
+                 ,gaspart%ppm25t,ng,'PM25',elements)
          endif
 
          if (associated(gaspart%pcot)) then
             call vtables_scalar (gaspart%pco(1,1,1)  &
                  ,gaspart%pcot(1),ng,'PCO')
-            call vtables_scalar_new (gaspart%pco(1,1,1)  &
-                 ,gaspart%pcot(1),ng,'PCO',elements)
+            call vtables_scalar_new (gaspart%pco  &
+                 ,gaspart%pcot,ng,'PCO',elements)
          endif
          
          if (associated(gaspart%pso2t)) then
             call vtables_scalar (gaspart%pso2(1,1,1)  &
                  ,gaspart%pso2t(1),ng,'PSO2')
-            call vtables_scalar_new (gaspart%pso2(1,1,1)  &
-                 ,gaspart%pso2t(1),ng,'PSO2',elements)
+            call vtables_scalar_new (gaspart%pso2  &
+                 ,gaspart%pso2t,ng,'PSO2',elements)
          endif
 
          if (associated(gaspart%pso4t)) then
             call vtables_scalar (gaspart%pso4(1,1,1)  &
                  ,gaspart%pso4t(1),ng,'PSO4')
-            call vtables_scalar_new (gaspart%pso4(1,1,1)  &
-                 ,gaspart%pso4t(1),ng,'PSO4',elements)
+            call vtables_scalar_new (gaspart%pso4  &
+                 ,gaspart%pso4t,ng,'PSO4',elements)
          endif
 
          if (associated(gaspart%paert)) then
             call vtables_scalar (gaspart%paer(1,1,1)  &
                  ,gaspart%paert(1),ng,'PAER')
-            call vtables_scalar_new (gaspart%paer(1,1,1)  &
-                 ,gaspart%paert(1),ng,'PAER',elements)
+            call vtables_scalar_new (gaspart%paer  &
+                 ,gaspart%paert,ng,'PAER',elements)
          endif
 
          if (associated(gaspart%pvoct)) then
             call vtables_scalar (gaspart%pvoc(1,1,1)  &
                  ,gaspart%pvoct(1),ng,'PVOC')
-            call vtables_scalar_new (gaspart%pvoc(1,1,1)  &
-                 ,gaspart%pvoct(1),ng,'PVOC',elements)
+            call vtables_scalar_new (gaspart%pvoc  &
+                 ,gaspart%pvoct,ng,'PVOC',elements)
          endif
 
          if(ichemi==1) then
             if (associated(gaspart%po3t)) then
                call vtables_scalar (gaspart%po3(1,1,1)  &
                     ,gaspart%po3t(1),ng,'PO3')
-               call vtables_scalar_new (gaspart%po3(1,1,1)  &
-                    ,gaspart%po3t(1),ng,'PO3',elements)
+               call vtables_scalar_new (gaspart%po3  &
+                    ,gaspart%po3t,ng,'PO3',elements)
             endif
         
             if (associated(gaspart%prhcot)) then
                call vtables_scalar (gaspart%prhco(1,1,1)  &
                     ,gaspart%prhcot(1),ng,'PRHCO')
-               call vtables_scalar_new (gaspart%prhco(1,1,1)  &
-                    ,gaspart%prhcot(1),ng,'PRHCO',elements)
+               call vtables_scalar_new (gaspart%prhco  &
+                    ,gaspart%prhcot,ng,'PRHCO',elements)
             endif
 			     
             if (associated(gaspart%pho2t)) then
                call vtables_scalar (gaspart%pho2(1,1,1)  &
                     ,gaspart%pho2t(1),ng,'PHO2')
-               call vtables_scalar_new (gaspart%pho2(1,1,1)  &
-                    ,gaspart%pho2t(1),ng,'PHO2',elements)
+               call vtables_scalar_new (gaspart%pho2  &
+                    ,gaspart%pho2t,ng,'PHO2',elements)
             endif
 			     
             if (associated(gaspart%po3pt)) then
                call vtables_scalar (gaspart%po3p(1,1,1)  &
                     ,gaspart%po3pt(1),ng,'PO3P')
-               call vtables_scalar_new (gaspart%po3p(1,1,1)  &
-                    ,gaspart%po3pt(1),ng,'PO3P',elements)
+               call vtables_scalar_new (gaspart%po3p  &
+                    ,gaspart%po3pt,ng,'PO3P',elements)
             endif
 
             if (associated(gaspart%po1dt)) then
                call vtables_scalar (gaspart%po1d(1,1,1)  &
                     ,gaspart%po1dt(1),ng,'PO1D')
-               call vtables_scalar_new (gaspart%po1d(1,1,1)  &
-                    ,gaspart%po1dt(1),ng,'PO1D',elements)
+               call vtables_scalar_new (gaspart%po1d  &
+                    ,gaspart%po1dt,ng,'PO1D',elements)
             endif
 			     
             if (associated(gaspart%phot)) then
                call vtables_scalar (gaspart%pho(1,1,1)  &
                     ,gaspart%phot(1),ng,'PHO')
-               call vtables_scalar_new (gaspart%pho(1,1,1)  &
-                    ,gaspart%phot(1),ng,'PHO',elements)
+               call vtables_scalar_new (gaspart%pho  &
+                    ,gaspart%phot,ng,'PHO',elements)
             endif
 			     
             if (associated(gaspart%proot)) then
                call vtables_scalar (gaspart%proo(1,1,1)  &
                     ,gaspart%proot(1),ng,'PROO')
-               call vtables_scalar_new (gaspart%proo(1,1,1)  &
-                    ,gaspart%proot(1),ng,'PROO',elements)
+               call vtables_scalar_new (gaspart%proo  &
+                    ,gaspart%proot,ng,'PROO',elements)
             endif
          endif
 
@@ -610,8 +610,8 @@ contains
       if (associated(scalar(nsc)%sclt)) then
          call vtables_scalar (scalar(nsc)%sclp(1,1,1)  &
               ,scalar(nsc)%sclt(1),ng,sname)
-         call vtables_scalar_new (scalar(nsc)%sclp(1,1,1)  &
-              ,scalar(nsc)%sclt(1),ng,sname,elements)
+         call vtables_scalar_new (scalar(nsc)%sclp  &
+              ,scalar(nsc)%sclt,ng,sname,elements)
       endif
    enddo
 

@@ -171,10 +171,10 @@ subroutine mksedim_tab(m1,zm,dzt,pcpfillc,pcpfillr,sfcpcp)
    implicit none
 
    !----- Arguments: ----------------------------------------------------------------------!
-   integer                                    , intent(in)  :: m1
-   real, dimension(m1                        ), intent(in)  :: zm,dzt
-   real, dimension(m1,maxkfall,nembfall,nhcat), intent(out) :: pcpfillc,pcpfillr
-   real, dimension(   maxkfall,nembfall,nhcat), intent(out) :: sfcpcp
+   integer                                    , intent(in)    :: m1
+   real, dimension(m1                        ), intent(in)    :: zm,dzt
+   real, dimension(m1,maxkfall,nembfall,nhcat), intent(inout) :: pcpfillc,pcpfillr
+   real, dimension(   maxkfall,nembfall,nhcat), intent(inout) :: sfcpcp
    !----- Local Constant: -----------------------------------------------------------------!
    integer, parameter    :: nbin=50
    !----- Local Variables: ----------------------------------------------------------------!

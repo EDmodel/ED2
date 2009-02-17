@@ -37,30 +37,30 @@ do ifm = 1,ngrids
       call refs1d
 
       call refs3d(nzp,nxp,nyp  &
-         ,basic_g(ifm)%pi0  (1,1,1)  ,basic_g(ifm)%dn0  (1,1,1)  &
-         ,basic_g(ifm)%dn0u (1,1,1)  ,basic_g(ifm)%dn0v (1,1,1)  &
-         ,basic_g(ifm)%th0  (1,1,1)  ,grid_g(ifm)%topt  (1,1)    &
-         ,grid_g(ifm)%rtgt  (1,1)                                )
+         ,basic_g(ifm)%pi0    ,basic_g(ifm)%dn0    &
+         ,basic_g(ifm)%dn0u   ,basic_g(ifm)%dn0v   &
+         ,basic_g(ifm)%th0    ,grid_g(ifm)%topt    &
+         ,grid_g(ifm)%rtgt                         )
 
       if (if_adap == 0) then
  
          call flds3d(nzp,nxp,nyp  &
-            ,basic_g(ifm)%uc  (1,1,1)  ,basic_g(ifm)%vc    (1,1,1)  &
-            ,basic_g(ifm)%pi0 (1,1,1)  ,basic_g(ifm)%theta (1,1,1)  &
-            ,basic_g(ifm)%thp (1,1,1)  ,basic_g(ifm)%rtp   (1,1,1)  &
-            ,basic_g(ifm)%pc  (1,1,1)  ,basic_g(ifm)%rv    (1,1,1)  &
-            ,grid_g(ifm)%topt (1,1)    ,grid_g(ifm)%topu   (1,1)    &
-            ,grid_g(ifm)%topv (1,1)    ,grid_g(ifm)%rtgt   (1,1)    &
-            ,grid_g(ifm)%rtgu (1,1)    ,grid_g(ifm)%rtgv   (1,1)    )
+            ,basic_g(ifm)%uc    ,basic_g(ifm)%vc      &
+            ,basic_g(ifm)%pi0   ,basic_g(ifm)%theta   &
+            ,basic_g(ifm)%thp   ,basic_g(ifm)%rtp     &
+            ,basic_g(ifm)%pc    ,basic_g(ifm)%rv      &
+            ,grid_g(ifm)%topt   ,grid_g(ifm)%topu     &
+            ,grid_g(ifm)%topv   ,grid_g(ifm)%rtgt     &
+            ,grid_g(ifm)%rtgu   ,grid_g(ifm)%rtgv     )
 
       else
 
-         call flds3d_adap(nzp,nxp,nyp  ,grid_g(ifm)%flpu    (1,1)    &
-            ,grid_g(ifm)%flpv  (1,1)    ,grid_g(ifm)%flpw    (1,1)    &
-            ,basic_g(ifm)%uc  (1,1,1)  ,basic_g(ifm)%vc    (1,1,1)  &
-            ,basic_g(ifm)%pi0 (1,1,1)  ,basic_g(ifm)%theta (1,1,1)  &
-            ,basic_g(ifm)%thp (1,1,1)  ,basic_g(ifm)%rtp   (1,1,1)  &
-            ,basic_g(ifm)%pc  (1,1,1)  ,basic_g(ifm)%rv    (1,1,1)  )
+         call flds3d_adap(nzp,nxp,nyp  ,grid_g(ifm)%flpu     &
+            ,grid_g(ifm)%flpv          ,grid_g(ifm)%flpw     &
+            ,basic_g(ifm)%uc           ,basic_g(ifm)%vc      &
+            ,basic_g(ifm)%pi0          ,basic_g(ifm)%theta   &
+            ,basic_g(ifm)%thp          ,basic_g(ifm)%rtp     &
+            ,basic_g(ifm)%pc           ,basic_g(ifm)%rv      )
 
       endif
 
@@ -304,7 +304,7 @@ use mem_grid
 use mem_scratch
 use ref_sounding
 use rconstants
-use therm_lib, only: mrsl,theta_iceliq,tv2temp,vapour_on,cloud_on
+use therm_lib, only: rslf,theta_iceliq,tv2temp,vapour_on,cloud_on
 
 implicit none
 integer :: n1,n2,n3
@@ -374,22 +374,18 @@ do j=1,nyp
          pc(k,i,j)=0.
       enddo
 
-      if(vapour_on)then
-         do k=1,nzp
-            rv(k,i,j)=rtp(k,i,j)
-         enddo
-      endif
-
       if(cloud_on)then
          do k=1,nzp
             p0(k)=(pi0(k,i,j)/cp)**cpor*p00
-            temp(k)=pi0(k,i,j)*thp(k,i,j)/cp
-         enddo
-         call mrsl(nzp,p0(1),temp(1),rvls(1))
-         do k=1,nzp
+            temp(k)=pi0(k,i,j)*theta(k,i,j)/cp
+            rvls(k)=rslf(p0(k),temp(k))
             rc(k)=max(0.,rtp(k,i,j)-rvls(k))
             thp(k,i,j)=theta_iceliq(pi0(k,i,j),temp(k),rc(k),0.)
             rv(k,i,j)=rtp(k,i,j)-rc(k)
+         enddo
+      elseif(vapour_on)then
+         do k=1,nzp
+            rv(k,i,j)=rtp(k,i,j)
          enddo
       endif
 
@@ -407,7 +403,7 @@ subroutine flds3d_adap(n1,n2,n3,flpu,flpv,flpw  &
 use mem_grid
 use ref_sounding
 use rconstants
-use therm_lib, only: mrsl,tv2temp,vapour_on,level
+use therm_lib, only: rslf,tv2temp,vapour_on,cloud_on,theta_iceliq
 implicit none
 integer :: n1,n2,n3
 real, dimension(n2,n3) :: flpu,flpv,flpw
@@ -471,22 +467,19 @@ do j = 1,n3
          theta(k,i,j) = thp(k,i,j)
          pc(k,i,j) = 0.
       enddo
-
-      if (level == 1) then
-         do k = 1,n1
-            rv(k,i,j) = rtp(k,i,j)
-         enddo
-      elseif (level >= 2) then
+      if (cloud_on) then
          do k = 1,n1
             p0(k) = (pi0(k,i,j)/cp) ** cpor * p00
-            temp(k) = pi0(k,i,j) * thp(k,i,j) / cp
-         enddo
-         call mrsl(n1,p0(1),temp(1),rvls(1))
-         do k = 1,n1
+            temp(k) = pi0(k,i,j) * theta(k,i,j) / cp
+            rvls(k) = rslf(p0(k),temp(k))
+
             rc(k) = max(0.,rtp(k,i,j) - rvls(k))
-            thp(k,i,j) = theta(k,i,j)  &
-               / (1.+(aklv*rc(k)) / max(temp(k),ttripoli))
+            thp(k,i,j) = theta_iceliq(pi0(k,i,j),temp(k),rc(k),0.)
             rv(k,i,j) = rtp(k,i,j) - rc(k)
+         end do
+      elseif (vapour_on) then
+         do k = 1,n1
+            rv(k,i,j) = rtp(k,i,j)
          enddo
       endif
 

@@ -10,7 +10,7 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
   use canopy_radiation_coms, only: lai_min
   use grid_coms, only: nzg
   use soil_coms, only: soil, dslz
-  use consts_coms, only : t00,mmdov
+  use consts_coms, only : t00,mmdov,wdnsi
 
   implicit none
 
@@ -183,15 +183,15 @@ end if
            !rb_min = 25.0*csite%lai(ipa)
            rb_min = 1.e6
 
-        ! Aerodynamic resistance [s/m]
-        cpatch%rb(ico) = min(rb_min, 1.0/ &
-             (0.003*sqrt(vels*exp(-0.5*cumulative_lai)  &
-             /leaf_width(cpatch%pft(ico)))  &
-             + 0.5 * 2.06e-5   &
-             * ( 1.6e8*abs(cpatch%veg_temp(ico)-csite%can_temp(ipa))  &
-             *leaf_width(cpatch%pft(ico))**3 )**0.25 &
-             /leaf_width(cpatch%pft(ico))))
-
+           ! Aerodynamic resistance [s/m]
+           cpatch%rb(ico) = min(rb_min, 1.0/ &
+                (0.003*sqrt(vels*exp(-0.5*cumulative_lai)  &
+                /leaf_width(cpatch%pft(ico)))  &
+                + 0.5 * 2.06e-5   &
+                * ( 1.6e8*abs(cpatch%veg_temp(ico)-csite%can_temp(ipa))  &
+                *leaf_width(cpatch%pft(ico))**3 )**0.25 &
+                /leaf_width(cpatch%pft(ico))))
+           
 !        if (iphoto == 1) then
            call lphysiol_full(  &
                 cpatch%veg_temp(ico)-t00  &  ! Vegetation temperature (C)
@@ -246,7 +246,7 @@ end if
 
         ! Supply of water
         water_supply = water_conductance(cpatch%pft(ico)) *   &
-             available_liquid_water(cpatch%krdepth(ico)) * 1.0e-3 *   &
+             available_liquid_water(cpatch%krdepth(ico)) * wdnsi *   &
              q(cpatch%pft(ico)) * cpatch%balive(ico) / (1.0 + q(cpatch%pft(ico)) + cpatch%hite(ico) *   &
              qsw(cpatch%pft(ico))) * cpatch%nplant(ico)
 
@@ -259,9 +259,16 @@ end if
         cpatch%fs_open(ico) = cpatch%fsw(ico) * cpatch%fsn(ico)
 
         ! Photorespiration can become important at high temperatures.  If so,
-        ! close down the stomata.
-        if(cpatch%A_open(ico) < cpatch%A_closed(ico)) cpatch%fs_open(ico) = 0.0
-
+        ! close down the stomata. 
+        if (cpatch%A_open(ico) < cpatch%A_closed(ico)) then
+            cpatch%fs_open(ico) = 0.0
+        elseif (cpatch%par_v(ico) < cpatch%lai(ico)*1.e-3) then
+            !------------------------------------------------------------------------------!
+            !    Nighttime, close the stomata. The following statement may be false if we  !
+            ! include CAM plants in this model someday...                                  !
+            !------------------------------------------------------------------------------!
+            cpatch%fs_open(ico) = 0.0
+        end if
         ! Net stomatal resistance
         cpatch%stomatal_resistance(ico) = 1.0 / (cpatch%fs_open(ico) / cpatch%rsw_open(ico) +   &
              (1.0 - cpatch%fs_open(ico)) / cpatch%rsw_closed(ico))

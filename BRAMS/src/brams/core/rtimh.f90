@@ -56,9 +56,6 @@ subroutine timestep()
        f_thermo_s, & ! intent(in)
        f_thermo_n    ! intent(in)
 
-  use shcu_vars_const, only: & ! For Shallow Cumulus Paramet.
-       nnshcu                ! ! intent(in)
-
   use mem_scalar, only: & ! For SiB
        scalar_g ! intent(in)
 
@@ -150,7 +147,7 @@ subroutine timestep()
   t1=cputime(w1)
   if (.not. bulk_on) then
      if (banneron) write(unit=*,fmt='(a)') '     [-] Calling thermo(supsat)...'
-     call THERMO(mzp,mxp,myp,ia,iz,ja,jz) 
+     call thermo(mzp,mxp,myp,ia,iz,ja,jz) 
   endif
   if (acct) call acctimes('accu',3,'THERMO',t1,w1)
 
@@ -161,7 +158,7 @@ subroutine timestep()
      call exevolve(mzp,mxp,myp,ngrid,ia,iz,ja,jz,izu,jzv,jdim,mynum,dtlt,'ADV')
      if (acct) call acctimes('accu',4,'EXEVOLVE_ADV',t1,w1)
   end if
-  !------------------------------------------------------- MLO - SRF]
+  !-------------------------------------------------------
   
   !  Radiation parameterization
   !--------------------------------
@@ -190,7 +187,7 @@ subroutine timestep()
      !! New version of SiB-BRAMS
      if (banneron) write(unit=*,fmt='(a)') '     [-] Calling CO2_biosource...'
      call co2_biosource(mzp,mxp,myp,ia,iz,ja,jz,ngrid,  &
-          scalar_g(1,ngrid)%sclt(1),basic_g(ngrid)%dn0,grid_g(ngrid)%rtgt)
+          scalar_g(1,ngrid)%sclt,basic_g(ngrid)%dn0,grid_g(ngrid)%rtgt)
      if (acct) call acctimes('accu',7,'co2_biosource',t1,w1)
   endif
   !----------------------------------------
@@ -228,22 +225,9 @@ subroutine timestep()
   !  Velocity advection
   !----------------------------------------
   t1=cputime(w1)
-  ! Use Optmized advection only in SX-6, for the moment
-!  if (machine==0) then
-     ! If Generic IA32 use old Advction Scheme
-     if (banneron) write(unit=*,fmt='(a)') '     [-] Calling advectc(v)...'
-     call ADVECTc('V',mzp,mxp,myp,ia,iz,ja,jz,izu,jzv,mynum)
-!  elseif (machine==1) then
-     ! Using optmized advection scheme only in SX-6
-!     call calc_advec('V',ngrid,mzp,mxp,myp)
-!  endif
+  if (banneron) write(unit=*,fmt='(a)') '     [-] Calling advectc(v)...'
+  call ADVECTc('V',mzp,mxp,myp,ia,iz,ja,jz,izu,jzv,mynum)
   if (acct) call acctimes('accu',10,'ADVECTv',t1,w1)
-
-  !  Cumulus parameterization
-  !----------------------------------------
-  !t1=cputime(w1)
-  !if(NNQPARM(ngrid) == 1 .or. IF_CUINV == 1) call cuparm()      
-  !if (acct) call acctimes('accu',7,'CUPARM',t1,w1)
 
   !  Urban canopy parameterization
   !----------------------------------------
@@ -283,19 +267,18 @@ subroutine timestep()
   !  Get the overlap region between parallel nodes
   !---------------------------------------------------
   if(ipara == 1) then      
+     t1=cputime(w1)
      if (banneron) write(unit=*,fmt='(a)') '     [-] Calling node_getlbc...'
      call node_getlbc()  
      if (banneron) write(unit=*,fmt='(a)') '     [-] Calling node_getcyclic...'
      if (ngrid  ==  1) call node_getcyclic(1)
+     if (acct) call acctimes('accu',16,'GETlbc',t1,w1)
   endif
-  if (acct) call acctimes('accu',16,'GETlbc',t1,w1)
 
   ! Exner function correction
   !----------------------------------------
   if (iexev == 2) then
      t1=cputime(w1)
-     if (banneron) write(unit=*,fmt='(a)') '     [-] Calling thermo(micro)...'
-     call thermo(mzp,mxp,myp,1,mxp,1,myp) 
      if (banneron) write(unit=*,fmt='(a)') '     [-] Calling exevolve(tha)...'
      call exevolve(mzp,mxp,myp,ngrid,ia,iz,ja,jz,izu,jzv,jdim,mynum,dtlt,'THA')
      if (acct) call acctimes('accu',17,'EXEVOLVE_THA',t1,w1)
@@ -327,18 +310,8 @@ subroutine timestep()
   !----------------------------------------
   t1=cputime(w1)
   ! Use Optmized advection only in SX-6, for the moment
- ! if (machine==0) then
-     ! If Generic IA32 use old Advction Scheme
-     if (banneron) write(unit=*,fmt='(a)') '     [-] Calling advectc(t)...'
-     call ADVECTc('T',mzp,mxp,myp,ia,iz,ja,jz,izu,jzv,mynum)
- ! elseif (machine==1) then
-     ! Using optmized advection scheme only in SX-6
- !    if (ngrid<=2) then
- !       call calc_advec('T',ngrid,mzp,mxp,myp)
- !    else
- !       call ADVECTc('T',mzp,mxp,myp,ia,iz,ja,jz,izu,jzv,mynum)
- !    endif
- ! endif
+  if (banneron) write(unit=*,fmt='(a)') '     [-] Calling advectc(t)...'
+  call ADVECTc('T',mzp,mxp,myp,ia,iz,ja,jz,izu,jzv,mynum)
   if (acct) call acctimes('accu',19,'ADVECTs',t1,w1)
 
   if (imassflx == 1) then
@@ -405,7 +378,7 @@ subroutine timestep()
   t1=cputime(w1)
   if (.not. bulk_on) then
      if (banneron) write(unit=*,fmt='(a)') '     [-] Calling thermo(micro)...'
-     call THERMO(mzp,mxp,myp,1,mxp,1,myp) 
+     call thermo(mzp,mxp,myp,ia,iz,ja,jz) 
   endif
   if (acct) call acctimes('accu',27,'THERMO',t1,w1)
 

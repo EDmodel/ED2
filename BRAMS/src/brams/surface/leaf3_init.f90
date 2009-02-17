@@ -13,11 +13,6 @@ use mem_leaf
 use leaf_coms
 
 implicit none
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-real, dimension(nzgmax,nstyp) :: slcons1
-real, dimension(nstyp) :: slcons0,fhydraul
-common/efold/slcons1,slcons0,fhydraul
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 integer :: k,nnn
 
@@ -272,7 +267,7 @@ implicit none
 
 integer :: n1,n2,n3,mzg,mzs,npat,ifm,i,j,k,ipat,nveg,nsoil
 
-real :: c1,airtemp
+real :: c1,airtemp,tsoil
 
 real, dimension(n1,n2,n3) :: theta,pi0,pp,rv
 real, dimension(n2,n3)    :: rvv,prsv,piv,vt2da,vt2db,glat,glon,zot  &
@@ -327,9 +322,8 @@ do j = 1,n3
       can_temp(i,j,1) = airtemp
       can_rvap(i,j,1) = rv(k2,i,j)
 
-      soil_energy(mzg,i,j,1) = alli  &
-         + cliq * (seatp(i,j) + (seatf(i,j) - seatp(i,j))  &
-         * timefac_sst - t3ple)
+      soil_energy(mzg,i,j,1) =  cliq * (seatp(i,j) + (seatf(i,j) - seatp(i,j))  &
+         * timefac_sst  - tsupercool)
 
       do ipat = 2,npat
 
@@ -369,14 +363,15 @@ do j = 1,n3
 ! temperature is initially below triple point, this will immediately adjust to soil
 ! at triple point with part ice.  In order to begin with partially or totally frozen
 ! soil, reduce or remove the latent-heat-of-fusion term (the one with the
-! factor of alli1000) from soil_energy below.  If the soil is totally frozen and the
-! temperature is below zero C, the factor of cliq1000 should be changed to cice1000
+! factor of allivlme) from soil_energy below.  If the soil is totally frozen and the
+! temperature is below zero C, the factor of cliqvlme should be changed to cicevlme
 ! to reflect the reduced heat capacity of ice compared to liquid.  These
 ! changes may be alternatively be done in subroutine sfcinit_user in ruser.f
-
-            soil_energy(k,i,j,ipat) = (airtemp - t3ple + stgoff(k))  &
-               * (slcpd(nsoil) + soil_water(k,i,j,ipat) * cliq1000)  &
-               + soil_water(k,i,j,ipat) * alli1000
+            tsoil = airtemp + stgoff(k)
+            soil_energy(k,i,j,ipat) = slcpd(nsoil) * tsoil   &
+                                    + soil_water(k,i,j,ipat) &
+                                    * cliqvlme * (tsoil - tsupercool)
+               
 
          enddo
 
@@ -393,7 +388,7 @@ do j = 1,n3
                 nint(leaf_class(i,j,ipat)) == 20) then
                if (k .eq. 1) then
                   sfcwater_mass(k,i,j,ipat) = 100.
-                  sfcwater_energy(k,i,j,ipat) = (airtemp - tsupercool) * cliq
+                  sfcwater_energy(k,i,j,ipat) = cliq * (airtemp -tsupercool)
                   sfcwater_depth(k,i,j,ipat) = .1
                endif
             endif
@@ -403,7 +398,7 @@ do j = 1,n3
                   sfcwater_mass(k,i,j,ipat) = sfcwater_mass(k,i,j,ipat)  &
                      + snow_mass(i,j)
                   sfcwater_energy(k,i,j,ipat) = sfcwater_energy(k,i,j,ipat)  &
-                     + min(0., (airtemp - t3ple) * cice)
+                     + min(t3ple,airtemp) * cice
                   sfcwater_depth(k,i,j,ipat) = sfcwater_depth(k,i,j,ipat)  &
                      + snow_mass(i,j) * 5.e-3   ! 5x equivalent liquid depth
                endif

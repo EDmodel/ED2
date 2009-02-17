@@ -9,7 +9,7 @@ module mem_mass
    type mass_vars
       real, pointer, dimension(:,:,:) :: & ! 3-D variables (nzp,nxp,nyp)
                               !Full Exner function equation variables
-                               thvlast,thvadv,thetav,thvtend  &
+                               thvlast,lnthetav,lnthvadv,lnthvtend  &
                               !Advective fluxes
                               ,afxu, afxv, afxw               &
                               !Averaged variables:
@@ -126,9 +126,9 @@ module mem_mass
    ! Allocate arrays based on options (if necessary)
       if (iexev == 2) then ! Full Exner function
          allocate (mass%thvlast(n1,n2,n3))
-         allocate (mass%thvadv(n1,n2,n3))
-         allocate (mass%thetav(n1,n2,n3))
-         allocate (mass%thvtend(n1,n2,n3))
+         allocate (mass%lnthetav(n1,n2,n3))
+         allocate (mass%lnthvadv(n1,n2,n3))
+         allocate (mass%lnthvtend(n1,n2,n3))
       end if
       if (imassflx == 1) then
          allocate (mass%afxu(n1,n2,n3))
@@ -167,25 +167,25 @@ module mem_mass
       implicit none
       type (mass_vars)   :: mass
 
-      if (associated(mass%thvlast ))  nullify (mass%thvlast )
-      if (associated(mass%thvadv  ))  nullify (mass%thvadv  )
-      if (associated(mass%thetav  ))  nullify (mass%thetav  )
-      if (associated(mass%thvtend ))  nullify (mass%thvtend )
-      if (associated(mass%afxu    ))  nullify (mass%afxu    )
-      if (associated(mass%afxv    ))  nullify (mass%afxv    )
-      if (associated(mass%afxw    ))  nullify (mass%afxw    )
-      if (associated(mass%ltscaleb))  nullify (mass%ltscaleb)
-      if (associated(mass%sigwb   ))  nullify (mass%sigwb   )
-      if (associated(mass%tkepb   ))  nullify (mass%tkepb   ) 
-      if (associated(mass%afxub   ))  nullify (mass%afxub   )
-      if (associated(mass%afxvb   ))  nullify (mass%afxvb   )
-      if (associated(mass%afxwb   ))  nullify (mass%afxwb   )
-      if (associated(mass%cfxup   ))  nullify (mass%cfxup   )
-      if (associated(mass%cfxdn   ))  nullify (mass%cfxdn   )
-      if (associated(mass%dfxup   ))  nullify (mass%dfxup   )
-      if (associated(mass%efxup   ))  nullify (mass%efxup   )
-      if (associated(mass%dfxdn   ))  nullify (mass%dfxdn   )
-      if (associated(mass%efxdn   ))  nullify (mass%efxdn   )
+      if (associated(mass%thvlast    ))  nullify (mass%thvlast    )
+      if (associated(mass%lnthetav   ))  nullify (mass%lnthetav   )
+      if (associated(mass%lnthvadv   ))  nullify (mass%lnthvadv   ) 
+      if (associated(mass%lnthvtend  ))  nullify (mass%lnthvtend  ) 
+      if (associated(mass%afxu       ))  nullify (mass%afxu       )
+      if (associated(mass%afxv       ))  nullify (mass%afxv       )
+      if (associated(mass%afxw       ))  nullify (mass%afxw       )
+      if (associated(mass%ltscaleb   ))  nullify (mass%ltscaleb   )
+      if (associated(mass%sigwb      ))  nullify (mass%sigwb      )
+      if (associated(mass%tkepb      ))  nullify (mass%tkepb      )
+      if (associated(mass%afxub      ))  nullify (mass%afxub      )
+      if (associated(mass%afxvb      ))  nullify (mass%afxvb      )
+      if (associated(mass%afxwb      ))  nullify (mass%afxwb      )
+      if (associated(mass%cfxup      ))  nullify (mass%cfxup      )
+      if (associated(mass%cfxdn      ))  nullify (mass%cfxdn      )
+      if (associated(mass%dfxup      ))  nullify (mass%dfxup      )
+      if (associated(mass%efxup      ))  nullify (mass%efxup      )
+      if (associated(mass%dfxdn      ))  nullify (mass%dfxdn      )
+      if (associated(mass%efxdn      ))  nullify (mass%efxdn      )
       return
    end subroutine nullify_mass
 !==========================================================================================!
@@ -228,25 +228,25 @@ module mem_mass
       implicit none
       type (mass_vars)   :: mass
 
-      if (associated(mass%thvlast ))  mass%thvlast = 0.0
-      if (associated(mass%thvadv  ))  mass%thvadv  = 0.0
-      if (associated(mass%thetav  ))  mass%thetav  = 0.0
-      if (associated(mass%thvtend ))  mass%thvtend = 0.0
-      if (associated(mass%afxu    ))  mass%afxu    = 0.0
-      if (associated(mass%afxv    ))  mass%afxv    = 0.0
-      if (associated(mass%afxw    ))  mass%afxw    = 0.0
-      if (associated(mass%ltscaleb))  mass%ltscaleb= 0.0
-      if (associated(mass%sigwb   ))  mass%sigwb   = 0.0
-      if (associated(mass%tkepb   ))  mass%tkepb   = 0.0
-      if (associated(mass%afxub   ))  mass%afxub   = 0.0
-      if (associated(mass%afxvb   ))  mass%afxvb   = 0.0
-      if (associated(mass%afxwb   ))  mass%afxwb   = 0.0
-      if (associated(mass%cfxup   ))  mass%cfxup   = 0.0
-      if (associated(mass%cfxdn   ))  mass%cfxdn   = 0.0
-      if (associated(mass%dfxup   ))  mass%dfxup   = 0.0
-      if (associated(mass%efxup   ))  mass%efxup   = 0.0
-      if (associated(mass%dfxdn   ))  mass%dfxdn   = 0.0
-      if (associated(mass%efxdn   ))  mass%efxdn   = 0.0
+      if (associated(mass%thvlast    ))  mass%thvlast    = 0.0
+      if (associated(mass%lnthetav   ))  mass%lnthetav   = 0.0
+      if (associated(mass%lnthvadv   ))  mass%lnthvadv   = 0.0
+      if (associated(mass%lnthvtend  ))  mass%lnthvtend  = 0.0
+      if (associated(mass%afxu       ))  mass%afxu       = 0.0
+      if (associated(mass%afxv       ))  mass%afxv       = 0.0
+      if (associated(mass%afxw       ))  mass%afxw       = 0.0
+      if (associated(mass%ltscaleb   ))  mass%ltscaleb   = 0.0
+      if (associated(mass%sigwb      ))  mass%sigwb      = 0.0
+      if (associated(mass%tkepb      ))  mass%tkepb      = 0.0
+      if (associated(mass%afxub      ))  mass%afxub      = 0.0
+      if (associated(mass%afxvb      ))  mass%afxvb      = 0.0
+      if (associated(mass%afxwb      ))  mass%afxwb      = 0.0
+      if (associated(mass%cfxup      ))  mass%cfxup      = 0.0
+      if (associated(mass%cfxdn      ))  mass%cfxdn      = 0.0
+      if (associated(mass%dfxup      ))  mass%dfxup      = 0.0
+      if (associated(mass%efxup      ))  mass%efxup      = 0.0
+      if (associated(mass%dfxdn      ))  mass%dfxdn      = 0.0
+      if (associated(mass%efxdn      ))  mass%efxdn      = 0.0
       return
    end subroutine zero_mass
 !==========================================================================================!
@@ -263,25 +263,25 @@ module mem_mass
       implicit none
       type (mass_vars)   :: mass
 
-      if (associated(mass%thvlast ))  deallocate (mass%thvlast )
-      if (associated(mass%thvadv  ))  deallocate (mass%thvadv  )
-      if (associated(mass%thetav  ))  deallocate (mass%thetav  )
-      if (associated(mass%thvtend ))  deallocate (mass%thvtend )
-      if (associated(mass%afxu    ))  deallocate (mass%afxu    )
-      if (associated(mass%afxv    ))  deallocate (mass%afxv    )
-      if (associated(mass%afxw    ))  deallocate (mass%afxw    )
-      if (associated(mass%ltscaleb))  deallocate (mass%ltscaleb)
-      if (associated(mass%sigwb   ))  deallocate (mass%sigwb   )
-      if (associated(mass%tkepb   ))  deallocate (mass%tkepb   )
-      if (associated(mass%afxub   ))  deallocate (mass%afxub   )
-      if (associated(mass%afxvb   ))  deallocate (mass%afxvb   )
-      if (associated(mass%afxwb   ))  deallocate (mass%afxwb   )
-      if (associated(mass%cfxup   ))  deallocate (mass%cfxup   )
-      if (associated(mass%cfxdn   ))  deallocate (mass%cfxdn   )
-      if (associated(mass%dfxup   ))  deallocate (mass%dfxup   )
-      if (associated(mass%efxup   ))  deallocate (mass%efxup   )
-      if (associated(mass%dfxdn   ))  deallocate (mass%dfxdn   )
-      if (associated(mass%efxdn   ))  deallocate (mass%efxdn   )
+      if (associated(mass%thvlast    ))  deallocate (mass%thvlast    ) 
+      if (associated(mass%lnthetav   ))  deallocate (mass%lnthetav   ) 
+      if (associated(mass%lnthvadv   ))  deallocate (mass%lnthvadv   )
+      if (associated(mass%lnthvtend  ))  deallocate (mass%lnthvtend  )
+      if (associated(mass%afxu       ))  deallocate (mass%afxu       )
+      if (associated(mass%afxv       ))  deallocate (mass%afxv       )
+      if (associated(mass%afxw       ))  deallocate (mass%afxw       )
+      if (associated(mass%ltscaleb   ))  deallocate (mass%ltscaleb   )
+      if (associated(mass%sigwb      ))  deallocate (mass%sigwb      )
+      if (associated(mass%tkepb      ))  deallocate (mass%tkepb      )
+      if (associated(mass%afxub      ))  deallocate (mass%afxub      )
+      if (associated(mass%afxvb      ))  deallocate (mass%afxvb      )
+      if (associated(mass%afxwb      ))  deallocate (mass%afxwb      )
+      if (associated(mass%cfxup      ))  deallocate (mass%cfxup      )
+      if (associated(mass%cfxdn      ))  deallocate (mass%cfxdn      )
+      if (associated(mass%dfxup      ))  deallocate (mass%dfxup      )
+      if (associated(mass%efxup      ))  deallocate (mass%efxup      )
+      if (associated(mass%dfxdn      ))  deallocate (mass%dfxdn      )
+      if (associated(mass%efxdn      ))  deallocate (mass%efxdn      )
       return
    end subroutine dealloc_mass
 !==========================================================================================!
@@ -311,20 +311,20 @@ module mem_mass
                     ,ng, npts, imean, &
                     'THVLAST :3:hist:mpti:mpt3:mpt1')
 
-      if (associated(mass%thvadv)) &
-         call vtables2 (mass%thvadv(1,1,1),massm%thvadv(1,1,1) &
+      if (associated(mass%lnthvadv)) &
+         call vtables2 (mass%lnthvadv(1,1,1),massm%lnthvadv(1,1,1) &
                     ,ng, npts, imean, &
-                    'THVADV :3:mpti:mpt3:mpt1')
+                    'LNTHVADV :3:mpti:mpt3:mpt1')
 
-      if (associated(mass%thetav)) &
-         call vtables2 (mass%thetav(1,1,1),massm%thetav(1,1,1) &
+      if (associated(mass%lnthetav)) &
+         call vtables2 (mass%lnthetav(1,1,1),massm%lnthetav(1,1,1) &
                     ,ng, npts, imean, &
-                    'THETAV :3:mpti:mpt3:mpt1')
+                    'LNTHETAV :3:mpti:mpt3:mpt1')
                     
-      if (associated(mass%thvtend )) &
-         call vtables2 (mass%thvtend(1,1,1),massm%thvtend(1,1,1) &
+      if (associated(mass%lnthvtend )) &
+         call vtables2 (mass%lnthvtend(1,1,1),massm%lnthvtend(1,1,1) &
                     ,ng, npts, imean, &
-                    'THVTEND :3:mpti:mpt3:mpt1')
+                    'LNTHVTEND :3:mpti:mpt3:mpt1')
      
       if (associated(mass%afxu)) &
          call vtables2 (mass%afxu(1,1,1),massm%afxu(1,1,1) &

@@ -14,7 +14,7 @@ module therm_lib
    !---------------------------------------------------------------------------------------!
    ! Constants that control the convergence for iterative methods                          !
    !---------------------------------------------------------------------------------------!
-   real   , parameter ::   toler  = 2.* epsilon(1.) ! Relative tolerance for iterative 
+   real   , parameter ::   toler  = 10.* epsilon(1.) ! Relative tolerance for iterative 
                                                     !   methods. The smaller the value, the
                                                     !   more accurate the result, but it
                                                     !   will slow down the run.
@@ -268,11 +268,20 @@ module therm_lib
       real   , intent(in)           :: pres,temp
       logical, intent(in), optional :: useice
       real                          :: esz
-    
+      logical                       :: brrr_cold
+
+      !----- Checking which saturation (liquid or ice) I should use here ------------------!
       if (present(useice)) then
-         esz = eslif(temp,useice)
+         brrr_cold = useice  .and. temp < t3ple
+      else 
+         brrr_cold = bulk_on .and. temp < t3ple
+      end if
+    
+      !----- Finding the saturation vapour pressure ---------------------------------------!
+      if (brrr_cold) then
+         esz = esif(temp)
       else
-         esz = eslif(temp)
+         esz = eslf(temp)
       end if
 
       rslif = ep * esz / (pres - esz)
@@ -776,7 +785,7 @@ module therm_lib
    ! internal energy .                                                                     !
    !---------------------------------------------------------------------------------------!
    subroutine qtk(q,tempk,fracliq)
-      use consts_coms, only: cliqi,cicei,allii,alli,tsupercool,t3ple
+      use consts_coms, only: cliqi,cicei,allii,t3ple,qicet3,qliqt3,tsupercool
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)  :: q        ! Internal energy                             [   J/kg]
@@ -785,17 +794,17 @@ module therm_lib
       !------------------------------------------------------------------------------------!
 
 
-      !----- Negative internal energy, frozen, all ice ------------------------------------!
-      if (q <= 0.) then
+      !----- Internal energy below qwfroz, all ice  ---------------------------------------!
+      if (q <= qicet3) then
          fracliq = 0.
-         tempk   = q * cicei + t3ple
-      !----- Positive internal energy, over latent heat of melting, all liquid ------------!
-      elseif (q > alli) then
+         tempk   = q * cicei 
+      !----- Internal energy, above qwmelt, all liquid ------------------------------------!
+      elseif (q >= qliqt3) then
          fracliq = 1.
          tempk   = q * cliqi + tsupercool
-      !----- Changing phase, it must be at triple point -----------------------------------!
+      !----- Changing phase, it must be at freezing point ---------------------------------!
       else
-         fracliq = q * allii
+         fracliq = (q-qicet3) * allii
          tempk   = t3ple
       endif
       !------------------------------------------------------------------------------------!
@@ -812,40 +821,12 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine computes the temperature, and the fraction of liquid water from    !
-   ! the internal energy. The only difference from qtk (which is actually called here) is  !
-   ! that the temperature is returned in Celsius.                                          !
-   !---------------------------------------------------------------------------------------!
-   subroutine qtc(q,tempc,fracliq)
-      use consts_coms, only: t00
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      real, intent(in)  :: q        ! Internal energy                             [   J/kg]
-      real, intent(out) :: tempc    ! Temperature                                 [      K]
-      real, intent(out) :: fracliq  ! Liquid Fraction (0-1)                       [    ---]
-      !------------------------------------------------------------------------------------!
-
-      call qtk(q,tempc,fracliq)
-      tempc = tempc - t00
-
-      return
-   end subroutine qtc
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
    !    This subroutine computes the temperature (Kelvin) and liquid fraction from inter-  !
    ! nal energy (J/m² or J/m³), mass (kg/m² or kg/m³), and heat capacity (J/m²/K or        !
    ! J/m³/K).                                                                              !
    !---------------------------------------------------------------------------------------!
    subroutine qwtk(qw,w,dryhcap,tempk,fracliq)
-      use consts_coms, only: cliqi,cliq,cicei,cice,allii,alli,t3ple
+      use consts_coms, only: cliqi,cliq,cicei,cice,allii,alli,t3ple,tsupercool
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)  :: qw      ! Internal energy                   [  J/m²] or [  J/m³]
@@ -854,34 +835,40 @@ module therm_lib
       real, intent(out) :: tempk   ! Temperature                                   [     K]
       real, intent(out) :: fracliq ! Liquid fraction (0-1)                         [   ---]
       !----- Local variable ---------------------------------------------------------------!
-      real              :: qwliq0  ! qw of liquid at triple point      [  J/m²] or [  J/m³]
+      real              :: qwfroz  ! qw of ice at triple point         [  J/m²] or [  J/m³] 
+      real              :: qwmelt  ! qw of liquid at triple point      [  J/m²] or [  J/m³]
       !------------------------------------------------------------------------------------!
 
       !----- Converting melting heat to J/m² or J/m³ --------------------------------------!
-      qwliq0 = w * alli
+      qwfroz = (dryhcap + w*cice) * t3ple
+      qwmelt = qwfroz   + w*alli
       !------------------------------------------------------------------------------------!
       
       !------------------------------------------------------------------------------------!
-      !    This is analogous to the qtk computation, we should analyse the sign and        !
-      ! magnitude of the internal energy to choose between liquid, ice, or both.           !
+      !    This is analogous to the qtk computation, we should analyse the magnitude of    !
+      ! the internal energy to choose between liquid, ice, or both by comparing with our.  !
+      ! know boundaries.                                                                   !
       !------------------------------------------------------------------------------------!
 
-      !----- Negative internal energy, frozen, all ice ------------------------------------!
-      if (qw < 0.) then
+      !----- Internal energy below qwfroz, all ice  ---------------------------------------!
+      if (qw < qwfroz) then
          fracliq = 0.
-         tempk   = qw  / (cice * w + dryhcap) + t3ple
-      !----- Positive internal energy, over latent heat of melting, all liquid ------------!
-      elseif (qw > qwliq0) then
+         tempk   = qw  / (cice * w + dryhcap)
+      !----- Internal energy, above qwmelt, all liquid ------------------------------------!
+      elseif (qw > qwmelt) then
          fracliq = 1.
-         tempk   = (qw - qwliq0) / (cliq * w + dryhcap) + t3ple
-      !----- Changing phase, it must be at triple point -----------------------------------!
-      else
-         if(w > 0.) then
-            fracliq = qw / qwliq0
-         else
-            fracliq = 0.0
-         endif
+         tempk   = (qw + w * cliq * tsupercool) / (dryhcap + w*cliq)
+      !------------------------------------------------------------------------------------!
+      !    Changing phase, it must be at freezing point.  The max and min are here just to !
+      ! avoid tiny deviations beyond 0. and 1. due to floating point arithmetics.          !
+      !------------------------------------------------------------------------------------!
+      elseif (w > 0.) then
+         fracliq = min(1.,max(0.,(qw - qwfroz) * allii / w))
          tempk = t3ple
+      !----- No water, but it must be at freezing point (qw = qwfroz = qwmelt) ------------!
+      else
+         fracliq = 0.
+         tempk   = t3ple
       end if
       !------------------------------------------------------------------------------------!
 
@@ -899,51 +886,28 @@ module therm_lib
    !    This subroutine computes the temperature (Kelvin) and liquid fraction from inter-  !
    ! nal energy (J/m² or J/m³), mass (kg/m² or kg/m³), and heat capacity (J/m²/K or        !
    ! J/m³/K).                                                                              !
-   ! This routine requires an 8-byte double precision floating point value for density     !
+   ! This routine requires an 8-byte double precision floating point value for density.    !
    !---------------------------------------------------------------------------------------!
-   subroutine qwtk8(qw,w,dryhcap,tempk,fracliq)
-      use consts_coms, only: cliqi,cliq,cicei,cice,allii,alli,t3ple
+   subroutine qwtk8(qw,w8,dryhcap,tempk,fracliq)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real        , intent(in)  :: qw      ! Internal energy           [  J/m²] or [  J/m³]
-      real(kind=8), intent(in)  :: w       ! Density                   [ kg/m²] or [ kg/m³]
+      real(kind=8), intent(in)  :: w8      ! Density                   [ kg/m²] or [ kg/m³]
       real        , intent(in)  :: dryhcap ! Heat capacity, nonwater   [J/m²/K] or [J/m³/K]
       real        , intent(out) :: tempk   ! Temperature                           [     K]
       real        , intent(out) :: fracliq ! Liquid fraction (0-1)                 [   ---]
       !----- Local variable ---------------------------------------------------------------!
-      real              :: qwliq0  ! qw of liquid at triple point      [  J/m²] or [  J/m³]
+      real              :: w       ! Density                           [ kg/m²] or [ kg/m³]
       !------------------------------------------------------------------------------------!
-     
-      !----- Converting melting heat to J/m² or J/m³ --------------------------------------!
-      qwliq0 = sngl(w) * alli
-      !------------------------------------------------------------------------------------!
-     
-      !------------------------------------------------------------------------------------!
-      !    This is analogous to the qtk computation, we should analyse the sign and        !
-      ! magnitude of the internal energy to choose between liquid, ice, or both.           !
-      !------------------------------------------------------------------------------------!
-     
-      !----- Negative internal energy, frozen, all ice ------------------------------------!
-      if (qw < 0.) then
-         fracliq = 0.
-         tempk   = qw  / (cice * sngl(w) + dryhcap) + t3ple
-      !----- Positive internal energy, over latent heat of melting, all liquid ------------!
-      elseif (qw > qwliq0) then
-         fracliq = 1.
-         tempk   = (qw - qwliq0) / (cliq * sngl(w) + dryhcap) + t3ple
-      !----- Changing phase, it must be at triple point -----------------------------------!
-      else
-         if(w > 0.d0) then
-            fracliq = qw / qwliq0
-         else
-            fracliq = 0.0
-         endif
-         tempk = t3ple
-      end if
-      !------------------------------------------------------------------------------------!
-     
+
+      !----- Converting water mass to single precision ------------------------------------!
+      w      = sngl(w8)
+      call qwtk(qw,w,dryhcap,tempk,fracliq)
+
       return
    end subroutine qwtk8
+   !=======================================================================================!
+   !=======================================================================================!
 
  end module therm_lib
 

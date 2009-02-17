@@ -34,6 +34,7 @@ Module rconstants
    real, parameter :: srtwoi    = 1./srtwo          ! 1./ Square root of 2.     [      ---]
    real, parameter :: srthreei  = 1./srthree        ! 1./ Square root of 3.     [      ---]
    real, parameter :: onethird  = 1./3.             ! 1/3                       [      ---]
+   real, parameter :: twothirds = 2./3.             ! 2/3                       [      ---]
    real, parameter :: onesixth  = 1./6.             ! 1/6                       [      ---]
    !---------------------------------------------------------------------------------------!
 
@@ -119,8 +120,10 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Liquid water properties                                                               !
    !---------------------------------------------------------------------------------------!
+   real, parameter :: wdns     = 1.000e3    ! Liquid water density              [    kg/m³]
+   real, parameter :: wdnsi    = 1./wdns    ! Inverse of liquid water density   [    m³/kg]
    real, parameter :: cliq     = 4.186e3    ! Liquid water specific heat (Cl)   [   J/kg/K]
-   real, parameter :: cliq1000 = 1000.*cliq ! Water heat capacity*water density [   J/m³/K]
+   real, parameter :: cliqvlme = wdns*cliq  ! Water heat capacity × water dens. [   J/m³/K]
    real, parameter :: cliqi    = 1./cliq    ! Inverse of water heat capacity    [   kg K/J]
    !---------------------------------------------------------------------------------------!
 
@@ -129,8 +132,10 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Ice properties                                                                        !
    !---------------------------------------------------------------------------------------!
+   real, parameter :: idns     = 9.167e2      ! "Hard" ice density              [    kg/m³]
+   real, parameter :: idnsi    = 1./idns      ! Inverse of ice density          [    m³/kg]
    real, parameter :: cice     = 2.093e3      ! Ice specific heat (Ci)          [   J/kg/K]
-   real, parameter :: cice1000 = 1000. * cice ! Heat capacity*water density     [   J/m³/K]
+   real, parameter :: cicevlme = wdns * cice  ! Heat capacity × water density   [   J/m³/K]
    real, parameter :: cicei    = 1. / cice    ! Inverse of ice heat capacity    [   kg K/J]
    !---------------------------------------------------------------------------------------!
 
@@ -139,33 +144,48 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Phase change properties                                                               !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: t3ple    = 273.16       ! Water triple point temp. (T3)   [        K]
-   real, parameter :: t3plei   = 1./t3ple     ! 1./T3                           [      1/K]
-   real, parameter :: es3ple   = 611.65685464 ! Vapour pressure at T3 (es3)     [       Pa]
-   real, parameter :: es3plei  = 1./es3ple    ! 1./es3                          [     1/Pa]
-   real, parameter :: epes3ple = ep * es3ple  ! epsilon × es3                   [ Pa kg/kg]
-   real, parameter :: rmt3ple  = rm * t3ple   ! Rv × T3                         [     J/kg]
-   real, parameter :: alvl     = 2.50e6       ! Latent heat - vaporisation (Lv) [     J/kg]
-   real, parameter :: alvi     = 2.834e6      ! Latent heat - sublimation  (Ls) [     J/kg]
-   real, parameter :: alli     = 3.34e5       ! Latent heat - fusion       (Lf) [     J/kg]
-   real, parameter :: alli1000 = 1000. * alli ! Latent heat - fusion       (Lf) [     J/kg]
-   real, parameter :: alvl2    = alvl*alvl    ! Lv²                             [   J²/kg²]
-   real, parameter :: alvi2    = alvi*alvi    ! Ls²                             [   J²/kg²]
-   real, parameter :: allii    = 1. / alli    ! 1./Lf                           [     kg/J]
-   real, parameter :: aklv     = alvl / cp    ! Lv/Cp                           [        K]
-   real, parameter :: akiv     = alvi / cp    ! Ls/Cp                           [        K]
-   real, parameter :: lvordry  = alvl / rgas  ! Lv/Ra                           [        K]
-   real, parameter :: lvorvap  = alvl / rm    ! Lv/Rv                           [        K]
-   real, parameter :: lsorvap  = alvi / rm    ! Ls/Rv                           [        K]
-   real, parameter :: lvt3ple  = alvl * t3ple ! Lv × T3                         [   K J/kg]
-   real, parameter :: lst3ple  = alvi * t3ple ! Ls × T3                         [   K J/kg]
+   real, parameter :: t3ple    = 273.16        ! Water triple point temp. (T3)  [        K]
+   real, parameter :: t3plei   = 1./t3ple      ! 1./T3                          [      1/K]
+   real, parameter :: es3ple   = 611.65685464  ! Vapour pressure at T3 (es3)    [       Pa]
+   real, parameter :: es3plei  = 1./es3ple     ! 1./es3                         [     1/Pa]
+   real, parameter :: epes3ple = ep * es3ple   ! epsilon × es3                  [ Pa kg/kg]
+   real, parameter :: rmt3ple  = rm * t3ple    ! Rv × T3                        [     J/kg]
+   real, parameter :: alvl     = 2.50e6        ! Lat. heat - vaporisation (Lv)  [     J/kg]
+   real, parameter :: alvi     = 2.834e6       ! Lat. heat - sublimation  (Ls)  [     J/kg]
+   real, parameter :: alli     = 3.34e5        ! Lat. heat - fusion       (Lf)  [     J/kg]
+   real, parameter :: allivlme = wdns * alli   ! Lat. heat × water density      [     J/m³]
+   real, parameter :: alvl2    = alvl * alvl   ! Lv²                            [   J²/kg²]
+   real, parameter :: alvi2    = alvi * alvi   ! Ls²                            [   J²/kg²]
+   real, parameter :: allii    = 1.   / alli   ! 1./Lf                          [     kg/J]
+   real, parameter :: aklv     = alvl / cp     ! Lv/Cp                          [        K]
+   real, parameter :: akiv     = alvi / cp     ! Ls/Cp                          [        K]
+   real, parameter :: lvordry  = alvl / rgas   ! Lv/Ra                          [        K]
+   real, parameter :: lvorvap  = alvl / rm     ! Lv/Rv                          [        K]
+   real, parameter :: lsorvap  = alvi / rm     ! Ls/Rv                          [        K]
+   real, parameter :: lvt3ple  = alvl * t3ple  ! Lv × T3                        [   K J/kg]
+   real, parameter :: lst3ple  = alvi * t3ple  ! Ls × T3                        [   K J/kg]
+   real, parameter :: qicet3   = cice * t3ple  ! q at triple point, only ice    [     J/kg]
+   real, parameter :: qliqt3   = qicet3 + alli ! q at triple point, only liquid [     J/kg]
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
-   !     Internal energy-related variable. QL = Cl×(T-T3)+Lf, which can also be written    !
-   ! as:QL = Cl×(T-TLow), where TLow is the temperature that liquid water would have       !
-   ! if it was supercooled (i.e. cooled without without freezing), until QL became 0.      !
+   !    Tsupercool is the temperature of supercooled water that will cause the energy to   !
+   ! be the same as ice at 0K. It can be used as an offset for temperature when defining   !
+   ! internal energy. The next two methods of defining the internal energy for the liquid  !
+   ! part:                                                                                 !
+   !                                                                                       !
+   !   Uliq = Mliq × [ Cice × T3 + Cliq × (T - T3) + Lf]                                   !
+   !   Uliq = Mliq × Cliq × (T - Tsupercool)                                               !
+   !                                                                                       !
+   !     You may be asking yourself why would we have the ice term in the internal energy  !
+   ! definition. The reason is that we can think that internal energy is the amount of     !
+   ! energy a parcel received to leave the 0K state to reach the current state (or if you  !
+   ! prefer the inverse way, Uliq is the amount of energy the parcel would need to lose to !
+   ! become solid at 0K.)                                                                  !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: tsupercool = t3ple - alli/cliq 
+   real, parameter :: tsupercool = t3ple - (qicet3+alli) * cliqi
    !---------------------------------------------------------------------------------------!
 
 

@@ -11,6 +11,7 @@ subroutine rams_mem_alloc(proc_type)
 
    use mem_all
    use node_mod
+   use leaf_coms, only : alloc_leafcol
 
    use io_params, only : maxlite,lite_vars,nlite_vars,frqlite,frqanl
 
@@ -337,6 +338,8 @@ subroutine rams_mem_alloc(proc_type)
       elseif (imean == 0) then
          call alloc_micro(microm_g(ng),1,1,1,ng,isfcl)
       end if
+      call zero_micro(micro_g(ng))
+      call zero_micro(microm_g(ng))
       call filltab_micro(micro_g(ng),microm_g(ng),imean  &
            ,nmzp(ng),nmxp(ng),nmyp(ng),ng)
    end do
@@ -519,9 +522,9 @@ subroutine rams_mem_alloc(proc_type)
    !---------------------------------------------------------------------------------------!
    call nullify_scratch()
    write (unit=*,fmt=*) ' [+] Scratch allocation on node ',mynum,'...'
-   call alloc_scratch(nmzp,nmxp,nmyp,nnzp,nnxp,nnyp,ngrids,nzg,nzs,npatch,nclouds          &
-                     ,proc_type,maxnxp,maxnyp,maxnzp)
-   call filltab_scratch()
+   call alloc_scratch(ngrids,nmzp(1:ngrids),nmxp(1:ngrids),nmyp(1:ngrids)                  &
+                            ,nnzp(1:ngrids),nnxp(1:ngrids),nnyp(1:ngrids)                  &
+                            ,nzg,nzs,npatch,nclouds,maxnxp,maxnyp,maxnzp)
    !---------------------------------------------------------------------------------------!
 
 

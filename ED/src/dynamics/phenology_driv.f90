@@ -69,7 +69,7 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
   use decomp_coms, only: f_labile
   use phenology_coms, only: retained_carbon_fraction, theta_crit, iphen_scheme
   use consts_coms, only: t3ple,cice,cliq,alli
-  use ed_therm_lib,only:update_veg_energy_cweh,calc_hcapveg
+  use ed_therm_lib,only:calc_hcapveg,update_veg_energy_cweh
 
   implicit none
   
@@ -89,6 +89,7 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
   real, dimension(nzg) :: theta
   real :: leaf_litter
   real :: bl_max
+  real :: old_hcapveg
 
   ! Level to evaluate the soil temperature
 
@@ -172,8 +173,11 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
               ! Added RGK 10-26-2008
               ! The leaf biomass of the cohort has changed, update the vegetation
               ! energy - using a constant temperature assumption
-              
-              call update_veg_energy_cweh(cpatch,ico)
+              old_hcapveg = cpatch%hcapveg(ico)
+              cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
+                                                 cpatch%nplant(ico),cpatch%pft(ico))
+              call update_veg_energy_cweh(cpatch%veg_energy(ico),cpatch%veg_temp(ico)      &
+                                         ,old_hcapveg,cpatch%hcapveg(ico))
 
            endif
 
@@ -199,14 +203,10 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
            cpatch%lai(ico) = cpatch%nplant(ico) * cpatch%bleaf(ico) * sla(cpatch%pft(ico))
            cpatch%veg_temp(ico) = csite%can_temp(ipa)
            cpatch%veg_water(ico) = 0.0
-           
-           !----- Because we assigned no water, the internal energy is 
-           !      simply hcapveg*(T-T3)
-           
            cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
                 cpatch%nplant(ico),cpatch%pft(ico))
-           
-           cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * (cpatch%veg_temp(ico)-t3ple)
+           !----- Because we assigned no water, the internal energy is simply hcapveg*T. --!
+           cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
            
         elseif(phenology(cpatch%pft(ico)) == 1)then 
 
@@ -247,18 +247,15 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
                  ! Added RGK 10-26-2008
                  ! IF the cohort drops it's leaves, then it is dropping the water also.
                  ! And the vegetation energy must be updated.
-                 ! We will assume for simplicity, that the water enters a wormhole to another
-                 ! galaxy
-                 
+                 ! We will assume for simplicity, that the water enters a wormhole to 
+                 ! another galaxy. And, of course the water brings its internal energy 
+                 ! with it.
                  cpatch%veg_water(ico) = 0.0
-                 
                  !----- Because we assigned no water, the internal energy is 
-                 !      simply hcapveg*(T-T3)
-                 
+                 !      simply hcapveg*T
                  cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
                       cpatch%nplant(ico),cpatch%pft(ico))
-                 
-                 cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * (cpatch%veg_temp(ico)-t3ple)
+                 cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
 
                  
               endif
@@ -277,11 +274,10 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
               cpatch%veg_water(ico) = 0.0
 
               !----- Because we assigned no water, the internal energy 
-              !      is simply hcapveg*(T-T3)
-              
+              !      is simply hcapveg*T.
               cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
                    cpatch%nplant(ico),cpatch%pft(ico))
-              cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * (cpatch%veg_temp(ico)-t3ple)
+              cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
               
            endif  ! critical moisture
            

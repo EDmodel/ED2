@@ -61,6 +61,7 @@ OBJ_MODEL =                         \
 	grid_dims.o                 \
 	grid_struct.o               \
 	gridset.o                   \
+	harr_coms.o                 \
 	harr_rad.o                  \
 	harr_raddriv.o              \
 	harr_radinit.o              \
@@ -332,6 +333,7 @@ OBJ_MODEL =                         \
 	pft_coms.o                  \
 	radiate_driver.o            \
 	reproduction.o              \
+	rk4_coms.o                  \
 	rk4_derivs.o                \
 	rk4_driver.o                \
 	rk4_integ_utils.o           \

@@ -43,18 +43,19 @@ subroutine node_decomp(init)
         ! for each column in the region of the domain.
         
         
-        call PAR_est_time(nnxp(ngr),nnyp(ngr),scratch%scr1(1)  &
-             ,basic_g(ngr)%cputime(1,1),init)
+        call PAR_est_time(nnxp(ngr),nnyp(ngr),scratch%scr1  &
+             ,basic_g(ngr)%cputime,init)
         
         ! Decompose the grid taking into account the work numbers.
         
         nsiz = nnxp(ngr)+nnyp(ngr)
         
-        call PAR_decomp(nnxp(ngr),nnyp(ngr),nsiz,nmachs,scratch%scr1(1)  &
-             ,scratch%scr2(1),scratch%scr2(1+nsiz),scratch%scr2(1+2*nsiz)  &
-             ,scratch%scr2(1+3*nsiz),scratch%scr2(1+4*nsiz)  &
-             ,scratch%scr2(1+5*nsiz),scratch%scr2(1+6*nsiz)  &
-             ,ixb(1,ngr),ixe(1,ngr),iyb(1,ngr),iye(1,ngr))
+        call PAR_decomp(nnxp(ngr),nnyp(ngr),nsiz,nmachs,scratch%scr1                &
+             ,scratch%scr2((1+0*nsiz):(1*nsiz)),scratch%scr2((1+1*nsiz):(2*nsiz))   &
+             ,scratch%scr2((1+2*nsiz):(3*nsiz)),scratch%scr2((1+3*nsiz):(4*nsiz))   &
+             ,scratch%scr2((1+4*nsiz):(5*nsiz)),scratch%scr2((1+5*nsiz):(6*nsiz))   &
+             ,scratch%scr2((1+6*nsiz):(7*nsiz)),ixb(:,ngr),ixe(:,ngr)               &
+             ,iyb(:,ngr),iye(:,ngr))
      end if
         
   enddo

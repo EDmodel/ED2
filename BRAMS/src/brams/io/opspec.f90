@@ -755,8 +755,8 @@ subroutine opspec3
      end do
    
      do nc=1,nclouds
-        if (iupmethod < 1 .or. iupmethod > 2) then
-            print *, 'FATAL - If Cumulus parameterization is used, iupmethod must be 1 or 2.'
+        if (iupmethod < 1 .or. iupmethod > 3) then
+            print *, 'FATAL - If Cumulus parameterization is used, iupmethod must be 1, 2, or 3.'
             print *, 'Yours is currently set to ',iupmethod
             IFATERR=IFATERR+1
         end if

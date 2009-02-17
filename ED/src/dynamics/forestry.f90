@@ -41,7 +41,7 @@ subroutine apply_forestry_ar(cpoly, isi, year, rhos)
   real :: lambda_mature_secondary
   real :: lambda_mature_plantation
   real :: harvest_deficit
-  integer,allocatable :: mask(:)
+  logical, allocatable, dimension(:) :: mask
 
   csite => cpoly%site(isi)
 
@@ -109,7 +109,7 @@ subroutine apply_forestry_ar(cpoly, isi, year, rhos)
   allocate(tempsite)
   allocate(mask(csite%npatches))
   call allocate_sitetype(tempsite,csite%npatches)
-  mask(:) = 1
+  mask(:) = .true.
   call copy_sitetype_mask(csite,tempsite,mask,csite%npatches,csite%npatches)
   call deallocate_sitetype(csite)
   call allocate_sitetype(csite,tempsite%npatches + 1)

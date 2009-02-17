@@ -134,145 +134,144 @@ subroutine rams_grad(m1,m2,m3,ia,iz,ja,jz,vc3da,vc3db,dir,gpnt,optyp)
 
   IF(DIR.EQ.'XDIR')THEN
      IF(GPNT.EQ.'UPNT')THEN
-        CALL GRADXU(m1,m2,m3,ia,iz,jaa,jzz  &
-             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGU(1,1)  &
-             ,GRID_G(NGRID)%RTGT(1,1),GRID_G(NGRID)%DXT(1,1),DZT  &
-             ,GRID_G(NGRID)%FMAPUI(1,1),GRID_G(NGRID)%FMAPT(1,1)  &
-             ,GRID_G(NGRID)%F13T(1,1)  &
-             ,HW,VCTR2,'T',JDIM)
+        CALL GRADXU(m1,m2,m3,ia,iz,jaa,jzz                &
+             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGU  &
+             ,GRID_G(NGRID)%RTGT,GRID_G(NGRID)%DXT,DZT    &
+             ,GRID_G(NGRID)%FMAPUI,GRID_G(NGRID)%FMAPT    &
+             ,GRID_G(NGRID)%F13T,HW,VCTR2,'T',JDIM)
      ELSEIF(GPNT.EQ.'VPNT')THEN
         CALL GRADXT(m1,m2,m3,ia,iz,jaa,jzz  &
-             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGV(1,1)  &
-             ,GRID_G(NGRID)%RTGM(1,1),GRID_G(NGRID)%DXM(1,1),DZT  &
-             ,GRID_G(NGRID)%FMAPVI(1,1),GRID_G(NGRID)%FMAPM(1,1)  &
-             ,GRID_G(NGRID)%F13M(1,1)  &
+             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGV  &
+             ,GRID_G(NGRID)%RTGM,GRID_G(NGRID)%DXM,DZT  &
+             ,GRID_G(NGRID)%FMAPVI,GRID_G(NGRID)%FMAPM  &
+             ,GRID_G(NGRID)%F13M  &
              ,HW,VCTR2,'T',JDIM)
      ELSEIF(GPNT.EQ.'WPNT')THEN
         CALL GRADXT(m1,m2,m3,ia,iz,jaa,jzz  &
-             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGT(1,1)  &
-             ,GRID_G(NGRID)%RTGU(1,1),GRID_G(NGRID)%DXU(1,1),DZM  &
-             ,GRID_G(NGRID)%FMAPTI(1,1),GRID_G(NGRID)%FMAPU(1,1)  &
-             ,GRID_G(NGRID)%F13U(1,1)  &
+             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGT  &
+             ,GRID_G(NGRID)%RTGU,GRID_G(NGRID)%DXU,DZM  &
+             ,GRID_G(NGRID)%FMAPTI,GRID_G(NGRID)%FMAPU  &
+             ,GRID_G(NGRID)%F13U  &
              ,HT,VCTR2,'W',JDIM)
      ELSEIF(GPNT.EQ.'TPNT')THEN
         CALL GRADXT(m1,m2,m3,ia,iz,jaa,jzz  &
-             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGT(1,1)  &
-             ,GRID_G(NGRID)%RTGU(1,1),GRID_G(NGRID)%DXU(1,1),DZT  &
-             ,GRID_G(NGRID)%FMAPTI(1,1),GRID_G(NGRID)%FMAPU(1,1)  &
-             ,GRID_G(NGRID)%F13U(1,1)  &
+             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGT  &
+             ,GRID_G(NGRID)%RTGU,GRID_G(NGRID)%DXU,DZT  &
+             ,GRID_G(NGRID)%FMAPTI,GRID_G(NGRID)%FMAPU  &
+             ,GRID_G(NGRID)%F13U  &
              ,HW,VCTR2,'T',JDIM)
      ELSEIF(GPNT.EQ.'NPNT')THEN
         CALL GRADXT(m1,m2,m3,ia,iz,jaa,jzz  &
-             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGV(1,1)  &
-             ,GRID_G(NGRID)%RTGM(1,1),GRID_G(NGRID)%DXM(1,1),DZM  &
-             ,GRID_G(NGRID)%FMAPVI(1,1),GRID_G(NGRID)%FMAPM(1,1)  &
-             ,GRID_G(NGRID)%F13M(1,1)  &
+             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGV  &
+             ,GRID_G(NGRID)%RTGM,GRID_G(NGRID)%DXM,DZM  &
+             ,GRID_G(NGRID)%FMAPVI,GRID_G(NGRID)%FMAPM  &
+             ,GRID_G(NGRID)%F13M  &
              ,HT,VCTR2,'W',JDIM)
      ELSEIF(GPNT.EQ.'OPNT')THEN
         CALL GRADXU(m1,m2,m3,ia,iz,jaa,jzz  &
-             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGU(1,1)  &
-             ,GRID_G(NGRID)%RTGT(1,1),GRID_G(NGRID)%DXT(1,1),DZM  &
-             ,GRID_G(NGRID)%FMAPUI(1,1),GRID_G(NGRID)%FMAPT(1,1)  &
-             ,GRID_G(NGRID)%F13T(1,1)  &
+             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGU  &
+             ,GRID_G(NGRID)%RTGT,GRID_G(NGRID)%DXT,DZM  &
+             ,GRID_G(NGRID)%FMAPUI,GRID_G(NGRID)%FMAPT  &
+             ,GRID_G(NGRID)%F13T  &
              ,HT,VCTR2,'W',JDIM)
      ELSEIF(GPNT.EQ.'PPNT')THEN
         CALL GRADXU(m1,m2,m3,ia,iz,jaa,jzz  &
-             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGM(1,1)  &
-             ,GRID_G(NGRID)%RTGV(1,1),GRID_G(NGRID)%DXV(1,1),DZT  &
-             ,GRID_G(NGRID)%FMAPMI(1,1),GRID_G(NGRID)%FMAPV(1,1)  &
-             ,GRID_G(NGRID)%F13V(1,1)  &
+             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGM  &
+             ,GRID_G(NGRID)%RTGV,GRID_G(NGRID)%DXV,DZT  &
+             ,GRID_G(NGRID)%FMAPMI,GRID_G(NGRID)%FMAPV  &
+             ,GRID_G(NGRID)%F13V  &
              ,HW,VCTR2,'T',JDIM)
      ELSEIF(GPNT.EQ.'MPNT')THEN
         CALL GRADXU(m1,m2,m3,ia,iz,jaa,jzz  &
-             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGM(1,1)  &
-             ,GRID_G(NGRID)%RTGV(1,1),GRID_G(NGRID)%DXV(1,1),DZM  &
-             ,GRID_G(NGRID)%FMAPMI(1,1),GRID_G(NGRID)%FMAPV(1,1)  &
-             ,GRID_G(NGRID)%F13V(1,1)  &
+             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGM  &
+             ,GRID_G(NGRID)%RTGV,GRID_G(NGRID)%DXV,DZM  &
+             ,GRID_G(NGRID)%FMAPMI,GRID_G(NGRID)%FMAPV  &
+             ,GRID_G(NGRID)%F13V  &
              ,HT,VCTR2,'W',JDIM)
      ENDIF
   ELSEIF(DIR.EQ.'YDIR')THEN
      IF(GPNT.EQ.'UPNT')THEN
         CALL GRADYT(m1,m2,m3,ia,iz,jaa,jzz  &
-             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGU(1,1)  &
-             ,GRID_G(NGRID)%RTGM(1,1),GRID_G(NGRID)%DYM(1,1),DZT  &
-             ,GRID_G(NGRID)%FMAPUI(1,1),GRID_G(NGRID)%FMAPM(1,1)  &
-             ,GRID_G(NGRID)%F23M(1,1)  &
+             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGU  &
+             ,GRID_G(NGRID)%RTGM,GRID_G(NGRID)%DYM,DZT  &
+             ,GRID_G(NGRID)%FMAPUI,GRID_G(NGRID)%FMAPM  &
+             ,GRID_G(NGRID)%F23M  &
            ,HW,VCTR2,'T',JDIM)
      ELSEIF(GPNT.EQ.'VPNT')THEN
         CALL GRADYV(m1,m2,m3,ia,iz,jaa,jzz  &
-             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGV(1,1)  &
-             ,GRID_G(NGRID)%RTGT(1,1),GRID_G(NGRID)%DYT(1,1),DZT  &
-             ,GRID_G(NGRID)%FMAPVI(1,1),GRID_G(NGRID)%FMAPT(1,1)  &
-             ,GRID_G(NGRID)%F23T(1,1)  &
+             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGV  &
+             ,GRID_G(NGRID)%RTGT,GRID_G(NGRID)%DYT,DZT  &
+             ,GRID_G(NGRID)%FMAPVI,GRID_G(NGRID)%FMAPT  &
+             ,GRID_G(NGRID)%F23T  &
              ,HW,VCTR2,'T',JDIM)
      ELSEIF(GPNT.EQ.'WPNT')THEN
         CALL GRADYT(m1,m2,m3,ia,iz,jaa,jzz  &
-             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGT(1,1)  &
-             ,GRID_G(NGRID)%RTGV(1,1),GRID_G(NGRID)%DYV(1,1),DZM  &
-             ,GRID_G(NGRID)%FMAPTI(1,1),GRID_G(NGRID)%FMAPV(1,1)  &
-             ,GRID_G(NGRID)%F23V(1,1)  &
+             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGT  &
+             ,GRID_G(NGRID)%RTGV,GRID_G(NGRID)%DYV,DZM  &
+             ,GRID_G(NGRID)%FMAPTI,GRID_G(NGRID)%FMAPV  &
+             ,GRID_G(NGRID)%F23V  &
              ,HT,VCTR2,'W',JDIM)
      ELSEIF(GPNT.EQ.'TPNT')THEN
         CALL GRADYT(m1,m2,m3,ia,iz,jaa,jzz  &
-             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGT(1,1)  &
-             ,GRID_G(NGRID)%RTGV(1,1),GRID_G(NGRID)%DYV(1,1),DZT  &
-             ,GRID_G(NGRID)%FMAPTI(1,1),GRID_G(NGRID)%FMAPV(1,1)  &
-             ,GRID_G(NGRID)%F23V(1,1)  &
+             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGT  &
+             ,GRID_G(NGRID)%RTGV,GRID_G(NGRID)%DYV,DZT  &
+             ,GRID_G(NGRID)%FMAPTI,GRID_G(NGRID)%FMAPV  &
+             ,GRID_G(NGRID)%F23V  &
              ,HW,VCTR2,'T',JDIM)
      ELSEIF(GPNT.EQ.'NPNT')THEN
         CALL GRADYV(m1,m2,m3,ia,iz,jaa,jzz  &
-             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGV(1,1)  &
-             ,GRID_G(NGRID)%RTGT(1,1),GRID_G(NGRID)%DYT(1,1),DZM  &
-             ,GRID_G(NGRID)%FMAPVI(1,1),GRID_G(NGRID)%FMAPT(1,1)  &
-             ,GRID_G(NGRID)%F23T(1,1)  &
+             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGV  &
+             ,GRID_G(NGRID)%RTGT,GRID_G(NGRID)%DYT,DZM  &
+             ,GRID_G(NGRID)%FMAPVI,GRID_G(NGRID)%FMAPT  &
+             ,GRID_G(NGRID)%F23T  &
              ,HT,VCTR2,'W',JDIM)
      ELSEIF(GPNT.EQ.'OPNT')THEN
         CALL GRADYT(m1,m2,m3,ia,iz,jaa,jzz  &
-             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGU(1,1)  &
-             ,GRID_G(NGRID)%RTGM(1,1),GRID_G(NGRID)%DYM(1,1),DZM  &
-             ,GRID_G(NGRID)%FMAPUI(1,1),GRID_G(NGRID)%FMAPM(1,1)  &
-             ,GRID_G(NGRID)%F23M(1,1)  &
+             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGU  &
+             ,GRID_G(NGRID)%RTGM,GRID_G(NGRID)%DYM,DZM  &
+             ,GRID_G(NGRID)%FMAPUI,GRID_G(NGRID)%FMAPM  &
+             ,GRID_G(NGRID)%F23M  &
              ,HT,VCTR2,'W',JDIM)
      ELSEIF(GPNT.EQ.'PPNT')THEN
         CALL GRADYV(m1,m2,m3,ia,iz,jaa,jzz  &
-             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGM(1,1)  &
-             ,GRID_G(NGRID)%RTGU(1,1),GRID_G(NGRID)%DYU(1,1),DZT  &
-             ,GRID_G(NGRID)%FMAPMI(1,1),GRID_G(NGRID)%FMAPU(1,1)  &
-             ,GRID_G(NGRID)%F23U(1,1)  &
+             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGM  &
+             ,GRID_G(NGRID)%RTGU,GRID_G(NGRID)%DYU,DZT  &
+             ,GRID_G(NGRID)%FMAPMI,GRID_G(NGRID)%FMAPU  &
+             ,GRID_G(NGRID)%F23U  &
              ,HW,VCTR2,'T',JDIM)
      ELSEIF(GPNT.EQ.'MPNT')THEN
         CALL GRADYV(m1,m2,m3,ia,iz,jaa,jzz  &
-             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGM(1,1)  &
-             ,GRID_G(NGRID)%RTGU(1,1),GRID_G(NGRID)%DYU(1,1),DZM  &
-             ,GRID_G(NGRID)%FMAPMI(1,1),GRID_G(NGRID)%FMAPU(1,1)  &
-             ,GRID_G(NGRID)%F23U(1,1)  &
+             ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGM  &
+             ,GRID_G(NGRID)%RTGU,GRID_G(NGRID)%DYU,DZM  &
+             ,GRID_G(NGRID)%FMAPMI,GRID_G(NGRID)%FMAPU  &
+             ,GRID_G(NGRID)%F23U  &
              ,HT,VCTR2,'W',JDIM)
      ENDIF
   ELSEIF(DIR.EQ.'ZDIR')THEN
      IF(GPNT.EQ.'UPNT')THEN
         CALL GRADZT(m1,m2,m3,ia,iz,jaa,jzz,VC3DA,VC3DB  &
-             ,GRID_G(NGRID)%RTGU(1,1),DZM)
+             ,GRID_G(NGRID)%RTGU,DZM)
      ELSEIF(GPNT.EQ.'VPNT')THEN
         CALL GRADZT(m1,m2,m3,ia,iz,jaa,jzz,VC3DA,VC3DB  &
-         ,GRID_G(NGRID)%RTGV(1,1),DZM)
+         ,GRID_G(NGRID)%RTGV,DZM)
      ELSEIF(GPNT.EQ.'WPNT')THEN
         CALL GRADZW(m1,m2,m3,ia,iz,jaa,jzz,VC3DA,VC3DB  &
-             ,GRID_G(NGRID)%RTGT(1,1),DZT)
+             ,GRID_G(NGRID)%RTGT,DZT)
      ELSEIF(GPNT.EQ.'TPNT')THEN
         CALL GRADZT(m1,m2,m3,ia,iz,jaa,jzz,VC3DA,VC3DB  &
-             ,GRID_G(NGRID)%RTGT(1,1),DZM)
+             ,GRID_G(NGRID)%RTGT,DZM)
      ELSEIF(GPNT.EQ.'NPNT')THEN
         CALL GRADZW(m1,m2,m3,ia,iz,jaa,jzz,VC3DA,VC3DB  &
-             ,GRID_G(NGRID)%RTGV(1,1),DZT)
+             ,GRID_G(NGRID)%RTGV,DZT)
      ELSEIF(GPNT.EQ.'OPNT')THEN
         CALL GRADZW(m1,m2,m3,ia,iz,jaa,jzz,VC3DA,VC3DB  &
-             ,GRID_G(NGRID)%RTGU(1,1),DZT)
+             ,GRID_G(NGRID)%RTGU,DZT)
      ELSEIF(GPNT.EQ.'PPNT')THEN
         CALL GRADZT(m1,m2,m3,ia,iz,jaa,jzz,VC3DA,VC3DB  &
-             ,GRID_G(NGRID)%RTGM(1,1),DZM)
+             ,GRID_G(NGRID)%RTGM,DZM)
      ELSEIF(GPNT.EQ.'MPNT')THEN
         CALL GRADZW(m1,m2,m3,ia,iz,jaa,jzz,VC3DA,VC3DB  &
-             ,GRID_G(NGRID)%RTGM(1,1),DZT)
+             ,GRID_G(NGRID)%RTGM,DZT)
      ENDIF
   ENDIF
 

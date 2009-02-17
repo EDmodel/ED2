@@ -108,20 +108,26 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
          cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
          cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
          cpatch%bleaf(ico)            = dbh2bl(cpatch%dbh(ico),ipft)
-         if (ipft==1 .or. ipft==5) then   ! Grasses need more plants to start or their
-                                          ! seed mass will never be large enough to reproduce
+         
+         !---------------------------------------------------------------------------------!
+         !    Grasses need more plants to start or their seed mass will never be large     !
+         ! enough to reproduce.                                                            !
+         !---------------------------------------------------------------------------------!
+         select case (ipft)
+         case (1,5)  
             cpatch%nplant(ico)           = 0.6
-         else
+         case default
             cpatch%nplant(ico)           = 0.1
-         endif
+         end select
+
          cpatch%phenology_status(ico) = 0
          cpatch%balive(ico)           = cpatch%bleaf(ico) * ( 1.0 + q(ipft) +  &
                                         qsw(ipft) * cpatch%hite(ico) )
          cpatch%lai(ico)              = cpatch%bleaf(ico) * cpatch%nplant(ico) * SLA(ipft)
          cpatch%bstorage(ico)         = 0.0   
-         csite%plant_ag_biomass(ipa)  = csite%plant_ag_biomass(ipa) +                    &
-               ed_biomass(cpatch%bdead(ico),cpatch%balive(ico), cpatch%bleaf(ico)        &
-                         ,cpatch%pft(ico), cpatch%hite(ico),cpatch%bstorage(ico))        &
+         csite%plant_ag_biomass(ipa)  = csite%plant_ag_biomass(ipa) +                      & 
+               ed_biomass(cpatch%bdead(ico),cpatch%balive(ico), cpatch%bleaf(ico)          & 
+                         ,cpatch%pft(ico), cpatch%hite(ico),cpatch%bstorage(ico))          & 
               * cpatch%nplant(ico)           
          
          ! Initialize cohort-level variables
@@ -138,10 +144,10 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
             cpatch%veg_temp(ico)  = atm_tmp
             cpatch%veg_water(ico) = 0.0
             
-            cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-                 cpatch%nplant(ico),cpatch%pft(ico))
+            cpatch%hcapveg(ico)   = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)       &
+                                                ,cpatch%nplant(ico),cpatch%pft(ico))
             
-            cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * (cpatch%veg_temp(ico)-t3ple)
+            cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
 
          end if
       end do

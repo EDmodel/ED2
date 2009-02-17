@@ -58,8 +58,8 @@ subroutine trans_conv_mflx(icld,iscl,m1,m2,m3,i,j,edt,upmf,sttend)
   if(ierr == 0) then
      
      iconv = 1
-     call get_dn01d(mgmzp,m1,dn01d,basic_g(ngrid)%dn0(1,i,j))
-     call get_se(mgmzp,m1,m2,m3,i,j,scalar_g(iscl,ngrid)%sclp(1,1,1),&
+     call get_dn01d(mgmzp,m1,dn01d,basic_g(ngrid)%dn0(:,i,j))
+     call get_se(mgmzp,m1,m2,m3,i,j,scalar_g(iscl,ngrid)%sclp,&
           se,se_cup)
 
      if(iwet == 0) then

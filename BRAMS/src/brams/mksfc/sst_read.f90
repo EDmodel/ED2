@@ -582,7 +582,7 @@ do ng=1,ngrids
    read(25,*) dummy
    read(25,*) dummy
    read(25,*) dummy
-   call vfirec(25,leaf_g(ng)%seatf(1,1),nnxp(ng)*nnyp(ng),'LIN')
+   call vfirec(25,leaf_g(ng)%seatf,nnxp(ng)*nnyp(ng),'LIN')
    !call ezcntr(leaf_g(ng)%seatf(1,1),nnxp(ng),nnyp(ng))
 
    ! Close the input file

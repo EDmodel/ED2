@@ -189,6 +189,7 @@ subroutine sfcprt(n2,n3,mzg,mzs,npat,leaf,vnam,lprt)
 
 use mem_leaf
 use leaf_coms
+use rconstants, only: wdns
 use therm_lib, only: qtk, qwtk
 type (leaf_vars) :: leaf
 
@@ -301,12 +302,12 @@ do k = k1,k2
          
             if     (vnam == 'soil_water'     ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%soil_water(k,i1,j,ipat)       &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%soil_water(k,i1:i2,j,ipat)       &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'soil_energy'    ) then
                call plin(nc,j,ipat,2,1.e-6            &
-                  ,leaf%soil_energy(k,i1,j,ipat)      &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%soil_energy(k,i1:i2,j,ipat)      &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'soil_temp'      ) then
 
                do i = i1,i2
@@ -318,138 +319,138 @@ do k = k1,k2
                   else
                      nsoil = nint(leaf%soil_text(k,i,j,ipat))
                      call qwtk(leaf%soil_energy(k,i,j,ipat)       &
-                              ,leaf%soil_water (k,i,j,ipat)*1.e3  &
+                              ,leaf%soil_water (k,i,j,ipat)*wdns  &
                               ,slcpd(nsoil),tempkk(i+1-i1),fracliqq(i+1-i1))
                   endif
                enddo
 
                call plin(nc,j,ipat,2,1.               &
-                  ,tempk(1)                           &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,tempk(1:nc)                        &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'soil_text'      ) then
-               call plin(nc,j,ipat,3,1.               &
-                  ,leaf%soil_text(k,i1,j,ipat)        &
-                  ,leaf%patch_area(i1,j,ipat))
+               call plin(nc,j,ipat,3,1.                  &
+                  ,leaf%soil_text(k,i1:i2,j,ipat)        &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'sfcwater_mass'  ) then
-               call plin(nc,j,ipat,3,1.               &
-                  ,leaf%sfcwater_mass(k,i1,j,ipat)    &
-                  ,leaf%patch_area(i1,j,ipat))
+               call plin(nc,j,ipat,3,1.                  &
+                  ,leaf%sfcwater_mass(k,i1:i2,j,ipat)    &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'sfcwater_energy') then
-               call plin(nc,j,ipat,2,1.e-3            &
-                  ,leaf%sfcwater_energy(k,i1,j,ipat)  &
-                  ,leaf%patch_area(i1,j,ipat))
+               call plin(nc,j,ipat,2,1.e-3               &
+                  ,leaf%sfcwater_energy(k,i1:i2,j,ipat)  &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'sfcwater_temp'  ) then
                do i = i1,i2
                   nsoil = nint(leaf%soil_text(k,i,j,ipat))
                   call qwtk(leaf%soil_energy(k,i,j,ipat)       &
-                           ,leaf%soil_water (k,i,j,ipat)*1.e3  &
+                           ,leaf%soil_water (k,i,j,ipat)*wdns  &
                            ,slcpd(nsoil),tempkk(i+1-i1),fracliqq(i+1-i1))
                enddo
                call plin(nc,j,ipat,2,1.               &
-                  ,tempk(1)                           &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,tempk(1:nc)                        &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'sfcwater_depth' ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%sfcwater_depth(k,i1,j,ipat)   &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%sfcwater_depth(k,i1:i2,j,ipat)   &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'ustar'          ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%ustar(i1,j,ipat)              &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%ustar(i1:i2,j,ipat)              &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'tstar'          ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%tstar(i1,j,ipat)              &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%tstar(i1:i2,j,ipat)              &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'rstar'          ) then
                call plin(nc,j,ipat,3,1.e3             &
-                  ,leaf%rstar(i1,j,ipat)              &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%rstar(i1:i2,j,ipat)              &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'veg_fracarea'   ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%veg_fracarea(i1,j,ipat)       &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%veg_fracarea(i1:i2,j,ipat)       &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'veg_lai'        ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%veg_lai(i1,j,ipat)            &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%veg_lai(i1:i2,j,ipat)            &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'veg_tai'        ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%veg_tai(i1,j,ipat)            &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%veg_tai(i1:i2,j,ipat)            &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'veg_rough'      ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%veg_rough(i1,j,ipat)          & 
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%veg_rough(i1:i2,j,ipat)          & 
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'veg_albedo'     ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%veg_albedo(i1,j,ipat)         &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%veg_albedo(i1:i2,j,ipat)         &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'veg_height'     ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%veg_height(i1,j,ipat)         &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%veg_height(i1:i2,j,ipat)         &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'patch_area'     ) then
                write(6,243)j,ipat,(leaf%patch_area(i,j,ipat),i=i1,i2)
             elseif (vnam == 'patch_rough'    ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%patch_rough(i1,j,ipat)        &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%patch_rough(i1:i2,j,ipat)        &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'patch_wetind'   ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%patch_wetind(i1,j,ipat)       &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%patch_wetind(i1:i2,j,ipat)       &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'leaf_class'    ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%leaf_class(i1,j,ipat)         &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%leaf_class(i1:i2,j,ipat)         &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'soil_rough'     ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%soil_rough(i1,j,ipat)         &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%soil_rough(i1:i2,j,ipat)         &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'sfcwater_nlev'  ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%sfcwater_nlev(i1,j,ipat)      &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%sfcwater_nlev(i1:i2,j,ipat)      &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'stom_resist'    ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%stom_resist(i1,j,ipat)        &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%stom_resist(i1:i2,j,ipat)        &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'ground_rsat'    ) then
                call plin(nc,j,ipat,3,1.e3             &
-                  ,leaf%ground_rsat(i1,j,ipat)        &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%ground_rsat(i1:i2,j,ipat)        &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'ground_rvap'    ) then
                call plin(nc,j,ipat,3,1.e3             &
-                  ,leaf%ground_rvap(i1,j,ipat)        &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%ground_rvap(i1:i2,j,ipat)        &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'veg_water'      ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%veg_water(i1,j,ipat)          &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%veg_water(i1:i2,j,ipat)          &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'veg_temp'       ) then
                call plin(nc,j,ipat,2,1.               &
-                  ,leaf%veg_temp(i1,j,ipat)           &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%veg_temp(i1:i2,j,ipat)           &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'can_rvap'       ) then
                call plin(nc,j,ipat,3,1.e3             &
-                  ,leaf%can_rvap(i1,j,ipat)           &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%can_rvap(i1:i2,j,ipat)           &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'can_temp'       ) then
                call plin(nc,j,ipat,2,1.               &
-                  ,leaf%can_temp(i1,j,ipat)           &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%can_temp(i1:i2,j,ipat)           &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'veg_ndvip'      ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%veg_ndvip(i1,j,ipat)          &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%veg_ndvip(i1:i2,j,ipat)          &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'veg_ndvic'      ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%veg_ndvic(i1,j,ipat)          &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%veg_ndvic(i1:i2,j,ipat)          &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'veg_ndvif'      ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%veg_ndvif(i1,j,ipat)          &
-                  ,leaf%patch_area(i1,j,ipat))
+                  ,leaf%veg_ndvif(i1:i2,j,ipat)          &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             endif
 
          enddo
@@ -1757,13 +1758,12 @@ use ref_sounding
 use rconstants
 use mem_turb
 use ref_sounding
-use therm_lib, only: mrsl,virtt
+use therm_lib, only: rehuil,tv2temp
 
 IF(INITIAL.NE.2)THEN
-  call mrsl(nsndg,ps(1),ts(1),vctr5(1))
   do k=1,nsndg
-     vctr1(k) = 100. * rts(k) / vctr5(k)
-  enddo
+     vctr1(k) = 100. *rehuil(ps(k),ts(k),rts(k))
+  end do
   WRITE(M,41)
 41      FORMAT(/,'------------------------------SOUNDING INPUT-------'  &
    ,'---------------------------',//,7X,'PS',9X,'HS',7X,'TS',6X  &
@@ -1777,7 +1777,7 @@ ENDIF
 !
 DO K=1,NNZP(1)
   VCTR1(K)=P00*(PI01DN(K,1)/CP)**CPOR
-  VCTR2(K)=virtt(TH01DN(K,1),RT01DN(K,1))
+  VCTR2(K)=tv2temp(TH01DN(K,1),RT01DN(K,1))
 ENDDO
 WRITE(M,310)IREF,JREF,TOPREF,(ZTN(K,1),U01DN(K,1),V01DN(K,1)  &
   ,DN01DN(K,1),PI01DN(K,1),VCTR1(K),TH01DN(K,1),VCTR2(K)  &
@@ -1830,8 +1830,7 @@ use mem_basic
 use mem_grid
 
 call newgrid(1)
-CALL UWC(NZP,NXP,NYP,basic_g(ngrid)%UP(1,1,1)  &
-   ,basic_g(ngrid)%WP(1,1,1),grid_g(ngrid)%DXT(1,1))
+CALL UWC(NZP,NXP,NYP,basic_g(ngrid)%UP,basic_g(ngrid)%WP,grid_g(ngrid)%DXT)
 !
 RETURN
 END

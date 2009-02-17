@@ -47,7 +47,7 @@ subroutine node_sendst(isflag)
 
   do nm=1,nmachs
      if (iget_paths(itype,ngrid,nm).ne.0) then
-        call MPI_Irecv(node_buffs(nm)%lbc_recv_buff(1),               &
+        call MPI_Irecv(node_buffs(nm)%lbc_recv_buff,               &
              node_buffs(nm)%nrecv*f_ndmd_size,MPI_PACKED,             &
              machs(nm),10000+isflag,MPI_COMM_WORLD,irecv_req(nm),ierr )
      endif
@@ -67,54 +67,54 @@ subroutine node_sendst(isflag)
         j2=ipaths(4,itype,ngrid,nm)
 
        ipos = 1
-        call MPI_Pack(i1,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(i1,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-        call MPI_Pack(i2,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(i2,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-        call MPI_Pack(j1,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(j1,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-        call MPI_Pack(j2,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(j2,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-        call MPI_Pack(mynum,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(mynum,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
 
         if(isflag == 2) then
-           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%up(1,1,1)  &
-                ,scratch%scr1(1),i1-i0,i2-i0,j1-j0,j2-j0,mtp)
-           call MPI_Pack(scratch%scr1(1),mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff(1),&
+           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%up  &
+                ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+           call MPI_Pack(scratch%scr1,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff,&
                 node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
         elseif (isflag == 3) then
-           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%vp(1,1,1)  &
-                ,scratch%scr1(1),i1-i0,i2-i0,j1-j0,j2-j0,mtp)
-           call MPI_Pack(scratch%scr1(1),mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff(1),&
+           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%vp  &
+                ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+           call MPI_Pack(scratch%scr1,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff,&
                       node_buffs(nm)%nsend,ipos,MPI_COMM_WORLD,ierr)
         elseif (isflag == 4) then
-           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%pp(1,1,1)  &
-                ,scratch%scr1(1),i1-i0,i2-i0,j1-j0,j2-j0,mtp)
-           call MPI_Pack(scratch%scr1(1),mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff(1),&
+           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%pp  &
+                ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+           call MPI_Pack(scratch%scr1,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff,&
                       node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
         elseif(isflag == 5) then
-           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%up(1,1,1)  &
-                ,scratch%scr1(1),i1-i0,i2-i0,j1-j0,j2-j0,mtp)
-           call MPI_Pack(scratch%scr1(1),mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff(1),&
+           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%up  &
+                ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+           call MPI_Pack(scratch%scr1,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff,&
                       node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%vp(1,1,1)  &
-                ,scratch%scr1(1),i1-i0,i2-i0,j1-j0,j2-j0,mtp)
-           call MPI_Pack(scratch%scr1(1),mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff(1),&
+           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%vp  &
+                ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+           call MPI_Pack(scratch%scr1,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff,&
                 node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
         elseif (isflag == 6) then
-           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%wp(1,1,1)  &
-                ,scratch%scr1(1),i1-i0,i2-i0,j1-j0,j2-j0,mtp)
-           call MPI_Pack(scratch%scr1(1),mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff(1),&
+           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%wp  &
+                ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+           call MPI_Pack(scratch%scr1,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff,&
                 node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%pp(1,1,1)  &
-                ,scratch%scr1(1),i1-i0,i2-i0,j1-j0,j2-j0,mtp)
-           call MPI_Pack(scratch%scr1(1),mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff(1),&
+           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%pp  &
+                ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+           call MPI_Pack(scratch%scr1,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff,&
                 node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
 
         endif
 
-        call MPI_Isend(node_buffs(nm)%lbc_send_buff(1),  &
+        call MPI_Isend(node_buffs(nm)%lbc_send_buff,  &
              ipos-1,  &
              MPI_PACKED,ipaths(5,itype,ngrid,nm),10000+isflag,      &
              MPI_COMM_WORLD,isend_req(nm),ierr)
@@ -179,15 +179,15 @@ subroutine node_getst(isflag)
 
      if (iget_paths(itype,ngrid,nm).ne.0) then
         ipos = 1
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
                         i1,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
                         i2,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
                         j1,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
                         j2,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
+        call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
                         node_src,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
 
         nptsxy=(i2-i1+1)*(j2-j1+1)
@@ -195,38 +195,38 @@ subroutine node_getst(isflag)
         mtp=nzp * nptsxy
 
         if(isflag == 2) then
-           call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
-             scratch%scr1(1),mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
-           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%up(1,1,1)  &
-               ,scratch%scr1(1),i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+           call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
+             scratch%scr1,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%up  &
+               ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
         elseif(isflag == 3) then
-           call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
-             scratch%scr1(1),mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
-           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%vp(1,1,1)  &
-               ,scratch%scr1(1),i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+           call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
+             scratch%scr1,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%vp  &
+               ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
         elseif(isflag == 4) then
-           call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
-             scratch%scr1(1),mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
-           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%pp(1,1,1)  &
-               ,scratch%scr1(1),i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+           call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
+             scratch%scr1,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%pp  &
+               ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
         elseif(isflag == 5) then
-           call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
-             scratch%scr1(1),mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
-           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%up(1,1,1)  &
-               ,scratch%scr1(1),i1-i0,i2-i0,j1-j0,j2-j0,mtc)
-           call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
-             scratch%scr1(1),mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
-           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%vp(1,1,1)  &
-               ,scratch%scr1(1),i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+           call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
+             scratch%scr1,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%up  &
+               ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+           call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
+             scratch%scr1,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%vp  &
+               ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
         elseif(isflag == 6) then
-           call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
-             scratch%scr1(1),mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
-           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%wp(1,1,1)  &
-               ,scratch%scr1(1),i1-i0,i2-i0,j1-j0,j2-j0,mtc)
-           call MPI_Unpack(node_buffs(nm)%lbc_recv_buff(1),node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
-             scratch%scr1(1),mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
-           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%pp(1,1,1)  &
-               ,scratch%scr1(1),i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+           call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
+             scratch%scr1,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%wp  &
+               ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+           call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
+             scratch%scr1,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%pp  &
+               ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
         endif
 
      endif

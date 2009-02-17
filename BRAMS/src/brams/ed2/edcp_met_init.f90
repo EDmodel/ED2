@@ -3,13 +3,13 @@ subroutine ed_init_coup_atm
   
   use misc_coms,     only: ied_init_mode,runtype
   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype,edgrid_g
-  use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr
-  use rconstants,    only: alli1000, cliq1000, cice1000, t3ple
+  use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr,dslz
+  use rconstants,    only: tsupercool, cliqvlme, cicevlme, t3ple
   use grid_coms,      only: nzs, nzg, ngrids
   use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
   use pft_coms,only : sla
-  use ed_therm_lib,only : update_veg_energy_ct,ed_grndvap
+  use ed_therm_lib,only : calc_hcapveg,ed_grndvap
 
   implicit none
 
@@ -22,10 +22,11 @@ subroutine ed_init_coup_atm
   integer :: nsoil
   integer :: nls
   integer :: nlsw1
-  integer :: ncohorts
-  real    :: poly_lai,p_lai
+  integer :: ncohorts, npatches
+  real    :: site_area_i, poly_area_i
+  real    :: poly_lai,poly_nplant
   integer :: ix,iy
-  real    :: hcapveg
+  real    :: surface_temp,surface_fliq
   integer, parameter :: harvard_override = 0
   include 'mpif.h'
   integer :: ping,ierr
@@ -94,12 +95,12 @@ subroutine ed_init_coup_atm
                  ! Initialize vegetation properties.
                  ! For now, set heat capacity for stability.
 
-                 cpatch%veg_temp(ico)  = cpoly%met(isi)%atm_tmp
-                 cpatch%veg_water(ico) = 0.0
-
-                 call update_veg_energy_ct(cpatch,ico)
-
-              enddo
+                 cpatch%veg_temp(ico)   = cpoly%met(isi)%atm_tmp
+                 cpatch%veg_water(ico)  = 0.0
+                 cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico) &
+                                                      ,cpatch%nplant(ico),cpatch%pft(ico))
+                 cpatch%veg_energy(ico) = cpatch%hcapveg(ico)*cpatch%veg_temp(ico)
+              end do
            
            enddo
            
@@ -144,23 +145,26 @@ subroutine ed_init_coup_atm
                     do k = 1, nzg
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 1.0
-                       csite%soil_water(k,ipa) = max(soil(nsoil)%soilcp,   &
-                            slmstr(k) * soil(nsoil)%slmsts)
-                       csite%soil_energy(k,ipa) = (csite%soil_tempk(k,ipa) - t3ple) *   &
-                            (soil(nsoil)%slcpd + csite%soil_water(k,ipa) *   &
-                            cliq1000) + csite%soil_water(k,ipa) * alli1000
-                    enddo
+                       csite%soil_water(k,ipa) = max( soil(nsoil)%soilcp                   &
+                                                    , slmstr(k) * soil(nsoil)%slmsts)
+                       csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
+                                                * csite%soil_tempk(k,ipa)                  &
+                                                + sngl(csite%soil_water(k,ipa)) * cliqvlme &
+                                                * (csite%soil_tempk(k,ipa) - tsupercool)
+                    end do
                  else
                     do k = 1, nzg
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 0.0
-                       csite%soil_water(k,ipa) = max(soil(nsoil)%soilcp,             &
-                            slmstr(k) * soil(nsoil)%slmsts)
-                       csite%soil_energy(k,ipa) = (csite%soil_tempk(k,ipa) - t3ple) *   &
-                            (soil(nsoil)%slcpd + csite%soil_water(k,ipa) * cice1000)
-                    enddo
-                 endif
-              
+                       csite%soil_water(k,ipa) = max( soil(nsoil)%soilcp                   &
+                                                    , slmstr(k) * soil(nsoil)%slmsts)
+                       csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
+                                                * csite%soil_tempk(k,ipa)                  &
+                                                + sngl(csite%soil_water(k,ipa))            &
+                                                * cicevlme * csite%soil_tempk(k,ipa)
+                    end do
+                 end if
+
                  nls   = csite%nlev_sfcwater(ipa)
                  nlsw1 = max(nls,1)
                  
@@ -172,7 +176,9 @@ subroutine ed_init_coup_atm
                       cpoly%met(isi)%rhos,  &
                       csite%can_shv(ipa),  &
                       csite%ground_shv(ipa),  &
-                      csite%surface_ssh(ipa))
+                      csite%surface_ssh(ipa), &
+                      surface_temp,&
+                      surface_fliq)
               endif
               
               ! Compute patch-level LAI, vegetation height, and roughness
@@ -191,48 +197,44 @@ subroutine ed_init_coup_atm
      enddo
      
      call update_polygon_derived_props_ar(cgrid)
-     
-     ! Energy needs to be done after LAI and Hite are loaded
-     call initialize_vegetation_energy(cgrid)
 
 
      call fuse_patches_ar(cgrid)
 
      do ipy = 1,cgrid%npolygons
-        
-        ncohorts = 0
-        poly_lai = 0.0
-        
+        ncohorts     = 0
+        npatches     = 0
+        poly_lai     = 0.0
+        poly_nplant  = 0.0
+
         cpoly => cgrid%polygon(ipy)
-        
+        poly_area_i = 1./sum(cpoly%area(:))
+
         do isi = 1,cpoly%nsites
-           
+
            csite => cpoly%site(isi)
-           
+           site_area_i = 1./sum(csite%area(:))
            do ipa = 1,csite%npatches
-              
+              npatches = npatches + 1
               cpatch => csite%patch(ipa)
 
               call fuse_cohorts_ar(csite,ipa,cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
-              
+
               do ico = 1,cpatch%ncohorts
                  ncohorts=ncohorts+1
-                 poly_lai = poly_lai + cpatch%lai(ico) * csite%area(ipa)*cpoly%area(isi)
-              enddo
-              
-           enddo
-           
-        enddo
-        write(*,'(2(a,1x,i4,1x),2(a,1x,f9.4,1x),a,1x,f5.2,1x,a,1x,i4)')   &
-            'Grid:',igr,'Poly:',ipy,'Lon:',cgrid%lon(ipy),'Lat: ',cgrid%lat(ipy),'Avg. LAI:',poly_lai,'NCohorts:',ncohorts
-
-     enddo
-
-
-  enddo
-
-  ! Energy needs to be done after LAI and Hite are loaded
-  call initialize_vegetation_energy(cgrid)
+                 poly_lai    = poly_lai + cpatch%lai(ico) * csite%area(ipa)                &
+                                        * cpoly%area(isi) * site_area_i * poly_area_i
+                 poly_nplant = poly_nplant + cpatch%nplant(ico) * csite%area(ipa)          &
+                                           * cpoly%area(isi) * site_area_i * poly_area_i
+              end do
+           end do
+        end do
+        write(unit=*,fmt='(2(a,1x,i4,1x),2(a,1x,f9.4,1x),2(a,1x,f7.2,1x),2(a,1x,i4,1x))')  &
+            'Grid:',igr,'Poly:',ipy,'Lon:',cgrid%lon(ipy),'Lat: ',cgrid%lat(ipy)           &
+           ,'Nplants:',poly_nplant,'Avg. LAI:',poly_lai                                    &
+           ,'NPatches:',npatches,'NCohorts:',ncohorts
+     end do
+  end do
 
   return
 end subroutine ed_init_coup_atm
@@ -465,7 +467,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
 
   use ed_state_vars, only: edtype, polygontype, sitetype, patchtype
   use soil_coms, only: soilstate_db, soil,slz
-  use rconstants, only: alli1000, cliq1000, cice1000, t3ple
+  use rconstants, only: tsupercool, cliqvlme, cicevlme, t3ple
   use grid_coms, only: nzg, ngrids
   use ed_therm_lib,only:ed_grndvap
   
@@ -495,6 +497,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
   real :: tmp2
   real :: soilw1
   real :: soilw2
+  real :: surface_temp, surface_fliq
   logical :: l1
   integer :: ip
   integer :: ipy, isi, ipa, ico !Counters for all structures
@@ -564,23 +567,25 @@ subroutine read_soil_moist_temp_ar(cgrid)
 
                           if(abs(slz(k)) < 0.1)then
                              csite%soil_tempk(k,ipa) = tmp1
-                             soil_tempaux = tmp1 - t3ple
-                             csite%soil_water(k,ipa) = max(soil(ntext)%soilcp,   &
-                                  soilw1 * soil(ntext)%slmsts)
+                             csite%soil_water(k,ipa) = max( soil(ntext)%soilcp             &
+                                                          , soilw1 * soil(ntext)%slmsts)
                           else
                              csite%soil_tempk(k,ipa) = tmp2
-                             soil_tempaux = tmp2 - t3ple
-                             csite%soil_water(k,ipa) = max(soil(ntext)%soilcp,   &
-                                  soilw2 * soil(ntext)%slmsts)
+                             csite%soil_water(k,ipa) = max( soil(ntext)%soilcp             &
+                                                          , soilw2 * soil(ntext)%slmsts)
                           endif
-                          if(soil_tempaux > 0.0)then
-                             csite%soil_energy(k,ipa) = soil_tempaux * (soil(ntext)%slcpd   &
-                                  + csite%soil_water(k,ipa) * cliq1000) +   &
-                                    csite%soil_water(k,ipa) * alli1000
+                          if (csite%soil_tempk(k,ipa) > t3ple) then
+                             csite%soil_energy(k,ipa) = soil(ntext)%slcpd                  &
+                                                      * csite%soil_tempk(k,ipa)            &
+                                                      + sngl(csite%soil_water(k,ipa))      &
+                                                      * cliqvlme *(csite%soil_tempk(k,ipa) &
+                                                                 - tsupercool)
                              csite%soil_fracliq(k,ipa) = 1.0
                           else
-                             csite%soil_energy(k,ipa) = soil_tempaux * (soil(ntext)%slcpd   &
-                                  + csite%soil_water(k,ipa) * cice1000)
+                             csite%soil_energy(k,ipa) = soil(ntext)%slcpd                  &
+                                                      * csite%soil_tempk(k,ipa)            &
+                                                      + sngl(csite%soil_water(k,ipa))      &
+                                                      * cicevlme*csite%soil_tempk(k,ipa)
                              csite%soil_fracliq(k,ipa) = 0.0
                           end if
                        end do
@@ -597,7 +602,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
                        nls   = csite%nlev_sfcwater(ipa)
                        nlsw1 = max(nls,1)
                  
-                       call ed_grndvap(nls,                                &
+                       call ed_grndvap(nls,                    &
                             csite%ntext_soil       (nzg,ipa),  &
                             csite%soil_water       (nzg,ipa),  &
                             csite%soil_energy      (nzg,ipa),  &
@@ -605,7 +610,9 @@ subroutine read_soil_moist_temp_ar(cgrid)
                             cpoly%met(isi)%rhos,  &
                             csite%can_shv(ipa),  &
                             csite%ground_shv(ipa),  &
-                            csite%surface_ssh(ipa))
+                            csite%surface_ssh(ipa), &
+                            surface_temp, &
+                            surface_fliq )
 
                     end do patchloop
                  end do siteloop
@@ -655,54 +662,5 @@ subroutine update_polygon_derived_props_ar(cgrid)
 
   return
 end subroutine update_polygon_derived_props_ar
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!    This subroutine simply assigns the initial value for internal energy. The only reason !
-! to do it separatedly is that we first load atmospheric-based variables, then we assign   !
-! LAI and height. This should be called just at the initialization, during the run energy  !
-! is what defines the temperature, not the other way.                                      !
-!------------------------------------------------------------------------------------------!
-subroutine initialize_vegetation_energy(cgrid)
-   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype
-   use canopy_air_coms, only: hcapveg_ref, heathite_min
-   use ed_therm_lib,only:calc_hcapveg
-   use consts_coms, only: t3ple
-   implicit none 
-   !----- Argument ------------------------------------------------------------------------!
-   type(edtype), target :: cgrid
-   !----- Local variables -----------------------------------------------------------------!
-   integer :: ipy,isi,ipa,ico
-   type(polygontype), pointer :: cpoly
-   type(sitetype)   , pointer :: csite
-   type(patchtype)  , pointer :: cpatch
-   real                       :: hcapveg
-   !---------------------------------------------------------------------------------------!
-
-   do ipy=1,cgrid%npolygons
-      cpoly => cgrid%polygon(ipy)
-      do isi=1,cpoly%nsites
-         csite => cpoly%site(isi)
-         do ipa=1,csite%npatches
-            cpatch => csite%patch(ipa)
-            do ico=1,cpatch%ncohorts
-               
-               hcapveg = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-                    cpatch%nplant(ico),cpatch%pft(ico))
-
-               cpatch%veg_energy(ico) = hcapveg * (cpatch%veg_temp(ico)-t3ple)
-            end do
-         end do
-      end do
-   end do
-
-   return
-end subroutine initialize_vegetation_energy
 !==========================================================================================!
 !==========================================================================================!

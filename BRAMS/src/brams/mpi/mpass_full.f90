@@ -81,49 +81,49 @@ subroutine master_sendinit()
                !---------------------------------------------------------------------------!
                select case(vtab_r(nv,ng)%idim_type)
                case (2) !----- 2D variables (nxp,nyp) -------------------------------------!
-                  call mk_2_buff(vtab_r(nv,ng)%var_p ,scratch%scr2(1),nnxp(ng),nnyp(ng)    &
+                  call mk_2_buff(vtab_r(nv,ng)%var_p ,scratch%scr2,nnxp(ng),nnyp(ng)       &
                                 ,mxp,myp,nxbeg(nm,ng),nxend(nm,ng),nybeg(nm,ng)            &
                                 ,nyend(nm,ng))
                   npts=mxyp
 
                case (3) !----- 3D variables (nzp,nxp,nyp) ---------------------------------!
-                  call mk_3_buff(vtab_r(nv,ng)%var_p,scratch%scr2(1),nnzp(ng),nnxp(ng)     &
+                  call mk_3_buff(vtab_r(nv,ng)%var_p,scratch%scr2,nnzp(ng),nnxp(ng)        &
                                 ,nnyp(ng),mxp,myp,nxbeg(nm,ng),nxend(nm,ng),nybeg(nm,ng)   &
                                 ,nyend(nm,ng))
                   npts=mxyzp
 
                case (4) !----- 4D variables (nzg,nxp,nyp,npatch) --------------------------!
-                  call mk_4_buff(vtab_r(nv,ng)%var_p,scratch%scr2(1),nzg,nnxp(ng),nnyp(ng) &
+                  call mk_4_buff(vtab_r(nv,ng)%var_p,scratch%scr2,nzg,nnxp(ng),nnyp(ng)    &
                                 ,npatch,mxp,myp,nxbeg(nm,ng),nxend(nm,ng),nybeg(nm,ng)     &
                                 ,nyend(nm,ng))
                   npts=mxyp*nzg*npatch
 
                case (5) !----- 4D variables (nzs,nxp,nyp,npatch) --------------------------!
-                  call mk_4_buff(vtab_r(nv,ng)%var_p,scratch%scr2(1),nzs,nnxp(ng),nnyp(ng) &
+                  call mk_4_buff(vtab_r(nv,ng)%var_p,scratch%scr2,nzs,nnxp(ng),nnyp(ng)    &
                                 ,npatch,mxp,myp,nxbeg(nm,ng),nxend(nm,ng),nybeg(nm,ng)     &
                                 ,nyend(nm,ng))
                   npts=mxyp*nzs*npatch
 
                case (6) !----- 3D variables (nxp,nyp,npatch) ------------------------------!
-                  call mk_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr2(1),nnxp(ng),nnyp(ng)    &
+                  call mk_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr2,nnxp(ng),nnyp(ng)       &
                                  ,npatch,mxp,myp,nxbeg(nm,ng),nxend(nm,ng),nybeg(nm,ng)    &
                                  ,nyend(nm,ng))
                   npts=mxyp*npatch
 
                case (7) !----- 3D variables (nxp,nyp,nwave) -------------------------------!
-                  call mk_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr2(1),nnxp(ng),nnyp(ng)    &
+                  call mk_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr2,nnxp(ng),nnyp(ng)       &
                                     ,nwave,mxp,myp,nxbeg(nm,ng),nxend(nm,ng),nybeg(nm,ng)  &
                                     ,nyend(nm,ng))
                   npts=mxyp*nwave
 
                case (8) !----- 4D variables (nzp,nxp,nyp,nclouds) -------------------------!
-                  call mk_4_buff(vtab_r(nv,ng)%var_p,scratch%scr2(1),nnzp(ng),nnxp(ng)     &
+                  call mk_4_buff(vtab_r(nv,ng)%var_p,scratch%scr2,nnzp(ng),nnxp(ng)        &
                                 ,nnyp(ng),nclouds,mxp,myp,nxbeg(nm,ng),nxend(nm,ng)        &
                                 ,nybeg(nm,ng),nyend(nm,ng))
                   npts=mxyzp*nclouds
 
                case (9) !----- 3D variables (nxp,nyp,nclouds) -----------------------------!
-                  call mk_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr2(1),nnxp(ng),nnyp(ng)    &
+                  call mk_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr2,nnxp(ng),nnyp(ng)       &
                                  ,nclouds,mxp,myp,nxbeg(nm,ng),nxend(nm,ng),nybeg(nm,ng)   &
                                  ,nyend(nm,ng))
                   npts=mxyp*nclouds
@@ -131,7 +131,7 @@ subroutine master_sendinit()
                end select
                
                !----- Sending the buffer to the node --------------------------------------!
-               call MPI_Send(scratch%scr2(1),npts,MPI_REAL,machnum(nm),110000+ng*1000+nv   &
+               call MPI_Send(scratch%scr2,npts,MPI_REAL,machnum(nm),110000+ng*1000+nv      &
                             ,MPI_COMM_WORLD,ierr)
             end if
          end do varloop
@@ -445,8 +445,8 @@ subroutine master_getall()
          jt2       = nyendc(nm,ng)
          
          !----- Receiving the data in the scratch array. ----------------------------------!
-         call MPI_Recv(scratch%scr1(1),npts,MPI_REAL,nm,         &
-                       220000+nm*100+msiii,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
+         call MPI_Recv(scratch%scr1,npts,MPI_REAL,nm                                       &
+                      ,220000+nm*100+msiii,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
          if(iand(ibcflg(nm,ng),1) /= 0) il1 = il1 - 1
          if(iand(ibcflg(nm,ng),2) /= 0) ir2 = ir2 + 1
          if(iand(ibcflg(nm,ng),4) /= 0) jb1 = jb1 - 1
@@ -463,35 +463,35 @@ subroutine master_getall()
          !---------------------------------------------------------------------------------!
          select case (idim_type)
          case (2) !----- 2D variables (nxp,nyp) -------------------------------------------!
-            call ex_2_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nnxp(ng),nnyp(ng),mxp,myp   &
+            call ex_2_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnxp(ng),nnyp(ng),mxp,myp      &
                           ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (3) !----- 3D variables (nzp,nxp,nyp) ---------------------------------------!
-            call ex_3_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nnzp(ng),nnxp(ng),nnyp(ng)  &
+            call ex_3_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnzp(ng),nnxp(ng),nnyp(ng)     &
                           ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (4) !----- 4D variables (nzg,nxp,nyp,npatch) --------------------------------!
-            call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nzg,nnxp(ng),nnyp(ng)       &
+            call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nzg,nnxp(ng),nnyp(ng)          &
                           ,npatch,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (5) !----- 4D variables (nzs,nxp,nyp,npatch) --------------------------------!
-            call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nzs,nnxp(ng),nnyp(ng)       &
+            call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nzs,nnxp(ng),nnyp(ng)          &
                           ,npatch,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (6) !----- 3D variables (nxp,nyp,npatch) ------------------------------------!
-            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nnxp(ng),nnyp(ng),npatch   &
+            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnxp(ng),nnyp(ng),npatch      &
                            ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (7) !----- 3D variables (nxp,nyp,nwave) -------------------------------------!
-            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nnxp(ng),nnyp(ng),nwave    &
+            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnxp(ng),nnyp(ng),nwave       &
                            ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (8) !----- 4D variables (nzp,nxp,nyp,nclouds) -------------------------------!
-            call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nnzp(ng),nnxp(ng),nnyp(ng)  &
+            call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnzp(ng),nnxp(ng),nnyp(ng)     &
                           ,nclouds,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          case (9) !----- 3D variables (nxp,nyp,nclouds) -----------------------------------!
-            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1(1),nnxp(ng),nnyp(ng),nclouds  &
+            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnxp(ng),nnyp(ng),nclouds     &
                            ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
 
          end select
@@ -605,7 +605,7 @@ subroutine ex_4_buff(mydata,buff,nz,nx,ny,ne,mx,my,ioff,joff,ibeg,iend,jbeg,jend
    real, dimension(nz,nx,ny,ne), intent(inout) :: mydata
    !---------------------------------------------------------------------------------------!
 
-   mydata(1:nz,ibeg+ioff:iend+ioff,jbeg+joff:jend+joff,1:ne) =                                  &
+   mydata(1:nz,ibeg+ioff:iend+ioff,jbeg+joff:jend+joff,1:ne) =                             &
                                                         buff(1:nz,ibeg:iend,jbeg:jend,1:ne)
 
    return
