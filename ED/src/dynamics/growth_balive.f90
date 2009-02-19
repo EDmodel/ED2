@@ -422,7 +422,7 @@ subroutine alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci, carbon_balance,
   cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)                   &
                                     ,cpatch%nplant(ico),cpatch%pft(ico))
   call update_veg_energy_cweh(cpatch%veg_energy(ico),cpatch%veg_temp(ico)                  &
-                             ,old_hcapveg,cpatch%hcapveg(ico))
+                             ,cpatch%veg_water(ico),old_hcapveg,cpatch%hcapveg(ico))
   !----------------------------------------------------------------------------------------!
   
 
