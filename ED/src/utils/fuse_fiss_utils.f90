@@ -618,7 +618,7 @@ module fuse_fiss_utils_ar
                cpatch%bdead(ico)  = dbh2bd(cpatch%dbh(ico),cpatch%hite(ico)                &
                                           ,cpatch%pft(ico))
 
-               cpatch%dbh(inew)   = 2.0*cpatch%bdead(inew)-cpatch%bdead(ico)
+               cpatch%dbh(inew)   = 2.0*cpatch%dbh(inew)-cpatch%dbh(ico)
                cpatch%hite(inew)  = dbh2h(cpatch%pft(inew),cpatch%dbh(inew))
                cpatch%bdead(inew) = dbh2bd(cpatch%dbh(inew),cpatch%hite(inew)              &
                                           ,cpatch%pft(inew))

@@ -272,11 +272,11 @@ MOD_EXT=mod
 #    anything for the debugger. Use this only if you really don't want to deal with idb    #
 #    or if you have a good idea of which problem you are dealing with.                     #
 #------------------------------------------------------------------------------------------#
-USE_INTERF=1
-F_OPTS= -FR -O2 -recursive -Vaxlib -check all -fpe0 -ftz  -traceback -ftrapuv
-C_OPTS= -O2 -DLITTLE -traceback
-LOADER_OPTS= -FR -O2 -Vaxlib  -check all -fpe0 -ftz -traceback -ftrapuv
-C_LOADER_OPTS=-v -traceback
+#USE_INTERF=1
+#F_OPTS= -FR -O2 -recursive -Vaxlib -check all -fpe0 -ftz  -traceback -ftrapuv
+#C_OPTS= -O2 -DLITTLE -traceback
+#LOADER_OPTS= -FR -O2 -Vaxlib  -check all -fpe0 -ftz -traceback -ftrapuv
+#C_LOADER_OPTS=-v -traceback
 #------------------------------------------------------------------------------------------#
 
 
@@ -286,11 +286,11 @@ C_LOADER_OPTS=-v -traceback
 #           problems, which means that this is an option suitable for end users, not de-   #
 #           velopers.                                                                      #
 #------------------------------------------------------------------------------------------#
-#USE_INTERF=1
-#F_OPTS= -FR -O2 -recursive -Vaxlib -traceback
-#C_OPTS= -O2 -DLITTLE -traceback
-#LOADER_OPTS= -FR -O2 -Vaxlib  -traceback
-#C_LOADER_OPTS=-v -traceback
+USE_INTERF=1
+F_OPTS= -FR -O3 -recursive -Vaxlib -traceback
+C_OPTS= -O3 -DLITTLE -traceback
+LOADER_OPTS= -FR -O3 -Vaxlib  -traceback
+C_LOADER_OPTS=-v -traceback
 #------------------------------------------------------------------------------------------#
 
 ############################################################################################
