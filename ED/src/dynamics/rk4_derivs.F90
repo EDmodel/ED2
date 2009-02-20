@@ -1006,14 +1006,14 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          !------  Calculate leaf-level CO2 flux -------------------------------------------!
          leaf_flux = cpatch%gpp(ico) - cpatch%leaf_respiration(ico)
          
+         !------ Update CO2 flux from vegetation to canopy air space. ---------------------!
+         cflxvc_tot = cflxvc_tot - leaf_flux
+         
          !---------------------------------------------------------------------------------!
          !     If there is more leaf water (kg/m² leaf) than this threshold then no more   !
          ! water may be allowed to collect on the leaf.                                    !
          !---------------------------------------------------------------------------------!
          max_leaf_water = leaf_h2o_thick*cpatch%lai(ico)
-         
-         !------ Update CO2 flux from vegetation to canopy air space. ---------------------!
-         cflxvc_tot = cflxvc_tot - leaf_flux
          
          !------ Calculate fraction of leaves covered with water. -------------------------!
          if(initp%veg_water(ico) > 1.0e-12)then
@@ -1046,44 +1046,10 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
             cpatch%Psi_closed(ico) = c3 / (cpatch%rb(ico) + cpatch%rsw_closed(ico))
 
 
-
-            if (cpatch%A_open(ico) >= cpatch%A_closed(ico)  .and.                          &
-                cpatch%par_v(ico)  >= cpatch%lai(ico)*1.e-3       ) then
-               !---------------------------------------------------------------------------!
-               !    Computing the transpiration, now updating water_demand and             !
-               ! water_supply whenever transpiration is computed. This is essentially do-  !
-               ! ing what used to be done in the past.                                     !
-               !---------------------------------------------------------------------------!
-               !----- Demand for water ----------------------------------------------------!
-               water_demand = cpatch%Psi_open(ico)
-
-               !----- Supply of water -----------------------------------------------------!
-               water_supply = cpatch%nplant(ico) * water_conductance(ipft)*wdnsi * q(ipft) &
-                            * initp%available_liquid_water(kroot) * cpatch%balive(ico)     &
-                            / (1.0 + q(ipft) + cpatch%hite(ico) * qsw(ipft))
-
-               !----- Weighting between open/closed stomata -------------------------------!
-               if (water_supply + water_demand > 1.e30) then
-                  cpatch%fsw(ico) = water_supply / (water_supply + water_demand)
-               else
-                  cpatch%fsw(ico) = 0.
-               end if
-               !----- Account for nitrogen limitation -------------------------------------!
-               cpatch%fs_open(ico) = cpatch%fsw(ico) * cpatch%fsn(ico)
-            else
-               !---------------------------------------------------------------------------!
-               !      Photorespiration can become important at high temperatures.  If so,  !
-               ! close down the stomata. Also, if itis night time, close the stomata. The  !
-               ! latter statement may be false if we include CAM plants in this model      !
-               ! someday...                                                                !
-               !---------------------------------------------------------------------------!
-               cpatch%fs_open(ico) = 0.0
-            end if
-
             if(initp%available_liquid_water(kroot) > 0.0) then
                transp = cpatch%fs_open(ico) * cpatch%Psi_open(ico)                         &
                       + (1.0 - cpatch%fs_open(ico)) * cpatch%Psi_closed(ico)
-            else
+           else
               transp = 0.0
             end if
             qtransp = transp * alvl
@@ -1125,8 +1091,11 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          !  wflxvc accounts for evaporation and dew formation.  If the leaf has more water !
          ! than the carrying capacity, then it must flux all precipitation and dew. The    !
          ! leaf water may evaporate in every condition.                                    !
+         !                                                                                 !
+         !    Following Ryan's suggestion, switched the initp%veg_water in the condition   !
+         ! by cpatch%veg_water.                                                            !
          !---------------------------------------------------------------------------------!
-         if (initp%veg_water(ico) >= max_leaf_water) then
+         if (cpatch%veg_water(ico) >= max_leaf_water) then
             !------------------------------------------------------------------------------!
             ! Case 1: Leaf has no space for rain. All rain/snow falls with the same        !
             !         density it fell. Dew and frost and old precipitation that were       !

@@ -56,7 +56,7 @@ subroutine h5_output(vtype)
   character(len=25) :: subaname
   character(len=64) :: varn
   character(len=1)  :: vnam
-  character(len=10) :: c0
+  character(len=15) :: c0
   character(len=64),dimension(3) :: metadata
   logical exans
 
@@ -656,7 +656,7 @@ subroutine h5_output(vtype)
      end select
      
      if (mynum.eq.nnodetot .and. new_file) then
-        write(c0,'(F10.0)') time
+        write(c0,'(f15.0)') sngl(time)
         write(*,"(/,a)") " === "//trim(adjustl(subaname))//" at Sim time "//trim(adjustl(c0))//" ==="
 !        write(*,"(a,/)") " === wrote file "//&
 !             &trim(adjustl(anamel))//" ==="

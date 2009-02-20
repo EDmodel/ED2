@@ -60,15 +60,34 @@ contains
    !                                                                                       !
    !    The "cweh" mean "consistent water&energy&hcap" assumption                          !
    !---------------------------------------------------------------------------------------!
-   subroutine update_veg_energy_cweh(veg_energy,veg_temp,old_hcapveg,new_hcapveg)     
+   subroutine update_veg_energy_cweh(veg_energy,veg_temp,veg_water,old_hcapveg             &
+                                    ,new_hcapveg)
+      use therm_lib, only : qwtk ! ! subroutine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real, intent(inout) :: veg_energy
       real, intent(in)    :: veg_temp
+      real, intent(in)    :: veg_water
       real, intent(in)    :: old_hcapveg
       real, intent(in)    :: new_hcapveg
+      !----- Local variables --------------------------------------------------------------!
+      real                :: new_temp, new_fliq
       !------------------------------------------------------------------------------------!
       veg_energy = veg_energy + (new_hcapveg-old_hcapveg) * veg_temp
+      
+      call qwtk(veg_energy,veg_water,new_hcapveg,new_temp,new_fliq)
+      
+      if (abs(new_temp - veg_temp) > 0.1) then
+         write (unit=*,fmt='(a)') ' ENERGY CONSERVATION FAILED!:'
+         write (unit=*,fmt='(a,1x,es12.5)') ' Old temperature:   ',veg_temp
+         write (unit=*,fmt='(a,1x,es12.5)') ' New temperature:   ',new_temp
+         write (unit=*,fmt='(a,1x,es12.5)') ' Old heat capacity: ',old_hcapveg
+         write (unit=*,fmt='(a,1x,es12.5)') ' New heat capacity: ',new_hcapveg
+         write (unit=*,fmt='(a,1x,es12.5)') ' Veg energy:        ',old_hcapveg
+         write (unit=*,fmt='(a,1x,es12.5)') ' Veg water:         ',new_hcapveg
+         call fatal_error('ENERGY LEAK','update_veg_energy_cweh','ed_therm_lib.f90')
+      end if
+      
       return
    end subroutine update_veg_energy_cweh
    !=======================================================================================!

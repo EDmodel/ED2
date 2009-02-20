@@ -164,13 +164,13 @@ subroutine apply_forestry_ar(cpoly, isi, year, rhos)
         call plant_patch_ar(csite,np, cpoly%plantation_stocking_pft(isi),   &
              cpoly%plantation_stocking_density(isi), 2.0, cpoly%lsl(isi))
         csite%plantation(np) = 1
-     else
-     
-     ! Including some near bare ground state there, otherwise it will be with no cohorts...
-     !   David, do you see any problem by doing that? I included this just because the fast
-     !   time dynamics was crashing with the zero-cohort patch. 
-        write (unit=*,fmt='(a)') ' ----> Including a nearly-bare ground state for a patch with no cohorts...'
-        call init_bare_ground_patchtype(.false.,csite,cpoly%lsl(isi),cpoly%met(isi)%atm_tmp,np,np)
+     !else
+     !
+     !! Including some near bare ground state there, otherwise it will be with no cohorts...
+     !!   David, do you see any problem by doing that? I included this just because the fast
+     !!   time dynamics was crashing with the zero-cohort patch. 
+     !   write (unit=*,fmt='(a)') ' ----> Including a nearly-bare ground state for a patch with no cohorts...'
+     !   call init_bare_ground_patchtype(.false.,csite,cpoly%lsl(isi),cpoly%met(isi)%atm_tmp,np,np)
      end if
 
      call update_patch_derived_props_ar(csite, cpoly%lsl(isi), rhos, np)

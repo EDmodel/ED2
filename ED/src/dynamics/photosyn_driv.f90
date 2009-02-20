@@ -10,8 +10,8 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
   use canopy_radiation_coms, only: lai_min
   use grid_coms, only: nzg
   use soil_coms, only: soil, dslz
-  use consts_coms, only : t00,mmdov,wdnsi
-
+  use consts_coms, only : t00,mmdov,wdnsi,wdns
+  use misc_coms, only : current_time
   implicit none
 
   type(sitetype),target :: csite
@@ -47,18 +47,19 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
   logical :: las
   real,parameter :: vels_min = 1.0
   real :: rb_min
+  logical, save :: first_time=.true.
 
   las = .false.
 
   cpatch => csite%patch(ipa)
 
   ! calculate liquid water available for transpiration
-  available_liquid_water(nzg) = max(0.0, 1.0e3 * dslz(nzg) *   &
+  available_liquid_water(nzg) = max(0.0, wdns * dslz(nzg) *   &
        soil_fracliq(nzg) * real(soil_water(nzg) - dble(soil(ntext_soil(nzg))%soilcp)))
 
   do k1 = nzg-1, lsl, -1
      available_liquid_water(k1) = available_liquid_water(k1+1) +  &
-          dslz(k1) * 1.0e3 * soil_fracliq(k1) * max(0.0, real(soil_water(k1) -  &
+          dslz(k1) * wdns * soil_fracliq(k1) * max(0.0, real(soil_water(k1) -  &
           dble(soil(ntext_soil(k1))%soilcp)))
   enddo
 
@@ -255,19 +256,13 @@ end if
         ! Weighting between open/closed stomata
         cpatch%fsw(ico) = water_supply / max(1.0e-30,water_supply + water_demand)
 
-        ! Account for nitrogen limitation
-        cpatch%fs_open(ico) = cpatch%fsw(ico) * cpatch%fsn(ico)
 
         ! Photorespiration can become important at high temperatures.  If so,
         ! close down the stomata. 
         if (cpatch%A_open(ico) < cpatch%A_closed(ico)) then
-            cpatch%fs_open(ico) = 0.0
-        elseif (cpatch%par_v(ico) < cpatch%lai(ico)*1.e-3) then
-            !------------------------------------------------------------------------------!
-            !    Nighttime, close the stomata. The following statement may be false if we  !
-            ! include CAM plants in this model someday...                                  !
-            !------------------------------------------------------------------------------!
-            cpatch%fs_open(ico) = 0.0
+           cpatch%fs_open(ico) = 0.0
+        else
+           cpatch%fs_open(ico) = cpatch%fsw(ico) * cpatch%fsn(ico)
         end if
         ! Net stomatal resistance
         cpatch%stomatal_resistance(ico) = 1.0 / (cpatch%fs_open(ico) / cpatch%rsw_open(ico) +   &
@@ -334,6 +329,29 @@ end if
         enddo
      endif
   enddo
+  ! Printing debugging stuff
+  !if (first_time) then
+  !   do ico=1,cpatch%ncohorts
+  !      write(unit=60+ico,fmt='(268a)') ('-',k1=1,268)
+  !      write(unit=60+ico,fmt='(21(a,1x))') '     CURRENT_TIME','PFT' &
+  !       ,'         LAI','    VEG_TEMP',' CAN_MIX_RAT','    PRESSURE','     DENSITY' &
+  !       ,'       PAR_V','         GPP','   LEAF_RESP','          RB',' STOM_RESIST' &
+  !       ,'      A_OPEN','    A_CLOSED','    RSW_OPEN','  RSW_CLOSED','    PSI_OPEN' &
+  !       ,'  PSI_CLOSED','         FSW','         FSN','     FS_OPEN'
+  !      write(unit=60+ico,fmt='(268a)') ('-',k1=1,268)
+  !   end do
+  !   first_time=.false.
+  !end if
+  !do ico=1,cpatch%ncohorts
+  !   write(unit=60+ico,fmt='(i4.4,2(a,i2.2),1x,f6.0,1x,i3,19(1x,es12.5))')                &
+  !      current_time%year,'-',current_time%month,'-',current_time%date,current_time%time  &
+  !     ,cpatch%pft(ico),cpatch%lai(ico),cpatch%veg_temp(ico),csite%can_shv(ipa),prss,rhos &
+  !     ,cpatch%par_v(ico),cpatch%gpp(ico),cpatch%leaf_respiration(ico),cpatch%rb(ico)     &
+  !     ,cpatch%stomatal_resistance(ico),cpatch%A_open(ico),cpatch%A_closed(ico)           &
+  !     ,cpatch%rsw_open(ico),cpatch%rsw_closed(ico),cpatch%Psi_open(ico)                  &
+  !     ,cpatch%Psi_closed(ico),cpatch%fsw(ico),cpatch%fsn(ico),cpatch%fs_open(ico)
+
+  !end do
 
   return
 end subroutine canopy_photosynthesis_ar

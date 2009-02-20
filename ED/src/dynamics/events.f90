@@ -378,7 +378,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                                                       ,cpatch%nplant(ico),cpatch%pft(ico))
                     call update_veg_energy_cweh(cpatch%veg_energy(ico)                     &
                                                ,cpatch%veg_temp(ico)                       &
-                                               ,old_hcapveg,cpatch%hcapveg(ico))
+                                               ,cpatch%veg_water(ico),old_hcapveg          &
+                                               ,cpatch%hcapveg(ico))
                  end if
 
                  if(cpatch%bdead(ico) .gt. tiny(1.0)) then
