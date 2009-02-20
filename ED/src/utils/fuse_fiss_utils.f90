@@ -196,14 +196,6 @@ module fuse_fiss_utils_ar
       !------------------------------------------------------------------------------------!
       elim_area = 0.0
       do ipa = 1,csite%npatches
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !!! MLO - Should patches with no cohorts be always removed?                     !!!
-         !!!       I am just concerned how desert areas would be represented...          !!!
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !if (csite%area(ipa) < min_new_patch_area .or. csite%patch(ipa)%ncohorts == 0 )    &
-         !then
          if (csite%area(ipa) < min_new_patch_area) then
             elim_area = elim_area + csite%area(ipa)
             remain_table(ipa) = .false.
@@ -282,7 +274,7 @@ module fuse_fiss_utils_ar
       logical, dimension(:)  , allocatable :: fuse_table     ! Flag, remaining cohorts
       type(patchtype)        , pointer     :: cpatch         ! Current patch
       type(patchtype)        , pointer     :: temppatch      ! Scratch patch
-      integer                              :: ico1, ico2     ! Counters
+      integer                              :: ico1,ico2,ico3 ! Counters
       logical                              :: fusion_test    ! Flag: proceed with fusion?
       real                                 :: hite_threshold ! Height threshold
       real                                 :: newn           ! new nplants of merged coh.
@@ -293,10 +285,6 @@ module fuse_fiss_utils_ar
       real                                 :: mean_hite      ! Mean height        (???)
       integer                              :: ntall          ! # of tall cohorts  (???)
       integer                              :: nshort         ! # of short cohorts (???)
-      integer                              :: old_ncohorts   ! # of cohorts before fusion
-      integer                              :: new_ncohorts   ! # of cohorts after fusion
-      real                                 :: old_lai        ! Patch LAI before fusion
-      real                                 :: new_lai        ! Patch LAI after fusion
       logical                              :: any_fusion     ! Flag: was there any fusion?
       !------------------------------------------------------------------------------------!
 
@@ -317,17 +305,12 @@ module fuse_fiss_utils_ar
      
       !------------------------------------------------------------------------------------!
       !     Return if we don't have many cohorts anyway. Cohort fusion is just for         !
-      ! computational efficiency.                                                          !
+      ! computational efficiency. The abs is necessary because maxcohort can be negative.  !
+      ! Negative is a flag to tell ED that cohort fusion is allowed to take place only     !
+      ! during initialisation.                                                             !
       !------------------------------------------------------------------------------------!
       if(cpatch%ncohorts <= abs(maxcohort))return
 
-      
-      !----- Debugging variables, may be removed after check ------------------------------!
-      old_ncohorts = cpatch%ncohorts
-      old_lai      = 0.0
-      do ico1=1,cpatch%ncohorts
-         old_lai = old_lai + cpatch%lai(ico1)
-      end do
 
       !------------------------------------------------------------------------------------!
       !    Calculate mean DBH and HITE to help with the normalization of differences mean  !
@@ -401,7 +384,7 @@ module fuse_fiss_utils_ar
                               * dbh2bl(cpatch%dbh(ico1),cpatch%pft(ico1)) )
 
                   !------------------------------------------------------------------------!
-                  !    Four conditions must be met to allow two cohorts to be fused:       !
+                  !    Five conditions must be met to allow two cohorts to be fused:       !
                   ! 1. Both cohorts must have the same PFT;                                !
                   ! 2. Combined LAI won't be too large.                                    !
                   ! 3. Both cohorts must have the same status with respect to the first    !
@@ -423,6 +406,37 @@ module fuse_fiss_utils_ar
 
                      !----- Flag donating cohort as gone, so it won't be checked again. ---!
                      fuse_table(ico1) = .false.
+
+                     !---------------------------------------------------------------------!
+                     !    Recalculate the means                                            !
+                     !---------------------------------------------------------------------!
+                     mean_dbh  = 0.0
+                     mean_hite = 0.0
+                     nshort    = 0
+                     ntall     = 0
+                     recalcloop: do ico3 = 1,cpatch%ncohorts
+                        if (.not. fuse_table(ico3)) cycle recalcloop
+                        !----- Get fusion height threshold --------------------------------!
+                        if (rho(cpatch%pft(ico3)) == 0.0) then
+                           hite_threshold = b1Ht(cpatch%pft(ico3))
+                        else
+                           hite_threshold = dbh2h(cpatch%pft(ico3)                         &
+                                                 , max_dbh(cpatch%pft(ico3)))
+                        end if
+                        if (cpatch%hite(ico3) < (0.95 * hite_threshold )) then
+                           mean_hite = mean_hite + cpatch%hite(ico3)
+                           nshort = nshort+1
+                        else
+                           if(cpatch%dbh(ico3).eq.0. ) then
+                              print*,"dbh(ico1) is zero",cpatch%dbh(ico3)
+                              call fatal_error('Zero DBH!','fuse_cohorts_ar'&
+                                              &,'fuse_fiss_utils.f90')
+                           end if
+                           mean_dbh = mean_dbh + cpatch%dbh(ico3)
+                           ntall=ntall+1
+                        end if
+                     end do recalcloop
+                     !---------------------------------------------------------------------!
                      cycle donloop
                   end if
                   !------------------------------------------------------------------------!
@@ -472,13 +486,6 @@ module fuse_fiss_utils_ar
          call sort_cohorts_ar(cpatch)
          csite%cohort_count(ipa) = count(fuse_table)
       end if
-
-      !----- Calculate the new LAI --------------------------------------------------------!
-      new_ncohorts = cpatch%ncohorts
-      new_lai = 0.0
-      do ico1=1,cpatch%ncohorts
-         new_lai = new_lai + cpatch%lai(ico1)
-      end do
 
       !----- Deallocate the aux. table ----------------------------------------------------!
       deallocate(fuse_table)
@@ -594,8 +601,8 @@ module fuse_fiss_utils_ar
                cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)    * 0.5
 
                !---------------------------------------------------------------------------!
-               !     Since water and plants were evenly split, hcapveg and veg_energy, we  !
-               ! can do the same with veg_energy and veg heat capacity.                    !
+               !     Since water and plants were evenly split, we can do the same with     !
+               ! veg_energy and veg heat capacity.                                         !
                !---------------------------------------------------------------------------!
                cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)             * 0.5
                cpatch%veg_water(ico)           = cpatch%veg_water(ico)           * 0.5
@@ -606,16 +613,19 @@ module fuse_fiss_utils_ar
                call copy_cohort_ar(cpatch,ico,inew)
 
                !----- Tweak the heights and DBHs. -----------------------------------------!
-               cpatch%dbh(ico)    = cpatch%dbh(ico) - epsilon
+               cpatch%dbh(ico)    = cpatch%dbh(ico)*(1.0 - epsilon)
                cpatch%hite(ico)   = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
                cpatch%bdead(ico)  = dbh2bd(cpatch%dbh(ico),cpatch%hite(ico)                &
                                           ,cpatch%pft(ico))
 
-               cpatch%dbh(inew)   = cpatch%dbh(inew) + epsilon
+               cpatch%dbh(inew)   = 2.0*cpatch%dbh(inew)-cpatch%dbh(ico)
                cpatch%hite(inew)  = dbh2h(cpatch%pft(inew),cpatch%dbh(inew))
                cpatch%bdead(inew) = dbh2bd(cpatch%dbh(inew),cpatch%hite(inew)              &
                                           ,cpatch%pft(inew))
-
+               !---------------------------------------------------------------------------!
+               !     Since the tweaks do not affect balive, we don't need to update leaf   !
+               ! internal energy and heat capacity.                                        !
+               !---------------------------------------------------------------------------!
             end if
          end do
          deallocate(temppatch)
@@ -797,7 +807,7 @@ module fuse_fiss_utils_ar
       cpatch%mean_gpp(recc) = cpatch%mean_gpp(recc) + cpatch%mean_gpp(donc)
 
       cpatch%mean_leaf_resp(recc) = cpatch%mean_leaf_resp(recc)                            &
-                                  + cpatch%mean_leaf_resp(donc)
+                                 + cpatch%mean_leaf_resp(donc)
 
       cpatch%mean_root_resp(recc) = cpatch%mean_root_resp(recc)                            &
                                   + cpatch%mean_root_resp(donc)
@@ -838,6 +848,7 @@ module fuse_fiss_utils_ar
                                     + cpatch%leaf_respiration(donc)
       cpatch%root_respiration(recc) = cpatch%root_respiration(recc)                        &
                                     + cpatch%root_respiration(donc)
+      !------------------------------------------------------------------------------------!
 
       cb_max = sum(cpatch%cb_max(1:12,recc))
       if(cb_max > 0.0)then
@@ -1531,7 +1542,7 @@ module fuse_fiss_utils_ar
       !------------------------------------------------------------------------------------!
 
       !----- Finding the size of each DBH class interval ----------------------------------!
-      ddbh = maxdbh/nbins
+      ddbh = maxdbh/real(nbins)
 
       !----- Initialize bins --------------------------------------------------------------!
       do ipft=1,n_pft

@@ -243,6 +243,7 @@ subroutine spatial_averages
            cpoly%avg_co2can(isi)         = sum(csite%can_co2            * csite%area ) * site_area_i
            
            cpoly%avg_snowdepth(isi)   = 0.0
+           cpoly%avg_snowenergy(isi)   = 0.0
            cpoly%avg_snowmass(isi)    = 0.0
            cpoly%avg_snowtempk(isi)   = 0.0
            cpoly%avg_snowfracliq(isi) = 0.0
@@ -255,9 +256,13 @@ subroutine spatial_averages
                       &sum(csite%sfcwater_depth(1:csite%nlev_sfcwater(k)  ,k)) * csite%area(k)
                  cpoly%avg_snowmass(isi)    = cpoly%avg_snowmass(isi)    + &
                       &sum(csite%sfcwater_mass(1:csite%nlev_sfcwater(k)   ,k)) * csite%area(k)
-                 !! average temp and frac liq weighted by **mass**
+                 !! average temp, energy, and frac liq weighted by **mass**
                  cpoly%avg_snowtempk(isi)   = cpoly%avg_snowtempk(isi)   + &
                       &sum(csite%sfcwater_tempk(1:csite%nlev_sfcwater(k),k)*csite%sfcwater_mass(1:csite%nlev_sfcwater(k),k))&
+                      &/sum(csite%sfcwater_mass(1:csite%nlev_sfcwater(k)   ,k))* csite%area(k)
+                 !! average temp and frac liq weighted by **mass**
+                 cpoly%avg_snowenergy(isi)   = cpoly%avg_snowenergy(isi)   + &
+                      &sum(csite%sfcwater_energy(1:csite%nlev_sfcwater(k),k)*csite%sfcwater_mass(1:csite%nlev_sfcwater(k),k))&
                       &/sum(csite%sfcwater_mass(1:csite%nlev_sfcwater(k)   ,k))* csite%area(k)
                  cpoly%avg_snowfracliq(isi) = cpoly%avg_snowfracliq(isi) + &
                       & sum(csite%sfcwater_fracliq(1:csite%nlev_sfcwater(k),k)*csite%sfcwater_mass(1:csite%nlev_sfcwater(k),k)) &
@@ -273,6 +278,7 @@ subroutine spatial_averages
            cpoly%avg_snowfracliq(isi) = cpoly%avg_snowfracliq(isi) * site_area_i
            cpoly%avg_snowdepth(isi)   = cpoly%avg_snowdepth(isi)   * site_area_i
            cpoly%avg_snowmass(isi)    = cpoly%avg_snowmass(isi)    * site_area_i
+           cpoly%avg_snowenergy(isi)  = cpoly%avg_snowenergy(isi)  * site_area_i
            cpoly%avg_snowtempk(isi)   = cpoly%avg_snowtempk(isi)   * site_area_i
 
 
@@ -456,6 +462,7 @@ subroutine spatial_averages
         cgrid%avg_runoff_heat(ipy)    = sum(cpoly%avg_runoff_heat    * cpoly%area ) * poly_area_i
         cgrid%avg_runoff(ipy)         = sum(cpoly%avg_runoff         * cpoly%area ) * poly_area_i
         cgrid%avg_snowmass(ipy)       = sum(cpoly%avg_snowmass       * cpoly%area ) * poly_area_i
+        cgrid%avg_snowenergy(ipy)     = sum(cpoly%avg_snowenergy     * cpoly%area ) * poly_area_i
         cgrid%avg_snowtempk(ipy)      = sum(cpoly%avg_snowtempk      * cpoly%area ) * poly_area_i
         cgrid%avg_snowfracliq(ipy)    = sum(cpoly%avg_snowfracliq    * cpoly%area ) * poly_area_i
         cgrid%avg_snowdepth(ipy)      = sum(cpoly%avg_snowdepth      * cpoly%area ) * poly_area_i

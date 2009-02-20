@@ -322,3 +322,7 @@ notequal.txt
 quebec
 amazon
 BRAMS/build/bin/harr_coms.mod
+ED/build/bin/allometry.mod
+ED/build/bin/ed_therm_lib.mod
+ED/build/bin/edmain.f90
+ED/build/bin/rk4_coms.mod

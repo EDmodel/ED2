@@ -16,7 +16,7 @@ subroutine simple_lake_model(time,dtlongest)
   use mem_radiate,only: radiate_g
   use mem_cuparm, only: cuparm_g
   use mem_micro,  only: micro_g
-  use mem_grid,   only: zt,grid_g,dzt,zm,if_adap,jdim,ngrid
+  use mem_grid,   only: zt,grid_g,dzt,zm,if_adap,jdim,ngrid,nzs
   use therm_lib,  only: rslif
   !------------------------------------------------------------!
 
@@ -48,7 +48,7 @@ subroutine simple_lake_model(time,dtlongest)
   real :: gzotheta, patarea,vels
   real :: timefac_sst,seatc
   real    :: ustaro,delz,d_vel,d_veln,vel_new
-  integer :: ifixu
+  integer :: ifixu,k
   real, parameter   :: co2_mean   = 370.00
   real, parameter   :: canopy_co2 = 370.00
   real, parameter   :: emiss_w  = 0.97  ! emissivity of water (super gross approximation!)
@@ -329,8 +329,15 @@ subroutine simple_lake_model(time,dtlongest)
 
         leaf_g(ngrid)%can_temp(i,j,1) = canopy_tempk
         leaf_g(ngrid)%can_rvap(i,j,1) = canopy_water_vapor
+        leaf_g(ngrid)%veg_temp(i,j,1) = canopy_tempk
         
-
+        !---- Ice free water... --------------------------------------------------------!
+        leaf_g(ngrid)%sfcwater_nlev     (i,j,1) = 0.
+        do k=1, nzs
+           leaf_g(ngrid)%sfcwater_energy (1,i,j,1) = 0.
+           leaf_g(ngrid)%sfcwater_mass   (1,i,j,1) = 0.
+           leaf_g(ngrid)%sfcwater_depth  (1,i,j,1) = 0.
+        end do
      end do
   end do
 

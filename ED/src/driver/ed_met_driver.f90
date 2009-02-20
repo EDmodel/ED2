@@ -551,7 +551,8 @@ subroutine update_met_drivers_array(cgrid)
   use met_driver_coms, only: met_frq, nformats, met_nv, met_interp, met_vars &
                             ,have_co2,initial_co2
   use misc_coms, only: current_time
-  use consts_coms, only: rdry, cice, cliq, alli, rocp, p00, cp,day_sec,t3ple, wdnsi
+  use consts_coms, only: rdry, cice, cliq, alli, rocp, p00, cp,day_sec,t3ple, wdnsi        &
+                       , tsupercool
   use therm_lib, only: virtt
 
   implicit none
@@ -878,7 +879,8 @@ subroutine update_met_drivers_array(cgrid)
         
         ! qpcpg, dpcpg
         if(cpoly%met(isi)%atm_tmp > t3ple)then
-           cpoly%met(isi)%qpcpg = (cliq * cpoly%met(isi)%atm_tmp + alli) * cpoly%met(isi)%pcpg
+           cpoly%met(isi)%qpcpg = cliq * (cpoly%met(isi)%atm_tmp - tsupercool)             &
+                                       * max(0.0, cpoly%met(isi)%pcpg)
            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg * wdnsi)
         else
            cpoly%met(isi)%qpcpg = cice * cpoly%met(isi)%atm_tmp * cpoly%met(isi)%pcpg
@@ -1289,77 +1291,62 @@ end subroutine transfer_ol_month_ar
 !==========================================================================================!
 subroutine match_poly_grid_array(cgrid,nlon,nlat,lon,lat)
 
-  use ed_state_vars,only:edtype
+   use ed_state_vars , only : edtype
 
-  implicit none
-  
-  type(edtype),target :: cgrid
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   type(edtype)              , target        :: cgrid
+   real, dimension(nlon,nlat), intent(inout) :: lon,lat
+   integer                   , intent(in)    :: nlon,nlat
+   !----- Local variables -----------------------------------------------------------------!
+   integer                                   :: ilat,ilon,offlat,offlon
+   integer                                   :: ipy
+   real                                      :: min_dist
+   real                                      :: this_dist
+   !----- External function ---------------------------------------------------------------!
+   real                       , external     :: dist_gc
+   !---------------------------------------------------------------------------------------!
 
-  integer :: nlon,nlat,ilat,ilon,offlat,offlon
-  integer :: located
-  integer :: ipy
-  real,dimension(nlon,nlat) :: lon,lat
-  real :: deltax,deltay
 
+   do ipy = 1,cgrid%npolygons
+      min_dist = huge (1.)
 
-  do ipy = 1,cgrid%npolygons
-     
-     located = 0
-     do ilon = 1,nlon
+      do ilon = 1,nlon
+         do ilat = 1,nlat
+            
+            if (ilat /= nlat) then
+               offlat = 1
+            else
+               offlat = -1
+            end if
+            if (ilon /= nlon) then
+               offlon = 1
+            else
+               offlon = -1
+            end if
 
-        do ilat = 1,nlat
-           
-           if (ilat.ne.nlat) then
-              offlat = 1
-           else
-              offlat = -1
-           endif
-           if (ilon.ne.nlon) then
-              offlon = 1
-           else
-              offlon = -1
-           endif
+            if (lon(ilon,ilat) > 180.0)                                                    &
+               lon(ilon,ilat) = lon(ilon,ilat) - 360.0
 
-           if (lon(ilon,ilat)>180.0) lon(ilon,ilat) = lon(ilon,ilat) - 360.0
-           if (lon(ilon+offlon,ilat)>180.0) lon(ilon+offlon,ilat) = lon(ilon+offlon,ilat) - 360.0
-           if (lon(ilon,ilat+offlat)>180.0) lon(ilon,ilat+offlat) = lon(ilon,ilat+offlat) - 360.0
+            if (lon(ilon+offlon,ilat) > 180.0)                                             &
+               lon(ilon+offlon,ilat) = lon(ilon+offlon,ilat) - 360.0
 
-           deltay = 0.50*abs( lat(ilon,ilat+offlat) - lat(ilon,ilat) )
-           deltax = 0.50*abs( lon(ilon+offlon,ilat) - lon(ilon,ilat) )
-           
-           if(  abs(cgrid%lat(ipy) - lat(ilon,ilat)).lt.deltay .and. &
-                abs(cgrid%lon(ipy) - lon(ilon,ilat)).lt.deltax  ) then
+            if (lon(ilon,ilat+offlat) > 180.0)                                             &
+               lon(ilon,ilat+offlat) = lon(ilon,ilat+offlat) - 360.0
 
-              if(located.eq.1) then
-                 call fatal_error('OVERLAP PROBLEM','match_poly_grid_array' &
-                                 ,'ed_met_driver.f90')
-              endif
-              
-              cgrid%ilon(ipy) = ilon
-              cgrid%ilat(ipy) = ilat
-              located = 1
-              
-           endif
-           
-        enddo
-     enddo
+            this_dist = dist_gc(lon(ilon+offlon,ilat), lon(ilon,ilat)                      &
+                               ,lat(ilon,ilat+offlat), lat(ilon,ilat) )
+            
+            if(this_dist < min_dist) then               
+               cgrid%ilon(ipy) = ilon
+               cgrid%ilat(ipy) = ilat
+               min_dist        = this_dist
+            endif
+         end do
+      end do
+   end do
 
-     if (located.eq.0) then
-        print*,"Could not find a corresponding grid space"
-        print*,"ixn the met data for polygon:",ipy
-        print*,cgrid%lat(ipy),cgrid%lon(ipy)
-
-        print*,lat
-        print*,""
-        print*,lon
-
-        call fatal_error('Failed finding a corresponding grid space' &
-                        ,'match_poly_grid_array','ed_met_driver.f90')
-     endif
-     
-  enddo
-
-  return
+   return
 end subroutine match_poly_grid_array
 !==========================================================================================!
 !==========================================================================================!
