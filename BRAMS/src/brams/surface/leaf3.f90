@@ -2055,51 +2055,6 @@ subroutine sfcrad(mzg,mzs,ip  &
       endif
    !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-      !------------------------------------------------------------------------------------!
-      !   800 W/m² corresponds to an emission at roughly 71°C, which is too hot. In case   !
-      ! this happens, we'd rather stop the run and check what is going on. It will write   !
-      ! the output in a fort.?? file.                                                      !
-      !------------------------------------------------------------------------------------!
-      if (rlongup > 800.) then
-         m=mynum+20
-         write (unit=m,fmt='(80a)')         ('-',k=1,80)
-         write (unit=m,fmt='(a)')           '    NON-SENSE RLONGUP:'
-         write (unit=m,fmt='(80a)')         ('-',k=1,80)
-         write (unit=m,fmt='(a,1x,i6)')     ' + PATCH:      ',ip
-         write (unit=m,fmt='(a,1x,i6)')     ' + SOIL_TEXT:  ',nsoil
-         write (unit=m,fmt='(a,1x,i6)')     ' + KSN:        ',ksn
-         write (unit=m,fmt='(a,1x,es12.5)') ' + RLONGUP:    ',rlongup
-         write (unit=m,fmt='(a,1x,es12.5)') ' + PATCH_AREA: ',patch_area
-         write (unit=m,fmt='(a,1x,es12.5)') ' + ALBEDT:     ',albedt
-         write (unit=m,fmt='(a,1x,es12.5)') ' + RLONGV_A:   ',rlongv_a
-         write (unit=m,fmt='(a,1x,es12.5)') ' + RLONGGS_A:  ',rlonggs_a
-         write (unit=m,fmt='(a,1x,es12.5)') ' + RLONGA_A:   ',rlonga_a
-         write (unit=m,fmt='(a,1x,es12.5)') ' + VEG_TEMP:   ',veg_temp
-         write (unit=m,fmt='(a,1x,es12.5)') ' + CAN_TEMP:   ',can_temp
-         write (unit=m,fmt='(80a)')         ('-',k=1,80)
-         write (unit=m,fmt='(a3,1x,4(a12,1x))') 'LEV',' SOIL_ENERGY','  SOIL_WATER'        &
-                                                     ,'       TEMPK','     FRACLIQ'
-         write (unit=m,fmt='(80a)')         ('-',k=1,80)
-         do k=1,mzg
-            write (unit=m,fmt='(i3,1x,4(es12.5,1x))') k,soil_energy(k),soil_water(k)       &
-                                                       ,tempk(k),fracliq(k)
-         end do
-         write (unit=m,fmt='(80a)')         ('-',k=1,80)
-         if (ksn > 0) then
-            write (unit=m,fmt='(a3,1x,5(a12,1x))') 'LEV',' SFCW_ENERGY','  SFCW_DEPTH'     &
-                                         ,'   SFCW_MASS','       TEMPK','     FRACLIQ'
-            write (unit=m,fmt='(80a)')         ('-',k=1,80)
-            do k=1,ksn
-               write (unit=m,fmt='(i3,1x,5(es12.5,1x))')  k,sfcwater_energy(k)             &
-                                                           ,sfcwater_depth(k)              &
-                                                           ,sfcwater_mass(k)               &
-                                                           ,tempk(mzg+k),fracliq(mzg+k)
-            end do
-            write (unit=m,fmt='(80a)')         ('-',k=1,80)
-         end if
-         call abort_run('Non-sense rlongup','sfcrad','leaf3.f90')
-      end if
-
    endif
    return
 end subroutine sfcrad
