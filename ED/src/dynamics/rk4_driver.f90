@@ -279,6 +279,7 @@ contains
     real :: surface_temp, surface_fliq
     real, parameter :: tendays_sec=10.*day_sec
     real :: fracliq
+    integer :: adjacent_layer
 
     csite%can_temp(ipa) = initp%can_temp
     csite%can_shv(ipa) = initp%can_shv
@@ -405,9 +406,20 @@ contains
        ! For plants with minimal foliage, fix the vegetation
        ! temperature to the canopy air space
        if (cpatch%lai(ico) < lai_min) then
-
           cpatch%veg_temp(ico)   = csite%can_temp(ipa)
           cpatch%veg_water(ico)  = 0. 
+          cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
+       end if
+
+       if (cpatch%hite(ico) <  csite%total_snow_depth(ipa)) then
+          adjacent_layer = 1
+           do k = csite%nlev_sfcwater(ipa), 1, -1
+              if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) then
+                adjacent_layer = k
+              end if
+             end do
+          cpatch%veg_temp(ico) = csite%sfcwater_tempk(adjacent_layer,ipa)
+          cpatch%veg_water(ico) = 0.
           cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
        end if
 
@@ -473,6 +485,8 @@ contains
 
        end if
     end do
+
+    print*, cpatch%hcapveg(1), cpatch%veg_temp(1), cpatch%veg_energy(1), cpatch%hite(1), csite%total_snow_depth(ipa)
 
 
     ksn = csite%nlev_sfcwater(ipa)
