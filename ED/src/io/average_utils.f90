@@ -31,7 +31,6 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
    
    frqsumi = 1.0 / frqsum
    tfact = dtlsm * frqsumi
-   print*,"tfact",tfact
    do ipy = 1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
 

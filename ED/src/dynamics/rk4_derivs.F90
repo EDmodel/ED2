@@ -493,7 +493,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
             infilt = -dslzi(nzg)* 0.5 * slcons1(nzg,nsoil)                                 &
                    * (sngl(initp%soil_water(nzg)) / soil(nsoil)%slmsts)                    &
                      **(2. * soil(nsoil)%slbs + 3.)                                        &
-                   * (psiplusz(nzg) - sngl(initp%virtual_water)/2000.0) & !diff. in pot.
+                   * (psiplusz(nzg) - initp%virtual_water/2000.0) & !diff. in pot.
                    * .5 * (initp%soil_fracliq(nzg)+ fracliq)         ! mean liquid fraction
             qinfilt = infilt * cliqvlme * (tempk - tsupercool)
             !----- Adjust other rates accordingly -----------------------------------------!
@@ -1087,7 +1087,8 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
               transp = 0.0
             end if
             qtransp = transp * alvl
-         elseif (initp%veg_water(ico) < 0.99*max_leaf_water) then
+!         elseif (initp%veg_water(ico) < 0.99*max_leaf_water) then
+         elseif (cpatch%veg_water(ico) < 0.99*max_leaf_water) then
             !------ Dew/frost formation ---------------------------------------------------!
             wflxvc                 = c3 * evap_area_one * rbi
             qwflxvc                = wflxvc * (alvi - veg_fliq*alli)
@@ -1126,7 +1127,8 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          ! than the carrying capacity, then it must flux all precipitation and dew. The    !
          ! leaf water may evaporate in every condition.                                    !
          !---------------------------------------------------------------------------------!
-         if (initp%veg_water(ico) >= max_leaf_water) then
+!!         if (initp%veg_water(ico) >= max_leaf_water) then
+         if (cpatch%veg_water(ico) >= max_leaf_water) then
             !------------------------------------------------------------------------------!
             ! Case 1: Leaf has no space for rain. All rain/snow falls with the same        !
             !         density it fell. Dew and frost and old precipitation that were       !
