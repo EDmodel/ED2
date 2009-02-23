@@ -384,6 +384,9 @@ module ed_state_vars
 
      ! Patch name (only used when restarting from ED1)
      character(len=256), pointer,dimension(:) :: pname
+     
+     ! Number of surface water layers
+     integer,pointer,dimension(:) :: nlev_sfcwater
 
      ! Surface water mass (kg/m2)
      real, pointer,dimension(:,:) :: sfcwater_mass
@@ -393,6 +396,12 @@ module ed_state_vars
 
      ! Depth of surface water (m)
      real, pointer,dimension(:,:) :: sfcwater_depth
+
+     ! Temperature of surface water (K)
+     real, pointer,dimension(:,:) :: sfcwater_tempk
+    
+     ! Liquid fraction of surface water
+     real, pointer,dimension(:,:) :: sfcwater_fracliq
 
      ! Short wave radiation absorbed by the surface water (W/m2)
      real, pointer,dimension(:,:) :: rshort_s
@@ -404,15 +413,6 @@ module ed_state_vars
      ! Short wave radiation absorbed by the surface water, 
      ! diffuse component (W/m2)
      real, pointer,dimension(:,:) :: rshort_s_diffuse
-
-     ! Temperature of surface water (K)
-     real, pointer,dimension(:,:) :: sfcwater_tempk
-    
-     ! Liquid fraction of surface water
-     real, pointer,dimension(:,:) :: sfcwater_fracliq
-     
-     ! Number of surface water layers
-     integer,pointer,dimension(:) :: nlev_sfcwater
 
      ! Soil textural class index
      integer, pointer,dimension(:,:) :: ntext_soil
@@ -983,7 +983,6 @@ module ed_state_vars
      real,pointer,dimension(:,:) :: avg_soil_water
      real,pointer,dimension(:,:) :: avg_soil_temp
      real,pointer,dimension(:,:) :: avg_soil_fracliq
-
      real,pointer,dimension(:) :: runoff
 
 
@@ -991,6 +990,7 @@ module ed_state_vars
 
      !----- NACP intercomparison ---------------------------------------------!
      real,pointer,dimension(:) :: avg_snowdepth
+     real,pointer,dimension(:) :: avg_snowenergy
      real,pointer,dimension(:) :: avg_snowmass
      real,pointer,dimension(:) :: avg_snowtempk
      real,pointer,dimension(:) :: avg_snowfracliq
@@ -1225,6 +1225,7 @@ module ed_state_vars
 
 
      real,pointer,dimension(:) :: avg_snowdepth     !sfcwater_depth
+     real,pointer,dimension(:) :: avg_snowenergy    !sfcwater_mass
      real,pointer,dimension(:) :: avg_snowmass      !sfcwater_mass
      real,pointer,dimension(:) :: avg_snowtempk     !sfcwater_tempk
      real,pointer,dimension(:) :: avg_snowfracliq   !sfcwater_fracliq
@@ -1751,6 +1752,7 @@ contains
 
        !! added MCD for NACP intercomparison
        allocate(cgrid%avg_snowdepth   (npolygons))
+       allocate(cgrid%avg_snowenergy  (npolygons))
        allocate(cgrid%avg_snowmass    (npolygons))
        allocate(cgrid%avg_snowtempk   (npolygons))
        allocate(cgrid%avg_snowfracliq (npolygons))
@@ -2012,6 +2014,7 @@ contains
 
     !!!NACP
     allocate(cpoly%avg_snowdepth           (nsites))
+    allocate(cpoly%avg_snowenergy          (nsites))
     allocate(cpoly%avg_snowmass            (nsites))
     allocate(cpoly%avg_snowfracliq         (nsites))
     allocate(cpoly%avg_snowtempk           (nsites))
@@ -2428,6 +2431,7 @@ contains
 
        !!! added for NACP intercomparison (MCD)
        nullify(cgrid%avg_snowdepth     )
+       nullify(cgrid%avg_snowenergy    )
        nullify(cgrid%avg_snowmass      )
        nullify(cgrid%avg_snowtempk     )
        nullify(cgrid%avg_snowfracliq   )
@@ -2665,6 +2669,7 @@ contains
 
     ! NACP
     nullify(cpoly%avg_snowdepth    )
+    nullify(cpoly%avg_snowenergy   )
     nullify(cpoly%avg_snowmass     )
     nullify(cpoly%avg_snowtempk    )
     nullify(cpoly%avg_snowfracliq  )
@@ -3067,6 +3072,7 @@ contains
 
        !!! added for NACP intercomparison (MCD)
        if(associated(cgrid%avg_snowdepth           )) deallocate(cgrid%avg_snowdepth       )
+       if(associated(cgrid%avg_snowenergy          )) deallocate(cgrid%avg_snowenergy      )
        if(associated(cgrid%avg_snowmass            )) deallocate(cgrid%avg_snowmass        )
        if(associated(cgrid%avg_snowtempk           )) deallocate(cgrid%avg_snowtempk       )
        if(associated(cgrid%avg_snowfracliq         )) deallocate(cgrid%avg_snowfracliq     )
@@ -3303,6 +3309,7 @@ contains
 
     ! NACP
     if(associated(cpoly%avg_snowdepth             )) deallocate(cpoly%avg_snowdepth             )
+    if(associated(cpoly%avg_snowenergy            )) deallocate(cpoly%avg_snowenergy            )
     if(associated(cpoly%avg_snowmass              )) deallocate(cpoly%avg_snowmass              )
     if(associated(cpoly%avg_snowfracliq           )) deallocate(cpoly%avg_snowfracliq           )
     if(associated(cpoly%avg_snowtempk             )) deallocate(cpoly%avg_snowtempk             )
@@ -3742,6 +3749,7 @@ contains
 
        !!! added for NACP intercomparison (MCD)
        if(associated(cgrid%avg_snowdepth           )) cgrid%avg_snowdepth            = large_real
+       if(associated(cgrid%avg_snowenergy          )) cgrid%avg_snowenergy           = large_real
        if(associated(cgrid%avg_snowmass            )) cgrid%avg_snowmass             = large_real
        if(associated(cgrid%avg_snowtempk           )) cgrid%avg_snowtempk            = large_real
        if(associated(cgrid%avg_snowfracliq         )) cgrid%avg_snowfracliq          = large_real
@@ -4000,6 +4008,7 @@ contains
 
     !NACP
     if(associated(cpoly%avg_snowdepth               )) cpoly%avg_snowdepth               = large_real
+    if(associated(cpoly%avg_snowenergy              )) cpoly%avg_snowenergy              = large_real
     if(associated(cpoly%avg_snowmass                )) cpoly%avg_snowmass                = large_real
     if(associated(cpoly%avg_snowtempk               )) cpoly%avg_snowtempk               = large_real
     if(associated(cpoly%avg_snowfracliq             )) cpoly%avg_snowfracliq             = large_real
@@ -5934,6 +5943,12 @@ contains
        call vtable_edio_r(cgrid%avg_snowdepth(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_SNOWDEPTH :11:hist:anal:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Poly Avg. Snow Depth ','[m]','ipoly') 
+    endif
+    if (associated(cgrid%avg_snowenergy)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_snowenergy(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_SNOWENERGY :11:hist:anal:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Poly Avg. Snow Energy ','[J/kg]','ipoly') 
     endif
     if (associated(cgrid%avg_snowmass)) then
        nvar=nvar+1

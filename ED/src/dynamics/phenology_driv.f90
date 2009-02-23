@@ -177,7 +177,8 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
               cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
                                                  cpatch%nplant(ico),cpatch%pft(ico))
               call update_veg_energy_cweh(cpatch%veg_energy(ico),cpatch%veg_temp(ico)      &
-                                         ,old_hcapveg,cpatch%hcapveg(ico))
+                                         ,cpatch%veg_water(ico),old_hcapveg                &
+                                         ,cpatch%hcapveg(ico))
 
            endif
 

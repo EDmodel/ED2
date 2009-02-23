@@ -864,7 +864,7 @@ do k = nlev_sfcwater,1,-1
 
          sfcwater_fracliq(1) = max(0.,flmin,min(1.0,flmax,sfcwater_fracliq(1)))
          sfcwater_tempk(1) = t3ple
-         energy_per_m2(1) = sfcwater_mass(1) * sfcwater_fracliq(1) * qliqt3
+         energy_per_m2(1) = sfcwater_mass(1) * (qicet3 + sfcwater_fracliq(1) * alli)
 
       endif
 

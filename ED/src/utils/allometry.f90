@@ -4,26 +4,28 @@
 !------------------------------------------------------------------------------------------!
 module allometry
 
-   !----- Constants shared by both bdead and bleaf ------------------------------------------!
+   !----- Constants shared by both bdead and bleaf ----------------------------------------!
    real, parameter :: a1    =  -1.981
    real, parameter :: b1    =   1.047
    real, parameter :: dcrit = 100.0
    real, parameter :: ff    =   0.640
    real, parameter :: gg    =   0.370
-   !----- Constants used by bdead only ------------------------------------------------------!
+   !----- Constants used by bdead only ----------------------------------------------------!
    real, parameter :: c1d   =   0.572
    real, parameter :: d1d   =   0.931
    real, parameter :: a2d   =  -1.086
    real, parameter :: b2d   =   0.876
    real, parameter :: c2d   =   0.604
    real, parameter :: d2d   =   0.871
-   !----- Constants used by bleaf only ------------------------------------------------------!
+   !----- Constants used by bleaf only ----------------------------------------------------!
    real, parameter :: c1l   =  -0.584
    real, parameter :: d1l   =   0.550
    real, parameter :: a2l   =  -4.111
    real, parameter :: b2l   =   0.605
    real, parameter :: c2l   =   0.848
    real, parameter :: d2l   =   0.438
+   !----- Constants for root depth --------------------------------------------------------!
+   real(kind=8), parameter :: volume_min = 1.d-24
    !---------------------------------------------------------------------------------------!
 
    contains
@@ -182,6 +184,7 @@ module allometry
       real   , intent(in) :: dbh
       integer, intent(in) :: ipft
       !----- Local variables --------------------------------------------------------------!
+      real(kind=8)        :: volume8
       real                :: volume
       !------------------------------------------------------------------------------------!
 
@@ -189,7 +192,10 @@ module allometry
       case(1,5) !----- Grasses get a fixed rooting depth of 70 cm. ------------------------!
          calc_root_depth = -0.7
       case default
-         volume          = h * 0.65 * pi1 * (dbh*0.11)**2
+         !----- Using double precision to avoid FPE when both dbh and h are tiny. ---------!
+         volume8          = max(volume_min,dble(h) * 0.65 * dble(pi1)                      &
+                          * (dble(dbh)*0.11)*(dble(dbh)*0.11))
+         volume           = sngl(volume8)
          calc_root_depth = -10.0**(0.545 + 0.277*log10(volume))
       end select
 

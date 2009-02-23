@@ -1172,7 +1172,7 @@ subroutine copy_avgvars_to_leaf(ifm)
 
    use ed_state_vars , only: edgrid_g,edtype,polygontype,sitetype,patchtype
    use mem_leaf      , only: leaf_g
-   use mem_grid      , only: nzg
+   use mem_grid      , only: nzg,nzs
    use rconstants    , only: t3ple,cliqvlme,cicevlme,allivlme
    use soil_coms     , only: soil
    use misc_coms, only: frqsum
@@ -1204,6 +1204,16 @@ subroutine copy_avgvars_to_leaf(ifm)
          leaf_g(ifm)%soil_text(k,ix,iy,2)   = cgrid%ntext_soil(k,ipy)
          leaf_g(ifm)%soil_energy(k,ix,iy,2) = cgrid%avg_soil_energy(k,ipy)
          leaf_g(ifm)%soil_water(k,ix,iy,2)  = cgrid%avg_soil_water(k,ipy)
+      end do
+      !----- Surface water is always 1, because we give the averaged value. ---------------!
+      leaf_g(ifm)%sfcwater_nlev     (ix,iy,2) = 1.
+      leaf_g(ifm)%sfcwater_energy (1,ix,iy,2) = cgrid%avg_snowenergy(ipy)
+      leaf_g(ifm)%sfcwater_mass   (1,ix,iy,2) = cgrid%avg_snowmass  (ipy)
+      leaf_g(ifm)%sfcwater_depth  (1,ix,iy,2) = cgrid%avg_snowdepth (ipy)
+      do k=2,nzs
+         leaf_g(ifm)%sfcwater_energy (k,ix,iy,2) = 0.
+         leaf_g(ifm)%sfcwater_mass   (k,ix,iy,2) = 0.
+         leaf_g(ifm)%sfcwater_depth  (k,ix,iy,2) = 0.
       end do
       
       leaf_g(ifm)%veg_water(ix,iy,2) = cgrid%avg_veg_water(ipy)
