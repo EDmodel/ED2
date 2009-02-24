@@ -200,6 +200,13 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
    end do kbconloop
 
    !---------------------------------------------------------------------------------------!
+   !     The LFC is really somewhere betweeen kbcon-1 and kbcon. If we assume it is kbcon  !
+   ! we are going to make it less likely for convection to happen, whereas assuming it to  !
+   ! be kbcon-1 may cause convection where it shouldn't really happen.                     !
+   !---------------------------------------------------------------------------------------!
+   kbcon = kbcon - 1
+
+   !---------------------------------------------------------------------------------------!
    !   Finding the minimum velocity an updraft would need to have to reach the tentative   !
    ! LFC. This may not be needed here depending on the test the user asked for, but it     !
    ! will be needed when computing the fractional area covered by clouds.                  !

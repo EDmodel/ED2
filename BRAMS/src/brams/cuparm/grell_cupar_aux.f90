@@ -300,7 +300,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,pi0,pp,pc,wp,dn0,tkep,rli
       !------ 7. Vertical velocity [m/s], this is staggered, averaging... -----------------!
       wwind(k)    = 0.5 * (wp(kr)+wp(kr-1))
       !------ 8. Standard-deviation of vertical velocity ----------------------------------!
-      sigw(k)     = max(wstd(kr),sigwmin)
+      ! sigw(k)     = max(wstd(kr),sigwmin)
       !------------------------------------------------------------------------------------!
       !]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]!
 
@@ -330,6 +330,8 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,pi0,pp,pc,wp,dn0,tkep,rli
       tke(k)   = max(tkmin,tkep(kr) + dtkedt(k) * dtime)
       !------ 8. Air density --------------------------------------------------------------!
       rho(k)   = idealdens(p(k),t(k),qvap(k),qtot(k))
+      !------ 9. Standard-deviation of vertical velocity ----------------------------------!
+      sigw(k)     = max(sqrt(2.*tke(k)),sigwmin)
       !------------------------------------------------------------------------------------!
       !]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]!
 

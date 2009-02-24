@@ -814,6 +814,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    !---------------------------------------------------------------------------------------!
    !   Obtaining the shedding water and t
    !---------------------------------------------------------------------------------------!
+ 
    if (csite%lai(ipa) > lai_min) then
       !------------------------------------------------------------------------------------!
       !     If vegetation is sufficiently abundant and not covered by snow, compute heat   !
@@ -991,7 +992,8 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
       ! and pass all throughfall to the ground. Later, those small cohorts will have their !
       ! leaf energy set to equilibrium with the canopy air space (temperature).            !
       !------------------------------------------------------------------------------------!
-      if (cpatch%lai(ico) > lai_min) then
+      if (cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))  &
+      then
 
          !------ Defining some shortcuts to indices ---------------------------------------!
          ipft  = cpatch%pft(ico)

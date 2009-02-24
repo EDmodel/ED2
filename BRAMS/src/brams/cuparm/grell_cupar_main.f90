@@ -568,10 +568,17 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
       ! 8. Also check whether this cloud qualifies to be in this spectrum size. It need    !
       !    to be thicker than the minimum value provided by the user.                      !
       !------------------------------------------------------------------------------------!
-      if (z_cup(ktop)-z_cup(kbcon) < depth_min) then
+      !if (z_cup(ktop)-z_cup(kbcon) < depth_min) then
+      !   ierr = 6
+      !   cycle stacloop
+      !elseif (z_cup(ktop)-z_cup(kbcon) > depth_max) then
+      !   ierr = 7
+      !   cycle stacloop
+      !end if
+      if (z_cup(ktop)-z_cup(k22) < depth_min) then
          ierr = 6
          cycle stacloop
-      elseif (z_cup(ktop)-z_cup(kbcon) > depth_max) then
+      elseif (z_cup(ktop)-z_cup(k22) > depth_max) then
          ierr = 7
          cycle stacloop
       end if
