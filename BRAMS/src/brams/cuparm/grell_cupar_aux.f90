@@ -21,12 +21,15 @@ subroutine initial_grid_grell(m1,deltax,deltay,zt,zm,flpw,rtgt,confrq,pblidx)
            mkx                  & ! intent(out) - Number of Grell levels.
           ,kgoff                & ! intent(out) - BRAMS offset related to Grell
           ,kpbl                 & ! intent(out) - Level of PBL top
+          ,ktpse                & ! intent(out) - Maximum cloud top allowed
           ,lpw                  & ! intent(out) - Lowest thermodynamic point
           ,tscal_kf             & ! intent(out) - Kain-Fritsch(1990) time scale
           ,z                    & ! intent(out) - Height
           ,z_cup                & ! intent(out) - Height at cloud levels
           ,dzu_cld              & ! intent(out) - Delta z for updraft calculations
           ,dzd_cld              ! ! intent(out) - Delta z for downdraft calculations
+   use grell_coms       , only: &
+           zmaxtpse             ! ! intent(in)  - Maximum height allowed for cloud top.
    implicit none
    !------ I/O variables ------------------------------------------------------------------!
    integer               , intent(in)  :: m1        ! Number of vertical levels
@@ -87,6 +90,12 @@ subroutine initial_grid_grell(m1,deltax,deltay,zt,zm,flpw,rtgt,confrq,pblidx)
    do k=2,mkx
       dzu_cld(k) = z_cup(k)-z_cup(k-1)
    end do
+   
+   !----- Finding the top height that we allow convection to develop. ---------------------!
+   pauseloop: do ktpse=2,mkx-1
+      if (z_cup(ktpse) > zmaxtpse) exit pauseloop
+   end do pauseloop
+   ktpse = ktpse - 1
 
    return
 end subroutine initial_grid_grell
@@ -300,7 +309,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,pi0,pp,pc,wp,dn0,tkep,rli
       !------ 7. Vertical velocity [m/s], this is staggered, averaging... -----------------!
       wwind(k)    = 0.5 * (wp(kr)+wp(kr-1))
       !------ 8. Standard-deviation of vertical velocity ----------------------------------!
-      ! sigw(k)     = max(wstd(kr),sigwmin)
+      sigw(k)     = max(wstd(kr),sigwmin)
       !------------------------------------------------------------------------------------!
       !]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]!
 
@@ -330,8 +339,6 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,pi0,pp,pc,wp,dn0,tkep,rli
       tke(k)   = max(tkmin,tkep(kr) + dtkedt(k) * dtime)
       !------ 8. Air density --------------------------------------------------------------!
       rho(k)   = idealdens(p(k),t(k),qvap(k),qtot(k))
-      !------ 9. Standard-deviation of vertical velocity ----------------------------------!
-      sigw(k)     = max(sqrt(2.*tke(k)),sigwmin)
       !------------------------------------------------------------------------------------!
       !]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]!
 

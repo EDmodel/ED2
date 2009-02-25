@@ -38,7 +38,8 @@ module mem_scratch_grell
            ,kdet                         & ! Top of downdraft detrainemnt layer
            ,kstabi                       & ! cloud stable layer base
            ,kstabm                       & ! cloud stable layer top
-           ,ktop                         ! ! cloud top
+           ,ktop                         & ! cloud top
+           ,ktpse                        ! ! maximum height allowed for cloud top
    !---------------------------------------------------------------------------------------!
 
 
@@ -367,6 +368,7 @@ module mem_scratch_grell
      kstabi            = 0
      kstabm            = 0
      ktop              = 0
+     ktpse             = 0
 
      !----- Real variables ----------------------------------------------------------------!
      exnersur          = 0.
