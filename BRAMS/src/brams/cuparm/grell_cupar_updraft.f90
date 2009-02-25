@@ -351,88 +351,6 @@ end subroutine grell_buoy_below_lfc
 
 !==========================================================================================!
 !==========================================================================================!
-!     This subroutine finds the level of convective cloud top. The method as is has two    !
-! approximations:                                                                          !
-! 1. The cloud top is roughly the equilibrium level (the cloud top is often higher because !
-!    the air parcel still has momentum at EL);                                             !
-! 2. We can determine the equilibrium level from thetae_iv only. The most accurate way     !
-!    would be using the buoyancy, however, we need to know the  cloud top before proceed-  !
-!    ing to the moisture balance. Nonetheless, the buoyancy will be correctly computed for !
-!    cloud work function after we know the updraft water phase partition.                  !
-!------------------------------------------------------------------------------------------!
-subroutine grell_find_cloud_top(mkx,mgmzp,kbcon,cdu,mentru_rate,theiv_cup,theivs_cup       &
-                               ,dzu_cld,theivu_cld,dbyu,ierr,ktop)
-
-   implicit none
-   !----- Input variables -----------------------------------------------------------------!
-   integer, intent(in)                   :: mkx,mgmzp   ! Grid dimensions
-   integer, intent(in)                   :: kbcon       ! Level of free convection
-   real, dimension(mgmzp), intent(in)    :: cdu         ! Detrainment function      [  1/m]
-   real, dimension(mgmzp), intent(in)    :: mentru_rate ! Entrainment rate          [  1/m]
-
-   real, dimension(mgmzp), intent(in)    :: theiv_cup   ! Thetae_iv @ cloud levels  [    K]
-   real, dimension(mgmzp), intent(in)    :: theivs_cup  ! Thetaes_iv @ cloud levels [    K]
-   real, dimension(mgmzp), intent(in)    :: dzu_cld     ! Layer thickness           [    m]
-   !----- Transit variables, these will be reset above the cloud top ----------------------!
-   real, dimension(mgmzp), intent(inout) :: theivu_cld  ! Thetae_iv                 [    K]
-   real, dimension(mgmzp), intent(inout) :: dbyu        ! Buoyancy acceleration     [ m/s²]
-   !----- Output variables, error and the cloud top ---------------------------------------!
-   integer               , intent(inout) :: ierr        ! Error flag
-   integer               , intent(out)   :: ktop        ! Cloud top level
-   !----- Auxiliary variables -------------------------------------------------------------!
-   logical                               :: foundit     ! Top check Boolean flag
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Initialize foundit                                                                 !
-   !---------------------------------------------------------------------------------------!
-   foundit=.false.
-   
-   !---------------------------------------------------------------------------------------!
-   !   Loop over levels looking for the first level above the cloud top that has negative  !
-   ! buoyancy.                                                                             !
-   !---------------------------------------------------------------------------------------!
-   ktoploop: do ktop=kbcon+1,mkx-2
-      foundit=theivu_cld(ktop) < theivs_cup(ktop)
-      if (foundit) exit ktoploop
-   end do ktoploop
- 
-   !---------------------------------------------------------------------------------------!
-   !    The cloud top truthfully should be the level in which it loses its positive verti- !
-   ! cal velocity, but as a first approximation we can leave it at the equilibrium level.  !
-   !---------------------------------------------------------------------------------------!
-   ktop = ktop - 1
-
-   if (foundit) then
-      !------------------------------------------------------------------------------------!
-      !    Fixing the updraft properties aloft to be the same as the environment.          !
-      !------------------------------------------------------------------------------------!
-      theivu_cld(ktop+1:mkx) = theiv_cup(ktop+1:mkx)
-      dbyu(ktop+1:mkx)       = 0.
-   else
-      !------------------------------------------------------------------------------------!
-      !    I won't allow those clouds that extend all the way up to the mesosphere, they   !
-      ! are way too scary...                                                               !
-      !------------------------------------------------------------------------------------!
-      ktop=0
-      dbyu=0.
-      theivu_cld = theiv_cup
-      ierr=5
-   end if
-
-   return
-end subroutine grell_find_cloud_top
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
 !   This subroutine computes the incloud moist static energy                               !
 !------------------------------------------------------------------------------------------!
 subroutine grell_theiv_updraft(mkx,mgmzp,k22,kbcon,cdu,mentru_rate,theiv,theiv_cup,dzu_cld &
@@ -475,13 +393,13 @@ end subroutine grell_theiv_updraft
 !==========================================================================================!
 !   This subroutine computes the normalized mass flux associated with updrafts             !
 !------------------------------------------------------------------------------------------!
-subroutine grell_nms_updraft(mkx,mgmzp,k22,kbcon,ktop,mentru_rate,cdu,dzu_cld,etau_cld)
+subroutine grell_nms_updraft(mkx,mgmzp,k22,kbcon,ktpse,mentru_rate,cdu,dzu_cld,etau_cld)
    implicit none
 
    integer               , intent(in)    :: mkx, mgmzp  ! Grid dimesnsions
    integer               , intent(in)    :: k22         ! Level in which updrafts begin
    integer               , intent(in)    :: kbcon       ! Level of free convection
-   integer               , intent(in)    :: ktop        ! Cloud top
+   integer               , intent(in)    :: ktpse       ! Maximum cloud top possible
                                         
    real, dimension(mgmzp), intent(in)    :: mentru_rate ! Updraft entrainment rate
    real, dimension(mgmzp), intent(in)    :: cdu         ! Updraft detrainment function;
@@ -509,7 +427,7 @@ subroutine grell_nms_updraft(mkx,mgmzp,k22,kbcon,ktop,mentru_rate,cdu,dzu_cld,et
    ! 3. Between the LFC and cloud top, need to consider entrainment and detrainment        !
    !    contributions, loop through levels.                                                !
    !---------------------------------------------------------------------------------------!
-   do k=kbcon+1,ktop
+   do k=kbcon+1,ktpse
       etau_cld(k)=etau_cld(k-1)*(1.+(mentru_rate(k)-cdu(k))*dzu_cld(k))
    end do
 
@@ -517,7 +435,7 @@ subroutine grell_nms_updraft(mkx,mgmzp,k22,kbcon,ktop,mentru_rate,cdu,dzu_cld,et
    !---------------------------------------------------------------------------------------!
    ! 1. Above the cloud top, no mass flux, set it to zero.                                 !
    !---------------------------------------------------------------------------------------!
-   etau_cld(ktop+1:mkx) = 0.
+   etau_cld(ktpse+1:mkx) = 0.
    
    return
 end subroutine grell_nms_updraft
@@ -534,20 +452,21 @@ end subroutine grell_nms_updraft
 !     This subroutine computes most thermodynamic variables associated with the updraft,   !
 ! in particular those affected by phase change.                                            !
 !------------------------------------------------------------------------------------------!
-subroutine grell_most_thermo_updraft(comp_down,mkx,mgmzp,kbcon,ktop,cdu,mentru_rate,qtot   &
-                                    ,p_cup,exner_cup,thil_cup,t_cup,qtot_cup,qvap_cup      &
-                                    ,qliq_cup,qice_cup,qsat_cup,rho_cup,theivu_cld         &
-                                    ,etau_cld,dzu_cld,thilu_cld,tu_cld,qtotu_cld,qvapu_cld &
-                                    ,qliqu_cld,qiceu_cld,qsatu_cld,rhou_cld,dbyu,pwu_cld   &
-                                    ,pwavu)
+subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,cdu         &
+                                    ,mentru_rate,qtot,p_cup,exner_cup,theiv_cup,thil_cup   &
+                                    ,t_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup,qsat_cup    &
+                                    ,rho_cup,theivu_cld,etau_cld,dzu_cld,thilu_cld,tu_cld  &
+                                    ,qtotu_cld,qvapu_cld,qliqu_cld,qiceu_cld,qsatu_cld     &
+                                    ,rhou_cld,dbyu,pwu_cld,pwavu,ktop,ierr)
    use rconstants, only : epi,rgas, t00, toodry
    use therm_lib , only : thetaeiv2thil, idealdens, toler, maxfpo
    implicit none
-   logical               , intent(in)    :: comp_down  ! Flag for downdraft/precipitation
-   integer               , intent(in)    :: mkx        ! Levels 
-   integer               , intent(in)    :: mgmzp      ! Levels
-   integer               , intent(in)    :: kbcon      ! Level of free convection
-   integer               , intent(in)    :: ktop       ! Cloud top
+   logical               , intent(in)    :: comp_down   ! Flag for downdraft/precipitation
+   logical               , intent(in)    :: check_top   ! Flag for checking top
+   integer               , intent(in)    :: mkx         ! Levels 
+   integer               , intent(in)    :: mgmzp       ! Levels
+   integer               , intent(in)    :: kbcon       ! Level of free convection
+   integer               , intent(in)    :: ktpse       ! Maximum cloud top possible
 
    real, dimension(mgmzp), intent(in)    :: cdu         ! Detrainment function     [   1/m]
    real, dimension(mgmzp), intent(in)    :: mentru_rate ! Entrainment function     [   1/m]
@@ -556,6 +475,7 @@ subroutine grell_most_thermo_updraft(comp_down,mkx,mgmzp,kbcon,ktop,cdu,mentru_r
    !----- Variables at cloud levels -------------------------------------------------------!
    real, dimension(mgmzp), intent(in)    :: p_cup       ! Pressure @ cloud levels  [   1/m]
    real, dimension(mgmzp), intent(in)    :: exner_cup   ! Exner fctn. @ cloud lev. [J/kg/K]
+   real, dimension(mgmzp), intent(in)    :: theiv_cup   ! Thetae_iv                [     K]
    real, dimension(mgmzp), intent(in)    :: thil_cup    ! Theta_il                 [     K]
    real, dimension(mgmzp), intent(in)    :: t_cup       ! Temperature              [     K]
    real, dimension(mgmzp), intent(in)    :: qtot_cup    ! Total mixing ratio       [ kg/kg]
@@ -565,10 +485,11 @@ subroutine grell_most_thermo_updraft(comp_down,mkx,mgmzp,kbcon,ktop,cdu,mentru_r
    real, dimension(mgmzp), intent(in)    :: qsat_cup    ! Sat. mixing ratio        [ kg/kg]
    real, dimension(mgmzp), intent(in)    :: rho_cup     ! Density                  [ kg/m³]
    !----- Input variables at updraft ------------------------------------------------------!
-   real, dimension(mgmzp), intent(in)    :: theivu_cld  ! Thetae_iv @ updraft      [     K]
-   real, dimension(mgmzp), intent(in)    :: etau_cld    ! Normalized mass flux     [   ---]
    real, dimension(mgmzp), intent(in)    :: dzu_cld     ! Layer thickness          [     m]
    !----- Transit variables, which will be changed between kbcon and ktop -----------------!
+   real, dimension(mgmzp), intent(inout) :: etau_cld    ! Normalized mass flux     [   ---]
+   real, dimension(mgmzp), intent(inout) :: pwu_cld     ! Fall-out rain            [ kg/kg]
+   real, dimension(mgmzp), intent(inout) :: theivu_cld  ! Thetae_iv @ updraft      [     K]
    real, dimension(mgmzp), intent(inout) :: thilu_cld   ! Theta_il                 [     K]
    real, dimension(mgmzp), intent(inout) :: tu_cld      ! Temperature              [     K]
    real, dimension(mgmzp), intent(inout) :: qtotu_cld   ! Total mixing ratio       [ kg/kg]
@@ -578,9 +499,10 @@ subroutine grell_most_thermo_updraft(comp_down,mkx,mgmzp,kbcon,ktop,cdu,mentru_r
    real, dimension(mgmzp), intent(inout) :: qsatu_cld   ! Sat. mixing ratio        [ kg/kg]
    real, dimension(mgmzp), intent(inout) :: rhou_cld    ! Density                  [ kg/m³]
    real, dimension(mgmzp), intent(inout) :: dbyu        ! Buoyancy acceleration    [  m/s²]
+   integer               , intent(inout) :: ierr        ! Error flag               [   ---]
    !----- Output variables ----------------------------------------------------------------!
-   real, dimension(mgmzp), intent(inout) :: pwu_cld     ! Fall-out rain            [ kg/kg]
    real                  , intent(out)   :: pwavu       ! Total normalized integrated cond.
+   integer               , intent(out)   :: ktop        ! Cloud top.
    !----- Local variables -----------------------------------------------------------------!
    integer                :: k              ! Counter                              [  ----]
    integer                :: it             ! Iteration counter                    [  ----]
@@ -589,6 +511,7 @@ subroutine grell_most_thermo_updraft(comp_down,mkx,mgmzp,kbcon,ktop,cdu,mentru_r
                                             !   of wind shear and cloud spectral size.
    logical                :: converged      ! Flag to test convergence             [   T|F]
    logical                :: bisection      ! Flag to use bisection                [   T|F]
+   logical                :: foundtop       ! Flag for finding cloud top           [   T|F]
    real                   :: qeverything    ! Sum of all mixing ratios             [ kg/kg]
    real                   :: qtotua, qtotuz ! Aux. vars for bisection iteration    [ kg/kg]
    real                   :: qtotuc, qtotup ! Aux. vars for secant iteration       [ kg/kg]
@@ -622,13 +545,26 @@ subroutine grell_most_thermo_updraft(comp_down,mkx,mgmzp,kbcon,ktop,cdu,mentru_r
    end if
    
    !---------------------------------------------------------------------------------------!
-   ! 2.  Initialise integrated condensation                                                !
+   ! 2.  Initialise integrated condensation and top flag.                                  !
    !---------------------------------------------------------------------------------------!
    pwavu     = 0.
    pwu_cld   = 0.
    leftu_cld = 0.
+   
+   
    !---------------------------------------------------------------------------------------!
-   ! 3. Between the surface and the level of free convection, everything is already set up !
+   ! 3.  Initialise the cloud top check. The check is done only once. The non-forced and   !
+   !     the modified profiles should use the original cloud top definition.               !
+   !---------------------------------------------------------------------------------------!
+   if (check_top) then
+      foundtop  = .false.
+   else
+      foundtop  = .true.
+      ktop      = ktpse
+   end if
+
+   !---------------------------------------------------------------------------------------!
+   ! 4. Between the surface and the level of free convection, everything is already set up !
    !    (it was done at the grell_find_cloud_lfc subroutine) but between the LFC and the   !
    !    cloud top I will need a first guess for most variables, so I will initialise with  !
    !    the environment. Above the cloud top, no mass flux, nothing happens in terms of    !
@@ -646,12 +582,12 @@ subroutine grell_most_thermo_updraft(comp_down,mkx,mgmzp,kbcon,ktop,cdu,mentru_r
 
 
    !---------------------------------------------------------------------------------------!
-   ! 4. Between the LFC and the cloud top, we need to consider entrainment and detrainment !
+   ! 5. Between the LFC and the cloud top, we need to consider entrainment and detrainment !
    !    contributions. Also, as the air parcel moves upward, condensation will happen, and !
    !    a fraction of this condensation will fall out as rainfall. Here we will compute    !
    !    all these variables, some of them in an iterative way.                             !
    !---------------------------------------------------------------------------------------!
-   do k=kbcon,ktop
+   vertiloop: do k=kbcon,ktpse
       !------------------------------------------------------------------------------------!
       !    The total mixing ratio is what came from level immediately beneath us plus      !
       ! entrainment and detrainment, plus the water and ice that is about to leave the     !
@@ -946,8 +882,44 @@ subroutine grell_most_thermo_updraft(comp_down,mkx,mgmzp,kbcon,ktop,cdu,mentru_r
       rhou_cld(k) = idealdens(p_cup(k),tu_cld(k),qvapu_cld(k),qtotu_cld(k))
       !------ Finding buoyancy ------------------------------------------------------------!
       dbyu(k) = buoyancy_acc(rho_cup(k),rhou_cld(k))
+      
+      !------------------------------------------------------------------------------------!
+      !    If buoyancy is negative, we found the cloud top. We can skip this loop and set  !
+      ! all the other variables to either 0 or the environment, whichever is suitable.     !
+      !------------------------------------------------------------------------------------!
+      if (check_top .and. dbyu(k) < 0.) then
+         pwavu        = pwavu - pwu_cld(k)
+         pwu_cld(k)   = 0.
+         thilu_cld(k) = thil_cup(k)
+         tu_cld   (k) = t_cup   (k)
+         qvapu_cld(k) = qvap_cup(k)
+         qliqu_cld(k) = qliq_cup(k)
+         qiceu_cld(k) = qice_cup(k)
+         qtotu_cld(k) = qtot_cup(k)
+         rhou_cld (k) = rho_cup (k)
+         dbyu(k)      = 0.
+         ktop         = k -1
+         foundtop     = .true.
+         exit vertiloop
+      end if
 
-   end do
+   end do vertiloop
+   
+   !---------------------------------------------------------------------------------------!
+   !   If I found the cloud top, I need to reset values beyond that point.                 !
+   !---------------------------------------------------------------------------------------!
+   if (check_top .and. foundtop) then
+      etau_cld(ktop+1:mkx)   = 0.
+      theivu_cld(ktop+1:mkx) = theiv_cup(ktop+1:mkx)
+      dbyu(ktop+1:mkx)       = 0.
+   elseif (check_top) then
+      !----- Cloud is way too thick! Don't allow such cloud -------------------------------!
+      ierr = 5
+      ktop = 0
+      etau_cld = 0.
+      dbyu = 0.
+      theivu_cld = theiv_cup
+   end if
 
    return
 end subroutine grell_most_thermo_updraft

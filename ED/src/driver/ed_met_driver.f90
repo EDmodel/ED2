@@ -1299,7 +1299,7 @@ subroutine match_poly_grid_array(cgrid,nlon,nlat,lon,lat)
    real, dimension(nlon,nlat), intent(inout) :: lon,lat
    integer                   , intent(in)    :: nlon,nlat
    !----- Local variables -----------------------------------------------------------------!
-   integer                                   :: ilat,ilon,offlat,offlon
+   integer                                   :: ilat,ilon
    integer                                   :: ipy
    real                                      :: min_dist
    real                                      :: this_dist
@@ -1313,29 +1313,12 @@ subroutine match_poly_grid_array(cgrid,nlon,nlat,lon,lat)
 
       do ilon = 1,nlon
          do ilat = 1,nlat
-            
-            if (ilat /= nlat) then
-               offlat = 1
-            else
-               offlat = -1
-            end if
-            if (ilon /= nlon) then
-               offlon = 1
-            else
-               offlon = -1
-            end if
 
             if (lon(ilon,ilat) > 180.0)                                                    &
                lon(ilon,ilat) = lon(ilon,ilat) - 360.0
 
-            if (lon(ilon+offlon,ilat) > 180.0)                                             &
-               lon(ilon+offlon,ilat) = lon(ilon+offlon,ilat) - 360.0
-
-            if (lon(ilon,ilat+offlat) > 180.0)                                             &
-               lon(ilon,ilat+offlat) = lon(ilon,ilat+offlat) - 360.0
-
-            this_dist = dist_gc(lon(ilon+offlon,ilat), lon(ilon,ilat)                      &
-                               ,lat(ilon,ilat+offlat), lat(ilon,ilat) )
+            this_dist = dist_gc(cgrid%lon(ipy), lon(ilon,ilat)                      &
+                               ,cgrid%lat(ipy), lat(ilon,ilat) )
             
             if(this_dist < min_dist) then               
                cgrid%ilon(ipy) = ilon

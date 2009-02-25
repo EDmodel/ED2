@@ -37,6 +37,7 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
       ,exner        & ! intent(in)  - Forced Exner funtion                        [ J/kg/K]
       ,exnersur     & ! intent(in)  - Surface Exner function                      [ J/kg/K]
       ,kpbl         & ! intent(in)  - Level of PBL top (Nakanishi/Niino only)     [    ---]
+      ,ktpse        & ! intent(in)  - Maximum level allowed for cloud top         [    ---]
       ,mkx          & ! intent(in)  - Number of vertical levels                   [    ---]
       ,mconv        & ! intent(in)  - Integrated moisture convergence             [kg/m²/s]
       ,omeg         & ! intent(in)  - Vertical velocity in pressure, dp/dt:       [   Pa/s]
@@ -287,6 +288,7 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
    !    Flag for convection error when using the "0"  variables.                           !
    !---------------------------------------------------------------------------------------!
    integer :: ierr0     ! Flag for convection error
+   integer :: ktop0     ! ktop, but it is just a dummy variable.
    !---------------------------------------------------------------------------------------!
 
 
@@ -348,6 +350,7 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
    real                      :: x_aatot       ! Combined cloud work function      [   J/kg]
    !----- Other parameters ----------------------------------------------------------------!
    integer                   :: x_ierr        ! Flag for convection error
+   integer                   :: x_ktop        ! ktop, but it is just a dummy variable.
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -555,46 +558,42 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
       !------------------------------------------------------------------------------------!
       call grell_theiv_updraft(mkx,mgmzp,k22,kbcon,cdu,mentru_rate,theiv,theiv_cup,dzu_cld &
                               ,theivu_cld)
-                           
-      !------------------------------------------------------------------------------------!
-      ! 7. Finding the cloud top. Since this may keep convection to happen, I check        !
-      !    whether I should move on or break here.                                         !
-      !------------------------------------------------------------------------------------!
-      call grell_find_cloud_top(mkx,mgmzp,kbcon,cdu,mentru_rate,theiv_cup,theivs_cup       &
-                               ,dzu_cld,theivu_cld,dbyu,ierr,ktop)
-      if (ierr /= 0) cycle stacloop
 
       !------------------------------------------------------------------------------------!
-      ! 8. Also check whether this cloud qualifies to be in this spectrum size. It need    !
-      !    to be thicker than the minimum value provided by the user.                      !
+      ! 7. Finding the normalized mass fluxes associated with updrafts. Since we are using !
+      !    height-based vertical coordinate, there is no need to find the forced           !
+      !    normalized mass flux, they'll be the same, so just copy it afterwards.          !
       !------------------------------------------------------------------------------------!
-      if (z_cup(ktop)-z_cup(kbcon) < depth_min) then
+      call grell_nms_updraft(mkx,mgmzp,k22,kbcon,ktpse,mentru_rate,cdu,dzu_cld,etau_cld)
+
+      !------------------------------------------------------------------------------------!
+      ! 8. Finding the moisture profiles associated with updrafts.                         !
+      !------------------------------------------------------------------------------------!
+      call grell_most_thermo_updraft(comp_down,.true.,mkx,mgmzp,kbcon,ktpse,cdu            &
+                                    ,mentru_rate,qtot,p_cup,exner_cup,theiv_cup,thil_cup   &
+                                    ,t_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup,qsat_cup    &
+                                    ,rho_cup,theivu_cld,etau_cld,dzu_cld,thilu_cld,tu_cld  &
+                                    ,qtotu_cld,qvapu_cld,qliqu_cld,qiceu_cld,qsatu_cld     &
+                                    ,rhou_cld,dbyu,pwu_cld,pwav,ktop,ierr)
+
+      !------------------------------------------------------------------------------------!
+      ! 9. Checking whether we found a cloud top. Since this may keep convection to        !
+      !    happen, I check whether I should move on or break here.  Also check whether     !
+      !    this cloud qualifies to be in this spectrum size. It need to be thicker than    !
+      !    the minimum value provided by the user.                                         !
+      !------------------------------------------------------------------------------------!
+      if (ierr /= 0) then
+         cycle stacloop
+      elseif (z_cup(ktop)-z_cup(k22) < depth_min) then
          ierr = 6
          cycle stacloop
-      elseif (z_cup(ktop)-z_cup(kbcon) > depth_max) then
+      elseif (z_cup(ktop)-z_cup(k22) > depth_max) then
          ierr = 7
          cycle stacloop
       end if
 
       !------------------------------------------------------------------------------------!
-      ! 9. Finding the normalized mass fluxes associated with updrafts. Since we are using !
-      !    height-based vertical coordinate, there is no need to find the forced           !
-      !    normalized mass flux, they'll be the same, so just copy it afterwards.          !
-      !------------------------------------------------------------------------------------!
-      call grell_nms_updraft(mkx,mgmzp,k22,kbcon,ktop,mentru_rate,cdu,dzu_cld,etau_cld)
-
-      !------------------------------------------------------------------------------------!
-      !10. Finding the moisture profiles associated with updrafts.                         !
-      !------------------------------------------------------------------------------------!
-      call grell_most_thermo_updraft(comp_down,mkx,mgmzp,kbcon,ktop,cdu,mentru_rate,qtot   &
-                                    ,p_cup,exner_cup,thil_cup,t_cup,qtot_cup,qvap_cup      &
-                                    ,qliq_cup,qice_cup,qsat_cup,rho_cup,theivu_cld         &
-                                    ,etau_cld,dzu_cld,thilu_cld,tu_cld,qtotu_cld,qvapu_cld &
-                                    ,qliqu_cld,qiceu_cld,qsatu_cld,rhou_cld,dbyu,pwu_cld   &
-                                    ,pwav)
-
-      !------------------------------------------------------------------------------------!
-      !11. Finding the cloud work function associated with updrafts. If this cloud doesn't !
+      !10. Finding the cloud work function associated with updrafts. If this cloud doesn't !
       !    produce cloud work, break the run, we don't simulate lazy clouds in this model. !
       !------------------------------------------------------------------------------------!
       call grell_cldwork_updraft(mkx,mgmzp,kbcon,ktop,dbyu,dzu_cld,etau_cld,aau)
@@ -762,12 +761,13 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
          !---------------------------------------------------------------------------------!
          ! vi.    Finding the moisture profiles associated with updrafts.                  !
          !---------------------------------------------------------------------------------!
-         call grell_most_thermo_updraft(comp_down,mkx,mgmzp,kbcon,ktop,cdu,mentru_rate     &
-                                       ,qtot0,p0_cup,exner0_cup,thil0_cup,t0_cup,qtot0_cup &
-                                       ,qvap0_cup,qliq0_cup,qice0_cup,qsat0_cup,rho0_cup   &
-                                       ,theiv0u_cld,etau_cld,dzu_cld,thil0u_cld,t0u_cld    &
-                                       ,qtot0u_cld,qvap0u_cld,qliq0u_cld,qice0u_cld        &
-                                       ,qsat0u_cld,rho0u_cld,dby0u,pw0u_cld,pwav0)
+         call grell_most_thermo_updraft(comp_down,.false.,mkx,mgmzp,kbcon,ktop,cdu         &
+                                       ,mentru_rate,qtot0,p0_cup,exner0_cup,theiv0_cup     &
+                                       ,thil0_cup,t0_cup,qtot0_cup,qvap0_cup,qliq0_cup     &
+                                       ,qice0_cup,qsat0_cup,rho0_cup,theiv0u_cld,etau_cld  &
+                                       ,dzu_cld,thil0u_cld,t0u_cld,qtot0u_cld,qvap0u_cld   &
+                                       ,qliq0u_cld,qice0u_cld,qsat0u_cld,rho0u_cld,dby0u   &
+                                       ,pw0u_cld,pwav0,ktop0,ierr0)
          !---------------------------------------------------------------------------------!
          ! vii.   Finding the cloud work function                                          !
          !---------------------------------------------------------------------------------!
@@ -1000,14 +1000,15 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
                !---------------------------------------------------------------------------!
                ! 6h. Getting the updraft moisture profile                                  !
                !---------------------------------------------------------------------------!
-               call grell_most_thermo_updraft(comp_down,mkx,mgmzp,kbcon,ktop,cdu           &
+               call grell_most_thermo_updraft(comp_down,.false.,mkx,mgmzp,kbcon,ktop,cdu   &
                                              ,mentru_rate,x_qtot,x_p_cup,x_exner_cup       &
-                                             ,x_thil_cup,x_t_cup,x_qtot_cup,x_qvap_cup     &
-                                             ,x_qliq_cup,x_qice_cup,x_qsat_cup,x_rho_cup   &
-                                             ,x_theivu_cld,etau_cld,dzu_cld,x_thilu_cld    &
-                                             ,x_tu_cld,x_qtotu_cld,x_qvapu_cld,x_qliqu_cld &
-                                             ,x_qiceu_cld,x_qsatu_cld,x_rhou_cld,x_dbyu    &
-                                             ,x_pwu_cld,x_pwav)
+                                             ,x_theiv_cup,x_thil_cup,x_t_cup,x_qtot_cup    &
+                                             ,x_qvap_cup,x_qliq_cup,x_qice_cup,x_qsat_cup  &
+                                             ,x_rho_cup,x_theivu_cld,etau_cld,dzu_cld      &
+                                             ,x_thilu_cld,x_tu_cld,x_qtotu_cld             &
+                                             ,x_qvapu_cld,x_qliqu_cld,x_qiceu_cld          &
+                                             ,x_qsatu_cld,x_rhou_cld,x_dbyu,x_pwu_cld      &
+                                             ,x_pwav,x_ktop,x_ierr)
 
                !---------------------------------------------------------------------------!
                ! 6i. Recalculating the updraft cloud work                                  !
