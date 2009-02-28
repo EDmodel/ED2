@@ -1802,7 +1802,15 @@ subroutine ReadNamelist(fileName)
   if (isfcl == 5) then
      npatch = 2
      nvegpat = 1
+  else !---- Not an ED-BRAMS run, and isoilflg/ivegtflg are set to 3, switch them by 1. ---!
+     where (isoilflg == 3) isoilflg = 1
+     where (ivegtflg == 3) ivegtflg = 1
   end if
+  !---- If someone accidentally defined itoptflg, isstflg or ndviflg to 3, make them 1. ---!
+  where (itoptflg == 3) itoptflg = 1
+  where (isstflg  == 3) isstflg  = 1
+  where (ndviflg  == 3) ndviflg  = 1
+
   !----------------------------------------------------------------------------------------!
   !    Saving the moisture complexity level into logical variables. Note that vapour_on is !
   ! not level == 1, it will be true when level is 1, 2, and 3. (whenever vapour is on).    !

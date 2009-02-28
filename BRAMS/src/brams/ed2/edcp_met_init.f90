@@ -89,7 +89,7 @@ subroutine ed_init_coup_atm
               
               csite%rough(ipa) = soil_rough
               csite%soil_tempk(1,ipa) = -100.0 ! This value functions as a flag.  Do not 
-              ! change it here. It will be changed below.
+                                               ! change it here. It will be changed below.
               
               do ico = 1,cpatch%ncohorts
                  ! Initialize vegetation properties.
@@ -112,13 +112,16 @@ subroutine ed_init_coup_atm
         ! Initialize soil moisture, temperature, etc. from file specified in 
         ! the ED_NL.
 
-        if (mynum    /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,864,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
+        if (mynum    /= 1) &
+           call MPI_Recv(ping,1,MPI_INTEGER,recvnum,92,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
 
         call read_soil_moist_temp_ar(cgrid)
 
-        if (mynum     < nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,864,MPI_COMM_WORLD,ierr)
-
-
+        if (mynum     < nnodetot) &
+           call MPI_Send(ping,1,MPI_INTEGER,sendnum,92,MPI_COMM_WORLD,ierr)
+     elseif (isoilstateinit == 2) then
+        ! Use the soil moisture and energy from LEAF-3 initialisation ---------------------!
+        call leaf2ed_soil_moist_energy_ar(cgrid,igr)
      end if
 
      ! Do a simple, uniform initialization or take care of 
@@ -137,7 +140,7 @@ subroutine ed_init_coup_atm
               
               cpatch => csite%patch(ipa)
               
-              if(csite%soil_tempk(1,ipa) == -100.0 .or. isoilstateinit /= 1)then
+              if(csite%soil_tempk(1,ipa) == -100.0 .or. isoilstateinit == 0)then
                  
                  csite%soil_tempk(1:nzg,ipa) = csite%can_temp(ipa)
                  
@@ -461,6 +464,11 @@ end subroutine update_site_derived_props_ar
 !==========================================================================================!
 !==========================================================================================!
 
+
+
+
+
+
 !==========================================================================================!
 !==========================================================================================!
 subroutine read_soil_moist_temp_ar(cgrid)
@@ -626,6 +634,128 @@ subroutine read_soil_moist_temp_ar(cgrid)
 
   return
 end subroutine read_soil_moist_temp_ar
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine leaf2ed_soil_moist_energy_ar(cgrid,ifm)
+   use ed_state_vars, only : edtype       & ! structure
+                           , polygontype  & ! structure
+                           , sitetype     & ! structure
+                           , patchtype    ! ! structure
+   use grid_coms    , only : nzg          ! ! structure
+   use ed_therm_lib , only : ed_grndvap   ! ! subroutine
+   use therm_lib    , only : qwtk8        & ! subroutine
+                           , qwtk         ! ! subroutine
+   use rconstants   , only : wdns         & ! intent(in)
+                           , tsupercool   & ! intent(in)
+                           , cicevlme     & ! intent(in)
+                           , cliqvlme     ! ! intent(in)
+   use mem_leaf     , only : leaf_g       ! ! structure
+   use leaf_coms    , only : slcpd        ! ! intent(in)
+   use soil_coms    , only : soil         ! ! intent(in)
+   
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   type(edtype)      , target     :: cgrid  ! Alias for current ED grid
+   integer           , intent(in) :: ifm
+   !----- Local variables -----------------------------------------------------------------!
+   type(polygontype) , pointer    :: cpoly           ! Alias for current polygon
+   type(sitetype)    , pointer    :: csite           ! Alias for current site
+   type(patchtype)   , pointer    :: cpatch          ! Alias for current patch
+   integer                        :: ntext           ! Alias for ED-2 soil texture class
+   integer, dimension(nzg)        :: lsoil_text      ! LEAF-3 soil texture class
+   integer                        :: ipy,isi,ipa,ico ! Counters for all structures
+   integer                        :: k               ! Counter for soil layers
+   integer                        :: ix,iy           ! Counter for lon/lat
+   integer                        :: ksn, ksnw1      ! Alias for # of pond/snow layers
+   real, dimension(nzg)           :: lsoil_temp      ! LEAF-3 soil temperature
+   real, dimension(nzg)           :: lsoil_fliq      ! LEAF-3 soil liquid fraction
+   real                           :: surface_temp    ! Scratch variable for ed_grndvap
+   real                           :: surface_fliq    ! Scratch variable for ed_grndvap
+   real                           :: fice            ! soil ice fraction
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Loop over land points -----------------------------------------------------------!
+   polyloop: do ipy=1,cgrid%npolygons
+      ix = cgrid%ilon(ipy)
+      iy = cgrid%ilat(ipy)
+      
+      !------------------------------------------------------------------------------------!
+      !    Determining initial soil temperature and liquid fraction.  The reason we find   !
+      ! this for LEAF-3 instead of simply copying the soil energy and water to ED-2 is     !
+      ! that depending on the way the user set up his or her RAMSIN, soil types may not    !
+      ! match and this could put ED-2.1 in an inconsistent initial state.                  !
+      !------------------------------------------------------------------------------------!
+      do k=1,nzg
+         lsoil_text(k) =nint(leaf_g(ifm)%soil_text(k,ix,iy,2))
+         call qwtk(leaf_g(ifm)%soil_energy(k,ix,iy,2)                                      &
+                  ,leaf_g(ifm)%soil_water(k,ix,iy,2)*wdns                                  &
+                  ,slcpd(lsoil_text(k)),lsoil_temp(k),lsoil_fliq(k))
+      end do
+
+      cpoly => cgrid%polygon(ipy)
+
+      !----- Loop over sites --------------------------------------------------------------!
+      siteloop: do isi=1,cpoly%nsites
+         csite => cpoly%site(isi)
+         
+         !----- Loop over patches ---------------------------------------------------------!
+         patchloop: do ipa=1,csite%npatches
+            cpatch => csite%patch(ipa)
+  
+            do k=1,nzg
+            
+               ntext = csite%ntext_soil(k,ipa)
+               !---------------------------------------------------------------------------!
+               !   Soil water.  Ensuring that the initial condition is within the accept-  !
+               ! able range.                                                               !
+               !---------------------------------------------------------------------------!
+               csite%soil_water(k,ipa) = max(soil(ntext)%soilcp                            &
+                                            ,min(soil(ntext)%slmsts                        &
+                                                ,leaf_g(ifm)%soil_water(k,ix,iy,2) ) )
+
+               !---------------------------------------------------------------------------!
+               !   Soil temperature and liquid fraction. Simply use what we found a few    !
+               ! lines above.                                                              !
+               !---------------------------------------------------------------------------!
+               csite%soil_tempk(k,ipa)   = lsoil_temp(k)
+               csite%soil_fracliq(k,ipa) = lsoil_fliq(k)
+               fice = 1.-lsoil_fliq(k)
+               
+               
+               !---------------------------------------------------------------------------!
+               !   Soil energy. Now that temperature, moisture and liquid partition are    !
+               ! set, simply use the definition of internal energy to find it.             !
+               !---------------------------------------------------------------------------!
+               csite%soil_energy(k,ipa) = soil(ntext)%slcpd * csite%soil_tempk(k,ipa)      &
+                                        + sngl(csite%soil_water(k,ipa))                    &
+                                        * ( fice * cicevlme * csite%soil_tempk(k,ipa)      &
+                                          + csite%soil_fracliq(k,ipa) * cliqvlme           &
+                                          * (csite%soil_tempk(k,ipa) - tsupercool) )
+            end do
+            
+            !----- Compute the ground properties ------------------------------------------!
+            ksn   = csite%nlev_sfcwater(ipa)
+            ksnw1 = max(ksn,1)
+            call ed_grndvap(ksn,csite%ntext_soil(nzg,ipa),csite%soil_water(nzg,ipa)        &
+                           ,csite%soil_energy(nzg,ipa),csite%sfcwater_energy(ksnw1,ipa)    &
+                           ,cpoly%met(isi)%rhos,csite%can_shv(ipa),csite%ground_shv(ipa)   &
+                           ,csite%surface_ssh(ipa),surface_temp,surface_fliq)
+         end do patchloop
+      end do siteloop
+   end do polyloop
+  
+   return
+end subroutine leaf2ed_soil_moist_energy_ar
 !==========================================================================================!
 !==========================================================================================!
 

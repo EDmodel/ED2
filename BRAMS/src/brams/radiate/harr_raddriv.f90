@@ -196,7 +196,8 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
                 pl(k) <   0. .or.  o3l(k) <   0. .or.   tl(k) < 160.) then   
 
                 write (unit=*,fmt='(a)') '================================================'
-                write (unit=*,fmt='(a)') ' ERROR!!! The model is about to stop!'
+                write (unit=*,fmt='(a)') ' ERROR - harr_raddriv!!!'
+                write (unit=*,fmt='(a)') '         The model is about to stop!'
                 write (unit=*,fmt='(2(a,1x,i5,a))') ' - Node:',mynum,' Grid: ',ifm
                 write (unit=*,fmt='(3(a,1x,i5,a))') ' - k = ',k,' i = ',i,' j = ',j
                 write (unit=*,fmt='(a)') ' - Either the temperature is too low, or some'

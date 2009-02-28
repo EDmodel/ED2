@@ -179,12 +179,12 @@ ed_node_coms.o : $(ED_MPI)/ed_node_coms.f90 max_dims.o
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
-ed_opspec.o : $(ED_IO)/ed_opspec.f90 max_dims.o grid_coms.o mem_sites.o soil_coms.o        \
+ed_opspec.o : $(ED_IO)/ed_opspec.F90 max_dims.o grid_coms.o mem_sites.o soil_coms.o        \
 	ed_para_coms.o misc_coms.o consts_coms.o physiology_coms.o decomp_coms.o           \
 	disturb_coms.o phenology_coms.o pft_coms.o
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
+	cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
 
 ed_params.o : $(ED_INIT)/ed_params.f90 max_dims.o pft_coms.o disturb_coms.o ed_misc_coms.o \
 	met_driver_coms.o canopy_radiation_coms.o decomp_coms.o hydrology_coms.o           \
@@ -198,11 +198,11 @@ ed_para_coms.o : $(ED_MPI)/ed_para_coms.f90 max_dims.o
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
-ed_para_init.o : $(ED_MPI)/ed_para_init.f90 grid_coms.o ed_node_coms.o ed_para_coms.o      \
+ed_para_init.o : $(ED_MPI)/ed_para_init.F90 grid_coms.o ed_node_coms.o ed_para_coms.o      \
 	mem_sites.o ed_work_vars.o soil_coms.o ed_state_vars.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
 
 ed_state_vars.o : $(ED_MEMORY)/ed_state_vars.f90 grid_coms.o max_dims.o c34constants.o     \
 	disturb_coms.o met_driver_coms.o fusion_fission_coms.o phenology_coms.o            \

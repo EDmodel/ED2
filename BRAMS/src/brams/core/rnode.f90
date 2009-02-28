@@ -429,11 +429,12 @@ subroutine init_fields(init)
   !          -------------------------------------------------------
   if(init == 1) then
      ! ALF - For use with SiB
-     if (isfcl <= 2) then
+     select case (isfcl)
+     case (1,2,5)
         call sfcdata
-     elseif (isfcl == 3) then
+     case (3)
         call sfcdata_sib_driver
-     endif
+     end select
   endif
 
   !          Get all necessary fields from master.

@@ -1032,14 +1032,25 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
 
+#if defined(COUPLED)
    do ifm=1,ngrids
-      if (isoilflg(ifm) < 1 .or. isoilflg(ifm) > 2) then
+      if (isoilflg(ifm) < 0 .or. isoilflg(ifm) > 3) then
          write (reason,fmt='(a,1x,i4,1x,a,1x,i4,a)') &
            'Invalid ISOILFLG, it must be between 0 and 3. Yours is set to',isoilflg(ifm),'for grid',ifm,'...'
          call opspec_fatal(reason,'opspec_misc')  
          ifaterr = ifaterr +1
       end if
    end do
+#else
+   do ifm=1,ngrids
+      if (isoilflg(ifm) < 1 .or. isoilflg(ifm) > 2) then
+         write (reason,fmt='(a,1x,i4,1x,a,1x,i4,a)') &
+           'Invalid ISOILFLG, it must be between 1 and 3. Yours is set to',isoilflg(ifm),'for grid',ifm,'...'
+         call opspec_fatal(reason,'opspec_misc')  
+         ifaterr = ifaterr +1
+      end if
+   end do
+#endif
 
    if (nslcon < 1 .or. nslcon > 12) then
       write (reason,fmt='(a,1x,i4,a)') &
@@ -1048,13 +1059,21 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
 
+#if defined(COUPLED)
+   if (isoilstateinit < 0 .or. isoilstateinit > 2) then
+      write (reason,fmt='(a,1x,i4,a)') &
+        'Invalid ISOILSTATEINIT, it must be between 0 and 2. Yours is set to',isoilstateinit,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+#else
    if (isoilstateinit < 0 .or. isoilstateinit > 1) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid ISOILSTATEINIT, it must be between 0 and 1. Yours is set to',isoilstateinit,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if
-
+#endif
    if (isoildepthflg < 0 .or. isoildepthflg > 1) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid ISOILDEPTHFLG, it must be between 0 and 1. Yours is set to',isoildepthflg,'...'

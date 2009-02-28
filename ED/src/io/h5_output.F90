@@ -142,7 +142,7 @@ subroutine h5_output(vtype)
 #if USE_COLLECTIVE_MPIO
 #else
 
-        if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,734+ngr,MPI_COMM_WORLD,status,ierr)
+        if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,350+ngr,MPI_COMM_WORLD,status,ierr)
 
 #endif
      ! If there are no polygons on this node, we do not have any interaction with the file
@@ -627,7 +627,7 @@ subroutine h5_output(vtype)
      
 #else     
 
-        if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,734+ngr,MPI_COMM_WORLD,ierr)
+        if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,350+ngr,MPI_COMM_WORLD,ierr)
 !        if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
 #endif     

@@ -109,11 +109,11 @@ subroutine ed_init_atm_ar
         ! Initialize soil moisture, temperature, etc. from file specified in 
         ! the ED_NL.
         if (nnodetot /= 1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
-        if (mynum    /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,864,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
+        if (mynum    /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,110,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
 
         call read_soil_moist_temp_ar(cgrid)
 
-        if (mynum     < nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,864,MPI_COMM_WORLD,ierr)
+        if (mynum     < nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,110,MPI_COMM_WORLD,ierr)
         if (nnodetot /=        1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
      end if

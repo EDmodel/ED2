@@ -590,17 +590,18 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,fthrd,rtgt,f
                !               so the run is already in trouble.                           !
                !---------------------------------------------------------------------------!
                write (unit=*,fmt='(a)') '================================================='
-               write (unit=*,fmt='(a)') ' ERROR!!! The model is about to stop!'
+               write (unit=*,fmt='(a)') ' ERROR - rad_comp!!!'
+               write (unit=*,fmt='(a)') '         The model is about to stop!'
                write (unit=*,fmt='(2(a,1x,i5,a))') ' - Node:',mynum,' Grid: ',ifm
                write (unit=*,fmt='(3(a,1x,i5,a))') ' - k = ',k,' i = ',i,' j = ',j
                write (unit=*,fmt='(a)') ' - Either the temperature is too low, or some'
                write (unit=*,fmt='(a)') '   negative density, mixing ratio or pressure!'
                write (unit=*,fmt='(a)') ' - Sanity check at Chen-Cotton/Mahrer-Pielke:'
                write (unit=*,fmt='(a)') '-------------------------------------------------'
-               write (unit=*,fmt='(a)') 'LEV','  MIX. RATIO','     DENSITY'                &
-                                       ,'    PRESSURE',' TEMPERATURE'
+               write (unit=*,fmt='(a3,1x,4(a12,1x))')                                      &
+                          'LEV','  MIX. RATIO','     DENSITY','    PRESSURE',' TEMPERATURE'
                do kk=1,m1
-                  write (unit=*,fmt='(i3,1x,5(es12.3,1x))')                                &
+                  write (unit=*,fmt='(i3,1x,4(es12.3,1x))')                                &
                                         kk, rtr(kk), dn0r(kk), prd(kk), temprd(kk)
                enddo
                write (unit=*,fmt='(a)') '-------------------------------------------------'

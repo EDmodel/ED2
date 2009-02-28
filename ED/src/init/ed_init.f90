@@ -119,13 +119,13 @@ subroutine load_ecosystem_state
   !         hydrologic adjacencies
   ! ----------------------------------------------------
 
-  if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,734,MPI_COMM_WORLD,status,ierr)
+  if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,100,MPI_COMM_WORLD,status,ierr)
   
   do igr = 1,ngrids
      call read_site_file_array(edgrid_g(igr))
   enddo
   
-  if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,734,MPI_COMM_WORLD,ierr)
+  if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,100,MPI_COMM_WORLD,ierr)
 !  if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
   
   ! ----------------------------------------------------
@@ -133,7 +133,7 @@ subroutine load_ecosystem_state
   !         patch and cohort biophysical states
   ! ----------------------------------------------------
   
-  if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,799,MPI_COMM_WORLD,status,ierr)
+  if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,101,MPI_COMM_WORLD,status,ierr)
   
   
   select case (ied_init_mode)
@@ -155,7 +155,7 @@ subroutine load_ecosystem_state
      
   end select
 
-  if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,799,MPI_COMM_WORLD,ierr)
+  if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,101,MPI_COMM_WORLD,ierr)
 !  if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
   
 
@@ -163,12 +163,12 @@ subroutine load_ecosystem_state
   ! STEP 3: Initialize phenology parameters and thermal sums
   ! ----------------------------------------------------
   
-  if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,735,MPI_COMM_WORLD,status,ierr)
+  if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,102,MPI_COMM_WORLD,status,ierr)
   
   write(*,'(a,i3.3)')'    Initializing phenology. Node: ',mynum
   call phenology_init
   
-  if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,735,MPI_COMM_WORLD,ierr)
+  if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,102,MPI_COMM_WORLD,ierr)
 !  if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
   
   
@@ -176,14 +176,14 @@ subroutine load_ecosystem_state
   ! STEP 4: Initialize anthropogenic disturbance
   ! ----------------------------------------------------
   
-  if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,736,MPI_COMM_WORLD,status,ierr)
+  if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,103,MPI_COMM_WORLD,status,ierr)
   
 
   write(*,'(a,i3.3)')'    Initializing anthropogenic disturbance forcing. Node: ',mynum
 
   call landuse_init_array
 
-  if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,736,MPI_COMM_WORLD,ierr)
+  if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,103,MPI_COMM_WORLD,ierr)
 !  if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
   
 

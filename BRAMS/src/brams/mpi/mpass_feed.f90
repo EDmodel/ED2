@@ -44,6 +44,7 @@ subroutine node_sendfeed(ngr)
        i0,            & ! intent(in)
        j0,            & ! intent(in)
        mibcon,        & ! intent(in)
+       mchnum,        & ! intent(in)
        f_ndmd_size
 
   use mem_basic, only: &
@@ -53,6 +54,9 @@ subroutine node_sendfeed(ngr)
        num_scalar,      & ! intent(in)
        scalar_tab         ! intent(in)
 
+  use grid_dims , only: &
+       maxgrds            ! intent(in)
+
 implicit none
 
 integer :: ngr
@@ -61,8 +65,8 @@ include 'interface.h'
 include 'mpif.h'
 
 integer :: ierr,ipos
-integer :: i1s,i2s,j1s,j2s,k1s,k2s,mtp,i1f,i2f,j1f,j2f,k1f,k2f,i1,i2
-integer :: nm,icm,ifm,itype,itypef,nv,iptr,nvar,ibytes,msgid,ihostnum
+integer :: i1s,i2s,j1s,j2s,k1s,k2s,mtp,i1f,i2f,j1f,j2f,k1f,k2f,i1,i2,la,lz
+integer :: nm,icm,ifm,itype,itypef,nv,iptr,nvar,ibytes,msgid,ihostnum,mpiid
 
 real, save, allocatable::pbuff(:)
 integer, save :: nbuff_save=0
@@ -78,9 +82,10 @@ itype = 6
 do nm=1,nmachs
    irecv_req(nm)=0
    if (iget_paths(itype,ifm,nm).ne.0) then
+      mpiid = 200000 + maxgrds*(machs(nm)-1) + icm
       call MPI_Irecv(node_buffs(nm)%lbc_recv_buff,  &
            node_buffs(nm)%nrecv*f_ndmd_size,MPI_PACKED,machs(nm),  &
-           5500+icm,MPI_COMM_WORLD,irecv_req(nm),ierr )
+           mpiid,MPI_COMM_WORLD,irecv_req(nm),ierr )
    endif
 enddo
 !______________________
@@ -118,47 +123,51 @@ do nm=1,nmachs
       j1f=ipaths(3,itypef,ifm,nm)
       j2f=ipaths(4,itypef,ifm,nm)
 
-      iptr=0
-      call fdbackp(1,basic_g(ifm)%uc,pbuff(1+iptr:),mtp  &
+      la = 1
+      lz = mtp
+      call fdbackp(1,basic_g(ifm)%uc,pbuff(la:lz),mtp  &
           ,basic_g(ifm)%dn0,basic_g(ifm)%dn0u  &
           ,basic_g(ifm)%dn0v  &
           ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
           ,ifm,icm,i1f-i0,i2f-i0,j1f-j0,j2f-j0  &
           ,i0,j0,mibcon(ifm) ,nstratx(ifm),nstraty(ifm),mynum,i1s,i2s)
-      iptr=iptr+mtp
-      call fdbackp(2,basic_g(ifm)%vc,pbuff(1+iptr:),mtp  &
+      la = lz + 1
+      lz = lz + mtp
+      call fdbackp(2,basic_g(ifm)%vc,pbuff(la:lz),mtp  &
           ,basic_g(ifm)%dn0,basic_g(ifm)%dn0u  &
           ,basic_g(ifm)%dn0v  &
           ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
           ,ifm,icm,i1f-i0,i2f-i0,j1f-j0,j2f-j0  &
           ,i0,j0,mibcon(ifm) ,nstratx(ifm),nstraty(ifm),mynum,j1s,j2s)
-      iptr=iptr+mtp
-      call fdbackp(3,basic_g(ifm)%wc,pbuff(1+iptr:),mtp  &
+      la = lz + 1
+      lz = lz + mtp
+      call fdbackp(3,basic_g(ifm)%wc,pbuff(la:lz),mtp  &
           ,basic_g(ifm)%dn0,basic_g(ifm)%dn0u  &
           ,basic_g(ifm)%dn0v  &
           ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
           ,ifm,icm,i1f-i0,i2f-i0,j1f-j0,j2f-j0  &
           ,i0,j0,mibcon(ifm) ,nstratx(ifm),nstraty(ifm),mynum,i1,i2)
-      iptr=iptr+mtp
-      call fdbackp(4,basic_g(ifm)%pc,pbuff(1+iptr:),mtp  &
+      la = lz + 1
+      lz = lz + mtp
+      call fdbackp(4,basic_g(ifm)%pc,pbuff(la:lz),mtp  &
           ,basic_g(ifm)%dn0,basic_g(ifm)%dn0u  &
           ,basic_g(ifm)%dn0v  &
           ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
           ,ifm,icm,i1f-i0,i2f-i0,j1f-j0,j2f-j0  &
           ,i0,j0,mibcon(ifm) ,nstratx(ifm),nstraty(ifm),mynum,i1,i2)
-      iptr=iptr+mtp
 
       do nv=1,num_scalar(ifm)
-         call fdbackp(5,scalar_tab(nv,ifm)%var_p,pbuff(1+iptr:),mtp  &
+         la = lz + 1
+         lz = lz + mtp
+         call fdbackp(5,scalar_tab(nv,ifm)%var_p,pbuff(la:lz),mtp  &
              ,basic_g(ifm)%dn0,basic_g(ifm)%dn0u  &
              ,basic_g(ifm)%dn0v  &
              ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
              ,ifm,icm,i1f-i0,i2f-i0,j1f-j0,j2f-j0  &
              ,i0,j0,mibcon(ifm) ,nstratx(ifm),nstraty(ifm),mynum,i1,i2)
-         iptr=iptr+mtp
       enddo
-
-!     We will send master coarse grid indices to nodes.
+      iptr = lz
+      !     We will send master coarse grid indices to nodes.
       ipos = 1
       call MPI_Pack(i1f,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &
            MPI_COMM_WORLD,ierr)
@@ -187,11 +196,12 @@ do nm=1,nmachs
       call MPI_Pack(iptr,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &
            MPI_COMM_WORLD,ierr)
 
-      call MPI_Pack(pbuff(1),iptr,MPI_REAL,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(pbuff,iptr,MPI_REAL,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &
            MPI_COMM_WORLD,ierr)
+      mpiid = 200000 + maxgrds*(mchnum-1) + icm
       call MPI_Isend(node_buffs(nm)%lbc_send_buff,  &
            ipos-1,  &
-           MPI_PACKED,ipaths(5,itype,ifm,nm),5500+icm,MPI_COMM_WORLD,isend_req(nm),ierr)
+           MPI_PACKED,ipaths(5,itype,ifm,nm),mpiid,MPI_COMM_WORLD,isend_req(nm),ierr)
 
    endif
 enddo

@@ -144,6 +144,7 @@ subroutine ed_coup_model()
   use disturb_coms, only: include_fire
   use mem_sites, only : n_ed_region,maxpatch,maxcohort
   use consts_coms, only: day_sec
+  use io_params, only: ioutput
 
   implicit none
 
@@ -232,7 +233,8 @@ subroutine ed_coup_model()
   !----- Checking whether this is time to write fast analysis output or not. -----------!
   select case (unitfast)
   case (0,1) !----- Now both are in seconds --------------------------------------------!
-     analysis_time   = mod(current_time%time, frqfast) < dtlsm .and. ifoutput /= 0
+     analysis_time   = mod(current_time%time, frqfast) < dtlsm .and.                    &
+                       (ifoutput /= 0 .or. ioutput /= 0)
   case (2)   !----- Months, analysis time is at the new month --------------------------!
      analysis_time   = new_month .and. ifoutput /= 0 .and.                              &
                        mod(real(12+current_time%month-imontha),frqfast) == 0.
@@ -245,7 +247,8 @@ subroutine ed_coup_model()
   !----- Checking whether this is time to write restart output or not. -----------------!
   select case(unitstate)
   case (0,1) !----- Now both are in seconds --------------------------------------------!
-     history_time   = mod(current_time%time, frqstate) < dtlsm .and. isoutput /= 0
+     history_time   = mod(current_time%time, frqstate) < dtlsm .and.                    &
+                      (isoutput /= 0 .or. ioutput /= 0)
   case (2)   !----- Months, history time is at the new month ---------------------------!
      history_time   = new_month .and. isoutput /= 0 .and.                               &
                       mod(real(12+current_time%month-imontha),frqstate) == 0.

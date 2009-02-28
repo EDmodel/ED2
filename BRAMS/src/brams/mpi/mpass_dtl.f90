@@ -47,10 +47,10 @@ do ngr = 1,ngrids
 enddo
 
 do nm=1,nmachs
-   call MPI_Recv(ptimes(machnum(nm),1),1,MPI_REAL,machnum(nm),9940,MPI_COMM_WORLD,status,ierr)
-   call MPI_Recv(ptimes(machnum(nm),2),1,MPI_REAL,machnum(nm),9950,MPI_COMM_WORLD,status,ierr)
-   call MPI_Recv(buff1,maxgrds,MPI_REAL,machnum(nm),9960,MPI_COMM_WORLD,status,ierr)
-   call MPI_Recv(buff2,maxgrds,MPI_REAL,machnum(nm),9970,MPI_COMM_WORLD,status,ierr)
+   call MPI_Recv(ptimes(machnum(nm),1),1,MPI_REAL,machnum(nm),41,MPI_COMM_WORLD,status,ierr)
+   call MPI_Recv(ptimes(machnum(nm),2),1,MPI_REAL,machnum(nm),42,MPI_COMM_WORLD,status,ierr)
+   call MPI_Recv(buff1,maxgrds,MPI_REAL,machnum(nm),43,MPI_COMM_WORLD,status,ierr)
+   call MPI_Recv(buff2,maxgrds,MPI_REAL,machnum(nm),44,MPI_COMM_WORLD,status,ierr)
    do ngr = 1,ngrids
       cflxy(ngr) = max(cflxy(ngr),buff1(ngr))
       cflz(ngr) = max(cflz(ngr),buff2(ngr))
@@ -75,10 +75,10 @@ include 'mpif.h'
 real :: totcpu,totwall
 integer :: ierr
 
-call MPI_Send(totcpu,1,MPI_REAL,master_num,9940,MPI_COMM_WORLD,ierr)
-call MPI_Send(totwall,1,MPI_REAL,master_num,9950,MPI_COMM_WORLD,ierr)
-call MPI_Send(cflxy,maxgrds,MPI_REAL,master_num,9960,MPI_COMM_WORLD,ierr)
-call MPI_Send(cflz,maxgrds,MPI_REAL,master_num,9970,MPI_COMM_WORLD,ierr)
+call MPI_Send(totcpu,1,MPI_REAL,master_num,41,MPI_COMM_WORLD,ierr)
+call MPI_Send(totwall,1,MPI_REAL,master_num,42,MPI_COMM_WORLD,ierr)
+call MPI_Send(cflxy,maxgrds,MPI_REAL,master_num,43,MPI_COMM_WORLD,ierr)
+call MPI_Send(cflz,maxgrds,MPI_REAL,master_num,44,MPI_COMM_WORLD,ierr)
 
 return
 end subroutine node_putcflcpu

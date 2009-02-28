@@ -264,6 +264,7 @@ OBJ_MODEL =                         \
 	edcp_met_init.o             \
 	edcp_model.o                \
 	edcp_mpiutils.o             \
+	edcp_para_init.o            \
 	edcp_water.o                \
 	mem_edcp.o                  \
 	allometry.o                 \
@@ -287,7 +288,6 @@ OBJ_MODEL =                         \
 	ed_node_coms.o              \
 	ed_opspec.o                 \
 	ed_para_coms.o              \
-	ed_para_init.o              \
 	ed_params.o                 \
 	ed_state_vars.o             \
 	ed_type_init.o              \

@@ -5043,7 +5043,7 @@ contains
     ! =================================================
     
     
-    use var_tables_array,only:num_var,vt_info,var_table
+    use var_tables_array,only:num_var,vt_info,var_table,nullify_vt_vector_pointers
     use ed_node_coms,only:mynum,mchnum,machs,nmachs,nnodetot,sendnum,recvnum,master_num
     use max_dims, only: maxgrds, maxmach
     implicit none
@@ -5051,7 +5051,7 @@ contains
     include 'mpif.h'
 
     integer :: ncohorts_g,npatches_g,nsites_g
-    integer :: igr,ipy,isi,ipa,nv,ierr,nm
+    integer :: igr,ipy,isi,ipa,nv,ierr,nm,iptr
     integer,       dimension(MPI_STATUS_SIZE) :: status
     integer :: ping,uniqueid
     logical,save :: model_start = .true.
@@ -5075,6 +5075,9 @@ contains
        if (num_var(igr)>0) then
           do nv=1,num_var(igr)
              if (associated(vt_info(nv,igr)%vt_vector)) then
+                do iptr=1,vt_info(nv,igr)%nptrs
+                   call nullify_vt_vector_pointers(vt_info(nv,igr)%vt_vector(iptr))
+                end do
                 deallocate(vt_info(nv,igr)%vt_vector)
              endif
           enddo
@@ -5104,46 +5107,46 @@ contains
              gdpa(1,igr) = cgrid%npatches_global
              gdco(1,igr) = cgrid%ncohorts_global
 
-             call MPI_Send(ping,1,MPI_INTEGER,sendnum,242,MPI_COMM_WORLD,ierr)
+             call MPI_Send(ping,1,MPI_INTEGER,sendnum,94,MPI_COMM_WORLD,ierr)
              
              ! Have node 1 recieve the info
              do nm=2,nnodetot
                 uniqueid=((igr-1)*maxmach)+nm
-                call MPI_Recv(gdpy(nm,igr),1,MPI_INTEGER,machs(nm),810000+uniqueid,MPI_COMM_WORLD,status,ierr)
-                call MPI_Recv(gdsi(nm,igr),1,MPI_INTEGER,machs(nm),820000+uniqueid,MPI_COMM_WORLD,status,ierr)
-                call MPI_Recv(gdpa(nm,igr),1,MPI_INTEGER,machs(nm),830000+uniqueid,MPI_COMM_WORLD,status,ierr)
-                call MPI_Recv(gdco(nm,igr),1,MPI_INTEGER,machs(nm),840000+uniqueid,MPI_COMM_WORLD,status,ierr)
+                call MPI_Recv(gdpy(nm,igr),1,MPI_INTEGER,machs(nm),500000+uniqueid,MPI_COMM_WORLD,status,ierr)
+                call MPI_Recv(gdsi(nm,igr),1,MPI_INTEGER,machs(nm),600000+uniqueid,MPI_COMM_WORLD,status,ierr)
+                call MPI_Recv(gdpa(nm,igr),1,MPI_INTEGER,machs(nm),700000+uniqueid,MPI_COMM_WORLD,status,ierr)
+                call MPI_Recv(gdco(nm,igr),1,MPI_INTEGER,machs(nm),800000+uniqueid,MPI_COMM_WORLD,status,ierr)
              enddo
 
              ! Broadcast all this info to the nodes
              do nm=2,nnodetot
                 uniqueid=((igr-1)*maxmach)+nm
-                call MPI_Send(gdpy,maxmach*maxgrds,MPI_INTEGER,machs(nm),610000+uniqueid,MPI_COMM_WORLD,ierr)
-                call MPI_Send(gdsi,maxmach*maxgrds,MPI_INTEGER,machs(nm),620000+uniqueid,MPI_COMM_WORLD,ierr)
-                call MPI_Send(gdpa,maxmach*maxgrds,MPI_INTEGER,machs(nm),630000+uniqueid,MPI_COMM_WORLD,ierr)
-                call MPI_Send(gdco,maxmach*maxgrds,MPI_INTEGER,machs(nm),640000+uniqueid,MPI_COMM_WORLD,ierr)
+                call MPI_Send(gdpy,maxmach*maxgrds,MPI_INTEGER,machs(nm), 900000+uniqueid,MPI_COMM_WORLD,ierr)
+                call MPI_Send(gdsi,maxmach*maxgrds,MPI_INTEGER,machs(nm),1000000+uniqueid,MPI_COMM_WORLD,ierr)
+                call MPI_Send(gdpa,maxmach*maxgrds,MPI_INTEGER,machs(nm),1100000+uniqueid,MPI_COMM_WORLD,ierr)
+                call MPI_Send(gdco,maxmach*maxgrds,MPI_INTEGER,machs(nm),1200000+uniqueid,MPI_COMM_WORLD,ierr)
              enddo
 
          else
 
             ! Set the blocking recieve to allow ordering, start with machine 1
-            call MPI_Recv(ping,1,MPI_INTEGER,recvnum,242,MPI_COMM_WORLD,status,ierr)
+            call MPI_Recv(ping,1,MPI_INTEGER,recvnum,94,MPI_COMM_WORLD,status,ierr)
 
             uniqueid=((igr-1)*maxmach)+mynum
             ! Send the information to node (1)
-            call MPI_Send(cgrid%npolygons_global, 1,MPI_INTEGER,machs(1),810000+uniqueid,MPI_COMM_WORLD,ierr)
-            call MPI_Send(cgrid%nsites_global   , 1,MPI_INTEGER,machs(1),820000+uniqueid,MPI_COMM_WORLD,ierr)
-            call MPI_Send(cgrid%npatches_global , 1,MPI_INTEGER,machs(1),830000+uniqueid,MPI_COMM_WORLD,ierr)
-            call MPI_Send(cgrid%ncohorts_global , 1,MPI_INTEGER,machs(1),840000+uniqueid,MPI_COMM_WORLD,ierr)
+            call MPI_Send(cgrid%npolygons_global, 1,MPI_INTEGER,machs(1),500000+uniqueid,MPI_COMM_WORLD,ierr)
+            call MPI_Send(cgrid%nsites_global   , 1,MPI_INTEGER,machs(1),600000+uniqueid,MPI_COMM_WORLD,ierr)
+            call MPI_Send(cgrid%npatches_global , 1,MPI_INTEGER,machs(1),700000+uniqueid,MPI_COMM_WORLD,ierr)
+            call MPI_Send(cgrid%ncohorts_global , 1,MPI_INTEGER,machs(1),800000+uniqueid,MPI_COMM_WORLD,ierr)
           
             ! When this node is finished, send the blocking MPI_Send to the next machine
-            if (mynum /= nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,242,MPI_COMM_WORLD,ierr)
+            if (mynum /= nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,94,MPI_COMM_WORLD,ierr)
 
             uniqueid=((igr-1)*maxmach)+mynum
-            call MPI_Recv(gdpy,maxmach*maxgrds,MPI_INTEGER,machs(1),610000+uniqueid,MPI_COMM_WORLD,status,ierr)
-            call MPI_Recv(gdsi,maxmach*maxgrds,MPI_INTEGER,machs(1),620000+uniqueid,MPI_COMM_WORLD,status,ierr)
-            call MPI_Recv(gdpa,maxmach*maxgrds,MPI_INTEGER,machs(1),630000+uniqueid,MPI_COMM_WORLD,status,ierr)
-            call MPI_Recv(gdco,maxmach*maxgrds,MPI_INTEGER,machs(1),640000+uniqueid,MPI_COMM_WORLD,status,ierr)
+            call MPI_Recv(gdpy,maxmach*maxgrds,MPI_INTEGER,machs(1), 900000+uniqueid,MPI_COMM_WORLD,status,ierr)
+            call MPI_Recv(gdsi,maxmach*maxgrds,MPI_INTEGER,machs(1),1000000+uniqueid,MPI_COMM_WORLD,status,ierr)
+            call MPI_Recv(gdpa,maxmach*maxgrds,MPI_INTEGER,machs(1),1100000+uniqueid,MPI_COMM_WORLD,status,ierr)
+            call MPI_Recv(gdco,maxmach*maxgrds,MPI_INTEGER,machs(1),1200000+uniqueid,MPI_COMM_WORLD,status,ierr)
  
          end if
 

@@ -530,7 +530,7 @@ subroutine masterput_grid_dimens(master_num)
          call MPI_Send(ipathsv_cyc,8*npts_cyc,MPI_INTEGER,machnum(nm),26,MPI_COMM_WORLD    &
                       ,ierr)
       end if
-      zzz=26
+      zzz=1000
       do nmiii=1,nmachs
         zzz=zzz+1
         call MPI_Send(lbc_buffs(1,nmiii,nm),1,MPI_INTEGER,machnum(nm),zzz,MPI_COMM_WORLD   &
@@ -1389,7 +1389,7 @@ subroutine nodeget_grid_dimens()
                    ,MPI_STATUS_IGNORE,ierr)
    end if
 
-   zzz=26
+   zzz=1000
    do nm=1,nmachs
      zzz=zzz+1
      call MPI_Recv(node_buffs(nm)%nsend,1,MPI_INTEGER,master_num,zzz,MPI_COMM_WORLD        &
