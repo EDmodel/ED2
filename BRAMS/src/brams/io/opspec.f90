@@ -636,7 +636,6 @@ subroutine opspec3
   ![MLO - mass check and exner function check
   use mem_mass, only : iexev, imassflx
 
-
   implicit none
 
   integer :: ip,k,ifaterr,iwarerr,infoerr,ng,ngr,nc
@@ -690,6 +689,44 @@ subroutine opspec3
      end do
    end if
    
+   !---------------------------------------------------------------------------------------!
+   !    Checking whether the combination of akmin,akmax,hgtmin, hgtmax makes sense...      !
+   !---------------------------------------------------------------------------------------!
+   do ng=1,ngrids
+      if (akmin(ng) <= 0.) then
+         print *, 'FATAL - AKMIN must be positive'
+         print *, 'Please change your setup for grid ',ng,'...'
+         IFATERR=IFATERR+1
+      end if
+
+      if (akmax(ng) > 0.) then
+         if (akmax(ng) < akmin(ng)) then
+            print *, 'FATAL - If AKMAX is positive, then it must be greater than AKMIN...'
+            print *, 'Please change your setup for grid ',ng,'...'
+            IFATERR=IFATERR+1
+         end if 
+         if (hgtmax(ng) <= 0.) then
+            print *, 'FATAL - If AKMAX is positive, HGTMAX must be positive as well...'
+            print *, 'Please change your setup for grid ',ng,'...'
+            IFATERR=IFATERR+1
+         end if
+         if (hgtmin(ng) < 0.) then
+            print *, 'FATAL - If AKMAX is positive, HGTMIN must be non-negative...'
+            print *, 'Please change your setup for grid ',ng,'...'
+            IFATERR=IFATERR+1
+         end if
+         if (hgtmin(ng) >= hgtmax(ng)) then
+            print *, 'FATAL - If AKMAX is positive, HGTMIN must less than HGTMAX...'
+            print *, 'Please change your setup for grid ',ng,'...'
+            IFATERR=IFATERR+1
+         end if
+      elseif (akmax(ng) < 0.) then
+         print *, 'FATAL - AKMAX can''t be negative...'
+         print *, 'Please change your setup for grid ',ng,'...'
+         IFATERR=IFATERR+1
+      end if
+   end do
+
    !---------------------------------------------------------------------------------------!
    !   Determining whether Grell will be called or not, so the Grell-related               !
    ! configuration tests will be performed only if Grell is to be called.                  !

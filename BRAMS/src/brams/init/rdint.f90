@@ -21,6 +21,7 @@ subroutine initlz (name_name)
   use io_params
   use micphys
   use therm_lib, only : level
+  use mem_turb, only : turb_g
 
   ! CATT
   use catt_start, only         : CATT                      ! intent(in)
@@ -296,7 +297,17 @@ subroutine initlz (name_name)
 
      ! Read Radiation Parameters if CARMA Radiation is selected
      call master_read_carma_data()
-     !
+
+     ! Initialise turbulence factor akscal
+     if (if_adap == 1) then
+        do ifm=1,ngrids
+           call akscal_init(nnxp(ifm),nnyp(ifm),ifm,grid_g(ifm)%topta,turb_g(ifm)%akscal)
+        end do
+     else
+        do ifm=1,ngrids
+           call akscal_init(nnxp(ifm),nnyp(ifm),ifm,grid_g(ifm)%topt,turb_g(ifm)%akscal)
+        end do
+     end if
 
      ! CATT
      if (CATT==1) then
@@ -464,6 +475,13 @@ subroutine initlz (name_name)
                    ,leaf_g(ifm)%sfcwater_depth  ,grid_g(ifm)%glat              &
                    ,grid_g(ifm)%glon            ,grid_g(ifm)%flpw              )
            endif
+
+          ! Initialise turbulence factor akscal
+          if (if_adap == 1) then
+             call akscal_init(nnxp(ifm),nnyp(ifm),ifm,grid_g(ifm)%topta,turb_g(ifm)%akscal)
+          else
+             call akscal_init(nnxp(ifm),nnyp(ifm),ifm,grid_g(ifm)%topt,turb_g(ifm)%akscal)
+          end if
 
         enddo
 
@@ -863,6 +881,9 @@ subroutine ReadNamelist(fileName)
        usdata_in, &
        usmodel_in
   use mem_turb, only: akmin, &
+       akmax, &
+       hgtmin, &
+       hgtmax, &
        csx, &
        csz, &
        idiffk, &
@@ -1074,9 +1095,9 @@ subroutine ReadNamelist(fileName)
        nvgcon, pctlcon, nslcon, drtcon, zrough, albedo, seatmp, dthcon,  &
        soil_moist, soil_moist_fail, usdata_in, usmodel_in, slz, slmstr,  &
        stgoff, if_urban_canopy, idiffk, ibruvais, ihorgrad, csx, csz,    &
-       xkhkm, zkhkm, akmin, level, icloud, irain, ipris, isnow, iaggr,   &
-       igraup, ihail, cparm, rparm, pparm, sparm, aparm, gparm, hparm,   &
-       gnu
+       xkhkm, zkhkm, akmin, akmax, hgtmin, hgtmax, level, icloud, irain, &
+       ipris, isnow, iaggr, igraup, ihail, cparm, rparm, pparm, sparm,   &
+       aparm, gparm, hparm, gnu
 
   namelist /MODEL_SOUND/ &
        ipsflg, itsflg, irtsflg, iusflg, hs, ps, ts, rts, us, vs
@@ -1165,6 +1186,9 @@ subroutine ReadNamelist(fileName)
   xkhkm=0.0
   zkhkm=0.0
   akmin=0.0
+  akmax=0.0
+  hgtmin=0.0
+  hgtmax=0.0
   levth=0
   notid=" "
   gridwt=0.0
@@ -1673,6 +1697,9 @@ subroutine ReadNamelist(fileName)
      write (*, *) "xkhkm=",xkhkm
      write (*, *) "zkhkm=",zkhkm
      write (*, *) "akmin=",akmin
+     write (*, *) "akmax=",akmax
+     write (*, *) "hgtmin=",hgtmin
+     write (*, *) "hgtmax=",hgtmax
      write (*, *) "level=",level
      write (*, *) "icloud=",icloud
      write (*, *) "irain=",irain

@@ -366,7 +366,7 @@ end subroutine bruvais
 !==========================================================================================!
 !==========================================================================================!
 subroutine mxdefm(m1,m2,m3,ia,iz,ja,jz,ibcon,jd  &
-     ,vt3dh,vt3di,vt3dj,vt3dk,scr1,scr2,dn0,rtgt,dxt,dyt,flpw,mynum)
+     ,vt3dh,vt3di,vt3dj,vt3dk,scr1,scr2,dn0,rtgt,dxt,dyt,flpw,akscal,mynum)
 
   !     +-------------------------------------------------------------+
   !     \   this routine calculates the mixing coefficients with a    \
@@ -387,8 +387,7 @@ subroutine mxdefm(m1,m2,m3,ia,iz,ja,jz,ibcon,jd  &
                              rmin,     &     !INTENT(out)
                              rmax,     &     !INTENT(out)
                              zkhkm,    &     !INTENT(in)
-                             csz,      &     !INTENT(in)
-                             akmin           !INTENT(in)
+                             csz             !INTENT(in)
 
   use rconstants, only     : vonk
 
@@ -418,6 +417,7 @@ subroutine mxdefm(m1,m2,m3,ia,iz,ja,jz,ibcon,jd  &
   real, dimension(m2,m3), INTENT(IN) :: dyt  !- EHE -> nao e' usada!!!
 
   real, dimension(m2,m3), INTENT(IN) :: flpw
+  real, dimension(m2,m3), INTENT(IN) :: akscal
 
 
   !local variables:
@@ -456,7 +456,7 @@ subroutine mxdefm(m1,m2,m3,ia,iz,ja,jz,ibcon,jd  &
         do i = ia,iz
            c2 = 1.0 / (dxt(i,j) * dxt(i,j))
            c3 = csx2 * c2
-           akm = akmin(ngrid) * 0.075 * c2 ** (0.666667)
+           akm = akscal(i,j) * 0.075 * c2 ** (0.666667)
            lpw = nint(flpw(i,j))
            do k = lpw,m1-1
               scr2(k,i,j) = dn0(k,i,j)  &
@@ -470,7 +470,7 @@ subroutine mxdefm(m1,m2,m3,ia,iz,ja,jz,ibcon,jd  &
            c1 = rtgt(i,j) * rtgt(i,j)
            c2 = 1.0 / (dxt(i,j) * dxt(i,j))
            c3 = csx2 * c2
-           akm = akmin(ngrid) * 0.075 * c2 ** (0.666667)
+           akm = akscal(i,j) * 0.075 * c2 ** (0.666667)
            c4 = vonk * vonk * c1
            lpw = nint(flpw(i,j))
            do k = lpw,m1-1
@@ -601,26 +601,26 @@ end subroutine klbnd
 !------------------------------------------------------------------------------------------!
 
 subroutine mxdefm_tracer(m1,m2,m3,ia,iz,ja,jz,ibcon,jd  &
-     ,vt3dh,khtr,dn0,dxt,dyt,flpw,mynum)  !ALF
+     ,vt3dh,khtr,dn0,dxt,dyt,flpw,akscal,mynum)  !ALF
 
   !     +-------------------------------------------------------------+
   !     \   this routine calculates the mixing coefficients with a    \
   !     \     smagorinsky-type deformational based k                  \
   !     +-------------------------------------------------------------+
   !       khtr = coef. dif. horizontal para tracers
-  !       frtr = fator de reducao do Akmin dos campos meteorologicos
+  !       frtr = fator de reducao do Akscal dos campos meteorologicos
   !
   use mem_grid, only:  &
        ngrid                !INTENT(IN)
   use mem_turb, only:  &
-       csx,            &    !INTENT(IN)
-       akmin                !INTENT(IN)
+       csx                  !INTENT(IN)
 
   implicit none
   ! Arguments:
   integer, intent(in)                      :: m1, m2, m3, ia, iz, ja, jz, ibcon, jd, mynum
   ! ALF
   real, dimension(m2,m3), intent(in)    :: flpw
+  real, dimension(m2,m3), intent(in)    :: akscal
   real, dimension(m2,m3), intent(in)       :: dxt, dyt    !dyt nao eh usada
   real, dimension(m1,m2,m3), intent(in)    :: vt3dh, dn0
   real, dimension(m1,m2,m3), intent(inout) ::  khtr
@@ -638,7 +638,7 @@ subroutine mxdefm_tracer(m1,m2,m3,ia,iz,ja,jz,ibcon,jd  &
 
         c2 = 1.0 / (dxt(i,j) * dxt(i,j))
         c3 = csx2 * c2
-        akm = frtr * akmin(ngrid) * 0.075 * c2 ** (0.666667)
+        akm = frtr * akscal(i,j) * 0.075 * c2 ** (0.666667)
 
         lpw = nint(flpw(i,j))
         do k = lpw,m1-1
@@ -653,7 +653,55 @@ subroutine mxdefm_tracer(m1,m2,m3,ia,iz,ja,jz,ibcon,jd  &
 
   return
 end subroutine mxdefm_tracer
+!==========================================================================================!
+!==========================================================================================!
 
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!   This subroutine will assign an appropriate value for akscal. This goes instead of      !
+! former akmin in case the user wants different scales depending on topography.            !
 !------------------------------------------------------------------------------------------!
+subroutine akscal_init(n2,n3,ifm,topo,akscal)
+   use mem_turb, only: akmin   & ! intent(in)
+                     , akmax   & ! intent(in)
+                     , hgtmin  & ! intent(in)
+                     , hgtmax  ! ! intent(in)
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   integer               , intent(in)  :: n2,n3,ifm
+   real, dimension(n2,n3), intent(in)  :: topo
+   real, dimension(n2,n3), intent(out) :: akscal
+   !----- Local variables -----------------------------------------------------------------!
+   integer                             :: i,j
+   real                                :: hnorm
+   !----- Constants -----------------------------------------------------------------------!
+   real                  , parameter   :: scal = 3.
+   !----- External functions --------------------------------------------------------------!
+   real                  , external    :: errorfun
+   !---------------------------------------------------------------------------------------!
 
+   if (akmax(ifm) > 0.) then
+      do j=1,n3
+         do i=1,n2
+            hnorm = scal * (2.*(topo(i,j)-hgtmin(ifm))/(hgtmax(ifm)-hgtmin(ifm)) - 1.)
+            akscal(i,j) = akmin(ifm) + 0.5 * (akmax(ifm)-akmin(ifm))*(1.+errorfun(hnorm))
+         end do
+      end do
+   else
+      !----- User doesn't want different akscal, use akmin only. --------------------------!
+      do j=1,n3
+         do i=1,n2
+            akscal(i,j) = akmin(ifm)
+         end do
+      end do
+   end if
 
+   return   
+end subroutine akscal_init
+!==========================================================================================!
+!==========================================================================================!

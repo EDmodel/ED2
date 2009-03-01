@@ -143,7 +143,8 @@ subroutine diffuse_brams31()
              ,scratch%vt3dh            ,scratch%vt3di            ,scratch%vt3dj            &
              ,scratch%vt3dk            ,scratch%scr1             ,scratch%scr2             &
              ,basic_g(ngrid)%dn0       ,grid_g(ngrid)%rtgt       ,grid_g(ngrid)%dxt        &
-             ,grid_g(ngrid)%dyt        ,grid_g(ngrid)%flpw       ,mynum                    )
+             ,grid_g(ngrid)%dyt        ,grid_g(ngrid)%flpw       ,turb_g(ngrid)%akscal     &
+             ,mynum                    )
    end if
    !---------------------------------------------------------------------------------------!
 

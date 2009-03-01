@@ -24,7 +24,7 @@ module mem_turb
      real, pointer, dimension(:,:) :: &
           sflux_u,sflux_v,sflux_w,sflux_t,sflux_r &
 ![MLO - For Nakanishi/Niino
-         ,lmo,pblhgt
+         ,lmo,pblhgt,akscal
      integer, pointer, dimension(:,:) :: kpbl
 !MLO]
 
@@ -37,7 +37,7 @@ module mem_turb
   integer, dimension(maxgrds) :: idiffk
 
   real                     :: brunt ,rmax ,rmin
-  real, dimension(maxgrds) :: zkhkm,xkhkm,csz,csx,akmin
+  real, dimension(maxgrds) :: zkhkm,xkhkm,csz,csx,akmin,akmax,hgtmin,hgtmax
 
 contains
 !==========================================================================================!
@@ -77,6 +77,7 @@ contains
     allocate (turb%sflux_w(n2,n3))
     allocate (turb%sflux_t(n2,n3))
     allocate (turb%sflux_r(n2,n3))
+    allocate (turb%akscal (n2,n3))
 
     return
   end subroutine alloc_turb
@@ -107,6 +108,7 @@ contains
     if (associated(turb%sflux_w)) nullify (turb%sflux_w)
     if (associated(turb%sflux_t)) nullify (turb%sflux_t)
     if (associated(turb%sflux_r)) nullify (turb%sflux_r)
+    if (associated(turb%akscal   ))  nullify (turb%akscal   )
     if (associated(turb%ltscale  ))  nullify (turb%ltscale  )
     if (associated(turb%sigw     ))  nullify (turb%sigw     )
     if (associated(turb%pblhgt   ))  nullify (turb%pblhgt   )
@@ -142,6 +144,7 @@ contains
     if (associated(turb%sflux_w)) deallocate (turb%sflux_w)
     if (associated(turb%sflux_t)) deallocate (turb%sflux_t)
     if (associated(turb%sflux_r)) deallocate (turb%sflux_r)
+    if (associated(turb%akscal  )) deallocate (turb%akscal   )
     if (associated(turb%ltscale ))  deallocate (turb%ltscale )
     if (associated(turb%sigw    ))  deallocate (turb%sigw    )
     if (associated(turb%pblhgt  ))  deallocate (turb%pblhgt  )
@@ -177,6 +180,7 @@ contains
     if (associated(turb%sflux_w))   turb%sflux_w = 0.
     if (associated(turb%sflux_t))   turb%sflux_t = 0.
     if (associated(turb%sflux_r))   turb%sflux_r = 0.
+    if (associated(turb%akscal  ))  turb%akscal  = 0.
     if (associated(turb%ltscale ))  turb%ltscale = 0.
     if (associated(turb%sigw    ))  turb%sigw    = 0.
     if (associated(turb%pblhgt  ))  turb%pblhgt  = 0.
@@ -237,11 +241,11 @@ contains
     if (associated(turb%ltscale)) &
        call vtables2 (turb%ltscale(1,1,1),turbm%ltscale(1,1,1) &
          ,ng, npts, imean, &
-         'TL :3:hist:anal:mpti:mpt3:mpt1')
+         'TL :3:hist:anal:mpti:mpt3')
     if (associated(turb%sigw)) &
        call vtables2 (turb%sigw(1,1,1),turbm%sigw(1,1,1) &
          ,ng, npts, imean, &
-         'SIGW :3:hist:anal:mpti:mpt3:mpt1')
+         'SIGW :3:hist:anal:mpti:mpt3')
 
     npts=n2*n3
     if (associated(turb%sflux_u))  &
@@ -264,14 +268,18 @@ contains
          call vtables2 (turb%sflux_r(1,1),turbm%sflux_r(1,1)  &
          ,ng, npts, imean,  &
          'SFLUX_R :2:anal:mpt3')
+    if (associated(turb%akscal))  &
+         call vtables2 (turb%akscal(1,1),turbm%akscal(1,1)  &
+         ,ng, npts, imean,  &
+         'AKSCAL :2:hist:anal:mpti:mpt3')
     if (associated(turb%pblhgt)) &
        call vtables2 (turb%pblhgt(1,1),turbm%pblhgt(1,1) &
          ,ng, npts, imean, &
-         'PBLHGT :2:hist:anal:mpti:mpt3:mpt1')
+         'PBLHGT :2:hist:anal:mpti:mpt3')
     if (associated(turb%lmo)) &
        call vtables2 (turb%lmo(1,1),turbm%lmo(1,1) &
          ,ng, npts, imean, &
-         'LMO    :2:hist:anal:mpti:mpt3:mpt1')
+         'LMO    :2:hist:anal:mpti:mpt3')
 
     return
   end subroutine filltab_turb
