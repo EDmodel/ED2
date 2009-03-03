@@ -104,7 +104,7 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff,rhos,vels   &
 
       !----- Get scalings used to determine stability -------------------------------------!
       call get_yscal_ar(integration_buff%y, integration_buff%dydx,h,integration_buff%yscal &
-                       ,cpatch,lsl)
+                       ,cpatch,csite%total_snow_depth(ipa),lsl)
 
       !----- Be sure not to overstep ------------------------------------------------------!
       if((x+h-tend)*(x+h-tbeg) > 0.0) h=tend-x
@@ -453,7 +453,7 @@ end subroutine inc_rk4_patch_ar
 !    This subroutine finds the error scale for the integrated variables, which will be     !
 ! later used to define the relative error.                                                 !
 !------------------------------------------------------------------------------------------!
-subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, lsl)
+subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, total_snow_depth, lsl)
    use ed_state_vars        , only : patchtype          & ! subroutine
                                    , rk4patchtype       ! ! subroutine
    use rk4_coms             , only : tiny_offset        ! ! intent(in)
@@ -466,12 +466,13 @@ subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, lsl)
    use pft_coms             , only : sla                ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(rk4patchtype), target     :: y      ! Structure with the guesses
-   type(rk4patchtype), target     :: dy     ! Structure with their derivatives
-   type(rk4patchtype), target     :: yscal  ! Structure with their scales
-   type(patchtype)   , target     :: cpatch ! Current patch
-   integer           , intent(in) :: lsl    ! Lowest soil level
-   real              , intent(in) :: htry   ! Time-step we are trying
+   type(rk4patchtype), target     :: y                ! Structure with the guesses
+   type(rk4patchtype), target     :: dy               ! Structure with their derivatives
+   type(rk4patchtype), target     :: yscal            ! Structure with their scales
+   type(patchtype)   , target     :: cpatch           ! Current patch
+   integer           , intent(in) :: lsl              ! Lowest soil level
+   real              , intent(in) :: total_snow_depth ! Snow depth
+   real              , intent(in) :: htry             ! Time-step we are trying
    !----- Local variables -----------------------------------------------------------------!
    integer                        :: k      ! Counter
    integer                        :: ico    ! Current cohort ID
@@ -522,15 +523,19 @@ subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, lsl)
    yscal%virtual_heat  = qliqt3 * yscal%virtual_water
 
    !---------------------------------------------------------------------------------------!
-   !    Scale for leaf water and energy. In case the plants have few or no leaves, we      !
-   ! assign huge values for typical scale, preventing unecessary small steps.              !
+   !    Scale for leaf water and energy. In case the plants have few or no leaves, or the  !
+   ! plant is buried in snow, we assign huge values for typical scale, thus preventing     !
+   ! unecessary small steps.                                                               !
+   !    Also, if the cohort is tiny and has almost no water, make the scale less strict.   !
    !---------------------------------------------------------------------------------------!
    do ico = 1,cpatch%ncohorts
-      if (cpatch%lai(ico) > lai_min) then
-         yscal%veg_water(ico) = 0.22
-         yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico)*htry)
+      if (cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > total_snow_depth)  &
+      then
+         yscal%veg_water(ico)  = 0.22
+         yscal%veg_energy(ico) = max(abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico)*htry) &
+                                    ,yscal%veg_water(ico)*qliqt3)
       else
-         yscal%veg_water(ico) = 1.e30
+         yscal%veg_water(ico)  = 1.e30
          yscal%veg_energy(ico) = 1.e30
       end if
    end do

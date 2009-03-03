@@ -183,6 +183,8 @@ module fuse_fiss_utils_ar
       integer                            :: ipa,ico      ! Counters
       logical, dimension(:), allocatable :: remain_table ! Flag: this patch will remain.
       real                               :: elim_area    ! Area of removed patches
+      real                               :: new_area     ! Just to make sure area is 1.
+      real                               :: area_scale   ! Scaling area factor.
       !------------------------------------------------------------------------------------!
 
       allocate (remain_table(csite%npatches))
@@ -217,16 +219,43 @@ module fuse_fiss_utils_ar
       call deallocate_sitetype(tempsite)
       deallocate(tempsite)
 
-      !----- Renormalize the number of plants and the total area to reflect the deletions. !
+      !------------------------------------------------------------------------------------!
+      !    Renormalize the total area.  We must also rescale all extensive properties from !
+      ! cohorts, since they are per unit area and we are effectively changing the area.    !
+      !------------------------------------------------------------------------------------!
+      new_area=0.
+      area_scale = 1./(1. - elim_area)
       do ipa = 1,csite%npatches
-         csite%area(ipa) = csite%area(ipa) / (1.-elim_area)
+         csite%area(ipa) = csite%area(ipa) * area_scale
+         new_area = new_area + csite%area(ipa)
 
          cpatch => csite%patch(ipa)
          do ico = 1, cpatch%ncohorts
-            cpatch%nplant(ico) = cpatch%nplant(ico) / (1.-elim_area)
+            cpatch%lai(ico)                 = cpatch%lai(ico)                 * area_scale
+            cpatch%nplant(ico)              = cpatch%nplant(ico)              * area_scale
+            cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)            * area_scale
+            cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)      * area_scale
+            cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)      * area_scale
+            cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)  * area_scale
+            cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico) * area_scale
+            cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)   * area_scale
+            cpatch%Psi_open(ico)            = cpatch%Psi_open(ico)            * area_scale
+            cpatch%gpp(ico)                 = cpatch%gpp(ico)                 * area_scale
+            cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)    * area_scale
+            cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)    * area_scale
+            cpatch%veg_water(ico)           = cpatch%veg_water(ico)           * area_scale
+            cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)             * area_scale
+            cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)          * area_scale
          end do
       end do
 
+      if (abs(new_area-1.0) > 2.*epsilon(1.)) then
+         write (unit=*,fmt='(a,1x,es12.5)') ' + ELIM_AREA:',elim_area
+         write (unit=*,fmt='(a,1x,es12.5)') ' + NEW_AREA: ',new_area
+         call fatal_error('New_area should be 1 but it isn''t!!!','terminate_patches_ar'   &
+                       &,'fuse_fiss_utils.f90')
+      end if 
+      
       return
    end subroutine terminate_patches_ar
    !=======================================================================================!
@@ -924,6 +953,7 @@ module fuse_fiss_utils_ar
       logical                            :: fuse_flag      ! Flag: I will perform fusion.
       real                               :: norm           !
       real                               :: tolerance_mult ! Multiplying factor for tol.
+      real                               :: new_area       ! For area conservation check
       !------------------------------------------------------------------------------------!
 
       !----- Return if maxpatch is 0, this is a flag for no patch fusion. -----------------!
@@ -1113,7 +1143,18 @@ module fuse_fiss_utils_ar
             !----- Deallocation should happen outside the "if" statement ------------------!
             deallocate(tempsite)
             deallocate(fuse_table)
-
+            
+            !----- Sanity check -----------------------------------------------------------!
+            new_area = 0.
+            do ipa=1,csite%npatches
+               new_area = new_area + csite%area(ipa)
+            end do
+            if (abs(new_area-1.) > 2.*epsilon(new_area)) then
+               write (unit=*,fmt='(a,1x,es12.5)') 'NEW_AREA: ',new_area
+               call fatal_error('New area should be 1 but it isn''t!!!','fuse_patches_ar'  &
+                               &,'fuse_fiss_utils.f90')
+            end if
+            
          end do siteloop
       end do polyloop
       return
@@ -1244,7 +1285,7 @@ module fuse_fiss_utils_ar
               + csite%soil_energy(iii,recp)         * csite%area(recp) )
 
          csite%soil_water(iii,recp)      = newareai *                                      &
-              ( csite%soil_water(iii,recp)          * dble(csite%area(recp))                     &
+              ( csite%soil_water(iii,recp)          * dble(csite%area(recp))               &
               + csite%soil_water(iii,donp)          * dble(csite%area(donp)) )
       end do
 

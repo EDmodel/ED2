@@ -263,15 +263,16 @@ subroutine get_work(ifm,nxp,nyp)
            work_e(ifm)%work(i,j)      = 1.0
            work_e(ifm)%landfrac(i,j)  = real(ipcent_land(ipy))/100.0
 
-           if (isoilflg(ifm) == 0) then !! set from ED2IN/RAMSIN
-              work_e(ifm)%ntext(i,j) = nslcon
-           else  !! set from data base or LEAF-3
+           select case (isoilflg(ifm))
+           case (1)  !! set from data base or LEAF-3
               datsoil = ntext_soil_list(ipy)
 
               ! This is to prevent datsoil to be zero when the polygon was assumed land
               if (datsoil == 0) datsoil=nslcon
               work_e(ifm)%ntext(i,j) = datsoil
-           end if
+           case (2) !! set from ED2IN/RAMSIN
+              work_e(ifm)%ntext(i,j) = nslcon
+           end select
         else
            !----- Making this grid point 100% water ---------------------------------------!
            work_e(ifm)%landfrac(i,j)  = 0.

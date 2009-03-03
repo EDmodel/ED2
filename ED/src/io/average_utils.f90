@@ -543,7 +543,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
 !------------------------------------------------------------------------------------------!
    use grid_coms     , only : nzg
    use ed_state_vars , only : edtype,polygontype,sitetype,patchtype
-   use max_dims      , only : n_pft
+   use max_dims      , only : n_pft,n_dist_types
    use consts_coms   , only : alvl,day_sec,umol_2_kgC
    use misc_coms     , only : dtlsm,frqsum
    implicit none
@@ -551,7 +551,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    type(polygontype) , pointer :: cpoly
    type(sitetype)    , pointer :: csite
    type(patchtype)   , pointer :: cpatch
-   integer                  :: ipy,isi,ipa,ipft,k
+   integer                  :: ipy,isi,ipa,ipft,ilu,k
    real                     :: polygon_area_i, site_area_i
    real :: sitesum_storage_resp, sitesum_vleaf_resp, sitesum_growth_resp
    real :: patchsum_storage_resp, patchsum_vleaf_resp , patchsum_growth_resp
@@ -563,8 +563,10 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    do ipy=1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
       cgrid%lai_pft            (:,ipy) = 0.
+      cgrid%lai_lu             (:,ipy) = 0.
       do isi=1,cpoly%nsites
          cpoly%lai_pft (:,isi) = 0.
+         cpoly%lai_lu  (:,isi) = 0.
       end do
    end do
 
@@ -645,16 +647,25 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                           * csite%area(ipa) * site_area_i
                end do
             end if
+
+            ilu = csite%dist_type(ipa)
+            cpoly%lai_lu(ilu,isi) = cpoly%lai_lu(ilu,isi) + csite%lai(ipa) * csite%area(ipa) * site_area_i
+
          end do patchloop
 
          sitesum_growth_resp  = sitesum_growth_resp  + (patchsum_growth_resp    *site_area_i) * cpoly%area(isi)
          sitesum_storage_resp = sitesum_storage_resp + (patchsum_storage_resp   *site_area_i) * cpoly%area(isi)
          sitesum_vleaf_resp   = sitesum_vleaf_resp   + (patchsum_vleaf_resp     *site_area_i) * cpoly%area(isi)
 
+
       end do siteloop
       
       do ipft=1,n_pft
          cgrid%lai_pft(ipft,ipy) = cgrid%lai_pft(ipft,ipy) + sum(cpoly%lai_pft(ipft,:)*cpoly%area) * polygon_area_i
+      end do
+      
+      do ilu=1,n_dist_types
+         cgrid%lai_lu(ilu,ipy) = cgrid%lai_lu(ilu,ipy) + sum(cpoly%lai_lu(ilu,:)*cpoly%area) * polygon_area_i
       end do
       
       cgrid%dmean_growth_resp(ipy)  = cgrid%dmean_growth_resp(ipy)  + sitesum_growth_resp  * polygon_area_i
@@ -771,12 +782,14 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_nep_lu       (:,ipy) = 0.
       cgrid%dmean_gpp_dbh      (:,ipy) = 0.
       cgrid%lai_pft            (:,ipy) = 0.
+      cgrid%lai_lu             (:,ipy) = 0.
 
       !-----------------------------------------!
       ! Reset variables stored in polygontype   !
       !-----------------------------------------!
       do isi=1,cpoly%nsites
          cpoly%lai_pft (:,isi) = 0.
+         cpoly%lai_lu  (:,isi) = 0.
       end do
    end do
 
@@ -836,6 +849,7 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
       cgrid%mmean_nep_lu      (:,ipy) = cgrid%mmean_nep_lu      (:,ipy) +  cgrid%dmean_nep_lu      (:,ipy)
       cgrid%mmean_gpp_dbh     (:,ipy) = cgrid%mmean_gpp_dbh     (:,ipy) +  cgrid%dmean_gpp_dbh     (:,ipy)
       cgrid%mmean_lai_pft     (:,ipy) = cgrid%mmean_lai_pft     (:,ipy) +  cgrid%lai_pft           (:,ipy)
+      cgrid%mmean_lai_lu      (:,ipy) = cgrid%mmean_lai_lu      (:,ipy) +  cgrid%lai_lu            (:,ipy)
 
       !------------------------------------------------------------------------------------!
       !    During the integration stage we keep the sum of squares, it will be converted   !
@@ -910,6 +924,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_nep_lu       (:,ipy) = cgrid%mmean_nep_lu       (:,ipy) * ndaysi
       cgrid%mmean_gpp_dbh      (:,ipy) = cgrid%mmean_gpp_dbh      (:,ipy) * ndaysi
       cgrid%mmean_lai_pft      (:,ipy) = cgrid%mmean_lai_pft      (:,ipy) * ndaysi
+      cgrid%mmean_lai_lu       (:,ipy) = cgrid%mmean_lai_lu       (:,ipy) * ndaysi
   
       !------------------------------------------------------------------------------------!
       !   Here we convert the sum of squares into standard deviation. The standard devi-   !
@@ -986,6 +1001,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_nep_lu(:,ipy)     = 0.
       cgrid%mmean_gpp_dbh(:,ipy)    = 0.
       cgrid%mmean_lai_pft(:,ipy)    = 0.
+      cgrid%mmean_lai_lu(:,ipy)     = 0.
       cgrid%agb_pft(:,ipy)          = 0.
       cgrid%ba_pft(:,ipy)           = 0.
       cgrid%stdev_gpp(ipy)          = 0.

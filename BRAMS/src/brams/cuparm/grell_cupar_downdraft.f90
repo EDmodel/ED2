@@ -339,6 +339,8 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,mentrd_rate,cdd,p_cup
    real                   :: delta          ! Aux. var. for bisection 2nd guess    [ kg/kg]
    !----- External functions --------------------------------------------------------------!
    real, external         :: buoyancy_acc   ! Buoyancy acceleration funtion.
+   !----- Constants -----------------------------------------------------------------------!
+   real, parameter        :: toowet=0.030   ! Max. mix. ratio for initial guesses  [ kg/kg]
    !---------------------------------------------------------------------------------------!
 
 
@@ -455,12 +457,21 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,mentrd_rate,cdd,p_cup
 
          !---------------------------------------------------------------------------------!
          ! c. 2nd guess, the second for the secant method, which will be computed on top   !
-         !    of the first one. qtotda will be also qtotdp.                                !
+         !    of the first one. qtotda will be also qtotdp.However, because the first      !
+         !    guess started assuming that no evaporation have occurred, the error is like- !
+         !    ly to be large, which may overestimate evapd_cld and put the second guess    !
+         !    way off. Should this happen, we impose a maximum qtotd of 30 g/kg, which is  !
+         !    significantly above normal values, but not too large to the point that could !
+         !    cause the model to crash.                                                    !
          !---------------------------------------------------------------------------------!
          qtotdp = qtotda
          funp   = funa
-         !------ Finding the current guess ------------------------------------------------!
-         qtotdc = max(toodry,qtotd_0_evap - 0.5 * evapd_cld(k) * denomini)
+         !---------------------------------------------------------------------------------!
+         !     Finding the current guess. As a 2nd guess, qtotdc can be way off, in which  !
+         ! case we put a lid of 30. g/kg, which is a faily large number and should never   !
+         ! be below the maximum under normal conditions.                                   !
+         !---------------------------------------------------------------------------------!
+         qtotdc = min(max(toodry,qtotd_0_evap - 0.5 * evapd_cld(k) * denomini),toowet)
          thild_cld(k) = thetaeiv2thil(theivd_cld(k),p_cup(k),qtotdc)
          call thil2tqall(thild_cld(k),exner_cup(k),p_cup(k),qtotdc,qliqd_cld(k)            &
                         ,qiced_cld(k),td_cld(k),qvapd_cld(k),qsatd_cld(k))
@@ -499,7 +510,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,mentrd_rate,cdd,p_cup
             bisection = .false.
          !----- Just to enter at least once. The 1st time qtotdz=qtotda-2*delta -----------!
             zgssloop: do it=1,maxfpo
-               qtotdz = max(toodry,qtotda + real((-1)**it * (it+3)/2) * delta)
+               qtotdz = min(max(toodry,qtotda + real((-1)**it * (it+3)/2) * delta),toowet)
                !----- Finding this equilibrium state --------------------------------------!
                thild_cld(k) = thetaeiv2thil(theivd_cld(k),p_cup(k),qtotdz)
                call thil2tqall(thild_cld(k),exner_cup(k),p_cup(k),qtotdz                   &

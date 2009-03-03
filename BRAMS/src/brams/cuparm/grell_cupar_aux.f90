@@ -280,25 +280,15 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,pi0,pp,pc,wp,dn0,tkep,rli
       !------ 2. Pressure. ----------------------------------------------------------------!
       p0(k)     = p00*(cpi*exner0(k))**cpor
       !------------------------------------------------------------------------------------!
-      ! 3. Temperature and water, depending on whether shallower cumulus had happened.     !
+      ! 3. Temperature and water.                                                          !
       !------------------------------------------------------------------------------------!
-      !------ 3a. Shallower cumulus weren't called or didn't happen, using default --------!
-      if (dthildt_shal(k) == 0. .and. dqtotdt_shal(k) == 0.) then
-         thil0(k)  = thp(kr)
-         qtot0(k)  = max(toodry,rtp(kr))
-         qliq0(k)  = max(0.,rliq(kr))
-         qice0(k)  = max(0.,rice(kr))
-         qvap0(k)  = max(toodry,qtot0(k)-qice0(k)-qliq0(k))
-         t0(k)     = cpi * theta(kr) * exner0(k)
-      !------ 3b. Shallower cumulus happened, need to find new equilibrium state ----------!
-      else
-         thil0(k)  = thp(kr)   + dtime*dthildt_shal(k)
-         qtot0(k)  = max(toodry,rtp(kr)   + dtime*dqtotdt_shal(k))
-        !----- Using the Taylor expansion proxy as Tripoli/Cotton (1981) with prev. t -----!
-         t0(k)     = cpi * theta(kr) * exner0(k)
-         call thil2tqall(thil0(k),exner0(k),p0(k),qtot0(k),qliq0(k),qice0(k),t0(k)         &
-                        ,qvap0(k),qsat)
-      end if
+      thil0(k)  = thp(kr)
+      qtot0(k)  = max(toodry,rtp(kr))
+      qliq0(k)  = max(0.,rliq(kr))
+      qice0(k)  = max(0.,rice(kr))
+      qvap0(k)  = max(toodry,qtot0(k)-qice0(k)-qliq0(k))
+      t0(k)     = cpi * theta(kr) * exner0(k)
+
       !------ 4. Finding the ice-vapour equivalent potential temperature ------------------!
       theiv0(k) = thetaeiv(thil0(k),p0(k),t0(k),qvap0(k),qtot0(k))
 

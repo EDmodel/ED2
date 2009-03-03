@@ -198,7 +198,7 @@ ed_para_coms.o : $(ED_MPI)/ed_para_coms.f90 max_dims.o
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
-ed_para_init.o : $(ED_MPI)/ed_para_init.F90 grid_coms.o ed_node_coms.o ed_para_coms.o      \
+ed_para_init.o : $(ED_MPI)/ed_para_init.f90 grid_coms.o ed_node_coms.o ed_para_coms.o      \
 	mem_sites.o ed_work_vars.o soil_coms.o ed_state_vars.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)

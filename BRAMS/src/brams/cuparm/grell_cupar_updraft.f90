@@ -177,13 +177,11 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
          ierr = 3
          return
       end if
-      
+
       !----- No entrainment below the LFC, so theiv, thil, and qtot shouldn't change ------!
       theivu_cld(kbcon) = theiv_cup(k22)
       thilu_cld (kbcon) = thil_cup (k22)
       qtotu_cld (kbcon) = qtot_cup (k22)
-      qliqu_cld (kbcon) = qliqu_cld(kbcon-1) !----- For faster convergence ----------------!
-      qiceu_cld (kbcon) = qiceu_cld(kbcon-1) !----- For faster convergence ----------------!
       !------ Finding a consistent set of temperature and mixing ratios -------------------!
       call thil2tqall(thilu_cld(kbcon),exner_cup(kbcon),p_cup(kbcon),qtotu_cld(kbcon)      &
                      ,qliqu_cld(kbcon),qiceu_cld(kbcon),tu_cld(kbcon),qvapu_cld(kbcon)     &
@@ -708,7 +706,7 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
             tubis     = tu_cld(k) !---- Using a scratch to avoid sending td_cld too far ---!
             funz      = funa
             bisection = .false.
-         !----- Just to enter at least once. The 1st time qtotdz=qtotda-2*delta -----------!
+            !----- Just to enter at least once. The 1st time qtotdz=qtotda-2*delta --------!
             zgssloop: do it=1,maxfpo
                qtotuz = max(toodry,qtotua + real((-1)**it * (it+3)/2) * delta)
 

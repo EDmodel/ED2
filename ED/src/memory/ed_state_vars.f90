@@ -759,6 +759,7 @@ module ed_state_vars
 
      integer,pointer,dimension(:) :: num_landuse_years
      real,   pointer,dimension(:,:) :: lai_pft ! (n_pft,nsites)
+     real,   pointer,dimension(:,:) :: lai_lu ! (n_dist_types,nsites)
 
      real, pointer,dimension(:,:) :: elongation_factor
      real, pointer,dimension(:,:) :: delta_elongf
@@ -1296,6 +1297,7 @@ module ed_state_vars
      ! averages but they are written at the daily analysis               !
      !-------------------------------------------------------------------!
      real, pointer, dimension(:,:) :: lai_pft          !(n_pft       ,npolygons)
+     real, pointer, dimension(:,:) :: lai_lu           !(n_dist_types,npolygons)
      !-------------------------------------------------------------------!
      ! These variables carry the montlhly mean, and are allocated only   !
      ! when monthly means are requested by the user. For now only        !
@@ -1326,6 +1328,7 @@ module ed_state_vars
      real, pointer, dimension(:,:) :: mmean_nep_lu !(n_dist_types,npolygons)
      real, pointer, dimension(:,:) :: mmean_gpp_dbh!(n_dbh       ,npolygons)
      real, pointer, dimension(:,:) :: mmean_lai_pft!(n_pft       ,npolygons)
+     real, pointer, dimension(:,:) :: mmean_lai_lu !(n_dist_types,npolygons)
      !-------------------------------------------------------------------!
      !   These are variables updated at a monthly basis, so they are not !
      ! averages but they are written at the monthly analysis             !
@@ -1769,6 +1772,7 @@ contains
        allocate(cgrid%avg_rlongup      (npolygons))
        
        allocate(cgrid%lai_pft            (n_pft       ,npolygons))
+       allocate(cgrid%lai_lu             (n_dist_types,npolygons))
 
        !-----------------------------------------------------------------!
        ! Allocating the daily means, only if daily or monthly means were !
@@ -1827,6 +1831,7 @@ contains
           allocate(cgrid%mmean_nep_lu       (n_dist_types,npolygons))
           allocate(cgrid%mmean_gpp_dbh      (n_dbh       ,npolygons))
           allocate(cgrid%mmean_lai_pft      (n_pft       ,npolygons))
+          allocate(cgrid%mmean_lai_lu       (n_dist_types,npolygons))
           ! THE FOLLOWING IS ALREADY ALLOCATED IN THE PREVIOUS CONDITION RGK 6-13-08
         !  allocate(cgrid%agb_pft            (n_pft       ,npolygons))
           allocate(cgrid%ba_pft             (n_pft       ,npolygons))
@@ -1892,6 +1897,7 @@ contains
     allocate(cpoly%num_landuse_years(nsites))
 
     allocate(cpoly%lai_pft(n_pft,nsites))
+    allocate(cpoly%lai_lu(n_dist_types,nsites))
     allocate(cpoly%soi(nsites))
     allocate(cpoly%soi_name(nsites))
     allocate(cpoly%TCI(nsites))      
@@ -2463,6 +2469,7 @@ contains
        nullify(cgrid%dmean_nep_lu            )
        nullify(cgrid%dmean_gpp_dbh           ) 
        nullify(cgrid%lai_pft                 )
+       nullify(cgrid%lai_lu                  )
        nullify(cgrid%mmean_gpp               )
        nullify(cgrid%mmean_evap              )
        nullify(cgrid%mmean_transp            )
@@ -2485,6 +2492,7 @@ contains
        nullify(cgrid%mmean_nep_lu            )
        nullify(cgrid%mmean_gpp_dbh           )
        nullify(cgrid%mmean_lai_pft           )
+       nullify(cgrid%mmean_lai_lu            )
        nullify(cgrid%agb_pft                 )
        nullify(cgrid%ba_pft                  )
        nullify(cgrid%stdev_gpp               )
@@ -2543,6 +2551,7 @@ contains
 
     nullify(cpoly%num_landuse_years)
     nullify(cpoly%lai_pft)
+    nullify(cpoly%lai_lu)
     nullify(cpoly%soi)
     nullify(cpoly%soi_name)
     nullify(cpoly%TCI)   
@@ -3103,6 +3112,8 @@ contains
        if(associated(cgrid%dmean_rh_lu             )) deallocate(cgrid%dmean_rh_lu             )
        if(associated(cgrid%dmean_nep_lu            )) deallocate(cgrid%dmean_nep_lu            )
        if(associated(cgrid%dmean_gpp_dbh           )) deallocate(cgrid%dmean_gpp_dbh           )
+       if(associated(cgrid%lai_pft                 )) deallocate(cgrid%lai_pft                 )
+       if(associated(cgrid%lai_lu                  )) deallocate(cgrid%lai_lu                  )
        if(associated(cgrid%mmean_gpp               )) deallocate(cgrid%mmean_gpp               )
        if(associated(cgrid%mmean_evap              )) deallocate(cgrid%mmean_evap              )
        if(associated(cgrid%mmean_transp            )) deallocate(cgrid%mmean_transp            )
@@ -3125,6 +3136,7 @@ contains
        if(associated(cgrid%mmean_nep_lu            )) deallocate(cgrid%mmean_nep_lu            )
        if(associated(cgrid%mmean_gpp_dbh           )) deallocate(cgrid%mmean_gpp_dbh           )
        if(associated(cgrid%mmean_lai_pft           )) deallocate(cgrid%mmean_lai_pft           )
+       if(associated(cgrid%mmean_lai_pft           )) deallocate(cgrid%mmean_lai_lu            )
        if(associated(cgrid%agb_pft                 )) deallocate(cgrid%agb_pft                 )
        if(associated(cgrid%ba_pft                  )) deallocate(cgrid%ba_pft                  )
        if(associated(cgrid%stdev_gpp               )) deallocate(cgrid%stdev_gpp               )
@@ -3177,6 +3189,7 @@ contains
 
     if(associated(cpoly%num_landuse_years           )) deallocate(cpoly%num_landuse_years           )
     if(associated(cpoly%lai_pft                     )) deallocate(cpoly%lai_pft                     )
+    if(associated(cpoly%lai_lu                      )) deallocate(cpoly%lai_lu                      )
     if(associated(cpoly%soi                         )) deallocate(cpoly%soi                         )
     if(associated(cpoly%soi_name                    )) deallocate(cpoly%soi_name                    )
     if(associated(cpoly%TCI                         )) deallocate(cpoly%TCI                         )
@@ -3773,6 +3786,8 @@ contains
        if(associated(cgrid%dmean_rh_lu             )) cgrid%dmean_rh_lu              = large_real
        if(associated(cgrid%dmean_nep_lu            )) cgrid%dmean_nep_lu             = large_real
        if(associated(cgrid%dmean_gpp_dbh           )) cgrid%dmean_gpp_dbh            = large_real
+       if(associated(cgrid%lai_pft                 )) cgrid%lai_pft                  = large_real
+       if(associated(cgrid%lai_lu                  )) cgrid%lai_lu                   = large_real
        if(associated(cgrid%mmean_gpp               )) cgrid%mmean_gpp                = large_real
        if(associated(cgrid%mmean_evap              )) cgrid%mmean_evap               = large_real
        if(associated(cgrid%mmean_transp            )) cgrid%mmean_transp             = large_real
@@ -3795,6 +3810,7 @@ contains
        if(associated(cgrid%mmean_nep_lu            )) cgrid%mmean_nep_lu             = large_real
        if(associated(cgrid%mmean_gpp_dbh           )) cgrid%mmean_gpp_dbh            = large_real
        if(associated(cgrid%mmean_lai_pft           )) cgrid%mmean_lai_pft            = large_real
+       if(associated(cgrid%mmean_lai_lu            )) cgrid%mmean_lai_lu             = large_real
        if(associated(cgrid%agb_pft                 )) cgrid%agb_pft                  = large_real
        if(associated(cgrid%ba_pft                  )) cgrid%ba_pft                   = large_real
        if(associated(cgrid%stdev_gpp               )) cgrid%stdev_gpp                = large_real
@@ -3845,6 +3861,7 @@ contains
 
     if(associated(cpoly%num_landuse_years           )) cpoly%num_landuse_years           = large_integer  ! Integer
     if(associated(cpoly%lai_pft                     )) cpoly%lai_pft                     = large_real
+    if(associated(cpoly%lai_lu                      )) cpoly%lai_lu                      = large_real
     if(associated(cpoly%soi                         )) cpoly%soi                         = large_integer  ! Integer
     if(associated(cpoly%soi_name                    )) cpoly%soi_name                    = ''       ! Character
     if(associated(cpoly%TCI                         )) cpoly%TCI                         = large_real
@@ -6349,13 +6366,13 @@ contains
        call vtable_edio_r(cgrid%lai_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'LAI_PFT :14:hist:anal:dail') 
        call metadata_edio(nvar,igr,'Leaf Area Index','[m/m]','NA') 
-    else
-       !    print*,"LAI_PFT not associated"
-       ! REMOVING THE STOP, WITH LARGE GRIDS, IT IS POSSIBLE THAT
-       ! A PARALLEL NODE WILL HAVE NO POLYGONS, AND THUS BREAK THIS
-       ! CONDITION IN A LAWFULL CONTEXT. RK 10-25-08
-       !       stop
-       !       print*,"LAI_PFT not associated"
+    endif
+    
+    if(associated(cgrid%lai_lu)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%lai_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'LAI_LU :15:hist:anal:dail') 
+       call metadata_edio(nvar,igr,'Leaf Area Index','[m/m]','NA') 
     endif
     
     if(associated(cgrid%mmean_gpp)) then
@@ -6509,6 +6526,13 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%mmean_lai_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'MMEAN_LAI_PFT :14:hist:mont:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+    
+    if(associated(cgrid%mmean_lai_lu)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_lai_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_LAI_LU :15:hist:mont:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
@@ -6981,6 +7005,13 @@ contains
        nvar=nvar+1
          call vtable_edio_r(cpoly%lai_pft(1,1),nvar,igr,init,cpoly%siglob_id, &
          var_len,var_len_global,max_ptrs,'LAI_PFT_SI :24:hist:dail:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+    
+    if (associated(cpoly%lai_lu)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpoly%lai_lu(1,1),nvar,igr,init,cpoly%siglob_id, &
+         var_len,var_len_global,max_ptrs,'LAI_LU_SI :25:hist:dail:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
  
