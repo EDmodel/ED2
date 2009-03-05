@@ -531,9 +531,9 @@ subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, total_snow_depth, lsl)
    do ico = 1,cpatch%ncohorts
       if (cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > total_snow_depth)  &
       then
-         yscal%veg_water(ico)  = 0.22
-         yscal%veg_energy(ico) = max(abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico)*htry) &
-                                    ,yscal%veg_water(ico)*qliqt3)
+         yscal%veg_water(ico)  = max(abs(y%veg_water(ico)) + abs(dy%veg_water(ico)*htry)   &
+                                    ,1.e-4)
+         yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico)*htry)
       else
          yscal%veg_water(ico)  = 1.e30
          yscal%veg_energy(ico) = 1.e30
