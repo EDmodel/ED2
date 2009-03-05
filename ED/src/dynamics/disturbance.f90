@@ -557,11 +557,6 @@ end subroutine apply_disturbances_ar
        csite%sfcwater_mass(k,np) = csite%sfcwater_mass(k,np) + csite%sfcwater_mass(k,cp) *   &
             area_fac
 
-       !!!! IS THE FOLLOWING LINE CORRECT? IT SEEMS TO BE ADDING AN EXTRA AND UNECESARY
-       !!!! MASS TERM FROM THE DONOR PATCH  !!!
-       !!!! MLO: I don't think it's correct, it should be cp, shouldn't it? I switched it.
-       !csite%sfcwater_energy(k,np) = csite%sfcwater_energy(k,np) +   &
-       !     csite%sfcwater_energy(k,np) * csite%sfcwater_mass(k,cp) * area_fac
        csite%sfcwater_energy(k,np) = csite%sfcwater_energy(k,np) +   &
             csite%sfcwater_energy(k,cp) * csite%sfcwater_mass(k,cp) * area_fac
        csite%sfcwater_depth(k,np) = csite%sfcwater_depth(k,np) + csite%sfcwater_depth(k,cp) *   &

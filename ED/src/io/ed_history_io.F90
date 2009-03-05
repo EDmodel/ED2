@@ -12,6 +12,7 @@ subroutine read_ed1_history_file_array
   use grid_coms,only:ngrids
   use ed_therm_lib,only:calc_hcapveg
   use allometry, only: dbh2h,h2dbh,dbh2bd,dbh2bl, ed_biomass
+  use fuse_fiss_utils_ar, only: sort_cohorts_ar
   implicit none
 
   integer :: year
@@ -638,7 +639,6 @@ subroutine read_ed1_history_file_array
         close(12)
 
         !! Init sites, patches, and cohorts
-        !! Check cohorts are not bare ground
         do isi = 1,cpoly%nsites
            
            area_sum = 0.0
@@ -666,27 +666,14 @@ subroutine read_ed1_history_file_array
               
            enddo
 
-           ! If there are no cohorts, set some up
-           ! THERE ARE SOME DISTURBANCE TYPES,1,2 THAT HAVE NO COHORTS IN THEM
-           ! SHOULD THESE BE POPULATED WITH STARTED COHORTS? THE LOGIC IN THE 
-           ! NEXT FEW LINES CHECKS FOR COHORTS AT THE SITE LEVEL, NOT THE PATCH
-           ! LEVEL.  IS THIS OK?  -RGK 4-3-08
-
-           ! MLO 5-27-08. I don't think so, there are patches that are still with no cohorts...
-           ! I am just switching to the patch level, so it forces these patches to have a minimum 
-           ! number of cohorts. I moved this to the time it allocates the cohorts.
-                     
            do ipa = 1,csite%npatches
               
               cpatch => csite%patch(ipa)
-              do ico = 1,cpatch%ncohorts
-                 
-                 ! This shouldn't be defined here
-                 !cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-                 !     cpatch%nplant(ico),cpatch%pft(ico))
-                 
+              do ico = 1,cpatch%ncohorts                 
                  call init_ed_cohort_vars_array(cpatch,ico,cpoly%lsl(isi))
               enddo
+              !----- Need to sort cohorts by size. ----------------------------------------!
+              call sort_cohorts_ar(cpatch)
               
            enddo
            

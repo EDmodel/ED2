@@ -1542,7 +1542,8 @@ ed_grid.o : $(ED_UTILS)/ed_grid.f90 grid_coms.o ed_node_coms.o max_dims.o consts
 
 ed_history_io.o : $(ED_IO)/ed_history_io.F90 max_dims.o pft_coms.o misc_coms.o mem_sites.o \
 	consts_coms.o ed_misc_coms.o ed_state_vars.o grid_coms.o max_dims.o soil_coms.o    \
-	ed_node_coms.o hdf5_coms.o fusion_fission_coms.o ed_therm_lib.o allometry.o
+	ed_node_coms.o hdf5_coms.o fusion_fission_coms.o ed_therm_lib.o allometry.o        \
+	fuse_fiss_utils.o
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)
