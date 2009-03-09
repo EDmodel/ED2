@@ -24,8 +24,6 @@ module allometry
    real, parameter :: b2l   =   0.605
    real, parameter :: c2l   =   0.848
    real, parameter :: d2l   =   0.438
-   !----- Constants for root depth --------------------------------------------------------!
-   real(kind=8), parameter :: volume_min = 1.d-24
    !---------------------------------------------------------------------------------------!
 
    contains
@@ -184,7 +182,6 @@ module allometry
       real   , intent(in) :: dbh
       integer, intent(in) :: ipft
       !----- Local variables --------------------------------------------------------------!
-      real(kind=8)        :: volume8
       real                :: volume
       !------------------------------------------------------------------------------------!
 
@@ -192,10 +189,7 @@ module allometry
       case(1,5) !----- Grasses get a fixed rooting depth of 70 cm. ------------------------!
          calc_root_depth = -0.7
       case default
-         !----- Using double precision to avoid FPE when both dbh and h are tiny. ---------!
-         volume8          = max(volume_min,dble(h) * 0.65 * dble(pi1)                      &
-                          * (dble(dbh)*0.11)*(dble(dbh)*0.11))
-         volume           = sngl(volume8)
+         volume           = h * 0.65 * pi1 * (dbh*0.11)*(dbh*0.11)
          calc_root_depth = -10.0**(0.545 + 0.277*log10(volume))
       end select
 

@@ -90,16 +90,20 @@ subroutine ed_init_coup_atm
               csite%rough(ipa) = soil_rough
               csite%soil_tempk(1,ipa) = -100.0 ! This value functions as a flag.  Do not 
                                                ! change it here. It will be changed below.
-              
+              csite%hcapveg(ipa) = 0.
               do ico = 1,cpatch%ncohorts
                  ! Initialize vegetation properties.
                  ! For now, set heat capacity for stability.
 
                  cpatch%veg_temp(ico)   = cpoly%met(isi)%atm_tmp
                  cpatch%veg_water(ico)  = 0.0
-                 cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico) &
-                                                      ,cpatch%nplant(ico),cpatch%pft(ico))
+                 cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico)           &
+                                                      ,cpatch%nplant(ico)          &
+                                                      ,cpatch%lai(ico)             &
+                                                      ,cpatch%pft(ico)             &
+                                                      ,cpatch%phenology_status(ico))
                  cpatch%veg_energy(ico) = cpatch%hcapveg(ico)*cpatch%veg_temp(ico)
+                 csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico)
               end do
            
            enddo
@@ -355,6 +359,7 @@ subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
   ! Reset height
   csite%veg_height(ipa) = 0.0
   csite%lai(ipa)        = 0.0
+  csite%hcapveg(ipa)    = 0.0
   norm_fac              = 0.0
   csite%plant_ag_biomass(ipa) = 0.0
   cpatch => csite%patch(ipa)
@@ -367,8 +372,9 @@ subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
      norm_fac = norm_fac + ba
      csite%veg_height(ipa) = csite%veg_height(ipa) + cpatch%hite(ico) * ba
      
-     ! Update LAI and AGB
-     csite%lai(ipa) = csite%lai(ipa) + cpatch%lai(ico)
+     ! Update LAI, heat capacity, and AGB
+     csite%lai(ipa)     = csite%lai(ipa)     + cpatch%lai(ico)
+     csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico)
      csite%plant_ag_biomass(ipa)  = csite%plant_ag_biomass(ipa) +                          &
            ed_biomass(cpatch%bdead(ico),cpatch%balive(ico), cpatch%bleaf(ico)              &
                       ,cpatch%pft(ico), cpatch%hite(ico),cpatch%bstorage(ico))             &
@@ -427,18 +433,20 @@ subroutine update_site_derived_props_ar(cpoly, census_flag, isi)
   type(polygontype),target :: cpoly
   type(sitetype), pointer :: csite
   type(patchtype), pointer :: cpatch
-  integer :: isi,ipa,ico
+  integer :: isi,ipa,ico,ilu
   real :: ba
   integer :: bdbh
   integer, intent(in) :: census_flag
 
   cpoly%basal_area(:,:,isi) = 0.0
   cpoly%agb(:,:,isi) = 0.0
+  cpoly%agb_lu(:,isi) = 0.0
   
   csite => cpoly%site(isi)
 
   do ipa = 1,csite%npatches
      
+     ilu = csite%dist_type(ipa)
      cpatch => csite%patch(ipa)
 
      do ico = 1,cpatch%ncohorts
@@ -450,6 +458,10 @@ subroutine update_site_derived_props_ar(cpoly, census_flag, isi)
            cpoly%basal_area(cpatch%pft(ico), bdbh,isi) = cpoly%basal_area(cpatch%pft(ico), bdbh,isi) &
                 +  csite%area(ipa) * ba * pi1 * 0.25
            cpoly%agb(cpatch%pft(ico), bdbh,isi) = cpoly%agb(cpatch%pft(ico), bdbh,isi) +  &
+                ed_biomass(cpatch%bdead(ico), cpatch%balive(ico), cpatch%bleaf(ico), &
+                cpatch%pft(ico), cpatch%hite(ico),cpatch%bstorage(ico)) &
+                * cpatch%nplant(ico) * 10.0 * csite%area(ipa)
+           cpoly%agb_lu(ilu,isi) = cpoly%agb_lu(ilu,isi) +  &
                 ed_biomass(cpatch%bdead(ico), cpatch%balive(ico), cpatch%bleaf(ico), &
                 cpatch%pft(ico), cpatch%hite(ico),cpatch%bstorage(ico)) &
                 * cpatch%nplant(ico) * 10.0 * csite%area(ipa)

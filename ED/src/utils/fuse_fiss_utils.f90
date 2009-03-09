@@ -239,9 +239,9 @@ module fuse_fiss_utils_ar
             cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)            * area_scale
             cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)      * area_scale
             cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)      * area_scale
-            cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)  * area_scale
-            cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico) * area_scale
-            cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)   * area_scale
+!            cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)  * area_scale
+!            cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico) * area_scale
+!            cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)   * area_scale
             cpatch%Psi_open(ico)            = cpatch%Psi_open(ico)            * area_scale
             cpatch%gpp(ico)                 = cpatch%gpp(ico)                 * area_scale
             cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)    * area_scale
@@ -651,27 +651,24 @@ module fuse_fiss_utils_ar
                !   Half the densities of the original cohort.  All "extensive" variables   !
                ! need to be rescaled.                                                      !
                !---------------------------------------------------------------------------!
-               cpatch%nplant(ico)              = cpatch%nplant(ico)              * 0.5
-               cpatch%lai(ico)                 = cpatch%lai(ico)                 * 0.5
-               cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)            * 0.5
-               cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)      * 0.5
-               cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)      * 0.5
-               cpatch%dmean_leaf_resp(ico)     = cpatch%dmean_leaf_resp(ico)     * 0.5
-               cpatch%dmean_root_resp(ico)     = cpatch%dmean_root_resp(ico)     * 0.5
-               cpatch%dmean_gpp(ico)           = cpatch%dmean_gpp(ico)           * 0.5
-               cpatch%dmean_gpp_pot(ico)       = cpatch%dmean_gpp_pot(ico)       * 0.5
-               cpatch%dmean_gpp_max(ico)       = cpatch%dmean_gpp_max(ico)       * 0.5
-               cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)  * 0.5
-               cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico) * 0.5
-               cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)   * 0.5
-               cpatch%monthly_dndt(ico)        = cpatch%monthly_dndt(ico)        * 0.5
-               cpatch%Psi_open(ico)            = cpatch%Psi_open(ico)            * 0.5
-               cpatch%gpp(ico)                 = cpatch%gpp(ico)                 * 0.5
-               cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)    * 0.5
-               cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)    * 0.5
-               cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)             * 0.5
-               cpatch%veg_water(ico)           = cpatch%veg_water(ico)           * 0.5
-               cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)          * 0.5
+               cpatch%lai(ico)                 = cpatch%lai(ico)                  * 0.5
+               cpatch%nplant(ico)              = cpatch%nplant(ico)               * 0.5
+               cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * 0.5
+               cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * 0.5
+               cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)       * 0.5
+               cpatch%dmean_gpp(ico)           = cpatch%dmean_gpp(ico)            * 0.5
+               cpatch%dmean_gpp_pot(ico)       = cpatch%dmean_gpp_pot(ico)        * 0.5
+               cpatch%dmean_gpp_max(ico)       = cpatch%dmean_gpp_max(ico)        * 0.5
+               cpatch%dmean_leaf_resp(ico)     = cpatch%dmean_leaf_resp(ico)      * 0.5
+               cpatch%dmean_root_resp(ico)     = cpatch%dmean_root_resp(ico)      * 0.5
+               cpatch%Psi_open(ico)            = cpatch%Psi_open(ico)             * 0.5
+               cpatch%gpp(ico)                 = cpatch%gpp(ico)                  * 0.5
+               cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)     * 0.5
+               cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)     * 0.5
+               cpatch%monthly_dndt(ico)        = cpatch%monthly_dndt(ico)         * 0.5
+               cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * 0.5
+               cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)              * 0.5
+               cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)           * 0.5
                !---------------------------------------------------------------------------!
 
 
@@ -849,7 +846,6 @@ module fuse_fiss_utils_ar
       use pft_coms      , only :  q                     & ! intent(in), lookup table
                                 , qsw                   & ! intent(in), lookup table
                                 , sla                   ! ! intent(in), lookup table
-      use ed_therm_lib  , only :  calc_hcapveg          ! ! function
       use therm_lib     , only :  qwtk                  ! ! subroutine
       use allometry     , only :  calc_root_depth       & ! function
                                 , assign_root_depth     & ! function
@@ -864,7 +860,9 @@ module fuse_fiss_utils_ar
       real            , intent(in) :: green_leaf_factor ! Green leaf factor
       integer         , intent(in) :: lsl               ! Lowest soil level
       !----- Local variables --------------------------------------------------------------!
+      integer                      :: imon              ! Month for cb loop
       real                         :: newni             ! Inverse of new nplants
+      real                         :: cb_act            !
       real                         :: cb_max            !
       real                         :: root_depth        !
       real                         :: fracliq           ! Scratch var., liquid fraction
@@ -891,6 +889,11 @@ module fuse_fiss_utils_ar
                             + cpatch%nplant(donc) * cpatch%bleaf(donc) ) *newni
       cpatch%bstorage(recc) = ( cpatch%nplant(recc) * cpatch%bstorage(recc)                &
                               + cpatch%nplant(donc) * cpatch%bstorage(donc) ) * newni
+      cpatch%bseeds(recc)   = ( cpatch%nplant(recc) * cpatch%bseeds(recc)                  &
+                              + cpatch%nplant(donc) * cpatch%bseeds(donc) ) * newni
+      cpatch%maintenance_costs(recc) = newni                                               &
+                            * ( cpatch%nplant(recc) * cpatch%maintenance_costs(recc)       &
+                              + cpatch%nplant(donc) * cpatch%maintenance_costs(donc) )
       !------------------------------------------------------------------------------------!
 
 
@@ -899,6 +902,50 @@ module fuse_fiss_utils_ar
       cpatch%lai(recc)    = cpatch%lai(recc) + cpatch%lai(donc)
       !------------------------------------------------------------------------------------!
 
+      cb_act = 0.
+      cb_max = 0.
+      do imon = 1,12
+         cpatch%cb(imon,recc)     = ( cpatch%cb(imon,recc) * cpatch%nplant(recc)           &
+                                    + cpatch%cb(imon,donc) * cpatch%nplant(donc) ) * newni
+
+         cpatch%cb_max(imon,recc) = ( cpatch%cb_max(imon,recc) * cpatch%nplant(recc)       &
+                                    + cpatch%cb_max(imon,donc) * cpatch%nplant(donc))      &
+                                    * newni
+         cb_act = cb_act + cpatch%cb(imon,recc)
+         cb_max = cb_max + cpatch%cb_max(imon,recc)
+      end do
+      cpatch%cb(13,recc)     = ( cpatch%cb(13,recc) * cpatch%nplant(recc)                  &
+                               + cpatch%cb(13,donc) * cpatch%nplant(donc) ) * newni
+
+      cpatch%cb_max(13,recc) = ( cpatch%cb_max(13,recc) * cpatch%nplant(recc)              &
+                               + cpatch%cb_max(13,donc) * cpatch%nplant(donc))             &
+                               * newni
+
+      if(cb_max > 0.0)then
+         cpatch%cbr_bar(recc) = cb_act / cb_max
+      else
+         cpatch%cbr_bar(recc) = 0.0
+      end if
+
+
+      !------------------------------------------------------------------------------------!
+      !    Energy, water mass and heat capacity are extensive properties, and area         !
+      ! dependent. Therefore, the updated value will be simply the sum of each cohort.     !
+      ! We skip this if leaves are absent.                                                 !
+      !------------------------------------------------------------------------------------!
+      if (cpatch%phenology_status(recc) < 2) then
+         cpatch%veg_energy(recc) = cpatch%veg_energy(recc) + cpatch%veg_energy(donc)
+         cpatch%veg_water(recc)  = cpatch%veg_water(recc)  + cpatch%veg_water(donc)
+         cpatch%hcapveg(recc)    = cpatch%hcapveg(recc)    + cpatch%hcapveg(donc)
+         !----- Updating temperature ------------------------------------------------------!
+         call qwtk(cpatch%veg_energy(recc),cpatch%veg_water(recc),cpatch%hcapveg(recc)     &
+                  ,cpatch%veg_temp(recc),fracliq)
+      else
+         !----- In case cohorts don't have leaves, fuse their temperatures (singularity) --!
+         cpatch%veg_temp(recc) = newni                                                     &
+                               * ( cpatch%veg_temp(recc) * cpatch%nplant(recc)             &
+                                 + cpatch%veg_temp(donc) * cpatch%nplant(donc))
+      end if
 
 
       !------------------------------------------------------------------------------------!
@@ -912,6 +959,21 @@ module fuse_fiss_utils_ar
 
       cpatch%mean_root_resp(recc) = cpatch%mean_root_resp(recc)                            &
                                   + cpatch%mean_root_resp(donc)
+
+      cpatch%dmean_gpp(recc)     = cpatch%dmean_gpp(recc)                                  &
+                                 + cpatch%dmean_gpp(donc)
+
+      cpatch%dmean_gpp_pot(recc) = cpatch%dmean_gpp_pot(recc)                              &
+                                 + cpatch%dmean_gpp_pot(donc)
+
+      cpatch%dmean_gpp_max(recc) = cpatch%dmean_gpp_max(recc)                              &
+                                 + cpatch%dmean_gpp_max(donc)
+
+      cpatch%dmean_leaf_resp(recc) = cpatch%dmean_leaf_resp(recc)                          &
+                                  + cpatch%dmean_leaf_resp(donc)
+
+      cpatch%dmean_root_resp(recc) = cpatch%dmean_root_resp(recc)                          &
+                                   + cpatch%dmean_root_resp(donc)
       !------------------------------------------------------------------------------------!
 
 
@@ -921,17 +983,21 @@ module fuse_fiss_utils_ar
       ! plant.  But from the fuse_2_patches_ar subroutine here it seems they are per unit  !
       ! area.                                                                              !
       !------------------------------------------------------------------------------------!
-      cpatch%growth_respiration(recc)  = cpatch%growth_respiration(recc)                   &
-                                       + cpatch%growth_respiration(donc)
+      cpatch%growth_respiration(recc)  = newni *                                           &
+                                ( cpatch%growth_respiration(recc)  * cpatch%nplant(recc)   &
+                                + cpatch%growth_respiration(donc)  * cpatch%nplant(donc) )
      
-      cpatch%storage_respiration(recc) = cpatch%storage_respiration(recc)                  &
-                                       + cpatch%storage_respiration(donc)
+      cpatch%storage_respiration(recc) = newni *                                           &
+                                ( cpatch%storage_respiration(recc) * cpatch%nplant(recc)   &
+                                + cpatch%storage_respiration(donc) * cpatch%nplant(donc) )
      
-      cpatch%vleaf_respiration(recc)   = cpatch%vleaf_respiration(recc)                    &
-                                       + cpatch%vleaf_respiration(donc)
+      cpatch%vleaf_respiration(recc)   = newni *                                           &
+                                ( cpatch%vleaf_respiration(recc)   * cpatch%nplant(recc)   &
+                                + cpatch%vleaf_respiration(donc)   * cpatch%nplant(donc) )
 
-      cpatch%Psi_open(recc)            = cpatch%Psi_open(recc)                             &
-                                       + cpatch%Psi_open(donc)
+      !------ Psi_open is in kg/m2/s, so we add them. -------------------------------------!
+      cpatch%Psi_open(recc)   = cpatch%Psi_open(recc)   + cpatch%Psi_open(donc)
+      cpatch%Psi_closed(recc) = cpatch%Psi_closed(recc) + cpatch%Psi_closed(donc)
       !------------------------------------------------------------------------------------!
 
 
@@ -951,12 +1017,6 @@ module fuse_fiss_utils_ar
       cpatch%fsw(recc) = ( cpatch%fsw(recc) * cpatch%nplant(recc)                          &
                          + cpatch%fsw(donc) * cpatch%nplant(donc) ) * newni
 
-      cpatch%cb(1:13,recc) = ( cpatch%cb(1:13,recc) * cpatch%nplant(recc)                  &
-                             + cpatch%cb(1:13,donc) * cpatch%nplant(donc) ) * newni
-
-      cpatch%cb_max(1:13,recc) = ( cpatch%cb_max(1:13,recc) * cpatch%nplant(recc)          &
-                                 + cpatch%nplant(donc) * cpatch%cb_max(1:13,donc)) * newni
-
 
       !------------------------------------------------------------------------------------!
       !     Updating the carbon fluxes. They are fluxes per unit of area, so they should   !
@@ -969,27 +1029,11 @@ module fuse_fiss_utils_ar
       cpatch%root_respiration(recc) = cpatch%root_respiration(recc)                        &
                                     + cpatch%root_respiration(donc)
       !------------------------------------------------------------------------------------!
-
-      cb_max = sum(cpatch%cb_max(1:12,recc))
-      if(cb_max > 0.0)then
-         cpatch%cbr_bar(recc) = sum(cpatch%cb(1:12,recc)) / cb_max
-      else
-         cpatch%cbr_bar(recc) = 0.0
-      end if
      
+      cpatch%paw_avg10d(recc) = cpatch%paw_avg10d(recc) + cpatch%paw_avg10d(donc)
+      
       root_depth = calc_root_depth(cpatch%hite(recc), cpatch%dbh(recc), cpatch%pft(recc))
       cpatch%krdepth(recc) = assign_root_depth(root_depth, lsl)
-
-      !------------------------------------------------------------------------------------!
-      !    Energy, water mass and heat capacity are extensive properties, and area         !
-      ! dependent. Therefore, the updated value will be simply the sum of each cohort.     !
-      !------------------------------------------------------------------------------------!
-      cpatch%veg_energy(recc) = cpatch%veg_energy(recc) + cpatch%veg_energy(donc)
-      cpatch%veg_water(recc)  = cpatch%veg_water(recc)  + cpatch%veg_water(donc)
-      cpatch%hcapveg(recc)    = cpatch%hcapveg(recc)    + cpatch%hcapveg(donc)
-      !----- Updating temperature ---------------------------------------------------------!
-      call qwtk(cpatch%veg_energy(recc),cpatch%veg_water(recc),cpatch%hcapveg(recc)        &
-               ,cpatch%veg_temp(recc),fracliq)
 
       !----- Last, but not the least, we update nplant ------------------------------------!
       cpatch%nplant(recc) = newn
@@ -1391,12 +1435,19 @@ module fuse_fiss_utils_ar
                                      ( csite%can_shv(donp)            * csite%area(donp)   &
                                      + csite%can_shv(recp)            * csite%area(recp) )
 
+      csite%hcapveg(recp)            = newareai *                                          &
+                                     ( csite%hcapveg(donp)            * csite%area(donp)   &
+                                     + csite%hcapveg(recp)            * csite%area(recp) )
+
       do iii=1,nzs
-         csite%sfcwater_energy(iii,recp) = newareai *                                      &
+         !----- Surface water energy is scaled by mass, the weight must be different... ---!
+         csite%sfcwater_energy(iii,recp) =                                                 &
               ( csite%sfcwater_energy(iii,recp)     * csite%area(recp)                     &
                                                     * csite%sfcwater_mass(iii,recp)        &
               + csite%sfcwater_energy(iii,donp)     * csite%area(donp)                     &
-                                                    * csite%sfcwater_mass(iii,donp))
+                                                    * csite%sfcwater_mass(iii,donp))       &
+              / ( csite%sfcwater_mass(iii,recp) * csite%area(recp)                         &
+                + csite%sfcwater_mass(iii,donp) * csite%area(donp))
 
          csite%sfcwater_mass(iii,recp)   = newareai *                                      &
               ( csite%sfcwater_mass(iii,recp)       * csite%area(recp)                     &
@@ -1412,7 +1463,7 @@ module fuse_fiss_utils_ar
               ( csite%soil_energy(iii,donp)         * csite%area(donp)                     &
               + csite%soil_energy(iii,recp)         * csite%area(recp) )
 
-         csite%soil_water(iii,recp)      = newareai *                                      &
+         csite%soil_water(iii,recp)      = dble(newareai) *                                &
               ( csite%soil_water(iii,recp)          * dble(csite%area(recp))               &
               + csite%soil_water(iii,donp)          * dble(csite%area(donp)) )
       end do
@@ -1591,20 +1642,16 @@ module fuse_fiss_utils_ar
          cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * area_scale
          cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * area_scale
          cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)       * area_scale
-         cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)   * area_scale
-         cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico)  * area_scale
-         cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)    * area_scale
+         cpatch%dmean_gpp(ico)           = cpatch%dmean_gpp(ico)            * area_scale
+         cpatch%dmean_gpp_pot(ico)       = cpatch%dmean_gpp_pot(ico)        * area_scale
+         cpatch%dmean_gpp_max(ico)       = cpatch%dmean_gpp_max(ico)        * area_scale
+         cpatch%dmean_leaf_resp(ico)     = cpatch%dmean_leaf_resp(ico)      * area_scale
+         cpatch%dmean_root_resp(ico)     = cpatch%dmean_root_resp(ico)      * area_scale
          cpatch%Psi_open(ico)            = cpatch%Psi_open(ico)             * area_scale
          cpatch%gpp(ico)                 = cpatch%gpp(ico)                  * area_scale
          cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)     * area_scale
          cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)     * area_scale
          cpatch%monthly_dndt(ico)        = cpatch%monthly_dndt(ico)         * area_scale
-         
-         !---------------------------------------------------------------------------------!
-         !    Because both nplant and veg_water were scaled, we can simply apply the same  !
-         ! metrics to the heat capacity and energy, and the temperature will remain the    !
-         ! same.                                                                           !
-         !---------------------------------------------------------------------------------!
          cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * area_scale
          cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)              * area_scale
          cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)           * area_scale
@@ -1619,19 +1666,16 @@ module fuse_fiss_utils_ar
          cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * area_scale
          cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * area_scale
          cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)       * area_scale
-         cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)   * area_scale
-         cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico)  * area_scale
-         cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)    * area_scale
+         cpatch%dmean_gpp(ico)           = cpatch%dmean_gpp(ico)            * area_scale
+         cpatch%dmean_gpp_pot(ico)       = cpatch%dmean_gpp_pot(ico)        * area_scale
+         cpatch%dmean_gpp_max(ico)       = cpatch%dmean_gpp_max(ico)        * area_scale
+         cpatch%dmean_leaf_resp(ico)     = cpatch%dmean_leaf_resp(ico)      * area_scale
+         cpatch%dmean_root_resp(ico)     = cpatch%dmean_root_resp(ico)      * area_scale
          cpatch%Psi_open(ico)            = cpatch%Psi_open(ico)             * area_scale
          cpatch%gpp(ico)                 = cpatch%gpp(ico)                  * area_scale
          cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)     * area_scale
          cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)     * area_scale
          cpatch%monthly_dndt(ico)        = cpatch%monthly_dndt(ico)         * area_scale
-         !---------------------------------------------------------------------------------!
-         !    Because both nplant and veg_water were scaled, we can simply apply the same  !
-         ! metrics to the heat capacity and energy, and the temperature will remain the    !
-         ! same.                                                                           !
-         !---------------------------------------------------------------------------------!
          cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * area_scale
          cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)              * area_scale
          cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)           * area_scale

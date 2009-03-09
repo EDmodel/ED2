@@ -4,7 +4,7 @@ subroutine load_ed_ecosystem_params()
 
    use max_dims, only: n_pft
    use pft_coms, only: include_pft, include_pft_ag,C2B,frost_mort,include_these_pft,grass_pft
-   use disturb_coms,only:min_new_patch_area,num_lu_trans
+   use disturb_coms,only:min_new_patch_area,num_lu_trans,ianth_disturb
 
    implicit none
    integer :: p
@@ -62,15 +62,13 @@ subroutine load_ed_ecosystem_params()
       if (include_pft(grass_pft(p)) == 1) include_pft_ag(grass_pft(p)) = 1
       p = p+1
    end do
-   if (sum(include_pft_ag) == 0) then
+   if (sum(include_pft_ag) == 0 .and. ianth_disturb == 1) then
 !      WHY DO WE REQUIRE THERE TO BE AT LEAST ONE GRASS??  (MCD)
 !      MLO - Because pft 1 and 5 used to be the only PFTs allowed in agricultural patches.
 !            So when a new agricultural patch is created not having one was causing memory
 !            allocation issues. Yeonjoo also mentioned that this may be a problem at the
 !            reproduction.
-!      call fatal_error ('No grass included in include_these_pft, you should have at least one kind of grass...' &
-!                       ,'load_ecosystem_params','ed_params.f90')
-      call warning ('No grass included in include_these_pft, you should have at least one kind of grass...' &
+      call fatal_error ('No grass included in include_these_pft, you should have at least one kind of grass...' &
                        ,'load_ecosystem_params','ed_params.f90')
    end if
 
@@ -353,6 +351,7 @@ subroutine init_pft_mort_params()
 
 use pft_coms, only: mort1, mort2, mort3, seedling_mortality, treefall_s_gtht,  &
      treefall_s_ltht, plant_min_temp,frost_mort
+use consts_coms, only: t00
 
 implicit none
 
@@ -391,14 +390,14 @@ treefall_s_ltht(5) = 0.25
 treefall_s_ltht(6:11) = 0.1
 treefall_s_ltht(12:15) = 0.25
 
-plant_min_temp(1:4) = 0.0
-plant_min_temp(5:6) = -80.0
-plant_min_temp(7) = -10.0
-plant_min_temp(8) = -60.0
-plant_min_temp(9) = -80.0
-plant_min_temp(10:11) = -20.0
-plant_min_temp(12:13) = -80.0
-plant_min_temp(14:15) = 0.0
+plant_min_temp(1:4)   = t00
+plant_min_temp(5:6)   = t00-80.0
+plant_min_temp(7)     = t00-10.0
+plant_min_temp(8)     = t00-60.0
+plant_min_temp(9)     = t00-80.0
+plant_min_temp(10:11) = t00-20.0
+plant_min_temp(12:13) = t00-80.0
+plant_min_temp(14:15) = t00
 
 return
 end subroutine init_pft_mort_params

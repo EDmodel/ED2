@@ -15,7 +15,7 @@ module canopy_air_coms
   real, parameter ::  ubmin =    .25    ! should use ubmin=1.0 for convec case
   
   
-  real, parameter :: hcapveg_ref = 3.0e3
+  real, parameter :: hcapveg_ref = 4.5e3
   real, parameter :: heathite_min = 2.5
 
 end module canopy_air_coms

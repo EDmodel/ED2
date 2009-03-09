@@ -70,6 +70,8 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
   use phenology_coms, only: retained_carbon_fraction, theta_crit, iphen_scheme
   use consts_coms, only: t3ple,cice,cliq,alli
   use ed_therm_lib,only:calc_hcapveg,update_veg_energy_cweh
+  use max_dims, only : n_pft
+  use misc_coms, only : current_time
 
   implicit none
   
@@ -90,6 +92,8 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
   real :: leaf_litter
   real :: bl_max
   real :: old_hcapveg
+  logical, dimension(n_pft), save :: first_time=.true.
+  integer :: ipft
 
   ! Level to evaluate the soil temperature
 
@@ -120,23 +124,23 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
 
 
      do ico = 1,cpatch%ncohorts
-
+        ipft = cpatch%pft(ico)
         ! Find cohort-specific thresholds.
         if(iphen_scheme == 0)then
            ! drop_cold is computed in phenology_thresholds for Botta scheme.
            if(drop_cold == 1)bl_max = 0.0
         elseif(iphen_scheme == 1)then
            ! Get cohort-specific thresholds for prescribed phenology.
-           call cohort_phen_thresholds(cpoly%green_leaf_factor(cpatch%pft(ico),isi),  &
-                cpoly%leaf_aging_factor(cpatch%pft(ico),isi), cpatch%dbh(ico), cpatch%pft(ico),   &
+           call cohort_phen_thresholds(cpoly%green_leaf_factor(ipft,isi),  &
+                cpoly%leaf_aging_factor(ipft,isi), cpatch%dbh(ico), ipft,   &
                 drop_cold, leaf_out_cold, bl_max)
         endif
 
         ! Is this a cold deciduous with leaves?
-        if(cpatch%phenology_status(ico) < 2 .and. phenology(cpatch%pft(ico)) == 2 .and.   &
+        if(cpatch%phenology_status(ico) < 2 .and. phenology(ipft) == 2 .and.   &
              drop_cold == 1)then
            !             day >= 210)then
-           !print*,'dropping ',cs%green_leaf_factor(cpatch%pft(ico)),cs%leaf_aging_factor(cpatch%pft(ico))           
+           !print*,'dropping ',cs%green_leaf_factor(ipft),cs%leaf_aging_factor(ipft)           
            ! If dropping, compute litter inputs.
            delta_bleaf = cpatch%bleaf(ico) - bl_max
            if(delta_bleaf > 0.0)then
@@ -148,12 +152,12 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
               cpatch%phenology_status(ico) = 0
               leaf_litter = (1.0 - retained_carbon_fraction)  &
                    * delta_bleaf * cpatch%nplant(ico)
-              csite%fsc_in(ipa) = csite%fsc_in(ipa) + leaf_litter * f_labile(cpatch%pft(ico))
-              csite%fsn_in(ipa) = csite%fsn_in(ipa) + leaf_litter * f_labile(cpatch%pft(ico)) /   &
-                   c2n_leaf(cpatch%pft(ico))
-              csite%ssc_in(ipa) = csite%ssc_in(ipa) + leaf_litter * (1.0 - f_labile(cpatch%pft(ico)))
+              csite%fsc_in(ipa) = csite%fsc_in(ipa) + leaf_litter * f_labile(ipft)
+              csite%fsn_in(ipa) = csite%fsn_in(ipa) + leaf_litter * f_labile(ipft) /   &
+                   c2n_leaf(ipft)
+              csite%ssc_in(ipa) = csite%ssc_in(ipa) + leaf_litter * (1.0 - f_labile(ipft))
               csite%ssl_in(ipa) = csite%ssl_in(ipa) + leaf_litter *   &
-                   (1.0 - f_labile(cpatch%pft(ico))) * l2n_stem / c2n_stem
+                   (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem
               
               ! adjust plant carbon pools
               cpatch%balive(ico) = cpatch%balive(ico) - delta_bleaf
@@ -163,10 +167,10 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
               ! may be different
               csite%fsn_in(ipa) = csite%fsn_in(ipa) + delta_bleaf * cpatch%nplant(ico) *  &
                    retained_carbon_fraction *  &
-                   (1.0 / c2n_leaf(cpatch%pft(ico)) - 1.0/c2n_storage)
+                   (1.0 / c2n_leaf(ipft) - 1.0/c2n_storage)
               
               cpatch%bleaf(ico) = bl_max
-              cpatch%lai(ico) = cpatch%bleaf(ico) * sla(cpatch%pft(ico)) * cpatch%nplant(ico)
+              cpatch%lai(ico) = cpatch%bleaf(ico) * sla(ipft) * cpatch%nplant(ico)
               cpatch%cb(13,ico) = cpatch%cb(13,ico) - leaf_litter / cpatch%nplant(ico)
               cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - leaf_litter / cpatch%nplant(ico)
 
@@ -174,23 +178,23 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
               ! The leaf biomass of the cohort has changed, update the vegetation
               ! energy - using a constant temperature assumption
               old_hcapveg = cpatch%hcapveg(ico)
-              cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-                                                 cpatch%nplant(ico),cpatch%pft(ico))
-              call update_veg_energy_cweh(cpatch%veg_energy(ico),cpatch%veg_temp(ico)      &
-                                         ,cpatch%veg_water(ico),old_hcapveg                &
-                                         ,cpatch%hcapveg(ico))
-
+              cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%nplant(ico)      &
+                                                ,cpatch%lai(ico),cpatch%pft(ico)           &
+                                                ,cpatch%phenology_status(ico))
+              call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
+              !---- Likewise, update the patch level one. ---------------------------------!
+              csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
            endif
 
            ! Set status flag
-           if(bl_max == 0.0 .or. cpoly%green_leaf_factor(cpatch%pft(ico),isi) < 0.02)then
+           if(bl_max == 0.0 .or. cpoly%green_leaf_factor(ipft,isi) < 0.02)then
               cpatch%phenology_status(ico) = 2 
               cpatch%lai(ico) = 0.0
 !           else
 !              cpatch%phenology_status = 1
            endif
 
-        elseif(cpatch%phenology_status(ico) == 2 .and. phenology(cpatch%pft(ico)) == 2 .and.  &
+        elseif(cpatch%phenology_status(ico) == 2 .and. phenology(ipft) == 2 .and.  &
              leaf_out_cold == 1)then 
 !             cs%green_leaf_factor(cpatch%pft) > 0.02 .and. day < 210)then 
            
@@ -199,17 +203,21 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
 
            ! Update plant carbon pools
            cpatch%phenology_status(ico) = 1 ! 1 indicates leaves are growing
-           cpatch%bleaf(ico) = cpoly%green_leaf_factor(cpatch%pft(ico),isi) * cpatch%balive(ico)   &
-                / (1.0 + qsw(cpatch%pft(ico)) * cpatch%hite(ico) + q(cpatch%pft(ico)))
-           cpatch%lai(ico) = cpatch%nplant(ico) * cpatch%bleaf(ico) * sla(cpatch%pft(ico))
+           cpatch%bleaf(ico) = cpoly%green_leaf_factor(ipft,isi) * cpatch%balive(ico)   &
+                / (1.0 + qsw(ipft) * cpatch%hite(ico) + q(ipft))
+           cpatch%lai(ico) = cpatch%nplant(ico) * cpatch%bleaf(ico) * sla(ipft)
            cpatch%veg_temp(ico) = csite%can_temp(ipa)
            cpatch%veg_water(ico) = 0.0
-           cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-                cpatch%nplant(ico),cpatch%pft(ico))
+           old_hcapveg = cpatch%hcapveg(ico)
+           cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%nplant(ico)         &
+                                             ,cpatch%lai(ico),cpatch%pft(ico)              &
+                                             ,cpatch%phenology_status(ico))
            !----- Because we assigned no water, the internal energy is simply hcapveg*T. --!
            cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
            
-        elseif(phenology(cpatch%pft(ico)) == 1)then 
+           !----- Updating site heat capacity ---------------------------------------------!
+           csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
+        elseif(phenology(ipft) == 1)then 
 
            ! Drought deciduous?
            
@@ -221,13 +229,13 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
                  
                  ! update litter pools
                  leaf_litter = (1.0 - retained_carbon_fraction) * cpatch%lai(ico) /   &
-                      sla(cpatch%pft(ico))
-                 csite%fsc_in(ipa) = csite%fsc_in(ipa) + leaf_litter * f_labile(cpatch%pft(ico))
-                 csite%fsn_in(ipa) = csite%fsn_in(ipa) + leaf_litter * f_labile(cpatch%pft(ico)) /   &
-                      c2n_leaf(cpatch%pft(ico))
-                 csite%ssc_in(ipa) = csite%ssc_in(ipa) + leaf_litter * (1.0 - f_labile(cpatch%pft(ico)))
+                      sla(ipft)
+                 csite%fsc_in(ipa) = csite%fsc_in(ipa) + leaf_litter * f_labile(ipft)
+                 csite%fsn_in(ipa) = csite%fsn_in(ipa) + leaf_litter * f_labile(ipft) /   &
+                      c2n_leaf(ipft)
+                 csite%ssc_in(ipa) = csite%ssc_in(ipa) + leaf_litter * (1.0 - f_labile(ipft))
                  csite%ssl_in(ipa) = csite%ssl_in(ipa) + leaf_litter *   &
-                      (1.0 - f_labile(cpatch%pft(ico))) * l2n_stem / c2n_stem
+                      (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem
                  
                  ! update plant carbon pools
                  cpatch%balive(ico) = cpatch%balive(ico) - cpatch%bleaf(ico)
@@ -237,7 +245,7 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
                  ! may be different
                  csite%fsn_in(ipa) = csite%fsn_in(ipa) + cpatch%bleaf(ico) * cpatch%nplant(ico) *  &
                       retained_carbon_fraction *  &
-                      (1.0 / c2n_leaf(cpatch%pft(ico)) - 1.0 / c2n_storage)
+                      (1.0 / c2n_leaf(ipft) - 1.0 / c2n_storage)
                  cpatch%lai(ico) = 0.0
                  cpatch%bleaf(ico) = 0.0
                  cpatch%phenology_status(ico) = 2
@@ -251,14 +259,9 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
                  ! We will assume for simplicity, that the water enters a wormhole to 
                  ! another galaxy. And, of course the water brings its internal energy 
                  ! with it.
-                 cpatch%veg_water(ico) = 0.0
-                 !----- Because we assigned no water, the internal energy is 
-                 !      simply hcapveg*T
-                 cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-                      cpatch%nplant(ico),cpatch%pft(ico))
-                 cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
-
-                 
+                 old_hcapveg            = cpatch%hcapveg(ico)
+                 cpatch%hcapveg(ico)    = 0.
+                 call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
               endif
               
            elseif(theta(cpatch%krdepth(ico)) > theta_crit .and.   &
@@ -268,21 +271,36 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
                  
               ! update carbon pools
               cpatch%phenology_status(ico) = 1
-              cpatch%bleaf(ico) = cpatch%balive(ico) / (1.0 + qsw(cpatch%pft(ico)) * &
-                   cpatch%hite(ico) + q(cpatch%pft(ico)))
-              cpatch%lai(ico) = cpatch%nplant(ico) * cpatch%bleaf(ico) * sla(cpatch%pft(ico))
+              cpatch%bleaf(ico) = cpatch%balive(ico) / (1.0 + qsw(ipft) * &
+                   cpatch%hite(ico) + q(ipft))
+              cpatch%lai(ico) = cpatch%nplant(ico) * cpatch%bleaf(ico) * sla(ipft)
               cpatch%veg_temp(ico) = csite%can_temp(ipa)
               cpatch%veg_water(ico) = 0.0
 
               !----- Because we assigned no water, the internal energy 
-              !      is simply hcapveg*T.
-              cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-                   cpatch%nplant(ico),cpatch%pft(ico))
+              !      is simply hcapveg*T. Since phenology status used to be 2,
+              !      old_hcapveg was 0.
+              cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%nplant(ico) &
+                                             ,cpatch%lai(ico),cpatch%pft(ico)         &
+                                             ,cpatch%phenology_status(ico))
               cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
+              csite%hcapveg(ipa)     = csite%hcapveg(ipa) + cpatch%hcapveg(ico)
               
            endif  ! critical moisture
            
         endif  ! phenology type
+
+        !ipft=cpatch%pft(ico)
+        !if (first_time(ipft)) then
+        !   first_time(ipft) = .false.
+        !   write (unit=40+ipft,fmt='(a10,6(1x,a12))')                                      &
+        !      &'      TIME','       PATCH','      COHORT','      NPLANT',' LEAF_LITTER'    &
+        !      &            ,'       THETA','  THETA_CRIT'
+        !end if
+        !
+        !write (unit=40+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i12),4(1x,es12.5))')                &
+        !     current_time%month,'/',current_time%date,'/',current_time%year,ipa,ico        &
+        !    ,cpatch%nplant(ico),leaf_litter,theta(cpatch%krdepth(ico)),theta_crit
 
      enddo  ! cohorts
 

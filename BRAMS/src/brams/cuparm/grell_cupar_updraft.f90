@@ -16,8 +16,8 @@
 ! may not be the definite level, it may change during the search for the level of free     !
 ! convection.                                                                              !
 !------------------------------------------------------------------------------------------!
-subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,tke,qice,qliq,theiv_cup   &
-                               ,ierr,k22)
+subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,wwind,sigw,tke,qice,qliq  &
+                               ,theiv_cup,ierr,k22)
 
    implicit none
    integer               , intent(in)     :: mkx,mgmzp ! Grid dimensions
@@ -26,6 +26,8 @@ subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,tke,qice,qliq,t
    integer               , intent(in)     :: kbmax     ! Maximum allowed level for updraft
    !----- Variables at the model levels ---------------------------------------------------!
    real, dimension(mgmzp), intent(in)     :: z         ! Height                    [     m]
+   real, dimension(mgmzp), intent(in)     :: wwind     ! Vertical velocity         [   m/s]
+   real, dimension(mgmzp), intent(in)     :: sigw      ! wwind std. deviation      [   m/s]
    real, dimension(mgmzp), intent(in)     :: tke       ! Turbulent Kinetic Energy  [  J/kg]
    real, dimension(mgmzp), intent(in)     :: qliq      ! Liquid water mixing ratio [ kg/kg]
    real, dimension(mgmzp), intent(in)     :: qice      ! Ice mixing ratio          [ kg/kg]
@@ -34,6 +36,8 @@ subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,tke,qice,qliq,t
    !----- Output and sort of output variables ---------------------------------------------!
    integer               , intent(inout)  :: ierr      ! Error flag
    integer               , intent(out)    :: k22       ! Updraft origin level
+   !----- Local variable ------------------------------------------------------------------!
+   real, dimension(mgmzp)                 :: wboth     ! Combination of w and sigw [   m/s]
    !----- Constant. Avoding using too levels too close to the surface ---------------------!
    integer               , parameter      :: kstart=2  ! Minimum level
    !---------------------------------------------------------------------------------------!
@@ -49,6 +53,8 @@ subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,tke,qice,qliq,t
    !    c. The user wants to use the maximum thetae_iv as the first guess, for maximum     !
    !       instability.                                                                    !
    !    d. The user wants to use the most turbulent level as the updraft origin.           !
+   !    e. The user wants to use the maximum w+tke, which is the most likely to reach the  !
+   !       LFC.                                                                            !
    !---------------------------------------------------------------------------------------!
    select case (iupmethod)
    case (1) ! Maximum Thetae_iv
@@ -61,6 +67,13 @@ subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,tke,qice,qliq,t
       end if
    case (3) ! Most turbulent
       k22 = (kstart-1) + maxloc(tke(kstart:kbmax),dim=1)
+   case (4) ! Combined mechanical forcing and turbulent
+      if (kpbl /= 0) then ! Nakanishi and Niino is used, sigw is available
+         wboth = wwind + sigw
+      else ! Estimate sigw as the square root of 2 TKE
+         wboth = wwind + sqrt(2.*tke)
+      end if
+      k22 = (kstart-1) + maxloc(wboth(kstart:kbmax),dim=1)
    end select
    !---------------------------------------------------------------------------------------!
 

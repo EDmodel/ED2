@@ -53,8 +53,7 @@ contains
 
              ! Get photosynthesis, stomatal conductance, and transpiration
              call canopy_photosynthesis_ar(csite, ipa, cpoly%met(isi)%vels,   &
-                  cpoly%met(isi)%rhos,   &
-                  cpoly%met(isi)%prss,  &
+                  cpoly%met(isi)%atm_tmp, cpoly%met(isi)%rhos,cpoly%met(isi)%prss,  &
                   ed_ktrans, csite%ntext_soil(:,ipa), csite%soil_water(:,ipa),   &
                   csite%soil_fracliq(:,ipa), cpoly%lsl(isi), sum_lai_rbi,  &
                   cpoly%leaf_aging_factor(:,isi),  &
@@ -105,8 +104,9 @@ contains
                   cpoly%lsl(isi))
 
              ! Update the minimum monthly temperature, based on canopy temperature
-!             if ( cpoly%min_monthly_temp(isi) < cpoly%site(isi)%can_tmp(ipa) ) &
-!                  cpoly%min_monthly_temp(isi)=cpoly%site(isi)%can_tmp(ipa)
+             if ( cpoly%site(isi)%can_temp(ipa) < cpoly%min_monthly_temp(isi)) then
+                  cpoly%min_monthly_temp(isi) = cpoly%site(isi)%can_temp(ipa)
+             end if
 
 
           end do patchloop
@@ -262,6 +262,7 @@ contains
     use canopy_radiation_coms, only: lai_min, veg_temp_min
     use therm_lib, only: qwtk
     use ed_therm_lib, only: calc_hcapveg,ed_grndvap
+    use rk4_coms, only : rk4max_veg_temp
     implicit none
 
     integer, intent(in) :: lsl
@@ -397,19 +398,10 @@ contains
        end if
     enddo
     
-
+    csite%hcapveg(ipa) = 0.
     do ico = 1,cpatch%ncohorts
 
-       cpatch%veg_water(ico)  = initp%veg_water(ico)
-       cpatch%veg_energy(ico) = initp%veg_energy(ico)
 
-       ! For plants with minimal foliage, fix the vegetation
-       ! temperature to the canopy air space
-       if (cpatch%lai(ico) < lai_min) then
-          cpatch%veg_temp(ico)   = csite%can_temp(ipa)
-          cpatch%veg_water(ico)  = 0. 
-          cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
-       end if
        ! For plants buried in snow, fix the leaf temperature to the snow temperature of the
        ! layer that is the closest to the leaves.
        if (cpatch%hite(ico) <  csite%total_snow_depth(ipa)) then
@@ -419,15 +411,27 @@ contains
                 adjacent_layer = k
               end if
              end do
-          cpatch%veg_temp(ico) = csite%sfcwater_tempk(adjacent_layer,ipa)
-          cpatch%veg_water(ico) = 0.
+          cpatch%veg_temp(ico)   = csite%sfcwater_tempk(adjacent_layer,ipa)
+          cpatch%veg_water(ico)  = 0.
           cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
+       elseif (cpatch%lai(ico) < lai_min) then
+          ! For plants with minimal foliage, fix the vegetation
+          ! temperature to the canopy air space and force veg_water to be zero.
+          cpatch%veg_temp(ico)   = csite%can_temp(ipa)
+          cpatch%veg_water(ico)  = 0. 
+          cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
+       else
+          cpatch%veg_water(ico)  = initp%veg_water(ico)
+          cpatch%veg_temp(ico)   = initp%veg_temp(ico)
+          ! Internal energy may need to be adjusted in case we added the offset to heat capacity.
+          ! If we did not, cpatch%hcapveg(ico) and initp%hcapveg(ico) are identical.
+          cpatch%veg_energy(ico) = initp%veg_energy(ico) &
+                                 + (cpatch%hcapveg(ico)-initp%hcapveg(ico)) * initp%veg_temp(ico)
+          call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)       &
+                   ,cpatch%veg_temp(ico),fracliq)
        end if
 
-       call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)          &
-                ,cpatch%veg_temp(ico),fracliq)
-        
-       if (cpatch%veg_temp(ico) < veg_temp_min .or. cpatch%veg_temp(ico) > 360.0  ) then
+       if (cpatch%veg_temp(ico) < veg_temp_min .or. cpatch%veg_temp(ico) > rk4max_veg_temp  ) then
           print*,"==========================================================="
           
           write(unit=*,fmt='(a,1x,es14.7)') 'veg temp      :',cpatch%veg_temp(ico)
@@ -485,6 +489,8 @@ contains
           call fatal_error('extreme vegetation temperature','initp2modelp','rk4_driver.f90')
 
        end if
+       
+       csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico)
     end do
 
 

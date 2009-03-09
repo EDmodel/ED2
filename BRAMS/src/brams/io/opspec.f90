@@ -609,7 +609,6 @@ subroutine opspec3
           closure_type,  & ! intent(in)
           cap_maxs,      & ! intent(in)
           maxclouds,     & ! intent(in)
-          iupmethod,     & ! intent(in)
           depth_min,     & ! intent(in)
           maxens_lsf,    & ! intent(in)
           maxens_eff,    & ! intent(in)
@@ -792,8 +791,8 @@ subroutine opspec3
      end do
    
      do nc=1,nclouds
-        if (iupmethod < 1 .or. iupmethod > 3) then
-            print *, 'FATAL - If Cumulus parameterization is used, iupmethod must be 1, 2, or 3.'
+        if (iupmethod < 1 .or. iupmethod > 4) then
+            print *, 'FATAL - If Cumulus parameterization is used, iupmethod must be between 1 and 4.'
             print *, 'Yours is currently set to ',iupmethod
             IFATERR=IFATERR+1
         end if

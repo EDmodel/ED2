@@ -189,7 +189,8 @@ ed_opspec.o : $(ED_IO)/ed_opspec.F90 max_dims.o grid_coms.o mem_sites.o soil_com
 
 ed_params.o : $(ED_INIT)/ed_params.f90 max_dims.o pft_coms.o disturb_coms.o ed_misc_coms.o \
 	met_driver_coms.o canopy_radiation_coms.o decomp_coms.o hydrology_coms.o           \
-	misc_coms.o soil_coms.o phenology_coms.o fusion_fission_coms.o allometry.o
+	misc_coms.o soil_coms.o phenology_coms.o fusion_fission_coms.o allometry.o         \
+	consts_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -213,7 +214,7 @@ ed_state_vars.o : $(ED_MEMORY)/ed_state_vars.f90 grid_coms.o max_dims.o c34const
 	rm -f $(<F:.f90=.f90)
 
 ed_therm_lib.o : $(ED_UTILS)/ed_therm_lib.f90 consts_coms.o pft_coms.o ed_state_vars.o     \
-	therm_lib.o
+	therm_lib.o canopy_radiation_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -299,7 +300,8 @@ grid_coms.o : $(ED_MEMORY)/grid_coms.f90 max_dims.o
 	rm -f $(<F:.f90=.f90) 
 
 growth_balive.o : $(ED_DYNAMICS)/growth_balive.f90 ed_state_vars.o pft_coms.o allometry.o  \
-	decomp_coms.o consts_coms.o physiology_coms.o grid_coms.o ed_therm_lib.o
+	decomp_coms.o consts_coms.o physiology_coms.o grid_coms.o ed_therm_lib.o           \
+	max_dims.o misc_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -386,7 +388,7 @@ misc_coms.o : $(ED_MEMORY)/misc_coms.f90 max_dims.o
 	rm -f $(<F:.f90=.f90)
 
 mortality.o : $(ED_DYNAMICS)/mortality.f90 ed_state_vars.o pft_coms.o disturb_coms.o       \
-	consts_coms.o
+	misc_coms.o max_dims.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -414,7 +416,7 @@ phenology_coms.o : $(ED_MEMORY)/phenology_coms.f90
 
 phenology_driv.o : $(ED_DYNAMICS)/phenology_driv.f90 soil_coms.o pft_coms.o decomp_coms.o  \
 	phenology_coms.o ed_state_vars.o grid_coms.o canopy_air_coms.o ed_therm_lib.o      \
-	allometry.o
+	allometry.o misc_coms.o max_dims.o
 	cp -f $< $(<F:.f90=.f90) 
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -476,7 +478,8 @@ rk4_driver.o : $(ED_DYNAMICS)/rk4_driver.f90 ed_state_vars.o grid_coms.o max_dim
 
 rk4_integ_utils.o : $(ED_DYNAMICS)/rk4_integ_utils.f90 ed_state_vars.o rk4_stepper.o       \
 	hydrology_coms.o grid_coms.o soil_coms.o consts_coms.o grid_coms.o ed_misc_coms.o  \
-	canopy_radiation_coms.o therm_lib.o max_dims.o misc_coms.o rk4_coms.o
+	canopy_radiation_coms.o therm_lib.o max_dims.o misc_coms.o rk4_coms.o              \
+	canopy_air_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

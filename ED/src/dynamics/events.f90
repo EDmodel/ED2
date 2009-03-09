@@ -368,18 +368,20 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                     cpatch%bleaf(ico)      = 0.0
                     cpatch%veg_energy(ico) = 0.0
                     cpatch%veg_water(ico)  = 0.0
-                    cpatch%veg_temp(ico)   = 0.0
+                    cpatch%veg_temp(ico)   = csite%can_temp(ipa)
                  else
                     cpatch%phenology_status(ico) = 1
                     cpatch%lai(ico)     = bleaf_new * cpatch%nplant(ico) * sla(cpatch%pft(ico))
                     cpatch%bleaf(ico)   = bleaf_new
                     old_hcapveg         = cpatch%hcapveg(ico)
-                    cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico) &
-                                                      ,cpatch%nplant(ico),cpatch%pft(ico))
-                    call update_veg_energy_cweh(cpatch%veg_energy(ico)                     &
-                                               ,cpatch%veg_temp(ico)                       &
-                                               ,cpatch%veg_water(ico),old_hcapveg          &
-                                               ,cpatch%hcapveg(ico))
+                    cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%nplant(ico) &
+                                                      ,cpatch%lai(ico),cpatch%pft(ico)      &
+                                                      ,cpatch%phenology_status(ico))
+                    call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
+
+                    !----- Updating patch heat capacity. ----------------------------------!
+                    csite%hcapveg(ipa) = csite%hcapveg(ipa)                                &
+                                       + cpatch%hcapveg(ico) - old_hcapveg
                  end if
 
                  if(cpatch%bdead(ico) .gt. tiny(1.0)) then
@@ -728,7 +730,7 @@ subroutine event_till(rval8)
                  cpatch%bleaf(ico)    = 0.0
                  cpatch%veg_energy(ico) = 0.0
                  cpatch%veg_water(ico) = 0.0
-                 cpatch%veg_temp(ico)  = 0.0
+                 cpatch%veg_temp(ico)  = csite%can_temp(ipa)
                  cpatch%phenology_status(ico) = 2
                  
               enddo

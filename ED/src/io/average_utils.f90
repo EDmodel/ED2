@@ -880,24 +880,26 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
 !    This subroutine normalize the sum before writing the mobthly analysis. It also        !
 ! computes some of the variables that didn't need to be computed every day, like AGB.      !
 !------------------------------------------------------------------------------------------!
-   use ed_state_vars, only: edtype,polygontype
+   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype
    use     misc_coms, only: current_time,simtime
-   use      max_dims, only: n_pft,n_dbh
+   use      max_dims, only: n_pft,n_dbh,n_dist_types
    implicit none
   
    type(edtype)      , target  :: cgrid
    type(polygontype) , pointer :: cpoly
-   
+   type(sitetype)    , pointer :: csite
+   type(patchtype)   , pointer :: cpatch
+
    type(simtime)               :: lastmonth
-   real                        :: ndaysi,polygon_area_i
-   integer                     :: ipy,ipft,dbh
+   real                        :: ndaysi,polygon_area_i,site_area_i
+   integer                     :: ipy,isi,ipa,ico,ipft,dbh,ilu
    real                        :: srnonm1
    !----------------------------------------------------------------------!
    ! Finding the inverse of number of days used for this monthly integral !
    !----------------------------------------------------------------------!
    call lastmonthdate(current_time,lastmonth,ndaysi)
 
-   do ipy=1,cgrid%npolygons
+   polyloop: do ipy=1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
       !-----------------------------------------------------------!
       ! First normalize the variables previously defined          !
@@ -946,7 +948,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%stdev_nep     (ipy) = srnonm1 * sqrt(cgrid%stdev_nep     (ipy) * ndaysi - cgrid%mmean_nep     (ipy) ** 2)
       cgrid%stdev_rh      (ipy) = srnonm1 * sqrt(cgrid%stdev_rh      (ipy) * ndaysi - cgrid%mmean_rh      (ipy) ** 2)
   
-      
+      !---- Finding AGB and basal area per PFT --------------------------------------------!
       polygon_area_i = 1./sum(cpoly%area)
       do ipft = 1,n_pft
         do dbh =1,n_dbh
@@ -956,7 +958,38 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                + sum(cpoly%basal_area(ipft,dbh,:)*cpoly%area)*polygon_area_i
         end do
       end do
-   end do
+
+      !----- Finding AGB per land use type ------------------------------------------------!
+      do ilu = 1,n_dist_types
+          cgrid%agb_lu(ilu,ipy) = cgrid%agb_lu(ilu,ipy) &
+                            + sum(cpoly%agb_lu(ilu,:)*cpoly%area)*polygon_area_i
+      end do
+
+      !----- Finding the fractional area covered by each land use and each PFT ------------!
+      cgrid%area_pft(:,ipy) = 0.
+      cgrid%area_lu(:,ipy)  = 0.
+      siteloop: do isi = 1, cpoly%nsites
+         csite => cpoly%site(isi)
+         site_area_i = 1./sum(csite%area)
+         patchloop: do ipa=1,csite%npatches
+            ilu = csite%dist_type(ipa)
+            cgrid%area_lu(ilu,ipy) = cgrid%area_lu(ilu,ipy)                                &
+                                   + csite%area(ipa) * cpoly%area(isi)                     &
+                                   * site_area_i * polygon_area_i
+            cpatch => csite%patch(ipa)
+            if (cpatch%ncohorts > 0) then
+               pftloop: do ipft=1,n_pft
+                  if (any(cpatch%pft(:) == ipft)) then
+                     cgrid%area_pft(ipft,ipy) = cgrid%area_pft(ipft,ipy)                   &
+                                              + csite%area(ipa) * cpoly%area(isi)          &
+                                              * site_area_i * polygon_area_i
+                  end if
+               end do pftloop
+            end if
+         end do patchloop
+      end do siteloop
+
+   end do polyloop
 
    return
 end subroutine normalize_ed_monthly_output_vars

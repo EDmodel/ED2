@@ -771,7 +771,7 @@ subroutine init_full_history_restart()
   real :: ll_tolerance
 
   integer :: ngr,ifpy,ipft
-  integer :: ipy,isi,ipa
+  integer :: ipy,isi,ipa,ico
   integer :: py_index,si_index,pa_index
 
   ! HDF5 types are defined here
@@ -1061,6 +1061,7 @@ subroutine init_full_history_restart()
                  
                  call fill_history_site(csite,sipa_id(si_index),cgrid%npatches_global)
 
+                 csite%hcapveg(ipa) = 0.
                  do ipa = 1,csite%npatches
                     cpatch => csite%patch(ipa)
                     
@@ -1083,6 +1084,9 @@ subroutine init_full_history_restart()
                        do ipft = 1,n_pft
                           csite%old_stoma_data_max(ipft,ipa)%recalc = 1
                        enddo
+                       do ico = 1,cpatch%ncohorts
+                          csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico)
+                       end do
                        
 
                     else
@@ -2187,8 +2191,9 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
            ! Calculate the vegetation energy based on the leaf temperature
            ! biomass and the stuff that is written in the banner above.
            
-           cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)          &
-                                    ,cpatch%nplant(ico),cpatch%pft(ico))
+           cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%nplant(ico)         &
+                                             ,cpatch%lai(ico),cpatch%pft(ico)              &
+                                             ,cpatch%phenology_status(ico))
            if (cpatch%veg_temp(ico) >= t3ple) then
               cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)          &
                                      + cpatch%veg_water(ico)                               &

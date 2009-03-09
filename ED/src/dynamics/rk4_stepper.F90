@@ -275,6 +275,7 @@ module rk4_stepper_ar
 
       call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
       call inc_rk4_patch_ar(ak7, dydx, b21*h, cpatch, lsl)
+      call adjust_veg_properties(ak7,csite,ipa)
       call stabilize_snow_layers_ar(ak7, csite, ipa, lsl)
       call lsm_sanity_check_ar(ak7, reject_step, csite, ipa, lsl ,dydx,h,atm_tmp,atm_shv   &
                               ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg         &
@@ -287,7 +288,9 @@ module rk4_stepper_ar
                          ,atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
       call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
       call inc_rk4_patch_ar(ak7, dydx, b31*h, cpatch, lsl)
+      call adjust_veg_properties(ak7,csite,ipa)
       call inc_rk4_patch_ar(ak7, ak2, b32*h, cpatch, lsl)
+      call adjust_veg_properties(ak7,csite,ipa)
       call stabilize_snow_layers_ar(ak7, csite,ipa, lsl)
       call lsm_sanity_check_ar(ak7,reject_step,csite,ipa, lsl,dydx,h,atm_tmp,atm_shv       &
                               ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg         &
@@ -300,8 +303,11 @@ module rk4_stepper_ar
                          ,atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
       call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
       call inc_rk4_patch_ar(ak7, dydx, b41*h, cpatch, lsl)
+      call adjust_veg_properties(ak7,csite,ipa)
       call inc_rk4_patch_ar(ak7, ak2, b42*h, cpatch, lsl)
+      call adjust_veg_properties(ak7,csite,ipa)
       call inc_rk4_patch_ar(ak7, ak3, b43*h, cpatch, lsl)
+      call adjust_veg_properties(ak7,csite,ipa)
       call stabilize_snow_layers_ar(ak7, csite,ipa, lsl)
       call lsm_sanity_check_ar(ak7, reject_step, csite,ipa, lsl,dydx,h,atm_tmp,atm_shv     &
                               ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg         &
@@ -314,9 +320,13 @@ module rk4_stepper_ar
                          ,atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
       call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
       call inc_rk4_patch_ar(ak7, dydx, b51*h, cpatch, lsl)
+      call adjust_veg_properties(ak7,csite,ipa)
       call inc_rk4_patch_ar(ak7, ak2, b52*h, cpatch, lsl)
+      call adjust_veg_properties(ak7,csite,ipa)
       call inc_rk4_patch_ar(ak7, ak3, b53*h, cpatch, lsl)
+      call adjust_veg_properties(ak7,csite,ipa)
       call inc_rk4_patch_ar(ak7, ak4, b54*h, cpatch, lsl)
+      call adjust_veg_properties(ak7,csite,ipa)
       call stabilize_snow_layers_ar(ak7, csite, ipa, lsl)
       call lsm_sanity_check_ar(ak7,reject_step,csite,ipa,lsl,dydx,h,atm_tmp,atm_shv        &
                               ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg         &
@@ -329,10 +339,15 @@ module rk4_stepper_ar
                          ,atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
       call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
       call inc_rk4_patch_ar(ak7, dydx, b61*h, cpatch, lsl)
+      call adjust_veg_properties(ak7,csite,ipa)
       call inc_rk4_patch_ar(ak7, ak2, b62*h, cpatch, lsl)
+      call adjust_veg_properties(ak7,csite,ipa)
       call inc_rk4_patch_ar(ak7, ak3, b63*h, cpatch, lsl)
+      call adjust_veg_properties(ak7,csite,ipa)
       call inc_rk4_patch_ar(ak7, ak4, b64*h, cpatch, lsl)
+      call adjust_veg_properties(ak7,csite,ipa)
       call inc_rk4_patch_ar(ak7, ak5, b65*h, cpatch, lsl)
+      call adjust_veg_properties(ak7,csite,ipa)
       call stabilize_snow_layers_ar(ak7, csite,ipa, lsl)
       call lsm_sanity_check_ar(ak7, reject_step, csite,ipa, lsl,dydx,h,atm_tmp,atm_shv     &
                               ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg         &
@@ -343,9 +358,13 @@ module rk4_stepper_ar
                          ,atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
       call copy_rk4_patch_ar(y, yout, cpatch, lsl)
       call inc_rk4_patch_ar(yout, dydx, c1*h, cpatch, lsl)
+      call adjust_veg_properties(yout,csite,ipa)
       call inc_rk4_patch_ar(yout, ak3, c3*h, cpatch, lsl)
+      call adjust_veg_properties(yout,csite,ipa)
       call inc_rk4_patch_ar(yout, ak4, c4*h, cpatch, lsl)
+      call adjust_veg_properties(yout,csite,ipa)
       call inc_rk4_patch_ar(yout, ak6, c6*h, cpatch, lsl)
+      call adjust_veg_properties(yout,csite,ipa)
       call stabilize_snow_layers_ar(yout, csite,ipa, lsl)
       call lsm_sanity_check_ar(yout, reject_step, csite,ipa, lsl,dydx,h,atm_tmp,atm_shv    &
                               ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg         &
@@ -389,7 +408,6 @@ module rk4_stepper_ar
       use canopy_radiation_coms , only : lai_min              & ! intent(in)
                                        , veg_temp_min         ! ! intent(in)
       use consts_coms           , only : t3ple                ! ! intent(in)
-      use therm_lib             , only : qwtk                 ! ! subroutine
       use misc_coms             , only : integ_err            & ! intent(inout)
                                        , record_err           ! ! intent(inout)
       use rk4_coms              , only : rk4min_can_temp      & ! intent(in)
@@ -414,7 +432,7 @@ module rk4_stepper_ar
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)    , pointer     :: cpatch
       integer                          :: k
-      real                             :: h,veg_temp,veg_fliq
+      real                             :: h
       integer                          :: ipa,ico
       logical                          :: cflag1,cflag2,introuble
       !------------------------------------------------------------------------------------!
@@ -666,9 +684,7 @@ module rk4_stepper_ar
       cflag1 = .false.
       do ico = 1,cpatch%ncohorts
          if (cpatch%lai(ico) > lai_min) then
-            call qwtk(y%veg_energy(ico),y%veg_water(ico),cpatch%hcapveg(ico)               &
-                     ,veg_temp,veg_fliq)
-            if (veg_temp > rk4max_veg_temp .or. veg_temp < veg_temp_min ) then
+            if (y%veg_temp(ico) > rk4max_veg_temp .or. y%veg_temp(ico) < veg_temp_min ) then
                reject_step = .true.
                if(record_err) cflag1 = .true.
                if (print_problems) then
@@ -677,11 +693,32 @@ module rk4_stepper_ar
                   write(unit=*,fmt='(a)')           '--------------------------------------'
                   write(unit=*,fmt='(a,1x,i6)')     ' PFT:          ',cpatch%pft(ico)
                   write(unit=*,fmt='(a,1x,es12.5)') ' LAI:          ',cpatch%lai(ico)
-                  write(unit=*,fmt='(a,1x,es12.5)') ' HCAPVEG:      ',cpatch%hcapveg(ico)
-                  write(unit=*,fmt='(a,1x,es12.5)') ' VEG_TEMP:     ',veg_temp
-                  write(unit=*,fmt='(a,1x,es12.5)') ' VEG_FRACLIQ:  ',veg_fliq
+                  write(unit=*,fmt='(a,1x,es12.5)') ' HCAPVEG:      ',y%hcapveg(ico)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' VEG_TEMP:     ',y%veg_temp(ico)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' VEG_FRACLIQ:  ',y%veg_fliq(ico)
                   write(unit=*,fmt='(a,1x,es12.5)') ' VEG_ENERGY:   ',y%veg_energy(ico)
                   write(unit=*,fmt='(a,1x,es12.5)') ' VEG_WATER:    ',y%veg_water(ico)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' D(VEG_EN)/Dt: ',dydx%veg_energy(ico)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' D(VEG_WAT)/Dt:',dydx%veg_water(ico)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' H:            ',h
+                  write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+               elseif (.not. record_err) then
+                  return
+               end if
+            end if
+            if (y%veg_water(ico) < 0.) then
+               reject_step = .true.
+               if(record_err) cflag1 = .true.
+               if (print_problems) then
+                  write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+                  write(unit=*,fmt='(a)')           ' + Leaf water is off-track...'
+                  write(unit=*,fmt='(a)')           '--------------------------------------'
+                  write(unit=*,fmt='(a,1x,i6)')     ' PFT:          ',cpatch%pft(ico)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' LAI:          ',cpatch%lai(ico)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' HCAPVEG:      ',y%hcapveg(ico)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' VEG_TEMP:     ',y%veg_temp(ico)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' VEG_FRACLIQ:  ',y%veg_fliq(ico)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' VEG_ENERGY:   ',y%veg_energy(ico)
                   write(unit=*,fmt='(a,1x,es12.5)') ' VEG_WATER:    ',y%veg_water(ico)
                   write(unit=*,fmt='(a,1x,es12.5)') ' D(VEG_EN)/Dt: ',dydx%veg_energy(ico)
                   write(unit=*,fmt='(a,1x,es12.5)') ' D(VEG_WAT)/Dt:',dydx%veg_water(ico)
@@ -726,7 +763,6 @@ module rk4_stepper_ar
       use grid_coms             , only : nzg           ! ! intent(in)
       use soil_coms             , only : soil          ! ! intent(in), look-up table
       use canopy_radiation_coms , only : lai_min       ! ! intent(in)
-      use therm_lib             , only : qwtk          ! ! subroutine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype) , target     :: y
@@ -734,7 +770,6 @@ module rk4_stepper_ar
       integer            , intent(in) :: ipa,lsl
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)    , pointer    :: cpatch
-      real                            :: veg_temp, veg_fliq
       integer                         :: ico,k
       !------------------------------------------------------------------------------------!
 
@@ -785,27 +820,23 @@ module rk4_stepper_ar
          &,'OLD_VEG_TEMP'
       do ico = 1,cpatch%ncohorts
          if(cpatch%lai(ico) > lai_min) then
-            call qwtk(y%veg_energy(ico),y%veg_water(ico),cpatch%hcapveg(ico)               &
-                     ,veg_temp,veg_fliq)
             write(unit=*,fmt='(2(i5,1x),5(es12.5,1x))')                                    &
                ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_energy(ico)                       &
-                                  ,cpatch%veg_energy(ico),veg_temp,cpatch%veg_temp(ico)
+                  ,cpatch%veg_energy(ico),y%veg_temp(ico),cpatch%veg_temp(ico)
          end if
       end do
       write(unit=*,fmt='(78a)') ('-',k=1,78)
 
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(78a)') ('-',k=1,78)
-      write (unit=*,fmt='(2(a5,1x),5(a12,1x))') &
+      write (unit=*,fmt='(2(a5,1x),6(a12,1x))') &
          '  COH','  PFT','         LAI','   VEG_WATER',' OLD_VEG_H2O','    HEAT_CAP'&
-         ,'     FRACLIQ'
+        &,'RK4_HEAT_CAP' ,'     FRACLIQ'
       do ico = 1,cpatch%ncohorts
          if(cpatch%lai(ico) > lai_min) then
-            call qwtk(y%veg_energy(ico),y%veg_water(ico),cpatch%hcapveg(ico)               &
-                     ,veg_temp,veg_fliq)
-            write(unit=*,fmt='(2(i5,1x),5(es12.5,1x))') &
+            write(unit=*,fmt='(2(i5,1x),6(es12.5,1x))') &
                ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_water(ico),cpatch%veg_water(ico)  &
-                  ,cpatch%hcapveg(ico),veg_fliq
+                  ,cpatch%hcapveg(ico),y%hcapveg(ico),y%veg_fliq(ico)
          end if
       end do
       write(unit=*,fmt='(78a)') ('-',k=1,78)

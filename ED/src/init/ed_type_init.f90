@@ -240,6 +240,7 @@ subroutine init_ed_site_vars_array(cpoly, lat)
 !  cpoly%basal_area_recruit(1:n_pft, 1:n_dbh,:) = 0.0
 
   cpoly%agb(1:n_pft, 1:n_dbh,:) = 0.0
+  cpoly%agb_lu(1:n_dist_types,:) = 0.0
   cpoly%agb_growth(1:n_pft, 1:n_dbh,:) = 0.0
   cpoly%agb_mort(1:n_pft, 1:n_dbh,:) = 0.0
   cpoly%agb_cut(1:n_pft, 1:n_dbh,:) = 0.0
@@ -248,7 +249,9 @@ subroutine init_ed_site_vars_array(cpoly, lat)
   cpoly%green_leaf_factor(1:n_pft,:) = 1.0
   cpoly%leaf_aging_factor(1:n_pft,:) = 1.0
 
-  cpoly%min_monthly_temp(:) = 0.0
+  ! Initialising minimum monthly temperature with a very large value, to be reduced
+  ! as the canopy temperature is updated.
+  cpoly%min_monthly_temp(:) = huge(1.)
 
  ! cpoly%mm_gpp(:) = 0.0
  ! cpoly%mm_plresp(:) = 0.0

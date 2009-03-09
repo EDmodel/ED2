@@ -231,6 +231,10 @@ subroutine sfcdata_ed()
      dslzti  (k) = 1. / dslzt(k)
      dslztidt(k) = dslzti(k) * dtlsm
   enddo
+  
+  dslzt(1)    = 2.0*slz(1) - slzt(1)
+  dslzti(1)   = 1./dslzt(1)
+  dslztidt(1) = dslzti(1) * dtlsm
 
   ! Soil constants
 

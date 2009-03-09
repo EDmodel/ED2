@@ -138,19 +138,20 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
 
 
       ! If this is not the initial time, set heat capacity for stability.
-      do ico = 1,mypfts
-         if (.not. zero_time) then
+      if (.not. zero_time) then
+         csite%hcapveg(ipa) = 0.
+         do ico = 1,mypfts
             
             cpatch%veg_temp(ico)  = atm_tmp
             cpatch%veg_water(ico) = 0.0
             
-            cpatch%hcapveg(ico)   = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)       &
-                                                ,cpatch%nplant(ico),cpatch%pft(ico))
-            
+            cpatch%hcapveg(ico)   = calc_hcapveg(cpatch%bleaf(ico),cpatch%nplant(ico)      &
+                                                ,cpatch%lai(ico),cpatch%pft(ico)           &
+                                                ,cpatch%phenology_status(ico))
             cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
-
-         end if
-      end do
+            csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico)
+         end do
+      end if
    end do
    return
 end subroutine init_bare_ground_patchtype

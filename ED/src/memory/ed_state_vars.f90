@@ -329,6 +329,9 @@ module ed_state_vars
      ! Fractional area of the patch (considers lai weighting)
      real, pointer,dimension(:) :: laiarea
 
+     ! Total patch heat capacity (J / m2 ground / K)
+     real, pointer,dimension(:) :: hcapveg
+
      ! Soil carbon concentration, fast pool (kg/m2)
      real , pointer,dimension(:) :: fast_soil_C 
 
@@ -904,6 +907,7 @@ module ed_state_vars
 
      real,pointer, dimension(:,:,:) :: basal_area  !(n_pft,n_dbh,nsites)
      real,pointer, dimension(:,:,:) :: agb         !(n_pft,n_dbh,nsites)
+     real,pointer, dimension(:,:)   :: agb_lu      !(n_dist_types,nsites)
 
 
      real,pointer, dimension(:,:,:) :: basal_area_growth
@@ -1333,8 +1337,11 @@ module ed_state_vars
      !   These are variables updated at a monthly basis, so they are not !
      ! averages but they are written at the monthly analysis             !
      !-------------------------------------------------------------------!
-     real, pointer, dimension(:,:) :: agb_pft      !(n_pft       ,npolygons)
-     real, pointer, dimension(:,:) :: ba_pft       !(n_pft       ,npolygons)
+     real, pointer, dimension(:,:) :: agb_pft    !(n_pft       ,npolygons)
+     real, pointer, dimension(:,:) :: ba_pft     !(n_pft       ,npolygons)
+     real, pointer, dimension(:,:) :: area_pft   !(n_pft       ,npolygons)
+     real, pointer, dimension(:,:) :: agb_lu     !(n_dist_types,npolygons)
+     real, pointer, dimension(:,:) :: area_lu    !(n_dist_types,npolygons)
 
      !-------------------------------------------------------------------!
      ! These variables serve two purposes. During the run they carry the !
@@ -1419,6 +1426,9 @@ module ed_state_vars
      
      real,pointer,dimension(:) :: veg_energy
      real,pointer,dimension(:) :: veg_water
+     real,pointer,dimension(:) :: veg_temp
+     real,pointer,dimension(:) :: veg_fliq
+     real,pointer,dimension(:) :: hcapveg
 
 
      ! ------------------------------------------
@@ -1802,7 +1812,6 @@ contains
           allocate(cgrid%dmean_rh_lu        (n_dist_types,npolygons))
           allocate(cgrid%dmean_nep_lu       (n_dist_types,npolygons))
           allocate(cgrid%dmean_gpp_dbh      (n_dbh       ,npolygons))
-          allocate(cgrid%agb_pft            (n_pft       ,npolygons))
        end if
        !-------------------------------------------------------------------!
        ! Allocating the monthly means, only if monthly means were          !
@@ -1832,9 +1841,11 @@ contains
           allocate(cgrid%mmean_gpp_dbh      (n_dbh       ,npolygons))
           allocate(cgrid%mmean_lai_pft      (n_pft       ,npolygons))
           allocate(cgrid%mmean_lai_lu       (n_dist_types,npolygons))
-          ! THE FOLLOWING IS ALREADY ALLOCATED IN THE PREVIOUS CONDITION RGK 6-13-08
-        !  allocate(cgrid%agb_pft            (n_pft       ,npolygons))
+          allocate(cgrid%agb_pft            (n_pft       ,npolygons))
           allocate(cgrid%ba_pft             (n_pft       ,npolygons))
+          allocate(cgrid%area_pft           (n_pft       ,npolygons))
+          allocate(cgrid%agb_lu             (n_dist_types,npolygons))
+          allocate(cgrid%area_lu            (n_dist_types,npolygons))
           allocate(cgrid%stdev_gpp          (             npolygons))
           allocate(cgrid%stdev_evap         (             npolygons))
           allocate(cgrid%stdev_transp       (             npolygons))
@@ -1945,6 +1956,7 @@ contains
 
     allocate(cpoly%basal_area  (n_pft,n_dbh,nsites))
     allocate(cpoly%agb         (n_pft,n_dbh,nsites))
+    allocate(cpoly%agb_lu      (n_dist_types,nsites))
 
     allocate(cpoly%basal_area_growth (n_pft,n_dbh,nsites))
     allocate(cpoly%agb_growth        (n_pft,n_dbh,nsites))
@@ -2050,6 +2062,7 @@ contains
     allocate(csite%age(npatches))
     allocate(csite%area(npatches))
     allocate(csite%laiarea(npatches))
+    allocate(csite%hcapveg(npatches))
     allocate(csite%fast_soil_C(npatches))
     allocate(csite%slow_soil_C(npatches))
     allocate(csite%structural_soil_C(npatches))
@@ -2495,6 +2508,9 @@ contains
        nullify(cgrid%mmean_lai_lu            )
        nullify(cgrid%agb_pft                 )
        nullify(cgrid%ba_pft                  )
+       nullify(cgrid%area_pft                )
+       nullify(cgrid%agb_lu                  )
+       nullify(cgrid%area_lu                 )
        nullify(cgrid%stdev_gpp               )
        nullify(cgrid%stdev_evap              )
        nullify(cgrid%stdev_transp            )
@@ -2597,6 +2613,7 @@ contains
     nullify(cpoly%met)
     nullify(cpoly%basal_area)
     nullify(cpoly%agb)    
+    nullify(cpoly%agb_lu)    
     
     nullify(cpoly%basal_area_growth)
     nullify(cpoly%agb_growth       )
@@ -2687,6 +2704,7 @@ contains
     nullify(csite%age)
     nullify(csite%area)
     nullify(csite%laiarea)
+    nullify(csite%hcapveg)
     nullify(csite%fast_soil_C)
     nullify(csite%slow_soil_C)
     nullify(csite%structural_soil_C)
@@ -3139,6 +3157,9 @@ contains
        if(associated(cgrid%mmean_lai_pft           )) deallocate(cgrid%mmean_lai_lu            )
        if(associated(cgrid%agb_pft                 )) deallocate(cgrid%agb_pft                 )
        if(associated(cgrid%ba_pft                  )) deallocate(cgrid%ba_pft                  )
+       if(associated(cgrid%area_pft                )) deallocate(cgrid%area_pft                )
+       if(associated(cgrid%agb_lu                  )) deallocate(cgrid%agb_lu                  )
+       if(associated(cgrid%area_lu                 )) deallocate(cgrid%area_lu                 )
        if(associated(cgrid%stdev_gpp               )) deallocate(cgrid%stdev_gpp               )
        if(associated(cgrid%stdev_evap              )) deallocate(cgrid%stdev_evap              )
        if(associated(cgrid%stdev_transp            )) deallocate(cgrid%stdev_transp            )
@@ -3235,6 +3256,7 @@ contains
     if(associated(cpoly%met                         )) deallocate(cpoly%met                         )
     if(associated(cpoly%basal_area                  )) deallocate(cpoly%basal_area                  )
     if(associated(cpoly%agb                         )) deallocate(cpoly%agb                         )
+    if(associated(cpoly%agb_lu                      )) deallocate(cpoly%agb_lu                      )
     
     if(associated(cpoly%basal_area_growth           )) deallocate(cpoly%basal_area_growth           )
     if(associated(cpoly%agb_growth                  )) deallocate(cpoly%agb_growth                  )
@@ -3325,6 +3347,7 @@ contains
     if(associated(csite%age                          )) deallocate(csite%age                          )
     if(associated(csite%area                         )) deallocate(csite%area                         )
     if(associated(csite%laiarea                      )) deallocate(csite%laiarea                      )
+    if(associated(csite%hcapveg                      )) deallocate(csite%hcapveg                      )
     if(associated(csite%fast_soil_C                  )) deallocate(csite%fast_soil_C                  )
     if(associated(csite%slow_soil_C                  )) deallocate(csite%slow_soil_C                  )
     if(associated(csite%structural_soil_C            )) deallocate(csite%structural_soil_C            )
@@ -3813,6 +3836,9 @@ contains
        if(associated(cgrid%mmean_lai_lu            )) cgrid%mmean_lai_lu             = large_real
        if(associated(cgrid%agb_pft                 )) cgrid%agb_pft                  = large_real
        if(associated(cgrid%ba_pft                  )) cgrid%ba_pft                   = large_real
+       if(associated(cgrid%area_pft                )) cgrid%area_pft                 = large_real
+       if(associated(cgrid%agb_lu                  )) cgrid%agb_lu                   = large_real
+       if(associated(cgrid%area_lu                 )) cgrid%area_lu                  = large_real
        if(associated(cgrid%stdev_gpp               )) cgrid%stdev_gpp                = large_real
        if(associated(cgrid%stdev_evap              )) cgrid%stdev_evap               = large_real
        if(associated(cgrid%stdev_transp            )) cgrid%stdev_transp             = large_real
@@ -3934,6 +3960,7 @@ contains
     end if
     if(associated(cpoly%basal_area                  )) cpoly%basal_area                  = large_real
     if(associated(cpoly%agb                         )) cpoly%agb                         = large_real
+    if(associated(cpoly%agb_lu                      )) cpoly%agb_lu                      = large_real
     
     if(associated(cpoly%basal_area_growth           )) cpoly%basal_area_growth           = large_real
     if(associated(cpoly%agb_growth                  )) cpoly%agb_growth                  = large_real
@@ -4022,6 +4049,7 @@ contains
     if(associated(csite%age                          )) csite%age                          = large_real
     if(associated(csite%area                         )) csite%area                         = large_real
     if(associated(csite%laiarea                      )) csite%laiarea                      = large_real
+    if(associated(csite%hcapveg                      )) csite%hcapveg                      = large_real
     if(associated(csite%fast_soil_C                  )) csite%fast_soil_C                  = large_real
     if(associated(csite%slow_soil_C                  )) csite%slow_soil_C                  = large_real
     if(associated(csite%structural_soil_C            )) csite%structural_soil_C            = large_real
@@ -4432,6 +4460,7 @@ contains
     siteout%dist_type(ipout)          = sitein%dist_type(ipin)
     siteout%age(ipout)                = sitein%age(ipin)
     siteout%area(ipout)               = sitein%area(ipin)
+    siteout%hcapveg(ipout)            = sitein%hcapveg(ipin)
     siteout%fast_soil_C(ipout)        = sitein%fast_soil_C(ipin)
     siteout%slow_soil_C(ipout)        = sitein%slow_soil_C(ipin)
     siteout%structural_soil_C(ipout)  = sitein%structural_soil_C(ipin)
@@ -4498,6 +4527,7 @@ contains
     siteout%dist_type(1:inc)            = pack(sitein%dist_type,logmask)
     siteout%age(1:inc)                  = pack(sitein%age,logmask)
     siteout%area(1:inc)                 = pack(sitein%area,logmask)
+    siteout%hcapveg(1:inc)              = pack(sitein%hcapveg,logmask)
     siteout%fast_soil_C(1:inc)          = pack(sitein%fast_soil_C,logmask)
     siteout%slow_soil_C(1:inc)          = pack(sitein%slow_soil_C,logmask)
     siteout%structural_soil_C(1:inc)    = pack(sitein%structural_soil_C,logmask)
@@ -4791,10 +4821,13 @@ contains
     patchout%gpp(1:inc)              = pack(patchin%gpp,mask)
     patchout%paw_avg10d(1:inc)       = pack(patchin%paw_avg10d,mask)
     
-    do k = 1,13
-       patchout%cb(k,1:inc)               = pack(patchin%cb(k,:),mask)
-       patchout%cb_max(k,1:inc)           = pack(patchin%cb_max(k,:),mask)
-    enddo
+    do m=1,inc
+       k=incmask(m)
+       do i = 1,13
+          patchout%cb(i,m)               = patchin%cb(i,k)
+          patchout%cb_max(i,m)           = patchin%cb_max(i,k)
+       end do
+    end do
     
     
     ! Copy the stoma data
@@ -6549,6 +6582,27 @@ contains
             var_len,var_len_global,max_ptrs,'BA_PFT :14:hist:mont:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
+    
+    if(associated(cgrid%area_pft)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%area_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AREA_PFT :14:hist:mont:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+    
+    if(associated(cgrid%agb_lu)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%agb_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AGB_LU :15:hist:mont:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+    
+    if(associated(cgrid%area_lu)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%area_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AREA_LU :15:hist:mont:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
 
     if(associated(cgrid%stdev_gpp)) then
        nvar=nvar+1
@@ -7092,6 +7146,13 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
+    if (associated(cpoly%agb_lu)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpoly%agb_lu(1,1),nvar,igr,init,cpoly%siglob_id, &
+         var_len,var_len_global,max_ptrs,'AGB_LU_SI :25:hist:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
     if (associated(cpoly%basal_area_growth)) then
        nvar=nvar+1
          call vtable_edio_r(cpoly%basal_area_growth(1,1,1),nvar,igr,init,cpoly%siglob_id, &
@@ -7204,6 +7265,13 @@ contains
          call vtable_edio_r(csite%area(1),nvar,igr,init,csite%paglob_id, &
          var_len,var_len_global,max_ptrs,'AREA :31:hist:dail:mont:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(csite%hcapveg)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%hcapveg(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'HCAPVEG_PA :31:hist:year:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Total patch heat capacity','[J/m2/K]','NA') 
     endif
 
     if (associated(csite%fast_soil_C)) then
