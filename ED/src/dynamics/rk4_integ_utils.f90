@@ -215,16 +215,18 @@ end subroutine odeint_ar
 ! to a buffer structure.                                                                   !
 !------------------------------------------------------------------------------------------!
 subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
-   use ed_state_vars   , only : sitetype           & ! structure
-                              , rk4patchtype       & ! structure
-                              , patchtype          ! ! structure
-   use grid_coms       , only : nzg                & ! intent(in)
-                              , nzs                ! ! intent(in) 
-   use soil_coms       , only : water_stab_thresh  & ! intent(in)
-                              , min_sfcwater_mass  ! ! intent(in)
-   use ed_misc_coms    , only : fast_diagnostics   ! ! intent(in)
-   use rk4_coms        , only : hcapveg_min        ! ! intent(in)
-   use therm_lib       , only : qwtk               ! ! subroutine
+   use ed_state_vars        , only : sitetype           & ! structure
+                                   , rk4patchtype       & ! structure
+                                   , patchtype          ! ! structure
+   use grid_coms            , only : nzg                & ! intent(in)
+                                   , nzs                ! ! intent(in) 
+   use soil_coms            , only : water_stab_thresh  & ! intent(in)
+                                   , min_sfcwater_mass  ! ! intent(in)
+   use ed_misc_coms         , only : fast_diagnostics   ! ! intent(in)
+   use rk4_coms             , only : hcapveg_ref        & ! intent(in)
+                                   , min_height         ! ! intent(in)
+   use canopy_radiation_coms, only : lai_min            ! ! intent(in)
+   use therm_lib            , only : qwtk               ! ! subroutine
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -234,6 +236,8 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
    integer            , intent(in) :: ipa
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)    , pointer    :: cpatch
+   real                            :: hvegpat_min
+   real                            :: hcap_scale
    integer                         :: ico
    integer                         :: k
    !---------------------------------------------------------------------------------------!
@@ -294,7 +298,25 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
       end if
    end if
 
+   !---------------------------------------------------------------------------------------!
+   !     Here we find the minimum patch-level leaf heat capacity.  If the total patch leaf !
+   ! heat capacity is less than this, we scale the cohorts heat capacity inside the        !
+   ! integrator, so it preserves the proportional heat capacity and prevents the pool to   !
+   ! be too small.                                                                         !
+   !---------------------------------------------------------------------------------------!
    cpatch => sourcesite%patch(ipa)
+   sourcesite%hcapveg(ipa) = 0.
+   do ico=1,cpatch%ncohorts
+      sourcesite%hcapveg(ipa) = sourcesite%hcapveg(ipa) + cpatch%hcapveg(ico)
+   end do
+   if (sourcesite%hcapveg(ipa) > 0. .and. cpatch%ncohorts > 0 .and.                        &
+       sourcesite%lai(ipa) > lai_min) then
+      hvegpat_min = hcapveg_ref * max(cpatch%hite(1),min_height)
+      hcap_scale  = max(1.,hvegpat_min / sourcesite%hcapveg(ipa))
+   else
+      hcap_scale  = 1.
+   end if
+
    do ico = 1,cpatch%ncohorts
       targetp%veg_water(ico)     = cpatch%veg_water(ico)
       call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)           &
@@ -305,7 +327,7 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
       ! run in a stable range inside the integrator. At the end this extra heat capacity   !
       ! will be removed. This ensures energy conservation.                                 !
       !------------------------------------------------------------------------------------!
-      targetp%hcapveg(ico)       = max(cpatch%hcapveg(ico),hcapveg_min)
+      targetp%hcapveg(ico)       = cpatch%hcapveg(ico) * hcap_scale
       targetp%veg_energy(ico)    = cpatch%veg_energy(ico)                                  &
                                  + (targetp%hcapveg(ico)-cpatch%hcapveg(ico))              &
                                  * targetp%veg_temp(ico)

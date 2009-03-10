@@ -116,8 +116,8 @@ subroutine init_bare_ground_patchtype(zero_time,csite,lsl,atm_tmp,ipa_a,ipa_z)
          select case (ipft)
          case (1,5)  
             cpatch%nplant(ico)           = 0.6
-         !case (7)
-         !   cpatch%nplant(ico)           = 1.0
+         case (7)
+            cpatch%nplant(ico)           = 1.0
          case default
             cpatch%nplant(ico)           = 0.1
          end select

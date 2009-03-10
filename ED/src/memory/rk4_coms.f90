@@ -54,10 +54,12 @@ module rk4_coms
    !---------------------------------------------------------------------------------------!
    
    !---------------------------------------------------------------------------------------!
-   !    This is the minimum heat capacity we attempt to prognose leaf internal energy.     !
-   ! Below  this value, the fluctuations could become too large.                           !
+   !    These two parameter will scale the cohort heat capacity inside the RK4 integrator, !
+   ! to avoid having patches with heat capacity that is way too small to be computational- !
+   ! ly stable and solvable in a fast way.                                                 !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: hcapveg_min=60.
+   real, parameter :: hcapveg_ref = 4000.
+   real, parameter :: min_height  = 1.5
 
    !----- These are all RK4 integrator factors. -------------------------------------------!
    real, parameter :: a2  = 0.2
