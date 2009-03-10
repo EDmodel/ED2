@@ -101,7 +101,9 @@ contains
                   cpoly%met(isi)%prss,     &
                   cpoly%met(isi)%atm_shv,  &
                   cpoly%met(isi)%geoht,    &
-                  cpoly%lsl(isi))
+                  cpoly%lsl(isi),          &
+                  cgrid%lon(ipy),          &
+                  cgrid%lat(ipy))
 
              ! Update the minimum monthly temperature, based on canopy temperature
              if ( cpoly%site(isi)%can_temp(ipa) < cpoly%min_monthly_temp(isi)) then
@@ -122,7 +124,7 @@ contains
 
   subroutine integrate_patch_ar(csite,ipa,isi,ipy,ifm, integration_buff, rhos,  &
        vels, atm_tmp, rv, atm_co2, zoff, exner, pcpg, qpcpg, dpcpg, prss,  &
-       atm_shv, geoht, lsl)
+       atm_shv, geoht, lsl,lon,lat)
 
     use ed_state_vars,only:sitetype,patchtype,integration_vars_ar,rk4patchtype
 
@@ -151,6 +153,8 @@ contains
     real, intent(in) :: dpcpg
     real, intent(in) :: prss
     real, intent(in) :: geoht
+    real, intent(in) :: lon
+    real, intent(in) :: lat
 
     type(rk4patchtype), pointer :: initp
     real :: hbeg
@@ -243,7 +247,7 @@ contains
     ! Move the state variables from the integrated patch to the model patch
     !------------------------
     call initp2modelp_ar(tend-tbeg, initp, csite, ipa,isi,ipy,lsl,atm_tmp,atm_shv,atm_co2 &
-                        ,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg)
+                        ,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg,lon,lat)
 
     return
   end subroutine integrate_patch_ar
@@ -251,7 +255,7 @@ contains
   !====================================================================
 
   subroutine initp2modelp_ar(hdid, initp, csite, ipa,isi,ipy,lsl,atm_tmp,atm_shv,atm_co2   &
-                            ,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg)
+                            ,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg,lon,lat)
 
     use ed_state_vars,only:sitetype,patchtype,rk4patchtype,edgrid_g
     use consts_coms, only: day_sec,t3ple
@@ -268,6 +272,7 @@ contains
     integer, intent(in) :: lsl
     real   , intent(in) :: atm_tmp,atm_shv,atm_co2
     real   , intent(in) :: prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg
+    real   , intent(in) :: lon,lat
 
     type(sitetype),target :: csite
     type(patchtype),pointer :: cpatch
@@ -398,7 +403,6 @@ contains
        end if
     enddo
     
-    csite%hcapveg(ipa) = 0.
     do ico = 1,cpatch%ncohorts
 
 
@@ -432,65 +436,22 @@ contains
        end if
 
        if (cpatch%veg_temp(ico) < veg_temp_min .or. cpatch%veg_temp(ico) > rk4max_veg_temp  ) then
-          print*,"==========================================================="
-          
-          write(unit=*,fmt='(a,1x,es14.7)') 'veg temp      :',cpatch%veg_temp(ico)
-          write(unit=*,fmt='(a,1x,es14.7)') 'veg_temp min  :',veg_temp_min
-          write(unit=*,fmt='(a,1x,es14.7)') 'lai           :',cpatch%lai(ico)
-          write(unit=*,fmt='(a,1x,es14.7)') 'lai_min       :', lai_min
-          print*,"veg_water",cpatch%veg_water(ico),cpatch%veg_water(ico)/cpatch%lai(ico)
-          print*,"veg_energy",cpatch%veg_energy(ico),cpatch%veg_energy(ico)/cpatch%lai(ico)
-          print*,"hcapveg",cpatch%hcapveg(ico),cpatch%hcapveg(ico)/cpatch%lai(ico)
-
-          print*,"Polygon:",ipy," Site:",isi," Patch:",ipa," Cohort:",ico," of",cpatch%ncohorts
-          
-          print*,"LAI",cpatch%lai(ico)
-          print*,"Height",cpatch%hite(ico)
-          print*,"DBH",cpatch%dbh(ico)
-          print*,"Phenology Status",cpatch%phenology_status(ico)
-          print*,"PFT",cpatch%pft(ico)
-          print*,"Leaf Biomass",cpatch%bleaf(ico)
-          print*,"Density",cpatch%nplant(ico)
-          print*,"Patch LAI",csite%lai(ipa)
-          print*,"Patch Disturbance Type",csite%dist_type(ipa)
-          print*,"Patch Canopy Temperature",csite%can_temp(ipa)
-          
-          write(unit=*,fmt='(a,1x,i5)')     '================== FATAL ERROR =================='
-          write(unit=*,fmt='(a,1x,i5)')     ' IPY:',ipy
-          write(unit=*,fmt='(a,1x,i5)')     ' ISI:',isi
-          write(unit=*,fmt='(a,1x,i5)')     ' IPA:',ipa
-          write(unit=*,fmt='(a,1x,i5)')     ' ICO:',ico
-!!$       write(unit=*,fmt='(a,1x,f14.5)')  ' Longitude:',edgrid_g(1)%lon(ipy)
-!!$       write(unit=*,fmt='(a,1x,f14.5)')  ' Latitude: ',edgrid_g(1)%lat(ipy)
-!!$       write(unit=*,fmt='(a)')           ' '
-!!$       write(unit=*,fmt='(a,1x,es14.7)') ' PRSS:     ',edgrid_g(1)%polygon(ipy)%met(isi)%prss
-!!$       write(unit=*,fmt='(a,1x,es14.7)') ' ATM_TMP:  ',edgrid_g(1)%polygon(ipy)%met(isi)%atm_tmp
-!!$       write(unit=*,fmt='(a,1x,es14.7)') ' RHOS:     ',edgrid_g(1)%polygon(ipy)%met(isi)%rhos
-!!$       write(unit=*,fmt='(a,1x,es14.7)') ' PCPG:     ',edgrid_g(1)%polygon(ipy)%met(isi)%pcpg
-!!$       write(unit=*,fmt='(a,1x,es14.7)') ' SHV:g/kg  ',edgrid_g(1)%polygon(ipy)%met(isi)%atm_shv*1000
-!!$       write(unit=*,fmt='(a,1x,es14.7)') ' VELS:     ',edgrid_g(1)%polygon(ipy)%met(isi)%vels
-!!$       write(unit=*,fmt='(a)')           ' '
-!!$       write(unit=*,fmt='(a,1x,es14.7)') ' rshort_v: ',cpatch%rshort_v(ico)
-!!$       write(unit=*,fmt='(a,1x,es14.7)') ' rlong_v:  ',cpatch%rlong_v(ico)
-!!$       write(unit=*,fmt='(a)')           ' '
-!!$       write(unit=*,fmt='(a,1x,es14.7)') ' can_temp :',csite%can_temp(ipa)
-!!$       write(unit=*,fmt='(a,1x,es14.7)') ' can_shv g/kg :',csite%can_shv(ipa)*1000.
-!!$       write(unit=*,fmt='(a,1x,es14.7)') ' gnd_shv g/kg :',csite%ground_shv(ipa)*1000.
-!!$       write(unit=*,fmt='(a)')           ' '
-!!$       write(unit=*,fmt='(a,1x,es14.7)') 'Lai_coh   :',cpatch%lai(ico)
-!!$       
-!!$       write(unit=*,fmt='(a,1x,es14.7)') 'veg_water :',cpatch%veg_water(ico)
-!!$       write(unit=*,fmt='(a,1x,es14.7)') 'rb        :',cpatch%rb(ico)
-!!$       write(unit=*,fmt='(a)')           ' '
-!!$
+          write (unit=*,fmt='(80a)')         ('=',k=1,80)
+          write (unit=*,fmt='(a)')           'FINAL VEG_TEMP IS WRONG IN INITP2MODELP'
+          write (unit=*,fmt='(80a)')         ('-',k=1,80)
+          write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:   ',lon
+          write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:    ',lat
+          write (unit=*,fmt='(a,1x,i6)')     ' + POLYGON:     ',ipy
+          write (unit=*,fmt='(a)')           ' + PATCH AGE:   ',csite%age(ipa)
+          write (unit=*,fmt='(a,1x,es12.5)') '   - AGE:       ',csite%age(ipa)
+          write (unit=*,fmt='(a,1x,i6)')     '   - DIST_TYPE: ',csite%dist_type(ipa)
+          write (unit=*,fmt='(80a)') ('-',k=1,80)
           call print_patch_ar(initp, csite,ipa, lsl,atm_tmp,atm_shv,atm_co2,prss           &
                              ,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg)
           
           call fatal_error('extreme vegetation temperature','initp2modelp','rk4_driver.f90')
 
        end if
-       
-       csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico)
     end do
 
 

@@ -2089,7 +2089,6 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
        globdims,chnkdims,chnkoffs,cnt,stride, &
        memdims,memoffs,memsize
   use consts_coms, only: cliq,cice,t3ple,tsupercool
-!  use canopy_air_coms, only: hcapveg_ref,heathite_min
   use ed_therm_lib, only : calc_hcapveg
   use canopy_radiation_coms, only:lai_min
 

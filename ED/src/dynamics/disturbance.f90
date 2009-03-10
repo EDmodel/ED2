@@ -816,7 +816,6 @@ end subroutine apply_disturbances_ar
     use pft_coms, only: q, qsw, sla, hgt_min, max_dbh
     use misc_coms, only: dtlsm
     use fuse_fiss_utils_ar, only : sort_cohorts_ar
-!    use canopy_air_coms, only: hcapveg_ref,heathite_min
     use ed_therm_lib,only : calc_hcapveg
     use consts_coms, only: t3ple
     use allometry, only : h2dbh, dbh2bd, dbh2bl, dbh2h
