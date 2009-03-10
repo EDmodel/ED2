@@ -417,6 +417,7 @@
                              ! 1. Maximum moist static energy;
                              ! 2. PBL top (if IDIFFK=7, uses the pblhgt from turbulence)
                              ! 3. Most turbulent layer
+                             ! 4. Maximum w + sigma w (both turblent 
    
    IUPSTRM     = 0,          ! Check for previous upstream downdraft?
                              ! 0. No, thanks

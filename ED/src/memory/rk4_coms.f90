@@ -57,7 +57,7 @@ module rk4_coms
    !    This is the minimum heat capacity we attempt to prognose leaf internal energy.     !
    ! Below  this value, the fluctuations could become too large.                           !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: hcapveg_min=1000.
+   real, parameter :: hcapveg_min=60.
 
    !----- These are all RK4 integrator factors. -------------------------------------------!
    real, parameter :: a2  = 0.2
@@ -119,7 +119,7 @@ module rk4_coms
    real, parameter :: rk4min_soil_temp = 184.00  ! Same as rk4min_soil_temp
 
    real, parameter :: rk4max_veg_temp  = 341.00  ! ~10C hotter than rk4max_can_temp.
-   real, parameter :: rk4min_veg_water = -1.e-2  ! Minimum leaf water allowed. This will
+   real, parameter :: rk4min_veg_water = -1.e-3  ! Minimum leaf water allowed. This will
                                                  !  be multiplied by LAI
 
    real, parameter :: rk4min_sfcw_temp = 193.15  ! -80C

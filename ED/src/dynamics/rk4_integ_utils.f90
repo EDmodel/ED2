@@ -112,7 +112,7 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff,rhos,vels   &
       call rkqs_ar(integration_buff,x,h,hdid,hnext,csite,ipa,isi,ipy,ifm,rhos,vels,atm_tmp &
                   ,atm_shv,atm_co2,geoht,exner,pcpg,qpcpg,dpcpg,prss,lsl)
 
-      !----- Final update of leaf properties ----------------------------------------------!
+      !----- Final update of leaf properties. ---------------------------------------------!
       call adjust_veg_properties(integration_buff%y,integration_buff%dydx              &
                                  ,csite,ipa,rhos,hdid)
 
@@ -1277,7 +1277,9 @@ subroutine adjust_veg_properties(initp,dinitp,csite,ipa,rhos,hdid)
                                    , wdnsi             ! ! intent(in)
    use therm_lib            , only : qtk               & ! subroutine
                                    , qwtk              ! ! subroutine
-   use rk4_coms             , only : leaf_h2o_thick    ! ! intent(in)
+   use rk4_coms             , only : leaf_h2o_thick    & ! intent(in)
+                                   , rk4min_veg_water  & ! intent(in)
+                                   , rk4eps            ! ! intent(in)
    use canopy_radiation_coms, only : lai_min           ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -1320,7 +1322,7 @@ subroutine adjust_veg_properties(initp,dinitp,csite,ipa,rhos,hdid)
          max_leaf_water = leaf_h2o_thick * cpatch%lai(ico)
 
          !----- Shedding excessive water to the ground ------------------------------------!
-         if (initp%veg_water(ico) > max_leaf_water) then
+         if (initp%veg_water(ico) > (1.+rk4eps)*max_leaf_water) then
             veg_wshed  = (initp%veg_water(ico)-max_leaf_water)
             veg_qwshed = veg_wshed                                                         &
                        * (initp%veg_fliq(ico) * cliq * (initp%veg_temp(ico)-tsupercool)    &
@@ -1349,7 +1351,8 @@ subroutine adjust_veg_properties(initp,dinitp,csite,ipa,rhos,hdid)
             initp%avg_qwshed_vg = initp%avg_qwshed_vg + veg_qwshed * hdidi
 
          !----- If veg_water is negative, "steal" moisture from the air as "dew/frost" ----!
-         elseif (initp%veg_water(ico) < 0.) then
+         elseif (initp%veg_water(ico) < 0. .and.                                           &
+                 initp%veg_water(ico) >= (1.+rk4eps)*rk4min_veg_water) then
             veg_dew = - initp%veg_water(ico)
             if (initp%can_temp >=t3ple) then
                veg_qdew = veg_dew * alvl

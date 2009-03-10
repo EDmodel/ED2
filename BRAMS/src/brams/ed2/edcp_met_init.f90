@@ -6,7 +6,7 @@ subroutine ed_init_coup_atm
   use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr,dslz
   use rconstants,    only: tsupercool, cliqvlme, cicevlme, t3ple
   use grid_coms,      only: nzs, nzg, ngrids
-  use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar
+  use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar,terminate_cohorts_ar,split_cohorts_ar
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
   use pft_coms,only : sla
   use ed_therm_lib,only : calc_hcapveg,ed_grndvap
@@ -224,9 +224,11 @@ subroutine ed_init_coup_atm
            do ipa = 1,csite%npatches
               npatches = npatches + 1
               cpatch => csite%patch(ipa)
-
-              call fuse_cohorts_ar(csite,ipa,cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
-
+              if (cpatch%ncohorts > 0) then
+                 call fuse_cohorts_ar(csite,ipa,cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
+                 call terminate_cohorts_ar(csite,ipa)
+                 call split_cohorts_ar(cpatch, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
+              end if
               do ico = 1,cpatch%ncohorts
                  ncohorts=ncohorts+1
                  poly_lai    = poly_lai + cpatch%lai(ico) * csite%area(ipa)                &

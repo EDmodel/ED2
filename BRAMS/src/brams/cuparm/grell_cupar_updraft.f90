@@ -38,6 +38,7 @@ subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,wwind,sigw,tke,
    integer               , intent(out)    :: k22       ! Updraft origin level
    !----- Local variable ------------------------------------------------------------------!
    real, dimension(mgmzp)                 :: wboth     ! Combination of w and sigw [   m/s]
+   integer                                :: kpblloc   ! Local PBL top level       [   ---]
    !----- Constant. Avoding using too levels too close to the surface ---------------------!
    integer               , parameter      :: kstart=2  ! Minimum level
    !---------------------------------------------------------------------------------------!
@@ -70,10 +71,16 @@ subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,wwind,sigw,tke,
    case (4) ! Combined mechanical forcing and turbulent
       if (kpbl /= 0) then ! Nakanishi and Niino is used, sigw is available
          wboth = wwind + sigw
+         k22 = (kstart-1) + maxloc(wboth(kstart:kpbl),dim=1)
       else ! Estimate sigw as the square root of 2 TKE
+         call grell_find_pbl_height(mkx,mgmzp,z,tke,qliq,qice,kpblloc)
          wboth = wwind + sqrt(2.*tke)
+         if (kpblloc > kstart) then
+            k22 = (kstart-1) + maxloc(wboth(kstart:kpblloc),dim=1)
+         else 
+            k22 = kstart
+         end if
       end if
-      k22 = (kstart-1) + maxloc(wboth(kstart:kbmax),dim=1)
    end select
    !---------------------------------------------------------------------------------------!
 
