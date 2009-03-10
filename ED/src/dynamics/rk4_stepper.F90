@@ -132,10 +132,10 @@ module rk4_stepper_ar
 
                if (reject_step) then
                   !----- Run the LSM sanity check but this time we force the print. -------!
-                  call lsm_sanity_check_ar(integration_buff%ytemp,test_reject,csite,ipa,lsl    &
-                                          ,integration_buff%dydx,h,atm_tmp,atm_shv,atm_co2 &
-                                          ,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg     &
-                                          ,.true.)
+                  call lsm_sanity_check_ar(integration_buff%ytemp,test_reject,csite,ipa    &
+                                          ,lsl,integration_buff%dydx,h,atm_tmp,atm_shv     &
+                                          ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg   &
+                                          ,dpcpg,.true.)
                   if (.not. test_reject) then
                      call lsm_sanity_check_ar(integration_buff%ak7,test_reject,csite,ipa   &
                                              ,lsl,integration_buff%dydx,h,atm_tmp,atm_shv  &
@@ -275,7 +275,8 @@ module rk4_stepper_ar
 
       call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
       call inc_rk4_patch_ar(ak7, dydx, b21*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,csite,ipa)
+      !call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b21*h)
+      call update_veg_properties(ak7,csite,ipa)
       call stabilize_snow_layers_ar(ak7, csite, ipa, lsl)
       call lsm_sanity_check_ar(ak7, reject_step, csite, ipa, lsl ,dydx,h,atm_tmp,atm_shv   &
                               ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg         &
@@ -288,9 +289,10 @@ module rk4_stepper_ar
                          ,atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
       call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
       call inc_rk4_patch_ar(ak7, dydx, b31*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,csite,ipa)
+      !call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b31*h)
       call inc_rk4_patch_ar(ak7, ak2, b32*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,csite,ipa)
+      !call adjust_veg_properties(ak7,ak2,csite,ipa,rhos,b32*h)
+      call update_veg_properties(ak7,csite,ipa)
       call stabilize_snow_layers_ar(ak7, csite,ipa, lsl)
       call lsm_sanity_check_ar(ak7,reject_step,csite,ipa, lsl,dydx,h,atm_tmp,atm_shv       &
                               ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg         &
@@ -303,11 +305,12 @@ module rk4_stepper_ar
                          ,atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
       call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
       call inc_rk4_patch_ar(ak7, dydx, b41*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,csite,ipa)
+      !call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b41*h)
       call inc_rk4_patch_ar(ak7, ak2, b42*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,csite,ipa)
+      !call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b42*h)
       call inc_rk4_patch_ar(ak7, ak3, b43*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,csite,ipa)
+      !call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b43*h)
+      call update_veg_properties(ak7,csite,ipa)
       call stabilize_snow_layers_ar(ak7, csite,ipa, lsl)
       call lsm_sanity_check_ar(ak7, reject_step, csite,ipa, lsl,dydx,h,atm_tmp,atm_shv     &
                               ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg         &
@@ -320,13 +323,14 @@ module rk4_stepper_ar
                          ,atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
       call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
       call inc_rk4_patch_ar(ak7, dydx, b51*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,csite,ipa)
+      !call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b51*h)
       call inc_rk4_patch_ar(ak7, ak2, b52*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,csite,ipa)
+      !call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b52*h)
       call inc_rk4_patch_ar(ak7, ak3, b53*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,csite,ipa)
+      !call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b53*h)
       call inc_rk4_patch_ar(ak7, ak4, b54*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,csite,ipa)
+      !call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b54*h)
+      call update_veg_properties(ak7,csite,ipa)
       call stabilize_snow_layers_ar(ak7, csite, ipa, lsl)
       call lsm_sanity_check_ar(ak7,reject_step,csite,ipa,lsl,dydx,h,atm_tmp,atm_shv        &
                               ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg         &
@@ -339,15 +343,16 @@ module rk4_stepper_ar
                          ,atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
       call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
       call inc_rk4_patch_ar(ak7, dydx, b61*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,csite,ipa)
+      !call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b61*h)
       call inc_rk4_patch_ar(ak7, ak2, b62*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,csite,ipa)
+      !call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b62*h)
       call inc_rk4_patch_ar(ak7, ak3, b63*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,csite,ipa)
+      !call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b63*h)
       call inc_rk4_patch_ar(ak7, ak4, b64*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,csite,ipa)
+      !call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b64*h)
       call inc_rk4_patch_ar(ak7, ak5, b65*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,csite,ipa)
+      !call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b65*h)
+      call update_veg_properties(ak7,csite,ipa)
       call stabilize_snow_layers_ar(ak7, csite,ipa, lsl)
       call lsm_sanity_check_ar(ak7, reject_step, csite,ipa, lsl,dydx,h,atm_tmp,atm_shv     &
                               ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg         &
@@ -358,13 +363,14 @@ module rk4_stepper_ar
                          ,atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
       call copy_rk4_patch_ar(y, yout, cpatch, lsl)
       call inc_rk4_patch_ar(yout, dydx, c1*h, cpatch, lsl)
-      call adjust_veg_properties(yout,csite,ipa)
+      !call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,c1*h)
       call inc_rk4_patch_ar(yout, ak3, c3*h, cpatch, lsl)
-      call adjust_veg_properties(yout,csite,ipa)
+      !call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,c3*h)
       call inc_rk4_patch_ar(yout, ak4, c4*h, cpatch, lsl)
-      call adjust_veg_properties(yout,csite,ipa)
+      !call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,c4*h)
       call inc_rk4_patch_ar(yout, ak6, c6*h, cpatch, lsl)
-      call adjust_veg_properties(yout,csite,ipa)
+      !call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,c6*h)
+      call update_veg_properties(yout,csite,ipa)
       call stabilize_snow_layers_ar(yout, csite,ipa, lsl)
       call lsm_sanity_check_ar(yout, reject_step, csite,ipa, lsl,dydx,h,atm_tmp,atm_shv    &
                               ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg         &
@@ -415,6 +421,7 @@ module rk4_stepper_ar
                                        , rk4max_can_shv       & ! intent(in)
                                        , rk4min_can_shv       & ! intent(in)
                                        , rk4max_veg_temp      & ! intent(in)
+                                       , rk4min_veg_water     & ! intent(in)
                                        , rk4min_sfcw_temp     & ! intent(in)
                                        , rk4max_soil_temp     & ! intent(in)
                                        , rk4min_soil_temp     & ! intent(in)
@@ -607,8 +614,8 @@ module rk4_stepper_ar
       cflag1 = .false.
       do k=lsl,nzg
          !----- Soil moisture -------------------------------------------------------------!
-         if (y%soil_water(k) < 0.99*dble(soil(csite%ntext_soil(k,ipa))%soilcp) .or.        &
-             y%soil_water(k) > 1.01*dble(soil(csite%ntext_soil(k,ipa))%slmsts)  ) then
+         if (y%soil_water(k) < 0.95*dble(soil(csite%ntext_soil(k,ipa))%soilcp) .or.        &
+             y%soil_water(k) > 1.05*dble(soil(csite%ntext_soil(k,ipa))%slmsts)  ) then
             reject_step = .true.
             if(record_err) integ_err(3+k,2) = integ_err(3+k,2) + 1_8
             if (print_problems) then
@@ -706,7 +713,7 @@ module rk4_stepper_ar
                   return
                end if
             end if
-            if (y%veg_water(ico) < 0.) then
+            if (y%veg_water(ico) < rk4min_veg_water) then
                reject_step = .true.
                if(record_err) cflag1 = .true.
                if (print_problems) then

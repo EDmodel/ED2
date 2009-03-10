@@ -997,7 +997,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          max_leaf_water = leaf_h2o_thick*cpatch%lai(ico)
          
          !------ Calculate fraction of leaves covered with water. -------------------------!
-         if(initp%veg_water(ico) > 1.0e-5*cpatch%lai(ico))then
+         if(initp%veg_water(ico) > 1.0e-12)then
             sigmaw = min(1.0, (initp%veg_water(ico)/max_leaf_water)**twothirds )
          else
             sigmaw = 0.0

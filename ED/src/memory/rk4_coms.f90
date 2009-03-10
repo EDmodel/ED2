@@ -109,14 +109,18 @@ module rk4_coms
    !---------------------------------------------------------------------------------------!
    real, parameter :: rk4max_can_temp  = 341.00  ! ~10C hotter than record in El Azizia;
    real, parameter :: rk4min_can_temp  = 184.00  ! ~10C colder than record in Vostok;
-   real, parameter :: rk4min_can_shv   = 0.0     ! Horribly dry
-   real, parameter :: rk4max_can_shv   = 1.0     ! No dry air left, it's water vapour only.
+   real, parameter :: rk4min_can_shv   = 1.e-8   ! Horribly dry
+   real, parameter :: rk4max_can_shv   = 0.08    ! This is equivalent to a dewpoint of 48C.
+                                                 !  at 1000hPa, or if during the record
+                                                 !  at El Azizia they had relative humidity
+                                                 !  of 60%... Very comfortable!
 
-   real, parameter :: rk4max_soil_temp = 351.00  ! ~10C hotter than rk4max_can_temp
+   real, parameter :: rk4max_soil_temp = 341.00  ! ~10C hotter than rk4max_can_temp
    real, parameter :: rk4min_soil_temp = 184.00  ! Same as rk4min_soil_temp
 
-   real, parameter :: rk4max_veg_temp  = 361.00  ! ~20C hotter than rk4max_can_temp. Your
-                                                 !      steamed greens are served.
+   real, parameter :: rk4max_veg_temp  = 341.00  ! ~10C hotter than rk4max_can_temp.
+   real, parameter :: rk4min_veg_water = -1.e-2  ! Minimum leaf water allowed. This will
+                                                 !  be multiplied by LAI
 
    real, parameter :: rk4min_sfcw_temp = 193.15  ! -80C
    real, parameter :: rk4min_sfcw_mass = -1.e-3  ! ???? Minimum water mass allowed.

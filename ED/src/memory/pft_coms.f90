@@ -43,6 +43,10 @@ integer, dimension(n_pft) :: include_pft_ag
 ! 2. Ignore the cohort and keep going.
 integer :: pft_1st_check
 
+! This is the flag that tells where agriculture and plantation stock should go:
+integer :: agri_stock 
+integer :: plantation_stock
+
 !--------------------
 ! PHOTOSYNTHESIS AND STOMATAL CONDUCTANCE
 !--------------------

@@ -112,8 +112,9 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff,rhos,vels   &
       call rkqs_ar(integration_buff,x,h,hdid,hnext,csite,ipa,isi,ipy,ifm,rhos,vels,atm_tmp &
                   ,atm_shv,atm_co2,geoht,exner,pcpg,qpcpg,dpcpg,prss,lsl)
 
-      !----- Eliminate the excess of water in the leaves ----------------------------------!
-      call shed_veg_water_excess(integration_buff%y,csite,ipa,hdid)
+      !----- Final update of leaf properties ----------------------------------------------!
+      call adjust_veg_properties(integration_buff%y,integration_buff%dydx              &
+                                 ,csite,ipa,rhos,hdid)
 
       !----- Re-calculate tempks, fracliqs, surface water flags. --------------------------!
       call stabilize_snow_layers_ar(integration_buff%y, csite,ipa, lsl)
@@ -397,9 +398,9 @@ subroutine inc_rk4_patch_ar(rkp, inc, fac, cpatch, lsl)
    end do
 
    do k=1,rkp%nlev_sfcwater
-      rkp%sfcwater_mass(k)   = max(0.0,rkp%sfcwater_mass(k)   + fac * inc%sfcwater_mass(k))
-      rkp%sfcwater_energy(k) = rkp%sfcwater_energy(k)         + fac * inc%sfcwater_energy(k)
-      rkp%sfcwater_depth(k)  = rkp%sfcwater_depth(k)          + fac * inc%sfcwater_depth(k)
+      rkp%sfcwater_mass(k)   = rkp%sfcwater_mass(k)   + fac * inc%sfcwater_mass(k)
+      rkp%sfcwater_energy(k) = rkp%sfcwater_energy(k) + fac * inc%sfcwater_energy(k)
+      rkp%sfcwater_depth(k)  = rkp%sfcwater_depth(k)  + fac * inc%sfcwater_depth(k)
    end do
 
    rkp%virtual_heat  = rkp%virtual_heat  + fac * inc%virtual_heat
@@ -414,7 +415,7 @@ subroutine inc_rk4_patch_ar(rkp, inc, fac, cpatch, lsl)
 
   
    do ico = 1,cpatch%ncohorts
-      rkp%veg_water(ico)     = max(0.0,rkp%veg_water(ico) + fac * inc%veg_water(ico))
+      rkp%veg_water(ico)     = rkp%veg_water(ico) + fac * inc%veg_water(ico)
       rkp%veg_energy(ico)    = rkp%veg_energy(ico) + fac * inc%veg_energy(ico)
    enddo
 
@@ -534,16 +535,11 @@ subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, total_snow_depth, lsl)
    end if
 
    !----- Scale for the virtual water pools -----------------------------------------------!
-   if (y%virtual_water > 0.1) then
-      yscal%virtual_water = abs(y%virtual_water)                                           &
-                          + abs(dy%virtual_water*htry) + tiny_offset
-      yscal%virtual_heat  = abs(y%virtual_heat)                                            &
-                          + abs(dy%virtual_heat*htry) + tiny_offset
-   elseif(y%virtual_water > min_sfcwater_mass) then
-      yscal%virtual_water = 0.1
-      yscal%virtual_heat  = abs(y%virtual_heat)                                            &
-                          + abs(dy%virtual_heat*htry) + tiny_offset
-      yscal%virtual_heat  = max(yscal%virtual_heat,qliqt3 * yscal%virtual_water)
+   if (y%virtual_water > min_sfcwater_mass) then
+      yscal%virtual_water = max(0.1                                                        &
+                               ,abs(y%virtual_water) + abs(dy%virtual_water*htry))
+      yscal%virtual_heat  = max(yscal%virtual_water*qliqt3                                 &
+                               ,abs(y%virtual_heat) + abs(dy%virtual_heat*htry))
    else
       yscal%virtual_water = 1.e30
       yscal%virtual_heat  = 1.e30
@@ -556,12 +552,11 @@ subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, total_snow_depth, lsl)
    !    Also, if the cohort is tiny and has almost no water, make the scale less strict.   !
    !---------------------------------------------------------------------------------------!
    do ico = 1,cpatch%ncohorts
-      if (cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > total_snow_depth)  &
+      if (cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > total_snow_depth)             &
       then
-         yscal%veg_water(ico)  = 0.22
-         yscal%veg_energy(ico) = max(yscal%veg_water(ico) * qliqt3                         &
-                                       ,abs(y%veg_energy(ico))                             &
-                                       + abs(dy%veg_energy(ico)*htry))
+         yscal%veg_water(ico)  = max(1.e-2                                                 &
+                                    ,abs(y%veg_water(ico))+ abs(dy%veg_water(ico)*htry))
+         yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico)*htry)
       else
          yscal%veg_water(ico)  = 1.e30
          yscal%veg_energy(ico) = 1.e30
@@ -1259,18 +1254,22 @@ end subroutine redistribute_snow_ar
 
 !==========================================================================================!
 !==========================================================================================!
-!    This subroutine checks how much water is over the leaves surface, and sheds the       !
-! excess to the virtual layer, consistently with loss of energy and virtual layer depth    !
-! gain.  This cannot be done in canopy_derivs because of the time scale, like the snow     !
-! thermal equilibrium cannot be done there. We assume this shedding is fast.  This is      !
-! called before we incorporate the virtual layer to the soil.                              !
+!    This subroutine will ensure that leaf water is positively defined.  Depending on its  !
+! derivative, it can go under zero, in which case we must correct the derivatives rather   !
+! than forcing it to be zero.  This guarantees mass conservation.  Likewise, if in the end !
+! of the step the leaf water is over the maximum, we remove the excess through shedding.   !
+!    After this is checked, we then update the remaining leaf properties, namely the       !
+! temperature and liquid water fraction.                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine shed_veg_water_excess(initp,csite,ipa,hdid)
+subroutine adjust_veg_properties(initp,dinitp,csite,ipa,rhos,hdid)
    use ed_state_vars        , only : sitetype          & ! structure
                                    , patchtype         & ! structure
                                    , rk4patchtype      ! ! structure
    use consts_coms          , only : cice              & ! intent(in)
                                    , cliq              & ! intent(in)
+                                   , alvl              & ! intent(in)
+                                   , alvi              & ! intent(in)
+                                   , t3ple             & ! intent(in)
                                    , wdns              & ! intent(in)
                                    , idns              & ! intent(in)
                                    , tsupercool        & ! intent(in)
@@ -1283,8 +1282,10 @@ subroutine shed_veg_water_excess(initp,csite,ipa,hdid)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype)     , target     :: initp  ! Integration buffer
+   type(rk4patchtype)     , target     :: dinitp ! Derivatives
    type(sitetype)         , target     :: csite  ! Current site
    integer                , intent(in) :: ipa    ! Current patch ID
+   real                   , intent(in) :: rhos   ! Air density
    real                   , intent(in) :: hdid   ! Time step 
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)        , pointer    :: cpatch
@@ -1293,25 +1294,33 @@ subroutine shed_veg_water_excess(initp,csite,ipa,hdid)
    real                                :: veg_wshed
    real                                :: veg_qwshed
    real                                :: veg_dwshed
+   real                                :: veg_dew
+   real                                :: veg_qdew
+   real                                :: wcapcani
+   real                                :: hdidi
    !---------------------------------------------------------------------------------------!
 
    cpatch => csite%patch(ipa)
+   
+   !----- Canopy water capacity -----------------------------------------------------------!
+   wcapcani = 1.0 / (rhos * max(csite%veg_height(ipa), 3.5))
+   
+   !----- Inverse of time increment -------------------------------------------------------!
+   hdidi = 1. / hdid
 
    !----- Looping over cohorts ------------------------------------------------------------!
    cohortloop: do ico=1,cpatch%ncohorts
       !----- Checking whether this is a prognostic cohort... ------------------------------!
       if (cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))  &
       then
-         !----- First we update leaf temperature and liquid fraction. ---------------------!
-         call qwtk(initp%veg_energy(ico),initp%veg_water(ico),initp%hcapveg(ico)           &
-                  ,initp%veg_temp(ico),initp%veg_fliq(ico))
-
-         !----- Now we find the maximum leaf water possible. ------------------------------!
+         !---------------------------------------------------------------------------------!
+         !   Now we find the maximum leaf water possible. Add 2% to avoid bouncing back    !
+         ! and forward.                                                                    !
+         !---------------------------------------------------------------------------------!
          max_leaf_water = leaf_h2o_thick * cpatch%lai(ico)
 
          !----- Shedding excessive water to the ground ------------------------------------!
          if (initp%veg_water(ico) > max_leaf_water) then
-
             veg_wshed  = (initp%veg_water(ico)-max_leaf_water)
             veg_qwshed = veg_wshed                                                         &
                        * (initp%veg_fliq(ico) * cliq * (initp%veg_temp(ico)-tsupercool)    &
@@ -1328,16 +1337,49 @@ subroutine shed_veg_water_excess(initp,csite,ipa,hdid)
             initp%virtual_heat    = initp%virtual_heat  + veg_qwshed
             initp%virtual_depth   = initp%virtual_depth + veg_dwshed
             
+            !----- Updating derivatives ---------------------------------------------------!
+            dinitp%veg_water(ico)  = dinitp%veg_water(ico)  - veg_wshed  * hdidi
+            dinitp%veg_energy(ico) = dinitp%veg_energy(ico) - veg_qwshed * hdidi
+            dinitp%virtual_water   = dinitp%virtual_water   + veg_wshed  * hdidi
+            dinitp%virtual_heat    = dinitp%virtual_heat    + veg_qwshed * hdidi
+            dinitp%virtual_depth   = dinitp%virtual_depth   + veg_dwshed * hdidi
+            
             !----- Updating output fluxes -------------------------------------------------!
-            initp%avg_wshed_vg  = initp%avg_wshed_vg  + veg_wshed  / hdid
-            initp%avg_qwshed_vg = initp%avg_qwshed_vg + veg_qwshed / hdid
+            initp%avg_wshed_vg  = initp%avg_wshed_vg  + veg_wshed  * hdidi
+            initp%avg_qwshed_vg = initp%avg_qwshed_vg + veg_qwshed * hdidi
+
+         !----- If veg_water is negative, "steal" moisture from the air as "dew/frost" ----!
+         elseif (initp%veg_water(ico) < 0.) then
+            veg_dew = - initp%veg_water(ico)
+            if (initp%can_temp >=t3ple) then
+               veg_qdew = veg_dew * alvl
+            else
+               veg_qdew = veg_dew * alvi
+            end if
+
+            !----- Updating state variables -----------------------------------------------!
+            initp%veg_water(ico)  = 0.
+            initp%veg_energy(ico) = initp%veg_energy(ico)  + veg_qdew
+            initp%can_shv         = initp%can_shv          - veg_dew * wcapcani
+
+            !----- Updating derivatives ---------------------------------------------------!
+            dinitp%veg_water(ico)  = dinitp%veg_water(ico)    + veg_dew  * hdidi
+            dinitp%veg_energy(ico) = dinitp%veg_energy(ico)   + veg_qdew * hdidi
+            dinitp%can_shv         = dinitp%can_shv           - veg_dew * wcapcani * hdidi
+
+            !----- Updating output flux ---------------------------------------------------!
+            initp%avg_vapor_vc    = initp%avg_vapor_vc - veg_qdew * hdidi
          end if
+
+         !----- Lastly we update leaf temperature and liquid fraction. --------------------!
+         call qwtk(initp%veg_energy(ico),initp%veg_water(ico),initp%hcapveg(ico)           &
+                  ,initp%veg_temp(ico),initp%veg_fliq(ico))
       end if
 
    end do cohortloop
 
    return
-end subroutine shed_veg_water_excess
+end subroutine adjust_veg_properties
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1348,18 +1390,19 @@ end subroutine shed_veg_water_excess
 
 !==========================================================================================!
 !==========================================================================================!
-!    This subroutine simply updates leaf temperature and liquid water fraction.            !
+!    This subroutine will update the leaf temperature and liquid water fraction.           !
 !------------------------------------------------------------------------------------------!
-subroutine adjust_veg_properties(initp,csite,ipa)
+subroutine update_veg_properties(initp,csite,ipa)
    use ed_state_vars        , only : sitetype          & ! structure
                                    , patchtype         & ! structure
                                    , rk4patchtype      ! ! structure
-   use canopy_radiation_coms, only : lai_min           ! ! intent(in)
    use therm_lib            , only : qwtk              ! ! subroutine
+   use rk4_coms             , only : leaf_h2o_thick    ! ! intent(in)
+   use canopy_radiation_coms, only : lai_min           ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype)     , target     :: initp  ! Integration buffer
-   type(sitetype)         , target     :: csite  ! Current site
+    type(sitetype)         , target    :: csite  ! Current site
    integer                , intent(in) :: ipa    ! Current patch ID
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)        , pointer    :: cpatch
@@ -1373,7 +1416,7 @@ subroutine adjust_veg_properties(initp,csite,ipa)
       !----- Checking whether this is a prognostic cohort... ------------------------------!
       if (cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))  &
       then
-         !----- First we update leaf temperature and liquid fraction. ---------------------!
+         !----- Lastly we update leaf temperature and liquid fraction. --------------------!
          call qwtk(initp%veg_energy(ico),initp%veg_water(ico),initp%hcapveg(ico)           &
                   ,initp%veg_temp(ico),initp%veg_fliq(ico))
       end if
@@ -1381,7 +1424,7 @@ subroutine adjust_veg_properties(initp,csite,ipa)
    end do cohortloop
 
    return
-end subroutine adjust_veg_properties
+end subroutine update_veg_properties
 !==========================================================================================!
 !==========================================================================================!
 

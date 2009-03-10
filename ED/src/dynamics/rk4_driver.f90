@@ -53,7 +53,7 @@ contains
 
              ! Get photosynthesis, stomatal conductance, and transpiration
              call canopy_photosynthesis_ar(csite, ipa, cpoly%met(isi)%vels,   &
-                  cpoly%met(isi)%atm_tmp, cpoly%met(isi)%rhos,cpoly%met(isi)%prss,  &
+                  cpoly%met(isi)%rhos,cpoly%met(isi)%prss,  &
                   ed_ktrans, csite%ntext_soil(:,ipa), csite%soil_water(:,ipa),   &
                   csite%soil_fracliq(:,ipa), cpoly%lsl(isi), sum_lai_rbi,  &
                   cpoly%leaf_aging_factor(:,isi),  &

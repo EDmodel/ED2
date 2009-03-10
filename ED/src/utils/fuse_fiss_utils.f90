@@ -239,9 +239,6 @@ module fuse_fiss_utils_ar
             cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)            * area_scale
             cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)      * area_scale
             cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)      * area_scale
-!            cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)  * area_scale
-!            cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico) * area_scale
-!            cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)   * area_scale
             cpatch%Psi_open(ico)            = cpatch%Psi_open(ico)            * area_scale
             cpatch%gpp(ico)                 = cpatch%gpp(ico)                 * area_scale
             cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)    * area_scale

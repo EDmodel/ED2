@@ -1,6 +1,6 @@
 ! ===================================================
 
-subroutine canopy_photosynthesis_ar(csite, ipa, vels, atm_tmp,rhos, prss,   &
+subroutine canopy_photosynthesis_ar(csite, ipa, vels,rhos, prss,   &
      ed_ktrans, ntext_soil, soil_water, soil_fracliq, lsl, sum_lai_rbi,  &
      leaf_aging_factor, green_leaf_factor)
 
@@ -18,7 +18,6 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, atm_tmp,rhos, prss,   &
   type(patchtype),pointer :: cpatch
   integer :: ipa,ico
   real, intent(in) :: vels
-  real, intent(in) :: atm_tmp
   real, intent(in) :: rhos
   real, intent(in) :: prss
   integer, dimension(nzg), intent(out) :: ed_ktrans
@@ -347,7 +346,7 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, atm_tmp,rhos, prss,   &
   !      current_time%year,'-',current_time%month,'-',current_time%date,current_time%time  &
   !     ,cpatch%pft(ico),cpatch%lai(ico),cpatch%nplant(ico),cpatch%bleaf(ico)              &
   !     ,cpatch%hcapveg(ico),cpatch%veg_water(ico)                                         &
-  !     ,cpatch%veg_temp(ico),csite%can_shv(ipa),csite%can_temp(ipa),atm_tmp,prss,rhos     &
+  !     ,cpatch%veg_temp(ico),csite%can_shv(ipa),csite%can_temp(ipa),-999.0,prss,rhos      &
   !     ,cpatch%par_v(ico),cpatch%gpp(ico),cpatch%leaf_respiration(ico),cpatch%rb(ico)     &
   !     ,cpatch%stomatal_resistance(ico),cpatch%A_open(ico),cpatch%A_closed(ico)           &
   !     ,cpatch%rsw_open(ico),cpatch%rsw_closed(ico),cpatch%Psi_open(ico)                  &

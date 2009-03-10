@@ -15,22 +15,22 @@
 
    IMONTHA  =    01,
    IDATEA   =    01,
-   IYEARA   =  2001,
+   IYEARA   =  1999,
    ITIMEA   =  0000,
 
 !  End of simulation or ISAN processing
 
-   IMONTHZ  =    02,
+   IMONTHZ  =    03,
    IDATEZ   =    01,
-   IYEARZ   =  2001,
+   IYEARZ   =  1999,
    ITIMEZ   =  0000,
 
 ! Grid specifications
 
    NGRIDS   = 1,            ! Number of grids to run
  
-   NNXP     =   83,  80, 230,     ! Number of x gridpoints
-   NNYP     =   54,  60, 161,     ! Number of y gridpoints
+   NNXP     =  156,  68, 230,     ! Number of x gridpoints
+   NNYP     =   89,  56, 161,     ! Number of y gridpoints
    NNZP     =   41,  41,  41,     ! Number of z gridpoints
    NZG      =   13,          ! Number of soil layers
    NZS      =    4,          ! Maximum number of snow layers
@@ -43,8 +43,8 @@
    IF_ADAP  = 0,            !Vertical coordinate: 0- sigma_z, 1- shaved ETA
    
    IHTRAN   = 1,            ! 0-Cartesian, 1-Polar stereo
-   DELTAX   = 48000.,
-   DELTAY   = 48000.,       ! X and Y grid spacing
+   DELTAX   = 40000.,
+   DELTAY   = 40000.,       ! X and Y grid spacing
 
    DELTAZ   = 150.,         ! Z grid spacing (set to 0. to use ZZ)
    DZRAT    = 1.06,         ! Vertical grid stretch ratio
@@ -60,16 +60,16 @@
              10700.0,   11700.0,   12700.0,   13700.0,   14700.0,
              15700.0,   16700.0,   17700.0,   18700.0,   19700.0,
  
-   DTLONG   = 36.,          ! Coarse grid long timestep
+   DTLONG   = 60.,          ! Coarse grid long timestep
    NACOUST  =  3,            ! Small timestep ratio
    IDELTAT  =  0,            ! =0 - constant timesteps
                             ! >0 - initial computation <0 - variable
 
                             ! Nest ratios between this grid
                             !  and the next coarser grid.
-   NSTRATX  = 1,4,          ! x-direction
-   NSTRATY  = 1,4,          ! y-direction
-   NNDTRAT  = 1,4,          ! Time
+   NSTRATX  = 1,3,          ! x-direction
+   NSTRATY  = 1,3,          ! y-direction
+   NNDTRAT  = 1,3,          ! Time
 
    NESTZ1   = 0,	         ! Contort coarser grids if negative
    NSTRATZ1 = 3,3,3,3,2,2,2,2,1, !
@@ -77,11 +77,11 @@
    NSTRATZ2 = 3,3,3,2,2,2,2,1,   !
 
 
-   POLELAT  =  -1.66666666667,          ! Latitude of pole point
-   POLELON  = -51.50000000000,         ! Longitude of pole point
+   POLELAT  =  -2.0,          ! Latitude of pole point
+   POLELON  = -58.0,         ! Longitude of pole point
 
-   CENTLAT  =  -1.66666666667,  -3.5,
-   CENTLON  = -51.50000000000, -62.5,
+   CENTLAT  =  -2.0, -11.0,
+   CENTLON  = -58.0, -63.0,
                               ! Grid point on the next coarser
                               !  nest where the lower southwest
                               !  corner of this nest will start.
@@ -133,16 +133,16 @@
                              ! =2 - nudge from varfiles
                              ! =0 - no analysis nudging
                              
-   VARFPFX  = '/n/data/moorcroft_lab/mlongo/EDBRAMS/amazon/isean/ecmwf',
+   VARFPFX  = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/isean/ecmwf',
    VWAIT1   = 0.,            ! wait between each VFILE check (s)
    VWAITTOT = 0.,            ! total wait before giving up on a VFILE (s)
    
-   NUD_HFILE = '/n/data/moorcroft_lab/mlongo/EDBRAMS/amazon/histo/drytowet', 
+   NUD_HFILE = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/histo/drytowet', 
                ! Prefix for history nudging files
                              
-   NUDLAT   =     5,          ! Number of points in lateral bnd region
-   TNUDLAT  =   2700.,        ! 2700 - Nudging time scale(s) at lateral boundary
-   TNUDCENT =  86400.,        ! Nudging time scale(s) in center of domain
+   NUDLAT   =      5,          ! Number of points in lateral bnd region
+   TNUDLAT  =   1200.,        ! 2700 - Nudging time scale(s) at lateral boundary
+   TNUDCENT =  64800.,        ! Nudging time scale(s) in center of domain
    TNUDTOP  =  10800.,        ! 10800 - Nudging time scale (s) at top of domain
    ZNUDTOP  =  16000.,        ! Nudging at top of domain above height(m)
    
@@ -163,7 +163,7 @@
 !----------- Condensate nudging ------------------------------------------
    NUD_COND    = 0,              ! Only nudge total water where condensate
                                  !   exists (from previous history files, HFILIN)
-   COND_HFILE = '/n/data/moorcroft_lab/mlongo/EDBRAMS/amazon/histo/histo-H-2001-07-21-000000-head.txt',
+   COND_HFILE = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/histo/histo-H-2001-07-21-000000-head.txt',
             ! Header file name for cond nudging history files (only prefix is used)
    TCOND_BEG=0.,                 ! Model time start of cond nudging (sec)
    TCOND_END=21600.,             ! Model time end of cond nudging (sec)
@@ -219,7 +219,7 @@
 
 !----- Cumulus inversion tendency input -----
    IF_CUINV = 0,               
-   CU_PREFIX = '/n/data/moorcroft_lab/mlongo/EDBRAMS/amazon/t5-C-',
+   CU_PREFIX = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/t5-C-',
    
    TNUDCU=900.,
    WT_CU_GRID=1., 1., .5,
@@ -237,7 +237,7 @@
    IDATEH   = 21,
    IYEARH   = 2002,
    ITIMEH   = 1200,
-   HFILIN   = '/n/data/moorcroft_lab/mlongo/EDBRAMS/amazon/histo/histo',
+   HFILIN   = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/histo/histo',
                              ! Input history file name
  
 ! Analysis file input for assimilation (currently LEAF variables)
@@ -250,12 +250,12 @@
 ! History/analysis file output
  
    IOUTPUT  =  2,                                ! 0-no files, 1-save ASCII, 2-save binary
-   HFILOUT  = '/n/data/moorcroft_lab/mlongo/EDBRAMS/amazon/histo/amazon', 
-   AFILOUT  = '/n/data/moorcroft_lab/mlongo/EDBRAMS/amazon/analy/amazon',
+   HFILOUT  = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/histo/wetamc', 
+   AFILOUT  = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/analy/wetamc',
    ICLOBBER = 1,                                 ! 0=stop if files exist, 1=overwite files
    IHISTDEL = 0,                                 ! 0=keep all hist files, 1=delete previous
    FRQHIS   = 86400.,          ! History file frequency
-   FRQANL   = 10800.,          ! Analysis file frequency
+   FRQANL   =  3600.,          ! Analysis file frequency
 !-----------------------------------------------------------------------
    FRQLITE  = 0.,            ! Analysis freq. for "lite" variables
                              !   = 0 : no lite files
@@ -294,10 +294,10 @@
  
 ! Input topography variables
 
-   TOPFILES = '/n/data/moorcroft_lab/mlongo/EDBRAMS/amazon/surfa/topog',  ! File path and prefix for topography files.
-   SFCFILES = '/n/data/moorcroft_lab/mlongo/EDBRAMS/amazon/surfa/surfa',  ! File path and prefix for surface files.
-   SSTFPFX  = '/n/data/moorcroft_lab/mlongo/EDBRAMS/amazon/surfa/seast',  ! File path and prefix for SST files.
-   NDVIFPFX = '/n/data/moorcroft_lab/mlongo/EDBRAMS/amazon/surfa/ndvi_',  ! File path and prefix for NDVI files
+   TOPFILES = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/surfa/topog',  ! File path and prefix for topography files.
+   SFCFILES = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/surfa/surfa',  ! File path and prefix for surface files.
+   SSTFPFX  = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/surfa/seast',  ! File path and prefix for SST files.
+   NDVIFPFX = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/surfa/ndvi_',  ! File path and prefix for NDVI files
               
 
    ITOPTFLG = 1,1,1,           ! 0 - Interpolate from coarser grid
@@ -308,21 +308,25 @@
                                !     standard Lat/Lon data file.
 
    NOFILFLG = 2,2,2,           ! 2 - Fill data in "leaf3_init"
-                                 ! 0 - Interpolate from coarser grid   
+                               ! 0 - Interpolate from coarser grid   
  
    IUPDNDVI  = 0,             ! 0 - No update of NDVI values during run
    IUPDSST  = 1,              ! 0 - No update of SST values during run
                               ! 1 - Update values during run
  
-                             ! The following only apply for IxxxxFLG=1
+   !---------------------------------------------------------------------------------------!
+   !    The following only apply for IxxxxFLG=1. If IVEGTFLG and/or ISOILFLG are set to 3  !
+   ! and it is a coupled run, then you must set up VEG_DATABASE and/or SOIL_DATABASE,      !
+   ! respectively.                                                                         !
+   !---------------------------------------------------------------------------------------!
    ITOPTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/topo10km/H',
               '/n/Moorcroft_Lab/Lab/data/brams_data/topo/EL',
-   ISSTFN   = '/n/Moorcroft_Lab/Lab/data/brams_data/weeklysst/2001/W',
-              '/n/Moorcroft_Lab/Lab/data/brams_data/weeklysst/2001/W',
+   ISSTFN   = '/n/Moorcroft_Lab/Lab/data/brams_data/weeklysst/1999/W',
+              '/n/Moorcroft_Lab/Lab/data/brams_data/weeklysst/1999/W',
    IVEGTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/veg_usgs/VUSGS_',
               '/n/Moorcroft_Lab/Lab/data/brams_data/veg_usgs/VUSGS_',
-   ISOILFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soil_FAO/FAO',
-              '/n/Moorcroft_Lab/Lab/data/brams_data/soil_FAO/FAO',
+   ISOILFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soil_inpe/LReFAO',
+              '/n/Moorcroft_Lab/Lab/data/brams_data/soil_inpe/LReFAO',
     NDVIFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/ndvi-modis/N',
               '/n/Moorcroft_Lab/Lab/data/brams_data/ndvi-modis/N',
               '/n/Moorcroft_Lab/Lab/data/brams_data/ndvi-modis/N',
@@ -334,16 +338,16 @@
                                  ! 2 = Envelope Orography
                                  ! 3 = Reflected Envelope Orography
 
-   TOPTENH  = 0.,0.,             ! For ITOPSFLG=1, Weighting of topo
+   TOPTENH  = 1.,1.,             ! For ITOPSFLG=1, Weighting of topo
                                  !   silhouette averaging 
                                  ! For ITOPSFLG=2 or 3, Reflected Envelope
                                  !   and Envelope Orography enhancement factor
                                  
-   TOPTWVL  = 2.,2.,2.,2.,       ! Topo wavelength cutoff in filter 
+   TOPTWVL  = 3.,2.,2.,4.,       ! Topo wavelength cutoff in filter 
                                 
 ! Surface Roughness scheme
 
-   IZ0FLG   = 0,0,               ! 0 = Use veg, bare soil and water surface
+   IZ0FLG   = 1,1,               ! 0 = Use veg, bare soil and water surface
                                  ! 1 = Also use subgrid scale topography
    Z0MAX    = 5.,5.,             ! Max zo for IZ0FLG=1
    Z0FACT   = 0.005,             ! Subgrid scale orograhic roughness factor
@@ -351,7 +355,7 @@
 ! Microphysics collection tables
 
    MKCOLTAB = 1,             ! Make table: 0 = no, 1 = yes
-   COLTABFN = '/n/data/moorcroft_lab/mlongo/EDBRAMS/amazon/micro/coltab_4.0.6',
+   COLTABFN = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/micro/coltab_4.0.6',
                              ! Filename to read or write
 
  $END
@@ -375,7 +379,7 @@
    ! PS3: If NCLOUDS >= 3, then the middle ones will necessarily use Grell's               !
    !      parameterization.                                                                !
    !---------------------------------------------------------------------------------------!
-    NCLOUDS  = 3,
+    NCLOUDS  = 1,
 
 
    !---------------------------------------------------------------------------------------!
@@ -397,8 +401,8 @@
    !                  PS2: The first value is always assigned for the deepest cloud, even  !
    !                       if you are not running it.                                      !
    !---------------------------------------------------------------------------------------!
-   CONFRQ=1200.,1200., 600.,
-   CPTIME=7200.,5400.,3600.,
+   CONFRQ=1200., 600.,
+   CPTIME=7200.,3600.,
 
 
 
@@ -409,7 +413,7 @@
    ! needs to be here).                                                                    !
    !=======================================================================================!
    
-   IUPMETHOD   = 3,          ! How to find the level in which updrafts originate:
+   IUPMETHOD   = 4,          ! How to find the level in which updrafts originate:
                              ! 1. Maximum moist static energy;
                              ! 2. PBL top (if IDIFFK=7, uses the pblhgt from turbulence)
                              ! 3. Most turbulent layer
@@ -421,16 +425,16 @@
                              !    mass flux to enhance convection downstream
                              !    (not tested thoroughly, use with caution)
    
-   RADIUS    = 15000.,3000.,666., ! (nclouds) - Cloud mean radius [m]. Important: the
+   RADIUS    = 15000.,  666.,     ! (nclouds) - Cloud mean radius [m]. Important: the
                                   !    cloud won't have downdrafts nor precipitation if
                                   !    it is less than min_down_radius (grell_coms.f90).
                                   !    Default threshold is 900.
 
-   DEPTH_MIN = 6000., 3000., 60., ! (nclouds) - Grell's deep and shallow convection:
+   DEPTH_MIN =  4000.,   60.,     ! (nclouds) - Grell's deep and shallow convection:
                                   !    Minimum depth that the cloud must have [m]
 
-   !CAP_MAXS  = 110.,110., 110.,
-   CAP_MAXS  =  -12., -6.,  -1.,  ! (nclouds) Grell's deep and shallow convection:
+   !CAP_MAXS  = 110.,110.,
+   CAP_MAXS  =  -10., -1.,        ! (nclouds) Grell's deep and shallow convection:
                                   !           This one depends on the sign:
                                   !    Positive: Depth of the inverse capping in hPa. 
                                   !              The larger the value is, the less likely 
@@ -447,15 +451,15 @@
                                   !              sigma-w, so this option works only when
                                   !              IDIFFK is 1 or 7.
 
-   ZKBMAX   = 4000.,4000.,9000.,  ! (nclouds) - Maximum AGL height in which updrafts can
+   ZKBMAX   = 4000.,8000.,        ! (nclouds) - Maximum AGL height in which updrafts can
                                   !             originate. [m]
    
-   ZCUTDOWN = 3000.,3000.,3000.,  ! (nclouds) - Maximum AGL height in which downdrafts can
+   ZCUTDOWN = 3000.,3000.,        ! (nclouds) - Maximum AGL height in which downdrafts can
                                   !             originate. [m]
 
-   Z_DETR   = 1250.,1250.,1250.,  ! (nclouds) - Top of the downdraft detrainment layer [m]
+   Z_DETR   = 1250.,1250.,        ! (nclouds) - Top of the downdraft detrainment layer [m]
    
-   MAX_HEAT =  250., 250., 250.,  ! (nclouds) - Maximum heating allowed for feedback [K/day]
+   MAX_HEAT =  300., 250.,        ! (nclouds) - Maximum heating allowed for feedback [K/day]
 
    !=======================================================================================!
    !    The following variables will define the ensemble members. Currently 4 types of     !
@@ -468,7 +472,7 @@
    !      out...                                                                           !
    !=======================================================================================!
 
-   CLOSURE_TYPE = 'NC','NC','NC', ! Closure type to find the reference updraft mass flux:
+   CLOSURE_TYPE = 'NC','NC',      ! Closure type to find the reference updraft mass flux:
                                   ! PS1. Case insensitive - see table below:
       !----------------------------------------------------------------------------------!
       ! Type | Description                    | Deep | Shal | Reference Paper            !
@@ -594,7 +598,7 @@
    DTHCON   = 0.,            ! Constant sfc layer  temp grad for no soil
    DRTCON   = 0.,            ! Constant sfc layer moist grad for no soil
    
-   SOIL_MOIST = 'n',         ! n => Homogeneous (standard)
+   SOIL_MOIST = 'i',         ! n => Homogeneous (standard)
                              ! i,h,a => Heterogenous Soil Moist.Init.
                              !          with file.
                              ! i => INITIAL
@@ -608,12 +612,12 @@
                              ! l => Looking for 5 days old files,
                              !      and if not found again then stop.
 
-   USDATA_IN  = '/n/Moorcroft_Lab/Lab/data/brams_data/racci/smoist/GL_SM.GPCP.',  ! Soil Moisture File prefix
-   USMODEL_IN = '/n/data/moorcroft_lab/mlongo/EDBRAMS/amazon/surfa/lesmo',  ! File prefix with pre-calculated data by BRAMS
+   USDATA_IN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soilmoisture/GL_SM.GPCP.',  ! Soil Moisture File prefix
+   USMODEL_IN = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/surfa/lesmo',  ! File prefix with pre-calculated data by BRAMS
 
 
 
-   SLZ     = -10.00, -7.50, -5.00, -3.50, -2.50, -1.75, -1.25,
+   SLZ     =  -6.00, -5.00, -4.00, -3.00, -2.25, -1.50, -1.25,
               -1.00, -0.75, -0.50, -0.25, -0.16, -0.08,        ! Soil grid levels
    SLMSTR  =   0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,
                0.60,  0.60,  0.60,  0.60,  0.60,  0.60,        ! Initial soil moisture
@@ -629,7 +633,7 @@
  
 !--------- Eddy diffusion coefficient parameters -----------------------
  
-   IDIFFK  = 7,7,7,            ! K flag:
+   IDIFFK  = 7,7,7,          ! K flag:
                              !  1 - Horiz deform/Vert Mellor-Yamada
                              !  2 - Anisotropic deformormation
                              !      (horiz & vert differ)
@@ -650,9 +654,18 @@
    CSZ     = .35,.35,        ! Deformation vert. K's coefficient
    XKHKM   =  3., 3.,        ! Ratio of horiz K_h to K_m for deformation
    ZKHKM   =  3., 3.,        ! Ratio of vert K_h to K_m for deformation
-   AKMIN   =  1., 1.,        ! Ratio of minimum horizontal eddy
-                             !    viscosity coefficientto typical value
-                             !    from deformation K
+
+   !---------------------------------------------------------------------------!
+   !  The following values can be used to scale the horizontal eddy            !
+   !  viscosity coefficient to the typical value from deformation K (AKSCAL).  !
+   !---------------------------------------------------------------------------!
+   AKMIN   =  1.0, 1.0,        ! Minimum value for this scaling. 
+   AKMAX   =  0.0, 0.0,        ! Maximum value, for higher elevations. If you 
+                               !    want AKSCAL to be constant, set AKMAX to 0.
+   HGTMIN  = 1000.,1000.,      ! Height above which AKSCAL should start increas-
+                               !    ing from AKMIN to AKMAX
+   HGTMAX  = 3500.,3500.,      ! Height above which AKSCAL should remain 
+                               !    constant and equal to AKMAX.
 !------------------------------------------------------------------------------
  
 !----- Microphysics ------------------------------------------------------
@@ -699,12 +712,12 @@
 ! ED2 File output                                                         !
 !-------------------------------------------------------------------------!
  
-   IFOUTPUT  =  3,             ! Fast analysis (mostly polygon averages)
+   IFOUTPUT  =  0,             ! Fast analysis (mostly polygon averages)
                                ! Fast analysis files are synchronized
                                ! with BRAMS analysis write-outs
                                ! FRQANL
-   IDOUTPUT  =  3,             ! Daily means   (mostly polygon averages)
-   IMOUTPUT  =  3,             ! Monthly means (mostly polygon averages)
+   IDOUTPUT  =  0,             ! Daily means   (mostly polygon averages)
+   IMOUTPUT  =  0,             ! Monthly means (mostly polygon averages)
    IYOUTPUT  =  0,             ! Annual output
    ISOUTPUT  =  0,             ! State file    (contains the entire model core)
                                ! State files are synchronized with BRAMS
@@ -733,8 +746,8 @@
 !-------------------------------------------------------------------------!
 ! Analysis/history/restart file: path, prefix, settings                   !
 !-------------------------------------------------------------------------!
-   FFILOUT   = '/n/data/moorcroft_lab/mlongo/EDBRAMS/amazon/ecoss/amazon',       ! Fast-time scal analysis output prefix
-   SFILOUT   = '/n/data/moorcroft_lab/mlongo/EDBRAMS/amazon/ecoss/amazon',       ! Output prefix for the state variables
+   FFILOUT   = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/ecoss/wetamc',       ! Fast-time scal analysis output prefix
+   SFILOUT   = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/ecoss/wetamc',       ! Output prefix for the state variables
 
    IED_INIT_MODE   =   1,           !  0 - signifies a start from near-bare ground.
                                     !
@@ -774,7 +787,7 @@
    SOILSTATE_DB='./ined2/STW1996OCT.dat',
    SOILDEPTH_DB='./ined2/soil_depths.dat',
 
-   ISOILSTATEINIT = 0,  ! 0 -- use slmstr
+   ISOILSTATEINIT = 2,  ! 0 -- use slmstr
                         ! 1 -- read from file
                         ! 2 -- copy from LEAF-3 initialisation
                         !      (if you use ISOILSTATEINIT =2, prefer using
@@ -783,7 +796,7 @@
                         !       some soils that are too dry or too wet).
 
    ISOILDEPTHFLG  = 0,  ! 0 -- use NZG, SLZ for each grid cell
-                        ! 1 -- read file to get soil depth for each grid cell
+                       ! 1 -- read file to get soil depth for each grid cell
    
    ISOILBC        = 0,  ! Soil boundary condition at lowest soil level
                         ! 0 - Bedrock;
@@ -815,20 +828,20 @@
                          !  1 -- original ED1 default
 
    LAPSE_SCHEME    = 0,  ! This specifies the met lapse rate scheme:
-			 !  0 -- lapse rates off
-			 !  1 -- phenomenological, global
-			 !  2 -- phenomenological, local (not yet implemented)
-			 !  2 -- mechanistic(not yet implemented)
+                         !  0 -- lapse rates off
+                         !  1 -- phenomenological, global
+                         !  2 -- phenomenological, local (not yet implemented)
+                         !  2 -- mechanistic(not yet implemented)
   
    CROWN_MOD       = 0,  ! Specifies how tree crowns are represent in the 
                          ! canopy radiation model                    
                          !  0  - ED1 default (continuous horizontal) 
                          !  1  - finite radius mixing model (Dietze) 
 
-   N_PLANT_LIM     = 1,  ! Determines whether (1) or not (0) plants can
+   N_PLANT_LIM     = 0,  ! Determines whether (1) or not (0) plants can
                          ! be limited by nitrogen
 
-   N_DECOMP_LIM    = 1,  ! Determines whether (1) or not (0) decomposition
+   N_DECOMP_LIM    = 0,  ! Determines whether (1) or not (0) decomposition
                          ! can be limited by nitrogen
 
    INCLUDE_FIRE    = 1,  ! Determines whether (1) or not (0) simulation can have fires 
@@ -849,6 +862,10 @@
    ! 6 - northern pines              |                                  !
    !--------------------------------------------------------------------!
    INCLUDE_THESE_PFT = 1,2,3,4,        ! List of PFTs to be included 
+   
+   ! The STOCK variables set up land use PFTs (used only when ianth_disturb=1)
+   AGRI_STOCK        = 1,              ! PFT assigned for agriculture 
+   PLANTATION_STOCK  = 3,              ! PFT assigned for forest plantation
 
 
    PFT_1ST_CHECK = 0, ! What should I do when I find a cohort with an unexpected PFT 
@@ -913,7 +930,7 @@
 !-------------------------------------------------------------------------!
 
    INITIAL_CO2 = 370., ! Initial value for CO2 in case no CO2 is provided at the 
-                      ! meteorological driver dataset
+                       ! meteorological driver dataset
 
 
 !----- For phenology prescribed from observations, we also need to recycle over years. ----!
@@ -1053,13 +1070,13 @@
 
 ! Input data file prefixes
 
-   IAPR    = '/n/Moorcroft_Lab/Lab/data/brams_data/ecmwf/hires2001/dp-p', ! Archived 1st guess   file name
+   IAPR    = '/n/Moorcroft_Lab/Lab/data/brams_data/wetamc/ecmwf/1stguess/e1st', ! Archived 1st guess   file name
    IARAWI  = '/n/Moorcroft_Lab/Lab/data/brams_data/wetamc/radio/ir',       ! Archived rawindsonde file name
    IASRFCE = '/n/Moorcroft_Lab/Lab/data/brams_data/wetamc/weasta/es',  ! Archived surface obs file name
 
 ! File names and dispose flags 
 
-   VARPFX    = '/n/data/moorcroft_lab/mlongo/EDBRAMS/amazon/isean/ecmwf',
+   VARPFX    = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/isean/ecmwf',
    IOFLGISZ  = 0,           ! Isen-sigz file flag: 0 = no write, 1 = write
    IOFLGVAR  = 1,           ! Var file flag: 0 = no write, 1 = write
 
