@@ -141,6 +141,8 @@ Module ename_coms
       ! Huge(1) will initialize with the maximum representable number, which 
       !   will be ignored by ED, which include pfts that are <= n_pft only.
       integer, dimension(n_pft) :: include_these_pft = (/(huge(1),i=1,n_pft)/) 
+      integer                   :: agri_stock = 0
+      integer                   :: plantation_stock = 0
       integer                   :: pft_1st_check = 0
       
       real              :: treefall_disturbance_rate = 0.0

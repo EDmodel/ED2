@@ -38,6 +38,27 @@ module rk4_coms
    real   , parameter :: pshrnk = -0.25
    real   , parameter :: errcon = 1.89e-4
 
+   !----- Constants used in rk4_derivs ----------------------------------------------------!
+   real   , parameter :: leaf_h2o_thick = 0.11 ! mm
+   logical, parameter :: debug  = .true.       ! Verbose output for debug (T|F)
+   real   , parameter :: toocold = 193.15      ! Minimum temperature for sat., -80°C
+   real   , parameter :: toohot  = 353.15      ! Maximum temperature for sat.,  80°C
+   real   , parameter :: lai_to_cover = 1.5    ! Canopies with LAI less than this number 
+                                               !    are assumed to be open, ie, some 
+                                               !    fraction of the rain-drops can reach
+                                               !    the soil/litter layer unimpeded.
+   real   , parameter :: evap_area_one = 1.2   ! Evaporation are factor (1 side of leaves 
+                                               !    + branches + stems) 
+   real   , parameter :: evap_area_two = 2.2   ! Evaporation are factor (2 sides of leaves 
+                                               !    + branches + stems) 
+   !---------------------------------------------------------------------------------------!
+   
+   !---------------------------------------------------------------------------------------!
+   !    This is the minimum heat capacity we attempt to prognose leaf internal energy.     !
+   ! Below  this value, the fluctuations could become too large.                           !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: hcapveg_min=60.
+
    !----- These are all RK4 integrator factors. -------------------------------------------!
    real, parameter :: a2  = 0.2
    real, parameter :: a3  = 0.3
@@ -88,14 +109,18 @@ module rk4_coms
    !---------------------------------------------------------------------------------------!
    real, parameter :: rk4max_can_temp  = 341.00  ! ~10C hotter than record in El Azizia;
    real, parameter :: rk4min_can_temp  = 184.00  ! ~10C colder than record in Vostok;
-   real, parameter :: rk4min_can_shv   = 0.0     ! Horribly dry
-   real, parameter :: rk4max_can_shv   = 1.0     ! No dry air left, it's water vapour only.
+   real, parameter :: rk4min_can_shv   = 1.e-8   ! Horribly dry
+   real, parameter :: rk4max_can_shv   = 0.08    ! This is equivalent to a dewpoint of 48C.
+                                                 !  at 1000hPa, or if during the record
+                                                 !  at El Azizia they had relative humidity
+                                                 !  of 60%... Very comfortable!
 
-   real, parameter :: rk4max_soil_temp = 351.00  ! ~10C hotter than rk4max_can_temp
+   real, parameter :: rk4max_soil_temp = 341.00  ! ~10C hotter than rk4max_can_temp
    real, parameter :: rk4min_soil_temp = 184.00  ! Same as rk4min_soil_temp
 
-   real, parameter :: rk4max_veg_temp  = 361.00  ! ~20C hotter than rk4max_can_temp. Your
-                                                 !      steamed greens are served.
+   real, parameter :: rk4max_veg_temp  = 341.00  ! ~10C hotter than rk4max_can_temp.
+   real, parameter :: rk4min_veg_water = -1.e-3  ! Minimum leaf water allowed. This will
+                                                 !  be multiplied by LAI
 
    real, parameter :: rk4min_sfcw_temp = 193.15  ! -80C
    real, parameter :: rk4min_sfcw_mass = -1.e-3  ! ???? Minimum water mass allowed.

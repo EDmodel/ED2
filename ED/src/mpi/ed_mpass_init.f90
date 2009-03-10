@@ -43,12 +43,12 @@ subroutine ed_masterput_processid(nproc,headnode_num,masterworks,par_run)
   machs(machsize)=0  !Thats me!!
 
   do nm=1,nmachs
-    call MPI_Send(mainnum,1,MPI_INTEGER,machnum(nm),11,MPI_COMM_WORLD,ierr)
-    call MPI_Send(machnum(nm),1,MPI_INTEGER,machnum(nm),12,MPI_COMM_WORLD,ierr)
-    call MPI_Send(nm,1,MPI_INTEGER,machnum(nm),13,MPI_COMM_WORLD,ierr)
-    call MPI_Send(nmachs,1,MPI_INTEGER,machnum(nm),14,MPI_COMM_WORLD,ierr)
-    call MPI_Send(machnum,nmachs,MPI_INTEGER,machnum(nm),15,MPI_COMM_WORLD,ierr)
-    call MPI_Send(machsize,1,MPI_INTEGER,machnum(nm),16,MPI_COMM_WORLD,ierr)
+    call MPI_Send(mainnum,1,MPI_INTEGER,machnum(nm),311,MPI_COMM_WORLD,ierr)
+    call MPI_Send(machnum(nm),1,MPI_INTEGER,machnum(nm),312,MPI_COMM_WORLD,ierr)
+    call MPI_Send(nm,1,MPI_INTEGER,machnum(nm),313,MPI_COMM_WORLD,ierr)
+    call MPI_Send(nmachs,1,MPI_INTEGER,machnum(nm),314,MPI_COMM_WORLD,ierr)
+    call MPI_Send(machnum,nmachs,MPI_INTEGER,machnum(nm),315,MPI_COMM_WORLD,ierr)
+    call MPI_Send(machsize,1,MPI_INTEGER,machnum(nm),316,MPI_COMM_WORLD,ierr)
   enddo
 
 
@@ -95,7 +95,7 @@ subroutine ed_masterput_nl(par_run)
    use physiology_coms, only: istoma_scheme,n_plant_lim
    use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath,repro_scheme
    use decomp_coms,     only: n_decomp_lim
-   use pft_coms,        only: include_these_pft,pft_1st_check
+   use pft_coms,        only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
    use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
    use optimiz_coms,    only: ioptinpt
    use canopy_radiation_coms, only : crown_mod
@@ -214,6 +214,8 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(include_fire,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ianth_disturb,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_these_pft,n_pft,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(agri_stock,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(plantation_stock,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(pft_1st_check,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(treefall_disturbance_rate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -488,21 +490,19 @@ subroutine ed_masterput_worklist_info(par_run)
            
            allocate(rscratch(npoly),iscratch(npoly))
 
+           mpiid=maxmach*(ifm-1)+nm
+
            rscratch(1:npoly) = work_e(ifm)%vec_glon(offset+1:offset+npoly)
-           mpiid=0000+maxmach*(ifm-1)+nm
-           call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+           call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),1300000+mpiid,MPI_COMM_WORLD,ierr)
   
            rscratch(1:npoly) = work_e(ifm)%vec_glat(offset+1:offset+npoly)
-           mpiid=10000+maxmach*(ifm-1)+nm
-           call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+           call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),1400000+mpiid,MPI_COMM_WORLD,ierr)
            
            rscratch(1:npoly) = work_e(ifm)%vec_landfrac(offset+1:offset+npoly)
-           mpiid=20000+maxmach*(ifm-1)+nm
-           call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+           call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),1500000+mpiid,MPI_COMM_WORLD,ierr)
            
            iscratch(1:npoly) = work_e(ifm)%vec_ntext(offset+1:offset+npoly)
-           mpiid=30000+maxmach*(ifm-1)+nm
-           call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+           call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),1600000+mpiid,MPI_COMM_WORLD,ierr)
 
            deallocate(rscratch,iscratch)
 
@@ -595,12 +595,12 @@ subroutine ed_nodeget_processid(init)
 
   if(init == 1) then
      
-     call MPI_Recv(master_num,1,MPI_INTEGER,0,11,MPI_COMM_WORLD,status,ierr)
-     call MPI_Recv(mchnum,1,MPI_INTEGER,0,12,MPI_COMM_WORLD,status,ierr)
-     call MPI_Recv(mynum,1,MPI_INTEGER,0,13,MPI_COMM_WORLD,status,ierr)
-     call MPI_Recv(nmachs,1,MPI_INTEGER,0,14,MPI_COMM_WORLD,status,ierr)
-     call MPI_Recv(machs,nmachs,MPI_INTEGER,0,15,MPI_COMM_WORLD,status,ierr)
-     call MPI_Recv(nnodetot,1,MPI_INTEGER,0,16,MPI_COMM_WORLD,status,ierr)
+     call MPI_Recv(master_num,1,MPI_INTEGER,0,311,MPI_COMM_WORLD,status,ierr)
+     call MPI_Recv(mchnum,1,MPI_INTEGER,0,312,MPI_COMM_WORLD,status,ierr)
+     call MPI_Recv(mynum,1,MPI_INTEGER,0,313,MPI_COMM_WORLD,status,ierr)
+     call MPI_Recv(nmachs,1,MPI_INTEGER,0,314,MPI_COMM_WORLD,status,ierr)
+     call MPI_Recv(machs,nmachs,MPI_INTEGER,0,315,MPI_COMM_WORLD,status,ierr)
+     call MPI_Recv(nnodetot,1,MPI_INTEGER,0,316,MPI_COMM_WORLD,status,ierr)
      
      recvnum = mynum-1
      sendnum = mynum+1
@@ -651,7 +651,7 @@ subroutine ed_nodeget_nl
    use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
    use optimiz_coms,    only: ioptinpt
    use ed_misc_coms,only: attach_metadata
-   use pft_coms,        only: include_these_pft,pft_1st_check
+   use pft_coms,        only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
    use canopy_radiation_coms, only: crown_mod
 
    implicit none
@@ -766,6 +766,8 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(include_fire,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ianth_disturb,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_these_pft,n_pft,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(agri_stock,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(plantation_stock,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(pft_1st_check,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(treefall_disturbance_rate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -948,21 +950,19 @@ subroutine ed_nodeget_worklist_info
      allocate(work_e(ifm)%vec_landfrac(npolygons))
      allocate(work_e(ifm)%vec_ntext(npolygons))
 
-     mpiid=0000+maxmach*(ifm-1)+mynum
+     mpiid=maxmach*(ifm-1)+mynum
+
      call MPI_Recv(work_e(ifm)%vec_glon(1:npolygons),npolygons, &
-          MPI_REAL,0,mpiid,MPI_COMM_WORLD,status,ierr)
+          MPI_REAL,0,1300000+mpiid,MPI_COMM_WORLD,status,ierr)
      
-     mpiid=10000+maxmach*(ifm-1)+mynum
      call MPI_Recv(work_e(ifm)%vec_glat(1:npolygons),npolygons, &
-          MPI_REAL,0,mpiid,MPI_COMM_WORLD,status,ierr)
+          MPI_REAL,0,1400000+mpiid,MPI_COMM_WORLD,status,ierr)
      
-     mpiid=20000+maxmach*(ifm-1)+mynum
      call MPI_Recv(work_e(ifm)%vec_landfrac(1:npolygons),npolygons, &
-          MPI_REAL,0,mpiid,MPI_COMM_WORLD,status,ierr)
+          MPI_REAL,0,1500000+mpiid,MPI_COMM_WORLD,status,ierr)
      
-     mpiid=30000+maxmach*(ifm-1)+mynum
      call MPI_Recv(work_e(ifm)%vec_ntext(1:npolygons),npolygons, &
-          MPI_INTEGER,0,mpiid,MPI_COMM_WORLD,status,ierr)
+          MPI_INTEGER,0,1600000+mpiid,MPI_COMM_WORLD,status,ierr)
 
      
   end do

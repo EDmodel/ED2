@@ -16,8 +16,8 @@
 ! may not be the definite level, it may change during the search for the level of free     !
 ! convection.                                                                              !
 !------------------------------------------------------------------------------------------!
-subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,tke,qice,qliq,theiv_cup   &
-                               ,ierr,k22)
+subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,wwind,sigw,tke,qice,qliq  &
+                               ,theiv_cup,ierr,k22)
 
    implicit none
    integer               , intent(in)     :: mkx,mgmzp ! Grid dimensions
@@ -26,6 +26,8 @@ subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,tke,qice,qliq,t
    integer               , intent(in)     :: kbmax     ! Maximum allowed level for updraft
    !----- Variables at the model levels ---------------------------------------------------!
    real, dimension(mgmzp), intent(in)     :: z         ! Height                    [     m]
+   real, dimension(mgmzp), intent(in)     :: wwind     ! Vertical velocity         [   m/s]
+   real, dimension(mgmzp), intent(in)     :: sigw      ! wwind std. deviation      [   m/s]
    real, dimension(mgmzp), intent(in)     :: tke       ! Turbulent Kinetic Energy  [  J/kg]
    real, dimension(mgmzp), intent(in)     :: qliq      ! Liquid water mixing ratio [ kg/kg]
    real, dimension(mgmzp), intent(in)     :: qice      ! Ice mixing ratio          [ kg/kg]
@@ -34,6 +36,9 @@ subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,tke,qice,qliq,t
    !----- Output and sort of output variables ---------------------------------------------!
    integer               , intent(inout)  :: ierr      ! Error flag
    integer               , intent(out)    :: k22       ! Updraft origin level
+   !----- Local variable ------------------------------------------------------------------!
+   real, dimension(mgmzp)                 :: wboth     ! Combination of w and sigw [   m/s]
+   integer                                :: kpblloc   ! Local PBL top level       [   ---]
    !----- Constant. Avoding using too levels too close to the surface ---------------------!
    integer               , parameter      :: kstart=2  ! Minimum level
    !---------------------------------------------------------------------------------------!
@@ -49,6 +54,8 @@ subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,tke,qice,qliq,t
    !    c. The user wants to use the maximum thetae_iv as the first guess, for maximum     !
    !       instability.                                                                    !
    !    d. The user wants to use the most turbulent level as the updraft origin.           !
+   !    e. The user wants to use the maximum w+tke, which is the most likely to reach the  !
+   !       LFC.                                                                            !
    !---------------------------------------------------------------------------------------!
    select case (iupmethod)
    case (1) ! Maximum Thetae_iv
@@ -61,6 +68,19 @@ subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,tke,qice,qliq,t
       end if
    case (3) ! Most turbulent
       k22 = (kstart-1) + maxloc(tke(kstart:kbmax),dim=1)
+   case (4) ! Combined mechanical forcing and turbulent
+      if (kpbl /= 0) then ! Nakanishi and Niino is used, sigw is available
+         wboth = wwind + sigw
+         k22 = (kstart-1) + maxloc(wboth(kstart:kpbl),dim=1)
+      else ! Estimate sigw as the square root of 2 TKE
+         call grell_find_pbl_height(mkx,mgmzp,z,tke,qliq,qice,kpblloc)
+         wboth = wwind + sqrt(2.*tke)
+         if (kpblloc > kstart) then
+            k22 = (kstart-1) + maxloc(wboth(kstart:kpblloc),dim=1)
+         else 
+            k22 = kstart
+         end if
+      end if
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -177,13 +197,11 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
          ierr = 3
          return
       end if
-      
+
       !----- No entrainment below the LFC, so theiv, thil, and qtot shouldn't change ------!
       theivu_cld(kbcon) = theiv_cup(k22)
       thilu_cld (kbcon) = thil_cup (k22)
       qtotu_cld (kbcon) = qtot_cup (k22)
-      qliqu_cld (kbcon) = qliqu_cld(kbcon-1) !----- For faster convergence ----------------!
-      qiceu_cld (kbcon) = qiceu_cld(kbcon-1) !----- For faster convergence ----------------!
       !------ Finding a consistent set of temperature and mixing ratios -------------------!
       call thil2tqall(thilu_cld(kbcon),exner_cup(kbcon),p_cup(kbcon),qtotu_cld(kbcon)      &
                      ,qliqu_cld(kbcon),qiceu_cld(kbcon),tu_cld(kbcon),qvapu_cld(kbcon)     &
@@ -708,7 +726,7 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
             tubis     = tu_cld(k) !---- Using a scratch to avoid sending td_cld too far ---!
             funz      = funa
             bisection = .false.
-         !----- Just to enter at least once. The 1st time qtotdz=qtotda-2*delta -----------!
+            !----- Just to enter at least once. The 1st time qtotdz=qtotda-2*delta --------!
             zgssloop: do it=1,maxfpo
                qtotuz = max(toodry,qtotua + real((-1)**it * (it+3)/2) * delta)
 

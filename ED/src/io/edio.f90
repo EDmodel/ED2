@@ -123,9 +123,9 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
 
 
   if(history_time) then
-     
-     call h5_output('HIST')
-     
+     if (isoutput /= 0) then
+        call h5_output('HIST')
+     end if
   endif
 
 
@@ -669,13 +669,13 @@ subroutine print_array(ifm,cgrid)
 
                  do nm = 1,nnodetot-1
 
-                    call MPI_Recv(ptr_recv,1,MPI_LOGICAL,machs(nm),31,MPI_COMM_WORLD,status,ierr)
+                    call MPI_Recv(ptr_recv,1,MPI_LOGICAL,machs(nm),120,MPI_COMM_WORLD,status,ierr)
 
                     if (ptr_recv) then
-                       call MPI_Recv(mast_idmin,1,MPI_INTEGER,machs(nm),32,MPI_COMM_WORLD,status,ierr)
-                       call MPI_Recv(mast_idmax,1,MPI_INTEGER,machs(nm),33,MPI_COMM_WORLD,status,ierr)
+                       call MPI_Recv(mast_idmin,1,MPI_INTEGER,machs(nm),121,MPI_COMM_WORLD,status,ierr)
+                       call MPI_Recv(mast_idmax,1,MPI_INTEGER,machs(nm),122,MPI_COMM_WORLD,status,ierr)
                        call MPI_Recv(pvar_g(mast_idmin:mast_idmax),mast_idmax-mast_idmin+1,MPI_REAL,&
-                            machs(nm),34,MPI_COMM_WORLD,status,ierr)
+                            machs(nm),123,MPI_COMM_WORLD,status,ierr)
                     end if
                  enddo
               endif
@@ -699,7 +699,7 @@ subroutine print_array(ifm,cgrid)
            pvar_l =-99.9
            
            ! Set the blocking recieve to allow ordering, start with machine 1
-           if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,212,MPI_COMM_WORLD,status,ierr)
+           if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,93,MPI_COMM_WORLD,status,ierr)
            
            ! Cycle through this node's pointers for the current variable.  If the index
            ! falls within the printable range. Save that pointer to a local array.
@@ -767,18 +767,18 @@ subroutine print_array(ifm,cgrid)
 
               if (mynum /= nnodetot) then
 
-                 call MPI_Send(ptr_send,1,MPI_LOGICAL,machs(nnodetot),31,MPI_COMM_WORLD,ierr)
+                 call MPI_Send(ptr_send,1,MPI_LOGICAL,machs(nnodetot),120,MPI_COMM_WORLD,ierr)
                  if (ptr_send) then
-                    call MPI_Send(node_idmin,1,MPI_INTEGER,machs(nnodetot),32,MPI_COMM_WORLD,ierr)
-                    call MPI_Send(node_idmax,1,MPI_INTEGER,machs(nnodetot),33,MPI_COMM_WORLD,ierr)
+                    call MPI_Send(node_idmin,1,MPI_INTEGER,machs(nnodetot),121,MPI_COMM_WORLD,ierr)
+                    call MPI_Send(node_idmax,1,MPI_INTEGER,machs(nnodetot),122,MPI_COMM_WORLD,ierr)
                     call MPI_Send(pvar_l(node_idmin:node_idmax),node_idmax-node_idmin+1, &
-                         MPI_REAL,machs(nnodetot),34,MPI_COMM_WORLD,ierr)
+                         MPI_REAL,machs(nnodetot),123,MPI_COMM_WORLD,ierr)
                  end if
                  
               
                  ! When this node is finished, send the blocking MPI_Send to the next machine
 
-                 call MPI_Send(ping,1,MPI_INTEGER,sendnum,212,MPI_COMM_WORLD,ierr)
+                 call MPI_Send(ping,1,MPI_INTEGER,sendnum,93,MPI_COMM_WORLD,ierr)
                  
                  ! If this is root, then just copy the array to the global
               else

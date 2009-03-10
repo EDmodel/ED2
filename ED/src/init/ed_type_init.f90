@@ -225,7 +225,8 @@ subroutine init_ed_site_vars_array(cpoly, lat)
 
   use ed_state_vars,only:polygontype
   use max_dims, only: n_pft, n_dbh, n_dist_types 
-  use grid_coms,     only: nzs, nzg
+  use pft_coms, only: agri_stock,plantation_stock
+  use grid_coms, only: nzs, nzg
 
   implicit none
 
@@ -240,6 +241,7 @@ subroutine init_ed_site_vars_array(cpoly, lat)
 !  cpoly%basal_area_recruit(1:n_pft, 1:n_dbh,:) = 0.0
 
   cpoly%agb(1:n_pft, 1:n_dbh,:) = 0.0
+  cpoly%agb_lu(1:n_dist_types,:) = 0.0
   cpoly%agb_growth(1:n_pft, 1:n_dbh,:) = 0.0
   cpoly%agb_mort(1:n_pft, 1:n_dbh,:) = 0.0
   cpoly%agb_cut(1:n_pft, 1:n_dbh,:) = 0.0
@@ -248,7 +250,9 @@ subroutine init_ed_site_vars_array(cpoly, lat)
   cpoly%green_leaf_factor(1:n_pft,:) = 1.0
   cpoly%leaf_aging_factor(1:n_pft,:) = 1.0
 
-  cpoly%min_monthly_temp(:) = 0.0
+  ! Initialising minimum monthly temperature with a very large value, to be reduced
+  ! as the canopy temperature is updated.
+  cpoly%min_monthly_temp(:) = huge(1.)
 
  ! cpoly%mm_gpp(:) = 0.0
  ! cpoly%mm_plresp(:) = 0.0
@@ -265,19 +269,14 @@ subroutine init_ed_site_vars_array(cpoly, lat)
 
   cpoly%agri_stocking_density(:) = 10.0
 
-!KIM - using latitude for c3/c4 crops may not always work.  
-!    - e.g., a lot of corn (C4 crop) grows in the US Midwest.
-!    - agri_stocking_pft would better be sepcified according to the need.
-!    - possibly in ED2IN?
+!KIM - 
 !    - anyway, this part should be more elaborate for the case 
 !    - that we have different crops/pastures.
-  if(lat > 40.0)then
-     cpoly%agri_stocking_pft(:) = 12
-     cpoly%plantation_stocking_pft(:) = 6
-  else
-     cpoly%agri_stocking_pft(:) = 14
-     cpoly%plantation_stocking_pft(:) = 7
-  endif
+! It's now defined in ED2IN, but it assumes only one PFT. It is probably not the
+! ideal solution for regional runs...
+  cpoly%agri_stocking_pft(:) = agri_stock
+  cpoly%plantation_stocking_pft(:) = plantation_stock
+
   cpoly%plantation_stocking_density(:) = 4.0
 
   cpoly%primary_harvest_memory(:) = 0.0

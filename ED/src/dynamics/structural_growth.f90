@@ -39,7 +39,7 @@ subroutine structural_growth_ar(cgrid, month)
   integer :: update_month
   real :: cb_act
   real :: cb_max
-  integer :: imonth
+  integer :: imonth,ilu
   real :: old_hcapveg
 
  
@@ -51,6 +51,7 @@ subroutine structural_growth_ar(cgrid, month)
      ! Initialization
      cpoly%basal_area(:,:,:) = 0.0
      cpoly%agb(:,:,:) = 0.0
+     cpoly%agb_lu(:,:) = 0.0
      ! cs%basal_area_growth  = 0.0
      ! cpoly%agb_growth  = 0.0
      ! cpoly%basal_area_mort = 0.0
@@ -61,7 +62,7 @@ subroutine structural_growth_ar(cgrid, month)
         csite => cpoly%site(isi)
 
         do ipa=1,csite%npatches
-
+           ilu = csite%dist_type(ipa)
            cpatch => csite%patch(ipa)
 
            do ico = 1,cpatch%ncohorts
@@ -149,11 +150,12 @@ subroutine structural_growth_ar(cgrid, month)
               !      difference in the heat capacity to update it.                         !
               !----------------------------------------------------------------------------!
               old_hcapveg = cpatch%hcapveg(ico)
-              cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)       &
-                                                ,cpatch%nplant(ico),cpatch%pft(ico))
-              call update_veg_energy_cweh(cpatch%veg_energy(ico),cpatch%veg_temp(ico)      &
-                                         ,cpatch%veg_water(ico),old_hcapveg                &
-                                         ,cpatch%hcapveg(ico))
+              cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%nplant(ico)      &
+                                                ,cpatch%lai(ico),cpatch%pft(ico)           &
+                                                ,cpatch%phenology_status(ico))
+              call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
+              !----- Likewise, update the patch heat capacity -----------------------------!
+              csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
               !----------------------------------------------------------------------------!
 
 
@@ -177,11 +179,12 @@ subroutine structural_growth_ar(cgrid, month)
               endif
 
               ! Update interesting output quantities
-              call update_vital_rates_ar(cpatch,ico, dbh_in, bdead_in,   &
+              call update_vital_rates_ar(cpatch,ico, ilu, dbh_in, bdead_in,   &
                    balive_in, hite_in, bstorage_in, nplant_in, mort_litter,  &
                    csite%area(ipa), cpoly%basal_area(:,:,isi), cpoly%agb(:,:,isi),  &
-                   cpoly%basal_area_growth(:,:,isi), cpoly%agb_growth(:,:,isi),   &
-                   cpoly%basal_area_mort(:,:,isi), cpoly%agb_mort(:,:,isi))
+                   cpoly%agb_lu(:,isi),cpoly%basal_area_growth(:,:,isi), &
+                   cpoly%agb_growth(:,:,isi),cpoly%basal_area_mort(:,:,isi), &
+                   cpoly%agb_mort(:,:,isi))
 
            enddo
            
@@ -291,12 +294,12 @@ end subroutine update_derived_cohort_props_ar
 
 !=====================================================================
 
-subroutine update_vital_rates_ar(cpatch,ico, dbh_in, bdead_in, balive_in, hite_in,  &
-     bstorage_in, nplant_in, mort_litter, area, basal_area, agb,  &
+subroutine update_vital_rates_ar(cpatch,ico, ilu, dbh_in, bdead_in, balive_in, hite_in,  &
+     bstorage_in, nplant_in, mort_litter, area, basal_area, agb, agb_lu, &
      basal_area_growth, agb_growth, basal_area_mort, agb_mort)
    
   use ed_state_vars,only:patchtype
-  use max_dims, only: n_pft, n_dbh
+  use max_dims, only: n_pft, n_dbh, n_dist_types
   use consts_coms, only: pi1
   use pft_coms, only: agf_bs,q,qsw
   use allometry, only: ed_biomass
@@ -311,12 +314,13 @@ subroutine update_vital_rates_ar(cpatch,ico, dbh_in, bdead_in, balive_in, hite_i
   real, intent(in) :: mort_litter  
   
   type(patchtype),target :: cpatch
-  integer :: ico
+  integer,intent(in) :: ico,ilu
 
   integer :: bdbh
   real, intent(in) :: area
   real, dimension(n_pft, n_dbh) :: basal_area
   real, dimension(n_pft, n_dbh) :: agb
+  real, dimension(n_dist_types) :: agb_lu
   real, dimension(n_pft, n_dbh) :: basal_area_growth
   real, dimension(n_pft, n_dbh) :: agb_growth
   real, dimension(n_pft, n_dbh) :: basal_area_mort
@@ -330,6 +334,10 @@ subroutine update_vital_rates_ar(cpatch,ico, dbh_in, bdead_in, balive_in, hite_i
        pi1 * 0.25 * cpatch%dbh(ico)**2
 
   agb(cpatch%pft(ico), bdbh) = agb(cpatch%pft(ico), bdbh) + area * cpatch%nplant(ico) * 10.0 * &
+       ed_biomass(cpatch%bdead(ico), cpatch%balive(ico), cpatch%bleaf(ico), cpatch%pft(ico), &
+       cpatch%hite(ico), cpatch%bstorage(ico)) 
+
+  agb_lu(ilu) = agb_lu(ilu) + area * cpatch%nplant(ico) * 10.0 * &
        ed_biomass(cpatch%bdead(ico), cpatch%balive(ico), cpatch%bleaf(ico), cpatch%pft(ico), &
        cpatch%hite(ico), cpatch%bstorage(ico)) 
 

@@ -1,124 +1,9 @@
-!------------------------------------------------------------------------------------------!
+!==========================================================================================!
+!==========================================================================================!
 !    Subroutines based on the RAMS node decomposition. The main difference between the     !
 ! original code and this one is that when we split the domain we need to consider whether  !
 ! the polygon will fall on land or water. The water ones will be removed, so this should   !
 ! be taken into account for the standalone version.                                        !
-!------------------------------------------------------------------------------------------!
-subroutine ed_node_decomp(init,standalone,masterworks)
-
-  use grid_coms,only: ngrids,nnxp,nnyp
-  use ed_node_coms, only: mmxp,mmyp,mia,miz,mja,mjz,mi0,mj0,mibcon
-  use ed_para_coms
-  use mem_sites,only : n_ed_region
-  use ed_work_vars,only : work_e,ed_alloc_work,ed_nullify_work
-  use soil_coms, only: isoilflg
-
-  implicit none
-
-  integer , intent(in) :: init
-  logical , intent(in) :: standalone,masterworks
-  integer :: ngr,nsiz &
-       ,ntotmachs
-
-  !    This is a logical flag to test wheter the master should also do some
-  ! processing
-
-  if (masterworks) then
-    ntotmachs=nmachs+1
-  else
-    ntotmachs=nmachs
-  end if
-    
-  allocate(work_e(ngrids))
-
-  !      Decompose all grids into subdomains
-  
-  do ngr = 1,ngrids
-    ! SOI grids always have one point only. Since the structure will be sent
-    ! I am filling the structures. It is just 4 extra numbers that will reach
-    ! the other side anyway
-
-     mmxp(ngr) = nnxp(ngr)
-     mmyp(ngr) = nnyp(ngr)
-
-     call ed_nullify_work(work_e(ngr))
-     call ed_alloc_work(work_e(ngr),nnxp(ngr),nnyp(ngr))
-  enddo
-
-  call get_grid
-
-  do ngr = 1,ngrids!n_ed_region
-
-     ! Obtain estimates of the fraction of computational time (work) required
-     ! for each column in the region of the domain.
-     
-     call get_work(ngr,mmxp(ngr),mmyp(ngr))
-     
-     call ed_parvec_work(ngr,mmxp(ngr),mmyp(ngr),work_e(ngr)%land)
-     
-  enddo
-
-  do ngr=n_ed_region+1,ngrids
-     call ed_newgrid(ngr)
-     work_e(ngr)%work(1,1)=1.
-     work_e(ngr)%land(1,1)=.true.
-
-     call ed_parvec_work(ngr,mmxp(ngr),mmyp(ngr),work_e(ngr)%land)
-
-  end do
-
-
-  return
-end subroutine ed_node_decomp
-
-!==========================================================================================!
-!==========================================================================================!
-
-subroutine get_grid
-
-  use mem_sites, only: grid_type,grid_res,n_ed_region &
-                      ,soi_lat,soi_lon,ed_reg_lonmin,ed_reg_latmin
-
-  use grid_coms, only: ngrids,nnxp,nnyp,nstratx,nstraty
-  use ed_work_vars, only: work_e
-  implicit none
-
-  integer :: ifm,i,j
-
-  select case (grid_type)
-  case (0)          ! lat-lon type grid
-     do ifm=1,n_ed_region
-        do i=1,nnxp(ifm)
-           do j=1,nnyp(ifm)
-              work_e(ifm)%glon(i,j) = ed_reg_lonmin(ifm) + (float(i) - 0.5) * grid_res/real(nstratx(ifm))
-              work_e(ifm)%glat(i,j) = ed_reg_latmin(ifm) + (float(j) - 0.5) * grid_res/real(nstraty(ifm))
-           end do
-        end do
-     end do
-  case (1) ! polar-stereo type grid
-     call ed_gridset(1)
-     do ifm=1,n_ed_region
-        call ed_newgrid(ifm)
-        call ed_polarst(nnxp(ifm),nnyp(ifm),work_e(ifm)%glat,work_e(ifm)%glon)
-     end do
-     
-  case default
-     !  Eventually we'll have polygons, but not yet.
-     call fatal_error('Invalid grid_type in ED_grid_setup.' &
-          ,'get_grid','ed_para_init.f90')
-  end select
-  do ifm=n_ed_region+1,ngrids
-     do i=1,nnxp(ifm)
-        do j=1,nnyp(ifm)
-           work_e(ifm)%glon(i,j)=soi_lon(ifm-n_ed_region)
-           work_e(ifm)%glat(i,j)=soi_lat(ifm-n_ed_region)
-        end do
-     end do
-  end do
-
-
-  return
-end subroutine get_grid
 !==========================================================================================!
 !==========================================================================================!
 
@@ -129,16 +14,18 @@ end subroutine get_grid
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine get_work(ifm,nxp,nyp)
+subroutine edcp_get_work(ifm,mxp,myp,iwest,ieast,jsouth,jnorth)
 
   use ed_work_vars,only : work_e
-  use soil_coms, only: veg_database,soil_database,isoilflg,nslcon
+  use soil_coms, only: veg_database,soil_database,nslcon
+  use io_params, only: b_isoilflg => isoilflg & ! intent(in)
+                     , b_ivegtflg => ivegtflg ! ! intent(in)
   use mem_sites,only:n_soi
 
   implicit none
-  integer, intent(in) :: ifm
+  integer, intent(in) :: ifm,iwest,ieast,jsouth,jnorth
   integer :: npoly
-  integer, intent(in) :: nxp,nyp
+  integer, intent(in) :: mxp,myp
 
   real, allocatable, dimension(:,:) :: lat_list
   real, allocatable, dimension(:,:) :: lon_list
@@ -150,7 +37,7 @@ subroutine get_work(ifm,nxp,nyp)
   integer,parameter :: min_land_pcent = 25
   real,   parameter :: soi_edge_deg = 0.05   ! 100th of a degree, about 5.5 km at the equator.
 
-  npoly = nxp*nyp
+  npoly = mxp*myp
 
   allocate(lat_list(3,npoly))
   allocate(lon_list(3,npoly))
@@ -164,8 +51,8 @@ subroutine get_work(ifm,nxp,nyp)
   if (n_soi.gt.0 .and. ifm.le.n_soi) then
 
      ipy = 0
-     do i=1,nxp
-        do j = 1,nyp
+     do i=1,mxp
+        do j = 1,myp
            ipy = ipy + 1
            
            lat_list(1,ipy) = work_e(ifm)%glat(i,j)
@@ -196,8 +83,8 @@ subroutine get_work(ifm,nxp,nyp)
   else
      
      ipy = 0
-     do i=1,nxp
-        do j = 1,nyp
+     do i=1,mxp
+        do j = 1,myp
            ipy = ipy + 1
            
            iloff=1
@@ -209,7 +96,7 @@ subroutine get_work(ifm,nxp,nyp)
            lon_list(1,ipy) = work_e(ifm)%glon(i,j)
            
            ! Top latitude
-           if(j==nyp)jtoff=-1
+           if(j==myp)jtoff=-1
            lat_list(2,ipy) = work_e(ifm)%glat(i,j) + real(jtoff)*0.5*(work_e(ifm)%glat(i,j+jtoff)-work_e(ifm)%glat(i,j))
            
            ! Bottom latitude
@@ -221,7 +108,7 @@ subroutine get_work(ifm,nxp,nyp)
            lon_list(2,ipy) = work_e(ifm)%glon(i,j) + real(iloff)*0.5*(work_e(ifm)%glon(i-iloff,j)-work_e(ifm)%glon(i,j))
            
            ! Right longitude
-           if(i==nxp)iroff=-1
+           if(i==mxp)iroff=-1
            lon_list(3,ipy) = work_e(ifm)%glon(i,j) + real(iroff)*0.5*(work_e(ifm)%glon(i+iroff,j)-work_e(ifm)%glon(i,j))
            
            if (lon_list(1,ipy) >=  180.) lon_list(1,ipy) = lon_list(1,ipy) - 360.
@@ -240,21 +127,35 @@ subroutine get_work(ifm,nxp,nyp)
   ! Generate the land/sea mask
 
   write(unit=*,fmt=*) ' => Generating the land/sea mask.'
+  write(unit=*,fmt='(3(a,1x,i5,1x))') 'GRID:',ifm,'IVEGTFLG',b_ivegtflg(ifm)               &
+                                     ,'ISOILFLG:',b_isoilflg(ifm)
+  select case (b_ivegtflg(ifm))
+  case (0,1,2)
+     call leaf3init_overwrite(iwest,ieast,jsouth,jnorth,npoly,ifm,'leaf',ipcent_land)
+  case (3)
+     call leaf_database(trim(veg_database), npoly, 'leaf_class', lat_list,  &
+                        lon_list, ipcent_land)
+  end select
 
-  call leaf_database(trim(veg_database), npoly, 'leaf_class', lat_list,  &
-                     lon_list, ipcent_land)
-
-  if (isoilflg(ifm) == 1) then
+  select case (b_isoilflg(ifm))
+  !----------------------------------------------------------------------------------------!
+  !    This allows us to use the vegetation and soil type defined for LEAF in coupled      !
+  ! runs. Note that to use the ED dataset in coupled runs we need to use isoilflg =3.      !
+  !----------------------------------------------------------------------------------------!
+  case (0,1,2)
+     allocate(ntext_soil_list(npoly))
+     call leaf3init_overwrite(iwest,ieast,jsouth,jnorth,npoly,ifm,'soil',ntext_soil_list)
+  case (3)
      allocate(ntext_soil_list(npoly))
      call leaf_database(trim(soil_database), npoly, 'soil_text', lat_list,  &
           lon_list, ntext_soil_list)
-  end if
+  end select
  
   ! Re-map the land cover classes
 
   ipy = 0
-  do i=1,nxp
-     do j = 1,nyp
+  do i=1,mxp
+     do j = 1,myp
         ipy = ipy + 1
 
         work_e(ifm)%land(i,j)      = ipcent_land(ipy) > min_land_pcent
@@ -263,16 +164,15 @@ subroutine get_work(ifm,nxp,nyp)
            work_e(ifm)%work(i,j)      = 1.0
            work_e(ifm)%landfrac(i,j)  = real(ipcent_land(ipy))/100.0
 
-           select case (isoilflg(ifm))
-           case (1)  !! set from data base or LEAF-3
+           if (b_isoilflg(ifm) == 0) then !! set from ED2IN/RAMSIN
+              work_e(ifm)%ntext(i,j) = nslcon
+           else  !! set from data base or LEAF-3
               datsoil = ntext_soil_list(ipy)
 
               ! This is to prevent datsoil to be zero when the polygon was assumed land
               if (datsoil == 0) datsoil=nslcon
               work_e(ifm)%ntext(i,j) = datsoil
-           case (2) !! set from ED2IN/RAMSIN
-              work_e(ifm)%ntext(i,j) = nslcon
-           end select
+           end if
         else
            !----- Making this grid point 100% water ---------------------------------------!
            work_e(ifm)%landfrac(i,j)  = 0.
@@ -283,16 +183,16 @@ subroutine get_work(ifm,nxp,nyp)
   end do
 
   ! PRINT OUT THE ARRAYS !
-  !  do j = nyp,1,-1
-  !     print*,(work_e(ifm)%glat(i,j),i=1,nxp)
+  !  do j = myp,1,-1
+  !     print*,(work_e(ifm)%glat(i,j),i=1,mxp)
   !  enddo
   
-  !  do j = nyp,1,-1
-  !     print*,(work_e(ifm)%glon(i,j),i=1,nxp)
+  !  do j = myp,1,-1
+  !     print*,(work_e(ifm)%glon(i,j),i=1,mxp)
   !  enddo
   
-  !  do j = nyp,1,-1
-  !     print*,(work_e(ifm)%landfrac(i,j),i=1,nxp)
+  !  do j = myp,1,-1
+  !     print*,(work_e(ifm)%landfrac(i,j),i=1,mxp)
   !  enddo
   
   
@@ -303,58 +203,55 @@ subroutine get_work(ifm,nxp,nyp)
   if (allocated(ntext_soil_list)) deallocate (ntext_soil_list)
 
   return
-end subroutine get_work
+end subroutine edcp_get_work
 !==========================================================================================!
 !==========================================================================================!
 
-subroutine ed_parvec_work(ifm,nxp,nyp,land)
-
-  use ed_work_vars,  only: work_e
-  
-  implicit none
-
-  integer,intent(in) :: nxp,nyp
-  logical,intent(in),dimension(nxp,nyp) :: land
-  integer :: npolygons
-  integer :: poly
-  integer,intent(in) :: ifm
-  integer :: i,j
-  
-  ! Compute total work load over each row and over entire domain.
-  
-  npolygons = 0
-  do j = 1,nyp
-     do i = 1,nxp
-        if(land(i,j)) then
-           npolygons = npolygons + 1
-        endif
-     enddo
-  enddo
-  
-  ! Allocate the polygon vectors
-  
-  allocate(work_e(ifm)%vec_glon(npolygons))
-  allocate(work_e(ifm)%vec_glat(npolygons))
-  allocate(work_e(ifm)%vec_landfrac(npolygons))
-  allocate(work_e(ifm)%vec_ntext(npolygons))
-  
-  poly = 0
-  do j = 1,nyp
-     do i = 1,nxp
-        
-        if(land(i,j)) then
-           poly = poly + 1
-           
-           work_e(ifm)%vec_glon(poly) = work_e(ifm)%glon(i,j)
-           work_e(ifm)%vec_glat(poly) = work_e(ifm)%glat(i,j)
-           work_e(ifm)%vec_landfrac(poly) = work_e(ifm)%landfrac(i,j)
-           work_e(ifm)%vec_ntext(poly) = work_e(ifm)%ntext(i,j)
-
-        endif
-     end do
-  end do
-  
-  return
-end subroutine ed_parvec_work
 
 
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!   This subroutine will copy LEAF-3 initial condition to ED, so we can use other LEAF     !
+! databases to decide whether a polygon is inland or offshore, and aslo other soil texture !
+! dataset.                                                                                 !
+!------------------------------------------------------------------------------------------!
+subroutine leaf3init_overwrite(iwest,ieast,jsouth,jnorth,nlandsea,ifm,varname,varout)
+   use mem_leaf, only: leaf_g
+   use mem_grid, only: nzg
+   use node_mod, only: mynum
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   integer                     , intent(in)  :: iwest,ieast,jsouth,jnorth,nlandsea,ifm
+   character(len=4)            , intent(in)  :: varname
+   integer, dimension(nlandsea), intent(out) :: varout
+   !----- Local variables -----------------------------------------------------------------!
+   integer                                   :: i,j,ipy
+   !---------------------------------------------------------------------------------------!
+
+   select case (varname)
+   case ('leaf')
+      ipy=0
+      do i=iwest,ieast
+         do j=jsouth,jnorth
+            ipy=ipy+1
+            varout(ipy) = nint(100.* leaf_g(ifm)%patch_area(i,j,2))
+         end do
+      end do
+   case ('soil')
+      ipy=0
+      do i=iwest,ieast
+         do j=jsouth,jnorth
+            ipy=ipy+1
+            varout(ipy) = nint(leaf_g(ifm)%soil_text(nzg,i,j,2))
+         end do
+      end do
+   case default
+      call abort_run('Invalid key: '//varname,'leaf3init_overwrite.f90','edcp_met_init.f90')
+   end select
+   return
+end subroutine leaf3init_overwrite
+!==========================================================================================!
+!==========================================================================================!

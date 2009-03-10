@@ -22,6 +22,7 @@
 subroutine node_sendst(isflag)
 
   use mem_grid
+  use grid_dims
   use node_mod
 
   use mem_scratch
@@ -35,7 +36,7 @@ subroutine node_sendst(isflag)
   include 'mpif.h'
 
   integer :: ierr,ipos
-  integer :: itype,nm,i1,i2,j1,j2,mtp
+  integer :: itype,nm,i1,i2,j1,j2,mtp,mpiid
 
   if (isflag >= 2 .and. isflag <= 4) itype=isflag
   if (isflag >= 5 .and. isflag <= 6) itype=1
@@ -47,9 +48,11 @@ subroutine node_sendst(isflag)
 
   do nm=1,nmachs
      if (iget_paths(itype,ngrid,nm).ne.0) then
+!        write (unit=20+mynum,fmt='(4(a,1x,i10,1x))') 'MACHS(NM):',machs(nm),'NGRID=',ngrid,'ISFLAG=',isflag,'MPIID=',mpiid
+        mpiid= 2000000 + 10*maxgrds*(machs(nm)-1) + 10*(ngrid-1) + isflag
         call MPI_Irecv(node_buffs(nm)%lbc_recv_buff,               &
              node_buffs(nm)%nrecv*f_ndmd_size,MPI_PACKED,             &
-             machs(nm),10000+isflag,MPI_COMM_WORLD,irecv_req(nm),ierr )
+             machs(nm),mpiid,MPI_COMM_WORLD,irecv_req(nm),ierr )
      endif
   enddo
 
@@ -79,44 +82,45 @@ subroutine node_sendst(isflag)
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
 
         if(isflag == 2) then
-           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%up  &
+           call mkstbuff(mzp,mxp,myp,1,basic_g(ngrid)%up  &
                 ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
            call MPI_Pack(scratch%scr1,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff,&
                 node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
         elseif (isflag == 3) then
-           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%vp  &
+           call mkstbuff(mzp,mxp,myp,1,basic_g(ngrid)%vp  &
                 ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
            call MPI_Pack(scratch%scr1,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff,&
                       node_buffs(nm)%nsend,ipos,MPI_COMM_WORLD,ierr)
         elseif (isflag == 4) then
-           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%pp  &
+           call mkstbuff(mzp,mxp,myp,1,basic_g(ngrid)%pp  &
                 ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
            call MPI_Pack(scratch%scr1,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff,&
                       node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
         elseif(isflag == 5) then
-           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%up  &
+           call mkstbuff(mzp,mxp,myp,1,basic_g(ngrid)%up  &
                 ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
            call MPI_Pack(scratch%scr1,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff,&
                       node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%vp  &
+           call mkstbuff(mzp,mxp,myp,1,basic_g(ngrid)%vp  &
                 ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
            call MPI_Pack(scratch%scr1,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff,&
                 node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
         elseif (isflag == 6) then
-           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%wp  &
+           call mkstbuff(mzp,mxp,myp,1,basic_g(ngrid)%wp  &
                 ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
            call MPI_Pack(scratch%scr1,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff,&
                 node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-           call mkstbuff(mzp,mxp,myp,basic_g(ngrid)%pp  &
+           call mkstbuff(mzp,mxp,myp,1,basic_g(ngrid)%pp  &
                 ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
            call MPI_Pack(scratch%scr1,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff,&
                 node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
 
         endif
 
+        mpiid= 2000000 + 10*maxgrds*(mchnum-1) + 10*(ngrid-1) + isflag
         call MPI_Isend(node_buffs(nm)%lbc_send_buff,  &
              ipos-1,  &
-             MPI_PACKED,ipaths(5,itype,ngrid,nm),10000+isflag,      &
+             MPI_PACKED,ipaths(5,itype,ngrid,nm),mpiid,      &
              MPI_COMM_WORLD,isend_req(nm),ierr)
      endif
 
@@ -197,35 +201,35 @@ subroutine node_getst(isflag)
         if(isflag == 2) then
            call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
              scratch%scr1,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
-           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%up  &
+           call exstbuff(mzp,mxp,myp,1,basic_g(ngrid)%up  &
                ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
         elseif(isflag == 3) then
            call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
              scratch%scr1,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
-           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%vp  &
+           call exstbuff(mzp,mxp,myp,1,basic_g(ngrid)%vp  &
                ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
         elseif(isflag == 4) then
            call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
              scratch%scr1,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
-           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%pp  &
+           call exstbuff(mzp,mxp,myp,1,basic_g(ngrid)%pp  &
                ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
         elseif(isflag == 5) then
            call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
              scratch%scr1,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
-           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%up  &
+           call exstbuff(mzp,mxp,myp,1,basic_g(ngrid)%up  &
                ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
            call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
              scratch%scr1,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
-           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%vp  &
+           call exstbuff(mzp,mxp,myp,1,basic_g(ngrid)%vp  &
                ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
         elseif(isflag == 6) then
            call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
              scratch%scr1,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
-           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%wp  &
+           call exstbuff(mzp,mxp,myp,1,basic_g(ngrid)%wp  &
                ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
            call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
              scratch%scr1,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
-           call exstbuff(mzp,mxp,myp,basic_g(ngrid)%pp  &
+           call exstbuff(mzp,mxp,myp,1,basic_g(ngrid)%pp  &
                ,scratch%scr1,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
         endif
 
@@ -238,63 +242,45 @@ end subroutine node_getst
 
 !*********************************************************************
 
-subroutine mkstbuff(n1,n2,n3,a,b,il,ir,jb,jt,ind)
+subroutine mkstbuff(n1,n2,n3,n4,a,b,il,ir,jb,jt,ind)
   implicit none
-  integer :: n1,n2,n3,il,ir,jb,jt,ind
-  real :: a(n1,n2,n3),b(*)
+  integer :: n1,n2,n3,n4,il,ir,jb,jt,ind
+  real :: a(n1,n2,n3,n4),b(*)
 
-  integer :: i,j,k
+  integer :: i,j,k,l
 
   ind=0
   do j=jb,jt
      do i=il,ir
         do k=1,n1
-           ind=ind+1
-           b(ind)=a(k,i,j)
-        enddo
-     enddo
-  enddo
+           do l=1,n4
+              ind=ind+1
+              b(ind)=a(k,i,j,l)
+           end do
+        end do
+     end do
+  end do
 
   return
 end subroutine mkstbuff
 
 !*********************************************************************
 
-subroutine mkstbuffs(n1,n2,n3,a,b,il,ir,jb,jt,ind)
+subroutine exstbuff(n1,n2,n3,n4,a,b,il,ir,jb,jt,ind)
   implicit none
-  integer :: n1,n2,n3,il,ir,jb,jt,ind
-  real :: a(n1,n2,n3),b(*)
+  integer :: n1,n2,n3,n4,il,ir,jb,jt,ind
+  real :: a(n1,n2,n3,n4),b(*)
 
-  integer :: i,j,k
-
-  ind=0
-  do j=jb,jt
-     do i=il,ir
-        do k=1,n3
-           ind=ind+1
-           b(ind)=a(i,j,k)
-        enddo
-     enddo
-  enddo
-
-  return
-end subroutine mkstbuffs
-
-!*********************************************************************
-
-subroutine exstbuff(n1,n2,n3,a,b,il,ir,jb,jt,ind)
-  implicit none
-  integer :: n1,n2,n3,il,ir,jb,jt,ind
-  real :: a(n1,n2,n3),b(*)
-
-  integer :: i,j,k
+  integer :: i,j,k,l
 
   ind=0
   do j=jb,jt
      do i=il,ir
         do k=1,n1
-           ind=ind+1
-           a(k,i,j)=b(ind)
+           do l=1,n4
+              ind=ind+1
+              a(k,i,j,l)=b(ind)
+           end do
         enddo
      enddo
   enddo
@@ -303,25 +289,3 @@ subroutine exstbuff(n1,n2,n3,a,b,il,ir,jb,jt,ind)
 end subroutine exstbuff
 
 !*********************************************************************
-
-subroutine exstbuffs(n1,n2,n3,a,b,il,ir,jb,jt,ind)
-  implicit none
-  integer :: n1,n2,n3,il,ir,jb,jt,ind
-  real :: a(n1,n2,n3),b(*)
-
-  integer :: i,j,k
-
-  ind=0
-  do j=jb,jt
-     do i=il,ir
-        do k=1,n3
-           ind=ind+1
-           a(i,j,k)=b(ind)
-        enddo
-     enddo
-  enddo
-
-  return
-end subroutine exstbuffs
-
-

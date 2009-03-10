@@ -198,7 +198,7 @@ module disturbance_utils_ar
               initial_agb(1:n_pft, 1:n_dbh) = cpoly%agb(1:n_pft, 1:n_dbh,isi)
               initial_basal_area(1:n_pft, 1:n_dbh) = cpoly%basal_area(1:n_pft, 1:n_dbh, isi)
               
-              ! Update the derived properties including veg_height, lai
+              ! Update the derived properties including veg_height, patch hcapveg, lai
               call update_patch_derived_props_ar(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,q+onsp)
 
               ! Update soil temp, fracliq, etc.
@@ -493,6 +493,8 @@ end subroutine apply_disturbances_ar
     csite%sfcwater_energy(1:nzs,np) = 0.0
 
     csite%sfcwater_depth(1:nzs,np) = 0.0
+    
+    csite%hcapveg(np) = 0.0
 
     !--------------------------------------------------------------------------------------!
     csite%rough(np) = 0.0
@@ -557,11 +559,6 @@ end subroutine apply_disturbances_ar
        csite%sfcwater_mass(k,np) = csite%sfcwater_mass(k,np) + csite%sfcwater_mass(k,cp) *   &
             area_fac
 
-       !!!! IS THE FOLLOWING LINE CORRECT? IT SEEMS TO BE ADDING AN EXTRA AND UNECESARY
-       !!!! MASS TERM FROM THE DONOR PATCH  !!!
-       !!!! MLO: I don't think it's correct, it should be cp, shouldn't it? I switched it.
-       !csite%sfcwater_energy(k,np) = csite%sfcwater_energy(k,np) +   &
-       !     csite%sfcwater_energy(k,np) * csite%sfcwater_mass(k,cp) * area_fac
        csite%sfcwater_energy(k,np) = csite%sfcwater_energy(k,np) +   &
             csite%sfcwater_energy(k,cp) * csite%sfcwater_mass(k,cp) * area_fac
        csite%sfcwater_depth(k,np) = csite%sfcwater_depth(k,np) + csite%sfcwater_depth(k,cp) *   &
@@ -668,25 +665,27 @@ end subroutine apply_disturbances_ar
           nco = nco + 1
           
           call copy_patchtype(cpatch,tpatch,ico,ico,nco,nco)
-          
+
           ! Adjust area-based variables
-          tpatch%nplant(nco)     = tpatch%nplant(nco)    * cohort_area_fac
-          tpatch%lai(nco)        = tpatch%lai(nco)       * cohort_area_fac       
-          tpatch%veg_water(nco)  = tpatch%veg_water(nco) * cohort_area_fac
-          tpatch%mean_gpp(nco)   = tpatch%mean_gpp(nco)  * cohort_area_fac
-          tpatch%mean_leaf_resp(nco)      = tpatch%mean_leaf_resp(nco) * cohort_area_fac
-          tpatch%mean_root_resp(nco)      = tpatch%mean_root_resp(nco) * cohort_area_fac
-          tpatch%growth_respiration(nco)  = tpatch%growth_respiration(nco) * cohort_area_fac
-          tpatch%storage_respiration(nco) = tpatch%storage_respiration(nco) * cohort_area_fac
-          tpatch%vleaf_respiration(nco)   = tpatch%vleaf_respiration(nco) * cohort_area_fac
-          tpatch%Psi_open(nco)            = tpatch%Psi_open(nco) * cohort_area_fac
-
-          !    Because both nplant and water were scaled by a factor, and bleaf/bdead 
-          ! didn't change, energy and heat capacity are updated by the same metrics.
-          tpatch%hcapveg(nco)    = tpatch%hcapveg(nco)    * cohort_area_fac
-          tpatch%veg_energy(nco) = tpatch%veg_energy(nco) * cohort_area_fac
-
-       endif
+          tpatch%lai(nco)                 = tpatch%lai(nco)                  * cohort_area_fac
+          tpatch%nplant(nco)              = tpatch%nplant(nco)               * cohort_area_fac
+          tpatch%mean_gpp(nco)            = tpatch%mean_gpp(nco)             * cohort_area_fac
+          tpatch%mean_leaf_resp(nco)      = tpatch%mean_leaf_resp(nco)       * cohort_area_fac
+          tpatch%mean_root_resp(nco)      = tpatch%mean_root_resp(nco)       * cohort_area_fac
+          tpatch%dmean_gpp(nco)           = tpatch%dmean_gpp(nco)            * cohort_area_fac
+          tpatch%dmean_gpp_pot(nco)       = tpatch%dmean_gpp_pot(nco)        * cohort_area_fac
+          tpatch%dmean_gpp_max(nco)       = tpatch%dmean_gpp_max(nco)        * cohort_area_fac
+          tpatch%dmean_leaf_resp(nco)     = tpatch%dmean_leaf_resp(nco)      * cohort_area_fac
+          tpatch%dmean_root_resp(nco)     = tpatch%dmean_root_resp(nco)      * cohort_area_fac
+          tpatch%Psi_open(nco)            = tpatch%Psi_open(nco)             * cohort_area_fac
+          tpatch%gpp(nco)                 = tpatch%gpp(nco)                  * cohort_area_fac
+          tpatch%leaf_respiration(nco)    = tpatch%leaf_respiration(nco)     * cohort_area_fac
+          tpatch%root_respiration(nco)    = tpatch%root_respiration(nco)     * cohort_area_fac
+          tpatch%monthly_dndt(nco)        = tpatch%monthly_dndt(nco)         * cohort_area_fac
+          tpatch%veg_water(nco)           = tpatch%veg_water(nco)            * cohort_area_fac
+          tpatch%hcapveg(nco)             = tpatch%hcapveg(nco)              * cohort_area_fac
+          tpatch%veg_energy(nco)          = tpatch%veg_energy(nco)           * cohort_area_fac
+       end if
           
     enddo  ! end loop over cohorts
 
@@ -891,8 +890,9 @@ end subroutine apply_disturbances_ar
 
     !----- Because we assigned no water, the internal energy is simply hcapveg*T
 
-    cpatch%hcapveg(nc) = calc_hcapveg(cpatch%bleaf(nc),cpatch%bdead(nc), &
-         cpatch%nplant(nc),cpatch%pft(nc))
+    cpatch%hcapveg(nc) = calc_hcapveg(cpatch%bleaf(nc),cpatch%nplant(nc) &
+                                     ,cpatch%lai(nc),cpatch%pft(nc)      &
+                                     ,cpatch%phenology_status(nc))
     
     cpatch%veg_energy(nc) = cpatch%hcapveg(nc) * cpatch%veg_temp(nc)
     

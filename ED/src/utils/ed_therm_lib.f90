@@ -1,55 +1,79 @@
 module ed_therm_lib
   
 contains
-   real function calc_hcapveg(leaf_carbon,structural_carbon,nplants,pft)
-     
-     ! This function calculates the total heat capacity in (J/K/m2) of the cohort
-     ! leaf biomass.  This function is primarily used to calculate leaf temperatures
-     ! based on leaf energy.
-
-     ! Inputs:
-     ! leaf_biomass - the leaf biomass of the cohort in kg/m2 - NOTE
-     ! this is constructed by the product of leaf_carbon in units kg/plant
-     ! and number of plants per square meter, and the conversion of carbon to 
-     ! total biomass.  The right hand side of the main equation accounts for 
-     ! the mass of insterstitial water and its ability to hold energy.
-     ! pft - the plant functional type of the current cohort, which may serve
-     ! for defining different parameterizations of specific heat capacity
-
-     ! These methods follow the ways of Gu et al. 2007. See the module pft_coms.f90
-     ! for a description of the parameters, and see ed_params.f90 for the setting
-     ! of these parameters.
-
-     use consts_coms,only : cliq
-
-     use pft_coms,only:       &
-          c_grn_leaf_dry,     &
-          c_ngrn_biom_dry,    &
-          wat_dry_ratio_grn,  &
-          wat_dry_ratio_ngrn, &
-          hcap_stem_fraction, &
-          C2B
+   !=======================================================================================!
+   !=======================================================================================!
 
 
-     implicit none
-     
-     real :: leaf_carbon         ! leaf biomass per plant
-     real :: structural_carbon   ! structural biomass per plant
-     real :: nplants             ! Number of plants per square meter
-     integer :: pft
-     real,parameter :: min_hcapveg = 200.0    
 
-     
-     calc_hcapveg = nplants*leaf_carbon*C2B*( c_grn_leaf_dry(pft) + wat_dry_ratio_grn(pft)*cliq)
 
-     calc_hcapveg = max(calc_hcapveg,min_hcapveg)
-     
-     
-     return
-     
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   ! This function calculates the total heat capacity in (J/K/m2) of the cohort            !
+   ! leaf biomass.  This function is primarily used to calculate leaf temperatures         !
+   ! based on leaf energy.                                                                 !
+   !                                                                                       !
+   ! Inputs:                                                                               !
+   ! + LEAF_BIOMASS - the leaf biomass of the cohort in kg/plant.  NOTE: it will be        !
+   !                  converted to kg/m2, by the product of leaf_carbon in units kg/plant  !
+   !                  and number of plants per square meter, and the conversion of carbon  !
+   !                  to total biomass.  The right hand side of the main equation accounts !
+   !                  for the mass of insterstitial water and its ability to hold energy.  !
+   ! + NPLANTS      - the number of plants per m2.                                         !
+   ! + PFT          - the plant functional type of the current cohort, which may serve     !
+   !                  for defining different parameterizations of specific heat capacity   !
+   ! + LAI          - LAI, used to check whether we will keep track of this cohort heat    !
+   !                  capacity or simply set it to zero (when LAI < LAI_MIN and we don't   !
+   !                  prognose the leaf energy).                                           !
+   ! + PHEN_STATUS  - this is probably redundant with the LAI check, but if phen_status is !
+   !                  2, it means no leaves exist so we set hcapveg to 0.                  !
+   !                                                                                       !
+   ! These methods follow the ways of Gu et al. 2007. See the module pft_coms.f90          !
+   ! for a description of the parameters, and see ed_params.f90 for the setting            !
+   ! of these parameters.                                                                  !
+   !---------------------------------------------------------------------------------------!
+   real function calc_hcapveg(leaf_carbon,nplants,lai,pft,phen_status)
+      use consts_coms          , only : cliq                ! ! intent(in)
+      use pft_coms             , only : c_grn_leaf_dry      & ! intent(in)
+                                      , wat_dry_ratio_grn   & ! intent(in)
+                                      , C2B                 ! ! intent(in)
+      use canopy_radiation_coms, only : lai_min             ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real    , intent(in)    :: leaf_carbon         ! Leaf biomass              [kg/plant]
+      real    , intent(in)    :: nplants             ! Number of plants          [plant/m2]
+      real    , intent(in)    :: lai                 ! Leaf area index           [   m2/m2]
+      integer , intent(in)    :: pft                 ! Plant functional type     [    ----]
+      integer , intent(in)    :: phen_status         ! Phenology status          [    ----]
+      !------------------------------------------------------------------------------------!
+
+      !----- Leaf heat capacity should be zero if there is no leaf ------------------------!
+      if (phen_status == 2) then
+         calc_hcapveg = 0.
+      else
+         !---------------------------------------------------------------------------------!
+         !    Including an offset in the specific heat capacity. This is as bad as set-    !
+         ! ting the minimum heat capacity in the sense that this is a kluge, but it has a  !
+         ! few advantages...                                                               !
+         ! 1. If there is no plant, the heat capacity will be 0.                           !
+         ! 2. If patches are fused or split, then hcapveg can be really treated as an      !
+         !    extensive quantity;                                                          !
+         ! 3. The heat capacity becomes a smooth curve, continuous and differentiable.     !
+         !---------------------------------------------------------------------------------!
+         calc_hcapveg = nplants * leaf_carbon * C2B                                        &
+                      * ( c_grn_leaf_dry(pft) + wat_dry_ratio_grn(pft)*cliq)
+      end if
+
+      return
    end function calc_hcapveg
    !=======================================================================================!
    !=======================================================================================!
+
+
+
+
 
 
    !=======================================================================================!
@@ -60,34 +84,66 @@ contains
    !                                                                                       !
    !    The "cweh" mean "consistent water&energy&hcap" assumption                          !
    !---------------------------------------------------------------------------------------!
-   subroutine update_veg_energy_cweh(veg_energy,veg_temp,veg_water,old_hcapveg             &
-                                    ,new_hcapveg)
-      use therm_lib, only : qwtk ! ! subroutine
+   subroutine update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
+      use ed_state_vars, only : sitetype   & ! Structure
+                              , patchtype  ! ! Structure
+      use therm_lib    , only : qwtk       ! ! subroutine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real, intent(inout) :: veg_energy
-      real, intent(in)    :: veg_temp
-      real, intent(in)    :: veg_water
-      real, intent(in)    :: old_hcapveg
-      real, intent(in)    :: new_hcapveg
+      type(sitetype) , target     :: csite
+      integer        , intent(in) :: ipa
+      integer        , intent(in) :: ico
+      real           , intent(in) :: old_hcapveg
       !----- Local variables --------------------------------------------------------------!
-      real                :: new_temp, new_fliq
+      type(patchtype), pointer    :: cpatch
+      real                        :: new_temp
+      real                        :: new_fliq
+      integer                     :: kclosest
+      integer                     :: k
       !------------------------------------------------------------------------------------!
-      veg_energy = veg_energy + (new_hcapveg-old_hcapveg) * veg_temp
+
+      cpatch => csite%patch(ipa)
+
+      !------------------------------------------------------------------------------------!
+      !    If the heat capacity is zero we cannot use qwtk to find the temperature.  This  !
+      ! will happen only when the plant has no leaves, so we set up the leaf temperature   !
+      ! to be the canopy air temperature, or the snow temperature in case it is buried in  !
+      ! snow.                                                                              !
+      !------------------------------------------------------------------------------------!
+      if (cpatch%hcapveg(ico) == 0.) then
+         cpatch%veg_energy(ico) = 0.
+         cpatch%veg_water(ico)  = 0.
+         if (cpatch%hite(ico) > csite%total_snow_depth(ipa)) then
+            !----- Plant is exposed, set temperature to the canopy temperature. -----------!
+            cpatch%veg_temp(ico) = csite%can_temp(ipa)
+         else
+            !----- Find the snow layer that is the closest to where the leaves would be. --!
+            do k = csite%nlev_sfcwater(ipa), 1, -1
+               if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) then
+                  kclosest = k
+               end if
+            end do
+            cpatch%veg_temp(ico) = csite%sfcwater_tempk(kclosest,ipa)
+         end if
+      else
+         cpatch%veg_energy(ico) = cpatch%veg_energy(ico)                                   &
+                                + (cpatch%hcapveg(ico)-old_hcapveg) * cpatch%veg_temp(ico)
+         call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)        &
+                  ,new_temp,new_fliq)
       
-      call qwtk(veg_energy,veg_water,new_hcapveg,new_temp,new_fliq)
-      
-      if (abs(new_temp - veg_temp) > 0.1) then
-         write (unit=*,fmt='(a)') ' ENERGY CONSERVATION FAILED!:'
-         write (unit=*,fmt='(a,1x,es12.5)') ' Old temperature:   ',veg_temp
-         write (unit=*,fmt='(a,1x,es12.5)') ' New temperature:   ',new_temp
-         write (unit=*,fmt='(a,1x,es12.5)') ' Old heat capacity: ',old_hcapveg
-         write (unit=*,fmt='(a,1x,es12.5)') ' New heat capacity: ',new_hcapveg
-         write (unit=*,fmt='(a,1x,es12.5)') ' Veg energy:        ',old_hcapveg
-         write (unit=*,fmt='(a,1x,es12.5)') ' Veg water:         ',new_hcapveg
-         call fatal_error('ENERGY LEAK','update_veg_energy_cweh','ed_therm_lib.f90')
+         if (abs(new_temp - cpatch%veg_temp(ico)) > 0.1) then
+            write (unit=*,fmt='(a)') ' ENERGY CONSERVATION FAILED!:'
+            write (unit=*,fmt='(a,1x,es12.5)') ' Old temperature:  ',cpatch%veg_temp(ico)
+            write (unit=*,fmt='(a,1x,es12.5)') ' New temperature:  ',new_temp
+            write (unit=*,fmt='(a,1x,es12.5)') ' Old heat capacity:',old_hcapveg
+            write (unit=*,fmt='(a,1x,es12.5)') ' New heat capacity:',cpatch%hcapveg(ico)
+            write (unit=*,fmt='(a,1x,es12.5)') ' Veg energy:       ',cpatch%veg_energy(ico)
+            write (unit=*,fmt='(a,1x,es12.5)') ' Veg water:        ',cpatch%veg_water(ico)
+            call fatal_error('Energy is leaking!!!','update_veg_energy_cweh'               &
+                            &,'ed_therm_lib.f90')
+         end if
       end if
-      
+
       return
    end subroutine update_veg_energy_cweh
    !=======================================================================================!

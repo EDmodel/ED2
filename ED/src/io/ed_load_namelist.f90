@@ -40,7 +40,7 @@ subroutine copy_nl(copy_type)
   use decomp_coms, only: n_decomp_lim
   use disturb_coms, only: include_fire, ianth_disturb,   &
        treefall_disturbance_rate
-  use pft_coms, only: include_these_pft,pft_1st_check
+  use pft_coms, only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
 
   use misc_coms, only: expnme, runtype, itimez, idatez, imonthz, iyearz,  &
        itimea, idatea, imontha, iyeara, ifoutput, iclobber, frqfast, &
@@ -138,6 +138,8 @@ subroutine copy_nl(copy_type)
      ianth_disturb = nl%ianth_disturb
      
      include_these_pft = nl%include_these_pft
+     agri_stock        = nl%agri_stock
+     plantation_stock  = nl%plantation_stock
      pft_1st_check     = nl%pft_1st_check
      
      treefall_disturbance_rate = nl%treefall_disturbance_rate

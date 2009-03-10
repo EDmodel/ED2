@@ -23,7 +23,7 @@ subroutine read_ednl(iunit)
   use disturb_coms, only: include_fire, ianth_disturb,   &
        treefall_disturbance_rate
   
-  use pft_coms, only: include_these_pft,pft_1st_check
+  use pft_coms, only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
   
   use misc_coms, only:  ifoutput,idoutput,imoutput,iyoutput,isoutput, &
        frqfast, frqstate, outfast,outstate,unitfast,unitstate,        &
@@ -65,10 +65,10 @@ subroutine read_ednl(iunit)
        soildepth_db,isoilstateinit,isoildepthflg,isoilbc,integration_scheme, &
        istoma_scheme,iphen_scheme,repro_scheme,lapse_scheme,crown_mod,       &
        n_plant_lim,n_decomp_lim,include_fire,ianth_disturb,                  &
-       include_these_pft,pft_1st_check,maxpatch,maxcohort,                   &
-       treefall_disturbance_rate,runoff_time,iprintpolys,npvars,printvars,   &
-       pfmtstr,ipmin,ipmax,initial_co2,iphenys1,iphenysf,iphenyf1,iphenyff,  &
-       iedcnfgf,event_file,phenpath
+       include_these_pft,agri_stock,plantation_stock,pft_1st_check,maxpatch, &
+       maxcohort,treefall_disturbance_rate,runoff_time,iprintpolys,npvars,   &
+       printvars,pfmtstr,ipmin,ipmax,initial_co2,iphenys1,iphenysf,iphenyf1, &
+       iphenyff,iedcnfgf,event_file,phenpath
 
   read (iunit, iostat=err, NML=ED2_INFO)
   if (err /= 0) then
@@ -108,6 +108,8 @@ subroutine read_ednl(iunit)
      write(*,*) "include_fire=",include_fire
      write(*,*) "ianth_disturb=",ianth_disturb
      write(*,*) "include_these_pft=",include_these_pft
+     write(*,*) "agri_stock=",agri_stock
+     write(*,*) "plantation_stock=",plantation_stock
      write(*,*) "pft_1st_check=",pft_1st_check
      write(*,*) "maxpatch=",maxpatch
      write(*,*) "maxcohort=",maxcohort

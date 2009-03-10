@@ -1,6 +1,6 @@
 ! ===================================================
 
-subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
+subroutine canopy_photosynthesis_ar(csite, ipa, vels,rhos, prss,   &
      ed_ktrans, ntext_soil, soil_water, soil_fracliq, lsl, sum_lai_rbi,  &
      leaf_aging_factor, green_leaf_factor)
 
@@ -47,7 +47,7 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
   logical :: las
   real,parameter :: vels_min = 1.0
   real :: rb_min
-  logical, save :: first_time=.true.
+  logical, dimension(n_pft), save :: first_time=.true.
 
   las = .false.
 
@@ -102,7 +102,9 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
 !                * leaf_width(cpatch%pft(ico))**3 )**0.25 &
 !                / leaf_width(cpatch%pft(ico)))
 
-           rb_min = 1.e6
+           !rb_min = 1.e6
+           !rb_min = 25.0 * max(csite%lai(ipa),1.)
+           rb_min = 25.0 * csite%lai(ipa)
 
            
 !           cpatch%rb(ico) = min(25.0 * csite%lai(ipa), 1.0/(  &
@@ -112,11 +114,6 @@ subroutine canopy_photosynthesis_ar(csite, ipa, vels, rhos, prss,   &
                 * ( 1.6e8 * abs(cpatch%veg_temp(ico)-csite%can_temp(ipa))  &
                 * leaf_width(cpatch%pft(ico))**3 )**0.25 &
                 / leaf_width(cpatch%pft(ico))))
-
-if(abs(cpatch%rb(ico)) < tiny(1.0))then
-   print*,"WARNING, small RB"
-   print*,vels,leaf_width(cpatch%pft(ico)),cpatch%veg_temp(ico),csite%can_temp(ipa),cpatch%pft(ico),ico
-end if
 
               call lphysiol_full(  &
                    cpatch%veg_temp(ico)-t00  &  ! Vegetation temperature (C)
@@ -181,8 +178,9 @@ end if
         
         if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))then
         
-           !rb_min = 25.0*csite%lai(ipa)
-           rb_min = 1.e6
+           !rb_min = 1.e6
+           !rb_min = 25.0*max(csite%lai(ipa),1.)
+           rb_min = 25.0*csite%lai(ipa)
 
            ! Aerodynamic resistance [s/m]
            cpatch%rb(ico) = min(rb_min, 1.0/ &
@@ -330,27 +328,29 @@ end if
      endif
   enddo
   ! Printing debugging stuff
-  !if (first_time) then
-  !   do ico=1,cpatch%ncohorts
-  !      write(unit=60+ico,fmt='(268a)') ('-',k1=1,268)
-  !      write(unit=60+ico,fmt='(21(a,1x))') '     CURRENT_TIME','PFT' &
-  !       ,'         LAI','    VEG_TEMP',' CAN_MIX_RAT','    PRESSURE','     DENSITY' &
-  !       ,'       PAR_V','         GPP','   LEAF_RESP','          RB',' STOM_RESIST' &
-  !       ,'      A_OPEN','    A_CLOSED','    RSW_OPEN','  RSW_CLOSED','    PSI_OPEN' &
-  !       ,'  PSI_CLOSED','         FSW','         FSN','     FS_OPEN'
-  !      write(unit=60+ico,fmt='(268a)') ('-',k1=1,268)
-  !   end do
-  !   first_time=.false.
-  !end if
   !do ico=1,cpatch%ncohorts
-  !   write(unit=60+ico,fmt='(i4.4,2(a,i2.2),1x,f6.0,1x,i3,19(1x,es12.5))')                &
+  !   ipft=cpatch%pft(ico)
+  !   if (first_time(ipft)) then
+  !      write(unit=80+ipft,fmt='(356a)') ('-',k1=1,356)
+  !      write(unit=80+ipft,fmt='(27(a,1x))') '     CURRENT_TIME','PFT' &
+  !       ,'      NPLANT','       BLEAF','         LAI','     HCAPVEG','   VEG_WATER' &
+  !       ,'    VEG_TEMP',' CAN_MIX_RAT','    CAN_TEMP','    AIR_TEMP','    PRESSURE' &
+  !       ,'     DENSITY','       PAR_V','         GPP','   LEAF_RESP','          RB' &
+  !       ,' STOM_RESIST','      A_OPEN','    A_CLOSED','    RSW_OPEN','  RSW_CLOSED' &
+  !       ,'    PSI_OPEN','  PSI_CLOSED','         FSW','         FSN','     FS_OPEN'
+  !       
+  !      write(unit=80+ipft,fmt='(356a)') ('-',k1=1,356)
+  !      first_time(ipft)=.false.
+  !   end if
+  !   write(unit=80+ipft,fmt='(i4.4,2(a,i2.2),1x,f6.0,1x,i3,25(1x,es12.5))')               &
   !      current_time%year,'-',current_time%month,'-',current_time%date,current_time%time  &
-  !     ,cpatch%pft(ico),cpatch%lai(ico),cpatch%veg_temp(ico),csite%can_shv(ipa),prss,rhos &
+  !     ,cpatch%pft(ico),cpatch%lai(ico),cpatch%nplant(ico),cpatch%bleaf(ico)              &
+  !     ,cpatch%hcapveg(ico),cpatch%veg_water(ico)                                         &
+  !     ,cpatch%veg_temp(ico),csite%can_shv(ipa),csite%can_temp(ipa),-999.0,prss,rhos      &
   !     ,cpatch%par_v(ico),cpatch%gpp(ico),cpatch%leaf_respiration(ico),cpatch%rb(ico)     &
   !     ,cpatch%stomatal_resistance(ico),cpatch%A_open(ico),cpatch%A_closed(ico)           &
   !     ,cpatch%rsw_open(ico),cpatch%rsw_closed(ico),cpatch%Psi_open(ico)                  &
   !     ,cpatch%Psi_closed(ico),cpatch%fsw(ico),cpatch%fsn(ico),cpatch%fs_open(ico)
-
   !end do
 
   return

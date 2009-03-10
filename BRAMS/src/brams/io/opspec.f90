@@ -609,7 +609,6 @@ subroutine opspec3
           closure_type,  & ! intent(in)
           cap_maxs,      & ! intent(in)
           maxclouds,     & ! intent(in)
-          iupmethod,     & ! intent(in)
           depth_min,     & ! intent(in)
           maxens_lsf,    & ! intent(in)
           maxens_eff,    & ! intent(in)
@@ -635,7 +634,6 @@ subroutine opspec3
 
   ![MLO - mass check and exner function check
   use mem_mass, only : iexev, imassflx
-
 
   implicit none
 
@@ -690,6 +688,44 @@ subroutine opspec3
      end do
    end if
    
+   !---------------------------------------------------------------------------------------!
+   !    Checking whether the combination of akmin,akmax,hgtmin, hgtmax makes sense...      !
+   !---------------------------------------------------------------------------------------!
+   do ng=1,ngrids
+      if (akmin(ng) <= 0.) then
+         print *, 'FATAL - AKMIN must be positive'
+         print *, 'Please change your setup for grid ',ng,'...'
+         IFATERR=IFATERR+1
+      end if
+
+      if (akmax(ng) > 0.) then
+         if (akmax(ng) < akmin(ng)) then
+            print *, 'FATAL - If AKMAX is positive, then it must be greater than AKMIN...'
+            print *, 'Please change your setup for grid ',ng,'...'
+            IFATERR=IFATERR+1
+         end if 
+         if (hgtmax(ng) <= 0.) then
+            print *, 'FATAL - If AKMAX is positive, HGTMAX must be positive as well...'
+            print *, 'Please change your setup for grid ',ng,'...'
+            IFATERR=IFATERR+1
+         end if
+         if (hgtmin(ng) < 0.) then
+            print *, 'FATAL - If AKMAX is positive, HGTMIN must be non-negative...'
+            print *, 'Please change your setup for grid ',ng,'...'
+            IFATERR=IFATERR+1
+         end if
+         if (hgtmin(ng) >= hgtmax(ng)) then
+            print *, 'FATAL - If AKMAX is positive, HGTMIN must less than HGTMAX...'
+            print *, 'Please change your setup for grid ',ng,'...'
+            IFATERR=IFATERR+1
+         end if
+      elseif (akmax(ng) < 0.) then
+         print *, 'FATAL - AKMAX can''t be negative...'
+         print *, 'Please change your setup for grid ',ng,'...'
+         IFATERR=IFATERR+1
+      end if
+   end do
+
    !---------------------------------------------------------------------------------------!
    !   Determining whether Grell will be called or not, so the Grell-related               !
    ! configuration tests will be performed only if Grell is to be called.                  !
@@ -755,8 +791,8 @@ subroutine opspec3
      end do
    
      do nc=1,nclouds
-        if (iupmethod < 1 .or. iupmethod > 3) then
-            print *, 'FATAL - If Cumulus parameterization is used, iupmethod must be 1, 2, or 3.'
+        if (iupmethod < 1 .or. iupmethod > 4) then
+            print *, 'FATAL - If Cumulus parameterization is used, iupmethod must be between 1 and 4.'
             print *, 'Yours is currently set to ',iupmethod
             IFATERR=IFATERR+1
         end if

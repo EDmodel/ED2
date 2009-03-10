@@ -375,6 +375,7 @@ subroutine gradxu(m1,m2,m3,ia,iz,ja,jz  &
               vc1da(k)=hq4(k)*(vc3da(k,i,j)+vc3da(k-1,i,j)  &
                    +vc3da(k,i-1,j)+vc3da(k-1,i-1,j))
            enddo
+           if (optyp /= 'GRADNT') vc1da(2) = 0. 
            do k=2,m1-1
               vc3db(k,i,j)=vc3db(k,i,j)  &
                    +fq(i,j)*dz(k)*(vc1da(k+1)-vc1da(k))
@@ -498,6 +499,7 @@ SUBROUTINE GRADXT(m1,m2,m3,ia,iz,ja,jz  &
               vc1da(k)=hq4(k)*(vc3da(k,i,j)+vc3da(k-1,i,j)  &
                    +vc3da(k,i+1,j)+vc3da(k-1,i+1,j))
            enddo
+           if (optyp /= 'GRADNT') vc1da(2) = 0. 
            do k=2,m1-1
               vc3db(k,i,j)=vc3db(k,i,j)  &
                    +fq(i,j)*dz(k)*(vc1da(k+1)-vc1da(k))
@@ -623,6 +625,7 @@ SUBROUTINE GRADYV(m1,m2,m3,ia,iz,ja,jz  &
               vc1da(k)=hq4(k)*(vc3da(k,i,j)+vc3da(k-1,i,j)  &
                    +vc3da(k,i,j-jd)+vc3da(k-1,i,j-jd))
            enddo
+           if (optyp /= 'GRADNT') vc1da(2) = 0. 
            do k=2,m1-1
               vc3db(k,i,j)=vc3db(k,i,j)  &
                    +fq(i,j)*dz(k)*(vc1da(k+1)-vc1da(k))
@@ -745,6 +748,7 @@ SUBROUTINE GRADYT(m1,m2,m3,ia,iz,ja,jz  &
               vc1da(k)=hq4(k)*(vc3da(k,i,j)+vc3da(k-1,i,j)  &
                    +vc3da(k,i,j+jd)+vc3da(k-1,i,j+jd))
            enddo
+           if (optyp /= 'GRADNT') vc1da(2) = 0. 
            do k=2,m1-1
               vc3db(k,i,j)=vc3db(k,i,j)  &
                    +fq(i,j)*dz(k)*(vc1da(k+1)-vc1da(k))

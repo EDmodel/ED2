@@ -996,7 +996,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
            print*,cpoly%met(isi)%atm_tmp,cgrid%met(ipy)%atm_tmp
            call fatal_error('Problems with ATM TEMP A','calc_met_lapse_ar','ed_met_driver.f90')
         endif
-        if ( cpoly%met(isi)%atm_shv < 0.01e-2) then
+        if ( cpoly%met(isi)%atm_shv < 0.01e-3) then
            print*,cpoly%met(isi)%atm_shv,cgrid%met(ipy)%atm_shv
            call fatal_error('Problems with ATM MOISTURE A','calc_met_lapse_ar','ed_met_driver.f90')
         endif

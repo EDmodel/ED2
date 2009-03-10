@@ -633,6 +633,9 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
                                     , sitetype          & ! Structure
                                     , patchtype         ! ! Structure
    use consts_coms           , only : alvl              & ! intent(in)
+                                    , cliq              & ! intent(in)
+                                    , cice              & ! intent(in)
+                                    , tsupercool        & ! intent(in)
                                     , cp                & ! intent(in)
                                     , cpi               & ! intent(in)
                                     , twothirds         & ! intent(in)
@@ -659,7 +662,14 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    use pft_coms              , only : water_conductance & ! intent(in)
                                     , q                 & ! intent(in)
                                     , qsw               ! ! intent(in)
-
+   use rk4_coms              , only : leaf_h2o_thick    & ! intent(in)
+                                    , debug             & ! intent(in)
+                                    , toocold           & ! intent(in)
+                                    , toohot            & ! intent(in)
+                                    , lai_to_cover      & ! intent(in)
+                                    , evap_area_one     & ! intent(in)
+                                    , evap_area_two     ! ! intent(in)
+                                       
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)     , target      :: csite          ! Current site
@@ -728,8 +738,6 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    real                             :: storage_decay    !
    real                             :: leaf_flux        !
    real                             :: sat_shv          !
-   real                             :: veg_temp         !
-   real                             :: veg_fliq         !
    real                             :: max_leaf_water   !
    real                             :: maxfluxrate      !
    real                             :: intercepted_tot  !
@@ -742,19 +750,6 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    real                             :: water_demand     !
    real                             :: water_supply     !
    real                             :: veg_temp_sat     !
-   !----- Constants -----------------------------------------------------------------------!
-   real   , parameter :: leaf_h2o_thick = 0.11 ! mm
-   logical, parameter :: debug  = .true.       ! Verbose output for debug (T|F)
-   real   , parameter :: toocold = 193.15      ! Minimum temperature for sat., -80°C
-   real   , parameter :: toohot  = 353.15      ! Maximum temperature for sat.,  80°C
-   real   , parameter :: lai_to_cover = 1.5    ! Canopies with LAI less than this number 
-                                               !    are assumed to be open, ie, some 
-                                               !    fraction of the rain-drops can reach
-                                               !    the soil/litter layer unimpeded.
-   real   , parameter :: evap_area_one = 1.2   ! Evaporation are factor (1 side of leaves 
-                                               !    + branches + stems) 
-   real   , parameter :: evap_area_two = 2.2   ! Evaporation are factor (2 sides of leaves 
-                                               !    + branches + stems) 
    !----- Functions -----------------------------------------------------------------------!
    real   , external  :: vertical_vel_flux     !
    !---------------------------------------------------------------------------------------!
@@ -911,18 +906,6 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    ddewgndflx = dewgndflx / (surface_fliq * wdns + (1.-surface_fliq) * idns)
 
 
-   !---------------------------------------------------------------------------------------!
-   !     Final evap check, make sure that the projected integrated evaporative mass flux   !
-   ! does not exceed 55% of the available liquid water in the top soil layer. I don't like !
-   ! this because it imposes layer thickness dependence, but this should make the model    !
-   ! more stable.                                                                          !
-   !---------------------------------------------------------------------------------------!
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   !!!! Shouldn't this be the htry instead of dtlsm???                                  !!!!
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   !maxfluxrate = 0.55 * wdns * initp%available_liquid_water(nzg)/dtlsm
    !----- Temporary water/snow layers exist. ----------------------------------------------!
    if (initp%nlev_sfcwater > 0) then
       wflxgc  = max(0.,wflx)
@@ -1000,17 +983,13 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          kroot = cpatch%krdepth(ico)
 
 
-         !------ Finding previous leaf temperature and fraction of liquid water. ----------!
-         call qwtk (initp%veg_energy(ico),initp%veg_water(ico),cpatch%hcapveg(ico)         &
-                   ,veg_temp,veg_fliq)
-
-
          !------  Calculate leaf-level CO2 flux -------------------------------------------!
          leaf_flux = cpatch%gpp(ico) - cpatch%leaf_respiration(ico)
          
          !------ Update CO2 flux from vegetation to canopy air space. ---------------------!
          cflxvc_tot = cflxvc_tot - leaf_flux
-         
+
+
          !---------------------------------------------------------------------------------!
          !     If there is more leaf water (kg/m² leaf) than this threshold then no more   !
          ! water may be allowed to collect on the leaf.                                    !
@@ -1026,7 +1005,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
 
 
          !------ Finding the saturation mixing ratio associated with leaf temperature -----!
-         veg_temp_sat = max(toocold,min(toohot,veg_temp))
+         veg_temp_sat = max(toocold,min(toohot,initp%veg_temp(ico)))
          sat_shv=rslif(prss,veg_temp_sat)
 
          c3 = cpatch%lai(ico) * rhos * (sat_shv - initp%can_shv)
@@ -1042,7 +1021,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
             !------------------------------------------------------------------------------!
             !------ Evaporation, energy is scaled by liquid/ice partition (no phase bias) -!
             wflxvc  = c3 * sigmaw * evap_area_one * rbi
-            qwflxvc = wflxvc * (alvi - veg_fliq * alli)
+            qwflxvc = wflxvc * (alvi - initp%veg_fliq(ico) * alli)
 
             cpatch%Psi_open(ico)   = c3 / (cpatch%rb(ico) + cpatch%rsw_open(ico)  )
             cpatch%Psi_closed(ico) = c3 / (cpatch%rb(ico) + cpatch%rsw_closed(ico))
@@ -1055,18 +1034,10 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
               transp = 0.0
             end if
             qtransp = transp * alvl
-         elseif (initp%veg_water(ico) < 0.99*max_leaf_water) then
+         else
             !------ Dew/frost formation ---------------------------------------------------!
             wflxvc                 = c3 * evap_area_one * rbi
-            qwflxvc                = wflxvc * (alvi - veg_fliq*alli)
-            transp                 = 0.0
-            qtransp                = 0.0
-            cpatch%Psi_open(ico)   = 0.0
-            cpatch%Psi_closed(ico) = 0.0
-         else
-            !----- Leaf cannot hold more water, forbid dew/frost to develop ---------------!
-            wflxvc                 = 0.0
-            qwflxvc                = 0.0
+            qwflxvc                = wflxvc * (alvi - initp%veg_fliq(ico)*alli)
             transp                 = 0.0
             qtransp                = 0.0
             cpatch%Psi_open(ico)   = 0.0
@@ -1082,10 +1053,10 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
 
 
          !---------------------------------------------------------------------------------!
-         !   Calculate vegetation-to-canopy sensible heat flux:                            !
+         !   Calculate vegetation-to-canopy sensible heat flux.                            !
          !---------------------------------------------------------------------------------!
          hflxvc = evap_area_two * cpatch%lai(ico) * cp * rhos * rbi                        &
-                * (veg_temp - initp%can_temp)
+                    * (initp%veg_temp(ico) - initp%can_temp)
 
          !---------------------------------------------------------------------------------!
          !     Calculate interception by leaves. Added RGK 11-2008, comments welcomed      !
@@ -1093,21 +1064,18 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          !  wflxvc accounts for evaporation and dew formation.  If the leaf has more water !
          ! than the carrying capacity, then it must flux all precipitation and dew. The    !
          ! leaf water may evaporate in every condition.                                    !
-         !                                                                                 !
-         !    Following Ryan's suggestion, switched the initp%veg_water in the condition   !
-         ! by cpatch%veg_water.                                                            !
          !---------------------------------------------------------------------------------!
-         if (cpatch%veg_water(ico) >= max_leaf_water) then
+         if (initp%veg_water(ico) >= max_leaf_water) then
             !------------------------------------------------------------------------------!
             ! Case 1: Leaf has no space for rain. All rain/snow falls with the same        !
             !         density it fell. Dew and frost and old precipitation that were       !
-            !         already there will not fall and new dew/frost is allowed. It may     !
-            !         seem a bad assumption, but it considerably simplifies things and we  !
-            !         don't need to wonder what will happen with the dew/frost energy.     !
+            !         already there will likewise fall to bring it to the maximum amount   !
+            !         of leaf water.                                                       !
             !------------------------------------------------------------------------------!
             wshed                 = intercepted_tot  * cpatch%lai(ico) * laii
             qwshed                = qintercepted_tot * cpatch%lai(ico) * laii
             dwshed                = dintercepted_tot * cpatch%lai(ico) * laii
+
             intercepted           = 0.
             qintercepted          = 0.
          else
@@ -1124,13 +1092,15 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          
          dinitp%veg_water(ico) = - wflxvc + intercepted
 
-         !----- Latent heat of evap and dew. ----------------------------------------------!
+         !---------------------------------------------------------------------------------!
+         !     Find the energy balance for this cohort.                                    !
+         !---------------------------------------------------------------------------------!
          dinitp%veg_energy(ico) = cpatch%rshort_v(ico) & ! Absorbed short wave radiation
                                 + cpatch%rlong_v(ico)  & ! Net thermal radiation
                                 - hflxvc               & ! Sensible heat flux
                                 - qwflxvc              & ! Evaporative
                                 - qtransp              & ! Transpiration.
-                                + qintercepted         ! ! Int. energy of intercepted water
+                                + qintercepted         ! ! Intercepted water energy
 
 
          !----- Add the contribution of this cohort to total heat and evapotranspiration. -!
@@ -1143,10 +1113,9 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          ! wshed:  Water passing through vegetated canopy to soil surface                  !
          !         (enters virtual layer first), [kg/m2/s]                                 !
          !---------------------------------------------------------------------------------!
-         wshed_tot  = wshed_tot  + wshed
+         wshed_tot  = wshed_tot  + wshed 
          qwshed_tot = qwshed_tot + qwshed
          dwshed_tot = dwshed_tot + dwshed
-
 
       else
          !---------------------------------------------------------------------------------! 

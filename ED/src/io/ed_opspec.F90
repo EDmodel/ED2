@@ -957,12 +957,13 @@ subroutine ed_opspec_misc
    use decomp_coms, only : n_decomp_lim
    use disturb_coms, only : include_fire,ianth_disturb,treefall_disturbance_rate
    use phenology_coms, only : iphen_scheme
-   use pft_coms, only  : include_these_pft,pft_1st_check
+   use pft_coms, only  : include_these_pft,pft_1st_check,agri_stock,plantation_stock
 
    implicit none
    character(len=222)           :: reason
    integer, parameter           :: skip=huge(6)
    integer                      :: ifaterr,ifm,ipft
+   logical                      :: agri_ok,plantation_ok
    ifaterr=0
 
    if (ifoutput /= 0 .and. ifoutput /= 3) then
@@ -1032,14 +1033,25 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
 
+#if defined(COUPLED)
    do ifm=1,ngrids
-      if (isoilflg(ifm) < 1 .or. isoilflg(ifm) > 2) then
+      if (isoilflg(ifm) < 0 .or. isoilflg(ifm) > 3) then
          write (reason,fmt='(a,1x,i4,1x,a,1x,i4,a)') &
            'Invalid ISOILFLG, it must be between 0 and 3. Yours is set to',isoilflg(ifm),'for grid',ifm,'...'
          call opspec_fatal(reason,'opspec_misc')  
          ifaterr = ifaterr +1
       end if
    end do
+#else
+   do ifm=1,ngrids
+      if (isoilflg(ifm) < 1 .or. isoilflg(ifm) > 2) then
+         write (reason,fmt='(a,1x,i4,1x,a,1x,i4,a)') &
+           'Invalid ISOILFLG, it must be between 1 and 3. Yours is set to',isoilflg(ifm),'for grid',ifm,'...'
+         call opspec_fatal(reason,'opspec_misc')  
+         ifaterr = ifaterr +1
+      end if
+   end do
+#endif
 
    if (nslcon < 1 .or. nslcon > 12) then
       write (reason,fmt='(a,1x,i4,a)') &
@@ -1048,13 +1060,21 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
 
+#if defined(COUPLED)
+   if (isoilstateinit < 0 .or. isoilstateinit > 2) then
+      write (reason,fmt='(a,1x,i4,a)') &
+        'Invalid ISOILSTATEINIT, it must be between 0 and 2. Yours is set to',isoilstateinit,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+#else
    if (isoilstateinit < 0 .or. isoilstateinit > 1) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid ISOILSTATEINIT, it must be between 0 and 1. Yours is set to',isoilstateinit,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if
-
+#endif
    if (isoildepthflg < 0 .or. isoildepthflg > 1) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid ISOILDEPTHFLG, it must be between 0 and 1. Yours is set to',isoildepthflg,'...'
@@ -1139,6 +1159,46 @@ subroutine ed_opspec_misc
       end if
    end do pftloop
    
+   !----- Checking whether the user choice for agriculture and plantation make sense. -----!
+   if (ianth_disturb == 1) then
+   
+      select case (plantation_stock)
+      case (2,3,4,6,7,8,9,10,11)
+         continue
+      case default
+         write(reason,fmt='(a,1x,i5,a)') &
+            'Invalid plantation_stock , it can''t be grass and yours is set to'            &
+           &,plantation_stock,'...'
+      end select
+   
+      select case (agri_stock)
+      case (1,5,12,13,14,15)
+         continue
+      case default
+         write(reason,fmt='(a,1x,i5,a)') &
+            'Invalid AGRI_STOCK , it can''t be a tree and yours is set to',agri_stock,'...'
+      end select
+
+      agri_ok       = .false.
+      plantation_ok = .false.
+      agriloop: do ipft=1,n_pft
+         if (include_these_pft(ipft) == skip) exit agriloop
+         if (agri_stock == include_these_pft(ipft)) agri_ok = .true.
+         if (plantation_stock == include_these_pft(ipft)) plantation_ok=.true.
+      end do agriloop
+      
+      if (.not. agri_ok) then
+         write(reason,fmt='(a,1x,i5,a)')                                                   &
+            'Invalid AGRI_STOCK (',agri_stock,'). The pft must be in INCLUDE_THESE_PFT.'
+      end if
+      
+      if (.not. plantation_ok) then
+         write(reason,fmt='(a,1x,i5,a)')                                                   &
+            'Invalid PLANTATION_STOCK (',plantation_stock,                                 &
+             &'). The pft must be in INCLUDE_THESE_PFT.'
+      end if
+   end if
+
    if (pft_1st_check < 0 .or. pft_1st_check > 2) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid PFT_1ST_CHECK, it must be between 0 and 2. Yours is set to',pft_1st_check,'...'

@@ -255,6 +255,7 @@ rm -fv edcp_met.o                 edcp_met.mod
 rm -fv edcp_met_init.o            edcp_met_init.mod
 rm -fv edcp_model.o               edcp_model.mod
 rm -fv edcp_mpiutils.o            edcp_mpiutils.mod
+rm -fv edcp_para_init.o           edcp_para_init.mod
 rm -fv mem_edcp.o                 mem_edcp.mod
 rm -fv allometry.o                allometry.mod
 rm -fv average_utils.o            average_utils.mod
@@ -277,7 +278,6 @@ rm -fv ed_misc_coms.o             ed_misc_coms.mod
 rm -fv ed_node_coms.o             ed_node_coms.mod
 rm -fv ed_opspec.o                ed_opspec.mod
 rm -fv ed_para_coms.o             ed_para_coms.mod
-rm -fv ed_para_init.o             ed_para_init.mod
 rm -fv ed_params.o                ed_params.mod
 rm -fv ed_state_vars.o            ed_state_vars.mod
 rm -fv ed_therm_lib.o             ed_therm_lib.mod

@@ -150,7 +150,8 @@ subroutine reproduction_ar(cgrid, month)
                  
                  ! Make sure that this is not agriculture or that it is 
                  ! OK for this PFT to be in an agriculture patch.
-                 if(csite%dist_type(ipa) /= 1 .or. include_pft_ag(pft) == 1)then
+                 if(csite%dist_type(ipa) /= 1 .or.  &
+                    (include_pft(pft) == 1 .and. include_pft_ag(pft) == 1)) then
 
                     ! Generate specs for this PFT
                     hite = hgt_min(pft)
@@ -241,8 +242,9 @@ subroutine reproduction_ar(cgrid, month)
               !----- Because we assigned no water, the internal energy 
               !      is simply hcapveg*T
               
-              cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico), &
-                   cpatch%nplant(ico),cpatch%pft(ico))
+              cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%nplant(ico) &
+                                                ,cpatch%lai(ico),cpatch%pft(ico)      &
+                                                ,cpatch%phenology_status(ico))
               cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
               
               ! Setting new_recruit_flag to 1 indicates that 
@@ -288,7 +290,7 @@ subroutine reproduction_ar(cgrid, month)
         ! Update site properties.
         call update_site_derived_props_ar(cpoly, 0,isi)
         
-        cpoly%min_monthly_temp(isi) = 500.0
+        cpoly%min_monthly_temp(isi) = huge(1.)
         
      enddo
      

@@ -62,12 +62,12 @@ subroutine ed_driver
   ! THIS IS SHOULD ONLY BE TRUE FOR A STAND-ALONE RUN
   if (mynum == nnodetot-1) sendnum = 0
 
-  if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,602,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
+  if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,80,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
   if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Checking for XML config...'
   
   call overwrite_with_xml_config(mynum)
   
-  if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,602,MPI_COMM_WORLD,ierr)
+  if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,80,MPI_COMM_WORLD,ierr)
   if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
   
   !---------------------------------------------------------------------------!
@@ -102,12 +102,12 @@ subroutine ed_driver
 
      if (mynum == nnodetot-1) sendnum = 0
      
-     if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,606,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
+     if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,81,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
   
      if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Init_Full_History_Restart...'
      call init_full_history_restart()
      
-     if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,606,MPI_COMM_WORLD,ierr)
+     if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,81,MPI_COMM_WORLD,ierr)
      if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
      
   else
@@ -136,7 +136,7 @@ subroutine ed_driver
   
   if (mynum == nnodetot-1) sendnum = 0
 
-  if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,608,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
+  if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,82,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
 
   if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Init_Met_Drivers_Array...'
   call init_met_drivers_array
@@ -145,7 +145,7 @@ subroutine ed_driver
   call read_met_drivers_init_array
 
 
-  if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,608,MPI_COMM_WORLD,ierr)
+  if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,82,MPI_COMM_WORLD,ierr)
   if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
      
   !-----------------------------------------------------------------------!

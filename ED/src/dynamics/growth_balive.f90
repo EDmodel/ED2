@@ -100,7 +100,7 @@ subroutine dbalive_dt_ar(cgrid, tfact)
               cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - cpatch%maintenance_costs(ico)
 
               ! Calculate actual, potential and maximum carbon balances
-              call plant_carbon_balances_ar(cpatch,ico, daily_C_gain, carbon_balance,  &
+              call plant_carbon_balances_ar(cpatch,ipa,ico, daily_C_gain, carbon_balance,  &
                    carbon_balance_pot, carbon_balance_max)
 
               ! Compute respiration rates for coming day [kgC/plant/day]
@@ -115,10 +115,9 @@ subroutine dbalive_dt_ar(cgrid, tfact)
 
               ! Allocate plant carbon balance to balive and bstorage
               balive_in = cpatch%balive(ico)
-              call alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci,   &
+              call alloc_plant_c_balance_ar(csite,ipa,ico, salloc, salloci,   &
                    carbon_balance, nitrogen_uptake,   &
-                   cpoly%green_leaf_factor(cpatch%pft(ico),isi), csite%fsn_in(ipa))
-             
+                   cpoly%green_leaf_factor(cpatch%pft(ico),isi))
               ! Do a shadow calculation to see what would have happened if 
               ! stomata were open.  This is used to calculate potential 
               ! nitrogen uptake, N_uptake_pot.
@@ -143,7 +142,7 @@ subroutine dbalive_dt_ar(cgrid, tfact)
               endif
               
               ! Do mortality --- note that only frost mortality changes daily.
-              dndt = - mortality_rates_ar(cpatch,ico, csite%avg_daily_temp(ipa)) *   &
+              dndt = - mortality_rates_ar(cpatch,ipa,ico, csite%avg_daily_temp(ipa)) *   &
                    cpatch%nplant(ico) * tfact
               
               ! Update monthly mortality rate [plants/m2/month]
@@ -260,17 +259,19 @@ end subroutine plant_maintenance_and_resp_ar
 
 !===================================================================
 
-subroutine plant_carbon_balances_ar(cpatch,ico, daily_C_gain, carbon_balance,  &
+subroutine plant_carbon_balances_ar(cpatch,ipa,ico, daily_C_gain, carbon_balance,  &
      carbon_balance_pot, carbon_balance_max)
  
   use ed_state_vars,only:patchtype
   use pft_coms, only: growth_resp_factor
   use consts_coms, only: umol_2_kgC,day_sec
+  use misc_coms, only: current_time
+  use max_dims, only: n_pft
 
   implicit none
 
   type(patchtype),target :: cpatch
-  integer :: ico
+  integer :: ipa,ico
   real, intent(in) :: daily_C_gain
   real, intent(out) :: carbon_balance
   real, intent(out) :: carbon_balance_pot
@@ -279,9 +280,11 @@ subroutine plant_carbon_balances_ar(cpatch,ico, daily_C_gain, carbon_balance,  &
   real :: daily_C_gain_max
   real :: growth_respiration_pot
   real :: growth_respiration_max
+  integer :: ipft
+  logical, dimension(n_pft), save :: first_time=.true.
 
   ! Calculate actual daily carbon balance: kgC/plant/day.
-
+  ipft = cpatch%pft(ico)
   carbon_balance = daily_C_gain - cpatch%growth_respiration(ico) - cpatch%vleaf_respiration(ico)
 
   if(cpatch%nplant(ico) .gt. tiny(1.0)) then
@@ -292,7 +295,7 @@ subroutine plant_carbon_balances_ar(cpatch,ico, daily_C_gain, carbon_balance,  &
      daily_C_gain_pot = umol_2_kgC * day_sec * (cpatch%dmean_gpp_pot(ico) -   &
           cpatch%dmean_leaf_resp(ico) - cpatch%dmean_root_resp(ico)) / cpatch%nplant(ico)
      growth_respiration_pot = max(0.0, daily_C_gain_pot *   &
-          growth_resp_factor(cpatch%pft(ico)))
+          growth_resp_factor(ipft))
      carbon_balance_pot = daily_C_gain_pot - growth_respiration_pot -   &
           cpatch%vleaf_respiration(ico)
      
@@ -300,7 +303,7 @@ subroutine plant_carbon_balances_ar(cpatch,ico, daily_C_gain, carbon_balance,  &
      daily_C_gain_max = umol_2_kgC * day_sec * (cpatch%dmean_gpp_max(ico) -   &
           cpatch%dmean_leaf_resp(ico) - cpatch%dmean_root_resp(ico)) / cpatch%nplant(ico)
      growth_respiration_max = max(0.0, daily_C_gain_max *   &
-          growth_resp_factor(cpatch%pft(ico)))
+          growth_resp_factor(ipft))
      carbon_balance_max = daily_C_gain_max - growth_respiration_max -   &
           cpatch%vleaf_respiration(ico)
      
@@ -311,36 +314,56 @@ subroutine plant_carbon_balances_ar(cpatch,ico, daily_C_gain, carbon_balance,  &
   ! Carbon balances for mortality
   cpatch%cb(13,ico) = cpatch%cb(13,ico) + carbon_balance
   cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) + carbon_balance_max
+  
+
+   !if (first_time(ipft)) then
+   !   first_time(ipft) = .false.
+   !   write (unit=30+ipft,fmt='(a10,14(1x,a12))')                                          &
+   !      &'      TIME','       PATCH','      COHORT','      NPLANT','    CB_TODAY'         &
+   !      &            ,' GROWTH_RESP','  VLEAF_RESP','   DMEAN_GPP','DMEAN_GPPMAX'         &
+   !      &            ,'  DMEAN_LEAF','  DMEAN_ROOT',' CBMAX_TODAY','          CB'         &
+   !      &            ,'       CBMAX',' MAINTENANCE'
+   !end if
+   !
+   !write (unit=30+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i12),12(1x,es12.5))')                    &
+   !     current_time%month,'/',current_time%date,'/',current_time%year,ipa,ico             &
+   !    ,cpatch%nplant(ico),carbon_balance,cpatch%growth_respiration(ico)                   &
+   !    ,cpatch%vleaf_respiration(ico),cpatch%dmean_gpp(ico),cpatch%dmean_gpp_max(ico)      &
+   !    ,cpatch%dmean_leaf_resp(ico),cpatch%dmean_root_resp(ico)                            &
+   !    ,carbon_balance_max,cpatch%cb(13,ico),cpatch%cb_max(13,ico)                         &
+   !    ,cpatch%maintenance_costs(ico)
 
   return
 end subroutine plant_carbon_balances_ar
 
 !====================================================================
 
-subroutine alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci, carbon_balance,   &
-     nitrogen_uptake, green_leaf_factor, fsn_in)
+subroutine alloc_plant_c_balance_ar(csite,ipa,ico, salloc, salloci, carbon_balance,   &
+     nitrogen_uptake, green_leaf_factor)
 
-  use ed_state_vars,only:patchtype
+  use ed_state_vars,only:sitetype,patchtype
   use pft_coms, only: c2n_storage, c2n_leaf, sla, c2n_stem
   use decomp_coms, only: f_labile
   use ed_therm_lib,only : calc_hcapveg, update_veg_energy_cweh
   use allometry, only: dbh2bl
   implicit none
   
-  type(patchtype),target :: cpatch
-  integer :: ico
+  type(sitetype),target :: csite
+  type(patchtype), pointer :: cpatch
+  integer, intent(in) :: ipa,ico
   real, intent(in) :: salloc
   real, intent(in) :: salloci
   real, intent(in) :: carbon_balance
   real, intent(inout) :: nitrogen_uptake
   real, intent(in) :: green_leaf_factor
-  real, intent(inout) :: fsn_in
   real :: bl_max
   real :: bl_pot
   real :: increment
   real :: old_hcapveg
+  real :: old_status
   
-  
+  cpatch => csite%patch(ipa)
+
   if(cpatch%phenology_status(ico) == 0 .and. carbon_balance > 0.0 )then
 
      ! Simply update monthly carbon gain.  This will be 
@@ -387,7 +410,7 @@ subroutine alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci, carbon_balance,
 
 
            if(carbon_balance < 0.0)then
-              fsn_in = fsn_in - carbon_balance *  &
+              csite%fsn_in(ipa) = csite%fsn_in(ipa) - carbon_balance *  &
                    (f_labile(cpatch%pft(ico)) / c2n_leaf(cpatch%pft(ico)) + (1.0 -  &
                    f_labile(cpatch%pft(ico))) / c2n_stem ) * cpatch%nplant(ico)
            else
@@ -404,7 +427,7 @@ subroutine alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci, carbon_balance,
         cpatch%balive(ico) = max(0.0,cpatch%balive(ico) + carbon_balance)
         cpatch%bleaf(ico) = 0.0
         cpatch%lai(ico) = 0.0
-        fsn_in = fsn_in - carbon_balance *  &
+        csite%fsn_in(ipa) = csite%fsn_in(ipa) - carbon_balance *  &
              (f_labile(cpatch%pft(ico)) / c2n_leaf(cpatch%pft(ico)) + (1.0 -   &
              f_labile(cpatch%pft(ico))) / c2n_stem) * cpatch%nplant(ico)
         
@@ -413,17 +436,20 @@ subroutine alloc_plant_c_balance_ar(cpatch,ico, salloc, salloci, carbon_balance,
   
   cpatch%lai(ico) = cpatch%bleaf(ico) * cpatch%nplant(ico) * sla(cpatch%pft(ico))
   
-  
+
   !----------------------------------------------------------------------------------------!
   !     It is likely that the leaf biomass has changed, therefore, update vegetation       !
   ! energy and heat capacity.                                                              !
   !----------------------------------------------------------------------------------------!
   old_hcapveg = cpatch%hcapveg(ico)
-  cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)                   &
-                                    ,cpatch%nplant(ico),cpatch%pft(ico))
-  call update_veg_energy_cweh(cpatch%veg_energy(ico),cpatch%veg_temp(ico)                  &
-                             ,cpatch%veg_water(ico),old_hcapveg,cpatch%hcapveg(ico))
+  cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%nplant(ico)                  &
+                                    ,cpatch%lai(ico),cpatch%pft(ico)                       &
+                                    ,cpatch%phenology_status(ico))
+  call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
+  !----- Likewise, the total heat capacity must be updated --------------------------------!
+  csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
   !----------------------------------------------------------------------------------------!
+  
   
 
   return

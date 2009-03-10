@@ -521,8 +521,8 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
       ! 2. Determine a first guess for k22, the level of origin of updrafts. Check if that !
       !    didn't prevent convection to happen.                                            !
       !------------------------------------------------------------------------------------!
-      call grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,tke,qice,qliq,theiv_cup   &
-                               ,ierr,k22)
+      call grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,wwind,sigw,tke,qice,qliq  &
+                               ,theiv_cup,ierr,k22)
 
 
       if (ierr /= 0) cycle stacloop
