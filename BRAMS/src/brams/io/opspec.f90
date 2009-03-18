@@ -981,6 +981,11 @@ subroutine opspec3
      print*,' fatal - ibruvais must be either 1, 2, or 3. Yours is set to ',ibruvais,'...'
      ifaterr=ifaterr+1
   end if
+
+  if(ibotflx < 0 .or. ibotflx > 1)then
+     print*,' fatal - ibotflx must be either 0 or 1. Yours is set to ',ibotflx,'...'
+     ifaterr=ifaterr+1
+  end if
   ! check that diffusion flags are compatible if using ihorgrad=1
 
   if(ihorgrad.eq.2)then

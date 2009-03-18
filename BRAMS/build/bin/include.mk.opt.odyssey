@@ -60,8 +60,8 @@ HDF4_LIBS=
 # and specify the location of the include directory
 # library files. Make sure you include the zlib.a location too.
 USE_HDF5=1
-HDF5_INCS=-I/odyssey/apps/hdf5/intel/lib -I/odyssey/apps/hdf5/intel/include
-HDF5_LIBS=-L/odyssey/apps/hdf5/intel/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
+HDF5_INCS=
+HDF5_LIBS=-lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
 
 #---------------------------------------------------------------
 # If you have a version of hdf5 compiled in parallel, then you

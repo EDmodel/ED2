@@ -255,7 +255,7 @@ MOD_EXT=mod
 
 #------------------------------------------------------------------------------------------#
 # D. Fast check - This will check pretty much the same as C, but it will not set up        #
-#    anything for the debugger. Use this only if you really don't want to deal with idb    #
+#    anything for the debugger. Use this only if you really don't want 249544to deal with idb    #
 #    or if you have a good idea of which problem you are dealing with.                     #
 #------------------------------------------------------------------------------------------#
 #USE_INTERF=1

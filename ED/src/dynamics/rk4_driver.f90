@@ -176,6 +176,34 @@ contains
        dtrk4i = 1./dtrk4
     end if
 
+    !-----------------------------------------------------
+    ! Making sure that all buffers are flushed to zero
+    !-----------------------------------------------------
+    call zero_rk4_patch(integration_buff%initp)
+    call zero_rk4_patch(integration_buff%yscal)
+    call zero_rk4_patch(integration_buff%y)
+    call zero_rk4_patch(integration_buff%dydx)
+    call zero_rk4_patch(integration_buff%yerr)
+    call zero_rk4_patch(integration_buff%ytemp)
+    call zero_rk4_patch(integration_buff%ak2)
+    call zero_rk4_patch(integration_buff%ak3)
+    call zero_rk4_patch(integration_buff%ak4)
+    call zero_rk4_patch(integration_buff%ak5)
+    call zero_rk4_patch(integration_buff%ak6)
+    call zero_rk4_patch(integration_buff%ak7)
+    call zero_rk4_cohort(integration_buff%initp)
+    call zero_rk4_cohort(integration_buff%yscal)
+    call zero_rk4_cohort(integration_buff%y)
+    call zero_rk4_cohort(integration_buff%dydx)
+    call zero_rk4_cohort(integration_buff%yerr)
+    call zero_rk4_cohort(integration_buff%ytemp)
+    call zero_rk4_cohort(integration_buff%ak2)
+    call zero_rk4_cohort(integration_buff%ak3)
+    call zero_rk4_cohort(integration_buff%ak4)
+    call zero_rk4_cohort(integration_buff%ak5)
+    call zero_rk4_cohort(integration_buff%ak6)
+    call zero_rk4_cohort(integration_buff%ak7)
+
     !---------------------------------
     ! Set up the integration patch
     !---------------------------------

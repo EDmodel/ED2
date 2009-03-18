@@ -877,7 +877,7 @@ end subroutine apply_disturbances_ar
        cpatch%hite(nc)  = dbh2h(pft,max_dbh(pft))
     end if
 
-    cpatch%phenology_status = 0
+    cpatch%phenology_status(nc) = 0
     cpatch%balive(nc) = cpatch%bleaf(nc) * &
          (1.0 + q(cpatch%pft(nc)) + qsw(cpatch%pft(nc)) * cpatch%hite(nc))
     cpatch%lai(nc) = cpatch%bleaf(nc) * cpatch%nplant(nc) * sla(cpatch%pft(nc))

@@ -149,8 +149,7 @@ subroutine reproduction_ar(cgrid, month)
                  
                  ! Make sure that this is not agriculture or that it is 
                  ! OK for this PFT to be in an agriculture patch.
-                 if(csite%dist_type(ipa) /= 1 .or.  &
-                    (include_pft(pft) == 1 .and. include_pft_ag(pft) == 1)) then
+                 if(csite%dist_type(ipa) /= 1 .or. include_pft_ag(pft) == 1) then
 
                     ! Generate specs for this PFT
                     hite = hgt_min(pft)

@@ -33,7 +33,8 @@ subroutine diffvel(m1,m2,m3,ia,iz,ja,jz,jd  &
                            vctr6,    &     !INTENT(OUT)
                            vctr7           !INTENT(OUT)
 
-  use mem_turb, only     : ihorgrad        !INTENT(IN)
+  use mem_turb, only     : ihorgrad      & !INTENT(IN)
+                         , ibotflx       ! !INTENT(IN)
 
   implicit none
 
@@ -203,8 +204,8 @@ subroutine diffvel(m1,m2,m3,ia,iz,ja,jz,jd  &
   !---------------------horizontal u-component diffusion ----------------
 
   if(ihorgrad.eq.1)then
-     call divcart(m1,m2,m3,ia,izu,ja,jz,vt3da,vt3dj,'XDIR','TPNT')
-     call divcart(m1,m2,m3,ia,izu,ja,jz,vt3dn,vt3dk,'YDIR','PPNT')
+     call divcart(m1,m2,m3,ia,izu,ja,jz,vt3da,vt3dj,'XDIR','TPNT',ibotflx)
+     call divcart(m1,m2,m3,ia,izu,ja,jz,vt3dn,vt3dk,'YDIR','PPNT',ibotflx)
 
   elseif(ihorgrad.eq.2)then
      !        average the dn0*hkh to the velocity points
@@ -301,8 +302,8 @@ subroutine diffvel(m1,m2,m3,ia,iz,ja,jz,jd  &
   !--------------------- horizontal v-component diffusion ----------------
 
   if (ihorgrad .eq. 1) then
-     call divcart(m1,m2,m3,ia,iz,ja,jzv,vt3dc,vt3dj,'YDIR','TPNT')
-     call divcart(m1,m2,m3,ia,iz,ja,jzv,vt3db,vt3dk,'XDIR','PPNT')
+     call divcart(m1,m2,m3,ia,iz,ja,jzv,vt3dc,vt3dj,'YDIR','TPNT',ibotflx)
+     call divcart(m1,m2,m3,ia,iz,ja,jzv,vt3db,vt3dk,'XDIR','PPNT',ibotflx)
 
   elseif(ihorgrad.eq.2)then
      !        average the dn0*hkh to the velocity points
@@ -383,8 +384,8 @@ subroutine diffvel(m1,m2,m3,ia,iz,ja,jz,jd  &
 
   if (idiffkk >= 3 .and. idiffkk /= 7) then
      if (ihorgrad .eq. 1) then
-        call divcart(m1,m2,m3,ia,iz,ja,jz,vt3dd,vt3dj,'XDIR','OPNT')
-        call divcart(m1,m2,m3,ia,iz,ja,jz,vt3de,vt3dk,'YDIR','NPNT')
+        call divcart(m1,m2,m3,ia,iz,ja,jz,vt3dd,vt3dj,'XDIR','OPNT',ibotflx)
+        call divcart(m1,m2,m3,ia,iz,ja,jz,vt3de,vt3dk,'YDIR','NPNT',ibotflx)
 
      elseif(ihorgrad.eq.2)then
         call truhor(m1,m2,m3,ia,iz,ja,jz                     &
@@ -403,8 +404,8 @@ subroutine diffvel(m1,m2,m3,ia,iz,ja,jz,jd  &
 
   else
      if(ihorgrad.eq.1)then
-        call divcart(m1,m2,m3,ia,iz,ja,jz,vt3df,vt3dj,'XDIR','OPNT')
-        call divcart(m1,m2,m3,ia,iz,ja,jz,vt3dg,vt3dk,'YDIR','NPNT')
+        call divcart(m1,m2,m3,ia,iz,ja,jz,vt3df,vt3dj,'XDIR','OPNT',ibotflx)
+        call divcart(m1,m2,m3,ia,iz,ja,jz,vt3dg,vt3dk,'YDIR','NPNT',ibotflx)
 
      elseif(ihorgrad.eq.2)then
         call truhor(m1,m2,m3,ia,iz,ja,jz                  &
@@ -478,7 +479,8 @@ subroutine diffsclr(m1,m2,m3,ia,iz,ja,jz,jd  &
                        , vctr6   & !INTENT(OUT)
                        , vctr7     !INTENT(OUT)
 
-  use mem_turb, only: ihorgrad     !INTENT(IN)
+  use mem_turb, only: ihorgrad   & !INTENT(IN)
+                    , ibotflx    ! !INTENT(IN)
 
   use var_tables
 
@@ -666,8 +668,8 @@ subroutine diffsclr(m1,m2,m3,ia,iz,ja,jz,jd  &
   !     compute 2 horizontal scalar gradients needed for dscp/dt
 
   if (ihorgrad .eq. 1) then
-     call grad(m1,m2,m3,1,iz,ja,jz,scp,vt3df,'XDIR','TPNT')
-     call grad(m1,m2,m3,ia,iz,1,jz,scp,vt3dg,'YDIR','TPNT')
+     call grad(m1,m2,m3,1,iz,ja,jz,scp,vt3df,'XDIR','TPNT',ibotflx)
+     call grad(m1,m2,m3,ia,iz,1,jz,scp,vt3dg,'YDIR','TPNT',ibotflx)
 
      do j = ja,jz
         do i = 1,iz
@@ -691,9 +693,8 @@ subroutine diffsclr(m1,m2,m3,ia,iz,ja,jz,jd  &
   !         horizontal flux divergence for scalars
 
   if (ihorgrad .eq. 1) then
-     call divcart(m1,m2,m3,ia,iz,ja,jz,vt3df,vt3da,'XDIR','UPNT')
-
-     call divcart(m1,m2,m3,ia,iz,ja,jz,vt3dg,vt3db,'YDIR','VPNT')
+     call divcart(m1,m2,m3,ia,iz,ja,jz,vt3df,vt3da,'XDIR','UPNT',ibotflx)
+     call divcart(m1,m2,m3,ia,iz,ja,jz,vt3dg,vt3db,'YDIR','VPNT',ibotflx)
 
   elseif (ihorgrad .eq. 2) then
      call truhor(m1,m2,m3,ia,iz,ja,jz  &

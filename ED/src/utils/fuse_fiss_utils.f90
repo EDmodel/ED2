@@ -882,8 +882,6 @@ module fuse_fiss_utils_ar
       !------------------------------------------------------------------------------------!
       cpatch%balive(recc) = ( cpatch%nplant(recc) * cpatch%balive(recc)                    &
                             + cpatch%nplant(donc) * cpatch%balive(donc) ) *newni
-      cpatch%bleaf(recc)  = ( cpatch%nplant(recc) * cpatch%bleaf(recc)                     &
-                            + cpatch%nplant(donc) * cpatch%bleaf(donc) ) *newni
       cpatch%bstorage(recc) = ( cpatch%nplant(recc) * cpatch%bstorage(recc)                &
                               + cpatch%nplant(donc) * cpatch%bstorage(donc) ) * newni
       cpatch%bseeds(recc)   = ( cpatch%nplant(recc) * cpatch%bseeds(recc)                  &
@@ -896,8 +894,37 @@ module fuse_fiss_utils_ar
 
 
       !----- LAI is simply the sum. -------------------------------------------------------!
-      cpatch%lai(recc)    = cpatch%lai(recc) + cpatch%lai(donc)
+      if (cpatch%phenology_status(recc) < 2) then
+      else
+      end if
       !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !    Bleaf, LAI, energy, water mass and heat capacity must be zero if phenology      !
+      ! status is 2.  This is probably done correctly throughout the code, but being safe  !
+      ! here.                                                                              !
+      !------------------------------------------------------------------------------------!
+      if (cpatch%phenology_status(recc) < 2) then
+         cpatch%bleaf(recc)  = ( cpatch%nplant(recc) * cpatch%bleaf(recc)                  &
+                               + cpatch%nplant(donc) * cpatch%bleaf(donc) ) *newni
+         cpatch%lai(recc)    = cpatch%lai(recc) + cpatch%lai(donc)
+         cpatch%veg_energy(recc) = cpatch%veg_energy(recc) + cpatch%veg_energy(donc)
+         cpatch%veg_water(recc)  = cpatch%veg_water(recc)  + cpatch%veg_water(donc)
+         cpatch%hcapveg(recc)    = cpatch%hcapveg(recc)    + cpatch%hcapveg(donc)
+         !----- Updating temperature ------------------------------------------------------!
+         call qwtk(cpatch%veg_energy(recc),cpatch%veg_water(recc),cpatch%hcapveg(recc)     &
+                  ,cpatch%veg_temp(recc),fracliq)
+      else
+         cpatch%bleaf(recc)      = 0.
+         cpatch%lai(recc)        = 0.
+         cpatch%veg_energy(recc) = 0.
+         cpatch%veg_water(recc)  = 0.
+         cpatch%hcapveg(recc)    = 0.
+         !----- In case cohorts don't have leaves, fuse their temperatures (singularity) --!
+         cpatch%veg_temp(recc) = newni                                                     &
+                               * ( cpatch%veg_temp(recc) * cpatch%nplant(recc)             &
+                                 + cpatch%veg_temp(donc) * cpatch%nplant(donc))
+      end if
 
       cb_act = 0.
       cb_max = 0.
@@ -924,25 +951,6 @@ module fuse_fiss_utils_ar
          cpatch%cbr_bar(recc) = 0.0
       end if
 
-
-      !------------------------------------------------------------------------------------!
-      !    Energy, water mass and heat capacity are extensive properties, and area         !
-      ! dependent. Therefore, the updated value will be simply the sum of each cohort.     !
-      ! We skip this if leaves are absent.                                                 !
-      !------------------------------------------------------------------------------------!
-      if (cpatch%phenology_status(recc) < 2) then
-         cpatch%veg_energy(recc) = cpatch%veg_energy(recc) + cpatch%veg_energy(donc)
-         cpatch%veg_water(recc)  = cpatch%veg_water(recc)  + cpatch%veg_water(donc)
-         cpatch%hcapveg(recc)    = cpatch%hcapveg(recc)    + cpatch%hcapveg(donc)
-         !----- Updating temperature ------------------------------------------------------!
-         call qwtk(cpatch%veg_energy(recc),cpatch%veg_water(recc),cpatch%hcapveg(recc)     &
-                  ,cpatch%veg_temp(recc),fracliq)
-      else
-         !----- In case cohorts don't have leaves, fuse their temperatures (singularity) --!
-         cpatch%veg_temp(recc) = newni                                                     &
-                               * ( cpatch%veg_temp(recc) * cpatch%nplant(recc)             &
-                                 + cpatch%veg_temp(donc) * cpatch%nplant(donc))
-      end if
 
 
       !------------------------------------------------------------------------------------!
