@@ -1374,21 +1374,30 @@ module ed_state_vars
   type rk4patchtype
      
 
-     ! Prognostic variables
+     ! Prognostic variables + some useful aux variables
      ! ---------------------------------------
      
      real :: can_temp
      real :: can_shv
      real :: can_co2
      
-     real, pointer :: soil_energy(:)
-     real, pointer :: soil_tempk(:)
-     real, pointer :: soil_fracliq(:)
-     real(kind=8), pointer :: soil_water(:)
      
-     real, pointer :: sfcwater_depth(:)
-     real, pointer :: sfcwater_mass(:)
-     real, pointer :: sfcwater_energy(:)
+     real        , dimension(:), pointer :: soil_energy
+     real        , dimension(:), pointer :: soil_tempk
+     real        , dimension(:), pointer :: soil_fracliq
+     real(kind=8), dimension(:), pointer :: soil_water
+     real        , dimension(:), pointer :: psiplusz
+     real        , dimension(:), pointer :: soilair99
+     real        , dimension(:), pointer :: soilair01
+     real        , dimension(:), pointer :: soil_liq
+     real        , dimension(:), pointer :: available_liquid_water
+     real        , dimension(:), pointer :: extracted_water
+     
+     real        , dimension(:), pointer :: sfcwater_depth
+     real        , dimension(:), pointer :: sfcwater_mass
+     real        , dimension(:), pointer :: sfcwater_energy
+     real        , dimension(:), pointer :: sfcwater_tempk
+     real        , dimension(:), pointer :: sfcwater_fracliq
      
      real :: virtual_water
      real :: virtual_heat
@@ -1396,8 +1405,6 @@ module ed_state_vars
      
      real :: ground_shv
      real :: surface_ssh
-     real, pointer :: sfcwater_tempk(:)
-     real, pointer :: sfcwater_fracliq(:)
      integer :: nlev_sfcwater
      real :: net_rough_length
      
@@ -1421,8 +1428,6 @@ module ed_state_vars
      real, dimension(n_pft) :: a_c_max
      real :: rasveg
      real :: root_res_fac
-     real, pointer :: available_liquid_water(:)
-     real, pointer :: extracted_water(:)
      
      real,pointer,dimension(:) :: veg_energy
      real,pointer,dimension(:) :: veg_water

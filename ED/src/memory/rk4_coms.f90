@@ -39,17 +39,16 @@ module rk4_coms
    real   , parameter :: errcon = 1.89e-4
 
    !----- Constants used in rk4_derivs ----------------------------------------------------!
-   real   , parameter :: leaf_h2o_thick = 0.11 ! mm
    logical, parameter :: debug  = .true.       ! Verbose output for debug (T|F)
-   real   , parameter :: toocold = 150.        ! Minimum temperature for sat.,1 K
+   real   , parameter :: toocold = 153.15      ! Minimum temperature for sat., -120°C
    real   , parameter :: toohot  = 353.15      ! Maximum temperature for sat.,  80°C
    real   , parameter :: lai_to_cover = 1.5    ! Canopies with LAI less than this number 
                                                !    are assumed to be open, ie, some 
                                                !    fraction of the rain-drops can reach
                                                !    the soil/litter layer unimpeded.
-   real   , parameter :: evap_area_one = 1.2   ! Evaporation are factor (1 side of leaves 
+   real   , parameter :: evap_area_one = 1.2   ! Evaporation area factor (1 side of leaves
                                                !    + branches + stems) 
-   real   , parameter :: evap_area_two = 2.2   ! Evaporation are factor (2 sides of leaves 
+   real   , parameter :: evap_area_two = 2.2   ! Evaporation area factor (2 sides of leaves
                                                !    + branches + stems) 
    !---------------------------------------------------------------------------------------!
    
@@ -112,10 +111,10 @@ module rk4_coms
    real, parameter :: rk4max_can_temp  = 341.00  ! ~10C hotter than record in El Azizia;
    real, parameter :: rk4min_can_temp  = 184.00  ! ~10C colder than record in Vostok;
    real, parameter :: rk4min_can_shv   = 1.e-8   ! Horribly dry
-   real, parameter :: rk4max_can_shv   = 0.20    ! This roughly corresponds to a dewpoint 
+   real, parameter :: rk4max_can_shv   = 0.04    ! This roughly corresponds to a dewpoint 
                                                  !    of about 43C at 1000hPa, or 34C at 
                                                  !    600 hPa. This is ridiculously humid.
-   real, parameter :: rk4max_can_rhv   = 2.00    ! Maximum acceptable canopy relative 
+   real, parameter :: rk4max_can_rhv   = 1.10    ! Maximum acceptable canopy relative 
                                                  !     humidity. We can't be strict here
                                                  !     and impose 100% relative humidity
                                                  !     as maximum because ED doesn't have
@@ -123,16 +122,28 @@ module rk4_coms
                                                  !     occur. That's something to consider
                                                  !     in the future...
 
-   real, parameter :: rk4max_soil_temp = 341.00  ! ~10C hotter than rk4max_can_temp
-   real, parameter :: rk4min_soil_temp = 184.00  ! Same as rk4min_soil_temp
+   real, parameter :: rk4max_soil_temp  = 341.00 ! ~10C hotter than record in El Azizia;
+   real, parameter :: rk4min_soil_temp  = 184.00 ! Same as rk4min_soil_temp
 
-   real, parameter :: rk4max_veg_temp  = 341.00  ! ~10C hotter than rk4max_can_temp.
-   real, parameter :: rk4min_veg_water = -1.e-2  ! Minimum leaf water allowed. This will
-                                                 !  be multiplied by LAI
+   real, parameter :: rk4max_veg_temp   = 341.00 ! ~10C hotter than record in El Azizia;
+   real, parameter :: rk4min_veg_lwater = -1.e-3 ! Minimum leaf water allowed. This is 
+                                                 !   in kg/[m2 leaf], so it will be multi-
+                                                 !   plied by LAI.
 
-   real, parameter :: rk4min_sfcw_temp = 193.15  ! -80C
-   real, parameter :: rk4min_sfcw_mass = -1.e-2  ! ???? Minimum water mass allowed.
-   real, parameter :: rk4min_virt_water = -1.e-2 ! Minimum water allowed at virtual pool.
+   real, parameter :: rk4min_sfcw_temp  = 193.15 ! -80C
+   real, parameter :: rk4max_sfcw_temp  = 341.00 ! ~10C hotter than record in El Azizia;
+   !---------------------------------------------------------------------------------------!
+   !    The minimum mass of surface water and virtual layer are given in m3/m3 rather than !
+   ! kg/m2.  This is because there will be exchange between the top soil layer and the     !
+   ! layers above in case the mass goes below the minimum.  Since this would make the im-  !
+   ! pact of such exchange dependent on the soil depth, we assign the scale a function of  !
+   ! the top layer thickness.                                                              !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: rk4min_sfcw_moist = -1.e-3 ! Minimum water mass allowed.
+   real, parameter :: rk4min_virt_moist = -1.e-3 ! Minimum water allowed at virtual pool.
+   !----- The following variables will be defined in sfcdata_ed (ed_init.f90). ------------!
+   real            :: rk4min_sfcw_mass           ! Minimum water mass allowed.
+   real            :: rk4min_virt_water          ! Minimum water allowed at virtual pool.
    !---------------------------------------------------------------------------------------!
 
 end module rk4_coms

@@ -436,7 +436,7 @@ contains
 
        ! For plants buried in snow, fix the leaf temperature to the snow temperature of the
        ! layer that is the closest to the leaves.
-       if (cpatch%hite(ico) <  csite%total_snow_depth(ipa)) then
+       if (cpatch%hite(ico) <=  csite%total_snow_depth(ipa)) then
           adjacent_layer = 1
            do k = csite%nlev_sfcwater(ipa), 1, -1
               if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) then
@@ -446,7 +446,7 @@ contains
           cpatch%veg_temp(ico)   = csite%sfcwater_tempk(adjacent_layer,ipa)
           cpatch%veg_water(ico)  = 0.
           cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
-       elseif (cpatch%lai(ico) < lai_min) then
+       elseif (cpatch%lai(ico) <= lai_min) then
           ! For plants with minimal foliage, fix the vegetation
           ! temperature to the canopy air space and force veg_water to be zero.
           cpatch%veg_temp(ico)   = csite%can_temp(ipa)

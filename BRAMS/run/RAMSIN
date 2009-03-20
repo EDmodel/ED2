@@ -250,8 +250,8 @@
 ! History/analysis file output
  
    IOUTPUT  =  2,                                ! 0-no files, 1-save ASCII, 2-save binary
-   HFILOUT  = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/histo/wetamc', 
-   AFILOUT  = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/analy/wetamc',
+   HFILOUT  = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/histo/nouveau', 
+   AFILOUT  = '/n/data/moorcroft_lab/mlongo/EDBRAMS/wetamc/analy/nouveau',
    ICLOBBER = 1,                                 ! 0=stop if files exist, 1=overwite files
    IHISTDEL = 0,                                 ! 0=keep all hist files, 1=delete previous
    FRQHIS   = 86400.,          ! History file frequency
@@ -325,8 +325,8 @@
               '/n/Moorcroft_Lab/Lab/data/brams_data/weeklysst/1999/W',
    IVEGTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/veg_usgs/VUSGS_',
               '/n/Moorcroft_Lab/Lab/data/brams_data/veg_usgs/VUSGS_',
-   ISOILFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soil_inpe/LReFAO',
-              '/n/Moorcroft_Lab/Lab/data/brams_data/soil_inpe/LReFAO',
+   ISOILFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soil_radam+fao/LReFAO',
+              '/n/Moorcroft_Lab/Lab/data/brams_data/soil_radam+fao/LReFAO',
     NDVIFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/ndvi-modis/N',
               '/n/Moorcroft_Lab/Lab/data/brams_data/ndvi-modis/N',
               '/n/Moorcroft_Lab/Lab/data/brams_data/ndvi-modis/N',
@@ -401,7 +401,7 @@
    !                  PS2: The first value is always assigned for the deepest cloud, even  !
    !                       if you are not running it.                                      !
    !---------------------------------------------------------------------------------------!
-   CONFRQ=1200., 600.,
+   CONFRQ= 900., 600.,
    CPTIME=7200.,3600.,
 
 
@@ -413,29 +413,29 @@
    ! needs to be here).                                                                    !
    !=======================================================================================!
    
-   IUPMETHOD   = 4,          ! How to find the level in which updrafts originate:
+   IUPMETHOD   = 3,          ! How to find the level in which updrafts originate:
                              ! 1. Maximum moist static energy;
                              ! 2. PBL top (if IDIFFK=7, uses the pblhgt from turbulence)
                              ! 3. Most turbulent layer
-                             ! 4. Maximum w + sigma w (both turblent 
+                             ! 4. Max w+sigw within the PBL.
    
-   IUPSTRM     = 0,          ! Check for previous upstream downdraft?
+   IUPSTRM     = 1,          ! Check for previous upstream downdraft?
                              ! 0. No, thanks
                              ! 1. Check and lower cap_maxs
                              ! 2. Check, lower cap_maxs and use the upstream downdraft
                              !    mass flux to enhance convection downstream
                              !    (not tested thoroughly, use with caution)
    
-   RADIUS    = 15000.,  666.,     ! (nclouds) - Cloud mean radius [m]. Important: the
+   RADIUS    = 12000.,  666.,     ! (nclouds) - Cloud mean radius [m]. Important: the
                                   !    cloud won't have downdrafts nor precipitation if
                                   !    it is less than min_down_radius (grell_coms.f90).
                                   !    Default threshold is 900.
 
-   DEPTH_MIN =  4000.,   60.,     ! (nclouds) - Grell's deep and shallow convection:
+   DEPTH_MIN =  5000.,   60.,     ! (nclouds) - Grell's deep and shallow convection:
                                   !    Minimum depth that the cloud must have [m]
 
    !CAP_MAXS  = 110.,110.,
-   CAP_MAXS  =  -10., -1.,        ! (nclouds) Grell's deep and shallow convection:
+   CAP_MAXS  =  -16., -1.,        ! (nclouds) Grell's deep and shallow convection:
                                   !           This one depends on the sign:
                                   !    Positive: Depth of the inverse capping in hPa. 
                                   !              The larger the value is, the less likely 
@@ -460,7 +460,7 @@
 
    Z_DETR   = 1250.,1250.,        ! (nclouds) - Top of the downdraft detrainment layer [m]
    
-   MAX_HEAT =  300., 250.,        ! (nclouds) - Maximum heating allowed for feedback [K/day]
+   MAX_HEAT =  400., 250.,        ! (nclouds) - Maximum heating allowed for feedback [K/day]
 
    !=======================================================================================!
    !    The following variables will define the ensemble members. Currently 4 types of     !
@@ -543,7 +543,7 @@
    RADDATFN = '',            ! Radiation parameterization datafile
                              ! (only if iswrtyp and/or ilwrtyp is 4).
                              !
-   RADFRQ   = 720.,          ! Freq. of radiation tendency update (s)
+   RADFRQ   = 900.,          ! Freq. of radiation tendency update (s)
    LONRAD   = 1,             ! Longitudinal variation of shortwave
                              !    (0-no, 1-yes)
  
@@ -606,7 +606,7 @@
                              ! h => HISTORY
                              ! a => INITIAL or HISTORY
 
-   SOIL_MOIST_FAIL = 'l',    ! In case that Heterogenous Soil Moist.
+   SOIL_MOIST_FAIL = 'h',    ! In case that Heterogenous Soil Moist.
                              ! file is not found, what should RAMS do?
                              ! s => STOP the program
                              ! h => Initialize with Homogenous Soil Moist.
@@ -647,6 +647,11 @@
    IBRUVAIS = 1,             !  Brunt-Väisälä frequency:
                              !  1 - Traditional method (g/theta_v d(theta_v)/dz)^½;
                              !  2 - Wet enhancement (violates 2nd law of thermo, though).
+
+   IBOTFLX  = 1,             !  Horizontal advection flux:
+                             !   (this variable will be removed soon)
+                             !  0 - Original code
+                             !  1 - Meester's bug fix 
 
    IHORGRAD = 1,             !  1 - horiz grad frm decomposed sigma grad
                              !  2 - true horizontal gradient. 
@@ -702,7 +707,7 @@
 ! Main time step parameters                                               !
 !-------------------------------------------------------------------------!
 
-   DTLSM  = 360.0,    ! Basic time step [s].  In the Euler scheme, this
+   DTLSM  = 720.0,    ! Basic time step [s].  In the Euler scheme, this
                       ! is the length of the Euler time step.  Recommended
                       ! values are between 60-180.  In the Runge Kutta
                       ! scheme, this is the time between photosynthesis
@@ -799,7 +804,7 @@
    ISOILDEPTHFLG  = 0,  ! 0 -- use NZG, SLZ for each grid cell
                        ! 1 -- read file to get soil depth for each grid cell
    
-   ISOILBC        = 0,  ! Soil boundary condition at lowest soil level
+   ISOILBC        = 1,  ! Soil boundary condition at lowest soil level
                         ! 0 - Bedrock;
                         ! 1 - Free drainage.
 !-------------------------------------------------------------------------!
@@ -886,21 +891,22 @@
                      ! For both MAXPATCH and MAXCOHORT, 0 means that fusion
                      !    will never be forced. Negative number means that
                      !    fusion will happen only during the initialization.
-!-------------------------------------------------------------------------!
+!------------------------------------------------------------------------------------------!
                                                                  
                                          
-!-------------------------------------------------------------------------!
+!------------------------------------------------------------------------------------------!
 ! Commonly changed parameters                                                              !
-!-------------------------------------------------------------------------!
+!------------------------------------------------------------------------------------------!
 
-   TREEFALL_DISTURBANCE_RATE  = 0.0,  ! Treefall disturbance rate, 1/years
+   TREEFALL_DISTURBANCE_RATE  = 0.01,  ! Treefall disturbance rate, 1/years
 
-   RUNOFF_TIME     = 86400.0,         ! the forest could get saturated and 
-                                        ! develop a sfcwater pool of meters or 
-                                        ! more.  In many cases, this is not realistic.
-                                        ! This is the time scale in seconds for 
-                                        ! this water to disappear.        
-!-------------------------------------------------------------------------!
+   RUNOFF_TIME     = 21600.0,          ! the forest could get saturated and 
+                                       ! develop a sfcwater pool of meters or 
+                                       ! more.  In many cases, this is not realistic.
+                                       ! This is the time scale in seconds for 
+                                       ! this water to disappear.  If you want no runoff
+                                       ! to happen at all, set runoff_time = 0.
+!------------------------------------------------------------------------------------------!
 
 !-------------------------------------------------------------------------!
 ! Control parameters for printing to standard output                      

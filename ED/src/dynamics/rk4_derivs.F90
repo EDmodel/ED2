@@ -147,6 +147,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
    use ed_state_vars        , only : sitetype             & ! structure
                                    , patchtype            & ! structure
                                    , rk4patchtype         ! ! structure
+   use rk4_coms             , only : rk4eps               ! ! intent(in)
    use ed_therm_lib         , only : ed_grndvap           ! ! subroutine
    use therm_lib            , only : qtk                  & ! subroutine
                                    , qwtk                 & ! subroutine
@@ -186,9 +187,6 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
    real                             :: dwshed        ! Density flux due to water shedding
    real, dimension(nzgmax+nzsmax)   :: rfactor       ! 
    real, dimension(nzgmax+nzsmax+1) :: hfluxgsc      ! Surface -> canopy heat flux
-   real, dimension(nzgmax)          :: soil_liq      ! Soil liquid water (i.e. not frozen)
-   real, dimension(nzgmax)          :: psiplusz      ! Water potential
-   real, dimension(nzgmax)          :: soilair99     ! 99% of soil field capacity
    real, dimension(nzg+nzs+1)       :: w_flux        ! Water flux (aux. variable)
    real, dimension(nzg+nzs+1)       :: qw_flux       ! Heat flux (aux. variable)
    real, dimension(nzs+1)           :: d_flux        ! Density flux
@@ -292,6 +290,31 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
       initp%available_liquid_water(k) = initp%available_liquid_water(k+1) + dslz(k)        &
            * max(0.0,(sngl(initp%soil_water(k))-soil(nsoil)%soilcp)*initp%soil_fracliq(k))
    end do
+
+   !---------------------------------------------------------------------------------------!
+   !     Compute gravitational potential plus moisture potential, psi + z (psiplusz) [m],  !
+   ! liquid water content (soil_liq) [m], and 99% the remaining water capacity (soilair99) !
+   ! [m].                                                                                  !
+   !---------------------------------------------------------------------------------------!
+   do k = lsl, nzg
+      nsoil = csite%ntext_soil(k,ipa)
+      initp%psiplusz(k) = slzt(k) + soil(nsoil)%slpots                                     &
+                        * (soil(nsoil)%slmsts / sngl(initp%soil_water(k)))                 & 
+                        ** soil(nsoil)%slbs
+
+      !------------------------------------------------------------------------------------!
+      !    Soil liquid water must be converted to meters of liquid water per layer. This   !
+      ! requires multiplication of volumetric water content, m3(water)/m3 must be          !
+      ! multiplied by depth to get a depth of water.                                       !
+      !------------------------------------------------------------------------------------!
+      initp%soil_liq(k) = max(0.0                                                          &
+                             ,( sngl(initp%soil_water(k)) - soil(nsoil)%soilcp)            &
+                              * initp%soil_fracliq(k) )
+      initp%soilair99(k) = (1.-rk4eps) * soil(nsoil)%slmsts - sngl(initp%soil_water(k))
+      initp%soilair01(k) = (sngl(initp%soil_water(k)) - (1.+rk4eps) * soil(nsoil)%soilcp)  &
+                         * initp%soil_fracliq(k)
+   end do
+   !---------------------------------------------------------------------------------------!
 
  
    !----- Get derivatives of canopy variables. --------------------------------------------!
@@ -430,27 +453,6 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
 
    dinitp%avg_smoist_gg(nzg) = w_flux(nzg+ksn+1)  ! Diagnostic
 
-   !---------------------------------------------------------------------------------------!
-   !     Compute gravitational potential plus moisture potential, psi + z (psiplusz) [m],  !
-   ! liquid water content (soil_liq) [m], and 99% the remaining water capacity (soilair99) !
-   ! [m].                                                                                  !
-   !---------------------------------------------------------------------------------------!
-   do k = lsl, nzg
-      nsoil = csite%ntext_soil(k,ipa)
-      psiplusz(k) = slzt(k) + soil(nsoil)%slpots                                           &
-                  * (soil(nsoil)%slmsts / sngl(initp%soil_water(k))) ** soil(nsoil)%slbs
-
-      !------------------------------------------------------------------------------------!
-      !    Soil liquid water must be converted to meters of liquid water per layer. This   !
-      ! requires multiplication of volumetric water content, m3(water)/m3 must be          !
-      ! multiplied by depth to get a depth of water.                                       !
-      !------------------------------------------------------------------------------------!
-      soil_liq(k) = max(0.0, ( sngl(initp%soil_water(k)) - soil(nsoil)%soilcp)             &
-                             * initp%soil_fracliq(k))
-      soilair99(k) = 0.99 * soil(nsoil)%slmsts - sngl(initp%soil_water(k))
-   end do
-   !---------------------------------------------------------------------------------------!
-
 
 
    !---------------------------------------------------------------------------------------!
@@ -473,7 +475,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
             infilt = -dslzi(nzg)* 0.5 * slcons1(nzg,nsoil)                                 &
                    * (sngl(initp%soil_water(nzg)) / soil(nsoil)%slmsts)                    &
                      **(2. * soil(nsoil)%slbs + 3.)                                        &
-                   * (psiplusz(nzg) - sngl(initp%virtual_water)/2000.0) & !diff. in pot.
+                   * (initp%psiplusz(nzg)-sngl(initp%virtual_water)/2000.0) & !diff. in pot.
                    * .5 * (initp%soil_fracliq(nzg)+ fracliq)         ! mean liquid fraction
             qinfilt = infilt * cliqvlme * (tempk - tsupercool)
             !----- Adjust other rates accordingly -----------------------------------------!
@@ -492,7 +494,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
             infilt = -dslzi(nzg) * 0.5 * slcons1(nzg,nsoil)                                &
                    * (sngl(initp%soil_water(nzg)) / soil(nsoil)%slmsts)                    &
                      **(2. * soil(nsoil)%slbs + 3.)                                        &
-                   * (psiplusz(nzg) - surface_water/2.0)     &  !difference in potentials
+                   * (initp%psiplusz(nzg) - surface_water/2.0) &  !difference in potentials
                    * .5 * (initp%soil_fracliq(nzg)+ fracliq)    ! mean liquid fraction
             qinfilt = infilt * cliqvlme * (tempk - tsupercool)
             !----- Adjust other rates accordingly -----------------------------------------!
@@ -517,9 +519,18 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
          if(freezeCor < 1.0) freezeCor = 10.0**(-freezeCoef*(1.0-freezeCor))
          w_flux(k) = dslzti(k) * slcons1(k,nsoil)                                          &
                    * (wgpmid / soil(nsoil)%slmsts)**(2. * soil(nsoil)%slbs + 3.)           &
-                   * (psiplusz(k-1) - psiplusz(k)) * freezeCor
+                   * (initp%psiplusz(k-1) - initp%psiplusz(k)) * freezeCor
+
+        !----------------------------------------------------------------------------------!
+        !      Limit water transfers to prevent over-saturation and over-depletion.        !
+        !----------------------------------------------------------------------------------!
+        if (w_flux(k) > 0.) then
+           if (initp%soilair01(k-1) <= 0.0 .or. initp%soilair99(k) <= 0.0 ) w_flux(k) = 0.
+        else
+           if (initp%soilair99(k-1) <= 0.0 .or. initp%soilair01(k) <= 0.0 ) w_flux(k) = 0.
+        end if
       end if
-      !----- Only liquid water is allowed to flow, find qw accordingly --------------------!
+      !----- Only liquid water is allowed to flow, find qw_flux (W/m2) accordingly --------!
       qw_flux(k) = w_flux(k) * cliqvlme * (initp%soil_tempk(k) - tsupercool)
       dinitp%avg_smoist_gg(k-1) = w_flux(k)*wdns   ! Diagnostic
    end do
@@ -534,8 +545,15 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
       w_flux(lsl) = dslzti(lsl) * slcons1(lsl,nsoil)                                       &
                   * (wgpmid / soil(nsoil)%slmsts)**(2. * soil(nsoil)%slbs + 3.)            &
                   * freezeCor
-      if (soil_liq(lsl) == 0.) w_flux(lsl) = 0.
-      !----- Only  liquid water is allowed to flow, find qw accordingly -------------------!
+      !------------------------------------------------------------------------------------!
+      !      Limit water transfers to prevent over-saturation and over-depletion.          !
+      !------------------------------------------------------------------------------------!
+      if (w_flux(lsl) > 0.) then
+         if (initp%soilair99(lsl) <= 0.0) w_flux(lsl) = 0.
+      else
+         if (initp%soilair01(lsl) <= 0.0) w_flux(lsl) = 0.
+      end if
+      !----- Only liquid water is allowed to flow, find qw_flux (W/m2) accordingly --------!
       qw_flux(lsl) = w_flux(lsl) * cliqvlme * (initp%soil_tempk(lsl) - tsupercool)
    else
       !----- Bedrock, no flux accross it. -------------------------------------------------!
@@ -559,7 +577,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
                if (initp%available_liquid_water(k1) > 0.0) then
                   
                   wloss = wdnsi * initp%extracted_water(k1)                                &
-                        * soil_liq(k2) / initp%available_liquid_water(k1)
+                        * initp%soil_liq(k2) / initp%available_liquid_water(k1)
                   
                   dinitp%soil_water(k2) = dinitp%soil_water(k2) - dble(wloss)
                   
@@ -613,8 +631,12 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
                                     , idns              ! ! intent(in)
    use grid_coms             , only : nzg               ! ! intent(in)
    use soil_coms             , only : soil              & ! intent(in)
+                                    , dslzi             & ! intent(in)
+                                    , water_stab_thresh & ! intent(in)
                                     , dewmax            ! ! intent(in)
    use canopy_radiation_coms , only : lai_min           ! ! intent(in)
+   use canopy_air_coms       , only : min_veg_lwater    & ! intent(in)
+                                    , max_veg_lwater    ! ! intent(in)
    use therm_lib             , only : qwtk              & ! subroutine
                                     , rslif             ! ! function
    use misc_coms             , only : dtlsm             ! ! intent(in)
@@ -623,8 +645,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    use pft_coms              , only : water_conductance & ! intent(in)
                                     , q                 & ! intent(in)
                                     , qsw               ! ! intent(in)
-   use rk4_coms              , only : leaf_h2o_thick    & ! intent(in)
-                                    , debug             & ! intent(in)
+   use rk4_coms              , only : debug             & ! intent(in)
                                     , toocold           & ! intent(in)
                                     , toohot            & ! intent(in)
                                     , lai_to_cover      & ! intent(in)
@@ -699,6 +720,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    real                             :: storage_decay    !
    real                             :: leaf_flux        !
    real                             :: sat_shv          !
+   real                             :: min_leaf_water   !
    real                             :: max_leaf_water   !
    real                             :: maxfluxrate      !
    real                             :: intercepted_tot  !
@@ -852,8 +874,8 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
 
  
    !---------------------------------------------------------------------------------------!
-   !     Calculate the dew flux, and impose a dew cap. Here the decision on whether dew or !
-   ! frost will form depends on the surface_temperature.                                   !
+   !     Calculate the dew flux.  Here the decision on whether dew or frost will form      !
+   ! depends on the surface_temperature.                                                   !
    !---------------------------------------------------------------------------------------!
    dewgndflx  = max(0.0, -wflx)
    qdewgndflx = dewgndflx * (alvi - surface_fliq * alli)
@@ -872,7 +894,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
       wflxgc  = max(0.,wflx)
       qwflxgc = max(0.,qwflx)
    !----- No surface water and not dry: evaporate from soil pores -------------------------!
-   else if (initp%soil_water(nzg) > dble(soil(csite%ntext_soil(nzg,ipa))%soilcp)) then
+   else if (initp%soilair01(nzg) > 0.0 ) then
       wflxgc = max( 0.0, (initp%ground_shv - initp%can_shv) * rdi)
       !----- Adjusting the flux accordingly to the surface fraction (no phase bias) -------!
       qwflxgc = wflxgc * ( alvi - surface_fliq * alli)
@@ -932,15 +954,15 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          !------ Update CO2 flux from vegetation to canopy air space. ---------------------!
          cflxvc_tot = cflxvc_tot - leaf_flux
 
-
          !---------------------------------------------------------------------------------!
-         !     If there is more leaf water (kg/m² leaf) than this threshold then no more   !
-         ! water may be allowed to collect on the leaf.                                    !
+         !     Defining the minimum leaf water to be considered, and the maximum amount    !
+         ! possible.                                                                       !
          !---------------------------------------------------------------------------------!
-         max_leaf_water = leaf_h2o_thick*cpatch%lai(ico)
+         min_leaf_water = min_veg_lwater*cpatch%lai(ico)
+         max_leaf_water = max_veg_lwater*cpatch%lai(ico)
          
          !------ Calculate fraction of leaves covered with water. -------------------------!
-         if(initp%veg_water(ico) > 1.0e-12)then
+         if(initp%veg_water(ico) > min_leaf_water)then
             sigmaw = min(1.0, (initp%veg_water(ico)/max_leaf_water)**twothirds )
          else
             sigmaw = 0.0
@@ -1144,6 +1166,15 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    if(debug .and. abs(atm_tmp) < tiny(1.0)) print*,"atm_tmp = 0"
    dinitp%wpwp = vertical_vel_flux(grav * geoht * cpi * exner / atm_tmp &
                                   ,initp%tstar,initp%ustar)
+
+   !----- If the single pond layer is too thin, force equilibrium with top soil layer -----!
+   !if (initp%nlev_sfcwater == 1) then
+   !   if (abs(initp%sfcwater_mass(1)) < water_stab_thresh) then
+   !      dinitp%sfcwater_energy(nzg) = dinitp%sfcwater_energy(nzg)                         &
+   !                                  + dinitp%sfcwater_energy(1) * dslzi(nzg)
+   !      dinitp%sfcwater_energy(1) = 0.
+   !   end if
+   !end if
 
    return
 end subroutine canopy_derivs_two_ar

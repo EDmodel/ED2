@@ -1062,7 +1062,7 @@ module fuse_fiss_utils_ar
    ! will need to live with that and accept life is not always fair with those with        !
    ! limited computational resources.                                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_patches_ar(cgrid)
+   subroutine fuse_patches_ar(cgrid,ifm)
      
       use ed_state_vars       , only :  edtype            & ! structure
                                       , polygontype       & ! structure
@@ -1075,10 +1075,12 @@ module fuse_fiss_utils_ar
       use max_dims            , only :  n_pft             ! ! intent(in)
       use mem_sites           , only :  maxpatch          & ! intent(in)
                                       , maxcohort         ! ! intent(in)
+      use ed_node_coms        , only :  mynum
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)         , target      :: cgrid          ! Current grid
+      integer              , intent(in)  :: ifm            ! Current grid index
       !----- Local variables --------------------------------------------------------------!
       type(polygontype)    , pointer     :: cpoly          ! Current polygon
       type(sitetype)       , pointer     :: csite          ! Current site
@@ -1101,6 +1103,10 @@ module fuse_fiss_utils_ar
       real                               :: old_nplant_tot ! Old total nplant
       real                               :: new_lai_tot    ! New total LAI
       real                               :: new_nplant_tot ! New total nplant
+      integer                            :: tot_npolygons  ! Total # of polygons
+      integer                            :: tot_nsites     ! Total # of sites
+      integer                            :: tot_npatches   ! Total # of patches
+      integer                            :: tot_ncohorts   ! Total # of cohorts
       !------------------------------------------------------------------------------------!
 
       !----- Return if maxpatch is 0, this is a flag for no patch fusion. -----------------!
@@ -1332,8 +1338,36 @@ module fuse_fiss_utils_ar
                call fatal_error('Conservation failed while fusing patches'                 &
                               &,'fuse_patches_ar','fuse_fiss_utils.f90')
             end if
+            
          end do siteloop
       end do polyloop
+      
+      !------------------------------------------------------------------------------------!
+      !     Printing a banner to inform the user how many patches and cohorts exist.  To   !
+      ! avoid dumping too many information, display the message only when the user is not  !
+      ! running regional runs.                                                             !
+      !------------------------------------------------------------------------------------!
+      tot_npolygons = cgrid%npolygons
+      tot_ncohorts  = 0
+      tot_npatches  = 0
+      tot_nsites    = 0
+      do ipy=1,cgrid%npolygons
+         cpoly => cgrid%polygon(ipy)
+         tot_nsites = tot_nsites + cpoly%nsites 
+         do isi=1,cpoly%nsites
+            csite => cpoly%site(isi)
+            tot_npatches = tot_npatches + csite%npatches
+            do ipa=1,csite%npatches
+               cpatch => csite%patch(ipa)
+               tot_ncohorts = tot_ncohorts + cpatch%ncohorts
+            end do
+         end do
+      end do
+      write (unit=*,fmt='(6(a,1x,i8,1x))')                                                 &
+        'Total count in node',mynum,'for grid',ifm,': POLYGONS=',tot_npolygons             &
+       ,'SITES=',tot_nsites,'PATCHES=',tot_npatches,'COHORTS=',tot_ncohorts
+      !------------------------------------------------------------------------------------!
+
       return
    end subroutine fuse_patches_ar
    !=======================================================================================!

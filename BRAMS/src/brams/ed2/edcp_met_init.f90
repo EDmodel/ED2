@@ -206,7 +206,7 @@ subroutine ed_init_coup_atm
      call update_polygon_derived_props_ar(cgrid)
 
 
-     call fuse_patches_ar(cgrid)
+     call fuse_patches_ar(cgrid,igr)
 
      do ipy = 1,cgrid%npolygons
         ncohorts     = 0

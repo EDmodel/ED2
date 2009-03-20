@@ -61,11 +61,17 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff,rhos,vels   &
    !----- Saved variables -----------------------------------------------------------------!
    logical, save    :: first_time=.true.
    logical, save    :: simplerunoff
+   real   , save    :: runoff_time_i
    !---------------------------------------------------------------------------------------!
    
    !----- Checking whether we will use runoff or not, and saving this check to save time. -!
    if (first_time) then
-      simplerunoff = useRUNOFF == 0
+      simplerunoff = useRUNOFF == 0 .and. runoff_time /= 0.
+      if (runoff_time /= 0.) then
+         runoff_time_i = 1./runoff_time
+      else 
+         runoff_time_i = 0.
+      end if
       first_time   = .false.
    end if
 
@@ -74,6 +80,7 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff,rhos,vels   &
    ! thermal equilibrium with top soil layer.                                              !
    !---------------------------------------------------------------------------------------!
    call redistribute_snow_ar(integration_buff%initp, csite,ipa)
+   call update_diagnostic_vars_ar(integration_buff%initp,csite,ipa,lsl)
 
 
 
@@ -120,16 +127,19 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff,rhos,vels   &
          ksn = integration_buff%y%nlev_sfcwater
 
          !---------------------------------------------------------------------------------!
-         !   Make temporary surface liquid water disappear.                                !
+         !   Make temporary surface liquid water disappear.  This will not happen          !
+         ! immediately, but liquid water will decay with the time scale defined by         !
+         ! runoff_time scale. If the time scale is too tiny, then it will be forced to be  !
+         ! hdid (no reason to be faster than that).                                        !
          !---------------------------------------------------------------------------------!
          if (simplerunoff .and. ksn >= 1) then
          
             if (integration_buff%y%sfcwater_mass(ksn) > 0.0   .and.                        &
                 integration_buff%y%sfcwater_fracliq(ksn) > 0.1) then
+               wfreeb = min(1.0,dtrk4*runoff_time_i)                                       &
+                      * integration_buff%y%sfcwater_mass(ksn)                              &
+                      * (integration_buff%y%sfcwater_fracliq(ksn) - .1) / 0.9
 
-               wfreeb = integration_buff%y%sfcwater_mass(ksn)                              &
-                      * (integration_buff%y%sfcwater_fracliq(ksn) - .1)                    &
-                      / 0.9 * min(1.0,runoff_time*hdid) 
                qwfree = wfreeb                                                             &
                       * cliq * (integration_buff%y%sfcwater_tempk(ksn) - tsupercool )
 
@@ -142,21 +152,17 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff,rhos,vels   &
                                  - wfreeb*wdnsi
 
                !----- Recompute the energy removing runoff --------------------------------!
-               if (integration_buff%y%sfcwater_mass(ksn) >= min_sfcwater_mass) then
-                  integration_buff%y%sfcwater_energy(ksn) =                                &
+               integration_buff%y%sfcwater_energy(ksn) =                                   &
                                      integration_buff%y%sfcwater_energy(ksn) - qwfree
-               else
-                  integration_buff%y%sfcwater_energy(ksn) = 0.0
-               end if
 
-               call update_diagnostic_vars_ar(integration_buff%y,csite,ipa,lsl)
                call redistribute_snow_ar(integration_buff%y,csite,ipa)
+               call update_diagnostic_vars_ar(integration_buff%y,csite,ipa,lsl)
 
                !----- Compute runoff for output -------------------------------------------!
                if(fast_diagnostics) then
                   csite%runoff(ipa) = csite%runoff(ipa) + wfreeb * dtrk4i
-                  csite%avg_runoff(ipa) = csite%avg_runoff(ipa) + wfreeb
-                  csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa) + qwfree
+                  csite%avg_runoff(ipa) = csite%avg_runoff(ipa) + wfreeb * dtrk4i
+                  csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa) + qwfree * dtrk4i
                   csite%wbudget_loss2runoff(ipa) = wfreeb
                   csite%ebudget_loss2runoff(ipa) = qwfree
                end if
@@ -323,7 +329,7 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
       !------------------------------------------------------------------------------------!
       targetp%hcapveg(ico)       = cpatch%hcapveg(ico) * hcap_scale
       
-      if (targetp%hcapveg(ico) == 0.) then
+      if (targetp%hcapveg(ico) == 0. .and. cpatch%lai(ico) > lai_min) then
          write (unit=*,fmt='(a,1x,es12.5)') 'NHACPVEG=',targetp%hcapveg(ico)
          write (unit=*,fmt='(a,1x,es12.5)') 'OHACPVEG=',cpatch%hcapveg(ico)
          write (unit=*,fmt='(a,1x,es12.5)') 'LAI     =',cpatch%lai(ico)
@@ -501,10 +507,12 @@ subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, total_snow_depth, lsl)
    use rk4_coms             , only : tiny_offset        ! ! intent(in)
    use grid_coms            , only : nzg                & ! intent(in)
                                    , nzs                ! ! intent(in)
-   use soil_coms            , only : min_sfcwater_mass  ! ! intent(in)
+   use soil_coms            , only : min_sfcwater_mass  & ! intent(in)
+                                   , water_stab_thresh  ! ! intent(in)
    use consts_coms          , only : cliq               & ! intent(in)
                                    , qliqt3             ! ! intent(in)
    use canopy_radiation_coms, only : lai_min            ! ! intent(in)
+   use canopy_air_coms      , only : min_veg_lwater     ! ! intent(in)
    use pft_coms             , only : sla                ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -516,8 +524,9 @@ subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, total_snow_depth, lsl)
    real              , intent(in) :: total_snow_depth ! Snow depth
    real              , intent(in) :: htry             ! Time-step we are trying
    !----- Local variables -----------------------------------------------------------------!
-   integer                        :: k      ! Counter
-   integer                        :: ico    ! Current cohort ID
+   real                           :: tot_sfcw_mass    ! Total surface water/snow mass
+   integer                        :: k                ! Counter
+   integer                        :: ico              ! Current cohort ID
    !---------------------------------------------------------------------------------------!
 
   
@@ -536,36 +545,49 @@ subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, total_snow_depth, lsl)
       yscal%soil_energy(k) = abs(y%soil_energy(k)) + abs(dy%soil_energy(k)*htry)
    end do
 
-   if(abs(y%sfcwater_mass(1)) > 0.01 .or. y%nlev_sfcwater > 1)then
-      !----- Either frozen or computationally stable layer. -------------------------------!
+   tot_sfcw_mass = 0.
+   do k=1,y%nlev_sfcwater
+      tot_sfcw_mass = tot_sfcw_mass + y%sfcwater_mass(k)
+   end do
+   tot_sfcw_mass = abs(tot_sfcw_mass)
+   
+   if (tot_sfcw_mass > 0.01*water_stab_thresh) then
+      !----- Computationally stable layer. ------------------------------------------------!
       do k=1,nzs
          yscal%sfcwater_mass(k)   = abs(y%sfcwater_mass(k))                                &
-                                  + abs(dy%sfcwater_mass(k)*htry)     + tiny_offset
+                                  + abs(dy%sfcwater_mass(k)*htry)
          yscal%sfcwater_energy(k) = abs(y%sfcwater_energy(k))                              &
-                                  + abs(dy%sfcwater_energy(k)*htry) + tiny_offset
+                                  + abs(dy%sfcwater_energy(k)*htry)
          yscal%sfcwater_depth(k)  = abs(y%sfcwater_depth(k))                               &
-                                  + abs(dy%sfcwater_depth(k)*htry)   + tiny_offset
+                                  + abs(dy%sfcwater_depth(k)*htry)
       end do
    else
       !----- Low stability threshold ------------------------------------------------------!
       do k=1,nzs
-         yscal%sfcwater_mass(k) = 0.01
          if(abs(y%sfcwater_mass(k)) > min_sfcwater_mass)then
-            yscal%sfcwater_energy(k) = ( yscal%sfcwater_mass(k) / y%sfcwater_mass(k))      &
+            yscal%sfcwater_mass(k) = 0.01*water_stab_thresh
+            yscal%sfcwater_energy(k) = ( yscal%sfcwater_mass(k) / abs(y%sfcwater_mass(k))) &
                                      * ( abs( y%sfcwater_energy(k))                        &
-                                       + abs(dy%sfcwater_energy(k)))
+                                       + abs(dy%sfcwater_energy(k)*htry))
+            yscal%sfcwater_depth(k)  = ( yscal%sfcwater_mass(k) / abs(y%sfcwater_mass(k))) &
+                                     * abs(y%sfcwater_depth(k))                            &
+                                     + abs(dy%sfcwater_depth(k)*htry)
          else
+            yscal%sfcwater_mass(k)   = 1.0e30
             yscal%sfcwater_energy(k) = 1.0e30
+            yscal%sfcwater_depth(k)  = 1.0e30
          end if
       end do
    end if
 
    !----- Scale for the virtual water pools -----------------------------------------------!
-   if (abs(y%virtual_water) > min_sfcwater_mass) then
-      yscal%virtual_water = max(0.1                                                        &
-                               ,abs(y%virtual_water) + abs(dy%virtual_water*htry))
-      yscal%virtual_heat  = max(yscal%virtual_water*qliqt3                                 &
-                               ,abs(y%virtual_heat) + abs(dy%virtual_heat*htry))
+   if (abs(y%virtual_water) > 0.01*water_stab_thresh) then
+      yscal%virtual_water = abs(y%virtual_water) + abs(dy%virtual_water*htry)
+      yscal%virtual_heat  = abs(y%virtual_heat) + abs(dy%virtual_heat*htry)
+   elseif (abs(y%virtual_water) > min_sfcwater_mass) then
+      yscal%virtual_water = 0.01*water_stab_thresh
+      yscal%virtual_heat  = (yscal%virtual_water / abs(y%virtual_water))                   &
+                          * (abs(y%virtual_heat) + abs(dy%virtual_heat*htry))
    else
       yscal%virtual_water = 1.e30
       yscal%virtual_heat  = 1.e30
@@ -578,14 +600,16 @@ subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, total_snow_depth, lsl)
    !    Also, if the cohort is tiny and has almost no water, make the scale less strict.   !
    !---------------------------------------------------------------------------------------!
    do ico = 1,cpatch%ncohorts
-      if (cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > total_snow_depth)             &
-      then
-         yscal%veg_water(ico)  = max(1.e-2*cpatch%lai(ico)                                 &
-                                    ,abs(y%veg_water(ico))+ abs(dy%veg_water(ico)*htry))
-         yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico)*htry)
-      else
+      if (cpatch%lai(ico) <= lai_min .or. cpatch%hite(ico) <= total_snow_depth) then
          yscal%veg_water(ico)  = 1.e30
          yscal%veg_energy(ico) = 1.e30
+      elseif (y%veg_water(ico) > min_veg_lwater*cpatch%lai(ico)) then
+         yscal%veg_water(ico)  = abs(y%veg_water(ico)) + abs(dy%veg_water(ico)*htry)
+         yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico)*htry)
+      else
+         yscal%veg_water(ico)  = min_veg_lwater*cpatch%lai(ico)
+         yscal%veg_energy(ico) = max(yscal%veg_water(ico)*qliqt3                           &
+                                    ,abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico)*htry))
       end if
    end do
 
@@ -983,6 +1007,8 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
                             , dslz              & ! intent(in)
                             , dslzi             & ! intent(in)
                             , snowmin           & ! intent(in)
+                            , thick             & ! intent(in)
+                            , thicknet          & ! intent(in)
                             , min_sfcwater_mass ! ! intent(in)
    use consts_coms   , only : cice              & ! intent(in)
                             , cliq              & ! intent(in)
@@ -1000,19 +1026,13 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
    type(sitetype)         , target     :: csite
    integer                , intent(in) :: ipa
    !----- Local variables -----------------------------------------------------------------!
-   integer                             :: kzs
    integer                             :: kold
    integer                             :: newlayers
    integer                             :: nlayers
    integer                             :: ksn
    integer                             :: ksnnew
    integer                             :: k
-   real                                :: stretch
-   real                                :: thik
    !----- Control variables ---------------------------------------------------------------!
-   logical                , save       :: first_call = .true.
-   real, dimension(20)    , save       :: thicknet
-   real, dimension(20,20) , save       :: thick   
    real                                :: wtold
    real                                :: wtnew
    real, dimension(nzs)                :: newsfcw_mass
@@ -1038,208 +1058,91 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
    !----- Constants -----------------------------------------------------------------------!
    logical                , parameter  :: debug = .false.
    !---------------------------------------------------------------------------------------!
-   
 
-   !----- Defining some thickness variables only once, at start. --------------------------!
-   if (first_call) then
-      first_call = .false.
-
-      stretch = 2.0
-      do kzs = 1,nzs
-         thik = 1.0
-         thicknet(kzs) = 0.0
-         do k = 1,(kzs+1)/2
-            thick(k,kzs)       = thik
-            thick(kzs+1-k,kzs) = thik
-            thicknet(kzs)      = thicknet(kzs) + 2. * thik
-            thik               = thik * stretch
-         end do
-         if ((kzs+1)/2 .ne. kzs/2) thicknet(kzs) = thicknet(kzs) - thik/stretch
-         do k = 1,kzs
-            thick(k,kzs) = thick(k,kzs) / thicknet(kzs)
-         end do
-      end do
-   end if
 
    !----- Initializing # of layers alias --------------------------------------------------!
    ksn       = initp%nlev_sfcwater
-   wfree     = 0.
-   qwfree    = 0.
-   depthgain = 0.
-   !---------------------------------------------------------------------------------------!
-   !    Checking whether we still have water/snow, and depending on this, where to add the !
-   ! virtual pool.                                                                         !
-   !---------------------------------------------------------------------------------------!
-   if (initp%nlev_sfcwater >= 1) then
+
+   if (ksn >= 1) then
+      !------------------------------------------------------------------------------------!
+      ! 1. There used to exist temporary water/snow layers here.  Check total mass to see  !
+      !    whether there is still enough mass.                                             !
+      !------------------------------------------------------------------------------------!
       totsnow = sum(initp%sfcwater_mass)
 
-      !------------------------------------------------------------------------------------!
-      !    Check for negative mass, and transfer mass and energy from some available       !
-      ! source to fill the gap.  If this is negative, it's not going to be too negative,   !
-      ! because when large negative numbers are found the step is rejected, but we need to !
-      ! make it consistent and not leak mass or energy.                                    !
-      !------------------------------------------------------------------------------------!
-      if (totsnow <= -min_sfcwater_mass) then
-         if (initp%virtual_water >= -totsnow) then
-            !------------------------------------------------------------------------------!
-            !     Virtual water can compensate the gap, fill it, and make the surface      !
-            ! water disappear.                                                             !
-            !------------------------------------------------------------------------------!
-            initp%virtual_water    = initp%virtual_water + totsnow
-            initp%virtual_heat     = initp%virtual_heat  + sum(initp%sfcwater_energy)
-            initp%virtual_depth    = initp%virtual_depth + sum(initp%sfcwater_depth)
-            initp%nlev_sfcwater    = 0
-            initp%sfcwater_mass    = 0.
-            initp%sfcwater_energy  = 0.
-            initp%sfcwater_tempk   = initp%soil_tempk(nzg)
-            initp%sfcwater_fracliq = 0.
-            initp%sfcwater_depth   = 0.
-            ksnnew                 = 0
-            !------------------------------------------------------------------------------!
-            !      If there is still water available in the virtual layer, recreate it.    !
-            !------------------------------------------------------------------------------!
-            if (initp%virtual_water > min_sfcwater_mass) then
-               wfree               = initp%virtual_water
-               qwfree              = initp%virtual_heat
-               depthgain           = initp%virtual_depth
-               initp%virtual_water = 0.0
-               initp%virtual_heat  = 0.0
-               initp%virtual_depth = 0.0
-               ksnnew = 1
-            end if
-         else
-            !------------------------------------------------------------------------------!
-            !     Not enough water in the virtual layer, dry it up and borrow the remain-  !
-            ! ing from the top soil layer.  I think it's unlikely for the soil to be dry   !
-            ! if there was a pond before, not sure if this applies to snow, but I guess    !
-            ! not.  I don't know what would be the right thing to do here.                 !
-            !------------------------------------------------------------------------------!
-            initp%sfcwater_mass(1)   = sum(initp%sfcwater_mass)   + initp%virtual_water
-            initp%sfcwater_energy(1) = sum(initp%sfcwater_energy) + initp%virtual_heat
-            initp%sfcwater_depth(1)  = sum(initp%sfcwater_depth)  + initp%virtual_depth
-            initp%virtual_water      = 0.
-            initp%virtual_heat       = 0.
-            initp%virtual_depth      = 0.
-            initp%nlev_sfcwater      = 0
-            ksnnew                   = 0
-            !----- These are diagnostic, assign this to every level. ----------------------!
-            initp%sfcwater_tempk   = initp%soil_tempk(nzg)
-            initp%sfcwater_fracliq = 0.
-            !----- Reset the prognostic variables for layers above. -----------------------!
-            do k = 2,initp%nlev_sfcwater
-               initp%sfcwater_mass(1)   = 0.
-               initp%sfcwater_energy(1) = 0.
-               initp%sfcwater_depth(1)  = 0.
-            end do
-            !----- "Steal" water and energy from the top layer to fill the gap. -----------!
-            initp%soil_energy(nzg) = initp%soil_energy(nzg)                                &
-                                   + initp%sfcwater_energy(1) * dslzi(nzg)
-            initp%soil_water(nzg)  = initp%soil_water(nzg)                                 &
-                                   + dble(initp%sfcwater_mass(1)) * dble(dslzi(nzg))
-            !----- Setting mass and energy to 0. ------------------------------------------!
-            initp%sfcwater_mass(1)   = 0.
-            initp%sfcwater_energy(1) = 0.
-
-            !----- Finding the new equilibrium temperature and liquid/ice partition. ------!
-            call qwtk8(initp%soil_energy(nzg),initp%soil_water(nzg)*dble(wdns)             &
+      if (totsnow < min_sfcwater_mass) then
+         !---------------------------------------------------------------------------------!
+         ! 1.a. Too little or negative mass.  Eliminate layers, ensuring that it will  not !
+         !      leak mass or energy, by "stealing" them from the top soil  !
+         !      layer.                                                                     !
+         !---------------------------------------------------------------------------------!
+         initp%sfcwater_energy(1) = sum(initp%sfcwater_energy(1:ksn))
+         initp%sfcwater_mass(1)   = sum(initp%sfcwater_mass(1:ksn))
+         initp%soil_energy(nzg)   = initp%soil_energy(nzg)                                 &
+                                  + initp%sfcwater_energy(1) * dslzi(nzg)
+         initp%soil_water(nzg)    = initp%soil_water(nzg)                                  &
+                                  + dble(initp%sfcwater_mass(1)) * dble(dslzi(nzg))
+         call qwtk8(initp%soil_energy(nzg),initp%soil_water(nzg)*dble(wdns)                &
                    ,soil(csite%ntext_soil(nzg,ipa))%slcpd,initp%soil_tempk(nzg)            &
                    ,initp%soil_fracliq(nzg))
-            
-         end if
-      !----- Nothing left, no more temporary water/snow layer -----------------------------!
-      elseif (totsnow < min_sfcwater_mass) then
-         initp%nlev_sfcwater      = 0
          initp%sfcwater_mass      = 0.
          initp%sfcwater_energy    = 0.
          initp%sfcwater_tempk     = initp%soil_tempk(nzg)
          initp%sfcwater_fracliq   = 0.
-         initp%sfcwater_depth     = 0.
+         initp%sfcwater_depth     = 0.         
+         initp%nlev_sfcwater      = 0
          ksnnew                   = 0
-      !----- Still something there, nothing changes at least now --------------------------!
       else
+         !---------------------------------------------------------------------------------!
+         ! 1.b.  Still something there, nothing changes at least not for the time being.   !
+         !---------------------------------------------------------------------------------!
          ksnnew = ksn
       end if
-   !----- Negative virtual pool, "steal" water and energy from other sources and zero it. -!
-   elseif (initp%virtual_water <= -min_sfcwater_mass) then
-         if (totsnow >= -initp%virtual_water) then
-            !------------------------------------------------------------------------------!
-            !     Temporary water has enough mass to fill the gap, squeeze it into one     !
-            ! layer and use it. Needs to be developed for snow.                            !
-            !------------------------------------------------------------------------------!
-            initp%nlev_sfcwater       = 0
-            initp%sfcwater_mass(1)    = sum(initp%sfcwater_mass)   + initp%virtual_water
-            initp%sfcwater_energy(1)  = sum(initp%sfcwater_energy) + initp%virtual_heat
-            initp%sfcwater_depth(1)   = sum(initp%sfcwater_depth)  + initp%virtual_depth
-            if ( abs(initp%sfcwater_mass(1)) > min_sfcwater_mass) then
-               call qtk(initp%sfcwater_energy(1)/initp%sfcwater_mass(1)                    &
-                       ,initp%sfcwater_tempk(1),initp%sfcwater_fracliq(1))
-               initp%nlev_sfcwater = 1
-               ksnnew = 1
-            else
-               initp%sfcwater_tempk(1)   = initp%soil_tempk(nzg)
-               initp%sfcwater_fracliq(1) = 0.
-               initp%nlev_sfcwater = 0
-               ksnnew = 0
-            end if
-            wfree               = 0.
-            qwfree              = 0.
-            depthgain           = 0.
-            initp%virtual_water = 0.0
-            initp%virtual_heat  = 0.0
-            initp%virtual_depth = 0.0
-         else
-            !------------------------------------------------------------------------------!
-            !     Not enough water in the surface water, dry it up and borrow the remain-  !
-            ! ing from the top soil layer.  I think it's unlikely for the soil to be dry   !
-            ! if there was a pond before, not sure if this applies to snow, but I guess    !
-            ! not.  I don't know what would be the right thing to do here.                 !
-            !------------------------------------------------------------------------------!
-            initp%virtual_water      = sum(initp%sfcwater_mass)   + initp%virtual_water
-            initp%virtual_heat       = sum(initp%sfcwater_energy) + initp%virtual_heat
-            initp%virtual_depth      = sum(initp%sfcwater_depth)  + initp%virtual_depth
-            initp%sfcwater_mass      = 0.
-            initp%sfcwater_energy    = 0.
-            initp%sfcwater_depth     = 0.
-            initp%sfcwater_tempk     = initp%soil_tempk(nzg)
-            initp%sfcwater_fracliq   = 0.
-            initp%nlev_sfcwater      = 0
-            ksnnew                   = 0
-            !----- "Steal" water and energy from the top layer to fill the gap. -----------!
-            initp%soil_energy(nzg) = initp%soil_energy(nzg)                                &
-                                   + initp%virtual_heat * dslzi(nzg)
-            initp%soil_water(nzg)  = initp%soil_water(nzg)                                 &
-                                   + dble(initp%virtual_water) * dble(dslzi(nzg))
-            !----- Setting mass and energy to 0. ------------------------------------------!
-            initp%virtual_heat   = 0.
-            initp%virtual_water  = 0.
-            initp%virtual_depth  = 0.
-
-            !----- Finding the new equilibrium temperature and liquid/ice partition. ------!
-            call qwtk8(initp%soil_energy(nzg),initp%soil_water(nzg)*dble(wdns)             &
+   else
+      !------------------------------------------------------------------------------------!
+      ! 2.  No temporary layer, dealing with virtual layer.  Check whether the virtual     !
+      !     layer would be thick enough to create a pond, otherwise skip the entire thing. !
+      !------------------------------------------------------------------------------------!
+      if (initp%virtual_water < min_sfcwater_mass) then
+         !---------------------------------------------------------------------------------!
+         ! 2.a. Too little or negative mass in the virtual layer.  No layer will be creat- !
+         !      ed, but before eliminating it, just make sure mass and energy will be      !
+         !      conserved.                                                                 !
+         !---------------------------------------------------------------------------------!
+         ksnnew = 0
+         initp%soil_energy(nzg)   = initp%soil_energy(nzg)                                 &
+                                  + initp%virtual_heat * dslzi(nzg)
+         initp%soil_water(nzg)    = initp%soil_water(nzg)                                  &
+                                  + dble(initp%virtual_water) * dble(dslzi(nzg))
+         call qwtk8(initp%soil_energy(nzg),initp%soil_water(nzg)*dble(wdns)                &
                    ,soil(csite%ntext_soil(nzg,ipa))%slcpd,initp%soil_tempk(nzg)            &
                    ,initp%soil_fracliq(nzg))
-            
-         end if
-   !----- No temporary layer, nothing in the virtual pool, keep it dry --------------------!
-   elseif (initp%virtual_water < min_sfcwater_mass) then
-      ksnnew = 0
-      initp%virtual_water = 0.0
-      initp%virtual_heat  = 0.0
-      initp%virtual_depth = 0.0
-   !----- No temporary layer, significant mass to add, create one layer -------------------!
-   else
-      wfree = initp%virtual_water
-      qwfree = initp%virtual_heat
-      depthgain = initp%virtual_depth
-      initp%virtual_water = 0.0
-      initp%virtual_heat  = 0.0
-      initp%virtual_depth = 0.0
-      ksnnew = 1
+         initp%virtual_water      = 0.0
+         initp%virtual_heat       = 0.0
+         initp%virtual_depth      = 0.0
+      else
+         !---------------------------------------------------------------------------------!
+         ! 2.b. No temporary layer, significant mass to add.  ksnnew will be at least one. !
+         !      If there was no layer before, create one.                                  !
+         !---------------------------------------------------------------------------------!
+         wfree               = initp%virtual_water
+         qwfree              = initp%virtual_heat
+         depthgain           = initp%virtual_depth
+         initp%virtual_water = 0.0
+         initp%virtual_heat  = 0.0
+         initp%virtual_depth = 0.0
+         ksnnew = 1
+      end if
    end if
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   ! 3. We now update the diagnostic variables, and ensure the layers are stable.  Loop    !
+   !    over layers, from top to bottom this time.                                         !
+   !---------------------------------------------------------------------------------------!
    totsnow =0.
-   !----- Loop over layers, from top to bottom this time ----------------------------------!
    do k = ksnnew,1,-1
 
       !----- Update current mass and energy of temporary layer ----------------------------!
@@ -1298,7 +1201,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
          wfreeb = w
       else
          wfreeb = max(0.0, w * (initp%sfcwater_fracliq(k)-0.1)/0.9 )
-      endif
+      end if
       if (k == 1)then
            !----- Do "greedy" infiltration. -----------------------------------------------!
            nsoil = csite%ntext_soil(nzg,ipa)
@@ -1343,14 +1246,13 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
       !----- Set up input to next layer ---------------------------------------------------!
       wfree = wfreeb
       depthgain = depthloss
-   enddo
+   end do
 
-   !----- Re-distribute snow layers to maintain prescribed distribution of mass. ----------!
+   !---------------------------------------------------------------------------------------!
+   ! 4. Re-distribute snow layers to maintain prescribed distribution of mass.             !
+   !---------------------------------------------------------------------------------------!
    if (totsnow < min_sfcwater_mass .or. ksnnew == 0) then
       initp%nlev_sfcwater = 0
-      call qwtk8(initp%soil_energy(nzg),initp%soil_water(nzg) * dble(wdns)                 &
-                ,soil(csite%ntext_soil(nzg,ipa))%slcpd,initp%soil_tempk(nzg)               &
-                ,initp%soil_fracliq(nzg))
    else
       !---- Check whether there is enough snow for a new layer. ---------------------------!
       nlayers   = ksnnew
@@ -1420,7 +1322,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
          initp%sfcwater_mass(k)    = 0.0
          initp%sfcwater_energy(k)  = 0.0
          initp%sfcwater_depth(k)   = 0.0
-         initp%sfcwater_tempk(k)   = t3ple
+         initp%sfcwater_tempk(k)   = initp%sfcwater_tempk(k-1)
          initp%sfcwater_fracliq(k) = 0.
       end do
    end if
@@ -1444,7 +1346,7 @@ end subroutine redistribute_snow_ar
 !    After this is checked, we then update the remaining leaf properties, namely the       !
 ! temperature and liquid water fraction.                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine adjust_veg_properties(initp,dinitp,csite,ipa,rhos,hdid)
+subroutine adjust_veg_properties(initp,hdid,csite,ipa,rhos)
    use ed_state_vars        , only : sitetype          & ! structure
                                    , patchtype         & ! structure
                                    , rk4patchtype      ! ! structure
@@ -1460,14 +1362,13 @@ subroutine adjust_veg_properties(initp,dinitp,csite,ipa,rhos,hdid)
                                    , wdnsi             ! ! intent(in)
    use therm_lib            , only : qtk               & ! subroutine
                                    , qwtk              ! ! subroutine
-   use rk4_coms             , only : leaf_h2o_thick    & ! intent(in)
-                                   , rk4min_veg_water  & ! intent(in)
-                                   , rk4eps            ! ! intent(in)
+   use canopy_air_coms      , only : min_veg_lwater    & ! intent(in)
+                                   , max_veg_lwater    ! ! intent(in)
+   use rk4_coms             , only : rk4eps            ! ! intent(in)
    use canopy_radiation_coms, only : lai_min           ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype)     , target     :: initp  ! Integration buffer
-   type(rk4patchtype)     , target     :: dinitp ! Derivatives
    type(sitetype)         , target     :: csite  ! Current site
    integer                , intent(in) :: ipa    ! Current patch ID
    real                   , intent(in) :: rhos   ! Air density
@@ -1475,6 +1376,7 @@ subroutine adjust_veg_properties(initp,dinitp,csite,ipa,rhos,hdid)
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)        , pointer    :: cpatch
    integer                             :: ico
+   real                                :: min_leaf_water
    real                                :: max_leaf_water
    real                                :: veg_wshed
    real                                :: veg_qwshed
@@ -1502,10 +1404,11 @@ subroutine adjust_veg_properties(initp,dinitp,csite,ipa,rhos,hdid)
          !   Now we find the maximum leaf water possible. Add 2% to avoid bouncing back    !
          ! and forward.                                                                    !
          !---------------------------------------------------------------------------------!
-         max_leaf_water = leaf_h2o_thick * cpatch%lai(ico)
+         min_leaf_water = min_veg_lwater * cpatch%lai(ico)
+         max_leaf_water = max_veg_lwater * cpatch%lai(ico)
 
          !----- Shedding excessive water to the ground ------------------------------------!
-         if (initp%veg_water(ico) > (1.+rk4eps)*max_leaf_water) then
+         if (initp%veg_water(ico) > max_leaf_water) then
             veg_wshed  = (initp%veg_water(ico)-max_leaf_water)
             veg_qwshed = veg_wshed                                                         &
                        * (initp%veg_fliq(ico) * cliq * (initp%veg_temp(ico)-tsupercool)    &
@@ -1522,20 +1425,16 @@ subroutine adjust_veg_properties(initp,dinitp,csite,ipa,rhos,hdid)
             initp%virtual_heat    = initp%virtual_heat  + veg_qwshed
             initp%virtual_depth   = initp%virtual_depth + veg_dwshed
             
-            !----- Updating derivatives ---------------------------------------------------!
-            dinitp%veg_water(ico)  = dinitp%veg_water(ico)  - veg_wshed  * hdidi
-            dinitp%veg_energy(ico) = dinitp%veg_energy(ico) - veg_qwshed * hdidi
-            dinitp%virtual_water   = dinitp%virtual_water   + veg_wshed  * hdidi
-            dinitp%virtual_heat    = dinitp%virtual_heat    + veg_qwshed * hdidi
-            dinitp%virtual_depth   = dinitp%virtual_depth   + veg_dwshed * hdidi
-            
             !----- Updating output fluxes -------------------------------------------------!
             initp%avg_wshed_vg  = initp%avg_wshed_vg  + veg_wshed  * hdidi
             initp%avg_qwshed_vg = initp%avg_qwshed_vg + veg_qwshed * hdidi
 
-         !----- If veg_water is negative, "steal" moisture from the air as "dew/frost" ----!
-         elseif (initp%veg_water(ico) < 0. .and.                                           &
-                 initp%veg_water(ico) >= (1.+rk4eps)*rk4min_veg_water*cpatch%lai(ico)) then
+         !---------------------------------------------------------------------------------!
+         !    If veg_water is tiny or negative, exchange moisture with the air, "stealing" !
+         ! moisture as fast "dew/frost" condensation if it is negative, or "donating" the  !
+         ! remaining as "boiling" (fast evaporation).                                      !
+         !---------------------------------------------------------------------------------!
+         elseif (initp%veg_water(ico) < min_leaf_water) then
             veg_dew = - initp%veg_water(ico)
             if (initp%can_temp >=t3ple) then
                veg_qdew = veg_dew * alvl
@@ -1547,11 +1446,6 @@ subroutine adjust_veg_properties(initp,dinitp,csite,ipa,rhos,hdid)
             initp%veg_water(ico)  = 0.
             initp%veg_energy(ico) = initp%veg_energy(ico)  + veg_qdew
             initp%can_shv         = initp%can_shv          - veg_dew * wcapcani
-
-            !----- Updating derivatives ---------------------------------------------------!
-            dinitp%veg_water(ico)  = dinitp%veg_water(ico)    + veg_dew  * hdidi
-            dinitp%veg_energy(ico) = dinitp%veg_energy(ico)   + veg_qdew * hdidi
-            dinitp%can_shv         = dinitp%can_shv           - veg_dew * wcapcani * hdidi
 
             !----- Updating output flux ---------------------------------------------------!
             initp%avg_vapor_vc    = initp%avg_vapor_vc - veg_qdew * hdidi
@@ -1634,7 +1528,10 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch, lsl)
       targetp%soil_fracliq(k)           = sourcep%soil_fracliq(k)
       targetp%available_liquid_water(k) = sourcep%available_liquid_water(k)
       targetp%extracted_water(k)        = sourcep%extracted_water(k)
-
+      targetp%psiplusz(k)               = sourcep%psiplusz(k)
+      targetp%soilair99(k)              = sourcep%soilair99(k)
+      targetp%soilair01(k)              = sourcep%soilair01(k)
+      targetp%soil_liq(k)               = sourcep%soil_liq(k)
    end do
 
    do k=1,nzs
@@ -2123,6 +2020,10 @@ subroutine allocate_rk4_patch(y)
    allocate(y%soil_tempk(nzg))
    allocate(y%available_liquid_water(nzg))
    allocate(y%extracted_water(nzg))
+   allocate(y%psiplusz(nzg))
+   allocate(y%soilair99(nzg))
+   allocate(y%soilair01(nzg))
+   allocate(y%soil_liq(nzg))
 
    allocate(y%sfcwater_energy(nzs))
    allocate(y%sfcwater_mass(nzs))
@@ -2168,6 +2069,10 @@ subroutine nullify_rk4_patch(y)
    nullify(y%soil_tempk)
    nullify(y%available_liquid_water)
    nullify(y%extracted_water)
+   nullify(y%psiplusz)
+   nullify(y%soilair99)
+   nullify(y%soilair01)
+   nullify(y%soil_liq)
 
    nullify(y%sfcwater_energy)
    nullify(y%sfcwater_mass)
@@ -2220,10 +2125,18 @@ subroutine zero_rk4_patch(y)
    y%soil_tempk(:)                  = 0.
    y%soil_fracliq(:)                = 0.
    y%soil_water(:)                  = 0.d0
+   y%available_liquid_water(:)      = 0.
+   y%extracted_water(:)             = 0.
+   y%psiplusz(:)                    = 0.
+   y%soilair99(:)                   = 0.
+   y%soilair01(:)                   = 0.
+   y%soil_liq(:)                    = 0.
   
    y%sfcwater_depth(:)              = 0.
    y%sfcwater_mass(:)               = 0.
    y%sfcwater_energy(:)             = 0.
+   y%sfcwater_tempk(:)              = 0.
+   y%sfcwater_fracliq(:)            = 0.
   
    y%virtual_water                  = 0.
    y%virtual_heat                   = 0.
@@ -2231,8 +2144,6 @@ subroutine zero_rk4_patch(y)
   
    y%ground_shv                     = 0.
    y%surface_ssh                    = 0.
-   y%sfcwater_tempk(:)              = 0.
-   y%sfcwater_fracliq(:)            = 0.
    y%nlev_sfcwater                  = 0
    y%net_rough_length               = 0.
   
@@ -2256,8 +2167,6 @@ subroutine zero_rk4_patch(y)
    y%a_c_max                        = 0.
    y%rasveg                         = 0.
    y%root_res_fac                   = 0.
-   y%available_liquid_water(:)      = 0.
-   y%extracted_water(:)             = 0.
   
 
    y%avg_vapor_vc                   = 0.
@@ -2309,6 +2218,10 @@ subroutine deallocate_rk4_patch(y)
    if (associated(y%soil_tempk))              deallocate(y%soil_tempk)
    if (associated(y%available_liquid_water))  deallocate(y%available_liquid_water)
    if (associated(y%extracted_water))         deallocate(y%extracted_water)
+   if (associated(y%psiplusz))                deallocate(y%psiplusz)
+   if (associated(y%soilair99))               deallocate(y%soilair99)
+   if (associated(y%soilair01))               deallocate(y%soilair01)
+   if (associated(y%soil_liq))                deallocate(y%soil_liq)
 
    if (associated(y%sfcwater_energy))         deallocate(y%sfcwater_energy)
    if (associated(y%sfcwater_mass))           deallocate(y%sfcwater_mass)
