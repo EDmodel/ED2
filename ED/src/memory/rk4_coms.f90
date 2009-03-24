@@ -57,7 +57,7 @@ module rk4_coms
    ! to avoid having patches with heat capacity that is way too small to be computational- !
    ! ly stable and solvable in a fast way.                                                 !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: hcapveg_ref = 4000.
+   real, parameter :: hcapveg_ref = 3000.
    real, parameter :: min_height  = 1.5
 
    !----- These are all RK4 integrator factors. -------------------------------------------!
@@ -102,6 +102,26 @@ module rk4_coms
    real   :: dtrk4
    real   :: dtrk4i
    !---------------------------------------------------------------------------------------!
+   
+   !---------------------------------------------------------------------------------------!
+   !     Flag to determine whether the patch is too sparsely populated to be computed at   !
+   ! the cohort level.  The decision is made based on the difference in order of magnitude !
+   ! between the patch "natural" leaf heat capacity and the minimum heat capacity for the  !
+   ! Runge-Kutta solver (checked at copy_patch_init_ar).                                   !
+   !---------------------------------------------------------------------------------------!
+   logical :: toosparse
+   
+   !----- Flag to tell whether there is at least one "solvable" cohort in this patch ------!
+   logical :: any_solvable
+   
+   !----- Canopy water and heat capacity variables. ---------------------------------------!
+   real    :: zoveg
+   real    :: zveg
+   real    :: wcapcan
+   real    :: wcapcani
+   real    :: hcapcani
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !    The following variables are the bounds of what we could consider barely reasonable !

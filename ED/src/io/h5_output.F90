@@ -53,7 +53,7 @@ subroutine h5_output(vtype)
 
   character(len=128) :: anamel
   character(len=2)  :: cgrid
-  character(len=25) :: subaname
+  character(len=40) :: subaname
   character(len=64) :: varn
   character(len=1)  :: vnam
   character(len=15) :: c0

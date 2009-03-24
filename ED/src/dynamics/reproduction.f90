@@ -35,6 +35,8 @@ subroutine reproduction_ar(cgrid, month)
   real :: bdead
   real :: dbh
   real :: hite
+  real :: elim_nplant
+  real :: elim_lai
   integer :: pft
 
   integer :: inew,ncohorts_new
@@ -273,7 +275,7 @@ subroutine reproduction_ar(cgrid, month)
 
            if(cpatch%ncohorts>0 .and. maxcohort >= 0) then
 
-              call terminate_cohorts_ar(csite,ipa)
+              call terminate_cohorts_ar(csite,ipa,elim_nplant,elim_lai)
               call fuse_cohorts_ar(csite,ipa, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))                         
               call split_cohorts_ar(cpatch, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
               

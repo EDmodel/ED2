@@ -837,7 +837,7 @@ subroutine init_soil_coms
    snowmin             = 3.0    ! Minimum snow mass needed to create a new layer [   kg/m2]
    dewmax              = 3.0e-5 ! Maximum dew flux rate (deprecated)             [ kg/m2/s]
    soil_rough          = 0.05   ! Soil roughness height                          [       m]
-   snow_rough          = 0.01   ! Snowcover roughness height                     [       m]
+   snow_rough          = 0.001  ! Snowcover roughness height                     [       m]
    min_sfcwater_mass   = 1.0e-6 ! Minimum allowed mass in temporary layers       [   kg/m2]
    infiltration_method = 0      ! Infiltration method, used in rk4_derivs        [     0|1]
    min_veg_lwater      = 1.e-3  ! Minimum leaf water mass per leaf area          [   kg/m2]

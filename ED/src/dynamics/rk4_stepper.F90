@@ -70,8 +70,8 @@ module rk4_stepper_ar
             errmax = 10.0
          else
             call get_errmax_ar(errmax, integration_buff%yerr,integration_buff%yscal        &
-                              ,csite%patch(ipa),lsl,integration_buff%y                     &
-                              ,integration_buff%ytemp)
+                              ,csite%patch(ipa),csite%total_snow_depth(ipa),lsl            &
+                              ,integration_buff%y,integration_buff%ytemp)
             errmax = errmax * rk4epsi
          end if
 
@@ -145,8 +145,8 @@ module rk4_stepper_ar
                   call print_sanity_check_ar(integration_buff%y,csite,ipa,lsl)
                else
                   call print_errmax_ar(errmax,integration_buff%yerr,integration_buff%yscal &
-                                      ,csite%patch(ipa),lsl,integration_buff%y             &
-                                      ,integration_buff%ytemp)
+                                      ,csite%patch(ipa),csite%total_snow_depth(ipa),lsl    &
+                                      ,integration_buff%y,integration_buff%ytemp)
                   write (unit=*,fmt='(80a)') ('=',k=1,80)
                   write (unit=*,fmt='(a,1x,es12.5)') ' - Rel. errmax:',errmax*rk4epsi
                   write (unit=*,fmt='(a,1x,es12.5)') ' - Raw errmax: ',errmax
@@ -417,12 +417,12 @@ module rk4_stepper_ar
       use grid_coms             , only : nzg                  ! ! intent(in)
       use soil_coms             , only : soil                 & ! intent(in), lookup table
                                        , min_sfcwater_mass    ! ! intent(in)
-      use canopy_radiation_coms , only : lai_min              & ! intent(in)
-                                       , veg_temp_min         ! ! intent(in)
+      use canopy_radiation_coms , only : veg_temp_min         ! ! intent(in)
       use consts_coms           , only : t3ple                ! ! intent(in)
       use misc_coms             , only : integ_err            & ! intent(inout)
                                        , record_err           ! ! intent(inout)
       use rk4_coms              , only : rk4eps               & ! intent(in)
+                                       , toocold              & ! intent(in)
                                        , rk4min_can_temp      & ! intent(in)
                                        , rk4max_can_temp      & ! intent(in)
                                        , rk4max_can_rhv       & ! intent(in)
@@ -529,7 +529,7 @@ module rk4_stepper_ar
       !------------------------------------------------------------------------------------!
 
       !----- Finding canopy relative humidity ---------------------------------------------!
-      can_rhv = rehuil(prss,y%can_temp,y%can_shv)
+      can_rhv = rehuil(prss,max(y%can_temp,toocold),y%can_shv)
 
       !------------------------------------------------------------------------------------!
       !   Checking whether the canopy temperature is too hot or too cold.                  !
@@ -793,7 +793,7 @@ module rk4_stepper_ar
       cpatch => csite%patch(ipa)
       cflag1 = .false.
       do ico = 1,cpatch%ncohorts
-         if (cpatch%lai(ico) > lai_min) then
+         if (y%solvable(ico)) then
             if (y%veg_temp(ico) > rk4max_veg_temp .or. y%veg_temp(ico) < veg_temp_min ) then
                reject_step = .true.
                if(record_err) cflag1 = .true.
@@ -872,7 +872,6 @@ module rk4_stepper_ar
                                        , rk4patchtype  ! ! structure
       use grid_coms             , only : nzg           ! ! intent(in)
       use soil_coms             , only : soil          ! ! intent(in), look-up table
-      use canopy_radiation_coms , only : lai_min       ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype) , target     :: y
@@ -929,7 +928,7 @@ module rk4_stepper_ar
          '  COH','  PFT','         LAI','  VEG_ENERGY','OLD_VEG_ENER','    VEG_TEMP'&
          &,'OLD_VEG_TEMP'
       do ico = 1,cpatch%ncohorts
-         if(cpatch%lai(ico) > lai_min) then
+         if(y%solvable(ico)) then
             write(unit=*,fmt='(2(i5,1x),5(es12.5,1x))')                                    &
                ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_energy(ico)                       &
                   ,cpatch%veg_energy(ico),y%veg_temp(ico),cpatch%veg_temp(ico)
@@ -943,7 +942,7 @@ module rk4_stepper_ar
          '  COH','  PFT','         LAI','   VEG_WATER',' OLD_VEG_H2O','    HEAT_CAP'&
         &,'RK4_HEAT_CAP' ,'     FRACLIQ'
       do ico = 1,cpatch%ncohorts
-         if(cpatch%lai(ico) > lai_min) then
+         if(y%solvable(ico)) then
             write(unit=*,fmt='(2(i5,1x),6(es12.5,1x))') &
                ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_water(ico),cpatch%veg_water(ico)  &
                   ,cpatch%hcapveg(ico),y%hcapveg(ico),y%veg_fliq(ico)

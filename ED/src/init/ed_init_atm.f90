@@ -72,10 +72,6 @@ subroutine ed_init_atm_ar
               
               ! For now, choose heat/vapor capacities for stability
               csite%can_depth(ipa) = 30.0
-              do k=1,nzs
-                 csite%sfcwater_tempk(k,ipa) = t3ple   ! Set canopy temp triple point
-                 csite%sfcwater_fracliq(k,ipa) = 1.0 ! Set to 100% liquid
-              end do
               
               csite%rshort_g(ipa) = 0.0
               csite%rlong_g(ipa) = 0.0
@@ -164,10 +160,19 @@ subroutine ed_init_atm_ar
                                                 * cicevlme * csite%soil_tempk(k,ipa)
                     end do
                  end if
-              
+
+                 !----- Initial condition is with no snow/pond. ---------------------------!
+                 csite%nlev_sfcwater(ipa) = 0
+                 do k=1,nzs
+                    csite%sfcwater_energy (k,ipa) = 0.
+                    csite%sfcwater_depth  (k,ipa) = 0.
+                    csite%sfcwater_mass   (k,ipa) = 0.
+                    csite%sfcwater_tempk  (k,ipa) = csite%soil_tempk(nzg,ipa)
+                    csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(nzg,ipa)
+                 end do
+
                  nls   = csite%nlev_sfcwater(ipa)
-                 nlsw1 = max(nls,1)
-                 
+                 nlsw1 = max(1,nls)
                  call ed_grndvap(nls,                    &
                       csite%ntext_soil       (nzg,ipa),  &
                       csite%soil_water       (nzg,ipa),  &
@@ -178,7 +183,7 @@ subroutine ed_init_atm_ar
                       csite%ground_shv(ipa),  &
                       csite%surface_ssh(ipa), surface_temp, surface_fliq)
               endif
-              
+
               ! Compute patch-level LAI, vegetation height, and roughness
               call update_patch_derived_props_ar(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos, ipa)
               
@@ -422,7 +427,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
   use ed_state_vars, only: edtype, polygontype, sitetype, patchtype
   use soil_coms, only: soilstate_db, soil,slz
   use consts_coms, only: cliqvlme, cicevlme, t3ple, tsupercool
-  use grid_coms, only: nzg, ngrids
+  use grid_coms, only: nzg, nzs, ngrids
   use ed_therm_lib,only:ed_grndvap
 
   implicit none
@@ -536,6 +541,18 @@ subroutine read_soil_moist_temp_ar(cgrid)
                              csite%soil_fracliq(k,ipa) = 0.0
                           end if
                        end do
+
+
+                      !----- Initial condition is with no snow/pond. ----------------------!
+                      csite%nlev_sfcwater(ipa) = 0
+                      do k=1,nzs
+                         csite%sfcwater_energy (k,ipa) = 0.
+                         csite%sfcwater_depth  (k,ipa) = 0.
+                         csite%sfcwater_mass   (k,ipa) = 0.
+                         csite%sfcwater_tempk  (k,ipa) = csite%soil_tempk(nzg,ipa)
+                         csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(nzg,ipa)
+                       end do
+
                        if(harvard_override == 1)then
                           csite%soil_tempk(1,ipa)     = 277.6
                           csite%soil_tempk(2:4,ipa)   = 276.0
@@ -546,9 +563,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
                           csite%soil_fracliq(1:4,ipa) =   1.0
                        endif
                        
-                       nls   = csite%nlev_sfcwater(ipa)
-                       nlsw1 = max(nls,1)
-                 
+                       nls = 1
                        call ed_grndvap(nls,                                &
                             csite%ntext_soil       (nzg,ipa),  &
                             csite%soil_water       (nzg,ipa),  &

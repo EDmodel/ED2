@@ -38,6 +38,8 @@ module disturbance_utils_ar
 
     real :: dA
     real :: area_fac
+    real :: elim_nplant
+    real :: elim_lai
     real, dimension(n_pft, n_dbh) :: initial_agb
     real, dimension(n_pft, n_dbh) :: initial_basal_area
 
@@ -190,7 +192,7 @@ module disturbance_utils_ar
               !  fuse then terminate cohorts
               if (csite%patch(q+onsp)%ncohorts > 0 .and. maxcohort >= 0) then
                  call fuse_cohorts_ar(csite,q+onsp, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
-                 call terminate_cohorts_ar(csite,q+onsp)
+                 call terminate_cohorts_ar(csite,q+onsp,elim_nplant,elim_lai)
                  call split_cohorts_ar(qpatch, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
               endif
           
@@ -439,8 +441,8 @@ end subroutine apply_disturbances_ar
     ! For now, choose heat/vapor capacities for stability
     csite%can_depth(np) = 30.0
     do k=1,nzs
-       csite%sfcwater_tempk(k,np) = t00   ! Set canopy temp to 0 C
-       csite%sfcwater_fracliq(k,np) = 1.0 ! Set to 100% liquid
+       csite%sfcwater_tempk(k,np) = atm_tmp   ! Set canopy temp to 0 C
+       csite%sfcwater_fracliq(k,np) = 1.0     ! Set to 100% liquid
     end do
 
 

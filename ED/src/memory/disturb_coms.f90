@@ -17,7 +17,10 @@ Module disturb_coms
   integer, parameter :: num_lu_trans = 19 ! number of different types 
   ! of land use transitions in George Hurtt's GLU data set.
 
-  integer, parameter :: max_lu_years = 300 ! Used to hold the lu transition array
+  integer, parameter :: max_lu_years = 1000 ! Used to hold the lu transition array
+                                            ! In case the simulation runs longer than this, the missing years
+                                            ! will be filled with zeroes. The first and last year of each 
+                                            ! file is now checked in landuse_init.
 
 
   integer :: include_fire ! flag specifying whether or not to include fire

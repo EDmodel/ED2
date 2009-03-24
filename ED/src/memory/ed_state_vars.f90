@@ -1429,11 +1429,14 @@ module ed_state_vars
      real :: rasveg
      real :: root_res_fac
      
-     real,pointer,dimension(:) :: veg_energy
-     real,pointer,dimension(:) :: veg_water
-     real,pointer,dimension(:) :: veg_temp
-     real,pointer,dimension(:) :: veg_fliq
-     real,pointer,dimension(:) :: hcapveg
+     !----- Cohort variables --------------------------------------------------------------!
+     real   ,pointer,dimension(:) :: veg_energy
+     real   ,pointer,dimension(:) :: veg_water
+     real   ,pointer,dimension(:) :: veg_temp
+     real   ,pointer,dimension(:) :: veg_fliq
+     real   ,pointer,dimension(:) :: hcapveg
+     logical,pointer,dimension(:) :: solvable
+     !-------------------------------------------------------------------------------------!
 
 
      ! ------------------------------------------

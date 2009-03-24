@@ -143,11 +143,11 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
                                    , isoilbc              ! ! intent(in)
    use misc_coms            , only : dtlsm                & ! intent(in)
                                    , current_time         ! ! intent(in)
-   use canopy_radiation_coms, only : lai_min              ! ! intent(in)
    use ed_state_vars        , only : sitetype             & ! structure
                                    , patchtype            & ! structure
                                    , rk4patchtype         ! ! structure
-   use rk4_coms             , only : rk4eps               ! ! intent(in)
+   use rk4_coms             , only : rk4eps               & ! intent(in)
+                                   , any_solvable         ! ! intent(in)
    use ed_therm_lib         , only : ed_grndvap           ! ! subroutine
    use therm_lib            , only : qtk                  & ! subroutine
                                    , qwtk                 & ! subroutine
@@ -157,9 +157,9 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
    type(rk4patchtype)  , target     :: initp         ! RK4 structure, intermediate step
    type(rk4patchtype)  , target     :: dinitp        ! RK4 structure, derivatives
    type(sitetype)      , target     :: csite         ! Current site (before integration)
-   integer                          :: ipa           ! Current patch ID
-   integer                          :: isi           ! Current site ID
-   integer                          :: ipy           ! Current polygon ID
+   integer             , intent(in) :: ipa           ! Current patch ID
+   integer             , intent(in) :: isi           ! Current site ID
+   integer             , intent(in) :: ipy           ! Current polygon ID
    integer             , intent(in) :: lsl           ! Lowest soil level
    real                , intent(in) :: pcpg          ! Precipitation rate
    real                , intent(in) :: qpcpg         ! Precipitation heat
@@ -570,7 +570,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
    end do
 
    !---- Update soil moisture and energy from transpiration/root uptake. ------------------!
-   if (csite%lai(ipa) > lai_min) then
+   if (any_solvable) then
       do k1 = lsl, nzg    ! loop over extracted water
          do k2=k1,nzg
             if (csite%ntext_soil(k2,ipa) /= 13) then
@@ -634,7 +634,6 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
                                     , dslzi             & ! intent(in)
                                     , water_stab_thresh & ! intent(in)
                                     , dewmax            ! ! intent(in)
-   use canopy_radiation_coms , only : lai_min           ! ! intent(in)
    use canopy_air_coms       , only : min_veg_lwater    & ! intent(in)
                                     , max_veg_lwater    ! ! intent(in)
    use therm_lib             , only : qwtk              & ! subroutine
@@ -650,7 +649,13 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
                                     , toohot            & ! intent(in)
                                     , lai_to_cover      & ! intent(in)
                                     , evap_area_one     & ! intent(in)
-                                    , evap_area_two     ! ! intent(in)
+                                    , evap_area_two     & ! intent(in)
+                                    , zoveg             & ! intent(in)
+                                    , zveg              & ! intent(in)
+                                    , wcapcan           & ! intent(in)
+                                    , wcapcani          & ! intent(in)
+                                    , hcapcani          & ! intent(in)
+                                    , any_solvable      ! ! intent(in)
                                        
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -701,10 +706,6 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    real                             :: wshed            !
    real                             :: qwshed           !
    real                             :: dwshed           !
-   real                             :: zoveg,zveg       !
-   real                             :: wcapcan          !
-   real                             :: wcapcani         !
-   real                             :: hcapcani         !
    real                             :: cflxgc           !
    real                             :: laii             !
    real                             :: wflx             !
@@ -748,22 +749,6 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   !     Surface roughness parameters. Eventually I should account for snow factors here.  !
-   !---------------------------------------------------------------------------------------!
-   zoveg = csite%veg_rough(ipa)
-   zveg = csite%veg_height(ipa)
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !     Capacities of the canopy air space.                                               !
-   !---------------------------------------------------------------------------------------!
-   wcapcan = rhos * max(zveg,3.5)
-   wcapcani = 1.0 / wcapcan
-   hcapcani = cpi * wcapcani
-   !---------------------------------------------------------------------------------------!
-
-  
-   !---------------------------------------------------------------------------------------!
    !     The following value of ground-canopy resistance for the nonvegetated (bare soil   !
    ! or water) surface is from John Garratt.  It is 5/ustar and replaces the one from old  !
    ! leaf.                                                                                 !
@@ -777,7 +762,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    cpatch => csite%patch(ipa)
    can_frac = 1.0
    do ico = 1,cpatch%ncohorts
-      if(cpatch%lai(ico) > lai_min) then
+      if(initp%solvable(ico)) then
          can_frac = can_frac                                                               &
                   * (1.0 - min(1.0                                                         &
                               ,cpatch%nplant(ico)*dbh2ca(cpatch%dbh(ico),cpatch%pft(ico))))
@@ -792,8 +777,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    !---------------------------------------------------------------------------------------!
    !   Obtaining the shedding water and t
    !---------------------------------------------------------------------------------------!
- 
-   if (csite%lai(ipa) > lai_min) then
+   if (any_solvable) then
       !------------------------------------------------------------------------------------!
       !     If vegetation is sufficiently abundant and not covered by snow, compute heat   !
       ! and moisture fluxes from vegetation to canopy, and flux resistance from soil or    !
@@ -828,10 +812,10 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
 
    else
       !------------------------------------------------------------------------------------!
-      !     If the LAI is very small or if snow mostly covers the vegetation, bypass vege- !
-      ! tation computations.  Set heat and moisture flux resistance rd  between the        !
-      ! "canopy" and snow or soil surface to its bare soil value. Set shed precipitation   !
-      ! heat and moisture to unintercepted values.                                         !
+      !     If the LAI is very small or total patch leaf heat capacity is too small, by-   !
+      ! pass vegetation computations.  Set heat and moisture flux resistance rd  between   !
+      ! the "canopy" and snow or soil surface to its bare soil value. Set shed precipit-   !
+      ! ation heat and moisture to unintercepted values.                                   !
       !------------------------------------------------------------------------------------!
       rd               = rasgnd
       wshed_tot        = pcpg
@@ -936,12 +920,14 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
       
       
       !------------------------------------------------------------------------------------!
-      !     See if this cohort has leaves, if not set the leaf energy derivatives to zero, !
-      ! and pass all throughfall to the ground. Later, those small cohorts will have their !
-      ! leaf energy set to equilibrium with the canopy air space (temperature).            !
+      !     Check whether this this cohort hasn't been flagged as non-solvable, i.e., it   !
+      ! has leaves, belongs to a patch that is not too sparse, an it is not buried in      !
+      ! snow.  We should compute energy and water at the cohort level only if the cohort   !
+      ! is "safe".  Otherwise, we will set the leaf energy derivatives to zero, and pass   !
+      ! all throughfall to the ground.  Later, these "unsafe" cohorts will have their leaf !
+      ! energy set to equilibrium with the canopy air space (temperature).                 !
       !------------------------------------------------------------------------------------!
-      if (cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))  &
-      then
+      if (initp%solvable(ico)) then
 
          !------ Defining some shortcuts to indices ---------------------------------------!
          ipft  = cpatch%pft(ico)
@@ -1097,10 +1083,10 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          !     Allow the complete bypass of precipitation if there are no leaves.          !
          !                                                                                 !
          ! Added RGK 11-2008, comments welcomed:                                           !
-         !          This will cause small deviations if the patch has LAI larger than      !
-         !      lai_min, but only some of the cohorts do. If the ones that do not exceed   !
-         !      the threshold of lai_min make up an appreciable fraction of the total LAI, !
-         !      then we better account for it.                                             !
+         !          This will cause small deviations if the patch has some cohorts that    !
+         !          are solved and others that are not.  If the ones that are not solved   !
+         !          make an appreciable fraction of the total LAI, then we better account  !
+         !          for it.                                                                !
          !---------------------------------------------------------------------------------!
          wshed_tot  = wshed_tot  + intercepted_tot*cpatch%lai(ico)  * laii
          qwshed_tot = qwshed_tot + qintercepted_tot*cpatch%lai(ico) * laii

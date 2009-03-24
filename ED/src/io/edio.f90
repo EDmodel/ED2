@@ -633,7 +633,7 @@ subroutine spatial_averages
             cgrid%avg_snowdepth(ipy)   = 0.
             cgrid%avg_snowenergy(ipy)  = 0.
             cgrid%avg_snowtempk(ipy)   = cgrid%avg_soil_temp(nzg,ipy)
-            cgrid%avg_snowfracliq(ipy) = cgrid%avg_soil_fracliq(k,ipy)
+            cgrid%avg_snowfracliq(ipy) = cgrid%avg_soil_fracliq(nzg,ipy)
          end if
 
          !---------------------------------------------------------------------------------!

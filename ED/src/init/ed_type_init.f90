@@ -281,18 +281,6 @@ subroutine init_ed_site_vars_array(cpoly, lat)
 
   cpoly%primary_harvest_memory(:) = 0.0
   cpoly%secondary_harvest_memory(:) = 0.0
-
-!  cpoly%soil_water(1:nzg,:)     = 0.0
-!  cpoly%soil_tempk(1:nzg,:)     = 0.0
-!  cpoly%soil_energy(1:nzg,:)    = 0.0
-!  cpoly%sfcwater_tempk(1:nzs,:) = 0.0
-!  cpoly%sfcwater_mass(1:nzs,:)  = 0.0
-!  cpoly%sfcwater_depth(1:nzs,:) = 0.0
-
-!  cpoly%avg_smoist_gc(1:nzg)  = 0.0
-!  cpoly%avg_smoist_gg(1:nzg)  = 0.0
-!  cpoly%avg_sensible_gg(1:nzg)= 0.0
-!  cpoly%aux_s(1:nzg)          = 0.0
   
   return
 end subroutine init_ed_site_vars_array
@@ -300,93 +288,153 @@ end subroutine init_ed_site_vars_array
 !======================================================================
 subroutine init_ed_poly_vars_array(cgrid)
   
-  use ed_state_vars,only:edtype
+   use ed_state_vars,only:edtype
   
-  implicit none
+   implicit none
   
-  type(edtype),target :: cgrid
-  integer :: ipy
+   type(edtype),target :: cgrid
+   integer :: ipy
   
-  real :: soil_C
-  real :: soil_N
-  real :: veg_C
-  real :: veg_N
+   real :: soil_C
+   real :: soil_N
+   real :: veg_C
+   real :: veg_N
   
   
 
-  do ipy = 1,cgrid%npolygons
-     !Moved inside the loop for the cases in which npolygons is 0
-     cgrid%mean_precip(ipy)  = 0.0
-     cgrid%mean_qprecip(ipy) = 0.0
-     cgrid%mean_netrad(ipy)  = 0.0
-     call compute_C_and_N_storage(cgrid,ipy,soil_C, soil_N, veg_C, veg_N)
-     cgrid%cbudget_initialstorage(ipy) = soil_C + veg_C
-     cgrid%nbudget_initialstorage(ipy) = soil_N + veg_N
-     cgrid%cbudget_nep(ipy) = 0.0
-  enddo
+   do ipy = 1,cgrid%npolygons
+      !Moved inside the loop for the cases in which npolygons is 0
+      cgrid%mean_precip(ipy)  = 0.0
+      cgrid%mean_qprecip(ipy) = 0.0
+      cgrid%mean_netrad(ipy)  = 0.0
+      call compute_C_and_N_storage(cgrid,ipy,soil_C, soil_N, veg_C, veg_N)
+      cgrid%cbudget_initialstorage(ipy) = soil_C + veg_C
+      cgrid%nbudget_initialstorage(ipy) = soil_N + veg_N
+      cgrid%cbudget_nep(ipy) = 0.0
+   enddo
 
-  return
+   return
 end subroutine init_ed_poly_vars_array
+!==========================================================================================!
+!==========================================================================================!
 
 
-!===================================================
 
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine will assign the values of some diagnostic variables, such as soil    !
+! and temporary layer temperature and liquid fraction, and the surface properties.         !
+!------------------------------------------------------------------------------------------!
 subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
+   use ed_state_vars , only : sitetype          & ! structure
+                            , patchtype         ! ! structure
+   use grid_coms     , only : nzg               & ! intent(in)
+                            , nzs               ! ! intent(in)
+   use soil_coms     , only : soil              & ! intent(in), look-up table
+                            , slz               & ! intent(in)
+                            , min_sfcwater_mass ! ! intent(in)
+   use consts_coms   , only : wdns              ! ! intent(in)
+   use therm_lib     , only : qwtk8             & ! subroutine
+                            , qtk               ! ! subroutine
+   use ed_therm_lib  , only : ed_grndvap        ! ! subroutine
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   type(sitetype) , target     :: csite          ! Current site
+   integer        , intent(in) :: ipa            ! Number of the current patch
+   real           , intent(in) :: rhos           ! Air density                     [ kg/m3]
+   !----- Local variables -----------------------------------------------------------------!
+   type(patchtype), pointer    :: cpatch         ! Current patch
+   integer                     :: k              ! Layer counter
+   integer                     :: ico            ! Cohort counter
+   integer                     :: nsoil          ! Alias for soil texture class
+   real                        :: surface_temp   ! Scratch variable for ed_grndvap
+   real                        :: surface_fliq   ! Scratch variable for ed_grndvap
+   !---------------------------------------------------------------------------------------!
   
-  use ed_state_vars,only:sitetype,patchtype
-  use grid_coms, only: nzg, nzs
-  use soil_coms, only: soil,slz
-  use therm_lib, only: qwtk8,qtk
-  use ed_therm_lib,only:ed_grndvap
-  use consts_coms, only: wdns
-  
-  implicit none
-  integer :: ipa,ico
-  type(sitetype), target :: csite
-  type(patchtype), pointer :: cpatch
-  integer :: k
-  real :: surface_temp, surface_fliq
-  real, intent(in) :: rhos
-  
-  do k = 1, nzg
-     call qwtk8(csite%soil_energy(k,ipa), csite%soil_water(k,ipa)*dble(wdns),  &
-          soil(csite%ntext_soil(k,ipa))%slcpd, csite%soil_tempk(k,ipa), csite%soil_fracliq(k,ipa))
-  enddo
+   !----- Finding soil temperature and liquid water fraction. -----------------------------!
+   do k = 1, nzg
+      nsoil = csite%ntext_soil(k,ipa)
+      call qwtk8(csite%soil_energy(k,ipa), csite%soil_water(k,ipa)*dble(wdns)              &
+                ,soil(nsoil)%slcpd, csite%soil_tempk(k,ipa), csite%soil_fracliq(k,ipa))
+   end do
+   !---------------------------------------------------------------------------------------! 
 
-  csite%nlev_sfcwater(ipa) = 0
-  k = 1
-  do while(csite%sfcwater_mass(min(k,nzs),ipa) > 1.0e-6 .and. k <= nzs)
-     csite%nlev_sfcwater(ipa) = k
-     csite%sfcwater_energy(k,ipa) = csite%sfcwater_energy(k,ipa) / csite%sfcwater_mass(k,ipa)
-     call qtk(csite%sfcwater_energy(k,ipa), csite%sfcwater_tempk(k,ipa),   &
-          csite%sfcwater_fracliq(k,ipa))
-     k = k+1
-  enddo
-  
-  call ed_grndvap(csite%nlev_sfcwater(ipa), csite%ntext_soil(nzg,ipa),   &
-       csite%soil_water(nzg,ipa), csite%soil_energy(nzg,ipa),    &
-       csite%sfcwater_energy(max(1,csite%nlev_sfcwater(ipa)),ipa), rhos,   &
-       csite%can_shv(ipa), csite%ground_shv(ipa), csite%surface_ssh(ipa), &
-       surface_temp, surface_fliq)
-  
-  
-  !---- paw_avg10d is a 10-day running average of available water. Initialize it with the current value.
-  cpatch => csite%patch(ipa)
-  do ico = 1, cpatch%ncohorts
-     cpatch%paw_avg10d(ico) = 0.0
-     do k = cpatch%krdepth(ico), nzg - 1
-        cpatch%paw_avg10d(ico) = cpatch%paw_avg10d(ico)                           &
-             + real(csite%soil_water(k,ipa)-dble(soil(csite%ntext_soil(k,ipa))%soilcp))     &
-             * (slz(k+1)-slz(k))/(soil(csite%ntext_soil(k,ipa))%slmsts            &
-             - soil(csite%ntext_soil(k,ipa))%soilcp) 
-     end do
-     cpatch%paw_avg10d(ico)= cpatch%paw_avg10d(ico) + real(csite%soil_water(nzg,ipa)  &
-          -dble(soil(csite%ntext_soil(nzg,ipa))%soilcp)) &
-          *(-1.0*slz(nzg))              &
-          /(soil(csite%ntext_soil(nzg,ipa))%slmsts &
-          -soil(csite%ntext_soil(nzg,ipa))%soilcp) 
-     cpatch%paw_avg10d(ico) = cpatch%paw_avg10d(ico)/(-1.0*slz(cpatch%krdepth(ico)))
-  end do
-  
-  return
+
+
+   !---------------------------------------------------------------------------------------! 
+   !   Determining number of temporary snow/surface water layers.  This is done by check-  !
+   ! ing the mass.  If it is a layer, then we convert sfcwater_energy from J/m2 to J/kg,   !
+   ! and compute the temperature and liquid fraction.                                      !
+   !---------------------------------------------------------------------------------------! 
+   csite%nlev_sfcwater(ipa) = 0
+   snowloop: do k=1,nzs
+      !----- Leave the loop if there is not enough mass in this layer... ------------------!
+      if (csite%sfcwater_mass(k,ipa) <= min_sfcwater_mass)  exit snowloop
+      csite%nlev_sfcwater(ipa) = k
+      csite%sfcwater_energy(k,ipa) = csite%sfcwater_energy(k,ipa)                          &
+                                   / csite%sfcwater_mass(k,ipa)
+      call qtk(csite%sfcwater_energy(k,ipa),csite%sfcwater_tempk(k,ipa)                    &
+              ,csite%sfcwater_fracliq(k,ipa))
+   end do snowloop
+   !---------------------------------------------------------------------------------------!
+   !     Now, just to be safe, we will assign zeroes to layers above.                      !
+   !---------------------------------------------------------------------------------------!
+   do k=csite%nlev_sfcwater(ipa)+1,nzs
+      csite%sfcwater_mass(k,ipa)   = 0.
+      csite%sfcwater_energy(k,ipa) = 0.
+      csite%sfcwater_depth(k,ipa)  = 0.
+      if (k == 1) then
+         csite%sfcwater_tempk(k,ipa)   = csite%soil_tempk(nzg,ipa)
+         csite%sfcwater_fracliq(k,ipa) = csite%soil_fracliq(nzg,ipa) 
+      else
+         csite%sfcwater_tempk(k,ipa)   = csite%sfcwater_tempk(k-1,ipa)
+         csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(k-1,ipa)
+      end if
+   end do
+   !---------------------------------------------------------------------------------------! 
+
+
+   
+   !----- Now we can compute the surface properties. --------------------------------------!
+   k=max(1,csite%nlev_sfcwater(ipa))
+   call ed_grndvap(csite%nlev_sfcwater(ipa),csite%ntext_soil(nzg,ipa)                      &
+                  ,csite%soil_water(nzg,ipa),csite%soil_energy(nzg,ipa)                    &
+                  ,csite%sfcwater_energy(k,ipa), rhos,csite%can_shv(ipa)                   &
+                  ,csite%ground_shv(ipa),csite%surface_ssh(ipa),surface_temp,surface_fliq)
+   !---------------------------------------------------------------------------------------! 
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      paw_avg10d is a 10-day running average of available water. Initialize it with    !
+   ! the current value.                                                                    !
+   !  MLO: I don't think this is currently used, but if we do use this, then we should add !
+   !       a flag to initialise like this only if it is a new patch.  This is also called  !
+   !       during patch fusion, when the 10-day running average is available...            !
+   !---------------------------------------------------------------------------------------!
+   cpatch => csite%patch(ipa)
+   do ico = 1, cpatch%ncohorts
+      cpatch%paw_avg10d(ico) = 0.0
+
+      do k = cpatch%krdepth(ico), nzg - 1
+         nsoil = csite%ntext_soil(k,ipa)
+         cpatch%paw_avg10d(ico) = cpatch%paw_avg10d(ico)                                   &
+                                + real(csite%soil_water(k,ipa) - dble(soil(nsoil)%soilcp)) &
+                                * (slz(k+1)-slz(k))                                        &
+                                / (soil(nsoil)%slmsts - soil(nsoil)%soilcp) 
+      end do
+      nsoil = csite%ntext_soil(nzg,ipa)
+      cpatch%paw_avg10d(ico) = cpatch%paw_avg10d(ico)                                      &
+                             + real(csite%soil_water(nzg,ipa) - dble(soil(nsoil)%soilcp))  &
+                             * (-1.0*slz(nzg)) / (soil(nsoil)%slmsts - soil(nsoil)%soilcp) 
+      cpatch%paw_avg10d(ico) = cpatch%paw_avg10d(ico)/(-1.0*slz(cpatch%krdepth(ico)))
+   end do
+   !---------------------------------------------------------------------------------------! 
+ 
+   return
 end subroutine new_patch_sfc_props_ar
+!==========================================================================================!
+!==========================================================================================!

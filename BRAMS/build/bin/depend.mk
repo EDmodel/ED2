@@ -1737,7 +1737,7 @@ invmondays.o : $(ED_UTILS)/invmondays.f90 misc_coms.o
 	rm -f $(<F:.f90=.f90)
 
 landuse_init.o : $(ED_INIT)/landuse_init.f90 ed_state_vars.o consts_coms.o disturb_coms.o  \
-	misc_coms.o grid_coms.o
+	misc_coms.o grid_coms.o max_dims.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

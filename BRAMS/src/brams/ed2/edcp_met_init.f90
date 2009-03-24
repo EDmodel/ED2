@@ -25,6 +25,7 @@ subroutine ed_init_coup_atm
   integer :: ncohorts, npatches
   real    :: site_area_i, poly_area_i
   real    :: poly_lai,poly_nplant
+  real    :: elim_nplant,elim_lai
   integer :: ix,iy
   real    :: surface_temp,surface_fliq
   integer, parameter :: harvard_override = 0
@@ -73,11 +74,7 @@ subroutine ed_init_coup_atm
               
               ! For now, choose heat/vapor capacities for stability
               csite%can_depth(ipa) = 30.0
-              do k=1,nzs
-                 csite%sfcwater_tempk(k,ipa) = t3ple   ! Set canopy temp to 273.16K
-                 csite%sfcwater_fracliq(k,ipa) = 1.0 ! Set to 100% liquid
-              end do
-              
+
               csite%rshort_g(ipa) = 0.0
               csite%rlong_g(ipa) = 0.0
               
@@ -172,6 +169,16 @@ subroutine ed_init_coup_atm
                     end do
                  end if
 
+                 !----- Initial condition is with no snow/pond. ---------------------------!
+                 csite%nlev_sfcwater(ipa) = 0
+                 do k=1,nzs
+                    csite%sfcwater_energy (k,ipa) = 0.
+                    csite%sfcwater_depth  (k,ipa) = 0.
+                    csite%sfcwater_mass   (k,ipa) = 0.
+                    csite%sfcwater_tempk  (k,ipa) = csite%soil_tempk(nzg,ipa)
+                    csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(nzg,ipa)
+                 end do
+
                  nls   = csite%nlev_sfcwater(ipa)
                  nlsw1 = max(nls,1)
                  
@@ -226,7 +233,7 @@ subroutine ed_init_coup_atm
               cpatch => csite%patch(ipa)
               if (cpatch%ncohorts > 0) then
                  call fuse_cohorts_ar(csite,ipa,cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
-                 call terminate_cohorts_ar(csite,ipa)
+                 call terminate_cohorts_ar(csite,ipa,elim_nplant,elim_lai)
                  call split_cohorts_ar(cpatch, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
               end if
               do ico = 1,cpatch%ncohorts
@@ -490,7 +497,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
   use ed_state_vars, only: edtype, polygontype, sitetype, patchtype
   use soil_coms, only: soilstate_db, soil,slz
   use rconstants, only: tsupercool, cliqvlme, cicevlme, t3ple
-  use grid_coms, only: nzg, ngrids
+  use grid_coms, only: nzg, nzs, ngrids
   use ed_therm_lib,only:ed_grndvap
   
   implicit none
@@ -611,6 +618,17 @@ subroutine read_soil_moist_temp_ar(cgrid)
                              csite%soil_fracliq(k,ipa) = 0.0
                           end if
                        end do
+
+                       !----- Initial condition is with no snow/pond. ---------------------!
+                       csite%nlev_sfcwater(ipa) = 0
+                       do k=1,nzs
+                          csite%sfcwater_energy (k,ipa) = 0.
+                          csite%sfcwater_depth  (k,ipa) = 0.
+                          csite%sfcwater_mass   (k,ipa) = 0.
+                          csite%sfcwater_tempk  (k,ipa) = csite%soil_tempk(nzg,ipa)
+                          csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(nzg,ipa)
+                       end do
+
                        if(harvard_override == 1)then
                           csite%soil_tempk(1,ipa)     = 277.6
                           csite%soil_tempk(2:4,ipa)   = 276.0
@@ -663,7 +681,8 @@ subroutine leaf2ed_soil_moist_energy_ar(cgrid,ifm)
                            , polygontype  & ! structure
                            , sitetype     & ! structure
                            , patchtype    ! ! structure
-   use grid_coms    , only : nzg          ! ! structure
+   use grid_coms    , only : nzg          & ! intent(in)
+                           , nzs          ! ! intent(in)
    use ed_therm_lib , only : ed_grndvap   ! ! subroutine
    use therm_lib    , only : qwtk8        & ! subroutine
                            , qwtk         ! ! subroutine
@@ -755,6 +774,16 @@ subroutine leaf2ed_soil_moist_energy_ar(cgrid,ifm)
                                         * ( fice * cicevlme * csite%soil_tempk(k,ipa)      &
                                           + csite%soil_fracliq(k,ipa) * cliqvlme           &
                                           * (csite%soil_tempk(k,ipa) - tsupercool) )
+            end do
+            
+            !----- Initialising surface snow/pond layers with nothing as default. ---------!
+            csite%nlev_sfcwater(ipa) = 0
+            do k=1,nzs
+               csite%sfcwater_energy (k,ipa) = 0.
+               csite%sfcwater_depth  (k,ipa) = 0.
+               csite%sfcwater_mass   (k,ipa) = 0.
+               csite%sfcwater_tempk  (k,ipa) = csite%soil_tempk(nzg,ipa)
+               csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(nzg,ipa)
             end do
             
             !----- Compute the ground properties ------------------------------------------!
