@@ -2245,6 +2245,9 @@ contains
     call nullify_patchtype(cpatch)
     cpatch%ncohorts = ncohorts
 
+    !----- We need to leave the subroutine in case this patch is empty. -------------------!
+    if (ncohorts == 0) return
+    
     allocate(cpatch%pft(ncohorts))
     allocate(cpatch%nplant(ncohorts))
     allocate(cpatch%hite(ncohorts))
@@ -2304,13 +2307,6 @@ contains
     allocate(cpatch%hcapveg(ncohorts))
     allocate(cpatch%gpp(ncohorts))
     allocate(cpatch%paw_avg10d(ncohorts))
-
-    ! Depricated
-!    allocate(cpatch%co_srad_h(ncohorts))
-!    allocate(cpatch%co_lrad_h(ncohorts))
-!    allocate(cpatch%co_sens_h(ncohorts))
-!    allocate(cpatch%co_evap_h(ncohorts))
-!    allocate(cpatch%co_liqr_h(ncohorts))
 
     ! Initialize the variables with a non-sense number.
     !call huge_patchtype(cpatch)
@@ -3584,13 +3580,6 @@ contains
     if(associated(cpatch%hcapveg))          deallocate(cpatch%hcapveg)
     if(associated(cpatch%gpp))              deallocate(cpatch%gpp)
     if(associated(cpatch%paw_avg10d))       deallocate(cpatch%paw_avg10d)
-
-!Depricated
-!    if(associated(cpatch%co_srad_h))          deallocate(cpatch%co_srad_h)
-!    if(associated(cpatch%co_lrad_h))          deallocate(cpatch%co_lrad_h)
-!    if(associated(cpatch%co_sens_h))          deallocate(cpatch%co_sens_h)
-!    if(associated(cpatch%co_evap_h))          deallocate(cpatch%co_evap_h)
-!    if(associated(cpatch%co_liqr_h))          deallocate(cpatch%co_liqr_h)
 
 
     return

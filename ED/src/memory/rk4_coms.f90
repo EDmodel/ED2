@@ -146,7 +146,7 @@ module rk4_coms
    real, parameter :: rk4min_soil_temp  = 184.00 ! Same as rk4min_soil_temp
 
    real, parameter :: rk4max_veg_temp   = 341.00 ! ~10C hotter than record in El Azizia;
-   real, parameter :: rk4min_veg_lwater = -1.e-3 ! Minimum leaf water allowed. This is 
+   real, parameter :: rk4min_veg_lwater = -5.e-4 ! Minimum leaf water allowed. This is 
                                                  !   in kg/[m2 leaf], so it will be multi-
                                                  !   plied by LAI.
 
@@ -159,8 +159,8 @@ module rk4_coms
    ! pact of such exchange dependent on the soil depth, we assign the scale a function of  !
    ! the top layer thickness.                                                              !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: rk4min_sfcw_moist = -1.e-3 ! Minimum water mass allowed.
-   real, parameter :: rk4min_virt_moist = -1.e-3 ! Minimum water allowed at virtual pool.
+   real, parameter :: rk4min_sfcw_moist = -5.e-4 ! Minimum water mass allowed.
+   real, parameter :: rk4min_virt_moist = -5.e-4 ! Minimum water allowed at virtual pool.
    !----- The following variables will be defined in sfcdata_ed (ed_init.f90). ------------!
    real            :: rk4min_sfcw_mass           ! Minimum water mass allowed.
    real            :: rk4min_virt_water          ! Minimum water allowed at virtual pool.

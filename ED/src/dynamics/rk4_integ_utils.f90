@@ -1080,8 +1080,8 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
                             , tsupercool        & ! intent(in)
                             , qliqt3            & ! intent(in)
                             , wdnsi             ! ! intent(in)
-   use rk4_coms      , only : rk4min_sfcw_moist & ! intent(in)
-                            , rk4min_virt_moist ! ! intent(in)
+   use rk4_coms      , only : rk4min_sfcw_mass  & ! intent(in)
+                            , rk4min_virt_water ! ! intent(in)
    use therm_lib     , only : qtk               & ! subroutine
                             , qwtk              & ! subroutine
                             , qwtk8             ! ! subroutine
@@ -1134,7 +1134,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
       !    whether there is still enough mass.                                             !
       !------------------------------------------------------------------------------------!
       totsnow = sum(initp%sfcwater_mass(1:ksn))
-      if (totsnow < rk4min_sfcw_moist*wdns*dslz(nzg)) then
+      if (totsnow < rk4min_sfcw_mass) then
          !----- Temporary layer is too negative, break it so the step can be rejected. ----!
          return
       elseif (totsnow <= min_sfcwater_mass) then
@@ -1173,7 +1173,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
       ! 2.  No temporary layer, dealing with virtual layer.  Check whether the virtual     !
       !     layer would be thick enough to create a pond, otherwise skip the entire thing. !
       !------------------------------------------------------------------------------------!
-      if (initp%virtual_water < rk4min_virt_moist*wdns*dslz(nzg)) then
+      if (initp%virtual_water < rk4min_virt_water) then
          !----- Virtual layer is too negative, break it so the step can be rejected. ------!
          return
       elseif (initp%virtual_water <= min_sfcwater_mass) then
