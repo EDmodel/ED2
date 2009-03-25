@@ -72,11 +72,11 @@
    NL%DELTAX   = 60000.           ! X and Y grid spacing scale  [\*/]
    NL%DELTAY   = 60000.           ! in metres (dimension 1)     [\*/]
                                   !
-   NL%POLELAT  = -23.98            ! Latitude of pole point   (dimension 1)
-   NL%POLELON  = -48.88           ! Longitude of pole point  (dimension 1)
+   NL%POLELAT  = -15.60            ! Latitude of pole point   (dimension 1)
+   NL%POLELON  = -56.10           ! Longitude of pole point  (dimension 1)
                                   !
-   NL%CENTLAT  = -23.98          ! Latitude of central point  (n_ed_regions)
-   NL%CENTLON  = -48.88          ! Longitude of central point (n_ed_regions)
+   NL%CENTLAT  = -15.60          ! Latitude of central point  (n_ed_regions)
+   NL%CENTLON  = -56.10          ! Longitude of central point (n_ed_regions)
 
 !----- For both kinds of region
    NL%NSTRATX = 1,4 ! Fraction of the sizes given above that I should use for these
@@ -85,8 +85,8 @@
 !----- You can pinpoint individual locations, known as SOI. -------------------------------!
    NL%N_SOI    =    1   ! number of sites of interest (SOIs).  This could be zero.
                 
-   NL%SOI_LAT  = -23.98 ! list of the latitudes of the SOIs (degrees north)
-   NL%SOI_LON  = -48.88 ! list of the longitudes of the SOIs (degrees east)
+   NL%SOI_LAT  = -15.60 ! list of the latitudes of the SOIs (degrees north)
+   NL%SOI_LON  = -56.10 ! list of the longitudes of the SOIs (degrees east)
 !------------------------------------------------------------------------------------------!
 
 
@@ -138,8 +138,8 @@
 !------------------------------------------------------------------------------------------!
 ! Analysis/history/restart file: path, prefix, settings                                    !
 !------------------------------------------------------------------------------------------!
-   NL%FFILOUT = 'analy/itapeva'         ! Analysis output prefix
-   NL%SFILOUT   = 'histo/itapeva'       ! History output prefix
+   NL%FFILOUT = 'analy/cuiaba'         ! Analysis output prefix
+   NL%SFILOUT   = 'histo/cuiaba'       ! History output prefix
 
    NL%IED_INIT_MODE   = 0              ! 0 signifies a start from near-bare ground.   
                                        ! 1 allows you to do a history restart from ED1-type
@@ -282,9 +282,9 @@
    ! 5 - C3 grass                    | 11 - late temperate deciduous    ! 
    ! 6 - northern pines              |                                  !
    !--------------------------------------------------------------------!                             
-   NL%INCLUDE_THESE_PFT = 1,2,3,4,5,7       ! List of PFTs to be included 
-   NL%AGRI_STOCK        = 5              ! Agriculture PFT (used only if ianth_disturb=1)
-   NL%PLANTATION_STOCK  = 7              ! Plantation PFT  (used only if ianth_disturb=1)
+   NL%INCLUDE_THESE_PFT = 1,2,3,4        ! List of PFTs to be included 
+   NL%AGRI_STOCK        = 1              ! Agriculture PFT (used only if ianth_disturb=1)
+   NL%PLANTATION_STOCK  = 3              ! Plantation PFT  (used only if ianth_disturb=1)
 
    NL%PFT_1ST_CHECK = 0 ! What should I do when I find a cohort with an unexpected PFT 
                         !    in the history start?
@@ -311,11 +311,13 @@
 
    NL%TREEFALL_DISTURBANCE_RATE  = 0.01 ! Treefall disturbance rate, 1/years
 
-   NL%RUNOFF_TIME     = 86400.0         ! the forest could get saturated and 
-                                        ! develop a sfcwater pool of meters or 
-                                        ! more.  In many cases, this is not realistic.
-                                        ! This is the time scale in seconds for 
-                                        ! this water to disappear.        
+   NL%RUNOFF_TIME    = 28800.0         ! the forest could get saturated and 
+                                       ! develop a sfcwater pool of meters or 
+                                       ! more.  In many cases, this is not realistic.
+                                       ! This is the time scale in seconds for 
+                                       ! this water to disappear.  If you want no runoff
+                                       ! set runoff_time = 0 (not recommended for long 
+                                       ! runs).
 !------------------------------------------------------------------------------------------!
 
 

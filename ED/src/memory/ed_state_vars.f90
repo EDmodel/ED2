@@ -1374,21 +1374,30 @@ module ed_state_vars
   type rk4patchtype
      
 
-     ! Prognostic variables
+     ! Prognostic variables + some useful aux variables
      ! ---------------------------------------
      
      real :: can_temp
      real :: can_shv
      real :: can_co2
      
-     real, pointer :: soil_energy(:)
-     real, pointer :: soil_tempk(:)
-     real, pointer :: soil_fracliq(:)
-     real(kind=8), pointer :: soil_water(:)
      
-     real, pointer :: sfcwater_depth(:)
-     real, pointer :: sfcwater_mass(:)
-     real, pointer :: sfcwater_energy(:)
+     real        , dimension(:), pointer :: soil_energy
+     real        , dimension(:), pointer :: soil_tempk
+     real        , dimension(:), pointer :: soil_fracliq
+     real(kind=8), dimension(:), pointer :: soil_water
+     real        , dimension(:), pointer :: psiplusz
+     real        , dimension(:), pointer :: soilair99
+     real        , dimension(:), pointer :: soilair01
+     real        , dimension(:), pointer :: soil_liq
+     real        , dimension(:), pointer :: available_liquid_water
+     real        , dimension(:), pointer :: extracted_water
+     
+     real        , dimension(:), pointer :: sfcwater_depth
+     real        , dimension(:), pointer :: sfcwater_mass
+     real        , dimension(:), pointer :: sfcwater_energy
+     real        , dimension(:), pointer :: sfcwater_tempk
+     real        , dimension(:), pointer :: sfcwater_fracliq
      
      real :: virtual_water
      real :: virtual_heat
@@ -1396,8 +1405,6 @@ module ed_state_vars
      
      real :: ground_shv
      real :: surface_ssh
-     real, pointer :: sfcwater_tempk(:)
-     real, pointer :: sfcwater_fracliq(:)
      integer :: nlev_sfcwater
      real :: net_rough_length
      
@@ -1421,14 +1428,15 @@ module ed_state_vars
      real, dimension(n_pft) :: a_c_max
      real :: rasveg
      real :: root_res_fac
-     real, pointer :: available_liquid_water(:)
-     real, pointer :: extracted_water(:)
      
-     real,pointer,dimension(:) :: veg_energy
-     real,pointer,dimension(:) :: veg_water
-     real,pointer,dimension(:) :: veg_temp
-     real,pointer,dimension(:) :: veg_fliq
-     real,pointer,dimension(:) :: hcapveg
+     !----- Cohort variables --------------------------------------------------------------!
+     real   ,pointer,dimension(:) :: veg_energy
+     real   ,pointer,dimension(:) :: veg_water
+     real   ,pointer,dimension(:) :: veg_temp
+     real   ,pointer,dimension(:) :: veg_fliq
+     real   ,pointer,dimension(:) :: hcapveg
+     logical,pointer,dimension(:) :: solvable
+     !-------------------------------------------------------------------------------------!
 
 
      ! ------------------------------------------
@@ -2237,6 +2245,9 @@ contains
     call nullify_patchtype(cpatch)
     cpatch%ncohorts = ncohorts
 
+    !----- We need to leave the subroutine in case this patch is empty. -------------------!
+    if (ncohorts == 0) return
+    
     allocate(cpatch%pft(ncohorts))
     allocate(cpatch%nplant(ncohorts))
     allocate(cpatch%hite(ncohorts))
@@ -2296,13 +2307,6 @@ contains
     allocate(cpatch%hcapveg(ncohorts))
     allocate(cpatch%gpp(ncohorts))
     allocate(cpatch%paw_avg10d(ncohorts))
-
-    ! Depricated
-!    allocate(cpatch%co_srad_h(ncohorts))
-!    allocate(cpatch%co_lrad_h(ncohorts))
-!    allocate(cpatch%co_sens_h(ncohorts))
-!    allocate(cpatch%co_evap_h(ncohorts))
-!    allocate(cpatch%co_liqr_h(ncohorts))
 
     ! Initialize the variables with a non-sense number.
     !call huge_patchtype(cpatch)
@@ -3576,13 +3580,6 @@ contains
     if(associated(cpatch%hcapveg))          deallocate(cpatch%hcapveg)
     if(associated(cpatch%gpp))              deallocate(cpatch%gpp)
     if(associated(cpatch%paw_avg10d))       deallocate(cpatch%paw_avg10d)
-
-!Depricated
-!    if(associated(cpatch%co_srad_h))          deallocate(cpatch%co_srad_h)
-!    if(associated(cpatch%co_lrad_h))          deallocate(cpatch%co_lrad_h)
-!    if(associated(cpatch%co_sens_h))          deallocate(cpatch%co_sens_h)
-!    if(associated(cpatch%co_evap_h))          deallocate(cpatch%co_evap_h)
-!    if(associated(cpatch%co_liqr_h))          deallocate(cpatch%co_liqr_h)
 
 
     return

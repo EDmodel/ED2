@@ -13,7 +13,7 @@
 subroutine strain(m1,m2,m3,ia,iz,ja,jz,ia_1,ja_1,iz1,jz1,jd                                &
                  ,up,vp,wp,vt3da,vt3db,vt3dc,vt3dd,vt3de,vt3df,vt3dg,vt3dh,vt3di,vt3dn     &
                  ,scr2,idiffk)
-
+  use mem_turb, only : ibotflx
   implicit none
 
   integer, intent(in)  :: m1   &
@@ -48,18 +48,18 @@ subroutine strain(m1,m2,m3,ia,iz,ja,jz,ia_1,ja_1,iz1,jz1,jd                     
   integer              :: i,j,k
 
 
-  call grad(m1, m2, m3, ia  , iz1, ja  , jz , up, vt3da, 'XDIR', 'UPNT')
-  call grad(m1, m2, m3, ia_1, iz , ja_1, jz , vp, vt3db, 'XDIR', 'VPNT')
-  call grad(m1, m2, m3, ia_1, iz , ja  , jz , wp, vt3df, 'XDIR', 'WPNT')
+  call grad(m1, m2, m3, ia  , iz1, ja  , jz , up, vt3da, 'XDIR', 'UPNT',ibotflx)
+  call grad(m1, m2, m3, ia_1, iz , ja_1, jz , vp, vt3db, 'XDIR', 'VPNT',ibotflx)
+  call grad(m1, m2, m3, ia_1, iz , ja  , jz , wp, vt3df, 'XDIR', 'WPNT',ibotflx)
 
-  call grad(m1, m2, m3, ia_1, iz , ja_1, jz , up, vt3dn, 'YDIR', 'UPNT')
-  call grad(m1, m2, m3, ia  , iz , ja  , jz1, vp, vt3dc, 'YDIR', 'VPNT')
-  call grad(m1, m2, m3, ia  , iz , ja_1, jz , wp, vt3dg, 'YDIR', 'WPNT')
+  call grad(m1, m2, m3, ia_1, iz , ja_1, jz , up, vt3dn, 'YDIR', 'UPNT',ibotflx)
+  call grad(m1, m2, m3, ia  , iz , ja  , jz1, vp, vt3dc, 'YDIR', 'VPNT',ibotflx)
+  call grad(m1, m2, m3, ia  , iz , ja_1, jz , wp, vt3dg, 'YDIR', 'WPNT',ibotflx)
 
-  call grad(m1, m2, m3, ia_1, iz , ja  , jz , up, vt3dd, 'ZDIR', 'UPNT')
-  call grad(m1, m2, m3, ia  , iz , ja_1, jz , vp, vt3de, 'ZDIR', 'VPNT')
+  call grad(m1, m2, m3, ia_1, iz , ja  , jz , up, vt3dd, 'ZDIR', 'UPNT',ibotflx)
+  call grad(m1, m2, m3, ia  , iz , ja_1, jz , vp, vt3de, 'ZDIR', 'VPNT',ibotflx)
   if(idiffk >= 3 .and. idiffk /= 7)then
-     call grad(m1,m2,m3,ia,iz,ja,jz,wp,scr2,'ZDIR','WPNT')
+     call grad(m1,m2,m3,ia,iz,ja,jz,wp,scr2,'ZDIR','WPNT',ibotflx)
   endif
 
   if (idiffk <= 2 .or. idiffk == 7) then

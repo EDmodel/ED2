@@ -189,7 +189,19 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
            ! Set status flag
            if(bl_max == 0.0 .or. cpoly%green_leaf_factor(ipft,isi) < 0.02)then
               cpatch%phenology_status(ico) = 2 
-              cpatch%lai(ico) = 0.0
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              !  NOT SURE ABOUT THIS ONE. LAI WAS SET TO ZERO, BUT NOT BLEAF AND HEAT CAPACITY !
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              csite%hcapveg(ipa)     = csite%hcapveg(ipa) - cpatch%hcapveg(ico)
+              cpatch%bleaf(ico)      = 0.0
+              cpatch%lai(ico)        = 0.0
+              cpatch%hcapveg(ico)    = 0.0
+              cpatch%veg_energy(ico) = 0.0
+              cpatch%veg_water(ico)  = 0.0
+              cpatch%veg_temp(ico)   = csite%can_temp(ipa)
+              
 !           else
 !              cpatch%phenology_status = 1
            endif
@@ -261,7 +273,12 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
                  ! with it.
                  old_hcapveg            = cpatch%hcapveg(ico)
                  cpatch%hcapveg(ico)    = 0.
-                 call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
+                 cpatch%veg_energy(ico) = 0.
+                 cpatch%veg_water(ico)  = 0.
+                 cpatch%veg_temp(ico)   = csite%can_temp(ipa)
+                 !----- Updating site heat capacity ---------------------------------------------!
+                 csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
+                 
               endif
               
            elseif(theta(cpatch%krdepth(ico)) > theta_crit .and.   &

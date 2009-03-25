@@ -32,7 +32,7 @@ module mem_turb
 
   type (turb_vars), allocatable :: turb_g(:), turbm_g(:)
 
-  integer :: if_urban_canopy,ihorgrad,ibruvais
+  integer :: if_urban_canopy,ihorgrad,ibruvais,ibotflx
 
   integer, dimension(maxgrds) :: idiffk
 

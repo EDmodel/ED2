@@ -110,7 +110,8 @@ contains
       ! to be the canopy air temperature, or the snow temperature in case it is buried in  !
       ! snow.                                                                              !
       !------------------------------------------------------------------------------------!
-      if (cpatch%hcapveg(ico) == 0.) then
+      if (cpatch%hcapveg(ico) == 0. .or. cpatch%phenology_status(ico) == 2) then
+         cpatch%hcapveg(ico)    = 0.
          cpatch%veg_energy(ico) = 0.
          cpatch%veg_water(ico)  = 0.
          if (cpatch%hite(ico) > csite%total_snow_depth(ipa)) then
@@ -125,7 +126,7 @@ contains
             end do
             cpatch%veg_temp(ico) = csite%sfcwater_tempk(kclosest,ipa)
          end if
-      else
+      elseif(cpatch%phenology_status(ico) < 2) then
          cpatch%veg_energy(ico) = cpatch%veg_energy(ico)                                   &
                                 + (cpatch%hcapveg(ico)-old_hcapveg) * cpatch%veg_temp(ico)
          call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)        &
@@ -142,6 +143,10 @@ contains
             call fatal_error('Energy is leaking!!!','update_veg_energy_cweh'               &
                             &,'ed_therm_lib.f90')
          end if
+      else 
+            write (unit=*,fmt='(a)') ' WHAT AM I DOING HERE???:'
+            call fatal_error('Entered in a forbidden place!!!','update_veg_energy_cweh'    &
+                            &,'ed_therm_lib.f90')
       end if
 
       return

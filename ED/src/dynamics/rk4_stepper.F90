@@ -70,8 +70,8 @@ module rk4_stepper_ar
             errmax = 10.0
          else
             call get_errmax_ar(errmax, integration_buff%yerr,integration_buff%yscal        &
-                              ,csite%patch(ipa),lsl,integration_buff%y                     &
-                              ,integration_buff%ytemp)
+                              ,csite%patch(ipa),csite%total_snow_depth(ipa),lsl            &
+                              ,integration_buff%y,integration_buff%ytemp)
             errmax = errmax * rk4epsi
          end if
 
@@ -108,7 +108,7 @@ module rk4_stepper_ar
                write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:   ',cgrid%lon(ipy)
                write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:    ',cgrid%lat(ipy)
                write (unit=*,fmt='(a,1x,i6)')     ' + POLYGON:     ',ipy
-               write (unit=*,fmt='(a)')           ' + PATCH AGE:   ',csite%age(ipa)
+               write (unit=*,fmt='(a)')           ' + PATCH INFO:  '
                write (unit=*,fmt='(a,1x,es12.5)') '   - AGE:       ',csite%age(ipa)
                write (unit=*,fmt='(a,1x,i6)')     '   - DIST_TYPE: ',csite%dist_type(ipa)
                write (unit=*,fmt='(a,1x,l1)')     ' + REJECT_STEP: ',reject_step
@@ -145,8 +145,8 @@ module rk4_stepper_ar
                   call print_sanity_check_ar(integration_buff%y,csite,ipa,lsl)
                else
                   call print_errmax_ar(errmax,integration_buff%yerr,integration_buff%yscal &
-                                      ,csite%patch(ipa),lsl,integration_buff%y             &
-                                      ,integration_buff%ytemp)
+                                      ,csite%patch(ipa),csite%total_snow_depth(ipa),lsl    &
+                                      ,integration_buff%y,integration_buff%ytemp)
                   write (unit=*,fmt='(80a)') ('=',k=1,80)
                   write (unit=*,fmt='(a,1x,es12.5)') ' - Rel. errmax:',errmax*rk4epsi
                   write (unit=*,fmt='(a,1x,es12.5)') ' - Raw errmax: ',errmax
@@ -159,10 +159,19 @@ module rk4_stepper_ar
          
          else
             !------------------------------------------------------------------------------!
-            !   Great, it worked, so now we can advance to the next step, copy the stuff   !
-            ! on the integration buffer to the actual patch/cohort structures, ans we will !
-            ! also set up h for the next time.  And here we can relax h for the next step, !
-            ! and try something faster.                                                    !
+            !   Great, it worked, so now we can advance to the next step.  We just need to !
+            ! do some minor adjustments before...                                          !
+            !------------------------------------------------------------------------------!
+            !----- 1. Final update of leaf properties to avoid negative water. ------------!
+            call adjust_veg_properties(integration_buff%ytemp,h,csite,ipa,rhos)
+            !----- 2. Make snow layers stable and positively defined. ---------------------!
+            call redistribute_snow_ar(integration_buff%ytemp, csite,ipa)
+            !----- 3. Update the diagnostic variables. ------------------------------------!
+            call update_diagnostic_vars_ar(integration_buff%ytemp, csite,ipa,lsl)
+            
+            !------------------------------------------------------------------------------!
+            ! 4. Set up h for the next time.  And here we can relax h for the next step,   !
+            !    and try something faster.                                                 !
             !------------------------------------------------------------------------------!
             if (errmax > errcon) then
                hnext = safety * h * errmax**pgrow
@@ -171,9 +180,11 @@ module rk4_stepper_ar
             endif
             hnext = max(2.0*hmin,hnext)
 
-            !----- Updating time ----------------------------------------------------------!
+            !----- 5. Updating time. ------------------------------------------------------!
             x    = x + h
             hdid = h
+            
+            !----- 6. Copying the temporary structure to the intermediate state. ----------!
             call copy_rk4_patch_ar(integration_buff%ytemp,integration_buff%y               &
                                   ,csite%patch(ipa),lsl)
             exit hstep
@@ -244,6 +255,7 @@ module rk4_stepper_ar
       logical           , intent(out) :: reject_step
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)   , pointer     :: cpatch
+      real                            :: combh
       !------------------------------------------------------------------------------------!
 
 
@@ -275,9 +287,10 @@ module rk4_stepper_ar
 
       call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
       call inc_rk4_patch_ar(ak7, dydx, b21*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b21*h)
-      !call update_veg_properties(ak7,csite,ipa)
-      call stabilize_snow_layers_ar(ak7, csite, ipa, lsl)
+      combh = b21*h
+      call adjust_veg_properties(ak7,combh,csite,ipa,rhos)
+      call redistribute_snow_ar(ak7, csite,ipa)
+      call update_diagnostic_vars_ar(ak7, csite,ipa, lsl)
       call lsm_sanity_check_ar(ak7, reject_step, csite, ipa, lsl ,dydx,h,atm_tmp,atm_shv   &
                               ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg         &
                               ,print_diags)
@@ -289,11 +302,11 @@ module rk4_stepper_ar
                          ,atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
       call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
       call inc_rk4_patch_ar(ak7, dydx, b31*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b31*h)
       call inc_rk4_patch_ar(ak7, ak2, b32*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,ak2,csite,ipa,rhos,b32*h)
-      !call update_veg_properties(ak7,csite,ipa)
-      call stabilize_snow_layers_ar(ak7, csite,ipa, lsl)
+      combh = (b31+b32)*h
+      call adjust_veg_properties(ak7,combh,csite,ipa,rhos)
+      call redistribute_snow_ar(ak7, csite,ipa)
+      call update_diagnostic_vars_ar(ak7, csite,ipa, lsl)
       call lsm_sanity_check_ar(ak7,reject_step,csite,ipa, lsl,dydx,h,atm_tmp,atm_shv       &
                               ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg         &
                               ,print_diags)
@@ -305,13 +318,12 @@ module rk4_stepper_ar
                          ,atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
       call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
       call inc_rk4_patch_ar(ak7, dydx, b41*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b41*h)
       call inc_rk4_patch_ar(ak7, ak2, b42*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,ak2,csite,ipa,rhos,b42*h)
       call inc_rk4_patch_ar(ak7, ak3, b43*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,ak3,csite,ipa,rhos,b43*h)
-      !call update_veg_properties(ak7,csite,ipa)
-      call stabilize_snow_layers_ar(ak7, csite,ipa, lsl)
+      combh = (b41+b42+b43)*h
+      call adjust_veg_properties(ak7,combh,csite,ipa,rhos)
+      call redistribute_snow_ar(ak7, csite,ipa)
+      call update_diagnostic_vars_ar(ak7, csite,ipa, lsl)
       call lsm_sanity_check_ar(ak7, reject_step, csite,ipa, lsl,dydx,h,atm_tmp,atm_shv     &
                               ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg         &
                               ,print_diags )
@@ -323,15 +335,13 @@ module rk4_stepper_ar
                          ,atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
       call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
       call inc_rk4_patch_ar(ak7, dydx, b51*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b51*h)
       call inc_rk4_patch_ar(ak7, ak2, b52*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,ak2,csite,ipa,rhos,b52*h)
       call inc_rk4_patch_ar(ak7, ak3, b53*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,ak3,csite,ipa,rhos,b53*h)
       call inc_rk4_patch_ar(ak7, ak4, b54*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,ak4,csite,ipa,rhos,b54*h)
-      !call update_veg_properties(ak7,csite,ipa)
-      call stabilize_snow_layers_ar(ak7, csite, ipa, lsl)
+      combh = (b51+b52+b53+b54)*h
+      call adjust_veg_properties(ak7,combh,csite,ipa,rhos)
+      call redistribute_snow_ar(ak7, csite,ipa)
+      call update_diagnostic_vars_ar(ak7, csite,ipa, lsl)
       call lsm_sanity_check_ar(ak7,reject_step,csite,ipa,lsl,dydx,h,atm_tmp,atm_shv        &
                               ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg         &
                               ,print_diags)
@@ -343,17 +353,14 @@ module rk4_stepper_ar
                          ,atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
       call copy_rk4_patch_ar(y, ak7, cpatch, lsl)
       call inc_rk4_patch_ar(ak7, dydx, b61*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,b61*h)
       call inc_rk4_patch_ar(ak7, ak2, b62*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,ak2,csite,ipa,rhos,b62*h)
       call inc_rk4_patch_ar(ak7, ak3, b63*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,ak3,csite,ipa,rhos,b63*h)
       call inc_rk4_patch_ar(ak7, ak4, b64*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,ak4,csite,ipa,rhos,b64*h)
       call inc_rk4_patch_ar(ak7, ak5, b65*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,ak5,csite,ipa,rhos,b65*h)
-      !call update_veg_properties(ak7,csite,ipa)
-      call stabilize_snow_layers_ar(ak7, csite,ipa, lsl)
+      combh = (b61+b62+b63+b64+b65)*h
+      call adjust_veg_properties(ak7,combh,csite,ipa,rhos)
+      call redistribute_snow_ar(ak7, csite,ipa)
+      call update_diagnostic_vars_ar(ak7, csite,ipa, lsl)
       call lsm_sanity_check_ar(ak7, reject_step, csite,ipa, lsl,dydx,h,atm_tmp,atm_shv     &
                               ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg         &
                               ,print_diags)
@@ -363,15 +370,13 @@ module rk4_stepper_ar
                          ,atm_tmp, exner, geoht, vels, atm_shv, atm_co2, lsl)
       call copy_rk4_patch_ar(y, yout, cpatch, lsl)
       call inc_rk4_patch_ar(yout, dydx, c1*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,dydx,csite,ipa,rhos,c1*h)
       call inc_rk4_patch_ar(yout, ak3, c3*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,ak3,csite,ipa,rhos,c3*h)
       call inc_rk4_patch_ar(yout, ak4, c4*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,ak4,csite,ipa,rhos,c4*h)
       call inc_rk4_patch_ar(yout, ak6, c6*h, cpatch, lsl)
-      call adjust_veg_properties(ak7,ak6,csite,ipa,rhos,c6*h)
-      !call update_veg_properties(yout,csite,ipa)
-      call stabilize_snow_layers_ar(yout, csite,ipa, lsl)
+      combh = (c1+c3+c4+c6)*h
+      call adjust_veg_properties(yout,combh,csite,ipa,rhos)
+      call redistribute_snow_ar(yout, csite,ipa)
+      call update_diagnostic_vars_ar(yout, csite,ipa, lsl)
       call lsm_sanity_check_ar(yout, reject_step, csite,ipa, lsl,dydx,h,atm_tmp,atm_shv    &
                               ,atm_co2,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg         &
                               ,print_diags)
@@ -410,23 +415,30 @@ module rk4_stepper_ar
                                        , rk4patchtype         & ! structure
                                        , integration_vars_ar  ! ! structure
       use grid_coms             , only : nzg                  ! ! intent(in)
-      use soil_coms             , only : soil                 ! ! intent(in), lookup table
-      use canopy_radiation_coms , only : lai_min              & ! intent(in)
-                                       , veg_temp_min         ! ! intent(in)
+      use soil_coms             , only : soil                 & ! intent(in), lookup table
+                                       , min_sfcwater_mass    ! ! intent(in)
+      use canopy_radiation_coms , only : veg_temp_min         ! ! intent(in)
       use consts_coms           , only : t3ple                ! ! intent(in)
       use misc_coms             , only : integ_err            & ! intent(inout)
                                        , record_err           ! ! intent(inout)
-      use rk4_coms              , only : rk4min_can_temp      & ! intent(in)
+      use rk4_coms              , only : rk4eps               & ! intent(in)
+                                       , toocold              & ! intent(in)
+                                       , rk4min_can_temp      & ! intent(in)
                                        , rk4max_can_temp      & ! intent(in)
+                                       , rk4max_can_rhv       & ! intent(in)
                                        , rk4max_can_shv       & ! intent(in)
                                        , rk4min_can_shv       & ! intent(in)
                                        , rk4max_veg_temp      & ! intent(in)
-                                       , rk4min_veg_water     & ! intent(in)
+                                       , rk4min_veg_lwater    & ! intent(in)
                                        , rk4min_sfcw_temp     & ! intent(in)
+                                       , rk4max_sfcw_temp     & ! intent(in)
                                        , rk4max_soil_temp     & ! intent(in)
                                        , rk4min_soil_temp     & ! intent(in)
                                        , rk4min_sfcw_mass     & ! intent(in)
                                        , rk4min_virt_water    ! ! intent(in)
+      use therm_lib             , only : rehuil               & ! function
+                                       , qtk                  ! ! subroutine
+
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype) , target      :: y,dydx
@@ -439,7 +451,13 @@ module rk4_stepper_ar
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)    , pointer     :: cpatch
       integer                          :: k
+      integer                          :: ksn
       real                             :: h
+      real                             :: can_rhv
+      real                             :: total_sfcw_energy
+      real                             :: total_sfcw_mass
+      real                             :: mean_sfcw_tempk
+      real                             :: mean_sfcw_fracliq
       integer                          :: ipa,ico
       logical                          :: cflag1,cflag2,introuble
       !------------------------------------------------------------------------------------!
@@ -450,7 +468,8 @@ module rk4_stepper_ar
       !   write (unit=*,fmt='(a)') '\\\\\\\\\\\\\\\\\\\\\\\\\\//////////////////////////'
       !   introuble=.false.
       !end if
-      
+
+
       !----- Assigning initial values for flags. ------------------------------------------!
       cflag1 = .false.
       cflag2 = .false.
@@ -509,7 +528,8 @@ module rk4_stepper_ar
       if (record_err .and. cflag2) integ_err(43,2) = integ_err(43,2) + 1_8
       !------------------------------------------------------------------------------------!
 
-
+      !----- Finding canopy relative humidity ---------------------------------------------!
+      can_rhv = rehuil(prss,max(y%can_temp,toocold),y%can_shv)
 
       !------------------------------------------------------------------------------------!
       !   Checking whether the canopy temperature is too hot or too cold.                  !
@@ -518,13 +538,13 @@ module rk4_stepper_ar
          reject_step = .true.
          if(record_err) integ_err(1,2) = integ_err(1,2) + 1_8
          if (print_problems) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           ' + Canopy air is off-track...'
-            write(unit=*,fmt='(a)')           '----------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.5)') ' CAN_SHV:       ',y%can_shv
+            write(unit=*,fmt='(a,1x,es12.5)') ' CAN_RHV:       ',can_rhv
             write(unit=*,fmt='(a,1x,es12.5)') ' CAN_TEMP:      ',y%can_temp
+            write(unit=*,fmt='(a,1x,es12.5)') ' PRESSURE:      ',prss
             write(unit=*,fmt='(a,1x,es12.5)') ' D(CAN_TEMP)/Dt:',dydx%can_temp
-            write(unit=*,fmt='(a,1x,es12.5)') ' H:             ',h
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            write(unit=*,fmt='(a,1x,es12.5)') ' D(CAN_SHV)/Dt: ',dydx%can_shv
+            write(unit=*,fmt='(a,1x,es12.5)') ' H:            ',h
          elseif (.not. record_err) then
             return
          end if
@@ -536,15 +556,20 @@ module rk4_stepper_ar
       !------------------------------------------------------------------------------------!
       !   Checking whether the canopy air is too dry or too humid.                         !
       !------------------------------------------------------------------------------------!
-      if(y%can_shv > rk4max_can_shv .or. y%can_shv <= rk4min_can_shv)then
+      if((can_rhv > rk4max_can_rhv .and. y%can_shv > rk4max_can_shv) .or.                  &
+         y%can_shv < rk4min_can_shv )then
          reject_step = .true.
          if(record_err) integ_err(2,2) = integ_err(2,2) + 1_8
          if (print_problems) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           ' + Canopy air is off-track...'
+            write(unit=*,fmt='(a)')           ' + Canopy air mix. rat. is off-track...'
             write(unit=*,fmt='(a)')           '----------------------------------------'
-            write(unit=*,fmt='(a,1x,es12.5)') ' CAN_SHV:      ',y%can_shv
-            write(unit=*,fmt='(a,1x,es12.5)') ' D(CAN_SHV)/Dt:',dydx%can_shv
+            write(unit=*,fmt='(a,1x,es12.5)') ' CAN_SHV:       ',y%can_shv
+            write(unit=*,fmt='(a,1x,es12.5)') ' CAN_RHV:       ',can_rhv
+            write(unit=*,fmt='(a,1x,es12.5)') ' CAN_TEMP:      ',y%can_temp
+            write(unit=*,fmt='(a,1x,es12.5)') ' PRESSURE:      ',prss
+            write(unit=*,fmt='(a,1x,es12.5)') ' D(CAN_TEMP)/Dt:',dydx%can_temp
+            write(unit=*,fmt='(a,1x,es12.5)') ' D(CAN_SHV)/Dt: ',dydx%can_shv
             write(unit=*,fmt='(a,1x,es12.5)') ' H:            ',h
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
          elseif (.not. record_err) then
@@ -558,47 +583,102 @@ module rk4_stepper_ar
       !------------------------------------------------------------------------------------!
       !    Checking whether the temporary snow/water layer(s) has(ve) reasonable values.   !
       !------------------------------------------------------------------------------------!
-      k = y%nlev_sfcwater
-      if (k >= 1) then
+      ksn = y%nlev_sfcwater
+      if (ksn >= 1) then
+         total_sfcw_energy = sum(y%sfcwater_energy(1:ksn))
+         total_sfcw_mass   = sum(y%sfcwater_mass(1:ksn))
+         if (abs(total_sfcw_mass) > min_sfcwater_mass) then
+            call qtk(total_sfcw_energy/total_sfcw_mass,mean_sfcw_tempk,mean_sfcw_fracliq)
+         else
+            mean_sfcw_tempk   = t3ple
+            mean_sfcw_fracliq = 0.5
+         end if
+
          !----- Temperature ---------------------------------------------------------------!
-         if (y%sfcwater_tempk(1) < rk4min_sfcw_temp) then
+         if (mean_sfcw_tempk < rk4min_sfcw_temp .or. mean_sfcw_tempk > rk4max_sfcw_temp)   &
+         then
             reject_step = .true.
             if(record_err) integ_err(44,2) = integ_err(44,2) + 1_8
             if (print_problems) then
-               write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-               write(unit=*,fmt='(a)')           ' + Only snow layer is way too cold...'
-               write(unit=*,fmt='(a)')           '----------------------------------------'
-               write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_TEMP:        ',y%sfcwater_tempk(1)
-               write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_ENERGY:      ',y%sfcwater_energy(1)
-               write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_MASS:        ',y%sfcwater_mass(1)
-               write(unit=*,fmt='(a,1x,es12.5)') ' D(SFCW_ENERGY)/Dt:'                     &
-                                                 ,dydx%sfcwater_energy(1)
-               write(unit=*,fmt='(a,1x,es12.5)') ' D(SFCW_MASS)/Dt:  '                     &
-                                                 ,dydx%sfcwater_mass(1)
-               write(unit=*,fmt='(a,1x,es12.5)') ' H:                ',h
-               write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+               write(unit=*,fmt='(a)')              '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+               write(unit=*,fmt='(a)')              ' + Snow/pond temperature is off...'
+               write(unit=*,fmt='(a)')              '-------------------------------------'
+               write(unit=*,fmt='(a,1x,es12.5)')    ' TOTAL_MASS:  ',total_sfcw_mass
+               write(unit=*,fmt='(a,1x,es12.5)')    ' TOTAL_ENERGY:',total_sfcw_energy
+               write(unit=*,fmt='(a,1x,es12.5)')    ' MEAN_TEMPK:  ',mean_sfcw_tempk
+               write(unit=*,fmt='(a,1x,es12.5)')    ' MEAN_FLIQ:   ',mean_sfcw_fracliq
+               write(unit=*,fmt='(a)')              '-------------------------------------'
+               do k=1,ksn
+                  write(unit=*,fmt='(a,1x,i6)')     ' # of layer   ',k
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_TEMP:   ',y%sfcwater_tempk(k)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_ENERGY: ',y%sfcwater_energy(k)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_MASS:   ',y%sfcwater_mass(k)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_DEPTH:  ',y%sfcwater_depth(k)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' D(SFCW_E)/Dt:',dydx%sfcwater_energy(k)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' D(SFCW_M)/Dt:',dydx%sfcwater_mass(k)
+                  write(unit=*,fmt='(a)')           '-------------------------------------'
+               end do
+               write(unit=*,fmt='(a,1x,es12.5)')    ' H:           ',h
+               write(unit=*,fmt='(a)')              '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            elseif (.not. record_err) then
+               return
+            end if
+         end if
+
+         !----- Liquid fraction -----------------------------------------------------------!
+         if (mean_sfcw_fracliq < 0.0 .or. mean_sfcw_fracliq > 1.0) then
+            reject_step = .true.
+            if(record_err) integ_err(44,2) = integ_err(44,2) + 1_8
+            if (print_problems) then
+               write(unit=*,fmt='(a)')              '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+               write(unit=*,fmt='(a)')              ' + Snow/pond liquid frac. is off...'
+               write(unit=*,fmt='(a)')              '-------------------------------------'
+               write(unit=*,fmt='(a,1x,es12.5)')    ' TOTAL_MASS:  ',total_sfcw_mass
+               write(unit=*,fmt='(a,1x,es12.5)')    ' TOTAL_ENERGY:',total_sfcw_energy
+               write(unit=*,fmt='(a,1x,es12.5)')    ' MEAN_TEMPK:  ',mean_sfcw_tempk
+               write(unit=*,fmt='(a,1x,es12.5)')    ' MEAN_FLIQ:   ',mean_sfcw_fracliq
+               write(unit=*,fmt='(a)')              '-------------------------------------'
+               do k=1,ksn
+                  write(unit=*,fmt='(a,1x,i6)')     ' # of layer   ',k
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_TEMP:   ',y%sfcwater_tempk(k)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_ENERGY: ',y%sfcwater_energy(k)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_MASS:   ',y%sfcwater_mass(k)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_DEPTH:  ',y%sfcwater_depth(k)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' D(SFCW_E)/Dt:',dydx%sfcwater_energy(k)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' D(SFCW_M)/Dt:',dydx%sfcwater_mass(k)
+                  write(unit=*,fmt='(a)')           '-------------------------------------'
+               end do
+               write(unit=*,fmt='(a,1x,es12.5)')    ' H:           ',h
+               write(unit=*,fmt='(a)')              '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             elseif (.not. record_err) then
                return
             end if
          end if
          !----- Mass ----------------------------------------------------------------------!
-        if (y%sfcwater_mass(k) < rk4min_sfcw_mass) then
+         if (total_sfcw_mass < rk4min_sfcw_mass) then
             reject_step = .true.
-            if(record_err) integ_err(32+k,2) = integ_err(32+k,2) + 1_8
+            if(record_err) integ_err(32+ksn,2) = integ_err(32+ksn,2) + 1_8
             if (print_problems) then
-               write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-               write(unit=*,fmt='(a)')           ' + Top snow/pond layer has weird mass...'
-               write(unit=*,fmt='(a)')           '----------------------------------------'
-               write(unit=*,fmt='(a,1x,i6)')     ' # of layer        ',k
-               write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_TEMP:        ',y%sfcwater_tempk(k)
-               write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_ENERGY:      ',y%sfcwater_energy(k)
-               write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_MASS:        ',y%sfcwater_mass(k)
-               write(unit=*,fmt='(a,1x,es12.5)') ' D(SFCW_ENERGY)/Dt:'                     &
-                                                 ,dydx%sfcwater_energy(k)
-               write(unit=*,fmt='(a,1x,es12.5)') ' D(SFCW_MASS)/Dt:  '                     &
-                                                 ,dydx%sfcwater_mass(k)
-               write(unit=*,fmt='(a,1x,es12.5)') ' H:                ',h
-               write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+               write(unit=*,fmt='(a)')              '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+               write(unit=*,fmt='(a)')              ' + Snow/pond layer has weird mass...'
+               write(unit=*,fmt='(a)')              '-------------------------------------'
+               write(unit=*,fmt='(a,1x,es12.5)')    ' TOTAL_MASS:  ',total_sfcw_mass
+               write(unit=*,fmt='(a,1x,es12.5)')    ' TOTAL_ENERGY:',total_sfcw_energy
+               write(unit=*,fmt='(a,1x,es12.5)')    ' MEAN_TEMPK:  ',mean_sfcw_tempk
+               write(unit=*,fmt='(a,1x,es12.5)')    ' MEAN_FLIQ:   ',mean_sfcw_fracliq
+               write(unit=*,fmt='(a)')              '-------------------------------------'
+               do k=1,ksn
+                  write(unit=*,fmt='(a,1x,i6)')     ' # of layer   ',k
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_TEMP:   ',y%sfcwater_tempk(k)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_ENERGY: ',y%sfcwater_energy(k)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_MASS:   ',y%sfcwater_mass(k)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_DEPTH:  ',y%sfcwater_depth(k)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' D(SFCW_E)/Dt:',dydx%sfcwater_energy(k)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' D(SFCW_M)/Dt:',dydx%sfcwater_mass(k)
+                  write(unit=*,fmt='(a)')           '-------------------------------------'
+               end do
+               write(unit=*,fmt='(a,1x,es12.5)')    ' H:           ',h
+               write(unit=*,fmt='(a)')              '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             elseif (.not. record_err) then
                return
             end if
@@ -614,19 +694,31 @@ module rk4_stepper_ar
       cflag1 = .false.
       do k=lsl,nzg
          !----- Soil moisture -------------------------------------------------------------!
-         if (y%soil_water(k) < 0.95*dble(soil(csite%ntext_soil(k,ipa))%soilcp) .or.        &
-             y%soil_water(k) > 1.05*dble(soil(csite%ntext_soil(k,ipa))%slmsts)  ) then
+         if (y%soil_water(k)<dble((1.00-rk4eps)*soil(csite%ntext_soil(k,ipa))%soilcp) .or. &
+             y%soil_water(k)>dble((1.00+rk4eps)*soil(csite%ntext_soil(k,ipa))%slmsts) )    &
+         then
             reject_step = .true.
             if(record_err) integ_err(3+k,2) = integ_err(3+k,2) + 1_8
             if (print_problems) then
                write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-               write(unit=*,fmt='(a)')           ' + Soil layer is off-track...'
+               write(unit=*,fmt='(a)')           ' + Soil layer water is off-track...'
                write(unit=*,fmt='(a)')           '----------------------------------------'
                write(unit=*,fmt='(a,1x,i6)')     ' Level:       ',k
+               write(unit=*,fmt='(a,1x,es12.5)') ' H:           ',h
                write(unit=*,fmt='(a,1x,es12.5)') ' SOIL_TEMPK:  ',y%soil_tempk(k)
                write(unit=*,fmt='(a,1x,es12.5)') ' SOIL_FLIQ :  ',y%soil_fracliq(k)
                write(unit=*,fmt='(a,1x,es12.5)') ' SOIL_ENERGY: ',y%soil_energy(k)
                write(unit=*,fmt='(a,1x,es12.5)') ' SOIL_WATER:  ',y%soil_water(k)
+               write(unit=*,fmt='(a,1x,es12.5)') ' D(SOIL_E)/Dt:',dydx%soil_energy(k)
+               write(unit=*,fmt='(a,1x,es12.5)') ' D(SOIL_M)/Dt:',dydx%soil_water(k)
+               if (k == nzg .and. y%nlev_sfcwater > 0) then
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_TEMP:   ',y%sfcwater_tempk(1)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_ENERGY: ',y%sfcwater_energy(1)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_MASS:   ',y%sfcwater_mass(1)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_DEPTH:  ',y%sfcwater_depth(1)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' D(SFCW_E)/Dt:',dydx%sfcwater_energy(1)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' D(SFCW_M)/Dt:',dydx%sfcwater_mass(1)
+               end if
                write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             elseif (.not. record_err) then
                return
@@ -634,19 +726,30 @@ module rk4_stepper_ar
          end if
 
          !----- Soil temperature ----------------------------------------------------------!
-         if (y%soil_tempk(k) > rk4max_soil_temp .or.                                       &
-             y%soil_tempk(k) < rk4min_soil_temp ) then
+         if (y%soil_tempk(k) > rk4max_soil_temp .or. y%soil_tempk(k) < rk4min_soil_temp )  &
+         then
             reject_step = .true.
             if(record_err) cflag1 = .true.
             if (print_problems) then
                write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-               write(unit=*,fmt='(a)')           ' + Soil layer is off-track...'
+               write(unit=*,fmt='(a)')           ' + Soil layer temp is off-track...'
                write(unit=*,fmt='(a)')           '----------------------------------------'
                write(unit=*,fmt='(a,1x,i6)')     ' Level:       ',k
+               write(unit=*,fmt='(a,1x,es12.5)') ' H:           ',h
                write(unit=*,fmt='(a,1x,es12.5)') ' SOIL_TEMPK:  ',y%soil_tempk(k)
                write(unit=*,fmt='(a,1x,es12.5)') ' SOIL_FLIQ :  ',y%soil_fracliq(k)
                write(unit=*,fmt='(a,1x,es12.5)') ' SOIL_ENERGY: ',y%soil_energy(k)
                write(unit=*,fmt='(a,1x,es12.5)') ' SOIL_WATER:  ',y%soil_water(k)
+               write(unit=*,fmt='(a,1x,es12.5)') ' D(SOIL_E)/Dt:',dydx%soil_energy(k)
+               write(unit=*,fmt='(a,1x,es12.5)') ' D(SOIL_M)/Dt:',dydx%soil_water(k)
+               if (k == nzg .and. y%nlev_sfcwater > 0) then
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_TEMP:   ',y%sfcwater_tempk(1)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_ENERGY: ',y%sfcwater_energy(1)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_MASS:   ',y%sfcwater_mass(1)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' SFCW_DEPTH:  ',y%sfcwater_depth(1)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' D(SFCW_E)/Dt:',dydx%sfcwater_energy(1)
+                  write(unit=*,fmt='(a,1x,es12.5)') ' D(SFCW_M)/Dt:',dydx%sfcwater_mass(1)
+               end if
                write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             elseif (.not. record_err) then
                return
@@ -690,7 +793,7 @@ module rk4_stepper_ar
       cpatch => csite%patch(ipa)
       cflag1 = .false.
       do ico = 1,cpatch%ncohorts
-         if (cpatch%lai(ico) > lai_min) then
+         if (y%solvable(ico)) then
             if (y%veg_temp(ico) > rk4max_veg_temp .or. y%veg_temp(ico) < veg_temp_min ) then
                reject_step = .true.
                if(record_err) cflag1 = .true.
@@ -713,7 +816,7 @@ module rk4_stepper_ar
                   return
                end if
             end if
-            if (y%veg_water(ico) < rk4min_veg_water * cpatch%lai(ico)) then
+            if (y%veg_water(ico) < rk4min_veg_lwater * cpatch%lai(ico)) then
                reject_step = .true.
                if(record_err) cflag1 = .true.
                if (print_problems) then
@@ -769,7 +872,6 @@ module rk4_stepper_ar
                                        , rk4patchtype  ! ! structure
       use grid_coms             , only : nzg           ! ! intent(in)
       use soil_coms             , only : soil          ! ! intent(in), look-up table
-      use canopy_radiation_coms , only : lai_min       ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype) , target     :: y
@@ -826,7 +928,7 @@ module rk4_stepper_ar
          '  COH','  PFT','         LAI','  VEG_ENERGY','OLD_VEG_ENER','    VEG_TEMP'&
          &,'OLD_VEG_TEMP'
       do ico = 1,cpatch%ncohorts
-         if(cpatch%lai(ico) > lai_min) then
+         if(y%solvable(ico)) then
             write(unit=*,fmt='(2(i5,1x),5(es12.5,1x))')                                    &
                ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_energy(ico)                       &
                   ,cpatch%veg_energy(ico),y%veg_temp(ico),cpatch%veg_temp(ico)
@@ -840,7 +942,7 @@ module rk4_stepper_ar
          '  COH','  PFT','         LAI','   VEG_WATER',' OLD_VEG_H2O','    HEAT_CAP'&
         &,'RK4_HEAT_CAP' ,'     FRACLIQ'
       do ico = 1,cpatch%ncohorts
-         if(cpatch%lai(ico) > lai_min) then
+         if(y%solvable(ico)) then
             write(unit=*,fmt='(2(i5,1x),6(es12.5,1x))') &
                ico,cpatch%pft(ico),cpatch%lai(ico),y%veg_water(ico),cpatch%veg_water(ico)  &
                   ,cpatch%hcapveg(ico),y%hcapveg(ico),y%veg_fliq(ico)

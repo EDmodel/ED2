@@ -515,7 +515,7 @@ subroutine vegetation_dynamics(new_month,new_year)
      ! the number of patch variables that actually need to be fused.  
      if(new_year) then
 !        write (unit=*,fmt='(a)') '### Fuse_patchesar...'
-        if (maxpatch >= 0) call fuse_patches_ar(cgrid)
+        if (maxpatch >= 0) call fuse_patches_ar(cgrid,ifm)
         first_time =.false.
      end if
 

@@ -887,6 +887,7 @@ subroutine ReadNamelist(fileName)
        csx, &
        csz, &
        idiffk, &
+       ibotflx, &
        ibruvais, &
        if_urban_canopy, &
        ihorgrad, &
@@ -1094,10 +1095,10 @@ subroutine ReadNamelist(fileName)
        raddatfn,radfrq, lonrad, npatch, nvegpat, isfcl, n_co2, co2_init, &
        nvgcon, pctlcon, nslcon, drtcon, zrough, albedo, seatmp, dthcon,  &
        soil_moist, soil_moist_fail, usdata_in, usmodel_in, slz, slmstr,  &
-       stgoff, if_urban_canopy, idiffk, ibruvais, ihorgrad, csx, csz,    &
-       xkhkm, zkhkm, akmin, akmax, hgtmin, hgtmax, level, icloud, irain, &
-       ipris, isnow, iaggr, igraup, ihail, cparm, rparm, pparm, sparm,   &
-       aparm, gparm, hparm, gnu
+       stgoff, if_urban_canopy, idiffk, ibruvais, ibotflx, ihorgrad,     &
+       csx, csz, xkhkm, zkhkm, akmin, akmax, hgtmin, hgtmax, level,      &
+       icloud, irain, ipris, isnow, iaggr, igraup, ihail, cparm, rparm,  &
+       pparm, sparm, aparm, gparm, hparm, gnu
 
   namelist /MODEL_SOUND/ &
        ipsflg, itsflg, irtsflg, iusflg, hs, ps, ts, rts, us, vs
@@ -1180,6 +1181,7 @@ subroutine ReadNamelist(fileName)
   slmstr=0.0
   stgoff=0.0
   idiffk=0
+  ibotflx = 0
   ibruvais = 0
   csx=0.0
   csz=0.0
@@ -1691,6 +1693,7 @@ subroutine ReadNamelist(fileName)
      write (*, *) "if_urban_canopy=",if_urban_canopy
      write (*, *) "idiffk=",idiffk
      write (*, *) "ibruvais=",ibruvais
+     write (*, *) "ibotflx=",ibotflx
      write (*, *) "ihorgrad=",ihorgrad
      write (*, *) "csx=",csx
      write (*, *) "csz=",csz

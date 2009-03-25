@@ -282,6 +282,7 @@ subroutine masterput_nl(master_num)
    call MPI_Bcast(SLMSTR,NZGMAX,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IDIFFK,MAXGRDS,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IBRUVAIS,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(IBOTFLX,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IHORGRAD,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IF_URBAN_CANOPY,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    
@@ -1148,6 +1149,7 @@ subroutine nodeget_nl
    call MPI_Bcast(SLMSTR,NZGMAX,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IDIFFK,MAXGRDS,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IBRUVAIS,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(IBOTFLX,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IHORGRAD,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IF_URBAN_CANOPY,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   

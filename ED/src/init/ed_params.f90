@@ -821,17 +821,28 @@ end subroutine init_hydro_coms
 !==========================================================================================!
 !==========================================================================================!
 subroutine init_soil_coms
+   use soil_coms      , only : water_stab_thresh    & ! intent(out)
+                             , snowmin              & ! intent(out)
+                             , dewmax               & ! intent(out)
+                             , soil_rough           & ! intent(out)
+                             , snow_rough           & ! intent(out)
+                             , min_sfcwater_mass    & ! intent(out)
+                             , infiltration_method  ! ! intent(out)
+   use canopy_air_coms, only : min_veg_lwater       & ! intent(out)
+                             , max_veg_lwater       ! ! intent(out)
 
+   implicit none
 
-  use soil_coms,only:water_stab_thresh,dewmax
-
-  implicit none
-
-  water_stab_thresh = 3.0
-
-  dewmax = 3.0e-5
-
-  return
+   water_stab_thresh   = 3.0    ! Minimum water mass to be considered stable     [   kg/m2]
+   snowmin             = 3.0    ! Minimum snow mass needed to create a new layer [   kg/m2]
+   dewmax              = 3.0e-5 ! Maximum dew flux rate (deprecated)             [ kg/m2/s]
+   soil_rough          = 0.05   ! Soil roughness height                          [       m]
+   snow_rough          = 0.001  ! Snowcover roughness height                     [       m]
+   min_sfcwater_mass   = 1.0e-6 ! Minimum allowed mass in temporary layers       [   kg/m2]
+   infiltration_method = 0      ! Infiltration method, used in rk4_derivs        [     0|1]
+   min_veg_lwater      = 1.e-3  ! Minimum leaf water mass per leaf area          [   kg/m2]
+   max_veg_lwater      = 0.22   ! Maximum leaf water mass per leaf area          [   kg/m2]
+   return
 
 end subroutine init_soil_coms
 !==========================================================================================!

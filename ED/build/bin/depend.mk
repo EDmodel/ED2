@@ -74,7 +74,8 @@ disturb_coms.o : $(ED_MEMORY)/disturb_coms.f90
 	rm -f $(<F:.f90=.f90)
 
 edio.o : $(ED_IO)/edio.f90 ed_state_vars.o grid_coms.o ed_misc_coms.o ed_node_coms.o       \
-	misc_coms.o canopy_radiation_coms.o consts_coms.o var_tables_array.o 
+	misc_coms.o canopy_radiation_coms.o consts_coms.o var_tables_array.o therm_lib.o   \
+	soil_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -115,7 +116,8 @@ ed_history_io.o : $(ED_IO)/ed_history_io.F90 max_dims.o pft_coms.o misc_coms.o m
 	rm -f $(<F:.F90=.F90)
 
 ed_init.o : $(ED_INIT)/ed_init.f90 grid_coms.o ed_work_vars.o soil_coms.o ed_node_coms.o   \
-	ed_state_vars.o phenology_coms.o phenology_init.o misc_coms.o 
+	ed_state_vars.o phenology_coms.o phenology_init.o misc_coms.o consts_coms.o        \
+	rk4_coms.o canopy_air_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -284,7 +286,8 @@ fusion_fission_coms.o : $(ED_MEMORY)/fusion_fission_coms.f90
 
 fuse_fiss_utils.o : $(ED_UTILS)/fuse_fiss_utils.f90 ed_state_vars.o pft_coms.o             \
 	decomp_coms.o fusion_fission_coms.o disturb_coms.o max_dims.o mem_sites.o          \
-	soil_coms.o grid_coms.o consts_coms.o ed_therm_lib.o therm_lib.o allometry.o
+	soil_coms.o grid_coms.o consts_coms.o ed_therm_lib.o therm_lib.o allometry.o       \
+	ed_node_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -345,7 +348,7 @@ invmondays.o : $(ED_UTILS)/invmondays.f90 misc_coms.o
 	rm -f $(<F:.f90=.f90)
 
 landuse_init.o : $(ED_INIT)/landuse_init.f90 ed_state_vars.o consts_coms.o disturb_coms.o  \
-	misc_coms.o grid_coms.o
+	misc_coms.o grid_coms.o max_dims.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -486,7 +489,7 @@ rk4_integ_utils.o : $(ED_DYNAMICS)/rk4_integ_utils.f90 ed_state_vars.o rk4_stepp
 
 rk4_stepper.o : $(ED_DYNAMICS)/rk4_stepper.F90 ed_state_vars.o grid_coms.o soil_coms.o     \
 	canopy_radiation_coms.o consts_coms.o canopy_air_coms.o therm_lib.o ed_therm_lib.o \
-	misc_coms.o rk4_coms.o
+	misc_coms.o rk4_coms.o therm_lib.o
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)

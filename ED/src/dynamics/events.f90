@@ -300,6 +300,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   real :: ialloc,bdead_new,bsw_new,bleaf_new,bfr_new,bstore_new
   real :: agb_frac,bgb_frac,fol_frac,stor_frac
   real :: old_hcapveg
+  real :: elim_nplant
+  real :: elim_lai
   integer :: ifm,ipy,isi,ipa,pft
   type(edtype), pointer :: cgrid
   type(polygontype), pointer :: cpoly
@@ -368,6 +370,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                     cpatch%bleaf(ico)      = 0.0
                     cpatch%veg_energy(ico) = 0.0
                     cpatch%veg_water(ico)  = 0.0
+                    cpatch%hcapveg(ico)    = 0.0
                     cpatch%veg_temp(ico)   = csite%can_temp(ipa)
                  else
                     cpatch%phenology_status(ico) = 1
@@ -396,7 +399,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
               enddo
              
               !! remove small cohorts
-              call terminate_cohorts_ar(csite,ipa)
+              call terminate_cohorts_ar(csite,ipa,elim_nplant,elim_lai)
 
               call update_patch_derived_props_ar(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,ipa)
               
@@ -664,6 +667,7 @@ subroutine event_till(rval8)
 
   real :: depth
   integer :: ifm,ipy,isi,ipa,pft
+  real :: elim_nplant,elim_lai
   type(edtype), pointer :: cgrid
   type(polygontype), pointer :: cpoly
   type(sitetype),pointer :: csite
@@ -735,7 +739,7 @@ subroutine event_till(rval8)
                  
               enddo
               !! remove small cohorts
-              call terminate_cohorts_ar(csite,ipa)
+              call terminate_cohorts_ar(csite,ipa,elim_nplant,elim_lai)
 
               !! update patch properties
               call update_patch_derived_props_ar(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,ipa)

@@ -71,7 +71,7 @@ module fuse_fiss_utils_ar
    !    This subroutine will eliminate cohorts based on their sizes. This is intended to   !
    ! eliminate cohorts that have little contribution and thus we can speed up the run.     !
    !---------------------------------------------------------------------------------------!
-   subroutine terminate_cohorts_ar(csite,ipa)
+   subroutine terminate_cohorts_ar(csite,ipa,elim_nplant,elim_lai)
 
       use fusion_fission_coms, only :  min_recruit_size ! ! intent(in)
 
@@ -88,6 +88,8 @@ module fuse_fiss_utils_ar
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)       , target      :: csite        ! Current site
       integer              , intent(in)  :: ipa          ! Current patch ID
+      real                 , intent(out) :: elim_nplant  ! Nplants eliminated here
+      real                 , intent(out) :: elim_lai     ! LAI eliminated here
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)      , pointer     :: cpatch       ! Current patch
       type(patchtype)      , pointer     :: temppatch    ! Scratch patch structure
@@ -97,6 +99,8 @@ module fuse_fiss_utils_ar
       !------------------------------------------------------------------------------------!
       
       cpatch => csite%patch(ipa)
+      elim_nplant = 0.
+      elim_lai    = 0.
 
       !----- Initialize the temporary patch structures and the remain/terminate table -----!
       nullify(temppatch)
@@ -114,6 +118,8 @@ module fuse_fiss_utils_ar
          if( csize < (0.1 * min_recruit_size) )then
             !----- Cohort is indeed too small, it won't remain ----------------------------!
             remain_table(ico) = .false.
+            elim_nplant = elim_nplant + cpatch%nplant(ico)
+            elim_lai    = elim_lai    + cpatch%lai(ico)
 
             !----- Update litter pools ----------------------------------------------------!
             csite%fsc_in(ipa) = csite%fsc_in(ipa) + cpatch%nplant(ico)                     &
@@ -882,8 +888,6 @@ module fuse_fiss_utils_ar
       !------------------------------------------------------------------------------------!
       cpatch%balive(recc) = ( cpatch%nplant(recc) * cpatch%balive(recc)                    &
                             + cpatch%nplant(donc) * cpatch%balive(donc) ) *newni
-      cpatch%bleaf(recc)  = ( cpatch%nplant(recc) * cpatch%bleaf(recc)                     &
-                            + cpatch%nplant(donc) * cpatch%bleaf(donc) ) *newni
       cpatch%bstorage(recc) = ( cpatch%nplant(recc) * cpatch%bstorage(recc)                &
                               + cpatch%nplant(donc) * cpatch%bstorage(donc) ) * newni
       cpatch%bseeds(recc)   = ( cpatch%nplant(recc) * cpatch%bseeds(recc)                  &
@@ -896,8 +900,37 @@ module fuse_fiss_utils_ar
 
 
       !----- LAI is simply the sum. -------------------------------------------------------!
-      cpatch%lai(recc)    = cpatch%lai(recc) + cpatch%lai(donc)
+      if (cpatch%phenology_status(recc) < 2) then
+      else
+      end if
       !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !    Bleaf, LAI, energy, water mass and heat capacity must be zero if phenology      !
+      ! status is 2.  This is probably done correctly throughout the code, but being safe  !
+      ! here.                                                                              !
+      !------------------------------------------------------------------------------------!
+      if (cpatch%phenology_status(recc) < 2) then
+         cpatch%bleaf(recc)  = ( cpatch%nplant(recc) * cpatch%bleaf(recc)                  &
+                               + cpatch%nplant(donc) * cpatch%bleaf(donc) ) *newni
+         cpatch%lai(recc)    = cpatch%lai(recc) + cpatch%lai(donc)
+         cpatch%veg_energy(recc) = cpatch%veg_energy(recc) + cpatch%veg_energy(donc)
+         cpatch%veg_water(recc)  = cpatch%veg_water(recc)  + cpatch%veg_water(donc)
+         cpatch%hcapveg(recc)    = cpatch%hcapveg(recc)    + cpatch%hcapveg(donc)
+         !----- Updating temperature ------------------------------------------------------!
+         call qwtk(cpatch%veg_energy(recc),cpatch%veg_water(recc),cpatch%hcapveg(recc)     &
+                  ,cpatch%veg_temp(recc),fracliq)
+      else
+         cpatch%bleaf(recc)      = 0.
+         cpatch%lai(recc)        = 0.
+         cpatch%veg_energy(recc) = 0.
+         cpatch%veg_water(recc)  = 0.
+         cpatch%hcapveg(recc)    = 0.
+         !----- In case cohorts don't have leaves, fuse their temperatures (singularity) --!
+         cpatch%veg_temp(recc) = newni                                                     &
+                               * ( cpatch%veg_temp(recc) * cpatch%nplant(recc)             &
+                                 + cpatch%veg_temp(donc) * cpatch%nplant(donc))
+      end if
 
       cb_act = 0.
       cb_max = 0.
@@ -924,25 +957,6 @@ module fuse_fiss_utils_ar
          cpatch%cbr_bar(recc) = 0.0
       end if
 
-
-      !------------------------------------------------------------------------------------!
-      !    Energy, water mass and heat capacity are extensive properties, and area         !
-      ! dependent. Therefore, the updated value will be simply the sum of each cohort.     !
-      ! We skip this if leaves are absent.                                                 !
-      !------------------------------------------------------------------------------------!
-      if (cpatch%phenology_status(recc) < 2) then
-         cpatch%veg_energy(recc) = cpatch%veg_energy(recc) + cpatch%veg_energy(donc)
-         cpatch%veg_water(recc)  = cpatch%veg_water(recc)  + cpatch%veg_water(donc)
-         cpatch%hcapveg(recc)    = cpatch%hcapveg(recc)    + cpatch%hcapveg(donc)
-         !----- Updating temperature ------------------------------------------------------!
-         call qwtk(cpatch%veg_energy(recc),cpatch%veg_water(recc),cpatch%hcapveg(recc)     &
-                  ,cpatch%veg_temp(recc),fracliq)
-      else
-         !----- In case cohorts don't have leaves, fuse their temperatures (singularity) --!
-         cpatch%veg_temp(recc) = newni                                                     &
-                               * ( cpatch%veg_temp(recc) * cpatch%nplant(recc)             &
-                                 + cpatch%veg_temp(donc) * cpatch%nplant(donc))
-      end if
 
 
       !------------------------------------------------------------------------------------!
@@ -1054,7 +1068,7 @@ module fuse_fiss_utils_ar
    ! will need to live with that and accept life is not always fair with those with        !
    ! limited computational resources.                                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_patches_ar(cgrid)
+   subroutine fuse_patches_ar(cgrid,ifm)
      
       use ed_state_vars       , only :  edtype            & ! structure
                                       , polygontype       & ! structure
@@ -1067,42 +1081,57 @@ module fuse_fiss_utils_ar
       use max_dims            , only :  n_pft             ! ! intent(in)
       use mem_sites           , only :  maxpatch          & ! intent(in)
                                       , maxcohort         ! ! intent(in)
+      use ed_node_coms        , only :  mynum
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(edtype)         , target      :: cgrid          ! Current grid
+      type(edtype)         , target      :: cgrid           ! Current grid
+      integer              , intent(in)  :: ifm             ! Current grid index
       !----- Local variables --------------------------------------------------------------!
-      type(polygontype)    , pointer     :: cpoly          ! Current polygon
-      type(sitetype)       , pointer     :: csite          ! Current site
-      type(patchtype)      , pointer     :: cpatch         ! Current patch
-      type(sitetype)       , pointer     :: tempsite       ! Temporary site
-      logical, dimension(:), allocatable :: fuse_table     ! Flag: this will remain.
-      real   , dimension(n_pft,ff_ndbh)  :: mean_nplant    ! Mean # of plants
-      integer                            :: ipy,isi        ! Counters
-      integer                            :: ipa,ico        ! Counters
-      integer                            :: ipa_next       ! Counters
-      integer                            :: ipft,idbh      ! Counters
-      integer                            :: npatches_new   ! New # of patches
-      integer                            :: npatches_old   ! Old # of patches
-      logical                            :: fuse_flag      ! Flag: I will perform fusion.
-      real                               :: norm           !
-      real                               :: tolerance_mult ! Multiplying factor for tol.
-      real                               :: old_area       ! For area conservation check
-      real                               :: new_area       ! For area conservation check
-      real                               :: old_lai_tot    ! Old total LAI
-      real                               :: old_nplant_tot ! Old total nplant
-      real                               :: new_lai_tot    ! New total LAI
-      real                               :: new_nplant_tot ! New total nplant
+      type(polygontype)    , pointer     :: cpoly           ! Current polygon
+      type(sitetype)       , pointer     :: csite           ! Current site
+      type(patchtype)      , pointer     :: cpatch          ! Current patch
+      type(sitetype)       , pointer     :: tempsite        ! Temporary site
+      logical, dimension(:), allocatable :: fuse_table      ! Flag: this will remain.
+      real   , dimension(n_pft,ff_ndbh)  :: mean_nplant     ! Mean # of plants
+      integer                            :: ipy,isi         ! Counters
+      integer                            :: ipa,ico         ! Counters
+      integer                            :: donp,recp       ! Counters
+      integer                            :: ipft,idbh       ! Counters
+      integer                            :: npatches_new    ! New # of patches
+      integer                            :: npatches_old    ! Old # of patches
+      logical                            :: fuse_flag       ! Flag: I will perform fusion.
+      real                               :: diff            !
+      real                               :: refv            !
+      real                               :: norm            !
+      real                               :: tolerance_mult  ! Multiplying factor for tol.
+      real                               :: old_area        ! For area conservation check
+      real                               :: new_area        ! For area conservation check
+      real                               :: old_lai_tot     ! Old total LAI
+      real                               :: old_nplant_tot  ! Old total nplant
+      real                               :: new_lai_tot     ! New total LAI
+      real                               :: new_nplant_tot  ! New total nplant
+      real                               :: elim_nplant     ! Elim. nplant during 1 fusion
+      real                               :: elim_lai        ! Elim. LAI during 1 fusion
+      real                               :: elim_nplant_tot ! Total eliminated nplant
+      real                               :: elim_lai_tot    ! Elim. eliminated LAI
+      integer                            :: tot_npolygons   ! Total # of polygons
+      integer                            :: tot_nsites      ! Total # of sites
+      integer                            :: tot_npatches    ! Total # of patches
+      integer                            :: tot_ncohorts    ! Total # of cohorts
       !------------------------------------------------------------------------------------!
 
       !----- Return if maxpatch is 0, this is a flag for no patch fusion. -----------------!
       if (maxpatch == 0) return
-
+      
       polyloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
          
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
+
+            !----- Skip this site if it contains only one patch... ------------------------!
+            if (csite%npatches < 2) cycle siteloop
 
             !----- Allocate the swapper patches in the site type and the fusion table. ----!
             nullify(tempsite)
@@ -1119,10 +1148,14 @@ module fuse_fiss_utils_ar
                old_area  = old_area + csite%area(ipa)
                cpatch => csite%patch(ipa)
                do ico = 1, cpatch%ncohorts
-                  old_nplant_tot = old_nplant_tot + cpatch%nplant(ico)
-                  old_lai_tot    = old_lai_tot    + cpatch%lai(ico)
+                  old_nplant_tot = old_nplant_tot + cpatch%nplant(ico)*csite%area(ipa)
+                  old_lai_tot    = old_lai_tot    + cpatch%lai(ico)*csite%area(ipa)
                end do
             end do
+
+            !----- Initially we didn't eliminate any cohort... ----------------------------!
+            elim_nplant_tot = 0.
+            elim_lai_tot    = 0.
 
             !------------------------------------------------------------------------------!
             ! ALGORITHM                                                                    !
@@ -1154,89 +1187,110 @@ module fuse_fiss_utils_ar
                      end do
                   end do
                end do
- 
+
                !----- Start with no multiplication factor. --------------------------------!
                tolerance_mult = 1.0
                max_patch: do
                   npatches_old = count(fuse_table)
                
                   !----- Loop from youngest to the second oldest patch --------------------!
-                  do ipa = csite%npatches,2,-1
-                     cpatch => csite%patch(ipa)
+                  do donp = csite%npatches,2,-1
+                     cpatch => csite%patch(donp)
 
                      !----- If this patch was already merged, skip it. --------------------!
-                     if (.not. fuse_table(ipa)) then
+                     if (fuse_table(donp)) then
                         !------------------------------------------------------------------!
                         !    Cycle through the next patches and compare densities, but     !
                         ! only compare densities if the patches have the same disturbance  !
                         ! types. Of course, only existing patches (i.e. that weren't       !
                         ! merged yet) are compared.                                        !
                         !------------------------------------------------------------------!
-                        next_patch: do ipa_next = ipa-1,1,-1
+                        next_patch: do recp = donp-1,1,-1
 
-                           if ( csite%dist_type(ipa) == csite%dist_type(ipa_next)          &
-                              .and. (.not. fuse_table(ipa_next)) ) then
+                           if ( csite%dist_type(donp) == csite%dist_type(recp)             &
+                              .and. fuse_table(recp) ) then
                            
                               !------------------------------------------------------------!
                               !    Once we have identified the patch with the same         !
-                              ! disturbance type and closest age (ipa_next), determine if  !
+                              ! disturbance type and closest age (recp), determine if      !
                               ! it is similar enough to average (fuse) the two together.   !
                               !------------------------------------------------------------!
                               fuse_flag = .true.
 
-                              !-----  Fusion criterion. -----------------------------------!
-                              fuseloop:do ipft=1,n_pft
-                                 do idbh=1,ff_ndbh
+                              !------------------------------------------------------------!
+                              !     Testing.  If two patches are empty, I guess it's fine  !
+                              ! to just fuse them.                                         !
+                              !------------------------------------------------------------!
+                              if (csite%patch(donp)%ncohorts > 0 .or.                      &
+                                  csite%patch(recp)%ncohorts > 0) then
+                                 !-----  Fusion criterion. --------------------------------!
+                                 fuseloop:do ipft=1,n_pft
+                                    do idbh=1,ff_ndbh
 
-                                    if (csite%pft_density_profile(ipft,idbh,ipa)>ntol .or. &
-                                        csite%pft_density_profile(ipft,idbh,ipa_next)>ntol &
-                                       ) then
-                                       !---------------------------------------------------!
-                                       !     This is the normalized difference in their    !
-                                       ! biodensity profiles. If the normalized difference !
-                                       ! is greater than the tolerance for any of the pfts !
-                                       ! and dbh classes, then reject them as similar.     !
-                                       !                                                   !
-                                       ! Note: If one of the patches is missing any member !
-                                       !       of the profile it will force the norm to be !
-                                       !       2.0. That is the highest the norm should be !
-                                       !       able to go.                                 !
-                                       !---------------------------------------------------!
-                                       norm = abs(csite%pft_density_profile(ipft,idbh,ipa) &
-                                          - csite%pft_density_profile(ipft,idbh,ipa_next)) &
-                                          / mean_nplant(ipft,idbh)
-                                    
-                                       if (norm > tolerance_mult*profile_tol) then
-                                          fuse_flag = .false.   ! reject
-                                          exit fuseloop
+                                       if (csite%pft_density_profile(ipft,idbh,donp) >     &
+                                           tolerance_mult*ntol                        .or. &
+                                           csite%pft_density_profile(ipft,idbh,recp) >     &
+                                           tolerance_mult*ntol                       ) then
+                                          !------------------------------------------------!
+                                          !     This is the normalized difference in their !
+                                          ! biodensity profiles. If the normalized         !
+                                          ! difference is greater than the tolerance for   !
+                                          ! any of the pfts and dbh classes, then reject   !
+                                          ! them as similar.                               !
+                                          !                                                !
+                                          ! Note: If one of the patches is missing any     !
+                                          !       member of the profile it will force the  !
+                                          !       norm to be 2.0. That is the highest the  !
+                                          !       norm should be able to go.               !
+                                          !------------------------------------------------!
+                                          diff = abs(                                      &
+                                                 csite%pft_density_profile(ipft,idbh,donp) &
+                                               - csite%pft_density_profile(ipft,idbh,recp) )
+                                          refv = 0.5                                       &
+                                               *(csite%pft_density_profile(ipft,idbh,donp) &
+                                               + csite%pft_density_profile(ipft,idbh,recp) )
+                                          norm = diff / mean_nplant(ipft,idbh)
+                                          !norm = diff / refv
+
+                                          if (norm > profile_tol) then
+                                             fuse_flag = .false.   ! reject
+                                             exit fuseloop
+                                          end if
                                        end if
-                                    end if
-                                 end do
-                              end do fuseloop
+                                    end do
+                                 end do fuseloop
+                              end if
 
                               !----- Create a mapping of the patches that fuse together. --!
                               if (fuse_flag) then
 
                                  !---------------------------------------------------------!
                                  !     Take an average of the patch properties at index    !
-                                 ! ipa and ipa_tp assign the average to index ipa_tp.      !
+                                 ! donp and ipa_tp assign the average to index ipa_tp.     !
                                  !---------------------------------------------------------!
-                                 call fuse_2_patches_ar(csite,ipa,ipa_next                 &
+                                 call fuse_2_patches_ar(csite,donp,recp                    &
                                                        ,cpoly%met(isi)%rhos,cpoly%lsl(isi) &
-                                                       ,cpoly%green_leaf_factor(:,isi))
+                                                       ,cpoly%green_leaf_factor(:,isi)     &
+                                                       ,elim_nplant,elim_lai)
+
+                                 !----- Updating total eliminated nplant and LAI  ---------!
+                                 elim_nplant_tot = elim_nplant_tot                         &
+                                                 + elim_nplant * csite%area(recp)
+                                 elim_lai_tot    = elim_lai_tot                            &
+                                                 + elim_lai    * csite%area(recp)
 
                                  !---------------------------------------------------------!
                                  !     Recalculate the pft size profile for the averaged   !
-                                 ! patch at ipa_tp.                                        !
+                                 ! patch at donp_tp.                                       !
                                  !---------------------------------------------------------!
-                                 call patch_pft_size_profile_ar(csite,ipa_next,ff_ndbh     &
+                                 call patch_pft_size_profile_ar(csite,recp,ff_ndbh         &
                                                           ,cpoly%green_leaf_factor(:,isi) )
 
                                  !---------------------------------------------------------!
-                                 !     The patch at index ipa is no longer valid, it       !
+                                 !     The patch at index donp is no longer valid, it      !
                                  ! should be flagged as such.                              !
                                  !---------------------------------------------------------!
-                                 fuse_table(ipa) = .false.
+                                 fuse_table(donp) = .false.
 
                                  !---------------------------------------------------------!
                                  !     If we have gotten to this point, we have found our  !
@@ -1245,13 +1299,13 @@ module fuse_fiss_utils_ar
                                  !---------------------------------------------------------!
                                  exit next_patch
                               end if ! if( fuse_flag)
-                           end if ! if(csite%dist_type(ipa) == csite%dist_type(ipa_next)...
-                        end do next_patch       ! do ipa_next
-                     end if          ! if (.not. fuse_table(ipa)) then
+                           end if ! if(csite%dist_type(donp) == csite%dist_type(recp)...
+                        end do next_patch       ! do recp
+                     end if          ! if (.not. fuse_table(donp)) then
 
                      npatches_new = count(fuse_table)
                      if (npatches_new <= abs(maxpatch)) exit max_patch
-                  end do          ! do ipa = csite%npatches,2,-1
+                  end do          ! do donp = csite%npatches,2,-1
 
                   !------------------------------------------------------------------------!
                   !    If no fusion happened and it exceed the maximum tolerance, give up. !
@@ -1261,7 +1315,7 @@ module fuse_fiss_utils_ar
                      tolerance_mult > pat_tolerance_max ) exit max_patch
                   
                   !----- Increment tolerance ----------------------------------------------!
-                  tolerance_mult = tolerance_mult * 1.01
+                  tolerance_mult = tolerance_mult * 1.1
                end do max_patch
      
                !----- Set the number of patches in the site to "npatches_new" -------------!
@@ -1306,16 +1360,16 @@ module fuse_fiss_utils_ar
                new_area = new_area + csite%area(ipa)
                cpatch => csite%patch(ipa)
                do ico = 1, cpatch%ncohorts
-                  new_nplant_tot = new_nplant_tot + cpatch%nplant(ico)
-                  new_lai_tot    = new_lai_tot    + cpatch%lai(ico)
+                  new_nplant_tot = new_nplant_tot + cpatch%nplant(ico)*csite%area(ipa)
+                  new_lai_tot    = new_lai_tot    + cpatch%lai(ico)*csite%area(ipa)
                end do
             end do
             if (new_area       < 0.99 * old_area       .or.                                &
                 new_area       > 1.01 * old_area       .or.                                &
-                new_nplant_tot < 0.99 * old_nplant_tot .or.                                &
-                new_nplant_tot > 1.01 * old_nplant_tot .or.                                &
-                new_lai_tot    < 0.99 * old_lai_tot    .or.                                &
-                new_lai_tot    > 1.01 * old_lai_tot    ) then
+                new_nplant_tot < 0.99 * (old_nplant_tot - elim_nplant_tot) .or.            &
+                new_nplant_tot > 1.01 * (old_nplant_tot - elim_nplant_tot) .or.            &
+                new_lai_tot    < 0.99 * (old_lai_tot    - elim_lai_tot   ) .or.            &
+                new_lai_tot    > 1.01 * (old_lai_tot    - elim_lai_tot   )     ) then
                write (unit=*,fmt='(a,1x,es12.5)') 'NEW_AREA:       ',new_area
                write (unit=*,fmt='(a,1x,es12.5)') 'NEW_LAI_TOT:    ',new_lai_tot
                write (unit=*,fmt='(a,1x,es12.5)') 'OLD_LAI_TOT:    ',old_lai_tot
@@ -1324,8 +1378,36 @@ module fuse_fiss_utils_ar
                call fatal_error('Conservation failed while fusing patches'                 &
                               &,'fuse_patches_ar','fuse_fiss_utils.f90')
             end if
+            
          end do siteloop
       end do polyloop
+      
+      !------------------------------------------------------------------------------------!
+      !     Printing a banner to inform the user how many patches and cohorts exist.  To   !
+      ! avoid dumping too many information, display the message only when the user is not  !
+      ! running regional runs.                                                             !
+      !------------------------------------------------------------------------------------!
+      tot_npolygons = cgrid%npolygons
+      tot_ncohorts  = 0
+      tot_npatches  = 0
+      tot_nsites    = 0
+      do ipy=1,cgrid%npolygons
+         cpoly => cgrid%polygon(ipy)
+         tot_nsites = tot_nsites + cpoly%nsites 
+         do isi=1,cpoly%nsites
+            csite => cpoly%site(isi)
+            tot_npatches = tot_npatches + csite%npatches
+            do ipa=1,csite%npatches
+               cpatch => csite%patch(ipa)
+               tot_ncohorts = tot_ncohorts + cpatch%ncohorts
+            end do
+         end do
+      end do
+      write (unit=*,fmt='(6(a,1x,i8,1x))')                                                 &
+        'Total count in node',mynum,'for grid',ifm,': POLYGONS=',tot_npolygons             &
+       ,'SITES=',tot_nsites,'PATCHES=',tot_npatches,'COHORTS=',tot_ncohorts
+      !------------------------------------------------------------------------------------!
+
       return
    end subroutine fuse_patches_ar
    !=======================================================================================!
@@ -1338,36 +1420,42 @@ module fuse_fiss_utils_ar
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine will merge two cohorts into 1.                                      !
+   !   This subroutine will merge two patches into 1.                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_2_patches_ar(csite,donp,recp,rhos,lsl,green_leaf_factor)
+   subroutine fuse_2_patches_ar(csite,donp,recp,rhos,lsl,green_leaf_factor                 &
+                               ,elim_nplant,elim_lai)
       use ed_state_vars      , only :  sitetype              & ! Structure 
                                      , patchtype             ! ! Structure
-      use soil_coms          , only :  soil                  ! ! intent(in), lookup table
+      use soil_coms          , only :  soil                  & ! intent(in), lookup table
+                                     , min_sfcwater_mass     ! ! intent(in)
       use grid_coms          , only :  nzg                   & ! intent(in)
                                      , nzs                   ! ! intent(in)
       use fusion_fission_coms, only :  ff_ndbh               ! ! intent(in)
       use max_dims           , only :  n_pft                 & ! intent(in)
                                      , n_dbh                 ! ! intent(in)
+      use mem_sites          , only :  maxcohort             ! ! intent(in)
       use consts_coms        , only :  cpi                   & ! intent(in)
                                      , cpor                  & ! intent(in)
                                      , p00                   ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype)         , target     :: csite             ! Current site
-      integer                , intent(in) :: donp              ! Donating patch
-      integer                , intent(in) :: recp              ! Receptor patch
-      integer                , intent(in) :: lsl               ! Lowest soil level
-      real, dimension(n_pft) , intent(in) :: green_leaf_factor ! Green leaf factor...
-      real                   , intent(in) :: rhos              ! Sfc. air density
+      type(sitetype)         , target      :: csite             ! Current site
+      integer                , intent(in)  :: donp              ! Donating patch
+      integer                , intent(in)  :: recp              ! Receptor patch
+      integer                , intent(in)  :: lsl               ! Lowest soil level
+      real, dimension(n_pft) , intent(in)  :: green_leaf_factor ! Green leaf factor...
+      real                   , intent(in)  :: rhos              ! Sfc. air density
+      real                   , intent(out) :: elim_nplant       ! Eliminated nplant 
+      real                   , intent(out) :: elim_lai          ! Eliminated lai
       !----- Local variables --------------------------------------------------------------!
-      type(patchtype)        , pointer    :: cpatch            ! Current patch
-      type(patchtype)        , pointer    :: temppatch         ! Temporary patch
-      integer                             :: ico,iii           ! Counters
-      integer                             :: ndc               ! # of cohorts - donp patch
-      integer                             :: nrc               ! # of cohorts - recp patch
-      real                                :: newarea,newareai  ! New patch area and inverse
-      real                                :: area_scale        ! Cohort rescaling factor.
+      type(patchtype)        , pointer     :: cpatch            ! Current patch
+      type(patchtype)        , pointer     :: temppatch         ! Temporary patch
+      integer                              :: ico,iii           ! Counters
+      integer                              :: ndc               ! # of cohorts - donp patch
+      integer                              :: nrc               ! # of cohorts - recp patch
+      real                                 :: newarea           ! new patch area
+      real                                 :: newareai          ! 1./(new patch area)
+      real                                 :: area_scale        ! Cohort rescaling factor.
       !------------------------------------------------------------------------------------!
      
       !------------------------------------------------------------------------------------!
@@ -1436,25 +1524,73 @@ module fuse_fiss_utils_ar
                                      ( csite%hcapveg(donp)            * csite%area(donp)   &
                                      + csite%hcapveg(recp)            * csite%area(recp) )
 
-      do iii=1,nzs
-         !----- Surface water energy is scaled by mass, the weight must be different... ---!
-         csite%sfcwater_energy(iii,recp) =                                                 &
-              ( csite%sfcwater_energy(iii,recp)     * csite%area(recp)                     &
-                                                    * csite%sfcwater_mass(iii,recp)        &
-              + csite%sfcwater_energy(iii,donp)     * csite%area(donp)                     &
-                                                    * csite%sfcwater_mass(iii,donp))       &
-              / ( csite%sfcwater_mass(iii,recp) * csite%area(recp)                         &
-                + csite%sfcwater_mass(iii,donp) * csite%area(donp))
 
-         csite%sfcwater_mass(iii,recp)   = newareai *                                      &
-              ( csite%sfcwater_mass(iii,recp)       * csite%area(recp)                     &
-              + csite%sfcwater_mass(iii,donp)       * csite%area(donp) )
-
-         csite%sfcwater_depth(iii,recp)  = newareai *                                      &
-              ( csite%sfcwater_depth(iii,recp)      * csite%area(recp)                     &
-              + csite%sfcwater_depth(iii,donp)      * csite%area(donp) )
+      !------------------------------------------------------------------------------------!
+      !    There is no guarantee that there will be a minimum amount of mass in the tempo- !
+      ! rary layer, nor is there any reason for both patches to have the same number of    !
+      ! layers. In order to be safe, the fusion must happen in 5 stages.                   !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Find the "extensive" sfcwater_energy (convert from J/kg to J/m2); ---------!
+      do iii=1,csite%nlev_sfcwater(recp)
+         csite%sfcwater_energy(iii,recp) = csite%sfcwater_energy(iii,recp)                 &
+                                         * csite%sfcwater_mass(iii,recp)
       end do
+      do iii=1,csite%nlev_sfcwater(donp)
+         csite%sfcwater_energy(iii,donp) = csite%sfcwater_energy(iii,donp)                 &
+                                         * csite%sfcwater_mass(iii,donp)
+      end do
+      !------------------------------------------------------------------------------------!
+      ! 2. Squeeze all layers into one.  If needed, the layer will be split again next     !
+      !    time the Runge-Kutta integrator is called.  After adding the value to the first !
+      !    layer, discard the value.                                                       !
+      !------------------------------------------------------------------------------------!
+      do iii=2,csite%nlev_sfcwater(recp)
+         csite%sfcwater_energy(1,recp) = csite%sfcwater_energy(1,recp)                     &
+                                       + csite%sfcwater_energy(iii,recp)
+         csite%sfcwater_depth(1,recp)  = csite%sfcwater_depth(1,recp)                      &
+                                       + csite%sfcwater_depth(iii,recp)
+         csite%sfcwater_mass(1,recp)   = csite%sfcwater_mass(1,recp)                       &
+                                       + csite%sfcwater_mass(iii,recp)
+         csite%sfcwater_energy(iii,recp) = 0.
+         csite%sfcwater_depth(iii,recp)  = 0.
+         csite%sfcwater_mass(iii,recp)   = 0.
+      end do
+      do iii=2,csite%nlev_sfcwater(donp)
+         csite%sfcwater_energy(1,donp) = csite%sfcwater_energy(1,donp)                     &
+                                       + csite%sfcwater_energy(iii,donp)
+         csite%sfcwater_depth(1,donp)  = csite%sfcwater_depth(1,donp)                      &
+                                       + csite%sfcwater_depth(iii,donp)
+         csite%sfcwater_mass(1,donp)   = csite%sfcwater_mass(1,donp)                       &
+                                       + csite%sfcwater_mass(iii,donp)
+         csite%sfcwater_energy(iii,donp) = 0.
+         csite%sfcwater_depth(iii,donp)  = 0.
+         csite%sfcwater_mass(iii,donp)   = 0.
+      end do
+      !----- 3. Merge the patches; --------------------------------------------------------!
+      if (csite%nlev_sfcwater(recp) > 0 .or. csite%nlev_sfcwater(donp) > 0) then
+         csite%sfcwater_mass(1,recp)   = newareai *                                        &
+                                         (csite%sfcwater_mass(1,recp)  * csite%area(recp)  &
+                                         +csite%sfcwater_mass(1,donp)  * csite%area(donp)  )
+         csite%sfcwater_depth(1,recp)  = newareai *                                        &
+                                         (csite%sfcwater_depth(1,recp) * csite%area(recp)  &
+                                         +csite%sfcwater_depth(1,donp) * csite%area(donp)  )
+         csite%sfcwater_energy(1,recp) = newareai *                                        &
+                                         (csite%sfcwater_energy(1,recp) * csite%area(recp) &
+                                         +csite%sfcwater_energy(1,donp) * csite%area(donp) )
+      else
+         csite%sfcwater_mass(1,recp)   = 0.
+         csite%sfcwater_depth(1,recp)  = 0.
+         csite%sfcwater_energy(1,recp) = 0.
+      end if
+      !------------------------------------------------------------------------------------!
+      ! 4. Converting energy back to J/kg;                                                 !
+      ! 5. Finding temperature and liquid water fraction;                                  !
+      !    (Both are done in new_patch_sfc_props_ar).                                      !
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
 
+
+      !----- Merging soil energy and water. -----------------------------------------------!
       do iii=1,nzg
          csite%soil_energy(iii,recp)     = newareai *                                      &
               ( csite%soil_energy(iii,donp)         * csite%area(donp)                     &
@@ -1473,7 +1609,7 @@ module fuse_fiss_utils_ar
       ! + csite%soil_tempk(k,recp)                                                         !
       ! + csite%soil_fracliq(k,recp)                                                       !
       ! + csite%nlev_sfcwater(recp)                                                        !
-      ! + csite%sfcwater_energy(k,recp)                                                    !
+      ! + csite%sfcwater_energy(k,recp) (Just converting back to J/kg)                     !
       ! + csite%csite%sfcwater_tempk(k,recp)                                               !
       ! + csite%sfcwater_fracliq(k,recp)                                                   !
       !------------------------------------------------------------------------------------!
@@ -1701,6 +1837,15 @@ module fuse_fiss_utils_ar
       !----- Sort cohorts in the new patch ------------------------------------------------!
       cpatch => csite%patch(recp)
       call sort_cohorts_ar(cpatch)
+      !------------------------------------------------------------------------------------!
+      !    We just combined two patches, so we may be able to fuse some cohorts and/or     !
+      ! eliminate others.                                                                  !
+      !------------------------------------------------------------------------------------!
+      if (cpatch%ncohorts > 0 .and. maxcohort >= 0) then
+         call fuse_cohorts_ar(csite,recp,green_leaf_factor,lsl)
+         call terminate_cohorts_ar(csite,recp,elim_nplant,elim_lai)
+         call split_cohorts_ar(cpatch,green_leaf_factor,lsl)
+      end if
       !------------------------------------------------------------------------------------!
 
 

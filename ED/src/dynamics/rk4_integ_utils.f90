@@ -61,11 +61,17 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff,rhos,vels   &
    !----- Saved variables -----------------------------------------------------------------!
    logical, save    :: first_time=.true.
    logical, save    :: simplerunoff
+   real   , save    :: runoff_time_i
    !---------------------------------------------------------------------------------------!
    
    !----- Checking whether we will use runoff or not, and saving this check to save time. -!
    if (first_time) then
-      simplerunoff = useRUNOFF == 0
+      simplerunoff = useRUNOFF == 0 .and. runoff_time /= 0.
+      if (runoff_time /= 0.) then
+         runoff_time_i = 1./runoff_time
+      else 
+         runoff_time_i = 0.
+      end if
       first_time   = .false.
    end if
 
@@ -73,7 +79,8 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff,rhos,vels   &
    !    If top snow layer is too thin for computational stability, have it evolve in       !
    ! thermal equilibrium with top soil layer.                                              !
    !---------------------------------------------------------------------------------------!
-   call stabilize_snow_layers_ar(integration_buff%initp, csite,ipa, lsl)
+   call redistribute_snow_ar(integration_buff%initp, csite,ipa)
+   call update_diagnostic_vars_ar(integration_buff%initp,csite,ipa,lsl)
 
 
 
@@ -112,13 +119,6 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff,rhos,vels   &
       call rkqs_ar(integration_buff,x,h,hdid,hnext,csite,ipa,isi,ipy,ifm,rhos,vels,atm_tmp &
                   ,atm_shv,atm_co2,geoht,exner,pcpg,qpcpg,dpcpg,prss,lsl)
 
-      !----- Final update of leaf properties. ---------------------------------------------!
-      call adjust_veg_properties(integration_buff%y,integration_buff%dydx              &
-                                 ,csite,ipa,rhos,hdid)
-
-      !----- Re-calculate tempks, fracliqs, surface water flags. --------------------------!
-      call stabilize_snow_layers_ar(integration_buff%y, csite,ipa, lsl)
-
       !----- If the integration reached the next step, make some final adjustments --------!
       if((x-tend)*dtrk4 >= 0.0)then
 
@@ -127,16 +127,19 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff,rhos,vels   &
          ksn = integration_buff%y%nlev_sfcwater
 
          !---------------------------------------------------------------------------------!
-         !   Make temporary surface liquid water disappear.                                !
+         !   Make temporary surface liquid water disappear.  This will not happen          !
+         ! immediately, but liquid water will decay with the time scale defined by         !
+         ! runoff_time scale. If the time scale is too tiny, then it will be forced to be  !
+         ! hdid (no reason to be faster than that).                                        !
          !---------------------------------------------------------------------------------!
          if (simplerunoff .and. ksn >= 1) then
          
             if (integration_buff%y%sfcwater_mass(ksn) > 0.0   .and.                        &
                 integration_buff%y%sfcwater_fracliq(ksn) > 0.1) then
+               wfreeb = min(1.0,dtrk4*runoff_time_i)                                       &
+                      * integration_buff%y%sfcwater_mass(ksn)                              &
+                      * (integration_buff%y%sfcwater_fracliq(ksn) - .1) / 0.9
 
-               wfreeb = integration_buff%y%sfcwater_mass(ksn)                              &
-                      * (integration_buff%y%sfcwater_fracliq(ksn) - .1)                    &
-                      / 0.9 * min(1.0,runoff_time*hdid) 
                qwfree = wfreeb                                                             &
                       * cliq * (integration_buff%y%sfcwater_tempk(ksn) - tsupercool )
 
@@ -149,20 +152,17 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff,rhos,vels   &
                                  - wfreeb*wdnsi
 
                !----- Recompute the energy removing runoff --------------------------------!
-               if (integration_buff%y%sfcwater_mass(ksn) >= min_sfcwater_mass) then
-                  integration_buff%y%sfcwater_energy(ksn) =                                &
+               integration_buff%y%sfcwater_energy(ksn) =                                   &
                                      integration_buff%y%sfcwater_energy(ksn) - qwfree
-               else
-                  integration_buff%y%sfcwater_energy(ksn) = 0.0
-               end if
 
-               call stabilize_snow_layers_ar(integration_buff%y,csite,ipa,lsl)
+               call redistribute_snow_ar(integration_buff%y,csite,ipa)
+               call update_diagnostic_vars_ar(integration_buff%y,csite,ipa,lsl)
 
                !----- Compute runoff for output -------------------------------------------!
                if(fast_diagnostics) then
                   csite%runoff(ipa) = csite%runoff(ipa) + wfreeb * dtrk4i
-                  csite%avg_runoff(ipa) = csite%avg_runoff(ipa) + wfreeb
-                  csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa) + qwfree
+                  csite%avg_runoff(ipa) = csite%avg_runoff(ipa) + wfreeb * dtrk4i
+                  csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa) + qwfree * dtrk4i
                   csite%wbudget_loss2runoff(ipa) = wfreeb
                   csite%ebudget_loss2runoff(ipa) = qwfree
                end if
@@ -214,7 +214,7 @@ end subroutine odeint_ar
 !    This subroutine copies that variables that are integrated by the Runge-Kutta solver   !
 ! to a buffer structure.                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
+subroutine copy_patch_init_ar(sourcesite,ipa, targetp, rhos, lsl)
    use ed_state_vars        , only : sitetype           & ! structure
                                    , rk4patchtype       & ! structure
                                    , patchtype          ! ! structure
@@ -223,8 +223,17 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
    use soil_coms            , only : water_stab_thresh  & ! intent(in)
                                    , min_sfcwater_mass  ! ! intent(in)
    use ed_misc_coms         , only : fast_diagnostics   ! ! intent(in)
+   use consts_coms          , only : cpi                ! ! intent(in)
    use rk4_coms             , only : hcapveg_ref        & ! intent(in)
-                                   , min_height         ! ! intent(in)
+                                   , rk4eps             & ! intent(in)
+                                   , min_height         & ! intent(in)
+                                   , toosparse          & ! intent(out)
+                                   , any_solvable       & ! intent(out)
+                                   , zoveg              & ! intent(out)
+                                   , zveg               & ! intent(out)
+                                   , wcapcan            & ! intent(out)
+                                   , wcapcani           & ! intent(out)
+                                   , hcapcani           ! ! intent(out)
    use canopy_radiation_coms, only : lai_min            ! ! intent(in)
    use therm_lib            , only : qwtk               ! ! subroutine
    implicit none
@@ -232,6 +241,7 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype) , target     :: targetp
    type(sitetype)     , target     :: sourcesite
+   real               , intent(in) :: rhos
    integer            , intent(in) :: lsl
    integer            , intent(in) :: ipa
    !----- Local variables -----------------------------------------------------------------!
@@ -242,6 +252,21 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
    integer                         :: k
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Surface roughness parameters. Eventually I should account for snow factors here.  !
+   !---------------------------------------------------------------------------------------!
+   zoveg = sourcesite%veg_rough(ipa)
+   zveg  = max(sourcesite%veg_height(ipa),3.5)
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Capacities of the canopy air space.                                               !
+   !---------------------------------------------------------------------------------------!
+   wcapcan  = rhos * zveg
+   wcapcani = 1.0 / wcapcan
+   hcapcani = cpi * wcapcani
+   !---------------------------------------------------------------------------------------!
 
 
    targetp%can_temp  = sourcesite%can_temp(ipa)
@@ -309,30 +334,69 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
    do ico=1,cpatch%ncohorts
       sourcesite%hcapveg(ipa) = sourcesite%hcapveg(ipa) + cpatch%hcapveg(ico)
    end do
-   if (sourcesite%hcapveg(ipa) > 0. .and. cpatch%ncohorts > 0 .and.                        &
-       sourcesite%lai(ipa) > lai_min) then
+   if (sourcesite%hcapveg(ipa) > 0. .and. cpatch%ncohorts > 0) then
       hvegpat_min = hcapveg_ref * max(cpatch%hite(1),min_height)
-      hcap_scale  = max(1.,hvegpat_min / sourcesite%hcapveg(ipa))
+      !------------------------------------------------------------------------------------!
+      !    Checking whether the patch heat capacity scaling wouldn't cause numerical       !
+      ! precision issues.  In case it would, then we will bypass the energy and water      !
+      ! balance for these cohorts, assigning no water (we will transfer all water to the   !
+      ! canopy, and making temperature equal to the canopy.                                !
+      !------------------------------------------------------------------------------------!
+      toosparse = sourcesite%hcapveg(ipa) / hvegpat_min <= 10. * epsilon(1.) / rk4eps
+      if (toosparse) then
+         hcap_scale = 1.
+      else
+         hcap_scale  = max(1.,hvegpat_min / sourcesite%hcapveg(ipa))
+      end if
    else
+      toosparse   = .true.
       hcap_scale  = 1.
    end if
-
+   any_solvable = .false.
    do ico = 1,cpatch%ncohorts
-      targetp%veg_water(ico)     = cpatch%veg_water(ico)
-      call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)           &
-               ,targetp%veg_temp(ico),targetp%veg_fliq(ico))
+      !------------------------------------------------------------------------------------!
+      !     Filling the flag that will tell whether the cohort is "solvable".  A cohort is !
+      ! solved by the RK4 integrator only when it satisfies the following three            !
+      ! conditions:                                                                        !
+      ! 1. The cohort LAI is above a minimum (lai_min)                                     !
+      ! 2. The cohort leaves aren't completely buried in snow.                             !
+      ! 3. The patch LAI to which this cohort belongs is not too sparse.  This is to avoid !
+      !    numerical precision issues, since hcapveg would be modified by several orders   !
+      !    of magnitude.                                                                   !
+      !------------------------------------------------------------------------------------!
+      targetp%solvable(ico) = cpatch%lai(ico) > lai_min .and.                              &
+                              cpatch%hite(ico) > sourcesite%total_snow_depth(ipa) .and.    &
+                              (.not. toosparse)
 
       !------------------------------------------------------------------------------------!
-      !    If the cohort is too small, we give some extra heat capacity, so the model can  !
-      ! run in a stable range inside the integrator. At the end this extra heat capacity   !
-      ! will be removed. This ensures energy conservation.                                 !
+      !     Checking whether this is considered a "safe" one or not.  In case it is, we    !
+      ! copy water, temperature, and liquid fraction, and scale energy and heat capacity   !
+      ! as needed.  Otherwise, just fill with some safe values, but the cohort won't be    !
+      ! really solved.                                                                     !
       !------------------------------------------------------------------------------------!
-      targetp%hcapveg(ico)       = cpatch%hcapveg(ico) * hcap_scale
-      targetp%veg_energy(ico)    = cpatch%veg_energy(ico)                                  &
-                                 + (targetp%hcapveg(ico)-cpatch%hcapveg(ico))              &
-                                 * targetp%veg_temp(ico)
+      if (targetp%solvable(ico)) then
+         any_solvable = .true. 
+         targetp%veg_water(ico)     = cpatch%veg_water(ico)
+         call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)        &
+                  ,targetp%veg_temp(ico),targetp%veg_fliq(ico))
+
+         !---------------------------------------------------------------------------------!
+         !    If the cohort is too small, we give some extra heat capacity, so the model   !
+         ! can run in a stable range inside the integrator. At the end this extra heat     !
+         ! capacity will be removed. This ensures energy conservation.                     !
+         !---------------------------------------------------------------------------------!
+         targetp%hcapveg(ico)       = cpatch%hcapveg(ico) * hcap_scale
+         targetp%veg_energy(ico)    = cpatch%veg_energy(ico)                               &
+                                    + (targetp%hcapveg(ico)-cpatch%hcapveg(ico))           &
+                                    * targetp%veg_temp(ico)
+      else
+         targetp%veg_water(ico)  = 0.
+         targetp%veg_fliq(ico)   = 0.
+         targetp%veg_temp(ico)   = cpatch%veg_temp(ico)
+         targetp%hcapveg(ico)    = cpatch%hcapveg(ico)  * hcap_scale
+         targetp%veg_energy(ico) = targetp%hcapveg(ico) * targetp%veg_temp(ico)
+      end if
    end do
-
    !----- Diagnostics variables -----------------------------------------------------------!
    if(fast_diagnostics) then
 
@@ -345,7 +409,10 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, lsl)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!! WHY IS THIS COMMENTED OUT? RGK                                             !!!!!
-      !   targetp%avg_gpp = sourcesite%avg_gpp(ipa)
+      !!!!!      I think because gpp is no longer solved inside the Runge-Kutta        !!!!!
+      !!!!!      intermediate steps...                                                 !!!!!
+      !!!!!.                                                                           !!!!!
+      !   targetp%avg_gpp = sourcesite%avg_gpp(ipa)                                    !!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -497,10 +564,11 @@ subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, total_snow_depth, lsl)
    use rk4_coms             , only : tiny_offset        ! ! intent(in)
    use grid_coms            , only : nzg                & ! intent(in)
                                    , nzs                ! ! intent(in)
-   use soil_coms            , only : min_sfcwater_mass  ! ! intent(in)
+   use soil_coms            , only : min_sfcwater_mass  & ! intent(in)
+                                   , water_stab_thresh  ! ! intent(in)
    use consts_coms          , only : cliq               & ! intent(in)
                                    , qliqt3             ! ! intent(in)
-   use canopy_radiation_coms, only : lai_min            ! ! intent(in)
+   use canopy_air_coms      , only : min_veg_lwater     ! ! intent(in)
    use pft_coms             , only : sla                ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -512,8 +580,9 @@ subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, total_snow_depth, lsl)
    real              , intent(in) :: total_snow_depth ! Snow depth
    real              , intent(in) :: htry             ! Time-step we are trying
    !----- Local variables -----------------------------------------------------------------!
-   integer                        :: k      ! Counter
-   integer                        :: ico    ! Current cohort ID
+   real                           :: tot_sfcw_mass    ! Total surface water/snow mass
+   integer                        :: k                ! Counter
+   integer                        :: ico              ! Current cohort ID
    !---------------------------------------------------------------------------------------!
 
   
@@ -532,36 +601,49 @@ subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, total_snow_depth, lsl)
       yscal%soil_energy(k) = abs(y%soil_energy(k)) + abs(dy%soil_energy(k)*htry)
    end do
 
-   if(y%sfcwater_mass(1) > 0.1 .or. y%nlev_sfcwater > 1)then
-      !----- Either frozen or computationally stable layer. -------------------------------!
+   tot_sfcw_mass = 0.
+   do k=1,y%nlev_sfcwater
+      tot_sfcw_mass = tot_sfcw_mass + y%sfcwater_mass(k)
+   end do
+   tot_sfcw_mass = abs(tot_sfcw_mass)
+   
+   if (tot_sfcw_mass > 0.01*water_stab_thresh) then
+      !----- Computationally stable layer. ------------------------------------------------!
       do k=1,nzs
          yscal%sfcwater_mass(k)   = abs(y%sfcwater_mass(k))                                &
-                                  + abs(dy%sfcwater_mass(k)*htry)     + tiny_offset
+                                  + abs(dy%sfcwater_mass(k)*htry)
          yscal%sfcwater_energy(k) = abs(y%sfcwater_energy(k))                              &
-                                  + abs(dy%sfcwater_energy(k)*htry) + tiny_offset
+                                  + abs(dy%sfcwater_energy(k)*htry)
          yscal%sfcwater_depth(k)  = abs(y%sfcwater_depth(k))                               &
-                                  + abs(dy%sfcwater_depth(k)*htry)   + tiny_offset
+                                  + abs(dy%sfcwater_depth(k)*htry)
       end do
    else
       !----- Low stability threshold ------------------------------------------------------!
       do k=1,nzs
-         yscal%sfcwater_mass(k) = 0.1
-         if(y%sfcwater_mass(k) > min_sfcwater_mass)then
-            yscal%sfcwater_energy(k) = ( yscal%sfcwater_mass(k) / y%sfcwater_mass(k))      &
+         if(abs(y%sfcwater_mass(k)) > min_sfcwater_mass)then
+            yscal%sfcwater_mass(k) = 0.01*water_stab_thresh
+            yscal%sfcwater_energy(k) = ( yscal%sfcwater_mass(k) / abs(y%sfcwater_mass(k))) &
                                      * ( abs( y%sfcwater_energy(k))                        &
-                                       + abs(dy%sfcwater_energy(k)))
+                                       + abs(dy%sfcwater_energy(k)*htry))
+            yscal%sfcwater_depth(k)  = ( yscal%sfcwater_mass(k) / abs(y%sfcwater_mass(k))) &
+                                     * abs(y%sfcwater_depth(k))                            &
+                                     + abs(dy%sfcwater_depth(k)*htry)
          else
+            yscal%sfcwater_mass(k)   = 1.0e30
             yscal%sfcwater_energy(k) = 1.0e30
+            yscal%sfcwater_depth(k)  = 1.0e30
          end if
       end do
    end if
 
    !----- Scale for the virtual water pools -----------------------------------------------!
-   if (y%virtual_water > min_sfcwater_mass) then
-      yscal%virtual_water = max(0.1                                                        &
-                               ,abs(y%virtual_water) + abs(dy%virtual_water*htry))
-      yscal%virtual_heat  = max(yscal%virtual_water*qliqt3                                 &
-                               ,abs(y%virtual_heat) + abs(dy%virtual_heat*htry))
+   if (abs(y%virtual_water) > 0.01*water_stab_thresh) then
+      yscal%virtual_water = abs(y%virtual_water) + abs(dy%virtual_water*htry)
+      yscal%virtual_heat  = abs(y%virtual_heat) + abs(dy%virtual_heat*htry)
+   elseif (abs(y%virtual_water) > min_sfcwater_mass) then
+      yscal%virtual_water = 0.01*water_stab_thresh
+      yscal%virtual_heat  = (yscal%virtual_water / abs(y%virtual_water))                   &
+                          * (abs(y%virtual_heat) + abs(dy%virtual_heat*htry))
    else
       yscal%virtual_water = 1.e30
       yscal%virtual_heat  = 1.e30
@@ -574,14 +656,19 @@ subroutine get_yscal_ar(y, dy, htry, yscal, cpatch, total_snow_depth, lsl)
    !    Also, if the cohort is tiny and has almost no water, make the scale less strict.   !
    !---------------------------------------------------------------------------------------!
    do ico = 1,cpatch%ncohorts
-      if (cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > total_snow_depth)             &
-      then
-         yscal%veg_water(ico)  = max(1.e-2                                                 &
-                                    ,abs(y%veg_water(ico))+ abs(dy%veg_water(ico)*htry))
-         yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico)*htry)
-      else
+      if (.not. y%solvable(ico)) then
+         yscal%solvable(ico)   = .false.
          yscal%veg_water(ico)  = 1.e30
          yscal%veg_energy(ico) = 1.e30
+      elseif (y%veg_water(ico) > min_veg_lwater*cpatch%lai(ico)) then
+         yscal%solvable(ico)   = .true.
+         yscal%veg_water(ico)  = abs(y%veg_water(ico)) + abs(dy%veg_water(ico)*htry)
+         yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico)*htry)
+      else
+         yscal%solvable(ico)   = .true.
+         yscal%veg_water(ico)  = min_veg_lwater*cpatch%lai(ico)
+         yscal%veg_energy(ico) = max(yscal%veg_water(ico)*qliqt3                           &
+                                    ,abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico)*htry))
       end if
    end do
 
@@ -601,32 +688,32 @@ end subroutine get_yscal_ar
 !    This subroutine loops through the integrating variables, seeking for the largest      !
 ! error.                                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine get_errmax_ar(errmax,yerr,yscal,cpatch,lsl,y,ytemp)
+subroutine get_errmax_ar(errmax,yerr,yscal,cpatch,total_snow_depth,lsl,y,ytemp)
 
    use ed_state_vars         , only : patchtype     & ! structure
                                     , rk4patchtype  ! ! structure
    use rk4_coms              , only : rk4eps        ! ! intent(in)
    use grid_coms             , only : nzg           ! ! intent(in)
-   use canopy_radiation_coms , only : lai_min       ! ! intent(in)
    use misc_coms             , only : integ_err     & ! intent(in)
                                     , record_err    ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(rk4patchtype) , target      :: yerr      ! Error structure
-   type(rk4patchtype) , target      :: yscal     ! Scale structure
-   type(rk4patchtype) , target      :: y         ! Structure with previous value
-   type(rk4patchtype) , target      :: ytemp     ! Structure with attempted values
-   type(patchtype)    , target      :: cpatch    ! Current patch
-   integer            , intent(in)  :: lsl       ! Lowest soil level
-   real               , intent(out) :: errmax    ! Maximum error
+   type(rk4patchtype) , target      :: yerr             ! Error structure
+   type(rk4patchtype) , target      :: yscal            ! Scale structure
+   type(rk4patchtype) , target      :: y                ! Structure with previous value
+   type(rk4patchtype) , target      :: ytemp            ! Structure with attempted values
+   type(patchtype)    , target      :: cpatch           ! Current patch
+   real               , intent(in)  :: total_snow_depth ! Snow depth
+   integer            , intent(in)  :: lsl              ! Lowest soil level 
+   real               , intent(out) :: errmax           ! Maximum error     
    !----- Local variables -----------------------------------------------------------------!
-   integer                          :: ico       ! Current cohort ID
-   real                             :: errh2o    ! Scratch error variable
-   real                             :: errene    ! Scratch error variable
-   real                             :: err       ! Scratch error variable
-   real                             :: errh2oMAX ! Scratch error variable
-   real                             :: erreneMAX ! Scratch error variable
-   integer                          :: k         ! Scratch error variable
+   integer                          :: ico              ! Current cohort ID
+   real                             :: errh2o           ! Scratch error variable
+   real                             :: errene           ! Scratch error variable
+   real                             :: err              ! Scratch error variable
+   real                             :: errh2oMAX        ! Scratch error variable
+   real                             :: erreneMAX        ! Scratch error variable
+   integer                          :: k                ! Counter
    !---------------------------------------------------------------------------------------!
 
    !----- Initialize error ----------------------------------------------------------------!
@@ -688,7 +775,7 @@ subroutine get_errmax_ar(errmax,yerr,yscal,cpatch,lsl,y,ytemp)
    do ico = 1,cpatch%ncohorts
       errh2oMAX = 0.0
       erreneMAX = 0.0
-      if (cpatch%lai(ico) > lai_min) then
+      if (yscal%solvable(ico)) then
          errh2o     = abs(yerr%veg_water(ico)/yscal%veg_water(ico))
          errene     = abs(yerr%veg_energy(ico)/yscal%veg_energy(ico))
          errmax     = max(errmax,errh2o,errene)
@@ -713,7 +800,7 @@ end subroutine get_errmax_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine print_errmax_ar(errmax,yerr,yscal,cpatch,lsl,y,ytemp)
+subroutine print_errmax_ar(errmax,yerr,yscal,cpatch,total_snow_depth,lsl,y,ytemp)
    use ed_state_vars         , only : patchtype     & ! Structure
                                     , rk4patchtype  ! ! Structure
    use rk4_coms              , only : rk4eps        ! ! intent(in)
@@ -725,6 +812,7 @@ subroutine print_errmax_ar(errmax,yerr,yscal,cpatch,lsl,y,ytemp)
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype) , target       :: yerr,yscal,y,ytemp
    type(patchtype)    , target       :: cpatch
+   real               , intent(in)   :: total_snow_depth
    integer            , intent(in)   :: lsl
    real               , intent(out)  :: errmax
    !----- Local variables -----------------------------------------------------------------!
@@ -813,11 +901,11 @@ subroutine print_errmax_ar(errmax,yerr,yscal,cpatch,lsl,y,ytemp)
 
    write(unit=*,fmt='(a)'  ) 
    write(unit=*,fmt='(80a)') ('-',k=1,80)
-   write(unit=*,fmt='(a)'      ) ' Cohort_level variables (only those with sufficient LAI):'
+   write(unit=*,fmt='(a)'      ) ' Cohort_level variables (only the solvable ones):'
    write(unit=*,fmt='(7(a,1x))')  'Name            ','         PFT','         LAI'         &
                              &,'   Max.Error','   Abs.Error','       Scale','Problem(T|F)'
    do ico = 1,cpatch%ncohorts
-      if (cpatch%lai(ico) > lai_min) then
+      if (y%solvable(ico)) then
          errmax       = max(errmax,abs(yerr%veg_water(ico)/yscal%veg_water(ico)))
          troublemaker = large_error(yerr%veg_water(ico),yscal%veg_water(ico))
          write(unit=*,fmt=cohfmt) 'VEG_WATER:',cpatch%pft(ico),cpatch%lai(ico),errmax      &
@@ -874,21 +962,23 @@ end function large_error
 
 !==========================================================================================!
 !==========================================================================================!
-!     This subroutine is the driver for snow layer stability check, and it will call the   !
-! procedure to redistribute the snow layers should the partition become numerically        !
-! dangerous.                                                                               !
+!     This subroutine is called before the sanity check, and updates the diagnostic vari-  !
+! ables, namely the temperature and liquid fraction of leaf water, soil layers and         !
+! temporary snow/pond layers.                                                                      !
 !------------------------------------------------------------------------------------------!
-subroutine stabilize_snow_layers_ar(initp, csite,ipa, lsl)
-   use ed_state_vars , only : sitetype          & ! structure
-                            , patchtype         & ! structure
-                            , rk4patchtype      ! ! structure
-   use soil_coms     , only : soil              & ! intent(in)
-                            , min_sfcwater_mass ! ! intent(in)
-   use grid_coms     , only : nzg               & ! intent(in)
-                            , nzs               ! ! intent(in)
-   use therm_lib     , only : qwtk8             & ! subroutine
-                            , qtk               ! ! subroutine
-   use consts_coms   , only : wdns              ! ! intent(in)
+subroutine update_diagnostic_vars_ar(initp, csite,ipa, lsl)
+   use ed_state_vars        , only : sitetype          & ! structure
+                                   , patchtype         & ! structure
+                                   , rk4patchtype      ! ! structure
+   use soil_coms            , only : soil              & ! intent(in)
+                                   , min_sfcwater_mass ! ! intent(in)
+   use canopy_radiation_coms, only : lai_min           ! ! intent(in)
+   use grid_coms            , only : nzg               & ! intent(in)
+                                   , nzs               ! ! intent(in)
+   use therm_lib            , only : qwtk8             & ! subroutine
+                                   , qwtk              & ! subroutine
+                                   , qtk               ! ! subroutine
+   use consts_coms          , only : wdns              ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype) , target     :: initp
@@ -896,8 +986,10 @@ subroutine stabilize_snow_layers_ar(initp, csite,ipa, lsl)
    integer            , intent(in) :: lsl
    integer            , intent(in) :: ipa
    !----- Local variables -----------------------------------------------------------------!
-   integer                         :: k
-   real                            :: soilhcap
+   type(patchtype)        , pointer :: cpatch
+   integer                          :: ico
+   integer                          :: k
+   real                             :: soilhcap
    !---------------------------------------------------------------------------------------!
 
 
@@ -910,30 +1002,47 @@ subroutine stabilize_snow_layers_ar(initp, csite,ipa, lsl)
 
    !---------------------------------------------------------------------------------------!
    !    Updating surface water temperature and liquid water fraction, remembering that in- !
-   ! side the RK4 integration, surface water energy is in J/m².                            !
+   ! side the RK4 integration, surface water energy is in J/m². The abs is necessary be-   !
+   ! cause surface mass may indeed become too negative during the integration process and  !
+   ! if it happens, we want the step to be rejected.                                       !
    !---------------------------------------------------------------------------------------!
-   do k = 2, nzs
-      if(initp%sfcwater_mass(k) > min_sfcwater_mass)  then
+   do k = 1, nzs
+      if(abs(initp%sfcwater_mass(k)) > min_sfcwater_mass)  then
            call qtk(initp%sfcwater_energy(k)/initp%sfcwater_mass(k)                        &
                    ,initp%sfcwater_tempk(k),initp%sfcwater_fracliq(k))
-       else
-          initp%sfcwater_energy(k)  = 0.
-       end if
+      elseif (k == 1) then
+         initp%sfcwater_energy(k)  = 0.
+         initp%sfcwater_mass(k)    = 0.
+         initp%sfcwater_depth(k)   = 0.
+         initp%sfcwater_tempk(k)   = initp%soil_tempk(nzg)
+         initp%sfcwater_fracliq(k) = initp%soil_fracliq(nzg)
+      else
+         initp%sfcwater_energy(k)  = 0.
+         initp%sfcwater_mass(k)    = 0.
+         initp%sfcwater_depth(k)   = 0.
+         initp%sfcwater_tempk(k)   = initp%sfcwater_tempk(k-1)
+         initp%sfcwater_fracliq(k) = initp%sfcwater_fracliq(k-1)
+      end if
    end do
-  
-   !---------------------------------------------------------------------------------------!
-   !    Checking whether the snow layers need to be adjusted based on their changes in     !
-   ! mass, forcing excessive water to percolate, and performing a quick thermal adjust if  !
-   ! the temporary layer is way too thin.                                                  !
-   !---------------------------------------------------------------------------------------!
-   call redistribute_snow_ar(initp,csite,ipa)
-   
-  
-   return
-end subroutine stabilize_snow_layers_ar
-!==========================================================================================!
-!==========================================================================================!
 
+
+   cpatch => csite%patch(ipa)
+
+   !----- Looping over cohorts ------------------------------------------------------------!
+   cohortloop: do ico=1,cpatch%ncohorts
+      !----- Checking whether this is a prognostic cohort... ------------------------------!
+      if (initp%solvable(ico)) then
+         !----- Lastly we update leaf temperature and liquid fraction. --------------------!
+         call qwtk(initp%veg_energy(ico),initp%veg_water(ico),initp%hcapveg(ico)           &
+                  ,initp%veg_temp(ico),initp%veg_fliq(ico))
+      end if
+
+   end do cohortloop
+
+   return
+end subroutine update_diagnostic_vars_ar
+!==========================================================================================!
+!==========================================================================================!
 
 
 
@@ -961,6 +1070,8 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
                             , dslz              & ! intent(in)
                             , dslzi             & ! intent(in)
                             , snowmin           & ! intent(in)
+                            , thick             & ! intent(in)
+                            , thicknet          & ! intent(in)
                             , min_sfcwater_mass ! ! intent(in)
    use consts_coms   , only : cice              & ! intent(in)
                             , cliq              & ! intent(in)
@@ -969,6 +1080,8 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
                             , tsupercool        & ! intent(in)
                             , qliqt3            & ! intent(in)
                             , wdnsi             ! ! intent(in)
+   use rk4_coms      , only : rk4min_sfcw_mass  & ! intent(in)
+                            , rk4min_virt_water ! ! intent(in)
    use therm_lib     , only : qtk               & ! subroutine
                             , qwtk              & ! subroutine
                             , qwtk8             ! ! subroutine
@@ -978,19 +1091,13 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
    type(sitetype)         , target     :: csite
    integer                , intent(in) :: ipa
    !----- Local variables -----------------------------------------------------------------!
-   integer                             :: kzs
    integer                             :: kold
    integer                             :: newlayers
    integer                             :: nlayers
    integer                             :: ksn
    integer                             :: ksnnew
    integer                             :: k
-   real                                :: stretch
-   real                                :: thik
    !----- Control variables ---------------------------------------------------------------!
-   logical                , save       :: first_call = .true.
-   real, dimension(20)    , save       :: thicknet
-   real, dimension(20,20) , save       :: thick   
    real                                :: wtold
    real                                :: wtnew
    real, dimension(nzs)                :: newsfcw_mass
@@ -1016,69 +1123,99 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
    !----- Constants -----------------------------------------------------------------------!
    logical                , parameter  :: debug = .false.
    !---------------------------------------------------------------------------------------!
-   
 
-   !----- Defining some thickness variables only once, at start. --------------------------!
-   if (first_call) then
-      first_call = .false.
 
-      stretch = 2.0
-      do kzs = 1,nzs
-         thik = 1.0
-         thicknet(kzs) = 0.0
-         do k = 1,(kzs+1)/2
-            thick(k,kzs)       = thik
-            thick(kzs+1-k,kzs) = thik
-            thicknet(kzs)      = thicknet(kzs) + 2. * thik
-            thik               = thik * stretch
-         end do
-         if ((kzs+1)/2 .ne. kzs/2) thicknet(kzs) = thicknet(kzs) - thik/stretch
-         do k = 1,kzs
-            thick(k,kzs) = thick(k,kzs) / thicknet(kzs)
-         end do
-      end do
-   end if
+   !----- Initializing # of layers alias --------------------------------------------------!
+   ksn       = initp%nlev_sfcwater
 
-   !----- Initializing total snow and # of layers alias -----------------------------------!
-   totsnow = 0.0
-   ksn     = initp%nlev_sfcwater
-   
-   !---------------------------------------------------------------------------------------!
-   !    Checking whether we still have water/snow, and depending on this, where to add the !
-   ! virtual pool.                                                                         !
-   !---------------------------------------------------------------------------------------!
-   if (initp%nlev_sfcwater >= 1) then
-      !----- Nothing left, no more temporary water/snow layer -----------------------------!
-      if (sum(initp%sfcwater_mass) < min_sfcwater_mass) then
-         initp%nlev_sfcwater = 0
-         ksnnew              = 0
-      !----- Still something there, nothing changes at least now --------------------------!
+   if (ksn >= 1) then
+      !------------------------------------------------------------------------------------!
+      ! 1. There used to exist temporary water/snow layers here.  Check total mass to see  !
+      !    whether there is still enough mass.                                             !
+      !------------------------------------------------------------------------------------!
+      totsnow = sum(initp%sfcwater_mass(1:ksn))
+      if (totsnow < rk4min_sfcw_mass) then
+         !----- Temporary layer is too negative, break it so the step can be rejected. ----!
+         return
+      elseif (totsnow <= min_sfcwater_mass) then
+         !---------------------------------------------------------------------------------!
+         ! 1.a. Too little or negative mass.  Eliminate layers, ensuring that it will  not !
+         !      leak mass or energy, by "stealing" them from the top soil  !
+         !      layer.                                                                     !
+         !---------------------------------------------------------------------------------!
+         initp%sfcwater_energy(1) = sum(initp%sfcwater_energy(1:ksn))
+         initp%sfcwater_mass(1)   = sum(initp%sfcwater_mass(1:ksn))
+         initp%soil_energy(nzg)   = initp%soil_energy(nzg)                                 &
+                                  + initp%sfcwater_energy(1) * dslzi(nzg)
+         initp%soil_water(nzg)    = initp%soil_water(nzg)                                  &
+                                  + dble(initp%sfcwater_mass(1)) * dble(dslzi(nzg))
+         call qwtk8(initp%soil_energy(nzg),initp%soil_water(nzg)*dble(wdns)                &
+                   ,soil(csite%ntext_soil(nzg,ipa))%slcpd,initp%soil_tempk(nzg)            &
+                   ,initp%soil_fracliq(nzg))
+         initp%sfcwater_mass      = 0.
+         initp%sfcwater_energy    = 0.
+         initp%sfcwater_tempk     = initp%soil_tempk(nzg)
+         initp%sfcwater_fracliq   = 0.
+         initp%sfcwater_depth     = 0.         
+         initp%nlev_sfcwater      = 0
+         ksnnew                   = 0
       else
-         wfree = 0.0
-         qwfree = 0.0
-         depthgain = 0.0
+         !---------------------------------------------------------------------------------!
+         ! 1.b.  Still something there, nothing changes at least not for the time being.   !
+         !---------------------------------------------------------------------------------!
          ksnnew = ksn
+         wfree               = 0.
+         qwfree              = 0.
+         depthgain           = 0.
       end if
-   !----- No temporary layer, nothing in the virtual pool, keep it dry --------------------!
-   elseif (initp%virtual_water < min_sfcwater_mass) then
-      ksnnew = 0
-      initp%virtual_water = 0.0
-      initp%virtual_heat  = 0.0
-      initp%virtual_depth = 0.0
-   !----- No temporary layer, significant mass to add, create one layer -------------------!
    else
-      wfree = initp%virtual_water
-      qwfree = initp%virtual_heat
-      depthgain = initp%virtual_depth
-      initp%virtual_water = 0.0
-      initp%virtual_heat  = 0.0
-      initp%virtual_depth = 0.0
-      ksnnew = 1
+      !------------------------------------------------------------------------------------!
+      ! 2.  No temporary layer, dealing with virtual layer.  Check whether the virtual     !
+      !     layer would be thick enough to create a pond, otherwise skip the entire thing. !
+      !------------------------------------------------------------------------------------!
+      if (initp%virtual_water < rk4min_virt_water) then
+         !----- Virtual layer is too negative, break it so the step can be rejected. ------!
+         return
+      elseif (initp%virtual_water <= min_sfcwater_mass) then
+         !---------------------------------------------------------------------------------!
+         ! 2.a. Too little or negative mass in the virtual layer.  No layer will be creat- !
+         !      ed, but before eliminating it, just make sure mass and energy will be      !
+         !      conserved.                                                                 !
+         !---------------------------------------------------------------------------------!
+         ksnnew = 0
+         initp%soil_energy(nzg)   = initp%soil_energy(nzg)                                 &
+                                  + initp%virtual_heat * dslzi(nzg)
+         initp%soil_water(nzg)    = initp%soil_water(nzg)                                  &
+                                  + dble(initp%virtual_water) * dble(dslzi(nzg))
+         call qwtk8(initp%soil_energy(nzg),initp%soil_water(nzg)*dble(wdns)                &
+                   ,soil(csite%ntext_soil(nzg,ipa))%slcpd,initp%soil_tempk(nzg)            &
+                   ,initp%soil_fracliq(nzg))
+         initp%virtual_water      = 0.0
+         initp%virtual_heat       = 0.0
+         initp%virtual_depth      = 0.0
+      else
+         !---------------------------------------------------------------------------------!
+         ! 2.b. No temporary layer, significant mass to add.  ksnnew will be at least one. !
+         !      If there was no layer before, create one.                                  !
+         !---------------------------------------------------------------------------------!
+         wfree               = initp%virtual_water
+         qwfree              = initp%virtual_heat
+         depthgain           = initp%virtual_depth
+         initp%virtual_water = 0.0
+         initp%virtual_heat  = 0.0
+         initp%virtual_depth = 0.0
+         ksnnew = 1
+      end if
    end if
    !---------------------------------------------------------------------------------------!
 
 
-   !----- Loop over layers, from top to bottom this time ----------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   ! 3. We now update the diagnostic variables, and ensure the layers are stable.  Loop    !
+   !    over layers, from top to bottom this time.                                         !
+   !---------------------------------------------------------------------------------------!
+   totsnow =0.
    do k = ksnnew,1,-1
 
       !----- Update current mass and energy of temporary layer ----------------------------!
@@ -1133,11 +1270,17 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
       !    Shed liquid in excess of a 1:9 liquid-to-ice ratio through percolation.  Limit  !
       ! this shed amount (wfreeb) in lowest snow layer to amount top soil layer can hold.  !
       !------------------------------------------------------------------------------------!
-      if (initp%sfcwater_fracliq(k) == 1.0) then
-         wfreeb = w
-      else
+      !if (initp%sfcwater_fracliq(k) == 1.0) then
+      !   wfreeb = w
+      !else
+      !   wfreeb = max(0.0, w * (initp%sfcwater_fracliq(k)-0.1)/0.9 )
+      !end if
+      if (w > min_sfcwater_mass) then
          wfreeb = max(0.0, w * (initp%sfcwater_fracliq(k)-0.1)/0.9 )
-      endif
+      else
+         wfreeb = 0.0
+      end if
+
       if (k == 1)then
            !----- Do "greedy" infiltration. -----------------------------------------------!
            nsoil = csite%ntext_soil(nzg,ipa)
@@ -1161,13 +1304,22 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
       !----- Remove water and internal energy losses due to percolation -------------------!
       initp%sfcwater_mass(k)  = w - wfreeb
       initp%sfcwater_depth(k) = initp%sfcwater_depth(k) + depthgain - depthloss
-      if(initp%sfcwater_mass(k) >= min_sfcwater_mass)then
+      if(initp%sfcwater_mass(k) > min_sfcwater_mass) then
          initp%sfcwater_energy(k) = qw - qwfree
          call qtk(initp%sfcwater_energy(k)/initp%sfcwater_mass(k),initp%sfcwater_tempk(k)  &
                  ,initp%sfcwater_fracliq(k))
       else
          initp%sfcwater_energy(k) = 0.0
-      endif
+         initp%sfcwater_mass(k)   = 0.0
+         initp%sfcwater_depth(k)  = 0.0
+         if (k == 1) then
+            initp%sfcwater_tempk(k)   = initp%soil_tempk(nzg)
+            initp%sfcwater_fracliq(k) = initp%soil_fracliq(nzg)
+         else
+            initp%sfcwater_tempk(k)   = initp%sfcwater_tempk(k-1)
+            initp%sfcwater_fracliq(k) = initp%sfcwater_fracliq(k-1)
+         end if
+      end if
 
       !----- Integrate total "snow" -------------------------------------------------------!
       totsnow = totsnow + initp%sfcwater_mass(k)
@@ -1175,28 +1327,41 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
       !----- Calculate density and depth of snow ------------------------------------------!
       snden    = initp%sfcwater_mass(k) / max(1.0e-6,initp%sfcwater_depth(k))
       sndenmax = wdns
-      sndenmin = max(30.0, 200.0 * (wfree + wfreeb) / max(1.0e-12,initp%sfcwater_mass(k)))
+      sndenmin = max(30.0, 200.0 * (wfree + wfreeb)                                        &
+               / max(min_sfcwater_mass,initp%sfcwater_mass(k)))
       snden    = min(sndenmax, max(sndenmin,snden))
       initp%sfcwater_depth(k) = initp%sfcwater_mass(k) / snden
 
       !----- Set up input to next layer ---------------------------------------------------!
       wfree = wfreeb
       depthgain = depthloss
-   enddo
+   end do
 
-   !----- Re-distribute snow layers to maintain prescribed distribution of mass. ----------!
-   if (totsnow < min_sfcwater_mass .or. ksnnew == 0) then
+   !---------------------------------------------------------------------------------------!
+   ! 4. Re-distribute snow layers to maintain prescribed distribution of mass.             !
+   !---------------------------------------------------------------------------------------!
+   if (totsnow <= min_sfcwater_mass .or. ksnnew == 0) then
       initp%nlev_sfcwater = 0
-      call qwtk8(initp%soil_energy(nzg),initp%soil_water(nzg) * dble(wdns)                 &
-                ,soil(csite%ntext_soil(nzg,ipa))%slcpd,initp%soil_tempk(nzg)               &
-                ,initp%soil_fracliq(nzg))
+      !----- Making sure that the unused layers have zero in everything -------------------!
+      do k = 1, nzs
+         initp%sfcwater_mass(k)    = 0.0
+         initp%sfcwater_energy(k)  = 0.0
+         initp%sfcwater_depth(k)   = 0.0
+         if (k == 1) then
+            initp%sfcwater_tempk(k)   = initp%soil_tempk(nzg)
+            initp%sfcwater_fracliq(k) = initp%soil_fracliq(nzg)
+         else
+            initp%sfcwater_tempk(k)   = initp%sfcwater_tempk(k-1)
+            initp%sfcwater_fracliq(k) = initp%sfcwater_fracliq(k-1)
+         end if
+      end do
    else
       !---- Check whether there is enough snow for a new layer. ---------------------------!
       nlayers   = ksnnew
       newlayers = 1
       do k = 1,nzs
          !----- Checking whether we need 
-         if (      initp%sfcwater_mass(k)   >= min_sfcwater_mass                           &
+         if (      initp%sfcwater_mass(k)   > min_sfcwater_mass                            &
              .and. snowmin * thicknet(k)    <= totsnow                                     &
              .and. initp%sfcwater_energy(k) <  initp%sfcwater_mass(k)*qliqt3 ) then
 
@@ -1244,14 +1409,17 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
       do k = 1,newlayers
          initp%sfcwater_mass(k)   = newsfcw_mass(k)
          initp%sfcwater_energy(k) = newsfcw_energy(k)
-         if (newsfcw_mass(k) >= min_sfcwater_mass) then
+         initp%sfcwater_depth(k) = newsfcw_depth(k)
+         if (newsfcw_mass(k) > min_sfcwater_mass) then
             call qtk(initp%sfcwater_energy(k)/initp%sfcwater_mass(k)                       &
                     ,initp%sfcwater_tempk(k),initp%sfcwater_fracliq(k))
+         elseif (k == 1) then
+            initp%sfcwater_tempk(k)   = initp%soil_tempk(nzg)
+            initp%sfcwater_fracliq(k) = initp%soil_fracliq(nzg)
          else
-            initp%sfcwater_tempk(k) = t3ple
-            initp%sfcwater_fracliq(k) = 0.
+            initp%sfcwater_tempk(k)   = initp%sfcwater_tempk(k-1)
+            initp%sfcwater_fracliq(k) = initp%sfcwater_fracliq(k-1)
          end if
-         initp%sfcwater_depth(k) = newsfcw_depth(k)
       end do
 
       !----- Making sure that the unused layers have zero in everything -------------------!
@@ -1259,8 +1427,13 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
          initp%sfcwater_mass(k)    = 0.0
          initp%sfcwater_energy(k)  = 0.0
          initp%sfcwater_depth(k)   = 0.0
-         initp%sfcwater_tempk(k)   = t3ple
-         initp%sfcwater_fracliq(k) = 0.
+         if (k == 1) then
+            initp%sfcwater_tempk(k)   = initp%soil_tempk(nzg)
+            initp%sfcwater_fracliq(k) = initp%soil_fracliq(nzg)
+         else
+            initp%sfcwater_tempk(k)   = initp%sfcwater_tempk(k-1)
+            initp%sfcwater_fracliq(k) = initp%sfcwater_fracliq(k-1)
+         end if
       end do
    end if
 
@@ -1283,7 +1456,7 @@ end subroutine redistribute_snow_ar
 !    After this is checked, we then update the remaining leaf properties, namely the       !
 ! temperature and liquid water fraction.                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine adjust_veg_properties(initp,dinitp,csite,ipa,rhos,hdid)
+subroutine adjust_veg_properties(initp,hdid,csite,ipa,rhos)
    use ed_state_vars        , only : sitetype          & ! structure
                                    , patchtype         & ! structure
                                    , rk4patchtype      ! ! structure
@@ -1299,14 +1472,14 @@ subroutine adjust_veg_properties(initp,dinitp,csite,ipa,rhos,hdid)
                                    , wdnsi             ! ! intent(in)
    use therm_lib            , only : qtk               & ! subroutine
                                    , qwtk              ! ! subroutine
-   use rk4_coms             , only : leaf_h2o_thick    & ! intent(in)
-                                   , rk4min_veg_water  & ! intent(in)
-                                   , rk4eps            ! ! intent(in)
-   use canopy_radiation_coms, only : lai_min           ! ! intent(in)
+   use canopy_air_coms      , only : min_veg_lwater    & ! intent(in)
+                                   , max_veg_lwater    ! ! intent(in)
+   use rk4_coms             , only : rk4eps            & ! intent(in)
+                                   , rk4min_veg_lwater & ! intent(in)
+                                   , wcapcani          ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype)     , target     :: initp  ! Integration buffer
-   type(rk4patchtype)     , target     :: dinitp ! Derivatives
    type(sitetype)         , target     :: csite  ! Current site
    integer                , intent(in) :: ipa    ! Current patch ID
    real                   , intent(in) :: rhos   ! Air density
@@ -1314,20 +1487,19 @@ subroutine adjust_veg_properties(initp,dinitp,csite,ipa,rhos,hdid)
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)        , pointer    :: cpatch
    integer                             :: ico
+   integer                             :: ksn
+   real                                :: rk4min_leaf_water
+   real                                :: min_leaf_water
    real                                :: max_leaf_water
    real                                :: veg_wshed
    real                                :: veg_qwshed
    real                                :: veg_dwshed
    real                                :: veg_dew
    real                                :: veg_qdew
-   real                                :: wcapcani
    real                                :: hdidi
    !---------------------------------------------------------------------------------------!
 
    cpatch => csite%patch(ipa)
-   
-   !----- Canopy water capacity -----------------------------------------------------------!
-   wcapcani = 1.0 / (rhos * max(csite%veg_height(ipa), 3.5))
    
    !----- Inverse of time increment -------------------------------------------------------!
    hdidi = 1. / hdid
@@ -1335,16 +1507,20 @@ subroutine adjust_veg_properties(initp,dinitp,csite,ipa,rhos,hdid)
    !----- Looping over cohorts ------------------------------------------------------------!
    cohortloop: do ico=1,cpatch%ncohorts
       !----- Checking whether this is a prognostic cohort... ------------------------------!
-      if (cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))  &
-      then
+      if (initp%solvable(ico)) then
          !---------------------------------------------------------------------------------!
          !   Now we find the maximum leaf water possible. Add 2% to avoid bouncing back    !
          ! and forward.                                                                    !
          !---------------------------------------------------------------------------------!
-         max_leaf_water = leaf_h2o_thick * cpatch%lai(ico)
+         rk4min_leaf_water = rk4min_veg_lwater * cpatch%lai(ico)
+         min_leaf_water    = min_veg_lwater    * cpatch%lai(ico)
+         max_leaf_water    = max_veg_lwater    * cpatch%lai(ico)
 
+         !------ Leaf water is too negative, break it so the step can be rejected. --------!
+         if (initp%veg_water(ico) < rk4min_leaf_water) then
+            return
          !----- Shedding excessive water to the ground ------------------------------------!
-         if (initp%veg_water(ico) > (1.+rk4eps)*max_leaf_water) then
+         elseif (initp%veg_water(ico) > max_leaf_water) then
             veg_wshed  = (initp%veg_water(ico)-max_leaf_water)
             veg_qwshed = veg_wshed                                                         &
                        * (initp%veg_fliq(ico) * cliq * (initp%veg_temp(ico)-tsupercool)    &
@@ -1357,24 +1533,26 @@ subroutine adjust_veg_properties(initp,dinitp,csite,ipa,rhos,hdid)
             initp%veg_energy(ico) = initp%veg_energy(ico) - veg_qwshed
             
             !----- Updating virtual pool --------------------------------------------------!
-            initp%virtual_water   = initp%virtual_water + veg_wshed
-            initp%virtual_heat    = initp%virtual_heat  + veg_qwshed
-            initp%virtual_depth   = initp%virtual_depth + veg_dwshed
-            
-            !----- Updating derivatives ---------------------------------------------------!
-            dinitp%veg_water(ico)  = dinitp%veg_water(ico)  - veg_wshed  * hdidi
-            dinitp%veg_energy(ico) = dinitp%veg_energy(ico) - veg_qwshed * hdidi
-            dinitp%virtual_water   = dinitp%virtual_water   + veg_wshed  * hdidi
-            dinitp%virtual_heat    = dinitp%virtual_heat    + veg_qwshed * hdidi
-            dinitp%virtual_depth   = dinitp%virtual_depth   + veg_dwshed * hdidi
-            
+            ksn = initp%nlev_sfcwater
+            if (ksn > 0) then
+               initp%sfcwater_mass(ksn)   = initp%sfcwater_mass(ksn)   + veg_wshed
+               initp%sfcwater_energy(ksn) = initp%sfcwater_energy(ksn) + veg_qwshed
+               initp%sfcwater_depth(ksn)  = initp%sfcwater_depth(ksn)  + veg_dwshed
+            else
+               initp%virtual_water   = initp%virtual_water + veg_wshed
+               initp%virtual_heat    = initp%virtual_heat  + veg_qwshed
+               initp%virtual_depth   = initp%virtual_depth + veg_dwshed
+            end if
             !----- Updating output fluxes -------------------------------------------------!
             initp%avg_wshed_vg  = initp%avg_wshed_vg  + veg_wshed  * hdidi
             initp%avg_qwshed_vg = initp%avg_qwshed_vg + veg_qwshed * hdidi
 
-         !----- If veg_water is negative, "steal" moisture from the air as "dew/frost" ----!
-         elseif (initp%veg_water(ico) < 0. .and.                                           &
-                 initp%veg_water(ico) >= (1.+rk4eps)*rk4min_veg_water) then
+         !---------------------------------------------------------------------------------!
+         !    If veg_water is tiny or negative, exchange moisture with the air, "stealing" !
+         ! moisture as fast "dew/frost" condensation if it is negative, or "donating" the  !
+         ! remaining as "boiling" (fast evaporation).                                      !
+         !---------------------------------------------------------------------------------!
+         elseif (initp%veg_water(ico) < min_leaf_water) then
             veg_dew = - initp%veg_water(ico)
             if (initp%can_temp >=t3ple) then
                veg_qdew = veg_dew * alvl
@@ -1386,11 +1564,6 @@ subroutine adjust_veg_properties(initp,dinitp,csite,ipa,rhos,hdid)
             initp%veg_water(ico)  = 0.
             initp%veg_energy(ico) = initp%veg_energy(ico)  + veg_qdew
             initp%can_shv         = initp%can_shv          - veg_dew * wcapcani
-
-            !----- Updating derivatives ---------------------------------------------------!
-            dinitp%veg_water(ico)  = dinitp%veg_water(ico)    + veg_dew  * hdidi
-            dinitp%veg_energy(ico) = dinitp%veg_energy(ico)   + veg_qdew * hdidi
-            dinitp%can_shv         = dinitp%can_shv           - veg_dew * wcapcani * hdidi
 
             !----- Updating output flux ---------------------------------------------------!
             initp%avg_vapor_vc    = initp%avg_vapor_vc - veg_qdew * hdidi
@@ -1405,51 +1578,6 @@ subroutine adjust_veg_properties(initp,dinitp,csite,ipa,rhos,hdid)
 
    return
 end subroutine adjust_veg_properties
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!    This subroutine will update the leaf temperature and liquid water fraction.           !
-!------------------------------------------------------------------------------------------!
-subroutine update_veg_properties(initp,csite,ipa)
-   use ed_state_vars        , only : sitetype          & ! structure
-                                   , patchtype         & ! structure
-                                   , rk4patchtype      ! ! structure
-   use therm_lib            , only : qwtk              ! ! subroutine
-   use rk4_coms             , only : leaf_h2o_thick    ! ! intent(in)
-   use canopy_radiation_coms, only : lai_min           ! ! intent(in)
-   implicit none
-   !----- Arguments -----------------------------------------------------------------------!
-   type(rk4patchtype)     , target     :: initp  ! Integration buffer
-    type(sitetype)         , target    :: csite  ! Current site
-   integer                , intent(in) :: ipa    ! Current patch ID
-   !----- Local variables -----------------------------------------------------------------!
-   type(patchtype)        , pointer    :: cpatch
-   integer                             :: ico
-   !---------------------------------------------------------------------------------------!
-
-   cpatch => csite%patch(ipa)
-
-   !----- Looping over cohorts ------------------------------------------------------------!
-   cohortloop: do ico=1,cpatch%ncohorts
-      !----- Checking whether this is a prognostic cohort... ------------------------------!
-      if (cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))  &
-      then
-         !----- Lastly we update leaf temperature and liquid fraction. --------------------!
-         call qwtk(initp%veg_energy(ico),initp%veg_water(ico),initp%hcapveg(ico)           &
-                  ,initp%veg_temp(ico),initp%veg_fliq(ico))
-      end if
-
-   end do cohortloop
-
-   return
-end subroutine update_veg_properties
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1518,7 +1646,10 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch, lsl)
       targetp%soil_fracliq(k)           = sourcep%soil_fracliq(k)
       targetp%available_liquid_water(k) = sourcep%available_liquid_water(k)
       targetp%extracted_water(k)        = sourcep%extracted_water(k)
-
+      targetp%psiplusz(k)               = sourcep%psiplusz(k)
+      targetp%soilair99(k)              = sourcep%soilair99(k)
+      targetp%soilair01(k)              = sourcep%soilair01(k)
+      targetp%soil_liq(k)               = sourcep%soil_liq(k)
    end do
 
    do k=1,nzs
@@ -1540,6 +1671,7 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch, lsl)
       targetp%veg_temp(k)    = sourcep%veg_temp(k)
       targetp%veg_fliq(k)    = sourcep%veg_fliq(k)
       targetp%hcapveg(k)     = sourcep%hcapveg(k)
+      targetp%solvable(k)    = sourcep%solvable(k)
    end do
 
    if (fast_diagnostics) then
@@ -1803,7 +1935,7 @@ subroutine print_patch_ar(y,csite,ipa, lsl,atm_tmp,atm_shv,atm_co2,prss,exner,rh
          '    PFT','KRDEPTH','  VEG_ENERGY','   VEG_WATER' ,'   VEG_HCAP'                  &
                            &,'    VEG_TEMP','    VEG_FLIQ'
    do ico = 1,cpatch%ncohorts
-      if (cpatch%lai(ico) > lai_min) then
+      if (y%solvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),5(es12.5,1x))') cpatch%pft(ico), cpatch%krdepth(ico) &
                ,y%veg_energy(ico),y%veg_water(ico),y%hcapveg(ico),y%veg_temp(ico)         &
                ,y%veg_fliq(ico)
@@ -2007,6 +2139,10 @@ subroutine allocate_rk4_patch(y)
    allocate(y%soil_tempk(nzg))
    allocate(y%available_liquid_water(nzg))
    allocate(y%extracted_water(nzg))
+   allocate(y%psiplusz(nzg))
+   allocate(y%soilair99(nzg))
+   allocate(y%soilair01(nzg))
+   allocate(y%soil_liq(nzg))
 
    allocate(y%sfcwater_energy(nzs))
    allocate(y%sfcwater_mass(nzs))
@@ -2052,6 +2188,10 @@ subroutine nullify_rk4_patch(y)
    nullify(y%soil_tempk)
    nullify(y%available_liquid_water)
    nullify(y%extracted_water)
+   nullify(y%psiplusz)
+   nullify(y%soilair99)
+   nullify(y%soilair01)
+   nullify(y%soil_liq)
 
    nullify(y%sfcwater_energy)
    nullify(y%sfcwater_mass)
@@ -2104,10 +2244,18 @@ subroutine zero_rk4_patch(y)
    y%soil_tempk(:)                  = 0.
    y%soil_fracliq(:)                = 0.
    y%soil_water(:)                  = 0.d0
+   y%available_liquid_water(:)      = 0.
+   y%extracted_water(:)             = 0.
+   y%psiplusz(:)                    = 0.
+   y%soilair99(:)                   = 0.
+   y%soilair01(:)                   = 0.
+   y%soil_liq(:)                    = 0.
   
    y%sfcwater_depth(:)              = 0.
    y%sfcwater_mass(:)               = 0.
    y%sfcwater_energy(:)             = 0.
+   y%sfcwater_tempk(:)              = 0.
+   y%sfcwater_fracliq(:)            = 0.
   
    y%virtual_water                  = 0.
    y%virtual_heat                   = 0.
@@ -2115,8 +2263,6 @@ subroutine zero_rk4_patch(y)
   
    y%ground_shv                     = 0.
    y%surface_ssh                    = 0.
-   y%sfcwater_tempk(:)              = 0.
-   y%sfcwater_fracliq(:)            = 0.
    y%nlev_sfcwater                  = 0
    y%net_rough_length               = 0.
   
@@ -2140,8 +2286,6 @@ subroutine zero_rk4_patch(y)
    y%a_c_max                        = 0.
    y%rasveg                         = 0.
    y%root_res_fac                   = 0.
-   y%available_liquid_water(:)      = 0.
-   y%extracted_water(:)             = 0.
   
 
    y%avg_vapor_vc                   = 0.
@@ -2193,6 +2337,10 @@ subroutine deallocate_rk4_patch(y)
    if (associated(y%soil_tempk))              deallocate(y%soil_tempk)
    if (associated(y%available_liquid_water))  deallocate(y%available_liquid_water)
    if (associated(y%extracted_water))         deallocate(y%extracted_water)
+   if (associated(y%psiplusz))                deallocate(y%psiplusz)
+   if (associated(y%soilair99))               deallocate(y%soilair99)
+   if (associated(y%soilair01))               deallocate(y%soilair01)
+   if (associated(y%soil_liq))                deallocate(y%soil_liq)
 
    if (associated(y%sfcwater_energy))         deallocate(y%sfcwater_energy)
    if (associated(y%sfcwater_mass))           deallocate(y%sfcwater_mass)
@@ -2236,6 +2384,7 @@ subroutine allocate_rk4_coh_ar(maxcohort,y)
    allocate(y%veg_temp(maxcohort))
    allocate(y%veg_fliq(maxcohort))
    allocate(y%hcapveg(maxcohort))
+   allocate(y%solvable(maxcohort))
 
    call zero_rk4_cohort(y)
 
@@ -2265,6 +2414,7 @@ subroutine nullify_rk4_cohort(y)
    nullify(y%veg_temp)
    nullify(y%veg_fliq)
    nullify(y%hcapveg)
+   nullify(y%solvable)
 
    return
 end subroutine nullify_rk4_cohort
@@ -2292,6 +2442,7 @@ subroutine zero_rk4_cohort(y)
    if(associated(y%veg_temp      ))  y%veg_temp      = 0.
    if(associated(y%veg_fliq      ))  y%veg_fliq      = 0.
    if(associated(y%hcapveg       ))  y%hcapveg       = 0.
+   if(associated(y%solvable      ))  y%solvable      = .false.
 
    return
 end subroutine zero_rk4_cohort
@@ -2314,11 +2465,12 @@ subroutine deallocate_rk4_coh_ar(y)
    type(rk4patchtype) :: y
    !---------------------------------------------------------------------------------------!
 
-   if(associated(y%veg_energy    ))  deallocate(y%veg_energy)  
-   if(associated(y%veg_water     ))  deallocate(y%veg_water )  
-   if(associated(y%veg_temp      ))  deallocate(y%veg_temp  )  
-   if(associated(y%veg_fliq      ))  deallocate(y%veg_fliq  )  
-   if(associated(y%hcapveg       ))  deallocate(y%hcapveg   )  
+   if(associated(y%veg_energy    ))  deallocate(y%veg_energy)
+   if(associated(y%veg_water     ))  deallocate(y%veg_water )
+   if(associated(y%veg_temp      ))  deallocate(y%veg_temp  )
+   if(associated(y%veg_fliq      ))  deallocate(y%veg_fliq  )
+   if(associated(y%hcapveg       ))  deallocate(y%hcapveg   )
+   if(associated(y%solvable      ))  deallocate(y%solvable  )
 
    return
 end subroutine deallocate_rk4_coh_ar

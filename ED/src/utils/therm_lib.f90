@@ -694,6 +694,134 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
+   !     This function computes the relative humidity [fraction] based on pressure, tem-   !
+   ! perature, and vapour mixing ratio. Two important points:                              !
+   ! 1. IT ALWAYS ASSUME THAT RELATIVE HUMIDITY IS WITH RESPECT TO THE LIQUID PHASE.       !
+   !    If you want to switch between ice and liquid, use rehuil instead.                  !
+   ! 2. IT DOESN'T PREVENT SUPERSATURATION TO OCCUR. This is because this subroutine is    !
+   !    also used in the microphysics, where supersaturation does happen and needs to be   !
+   !    accounted.                                                                         !
+   !---------------------------------------------------------------------------------------!
+   real function rehul(pres,temp,rvap)
+      use consts_coms, only: ep,toodry
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in)           :: pres     ! Air pressure                     [    Pa]
+      real   , intent(in)           :: temp     ! Temperature                      [     K]
+      real   , intent(in)           :: rvap     ! Vapour mixing ratio              [ kg/kg]
+      !----- Local variables --------------------------------------------------------------!
+      real                          :: rvapsat  ! Saturation mixing ratio          [ kg/kg]
+      !------------------------------------------------------------------------------------!
+
+      rvapsat = max(toodry,rslf(pres,temp))
+      if (newthermo) then
+         !----- This is based on relative humidity being defined with vapour pressure -----!
+         rehul = max(0.,rvap*(ep+rvapsat)/(rvapsat*(ep+rvap)))
+      else
+         !----- Original formula used by RAMS ---------------------------------------------!
+         rehul = max(0.,rvap/rvapsat)
+      end if
+      return
+   end function rehul
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the relative humidity [fraction] based on pressure, tem-   !
+   ! perature, and vapour mixing ratio. Two important points:                              !
+   ! 1. IT ALWAYS ASSUME THAT RELATIVE HUMIDITY IS WITH RESPECT TO THE ICE PHASE.          !
+   !    If you want to switch between ice and liquid, use rehuil instead.                  !
+   ! 2. IT DOESN'T PREVENT SUPERSATURATION TO OCCUR. This is because this subroutine is    !
+   !    also used in the microphysics, where supersaturation does happen and needs to be   !
+   !    accounted.                                                                         !
+   !---------------------------------------------------------------------------------------!
+   real function rehui(pres,temp,rvap)
+      use consts_coms, only: ep,toodry
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in)           :: pres     ! Air pressure                     [    Pa]
+      real   , intent(in)           :: temp     ! Temperature                      [     K]
+      real   , intent(in)           :: rvap     ! Vapour mixing ratio              [ kg/kg]
+      !----- Local variables --------------------------------------------------------------!
+      real                          :: rvapsat  ! Saturation mixing ratio          [ kg/kg]
+      !------------------------------------------------------------------------------------!
+
+      rvapsat = max(toodry,rsif(pres,temp))
+      if (newthermo) then
+         !----- This is based on relative humidity being defined with vapour pressure -----!
+         rehui = max(0.,rvap*(ep+rvapsat)/(rvapsat*(ep+rvap)))
+      else
+         !----- Original formula used by RAMS ---------------------------------------------!
+         rehui = max(0.,rvap/rvapsat)
+      end if
+      return
+   end function rehui
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the relative humidity [fraction] based on pressure, tem-   !
+   ! perature, and vapour mixing ratio. Two important points:                              !
+   ! 1. It may consider whether the temperature is above or below the freezing point       !
+   !    to choose which saturation to use. It is possible to explicitly force not to use   !
+   !    ice in case level is 2 or if you have reasons not to use ice (e.g. reading data    !
+   !    that did not consider ice).
+   ! 2. IT DOESN'T PREVENT SUPERSATURATION TO OCCUR. This is because this subroutine is    !
+   !    also used in the microphysics, where supersaturation does happen and needs to be   !
+   !    accounted.                                                                         !
+   !---------------------------------------------------------------------------------------!
+   real function rehuil(pres,temp,rvap,useice)
+      use consts_coms, only: t3ple
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in)           :: pres      ! Air pressure                    [    Pa]
+      real   , intent(in)           :: temp      ! Temperature                     [     K]
+      real   , intent(in)           :: rvap      ! Vapour mixing ratio             [ kg/kg]
+      logical, intent(in), optional :: useice    ! Should I consider ice?          [   T|F]
+      !----- Local variables --------------------------------------------------------------!
+      real                          :: rvapsat   ! Saturation mixing ratio         [ kg/kg]
+      logical                       :: brrr_cold ! I will use ice saturation now   [   T|F]
+      !------------------------------------------------------------------------------------!
+      
+      !------------------------------------------------------------------------------------!
+      !    Checking whether I should go with ice or liquid saturation.                     !
+      !------------------------------------------------------------------------------------!
+      if (present(useice)) then
+         brrr_cold = useice  .and. temp < t3ple
+      else 
+         brrr_cold = bulk_on .and. temp < t3ple
+      end if
+
+      if (brrr_cold) then
+         rehuil = rehui(pres,temp,rvap)
+      else
+         rehuil = rehul(pres,temp,rvap)
+      end if
+
+      return
+   end function rehuil
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !     This subroutine calculates the liquid saturation mixing ratio as a function of    !
    ! pressure and Kelvin temperature for a column.                                         !
    !---------------------------------------------------------------------------------------!

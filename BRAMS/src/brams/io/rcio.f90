@@ -178,6 +178,7 @@ subroutine commio (cfile,io,iun)
    ie=cio_i_sca(iun,irw,'ihail',ihail,1)
 
    ie=cio_i_sca(iun,irw,'ibruvais',ibruvais,1)
+   ie=cio_i_sca(iun,irw,'ibotflx',ibotflx,1)
    ie=cio_f_sca(iun,irw,'brunt',brunt,1)
    ie=cio_f_sca(iun,irw,'drtcon',drtcon,1)
    ie=cio_f_sca(iun,irw,'rmin',rmin,1)

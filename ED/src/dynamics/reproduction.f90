@@ -35,6 +35,8 @@ subroutine reproduction_ar(cgrid, month)
   real :: bdead
   real :: dbh
   real :: hite
+  real :: elim_nplant
+  real :: elim_lai
   integer :: pft
 
   integer :: inew,ncohorts_new
@@ -149,8 +151,7 @@ subroutine reproduction_ar(cgrid, month)
                  
                  ! Make sure that this is not agriculture or that it is 
                  ! OK for this PFT to be in an agriculture patch.
-                 if(csite%dist_type(ipa) /= 1 .or.  &
-                    (include_pft(pft) == 1 .and. include_pft_ag(pft) == 1)) then
+                 if(csite%dist_type(ipa) /= 1 .or. include_pft_ag(pft) == 1) then
 
                     ! Generate specs for this PFT
                     hite = hgt_min(pft)
@@ -274,7 +275,7 @@ subroutine reproduction_ar(cgrid, month)
 
            if(cpatch%ncohorts>0 .and. maxcohort >= 0) then
 
-              call terminate_cohorts_ar(csite,ipa)
+              call terminate_cohorts_ar(csite,ipa,elim_nplant,elim_lai)
               call fuse_cohorts_ar(csite,ipa, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))                         
               call split_cohorts_ar(cpatch, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
               

@@ -27,7 +27,7 @@ subroutine anlhdf(vtype)
    !----- Local variables -----------------------------------------------------------------!
    character(len=128)       :: anamel
    character(len=2)         :: cgrid
-   character(len=25)        :: subaname
+   character(len=40)        :: subaname
    character(len=16)        :: varn
    character(len=1)         :: vnam
    character(len=10)        :: c0
