@@ -163,12 +163,13 @@ subroutine ed_init_atm_ar
 
                  !----- Initial condition is with no snow/pond. ---------------------------!
                  csite%nlev_sfcwater(ipa) = 0
+                 print*,nzs
                  do k=1,nzs
                     csite%sfcwater_energy (k,ipa) = 0.
                     csite%sfcwater_depth  (k,ipa) = 0.
                     csite%sfcwater_mass   (k,ipa) = 0.
                     csite%sfcwater_tempk  (k,ipa) = csite%soil_tempk(nzg,ipa)
-                    csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(nzg,ipa)
+                    csite%sfcwater_fracliq(k,ipa) = csite%soil_fracliq(nzg,ipa)
                  end do
 
                  nls   = csite%nlev_sfcwater(ipa)
