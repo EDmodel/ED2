@@ -475,7 +475,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
             infilt = -dslzi(nzg)* 0.5 * slcons1(nzg,nsoil)                                 &
                    * (sngl(initp%soil_water(nzg)) / soil(nsoil)%slmsts)                    &
                      **(2. * soil(nsoil)%slbs + 3.)                                        &
-                   * (initp%psiplusz(nzg)-sngl(initp%virtual_water)/2000.0) & !diff. in pot.
+                   * (initp%psiplusz(nzg)-initp%virtual_water/2000.0) & !diff. in pot.
                    * .5 * (initp%soil_fracliq(nzg)+ fracliq)         ! mean liquid fraction
             qinfilt = infilt * cliqvlme * (tempk - tsupercool)
             !----- Adjust other rates accordingly -----------------------------------------!
