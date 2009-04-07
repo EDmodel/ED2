@@ -41,13 +41,13 @@ contains
                                       , C2B                 ! ! intent(in)
       use canopy_radiation_coms, only : lai_min             ! ! intent(in)
       implicit none
-      !----- Arguments --------------------------------------------------------------------!
+      !----- Arguments -------------------------------------------------------------------!
       real    , intent(in)    :: leaf_carbon         ! Leaf biomass              [kg/plant]
       real    , intent(in)    :: nplants             ! Number of plants          [plant/m2]
       real    , intent(in)    :: lai                 ! Leaf area index           [   m2/m2]
       integer , intent(in)    :: pft                 ! Plant functional type     [    ----]
       integer , intent(in)    :: phen_status         ! Phenology status          [    ----]
-      !------------------------------------------------------------------------------------!
+      !-----------------------------------------------------------------------------------!
 
       !----- Leaf heat capacity should be zero if there is no leaf ------------------------!
       if (phen_status == 2) then

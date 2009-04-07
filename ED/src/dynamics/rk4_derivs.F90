@@ -545,6 +545,9 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
       w_flux(lsl) = dslzti(lsl) * slcons1(lsl,nsoil)                                       &
                   * (wgpmid / soil(nsoil)%slmsts)**(2. * soil(nsoil)%slbs + 3.)            &
                   * freezeCor
+      
+      dinitp%avg_drainage = w_flux(lsl)*1000.0  ! Make it kg/s instead of m3
+
       !------------------------------------------------------------------------------------!
       !      Limit water transfers to prevent over-saturation and over-depletion.          !
       !------------------------------------------------------------------------------------!
@@ -559,6 +562,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy,rhos,prss,pcpg,qpcpg,
       !----- Bedrock, no flux accross it. -------------------------------------------------!
       w_flux(lsl)  = 0.
       qw_flux(lsl) = 0.
+      dinitp%avg_drainage = 0.
    end if
 
    !----- Finally, update soil moisture (impose minimum value of soilcp) and soil energy. -!
@@ -1125,11 +1129,11 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
 
       dinitp%avg_sensible_vc   = hflxvc_tot                     ! Sens. heat,  Leaf->Canopy
       dinitp%avg_sensible_2cas = hflxgc+hflxac+hflxvc_tot       ! Sens. heat,  All ->Canopy
-      dinitp%avg_vapor_vc      = qwflxvc_tot                    ! Lat.  heat,  Leaf->Canopy
+      dinitp%avg_vapor_vc      = wflxvc_tot                     ! Vapor flux,  Leaf->Canopy
       dinitp%avg_sensible_gc   = hflxgc                         ! Sens. heat,  Gnd ->Canopy
       dinitp%avg_sensible_ac   = hflxac / exner                 ! Sens. heat,  Atmo->Canopy
-      dinitp%avg_vapor_ac      = alvl*wflxac                    ! Lat.  heat,  Atmo->Canopy
-      dinitp%avg_transp        = alvl*transp_tot                ! Transpiration
+      dinitp%avg_vapor_ac      = wflxac                         ! Lat.  heat,  Atmo->Canopy
+      dinitp%avg_transp        = transp_tot                     ! Transpiration
       dinitp%avg_evap          = qwflxgc-qdewgndflx+qwflxvc_tot ! Evaporation/Condensation
       dinitp%avg_sensible_tot  = (hflxgc + hflxvc_tot)          ! Total Sensible heat
       if (initp%nlev_sfcwater > 0) then
