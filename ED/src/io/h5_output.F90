@@ -52,7 +52,7 @@ subroutine h5_output(vtype)
   character*(*) vtype
 
   character(len=128) :: anamel
-  character(len=2)  :: cgrid
+  character(len=3)  :: cgrid
   character(len=40) :: subaname
   character(len=64) :: varn
   character(len=1)  :: vnam
@@ -149,7 +149,7 @@ subroutine h5_output(vtype)
      
      if (gdpy(mynum,ngr)>0) then
         
-        write(cgrid,'(a1,i1)') 'g',ngr
+        write(cgrid,'(a1,i2.2)') 'g',ngr
         
         select case (trim(vtype))
         case('DAIL')

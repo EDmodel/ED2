@@ -27,7 +27,6 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
    !  They have been integrated over the period frqanl, and must be divided  !
    !  by that period to get their value per unit time.                       !
    !-------------------------------------------------------------------------!
-
    
    frqsumi = 1.0 / frqsum
    tfact = dtlsm * frqsumi
@@ -50,6 +49,7 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
             csite%avg_transp(ipa)       = csite%avg_transp(ipa)        * frqsumi
             csite%avg_evap(ipa)         = csite%avg_evap(ipa)          * frqsumi
             csite%avg_runoff(ipa)       = csite%avg_runoff(ipa)        * frqsumi
+            csite%avg_drainage(ipa)     = csite%avg_drainage(ipa)      * frqsumi
             csite%avg_sensible_vc(ipa)  = csite%avg_sensible_vc(ipa)   * frqsumi
             csite%avg_sensible_2cas(ipa)= csite%avg_sensible_2cas(ipa) * frqsumi
             csite%avg_qwshed_vg(ipa)    = csite%avg_qwshed_vg(ipa)     * frqsumi
@@ -58,6 +58,7 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
             csite%avg_sensible_tot(ipa) = csite%avg_sensible_tot(ipa)  * frqsumi
             csite%avg_carbon_ac(ipa)    = csite%avg_carbon_ac(ipa)     * frqsumi
             csite%avg_runoff_heat(ipa)  = csite%avg_runoff_heat(ipa)   * frqsumi
+
             ! csite%avg_heatstor_veg(ipa) = csite%avg_heatstor_veg(ipa)  * tfact ! CHECK THIS?
          
             do k=cpoly%lsl(isi),nzg
@@ -150,6 +151,7 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_smoist_gg(:,ipa)      = 0.0
             csite%avg_smoist_gc(:,ipa)      = 0.0
             csite%avg_runoff(ipa)           = 0.0
+            csite%avg_drainage(ipa)         = 0.0
             csite%avg_sensible_vc(ipa)      = 0.0
             csite%avg_sensible_2cas(ipa)    = 0.0
             csite%avg_qwshed_vg(ipa)        = 0.0
@@ -215,6 +217,7 @@ subroutine reset_averaged_vars(cgrid)
    
       !
       cgrid%avg_evap(ipy)           = 0.0
+      cgrid%avg_drainage(ipy)       = 0.0
       cgrid%avg_transp(ipy)         = 0.0
       cgrid%avg_sensible_tot(ipy)   = 0.0
       cgrid%avg_soil_temp(:,ipy)    = 0.0
@@ -471,6 +474,13 @@ subroutine integrate_ed_daily_output_flux(cgrid)
       cgrid%dmean_sensible_gc(ipy)  = cgrid%dmean_sensible_gc(ipy)  + cgrid%avg_sensible_gc(ipy) 
       cgrid%dmean_sensible_ac(ipy)  = cgrid%dmean_sensible_ac(ipy)  + cgrid%avg_sensible_ac(ipy) 
       cgrid%dmean_sensible(ipy)     = cgrid%dmean_sensible(ipy)     + cgrid%avg_sensible_tot(ipy) 
+      
+      cgrid%dmean_pcpg(ipy)         = cgrid%dmean_pcpg(ipy)      + cgrid%avg_pcpg(ipy)     
+      cgrid%dmean_runoff(ipy)       = cgrid%dmean_runoff(ipy)    + cgrid%avg_runoff(ipy)
+      cgrid%dmean_drainage(ipy)     = cgrid%dmean_drainage(ipy)  + cgrid%avg_drainage(ipy)
+      cgrid%dmean_vapor_vc(ipy)     = cgrid%dmean_vapor_vc(ipy)  + cgrid%avg_vapor_vc(ipy) 
+      cgrid%dmean_vapor_gc(ipy)     = cgrid%dmean_vapor_gc(ipy)  + cgrid%avg_vapor_gc(ipy) 
+      cgrid%dmean_vapor_ac(ipy)     = cgrid%dmean_vapor_ac(ipy)  + cgrid%avg_vapor_ac(ipy) 
 
    end do polyloop
 
@@ -591,6 +601,16 @@ subroutine normalize_ed_daily_output_vars(cgrid)
          cgrid%dmean_soil_temp (k,ipy) = cgrid%dmean_soil_temp (k,ipy)   * frqsum_o_daysec
          cgrid%dmean_soil_water(k,ipy) = cgrid%dmean_soil_water(k,ipy)   * frqsum_o_daysec
       end do
+
+      ! Precip and runoff
+      cgrid%dmean_pcpg       (ipy)  = cgrid%dmean_pcpg       (ipy)  * frqsum_o_daysec ! kg/m2/sec
+      cgrid%dmean_runoff     (ipy)  = cgrid%dmean_runoff     (ipy)  * frqsum_o_daysec ! kg/m2/sec
+      cgrid%dmean_drainage   (ipy)  = cgrid%dmean_drainage   (ipy)  * frqsum_o_daysec ! kg/m2/sec
+
+      ! vapor flux
+      cgrid%dmean_vapor_vc(ipy)  = cgrid%dmean_vapor_vc(ipy)  * frqsum_o_daysec
+      cgrid%dmean_vapor_gc(ipy)  = cgrid%dmean_vapor_gc(ipy)  * frqsum_o_daysec
+      cgrid%dmean_vapor_ac(ipy)  = cgrid%dmean_vapor_ac(ipy)  * frqsum_o_daysec
 
       ! Flux variables, updated every frqsum, so these are normalized by frqsum/day_sec
       cgrid%dmean_evap       (ipy)  = cgrid%dmean_evap       (ipy)  * frqsum_o_daysec
@@ -758,6 +778,13 @@ subroutine zero_ed_daily_output_vars(cgrid)
       !-------------------------------------!
       ! Variables stored in edtype          !
       !-------------------------------------!
+      cgrid%dmean_pcpg            (ipy) = 0.
+      cgrid%dmean_drainage        (ipy) = 0.
+      cgrid%dmean_runoff          (ipy) = 0.
+      cgrid%dmean_vapor_vc        (ipy) = 0.
+      cgrid%dmean_vapor_gc        (ipy) = 0.
+      cgrid%dmean_vapor_ac        (ipy) = 0.
+
       cgrid%dmean_gpp            (ipy) = 0.
       cgrid%dmean_evap           (ipy) = 0.
       cgrid%dmean_transp         (ipy) = 0.

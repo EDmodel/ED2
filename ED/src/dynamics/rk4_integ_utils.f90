@@ -406,16 +406,6 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, rhos, lsl)
       targetp%ebudget_latent     = sourcesite%ebudget_latent(ipa)
       targetp%avg_carbon_ac      = sourcesite%avg_carbon_ac(ipa)
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!! WHY IS THIS COMMENTED OUT? RGK                                             !!!!!
-      !!!!!      I think because gpp is no longer solved inside the Runge-Kutta        !!!!!
-      !!!!!      intermediate steps...                                                 !!!!!
-      !!!!!.                                                                           !!!!!
-      !   targetp%avg_gpp = sourcesite%avg_gpp(ipa)                                    !!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
       targetp%avg_vapor_vc       = sourcesite%avg_vapor_vc(ipa)
       targetp%avg_dew_cg         = sourcesite%avg_dew_cg(ipa)
       targetp%avg_vapor_gc       = sourcesite%avg_vapor_gc(ipa)
@@ -423,6 +413,7 @@ subroutine copy_patch_init_ar(sourcesite,ipa, targetp, rhos, lsl)
       targetp%avg_vapor_ac       = sourcesite%avg_vapor_ac(ipa)
       targetp%avg_transp         = sourcesite%avg_transp(ipa)
       targetp%avg_evap           = sourcesite%avg_evap(ipa)
+      targetp%avg_drainage       = sourcesite%avg_drainage(ipa)
       targetp%avg_netrad         = sourcesite%avg_netrad(ipa)
       targetp%aux                = sourcesite%aux(ipa)
       targetp%avg_sensible_vc    = sourcesite%avg_sensible_vc(ipa)
@@ -525,6 +516,7 @@ subroutine inc_rk4_patch_ar(rkp, inc, fac, cpatch, lsl)
       rkp%avg_vapor_ac       = rkp%avg_vapor_ac       + fac * inc%avg_vapor_ac
       rkp%avg_transp         = rkp%avg_transp         + fac * inc%avg_transp  
       rkp%avg_evap           = rkp%avg_evap           + fac * inc%avg_evap  
+      rkp%avg_drainage       = rkp%avg_drainage       + fac * inc%avg_drainage
       rkp%avg_netrad         = rkp%avg_netrad         + fac * inc%avg_netrad      
       rkp%aux                = rkp%aux                + fac * inc%aux
       rkp%avg_sensible_vc    = rkp%avg_sensible_vc    + fac * inc%avg_sensible_vc  
@@ -1566,7 +1558,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa,rhos)
             initp%can_shv         = initp%can_shv          - veg_dew * wcapcani
 
             !----- Updating output flux ---------------------------------------------------!
-            initp%avg_vapor_vc    = initp%avg_vapor_vc - veg_qdew * hdidi
+            initp%avg_vapor_vc    = initp%avg_vapor_vc - veg_dew * hdidi
          end if
 
          !----- Lastly we update leaf temperature and liquid fraction. --------------------!
@@ -1687,6 +1679,7 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch, lsl)
       targetp%avg_vapor_ac       = sourcep%avg_vapor_ac
       targetp%avg_transp         = sourcep%avg_transp  
       targetp%avg_evap           = sourcep%avg_evap   
+      targetp%avg_drainage       = sourcep%avg_drainage
       targetp%avg_netrad         = sourcep%avg_netrad   
       targetp%avg_sensible_vc    = sourcep%avg_sensible_vc  
       targetp%avg_sensible_2cas  = sourcep%avg_sensible_2cas
@@ -1694,14 +1687,6 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch, lsl)
       targetp%avg_sensible_gc    = sourcep%avg_sensible_gc  
       targetp%avg_sensible_ac    = sourcep%avg_sensible_ac  
       targetp%avg_sensible_tot   = sourcep%avg_sensible_tot 
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!     WHY IS THIS COMMENTED OUT? IS IT NOT INTEGRATED? REMEMBER TO DOUBLE     !!!!
-      !!!!! CHECK AND THEN REMOVE THESE COMMENTS IF SO.                                 !!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !    targetp%avg_gpp = sourcep%avg_gpp
 
       do k=lsl,nzg
          targetp%avg_sensible_gg(k) = sourcep%avg_sensible_gg(k)
@@ -2294,7 +2279,8 @@ subroutine zero_rk4_patch(y)
    y%avg_wshed_vg                   = 0.
    y%avg_vapor_ac                   = 0.
    y%avg_transp                     = 0.
-   y%avg_evap                       = 0.
+   y%avg_evap                       = 0. 
+   y%avg_drainage                   = 0.
    y%avg_netrad                     = 0.
    y%avg_smoist_gg                  = 0.
    y%avg_smoist_gc                  = 0.

@@ -380,6 +380,7 @@ module rk4_driver_ar
          csite%avg_wshed_vg(ipa)         = initp%avg_wshed_vg
          csite%avg_vapor_ac(ipa)         = initp%avg_vapor_ac
          csite%avg_transp(ipa)           = initp%avg_transp
+         csite%avg_drainage(ipa)         = initp%avg_drainage
          csite%avg_evap(ipa)             = initp%avg_evap
          csite%avg_netrad(ipa)           = initp%avg_netrad
          csite%aux(ipa)                  = initp%aux

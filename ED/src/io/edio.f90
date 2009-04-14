@@ -251,7 +251,10 @@ subroutine spatial_averages
             cpoly%avg_vapor_ac(isi) = sum(csite%avg_vapor_ac * csite%area ) * site_area_i
             cpoly%avg_transp(isi)   = sum(csite%avg_transp   * csite%area ) * site_area_i
             cpoly%avg_evap(isi)     = sum(csite%avg_evap     * csite%area ) * site_area_i
+            cpoly%avg_drainage(isi) = sum(csite%avg_drainage * csite%area ) * site_area_i
             cpoly%aux(isi)          = sum(csite%aux          * csite%area ) * site_area_i
+            cpoly%avg_runoff(isi)   = sum(csite%avg_runoff   * csite%area ) * site_area_i
+
             cpoly%avg_sensible_vc(isi)   = sum(csite%avg_sensible_vc    * csite%area )     &
                                          * site_area_i
             cpoly%avg_sensible_2cas(isi) = sum(csite%avg_sensible_2cas  * csite%area )     &
@@ -572,6 +575,7 @@ subroutine spatial_averages
          cgrid%avg_ssc(ipy)          = sum(cpoly%avg_ssc         * cpoly%area)*poly_area_i
          cgrid%avg_runoff_heat(ipy)  = sum(cpoly%avg_runoff_heat * cpoly%area)*poly_area_i
          cgrid%avg_runoff(ipy)       = sum(cpoly%avg_runoff      * cpoly%area)*poly_area_i
+         cgrid%avg_drainage(ipy)     = sum(cpoly%avg_drainage     *cpoly%area)*poly_area_i
          cgrid%avg_vapor_ac(ipy)     = sum(cpoly%avg_vapor_ac     *cpoly%area)*poly_area_i
          cgrid%avg_transp(ipy)       = sum(cpoly%avg_transp       *cpoly%area)*poly_area_i
          cgrid%avg_evap(ipy)         = sum(cpoly%avg_evap         *cpoly%area)*poly_area_i

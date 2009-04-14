@@ -756,7 +756,7 @@ subroutine init_full_history_restart()
   implicit none
   
   character(len=1)  :: vnam
-  character(len=2)  :: cgr
+  character(len=3)  :: cgr
   character(len=128) :: hnamel
   type(edtype),pointer      :: cgrid
   type(polygontype),pointer :: cpoly
@@ -844,7 +844,7 @@ subroutine init_full_history_restart()
      ! 1) Open the HDF5 HISTORY FILE
      !=======================================
 
-     write(cgr,'(a1,i1)') 'g',ngr
+     write(cgr,'(a1,i2.2)') 'g',ngr
 
      dbletime=dble(current_time%time)
      
