@@ -1675,7 +1675,7 @@ subroutine int_met_avg(cgrid)
 
 
   use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
-  use misc_coms,only : dtlsm,frqfast
+  use misc_coms,only : dtlsm,frqsum
   
   implicit none
 
@@ -1683,10 +1683,10 @@ subroutine int_met_avg(cgrid)
   type(polygontype),pointer :: cpoly
 
   integer :: ipy,isi
-  real :: frqfasti,tfact
+  real :: frqsumi,tfact
 
-  frqfasti = 1.0 / frqfast
-  tfact = dtlsm * frqfasti
+  frqsumi = 1.0 / frqsum
+  tfact = dtlsm * frqsumi
 
   do ipy = 1,cgrid%npolygons
 

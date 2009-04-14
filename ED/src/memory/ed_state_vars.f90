@@ -267,15 +267,6 @@ module ed_state_vars
 
      real, pointer, dimension(:) :: paw_avg10d
 
-     ! Vegetation heating/cooling rates
-     ! These diagnostics are now depricated RGK 11-2008
-     !real,pointer,dimension(:) :: co_srad_h
-     !real,pointer,dimension(:) :: co_lrad_h
-     !real,pointer,dimension(:) :: co_sens_h
-     !real,pointer,dimension(:) :: co_evap_h
-     !real,pointer,dimension(:) :: co_liqr_h
-
-     
   end type patchtype
 !============================================================================!
 !============================================================================!
@@ -449,6 +440,11 @@ module ed_state_vars
      ! average of net ecosystem productivity (NEP) [umol/m2/s] over FRQSTATE
      real , pointer,dimension(:) :: mean_nep
 
+     
+     ! SHOULD THESE BE DEPRICATED ???
+     ! THESE VARIABLES NEED A MAINTAINER
+     ! ===================================================================
+
      ! Mean moisture transfer from the canopy air to the atmosphere 
      ! (kg_H2O/m2/FRQSTATE)
      real , pointer,dimension(:) :: wbudget_loss2atm
@@ -501,6 +497,9 @@ module ed_state_vars
 
      ! Average heterotrophic respiration [umol_CO2/m2/FRQSTATE]
      real , pointer,dimension(:) :: co2budget_rh
+
+     !=====================================================================
+
 
      ! Daily average of A_decomp, the temperature and moisture dependence
      ! of heterotrophic respiration.
@@ -629,13 +628,13 @@ module ed_state_vars
      ! Last time step successfully completed by integrator.
      real, pointer,dimension(:)  :: htry
 
-     real, pointer,dimension(:)  :: ustar
+     real, pointer,dimension(:)  :: ustar ! friction velocity  (m/s)
 
-     real, pointer,dimension(:)  :: tstar
+     real, pointer,dimension(:)  :: tstar ! temperature velocity (K)
+ 
+     real, pointer,dimension(:)  :: rstar ! moisture velocity (kg/kg)
 
-     real, pointer,dimension(:)  :: rstar
-
-     real, pointer,dimension(:)  :: cstar
+     real, pointer,dimension(:)  :: cstar ! co2 velocity (ppm?)
 
      real, pointer,dimension(:)  :: upwp !eddy mom. flux u-prime w-prime
 
@@ -657,16 +656,17 @@ module ed_state_vars
 
      !----- Moisture ----------------------------
      !                                              | Description
-     real,pointer,dimension(:) :: avg_vapor_vc      ! Vegetation to canopy air latent heat flux
+     real,pointer,dimension(:) :: avg_vapor_vc      ! Vegetation to canopy air latent heat flux (kg/m2/s)
      real,pointer,dimension(:) :: avg_dew_cg        ! Dew to ground flux
-     real,pointer,dimension(:) :: avg_vapor_gc      ! Ground to canopy air latent heat flux
+     real,pointer,dimension(:) :: avg_vapor_gc      ! Ground to canopy air latent heat flux (kg/m2/s)
      real,pointer,dimension(:) :: avg_wshed_vg      ! Latent heat (shedding)
-     real,pointer,dimension(:) :: avg_vapor_ac      ! Canopy to atmosphere water flux
+     real,pointer,dimension(:) :: avg_vapor_ac      ! Canopy to atmosphere water flux (kg/m2/s)
      real,pointer,dimension(:) :: avg_transp        ! Transpiration
      real,pointer,dimension(:) :: avg_evap          ! Evaporation
      real,pointer,dimension(:,:) :: avg_smoist_gg   ! Moisture flux between layers
      real,pointer,dimension(:,:) :: avg_smoist_gc   ! Trabspired soil moisture sink
-     real,pointer,dimension(:) :: avg_runoff            ! Total runoff
+     real,pointer,dimension(:) :: avg_runoff        ! Total runoff
+     real,pointer,dimension(:) :: avg_drainage      ! Total drainage through the lower soil layer
 
      !----- Auxillary Variables (user can modify to view any variable -----------------------------------------------!
      real,pointer,dimension(:)   :: aux             ! Auxillary surface variable
@@ -933,16 +933,17 @@ module ed_state_vars
      
      !----- Moisture ----------------------------
      !                                              | Description
-     real,pointer,dimension(:) :: avg_vapor_vc      ! Vegetation to canopy air latent heat flux
+     real,pointer,dimension(:) :: avg_vapor_vc      ! Vegetation to canopy air vapor flux (kg/m2/s)
      real,pointer,dimension(:) :: avg_dew_cg        ! Dew to ground flux
-     real,pointer,dimension(:) :: avg_vapor_gc      ! Ground to canopy air latent heat flux
+     real,pointer,dimension(:) :: avg_vapor_gc      ! Ground to canopy air vapor flux (kg/m2/s)
      real,pointer,dimension(:) :: avg_wshed_vg      ! Latent heat (shedding)
-     real,pointer,dimension(:) :: avg_vapor_ac      ! Canopy to atmosphere water flux
+     real,pointer,dimension(:) :: avg_vapor_ac      ! Canopy to atmosphere water flux (kg/m2/s)
      real,pointer,dimension(:) :: avg_transp        ! Transpiration
      real,pointer,dimension(:) :: avg_evap          ! Evaporation
      real,pointer,dimension(:,:) :: avg_smoist_gg   ! Moisture flux between layers
      real,pointer,dimension(:,:) :: avg_smoist_gc   ! Trabspired soil moisture sink
-     real,pointer,dimension(:) :: avg_runoff            ! Total runoff
+     real,pointer,dimension(:) :: avg_runoff        ! Total runoff
+     real,pointer,dimension(:) :: avg_drainage      ! Total drainage
 
      !----- Auxiliary Variables (user can modify to view any variable -----------------------------------------------!
      real,pointer,dimension(:)   :: aux             ! Auxillary surface variable
@@ -1165,16 +1166,17 @@ module ed_state_vars
      
      !----- Moisture Flux ----------------------------
 
-     real,pointer,dimension(:) :: avg_vapor_vc      ! Vegetation to canopy air latent heat flux
+     real,pointer,dimension(:) :: avg_vapor_vc      ! Vegetation to canopy air vapor flux (kg/m2/s)
      real,pointer,dimension(:) :: avg_dew_cg        ! Dew to ground flux
-     real,pointer,dimension(:) :: avg_vapor_gc      ! Ground to canopy air latent heat flux
+     real,pointer,dimension(:) :: avg_vapor_gc      ! Ground to canopy air latent heat flux (kg/m2/s)
      real,pointer,dimension(:) :: avg_wshed_vg      ! Latent heat (shedding)
-     real,pointer,dimension(:) :: avg_vapor_ac      ! Canopy to atmosphere water flux
+     real,pointer,dimension(:) :: avg_vapor_ac      ! Canopy to atmosphere water flux (kg/m2/s)
      real,pointer,dimension(:) :: avg_transp        ! Transpiration
      real,pointer,dimension(:) :: avg_evap          ! Evaporation
      real,pointer,dimension(:,:) :: avg_smoist_gg   ! Moisture flux between layers
      real,pointer,dimension(:,:) :: avg_smoist_gc   ! Trabspired soil moisture sink
      real,pointer,dimension(:) :: avg_runoff            ! Total runoff
+     real,pointer,dimension(:) :: avg_drainage
 
      !----- Auxillary Variables (user can modify to view any variable --------!
      real,pointer,dimension(:)   :: aux             ! Auxillary surface variable
@@ -1272,6 +1274,10 @@ module ed_state_vars
      ! of site/patch/cohort level variables, feel free to include them.  !
      !-------------------------------------------------------------------!
 
+     real, pointer, dimension(:)   :: dmean_pcpg            ! [kg/m2/d]
+     real, pointer, dimension(:)   :: dmean_runoff          ! [kg/m2/d]
+     real, pointer, dimension(:)   :: dmean_drainage        ! [kg/m2/d]
+     
      real, pointer, dimension(:)   :: dmean_gpp            ! [kgC/m²/day]
      real, pointer, dimension(:)   :: dmean_evap           ! [      W/m2]
      real, pointer, dimension(:)   :: dmean_transp         ! [      W/m2]
@@ -1279,6 +1285,11 @@ module ed_state_vars
      real, pointer, dimension(:)   :: dmean_sensible_gc    ! [      W/m2]
      real, pointer, dimension(:)   :: dmean_sensible_ac    ! [      W/m2]
      real, pointer, dimension(:)   :: dmean_sensible       ! [      W/m2]
+
+     real, pointer, dimension(:)   :: dmean_vapor_vc       ! [      W/m2]
+     real, pointer, dimension(:)   :: dmean_vapor_gc       ! [      W/m2]
+     real, pointer, dimension(:)   :: dmean_vapor_ac       ! [      W/m2]
+
      real, pointer, dimension(:)   :: dmean_nep            ! [kgC/m²/day]
      real, pointer, dimension(:)   :: dmean_plresp         ! [kgC/m²/day]
      real, pointer, dimension(:)   :: dmean_rh             ! [kgC/m²/day]
@@ -1456,6 +1467,7 @@ module ed_state_vars
      real :: avg_vapor_ac      ! Canopy to atmosphere water flux
      real :: avg_transp        ! Transpiration
      real :: avg_evap          ! Evaporation
+     real :: avg_drainage      ! Flow through lower soil layer
 
      real,pointer,dimension(:) :: avg_smoist_gg   ! Moisture flux between layers
      real,pointer,dimension(:) :: avg_smoist_gc     ! Trabspired soil moisture sink
@@ -1717,6 +1729,7 @@ contains
        allocate(cgrid%avg_smoist_gg (nzg,npolygons))
        allocate(cgrid%avg_smoist_gc (nzg,npolygons))
        allocate(cgrid%avg_runoff        (npolygons))
+       allocate(cgrid%avg_drainage  (npolygons))
        allocate(cgrid%aux           (npolygons))
        allocate(cgrid%aux_s         (nzg,npolygons))
        allocate(cgrid%avg_sensible_vc  (npolygons))
@@ -1797,6 +1810,15 @@ contains
        ! requested by the user.                                          !
        !-----------------------------------------------------------------!
        if (idoutput > 0 .or. imoutput > 0) then
+
+          allocate(cgrid%dmean_pcpg         (             npolygons))
+          allocate(cgrid%dmean_runoff       (             npolygons))
+          allocate(cgrid%dmean_drainage     (             npolygons))
+          allocate(cgrid%dmean_vapor_ac     (             npolygons))
+          allocate(cgrid%dmean_vapor_gc     (             npolygons))
+          allocate(cgrid%dmean_vapor_vc     (             npolygons))
+          
+
           allocate(cgrid%dmean_gpp          (             npolygons))
           allocate(cgrid%dmean_evap         (             npolygons))
           allocate(cgrid%dmean_transp       (             npolygons))
@@ -1995,6 +2017,7 @@ contains
     allocate(cpoly%avg_smoist_gg (nzg,nsites))
     allocate(cpoly%avg_smoist_gc (nzg,nsites))
     allocate(cpoly%avg_runoff        (nsites))
+    allocate(cpoly%avg_drainage  (nsites))
     allocate(cpoly%aux           (nsites))
     allocate(cpoly%aux_s         (nzg,nsites))
     allocate(cpoly%avg_sensible_vc  (nsites))
@@ -2193,6 +2216,7 @@ contains
     allocate(csite%avg_smoist_gg (nzg,npatches))
     allocate(csite%avg_smoist_gc (nzg,npatches))
     allocate(csite%avg_runoff        (npatches))
+    allocate(csite%avg_drainage  (npatches))
     allocate(csite%aux           (npatches))
     allocate(csite%aux_s         (nzg,npatches))
     allocate(csite%avg_sensible_vc  (npatches))
@@ -2395,6 +2419,7 @@ contains
        nullify(cgrid%avg_smoist_gg           )
        nullify(cgrid%avg_smoist_gc           )
        nullify(cgrid%avg_runoff              )
+       nullify(cgrid%avg_drainage            )
        nullify(cgrid%aux                     )
        nullify(cgrid%aux_s                   )
        nullify(cgrid%avg_sensible_vc         )
@@ -2462,7 +2487,16 @@ contains
        nullify(cgrid%avg_atm_co2             )
        nullify(cgrid%avg_albedt              )
        nullify(cgrid%avg_rlongup             )
+       
+       nullify(cgrid%dmean_pcpg              )
+       nullify(cgrid%dmean_runoff            )
+       nullify(cgrid%dmean_drainage          )
+       nullify(cgrid%dmean_vapor_ac          )
+       nullify(cgrid%dmean_vapor_gc          )
+       nullify(cgrid%dmean_vapor_vc          )
+
        nullify(cgrid%dmean_gpp               )
+
        nullify(cgrid%dmean_evap              )
        nullify(cgrid%dmean_transp            )
        nullify(cgrid%dmean_sensible_vc       )
@@ -2647,6 +2681,7 @@ contains
     nullify(cpoly%avg_smoist_gg )
     nullify(cpoly%avg_smoist_gc )
     nullify(cpoly%avg_runoff    )
+    nullify(cpoly%avg_drainage  )
     nullify(cpoly%aux           )
     nullify(cpoly%aux_s         )
     nullify(cpoly%avg_sensible_vc  )
@@ -2833,6 +2868,7 @@ contains
     nullify(csite%avg_smoist_gg )
     nullify(csite%avg_smoist_gc )
     nullify(csite%avg_runoff    )
+    nullify(csite%avg_drainage  )
     nullify(csite%aux           )
     nullify(csite%aux_s         )
     nullify(csite%avg_sensible_vc  )
@@ -3031,6 +3067,7 @@ contains
        if(associated(cgrid%avg_smoist_gg           )) deallocate(cgrid%avg_smoist_gg           )
        if(associated(cgrid%avg_smoist_gc           )) deallocate(cgrid%avg_smoist_gc           )
        if(associated(cgrid%avg_runoff              )) deallocate(cgrid%avg_runoff              )
+       if(associated(cgrid%avg_drainage            )) deallocate(cgrid%avg_drainage            )
        if(associated(cgrid%aux                     )) deallocate(cgrid%aux                     )
        if(associated(cgrid%aux_s                   )) deallocate(cgrid%aux_s                   )
        if(associated(cgrid%avg_sensible_vc         )) deallocate(cgrid%avg_sensible_vc         )
@@ -3110,7 +3147,14 @@ contains
        if(associated(cgrid%avg_rlongup             )) deallocate(cgrid%avg_rlongup             )
 
        if(associated(cgrid%runoff                  )) deallocate(cgrid%runoff                  )
-       
+
+       if(associated(cgrid%dmean_pcpg              )) deallocate(cgrid%dmean_pcpg              )
+       if(associated(cgrid%dmean_runoff            )) deallocate(cgrid%dmean_runoff            )
+       if(associated(cgrid%dmean_drainage          )) deallocate(cgrid%dmean_drainage          )
+       if(associated(cgrid%dmean_vapor_ac          )) deallocate(cgrid%dmean_vapor_ac          )
+       if(associated(cgrid%dmean_vapor_gc          )) deallocate(cgrid%dmean_vapor_gc          )
+       if(associated(cgrid%dmean_vapor_vc          )) deallocate(cgrid%dmean_vapor_vc          )
+
        if(associated(cgrid%dmean_gpp               )) deallocate(cgrid%dmean_gpp               )
        if(associated(cgrid%dmean_evap              )) deallocate(cgrid%dmean_evap              )
        if(associated(cgrid%dmean_transp            )) deallocate(cgrid%dmean_transp            )
@@ -3291,6 +3335,7 @@ contains
     if(associated(cpoly%avg_smoist_gg               )) deallocate(cpoly%avg_smoist_gg               )
     if(associated(cpoly%avg_smoist_gc               )) deallocate(cpoly%avg_smoist_gc               )
     if(associated(cpoly%avg_runoff                  )) deallocate(cpoly%avg_runoff                  )
+    if(associated(cpoly%avg_drainage                )) deallocate(cpoly%avg_drainage                )
     if(associated(cpoly%aux                         )) deallocate(cpoly%aux                         )
     if(associated(cpoly%aux_s                       )) deallocate(cpoly%aux_s                       )
     if(associated(cpoly%avg_sensible_vc             )) deallocate(cpoly%avg_sensible_vc             )
@@ -3472,7 +3517,8 @@ contains
     if(associated(csite%avg_netrad                   )) deallocate(csite%avg_netrad                   )
     if(associated(csite%avg_smoist_gg                )) deallocate(csite%avg_smoist_gg                )
     if(associated(csite%avg_smoist_gc                )) deallocate(csite%avg_smoist_gc                )
-    if(associated(csite%avg_runoff                   )) deallocate(csite%avg_runoff                   )
+    if(associated(csite%avg_runoff                   )) deallocate(csite%avg_runoff                   ) 
+    if(associated(csite%avg_drainage                 )) deallocate(csite%avg_drainage                 )
     if(associated(csite%aux                          )) deallocate(csite%aux                          )
     if(associated(csite%aux_s                        )) deallocate(csite%aux_s                        )
     if(associated(csite%avg_sensible_vc              )) deallocate(csite%avg_sensible_vc              )
@@ -3714,6 +3760,7 @@ contains
        if(associated(cgrid%avg_smoist_gg           )) cgrid%avg_smoist_gg            = large_real
        if(associated(cgrid%avg_smoist_gc           )) cgrid%avg_smoist_gc            = large_real
        if(associated(cgrid%avg_runoff              )) cgrid%avg_runoff               = large_real
+       if(associated(cgrid%avg_drainage            )) cgrid%avg_drainage             = large_real
        if(associated(cgrid%aux                     )) cgrid%aux                      = large_real
        if(associated(cgrid%aux_s                   )) cgrid%aux_s                    = large_real
        if(associated(cgrid%avg_sensible_vc         )) cgrid%avg_sensible_vc          = large_real
@@ -3785,6 +3832,14 @@ contains
        
        if(associated(cgrid%dmean_gpp               )) cgrid%dmean_gpp                = large_real
        if(associated(cgrid%dmean_evap              )) cgrid%dmean_evap               = large_real
+
+       if(associated(cgrid%dmean_pcpg              )) cgrid%dmean_pcpg               = large_real
+       if(associated(cgrid%dmean_runoff            )) cgrid%dmean_runoff             = large_real
+       if(associated(cgrid%dmean_drainage          )) cgrid%dmean_drainage           = large_real
+       if(associated(cgrid%dmean_vapor_ac          )) cgrid%dmean_vapor_ac           = large_real
+       if(associated(cgrid%dmean_vapor_gc          )) cgrid%dmean_vapor_gc           = large_real
+       if(associated(cgrid%dmean_vapor_vc          )) cgrid%dmean_vapor_vc           = large_real
+
        if(associated(cgrid%dmean_transp            )) cgrid%dmean_transp             = large_real
        if(associated(cgrid%dmean_sensible_vc       )) cgrid%dmean_sensible_vc        = large_real
        if(associated(cgrid%dmean_sensible_gc       )) cgrid%dmean_sensible_gc        = large_real
@@ -3988,6 +4043,7 @@ contains
     if(associated(cpoly%avg_smoist_gg               )) cpoly%avg_smoist_gg               = large_real
     if(associated(cpoly%avg_smoist_gc               )) cpoly%avg_smoist_gc               = large_real
     if(associated(cpoly%avg_runoff                  )) cpoly%avg_runoff                  = large_real
+    if(associated(cpoly%avg_drainage                )) cpoly%avg_drainage                = large_real
     if(associated(cpoly%aux                         )) cpoly%aux                         = large_real
     if(associated(cpoly%aux_s                       )) cpoly%aux_s                       = large_real
     if(associated(cpoly%avg_sensible_vc             )) cpoly%avg_sensible_vc             = large_real
@@ -4185,6 +4241,7 @@ contains
     if(associated(csite%avg_smoist_gg                )) csite%avg_smoist_gg                = large_real
     if(associated(csite%avg_smoist_gc                )) csite%avg_smoist_gc                = large_real
     if(associated(csite%avg_runoff                   )) csite%avg_runoff                   = large_real
+    if(associated(csite%avg_drainage                 )) csite%avg_drainage                 = large_real
     if(associated(csite%aux                          )) csite%aux                          = large_real
     if(associated(csite%aux_s                        )) csite%aux_s                        = large_real
     if(associated(csite%avg_sensible_vc              )) csite%avg_sensible_vc              = large_real
@@ -4622,6 +4679,7 @@ contains
     siteout%avg_evap(1:inc)             = pack(sitein%avg_evap,logmask)
     siteout%avg_netrad(1:inc)           = pack(sitein%avg_netrad,logmask)
     siteout%avg_runoff(1:inc)           = pack(sitein%avg_runoff,logmask)
+    siteout%avg_drainage(1:inc)         = pack(sitein%avg_drainage,logmask)
     siteout%aux(1:inc)                  = pack(sitein%aux,logmask)
     siteout%avg_sensible_vc(1:inc)      = pack(sitein%avg_sensible_vc,logmask)
     siteout%avg_sensible_2cas(1:inc)    = pack(sitein%avg_sensible_2cas,logmask)
@@ -5723,7 +5781,7 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_vapor_vc(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_VAPOR_VC :11:hist:anal:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'Polygon Averaged vegetation to canopy air latent heat flux','[W/m2]','ipoly') 
+       call metadata_edio(nvar,igr,'polygon vegetation to canopy air vapor flux','[kg/m2/s]','ipoly') 
 
 
     endif
@@ -5739,7 +5797,7 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_vapor_gc(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_VAPOR_GC :11:hist:anal:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'Polygon averaged moisture flux ground to canopy air','[kg/m2/s]','ipoly') 
+       call metadata_edio(nvar,igr,'polygon moisture flux ground to canopy air','[kg/m2/s]','ipoly') 
     endif
     
     if (associated(cgrid%avg_wshed_vg)) then
@@ -5753,21 +5811,21 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_vapor_ac(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_VAPOR_AC :11:hist:anal:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'Polygon averaged latent heat flux from atmosphere to canopy air','[W/m2]','ipoly') 
+       call metadata_edio(nvar,igr,'polygon vapor flux atmosphere to canopy air','[kg/m2/s]','ipoly') 
     endif
     
     if (associated(cgrid%avg_transp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_transp(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_TRANSP :11:hist:anal:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'Polygon averaged transpiration from stomata to canopy air space','[W/m2]','ipoly') 
+       call metadata_edio(nvar,igr,'polygon transpiration from stomata to canopy air space','[kg/m2/s]','ipoly') 
     endif
     
     if (associated(cgrid%avg_evap)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_evap(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_EVAP :11:hist:anal:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'Polygon averaged net evap/dew from ground and leaves to CAS','[W/m2]','ipoly') 
+       call metadata_edio(nvar,igr,'polygon averaged net evap/dew from ground and leaves to CAS','[W/m2]','ipoly') 
     endif
     
     if (associated(cgrid%avg_smoist_gg)) then
@@ -5790,6 +5848,14 @@ contains
             var_len,var_len_global,max_ptrs,'AVG_RUNOFF :11:hist:anal:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Polygon average surface runoff','[kg/m2/s]','NA') 
     endif
+    
+    if (associated(cgrid%avg_drainage)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_drainage(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_DRAINAGE :11:hist:anal:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'polygon average water flux through lower soil layer','[kg/m2/s]','ipoly') 
+    endif
+
     
     if (associated(cgrid%aux)) then
        nvar=nvar+1
@@ -6231,6 +6297,51 @@ contains
        call metadata_edio(nvar,igr,'Polygon Average Daily Integrated Gross Primary Productivity','[tC/ha/d]','ipoly') 
     endif
     
+    if(associated(cgrid%dmean_pcpg)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_pcpg(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_PCPG :11:hist:dail:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'total daily precipitation','[kg/m2/day]','ipoly') 
+    endif
+
+    if(associated(cgrid%dmean_runoff)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_runoff(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_RUNOFF :11:hist:dail:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'total daily surface runoff','[kg/m2/day]','ipoly') 
+    endif
+
+    if(associated(cgrid%dmean_drainage)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_drainage(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_DRAINAGE :11:hist:dail:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'total daily water flux through lower soil layer','[kg/m2/day]','ipoly') 
+    endif
+
+    if(associated(cgrid%dmean_vapor_ac)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_vapor_ac(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_VAPOR_AC :11:hist:dail:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'total daily vapor flux atm->canopy','[kg/m2/day]','ipoly') 
+    endif
+
+
+    if(associated(cgrid%dmean_vapor_gc)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_vapor_gc(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_VAPOR_GC :11:hist:dail:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'total daily vapor flux ground->canopy','[kg/m2/day]','ipoly') 
+    endif
+
+
+    if(associated(cgrid%dmean_vapor_vc)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_vapor_vc(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_VAPOR_VC :11:hist:dail:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'total daily vapor flux vegetation->canopy','[kg/m2/day]','ipoly') 
+    endif
+
+
     if(associated(cgrid%dmean_evap)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%dmean_evap(1),nvar,igr,init,cgrid%pyglob_id, &
