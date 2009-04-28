@@ -272,11 +272,11 @@ C_LOADER_OPTS=-v -g -traceback
 #           problems, which means that this is an option suitable for end users, not de-   #
 #           velopers.                                                                      #
 #------------------------------------------------------------------------------------------#
-USE_INTERF=1
-F_OPTS= -FR -O3 -recursive -Vaxlib -traceback -axP
-C_OPTS= -O3 -DLITTLE -traceback
-LOADER_OPTS= -FR -O3 -Vaxlib  -traceback -axP
-C_LOADER_OPTS=-v -traceback
+#USE_INTERF=1
+#F_OPTS= -FR -O3 -recursive -Vaxlib -traceback -axP
+#C_OPTS= -O3 -DLITTLE -traceback
+#LOADER_OPTS= -FR -O3 -Vaxlib  -traceback -axP
+#C_LOADER_OPTS=-v -traceback
 #------------------------------------------------------------------------------------------#
 
 ############################################################################################
