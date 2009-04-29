@@ -420,15 +420,20 @@ implicit none
 
 C2B    = 2.0               !  Carbon-to-biomass ratio of plant tissues.
 
-rho(1:2) = 0.53
-rho(3) = 0.71
-rho(4) = 0.9
+![KIM] - new tropical parameters
+!rho(1:2) = 0.53
+!rho(3) = 0.71
+!rho(4) = 0.9
+rho(1:2) = 0.40 
+rho(3) = 0.60 
+rho(4) = 0.87 
 rho(5:11) = 0.0
 rho(12:13) = 0.0
 rho(14:15) = 0.53
 
-
-SLA(1:4) = 10.0**((2.4-0.46*log10(12.0/leaf_turnover_rate(1:4)))) * C2B * 0.1
+![KIM] - new tropical parameters
+!SLA(1:4) = 10.0**((2.4-0.46*log10(12.0/leaf_turnover_rate(1:4)))) * C2B * 0.1
+SLA(1:4) = 10.0**(1.6923-0.3305*log10(12.0/leaf_turnover_rate(1:4)))
 SLA(5) = 22.0
 SLA(6) = 6.0
 SLA(7) = 9.0
@@ -437,7 +442,8 @@ SLA(9) = 30.0
 SLA(10) = 24.2
 SLA(11) = 60.0
 SLA(12:13) = 22.0
-SLA(14:15) =  10.0**((2.4-0.46*log10(12.0/leaf_turnover_rate(14:15)))) * C2B * 0.1
+!SLA(14:15) =  10.0**((2.4-0.46*log10(12.0/leaf_turnover_rate(14:15)))) * C2B * 0.1
+SLA(14:15) =  10.0**(1.6923-0.3305*log10(12.0/leaf_turnover_rate(14:15)))
 
 q(1:5) = 1.0
 q(6:8) = 0.3463
