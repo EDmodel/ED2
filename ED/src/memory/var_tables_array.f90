@@ -367,6 +367,8 @@ module var_tables_array
          write (unit=*,fmt='(a,1x,i4,1x,a,1x,i2,1x,a)')  &
                                   '! Vt_vector for variable',nv,'of grid',igr,'is not associated                !'
          write (unit=*,fmt='(a)') '! I will allocate it now.                                                 !'
+         write (unit=*,fmt='(a,1x,i20,1x,a)') '! MAX_PTRS=',max_ptrs,'...'
+         write (unit=*,fmt='(a,1x,a,1x,a)')   '! Tabstr=',tabstr,'...'
          write (unit=*,fmt='(a)') '!-------------------------------------------------------------------------!'
          write (unit=*,fmt='(a)') ' '
          call vtable_edio_d(var,nv,igr,0,glob_id,var_len,var_len_global,max_ptrs,tabstr)

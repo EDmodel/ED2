@@ -276,6 +276,11 @@ end function julday
 !==========================================================================================!
 !==========================================================================================!
 
+
+
+
+
+
 !==========================================================================================!
 !==========================================================================================!
 integer function julday1000 (imonth,iday,iyear)
@@ -287,10 +292,9 @@ integer function julday1000 (imonth,iday,iyear)
    integer           :: febdays
    logical, external :: isleap
 
-   ! compute the julian day (from 1000AD) from a normal date w/4 digit yr
+   ! compute the julian day (from 1000) from a normal date w/4 digit yr
    ! 1583 is the first full year with Gregorian calendar, but we may want to do historical
    ! runs that predate the calandar so 1000 was chosen instead
-   ! most cases.
 
    julday1000=0
    do i=1000,iyear
@@ -327,7 +331,7 @@ integer function julday1000 (imonth,iday,iyear)
    enddo    
 
    return
- end function julday1000
+end function julday1000
 !==========================================================================================!
 !==========================================================================================!
 

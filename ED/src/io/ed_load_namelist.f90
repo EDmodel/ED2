@@ -52,11 +52,13 @@ subroutine copy_nl(copy_type)
   use grid_coms, only: time,centlon,centlat,deltax,deltay,nnxp,nnyp,nstratx, &
                        nstraty,polelat,polelon,ngrids,timmax,time,nzg, nzs
 
-  use ed_misc_coms,only: attach_metadata
+  use ed_misc_coms,only: attach_metadata, icanturb
 
   use optimiz_coms, only : ioptinpt
 
   use canopy_radiation_coms, only : crown_mod
+  
+  use rk4_coms, only : ibranch_thermo
 
 
   implicit none
@@ -127,15 +129,18 @@ subroutine copy_nl(copy_type)
      ed_reg_lonmax = nl%ed_reg_lonmax
 
      integration_scheme = nl%integration_scheme
-     istoma_scheme = nl%istoma_scheme
-     iphen_scheme  = nl%iphen_scheme
-     repro_scheme  = nl%repro_scheme
-     lapse_scheme  = nl%lapse_scheme
-     crown_mod     = nl%crown_mod
-     n_plant_lim   = nl%n_plant_lim
-     n_decomp_lim  = nl%n_decomp_lim
-     include_fire  = nl%include_fire
-     ianth_disturb = nl%ianth_disturb
+     ibranch_thermo     = nl%ibranch_thermo
+     istoma_scheme      = nl%istoma_scheme
+     iphen_scheme       = nl%iphen_scheme
+     repro_scheme       = nl%repro_scheme
+     lapse_scheme       = nl%lapse_scheme
+     crown_mod          = nl%crown_mod
+     n_plant_lim        = nl%n_plant_lim
+     n_decomp_lim       = nl%n_decomp_lim
+     include_fire       = nl%include_fire
+     ianth_disturb      = nl%ianth_disturb
+     
+     icanturb      = nl%icanturb
      
      include_these_pft = nl%include_these_pft
      agri_stock        = nl%agri_stock

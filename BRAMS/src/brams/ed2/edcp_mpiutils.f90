@@ -24,6 +24,7 @@ subroutine masterput_ednl(mainnum)
   use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
   use optimiz_coms,    only: ioptinpt
   use canopy_radiation_coms, only: crown_mod
+  use rk4_coms,        only: ibranch_thermo
 
 
 
@@ -72,6 +73,7 @@ subroutine masterput_ednl(mainnum)
   call MPI_Bcast(isoildepthflg,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(isoilbc,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(integration_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(ibranch_thermo,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(repro_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -175,6 +177,7 @@ subroutine nodeget_ednl(master_num)
   use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
   use optimiz_coms,    only: ioptinpt
   use canopy_radiation_coms, only: crown_mod
+  use rk4_coms,        only: ibranch_thermo
 
 
   implicit none
@@ -222,6 +225,7 @@ subroutine nodeget_ednl(master_num)
   call MPI_Bcast(isoildepthflg,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(isoilbc,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(integration_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(ibranch_thermo,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(repro_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

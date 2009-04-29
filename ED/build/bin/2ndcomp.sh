@@ -5,6 +5,7 @@ rm -fv an_header.o             an_header.mod
 rm -fv average_utils.o         average_utils.mod 
 rm -fv canopy_air_coms.o       canopy_air_coms.mod 
 rm -fv canopy_radiation_coms.o canopy_radiation_coms.mod 
+rm -fv canopy_struct_dynamics.o   canopy_struct_dynamics.mod
 rm -fv canopy_update_euler.o   canopy_update_euler.mod 
 rm -fv c34constants.o          c34constants.mod 
 rm -fv charutils.o             charutils.mod 

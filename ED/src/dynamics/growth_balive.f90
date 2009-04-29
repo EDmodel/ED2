@@ -13,6 +13,8 @@ subroutine dbalive_dt_ar(cgrid, tfact)
        growth_resp_factor, storage_turnover_rate
   use physiology_coms, only: N_plant_lim
   use grid_coms, only: nzg
+  use ed_therm_lib,only : calc_hcapveg, update_veg_energy_cweh
+  use allometry, only : area_indices
 
   implicit none
 
@@ -35,6 +37,7 @@ subroutine dbalive_dt_ar(cgrid, tfact)
   real :: nitrogen_supply
   real, external :: mortality_rates_ar
   real :: dndt
+  real :: old_hcapveg
   real :: nitrogen_uptake
   real :: N_uptake_pot
 
@@ -148,7 +151,29 @@ subroutine dbalive_dt_ar(cgrid, tfact)
               ! Update monthly mortality rate [plants/m2/month]
               cpatch%monthly_dndt(ico) = cpatch%monthly_dndt(ico) + dndt
 
-           enddo
+  
+              !----- Updating LAI, BAI, and SAI. ------------------------------------------!
+              call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)     &
+                               ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)       &
+                               ,cpatch%pft(ico),cpatch%lai(ico),cpatch%bai(ico)            &
+                               ,cpatch%sai(ico))
+
+              !----------------------------------------------------------------------------!
+              !     It is likely that the leaf biomass has changed, therefore, update      !
+              ! vegetation energy and heat capacity.                                       !
+              !----------------------------------------------------------------------------!
+              old_hcapveg = cpatch%hcapveg(ico)
+              cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)       &
+                                                ,cpatch%balive(ico),cpatch%nplant(ico)     &
+                                                ,cpatch%hite(ico),cpatch%pft(ico)          &
+                                                ,cpatch%phenology_status(ico))
+              call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
+              !----- Likewise, the total heat capacity must be updated --------------------!
+              csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
+              !----------------------------------------------------------------------------!
+
+
+           end do
            
            ! Update litter
            call litter_ar(csite,ipa)
@@ -344,7 +369,6 @@ subroutine alloc_plant_c_balance_ar(csite,ipa,ico, salloc, salloci, carbon_balan
   use ed_state_vars,only:sitetype,patchtype
   use pft_coms, only: c2n_storage, c2n_leaf, sla, c2n_stem
   use decomp_coms, only: f_labile
-  use ed_therm_lib,only : calc_hcapveg, update_veg_energy_cweh
   use allometry, only: dbh2bl
   implicit none
   
@@ -359,7 +383,6 @@ subroutine alloc_plant_c_balance_ar(csite,ipa,ico, salloc, salloci, carbon_balan
   real :: bl_max
   real :: bl_pot
   real :: increment
-  real :: old_hcapveg
   real :: old_status
   
   cpatch => csite%patch(ipa)
@@ -426,7 +449,6 @@ subroutine alloc_plant_c_balance_ar(csite,ipa,ico, salloc, salloci, carbon_balan
         ! in this case, carbon balance in negative so just subtract
         cpatch%balive(ico) = max(0.0,cpatch%balive(ico) + carbon_balance)
         cpatch%bleaf(ico) = 0.0
-        cpatch%lai(ico) = 0.0
         csite%fsn_in(ipa) = csite%fsn_in(ipa) - carbon_balance *  &
              (f_labile(cpatch%pft(ico)) / c2n_leaf(cpatch%pft(ico)) + (1.0 -   &
              f_labile(cpatch%pft(ico))) / c2n_stem) * cpatch%nplant(ico)
@@ -434,23 +456,8 @@ subroutine alloc_plant_c_balance_ar(csite,ipa,ico, salloc, salloci, carbon_balan
      endif
   endif
   
-  cpatch%lai(ico) = cpatch%bleaf(ico) * cpatch%nplant(ico) * sla(cpatch%pft(ico))
-  
-
-  !----------------------------------------------------------------------------------------!
-  !     It is likely that the leaf biomass has changed, therefore, update vegetation       !
-  ! energy and heat capacity.                                                              !
-  !----------------------------------------------------------------------------------------!
-  old_hcapveg = cpatch%hcapveg(ico)
-  cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%nplant(ico)                  &
-                                    ,cpatch%lai(ico),cpatch%pft(ico)                       &
-                                    ,cpatch%phenology_status(ico))
-  call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
-  !----- Likewise, the total heat capacity must be updated --------------------------------!
-  csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
-  !----------------------------------------------------------------------------------------!
-  
-  
+  ! LAI and bleaf probably changed, so we need to update TAI and HCAPVEG.  And we
+  ! will do it, but in the main subroutine (dbalive_dt_ar), at the end.
 
   return
 end subroutine alloc_plant_c_balance_ar

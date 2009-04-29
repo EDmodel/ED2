@@ -113,7 +113,7 @@ module disturbance_utils_ar
         ! patches. Since agb and basal area is calculated based on these
         ! numbers
         do q = onsp+1, onsp+n_dist_types
-            call initialize_disturbed_patch_ar(csite,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv,q,1)
+            call initialize_disturbed_patch_ar(csite,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv,q,1,cpoly%lsl(isi))
         enddo
 
         ! Loop over q, the *destination* landuse type
@@ -154,7 +154,7 @@ module disturbance_utils_ar
               csite%area(onsp+q)       = area
               
               ! Initialize to zero the new trasitioned patches (redundant)
-              call initialize_disturbed_patch_ar(csite,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv,onsp+q,1)
+              call initialize_disturbed_patch_ar(csite,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv,onsp+q,1,cpoly%lsl(isi))
               
               ! Now go through patches, adding its contribution to the new patch.
               do ipa=1,onsp
@@ -185,7 +185,7 @@ module disturbance_utils_ar
               
               ! if the new patch is agriculture, plant it with grasses.
               if(q == 1)call plant_patch_ar(csite,q+onsp,cpoly%agri_stocking_pft(isi),   &
-                   cpoly%agri_stocking_density(isi), 1.0, cpoly%lsl(isi))
+                   cpoly%agri_stocking_density(isi),cpoly%green_leaf_factor(:,isi), 1.0, cpoly%lsl(isi))
               
               qpatch => csite%patch(q+onsp)
 
@@ -415,7 +415,7 @@ end subroutine apply_disturbances_ar
 
   !=====================================================================
 
-  subroutine initialize_disturbed_patch_ar(csite,atm_tmp,atm_shv,np,dp)
+  subroutine initialize_disturbed_patch_ar(csite,atm_tmp,atm_shv,np,dp,lsl)
     
     use ed_state_vars, only: sitetype,patchtype
     use consts_coms, only : t00
@@ -424,7 +424,7 @@ end subroutine apply_disturbances_ar
     implicit none
     type(sitetype),target    :: csite
     real, intent(in)         :: atm_tmp,atm_shv
-    integer, intent(in)      :: np,dp
+    integer, intent(in)      :: np,dp,lsl
     integer                  :: k
 
 
@@ -447,7 +447,7 @@ end subroutine apply_disturbances_ar
 
 
     ! Included the initialization for all fast variables.
-    call init_ed_patch_vars_array(csite,np,np)
+    call init_ed_patch_vars_array(csite,np,np,lsl)
 
     ! dist_type is not set here.
 
@@ -488,7 +488,7 @@ end subroutine apply_disturbances_ar
 
     csite%soil_energy(1:nzg,np) = 0.0
 
-    csite%soil_water(1:nzg,np) = 0.0d+0
+    csite%soil_water(1:nzg,np) = 0.0
 
     csite%sfcwater_mass(1:nzs,np) =  0.0
 
@@ -502,7 +502,7 @@ end subroutine apply_disturbances_ar
     csite%rough(np) = 0.0
 
     ! this 
-    call init_ed_patch_vars_array(csite,np,np)
+    call init_ed_patch_vars_array(csite,np,np,lsl)
 
     csite%fsc_in(np) = 0.0
 
@@ -568,9 +568,9 @@ end subroutine apply_disturbances_ar
     enddo
 
     do k = 1, nzg
-       csite%ntext_soil(k,np) = csite%ntext_soil(k,np)
-       csite%soil_energy(k,np) = csite%soil_energy(k,np) +csite%soil_energy(k,cp) * area_fac
-       csite%soil_water(k,np) = csite%soil_water(k,np) + csite%soil_water(k,cp) * dble(area_fac)
+       csite%ntext_soil(k,np)  = csite%ntext_soil(k,np)
+       csite%soil_energy(k,np) = csite%soil_energy(k,np) + csite%soil_energy(k,cp) * area_fac
+       csite%soil_water(k,np)  = csite%soil_water(k,np)  + csite%soil_water(k,cp)  * area_fac
     enddo
 
     csite%rough(np) = csite%rough(np) + csite%rough(cp) * area_fac
@@ -670,6 +670,8 @@ end subroutine apply_disturbances_ar
 
           ! Adjust area-based variables
           tpatch%lai(nco)                 = tpatch%lai(nco)                  * cohort_area_fac
+          tpatch%bai(nco)                 = tpatch%bai(nco)                  * cohort_area_fac
+          tpatch%sai(nco)                 = tpatch%sai(nco)                  * cohort_area_fac
           tpatch%nplant(nco)              = tpatch%nplant(nco)               * cohort_area_fac
           tpatch%mean_gpp(nco)            = tpatch%mean_gpp(nco)             * cohort_area_fac
           tpatch%mean_leaf_resp(nco)      = tpatch%mean_leaf_resp(nco)       * cohort_area_fac
@@ -811,7 +813,7 @@ end subroutine apply_disturbances_ar
 
   !=============================================================
 
-  subroutine plant_patch_ar(csite, np, pft, density, height_factor, lsl)
+  subroutine plant_patch_ar(csite, np, pft, density, green_leaf_factor, height_factor, lsl)
 
     use ed_state_vars,only : sitetype,patchtype
 
@@ -820,7 +822,8 @@ end subroutine apply_disturbances_ar
     use fuse_fiss_utils_ar, only : sort_cohorts_ar
     use ed_therm_lib,only : calc_hcapveg
     use consts_coms, only: t3ple
-    use allometry, only : h2dbh, dbh2bd, dbh2bl, dbh2h
+    use allometry, only : h2dbh, dbh2bd, dbh2bl, dbh2h, area_indices
+    use max_dims, only : n_pft
 
     implicit none
 
@@ -833,7 +836,7 @@ end subroutine apply_disturbances_ar
     integer, intent(in) :: pft
     real, intent(in) :: density
     real, intent(in) :: height_factor
-    
+    real, dimension(n_pft), intent(in) :: green_leaf_factor
     cpatch => csite%patch(np)
 
     ! Reallocate the current cohort with an extra space for the
@@ -882,17 +885,25 @@ end subroutine apply_disturbances_ar
     cpatch%phenology_status(nc) = 0
     cpatch%balive(nc) = cpatch%bleaf(nc) * &
          (1.0 + q(cpatch%pft(nc)) + qsw(cpatch%pft(nc)) * cpatch%hite(nc))
-    cpatch%lai(nc) = cpatch%bleaf(nc) * cpatch%nplant(nc) * sla(cpatch%pft(nc))
+    call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)        &
+                     ,cpatch%balive(nc),cpatch%dbh(nc), cpatch%hite(nc)          &
+                     ,cpatch%pft(nc),cpatch%lai(nc),cpatch%bai(nc)               &
+                     ,cpatch%sai(nc))
+
     cpatch%bstorage(nc) = 1.0*(cpatch%balive(nc)) !! changed by MCD, was 0.0
 
 
-    cpatch%veg_temp(nc) = csite%can_temp(np)
+
+
+    cpatch%veg_temp(nc)  = csite%can_temp(np)
     cpatch%veg_water(nc) = 0.0
+    cpatch%veg_fliq(nc)  = 0.0
 
     !----- Because we assigned no water, the internal energy is simply hcapveg*T
 
-    cpatch%hcapveg(nc) = calc_hcapveg(cpatch%bleaf(nc),cpatch%nplant(nc) &
-                                     ,cpatch%lai(nc),cpatch%pft(nc)      &
+    cpatch%hcapveg(nc) = calc_hcapveg(cpatch%bleaf(nc),cpatch%bdead(nc)   &
+                                     ,cpatch%balive(nc),cpatch%nplant(nc) &
+                                     ,cpatch%hite(nc),cpatch%pft(nc)      &
                                      ,cpatch%phenology_status(nc))
     
     cpatch%veg_energy(nc) = cpatch%hcapveg(nc) * cpatch%veg_temp(nc)

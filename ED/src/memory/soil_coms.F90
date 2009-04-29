@@ -72,8 +72,8 @@ module soil_coms
    integer           , parameter :: pctlcon = 1
    integer           , parameter :: nvgcon = 7 ! I don't think it is been used...
    !----- Constants from  equation E27 (Medvigy 2007) -------------------------------------!
-   real, dimension(6), parameter :: ss = (/ 1.093e-3, 2.800e-2, 3.000e-2, 3.030e-4         &
-                                          ,-1.770e-7, 2.250e-9 /) 
+   real(kind=8), dimension(6), parameter :: ss = (/ 1.093d-3, 2.800d-2, 3.000d-2           &
+                                                  , 3.030d-4,-1.770d-7, 2.250d-9 /) 
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -94,8 +94,19 @@ module soil_coms
    real, allocatable, dimension(:)     :: dslzt    ! soil layer thickness at M pt   [    m]
    real, allocatable, dimension(:)     :: dslzti   ! 1/dslzt                        [  1/m]
    real, allocatable, dimension(:)     :: dslztidt ! dtll / dslzt                   [  s/m]
-   real, dimension(20)                 :: thicknet
-   real, dimension(20,20)              :: thick   
+   !----- The next variables are double precision version of the previous ones. -----------!
+   real(kind=8), allocatable, dimension(:)   :: slz8            ! Soil levels.
+   real(kind=8), allocatable, dimension(:,:) :: slcons18
+   real(kind=8), allocatable, dimension(:)   :: dslz8
+   real(kind=8), allocatable, dimension(:)   :: dslzo28
+   real(kind=8), allocatable, dimension(:)   :: dslzi8
+   real(kind=8), allocatable, dimension(:)   :: dslzidt8
+   real(kind=8), allocatable, dimension(:)   :: slzt8
+   real(kind=8), allocatable, dimension(:)   :: dslzt8
+   real(kind=8), allocatable, dimension(:)   :: dslzti8
+   real(kind=8), allocatable, dimension(:)   :: dslztidt8
+   real(kind=8), dimension(20)               :: thicknet
+   real(kind=8), dimension(20,20)            :: thick   
    !---------------------------------------------------------------------------------------!
 
 
@@ -133,9 +144,29 @@ module soil_coms
       real :: xrobulk
       real :: slden
    end type soil_class
+   !----- Double precision version --------------------------------------------------------!
+   type soil_class8
+      real(kind=8) :: slpots     ! Saturation moisture potential                 [       m]
+      real(kind=8) :: slmsts     ! Saturation volumetric moisture content        [   m3/m3]
+      real(kind=8) :: slbs       ! B exponent                                    [     n/d]
+      real(kind=8) :: slcpd      ! Saturation soil hydraulic conductivity        [     m/s]
+      real(kind=8) :: soilcp     ! Surface value for slcons                      [     m/s]
+      real(kind=8) :: slcons     ! Dry soil volumetric heat capacity             [  J/m3/K]
+      real(kind=8) :: slcons0    ! Dry soil density (also total soil porosity)   [   kg/m3]
+      real(kind=8) :: soilcond0
+      real(kind=8) :: soilcond1
+      real(kind=8) :: soilcond2
+      real(kind=8) :: sfldcap
+      real(kind=8) :: xsand
+      real(kind=8) :: xclay
+      real(kind=8) :: xorgan
+      real(kind=8) :: xrobulk
+      real(kind=8) :: slden
+   end type soil_class8
    !---------------------------------------------------------------------------------------!
-
-   type(soil_class), dimension(ed_nstyp), parameter :: soil =                              &
+   !----- To be filled in ed_params.f90. --------------------------------------------------!
+   type(soil_class8), dimension(ed_nstyp)            :: soil8 
+   type(soil_class) , dimension(ed_nstyp), parameter :: soil =                             &
 
 !------------------------------------------------------------------------------------------------------------------------------------------------!
 !  slpots  slmsts   slbs    slcpd   soilcp    slcons   slcons0  soilcond0  soilcond1  soilcond2    sfldcap   xsand   xclay  xorgan xrobulk slden !
@@ -224,6 +255,7 @@ module soil_coms
 
       allocate (slcons1(nzg,ed_nstyp))
 
+      allocate (slz8     (nzg))
       allocate (dslz     (nzg))
       allocate (dslzo2   (nzg))
       allocate (dslzi    (nzg))
@@ -232,6 +264,17 @@ module soil_coms
       allocate (dslzt    (nzg))
       allocate (dslzti   (nzg))
       allocate (dslztidt (nzg))
+
+      allocate (slcons18(nzg,ed_nstyp))
+
+      allocate (dslz8     (nzg))
+      allocate (dslzo28   (nzg))
+      allocate (dslzi8    (nzg))
+      allocate (dslzidt8  (nzg))
+      allocate (slzt8     (nzg))
+      allocate (dslzt8    (nzg))
+      allocate (dslzti8   (nzg))
+      allocate (dslztidt8 (nzg))
 
       return
    end subroutine alloc_soilgrid

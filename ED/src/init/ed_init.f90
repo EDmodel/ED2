@@ -216,8 +216,18 @@ subroutine sfcdata_ed()
                           , dslzt             & ! intent(out)
                           , dslzti            & ! intent(out)
                           , dslztidt          & ! intent(out)
+                          , slz8              & ! intent(in)
+                          , dslz8             & ! intent(out)
+                          , dslzo28           & ! intent(out)
+                          , dslzi8            & ! intent(out)
+                          , dslzidt8          & ! intent(out)
+                          , slzt8             & ! intent(out)
+                          , dslzt8            & ! intent(out)
+                          , dslzti8           & ! intent(out)
+                          , dslztidt8         & ! intent(out)
                           , fhydraul          & ! intent(out)
                           , slcons1           & ! intent(out)
+                          , slcons18          & ! intent(out)
                           , slden             & ! intent(out)
                           , emisg             & ! intent(out)
                           , soil              & ! intent(in)
@@ -244,23 +254,35 @@ subroutine sfcdata_ed()
    slz(nzg+1) = 0.
 
    do k = 1,nzg
-      dslz   (k) = slz(k+1) - slz(k)
-      dslzo2 (k) = .5 * dslz(k)
-      dslzi  (k) = 1. / dslz(k)
-      dslzidt(k) = dslzi(k) * dtlsm
-      slzt   (k) = .5 * (slz(k) + slz(k+1))
+      dslz    (k) = slz(k+1) - slz(k)
+      dslzo2  (k) = .5 * dslz(k)
+      dslzi   (k) = 1. / dslz(k)
+      dslzidt (k) = dslzi(k) * dtlsm
+      slzt    (k) = .5 * (slz(k) + slz(k+1))
+      slz8    (k) = dble(slz    (k))
+      dslz8   (k) = dble(dslz   (k))
+      dslzo28 (k) = dble(dslzo2 (k))
+      dslzi8  (k) = dble(dslzi  (k))
+      dslzidt8(k) = dble(dslzidt(k))
+      slzt8   (k) = dble(slzt   (k))
    end do
 
    do k = 2,nzg
-      dslzt   (k) = slzt(k) - slzt(k-1)
-      dslzti  (k) = 1. / dslzt(k)
-      dslztidt(k) = dslzti(k) * dtlsm
+      dslzt    (k) = slzt(k) - slzt(k-1)
+      dslzti   (k) = 1. / dslzt(k)
+      dslztidt (k) = dslzti(k) * dtlsm
+      dslzt8   (k) = dble(dslzt   (k))
+      dslzti8  (k) = dble(dslzti  (k))
+      dslztidt8(k) = dble(dslztidt(k))
    end do
 
    !----- These must be defined for free drainage bc (RGK) --------------------------------!
-   dslzt(1)    = 2.0*slz(1) - slzt(1)
-   dslzti(1)   = 1./dslzt(1)
-   dslztidt(1) = dslzti(1) * dtlsm
+   dslzt    (1) = 2.0*slz(1) - slzt(1)
+   dslzti   (1) = 1./dslzt(1)
+   dslztidt (1) = dslzti(1) * dtlsm
+   dslzt8   (1) = dble(dslzt   (1))
+   dslzti8  (1) = dble(dslzti  (1))
+   dslztidt8(1) = dble(dslztidt(1))
 
    !----- Soil constants. -----------------------------------------------------------------!
    refdepth = -2.0
@@ -272,7 +294,8 @@ subroutine sfcdata_ed()
          slcons1(k,nnn) = soil(nnn)%slcons     ! ORIGINAL form - const with depth
    !     slcons1(k,nnn) = soilparms(5,nnn)  &  ! TOPMODEL form - large at surface
    !        * exp(slz(k) * fhydraul(nnn))      !    and exp decrease with depth
-      enddo
+         slcons18(k,nnn) = dble(slcons1(k,nnn))
+      end do
 
       slden    (nnn) =  soil(nnn)%slden    
       emisg (nnn) = .98
@@ -301,4 +324,5 @@ subroutine sfcdata_ed()
 
    return
 end subroutine sfcdata_ed
-
+!==========================================================================================!
+!==========================================================================================!
