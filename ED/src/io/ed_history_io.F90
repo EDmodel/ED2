@@ -2252,7 +2252,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
      call hdf_getslab_r(cpatch%leaf_respiration,'LEAF_RESPIRATION ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%root_respiration,'ROOT_RESPIRATION ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%gpp,'GPP ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%paw_avg10d,'PAW_AVG10D ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%paw_avg,'PAW_AVG ',dsetrank,iparallel,.true.)
      
      
      dsetrank    = 2

@@ -106,6 +106,10 @@ subroutine radiate_driver_ar(cgrid)
         
      enddo
 
+     ![KIM - 10-day running average of radiation for 
+     !light-controlled phenology] 
+     call update_rad_avg(cgrid)
+
   endif
        
   ! At this point, all meteorologic driver data for the land

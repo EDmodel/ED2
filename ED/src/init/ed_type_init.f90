@@ -58,7 +58,7 @@ subroutine init_ed_cohort_vars_array(cpatch,ico, lsl)
       
   cpatch%stomatal_resistance(ico) = 0.0
   cpatch%maintenance_costs(ico)   = 0.0
-  cpatch%paw_avg10d(ico)          = 0.0
+  cpatch%paw_avg(ico)          = 0.0
 
   ! From the ed_state_vars comment, these variables are now deprecated, commenting
   ! them so it will compile...
@@ -409,7 +409,7 @@ subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
 
 
    !---------------------------------------------------------------------------------------!
-   !      paw_avg10d is a 10-day running average of available water. Initialize it with    !
+   !      paw_avg is a 10-day running average of available water. Initialize it with    !
    ! the current value.                                                                    !
    !  MLO: I don't think this is currently used, but if we do use this, then we should add !
    !       a flag to initialise like this only if it is a new patch.  This is also called  !
@@ -417,20 +417,20 @@ subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
    !---------------------------------------------------------------------------------------!
    cpatch => csite%patch(ipa)
    do ico = 1, cpatch%ncohorts
-      cpatch%paw_avg10d(ico) = 0.0
+      cpatch%paw_avg(ico) = 0.0
 
       do k = cpatch%krdepth(ico), nzg - 1
          nsoil = csite%ntext_soil(k,ipa)
-         cpatch%paw_avg10d(ico) = cpatch%paw_avg10d(ico)                                   &
+         cpatch%paw_avg(ico) = cpatch%paw_avg(ico)                                   &
                                 + real(csite%soil_water(k,ipa) - dble(soil(nsoil)%soilcp)) &
                                 * (slz(k+1)-slz(k))                                        &
                                 / (soil(nsoil)%slmsts - soil(nsoil)%soilcp) 
       end do
       nsoil = csite%ntext_soil(nzg,ipa)
-      cpatch%paw_avg10d(ico) = cpatch%paw_avg10d(ico)                                      &
+      cpatch%paw_avg(ico) = cpatch%paw_avg(ico)                                      &
                              + real(csite%soil_water(nzg,ipa) - dble(soil(nsoil)%soilcp))  &
                              * (-1.0*slz(nzg)) / (soil(nsoil)%slmsts - soil(nsoil)%soilcp) 
-      cpatch%paw_avg10d(ico) = cpatch%paw_avg10d(ico)/(-1.0*slz(cpatch%krdepth(ico)))
+      cpatch%paw_avg(ico) = cpatch%paw_avg(ico)/(-1.0*slz(cpatch%krdepth(ico)))
    end do
    !---------------------------------------------------------------------------------------! 
  

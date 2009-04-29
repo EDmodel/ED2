@@ -806,7 +806,7 @@ module fuse_fiss_utils_ar
       cpatch%leaf_respiration(idt)    = cpatch%leaf_respiration(isc)
       cpatch%root_respiration(idt)    = cpatch%root_respiration(isc)
       cpatch%gpp(idt)                 = cpatch%gpp(isc)
-      cpatch%paw_avg10d(idt)          = cpatch%paw_avg10d(isc)
+      cpatch%paw_avg(idt)          = cpatch%paw_avg(isc)
 
       osdt => cpatch%old_stoma_data(idt)
       ossc => cpatch%old_stoma_data(isc)
@@ -1041,7 +1041,7 @@ module fuse_fiss_utils_ar
                                     + cpatch%root_respiration(donc)
       !------------------------------------------------------------------------------------!
      
-      cpatch%paw_avg10d(recc) = cpatch%paw_avg10d(recc) + cpatch%paw_avg10d(donc)
+      cpatch%paw_avg(recc) = cpatch%paw_avg(recc) + cpatch%paw_avg(donc)
       
       root_depth = calc_root_depth(cpatch%hite(recc), cpatch%dbh(recc), cpatch%pft(recc))
       cpatch%krdepth(recc) = assign_root_depth(root_depth, lsl)
