@@ -150,8 +150,9 @@ subroutine structural_growth_ar(cgrid, month)
               !      difference in the heat capacity to update it.                         !
               !----------------------------------------------------------------------------!
               old_hcapveg = cpatch%hcapveg(ico)
-              cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%nplant(ico)      &
-                                                ,cpatch%lai(ico),cpatch%pft(ico)           &
+              cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)       &
+                                                ,cpatch%balive(ico),cpatch%nplant(ico)     &
+                                                ,cpatch%hite(ico),cpatch%pft(ico)          &
                                                 ,cpatch%phenology_status(ico))
               call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
               !----- Likewise, update the patch heat capacity -----------------------------!
@@ -243,60 +244,90 @@ subroutine plant_structural_allocation_ar(cpatch,ico, month, f_bseeds, f_bdead, 
         
   return
 end subroutine plant_structural_allocation_ar
+!==========================================================================================!
+!==========================================================================================!
 
-!===================================================================
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine will assign values derived from the basic properties of a given      !
+! cohort.                                                                                  !
+!------------------------------------------------------------------------------------------!
 subroutine update_derived_cohort_props_ar(cpatch,ico, green_leaf_factor, lsl)
 
-  use ed_state_vars,only:patchtype
-  use pft_coms, only: phenology, sla, q, qsw
-  use allometry, only: bd2dbh, dbh2h, dbh2bl, assign_root_depth, calc_root_depth
+   use ed_state_vars , only : patchtype           ! ! structure
+   use pft_coms      , only : phenology           & ! intent(in)
+                            , q                   & ! intent(in)
+                            , qsw                 ! ! intent(in)
+   use allometry     , only : bd2dbh              & ! function
+                            , dbh2h               & ! function
+                            , dbh2bl              & ! function
+                            , assign_root_depth   & ! function
+                            , calc_root_depth     & ! function
+                            , area_indices        ! ! subroutine
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   type(patchtype), target     :: cpatch
+   integer        , intent(in) :: ico
+   real           , intent(in) :: green_leaf_factor
+   integer        , intent(in) :: lsl
+   !----- Local variables -----------------------------------------------------------------!
+   real :: bl
+   real :: bl_max
+   real :: rootdepth
 
-  implicit none
+   !----- Getting DBH and height from structural biomass. ---------------------------------!
+   cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
+   cpatch%hite(ico) = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
+   
+   !----- Checking the phenology status and whether it needs to change. -------------------!
+   if(cpatch%phenology_status(ico) /= 2)then
 
-  type(patchtype),target :: cpatch
-  integer :: ico
-  real, intent(in) :: green_leaf_factor
-  real :: bl
-  real :: bl_max
-  real :: rootdepth
-  integer, intent(in) :: lsl
+      bl     = cpatch%balive(ico) * green_leaf_factor                                      &
+             / (1.0 + q(cpatch%pft(ico)) + qsw(cpatch%pft(ico)) * cpatch%hite(ico))
+      bl_max = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico)) * green_leaf_factor
+      !------------------------------------------------------------------------------------!
+      !     If LEAF biomass is not the maximum, set it to 1 (leaves partially flushed),    !
+      ! otherwise, set it to 0 (leaves are fully flushed).                                 !
+      !------------------------------------------------------------------------------------!
+      if (bl < bl_max) then
+         cpatch%phenology_status(ico) = 1
+      else
+         cpatch%phenology_status(ico) = 0
+      end if
+      cpatch%bleaf(ico) = bl
+      
+      !----- Update LAI, BAI, and SAI -----------------------------------------------------!
+      call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)             &
+                 ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico),cpatch%pft(ico)     &
+                 ,cpatch%lai(ico),cpatch%bai(ico),cpatch%sai(ico))
+   end if
 
-  cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico)) 
-  cpatch%hite(ico) = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
-     
-  if(cpatch%phenology_status(ico) /= 2)then
-
-     ! Update status
-     bl = cpatch%balive(ico) * green_leaf_factor / (1.0 +   &
-          q(cpatch%pft(ico)) + qsw(cpatch%pft(ico)) * cpatch%hite(ico))
-     bl_max = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico)) * green_leaf_factor
-     if(bl.lt.bl_max)then
-        cpatch%phenology_status(ico) = 1
-     else
-        cpatch%phenology_status(ico) = 0
-     endif
-     
-     ! Update LAI
-     cpatch%lai(ico) = bl * cpatch%nplant(ico) * sla(cpatch%pft(ico))
-     cpatch%bleaf(ico) = bl
-
-  endif
-
-  ! Update rooting depth
-  rootdepth = calc_root_depth(cpatch%hite(ico), cpatch%dbh(ico), cpatch%pft(ico))
-  
-  ! See which discrete soil level this corresponds to
-  cpatch%krdepth(ico) = assign_root_depth(rootdepth, lsl)
-  
-  return
+   !----- Update rooting depth ------------------------------------------------------------!
+   rootdepth = calc_root_depth(cpatch%hite(ico), cpatch%dbh(ico), cpatch%pft(ico))
+   
+   !----- See which discrete soil level this corresponds to. ------------------------------!
+   cpatch%krdepth(ico) = assign_root_depth(rootdepth, lsl)
+   
+   return
 end subroutine update_derived_cohort_props_ar
+!==========================================================================================!
+!==========================================================================================!
 
-!=====================================================================
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine update_vital_rates_ar(cpatch,ico, ilu, dbh_in, bdead_in, balive_in, hite_in,  &
      bstorage_in, nplant_in, mort_litter, area, basal_area, agb, agb_lu, &
-     basal_area_growth, agb_growth, basal_area_mort, agb_mort)
+    basal_area_growth, agb_growth, basal_area_mort, agb_mort)
    
   use ed_state_vars,only:patchtype
   use max_dims, only: n_pft, n_dbh, n_dist_types

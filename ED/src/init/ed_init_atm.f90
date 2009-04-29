@@ -61,13 +61,13 @@ subroutine ed_init_atm_ar
               cpatch => csite%patch(ipa)
 
               csite%can_temp(ipa) =   cpoly%met(isi)%atm_tmp
-              
               csite%can_shv(ipa)  =   cpoly%met(isi)%atm_shv
+              csite%can_co2(ipa)  =   cpoly%met(isi)%atm_co2
               
               ! Initialize stars
               csite%tstar(ipa)  = 0.
               csite%ustar(ipa)  = 0.
-              csite%rstar(ipa)  = 0.
+              csite%qstar(ipa)  = 0.
               csite%cstar(ipa)  = 0.
               
               ! For now, choose heat/vapor capacities for stability
@@ -94,8 +94,10 @@ subroutine ed_init_atm_ar
 
                  cpatch%veg_temp(ico)   = cpoly%met(isi)%atm_tmp
                  cpatch%veg_water(ico)  = 0.0
-                 cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%nplant(ico) &
-                                                      ,cpatch%lai(ico),cpatch%pft(ico)      &
+                 cpatch%veg_fliq(ico)   = 0.0
+                 cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)   &
+                                                      ,cpatch%balive(ico),cpatch%nplant(ico) &
+                                                      ,cpatch%hite(ico),cpatch%pft(ico)      &
                                                       ,cpatch%phenology_status(ico))
                  cpatch%veg_energy(ico) = cpatch%hcapveg(ico)*cpatch%veg_temp(ico)
                  csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico)
@@ -141,22 +143,22 @@ subroutine ed_init_atm_ar
                     do k = 1, nzg
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 1.0
-                       csite%soil_water(k,ipa)  = dble(max(soil(nsoil)%soilcp              &
-                                                          ,slmstr(k) * soil(nsoil)%slmsts))
+                       csite%soil_water(k,ipa)  = max(soil(nsoil)%soilcp                   &
+                                                     ,slmstr(k) * soil(nsoil)%slmsts)
                        csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
                                                 * csite%soil_tempk(k,ipa)                  &
-                                                + sngl(csite%soil_water(k,ipa)) * cliqvlme &
+                                                + csite%soil_water(k,ipa)  * cliqvlme      &
                                                 * (csite%soil_tempk(k,ipa) - tsupercool)
                     end do
                  else
                     do k = 1, nzg
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 0.0
-                       csite%soil_water(k,ipa)  = dble(max(soil(nsoil)%soilcp             &
-                                                         ,slmstr(k) * soil(nsoil)%slmsts))
+                       csite%soil_water(k,ipa)   = max(soil(nsoil)%soilcp                  &
+                                                      ,slmstr(k) * soil(nsoil)%slmsts)
                        csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
                                                 * csite%soil_tempk(k,ipa)                  &
-                                                + sngl(csite%soil_water(k,ipa))            &
+                                                + csite%soil_water(k,ipa)                  &
                                                 * cicevlme * csite%soil_tempk(k,ipa)
                     end do
                  end if
@@ -309,6 +311,8 @@ subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
   ! Reset height
   csite%veg_height(ipa) = 0.0
   csite%lai(ipa)        = 0.0
+  csite%bai(ipa)        = 0.0
+  csite%sai(ipa)        = 0.0
   norm_fac              = 0.0
   csite%plant_ag_biomass(ipa) = 0.0
   cpatch => csite%patch(ipa)
@@ -321,8 +325,10 @@ subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
      norm_fac = norm_fac + ba
      csite%veg_height(ipa) = csite%veg_height(ipa) + cpatch%hite(ico) * ba
      
-     ! Update LAI and AGB
-     csite%lai(ipa) = csite%lai(ipa) + cpatch%lai(ico)
+     ! Update LAI, BAI, SAI,  and AGB
+     csite%lai(ipa)  = csite%lai(ipa)  + cpatch%lai(ico)
+     csite%bai(ipa)  = csite%bai(ipa)  + cpatch%bai(ico)
+     csite%sai(ipa)  = csite%sai(ipa)  + cpatch%sai(ico)
      csite%plant_ag_biomass(ipa)  = csite%plant_ag_biomass(ipa) +                          &
            ed_biomass(cpatch%bdead(ico),cpatch%balive(ico), cpatch%bleaf(ico)              &
                       ,cpatch%pft(ico), cpatch%hite(ico),cpatch%bstorage(ico))             &
@@ -519,24 +525,24 @@ subroutine read_soil_moist_temp_ar(cgrid)
 
                           if(abs(slz(k)) < 0.1)then
                              csite%soil_tempk(k,ipa) = tmp1
-                             csite%soil_water(k,ipa) = dble(max(soil(ntext)%soilcp,   &
-                                  soilw1 * soil(ntext)%slmsts))
+                             csite%soil_water(k,ipa) = max(soil(ntext)%soilcp              &
+                                                          ,soilw1 * soil(ntext)%slmsts)
                           else
                              csite%soil_tempk(k,ipa) = tmp2
-                             csite%soil_water(k,ipa) = dble(max(soil(ntext)%soilcp,   &
-                                  soilw2 * soil(ntext)%slmsts))
+                             csite%soil_water(k,ipa) = max(soil(ntext)%soilcp   &
+                                                          ,soilw2 * soil(ntext)%slmsts)
                           endif
                           if(csite%soil_tempk(k,ipa) > t3ple)then
                              csite%soil_energy(k,ipa) = soil(ntext)%slcpd                  &
                                                       * csite%soil_tempk(k,ipa)            &
-                                                      + sngl(csite%soil_water(k,ipa))      &
+                                                      + csite%soil_water(k,ipa)            &
                                                       * cliqvlme *(csite%soil_tempk(k,ipa) &
                                                                  - tsupercool)
                              csite%soil_fracliq(k,ipa) = 1.0
                           else
                              csite%soil_energy(k,ipa) = soil(ntext)%slcpd                  &
                                                       * csite%soil_tempk(k,ipa)            &
-                                                      + sngl(csite%soil_water(k,ipa))      &
+                                                      + csite%soil_water(k,ipa)            &
                                                       * cicevlme * csite%soil_tempk(k,ipa)
                              csite%soil_fracliq(k,ipa) = 0.0
                           end if
@@ -559,7 +565,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
                           csite%soil_energy(1,ipa)    =   1.5293664e8
                           csite%soil_energy(2,ipa)    =   1.4789957e8
                           csite%soil_energy(3:4,ipa)  =   1.4772002e8
-                          csite%soil_water(1:4,ipa)   =   0.41595d+0
+                          csite%soil_water(1:4,ipa)   =   0.41595e+0
                           csite%soil_fracliq(1:4,ipa) =   1.0
                        endif
                        

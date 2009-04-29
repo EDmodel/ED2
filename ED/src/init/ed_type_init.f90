@@ -89,23 +89,30 @@ subroutine init_ed_cohort_vars_array(cpatch,ico, lsl)
   cpatch%new_recruit_flag(ico) = 0
   cpatch%bseeds(ico) = 0.0
 
+  cpatch%hcapveg(ico)    = 0.
+  cpatch%veg_energy(ico) = 0.
+  cpatch%veg_temp(ico)   = 0.
+  cpatch%veg_water(ico)  = 0.
+  cpatch%veg_fliq(ico)   = 0.
+
   return
 end subroutine init_ed_cohort_vars_array
 
 ! ==========================================
 
-subroutine init_ed_patch_vars_array(csite,ip1,ip2)
+subroutine init_ed_patch_vars_array(csite,ip1,ip2,lsl)
   
   use ed_state_vars,only:sitetype
   use max_dims, only: n_pft
 !  use fuse_fiss_utils, only: count_cohorts
   use grid_coms,     only: nzs, nzg
+  use soil_coms, only: slz
 
   implicit none
 
   type(sitetype), target :: csite
   integer :: ipft,ncohorts,ipa
-  integer :: ip1,ip2
+  integer, intent(in) :: ip1,ip2,lsl
   
   do ipa = ip1,ip2
      do ipft = 1,n_pft
@@ -115,9 +122,11 @@ subroutine init_ed_patch_vars_array(csite,ip1,ip2)
 
 
   ! Initialize sfcwater state variables
-  csite%sfcwater_mass(1:nzs,ip1:ip2) = 0.0
+  csite%sfcwater_mass(1:nzs,ip1:ip2)   = 0.0
   csite%sfcwater_energy(1:nzs,ip1:ip2) = 0.0
-  csite%sfcwater_depth(1:nzs,ip1:ip2) = 0.0
+  csite%sfcwater_depth(1:nzs,ip1:ip2)  = 0.0
+  csite%total_snow_depth(ip1:ip2)      = 0.0
+
   csite%rshort_s(:,ip1:ip2) = 0.0
   csite%rshort_s_beam(:,ip1:ip2) = 0.0
   csite%rshort_s_diffuse(:,ip1:ip2) = 0.0
@@ -207,6 +216,8 @@ subroutine init_ed_patch_vars_array(csite,ip1,ip2)
   csite%ssl_in(ip1:ip2)                      = 0.0
   csite%fsn_in(ip1:ip2)                      = 0.0
   csite%total_plant_nitrogen_uptake(ip1:ip2) = 0.0
+  
+  csite%watertable(ip1:ip2)                  = slz(lsl)
 
   ncohorts = 0
   do ipa=1,csite%npatches
@@ -282,6 +293,8 @@ subroutine init_ed_site_vars_array(cpoly, lat)
   cpoly%primary_harvest_memory(:) = 0.0
   cpoly%secondary_harvest_memory(:) = 0.0
   
+  
+  
   return
 end subroutine init_ed_site_vars_array
 
@@ -337,7 +350,7 @@ subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
                             , slz               & ! intent(in)
                             , min_sfcwater_mass ! ! intent(in)
    use consts_coms   , only : wdns              ! ! intent(in)
-   use therm_lib     , only : qwtk8             & ! subroutine
+   use therm_lib     , only : qwtk              & ! subroutine
                             , qtk               ! ! subroutine
    use ed_therm_lib  , only : ed_grndvap        ! ! subroutine
    implicit none
@@ -357,7 +370,7 @@ subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
    !----- Finding soil temperature and liquid water fraction. -----------------------------!
    do k = 1, nzg
       nsoil = csite%ntext_soil(k,ipa)
-      call qwtk8(csite%soil_energy(k,ipa), csite%soil_water(k,ipa)*dble(wdns)              &
+      call qwtk(csite%soil_energy(k,ipa), csite%soil_water(k,ipa)*wdns                     &
                 ,soil(nsoil)%slcpd, csite%soil_tempk(k,ipa), csite%soil_fracliq(k,ipa))
    end do
    !---------------------------------------------------------------------------------------! 
@@ -422,13 +435,13 @@ subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
       do k = cpatch%krdepth(ico), nzg - 1
          nsoil = csite%ntext_soil(k,ipa)
          cpatch%paw_avg10d(ico) = cpatch%paw_avg10d(ico)                                   &
-                                + real(csite%soil_water(k,ipa) - dble(soil(nsoil)%soilcp)) &
+                                + (csite%soil_water(k,ipa) - soil(nsoil)%soilcp)           &
                                 * (slz(k+1)-slz(k))                                        &
                                 / (soil(nsoil)%slmsts - soil(nsoil)%soilcp) 
       end do
       nsoil = csite%ntext_soil(nzg,ipa)
       cpatch%paw_avg10d(ico) = cpatch%paw_avg10d(ico)                                      &
-                             + real(csite%soil_water(nzg,ipa) - dble(soil(nsoil)%soilcp))  &
+                             + (csite%soil_water(nzg,ipa) - soil(nsoil)%soilcp)            &
                              * (-1.0*slz(nzg)) / (soil(nsoil)%slmsts - soil(nsoil)%soilcp) 
       cpatch%paw_avg10d(ico) = cpatch%paw_avg10d(ico)/(-1.0*slz(cpatch%krdepth(ico)))
    end do

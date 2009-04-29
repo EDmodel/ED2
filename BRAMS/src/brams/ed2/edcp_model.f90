@@ -9,11 +9,11 @@ subroutine ed_timestep(timel,dtlong)
   implicit none
   include 'mpif.h'
   integer :: ifm
-  real(kind=8) :: timel
+  real(kind=8) :: timel,thistime
   real :: dtlong
   real :: wtime_start,t1,wtime1,wtime2,t2,wtime_tot
   real, external :: walltime
-  integer :: ierr
+  integer :: ierr,thismonth,thisyear,thisdate
   logical,save :: first = .true.
 
 
@@ -31,12 +31,18 @@ subroutine ed_timestep(timel,dtlong)
     
   if ( mod(timel+dble(dtlong),dble(dtlsm)) < dble(dtlong) .or. first ) then
 
+     thisyear  = current_time%year
+     thismonth = current_time%month
+     thisdate  = current_time%date
+     thistime  = current_time%time
+
      wtime_start=walltime(0.)
      !   CPU timing information & model timing information
      !   ===================================================
 
      call timing(1,t1)
      wtime1=walltime(wtime_start)
+
 
      ! Transfer the fluxes from the terrestrial and ocean models
      ! to the previous time arrays
@@ -64,18 +70,19 @@ subroutine ed_timestep(timel,dtlong)
      
      wtime2=walltime(wtime_start)
      call TIMING(2,T2)
-     
+
      if(mynum.eq.1) then
         write(*,"(a,a,i2.2,a,i2.2,a,i4.4,a,f6.0,2(a,f7.3),a)") &
              ' ED2 LSM Timestep ',&
-             '; Sim time  ',current_time%month, &
-             '-',current_time%date,           &
-             '-',current_time%year,           &
-             ' ',current_time%time,           &
+             '; Sim time  ',thismonth, &
+             '-',thisdate,           &
+             '-',thisyear,           &
+             ' ',thistime,           &
              's; Wall',wtime2-wtime1,&
              's; CPU',t2-t1,&
              's'
      endif
+
 
      
      ! If this is the first time the routine is called, then
@@ -135,7 +142,6 @@ subroutine ed_coup_model()
        nzg
   
   use ed_state_vars,only: edgrid_g, &
-       integration_buff_g,          &
        edtype,                      &
        patchtype,                   &
        filltab_alltypes
@@ -190,6 +196,10 @@ subroutine ed_coup_model()
   !         Start the timesteps
 
   do ifm=1,ngrids
+     call flag_stable_cohorts(edgrid_g(ifm))
+  end do
+
+  do ifm=1,ngrids
      call radiate_driver_ar(edgrid_g(ifm))
   end do
   
@@ -199,7 +209,7 @@ subroutine ed_coup_model()
      end do
   elseif(integration_scheme == 1)then
      do ifm=1,ngrids
-        call rk4_timestep_ar(edgrid_g(ifm),ifm,integration_buff_g)
+        call rk4_timestep_ar(edgrid_g(ifm),ifm)
      end do
   endif
 

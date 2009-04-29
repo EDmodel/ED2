@@ -13,9 +13,6 @@ module fusion_fission_coms
   
    implicit none
 
-   !----- Minimum biomass density (kgC/m2) required to form a new recruit. ----------------!
-   real :: min_recruit_size
-
    !----- Minimum DBH class used in patch profiling ---------------------------------------!
    real :: min_dbh_class
 

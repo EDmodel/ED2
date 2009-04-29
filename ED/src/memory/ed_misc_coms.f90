@@ -23,6 +23,8 @@ Module ed_misc_coms
   ! Namelist option to attach metadata to HDF5 output files 0=no, 1=yes
 
   integer :: attach_metadata
+  
+  integer :: icanturb
 
 
 end Module ed_misc_coms

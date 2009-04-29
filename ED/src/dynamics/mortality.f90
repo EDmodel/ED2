@@ -1,10 +1,6 @@
 !==========================================================================================!
 !==========================================================================================!
-!    This function computes the total PFT-dependent mortality rate due to 4 factors:       !
-! 1. Low carbon;                                                                           !
-! 2. Treefall;                                                                             !
-! 3. Cold mortality (currently off...);                                                    !
-! 4. Aging(?).                                                                             !
+!    This function computes the total PFT-dependent mortality rate:                        !
 !------------------------------------------------------------------------------------------!
 real function mortality_rates_ar(cpatch,ipa,ico,avg_daily_temp)
    use ed_state_vars , only : patchtype                  ! ! Structure
@@ -61,7 +57,7 @@ real function mortality_rates_ar(cpatch,ipa,ico,avg_daily_temp)
    !---------------------------------------------------------------------------------------!
    threshtemp = 5.0 + plant_min_temp(ipft)
    if(avg_daily_temp < threshtemp)then
-      cold_mort = frost_mort
+      cold_mort = frost_mort(ipft)
       if (avg_daily_temp > plant_min_temp(ipft)) then
          cold_mort = cold_mort * (1.0 - (avg_daily_temp - plant_min_temp(ipft))            &
                                       / (threshtemp - plant_min_temp(ipft)) )
@@ -84,10 +80,13 @@ real function mortality_rates_ar(cpatch,ipa,ico,avg_daily_temp)
    !    ,cpatch%cbr_bar(ico),cpatch%hite(ico),avg_daily_temp
 
    !---------------------------------------------------------------------------------------!
-   !    Find the total, density independent, mortality rate.  I don't know why, but cold   !
-   ! mortality was commented out. I left it commented, but it would be good to check that. !
+   !    Find the total, density independent, mortality rate.  This is the combination of   !
+   ! four factors:                                                                         !
    !---------------------------------------------------------------------------------------!
-   mortality_rates_ar = mort3(ipft) + carbon_mort + treefall_mort + cold_mort
+   mortality_rates_ar = mort3(ipft)   & ! 1. Ageing, PFT-dependent but otherwise constant;
+                      + carbon_mort   & ! 2. Negative carbon balance;
+                      + treefall_mort & ! 3. Treefall mortality;
+                      + cold_mort     ! ! 4. Mortality due to cold weather.
 
    return
 end function mortality_rates_ar

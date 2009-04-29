@@ -1,3 +1,8 @@
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine will control the two-stream radiation scheme.  This is called every  !
+! step, but not every sub-step.                                                            !
+!------------------------------------------------------------------------------------------!
 subroutine radiate_driver_ar(cgrid)
   
   use misc_coms, only: current_time, radfrq, dtlsm
@@ -121,13 +126,13 @@ end subroutine radiate_driver_ar
 subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
 
   use ed_state_vars,only:sitetype,patchtype
-  use canopy_radiation_coms, only: lai_min, Watts2Ein
+  use canopy_radiation_coms, only: lai_min, tai_min, Watts2Ein
   use grid_coms, only: nzg, nzs
   use soil_coms, only: soil, emisg
   use consts_coms, only: stefan
   use max_dims, only: n_pft
-  use pft_coms,only:sla
   use allometry, only : dbh2ca
+  use rk4_coms, only : hcapveg_coh_min
 
   implicit none
 
@@ -153,7 +158,7 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
   real, dimension(maxcohort) :: par_v_diffuse_array
   real, dimension(maxcohort) :: rshort_v_diffuse_array
   real(kind=8), dimension(maxcohort) :: veg_temp_array
-  real(kind=8), dimension(maxcohort) ::  lai_array
+  real(kind=8), dimension(maxcohort) ::  tai_array
   real(kind=8), dimension(maxcohort) ::  CA_array
   integer, dimension(maxcohort) :: pft_array
   real :: downward_par_below_beam
@@ -179,19 +184,13 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
   real :: downward_rshort_below_diffuse
   real :: surface_absorbed_longwave_surf
   real :: surface_absorbed_longwave_incid
-
+  real :: patch_tai
   ! Loop over the patches
 
   do ipa = 1,csite%npatches
 
      cpatch => csite%patch(ipa)
      
-     ! Calculate the total snow depth
-     if(csite%nlev_sfcwater(ipa) == 0)then
-        csite%total_snow_depth(ipa) = 0.0
-     else
-        csite%total_snow_depth(ipa) = sum(csite%sfcwater_depth(1:csite%nlev_sfcwater(ipa),ipa))
-     endif
 
      ! cohort_count is the number of cohorts with leaves that are not 
      ! covered by snow.
@@ -199,6 +198,8 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
      
      ! recalc the maximum photosynthetic rates next time around.
      csite%old_stoma_data_max(1:n_pft,ipa)%recalc = 1
+
+     patch_tai = 0.
 
      ! loop over cohorts
      do ico = cpatch%ncohorts,1,-1
@@ -220,11 +221,15 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
         cpatch%old_stoma_data(ico)%recalc = 1
 
         ! transfer information from linked lists to arrays
-        if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > &
-             csite%total_snow_depth(ipa))then
+        !if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > &
+        !     csite%total_snow_depth(ipa))then
+        if ((cpatch%lai(ico)+cpatch%bai(ico)) > tai_min  .and.  &
+            cpatch%hcapveg(ico) > hcapveg_coh_min         .and. &
+            cpatch%hite(ico) > csite%total_snow_depth(ipa)     )then
            cohort_count = cohort_count + 1
            pft_array(cohort_count) = cpatch%pft(ico)
-           lai_array(cohort_count) = dble(cpatch%lai(ico))
+           !---- This will be LAI if ibranch_thermo = 0.
+           tai_array(cohort_count) = dble(cpatch%lai(ico)) + dble(cpatch%bai(ico))
            !! crown area allom from Dietze and Clark 2008
            CA_array(cohort_count)  = dble(min(1.0,&
                 cpatch%nplant(ico)*dbh2ca(cpatch%dbh(ico),cpatch%pft(ico))))
@@ -236,11 +241,12 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
            ! long wave doesn't need to be initialized.
         endif
 
+        patch_tai = patch_tai + cpatch%lai(ico) + cpatch%bai(ico)
      enddo
      csite%rshort_s_diffuse(:,ipa) = 0.0
      csite%rshort_s_beam(:,ipa) = 0.0
 
-     fcpct = real(csite%soil_water(nzg,ipa) / dble(soil(csite%ntext_soil(nzg,ipa))%slmsts)) ! soil water fraction
+     fcpct = csite%soil_water(nzg,ipa) / soil(csite%ntext_soil(nzg,ipa))%slmsts ! soil water fraction
 
      if (fcpct > .5) then
         alg = .14                ! ground albedo
@@ -298,7 +304,7 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
         
         ! Long wave first.
         call lw_twostream(cohort_count, emissivity, T_surface,  &
-             pft_array(1:cohort_count), lai_array(1:cohort_count), & 
+             pft_array(1:cohort_count), tai_array(1:cohort_count), & 
              CA_array(1:cohort_count),  &
              veg_temp_array(1:cohort_count), lw_v_surf_array(1:cohort_count),  &
              lw_v_incid_array(1:cohort_count), downward_lw_below_surf,  &
@@ -322,10 +328,11 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
            call sw_twostream_clump(algs,  &
                 cosz,  &
                 cosaoi, &
-                csite%lai(ipa),  &
+                !csite%lai(ipa),  &
+                patch_tai,  &
                 cohort_count,   &
                 pft_array(1:cohort_count),  &
-                lai_array(1:cohort_count),   &
+                tai_array(1:cohort_count),   &
                 CA_array(1:cohort_count),    &
                 par_v_beam_array(1:cohort_count),  &
                 par_v_diffuse_array(1:cohort_count),  &
@@ -364,7 +371,10 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
         il = 0
         do ico = cpatch%ncohorts,1,-1
 
-           if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))then
+           if ((cpatch%lai(ico)+cpatch%bai(ico)) > tai_min  .and.  &
+               cpatch%hcapveg(ico) > hcapveg_coh_min         .and. &
+               cpatch%hite(ico) > csite%total_snow_depth(ipa)     )then
+           !if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))then
               il = il + 1
               cpatch%rshort_v_beam(ico) = rshort_v_beam_array(il)
               cpatch%rshort_v_diffuse(ico) = rshort_v_diffuse_array(il)
@@ -549,7 +559,8 @@ end subroutine ed2land_radiation_ar
 subroutine scale_ed_radiation_ar(rshort, rshort_diffuse, rlong, csite)
 
   use ed_state_vars,only:sitetype,patchtype
-  use canopy_radiation_coms, only: lai_min
+  use canopy_radiation_coms, only: lai_min, tai_min
+  use rk4_coms, only: hcapveg_coh_min
 
   implicit none
   type(sitetype),target :: csite
@@ -569,7 +580,10 @@ subroutine scale_ed_radiation_ar(rshort, rshort_diffuse, rlong, csite)
 
      do ico = 1,cpatch%ncohorts
         
-        if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))then
+        !if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))then
+        if ((cpatch%lai(ico)+cpatch%bai(ico)) > tai_min   .and. &
+            cpatch%hcapveg(ico) > hcapveg_coh_min         .and. &
+            cpatch%hite(ico) > csite%total_snow_depth(ipa)     )then
            cpatch%rshort_v_beam(ico) = cpatch%rshort_v_beam(ico) * beam_radiation
            cpatch%rshort_v_diffuse(ico) = cpatch%rshort_v_diffuse(ico) * rshort_diffuse
            cpatch%rshort_v(ico) = cpatch%rshort_v_beam(ico) + cpatch%rshort_v_diffuse(ico)

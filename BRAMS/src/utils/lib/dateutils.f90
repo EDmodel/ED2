@@ -7,7 +7,7 @@
 !                                                                                          !
 !  MLO - 08/08/08 : Adjusting dates on BRAMS so it will also use Gregorian calendar (97    !
 !                   leap years every 400 years), so it will be in line with ED2.           !
-!                   Also, BRAMS, like ED2, now uses January 1, 1583, 00GMT as the time     !
+!                   Also, BRAMS, like ED2, now uses January 1, 1000, 00GMT as the time     !
 !                   origin.                                                                !
 !##########################################################################################!
 subroutine date_abs_secs (indate1,seconds)
@@ -22,7 +22,7 @@ subroutine date_abs_secs (indate1,seconds)
    integer :: year1,month1,date1,hour1,iy,ndays
    integer, external  :: julday
    logical, external  :: isleap
-   integer, parameter :: firstyear = 1583
+   integer, parameter :: firstyear = 1000
    integer            :: elapdays
    call date_unmake_big(year1,month1,date1,hour1,indate1)
 
@@ -73,14 +73,14 @@ subroutine date_abs_secs2 (year1,month1,date1,hour1,seconds)
    implicit none
    real(kind=8) :: seconds
 
-   ! compute number of seconds past 1 January 1583 12:00 am
+   ! compute number of seconds past 1 January 1000 12:00 am
 
    real(kind=8) :: s1,s2,s3,s4
    integer :: year1,month1,date1,hour1,iy,ndays
    integer :: elapdays
    integer, external  :: julday
    logical, external  :: isleap
-   integer, parameter :: firstyear=1583
+   integer, parameter :: firstyear=1000
 
    !---------------------------------------------------------------------------------------!
    ! Counting the # of leap days between the reference and current year.                   !
@@ -165,10 +165,10 @@ subroutine date_secs_ymdt (seconds,iyear1,imonth1,idate1,ihour1)
    real(kind=8) :: seconds,s1
    integer :: iyear1,imonth1,idate1,ihour1
 
-   integer,parameter :: firstyear=1583
+   integer,parameter :: firstyear=1000
    logical, external :: isleap
 
-   ! compute real time given number of seconds past 1 January 1583 12:00 am  
+   ! compute real time given number of seconds past 1 January 1000 12:00 am  
 
    integer :: ny,nyr,ileap,nm,ihr,imn,isc
 
@@ -412,7 +412,7 @@ end function julday
 
 !==========================================================================================!
 !==========================================================================================!
-integer function julday1583 (imonth,iday,iyear)
+integer function julday1000 (imonth,iday,iyear)
    implicit none
    integer :: imonth,iday,iyear
 
@@ -421,12 +421,12 @@ integer function julday1583 (imonth,iday,iyear)
    integer           :: febdays
    logical, external :: isleap
 
-   ! compute the julian day (from 1583) from a normal date w/4 digit yr
-   ! 1583 is the first full year with Gregorian calendar, so that should cover
-   ! most cases.
+   ! compute the julian day (from 1000) from a normal date w/4 digit yr
+   ! 1583 is the first full year with Gregorian calendar, but for compability with ED 
+   ! we use 1000 instead.
 
-   julday1583=0
-   do i=1583,iyear
+   julday1000=0
+   do i=1000,iyear
 
       imm=12
       idd=31
@@ -455,12 +455,12 @@ integer function julday1583 (imonth,iday,iyear)
          + min(1,max(0,imm-11))*30  &
          + min(1,max(0,imm-12))*31
 
-      julday1583=julday1583+jd
+      julday1000=julday1000+jd
 
    enddo    
 
    return
-end function julday1583
+end function julday1000
 !==========================================================================================!
 !==========================================================================================!
 
