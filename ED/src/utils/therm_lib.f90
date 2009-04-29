@@ -1009,6 +1009,47 @@ module therm_lib
 
 
 
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine computes the temperature and fraction of liquid water from the     !
+   ! internal energy .   This requires double precision arguments.                         !
+   !---------------------------------------------------------------------------------------!
+   subroutine qtk8(q,tempk,fracliq)
+      use consts_coms, only: cliqi8,cicei8,allii8,t3ple8,qicet38,qliqt38,tsupercool8
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real(kind=8), intent(in)  :: q        ! Internal energy                     [   J/kg]
+      real(kind=8), intent(out) :: tempk    ! Temperature                         [      K]
+      real(kind=8), intent(out) :: fracliq  ! Liquid Fraction (0-1)               [    ---]
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Internal energy below qwfroz, all ice  ---------------------------------------!
+      if (q <= dble(qicet38)) then
+         fracliq = 0.d0
+         tempk   = q * cicei8 
+      !----- Internal energy, above qwmelt, all liquid ------------------------------------!
+      elseif (q >= dble(qliqt38)) then
+         fracliq = 1.d0
+         tempk   = q * cliqi8 + tsupercool8
+      !----- Changing phase, it must be at freezing point ---------------------------------!
+      else
+         fracliq = (q-qicet38) * allii8
+         tempk   = t3ple8
+      endif
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine qtk8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
    !=======================================================================================!
    !=======================================================================================!
    !    This subroutine computes the temperature (Kelvin) and liquid fraction from inter-  !
@@ -1016,26 +1057,56 @@ module therm_lib
    ! J/m³/K).                                                                              !
    ! This routine requires an 8-byte double precision floating point value for density.    !
    !---------------------------------------------------------------------------------------!
-   subroutine qwtk8(qw,w8,dryhcap,tempk,fracliq)
+   subroutine qwtk8(qw,w,dryhcap,tempk,fracliq)
+      use consts_coms, only: cliqi8,cliq8,cicei8,cice8,allii8,alli8,t3ple8,tsupercool8
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real        , intent(in)  :: qw      ! Internal energy           [  J/m²] or [  J/m³]
-      real(kind=8), intent(in)  :: w8      ! Density                   [ kg/m²] or [ kg/m³]
-      real        , intent(in)  :: dryhcap ! Heat capacity, nonwater   [J/m²/K] or [J/m³/K]
-      real        , intent(out) :: tempk   ! Temperature                           [     K]
-      real        , intent(out) :: fracliq ! Liquid fraction (0-1)                 [   ---]
+      real(kind=8), intent(in)  :: qw      ! Internal energy           [  J/m²] or [  J/m³]
+      real(kind=8), intent(in)  :: w       ! Density                   [ kg/m²] or [ kg/m³]
+      real(kind=8), intent(in)  :: dryhcap ! Heat capacity, nonwater   [J/m²/K] or [J/m³/K]
+      real(kind=8), intent(out) :: tempk   ! Temperature                           [     K]
+      real(kind=8), intent(out) :: fracliq ! Liquid fraction (0-1)                 [   ---]
       !----- Local variable ---------------------------------------------------------------!
-      real              :: w       ! Density                           [ kg/m²] or [ kg/m³]
+      real(kind=8)              :: qwfroz  ! qw of ice at triple pt.   [  J/m²] or [  J/m³] 
+      real(kind=8)              :: qwmelt  ! qw of liquid at triple pt.[  J/m²] or [  J/m³]
       !------------------------------------------------------------------------------------!
 
-      !----- Converting water mass to single precision ------------------------------------!
-      w      = sngl(w8)
-      call qwtk(qw,w,dryhcap,tempk,fracliq)
+      !----- Converting melting heat to J/m² or J/m³ --------------------------------------!
+      qwfroz = (dryhcap + w*cice8) * t3ple8
+      qwmelt = qwfroz   + w*alli8
+      !------------------------------------------------------------------------------------!
+      
+      !------------------------------------------------------------------------------------!
+      !    This is analogous to the qtk computation, we should analyse the magnitude of    !
+      ! the internal energy to choose between liquid, ice, or both by comparing with our.  !
+      ! know boundaries.                                                                   !
+      !------------------------------------------------------------------------------------!
+
+      !----- Internal energy below qwfroz, all ice  ---------------------------------------!
+      if (qw < qwfroz) then
+         fracliq = 0.d0
+         tempk   = qw  / (cice8 * w + dryhcap)
+      !----- Internal energy, above qwmelt, all liquid ------------------------------------!
+      elseif (qw > qwmelt) then
+         fracliq = 1.d0
+         tempk   = (qw + w * cliq8 * tsupercool8) / (dryhcap + w*cliq8)
+      !------------------------------------------------------------------------------------!
+      !    Changing phase, it must be at freezing point.  The max and min are here just to !
+      ! avoid tiny deviations beyond 0. and 1. due to floating point arithmetics.          !
+      !------------------------------------------------------------------------------------!
+      elseif (w > 0.d0) then
+         fracliq = min(1.d0,max(0.d0,(qw - qwfroz) * allii8 / w))
+         tempk = t3ple8
+      !----- No water, but it must be at freezing point (qw = qwfroz = qwmelt) ------------!
+      else
+         fracliq = 0.d0
+         tempk   = t3ple8
+      end if
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine qwtk8
    !=======================================================================================!
    !=======================================================================================!
-
- end module therm_lib
+end module therm_lib
 

@@ -24,7 +24,7 @@ Module consts_coms
      , b_sqrtpii    => sqrtpii    , b_onesixth   => onesixth   , b_qicet3     => qicet3    &
      , b_wdnsi      => wdnsi      , b_gorm       => gorm       , b_idns       => idns      &
      , b_idnsi      => idnsi      , b_tsupercool => tsupercool , b_twothirds  => twothirds &
-     , b_qliqt3     => qliqt3
+     , b_qliqt3     => qliqt3     , b_sqrt2o2    => sqrt2o2
 
    implicit none
 
@@ -58,7 +58,7 @@ Module consts_coms
    real, parameter :: onesixth   = b_onesixth   , qicet3     = b_qicet3
    real, parameter :: wdnsi      = b_wdnsi      , gorvap     = b_gorm
    real, parameter :: idns       = b_idns       , idnsi      = b_idnsi
-   real, parameter :: qliqt3     = b_qliqt3
+   real, parameter :: qliqt3     = b_qliqt3     , sqrt2o2    = b_sqrt2o2
 #else
    implicit none
 
@@ -80,6 +80,7 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    real, parameter :: srtwo     = 1.414213562373095 ! Square root of 2.         [      ---]
    real, parameter :: srthree   = 1.732050807568877 ! Square root of 3.         [      ---]
+   real, parameter :: sqrt2o2   = 0.5 * srtwo       ! ½ Square root of 2.       [      ---]
    real, parameter :: srtwoi    = 1./srtwo          ! 1./ Square root of 2.     [      ---]
    real, parameter :: srthreei  = 1./srthree        ! 1./ Square root of 3.     [      ---]
    real, parameter :: onethird  = 1./3.             ! 1/3                       [      ---]
@@ -231,5 +232,41 @@ Module consts_coms
    real, parameter :: mmdry1000   = 1000.*mmdry    ! Mean dry air molar mass    [   kg/mol]
    real, parameter :: mmdryi      = 1./mmdry       ! 1./mmdry                   [   mol/kg]
    !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Double precision version of constants used in Runge-Kutta.                         !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8), parameter :: alli8        = dble(alli      )
+   real(kind=8), parameter :: allii8       = dble(allii     )
+   real(kind=8), parameter :: alvi8        = dble(alvi      )
+   real(kind=8), parameter :: alvl8        = dble(alvl      )
+   real(kind=8), parameter :: cice8        = dble(cice      )
+   real(kind=8), parameter :: cicei8       = dble(cicei     )
+   real(kind=8), parameter :: cliq8        = dble(cliq      )
+   real(kind=8), parameter :: cliqi8       = dble(cliqi     )
+   real(kind=8), parameter :: cliqvlme8    = dble(cliqvlme  )
+   real(kind=8), parameter :: cp8          = dble(cp        )
+   real(kind=8), parameter :: cpi8         = dble(cpi       )
+   real(kind=8), parameter :: day_sec8     = dble(day_sec   )
+   real(kind=8), parameter :: gorvap8      = dble(gorvap    )
+   real(kind=8), parameter :: grav8        = dble(grav      )
+   real(kind=8), parameter :: idns8        = dble(idns      )
+   real(kind=8), parameter :: mmdry8       = dble(mmdry     )
+   real(kind=8), parameter :: mmdryi8      = dble(mmdryi    )
+   real(kind=8), parameter :: pi18         = dble(pi1       )
+   real(kind=8), parameter :: qicet38      = dble(qicet3    )
+   real(kind=8), parameter :: qliqt38      = dble(qliqt3    )
+   real(kind=8), parameter :: sqrt2o28     = dble(sqrt2o2   )
+   real(kind=8), parameter :: t3ple8       = dble(t3ple     )
+   real(kind=8), parameter :: tsupercool8  = dble(tsupercool)
+   real(kind=8), parameter :: twothirds8   = dble(twothirds )
+   real(kind=8), parameter :: umol_2_kgC8  = dble(umol_2_kgC)
+   real(kind=8), parameter :: vonk8        = dble(vonk      )
+   real(kind=8), parameter :: wdns8        = dble(wdns      )
+   real(kind=8), parameter :: wdnsi8       = dble(wdnsi     )
+   !---------------------------------------------------------------------------------------!
+
+
 
 end Module consts_coms

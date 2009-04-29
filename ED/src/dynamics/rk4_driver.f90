@@ -11,20 +11,23 @@ module rk4_driver_ar
    !      Main driver of short-time scale dynamics of the Runge-Kutta integrator for the   !
    ! land surface model.                                                                   !
    !---------------------------------------------------------------------------------------!
-   subroutine rk4_timestep_ar(cgrid,ifm,integration_buff)
-      use ed_state_vars  , only : integration_vars_ar  & ! structure
-                                , edtype               & ! structure
-                                , polygontype          & ! structure
-                                , sitetype             & ! structure
-                                , patchtype            ! ! structure
-      use grid_coms      , only : nzg                  ! ! intent(in)
-      use max_dims       , only : n_dbh                ! ! intent(in)
-      use misc_coms      , only : dtlsm                ! ! intent(in)
-      use consts_coms    , only : umol_2_kgC           ! ! intent(in)
+   subroutine rk4_timestep_ar(cgrid,ifm)
+      use rk4_coms               , only : integration_vars_ar  & ! structure
+                                        , integration_buff     & ! structure
+                                        , rk4patchtype         & ! structure
+                                        , rk4met               ! ! intent(out)
+      use ed_state_vars          , only : edtype               & ! structure
+                                        , polygontype          & ! structure
+                                        , sitetype             & ! structure
+                                        , patchtype            ! ! structure
+      use grid_coms              , only : nzg                  ! ! intent(in)
+      use max_dims               , only : n_dbh                ! ! intent(in)
+      use misc_coms              , only : dtlsm                ! ! intent(in)
+      use consts_coms            , only : umol_2_kgC           ! ! intent(in)
+      use canopy_struct_dynamics , only : canopy_turbulence ! ! subroutine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)              , target      :: cgrid
-      type(integration_vars_ar) , target      :: integration_buff
       integer                   , intent (in) :: ifm
       !----- Local variables --------------------------------------------------------------!
       type(polygontype)         , pointer     :: cpoly
@@ -32,16 +35,20 @@ module rk4_driver_ar
       type(patchtype)           , pointer     :: cpatch
       integer                                 :: ipy,isi,ipa
       integer, dimension(nzg)                 :: ed_ktrans
+      real                                    :: time_py_start,time_py_spent
       real   , dimension(n_dbh)               :: gpp_dbh
       real                                    :: sum_lai_rbi
       real                                    :: gpp
       real                                    :: plant_respiration
       !----- Functions --------------------------------------------------------------------!
       real                      , external    :: compute_netrad_ar
+      real                      , external    :: walltime
       !------------------------------------------------------------------------------------!
       
       polygonloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
+
+         time_py_start = walltime(0.) 
 
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
@@ -56,12 +63,40 @@ module rk4_driver_ar
                   cpoly%met(isi)%vels = cpoly%met(isi)%vels_unstab
                end if
 
+               !---------------------------------------------------------------------------!
+               !    Copy the meteorological variables to the rk4met structure.             !
+               !---------------------------------------------------------------------------!
+               call copy_met_2_rk4met(cpoly%met(isi)%rhos,cpoly%met(isi)%vels              &
+                                     ,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv        &
+                                     ,cpoly%met(isi)%atm_co2,cpoly%met(isi)%geoht          &
+                                     ,cpoly%met(isi)%exner,cpoly%met(isi)%pcpg             &
+                                     ,cpoly%met(isi)%qpcpg,cpoly%met(isi)%dpcpg            &
+                                     ,cpoly%met(isi)%prss,cpoly%met(isi)%geoht             &
+                                     ,cpoly%lsl(isi),cgrid%lon(ipy),cgrid%lat(ipy))
+
+
+               !---------------------------------------------------------------------------!
+               !     Set up the integration patch.                                         !
+               !---------------------------------------------------------------------------!
+               call copy_patch_init_ar(csite,ipa,integration_buff%initp)
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Calculate the canopy geometry, and the scalar transport coefficients. !
+               !---------------------------------------------------------------------------!
+               call canopy_turbulence(csite,integration_buff%initp,isi,ipa,.true.)
+
+
+
                !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
                call canopy_photosynthesis_ar(csite,ipa,cpoly%met(isi)%vels                 &
                           ,cpoly%met(isi)%rhos,cpoly%met(isi)%prss,ed_ktrans               &
                           ,csite%ntext_soil(:,ipa),csite%soil_water(:,ipa)                 &
                           ,csite%soil_fracliq(:,ipa),cpoly%lsl(isi),sum_lai_rbi            &
                           ,cpoly%leaf_aging_factor(:,isi),cpoly%green_leaf_factor(:,isi) )
+
+
 
                !----- Compute root and heterotrophic respiration. -------------------------!
                call soil_respiration_ar(csite,ipa)
@@ -76,7 +111,8 @@ module rk4_driver_ar
                !----- Compute the carbon flux components. ---------------------------------!
                call sum_plant_cfluxes_ar(csite,ipa,gpp,gpp_dbh,plant_respiration)
                csite%co2budget_gpp(ipa)       = csite%co2budget_gpp(ipa) + gpp * dtlsm
-               csite%co2budget_gpp_dbh(:,ipa) = csite%co2budget_gpp_dbh(:,ipa) + gpp_dbh(:) *dtlsm
+               csite%co2budget_gpp_dbh(:,ipa) = csite%co2budget_gpp_dbh(:,ipa)             & 
+                                              + gpp_dbh(:) *dtlsm
                csite%co2budget_plresp(ipa)    = csite%co2budget_plresp(ipa)                &
                                               + plant_respiration * dtlsm
                csite%co2budget_rh(ipa)        = csite%co2budget_rh(ipa)                    &
@@ -89,15 +125,7 @@ module rk4_driver_ar
                !---------------------------------------------------------------------------!
                !    This is the driver for the integration process...                      !
                !---------------------------------------------------------------------------!
-               call integrate_patch_ar(csite,ipa,isi,ipy,ifm,integration_buff              &
-                                      ,cpoly%met(isi)%rhos,cpoly%met(isi)%vels             &
-                                      ,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv       &
-                                      ,cpoly%met(isi)%atm_co2,cpoly%met(isi)%geoht         &
-                                      ,cpoly%met(isi)%exner,cpoly%met(isi)%pcpg            &
-                                      ,cpoly%met(isi)%qpcpg,cpoly%met(isi)%dpcpg           &
-                                      ,cpoly%met(isi)%prss,cpoly%met(isi)%atm_shv          &
-                                      ,cpoly%met(isi)%geoht,cpoly%lsl(isi),cgrid%lon(ipy)  &
-                                      ,cgrid%lat(ipy))
+               call integrate_patch_ar(csite,ipa,isi,ipy,ifm,integration_buff)
 
                !---------------------------------------------------------------------------!
                !    Update the minimum monthly temperature, based on canopy temperature.
@@ -108,6 +136,10 @@ module rk4_driver_ar
 
             end do patchloop
          end do siteloop
+
+         time_py_spent = walltime(time_py_start)
+         cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) + dble(time_py_spent)
+
       end do polygonloop
 
       return
@@ -124,23 +156,28 @@ module rk4_driver_ar
    !=======================================================================================!
    !     This subroutine will drive the integration process.                               !
    !---------------------------------------------------------------------------------------!
-   subroutine integrate_patch_ar(csite,ipa,isi,ipy,ifm,integration_buff,rhos,vels,atm_tmp  &
-                                ,rv,atm_co2,zoff,exner,pcpg,qpcpg,dpcpg,prss,atm_shv,geoht &
-                                ,lsl,lon,lat)
+   subroutine integrate_patch_ar(csite,ipa,isi,ipy,ifm,integration_buff)
       use ed_state_vars   , only : sitetype             & ! structure
-                                 , patchtype            & ! structure
-                                 , integration_vars_ar  & ! structure
-                                 , rk4patchtype         ! ! structure
+                                 , patchtype            ! ! structure
       use misc_coms       , only : dtlsm                ! ! intent(in)
       use soil_coms       , only : soil_rough           & ! intent(in)
                                  , snow_rough           ! ! intent(in)
-      use canopy_air_coms , only : exar                 ! ! intent(in)
-      use consts_coms     , only : vonk                 & ! intent(in)
-                                 , cp                   ! ! intent(in)
-      use rk4_coms        , only : tbeg                 & ! intent(inout)
+      use canopy_air_coms , only : exar8                ! ! intent(in)
+      use consts_coms     , only : vonk8                & ! intent(in)
+                                 , cp8                  & ! intent(in)
+                                 , cpi8                 ! ! intent(in)
+      use rk4_coms        , only : integration_vars_ar  & ! structure
+                                 , rk4patchtype         & ! structure
+                                 , rk4met               & ! intent(inout)
+                                 , zero_rk4_patch       & ! subroutine
+                                 , zero_rk4_cohort      & ! subroutine
+                                 , tbeg                 & ! intent(inout)
                                  , tend                 & ! intent(inout)
                                  , dtrk4                & ! intent(inout)
-                                 , dtrk4i               ! ! intent(inout)
+                                 , dtrk4i               & ! intent(inout)
+                                 , ibranch_thermo       & ! intent(in)
+                                 , effarea_water        & ! intent(out)
+                                 , effarea_heat         ! ! intent(out)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(integration_vars_ar), target     :: integration_buff
@@ -149,137 +186,74 @@ module rk4_driver_ar
       integer                  , intent(in) :: ipy
       integer                  , intent(in) :: isi
       integer                  , intent(in) :: ipa
-      integer                  , intent(in) :: lsl
-      !----- Local variables --------------------------------------------------------------!
-      real                     , intent(in) :: rhos
-      real                     , intent(in) :: vels
-      real                     , intent(in) :: atm_tmp
-      real                     , intent(in) :: atm_shv
-      real                     , intent(in) :: rv
-      real                     , intent(in) :: atm_co2
-      real                     , intent(in) :: zoff
-      real                     , intent(in) :: exner
-      real                     , intent(in) :: pcpg
-      real                     , intent(in) :: qpcpg
-      real                     , intent(in) :: dpcpg
-      real                     , intent(in) :: prss
-      real                     , intent(in) :: geoht
-      real                     , intent(in) :: lon
-      real                     , intent(in) :: lat
       !----- Local variables --------------------------------------------------------------!
       type(rk4patchtype)       , pointer    :: initp
-      real                                  :: hbeg
-      real                                  :: factv
-      real                                  :: aux
-      real                                  :: zveget
-      real                                  :: zdisp
+      real(kind=8)                          :: hbeg
       !----- Locally saved variable -------------------------------------------------------!
-      logical, save :: first_time=.true.
+      logical                  , save       :: first_time=.true.
       !------------------------------------------------------------------------------------!
 
-
+      !----- Making an alias. -------------------------------------------------------------!
+      initp => integration_buff%initp
 
       !----- Assigning some constants which will remain the same throughout the run. ------!
       if (first_time) then
          first_time = .false.
-         tbeg   = 0.0
-         tend   = dtlsm
+         tbeg   = 0.d0
+         tend   = dble(dtlsm)
          dtrk4  = tend - tbeg
-         dtrk4i = 1./dtrk4
+         dtrk4i = 1.d0/dtrk4
+         
+         !---------------------------------------------------------------------------------!
+         !    The area factor for heat and water exchange between canopy and vegetation is !
+         ! applied only on LAI, and it depends on how we are considering the branches and  !
+         ! twigs.  If their area isn't explicitly defined, we add a 0.2 factor to the      !
+         ! area because BAI will be 0.  Otherwise, we don't add anything to the LAI, and   !
+         ! let BAI to do the job.                                                          !
+         !---------------------------------------------------------------------------------!
+         select case (ibranch_thermo)
+         case (0)
+            effarea_water = 1.2d0
+            effarea_heat  = 2.2d0
+         case (1)
+            effarea_water = 1.0d0
+            effarea_heat  = 2.0d0
+         end select
       end if
-
-      !------------------------------------------------------------------------------------!
-      !    Making sure that all buffers are flushed to zero.                               !
-      !------------------------------------------------------------------------------------!
-      call zero_rk4_patch(integration_buff%initp)
-      call zero_rk4_patch(integration_buff%yscal)
-      call zero_rk4_patch(integration_buff%y)
-      call zero_rk4_patch(integration_buff%dydx)
-      call zero_rk4_patch(integration_buff%yerr)
-      call zero_rk4_patch(integration_buff%ytemp)
-      call zero_rk4_patch(integration_buff%ak2)
-      call zero_rk4_patch(integration_buff%ak3)
-      call zero_rk4_patch(integration_buff%ak4)
-      call zero_rk4_patch(integration_buff%ak5)
-      call zero_rk4_patch(integration_buff%ak6)
-      call zero_rk4_patch(integration_buff%ak7)
-      call zero_rk4_cohort(integration_buff%initp)
-      call zero_rk4_cohort(integration_buff%yscal)
-      call zero_rk4_cohort(integration_buff%y)
-      call zero_rk4_cohort(integration_buff%dydx)
-      call zero_rk4_cohort(integration_buff%yerr)
-      call zero_rk4_cohort(integration_buff%ytemp)
-      call zero_rk4_cohort(integration_buff%ak2)
-      call zero_rk4_cohort(integration_buff%ak3)
-      call zero_rk4_cohort(integration_buff%ak4)
-      call zero_rk4_cohort(integration_buff%ak5)
-      call zero_rk4_cohort(integration_buff%ak6)
-      call zero_rk4_cohort(integration_buff%ak7)
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !     Set up the integration patch.                                                  !
-      !------------------------------------------------------------------------------------!
-      initp => integration_buff%initp
-      call copy_patch_init_ar(csite,ipa, initp, rhos, lsl)
 
       !------------------------------------------------------------------------------------!
       !      Initial step size.  Experience has shown that giving this too large a value   !
       ! causes the integrator to fail (e.g., soil layers become supersaturated).           !
       !------------------------------------------------------------------------------------!
-      hbeg = csite%htry(ipa)
+      hbeg = dble(csite%htry(ipa))
 
-
-      !------------------------------------------------------------------------------------!
-      !      This is Bob Walko's recommended way of calculating the resistance.  Note that !
-      ! temperature, not potential temperature, is input here.                             !
-      !------------------------------------------------------------------------------------!
-      initp%rough = max(soil_rough, csite%veg_rough(ipa)) * (1.0 - csite%snowfac(ipa))     &
-                  + snow_rough
-      zveget      = csite%veg_height(ipa) * (1.0 - csite%snowfac(ipa))
-      zdisp       = 0.63 * zveget
 
       !------------------------------------------------------------------------------------!
       !     Zero the canopy-atmosphere flux values.  These values are updated every dtlsm, !
       ! so they must be zeroed at each call.                                               !
       !------------------------------------------------------------------------------------!
-      initp%upwp = 0.
-      initp%tpwp = 0.
-      initp%rpwp = 0.
-      initp%wpwp = 0.
-
-      !----- Finding the characteristic scales (a.k.a. starts). ---------------------------!
-      call ed_stars(atm_tmp,atm_shv,atm_co2,initp%can_temp,geoht,vels,initp%rough          &
-                   ,initp%ustar,initp%rstar,initp%tstar,initp%cstar,initp%can_shv          &
-                   ,initp%can_co2)
-      !----- Converting T-star to theta-star. ---------------------------------------------!
-      initp%tstar = initp%tstar * cp / exner  
-
-      !----- Finding the aerodynamic resistance due to vegetation. ------------------------!
-      factv        = 1.0 / (vonk * initp%ustar)
-      aux          = exp(exar * (1. - (zdisp + initp%rough) / zveget))
-      initp%rasveg = factv * zveget / (exar * (zveget - zdisp)) * (exp(exar) - aux)
+      initp%upwp = 0.d0
+      initp%tpwp = 0.d0
+      initp%qpwp = 0.d0
+      initp%wpwp = 0.d0
 
       !----- Go into the ODE integrator. --------------------------------------------------!
-      call odeint_ar(hbeg,csite,ipa,isi,ipy,ifm,integration_buff,rhos,vels,atm_tmp,atm_shv &
-                    ,atm_co2,geoht,exner, pcpg, qpcpg, dpcpg, prss, lsl)
+      call odeint_ar(hbeg,csite,ipa,isi,ipy,ifm,integration_buff)
 
       !------------------------------------------------------------------------------------!
       !      Normalize canopy-atmosphere flux values.  These values are updated every      !
       ! dtlsm, so they must be normalized every time.                                      !
       !------------------------------------------------------------------------------------!
-      initp%upwp = rhos*initp%upwp/dtlsm
-      initp%tpwp = rhos*initp%tpwp/dtlsm
-      initp%rpwp = rhos*initp%rpwp/dtlsm
-      initp%wpwp = rhos*initp%wpwp/dtlsm
+      initp%upwp = rk4met%rhos*initp%upwp * dtrk4i
+      initp%tpwp = rk4met%rhos*initp%tpwp * dtrk4i
+      initp%qpwp = rk4met%rhos*initp%qpwp * dtrk4i
+      initp%wpwp = rk4met%rhos*initp%wpwp * dtrk4i
       
       
       !------------------------------------------------------------------------------------!
       ! Move the state variables from the integrated patch to the model patch.             !
       !------------------------------------------------------------------------------------!
-      call initp2modelp_ar(tend-tbeg,initp,csite,ipa,isi,ipy,lsl,atm_tmp,atm_shv,atm_co2   &
-                          ,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg,lon,lat)
+      call initp2modelp_ar(tend-tbeg,initp,csite,ipa,isi,ipy)
 
       return
    end subroutine integrate_patch_ar
@@ -296,39 +270,33 @@ module rk4_driver_ar
    !     This subroutine will copy the variables from the integration buffer to the state  !
    ! patch and cohorts.                                                                    !
    !---------------------------------------------------------------------------------------!
-   subroutine initp2modelp_ar(hdid,initp,csite,ipa,isi,ipy,lsl,atm_tmp,atm_shv,atm_co2     &
-                             ,prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg,lon,lat)
-      use ed_state_vars        , only : sitetype          & ! structure
-                                      , patchtype         & ! structure
-                                      , rk4patchtype      & ! structure
-                                      , edgrid_g          ! ! structure
-      use consts_coms          , only : day_sec           & ! intent(in)
-                                      , t3ple             ! ! intent(in)
-      use ed_misc_coms         , only : fast_diagnostics  ! ! intent(in)
-      use soil_coms            , only : soil              & ! intent(in)
-                                      , slz               & ! intent(in)
-                                      , min_sfcwater_mass ! ! intent(in) 
-      use ed_misc_coms         , only : fast_diagnostics  ! ! intent(in)
-      use grid_coms            , only : nzg               & ! intent(in)
-                                      , nzs               ! ! intent(in)
-      use canopy_radiation_coms, only : veg_temp_min      ! ! intent(in)
-      use rk4_coms             , only : rk4max_veg_temp   ! ! intent(in)
-      use therm_lib            , only : qwtk              ! ! subroutine
-      use ed_therm_lib         , only : calc_hcapveg      & ! function
-                                      , ed_grndvap        ! ! subroutine
+   subroutine initp2modelp_ar(hdid,initp,csite,ipa,isi,ipy)
+      use rk4_coms             , only : rk4patchtype         & ! structure
+                                      , rk4met               & ! intent(in)
+                                      , rk4min_veg_temp      & ! intent(in)
+                                      , rk4max_veg_temp      & ! intent(in)
+                                      , tiny_offset          ! ! intent(in) 
+      use ed_state_vars        , only : sitetype             & ! structure
+                                      , patchtype            & ! structure
+                                      , edgrid_g             ! ! structure
+      use consts_coms          , only : day_sec              & ! intent(in)
+                                      , t3ple8               ! ! intent(in)
+      use ed_misc_coms         , only : fast_diagnostics     ! ! intent(in)
+      use soil_coms            , only : soil8                & ! intent(in)
+                                      , slz8                 ! ! intent(in)
+      use ed_misc_coms         , only : fast_diagnostics     ! ! intent(in)
+      use grid_coms            , only : nzg                  & ! intent(in)
+                                      , nzs                  ! ! intent(in)
+      use therm_lib            , only : qwtk                 ! ! subroutine
+      use ed_therm_lib         , only : ed_grndvap           ! ! subroutine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype), target     :: initp
       type(sitetype)    , target     :: csite
+      real(kind=8)      , intent(in) :: hdid
       integer           , intent(in) :: ipa
       integer           , intent(in) :: ipy
       integer           , intent(in) :: isi
-      integer           , intent(in) :: lsl
-      real              , intent(in) :: atm_tmp
-      real              , intent(in) :: atm_shv
-      real              , intent(in) :: atm_co2
-      real              , intent(in) :: prss,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg
-      real              , intent(in) :: lon,lat
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)   , pointer    :: cpatch
       integer                        :: ico
@@ -337,65 +305,65 @@ module rk4_driver_ar
       integer                        :: ksn
       integer                        :: nsoil
       integer                        :: nlsw1
-      real                           :: hdid
-      real                           :: veg_fliq
-      real                           :: available_water
+      real(kind=8)                   :: available_water
+      real(kind=8)                   :: tmp_energy
       real                           :: surface_temp
       real                           :: surface_fliq
       !----- Local contants ---------------------------------------------------------------!
-      real, parameter                :: tendays_sec=10.*day_sec
+      real        , parameter        :: tendays_sec=10.*day_sec
+      !----- External function ------------------------------------------------------------!
+      real        , external         :: sngloff
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
       !     Most variables require just a simple copy.  More comments will be made next to !
-      ! those in which this is not true.                                                   !
+      ! those in which this is not true.  All floating point variables are converted back  !
+      ! to single precision.                                                               !
       !------------------------------------------------------------------------------------!
-      csite%can_temp(ipa) = initp%can_temp
-      csite%can_shv(ipa)  = initp%can_shv
-      csite%can_co2(ipa)  = initp%can_co2
+      csite%can_temp(ipa) = sngloff(initp%can_temp,tiny_offset)
+      csite%can_shv(ipa)  = sngloff(initp%can_shv ,tiny_offset)
+      csite%can_co2(ipa)  = sngloff(initp%can_co2 ,tiny_offset)
 
-      csite%ustar(ipa)    = initp%ustar
-      csite%tstar(ipa)    = initp%tstar
-      csite%rstar(ipa)    = initp%rstar
-      csite%cstar(ipa)    = initp%cstar
+      csite%ustar(ipa)    = sngloff(initp%ustar   ,tiny_offset)
+      csite%tstar(ipa)    = sngloff(initp%tstar   ,tiny_offset)
+      csite%qstar(ipa)    = sngloff(initp%qstar   ,tiny_offset)
+      csite%cstar(ipa)    = sngloff(initp%cstar   ,tiny_offset)
 
-      csite%upwp(ipa)     = initp%upwp
-      csite%wpwp(ipa)     = initp%wpwp
-      csite%tpwp(ipa)     = initp%tpwp
-      csite%rpwp(ipa)     = initp%rpwp
+      csite%upwp(ipa)     = sngloff(initp%upwp    ,tiny_offset)
+      csite%wpwp(ipa)     = sngloff(initp%wpwp    ,tiny_offset)
+      csite%tpwp(ipa)     = sngloff(initp%tpwp    ,tiny_offset)
+      csite%qpwp(ipa)     = sngloff(initp%qpwp    ,tiny_offset)
 
       !------------------------------------------------------------------------------------!
       !    These variables are fast scale fluxes, and they may not be allocated, so just   !
       ! check this before copying.                                                         !
       !------------------------------------------------------------------------------------!
       if(fast_diagnostics) then
-         csite%wbudget_loss2atm(ipa)     = initp%wbudget_loss2atm
-         csite%ebudget_loss2atm(ipa)     = initp%ebudget_loss2atm
-         csite%co2budget_loss2atm(ipa)   = initp%co2budget_loss2atm
-         csite%ebudget_latent(ipa)       = initp%ebudget_latent
-         csite%avg_vapor_vc(ipa)         = initp%avg_vapor_vc
-         csite%avg_dew_cg(ipa)           = initp%avg_dew_cg
-         csite%avg_vapor_gc(ipa)         = initp%avg_vapor_gc
-         csite%avg_wshed_vg(ipa)         = initp%avg_wshed_vg
-         csite%avg_vapor_ac(ipa)         = initp%avg_vapor_ac
-         csite%avg_transp(ipa)           = initp%avg_transp
-         csite%avg_drainage(ipa)         = initp%avg_drainage
-         csite%avg_evap(ipa)             = initp%avg_evap
-         csite%avg_netrad(ipa)           = initp%avg_netrad
-         csite%aux(ipa)                  = initp%aux
-         csite%avg_sensible_vc(ipa)      = initp%avg_sensible_vc
-         csite%avg_sensible_2cas(ipa)    = initp%avg_sensible_2cas
-         csite%avg_qwshed_vg(ipa)        = initp%avg_qwshed_vg
-         csite%avg_sensible_gc(ipa)      = initp%avg_sensible_gc
-         csite%avg_sensible_ac(ipa)      = initp%avg_sensible_ac
-         csite%avg_sensible_tot(ipa)     = initp%avg_sensible_tot
-         csite%avg_carbon_ac(ipa)        = initp%avg_carbon_ac
-         do k = lsl, nzg
-            csite%avg_sensible_gg(k,ipa) = initp%avg_sensible_gg(k)
-            csite%avg_smoist_gg(k,ipa)   = initp%avg_smoist_gg(k)
-            csite%avg_smoist_gc(k,ipa)   = initp%avg_smoist_gc(k)
-            csite%aux_s(k,ipa)           = initp%aux_s(k)
+         csite%wbudget_loss2atm(ipa)     =sngloff(initp%wbudget_loss2atm  ,tiny_offset)
+         csite%ebudget_loss2atm(ipa)     =sngloff(initp%ebudget_loss2atm  ,tiny_offset)
+         csite%co2budget_loss2atm(ipa)   =sngloff(initp%co2budget_loss2atm,tiny_offset)
+         csite%ebudget_latent(ipa)       =sngloff(initp%ebudget_latent    ,tiny_offset)
+         csite%avg_vapor_vc(ipa)         =sngloff(initp%avg_vapor_vc      ,tiny_offset)
+         csite%avg_dew_cg(ipa)           =sngloff(initp%avg_dew_cg        ,tiny_offset)
+         csite%avg_vapor_gc(ipa)         =sngloff(initp%avg_vapor_gc      ,tiny_offset)
+         csite%avg_wshed_vg(ipa)         =sngloff(initp%avg_wshed_vg      ,tiny_offset)
+         csite%avg_vapor_ac(ipa)         =sngloff(initp%avg_vapor_ac      ,tiny_offset)
+         csite%avg_transp(ipa)           =sngloff(initp%avg_transp        ,tiny_offset)
+         csite%avg_evap(ipa)             =sngloff(initp%avg_evap          ,tiny_offset)
+         csite%avg_drainage(ipa)         =sngloff(initp%avg_drainage      ,tiny_offset)
+         csite%avg_netrad(ipa)           =sngloff(initp%avg_netrad        ,tiny_offset)
+         csite%avg_sensible_vc(ipa)      =sngloff(initp%avg_sensible_vc   ,tiny_offset)
+         csite%avg_sensible_2cas(ipa)    =sngloff(initp%avg_sensible_2cas ,tiny_offset)
+         csite%avg_qwshed_vg(ipa)        =sngloff(initp%avg_qwshed_vg     ,tiny_offset)
+         csite%avg_sensible_gc(ipa)      =sngloff(initp%avg_sensible_gc   ,tiny_offset)
+         csite%avg_sensible_ac(ipa)      =sngloff(initp%avg_sensible_ac   ,tiny_offset)
+         csite%avg_sensible_tot(ipa)     =sngloff(initp%avg_sensible_tot  ,tiny_offset)
+         csite%avg_carbon_ac(ipa)        =sngloff(initp%avg_carbon_ac     ,tiny_offset)
+         do k = rk4met%lsl, nzg
+            csite%avg_sensible_gg(k,ipa) =sngloff(initp%avg_sensible_gg(k),tiny_offset)
+            csite%avg_smoist_gg(k,ipa)   =sngloff(initp%avg_smoist_gg(k)  ,tiny_offset)
+            csite%avg_smoist_gc(k,ipa)   =sngloff(initp%avg_smoist_gc(k)  ,tiny_offset)
          end do
       end if
       !------------------------------------------------------------------------------------!
@@ -418,31 +386,32 @@ module rk4_driver_ar
       !------------------------------------------------------------------------------------!
       cpatch => csite%patch(ipa)
       do ico = 1,cpatch%ncohorts
-         available_water = 0.0
+         available_water = 0.d0
          do k = cpatch%krdepth(ico), nzg - 1
             nsoil = csite%ntext_soil(k,ipa)
             available_water = available_water                                              &
-                            + real( (initp%soil_water(k) - dble(soil(nsoil)%soilcp))       &
-                                  * dble(slz(k+1)-slz(k))                                  &
-                                  / dble(soil(nsoil)%slmsts - soil(nsoil)%soilcp) )
+                            + (initp%soil_water(k) - soil8(nsoil)%soilcp)                  &
+                            * (slz8(k+1)-slz8(k))                                          &
+                            / (soil8(nsoil)%slmsts - soil8(nsoil)%soilcp)
          end do
          nsoil = csite%ntext_soil(nzg,ipa)
          available_water = available_water                                                 &
-                         + real( (initp%soil_water(nzg) - dble(soil(nsoil)%soilcp))        &
-                               * dble(-1.0*slz(nzg))                                       &
-                               / dble(soil(nsoil)%slmsts -soil(nsoil)%soilcp)) 
-         available_water = available_water / (-1.0*slz(cpatch%krdepth(ico)))
+                         + (initp%soil_water(nzg) - soil8(nsoil)%soilcp)                   &
+                         * (-1.d0*slz8(nzg))                                               &
+                         / (soil8(nsoil)%slmsts -soil8(nsoil)%soilcp) 
+         available_water = available_water / (-1.d0*slz8(cpatch%krdepth(ico)))
 
-         cpatch%paw_avg(ico) = cpatch%paw_avg(ico)*(1.0-hdid/tendays_sec)            &
-                                + available_water*hdid/tendays_sec
+
+         cpatch%paw_avg(ico) = cpatch%paw_avg(ico)*(1.0-sngl(hdid)/tendays_sec)      &
+                                + sngl(available_water)*sngl(hdid)/tendays_sec
       end do
 
       
-      do k = lsl, nzg
-         csite%soil_water(k,ipa)   = initp%soil_water(k)
-         csite%soil_energy(k,ipa)  = initp%soil_energy(k)
-         csite%soil_tempk(k,ipa)   = initp%soil_tempk(k)
-         csite%soil_fracliq(k,ipa) = initp%soil_fracliq(k)
+      do k = rk4met%lsl, nzg
+         csite%soil_water(k,ipa)   = sngloff(initp%soil_water(k)  ,tiny_offset)
+         csite%soil_energy(k,ipa)  = sngloff(initp%soil_energy(k) ,tiny_offset)
+         csite%soil_tempk(k,ipa)   = sngloff(initp%soil_tempk(k)  ,tiny_offset)
+         csite%soil_fracliq(k,ipa) = sngloff(initp%soil_fracliq(k),tiny_offset)
       end do
       
 
@@ -452,11 +421,12 @@ module rk4_driver_ar
       !------------------------------------------------------------------------------------!
       csite%nlev_sfcwater(ipa) = initp%nlev_sfcwater
       do k = 1, csite%nlev_sfcwater(ipa)
-         csite%sfcwater_depth(k,ipa)   = initp%sfcwater_depth(k)
-         csite%sfcwater_mass(k,ipa)    = initp%sfcwater_mass(k)
-         csite%sfcwater_tempk(k,ipa)   = initp%sfcwater_tempk(k)
-         csite%sfcwater_fracliq(k,ipa) = initp%sfcwater_fracliq(k)
-         csite%sfcwater_energy(k,ipa)  = initp%sfcwater_energy(k)/initp%sfcwater_mass(k)
+         csite%sfcwater_depth(k,ipa)   = sngloff(initp%sfcwater_depth(k)   ,tiny_offset)
+         csite%sfcwater_mass(k,ipa)    = sngloff(initp%sfcwater_mass(k)    ,tiny_offset)
+         csite%sfcwater_tempk(k,ipa)   = sngloff(initp%sfcwater_tempk(k)   ,tiny_offset)
+         csite%sfcwater_fracliq(k,ipa) = sngloff(initp%sfcwater_fracliq(k) ,tiny_offset)
+         tmp_energy                    = initp%sfcwater_energy(k)/initp%sfcwater_mass(k)
+         csite%sfcwater_energy(k,ipa)  = sngloff(tmp_energy                ,tiny_offset)
       end do
       !------------------------------------------------------------------------------------!
       !    For the layers that no longer exist, assign zeroes for prognostic variables,    !
@@ -492,12 +462,14 @@ module rk4_driver_ar
             !    The cohort was solved, update internal energy and water, and re-calculate !
             ! temperature.  Note that energy may need to be scaled back.                   !
             !------------------------------------------------------------------------------!
-            cpatch%veg_water(ico)  = initp%veg_water(ico)
-            cpatch%veg_energy(ico) = initp%veg_energy(ico)                                 &
-                                   + (cpatch%hcapveg(ico)-initp%hcapveg(ico))              &
+            cpatch%veg_water(ico)  = sngloff(initp%veg_water(ico),tiny_offset)
+            tmp_energy             = initp%veg_energy(ico)                                 &
+                                   + (dble(cpatch%hcapveg(ico))-initp%hcapveg(ico))        &
                                    * initp%veg_temp(ico)
+
+            cpatch%veg_energy(ico) = sngloff(tmp_energy,tiny_offset)
             call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)     &
-                     ,cpatch%veg_temp(ico),veg_fliq)
+                     ,cpatch%veg_temp(ico),cpatch%veg_fliq(ico))
          elseif (cpatch%hite(ico) <=  csite%total_snow_depth(ipa)) then
             !------------------------------------------------------------------------------!
             !    For plants buried in snow, fix the leaf temperature to the snow temper-   !
@@ -508,6 +480,7 @@ module rk4_driver_ar
                if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) kclosest = k
             end do
             cpatch%veg_temp(ico)   = csite%sfcwater_tempk(kclosest,ipa)
+            cpatch%veg_fliq(ico)   = 0.
             cpatch%veg_water(ico)  = 0.
             cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
          else
@@ -516,6 +489,7 @@ module rk4_driver_ar
             ! temperature to the canopy air space and force veg_water to be zero.          !
             !------------------------------------------------------------------------------!
             cpatch%veg_temp(ico)   = csite%can_temp(ipa)
+            cpatch%veg_fliq(ico)   = 0.
             cpatch%veg_water(ico)  = 0. 
             cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
          end if
@@ -525,35 +499,34 @@ module rk4_driver_ar
          ! happen (well, if this still happens, then it's a bug, and we should remove the  !
          ! bug first...).                                                                  !
          !---------------------------------------------------------------------------------!
-         if (cpatch%veg_temp(ico) < veg_temp_min .or.                                      &
-             cpatch%veg_temp(ico) > rk4max_veg_temp   ) then
+         if (cpatch%veg_temp(ico) < sngl(rk4min_veg_temp) .or.                             &
+             cpatch%veg_temp(ico) > sngl(rk4max_veg_temp)   ) then
             write (unit=*,fmt='(80a)')         ('=',k=1,80)
             write (unit=*,fmt='(a)')           'FINAL VEG_TEMP IS WRONG IN INITP2MODELP'
             write (unit=*,fmt='(80a)')         ('-',k=1,80)
-            write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:    ',lon
-            write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:     ',lat
+            write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:    ',rk4met%lon
+            write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:     ',rk4met%lat
             write (unit=*,fmt='(a,1x,i6)')     ' + POLYGON:      ',ipy
             write (unit=*,fmt='(a,1x,i6)')     ' + SITE:         ',isi
             write (unit=*,fmt='(a,1x,i6)')     ' + PATCH:        ',ipa
             write (unit=*,fmt='(a,1x,i6)')     ' + COHORT:       ',ico
             write (unit=*,fmt='(a)')           ' + PATCH AGE:    ',csite%age(ipa)
-            write (unit=*,fmt='(a,1x,es12.5)') '   - AGE:        ',csite%age(ipa)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - AGE:        ',csite%age(ipa)
             write (unit=*,fmt='(a,1x,i6)')     '   - DIST_TYPE:  ',csite%dist_type(ipa)
             write (unit=*,fmt='(a)')           ' + BUFFER_COHORT (initp):'
-            write (unit=*,fmt='(a,1x,es12.5)') '   - ENERGY:     ',initp%veg_energy(ico)
-            write (unit=*,fmt='(a,1x,es12.5)') '   - WATER:      ',initp%veg_water(ico)
-            write (unit=*,fmt='(a,1x,es12.5)') '   - WATER:      ',initp%veg_temp(ico)
-            write (unit=*,fmt='(a,1x,es12.5)') '   - WATER:      ',initp%veg_fliq(ico)
-            write (unit=*,fmt='(a,1x,es12.5)') '   - WATER:      ',initp%hcapveg(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - ENERGY:     ',initp%veg_energy(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - WATER:      ',initp%veg_water(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - TEMPERATURE:',initp%veg_temp(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - FRACLIQ:    ',initp%veg_fliq(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - HEAT_CAP:   ',initp%hcapveg(ico)
             write (unit=*,fmt='(a)')           ' + STATE_COHORT (cpatch):'
-            write (unit=*,fmt='(a,1x,es12.5)') '   - ENERGY:     ',cpatch%veg_energy(ico)
-            write (unit=*,fmt='(a,1x,es12.5)') '   - WATER:      ',cpatch%veg_water(ico)
-            write (unit=*,fmt='(a,1x,es12.5)') '   - WATER:      ',cpatch%veg_temp(ico)
-            write (unit=*,fmt='(a,1x,es12.5)') '   - WATER:      ',veg_fliq
-            write (unit=*,fmt='(a,1x,es12.5)') '   - WATER:      ',cpatch%hcapveg(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - ENERGY:     ',cpatch%veg_energy(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - WATER:      ',cpatch%veg_water(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - TEMPERATURE:',cpatch%veg_temp(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - FRACLIQ:    ',cpatch%veg_fliq(ico)
+            write (unit=*,fmt='(a,1x,es12.4)') '   - HEAT_CAP:   ',cpatch%hcapveg(ico)
             write (unit=*,fmt='(80a)') ('-',k=1,80)
-            call print_patch_ar(initp, csite,ipa, lsl,atm_tmp,atm_shv,atm_co2,prss           &
-                               ,exner,rhos,vels,geoht,pcpg,qpcpg,dpcpg)
+            call print_rk4patch_ar(initp, csite,ipa)
             call fatal_error('extreme vegetation temperature','initp2modelp'               &
                             &,'rk4_driver.f90')
          end if
@@ -565,9 +538,9 @@ module rk4_driver_ar
       nsoil = csite%ntext_soil(nzg,ipa)
       nlsw1 = max(1, ksn)
       call ed_grndvap(ksn,nsoil,csite%soil_water(nzg,ipa),csite%soil_energy(nzg,ipa)       &
-                     ,csite%sfcwater_energy(nlsw1,ipa),rhos,csite%can_shv(ipa)             &
-                     ,csite%ground_shv(ipa),csite%surface_ssh(ipa),surface_temp            &
-                     ,surface_fliq)
+                     ,csite%sfcwater_energy(nlsw1,ipa),sngl(rk4met%rhos)                   &
+                     ,csite%can_shv(ipa),csite%ground_shv(ipa),csite%surface_ssh(ipa)      &
+                     ,surface_temp,surface_fliq)
       return
    end subroutine initp2modelp_ar
    !=======================================================================================!
@@ -861,7 +834,7 @@ subroutine sum_plant_cfluxes_ar(csite,ipa, gpp, gpp_dbh,plresp)
       lrresp = lrresp + cpatch%root_respiration(ico)
       !------------------------------------------------------------------------------------!
       !     So do the other components that go to sresp.  Structural terms are "intens-    !
-      ! ive", we must convert them from umol/plant/day to kgC/m2/s.                        !
+      ! ive", we must convert them from kgC/plant/day to umol/m2/s.                        !
       !------------------------------------------------------------------------------------!
       sresp  = sresp                                                                       &
              + ( cpatch%growth_respiration(ico) + cpatch%storage_respiration(ico)          &

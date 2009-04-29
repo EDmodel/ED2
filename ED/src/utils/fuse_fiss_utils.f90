@@ -23,7 +23,7 @@ module fuse_fiss_utils_ar
       !----- Local variables --------------------------------------------------------------!
       type(patchtype), pointer :: temppatch  ! Scratch patch structure
       integer                  :: ico, iico  ! Counters
-      integer, dimension(1)    :: tallid     ! Identity of tallest cohort
+      integer                  :: tallid     ! Identity of tallest cohort
       !------------------------------------------------------------------------------------!
       
       !----- No need to sort an empty patch or a patch with a single cohort. --------------!
@@ -39,13 +39,13 @@ module fuse_fiss_utils_ar
       do while(iico <= cpatch%ncohorts)
       
          !----- Finding the tallest cohort ------------------------------------------------!
-         tallid = maxloc(cpatch%hite)
+         tallid = maxloc(cpatch%hite,dim=1)
          
          !----- Copying to the scratch structure ------------------------------------------!
-         call copy_patchtype(cpatch,temppatch,tallid(1),tallid(1),iico,iico)
+         call copy_patchtype(cpatch,temppatch,tallid,tallid,iico,iico)
          
          !----- Putting a non-sense height so this will never "win" again. ----------------!
-         cpatch%hite(tallid) = -1.0
+         cpatch%hite(tallid) = -huge(1.)
 
          iico = iico + 1
       end do
@@ -72,18 +72,16 @@ module fuse_fiss_utils_ar
    ! eliminate cohorts that have little contribution and thus we can speed up the run.     !
    !---------------------------------------------------------------------------------------!
    subroutine terminate_cohorts_ar(csite,ipa,elim_nplant,elim_lai)
+      use pft_coms           , only : min_recruit_size & ! intent(in)
+                                    , l2n_stem         & ! intent(in)
+                                    , c2n_stem         & ! intent(in)
+                                    , c2n_storage      & ! intent(in), lookup table
+                                    , c2n_leaf         ! ! intent(in), lookup table
 
-      use fusion_fission_coms, only :  min_recruit_size ! ! intent(in)
+      use decomp_coms        , only : f_labile         ! ! intent(in), lookup table
 
-      use pft_coms           , only :  l2n_stem         & ! intent(in)
-                                     , c2n_stem         & ! intent(in)
-                                     , c2n_storage      & ! intent(in), lookup table
-                                     , c2n_leaf         ! ! intent(in), lookup table
-
-      use decomp_coms        , only :  f_labile         ! ! intent(in), lookup table
-
-      use ed_state_vars      , only :  patchtype        & ! structure
-                                     , sitetype         ! ! structure
+      use ed_state_vars      , only : patchtype        & ! structure
+                                    , sitetype         ! ! structure
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)       , target      :: csite        ! Current site
@@ -115,7 +113,7 @@ module fuse_fiss_utils_ar
          csize = cpatch%nplant(ico)                                                        &
                * (cpatch%balive(ico) + cpatch%bdead(ico) + cpatch%bstorage(ico))
 
-         if( csize < (0.1 * min_recruit_size) )then
+         if( csize < (0.1 * min_recruit_size(cpatch%pft(ico)))) then
             !----- Cohort is indeed too small, it won't remain ----------------------------!
             remain_table(ico) = .false.
             elim_nplant = elim_nplant + cpatch%nplant(ico)
@@ -160,7 +158,10 @@ module fuse_fiss_utils_ar
 
       !----- Update the cohort census at the site level -----------------------------------!
       csite%cohort_count(ipa) = cpatch%ncohorts
-
+      if (elim_lai < 0. .or. elim_nplant < 0.) then
+         write (unit=*,fmt='(a,1x,es12.5)') 'TERMINATE: ELIM_LAI=',elim_lai
+         write (unit=*,fmt='(a,1x,es12.5)') 'TERMINATE: ELIM_NPLANT=',elim_nplant
+      end if
       return
    end subroutine terminate_cohorts_ar
    !=======================================================================================!
@@ -242,6 +243,8 @@ module fuse_fiss_utils_ar
          do ico = 1, cpatch%ncohorts
             cpatch%nplant(ico)              = cpatch%nplant(ico)              * area_scale
             cpatch%lai(ico)                 = cpatch%lai(ico)                 * area_scale
+            cpatch%bai(ico)                 = cpatch%bai(ico)                 * area_scale
+            cpatch%sai(ico)                 = cpatch%sai(ico)                 * area_scale
             cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)            * area_scale
             cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)      * area_scale
             cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)      * area_scale
@@ -284,21 +287,21 @@ module fuse_fiss_utils_ar
    !---------------------------------------------------------------------------------------!
    subroutine fuse_cohorts_ar(csite,ipa, green_leaf_factor, lsl)
 
-      use ed_state_vars       , only :  sitetype           & ! Structure
-                                      , patchtype          ! ! Structure
-      use pft_coms            , only :  rho                & ! intent(in)
-                                      , b1Ht               & ! intent(in)
-                                      , max_dbh            & ! intent(in)
-                                      , sla                ! ! intent(in)
-      use fusion_fission_coms , only :  fusetol_h          & ! intent(in)
-                                      , fusetol            & ! intent(in)
-                                      , lai_fuse_tol       & ! intent(in)
-                                      , fuse_relax         & ! intent(in)
-                                      , coh_tolerance_max  ! ! intent(in)
-      use max_dims            , only :  n_pft              ! ! intent(in)
-      use mem_sites           , only :  maxcohort          ! ! intent(in)
-      use allometry           , only :  dbh2h              & ! function
-                                      , dbh2bl             ! ! function
+      use ed_state_vars       , only : sitetype            & ! Structure
+                                     , patchtype           ! ! Structure
+      use pft_coms            , only : rho                 & ! intent(in)
+                                     , b1Ht                & ! intent(in)
+                                     , max_dbh             & ! intent(in)
+                                     , sla                 ! ! intent(in)
+      use fusion_fission_coms , only : fusetol_h           & ! intent(in)
+                                     , fusetol             & ! intent(in)
+                                     , lai_fuse_tol        & ! intent(in)
+                                     , fuse_relax          & ! intent(in)
+                                     , coh_tolerance_max   ! ! intent(in)
+      use max_dims            , only : n_pft               ! ! intent(in)
+      use mem_sites           , only : maxcohort           ! ! intent(in)
+      use allometry           , only : dbh2h               & ! function
+                                     , dbh2bl              ! ! function
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -314,7 +317,8 @@ module fuse_fiss_utils_ar
       logical                              :: fusion_test    ! Flag: proceed with fusion?
       real                                 :: hite_threshold ! Height threshold
       real                                 :: newn           ! new nplants of merged coh.
-      real                                 :: total_lai      ! Total LAI
+      real                                 :: lai_max        ! Maximum LAI the fused 
+                                                             !    cohort could have.
       real                                 :: total_size     ! Total size
       real                                 :: tolerance_mult ! Multiplication factor
       integer                              :: ncohorts_old   ! # of coh. before fusion test
@@ -414,10 +418,14 @@ module fuse_fiss_utils_ar
                   newn = cpatch%nplant(donc) + cpatch%nplant(recc)
 
                   !------------------------------------------------------------------------!
-                  !    Since we are allowing allometry to be off, total_lai can be simply  !
-                  ! the sum.                                                               !
+                  !     We now check the maximum LAI the fused cohorts could have.  We     !
+                  ! don't want the cohort to have a very large LAI.  If both cohorts have  !
+                  ! leaves fully flushed, this is the same as adding the individual LAIs,  !
+                  ! but if they are not, we need to consider that LAI may grow...          !
                   !------------------------------------------------------------------------!
-                  total_lai = cpatch%lai(recc) + cpatch%lai(donc)
+                  lai_max = (cpatch%nplant(recc)*dbh2bl(cpatch%dbh(recc),cpatch%pft(recc)) &
+                          + cpatch%nplant(donc)*dbh2bl(cpatch%dbh(donc),cpatch%pft(donc))) &
+                          * sla(cpatch%pft(recc))
 
                   !----- Checking the total size of this cohort before and after fusion. --!
                   total_size = cpatch%nplant(donc) * ( cpatch%balive(donc)                 &
@@ -439,7 +447,7 @@ module fuse_fiss_utils_ar
                   ! 5. Both cohorts must have the same phenology status.                   !
                   !------------------------------------------------------------------------!
                   if (     cpatch%pft(donc)              == cpatch%pft(recc)               &     
-                     .and. total_lai                      < lai_fuse_tol*tolerance_mult    &
+                     .and. lai_max                        < lai_fuse_tol*tolerance_mult    &
                      .and. cpatch%first_census(donc)     == cpatch%first_census(recc)      &
                      .and. cpatch%new_recruit_flag(donc) == cpatch%new_recruit_flag(recc)  &
                      .and. cpatch%phenology_status(donc) == cpatch%phenology_status(recc)  &
@@ -655,6 +663,8 @@ module fuse_fiss_utils_ar
                ! need to be rescaled.                                                      !
                !---------------------------------------------------------------------------!
                cpatch%lai(ico)                 = cpatch%lai(ico)                  * 0.5
+               cpatch%bai(ico)                 = cpatch%bai(ico)                  * 0.5
+               cpatch%sai(ico)                 = cpatch%sai(ico)                  * 0.5
                cpatch%nplant(ico)              = cpatch%nplant(ico)               * 0.5
                cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * 0.5
                cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * 0.5
@@ -677,7 +687,7 @@ module fuse_fiss_utils_ar
 
                !----- Apply these values to the new cohort. -------------------------------!
                inew = inew+1
-               call copy_cohort_ar(cpatch,ico,inew)
+               call clone_cohort_ar(cpatch,ico,inew)
                !---------------------------------------------------------------------------!
 
                !----- Tweaking bdead, to ensure carbon is conserved. ----------------------!
@@ -731,7 +741,7 @@ module fuse_fiss_utils_ar
    !=======================================================================================!
    !   This subroutine will clone one cohort.                                              !
    !---------------------------------------------------------------------------------------!
-   subroutine copy_cohort_ar(cpatch,isc,idt)
+   subroutine clone_cohort_ar(cpatch,isc,idt)
    
       use ed_state_vars, only : patchtype  & ! Strucuture
                               , stoma_data ! ! Structure
@@ -754,7 +764,12 @@ module fuse_fiss_utils_ar
       cpatch%phenology_status(idt)    = cpatch%phenology_status(isc)
       cpatch%balive(idt)              = cpatch%balive(isc)
       cpatch%lai(idt)                 = cpatch%lai(isc)
+      cpatch%bai(idt)                 = cpatch%bai(isc)
+      cpatch%sai(idt)                 = cpatch%sai(isc)
       cpatch%bstorage(idt)            = cpatch%bstorage(isc)
+      
+      !----- We copy this one, but it will be updated before it is really used. -----------!
+      cpatch%solvable(idt)            = cpatch%solvable(isc)
 
       do imonth = 1,13
          cpatch%cb(imonth,idt)        = cpatch%cb(imonth,isc)
@@ -764,8 +779,8 @@ module fuse_fiss_utils_ar
       cpatch%cbr_bar(idt)             = cpatch%cbr_bar(isc)
       cpatch%veg_energy(idt)          = cpatch%veg_energy(isc)
       cpatch%veg_temp(idt)            = cpatch%veg_temp(isc)
+      cpatch%veg_fliq(idt)            = cpatch%veg_fliq(isc)
       cpatch%veg_water(idt)           = cpatch%veg_water(isc)
-      cpatch%hcapveg(idt)             = cpatch%hcapveg(isc)
       cpatch%mean_gpp(idt)            = cpatch%mean_gpp(isc)
       cpatch%mean_leaf_resp(idt)      = cpatch%mean_leaf_resp(isc)
       cpatch%mean_root_resp(idt)      = cpatch%mean_root_resp(isc)
@@ -779,7 +794,6 @@ module fuse_fiss_utils_ar
       cpatch%vleaf_respiration(idt)   = cpatch%vleaf_respiration(isc)
       cpatch%fsn(idt)                 = cpatch%fsn(isc)
       cpatch%monthly_dndt(idt)        = cpatch%monthly_dndt(isc)
-
       cpatch%Psi_open(idt)            = cpatch%Psi_open(isc)
       cpatch%krdepth(idt)             = cpatch%krdepth(isc)
       cpatch%first_census(idt)        = cpatch%first_census(isc)
@@ -798,6 +812,7 @@ module fuse_fiss_utils_ar
       cpatch%A_closed(idt)            = cpatch%A_closed(isc)
       cpatch%Psi_closed(idt)          = cpatch%Psi_closed(isc)
       cpatch%rsw_open(idt)            = cpatch%rsw_open(isc)
+      cpatch%rsw_closed(idt)          = cpatch%rsw_closed(isc)
       cpatch%fsw(idt)                 = cpatch%fsw(isc)
       cpatch%fs_open(idt)             = cpatch%fs_open(isc)
       cpatch%stomatal_resistance(idt) = cpatch%stomatal_resistance(isc)
@@ -805,6 +820,8 @@ module fuse_fiss_utils_ar
       cpatch%bseeds(idt)              = cpatch%bseeds(isc)
       cpatch%leaf_respiration(idt)    = cpatch%leaf_respiration(isc)
       cpatch%root_respiration(idt)    = cpatch%root_respiration(isc)
+      cpatch%hcapveg(idt)             = cpatch%hcapveg(isc)
+
       cpatch%gpp(idt)                 = cpatch%gpp(isc)
       cpatch%paw_avg(idt)          = cpatch%paw_avg(isc)
 
@@ -828,7 +845,7 @@ module fuse_fiss_utils_ar
       osdt%gsw_residual     = ossc%gsw_residual
      
       return
-   end subroutine copy_cohort_ar
+   end subroutine clone_cohort_ar
    !=======================================================================================!
    !=======================================================================================!
 
@@ -868,7 +885,6 @@ module fuse_fiss_utils_ar
       real                         :: cb_act            !
       real                         :: cb_max            !
       real                         :: root_depth        !
-      real                         :: fracliq           ! Scratch var., liquid fraction
       !------------------------------------------------------------------------------------!
 
       newni = 1.0 / newn
@@ -899,37 +915,33 @@ module fuse_fiss_utils_ar
 
 
 
-      !----- LAI is simply the sum. -------------------------------------------------------!
-      if (cpatch%phenology_status(recc) < 2) then
-      else
-      end if
       !------------------------------------------------------------------------------------!
-
-      !------------------------------------------------------------------------------------!
-      !    Bleaf, LAI, energy, water mass and heat capacity must be zero if phenology      !
-      ! status is 2.  This is probably done correctly throughout the code, but being safe  !
-      ! here.                                                                              !
+      !    Bleaf and LAI must be zero if phenology status is 2.  This is probably done     !
+      ! correctly throughout the code, but being safe here.                                !
       !------------------------------------------------------------------------------------!
       if (cpatch%phenology_status(recc) < 2) then
          cpatch%bleaf(recc)  = ( cpatch%nplant(recc) * cpatch%bleaf(recc)                  &
                                + cpatch%nplant(donc) * cpatch%bleaf(donc) ) *newni
          cpatch%lai(recc)    = cpatch%lai(recc) + cpatch%lai(donc)
-         cpatch%veg_energy(recc) = cpatch%veg_energy(recc) + cpatch%veg_energy(donc)
-         cpatch%veg_water(recc)  = cpatch%veg_water(recc)  + cpatch%veg_water(donc)
-         cpatch%hcapveg(recc)    = cpatch%hcapveg(recc)    + cpatch%hcapveg(donc)
-         !----- Updating temperature ------------------------------------------------------!
-         call qwtk(cpatch%veg_energy(recc),cpatch%veg_water(recc),cpatch%hcapveg(recc)     &
-                  ,cpatch%veg_temp(recc),fracliq)
       else
          cpatch%bleaf(recc)      = 0.
          cpatch%lai(recc)        = 0.
-         cpatch%veg_energy(recc) = 0.
-         cpatch%veg_water(recc)  = 0.
-         cpatch%hcapveg(recc)    = 0.
-         !----- In case cohorts don't have leaves, fuse their temperatures (singularity) --!
-         cpatch%veg_temp(recc) = newni                                                     &
-                               * ( cpatch%veg_temp(recc) * cpatch%nplant(recc)             &
-                                 + cpatch%veg_temp(donc) * cpatch%nplant(donc))
+      end if
+
+      cpatch%bai(recc)    = cpatch%bai(recc)  + cpatch%bai(donc)
+      cpatch%sai(recc)    = cpatch%sai(recc)  + cpatch%sai(donc)
+      cpatch%veg_energy(recc) = cpatch%veg_energy(recc) + cpatch%veg_energy(donc)
+      cpatch%veg_water(recc)  = cpatch%veg_water(recc)  + cpatch%veg_water(donc)
+      cpatch%hcapveg(recc)    = cpatch%hcapveg(recc)    + cpatch%hcapveg(donc)
+      if ( cpatch%hcapveg(recc) > 0. ) then !----- almost always the case. ----------------!
+         !----- Updating temperature ------------------------------------------------------!
+         call qwtk(cpatch%veg_energy(recc),cpatch%veg_water(recc),cpatch%hcapveg(recc)     &
+                  ,cpatch%veg_temp(recc),cpatch%veg_fliq(recc))
+      else !---- Veg_temp cannot be found using qwtk, it is a singularity. ----------------!
+         cpatch%veg_temp(recc)  = newni *                                                  &
+                                ( cpatch%veg_temp(recc)  * cpatch%nplant(recc)             &
+                                + cpatch%veg_temp(donc)  * cpatch%nplant(donc))
+         cpatch%veg_fliq(recc)  = 0.0
       end if
 
       cb_act = 0.
@@ -1249,8 +1261,8 @@ module fuse_fiss_utils_ar
                                           refv = 0.5                                       &
                                                *(csite%pft_density_profile(ipft,idbh,donp) &
                                                + csite%pft_density_profile(ipft,idbh,recp) )
-                                          norm = diff / mean_nplant(ipft,idbh)
-                                          !norm = diff / refv
+                                          !norm = diff / mean_nplant(ipft,idbh)
+                                          norm = diff / refv
 
                                           if (norm > profile_tol) then
                                              fuse_flag = .false.   ! reject
@@ -1370,11 +1382,14 @@ module fuse_fiss_utils_ar
                 new_nplant_tot > 1.01 * (old_nplant_tot - elim_nplant_tot) .or.            &
                 new_lai_tot    < 0.99 * (old_lai_tot    - elim_lai_tot   ) .or.            &
                 new_lai_tot    > 1.01 * (old_lai_tot    - elim_lai_tot   )     ) then
+               write (unit=*,fmt='(a,1x,es12.5)') 'OLD_AREA:       ',old_area
                write (unit=*,fmt='(a,1x,es12.5)') 'NEW_AREA:       ',new_area
                write (unit=*,fmt='(a,1x,es12.5)') 'NEW_LAI_TOT:    ',new_lai_tot
                write (unit=*,fmt='(a,1x,es12.5)') 'OLD_LAI_TOT:    ',old_lai_tot
+               write (unit=*,fmt='(a,1x,es12.5)') 'ELIM_LAI_TOT:   ',elim_lai_tot
                write (unit=*,fmt='(a,1x,es12.5)') 'NEW_NPLANT_TOT: ',new_nplant_tot
                write (unit=*,fmt='(a,1x,es12.5)') 'OLD_NPLANT_TOT: ',old_nplant_tot
+               write (unit=*,fmt='(a,1x,es12.5)') 'ELIM_NPLANT_TOT:',elim_nplant_tot
                call fatal_error('Conservation failed while fusing patches'                 &
                               &,'fuse_patches_ar','fuse_fiss_utils.f90')
             end if
@@ -1468,6 +1483,10 @@ module fuse_fiss_utils_ar
       !----- The new area is simply the sum of each patch area. ---------------------------!
       newarea  = csite%area(donp) + csite%area(recp)
       newareai = 1.0/newarea
+
+      !----- Assign eliminated LAI and nplant to zero (everything stays) ------------------!
+      elim_nplant = 0.
+      elim_lai    = 0.
 
       !----- We now take the weighted average, scale by the individual patch area. --------!
       csite%age(recp)                = newareai *                                          &
@@ -1593,12 +1612,12 @@ module fuse_fiss_utils_ar
       !----- Merging soil energy and water. -----------------------------------------------!
       do iii=1,nzg
          csite%soil_energy(iii,recp)     = newareai *                                      &
-              ( csite%soil_energy(iii,donp)         * csite%area(donp)                     &
-              + csite%soil_energy(iii,recp)         * csite%area(recp) )
+                                         ( csite%soil_energy(iii,donp) * csite%area(donp)  &
+                                         + csite%soil_energy(iii,recp) * csite%area(recp))
 
-         csite%soil_water(iii,recp)      = dble(newareai) *                                &
-              ( csite%soil_water(iii,recp)          * dble(csite%area(recp))               &
-              + csite%soil_water(iii,donp)          * dble(csite%area(donp)) )
+         csite%soil_water(iii,recp)      = newareai *                                      &
+                                         ( csite%soil_water(iii,recp)  * csite%area(recp)  &
+                                         + csite%soil_water(iii,donp)  * csite%area(donp))
       end do
 
       !------------------------------------------------------------------------------------!
@@ -1719,6 +1738,10 @@ module fuse_fiss_utils_ar
                                       ( csite%avg_veg_temp(donp)      * csite%area(donp)   &
                                       + csite%avg_veg_temp(recp)      * csite%area(recp) )  
 
+      csite%avg_veg_fliq(recp)        = newareai *                                         &
+                                      ( csite%avg_veg_fliq(donp)      * csite%area(donp)   &
+                                      + csite%avg_veg_fliq(recp)      * csite%area(recp) )  
+
       csite%avg_veg_water(recp)       = newareai *                                         &
                                       ( csite%avg_veg_water(donp)     * csite%area(donp)   &
                                       + csite%avg_veg_water(recp)     * csite%area(recp) )  
@@ -1771,6 +1794,8 @@ module fuse_fiss_utils_ar
       area_scale = csite%area(recp) * newareai
       do ico = 1,nrc
          cpatch%lai(ico)                 = cpatch%lai(ico)                  * area_scale
+         cpatch%bai(ico)                 = cpatch%bai(ico)                  * area_scale
+         cpatch%sai(ico)                 = cpatch%sai(ico)                  * area_scale
          cpatch%nplant(ico)              = cpatch%nplant(ico)               * area_scale
          cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * area_scale
          cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * area_scale
@@ -1795,6 +1820,8 @@ module fuse_fiss_utils_ar
       area_scale = csite%area(donp) * newareai
       do ico = 1,ndc
          cpatch%lai(ico)                 = cpatch%lai(ico)                  * area_scale
+         cpatch%bai(ico)                 = cpatch%bai(ico)                  * area_scale
+         cpatch%sai(ico)                 = cpatch%sai(ico)                  * area_scale
          cpatch%nplant(ico)              = cpatch%nplant(ico)               * area_scale
          cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * area_scale
          cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * area_scale
@@ -1820,34 +1847,35 @@ module fuse_fiss_utils_ar
       !    Fill a new patch with the donor and recipient cohort vectors.                   !
       !------------------------------------------------------------------------------------!
       !----- Allocate the temporary patch with room for all cohorts. ----------------------!
-      nullify(temppatch)
-      allocate(temppatch)
-      call allocate_patchtype(temppatch,ndc + nrc )
-      !----- Copy the recipient and donor cohorts to the temporary patch. -----------------!
-      call copy_patchtype(csite%patch(recp),temppatch,1,nrc,1,nrc)
-      call copy_patchtype(csite%patch(donp),temppatch,1,ndc,nrc+1,nrc+ndc)
-      !----- Reallocate the current recipient patch with all cohorts ----------------------!
-      call deallocate_patchtype(csite%patch(recp))
-      call allocate_patchtype(csite%patch(recp),ndc+nrc)
-      !----- Copy the temporary patch back to the recipient patch. ------------------------!
-      call copy_patchtype(temppatch,csite%patch(recp),1,nrc+ndc,1,nrc+ndc)
-      !----- Get rid of the temporary patch -----------------------------------------------!
-      call deallocate_patchtype(temppatch)
-      deallocate(temppatch)
-      !----- Sort cohorts in the new patch ------------------------------------------------!
-      cpatch => csite%patch(recp)
-      call sort_cohorts_ar(cpatch)
-      !------------------------------------------------------------------------------------!
-      !    We just combined two patches, so we may be able to fuse some cohorts and/or     !
-      ! eliminate others.                                                                  !
-      !------------------------------------------------------------------------------------!
-      if (cpatch%ncohorts > 0 .and. maxcohort >= 0) then
-         call fuse_cohorts_ar(csite,recp,green_leaf_factor,lsl)
-         call terminate_cohorts_ar(csite,recp,elim_nplant,elim_lai)
-         call split_cohorts_ar(cpatch,green_leaf_factor,lsl)
+      if (ndc + nrc > 0 ) then
+         nullify(temppatch)
+         allocate(temppatch)
+         call allocate_patchtype(temppatch,ndc + nrc )
+         !----- Copy the recipient and donor cohorts to the temporary patch. --------------!
+         call copy_patchtype(csite%patch(recp),temppatch,1,nrc,1,nrc)
+         call copy_patchtype(csite%patch(donp),temppatch,1,ndc,nrc+1,nrc+ndc)
+         !----- Reallocate the current recipient patch with all cohorts -------------------!
+         call deallocate_patchtype(csite%patch(recp))
+         call allocate_patchtype(csite%patch(recp),ndc+nrc)
+         !----- Copy the temporary patch back to the recipient patch. ---------------------!
+         call copy_patchtype(temppatch,csite%patch(recp),1,nrc+ndc,1,nrc+ndc)
+         !----- Get rid of the temporary patch --------------------------------------------!
+         call deallocate_patchtype(temppatch)
+         deallocate(temppatch)
+         !----- Sort cohorts in the new patch ---------------------------------------------!
+         cpatch => csite%patch(recp)
+         call sort_cohorts_ar(cpatch)
+         !---------------------------------------------------------------------------------!
+         !    We just combined two patches, so we may be able to fuse some cohorts and/or  !
+         ! eliminate others.                                                               !
+         !---------------------------------------------------------------------------------!
+         if (cpatch%ncohorts > 0 .and. maxcohort >= 0) then
+            call fuse_cohorts_ar(csite,recp,green_leaf_factor,lsl)
+            call terminate_cohorts_ar(csite,recp,elim_nplant,elim_lai)
+            call split_cohorts_ar(cpatch,green_leaf_factor,lsl)
+         end if
+         !---------------------------------------------------------------------------------!
       end if
-      !------------------------------------------------------------------------------------!
-
 
       !------------------------------------------------------------------------------------!
       !    Now we update some variables that depend on cohort statistics, namely:          !

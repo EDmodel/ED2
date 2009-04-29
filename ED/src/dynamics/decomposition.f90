@@ -67,7 +67,7 @@ subroutine resp_index(nsoil,tempk,theta,slmsts,resp_weight)
 
   integer :: nsoil
   real :: tempk
-  real(kind=8) :: theta
+  real :: theta
   real :: slmsts
   real :: resp_weight
   real :: temperature_limitation
@@ -79,7 +79,7 @@ subroutine resp_index(nsoil,tempk,theta,slmsts,resp_weight)
        (tempk-318.15)))
 
   ! moisture dependence
-  Ws = real(theta/dble(slmsts))
+  Ws = theta/slmsts
 
 
 

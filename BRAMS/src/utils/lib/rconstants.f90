@@ -31,6 +31,7 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    real, parameter :: srtwo     = 1.414213562373095 ! Square root of 2.         [      ---]
    real, parameter :: srthree   = 1.732050807568877 ! Square root of 3.         [      ---]
+   real, parameter :: sqrt2o2   = 0.5 * srtwo       ! ½ Square root of 2.       [      ---]
    real, parameter :: srtwoi    = 1./srtwo          ! 1./ Square root of 2.     [      ---]
    real, parameter :: srthreei  = 1./srthree        ! 1./ Square root of 3.     [      ---]
    real, parameter :: onethird  = 1./3.             ! 1/3                       [      ---]
@@ -216,4 +217,36 @@ Module rconstants
    real, parameter :: abswltlmin  = 1.e-4 ! Minimum abs value of Theta*         [    K m/s]
    real, parameter :: lturbmin    = 1.e-3 ! Minimum abs value of turb. lenght   [        m]
    !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Double precision version of constants used in Runge-Kutta.                         !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8), parameter :: alli8        = dble(alli      )
+   real(kind=8), parameter :: allii8       = dble(allii     )
+   real(kind=8), parameter :: alvi8        = dble(alvi      )
+   real(kind=8), parameter :: alvl8        = dble(alvl      )
+   real(kind=8), parameter :: cice8        = dble(cice      )
+   real(kind=8), parameter :: cicei8       = dble(cicei     )
+   real(kind=8), parameter :: cliq8        = dble(cliq      )
+   real(kind=8), parameter :: cliqi8       = dble(cliqi     )
+   real(kind=8), parameter :: cliqvlme8    = dble(cliqvlme  )
+   real(kind=8), parameter :: cp8          = dble(cp        )
+   real(kind=8), parameter :: cpi8         = dble(cpi       )
+   real(kind=8), parameter :: day_sec8     = dble(day_sec   )
+   real(kind=8), parameter :: gorvap8      = dble(gorm      )
+   real(kind=8), parameter :: grav8        = dble(g         )
+   real(kind=8), parameter :: idns8        = dble(idns      )
+   real(kind=8), parameter :: pi18         = dble(pi1       )
+   real(kind=8), parameter :: qicet38      = dble(qicet3    )
+   real(kind=8), parameter :: qliqt38      = dble(qliqt3    )
+   real(kind=8), parameter :: t3ple8       = dble(t3ple     )
+   real(kind=8), parameter :: tsupercool8  = dble(tsupercool)
+   real(kind=8), parameter :: twothirds8   = dble(twothirds )
+   real(kind=8), parameter :: vonk8        = dble(vonk      )
+   real(kind=8), parameter :: wdns8        = dble(wdns      )
+   real(kind=8), parameter :: wdnsi8       = dble(wdnsi     )
+   !---------------------------------------------------------------------------------------!
+
 end module rconstants

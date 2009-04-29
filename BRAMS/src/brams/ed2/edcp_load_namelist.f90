@@ -34,9 +34,11 @@ subroutine read_ednl(iunit)
 
   use grid_coms, only: timmax,time
   
-  use ed_misc_coms,only: attach_metadata
+  use ed_misc_coms,only: attach_metadata, icanturb
   
   use optimiz_coms, only : ioptinpt
+  
+  use rk4_coms, only : ibranch_thermo
   
   use canopy_radiation_coms, only: crown_mod
 
@@ -63,12 +65,12 @@ subroutine read_ednl(iunit)
        attach_metadata,outfast,outstate,ffilout,sfilout,ied_init_mode,       &
        edres,sfilin,veg_database,soil_database,ed_inputs_dir,soilstate_db,   &
        soildepth_db,isoilstateinit,isoildepthflg,isoilbc,integration_scheme, &
-       istoma_scheme,iphen_scheme,repro_scheme,lapse_scheme,crown_mod,       &
-       n_plant_lim,n_decomp_lim,include_fire,ianth_disturb,                  &
-       include_these_pft,agri_stock,plantation_stock,pft_1st_check,maxpatch, &
-       maxcohort,treefall_disturbance_rate,runoff_time,iprintpolys,npvars,   &
-       printvars,pfmtstr,ipmin,ipmax,initial_co2,iphenys1,iphenysf,iphenyf1, &
-       iphenyff,iedcnfgf,event_file,phenpath
+       ibranch_thermo,istoma_scheme,iphen_scheme,repro_scheme,lapse_scheme,  &
+       crown_mod,n_plant_lim,n_decomp_lim,include_fire,ianth_disturb,        &
+       icanturb,include_these_pft,agri_stock,plantation_stock,pft_1st_check, &
+       maxpatch,maxcohort,treefall_disturbance_rate,runoff_time,iprintpolys, &
+       npvars,printvars,pfmtstr,ipmin,ipmax,initial_co2,iphenys1,iphenysf,   &
+       iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
 
   read (iunit, iostat=err, NML=ED2_INFO)
   if (err /= 0) then
@@ -98,6 +100,7 @@ subroutine read_ednl(iunit)
      write(*,*) "isoildepthflg=",isoildepthflg
      write(*,*) "isoilbc=",isoilbc
      write(*,*) "integration_scheme=",integration_scheme
+     write(*,*) "ibranch_thermo=",ibranch_thermo
      write(*,*) "istoma_scheme=",istoma_scheme
      write(*,*) "iphen_scheme",iphen_scheme
      write(*,*) "repro_scheme",repro_scheme
@@ -107,6 +110,7 @@ subroutine read_ednl(iunit)
      write(*,*) "n_decomp_lim=",n_decomp_lim
      write(*,*) "include_fire=",include_fire
      write(*,*) "ianth_disturb=",ianth_disturb
+     write(*,*) "icanturb=",icanturb
      write(*,*) "include_these_pft=",include_these_pft
      write(*,*) "agri_stock=",agri_stock
      write(*,*) "plantation_stock=",plantation_stock

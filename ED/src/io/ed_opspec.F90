@@ -914,7 +914,7 @@ subroutine ed_opspec_times
 
    ! Not sure if this is really necessary. If not, please remove it...
    if (mod(radfrq,dtlsm) /= 0.0) then
-      write(reason,fmt='(a,1x,f8.2,1x,a,1x,f8.2)')  &
+      write(reason,fmt='(a,1x,f8.2,1x,a,1x,f8.2,a)')  &
           'DTLSM must be a divisor of RADFRQ. Your DTLSM is set to',dtlsm, &
           'and your RADFRQ is set to',radfrq,'...'
       call opspec_fatal(reason,'opspec_times')  
@@ -942,70 +942,98 @@ end subroutine ed_opspec_times
 !==========================================================================================!
 !==========================================================================================!
 subroutine ed_opspec_misc
-!------------------------------------------------------------------------------------------!
-!   This subroutine performs miscellaneous tests over the options, like values outside the !
-! allowed ranges and conflicting dynamic settings.
-!------------------------------------------------------------------------------------------!
-   use max_dims, only : n_pft
-   use misc_coms, only : ifoutput,idoutput,imoutput,iyoutput,isoutput,iclobber,runtype,ied_init_mode &
-                        ,integration_scheme
-   use soil_coms, only : isoilflg, nslcon,isoilstateinit,isoildepthflg,isoilbc,zrough      &
-                        ,runoff_time
-   use mem_sites, only : n_soi,n_ed_region,maxpatch,maxcohort
-   use grid_coms , only : ngrids
-   use physiology_coms, only : istoma_scheme,n_plant_lim
-   use decomp_coms, only : n_decomp_lim
-   use disturb_coms, only : include_fire,ianth_disturb,treefall_disturbance_rate
-   use phenology_coms, only : iphen_scheme
-   use pft_coms, only  : include_these_pft,pft_1st_check,agri_stock,plantation_stock
+   !---------------------------------------------------------------------------------------!
+   !    This subroutine performs miscellaneous tests over the options, like values outside !
+   ! the allowed ranges and conflicting dynamic settings.                                  !
+   !---------------------------------------------------------------------------------------!
+   use max_dims        , only : n_pft                        ! ! intent(in)
+   use misc_coms       , only : ifoutput                     & ! intent(in)
+                              , idoutput                     & ! intent(in)
+                              , imoutput                     & ! intent(in)
+                              , iyoutput                     & ! intent(in)
+                              , isoutput                     & ! intent(in)
+                              , iclobber                     & ! intent(in)
+                              , runtype                      & ! intent(in)
+                              , ied_init_mode                & ! intent(in)
+                              , integration_scheme           ! ! intent(in)
+   use soil_coms       , only : isoilflg                     & ! intent(in)
+                              , nslcon                       & ! intent(in)
+                              , isoilstateinit               & ! intent(in)
+                              , isoildepthflg                & ! intent(in)
+                              , isoilbc                      & ! intent(in)
+                              , zrough                       & ! intent(in)
+                              , runoff_time                  ! ! intent(in)
+   use mem_sites       , only : n_soi                        & ! intent(in)
+                              , n_ed_region                  & ! intent(in)
+                              , maxpatch                     & ! intent(in)
+                              , maxcohort                    ! ! intent(in)
+   use grid_coms       , only : ngrids                       ! ! intent(in)
+   use physiology_coms , only : istoma_scheme                & ! intent(in)
+                              , n_plant_lim                  ! ! intent(in)
+   use decomp_coms     , only : n_decomp_lim                 ! ! intent(in)
+   use disturb_coms    , only : include_fire                 & ! intent(in)
+                              , ianth_disturb                & ! intent(in)
+                              , treefall_disturbance_rate    ! ! intent(in)
+   use phenology_coms  , only : iphen_scheme                 ! ! intent(in)
+   use pft_coms        , only : include_these_pft            & ! intent(in)
+                              , pft_1st_check                & ! intent(in)
+                              , agri_stock                   & ! intent(in)
+                              , plantation_stock             ! ! intent(in)
+   use rk4_coms        , only : ibranch_thermo               ! ! intent(in)
 
    implicit none
-   character(len=222)           :: reason
-   integer, parameter           :: skip=huge(6)
-   integer                      :: ifaterr,ifm,ipft
-   logical                      :: agri_ok,plantation_ok
+   !----- Local variables -----------------------------------------------------------------!
+   character(len=222) :: reason
+   integer            :: ifaterr,ifm,ipft
+   logical            :: agri_ok,plantation_ok
+   !----- Local constants -----------------------------------------------------------------!
+   integer, parameter :: skip=huge(6)
+   !---------------------------------------------------------------------------------------!
+
+   !----- IFATERR will count the number of bad set ups. -----------------------------------!
    ifaterr=0
 
    if (ifoutput /= 0 .and. ifoutput /= 3) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid IFOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',ifoutput,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
    if (idoutput /= 0 .and. idoutput /= 3) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid IDOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',idoutput,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
    if (imoutput /= 0 .and. imoutput /= 3) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid IMOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',imoutput,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
    if (iyoutput /= 0 .and. iyoutput /= 3) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid IYOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',iyoutput,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
    if (isoutput /= 0 .and. isoutput /= 3) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid ISOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',isoutput,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
    if (iclobber < 0 .or. iclobber > 1) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid ICLOBBER, it must be 0 or 1. Yours is set to',iclobber,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
    if (trim(runtype) /= 'INITIAL' .and. trim(runtype) /= 'HISTORY') then
-      write (reason,fmt='(a,1x,2a)') &
-        'Invalid RUNTYPE, it must be INITIAL or HISTORY. Yours is set to',trim(runtype),'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      write (reason,fmt='(a,1x,2a)')                                                       &
+                         'Invalid RUNTYPE, it must be INITIAL or HISTORY. Yours is set to' &
+                         ,trim(runtype),'...'
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
@@ -1029,105 +1057,140 @@ subroutine ed_opspec_misc
    elseif (ied_init_mode < 0 .or. ied_init_mode > 3) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid IED_INIT_MODE, it must be between 0 and 3. Yours is set to',ied_init_mode,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
 #if defined(COUPLED)
    do ifm=1,ngrids
       if (isoilflg(ifm) < 0 .or. isoilflg(ifm) > 3) then
-         write (reason,fmt='(a,1x,i4,1x,a,1x,i4,a)') &
-           'Invalid ISOILFLG, it must be between 0 and 3. Yours is set to',isoilflg(ifm),'for grid',ifm,'...'
-         call opspec_fatal(reason,'opspec_misc')  
+         write (reason,fmt='(a,1x,i4,1x,a,1x,i4,a)')                                       &
+                       'Invalid ISOILFLG, it must be between 0 and 3. Yours is set to'     &
+                       ,isoilflg(ifm),'for grid',ifm,'...'
+         call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
    end do
 #else
    do ifm=1,ngrids
       if (isoilflg(ifm) < 1 .or. isoilflg(ifm) > 2) then
-         write (reason,fmt='(a,1x,i4,1x,a,1x,i4,a)') &
-           'Invalid ISOILFLG, it must be between 1 and 3. Yours is set to',isoilflg(ifm),'for grid',ifm,'...'
-         call opspec_fatal(reason,'opspec_misc')  
+         write (reason,fmt='(a,1x,i4,1x,a,1x,i4,a)')                                       &
+                       'Invalid ISOILFLG, it must be between 1 and 3. Yours is set to'     &
+                      ,isoilflg(ifm),'for grid',ifm,'...'
+         call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
    end do
 #endif
 
    if (nslcon < 1 .or. nslcon > 12) then
-      write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid NSLCON, it must be between 1 and 12. Yours is set to',nslcon,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+             'Invalid NSLCON, it must be between 1 and 12. Yours is set to',nslcon,'...'
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
 #if defined(COUPLED)
    if (isoilstateinit < 0 .or. isoilstateinit > 2) then
-      write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid ISOILSTATEINIT, it must be between 0 and 2. Yours is set to',isoilstateinit,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+             'Invalid ISOILSTATEINIT, it must be between 0 and 2. Yours is set to'         &
+             ,isoilstateinit,'...'
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 #else
    if (isoilstateinit < 0 .or. isoilstateinit > 1) then
-      write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid ISOILSTATEINIT, it must be between 0 and 1. Yours is set to',isoilstateinit,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+             'Invalid ISOILSTATEINIT, it must be between 0 and 1. Yours is set to'         &
+             ,isoilstateinit,'...'
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 #endif
+
+
    if (isoildepthflg < 0 .or. isoildepthflg > 1) then
-      write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid ISOILDEPTHFLG, it must be between 0 and 1. Yours is set to',isoildepthflg,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+              'Invalid ISOILDEPTHFLG, it must be between 0 and 1. Yours is set to'         &
+              ,isoildepthflg,'...'
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
    if (isoilbc < 0 .or. isoilbc > 1) then
-      write (reason,fmt='(a,1x,i4,a)') &
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid ISOILBC, it must be between 0 and 1. Yours is set to',isoilbc,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
-   if (integration_scheme < 0 .or. integration_scheme > 1) then
-      write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid INTEGRATION_SCHEME, it must be between 0 and 1. Yours is set to',integration_scheme,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+   !---------------------------------------------------------------------------------------!
+   !      Integration scheme can be only 0 (Euler) or 1 (4th order Runge-Kutta).  The      !
+   ! branch thermodynamics is currently working only with Runge-Kutta, so we won't allow   !
+   ! using it in case the user decides for Euler.                                          !
+   !---------------------------------------------------------------------------------------!
+   select case (integration_scheme)
+   case (0)
+      if (ibranch_thermo /= 0) then
+         write (reason,fmt='(a,1x,a)') 'Invalid IBRANCH_THERMO.  You must set it to 0'     &
+                                      ,'when using the Euler integration method...'
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr + 1
+      end if
+   case (1)
+      if (ibranch_thermo < 0 .or. ibranch_thermo > 2) then
+         write (reason,fmt='(a,1x,i4,a)')                                                  &
+                   'Invalid IBRANCH_THERMO, it must be between 0 and 2. Yours is set to'   &
+                   ,ibranch_thermo,'...'
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
+      end if
+   case default
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+               'Invalid INTEGRATION_SCHEME, it must be between 0 and 1. Yours is set to'   &
+               ,integration_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
-   end if
+   end select
+   !---------------------------------------------------------------------------------------!
 
    if (istoma_scheme < 0 .or. istoma_scheme > 1) then
-      write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid ISTOMA_SCHEME, it must be between 0 and 1. Yours is set to',istoma_scheme,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid ISTOMA_SCHEME, it must be between 0 and 1. Yours is set to'   &
+                    ,istoma_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
    if (iphen_scheme < 0 .or. iphen_scheme > 1) then
-      write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid IPHEN_SCHEME, it must be between 0 and 1. Yours is set to',iphen_scheme,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid IPHEN_SCHEME, it must be between 0 and 1. Yours is set to'    &
+                    ,iphen_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
    if (n_plant_lim < 0 .or. n_plant_lim > 1) then
-      write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid N_PLANT_LIM, it must be between 0 and 1. Yours is set to',n_plant_lim,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid N_PLANT_LIM, it must be between 0 and 1. Yours is set to'     &
+                    ,n_plant_lim,'...'
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
    if (n_decomp_lim < 0 .or. n_decomp_lim > 1) then
-      write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid N_DECOMP_LIM, it must be between 0 and 1. Yours is set to',n_decomp_lim,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid N_DECOMP_LIM, it must be between 0 and 1. Yours is set to'    &
+                    ,n_decomp_lim,'...'
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
    if (include_fire < 0 .or. include_fire > 1) then
-      write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid INCLUDE_FIRE, it must be between 0 and 1. Yours is set to',include_fire,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid INCLUDE_FIRE, it must be between 0 and 1. Yours is set to'    &
+                    ,include_fire,'...'
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
@@ -1161,22 +1224,27 @@ subroutine ed_opspec_misc
    
    !----- Checking whether the user choice for agriculture and plantation make sense. -----!
    if (ianth_disturb == 1) then
-   
+      !------ Checking the plantation PFT.  It must be a tree PFT. ------------------------!
       select case (plantation_stock)
       case (2,3,4,6,7,8,9,10,11)
          continue
       case default
-         write(reason,fmt='(a,1x,i5,a)') &
-            'Invalid plantation_stock , it can''t be grass and yours is set to'            &
-           &,plantation_stock,'...'
+         write(reason,fmt='(a,1x,i5,a)')                                                   &
+                      'Invalid plantation_stock , it can''t be grass and yours is set to'  &
+                      ,plantation_stock,'...'
+         ifaterr = ifaterr +1
+         call opspec_fatal(reason,'opspec_misc')
       end select
    
+      !------ Checking the plantation PFT. It must be a grass PFT. ------------------------!
       select case (agri_stock)
       case (1,5,12,13,14,15)
          continue
       case default
-         write(reason,fmt='(a,1x,i5,a)') &
+         write(reason,fmt='(a,1x,i5,a)')                                                   &
             'Invalid AGRI_STOCK , it can''t be a tree and yours is set to',agri_stock,'...'
+         ifaterr = ifaterr +1
+         call opspec_fatal(reason,'opspec_misc')
       end select
 
       agri_ok       = .false.
@@ -1190,58 +1258,50 @@ subroutine ed_opspec_misc
       if (.not. agri_ok) then
          write(reason,fmt='(a,1x,i5,a)')                                                   &
             'Invalid AGRI_STOCK (',agri_stock,'). The pft must be in INCLUDE_THESE_PFT.'
+         ifaterr = ifaterr +1
+         call opspec_fatal(reason,'opspec_misc')
       end if
       
       if (.not. plantation_ok) then
          write(reason,fmt='(a,1x,i5,a)')                                                   &
             'Invalid PLANTATION_STOCK (',plantation_stock,                                 &
              &'). The pft must be in INCLUDE_THESE_PFT.'
+         ifaterr = ifaterr +1
+         call opspec_fatal(reason,'opspec_misc')
       end if
    end if
 
    if (pft_1st_check < 0 .or. pft_1st_check > 2) then
-      write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid PFT_1ST_CHECK, it must be between 0 and 2. Yours is set to',pft_1st_check,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid PFT_1ST_CHECK, it must be between 0 and 2.  Yours is set to'  &
+                    ,pft_1st_check,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
    end if
-   
-   !if (maxpatch < 0) then
-   !   write (reason,fmt='(a,1x,i4,a)') &
-   !     'Invalid MAXPATCH, it must be either 0 (no limit) or positive. Yours is set to',maxpatch,'...'
-   !   call opspec_fatal(reason,'opspec_misc')  
-   !   ifaterr = ifaterr +1
-   !end if
-   ! 
-   !if (maxcohort < 0) then
-   !   write (reason,fmt='(a,1x,i4,a)') &
-   !     'Invalid MAXCOHORT, it must be either 0 (no limit) or positive. Yours is set to',maxcohort,'...'
-   !   call opspec_fatal(reason,'opspec_misc')  
-   !   ifaterr = ifaterr +1
-   !end if
     
    if (zrough <= 0.0) then
-      write (reason,fmt='(a,1x,es14.7,a)') &
-        'Invalid ZROUGH, it must be positive. Yours is set to',zrough,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+                    'Invalid ZROUGH, it must be positive.  Yours is set to',zrough,'...'
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
     
    if (treefall_disturbance_rate < 0.0) then
-      write (reason,fmt='(a,1x,es14.7,a)') &
-        'Invalid TREEFALL_DISTURBANCE_RATE, it must be non-negative. Yours is set to' &
-        ,treefall_disturbance_rate,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+             'Invalid TREEFALL_DISTURBANCE_RATE, it can''t be negative.  Yours is set to'  &
+             ,treefall_disturbance_rate,'...'
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
     
    if (runoff_time < 0.0) then
-      write (reason,fmt='(a,1x,es14.7,a)') &
-        'Invalid RUNOFF_TIME, it must be non-negative. Yours is set to',runoff_time,'...'
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid RUNOFF_TIME, it can''t be negative. Yours is set to',runoff_time,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if
 
-   ! Stop the run if there are any fatal errors.
+   !----- Stop the run if there are any fatal errors. -------------------------------------!
    if (ifaterr > 0) then
       write (unit=*,fmt='(a)')       ' -----------ED_OPSPEC_MISC --------------------------'
       write (unit=*,fmt='(a,1x,i5)') ' Fatal errors:',ifaterr
@@ -1249,5 +1309,8 @@ subroutine ed_opspec_misc
       call fatal_error('Fatal errors at namelist - Misc settings '&
                      & ,'ed_opspec_misc','ed_opspec.f90')
    end if
+
    return
 end subroutine ed_opspec_misc
+!==========================================================================================!
+!==========================================================================================!

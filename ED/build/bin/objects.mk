@@ -14,6 +14,7 @@ OBJ_MODEL =                        \
 	average_utils.o            \
 	canopy_air_coms.o          \
 	canopy_radiation_coms.o    \
+	canopy_struct_dynamics.o   \
 	canopy_update_euler.o      \
 	c34constants.o             \
 	charutils.o                \
@@ -95,6 +96,7 @@ OBJ_MODEL =                        \
 	rk4_stepper.o              \
 	rsys.o                     \
 	soil_coms.o                \
+	stable_cohorts.o           \
 	structural_growth.o        \
 	therm_lib.o                \
 	twostream_rad.o            \

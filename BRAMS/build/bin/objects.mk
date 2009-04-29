@@ -272,6 +272,7 @@ OBJ_MODEL =                         \
 	c34constants.o              \
 	canopy_air_coms.o           \
 	canopy_radiation_coms.o     \
+	canopy_struct_dynamics.o   \
 	canopy_update_euler.o       \
 	consts_coms.o               \
 	decomp_coms.o               \
@@ -339,6 +340,7 @@ OBJ_MODEL =                         \
 	rk4_integ_utils.o           \
 	rk4_stepper.o               \
 	soil_coms.o                 \
+	stable_cohorts.o            \
 	structural_growth.o         \
 	twostream_rad.o             \
 	var_tables_array.o

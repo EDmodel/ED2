@@ -144,7 +144,7 @@ subroutine apply_forestry_ar(cpoly, isi, year, rhos)
    !------ Initialize the new patch (newp) in the last position. --------------------------!
    csite%dist_type(newp) = 2
    call initialize_disturbed_patch_ar(csite,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv  &
-                                     ,newp,1)
+                                     ,newp,1,cpoly%lsl(isi))
 
    !------ Compute current stocks of agb in mature forests. -------------------------------!
    call inventory_mat_forests_ar(cpoly,isi,area_mature_primary,agb_mature_primary          &
@@ -185,8 +185,9 @@ subroutine apply_forestry_ar(cpoly, isi, year, rhos)
 
       !----- Plant the patch if it is a plantation. ---------------------------------------!
       if (cpoly%plantation(isi) == 1 .and. year > plantation_year) then
-         call plant_patch_ar(csite,newp, cpoly%plantation_stocking_pft(isi)                  &
-                            ,cpoly%plantation_stocking_density(isi), 2.0, cpoly%lsl(isi))
+         call plant_patch_ar(csite,newp, cpoly%plantation_stocking_pft(isi)                &
+                            ,cpoly%plantation_stocking_density(isi)                        &
+                            ,cpoly%green_leaf_factor(:,isi), 2.0, cpoly%lsl(isi))
          csite%plantation(newp) = 1
       end if
       call update_patch_derived_props_ar(csite,cpoly%lsl(isi),rhos,newp)
@@ -597,6 +598,7 @@ subroutine norm_harv_patch_ar(csite,newp)
    csite%sum_dgd(newp)                     = csite%sum_dgd(newp)             * area_fac
    csite%sum_chd(newp)                     = csite%sum_chd(newp)             * area_fac
    csite%can_temp(newp)                    = csite%can_temp(newp)            * area_fac
+   csite%can_co2(newp)                     = csite%can_co2(newp)             * area_fac
    csite%can_shv(newp)                     = csite%can_shv(newp)             * area_fac
    csite%can_depth(newp)                   = csite%can_depth(newp)           * area_fac
    csite%rough(newp)                       = csite%rough(newp)               * area_fac
@@ -618,7 +620,7 @@ subroutine norm_harv_patch_ar(csite,newp)
    end do
    do k = 1, nzg
       csite%soil_energy(k,newp) = csite%soil_energy(k,newp) * area_fac
-      csite%soil_water(k,newp)  = csite%soil_water(k,newp)  * dble(area_fac)
+      csite%soil_water(k,newp)  = csite%soil_water(k,newp)  * area_fac
    end do
    return
 end subroutine norm_harv_patch_ar

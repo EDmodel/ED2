@@ -41,7 +41,7 @@ subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, prss, pcpg, qpcpg,  &
   integer :: ndims
   integer, dimension(nzg) :: ed_ktrans
   integer, dimension(nzg), intent(in) :: ntext_soil
-  real(kind=8), dimension(nzg), intent(in) :: soil_water
+  real, dimension(nzg), intent(in) :: soil_water
   real, dimension(nzg), intent(in) :: soil_fracliq
   integer, intent(in) :: lsl
 
@@ -103,7 +103,6 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
   real :: tvegaux
   real :: qwtot
   real :: lai_fraction
-  real :: fracliqv
   real :: wshed_layer
   real :: hcapveg_factor
 
@@ -149,7 +148,7 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
 ! Compute equilbrium temperature of veg + precipitation
 
            call qwtk(cpatch%veg_energy(ico), cpatch%veg_water(ico), cpatch%hcapveg(ico) * hcapveg_factor,   &
-                cpatch%veg_temp(ico), fracliqv)
+                cpatch%veg_temp(ico), cpatch%veg_fliq(ico))
       
 ! Shed any excess intercepted precipitation and its energy
 
@@ -157,12 +156,12 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
               wshed_layer = cpatch%veg_water(ico) - .22 * cpatch%lai(ico)
               wshed_canopy = wshed_canopy + wshed_layer
 
-              if (fracliqv <= .0001) then
+              if (cpatch%veg_fliq(ico) <= .0001) then
                  qwshed_canopy = qwshed_canopy + cice * cpatch%veg_temp(ico) * wshed_layer
               else
                  qwshed_canopy = qwshed_canopy + wshed_layer &
-                               * ( fracliqv*cliq*(cpatch%veg_temp(ico)-tsupercool) &
-                                 + (1.-fracliqv)*cice*cpatch%veg_temp(ico))
+                               * ( cpatch%veg_fliq(ico)*cliq*(cpatch%veg_temp(ico)-tsupercool) &
+                                 + (1.-cpatch%veg_fliq(ico))*cice*cpatch%veg_temp(ico))
               endif
               
               cpatch%veg_water(ico) = cpatch%veg_water(ico) - wshed_layer

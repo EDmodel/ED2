@@ -10,8 +10,7 @@ subroutine read_ed1_history_file_array
   use ed_state_vars,only:polygontype,sitetype,patchtype,edtype, &
        edgrid_g,allocate_sitetype,allocate_patchtype
   use grid_coms,only:ngrids
-  use ed_therm_lib,only:calc_hcapveg
-  use allometry, only: dbh2h,h2dbh,dbh2bd,dbh2bl, ed_biomass
+  use allometry, only: dbh2h,h2dbh,dbh2bd,dbh2bl, ed_biomass,area_indices
   use fuse_fiss_utils_ar, only: sort_cohorts_ar
   implicit none
 
@@ -80,7 +79,7 @@ subroutine read_ed1_history_file_array
 
   real :: area_tot
   real :: area_sum
-  real :: patch_lai,poly_lai
+  real :: patch_lai,patch_bai,patch_sai,poly_lai
   real :: site_lai
   integer :: ncohorts,npatchco
   integer :: npatches,nsitepat,npatch2
@@ -546,8 +545,7 @@ subroutine read_ed1_history_file_array
                        cpatch%balive(ic2) = cpatch%bleaf(ic2) * (1.0 + q(ipft(ic)) +  &
                             qsw(ipft(ic)) * cpatch%hite(ic2))
                        
-                       cpatch%lai(ic2) = cpatch%bleaf(ic2) * cpatch%nplant(ic2) *   &
-                            SLA(ipft(ic))
+
 
 !                       print*,cpatch%lai(ic2),cpatch%bleaf(ic2),cpatch%nplant(ic2),SLA(ipft(ic)),ipft(ic)
                        
@@ -560,10 +558,16 @@ subroutine read_ed1_history_file_array
                        else
                           cpatch%phenology_status(ic2) = 2
                           cpatch%bleaf(ic2) = 0.0
-                          cpatch%lai(ic2) = 0.0
                           cpatch%bstorage(ic2) = 0.5 * cpatch%balive(ic2)
                        endif
                                   
+                       !----- Assign LAI, BAI, and SAI ------------------------------------!
+                       call area_indices(cpatch%nplant(ic2),cpatch%bleaf(ic2)              &
+                                        ,cpatch%bdead(ic2),cpatch%balive(ic2)              &
+                                        ,cpatch%dbh(ic2), cpatch%hite(ic2)                 &
+                                        ,cpatch%pft(ic2),cpatch%lai(ic2),cpatch%bai(ic2)   &
+                                        ,cpatch%sai(ic2))
+                       
                        cpatch%cb(1:12,ic2) = cb(1:12,ic)
                        cpatch%cb_max(1:12,ic2) = cb_max(1:12,ic)
                        cpatch%cb(13,ic2) = 0.0
@@ -653,15 +657,21 @@ subroutine read_ed1_history_file_array
 
            do ipa=1,csite%npatches
               area_sum = area_sum + csite%area(ipa)
-              patch_lai = 0.0
+              patch_lai  = 0.0
+              patch_bai  = 0.0
+              patch_sai  = 0.0
               
               cpatch => csite%patch(ipa)
               do ico = 1,cpatch%ncohorts
-                 patch_lai = patch_lai + cpatch%lai(ico)
-                 ncohorts = ncohorts + 1
-              enddo
+                 patch_lai  = patch_lai  + cpatch%lai(ico)
+                 patch_bai  = patch_bai  + cpatch%bai(ico)
+                 patch_sai  = patch_sai  + cpatch%sai(ico)
+                 ncohorts  = ncohorts + 1
+              end do
               
-              csite%lai(ipa) = patch_lai
+              csite%lai(ipa)  = patch_lai
+              csite%bai(ipa)  = patch_bai
+              csite%sai(ipa)  = patch_sai
               site_lai = site_lai + csite%area(ipa) * patch_lai
               
            enddo
@@ -677,7 +687,7 @@ subroutine read_ed1_history_file_array
               
            enddo
            
-           call init_ed_patch_vars_array(csite,1,csite%npatches)
+           call init_ed_patch_vars_array(csite,1,csite%npatches,cpoly%lsl(isi))
            
         enddo
         
@@ -695,16 +705,20 @@ subroutine read_ed1_history_file_array
 
            do ipa = 1,csite%npatches
               
-              csite%lai(ipa) = 0.0
+              csite%lai(ipa)  = 0.0
+              csite%bai(ipa)  = 0.0
+              csite%sai(ipa)  = 0.0
               npatchco = 0
               cpatch => csite%patch(ipa)
               
               do ico = 1,cpatch%ncohorts
                  ncohorts=ncohorts+1
                  npatchco=npatchco+1
-                 csite%lai(ipa) = csite%lai(ipa) + cpatch%lai(ico)
+                 csite%lai(ipa)  = csite%lai(ipa)  + cpatch%lai(ico)
+                 csite%bai(ipa)  = csite%bai(ipa)  + cpatch%bai(ico)
+                 csite%sai(ipa)  = csite%sai(ipa)  + cpatch%sai(ico)
 
-              enddo
+              end do
 
               poly_lai = poly_lai + cpoly%area(isi)*csite%area(ipa)*csite%lai(ipa)
               csite%cohort_count(ipa) = npatchco
@@ -1078,7 +1092,8 @@ subroutine init_full_history_restart()
                        ! associated with this index for the
                        ! current site
                        
-                       call fill_history_patch(cpatch,paco_id(pa_index),cgrid%ncohorts_global)
+                       call fill_history_patch(cpatch,paco_id(pa_index),cgrid%ncohorts_global &
+                                              ,cpoly%green_leaf_factor(:,isi))
 
                        
                        do ipft = 1,n_pft
@@ -1259,6 +1274,8 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   memoffs(1)  = 0_8
   memsize(1)  = 1_8
 
+
+  call hdf_getslab_d(cgrid%walltime_py(ipy:ipy),'WALLTIME_PY ',dsetrank,iparallel,.false.)
 
   call hdf_getslab_i(cgrid%lsl(ipy:ipy),'LSL ',dsetrank,iparallel,.true.)
 
@@ -1447,6 +1464,14 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    if(associated(cgrid%lai_pft)) call hdf_getslab_r(cgrid%lai_pft(:,ipy) ,'LAI_PFT '       , &
         dsetrank,iparallel,.false.)
    if(associated(cgrid%mmean_lai_pft)) call hdf_getslab_r(cgrid%mmean_lai_pft(:,ipy) ,'MMEAN_LAI_PFT ' , &
+        dsetrank,iparallel,.false.)
+   if(associated(cgrid%bai_pft)) call hdf_getslab_r(cgrid%bai_pft(:,ipy) ,'BAI_PFT '       , &
+        dsetrank,iparallel,.false.)
+   if(associated(cgrid%mmean_bai_pft)) call hdf_getslab_r(cgrid%mmean_bai_pft(:,ipy) ,'MMEAN_BAI_PFT ' , &
+        dsetrank,iparallel,.false.)
+   if(associated(cgrid%sai_pft)) call hdf_getslab_r(cgrid%sai_pft(:,ipy) ,'SAI_PFT '       , &
+        dsetrank,iparallel,.false.)
+   if(associated(cgrid%mmean_sai_pft)) call hdf_getslab_r(cgrid%mmean_sai_pft(:,ipy) ,'MMEAN_SAI_PFT ' , &
         dsetrank,iparallel,.false.)
    if(associated(cgrid%agb_pft)) call hdf_getslab_r(cgrid%agb_pft(:,ipy) ,'AGB_PFT '       , &
         dsetrank,iparallel,.true.)
@@ -1668,7 +1693,11 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(cpoly%gee_phen_delay,'GEE_PHEN_DELAY ',&
         dsetrank,iparallel,.true.)
    if (associated(cpoly%lai_pft)) call hdf_getslab_r(cpoly%lai_pft,'LAI_PFT_SI ', &
-        dsetrank,iparallel,.true.)
+        dsetrank,iparallel,.false.)
+   if (associated(cpoly%bai_pft)) call hdf_getslab_r(cpoly%bai_pft,'BAI_PFT_SI ', &
+        dsetrank,iparallel,.false.)
+   if (associated(cpoly%sai_pft)) call hdf_getslab_r(cpoly%sai_pft,'SAI_PFT_SI ', &
+        dsetrank,iparallel,.false.)
    call hdf_getslab_r(cpoly%green_leaf_factor,'GREEN_LEAF_FACTOR ', &
         dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%leaf_aging_factor,'LEAF_AGING_FACTOR ', &
@@ -1831,7 +1860,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    integer :: iparallel
    integer :: dsetrank
    integer :: hdferr
-   real,allocatable :: buff(:,:)
+   real(kind=8),allocatable, dimension(:,:) ::  buff
 
    iparallel = 0
 
@@ -1877,6 +1906,8 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%can_depth,'CAN_DEPTH ',dsetrank,iparallel,.true.)
    !  call hdf_getslab_i(csite%pname,'PNAME ',dsetrank,iparallel)
    call hdf_getslab_r(csite%lai,'LAI_PA ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%bai,'BAI_PA ',dsetrank,iparallel,.false.)
+   call hdf_getslab_r(csite%sai,'SAI_PA ',dsetrank,iparallel,.false.)
    call hdf_getslab_i(csite%nlev_sfcwater,'NLEV_SFCWATER ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ground_shv,'GROUND_SHV ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%surface_ssh,'SURFACE_SSH ',dsetrank,iparallel,.true.)
@@ -1993,18 +2024,18 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call h5dclose_f(dset_id  , hdferr)
    
    if (setsize==4_8) then  !Old precision
-     allocate(buff(nzg,csite%npatches))
-     write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
-     write (unit=*,fmt='(a)') '  Loading 4-byte precision soil water and converting to 8-byte'
-     write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
-     call hdf_getslab_r(buff,'SOIL_WATER_PA ',dsetrank,iparallel,.true.)
-     csite%soil_water(1:nzg,1:csite%npatches) = dble(buff(1:nzg,1:csite%npatches))
-     deallocate(buff)
-  else if (setsize==8_8) then ! Newer precision
-     call hdf_getslab_d(csite%soil_water,'SOIL_WATER_PA ',dsetrank,iparallel,.true.)
+      call hdf_getslab_r(csite%soil_water,'SOIL_WATER_PA ',dsetrank,iparallel,.true.)
+   else if (setsize==8_8) then ! Newer precision
+      allocate(buff(nzg,csite%npatches))
+      write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
+      write (unit=*,fmt='(a)') '  Loading 8-byte precision soil water and converting to 4-byte'
+      write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
+      call hdf_getslab_d(buff,'SOIL_WATER_PA ',dsetrank,iparallel,.true.)
+      csite%soil_water(1:nzg,1:csite%npatches) = sngl(buff(1:nzg,1:csite%npatches))
+      deallocate(buff)
   else
-     call fatal_error('Soil water dataset is not real nor double?' &
-          ,'fill_history_site','ed_history_io.f90')
+     call fatal_error('Soil water dataset is not real nor double?'                         &
+                     ,'fill_history_site','ed_history_io.f90')
   end if
 
 
@@ -2081,7 +2112,7 @@ end subroutine fill_history_site
 !==========================================================================================!
 !==========================================================================================!
 
-subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
+subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_factor)
   
   use ed_state_vars,only: patchtype
   use hdf5_coms,only:file_id,dset_id,dspace_id,plist_id, &
@@ -2089,9 +2120,10 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
        globdims,chnkdims,chnkoffs,cnt,stride, &
        memdims,memoffs,memsize
   use consts_coms, only: cliq,cice,t3ple,tsupercool
+  use max_dims,only: n_pft
   use ed_therm_lib, only : calc_hcapveg
-  use canopy_radiation_coms, only:lai_min
-
+  use allometry, only : area_indices
+  use therm_lib, only : qwtk
   implicit none
 
 #if USE_INTERF
@@ -2123,6 +2155,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
   type(patchtype),target :: cpatch
   integer,intent(in) :: paco_index
   integer,intent(in) :: ncohorts_global
+  real, dimension(n_pft), intent(in) :: green_leaf_factor
   integer :: iparallel,dsetrank
   
   ! Needed for reconstructing veg_energy if using an old restart
@@ -2166,6 +2199,19 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
      call hdf_getslab_r(cpatch%veg_temp,'VEG_TEMP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%veg_water,'VEG_WATER ',dsetrank,iparallel,.true.)
      
+     !----- Older versions may not have BAI. If this is the case, assign it here
+     call hdf_getslab_r(cpatch%bai,'BAI_CO ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%sai,'SAI_CO ',dsetrank,iparallel,.false.)
+     if (sum(cpatch%bai(1:cpatch%ncohorts),1) == 0.0 .or. &
+         sum(cpatch%sai(1:cpatch%ncohorts),1) == 0.0      ) then
+        do ico=1,cpatch%ncohorts
+           call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)  &
+                            ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)    &
+                            ,cpatch%pft(ico),cpatch%lai(ico),cpatch%bai(ico)         &
+                            ,cpatch%sai(ico))
+        end do
+     end if
+
      ! ------------------------------------------------------------------------------------
      ! ======= Older versions of the code did not have vegetation energy
      ! ======= If the VEG_ENERGY variable was not there, and was initialized to 0._4
@@ -2174,8 +2220,10 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
      ! ======= is an acceptable approximation if this process only occurs once.  It is
      ! ======= assumed that the vegetation water is all liquid if the temperature is
      ! ======= greater than or equal to 0, and all ice if it is less than zero.
+     
      call hdf_getslab_r(cpatch%veg_energy,'VEG_ENERGY ',dsetrank,iparallel,.false.)
      call hdf_getslab_r(cpatch%hcapveg,'HCAPVEG ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%veg_fliq,'VEG_FLIQ ',dsetrank,iparallel,.false.)
      
      if ( sum(cpatch%veg_energy(1:cpatch%ncohorts),1) == 0.0 .or.                          &
           sum(cpatch%hcapveg(1:cpatch%ncohorts),1)    == 0.0 ) then
@@ -2190,22 +2238,34 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
            ! Calculate the vegetation energy based on the leaf temperature
            ! biomass and the stuff that is written in the banner above.
            
-           cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%nplant(ico)         &
-                                             ,cpatch%lai(ico),cpatch%pft(ico)              &
+           cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)          &
+                                             ,cpatch%balive(ico),cpatch%nplant(ico)        &
+                                             ,cpatch%hite(ico),cpatch%pft(ico)             &
                                              ,cpatch%phenology_status(ico))
-           if (cpatch%veg_temp(ico) >= t3ple) then
+           if (cpatch%veg_water(ico) == 0.0) then
+              cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
+              cpatch%veg_fliq(ico)   = 0.0
+           elseif (cpatch%veg_temp(ico) >= t3ple) then
               cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)          &
                                      + cpatch%veg_water(ico)                               &
                                      * cliq * (cpatch%veg_temp(ico) - tsupercool)
-                                     
+              cpatch%veg_fliq(ico) = 1.0
            else
               cpatch%veg_energy(ico) = (cpatch%hcapveg(ico) + cpatch%veg_water(ico)*cice)  &
                                      * cpatch%veg_temp(ico)
+              cpatch%veg_fliq(ico) = 0.0
            end if
            
         enddo
-        
-     endif
+     elseif (sum(cpatch%veg_fliq(1:cpatch%ncohorts),1) == 0.0) then
+        write (unit=*,fmt='(a)') '---------------------------------------------------------'
+        write (unit=*,fmt='(a)') ' - Reconstructing VEG_FLIQ from VEG_WATER & VEG_TEMP...'
+        write (unit=*,fmt='(a)') '---------------------------------------------------------'
+        do ico=1,cpatch%ncohorts
+           call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)      &
+                    ,cpatch%veg_temp(ico),cpatch%veg_fliq(ico))
+        end do
+     end if
      
      ! ------------------------------------------------------------------------------------------
      
