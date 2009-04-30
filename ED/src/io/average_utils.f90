@@ -251,7 +251,6 @@ subroutine integrate_ed_daily_output_state(cgrid)
    use ed_state_vars        , only: edtype,polygontype,sitetype,patchtype
    use grid_coms            , only : nzg
    use max_dims             , only : n_dbh, n_pft, n_dist_types
-   use canopy_radiation_coms, only: lai_min
    implicit none
    
    type(edtype)      , target  :: cgrid
@@ -302,10 +301,10 @@ subroutine integrate_ed_daily_output_state(cgrid)
             cpatch => csite%patch(ipa)
             
             if (cpatch%ncohorts > 0) then
-               patch_lai_i = 1./max(tiny(1.),sum(cpatch%lai,cpatch%lai > lai_min))
+               patch_lai_i = 1./max(tiny(1.),sum(cpatch%lai,cpatch%solvable))
             
-               patchsum_fsn = patchsum_fsn + (sum(cpatch%fsn * cpatch%lai,cpatch%lai > lai_min) * patch_lai_i) * csite%area(ipa)
-               patchsum_fsw = patchsum_fsw + (sum(cpatch%fsw * cpatch%lai,cpatch%lai > lai_min) * patch_lai_i) * csite%area(ipa)
+               patchsum_fsn = patchsum_fsn + (sum(cpatch%fsn * cpatch%lai,cpatch%solvable) * patch_lai_i) * csite%area(ipa)
+               patchsum_fsw = patchsum_fsw + (sum(cpatch%fsw * cpatch%lai,cpatch%solvable) * patch_lai_i) * csite%area(ipa)
             end if
          end do patchloop
          
@@ -342,7 +341,6 @@ subroutine integrate_ed_daily_output_flux(cgrid)
    use ed_state_vars        , only : edtype,polygontype,sitetype,patchtype
    use grid_coms            , only : nzg
    use max_dims             , only : n_dbh, n_pft, n_dist_types
-   use canopy_radiation_coms, only : lai_min
    use misc_coms            , only : dtlsm
    implicit none
    
@@ -409,8 +407,8 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          patchloop: do ipa=1, csite%npatches
             cpatch => csite%patch(ipa)
             if (cpatch%ncohorts > 0) then
-               patchsum_leaf_resp = patchsum_leaf_resp + sum(cpatch%mean_leaf_resp, cpatch%lai > lai_min)  * csite%area(ipa) 
-               patchsum_root_resp = patchsum_root_resp + sum(cpatch%mean_root_resp                      )  * csite%area(ipa) 
+               patchsum_leaf_resp = patchsum_leaf_resp + sum(cpatch%mean_leaf_resp, cpatch%solvable)  * csite%area(ipa) 
+               patchsum_root_resp = patchsum_root_resp + sum(cpatch%mean_root_resp                 )  * csite%area(ipa) 
             end if
 
          end do patchloop

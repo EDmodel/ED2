@@ -7,7 +7,6 @@ subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, prss, pcpg, qpcpg,  &
 
   use ed_state_vars,only:sitetype,patchtype
   use grid_coms, only: nzg
-  use canopy_radiation_coms, only: lai_min
   use consts_coms, only: alvi
   use max_dims, only: n_pft
 
@@ -56,7 +55,7 @@ subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, prss, pcpg, qpcpg,  &
   ndims = 2
   cpatch => csite%patch(ipa)
   do ico = 1,cpatch%ncohorts
-     if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa) )then
+     if(cpatch%solvable(ico) )then
         ndims = ndims + 2
      endif
   enddo
@@ -83,7 +82,6 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
      qwshed_canopy)
 
   use ed_state_vars,only:sitetype,patchtype
-
   use canopy_radiation_coms, only: lai_min
   use consts_coms, only: cice, cliq, alli, t3ple, tsupercool
   use therm_lib, only: qwtk
@@ -121,7 +119,7 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
      
      do ico = 1,cpatch%ncohorts
 
-        if(cpatch%hite(ico) > csite%total_snow_depth(ipa) .and. cpatch%lai(ico) > lai_min)then
+        if(cpatch%solvable(ico))then
            tvegaux = cpatch%veg_temp(ico) - t3ple
 
            hcapveg_factor = cpatch%lai(ico) / csite%lai(ipa)
@@ -190,7 +188,6 @@ subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
 !-----------------------------------------------------------------------------
 
   use ed_state_vars,only: sitetype,patchtype
-  use canopy_radiation_coms, only: lai_min
   use consts_coms, only: cp, alvl, alvi
   use grid_coms, only: nzg
   use therm_lib, only: rhovsil,rhovsilp
@@ -262,7 +259,7 @@ subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
   ic = 0
 
   do ico = 1,cpatch%ncohorts
-     if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))then
+     if(cpatch%solvable(ico))then
 
         ! Set indices
         ic = ic + 1
@@ -435,7 +432,7 @@ subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
   
   do ico = 1,cpatch%ncohorts
 
-     if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))then
+     if(cpatch%solvable(ico))then
         ic = ic + 1
         idim = idim + 2
         cpatch%veg_temp(ico) = implicit_new_state(idim)
@@ -474,7 +471,7 @@ subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
 
   ! Require veg_water >= 0
   do ico = 1,cpatch%ncohorts
-     if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))then
+     if(cpatch%solvable(ico))then
         if(cpatch%veg_water(ico) < 0.0)then
            
            ! Take away from the canopy humidity...
@@ -515,7 +512,6 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
 !-----------------------------------------------------------------------------
 
   use ed_state_vars,only:sitetype,patchtype
-  use canopy_radiation_coms, only: lai_min
   use consts_coms, only: cp, alvl, alvi, cliq, cice, alli, t3ple,tsupercool
   use grid_coms, only: nzg
   use therm_lib, only: rhovsil,rhovsilp
@@ -581,7 +577,7 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
 
   ic = 0
   do ico = 1,cpatch%ncohorts
-     if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))then
+     if(cpatch%solvable(ico))then
 
         ! Set indices
         ic = ic + 1
@@ -675,7 +671,7 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
   idim = 1
   ic = 0
   do ico = 1,cpatch%ncohorts
-     if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))then
+     if(cpatch%solvable(ico))then
         ic = ic + 1
         idim = idim + 2
         cpatch%veg_temp(ico) = explicit_new_state(idim)
@@ -687,7 +683,7 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
 
   ! Require 0.22 LAI >= veg_water >= 0
   do ico = 1,cpatch%ncohorts
-     if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))then
+     if(cpatch%solvable(ico))then
         if(cpatch%veg_water(ico) < 0.0)then
            
            ! Take away from the canopy humidity...

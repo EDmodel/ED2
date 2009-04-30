@@ -10,7 +10,7 @@ an_header.o: $(ED_IO)/an_header.f90
 	rm -f $(<F:.f90=.f90)
 
 average_utils.o : $(ED_IO)/average_utils.f90 grid_coms.o misc_coms.o ed_state_vars.o       \
-	ed_misc_coms.o max_dims.o canopy_radiation_coms.o consts_coms.o allometry.o
+	ed_misc_coms.o max_dims.o consts_coms.o allometry.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -81,7 +81,7 @@ disturb_coms.o : $(ED_MEMORY)/disturb_coms.f90
 	rm -f $(<F:.f90=.f90)
 
 edio.o : $(ED_IO)/edio.f90 ed_state_vars.o grid_coms.o ed_node_coms.o misc_coms.o          \
-	canopy_radiation_coms.o consts_coms.o var_tables_array.o therm_lib.o soil_coms.o
+	consts_coms.o var_tables_array.o therm_lib.o soil_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -475,16 +475,16 @@ rk4_coms.o : $(ED_MEMORY)/rk4_coms.f90 grid_coms.o
 	rm -f $(<F:.f90=.f90)
 
 rk4_derivs.o : $(ED_DYNAMICS)/rk4_derivs.F90 ed_state_vars.o consts_coms.o grid_coms.o     \
-	max_dims.o grid_coms.o soil_coms.o misc_coms.o canopy_radiation_coms.o therm_lib.o \
-	pft_coms.o ed_misc_coms.o canopy_air_coms.o ed_therm_lib.o allometry.o rk4_coms.o  \
+	max_dims.o grid_coms.o soil_coms.o misc_coms.o therm_lib.o pft_coms.o              \
+	ed_misc_coms.o canopy_air_coms.o ed_therm_lib.o allometry.o rk4_coms.o             \
 	canopy_struct_dynamics.o
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)
 
 rk4_driver.o : $(ED_DYNAMICS)/rk4_driver.f90 ed_state_vars.o grid_coms.o max_dims.o        \
-	misc_coms.o consts_coms.o soil_coms.o canopy_radiation_coms.o ed_misc_coms.o       \
-	canopy_air_coms.o therm_lib.o ed_therm_lib.o rk4_coms.o canopy_struct_dynamics.o
+	misc_coms.o consts_coms.o soil_coms.o ed_misc_coms.o canopy_air_coms.o therm_lib.o \
+	ed_therm_lib.o rk4_coms.o canopy_struct_dynamics.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -515,7 +515,7 @@ soil_coms.o : $(ED_MEMORY)/soil_coms.F90 max_dims.o grid_coms.o
 	rm -f $(<F:.F90=.F90)
 
 stable_cohorts.o : $(ED_UTILS)/stable_cohorts.f90 ed_state_vars.o canopy_radiation_coms.o  \
-	rk4_coms.o
+	allometry.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

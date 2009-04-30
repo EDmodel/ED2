@@ -142,8 +142,6 @@ module ed_therm_lib
       real                        :: new_fliq
       integer                     :: kclosest
       integer                     :: k
-      !----- External functions. ----------------------------------------------------------!
-      logical        , external   :: is_solvable
       !------------------------------------------------------------------------------------!
 
       cpatch => csite%patch(ipa)

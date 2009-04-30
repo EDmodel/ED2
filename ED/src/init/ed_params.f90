@@ -185,6 +185,7 @@ subroutine init_can_rad_params()
                                     , leaf_trans_nir              & ! intent(out)
                                     , lai_min                     & ! intent(out)
                                     , tai_min                     & ! intent(out)
+                                    , blfac_min                   & ! intent(out)
                                     , rlong_min                   & ! intent(out)
                                     , veg_temp_min                ! ! intent(out)
    use max_dims              , only : n_pft                       ! ! intent(out)
@@ -241,6 +242,7 @@ subroutine init_can_rad_params()
 
    lai_min       = 1.0e-5
    tai_min       = 1.0e-5
+   blfac_min     = 1.0e-2
    rlong_min     = 50.0
    veg_temp_min  = 150.0
 

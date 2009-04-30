@@ -767,8 +767,6 @@ module fuse_fiss_utils_ar
       cpatch%bai(idt)                 = cpatch%bai(isc)
       cpatch%sai(idt)                 = cpatch%sai(isc)
       cpatch%bstorage(idt)            = cpatch%bstorage(isc)
-      
-      !----- We copy this one, but it will be updated before it is really used. -----------!
       cpatch%solvable(idt)            = cpatch%solvable(isc)
 
       do imonth = 1,13

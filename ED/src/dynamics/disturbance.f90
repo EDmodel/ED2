@@ -894,6 +894,7 @@ end subroutine apply_disturbances_ar
 
 
 
+    call init_ed_cohort_vars_array(cpatch, nc, lsl)
 
     cpatch%veg_temp(nc)  = csite%can_temp(np)
     cpatch%veg_water(nc) = 0.0
@@ -908,7 +909,6 @@ end subroutine apply_disturbances_ar
     
     cpatch%veg_energy(nc) = cpatch%hcapveg(nc) * cpatch%veg_temp(nc)
     
-    call init_ed_cohort_vars_array(cpatch, nc, lsl)
     
     cpatch%new_recruit_flag(nc) = 1 ! should plantations be considered recruits?
 

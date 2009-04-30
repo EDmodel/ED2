@@ -703,7 +703,6 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
                                    , alli       & ! intent(in)
                                    , t3ple      ! ! intent(in)
    use rk4_coms             , only : toosparse  ! ! intent(in)
-   use canopy_radiation_coms, only : lai_min    ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype) , target     :: csite
@@ -752,11 +751,6 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
    veg_storage = 0.0
    do ico = 1,cpatch%ncohorts
       veg_storage = veg_storage + cpatch%veg_energy(ico)
-      !if(csite%lai(ipa)   > lai_min                     .and.                             &
-      !   cpatch%hite(ico) > csite%total_snow_depth(ipa) .and.                             &
-      !   (.not. toosparse)                                   ) then
-      !   veg_storage = veg_storage + cpatch%veg_energy(ico)
-      !end if
    end do
  
    !----- 5. Integrating the total energy in ED. ------------------------------------------!
@@ -782,7 +776,6 @@ subroutine sum_plant_cfluxes_ar(csite,ipa, gpp, gpp_dbh,plresp)
                                    , patchtype   ! ! structure
    use consts_coms          , only : day_sec     & ! intent(in)
                                    , umol_2_kgC  ! ! intent(in)
-   use canopy_radiation_coms, only : lai_min     ! ! intent(in)
    use max_dims             , only : n_dbh
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -819,7 +812,7 @@ subroutine sum_plant_cfluxes_ar(csite,ipa, gpp, gpp_dbh,plresp)
    !---------------------------------------------------------------------------------------!
    do ico = 1,cpatch%ncohorts
       !----- Adding GPP and leaf respiration only for those cohorts with enough leaves. ---!
-      if (cpatch%lai(ico) > lai_min) then
+      if (cpatch%solvable(ico)) then
          gpp = gpp + cpatch%gpp(ico)
          !----- Forest cohorts have dbh distribution, add them to gpp_dbh. ----------------!
          if (forest) then 

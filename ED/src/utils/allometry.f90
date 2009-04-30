@@ -152,20 +152,14 @@ module allometry
    !=======================================================================================!
    !=======================================================================================!
    !    Canopy Area allometry from Dietze and Clark (2008).                                !
-   !    MLO. Included a check on whether this is being called for a tree or grass PFT.  In !
-   ! the grass case, we don't want to apply the crown area, so assume the grass is always  !
-   ! evenly distributed.                                                                   !
    !---------------------------------------------------------------------------------------!
    real function dbh2ca(dbh,ipft)
-      use pft_coms , only : is_grass ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
       integer, intent(in) :: ipft
       !------------------------------------------------------------------------------------!
-      if (is_grass(ipft)) then
-          dbh2ca = 1.e25 !---- A very large number, so it will always use 1. --------------!
-      elseif(dbh < tiny(1.0)) then
+      if(dbh < tiny(1.0)) then
          dbh2ca = 0.0
       else
          dbh2ca = 2.490154*dbh**0.8068806

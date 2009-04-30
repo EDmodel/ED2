@@ -154,7 +154,6 @@ subroutine spatial_averages
    use grid_coms             , only : ngrids            & ! intent(in)
                                     , nzg               & ! intent(in)
                                     , nzs               ! ! intent(in)
-   use canopy_radiation_coms , only : lai_min           ! ! intent(in)
    use consts_coms           , only : alvl              & ! intent(in)
                                     , wdns              ! ! intent(in)
    use misc_coms             , only : frqsum            ! ! intent(in)
@@ -383,7 +382,7 @@ subroutine spatial_averages
                ! scaled by nplant. Just make sure that we have at least one cohort.        !
                !---------------------------------------------------------------------------!
                if (cpatch%ncohorts > 0) then
-                  lai_patch = sum(cpatch%lai, cpatch%lai > lai_min)
+                  lai_patch = sum(cpatch%lai, cpatch%solvable)
                   csite%avg_veg_energy(ipa) = sum(cpatch%veg_energy)
                   csite%avg_veg_water(ipa)  = sum(cpatch%veg_water)
                   csite%hcapveg(ipa)        = sum(cpatch%hcapveg)

@@ -1054,9 +1054,9 @@ subroutine ed_opspec_misc
       write (unit=*,fmt='(a)') ' run, and in case it crashes, it is going to be all your   '
       write (unit=*,fmt='(a)') ' fault and I will remind you that!!!                       '
       write (unit=*,fmt='(a)') '==========================================================='
-   elseif (ied_init_mode < 0 .or. ied_init_mode > 3) then
+   elseif (ied_init_mode < 0 .or. ied_init_mode > 4) then
       write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid IED_INIT_MODE, it must be between 0 and 3. Yours is set to',ied_init_mode,'...'
+        'Invalid IED_INIT_MODE, it must be between 0 and 4. Yours is set to',ied_init_mode,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
