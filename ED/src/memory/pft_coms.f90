@@ -312,7 +312,10 @@ module pft_coms
    ! Phenology indicates the leaf habit regarding phenology:                               !
    ! 0. Evergreen coniferous;                                                              !
    ! 1. Drought deciduous;                                                                 !
-   ! 2. Cold deciduous.                                                                    !
+   ! 2. Cold deciduous;
+   ! 3. Tropical light-controlled;
+   ! 4. Tropical water-controlled.
+                                                                   !
    !---------------------------------------------------------------------------------------!
    integer, dimension(n_pft) :: phenology 
 

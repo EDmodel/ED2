@@ -5,6 +5,7 @@ subroutine init_ed_cohort_vars_array(cpatch,ico, lsl)
   
   use ed_state_vars,only : patchtype
   use allometry, only: calc_root_depth, assign_root_depth
+  use pft_coms, only : leaf_turnover_rate, Vm0, sla
 
   implicit none
 
@@ -58,7 +59,8 @@ subroutine init_ed_cohort_vars_array(cpatch,ico, lsl)
       
   cpatch%stomatal_resistance(ico) = 0.0
   cpatch%maintenance_costs(ico)   = 0.0
-  cpatch%paw_avg(ico)          = 0.0
+  cpatch%paw_avg(ico)          = 0.5 !0.0 - [KIM] starting from the mid point.  if starting from the driest point, plants'll drop leaves initially due to the water stress
+  
 
   ! From the ed_state_vars comment, these variables are now deprecated, commenting
   ! them so it will compile...
@@ -94,6 +96,11 @@ subroutine init_ed_cohort_vars_array(cpatch,ico, lsl)
   cpatch%veg_temp(ico)   = 0.
   cpatch%veg_water(ico)  = 0.
   cpatch%veg_fliq(ico)   = 0.
+
+  cpatch%turnover_amp = 1.0
+  cpatch%llspan = 12.0/leaf_turnover_rate(cpatch%pft(ico)) !in month
+  cpatch%vm_bar = Vm0(cpatch%pft(ico))
+  cpatch%sla = sla(cpatch%pft(ico))
 
   return
 end subroutine init_ed_cohort_vars_array

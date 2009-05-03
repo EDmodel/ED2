@@ -565,8 +565,8 @@ subroutine read_ed1_history_file_array
                        call area_indices(cpatch%nplant(ic2),cpatch%bleaf(ic2)              &
                                         ,cpatch%bdead(ic2),cpatch%balive(ic2)              &
                                         ,cpatch%dbh(ic2), cpatch%hite(ic2)                 &
-                                        ,cpatch%pft(ic2),cpatch%lai(ic2),cpatch%bai(ic2)   &
-                                        ,cpatch%sai(ic2))
+                                        ,cpatch%pft(ic2), cpatch%sla(ic2), cpatch%lai(ic2) &
+                                        ,cpatch%bai(ic2), cpatch%sai(ic2))
                        
                        cpatch%cb(1:12,ic2) = cb(1:12,ic)
                        cpatch%cb_max(1:12,ic2) = cb_max(1:12,ic)
@@ -2207,8 +2207,8 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
         do ico=1,cpatch%ncohorts
            call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)  &
                             ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)    &
-                            ,cpatch%pft(ico),cpatch%lai(ico),cpatch%bai(ico)         &
-                            ,cpatch%sai(ico))
+                            ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)         &
+                            ,cpatch%bai(ico),cpatch%sai(ico))
         end do
      end if
 

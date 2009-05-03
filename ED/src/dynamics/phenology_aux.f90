@@ -214,12 +214,56 @@ subroutine update_thermal_sums_ar(month, cpoly, isi, lat)
 end subroutine update_thermal_sums_ar
 !==========================================================================================!
 !==========================================================================================!
+subroutine update_turnover(cpoly, isi)
+  use ed_state_vars,only:polygontype,sitetype,patchtype
+  use pft_coms,only:leaf_turnover_rate
+  use phenology_coms,only:rad_turnover_int,rad_turnover_slope, &
+       vm_tran, vm_slop, vm_amp, vm_min
+  use consts_coms, only : day_sec
 
+  implicit none
+  
+  type(polygontype),target :: cpoly
+  type(sitetype),pointer   :: csite
+  type(patchtype),pointer  :: cpatch
+  integer :: isi,ipa,ico,ipft
+  real :: radcrit, turnover0,llspan0,vm0
+  real :: tfact10, tfact60
+ 
+  tfact10 = 1./10.
+  tfact60 = 1./60.
+  ! loop over patches
 
+  radcrit = -rad_turnover_int/rad_turnover_slope
 
+  csite => cpoly%site(isi)
+  do ipa = 1,csite%npatches
+    
+     cpatch => csite%patch(ipa)
+     do ico = 1,cpatch%ncohorts
+        ipft = cpatch%pft(ico)
 
+        ! update turnover mulitplier
+        turnover0 = min(100.,max(0.01,rad_turnover_int+rad_turnover_slope*cpoly%rad_avg(isi)))                
+        if (cpoly%rad_avg(isi) < radcrit) turnover0 = 0.01
+        cpatch%turnover_amp(ico) = (1.0-tfact10)*cpatch%turnover_amp(ico)+tfact10*turnover0
 
+        ! update leaf lifespan
+        llspan0 = 12.0/(cpatch%turnover_amp(ico)*leaf_turnover_rate(ipft))
+        cpatch%llspan=(1.0-tfact60)*cpatch%llspan+tfact60*llspan0
 
+        ! update vm_bar
+        vm0=vm_amp/(1.0+(cpatch%llspan(ico)/vm_tran)**vm_slop)+vm_min
+        cpatch%vm_bar(ico)=(1.0-tfact60)*cpatch%vm_bar(ico)+tfact60*vm0
+
+        ! update sla
+        cpatch%sla(ico) = 10.0**((1.6923-0.3305*log10(12.0/ &
+             (cpatch%turnover_amp(ico)*leaf_turnover_rate(ipft))))) 
+     enddo
+
+  enddo
+
+end subroutine update_turnover
 !==========================================================================================!
 !==========================================================================================!
 real function daylength(lat,day)

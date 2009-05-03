@@ -825,6 +825,11 @@ module fuse_fiss_utils_ar
       cpatch%gpp(idt)                 = cpatch%gpp(isc)
       cpatch%paw_avg(idt)          = cpatch%paw_avg(isc)
 
+      cpatch%turnover_amp(idt)  = cpatch%turnover_amp(isc)     
+      cpatch%llspan(idt)  = cpatch%llspan(isc)     
+      cpatch%vm_bar(idt)  = cpatch%vm_bar(isc)  
+      cpatch%sla(idt)  = cpatch%sla(isc)  
+
       osdt => cpatch%old_stoma_data(idt)
       ossc => cpatch%old_stoma_data(isc)
 

@@ -281,9 +281,9 @@ module ed_state_vars
 
      ! Phenology-related
      real, pointer, dimension(:) :: turnover_amp
-     real, pointer, dimension(:) :: turnover_acc 
      real, pointer, dimension(:) :: llspan
      real, pointer, dimension(:) :: vm_bar
+     real, pointer, dimension(:) :: sla
 
   end type patchtype
 !============================================================================!
@@ -2244,9 +2244,9 @@ contains
     allocate(cpatch%gpp(ncohorts))
     allocate(cpatch%paw_avg(ncohorts))
     allocate(cpatch%turnover_amp(ncohorts))
-    allocate(cpatch%turnover_acc(ncohorts))
     allocate(cpatch%llspan(ncohorts))
     allocate(cpatch%vm_bar(ncohorts))
+    allocate(cpatch%sla(ncohorts))
 
     ! Initialize the variables with a non-sense number.
     !call huge_patchtype(cpatch)
@@ -2913,9 +2913,9 @@ contains
     nullify(cpatch%gpp)
     nullify(cpatch%paw_avg)
     nullify(cpatch%turnover_amp)
-    nullify(cpatch%turnover_acc)
     nullify(cpatch%llspan)
     nullify(cpatch%vm_bar)
+    nullify(cpatch%sla)
 
 ! Depricated
 !    nullify(cpatch%co_srad_h)
@@ -3597,9 +3597,9 @@ contains
     if(associated(cpatch%gpp))              deallocate(cpatch%gpp)
     if(associated(cpatch%paw_avg))          deallocate(cpatch%paw_avg)
     if(associated(cpatch%turnover_amp))     deallocate(cpatch%turnover_amp)
-    if(associated(cpatch%turnover_acc))     deallocate(cpatch%turnover_acc)
     if(associated(cpatch%llspan))           deallocate(cpatch%llspan)
     if(associated(cpatch%vm_bar))           deallocate(cpatch%vm_bar)
+    if(associated(cpatch%sla))           deallocate(cpatch%sla)
 
 
     return
@@ -4357,10 +4357,10 @@ contains
     if(associated(cpatch%hcapveg))              cpatch%hcapveg             = large_real
     if(associated(cpatch%gpp))                  cpatch%gpp                 = large_real
     if(associated(cpatch%paw_avg))              cpatch%paw_avg             = large_real
-    if(associated(cpatch%turnover_acc))         cpatch%turnover_acc        = large_real
     if(associated(cpatch%turnover_amp))         cpatch%turnover_amp        = large_real
     if(associated(cpatch%llspan))               cpatch%llspan              = large_real
     if(associated(cpatch%vm_bar))               cpatch%vm_bar              = large_real
+    if(associated(cpatch%sla))                  cpatch%sla                 = large_real
     ! Depricated
 !    if(associated(cpatch%co_srad_h))            cpatch%co_srad_h           = large_real
 !    if(associated(cpatch%co_lrad_h))            cpatch%co_lrad_h           = large_real
@@ -4886,10 +4886,10 @@ contains
     patchout%gpp(1:inc)              = pack(patchin%gpp,mask)
     patchout%paw_avg(1:inc)          = pack(patchin%paw_avg,mask)
     patchout%turnover_amp(1:inc)     = pack(patchin%turnover_amp,mask)
-    patchout%turnover_acc(1:inc)     = pack(patchin%turnover_acc,mask)
     patchout%llspan(1:inc)           = pack(patchin%llspan,mask)
     patchout%vm_bar(1:inc)           = pack(patchin%vm_bar,mask)
-    
+    patchout%sla(1:inc)              = pack(patchin%sla,mask)    
+
     do m=1,inc
        k=incmask(m)
        do i = 1,13
@@ -5021,9 +5021,9 @@ contains
        patchout%gpp(iout)              = patchin%gpp(iin)
        patchout%paw_avg(iout)          = patchin%paw_avg(iin)
        patchout%turnover_amp(iout)     = patchin%turnover_amp(iin)
-       patchout%turnover_acc(iout)     = patchin%turnover_acc(iin)
        patchout%llspan(iout)           = patchin%llspan(iin)
        patchout%vm_bar(iout)           = patchin%vm_bar(iin)
+       patchout%sla(iout)              = patchin%sla(iin)
 
        ! Depricated
 !       patchout%co_srad_h(iout)        = patchin%co_srad_h(iin)
@@ -8736,13 +8736,6 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpatch%turnover_acc)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpatch%turnover_acc(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'TURNOVER_ACC :41:hist:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-
     if (associated(cpatch%llspan)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%llspan(1),nvar,igr,init,cpatch%coglob_id, &
@@ -8754,6 +8747,13 @@ contains
        nvar=nvar+1
          call vtable_edio_r(cpatch%vm_bar(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'VM_BAR :41:hist:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%sla)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%sla(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'SLA :41:hist:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 

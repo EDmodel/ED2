@@ -1162,7 +1162,7 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
 
-   if (iphen_scheme < 0 .or. iphen_scheme > 1) then
+   if (iphen_scheme < 0 .or. iphen_scheme > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid IPHEN_SCHEME, it must be between 0 and 1. Yours is set to'    &
                     ,iphen_scheme,'...'

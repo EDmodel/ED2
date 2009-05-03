@@ -887,8 +887,8 @@ end subroutine apply_disturbances_ar
          (1.0 + q(cpatch%pft(nc)) + qsw(cpatch%pft(nc)) * cpatch%hite(nc))
     call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)        &
                      ,cpatch%balive(nc),cpatch%dbh(nc), cpatch%hite(nc)          &
-                     ,cpatch%pft(nc),cpatch%lai(nc),cpatch%bai(nc)               &
-                     ,cpatch%sai(nc))
+                     ,cpatch%pft(nc),cpatch%sla(nc), cpatch%lai(nc)              &
+                     ,cpatch%bai(nc),cpatch%sai(nc))
 
     cpatch%bstorage(nc) = 1.0*(cpatch%balive(nc)) !! changed by MCD, was 0.0
 

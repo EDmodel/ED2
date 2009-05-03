@@ -844,11 +844,18 @@ subroutine init_pft_leaf_params()
                              , wat_dry_ratio_grn    & ! intent(out)
                              , wat_dry_ratio_ngrn   & ! intent(out)
                              , delta_c              ! ! intent(out)
-   use consts_coms    , only : t3ple                ! ! intent(out)
+   use consts_coms    , only : t3ple                ! ! intent(out) 
+   use phenology_coms, only:iphen_scheme
 
    implicit none
 
-   phenology(1:5)   = 1
+   if ( iphen_scheme == 2 ) then
+      phenology(1) = 4
+      phenology(2:4) = 3
+   else
+      phenology(1:4) = 1
+   endif
+   phenology(5)   = 1
    phenology(6:8)   = 0
    phenology(9:11)  = 2
    phenology(12:15) = 1
@@ -1204,7 +1211,9 @@ end subroutine init_soil_coms
 subroutine init_phen_coms
 
   use phenology_coms,only: retained_carbon_fraction, &
-       theta_crit,dl_tr,st_tr1,st_tr2,phen_a,phen_b,phen_c
+       theta_crit,dl_tr,st_tr1,st_tr2,phen_a,phen_b,phen_c, &
+       rad_turnover_int, rad_turnover_slope, &
+       vm_tran, vm_slop, vm_amp, vm_min
 
   implicit none
 
@@ -1218,6 +1227,13 @@ subroutine init_phen_coms
   phen_b = 638.0    
   phen_c = -0.01    
 
+  rad_turnover_int   = -11.3868
+  rad_turnover_slope = 0.0824
+
+  vm_tran = 9.0
+  vm_slop = 10.0
+  vm_amp = 20.0
+  vm_min = 15.0
 
   return
 end subroutine init_phen_coms

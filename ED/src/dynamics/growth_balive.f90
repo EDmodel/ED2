@@ -155,8 +155,8 @@ subroutine dbalive_dt_ar(cgrid, tfact)
               !----- Updating LAI, BAI, and SAI. ------------------------------------------!
               call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)     &
                                ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)       &
-                               ,cpatch%pft(ico),cpatch%lai(ico),cpatch%bai(ico)            &
-                               ,cpatch%sai(ico))
+                               ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)              &
+                               ,cpatch%bai(ico),cpatch%sai(ico))
 
               !----------------------------------------------------------------------------!
               !     It is likely that the leaf biomass has changed, therefore, update      !
@@ -252,18 +252,25 @@ subroutine plant_maintenance_and_resp_ar(cpatch,ico, br, bl, tfact, daily_C_gain
   real, intent(in) :: tempk
   real, intent(out) :: daily_C_gain
   real :: maintenance_temp_dep
+  integer :: ipft
+
+  ipft=cpatch%pft(ico)
 
   ! Get the temperature dependence
-  if(phenology(cpatch%pft(ico)) /= 1)then
+  if(phenology(ipft) == 0 .or. phenology(ipft) == 3)then
      maintenance_temp_dep = 1.0 / (1.0 + exp(0.4 * (278.15 - tempk)))
   else
      maintenance_temp_dep = 1.0
   endif
 
   ! Calculate maintenance demand (kgC/plant/year)
-  
-  cpatch%maintenance_costs(ico) = (root_turnover_rate(cpatch%pft(ico)) * br +  &
-       leaf_turnover_rate(cpatch%pft(ico)) * bl) * maintenance_temp_dep
+  if(phenology(ipft) /= 3)then
+     cpatch%maintenance_costs(ico) = (root_turnover_rate(ipft) * br +  &
+       leaf_turnover_rate(ipft) * bl) * maintenance_temp_dep
+  else
+     cpatch%maintenance_costs(ico) = (root_turnover_rate(ipft) * br +  &
+       leaf_turnover_rate(ipft) * bl * cpatch%turnover_amp(ico)) * maintenance_temp_dep
+  endif
 
   ! Convert units of maintenance to [kgC/plant/day]
   

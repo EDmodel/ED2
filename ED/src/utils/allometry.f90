@@ -414,12 +414,11 @@ module allometry
    !                     forestry systems. Rapports Production Soudano-Sahélienne.         !
    !                     Wageningen, 1995.                                                 !
    !---------------------------------------------------------------------------------------!
-   subroutine area_indices(nplant,bleaf,bdead,balive,dbh,hite,pft,lai,bai,sai)
+   subroutine area_indices(nplant,bleaf,bdead,balive,dbh,hite,pft,sla,lai,bai,sai)
       use pft_coms    , only : is_tropical     & ! intent(in)
                              , is_grass        & ! intent(in)
                              , rho             & ! intent(in)
                              , C2B             & ! intent(in)
-                             , sla             & ! intent(in)
                              , branch_fraction & ! intent(in)
                              , rbranch         & ! intent(in)
                              , rdiamet         & ! intent(in)
@@ -443,6 +442,7 @@ module allometry
       real    , intent(in)  :: balive  ! Specific live tissue biomass         [  kgC/plant]
       real    , intent(in)  :: dbh     ! Diameter at breast height            [         cm]
       real    , intent(in)  :: hite    ! Plant height                         [          m]
+      real    , intent(in)  :: sla     
       real    , intent(out) :: lai     ! Leaf area index                      [  m²leaf/m²]
       real    , intent(out) :: sai     ! Stem(trunk) projected area index     [  m²wood/m²]
       real    , intent(out) :: bai     ! Branch (+twigs) projected area index [  m²wood/m²]
@@ -461,7 +461,7 @@ module allometry
       !------------------------------------------------------------------------------------!
       
       !----- First, we compute the LAI ----------------------------------------------------!
-      lai = bleaf * nplant * sla(pft)
+      lai = bleaf * nplant * sla
       
       !------------------------------------------------------------------------------------!
       !     Here we check whether we need to compute the branch, stem, and effective       !

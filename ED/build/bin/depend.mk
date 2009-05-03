@@ -266,7 +266,7 @@ events.o : $(ED_DYNAMICS)/events.f90 misc_coms.o grid_coms.o ed_state_vars.o pft
 	rm -f $(<F:.f90=.f90)
 
 farq_leuning.o : $(ED_DYNAMICS)/farq_leuning.f90 c34constants.o pft_coms.o                 \
-	physiology_coms.o therm_lib.o consts_coms.o
+	physiology_coms.o phenology_coms.o therm_lib.o consts_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

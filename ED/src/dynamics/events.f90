@@ -384,8 +384,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  !----- Update LAI, BAI, and SAI ------------------------------------------!
                  call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)  &
                                   ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)    &
-                                  ,cpatch%pft(ico),cpatch%lai(ico),cpatch%bai(ico)         &
-                                  ,cpatch%sai(ico))
+                                  ,cpatch%pft(nc),cpatch%sla(nc), cpatch%lai(nc)           &
+                                  ,cpatch%bai(nc),cpatch%sai(nc))
 
                  !-------------------------------------------------------------------------!
                  !    Here we are leaving all water in the branches and twigs... Do not    !

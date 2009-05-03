@@ -48,7 +48,10 @@ subroutine phenology_driver_ar(cgrid, doy, month, tfact)
 
         elseif(iphen_scheme == 2)then
            
-           !  A new predictive scheme
+           !-KIM light-controlled predictive phenology scheme 
+           
+           call update_turnover(cpoly,isi)
+           call update_phenology_tropics(cpoly,isi)
            
         endif
 
@@ -249,8 +252,8 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
         !----- Update LAI, SAI, and BAI accordingly. --------------------------------------!
         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)           &
                          ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)             &
-                         ,cpatch%pft(ico),cpatch%lai(ico),cpatch%bai(ico)                  &
-                         ,cpatch%sai(ico))
+                         ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)                    &
+                         ,cpatch%bai(ico),cpatch%sai(ico))
 
         ! Added RGK 10-26-2008
         ! The leaf biomass of the cohort has changed, update the vegetation
@@ -383,3 +386,115 @@ subroutine cohort_phen_thresholds(green_leaf_factor, leaf_aging_factor,   &
 
   return
 end subroutine cohort_phen_thresholds
+!==================================================================
+
+subroutine update_phenology_tropics(cpoly, isi)
+
+  use ed_state_vars,only:polygontype,sitetype,patchtype
+  use pft_coms, only: phenology, sla, c2n_leaf, q, qsw, l2n_stem, c2n_stem, &
+       c2n_storage, leaf_turnover_rate
+  use decomp_coms, only: f_labile
+  use phenology_coms, only: retained_carbon_fraction, theta_crit
+  use allometry, only: dbh2bl
+  use ed_therm_lib,only:calc_hcapveg,update_veg_energy_cweh
+  use allometry, only : area_indices
+
+  implicit none
+  
+  real :: delta_bleaf
+  type(polygontype),target :: cpoly
+  type(sitetype),pointer   :: csite
+  type(patchtype),pointer  :: cpatch
+  integer :: isi,ipa,ico,ipft
+  real :: leaf_litter
+  real :: bl_max
+  real :: elongf
+  real :: old_hcapveg
+
+  ! Loop over patches
+
+  csite => cpoly%site(isi)
+
+  patchloop: do ipa = 1,csite%npatches
+
+     cpatch => csite%patch(ipa)
+
+     ! Re-initialize litter inputs
+     csite%fsc_in(ipa) = 0.0
+     csite%fsn_in(ipa) = 0.0
+     csite%ssc_in(ipa) = 0.0
+     csite%ssl_in(ipa) = 0.0
+
+     cohortloop: do ico = 1,cpatch%ncohorts
+        ipft = cpatch%pft(ico)
+        ! light-controlled
+        if(phenology(ipft) == 3)then !tropical evergreen 
+
+        ! water-controlled   
+        elseif (phenology(ipft) == 4)then !tropical tropical drought deciduous 
+           elongf = min (1.0, cpatch%paw_avg(ico)/theta_crit)
+           bl_max = elongf * dbh2bl(cpatch%dbh(ico),ipft)
+           delta_bleaf = cpatch%bleaf(ico) - bl_max
+           if(delta_bleaf > 0.0)then
+              cpatch%phenology_status(ico) = 0 
+              leaf_litter = (1.0 - retained_carbon_fraction)  &
+                   * delta_bleaf * cpatch%nplant(ico)
+              csite%fsc_in(ipa) = csite%fsc_in(ipa) + leaf_litter * f_labile(ipft)
+              csite%fsn_in(ipa) = csite%fsn_in(ipa) + leaf_litter * f_labile(ipft) /   &
+                   c2n_leaf(ipft)
+              csite%ssc_in(ipa) = csite%ssc_in(ipa) + leaf_litter * (1.0 - f_labile(ipft))
+              csite%ssl_in(ipa) = csite%ssl_in(ipa) + leaf_litter *   &
+                   (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem
+              
+              ! adjust plant carbon pools
+              cpatch%balive(ico) = cpatch%balive(ico) - delta_bleaf
+              cpatch%bstorage(ico) = cpatch%bstorage(ico) + retained_carbon_fraction *   &
+                   delta_bleaf
+              ! Contribution due to the fact that c2n_leaf and c2n_storage 
+              ! may be different
+              csite%fsn_in(ipa) = csite%fsn_in(ipa) + delta_bleaf * cpatch%nplant(ico) *  &
+                   retained_carbon_fraction *  &
+                   (1.0 / c2n_leaf(ipft) - 1.0/c2n_storage)
+              
+              cpatch%bleaf(ico) = bl_max
+              cpatch%cb(13,ico) = cpatch%cb(13,ico) - leaf_litter / cpatch%nplant(ico)
+              cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - leaf_litter / cpatch%nplant(ico)
+           elseif (elongf > 0.02) then
+              cpatch%phenology_status(ico) = 1 
+              cpatch%bleaf(ico) = elongf * cpatch%balive(ico)   &
+                / (1.0 + qsw(ipft) * cpatch%hite(ico) + q(ipft))
+            endif
+           if (elongf < 0.02)then
+              cpatch%phenology_status(ico) = 2
+              cpatch%bleaf(ico) = 0.0
+           endif
+
+         endif  ! phenology type
+
+        !----- Update LAI, SAI, and BAI accordingly. --------------------------------------!
+        call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)           &
+                         ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)             &
+                         ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)                    &
+                         ,cpatch%bai(ico),cpatch%sai(ico))
+
+        ! The leaf biomass of the cohort has changed, update the vegetation
+        ! energy - using a constant temperature assumption
+        old_hcapveg = cpatch%hcapveg(ico)
+        cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)       &
+                                          ,cpatch%balive(ico),cpatch%nplant(ico)     &
+                                          ,cpatch%hite(ico),cpatch%pft(ico)          &
+                                          ,cpatch%phenology_status(ico))
+        call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
+        !---- Likewise, update the patch level one. ---------------------------------!
+        csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
+
+
+     end do cohortloop ! cohorts
+
+     
+  end do patchloop  ! patches
+  return
+end subroutine update_phenology_tropics
+
+
+!=======================================================================
