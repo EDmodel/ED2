@@ -1059,7 +1059,16 @@ module fuse_fiss_utils_ar
       !------------------------------------------------------------------------------------!
      
       cpatch%paw_avg(recc) = cpatch%paw_avg(recc) + cpatch%paw_avg(donc)
-      
+
+      cpatch%turnover_amp(recc)  = (cpatch%turnover_amp(recc) * cpatch%nplant(recc)        &
+           cpatch%turnover_amp(donc) * cpatch%nplant(donc) ) *newni   
+      cpatch%llspan(recc)  = (cpatch%llspan(recc) * cpatch%nplant(recc)                    &
+           cpatch%llspan(donc) * cpatch%nplant(donc) ) *newni   
+      cpatch%vm_bar(recc)  = (cpatch%vm_bar(recc) * cpatch%nplant(recc)                    &
+           cpatch%vm_bar(donc) * cpatch%nplant(donc) ) *newni   
+      cpatch%sla(recc)  = (cpatch%sla(recc) * cpatch%nplant(recc)                          &
+           cpatch%sla(donc) * cpatch%nplant(donc) ) *newni   
+    
       root_depth = calc_root_depth(cpatch%hite(recc), cpatch%dbh(recc), cpatch%pft(recc))
       cpatch%krdepth(recc) = assign_root_depth(root_depth, lsl)
 
