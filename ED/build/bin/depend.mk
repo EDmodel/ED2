@@ -131,7 +131,7 @@ ed_init.o : $(ED_INIT)/ed_init.f90 grid_coms.o ed_work_vars.o soil_coms.o ed_nod
 
 ed_init_atm.o : $(ED_INIT)/ed_init_atm.f90 misc_coms.o ed_state_vars.o soil_coms.o         \
 	consts_coms.o grid_coms.o fuse_fiss_utils.o ed_node_coms.o pft_coms.o therm_lib.o  \
-	canopy_air_coms.o ed_therm_lib.o allometry.o max_dims.o
+	canopy_air_coms.o ed_therm_lib.o allometry.o max_dims.o fusion_fission_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

@@ -1198,8 +1198,7 @@ module fuse_fiss_utils_ar
 
                mean_nplant = 0.0
                do ipa = csite%npatches,1,-1
-                  call patch_pft_size_profile_ar(csite,ipa,ff_ndbh                         &
-                                                ,cpoly%green_leaf_factor(:,isi))
+                  call patch_pft_size_profile_ar(csite,ipa,ff_ndbh)
                
                   !------------------------------------------------------------------------!
                   !    Get a mean density profile for all of the patches. This will be     !
@@ -1309,8 +1308,7 @@ module fuse_fiss_utils_ar
                                  !     Recalculate the pft size profile for the averaged   !
                                  ! patch at donp_tp.                                       !
                                  !---------------------------------------------------------!
-                                 call patch_pft_size_profile_ar(csite,recp,ff_ndbh         &
-                                                          ,cpoly%green_leaf_factor(:,isi) )
+                                 call patch_pft_size_profile_ar(csite,recp,ff_ndbh)
 
                                  !---------------------------------------------------------!
                                  !     The patch at index donp is no longer valid, it      !
@@ -1907,7 +1905,7 @@ module fuse_fiss_utils_ar
       !    This subroutine will update the size profile within patch.                      !
       ! + csite%pft_density_profile(:,:,recp)                                              !
       !------------------------------------------------------------------------------------!
-      call patch_pft_size_profile_ar(csite,recp,ff_ndbh,green_leaf_factor)
+      call patch_pft_size_profile_ar(csite,recp,ff_ndbh)
       !------------------------------------------------------------------------------------!
 
       !----- Last, but not the least, we update the patch area ----------------------------!
@@ -1926,7 +1924,7 @@ module fuse_fiss_utils_ar
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine patch_pft_size_profile_ar(csite,ipa,nbins,green_leaf_factor)
+   subroutine patch_pft_size_profile_ar(csite,ipa,nbins)
       use ed_state_vars      , only :  sitetype   & ! structure
                                      , patchtype  ! ! structure
       use fusion_fission_coms, only :  maxdbh     ! ! intent(in)
@@ -1934,7 +1932,6 @@ module fuse_fiss_utils_ar
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target     :: csite             ! Current site
-      real, dimension(n_pft) , intent(in) :: green_leaf_factor ! Green leaf factor
       integer                , intent(in) :: ipa               ! Current patch ID
       integer                , intent(in) :: nbins             ! # of DBH classes
       !----- Local variables --------------------------------------------------------------!

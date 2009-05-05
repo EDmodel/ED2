@@ -1409,7 +1409,7 @@ edcp_met.o : $(ED_MIXED)/edcp_met.f90 node_mod.o rconstants.o met_driver_coms.o 
 
 edcp_met_init.o : $(ED_MIXED)/edcp_met_init.f90 misc_coms.o ed_state_vars.o soil_coms.o    \
 	rconstants.o grid_coms.o fuse_fiss_utils.o ed_node_coms.o pft_coms.o mem_radiate.o \
-	mem_leaf.o mem_grid.o therm_lib.o ed_therm_lib.o allometry.o leaf_coms.o
+	mem_leaf.o mem_grid.o therm_lib.o ed_therm_lib.o allometry.o leaf_coms.o fusion_fission_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
