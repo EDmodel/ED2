@@ -246,11 +246,11 @@ subroutine update_phenology_ar(day, cpoly, isi, lat)
            
         endif  ! phenology type
 
-        !----- Update LAI, SAI, and BAI accordingly. --------------------------------------!
+        !----- Update LAI, WPA, and WAI accordingly. --------------------------------------!
         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)           &
                          ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)             &
-                         ,cpatch%pft(ico),cpatch%lai(ico),cpatch%bai(ico)                  &
-                         ,cpatch%sai(ico))
+                         ,cpatch%pft(ico),cpatch%lai(ico),cpatch%wai(ico)                  &
+                         ,cpatch%wpa(ico))
 
         ! Added RGK 10-26-2008
         ! The leaf biomass of the cohort has changed, update the vegetation

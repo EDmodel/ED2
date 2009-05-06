@@ -241,6 +241,7 @@ Module rconstants
    real(kind=8), parameter :: pi18         = dble(pi1       )
    real(kind=8), parameter :: qicet38      = dble(qicet3    )
    real(kind=8), parameter :: qliqt38      = dble(qliqt3    )
+   real(kind=8), parameter :: stefan8      = dble(stefan    )
    real(kind=8), parameter :: t3ple8       = dble(t3ple     )
    real(kind=8), parameter :: tsupercool8  = dble(tsupercool)
    real(kind=8), parameter :: twothirds8   = dble(twothirds )

@@ -301,10 +301,10 @@ subroutine update_derived_cohort_props_ar(cpatch,ico, green_leaf_factor, lsl)
       end if
       cpatch%bleaf(ico) = bl
       
-      !----- Update LAI, BAI, and SAI -----------------------------------------------------!
+      !----- Update LAI, WPA, and WAI -----------------------------------------------------!
       call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)             &
                  ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico),cpatch%pft(ico)     &
-                 ,cpatch%lai(ico),cpatch%bai(ico),cpatch%sai(ico))
+                 ,cpatch%lai(ico),cpatch%wpa(ico),cpatch%wai(ico))
    end if
 
    !----- Update rooting depth ------------------------------------------------------------!

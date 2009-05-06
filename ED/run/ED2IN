@@ -234,7 +234,7 @@
                               !  0  --  Euler step
                               !  1  --  Fourth-order Runge Kutta
 
-   IBRANCH_THERMO = 0,        ! This determines whether branches should be included in
+   NL%IBRANCH_THERMO = 0      ! This determines whether branches should be included in
                               !    the vegetation thermodynamics or not.  This is under
                               !    development, not fully tested.
                               !  0  --  No branches in energy/radiation;

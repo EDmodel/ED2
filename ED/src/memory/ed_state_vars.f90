@@ -102,11 +102,11 @@ module ed_state_vars
      ! Leaf area index (m2 leaf / m2 ground)
      real ,pointer,dimension(:) :: lai
 
-     ! Branch (+twigs) area index (m2 wood / m2 ground)
-     real ,pointer,dimension(:) :: bai
+     ! Wood projected area (m2 wood / m2 ground)
+     real ,pointer,dimension(:) :: wpa
 
-     ! Stem (trunk) area index (m2 wood / m2 ground)
-     real ,pointer,dimension(:) :: sai
+     ! Wood area index (m2 wood / m2 ground)
+     real ,pointer,dimension(:) :: wai
 
      ! Logical test to check whether this cohort can be solved...
      logical, pointer, dimension(:) :: solvable
@@ -318,11 +318,11 @@ module ed_state_vars
      ! Leaf area index (m2 leaf / m2 ground)
      real, pointer,dimension(:) :: lai
 
-     ! Branch(+twigs) area index (m2 wood / m2 ground)
-     real, pointer,dimension(:) :: bai
+     ! Wood projected area (m2 wood / m2 ground)
+     real, pointer,dimension(:) :: wpa
 
-     ! Stem (trunk) area index (m2 wood / m2 ground)
-     real, pointer,dimension(:) :: sai
+     ! Wood area index (m2 wood / m2 ground)
+     real, pointer,dimension(:) :: wai
 
      ! Patch type index:
      !       Agriculture = 1
@@ -779,10 +779,10 @@ module ed_state_vars
      integer,pointer,dimension(:) :: num_landuse_years
      real,   pointer,dimension(:,:) :: lai_pft ! (n_pft,nsites)
      real,   pointer,dimension(:,:) :: lai_lu ! (n_dist_types,nsites)
-     real,   pointer,dimension(:,:) :: bai_pft ! (n_pft,nsites)
-     real,   pointer,dimension(:,:) :: bai_lu ! (n_dist_types,nsites)
-     real,   pointer,dimension(:,:) :: sai_pft ! (n_pft,nsites)
-     real,   pointer,dimension(:,:) :: sai_lu ! (n_dist_types,nsites)
+     real,   pointer,dimension(:,:) :: wpa_pft ! (n_pft,nsites)
+     real,   pointer,dimension(:,:) :: wpa_lu ! (n_dist_types,nsites)
+     real,   pointer,dimension(:,:) :: wai_pft ! (n_pft,nsites)
+     real,   pointer,dimension(:,:) :: wai_lu ! (n_dist_types,nsites)
 
      real, pointer,dimension(:,:) :: elongation_factor
      real, pointer,dimension(:,:) :: delta_elongf
@@ -969,10 +969,10 @@ module ed_state_vars
      real,pointer,dimension(:)   :: aux             ! Auxillary surface variable
      real,pointer,dimension(:,:) :: aux_s           ! Auxillary soil variable
 
-     !---- Polygon LAI, BAI, and SAI ------------------------------------------------------!
+     !---- Polygon LAI, WPA, and WAI ------------------------------------------------------!
      real, pointer, dimension(:) :: lai
-     real, pointer, dimension(:) :: bai
-     real, pointer, dimension(:) :: sai
+     real, pointer, dimension(:) :: wpa
+     real, pointer, dimension(:) :: wai
 
      !----- Sensible heat -------------------------------------------------------------------------------------------!
      !                                              | Description
@@ -1206,10 +1206,10 @@ module ed_state_vars
      real,pointer,dimension(:)   :: aux             ! Auxillary surface variable
      real,pointer,dimension(:,:) :: aux_s           ! Auxillary soil variable
 
-     !----- LAI, BAI, and SAI ------------------------------------------------!
+     !----- LAI, WPA, and WAI ------------------------------------------------!
      real,pointer,dimension(:) :: lai
-     real,pointer,dimension(:) :: bai
-     real,pointer,dimension(:) :: sai
+     real,pointer,dimension(:) :: wpa
+     real,pointer,dimension(:) :: wai
 
 
      !----- Sensible heat Flux -----------------------------------------------!
@@ -1337,10 +1337,10 @@ module ed_state_vars
      !-------------------------------------------------------------------!
      real, pointer, dimension(:,:) :: lai_pft          !(n_pft       ,npolygons)
      real, pointer, dimension(:,:) :: lai_lu           !(n_dist_types,npolygons)
-     real, pointer, dimension(:,:) :: bai_pft          !(n_pft       ,npolygons)
-     real, pointer, dimension(:,:) :: bai_lu           !(n_dist_types,npolygons)
-     real, pointer, dimension(:,:) :: sai_pft          !(n_pft       ,npolygons)
-     real, pointer, dimension(:,:) :: sai_lu           !(n_dist_types,npolygons)
+     real, pointer, dimension(:,:) :: wpa_pft          !(n_pft       ,npolygons)
+     real, pointer, dimension(:,:) :: wpa_lu           !(n_dist_types,npolygons)
+     real, pointer, dimension(:,:) :: wai_pft          !(n_pft       ,npolygons)
+     real, pointer, dimension(:,:) :: wai_lu           !(n_dist_types,npolygons)
 
      !-------------------------------------------------------------------!
      ! These variables carry the montlhly mean, and are allocated only   !
@@ -1373,10 +1373,10 @@ module ed_state_vars
      real, pointer, dimension(:,:) :: mmean_gpp_dbh  !(n_dbh       ,npolygons)
      real, pointer, dimension(:,:) :: mmean_lai_pft  !(n_pft       ,npolygons)
      real, pointer, dimension(:,:) :: mmean_lai_lu   !(n_dist_types,npolygons)
-     real, pointer, dimension(:,:) :: mmean_bai_pft  !(n_pft       ,npolygons)
-     real, pointer, dimension(:,:) :: mmean_bai_lu   !(n_dist_types,npolygons)
-     real, pointer, dimension(:,:) :: mmean_sai_pft  !(n_pft       ,npolygons)
-     real, pointer, dimension(:,:) :: mmean_sai_lu   !(n_dist_types,npolygons)
+     real, pointer, dimension(:,:) :: mmean_wpa_pft  !(n_pft       ,npolygons)
+     real, pointer, dimension(:,:) :: mmean_wpa_lu   !(n_dist_types,npolygons)
+     real, pointer, dimension(:,:) :: mmean_wai_pft  !(n_pft       ,npolygons)
+     real, pointer, dimension(:,:) :: mmean_wai_lu   !(n_dist_types,npolygons)
      !-------------------------------------------------------------------!
      !   These are variables updated at a monthly basis, so they are not !
      ! averages but they are written at the monthly analysis             !
@@ -1601,8 +1601,8 @@ contains
        allocate(cgrid%lapse(npolygons))
 
        allocate(cgrid%lai  (npolygons))
-       allocate(cgrid%bai  (npolygons))
-       allocate(cgrid%sai  (npolygons))
+       allocate(cgrid%wpa  (npolygons))
+       allocate(cgrid%wai  (npolygons))
 
        ! Fast time flux diagnostics
        ! ---------------------------------------------
@@ -1692,10 +1692,10 @@ contains
        
        allocate(cgrid%lai_pft            (n_pft       ,npolygons))
        allocate(cgrid%lai_lu             (n_dist_types,npolygons))
-       allocate(cgrid%bai_pft            (n_pft       ,npolygons))
-       allocate(cgrid%bai_lu             (n_dist_types,npolygons))
-       allocate(cgrid%sai_pft            (n_pft       ,npolygons))
-       allocate(cgrid%sai_lu             (n_dist_types,npolygons))
+       allocate(cgrid%wpa_pft            (n_pft       ,npolygons))
+       allocate(cgrid%wpa_lu             (n_dist_types,npolygons))
+       allocate(cgrid%wai_pft            (n_pft       ,npolygons))
+       allocate(cgrid%wai_lu             (n_dist_types,npolygons))
 
        !-----------------------------------------------------------------!
        ! Allocating the daily means, only if daily or monthly means were !
@@ -1760,10 +1760,10 @@ contains
           allocate(cgrid%mmean_gpp_dbh      (n_dbh       ,npolygons))
           allocate(cgrid%mmean_lai_pft      (n_pft       ,npolygons))
           allocate(cgrid%mmean_lai_lu       (n_dist_types,npolygons))
-          allocate(cgrid%mmean_bai_pft      (n_pft       ,npolygons))
-          allocate(cgrid%mmean_bai_lu       (n_dist_types,npolygons))
-          allocate(cgrid%mmean_sai_pft      (n_pft       ,npolygons))
-          allocate(cgrid%mmean_sai_lu       (n_dist_types,npolygons))
+          allocate(cgrid%mmean_wpa_pft      (n_pft       ,npolygons))
+          allocate(cgrid%mmean_wpa_lu       (n_dist_types,npolygons))
+          allocate(cgrid%mmean_wai_pft      (n_pft       ,npolygons))
+          allocate(cgrid%mmean_wai_lu       (n_dist_types,npolygons))
           allocate(cgrid%agb_pft            (n_pft       ,npolygons))
           allocate(cgrid%ba_pft             (n_pft       ,npolygons))
           allocate(cgrid%area_pft           (n_pft       ,npolygons))
@@ -1832,10 +1832,10 @@ contains
 
     allocate(cpoly%lai_pft(n_pft,nsites))
     allocate(cpoly%lai_lu(n_dist_types,nsites))
-    allocate(cpoly%bai_pft(n_pft,nsites))
-    allocate(cpoly%bai_lu(n_dist_types,nsites))
-    allocate(cpoly%sai_pft(n_pft,nsites))
-    allocate(cpoly%sai_lu(n_dist_types,nsites))
+    allocate(cpoly%wpa_pft(n_pft,nsites))
+    allocate(cpoly%wpa_lu(n_dist_types,nsites))
+    allocate(cpoly%wai_pft(n_pft,nsites))
+    allocate(cpoly%wai_lu(n_dist_types,nsites))
     allocate(cpoly%soi(nsites))
     allocate(cpoly%soi_name(nsites))
     allocate(cpoly%TCI(nsites))      
@@ -1901,8 +1901,8 @@ contains
     allocate(cpoly%rlongup(nsites))
 
     allocate(cpoly%lai  (nsites))
-    allocate(cpoly%bai  (nsites))
-    allocate(cpoly%sai  (nsites))
+    allocate(cpoly%wpa  (nsites))
+    allocate(cpoly%wai  (nsites))
     ! Fast time flux diagnostics
     ! ---------------------------------------------
     allocate(cpoly%avg_vapor_vc  (nsites))
@@ -1989,8 +1989,8 @@ contains
     enddo
 
     allocate(csite%lai(npatches))
-    allocate(csite%bai(npatches))
-    allocate(csite%sai(npatches))
+    allocate(csite%wpa(npatches))
+    allocate(csite%wai(npatches))
     allocate(csite%dist_type(npatches))
     allocate(csite%age(npatches))
     allocate(csite%area(npatches))
@@ -2184,8 +2184,8 @@ contains
     allocate(cpatch%phenology_status(ncohorts))
     allocate(cpatch%balive(ncohorts))
     allocate(cpatch%lai(ncohorts))
-    allocate(cpatch%bai(ncohorts))
-    allocate(cpatch%sai(ncohorts))
+    allocate(cpatch%wpa(ncohorts))
+    allocate(cpatch%wai(ncohorts))
     allocate(cpatch%solvable(ncohorts))
     allocate(cpatch%bstorage(ncohorts))
     allocate(cpatch%cb(13,ncohorts))
@@ -2314,8 +2314,8 @@ contains
        nullify(cgrid%lapse                   )
 
        nullify(cgrid%lai                     )
-       nullify(cgrid%bai                     )
-       nullify(cgrid%sai                     )
+       nullify(cgrid%wpa                     )
+       nullify(cgrid%wai                     )
 
        ! Fast time flux diagnostics
        ! ---------------------------------------------
@@ -2429,10 +2429,10 @@ contains
        nullify(cgrid%dmean_gpp_dbh           ) 
        nullify(cgrid%lai_pft                 )
        nullify(cgrid%lai_lu                  )
-       nullify(cgrid%bai_pft                 )
-       nullify(cgrid%bai_lu                  )
-       nullify(cgrid%sai_pft                 )
-       nullify(cgrid%sai_lu                  )
+       nullify(cgrid%wpa_pft                 )
+       nullify(cgrid%wpa_lu                  )
+       nullify(cgrid%wai_pft                 )
+       nullify(cgrid%wai_lu                  )
        nullify(cgrid%mmean_gpp               )
        nullify(cgrid%mmean_evap              )
        nullify(cgrid%mmean_transp            )
@@ -2456,10 +2456,10 @@ contains
        nullify(cgrid%mmean_gpp_dbh           )
        nullify(cgrid%mmean_lai_pft           )
        nullify(cgrid%mmean_lai_lu            )
-       nullify(cgrid%mmean_bai_pft           )
-       nullify(cgrid%mmean_bai_lu            )
-       nullify(cgrid%mmean_sai_pft           )
-       nullify(cgrid%mmean_sai_lu            )
+       nullify(cgrid%mmean_wpa_pft           )
+       nullify(cgrid%mmean_wpa_lu            )
+       nullify(cgrid%mmean_wai_pft           )
+       nullify(cgrid%mmean_wai_lu            )
        nullify(cgrid%agb_pft                 )
        nullify(cgrid%ba_pft                  )
        nullify(cgrid%area_pft                )
@@ -2522,10 +2522,10 @@ contains
     nullify(cpoly%num_landuse_years)
     nullify(cpoly%lai_pft)
     nullify(cpoly%lai_lu)
-    nullify(cpoly%bai_pft)
-    nullify(cpoly%bai_lu)
-    nullify(cpoly%sai_pft)
-    nullify(cpoly%sai_lu)
+    nullify(cpoly%wpa_pft)
+    nullify(cpoly%wpa_lu)
+    nullify(cpoly%wai_pft)
+    nullify(cpoly%wai_lu)
     nullify(cpoly%soi)
     nullify(cpoly%soi_name)
     nullify(cpoly%TCI)   
@@ -2588,8 +2588,8 @@ contains
     nullify(cpoly%albedt)
     nullify(cpoly%rlongup)
     nullify(cpoly%lai    )
-    nullify(cpoly%bai    )
-    nullify(cpoly%sai    )
+    nullify(cpoly%wpa    )
+    nullify(cpoly%wai    )
     
     ! Fast time flux diagnostics
     ! ---------------------------------------------
@@ -2683,8 +2683,8 @@ contains
     nullify(csite%can_co2)
     nullify(csite%can_depth)
     nullify(csite%lai)
-    nullify(csite%bai)
-    nullify(csite%sai)
+    nullify(csite%wpa)
+    nullify(csite%wai)
 
     nullify(csite%sfcwater_mass)
     nullify(csite%sfcwater_energy)
@@ -2849,8 +2849,8 @@ contains
     nullify(cpatch%phenology_status)
     nullify(cpatch%balive)
     nullify(cpatch%lai)
-    nullify(cpatch%bai)
-    nullify(cpatch%sai)
+    nullify(cpatch%wpa)
+    nullify(cpatch%wai)
     nullify(cpatch%solvable)
     nullify(cpatch%bstorage)
     nullify(cpatch%cb)
@@ -2985,8 +2985,8 @@ contains
        if(associated(cgrid%lapse                   )) deallocate(cgrid%lapse                   )
 
        if(associated(cgrid%lai                     )) deallocate(cgrid%lai                     )
-       if(associated(cgrid%bai                     )) deallocate(cgrid%bai                     )
-       if(associated(cgrid%sai                     )) deallocate(cgrid%sai                     )
+       if(associated(cgrid%wpa                     )) deallocate(cgrid%wpa                     )
+       if(associated(cgrid%wai                     )) deallocate(cgrid%wai                     )
 
        ! Fast time flux diagnostics
        ! ---------------------------------------------
@@ -3113,10 +3113,10 @@ contains
        if(associated(cgrid%dmean_gpp_dbh           )) deallocate(cgrid%dmean_gpp_dbh           )
        if(associated(cgrid%lai_pft                 )) deallocate(cgrid%lai_pft                 )
        if(associated(cgrid%lai_lu                  )) deallocate(cgrid%lai_lu                  )
-       if(associated(cgrid%bai_pft                 )) deallocate(cgrid%bai_pft                 )
-       if(associated(cgrid%bai_lu                  )) deallocate(cgrid%bai_lu                  )
-       if(associated(cgrid%sai_pft                 )) deallocate(cgrid%sai_pft                 )
-       if(associated(cgrid%sai_lu                  )) deallocate(cgrid%sai_lu                  )
+       if(associated(cgrid%wpa_pft                 )) deallocate(cgrid%wpa_pft                 )
+       if(associated(cgrid%wpa_lu                  )) deallocate(cgrid%wpa_lu                  )
+       if(associated(cgrid%wai_pft                 )) deallocate(cgrid%wai_pft                 )
+       if(associated(cgrid%wai_lu                  )) deallocate(cgrid%wai_lu                  )
        if(associated(cgrid%mmean_gpp               )) deallocate(cgrid%mmean_gpp               )
        if(associated(cgrid%mmean_evap              )) deallocate(cgrid%mmean_evap              )
        if(associated(cgrid%mmean_transp            )) deallocate(cgrid%mmean_transp            )
@@ -3140,10 +3140,10 @@ contains
        if(associated(cgrid%mmean_gpp_dbh           )) deallocate(cgrid%mmean_gpp_dbh           )
        if(associated(cgrid%mmean_lai_pft           )) deallocate(cgrid%mmean_lai_pft           )
        if(associated(cgrid%mmean_lai_pft           )) deallocate(cgrid%mmean_lai_lu            )
-       if(associated(cgrid%mmean_bai_pft           )) deallocate(cgrid%mmean_bai_pft           )
-       if(associated(cgrid%mmean_bai_pft           )) deallocate(cgrid%mmean_bai_lu            )
-       if(associated(cgrid%mmean_sai_pft           )) deallocate(cgrid%mmean_sai_pft           )
-       if(associated(cgrid%mmean_sai_pft           )) deallocate(cgrid%mmean_sai_lu            )
+       if(associated(cgrid%mmean_wpa_pft           )) deallocate(cgrid%mmean_wpa_pft           )
+       if(associated(cgrid%mmean_wpa_pft           )) deallocate(cgrid%mmean_wpa_lu            )
+       if(associated(cgrid%mmean_wai_pft           )) deallocate(cgrid%mmean_wai_pft           )
+       if(associated(cgrid%mmean_wai_pft           )) deallocate(cgrid%mmean_wai_lu            )
        if(associated(cgrid%agb_pft                 )) deallocate(cgrid%agb_pft                 )
        if(associated(cgrid%ba_pft                  )) deallocate(cgrid%ba_pft                  )
        if(associated(cgrid%area_pft                )) deallocate(cgrid%area_pft                )
@@ -3200,10 +3200,10 @@ contains
     if(associated(cpoly%num_landuse_years           )) deallocate(cpoly%num_landuse_years           )
     if(associated(cpoly%lai_pft                     )) deallocate(cpoly%lai_pft                     )
     if(associated(cpoly%lai_lu                      )) deallocate(cpoly%lai_lu                      )
-    if(associated(cpoly%bai_pft                     )) deallocate(cpoly%bai_pft                     )
-    if(associated(cpoly%bai_lu                      )) deallocate(cpoly%bai_lu                      )
-    if(associated(cpoly%sai_pft                     )) deallocate(cpoly%sai_pft                     )
-    if(associated(cpoly%sai_lu                      )) deallocate(cpoly%sai_lu                      )
+    if(associated(cpoly%wpa_pft                     )) deallocate(cpoly%wpa_pft                     )
+    if(associated(cpoly%wpa_lu                      )) deallocate(cpoly%wpa_lu                      )
+    if(associated(cpoly%wai_pft                     )) deallocate(cpoly%wai_pft                     )
+    if(associated(cpoly%wai_lu                      )) deallocate(cpoly%wai_lu                      )
     if(associated(cpoly%soi                         )) deallocate(cpoly%soi                         )
     if(associated(cpoly%soi_name                    )) deallocate(cpoly%soi_name                    )
     if(associated(cpoly%TCI                         )) deallocate(cpoly%TCI                         )
@@ -3267,8 +3267,8 @@ contains
     if(associated(cpoly%rlongup                     )) deallocate(cpoly%rlongup                     )
     
     if(associated(cpoly%lai                         )) deallocate(cpoly%lai                         )
-    if(associated(cpoly%bai                         )) deallocate(cpoly%bai                         )
-    if(associated(cpoly%sai                         )) deallocate(cpoly%sai                         )
+    if(associated(cpoly%wpa                         )) deallocate(cpoly%wpa                         )
+    if(associated(cpoly%wai                         )) deallocate(cpoly%wai                         )
 
     ! Fast time flux diagnostics
     ! ---------------------------------------------
@@ -3361,8 +3361,8 @@ contains
     if(associated(csite%can_co2                      )) deallocate(csite%can_co2                      )
     if(associated(csite%can_depth                    )) deallocate(csite%can_depth                    )
     if(associated(csite%lai                          )) deallocate(csite%lai                          )
-    if(associated(csite%bai                          )) deallocate(csite%bai                          )
-    if(associated(csite%sai                          )) deallocate(csite%sai                          )
+    if(associated(csite%wpa                          )) deallocate(csite%wpa                          )
+    if(associated(csite%wai                          )) deallocate(csite%wai                          )
 
     if(associated(csite%sfcwater_mass                )) deallocate(csite%sfcwater_mass                )
     if(associated(csite%sfcwater_energy              )) deallocate(csite%sfcwater_energy              )
@@ -3529,8 +3529,8 @@ contains
     if(associated(cpatch%phenology_status)) deallocate(cpatch%phenology_status)
     if(associated(cpatch%balive))    deallocate(cpatch%balive)
     if(associated(cpatch%lai))       deallocate(cpatch%lai)
-    if(associated(cpatch%bai))       deallocate(cpatch%bai)
-    if(associated(cpatch%sai))       deallocate(cpatch%sai)
+    if(associated(cpatch%wpa))       deallocate(cpatch%wpa)
+    if(associated(cpatch%wai))       deallocate(cpatch%wai)
     if(associated(cpatch%solvable))  deallocate(cpatch%solvable)
     if(associated(cpatch%bstorage))  deallocate(cpatch%bstorage)
     if(associated(cpatch%cb))        deallocate(cpatch%cb)
@@ -3706,8 +3706,8 @@ contains
     end if                         
 
     if(associated(cgrid%lai                     )) cgrid%lai                      = large_real
-    if(associated(cgrid%bai                     )) cgrid%bai                      = large_real
-    if(associated(cgrid%sai                     )) cgrid%sai                      = large_real
+    if(associated(cgrid%wpa                     )) cgrid%wpa                      = large_real
+    if(associated(cgrid%wai                     )) cgrid%wai                      = large_real
     ! Fast time flux diagnostics
     ! ---------------------------------------------
     if(associated(cgrid%avg_vapor_vc            )) cgrid%avg_vapor_vc             = large_real
@@ -3822,10 +3822,10 @@ contains
     if(associated(cgrid%dmean_gpp_dbh           )) cgrid%dmean_gpp_dbh            = large_real
     if(associated(cgrid%lai_pft                 )) cgrid%lai_pft                  = large_real
     if(associated(cgrid%lai_lu                  )) cgrid%lai_lu                   = large_real
-    if(associated(cgrid%bai_pft                 )) cgrid%bai_pft                  = large_real
-    if(associated(cgrid%bai_lu                  )) cgrid%bai_lu                   = large_real
-    if(associated(cgrid%sai_pft                 )) cgrid%sai_pft                  = large_real
-    if(associated(cgrid%sai_lu                  )) cgrid%sai_lu                   = large_real
+    if(associated(cgrid%wpa_pft                 )) cgrid%wpa_pft                  = large_real
+    if(associated(cgrid%wpa_lu                  )) cgrid%wpa_lu                   = large_real
+    if(associated(cgrid%wai_pft                 )) cgrid%wai_pft                  = large_real
+    if(associated(cgrid%wai_lu                  )) cgrid%wai_lu                   = large_real
     if(associated(cgrid%mmean_gpp               )) cgrid%mmean_gpp                = large_real
     if(associated(cgrid%mmean_evap              )) cgrid%mmean_evap               = large_real
     if(associated(cgrid%mmean_transp            )) cgrid%mmean_transp             = large_real
@@ -3849,10 +3849,10 @@ contains
     if(associated(cgrid%mmean_gpp_dbh           )) cgrid%mmean_gpp_dbh            = large_real
     if(associated(cgrid%mmean_lai_pft           )) cgrid%mmean_lai_pft            = large_real
     if(associated(cgrid%mmean_lai_lu            )) cgrid%mmean_lai_lu             = large_real
-    if(associated(cgrid%mmean_bai_pft           )) cgrid%mmean_bai_pft            = large_real
-    if(associated(cgrid%mmean_bai_lu            )) cgrid%mmean_bai_lu             = large_real
-    if(associated(cgrid%mmean_sai_pft           )) cgrid%mmean_sai_pft            = large_real
-    if(associated(cgrid%mmean_sai_lu            )) cgrid%mmean_sai_lu             = large_real
+    if(associated(cgrid%mmean_wpa_pft           )) cgrid%mmean_wpa_pft            = large_real
+    if(associated(cgrid%mmean_wpa_lu            )) cgrid%mmean_wpa_lu             = large_real
+    if(associated(cgrid%mmean_wai_pft           )) cgrid%mmean_wai_pft            = large_real
+    if(associated(cgrid%mmean_wai_lu            )) cgrid%mmean_wai_lu             = large_real
     if(associated(cgrid%agb_pft                 )) cgrid%agb_pft                  = large_real
     if(associated(cgrid%ba_pft                  )) cgrid%ba_pft                   = large_real
     if(associated(cgrid%area_pft                )) cgrid%area_pft                 = large_real
@@ -3907,10 +3907,10 @@ contains
     if(associated(cpoly%num_landuse_years           )) cpoly%num_landuse_years           = large_integer  ! Integer
     if(associated(cpoly%lai_pft                     )) cpoly%lai_pft                     = large_real
     if(associated(cpoly%lai_lu                      )) cpoly%lai_lu                      = large_real
-    if(associated(cpoly%bai_pft                     )) cpoly%bai_pft                     = large_real
-    if(associated(cpoly%bai_lu                      )) cpoly%bai_lu                      = large_real
-    if(associated(cpoly%sai_pft                     )) cpoly%sai_pft                     = large_real
-    if(associated(cpoly%sai_lu                      )) cpoly%sai_lu                      = large_real
+    if(associated(cpoly%wpa_pft                     )) cpoly%wpa_pft                     = large_real
+    if(associated(cpoly%wpa_lu                      )) cpoly%wpa_lu                      = large_real
+    if(associated(cpoly%wai_pft                     )) cpoly%wai_pft                     = large_real
+    if(associated(cpoly%wai_lu                      )) cpoly%wai_lu                      = large_real
     if(associated(cpoly%soi                         )) cpoly%soi                         = large_integer  ! Integer
     if(associated(cpoly%soi_name                    )) cpoly%soi_name                    = ''       ! Character
     if(associated(cpoly%TCI                         )) cpoly%TCI                         = large_real
@@ -4001,8 +4001,8 @@ contains
     if(associated(cpoly%rlongup                     )) cpoly%rlongup                     = large_real
     
     if(associated(cpoly%lai                         )) cpoly%lai                         = large_real
-    if(associated(cpoly%bai                         )) cpoly%bai                         = large_real
-    if(associated(cpoly%sai                         )) cpoly%sai                         = large_real
+    if(associated(cpoly%wpa                         )) cpoly%wpa                         = large_real
+    if(associated(cpoly%wai                         )) cpoly%wai                         = large_real
 
     ! Fast time flux diagnostics
     ! ---------------------------------------------
@@ -4093,8 +4093,8 @@ contains
     if(associated(csite%can_co2                      )) csite%can_co2                      = large_real
     if(associated(csite%can_depth                    )) csite%can_depth                    = large_real
     if(associated(csite%lai                          )) csite%lai                          = large_real
-    if(associated(csite%bai                          )) csite%bai                          = large_real
-    if(associated(csite%sai                          )) csite%sai                          = large_real
+    if(associated(csite%wpa                          )) csite%wpa                          = large_real
+    if(associated(csite%wai                          )) csite%wai                          = large_real
 
     if(associated(csite%sfcwater_mass                )) csite%sfcwater_mass                = large_real
     if(associated(csite%sfcwater_energy              )) csite%sfcwater_energy              = large_real
@@ -4269,8 +4269,8 @@ contains
     if(associated(cpatch%phenology_status))     cpatch%phenology_status    = large_integer !Integer
     if(associated(cpatch%balive))               cpatch%balive              = large_real
     if(associated(cpatch%lai))                  cpatch%lai                 = large_real
-    if(associated(cpatch%bai))                  cpatch%bai                 = large_real
-    if(associated(cpatch%sai))                  cpatch%sai                 = large_real
+    if(associated(cpatch%wpa))                  cpatch%wpa                 = large_real
+    if(associated(cpatch%wai))                  cpatch%wai                 = large_real
     if(associated(cpatch%solvable))             cpatch%solvable            = .true.
     if(associated(cpatch%bstorage))             cpatch%bstorage            = large_real
     if(associated(cpatch%cb))                   cpatch%cb                  = large_real
@@ -4579,8 +4579,8 @@ contains
     siteout%can_co2(1:inc)              = pack(sitein%can_co2,logmask)
     siteout%can_depth(1:inc)            = pack(sitein%can_depth,logmask)
     siteout%lai(1:inc)                  = pack(sitein%lai,logmask)
-    siteout%bai(1:inc)                  = pack(sitein%bai,logmask)
-    siteout%sai(1:inc)                  = pack(sitein%sai,logmask)
+    siteout%wpa(1:inc)                  = pack(sitein%wpa,logmask)
+    siteout%wai(1:inc)                  = pack(sitein%wai,logmask)
     siteout%avg_daily_temp(1:inc)       = pack(sitein%avg_daily_temp,logmask)
     siteout%mean_rh(1:inc)              = pack(sitein%mean_rh,logmask)
     siteout%mean_nep(1:inc)             = pack(sitein%mean_nep,logmask)
@@ -4813,8 +4813,8 @@ contains
     patchout%phenology_status(1:inc) = pack(patchin%phenology_status,mask)
     patchout%balive(1:inc)           = pack(patchin%balive,mask)
     patchout%lai(1:inc)              = pack(patchin%lai,mask)
-    patchout%bai(1:inc)              = pack(patchin%bai,mask)
-    patchout%sai(1:inc)              = pack(patchin%sai,mask)
+    patchout%wpa(1:inc)              = pack(patchin%wpa,mask)
+    patchout%wai(1:inc)              = pack(patchin%wai,mask)
     patchout%solvable(1:inc)         = pack(patchin%solvable,mask)
     patchout%bstorage(1:inc)         = pack(patchin%bstorage,mask)
     patchout%cbr_bar(1:inc)          = pack(patchin%cbr_bar,mask)
@@ -4942,9 +4942,9 @@ contains
        patchout%phenology_status(iout) = patchin%phenology_status(iin)
        patchout%balive(iout)           = patchin%balive(iin)
        patchout%lai(iout)              = patchin%lai(iin)
-       patchout%bai(iout)              = patchin%bai(iin)
+       patchout%wpa(iout)              = patchin%wpa(iin)
+       patchout%wai(iout)              = patchin%wai(iin)
        patchout%solvable(iout)         = patchin%solvable(iin)
-       patchout%sai(iout)              = patchin%sai(iin)
        patchout%bstorage(iout)         = patchin%bstorage(iin)
        patchout%cb(:,iout)             = patchin%cb(:,iin)
        patchout%cb_max(:,iout)         = patchin%cb_max(:,iin)
@@ -5958,18 +5958,18 @@ contains
        call metadata_edio(nvar,igr,'Polygon  LAI','[m2/m2]','ipoly') 
     endif
 
-    if (associated(cgrid%bai)) then
+    if (associated(cgrid%wpa)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%bai(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'BAI :11:hist:anal:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'Polygon  BAI','[m2/m2]','ipoly') 
+       call vtable_edio_r(cgrid%wpa(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'WPA :11:hist:anal:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Polygon  WPA','[m2/m2]','ipoly') 
     endif
 
-    if (associated(cgrid%sai)) then
+    if (associated(cgrid%wai)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%sai(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'SAI :11:hist:anal:mpti:mpt3') 
-       call metadata_edio(nvar,igr,'Polygon  SAI','[m2/m2]','ipoly') 
+       call vtable_edio_r(cgrid%wai(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'WAI :11:hist:anal:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Polygon  WAI','[m2/m2]','ipoly') 
     endif
 
     if (associated(cgrid%avg_leaf_resp)) then
@@ -6539,32 +6539,32 @@ contains
        call metadata_edio(nvar,igr,'Leaf Area Index','[m2/m2]','NA') 
     endif
     
-    if(associated(cgrid%bai_pft)) then
+    if(associated(cgrid%wpa_pft)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%bai_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'BAI_PFT :14:hist:anal:dail') 
-       call metadata_edio(nvar,igr,'Branch Area Index','[m2/m2]','NA') 
+       call vtable_edio_r(cgrid%wpa_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'WPA_PFT :14:hist:anal:dail') 
+       call metadata_edio(nvar,igr,'Wood Projected Area','[m2/m2]','NA') 
     endif
     
-    if(associated(cgrid%bai_lu)) then
+    if(associated(cgrid%wpa_lu)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%bai_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'BAI_LU :15:hist:anal:dail') 
-       call metadata_edio(nvar,igr,'Branch Area Index','[m2/m2]','NA') 
+       call vtable_edio_r(cgrid%wpa_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'WPA_LU :15:hist:anal:dail') 
+       call metadata_edio(nvar,igr,'Wood Projected Area ','[m2/m2]','NA') 
     endif
     
-    if(associated(cgrid%sai_pft)) then
+    if(associated(cgrid%wai_pft)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%sai_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'SAI_PFT :14:hist:anal:dail') 
-       call metadata_edio(nvar,igr,'Stem Area Index','[m2/m2]','NA') 
+       call vtable_edio_r(cgrid%wai_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'WAI_PFT :14:hist:anal:dail') 
+       call metadata_edio(nvar,igr,'Wood Area Index','[m2/m2]','NA') 
     endif
     
-    if(associated(cgrid%sai_lu)) then
+    if(associated(cgrid%wai_lu)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%sai_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'SAI_LU :15:hist:anal:dail') 
-       call metadata_edio(nvar,igr,'Stem Area Index','[m2/m2]','NA') 
+       call vtable_edio_r(cgrid%wai_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'WAI_LU :15:hist:anal:dail') 
+       call metadata_edio(nvar,igr,'Wood Area Index','[m2/m2]','NA') 
     endif
     
     if(associated(cgrid%mmean_gpp)) then
@@ -6728,31 +6728,31 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
-    if(associated(cgrid%mmean_bai_pft)) then
+    if(associated(cgrid%mmean_wpa_pft)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_bai_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_BAI_PFT :14:hist:mont:mpti:mpt3') 
+       call vtable_edio_r(cgrid%mmean_wpa_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_WPA_PFT :14:hist:mont:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
-    if(associated(cgrid%mmean_bai_lu)) then
+    if(associated(cgrid%mmean_wpa_lu)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_bai_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_BAI_LU :15:hist:mont:mpti:mpt3') 
+       call vtable_edio_r(cgrid%mmean_wpa_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_WPA_LU :15:hist:mont:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
-    if(associated(cgrid%mmean_sai_pft)) then
+    if(associated(cgrid%mmean_wai_pft)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_sai_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_SAI_PFT :14:hist:mont:mpti:mpt3') 
+       call vtable_edio_r(cgrid%mmean_wai_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_WAI_PFT :14:hist:mont:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
-    if(associated(cgrid%mmean_sai_lu)) then
+    if(associated(cgrid%mmean_wai_lu)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_sai_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_SAI_LU :15:hist:mont:mpti:mpt3') 
+       call vtable_edio_r(cgrid%mmean_wai_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_WAI_LU :15:hist:mont:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
@@ -7256,31 +7256,31 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
-    if (associated(cpoly%bai_pft)) then
+    if (associated(cpoly%wpa_pft)) then
        nvar=nvar+1
-         call vtable_edio_r(cpoly%bai_pft(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'BAI_PFT_SI :24:hist:dail:mpti:mpt3') 
+         call vtable_edio_r(cpoly%wpa_pft(1,1),nvar,igr,init,cpoly%siglob_id, &
+         var_len,var_len_global,max_ptrs,'WPA_PFT_SI :24:hist:dail:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
-    if (associated(cpoly%bai_lu)) then
+    if (associated(cpoly%wpa_lu)) then
        nvar=nvar+1
-         call vtable_edio_r(cpoly%bai_lu(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'BAI_LU_SI :25:hist:dail:mpti:mpt3') 
+         call vtable_edio_r(cpoly%wpa_lu(1,1),nvar,igr,init,cpoly%siglob_id, &
+         var_len,var_len_global,max_ptrs,'WPA_LU_SI :25:hist:dail:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
-    if (associated(cpoly%sai_pft)) then
+    if (associated(cpoly%wai_pft)) then
        nvar=nvar+1
-         call vtable_edio_r(cpoly%sai_pft(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'SAI_PFT_SI :24:hist:dail:mpti:mpt3') 
+         call vtable_edio_r(cpoly%wai_pft(1,1),nvar,igr,init,cpoly%siglob_id, &
+         var_len,var_len_global,max_ptrs,'WAI_PFT_SI :24:hist:dail:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
-    if (associated(cpoly%sai_lu)) then
+    if (associated(cpoly%wai_lu)) then
        nvar=nvar+1
-         call vtable_edio_r(cpoly%sai_lu(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'SAI_LU_SI :25:hist:dail:mpti:mpt3') 
+         call vtable_edio_r(cpoly%wai_lu(1,1),nvar,igr,init,cpoly%siglob_id, &
+         var_len,var_len_global,max_ptrs,'WAI_LU_SI :25:hist:dail:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
  
@@ -7587,17 +7587,17 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(csite%bai)) then
+    if (associated(csite%wpa)) then
        nvar=nvar+1
-         call vtable_edio_r(csite%bai(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'BAI_PA :31:hist:dail:mpti:mpt3') 
+         call vtable_edio_r(csite%wpa(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'WPA_PA :31:hist:dail:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(csite%sai)) then
+    if (associated(csite%wai)) then
        nvar=nvar+1
-         call vtable_edio_r(csite%sai(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'SAI_PA :31:hist:dail:mpti:mpt3') 
+         call vtable_edio_r(csite%wai(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'WAI_PA :31:hist:dail:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
    
@@ -8337,17 +8337,17 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpatch%bai)) then
+    if (associated(cpatch%wpa)) then
        nvar=nvar+1
-         call vtable_edio_r(cpatch%bai(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BAI_CO :41:hist:dail:mont:year:mpti:mpt3') 
+         call vtable_edio_r(cpatch%wpa(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'WPA_CO :41:hist:dail:mont:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpatch%sai)) then
+    if (associated(cpatch%wai)) then
        nvar=nvar+1
-         call vtable_edio_r(cpatch%sai(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'SAI_CO :41:hist:dail:mont:year:mpti:mpt3') 
+         call vtable_edio_r(cpatch%wai(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'WAI_CO :41:hist:dail:mont:year:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 

@@ -91,8 +91,8 @@ module rk4_driver_ar
 
                !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
                call canopy_photosynthesis_ar(csite,ipa,cpoly%met(isi)%vels                 &
-                          ,cpoly%met(isi)%rhos,cpoly%met(isi)%prss,ed_ktrans               &
-                          ,csite%ntext_soil(:,ipa),csite%soil_water(:,ipa)                 &
+                          ,cpoly%met(isi)%rhos,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%prss  &
+                          ,ed_ktrans,csite%ntext_soil(:,ipa),csite%soil_water(:,ipa)       &
                           ,csite%soil_fracliq(:,ipa),cpoly%lsl(isi),sum_lai_rbi            &
                           ,cpoly%leaf_aging_factor(:,isi),cpoly%green_leaf_factor(:,isi) )
 
@@ -208,14 +208,14 @@ module rk4_driver_ar
          !    The area factor for heat and water exchange between canopy and vegetation is !
          ! applied only on LAI, and it depends on how we are considering the branches and  !
          ! twigs.  If their area isn't explicitly defined, we add a 0.2 factor to the      !
-         ! area because BAI will be 0.  Otherwise, we don't add anything to the LAI, and   !
-         ! let BAI to do the job.                                                          !
+         ! area because WPA will be 0.  Otherwise, we don't add anything to the LAI, and   !
+         ! let WPA to do the job.                                                          !
          !---------------------------------------------------------------------------------!
          select case (ibranch_thermo)
          case (0)
             effarea_water = 1.2d0
             effarea_heat  = 2.2d0
-         case (1)
+         case default
             effarea_water = 1.0d0
             effarea_heat  = 2.0d0
          end select

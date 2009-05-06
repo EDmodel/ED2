@@ -115,92 +115,97 @@ end subroutine radiate_driver_ar
 
 !==========================================================================================!
 !==========================================================================================!
+!     This subroutine will drive the distribution of radiation among crowns, snow layers,  !
+! and soil.                                                                                !
+!------------------------------------------------------------------------------------------!
 subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
 
-   use ed_state_vars        , only : sitetype   & ! structure
-                                   , patchtype  ! ! structure
-   use canopy_radiation_coms, only : Watts2Ein  ! ! intent(in)
-   use grid_coms            , only : nzg        & ! intent(in)
-                                   , nzs        ! ! intent(in)
-   use soil_coms            , only : soil       & ! intent(in)
-                                   , emisg      ! ! intent(in)
-   use consts_coms          , only : stefan     ! ! intent(in)
-   use max_dims             , only : n_pft      ! ! intent(in)
-   use allometry            , only : dbh2ca     ! ! function
+   use ed_state_vars        , only : sitetype        & ! structure  
+                                   , patchtype       ! ! structure  
+   use canopy_radiation_coms, only : Watts2Ein       & ! intent(in) 
+                                   , crown_mod       ! ! intent(in)
+   use grid_coms            , only : nzg             & ! intent(in)
+                                   , nzs             ! ! intent(in)
+   use soil_coms            , only : soil            & ! intent(in)
+                                   , emisg           ! ! intent(in)
+   use consts_coms          , only : stefan          ! ! intent(in)
+   use max_dims             , only : n_pft           ! ! intent(in)
+   use allometry            , only : dbh2ca          ! ! function
 
    implicit none
-
-   real, intent(in) :: rshort
-   real, intent(in) :: cosaoi
-   integer, intent(in) :: maxcohort
-   type(sitetype),target   :: csite
-   type(patchtype),pointer :: cpatch
-   integer :: ipa,ico
-   integer :: cohort_count
-   real :: fcpct
-   real :: alg
-   real :: als
-   real :: rad
-   integer :: k
-   real :: fractrans
-   real, dimension(nzs) :: fracabs
-   real :: absg
-   real :: algs
-   real :: cosz
-   real, dimension(maxcohort) :: par_v_beam_array
-   real, dimension(maxcohort) :: rshort_v_beam_array
-   real, dimension(maxcohort) :: par_v_diffuse_array
-   real, dimension(maxcohort) :: rshort_v_diffuse_array
-   real(kind=8), dimension(maxcohort) :: veg_temp_array
-   real(kind=8), dimension(maxcohort) ::  tai_array
-   real(kind=8), dimension(maxcohort) ::  CA_array
-   integer, dimension(maxcohort) :: pft_array
-   real :: downward_par_below_beam
-   real :: upward_par_above_beam
-   real :: downward_nir_below_beam
-   real :: upward_nir_above_beam
-   integer :: il
-   real :: downward_par_below_diffuse
-   real :: upward_par_above_diffuse
-   real :: downward_nir_below_diffuse
-   real :: upward_nir_above_diffuse 
-   real :: T_surface
-   real :: emissivity
-   real, dimension(maxcohort) :: lw_v_surf_array
-   real, dimension(maxcohort) :: lw_v_incid_array
-   real :: downward_lw_below_surf
-   real :: downward_lw_below_incid
-   real :: upward_lw_below_surf
-   real :: upward_lw_below_incid
-   real :: upward_lw_above_surf
-   real :: upward_lw_above_incid
-   real :: downward_rshort_below_beam
-   real :: downward_rshort_below_diffuse
-   real :: surface_absorbed_longwave_surf
-   real :: surface_absorbed_longwave_incid
-   real :: patch_tai
-   ! Loop over the patches
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(sitetype)  , target     :: csite
+   real            , intent(in) :: rshort
+   real            , intent(in) :: cosaoi
+   real            , intent(in) :: cosz
+   integer         , intent(in) :: maxcohort
+   !----- Local variables. ----------------------------------------------------------------!
+   type(patchtype) , pointer              :: cpatch
+   integer         , dimension(maxcohort) :: pft_array
+   integer                                :: il
+   integer                                :: ipa,ico
+   integer                                :: cohort_count
+   integer                                :: k
+   real                                   :: fcpct
+   real                                   :: alg
+   real                                   :: als
+   real                                   :: rad
+   real                                   :: fractrans
+   real            , dimension(nzs)       :: fracabs
+   real                                   :: absg
+   real                                   :: algs
+   real                                   :: downward_par_below_beam
+   real                                   :: upward_par_above_beam
+   real                                   :: downward_nir_below_beam
+   real                                   :: upward_nir_above_beam
+   real(kind=8)    , dimension(maxcohort) :: veg_temp_array
+   real(kind=8)    , dimension(maxcohort) :: tai_array
+   real(kind=8)    , dimension(maxcohort) :: CA_array
+   real            , dimension(maxcohort) :: par_v_beam_array
+   real            , dimension(maxcohort) :: rshort_v_beam_array
+   real            , dimension(maxcohort) :: par_v_diffuse_array
+   real            , dimension(maxcohort) :: rshort_v_diffuse_array
+   real            , dimension(maxcohort) :: lw_v_surf_array
+   real            , dimension(maxcohort) :: lw_v_incid_array
+   real                                   :: downward_par_below_diffuse
+   real                                   :: upward_par_above_diffuse
+   real                                   :: downward_nir_below_diffuse
+   real                                   :: upward_nir_above_diffuse 
+   real                                   :: T_surface
+   real                                   :: emissivity
+   real                                   :: downward_lw_below_surf
+   real                                   :: downward_lw_below_incid
+   real                                   :: upward_lw_below_surf
+   real                                   :: upward_lw_below_incid
+   real                                   :: upward_lw_above_surf
+   real                                   :: upward_lw_above_incid
+   real                                   :: downward_rshort_below_beam
+   real                                   :: downward_rshort_below_diffuse
+   real                                   :: surface_absorbed_longwave_surf
+   real                                   :: surface_absorbed_longwave_incid
+   real                                   :: crown_area
+   !----- Loop over the patches -----------------------------------------------------------!
 
    do ipa = 1,csite%npatches
-
       cpatch => csite%patch(ipa)
       
 
-      ! cohort_count is the number of cohorts with leaves that are not 
-      ! covered by snow.
+      !------------------------------------------------------------------------------------!
+      !     Cohort_count is the number of cohorts that affect the radiation balance (i.e.  !
+      ! those which are flagged as solvable.                                               !
+      !------------------------------------------------------------------------------------!
       cohort_count = 0
-      
-      ! recalc the maximum photosynthetic rates next time around.
+
+      !----- Recalc the maximum photosynthetic rates next time around. --------------------!
       csite%old_stoma_data_max(1:n_pft,ipa)%recalc = 1
 
-      patch_tai = 0.
-
-      ! loop over cohorts
+      !------------------------------------------------------------------------------------!
+      !     Loop over cohorts.  Unusually, we here start at the shortest. Required by      !
+      ! radiation schemes.                                                                 !
+      !------------------------------------------------------------------------------------!
       do ico = cpatch%ncohorts,1,-1
-
-         ! Unusually, we here start at the shortest. Required by radiation schemes.
          
-         ! initialize values
+         !----- Initialize values. --------------------------------------------------------!
          cpatch%par_v(ico)                 = 0.0
          cpatch%par_v_beam(ico)            = 0.0
          cpatch%par_v_diffuse(ico)         = 0.0
@@ -214,408 +219,402 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
          cpatch%rlong_v_surf(ico)          = 0.0
          cpatch%old_stoma_data(ico)%recalc = 1
 
-         ! transfer information from linked lists to arrays
+         !------ Transfer information from linked lists to arrays. ------------------------!
          if (cpatch%solvable(ico)) then
-            cohort_count = cohort_count + 1
-            pft_array(cohort_count) = cpatch%pft(ico)
-            !---- This will be LAI if ibranch_thermo = 0.
-            tai_array(cohort_count) = dble(cpatch%lai(ico)) + dble(cpatch%bai(ico))
-            !! crown area allom from Dietze and Clark 2008
-            CA_array(cohort_count)  = dble(min(1.0,&
-                 cpatch%nplant(ico)*dbh2ca(cpatch%dbh(ico),cpatch%pft(ico))))
-            veg_temp_array(cohort_count) = dble(cpatch%veg_temp(ico))
-            rshort_v_beam_array(cohort_count) = 0.0
-            par_v_beam_array(cohort_count) = 0.0
+            cohort_count                         = cohort_count + 1
+            pft_array(cohort_count)              = cpatch%pft(ico)
+            tai_array(cohort_count)              = dble(cpatch%lai(ico))                   &
+                                                 + dble(cpatch%wai(ico))
+            veg_temp_array(cohort_count)         = dble(cpatch%veg_temp(ico))
+            rshort_v_beam_array(cohort_count)    = 0.0
+            par_v_beam_array(cohort_count)       = 0.0
             rshort_v_diffuse_array(cohort_count) = 0.0
-            par_v_diffuse_array(cohort_count) = 0.0
-            ! long wave doesn't need to be initialized.
-         endif
+            par_v_diffuse_array(cohort_count)    = 0.0
+            select case (crown_mod)
+            case (0)
+               CA_array(cohort_count) = 1.
+            case (1)
+               !----- Crown area allom from Dietze and Clark (2008). ----------------------!
+               crown_area              = cpatch%nplant(ico)                                &
+                                       * dbh2ca(cpatch%dbh(ico),cpatch%pft(ico))
+               CA_array(cohort_count)  = min(1.d0,dble(crown_area))
+            end select
+         end if
 
-         patch_tai = patch_tai + cpatch%lai(ico) + cpatch%bai(ico)
-      enddo
+      end do
+
       csite%rshort_s_diffuse(:,ipa) = 0.0
-      csite%rshort_s_beam(:,ipa) = 0.0
+      csite%rshort_s_beam(:,ipa)    = 0.0
 
-      fcpct = csite%soil_water(nzg,ipa) / soil(csite%ntext_soil(nzg,ipa))%slmsts ! soil water fraction
+      !----- Soil water fraction. ---------------------------------------------------------!
+      fcpct = csite%soil_water(nzg,ipa) / soil(csite%ntext_soil(nzg,ipa))%slmsts 
 
-      if (fcpct > .5) then
-         alg = .14                ! ground albedo
-      else
-         alg = .31 - .34 * fcpct  ! ground albedo
-      endif
+      !----- Finding the ground albedo as a function of soil water relative moisture. -----!
+      alg = max(.14,.31-.34*fcpct)
       
-      rad = 1.0
+      !------------------------------------------------------------------------------------!
+      !     Deciding what is our surface temperature.  When the soil is exposed, then that !
+      ! is the surface temperature.  Otherwise, we pick the temporary surface water or     !
+      ! snow layer.                                                                        !
+      !------------------------------------------------------------------------------------!
+      rad  = 1.0
       algs = 1.0
       if(csite%nlev_sfcwater(ipa) == 0)then
          emissivity = emisg(csite%ntext_soil(nzg,ipa))
-         T_surface = csite%soil_tempk(nzg,ipa)
+         T_surface  = csite%soil_tempk(nzg,ipa)
       else
-
-         ! Sfcwater albedo ALS ranges from wet-soil value .14 for all-liquid
-         ! to .5 for all-ice
+         !---------------------------------------------------------------------------------!
+         !      Sfcwater albedo ALS ranges from wet-soil value .14 for all-liquid to .5    !
+         ! for all-ice.                                                                    !
+         !---------------------------------------------------------------------------------!
          als = 0.5 - 0.36 * csite%sfcwater_fracliq(csite%nlev_sfcwater(ipa),ipa)
 
-         rad = 1.0 - als    ! fraction shortwave absorbed into sfcwater + soil
+         !----- Fraction shortwave absorbed into sfcwater + soil. -------------------------!
+         rad = 1.0 - als
          
          do k = csite%nlev_sfcwater(ipa),1,-1
             
-            ! fractrans is fraction of shortwave entering each sfcwater layer that
-            ! gets transmitted through that layer
+            !------------------------------------------------------------------------------!
+            !      Fractrans is fraction of shortwave entering each sfcwater layer that    !
+            ! gets transmitted through that layer.                                         !
+            !------------------------------------------------------------------------------!
             fractrans = exp(-20.0 * csite%sfcwater_depth(k,ipa))
             
-            ! fracabs(k) is fraction of total incident shortwave (at top of 
-            ! top sfcwater layer) that is absorbed in each sfcwater layer
+            !------------------------------------------------------------------------------!
+            !      Fracabs(k) is fraction of total incident shortwave (at top of top       !
+            ! sfcwater layer) that is absorbed in each sfcwater layer.                     !
+            !------------------------------------------------------------------------------!
             fracabs(k) = rad * (1.0 - fractrans)
             
-            ! rad is fraction of total incident shortwave (at top of top sfcwater 
-            ! layer) that remains at bottom of current sfcwater layer
+            !------------------------------------------------------------------------------!
+            !      Rad is fraction of total incident shortwave (at top of top sfcwater     !
+            ! layer) that remains at bottom of current sfcwater layer.                     !
+            !------------------------------------------------------------------------------!
             rad = rad * fractrans
             
-            ! algs will ultimately be the albedo of the soil+sfcwater.  So 
-            ! subtract out whatever is getting absorbed by sfcwater.
+            !------------------------------------------------------------------------------!
+            !      Algs will ultimately be the albedo of the soil+sfcwater.  So subtract   !
+            ! out whatever is getting absorbed by sfcwater.                                !
+            !------------------------------------------------------------------------------!
             algs = algs - fracabs(k)
-         enddo
-         ! long wave parameter if sfcwater exists
+         end do
+
+         !----- Long wave parameter if sfcwater exists. -----------------------------------!
          emissivity = 1.0
-         T_surface = csite%sfcwater_tempk(csite%nlev_sfcwater(ipa),ipa)
-      endif
+         T_surface  = csite%sfcwater_tempk(csite%nlev_sfcwater(ipa),ipa)
+      end if
       
-      csite%snowfac(ipa) = min(.99, csite%total_snow_depth(ipa) / max(.001,csite%veg_height(ipa)))
+      csite%snowfac(ipa) = min(.99                                                         &
+                              ,csite%total_snow_depth(ipa)/max(.001,csite%veg_height(ipa)))
       
-      ! This is the fraction of below-canopy radiation that is absorbed by 
-      ! the ground
+      !------------------------------------------------------------------------------------!
+      !     This is the fraction of below-canopy radiation that is absorbed by the ground. !
+      !------------------------------------------------------------------------------------!
       absg = (1.0 - alg) * rad
-      
-      ! Subtract off ground absorption to obtain the soil+sfcwater albedo.
+
+      !----- Subtract off ground absorption to obtain the soil+sfcwater albedo. -----------!
       algs = algs - absg
-      
-      ! Call the radiation parameterizations if there is vegetation
+
+      !----- Call the radiation parameterizations if there is vegetation. -----------------!
       if(cohort_count > 0)then
-         
-         ! Long wave first.
-         call lw_twostream(cohort_count, emissivity, T_surface,  &
-              pft_array(1:cohort_count), tai_array(1:cohort_count), & 
-              CA_array(1:cohort_count),  &
-              veg_temp_array(1:cohort_count), lw_v_surf_array(1:cohort_count),  &
-              lw_v_incid_array(1:cohort_count), downward_lw_below_surf,  &
-              downward_lw_below_incid, upward_lw_below_surf,   &
-              upward_lw_below_incid, upward_lw_above_surf, upward_lw_above_incid)
-         
-         ! Upwelling long wave radiation at the top of the canopy
-         csite%rlongup(ipa) = upward_lw_above_surf
+
+         !----- Long wave first. ----------------------------------------------------------!
+         call lw_twostream(cohort_count,emissivity,T_surface,pft_array(1:cohort_count)     &
+                          ,TAI_array(1:cohort_count),CA_array(1:cohort_count)              &
+                          ,veg_temp_array(1:cohort_count),lw_v_surf_array(1:cohort_count)  &
+                          ,lw_v_incid_array(1:cohort_count), downward_lw_below_surf        &
+                          ,downward_lw_below_incid, upward_lw_below_surf                   &
+                          ,upward_lw_below_incid, upward_lw_above_surf                     &
+                          ,upward_lw_above_incid)
+
+         !----- Upwelling long wave radiation at the top of the canopy. -------------------!
+         csite%rlongup(ipa)      = upward_lw_above_surf
          csite%rlong_albedo(ipa) = upward_lw_above_incid
          
-         ! long wave absorbed by either soil or sfcwater
-         surface_absorbed_longwave_surf = downward_lw_below_surf -   &
-              upward_lw_below_surf
-         surface_absorbed_longwave_incid = downward_lw_below_incid -   &
-              upward_lw_below_incid
+         !----- Long wave absorbed by either soil or sfcwater. ----------------------------!
+         surface_absorbed_longwave_surf  = downward_lw_below_surf  - upward_lw_below_surf
+         surface_absorbed_longwave_incid = downward_lw_below_incid - upward_lw_below_incid
          
-         ! Compute short wave if it is daytime.
-         if(rshort > 0.5)then
-            !     if(cosz > 0.03)then
-            ! call the two-stream approximation
-            call sw_twostream_clump(algs,  &
-                 cosz,  &
-                 cosaoi, &
-                 !csite%lai(ipa),  &
-                 patch_tai,  &
-                 cohort_count,   &
-                 pft_array(1:cohort_count),  &
-                 tai_array(1:cohort_count),   &
-                 CA_array(1:cohort_count),    &
-                 par_v_beam_array(1:cohort_count),  &
-                 par_v_diffuse_array(1:cohort_count),  &
-                 rshort_v_beam_array(1:cohort_count), &
-                 rshort_v_diffuse_array(1:cohort_count), &
-                 downward_par_below_beam,  &
-                 downward_par_below_diffuse,  &
-                 upward_par_above_beam,  &
-                 upward_par_above_diffuse,  &
-                 downward_nir_below_beam,  &
-                 downward_nir_below_diffuse,  &
-                 upward_nir_above_beam,   &
-                 upward_nir_above_diffuse)        
-         
-            ! below-canopy downwelling radiation
-            downward_rshort_below_beam = downward_par_below_beam +   &
-                 downward_nir_below_beam
-            downward_rshort_below_diffuse = downward_par_below_diffuse +   &
-                 downward_nir_below_diffuse
+         !----- Compute short wave if it is daytime. --------------------------------------!
+         if (rshort > 0.5) then
+            call sw_twostream_clump(algs,cosz,cosaoi,cohort_count                          &
+                                   ,pft_array(1:cohort_count),TAI_array(1:cohort_count)    &
+                                   ,CA_array(1:cohort_count)                               &
+                                   ,par_v_beam_array(1:cohort_count)                       &
+                                   ,par_v_diffuse_array(1:cohort_count)                    &
+                                   ,rshort_v_beam_array(1:cohort_count)                    &
+                                   ,rshort_v_diffuse_array(1:cohort_count)                 &
+                                   ,downward_par_below_beam,downward_par_below_diffuse     &
+                                   ,upward_par_above_beam,upward_par_above_diffuse         &
+                                   ,downward_nir_below_beam,downward_nir_below_diffuse     &
+                                   ,upward_nir_above_beam,upward_nir_above_diffuse)        
 
-            ! soil+sfcwater+veg albedo (different for diffuse and beam radiation)
-            csite%albedo_beam(ipa) = upward_par_above_beam + upward_nir_above_beam
+            !----- Below-canopy downwelling radiation. ------------------------------------!
+            downward_rshort_below_beam    = downward_par_below_beam                        &
+                                          + downward_nir_below_beam
+            downward_rshort_below_diffuse = downward_par_below_diffuse                     &
+                                          + downward_nir_below_diffuse
+
+            !----- Soil+sfcwater+veg albedo (different for diffuse and beam radiation). ---!
+            csite%albedo_beam(ipa)    = upward_par_above_beam    + upward_nir_above_beam
             csite%albedo_diffuse(ipa) = upward_par_above_diffuse + upward_nir_above_diffuse
-            
          else
 
-            ! code expects values for these, even if it is not day.
-            downward_rshort_below_beam = 1.0
+            !----- The code expects values for these, even when it is not daytime. --------!
+            downward_rshort_below_beam    = 1.0
             downward_rshort_below_diffuse = 1.0
-            csite%albedo_beam(ipa) = algs
-            csite%albedo_diffuse(ipa) = algs
-            
-         endif
-      
-         ! Absorption rates of PAR, rshort, and rlong of the vegetation
+            csite%albedo_beam(ipa)        = algs
+            csite%albedo_diffuse(ipa)     = algs
+
+         end if
+
+         !----- Absorption rates of PAR, rshort, and rlong of the vegetation. -------------!
          il = 0
+
          do ico = cpatch%ncohorts,1,-1
-
-            if (cpatch%solvable(ico))then
+            if (cpatch%solvable(ico)) then
                il = il + 1
-               cpatch%rshort_v_beam(ico) = rshort_v_beam_array(il)
+               cpatch%rshort_v_beam(ico)    = rshort_v_beam_array(il)
                cpatch%rshort_v_diffuse(ico) = rshort_v_diffuse_array(il)
-               cpatch%par_v_beam(ico) = par_v_beam_array(il) * Watts2Ein
-               cpatch%par_v_diffuse(ico) = par_v_diffuse_array(il) * Watts2Ein
-               cpatch%rlong_v_surf(ico) = lw_v_surf_array(il)
-               cpatch%rlong_v_incid(ico) = lw_v_incid_array(il)
-
-               if (cpatch%rlong_v_surf(ico).ne.cpatch%rlong_v_surf(ico)) then
-                  print*,"LWSURF NAN",ico,il,cpatch%ncohorts,cohort_count
-                  print*,""
-                  print*,lw_v_surf_array
-                  call fatal_error('NaN found in LWSURF' &
-                                  &,'sfcrad_ed_ar','radiate_driver.f90')
-               endif
-
-               if (cpatch%rlong_v_incid(ico).ne.cpatch%rlong_v_incid(ico)) then
-                  print*,"LWINCID NAN",ico,il,cpatch%ncohorts,cohort_count
-                  print*,""
-                  print*,lw_v_incid_array
-                  call fatal_error('NaN found in LW_INCID' &
-                                  &,'sfcrad_ed_ar','radiate_driver.f90')
-                  
-               endif
-            endif
-         enddo
+               cpatch%par_v_beam(ico)       = par_v_beam_array(il) * Watts2Ein
+               cpatch%par_v_diffuse(ico)    = par_v_diffuse_array(il) * Watts2Ein
+               cpatch%rlong_v_surf(ico)     = lw_v_surf_array(il)
+               cpatch%rlong_v_incid(ico)    = lw_v_incid_array(il)
+            end if
+         end do
 
       else
          
-         ! This is the case where there is no vegetation
-         downward_rshort_below_beam = 1.0
-         downward_rshort_below_diffuse = 1.0
-         surface_absorbed_longwave_surf = - emissivity * stefan * T_surface**4
+         !----- This is the case where there is no vegetation. ----------------------------!
+         downward_rshort_below_beam      = 1.0
+         downward_rshort_below_diffuse   = 1.0
+         surface_absorbed_longwave_surf  = - emissivity * stefan * T_surface**4
          surface_absorbed_longwave_incid = emissivity
-         csite%albedo_beam(ipa) = algs
-         csite%albedo_diffuse(ipa) = algs
-         csite%rlongup(ipa) = - surface_absorbed_longwave_surf
-         csite%rlong_albedo(ipa) = 1.0 - surface_absorbed_longwave_incid
+         csite%albedo_beam(ipa)          = algs
+         csite%albedo_diffuse(ipa)       = algs
+         csite%rlongup(ipa)              = - surface_absorbed_longwave_surf
+         csite%rlong_albedo(ipa)         = 1.0 - surface_absorbed_longwave_incid
       
       endif
       
-      ! Absorption rate of short wave by the soil
-      csite%rshort_g_beam(ipa) = downward_rshort_below_beam * absg
+      !----- Absorption rate of short wave by the soil. -----------------------------------!
+      csite%rshort_g_beam(ipa)    = downward_rshort_below_beam    * absg
       csite%rshort_g_diffuse(ipa) = downward_rshort_below_diffuse * absg
 
-      ! Absorption rate of short wave by the surface water
+      !----- Absorption rate of short wave by the surface water. --------------------------!
       do k=1,csite%nlev_sfcwater(ipa)
-         csite%rshort_s_beam(k,ipa) = downward_rshort_below_beam * fracabs(k)
+         csite%rshort_s_beam(k,ipa)    = downward_rshort_below_beam    * fracabs(k)
          csite%rshort_s_diffuse(k,ipa) = downward_rshort_below_diffuse * fracabs(k)
-      enddo
+      end do
 
-      ! Long wave absorption rate at the surface
-      if(csite%nlev_sfcwater(ipa) == 0)then
-         csite%rlong_s_surf(ipa) = 0.0
+      !----- Long wave absorption rate at the surface. ------------------------------------!
+      if (csite%nlev_sfcwater(ipa) == 0) then
+         csite%rlong_s_surf(ipa)  = 0.0
          csite%rlong_s_incid(ipa) = 0.0
-         csite%rlong_g_surf(ipa) = surface_absorbed_longwave_surf
+         csite%rlong_g_surf(ipa)  = surface_absorbed_longwave_surf
          csite%rlong_g_incid(ipa) = surface_absorbed_longwave_incid
       else
-         csite%rlong_s_surf(ipa) = surface_absorbed_longwave_surf
+         csite%rlong_s_surf(ipa)  = surface_absorbed_longwave_surf
          csite%rlong_s_incid(ipa) = surface_absorbed_longwave_incid
-         csite%rlong_g_surf(ipa) = 0.0
+         csite%rlong_g_surf(ipa)  = 0.0
          csite%rlong_g_incid(ipa) = 0.0
-      endif
+      end if
       
-   enddo
-
+   end do
    return
 end subroutine sfcrad_ed_ar
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine solar_zenith_ar(cgrid)
+   use misc_coms    , only : current_time ! ! intent(in)
+   use consts_coms  , only : pio180       & ! intent(in)
+                           , twopi        & ! intent(in)
+                           , hr_sec       ! ! intent(in)
+   use ed_state_vars, only : edtype       ! ! intent(in)
 
-  use misc_coms, only: current_time
-  use consts_coms, only: pio180,twopi
-  use ed_state_vars, only: edtype
+   implicit none
+   !----- Argument. -----------------------------------------------------------------------!
+   type(edtype), target   :: cgrid
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                :: ipy
+   integer                :: jday
+   real                   :: declin
+   real                   :: sdec
+   real                   :: cdec
+   real                   :: d0
+   real                   :: d02
+   real                   :: solfac
+   real                   :: dayhr
+   real                   :: radlat
+   real                   :: cslcsd
+   real                   :: snlsnd
+   real                   :: dayhrr
+   real                   :: hrangl
+   !----- External functions. -------------------------------------------------------------!
+   integer     , external :: julday
+   !---------------------------------------------------------------------------------------!
 
-  implicit none
-  
-  type(edtype),target       :: cgrid
-  integer :: ipy
-  integer :: jday
-  integer, external :: julday
-  real :: declin
-  real :: sdec
-  real :: cdec
-  real :: d0
-  real :: d02
-  real :: solfac
-  real :: dayhr
-  real :: radlat
-  real :: cslcsd
-  real :: snlsnd
-  real :: dayhrr
-  real :: hrangl
+   jday  = julday(current_time%month, current_time%date, current_time%year)
 
+   !----- sdec - sine of declination, cdec - cosine of declination. -----------------------!
+   
+   declin = -23.5 * cos(twopi / 365. * real(jday + 9)) * pio180
+   sdec   = sin(declin)
+   cdec   = cos(declin)
 
-  jday  = julday(current_time%month, current_time%date, current_time%year)
+   !---------------------------------------------------------------------------------------!
+   !     Find the factor, solfac, to multiply the solar constant to correct for Earth's    !
+   ! varying distance to the sun.                                                          !
+   !---------------------------------------------------------------------------------------!
+   d0  = twopi * float(jday-1) / 365.
+   d02 = d0 * 2.
+   solfac = 1.000110 + 0.034221 * cos (d0) + 0.001280 * sin(d0)                            &
+          + 0.000719 * cos(d02) + 0.000077 * sin(d02)
 
-  ! sdec - sine of declination, cdec - cosine of declination
-  
-  declin = -23.5 * cos(twopi / 365. * real(jday + 9)) * pio180
-  sdec = sin(declin)
-  cdec = cos(declin)
+   !----- Find the hour angle, then get cosine of zenith angle. ---------------------------!
+   dayhr = current_time%time / hr_sec
 
-  ! Find the factor, solfac, to multiply the solar constant to correct
-  ! for Earth's varying distance to the sun.
-  
-  d0 = twopi * float(jday-1) / 365.
-  d02 = d0 * 2.
-  solfac = 1.000110 + 0.034221 * cos (d0) + 0.001280 * sin(d0)  &
-       + 0.000719 * cos(d02) + 0.000077 * sin(d02)
+   do ipy = 1,cgrid%npolygons
 
-  ! Find the hour angle, then get cosine of zenith angle.
-  
-  dayhr = current_time%time / 3600.
+      radlat = cgrid%lat(ipy) * pio180
+      if (radlat == declin) radlat = radlat + 1.e-5
+      cslcsd = cos(radlat) * cdec
+      snlsnd = sin(radlat) * sdec
+      dayhrr = mod(dayhr+cgrid%lon(ipy)/15.+24.,24.)
+      hrangl = 15. * (dayhrr - 12.) * pio180
 
-  do ipy = 1,cgrid%npolygons
+      cgrid%cosz(ipy) = snlsnd + cslcsd * cos(hrangl)
 
-     radlat = cgrid%lat(ipy) * pio180
-     if (radlat == declin) radlat = radlat + 1.e-5
-     cslcsd = cos(radlat) * cdec
-     snlsnd = sin(radlat) * sdec
-     dayhrr = mod(dayhr+cgrid%lon(ipy)/15.+24.,24.)
-     hrangl = 15. * (dayhrr - 12.) * pio180
-     
-     cgrid%cosz(ipy) = snlsnd + cslcsd * cos(hrangl)
+   end do
 
-  enddo
-
-  return
+   return
 end subroutine solar_zenith_ar
+!==========================================================================================!
+!==========================================================================================!
 
-!=================================================================
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine ed2land_radiation_ar(cpoly,isi)
-  
-  use ed_state_vars, only: polygontype,sitetype,patchtype
+   use ed_state_vars  , only : polygontype & ! intent(in)
+                             , sitetype    & ! intent(in)
+                             , patchtype   ! ! intent(in)
+   implicit none
+   !----- Argument. -----------------------------------------------------------------------!
+   type(polygontype) , target     :: cpoly
+   integer           , intent(in) :: isi
+   !----- Local variables. ----------------------------------------------------------------!
+   type(sitetype)    ,  pointer   :: csite
+   integer                        :: ipa
+   !---------------------------------------------------------------------------------------!
 
-  implicit none
-  
-  type(polygontype),target :: cpoly
-  type(sitetype),  pointer :: csite
-  integer :: isi,ipa
 
-  ! initialize arrays to zero
-  cpoly%albedo_beam(isi) = 0.0
-  cpoly%albedo_diffuse(isi) = 0.0
-  cpoly%rlongup(isi) = 0.0
-  cpoly%rlong_albedo(isi) = 0.0
+   !----- Initialize arrays to zero. ------------------------------------------------------!
+   cpoly%albedo_beam(isi)    = 0.0
+   cpoly%albedo_diffuse(isi) = 0.0
+   cpoly%rlongup(isi)        = 0.0
+   cpoly%rlong_albedo(isi)   = 0.0
 
-  csite => cpoly%site(isi)
 
-  ! loop over patches
-  do ipa = 1,csite%npatches
-     ! compute cell-level albedo and upward longwave, weighting patches 
-     ! by fractional area
-     cpoly%albedo_beam(isi) = cpoly%albedo_beam(isi) + csite%albedo_beam(ipa) * csite%area(ipa)
-     cpoly%albedo_diffuse(isi) = cpoly%albedo_diffuse(isi) + csite%albedo_diffuse(ipa) * csite%area(ipa)
-     cpoly%rlongup(isi) = cpoly%rlongup(isi) + csite%rlongup(ipa) * csite%area(ipa)
-     cpoly%rlong_albedo(isi) = cpoly%rlong_albedo(isi) + csite%rlong_albedo(ipa) * csite%area(ipa)
-  enddo
+   csite => cpoly%site(isi)
+   !----- Loop over patches. --------------------------------------------------------------!
+   do ipa = 1,csite%npatches
+      !------------------------------------------------------------------------------------!
+      !     Compute cell-level albedo and upward longwave, weighting patches by fractional !
+      ! area.                                                                              !
+      !------------------------------------------------------------------------------------!
+      cpoly%albedo_beam(isi)    = cpoly%albedo_beam(isi)                                   &
+                                + csite%albedo_beam(ipa) * csite%area(ipa)
+      cpoly%albedo_diffuse(isi) = cpoly%albedo_diffuse(isi)                                &
+                                + csite%albedo_diffuse(ipa) * csite%area(ipa)
+      cpoly%rlongup(isi)        = cpoly%rlongup(isi) + csite%rlongup(ipa) * csite%area(ipa)
+      cpoly%rlong_albedo(isi)   = cpoly%rlong_albedo(isi)                                  &
+                                + csite%rlong_albedo(ipa) * csite%area(ipa)
+   end do
 
-  ! Update the radiation diagnostic quantities
-  !  cs%avg_rlong     = cs%avg_rlong    + cpoly%metinput%rlong          * cs%area
-  !  cs%avg_rlongup   = cs%avg_rlongup  + cs%rlongup           * cs%area
-  
-  !  cs%avg_rshort    = cs%avg_rshort   + cpoly%metinput%rshort         * cs%area
-  
-  !  cs%avg_rshortup  = cs%avg_rshortup + &
-  !       (cpoly%metinput%rshort-cpoly%metinput%rshort_diffuse)*cs%albedo_beam*cs%area &
-  !       + cpoly%metinput%rshort_diffuse*cs%albedo_diffuse  * cs%area
-  
-  !  cs%avg_rshortd   = cs%avg_rshortd  + cpoly%metinput%rshort_diffuse * cs%area
-  
-
-  return
+   return
 end subroutine ed2land_radiation_ar
+!==========================================================================================!
+!==========================================================================================!
 
-!==========================================================================
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine scale_ed_radiation_ar(rshort, rshort_diffuse, rlong, csite)
 
-  use ed_state_vars,only:sitetype,patchtype
+   use ed_state_vars , only : sitetype  & ! intent(in)
+                            , patchtype ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(sitetype)  , target     :: csite
+   real            , intent(in) :: rshort
+   real            , intent(in) :: rshort_diffuse
+   real            , intent(in) :: rlong
+   !----- Local variables. ----------------------------------------------------------------!
+   type(patchtype) , pointer    :: cpatch
+   integer                      :: ipa,ico, k
+   real                         :: beam_radiation
+   !---------------------------------------------------------------------------------------!
 
-  implicit none
-  type(sitetype),target :: csite
-  type(patchtype), pointer :: cpatch
-  integer :: ipa,ico
-  real :: beam_radiation
-  integer :: k
-  real, intent(in) :: rshort
-  real, intent(in) :: rshort_diffuse
-  real, intent(in) :: rlong
+   beam_radiation = rshort - rshort_diffuse
 
-  beam_radiation = rshort - rshort_diffuse
+   do ipa = 1,csite%npatches
 
-  do ipa = 1,csite%npatches
+      cpatch => csite%patch(ipa)
+      do ico = 1,cpatch%ncohorts
+         
+         if (cpatch%solvable(ico)) then
+            cpatch%rshort_v_beam(ico)    = cpatch%rshort_v_beam(ico)    * beam_radiation
+            cpatch%rshort_v_diffuse(ico) = cpatch%rshort_v_diffuse(ico) * rshort_diffuse
+            cpatch%rshort_v(ico)         = cpatch%rshort_v_beam(ico)                       &
+                                         + cpatch%rshort_v_diffuse(ico)
+            
+            cpatch%par_v_beam(ico)       = cpatch%par_v_beam(ico) * beam_radiation
+            cpatch%par_v_diffuse(ico)    = cpatch%par_v_diffuse(ico) * rshort_diffuse
+            cpatch%par_v(ico)            = cpatch%par_v_beam(ico)                          &
+                                         + cpatch%par_v_diffuse(ico)
+            
+            cpatch%rlong_v_incid(ico)    = cpatch%rlong_v_incid(ico) * rlong
+            cpatch%rlong_v(ico)          = cpatch%rlong_v_incid(ico)                       &
+                                         + cpatch%rlong_v_surf(ico)
+         end if
+      end do
 
-     cpatch => csite%patch(ipa)
+      csite%rshort_g_beam(ipa)    = csite%rshort_g_beam(ipa)    * beam_radiation
+      csite%rshort_g_diffuse(ipa) = csite%rshort_g_diffuse(ipa) * rshort_diffuse
+      csite%rshort_g(ipa)         = csite%rshort_g_beam(ipa) + csite%rshort_g_diffuse(ipa)
+      
+      !----- Absorption rate of short wave by the surface water. --------------------------!
+      do k=1,csite%nlev_sfcwater(ipa)
+         csite%rshort_s_beam(k,ipa)    = csite%rshort_s_beam(k,ipa) * beam_radiation
+         csite%rshort_s_diffuse(k,ipa) = csite%rshort_s_diffuse(k,ipa) * rshort_diffuse
+         csite%rshort_s(k,ipa)         = csite%rshort_s_beam(k,ipa)                        &
+                                       + csite%rshort_s_diffuse(k,ipa)
+      end do
 
-     do ico = 1,cpatch%ncohorts
-        
-        if (cpatch%solvable(ico)) then
-           cpatch%rshort_v_beam(ico) = cpatch%rshort_v_beam(ico) * beam_radiation
-           cpatch%rshort_v_diffuse(ico) = cpatch%rshort_v_diffuse(ico) * rshort_diffuse
-           cpatch%rshort_v(ico) = cpatch%rshort_v_beam(ico) + cpatch%rshort_v_diffuse(ico)
-           
-           cpatch%par_v_beam(ico) = cpatch%par_v_beam(ico) * beam_radiation
-           cpatch%par_v_diffuse(ico) = cpatch%par_v_diffuse(ico) * rshort_diffuse
-           cpatch%par_v(ico) = cpatch%par_v_beam(ico) + cpatch%par_v_diffuse(ico)
-           
-           cpatch%rlong_v_incid(ico) = cpatch%rlong_v_incid(ico) * rlong
-           cpatch%rlong_v(ico) = cpatch%rlong_v_incid(ico) + cpatch%rlong_v_surf(ico)
+      csite%rlong_s_incid(ipa) = csite%rlong_s_incid(ipa) * rlong
+      csite%rlong_g_incid(ipa) = csite%rlong_g_incid(ipa) * rlong
+      csite%rlong_s(ipa)       = csite%rlong_s_surf(ipa) + csite%rlong_s_incid(ipa)
+      csite%rlong_g(ipa)       = csite%rlong_g_surf(ipa) + csite%rlong_g_incid(ipa)
+   end do
 
-           if (cpatch%rlong_v(ico) .ne. cpatch%rlong_v(ico)) then
-              print*,"cpatch%long_v(ico) is nan"
-              print*,cpatch%rlong_v(ico),cpatch%rlong_v_incid(ico),cpatch%rlong_v_surf(ico),rlong
-              print*,"ico:",ico
-              call fatal_error('Rlong_v is NaN','scale_ed_radiation_ar' &
-                              &,'radiate_driver.f90')
-           end if
-
-        endif
-
-        if (cpatch%rlong_v(ico) .ne. cpatch%rlong_v(ico)) then
-           print*,"cpatch%rlong_v(ico) is nan but not calculated"
-           print*,cpatch%rlong_v(ico),cpatch%rlong_v_incid(ico),cpatch%rlong_v_surf(ico)
-           call fatal_error('cpatch%rlong_v(ico) is nan but not calculated!'&
-                           &,'scale_ed_radiation_ar','radiate_driver.f90')
-        end if
-
-
-     enddo
-     
-     csite%rshort_g_beam(ipa) = csite%rshort_g_beam(ipa) * beam_radiation
-     csite%rshort_g_diffuse(ipa) = csite%rshort_g_diffuse(ipa) * rshort_diffuse
-     csite%rshort_g(ipa) = csite%rshort_g_beam(ipa) + csite%rshort_g_diffuse(ipa)
-     
-     ! Absorption rate of short wave by the surface water
-     do k=1,csite%nlev_sfcwater(ipa)
-        csite%rshort_s_beam(k,ipa) = csite%rshort_s_beam(k,ipa) * beam_radiation
-        csite%rshort_s_diffuse(k,ipa) = csite%rshort_s_diffuse(k,ipa) * rshort_diffuse
-        csite%rshort_s(k,ipa) = csite%rshort_s_beam(k,ipa) + csite%rshort_s_diffuse(k,ipa)
-     enddo
-     
-     csite%rlong_s_incid(ipa) = csite%rlong_s_incid(ipa) * rlong
-     csite%rlong_g_incid(ipa) = csite%rlong_g_incid(ipa) * rlong
-     csite%rlong_s(ipa) = csite%rlong_s_surf(ipa) + csite%rlong_s_incid(ipa)
-     csite%rlong_g(ipa) = csite%rlong_g_surf(ipa) + csite%rlong_g_incid(ipa)
-
-  enddo
-
-  return
+   return
 end subroutine scale_ed_radiation_ar
 !==========================================================================================!
 !==========================================================================================!
@@ -627,17 +626,44 @@ end subroutine scale_ed_radiation_ar
 
 !==========================================================================================!
 !==========================================================================================!
+!     This subroutine calculates angle of incidence based on local slope and aspect.       !
+!------------------------------------------------------------------------------------------!
 subroutine angle_of_incid(aoi,cosz,solar_hour_aspect,slope,terrain_aspect)
-  !!calculates angle of incidence based on local slope and aspect
-  !!zenith is the angle of the sun with vertical
-  !!solar_hour_aspect is the horizontal location of the sun defined with the same reference as terrain aspect
-  implicit none
-  real :: cosz,zenith,slope,solar_hour_aspect,terrain_aspect,aoi
-  zenith = acos(cosz)
-  aoi = cos(zenith)*cos(slope)+sin(zenith)*sin(slope)*cos(solar_hour_aspect-terrain_aspect)
-  if(cosz .lt. 0.0) aoi = 0.0
-  aoi = max(aoi,0.0)
-  
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real, intent(in)  :: cosz              ! Cosine of zenithal angle
+   real, intent(in)  :: slope             ! Terrain slope
+   real, intent(in)  :: solar_hour_aspect ! horizontal location of the sun defined with the
+                                          !    same reference as terrain aspect.
+   real, intent(in)  :: terrain_aspect    ! Terrain aspect
+   real, intent(out) :: aoi               ! Angle of incidence
+   !----- Local variables. ----------------------------------------------------------------!
+   real(kind=8)      :: cosz8             ! Double prec. counterpart of cosz
+   real(kind=8)      :: sinz8             ! Sine of zenithal angle
+   real(kind=8)      :: slope8            ! Double prec. counterpart of slope
+   real(kind=8)      :: sh_asp8           ! Double prec. counterpart of solar_hour_aspect
+   real(kind=8)      :: terr_asp8         ! Double prec. counterpart of terrain_aspect
+   real(kind=8)      :: aoi8              ! Double prec. counterpart of aoi
+   !----- Local parameters. ---------------------------------------------------------------!
+   real(kind=8), parameter :: tiny_offset=1.d-20
+   !----- External functions. -------------------------------------------------------------!
+   real        , external  :: sngloff           
+   !---------------------------------------------------------------------------------------!
+
+   cosz8     = dble(cosz)
+   sinz8     = sqrt(1.d0-cosz8*cosz8)
+   slope8    = dble(slope)
+   sh_asp8   = dble(solar_hour_aspect)
+   terr_asp8 = dble(terrain_aspect)
+   if (cosz8 < 0.d0) then
+      aoi8 = 0.d0
+   else
+      aoi8 = max(0.d0, cosz8*dcos(slope8) + sinz8*dsin(slope8)*dcos(sh_asp8-terr_asp8))
+   end if
+
+   aoi = sngloff(aoi8,tiny_offset) 
+
+   return
 end subroutine angle_of_incid
 !==========================================================================================!
 !==========================================================================================!
@@ -651,61 +677,61 @@ end subroutine angle_of_incid
 !==========================================================================================!
 subroutine short2diff(swdown,sunang,radvdc)
 
-  implicit none
-  !------------------------------------------------------------------
-  !---
-  !               radiation radive code to use the downward sw at
-  ! bottom
-  !               and the formulation to estimate radvbc,radvdc,
-  ! radndc,
-  !               radndc
-  !  This subroutine was adapted from the sib2 model (sellars et al.)
-  !  
-  !------------------------------------------------------------------
-  !---
+   implicit none
+   !------------------------------------------------------------------
+   !---
+   !               radiation radive code to use the downward sw at
+   ! bottom
+   !               and the formulation to estimate radvbc,radvdc,
+   ! radndc,
+   !               radndc
+   !  This subroutine was adapted from the sib2 model (sellars et al.)
+   !  
+   !------------------------------------------------------------------
+   !---
 
-  real swdown
-  real sunang, stemp
-  real radvdc
-  real c1,c2,c3,c4,c5,cloud,difrat
-  real vnrat
+   real swdown
+   real sunang, stemp
+   real radvdc
+   real c1,c2,c3,c4,c5,cloud,difrat
+   real vnrat
 
-  ! Arguments:
-  ! nsib:
-  ! swdown: surface incident shortwave radiation
-  ! sunang: cosine of solar zenith angle
-
-
-  c1 = 580.
-  c2 = 464.
-  c3 = 499.
-  c4 = 963.
-  c5 = 1160.
+   ! Arguments:
+   ! nsib:
+   ! swdown: surface incident shortwave radiation
+   ! sunang: cosine of solar zenith angle
 
 
-  sunang = max( 0.001 , sunang )
-  stemp = swdown
-  stemp = max(stemp,0.01 )
-  cloud = (c5 * sunang - stemp) / (c4 * sunang)
-  cloud = max(cloud,0.)
-  cloud = min(cloud,1.)
-  !         cloud = max(0.58,cloud)
-  
-  !z  use the real clouds here!
-  !         cloud = cldtot(i)
-  !         CLOUD = AMAX1(CLOUD,0.)
-  !         CLOUD = AMIN1(CLOUD,1.)
-  
-  difrat = 0.0604 / ( sunang -0.0223 ) + 0.0683
-  if ( difrat .lt. 0. ) difrat = 0.
-  if ( difrat .gt. 1. ) difrat = 1.
-  
-  difrat = difrat + ( 1. - difrat ) * cloud
-  vnrat = ( c1 - cloud*c2 ) / ( ( c1 - cloud*c3 ) + ( c1 - cloud*c2 ))
-  
-  radvdc = difrat*vnrat*stemp
-  
-  return
+   c1 = 580.
+   c2 = 464.
+   c3 = 499.
+   c4 = 963.
+   c5 = 1160.
+
+
+   sunang = max( 0.001 , sunang )
+   stemp = swdown
+   stemp = max(stemp,0.01 )
+   cloud = (c5 * sunang - stemp) / (c4 * sunang)
+   cloud = max(cloud,0.)
+   cloud = min(cloud,1.)
+   !         cloud = max(0.58,cloud)
+   
+   !z  use the real clouds here!
+   !         cloud = cldtot(i)
+   !         CLOUD = AMAX1(CLOUD,0.)
+   !         CLOUD = AMIN1(CLOUD,1.)
+   
+   difrat = 0.0604 / ( sunang -0.0223 ) + 0.0683
+   if ( difrat .lt. 0. ) difrat = 0.
+   if ( difrat .gt. 1. ) difrat = 1.
+   
+   difrat = difrat + ( 1. - difrat ) * cloud
+   vnrat = ( c1 - cloud*c2 ) / ( ( c1 - cloud*c3 ) + ( c1 - cloud*c2 ))
+   
+   radvdc = difrat*vnrat*stemp
+   
+   return
 end subroutine short2diff
 
 

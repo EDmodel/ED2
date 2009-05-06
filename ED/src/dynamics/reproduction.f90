@@ -286,11 +286,11 @@ subroutine reproduction_ar(cgrid, month)
                   !------------------------------------------------------------------------!
                   !    Obtaining derived properties.                                       !
                   !------------------------------------------------------------------------!
-                  !----- Finding LAI, BAI, SAI. -------------------------------------------!
+                  !----- Finding LAI, WPA, WAI. -------------------------------------------!
                   call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico) &
                                    ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)   &
-                                   ,cpatch%pft(ico),cpatch%lai(ico),cpatch%bai(ico)        &
-                                   ,cpatch%sai(ico))
+                                   ,cpatch%pft(ico),cpatch%lai(ico),cpatch%wpa(ico)        &
+                                   ,cpatch%wai(ico))
                   !----- Finding heat capacity and vegetation internal energy. ------------!
                   cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)   &
                                                     ,cpatch%balive(ico),cpatch%nplant(ico) &

@@ -368,13 +368,13 @@ subroutine copy_patch_init_ar(sourcesite,ipa,targetp)
    cpatch => sourcesite%patch(ipa)
    sourcesite%hcapveg(ipa) = 0.
    sourcesite%lai(ipa)     = 0.
-   sourcesite%bai(ipa)     = 0.
-   sourcesite%sai(ipa)     = 0.
+   sourcesite%wpa(ipa)     = 0.
+   sourcesite%wai(ipa)     = 0.
    do ico=1,cpatch%ncohorts
       sourcesite%hcapveg(ipa) = sourcesite%hcapveg(ipa) + cpatch%hcapveg(ico)
       sourcesite%lai(ipa)     = sourcesite%lai(ipa)     + cpatch%lai(ico)
-      sourcesite%bai(ipa)     = sourcesite%bai(ipa)     + cpatch%bai(ico)
-      sourcesite%sai(ipa)     = sourcesite%sai(ipa)     + cpatch%sai(ico)
+      sourcesite%wpa(ipa)     = sourcesite%wpa(ipa)     + cpatch%wpa(ico)
+      sourcesite%wai(ipa)     = sourcesite%wai(ipa)     + cpatch%wai(ico)
    end do
    
    any_solvable = .false.
@@ -384,7 +384,7 @@ subroutine copy_patch_init_ar(sourcesite,ipa,targetp)
       if (targetp%solvable(ico)) any_solvable = .true.
    end do
 
-   if ((sourcesite%lai(ipa)+sourcesite%bai(ipa)) > tai_min) then
+   if ((sourcesite%lai(ipa)+sourcesite%wai(ipa)) > tai_min) then
       hvegpat_min = hcapveg_ref * max(dble(cpatch%hite(1)),min_height)
       hcap_scale  = max(1.d0,hvegpat_min / sourcesite%hcapveg(ipa))
    else
@@ -396,8 +396,8 @@ subroutine copy_patch_init_ar(sourcesite,ipa,targetp)
     
       !----- Copying the leaf area index and total (leaf+branch+twig) area index. ---------!
       targetp%lai(ico)  = dble(cpatch%lai(ico))
-      targetp%bai(ico)  = dble(cpatch%bai(ico))
-      targetp%tai(ico) = targetp%lai(ico) + targetp%bai(ico)
+      targetp%wpa(ico)  = dble(cpatch%wpa(ico))
+      targetp%tai(ico) = targetp%lai(ico) + dble(cpatch%wai(ico))
 
       !------------------------------------------------------------------------------------!
       !    If the cohort is too small, we give some extra heat capacity, so the model can  !
@@ -911,20 +911,20 @@ subroutine print_errmax_ar(errmax,yerr,yscal,cpatch,y,ytemp)
    write(unit=*,fmt='(80a)') ('-',k=1,80)
    write(unit=*,fmt='(a)'      ) ' Cohort_level variables (only the solvable ones):'
    write(unit=*,fmt='(7(a,1x))')  'Name            ','         PFT','         LAI'         &
-                                     ,'         BAI','         TAI','   Max.Error'         &
+                                     ,'         WPA','         TAI','   Max.Error'         &
                                      ,'   Abs.Error','       Scale','Problem(T|F)'
    do ico = 1,cpatch%ncohorts
       if (y%solvable(ico)) then
          errmax       = max(errmax,abs(yerr%veg_water(ico)/yscal%veg_water(ico)))
          troublemaker = large_error(yerr%veg_water(ico),yscal%veg_water(ico))
-         write(unit=*,fmt=cohfmt) 'VEG_WATER:',cpatch%pft(ico),y%lai(ico),y%bai(ico)       &
+         write(unit=*,fmt=cohfmt) 'VEG_WATER:',cpatch%pft(ico),y%lai(ico),y%wpa(ico)       &
                                               ,y%tai(ico),errmax,yerr%veg_water(ico)       &
                                               ,yscal%veg_water(ico),troublemaker
               
 
          errmax       = max(errmax,abs(yerr%veg_energy(ico)/yscal%veg_energy(ico)))
          troublemaker = large_error(yerr%veg_energy(ico),yscal%veg_energy(ico))
-         write(unit=*,fmt=cohfmt) 'VEG_ENERGY:',cpatch%pft(ico),cpatch%lai(ico),y%bai(ico) &
+         write(unit=*,fmt=cohfmt) 'VEG_ENERGY:',cpatch%pft(ico),cpatch%lai(ico),y%wpa(ico) &
                                                ,y%tai(ico),errmax,yerr%veg_energy(ico)     &
                                                ,yscal%veg_energy(ico),troublemaker
       end if
@@ -1669,7 +1669,7 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch)
       targetp%veg_fliq(k)    = sourcep%veg_fliq(k)
       targetp%hcapveg(k)     = sourcep%hcapveg(k)
       targetp%lai(k)         = sourcep%lai(k)
-      targetp%bai(k)         = sourcep%bai(k)
+      targetp%wpa(k)         = sourcep%wpa(k)
       targetp%tai(k)         = sourcep%tai(k)
       targetp%solvable(k)    = sourcep%solvable(k)
    end do
@@ -1909,12 +1909,12 @@ subroutine print_rk4patch_ar(y,csite,ipa)
    end do
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
-         '    PFT','KRDEPTH','         LAI','         BAI','         TAI','  VEG_ENERGY'   &
+         '    PFT','KRDEPTH','         LAI','         WPA','         TAI','  VEG_ENERGY'   &
              ,'   VEG_WATER','    VEG_HCAP','    VEG_TEMP','    VEG_FLIQ'
    do ico = 1,cpatch%ncohorts
       if (y%solvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),9(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
-               ,y%lai(ico),y%bai(ico),y%tai(ico),y%veg_energy(ico),y%veg_water(ico)        &
+               ,y%lai(ico),y%wpa(ico),y%tai(ico),y%veg_energy(ico),y%veg_water(ico)        &
                ,y%hcapveg(ico),y%veg_temp(ico),y%veg_fliq(ico)
       end if
    end do

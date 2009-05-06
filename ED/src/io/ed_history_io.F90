@@ -79,7 +79,7 @@ subroutine read_ed1_history_file_array
 
   real :: area_tot
   real :: area_sum
-  real :: patch_lai,patch_bai,patch_sai,poly_lai
+  real :: patch_lai,patch_wpa,patch_wai,poly_lai
   real :: site_lai
   integer :: ncohorts,npatchco
   integer :: npatches,nsitepat,npatch2
@@ -561,12 +561,12 @@ subroutine read_ed1_history_file_array
                           cpatch%bstorage(ic2) = 0.5 * cpatch%balive(ic2)
                        endif
                                   
-                       !----- Assign LAI, BAI, and SAI ------------------------------------!
+                       !----- Assign LAI, WPA, and WAI ------------------------------------!
                        call area_indices(cpatch%nplant(ic2),cpatch%bleaf(ic2)              &
                                         ,cpatch%bdead(ic2),cpatch%balive(ic2)              &
                                         ,cpatch%dbh(ic2), cpatch%hite(ic2)                 &
-                                        ,cpatch%pft(ic2),cpatch%lai(ic2),cpatch%bai(ic2)   &
-                                        ,cpatch%sai(ic2))
+                                        ,cpatch%pft(ic2),cpatch%lai(ic2),cpatch%wpa(ic2)   &
+                                        ,cpatch%wai(ic2))
                        
                        cpatch%cb(1:12,ic2) = cb(1:12,ic)
                        cpatch%cb_max(1:12,ic2) = cb_max(1:12,ic)
@@ -657,22 +657,18 @@ subroutine read_ed1_history_file_array
 
            do ipa=1,csite%npatches
               area_sum = area_sum + csite%area(ipa)
-              patch_lai  = 0.0
-              patch_bai  = 0.0
-              patch_sai  = 0.0
+              csite%lai(ipa)  = 0.0
+              csite%wpa(ipa)  = 0.0
+              csite%wai(ipa)  = 0.0
               
               cpatch => csite%patch(ipa)
               do ico = 1,cpatch%ncohorts
-                 patch_lai  = patch_lai  + cpatch%lai(ico)
-                 patch_bai  = patch_bai  + cpatch%bai(ico)
-                 patch_sai  = patch_sai  + cpatch%sai(ico)
+                 csite%lai(ipa)  = csite%lai(ipa) + cpatch%lai(ico)
+                 csite%wpa(ipa)  = csite%wpa(ipa) + cpatch%wpa(ico)
+                 csite%wai(ipa)  = csite%wai(ipa) + cpatch%wai(ico)
                  ncohorts  = ncohorts + 1
               end do
-              
-              csite%lai(ipa)  = patch_lai
-              csite%bai(ipa)  = patch_bai
-              csite%sai(ipa)  = patch_sai
-              site_lai = site_lai + csite%area(ipa) * patch_lai
+              site_lai = site_lai + csite%area(ipa) * csite%lai(ipa)
               
            enddo
 
@@ -706,8 +702,8 @@ subroutine read_ed1_history_file_array
            do ipa = 1,csite%npatches
               
               csite%lai(ipa)  = 0.0
-              csite%bai(ipa)  = 0.0
-              csite%sai(ipa)  = 0.0
+              csite%wpa(ipa)  = 0.0
+              csite%wai(ipa)  = 0.0
               npatchco = 0
               cpatch => csite%patch(ipa)
               
@@ -715,8 +711,8 @@ subroutine read_ed1_history_file_array
                  ncohorts=ncohorts+1
                  npatchco=npatchco+1
                  csite%lai(ipa)  = csite%lai(ipa)  + cpatch%lai(ico)
-                 csite%bai(ipa)  = csite%bai(ipa)  + cpatch%bai(ico)
-                 csite%sai(ipa)  = csite%sai(ipa)  + cpatch%sai(ico)
+                 csite%wpa(ipa)  = csite%wpa(ipa)  + cpatch%wpa(ico)
+                 csite%wai(ipa)  = csite%wai(ipa)  + cpatch%wai(ico)
 
               end do
 
@@ -1465,13 +1461,13 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
         dsetrank,iparallel,.false.)
    if(associated(cgrid%mmean_lai_pft)) call hdf_getslab_r(cgrid%mmean_lai_pft(:,ipy) ,'MMEAN_LAI_PFT ' , &
         dsetrank,iparallel,.false.)
-   if(associated(cgrid%bai_pft)) call hdf_getslab_r(cgrid%bai_pft(:,ipy) ,'BAI_PFT '       , &
+   if(associated(cgrid%wpa_pft)) call hdf_getslab_r(cgrid%wpa_pft(:,ipy) ,'WPA_PFT '       , &
         dsetrank,iparallel,.false.)
-   if(associated(cgrid%mmean_bai_pft)) call hdf_getslab_r(cgrid%mmean_bai_pft(:,ipy) ,'MMEAN_BAI_PFT ' , &
+   if(associated(cgrid%mmean_wpa_pft)) call hdf_getslab_r(cgrid%mmean_wpa_pft(:,ipy) ,'MMEAN_WPA_PFT ' , &
         dsetrank,iparallel,.false.)
-   if(associated(cgrid%sai_pft)) call hdf_getslab_r(cgrid%sai_pft(:,ipy) ,'SAI_PFT '       , &
+   if(associated(cgrid%wai_pft)) call hdf_getslab_r(cgrid%wai_pft(:,ipy) ,'WAI_PFT '       , &
         dsetrank,iparallel,.false.)
-   if(associated(cgrid%mmean_sai_pft)) call hdf_getslab_r(cgrid%mmean_sai_pft(:,ipy) ,'MMEAN_SAI_PFT ' , &
+   if(associated(cgrid%mmean_wai_pft)) call hdf_getslab_r(cgrid%mmean_wai_pft(:,ipy) ,'MMEAN_WAI_PFT ' , &
         dsetrank,iparallel,.false.)
    if(associated(cgrid%agb_pft)) call hdf_getslab_r(cgrid%agb_pft(:,ipy) ,'AGB_PFT '       , &
         dsetrank,iparallel,.true.)
@@ -1694,9 +1690,9 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
         dsetrank,iparallel,.true.)
    if (associated(cpoly%lai_pft)) call hdf_getslab_r(cpoly%lai_pft,'LAI_PFT_SI ', &
         dsetrank,iparallel,.false.)
-   if (associated(cpoly%bai_pft)) call hdf_getslab_r(cpoly%bai_pft,'BAI_PFT_SI ', &
+   if (associated(cpoly%wpa_pft)) call hdf_getslab_r(cpoly%wpa_pft,'WPA_PFT_SI ', &
         dsetrank,iparallel,.false.)
-   if (associated(cpoly%sai_pft)) call hdf_getslab_r(cpoly%sai_pft,'SAI_PFT_SI ', &
+   if (associated(cpoly%wai_pft)) call hdf_getslab_r(cpoly%wai_pft,'WAI_PFT_SI ', &
         dsetrank,iparallel,.false.)
    call hdf_getslab_r(cpoly%green_leaf_factor,'GREEN_LEAF_FACTOR ', &
         dsetrank,iparallel,.true.)
@@ -1906,8 +1902,8 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%can_depth,'CAN_DEPTH ',dsetrank,iparallel,.true.)
    !  call hdf_getslab_i(csite%pname,'PNAME ',dsetrank,iparallel)
    call hdf_getslab_r(csite%lai,'LAI_PA ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(csite%bai,'BAI_PA ',dsetrank,iparallel,.false.)
-   call hdf_getslab_r(csite%sai,'SAI_PA ',dsetrank,iparallel,.false.)
+   call hdf_getslab_r(csite%wpa,'WPA_PA ',dsetrank,iparallel,.false.)
+   call hdf_getslab_r(csite%wai,'WAI_PA ',dsetrank,iparallel,.false.)
    call hdf_getslab_i(csite%nlev_sfcwater,'NLEV_SFCWATER ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ground_shv,'GROUND_SHV ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%surface_ssh,'SURFACE_SSH ',dsetrank,iparallel,.true.)
@@ -2199,16 +2195,16 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%veg_temp,'VEG_TEMP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%veg_water,'VEG_WATER ',dsetrank,iparallel,.true.)
      
-     !----- Older versions may not have BAI. If this is the case, assign it here
-     call hdf_getslab_r(cpatch%bai,'BAI_CO ',dsetrank,iparallel,.false.)
-     call hdf_getslab_r(cpatch%sai,'SAI_CO ',dsetrank,iparallel,.false.)
-     if (sum(cpatch%bai(1:cpatch%ncohorts),1) == 0.0 .or. &
-         sum(cpatch%sai(1:cpatch%ncohorts),1) == 0.0      ) then
+     !----- Older versions may not have WPA/WAI. If this is the case, assign it here
+     call hdf_getslab_r(cpatch%wpa,'WPA_CO ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%wai,'WAI_CO ',dsetrank,iparallel,.false.)
+     if (sum(cpatch%wpa(1:cpatch%ncohorts),1) == 0.0 .or. &
+         sum(cpatch%wai(1:cpatch%ncohorts),1) == 0.0      ) then
         do ico=1,cpatch%ncohorts
            call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)  &
                             ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)    &
-                            ,cpatch%pft(ico),cpatch%lai(ico),cpatch%bai(ico)         &
-                            ,cpatch%sai(ico))
+                            ,cpatch%pft(ico),cpatch%lai(ico),cpatch%wpa(ico)         &
+                            ,cpatch%wai(ico))
         end do
      end if
 

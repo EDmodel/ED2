@@ -912,7 +912,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          flux_area = initp%lai(ico)
          c3lai  = sngloff( flux_area * rk4met%rhos * (sat_shv - initp%can_shv),tiny_offset)
          !----- Evaporation/condensation "flux" -------------------------------------------!
-         flux_area = effarea_water * initp%lai(ico) + pi18 * initp%bai(ico)
+         flux_area = effarea_water * initp%lai(ico) + pi18 * initp%wpa(ico)
          c3tai  = flux_area * rk4met%rhos * (sat_shv - initp%can_shv)
          rbi    = 1.d0 / initp%rb(ico)
 
@@ -962,7 +962,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          ! leaves plus the actual projected branch area (not the effective), thus the pi   !
          ! factor (which to make it scalable with the cilinder.                            !
          !---------------------------------------------------------------------------------!
-         flux_area = effarea_heat * initp%lai(ico) + pi18 * initp%bai(ico)
+         flux_area = effarea_heat * initp%lai(ico) + pi18 * initp%wpa(ico)
          hflxvc    = flux_area * cp8 * rk4met%rhos * rbi                                   &
                    * (initp%veg_temp(ico) - initp%can_temp)
 

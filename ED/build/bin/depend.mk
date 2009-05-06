@@ -30,8 +30,9 @@ canopy_radiation_coms.o : $(ED_MEMORY)/canopy_radiation_coms.f90 max_dims.o
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-canopy_struct_dynamics.o : $(ED_DYNAMICS)/canopy_struct_dynamics.f90 ed_misc_coms.o         \
-	ed_state_vars.o rk4_coms.o pft_coms.o canopy_air_coms.o consts_coms.o soil_coms.o
+canopy_struct_dynamics.o : $(ED_DYNAMICS)/canopy_struct_dynamics.f90 ed_misc_coms.o        \
+	ed_state_vars.o rk4_coms.o pft_coms.o canopy_air_coms.o consts_coms.o soil_coms.o  \
+	allometry.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -457,7 +458,7 @@ pft_coms.o : $(ED_MEMORY)/pft_coms.f90 max_dims.o
 
 radiate_driver.o : $(ED_DYNAMICS)/radiate_driver.f90 misc_coms.o ed_state_vars.o           \
 	canopy_radiation_coms.o consts_coms.o grid_coms.o soil_coms.o max_dims.o           \
-	rk4_coms.o allometry.o
+	rk4_coms.o allometry.o pft_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -515,7 +516,7 @@ soil_coms.o : $(ED_MEMORY)/soil_coms.F90 max_dims.o grid_coms.o
 	rm -f $(<F:.F90=.F90)
 
 stable_cohorts.o : $(ED_UTILS)/stable_cohorts.f90 ed_state_vars.o canopy_radiation_coms.o  \
-	allometry.o
+	allometry.o rk4_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -532,7 +533,7 @@ therm_lib.o: $(ED_UTILS)/therm_lib.f90 consts_coms.o
 	rm -f $(<F:.f90=.f90)
 
 twostream_rad.o : $(ED_DYNAMICS)/twostream_rad.f90 pft_coms.o canopy_radiation_coms.o      \
-	consts_coms.o
+	consts_coms.o max_dims.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

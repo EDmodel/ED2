@@ -243,8 +243,8 @@ module fuse_fiss_utils_ar
          do ico = 1, cpatch%ncohorts
             cpatch%nplant(ico)              = cpatch%nplant(ico)              * area_scale
             cpatch%lai(ico)                 = cpatch%lai(ico)                 * area_scale
-            cpatch%bai(ico)                 = cpatch%bai(ico)                 * area_scale
-            cpatch%sai(ico)                 = cpatch%sai(ico)                 * area_scale
+            cpatch%wpa(ico)                 = cpatch%wpa(ico)                 * area_scale
+            cpatch%wai(ico)                 = cpatch%wai(ico)                 * area_scale
             cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)            * area_scale
             cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)      * area_scale
             cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)      * area_scale
@@ -663,8 +663,8 @@ module fuse_fiss_utils_ar
                ! need to be rescaled.                                                      !
                !---------------------------------------------------------------------------!
                cpatch%lai(ico)                 = cpatch%lai(ico)                  * 0.5
-               cpatch%bai(ico)                 = cpatch%bai(ico)                  * 0.5
-               cpatch%sai(ico)                 = cpatch%sai(ico)                  * 0.5
+               cpatch%wpa(ico)                 = cpatch%wpa(ico)                  * 0.5
+               cpatch%wai(ico)                 = cpatch%wai(ico)                  * 0.5
                cpatch%nplant(ico)              = cpatch%nplant(ico)               * 0.5
                cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * 0.5
                cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * 0.5
@@ -764,8 +764,8 @@ module fuse_fiss_utils_ar
       cpatch%phenology_status(idt)    = cpatch%phenology_status(isc)
       cpatch%balive(idt)              = cpatch%balive(isc)
       cpatch%lai(idt)                 = cpatch%lai(isc)
-      cpatch%bai(idt)                 = cpatch%bai(isc)
-      cpatch%sai(idt)                 = cpatch%sai(isc)
+      cpatch%wpa(idt)                 = cpatch%wpa(isc)
+      cpatch%wai(idt)                 = cpatch%wai(isc)
       cpatch%bstorage(idt)            = cpatch%bstorage(isc)
       cpatch%solvable(idt)            = cpatch%solvable(isc)
 
@@ -926,8 +926,8 @@ module fuse_fiss_utils_ar
          cpatch%lai(recc)        = 0.
       end if
 
-      cpatch%bai(recc)    = cpatch%bai(recc)  + cpatch%bai(donc)
-      cpatch%sai(recc)    = cpatch%sai(recc)  + cpatch%sai(donc)
+      cpatch%wpa(recc)    = cpatch%wpa(recc)  + cpatch%wpa(donc)
+      cpatch%wai(recc)    = cpatch%wai(recc)  + cpatch%wai(donc)
       cpatch%veg_energy(recc) = cpatch%veg_energy(recc) + cpatch%veg_energy(donc)
       cpatch%veg_water(recc)  = cpatch%veg_water(recc)  + cpatch%veg_water(donc)
       cpatch%hcapveg(recc)    = cpatch%hcapveg(recc)    + cpatch%hcapveg(donc)
@@ -1792,8 +1792,8 @@ module fuse_fiss_utils_ar
       area_scale = csite%area(recp) * newareai
       do ico = 1,nrc
          cpatch%lai(ico)                 = cpatch%lai(ico)                  * area_scale
-         cpatch%bai(ico)                 = cpatch%bai(ico)                  * area_scale
-         cpatch%sai(ico)                 = cpatch%sai(ico)                  * area_scale
+         cpatch%wpa(ico)                 = cpatch%wpa(ico)                  * area_scale
+         cpatch%wai(ico)                 = cpatch%wai(ico)                  * area_scale
          cpatch%nplant(ico)              = cpatch%nplant(ico)               * area_scale
          cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * area_scale
          cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * area_scale
@@ -1818,8 +1818,8 @@ module fuse_fiss_utils_ar
       area_scale = csite%area(donp) * newareai
       do ico = 1,ndc
          cpatch%lai(ico)                 = cpatch%lai(ico)                  * area_scale
-         cpatch%bai(ico)                 = cpatch%bai(ico)                  * area_scale
-         cpatch%sai(ico)                 = cpatch%sai(ico)                  * area_scale
+         cpatch%wpa(ico)                 = cpatch%wpa(ico)                  * area_scale
+         cpatch%wai(ico)                 = cpatch%wai(ico)                  * area_scale
          cpatch%nplant(ico)              = cpatch%nplant(ico)               * area_scale
          cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * area_scale
          cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * area_scale

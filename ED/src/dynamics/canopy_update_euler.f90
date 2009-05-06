@@ -1,4 +1,4 @@
-subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, prss, pcpg, qpcpg,  &
+subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, atm_tmp, prss, pcpg, qpcpg,  &
      wshed_canopy, qwshed_canopy, canair, canhcap, dt_leaf, hxfergc,  &
      sxfer_t, wxfergc, hxfersc, wxfersc, sxfer_r, ed_transp,          &
      ntext_soil, soil_water, soil_fracliq, lsl,  &
@@ -17,6 +17,7 @@ subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, prss, pcpg, qpcpg,  &
   integer :: ipa,ico
   real, intent(in) :: vels
   real, intent(in) :: rhos
+  real, intent(in) :: atm_tmp
   real, intent(in) :: prss
   real, intent(in) :: pcpg
   real, intent(in) :: qpcpg
@@ -45,7 +46,7 @@ subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, prss, pcpg, qpcpg,  &
   integer, intent(in) :: lsl
 
   ! Get photosynthesis, stomatal conductance, and transpiration
-  call canopy_photosynthesis_ar(csite,ipa, vels, rhos, prss, &
+  call canopy_photosynthesis_ar(csite,ipa, vels, rhos, atm_tmp, prss, &
        ed_ktrans, ntext_soil, soil_water, soil_fracliq, lsl, sum_lai_rbi, &
        leaf_aging_factor, green_leaf_factor)
 

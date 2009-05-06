@@ -1577,7 +1577,7 @@ subroutine copy_avgvars_to_leaf(ifm)
       
       
       leaf_g(ifm)%veg_lai(ix,iy,2)   = cgrid%lai(ipy)
-      leaf_g(ifm)%veg_tai(ix,iy,2)   = cgrid%lai(ipy) + cgrid%bai(ipy) + cgrid%sai(ipy)
+      leaf_g(ifm)%veg_tai(ix,iy,2)   = cgrid%lai(ipy) + cgrid%wai(ipy)
 
 
       

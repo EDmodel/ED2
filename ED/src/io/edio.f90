@@ -238,8 +238,8 @@ subroutine spatial_averages
 
             !----- LAI --------------------------------------------------------------------!
             cpoly%lai(isi)  = sum(csite%lai  * csite%area ) * site_area_i
-            cpoly%bai(isi)  = sum(csite%bai  * csite%area ) * site_area_i
-            cpoly%sai(isi)  = sum(csite%sai  * csite%area ) * site_area_i
+            cpoly%wpa(isi)  = sum(csite%wpa  * csite%area ) * site_area_i
+            cpoly%wai(isi)  = sum(csite%wai  * csite%area ) * site_area_i
 
 
             !----- Average fast time flux dynamics over sites. ----------------------------!
@@ -564,8 +564,8 @@ subroutine spatial_averages
 
          !----- Finding the polygon mean LAI ----------------------------------------------!
          cgrid%lai(ipy)  = sum(cpoly%lai  * cpoly%area ) * poly_area_i
-         cgrid%bai(ipy)  = sum(cpoly%bai  * cpoly%area ) * poly_area_i
-         cgrid%sai(ipy)  = sum(cpoly%sai  * cpoly%area ) * poly_area_i
+         cgrid%wpa(ipy)  = sum(cpoly%wpa  * cpoly%area ) * poly_area_i
+         cgrid%wai(ipy)  = sum(cpoly%wai  * cpoly%area ) * poly_area_i
         
          !----- Average fast time flux dynamics over polygons. ----------------------------!
          cgrid%avg_vapor_vc(ipy)     = sum(cpoly%avg_vapor_vc    * cpoly%area)*poly_area_i

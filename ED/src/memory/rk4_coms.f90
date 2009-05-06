@@ -81,8 +81,8 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: veg_fliq   ! Liquid fraction         [    ---]
       real(kind=8), pointer, dimension(:) :: hcapveg    ! Heat capacity           [ J/m²/K]
       real(kind=8), pointer, dimension(:) :: lai        ! Leaf area index         [  m²/m²]
-      real(kind=8), pointer, dimension(:) :: bai        ! Branch area index       [  m²/m²]
-      real(kind=8), pointer, dimension(:) :: tai        ! "Tree" area index       [  m²/m²]
+      real(kind=8), pointer, dimension(:) :: wpa        ! Wood projected area     [  m²/m²]
+      real(kind=8), pointer, dimension(:) :: tai        ! Tree area index         [  m²/m²]
       real(kind=8), pointer, dimension(:) :: rb         ! Aerodynamic resistance  [    s/m]
       logical     , pointer, dimension(:) :: solvable   ! Can I solve this cohort [    T|F]
       !------------------------------------------------------------------------------------!
@@ -650,7 +650,7 @@ module rk4_coms
       allocate(y%veg_fliq(maxcohort))
       allocate(y%hcapveg(maxcohort))
       allocate(y%lai(maxcohort))
-      allocate(y%bai(maxcohort))
+      allocate(y%wpa(maxcohort))
       allocate(y%tai(maxcohort))
       allocate(y%rb(maxcohort))
       allocate(y%solvable(maxcohort))
@@ -683,7 +683,7 @@ module rk4_coms
       nullify(y%veg_fliq)
       nullify(y%hcapveg)
       nullify(y%lai)
-      nullify(y%bai)
+      nullify(y%wpa)
       nullify(y%tai)
       nullify(y%rb)
       nullify(y%solvable)
@@ -714,7 +714,7 @@ module rk4_coms
       if(associated(y%veg_fliq      ))  y%veg_fliq      = 0.d0
       if(associated(y%hcapveg       ))  y%hcapveg       = 0.d0
       if(associated(y%lai           ))  y%lai           = 0.d0
-      if(associated(y%bai           ))  y%bai           = 0.d0
+      if(associated(y%wpa           ))  y%wpa           = 0.d0
       if(associated(y%tai           ))  y%tai           = 0.d0
       if(associated(y%rb            ))  y%rb            = 0.d0
       if(associated(y%solvable      ))  y%solvable      = .false.
@@ -745,7 +745,7 @@ module rk4_coms
       if(associated(y%veg_fliq      ))  deallocate(y%veg_fliq  )
       if(associated(y%hcapveg       ))  deallocate(y%hcapveg   )
       if(associated(y%lai           ))  deallocate(y%lai       )
-      if(associated(y%bai           ))  deallocate(y%bai       )
+      if(associated(y%wpa           ))  deallocate(y%wpa       )
       if(associated(y%tai           ))  deallocate(y%tai       )
       if(associated(y%rb            ))  deallocate(y%rb        )
       if(associated(y%solvable      ))  deallocate(y%solvable  )

@@ -271,7 +271,7 @@ subroutine init_can_air_params()
    !---------------------------------------------------------------------------------------!
    !    Minimum leaf water content to be considered.  Values smaller than this will be     !
    ! flushed to zero.  This value is in kg/[m2 plant], so it will be always scaled by      !
-   ! (LAI+BAI).                                                                            !
+   ! (LAI+WAI).                                                                            !
    !---------------------------------------------------------------------------------------!
    dry_veg_lwater = 5.e-4
    !---------------------------------------------------------------------------------------!
@@ -280,7 +280,7 @@ subroutine init_can_air_params()
    !    Maximum leaf water that plants can hold.  Should leaf water exceed this number,    !
    ! water will be no longer intercepted by the leaves, and any value in excess of this    !
    ! will be promptly removed through shedding.  This value is in kg/[m2 plant], so it     !
-   ! will be always scaled by (LAI+BAI).                                                   !
+   ! will be always scaled by (LAI+WAI).                                                   !
    !---------------------------------------------------------------------------------------!
    fullveg_lwater = 0.11
    !---------------------------------------------------------------------------------------!
@@ -541,7 +541,6 @@ subroutine init_pft_alloc_params()
                           , rbranch               & ! intent(out)
                           , rdiamet               & ! intent(out)
                           , rlength               & ! intent(out)
-                          , h1stbr                & ! intent(out)
                           , diammin               & ! intent(out)
                           , ntrunk                & ! intent(out)
                           , conijn_a              & ! intent(out)
@@ -720,11 +719,12 @@ subroutine init_pft_alloc_params()
    !    Defining the branching parameters, following Järvelä (2004)                        !
    !---------------------------------------------------------------------------------------!
    !----- Branching ratio -----------------------------------------------------------------!
-   rbranch(1)    = 4.24
-   rbranch(2:4)  = 4.23
-   rbranch(5)    = 4.24
-   rbranch(6:8)  = 4.44
-   rbranch(9:11) = 4.24
+   rbranch(1)     = 4.24
+   rbranch(2:4)   = 4.23
+   rbranch(5)     = 4.24
+   rbranch(6:8)   = 4.44
+   rbranch(9:11)  = 4.24
+   rbranch(12:15) = 4.24
    !----- Diameter ratio ------------------------------------------------------------------!
    rdiamet(1)     = 5.00
    rdiamet(2:4)   = 1.86
@@ -734,12 +734,8 @@ subroutine init_pft_alloc_params()
    rdiamet(12:15) = 5.00
    !----- Length ratio. Järvelä used rdiamet^2/3, so do we... -----------------------------!
    rlength(1:15)  = rdiamet(1:15)**twothirds
-   !----- Relative height of first branching.  Temperate PFT trees only. ------------------!
-   h1stbr(1:5)    = 0.0
-   h1stbr(6:11)   = 0.35
-   h1stbr(12:15)  = 0.0
    !----- Minimum diameter to consider. ---------------------------------------------------!
-   diammin(1:15)  = 0.005
+   diammin(1:15)  = 0.002
    !----- Number of trunks.  Usually this is 1. -------------------------------------------!
    ntrunk(1:15)   = 1.0
    
@@ -828,11 +824,11 @@ end subroutine init_pft_nitro_params
 !   This subroutine sets up some PFT and leaf dependent properties.                        !
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_leaf_params()
+   use rk4_coms       , only : ibranch_thermo       ! ! intent(in)
    use pft_coms       , only : phenology            & ! intent(out)
                              , clumping_factor      & ! intent(out)
                              , leaf_width           & ! intent(out)
                              , crown_depth_fraction & ! intent(out)
-                             , branch_fraction      & ! intent(out)
                              , c_grn_leaf_dry       & ! intent(out)
                              , c_ngrn_biom_dry      & ! intent(out)
                              , wat_dry_ratio_grn    & ! intent(out)
@@ -848,11 +844,11 @@ subroutine init_pft_leaf_params()
    phenology(12:15) = 1
 
    clumping_factor(1)     = 1.000d0
-   clumping_factor(2:4)   = 0.735d0
-   clumping_factor(5)     = 0.840d0
-   clumping_factor(6:8)   = 0.735d0
-   clumping_factor(9:11)  = 0.840d0
-   clumping_factor(12:13) = 0.840d0
+   clumping_factor(2:4)   = 7.350d-1
+   clumping_factor(5)     = 8.400d-1
+   clumping_factor(6:8)   = 7.350d-1
+   clumping_factor(9:11)  = 8.400d-1
+   clumping_factor(12:13) = 8.400d-1
    clumping_factor(14:15) = 1.000d0
 
    leaf_width(1:4)   = 0.20
@@ -876,19 +872,6 @@ subroutine init_pft_leaf_params()
    !---------------------------------------------------------------------------------------!
    delta_c(1:15) = 100. * wat_dry_ratio_ngrn(1:15)                                         &
                  * (-0.06191 + 2.36e-4 * t3ple - 1.33e-2 * wat_dry_ratio_ngrn(1:15))
-
-   !---------------------------------------------------------------------------------------!
-   !      Fraction of structural biomass included in calculation of veg. leaf heat         !
-   ! capacity.  Currently we assume everything for grasses, we follow the number suggested !
-   ! by Michiles and Gielow (2008). This should be probably better tuned, particularly for !
-   ! temperate PFTs, since the number came from a survey in the Amazon. But that is just a !
-   ! first guess.                                                                          !
-   !---------------------------------------------------------------------------------------!
-   branch_fraction(1)     = 1.0
-   branch_fraction(2:4)   = 0.3299 
-   branch_fraction(5)     = 1.0
-   branch_fraction(6:11)  = 0.3299 
-   branch_fraction(12:15) = 1.0
 
    !----- Relative height of crown. -------------------------------------------------------!
    crown_depth_fraction(1)     = 1.0    

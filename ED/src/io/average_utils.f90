@@ -571,17 +571,17 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cpoly => cgrid%polygon(ipy)
       cgrid%lai_pft            (:,ipy) = 0.
       cgrid%lai_lu             (:,ipy) = 0.
-      cgrid%bai_pft            (:,ipy) = 0.
-      cgrid%bai_lu             (:,ipy) = 0.
-      cgrid%sai_pft            (:,ipy) = 0.
-      cgrid%sai_lu             (:,ipy) = 0.
+      cgrid%wpa_pft            (:,ipy) = 0.
+      cgrid%wpa_lu             (:,ipy) = 0.
+      cgrid%wai_pft            (:,ipy) = 0.
+      cgrid%wai_lu             (:,ipy) = 0.
       do isi=1,cpoly%nsites
          cpoly%lai_pft (:,isi)  = 0.
          cpoly%lai_lu  (:,isi)  = 0.
-         cpoly%bai_pft (:,isi)  = 0.
-         cpoly%bai_lu  (:,isi)  = 0.
-         cpoly%sai_pft (:,isi)  = 0.
-         cpoly%sai_lu  (:,isi)  = 0.
+         cpoly%wpa_pft (:,isi)  = 0.
+         cpoly%wpa_lu  (:,isi)  = 0.
+         cpoly%wai_pft (:,isi)  = 0.
+         cpoly%wai_lu  (:,isi)  = 0.
       end do
    end do
 
@@ -670,11 +670,11 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                   cpoly%lai_pft(ipft,isi)  = cpoly%lai_pft(ipft,isi)                       &
                                            + sum(cpatch%lai,cpatch%pft == ipft)            &
                                            * csite%area(ipa) * site_area_i
-                  cpoly%bai_pft(ipft,isi)  = cpoly%bai_pft(ipft,isi)                       &
-                                           + sum(cpatch%bai,cpatch%pft == ipft)            &
+                  cpoly%wpa_pft(ipft,isi)  = cpoly%wpa_pft(ipft,isi)                       &
+                                           + sum(cpatch%wpa,cpatch%pft == ipft)            &
                                            * csite%area(ipa) * site_area_i
-                  cpoly%sai_pft(ipft,isi)  = cpoly%sai_pft(ipft,isi)                       &
-                                           + sum(cpatch%sai,cpatch%pft == ipft)            &
+                  cpoly%wai_pft(ipft,isi)  = cpoly%wai_pft(ipft,isi)                       &
+                                           + sum(cpatch%wai,cpatch%pft == ipft)            &
                                            * csite%area(ipa) * site_area_i
                end do
             end if
@@ -682,10 +682,10 @@ subroutine normalize_ed_daily_output_vars(cgrid)
             ilu = csite%dist_type(ipa)
             cpoly%lai_lu(ilu,isi)  = cpoly%lai_lu(ilu,isi)                                 &
                                    + csite%lai(ipa) * csite%area(ipa) * site_area_i
-            cpoly%bai_lu(ilu,isi)  = cpoly%bai_lu(ilu,isi)                                 &
-                                   + csite%bai(ipa) * csite%area(ipa) * site_area_i
-            cpoly%sai_lu(ilu,isi)  = cpoly%sai_lu(ilu,isi)                                 &
-                                   + csite%sai(ipa) * csite%area(ipa) * site_area_i
+            cpoly%wpa_lu(ilu,isi)  = cpoly%wpa_lu(ilu,isi)                                 &
+                                   + csite%wpa(ipa) * csite%area(ipa) * site_area_i
+            cpoly%wai_lu(ilu,isi)  = cpoly%wai_lu(ilu,isi)                                 &
+                                   + csite%wai(ipa) * csite%area(ipa) * site_area_i
 
          end do patchloop
 
@@ -699,19 +699,19 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       do ipft=1,n_pft
          cgrid%lai_pft(ipft,ipy)  = cgrid%lai_pft(ipft,ipy)                                &
                                   + sum(cpoly%lai_pft(ipft,:)*cpoly%area) * polygon_area_i
-         cgrid%bai_pft(ipft,ipy)  = cgrid%bai_pft(ipft,ipy)                                &
-                                  + sum(cpoly%bai_pft(ipft,:)*cpoly%area) * polygon_area_i
-         cgrid%sai_pft(ipft,ipy)  = cgrid%sai_pft(ipft,ipy)                                &
-                                  + sum(cpoly%sai_pft(ipft,:)*cpoly%area) * polygon_area_i
+         cgrid%wpa_pft(ipft,ipy)  = cgrid%wpa_pft(ipft,ipy)                                &
+                                  + sum(cpoly%wpa_pft(ipft,:)*cpoly%area) * polygon_area_i
+         cgrid%wai_pft(ipft,ipy)  = cgrid%wai_pft(ipft,ipy)                                &
+                                  + sum(cpoly%wai_pft(ipft,:)*cpoly%area) * polygon_area_i
       end do
       
       do ilu=1,n_dist_types
          cgrid%lai_lu(ilu,ipy)  = cgrid%lai_lu(ilu,ipy)                                    &
                                 + sum(cpoly%lai_lu(ilu,:)*cpoly%area) * polygon_area_i
-         cgrid%bai_lu(ilu,ipy)  = cgrid%bai_lu(ilu,ipy)                                    &
-                                + sum(cpoly%bai_lu(ilu,:)*cpoly%area) * polygon_area_i
-         cgrid%sai_lu(ilu,ipy)  = cgrid%sai_lu(ilu,ipy)                                    &
-                                + sum(cpoly%sai_lu(ilu,:)*cpoly%area) * polygon_area_i
+         cgrid%wpa_lu(ilu,ipy)  = cgrid%wpa_lu(ilu,ipy)                                    &
+                                + sum(cpoly%wpa_lu(ilu,:)*cpoly%area) * polygon_area_i
+         cgrid%wai_lu(ilu,ipy)  = cgrid%wai_lu(ilu,ipy)                                    &
+                                + sum(cpoly%wai_lu(ilu,:)*cpoly%area) * polygon_area_i
       end do
       
       cgrid%dmean_growth_resp(ipy)  = cgrid%dmean_growth_resp(ipy)  + sitesum_growth_resp  * polygon_area_i
@@ -835,10 +835,10 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_gpp_dbh      (:,ipy) = 0.
       cgrid%lai_pft            (:,ipy) = 0.
       cgrid%lai_lu             (:,ipy) = 0.
-      cgrid%bai_pft            (:,ipy) = 0.
-      cgrid%bai_lu             (:,ipy) = 0.
-      cgrid%sai_pft            (:,ipy) = 0.
-      cgrid%sai_lu             (:,ipy) = 0.
+      cgrid%wpa_pft            (:,ipy) = 0.
+      cgrid%wpa_lu             (:,ipy) = 0.
+      cgrid%wai_pft            (:,ipy) = 0.
+      cgrid%wai_lu             (:,ipy) = 0.
 
       !-----------------------------------------!
       ! Reset variables stored in polygontype   !
@@ -846,10 +846,10 @@ subroutine zero_ed_daily_output_vars(cgrid)
       do isi=1,cpoly%nsites
          cpoly%lai_pft (:,isi)  = 0.
          cpoly%lai_lu  (:,isi)  = 0.
-         cpoly%bai_pft (:,isi)  = 0.
-         cpoly%bai_lu  (:,isi)  = 0.
-         cpoly%sai_pft (:,isi)  = 0.
-         cpoly%sai_lu  (:,isi)  = 0.
+         cpoly%wpa_pft (:,isi)  = 0.
+         cpoly%wpa_lu  (:,isi)  = 0.
+         cpoly%wai_pft (:,isi)  = 0.
+         cpoly%wai_lu  (:,isi)  = 0.
       end do
    end do
 
@@ -910,10 +910,10 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
       cgrid%mmean_gpp_dbh     (:,ipy) = cgrid%mmean_gpp_dbh     (:,ipy) +  cgrid%dmean_gpp_dbh     (:,ipy)
       cgrid%mmean_lai_pft     (:,ipy) = cgrid%mmean_lai_pft     (:,ipy) +  cgrid%lai_pft           (:,ipy)
       cgrid%mmean_lai_lu      (:,ipy) = cgrid%mmean_lai_lu      (:,ipy) +  cgrid%lai_lu            (:,ipy)
-      cgrid%mmean_bai_pft     (:,ipy) = cgrid%mmean_bai_pft     (:,ipy) +  cgrid%bai_pft           (:,ipy)
-      cgrid%mmean_bai_lu      (:,ipy) = cgrid%mmean_bai_lu      (:,ipy) +  cgrid%bai_lu            (:,ipy)
-      cgrid%mmean_sai_pft     (:,ipy) = cgrid%mmean_sai_pft     (:,ipy) +  cgrid%sai_pft           (:,ipy)
-      cgrid%mmean_sai_lu      (:,ipy) = cgrid%mmean_sai_lu      (:,ipy) +  cgrid%sai_lu            (:,ipy)
+      cgrid%mmean_wpa_pft     (:,ipy) = cgrid%mmean_wpa_pft     (:,ipy) +  cgrid%wpa_pft           (:,ipy)
+      cgrid%mmean_wpa_lu      (:,ipy) = cgrid%mmean_wpa_lu      (:,ipy) +  cgrid%wpa_lu            (:,ipy)
+      cgrid%mmean_wai_pft     (:,ipy) = cgrid%mmean_wai_pft     (:,ipy) +  cgrid%wai_pft           (:,ipy)
+      cgrid%mmean_wai_lu      (:,ipy) = cgrid%mmean_wai_lu      (:,ipy) +  cgrid%wai_lu            (:,ipy)
 
       !------------------------------------------------------------------------------------!
       !    During the integration stage we keep the sum of squares, it will be converted   !
@@ -991,10 +991,10 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_gpp_dbh      (:,ipy) = cgrid%mmean_gpp_dbh      (:,ipy) * ndaysi
       cgrid%mmean_lai_pft      (:,ipy) = cgrid%mmean_lai_pft      (:,ipy) * ndaysi
       cgrid%mmean_lai_lu       (:,ipy) = cgrid%mmean_lai_lu       (:,ipy) * ndaysi
-      cgrid%mmean_bai_pft      (:,ipy) = cgrid%mmean_bai_pft      (:,ipy) * ndaysi
-      cgrid%mmean_bai_lu       (:,ipy) = cgrid%mmean_bai_lu       (:,ipy) * ndaysi
-      cgrid%mmean_sai_pft      (:,ipy) = cgrid%mmean_sai_pft      (:,ipy) * ndaysi
-      cgrid%mmean_sai_lu       (:,ipy) = cgrid%mmean_sai_lu       (:,ipy) * ndaysi
+      cgrid%mmean_wpa_pft      (:,ipy) = cgrid%mmean_wpa_pft      (:,ipy) * ndaysi
+      cgrid%mmean_wpa_lu       (:,ipy) = cgrid%mmean_wpa_lu       (:,ipy) * ndaysi
+      cgrid%mmean_wai_pft      (:,ipy) = cgrid%mmean_wai_pft      (:,ipy) * ndaysi
+      cgrid%mmean_wai_lu       (:,ipy) = cgrid%mmean_wai_lu       (:,ipy) * ndaysi
   
       !------------------------------------------------------------------------------------!
       !   Here we convert the sum of squares into standard deviation. The standard devi-   !
@@ -1103,10 +1103,10 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_gpp_dbh(:,ipy)    = 0.
       cgrid%mmean_lai_pft(:,ipy)    = 0.
       cgrid%mmean_lai_lu(:,ipy)     = 0.
-      cgrid%mmean_bai_pft(:,ipy)    = 0.
-      cgrid%mmean_bai_lu(:,ipy)     = 0.
-      cgrid%mmean_sai_pft(:,ipy)    = 0.
-      cgrid%mmean_sai_lu(:,ipy)     = 0.
+      cgrid%mmean_wpa_pft(:,ipy)    = 0.
+      cgrid%mmean_wpa_lu(:,ipy)     = 0.
+      cgrid%mmean_wai_pft(:,ipy)    = 0.
+      cgrid%mmean_wai_lu(:,ipy)     = 0.
       cgrid%agb_pft(:,ipy)          = 0.
       cgrid%ba_pft(:,ipy)           = 0.
       cgrid%stdev_gpp(ipy)          = 0.

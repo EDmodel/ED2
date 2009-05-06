@@ -10,21 +10,24 @@ subroutine flag_stable_cohorts(cgrid)
                                     , sitetype        & ! structure
                                     , patchtype       ! ! structure
    use allometry             , only : dbh2bl          ! ! function
-   use canopy_radiation_coms , only : blfac_min       ! ! intent(in)
+   use canopy_radiation_coms , only : blfac_min       & ! intent(in)
+                                    , tai_min         ! ! intent(in)
+   use rk4_coms              , only : ibranch_thermo  ! ! intent(in)
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target   :: cgrid  ! Current grid
    !----- Local variables. ----------------------------------------------------------------!
-   type(polygontype), pointer  :: cpoly     ! Current polygon 
-   type(sitetype)   , pointer  :: csite     ! Current site    
-   type(patchtype)  , pointer  :: cpatch    ! Current patch   
-   integer                     :: ipy       ! Polygon index   
-   integer                     :: isi       ! Site index      
-   integer                     :: ipa       ! Patch index     
-   integer                     :: ico       ! Cohort index    
-   integer                     :: k         ! Vertical index  
+   type(polygontype), pointer  :: cpoly        ! Current polygon
+   type(sitetype)   , pointer  :: csite        ! Current site
+   type(patchtype)  , pointer  :: cpatch       ! Current patch
+   integer                     :: ipy          ! Polygon index
+   integer                     :: isi          ! Site index
+   integer                     :: ipa          ! Patch index
+   integer                     :: ico          ! Cohort index
+   integer                     :: k            ! Vertical index
+   logical                     :: exposed      !
+   logical                     :: green        !
+   logical                     :: nottoosparse ! 
    real                        :: bleaf_pot ! Maximum possible leaf biomass.   [ kgC/plant]
-   !----- External functions. -------------------------------------------------------------!
-   ! logical          , external :: is_solvable
    !---------------------------------------------------------------------------------------!
 
    do ipy=1, cgrid%npolygons
@@ -42,14 +45,43 @@ subroutine flag_stable_cohorts(cgrid)
                                            +  csite%sfcwater_depth(k,ipa)
             end do
 
-            !----- Here we actually run the check. ----------------------------------------!
-            cpatch => csite%patch(ipa)
-            do ico=1, cpatch%ncohorts
-               bleaf_pot = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
-               cpatch%solvable(ico) =                                                      &
-                     cpatch%hite(ico)  > csite%total_snow_depth(ipa)                .and.  &
-                     cpatch%bleaf(ico) >= blfac_min * bleaf_pot
-            end do
+            !------------------------------------------------------------------------------!
+            !   Here we actually run the check.  The decision depends on whether we incor- !
+            ! porate the wood biomass as an active pool in the energy and water balance.   !
+            ! In both cases, we will skip the cohort if it is buried in snow.              !
+            !------------------------------------------------------------------------------!
+            select case (ibranch_thermo)
+            case (0)
+               !---------------------------------------------------------------------------!
+               !    Wood is not included, skip the cohort if the specific leaf biomass is  !
+               ! very low compared to the maximum possible leaf biomass of this plant.     !
+               !---------------------------------------------------------------------------!
+               cpatch => csite%patch(ipa)
+               do ico=1, cpatch%ncohorts
+                  bleaf_pot = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
+                  exposed = cpatch%hite(ico)  > csite%total_snow_depth(ipa)
+                  green   = cpatch%bleaf(ico) >= blfac_min * bleaf_pot
+                  cpatch%solvable(ico) = exposed .and. green
+               end do
+
+            case (1,2)
+               !---------------------------------------------------------------------------!
+               !    Wood is included.  Here we will skip the cohort only when the specific !
+               ! leaf biomass is very low compared to the maximum possible leaf biomass of !
+               ! this plant AND the tree are index is very low.  The latter is necessary   !
+               ! to avoid the model attempting to solve the heat balance for sparsely      !
+               ! populated patches when there is no leaves.                                !
+               !---------------------------------------------------------------------------!
+               cpatch => csite%patch(ipa)
+               do ico=1, cpatch%ncohorts
+                  bleaf_pot            = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
+                  exposed              = cpatch%hite(ico)  > csite%total_snow_depth(ipa)
+                  green                = cpatch%bleaf(ico) >= blfac_min * bleaf_pot
+                  nottoosparse         = cpatch%lai(ico)+cpatch%wai(ico) > tai_min
+                  cpatch%solvable(ico) = exposed .and. (green .or. nottosparse)
+               end do
+
+            end select
 
          end do
 
