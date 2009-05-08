@@ -152,21 +152,22 @@ module allometry
    !=======================================================================================!
    !=======================================================================================!
    !    Canopy Area allometry from Dietze and Clark (2008).                                !
-   !    MLO. Included a check on whether this is being called for a tree or grass PFT.  In !
-   ! the grass case, we don't want to apply the crown area, so assume the grass is always  !
-   ! evenly distributed.                                                                   !
    !---------------------------------------------------------------------------------------!
    real function dbh2ca(dbh,ipft)
-      use pft_coms , only : is_grass ! ! intent(in)
+      use pft_coms, only : is_tropical
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
       integer, intent(in) :: ipft
+      !----- Internal variables -----------------------------------------------------------!
+      real :: hite ! Only testing...
       !------------------------------------------------------------------------------------!
-      if (is_grass(ipft)) then
-          dbh2ca = 1.e25 !---- A very large number, so it will always use 1. --------------!
-      elseif(dbh < tiny(1.0)) then
+      if (dbh < tiny(1.0)) then
          dbh2ca = 0.0
+      !----- Based on Poorter et al. (2006) -----------------------------------------------!
+      !elseif(is_tropical(ipft)) then
+      !   hite   = dbh2h(ipft,dbh)
+      !   dbh2ca = 0.156766*hite**1.888
       else
          dbh2ca = 2.490154*dbh**0.8068806
       end if
@@ -267,6 +268,29 @@ module allometry
 
       return
    end function dbh2h
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This function finds the trunk height, based on Antonarakis (2008) estimation for   !
+   ! secondary forests.                                                                    !
+   !---------------------------------------------------------------------------------------!
+   real function h2trunkh(h)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real , intent(in) :: h
+      !------------------------------------------------------------------------------------!
+      
+      h2trunkh = 0.4359 * h ** 0.878
+
+      return
+   end function h2trunkh
    !=======================================================================================!
    !=======================================================================================!
 
@@ -400,8 +424,8 @@ module allometry
    !=======================================================================================!
    !     This subroutine estimates the tree area indices, namely leaf, branch(plus twigs), !
    ! and stem.  For the leaf area index (LAI), we use the specific leaf area (SLA), a      !
-   ! constant.  The branch/twig and stem (trunk) area indices (BAI and SAI) are found      !
-   ! using the model proposed by Järvelä (2004) to find the specific projected area.       !
+   ! constant.  The wood area index WAI is found using the model proposed by Järvelä       !
+   ! (2004) to find the specific projected area.                                           !
    !                                                                                       !
    ! Järvelä, J., 2004: Determination of flow resistance caused by non-submerged woody     !
    !                    vegetation. Intl. J. River Basin Management, 2, 61-70.             !
@@ -414,17 +438,16 @@ module allometry
    !                     forestry systems. Rapports Production Soudano-Sahélienne.         !
    !                     Wageningen, 1995.                                                 !
    !---------------------------------------------------------------------------------------!
-   subroutine area_indices(nplant,bleaf,bdead,balive,dbh,hite,pft,lai,bai,sai)
+   subroutine area_indices(nplant,bleaf,bdead,balive,dbh,hite,pft,lai,wpa,wai)
       use pft_coms    , only : is_tropical     & ! intent(in)
                              , is_grass        & ! intent(in)
                              , rho             & ! intent(in)
                              , C2B             & ! intent(in)
                              , sla             & ! intent(in)
-                             , branch_fraction & ! intent(in)
+                             , horiz_branch    & ! intent(in)
                              , rbranch         & ! intent(in)
                              , rdiamet         & ! intent(in)
                              , rlength         & ! intent(in)
-                             , h1stbr          & ! intent(in)
                              , diammin         & ! intent(in)
                              , ntrunk          & ! intent(in)
                              , conijn_a        & ! intent(in)
@@ -444,15 +467,11 @@ module allometry
       real    , intent(in)  :: dbh     ! Diameter at breast height            [         cm]
       real    , intent(in)  :: hite    ! Plant height                         [          m]
       real    , intent(out) :: lai     ! Leaf area index                      [  m²leaf/m²]
-      real    , intent(out) :: sai     ! Stem(trunk) projected area index     [  m²wood/m²]
-      real    , intent(out) :: bai     ! Branch (+twigs) projected area index [  m²wood/m²]
+      real    , intent(out) :: wpa     ! Wood projected area                  [  m²wood/m²]
+      real    , intent(out) :: wai     ! Wood area index                      [  m²wood/m²]
       !----- Local variables --------------------------------------------------------------!
       real                  :: bwood   ! Wood biomass                         [  kgC/plant]
-      real                  :: btrunk  ! Trunk biomass                        [  kgC/plant]
-      real                  :: bbranch ! Branch biomass                       [  kgC/plant]
-      real                  :: htrunk  ! Trunk height (until first branching) [          m]
-      real                  :: sta     ! Specific trunk area                  [   m²/plant]
-      real                  :: sba     ! Specific branch area                 [   m²/plant]
+      real                  :: swa     ! Specific wood area                   [   m²/plant]
       real                  :: bdiamet ! Diameter of current branch           [          m]
       real                  :: blength ! Length of each branch of this order  [          m]
       real                  :: nbranch ! Number of branches of this order     [       ----]
@@ -471,8 +490,8 @@ module allometry
       select case (ibranch_thermo)
       !----- Ignore branches and trunk. ---------------------------------------------------!
       case (0) 
-         bai  = 0.
-         sai  = 0.
+         wpa  = 0.
+         wai  = 0.
       !------------------------------------------------------------------------------------!
 
 
@@ -482,74 +501,42 @@ module allometry
          !     Finding the total wood biomass and the fraction corresponding to branches.  !
          !---------------------------------------------------------------------------------!
          bwood   = wood_biomass(bdead, balive, pft, hite)
-         bbranch = branch_fraction(pft) * bwood
          if (is_grass(pft)) then
-            sba = conijn_a(pft)
+            swa = conijn_a(pft)
          else
-            sba = conijn_a(pft)                                                            &
-                + conijn_b(pft) * errorfun(conijn_c(pft)*C2B*bbranch + conijn_d(pft))
+            swa = conijn_a(pft)                                                            &
+                + conijn_b(pft) * errorfun(conijn_c(pft)*C2B*bwood + conijn_d(pft))
          end if
-         bai = nplant * bbranch * sba
-         sai = 0. !----- No stem information available. -----------------------------------!
-      !------------------------------------------------------------------------------------!
+         wai = nplant * bwood * swa
+         wpa = wai * dbh2ca(dbh,pft)
+         !---------------------------------------------------------------------------------!
 
 
-      !----- Use . Järvelä (2004) method. -------------------------------------------------!
+      !----- Use  Järvelä (2004) method. --------------------------------------------------!
       case (2) 
-         !---------------------------------------------------------------------------------!
-         !     Finding the total wood biomass and its partition between bole and branches. !
-         !---------------------------------------------------------------------------------!
-         bwood   = wood_biomass(bdead, balive, pft, hite)
-         bbranch = branch_fraction(pft) * bwood
-         btrunk  = (1.-branch_fraction(pft)) * bwood
+         !----- Now we check the first branching height, that will be the trunk height. ---!
+         blength = h2trunkh(hite)
+         !----- Main branch diameter is DBH (in meters) -----------------------------------!
+         bdiamet = dbh * 0.01
+         !----- Number of main "branches" (trunk), this is usually 1. ---------------------!
+         nbranch = ntrunk(pft)
 
-         !----- Now we check the first branching height -----------------------------------!
-         if (is_tropical(pft) .or. is_grass(pft)) then
-             !-----------------------------------------------------------------------------!
-             !     Htrunk is found assuming the trunk is a cilinder of diameter dbh.  The  !
-             ! 40. term comes from the implicit unit convertion:                           !
-             ! 1. dbh is diameter, so the cross-section area is pi*dbh²/4;                 !
-             ! 2. dbh is given in cm, so dbh²=dbh_SI²/10000.;                              !
-             ! 3. wood density is given in g/cm³, and 1g/cm³ = 1000. kg/m³;                !
-             !-----------------------------------------------------------------------------!
-             htrunk = 40. * btrunk * C2B / (rho(pft) * pi1 * dbh * dbh)
-         else
-             htrunk = h1stbr(pft) * hite
-         end if
-         !----- STA is the specific trunk area.  SAI is the stem(trunk) area index. -------!
-         sta = ntrunk(pft) * htrunk * (0.01 * dbh)
-         sai = nplant * sta
-
-         if (branch_fraction(pft) == 0.) then
-            !------------------------------------------------------------------------------!
-            !    If there is no branch biomass, skip it and make bai = 0.                  !
-            !------------------------------------------------------------------------------!
-            sba  = 0.
-            bai  = 0.
-         else
-            !------------------------------------------------------------------------------!
-            !     Now we use Järvelä (2004) method to find the lower-order branches        !
-            ! contribution to the specific branch area.  Since we don't know how many      !
-            ! orders we have beforehand, we use a loop until the diameter gets too small.  !
-            !------------------------------------------------------------------------------!
-            sba = 0.
-            !----- Initialize branch values with trunk. -----------------------------------!
-            nbranch = ntrunk(pft)
-            bdiamet = dbh * 0.01
-            blength = htrunk
-            branchloop: do
-               if (bdiamet < diammin(pft)) exit branchloop
-               !----- Updating branch habits. ---------------------------------------------!
-               bdiamet = bdiamet / rdiamet(pft)
-               blength = blength / rlength(pft)
-               nbranch = nbranch * rbranch(pft)
-               sba     = sba + nbranch * blength * bdiamet
-            end do branchloop
-            !----- The branch area index, similarly to SAI. -------------------------------!
-            bai = nplant * sba
-         end if
+         swa = nbranch * blength * bdiamet
+         !---------------------------------------------------------------------------------!
+         !     Initialize branch values with trunk.                                        !
+         !---------------------------------------------------------------------------------!
+         branchloop: do
+            if (bdiamet < diammin(pft)) exit branchloop
+            !----- Updating branch habits. ------------------------------------------------!
+            bdiamet = bdiamet / rdiamet(pft)
+            blength = blength / rlength(pft)
+            nbranch = nbranch * rbranch(pft)
+            swa     = swa + nbranch * blength * bdiamet
+         end do branchloop
+         !----- The wood projected area and the wood area index. --------------------------!
+         wpa = nplant       * swa
+         wai = horiz_branch(pft) * wpa
       !------------------------------------------------------------------------------------!
-
       end select
 
       return

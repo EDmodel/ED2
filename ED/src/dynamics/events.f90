@@ -381,11 +381,11 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                     cpatch%hite(ico) = 0.0
                  end if
                  
-                 !----- Update LAI, BAI, and SAI ------------------------------------------!
+                 !----- Update LAI, WPA, and WAI ------------------------------------------!
                  call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)  &
                                   ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)    &
-                                  ,cpatch%pft(ico),cpatch%lai(ico),cpatch%bai(ico)         &
-                                  ,cpatch%sai(ico))
+                                  ,cpatch%pft(ico),cpatch%lai(ico),cpatch%wpa(ico)         &
+                                  ,cpatch%wai(ico))
 
                  !-------------------------------------------------------------------------!
                  !    Here we are leaving all water in the branches and twigs... Do not    !
@@ -739,8 +739,8 @@ subroutine event_till(rval8)
                  cpatch%bstorage(ico)   = 0.0
                  cpatch%nplant(ico)     = 0.0
                  cpatch%lai(ico)        = 0.0
-                 cpatch%bai(ico)        = 0.0
-                 cpatch%sai(ico)        = 0.0
+                 cpatch%wpa(ico)        = 0.0
+                 cpatch%wai(ico)        = 0.0
                  cpatch%bleaf(ico)      = 0.0
                  cpatch%veg_energy(ico) = 0.0
                  cpatch%veg_water(ico)  = 0.0

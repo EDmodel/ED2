@@ -286,8 +286,7 @@ subroutine copy_patch_init_ar(sourcesite,ipa,targetp)
                                    , rk4water_stab_thresh  & ! intent(in)
                                    , rk4min_sfcwater_mass  ! ! intent(in)
    use max_dims             , only : n_pft                 ! ! intent(in)
-   use canopy_radiation_coms, only : lai_min               & ! intent(in)
-                                   , tai_min               ! ! intent(in)
+   use canopy_radiation_coms, only : tai_min               ! ! intent(in)
    use therm_lib            , only : qwtk8                 ! ! subroutine
    use allometry            , only : dbh2bl                ! ! function
    implicit none
@@ -369,28 +368,36 @@ subroutine copy_patch_init_ar(sourcesite,ipa,targetp)
    cpatch => sourcesite%patch(ipa)
    sourcesite%hcapveg(ipa) = 0.
    sourcesite%lai(ipa)     = 0.
-   sourcesite%bai(ipa)     = 0.
-   sourcesite%sai(ipa)     = 0.
+   sourcesite%wpa(ipa)     = 0.
+   sourcesite%wai(ipa)     = 0.
    do ico=1,cpatch%ncohorts
       sourcesite%hcapveg(ipa) = sourcesite%hcapveg(ipa) + cpatch%hcapveg(ico)
       sourcesite%lai(ipa)     = sourcesite%lai(ipa)     + cpatch%lai(ico)
-      sourcesite%bai(ipa)     = sourcesite%bai(ipa)     + cpatch%bai(ico)
-      sourcesite%sai(ipa)     = sourcesite%sai(ipa)     + cpatch%sai(ico)
+      sourcesite%wpa(ipa)     = sourcesite%wpa(ipa)     + cpatch%wpa(ico)
+      sourcesite%wai(ipa)     = sourcesite%wai(ipa)     + cpatch%wai(ico)
    end do
-   if ((sourcesite%lai(ipa)+sourcesite%bai(ipa)) > tai_min) then
+   
+   any_solvable = .false.
+   do ico=1, cpatch%ncohorts
+      !----- Copying the flag that determines whether this cohort is numerically stable. --!
+      targetp%solvable(ico) = cpatch%solvable(ico)
+      if (targetp%solvable(ico)) any_solvable = .true.
+   end do
+
+   if ((sourcesite%lai(ipa)+sourcesite%wai(ipa)) > tai_min) then
       hvegpat_min = hcapveg_ref * max(dble(cpatch%hite(1)),min_height)
       hcap_scale  = max(1.d0,hvegpat_min / sourcesite%hcapveg(ipa))
    else
       hcap_scale  = 1.d0
    end if
-   any_solvable = .false.
+
    do ico = 1,cpatch%ncohorts
       ipft=cpatch%pft(ico)
     
       !----- Copying the leaf area index and total (leaf+branch+twig) area index. ---------!
       targetp%lai(ico)  = dble(cpatch%lai(ico))
-      targetp%bai(ico)  = dble(cpatch%bai(ico))
-      targetp%tai(ico) = targetp%lai(ico) + targetp%bai(ico)
+      targetp%wpa(ico)  = dble(cpatch%wpa(ico))
+      targetp%tai(ico) = targetp%lai(ico) + dble(cpatch%wai(ico))
 
       !------------------------------------------------------------------------------------!
       !    If the cohort is too small, we give some extra heat capacity, so the model can  !
@@ -399,27 +406,22 @@ subroutine copy_patch_init_ar(sourcesite,ipa,targetp)
       !------------------------------------------------------------------------------------!
       targetp%hcapveg(ico) = dble(cpatch%hcapveg(ico)) * hcap_scale
 
-      !----- Copying the flag that determines whether this cohort is numerically stable. --!
-      targetp%solvable(ico) = cpatch%solvable(ico)
-
       !------------------------------------------------------------------------------------!
       !     Checking whether this is considered a "safe" one or not.  In case it is, we    !
       ! copy water, temperature, and liquid fraction, and scale energy and heat capacity   !
       ! as needed.  Otherwise, just fill with some safe values, but the cohort won't be    !
       ! really solved.                                                                     !
       !------------------------------------------------------------------------------------!
-      if (targetp%solvable(ico)) then
-         any_solvable = .true. 
-         targetp%veg_water(ico)     = dble(cpatch%veg_water(ico))
+      targetp%veg_water(ico)     = dble(cpatch%veg_water(ico))
 
+      if (targetp%solvable(ico)) then
          targetp%veg_energy(ico)    = dble(cpatch%veg_energy(ico))                         &
                                     + (targetp%hcapveg(ico)-dble(cpatch%hcapveg(ico)))     &
                                     * dble(cpatch%veg_temp(ico))
          call qwtk8(targetp%veg_energy(ico),targetp%veg_water(ico),targetp%hcapveg(ico)    &
                    ,targetp%veg_temp(ico),targetp%veg_fliq(ico))
       else
-         targetp%veg_water(ico)  = 0.d0
-         targetp%veg_fliq(ico)   = 0.d0
+         targetp%veg_fliq(ico)   = dble(cpatch%veg_fliq(ico))
          targetp%veg_temp(ico)   = dble(cpatch%veg_temp(ico))
          targetp%veg_energy(ico) = targetp%hcapveg(ico) * targetp%veg_temp(ico)
       end if
@@ -819,7 +821,6 @@ subroutine print_errmax_ar(errmax,yerr,yscal,cpatch,y,ytemp)
    use ed_state_vars         , only : patchtype     ! ! Structure
    use grid_coms             , only : nzg           & ! intent(in)
                                     , nzs           ! ! intent(in)
-   use canopy_radiation_coms , only : lai_min       ! ! intent(in)
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -910,20 +911,20 @@ subroutine print_errmax_ar(errmax,yerr,yscal,cpatch,y,ytemp)
    write(unit=*,fmt='(80a)') ('-',k=1,80)
    write(unit=*,fmt='(a)'      ) ' Cohort_level variables (only the solvable ones):'
    write(unit=*,fmt='(7(a,1x))')  'Name            ','         PFT','         LAI'         &
-                                     ,'         BAI','         TAI','   Max.Error'         &
+                                     ,'         WPA','         TAI','   Max.Error'         &
                                      ,'   Abs.Error','       Scale','Problem(T|F)'
    do ico = 1,cpatch%ncohorts
       if (y%solvable(ico)) then
          errmax       = max(errmax,abs(yerr%veg_water(ico)/yscal%veg_water(ico)))
          troublemaker = large_error(yerr%veg_water(ico),yscal%veg_water(ico))
-         write(unit=*,fmt=cohfmt) 'VEG_WATER:',cpatch%pft(ico),y%lai(ico),y%bai(ico)       &
+         write(unit=*,fmt=cohfmt) 'VEG_WATER:',cpatch%pft(ico),y%lai(ico),y%wpa(ico)       &
                                               ,y%tai(ico),errmax,yerr%veg_water(ico)       &
                                               ,yscal%veg_water(ico),troublemaker
               
 
          errmax       = max(errmax,abs(yerr%veg_energy(ico)/yscal%veg_energy(ico)))
          troublemaker = large_error(yerr%veg_energy(ico),yscal%veg_energy(ico))
-         write(unit=*,fmt=cohfmt) 'VEG_ENERGY:',cpatch%pft(ico),cpatch%lai(ico),y%bai(ico) &
+         write(unit=*,fmt=cohfmt) 'VEG_ENERGY:',cpatch%pft(ico),cpatch%lai(ico),y%wpa(ico) &
                                                ,y%tai(ico),errmax,yerr%veg_energy(ico)     &
                                                ,yscal%veg_energy(ico),troublemaker
       end if
@@ -981,7 +982,6 @@ subroutine update_diagnostic_vars_ar(initp, csite,ipa)
    use ed_state_vars        , only : sitetype             & ! structure
                                    , patchtype            ! ! structure
    use soil_coms            , only : soil8                ! ! intent(in)
-   use canopy_radiation_coms, only : lai_min              ! ! intent(in)
    use grid_coms            , only : nzg                  & ! intent(in)
                                    , nzs                  ! ! intent(in)
    use therm_lib            , only : qwtk8                & ! subroutine
@@ -1669,7 +1669,7 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch)
       targetp%veg_fliq(k)    = sourcep%veg_fliq(k)
       targetp%hcapveg(k)     = sourcep%hcapveg(k)
       targetp%lai(k)         = sourcep%lai(k)
-      targetp%bai(k)         = sourcep%bai(k)
+      targetp%wpa(k)         = sourcep%wpa(k)
       targetp%tai(k)         = sourcep%tai(k)
       targetp%solvable(k)    = sourcep%solvable(k)
    end do
@@ -1726,7 +1726,6 @@ subroutine print_csiteipa_ar(csite, ipa)
    use grid_coms             , only : nzs           & ! intent(in)
                                     , nzg           ! ! intent(in)
    use max_dims              , only : n_pft         ! ! intent(in)
-   use canopy_radiation_coms , only : lai_min       ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)  , target     :: csite
@@ -1753,14 +1752,14 @@ subroutine print_csiteipa_ar(csite, ipa)
    write (unit=*,fmt='(a,1x,i6)')    'Ncohorts: ',cpatch%ncohorts
  
    write (unit=*,fmt='(80a)') ('-',k=1,80)
-   write (unit=*,fmt='(a)'  ) 'Cohort information (only those with LAI > LAI_MIN shown): '
+   write (unit=*,fmt='(a)'  ) 'Cohort information (only the solvable ones shown): '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(2(a7,1x),11(a12,1x))')                                              &
          '    PFT','KRDEPTH','      NPLANT','         LAI','         DBH','       BDEAD'   &
                            &,'      BALIVE','  VEG_ENERGY','    VEG_TEMP','   VEG_WATER'   &
                            &,'     FS_OPEN','         FSW','         FSN'
    do ico = 1,cpatch%ncohorts
-      if(cpatch%lai(ico) > lai_min)then
+      if (cpatch%solvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),11(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico) &
               ,cpatch%nplant(ico),cpatch%lai(ico),cpatch%dbh(ico),cpatch%bdead(ico)        &
               ,cpatch%balive(ico),cpatch%veg_energy(ico),cpatch%veg_temp(ico)              &
@@ -1850,7 +1849,6 @@ subroutine print_rk4patch_ar(y,csite,ipa)
                                     , patchtype            ! ! structure
    use grid_coms             , only : nzg                  & ! intent(in)
                                     , nzs                  ! ! intent(in)
-   use canopy_radiation_coms , only : lai_min              ! ! intent(in)
    use misc_coms             , only : current_time         ! ! intent(in)
    use therm_lib             , only : qtk8                 & ! subroutine
                                     , qwtk8                ! ! subroutine
@@ -1897,13 +1895,13 @@ subroutine print_rk4patch_ar(y,csite,ipa)
    write (unit=*,fmt='(a,1x,es12.4)') ' Precip. depth flux : ',rk4met%dpcpg
 
    write (unit=*,fmt='(80a)') ('=',k=1,80)
-   write (unit=*,fmt='(a)'  ) 'Cohort information (only those with LAI > LAI_MIN shown): '
+   write (unit=*,fmt='(a)'  ) 'Cohort information (only those solvable are shown): '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
          '    PFT','KRDEPTH','      NPLANT','        HITE','         DBH','       BDEAD'   &
                            &,'      BALIVE','     FS_OPEN','         FSW','         FSN'
    do ico = 1,cpatch%ncohorts
-      if (cpatch%lai(ico) > lai_min) then
+      if (cpatch%solvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
               ,cpatch%nplant(ico),cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdead(ico)       &
               ,cpatch%balive(ico),cpatch%fs_open(ico),cpatch%fsw(ico),cpatch%fsn(ico)
@@ -1911,12 +1909,12 @@ subroutine print_rk4patch_ar(y,csite,ipa)
    end do
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
-         '    PFT','KRDEPTH','         LAI','         BAI','         TAI','  VEG_ENERGY'   &
+         '    PFT','KRDEPTH','         LAI','         WPA','         TAI','  VEG_ENERGY'   &
              ,'   VEG_WATER','    VEG_HCAP','    VEG_TEMP','    VEG_FLIQ'
    do ico = 1,cpatch%ncohorts
       if (y%solvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),9(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
-               ,y%lai(ico),y%bai(ico),y%tai(ico),y%veg_energy(ico),y%veg_water(ico)        &
+               ,y%lai(ico),y%wpa(ico),y%tai(ico),y%veg_energy(ico),y%veg_water(ico)        &
                ,y%hcapveg(ico),y%veg_temp(ico),y%veg_fliq(ico)
       end if
    end do

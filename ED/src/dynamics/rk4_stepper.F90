@@ -699,7 +699,7 @@ module rk4_stepper_ar
                   write(unit=*,fmt='(a)')           '--------------------------------------'
                   write(unit=*,fmt='(a,1x,i6)')     ' PFT:          ',cpatch%pft(ico)
                   write(unit=*,fmt='(a,1x,es12.4)') ' LAI:          ',y%lai(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' BAI:          ',y%bai(ico)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' WPA:          ',y%wpa(ico)
                   write(unit=*,fmt='(a,1x,es12.4)') ' TAI:          ',y%tai(ico)
                   write(unit=*,fmt='(a,1x,es12.4)') ' HCAPVEG:      ',y%hcapveg(ico)
                   write(unit=*,fmt='(a,1x,es12.4)') ' VEG_TEMP:     ',y%veg_temp(ico)
@@ -723,7 +723,7 @@ module rk4_stepper_ar
                   write(unit=*,fmt='(a)')           '--------------------------------------'
                   write(unit=*,fmt='(a,1x,i6)')     ' PFT:          ',cpatch%pft(ico)
                   write(unit=*,fmt='(a,1x,es12.4)') ' LAI:          ',y%lai(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' BAI:          ',y%bai(ico)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' WPA:          ',y%wpa(ico)
                   write(unit=*,fmt='(a,1x,es12.4)') ' TAI:          ',y%tai(ico)
                   write(unit=*,fmt='(a,1x,es12.4)') ' HCAPVEG:      ',y%hcapveg(ico)
                   write(unit=*,fmt='(a,1x,es12.4)') ' VEG_TEMP:     ',y%veg_temp(ico)
@@ -821,12 +821,12 @@ module rk4_stepper_ar
       write(unit=*,fmt='(78a)') ('-',k=1,78)
       cpatch => csite%patch(ipa)
       write (unit=*,fmt='(2(a5,1x),7(a12,1x))')                                            &
-         '  COH','  PFT','         LAI','         BAI','         TAI','  VEG_ENERGY'       &
+         '  COH','  PFT','         LAI','         WPA','         TAI','  VEG_ENERGY'       &
                         ,'OLD_VEG_ENER','    VEG_TEMP','OLD_VEG_TEMP'
       do ico = 1,cpatch%ncohorts
          if(y%solvable(ico)) then
             write(unit=*,fmt='(2(i5,1x),7(es12.4,1x))')                                    &
-               ico,cpatch%pft(ico),y%lai(ico),y%bai(ico),y%tai(ico)                        &
+               ico,cpatch%pft(ico),y%lai(ico),y%wpa(ico),y%tai(ico)                        &
                   ,y%veg_energy(ico),cpatch%veg_energy(ico),y%veg_temp(ico)                &
                   ,cpatch%veg_temp(ico)
          end if
@@ -836,13 +836,13 @@ module rk4_stepper_ar
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(78a)') ('-',k=1,78)
       write (unit=*,fmt='(2(a5,1x),8(a12,1x))') &
-         '  COH','  PFT','         LAI','         BAI','         TAI'                      &
+         '  COH','  PFT','         LAI','         WPA','         TAI'                      &
                         ,'   VEG_WATER',' OLD_VEG_H2O','    HEAT_CAP','RK4_HEAT_CAP'       &
                         ,'     FRACLIQ'
       do ico = 1,cpatch%ncohorts
          if(y%solvable(ico)) then
             write(unit=*,fmt='(2(i5,1x),8(es12.4,1x))')                                    &
-               ico,cpatch%pft(ico),y%lai(ico),y%bai(ico),y%tai(ico)                        &
+               ico,cpatch%pft(ico),y%lai(ico),y%wpa(ico),y%tai(ico)                        &
                   ,y%veg_water(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)              &
                   ,y%hcapveg(ico),y%veg_fliq(ico)
          end if

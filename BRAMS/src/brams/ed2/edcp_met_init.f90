@@ -371,8 +371,8 @@ subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
   ! Reset height
   csite%veg_height(ipa) = 0.0
   csite%lai(ipa)        = 0.0
-  csite%bai(ipa)        = 0.0
-  csite%sai(ipa)        = 0.0
+  csite%wpa(ipa)        = 0.0
+  csite%wai(ipa)        = 0.0
   csite%hcapveg(ipa)    = 0.0
   norm_fac              = 0.0
   csite%plant_ag_biomass(ipa) = 0.0
@@ -386,10 +386,10 @@ subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
      norm_fac = norm_fac + ba
      csite%veg_height(ipa) = csite%veg_height(ipa) + cpatch%hite(ico) * ba
      
-     ! Update LAI, BAI, SAI, heat capacity, and AGB
+     ! Update LAI, WAI, WPA, heat capacity, and AGB
      csite%lai(ipa)     = csite%lai(ipa)     + cpatch%lai(ico)
-     csite%bai(ipa)     = csite%bai(ipa)     + cpatch%bai(ico)
-     csite%sai(ipa)     = csite%sai(ipa)     + cpatch%sai(ico)
+     csite%wai(ipa)     = csite%wai(ipa)     + cpatch%wai(ico)
+     csite%wpa(ipa)     = csite%wpa(ipa)     + cpatch%wpa(ico)
      csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico)
      csite%plant_ag_biomass(ipa)  = csite%plant_ag_biomass(ipa) +                          &
            ed_biomass(cpatch%bdead(ico),cpatch%balive(ico), cpatch%bleaf(ico)              &

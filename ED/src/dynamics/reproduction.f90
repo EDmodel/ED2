@@ -254,20 +254,29 @@ subroutine reproduction_ar(cgrid, month)
                   ! table, deriving other variables or assuming standard initial values.   !
                   !------------------------------------------------------------------------!
                   inew = inew + 1
+
                   !----- Copying from recruitment table. ----------------------------------!
                   cpatch%pft(ico)       = recruit(inew)%pft
-                  cpatch%veg_temp(ico)  = recruit(inew)%veg_temp
                   cpatch%hite(ico)      = recruit(inew)%hite
                   cpatch%dbh(ico)       = recruit(inew)%dbh
                   cpatch%bdead(ico)     = recruit(inew)%bdead
                   cpatch%bleaf(ico)     = recruit(inew)%bleaf
                   cpatch%balive(ico)    = recruit(inew)%balive
                   cpatch%nplant (ico)   = recruit(inew)%nplant
+
+                  !----- Carry out standard initialization. -------------------------------!
+                  call init_ed_cohort_vars_array(cpatch,ico,cpoly%lsl(isi))
+
+                  !----- Assign temperature after init_ed_cohort_vars_ar... ---------------!
+                  cpatch%veg_temp(ico)  = recruit(inew)%veg_temp
+
                   !----- Initialise the next variables with zeroes... ---------------------!
                   cpatch%phenology_status(ico) = 0
                   cpatch%bstorage(ico)  = 0.0
                   cpatch%veg_water(ico) = 0.0
                   cpatch%veg_fliq(ico)  = 0.0
+                  !----- Cohort should be solvable... -------------------------------------!
+                  cpatch%solvable(ico) = .true.
                   !------------------------------------------------------------------------!
                   !     Setting new_recruit_flag to 1 indicates that this cohort is        !
                   ! included when we tally agb_recruit, basal_area_recruit.                !
@@ -277,19 +286,17 @@ subroutine reproduction_ar(cgrid, month)
                   !------------------------------------------------------------------------!
                   !    Obtaining derived properties.                                       !
                   !------------------------------------------------------------------------!
-                  !----- Finding LAI, BAI, SAI. -------------------------------------------!
+                  !----- Finding LAI, WPA, WAI. -------------------------------------------!
                   call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico) &
                                    ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)   &
-                                   ,cpatch%pft(ico),cpatch%lai(ico),cpatch%bai(ico)        &
-                                   ,cpatch%sai(ico))
+                                   ,cpatch%pft(ico),cpatch%lai(ico),cpatch%wpa(ico)        &
+                                   ,cpatch%wai(ico))
                   !----- Finding heat capacity and vegetation internal energy. ------------!
                   cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)   &
                                                     ,cpatch%balive(ico),cpatch%nplant(ico) &
                                                     ,cpatch%hite(ico),cpatch%pft(ico)      &
                                                     ,cpatch%phenology_status(ico))
                   cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
-                  !----- Carry out standard initialization. -------------------------------!
-                  call init_ed_cohort_vars_array(cpatch,ico,cpoly%lsl(isi))
 
                   !----- Update number of cohorts in this site. ---------------------------!
                   csite%cohort_count(ipa) = csite%cohort_count(ipa) + 1

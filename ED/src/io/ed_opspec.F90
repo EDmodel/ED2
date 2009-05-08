@@ -946,40 +946,41 @@ subroutine ed_opspec_misc
    !    This subroutine performs miscellaneous tests over the options, like values outside !
    ! the allowed ranges and conflicting dynamic settings.                                  !
    !---------------------------------------------------------------------------------------!
-   use max_dims        , only : n_pft                        ! ! intent(in)
-   use misc_coms       , only : ifoutput                     & ! intent(in)
-                              , idoutput                     & ! intent(in)
-                              , imoutput                     & ! intent(in)
-                              , iyoutput                     & ! intent(in)
-                              , isoutput                     & ! intent(in)
-                              , iclobber                     & ! intent(in)
-                              , runtype                      & ! intent(in)
-                              , ied_init_mode                & ! intent(in)
-                              , integration_scheme           ! ! intent(in)
-   use soil_coms       , only : isoilflg                     & ! intent(in)
-                              , nslcon                       & ! intent(in)
-                              , isoilstateinit               & ! intent(in)
-                              , isoildepthflg                & ! intent(in)
-                              , isoilbc                      & ! intent(in)
-                              , zrough                       & ! intent(in)
-                              , runoff_time                  ! ! intent(in)
-   use mem_sites       , only : n_soi                        & ! intent(in)
-                              , n_ed_region                  & ! intent(in)
-                              , maxpatch                     & ! intent(in)
-                              , maxcohort                    ! ! intent(in)
-   use grid_coms       , only : ngrids                       ! ! intent(in)
-   use physiology_coms , only : istoma_scheme                & ! intent(in)
-                              , n_plant_lim                  ! ! intent(in)
-   use decomp_coms     , only : n_decomp_lim                 ! ! intent(in)
-   use disturb_coms    , only : include_fire                 & ! intent(in)
-                              , ianth_disturb                & ! intent(in)
-                              , treefall_disturbance_rate    ! ! intent(in)
-   use phenology_coms  , only : iphen_scheme                 ! ! intent(in)
-   use pft_coms        , only : include_these_pft            & ! intent(in)
-                              , pft_1st_check                & ! intent(in)
-                              , agri_stock                   & ! intent(in)
-                              , plantation_stock             ! ! intent(in)
-   use rk4_coms        , only : ibranch_thermo               ! ! intent(in)
+   use max_dims              , only : n_pft                        ! ! intent(in)
+   use misc_coms             , only : ifoutput                     & ! intent(in)
+                                    , idoutput                     & ! intent(in)
+                                    , imoutput                     & ! intent(in)
+                                    , iyoutput                     & ! intent(in)
+                                    , isoutput                     & ! intent(in)
+                                    , iclobber                     & ! intent(in)
+                                    , runtype                      & ! intent(in)
+                                    , ied_init_mode                & ! intent(in)
+                                    , integration_scheme           ! ! intent(in)
+   use soil_coms             , only : isoilflg                     & ! intent(in)
+                                    , nslcon                       & ! intent(in)
+                                    , isoilstateinit               & ! intent(in)
+                                    , isoildepthflg                & ! intent(in)
+                                    , isoilbc                      & ! intent(in)
+                                    , zrough                       & ! intent(in)
+                                    , runoff_time                  ! ! intent(in)
+   use mem_sites             , only : n_soi                        & ! intent(in)
+                                    , n_ed_region                  & ! intent(in)
+                                    , maxpatch                     & ! intent(in)
+                                    , maxcohort                    ! ! intent(in)
+   use grid_coms             , only : ngrids                       ! ! intent(in)
+   use physiology_coms       , only : istoma_scheme                & ! intent(in)
+                                    , n_plant_lim                  ! ! intent(in)
+   use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
+   use disturb_coms          , only : include_fire                 & ! intent(in)
+                                    , ianth_disturb                & ! intent(in)
+                                    , treefall_disturbance_rate    ! ! intent(in)
+   use phenology_coms        , only : iphen_scheme                 ! ! intent(in)
+   use pft_coms              , only : include_these_pft            & ! intent(in)
+                                    , pft_1st_check                & ! intent(in)
+                                    , agri_stock                   & ! intent(in)
+                                    , plantation_stock             ! ! intent(in)
+   use canopy_radiation_coms , only : crown_mod                    ! ! intent(in)
+   use rk4_coms              , only : ibranch_thermo               ! ! intent(in)
 
    implicit none
    !----- Local variables -----------------------------------------------------------------!
@@ -1054,9 +1055,9 @@ subroutine ed_opspec_misc
       write (unit=*,fmt='(a)') ' run, and in case it crashes, it is going to be all your   '
       write (unit=*,fmt='(a)') ' fault and I will remind you that!!!                       '
       write (unit=*,fmt='(a)') '==========================================================='
-   elseif (ied_init_mode < 0 .or. ied_init_mode > 3) then
+   elseif (ied_init_mode < 0 .or. ied_init_mode > 4) then
       write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid IED_INIT_MODE, it must be between 0 and 3. Yours is set to',ied_init_mode,'...'
+        'Invalid IED_INIT_MODE, it must be between 0 and 4. Yours is set to',ied_init_mode,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1275,6 +1276,14 @@ subroutine ed_opspec_misc
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid PFT_1ST_CHECK, it must be between 0 and 2.  Yours is set to'  &
                     ,pft_1st_check,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if (crown_mod < 0 .or. crown_mod > 2) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid CROWN_MOD, it must be between 0 and 2.  Yours is set to'  &
+                    ,crown_mod,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if

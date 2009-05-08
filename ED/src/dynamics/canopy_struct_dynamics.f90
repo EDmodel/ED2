@@ -90,6 +90,7 @@ module canopy_struct_dynamics
                                 , sqrt2o28             ! ! intent(in)
       use soil_coms      , only : snow_rough           & ! intent(in)
                                 , soil_rough           ! ! intent(in)
+      use allometry      , only : h2trunkh             ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)     , target     :: csite
@@ -144,7 +145,7 @@ module canopy_struct_dynamics
 
       !---- Finding the maximum aerodynamic resistance. -----------------------------------!
       rb_max = dble(rb_inter)                                                              &
-             + dble(rb_slope) * (dble(csite%lai(ipa)) + dble(csite%bai(ipa)))
+             + dble(rb_slope) * (dble(csite%lai(ipa)) + dble(csite%wpa(ipa)))
 
       !------------------------------------------------------------------------------------!
       !     If there is no vegetation in this patch, then we apply turbulence to bare      !
@@ -254,7 +255,8 @@ module canopy_struct_dynamics
                hite8 = dble(cpatch%hite(ico))
 
                !----- Estimate the height center of the crown. ----------------------------!
-               z = hite8 * (1.d0 - 5.d-1 * dble(crown_depth_fraction(ipft)))
+               !z = hite8 * (1.d0 - 5.d-1 * dble(crown_depth_fraction(ipft)))
+               z = 5.d-1 * (hite8 + dble(h2trunkh(cpatch%hite(ico))))
 
                !----- Calculate the wind speed at height z. -------------------------------!
                uz = uh * exp(-exar8 * (1.d0 - z/h))
@@ -453,10 +455,11 @@ module canopy_struct_dynamics
                      ! layertai=layertai + cpatch%nplant(ico)*0.5*(dz/crowndepth)
 
                      !---------------------------------------------------------------------!
-                     !    Use LAI and BAI to define the frontal area of drag surface.  If  !
+                     !    Use LAI and WPA to define the frontal area of drag surface.  If  !
                      ! the user decided to ignore branches, ignore them here too.          !
                      !---------------------------------------------------------------------!
-                     layertai = layertai + initp%tai(ico) * (dz /crowndepth)
+                     layertai = layertai + (initp%lai(ico) + initp%wpa(ico))               &
+                                           * (dz /crowndepth)
                   end if
                end do
 

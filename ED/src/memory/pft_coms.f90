@@ -327,6 +327,15 @@ module pft_coms
    ! they are uniformly distributed in this zone.                                          !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: crown_depth_fraction  
+   
+   !---------------------------------------------------------------------------------------!
+   !    Fraction of vertical branches.  Values are from Poorter et al. (2006):             !
+   !                                                                                       !
+   !    Poorter, L.; Bongers, L.; Bongers, F., 2006: Architecture of 54 moist-forest tree  !
+   ! species: traits, trade-offs, and functional groups. Ecology, 87, 1289-1301.           !
+   ! For simplicity, we assume similar numbers for temperate PFTs.                         !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: horiz_branch
    !=======================================================================================!
    !=======================================================================================!
 
@@ -361,21 +370,12 @@ module pft_coms
    !=======================================================================================!
    !    The following parameters are used in the branching parametrisation (Järvelä 2004). !
    !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !     Fraction of structural biomass that is considered in the calculation of veget-    !
-   ! ation heat capacity, (assumed to be the fraction corresponding to branches and        !
-   ! twigs).                                                                               !
-   !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: branch_fraction 
    !----- Branching ratio. ----------------------------------------------------------------!
    real   , dimension(n_pft)    :: rbranch
    !----- Diameter ratio. -----------------------------------------------------------------!
    real   , dimension(n_pft)    :: rdiamet
    !----- Length ratio. -------------------------------------------------------------------!
    real   , dimension(n_pft)    :: rlength
-   !----- Height of the first branch (relative to plant height). --------------------------!
-   real   , dimension(n_pft)    :: h1stbr
    !----- Minimum diameter allowed. -------------------------------------------------------!
    real   , dimension(n_pft)    :: diammin
    !----- Number of trunks (usually one). -------------------------------------------------!
