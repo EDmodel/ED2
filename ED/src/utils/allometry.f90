@@ -154,13 +154,20 @@ module allometry
    !    Canopy Area allometry from Dietze and Clark (2008).                                !
    !---------------------------------------------------------------------------------------!
    real function dbh2ca(dbh,ipft)
+      use pft_coms, only : is_tropical
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
       integer, intent(in) :: ipft
+      !----- Internal variables -----------------------------------------------------------!
+      real :: hite ! I know it's stupid, just testing...
       !------------------------------------------------------------------------------------!
-      if(dbh < tiny(1.0)) then
+      if (dbh < tiny(1.0)) then
          dbh2ca = 0.0
+      !----- Based on Poorter et al. (2006) -----------------------------------------------!
+      elseif(is_tropical(ipft)) then
+         hite   = dbh2h(ipft,dbh)
+         dbh2ca = 0.156766*hite**1.888
       else
          dbh2ca = 2.490154*dbh**0.8068806
       end if
@@ -437,6 +444,7 @@ module allometry
                              , rho             & ! intent(in)
                              , C2B             & ! intent(in)
                              , sla             & ! intent(in)
+                             , horiz_branch    & ! intent(in)
                              , rbranch         & ! intent(in)
                              , rdiamet         & ! intent(in)
                              , rlength         & ! intent(in)
@@ -501,7 +509,7 @@ module allometry
          end if
          wai = nplant * bwood * swa
          wpa = wai * dbh2ca(dbh,pft)
-         !------------------------------------------------------------------------------------!
+         !---------------------------------------------------------------------------------!
 
 
       !----- Use  Järvelä (2004) method. --------------------------------------------------!
@@ -515,7 +523,8 @@ module allometry
 
          swa = nbranch * blength * bdiamet
          !---------------------------------------------------------------------------------!
-         !     Initialize branch values with trunk.  !
+         !     Initialize branch values with trunk.                                        !
+         !---------------------------------------------------------------------------------!
          branchloop: do
             if (bdiamet < diammin(pft)) exit branchloop
             !----- Updating branch habits. ------------------------------------------------!
@@ -525,8 +534,8 @@ module allometry
             swa     = swa + nbranch * blength * bdiamet
          end do branchloop
          !----- The wood projected area and the wood area index. --------------------------!
-         wpa = nplant * swa
-         wai = wpa / dbh2ca(dbh,pft)
+         wpa = nplant       * swa
+         wai = horiz_branch(pft) * wpa
       !------------------------------------------------------------------------------------!
       end select
 

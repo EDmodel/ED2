@@ -192,7 +192,8 @@ ed_node_coms.o : $(ED_MPI)/ed_node_coms.f90 max_dims.o
 
 ed_opspec.o : $(ED_IO)/ed_opspec.F90 max_dims.o grid_coms.o mem_sites.o soil_coms.o        \
 	ed_para_coms.o misc_coms.o consts_coms.o physiology_coms.o decomp_coms.o           \
-	disturb_coms.o phenology_coms.o pft_coms.o rk4_coms.o ed_misc_coms.o 
+	disturb_coms.o phenology_coms.o pft_coms.o rk4_coms.o ed_misc_coms.o               \
+	canopy_radiation_coms.o
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)

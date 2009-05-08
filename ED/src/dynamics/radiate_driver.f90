@@ -238,6 +238,15 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
                crown_area              = cpatch%nplant(ico)                                &
                                        * dbh2ca(cpatch%dbh(ico),cpatch%pft(ico))
                CA_array(cohort_count)  = min(1.d0,dble(crown_area))
+            case (2)
+               !---------------------------------------------------------------------------!
+               !   Crown area allom from Dietze and Clark (2008).   No restriction on      !
+               ! crown area, since we are converting population based LAI in individual    !
+               ! based one.                                                                !
+               !---------------------------------------------------------------------------!
+               crown_area              = cpatch%nplant(ico)                                &
+                                       * dbh2ca(cpatch%dbh(ico),cpatch%pft(ico))
+               CA_array(cohort_count)  = dble(crown_area)
             end select
          end if
 

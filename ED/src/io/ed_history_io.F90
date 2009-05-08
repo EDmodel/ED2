@@ -1,7 +1,7 @@
 subroutine read_ed1_history_file_array
 
 
-  use max_dims, only: n_pft,huge_patch,huge_cohort,max_water,str_len,maxfiles
+  use max_dims, only: n_pft,huge_patch,huge_cohort,max_water,str_len,maxfiles,maxlist
   use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, include_pft_ag, phenology,pft_1st_check,include_these_pft
   use misc_coms, only: sfilin, ied_init_mode
   use mem_sites, only: grid_res,edres
@@ -90,7 +90,6 @@ subroutine read_ed1_history_file_array
   integer :: ied_init_mode_local
 
   !----- Variables for new method to find the closest file --------------------------------!
-  integer                                   , parameter :: maxlist=3*maxfiles
   integer                                               :: nf,nflist,nflsite,nflpss,nflcss
   integer                                               :: nclosest
   character(len=str_len), dimension(maxlist)            :: full_list
@@ -111,15 +110,14 @@ subroutine read_ed1_history_file_array
   !----- Retrieve LON/LAT information for sites -------------------------------------------!
   if (ied_init_mode == 3) then
      renumber_pfts = .false.
-     call ed1_fileinfo('.site',nflist,full_list(1:nflist),nflsite,site_list,slon_list      &
-                      ,slat_list)
+     call ed1_fileinfo('.site',nflist,full_list,nflsite,site_list,slon_list,slat_list)
   else
      renumber_pfts = .true.
   end if
   
   !----- Retrieve LON/LAT information for patches and cohorts -----------------------------!
-  call ed1_fileinfo('.pss',nflist,full_list(1:nflist),nflpss,pss_list,plon_list,plat_list)
-  call ed1_fileinfo('.css',nflist,full_list(1:nflist),nflcss,css_list,clon_list,clat_list)
+  call ed1_fileinfo('.pss',nflist,full_list,nflpss,pss_list,plon_list,plat_list)
+  call ed1_fileinfo('.css',nflist,full_list,nflcss,css_list,clon_list,clat_list)
   
   ! Loop over all grids, polygons, and sites
 
@@ -197,7 +195,7 @@ subroutine read_ed1_history_file_array
               read(12,*)cdum,depth(1:nwater)
               read(12,*)
            elseif(ied_init_mode_local == 2) then
-              read(12,*)!water patch
+           !   read(12,*)!water patch
            endif
            
            ! Note that if we are doing an ED1 restart we can 
@@ -232,8 +230,7 @@ subroutine read_ed1_history_file_array
                  
               case(2)  !! read ED2 format files
                  read(12,*,iostat=ierr)time(ip),pname(ip),trk(ip),dage,darea,dwater(1),dfsc,dstsc  &
-                      ,dstsl,dssc,dummy,dmsn,dfsn,dummy,dummy,dummy 
-                 
+                      ,dstsl,dssc,dummy,dmsn,dfsn
                  if(ierr /= 0)exit count_patches
               
                  area(ip)   = sngl(max(snglmin,darea  ))
@@ -286,7 +283,6 @@ subroutine read_ed1_history_file_array
            ! The next closest file.
 
            close(12)
-
            if (npatches>0) then
 
               ! We have found a suitable file, we will break from the 

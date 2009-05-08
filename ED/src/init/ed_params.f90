@@ -526,6 +526,7 @@ subroutine init_pft_alloc_params()
                           , is_grass              & ! intent(out)
                           , rho                   & ! intent(out)
                           , SLA                   & ! intent(out)
+                          , horiz_branch          & ! intent(out)
                           , q                     & ! intent(out)
                           , qsw                   & ! intent(out)
                           , init_density          & ! intent(out)
@@ -595,6 +596,26 @@ subroutine init_pft_alloc_params()
    SLA(11)    = 60.0
    SLA(12:13) = 22.0
    SLA(14:15) = 10.0**((2.4-0.46*log10(12.0/leaf_turnover_rate(14:15)))) * C2B * 0.1
+
+   !---------------------------------------------------------------------------------------!
+   !    Fraction of vertical branches.  Values are from Poorter et al. (2006):             !
+   !                                                                                       !
+   !    Poorter, L.; Bongers, L.; Bongers, F., 2006: Architecture of 54 moist-forest tree  !
+   ! species: traits, trade-offs, and functional groups. Ecology, 87, 1289-1301.           !
+   ! For simplicity, we assume similar numbers for temperate PFTs.                         !
+   !---------------------------------------------------------------------------------------!
+   horiz_branch(1)     = 0.50
+   horiz_branch(2)     = 0.57
+   horiz_branch(3)     = 0.39
+   horiz_branch(4)     = 0.61
+   horiz_branch(5)     = 0.50
+   horiz_branch(6:8)   = 0.61
+   horiz_branch(9)     = 0.57
+   horiz_branch(10)    = 0.39
+   horiz_branch(11)    = 0.61
+   horiz_branch(12:15) = 0.50
+   !---------------------------------------------------------------------------------------!
+
 
    !----- Ratio between fine roots and leaves [kg_fine_roots/kg_leaves] -------------------!
    q(1:5)    = 1.0
@@ -735,7 +756,7 @@ subroutine init_pft_alloc_params()
    !----- Length ratio. Järvelä used rdiamet^2/3, so do we... -----------------------------!
    rlength(1:15)  = rdiamet(1:15)**twothirds
    !----- Minimum diameter to consider. ---------------------------------------------------!
-   diammin(1:15)  = 0.002
+   diammin(1:15)  = 0.006
    !----- Number of trunks.  Usually this is 1. -------------------------------------------!
    ntrunk(1:15)   = 1.0
    

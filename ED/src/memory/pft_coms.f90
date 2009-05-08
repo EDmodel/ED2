@@ -328,6 +328,14 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: crown_depth_fraction  
    
+   !---------------------------------------------------------------------------------------!
+   !    Fraction of vertical branches.  Values are from Poorter et al. (2006):             !
+   !                                                                                       !
+   !    Poorter, L.; Bongers, L.; Bongers, F., 2006: Architecture of 54 moist-forest tree  !
+   ! species: traits, trade-offs, and functional groups. Ecology, 87, 1289-1301.           !
+   ! For simplicity, we assume similar numbers for temperate PFTs.                         !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: horiz_branch
    !=======================================================================================!
    !=======================================================================================!
 
