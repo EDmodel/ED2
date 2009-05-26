@@ -27,6 +27,7 @@ subroutine reproduction_ar(cgrid, month)
                                  , include_pft_ag        & ! intent(in)
                                  , qsw                   & ! intent(in)
                                  , q                     & ! intent(in)
+                                 , sla                   & ! intent(in)
                                  , hgt_min               & ! intent(in)
                                  , plant_min_temp        ! ! intent(in)
    use decomp_coms        , only : f_labile              ! ! intent(in)
@@ -280,8 +281,9 @@ subroutine reproduction_ar(cgrid, month)
                   !----- Finding LAI, BAI, SAI. -------------------------------------------!
                   call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico) &
                                    ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)   &
-                                   ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)          &
-                                   ,cpatch%bai(ico),cpatch%sai(ico)) 
+                                   ,cpatch%pft(ico),sla(cpatch%pft(ico)), cpatch%lai(ico)  &
+                                   ,cpatch%bai(ico),cpatch%sai(ico)) !here sla is not yet assigned; will be in init_ed_cohort_vars_array 
+
                   !----- Finding heat capacity and vegetation internal energy. ------------!
                   cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)   &
                                                     ,cpatch%balive(ico),cpatch%nplant(ico) &

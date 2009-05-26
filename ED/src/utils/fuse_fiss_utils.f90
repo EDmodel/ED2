@@ -291,8 +291,7 @@ module fuse_fiss_utils_ar
                                      , patchtype           ! ! Structure
       use pft_coms            , only : rho                 & ! intent(in)
                                      , b1Ht                & ! intent(in)
-                                     , max_dbh             & ! intent(in)
-                                     , sla                 ! ! intent(in)
+                                     , max_dbh               ! intent(in)
       use fusion_fission_coms , only : fusetol_h           & ! intent(in)
                                      , fusetol             & ! intent(in)
                                      , lai_fuse_tol        & ! intent(in)
@@ -425,7 +424,7 @@ module fuse_fiss_utils_ar
                   !------------------------------------------------------------------------!
                   lai_max = (cpatch%nplant(recc)*dbh2bl(cpatch%dbh(recc),cpatch%pft(recc)) &
                           + cpatch%nplant(donc)*dbh2bl(cpatch%dbh(donc),cpatch%pft(donc))) &
-                          * sla(cpatch%pft(recc))
+                          * cpatch%sla(recc)
 
                   !----- Checking the total size of this cohort before and after fusion. --!
                   total_size = cpatch%nplant(donc) * ( cpatch%balive(donc)                 &
@@ -575,8 +574,7 @@ module fuse_fiss_utils_ar
 
       use ed_state_vars        , only :  patchtype              ! ! structure
       use pft_coms             , only :  q                      & ! intent(in), lookup table
-                                       , qsw                    & ! intent(in), lookup table
-                                       , sla                    ! ! intent(in), lookup table
+                                       , qsw                      ! intent(in), lookup table
       use fusion_fission_coms  , only :  lai_tol                ! ! intent(in)
       use max_dims             , only :  n_pft                  ! ! intent(in)
       use allometry            , only :  dbh2h                  & ! function
@@ -615,7 +613,7 @@ module fuse_fiss_utils_ar
               * cpatch%balive(ico)                                                         &
               * green_leaf_factor(cpatch%pft(ico))                                         &
               / ( 1.0 + q(cpatch%pft(ico)) + qsw(cpatch%pft(ico)) * cpatch%hite(ico) )     &
-              * sla(cpatch%pft(ico))
+              * cpatch%sla(ico)
 
          !----- If the resulting LAI is too large, split this cohort. ---------------------!
          split_mask(ico) = slai > lai_tol
@@ -869,8 +867,7 @@ module fuse_fiss_utils_ar
    subroutine fuse_2_cohorts_ar(cpatch,donc,recc, newn,green_leaf_factor, lsl)
       use ed_state_vars , only :  patchtype             ! ! Structure
       use pft_coms      , only :  q                     & ! intent(in), lookup table
-                                , qsw                   & ! intent(in), lookup table
-                                , sla                   ! ! intent(in), lookup table
+                                , qsw                     ! intent(in), lookup table
       use therm_lib     , only :  qwtk                  ! ! subroutine
       use allometry     , only :  calc_root_depth       & ! function
                                 , assign_root_depth     & ! function
