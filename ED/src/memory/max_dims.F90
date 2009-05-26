@@ -122,5 +122,6 @@ Module max_dims
 
   integer, parameter :: maxfiles = 6666  ! Maximum number of files
 
+  integer, parameter :: maxlist = 3*maxfiles  ! Maximum number of files (site+patch+cohort)
   
 end Module max_dims

@@ -670,8 +670,8 @@ end subroutine apply_disturbances_ar
 
           ! Adjust area-based variables
           tpatch%lai(nco)                 = tpatch%lai(nco)                  * cohort_area_fac
-          tpatch%bai(nco)                 = tpatch%bai(nco)                  * cohort_area_fac
-          tpatch%sai(nco)                 = tpatch%sai(nco)                  * cohort_area_fac
+          tpatch%wai(nco)                 = tpatch%wai(nco)                  * cohort_area_fac
+          tpatch%wpa(nco)                 = tpatch%wpa(nco)                  * cohort_area_fac
           tpatch%nplant(nco)              = tpatch%nplant(nco)               * cohort_area_fac
           tpatch%mean_gpp(nco)            = tpatch%mean_gpp(nco)             * cohort_area_fac
           tpatch%mean_leaf_resp(nco)      = tpatch%mean_leaf_resp(nco)       * cohort_area_fac
@@ -888,12 +888,13 @@ end subroutine apply_disturbances_ar
     call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)        &
                      ,cpatch%balive(nc),cpatch%dbh(nc), cpatch%hite(nc)          &
                      ,cpatch%pft(nc),cpatch%sla(nc), cpatch%lai(nc)              &
-                     ,cpatch%bai(nc),cpatch%sai(nc))
+                     ,cpatch%wpa(nc),cpatch%wai(nc))
 
     cpatch%bstorage(nc) = 1.0*(cpatch%balive(nc)) !! changed by MCD, was 0.0
 
 
 
+    call init_ed_cohort_vars_array(cpatch, nc, lsl)
 
     cpatch%veg_temp(nc)  = csite%can_temp(np)
     cpatch%veg_water(nc) = 0.0
@@ -908,7 +909,6 @@ end subroutine apply_disturbances_ar
     
     cpatch%veg_energy(nc) = cpatch%hcapveg(nc) * cpatch%veg_temp(nc)
     
-    call init_ed_cohort_vars_array(cpatch, nc, lsl)
     
     cpatch%new_recruit_flag(nc) = 1 ! should plantations be considered recruits?
 

@@ -154,7 +154,6 @@ subroutine spatial_averages
    use grid_coms             , only : ngrids            & ! intent(in)
                                     , nzg               & ! intent(in)
                                     , nzs               ! ! intent(in)
-   use canopy_radiation_coms , only : lai_min           ! ! intent(in)
    use consts_coms           , only : alvl              & ! intent(in)
                                     , wdns              ! ! intent(in)
    use misc_coms             , only : frqsum            ! ! intent(in)
@@ -239,8 +238,8 @@ subroutine spatial_averages
 
             !----- LAI --------------------------------------------------------------------!
             cpoly%lai(isi)  = sum(csite%lai  * csite%area ) * site_area_i
-            cpoly%bai(isi)  = sum(csite%bai  * csite%area ) * site_area_i
-            cpoly%sai(isi)  = sum(csite%sai  * csite%area ) * site_area_i
+            cpoly%wpa(isi)  = sum(csite%wpa  * csite%area ) * site_area_i
+            cpoly%wai(isi)  = sum(csite%wai  * csite%area ) * site_area_i
 
 
             !----- Average fast time flux dynamics over sites. ----------------------------!
@@ -383,7 +382,7 @@ subroutine spatial_averages
                ! scaled by nplant. Just make sure that we have at least one cohort.        !
                !---------------------------------------------------------------------------!
                if (cpatch%ncohorts > 0) then
-                  lai_patch = sum(cpatch%lai, cpatch%lai > lai_min)
+                  lai_patch = sum(cpatch%lai, cpatch%solvable)
                   csite%avg_veg_energy(ipa) = sum(cpatch%veg_energy)
                   csite%avg_veg_water(ipa)  = sum(cpatch%veg_water)
                   csite%hcapveg(ipa)        = sum(cpatch%hcapveg)
@@ -565,8 +564,8 @@ subroutine spatial_averages
 
          !----- Finding the polygon mean LAI ----------------------------------------------!
          cgrid%lai(ipy)  = sum(cpoly%lai  * cpoly%area ) * poly_area_i
-         cgrid%bai(ipy)  = sum(cpoly%bai  * cpoly%area ) * poly_area_i
-         cgrid%sai(ipy)  = sum(cpoly%sai  * cpoly%area ) * poly_area_i
+         cgrid%wpa(ipy)  = sum(cpoly%wpa  * cpoly%area ) * poly_area_i
+         cgrid%wai(ipy)  = sum(cpoly%wai  * cpoly%area ) * poly_area_i
         
          !----- Average fast time flux dynamics over polygons. ----------------------------!
          cgrid%avg_vapor_vc(ipy)     = sum(cpoly%avg_vapor_vc    * cpoly%area)*poly_area_i

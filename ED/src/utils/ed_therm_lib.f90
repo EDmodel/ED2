@@ -44,8 +44,7 @@ module ed_therm_lib
    !---------------------------------------------------------------------------------------!
    real function calc_hcapveg(bleaf,bdead,balive,nplant,hite,pft,phen_status)
       use consts_coms          , only : cliq                ! ! intent(in)
-      use pft_coms             , only : branch_fraction     & ! intent(in)
-                                      , c_grn_leaf_dry      & ! intent(in)
+      use pft_coms             , only : c_grn_leaf_dry      & ! intent(in)
                                       , wat_dry_ratio_grn   & ! intent(in)
                                       , c_ngrn_biom_dry     & ! intent(in)
                                       , wat_dry_ratio_ngrn  & ! intent(in)
@@ -63,9 +62,9 @@ module ed_therm_lib
       integer , intent(in)    :: pft           ! Plant functional type          [     ----]
       integer , intent(in)    :: phen_status   ! Phenology status               [     ----]
       !----- Local variables --------------------------------------------------------------!
-      real                    :: bbranch       ! Biomass of branches and twigs  [kgC/plant]
+      real                    :: bwood         ! Wood biomass                   [kgC/plant]
       real                    :: spheat_leaf   ! Leaf specific heat             [   J/kg/K]
-      real                    :: spheat_branch ! Branch/twig specific heat      [   J/kg/K]
+      real                    :: spheat_wood   ! Wood specific heat             [   J/kg/K]
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -74,34 +73,34 @@ module ed_therm_lib
       select case (ibranch_thermo)
       case (0)
          !----- Skip it, the user doesn't want to solve for branches. ---------------------!
-         spheat_branch = 0.
-         bbranch       = 0.
-      case (1)
+         spheat_wood = 0.
+         bwood       = 0.
+      case default
          !----- Finding branch/twig specific heat and biomass. ----------------------------!
-         spheat_branch = (c_ngrn_biom_dry(pft) + wat_dry_ratio_ngrn(pft) * cliq)           &
-                       / (1. + wat_dry_ratio_ngrn(pft)) + delta_c(pft)
-         bbranch = branch_fraction(pft) * wood_biomass(bdead,balive,pft,hite)
+         spheat_wood = (c_ngrn_biom_dry(pft) + wat_dry_ratio_ngrn(pft) * cliq)             &
+                     / (1. + wat_dry_ratio_ngrn(pft)) + delta_c(pft)
+         bwood = wood_biomass(bdead,balive,pft,hite)
       end select
 
       select case (phen_status)
       case (2)
          !---------------------------------------------------------------------------------!
          !     If phenology is 2 (i.e., no leaves), then the heat capacity is only due to  !
-         ! the branches and twigs (it will be 0 in case branches were excluded.            !
+         ! the wood (it will be 0 in case wood is excluded).                               !
          !---------------------------------------------------------------------------------!
-         calc_hcapveg = nplant * C2B * bbranch * spheat_branch
+         calc_hcapveg = nplant * C2B * bwood * spheat_wood
       case default
          !---------------------------------------------------------------------------------!
          !     If phenology is either 0 or 1 (with leaves), then the heat capacity is the  !
-         ! sum of the heat capacity due to branches and leaves.                            !
+         ! sum of the heat capacity due to wood and leaves.                                !
          !---------------------------------------------------------------------------------!
          !----- Finding the leaf specific heat. -------------------------------------------!
          spheat_leaf = (c_grn_leaf_dry(pft) + wat_dry_ratio_grn(pft) * cliq)               &
                      / (1. + wat_dry_ratio_grn(pft))
          !----- Then the heat capacity. ---------------------------------------------------!
          calc_hcapveg = nplant * C2B                                                       &
-                      * ( bbranch * spheat_branch * (1. + wat_dry_ratio_ngrn(pft))         &
-                        + bleaf   * spheat_leaf   * (1. + wat_dry_ratio_grn(pft) ) )
+                      * ( bwood * spheat_wood * (1. + wat_dry_ratio_ngrn(pft))             &
+                        + bleaf * spheat_leaf * (1. + wat_dry_ratio_grn(pft) ) )
       end select
 
       return
@@ -142,8 +141,6 @@ module ed_therm_lib
       real                        :: new_fliq
       integer                     :: kclosest
       integer                     :: k
-      !----- External functions. ----------------------------------------------------------!
-      logical        , external   :: is_solvable
       !------------------------------------------------------------------------------------!
 
       cpatch => csite%patch(ipa)

@@ -152,12 +152,11 @@ subroutine dbalive_dt_ar(cgrid, tfact)
               cpatch%monthly_dndt(ico) = cpatch%monthly_dndt(ico) + dndt
 
   
-              !----- Updating LAI, BAI, and SAI. ------------------------------------------!
+              !----- Updating LAI, WPA, and WAI. ------------------------------------------!
               call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)     &
                                ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)       &
                                ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)              &
-                               ,cpatch%bai(ico),cpatch%sai(ico))
-
+                               ,cpatch%wpa(ico),cpatch%wai(ico))
               !----------------------------------------------------------------------------!
               !     It is likely that the leaf biomass has changed, therefore, update      !
               ! vegetation energy and heat capacity.                                       !

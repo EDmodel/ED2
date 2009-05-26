@@ -91,8 +91,8 @@ module rk4_driver_ar
 
                !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
                call canopy_photosynthesis_ar(csite,ipa,cpoly%met(isi)%vels                 &
-                          ,cpoly%met(isi)%rhos,cpoly%met(isi)%prss,ed_ktrans               &
-                          ,csite%ntext_soil(:,ipa),csite%soil_water(:,ipa)                 &
+                          ,cpoly%met(isi)%rhos,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%prss  &
+                          ,ed_ktrans,csite%ntext_soil(:,ipa),csite%soil_water(:,ipa)       &
                           ,csite%soil_fracliq(:,ipa),cpoly%lsl(isi),sum_lai_rbi            &
                           ,cpoly%leaf_aging_factor(:,isi),cpoly%green_leaf_factor(:,isi) )
 
@@ -208,14 +208,14 @@ module rk4_driver_ar
          !    The area factor for heat and water exchange between canopy and vegetation is !
          ! applied only on LAI, and it depends on how we are considering the branches and  !
          ! twigs.  If their area isn't explicitly defined, we add a 0.2 factor to the      !
-         ! area because BAI will be 0.  Otherwise, we don't add anything to the LAI, and   !
-         ! let BAI to do the job.                                                          !
+         ! area because WPA will be 0.  Otherwise, we don't add anything to the LAI, and   !
+         ! let WPA to do the job.                                                          !
          !---------------------------------------------------------------------------------!
          select case (ibranch_thermo)
          case (0)
             effarea_water = 1.2d0
             effarea_heat  = 2.2d0
-         case (1)
+         case default
             effarea_water = 1.0d0
             effarea_heat  = 2.0d0
          end select
@@ -704,7 +704,6 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
                                    , alli       & ! intent(in)
                                    , t3ple      ! ! intent(in)
    use rk4_coms             , only : toosparse  ! ! intent(in)
-   use canopy_radiation_coms, only : lai_min    ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype) , target     :: csite
@@ -753,11 +752,6 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
    veg_storage = 0.0
    do ico = 1,cpatch%ncohorts
       veg_storage = veg_storage + cpatch%veg_energy(ico)
-      !if(csite%lai(ipa)   > lai_min                     .and.                             &
-      !   cpatch%hite(ico) > csite%total_snow_depth(ipa) .and.                             &
-      !   (.not. toosparse)                                   ) then
-      !   veg_storage = veg_storage + cpatch%veg_energy(ico)
-      !end if
    end do
  
    !----- 5. Integrating the total energy in ED. ------------------------------------------!
@@ -783,7 +777,6 @@ subroutine sum_plant_cfluxes_ar(csite,ipa, gpp, gpp_dbh,plresp)
                                    , patchtype   ! ! structure
    use consts_coms          , only : day_sec     & ! intent(in)
                                    , umol_2_kgC  ! ! intent(in)
-   use canopy_radiation_coms, only : lai_min     ! ! intent(in)
    use max_dims             , only : n_dbh
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -820,7 +813,7 @@ subroutine sum_plant_cfluxes_ar(csite,ipa, gpp, gpp_dbh,plresp)
    !---------------------------------------------------------------------------------------!
    do ico = 1,cpatch%ncohorts
       !----- Adding GPP and leaf respiration only for those cohorts with enough leaves. ---!
-      if (cpatch%lai(ico) > lai_min) then
+      if (cpatch%solvable(ico)) then
          gpp = gpp + cpatch%gpp(ico)
          !----- Forest cohorts have dbh distribution, add them to gpp_dbh. ----------------!
          if (forest) then 

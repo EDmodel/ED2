@@ -168,11 +168,11 @@ subroutine init_nbg_cohorts(csite,lsl,atm_tmp,ipa_a,ipa_z)
          cpatch%balive(ico)           = cpatch%bleaf(ico)                                  &
                                       * ( 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico) )
 
-         !----- Find the initial area indices (LAI, BAI, SAI). ----------------------------!
+         !----- Find the initial area indices (LAI, WPA, WAI). ----------------------------!
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%bai(ico),cpatch%sai(ico))
+                          ,cpatch%wpa(ico),cpatch%wai(ico))
 
          
          !----- Initialize other cohort-level variables. ----------------------------------!

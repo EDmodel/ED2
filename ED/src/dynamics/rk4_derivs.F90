@@ -593,7 +593,6 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    use misc_coms             , only : dtlsm                ! ! intent(in)
    use ed_misc_coms          , only : fast_diagnostics     ! ! intent(in)
    use allometry             , only : dbh2ca               ! ! function
-   use canopy_radiation_coms , only : lai_min              ! ! intent(in)
    use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
    use pft_coms              , only : water_conductance    & ! intent(in)
                                     , q                    & ! intent(in)
@@ -913,7 +912,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          flux_area = initp%lai(ico)
          c3lai  = sngloff( flux_area * rk4met%rhos * (sat_shv - initp%can_shv),tiny_offset)
          !----- Evaporation/condensation "flux" -------------------------------------------!
-         flux_area = effarea_water * initp%lai(ico) + pi18 * initp%bai(ico)
+         flux_area = effarea_water * initp%lai(ico) + pi18 * initp%wpa(ico)
          c3tai  = flux_area * rk4met%rhos * (sat_shv - initp%can_shv)
          rbi    = 1.d0 / initp%rb(ico)
 
@@ -929,8 +928,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
             wflxvc  = c3tai * sigmaw * rbi
             qwflxvc = wflxvc * (alvi8 - initp%veg_fliq(ico) * alli8)
             !----- Transpiration, consider the leaf area rather than TAI. -----------------!
-            if (initp%lai(ico) > dble(lai_min)             .and.                           &
-                initp%available_liquid_water(kroot) > 0.d0      ) then
+            if (initp%solvable(ico) .and. initp%available_liquid_water(kroot) > 0.d0 ) then
                cpatch%Psi_open(ico)   = c3lai / (cpatch%rb(ico) + cpatch%rsw_open(ico)  )
                cpatch%Psi_closed(ico) = c3lai / (cpatch%rb(ico) + cpatch%rsw_closed(ico))
                transp = dble(cpatch%fs_open(ico)) * dble(cpatch%Psi_open(ico))             &
@@ -964,7 +962,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
          ! leaves plus the actual projected branch area (not the effective), thus the pi   !
          ! factor (which to make it scalable with the cilinder.                            !
          !---------------------------------------------------------------------------------!
-         flux_area = effarea_heat * initp%lai(ico) + pi18 * initp%bai(ico)
+         flux_area = effarea_heat * initp%lai(ico) + pi18 * initp%wpa(ico)
          hflxvc    = flux_area * cp8 * rk4met%rhos * rbi                                   &
                    * (initp%veg_temp(ico) - initp%can_temp)
 

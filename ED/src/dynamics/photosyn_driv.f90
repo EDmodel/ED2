@@ -3,7 +3,7 @@
 !     This subroutine will control the photosynthesis scheme (Farquar and Leuning).  This  !
 ! is called every step, but not every sub-step.                                            !
 !------------------------------------------------------------------------------------------!
-subroutine canopy_photosynthesis_ar(csite,ipa,vels,rhos,prss,ed_ktrans,ntext_soil          &
+subroutine canopy_photosynthesis_ar(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,ntext_soil  &
                                    ,soil_water,soil_fracliq,lsl,sum_lai_rbi                &
                                    ,leaf_aging_factor,green_leaf_factor)
    use ed_state_vars         , only : sitetype           & ! structure
@@ -32,6 +32,7 @@ subroutine canopy_photosynthesis_ar(csite,ipa,vels,rhos,prss,ed_ktrans,ntext_soi
    real   , dimension(nzg)   , intent(in)  :: soil_fracliq      ! Soil liq. water fraction
    real                      , intent(in)  :: vels              ! Wind speed
    real                      , intent(in)  :: rhos              ! Air density
+   real                      , intent(in)  :: atm_tmp           ! Atm. temperature
    real                      , intent(in)  :: prss              ! Atmospheric pressure
    real   , dimension(n_pft) , intent(in)  :: leaf_aging_factor ! 
    real   , dimension(n_pft) , intent(in)  :: green_leaf_factor ! 
@@ -58,7 +59,8 @@ subroutine canopy_photosynthesis_ar(csite,ipa,vels,rhos,prss,ed_ktrans,ntext_soi
    real                                    :: water_demand
    real                                    :: water_supply
    !----- Local constants -----------------------------------------------------------------!
-   real   , parameter                      :: vels_min = 1.0
+   real   , parameter                      :: vels_min    = 1.0
+   logical, parameter                      :: print_debug = .false.
    !----- Saved variables -----------------------------------------------------------------!
    logical, dimension(n_pft) , save        :: first_time=.true.
    !---------------------------------------------------------------------------------------!
@@ -67,14 +69,14 @@ subroutine canopy_photosynthesis_ar(csite,ipa,vels,rhos,prss,ed_ktrans,ntext_soi
    !----- Pointing to the cohort structures -----------------------------------------------!
    cpatch => csite%patch(ipa)
 
-   !----- Finding the patch-level Total (Leaf+Branch+Twig) Area Index. --------------------!
+   !----- Finding the patch-level Total Leaf and Wood Area Index. -------------------------!
    csite%lai(ipa) = 0.0
-   csite%bai(ipa) = 0.0
-   csite%sai(ipa) = 0.0
+   csite%wpa(ipa) = 0.0
+   csite%wai(ipa) = 0.0
    do ico=1,cpatch%ncohorts
       csite%lai(ipa)  = csite%lai(ipa)  + cpatch%lai(ico)
-      csite%bai(ipa)  = csite%bai(ipa)  + cpatch%bai(ico)
-      csite%sai(ipa)  = csite%sai(ipa)  + cpatch%sai(ico)
+      csite%wpa(ipa)  = csite%wpa(ipa)  + cpatch%wpa(ico)
+      csite%wai(ipa)  = csite%wai(ipa)  + cpatch%wai(ico)
    end do
 
 
@@ -129,7 +131,8 @@ subroutine canopy_photosynthesis_ar(csite,ipa,vels,rhos,prss,ed_ktrans,ntext_soi
             ! of leaf.                                                                     !
             !------------------------------------------------------------------------------!
             mixrat     = csite%can_shv(ipa) / (1. - csite%can_shv(ipa))
-            parv_o_lai = cpatch%par_v(tuco)/(cpatch%lai(tuco)+cpatch%bai(tuco))
+            parv_o_lai = cpatch%par_v(tuco)                                                &
+                       / (cpatch%lai(tuco) + cpatch%wai(tuco))
 
             !----- Calling the photosynthesis for maximum photosynthetic rates. -----------!
             call lphysiol_full(            & !
@@ -196,7 +199,8 @@ subroutine canopy_photosynthesis_ar(csite,ipa,vels,rhos,prss,ed_ktrans,ntext_soi
             ! of leaf.                                                                     !
             !------------------------------------------------------------------------------!
             mixrat     = csite%can_shv(ipa) / (1. - csite%can_shv(ipa))
-            parv_o_lai = cpatch%par_v(ico)/(cpatch%lai(ico)+cpatch%bai(ico))
+            parv_o_lai = cpatch%par_v(ico)                                                 &
+                       / (cpatch%lai(ico) + cpatch%wai(ico))
 
             !----- Calling the photosynthesis for maximum photosynthetic rates. -----------!
             call lphysiol_full(            & !
@@ -333,32 +337,33 @@ subroutine canopy_photosynthesis_ar(csite,ipa,vels,rhos,prss,ed_ktrans,ntext_soi
    !---------------------------------------------------------------------------------------!
    ! Printing debugging stuff                                                              !
    !---------------------------------------------------------------------------------------!
-   !do ico=1,cpatch%ncohorts
-   !   ipft=cpatch%pft(ico)
-   !   if (first_time(ipft)) then
-   !      write(unit=80+ipft,fmt='(356a)') ('-',k1=1,356)
-   !      write(unit=80+ipft,fmt='(28(a,1x))') '     CURRENT_TIME','PFT'                   &
-   !       ,'      NPLANT','       BLEAF','         LAI','         TAI','     HCAPVEG'     &
-   !       ,'   VEG_WATER','    VEG_TEMP',' CAN_MIX_RAT','    CAN_TEMP','    AIR_TEMP'     &
-   !       ,'    PRESSURE','     DENSITY','       PAR_V','         GPP','   LEAF_RESP'     &
-   !       ,'          RB',' STOM_RESIST','      A_OPEN','    A_CLOSED','    RSW_OPEN'     &
-   !       ,'  RSW_CLOSED','    PSI_OPEN','  PSI_CLOSED','         FSW','         FSN'     &
-   !       ,'     FS_OPEN'
-   !       
-   !      write(unit=80+ipft,fmt='(356a)') ('-',k1=1,356)
-   !      first_time(ipft)=.false.
-   !   end if
-   !   write(unit=80+ipft,fmt='(i4.4,2(a,i2.2),1x,f6.0,1x,i3,26(1x,es12.5))')              &
-   !      current_time%year,'-',current_time%month,'-',current_time%date,current_time%time &
-   !     ,cpatch%pft(ico),cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%lai(ico)             &
-   !     ,cpatch%tai(ico),cpatch%hcapveg(ico),cpatch%veg_water(ico)                        &
-   !     ,cpatch%veg_temp(ico),csite%can_shv(ipa),csite%can_temp(ipa),-999.0,prss,rhos     &
-   !     ,cpatch%par_v(ico),cpatch%gpp(ico),cpatch%leaf_respiration(ico),cpatch%rb(ico)    &
-   !     ,cpatch%stomatal_resistance(ico),cpatch%A_open(ico),cpatch%A_closed(ico)          &
-   !     ,cpatch%rsw_open(ico),cpatch%rsw_closed(ico),cpatch%Psi_open(ico)                 &
-   !     ,cpatch%Psi_closed(ico),cpatch%fsw(ico),cpatch%fsn(ico),cpatch%fs_open(ico)
-   !end do
-
+   if (print_debug) then
+      do ico=1,cpatch%ncohorts
+         ipft=cpatch%pft(ico)
+         if (first_time(ipft)) then
+            write(unit=80+ipft,fmt='(356a)') ('-',k1=1,356)
+            write(unit=80+ipft,fmt='(28(a,1x))') '     CURRENT_TIME','PFT'                 &
+             ,'      NPLANT','       BLEAF','         LAI','         WAI','     HCAPVEG'   &
+             ,'   VEG_WATER','    VEG_TEMP',' CAN_MIX_RAT','    CAN_TEMP','    AIR_TEMP'   &
+             ,'    PRESSURE','     DENSITY','       PAR_V','         GPP','   LEAF_RESP'   &
+             ,'          RB',' STOM_RESIST','      A_OPEN','    A_CLOSED','    RSW_OPEN'   &
+             ,'  RSW_CLOSED','    PSI_OPEN','  PSI_CLOSED','         FSW','         FSN'   &
+             ,'     FS_OPEN'
+             
+            write(unit=80+ipft,fmt='(356a)') ('-',k1=1,356)
+            first_time(ipft)=.false.
+         end if
+         write(unit=80+ipft,fmt='(i4.4,2(a,i2.2),1x,f6.0,1x,i3,26(1x,es12.5))')            &
+            current_time%year,'-',current_time%month,'-',current_time%date                 &
+           ,current_time%time,cpatch%pft(ico),cpatch%nplant(ico),cpatch%bleaf(ico)         &
+           ,cpatch%lai(ico),cpatch%wai(ico),cpatch%hcapveg(ico),cpatch%veg_water(ico)      &
+           ,cpatch%veg_temp(ico),csite%can_shv(ipa),csite%can_temp(ipa),atm_tmp,prss,rhos  &
+           ,cpatch%par_v(ico),cpatch%gpp(ico),cpatch%leaf_respiration(ico),cpatch%rb(ico)  &
+           ,cpatch%stomatal_resistance(ico),cpatch%A_open(ico),cpatch%A_closed(ico)        &
+           ,cpatch%rsw_open(ico),cpatch%rsw_closed(ico),cpatch%Psi_open(ico)               &
+           ,cpatch%Psi_closed(ico),cpatch%fsw(ico),cpatch%fsn(ico),cpatch%fs_open(ico)
+      end do
+   end if
 
    return
 end subroutine canopy_photosynthesis_ar

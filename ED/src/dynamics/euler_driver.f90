@@ -68,7 +68,7 @@ subroutine euler_timestep_ar(cgrid)
                 csite%rshort_s(:,ipa), csite%rshort_g(ipa), csite%rlong_s(ipa),  &
                 csite%rlong_g(ipa), csite%veg_height(ipa), csite%veg_rough(ipa),  &
                 csite%lai(ipa), csite%can_depth(ipa), cpoly%met(isi)%rhos,   &
-                cpoly%met(isi)%vels, cpoly%met(isi)%prss,   &
+                cpoly%met(isi)%vels, cpoly%met(isi)%atm_tmp, cpoly%met(isi)%prss,   &
                 cpoly%met(isi)%pcpg * dtlsm,   &
                 cpoly%met(isi)%qpcpg * dtlsm,  &
                 cpoly%met(isi)%dpcpg * dtlsm,   &
@@ -97,7 +97,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
      rshort_s, rshort_g, rlong_s,  &
      rlong_g, veg_height, veg_rough,  &
      veg_tai, can_depth, rhos,   &
-     vels, prss, pcpg,   &
+     vels, atm_tmp, prss, pcpg,   &
      qpcpg, dpcpg,   &
      sxfer_t, sxfer_r, sxfer_c,   &
      ustar, snowfac, surface_ssh,  &
@@ -135,6 +135,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
   real, intent(in) :: can_depth
   real, intent(in) :: rhos
   real, intent(in) :: vels
+  real, intent(in) :: atm_tmp
   real, intent(in) :: prss
   real, intent(in) :: pcpg
   real, intent(in) :: qpcpg
@@ -212,7 +213,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
        sfcwater_tempk(nlsw1), veg_height,            &
        veg_rough,             veg_tai,               &
        can_depth,             rhos,                  &
-       vels,                  prss,                  &
+       vels,                  atm_tmp, prss,                  &
        pcpg,                  qpcpg,                 &
        sxfer_t,               sxfer_r,               &
        sxfer_c,               ustar,                 &
@@ -325,7 +326,7 @@ subroutine canopy_ar(nlev_sfcwater, ntext_soil, ktrans,   &
                   sfcwater_mass, sfcwater_tempk,                          &
                   veg_height, veg_rough, veg_tai,                &
                   can_depth,                                     &
-                  rhos, vels, prss, pcpg, qpcpg,                          &
+                  rhos, vels, atm_tmp, prss, pcpg, qpcpg,                          &
                   sxfer_t, sxfer_r, sxfer_c, ustar,     &
                   snowfac, surface_ssh, ground_shv,                   &
                   can_temp, can_shv, can_co2,                 &
@@ -362,6 +363,7 @@ real, intent(in) :: veg_tai     ! veg total area index
 real, intent(in) :: can_depth   ! canopy depth for heat and vap capacity [m]
 real, intent(in) :: rhos        ! atmospheric air density [kg/m^3]
 real, intent(in) :: vels        ! surface wind speed [m/s]
+real, intent(in) :: atm_tmp     ! atmospheric air density [kg/m^3]
 real, intent(in) :: prss        ! air pressure [Pa]
 real, intent(in) :: pcpg        ! new precip amount this leaf timestep [kg/m^2]
 real, intent(in) :: qpcpg       ! new precip energy this leaf timestep [J/m^2]
@@ -508,7 +510,7 @@ ktrans = 0
 transp = 0.
 ed_transp(:) = 0.
 
-call canopy_update_euler_ar(csite,ipa, vels, rhos, prss, pcpg, qpcpg,   &
+call canopy_update_euler_ar(csite,ipa, vels, rhos, atm_tmp, prss, pcpg, qpcpg,   &
      wshed, qwshed, canair, canhcap, dtlsm, hxfergc, sxfer_t,  &
      wxfergc, hxfersc, wxfersc, sxfer_r, ed_transp, ntext_soil,  &
      soil_water, soil_fracliq, lsl, leaf_aging_factor, green_leaf_factor,  &
