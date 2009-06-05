@@ -13,6 +13,7 @@ subroutine flag_stable_cohorts(cgrid)
    use canopy_radiation_coms , only : blfac_min       & ! intent(in)
                                     , tai_min         ! ! intent(in)
    use rk4_coms              , only : ibranch_thermo  ! ! intent(in)
+   implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target   :: cgrid  ! Current grid
    !----- Local variables. ----------------------------------------------------------------!
@@ -78,7 +79,7 @@ subroutine flag_stable_cohorts(cgrid)
                   exposed              = cpatch%hite(ico)  > csite%total_snow_depth(ipa)
                   green                = cpatch%bleaf(ico) >= blfac_min * bleaf_pot
                   nottoosparse         = cpatch%lai(ico)+cpatch%wai(ico) > tai_min
-                  cpatch%solvable(ico) = exposed .and. (green .or. nottosparse)
+                  cpatch%solvable(ico) = exposed .and. (green .or. nottoosparse)
                end do
 
             end select

@@ -1331,6 +1331,18 @@ module ed_state_vars
      real, pointer, dimension(:,:) :: dmean_rh_lu      !(n_dist_types,npolygons)
      real, pointer, dimension(:,:) :: dmean_nep_lu     !(n_dist_types,npolygons)
      real, pointer, dimension(:,:) :: dmean_gpp_dbh    !(n_dbh       ,npolygons)
+     
+     real, pointer, dimension(:)   :: dmean_can_temp   ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_can_shv    ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_veg_energy ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_veg_water  ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_veg_hcap   ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_veg_temp   ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_atm_temp   ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_atm_shv    ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_atm_prss   ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_atm_vels   ! (npolygons)
+
      !-------------------------------------------------------------------!
      !   These are variables updated at a daily basis, so they are not   !
      ! averages but they are written at the daily analysis               !
@@ -1377,6 +1389,19 @@ module ed_state_vars
      real, pointer, dimension(:,:) :: mmean_wpa_lu   !(n_dist_types,npolygons)
      real, pointer, dimension(:,:) :: mmean_wai_pft  !(n_pft       ,npolygons)
      real, pointer, dimension(:,:) :: mmean_wai_lu   !(n_dist_types,npolygons)
+
+     real, pointer, dimension(:)   :: mmean_can_temp   ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_can_shv    ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_veg_energy ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_veg_water  ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_veg_temp   ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_veg_hcap   ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_atm_temp   ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_atm_shv    ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_atm_prss   ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_atm_vels   ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_pcpg       ! (npolygons)
+
      !-------------------------------------------------------------------!
      !   These are variables updated at a monthly basis, so they are not !
      ! averages but they are written at the monthly analysis             !
@@ -1731,6 +1756,16 @@ contains
           allocate(cgrid%dmean_rh_lu        (n_dist_types,npolygons))
           allocate(cgrid%dmean_nep_lu       (n_dist_types,npolygons))
           allocate(cgrid%dmean_gpp_dbh      (n_dbh       ,npolygons))
+          allocate(cgrid%dmean_can_temp     (             npolygons))
+          allocate(cgrid%dmean_can_shv      (             npolygons))
+          allocate(cgrid%dmean_veg_energy   (             npolygons))
+          allocate(cgrid%dmean_veg_water    (             npolygons))
+          allocate(cgrid%dmean_veg_hcap    (             npolygons))
+          allocate(cgrid%dmean_veg_temp     (             npolygons))
+          allocate(cgrid%dmean_atm_temp     (             npolygons))
+          allocate(cgrid%dmean_atm_shv      (             npolygons))
+          allocate(cgrid%dmean_atm_prss     (             npolygons))
+          allocate(cgrid%dmean_atm_vels     (             npolygons))
        end if
        !-------------------------------------------------------------------!
        ! Allocating the monthly means, only if monthly means were          !
@@ -1764,6 +1799,17 @@ contains
           allocate(cgrid%mmean_wpa_lu       (n_dist_types,npolygons))
           allocate(cgrid%mmean_wai_pft      (n_pft       ,npolygons))
           allocate(cgrid%mmean_wai_lu       (n_dist_types,npolygons))
+          allocate(cgrid%mmean_can_temp     (             npolygons))
+          allocate(cgrid%mmean_can_shv      (             npolygons))
+          allocate(cgrid%mmean_veg_energy   (             npolygons))
+          allocate(cgrid%mmean_veg_water    (             npolygons))
+          allocate(cgrid%mmean_veg_temp     (             npolygons))
+          allocate(cgrid%mmean_veg_hcap     (             npolygons))
+          allocate(cgrid%mmean_atm_temp     (             npolygons))
+          allocate(cgrid%mmean_atm_shv      (             npolygons))
+          allocate(cgrid%mmean_atm_prss     (             npolygons))
+          allocate(cgrid%mmean_atm_vels     (             npolygons))
+          allocate(cgrid%mmean_pcpg         (             npolygons))
           allocate(cgrid%agb_pft            (n_pft       ,npolygons))
           allocate(cgrid%ba_pft             (n_pft       ,npolygons))
           allocate(cgrid%area_pft           (n_pft       ,npolygons))
@@ -2426,7 +2472,17 @@ contains
        nullify(cgrid%dmean_gpp_lu            )
        nullify(cgrid%dmean_rh_lu             )
        nullify(cgrid%dmean_nep_lu            )
-       nullify(cgrid%dmean_gpp_dbh           ) 
+       nullify(cgrid%dmean_gpp_dbh           )
+       nullify(cgrid%dmean_can_temp          )
+       nullify(cgrid%dmean_can_shv           )
+       nullify(cgrid%dmean_veg_energy        )
+       nullify(cgrid%dmean_veg_water         )
+       nullify(cgrid%dmean_veg_hcap          )
+       nullify(cgrid%dmean_veg_temp          )
+       nullify(cgrid%dmean_atm_temp          )
+       nullify(cgrid%dmean_atm_shv           )
+       nullify(cgrid%dmean_atm_prss          )
+       nullify(cgrid%dmean_atm_vels          )
        nullify(cgrid%lai_pft                 )
        nullify(cgrid%lai_lu                  )
        nullify(cgrid%wpa_pft                 )
@@ -2460,6 +2516,17 @@ contains
        nullify(cgrid%mmean_wpa_lu            )
        nullify(cgrid%mmean_wai_pft           )
        nullify(cgrid%mmean_wai_lu            )
+       nullify(cgrid%mmean_can_temp          )
+       nullify(cgrid%mmean_can_shv           )
+       nullify(cgrid%mmean_veg_energy        )
+       nullify(cgrid%mmean_veg_water         )
+       nullify(cgrid%mmean_veg_hcap          )
+       nullify(cgrid%mmean_veg_temp          )
+       nullify(cgrid%mmean_atm_temp          )
+       nullify(cgrid%mmean_atm_shv           )
+       nullify(cgrid%mmean_atm_prss          )
+       nullify(cgrid%mmean_atm_vels          )
+       nullify(cgrid%mmean_pcpg              )
        nullify(cgrid%agb_pft                 )
        nullify(cgrid%ba_pft                  )
        nullify(cgrid%area_pft                )
@@ -3111,6 +3178,16 @@ contains
        if(associated(cgrid%dmean_rh_lu             )) deallocate(cgrid%dmean_rh_lu             )
        if(associated(cgrid%dmean_nep_lu            )) deallocate(cgrid%dmean_nep_lu            )
        if(associated(cgrid%dmean_gpp_dbh           )) deallocate(cgrid%dmean_gpp_dbh           )
+       if(associated(cgrid%dmean_can_temp          )) deallocate(cgrid%dmean_can_temp          )
+       if(associated(cgrid%dmean_can_shv           )) deallocate(cgrid%dmean_can_shv           )
+       if(associated(cgrid%dmean_veg_energy        )) deallocate(cgrid%dmean_veg_energy        )
+       if(associated(cgrid%dmean_veg_water         )) deallocate(cgrid%dmean_veg_water         )
+       if(associated(cgrid%dmean_veg_hcap          )) deallocate(cgrid%dmean_veg_hcap          )
+       if(associated(cgrid%dmean_veg_temp          )) deallocate(cgrid%dmean_veg_temp          )
+       if(associated(cgrid%dmean_atm_temp          )) deallocate(cgrid%dmean_atm_temp          )
+       if(associated(cgrid%dmean_atm_shv           )) deallocate(cgrid%dmean_atm_shv           )
+       if(associated(cgrid%dmean_atm_prss          )) deallocate(cgrid%dmean_atm_prss          )
+       if(associated(cgrid%dmean_atm_vels          )) deallocate(cgrid%dmean_atm_vels          )
        if(associated(cgrid%lai_pft                 )) deallocate(cgrid%lai_pft                 )
        if(associated(cgrid%lai_lu                  )) deallocate(cgrid%lai_lu                  )
        if(associated(cgrid%wpa_pft                 )) deallocate(cgrid%wpa_pft                 )
@@ -3144,6 +3221,17 @@ contains
        if(associated(cgrid%mmean_wpa_pft           )) deallocate(cgrid%mmean_wpa_lu            )
        if(associated(cgrid%mmean_wai_pft           )) deallocate(cgrid%mmean_wai_pft           )
        if(associated(cgrid%mmean_wai_pft           )) deallocate(cgrid%mmean_wai_lu            )
+       if(associated(cgrid%mmean_can_temp          )) deallocate(cgrid%mmean_can_temp          )
+       if(associated(cgrid%mmean_can_shv           )) deallocate(cgrid%mmean_can_shv           )
+       if(associated(cgrid%mmean_veg_energy        )) deallocate(cgrid%mmean_veg_energy        )
+       if(associated(cgrid%mmean_veg_water         )) deallocate(cgrid%mmean_veg_water         )
+       if(associated(cgrid%mmean_veg_hcap          )) deallocate(cgrid%mmean_veg_hcap          )
+       if(associated(cgrid%mmean_veg_temp          )) deallocate(cgrid%mmean_veg_temp          )
+       if(associated(cgrid%mmean_atm_temp          )) deallocate(cgrid%mmean_atm_temp          )
+       if(associated(cgrid%mmean_atm_shv           )) deallocate(cgrid%mmean_atm_shv           )
+       if(associated(cgrid%mmean_atm_prss          )) deallocate(cgrid%mmean_atm_prss          )
+       if(associated(cgrid%mmean_atm_vels          )) deallocate(cgrid%mmean_atm_vels          )
+       if(associated(cgrid%mmean_pcpg              )) deallocate(cgrid%mmean_pcpg              )
        if(associated(cgrid%agb_pft                 )) deallocate(cgrid%agb_pft                 )
        if(associated(cgrid%ba_pft                  )) deallocate(cgrid%ba_pft                  )
        if(associated(cgrid%area_pft                )) deallocate(cgrid%area_pft                )
@@ -3820,6 +3908,16 @@ contains
     if(associated(cgrid%dmean_rh_lu             )) cgrid%dmean_rh_lu              = large_real
     if(associated(cgrid%dmean_nep_lu            )) cgrid%dmean_nep_lu             = large_real
     if(associated(cgrid%dmean_gpp_dbh           )) cgrid%dmean_gpp_dbh            = large_real
+    if(associated(cgrid%dmean_can_temp          )) cgrid%dmean_can_temp           = large_real
+    if(associated(cgrid%dmean_can_shv           )) cgrid%dmean_can_shv            = large_real
+    if(associated(cgrid%dmean_veg_energy        )) cgrid%dmean_veg_energy         = large_real
+    if(associated(cgrid%dmean_veg_water         )) cgrid%dmean_veg_water          = large_real
+    if(associated(cgrid%dmean_veg_temp          )) cgrid%dmean_veg_temp           = large_real
+    if(associated(cgrid%dmean_veg_hcap          )) cgrid%dmean_veg_hcap           = large_real
+    if(associated(cgrid%dmean_atm_temp          )) cgrid%dmean_atm_temp           = large_real
+    if(associated(cgrid%dmean_atm_shv           )) cgrid%dmean_atm_shv            = large_real
+    if(associated(cgrid%dmean_atm_prss          )) cgrid%dmean_atm_prss           = large_real
+    if(associated(cgrid%dmean_atm_vels          )) cgrid%dmean_atm_vels           = large_real
     if(associated(cgrid%lai_pft                 )) cgrid%lai_pft                  = large_real
     if(associated(cgrid%lai_lu                  )) cgrid%lai_lu                   = large_real
     if(associated(cgrid%wpa_pft                 )) cgrid%wpa_pft                  = large_real
@@ -3853,6 +3951,16 @@ contains
     if(associated(cgrid%mmean_wpa_lu            )) cgrid%mmean_wpa_lu             = large_real
     if(associated(cgrid%mmean_wai_pft           )) cgrid%mmean_wai_pft            = large_real
     if(associated(cgrid%mmean_wai_lu            )) cgrid%mmean_wai_lu             = large_real
+    if(associated(cgrid%dmean_can_temp          )) cgrid%dmean_can_temp           = large_real
+    if(associated(cgrid%dmean_can_shv           )) cgrid%dmean_can_shv            = large_real
+    if(associated(cgrid%dmean_veg_energy        )) cgrid%dmean_veg_energy         = large_real
+    if(associated(cgrid%dmean_veg_water         )) cgrid%dmean_veg_water          = large_real
+    if(associated(cgrid%dmean_veg_hcap          )) cgrid%dmean_veg_hcap           = large_real
+    if(associated(cgrid%dmean_veg_temp          )) cgrid%dmean_veg_temp           = large_real
+    if(associated(cgrid%dmean_atm_temp          )) cgrid%dmean_atm_temp           = large_real
+    if(associated(cgrid%dmean_atm_shv           )) cgrid%dmean_atm_shv            = large_real
+    if(associated(cgrid%dmean_atm_prss          )) cgrid%dmean_atm_prss           = large_real
+    if(associated(cgrid%dmean_atm_vels          )) cgrid%dmean_atm_vels           = large_real
     if(associated(cgrid%agb_pft                 )) cgrid%agb_pft                  = large_real
     if(associated(cgrid%ba_pft                  )) cgrid%ba_pft                   = large_real
     if(associated(cgrid%area_pft                )) cgrid%area_pft                 = large_real
@@ -6525,6 +6633,76 @@ contains
             ,'[tC/ha/d]','ipoly - ndbh') 
     endif
     
+    if(associated(cgrid%dmean_can_temp)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_can_temp(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_CAN_TEMP :11:hist:dail:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Daily mean canopy temperature','[K]','ipoly') 
+    end if
+    
+    if(associated(cgrid%dmean_can_shv)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_can_shv(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_CAN_SHV :11:hist:dail:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Daily mean canopy specific humidity','[kg/kg]','ipoly') 
+    end if
+    
+    if(associated(cgrid%dmean_veg_energy)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_veg_energy(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_VEG_ENERGY :11:hist:dail:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Daily mean vegetation internal energy','[J/m2]','ipoly') 
+    end if
+    
+    if(associated(cgrid%dmean_veg_water)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_veg_water(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_VEG_WATER :11:hist:dail:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Daily mean vegetation surface water','[kg/m2]','ipoly') 
+    end if
+    
+    if(associated(cgrid%dmean_veg_temp)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_veg_temp(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_VEG_TEMP :11:hist:dail:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Daily mean vegetation temperature','[K]','ipoly') 
+    end if
+    
+    if(associated(cgrid%dmean_veg_hcap)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_veg_hcap(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_VEG_HCAP :11:hist:dail:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Daily mean vegetation heat capacity','[J/m2/K]','ipoly') 
+    end if
+    
+    if(associated(cgrid%dmean_atm_temp)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_atm_temp(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_ATM_TEMP :11:hist:dail:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Daily mean air temperature','[K]','ipoly') 
+    end if
+    
+    if(associated(cgrid%dmean_atm_shv)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_atm_shv(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_ATM_SHV :11:hist:dail:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Daily mean air specific humidity','[kg/kg]','ipoly') 
+    end if
+    
+    if(associated(cgrid%dmean_atm_prss)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_atm_prss(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_ATM_PRSS :11:hist:dail:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Daily mean air pressure','[ Pa]','ipoly') 
+    end if
+    
+    if(associated(cgrid%dmean_atm_vels)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_atm_vels(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_ATM_VELS :11:hist:dail:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Daily mean wind speed','[m/s]','ipoly') 
+    end if
+
     if(associated(cgrid%lai_pft)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%lai_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
@@ -6755,6 +6933,83 @@ contains
             var_len,var_len_global,max_ptrs,'MMEAN_WAI_LU :15:hist:mont:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
+    
+    if(associated(cgrid%mmean_can_temp)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_can_temp(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_CAN_TEMP :11:hist:mont:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Monthly mean canopy temperature','[K]','ipoly') 
+    end if
+    
+    if(associated(cgrid%mmean_can_shv)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_can_shv(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_CAN_SHV :11:hist:mont:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Monthly mean canopy specific humidity','[kg/kg]','ipoly') 
+    end if
+    
+    if(associated(cgrid%mmean_veg_water)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_veg_water(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_VEG_WATER :11:hist:mont:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Monthly mean vegetation surface water','[kg/m2]','ipoly') 
+    end if
+    
+    if(associated(cgrid%mmean_veg_energy)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_veg_energy(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_VEG_ENERGY :11:hist:mont:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Monthly mean vegetation internal energy','[J/m2]','ipoly') 
+    end if
+    
+    if(associated(cgrid%mmean_veg_temp)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_veg_temp(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_VEG_TEMP :11:hist:mont:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Monthly mean vegetation temperature','[K]','ipoly') 
+    end if
+    
+    if(associated(cgrid%mmean_veg_hcap)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_veg_hcap(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_VEG_HCAP :11:hist:mont:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Monthly mean vegetation heat capacity','[J/m2/K]','ipoly') 
+    end if
+    
+    if(associated(cgrid%mmean_atm_temp)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_atm_temp(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_ATM_TEMP :11:hist:mont:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Monthly mean air temperature','[K]','ipoly') 
+    end if
+    
+    if(associated(cgrid%mmean_atm_shv)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_atm_shv(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_ATM_SHV :11:hist:mont:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Monthly mean air specific humidity','[kg/kg]','ipoly') 
+    end if
+    
+    if(associated(cgrid%mmean_atm_prss)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_atm_prss(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_ATM_PRSS :11:hist:mont:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Monthly mean air pressure','[ Pa]','ipoly') 
+    end if
+    
+    if(associated(cgrid%mmean_atm_vels)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_atm_vels(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_ATM_VELS :11:hist:mont:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Monthly mean wind speed','[m/s]','ipoly') 
+    end if
+    
+    if(associated(cgrid%mmean_pcpg)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_pcpg(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_PCPG :11:hist:mont:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Monthly mean precipitation rate','[kg/m2/s]','ipoly') 
+    end if
     
     if(associated(cgrid%agb_pft)) then
        nvar=nvar+1

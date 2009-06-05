@@ -556,9 +556,10 @@ subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,T_veg,lw_v_surf,
                        ,downward_lw_below_surf,downward_lw_below_incid                     &
                        ,upward_lw_below_surf,upward_lw_below_incid,upward_lw_above_surf    &
                        ,upward_lw_above_incid)
-   use canopy_radiation_coms , only : emis_v  & ! intent(in)
-                                    , mubar   ! ! intent(in)
-   use consts_coms           , only : stefan8 ! ! intent(in)
+   use canopy_radiation_coms , only : emis_v          & ! intent(in)
+                                    , mubar           ! ! intent(in)
+   use pft_coms              , only : clumping_factor ! ! intent(in)
+   use consts_coms           , only : stefan8         ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                      , intent(in)  :: ncoh        ! # of cohorts
@@ -631,8 +632,10 @@ subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,T_veg,lw_v_surf,
       zetai       = 1.0d0 / zeta
       source(il)  = emis_v(pft(il)) * stefan8 *T_veg(il)**4
       forcing(il) = -(zeta + eta) * source(il)
-      explai(il)  = exp( exk * TAI(il))
-      exmlai(il)  = exp(-exk * TAI(il))
+      !explai(il)  = exp( exk * clumping_factor(pft(il))*TAI(il))
+      !exmlai(il)  = exp(-exk * clumping_factor(pft(il))*TAI(il))
+      explai(il)  = exp( exk *TAI(il))
+      exmlai(il)  = exp(-exk *TAI(il))
 
       !------------------------------------------------------------------------------------!
       !     Coefficient of lambda1 (and minus the coefficient of lambda2) for the bottom   !

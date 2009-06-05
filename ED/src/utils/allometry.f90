@@ -154,7 +154,7 @@ module allometry
    !    Canopy Area allometry from Dietze and Clark (2008).                                !
    !---------------------------------------------------------------------------------------!
    real function dbh2ca(dbh,ipft)
-      use pft_coms, only : is_tropical
+      use pft_coms, only : is_tropical,is_grass
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
@@ -165,9 +165,10 @@ module allometry
       if (dbh < tiny(1.0)) then
          dbh2ca = 0.0
       !----- Based on Poorter et al. (2006) -----------------------------------------------!
-      elseif(is_tropical(ipft)) then
-         hite   = dbh2h(ipft,dbh)
-         dbh2ca = 0.156766*hite**1.888
+      !elseif(is_tropical(ipft) .or. is_grass(ipft)) then
+      !   hite   = dbh2h(ipft,dbh)
+      !   dbh2ca = 0.156766*hite**1.888
+      !----- Based on Dietze and Clark (2008). --------------------------------------------!
       else
          dbh2ca = 2.490154*dbh**0.8068806
       end if

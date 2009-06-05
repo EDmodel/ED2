@@ -10,7 +10,7 @@ an_header.o: $(ED_IO)/an_header.f90
 	rm -f $(<F:.f90=.f90)
 
 average_utils.o : $(ED_IO)/average_utils.f90 grid_coms.o misc_coms.o ed_state_vars.o       \
-	ed_misc_coms.o max_dims.o consts_coms.o allometry.o
+	ed_misc_coms.o max_dims.o consts_coms.o allometry.o therm_lib.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
