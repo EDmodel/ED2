@@ -277,9 +277,14 @@ module ed_state_vars
      ! Gross Primary Productivity [umol/m2/s]
      real, pointer,dimension(:) :: gpp
 
-     real, pointer, dimension(:) :: paw_avg10d
+     real, pointer, dimension(:) :: paw_avg
 
-     
+     ! Phenology-related
+     real, pointer, dimension(:) :: turnover_amp
+     real, pointer, dimension(:) :: llspan
+     real, pointer, dimension(:) :: vm_bar
+     real, pointer, dimension(:) :: sla
+
   end type patchtype
 !============================================================================!
 !============================================================================!
@@ -1002,7 +1007,8 @@ module ed_state_vars
      real,pointer,dimension(:,:) :: avg_soil_fracliq
      real,pointer,dimension(:) :: runoff
 
-
+     !-----  Phenology
+     real, pointer, dimension(:) :: rad_avg
 
 
      !----- NACP intercomparison ---------------------------------------------!
@@ -1017,7 +1023,6 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_co2can
      real,pointer,dimension(:) :: avg_balive
      real,pointer,dimension(:) :: avg_bdead
-
 
   end type polygontype
 !============================================================================!
@@ -1985,8 +1990,9 @@ contains
     allocate(cpoly%avg_soil_water(nzg,nsites))
     allocate(cpoly%avg_soil_temp (nzg,nsites))
     allocate(cpoly%avg_soil_fracliq (nzg,nsites))
-
     allocate(cpoly%runoff           (nsites))
+    ! Phenology-related
+    allocate(cpoly%rad_avg (nsites))
 
     !!!NACP
     allocate(cpoly%avg_snowdepth           (nsites))
@@ -2000,7 +2006,6 @@ contains
     allocate(cpoly%avg_balive              (nsites))
     allocate(cpoly%avg_bdead               (nsites))
     allocate(cpoly%avg_co2can              (nsites))
-
 
     ! Initialize the variables with a non-sense number.
     !call huge_polygontype(cpoly)
@@ -2283,7 +2288,11 @@ contains
     allocate(cpatch%root_respiration(ncohorts))
     allocate(cpatch%hcapveg(ncohorts))
     allocate(cpatch%gpp(ncohorts))
-    allocate(cpatch%paw_avg10d(ncohorts))
+    allocate(cpatch%paw_avg(ncohorts))
+    allocate(cpatch%turnover_amp(ncohorts))
+    allocate(cpatch%llspan(ncohorts))
+    allocate(cpatch%vm_bar(ncohorts))
+    allocate(cpatch%sla(ncohorts))
 
     ! Initialize the variables with a non-sense number.
     !call huge_patchtype(cpatch)
@@ -2693,9 +2702,9 @@ contains
     nullify(cpoly%avg_soil_water)
     nullify(cpoly%avg_soil_temp )
     nullify(cpoly%avg_soil_fracliq )
-
     nullify(cpoly%runoff        )
-
+    ! Phenology
+    nullify(cpoly%rad_avg          )
     ! NACP
     nullify(cpoly%avg_snowdepth    )
     nullify(cpoly%avg_snowenergy   )
@@ -2969,7 +2978,11 @@ contains
     nullify(cpatch%root_respiration)
     nullify(cpatch%hcapveg)
     nullify(cpatch%gpp)
-    nullify(cpatch%paw_avg10d)
+    nullify(cpatch%paw_avg)
+    nullify(cpatch%turnover_amp)
+    nullify(cpatch%llspan)
+    nullify(cpatch%vm_bar)
+    nullify(cpatch%sla)
 
 ! Depricated
 !    nullify(cpatch%co_srad_h)
@@ -3393,7 +3406,7 @@ contains
     if(associated(cpoly%avg_soil_temp               )) deallocate(cpoly%avg_soil_temp               )
     if(associated(cpoly%avg_soil_fracliq            )) deallocate(cpoly%avg_soil_fracliq            )
     if(associated(cpoly%runoff                      )) deallocate(cpoly%runoff                      )
-
+    if(associated(cpoly%rad_avg                     )) deallocate(cpoly%rad_avg                     )
     ! NACP
     if(associated(cpoly%avg_snowdepth             )) deallocate(cpoly%avg_snowdepth             )
     if(associated(cpoly%avg_snowenergy            )) deallocate(cpoly%avg_snowenergy            )
@@ -3670,7 +3683,11 @@ contains
     if(associated(cpatch%root_respiration)) deallocate(cpatch%root_respiration)
     if(associated(cpatch%hcapveg))          deallocate(cpatch%hcapveg)
     if(associated(cpatch%gpp))              deallocate(cpatch%gpp)
-    if(associated(cpatch%paw_avg10d))       deallocate(cpatch%paw_avg10d)
+    if(associated(cpatch%paw_avg))          deallocate(cpatch%paw_avg)
+    if(associated(cpatch%turnover_amp))     deallocate(cpatch%turnover_amp)
+    if(associated(cpatch%llspan))           deallocate(cpatch%llspan)
+    if(associated(cpatch%vm_bar))           deallocate(cpatch%vm_bar)
+    if(associated(cpatch%sla))           deallocate(cpatch%sla)
 
 
     return
@@ -4447,8 +4464,11 @@ contains
     if(associated(cpatch%root_respiration))     cpatch%root_respiration    = large_real
     if(associated(cpatch%hcapveg))              cpatch%hcapveg             = large_real
     if(associated(cpatch%gpp))                  cpatch%gpp                 = large_real
-    if(associated(cpatch%paw_avg10d))           cpatch%paw_avg10d          = large_real
-
+    if(associated(cpatch%paw_avg))              cpatch%paw_avg             = large_real
+    if(associated(cpatch%turnover_amp))         cpatch%turnover_amp        = large_real
+    if(associated(cpatch%llspan))               cpatch%llspan              = large_real
+    if(associated(cpatch%vm_bar))               cpatch%vm_bar              = large_real
+    if(associated(cpatch%sla))                  cpatch%sla                 = large_real
     ! Depricated
 !    if(associated(cpatch%co_srad_h))            cpatch%co_srad_h           = large_real
 !    if(associated(cpatch%co_lrad_h))            cpatch%co_lrad_h           = large_real
@@ -4972,8 +4992,12 @@ contains
     patchout%root_respiration(1:inc) = pack(patchin%root_respiration,mask)
     patchout%hcapveg(1:inc)          = pack(patchin%hcapveg,mask)
     patchout%gpp(1:inc)              = pack(patchin%gpp,mask)
-    patchout%paw_avg10d(1:inc)       = pack(patchin%paw_avg10d,mask)
-    
+    patchout%paw_avg(1:inc)          = pack(patchin%paw_avg,mask)
+    patchout%turnover_amp(1:inc)     = pack(patchin%turnover_amp,mask)
+    patchout%llspan(1:inc)           = pack(patchin%llspan,mask)
+    patchout%vm_bar(1:inc)           = pack(patchin%vm_bar,mask)
+    patchout%sla(1:inc)              = pack(patchin%sla,mask)    
+
     do m=1,inc
        k=incmask(m)
        do i = 1,13
@@ -5103,7 +5127,11 @@ contains
        patchout%root_respiration(iout) = patchin%root_respiration(iin)
        patchout%hcapveg(iout)          = patchin%hcapveg(iin)
        patchout%gpp(iout)              = patchin%gpp(iin)
-       patchout%paw_avg10d(iout)       = patchin%paw_avg10d(iin)
+       patchout%paw_avg(iout)          = patchin%paw_avg(iin)
+       patchout%turnover_amp(iout)     = patchin%turnover_amp(iin)
+       patchout%llspan(iout)           = patchin%llspan(iin)
+       patchout%vm_bar(iout)           = patchin%vm_bar(iin)
+       patchout%sla(iout)              = patchin%sla(iin)
 
        ! Depricated
 !       patchout%co_srad_h(iout)        = patchin%co_srad_h(iin)
@@ -8949,10 +8977,38 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpatch%paw_avg10d)) then
+    if (associated(cpatch%paw_avg)) then
        nvar=nvar+1
-         call vtable_edio_r(cpatch%paw_avg10d(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'PAW_AVG10D :41:hist:mpti:mpt3') 
+         call vtable_edio_r(cpatch%paw_avg(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'PAW_AVG :41:hist:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%turnover_amp)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%turnover_amp(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'TURNOVER_AMP :41:hist:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%llspan)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%llspan(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'LLSPAN :41:hist:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%vm_bar)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%vm_bar(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'VM_BAR :41:hist:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%sla)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%sla(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'SLA :41:hist:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 

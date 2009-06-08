@@ -321,7 +321,7 @@ implicit none
 
 D0 = 0.01 ! same for all PFTs
 
-Vm_low_temp(1:4) = 5.0 ! tropical PFTs
+Vm_low_temp(1:4) = 5.0     ! tropical PFTs
 Vm_low_temp(5:13) = 4.7137 ! temperate PFTs
 Vm_low_temp(14:15) = 5.0 
 
@@ -474,9 +474,9 @@ subroutine init_pft_mort_params()
 
    mort2 = 20.0
 
-   mort3(1) = 0.06167 ! 0.037
-   mort3(2) = 0.06167 ! 0.037
-   mort3(3) = 0.03167 ! 0.019
+   mort3(1) =  0.06167 ! 0.037
+   mort3(2) =  0.06167 ! 0.037
+   mort3(3) =  0.03167 ! 0.019
    mort3(4) = 0.0
    mort3(5) = 0.066
    mort3(6) = 0.0033928
@@ -575,10 +575,15 @@ subroutine init_pft_alloc_params()
    !     Wood density.  Currently only tropical PFTs need it.  C3 grass density will be    !
    ! used only for branch area purposes.                                                   !
    !---------------------------------------------------------------------------------------!
-   rho(1)     = 0.53
-   rho(2)     = 0.53
-   rho(3)     = 0.71
-   rho(4)     = 0.90
+![KIM] - new tropical parameters
+!   rho(1)     = 0.53
+!   rho(2)     = 0.53
+!   rho(3)     = 0.71
+!   rho(4)     = 0.90
+   rho(1)     = 0.40
+   rho(2)     = 0.40
+   rho(3)     = 0.60
+   rho(4)     = 0.87
    rho(5)     = 0.53   ! Copied from C4 grass
    rho(6:11)  = 0.00   ! Currently not used
    rho(12:13) = 0.53
@@ -586,7 +591,9 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
 
    !----- Specific leaf area [m² leaf / kg C] ---------------------------------------------!
-   SLA(1:4)   = 10.0**((2.4-0.46*log10(12.0/leaf_turnover_rate(1:4)))) * C2B * 0.1
+![KIM] - new tropical parameters
+!   SLA(1:4)   = 10.0**((2.4-0.46*log10(12.0/leaf_turnover_rate(1:4)))) * C2B * 0.1
+   SLA(1:4) = 10.0**(1.6923-0.3305*log10(12.0/leaf_turnover_rate(1:4)))
    SLA(5)     = 22.0
    SLA(6)     =  6.0
    SLA(7)     =  9.0
@@ -595,7 +602,8 @@ subroutine init_pft_alloc_params()
    SLA(10)    = 24.2
    SLA(11)    = 60.0
    SLA(12:13) = 22.0
-   SLA(14:15) = 10.0**((2.4-0.46*log10(12.0/leaf_turnover_rate(14:15)))) * C2B * 0.1
+!   SLA(14:15) = 10.0**((2.4-0.46*log10(12.0/leaf_turnover_rate(14:15)))) * C2B * 0.1
+   SLA(14:15) = 10.0**(1.6923-0.3305*log10(12.0/leaf_turnover_rate(14:15)))
 
    !---------------------------------------------------------------------------------------!
    !    Fraction of vertical branches.  Values are from Poorter et al. (2006):             !
@@ -855,11 +863,18 @@ subroutine init_pft_leaf_params()
                              , wat_dry_ratio_grn    & ! intent(out)
                              , wat_dry_ratio_ngrn   & ! intent(out)
                              , delta_c              ! ! intent(out)
-   use consts_coms    , only : t3ple                ! ! intent(out)
+   use consts_coms    , only : t3ple                ! ! intent(out) 
+   use phenology_coms, only:iphen_scheme
 
    implicit none
 
-   phenology(1:5)   = 1
+   if ( iphen_scheme == 2 ) then
+      phenology(1) = 4
+      phenology(2:4) = 3
+   else
+      phenology(1:4) = 1
+   endif
+   phenology(5)   = 1
    phenology(6:8)   = 0
    phenology(9:11)  = 2
    phenology(12:15) = 1
@@ -882,8 +897,8 @@ subroutine init_pft_leaf_params()
    !---------------------------------------------------------------------------------------!
    c_grn_leaf_dry(1:15)      = 3218.0    ! Jones 1992  J/(kg K)
    c_ngrn_biom_dry(1:15)     = 1256.0    ! Forest Products Laboratory 
-   !wat_dry_ratio_grn(1:15)   = 2.5       ! 
-   wat_dry_ratio_grn(1:15)   = 1.5       ! Ceccato et al. 2001
+   wat_dry_ratio_grn(1:15)   = 2.5       ! 
+   !wat_dry_ratio_grn(1:15)   = 1.5       ! Ceccato et al. 2001
    wat_dry_ratio_ngrn(1:15)  = 0.7       ! Forest Products Laboratory
    !---------------------------------------------------------------------------------------!
    !     Delta-c is found using the second term of the RHS of equation 5, assuming         !
@@ -1202,7 +1217,9 @@ end subroutine init_soil_coms
 subroutine init_phen_coms
 
   use phenology_coms,only: retained_carbon_fraction, &
-       theta_crit,dl_tr,st_tr1,st_tr2,phen_a,phen_b,phen_c
+       theta_crit,dl_tr,st_tr1,st_tr2,phen_a,phen_b,phen_c, &
+       rad_turnover_int, rad_turnover_slope, &
+       vm_tran, vm_slop, vm_amp, vm_min
 
   implicit none
 
@@ -1216,6 +1233,13 @@ subroutine init_phen_coms
   phen_b = 638.0    
   phen_c = -0.01    
 
+  rad_turnover_int   = -11.3868
+  rad_turnover_slope = 0.0824
+
+  vm_tran = 9.0
+  vm_slop = 10.0
+  vm_amp = 20.0
+  vm_min = 15.0
 
   return
 end subroutine init_phen_coms

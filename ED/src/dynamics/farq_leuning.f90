@@ -13,12 +13,16 @@ subroutine lphysiol_full(T_L,  &
      leaf_resp,  &
      green_leaf_factor,  &
      leaf_aging_factor, &
-     old_st_data)
+     old_st_data, &
+     llspan, &
+     vm_bar)
 
   use c34constants
   use pft_coms, only: D0, cuticular_cond, dark_respiration_factor,   &
-       stomatal_slope, quantum_efficiency, photosyn_pathway, Vm0, Vm_low_temp
+       stomatal_slope, quantum_efficiency, photosyn_pathway, Vm0, Vm_low_temp, &
+       phenology
   use physiology_coms, only: istoma_scheme
+  use phenology_coms,only: vm_tran, vm_slop, vm_amp, vm_min
   use therm_lib, only : rslif
   use consts_coms, only : t00,mmdov
   implicit none
@@ -39,6 +43,8 @@ subroutine lphysiol_full(T_L,  &
   real, intent(in) :: leaf_aging_factor
   integer, intent(in) :: pft
   type(stoma_data), intent(inout) :: old_st_data
+  real, intent(in) :: llspan
+  real, intent(in) :: vm_bar
 
   type(farqdata) :: gsdata
   type(metdat) :: met
@@ -48,6 +54,7 @@ subroutine lphysiol_full(T_L,  &
   integer :: ilimit
 
   real :: co2cp
+  real :: vmbar, vmllspan
 
   ! load physiological parameters into structure
   gsdata%D0 = D0(pft)
@@ -71,10 +78,20 @@ subroutine lphysiol_full(T_L,  &
   sol%eps = 3.0e-8
   sol%ninterval = 6
 
+
+  ! Set variables for light-controlled phenology
+  if (phenology(pft) == 3) then
+     vmllspan=vm_amp/(1.0+(llspan/vm_tran)**vm_slop)+vm_min
+     vmbar = vm_bar
+  else
+     vmllspan = 0.0
+     vmbar = 0.0
+  endif
+
   ! Prepare derived terms for both exact and approximate solutions
   call prep_lphys_solution(photosyn_pathway(pft), Vm0(pft), met,   &
        Vm_low_temp(pft), leaf_aging_factor, green_leaf_factor, leaf_resp,   &
-       gsdata, apar)
+       vmllspan, vmbar, gsdata, apar)
 
   ! Decide whether to do the exact solution or the approximation
   recalc = 1
@@ -88,7 +105,7 @@ subroutine lphysiol_full(T_L,  &
   if(istoma_scheme == 1 .and. recalc == 1)then
      call store_exact_lphys_solution(old_st_data, met, prss,   &
           leaf_aging_factor, green_leaf_factor, sol, ilimit, gsdata, apar,  &
-          photosyn_pathway(pft), Vm0(pft), Vm_low_temp(pft))
+          photosyn_pathway(pft), Vm0(pft), Vm_low_temp(pft), vmbar)
   endif
 
   if(recalc == 1)then
@@ -688,7 +705,8 @@ subroutine solve_closed_case_c3(gsdata,met,apar,sol,ilimit)
 
   sol%gsw(1,ilimit) = gsdata%b
   sol%es(1,ilimit) = (met%ea*met%gbw+gsdata%b*met%el)/(gsdata%b+met%gbw)
-  sol%a(1,ilimit) = -gsdata%gamma*apar%vm
+!  sol%a(1,ilimit) = -gsdata%gamma*apar%vm ![KIM] - buggy if leaf_resp is estimated in a different way
+  sol%a(1,ilimit) = apar%nu
   sol%cs(1,ilimit) = met%ca - sol%a(1,ilimit)/met%gbc
   sol%ci(1,ilimit) = sol%cs(1,ilimit) - sol%a(1,ilimit) * 1.6 / gsdata%b
   return
@@ -982,7 +1000,8 @@ end subroutine testsolution
 !===============================================================
 
 subroutine prep_lphys_solution(photosyn_pathway, Vm0, met, Vm_low_temp,  &
-     leaf_aging_factor, green_leaf_factor, leaf_resp, gsdata, apar)
+     leaf_aging_factor, green_leaf_factor, leaf_resp, &
+     vmllspan,vmbar,gsdata, apar)
 
   use c34constants
 
@@ -996,10 +1015,13 @@ subroutine prep_lphys_solution(photosyn_pathway, Vm0, met, Vm_low_temp,  &
   type(metdat), intent(in) :: met
   real, intent(in) :: leaf_aging_factor
   real, intent(in) :: green_leaf_factor
+  real, intent(in) :: vmllspan
+  real, intent(in) :: vmbar
   real, intent(out) :: leaf_resp
   type(farqdata), intent(in) :: gsdata
   type(glim), intent(inout) :: apar
   real(kind=8) :: vmdble
+  real :: vmbar_temp
   real, external :: arrhenius
 
   if(photosyn_pathway == 3)then
@@ -1010,6 +1032,13 @@ subroutine prep_lphys_solution(photosyn_pathway, Vm0, met, Vm_low_temp,  &
                 (1.0d+0 + dexp(0.4d+0*dble(met%tl - 45.0 ))) )
      apar%vm = sngl(vmdble)
 
+     if(vmllspan > 0.0) then
+        vmdble = dble(vmllspan) * dble(arrhenius(met%tl, 1.0, 3000.0)) / &
+              ( (1.0d+0 + dexp(0.4d+0*dble(Vm_low_temp - met%tl) )) * &
+                (1.0d+0 + dexp(0.4d+0*dble(met%tl - 45.0 ))) )
+        apar%vm = sngl(vmdble)
+     endif
+
      ! Adjust Vm according to the aging factor.
      if(leaf_aging_factor > 0.01 .and. green_leaf_factor > 0.0001)then
         apar%vm = apar%vm * leaf_aging_factor / green_leaf_factor
@@ -1017,7 +1046,15 @@ subroutine prep_lphys_solution(photosyn_pathway, Vm0, met, Vm_low_temp,  &
 
      ! Compute leaf respiration and other constants.
      leaf_resp = apar%vm * gsdata%gamma
-     apar%nu = -apar%vm * gsdata%gamma
+
+     if (vmbar > 0.0) then
+        vmbar_temp = vmbar * arrhenius(met%tl, 1.0, 3000.0) / ( &
+          (1.0 + exp(0.4*(Vm_low_temp - met%tl))) * &
+          (1.0 + exp(0.4*(met%tl - 45.0 ))) )
+        leaf_resp = vmbar_temp * gsdata%gamma
+     endif  
+
+     apar%nu = -leaf_resp
      apar%k1 = arrhenius(met%tl, 1.5e-4, 6000.0)
      apar%k2 = arrhenius(met%tl, 0.836, -1400.0)
 
@@ -1073,7 +1110,7 @@ end subroutine exact_lphys_solution
 
 subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
      leaf_aging_factor, green_leaf_factor, sol, ilimit, gsdata, apar,  &
-     photosyn_pathway, Vm0, Vm_low_temp)
+     photosyn_pathway, Vm0, Vm_low_temp, vmbar)
 
   use c34constants
   use therm_lib, only: rslif
@@ -1094,6 +1131,7 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
   type(glim), intent(inout) :: apar
   real, intent(in) :: Vm0
   real, intent(in) :: Vm_low_temp
+  real, intent(in) :: vmbar
 
 
   real, external :: co2cp
@@ -1101,6 +1139,7 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
   real :: dprss
   real, external :: residual_c3
   real, external :: residual_c4
+  real :: vmbar_temp
 
   ! Save old meteorological information
   old_st_data%T_L = met%tl
@@ -1147,6 +1186,12 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
                 / green_leaf_factor
         endif
         apar%nu = -apar%vm * gsdata%gamma
+        if (vmbar > 0.0) then
+           vmbar_temp = vmbar * arrhenius(met%tl, 1.0, 3000.0) / ( &
+             (1.0 + exp(0.4*(Vm_low_temp - met%tl))) * &
+             (1.0 + exp(0.4*(met%tl - 45.0 ))) )
+           apar%nu = -vmbar_temp * gsdata%gamma
+        endif  
         apar%k1 = arrhenius(met%tl,1.5e-4,6000.0)
         apar%k2 = arrhenius(met%tl,0.836,-1400.0)
         call setapar_c3(gsdata,met,apar,ilimit)
@@ -1165,6 +1210,12 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
                 / green_leaf_factor
         endif
         apar%nu = -apar%vm * gsdata%gamma
+        if (vmbar > 0.0) then
+           vmbar_temp = vmbar * arrhenius(met%tl, 1.0, 3000.0) / ( &
+             (1.0 + exp(0.4*(Vm_low_temp - met%tl))) * &
+             (1.0 + exp(0.4*(met%tl - 45.0 ))) )
+           apar%nu = -vmbar_temp * gsdata%gamma
+        endif  
         apar%k1 = arrhenius(met%tl,1.5e-4,6000.0)
         apar%k2 = arrhenius(met%tl,0.836,-1400.0)
         

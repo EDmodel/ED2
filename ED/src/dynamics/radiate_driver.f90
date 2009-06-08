@@ -94,6 +94,10 @@ subroutine radiate_driver_ar(cgrid)
             call ed2land_radiation_ar(cpoly,isi)
          end do siteloop
       end do polyloop
+
+      !KIM---- update the average radiation for phenology----------------------------------!
+      call update_rad_avg(cgrid)
+
    end if
 
    !---------------------------------------------------------------------------------------!

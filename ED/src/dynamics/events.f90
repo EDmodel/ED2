@@ -384,8 +384,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  !----- Update LAI, WPA, and WAI ------------------------------------------!
                  call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)  &
                                   ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)    &
-                                  ,cpatch%pft(ico),cpatch%lai(ico),cpatch%wpa(ico)         &
-                                  ,cpatch%wai(ico))
+                                  ,cpatch%pft(nc),cpatch%sla(nc), cpatch%lai(nc)           &
+                                  ,cpatch%wpa(nc),cpatch%wai(nc))
 
                  !-------------------------------------------------------------------------!
                  !    Here we are leaving all water in the branches and twigs... Do not    !

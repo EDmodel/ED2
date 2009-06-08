@@ -60,8 +60,8 @@ HDF4_LIBS=
 # and specify the location of the include directory
 # library files. Make sure you include the zlib.a location too.
 USE_HDF5=1
-HDF5_INCS=
-HDF5_LIBS=-lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
+HDF5_INCS=-I/odyssey/apps/hdf5/intel/lib -I/odyssey/apps/hdf5/intel/include
+HDF5_LIBS=-L/odyssey/apps/hdf5/intel/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
 
 #---------------------------------------------------------------
 # If you have a version of hdf5 compiled in parallel, then you
@@ -225,11 +225,12 @@ MOD_EXT=mod
 #USE_INTERF=0
 #F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces            \
          -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
-         -traceback -ftrapuv -assume byterecl
+         -traceback -ftrapuv
 #C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended
 #LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces \
              -warn interfaces -debug extended -debug inline_debug_info  \
-             -debug-parameters all -traceback -ftrapuv  -assume byterecl
+             -debug-parameters all -traceback -ftrapuv
+#C_LOADER_OPTS=-v -g -traceback
 #------------------------------------------------------------------------------------------#
 
 
@@ -242,12 +243,11 @@ MOD_EXT=mod
 #------------------------------------------------------------------------------------------#
 #USE_INTERF=1
 #F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
-        -debug inline_debug_info -debug-parameters all -traceback -ftrapuv \
-        -assume byterecl
+        -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
 #C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended
 #LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -debug extended        \
-             -debug inline_debug_info -debug-parameters all -traceback -ftrapuv \
-             -assume byterecl
+             -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+#C_LOADER_OPTS=-v -g -traceback
 #------------------------------------------------------------------------------------------#
 
 
@@ -257,14 +257,13 @@ MOD_EXT=mod
 #    You should use this if your run seems to be working fine at the beginning, but it is  #
 #    failing or giving instabilities, or funny results after a long time.                  #
 #------------------------------------------------------------------------------------------#
-#USE_INTERF=1
-#F_OPTS= -FR -O2 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
-       -debug inline_debug_info -debug-parameters all -traceback -ftrapuv \
-       -assume byterecl
-#C_OPTS= -O2 -DLITTLE  -g -traceback -debug extended
-#LOADER_OPTS= -FR -O2 -Vaxlib  -check all -g -fpe0 -ftz -debug extended        \
-            -debug inline_debug_info -debug-parameters all -traceback -ftrapuv \
-            -assume byterecl
+USE_INTERF=1
+F_OPTS= -FR -O2 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
+       -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+C_OPTS= -O2 -DLITTLE  -g -traceback -debug extended
+LOADER_OPTS= -FR -O2 -Vaxlib  -check all -g -fpe0 -ftz -debug extended        \
+            -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+C_LOADER_OPTS=-v -g -traceback
 #------------------------------------------------------------------------------------------#
 
 
@@ -274,11 +273,10 @@ MOD_EXT=mod
 #    or if you have a good idea of which problem you are dealing with.                     #
 #------------------------------------------------------------------------------------------#
 #USE_INTERF=1
-#F_OPTS= -FR -O2 -recursive -Vaxlib -check all -fpe0 -ftz  -traceback -ftrapuv \
-         -assume byterecl
+#F_OPTS= -FR -O2 -recursive -Vaxlib -check all -fpe0 -ftz  -traceback -ftrapuv
 #C_OPTS= -O2 -DLITTLE -traceback
-#LOADER_OPTS= -FR -O2 -Vaxlib  -check all -fpe0 -ftz -traceback -ftrapuv \
-              -assume byterecl
+#LOADER_OPTS= -FR -O2 -Vaxlib  -check all -fpe0 -ftz -traceback -ftrapuv
+#C_LOADER_OPTS=-v -traceback
 #------------------------------------------------------------------------------------------#
 
 
@@ -289,9 +287,10 @@ MOD_EXT=mod
 #           velopers.                                                                      #
 #------------------------------------------------------------------------------------------#
 USE_INTERF=1
-F_OPTS= -FR -O3 -recursive -Vaxlib -traceback  -assume byterecl
+F_OPTS= -FR -O3 -recursive -Vaxlib -traceback
 C_OPTS= -O3 -DLITTLE -traceback
-LOADER_OPTS= -FR -O3 -Vaxlib  -traceback -assume byterecl
+LOADER_OPTS= -FR -O3 -Vaxlib  -traceback
+C_LOADER_OPTS=-v -traceback
 #------------------------------------------------------------------------------------------#
 
 ############################################################################################

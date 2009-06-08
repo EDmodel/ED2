@@ -79,6 +79,7 @@ subroutine init_nbg_cohorts(csite,lsl,atm_tmp,ipa_a,ipa_z)
    use max_dims           , only : n_pft              ! ! intent(in)
    use pft_coms           , only : q                  & ! intent(in)
                                  , qsw                & ! intent(in)
+                                 , sla                & ! intent(in)
                                  , hgt_min            & ! intent(in)
                                  , include_pft        & ! intent(in)
                                  , include_these_pft  & ! intent(in)
@@ -165,13 +166,15 @@ subroutine init_nbg_cohorts(csite,lsl,atm_tmp,ipa_a,ipa_z)
          cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
          cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
          cpatch%bleaf(ico)            = dbh2bl(cpatch%dbh(ico),ipft)
+         cpatch%sla(ico)              = sla(ipft)
          cpatch%balive(ico)           = cpatch%bleaf(ico)                                  &
                                       * ( 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico) )
 
          !----- Find the initial area indices (LAI, WPA, WAI). ----------------------------!
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
-                          ,cpatch%pft(ico),cpatch%lai(ico),cpatch%wpa(ico),cpatch%wai(ico))
+                          ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
+                          ,cpatch%wpa(ico),cpatch%wai(ico))
 
          
          !----- Initialize other cohort-level variables. ----------------------------------!
