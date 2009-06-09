@@ -10,7 +10,8 @@ an_header.o: $(ED_IO)/an_header.f90
 	rm -f $(<F:.f90=.f90)
 
 average_utils.o : $(ED_IO)/average_utils.f90 grid_coms.o misc_coms.o ed_state_vars.o       \
-	ed_misc_coms.o max_dims.o canopy_radiation_coms.o consts_coms.o allometry.o
+	ed_misc_coms.o max_dims.o canopy_radiation_coms.o consts_coms.o allometry.o        \
+	therm_lib.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -131,7 +132,7 @@ ed_init.o : $(ED_INIT)/ed_init.f90 grid_coms.o ed_work_vars.o soil_coms.o ed_nod
 
 ed_init_atm.o : $(ED_INIT)/ed_init_atm.f90 misc_coms.o ed_state_vars.o soil_coms.o         \
 	consts_coms.o grid_coms.o fuse_fiss_utils.o ed_node_coms.o pft_coms.o therm_lib.o  \
-	canopy_air_coms.o ed_therm_lib.o allometry.o max_dims.o
+	canopy_air_coms.o ed_therm_lib.o allometry.o max_dims.o fusion_fission_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -266,7 +267,7 @@ events.o : $(ED_DYNAMICS)/events.f90 misc_coms.o grid_coms.o ed_state_vars.o pft
 	rm -f $(<F:.f90=.f90)
 
 farq_leuning.o : $(ED_DYNAMICS)/farq_leuning.f90 c34constants.o pft_coms.o                 \
-	physiology_coms.o therm_lib.o consts_coms.o
+	physiology_coms.o phenology_coms.o therm_lib.o consts_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

@@ -288,7 +288,8 @@ subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
   
   use ed_state_vars,only:sitetype,patchtype
   use allometry, only: ed_biomass
-
+  use fusion_fission_coms , only: ff_ndbh     
+  use fuse_fiss_utils_ar  , only: patch_pft_size_profile_ar
   implicit none
   integer         , intent(in) :: ipa
   real            , intent(in) :: rhos
@@ -336,6 +337,8 @@ subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
   
   enddo
   
+  call patch_pft_size_profile_ar(csite,ipa,ff_ndbh)
+
   if (csite%lai(ipa).lt.0.0) then
      print*,"STRANGE LAI, ncohorts:",cpatch%ncohorts,"dist type",csite%dist_type(ipa)
      do ico = 1,cpatch%ncohorts

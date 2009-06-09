@@ -380,7 +380,7 @@ module rk4_driver_ar
 
 
       !------------------------------------------------------------------------------------!
-      ! paw_avg10d - 10-day average of plant available water.                              !
+      ! paw_avg - 10-day average of plant available water.                              !
       !     I don't think this is currently used, but it may be turned on for drought-     !
       ! -related  phenology.                                                               !
       !------------------------------------------------------------------------------------!
@@ -401,7 +401,8 @@ module rk4_driver_ar
                          / (soil8(nsoil)%slmsts -soil8(nsoil)%soilcp) 
          available_water = available_water / (-1.d0*slz8(cpatch%krdepth(ico)))
 
-         cpatch%paw_avg10d(ico) = cpatch%paw_avg10d(ico)*(1.0-sngl(hdid)/tendays_sec)      &
+
+         cpatch%paw_avg(ico) = cpatch%paw_avg(ico)*(1.0-sngl(hdid)/tendays_sec)      &
                                 + sngl(available_water)*sngl(hdid)/tendays_sec
       end do
 

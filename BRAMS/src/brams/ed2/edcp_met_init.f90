@@ -349,6 +349,8 @@ subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
   
   use ed_state_vars,only:sitetype,patchtype
   use allometry, only: ed_biomass
+  use fusion_fission_coms , only: ff_ndbh     
+  use fuse_fiss_utils     , only: patch_pft_size_profile_ar
 
   implicit none
   integer         , intent(in) :: ipa
@@ -408,6 +410,7 @@ subroutine update_patch_derived_props_ar(csite, lsl, rhos, ipa)
      stop
   endif
 
+  call patch_pft_size_profile_ar(csite,ipa,ff_ndbh)
   
   ! Update vegetation height
   if(norm_fac > 0.0)then

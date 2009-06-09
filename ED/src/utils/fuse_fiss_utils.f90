@@ -291,8 +291,7 @@ module fuse_fiss_utils_ar
                                      , patchtype           ! ! Structure
       use pft_coms            , only : rho                 & ! intent(in)
                                      , b1Ht                & ! intent(in)
-                                     , max_dbh             & ! intent(in)
-                                     , sla                 ! ! intent(in)
+                                     , max_dbh               ! intent(in)
       use fusion_fission_coms , only : fusetol_h           & ! intent(in)
                                      , fusetol             & ! intent(in)
                                      , lai_fuse_tol        & ! intent(in)
@@ -425,7 +424,7 @@ module fuse_fiss_utils_ar
                   !------------------------------------------------------------------------!
                   lai_max = (cpatch%nplant(recc)*dbh2bl(cpatch%dbh(recc),cpatch%pft(recc)) &
                           + cpatch%nplant(donc)*dbh2bl(cpatch%dbh(donc),cpatch%pft(donc))) &
-                          * sla(cpatch%pft(recc))
+                          * cpatch%sla(recc)
 
                   !----- Checking the total size of this cohort before and after fusion. --!
                   total_size = cpatch%nplant(donc) * ( cpatch%balive(donc)                 &
@@ -575,8 +574,7 @@ module fuse_fiss_utils_ar
 
       use ed_state_vars        , only :  patchtype              ! ! structure
       use pft_coms             , only :  q                      & ! intent(in), lookup table
-                                       , qsw                    & ! intent(in), lookup table
-                                       , sla                    ! ! intent(in), lookup table
+                                       , qsw                      ! intent(in), lookup table
       use fusion_fission_coms  , only :  lai_tol                ! ! intent(in)
       use max_dims             , only :  n_pft                  ! ! intent(in)
       use allometry            , only :  dbh2h                  & ! function
@@ -615,7 +613,7 @@ module fuse_fiss_utils_ar
               * cpatch%balive(ico)                                                         &
               * green_leaf_factor(cpatch%pft(ico))                                         &
               / ( 1.0 + q(cpatch%pft(ico)) + qsw(cpatch%pft(ico)) * cpatch%hite(ico) )     &
-              * sla(cpatch%pft(ico))
+              * cpatch%sla(ico)
 
          !----- If the resulting LAI is too large, split this cohort. ---------------------!
          split_mask(ico) = slai > lai_tol
@@ -821,7 +819,12 @@ module fuse_fiss_utils_ar
       cpatch%hcapveg(idt)             = cpatch%hcapveg(isc)
 
       cpatch%gpp(idt)                 = cpatch%gpp(isc)
-      cpatch%paw_avg10d(idt)          = cpatch%paw_avg10d(isc)
+      cpatch%paw_avg(idt)          = cpatch%paw_avg(isc)
+
+      cpatch%turnover_amp(idt)  = cpatch%turnover_amp(isc)     
+      cpatch%llspan(idt)  = cpatch%llspan(isc)     
+      cpatch%vm_bar(idt)  = cpatch%vm_bar(isc)  
+      cpatch%sla(idt)  = cpatch%sla(isc)  
 
       osdt => cpatch%old_stoma_data(idt)
       ossc => cpatch%old_stoma_data(isc)
@@ -862,8 +865,7 @@ module fuse_fiss_utils_ar
    subroutine fuse_2_cohorts_ar(cpatch,donc,recc, newn,green_leaf_factor, lsl)
       use ed_state_vars , only :  patchtype             ! ! Structure
       use pft_coms      , only :  q                     & ! intent(in), lookup table
-                                , qsw                   & ! intent(in), lookup table
-                                , sla                   ! ! intent(in), lookup table
+                                , qsw                     ! intent(in), lookup table
       use therm_lib     , only :  qwtk                  ! ! subroutine
       use allometry     , only :  calc_root_depth       & ! function
                                 , assign_root_depth     & ! function
@@ -1051,8 +1053,17 @@ module fuse_fiss_utils_ar
                                     + cpatch%root_respiration(donc)
       !------------------------------------------------------------------------------------!
      
-      cpatch%paw_avg10d(recc) = cpatch%paw_avg10d(recc) + cpatch%paw_avg10d(donc)
-      
+      cpatch%paw_avg(recc) = cpatch%paw_avg(recc) + cpatch%paw_avg(donc)
+
+      cpatch%turnover_amp(recc)  = (cpatch%turnover_amp(recc) * cpatch%nplant(recc)        &
+           + cpatch%turnover_amp(donc) * cpatch%nplant(donc) ) *newni   
+      cpatch%llspan(recc)  = (cpatch%llspan(recc) * cpatch%nplant(recc)                    &
+           + cpatch%llspan(donc) * cpatch%nplant(donc) ) *newni   
+      cpatch%vm_bar(recc)  = (cpatch%vm_bar(recc) * cpatch%nplant(recc)                    &
+           + cpatch%vm_bar(donc) * cpatch%nplant(donc) ) *newni   
+      cpatch%sla(recc)  = (cpatch%sla(recc) * cpatch%nplant(recc)                          &
+           + cpatch%sla(donc) * cpatch%nplant(donc) ) *newni   
+    
       root_depth = calc_root_depth(cpatch%hite(recc), cpatch%dbh(recc), cpatch%pft(recc))
       cpatch%krdepth(recc) = assign_root_depth(root_depth, lsl)
 
@@ -1182,8 +1193,7 @@ module fuse_fiss_utils_ar
 
                mean_nplant = 0.0
                do ipa = csite%npatches,1,-1
-                  call patch_pft_size_profile_ar(csite,ipa,ff_ndbh                         &
-                                                ,cpoly%green_leaf_factor(:,isi))
+                  call patch_pft_size_profile_ar(csite,ipa,ff_ndbh)
                
                   !------------------------------------------------------------------------!
                   !    Get a mean density profile for all of the patches. This will be     !
@@ -1293,8 +1303,7 @@ module fuse_fiss_utils_ar
                                  !     Recalculate the pft size profile for the averaged   !
                                  ! patch at donp_tp.                                       !
                                  !---------------------------------------------------------!
-                                 call patch_pft_size_profile_ar(csite,recp,ff_ndbh         &
-                                                          ,cpoly%green_leaf_factor(:,isi) )
+                                 call patch_pft_size_profile_ar(csite,recp,ff_ndbh)
 
                                  !---------------------------------------------------------!
                                  !     The patch at index donp is no longer valid, it      !
@@ -1891,7 +1900,7 @@ module fuse_fiss_utils_ar
       !    This subroutine will update the size profile within patch.                      !
       ! + csite%pft_density_profile(:,:,recp)                                              !
       !------------------------------------------------------------------------------------!
-      call patch_pft_size_profile_ar(csite,recp,ff_ndbh,green_leaf_factor)
+      call patch_pft_size_profile_ar(csite,recp,ff_ndbh)
       !------------------------------------------------------------------------------------!
 
       !----- Last, but not the least, we update the patch area ----------------------------!
@@ -1910,7 +1919,7 @@ module fuse_fiss_utils_ar
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine patch_pft_size_profile_ar(csite,ipa,nbins,green_leaf_factor)
+   subroutine patch_pft_size_profile_ar(csite,ipa,nbins)
       use ed_state_vars      , only :  sitetype   & ! structure
                                      , patchtype  ! ! structure
       use fusion_fission_coms, only :  maxdbh     ! ! intent(in)
@@ -1918,7 +1927,6 @@ module fuse_fiss_utils_ar
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target     :: csite             ! Current site
-      real, dimension(n_pft) , intent(in) :: green_leaf_factor ! Green leaf factor
       integer                , intent(in) :: ipa               ! Current patch ID
       integer                , intent(in) :: nbins             ! # of DBH classes
       !----- Local variables --------------------------------------------------------------!

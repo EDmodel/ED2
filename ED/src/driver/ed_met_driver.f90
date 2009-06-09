@@ -1864,3 +1864,41 @@ subroutine int_met_avg(cgrid)
   
   return
 end subroutine int_met_avg
+!==========================================================================================!
+subroutine update_rad_avg(cgrid)
+  
+  !10-day running average of radiation
+
+
+  use ed_state_vars,only:edtype,polygontype,sitetype
+  use misc_coms,only : radfrq
+  use consts_coms, only : day_sec
+  
+  implicit none
+
+  type(edtype), target :: cgrid
+  type(polygontype),pointer :: cpoly
+  type(sitetype),pointer :: csite
+
+
+  integer :: ipy,isi
+  real :: tfact
+  real, parameter :: tendays_sec = 10.*day_sec
+
+  tfact = radfrq/tendays_sec
+
+  do ipy = 1,cgrid%npolygons
+
+     cpoly => cgrid%polygon(ipy)
+  
+     do isi = 1,cpoly%nsites
+ 
+        cpoly%rad_avg(isi) = cpoly%rad_avg(isi)*(1.0-tfact) &
+             + cpoly%met(isi)%rshort*tfact
+
+     enddo
+        
+  enddo
+  
+  return
+end subroutine update_rad_avg

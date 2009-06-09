@@ -152,7 +152,9 @@ subroutine canopy_photosynthesis_ar(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,n
                , green_leaf_factor(ipft)   & ! Fraction of actual green leaves relative to 
                                            ! !      on-allometry value.
                , leaf_aging_factor(ipft)   &
-               , csite%old_stoma_data_max(ipft,ipa))
+               , csite%old_stoma_data_max(ipft,ipa) &
+               , cpatch%llspan(tuco) &
+               , cpatch%vm_bar(tuco))
          end if
       end do
          
@@ -218,7 +220,9 @@ subroutine canopy_photosynthesis_ar(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,n
                , green_leaf_factor(ipft)   & ! Fraction of actual green leaves relative to 
                                            ! !      on-allometry value.
                , leaf_aging_factor(ipft)   &
-               , cpatch%old_stoma_data(ico)) ! Type containing the exact stomatal deriv-
+               , cpatch%old_stoma_data(ico) &
+               , cpatch%llspan(ico) &
+               , cpatch%vm_bar(ico)) ! Type containing the exact stomatal deriv-
                                              !     atives and meteorological info
 
             !----- Leaf respiration, converting it to [µmol/m²ground/s] -------------------!

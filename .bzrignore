@@ -329,3 +329,6 @@ ED/build/bin/rk4_coms.mod
 ED/newbuild
 ED/build/bin/canopy_struct_dynamics.mod
 BRAMS/build/bin/canopy_struct_dynamics.mod
+compare.sh
+scenarios
+backup.bzr
