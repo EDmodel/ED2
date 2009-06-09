@@ -347,7 +347,6 @@ subroutine ed_opspec_times
    use grid_coms , only : timmax
    use ed_misc_coms, only : fast_diagnostics
 
-
    implicit none
    character(len=222)           :: reason
    integer :: ifaterr
@@ -982,6 +981,11 @@ subroutine ed_opspec_misc
    use canopy_radiation_coms , only : crown_mod                    ! ! intent(in)
    use rk4_coms              , only : ibranch_thermo               ! ! intent(in)
 
+#if defined(COUPLED)
+#else
+   use met_driver_coms, only : ishuffle
+#endif
+
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    character(len=222) :: reason
@@ -1309,6 +1313,17 @@ subroutine ed_opspec_misc
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if
+
+#if defined(COUPLED)
+#else
+   if (ishuffle < 0 .and. ishuffle > 2) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid ISHUFFLE, it must be between 0 and 2.  Yours is set to'       &
+                    ,ishuffle,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+#endif
 
    !----- Stop the run if there are any fatal errors. -------------------------------------!
    if (ifaterr > 0) then
