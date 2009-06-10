@@ -160,6 +160,7 @@ Module ename_coms
 
 !!    OPTIONS CONTROLLING METEOROLOGICAL FORCING
       integer           :: imettype      = 0
+      integer           :: ishuffle      = 0
       integer           :: metcyc1       = 0
       integer           :: metcycf       = 0
       real              :: initial_co2   = 370.

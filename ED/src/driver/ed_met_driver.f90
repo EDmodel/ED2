@@ -294,6 +294,7 @@ subroutine read_met_drivers_init_array
    use hdf5_utils     , only : shdf5_open_f   & ! subroutine
                              , shdf5_close_f  ! ! subroutine
    use met_driver_coms, only : nformats       & ! intent(in)
+                             , ishuffle       & ! intent(in)
                              , met_names      & ! intent(in)
                              , met_nv         & ! intent(in)
                              , met_interp     & ! intent(in)
@@ -310,13 +311,14 @@ subroutine read_met_drivers_init_array
    character(len=256)          :: infile
    integer                     :: igr
    integer                     :: year_use
-   integer                     :: ncyc
    integer                     :: iformat
    integer                     :: iv
    integer                     :: offset
    integer                     :: m2
    integer                     :: y2
    integer                     :: year_use_2
+   integer, dimension(8)       :: seedtime
+   real                        :: runif
    logical                     :: exans
    !----- Local constants -----------------------------------------------------------------!
    character(len=3), dimension(12), parameter :: mname = (/ 'JAN', 'FEB', 'MAR', 'APR'     &
@@ -324,23 +326,65 @@ subroutine read_met_drivers_init_array
                                                           , 'SEP', 'OCT', 'NOV', 'DEC'   /) 
    !----- External functions --------------------------------------------------------------!
    logical         , external  :: isleap
+   !----- Variables to be saved. ----------------------------------------------------------!
+   logical         , save      :: first_time=.true.
+   integer         , save      :: ncyc
    !---------------------------------------------------------------------------------------!
  
 
 
-   !----- If we need to recycle over years, find the appropriate year to apply. -----------!
+
+   if (first_time) then
+      first_time = .false.
+
+      !------ Defining the number of years we have meteorological information available. --!
+      ncyc     = metcycf - metcyc1 + 1
+      !----- Initialising the seed for random number generation. --------------------------!
+      call random_seed()
+   end if
+
+   !---------------------------------------------------------------------------------------!
+   !     First we assume that the year is within the range of the given meteorological     !
+   ! driver.  If not, then we must decide which equivalent year should be used.            !
+   !---------------------------------------------------------------------------------------!
    year_use = current_time%year
-   ncyc     = metcycf - metcyc1 + 1
+   if (year_use < metcyc1 .or. year_use > metcycf) then
 
-   !----- If we are after the last year... ------------------------------------------------!
-   do while(year_use > metcycf)
-      year_use = year_use - ncyc
-   end do
+      select case (ishuffle)
 
-   !----- If we are before the first year... ----------------------------------------------!
-   do while(year_use < metcyc1)
-      year_use = year_use + ncyc
-   end do
+      !----- Cycling over years sequentially. ---------------------------------------------!
+      case (0)
+         !----- If we are after the last year... ------------------------------------------!
+         do while(year_use > metcycf)
+            year_use = year_use - ncyc
+         end do
+
+         !----- If we are before the first year... ----------------------------------------!
+         do while(year_use < metcyc1)
+            year_use = year_use + ncyc
+         end do
+
+      !------------------------------------------------------------------------------------!
+      !    Choose an year randomly.  For the same dataset, this will always repeat the     !
+      ! same sequence.                                                                     !                !
+      !------------------------------------------------------------------------------------!
+      case (1)
+           year_use = metcyc1 + mod(int(ncyc*runif),ncyc)
+ 
+
+      !------------------------------------------------------------------------------------!
+      !    Choose an year randomly.  This will always generate a new sequence of years     !
+      ! based on the system clock (same way as done in STILT).                             !
+      !------------------------------------------------------------------------------------!
+      case (2)
+          call date_and_time(values=seedtime)
+          do iv=1,max(seedtime(8),1)
+             call random_number(runif)
+          end do
+          year_use = metcyc1 + mod(int(ncyc*runif),ncyc)
+
+      end select
+   end if
 
 
    gridloop: do igr = 1,ngrids

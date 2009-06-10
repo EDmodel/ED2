@@ -371,6 +371,13 @@
 !------------------------------------------------------------------------------------------!
 
    NL%IMETTYPE  = 1          ! 0 = ASCII, 1 = HDF5
+
+   NL%ISHUFFLE  = 0          ! How to choose an year outside the met data range:
+                             ! 0. Sequentially cycle over years
+                             ! 1. Randomly pick the years, using the same sequence
+                             ! 2. Randomly pick the years, choosing a different 
+                             !    sequence each time the model is run.
+
    NL%METCYC1         = 1948 ! First year of met data
    NL%METCYCF         = 2007 ! Last year of met data
    
