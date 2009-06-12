@@ -864,20 +864,26 @@ subroutine init_pft_leaf_params()
                              , wat_dry_ratio_ngrn   & ! intent(out)
                              , delta_c              ! ! intent(out)
    use consts_coms    , only : t3ple                ! ! intent(out) 
-   use phenology_coms, only:iphen_scheme
+   use phenology_coms , only :iphen_scheme
 
    implicit none
 
-   if ( iphen_scheme == 2 ) then
-      phenology(1) = 4
-      phenology(2:4) = 3
-   else
-      phenology(1:4) = 1
-   endif
-   phenology(5)   = 1
-   phenology(6:8)   = 0
-   phenology(9:11)  = 2
-   phenology(12:15) = 1
+   select case (iphen_scheme)
+   case (0,1)
+      phenology(1)     = 4
+      phenology(2:4)   = 3
+      phenology(5)     = 4
+      phenology(6:8)   = 0
+      phenology(9:11)  = 2
+      phenology(12:15) = 4
+   case (2)
+      phenology(1)     = 1
+      phenology(2:4)   = 1
+      phenology(5)     = 1
+      phenology(6:8)   = 0
+      phenology(9:11)  = 2
+      phenology(12:15) = 1
+   end select
 
    clumping_factor(1)     = 1.000d0
    clumping_factor(2:4)   = 7.350d-1
