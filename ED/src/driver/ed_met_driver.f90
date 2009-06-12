@@ -300,9 +300,12 @@ subroutine read_met_drivers_init_array
                              , met_interp     & ! intent(in)
                              , met_frq        & ! intent(in)
                              , metcyc1        & ! intent(in)
-                             , metcycf        ! ! intent(in)
+                             , metcycf        & ! intent(in)
+                             , metyears       ! ! intent(inout)
    use mem_sites      , only : grid_type      ! ! intent(in)
-   use misc_coms      , only : current_time   ! ! intent(in)
+   use misc_coms      , only : current_time   & ! intent(in)
+                             , iyeara         & ! intent(in)
+                             , iyearz         ! ! intent(in)
    use grid_coms      , only : ngrids         ! ! intent(in)
    use consts_coms    , only : day_sec        ! ! intent(in)
    implicit none
@@ -317,6 +320,11 @@ subroutine read_met_drivers_init_array
    integer                     :: m2
    integer                     :: y2
    integer                     :: year_use_2
+   integer                     :: nyears
+   integer                     :: ncyc
+   integer                     :: nfullcyc
+   integer                     :: i1stfull
+   integer                     :: iyear
    integer, dimension(8)       :: seedtime
    real                        :: runif
    logical                     :: exans
@@ -328,63 +336,101 @@ subroutine read_met_drivers_init_array
    logical         , external  :: isleap
    !----- Variables to be saved. ----------------------------------------------------------!
    logical         , save      :: first_time=.true.
-   integer         , save      :: ncyc
    !---------------------------------------------------------------------------------------!
  
 
 
-
+   !---------------------------------------------------------------------------------------!
+   !    If this is the first time this subroutine is called, we build the meteorological   !
+   ! driver sequence of years.  Often is the case that the user has a meteorological data- !
+   ! set that is shorter than the time span he or she is intending to run. In this case we !
+   ! need to fill the other years with some data.                                          !
+   !---------------------------------------------------------------------------------------!
    if (first_time) then
       first_time = .false.
 
       !------ Defining the number of years we have meteorological information available. --!
-      ncyc     = metcycf - metcyc1 + 1
+      ncyc   = metcycf - metcyc1 + 1
+      nyears = iyearz  - iyeara  + 1
+
+      !------ Allocating the sequence of years. -------------------------------------------!
+      allocate(metyears(nyears))      
+      
       !----- Initialising the seed for random number generation. --------------------------!
       call random_seed()
-   end if
 
-   !---------------------------------------------------------------------------------------!
-   !     First we assume that the year is within the range of the given meteorological     !
-   ! driver.  If not, then we must decide which equivalent year should be used.            !
-   !---------------------------------------------------------------------------------------!
-   year_use = current_time%year
-   if (year_use < metcyc1 .or. year_use > metcycf) then
-
+      !------------------------------------------------------------------------------------!
+      !     Now we must decide how we are going to select the meteorological driver years, !
+      ! in particular, the years outside the meteorological driver range.                  !
+      !------------------------------------------------------------------------------------!
       select case (ishuffle)
-
-      !----- Cycling over years sequentially. ---------------------------------------------!
       case (0)
-         !----- If we are after the last year... ------------------------------------------!
-         do while(year_use > metcycf)
-            year_use = year_use - ncyc
-         end do
+         !---------------------------------------------------------------------------------!
+         !     Make a loop over the years, repeating the loop as many times as we need.    !
+         ! First we determine how many full cycles fit between iyeara and metcyc1.  Note   !
+         ! that this can be negative in case metcyc1 is less than iyeara, but this will    !
+         ! work too.
+         !---------------------------------------------------------------------------------!
+         nfullcyc = floor(real(metcyc1-iyeara)/real(ncyc))
+         i1stfull = metcyc1 - nfullcyc * ncyc
+         
+         year_use   = metcycf - (i1stfull - iyeara)
 
-         !----- If we are before the first year... ----------------------------------------!
-         do while(year_use < metcyc1)
-            year_use = year_use + ncyc
+         do iyear=1,nyears
+            if (year_use == metcycf) then
+               year_use = metcyc1
+            else
+               year_use = year_use + 1
+            end if
+
+            metyears(iyear) = year_use
          end do
 
       !------------------------------------------------------------------------------------!
-      !    Choose an year randomly.  For the same dataset, this will always repeat the     !
-      ! same sequence.                                                                     !                !
+      !    For years outside the met driver range, we pick up a random year.  Because we   !
+      ! use the actual sequence of random years given by the code random generator, this   !
+      ! sequence will be always the same for a given met driver and first year.            !                !
       !------------------------------------------------------------------------------------!
       case (1)
-           year_use = metcyc1 + mod(int(ncyc*runif),ncyc)
- 
+         do year_use=iyeara,iyearz
+            iyear=year_use-iyeara+1
+            if (year_use < metcyc1 .or. year_use > metcycf) then
+               call random_number(runif)
+               metyears(iyear) = metcyc1 + mod(floor(real(ncyc)*runif),ncyc)
+            else
+               metyears(iyear) = year_use
+            end if
+         end do
 
       !------------------------------------------------------------------------------------!
-      !    Choose an year randomly.  This will always generate a new sequence of years     !
-      ! based on the system clock (same way as done in STILT).                             !
+      !    For years outside the met driver range, we pick up a random year. We skip some  !
+      ! random numbers using the system clock, so each time we run the model we will have  !
+      ! a different sequence of years (similar to the random method used in STILT).        !
       !------------------------------------------------------------------------------------!
       case (2)
-          call date_and_time(values=seedtime)
-          do iv=1,max(seedtime(8),1)
-             call random_number(runif)
-          end do
-          year_use = metcyc1 + mod(int(ncyc*runif),ncyc)
-
+         do year_use=iyeara,iyearz
+            iyear=year_use-iyeara+1
+            if (year_use < metcyc1 .or. year_use > metcycf) then
+               call date_and_time(values=seedtime)
+               do iv=0,seedtime(8)
+                  call random_number(runif)
+               end do
+               metyears(iyear) = metcyc1 + mod(floor(real(ncyc)*runif),ncyc)
+            else
+               metyears(iyear) = year_use
+            end if
+         end do
       end select
    end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     We now retrieve the met driver year based on the stored sequence.                 !
+   !---------------------------------------------------------------------------------------!
+   iyear    = current_time%year-iyeara+1
+   year_use = metyears(iyear)
 
 
    gridloop: do igr = 1,ngrids
@@ -427,28 +473,20 @@ subroutine read_met_drivers_init_array
          !---------------------------------------------------------------------------------!
          !------ Find next month and year -------------------------------------------------!
          m2 = current_time%month + 1
-         y2 = current_time%year
-         year_use_2 = year_use
          
          !---------------------------------------------------------------------------------!
-         !     If this takes us into the next year, increment year and reset month to      !
-         ! January.                                                                        !
+         !     If this takes us into the next year, take the next year in sequence and     !
+         ! reset month to January.                                                         !
          !---------------------------------------------------------------------------------!
          if (m2 == 13) then
             m2 = 1
             y2 = current_time%year + 1
-            year_use_2 = y2
-            
-            !----- If we are now after the last year... -----------------------------------!
-            do while(year_use_2 > metcycf)
-               year_use_2 = year_use_2 - ncyc
-            end do
-            
-            !----- If we are now before the first year... ---------------------------------!
-            do while(year_use_2 < metcyc1)
-               year_use_2 = year_use_2 + ncyc
-            end do
+         else 
+            !----- Otherwise, use the same year. ------------------------------------------!
+            y2 = current_time%year
          end if
+         iyear = y2 - iyeara + 1
+         year_use_2 = metyears(iyear)
          
          !----- Now, open the file once. --------------------------------------------------!
          write(infile,fmt='(a,i4.4,a,a)')  trim(met_names(iformat)), year_use_2            &
