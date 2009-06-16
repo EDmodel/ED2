@@ -1,0 +1,41 @@
+&MEVI_OPTIONS
+
+!------------------------------------------------------------------------------------------!
+!  General options                                                                         !
+!------------------------------------------------------------------------------------------!
+   NL%INTYPE = 'ncep'    ! Type of input data.  Available options are (case insensitive):
+                         ! -> NCEP   - NCEP reanalysis
+                         ! -> Other options will eventually appear...
+                       
+!------------------------------------------------------------------------------------------!
+!      Input data folder.  In this folder you must have all variables needed by the input  !
+! data, one directory per variable.  Please check the DATASET_README.1ST file for specific !
+! information on which variables you must have.                                            !
+!------------------------------------------------------------------------------------------!
+   NL%INPATH = '/Users/mlongo/Data/NCEP'
+
+!----- Prefix for output files, including path. -------------------------------------------!
+   NL%OUTPREF='/Users/mlongo/Data/NCEP/southam/SOUTHAM'
+
+!------------------------------------------------------------------------------------------!
+!     Time                                                                                 !
+!------------------------------------------------------------------------------------------!
+   NL%IYEARA = 2006    ! First year to process
+   NL%IYEARZ = 2008    ! Last year to process
+
+   NL%INPFRQ = 21600.  ! Frequency for input variable frequency (in seconds)
+   NL%RADFRQ = 900.    ! Frequency for radiation flux output (interpolation will be done
+                       !    if needed).
+
+!------------------------------------------------------------------------------------------!
+!    Boundaries to be included.  The actual edges will be determined by the script, but it !
+! will be the closest to the given point.  Also, if the actual dataset covers a smaller    !
+! area than the one defined by these variables, everything will be included.               !
+!------------------------------------------------------------------------------------------!
+   NL%LONW = -120. ! Westermost   longitude allowed to be included;
+   NL%LONE =  -25. ! Easternmost  longitude allowed to be included;
+   NL%LATS =  -60. ! Southernmost latitude  allowed to be included;
+   NL%LATN =   30. ! Northernmost latitude  allowed to be included;
+
+
+/ ! End of MEVI_OPTIONS namelist

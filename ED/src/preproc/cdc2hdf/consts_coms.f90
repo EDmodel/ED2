@@ -1,27 +1,15 @@
-!====================================== Change Log ========================================!
-! 5.0.0                                                                                    !
-!                                                                                          !
-!==========================================================================================!
-!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved                       !
-!  Regional Atmospheric Modeling System - RAMS                                             !
-!==========================================================================================!
-!==========================================================================================!
-Module rconstants
+Module consts_coms
+   implicit none
 
    !---------------------------------------------------------------------------------------!
    ! Trigonometric constants                                                               !
    !---------------------------------------------------------------------------------------!
    real, parameter :: pi1       = 3.14159265358979  ! Pi                        [      ---]
-   real, parameter :: pii       = 1./pi1            ! 1/Pi                      [      ---]
-   real, parameter :: halfpi    = pi1/2             ! Pi/2                      [      ---]
-   real, parameter :: sqrtpii   = 0.564189583547756 ! 1/(pi**0.5)               [      ---]
    real, parameter :: twopi     = pi1* 2.           ! 2 Pi                      [      ---]
+   real, parameter :: sqrtpii   = 0.564189583547756 ! 1/(pi**0.5)               [      ---]
    real, parameter :: pio180    = pi1/ 180.         ! Pi/180 (deg -> rad)       [      ---]
-   real, parameter :: onerad    = 180. / pi1        ! 180/pi (rad -> deg)       [      ---]
    real, parameter :: pi4       = pi1 * 4.          ! 4 Pi                      [      ---]
    real, parameter :: pio4      = pi1 /4.           ! Pi/4                      [      ---]
-   real, parameter :: pio6      = pi1 /6.           ! Pi/6                      [      ---]
-   real, parameter :: pio6i     = 6.  /pi1          ! 6/Pi                      [      ---]
    !---------------------------------------------------------------------------------------!
 
 
@@ -67,19 +55,10 @@ Module rconstants
    ! General Earth properties                                                              !
    !---------------------------------------------------------------------------------------!
    real, parameter :: vonk      = 0.40        ! Von Kármán constant             [      ---]
-   real, parameter :: g         = 9.80665     ! Gravity acceleration            [     m/s²]
-   real, parameter :: gg        = .5 * g      ! ½ g                             [     m/s²]
+   real, parameter :: grav      = 9.80665     ! Gravity acceleration            [     m/s²]
    real, parameter :: erad      = 6370997.    ! Earth radius                    [        m]
-   real, parameter :: spcon     = pio180*erad ! One degree of latitude          [        m]
-   real, parameter :: spconkm   = spcon*0.001 ! One degree of latitude          [       km]
-   real, parameter :: eradi     = 1./erad     ! Inverse of Earth radius         [      1/m]
-   real, parameter :: erad2     = erad*2      ! Earth diameter                  [        m]
-   real, parameter :: ss60      = 1.8663      ! Polar stereo conversion to 60°  [         ]
-   real, parameter :: omega     = 7.292e-5    ! Earth's rotation speed          [    rad/s]
-   real, parameter :: viscos    = .15e-4      ! Viscosity coefficient           [         ]
-   real, parameter :: solar     = 1.3533e3    ! Solar constant                  [     W/m²]
+   real, parameter :: erad2     = 2.*erad     ! Earth diameter                  [        m]
    real, parameter :: p00       = 1.e5        ! Reference pressure              [       Pa]
-   real, parameter :: prefsea   = 101325.     ! Reference sea level pressure    [       Pa]
    real, parameter :: p00i      = 1. / p00    ! 1/p00                           [     1/Pa]
    !---------------------------------------------------------------------------------------!
 
@@ -88,19 +67,12 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Dry air properties                                                                    !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: rgas   = 287.04    ! Gas constant for dry air (Ra)        [   J/kg/K]
+   real, parameter :: rdry   = 287.04    ! Gas constant for dry air (Ra)        [   J/kg/K]
    real, parameter :: cp     = 1004.     ! Specific heat at constant pressure   [   J/kg/K]
-   real, parameter :: cv     = 717.      ! Specific heat at constant volume     [   J/kg/K]
-   real, parameter :: cpog   = cp /g     ! cp/g                                 [      m/K]
-   real, parameter :: rocp   = rgas / cp ! Ra/cp                                [     ----]
-   real, parameter :: cpor   = cp / rgas ! Cp/Ra                                [     ----]
-   real, parameter :: rocv   = rgas / cv ! Ra/Cv                                [     ----]
-   real, parameter :: gocp   = g / cp    ! g/Cp, dry adiabatic lapse rate       [      K/m]
-   real, parameter :: gordry = g / rgas  ! g/Ra                                 [      K/m]
+   real, parameter :: cpog   = cp /grav  ! cp/g                                 [      m/K]
+   real, parameter :: rocp   = rdry / cp ! Ra/cp                                [     ----]
+   real, parameter :: cpor   = cp / rdry ! Cp/Ra                                [     ----]
    real, parameter :: cpi    = 1. / cp   ! 1/Cp                                 [   kg K/J]
-   real, parameter :: cpi4   = 4. * cpi  ! 4/Cp                                 [   kg K/J]
-   real, parameter :: p00k   = 26.870941 ! p0 ** (Ra/Cp)                        [ Pa^0.286]
-   real, parameter :: p00ki  = 1. / p00k ! p0 ** (-Ra/Cp)                       [Pa^-0.286]
    !---------------------------------------------------------------------------------------!
 
 
@@ -108,12 +80,11 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Water vapour properties                                                               !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: rm     = 461.5     ! Gas constant for water vapour (Rv)   [   J/kg/K]
-   real, parameter :: gorm   = g / rm    ! g/Rv                                 [      K/m]
-   real, parameter :: ep     = rgas / rm ! Ra/Rv, epsilon, used to find rv      [    kg/kg]
-   real, parameter :: epi    = rm / rgas ! Rv/Ra, 1/epsilon                     [    kg/kg]
-   real, parameter :: rmocp  = rm / cp   ! Rv/cp                                [     ----]
-   real, parameter :: toodry = 1.e-8     ! Minimum acceptable mixing ratio.     [    kg/kg]
+   real, parameter :: rvap   = 461.5       ! Gas constant for water vapour (Rv) [   J/kg/K]
+   real, parameter :: gorvap = grav / rvap ! g/Rv                               [      K/m]
+   real, parameter :: ep     = rdry / rvap ! Ra/Rv, epsilon, used to find rv    [    kg/kg]
+   real, parameter :: epi    = rvap / rdry ! Rv/Ra, 1/epsilon                   [    kg/kg]
+   real, parameter :: toodry = 1.e-8       ! Minimum acceptable mixing ratio.   [    kg/kg]
    !---------------------------------------------------------------------------------------!
 
 
@@ -142,6 +113,7 @@ Module rconstants
 
 
 
+
    !---------------------------------------------------------------------------------------!
    ! Phase change properties                                                               !
    !---------------------------------------------------------------------------------------!
@@ -150,21 +122,11 @@ Module rconstants
    real, parameter :: es3ple   = 611.65685464  ! Vapour pressure at T3 (es3)    [       Pa]
    real, parameter :: es3plei  = 1./es3ple     ! 1./es3                         [     1/Pa]
    real, parameter :: epes3ple = ep * es3ple   ! epsilon × es3                  [ Pa kg/kg]
-   real, parameter :: rmt3ple  = rm * t3ple    ! Rv × T3                        [     J/kg]
    real, parameter :: alvl     = 2.50e6        ! Lat. heat - vaporisation (Lv)  [     J/kg]
    real, parameter :: alvi     = 2.834e6       ! Lat. heat - sublimation  (Ls)  [     J/kg]
    real, parameter :: alli     = 3.34e5        ! Lat. heat - fusion       (Lf)  [     J/kg]
    real, parameter :: allivlme = wdns * alli   ! Lat. heat × water density      [     J/m³]
-   real, parameter :: alvl2    = alvl * alvl   ! Lv²                            [   J²/kg²]
-   real, parameter :: alvi2    = alvi * alvi   ! Ls²                            [   J²/kg²]
-   real, parameter :: allii    = 1.   / alli   ! 1./Lf                          [     kg/J]
-   real, parameter :: aklv     = alvl / cp     ! Lv/Cp                          [        K]
-   real, parameter :: akiv     = alvi / cp     ! Ls/Cp                          [        K]
-   real, parameter :: lvordry  = alvl / rgas   ! Lv/Ra                          [        K]
-   real, parameter :: lvorvap  = alvl / rm     ! Lv/Rv                          [        K]
-   real, parameter :: lsorvap  = alvi / rm     ! Ls/Rv                          [        K]
-   real, parameter :: lvt3ple  = alvl * t3ple  ! Lv × T3                        [   K J/kg]
-   real, parameter :: lst3ple  = alvi * t3ple  ! Ls × T3                        [   K J/kg]
+   real, parameter :: allii    = 1./alli       ! 1/Latent heat - fusion         [     kg/J]
    real, parameter :: qicet3   = cice * t3ple  ! q at triple point, only ice    [     J/kg]
    real, parameter :: qliqt3   = qicet3 + alli ! q at triple point, only liquid [     J/kg]
    !---------------------------------------------------------------------------------------!
@@ -189,35 +151,24 @@ Module rconstants
    real, parameter :: tsupercool = t3ple - (qicet3+alli) * cliqi
    !---------------------------------------------------------------------------------------!
 
-
-
    !---------------------------------------------------------------------------------------!
-   !     Minimum temperature for computing the condensation effect of temperature on       !
-   ! theta_il, thetae_iv, and associates. Below this temperature, assuming the latent      !
-   ! heats as constants becomes a really bad assumption. See :                             !
-   !                                                                                       !
-   ! Tripoli, J. T.; and Cotton, W.R., 1981: The use of ice-liquid water potential temper- !
-   !    ature as a thermodynamic variable in deep atmospheric models. Mon. Wea. Rev.,      !
-   !    v. 109, 1094-1102.                                                                 !
+   ! Unit conversion, it must be defined locally even for coupled runs.                    !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: ttripoli  = 253.        ! "Tripoli-Cotton" temp. (Ttr)    [        K]
-   real, parameter :: htripoli  = cp*ttripoli ! Sensible enthalpy at T=Ttr      [     J/kg]
-   real, parameter :: htripolii = 1./htripoli ! 1./htripoli                     [     kg/J]
-   !---------------------------------------------------------------------------------------!
-
-
+   real, parameter :: umol_2_kgC      = 1.20107e-8 ! µmol(CO2) => kg(C)
+   real, parameter :: kgom2_2_tonoha = 10.         ! kg(C)/m² => ton(C)/ha
+   real, parameter :: tonoha_2_kgom2 = 0.1         ! ton(C)/ha => kg(C)/m²
 
    !---------------------------------------------------------------------------------------!
-   ! Lower bounds for turbulence-related variables                                         !
+   ! Molar masses and derived variables                                                    !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: tkmin       = 5.e-4 ! Minimum TKE                         [     J/kg]
-   real, parameter :: sigwmin     = 1.e-4 ! Minimum sigma-w                     [      m/s]
-   real, parameter :: abslmomin   = 1.e-4 ! Minimum abs value of Obukhov length [        m]
-   real, parameter :: ltscalemax  = 1.e5  ! Maximum Lagrangian timescale        [        s]
-   real, parameter :: abswltlmin  = 1.e-4 ! Minimum abs value of Theta*         [    K m/s]
-   real, parameter :: lturbmin    = 1.e-3 ! Minimum abs value of turb. lenght   [        m]
+   real, parameter :: mmdry       = 0.02897        ! Mean dry air molar mass    [   kg/mol]
+   real, parameter :: mmvap       = 0.01801505     ! Mean water molar mass      [   kg/mol]
+   real, parameter :: mmco2       = 0.0440095      ! Mean CO2 molar mass        [   kg/mol]
+   real, parameter :: mmdov       = mmdry/mmvap    ! mmdry/mmvap                [     ----]
+   real, parameter :: mmvod       = mmvap/mmdry    ! mmvap/mmdry                [     ----]
+   real, parameter :: mmdry1000   = 1000.*mmdry    ! Mean dry air molar mass    [   kg/mol]
+   real, parameter :: mmdryi      = 1./mmdry       ! 1./mmdry                   [   mol/kg]
    !---------------------------------------------------------------------------------------!
-
 
 
    !---------------------------------------------------------------------------------------!
@@ -235,22 +186,28 @@ Module rconstants
    real(kind=8), parameter :: cp8          = dble(cp        )
    real(kind=8), parameter :: cpi8         = dble(cpi       )
    real(kind=8), parameter :: day_sec8     = dble(day_sec   )
-   real(kind=8), parameter :: gorvap8      = dble(gorm      )
-   real(kind=8), parameter :: grav8        = dble(g         )
+   real(kind=8), parameter :: gorvap8      = dble(gorvap    )
+   real(kind=8), parameter :: grav8        = dble(grav      )
    real(kind=8), parameter :: hr_sec8      = dble(hr_sec    )
    real(kind=8), parameter :: idns8        = dble(idns      )
+   real(kind=8), parameter :: mmdry8       = dble(mmdry     )
+   real(kind=8), parameter :: mmdryi8      = dble(mmdryi    )
    real(kind=8), parameter :: pi18         = dble(pi1       )
    real(kind=8), parameter :: pio1808      = dble(pio180    )
    real(kind=8), parameter :: qicet38      = dble(qicet3    )
    real(kind=8), parameter :: qliqt38      = dble(qliqt3    )
    real(kind=8), parameter :: stefan8      = dble(stefan    )
+   real(kind=8), parameter :: sqrt2o28     = dble(sqrt2o2   )
    real(kind=8), parameter :: t3ple8       = dble(t3ple     )
    real(kind=8), parameter :: tsupercool8  = dble(tsupercool)
    real(kind=8), parameter :: twopi8       = dble(twopi     )
    real(kind=8), parameter :: twothirds8   = dble(twothirds )
+   real(kind=8), parameter :: umol_2_kgC8  = dble(umol_2_kgC)
    real(kind=8), parameter :: vonk8        = dble(vonk      )
    real(kind=8), parameter :: wdns8        = dble(wdns      )
    real(kind=8), parameter :: wdnsi8       = dble(wdnsi     )
    !---------------------------------------------------------------------------------------!
 
-end module rconstants
+
+
+end Module consts_coms

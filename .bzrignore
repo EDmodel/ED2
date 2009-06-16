@@ -333,3 +333,8 @@ compare.sh
 scenarios
 backup.bzr
 erasoi
+ED/src/preproc/cdc2hdf/consts_coms.mod
+ED/src/preproc/cdc2hdf/hdf5_coms.mod
+ED/src/preproc/cdc2hdf/hdf5_utils.mod
+ED/src/preproc/cdc2hdf/therm_lib.mod
+RAPP/build/bin/include.mk
