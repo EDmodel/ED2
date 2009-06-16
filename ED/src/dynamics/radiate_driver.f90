@@ -439,63 +439,50 @@ end subroutine sfcrad_ed_ar
 !==========================================================================================!
 subroutine solar_zenith_ar(cgrid)
    use misc_coms    , only : current_time ! ! intent(in)
-   use consts_coms  , only : pio180       & ! intent(in)
-                           , twopi        & ! intent(in)
-                           , hr_sec       ! ! intent(in)
+   use consts_coms  , only : pio1808      & ! intent(in)
+                           , twopi8       & ! intent(in)
+                           , hr_sec8      ! ! intent(in)
    use ed_state_vars, only : edtype       ! ! intent(in)
 
    implicit none
    !----- Argument. -----------------------------------------------------------------------!
-   type(edtype), target   :: cgrid
+   type(edtype), target   :: cgrid  ! Current ED grid
    !----- Local variables. ----------------------------------------------------------------!
-   integer                :: ipy
-   integer                :: jday
-   real                   :: declin
-   real                   :: sdec
-   real                   :: cdec
-   real                   :: d0
-   real                   :: d02
-   real                   :: solfac
-   real                   :: dayhr
-   real                   :: radlat
-   real                   :: cslcsd
-   real                   :: snlsnd
-   real                   :: dayhrr
-   real                   :: hrangl
+   integer                :: ipy    ! Polygon counter
+   integer                :: jday   ! Day of year ("Julian" day)
+   real(kind=8)           :: declin ! Declination
+   real(kind=8)           :: sdec   ! Sine of declination
+   real(kind=8)           :: cdec   ! Cosine of declination
+   real(kind=8)           :: dayhr  ! Hour of day 
+   real(kind=8)           :: radlat ! Latitude in radians
+   real(kind=8)           :: cslcsd ! Cosine of latitude times cosine of declination
+   real(kind=8)           :: snlsnd ! Sine of latitude times sine of declination
+   real(kind=8)           :: dayhrr ! Hour of day in radians
+   real(kind=8)           :: hrangl ! Hour angle
    !----- External functions. -------------------------------------------------------------!
-   integer     , external :: julday
+   integer     , external :: julday ! Function to find day of year ("Julian" day)
    !---------------------------------------------------------------------------------------!
 
    jday  = julday(current_time%month, current_time%date, current_time%year)
 
    !----- sdec - sine of declination, cdec - cosine of declination. -----------------------!
-   
-   declin = -23.5 * cos(twopi / 365. * real(jday + 9)) * pio180
-   sdec   = sin(declin)
-   cdec   = cos(declin)
-
-   !---------------------------------------------------------------------------------------!
-   !     Find the factor, solfac, to multiply the solar constant to correct for Earth's    !
-   ! varying distance to the sun.                                                          !
-   !---------------------------------------------------------------------------------------!
-   d0  = twopi * float(jday-1) / 365.
-   d02 = d0 * 2.
-   solfac = 1.000110 + 0.034221 * cos (d0) + 0.001280 * sin(d0)                            &
-          + 0.000719 * cos(d02) + 0.000077 * sin(d02)
+   declin = -2.35d1 * cos(twopi / 3.65d2 * dble(jday + 9)) * pio1808
+   sdec   = dsin(declin)
+   cdec   = dcos(declin)
 
    !----- Find the hour angle, then get cosine of zenith angle. ---------------------------!
-   dayhr = current_time%time / hr_sec
+   dayhr = dble(current_time%time) / hr_sec8
 
-   do ipy = 1,cgrid%npolygons
+   do ipy = 1, cgrid%npolygons
 
-      radlat = cgrid%lat(ipy) * pio180
-      if (radlat == declin) radlat = radlat + 1.e-5
-      cslcsd = cos(radlat) * cdec
-      snlsnd = sin(radlat) * sdec
-      dayhrr = mod(dayhr+cgrid%lon(ipy)/15.+24.,24.)
-      hrangl = 15. * (dayhrr - 12.) * pio180
+      radlat = dble(cgrid%lat(ipy)) * pio1808
+      if (radlat == declin) radlat = radlat + 1.d-5
+      cslcsd = dcos(radlat) * cdec
+      snlsnd = dsin(radlat) * sdec
+      dayhrr = dmod(dayhr+dble(cgrid%lon(ipy))/1.5d1+2.4d1,2.4d1)
+      hrangl = 1.5d1 * (dayhrr - 1.2d1) * pio1808
 
-      cgrid%cosz(ipy) = snlsnd + cslcsd * cos(hrangl)
+      cgrid%cosz(ipy) = sngloff(snlsnd + cslcsd * dcos(hrangl),1.d-20)
 
    end do
 
@@ -574,6 +561,8 @@ subroutine scale_ed_radiation_ar(rshort, rshort_diffuse, rlong, csite)
    type(patchtype) , pointer    :: cpatch
    integer                      :: ipa,ico, k
    real                         :: beam_radiation
+   !----- External functions. -------------------------------------------------------------!
+   real            , external   :: sngloff
    !---------------------------------------------------------------------------------------!
 
    beam_radiation = rshort - rshort_diffuse

@@ -37,8 +37,8 @@
 #define LATMAX   30
 #define LONMIN -120
 #define LONMAX  -25
-#define MIN_YEAR 2008
-#define MAX_YEAR 2008
+#define MIN_YEAR ZZZZZZ
+#define MAX_YEAR ZZZZZZ
 #define INPUT_DIR  "/n/data/moorcroft_lab/mlongo/NCEP_MET/netcdf"
 #define OUTPUT_DIR "/n/data/moorcroft_lab/mlongo/NCEP_MET/ascii"
 #define OUTPUT_PREF "SOUTHAM"
