@@ -112,6 +112,7 @@ subroutine update_phenology_ar(doy, cpoly, isi, lat)
    integer                               :: ipa
    integer                               :: ico
    integer                               :: isoil_lev
+   integer                               :: kroot
    integer                               :: ipft
    logical                               :: leaf_out_cold
    logical                               :: drop_cold
@@ -155,8 +156,8 @@ subroutine update_phenology_ar(doy, cpoly, isi, lat)
                                ,leaf_out_cold,theta,cpoly%lsl(isi))
 
       cohortloop: do ico = 1,cpatch%ncohorts
-         ipft = cpatch%pft(ico)
-         
+         ipft  = cpatch%pft(ico)
+         kroot = cpatch%krdepth(ico)
 
          !----- Find cohort-specific thresholds. ------------------------------------------!
          select case (iphen_scheme)
@@ -170,69 +171,37 @@ subroutine update_phenology_ar(doy, cpoly, isi, lat)
                                        ,ipft,drop_cold,leaf_out_cold, bl_max)
          end select
 
-         !----- Is this a cold deciduous with leaves? -------------------------------------!
-         if (cpatch%phenology_status(ico) < 2 .and. phenology(ipft) == 2 .and. drop_cold)  &
-         then
+         !---------------------------------------------------------------------------------!
+         !---------------------------------------------------------------------------------!
+         !     Here we decide what to do depending on the phenology habit. There are five  !
+         ! different types:                                                                !
+         ! 0. Evergreen         - neither cold nor drought makes these plants to drop      !
+         !                        their leaves;                                            !
+         ! 1. Drought deciduous - these plants will drop all leaves when drought           !
+         !                        conditions happen. By drought conditions we mean a time  !
+         !                        when the available water drops below a threshold;        !
+         ! 2. Cold deciduous    - these plants will drop their leaves when cold conditions !
+         !                        happen.                                                  !
+         ! 3. Light phenology   - these plants will control their leaf structure with      !
+         !                        the light history (last 10 days);                        !
+         ! 4. Drought deciduous - similar to one, but the threshold is compared against    !
+         !                        a 10-day running average rather than the instantaneous   !
+         !                        value.                                                   !
+         !---------------------------------------------------------------------------------!
+         select case (phenology(ipft))
+         case (0)
+            !------------------------------------------------------------------------------!
+            !    Evergreen, there is nothing to be done here, move on.                     !
+            !------------------------------------------------------------------------------!
+            continue
 
-            delta_bleaf = cpatch%bleaf(ico) - bl_max
-
-            if (delta_bleaf > 0.0) then
-               !---------------------------------------------------------------------------!
-               !    This is incorrect - phen_status 0 indicates leaves are fully flushed   !
-               ! but in this case, leaves were just dropped, should be 1 or 2 unless it is !
-               ! excess leaf trimming - and the resulting leaf biomass is just the carry-  !
-               ! ing capacity of the tree.                                                 !
-               !     Perhaps phenology_status = 0 means that leaves are not growing, not   !
-               ! necessarily because they are fully flushed.  Could anyone confirm this,   !
-               ! please?                                                                   !
-               !---------------------------------------------------------------------------!
-               cpatch%phenology_status(ico) = 0
-               leaf_litter       = (1.0 - retained_carbon_fraction) * delta_bleaf          &
-                                 * cpatch%nplant(ico)
-               csite%fsc_in(ipa) = csite%fsc_in(ipa) + leaf_litter * f_labile(ipft)
-               csite%fsn_in(ipa) = csite%fsn_in(ipa) + leaf_litter * f_labile(ipft)        &
-                                 / c2n_leaf(ipft)
-               csite%ssc_in(ipa) = csite%ssc_in(ipa) + leaf_litter * (1.0 - f_labile(ipft))
-               csite%ssl_in(ipa) = csite%ssl_in(ipa) + leaf_litter                         &
-                                 * (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem
-               
-               !----- Adjust plant carbon pools. ------------------------------------------!
-               cpatch%balive(ico)   = cpatch%balive(ico) - delta_bleaf
-               cpatch%bstorage(ico) = cpatch%bstorage(ico)                                 &
-                                    + retained_carbon_fraction * delta_bleaf
-
-               !---------------------------------------------------------------------------!
-               !     Contribution due to the fact that c2n_leaf and c2n_storage may be     !
-               ! different.                                                                !
-               !---------------------------------------------------------------------------!
-               csite%fsn_in(ipa)     = csite%fsn_in(ipa)                                   &
-                                     + delta_bleaf * cpatch%nplant(ico)                    &
-                                     * retained_carbon_fraction                            &
-                                     * (1.0 / c2n_leaf(ipft) - 1.0/c2n_storage)
-               cpatch%bleaf(ico)     = bl_max
-               cpatch%cb(13,ico)     = cpatch%cb(13,ico) - leaf_litter / cpatch%nplant(ico)
-               cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico)                               &
-                                     - leaf_litter / cpatch%nplant(ico)
-            end if
-
-            !----- Set status flag. -------------------------------------------------------!
-            if (bl_max == 0.0 .or. cpoly%green_leaf_factor(ipft,isi) < 0.02) then
-               cpatch%phenology_status(ico) = 2 
-               cpatch%bleaf(ico)      = 0.0
-            end if
-
-         elseif (cpatch%phenology_status(ico) == 2 .and. phenology(ipft) == 2 .and.        &
-                 leaf_out_cold) then
-
-            !----- Update plant carbon pools. ---------------------------------------------!
-            cpatch%phenology_status(ico) = 1 ! 1 indicates leaves are growing
-            cpatch%bleaf(ico) = cpoly%green_leaf_factor(ipft,isi) * cpatch%balive(ico)     &
-                              / (1.0 + qsw(ipft) * cpatch%hite(ico) + q(ipft))
-
-         elseif (phenology(ipft) == 1) then 
-
-            !----- Drought deciduous? -----------------------------------------------------!
-            if (theta(cpatch%krdepth(ico)) < theta_crit) then
+         case (1)
+            !------------------------------------------------------------------------------!
+            !     Drought deciduous.  Now we must check whether the plants still have      !
+            ! enough water or it is too dry, or if there is some drought relief so leaves  !
+            ! can start to grow again.                                                     ! 
+            !------------------------------------------------------------------------------!
+            if (theta(kroot) < theta_crit) then
 
                !----- It is time to drop leaves. ------------------------------------------!
                if (cpatch%phenology_status(ico) < 2) then
@@ -268,27 +237,91 @@ subroutine update_phenology_ar(doy, cpoly, isi, lat)
                                                - leaf_litter/cpatch%nplant(ico)
                end if
                
-            elseif(theta(cpatch%krdepth(ico)) > theta_crit .and.                           &
-                   cpatch%phenology_status(ico) == 2) then
+            elseif(theta(kroot) > theta_crit .and. cpatch%phenology_status(ico) == 2) then
                
                !----- It is time to flush.  Update carbon pools ---------------------------!
                cpatch%phenology_status(ico) = 1
                cpatch%bleaf(ico)            = cpatch%balive(ico)                           &
                                             / (1.0 + qsw(ipft)*cpatch%hite(ico) + q(ipft))
             end if  ! critical moisture
-            
-         !----- Light-controlled, for the time being, do nothing... -----------------------!
-         elseif (phenology(ipft) == 3) then ! Tropical evergreen 
 
-         !----- Water-controlled, tropical drought deciduous. -----------------------------!
-         elseif (phenology(ipft) == 4) then
-            elongf      = min (1.0, cpatch%paw_avg(ico)/theta_crit)
-            !----- If the tropical PFT happened to be where cold months exist... ----------!
-            if (drop_cold) then
-               bl_max      = 0.
-            else
-               bl_max      = elongf * dbh2bl(cpatch%dbh(ico),ipft)
+         case (2)
+            !------------------------------------------------------------------------------!
+            !    Cold deciduous.  Here we must check two possibilities:                    !
+            !                                                                              !
+            ! 1. It is cold, and the plants have leaves, so we flag them with              !
+            !    phenology_status=0 (leaves not growing) and the plants will start losing  !
+            !    their leaves;                                                             !
+            ! 2. The plant has no leaves, but the temperature and light conditions are     !
+            !    okay again, and leaves can start growing.                                 !
+            !------------------------------------------------------------------------------!
+            if (cpatch%phenology_status(ico) < 2 .and. drop_cold) then
+               delta_bleaf = cpatch%bleaf(ico) - bl_max
+
+               if (delta_bleaf > 0.0) then
+                  !------------------------------------------------------------------------!
+                  !    Phenology_status = 0 means that the plant has leaves, but they are  !
+                  ! not growing (not necessarily because the leaves are fully flushed).    !
+                  !------------------------------------------------------------------------!
+                  cpatch%phenology_status(ico) = 0
+                  leaf_litter       = (1.0 - retained_carbon_fraction) * delta_bleaf       &
+                                    * cpatch%nplant(ico)
+                  csite%fsc_in(ipa) = csite%fsc_in(ipa) + leaf_litter * f_labile(ipft)
+                  csite%fsn_in(ipa) = csite%fsn_in(ipa) + leaf_litter * f_labile(ipft)     &
+                                    / c2n_leaf(ipft)
+                  csite%ssc_in(ipa) = csite%ssc_in(ipa)                                    &
+                                    + leaf_litter * (1.0 - f_labile(ipft))
+                  csite%ssl_in(ipa) = csite%ssl_in(ipa) + leaf_litter                      &
+                                    * (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem
+                  
+                  !----- Adjust plant carbon pools. ---------------------------------------!
+                  cpatch%balive(ico)   = cpatch%balive(ico) - delta_bleaf
+                  cpatch%bstorage(ico) = cpatch%bstorage(ico)                              &
+                                       + retained_carbon_fraction * delta_bleaf
+
+                  !------------------------------------------------------------------------!
+                  !     Contribution due to the fact that c2n_leaf and c2n_storage may be  !
+                  ! different.                                                             !
+                  !------------------------------------------------------------------------!
+                  csite%fsn_in(ipa)     = csite%fsn_in(ipa)                                &
+                                        + delta_bleaf * cpatch%nplant(ico)                 &
+                                        * retained_carbon_fraction                         &
+                                        * (1.0 / c2n_leaf(ipft) - 1.0/c2n_storage)
+                  cpatch%bleaf(ico)     = bl_max
+                  cpatch%cb(13,ico)     = cpatch%cb(13,ico)                                &
+                                        - leaf_litter / cpatch%nplant(ico)
+                  cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico)                            &
+                                        - leaf_litter / cpatch%nplant(ico)
+               end if
+
+               !----- Set status flag. ----------------------------------------------------!
+               if (bl_max == 0.0 .or. cpoly%green_leaf_factor(ipft,isi) < 0.02) then
+                  cpatch%phenology_status(ico) = 2 
+                  cpatch%bleaf(ico)      = 0.0
+               end if
+            elseif(cpatch%phenology_status(ico) == 2 .and. leaf_out_cold) then
+               !---------------------------------------------------------------------------!
+               !      Update the phenology status (1 means that leaves are growing), and   !
+               ! the plant carbon pools, and the phenology status.                         !
+               !---------------------------------------------------------------------------!
+               cpatch%phenology_status(ico) = 1
+               cpatch%bleaf(ico) = cpoly%green_leaf_factor(ipft,isi) * cpatch%balive(ico)  &
+                                 / (1.0 + qsw(ipft) * cpatch%hite(ico) + q(ipft))
             end if
+
+
+         case (3,4) 
+            !------------------------------------------------------------------------------!
+            !    Drought deciduous.  Here we must check two possibilities:                 !
+            !                                                                              !
+            ! 1. The soil has been dry recently, and the plants have leaves, so we flag    !
+            !    them with phenology_status=0 (leaves not growing) and the plants will     !
+            !    start losing their leaves;                                                !
+            ! 2. The plant has no leaves, but the soil has started to come back to more    !
+            !    moist conditions. Given this situation, leaves can start growing again.   !
+            !------------------------------------------------------------------------------!
+            elongf      = min (1.0, cpatch%paw_avg(ico)/theta_crit)
+            bl_max      = elongf * dbh2bl(cpatch%dbh(ico),ipft)
                
             delta_bleaf = cpatch%bleaf(ico) - bl_max
 
@@ -332,7 +365,8 @@ subroutine update_phenology_ar(doy, cpoly, isi, lat)
                cpatch%bleaf(ico) = 0.0
             end if
 
-         end if  ! phenology type
+         end select
+         !---------------------------------------------------------------------------------!
 
          !----- Update LAI, WPA, and WAI accordingly. -------------------------------------!
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
@@ -364,7 +398,7 @@ subroutine update_phenology_ar(doy, cpoly, isi, lat)
          
             write (unit=40+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i12),4(1x,es12.5))')            &
                  current_time%month,'/',current_time%date,'/',current_time%year,ipa,ico    &
-                ,cpatch%nplant(ico),leaf_litter,theta(cpatch%krdepth(ico)),theta_crit
+                ,cpatch%nplant(ico),leaf_litter,theta(kroot),theta_crit
          end if
       end do cohortloop
    end do patchloop

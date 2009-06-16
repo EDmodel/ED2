@@ -15,6 +15,8 @@ module rk4_driver_ar
       use rk4_coms               , only : integration_vars_ar  & ! structure
                                         , integration_buff     & ! structure
                                         , rk4patchtype         & ! structure
+                                        , zero_rk4_patch       & ! subroutine
+                                        , zero_rk4_cohort      & ! subroutine
                                         , rk4met               ! ! intent(out)
       use ed_state_vars          , only : edtype               & ! structure
                                         , polygontype          & ! structure
@@ -55,6 +57,34 @@ module rk4_driver_ar
 
             patchloop: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
+
+               !----- Reset all buffers to zero, as a safety measure. ---------------------!
+               call zero_rk4_patch(integration_buff%initp)
+               call zero_rk4_patch(integration_buff%dinitp)
+               call zero_rk4_patch(integration_buff%yscal)
+               call zero_rk4_patch(integration_buff%y)
+               call zero_rk4_patch(integration_buff%dydx)
+               call zero_rk4_patch(integration_buff%yerr)
+               call zero_rk4_patch(integration_buff%ytemp)
+               call zero_rk4_patch(integration_buff%ak2)
+               call zero_rk4_patch(integration_buff%ak3)
+               call zero_rk4_patch(integration_buff%ak4)
+               call zero_rk4_patch(integration_buff%ak5)
+               call zero_rk4_patch(integration_buff%ak6)
+               call zero_rk4_patch(integration_buff%ak7)
+               call zero_rk4_cohort(integration_buff%initp)
+               call zero_rk4_cohort(integration_buff%dinitp)
+               call zero_rk4_cohort(integration_buff%yscal)
+               call zero_rk4_cohort(integration_buff%y)
+               call zero_rk4_cohort(integration_buff%dydx)
+               call zero_rk4_cohort(integration_buff%yerr)
+               call zero_rk4_cohort(integration_buff%ytemp)
+               call zero_rk4_cohort(integration_buff%ak2)
+               call zero_rk4_cohort(integration_buff%ak3)
+               call zero_rk4_cohort(integration_buff%ak4)
+               call zero_rk4_cohort(integration_buff%ak5)
+               call zero_rk4_cohort(integration_buff%ak6)
+               call zero_rk4_cohort(integration_buff%ak7)
 
                !----- Get velocity for aerodynamic resistance. ----------------------------!
                if (csite%can_temp(ipa) < cpoly%met(isi)%atm_tmp) then
