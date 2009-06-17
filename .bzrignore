@@ -338,3 +338,17 @@ ED/src/preproc/cdc2hdf/hdf5_coms.mod
 ED/src/preproc/cdc2hdf/hdf5_utils.mod
 ED/src/preproc/cdc2hdf/therm_lib.mod
 RAPP/build/bin/include.mk
+RAPP/build/bin/an_header.mod
+RAPP/build/bin/mod_grid.mod
+RAPP/build/bin/mod_ioopts.mod
+RAPP/build/bin/mod_maxdims.mod
+RAPP/build/bin/mod_model.mod
+RAPP/build/bin/mod_namelist.mod
+RAPP/build/bin/mod_ncdf_globio.mod
+RAPP/build/bin/mod_ncep.mod
+RAPP/build/bin/mod_netcdf.mod
+RAPP/build/bin/mod_time.mod
+RAPP/build/bin/rconstants.mod
+RAPP/build/bin/therm_lib.mod
+RAPP/build/rapp_1.0
+RAPP/run/rapp

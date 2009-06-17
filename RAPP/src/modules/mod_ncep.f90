@@ -25,10 +25,27 @@ module mod_ncep
    
    !----- NCEP variable array, it may have more than one grid in the input. ---------------!
    type(ncep_vars), dimension(:), allocatable :: ncep_g
+   !---------------------------------------------------------------------------------------!
+
+
+   
+   !---------------------------------------------------------------------------------------!
+   !   Number of grids we will work with:                                                  !
+   ! 1. Gaussian grid, with input data frequency + the output grid for state variables;    !
+   ! 2. Gaussian grid, with higher time resolution, the output grid for flux variables;    !
+   ! 3. Lon/lat grid, the input grid for state variables.                                  !
+   !---------------------------------------------------------------------------------------!
+   integer                        , parameter :: ngrids_ncep  = 3
+   logical, dimension(ngrids_ncep), parameter :: flux_g  = (/ .true.,  .true., .false. /) 
+   logical, dimension(ngrids_ncep), parameter :: state_g = (/ .true., .false.,  .true. /) 
+   !---------------------------------------------------------------------------------------!
+
    
    !----- Number of variables to be read. -------------------------------------------------!
    integer              , parameter                   :: nvars_ncep   = 12
+   !---------------------------------------------------------------------------------------!
 
+   
    !----- Variable names ------------------------------------------------------------------!
    character(len=maxstr), parameter, dimension(nvars_ncep) :: vars_ncep =                  &
                        (/ 'air'              & ! Air temperature                  [  deg C]
@@ -43,6 +60,9 @@ module mod_ncep
                         , 'vbdsf'            & ! Visible beam radiation           [   W/m2]
                         , 'vddsf'            & ! Visible beam radiation           [   W/m2]
                         , 'prate'           /) ! Precipitation rate               [kg/m2/s]
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Prefix of files containing the variables, one file per variable, not with full    !
@@ -55,13 +75,18 @@ module mod_ncep
                  , 'dlwrf.sfc.gauss/dlwrf.sfc.gauss' , 'nbdsf.sfc.gauss/nbdsf.sfc.gauss'   & 
                  , 'nddsf.sfc.gauss/nddsf.sfc.gauss' , 'vbdsf.sfc.gauss/vbdsf.sfc.gauss'   & 
                  , 'vddsf.sfc.gauss/vddsf.sfc.gauss' , 'prate.sfc.gauss/prate.sfc.gauss' /)  
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Grid where the variable should be loaded:                                         !
    ! + Gaussian variables go to grid 1 (the one that we will actually use).                !
-   ! + Lon/lat variables go to grid 2  (the one to be interpolated).                       !
+   ! + Lon/lat variables go to grid 3  (the one to be interpolated).                       !
    !---------------------------------------------------------------------------------------!
-   integer, parameter, dimension(nvars_ncep) :: grids_ncep = (/2,2,2,2,2,1,1,1,1,1,1,1/)
+   integer, parameter, dimension(nvars_ncep) :: grids_ncep = (/3,3,3,3,3,1,1,1,1,1,1,1/)
+   !---------------------------------------------------------------------------------------!
+
 
    !=======================================================================================!
    !=======================================================================================!
@@ -135,6 +160,41 @@ module mod_ncep
 
       return
    end subroutine nullify_ncep
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine will assign an initial value to the arrays.  The default value     !
+   ! is the missing number flag.                                                           !
+   !---------------------------------------------------------------------------------------!
+   subroutine init_ncep(ncep)
+      use mod_ioopts, only : missflg_real
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(ncep_vars), intent(inout) :: ncep
+      !------------------------------------------------------------------------------------!
+      if (associated(ncep%pres    )) ncep%pres  = missflg_real
+      if (associated(ncep%temp    )) ncep%temp  = missflg_real
+      if (associated(ncep%rhum    )) ncep%rhum  = missflg_real
+      if (associated(ncep%uwnd    )) ncep%uwnd  = missflg_real
+      if (associated(ncep%vwnd    )) ncep%vwnd  = missflg_real
+      if (associated(ncep%shum    )) ncep%shum  = missflg_real
+      if (associated(ncep%thil    )) ncep%thil  = missflg_real
+      if (associated(ncep%prate   )) ncep%prate = missflg_real
+      if (associated(ncep%dlwrf   )) ncep%dlwrf = missflg_real
+      if (associated(ncep%nbdsf   )) ncep%nbdsf = missflg_real
+      if (associated(ncep%nddsf   )) ncep%nddsf = missflg_real
+      if (associated(ncep%vbdsf   )) ncep%vbdsf = missflg_real
+      if (associated(ncep%vddsf   )) ncep%vddsf = missflg_real
+
+      return
+   end subroutine init_ncep
    !=======================================================================================!
    !=======================================================================================!
 

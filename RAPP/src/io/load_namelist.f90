@@ -14,6 +14,7 @@ subroutine load_namelist(rapp_in)
                           , iyearz               & ! intent(out)
                           , inpfrq               & ! intent(out)
                           , radfrq               & ! intent(out)
+                          , radratio             & ! intent(out)
                           , lonw                 & ! intent(out)
                           , lone                 & ! intent(out)
                           , lats                 & ! intent(out)
@@ -84,6 +85,23 @@ subroutine load_namelist(rapp_in)
    ! 5. Checking whether the setting is a valid one.                                       !
    !---------------------------------------------------------------------------------------!
    call rapp_opspec()
+   
+   !---------------------------------------------------------------------------------------!
+   ! 6. Find the ratio between the input and radiation update frequency.                   !
+   !---------------------------------------------------------------------------------------!
+   radratio = nint(inpfrq/radfrq)
+   
+   !---------------------------------------------------------------------------------------!
+   ! 7. Making the longitude in line with the meteorological dataset range (either 0..360  !
+   !    or -180..180).                                                                     !
+   !---------------------------------------------------------------------------------------!
+   select case (trim(intype))
+   case ('ncep')
+      if (lonw < 0.) then
+         lonw = lonw + 360.
+         lone = lone + 360.
+      end if
+   end select
 
    return
 end subroutine load_namelist

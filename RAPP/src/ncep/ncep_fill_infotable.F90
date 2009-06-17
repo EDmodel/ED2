@@ -8,7 +8,7 @@
 ! line with RAMS to ease the output step.  Note that this subroutine will do something     !
 ! only if netcdf libraries are loaded, otherwise this subroutine will be a dummy one.      !
 !------------------------------------------------------------------------------------------!
-subroutine ncep_fill_infotable(year,flnm)
+subroutine ncep_fill_infotable(year)
    use mod_maxdims    , only : maxstr           & ! intent(in)
                              , maxfiles         & ! intent(in)
                              , maxrank          ! ! intent(in)
@@ -20,16 +20,22 @@ subroutine ncep_fill_infotable(year,flnm)
                              , nnxp             & ! intent(out)
                              , nnyp             & ! intent(out)
                              , nnzp             & ! intent(out)
+                             , nntp             & ! intent(out)
+                             , xtn              & ! intent(out)
+                             , ytn              & ! intent(out)
                              , this_time        & ! intent(out)
                              , zero_time        ! ! intent(out)
    use an_header      , only : nfiles           & ! intent(out)
                              , info_table       & ! intent(out)
                              , alloc_anheader   & ! subroutine
                              , nullify_anheader ! ! subroutine
-   use mod_ioopts     , only : outtimes         & ! intent(out)
+   use mod_ioopts     , only : inpath           & ! intent(in)
+                             , radratio         & ! intent(in)
+                             , outtimes         & ! intent(out)
                              , nouttimes        & ! intent(out)
                              , missflg_int      ! ! intent(in)
-   use mod_ncep       , only : nvars_ncep       & ! intent(in)
+   use mod_ncep       , only : ngrids_ncep      & ! intent(in)
+                             , nvars_ncep       & ! intent(in)
                              , prefvars_ncep    & ! intent(in)
                              , grids_ncep       ! ! intent(in)
 #if USE_NCDF
@@ -52,30 +58,28 @@ subroutine ncep_fill_infotable(year,flnm)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer               , intent(in)          :: year       ! Year that we are processing
-   character(len=maxstr) , intent(in)          :: flnm       ! File prefix
 #if USE_NCDF
    !----- Local variables (only if NetCDF is available). ----------------------------------!
    character(len=maxstr)                       :: flnm_full     ! Full file name
    character(len=maxstr) , dimension(maxfiles) :: fnames        ! File name list
-   integer                                     :: na,nd,nf      ! Various counters
+   integer                                     :: nf            ! Various counters
    integer                                     :: nv,nt,tcnt    ! Various counters
-   integer               , pointer             :: ifm           ! Shortcut to current grid
-   integer                                     :: nvbtab        ! Scratch for var count
-   integer                                     :: itrim         ! String length
    integer                                     :: ierr          ! Error flag.
    integer                                     :: ngrid         ! Error flag.
-   integer                                     :: ntimes        ! number of times/file
-   integer                                     :: avant         ! Cleaning handle
    logical                                     :: file_is_there ! Is the 
    !---------------------------------------------------------------------------------------!
-
-   !----- Deallocating table if necessary, it will be allocated soon. ---------------------!
-   if(allocated(info_table)) deallocate(info_table)
 
    !----- Initialising the number of times and vertical levels ----------------------------!
    nouttimes = 0
    nnzp      = 0
-   ngrids    = 2 ! NCEP dataset will always have two grids (1=Gaussian; 2=Lon/Lat) 
+
+   !---------------------------------------------------------------------------------------!
+   !     NCEP dataset will always have three grids.                                        !
+   ! 1. Gaussian, same time resolution as input, and state variables for output;           !
+   ! 2. Gaussian, higher time resolution for radiation output;                             !
+   ! 3. Lon/Lat, state variables that are read here.                                       !
+   !---------------------------------------------------------------------------------------!
+   ngrids    = ngrids_ncep
 
    !---------------------------------------------------------------------------------------!
    !     Making the list of files for this year:                                           !
@@ -83,7 +87,7 @@ subroutine ncep_fill_infotable(year,flnm)
    nfiles = nvars_ncep
    do nf=1,nfiles
       write(flnm_full,fmt='(4a,i4.4,a)')                                                   &
-                      trim(flnm),'/',trim(prefvars_ncep(nf)),'.',year,'.nc'
+                      trim(inpath),'/',trim(prefvars_ncep(nf)),'.',year,'.nc'
       inquire(file=flnm_full,exist=file_is_there)
       if (file_is_there) then
          fnames(nf) = flnm_full
@@ -93,12 +97,12 @@ subroutine ncep_fill_infotable(year,flnm)
       end if
    end do
 
-
    !----- Now I will allocate the variable table accordingly ------------------------------!
    allocate (info_table(nfiles))
 
    !----- Loop through the files and store the variable info ------------------------------!
    fileloop: do nf=1,nfiles
+      write (unit=*,fmt='(92a)') ('-',nv=1,92)
       write (unit=*,fmt='(a,1x,2a)') ' [+] Opening file :',trim(fnames(nf)),'...'
 
       !----- Assigning the grid to this file. ---------------------------------------------!
@@ -120,22 +124,22 @@ subroutine ncep_fill_infotable(year,flnm)
       
       !----- Getting some global arguments ------------------------------------------------!
       write (unit=*,fmt='(a)') '     - Loading global attributes and dimensions...'
-      call commio_ncep(ngrid,ntimes)
-      info_table(nf)%ngrids    = 2
-      info_table(nf)%ntimes    = ntimes
+      call commio_ncep(ngrid)
+      info_table(nf)%ngrids    = ngrids
+      info_table(nf)%ntimes    = nntp(ngrid)
       info_table(nf)%init_time = this_time(1)
 
       !----- Initialising the analysis structure for this file ----------------------------!
       call nullify_anheader(info_table(nf))
       call alloc_anheader(info_table(nf))
-      info_table(nf)%avail_grid(:)       = .false.
-      info_table(nf)%avail_grid(ngrid)   = .true.
-      info_table(nf)%file_time(1:ntimes) = this_time(1:ntimes)
+      info_table(nf)%avail_grid(:)            = .false.
+      info_table(nf)%avail_grid(ngrid)        = .true.
+      info_table(nf)%file_time(1:nntp(ngrid)) = this_time(1:nntp(ngrid))
 
 
       !----- Adding the new times into the outtimes array ---------------------------------!
       tcnt=0
-      addtimeloop: do nt=1,ntimes
+      addtimeloop: do nt=1,nntp(ngrid)
          !----- I will only add times that were not there before --------------------------!
          if (nouttimes > 0) then
            if (any(outtimes(1:nouttimes)%elapsed == this_time(nt)%elapsed))                &
@@ -149,9 +153,7 @@ subroutine ncep_fill_infotable(year,flnm)
       call sort_time(nouttimes,outtimes(1:nouttimes))
 
       !----- Getting the variable information----------------------------------------------!
-      write (unit=*,fmt='(a)') ' '
-      write (unit=*,fmt='(a)') '-----------------------------------------------------------'
-      write (unit=*,fmt='(a)') ' - Loading variable table...'
+      write (unit=*,fmt='(a)') '     - Loading variable table...'
 
       !------------------------------------------------------------------------------------!
       !     We now build the NCEP variable table.                                          !
@@ -174,15 +176,26 @@ subroutine ncep_fill_infotable(year,flnm)
          call fatal_error ('Error closing the file '//trim(fnames(nf))//'...'              &
                           ,'ncep_fill_infotable','ncep_fill_infotable.F90'                 ) 
       end if
+
+      write (unit=*,fmt='(92a)') ('-',nv=1,92)
+      write (unit=*,fmt=*)
    end do fileloop
    !---------------------------------------------------------------------------------------!
    !     Here we need to fix the number of vertical levels. In case all that was provided  !
    ! was surface variables, nnzp by 1 and set up any junk for ztn(1,:).                    !
    !---------------------------------------------------------------------------------------!
-   where (nnzp(1:ngrids) == 0)
-      nnzp(1:ngrids)  = 1
-   end where
-   
+   if (nnzp(1) == 0) nnzp(1) = 1
+   if (nnzp(3) == 0) nnzp(3) = 1
+
+   !---------------------------------------------------------------------------------------!
+   !    Here we just build the grid 2 information. It has the same LON/LAT size as grid 1, !
+   ! but with a larger time dimension.                                                     !
+   !---------------------------------------------------------------------------------------!
+   nnxp(2) = nnxp(1)
+   nnyp(2) = nnyp(1)
+   nnzp(2) = nnzp(1)
+   nntp(2) = radratio*nntp(1) + 1
+
    return
 #else
    call fatal_error('You can''t use ncep input without compiling with netcdf libraries...' &
@@ -218,8 +231,7 @@ subroutine ncep_load_var_table(nv,current_grid,varname,npointer,idim_type,ngrid,
                              , idnnxp        & ! intent(in)
                              , idnnyp        & ! intent(in)
                              , idnnzp        & ! intent(in)
-                             , idtimes       & ! intent(in)
-                             , idnpatch      & ! intent(in)
+                             , idnntp        & ! intent(in)
                              , idnnxpst      & ! intent(in)
                              , idnnypst      & ! intent(in)
                              , idnnzpst      ! ! intent(in)
@@ -228,7 +240,8 @@ subroutine ncep_load_var_table(nv,current_grid,varname,npointer,idim_type,ngrid,
                              , missflg_char  ! ! intent(in)
    use mod_model      , only : nnxp          & ! intent(in)
                              , nnyp          & ! intent(in)
-                             , nnzp          ! ! intent(in)
+                             , nnzp          & ! intent(in)
+                             , nntp          ! ! intent(in)
    use mod_ncdf_globio, only : ncdf_load_err ! ! intent(in)
 #endif
    implicit none
@@ -240,7 +253,6 @@ subroutine ncep_load_var_table(nv,current_grid,varname,npointer,idim_type,ngrid,
    logical, dimension(maxrank), intent(out) :: stagger
    !----- Local variables -----------------------------------------------------------------!
    integer                                  :: ierr
-   character(len=maxstr)                    :: memorder,stagdim
    !---------------------------------------------------------------------------------------!  
 #if USE_NCDF
    ierr = nf90_inquire_variable(ncid,nv,varname,xtype,ndims,dimids,natts)
@@ -268,8 +280,8 @@ subroutine ncep_load_var_table(nv,current_grid,varname,npointer,idim_type,ngrid,
    ! and arrays and all scalars are stored with special dimension flag. Otherwise, we save !
    ! the variable with the default 99 category, which currently means "ignore me".         !
    !     Rank is the rank of each array (0 being a scalar, 1 a 1-D vector, 2 a 2-D, and so !
-   ! on). The value assigned to idim_type is standardized for all models and the look-up   !
-   ! table is available at ${MEVI_ROOT}/doc/dimension_table.txt.                           !
+   ! on). The value assigned to idim_type is standardised for all models and the look-up   !
+   ! table is available at ${RAPP_ROOT}/doc/dimension_table.txt.                           !
    !---------------------------------------------------------------------------------------!
    !----- Character, only scalars are considered ------------------------------------------!
    if (xtype == NF90_CHAR .and. ndims == 1) then
@@ -281,56 +293,51 @@ subroutine ncep_load_var_table(nv,current_grid,varname,npointer,idim_type,ngrid,
       rank      = 0
    !----- Reals, only 1D vectors are considered -------------------------------------------!
    elseif (xtype == NF90_FLOAT .and. ndims == 1) then
-         idim_type = 70
-         if (dimids(1) == idnnzp) then
-            idim_type = 13
-            dims(1) = nnzp(ngrid)
-         elseif (dimids(1) == idnnxp) then
-            dims(1) = nnxp(ngrid)
-         elseif (dimids(1) == idnnyp) then
-            dims(1) = nnyp(ngrid)
-         end if
-
+      rank      = 1
+      if (dimids(1) == idnnzp) then
+         idim_type = 13
          rank      = 1
+         dims(1)   = nnzp(ngrid)
+      elseif (dimids(1) == idnnxp) then
+         idim_type = 11
+         rank      = 1
+         dims(1)   = nnxp(ngrid)
+      elseif (dimids(1) == idnnyp) then
+         idim_type = 12
+         rank      = 1
+         dims(1)   = nnyp(ngrid)
+      elseif (dimids(1) == idnntp) then
+         idim_type = 14
+      end if
+   !----- Double precision, only 1D vectors are considered for the time being. ------------!
    elseif (xtype == NF90_DOUBLE .and. ndims == 1) then
-         idim_type = 60
-         rank      = 0
+      rank      = 1
+      if (dimids(1) == idnnzp) then
+         idim_type = 73
+         rank      = 1
+         dims(1)   = nnzp(ngrid)
+      elseif (dimids(1) == idnnxp) then
+         idim_type = 71
+         rank      = 1
+         dims(1)   = nnxp(ngrid)
+      elseif (dimids(1) == idnnyp) then
+         idim_type = 72
+         rank      = 1
+         dims(1)   = nnyp(ngrid)
+      elseif (dimids(1) == idnntp) then
+         idim_type = 74
+      end if
+
    !----- Real, scalar, vectors and higher-rank arrays are considered, check everything ---!
    elseif (xtype == NF90_SHORT) then
       select case(ndims)
-      !------------------------------------------------------------------------------------!
-      !   Time-dependent scalar or time-independent vector, just set up idim_type and we   !
-      ! are all set.                                                                       !
-      !------------------------------------------------------------------------------------!
-      case (1)
-         idim_type = 70
-         rank      = 0
 
       !------------------------------------------------------------------------------------!
-      !   Single rank vector, checking which dimension it is associated. This will not     !
-      ! crash if the vector has a non-spatial dimension, we will simply ignore it and      !
-      ! leave the dimension to be 99.                                                      !
-      !------------------------------------------------------------------------------------!
-      case (2) !----- The variable has one dimension. We will figure out which one... -----!
-         rank      = 1
-         if (dimids(1) == idnnzp) then
-            idim_type = 13
-            dims(1) = nnzp(ngrid)
-         elseif (dimids(1) == idnnxp) then
-            idim_type = 11
-            dims(1) = nnxp(ngrid)
-         elseif (dimids(1) == idnnyp) then
-            idim_type = 12
-            dims(1) = nnyp(ngrid)
-         end if
-
-      !------------------------------------------------------------------------------------!
-      !   2D fields. Currently only XY variables are known...                              !
+      !   3D fields.                                                                       !
       !------------------------------------------------------------------------------------!
       case (3)
-         rank = 2
-         !----- Currently the only 2D dimension is X and Y. -------------------------------!
-         idim_type = 62
+         !----- Currently the only three-dimension variable known is XYT, check that. -----!
+         rank = 3
 
          !----- X dimension ---------------------------------------------------------------!
          if (dimids(1) == idnnxp) then
@@ -350,13 +357,21 @@ subroutine ncep_load_var_table(nv,current_grid,varname,npointer,idim_type,ngrid,
                              ,'ncep_load_var_table','ncep_fill_infotable.F90')
          end if
 
+         !----- T dimension ---------------------------------------------------------------!
+         if (dimids(3) == idnntp) then
+            idim_type = 62
+            dims(3) = nntp(ngrid)
+         else 
+            call fatal_error ('T Dimension is wrong for '//trim(varname)//'!!!'            &
+                             ,'ncep_load_var_table','ncep_fill_infotable.F90')
+         end if
+
 
       !------------------------------------------------------------------------------------!
-      !   3D fields. There are some possible idim_type, but all of them  have X and Y,     !
-      !              what changes is the third dimension.                                  !
+      !   4D fields.                                                                       !
       !------------------------------------------------------------------------------------!
       case (4)
-         rank = 3
+         rank = 4
          !----- X dimension ---------------------------------------------------------------!
          if (dimids(1) == idnnxp) then
             dims(1) = nnxp(ngrid)
@@ -374,10 +389,18 @@ subroutine ncep_load_var_table(nv,current_grid,varname,npointer,idim_type,ngrid,
 
          !----- 3rd dimension -------------------------------------------------------------!
          if (dimids(3) == idnnzp) then
-            idim_type = 63
             dims(3) = nnzp(ngrid)
          else 
             call fatal_error ('Z Dimension is wrong for '//trim(varname)//'!!!'            &
+                             ,'ncep_load_var_table','ncep_fill_infotable.F90')
+         end if
+
+         !----- 4th dimension -------------------------------------------------------------!
+         if (dimids(4) == idnntp) then
+            idim_type = 63
+            dims(4) = nntp(ngrid)
+         else 
+            call fatal_error ('T Dimension is wrong for '//trim(varname)//'!!!'            &
                              ,'ncep_load_var_table','ncep_fill_infotable.F90')
          end if
       end select

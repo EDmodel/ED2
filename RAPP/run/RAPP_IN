@@ -1,4 +1,4 @@
-&MEVI_OPTIONS
+&RAPP_OPTIONS
 
 !------------------------------------------------------------------------------------------!
 !  General options                                                                         !
@@ -38,4 +38,4 @@
    NL%LATN =   30. ! Northernmost latitude  allowed to be included;
 
 
-/ ! End of MEVI_OPTIONS namelist
+/ ! End of RAPP_OPTIONS namelist

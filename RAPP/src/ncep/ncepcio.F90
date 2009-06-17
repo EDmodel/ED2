@@ -4,7 +4,7 @@
 !                    attributes and the dimensions. It will read and store only the        !
 !                    variables that are needed for conversion into the output formats.     !
 !------------------------------------------------------------------------------------------!
-subroutine commio_ncep(ngrid,ntimes)
+subroutine commio_ncep(ngrid)
    use mod_model      , only : polelon         & ! intent(out)
                              , polelat         & ! intent(out)
                              , l2ndlat         & ! intent(out)
@@ -13,10 +13,12 @@ subroutine commio_ncep(ngrid,ntimes)
                              , nnxp            & ! intent(inout)
                              , nnyp            & ! intent(inout)
                              , nnzp            & ! intent(inout)
+                             , nntp            & ! intent(inout)
                              , nclouds         & ! intent(inout)
                              , npatch          & ! intent(inout)
                              , nzg             & ! intent(inout)
                              , nzs             & ! intent(inout)
+                             , nwave           & ! intent(inout)
                              , zero_time       & ! intent(inout)
                              , ihtran          & ! intent(inout)
                              , deltaxn         & ! intent(inout)
@@ -30,10 +32,15 @@ subroutine commio_ncep(ngrid,ntimes)
    use mod_ioopts     , only : missflg_int     ! ! intent(in)
 #if USE_NCDF
    use netcdf
-   use mod_netcdf     , only : idtimes         & ! intent(inout)
+   use mod_netcdf     , only : idnntp          & ! intent(inout)
                              , idnnxp          & ! intent(inout)
                              , idnnyp          & ! intent(inout)
-                             , idnnzp          ! ! intent(inout)
+                             , idnnzp          & ! intent(inout)
+                             , idnzg           & ! intent(inout)
+                             , idnzs           & ! intent(inout)
+                             , idnclouds       & ! intent(inout)
+                             , idnpatch        & ! intent(inout)
+                             , idnwave         ! ! intent(inout)
    use mod_ncdf_globio, only : ncio_glo        & ! function
                              , ncio_glo_sca    & ! function
                              , ncio_dim        & ! function
@@ -46,7 +53,6 @@ subroutine commio_ncep(ngrid,ntimes)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer          , intent(in)       :: ngrid   ! Grid ID regarding this variable.
-   integer          , intent(out)      :: ntimes  ! Number of times available in this file.
    !----- Local variables -----------------------------------------------------------------!
    integer                             :: curryear,currdoy,it,s,t,z
    real   , dimension(maxtimes)        :: gmttime
@@ -64,7 +70,7 @@ subroutine commio_ncep(ngrid,ntimes)
 
 
    !----- Getting the dimensions ----------------------------------------------------------!
-   ierr   = ncio_dim   ('time'                  , .true.  ,ntimes         ,idtimes   )
+   ierr   = ncio_dim   ('time'                  , .true.  ,nntp(ngrid)    ,idnntp    )
    ierr   = ncio_dim   ('lon'                   , .true.  ,nnxp(ngrid)    ,idnnxp    )
    ierr   = ncio_dim   ('lat'                   , .true.  ,nnyp(ngrid)    ,idnnyp    )
 
@@ -85,11 +91,17 @@ subroutine commio_ncep(ngrid,ntimes)
       gotz = .false.
    end if
 
-   !----- Other dimensions will be set to 1, hardly should they be different --------------!
-   nzg     = 1
-   nzs     = 1
-   npatch  = 1
-   nclouds = 1
+   !----- Other dimensions will be set to 1 and their IDs to a non-sense number -----------!
+   nzg       = 1
+   nzs       = 1
+   npatch    = 1
+   nclouds   = 1
+   nwave     = 1 
+   idnzg     = missflg_int
+   idnzs     = missflg_int
+   idnpatch  = missflg_int
+   idnclouds = missflg_int
+   idnwave   = missflg_int
 
    !----- NCEP will always have a lon/lat list (either grid or Gaussian). -----------------!
    ihtran = 0
@@ -109,10 +121,9 @@ subroutine commio_ncep(ngrid,ntimes)
    centlon(ngrid) = (xtn(nnxp(ngrid)/2,ngrid))
    centlat(ngrid) = (ytn(nnyp(ngrid)/2,ngrid))
    !----- Retrieving all times ------------------------------------------------------------!
-   ierr   = ncio_ncep_time('time', .true., ntimes,this_time)
+   ierr   = ncio_ncep_time('time', .true., nntp(ngrid),this_time)
 
 #else
-   ntimes = missflg_int
    call fatal_error ('You can''t run ncep without compiling with netcdf!'                  &
                     ,'commio_ncep','ncepcio.F90')
 #endif

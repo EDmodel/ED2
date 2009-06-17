@@ -12,17 +12,15 @@ program rapp_main
            maxstr          ! ! Maximum string length
    implicit none
    
-   !---------------------------------------------------------------------------------------!
-   !   Variable declaration section:                                                       !
-   !---------------------------------------------------------------------------------------!
-   integer                              :: numarg               ! # of arguments
-   integer                              :: arg                  ! Argument counter
-   character(len=maxstr), dimension(2)  :: arguments            ! List of arguments
-   character(len=maxstr)                :: rapp_in              ! Namelist name
-   character(len=12)                    :: c0                   ! Just to print the banner
-   !
-   real                                 :: w1,w2,wtime_start    ! For time calculation
-   real, external                       :: walltime             ! To compute runtime
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                              :: numarg      ! # of arguments
+   integer                              :: arg         ! Argument counter
+   character(len=maxstr), dimension(2)  :: arguments   ! List of arguments
+   character(len=maxstr)                :: rapp_in     ! Namelist name
+   character(len=12)                    :: c0          ! Just to print the banner
+   real                                 :: wtime_zero  ! For run time calculation
+   real                                 :: wtime_start ! For run time calculation
+   real                                 :: wtime_end   ! For run time calculation
    !---------------------------------------------------------------------------------------!
    
 
@@ -65,8 +63,8 @@ program rapp_main
 
    !----- Initializing time ---------------------------------------------------------------! 
    write (unit=*,fmt='(a)') 'RAPP execution begins...'
-   wtime_start=walltime(0.)
-   w1=walltime(wtime_start)
+   wtime_zero = 0.
+   call walltime(wtime_zero,wtime_start)
 
    !---------------------------------------------------------------------------------------!
    ! 3.  Loading the namelist and storing the information at the appropriate modules.      !
@@ -82,9 +80,9 @@ program rapp_main
    call rapp_driver()
 
    !----- Getting the final time and printing the final time banner -----------------------!
-   w2=walltime(wtime_start)
-   write(c0,"(f12.2)") w2
-   write(unit=*,fmt='(/,a,/)') ' === File conversion ends; Total elapsed time='//&
+   call walltime(wtime_start,wtime_end)
+   write(c0,"(f12.2)") wtime_end
+   write(unit=*,fmt='(/,a,/)') ' === Data conversion ends; Total elapsed time='//&
                                trim(adjustl(c0))//' ==='
   
 

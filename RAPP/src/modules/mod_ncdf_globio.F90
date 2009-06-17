@@ -298,7 +298,8 @@ module mod_ncdf_globio
       !----- Optional output, only one of them should appear there ------------------------!
       type(time_stt), dimension(ntimes), intent(out) :: timeout
       !----- External functions for time handling -----------------------------------------!
-      integer          , external         :: julday,v5d_datestamp,v5d_timestamp,julday1000
+      integer          , external         :: dayofyear,julday1000
+      integer          , external         :: v5d_datestamp,v5d_timestamp
       character(len=3) , external         :: monchar
       real             , external         :: day_fraction
       character(len=17), external         :: grads_dtstamp
@@ -371,8 +372,8 @@ module mod_ncdf_globio
                read(tmpvar(t),fmt='(i4.4,5(1x,i2.2))')                                     &
                        timeout(t)%year, timeout(t)%month, timeout(t)%day                   &
                       ,timeout(t)%hour, timeout(t)%minu , timeout(t)%seco
-               timeout(t)%doy     = julday (timeout(t)%month,timeout(t)%day                &
-                                           ,timeout(t)%year)
+               timeout(t)%doy     = dayofyear (timeout(t)%month,timeout(t)%day             &
+                                              ,timeout(t)%year)
                timeout(t)%mmm     = monchar(timeout(t)%month)
                timeout(t)%fracday = day_fraction(timeout(t)%hour,timeout(t)%minu           &
                                                 ,timeout(t)%seco)
@@ -425,7 +426,8 @@ module mod_ncdf_globio
       !----- Optional output, only one of them should appear there ------------------------!
       type(time_stt), dimension(ntimes), intent(out) :: timeout
       !----- External functions for time handling -----------------------------------------!
-      integer          , external         :: julday,v5d_datestamp,v5d_timestamp,julday1000
+      integer          , external         :: dayofyear,julday1000
+      integer          , external         :: v5d_datestamp,v5d_timestamp
       character(len=3) , external         :: monchar
       real             , external         :: day_fraction
       character(len=17), external         :: grads_dtstamp
@@ -507,8 +509,8 @@ module mod_ncdf_globio
                timeout(t)%hour = timeout(t)%hhmmss/10000
                timeout(t)%minu = mod(timeout(t)%hhmmss/100,100)
                timeout(t)%seco = mod(timeout(t)%hhmmss,100)
-               timeout(t)%doy     = julday (timeout(t)%month,timeout(t)%day                &
-                                           ,timeout(t)%year)
+               timeout(t)%doy     = dayofyear(timeout(t)%month,timeout(t)%day              &
+                                             ,timeout(t)%year)
                timeout(t)%mmm     = monchar(timeout(t)%month)
                timeout(t)%fracday = day_fraction(timeout(t)%hour,timeout(t)%minu           &
                                                 ,timeout(t)%seco)
@@ -558,7 +560,8 @@ module mod_ncdf_globio
       !----- Optional output, only one of them should appear there ------------------------!
       type(time_stt), dimension(ntimes), intent(out) :: timeout
       !----- External functions for time handling -----------------------------------------!
-      integer          , external         :: julday,v5d_datestamp,v5d_timestamp,julday1000
+      integer          , external         :: dayofyear,julday1000
+      integer          , external         :: v5d_datestamp,v5d_timestamp
       character(len=3) , external         :: monchar
       real             , external         :: day_fraction
       character(len=17), external         :: grads_dtstamp
@@ -642,8 +645,8 @@ module mod_ncdf_globio
                timeout(t)%hour = timeout(t)%hhmmss/10000
                timeout(t)%minu = mod(timeout(t)%hhmmss/100,100)
                timeout(t)%seco = mod(timeout(t)%hhmmss,100)
-               timeout(t)%doy     = julday (timeout(t)%month,timeout(t)%day                &
-                                           ,timeout(t)%year)
+               timeout(t)%doy     = dayofyear(timeout(t)%month,timeout(t)%day              &
+                                             ,timeout(t)%year)
                timeout(t)%mmm     = monchar(timeout(t)%month)
                timeout(t)%fracday = day_fraction(timeout(t)%hour,timeout(t)%minu           &
                                                 ,timeout(t)%seco)
@@ -1335,10 +1338,10 @@ module mod_ncdf_globio
                             trim(varname)//' is not!','ncio_2dshort','mod_ncdf_globio.F90')
          !----- Guess it's okay to get the variable now -----------------------------------!
          else
-            write (unit=*,fmt='(2(a,1x),a)')                                               &
-                  '         [|] Retrieving :',trim(varname),'...'
             ierr = nf90_get_var(ncid,varid,tmpvar,start=start,count=count,stride=stride)
             if (ierr /= NF90_NOERR) then
+               write (unit=*,fmt='(2(a,1x),a)')                                            &
+                  '         [|] While retrieving :',trim(varname),'...'
                call ncdf_load_err(ierr)
                call fatal_error ('Error retrieving the variable '//trim(varname)//'...'    &
                                 ,'ncio_2dshort','mod_ncdf_globio.F90')

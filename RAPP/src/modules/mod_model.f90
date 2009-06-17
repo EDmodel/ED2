@@ -36,11 +36,13 @@ module mod_model
    !
    real   , dimension(maxgrds)        :: deltaxn ! Grid-dependent delta x
    real   , dimension(maxgrds)        :: deltayn ! Grid-dependent delta y
-   !
+
+   !----- Full dataset information. -------------------------------------------------------!
    integer, dimension(maxgrds)        :: nnxp    ! Number of points in the X direction;
    integer, dimension(maxgrds)        :: nnyp    ! Number of points in the Y direction;
    integer, dimension(maxgrds)        :: nnzp    ! Number of points in the Z direction;
-   
+   integer, dimension(maxgrds)        :: nntp    ! Number of points in time;
+
    !----- Number of input grids -----------------------------------------------------------!
    integer                            :: ngrids
   
@@ -49,12 +51,15 @@ module mod_model
    integer                            :: nzs     ! # of snow layers
    integer                            :: npatch  ! # of patches 
    integer                            :: nclouds ! # of clouds
+   integer                            :: nwave   ! # of wave numbers
   
    !----- Vertical levels associated to Polar-Stereographic and vertical coordinates-------!
    real   , dimension(nxpmax,maxgrds) :: xtn     ! x coordinate of cell centre on PS
    real   , dimension(nxpmax,maxgrds) :: xmn     ! x coordinate of higher cell boundary 
    real   , dimension(nypmax,maxgrds) :: ytn     ! y coordinate of cell centre on PS
    real   , dimension(nypmax,maxgrds) :: ymn     ! y coordinate of higher cell boundary 
+   real   , dimension(nzpmax,maxgrds) :: ztn     ! z coordinate of cell centre on PS
+   real   , dimension(nzpmax,maxgrds) :: zmn     ! z coordinate of higher cell boundary 
 
    !----- Scratch Time strucures ----------------------------------------------------------!
    type(time_stt), dimension(maxtimes) :: this_time   ! Scratch to hold file time
