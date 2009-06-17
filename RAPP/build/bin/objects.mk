@@ -8,6 +8,7 @@ OBJECTS =                       \
 	an_header.o             \
 	charutils.o             \
 	dateutils.o             \
+	dealloc_driver.o        \
 	fatal_error.o           \
 	load_namelist.o         \
 	mod_grid.o              \
@@ -21,8 +22,10 @@ OBJECTS =                       \
 	mod_time.o              \
 	numutils.o              \
 	ncepcio.o               \
+	ncep_alloc.o            \
 	ncep_coordinates.o      \
 	ncep_fill_infotable.o   \
+	ncep_loadvars.o         \
 	rapp_driver.o           \
 	rapp_opspec.o           \
 	rconstants.o            \

@@ -94,13 +94,13 @@ subroutine rapp_opspec()
    !---------------------------------------------------------------------------------------! 
    !     Check whether the longitude and latidute make sense.                              !
    !---------------------------------------------------------------------------------------! 
-   if (lonw < -180. .or. lonw > 180.) then
+   if (lonw < -180. .or. lonw > 360.) then
       write (reason,fmt='(a,1x,f9.3,a)')                                                   &
-          'Invalid LONW (between -180 and 180).  Currently LONW is set to ',lonw,'...'
+          'Invalid LONW (between -180 and 360).  Currently LONW is set to ',lonw,'...'
    end if
-   if (lone < -180. .or. lone > 180.) then
+   if (lone < -180. .or. lone > 360.) then
       write (reason,fmt='(a,1x,f9.3,a)')                                                   &
-          'Invalid LONE (between -180 and 180).  Currently LONE is set to ',lonw,'...'
+          'Invalid LONE (between -180 and 360).  Currently LONE is set to ',lonw,'...'
    end if
    if (lonw >= lone) then
       write (reason,fmt='(a,2(1x,f9.3,1x,a))')                                             &
@@ -118,7 +118,14 @@ subroutine rapp_opspec()
       write (reason,fmt='(a,2(1x,f9.3,1x,a))')                                             &
           'LATN must be greater than LATS.  Currently LATS =',lats,'and LATN =',latn,'...'
    end if
-
+   select case(intype)
+   case ('ncep')
+      if (lonw < 0. .and. lone >= 0.) then
+         write (reason,fmt='(a,2x,a,2(1x,f9.3,1x,a))')                                     &
+          'Sorry, RAPP doesn''t support domains crossing Greenwich (it will eventually).'  &
+         ,'  Currently LONW =',lonw,'and LONE =',lone,'...'
+      end if
+   end select
 
    !----- Stop the run if there are any fatal errors. -------------------------------------!
    if (ifaterr > 0) then

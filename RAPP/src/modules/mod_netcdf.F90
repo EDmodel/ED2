@@ -31,13 +31,15 @@ module mod_netcdf
    integer                     , dimension(NF90_MAX_VAR_DIMS) :: dimids ! Dimension ID
    integer                                                    :: natts  ! # of attributes
    !------ ID for useful dimensions, this is just to decide the variable type np-----------!
-   integer                                                    :: idtimes 
+   integer                                                    :: idnntp
    integer                                                    :: idnnxp  
    integer                                                    :: idnnyp  
    integer                                                    :: idnnzp  
    integer                                                    :: idnzg   
+   integer                                                    :: idnzs
    integer                                                    :: idnclouds   
    integer                                                    :: idnpatch
+   integer                                                    :: idnwave
    integer                                                    :: idnnxpst
    integer                                                    :: idnnypst
    integer                                                    :: idnnzpst

@@ -60,7 +60,7 @@ $(EXE): $(LIBMODEL) $(MAINOBJ)
 $(MAINOBJ): $(MAIN)
 	@echo ""
 	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
+	$(LOADER) $(LOADER_OPTS) -c $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
 $(LIBMODEL): $(OBJECTS)

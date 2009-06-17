@@ -30,6 +30,10 @@ module mod_ioopts
    real                  :: latn ! Northernmost latitude
    !---------------------------------------------------------------------------------------!
 
+   !----- Ratio between radiation and input frequency. ------------------------------------!
+   integer               :: radratio ! Inpfrq/Radfrq
+   !---------------------------------------------------------------------------------------!
+
    !----- Time map ------------------------------------------------------------------------!
    type(time_stt)        , dimension(maxtimes)                  :: outtimes
    integer                                                      :: nouttimes

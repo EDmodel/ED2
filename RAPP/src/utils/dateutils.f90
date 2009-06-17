@@ -14,7 +14,7 @@ subroutine date_abs_secs2 (year1,month1,date1,hour1,seconds)
    real(kind=8) :: s1,s2,s3,s4
    integer :: year1,month1,date1,hour1,iy,ndays
    integer :: elapdays
-   integer, external  :: julday
+   integer, external  :: dayofyear
    logical, external  :: isleap
    integer, parameter :: firstyear=1000
 
@@ -41,7 +41,7 @@ subroutine date_abs_secs2 (year1,month1,date1,hour1,seconds)
       elapdays = elapdays - 1
    end if
    
-   ndays = elapdays + julday(month1,date1,year1)
+   ndays = elapdays + dayofyear(month1,date1,year1)
    s1= dble(ndays) * day_sec
    s2= dble(hour1/10000) * hr_sec
    s3= dble(mod(hour1,10000)/100)*min_sec
@@ -248,37 +248,36 @@ end subroutine date_unmake_big
 
 !==========================================================================================!
 !==========================================================================================!
-integer function julday (imonth,iday,iyear)
+!     This subroutine will find the day of year for a given date.                          !
+!------------------------------------------------------------------------------------------!
+integer function dayofyear(imonth,iday,iyear)
    implicit none
-   integer :: imonth,iday,iyear
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer            , intent(in) :: imonth
+   integer            , intent(in) :: iday
+   integer            , intent(in) :: iyear
+   !----- Local variables. ----------------------------------------------------------------!
+   real, dimension(12), parameter  :: elap_regu = (/  0,   31,  59,  90, 120, 151          &
+                                                   , 181, 212, 243, 273, 304, 334 /)
+   real, dimension(12), parameter  :: elap_leap = (/   0,  31,  60,  91, 121, 152          &
+                                                   , 182, 213, 244, 274, 305, 335 /)
+   !----- External functions. -------------------------------------------------------------!
+   logical            , external   :: isleap
+   !---------------------------------------------------------------------------------------!
 
-   integer           :: febdays
-   logical, external :: isleap
-
-   ! compute the julian day from a normal date
+   !---------------------------------------------------------------------------------------!
+   !     Compute the day of year using one or other vector, depending on whether the year  !
+   ! is leap or not.                                                                       !
+   !---------------------------------------------------------------------------------------!
 
    if (isleap(iyear)) then
-      febdays=29
+      dayofyear = iday + elap_leap(imonth)
    else
-      febdays=28
+      dayofyear = iday + elap_regu(imonth)
    end if
-   
-   julday= iday  &
-         + min(1,max(0,imonth-1))*31  &
-         + min(1,max(0,imonth-2))*febdays  &
-         + min(1,max(0,imonth-3))*31  &
-         + min(1,max(0,imonth-4))*30  &
-         + min(1,max(0,imonth-5))*31  &
-         + min(1,max(0,imonth-6))*30  &
-         + min(1,max(0,imonth-7))*31  &
-         + min(1,max(0,imonth-8))*31  &
-         + min(1,max(0,imonth-9))*30  &
-         + min(1,max(0,imonth-10))*31  &
-         + min(1,max(0,imonth-11))*30  &
-         + min(1,max(0,imonth-12))*31
 
    return
-end function julday
+end function dayofyear
 !==========================================================================================!
 !==========================================================================================!
 
@@ -289,86 +288,56 @@ end function julday
 
 !==========================================================================================!
 !==========================================================================================!
+!   This function computes the Julian day (our reference is year 1000, and we assume       !
+! Gregorian calendar, although it was implented in 1582).                                  !
+!------------------------------------------------------------------------------------------!
 integer function julday1000 (imonth,iday,iyear)
-   implicit none
-   integer :: imonth,iday,iyear
-
-   integer :: i,imm,idd,jd
    
-   integer           :: febdays
-   logical, external :: isleap
-
-   ! compute the julian day (from 1000) from a normal date w/4 digit yr
-   ! 1000 is the first full year with Gregorian calendar, so that should cover
-   ! most cases.
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer, intent(in) :: imonth
+   integer, intent(in) :: iday
+   integer, intent(in) :: iyear
+   !----- Local variables. ----------------------------------------------------------------!
+   integer             :: iyy
+   integer             :: imm
+   integer             :: idd
+   !----- External functions. -------------------------------------------------------------!
+   logical, external   :: isleap
+   integer, external   :: dayofyear
+   !---------------------------------------------------------------------------------------!
 
    julday1000=0
+   !---------------------------------------------------------------------------------------!
+   !    If the year is at or after our time origin, we cycle over the years before our     !
+   ! year, then add the day of year of this year.
+   !---------------------------------------------------------------------------------------!
    if (iyear >= 1000) then
-      do i=1000,iyear
-
-         imm=12
-         idd=31
-         if(i==iyear)then
-            imm=imonth
-            idd=iday
-         endif
-         
-         if (isleap(i)) then
-            febdays=29
+      do iyy=1000,iyear-1
+         if (isleap(iyy)) then
+            julday1000 = julday1000 + 366
          else
-            febdays=28
-         end if
-
-         jd= idd  &
-            + min(1,max(0,imm-1))*31  &
-            + min(1,max(0,imm-2))*febdays  &
-            + min(1,max(0,imm-3))*31  &
-            + min(1,max(0,imm-4))*30  &
-            + min(1,max(0,imm-5))*31  &
-            + min(1,max(0,imm-6))*30  &
-            + min(1,max(0,imm-7))*31  &
-            + min(1,max(0,imm-8))*31  &
-            + min(1,max(0,imm-9))*30  &
-            + min(1,max(0,imm-10))*31  &
-            + min(1,max(0,imm-11))*30  &
-            + min(1,max(0,imm-12))*31
-
-         julday1000=julday1000+jd
-
-      end do  
-   else
-      do i=999,iyear,-1
-         if (isleap(i)) then
-            julday1000=julday1000-366
-         else
-            julday1000=julday1000-365
+            julday1000 = julday1000 + 365
          end if
       end do
 
-      imm=imonth
-      idd=iday
-      
-      if (isleap(iyear)) then
-         febdays=29
-      else
-         febdays=28
-      end if
-      
-      jd= idd  &
-         + min(1,max(0,imm-1))*31  &
-         + min(1,max(0,imm-2))*febdays  &
-         + min(1,max(0,imm-3))*31  &
-         + min(1,max(0,imm-4))*30  &
-         + min(1,max(0,imm-5))*31  &
-         + min(1,max(0,imm-6))*30  &
-         + min(1,max(0,imm-7))*31  &
-         + min(1,max(0,imm-8))*31  &
-         + min(1,max(0,imm-9))*30  &
-         + min(1,max(0,imm-10))*31  &
-         + min(1,max(0,imm-11))*30  &
-         + min(1,max(0,imm-12))*31
+      julday1000 = julday1000 + dayofyear(imonth,iday,iyear)
 
-      julday1000=julday1000+jd
+   !---------------------------------------------------------------------------------------!
+   !     Otherwise, we subtract year until our year, then add back the day of year of this !
+   ! year.                                                                                 !
+   !---------------------------------------------------------------------------------------!
+   else
+      do iyy=999,iyear,-1
+         if (isleap(iyy)) then
+            julday1000 = julday1000 - 366
+         else
+            julday1000 = julday1000 - 365
+         end if
+      end do
+
+      julday1000=julday1000 + dayofyear(imonth,iday,iyear)
+
    end if 
 
    return
@@ -427,6 +396,38 @@ real function day_fraction(hour,minu,seco)
    integer, intent(in) :: hour,minu,seco
    day_fraction = (real(seco)+min_sec*real(minu)+hr_sec*real(hour))/day_sec
 end function day_fraction
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This function return the number of days in a given month, considering whether the     !
+! year is leap or not.                                                                     !
+!------------------------------------------------------------------------------------------!
+integer function monndays(month,year)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer, intent(in) :: month
+   integer, intent(in) :: year
+   !----- Local constants. ----------------------------------------------------------------!
+   integer, dimension(12), parameter :: monlength= (/ 31, 28, 31, 30, 31, 30               &
+                                                    , 31, 31, 30, 31, 30, 31 /)
+   !----- External functions. -------------------------------------------------------------!
+   logical, external                 :: isleap
+   !---------------------------------------------------------------------------------------!
+   
+   monndays = monlength(month)
+
+   !----- If it is February in a leap year, add the leap day. -----------------------------!
+   if (month == 2 .and. isleap(year)) monndays = monndays + 1
+
+   return
+end function monndays
 !==========================================================================================!
 !==========================================================================================!
 

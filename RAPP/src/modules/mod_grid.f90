@@ -3,6 +3,9 @@
 ! Module grid: This module contains the input grid structure.                              !
 !------------------------------------------------------------------------------------------!
 module mod_grid
+
+   use mod_maxdims, only : maxgrds
+
    implicit none
 
    type grid_struct
@@ -15,6 +18,23 @@ module mod_grid
    !---------------------------------------------------------------------------------------!
    type(grid_struct), dimension(:), allocatable :: grid_g
    
+   
+   !----- Output dataset information. -----------------------------------------------------!
+   integer, dimension(maxgrds)        :: ssxp    ! Number of points in the X direction;
+   integer, dimension(maxgrds)        :: ssyp    ! Number of points in the Y direction;
+   integer, dimension(maxgrds)        :: sszp    ! Number of points in the Z direction;
+   integer, dimension(maxgrds)        :: sstp    ! Number of points in time;
+   
+   !----- Indices defining the grid edges. ------------------------------------------------!
+   integer, dimension(maxgrds)        :: x_1st   ! First point to use in X direction
+   integer, dimension(maxgrds)        :: xlast   ! Last  point to use in X direction
+   integer, dimension(maxgrds)        :: y_1st   ! First point to use in Y direction
+   integer, dimension(maxgrds)        :: ylast   ! Last  point to use in Y direction
+   integer, dimension(maxgrds)        :: z_1st   ! First point to use in Z direction
+   integer, dimension(maxgrds)        :: zlast   ! Last  point to use in Z direction
+   integer, dimension(maxgrds)        :: t_1st   ! First time  to use
+   integer, dimension(maxgrds)        :: tlast   ! Last  time  to use
+
    !=======================================================================================!
    !=======================================================================================!
 
