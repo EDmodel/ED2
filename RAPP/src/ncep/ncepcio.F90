@@ -19,7 +19,6 @@ subroutine commio_ncep(ngrid)
                              , nzg             & ! intent(inout)
                              , nzs             & ! intent(inout)
                              , nwave           & ! intent(inout)
-                             , zero_time       & ! intent(inout)
                              , ihtran          & ! intent(inout)
                              , deltaxn         & ! intent(inout)
                              , deltayn         & ! intent(inout)
@@ -121,7 +120,7 @@ subroutine commio_ncep(ngrid)
    centlon(ngrid) = (xtn(nnxp(ngrid)/2,ngrid))
    centlat(ngrid) = (ytn(nnyp(ngrid)/2,ngrid))
    !----- Retrieving all times ------------------------------------------------------------!
-   ierr   = ncio_ncep_time('time', .true., nntp(ngrid),this_time)
+   ierr   = ncio_ncep_time('time', .true., nntp(ngrid),this_time(1:nntp(ngrid),ngrid))
 
 #else
    call fatal_error ('You can''t run ncep without compiling with netcdf!'                  &

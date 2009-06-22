@@ -302,8 +302,8 @@ module mod_ncdf_globio
       integer          , external         :: v5d_datestamp,v5d_timestamp
       character(len=3) , external         :: monchar
       real             , external         :: day_fraction
-      character(len=17), external         :: grads_dtstamp
-      character(len=19), external         :: rapp_dtstamp
+      character(len=15), external         :: grads_dtstamp
+      character(len=17), external         :: rapp_dtstamp
       !----- Local variables --------------------------------------------------------------!
       character(len=timelength), dimension(ntimes) :: tmpvar
       integer                                      :: ierr
@@ -430,8 +430,8 @@ module mod_ncdf_globio
       integer          , external         :: v5d_datestamp,v5d_timestamp
       character(len=3) , external         :: monchar
       real             , external         :: day_fraction
-      character(len=17), external         :: grads_dtstamp
-      character(len=19), external         :: rapp_dtstamp
+      character(len=15), external         :: grads_dtstamp
+      character(len=17), external         :: rapp_dtstamp
       !----- Local variables --------------------------------------------------------------!
       integer     , dimension(ntimes)          :: tmpvar
       real(kind=8), dimension(ntimes)          :: tdble
@@ -564,8 +564,8 @@ module mod_ncdf_globio
       integer          , external         :: v5d_datestamp,v5d_timestamp
       character(len=3) , external         :: monchar
       real             , external         :: day_fraction
-      character(len=17), external         :: grads_dtstamp
-      character(len=19), external         :: rapp_dtstamp
+      character(len=15), external         :: grads_dtstamp
+      character(len=17), external         :: rapp_dtstamp
       !----- Local variables --------------------------------------------------------------!
       real(kind=8), dimension(ntimes)              :: tmpvar
       integer                                      :: ierr

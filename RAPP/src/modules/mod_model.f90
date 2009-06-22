@@ -62,8 +62,8 @@ module mod_model
    real   , dimension(nzpmax,maxgrds) :: zmn     ! z coordinate of higher cell boundary 
 
    !----- Scratch Time strucures ----------------------------------------------------------!
-   type(time_stt), dimension(maxtimes) :: this_time   ! Scratch to hold file time
-   type(time_stt)                      :: zero_time   ! Scratch to hold init. time
+   type(time_stt), dimension(maxtimes,maxgrds) :: this_time   ! Scratch to hold file time
+   type(time_stt)                              :: zero_time   ! Scratch to hold init. time
 
 end module mod_model
 !==========================================================================================!

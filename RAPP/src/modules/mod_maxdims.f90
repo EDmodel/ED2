@@ -11,7 +11,7 @@ module mod_maxdims
    integer, parameter :: maxfiles = 2000
 
    !----- Maximum number of dimensions accepted by RAPP. ----------------------------------!
-   integer, parameter :: maxrank  = 4
+   integer, parameter :: maxrank  = 6
 
    !----- Maximum number of grids accepted by RAPP. ---------------------------------------!
    integer, parameter :: maxgrds  = 6
@@ -22,6 +22,6 @@ module mod_maxdims
    integer, parameter :: nzpmax   = 1   ! Maximum number of points in the vertical
 
    !----- Maximum number of times per file ------------------------------------------------!
-   integer, parameter :: maxtimes = 2000
+   integer, parameter :: maxtimes = 1489 ! Files every half an hour for a 31-day month.
 
 end module mod_maxdims

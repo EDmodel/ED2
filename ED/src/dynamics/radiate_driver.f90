@@ -460,13 +460,14 @@ subroutine solar_zenith_ar(cgrid)
    real(kind=8)           :: dayhrr ! Hour of day in radians
    real(kind=8)           :: hrangl ! Hour angle
    !----- External functions. -------------------------------------------------------------!
-   integer     , external :: julday ! Function to find day of year ("Julian" day)
+   integer     , external :: julday  ! Function to find day of year ("Julian" day)
+   real        , external :: sngloff ! Function to safely convert double to single prec.
    !---------------------------------------------------------------------------------------!
 
    jday  = julday(current_time%month, current_time%date, current_time%year)
 
    !----- sdec - sine of declination, cdec - cosine of declination. -----------------------!
-   declin = -2.35d1 * cos(twopi / 3.65d2 * dble(jday + 9)) * pio1808
+   declin = -2.35d1 * cos(twopi8 / 3.65d2 * dble(jday + 9)) * pio1808
    sdec   = dsin(declin)
    cdec   = dcos(declin)
 

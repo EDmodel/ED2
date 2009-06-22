@@ -40,8 +40,8 @@ subroutine ncep_alloc(month,year)
    ! first time of the next month. This is used for the time interpolation.                !
    !---------------------------------------------------------------------------------------!
    ndays          = monndays(month,year)
-   sstp(1:ngrids) = nint(day_sec/inpfrq) * ndays + 1
-   sstp(2)        = nint(day_sec/radfrq) * ndays + 1
+   sstp(1:ngrids) = nint(day_sec/inpfrq) * ndays
+   sstp(2)        = nint(day_sec/radfrq) * ndays
    
    !----- Finding the offset for the time considering the month we are in. ----------------!
    doy_1st         = dayofyear(month,1,year)
@@ -55,14 +55,14 @@ subroutine ncep_alloc(month,year)
       write (unit=*,fmt='(3(a,1x,i6),2(a,1x,a))')                                          &
          '         [|] Time info (Grid 1): T_1ST=',t_1st(1),'. TLAST=',tlast(1)            &
                        ,'. SSTP=',sstp(1)                                                  &
-                       ,'. TIME_1ST=',trim(this_time(t_1st(1))%gradsstamp)                 &
-                       ,'. TIMELAST=',trim(this_time(tlast(1))%gradsstamp)
+                       ,'. TIME_1ST=',trim(this_time(t_1st(1),1)%gradsstamp)                 &
+                       ,'. TIMELAST=',trim(this_time(tlast(1),1)%gradsstamp)
    case(12)
       write (unit=*,fmt='(3(a,1x,i6,1x),2(a,1x,a))')                                       &
          '         [|] Time info (Grid 1): T_1ST=',t_1st(1),'. TZM1=',tlast(1)-1           &
                        ,'. SSTP=',sstp(1)                                                  &
-                       ,'. TIME_1ST=',trim(this_time(t_1st(1))%gradsstamp)                 &
-                       ,'. TIMETZM1=',trim(this_time(tlast(1)-1)%gradsstamp)
+                       ,'. TIME_1ST=',trim(this_time(t_1st(1),1)%gradsstamp)                 &
+                       ,'. TIMETZM1=',trim(this_time(tlast(1)-1,1)%gradsstamp)
    end select
 
    !----- Now we proceed with the actual structure allocation. ----------------------------!

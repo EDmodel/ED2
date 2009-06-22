@@ -41,7 +41,6 @@ ALL_LIBS    = $(LIBS) $(HDF5_LIBS) $(NCDF_LIBS)
 F90_COMMAND = $(F_COMP) $(F_OPTS) $(INCLUDES) -c
 FPP_COMMAND = $(F_COMP) -DUSE_NCDF=$(USE_NCDF) -D$(CMACH) -DUSE_HDF5=$(USE_HDF5)           \
               $(F_OPTS) $(INCLUDES) -c
-C_COMMAND   = $(C_COMP) $(C_OPTS) -D$(CMACH) $(INCLUDES) -c
 
 
 #----- Including the object list ----------------------------------------------------------#
