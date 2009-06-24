@@ -1,0 +1,69 @@
+#------------------------------------------------------------------------------------------#
+#    This is the file you need to adjust depending on your system and needs.               #
+#------------------------------------------------------------------------------------------#
+
+
+
+#------ Define make (gnu makes works best) ------------------------------------------------#
+MAKE = /usr/bin/make
+
+# RAPP root directory
+RAPP_ROOT=/Users/mlongo/EDBRAMS/RAPP
+
+#------------------------------------------------------------------------------------------#
+#    HDF5 libraries. You don't have to include them if you don't want to use anything in   #
+# HDF5, in which case you can set up USE_HDF5 to 0, and leave HDF5_INCS and HDF5_LIBS in   #
+# blank.                                                                                   #
+#------------------------------------------------------------------------------------------#
+USE_HDF5=1
+HDF5_INCS=-I/sw/hdf5/include
+HDF5_LIBS=-lm -lz -L/sw/hdf5/lib -lhdf5 -lhdf5_fortran
+
+#------------------------------------------------------------------------------------------#
+#    NetCDF libraries. You don't have to include them if you don't want to use anything in #
+# netCDF, in which case you can set up USE_NCDF to 0, and leave NCDF_INCS and NCDF_LIBS in #
+# blank.                                                                                   #
+#------------------------------------------------------------------------------------------#
+USE_NCDF=1
+NCDF_INCS=-I/sw/include
+NCDF_LIBS=-L/sw/lib -lnetcdf
+
+#------ Defining the compiler and library paths in case they are not in LD_LIBRARY_PATH ---#
+CMACH=MAC_OS_X
+F_COMP=gfortran
+LOADER=gfortran
+LIBS=
+
+##################################### COMPILER OPTIONS #####################################
+#------------------------------------------------------------------------------------------#
+# A. Pickiest - Use this whenever you change arguments on functions and subroutines.       #
+#               This will perform the same tests as B but it will also check whether all   #
+#               arguments match between subroutine declaration and subroutine calls.       #
+#               WARNING: In order to really check all interfaces you must compile with     #
+#                        this option twice:                                                #
+#               1. Compile (./compile.sh)                                                  #
+#               2. Prepare second compilation(./2ndcomp.sh)                                #
+#               3. Compile one more time (./compile.sh)                                    #
+#               If the compilation fails either at step 1 or 3, then your code has inter-  #
+#                  face problems. If it successfully compiles, then you can switch to B.   #
+#------------------------------------------------------------------------------------------#
+USE_INTERF=0
+F_OPTS=-O0 -Wall -ffpe-trap=invalid,zero,overflow,underflow,precision,denormal
+LOADER_OPTS=-O0 
+
+
+#------------------------------------------------------------------------------------------#
+# E. Fast - This is all about performance, use only when you are sure that the model has   #
+#           no code problem, and you want results asap. This will not check for any        #
+#           problems, which means that this is an option suitable for end users, not de-   #
+#           velopers.                                                                      #
+#------------------------------------------------------------------------------------------#
+#USE_INTERF=1
+#F_OPTS= -O3 
+#LOADER_OPTS= -O3 
+#------------------------------------------------------------------------------------------#
+
+
+
+#------ Archive command -------------------------------------------------------------------#
+ARCHIVE=ar rs

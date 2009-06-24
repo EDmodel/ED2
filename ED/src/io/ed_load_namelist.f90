@@ -31,7 +31,7 @@ subroutine copy_nl(copy_type)
   use soil_coms, only: isoilflg, nslcon, slmstr, zrough, soil_database, &
        isoilstateinit, isoildepthflg, isoilbc, soilstate_db, soildepth_db,   &
                        runoff_time, slz,veg_database
-  use met_driver_coms, only: ed_met_driver_db, metcyc1, metcycf,imettype,initial_co2, lapse_scheme
+  use met_driver_coms, only: ed_met_driver_db, ishuffle, metcyc1, metcycf,imettype,initial_co2, lapse_scheme
   use mem_sites, only: n_soi, soi_lat, soi_lon, n_ed_region, ed_reg_latmin,  &
        ed_reg_latmax, ed_reg_lonmin, ed_reg_lonmax, grid_res, grid_type, edres, &
        maxpatch, maxcohort
@@ -159,6 +159,7 @@ subroutine copy_nl(copy_type)
      ipmax         = nl%ipmax
 
      imettype      = nl%imettype
+     ishuffle      = nl%ishuffle
      metcyc1       = nl%metcyc1
      metcycf       = nl%metcycf
      initial_co2   = nl%initial_co2

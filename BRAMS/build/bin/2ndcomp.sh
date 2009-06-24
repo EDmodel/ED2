@@ -323,7 +323,7 @@ rm -fv physiology_coms.o          physiology_coms.mod
 rm -fv pft_coms.o                 pft_coms.mod
 rm -fv radiate_driver.o           radiate_driver.mod
 rm -fv reproduction.o             reproduction.mod
-rm -fv rk4_coms.o              rk4_coms.mod 
+rm -fv rk4_coms.o                 rk4_coms.mod 
 rm -fv rk4_derivs.o               rk4_derivs.mod
 rm -fv rk4_driver.o               rk4_driver.mod
 rm -fv rk4_integ_utils.o          rk4_integ_utils.mod
@@ -331,4 +331,5 @@ rm -fv rk4_stepper.o              rk4_stepper.mod
 rm -fv soil_coms.o                soil_coms.mod
 rm -fv structural_growth.o        structural_growth.mod
 rm -fv twostream_rad.o            twostream_rad.mod
+rm -fv update_derived_props.o     update_derived_props.mod
 rm -fv var_tables_array.o         var_tables_array.mod

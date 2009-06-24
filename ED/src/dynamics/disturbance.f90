@@ -822,7 +822,7 @@ end subroutine apply_disturbances_ar
     use fuse_fiss_utils_ar, only : sort_cohorts_ar
     use ed_therm_lib,only : calc_hcapveg
     use consts_coms, only: t3ple
-    use allometry, only : h2dbh, dbh2bd, dbh2bl, dbh2h, area_indices
+    use allometry, only : h2dbh, dbh2bd, dbh2bl, dbh2h, sla, area_indices
     use max_dims, only : n_pft
 
     implicit none
@@ -885,6 +885,7 @@ end subroutine apply_disturbances_ar
     cpatch%phenology_status(nc) = 0
     cpatch%balive(nc) = cpatch%bleaf(nc) * &
          (1.0 + q(cpatch%pft(nc)) + qsw(cpatch%pft(nc)) * cpatch%hite(nc))
+    cpatch%sla(nc)=sla(cpatch%pft(nc))
     call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)        &
                      ,cpatch%balive(nc),cpatch%dbh(nc), cpatch%hite(nc)          &
                      ,cpatch%pft(nc),cpatch%sla(nc), cpatch%lai(nc)              &

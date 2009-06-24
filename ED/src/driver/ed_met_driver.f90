@@ -294,14 +294,18 @@ subroutine read_met_drivers_init_array
    use hdf5_utils     , only : shdf5_open_f   & ! subroutine
                              , shdf5_close_f  ! ! subroutine
    use met_driver_coms, only : nformats       & ! intent(in)
+                             , ishuffle       & ! intent(in)
                              , met_names      & ! intent(in)
                              , met_nv         & ! intent(in)
                              , met_interp     & ! intent(in)
                              , met_frq        & ! intent(in)
                              , metcyc1        & ! intent(in)
-                             , metcycf        ! ! intent(in)
+                             , metcycf        & ! intent(in)
+                             , metyears       ! ! intent(inout)
    use mem_sites      , only : grid_type      ! ! intent(in)
-   use misc_coms      , only : current_time   ! ! intent(in)
+   use misc_coms      , only : current_time   & ! intent(in)
+                             , iyeara         & ! intent(in)
+                             , iyearz         ! ! intent(in)
    use grid_coms      , only : ngrids         ! ! intent(in)
    use consts_coms    , only : day_sec        ! ! intent(in)
    implicit none
@@ -310,13 +314,19 @@ subroutine read_met_drivers_init_array
    character(len=256)          :: infile
    integer                     :: igr
    integer                     :: year_use
-   integer                     :: ncyc
    integer                     :: iformat
    integer                     :: iv
    integer                     :: offset
    integer                     :: m2
    integer                     :: y2
    integer                     :: year_use_2
+   integer                     :: nyears
+   integer                     :: ncyc
+   integer                     :: nfullcyc
+   integer                     :: i1stfull
+   integer                     :: iyear
+   integer, dimension(8)       :: seedtime
+   real                        :: runif
    logical                     :: exans
    !----- Local constants -----------------------------------------------------------------!
    character(len=3), dimension(12), parameter :: mname = (/ 'JAN', 'FEB', 'MAR', 'APR'     &
@@ -324,23 +334,103 @@ subroutine read_met_drivers_init_array
                                                           , 'SEP', 'OCT', 'NOV', 'DEC'   /) 
    !----- External functions --------------------------------------------------------------!
    logical         , external  :: isleap
+   !----- Variables to be saved. ----------------------------------------------------------!
+   logical         , save      :: first_time=.true.
    !---------------------------------------------------------------------------------------!
  
 
 
-   !----- If we need to recycle over years, find the appropriate year to apply. -----------!
-   year_use = current_time%year
-   ncyc     = metcycf - metcyc1 + 1
+   !---------------------------------------------------------------------------------------!
+   !    If this is the first time this subroutine is called, we build the meteorological   !
+   ! driver sequence of years.  Often is the case that the user has a meteorological data- !
+   ! set that is shorter than the time span he or she is intending to run. In this case we !
+   ! need to fill the other years with some data.                                          !
+   !---------------------------------------------------------------------------------------!
+   if (first_time) then
+      first_time = .false.
 
-   !----- If we are after the last year... ------------------------------------------------!
-   do while(year_use > metcycf)
-      year_use = year_use - ncyc
-   end do
+      !------ Defining the number of years we have meteorological information available. --!
+      ncyc   = metcycf - metcyc1 + 1
+      nyears = iyearz  - iyeara  + 1
 
-   !----- If we are before the first year... ----------------------------------------------!
-   do while(year_use < metcyc1)
-      year_use = year_use + ncyc
-   end do
+      !------ Allocating the sequence of years. -------------------------------------------!
+      allocate(metyears(nyears))      
+      
+      !----- Initialising the seed for random number generation. --------------------------!
+      call random_seed()
+
+      !------------------------------------------------------------------------------------!
+      !     Now we must decide how we are going to select the meteorological driver years, !
+      ! in particular, the years outside the meteorological driver range.                  !
+      !------------------------------------------------------------------------------------!
+      select case (ishuffle)
+      case (0)
+         !---------------------------------------------------------------------------------!
+         !     Make a loop over the years, repeating the loop as many times as we need.    !
+         ! First we determine how many full cycles fit between iyeara and metcyc1.  Note   !
+         ! that this can be negative in case metcyc1 is less than iyeara, but this will    !
+         ! work too.
+         !---------------------------------------------------------------------------------!
+         nfullcyc = floor(real(metcyc1-iyeara)/real(ncyc))
+         i1stfull = metcyc1 - nfullcyc * ncyc
+         
+         year_use   = metcycf - (i1stfull - iyeara)
+
+         do iyear=1,nyears
+            if (year_use == metcycf) then
+               year_use = metcyc1
+            else
+               year_use = year_use + 1
+            end if
+
+            metyears(iyear) = year_use
+         end do
+
+      !------------------------------------------------------------------------------------!
+      !    For years outside the met driver range, we pick up a random year.  Because we   !
+      ! use the actual sequence of random years given by the code random generator, this   !
+      ! sequence will be always the same for a given met driver and first year.            !                !
+      !------------------------------------------------------------------------------------!
+      case (1)
+         do year_use=iyeara,iyearz
+            iyear=year_use-iyeara+1
+            if (year_use < metcyc1 .or. year_use > metcycf) then
+               call random_number(runif)
+               metyears(iyear) = metcyc1 + mod(floor(real(ncyc)*runif),ncyc)
+            else
+               metyears(iyear) = year_use
+            end if
+         end do
+
+      !------------------------------------------------------------------------------------!
+      !    For years outside the met driver range, we pick up a random year. We skip some  !
+      ! random numbers using the system clock, so each time we run the model we will have  !
+      ! a different sequence of years (similar to the random method used in STILT).        !
+      !------------------------------------------------------------------------------------!
+      case (2)
+         do year_use=iyeara,iyearz
+            iyear=year_use-iyeara+1
+            if (year_use < metcyc1 .or. year_use > metcycf) then
+               call date_and_time(values=seedtime)
+               do iv=0,seedtime(8)
+                  call random_number(runif)
+               end do
+               metyears(iyear) = metcyc1 + mod(floor(real(ncyc)*runif),ncyc)
+            else
+               metyears(iyear) = year_use
+            end if
+         end do
+      end select
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     We now retrieve the met driver year based on the stored sequence.                 !
+   !---------------------------------------------------------------------------------------!
+   iyear    = current_time%year-iyeara+1
+   year_use = metyears(iyear)
 
 
    gridloop: do igr = 1,ngrids
@@ -383,28 +473,20 @@ subroutine read_met_drivers_init_array
          !---------------------------------------------------------------------------------!
          !------ Find next month and year -------------------------------------------------!
          m2 = current_time%month + 1
-         y2 = current_time%year
-         year_use_2 = year_use
          
          !---------------------------------------------------------------------------------!
-         !     If this takes us into the next year, increment year and reset month to      !
-         ! January.                                                                        !
+         !     If this takes us into the next year, take the next year in sequence and     !
+         ! reset month to January.                                                         !
          !---------------------------------------------------------------------------------!
          if (m2 == 13) then
             m2 = 1
             y2 = current_time%year + 1
-            year_use_2 = y2
-            
-            !----- If we are now after the last year... -----------------------------------!
-            do while(year_use_2 > metcycf)
-               year_use_2 = year_use_2 - ncyc
-            end do
-            
-            !----- If we are now before the first year... ---------------------------------!
-            do while(year_use_2 < metcyc1)
-               year_use_2 = year_use_2 + ncyc
-            end do
+         else 
+            !----- Otherwise, use the same year. ------------------------------------------!
+            y2 = current_time%year
          end if
+         iyear = y2 - iyeara + 1
+         year_use_2 = metyears(iyear)
          
          !----- Now, open the file once. --------------------------------------------------!
          write(infile,fmt='(a,i4.4,a,a)')  trim(met_names(iformat)), year_use_2            &
@@ -1465,81 +1547,92 @@ end subroutine match_poly_grid_array
 !==========================================================================================!
 subroutine getll_array(cgrid,iformat)
 
-  use met_driver_coms, only: met_nv, &
-       met_vars, &
-       met_nlon, &
-       met_nlat, &
-       lat2d,    &
-       lon2d,    &
-       met_xmin, &
-       met_ymin, &
-       met_dx,   &
-       met_dy,   &
-       no_ll
-  
-  use hdf5_utils,only : shdf5_info_f,shdf5_irec_f
-  use ed_state_vars,only:edtype
+   use met_driver_coms, only: met_nv, &
+        met_vars, &
+        met_nlon, &
+        met_nlat, &
+        lat2d,    &
+        lon2d,    &
+        met_xmin, &
+        met_ymin, &
+        met_dx,   &
+        met_dy,   &
+        no_ll
+   
+   use hdf5_utils,only : shdf5_info_f,shdf5_irec_f
+   use ed_state_vars,only:edtype
 
-  implicit none
-  
-  integer :: iformat
-  integer :: ndims
-  integer, dimension(3) :: idims
-  type(edtype),target :: cgrid
+   implicit none
+   
+   integer :: iformat
+   integer :: ndims
+   integer :: d
+   integer, dimension(3) :: idims
+   type(edtype),target :: cgrid
 
-  ! First check to see if their is lat/lon data in this dataset
-  ! if the data exists, load it
-  
-  if(.not.no_ll) then
-        
-     !  Get the dimensioning information on latitude
-     call shdf5_info_f('lat',ndims,idims)
-     
-     if(ndims /= 2) then
-        call fatal_error ('NOT SET UP TO HAVE TIME VARYING LAT/LON' &
-                         ,'getll_array','ed_met_driver.f90')
-     endif
-     
-     !  Transfer the dimensions into the met_nlon array
-     met_nlon(iformat) = idims(1)
-     met_nlat(iformat) = idims(2)
-     
-     !  Allocate the latitude array
-     allocate(lat2d(idims(1),idims(2)))
-     
-     !  Read in the latitude array
-     call shdf5_irec_f(ndims, idims, 'lat',  &
-          rvara = lat2d )
-           
-     
-     !  Get the dimensioning information on longitude
-     call shdf5_info_f('lon',ndims,idims)
-     
-     if(ndims /= 2) then
-        call fatal_error("NOT SET UP TO HAVE TIME VARYING LAT/LON" &
-                         ,'getll_array','ed_met_driver.f90')
-     endif
-     
-     !  Allocate the latitude array
-     allocate(lon2d(idims(1),idims(2)))
-     ndims = 2
-     
-     !  Read in the latitude array
-     call shdf5_irec_f(ndims, idims, 'lon',  &
-          rvara = lon2d )
-     
-     !  Determine the indices of the grid that each polygon sees
-     !  returns poly%ilon and poly%ilat
-     
-     call match_poly_grid_array(cgrid,met_nlon(iformat),met_nlat(iformat),lon2d,lat2d)
-     
-     ! Deallocate the lat-lon arrays
-     deallocate(lat2d,lon2d)
+   ! First check to see if there is lat/lon data in this dataset
+   ! if the data exists, load it
+   
+   if(.not.no_ll) then
+         
+      !  Get the dimensioning information on latitude
+      call shdf5_info_f('lat',ndims,idims)
+      
+      if(ndims /= 2) then
+         write(unit=*,fmt='(a)') 'Number of dimensions of latitude is wrong...'
+         write(unit=*,fmt='(a,1x,i5)') 'NDIMS=',ndims
+         do d=1,ndims
+            write(unit=*,fmt='(a,1x,i5)') '---> ',d,': DIM=',idims(d)
+         end do
+         call fatal_error ('Not set up to have time varying latitude...' &
+                          ,'getll_array','ed_met_driver.f90')
+      endif
+      
+      !  Transfer the dimensions into the met_nlon array
+      met_nlon(iformat) = idims(1)
+      met_nlat(iformat) = idims(2)
+      
+      !  Allocate the latitude array
+      allocate(lat2d(idims(1),idims(2)))
+      
+      !  Read in the latitude array
+      call shdf5_irec_f(ndims, idims, 'lat',  &
+           rvara = lat2d )
+            
+      
+      !  Get the dimensioning information on longitude
+      call shdf5_info_f('lon',ndims,idims)
+      
+      if(ndims /= 2) then
+         write(unit=*,fmt='(a)') 'Number of dimensions of longitude is wrong...'
+         write(unit=*,fmt='(a,1x,i5)') 'NDIMS=',ndims
+         do d=1,ndims
+            write(unit=*,fmt='(a,1x,i5)') '---> ',d,': DIM=',idims(d)
+         end do
+         call fatal_error ('Not set up to have time varying longitude...' &
+                          ,'getll_array','ed_met_driver.f90')
+      endif
+      
+      !  Allocate the latitude array
+      allocate(lon2d(idims(1),idims(2)))
+      ndims = 2
+      
+      !  Read in the latitude array
+      call shdf5_irec_f(ndims, idims, 'lon',  &
+           rvara = lon2d )
+      
+      !  Determine the indices of the grid that each polygon sees
+      !  returns poly%ilon and poly%ilat
+      
+      call match_poly_grid_array(cgrid,met_nlon(iformat),met_nlat(iformat),lon2d,lat2d)
+      
+      ! Deallocate the lat-lon arrays
+      deallocate(lat2d,lon2d)
 
-  endif
-  
-  return
-  
+   endif
+   
+   return
+   
 end subroutine getll_array
 !==========================================================================================!
 !==========================================================================================!

@@ -100,6 +100,7 @@ OBJ_MODEL =                        \
 	structural_growth.o        \
 	therm_lib.o                \
 	twostream_rad.o            \
+	update_derived_props.o     \
 	utils_c.o                  \
 	utils_f.o                  \
 	var_tables_array.o

@@ -702,15 +702,29 @@ end subroutine radcomp
 !==========================================================================================!
 subroutine zen(m2,m3,ia,iz,ja,jz,iswrtyp,ilwrtyp,glon,glat,cosz)
 
-   use mem_grid   , only: nzpmax,imontha,idatea,iyeara,time,itimea,centlat, &
-                          centlon
-   use mem_radiate, only: lonrad, jday, solfac, sdec, cdec, declin, sun_longitude
-   use rconstants , only: pio180,twopi,day_sec
-   use mem_mclat,   only: mclat_spline
-   use mem_harr,    only: nsolb, solar0,solar1
-  
+   use mem_grid   , only : nzpmax          & ! intent(in)
+                         , imontha         & ! intent(in)
+                         , idatea          & ! intent(in)
+                         , iyeara          & ! intent(in)
+                         , time            & ! intent(in)
+                         , itimea          & ! intent(in)
+                         , centlat         & ! intent(in)
+                         , centlon         ! ! intent(in)
+   use mem_radiate, only : lonrad          & ! intent(in)
+                         , jday            & ! intent(out)
+                         , solfac          & ! intent(out)
+                         , sdec            & ! intent(out)
+                         , cdec            & ! intent(out)
+                         , declin          & ! intent(out) 
+                         , sun_longitude   ! ! intent(out)
+   use rconstants , only : pio1808         & ! intent(in)
+                         , twopi8          & ! intent(in)
+                         , day_sec8        ! ! intent(in)
+   use mem_mclat,   only : mclat_spline    ! ! subroutine
+   use mem_harr,    only : nsolb           & ! intent(in)
+                         , solar0          & ! intent(in)
+                         , solar1          ! ! intent(out)
    implicit none
-
    !----- Arguments -----------------------------------------------------------------------!
    integer, intent(in)                      :: m2,m3           ! Grid dimensions
    integer, intent(in)                      :: ia,iz,ja,jz     ! Node dimensions
@@ -740,10 +754,10 @@ subroutine zen(m2,m3,ia,iz,ja,jz,iswrtyp,ilwrtyp,glon,glat,cosz)
    !     Solfac is a multiplier of the solar constant to correct for Earth's varying       !
    ! distance to the sun.                                                                  !
    !---------------------------------------------------------------------------------------!
-   d0 =  twopi * dble(jday-1) / 365.
-   d02 = d0 * 2.
-   solfac = sngl(1.000110 + 0.034221 * dcos (d0) + 0.001280 * dsin(d0)                     &
-                          + 0.000719 * dcos(d02) + 0.000077 * dsin(d02))
+   d0 =  twopi8 * dble(jday-1) / 3.65d2
+   d02 = d0 * 2.d0
+   solfac = sngl(1.000110d0 + 3.4221d-2 * dcos (d0) + 1.280d-3 * dsin(d0)                  &
+                            + 7.1900d-4 * dcos(d02) + 7.700d-5 * dsin(d02))
 
    !----- Check whether Harrington shortwave or longwave radiation is used ----------------!
    if (iswrtyp == 3 .or. ilwrtyp == 3) then
@@ -763,39 +777,39 @@ subroutine zen(m2,m3,ia,iz,ja,jz,iswrtyp,ilwrtyp,glon,glat,cosz)
 
 
    !----- Declin is the solar latitude in degrees (aka declination) -----------------------!
-   t1     = twopi * dble(jday) / 366.
-   declin =  .322003                                                                       &
-            - 22.971  * dcos(t1) - .357898 * dcos(t1 * 2.) - .14398  * dcos(t1 * 3.)       &
-            + 3.94638 * dsin(t1) + .019334 * dsin(t1 * 2.) + .05928  * dsin(t1 * 3.)
-   t2     = (279.134 + .985647 * dble(jday)) * pio180
+   t1     = twopi8 * dble(jday) / 3.66d2
+   declin =  3.22003d-1                                                                       &
+            -2.29710d+1 * dcos(t1) -3.57898d-1 * dcos(t1*2.d0) -1.4398d-1 * dcos(t1*3.d0)  &
+            +3.94638d+1 * dsin(t1) +1.93340d-2 * dsin(t1*2.d0) +5.9280d-2 * dsin(t1*3.d0)
+   t2     = (2.79134d2 + 9.85647d-1 * dble(jday)) * dble(pio180)
    
-   sdec = dsin(declin*pio180) !-----  sdec - sine   of declination ------------------------!
-   cdec = dcos(declin*pio180) !-----  cdec - cosine of declination ------------------------!
+   sdec = dsin(declin*pio1808) !-----  sdec - sine   of declination -----------------------!
+   cdec = dcos(declin*pio1808) !-----  cdec - cosine of declination -----------------------!
 
    !---------------------------------------------------------------------------------------!
    !     The equation of time gives the number of seconds by which sundial time leads      !
    ! clock time                                                                            !
    !---------------------------------------------------------------------------------------!
-   eqn_of_time = 5.0323                                                                    &
-               - 100.976 * dsin(t2)       - 430.847 * dcos(t2)                             &
-               + 595.275 * dsin(t2 * 2.)  + 12.5024 * dcos(t2 * 2.)                        &
-               + 3.6858  * dsin(t2 * 3.)  + 18.25   * dcos(t2 * 3.)                        &
-               - 12.47   * dsin(t2 * 4.)
+   eqn_of_time = 5.0323d0                                                                    &
+               - 1.00976d2 * dsin(t2)       -4.30847d2 * dcos(t2)                             &
+               + 5.95275d2 * dsin(t2*2.d0)  +1.25024d1 * dcos(t2*2.d0)                        &
+               + 3.68580d0 * dsin(t2*3.d0)  +1.82500d1 * dcos(t2*3.d0)                        &
+               - 1.24700d1 * dsin(t2*4.d0)
 
    !----- Find the UTC time in seconds ----------------------------------------------------!
-   utc_sec = dmod(time+3600.*dble(itimea/100)+60.*dble(mod(itimea,100)),dble(day_sec))
+   utc_sec = dmod(time+3.600d3*dble(itimea/100)+6.d1*dble(mod(itimea,100)),day_sec8)
 
    !----- Find the longitude where the sun is at zenith -----------------------------------!
-   sun_longitude = 180. - 360. * (utc_sec + eqn_of_time) / day_sec
+   sun_longitude = 1.80d2 - 3.60d2 * (utc_sec + eqn_of_time) / day_sec8
 
   
    !----- Compute the cosine of zenith angle ----------------------------------------------!
    if (lonrad == 0) then
       !----- No longitude variation, use centlon to define the hour angle -----------------!
-      hrangl=(sun_longitude-dble(centlon(1)))*pio180
+      hrangl=(sun_longitude-dble(centlon(1)))*pio1808
       do j=ja,jz
          do i=ia,iz
-            radlat=dble(glat(i,j))*pio180
+            radlat=dble(glat(i,j))*pio1808
             cosz(i,j) = sngl(dsin(radlat)*sdec+dcos(radlat)*cdec*dcos(hrangl))
             !----- Making sure that it is bounded -----------------------------------------!
             cosz(i,j) = max(-1.,min(1.,cosz(i,j)))
@@ -805,8 +819,8 @@ subroutine zen(m2,m3,ia,iz,ja,jz,iswrtyp,ilwrtyp,glon,glat,cosz)
       !----- Use actual position to find the hour angle -----------------------------------!
       do j=ja,jz
          do i=ia,iz
-            radlat=dble(glat(i,j))*pio180
-            hrangl=(sun_longitude-dble(glon(i,j)))*pio180
+            radlat=dble(glat(i,j))*pio1808
+            hrangl=(sun_longitude-dble(glon(i,j)))*pio1808
             cosz(i,j) = sngl(dsin(radlat)*sdec+dcos(radlat)*cdec*dcos(hrangl))
             !----- Making sure that it is bounded -----------------------------------------!
             cosz(i,j) = max(-1.,min(1.,cosz(i,j)))

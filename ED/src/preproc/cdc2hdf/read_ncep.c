@@ -33,21 +33,15 @@
 
 /* USER CONTROL */
 /* ************ */
-#define LATMIN -50
-#define LATMAX 20
-#define LONMIN -110
-#define LONMAX -20
-// We are currently limited to doing 1 year at a time.  This is because
-// the f3tensors (air, prate, nbdsf, ... , etc.) are malloc'd in the f3tensor
-// function and are never deallocated.  But they need to be deallocated at
-// the end of each year!  Otherwise, a memory leak occurs.  The simple free 
-// command did not work.  If your knowledge of C is sufficient (mine is not) 
-// to write a function that deallocates these objects, please go ahead and 
-// do so and share your code.
-#define MIN_YEAR 1948
-#define MAX_YEAR 2007
-#define INPUT_DIR "/n/Moorcroft_Lab1/Users/mlongo/ncep-reanalysis/inputs/"
-#define OUTPUT_DIR "southam_met_driver/"
+#define LATMIN  -60
+#define LATMAX   30
+#define LONMIN -120
+#define LONMAX  -25
+#define MIN_YEAR 2008
+#define MAX_YEAR 2008
+#define INPUT_DIR  "/n/data/moorcroft_lab/mlongo/NCEP_MET/netcdf"
+#define OUTPUT_DIR "/n/data/moorcroft_lab/mlongo/NCEP_MET/ascii"
+#define OUTPUT_PREF "SOUTHAM"
 /* ************ */
 
 #define NR_END 1
@@ -96,7 +90,7 @@ int main(){
   char routname[256];
   struct ncvar *air_var = NULL;
   struct ncvar *pres_var = NULL;
-  struct ncvar *shum_var = NULL;
+  struct ncvar *rhum_var = NULL;
   struct ncvar *uwnd_var = NULL;
   struct ncvar *vwnd_var = NULL;
   struct ncvar *dlwrf_var = NULL;
@@ -108,7 +102,7 @@ int main(){
   struct ncvar *tmpvar = NULL;
   float ***air = NULL;
   float ***pres = NULL;
-  float ***shum = NULL;
+  float ***rhum = NULL;
   float ***uwnd = NULL;
   float ***vwnd = NULL;
   float ***dlwrf = NULL;
@@ -142,7 +136,6 @@ int main(){
   char var_name[20];
   int hdferr;
   int timeo;
-  float tot_prate=0.0;
 
   /* PART I:  Find information about your grid */
 
@@ -154,7 +147,7 @@ int main(){
      variable that you do have.  CANNOT BE A VARIABLE WITH GAUSS IN THE 
      FILE NAME.  THAT IS WHY WE USE UWND HERE.  */
 
-  sprintf(tmpvar_name,"%suwnd.sig995.1948.nc",INPUT_DIR);
+  sprintf(tmpvar_name,"%s/uwnd.sig995/uwnd.sig995.1948.nc",INPUT_DIR);
   tmpvar = new_ncvar(tmpvar_name,"uwnd");
 
   /* Find the grid cell indices nearest your specified LATMIN, LATMAX, LONMIN, 
@@ -175,7 +168,7 @@ int main(){
   /* PART II:  Read files and write the output */
 
   /* Make header file */
-  sprintf(outname,"%sSOUTHAM_HEADER",OUTPUT_DIR);
+  sprintf(outname,"%s/%s_HEADER",OUTPUT_DIR,OUTPUT_PREF);
   outfile = fopen(outname,"w");
   fprintf(outfile,"%d %d\n",nlat,nlon);
   fprintf(outfile,"%f %f %f %f\n",sqrt(pow(tmpvar->latstep,2)),
@@ -187,57 +180,57 @@ int main(){
 
     /* Read in each variable */
     printf("trying air\n");
-    sprintf(infilename,"%sair.2m.gauss.%d.nc",INPUT_DIR,iyear);
+    sprintf(infilename,"%s/air.sig995/air.sig995.%d.nc",INPUT_DIR,iyear);
     air_var = new_ncvar(infilename,"air");
     air = ncgetvar(air_var);
 
     printf("trying pres\n");
-    sprintf(infilename,"%spres.sfc.gauss.%d.nc",INPUT_DIR,iyear);
+    sprintf(infilename,"%s/pres.sfc/pres.sfc.%d.nc",INPUT_DIR,iyear);
     pres_var = new_ncvar(infilename,"pres");
     pres = ncgetvar(pres_var);
     
-    printf("trying shum\n");
-    sprintf(infilename,"%sshum.2m.gauss.%d.nc",INPUT_DIR,iyear);
-    shum_var = new_ncvar(infilename,"shum");
-    shum = ncgetvar(shum_var);
+    printf("trying rhum\n");
+    sprintf(infilename,"%s/rhum.sig995/rhum.sig995.%d.nc",INPUT_DIR,iyear);
+    rhum_var = new_ncvar(infilename,"rhum");
+    rhum = ncgetvar(rhum_var);
     
     printf("trying uwnd\n");
-    sprintf(infilename,"%suwnd.10m.gauss.%d.nc",INPUT_DIR,iyear);
+    sprintf(infilename,"%s/uwnd.sig995/uwnd.sig995.%d.nc",INPUT_DIR,iyear);
     uwnd_var = new_ncvar(infilename,"uwnd");
     uwnd = ncgetvar(uwnd_var);
     
     printf("trying vwnd\n");
-    sprintf(infilename,"%svwnd.10m.gauss.%d.nc",INPUT_DIR,iyear);
+    sprintf(infilename,"%s/vwnd.sig995/vwnd.sig995.%d.nc",INPUT_DIR,iyear);
     vwnd_var = new_ncvar(infilename,"vwnd");
     vwnd = ncgetvar(vwnd_var);
     
     printf("trying dlwrf\n");
-    sprintf(infilename,"%sdlwrf.sfc.gauss.%d.nc",INPUT_DIR,iyear);
+    sprintf(infilename,"%s/dlwrf.sfc.gauss/dlwrf.sfc.gauss.%d.nc",INPUT_DIR,iyear);
     dlwrf_var = new_ncvar(infilename,"dlwrf");
     dlwrf = ncgetvar(dlwrf_var);
     
     printf("trying nbdsf\n");
-    sprintf(infilename,"%snbdsf.sfc.gauss.%d.nc",INPUT_DIR,iyear);
+    sprintf(infilename,"%s/nbdsf.sfc.gauss/nbdsf.sfc.gauss.%d.nc",INPUT_DIR,iyear);
     nbdsf_var = new_ncvar(infilename,"nbdsf");
     nbdsf = ncgetvar(nbdsf_var);
 
     printf("trying nddsf\n");
-    sprintf(infilename,"%snddsf.sfc.gauss.%d.nc",INPUT_DIR,iyear);
+    sprintf(infilename,"%s/nddsf.sfc.gauss/nddsf.sfc.gauss.%d.nc",INPUT_DIR,iyear);
     nddsf_var = new_ncvar(infilename,"nddsf");
     nddsf = ncgetvar(nddsf_var);
 
     printf("trying vbdsf\n");
-    sprintf(infilename,"%svbdsf.sfc.gauss.%d.nc",INPUT_DIR,iyear);
+    sprintf(infilename,"%s/vbdsf.sfc.gauss/vbdsf.sfc.gauss.%d.nc",INPUT_DIR,iyear);
     vbdsf_var = new_ncvar(infilename,"vbdsf");
     vbdsf = ncgetvar(vbdsf_var);
 
     printf("trying vddsf\n");
-    sprintf(infilename,"%svddsf.sfc.gauss.%d.nc",INPUT_DIR,iyear);
+    sprintf(infilename,"%s/vddsf.sfc.gauss/vddsf.sfc.gauss.%d.nc",INPUT_DIR,iyear);
     vddsf_var = new_ncvar(infilename,"vddsf");
     vddsf = ncgetvar(vddsf_var);
 
     printf("trying prate\n");
-    sprintf(infilename,"%sprate.sfc.gauss.%d.nc",INPUT_DIR,iyear);
+    sprintf(infilename,"%s/prate.sfc.gauss/prate.sfc.gauss.%d.nc",INPUT_DIR,iyear);
     prate_var = new_ncvar(infilename,"prate");
     prate = ncgetvar(prate_var);
 
@@ -245,7 +238,7 @@ int main(){
      */
     beg_time[0] = 0;
     beg_time[1] = 31*4;
-    if(iyear%4 == 0){
+    if(iyear%400 == 0 | (iyear%4 == 0 & iyear%100 != 0)){
       beg_time[2] = beg_time[1] + 29 * 4;
     }else{
       beg_time[2] = beg_time[1] + 28 * 4;
@@ -263,46 +256,34 @@ int main(){
     
     /* Loop over months */
     for(imonth=0;imonth<12;imonth++){
-      tot_prate = 0.0;
-      if(imonth == 0){
-	sprintf(mname,"JAN");
-      }else{
-	if(imonth == 1){
-	  sprintf(mname,"FEB");
-	}else{
-	  if(imonth == 2){
-	    sprintf(mname,"MAR");
-	  }else{
-	    if(imonth == 3){
-	      sprintf(mname,"APR");
-	    }else{
-	      if(imonth == 4){
-		sprintf(mname,"MAY");
-	      }else{
-		if(imonth == 5){
-		  sprintf(mname,"JUN");
-		}else{
-		  if(imonth == 6){
-		    sprintf(mname,"JUL");
-		  }else{
-		    if(imonth == 7){
-		      sprintf(mname,"AUG");
-		    }else{
-		      if(imonth == 8){
-			sprintf(mname,"SEP");
-		      }else{
-			if(imonth == 9){
-			  sprintf(mname,"OCT");
-			}else{
-			  if(imonth == 10){
-			    sprintf(mname,"NOV");
-			  }else{
-			    if(imonth == 11){
-			      sprintf(mname,"DEC");
-			    }}}}}}}}}}}}
+      if (imonth == 0){
+         sprintf(mname,"JAN");
+      }else if(imonth == 1){
+         sprintf(mname,"FEB");
+      }else if(imonth == 2){
+         sprintf(mname,"MAR");
+      }else if(imonth == 3){
+         sprintf(mname,"APR");
+      }else if(imonth == 4){
+         sprintf(mname,"MAY");
+      }else if(imonth == 5){
+         sprintf(mname,"JUN");
+      }else if(imonth == 6){
+         sprintf(mname,"JUL");
+      }else if(imonth == 7){
+         sprintf(mname,"AUG");
+      }else if(imonth == 8){
+         sprintf(mname,"SEP");
+      }else if(imonth == 9){
+         sprintf(mname,"OCT");
+      }else if(imonth == 10){
+         sprintf(mname,"NOV");
+      }else if(imonth == 11){
+         sprintf(mname,"DEC");
+      }
       
       /* Make output file name */
-      sprintf(outname,"%sSOUTHAM_%.4d%s.dat",OUTPUT_DIR,iyear,mname);
+      sprintf(outname,"%s/%s_%.4d%s.dat",OUTPUT_DIR,OUTPUT_PREF,iyear,mname);
       printf("Trying new time: %s\n",outname);
       outfile = fopen(outname,"w");
 
@@ -324,15 +305,11 @@ int main(){
 		    dlwrf[timei][rlati][rloni], nbdsf[timei][rlati][rloni],
 		    nddsf[timei][rlati][rloni], vbdsf[timei][rlati][rloni],
 		    vddsf[timei][rlati][rloni], air[timei][rlati][rloni],
-		    pres[timei][rlati][rloni], shum[timei][rlati][rloni],
+		    pres[timei][rlati][rloni], rhum[timei][rlati][rloni],
 		    uwnd[timei][rlati][rloni], vwnd[timei][rlati][rloni]);
-	    if(lati == (latmaxi+9) && loni == (lonmini+19)){
-	      tot_prate += prate[timei][rlati][rloni] * 21600.0;
-	    }
 	  }
 	}
       }
-      printf("totprate: %f\n",tot_prate);
 
     }
     
@@ -340,7 +317,7 @@ int main(){
 
     free_f3tensor(air, air_var);
     free_f3tensor(pres, pres_var);
-    free_f3tensor(shum, shum_var);
+    free_f3tensor(rhum, rhum_var);
     free_f3tensor(uwnd, uwnd_var);
     free_f3tensor(vwnd, vwnd_var);
     free_f3tensor(dlwrf, dlwrf_var);
@@ -352,7 +329,7 @@ int main(){
 
     free_ncvar(air_var);
     free_ncvar(pres_var);
-    free_ncvar(shum_var);
+    free_ncvar(rhum_var);
     free_ncvar(uwnd_var);
     free_ncvar(vwnd_var);
     free_ncvar(dlwrf_var);
