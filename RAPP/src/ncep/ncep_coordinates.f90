@@ -22,7 +22,8 @@ subroutine ncep_coordinates()
    use mod_ioopts     , only : lonw         & ! intent(in)
                              , lone         & ! intent(in)
                              , lats         & ! intent(in)
-                             , latn         ! ! intent(in)
+                             , latn         & ! intent(in)
+                             , ref_hgt      ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer :: ifm,nv
@@ -47,11 +48,13 @@ subroutine ncep_coordinates()
    xlast(1) = minloc(abs(xtn(1:nnxp(1),1)-lone),dim=1)
    y_1st(1) = minloc(abs(ytn(1:nnyp(1),1)-latn),dim=1)
    ylast(1) = minloc(abs(ytn(1:nnyp(1),1)-lats),dim=1)
+   
    x_1st(2) = x_1st(1)
    xlast(2) = xlast(1)
    y_1st(2) = y_1st(1)
    ylast(2) = ylast(1)
-
+   xtn(:,2) = xtn(:,1)
+   ytn(:,2) = ytn(:,1)
    !----- Finding the sub-domain size for all grids. --------------------------------------!
    do ifm=1,ngrids
       ssxp(ifm) = xlast(ifm) - x_1st(ifm) + 1
@@ -81,31 +84,32 @@ subroutine ncep_coordinates()
                                                                  ,ytn(y_1st(ifm),ifm),'...'
       write (unit=*,fmt='(a,1x,f9.3,a)') '       [-] Southernmost latitude:'               &
                                                                  ,ytn(ylast(ifm),ifm),'...'
+      write (unit=*,fmt='(a,1x,f9.3,a)') '       [-] Reference height:',ref_hgt,'...'
 
       !------------------------------------------------------------------------------------!
       !    Here we have three steps for safe allocation. First nullify, then allocate, and !
       ! finally we initialise the structure.                                               !
       !------------------------------------------------------------------------------------!
       call nullify_grid(grid_g(ifm))
-      call alloc_grid(grid_g(ifm),nnxp(ifm),nnyp(ifm))
+      call alloc_grid(grid_g(ifm),ssxp(ifm),ssyp(ifm))
       call zero_grid(grid_g(ifm))
 
       !------------------------------------------------------------------------------------!
       !   Now we fill with longitude and latitude, and these should never change (RAPP     !
       ! doesn't support moving grids).                                                     !
       !------------------------------------------------------------------------------------!
-      xloop: do x=1,ssxp(ifm)
-         xfull = x_1st(ifm) + x -1
-         yloop: do y=1,ssyp(ifm)
-            yfull = y_1st(ifm) + y -1
+      yloop: do y=1,ssyp(ifm)
+         yfull = y_1st(ifm) + y -1
+         xloop: do x=1,ssxp(ifm)
+            xfull = x_1st(ifm) + x -1
             grid_g(ifm)%lon(x,y) = xtn(xfull,ifm)
             grid_g(ifm)%lat(x,y) = ytn(yfull,ifm)
-         end do yloop
-      end do xloop
+            grid_g(ifm)%lev(x,y) = ref_hgt
+         end do xloop
+      end do yloop
       !------------------------------------------------------------------------------------!
 
    end do gridloop
-
    return
 end subroutine ncep_coordinates
 !==========================================================================================!

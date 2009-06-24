@@ -127,14 +127,14 @@ subroutine ncep_fill_infotable(year)
       call commio_ncep(ngrid)
       info_table(nf)%ngrids    = ngrids
       info_table(nf)%ntimes    = nntp(ngrid)
-      info_table(nf)%init_time = this_time(1)
+      info_table(nf)%init_time = this_time(1,ngrid)
 
       !----- Initialising the analysis structure for this file ----------------------------!
       call nullify_anheader(info_table(nf))
       call alloc_anheader(info_table(nf))
       info_table(nf)%avail_grid(:)            = .false.
       info_table(nf)%avail_grid(ngrid)        = .true.
-      info_table(nf)%file_time(1:nntp(ngrid)) = this_time(1:nntp(ngrid))
+      info_table(nf)%file_time(1:nntp(ngrid)) = this_time(1:nntp(ngrid),ngrid)
 
 
       !----- Adding the new times into the outtimes array ---------------------------------!
@@ -142,11 +142,11 @@ subroutine ncep_fill_infotable(year)
       addtimeloop: do nt=1,nntp(ngrid)
          !----- I will only add times that were not there before --------------------------!
          if (nouttimes > 0) then
-           if (any(outtimes(1:nouttimes)%elapsed == this_time(nt)%elapsed))                &
+           if (any(outtimes(1:nouttimes)%elapsed == this_time(nt,ngrid)%elapsed))          &
               cycle addtimeloop
          end if
          tcnt=tcnt+1
-         outtimes(nouttimes+tcnt) = this_time(nt)
+         outtimes(nouttimes+tcnt) = this_time(nt,ngrid)
       end do addtimeloop
       !----- Updating time and sorting them up --------------------------------------------!
       nouttimes = nouttimes + tcnt
@@ -182,7 +182,7 @@ subroutine ncep_fill_infotable(year)
    end do fileloop
    !---------------------------------------------------------------------------------------!
    !     Here we need to fix the number of vertical levels. In case all that was provided  !
-   ! was surface variables, nnzp by 1 and set up any junk for ztn(1,:).                    !
+   ! was surface variables, nnzp must be 1 then.                                           !
    !---------------------------------------------------------------------------------------!
    if (nnzp(1) == 0) nnzp(1) = 1
    if (nnzp(3) == 0) nnzp(3) = 1
@@ -194,7 +194,7 @@ subroutine ncep_fill_infotable(year)
    nnxp(2) = nnxp(1)
    nnyp(2) = nnyp(1)
    nnzp(2) = nnzp(1)
-   nntp(2) = radratio*nntp(1) + 1
+   nntp(2) = radratio*(nntp(1)-1) + 1
 
    return
 #else

@@ -107,7 +107,7 @@ subroutine date_secs_ymdt (seconds,iyear1,imonth1,idate1,ihour1)
 
    ! compute real time given number of seconds past 1 January 1000 12:00 am  
 
-   integer :: ny,nyr,ileap,nm,nd,ihr,imn,isc
+   integer :: ny,nyr,ileap,nm,ihr,imn,isc
 
    integer :: mondays(12)
    data mondays/31,28,31,30,31,30,31,31,30,31,30,31/
@@ -300,8 +300,6 @@ integer function julday1000 (imonth,iday,iyear)
    integer, intent(in) :: iyear
    !----- Local variables. ----------------------------------------------------------------!
    integer             :: iyy
-   integer             :: imm
-   integer             :: idd
    !----- External functions. -------------------------------------------------------------!
    logical, external   :: isleap
    integer, external   :: dayofyear
@@ -438,20 +436,23 @@ end function monndays
 
 !==========================================================================================!
 !==========================================================================================!
+!      This function returns the month and day based on day of year (doy) and year.        !
+!------------------------------------------------------------------------------------------!
 subroutine doy_2_monday(doy,year,month,day,mmm)
-   !----- This function returns the month and day based on day of year (doy) and year -----!
    implicit none
-   integer         , intent(in)  :: doy,year
-   integer         , intent(out) :: month,day
-   character(len=3), intent(out) :: mmm
-
-   logical, external    :: isleap
-
-   real, dimension(12), parameter :: elap_regu=(/  0, 31, 59, 90,120,151 &
-                                                ,181,212,243,273,304,334/)
-   real, dimension(12), parameter :: elap_leap=(/  0, 31, 60, 91,121,152 &
-                                                ,182,213,244,274,305,335/)
-   character(len=3), external :: monchar
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer            , intent(in)  :: doy,year
+   integer            , intent(out) :: month,day
+   character(len=3)   , intent(out) :: mmm
+   !----- Local constants. ----------------------------------------------------------------!
+   real, dimension(12), parameter   :: elap_regu = (/   0,  31,  59,  90, 120, 151         &
+                                                    , 181, 212, 243, 273, 304, 334 /)
+   real, dimension(12), parameter   :: elap_leap = (/   0,  31,  60,  91, 121, 152         &
+                                                    , 182, 213, 244, 274, 305, 335 /)
+   !----- External functions. -------------------------------------------------------------!
+   logical            , external    :: isleap
+   character(len=3)   , external    :: monchar
+   !---------------------------------------------------------------------------------------!
 
    if (isleap(year)) then
       month=minloc(doy-elap_leap,dim=1,mask=elap_leap < doy)
@@ -531,7 +532,7 @@ end function v5d_timestamp
 
 !==========================================================================================!
 !==========================================================================================!
-character(len=17) function grads_dtstamp(year,mmm,day,hour,minu)
+character(len=15) function grads_dtstamp(year,mmm,day,hour,minu)
    !----- This function simply concatenates time info for GrADS time stamp ----------------!
    implicit none
    integer         , intent(in) :: year,day,hour,minu
@@ -557,7 +558,7 @@ end function grads_dtstamp
 
 !==========================================================================================!
 !==========================================================================================!
-character(len=19) function rapp_dtstamp(year,month,day,hour,minu,seco)
+character(len=17) function rapp_dtstamp(year,month,day,hour,minu,seco)
    !----- This function simply concatenates time info for RAPP filename stamp -------------!
    implicit none
    integer, intent(in) :: year,month,day,hour,minu,seco

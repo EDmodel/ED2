@@ -5,12 +5,14 @@
 module mod_grid
 
    use mod_maxdims, only : maxgrds
+   use mod_time   , only : time_stt
 
    implicit none
 
    type grid_struct
-      real, pointer, dimension(:,:  ) :: lon
-      real, pointer, dimension(:,:  ) :: lat
+      real          , pointer, dimension(:,:  ) :: lon
+      real          , pointer, dimension(:,:  ) :: lat
+      real          , pointer, dimension(:,:  ) :: lev
    end type grid_struct
 
    !---------------------------------------------------------------------------------------!
@@ -54,6 +56,7 @@ module mod_grid
 
       allocate(grid%lon (nx,ny   ))
       allocate(grid%lat (nx,ny   ))
+      allocate(grid%lev (nx,ny   ))
 
       return
    end subroutine alloc_grid
@@ -75,6 +78,7 @@ module mod_grid
 
       if (associated(grid%lon )) nullify(grid%lon )
       if (associated(grid%lat )) nullify(grid%lat )
+      if (associated(grid%lev )) nullify(grid%lev )
 
       return
    end subroutine nullify_grid
@@ -96,7 +100,7 @@ module mod_grid
 
       if (associated(grid%lon )) grid%lon  = 0.0
       if (associated(grid%lat )) grid%lat  = 0.0
-
+      if (associated(grid%lev )) grid%lev  = 0.0
       return
    end subroutine zero_grid
    !=======================================================================================!
@@ -117,6 +121,7 @@ module mod_grid
 
       if (associated(grid%lon )) deallocate(grid%lon )
       if (associated(grid%lat )) deallocate(grid%lat )
+      if (associated(grid%lev )) deallocate(grid%lev )
 
       return
    end subroutine dealloc_grid

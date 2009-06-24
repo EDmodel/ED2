@@ -16,22 +16,30 @@ module mod_ioopts
    character(len=maxstr) :: intype  ! Type of input file you want
    character(len=maxstr) :: inpath  ! Path of the input dataset
    character(len=maxstr) :: outpref ! Prefix of output file
-   
+
    !----- Time information ----------------------------------------------------------------!
    integer               :: iyeara  ! First year to process
    integer               :: iyearz  ! Last year to process
    real                  :: inpfrq  ! Input variable frequency
    real                  :: radfrq  ! Output frequency for radiation fluxes
-   
+
+   !----- Height information. -------------------------------------------------------------!
+   real                  :: ref_hgt  ! Reference height.
+
    !----- Output edge information. --------------------------------------------------------!
-   real                  :: lonw ! Westernmost longitude
-   real                  :: lone ! Easternmost longitude
-   real                  :: lats ! Southernmost latitude
-   real                  :: latn ! Northernmost latitude
+   real                  :: lonw     ! Westernmost longitude
+   real                  :: lone     ! Easternmost longitude
+   real                  :: lats     ! Southernmost latitude
+   real                  :: latn     ! Northernmost latitude
+   integer               :: edgeoff  ! # of edge points not to be included in the output.
    !---------------------------------------------------------------------------------------!
 
-   !----- Ratio between radiation and input frequency. ------------------------------------!
-   integer               :: radratio ! Inpfrq/Radfrq
+   !----- Ratio between time variables ... ------------------------------------------------!
+   integer               :: radratio    ! Inpfrq / Radfrq
+   integer               :: nsteps      ! Inpfrq / Dtinc
+   integer               :: nrads       ! Radfrq / Dtinc
+   real                  :: nstepsi     ! Dtinc  / Inpfrq
+   real                  :: nradsi      ! Dtinc  / Radfrq
    !---------------------------------------------------------------------------------------!
 
    !----- Time map ------------------------------------------------------------------------!
@@ -45,7 +53,7 @@ module mod_ioopts
    integer               , parameter           :: missflg_int   = 999999
    real                  , parameter           :: missflg_real  = 1.E+34 
    character(len=maxstr) , parameter           :: missflg_char  = '___'
-   real                  , parameter           :: missflg_dble  = 1.D+34 
+   real(kind=8)          , parameter           :: missflg_dble  = 1.D+34 
    integer               , parameter           :: rapp_absent   = -999
    integer               , parameter           :: rapp_badtype  = -888
    integer               , parameter           :: rapp_partly   = -777

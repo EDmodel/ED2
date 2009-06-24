@@ -17,7 +17,7 @@ RAPP_ROOT=/Users/mlongo/EDBRAMS/RAPP
 #------------------------------------------------------------------------------------------#
 USE_HDF5=1
 HDF5_INCS=-I/sw/hdf5/include
-HDF5_LIBS=-lm -lz -L/sw/hdf5/lib -lhdf5 -lhdf5_fortran -lhdf5_hl
+HDF5_LIBS=-lm -lz -L/sw/hdf5/lib -lhdf5 -lhdf5_fortran
 
 #------------------------------------------------------------------------------------------#
 #    NetCDF libraries. You don't have to include them if you don't want to use anything in #
@@ -31,7 +31,6 @@ NCDF_LIBS=-L/sw/lib -lnetcdf
 #------ Defining the compiler and library paths in case they are not in LD_LIBRARY_PATH ---#
 CMACH=MAC_OS_X
 F_COMP=gfortran
-C_COMP=gcc
 LOADER=gfortran
 LIBS=
 
@@ -50,8 +49,7 @@ LIBS=
 #------------------------------------------------------------------------------------------#
 USE_INTERF=0
 F_OPTS=-O0 -Wall -ffpe-trap=invalid,zero,overflow,underflow,precision,denormal
-C_OPTS=-O0 -DUNDERSCORE -DLITTLE
-LOADER_OPTS=-O0 -Wall
+LOADER_OPTS=-O0 
 
 
 #------------------------------------------------------------------------------------------#
@@ -62,7 +60,6 @@ LOADER_OPTS=-O0 -Wall
 #------------------------------------------------------------------------------------------#
 #USE_INTERF=1
 #F_OPTS= -O3 
-#C_OPTS= -O3 -DLITTLE
 #LOADER_OPTS= -O3 
 #------------------------------------------------------------------------------------------#
 

@@ -15,10 +15,26 @@ subroutine load_namelist(rapp_in)
                           , inpfrq               & ! intent(out)
                           , radfrq               & ! intent(out)
                           , radratio             & ! intent(out)
+                          , nsteps               & ! intent(out)
+                          , nrads                & ! intent(out)
+                          , nstepsi              & ! intent(out)
+                          , nradsi               & ! intent(out)
+                          , ref_hgt              & ! intent(out)
                           , lonw                 & ! intent(out)
                           , lone                 & ! intent(out)
                           , lats                 & ! intent(out)
-                          , latn                 ! ! intent(out)
+                          , latn                 & ! intent(out)
+                          , edgeoff              ! ! intent(out)
+   use mod_interp  , only : dtinc                & ! intent(out)
+                          , dtinc_fday           & ! intent(out)
+                          , gamma0               & ! intent(out)
+                          , minweight            & ! intent(out)
+                          , minweight8           ! ! intent(out)
+   use therm_lib   , only : level                & ! intent(out)
+                          , vapour_on            & ! intent(out)
+                          , cloud_on             & ! intent(out)
+                          , bulk_on              ! ! intent(out)
+   use rconstants  , only : day_sec              ! ! intent(in)
    implicit none
    !---------------------------------------------------------------------------------------!
    !    Variable declaration
@@ -63,11 +79,19 @@ subroutine load_namelist(rapp_in)
    iyearz       = nl%iyearz
    inpfrq       = nl%inpfrq
    radfrq       = nl%radfrq
+   dtinc        = nl%dtinc
+   
+   ref_hgt      = nl%ref_hgt
 
    lonw         = nl%lonw
    lone         = nl%lone
    lats         = nl%lats
    latn         = nl%latn
+   
+   edgeoff      = nl%edgeoff
+   
+   gamma0       = nl%gamma0
+   minweight    = nl%minweight
 
    !---------------------------------------------------------------------------------------!
    ! 3. Converting some setting variables into lower-case, so the code is case insenstive  !
@@ -87,10 +111,15 @@ subroutine load_namelist(rapp_in)
    call rapp_opspec()
    
    !---------------------------------------------------------------------------------------!
-   ! 6. Find the ratio between the input and radiation update frequency.                   !
+   ! 6. Find the various ratios between time scales                                        !
    !---------------------------------------------------------------------------------------!
-   radratio = nint(inpfrq/radfrq)
-   
+   dtinc_fday  = dtinc/day_sec
+   radratio    = nint(inpfrq / radfrq)
+   nsteps      = nint(inpfrq / dtinc )
+   nrads       = nint(radfrq / dtinc )
+   nstepsi     =      dtinc  / inpfrq
+   nradsi      =      dtinc  / radfrq
+
    !---------------------------------------------------------------------------------------!
    ! 7. Making the longitude in line with the meteorological dataset range (either 0..360  !
    !    or -180..180).                                                                     !
@@ -102,6 +131,20 @@ subroutine load_namelist(rapp_in)
          lone = lone + 360.
       end if
    end select
+
+   !---------------------------------------------------------------------------------------!
+   ! 8. Find the double precision version of minweight.                                    !
+   !---------------------------------------------------------------------------------------!
+   minweight8 = dble(minweight)
+
+
+   !---------------------------------------------------------------------------------------!
+   ! 9. Assigning the thermodynamic level, with full ice/liquid partition.                 !
+   !---------------------------------------------------------------------------------------!
+   level     = 3
+   vapour_on = .true.
+   cloud_on  = .true.
+   bulk_on   = .true.
 
    return
 end subroutine load_namelist
@@ -120,19 +163,23 @@ end subroutine load_namelist
 !------------------------------------------------------------------------------------------!
 subroutine dump_namelist()
    use mod_maxdims,  only : maxstr               ! ! intent(in)
-   use mod_ioopts  , only : intype               & ! intent(out)
-                          , inpath               & ! intent(out)
-                          , outpref              & ! intent(out)
-                          , iyeara               & ! intent(out)
-                          , iyearz               & ! intent(out)
-                          , inpfrq               & ! intent(out)
-                          , radfrq               & ! intent(out)
-                          , lonw                 & ! intent(out)
-                          , lone                 & ! intent(out)
-                          , lats                 & ! intent(out)
-                          , latn                 ! ! intent(out)
+   use mod_ioopts  , only : intype               & ! intent(in)
+                          , inpath               & ! intent(in)
+                          , outpref              & ! intent(in)
+                          , iyeara               & ! intent(in)
+                          , iyearz               & ! intent(in)
+                          , inpfrq               & ! intent(in)
+                          , radfrq               & ! intent(in)
+                          , lonw                 & ! intent(in)
+                          , lone                 & ! intent(in)
+                          , lats                 & ! intent(in)
+                          , latn                 & ! intent(in)
+                          , edgeoff              ! ! intent(in)
+   use mod_interp  , only : gamma0               & ! intent(in)
+                          , minweight            ! ! intent(in)
+   implicit none
    !----- Internal variables --------------------------------------------------------------!
-   character(len=maxstr) :: myform
+   integer    :: v
    !---------------------------------------------------------------------------------------!
 
    write (unit=*,fmt='(102a)'      ) ('-',v=1,102)
@@ -154,6 +201,14 @@ subroutine dump_namelist()
    write (unit=*,fmt='(a,1x,f10.3)') ' -> Lats:          ',lats
    write (unit=*,fmt='(a,1x,f10.3)') ' -> Latn:          ',latn
    write (unit=*,fmt='(a)'         ) ' '
+
+   write (unit=*,fmt='(a,1x,i5)'   ) ' -> Edgeoff:       ',edgeoff
+   write (unit=*,fmt='(a)'         ) ' '
+
+   write (unit=*,fmt='(a,1x,f10.3)') ' -> Gamma0:        ',gamma0
+   write (unit=*,fmt='(a,1x,f10.3)') ' -> Minweight:     ',minweight
+   write (unit=*,fmt='(a)'         ) ' '
+
    write (unit=*,fmt='(102a)'      ) ('-',v=1,102)
 
    return

@@ -12,30 +12,56 @@
 ! data, one directory per variable.  Please check the DATASET_README.1ST file for specific !
 ! information on which variables you must have.                                            !
 !------------------------------------------------------------------------------------------!
-   NL%INPATH = '/Users/mlongo/Data/NCEP'
+   NL%INPATH = '/n/data/moorcroft_lab/mlongo/NCEP_MET/netcdf'
 
 !----- Prefix for output files, including path. -------------------------------------------!
-   NL%OUTPREF='/Users/mlongo/Data/NCEP/southam/SOUTHAM'
+   NL%OUTPREF='/n/data/moorcroft_lab/mlongo/NCEP_MET/hdf5/SOUTHAM'
 
 !------------------------------------------------------------------------------------------!
 !     Time                                                                                 !
 !------------------------------------------------------------------------------------------!
-   NL%IYEARA = 2006    ! First year to process
+   NL%IYEARA = 1948    ! First year to process
    NL%IYEARZ = 2008    ! Last year to process
 
    NL%INPFRQ = 21600.  ! Frequency for input variable frequency (in seconds)
-   NL%RADFRQ = 900.    ! Frequency for radiation flux output (interpolation will be done
+   NL%RADFRQ = 2700.   ! Frequency for radiation flux output (interpolation will be done
                        !    if needed).
+   NL%DTINC  = 450.    ! Delta-t for integration of interpolated fluxes.
+
+!------------------------------------------------------------------------------------------!
+!     Height information.  This is a constant that will be assigned as the height for      !
+! state variables, and it should reflect the characteristic height above ground of the     !
+! provided state variables.                                                                !
+!------------------------------------------------------------------------------------------!
+   NL%REF_HGT = 80.   ! Height in metres.
 
 !------------------------------------------------------------------------------------------!
 !    Boundaries to be included.  The actual edges will be determined by the script, but it !
 ! will be the closest to the given point.  Also, if the actual dataset covers a smaller    !
 ! area than the one defined by these variables, everything will be included.               !
 !------------------------------------------------------------------------------------------!
-   NL%LONW = -120. ! Westermost   longitude allowed to be included;
-   NL%LONE =  -25. ! Easternmost  longitude allowed to be included;
-   NL%LATS =  -60. ! Southernmost latitude  allowed to be included;
-   NL%LATN =   30. ! Northernmost latitude  allowed to be included;
+   NL%LONW = -130.    ! Westermost   longitude allowed to be included;
+   NL%LONE =  -15.    ! Easternmost  longitude allowed to be included;
+   NL%LATS =  -70.    ! Southernmost latitude  allowed to be included;
+   NL%LATN =   35.    ! Northernmost latitude  allowed to be included;
 
+!------------------------------------------------------------------------------------------!
+!    Offset in the edges.  This will make the output smaller than the actual domain,       !
+! skipping the points in the edges.                                                        !
+!    IMPORTANT: If using NCEP data, always allow at least two points in the edge outside   !
+! your area of interest.  These data will have poorer quality because of the objective     !
+! analysis procedure.                                                                      ! 
+!------------------------------------------------------------------------------------------!
+   NL%EDGEOFF = 5 ! Number of points in the edges not to be included in the output
+
+!------------------------------------------------------------------------------------------!
+!     Interpolation parameters.  These numbers are based on Koch et al. (1983) paper.      !
+!     Koch, S. E., M. desJardins, and P.J. Kocin, 1983: An interactive Barnes objective    !
+! analysis for use with satellite and conventional data.                                   !
+!------------------------------------------------------------------------------------------!
+   NL%GAMMA0    = 0.20    ! Parameter gamma - acceptable values range between 0.05 and 1.0, 
+                          !     with lower numbers giving more detailed fields.  Common
+                          !     and suggested number is 0.2
+   NL%MINWEIGHT = 1.e-6   ! Minimum weight to be considered.
 
 / ! End of RAPP_OPTIONS namelist

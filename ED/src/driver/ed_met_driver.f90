@@ -1547,81 +1547,92 @@ end subroutine match_poly_grid_array
 !==========================================================================================!
 subroutine getll_array(cgrid,iformat)
 
-  use met_driver_coms, only: met_nv, &
-       met_vars, &
-       met_nlon, &
-       met_nlat, &
-       lat2d,    &
-       lon2d,    &
-       met_xmin, &
-       met_ymin, &
-       met_dx,   &
-       met_dy,   &
-       no_ll
-  
-  use hdf5_utils,only : shdf5_info_f,shdf5_irec_f
-  use ed_state_vars,only:edtype
+   use met_driver_coms, only: met_nv, &
+        met_vars, &
+        met_nlon, &
+        met_nlat, &
+        lat2d,    &
+        lon2d,    &
+        met_xmin, &
+        met_ymin, &
+        met_dx,   &
+        met_dy,   &
+        no_ll
+   
+   use hdf5_utils,only : shdf5_info_f,shdf5_irec_f
+   use ed_state_vars,only:edtype
 
-  implicit none
-  
-  integer :: iformat
-  integer :: ndims
-  integer, dimension(3) :: idims
-  type(edtype),target :: cgrid
+   implicit none
+   
+   integer :: iformat
+   integer :: ndims
+   integer :: d
+   integer, dimension(3) :: idims
+   type(edtype),target :: cgrid
 
-  ! First check to see if their is lat/lon data in this dataset
-  ! if the data exists, load it
-  
-  if(.not.no_ll) then
-        
-     !  Get the dimensioning information on latitude
-     call shdf5_info_f('lat',ndims,idims)
-     
-     if(ndims /= 2) then
-        call fatal_error ('NOT SET UP TO HAVE TIME VARYING LAT/LON' &
-                         ,'getll_array','ed_met_driver.f90')
-     endif
-     
-     !  Transfer the dimensions into the met_nlon array
-     met_nlon(iformat) = idims(1)
-     met_nlat(iformat) = idims(2)
-     
-     !  Allocate the latitude array
-     allocate(lat2d(idims(1),idims(2)))
-     
-     !  Read in the latitude array
-     call shdf5_irec_f(ndims, idims, 'lat',  &
-          rvara = lat2d )
-           
-     
-     !  Get the dimensioning information on longitude
-     call shdf5_info_f('lon',ndims,idims)
-     
-     if(ndims /= 2) then
-        call fatal_error("NOT SET UP TO HAVE TIME VARYING LAT/LON" &
-                         ,'getll_array','ed_met_driver.f90')
-     endif
-     
-     !  Allocate the latitude array
-     allocate(lon2d(idims(1),idims(2)))
-     ndims = 2
-     
-     !  Read in the latitude array
-     call shdf5_irec_f(ndims, idims, 'lon',  &
-          rvara = lon2d )
-     
-     !  Determine the indices of the grid that each polygon sees
-     !  returns poly%ilon and poly%ilat
-     
-     call match_poly_grid_array(cgrid,met_nlon(iformat),met_nlat(iformat),lon2d,lat2d)
-     
-     ! Deallocate the lat-lon arrays
-     deallocate(lat2d,lon2d)
+   ! First check to see if there is lat/lon data in this dataset
+   ! if the data exists, load it
+   
+   if(.not.no_ll) then
+         
+      !  Get the dimensioning information on latitude
+      call shdf5_info_f('lat',ndims,idims)
+      
+      if(ndims /= 2) then
+         write(unit=*,fmt='(a)') 'Number of dimensions of latitude is wrong...'
+         write(unit=*,fmt='(a,1x,i5)') 'NDIMS=',ndims
+         do d=1,ndims
+            write(unit=*,fmt='(a,1x,i5)') '---> ',d,': DIM=',idims(d)
+         end do
+         call fatal_error ('Not set up to have time varying latitude...' &
+                          ,'getll_array','ed_met_driver.f90')
+      endif
+      
+      !  Transfer the dimensions into the met_nlon array
+      met_nlon(iformat) = idims(1)
+      met_nlat(iformat) = idims(2)
+      
+      !  Allocate the latitude array
+      allocate(lat2d(idims(1),idims(2)))
+      
+      !  Read in the latitude array
+      call shdf5_irec_f(ndims, idims, 'lat',  &
+           rvara = lat2d )
+            
+      
+      !  Get the dimensioning information on longitude
+      call shdf5_info_f('lon',ndims,idims)
+      
+      if(ndims /= 2) then
+         write(unit=*,fmt='(a)') 'Number of dimensions of longitude is wrong...'
+         write(unit=*,fmt='(a,1x,i5)') 'NDIMS=',ndims
+         do d=1,ndims
+            write(unit=*,fmt='(a,1x,i5)') '---> ',d,': DIM=',idims(d)
+         end do
+         call fatal_error ('Not set up to have time varying longitude...' &
+                          ,'getll_array','ed_met_driver.f90')
+      endif
+      
+      !  Allocate the latitude array
+      allocate(lon2d(idims(1),idims(2)))
+      ndims = 2
+      
+      !  Read in the latitude array
+      call shdf5_irec_f(ndims, idims, 'lon',  &
+           rvara = lon2d )
+      
+      !  Determine the indices of the grid that each polygon sees
+      !  returns poly%ilon and poly%ilat
+      
+      call match_poly_grid_array(cgrid,met_nlon(iformat),met_nlat(iformat),lon2d,lat2d)
+      
+      ! Deallocate the lat-lon arrays
+      deallocate(lat2d,lon2d)
 
-  endif
-  
-  return
-  
+   endif
+   
+   return
+   
 end subroutine getll_array
 !==========================================================================================!
 !==========================================================================================!
