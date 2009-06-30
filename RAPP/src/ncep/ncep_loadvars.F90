@@ -137,6 +137,14 @@ logical function ncep_loadvars()
       end do
    end do
 
+   !----- Here we ensure that radiation and precipitation are never negative. -------------!
+   where (ncep_g(1)%prate < 0.) ncep_g(1)%prate = 0.
+   where (ncep_g(1)%dlwrf < 0.) ncep_g(1)%dlwrf = 0.
+   where (ncep_g(1)%nbdsf < 0.) ncep_g(1)%nbdsf = 0.
+   where (ncep_g(1)%nddsf < 0.) ncep_g(1)%nddsf = 0.
+   where (ncep_g(1)%vbdsf < 0.) ncep_g(1)%vbdsf = 0.
+   where (ncep_g(1)%vddsf < 0.) ncep_g(1)%vddsf = 0.
+
    !----- If the function reached this point, switch the flag to success. -----------------!
    ncep_loadvars = .true. 
 

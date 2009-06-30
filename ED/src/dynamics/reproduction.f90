@@ -278,6 +278,8 @@ subroutine reproduction_ar(cgrid, month)
                   cpatch%veg_fliq(ico)  = 0.0
                   !----- Cohort should be solvable... -------------------------------------!
                   cpatch%solvable(ico) = .true.
+                  !----- Assigning SLA as the default value. ------------------------------!
+                  cpatch%sla(ico) = sla(cpatch%pft(ico))
                   !------------------------------------------------------------------------!
                   !     Setting new_recruit_flag to 1 indicates that this cohort is        !
                   ! included when we tally agb_recruit, basal_area_recruit.                !
@@ -290,7 +292,7 @@ subroutine reproduction_ar(cgrid, month)
                   !----- Finding LAI, WPA, WAI. -------------------------------------------!
                   call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico) &
                                    ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)   &
-                                   ,cpatch%pft(ico),sla(cpatch%pft(ico)), cpatch%lai(ico)  &
+                                   ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)       &
                                    ,cpatch%wpa(ico),cpatch%wai(ico)) !here sla is not yet assigned; will be in init_ed_cohort_vars_array 
                   !----- Finding heat capacity and vegetation internal energy. ------------!
                   cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)   &
