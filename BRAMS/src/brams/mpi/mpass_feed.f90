@@ -65,7 +65,7 @@ include 'interface.h'
 include 'mpif.h'
 
 integer :: ierr,ipos
-integer :: i1s,i2s,j1s,j2s,k1s,k2s,mtp,i1f,i2f,j1f,j2f,k1f,k2f,i1,i2,la,lz
+integer :: i1s,i2s,j1s,j2s,k1s,k2s,mtp,i1f,i2f,j1f,j2f,k1f,k2f,i1,i2,la
 integer :: nm,icm,ifm,itype,itypef,nv,iptr,nvar,ibytes,msgid,ihostnum,mpiid
 
 real, save, allocatable::pbuff(:)
@@ -124,32 +124,28 @@ do nm=1,nmachs
       j2f=ipaths(4,itypef,ifm,nm)
 
       la = 1
-      lz = mtp
-      call fdbackp(1,basic_g(ifm)%uc,pbuff(la:lz),mtp  &
+      call fdbackp(1,basic_g(ifm)%uc,pbuff(la:),mtp  &
           ,basic_g(ifm)%dn0,basic_g(ifm)%dn0u  &
           ,basic_g(ifm)%dn0v  &
           ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
           ,ifm,icm,i1f-i0,i2f-i0,j1f-j0,j2f-j0  &
           ,i0,j0,mibcon(ifm) ,nstratx(ifm),nstraty(ifm),mynum,i1s,i2s)
-      la = lz + 1
-      lz = lz + mtp
-      call fdbackp(2,basic_g(ifm)%vc,pbuff(la:lz),mtp  &
+      la = la + mtp
+      call fdbackp(2,basic_g(ifm)%vc,pbuff(la:),mtp  &
           ,basic_g(ifm)%dn0,basic_g(ifm)%dn0u  &
           ,basic_g(ifm)%dn0v  &
           ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
           ,ifm,icm,i1f-i0,i2f-i0,j1f-j0,j2f-j0  &
           ,i0,j0,mibcon(ifm) ,nstratx(ifm),nstraty(ifm),mynum,j1s,j2s)
-      la = lz + 1
-      lz = lz + mtp
-      call fdbackp(3,basic_g(ifm)%wc,pbuff(la:lz),mtp  &
+      la = la + mtp
+      call fdbackp(3,basic_g(ifm)%wc,pbuff(la:),mtp  &
           ,basic_g(ifm)%dn0,basic_g(ifm)%dn0u  &
           ,basic_g(ifm)%dn0v  &
           ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
           ,ifm,icm,i1f-i0,i2f-i0,j1f-j0,j2f-j0  &
           ,i0,j0,mibcon(ifm) ,nstratx(ifm),nstraty(ifm),mynum,i1,i2)
-      la = lz + 1
-      lz = lz + mtp
-      call fdbackp(4,basic_g(ifm)%pc,pbuff(la:lz),mtp  &
+      la = la + mtp
+      call fdbackp(4,basic_g(ifm)%pc,pbuff(la:),mtp  &
           ,basic_g(ifm)%dn0,basic_g(ifm)%dn0u  &
           ,basic_g(ifm)%dn0v  &
           ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
@@ -157,16 +153,15 @@ do nm=1,nmachs
           ,i0,j0,mibcon(ifm) ,nstratx(ifm),nstraty(ifm),mynum,i1,i2)
 
       do nv=1,num_scalar(ifm)
-         la = lz + 1
-         lz = lz + mtp
-         call fdbackp(5,scalar_tab(nv,ifm)%var_p,pbuff(la:lz),mtp  &
+         la = la + mtp
+         call fdbackp(5,scalar_tab(nv,ifm)%var_p,pbuff(la:),mtp  &
              ,basic_g(ifm)%dn0,basic_g(ifm)%dn0u  &
              ,basic_g(ifm)%dn0v  &
              ,mmzp(ifm),mmxp(ifm),mmyp(ifm)  &
              ,ifm,icm,i1f-i0,i2f-i0,j1f-j0,j2f-j0  &
              ,i0,j0,mibcon(ifm) ,nstratx(ifm),nstraty(ifm),mynum,i1,i2)
       enddo
-      iptr = lz
+      iptr = la + mtp - 1
       !     We will send master coarse grid indices to nodes.
       ipos = 1
       call MPI_Pack(i1f,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff,node_buffs(nm)%nsend*f_ndmd_size,ipos, &

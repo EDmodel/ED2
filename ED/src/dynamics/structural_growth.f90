@@ -1,248 +1,279 @@
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine will control the structural growth of plants.                        !
+!                                                                                          !
+! IMPORTANT: Do not change the order of operations below unless you know what you are      !
+!            doing.  Changing the order can affect the C/N budgets.                        !
+!------------------------------------------------------------------------------------------!
 subroutine structural_growth_ar(cgrid, month)
+   use ed_state_vars , only : edtype                 & ! structure
+                            , polygontype            & ! structure
+                            , sitetype               & ! structure
+                            , patchtype              ! ! structure
+   use pft_coms      , only : q                      & ! intent(in)
+                            , qsw                    & ! intent(in)
+                            , seedling_mortality     & ! intent(in)
+                            , c2n_leaf               & ! intent(in)
+                            , c2n_storage            & ! intent(in)
+                            , c2n_recruit            & ! intent(in)
+                            , c2n_stem               & ! intent(in)
+                            , l2n_stem               ! ! intent(in)
+   use decomp_coms   , only : f_labile               ! ! intent(in)
+   use max_dims      , only : n_pft                  & ! intent(in)
+                            , n_dbh                  ! ! intent(in)
+   use ed_therm_lib  , only : calc_hcapveg           & ! function
+                            , update_veg_energy_cweh ! ! function
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   type(edtype)     , target     :: cgrid
+   integer          , intent(in) :: month
+   !----- Local variables -----------------------------------------------------------------!
+   type(polygontype), pointer    :: cpoly
+   type(sitetype)   , pointer    :: csite
+   type(patchtype)  , pointer    :: cpatch
+   integer                       :: ipy
+   integer                       :: isi
+   integer                       :: ipa
+   integer                       :: ico
+   integer                       :: ilu
+   integer                       :: ipft
+   integer                       :: update_month
+   integer                       :: imonth
+   real                          :: salloc
+   real                          :: salloci
+   real                          :: balive_in
+   real                          :: bdead_in
+   real                          :: hite_in
+   real                          :: dbh_in
+   real                          :: nplant_in
+   real                          :: bstorage_in
+   real                          :: f_bseeds
+   real                          :: f_bdead
+   real                          :: balive_mort_litter
+   real                          :: bstorage_mort_litter
+   real                          :: struct_litter
+   real                          :: mort_litter
+   real                          :: seed_litter
+   real                          :: net_seed_N_uptake
+   real                          :: net_stem_N_uptake
+   real                          :: cb_act
+   real                          :: cb_max
+   real                          :: old_hcapveg
+   !---------------------------------------------------------------------------------------!
 
-  ! Do not change the order of operations below unless you know what you
-  ! are doing.  Changing the order can affect the C/N budgets.
+   polyloop: do ipy = 1,cgrid%npolygons
+      cpoly => cgrid%polygon(ipy)
 
-  use ed_state_vars,only: edtype,polygontype,sitetype,patchtype
-  use pft_coms, only: q, qsw, seedling_mortality, c2n_leaf, c2n_storage,   &
-       c2n_recruit, c2n_stem, l2n_stem
-  use decomp_coms, only: f_labile
-  use max_dims, only: n_pft, n_dbh
-  use ed_therm_lib,only: calc_hcapveg,update_veg_energy_cweh
+      !----- Initialization. --------------------------------------------------------------!
+      cpoly%basal_area(:,:,:) = 0.0
+      cpoly%agb(:,:,:)        = 0.0
+      cpoly%agb_lu(:,:)       = 0.0
 
-  implicit none
+      siteloop: do isi = 1,cpoly%nsites
+         csite => cpoly%site(isi)
 
-  type(edtype),target       :: cgrid
-  type(polygontype),pointer :: cpoly
-  type(sitetype),pointer    :: csite
-  type(patchtype),pointer   :: cpatch
-  integer :: ipy,isi,ipa,ico
-  integer, intent(in) :: month
+         patchloop: do ipa=1,csite%npatches
+            cpatch => csite%patch(ipa)
+            ilu = csite%dist_type(ipa)
 
-  real :: salloc
-  real :: salloci
-  real :: balive_in
-  real :: bdead_in
-  real :: hite_in
-  real :: dbh_in
-  real :: nplant_in
-  real :: bstorage_in
-  real :: f_bseeds
-  real :: f_bdead
-  real :: balive_mort_litter
-  real :: bstorage_mort_litter
-  real :: struct_litter
-  real :: mort_litter
-  real :: seed_litter
-  real :: net_seed_N_uptake
-  real :: net_stem_N_uptake
-  integer :: update_month
-  real :: cb_act
-  real :: cb_max
-  integer :: imonth,ilu
-  real :: old_hcapveg
+            cohortloop: do ico = 1,cpatch%ncohorts
+               !----- Assigning an alias for PFT type. ------------------------------------!
+               ipft    = cpatch%pft(ico)
 
- 
+               salloc  = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
+               salloci = 1.0 / salloc
 
-  do ipy = 1,cgrid%npolygons
-     
-     cpoly => cgrid%polygon(ipy)
-             
-     ! Initialization
-     cpoly%basal_area(:,:,:) = 0.0
-     cpoly%agb(:,:,:) = 0.0
-     cpoly%agb_lu(:,:) = 0.0
-     ! cs%basal_area_growth  = 0.0
-     ! cpoly%agb_growth  = 0.0
-     ! cpoly%basal_area_mort = 0.0
-     ! cpoly%agb_mort = 0.0
+               !----- Remember inputs in order to calculate increments later on. ----------!
+               balive_in   = cpatch%balive(ico)
+               bdead_in    = cpatch%bdead(ico)
+               hite_in     = cpatch%hite(ico)
+               dbh_in      = cpatch%dbh(ico)
+               nplant_in   = cpatch%nplant(ico)
+               bstorage_in = cpatch%bstorage(ico)
 
-     do isi = 1,cpoly%nsites
-        
-        csite => cpoly%site(isi)
+               !---------------------------------------------------------------------------!
+               !    Apply mortality, and do not allow nplant < 3.0e-8 (such a sparse       !
+               ! cohort is about to be terminated, anyway).                                !
+               ! NB: monthly_dndt may be negative.                                         !
+               !---------------------------------------------------------------------------!
+               cpatch%monthly_dndt(ico) = max(cpatch%monthly_dndt(ico)                     &
+                                             , 3.0e-8 - cpatch%nplant(ico))
+               cpatch%nplant(ico)       = cpatch%nplant(ico) + cpatch%monthly_dndt(ico)
 
-        do ipa=1,csite%npatches
-           ilu = csite%dist_type(ipa)
-           cpatch => csite%patch(ipa)
+               !----- Calculate litter owing to mortality. --------------------------------!
+               balive_mort_litter   = - cpatch%balive(ico)   * cpatch%monthly_dndt(ico)
+               bstorage_mort_litter = - cpatch%bstorage(ico) * cpatch%monthly_dndt(ico)
+               struct_litter        = - cpatch%bdead(ico)    * cpatch%monthly_dndt(ico)
+               mort_litter          = balive_mort_litter + bstorage_mort_litter            &
+                                    + struct_litter
 
-           do ico = 1,cpatch%ncohorts
+               !----- Reset monthly_dndt. -------------------------------------------------!
+               cpatch%monthly_dndt(ico) = 0.0
 
-              salloc = 1.0 + q(cpatch%pft(ico)) + qsw(cpatch%pft(ico)) * cpatch%hite(ico)
-              salloci = 1.0 / salloc
+               !----- Determine how to distribute what is in bstorage. --------------------!
+               call plant_structural_allocation_ar(cpatch%pft(ico),cpatch%hite(ico)        &
+                                                  ,cgrid%lat(ipy),month,f_bseeds,f_bdead)
 
-              ! Remember inputs in order to calculate increments later on.
-              balive_in = cpatch%balive(ico)
-              bdead_in = cpatch%bdead(ico)
-              hite_in = cpatch%hite(ico)
-              dbh_in = cpatch%dbh(ico)
-              nplant_in = cpatch%nplant(ico)
-              bstorage_in = cpatch%bstorage(ico)
+               !----- Grow plants; bdead gets fraction f_bdead of bstorage. ---------------!
+               cpatch%bdead(ico) = cpatch%bdead(ico) + f_bdead * cpatch%bstorage(ico)
 
-              ! Apply mortality.  Do not allow nplant < 3.0e-8.  Such a 
-              ! sparse cohort will soon be terminated, anyway.  
-              ! NB: monthly_dndt is negative.
-              cpatch%monthly_dndt(ico) = max(cpatch%monthly_dndt(ico), 3.0e-8 - cpatch%nplant(ico))
+               !---------------------------------------------------------------------------!
+               !      Rebalance the plant nitrogen uptake considering the actual alloc-    !
+               ! ation to structural growth.  This is necessary because c2n_stem does not  !
+               ! necessarily equal c2n_storage.                                            !
+               !---------------------------------------------------------------------------!
+               net_stem_N_uptake = (cpatch%bdead(ico) - bdead_in) * cpatch%nplant(ico)     &
+                                 * ( 1.0 / c2n_stem - 1.0 / c2n_storage)
+               
+               !---------------------------------------------------------------------------!
+               !      Calculate total seed production and seed litter.  The seed pool gets !
+               ! a fraction f_bseeds of bstorage.                                          !
+               !---------------------------------------------------------------------------!
+               cpatch%bseeds(ico) = f_bseeds * cpatch%bstorage(ico)
+               seed_litter        = cpatch%bseeds(ico) * cpatch%nplant(ico)                &
+                                  * seedling_mortality(ipft)
+               
+               !---------------------------------------------------------------------------!
+               !      Rebalance the plant nitrogen uptake considering the actual alloc-    !
+               ! ation to seeds.  This is necessary because c2n_recruit does not have to   !
+               ! be equal to c2n_storage.                                                  !
+               !---------------------------------------------------------------------------!
+               net_seed_N_uptake = cpatch%bseeds(ico) * cpatch%nplant(ico)                 &
+                                 * (1.0 / c2n_recruit(ipft) - 1.0 / c2n_storage)
 
-              cpatch%nplant(ico) = cpatch%nplant(ico) + cpatch%monthly_dndt(ico)
+               !----- Decrement the storage pool. -----------------------------------------!
+               cpatch%bstorage(ico) = cpatch%bstorage(ico) * (1.0 - f_bdead - f_bseeds)
 
-              ! Calculate litter owing to mortality.
-              balive_mort_litter = - cpatch%balive(ico) * cpatch%monthly_dndt(ico)
-              bstorage_mort_litter = - cpatch%bstorage(ico) * cpatch%monthly_dndt(ico)
-              struct_litter = - cpatch%bdead(ico) * cpatch%monthly_dndt(ico)
-              mort_litter = balive_mort_litter + bstorage_mort_litter +  &
-                   struct_litter
+               !----- Finalize litter inputs. ---------------------------------------------!
+               csite%fsc_in(ipa) = csite%fsc_in(ipa) + f_labile(ipft) * balive_mort_litter &
+                                 + bstorage_mort_litter + seed_litter
+               csite%fsn_in(ipa) = csite%fsn_in(ipa)                                       &
+                                 + f_labile(ipft) * balive_mort_litter / c2n_leaf(ipft)    &
+                                 + bstorage_mort_litter/ c2n_storage                       &
+                                 + seed_litter / c2n_recruit(ipft)
+               csite%ssc_in(ipa) = csite%ssc_in(ipa) + struct_litter                       &
+                                 + (1.0 - f_labile(ipft)) * balive_mort_litter
+               csite%ssl_in(ipa) = csite%ssl_in(ipa)                                       &
+                                 + ( (1.0 - f_labile(ipft)) * balive_mort_litter           &
+                                    + struct_litter ) * l2n_stem / c2n_stem
+               csite%total_plant_nitrogen_uptake(ipa) =                                    &
+                      csite%total_plant_nitrogen_uptake(ipa) + net_seed_N_uptake           &
+                    + net_stem_N_uptake
 
-              ! Reset monthly_dndt.
-              cpatch%monthly_dndt(ico) = 0.0
+               !----- Calculate the derived cohort properties. ----------------------------!
+               call update_derived_cohort_props_ar(cpatch,ico                              &
+                                                  ,cpoly%green_leaf_factor(ipft,isi)       &
+                                                  ,cpoly%lsl(isi))
 
-              ! Determine how to distribute what is in bstorage.
-              call plant_structural_allocation_ar(cpatch,ico, month, f_bseeds,   &
-                   f_bdead, cgrid%lat(ipy))
-
-              ! Grow plants; bdead gets fraction f_bdead of bstorage.
-              cpatch%bdead(ico) = cpatch%bdead(ico) + f_bdead * cpatch%bstorage(ico)
-              
-              ! Rebalance the plant nitrogen uptake considering the actual 
-              ! allocation to structural growth.  This is necessary because
-              ! c2n_stem does not necessarily equal c2n_storage.
-              net_stem_N_uptake = (cpatch%bdead(ico) - bdead_in) * ( 1.0 / c2n_stem &
-                   - 1.0 / c2n_storage) * cpatch%nplant(ico)
-              
-              ! Calculate total seed production and seed litter.  The seed
-              ! pool gets a fraction f_bseeds of bstorage.
-
-              cpatch%bseeds(ico) = f_bseeds * cpatch%bstorage(ico)
-              seed_litter = cpatch%bseeds(ico) * cpatch%nplant(ico) * seedling_mortality(cpatch%pft(ico))
-              
-              ! Rebalance the plant nitrogen uptake considering the actual 
-              ! allocation to seeds.  This is necessary because c2n_recruit
-              ! does not have to equal c2n_storage.
-              net_seed_N_uptake = cpatch%bseeds(ico) * (1.0 / c2n_recruit(cpatch%pft(ico)) &
-                   - 1.0 / c2n_storage) * cpatch%nplant(ico)
-              
-              ! Decrement the storage pool.
-              cpatch%bstorage(ico) = cpatch%bstorage(ico) * (1.0 - f_bdead - f_bseeds)
-
-              ! Finalize litter inputs
-              csite%fsc_in(ipa) = csite%fsc_in(ipa) + f_labile(cpatch%pft(ico)) *   &
-                   balive_mort_litter + bstorage_mort_litter + seed_litter
-              csite%fsn_in(ipa) = csite%fsn_in(ipa) + f_labile(cpatch%pft(ico)) *   &
-                   balive_mort_litter / c2n_leaf(cpatch%pft(ico)) +   &
-                   bstorage_mort_litter/ c2n_storage + seed_litter /  &
-                   c2n_recruit(cpatch%pft(ico))
-              csite%ssc_in(ipa) = csite%ssc_in(ipa) + (1.0 - f_labile(cpatch%pft(ico))) *  &
-                   balive_mort_litter + struct_litter
-              csite%ssl_in(ipa) = csite%ssl_in(ipa) + ((1.0 - f_labile(cpatch%pft(ico))) * &
-                   balive_mort_litter + struct_litter ) * l2n_stem / c2n_stem
-              csite%total_plant_nitrogen_uptake(ipa) = &
-                   csite%total_plant_nitrogen_uptake(ipa)   &
-                   + net_seed_N_uptake + net_stem_N_uptake
-
-              ! Calculate the derived cohort properties
-              call update_derived_cohort_props_ar(cpatch,ico,   &
-                   cpoly%green_leaf_factor(cpatch%pft(ico),isi), cpoly%lsl(isi))
-
-              !----------------------------------------------------------------------------!
-              ! MLO. We now update the heat capacity and the vegetation internal energy.   !
-              !      Since no energy or water balance is done here, we simply update the   !
-              !      energy in order to keep the same temperature and water as before.     !
-              !      Internal energy is an extensive variable, we just account for the     !
-              !      difference in the heat capacity to update it.                         !
-              !----------------------------------------------------------------------------!
-              old_hcapveg = cpatch%hcapveg(ico)
-              cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)       &
-                                                ,cpatch%balive(ico),cpatch%nplant(ico)     &
-                                                ,cpatch%hite(ico),cpatch%pft(ico)          &
-                                                ,cpatch%phenology_status(ico))
-              call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
-              !----- Likewise, update the patch heat capacity -----------------------------!
-              csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
-              !----------------------------------------------------------------------------!
-
-
-              ! Update annual average carbon balances for mortality
-              update_month = month - 1
-              if(update_month == 0)update_month = 12
-              cpatch%cb(update_month,ico) = cpatch%cb(13,ico)
-              cpatch%cb_max(update_month,ico) = cpatch%cb_max(13,ico)
-              cpatch%cb(13,ico) = 0.0
-              cpatch%cb_max(13,ico) = 0.0
-              cb_act = 0.0
-              cb_max = 0.0
-              do imonth = 1,12
-                 cb_act = cb_act + cpatch%cb(imonth,ico)
-                 cb_max = cb_max + cpatch%cb_max(imonth,ico)
-              enddo
-              if(cb_max > 0.0)then
-                 cpatch%cbr_bar(ico) = cb_act / cb_max
-              else
-                 cpatch%cbr_bar(ico) = 0.0
-              endif
-
-              ! Update interesting output quantities
-              call update_vital_rates_ar(cpatch,ico, ilu, dbh_in, bdead_in,   &
-                   balive_in, hite_in, bstorage_in, nplant_in, mort_litter,  &
-                   csite%area(ipa), cpoly%basal_area(:,:,isi), cpoly%agb(:,:,isi),  &
-                   cpoly%agb_lu(:,isi),cpoly%basal_area_growth(:,:,isi), &
-                   cpoly%agb_growth(:,:,isi),cpoly%basal_area_mort(:,:,isi), &
-                   cpoly%agb_mort(:,:,isi))
-
-           enddo
-           
-           ! Age the patch if this is not agriculture
-           if(csite%dist_type(ipa) /= 1)csite%age(ipa) = csite%age(ipa) + 1.0/12.0
-           
-
-        enddo
-        
-     enddo
-     
-  enddo
+               !---------------------------------------------------------------------------!
+               ! MLO. We now update the heat capacity and the vegetation internal energy.  !
+               !      Since no energy or water balance is done here, we simply update the  !
+               !      energy in order to keep the same temperature and water as before.    !
+               !      Internal energy is an extensive variable, we just account for the    !
+               !      difference in the heat capacity to update it.                        !
+               !---------------------------------------------------------------------------!
+               old_hcapveg = cpatch%hcapveg(ico)
+               cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)      &
+                                                 ,cpatch%balive(ico),cpatch%nplant(ico)    &
+                                                 ,cpatch%hite(ico),cpatch%pft(ico)         &
+                                                 ,cpatch%phenology_status(ico))
+               call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
+               !----- Likewise, update the patch heat capacity ----------------------------!
+               csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
+               !---------------------------------------------------------------------------!
 
 
-  return
+               !----- Update annual average carbon balances for mortality. ----------------!
+               update_month = month - 1
+               if(update_month == 0) update_month = 12
+               cpatch%cb(update_month,ico)     = cpatch%cb(13,ico)
+               cpatch%cb_max(update_month,ico) = cpatch%cb_max(13,ico)
+               cpatch%cb(13,ico)               = 0.0
+               cpatch%cb_max(13,ico)           = 0.0
+               cb_act = 0.0
+               cb_max = 0.0
+               do imonth = 1,12
+                  cb_act = cb_act + cpatch%cb(imonth,ico)
+                  cb_max = cb_max + cpatch%cb_max(imonth,ico)
+               end do
+               if(cb_max > 0.0)then
+                  cpatch%cbr_bar(ico) = cb_act / cb_max
+               else
+                  cpatch%cbr_bar(ico) = 0.0
+               end if
+
+               !----- Update interesting output quantities. -------------------------------!
+               call update_vital_rates_ar(cpatch,ico,ilu,dbh_in,bdead_in,balive_in         &
+                                         ,hite_in,bstorage_in,nplant_in,mort_litter        &
+                                         ,csite%area(ipa),cpoly%basal_area(:,:,isi)        &
+                                         ,cpoly%agb(:,:,isi),cpoly%agb_lu(:,isi)           &
+                                         ,cpoly%basal_area_growth(:,:,isi)                 &
+                                         ,cpoly%agb_growth(:,:,isi)                        &
+                                         ,cpoly%basal_area_mort(:,:,isi)                   &
+                                         ,cpoly%agb_mort(:,:,isi))
+
+            end do cohortloop
+
+            !----- Age the patch if this is not agriculture. ------------------------------!
+            if (csite%dist_type(ipa) /= 1) csite%age(ipa) = csite%age(ipa) + 1.0/12.0
+
+         end do patchloop
+      end do siteloop
+   end do polyloop
+
+
+   return
 end subroutine structural_growth_ar
+!==========================================================================================!
+!==========================================================================================!
 
-!===============================================================
 
-subroutine plant_structural_allocation_ar(cpatch,ico, month, f_bseeds, f_bdead, lat)
-  
-  use ed_state_vars,only:patchtype
-  use pft_coms, only: phenology, repro_min_h, r_fract
 
-  implicit none
 
-  type(patchtype),target :: cpatch
-  integer :: ico
 
-  integer, intent(in) :: month
-  real, intent(out) :: f_bseeds
-  real, intent(out) :: f_bdead
-  real, intent(in) :: lat
 
-  ! Calculate fraction of bstorage going to bdead and reproduction
-  if(phenology(cpatch%pft(ico)) /= 2   .or.  &  ! for NOT broad leaf deciduous
-       (lat >= 0.0 .and. month == 6) .or.  &  ! or Jun in north
-       (lat < 0.0 .and. month == 12) )then    ! or Dec in south
-     
-     ! For all PFTs except broadleaf deciduous
-     
-     if(cpatch%hite(ico) <= repro_min_h(cpatch%pft(ico)))then
-        f_bseeds = 0.0
-     else
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine will decide the partition of storage biomass into seeds and dead     !
+! (structural) biomass.                                                                    !
+!------------------------------------------------------------------------------------------!
+subroutine plant_structural_allocation_ar(ipft,hite,lat,month,f_bseeds,f_bdead)
+   use pft_coms      , only : phenology    & ! intent(in)
+                            , repro_min_h  & ! intent(in)
+                            , r_fract      ! ! intent(in)
 
-        f_bseeds = r_fract(cpatch%pft(ico))
-     endif
-     f_bdead = 1.0 - f_bseeds
-     
-  else
-     
-     f_bdead = 0.0
-     f_bseeds = 0.0
-     
-  endif
-        
-  return
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   integer        , intent(in)  :: ipft
+   integer        , intent(in)  :: month
+   real           , intent(in)  :: hite
+   real           , intent(in)  :: lat
+   real           , intent(out) :: f_bseeds
+   real           , intent(out) :: f_bdead
+   !----- Local variables -----------------------------------------------------------------!
+   logical                      :: late_spring
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Check whether this is late spring... --------------------------------------------!
+   late_spring = (lat >= 0.0 .and. month == 6) .or. (lat < 0.0 .and. month == 12) 
+
+   !----- Calculate fraction of bstorage going to bdead and reproduction. -----------------!
+   if (phenology(ipft) /= 2   .or.  late_spring) then
+
+      !----- For all PFTs except broadleaf deciduous. -------------------------------------!
+      if (hite <= repro_min_h(ipft)) then
+         f_bseeds = 0.0
+      else
+         f_bseeds = r_fract(ipft)
+      end if
+      f_bdead  = 1.0 - f_bseeds
+   else
+      f_bdead  = 0.0
+      f_bseeds = 0.0
+   end if
+         
+   return
 end subroutine plant_structural_allocation_ar
 !==========================================================================================!
 !==========================================================================================!
@@ -257,7 +288,7 @@ end subroutine plant_structural_allocation_ar
 !     This subroutine will assign values derived from the basic properties of a given      !
 ! cohort.                                                                                  !
 !------------------------------------------------------------------------------------------!
-subroutine update_derived_cohort_props_ar(cpatch,ico, green_leaf_factor, lsl)
+subroutine update_derived_cohort_props_ar(cpatch,ico,green_leaf_factor,lsl)
 
    use ed_state_vars , only : patchtype           ! ! structure
    use pft_coms      , only : phenology           & ! intent(in)
@@ -279,6 +310,7 @@ subroutine update_derived_cohort_props_ar(cpatch,ico, green_leaf_factor, lsl)
    real :: bl
    real :: bl_max
    real :: rootdepth
+   !---------------------------------------------------------------------------------------!
 
    !----- Getting DBH and height from structural biomass. ---------------------------------!
    cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
@@ -325,201 +357,266 @@ end subroutine update_derived_cohort_props_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine update_vital_rates_ar(cpatch,ico, ilu, dbh_in, bdead_in, balive_in, hite_in,  &
-     bstorage_in, nplant_in, mort_litter, area, basal_area, agb, agb_lu, &
-    basal_area_growth, agb_growth, basal_area_mort, agb_mort)
+!    This subroutine will compute the growth and mortality rates.                          !
+!------------------------------------------------------------------------------------------!
+subroutine update_vital_rates_ar(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in          &
+                                ,bstorage_in,nplant_in,mort_litter,area,basal_area,agb     &
+                                ,agb_lu,basal_area_growth,agb_growth,basal_area_mort       &
+                                ,agb_mort)
    
-  use ed_state_vars,only:patchtype
-  use max_dims, only: n_pft, n_dbh, n_dist_types
-  use consts_coms, only: pi1
-  use pft_coms, only: agf_bs,q,qsw
-  use allometry, only: ed_biomass
-  implicit none
+   use ed_state_vars , only : patchtype    ! ! structure
+   use max_dims      , only : n_pft        & ! intent(in)
+                            , n_dbh        & ! intent(in)
+                            , n_dist_types ! ! intent(in)
+   use consts_coms   , only : pio4         ! ! intent(in)
+   use pft_coms      , only : agf_bs       & ! intent(in)
+                            , q            & ! intent(in)
+                            , qsw          ! ! intent(in)
+   use allometry     , only : ed_biomass   ! ! function
+   implicit none
 
-  real, intent(in) :: dbh_in
-  real, intent(in) :: bdead_in
-  real, intent(in) :: balive_in
-  real, intent(in) :: hite_in
-  real, intent(in) :: bstorage_in
-  real, intent(in) :: nplant_in
-  real, intent(in) :: mort_litter  
-  
-  type(patchtype),target :: cpatch
-  integer,intent(in) :: ico,ilu
+   !----- Arguments -----------------------------------------------------------------------!
+   type(patchtype)              , target        :: cpatch
+   real                         , intent(in)    :: dbh_in
+   real                         , intent(in)    :: bdead_in
+   real                         , intent(in)    :: balive_in
+   real                         , intent(in)    :: hite_in
+   real                         , intent(in)    :: bstorage_in
+   real                         , intent(in)    :: nplant_in
+   real                         , intent(in)    :: mort_litter
+   real                         , intent(in)    :: area
+   integer                      , intent(in)    :: ico
+   integer                      , intent(in)    :: ilu
+   real, dimension(n_pft, n_dbh), intent(inout) :: basal_area
+   real, dimension(n_pft, n_dbh), intent(inout) :: agb
+   real, dimension(n_dist_types), intent(inout) :: agb_lu
+   real, dimension(n_pft, n_dbh), intent(inout) :: basal_area_growth
+   real, dimension(n_pft, n_dbh), intent(inout) :: agb_growth
+   real, dimension(n_pft, n_dbh), intent(inout) :: basal_area_mort
+   real, dimension(n_pft, n_dbh), intent(inout) :: agb_mort
+   !----- Local variables -----------------------------------------------------------------!
+   integer                                      :: ipft
+   integer                                      :: bdbh
+   !---------------------------------------------------------------------------------------!
 
-  integer :: bdbh
-  real, intent(in) :: area
-  real, dimension(n_pft, n_dbh) :: basal_area
-  real, dimension(n_pft, n_dbh) :: agb
-  real, dimension(n_dist_types) :: agb_lu
-  real, dimension(n_pft, n_dbh) :: basal_area_growth
-  real, dimension(n_pft, n_dbh) :: agb_growth
-  real, dimension(n_pft, n_dbh) :: basal_area_mort
-  real, dimension(n_pft, n_dbh) :: agb_mort
 
-  ! Get dbh bin
-  bdbh = max(0,min(int(dbh_in*0.1),10))+1
+   !----- Making the alias for PFT type. --------------------------------------------------!
+   ipft = cpatch%pft(ico)
 
-  ! Update current basal area, agb
-  basal_area(cpatch%pft(ico), bdbh) = basal_area(cpatch%pft(ico), bdbh) + area * cpatch%nplant(ico) *  &
-       pi1 * 0.25 * cpatch%dbh(ico)**2
+   !----- Finding the DBH bin. ------------------------------------------------------------!
+   bdbh = max(0,min(int(dbh_in*0.1),10))+1
 
-  agb(cpatch%pft(ico), bdbh) = agb(cpatch%pft(ico), bdbh) + area * cpatch%nplant(ico) * 10.0 * &
-       ed_biomass(cpatch%bdead(ico), cpatch%balive(ico), cpatch%bleaf(ico), cpatch%pft(ico), &
-       cpatch%hite(ico), cpatch%bstorage(ico)) 
+   !----- Update the current basal area and above-ground biomass. -------------------------!
+   basal_area(ipft, bdbh) = basal_area(ipft, bdbh) + area * cpatch%nplant(ico) * pio4      &
+                                                   * cpatch%dbh(ico) * cpatch%dbh(ico)
 
-  agb_lu(ilu) = agb_lu(ilu) + area * cpatch%nplant(ico) * 10.0 * &
-       ed_biomass(cpatch%bdead(ico), cpatch%balive(ico), cpatch%bleaf(ico), cpatch%pft(ico), &
-       cpatch%hite(ico), cpatch%bstorage(ico)) 
+   agb(ipft, bdbh)        = agb(ipft, bdbh)                                                &
+                          + area * cpatch%nplant(ico) * 10.0                               &
+                          * ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                &
+                                      ,cpatch%bleaf(ico),cpatch%pft(ico)                   &
+                                      ,cpatch%hite(ico) ,cpatch%bstorage(ico) )           
 
-  ! Only update rates for cohorts on the first census.
-  if(cpatch%first_census(ico) /= 1)return
+   agb_lu(ilu)            = agb_lu(ilu)                                                    &
+                          + area * cpatch%nplant(ico) * 10.0                               &
+                          * ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                &
+                                      ,cpatch%bleaf(ico),cpatch%pft(ico)                   &
+                                      ,cpatch%hite(ico) ,cpatch%bstorage(ico) )           
 
-  ! Computed for plants alive both at past census and current census
-  basal_area_growth(cpatch%pft(ico),bdbh) = basal_area_growth(cpatch%pft(ico),bdbh) +  &
-       area * cpatch%nplant(ico) * pi1 * 0.25 * (cpatch%dbh(ico)**2 - dbh_in**2)
-  agb_growth(cpatch%pft(ico),bdbh) = agb_growth(cpatch%pft(ico),bdbh) +  &
-       area * cpatch%nplant(ico) * 10.0 * (ed_biomass(cpatch%bdead(ico), cpatch%balive(ico),   &
-       cpatch%bleaf(ico), cpatch%pft(ico), cpatch%hite(ico), cpatch%bstorage(ico)) - ed_biomass(bdead_in,   &
-       balive_in, cpatch%bleaf(ico), cpatch%pft(ico), hite_in, bstorage_in))
-  ! note bleaf is unchanged.
+   !---------------------------------------------------------------------------------------!
+   !    The growth and mortality census are applied only on those cohorts present on the   !
+   ! first census.                                                                         !
+   !---------------------------------------------------------------------------------------!
+   if (cpatch%first_census(ico) /= 1) return
 
-  ! Computed for plants alive at past census but dead at current census
-  basal_area_mort(cpatch%pft(ico),bdbh) = basal_area_mort(cpatch%pft(ico),bdbh) +  &
-       area * (nplant_in - cpatch%nplant(ico)) * pi1 * 0.25 * dbh_in**2
-        
-  agb_mort(cpatch%pft(ico),bdbh) = agb_mort(cpatch%pft(ico),bdbh) + area * mort_litter * 10.0
+   !----- Computed for plants alive both at past census and current census. ---------------!
+   basal_area_growth(ipft,bdbh) = basal_area_growth(ipft,bdbh)                             &
+                                + area * cpatch%nplant(ico) * pio4                         &
+                                * (cpatch%dbh(ico) * cpatch%dbh(ico) - dbh_in * dbh_in)
+   agb_growth(ipft,bdbh)        = agb_growth(ipft,bdbh)                                    &
+                                + area * cpatch%nplant(ico) * 10.0                         &
+                                * ( ed_biomass(cpatch%bdead(ico), cpatch%balive(ico)       &
+                                              ,cpatch%bleaf(ico), cpatch%pft(ico)          &
+                                              ,cpatch%hite(ico) , cpatch%bstorage(ico))    &
+                                  - ed_biomass(bdead_in,balive_in,cpatch%bleaf(ico)        &
+                                              ,cpatch%pft(ico),hite_in,bstorage_in))
 
-  return
+   !----- Computed for plants alive at past census but dead at current census. ------------!
+   basal_area_mort(ipft,bdbh) = basal_area_mort(ipft,bdbh)                                 &
+                              + area * (nplant_in - cpatch%nplant(ico)) * pio4             &
+                              * dbh_in * dbh_in
+         
+   agb_mort(ipft,bdbh)        = agb_mort(ipft,bdbh) + area * mort_litter * 10.0
+
+   return
 end subroutine update_vital_rates_ar
-        
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
 
 !==========================================================================================!
 !==========================================================================================!
+!    This subroutine will display the carbon and nitrogen budgets on screen.               !
+!------------------------------------------------------------------------------------------!
 subroutine print_C_and_N_budgets(cgrid)
-  
-  use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
-  
-  implicit none
+   use ed_state_vars , only : edtype       ! ! structure
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   type(edtype)                 , target    :: cgrid
+   !----- Local variables -----------------------------------------------------------------!
+   integer                                  :: ipy
+   real                                     :: soil_C
+   real                                     :: soil_N
+   real                                     :: veg_C
+   real                                     :: veg_N
+   !----- Local constants -----------------------------------------------------------------!
+   logical                      , parameter :: print_on = .false.
+   !---------------------------------------------------------------------------------------!
+   
 
-  type(edtype),target :: cgrid
-  integer :: ipy
-  real :: soil_C
-  real :: soil_N
-  real :: veg_C
-  real :: veg_N
-  logical,parameter :: print_on = .false.
 
-  do ipy = 1,cgrid%npolygons
+   do ipy = 1,cgrid%npolygons
 
-     call compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
+      call compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
 
-     if (print_on) then
-        
-        print*,"================================================="
-        print*,"CBUDGET-INITIAL STORAGE, SOIL_C+VEG_C-NEP, SOIL_C+VEG_C"
-        print*,cgrid%cbudget_initialstorage(ipy), soil_C+veg_C-cgrid%cbudget_nep(ipy), soil_C+veg_C
-        print*,""
-        print*,"SOIL_C+VEG_C,   NEP,   N-BUDGET_INITIAL_STORAGE, SOIL_N + VEG_N"
-        print*,soil_C+veg_C,cgrid%cbudget_nep(ipy), cgrid%nbudget_initialstorage(ipy), soil_N+ veg_N
-        print*,""
-        print*,"================================================="
-        
-     endif
-     
-  enddo
-  
-  return
+      if (print_on) then
+         
+         write (unit=*,fmt='(a)') '--------------------------------------------------------'
+         write (unit=*,fmt='(a,1x,i6)')     'POLYGON           =',ipy
+         write (unit=*,fmt='(a,1x,f9.3)')   'LON               =',cgrid%lon(ipy)
+         write (unit=*,fmt='(a,1x,f9.3)')   'LAT               =',cgrid%lat(ipy)
+         write (unit=*,fmt='(a,1x,es12.5)') 'C_INITIAL_STORAGE ='                          &
+                                                        ,cgrid%cbudget_initialstorage(ipy)
+         write (unit=*,fmt='(a,1x,es12.5)') 'SOIL_C+VEG_C-NCEP ='                          &
+                                                       ,soil_C+veg_C-cgrid%cbudget_nep(ipy)
+         write (unit=*,fmt='(a,1x,es12.5)') 'SOIL_C+VEG_C      = ',soil_C + veg_C
+         write (unit=*,fmt='(a,1x,es12.5)') 'NEP               = ',cgrid%cbudget_nep(ipy)
+         write (unit=*,fmt='(a,1x,es12.5)') 'N_INITIAL_STORAGE ='                          &
+                                                        ,cgrid%nbudget_initialstorage(ipy)
+         write (unit=*,fmt='(a,1x,es12.5)') 'SOIL_N+VEG_N      = ',soil_N + veg_N
+         write (unit=*,fmt='(a)') '--------------------------------------------------------'
+         write (unit=*,fmt='(a)') ' '
+      end if
+   end do
+   return
 end subroutine print_C_and_N_budgets
+!==========================================================================================!
+!==========================================================================================!
 
-!=====================================================================
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine will compute the carbon and nitrogen pools.                           !
+!------------------------------------------------------------------------------------------!
 subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
 
-  use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
+   use ed_state_vars , only : edtype         & ! structure
+                            , polygontype    & ! structure
+                            , sitetype       & ! structure
+                            , patchtype      ! ! structure
+   use max_dims      , only : n_pft          ! ! intent(in)
+   use pft_coms      , only : include_pft    & ! intent(in)
+                            , c2n_recruit    & ! intent(in)
+                            , c2n_stem       & ! intent(in)
+                            , c2n_leaf       & ! intent(in)
+                            , c2n_storage    & ! intent(in)
+                            , c2n_slow       & ! intent(in)
+                            , c2n_structural ! ! intent(in)
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   type(edtype)      , target      :: cgrid
+   integer           , intent(in)  :: ipy
+   real              , intent(out) :: soil_C
+   real              , intent(out) :: soil_N
+   real              , intent(out) :: veg_C
+   real              , intent(out) :: veg_N
+   !----- Local variables -----------------------------------------------------------------!
+   type(polygontype) , pointer     :: cpoly
+   type(sitetype)    , pointer     :: csite
+   type(patchtype)   , pointer     :: cpatch
+   integer                         :: isi
+   integer                         :: ipa
+   integer                         :: ico
+   integer                         :: ipft
+   real(kind=8)                    :: area_factor
+   real(kind=8)                    :: this_carbon
+   real(kind=8)                    :: this_nitrogen
+   real(kind=8)                    :: soil_C8
+   real(kind=8)                    :: soil_N8
+   real(kind=8)                    :: veg_C8
+   real(kind=8)                    :: veg_N8
+   !----- Local constants -----------------------------------------------------------------!
+   real(kind=8)      , parameter   :: almostnothing=1.d-30
+   !----- External functions. -------------------------------------------------------------!
+   real              , external    :: sngloff
+   !---------------------------------------------------------------------------------------!
 
-  use max_dims, only: n_pft
-  use pft_coms, only: include_pft, c2n_recruit, c2n_stem, c2n_leaf,  &
-       c2n_storage, c2n_slow, c2n_structural
+   !----- Initialize C and N pools. -------------------------------------------------------!
+   soil_C8 = 0.0d0
+   soil_N8 = 0.0d0
+   veg_C8  = 0.0d0
+   veg_N8  = 0.0d0
 
-  implicit none
+   cpoly => cgrid%polygon(ipy)
+   siteloop: do isi = 1,cpoly%nsites
 
-  type(edtype),target :: cgrid
-  type(polygontype),pointer :: cpoly
-  type(sitetype),pointer :: csite
-  type(patchtype),pointer :: cpatch
+      csite => cpoly%site(isi)
+      patchloop: do ipa = 1,csite%npatches
+         cpatch => csite%patch(ipa)
 
-  integer :: isi,ipa,ico
-  integer, intent(in) :: ipy
-  real, intent(out) :: soil_C
-  real, intent(out) :: soil_N
-  real, intent(out) :: veg_C
-  real, intent(out) :: veg_N
+         !----- Site area times patch area. -----------------------------------------------!
+         area_factor   = dble(cpoly%area(isi)) * dble(csite%area(ipa))
 
-  integer :: ipft
-  real(kind=8) :: area_factor, this_carbon, this_nitrogen
-  real(kind=8) :: soil_C8, soil_N8, veg_C8, veg_N8
-  
-  real(kind=8), parameter :: almostnothing=1.d-30
+         !----- Find carbon and nitrogen soil pools for this patch. -----------------------!
+         this_carbon   = dble(csite%fast_soil_C(ipa)) + dble(csite%slow_soil_C(ipa))       &
+                       + dble(csite%structural_soil_C(ipa))
+         this_nitrogen = dble(csite%fast_soil_N(ipa))                                      &
+                       + dble(csite%mineralized_soil_N(ipa))                               &
+                       + dble(csite%slow_soil_C(ipa)) / dble(c2n_slow)                     &
+                       + dble(csite%structural_soil_C(ipa)) / dble(c2n_structural)
 
-  ! Initialize C and N pools
-  soil_C8 = 0.0d0
-  soil_N8 = 0.0d0
-  veg_C8 = 0.0d0
-  veg_N8 = 0.0d0
+         !----- Add to the full counter. --------------------------------------------------!
+         soil_C8 = soil_C8 + area_factor * this_carbon
+         soil_N8 = soil_N8 + area_factor * this_nitrogen
 
-  cpoly => cgrid%polygon(ipy)
+         !----- Loop over PFT so we account for veg carbon/nitrogen in repro arrays. ------!
+         pftloop: do ipft = 1, n_pft
+            if (include_pft(ipft) == 1) then
+               veg_C8 = veg_C8 + dble(csite%repro(ipft,ipa)) * area_factor
+               veg_N8 = veg_N8 + dble(csite%repro(ipft,ipa))                               &
+                               / dble(c2n_recruit(ipft)) * area_factor
+            end if
+         end do pftloop
+         
+         cohortloop: do ico = 1,cpatch%ncohorts
+            
+            !----- Get the carbon and nitrogen in vegetation. -----------------------------!
+            veg_C8 = veg_C8 + area_factor                                                  &
+                            * ( dble(cpatch%balive(ico)) + dble(cpatch%bdead(ico))         &
+                              + dble(cpatch%bstorage(ico)) ) * dble(cpatch%nplant(ico))
+            
+            veg_N8 = veg_N8 + area_factor                                                  &
+                            * ( dble(cpatch%balive(ico)) / dble(c2n_leaf(cpatch%pft(ico))) &
+                              + dble(cpatch%bdead(ico)) / dble(c2n_stem)                   &
+                              + dble(cpatch%bstorage(ico)) / dble(c2n_storage))            &
+                            * dble(cpatch%nplant(ico))
+         end do cohortloop
+      end do patchloop
+   end do siteloop
 
-  do isi = 1,cpoly%nsites
+   soil_C = sngloff(soil_C8,almostnothing)
+   soil_N = sngloff(soil_N8,almostnothing)
+   veg_C  = sngloff(veg_C8 ,almostnothing)
+   veg_N  = sngloff(veg_N8 ,almostnothing)
 
-     csite => cpoly%site(isi)
-
-     do ipa = 1,csite%npatches
-          
-        cpatch => csite%patch(ipa)
-
-        ! site area times patch area
-        area_factor   = dble(cpoly%area(isi)) * dble(csite%area(ipa))
-        
-        this_carbon   = dble(csite%fast_soil_C(ipa)) + dble(csite%slow_soil_C(ipa)) &
-                      + dble(csite%structural_soil_C(ipa))
-        this_nitrogen = dble(csite%fast_soil_N(ipa)) + dble(csite%mineralized_soil_N(ipa))  &
-                      + dble(csite%slow_soil_C(ipa)) / dble(c2n_slow)                       &
-                      + dble(csite%structural_soil_C(ipa)) / dble(c2n_structural)
-        
-        ! Get soil nitrogen and carbon
-        soil_C8 = soil_C8 + area_factor * this_carbon
-        soil_N8 = soil_N8 + area_factor * this_nitrogen
-
-        ! Account for carbon/nitrogen in repro arrays
-        do ipft = 1, n_pft
-           if(include_pft(ipft) == 1)then
-              veg_C8 = veg_C8 + dble(csite%repro(ipft,ipa)) * area_factor
-              veg_N8 = veg_N8 + dble(csite%repro(ipft,ipa)) / dble(c2n_recruit(ipft)) * area_factor
-           endif
-        enddo
-        
-        do ico = 1,cpatch%ncohorts
-           
-           ! Get the carbon and nitrogen in vegetation.
-           veg_C8 = veg_C8 + area_factor * (dble(cpatch%balive(ico)) +   &
-                dble(cpatch%bdead(ico)) + dble(cpatch%bstorage(ico))) * dble(cpatch%nplant(ico))
-           
-           veg_N8 = veg_N8 + area_factor * (dble(cpatch%balive(ico)) /   &
-                dble(c2n_leaf(cpatch%pft(ico))) + dble(cpatch%bdead(ico)) / dble(c2n_stem) + dble(cpatch%bstorage(ico)) / &
-                dble(c2n_storage)) * dble(cpatch%nplant(ico))
-        enddo
-     enddo
-  enddo
-  
-  if (abs(soil_C8) < almostnothing) soil_C8 = sign(almostnothing,soil_C8)
-  if (abs(soil_N8) < almostnothing) soil_N8 = sign(almostnothing,soil_N8)
-  if (abs(veg_C8) < almostnothing)  veg_C8  = sign(almostnothing,veg_C8)
-  if (abs(veg_N8) < almostnothing)  veg_N8  = sign(almostnothing,veg_N8)
-
-  soil_C = sngl(soil_C8)
-  soil_N = sngl(soil_N8)
-  veg_C  = sngl(veg_C8)
-  veg_N  = sngl(veg_N8)
-  return
+   return
 end subroutine compute_C_and_N_storage
+!==========================================================================================!
+!==========================================================================================!
