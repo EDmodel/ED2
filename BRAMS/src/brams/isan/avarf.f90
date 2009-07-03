@@ -303,9 +303,6 @@ do j=1,n3
          do k=1,n1
             if(tt(k,i,j).gt.levth(lbc))go to 141
          enddo
-         do k=1,n1
-            print *, k,i,j,tt(k,i,j),pp(k,i,j),rr(k,i,j),levth(lbc)
-         end do
          stop 'vi-nbc2'
 141      continue
          kabc=k

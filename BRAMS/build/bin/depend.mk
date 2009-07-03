@@ -539,6 +539,11 @@ mem_scratch_grell.o : $(CUPARM)/mem_scratch_grell.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
+mem_scratch1_brams.o : $(MEMORY)/mem_scratch1_brams.f90 var_tables.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
 mem_scratch1_grell.o : $(OLDGRELL)/mem_scratch1_grell.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -561,11 +566,6 @@ mem_scratch3_grell.o : $(OLDGRELL)/mem_scratch3_grell.f90 mem_grell_param2.o
 	rm -f $(<F:.f90=.f90) 
 
 mem_scratch3_grell_sh.o : $(OLDGRELL)/mem_scratch3_grell_sh.f90 mem_grell_param2.o
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
-
-mem_scratch1_brams.o : $(MEMORY)/mem_scratch1_brams.f90 var_tables.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
