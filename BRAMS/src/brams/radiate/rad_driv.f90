@@ -530,7 +530,7 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,fthrd,rtgt,f
    use mem_grid   , only : dzm,dzt,itopo,plonn,ngrid,time,itimea,centlon
    use mem_scratch, only : scratch
    use mem_radiate, only : ilwrtyp,iswrtyp,lonrad,cdec,jday,solfac,sun_longitude
-   use rconstants , only : cpi,cpor,p00,stefan,solar,pio180,pi1,halfpi
+   use rconstants , only : cpi,cpor,p00,stefan,solar,pio1808,pi1,halfpi
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -646,14 +646,14 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,fthrd,rtgt,f
                !     The y- and x-directions must be true north and east for this correc-  !
                ! tion. the following rotates the model y/x to the true north/east.         !
                !---------------------------------------------------------------------------!
-               dlon = (dble(plonn(ngrid)) - dble(glon(i,j))) * pio180
+               dlon = (dble(plonn(ngrid)) - dble(glon(i,j))) * pio1808
                a1    = dzsdx*dcos(dlon) + dzsdy * dsin(dlon)
                a2    = -dzsdx*dsin(dlon) + dzsdy * dcos(dlon)
                dzsdx = a1
                dzsdy = a2
 
                if (lonrad == 1) gglon = dble(glon(i,j))
-               hrangl = (sun_longitude-gglon)*pio180
+               hrangl = (sun_longitude-gglon)*pio1808
                !---------------------------------------------------------------------------!
                !    sinz tends to zero when cosz(i,j) approaches 1. To avoid this singu-   !
                ! larity, include an offset.                                                !
@@ -748,7 +748,7 @@ subroutine zen(m2,m3,ia,iz,ja,jz,iswrtyp,ilwrtyp,glon,glat,cosz)
 
    !----- Find current Julian day ---------------------------------------------------------!
    jday = julday(imontha,idatea,iyeara)
-   jday = jday + floor(time/day_sec)
+   jday = jday + floor(time/day_sec8)
 
    !---------------------------------------------------------------------------------------!
    !     Solfac is a multiplier of the solar constant to correct for Earth's varying       !
@@ -781,7 +781,7 @@ subroutine zen(m2,m3,ia,iz,ja,jz,iswrtyp,ilwrtyp,glon,glat,cosz)
    declin =  3.22003d-1                                                                       &
             -2.29710d+1 * dcos(t1) -3.57898d-1 * dcos(t1*2.d0) -1.4398d-1 * dcos(t1*3.d0)  &
             +3.94638d+1 * dsin(t1) +1.93340d-2 * dsin(t1*2.d0) +5.9280d-2 * dsin(t1*3.d0)
-   t2     = (2.79134d2 + 9.85647d-1 * dble(jday)) * dble(pio180)
+   t2     = (2.79134d2 + 9.85647d-1 * dble(jday)) * pio1808
    
    sdec = dsin(declin*pio1808) !-----  sdec - sine   of declination -----------------------!
    cdec = dcos(declin*pio1808) !-----  cdec - cosine of declination -----------------------!

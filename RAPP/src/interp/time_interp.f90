@@ -97,6 +97,16 @@ subroutine time_interp()
          end do xloop
       end do yloop
    end do st2loop
+
+   !---------------------------------------------------------------------------------------!
+   !     Here we ensure that the fluxes will not be negative.                              !
+   !---------------------------------------------------------------------------------------!
+   where(ncep_g(2)%nbdsf < 0.) ncep_g(2)%nbdsf = 0.
+   where(ncep_g(2)%nddsf < 0.) ncep_g(2)%nddsf = 0.
+   where(ncep_g(2)%vbdsf < 0.) ncep_g(2)%vbdsf = 0.
+   where(ncep_g(2)%vddsf < 0.) ncep_g(2)%vddsf = 0.
+
+
    return
 end subroutine time_interp
 !==========================================================================================!

@@ -142,7 +142,8 @@ subroutine ncep_fill_infotable(year)
       addtimeloop: do nt=1,nntp(ngrid)
          !----- I will only add times that were not there before --------------------------!
          if (nouttimes > 0) then
-           if (any(outtimes(1:nouttimes)%elapsed == this_time(nt,ngrid)%elapsed))          &
+           !----- The maximum time resolution on these output files is 1 second. ----------!
+           if (any(abs(outtimes(1:nouttimes)%elapsed-this_time(nt,ngrid)%elapsed)>5.d-1))  &
               cycle addtimeloop
          end if
          tcnt=tcnt+1

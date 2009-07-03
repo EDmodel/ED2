@@ -539,6 +539,11 @@ mem_scratch_grell.o : $(CUPARM)/mem_scratch_grell.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
+mem_scratch1_brams.o : $(MEMORY)/mem_scratch1_brams.f90 var_tables.o
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
 mem_scratch1_grell.o : $(OLDGRELL)/mem_scratch1_grell.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -561,11 +566,6 @@ mem_scratch3_grell.o : $(OLDGRELL)/mem_scratch3_grell.f90 mem_grell_param2.o
 	rm -f $(<F:.f90=.f90) 
 
 mem_scratch3_grell_sh.o : $(OLDGRELL)/mem_scratch3_grell_sh.f90 mem_grell_param2.o
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
-
-mem_scratch1_brams.o : $(MEMORY)/mem_scratch1_brams.f90 var_tables.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
@@ -1915,7 +1915,7 @@ twostream_rad.o : $(ED_DYNAMICS)/twostream_rad.f90 pft_coms.o canopy_radiation_c
 
 update_derived_props.o : $(ED_UTILS)/update_derived_props.f90 ed_state_vars.o allometry.o  \
 	fusion_fission_coms.o fuse_fiss_utils.o allometry.o consts_coms.o soil_coms.o      \
-	grid_coms.o ed_therm_lib.o
+	grid_coms.o ed_therm_lib.o misc_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
