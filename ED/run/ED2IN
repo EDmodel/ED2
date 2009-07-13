@@ -250,7 +250,7 @@
                            !  0 -- the cold-deciuous (Botta et al.) & old drought-deciduous (same with ED2.0);
                            !  1 -- the Harvard Forest observations
                            !  2 -- the cold-deciduous & new drought-deciduous;
-                           !  3 -- the cold-deciduous, new drought-deciduous & light phenology;
+                           !  3 -- the cold-deciduous, new drought-deciduous & light phenology (not fully tested);
   
    NL%REPRO_SCHEME    = 1  ! This specifies the reproduction scheme:
                          !  0 -- reproduction off (useful for short runs)
