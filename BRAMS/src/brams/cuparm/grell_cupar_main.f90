@@ -30,7 +30,10 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
                
    use mem_scratch_grell, only : &
       !----- Variables defined at the initialization process ------------------------------!
-       dens_curr    & ! intent(in)  - Current density to strenghten updraft       [kg/m²/s]
+      ,co20         & ! intent(in)  - Current CO2 mixing ratio                    [    ppm]
+      ,co2          & ! intent(in)  - CO2 mixing ratio with forcing.              [    ppm]
+      ,co2sur       & ! intent(in)  - surface CO2 mixing ratio                    [    ppm]
+      ,dens_curr    & ! intent(in)  - Current density to strenghten updraft       [kg/m²/s]
       ,dzd_cld      & ! intent(in)  - Delta-height for downdraft calculations     [      m]
       ,dzu_cld      & ! intent(in)  - Delta-height for updraft calculations       [      m]
       ,exner0       & ! intent(in)  - Current Exner function                      [ J/kg/K]
@@ -94,8 +97,9 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
       ,ktop         & ! intent(out) - Cloud top                                   [   ----]
       ,mentrd_rate  & ! intent(out) - Normalized downdraft entrainment rate       [    1/m]
       ,mentru_rate  & ! intent(out) - Normalized updraft entrainment rate         [    1/m]
-      ,outthil      & ! intent(out) - Ice-liquid pot. temp. tendency              [    K/s]
+      ,outco2       & ! intent(out) - CO2 mixing ratio tendency                   [  ppm/s]
       ,outqtot      & ! intent(out) - Total H20 mixing ratio tendency             [kg/kg/s]
+      ,outthil      & ! intent(out) - Ice-liquid pot. temp. tendency              [    K/s]
       ,precip       & ! intent(out) - Precipitation rate                          [kg/m²/s]
       ,rhod_cld     & ! intent(out) - Downdraft density                           [  kg/m³]
       ,rhou_cld     & ! intent(out) - Updraft density                             [  kg/m³]
@@ -189,6 +193,7 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
    !     Environment variables at Grell's staggered grid.                                  !
    !---------------------------------------------------------------------------------------!
    !----- Variables based on values before any forcing is applied -------------------------!
+   real   , dimension(mgmzp) :: co20_cup      ! CO2 mixing ratio                  [    ppm]
    real   , dimension(mgmzp) :: exner0_cup    ! Exner function                    [   J/kg]
    real   , dimension(mgmzp) :: p0_cup        ! Pressure                          [     Pa]
    real   , dimension(mgmzp) :: qtot0_cup     ! Total mixing ratio                [  kg/kg]
@@ -202,6 +207,7 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
    real   , dimension(mgmzp) :: theiv0_cup    ! Ice-vapour potential temperature  [      K]
    real   , dimension(mgmzp) :: theivs0_cup   ! Sat. Ice-vapour equiv. pot. temp. [      K]
    !----- Variables with all time tendencies but this convection. -------------------------!
+   real   , dimension(mgmzp) :: co2_cup       ! CO2 mixing ratio                  [    ppm]
    real   , dimension(mgmzp) :: exner_cup     ! Exner function                    [   J/kg]
    real   , dimension(mgmzp) :: p_cup         ! Pressure                          [     Pa]
    real   , dimension(mgmzp) :: qtot_cup      ! Total mixing ratio                [  kg/kg]
@@ -221,6 +227,7 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
    !    Downdraft-related variables                                                        !
    !---------------------------------------------------------------------------------------!
    !----- Based on current values (no forcing) --------------------------------------------!
+   real   , dimension(mgmzp) :: co20d_cld     ! CO2 water mixing ratio            [    ppm]
    real   , dimension(mgmzp) :: dby0d         ! Buoyancy acceleration             [   m/s²]
    real   , dimension(mgmzp) :: pw0d_cld      ! Condensation                      [  kg/kg]
    real   , dimension(mgmzp) :: qtot0d_cld    ! Total water mixing ratio          [  kg/kg]
@@ -235,6 +242,7 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
    real                      :: aa0d          ! Updraft work function             [   J/kg]
    real                      :: pwev0         ! Integrated evaporation            [  kg/kg]
    !----- Based on values with forcing ----------------------------------------------------!
+   real   , dimension(mgmzp) :: co2d_cld      ! CO2 water mixing ratio            [    ppm]
    real   , dimension(mgmzp) :: pwd_cld       ! Condensation                      [  kg/kg]
    real   , dimension(mgmzp) :: qtotd_cld     ! Total water mixing ratio          [  kg/kg]
    real   , dimension(mgmzp) :: qvapd_cld     ! Vapour mixing ratio               [  kg/kg]
@@ -252,6 +260,7 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
    !    Updraft-related variables                                                          !
    !---------------------------------------------------------------------------------------!
    !----- Based on current values (no forcing) --------------------------------------------!
+   real   , dimension(mgmzp) :: co20u_cld     ! CO2 water mixing ratio            [    ppm]
    real   , dimension(mgmzp) :: dby0u         ! Buoyancy acceleration             [   m/s²]
    real   , dimension(mgmzp) :: pw0u_cld      ! Condensation                      [  kg/kg]
    real   , dimension(mgmzp) :: qtot0u_cld    ! Total water mixing ratio          [  kg/kg]
@@ -267,6 +276,7 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
    real                      :: pwav0         ! Integrated condensation           [  kg/kg]
    real                      :: wbuoymin0     ! Minimum buoyant velocity          [    m/s]
    !----- Based on values with forcing ----------------------------------------------------!
+   real   , dimension(mgmzp) :: co2u_cld      ! CO2 water mixing ratio            [    ppm]
    real   , dimension(mgmzp) :: pwu_cld       ! Condensation                      [  kg/kg]
    real   , dimension(mgmzp) :: qtotu_cld     ! Total water mixing ratio          [  kg/kg]
    real   , dimension(mgmzp) :: qvapu_cld     ! Vapour mixing ratio               [  kg/kg]
@@ -297,6 +307,7 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
    !    Variables modified by the arbitrary mass flux                                      !
    !---------------------------------------------------------------------------------------!
    !----- Model levels --------------------------------------------------------------------!
+   real   , dimension(mgmzp) :: x_co2         ! CO2 mixing ratio                  [    ppm]
    real   , dimension(mgmzp) :: x_qtot        ! Total mixing ratio                [  kg/kg]
    real   , dimension(mgmzp) :: x_qvap        ! Vapour mixing ratio               [  kg/kg]
    real   , dimension(mgmzp) :: x_qliq        ! Liquid water mixing ratio         [  kg/kg]
@@ -305,6 +316,7 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
    real   , dimension(mgmzp) :: x_theiv       ! Ice-vapour equiv. pot. temp.      [      K]
    real   , dimension(mgmzp) :: x_thil        ! Ice-liquid potential temperature. [      K]
    !----- Cloud levels --------------------------------------------------------------------!
+   real   , dimension(mgmzp) :: x_co2_cup     ! CO2 mixing ratio                  [    ppm]
    real   , dimension(mgmzp) :: x_exner_cup   ! Exner function                    [   J/kg]
    real   , dimension(mgmzp) :: x_p_cup       ! Pressure                          [     Pa]
    real   , dimension(mgmzp) :: x_qtot_cup    ! Total mixing ratio                [  kg/kg]
@@ -318,6 +330,7 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
    real   , dimension(mgmzp) :: x_theiv_cup   ! Ice-vapour equiv. pot. temp.      [      K]
    real   , dimension(mgmzp) :: x_theivs_cup  ! Sat. Ice-vapour equiv. pot. temp. [      K]
    !----- Downdraft variables -------------------------------------------------------------!
+   real   , dimension(mgmzp) :: x_co2d_cld    ! CO2 mixing ratio                  [    ppm]
    real   , dimension(mgmzp) :: x_dbyd        ! Buoyancy acceleration             [   m/s²]
    real   , dimension(mgmzp) :: x_pwd_cld     ! Condensation                      [  kg/kg]
    real   , dimension(mgmzp) :: x_qtotd_cld   ! Total water mixing ratio          [  kg/kg]
@@ -333,6 +346,7 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
    real                      :: x_pwev        ! Integrated evaporation            [  kg/kg]
    real                      :: x_wbuoymin    ! Minimum buoyant velocity          [    m/s]
    !----- Updraft variables ---------------------------------------------------------------!
+   real   , dimension(mgmzp) :: x_co2u_cld    ! CO2 mixing ratio                  [    ppm]
    real   , dimension(mgmzp) :: x_dbyu        ! Buoyancy acceleration             [   m/s²]
    real   , dimension(mgmzp) :: x_pwu_cld     ! Condensation                      [  kg/kg]
    real   , dimension(mgmzp) :: x_qtotu_cld   ! Total water mixing ratio          [  kg/kg]
@@ -486,10 +500,10 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
       ! G. Calculate all thermodynamic properties at the cloud level. The cloud levels are !
       !    staggered in relation to BRAMS model.                                           !
       !------------------------------------------------------------------------------------!
-      call grell_thermo_cldlev(mkx,mgmzp,z_cup,exner,thil,t,qtot,qliq,qice,exnersur        &
-                              ,thilsur,tsur,qtotsur,qliqsur,qicesur,exner_cup,p_cup,t_cup  &
-                              ,thil_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup,qsat_cup       &
-                              ,rho_cup,theiv_cup,theivs_cup)
+      call grell_thermo_cldlev(mkx,mgmzp,z_cup,exner,thil,t,qtot,qliq,qice,co2,exnersur    &
+                              ,thilsur,tsur,qtotsur,qliqsur,qicesur,co2sur,exner_cup,p_cup &
+                              ,t_cup,thil_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup,qsat_cup &
+                              ,co2_cup,rho_cup,theiv_cup,theivs_cup)
 
       !------------------------------------------------------------------------------------!
       ! H. Initialize updraft temperature and drafts liquid mixing ratio, in case          !
@@ -533,9 +547,10 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
       !------------------------------------------------------------------------------------!
       call grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wbuoy_max,wwind,sigw,exner_cup     &
                                ,p_cup,theiv_cup,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup  &
-                               ,qice_cup,qsat_cup,rho_cup,dzd_cld,mentru_rate,theivu_cld   &
-                               ,thilu_cld,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld,qiceu_cld   &
-                               ,qsatu_cld,rhou_cld,dbyu,k22,ierr,kbcon,wbuoymin)
+                               ,qice_cup,qsat_cup,co2_cup,rho_cup,dzd_cld,mentru_rate      &
+                               ,theivu_cld,thilu_cld,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld  &
+                               ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,k22,ierr,kbcon  &
+                               ,wbuoymin)
       if (ierr /= 0) cycle stacloop
 
       !------------------------------------------------------------------------------------!
@@ -570,11 +585,12 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
       ! 8. Finding the moisture profiles associated with updrafts.                         !
       !------------------------------------------------------------------------------------!
       call grell_most_thermo_updraft(comp_down,.true.,mkx,mgmzp,kbcon,ktpse,cdu            &
-                                    ,mentru_rate,qtot,p_cup,exner_cup,theiv_cup,thil_cup   &
-                                    ,t_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup,qsat_cup    &
-                                    ,rho_cup,theivu_cld,etau_cld,dzu_cld,thilu_cld,tu_cld  &
-                                    ,qtotu_cld,qvapu_cld,qliqu_cld,qiceu_cld,qsatu_cld     &
-                                    ,rhou_cld,dbyu,pwu_cld,pwav,ktop,ierr)
+                                    ,mentru_rate,qtot,co2,p_cup,exner_cup,theiv_cup        &
+                                    ,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup    &
+                                    ,qsat_cup,co2_cup,rho_cup,theivu_cld,etau_cld,dzu_cld  &
+                                    ,thilu_cld,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld        &
+                                    ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,pwu_cld    &
+                                    ,pwav,ktop,ierr)
 
       !------------------------------------------------------------------------------------!
       ! 9. Checking whether we found a cloud top. Since this may keep convection to        !
@@ -655,12 +671,13 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
          !---------------------------------------------------------------------------------!
          ! 6. Moisture properties of downdraft                                             !
          !---------------------------------------------------------------------------------!
-         call grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,mentrd_rate,cdd,p_cup        &
+         call grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,co2,mentrd_rate,cdd,p_cup    &
                                          ,exner_cup,thil_cup,t_cup,qtot_cup,qvap_cup       &
-                                         ,qliq_cup,qice_cup,qsat_cup,rho_cup,pwav          &
+                                         ,qliq_cup,qice_cup,qsat_cup,co2_cup,rho_cup,pwav  &
                                          ,theivd_cld,etad_cld,dzd_cld,thild_cld,td_cld     &
                                          ,qtotd_cld,qvapd_cld,qliqd_cld,qiced_cld          &
-                                         ,qsatd_cld,rhod_cld,dbyd,pwd_cld,pwev,ierr)
+                                         ,qsatd_cld,co2d_cld,rhod_cld,dbyd,pwd_cld,pwev    &
+                                         ,ierr)
          if (ierr /= 0) cycle stacloop
          !---------------------------------------------------------------------------------!
          ! 7. Compute the downdraft strength in terms of windshear. Remembering that edt   !
@@ -705,6 +722,7 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
          qtotd_cld    = qtot_cup
          qliqd_cld    = qliq_cup
          qiced_cld    = qice_cup
+         co2d_cld     = co2_cup
          pwd_cld      = 0.
          pwev         = 0.
          edt_eff      = 0.
@@ -737,10 +755,11 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
          ! iii.   Calculate all thermodynamic properties at the cloud level and initialize !
          !        draft thermodynamic properties                                           !
          !---------------------------------------------------------------------------------!
-         call grell_thermo_cldlev(mkx,mgmzp,z_cup,exner0,thil0,t0,qtot0,qliq0,qice0        &
-                                 ,exnersur,thilsur,tsur,qtotsur,qliqsur,qicesur,exner0_cup &
-                                 ,p0_cup,t0_cup,thil0_cup,qtot0_cup,qvap0_cup,qliq0_cup    &
-                                 ,qice0_cup,qsat0_cup,rho0_cup,theiv0_cup,theivs0_cup)
+         call grell_thermo_cldlev(mkx,mgmzp,z_cup,exner0,thil0,t0,qtot0,qliq0,qice0,co20   &
+                                 ,exnersur,thilsur,tsur,qtotsur,qliqsur,qicesur,co2sur     &
+                                 ,exner0_cup,p0_cup,t0_cup,thil0_cup,qtot0_cup,qvap0_cup   &
+                                 ,qliq0_cup,qice0_cup,qsat0_cup,co20_cup,rho0_cup          &
+                                 ,theiv0_cup,theivs0_cup)
 
          !---------------------------------------------------------------------------------!
          ! iv.    Calculate the thermodynamic properties below the level of free convec-   !
@@ -748,9 +767,9 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
          !---------------------------------------------------------------------------------!
          call grell_buoy_below_lfc(mkx,mgmzp,k22,kbcon,exner0_cup,p0_cup,theiv0_cup        &
                                   ,thil0_cup,t0_cup,qtot0_cup,qvap0_cup,qliq0_cup          &
-                                  ,qice0_cup,qsat0_cup,rho0_cup,theiv0u_cld,thil0u_cld     &
-                                  ,t0u_cld,qtot0u_cld,qvap0u_cld,qliq0u_cld,qice0u_cld     &
-                                  ,qsat0u_cld,rho0u_cld,dby0u)
+                                  ,qice0_cup,qsat0_cup,co20_cup,rho0_cup,theiv0u_cld       &
+                                  ,thil0u_cld,t0u_cld,qtot0u_cld,qvap0u_cld,qliq0u_cld     &
+                                  ,qice0u_cld,qsat0u_cld,co20u_cld,rho0u_cld,dby0u)
 
          !---------------------------------------------------------------------------------!
          ! v.     Calculate the incloud ice-vapour equivalent potential temperature        !
@@ -762,12 +781,13 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
          ! vi.    Finding the moisture profiles associated with updrafts.                  !
          !---------------------------------------------------------------------------------!
          call grell_most_thermo_updraft(comp_down,.false.,mkx,mgmzp,kbcon,ktop,cdu         &
-                                       ,mentru_rate,qtot0,p0_cup,exner0_cup,theiv0_cup     &
-                                       ,thil0_cup,t0_cup,qtot0_cup,qvap0_cup,qliq0_cup     &
-                                       ,qice0_cup,qsat0_cup,rho0_cup,theiv0u_cld,etau_cld  &
-                                       ,dzu_cld,thil0u_cld,t0u_cld,qtot0u_cld,qvap0u_cld   &
-                                       ,qliq0u_cld,qice0u_cld,qsat0u_cld,rho0u_cld,dby0u   &
-                                       ,pw0u_cld,pwav0,ktop0,ierr0)
+                                       ,mentru_rate,qtot0,co20,p0_cup,exner0_cup           &
+                                       ,theiv0_cup,thil0_cup,t0_cup,qtot0_cup,qvap0_cup    &
+                                       ,qliq0_cup,qice0_cup,qsat0_cup,co20_cup,rho0_cup    &
+                                       ,theiv0u_cld,etau_cld,dzu_cld,thil0u_cld,t0u_cld    &
+                                       ,qtot0u_cld,qvap0u_cld,qliq0u_cld,qice0u_cld        &
+                                       ,qsat0u_cld,co2u_cld,rho0u_cld,dby0u,pw0u_cld,pwav0 &
+                                       ,ktop0,ierr0)
          !---------------------------------------------------------------------------------!
          ! vii.   Finding the cloud work function                                          !
          !---------------------------------------------------------------------------------!
@@ -784,13 +804,13 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
             !------------------------------------------------------------------------------!
             ! ix.    Moisture properties of downdraft                                      !
             !------------------------------------------------------------------------------!
-            call grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot0,mentrd_rate,cdd,p0_cup   &
-                                            ,exner0_cup,thil0_cup,t0_cup,qtot0_cup         &
+            call grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot0,co20,mentrd_rate,cdd     &
+                                            ,p0_cup,exner0_cup,thil0_cup,t0_cup,qtot0_cup  &
                                             ,qvap0_cup,qliq0_cup,qice0_cup,qsat0_cup       &
-                                            ,rho0_cup,pwav0,theiv0d_cld,etad_cld,dzd_cld   &
-                                            ,thil0d_cld,t0d_cld,qtot0d_cld,qvap0d_cld      &
-                                            ,qliq0d_cld,qice0d_cld,qsat0d_cld,rho0d_cld    &
-                                            ,dby0d,pw0d_cld,pwev0,ierr0)
+                                            ,co20_cup,rho0_cup,pwav0,theiv0d_cld,etad_cld  &
+                                            ,dzd_cld,thil0d_cld,t0d_cld,qtot0d_cld         &
+                                            ,qvap0d_cld,qliq0d_cld,qice0d_cld,qsat0d_cld   &
+                                            ,co2d_cld,rho0d_cld,dby0d,pw0d_cld,pwev0,ierr0)
 
             !------------------------------------------------------------------------------!
             ! x.     Downdraft cloud work function.                                        !
@@ -840,6 +860,9 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
             call  grell_dellabot_ensemble(mgmzp,checkmass,masstol,edt,thil,p_cup,thil_cup  &
                                          ,mentrd_rate,cdd,dzd_cld,etad_cld,thild_cld       &
                                          ,dellathil_eff(1,iedt,icap))
+            call  grell_dellabot_ensemble(mgmzp,checkmass,masstol,edt,co2,p_cup,co2_cup    &
+                                         ,mentrd_rate,cdd,dzd_cld,etad_cld,co2d_cld        &
+                                         ,dellaco2_eff(1,iedt,icap))
          end if
          
          !---------------------------------------------------------------------------------!
@@ -859,6 +882,10 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
                                    ,thil,p_cup,thil_cup,mentrd_rate,mentru_rate,cdd,cdu    &
                                    ,dzd_cld,etad_cld,etau_cld,thild_cld,thilu_cld          &
                                    ,dellathil_eff(1:mgmzp,iedt,icap))
+         call grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,k22,kbcon,jmin,ktop   &
+                                   ,co2,p_cup,co2_cup,mentrd_rate,mentru_rate,cdd,cdu      &
+                                   ,dzd_cld,etad_cld,etau_cld,co2d_cld,co2u_cld            &
+                                   ,dellaco2_eff(1:mgmzp,iedt,icap))
 
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -943,11 +970,13 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
                x_theiv(k) = theiv(k)          + mbprime*dtime * dellatheiv_eff(k,iedt,icap)
                x_qtot(k)  = max(toodry,qtot(k)+ mbprime*dtime * dellaqtot_eff(k,iedt,icap))
                x_thil(k)  = thil(k)           + mbprime*dtime * dellathil_eff(k,iedt,icap)
+               x_co2(k)   = co2(k)            + mbprime*dtime * dellaco2_eff(k,iedt,icap)
             end do
             !----- Boundary condition at mkx, just use environment ------------------------!
             x_theiv (mkx) = theiv (mkx)
             x_qtot  (mkx) = qtot  (mkx)
             x_thil  (mkx) = thil  (mkx)
+            x_co2   (mkx) = co2   (mkx)
 
             !------------------------------------------------------------------------------!
             ! 6d. Initialise some variables.                                               !
@@ -974,10 +1003,11 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
                                  ,x_t(k),x_qvap(k),scrvar(k))
                end do
                call grell_thermo_cldlev(mkx,mgmzp,z_cup,exner,x_thil,x_t,x_qtot,x_qliq     &
-                                       ,x_qice,exnersur,thilsur,tsur,qtotsur,qliqsur       &
-                                       ,qicesur,x_exner_cup,x_p_cup,x_t_cup,x_thil_cup     &
-                                       ,x_qtot_cup,x_qvap_cup,x_qliq_cup,x_qice_cup        &
-                                       ,x_qsat_cup,x_rho_cup,x_theiv_cup,x_theivs_cup      )
+                                       ,x_qice,x_co2,exnersur,thilsur,tsur,qtotsur,qliqsur &
+                                       ,qicesur,co2sur,x_exner_cup,x_p_cup,x_t_cup         &
+                                       ,x_thil_cup,x_qtot_cup,x_qvap_cup,x_qliq_cup        &
+                                       ,x_qice_cup,x_qsat_cup,x_co2_cup,x_rho_cup          &
+                                       ,x_theiv_cup,x_theivs_cup)
 
                !---------------------------------------------------------------------------!
                ! 6f. Finding the updraft thermodynamics between the updraft origin and the !
@@ -986,9 +1016,10 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
                call grell_buoy_below_lfc(mkx,mgmzp,k22,kbcon,x_exner_cup,x_p_cup           &
                                         ,x_theiv_cup,x_thil_cup,x_t_cup,x_qtot_cup         &
                                         ,x_qvap_cup,x_qliq_cup,x_qice_cup,x_qsat_cup       &
-                                        ,x_rho_cup,x_theivu_cld,x_thilu_cld,x_tu_cld       &
-                                        ,x_qtotu_cld,x_qvapu_cld,x_qliqu_cld,x_qiceu_cld   &
-                                        ,x_qsatu_cld,x_rhou_cld,x_dbyu)
+                                        ,x_co2_cup,x_rho_cup,x_theivu_cld,x_thilu_cld      &
+                                        ,x_tu_cld,x_qtotu_cld,x_qvapu_cld,x_qliqu_cld      &
+                                        ,x_qiceu_cld,x_qsatu_cld,x_co2u_cld,x_rhou_cld     &
+                                        ,x_dbyu)
 
                !---------------------------------------------------------------------------!
                ! 6g. Compute the updraft profiles ice-vapour equivalent potential temper-  !
@@ -1001,13 +1032,13 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
                ! 6h. Getting the updraft moisture profile                                  !
                !---------------------------------------------------------------------------!
                call grell_most_thermo_updraft(comp_down,.false.,mkx,mgmzp,kbcon,ktop,cdu   &
-                                             ,mentru_rate,x_qtot,x_p_cup,x_exner_cup       &
+                                             ,mentru_rate,x_qtot,x_co2,x_p_cup,x_exner_cup &
                                              ,x_theiv_cup,x_thil_cup,x_t_cup,x_qtot_cup    &
                                              ,x_qvap_cup,x_qliq_cup,x_qice_cup,x_qsat_cup  &
-                                             ,x_rho_cup,x_theivu_cld,etau_cld,dzu_cld      &
-                                             ,x_thilu_cld,x_tu_cld,x_qtotu_cld             &
+                                             ,x_co2_cup,x_rho_cup,x_theivu_cld,etau_cld    &
+                                             ,dzu_cld,x_thilu_cld,x_tu_cld,x_qtotu_cld     &
                                              ,x_qvapu_cld,x_qliqu_cld,x_qiceu_cld          &
-                                             ,x_qsatu_cld,x_rhou_cld,x_dbyu,x_pwu_cld      &
+                                             ,x_qsatu_cld,x_co2u_cld,x_rhou_cld,x_dbyu     &,x_pwu_cld      &
                                              ,x_pwav,x_ktop,x_ierr)
 
                !---------------------------------------------------------------------------!
@@ -1028,15 +1059,16 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
                   !------------------------------------------------------------------------!
                   ! 6k. Moisture properties                                                !
                   !------------------------------------------------------------------------!
-                  call grell_most_thermo_downdraft(mkx,mgmzp,jmin,x_qtot,mentrd_rate,cdd   &
-                                                  ,x_p_cup,x_exner_cup,x_thil_cup,x_t_cup  &
-                                                  ,x_qtot_cup,x_qvap_cup,x_qliq_cup        &
-                                                  ,x_qice_cup,x_qsat_cup,x_rho_cup,x_pwav  &
-                                                  ,x_theivd_cld,etad_cld,dzd_cld           &
-                                                  ,x_thild_cld,x_td_cld,x_qtotd_cld        &
-                                                  ,x_qvapd_cld,x_qliqd_cld,x_qiced_cld     &
-                                                  ,x_qsatd_cld,x_rhod_cld,x_dbyd,x_pwd_cld &
-                                                  ,x_pwev,x_ierr)
+                  call grell_most_thermo_downdraft(mkx,mgmzp,jmin,x_qtot,x_co2,mentrd_rate &
+                                                  ,cdd,x_p_cup,x_exner_cup,x_thil_cup      &
+                                                  ,x_t_cup,x_qtot_cup,x_qvap_cup           &
+                                                  ,x_qliq_cup,x_qice_cup,x_qsat_cup        &
+                                                  ,x_co2_cup,x_rho_cup,x_pwav,x_theivd_cld &
+                                                  ,etad_cld,dzd_cld,x_thild_cld,x_td_cld   &
+                                                  ,x_qtotd_cld,x_qvapd_cld,x_qliqd_cld     &
+                                                  ,x_qiced_cld,x_qsatd_cld,x_co2d_cld      &
+                                                  ,x_rhod_cld,x_dbyd,x_pwd_cld,x_pwev      &
+                                                  ,x_ierr)
 
                   !------------------------------------------------------------------------!
                   ! 6l. Computing cloud work function associated with downdrafts           !
@@ -1097,8 +1129,8 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
    if (ierr == 0) then 
       call grell_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dyn      &
                          ,inv_ensdim,max_heat,ktop,edt_eff,dellathil_eff,dellaqtot_eff     &
-                         ,pw_eff,dnmf_ens,upmf_ens,ierr,upmf,dnmf,edt,outthil,outqtot      &
-                         ,precip)
+                         ,dellaco2_eff,pw_eff,dnmf_ens,upmf_ens,ierr,upmf,dnmf,edt,outthil &
+                         ,outqtot,outco2,precip)
    end if
    !---------------------------------------------------------------------------------------!
 

@@ -629,11 +629,10 @@ subroutine opspec3
   ! CAT
   use catt_start, only: CATT ! INTENT(IN)
 
-  ! Sib
-  use sib_vars, only: N_CO2 ! INTENT(IN)
-
   ![MLO - mass check and exner function check
   use mem_mass, only : iexev, imassflx
+  
+  use mem_basic, only : ico2, co2con
 
   implicit none
 
@@ -874,15 +873,6 @@ subroutine opspec3
         end if
      end do
   end if
-  ! SiB
-  ! Checking the naddsc variable
-  if (isfcl == 3) then
-     if (n_co2 < 1) then
-        print *, "FATAL - If using SiB, N_CO2 must to be > 1"
-        print *, "        NADDSC must be equal NADDSC + N_CO2."
-        IFATERR = IFATERR + 1
-     end if
-  end if
 
 
   ! check that moisture is turned on if radiation is used.
@@ -986,8 +976,8 @@ subroutine opspec3
      print*,' fatal - ibotflx must be either 0 or 1. Yours is set to ',ibotflx,'...'
      ifaterr=ifaterr+1
   end if
-  ! check that diffusion flags are compatible if using ihorgrad=1
 
+  ! check that diffusion flags are compatible if using ihorgrad=1
   if(ihorgrad.eq.2)then
      if(idiffk(ngr) >= 3 .and. idiffk(ngrid) /= 7)then
         print*,' fatal - can''t use ihorgrad=2 if idiffk 3, 4, 5 or 6'
@@ -1032,6 +1022,20 @@ subroutine opspec3
     end if 
   end do
 
+  select case (isfcl)
+  case (1,2,5)
+     continue
+  case (3)
+     print*,' fatal - SSiB is not available in this version, use LEAF or ED instead...'
+     ifaterr=ifaterr+1
+  case (4)
+     print*,' fatal - GEMTM is not available in this version, use LEAF or ED instead...'
+     ifaterr=ifaterr+1
+  case default
+     print*,' fatal - isfcl must be either 1, 2, or 5. Yours is set to ',ibruvais,'...'
+     ifaterr=ifaterr+1
+  end if
+
   ! check whether the soil model will be run and make sure that the
   !   number of soil levels are correct.(severity - f,i )
 
@@ -1051,6 +1055,31 @@ subroutine opspec3
           ,' model.'
      ifaterr=ifaterr+1
   endif
+  
+  !----- Check CO2 settings. --------------------------------------------------------------!
+  select case (ico2)
+  case (0,2)
+     !----- No further check is necessary for the time being, move on. --------------------!
+     continue
+
+  case (1)
+     !----- Value is okay, now check whether the initial co2con makes sense... ------------!
+     if (co2con < 0.) then
+        print *, 'FATAL - When ICO2=1, CO2CON cannot be negative and yours is '            &
+               ,co2con,'...'
+        ifaterr = ifaterr + 1
+     elseif (co2con > 1.e6) then
+        print *, 'FATAL - When ICO2=1, CO2CON cannot be more than 1 million and yours is ' &
+               ,co2con,'...'
+        ifaterr = ifaterr + 1
+     end if
+  case (3)
+        print *, 'FATAL - Assimilation of CO2 through RALPH2 files is not available yet.'
+        ifaterr = ifaterr + 1
+  case default 
+        print *, 'FATAL - Invalid ICO2... Yours is set to ',ico2,'...'
+        ifaterr = ifaterr + 1
+  end select
 
   do k=1,nzg
      if (slz(k) .gt. -.001) then

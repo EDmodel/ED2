@@ -34,9 +34,10 @@ if(jdim == 1) then
    if(iand(ibcon,8) /= 0) jr=myp
 endif
 
+! Here we will use scratch variables in case CO2 is off...
+call azero3(mzp*mxp*myp,scratch%vt3de,scratch%vt3df,scratch%vt3dg)
 
 ! Basic boundary and analysis nudging scheme
-
 call nudge(mzp,mxp,myp,il,ir,jl,jr,varinit_g(ngrid)%varwts  &
 
      ,varinit_g(ngrid)%varup,varinit_g(ngrid)%varvp  &

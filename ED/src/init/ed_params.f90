@@ -870,19 +870,26 @@ subroutine init_pft_leaf_params()
 
    select case (iphen_scheme)
    case (0,1)
-      phenology(1)     = 4
-      phenology(2:4)   = 4
-      phenology(5)     = 4
-      phenology(6:8)   = 0
-      phenology(9:11)  = 2
-      phenology(12:15) = 4
-   case (2)
       phenology(1)     = 1
       phenology(2:4)   = 1
       phenology(5)     = 1
       phenology(6:8)   = 0
       phenology(9:11)  = 2
       phenology(12:15) = 1
+   case (2)
+      phenology(1)     = 4
+      phenology(2:4)   = 4
+      phenology(5)     = 4
+      phenology(6:8)   = 0
+      phenology(9:11)  = 2
+      phenology(12:15) = 4
+   case (3)
+      phenology(1)     = 4
+      phenology(2:4)   = 3
+      phenology(5)     = 4
+      phenology(6:8)   = 0
+      phenology(9:11)  = 2
+      phenology(12:15) = 4
    end select
 
    clumping_factor(1)     = 1.000d0

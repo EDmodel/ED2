@@ -72,7 +72,7 @@ subroutine apply_forestry_ar(cpoly, isi, year, rhos)
          end if
       end do find_lu_year
    else
-      call fatal_error('Invalid initial year when using land-use disturbance'               &
+      call fatal_error('Invalid initial year when using land-use disturbance'              &
                       &,'apply_forestry_ar','forestry.f90')
    end if
 
@@ -178,6 +178,17 @@ subroutine apply_forestry_ar(cpoly, isi, year, rhos)
    !---------------------------------------------------------------------------------------!
    csite%area(newp) = total_harvested_area
    if (total_harvested_area > min_new_patch_area) then
+      write(unit=*,fmt='(a,1x,i5)')     'LANDUSE YEAR          =',clutime%landuse_year
+      write(unit=*,fmt='(a,1x,es12.5)') 'LANDUSE 14            =',clutime%landuse(14)
+      write(unit=*,fmt='(a,1x,es12.5)') 'LANDUSE 18            =',clutime%landuse(18)
+      write(unit=*,fmt='(a,1x,es12.5)') 'PRIMARY_HARVEST_MEM   ='                          &
+                                                         ,cpoly%primary_harvest_memory(isi)
+      write(unit=*,fmt='(a,1x,es12.5)') 'LAMBDA_MATURE_PRIMARY =',lambda_mature_primary
+      write(unit=*,fmt='(a,1x,es12.5)') 'LAMBDA_MATURE_2NDARY  =',lambda_mature_secondary
+      write(unit=*,fmt='(a,1x,es12.5)') 'LAMBDA_MATURE_PLANT   =',lambda_mature_plantation
+      write(unit=*,fmt='(a,1x,es12.5)') 'AREA_MATURE_PRIMARY   =',area_mature_primary
+      write(unit=*,fmt='(a,1x,es12.5)') 'AREA_MATURE_2NDARY    =',area_mature_secondary
+      write(unit=*,fmt='(a,1x,es12.5)') 'AREA_MATURE_PLANT     =',area_mature_plantation
       write(unit=*,fmt='(a,1x,es12.5,1x,a,1x,i5)')                                         &
           ' ---> Making new patch (harvesting), with area=',csite%area(newp)               &
               ,' for dist_type=',2

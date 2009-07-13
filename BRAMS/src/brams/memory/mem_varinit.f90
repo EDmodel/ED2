@@ -17,8 +17,8 @@ module mem_varinit
 
      ! Variables to be dimensioned by (nzp,nxp,nyp)
      real, pointer, dimension(:,:,:) :: &
-          varup,varvp,varpp,vartp,varrp  &
-          ,varuf,varvf,varpf,vartf,varrf  &
+          varup,varvp,varpp,vartp,varrp,varop  &
+          ,varuf,varvf,varpf,vartf,varrf,varof  &
           ,varwts &
           ,varrph,varrfh,varcph,varcfh
 
@@ -70,11 +70,12 @@ module mem_varinit
 
 contains
 
-  subroutine alloc_varinit(varinit,n1,n2,n3,ng)
+  subroutine alloc_varinit(varinit,n1,n2,n3,ng,co2_on)
 
     implicit none
     type (varinit_vars) :: varinit
     integer, intent(in) :: n1,n2,n3,ng
+    logical, intent(in) :: co2_on
 
     ! Allocate arrays based on options (if necessary)
 
@@ -90,6 +91,10 @@ contains
        allocate (varinit%vartf(n1,n2,n3))
        allocate (varinit%varrf(n1,n2,n3))                      
        allocate (varinit%varwts(n1,n2,n3))
+       if (co2_on) then
+       allocate (varinit%varop(n1,n2,n3))
+       allocate (varinit%varof(n1,n2,n3))
+       end if
     endif
 
     if (nud_cond == 1) then
@@ -114,11 +119,13 @@ contains
     if (associated(varinit%varpp))     nullify (varinit%varpp)
     if (associated(varinit%vartp))     nullify (varinit%vartp)
     if (associated(varinit%varrp))     nullify (varinit%varrp)
+    if (associated(varinit%varop))     nullify (varinit%varop)
     if (associated(varinit%varuf))     nullify (varinit%varuf)
     if (associated(varinit%varvf))     nullify (varinit%varvf)
     if (associated(varinit%varpf))     nullify (varinit%varpf)
     if (associated(varinit%vartf))     nullify (varinit%vartf)
     if (associated(varinit%varrf))     nullify (varinit%varrf)
+    if (associated(varinit%varof))     nullify (varinit%varof)
     if (associated(varinit%varwts))    nullify (varinit%varwts)
 
     if (associated(varinit%varcph))     nullify (varinit%varcph)
@@ -140,11 +147,13 @@ contains
     if (associated(varinit%varpp))     deallocate (varinit%varpp)
     if (associated(varinit%vartp))     deallocate (varinit%vartp)
     if (associated(varinit%varrp))     deallocate (varinit%varrp)
+    if (associated(varinit%varop))     deallocate (varinit%varop)
     if (associated(varinit%varuf))     deallocate (varinit%varuf)
     if (associated(varinit%varvf))     deallocate (varinit%varvf)
     if (associated(varinit%varpf))     deallocate (varinit%varpf)
     if (associated(varinit%vartf))     deallocate (varinit%vartf)
     if (associated(varinit%varrf))     deallocate (varinit%varrf)
+    if (associated(varinit%varof))     deallocate (varinit%varof)
     if (associated(varinit%varwts))    deallocate (varinit%varwts)
 
     if (associated(varinit%varcph))     deallocate (varinit%varcph)
@@ -190,6 +199,10 @@ contains
          call vtables2 (varinit%varrp(1,1,1),varinitm%varrp(1,1,1)  &
          ,ng, npts, imean,  &
          'VARRP :3:mpti')
+    if (associated(varinit%varop))  &
+         call vtables2 (varinit%varop(1,1,1),varinitm%varop(1,1,1)  &
+         ,ng, npts, imean,  &
+         'VAROP :3:mpti')
     if (associated(varinit%varuf))  &
          call vtables2 (varinit%varuf(1,1,1),varinitm%varuf(1,1,1)  &
          ,ng, npts, imean,  &
@@ -210,6 +223,10 @@ contains
          call vtables2 (varinit%varrf(1,1,1),varinitm%varrf(1,1,1)  &
          ,ng, npts, imean,  &
          'VARRF :3:mpti')
+    if (associated(varinit%varof))  &
+         call vtables2 (varinit%varof(1,1,1),varinitm%varof(1,1,1)  &
+         ,ng, npts, imean,  &
+         'VAROF :3:mpti')
     if (associated(varinit%varwts))  &
          call vtables2 (varinit%varwts(1,1,1),varinitm%varwts(1,1,1)  &
          ,ng, npts, imean,  &

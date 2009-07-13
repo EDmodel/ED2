@@ -249,7 +249,8 @@
    NL%IPHEN_SCHEME    = 0  ! This specifies the phenology scheme:
                            !  0 is for the Botta et al scheme
                            !  1 is for the Harvard Forest observations
-                           !  Other options coming soon.
+                           !  2 is for the more drought resistant phenology scheme;
+                           !  3 is for the drought and light phenology
   
    NL%REPRO_SCHEME    = 1  ! This specifies the reproduction scheme:
                          !  0 -- reproduction off (useful for short runs)

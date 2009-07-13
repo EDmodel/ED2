@@ -21,6 +21,7 @@ module mem_cuparm
      real, pointer, dimension(:,:,:,:) :: &
            thsrc                          & ! Heating rate due to this cloud
           ,rtsrc                          & ! Moistening rate due to this cloud
+          ,co2src                         & ! CO2 change rate due to this cloud
           ,cuprliq                        & ! Param. cumulus liquid water mixing ratio
           ,cuprice                        ! ! Param. cumulus ice mixing ratio
 
@@ -185,6 +186,7 @@ contains
 !==========================================================================================!
 !==========================================================================================!
   subroutine alloc_cuparm(cuparm,n1,n2,n3,ng)
+    use mem_basic, only : co2_on
     implicit none
     type (cuparm_vars) :: cuparm
     integer, intent(in) :: n1,n2,n3,ng
@@ -210,6 +212,8 @@ contains
     allocate (cuparm%areadn     (n2,n3,nclouds))
     allocate (cuparm%areaup     (n2,n3,nclouds))
 
+    !----- If CO2 is on, allocate the CO2 source. -----------------------------------------!
+    if (co2_on) allocate (cuparm%co2src  (n1,n2,n3,nclouds))
 
     !----- If cumulus inversion is on, include extra variables. ---------------------------!
     if (if_cuinv == 1) then
@@ -256,6 +260,7 @@ contains
 
     if(associated(cuparm%thsrc      ))  nullify (cuparm%thsrc      )
     if(associated(cuparm%rtsrc      ))  nullify (cuparm%rtsrc      )
+    if(associated(cuparm%co2src     ))  nullify (cuparm%co2src     )
     if(associated(cuparm%areadn     ))  nullify (cuparm%areadn     )
     if(associated(cuparm%areaup     ))  nullify (cuparm%areaup     )
     if(associated(cuparm%cuprliq    ))  nullify (cuparm%cuprliq    )
@@ -301,6 +306,7 @@ contains
     type (cuparm_vars) :: cuparm
     if(associated(cuparm%thsrc      ))  deallocate (cuparm%thsrc      )
     if(associated(cuparm%rtsrc      ))  deallocate (cuparm%rtsrc      )
+    if(associated(cuparm%co2src     ))  deallocate (cuparm%co2src     )
     if(associated(cuparm%areadn     ))  deallocate (cuparm%areadn     )
     if(associated(cuparm%areaup     ))  deallocate (cuparm%areaup     )
     if(associated(cuparm%cuprliq    ))  deallocate (cuparm%cuprliq    )
@@ -346,6 +352,7 @@ contains
     type (cuparm_vars) :: cuparm
     if(associated(cuparm%thsrc      ))  cuparm%thsrc      = 0.
     if(associated(cuparm%rtsrc      ))  cuparm%rtsrc      = 0.
+    if(associated(cuparm%co2src     ))  cuparm%co2src     = 0.
     if(associated(cuparm%upmf       ))  cuparm%upmf       = 0.
     if(associated(cuparm%areadn     ))  cuparm%areadn     = 0.
     if(associated(cuparm%areaup     ))  cuparm%areaup     = 0.
@@ -399,6 +406,10 @@ contains
          call vtables2 (cuparm%rtsrc(1,1,1,1),cuparmm%rtsrc(1,1,1,1)  &
          ,ng, npts, imean,  &
          'RTSRC :8:hist:anal:mpti:mpt3')
+    if (associated(cuparm%co2src))  &
+         call vtables2 (cuparm%co2src(1,1,1,1),cuparmm%co2src(1,1,1,1)  &
+         ,ng, npts, imean,  &
+         'CO2SRC :8:hist:anal:mpti:mpt3')
 
     if (associated(cuparm%cuprliq))  &
          call vtables2 (cuparm%cuprliq(1,1,1,1),cuparmm%cuprliq(1,1,1,1)  &

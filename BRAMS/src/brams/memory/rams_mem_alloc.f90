@@ -35,13 +35,6 @@ subroutine rams_mem_alloc(proc_type)
           ,nullify_ensemble       & !  - subroutine
           ,zero_ensemble            !  - subroutine
 
-   ! needed for SIB
-   use sib_vars, only : N_CO2 ! INTENT(IN)
-   use mem_sib_co2
-   use mem_sib, only : sib_brams_g, sib_bramsm_g                 &
-        , alloc_sib_brams, nullify_sib_brams, dealloc_sib_brams  &
-        , filltab_sib_brams, zero_sib_brams
-
    ! Needed for Optmization in HTINT
    use mem_opt
 
@@ -181,14 +174,13 @@ subroutine rams_mem_alloc(proc_type)
    do ng=1,ngrids
       call nullify_basic(basic_g(ng))
       call nullify_basic(basicm_g(ng))
-      call alloc_basic(basic_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng)
+      call alloc_basic(basic_g(ng),nmzp(ng),nmxp(ng),nmyp(ng))
       if (imean == 1) then
-         call alloc_basic(basicm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng)
+         call alloc_basic(basicm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng))
       elseif (imean == 0) then
-         call alloc_basic(basicm_g(ng),1,1,1,ng)
+         call alloc_basic(basicm_g(ng),1,1,1)
       endif
-      call filltab_basic(basic_g(ng),basicm_g(ng),imean  &
-           ,nmzp(ng),nmxp(ng),nmyp(ng),ng)
+      call filltab_basic(basic_g(ng),basicm_g(ng),imean,nmzp(ng),nmxp(ng),nmyp(ng),ng)
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -213,8 +205,7 @@ subroutine rams_mem_alloc(proc_type)
          call alloc_cuparm(cuparmm_g(ng),1,1,1,ng)
       endif
       call initialize_cuparm(cuparm_g(ng))
-      call filltab_cuparm(cuparm_g(ng),cuparmm_g(ng),imean  &
-           ,nmzp(ng),nmxp(ng),nmyp(ng),ng)
+      call filltab_cuparm(cuparm_g(ng),cuparmm_g(ng),imean,nmzp(ng),nmxp(ng),nmyp(ng),ng)
    end do
    !---------------------------------------------------------------------------------------!
    !     Now I check whether I need to allocate any of the Grell structures. If so,        !
@@ -395,8 +386,8 @@ subroutine rams_mem_alloc(proc_type)
    do ng=1,ngrids
       call nullify_varinit(varinit_g(ng)) 
       call nullify_varinit(varinitm_g(ng))
-      call alloc_varinit(varinit_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng)
-      call alloc_varinit(varinitm_g(ng),1,1,1,ng)
+      call alloc_varinit(varinit_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng,co2_on)
+      call alloc_varinit(varinitm_g(ng),1,1,1,ng,co2_on)
       call filltab_varinit(varinit_g(ng),varinitm_g(ng),0,nmzp(ng),nmxp(ng),nmyp(ng),ng)
    end do
    !---------------------------------------------------------------------------------------!
@@ -598,51 +589,6 @@ subroutine rams_mem_alloc(proc_type)
    ! Checking the frequency I should use for averaging                                     
    call define_frqmassave(frqlite,frqanl,ngrids,idiffk(1:ngrids),maxlite,nlite_vars        &
                          ,lite_vars)                                                       
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Allocation for SiB --------------------------------------------------------------!
-   if (ISFCL == 3) then
-      write (unit=*,fmt=*) ' [+] Sib allocation on node ',mynum,'...'
-      allocate(sib_g(ngrids, N_CO2), sibm_g(ngrids, N_CO2))
-      allocate(sib_brams_g(ngrids), sib_bramsm_g(ngrids))
-      do ng=1,ngrids
-         !----- SiB CO2 -------------------------------------------------------------------!
-         call nullify_sib_co2(sib_g(ng, 1))
-         call nullify_sib_co2(sibm_g(ng, 1))
-         call alloc_sib_co2(sib_g(ng, 1), nmxp(ng), nmyp(ng))
-         !----- Putting zero on all values ------------------------------------------------!
-         call zero_sib_co2(sib_g(ng, 1), nmxp(ng), nmyp(ng))
-         if (imean == 1) then
-            call alloc_sib_co2(sibm_g(ng, 1), nmxp(ng), nmyp(ng))
-            !----- Putting zero on all values ---------------------------------------------!
-            call zero_sib_co2(sibm_g(ng, 1), nmxp(ng), nmyp(ng))
-         elseif (imean == 0) then
-            call alloc_sib_co2(sibm_g(ng, 1), 1, 1)
-            !----- Putting zero on all values ---------------------------------------------!
-            call zero_sib_co2(sibm_g(ng, 1), 1, 1)
-         endif
-         call filltab_sib_co2(sib_g(ng, 1),sibm_g(ng, 1),imean,nmxp(ng),nmyp(ng),ng)
-         !----- Putting zero on all values. SiB BRAMS types -------------------------------!
-         call nullify_sib_brams(sib_brams_g(ng))
-         call nullify_sib_brams(sib_bramsm_g(ng))
-         call alloc_sib_brams(sib_brams_g(ng), nmxp(ng), nmyp(ng))
-         !----- Putting zero on all values ------------------------------------------------!
-         call zero_sib_brams(sib_brams_g(ng), nmxp(ng), nmyp(ng))
-         if (imean == 1) then
-            call alloc_sib_brams(sib_bramsm_g(ng), nmxp(ng), nmyp(ng))
-            !----- Putting zero on all values ---------------------------------------------!
-            call zero_sib_brams(sib_bramsm_g(ng), nmxp(ng), nmyp(ng))
-         elseif (imean == 0) then
-            call alloc_sib_brams(sib_bramsm_g(ng), 1, 1)
-            !----- Putting zero on all values ---------------------------------------------!
-            call zero_sib_brams(sib_bramsm_g(ng), 1, 1)
-         endif
-         call filltab_sib_brams(sib_brams_g(ng),sib_bramsm_g(ng),imean,nmxp(ng),nmyp(ng)   &
-                               ,ng)
-      end do
-   end if
    !---------------------------------------------------------------------------------------!
 
 

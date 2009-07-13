@@ -564,10 +564,16 @@
                              !  4 - GEMTM submodel (not available)
                              !  5 - ED2 submodel
 
-   N_CO2    = 1,             ! number of CO2 tracers
+   ICO2    = 0,              ! CO2 prognostic level
+                             !  0 - Do not solve it;
+                             !  1 - Solve it initialising with a constant value (CO2CON)
+                             !  2 - Solve and initialise with a horizontally homogeneous
+                             !      profile, given by CO2S (at the MODEL_SOUND namelist
+                             !      part, even if other variables are heterogeneous).
+                             !  3 - Solve and initialise with a RALPH2/SOUND_IN file
+                             !      (not available yet).
 
-   CO2_INIT=  360., 360., 360., 355., 355.,
-              350., 350., 355., 355., 340.,   ! ppm
+   CO2CON   = 380.,          ! Initial constant CO2 value if for all domain
 
    NVGCON   = 7,             ! Vegetation type (see below)
 !-------------------------------------------------------------------------------
@@ -834,7 +840,8 @@
    IPHEN_SCHEME    = 0,  ! This specifies the phenology scheme:
                            !  0 is for the Botta et al scheme
                            !  1 is for prescribed phenology
-                           !  Other options coming soon.
+                           !  2 is for the more drought resistant phenology scheme;
+                           !  3 is for the drought and light phenology
   
    REPRO_SCHEME    = 0,  ! This specifies the reproduction scheme:
                          !  0 -- reproduction off (useful for short runs)
@@ -1001,13 +1008,14 @@
                              ! 0-u,v component(m/s) 
                              ! 1-umoms-direction, vmoms-speed
  
-  HS  =  182.,
-  PS  =    0., 1010., 1000.,  925.,  850.,  700.,  600.,  500.,  400.,  300.,  200.,  100.,   70.,
-  TS  =          25.,  18.5,  12.0,   4.5,  -11.,  -24.,  -37., -56.5, -56.5, -56.5, -56.5,
-  RTS =          70.,   70.,   70.,   70.,   20.,   20.,   20.,   20.,   10.,   10.,   10.,
-  US  =          2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,
-  VS  =           3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,
- 
+  HS   =  182.,
+  PS   =    0., 1010., 1000.,  925.,  850.,  700.,  600.,  500.,  400.,  300.,  200.,  100.,   70.,
+  TS   =          25.,  18.5,  12.0,   4.5,  -11.,  -24.,  -37., -56.5, -56.5, -56.5, -56.5,
+  RTS  =          70.,   70.,   70.,   70.,   20.,   20.,   20.,   20.,   10.,   10.,   10.,
+  US   =          2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,
+  VS   =           3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,
+  CO2S =         380.,  380.,  380.,  380.,  380.,  380.,  380.,  380.,  380.,  380.,  380.,
+
  $END
  
  

@@ -822,7 +822,7 @@ end subroutine apply_disturbances_ar
     use fuse_fiss_utils_ar, only : sort_cohorts_ar
     use ed_therm_lib,only : calc_hcapveg
     use consts_coms, only: t3ple
-    use allometry, only : h2dbh, dbh2bd, dbh2bl, dbh2h, sla, area_indices
+    use allometry, only : h2dbh, dbh2bd, dbh2bl, dbh2h, area_indices
     use max_dims, only : n_pft
 
     implicit none

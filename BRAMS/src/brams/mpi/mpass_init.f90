@@ -93,8 +93,6 @@ subroutine masterput_nl(master_num)
                                   ,max_heat                    & ! intent(in)
                                   ,zcutdown                    & ! intent(in)
                                   ,z_detr                      ! ! intent(in)
-   use sib_vars           , only : n_co2                       & ! intent(in)
-                                  ,co2_init                    ! ! intent(in)
    use catt_start         , only : catt                        ! ! intent(in)
    use mem_globrad        , only : raddatfn                    ! ! intent(in)
    use emission_source_map, only : plumerise                   ! ! intent(in)
@@ -129,7 +127,6 @@ subroutine masterput_nl(master_num)
                                   ,eveico                      & ! intent(in)
                                   ,eveiso2                     & ! intent(in)
                                   ,eveivoc                       ! intent(in)
-   use ref_sounding, only:         maxsndg                     ! ! intent(in)
 
    implicit none
    !----- External variable declaration ---------------------------------------------------!
@@ -360,8 +357,8 @@ subroutine masterput_nl(master_num)
    call MPI_Bcast(NVEGPAT,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ISFCL,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
-   call MPI_Bcast(N_CO2,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(CO2_INIT,maxsndg,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ICO2,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(CO2CON,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    
    call MPI_Bcast(LONRAD,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(CPHAS,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -657,6 +654,7 @@ subroutine masterput_misc(master_num)
    call MPI_Bcast(th01dn,nzpmax*maxgrds,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(dn01dn,nzpmax*maxgrds,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(rt01dn,nzpmax*maxgrds,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(co201dn,nzpmax*maxgrds,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(htn,nzpmax*maxgrds,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(hwn,nzpmax*maxgrds,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -966,8 +964,6 @@ subroutine nodeget_nl
                                   ,max_heat                    & ! intent(out)
                                   ,zcutdown                    & ! intent(out)
                                   ,z_detr                      ! ! intent(out)
-   use sib_vars           , only : n_co2                       & ! intent(out)
-                                  ,co2_init                    ! ! intent(out)
    use catt_start         , only : catt                        ! ! intent(out)
    use mem_globrad        , only : raddatfn                    ! ! intent(out)
    use emission_source_map, only : plumerise                   ! ! intent(out)
@@ -1002,7 +998,6 @@ subroutine nodeget_nl
                                   ,eveico                      & ! intent(out)
                                   ,eveiso2                     & ! intent(out)
                                   ,eveivoc                       ! intent(out)
-   use ref_sounding, only:         maxsndg                     ! ! intent(out)
 
    implicit none
    !----- External variable declaration ---------------------------------------------------!
@@ -1227,8 +1222,8 @@ subroutine nodeget_nl
    call MPI_Bcast(NVEGPAT,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ISFCL,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
-   call MPI_Bcast(N_CO2,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(CO2_INIT,maxsndg,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ICO2,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(CO2CON,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   
    call MPI_Bcast(LONRAD,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(CPHAS,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -1532,6 +1527,7 @@ subroutine nodeget_misc
    call MPI_Bcast(th01dn,nzpmax*maxgrds,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(dn01dn,nzpmax*maxgrds,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(rt01dn,nzpmax*maxgrds,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(co201dn,nzpmax*maxgrds,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(htn,nzpmax*maxgrds,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(hwn,nzpmax*maxgrds,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)

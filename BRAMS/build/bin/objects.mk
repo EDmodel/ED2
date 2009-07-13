@@ -116,8 +116,6 @@ OBJ_MODEL =                         \
 	mem_scratch2_grell_sh.o     \
 	mem_scratch3_grell.o        \
 	mem_scratch3_grell_sh.o     \
-	mem_sib.o                   \
-	mem_sib_co2.o               \
 	mem_soil_moisture.o         \
 	mem_tconv.o                 \
 	mem_teb.o                   \
@@ -229,10 +227,6 @@ OBJ_MODEL =                         \
 	rsys.o                      \
 	ruser.o                     \
 	shcu_vars_const.o           \
-	sib_vars.o                  \
-	sib2_co2.o                  \
-	sib2_driver.o               \
-	sib2_init.o                 \
 	soil_moisture_init.o        \
 	souza_cupar_driver.o        \
 	sst_read.o                  \

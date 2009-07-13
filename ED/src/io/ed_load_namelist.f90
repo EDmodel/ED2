@@ -277,12 +277,15 @@ subroutine copy_nl(copy_type)
   end if
 
   ! Sorting up the chosen PFTs
-  where (include_these_pft < 1) include_these_pft=huge(1)
-     call sort_up(include_these_pft,n_pft)
+  where (include_these_pft < 1) 
+     include_these_pft=huge(1)
+  end where
+
+  call sort_up(include_these_pft,n_pft)
      
-     !  Determine the length of simuation
-     call date_2_seconds (iyearz,imonthz,idatez,itimez*100, &
+  !  Determine the length of simuation
+  call date_2_seconds (iyearz,imonthz,idatez,itimez*100, &
           iyeara,imontha,idatea,itimea*100,timmax)
-     return
-   end subroutine copy_nl
+  return
+end subroutine copy_nl
 !------------------------------------------------------------------------------------------!

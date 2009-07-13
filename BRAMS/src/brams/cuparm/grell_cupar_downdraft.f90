@@ -271,12 +271,12 @@ end subroutine grell_theiv_downdraft
 !     This subroutine computes the moisture profile, as well as the evaporation rate       !
 ! associated with each level.                                                              !
 !------------------------------------------------------------------------------------------!
-subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,mentrd_rate,cdd,p_cup,exner_cup &
-                                      ,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup  & 
-                                      ,qsat_cup,rho_cup,pwav,theivd_cld,etad_cld,dzd_cld   &
-                                      ,thild_cld,td_cld,qtotd_cld,qvapd_cld,qliqd_cld      &
-                                      ,qiced_cld,qsatd_cld,rhod_cld,dbyd,pwd_cld,pwev      &
-                                      ,ierr)
+subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,co2,mentrd_rate,cdd,p_cup       &
+                                      ,exner_cup,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup &
+                                      ,qice_cup,qsat_cup,co2_cup,rho_cup,pwav,theivd_cld   &
+                                      ,etad_cld,dzd_cld,thild_cld,td_cld,qtotd_cld         &
+                                      ,qvapd_cld,qliqd_cld,qiced_cld,qsatd_cld,co2d_cld    &
+                                      ,rhod_cld,dbyd,pwd_cld,pwev,ierr)
    use rconstants, only: epi,rgas,t00,cpi,toodry
    use therm_lib , only: thetaeiv2thil,toler,maxfpo,idealdens
    implicit none
@@ -286,6 +286,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,mentrd_rate,cdd,p_cup
 
    !----- Variables at model levels -------------------------------------------------------!
    real, dimension(mgmzp), intent(in)    :: qtot        ! Total mixing ratio       [ kg/kg]
+   real, dimension(mgmzp), intent(in)    :: co2         ! CO2 mixing ratio         [   ppm]
    !----- Downdraft mass exchange rates ---------------------------------------------------!
    real, dimension(mgmzp), intent(in)    :: mentrd_rate ! Entrainment rate;        [   1/m]
    real, dimension(mgmzp), intent(in)    :: cdd         ! Detrainment function;    [   1/m]
@@ -299,6 +300,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,mentrd_rate,cdd,p_cup
    real, dimension(mgmzp), intent(in)    :: qliq_cup    ! Liquid mixing ratio      [ kg/kg]
    real, dimension(mgmzp), intent(in)    :: qice_cup    ! Ice mixing ratio         [ kg/kg]
    real, dimension(mgmzp), intent(in)    :: qsat_cup    ! Sat. mixing ratio        [ kg/kg]
+   real, dimension(mgmzp), intent(in)    :: co2_cup     ! CO2 mixing ratio         [   ppm]
    real, dimension(mgmzp), intent(in)    :: rho_cup     ! Density                  [ kg/m³]
    real                  , intent(in)    :: pwav        ! Total available water    [ kg/kg]
    !----- Input variables at downdraft ----------------------------------------------------!
@@ -313,6 +315,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,mentrd_rate,cdd,p_cup
    real, dimension(mgmzp), intent(inout) :: qliqd_cld   ! Liquid mixing ratio      [ kg/kg]
    real, dimension(mgmzp), intent(inout) :: qiced_cld   ! Ice mixing ratio         [ kg/kg]
    real, dimension(mgmzp), intent(inout) :: qsatd_cld   ! Sat. mixing ratio        [ kg/kg]
+   real, dimension(mgmzp), intent(inout) :: co2d_cld    ! CO2 mixing ratio         [   ppm]
    real, dimension(mgmzp), intent(inout) :: rhod_cld    ! Density                  [ kg/m³]
    real, dimension(mgmzp), intent(inout) :: dbyd        ! Buoyancy acceleration    [  m/s²]
    !----- Output variables ----------------------------------------------------------------!
@@ -367,6 +370,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,mentrd_rate,cdd,p_cup
    qvapd_cld(1:mkx)  = qvap_cup(1:mkx)
    qliqd_cld(1:mkx)  = qliq_cup(1:mkx)
    qiced_cld(1:mkx)  = qice_cup(1:mkx)
+   co2d_cld (1:mkx)  = co2_cup (1:mkx)
    rhod_cld (1:mkx)  = rho_cup (1:mkx)
    evapd_cld(1:mkx)  = 0.
    dbyd     (1:mkx)  = 0.
@@ -386,10 +390,14 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,mentrd_rate,cdd,p_cup
       !------------------------------------------------------------------------------------!
       denomin      = 1.+(mentrd_rate(k)-0.5*cdd(k))*dzd_cld(k)
       denomini     = 1./denomin
-      qtotd_0_evap = (qtotd_cld(k+1)*(1-0.5*cdd(k)*dzd_cld(k))                             &
+      qtotd_0_evap = (qtotd_cld(k+1)*(1.-0.5*cdd(k)*dzd_cld(k))                            &
                    + mentrd_rate(k)*dzd_cld(k)*qtot(k) -0.5*evapd_cld(k+1))                &
                    * denomini
 
+      !----- CO2 will be assume an inert gas (i.e., no sources or sinks). -----------------!
+      co2d_cld(k) = (co2d_cld(k+1)*(1.-0.5*cdd(k)*dzd_cld(k))                              &
+                  + mentrd_rate(k)*dzd_cld(k)*co2(k) )                                     &
+                  * denomini
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
