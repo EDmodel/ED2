@@ -256,7 +256,7 @@ subroutine plant_maintenance_and_resp_ar(cpatch,ico, br, bl, tfact, daily_C_gain
   ipft=cpatch%pft(ico)
 
   ! Get the temperature dependence
-  if(phenology(ipft) == 0 .or. phenology(ipft) == 3)then
+  if(phenology(ipft) == 0)then
      maintenance_temp_dep = 1.0 / (1.0 + exp(0.4 * (278.15 - tempk)))
   else
      maintenance_temp_dep = 1.0

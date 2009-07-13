@@ -310,13 +310,13 @@ subroutine update_phenology_ar(doy, cpoly, isi, lat)
             end if
 
 
-         case (3,4) 
+         case (4) 
             !------------------------------------------------------------------------------!
             !    Drought deciduous.  Here we must check two possibilities:                 !
             !                                                                              !
             ! 1. The soil has been dry recently, and the plants have leaves, so we flag    !
             !    them with phenology_status=0 (leaves not growing) and the plants will     !
-            !    start losing their leaves;                                                !
+            !    start losing their leaves;                                                !a
             ! 2. The plant has no leaves, but the soil has started to come back to more    !
             !    moist conditions. Given this situation, leaves can start growing again.   !
             !------------------------------------------------------------------------------!
