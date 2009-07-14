@@ -1,7 +1,7 @@
 !!! translate from C to fortran
 ! ===============================================================
 
-subroutine read_site_file_array(cgrid)
+subroutine read_site_file(cgrid)
    ! function for loading sites within polygons and initializing polygon parms
    ! call prior to loading pss/css files but after basic polygon established
   
@@ -294,7 +294,7 @@ subroutine read_site_file_array(cgrid)
    end do
 
 
-end subroutine read_site_file_array
+end subroutine read_site_file
 !==========================================================================================!
 !==========================================================================================!
 

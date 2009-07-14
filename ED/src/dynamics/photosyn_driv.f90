@@ -3,7 +3,7 @@
 !     This subroutine will control the photosynthesis scheme (Farquar and Leuning).  This  !
 ! is called every step, but not every sub-step.                                            !
 !------------------------------------------------------------------------------------------!
-subroutine canopy_photosynthesis_ar(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,ntext_soil  &
+subroutine canopy_photosynthesis(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,ntext_soil  &
                                    ,soil_water,soil_fracliq,lsl,sum_lai_rbi                &
                                    ,leaf_aging_factor,green_leaf_factor)
    use ed_state_vars         , only : sitetype           & ! structure
@@ -366,4 +366,4 @@ subroutine canopy_photosynthesis_ar(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,n
    end if
 
    return
-end subroutine canopy_photosynthesis_ar
+end subroutine canopy_photosynthesis

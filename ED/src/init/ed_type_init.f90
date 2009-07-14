@@ -1,7 +1,7 @@
 !====================================================================
 ! ============================================
 
-subroutine init_ed_cohort_vars_array(cpatch,ico, lsl)
+subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   
   use ed_state_vars,only : patchtype
   use allometry, only: calc_root_depth, assign_root_depth
@@ -103,11 +103,11 @@ subroutine init_ed_cohort_vars_array(cpatch,ico, lsl)
   cpatch%sla = sla(cpatch%pft(ico))
 
   return
-end subroutine init_ed_cohort_vars_array
+end subroutine init_ed_cohort_vars
 
 ! ==========================================
 
-subroutine init_ed_patch_vars_array(csite,ip1,ip2,lsl)
+subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   
   use ed_state_vars,only:sitetype
   use max_dims, only: n_pft
@@ -234,12 +234,12 @@ subroutine init_ed_patch_vars_array(csite,ip1,ip2,lsl)
   csite%cohort_count = ncohorts
 
   return
-end subroutine init_ed_patch_vars_array
+end subroutine init_ed_patch_vars
 
 !======================================================================
 
 
-subroutine init_ed_site_vars_array(cpoly, lat)
+subroutine init_ed_site_vars(cpoly, lat)
 
   use ed_state_vars,only:polygontype
   use max_dims, only: n_pft, n_dbh, n_dist_types 
@@ -303,10 +303,10 @@ subroutine init_ed_site_vars_array(cpoly, lat)
   
   
   return
-end subroutine init_ed_site_vars_array
+end subroutine init_ed_site_vars
 
 !======================================================================
-subroutine init_ed_poly_vars_array(cgrid)
+subroutine init_ed_poly_vars(cgrid)
   
    use ed_state_vars,only:edtype
   
@@ -334,7 +334,7 @@ subroutine init_ed_poly_vars_array(cgrid)
    enddo
 
    return
-end subroutine init_ed_poly_vars_array
+end subroutine init_ed_poly_vars
 !==========================================================================================!
 !==========================================================================================!
 
@@ -348,7 +348,7 @@ end subroutine init_ed_poly_vars_array
 !     This subroutine will assign the values of some diagnostic variables, such as soil    !
 ! and temporary layer temperature and liquid fraction, and the surface properties.         !
 !------------------------------------------------------------------------------------------!
-subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
+subroutine new_patch_sfc_props(csite,ipa, rhos)
    use ed_state_vars , only : sitetype          & ! structure
                             , patchtype         ! ! structure
    use grid_coms     , only : nzg               & ! intent(in)
@@ -455,6 +455,6 @@ subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
    !---------------------------------------------------------------------------------------! 
  
    return
-end subroutine new_patch_sfc_props_ar
+end subroutine new_patch_sfc_props
 !==========================================================================================!
 !==========================================================================================!

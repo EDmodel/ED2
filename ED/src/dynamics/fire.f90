@@ -1,4 +1,4 @@
-subroutine fire_frequency_ar(month, cgrid)
+subroutine fire_frequency(month, cgrid)
 
   use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
   use pft_coms, only: agf_bs, qsw, q
@@ -76,4 +76,4 @@ subroutine fire_frequency_ar(month, cgrid)
   enddo
 
   return
-end subroutine fire_frequency_ar
+end subroutine fire_frequency

@@ -7,7 +7,7 @@ subroutine h5_output(vtype)
 
   use an_header
   
-  use var_tables_array,only: &
+  use ed_var_tables,only: &
        vt_info,              &
        var_table,            &
        var_table_vector,     &

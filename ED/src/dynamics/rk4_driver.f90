@@ -3,7 +3,7 @@
 !     This module contains the wrappers for the Runge-Kutta integration scheme.            !
 !==========================================================================================!
 !==========================================================================================!
-module rk4_driver_ar
+module rk4_driver
 
    contains
    !=======================================================================================!
@@ -11,8 +11,8 @@ module rk4_driver_ar
    !      Main driver of short-time scale dynamics of the Runge-Kutta integrator for the   !
    ! land surface model.                                                                   !
    !---------------------------------------------------------------------------------------!
-   subroutine rk4_timestep_ar(cgrid,ifm)
-      use rk4_coms               , only : integration_vars_ar  & ! structure
+   subroutine rk4_timestep(cgrid,ifm)
+      use rk4_coms               , only : integration_vars  & ! structure
                                         , integration_buff     & ! structure
                                         , rk4patchtype         & ! structure
                                         , zero_rk4_patch       & ! subroutine
@@ -43,7 +43,7 @@ module rk4_driver_ar
       real                                    :: gpp
       real                                    :: plant_respiration
       !----- Functions --------------------------------------------------------------------!
-      real                      , external    :: compute_netrad_ar
+      real                      , external    :: compute_netrad
       real                      , external    :: walltime
       !------------------------------------------------------------------------------------!
       
@@ -108,7 +108,7 @@ module rk4_driver_ar
                !---------------------------------------------------------------------------!
                !     Set up the integration patch.                                         !
                !---------------------------------------------------------------------------!
-               call copy_patch_init_ar(csite,ipa,integration_buff%initp)
+               call copy_patch_init(csite,ipa,integration_buff%initp)
 
 
 
@@ -120,7 +120,7 @@ module rk4_driver_ar
 
 
                !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
-               call canopy_photosynthesis_ar(csite,ipa,cpoly%met(isi)%vels                 &
+               call canopy_photosynthesis(csite,ipa,cpoly%met(isi)%vels                 &
                           ,cpoly%met(isi)%rhos,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%prss  &
                           ,ed_ktrans,csite%ntext_soil(:,ipa),csite%soil_water(:,ipa)       &
                           ,csite%soil_fracliq(:,ipa),cpoly%lsl(isi),sum_lai_rbi            &
@@ -129,17 +129,17 @@ module rk4_driver_ar
 
 
                !----- Compute root and heterotrophic respiration. -------------------------!
-               call soil_respiration_ar(csite,ipa)
+               call soil_respiration(csite,ipa)
 
                csite%wbudget_precipgain(ipa) = csite%wbudget_precipgain(ipa)               &
                                              + cpoly%met(isi)%pcpg * dtlsm
                csite%ebudget_precipgain(ipa) = csite%ebudget_precipgain(ipa)               &
                                              + cpoly%met(isi)%qpcpg * dtlsm
                csite%ebudget_netrad(ipa)     = csite%ebudget_netrad(ipa)                   &
-                                             + compute_netrad_ar(csite,ipa) * dtlsm
+                                             + compute_netrad(csite,ipa) * dtlsm
 
                !----- Compute the carbon flux components. ---------------------------------!
-               call sum_plant_cfluxes_ar(csite,ipa,gpp,gpp_dbh,plant_respiration)
+               call sum_plant_cfluxes(csite,ipa,gpp,gpp_dbh,plant_respiration)
                csite%co2budget_gpp(ipa)       = csite%co2budget_gpp(ipa) + gpp * dtlsm
                csite%co2budget_gpp_dbh(:,ipa) = csite%co2budget_gpp_dbh(:,ipa)             & 
                                               + gpp_dbh(:) *dtlsm
@@ -155,7 +155,7 @@ module rk4_driver_ar
                !---------------------------------------------------------------------------!
                !    This is the driver for the integration process...                      !
                !---------------------------------------------------------------------------!
-               call integrate_patch_ar(csite,ipa,isi,ipy,ifm,integration_buff)
+               call integrate_patch(csite,ipa,isi,ipy,ifm,integration_buff)
 
                !---------------------------------------------------------------------------!
                !    Update the minimum monthly temperature, based on canopy temperature.
@@ -173,7 +173,7 @@ module rk4_driver_ar
       end do polygonloop
 
       return
-   end subroutine rk4_timestep_ar
+   end subroutine rk4_timestep
    !=======================================================================================!
    !=======================================================================================!
 
@@ -186,7 +186,7 @@ module rk4_driver_ar
    !=======================================================================================!
    !     This subroutine will drive the integration process.                               !
    !---------------------------------------------------------------------------------------!
-   subroutine integrate_patch_ar(csite,ipa,isi,ipy,ifm,integration_buff)
+   subroutine integrate_patch(csite,ipa,isi,ipy,ifm,integration_buff)
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
       use misc_coms       , only : dtlsm                ! ! intent(in)
@@ -196,7 +196,7 @@ module rk4_driver_ar
       use consts_coms     , only : vonk8                & ! intent(in)
                                  , cp8                  & ! intent(in)
                                  , cpi8                 ! ! intent(in)
-      use rk4_coms        , only : integration_vars_ar  & ! structure
+      use rk4_coms        , only : integration_vars  & ! structure
                                  , rk4patchtype         & ! structure
                                  , rk4met               & ! intent(inout)
                                  , zero_rk4_patch       & ! subroutine
@@ -210,7 +210,7 @@ module rk4_driver_ar
                                  , effarea_heat         ! ! intent(out)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(integration_vars_ar), target     :: integration_buff
+      type(integration_vars), target     :: integration_buff
       type(sitetype)           , target     :: csite
       integer                  , intent(in) :: ifm
       integer                  , intent(in) :: ipy
@@ -268,7 +268,7 @@ module rk4_driver_ar
       initp%wpwp = 0.d0
 
       !----- Go into the ODE integrator. --------------------------------------------------!
-      call odeint_ar(hbeg,csite,ipa,isi,ipy,ifm,integration_buff)
+      call odeint(hbeg,csite,ipa,isi,ipy,ifm,integration_buff)
 
       !------------------------------------------------------------------------------------!
       !      Normalize canopy-atmosphere flux values.  These values are updated every      !
@@ -283,10 +283,10 @@ module rk4_driver_ar
       !------------------------------------------------------------------------------------!
       ! Move the state variables from the integrated patch to the model patch.             !
       !------------------------------------------------------------------------------------!
-      call initp2modelp_ar(tend-tbeg,initp,csite,ipa,isi,ipy)
+      call initp2modelp(tend-tbeg,initp,csite,ipa,isi,ipy)
 
       return
-   end subroutine integrate_patch_ar
+   end subroutine integrate_patch
    !=======================================================================================!
    !=======================================================================================!
 
@@ -300,7 +300,7 @@ module rk4_driver_ar
    !     This subroutine will copy the variables from the integration buffer to the state  !
    ! patch and cohorts.                                                                    !
    !---------------------------------------------------------------------------------------!
-   subroutine initp2modelp_ar(hdid,initp,csite,ipa,isi,ipy)
+   subroutine initp2modelp(hdid,initp,csite,ipa,isi,ipy)
       use rk4_coms             , only : rk4patchtype         & ! structure
                                       , rk4met               & ! intent(in)
                                       , rk4min_veg_temp      & ! intent(in)
@@ -556,7 +556,7 @@ module rk4_driver_ar
             write (unit=*,fmt='(a,1x,es12.4)') '   - FRACLIQ:    ',cpatch%veg_fliq(ico)
             write (unit=*,fmt='(a,1x,es12.4)') '   - HEAT_CAP:   ',cpatch%hcapveg(ico)
             write (unit=*,fmt='(80a)') ('-',k=1,80)
-            call print_rk4patch_ar(initp, csite,ipa)
+            call print_rk4patch(initp, csite,ipa)
             call fatal_error('extreme vegetation temperature','initp2modelp'               &
                             &,'rk4_driver.f90')
          end if
@@ -572,7 +572,7 @@ module rk4_driver_ar
                      ,csite%can_shv(ipa),csite%ground_shv(ipa),csite%surface_ssh(ipa)      &
                      ,surface_temp,surface_fliq)
       return
-   end subroutine initp2modelp_ar
+   end subroutine initp2modelp
    !=======================================================================================!
    !=======================================================================================!
 
@@ -585,7 +585,7 @@ module rk4_driver_ar
    !=======================================================================================!
    !    Currently not in use.                                                              !
    !---------------------------------------------------------------------------------------!
-   subroutine canopy_atm_fluxes_ar(csite,cpoly,ipa,isi)
+   subroutine canopy_atm_fluxes(csite,cpoly,ipa,isi)
       use ed_state_vars , only : polygontype  & ! structure
                                , sitetype     & ! structure
                                , patchtype    ! ! structure
@@ -600,7 +600,7 @@ module rk4_driver_ar
       !------------------------------------------------------------------------------------!
 
       call fatal_error('Decide how to set vels in canopy_atm_fluxes.'                      &
-                     &,'canopy_atm_fluxes_ar','rk4_driver.f90')
+                     &,'canopy_atm_fluxes','rk4_driver.f90')
 
       !----- Calculate turbulent fluxes between atmosphere and canopy. --------------------!
       !    pis = cpoly%pi0 * cpi
@@ -612,10 +612,10 @@ module rk4_driver_ar
       !    endif
 
       return
-   end subroutine canopy_atm_fluxes_ar
+   end subroutine canopy_atm_fluxes
    !=======================================================================================!
    !=======================================================================================! 
-end module rk4_driver_ar
+end module rk4_driver
 !==========================================================================================!
 !==========================================================================================!
 
@@ -629,7 +629,7 @@ end module rk4_driver_ar
 !   This function computes the total water stored in the system, in kg/m2.                 !
 !   (soil + temporary pools + canopy air space + leaf surface).                            !
 !------------------------------------------------------------------------------------------!
-real function compute_water_storage_ar(csite, lsl, rhos,ipa)
+real function compute_water_storage(csite, lsl, rhos,ipa)
    use ed_state_vars , only : sitetype   & ! structure
                             , patchtype  ! ! structure
    use grid_coms     , only : nzg        ! ! intent(in)
@@ -647,28 +647,28 @@ real function compute_water_storage_ar(csite, lsl, rhos,ipa)
    integer                     :: ico
    !---------------------------------------------------------------------------------------!
 
-   compute_water_storage_ar = 0.0
+   compute_water_storage = 0.0
    cpatch => csite%patch(ipa)
 
    !----- 1. Adding the water stored in the soil. -----------------------------------------!
    do k = lsl, nzg
-      compute_water_storage_ar = compute_water_storage_ar                                  &
+      compute_water_storage = compute_water_storage                                  &
                                + real(csite%soil_water(k,ipa)) * dslz(k) * wdns
    end do
    !----- 2. Adding the water stored in the temporary surface water/snow. -----------------!
    do k = 1, csite%nlev_sfcwater(ipa)
-      compute_water_storage_ar = compute_water_storage_ar + csite%sfcwater_mass(k,ipa)
+      compute_water_storage = compute_water_storage + csite%sfcwater_mass(k,ipa)
    end do
    !----- 3. Adding the water vapour floating in the canopy air space. --------------------!
-   compute_water_storage_ar = compute_water_storage_ar                                     &
+   compute_water_storage = compute_water_storage                                     &
                             + csite%can_shv(ipa) * csite%veg_height(ipa) * rhos
    !----- 4. Adding the water over the leaf surface. --------------------------------------!
    do ico = 1,cpatch%ncohorts
-      compute_water_storage_ar = compute_water_storage_ar + cpatch%veg_water(ico)
+      compute_water_storage = compute_water_storage + cpatch%veg_water(ico)
    end do
 
    return
-end function compute_water_storage_ar
+end function compute_water_storage
 !==========================================================================================!
 !==========================================================================================!
 
@@ -682,7 +682,7 @@ end function compute_water_storage_ar
 !    This function computs the total net radiation, by adding the radiation that interacts !
 ! with the different surfaces.                                                             !
 !------------------------------------------------------------------------------------------!
-real function compute_netrad_ar(csite,ipa)
+real function compute_netrad(csite,ipa)
    use ed_state_vars , only : sitetype  & ! structure
                             , patchtype ! ! structure
    implicit none
@@ -697,19 +697,19 @@ real function compute_netrad_ar(csite,ipa)
 
    cpatch => csite%patch(ipa)
 
-   compute_netrad_ar = 0.0
+   compute_netrad = 0.0
    !----- 1. Adding the ground components -------------------------------------------------!
-   compute_netrad_ar = csite%rshort_g(ipa) + csite%rlong_g(ipa) + csite%rlong_s(ipa)
+   compute_netrad = csite%rshort_g(ipa) + csite%rlong_g(ipa) + csite%rlong_s(ipa)
    !----- 2. Adding the shortwave radiation that reaches each snow/water layer ------------!
    do k = 1, csite%nlev_sfcwater(ipa)
-      compute_netrad_ar = compute_netrad_ar + csite%rshort_s(k,ipa)
+      compute_netrad = compute_netrad + csite%rshort_s(k,ipa)
    end do
    !----- 3. Adding the radiation components that interact with leaves. -------------------!
    do ico = 1,cpatch%ncohorts
-      compute_netrad_ar = compute_netrad_ar + cpatch%rshort_v(ico) + cpatch%rlong_v(ico)
+      compute_netrad = compute_netrad + cpatch%rshort_v(ico) + cpatch%rlong_v(ico)
    end do
    return
-end function compute_netrad_ar
+end function compute_netrad
 !==========================================================================================!
 !==========================================================================================!
 
@@ -723,7 +723,7 @@ end function compute_netrad_ar
 !    This function computs the total net radiation, by adding the radiation that interacts !
 ! with the different surfaces.  The result is given in J/m2.                               !
 !------------------------------------------------------------------------------------------!
-real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
+real function compute_energy_storage(csite, lsl, rhos, ipa)
    use ed_state_vars        , only : sitetype   & ! structure
                                    , patchtype  ! ! structure
    use grid_coms            , only : nzg        ! ! intent(in)
@@ -785,11 +785,11 @@ real function compute_energy_storage_ar(csite, lsl, rhos, ipa)
    end do
  
    !----- 5. Integrating the total energy in ED. ------------------------------------------!
-   compute_energy_storage_ar = soil_storage + sfcwater_storage + cas_storage               &
+   compute_energy_storage = soil_storage + sfcwater_storage + cas_storage               &
                              + veg_storage
 
    return
-end function compute_energy_storage_ar
+end function compute_energy_storage
 !==========================================================================================!
 !==========================================================================================!
 
@@ -802,7 +802,7 @@ end function compute_energy_storage_ar
 !==========================================================================================!
 !    This subroutine computes the carbon flux terms.                                       !
 !------------------------------------------------------------------------------------------!
-subroutine sum_plant_cfluxes_ar(csite,ipa, gpp, gpp_dbh,plresp)
+subroutine sum_plant_cfluxes(csite,ipa, gpp, gpp_dbh,plresp)
    use ed_state_vars        , only : sitetype    & ! structure
                                    , patchtype   ! ! structure
    use consts_coms          , only : day_sec     & ! intent(in)
@@ -867,7 +867,7 @@ subroutine sum_plant_cfluxes_ar(csite,ipa, gpp, gpp_dbh,plresp)
    !----- Plant respiration is the sum between alive and structural. ----------------------!
    plresp = lrresp + sresp
    return
-end subroutine sum_plant_cfluxes_ar
+end subroutine sum_plant_cfluxes
 !==========================================================================================!
 !==========================================================================================!
 
@@ -880,7 +880,7 @@ end subroutine sum_plant_cfluxes_ar
 !==========================================================================================!
 !    This function computes the co2 stored in the canopy air space from ppm to kgC/m2.     !
 !------------------------------------------------------------------------------------------!
-real function compute_co2_storage_ar(csite, rhos, ipa)
+real function compute_co2_storage(csite, rhos, ipa)
    use ed_state_vars, only : sitetype ! ! structure
    use consts_coms  , only : mmdryi   ! ! intent(in)
    implicit none
@@ -890,9 +890,9 @@ real function compute_co2_storage_ar(csite, rhos, ipa)
    real                  , intent(in)  :: rhos
    !---------------------------------------------------------------------------------------!
 
-   compute_co2_storage_ar = csite%can_co2(ipa) * mmdryi * rhos * csite%veg_height(ipa)
+   compute_co2_storage = csite%can_co2(ipa) * mmdryi * rhos * csite%veg_height(ipa)
 
    return
-end function compute_co2_storage_ar
+end function compute_co2_storage
 !==========================================================================================!
 !==========================================================================================!

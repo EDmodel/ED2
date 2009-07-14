@@ -3,7 +3,7 @@
 !     This subroutine will control the two-stream radiation scheme.  This is called every  !
 ! step, but not every sub-step.                                                            !
 !------------------------------------------------------------------------------------------!
-subroutine radiate_driver_ar(cgrid)
+subroutine radiate_driver(cgrid)
    use misc_coms             , only : current_time          & ! intent(in)
                                     , radfrq                & ! intent(in)
                                     , dtlsm                 ! ! intent(in)
@@ -33,7 +33,7 @@ subroutine radiate_driver_ar(cgrid)
    if (mod(current_time%time + .001,radfrq) < dtlsm) then
 
       !----- Compute solar zenith angle [cosz] --------------------------------------------!
-      call solar_zenith_ar(cgrid)
+      call solar_zenith(cgrid)
 
       !----- Loop over polygons and sites. ------------------------------------------------!
 
@@ -83,15 +83,15 @@ subroutine radiate_driver_ar(cgrid)
 
 
             !----- Get unnormalized radiative transfer information. -----------------------!
-            call sfcrad_ed_ar(cgrid%cosz(ipy),cpoly%cosaoi(isi),csite,maxcohort            &
+            call sfcrad_ed(cgrid%cosz(ipy),cpoly%cosaoi(isi),csite,maxcohort            &
                              ,cpoly%met(isi)%rshort)
 
             !----- Normalize the absorbed radiations. -------------------------------------!
-            call scale_ed_radiation_ar(cpoly%met(isi)%rshort,cpoly%met(isi)%rshort_diffuse &
+            call scale_ed_radiation(cpoly%met(isi)%rshort,cpoly%met(isi)%rshort_diffuse &
                                       ,cpoly%met(isi)%rlong,csite)
 
             !----- Update all albedos and rlongup. ----------------------------------------!
-            call ed2land_radiation_ar(cpoly,isi)
+            call ed2land_radiation(cpoly,isi)
          end do siteloop
       end do polyloop
 
@@ -108,7 +108,7 @@ subroutine radiate_driver_ar(cgrid)
    call int_met_avg(cgrid)
 
    return
-end subroutine radiate_driver_ar
+end subroutine radiate_driver
 !==========================================================================================!
 !==========================================================================================!
 
@@ -122,7 +122,7 @@ end subroutine radiate_driver_ar
 !     This subroutine will drive the distribution of radiation among crowns, snow layers,  !
 ! and soil.                                                                                !
 !------------------------------------------------------------------------------------------!
-subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
+subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
 
    use ed_state_vars        , only : sitetype        & ! structure  
                                    , patchtype       ! ! structure  
@@ -426,7 +426,7 @@ subroutine sfcrad_ed_ar(cosz, cosaoi, csite, maxcohort, rshort)
       
    end do
    return
-end subroutine sfcrad_ed_ar
+end subroutine sfcrad_ed
 !==========================================================================================!
 !==========================================================================================!
 
@@ -437,7 +437,7 @@ end subroutine sfcrad_ed_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine solar_zenith_ar(cgrid)
+subroutine solar_zenith(cgrid)
    use misc_coms    , only : current_time ! ! intent(in)
    use consts_coms  , only : pio1808      & ! intent(in)
                            , twopi8       & ! intent(in)
@@ -488,7 +488,7 @@ subroutine solar_zenith_ar(cgrid)
    end do
 
    return
-end subroutine solar_zenith_ar
+end subroutine solar_zenith
 !==========================================================================================!
 !==========================================================================================!
 
@@ -499,7 +499,7 @@ end subroutine solar_zenith_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine ed2land_radiation_ar(cpoly,isi)
+subroutine ed2land_radiation(cpoly,isi)
    use ed_state_vars  , only : polygontype & ! intent(in)
                              , sitetype    & ! intent(in)
                              , patchtype   ! ! intent(in)
@@ -537,7 +537,7 @@ subroutine ed2land_radiation_ar(cpoly,isi)
    end do
 
    return
-end subroutine ed2land_radiation_ar
+end subroutine ed2land_radiation
 !==========================================================================================!
 !==========================================================================================!
 
@@ -548,7 +548,7 @@ end subroutine ed2land_radiation_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine scale_ed_radiation_ar(rshort, rshort_diffuse, rlong, csite)
+subroutine scale_ed_radiation(rshort, rshort_diffuse, rlong, csite)
 
    use ed_state_vars , only : sitetype  & ! intent(in)
                             , patchtype ! ! intent(in)
@@ -609,7 +609,7 @@ subroutine scale_ed_radiation_ar(rshort, rshort_diffuse, rlong, csite)
    end do
 
    return
-end subroutine scale_ed_radiation_ar
+end subroutine scale_ed_radiation
 !==========================================================================================!
 !==========================================================================================!
 

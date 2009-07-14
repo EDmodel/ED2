@@ -1,4 +1,4 @@
-subroutine read_ed1_history_file_array
+subroutine read_ed1_history_file
 
 
   use max_dims, only: n_pft,huge_patch,huge_cohort,max_water,str_len,maxfiles,maxlist
@@ -11,7 +11,7 @@ subroutine read_ed1_history_file_array
        edgrid_g,allocate_sitetype,allocate_patchtype
   use grid_coms,only:ngrids
   use allometry, only: dbh2h,h2dbh,dbh2bd,dbh2bl, ed_biomass,area_indices
-  use fuse_fiss_utils_ar, only: sort_cohorts_ar
+  use fuse_fiss_utils, only: sort_cohorts
   implicit none
 
   integer :: year
@@ -206,7 +206,7 @@ subroutine read_ed1_history_file_array
            count_patches: do
               
               if (ip>huge_patch) call fatal_error('IP too high,increase array size huge_patch', &
-                   'read_ed1_history_file_array','ed_history_io.f90')
+                   'read_ed1_history_file','ed_history_io.f90')
               
               select case (ied_init_mode_local)
               case (1) !! read ED1 format files
@@ -420,7 +420,7 @@ subroutine read_ed1_history_file_array
            ic = ic + 1
            add_this_cohort(ic) = .false.
            
-           if (ic>huge_cohort) call fatal_error('IC too high','read_ed1_history_file_array','ed_history_io.f90')
+           if (ic>huge_cohort) call fatal_error('IC too high','read_ed1_history_file','ed_history_io.f90')
 
            select case (ied_init_mode_local)
            case (1)
@@ -464,7 +464,7 @@ subroutine read_ed1_history_file_array
                     case(0)
                        write (unit=*,fmt='(a,1x,i5,1x,a)') &
                             'I found a cohort with PFT=',ipft(ic),' and it is not in your include_these_pft...'
-                       call fatal_error('Invalid PFT in history file','read_ed1_history_file_array','ed_history_io.f90')
+                       call fatal_error('Invalid PFT in history file','read_ed1_history_file','ed_history_io.f90')
                     case(1)
                        write (unit=*,fmt='(a,1x,i5,1x,a)') &
                             'I found a cohort with PFT=',ipft(ic),'... Including this PFT in your include_these_pft...'
@@ -672,18 +672,18 @@ subroutine read_ed1_history_file_array
               
               cpatch => csite%patch(ipa)
               do ico = 1,cpatch%ncohorts                 
-                 call init_ed_cohort_vars_array(cpatch,ico,cpoly%lsl(isi))
+                 call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
               enddo
               !----- Need to sort cohorts by size. ----------------------------------------!
-              call sort_cohorts_ar(cpatch)
+              call sort_cohorts(cpatch)
               
            enddo
            
-           call init_ed_patch_vars_array(csite,1,csite%npatches,cpoly%lsl(isi))
+           call init_ed_patch_vars(csite,1,csite%npatches,cpoly%lsl(isi))
            
         enddo
         
-        call init_ed_site_vars_array(cpoly,cgrid%lat(ipy))
+        call init_ed_site_vars(cpoly,cgrid%lat(ipy))
         
         !  Get a diagnostic on the polygon's vegetation
         
@@ -723,12 +723,12 @@ subroutine read_ed1_history_file_array
      end do polyloop
 
      !! need to check what's going on in here
-     call init_ed_poly_vars_array(cgrid)
+     call init_ed_poly_vars(cgrid)
 
   end do gridloop
 
   return
-end subroutine read_ed1_history_file_array
+end subroutine read_ed1_history_file
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1154,11 +1154,11 @@ subroutine init_full_history_restart()
   !   do isi = 1,cpoly%nsites
   !      csite => cpoly%site(isi)
   !      do ipa = 1,csite%npatches
-  !         call update_patch_derived_props_ar(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos, ipa)
+  !         call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos, ipa)
   !      enddo
-  !      call update_site_derived_props_ar(cpoly, 0, isi)
+  !      call update_site_derived_props(cpoly, 0, isi)
   !   enddo
-  !   call update_polygon_derived_props_ar(cgrid)
+  !   call update_polygon_derived_props(cgrid)
   ! enddo
   
   ! Turn automatic error reporting back on.
@@ -1175,7 +1175,7 @@ subroutine init_full_history_restart()
   ! Initialize the disturbance transition rates
   
   write(*,'(a,i2.2)')'    Initializing anthropogenic disturbance forcing. Node: ',mynum
-  call landuse_init_array
+  call landuse_init
 
 
   return

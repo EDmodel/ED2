@@ -2,7 +2,7 @@
 !==========================================================================================!
 !    This function computes the total PFT-dependent mortality rate:                        !
 !------------------------------------------------------------------------------------------!
-real function mortality_rates_ar(cpatch,ipa,ico,avg_daily_temp)
+real function mortality_rates(cpatch,ipa,ico,avg_daily_temp)
    use ed_state_vars , only : patchtype                  ! ! Structure
    use pft_coms      , only : mort1                      & ! intent(in)
                             , mort2                      & ! intent(in)
@@ -30,7 +30,7 @@ real function mortality_rates_ar(cpatch,ipa,ico,avg_daily_temp)
 
 
    !----- Assume happy end, all plants survive... -----------------------------------------!
-   mortality_rates_ar = 0.0
+   mortality_rates = 0.0
    ipft = cpatch%pft(ico)
 
    !---------------------------------------------------------------------------------------!
@@ -83,12 +83,12 @@ real function mortality_rates_ar(cpatch,ipa,ico,avg_daily_temp)
    !    Find the total, density independent, mortality rate.  This is the combination of   !
    ! four factors:                                                                         !
    !---------------------------------------------------------------------------------------!
-   mortality_rates_ar = mort3(ipft)   & ! 1. Ageing, PFT-dependent but otherwise constant;
+   mortality_rates = mort3(ipft)   & ! 1. Ageing, PFT-dependent but otherwise constant;
                       + carbon_mort   & ! 2. Negative carbon balance;
                       + treefall_mort & ! 3. Treefall mortality;
                       + cold_mort     ! ! 4. Mortality due to cold weather.
 
    return
-end function mortality_rates_ar
+end function mortality_rates
 !==========================================================================================!
 !==========================================================================================!

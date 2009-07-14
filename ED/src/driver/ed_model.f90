@@ -43,7 +43,7 @@ subroutine ed_model()
                             , patchtype           & ! intent(in)
                             , filltab_alltypes    & ! intent(in)
                             , filltables          ! ! intent(in)
-   use rk4_driver_ar , only : rk4_timestep_ar     ! ! intent(in)
+   use rk4_driver , only : rk4_timestep     ! ! intent(in)
    use ed_node_coms  , only : mynum               & ! intent(in)
                             , nnodetot            ! ! intent(in)
    use disturb_coms  , only : include_fire        ! ! intent(in)
@@ -123,7 +123,7 @@ subroutine ed_model()
 
    !    Allocate memory to the integration patch
 
-   if(integration_scheme == 1) call initialize_rk4patches_ar(1)
+   if(integration_scheme == 1) call initialize_rk4patches(1)
 
    do ifm=1,ngrids
       call reset_averaged_vars(edgrid_g(ifm))
@@ -131,7 +131,7 @@ subroutine ed_model()
    
    !!Output Initial State
    do ifm=1,ngrids
-      call update_ed_yearly_vars_ar(edgrid_g(ifm))
+      call update_ed_yearly_vars(edgrid_g(ifm))
    end do
    if (writing_year) call h5_output('YEAR')
 
@@ -168,17 +168,17 @@ subroutine ed_model()
       end do
 
       do ifm=1,ngrids
-          call radiate_driver_ar(edgrid_g(ifm))
+          call radiate_driver(edgrid_g(ifm))
       end do
 
       ! THEN, DO THE PHOTOSYNTHESIS AND BIOPHYSICS.
       if(integration_scheme == 0)then
          do ifm=1,ngrids
-            call euler_timestep_ar(edgrid_g(ifm))
+            call euler_timestep(edgrid_g(ifm))
          end do
       elseif(integration_scheme == 1)then
          do ifm=1,ngrids
-            call rk4_timestep_ar(edgrid_g(ifm),ifm)
+            call rk4_timestep(edgrid_g(ifm),ifm)
          end do
       endif
       
@@ -302,17 +302,17 @@ subroutine ed_model()
             if (maxcohort >= 0 .or. maxpatch >= 0) filltables=.true.   ! call filltab_alltypes
 
             ! Read new met driver files only if this is the first timestep 
-            call read_met_drivers_array()
+            call read_met_drivers()
             
             ! Re-allocate integration buffer
             if(integration_scheme == 1 .and. (maxcohort >= 0 .or. maxpatch >= 0)) &
-               call initialize_rk4patches_ar(0)
+               call initialize_rk4patches(0)
          endif
          
       endif
 
       do ifm=1,ngrids
-         call update_met_drivers_array(edgrid_g(ifm))
+         call update_met_drivers(edgrid_g(ifm))
       end do
       if(new_day .and. new_month)then
          ! Loop all grids
@@ -327,7 +327,7 @@ subroutine ed_model()
             if(current_time%month == 6)then
                do ifm = 1,ngrids
                      
-                  call update_ed_yearly_vars_ar(edgrid_g(ifm))
+                  call update_ed_yearly_vars(edgrid_g(ifm))
                   enddo
                   !call zero_ed_yearly_vars(polygon_list_g(1)%first_polygon)
             endif
@@ -453,10 +453,10 @@ subroutine vegetation_dynamics(new_month,new_year)
   use grid_coms, only: ngrids
   use misc_coms, only: current_time, dtlsm,frqsum
   use disturb_coms, only: include_fire
-  use disturbance_utils_ar, only: apply_disturbances_ar, site_disturbance_rates_ar
-  use fuse_fiss_utils_ar, only : fuse_patches_ar
+  use disturbance_utils, only: apply_disturbances, site_disturbance_rates
+  use fuse_fiss_utils, only : fuse_patches
   use ed_state_vars,only : edgrid_g,edtype
-  use growth_balive_ar,only : dbalive_dt_ar
+  use growth_balive,only : dbalive_dt
   use consts_coms, only : day_sec,yr_day
   use mem_sites, only: maxpatch
 
@@ -490,31 +490,31 @@ subroutine vegetation_dynamics(new_month,new_year)
 !     write (unit=*,fmt='(a)') '~~~ Normalize_ed_daily_vars...'
      call normalize_ed_daily_vars(cgrid, tfact1)
      
-!     write (unit=*,fmt='(a)') '~~~ Phenology_driver_ar...'
-     call phenology_driver_ar(cgrid,doy,current_time%month, tfact1)
+!     write (unit=*,fmt='(a)') '~~~ Phenology_driver...'
+     call phenology_driver(cgrid,doy,current_time%month, tfact1)
      
-!     write (unit=*,fmt='(a)') '~~~ Dbalive_dt_ar...'
-     call dbalive_dt_ar(cgrid,tfact2)
+!     write (unit=*,fmt='(a)') '~~~ Dbalive_dt...'
+     call dbalive_dt(cgrid,tfact2)
      
      
      if(new_month)then
 
-!        write (unit=*,fmt='(a)') '^^^ Structural_growth_ar...'
-        call structural_growth_ar(cgrid, current_time%month)
+!        write (unit=*,fmt='(a)') '^^^ Structural_growth...'
+        call structural_growth(cgrid, current_time%month)
 
 
-!        write (unit=*,fmt='(a)') '^^^ Reproduction_ar...'
-        call reproduction_ar(cgrid,current_time%month)
+!        write (unit=*,fmt='(a)') '^^^ Reproduction...'
+        call reproduction(cgrid,current_time%month)
 
         ! NB: FIRE CURRENTLY OCCURS AT THE SITE LEVEL. MIKE: MAYBE
         ! YOU HAVE SOME IDEAS HERE?
 
         if(include_fire == 1) then
-!           write (unit=*,fmt='(a)') '^^^ Fire_frequency_ar...'
-           call fire_frequency_ar(current_time%month,cgrid)
+!           write (unit=*,fmt='(a)') '^^^ Fire_frequency...'
+           call fire_frequency(current_time%month,cgrid)
         end if
-!        write (unit=*,fmt='(a)') '^^^ Site_disturbance_rates_ar...'
-        call site_disturbance_rates_ar(current_time%month,   &
+!        write (unit=*,fmt='(a)') '^^^ Site_disturbance_rates...'
+        call site_disturbance_rates(current_time%month,   &
              current_time%year, cgrid)
 
         if(new_year) then
@@ -522,14 +522,14 @@ subroutine vegetation_dynamics(new_month,new_year)
   
 
 
-!           write (unit=*,fmt='(a)') '### Apply_disturbances_ar...'
-           call apply_disturbances_ar(cgrid)
+!           write (unit=*,fmt='(a)') '### Apply_disturbances...'
+           call apply_disturbances(cgrid)
         end if
         
      end if
 
-!     write (unit=*,fmt='(a)') '~~~ Update_C_and_N_pools_ar...'
-     call update_C_and_N_pools_ar(cgrid)
+!     write (unit=*,fmt='(a)') '~~~ Update_C_and_N_pools...'
+     call update_C_and_N_pools(cgrid)
 
 !     write (unit=*,fmt='(a)') '~~~ Zero_ed_daily_vars...'
      call zero_ed_daily_vars(cgrid)
@@ -538,13 +538,13 @@ subroutine vegetation_dynamics(new_month,new_year)
      ! the number of patch variables that actually need to be fused.  
      if(new_year) then
 !        write (unit=*,fmt='(a)') '### Fuse_patchesar...'
-        if (maxpatch >= 0) call fuse_patches_ar(cgrid,ifm)
+        if (maxpatch >= 0) call fuse_patches(cgrid,ifm)
         first_time =.false.
      end if
 
      ! Recalculate the agb and basal area at the polygon level
-!     write (unit=*,fmt='(a)') '~~~ Update_polygon_derived_props_ar...'
-     call update_polygon_derived_props_ar(cgrid)
+!     write (unit=*,fmt='(a)') '~~~ Update_polygon_derived_props...'
+     call update_polygon_derived_props(cgrid)
 
 !     write (unit=*,fmt='(a)') '~~~ Print_C_and_N_budgets...'
      call print_C_and_N_budgets(cgrid)

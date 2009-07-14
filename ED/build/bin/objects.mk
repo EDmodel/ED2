@@ -103,4 +103,4 @@ OBJ_MODEL =                        \
 	update_derived_props.o     \
 	utils_c.o                  \
 	utils_f.o                  \
-	var_tables_array.o
+	ed_var_tables.o

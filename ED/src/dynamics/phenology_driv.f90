@@ -2,7 +2,7 @@
 !==========================================================================================!
 !    This subroutine controls the changes in leaf biomass due to phenology.                !
 !------------------------------------------------------------------------------------------!
-subroutine phenology_driver_ar(cgrid, doy, month, tfact)
+subroutine phenology_driver(cgrid, doy, month, tfact)
    use ed_state_vars  , only : edtype        & ! structure
                              , polygontype   & ! structure
                              , sitetype      ! ! structure
@@ -39,8 +39,8 @@ subroutine phenology_driver_ar(cgrid, doy, month, tfact)
          select case (iphen_scheme)
          case (0)
             !----- Default predictive scheme (Botta et al.). ------------------------------!
-            call update_thermal_sums_ar(month, cpoly, isi, cgrid%lat(ipy))
-            call update_phenology_ar(doy,cpoly,isi,cgrid%lat(ipy))
+            call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
+            call update_phenology(doy,cpoly,isi,cgrid%lat(ipy))
             
          case (1)
             !----- Use prescribed phenology. ----------------------------------------------!
@@ -48,20 +48,20 @@ subroutine phenology_driver_ar(cgrid, doy, month, tfact)
                                       ,current_time%year, doy                              &
                                       ,cpoly%green_leaf_factor(:,isi)                      &
                                       ,cpoly%leaf_aging_factor(:,isi),cpoly%phen_pars(isi)) 
-            call update_phenology_ar(doy,cpoly,isi,cgrid%lat(ipy))
+            call update_phenology(doy,cpoly,isi,cgrid%lat(ipy))
 
 
          case (2)
             !----- KIM light-controlled predictive phenology scheme. ----------------------!
-            call update_thermal_sums_ar(month, cpoly, isi, cgrid%lat(ipy))
+            call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
             call update_turnover(cpoly,isi)
-            call update_phenology_ar(doy,cpoly,isi,cgrid%lat(ipy))
+            call update_phenology(doy,cpoly,isi,cgrid%lat(ipy))
          end select
       end do
    end do
 
    return
-end subroutine phenology_driver_ar
+end subroutine phenology_driver
 !==========================================================================================!
 !==========================================================================================!
 
@@ -72,7 +72,7 @@ end subroutine phenology_driver_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine update_phenology_ar(doy, cpoly, isi, lat)
+subroutine update_phenology(doy, cpoly, isi, lat)
 
    use ed_state_vars  , only : polygontype              & ! structure
                              , sitetype                 & ! structure
@@ -403,7 +403,7 @@ subroutine update_phenology_ar(doy, cpoly, isi, lat)
       end do cohortloop
    end do patchloop
    return
-end subroutine update_phenology_ar
+end subroutine update_phenology
 !==========================================================================================!
 !==========================================================================================!
 

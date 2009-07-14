@@ -82,7 +82,7 @@ disturb_coms.o : $(ED_MEMORY)/disturb_coms.f90
 	rm -f $(<F:.f90=.f90)
 
 edio.o : $(ED_IO)/edio.f90 ed_state_vars.o grid_coms.o ed_node_coms.o misc_coms.o          \
-	canopy_radiation_coms.o consts_coms.o var_tables_array.o therm_lib.o soil_coms.o
+	canopy_radiation_coms.o consts_coms.o ed_var_tables.o therm_lib.o soil_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -219,7 +219,7 @@ ed_para_init.o : $(ED_MPI)/ed_para_init.f90 grid_coms.o ed_node_coms.o ed_para_c
 
 ed_state_vars.o : $(ED_MEMORY)/ed_state_vars.f90 grid_coms.o max_dims.o c34constants.o     \
 	disturb_coms.o met_driver_coms.o fusion_fission_coms.o phenology_coms.o            \
-	misc_coms.o var_tables_array.o ed_node_coms.o soil_coms.o
+	misc_coms.o ed_var_tables.o ed_node_coms.o soil_coms.o
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -320,7 +320,7 @@ growth_balive.o : $(ED_DYNAMICS)/growth_balive.f90 ed_state_vars.o pft_coms.o al
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-h5_output.o : $(ED_IO)/h5_output.F90 an_header.o var_tables_array.o misc_coms.o            \
+h5_output.o : $(ED_IO)/h5_output.F90 an_header.o ed_var_tables.o misc_coms.o            \
 	ed_misc_coms.o grid_coms.o hdf5_coms.o ed_node_coms.o max_dims.o ed_state_vars.o   \
 	fusion_fission_coms.o
 	cp -f $< $(<F:.F90=.F90)
@@ -556,7 +556,7 @@ utils_f.o: $(ED_UTILS)/utils_f.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-var_tables_array.o : $(ED_MEMORY)/var_tables_array.f90 
+ed_var_tables.o : $(ED_MEMORY)/ed_var_tables.f90 
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

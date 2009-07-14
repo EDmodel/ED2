@@ -46,7 +46,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
 
   if(analysis_time .or. history_time .or. (new_day .and. (writing_dail .or. writing_mont))) then
      do ifm=1,ngrids
-        call normalize_averaged_vars_ar(edgrid_g(ifm),frqsum,dtlsm)
+        call normalize_averaged_vars(edgrid_g(ifm),frqsum,dtlsm)
      enddo
 
      !  Perform averaging and data preparation
@@ -73,7 +73,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
      
      if (iprintpolys.eq.1) then
         do ifm=1,ngrids
-           call print_array(ifm,edgrid_g(ifm))
+           call print(ifm,edgrid_g(ifm))
         enddo
      endif
 
@@ -708,7 +708,7 @@ end subroutine get3d
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine print_array(ifm,cgrid)
+subroutine print(ifm,cgrid)
   
   !------------------------------------------------------
   ! PRINT OUT FIELDS OF INTEREST
@@ -743,7 +743,7 @@ subroutine print_array(ifm,cgrid)
             pfmtstr,    &
             iprintpolys
   
-  use var_tables_array,only:vt_info,num_var
+  use ed_var_tables,only:vt_info,num_var
 
 
   implicit none
@@ -1015,7 +1015,7 @@ subroutine print_array(ifm,cgrid)
 
   
   return
-end subroutine print_array
+end subroutine print
 
 ! =======================================================
 

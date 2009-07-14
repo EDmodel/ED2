@@ -6,7 +6,7 @@
 ! NOTICE:  These subroutines have not been thoroughly tested. Please                       !
 !          report problems to David Medvigy, medvigy@post.harvard.edu.                     !
 !==========================================================================================!
-subroutine apply_forestry_ar(cpoly, isi, year, rhos)
+subroutine apply_forestry(cpoly, isi, year, rhos)
    use ed_state_vars        , only : polygontype                   & ! Structure
                                    , sitetype                      & ! Structure
                                    , allocate_sitetype             & ! Subroutine
@@ -15,9 +15,9 @@ subroutine apply_forestry_ar(cpoly, isi, year, rhos)
    use disturb_coms         , only : lutime                        & ! intent(in)
                                    , min_new_patch_area            & ! intent(in)
                                    , plantation_year               ! ! intent(in)
-   use disturbance_utils_ar , only : initialize_disturbed_patch_ar & ! subroutine
-                                   , plant_patch_ar                ! ! subroutine
-   use fuse_fiss_utils_ar   , only : terminate_patches_ar          ! ! subroutine
+   use disturbance_utils , only : initialize_disturbed_patch & ! subroutine
+                                   , plant_patch                ! ! subroutine
+   use fuse_fiss_utils   , only : terminate_patches          ! ! subroutine
    use max_dims             , only : n_pft                         & ! intent(in)
                                    , n_dbh                         ! ! intent(in)
    implicit none
@@ -73,7 +73,7 @@ subroutine apply_forestry_ar(cpoly, isi, year, rhos)
       end do find_lu_year
    else
       call fatal_error('Invalid initial year when using land-use disturbance'              &
-                      &,'apply_forestry_ar','forestry.f90')
+                      &,'apply_forestry','forestry.f90')
    end if
 
    clutime => cpoly%clutimes(useyear,isi)
@@ -143,23 +143,23 @@ subroutine apply_forestry_ar(cpoly, isi, year, rhos)
 
    !------ Initialize the new patch (newp) in the last position. --------------------------!
    csite%dist_type(newp) = 2
-   call initialize_disturbed_patch_ar(csite,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv  &
+   call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv  &
                                      ,newp,1,cpoly%lsl(isi))
 
    !------ Compute current stocks of agb in mature forests. -------------------------------!
-   call inventory_mat_forests_ar(cpoly,isi,area_mature_primary,agb_mature_primary          &
+   call inventory_mat_forests(cpoly,isi,area_mature_primary,agb_mature_primary          &
                                 ,area_mature_secondary,agb_mature_secondary                &
                                 ,area_mature_plantation,agb_mature_plantation)
 
    !------ Compute the mature-forest harvest rates. ---------------------------------------!
-   call mat_forest_harv_rates_ar(agb_mature_primary,agb_mature_secondary                   &
+   call mat_forest_harv_rates(agb_mature_primary,agb_mature_secondary                   &
                                 ,agb_mature_plantation,primary_harvest_target              &
                                 ,secondary_harvest_target,lambda_mature_primary            &
                                 ,lambda_mature_secondary,lambda_mature_plantation          &
                                 ,harvest_deficit)
 
    !------ Apply harvesting to the mature stands. -----------------------------------------!
-   call harv_mat_patches_ar(cpoly,isi,newp,lambda_mature_primary                           &
+   call harv_mat_patches(cpoly,isi,newp,lambda_mature_primary                           &
                            ,lambda_mature_secondary,lambda_mature_plantation)
    
    !---------------------------------------------------------------------------------------!
@@ -169,7 +169,7 @@ subroutine apply_forestry_ar(cpoly, isi, year, rhos)
    total_harvested_area = lambda_mature_primary    * area_mature_primary                   &
                         + lambda_mature_secondary  * area_mature_secondary                 &
                         + lambda_mature_plantation * area_mature_plantation
-   call harv_immat_patches_ar(cpoly,isi,newp,harvest_deficit,total_harvested_area)
+   call harv_immat_patches(cpoly,isi,newp,harvest_deficit,total_harvested_area)
 
    !---------------------------------------------------------------------------------------!
    !     Now we know the area of the new patch, and can normalize the averaged patch       !
@@ -192,21 +192,21 @@ subroutine apply_forestry_ar(cpoly, isi, year, rhos)
       write(unit=*,fmt='(a,1x,es12.5,1x,a,1x,i5)')                                         &
           ' ---> Making new patch (harvesting), with area=',csite%area(newp)               &
               ,' for dist_type=',2
-      call norm_harv_patch_ar(csite,newp)
+      call norm_harv_patch(csite,newp)
 
       !----- Plant the patch if it is a plantation. ---------------------------------------!
       if (cpoly%plantation(isi) == 1 .and. year > plantation_year) then
-         call plant_patch_ar(csite,newp, cpoly%plantation_stocking_pft(isi)                &
+         call plant_patch(csite,newp, cpoly%plantation_stocking_pft(isi)                &
                             ,cpoly%plantation_stocking_density(isi)                        &
                             ,cpoly%green_leaf_factor(:,isi), 2.0, cpoly%lsl(isi))
          csite%plantation(newp) = 1
       end if
-      call update_patch_derived_props_ar(csite,cpoly%lsl(isi),rhos,newp)
-      call new_patch_sfc_props_ar(csite,newp, rhos)
+      call update_patch_derived_props(csite,cpoly%lsl(isi),rhos,newp)
+      call new_patch_sfc_props(csite,newp, rhos)
    end if
 
    !----- Eliminate those patches with small area. ----------------------------------------!
-   call terminate_patches_ar(csite)
+   call terminate_patches(csite)
 
    !----- Clear out the primary harvest memory. -------------------------------------------!
    cpoly%primary_harvest_memory(isi) = 0.0
@@ -215,7 +215,7 @@ subroutine apply_forestry_ar(cpoly, isi, year, rhos)
    cpoly%secondary_harvest_memory(isi) = harvest_deficit
    
    return
-end subroutine apply_forestry_ar
+end subroutine apply_forestry
 !==========================================================================================!
 !==========================================================================================!
 
@@ -226,7 +226,7 @@ end subroutine apply_forestry_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine inventory_mat_forests_ar(cpoly,isi,area_mature_primary,agb_mature_primary       &
+subroutine inventory_mat_forests(cpoly,isi,area_mature_primary,agb_mature_primary       &
                                    ,area_mature_secondary, agb_mature_secondary            &
                                    ,area_mature_plantation, agb_mature_plantation)
    use ed_state_vars , only : polygontype         & ! structure
@@ -304,7 +304,7 @@ subroutine inventory_mat_forests_ar(cpoly,isi,area_mature_primary,agb_mature_pri
 
    end do
    return
-end subroutine inventory_mat_forests_ar
+end subroutine inventory_mat_forests
 !==========================================================================================!
 !==========================================================================================!
 
@@ -315,7 +315,7 @@ end subroutine inventory_mat_forests_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine mat_forest_harv_rates_ar(agb_mature_primary,agb_mature_secondary                &
+subroutine mat_forest_harv_rates(agb_mature_primary,agb_mature_secondary                &
                                    ,agb_mature_plantation, primary_harvest_target          &
                                    ,secondary_harvest_target,lambda_mature_primary         &
                                    ,lambda_mature_secondary,lambda_mature_plantation       &
@@ -371,7 +371,7 @@ subroutine mat_forest_harv_rates_ar(agb_mature_primary,agb_mature_secondary     
    endif
 
    return
-end subroutine mat_forest_harv_rates_ar
+end subroutine mat_forest_harv_rates
 !==========================================================================================!
 !==========================================================================================!
 
@@ -382,15 +382,15 @@ end subroutine mat_forest_harv_rates_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine harv_mat_patches_ar(cpoly,isi,newp,lambda_mature_primary                        &
+subroutine harv_mat_patches(cpoly,isi,newp,lambda_mature_primary                        &
                               ,lambda_mature_secondary,lambda_mature_plantation)
    use ed_state_vars        , only : polygontype             & ! structure
                                    , sitetype                & ! structure
                                    , patchtype               ! ! structure
    use disturb_coms         , only : mature_harvest_age      & ! intent(in)
                                    , plantation_rotation     ! ! intent(in)
-   use disturbance_utils_ar , only : accum_dist_litt_ar      & ! subroutine
-                                   , increment_patch_vars_ar ! ! subroutine
+   use disturbance_utils , only : accum_dist_litt      & ! subroutine
+                                   , increment_patch_vars ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(polygontype) , target     :: cpoly
@@ -432,15 +432,15 @@ subroutine harv_mat_patches_ar(cpoly,isi,newp,lambda_mature_primary             
       !------ Found a patch that is contributing to the new patch. ------------------------!
       if (dA > 0.0 .and. csite%plant_ag_biomass(ipa) >= 0.01) then
          csite%area(ipa) = csite%area(ipa) - dA
-         call increment_patch_vars_ar(csite,newp,ipa,dA)
-         call accum_dist_litt_ar(csite,newp,ipa,1,dA,cpoly%loss_fraction(1,isi)            &
+         call increment_patch_vars(csite,newp,ipa,dA)
+         call accum_dist_litt(csite,newp,ipa,1,dA,cpoly%loss_fraction(1,isi)            &
                                 ,cpoly%nat_dist_type(isi))
       endif
    end do
 
 
    return
-end subroutine harv_mat_patches_ar
+end subroutine harv_mat_patches
 !==========================================================================================!
 !==========================================================================================!
 
@@ -451,14 +451,14 @@ end subroutine harv_mat_patches_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine harv_immat_patches_ar(cpoly,isi, newp, harvest_deficit,total_harvest_area)
+subroutine harv_immat_patches(cpoly,isi, newp, harvest_deficit,total_harvest_area)
    use ed_state_vars        , only : polygontype             & ! structure
                                    , sitetype                & ! structure
                                    , patchtype               ! ! structure
    use disturb_coms         , only : plantation_rotation     & ! intent(in)
                                    , mature_harvest_age      ! ! intent(in)
-   use disturbance_utils_ar , only : accum_dist_litt_ar      & ! subroutine
-                                   , increment_patch_vars_ar ! ! subroutine
+   use disturbance_utils , only : accum_dist_litt      & ! subroutine
+                                   , increment_patch_vars ! ! subroutine
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -514,8 +514,8 @@ subroutine harv_immat_patches_ar(cpoly,isi, newp, harvest_deficit,total_harvest_
          end if
          total_harvest_area = total_harvest_area + dA
          csite%area(ipa)    = csite%area(ipa) - dA
-         call increment_patch_vars_ar(csite,newp,ipa, dA)
-         call accum_dist_litt_ar(csite,newp,ipa, 2, dA,cpoly%loss_fraction(2,isi)          &
+         call increment_patch_vars(csite,newp,ipa, dA)
+         call accum_dist_litt(csite,newp,ipa, 2, dA,cpoly%loss_fraction(2,isi)          &
                                 ,cpoly%nat_dist_type(isi))
       end if
    end do patchloop1
@@ -557,14 +557,14 @@ subroutine harv_immat_patches_ar(cpoly,isi, newp, harvest_deficit,total_harvest_
          total_harvest_area = total_harvest_area + dA
          csite%area(ipa)    = csite%area(ipa) - dA
 
-         call increment_patch_vars_ar(csite,newp,ipa,dA)
-         call accum_dist_litt_ar(csite,newp,ipa,2,dA,cpoly%loss_fraction(2,isi)            &
+         call increment_patch_vars(csite,newp,ipa,dA)
+         call accum_dist_litt(csite,newp,ipa,2,dA,cpoly%loss_fraction(2,isi)            &
                                 ,cpoly%nat_dist_type(isi))
       end if
    end do patchloop2
 
    return
-end subroutine harv_immat_patches_ar
+end subroutine harv_immat_patches
 !==========================================================================================!
 !==========================================================================================!
 
@@ -575,7 +575,7 @@ end subroutine harv_immat_patches_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine norm_harv_patch_ar(csite,newp)
+subroutine norm_harv_patch(csite,newp)
 
    use ed_state_vars , only : sitetype            & ! structure
                             , patchtype           ! ! structure
@@ -634,6 +634,6 @@ subroutine norm_harv_patch_ar(csite,newp)
       csite%soil_water(k,newp)  = csite%soil_water(k,newp)  * area_fac
    end do
    return
-end subroutine norm_harv_patch_ar
+end subroutine norm_harv_patch
 !==========================================================================================!
 !==========================================================================================!

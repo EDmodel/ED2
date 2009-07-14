@@ -1,4 +1,4 @@
-module fuse_fiss_utils_ar
+module fuse_fiss_utils
 
    use ed_state_vars,only :   copy_patchtype        & ! subroutine
                             , deallocate_patchtype  & ! subroutine
@@ -14,7 +14,7 @@ module fuse_fiss_utils_ar
    !=======================================================================================!
    !   This subroutine will sort the cohorts by size (1st = tallest, last = shortest.)     !
    !---------------------------------------------------------------------------------------!
-   subroutine sort_cohorts_ar(cpatch)
+   subroutine sort_cohorts(cpatch)
 
       use ed_state_vars,only :  patchtype   ! ! Structure
       implicit none
@@ -57,7 +57,7 @@ module fuse_fiss_utils_ar
 
       return
 
-   end subroutine sort_cohorts_ar
+   end subroutine sort_cohorts
    !=======================================================================================!
    !=======================================================================================!
 
@@ -71,7 +71,7 @@ module fuse_fiss_utils_ar
    !    This subroutine will eliminate cohorts based on their sizes. This is intended to   !
    ! eliminate cohorts that have little contribution and thus we can speed up the run.     !
    !---------------------------------------------------------------------------------------!
-   subroutine terminate_cohorts_ar(csite,ipa,elim_nplant,elim_lai)
+   subroutine terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
       use pft_coms           , only : min_recruit_size & ! intent(in)
                                     , l2n_stem         & ! intent(in)
                                     , c2n_stem         & ! intent(in)
@@ -163,7 +163,7 @@ module fuse_fiss_utils_ar
          write (unit=*,fmt='(a,1x,es12.5)') 'TERMINATE: ELIM_NPLANT=',elim_nplant
       end if
       return
-   end subroutine terminate_cohorts_ar
+   end subroutine terminate_cohorts
    !=======================================================================================!
    !=======================================================================================!
 
@@ -177,7 +177,7 @@ module fuse_fiss_utils_ar
    !    This subroutine will eliminate tiny or empty patches. This is intended to          !
    ! eliminate patches that have little contribution and thus we can speed up the run.     !
    !---------------------------------------------------------------------------------------!
-   subroutine terminate_patches_ar(csite)
+   subroutine terminate_patches(csite)
 
       use ed_state_vars, only :  polygontype       & ! Structure
                                , sitetype          & ! Structure
@@ -262,12 +262,12 @@ module fuse_fiss_utils_ar
       if (abs(new_area-1.0) > 1.e-5) then
          write (unit=*,fmt='(a,1x,es12.5)') ' + ELIM_AREA:',elim_area
          write (unit=*,fmt='(a,1x,es12.5)') ' + NEW_AREA: ',new_area
-         call fatal_error('New_area should be 1 but it isn''t!!!','terminate_patches_ar'   &
+         call fatal_error('New_area should be 1 but it isn''t!!!','terminate_patches'   &
                        &,'fuse_fiss_utils.f90')
       end if 
       
       return
-   end subroutine terminate_patches_ar
+   end subroutine terminate_patches
    !=======================================================================================!
    !=======================================================================================!
 
@@ -285,7 +285,7 @@ module fuse_fiss_utils_ar
    ! to live with that and accept life is not always fair with those with limited          !
    ! computational resources.                                                              !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_cohorts_ar(csite,ipa, green_leaf_factor, lsl)
+   subroutine fuse_cohorts(csite,ipa, green_leaf_factor, lsl)
 
       use ed_state_vars       , only : sitetype            & ! Structure
                                      , patchtype           ! ! Structure
@@ -453,7 +453,7 @@ module fuse_fiss_utils_ar
                      ) then
 
                      !----- Proceed with fusion -------------------------------------------!
-                     call fuse_2_cohorts_ar(cpatch,donc,recc,newn                          &
+                     call fuse_2_cohorts(cpatch,donc,recc,newn                          &
                                            ,green_leaf_factor(cpatch%pft(donc)),lsl)
 
                      !----- Flag donating cohort as gone, so it won't be checked again. ---!
@@ -468,7 +468,7 @@ module fuse_fiss_utils_ar
                         write (unit=*,fmt='(a,1x,es14.7)') 'OLD SIZE: ',total_size
                         write (unit=*,fmt='(a,1x,es14.7)') 'NEW SIZE: ',new_size
                         call fatal_error('Cohort fusion didn''t conserve plant size!!!'    &
-                                        &,'fuse_2_cohorts_ar','fuse_fiss_utils.f90')
+                                        &,'fuse_2_cohorts','fuse_fiss_utils.f90')
                      end if
                      !---------------------------------------------------------------------!
 
@@ -495,7 +495,7 @@ module fuse_fiss_utils_ar
                         else
                            if(cpatch%dbh(ico3).eq.0. ) then
                               print*,"dbh(ico3) is zero",cpatch%dbh(ico3)
-                              call fatal_error('Zero DBH!','fuse_cohorts_ar'&
+                              call fatal_error('Zero DBH!','fuse_cohorts'&
                                               &,'fuse_fiss_utils.f90')
                            end if
                            mean_dbh = mean_dbh + cpatch%dbh(ico3)
@@ -549,7 +549,7 @@ module fuse_fiss_utils_ar
          deallocate(temppatch)  
 
          !----- Sort cohorts by size again, and update the cohort census for this patch. --!
-         call sort_cohorts_ar(cpatch)
+         call sort_cohorts(cpatch)
          csite%cohort_count(ipa) = count(fuse_table)
       end if
 
@@ -557,7 +557,7 @@ module fuse_fiss_utils_ar
       deallocate(fuse_table)
      
       return
-   end subroutine fuse_cohorts_ar
+   end subroutine fuse_cohorts
    !=======================================================================================!
    !=======================================================================================!
 
@@ -570,7 +570,7 @@ module fuse_fiss_utils_ar
    !=======================================================================================!
    !   This subroutine will split two cohorts if its LAI has become too large.             !
    !---------------------------------------------------------------------------------------!
-   subroutine split_cohorts_ar(cpatch, green_leaf_factor, lsl)
+   subroutine split_cohorts(cpatch, green_leaf_factor, lsl)
 
       use ed_state_vars        , only :  patchtype              ! ! structure
       use pft_coms             , only :  q                      & ! intent(in), lookup table
@@ -685,7 +685,7 @@ module fuse_fiss_utils_ar
 
                !----- Apply these values to the new cohort. -------------------------------!
                inew = inew+1
-               call clone_cohort_ar(cpatch,ico,inew)
+               call clone_cohort(cpatch,ico,inew)
                !---------------------------------------------------------------------------!
 
                !----- Tweaking bdead, to ensure carbon is conserved. ----------------------!
@@ -702,7 +702,7 @@ module fuse_fiss_utils_ar
          end do
 
          !----- After splitting, cohorts may need to be sorted again... -------------------!
-         call sort_cohorts_ar(cpatch)
+         call sort_cohorts(cpatch)
 
          !----- Checking whether the total # of plants is conserved... --------------------!
          new_nplant = 0.
@@ -720,13 +720,13 @@ module fuse_fiss_utils_ar
             write (unit=*,fmt='(a,1x,es14.7)') 'OLD SIZE:   ',old_size
             write (unit=*,fmt='(a,1x,es14.7)') 'NEW SIZE:   ',new_size
             call fatal_error('Cohort splitting didn''t conserve plants!!!'                 &
-                                        &,'split_cohorts_ar','fuse_fiss_utils.f90')
+                                        &,'split_cohorts','fuse_fiss_utils.f90')
          end if
          
       end if
       deallocate(split_mask)
       return
-   end subroutine split_cohorts_ar
+   end subroutine split_cohorts
    !=======================================================================================!
    !=======================================================================================!
 
@@ -739,7 +739,7 @@ module fuse_fiss_utils_ar
    !=======================================================================================!
    !   This subroutine will clone one cohort.                                              !
    !---------------------------------------------------------------------------------------!
-   subroutine clone_cohort_ar(cpatch,isc,idt)
+   subroutine clone_cohort(cpatch,isc,idt)
    
       use ed_state_vars, only : patchtype  & ! Strucuture
                               , stoma_data ! ! Structure
@@ -846,7 +846,7 @@ module fuse_fiss_utils_ar
       osdt%gsw_residual     = ossc%gsw_residual
      
       return
-   end subroutine clone_cohort_ar
+   end subroutine clone_cohort
    !=======================================================================================!
    !=======================================================================================!
 
@@ -862,7 +862,7 @@ module fuse_fiss_utils_ar
    !  information from both cohorts.                                                       !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_2_cohorts_ar(cpatch,donc,recc, newn,green_leaf_factor, lsl)
+   subroutine fuse_2_cohorts(cpatch,donc,recc, newn,green_leaf_factor, lsl)
       use ed_state_vars , only :  patchtype             ! ! Structure
       use pft_coms      , only :  q                     & ! intent(in), lookup table
                                 , qsw                     ! intent(in), lookup table
@@ -1003,7 +1003,7 @@ module fuse_fiss_utils_ar
       !------------------------------------------------------------------------------------!
       !    Not sure about the following variables.  From ed_state_vars, I would say that   !
       ! they should be averaged, not added because there it's written that these are per   !
-      ! plant.  But from the fuse_2_patches_ar subroutine here it seems they are per unit  !
+      ! plant.  But from the fuse_2_patches subroutine here it seems they are per unit  !
       ! area.                                                                              !
       !------------------------------------------------------------------------------------!
       cpatch%growth_respiration(recc)  = newni *                                           &
@@ -1071,7 +1071,7 @@ module fuse_fiss_utils_ar
       cpatch%nplant(recc) = newn
 
       return
-   end subroutine fuse_2_cohorts_ar
+   end subroutine fuse_2_cohorts
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1089,7 +1089,7 @@ module fuse_fiss_utils_ar
    ! will need to live with that and accept life is not always fair with those with        !
    ! limited computational resources.                                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_patches_ar(cgrid,ifm)
+   subroutine fuse_patches(cgrid,ifm)
      
       use ed_state_vars       , only :  edtype            & ! structure
                                       , polygontype       & ! structure
@@ -1193,7 +1193,7 @@ module fuse_fiss_utils_ar
 
                mean_nplant = 0.0
                do ipa = csite%npatches,1,-1
-                  call patch_pft_size_profile_ar(csite,ipa,ff_ndbh)
+                  call patch_pft_size_profile(csite,ipa,ff_ndbh)
                
                   !------------------------------------------------------------------------!
                   !    Get a mean density profile for all of the patches. This will be     !
@@ -1288,7 +1288,7 @@ module fuse_fiss_utils_ar
                                  !     Take an average of the patch properties at index    !
                                  ! donp and ipa_tp assign the average to index ipa_tp.     !
                                  !---------------------------------------------------------!
-                                 call fuse_2_patches_ar(csite,donp,recp                    &
+                                 call fuse_2_patches(csite,donp,recp                    &
                                                        ,cpoly%met(isi)%rhos,cpoly%lsl(isi) &
                                                        ,cpoly%green_leaf_factor(:,isi)     &
                                                        ,elim_nplant,elim_lai)
@@ -1303,7 +1303,7 @@ module fuse_fiss_utils_ar
                                  !     Recalculate the pft size profile for the averaged   !
                                  ! patch at donp_tp.                                       !
                                  !---------------------------------------------------------!
-                                 call patch_pft_size_profile_ar(csite,recp,ff_ndbh)
+                                 call patch_pft_size_profile(csite,recp,ff_ndbh)
 
                                  !---------------------------------------------------------!
                                  !     The patch at index donp is no longer valid, it      !
@@ -1398,7 +1398,7 @@ module fuse_fiss_utils_ar
                write (unit=*,fmt='(a,1x,es12.5)') 'OLD_NPLANT_TOT: ',old_nplant_tot
                write (unit=*,fmt='(a,1x,es12.5)') 'ELIM_NPLANT_TOT:',elim_nplant_tot
                call fatal_error('Conservation failed while fusing patches'                 &
-                              &,'fuse_patches_ar','fuse_fiss_utils.f90')
+                              &,'fuse_patches','fuse_fiss_utils.f90')
             end if
             
          end do siteloop
@@ -1431,7 +1431,7 @@ module fuse_fiss_utils_ar
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine fuse_patches_ar
+   end subroutine fuse_patches
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1444,7 +1444,7 @@ module fuse_fiss_utils_ar
    !=======================================================================================!
    !   This subroutine will merge two patches into 1.                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_2_patches_ar(csite,donp,recp,rhos,lsl,green_leaf_factor                 &
+   subroutine fuse_2_patches(csite,donp,recp,rhos,lsl,green_leaf_factor                 &
                                ,elim_nplant,elim_lai)
       use ed_state_vars      , only :  sitetype              & ! Structure 
                                      , patchtype             ! ! Structure
@@ -1611,7 +1611,7 @@ module fuse_fiss_utils_ar
       !------------------------------------------------------------------------------------!
       ! 4. Converting energy back to J/kg;                                                 !
       ! 5. Finding temperature and liquid water fraction;                                  !
-      !    (Both are done in new_patch_sfc_props_ar).                                      !
+      !    (Both are done in new_patch_sfc_props).                                      !
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 
@@ -1639,7 +1639,7 @@ module fuse_fiss_utils_ar
       ! + csite%csite%sfcwater_tempk(k,recp)                                               !
       ! + csite%sfcwater_fracliq(k,recp)                                                   !
       !------------------------------------------------------------------------------------!
-      call new_patch_sfc_props_ar(csite,recp,rhos)
+      call new_patch_sfc_props(csite,recp,rhos)
       !------------------------------------------------------------------------------------!
 
       csite%mean_rh(recp)                = newareai *                                      &
@@ -1871,15 +1871,15 @@ module fuse_fiss_utils_ar
          deallocate(temppatch)
          !----- Sort cohorts in the new patch ---------------------------------------------!
          cpatch => csite%patch(recp)
-         call sort_cohorts_ar(cpatch)
+         call sort_cohorts(cpatch)
          !---------------------------------------------------------------------------------!
          !    We just combined two patches, so we may be able to fuse some cohorts and/or  !
          ! eliminate others.                                                               !
          !---------------------------------------------------------------------------------!
          if (cpatch%ncohorts > 0 .and. maxcohort >= 0) then
-            call fuse_cohorts_ar(csite,recp,green_leaf_factor,lsl)
-            call terminate_cohorts_ar(csite,recp,elim_nplant,elim_lai)
-            call split_cohorts_ar(cpatch,green_leaf_factor,lsl)
+            call fuse_cohorts(csite,recp,green_leaf_factor,lsl)
+            call terminate_cohorts(csite,recp,elim_nplant,elim_lai)
+            call split_cohorts(cpatch,green_leaf_factor,lsl)
          end if
          !---------------------------------------------------------------------------------!
       end if
@@ -1893,14 +1893,14 @@ module fuse_fiss_utils_ar
       ! + csite%ebudget_initialstorage(recp)                                               !
       ! + csite%co2budget_initialstorage(recp)                                             !
       !------------------------------------------------------------------------------------!
-      call update_patch_derived_props_ar(csite,lsl, rhos,recp)
+      call update_patch_derived_props(csite,lsl, rhos,recp)
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       !    This subroutine will update the size profile within patch.                      !
       ! + csite%pft_density_profile(:,:,recp)                                              !
       !------------------------------------------------------------------------------------!
-      call patch_pft_size_profile_ar(csite,recp,ff_ndbh)
+      call patch_pft_size_profile(csite,recp,ff_ndbh)
       !------------------------------------------------------------------------------------!
 
       !----- Last, but not the least, we update the patch area ----------------------------!
@@ -1908,7 +1908,7 @@ module fuse_fiss_utils_ar
 
       return
 
-   end subroutine fuse_2_patches_ar
+   end subroutine fuse_2_patches
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1919,7 +1919,7 @@ module fuse_fiss_utils_ar
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine patch_pft_size_profile_ar(csite,ipa,nbins)
+   subroutine patch_pft_size_profile(csite,ipa,nbins)
       use ed_state_vars      , only :  sitetype   & ! structure
                                      , patchtype  ! ! structure
       use fusion_fission_coms, only :  maxdbh     ! ! intent(in)
@@ -1956,9 +1956,9 @@ module fuse_fiss_utils_ar
       end do
 
       return
-   end subroutine patch_pft_size_profile_ar
+   end subroutine patch_pft_size_profile
    !=======================================================================================!
    !=======================================================================================!
-end module fuse_fiss_utils_ar
+end module fuse_fiss_utils
 !==========================================================================================!
 !==========================================================================================!

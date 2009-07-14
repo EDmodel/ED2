@@ -5,7 +5,7 @@
 !                           |----------------------------------|                           !
 !==========================================================================================!
 !==========================================================================================!
-subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
+subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
 
    use grid_coms, only: nzg
    use misc_coms, only: radfrq
@@ -93,7 +93,7 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
    end do
    
    return
-end subroutine normalize_averaged_vars_ar
+end subroutine normalize_averaged_vars
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1247,7 +1247,7 @@ end subroutine zero_ed_monthly_output_vars
 !                             |--------------------------------|                           !
 !==========================================================================================!
 !==========================================================================================!
-subroutine update_ed_yearly_vars_ar(cgrid)
+subroutine update_ed_yearly_vars(cgrid)
 
    use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
    use max_dims, only: n_pft, n_dbh
@@ -1333,7 +1333,7 @@ subroutine update_ed_yearly_vars_ar(cgrid)
    enddo
 
    return
-end subroutine update_ed_yearly_vars_ar
+end subroutine update_ed_yearly_vars
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1344,7 +1344,7 @@ end subroutine update_ed_yearly_vars_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine zero_ed_yearly_vars_ar(cgrid)
+subroutine zero_ed_yearly_vars(cgrid)
 
    use max_dims, only: n_pft, n_dbh
    use ed_state_vars,only:edtype,polygontype
@@ -1370,6 +1370,6 @@ subroutine zero_ed_yearly_vars_ar(cgrid)
    enddo
 
    return
-end subroutine zero_ed_yearly_vars_ar
+end subroutine zero_ed_yearly_vars
 !==========================================================================================!
 !==========================================================================================!

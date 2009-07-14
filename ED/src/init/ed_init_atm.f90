@@ -1,13 +1,13 @@
 !==========================================================================================!
 !==========================================================================================!
-subroutine ed_init_atm_ar
+subroutine ed_init_atm
   
   use misc_coms,     only: ied_init_mode,runtype
   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype,edgrid_g
   use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr
   use consts_coms,    only: cliqvlme, cicevlme, t3ple, tsupercool
   use grid_coms,      only: nzs, nzg, ngrids
-  use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar
+  use fuse_fiss_utils, only: fuse_patches,fuse_cohorts
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
   use pft_coms,only : sla
   use ed_therm_lib,only : calc_hcapveg,ed_grndvap
@@ -41,7 +41,7 @@ subroutine ed_init_atm_ar
      cgrid => edgrid_g(igr)
      
      ! First we need to update the meteorological fields.
-     call update_met_drivers_array(cgrid)
+     call update_met_drivers(cgrid)
 
      ! If this is a standard ED2 restart, we will read these fields in from 
      ! a history file and therefore not worry about setting them here.
@@ -113,7 +113,7 @@ subroutine ed_init_atm_ar
         if (nnodetot /= 1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
         if (mynum    /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,110,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
 
-        call read_soil_moist_temp_ar(cgrid)
+        call read_soil_moist_temp(cgrid)
 
         if (mynum     < nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,110,MPI_COMM_WORLD,ierr)
         if (nnodetot /=        1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
@@ -188,13 +188,13 @@ subroutine ed_init_atm_ar
               endif
 
               ! Compute patch-level LAI, vegetation height, and roughness
-              call update_patch_derived_props_ar(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos, ipa)
+              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos, ipa)
               
 
            enddo
            
            ! Compute basal area and AGB profiles.
-           call update_site_derived_props_ar(cpoly, 0, isi)
+           call update_site_derived_props(cpoly, 0, isi)
            
         enddo
         
@@ -202,10 +202,10 @@ subroutine ed_init_atm_ar
         
      enddo
      
-     call update_polygon_derived_props_ar(cgrid)
+     call update_polygon_derived_props(cgrid)
 
 
-     call fuse_patches_ar(cgrid, igr)
+     call fuse_patches(cgrid, igr)
 
      do ipy = 1,cgrid%npolygons
         
@@ -226,7 +226,7 @@ subroutine ed_init_atm_ar
               npatches = npatches + 1
               cpatch => csite%patch(ipa)
 
-              call fuse_cohorts_ar(csite,ipa,cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
+              call fuse_cohorts(csite,ipa,cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
               
               do ico = 1,cpatch%ncohorts
                  ncohorts=ncohorts+1
@@ -245,6 +245,6 @@ subroutine ed_init_atm_ar
   end do
 
   return
-end subroutine ed_init_atm_ar
+end subroutine ed_init_atm
 !==========================================================================================!
 !==========================================================================================!

@@ -3,7 +3,7 @@
 !    This subroutine will assign the longitude, latitude, and soil class for all non-empty !
 ! polygons.                                                                                !
 !------------------------------------------------------------------------------------------!
-subroutine set_polygon_coordinates_ar()
+subroutine set_polygon_coordinates()
    use grid_coms     , only : ngrids    & ! intent(in)
                             , nzg       ! ! intent(in)
    use ed_work_vars  , only : work_e    ! ! structure
@@ -31,7 +31,7 @@ subroutine set_polygon_coordinates_ar()
 
     
    return
-end subroutine set_polygon_coordinates_ar
+end subroutine set_polygon_coordinates
 !==========================================================================================!
 !==========================================================================================!
 
@@ -46,7 +46,7 @@ end subroutine set_polygon_coordinates_ar
 ! isoildepthflg was zero, then the layer_index matrix was filled with zeroes, so we do not !
 ! need to worry about this here.                                                           !
 !------------------------------------------------------------------------------------------!
-subroutine soil_depth_fill_ar(cgrid,igr)
+subroutine soil_depth_fill(cgrid,igr)
    
    use soil_coms     , only : layer_index ! ! intent(in)
    use ed_state_vars , only : edtype      ! ! structure
@@ -72,7 +72,7 @@ subroutine soil_depth_fill_ar(cgrid,igr)
    end do
 
    return
-end subroutine soil_depth_fill_ar
+end subroutine soil_depth_fill
 !==========================================================================================!
 !==========================================================================================!
 
@@ -123,7 +123,7 @@ subroutine load_ecosystem_state()
    !---------------------------------------------------------------------------------------!
    do igr=1,ngrids
       call ed_newgrid(igr)
-      call soil_depth_fill_ar(edgrid_g(igr),igr)
+      call soil_depth_fill(edgrid_g(igr),igr)
    end do
 
 
@@ -134,7 +134,7 @@ subroutine load_ecosystem_state()
       call MPI_Recv(ping,1,MPI_INTEGER,recvnum,100,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
   
    do igr = 1,ngrids
-      call read_site_file_array(edgrid_g(igr))
+      call read_site_file(edgrid_g(igr))
    end do
   
    if (mynum < nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,100,MPI_COMM_WORLD,ierr)
@@ -158,7 +158,7 @@ subroutine load_ecosystem_state()
    case(-1,1,2,3)
       !----- Initialize with ED1-type restart information. --------------------------------!
       write(unit=*,fmt='(a,i3.3)') ' + Initializing from ED restart file. Node: ',mynum
-      call read_ed1_history_file_array
+      call read_ed1_history_file
    end select
 
    if (mynum < nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,101,MPI_COMM_WORLD,ierr)
@@ -184,7 +184,7 @@ subroutine load_ecosystem_state()
    write(unit=*,fmt='(a,i3.3)')                                                            &
       ' + Initializing anthropogenic disturbance forcing. Node: ',mynum
 
-   call landuse_init_array()
+   call landuse_init()
 
    if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,103,MPI_COMM_WORLD,ierr)
 

@@ -1524,7 +1524,7 @@ contains
 
   subroutine allocate_edglobals(ngrids)
 
-    use var_tables_array,only:num_var,vt_info,maxvars
+    use ed_var_tables,only:num_var,vt_info,maxvars
 
     implicit none
     integer :: ngrids
@@ -5278,7 +5278,7 @@ contains
     ! =================================================
     
     
-    use var_tables_array,only:num_var,vt_info,var_table,nullify_vt_vector_pointers
+    use ed_var_tables,only:num_var,vt_info,var_table,nullify_vt_vector_pointers
     use ed_node_coms,only:mynum,mchnum,machs,nmachs,nnodetot,sendnum,recvnum,master_num
     use max_dims, only: maxgrds, maxmach
     implicit none
@@ -5540,7 +5540,7 @@ contains
 !==========================================================================================!
   subroutine filltab_globtype(igr)
 
-    use var_tables_array,only:vtable_edio_r,vtable_edio_i,vtable_edio_c,metadata_edio
+    use ed_var_tables,only:vtable_edio_r,vtable_edio_i,vtable_edio_c,metadata_edio
     use misc_coms,only:expnme
     use soil_coms,only:soil,ed_nstyp,slz
 
@@ -5642,7 +5642,7 @@ contains
 !==========================================================================================!
   subroutine filltab_edtype(igr,init)
 
-    use var_tables_array,only:vtable_edio_r,vtable_edio_i,vtable_edio_d,metadata_edio
+    use ed_var_tables,only:vtable_edio_r,vtable_edio_i,vtable_edio_d,metadata_edio
 
     implicit none
 
@@ -7137,7 +7137,7 @@ contains
 !==========================================================================================!
   subroutine filltab_polygontype(igr,ipy,init)
 
-    use var_tables_array,only:vtable_edio_r,vtable_edio_i,metadata_edio
+    use ed_var_tables,only:vtable_edio_r,vtable_edio_i,metadata_edio
 
     implicit none
 
@@ -7709,7 +7709,7 @@ contains
 !==========================================================================================!
   subroutine filltab_sitetype(igr,ipy,isi,init)
 
-    use var_tables_array,only:vtable_edio_r,vtable_edio_i,metadata_edio,vtable_edio_d
+    use ed_var_tables,only:vtable_edio_r,vtable_edio_i,metadata_edio,vtable_edio_d
 
     implicit none
     
@@ -8503,7 +8503,7 @@ contains
 !==========================================================================================!
   subroutine filltab_patchtype(igr,ipy,isi,ipa,init)
 
-    use var_tables_array,only:vtable_edio_r,vtable_edio_i,metadata_edio
+    use ed_var_tables,only:vtable_edio_r,vtable_edio_i,metadata_edio
 
     implicit none
 

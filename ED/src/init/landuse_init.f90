@@ -5,7 +5,7 @@
 !  MLO.  Added the possibility to start the run before the initial anthropogenic           !
 !        disturbance, by padding zeroes in the years before and after the dataset.         !
 !------------------------------------------------------------------------------------------!
-subroutine landuse_init_array
+subroutine landuse_init
 
    use ed_state_vars , only : edtype         & ! structure
                             , polygontype    & ! structure
@@ -56,7 +56,7 @@ subroutine landuse_init_array
       write (unit=*,fmt='(a)') ' so MAX_LU_YEARS >= IYEARZ-IYEARA+1, then recompile'
       write (unit=*,fmt='(a)') ' your model.'
       call fatal_error ('Simulation is too long for anthropogenic disturbance.'            &
-                      &,'landuse_init_array','landuse_init.f90')
+                      &,'landuse_init','landuse_init.f90')
    end if
 
    do igr = 1,ngrids
@@ -93,7 +93,7 @@ subroutine landuse_init_array
                read(unit=12,fmt=*,iostat=ierr) yd_1st
                if (ierr /= 0) then
                   call fatal_error('Error reading landuse file :'//trim(fname)//'...'      &
-                                  &,'landuse_init_array','landuse_init.f90')
+                                  &,'landuse_init','landuse_init.f90')
                end if
                yd_last = yd_1st
                !----- Read years until the end to find out first and last year. -----------!
@@ -177,13 +177,13 @@ subroutine landuse_init_array
          end if
  
          cpoly%plantation(:) = 0
-         call read_plantation_fractions_array(cpoly, file_lat, file_lon)
+         call read_plantation_fractions(cpoly, file_lat, file_lon)
          
       enddo
    enddo
 
    return
-end subroutine landuse_init_array
+end subroutine landuse_init
 !==========================================================================================!
 !==========================================================================================!
 
@@ -261,7 +261,7 @@ end subroutine landuse_file_name
 !==========================================================================================!
 !     This subroutine reads the plantation fraction.                                       !
 !------------------------------------------------------------------------------------------!
-subroutine read_plantation_fractions_array(cpoly, file_lat, file_lon)
+subroutine read_plantation_fractions(cpoly, file_lat, file_lon)
    use ed_state_vars , only : polygontype   ! ! structure
    use misc_coms     , only : ed_inputs_dir ! ! intent(in)
    use max_dims      , only : str_len       ! ! intent(in)
@@ -309,6 +309,6 @@ subroutine read_plantation_fractions_array(cpoly, file_lat, file_lon)
    close(unit=12)
 
    return
-end subroutine read_plantation_fractions_array
+end subroutine read_plantation_fractions
 !==========================================================================================!
 !==========================================================================================!
