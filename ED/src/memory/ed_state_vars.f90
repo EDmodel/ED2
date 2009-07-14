@@ -1,13 +1,13 @@
 module ed_state_vars
 
   use grid_coms, only: nzg,nzs,ngrids
-  use max_dims, only: max_site,n_pft,n_dbh, n_dist_types,maxmach,maxgrds
+  use ed_max_dims, only: max_site,n_pft,n_dbh, n_dist_types,maxmach,maxgrds
   use c34constants, only : stoma_data
   use disturb_coms, only : lutime,num_lu_trans,max_lu_years
   use met_driver_coms, only: met_driv_data,met_driv_state
   use fusion_fission_coms, only: ff_ndbh
   use phenology_coms, only: prescribed_phen
-  use misc_coms, only: idoutput, imoutput
+  use ed_misc_coms, only: idoutput, imoutput
 
 
 
@@ -5280,7 +5280,7 @@ contains
     
     use ed_var_tables,only:num_var,vt_info,var_table,nullify_vt_vector_pointers
     use ed_node_coms,only:mynum,mchnum,machs,nmachs,nnodetot,sendnum,recvnum,master_num
-    use max_dims, only: maxgrds, maxmach
+    use ed_max_dims, only: maxgrds, maxmach
     implicit none
     
     include 'mpif.h'
@@ -5541,7 +5541,7 @@ contains
   subroutine filltab_globtype(igr)
 
     use ed_var_tables,only:vtable_edio_r,vtable_edio_i,vtable_edio_c,metadata_edio
-    use misc_coms,only:expnme
+    use ed_misc_coms,only:expnme
     use soil_coms,only:soil,ed_nstyp,slz
 
 

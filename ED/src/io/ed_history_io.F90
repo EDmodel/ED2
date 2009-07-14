@@ -1,9 +1,9 @@
 subroutine read_ed1_history_file
 
 
-  use max_dims, only: n_pft,huge_patch,huge_cohort,max_water,str_len,maxfiles,maxlist
+  use ed_max_dims, only: n_pft,huge_patch,huge_cohort,max_water,str_len,maxfiles,maxlist
   use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, include_pft_ag, phenology,pft_1st_check,include_these_pft
-  use misc_coms, only: sfilin, ied_init_mode
+  use ed_misc_coms, only: sfilin, ied_init_mode
   use mem_sites, only: grid_res,edres
   use consts_coms, only: pio180
   use ed_misc_coms, only: use_target_year, restart_target_year
@@ -743,9 +743,9 @@ end subroutine read_ed1_history_file
 subroutine init_full_history_restart()
 
 
-  use max_dims, only: n_pft
+  use ed_max_dims, only: n_pft
   use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, phenology
-  use misc_coms, only: sfilin, ied_init_mode,current_time
+  use ed_misc_coms, only: sfilin, ied_init_mode,current_time
   use mem_sites, only: grid_res,edres
   use consts_coms, only: pio180
   use ed_misc_coms, only: use_target_year, restart_target_year
@@ -1194,7 +1194,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
   use ed_state_vars,only: edtype,polygontype
   use grid_coms,only : nzg
-  use max_dims,only : n_pft,n_dbh, n_dist_types
+  use ed_max_dims,only : n_pft,n_dbh, n_dist_types
   use hdf5
   use hdf5_coms,only:file_id,dset_id,dspace_id,plist_id, &
        globdims,chnkdims,chnkoffs,cnt,stride, &
@@ -1545,7 +1545,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
         memdims,memoffs,memsize
 
    use grid_coms,only : nzg
-   use max_dims,only : n_pft,n_dbh,n_dist_types
+   use ed_max_dims,only : n_pft,n_dbh,n_dist_types
 
    implicit none
 
@@ -1811,7 +1811,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    use ed_state_vars,only: sitetype
    use grid_coms,only : nzg,nzs
-   use max_dims,only : n_pft,n_dbh
+   use ed_max_dims,only : n_pft,n_dbh
    use hdf5_coms,only:file_id,dset_id,dspace_id,plist_id, &
         globdims,chnkdims,chnkoffs,cnt,stride, &
         memdims,memoffs,memsize,datatype_id,setsize
@@ -2112,7 +2112,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
        globdims,chnkdims,chnkoffs,cnt,stride, &
        memdims,memoffs,memsize
   use consts_coms, only: cliq,cice,t3ple,tsupercool
-  use max_dims,only: n_pft
+  use ed_max_dims,only: n_pft
   use ed_therm_lib, only : calc_hcapveg
   use allometry, only : area_indices
   use therm_lib, only : qwtk

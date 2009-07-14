@@ -19,7 +19,7 @@ subroutine structural_growth(cgrid, month)
                             , c2n_stem               & ! intent(in)
                             , l2n_stem               ! ! intent(in)
    use decomp_coms   , only : f_labile               ! ! intent(in)
-   use max_dims      , only : n_pft                  & ! intent(in)
+   use ed_max_dims      , only : n_pft                  & ! intent(in)
                             , n_dbh                  ! ! intent(in)
    use ed_therm_lib  , only : calc_hcapveg           & ! function
                             , update_veg_energy_cweh ! ! function
@@ -365,7 +365,7 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in  
                                 ,agb_mort)
    
    use ed_state_vars , only : patchtype    ! ! structure
-   use max_dims      , only : n_pft        & ! intent(in)
+   use ed_max_dims      , only : n_pft        & ! intent(in)
                             , n_dbh        & ! intent(in)
                             , n_dist_types ! ! intent(in)
    use consts_coms   , only : pio4         ! ! intent(in)
@@ -521,7 +521,7 @@ subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
                             , polygontype    & ! structure
                             , sitetype       & ! structure
                             , patchtype      ! ! structure
-   use max_dims      , only : n_pft          ! ! intent(in)
+   use ed_max_dims      , only : n_pft          ! ! intent(in)
    use pft_coms      , only : include_pft    & ! intent(in)
                             , c2n_recruit    & ! intent(in)
                             , c2n_stem       & ! intent(in)

@@ -7,7 +7,7 @@ subroutine phenology_driver(cgrid, doy, month, tfact)
                              , polygontype   & ! structure
                              , sitetype      ! ! structure
    use phenology_coms , only : iphen_scheme  ! ! intent(in)
-   use misc_coms      , only : current_time  ! ! intent(in)
+   use ed_misc_coms      , only : current_time  ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)      , target      :: cgrid
@@ -95,8 +95,8 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                              , alli                     ! ! intent(in)
    use ed_therm_lib   , only : calc_hcapveg             & ! function
                              , update_veg_energy_cweh   ! ! subroutine
-   use max_dims       , only : n_pft                    ! ! intent(in)
-   use misc_coms      , only : current_time             ! ! intent(in)
+   use ed_max_dims       , only : n_pft                    ! ! intent(in)
+   use ed_misc_coms      , only : current_time             ! ! intent(in)
    use allometry      , only : area_indices             & ! subroutine
                              , dbh2bl                   ! ! function
 

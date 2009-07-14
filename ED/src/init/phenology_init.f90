@@ -5,7 +5,7 @@ contains
   subroutine phenology_init
     
     use phenology_coms, only: iphen_scheme
-    use misc_coms, only: ied_init_mode
+    use ed_misc_coms, only: ied_init_mode
 
     implicit none
 
@@ -49,7 +49,7 @@ contains
 
     use ed_state_vars,only:edtype,polygontype,sitetype,edgrid_g
     use grid_coms,only:ngrids
-    use misc_coms, only: iyeara, imontha, idatea, itimea, ed_inputs_dir
+    use ed_misc_coms, only: iyeara, imontha, idatea, itimea, ed_inputs_dir
 
     implicit none
 
@@ -295,7 +295,7 @@ contains
   subroutine read_harvard_phenology
 
     use ed_state_vars,only:edgrid_g,edtype,polygontype,sitetype
-    use misc_coms, only: imontha, idatea, iyeara
+    use ed_misc_coms, only: imontha, idatea, iyeara
     use grid_coms,only:ngrids
 
     implicit none
@@ -432,10 +432,10 @@ contains
   subroutine read_prescribed_phenology
 
     use ed_state_vars,only:edgrid_g,edtype,polygontype,sitetype
-    use misc_coms, only: imontha, idatea, iyeara
+    use ed_misc_coms, only: imontha, idatea, iyeara
     use grid_coms,only:ngrids
     use phenology_coms, only: prescribed_phen,phenpath
-    use max_dims, only: str_len
+    use ed_max_dims, only: str_len
 
     implicit none
 

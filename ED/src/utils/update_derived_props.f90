@@ -461,7 +461,7 @@ subroutine update_rad_avg(cgrid)
    use ed_state_vars , only : edtype      & ! structure
                             , polygontype & ! structure
                             , sitetype    ! ! structure
-   use misc_coms     , only : radfrq      ! ! intent(in)
+   use ed_misc_coms     , only : radfrq      ! ! intent(in)
    use consts_coms   , only : day_sec     ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!

@@ -17,10 +17,10 @@ subroutine landuse_init
                             , max_lu_years   & ! intent(in)
                             , num_lu_trans   & ! intent(in)
                             , ianth_disturb  ! ! intent(in)
-   use misc_coms     , only : iyeara         & ! intent(in)
+   use ed_misc_coms     , only : iyeara         & ! intent(in)
                             , iyearz         ! ! intent(in)
    use grid_coms     , only : ngrids         ! ! intent(in)
-   use max_dims      , only : str_len        ! ! intent(in)
+   use ed_max_dims      , only : str_len        ! ! intent(in)
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    type(edtype)     , pointer    :: cgrid
@@ -196,7 +196,7 @@ end subroutine landuse_init
 !==========================================================================================!
 subroutine landuse_file_name(lat, lon, file_lat, file_lon, fname)
   
-  use misc_coms, only: ed_inputs_dir
+  use ed_misc_coms, only: ed_inputs_dir
 
   implicit none
 
@@ -263,8 +263,8 @@ end subroutine landuse_file_name
 !------------------------------------------------------------------------------------------!
 subroutine read_plantation_fractions(cpoly, file_lat, file_lon)
    use ed_state_vars , only : polygontype   ! ! structure
-   use misc_coms     , only : ed_inputs_dir ! ! intent(in)
-   use max_dims      , only : str_len       ! ! intent(in)
+   use ed_misc_coms     , only : ed_inputs_dir ! ! intent(in)
+   use ed_max_dims      , only : str_len       ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(polygontype), target     :: cpoly

@@ -18,7 +18,7 @@ subroutine ed_driver
        filltab_alltypes, &
        edgrid_g
   
-  use misc_coms, only: &
+  use ed_misc_coms, only: &
        iyeara,          &
        imontha,         &
        idatea,          &
@@ -218,7 +218,7 @@ end subroutine ed_driver
 !==========================================================================================!
 !==========================================================================================!
 subroutine find_frqsum()
-   use misc_coms, only:  &
+   use ed_misc_coms, only:  &
         unitfast,        &
         unitstate,       &
         isoutput,        &

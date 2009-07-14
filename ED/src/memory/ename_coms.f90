@@ -1,6 +1,6 @@
 Module ename_coms
 
-  use max_dims, only: max_soi, max_ed_regions, str_len,n_pft,maxgrds, nzgmax,maxpvars
+  use ed_max_dims, only: max_soi, max_ed_regions, str_len,n_pft,maxgrds, nzgmax,maxpvars
 
   implicit none
 

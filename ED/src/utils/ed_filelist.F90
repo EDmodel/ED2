@@ -10,7 +10,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine ed_filelist(fnames,file_prefix,nfile)
  
-   use max_dims, only : str_len, maxfiles
+   use ed_max_dims, only : str_len, maxfiles
 
    implicit none
    integer                        , intent(out)    :: nfile
@@ -116,7 +116,7 @@ end subroutine ed_filelist
 !==========================================================================================!
 !==========================================================================================!
 subroutine ed1_fileinfo(text,nfiles,full_list,ntype,type_list,tlon_list,tlat_list)
-   use max_dims, only: str_len,maxfiles,maxlist
+   use ed_max_dims, only: str_len,maxfiles,maxlist
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    character(len=*)                           , intent(in)  :: text   ! Type file extension

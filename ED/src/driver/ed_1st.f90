@@ -20,7 +20,7 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, name_name)
               iparallel,    &
               machsize
   
-  use misc_coms, only:  &
+  use ed_misc_coms, only:  &
        runtype,         &
        iyeara,          &
        imontha,         &

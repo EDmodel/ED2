@@ -73,10 +73,9 @@ OBJ_MODEL =                        \
 	leaf_database.o            \
 	libxml2f90.f90_pp.o        \
 	lsm_hyd.o                  \
-	max_dims.o                 \
+	ed_max_dims.o              \
 	mem_sites.o                \
 	met_driver_coms.o          \
-	misc_coms.o                \
 	mortality.o                \
 	numutils.o                 \
 	optimiz_coms.o             \

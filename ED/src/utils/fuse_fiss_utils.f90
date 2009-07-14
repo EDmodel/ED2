@@ -297,7 +297,7 @@ module fuse_fiss_utils
                                      , lai_fuse_tol        & ! intent(in)
                                      , fuse_relax          & ! intent(in)
                                      , coh_tolerance_max   ! ! intent(in)
-      use max_dims            , only : n_pft               ! ! intent(in)
+      use ed_max_dims            , only : n_pft               ! ! intent(in)
       use mem_sites           , only : maxcohort           ! ! intent(in)
       use allometry           , only : dbh2h               & ! function
                                      , dbh2bl              ! ! function
@@ -576,7 +576,7 @@ module fuse_fiss_utils
       use pft_coms             , only :  q                      & ! intent(in), lookup table
                                        , qsw                      ! intent(in), lookup table
       use fusion_fission_coms  , only :  lai_tol                ! ! intent(in)
-      use max_dims             , only :  n_pft                  ! ! intent(in)
+      use ed_max_dims             , only :  n_pft                  ! ! intent(in)
       use allometry            , only :  dbh2h                  & ! function
                                        , bd2dbh                 & ! function
                                        , dbh2bd                 ! ! function
@@ -1099,7 +1099,7 @@ module fuse_fiss_utils
                                       , ntol              & ! intent(in)
                                       , profile_tol       & ! intent(in)
                                       , pat_tolerance_max ! ! intent(in)
-      use max_dims            , only :  n_pft             ! ! intent(in)
+      use ed_max_dims            , only :  n_pft             ! ! intent(in)
       use mem_sites           , only :  maxpatch          & ! intent(in)
                                       , maxcohort         ! ! intent(in)
       use ed_node_coms        , only :  mynum
@@ -1453,7 +1453,7 @@ module fuse_fiss_utils
       use grid_coms          , only :  nzg                   & ! intent(in)
                                      , nzs                   ! ! intent(in)
       use fusion_fission_coms, only :  ff_ndbh               ! ! intent(in)
-      use max_dims           , only :  n_pft                 & ! intent(in)
+      use ed_max_dims           , only :  n_pft                 & ! intent(in)
                                      , n_dbh                 ! ! intent(in)
       use mem_sites          , only :  maxcohort             ! ! intent(in)
       use consts_coms        , only :  cpi                   & ! intent(in)
@@ -1923,7 +1923,7 @@ module fuse_fiss_utils
       use ed_state_vars      , only :  sitetype   & ! structure
                                      , patchtype  ! ! structure
       use fusion_fission_coms, only :  maxdbh     ! ! intent(in)
-      use max_dims           , only :  n_pft      ! ! intent(in)
+      use ed_max_dims           , only :  n_pft      ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target     :: csite             ! Current site

@@ -4,7 +4,7 @@
 ! logic data to be used during the run.                                                    !
 !------------------------------------------------------------------------------------------!
 subroutine read_met_driver_head()
-   use max_dims       , only : max_met_vars     ! ! intent(in)
+   use ed_max_dims       , only : max_met_vars     ! ! intent(in)
    use met_driver_coms, only : nformats         & ! intent(in)
                              , met_names        & ! intent(out)
                              , met_nlon         & ! intent(out)
@@ -109,7 +109,7 @@ end subroutine read_met_driver_head
 !------------------------------------------------------------------------------------------!
 subroutine init_met_drivers
 
-   use max_dims        , only : max_met_vars
+   use ed_max_dims        , only : max_met_vars
    use met_driver_coms , only : nformats          & ! intent(in)
                               , met_names         & ! intent(out)
                               , met_nlon          & ! intent(out)
@@ -303,7 +303,7 @@ subroutine read_met_drivers_init
                              , metcycf        & ! intent(in)
                              , metyears       ! ! intent(inout)
    use mem_sites      , only : grid_type      ! ! intent(in)
-   use misc_coms      , only : current_time   & ! intent(in)
+   use ed_misc_coms      , only : current_time   & ! intent(in)
                              , iyeara         & ! intent(in)
                              , iyearz         ! ! intent(in)
    use grid_coms      , only : ngrids         ! ! intent(in)
@@ -542,7 +542,7 @@ subroutine read_met_drivers
                              , met_vars      & ! intent(in)
                              , metcyc1       & ! intent(in)
                              , metcycf       ! ! intent(in)
-   use misc_coms      , only : current_time  ! ! intent(in)
+   use ed_misc_coms      , only : current_time  ! ! intent(in)
    use hdf5_utils     , only : shdf5_open_f  & ! subroutine
                              , shdf5_close_f ! ! subroutine
    use ed_state_vars  , only : edtype        & ! structure
@@ -710,7 +710,7 @@ subroutine update_met_drivers(cgrid)
                              , met_vars     & ! intent(in)
                              , have_co2     & ! intent(in)
                              , initial_co2  ! ! intent(in)
-   use misc_coms      , only : current_time ! ! intent(in)
+   use ed_misc_coms      , only : current_time ! ! intent(in)
    use consts_coms    , only : rdry         & ! intent(in)
                              , cice         & ! intent(in)
                              , cliq         & ! intent(in)
@@ -1890,7 +1890,7 @@ subroutine int_met_avg(cgrid)
 
 
   use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
-  use misc_coms,only : dtlsm,frqsum
+  use ed_misc_coms,only : dtlsm,frqsum
   
   implicit none
 

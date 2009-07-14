@@ -4,7 +4,7 @@
 ! step, but not every sub-step.                                                            !
 !------------------------------------------------------------------------------------------!
 subroutine radiate_driver(cgrid)
-   use misc_coms             , only : current_time          & ! intent(in)
+   use ed_misc_coms             , only : current_time          & ! intent(in)
                                     , radfrq                & ! intent(in)
                                     , dtlsm                 ! ! intent(in)
    use ed_state_vars         , only : edtype                & ! structure
@@ -133,7 +133,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
    use soil_coms            , only : soil            & ! intent(in)
                                    , emisg           ! ! intent(in)
    use consts_coms          , only : stefan          ! ! intent(in)
-   use max_dims             , only : n_pft           ! ! intent(in)
+   use ed_max_dims             , only : n_pft           ! ! intent(in)
    use allometry            , only : dbh2ca          ! ! function
 
    implicit none
@@ -438,7 +438,7 @@ end subroutine sfcrad_ed
 !==========================================================================================!
 !==========================================================================================!
 subroutine solar_zenith(cgrid)
-   use misc_coms    , only : current_time ! ! intent(in)
+   use ed_misc_coms    , only : current_time ! ! intent(in)
    use consts_coms  , only : pio1808      & ! intent(in)
                            , twopi8       & ! intent(in)
                            , hr_sec8      ! ! intent(in)

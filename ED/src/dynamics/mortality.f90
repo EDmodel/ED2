@@ -11,8 +11,8 @@ real function mortality_rates(cpatch,ipa,ico,avg_daily_temp)
                             , frost_mort                 ! ! intent(in)
    use disturb_coms  , only : treefall_disturbance_rate  & ! intent(in)
                             , treefall_hite_threshold    ! ! intent(in)
-   use misc_coms     , only : current_time               ! ! intent(in)
-   use max_dims      , only : n_pft                      ! ! intent(in)
+   use ed_misc_coms     , only : current_time               ! ! intent(in)
+   use ed_max_dims      , only : n_pft                      ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(patchtype)          , target     :: cpatch           ! Current patch

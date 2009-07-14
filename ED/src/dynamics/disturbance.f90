@@ -18,10 +18,10 @@ module disturbance_utils
   subroutine apply_disturbances(cgrid)
 
     use ed_state_vars,only: edtype,polygontype,sitetype,patchtype
-    use misc_coms, only: current_time
+    use ed_misc_coms, only: current_time
     use disturb_coms, only: treefall_age_threshold,  &
          min_new_patch_area
-    use max_dims, only: n_dist_types, n_pft, n_dbh
+    use ed_max_dims, only: n_dist_types, n_pft, n_dbh
     use mem_sites, only: maxcohort
 
     implicit none
@@ -522,7 +522,7 @@ end subroutine apply_disturbances
   subroutine increment_patch_vars(csite,np, cp, area_fac)
 
     use ed_state_vars, only: sitetype,patchtype
-    use max_dims, only: n_pft
+    use ed_max_dims, only: n_pft
     use grid_coms, only: nzg
 
     implicit none
@@ -711,7 +711,7 @@ end subroutine apply_disturbances
     
     use ed_state_vars, only: sitetype,patchtype,polygontype
     use decomp_coms, only: f_labile
-    use max_dims, only: n_pft
+    use ed_max_dims, only: n_pft
     use pft_coms, only: c2n_storage, c2n_leaf, c2n_recruit, c2n_stem, l2n_stem
     use grid_coms, only: nzg
 
@@ -818,12 +818,12 @@ end subroutine apply_disturbances
     use ed_state_vars,only : sitetype,patchtype
 
     use pft_coms, only: q, qsw, sla, hgt_min, max_dbh
-    use misc_coms, only: dtlsm
+    use ed_misc_coms, only: dtlsm
     use fuse_fiss_utils, only : sort_cohorts
     use ed_therm_lib,only : calc_hcapveg
     use consts_coms, only: t3ple
     use allometry, only : h2dbh, dbh2bd, dbh2bl, dbh2h, area_indices
-    use max_dims, only : n_pft
+    use ed_max_dims, only : n_pft
 
     implicit none
 

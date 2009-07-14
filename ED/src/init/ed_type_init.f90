@@ -110,7 +110,7 @@ end subroutine init_ed_cohort_vars
 subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   
   use ed_state_vars,only:sitetype
-  use max_dims, only: n_pft
+  use ed_max_dims, only: n_pft
 !  use fuse_fiss_utils, only: count_cohorts
   use grid_coms,     only: nzs, nzg
   use soil_coms, only: slz
@@ -242,7 +242,7 @@ end subroutine init_ed_patch_vars
 subroutine init_ed_site_vars(cpoly, lat)
 
   use ed_state_vars,only:polygontype
-  use max_dims, only: n_pft, n_dbh, n_dist_types 
+  use ed_max_dims, only: n_pft, n_dbh, n_dist_types 
   use pft_coms, only: agri_stock,plantation_stock
   use grid_coms, only: nzs, nzg
 

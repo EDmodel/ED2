@@ -31,7 +31,7 @@ subroutine reproduction(cgrid, month)
                                  , hgt_min               & ! intent(in)
                                  , plant_min_temp        ! ! intent(in)
    use decomp_coms        , only : f_labile              ! ! intent(in)
-   use max_dims           , only : n_pft                 ! ! intent(in)
+   use ed_max_dims           , only : n_pft                 ! ! intent(in)
    use fuse_fiss_utils , only : sort_cohorts       & ! subroutine
                                  , terminate_cohorts  & ! subroutine
                                  , fuse_cohorts       & ! subroutine

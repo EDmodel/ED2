@@ -13,7 +13,7 @@ subroutine h5_output(vtype)
        var_table_vector,     &
        num_var
 
-  use misc_coms, only : ffilout, &
+  use ed_misc_coms, only : ffilout, &
                         sfilout, &
 	                itimea,  &
 	                idatea,  &
@@ -39,7 +39,7 @@ subroutine h5_output(vtype)
   use hdf5
 #endif
   use ed_node_coms,only:mynum,nnodetot,recvnum,sendnum
-  use max_dims, only : n_pft,n_dist_types,n_dbh,maxgrds
+  use ed_max_dims, only : n_pft,n_dist_types,n_dbh,maxgrds
   use ed_state_vars,only: edgrid_g,edtype,polygontype,sitetype,patchtype,gdpy
 
   implicit none
@@ -680,7 +680,7 @@ subroutine h5_output(vtype)
 subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,irec)
   
   use grid_coms,only : nzg,nzs
-  use max_dims, only : n_pft,n_dist_types,n_dbh
+  use ed_max_dims, only : n_pft,n_dist_types,n_dbh
   use hdf5_coms,only : chnkdims,chnkoffs,cnt,stride,globdims
   use fusion_fission_coms, only: ff_ndbh
 

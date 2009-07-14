@@ -10,7 +10,7 @@ subroutine prescribed_leaf_state(lat,imonth,iyear,doy,green_leaf_factor,leaf_agi
                              , iphenyf1         & ! intent(in)
                              , iphenyff         & ! intent(in)
                              , prescribed_phen  ! ! intent(in)
-   use max_dims       , only : n_pft            ! ! intent(in)
+   use ed_max_dims       , only : n_pft            ! ! intent(in)
    use pft_coms       , only : phenology        ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!

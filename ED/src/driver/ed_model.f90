@@ -4,7 +4,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine ed_model()
   
-   use misc_coms     , only : integration_scheme  & ! intent(in)
+   use ed_misc_coms     , only : integration_scheme  & ! intent(in)
                             , current_time        & ! intent(in)
                             , frqfast             & ! intent(in)
                             , frqstate            & ! intent(in)
@@ -380,7 +380,7 @@ end subroutine ed_model
 !==========================================================================================!
 subroutine update_model_time_dm(ctime,dtlong)
 
-   use misc_coms, only: simtime
+   use ed_misc_coms, only: simtime
    use consts_coms, only : day_sec
    implicit none
 
@@ -451,7 +451,7 @@ subroutine vegetation_dynamics(new_month,new_year)
 
   use ed_node_coms,only:mynum,nnodetot
   use grid_coms, only: ngrids
-  use misc_coms, only: current_time, dtlsm,frqsum
+  use ed_misc_coms, only: current_time, dtlsm,frqsum
   use disturb_coms, only: include_fire
   use disturbance_utils, only: apply_disturbances, site_disturbance_rates
   use fuse_fiss_utils, only : fuse_patches

@@ -8,7 +8,7 @@ subroutine canopy_update_euler(csite, ipa, vels, rhos, atm_tmp, prss, pcpg, qpcp
   use ed_state_vars,only:sitetype,patchtype
   use grid_coms, only: nzg
   use consts_coms, only: alvi
-  use max_dims, only: n_pft
+  use ed_max_dims, only: n_pft
 
   implicit none
 

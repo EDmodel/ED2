@@ -8,7 +8,7 @@
 subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
 
    use grid_coms, only: nzg
-   use misc_coms, only: radfrq
+   use ed_misc_coms, only: radfrq
    use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
 
    
@@ -252,7 +252,7 @@ subroutine integrate_ed_daily_output_state(cgrid)
                                    , sitetype      & ! structure
                                    , patchtype     ! ! structure
    use grid_coms            , only : nzg           ! ! intent(in)
-   use max_dims             , only : n_dbh         & ! intent(in)
+   use ed_max_dims             , only : n_dbh         & ! intent(in)
                                    , n_pft         & ! intent(in)
                                    , n_dist_types  ! ! structure
    implicit none
@@ -392,8 +392,8 @@ subroutine integrate_ed_daily_output_flux(cgrid)
 !------------------------------------------------------------------------------------------!
    use ed_state_vars        , only : edtype,polygontype,sitetype,patchtype
    use grid_coms            , only : nzg
-   use max_dims             , only : n_dbh, n_pft, n_dist_types
-   use misc_coms            , only : dtlsm
+   use ed_max_dims             , only : n_dbh, n_pft, n_dist_types
+   use ed_misc_coms            , only : dtlsm
    implicit none
    
    type(edtype)      , target  :: cgrid
@@ -547,7 +547,7 @@ end subroutine integrate_ed_daily_output_flux
 !==========================================================================================!
 subroutine normalize_ed_daily_vars(cgrid,timefac1)
    use ed_state_vars , only : edtype,polygontype,sitetype,patchtype
-   use max_dims      , only : n_pft
+   use ed_max_dims      , only : n_pft
    implicit none
    real, intent(in)         :: timefac1 ! Daily sum          => daily average
    type(edtype)      , target  :: cgrid
@@ -602,9 +602,9 @@ subroutine normalize_ed_daily_output_vars(cgrid)
 !------------------------------------------------------------------------------------------!
    use grid_coms     , only : nzg
    use ed_state_vars , only : edtype,polygontype,sitetype,patchtype
-   use max_dims      , only : n_pft,n_dist_types
+   use ed_max_dims      , only : n_pft,n_dist_types
    use consts_coms   , only : alvl,day_sec,umol_2_kgC
-   use misc_coms     , only : dtlsm,frqsum
+   use ed_misc_coms     , only : dtlsm,frqsum
    use therm_lib     , only : qwtk
    implicit none
    type(edtype)      , target  :: cgrid
@@ -955,7 +955,7 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
 ! were integrated and normalized.                                                          !
 !------------------------------------------------------------------------------------------!
    use ed_state_vars, only : edtype
-   use      max_dims, only : n_dbh,n_pft, n_dist_types
+   use      ed_max_dims, only : n_dbh,n_pft, n_dist_types
    implicit none
    
    type(edtype)      , target  :: cgrid
@@ -1036,8 +1036,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
 ! computes some of the variables that didn't need to be computed every day, like AGB.      !
 !------------------------------------------------------------------------------------------!
    use ed_state_vars, only: edtype,polygontype,sitetype,patchtype
-   use     misc_coms, only: current_time,simtime
-   use      max_dims, only: n_pft,n_dbh,n_dist_types
+   use     ed_misc_coms, only: current_time,simtime
+   use      ed_max_dims, only: n_pft,n_dbh,n_dist_types
    implicit none
   
    type(edtype)      , target  :: cgrid
@@ -1250,7 +1250,7 @@ end subroutine zero_ed_monthly_output_vars
 subroutine update_ed_yearly_vars(cgrid)
 
    use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
-   use max_dims, only: n_pft, n_dbh
+   use ed_max_dims, only: n_pft, n_dbh
    use consts_coms, only: pi1
    use allometry, only: ed_biomass
   
@@ -1346,7 +1346,7 @@ end subroutine update_ed_yearly_vars
 !==========================================================================================!
 subroutine zero_ed_yearly_vars(cgrid)
 
-   use max_dims, only: n_pft, n_dbh
+   use ed_max_dims, only: n_pft, n_dbh
    use ed_state_vars,only:edtype,polygontype
 
    implicit none

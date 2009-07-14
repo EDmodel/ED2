@@ -285,7 +285,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                    , hcapcani              & ! intent(out)
                                    , rk4water_stab_thresh  & ! intent(in)
                                    , rk4min_sfcwater_mass  ! ! intent(in)
-   use max_dims             , only : n_pft                 ! ! intent(in)
+   use ed_max_dims             , only : n_pft                 ! ! intent(in)
    use canopy_radiation_coms, only : tai_min               ! ! intent(in)
    use therm_lib            , only : qwtk8                 ! ! subroutine
    use allometry            , only : dbh2bl                ! ! function
@@ -710,7 +710,7 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
                                     , rk4met        ! ! intent(in)
    use ed_state_vars         , only : patchtype     ! ! structure
    use grid_coms             , only : nzg           ! ! intent(in)
-   use misc_coms             , only : integ_err     & ! intent(in)
+   use ed_misc_coms             , only : integ_err     & ! intent(in)
                                     , record_err    ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -1600,7 +1600,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
                             , patchtype         ! ! structure
    use grid_coms     , only : nzg               & ! intent(in)
                             , nzs               ! ! intent(in)
-   use max_dims      , only : n_pft             ! ! intent(in)
+   use ed_max_dims      , only : n_pft             ! ! intent(in)
    use ed_misc_coms  , only : fast_diagnostics  ! ! intent(in)
 
    implicit none
@@ -1722,10 +1722,10 @@ subroutine print_csiteipa(csite, ipa)
    use rk4_coms              , only : rk4met        ! ! intent(in)
    use ed_state_vars         , only : sitetype      & ! structure
                                     , patchtype     ! ! structure
-   use misc_coms             , only : current_time  ! ! intent(in)
+   use ed_misc_coms             , only : current_time  ! ! intent(in)
    use grid_coms             , only : nzs           & ! intent(in)
                                     , nzg           ! ! intent(in)
-   use max_dims              , only : n_pft         ! ! intent(in)
+   use ed_max_dims              , only : n_pft         ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)  , target     :: csite
@@ -1849,7 +1849,7 @@ subroutine print_rk4patch(y,csite,ipa)
                                     , patchtype            ! ! structure
    use grid_coms             , only : nzg                  & ! intent(in)
                                     , nzs                  ! ! intent(in)
-   use misc_coms             , only : current_time         ! ! intent(in)
+   use ed_misc_coms             , only : current_time         ! ! intent(in)
    use therm_lib             , only : qtk8                 & ! subroutine
                                     , qwtk8                ! ! subroutine
    implicit none

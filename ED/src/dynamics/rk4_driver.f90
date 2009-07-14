@@ -23,8 +23,8 @@ module rk4_driver
                                         , sitetype             & ! structure
                                         , patchtype            ! ! structure
       use grid_coms              , only : nzg                  ! ! intent(in)
-      use max_dims               , only : n_dbh                ! ! intent(in)
-      use misc_coms              , only : dtlsm                ! ! intent(in)
+      use ed_max_dims               , only : n_dbh                ! ! intent(in)
+      use ed_misc_coms              , only : dtlsm                ! ! intent(in)
       use consts_coms            , only : umol_2_kgC           ! ! intent(in)
       use canopy_struct_dynamics , only : canopy_turbulence ! ! subroutine
       implicit none
@@ -189,7 +189,7 @@ module rk4_driver
    subroutine integrate_patch(csite,ipa,isi,ipy,ifm,integration_buff)
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
-      use misc_coms       , only : dtlsm                ! ! intent(in)
+      use ed_misc_coms       , only : dtlsm                ! ! intent(in)
       use soil_coms       , only : soil_rough           & ! intent(in)
                                  , snow_rough           ! ! intent(in)
       use canopy_air_coms , only : exar8                ! ! intent(in)
@@ -807,7 +807,7 @@ subroutine sum_plant_cfluxes(csite,ipa, gpp, gpp_dbh,plresp)
                                    , patchtype   ! ! structure
    use consts_coms          , only : day_sec     & ! intent(in)
                                    , umol_2_kgC  ! ! intent(in)
-   use max_dims             , only : n_dbh
+   use ed_max_dims             , only : n_dbh
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)        , target      :: csite

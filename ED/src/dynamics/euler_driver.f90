@@ -2,7 +2,7 @@ subroutine euler_timestep(cgrid)
 
   use ed_state_vars,only: edtype,polygontype, &
        sitetype,patchtype
-  use misc_coms, only: dtlsm
+  use ed_misc_coms, only: dtlsm
   use soil_coms, only: soil_rough
   use consts_coms, only: cp,mmdryi
   use canopy_struct_dynamics,only:ed_stars
@@ -108,8 +108,8 @@ subroutine leaf3_land(csite,ipa, nlev_sfcwater,   &
   use ed_state_vars, only: sitetype
   use grid_coms, only: nzg, nzs
   use soil_coms, only: soil_rough, snow_rough, soil
-  use misc_coms, only: dtlsm
-  use max_dims, only: n_pft
+  use ed_misc_coms, only: dtlsm
+  use ed_max_dims, only: n_pft
   use therm_lib, only: qtk,qwtk
   use ed_therm_lib,only:ed_grndvap
   use consts_coms, only: wdns
@@ -339,12 +339,12 @@ subroutine canopy(nlev_sfcwater, ntext_soil, ktrans,   &
 
 use soil_coms,   only: soil_rough, dslz
 use grid_coms, only: nzg
-use misc_coms, only: dtlsm
+use ed_misc_coms, only: dtlsm
 use consts_coms, only: cp, vonk, alvl, cliq, cice, alli, rvap
 
 use ed_state_vars,only:sitetype,patchtype
 use canopy_air_coms, only: exar, covr
-use max_dims, only: n_pft
+use ed_max_dims, only: n_pft
 
 implicit none
 
@@ -532,7 +532,7 @@ subroutine sfcwater(nlev_sfcwater,ntext_soil,                       &
 
 use soil_coms, only: slz, dslz, dslzi, dslzo2, soil
 use grid_coms, only: nzg, nzs                       
-use misc_coms, only: dtlsm
+use ed_misc_coms, only: dtlsm
 use consts_coms, only: alvi, cice, cliq, alli, t3ple, qicet3, qliqt3, tsupercool, wdns, wdnsi
 use therm_lib, only: qwtk
 
@@ -1133,7 +1133,7 @@ use consts_coms, only: cliqvlme, allivlme, alvi,t3ple, tsupercool,wdnsi
 
 use ed_state_vars,only:sitetype,patchtype
 
-use misc_coms, only: dtlsm
+use ed_misc_coms, only: dtlsm
 
 implicit none
 
@@ -1303,7 +1303,7 @@ subroutine remove_runoff(ksn, sfcwater_fracliq, sfcwater_mass,   &
   use soil_coms, only: runoff_time
   use grid_coms, only: nzs
   use consts_coms, only: alli, cliq,t3ple, wdnsi, tsupercool
-  use misc_coms, only: dtlsm
+  use ed_misc_coms, only: dtlsm
   use therm_lib, only: qtk
 
   implicit none

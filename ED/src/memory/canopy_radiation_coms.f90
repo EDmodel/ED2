@@ -8,7 +8,7 @@
 !------------------------------------------------------------------------------------------!
 module canopy_radiation_coms
 
-   use max_dims , only : n_pft
+   use ed_max_dims , only : n_pft
    implicit none 
 
    !----- Converts PAR radiation from  watts to Einsteins (units are Ein/watt of PAR). ----!

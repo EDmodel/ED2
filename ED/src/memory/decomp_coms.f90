@@ -3,7 +3,7 @@ Module decomp_coms
 
   ! DO NOT INITIALIZE PARAMETERS IN THEIR MODULES - NOT ALL COMPILERS WILL ACTUALLY INITIALIZE THEM
 
-  use max_dims, only: n_pft
+  use ed_max_dims, only: n_pft
 
   implicit none
 

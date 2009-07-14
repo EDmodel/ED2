@@ -76,7 +76,7 @@ subroutine init_nbg_cohorts(csite,lsl,atm_tmp,ipa_a,ipa_z)
                                  , patchtype          & ! structure
                                  , allocate_sitetype  & ! subroutine
                                  , allocate_patchtype ! ! subroutine
-   use max_dims           , only : n_pft              ! ! intent(in)
+   use ed_max_dims           , only : n_pft              ! ! intent(in)
    use pft_coms           , only : q                  & ! intent(in)
                                  , qsw                & ! intent(in)
                                  , sla                & ! intent(in)

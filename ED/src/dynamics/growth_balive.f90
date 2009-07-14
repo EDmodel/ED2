@@ -296,8 +296,8 @@ subroutine plant_carbon_balances(cpatch,ipa,ico, daily_C_gain, carbon_balance,  
   use ed_state_vars,only:patchtype
   use pft_coms, only: growth_resp_factor
   use consts_coms, only: umol_2_kgC,day_sec
-  use misc_coms, only: current_time
-  use max_dims, only: n_pft
+  use ed_misc_coms, only: current_time
+  use ed_max_dims, only: n_pft
 
   implicit none
 

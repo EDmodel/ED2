@@ -73,7 +73,7 @@ end subroutine leaf_derivs
 !==========================================================================================!
 !==========================================================================================!
 subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
-   use max_dims             , only : nzgmax               & ! intent(in)
+   use ed_max_dims             , only : nzgmax               & ! intent(in)
                                    , nzsmax               ! ! intent(in)
    use consts_coms          , only : alvl8                & ! intent(in)
                                    , cliqvlme8            & ! intent(in)
@@ -92,7 +92,7 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
                                    , slzt8                & ! intent(in)
                                    , ss                   & ! intent(in)
                                    , isoilbc              ! ! intent(in)
-   use misc_coms            , only : dtlsm                & ! intent(in)
+   use ed_misc_coms            , only : dtlsm                & ! intent(in)
                                    , current_time         ! ! intent(in)
    use rk4_coms             , only : rk4eps               & ! intent(in)
                                    , rk4min_sfcwater_mass & ! intent(in)
@@ -590,7 +590,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
                                     , dewmax               ! ! intent(in)
    use therm_lib             , only : qwtk                 & ! subroutine
                                     , rhovsil              ! ! function
-   use misc_coms             , only : dtlsm                ! ! intent(in)
+   use ed_misc_coms             , only : dtlsm                ! ! intent(in)
    use ed_misc_coms          , only : fast_diagnostics     ! ! intent(in)
    use allometry             , only : dbh2ca               ! ! function
    use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function

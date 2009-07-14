@@ -18,7 +18,7 @@ subroutine apply_forestry(cpoly, isi, year, rhos)
    use disturbance_utils , only : initialize_disturbed_patch & ! subroutine
                                    , plant_patch                ! ! subroutine
    use fuse_fiss_utils   , only : terminate_patches          ! ! subroutine
-   use max_dims             , only : n_pft                         & ! intent(in)
+   use ed_max_dims             , only : n_pft                         & ! intent(in)
                                    , n_dbh                         ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -80,7 +80,7 @@ subroutine apply_forestry(cpoly, isi, year, rhos)
    
    !---------------------------------------------------------------------------------------!
    !      Set primary and secondary targets based on current rates and unapplied harvest   !
-   ! from previous years (memory).                                                         !
+   ! from previous years (memory).  These are in kgC.                                                       !
    !---------------------------------------------------------------------------------------!
    primary_harvest_target   = clutime%landuse(14) + clutime%landuse(18)                    &
                             + cpoly%primary_harvest_memory(isi)
@@ -98,7 +98,7 @@ subroutine apply_forestry(cpoly, isi, year, rhos)
    !---------------------------------------------------------------------------------------!
    
 
-   !----- Finding total biomass -----------------------------------------------------------!
+   !----- Finding total biomass density in kgC/m2  -----------------------------------------------------------!
    total_site_biomass = 0.
    do ipft=1,n_pft
       do idbh=1,n_dbh
@@ -110,6 +110,8 @@ subroutine apply_forestry(cpoly, isi, year, rhos)
 
 
    !----- In case the conditions weren't met, update memory and return. -------------------!
+!  If site has no biomass, do not harvest.
+!  Similarly, if the area to be harvested is less than the minimum area for a new patch, do not harvest.
    if (total_site_biomass == 0.0 .or.                                                      &
        total_harvest_target <= total_site_biomass * min_new_patch_area) then
       cpoly%primary_harvest_memory(isi)   = primary_harvest_target
@@ -143,6 +145,7 @@ subroutine apply_forestry(cpoly, isi, year, rhos)
 
    !------ Initialize the new patch (newp) in the last position. --------------------------!
    csite%dist_type(newp) = 2
+   ! Area is not initialized.
    call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv  &
                                      ,newp,1,cpoly%lsl(isi))
 
@@ -580,7 +583,7 @@ subroutine norm_harv_patch(csite,newp)
    use ed_state_vars , only : sitetype            & ! structure
                             , patchtype           ! ! structure
    use disturb_coms  , only : min_new_patch_area  ! ! intent(in)
-   use max_dims      , only : n_pft               ! ! intent(in)
+   use ed_max_dims      , only : n_pft               ! ! intent(in)
    use grid_coms     , only : nzg                 & ! intent(in)
                             , nzs                 ! ! intent(in)
    implicit none

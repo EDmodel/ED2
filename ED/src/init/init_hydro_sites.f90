@@ -7,10 +7,10 @@ subroutine read_site_file(cgrid)
   
    use soil_coms, only: soil,slz
    use grid_coms, only: nzg
-   use misc_coms, only: ied_init_mode,sfilin
+   use ed_misc_coms, only: ied_init_mode,sfilin
    use mem_sites, only: edres
    use ed_state_vars, only: edtype,polygontype,sitetype,allocate_polygontype
-   use max_dims, only: max_site,n_pft
+   use ed_max_dims, only: max_site,n_pft
 
    implicit none
 

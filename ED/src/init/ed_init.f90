@@ -90,7 +90,7 @@ end subroutine soil_depth_fill
 !------------------------------------------------------------------------------------------!
 subroutine load_ecosystem_state()
    use phenology_coms    , only : iphen_scheme    ! ! intent(in)
-   use misc_coms         , only : ied_init_mode   ! ! intent(in)
+   use ed_misc_coms         , only : ied_init_mode   ! ! intent(in)
    use phenology_startup , only : phenology_init  ! ! intent(in)
    use ed_node_coms      , only : mynum           & ! intent(in)
                                 , nmachs          & ! intent(in)
@@ -238,7 +238,7 @@ subroutine sfcdata_ed()
                           , rk4min_virt_moist & ! intent(in)
                           , rk4min_sfcw_mass  & ! intent(out)
                           , rk4min_virt_water ! ! intent(out)
-   use misc_coms   , only : dtlsm             ! ! intent(in)
+   use ed_misc_coms   , only : dtlsm             ! ! intent(in)
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    integer                :: k

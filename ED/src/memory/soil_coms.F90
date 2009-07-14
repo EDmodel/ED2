@@ -9,7 +9,7 @@
 !==========================================================================================!
 !==========================================================================================!
 module soil_coms
-   use max_dims  , only : str_len   & ! intent(in)
+   use ed_max_dims  , only : str_len   & ! intent(in)
                         , maxgrds   & ! intent(in)
                         , nzgmax    ! ! intent(in)
    use grid_coms , only : nzg       & ! intent(in)

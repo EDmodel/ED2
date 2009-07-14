@@ -1,6 +1,6 @@
 Module mem_sites
 
-  use max_dims, only: max_soi, max_ed_regions
+  use ed_max_dims, only: max_soi, max_ed_regions
 
   implicit none
 

@@ -104,7 +104,7 @@ subroutine initHydroSubsurface()
   use hydrology_coms, only: useTOPMODEL, MoistRateTuning
   use soil_coms, only: soil,slz,dslz,dslzi
   use grid_coms, only: ngrids,nzg
-  use misc_coms, only: dtlsm
+  use ed_misc_coms, only: dtlsm
   use ed_state_vars, only: edgrid_g,edtype,polygontype,sitetype
   implicit none
 
@@ -201,7 +201,7 @@ subroutine calcHydroSubsurface()
   use hydrology_coms, only: useTOPMODEL, FracLiqRunoff,MoistRateTuning
   use soil_coms, only: soil,slz,dslz
   use grid_coms, only: ngrids,nzg
-  use misc_coms, only: dtlsm
+  use ed_misc_coms, only: dtlsm
   use therm_lib, only: qtk,qwtk,qwtk8
   use consts_coms, only: wdns
   implicit none
@@ -427,7 +427,7 @@ end subroutine calcHydroSubsurface
 !!!!!!   use hydrology_coms, only: useTOPMODEL
 !!!!!!   use soil_coms, only: soil
 !!!!!!   use grid_coms, only: ngrids
-!!!!!!   use misc_coms, only: dtlsm
+!!!!!!   use ed_misc_coms, only: dtlsm
 !!!!!!   implicit none
 !!!!!!   include "mpif.h"
 !!!!!! !  include 'rcommons.h'
@@ -822,7 +822,7 @@ end subroutine updateWatertableSubtract
 subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
    use ed_state_vars, only: polygontype, sitetype
    use soil_coms, only: soil,slz,dslz,dslzi,slcons1
-   use misc_coms, only: dtlsm
+   use ed_misc_coms, only: dtlsm
    use consts_coms, only: cliqvlme, tsupercool
    implicit none
 
@@ -889,7 +889,7 @@ subroutine writeHydro()
   !!        writes to <output_filepath>-HYD<year>
   !!        after every HydroOutputPeriod calls
   use ed_state_vars       , only : edgrid_g,edtype, polygontype,sitetype
-  use misc_coms           , only : ffilout, current_time
+  use ed_misc_coms           , only : ffilout, current_time
   use hydrology_constants
   use hydrology_coms      , only : HydroOutputPeriod, useRUNOFF, useTOPMODEL
   use grid_coms            , only : nzg,ngrids
@@ -1047,7 +1047,7 @@ subroutine calcHydroSurface()
   use hydrology_constants
   use hydrology_coms, only: useRUNOFF,FracLiqRunoff,runoff_Vmax
   use grid_coms, only: ngrids, nzg
-  use misc_coms, only: dtlsm
+  use ed_misc_coms, only: dtlsm
   use grid_coms,only:ngrids
   use consts_coms, only : cliqvlme,cliq,t3ple,qicet3,qliqt3,tsupercool
   use soil_coms, only: water_stab_thresh
@@ -1389,7 +1389,7 @@ end subroutine calcHydroSurface
 !!!!!!   use hydrology_coms, only: useRUNOFF, FracLiqRunoff,runoff_Vmax
 !!!!!!   use soil_coms, only: nzg, water_stab_thresh
 !!!!!!   use grid_coms,only: ngrids
-!!!!!!   use misc_coms, only: dtlsm
+!!!!!!   use ed_misc_coms, only: dtlsm
 !!!!!!   use ed_node_coms, only: master_num
 !!!!!!   use const_coms, only : g, 
 !!!!!!   use therm_lib, only: qtk

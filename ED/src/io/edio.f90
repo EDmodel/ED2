@@ -9,7 +9,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
 
   use ed_node_coms,only : mynum,nnodetot
 
-  use misc_coms, only: dtlsm, current_time, &
+  use ed_misc_coms, only: dtlsm, current_time, &
        idoutput,    &
        imoutput,    &
        iyoutput,    &
@@ -156,7 +156,7 @@ subroutine spatial_averages
                                     , nzs               ! ! intent(in)
    use consts_coms           , only : alvl              & ! intent(in)
                                     , wdns              ! ! intent(in)
-   use misc_coms             , only : frqsum            ! ! intent(in)
+   use ed_misc_coms             , only : frqsum            ! ! intent(in)
    use therm_lib             , only : qwtk              & ! subroutine
                                     , qtk               ! ! subroutine
    use soil_coms             , only : min_sfcwater_mass & ! intent(in)
@@ -736,7 +736,7 @@ subroutine print(ifm,cgrid)
   
   use ed_node_coms,only: mynum,nnodetot,sendnum,recvnum,master_num,machs
   use ed_state_vars,only: edtype,polygontype
-  use misc_coms, only: &
+  use ed_misc_coms, only: &
             printvars,  &
             ipmax,      &
             ipmin,      &

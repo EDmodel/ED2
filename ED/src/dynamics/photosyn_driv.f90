@@ -8,7 +8,7 @@ subroutine canopy_photosynthesis(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,ntex
                                    ,leaf_aging_factor,green_leaf_factor)
    use ed_state_vars         , only : sitetype           & ! structure
                                     , patchtype          ! ! structure
-   use max_dims              , only : n_pft              ! ! intent(in)
+   use ed_max_dims              , only : n_pft              ! ! intent(in)
    use pft_coms              , only : leaf_width         & ! intent(in)
                                     , water_conductance  & ! intent(in)
                                     , q                  & ! intent(in)
@@ -21,7 +21,7 @@ subroutine canopy_photosynthesis(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,ntex
                                     , mmdov              & ! intent(in)
                                     , wdnsi              & ! intent(in)
                                     , wdns               ! ! intent(in)
-   use misc_coms             , only : current_time       ! ! intent(in)
+   use ed_misc_coms             , only : current_time       ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)            , target      :: csite             ! Current site

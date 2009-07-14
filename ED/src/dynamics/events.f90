@@ -30,7 +30,7 @@ end subroutine read_events_xml
 
 subroutine prescribed_event(year,doy)
 
-  use misc_coms, only: event_file 
+  use ed_misc_coms, only: event_file 
 
   integer, intent(in) :: year
   integer, intent(in) :: doy !! day of year
@@ -288,7 +288,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
   use pft_coms, only:sla,qsw,q,hgt_min, agf_bs
-  use misc_coms, only: integration_scheme
+  use ed_misc_coms, only: integration_scheme
   use disturbance_utils,only: plant_patch
   use ed_therm_lib, only: calc_hcapveg,update_veg_energy_cweh
   use fuse_fiss_utils, only: terminate_cohorts
@@ -432,7 +432,7 @@ subroutine event_planting(pft,density8)
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype, &
        filltab_alltypes 
   use pft_coms, only:sla,qsw,q,hgt_min
-  use misc_coms, only: integration_scheme
+  use ed_misc_coms, only: integration_scheme
   use disturbance_utils,only: plant_patch
 
   integer(kind=4),intent(in) :: pft
@@ -499,7 +499,7 @@ subroutine event_fertilize(rval8)
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
   use pft_coms, only:sla,qsw,q,hgt_min, agf_bs
-  use misc_coms, only: integration_scheme
+  use ed_misc_coms, only: integration_scheme
   use disturbance_utils,only: plant_patch
   real(kind=8),intent(in),dimension(5) :: rval8
 

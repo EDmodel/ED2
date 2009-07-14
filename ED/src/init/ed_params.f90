@@ -7,7 +7,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine load_ed_ecosystem_params()
 
-   use max_dims    , only : n_pft               ! ! intent(in)
+   use ed_max_dims    , only : n_pft               ! ! intent(in)
    use pft_coms    , only : include_these_pft   & ! intent(in)
                           , include_pft         & ! intent(out)
                           , include_pft_ag      & ! intent(out)
@@ -188,7 +188,7 @@ subroutine init_can_rad_params()
                                     , blfac_min                   & ! intent(out)
                                     , rlong_min                   & ! intent(out)
                                     , veg_temp_min                ! ! intent(out)
-   use max_dims              , only : n_pft                       ! ! intent(out)
+   use ed_max_dims              , only : n_pft                       ! ! intent(out)
    use pft_coms              , only : phenology                   ! ! intent(out)
 
    implicit none
@@ -312,7 +312,7 @@ end subroutine init_can_air_params
 !==========================================================================================!
 subroutine init_pft_photo_params()
 
-use max_dims,only : n_pft
+use ed_max_dims,only : n_pft
 use pft_coms, only: D0, Vm_low_temp, Vm0, stomatal_slope, cuticular_cond, &
      quantum_efficiency, photosyn_pathway
 
@@ -990,7 +990,7 @@ end subroutine init_pft_repro_params
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_derived_params()
    use decomp_coms , only : f_labile             ! ! intent(in)
-   use max_dims    , only : n_pft                ! ! intent(in)
+   use ed_max_dims    , only : n_pft                ! ! intent(in)
    use consts_coms , only : onesixth             ! ! intent(in)
    use pft_coms    , only : init_density         & ! intent(in)
                           , c2n_leaf             & ! intent(in)
@@ -1132,7 +1132,7 @@ subroutine init_hydro_coms
   use hydrology_coms,only:useTOPMODEL,useRUNOFF,HydroOutputPeriod, &
        MoistRateTuning,MoistSatThresh,Moist_dWT,FracLiqRunoff, &
        GrassLAIMax,inverse_runoff_time
-  use misc_coms, only: ied_init_mode
+  use ed_misc_coms, only: ied_init_mode
 
   implicit none
 
@@ -1454,8 +1454,8 @@ end subroutine init_rk4_params
 !==========================================================================================!
 subroutine overwrite_with_xml_config(thisnode)
    !!! PARSE XML FILE
-   use max_dims, only: n_pft
-   use misc_coms, only: iedcnfgf
+   use ed_max_dims, only: n_pft
+   use ed_misc_coms, only: iedcnfgf
    
    implicit none
    integer, intent(in) :: thisnode
@@ -1475,7 +1475,7 @@ subroutine overwrite_with_xml_config(thisnode)
             write(unit=*,fmt='(a)') '**  Number of PFTs required by XML Config  **'
             write(unit=*,fmt='(a)') '**  exceeds the memory available           **'
             write(unit=*,fmt='(a)') '**                                         **'
-            write(unit=*,fmt='(a)') '**  Please change n_pft in Module max_dims **'
+            write(unit=*,fmt='(a)') '**  Please change n_pft in Module ed_max_dims **'
             write(unit=*,fmt='(a)') '**  and recompile                          **'
             write(unit=*,fmt='(a)') '**                                         **'
             write(unit=*,fmt='(a)') '*********************************************'

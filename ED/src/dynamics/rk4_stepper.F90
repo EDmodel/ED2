@@ -403,7 +403,7 @@ module rk4_stepper
       use grid_coms             , only : nzg                  ! ! intent(in)
       use soil_coms             , only : soil8                ! ! intent(in), lookup table
       use consts_coms           , only : t3ple8               ! ! intent(in)
-      use misc_coms             , only : integ_err            & ! intent(inout)
+      use ed_misc_coms             , only : integ_err            & ! intent(inout)
                                        , record_err           ! ! intent(inout)
       use therm_lib             , only : rehuil               & ! function
                                        , qtk8                 ! ! subroutine
