@@ -5,7 +5,7 @@ module grid_coms
   ! a grid_g structure either, the only two variable we would need (glon/glat) were 
   ! merged with the work structure (ed_work_vars.f90)
 
-  use max_dims, only : nxpmax,nypmax,maxgrds
+  use ed_max_dims, only : nxpmax,nypmax,maxgrds
   
 
   real(kind=8)       :: time                ! Simulation time since the beginning

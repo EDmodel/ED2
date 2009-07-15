@@ -3,7 +3,7 @@
 !------------------------------------------------------------------------------------------!
 
 subroutine lastmonthdate(time,lastmonth,ndaysi)
-  use misc_coms, only: simtime
+  use ed_misc_coms, only: simtime
   implicit none
   type(simtime), intent(in)  :: time
   type(simtime), intent(out) :: lastmonth

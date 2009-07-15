@@ -4,7 +4,7 @@
 ! logic data to be used during the run.                                                    !
 !------------------------------------------------------------------------------------------!
 subroutine read_met_driver_head()
-   use max_dims       , only : max_met_vars     ! ! intent(in)
+   use ed_max_dims       , only : max_met_vars     ! ! intent(in)
    use met_driver_coms, only : nformats         & ! intent(in)
                              , met_names        & ! intent(out)
                              , met_nlon         & ! intent(out)
@@ -107,9 +107,9 @@ end subroutine read_met_driver_head
 ! number so in case the variable is not properly initialised the user will notice some-    !
 ! thing went wrong right away.                                                             !
 !------------------------------------------------------------------------------------------!
-subroutine init_met_drivers_array
+subroutine init_met_drivers
 
-   use max_dims        , only : max_met_vars
+   use ed_max_dims        , only : max_met_vars
    use met_driver_coms , only : nformats          & ! intent(in)
                               , met_names         & ! intent(out)
                               , met_nlon          & ! intent(out)
@@ -144,7 +144,7 @@ subroutine init_met_drivers_array
 
    !----- Set the lapse rates. ------------------------------------------------------------!
    do igr=1,ngrids
-      call setLapseParms_ar(edgrid_g(igr))
+      call setLapseParms(edgrid_g(igr))
    end do
 
    !----- Read the information for each format. -------------------------------------------!
@@ -180,7 +180,7 @@ subroutine init_met_drivers_array
                write(unit=*,fmt='(a,1x,es12.5)') '   - South     : ',southedge
                write(unit=*,fmt='(a,1x,es12.5)') '   - North     : ',northedge
                call fatal_error('Polygon outside the domain of the meteorological drivers' &
-                               ,'init_met_drivers_array','ed_met_driver.f90')
+                               ,'init_met_drivers','ed_met_driver.f90')
             end if
             
             !----- Loop over variables. ---------------------------------------------------!
@@ -198,7 +198,7 @@ subroutine init_met_drivers_array
                   mem_size = 1
                case default
                   call fatal_error('Invalid met_interp! It should be between 0 and 4.'     &
-                                  ,'init_met_drivers_array','ed_met_driver.f90')
+                                  ,'init_met_drivers','ed_met_driver.f90')
                end select
 
                !---------------------------------------------------------------------------!
@@ -263,8 +263,8 @@ subroutine init_met_drivers_array
                case ('lat','lon') !---- Latitude and longitude: skip them. ----------------!
                case default
                   call fatal_error('Invalid met variable'//trim(met_vars(iformat,iv))//'!' &
-                                  ,'init_met_drivers_array'                                &
-                                  ,'ed_met_driver_array.f90')
+                                  ,'init_met_drivers'                                &
+                                  ,'ed_met_driver.f90')
                end select
 
             end do varloop
@@ -273,7 +273,7 @@ subroutine init_met_drivers_array
    end do formloop
 
    return
-end subroutine init_met_drivers_array
+end subroutine init_met_drivers
 !==========================================================================================!
 !==========================================================================================!
 
@@ -286,7 +286,7 @@ end subroutine init_met_drivers_array
 !==========================================================================================!
 !     This subroutine will control the HDF5 file reading.                                  !
 !------------------------------------------------------------------------------------------!
-subroutine read_met_drivers_init_array
+subroutine read_met_drivers_init
 
    use ed_state_vars  , only : edgrid_g       & ! structure
                              , edtype         & ! structure
@@ -303,7 +303,7 @@ subroutine read_met_drivers_init_array
                              , metcycf        & ! intent(in)
                              , metyears       ! ! intent(inout)
    use mem_sites      , only : grid_type      ! ! intent(in)
-   use misc_coms      , only : current_time   & ! intent(in)
+   use ed_misc_coms      , only : current_time   & ! intent(in)
                              , iyeara         & ! intent(in)
                              , iyearz         ! ! intent(in)
    use grid_coms      , only : ngrids         ! ! intent(in)
@@ -448,19 +448,19 @@ subroutine read_met_drivers_init_array
             call shdf5_open_f(trim(infile),'R')
          else
             call fatal_error('Cannot open met driver input file '//trim(infile)//'!'       &
-                            ,'read_met_drivers_init_array','ed_met_driver.f90')
+                            ,'read_met_drivers_init','ed_met_driver.f90')
          end if
          
          !---------------------------------------------------------------------------------!
          !     The following subroutine determines grid indices of each polygon's match to !
          ! the met data.                                                                   !
          !---------------------------------------------------------------------------------!
-         call getll_array(cgrid,iformat)
+         call getll(cgrid,iformat)
          
          !----- Loop over variables. and read the data. -----------------------------------!
          do iv = 1, met_nv(iformat)
             offset = 0
-            call read_ol_file_ar(iformat, iv, year_use, mname(current_time%month)          &
+            call read_ol_file(iformat, iv, year_use, mname(current_time%month)          &
                                 , current_time%year, offset, cgrid)
          end do
 
@@ -496,7 +496,7 @@ subroutine read_met_drivers_init_array
             call shdf5_open_f(trim(infile),'R')
          else
             call fatal_error('Cannot open met driver input file '//trim(infile)//'!' &
-                            ,'read_met_drivers_init_array','ed_met_driver.f90')
+                            ,'read_met_drivers_init','ed_met_driver.f90')
          end if
          
          !----- Loop over variables. ------------------------------------------------------!
@@ -505,7 +505,7 @@ subroutine read_met_drivers_init_array
                offset = nint(day_sec / met_frq(iformat,iv)) * 31
 
                !----- Read the file. ------------------------------------------------------!
-               call read_ol_file_ar(iformat,iv,year_use_2,mname(m2),y2,offset,cgrid)
+               call read_ol_file(iformat,iv,year_use_2,mname(m2),y2,offset,cgrid)
             end if
          end do varloop
          
@@ -517,7 +517,7 @@ subroutine read_met_drivers_init_array
 
 
    return
-end subroutine read_met_drivers_init_array
+end subroutine read_met_drivers_init
 !==========================================================================================!
 !==========================================================================================!
 
@@ -528,7 +528,7 @@ end subroutine read_met_drivers_init_array
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine read_met_drivers_array
+subroutine read_met_drivers
 
    use ed_state_vars  , only : edgrid_g      & ! structure
                              , edtype        & ! structure
@@ -542,7 +542,7 @@ subroutine read_met_drivers_array
                              , met_vars      & ! intent(in)
                              , metcyc1       & ! intent(in)
                              , metcycf       ! ! intent(in)
-   use misc_coms      , only : current_time  ! ! intent(in)
+   use ed_misc_coms      , only : current_time  ! ! intent(in)
    use hdf5_utils     , only : shdf5_open_f  & ! subroutine
                              , shdf5_close_f ! ! subroutine
    use ed_state_vars  , only : edtype        & ! structure
@@ -603,14 +603,14 @@ subroutine read_met_drivers_array
             call shdf5_open_f(trim(infile),'R')
          else
             call fatal_error('Cannot open met driver input file '//trim(infile)//'!'       &
-                            ,'read_met_drivers_array','ed_met_driver.f90')
+                            ,'read_met_drivers','ed_met_driver.f90')
          end if
          
          !---------------------------------------------------------------------------------!
          !     The following subroutine determines grid indices of each polygon's match to !
          ! the met data.                                                                   !
          !---------------------------------------------------------------------------------!
-         call getll_array(cgrid,iformat)
+         call getll(cgrid,iformat)
          
          !----- Loop over variables. and read the data. -----------------------------------!
          do iv = 1, met_nv(iformat)
@@ -619,11 +619,11 @@ subroutine read_met_drivers_array
             if (met_interp(iformat,iv) /= 1) then
                !----- If not, things are simple.  Just read in the month. -----------------!
                offset = 0
-               call read_ol_file_ar(iformat,iv,year_use,mname(current_time%month)          &
+               call read_ol_file(iformat,iv,year_use,mname(current_time%month)          &
                                    ,current_time%year,offset,cgrid)
             else
                !----- Here, just transfer future to current month.  -----------------------!
-               call transfer_ol_month_ar(trim(met_vars(iformat,iv)),met_frq(iformat,iv)    &
+               call transfer_ol_month(trim(met_vars(iformat,iv)),met_frq(iformat,iv)    &
                                         ,cgrid)
             end if
          end do
@@ -669,7 +669,7 @@ subroutine read_met_drivers_array
             call shdf5_open_f(trim(infile),'R')
          else
             call fatal_error ('Cannot open met driver input file '//trim(infile)//'!'      &
-                             ,'read_met_drivers_array','ed_met_driver.f90')
+                             ,'read_met_drivers','ed_met_driver.f90')
          end if
       
          !----- Loop over variables. ------------------------------------------------------!
@@ -677,7 +677,7 @@ subroutine read_met_drivers_array
             if(met_interp(iformat,iv) == 1)then
                offset = nint(day_sec / met_frq(iformat,iv)) * 31
                !----- Read the file. ------------------------------------------------------!
-               call read_ol_file_ar(iformat,iv,year_use_2,mname(m2),y2,offset,cgrid)
+               call read_ol_file(iformat,iv,year_use_2,mname(m2),y2,offset,cgrid)
             end if
          end do
          
@@ -688,7 +688,7 @@ subroutine read_met_drivers_array
 
 
    return
-end subroutine read_met_drivers_array
+end subroutine read_met_drivers
 !==========================================================================================!
 !==========================================================================================!
 
@@ -699,7 +699,7 @@ end subroutine read_met_drivers_array
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine update_met_drivers_array(cgrid)
+subroutine update_met_drivers(cgrid)
   
    use ed_state_vars  , only : edtype       & ! structure
                              , polygontype  ! ! structure
@@ -710,7 +710,7 @@ subroutine update_met_drivers_array(cgrid)
                              , met_vars     & ! intent(in)
                              , have_co2     & ! intent(in)
                              , initial_co2  ! ! intent(in)
-   use misc_coms      , only : current_time ! ! intent(in)
+   use ed_misc_coms      , only : current_time ! ! intent(in)
    use consts_coms    , only : rdry         & ! intent(in)
                              , cice         & ! intent(in)
                              , cliq         & ! intent(in)
@@ -1032,7 +1032,7 @@ subroutine update_met_drivers_array(cgrid)
       cgrid%met(ipy)%atm_shv = rvaux / (1. + rvaux)
 
       !------ Apply met to sites, and adjust met variables for topography. ----------------!
-      call calc_met_lapse_ar(cgrid,ipy)
+      call calc_met_lapse(cgrid,ipy)
 
       !----- Finding the polygon-level density. -------------------------------------------!
       tvir = virtt(cgrid%met(ipy)%atm_tmp,rvaux)
@@ -1108,7 +1108,7 @@ subroutine update_met_drivers_array(cgrid)
    end do polyloop
 
    return
-end subroutine update_met_drivers_array
+end subroutine update_met_drivers
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1119,7 +1119,7 @@ end subroutine update_met_drivers_array
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine read_ol_file_ar(iformat, iv, year_use, mname, year, offset, cgrid)
+subroutine read_ol_file(iformat, iv, year_use, mname, year, offset, cgrid)
 
   use ed_state_vars,only:edgrid_g,edtype,polygontype
   use met_driver_coms, only: met_frq, met_nlon, met_nlat, met_vars,   &
@@ -1268,7 +1268,7 @@ subroutine read_ol_file_ar(iformat, iv, year_use, mname, year, offset, cgrid)
         print*,"SPECIFIED INPUT, OR LAT/LON GRID"
         print*,ndims,np,met_nlon(iformat),met_nlat(iformat),idims
         call fatal_error('Mismatch between dataset and specified input' &
-                        ,'read_ol_file_ar','ed_met_driver.f90')
+                        ,'read_ol_file','ed_met_driver.f90')
      endif
 
      call shdf5_irec_f(ndims, idims, trim(met_vars(iformat,iv)),  &
@@ -1291,7 +1291,7 @@ subroutine read_ol_file_ar(iformat, iv, year_use, mname, year, offset, cgrid)
         print*,np_dset,met_nlon(iformat),met_nlat(iformat)
         print*,idims
         call fatal_error('Mismatch between dataset and specified input' &
-                        ,'read_ol_file_ar','ed_met_driver.f90')
+                        ,'read_ol_file','ed_met_driver.f90')
      endif
 
      if (np < np_dset) then     ! No interpolation is needed, but we
@@ -1407,7 +1407,7 @@ subroutine read_ol_file_ar(iformat, iv, year_use, mname, year, offset, cgrid)
   deallocate(metvar)
   
   return
-end subroutine read_ol_file_ar
+end subroutine read_ol_file
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1418,7 +1418,7 @@ end subroutine read_ol_file_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine transfer_ol_month_ar(vname, frq, cgrid)
+subroutine transfer_ol_month(vname, frq, cgrid)
   
   use ed_state_vars,only : edtype
   use consts_coms, only: day_sec
@@ -1482,7 +1482,7 @@ subroutine transfer_ol_month_ar(vname, frq, cgrid)
   enddo
   
   return
-end subroutine transfer_ol_month_ar
+end subroutine transfer_ol_month
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1493,7 +1493,7 @@ end subroutine transfer_ol_month_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine match_poly_grid_array(cgrid,nlon,nlat,lon,lat)
+subroutine match_poly_grid(cgrid,nlon,nlat,lon,lat)
 
    use ed_state_vars , only : edtype
 
@@ -1534,7 +1534,7 @@ subroutine match_poly_grid_array(cgrid,nlon,nlat,lon,lat)
    end do
 
    return
-end subroutine match_poly_grid_array
+end subroutine match_poly_grid
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1545,7 +1545,7 @@ end subroutine match_poly_grid_array
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine getll_array(cgrid,iformat)
+subroutine getll(cgrid,iformat)
 
    use met_driver_coms, only: met_nv, &
         met_vars, &
@@ -1585,7 +1585,7 @@ subroutine getll_array(cgrid,iformat)
             write(unit=*,fmt='(a,1x,i5)') '---> ',d,': DIM=',idims(d)
          end do
          call fatal_error ('Not set up to have time varying latitude...' &
-                          ,'getll_array','ed_met_driver.f90')
+                          ,'getll','ed_met_driver.f90')
       endif
       
       !  Transfer the dimensions into the met_nlon array
@@ -1610,7 +1610,7 @@ subroutine getll_array(cgrid,iformat)
             write(unit=*,fmt='(a,1x,i5)') '---> ',d,': DIM=',idims(d)
          end do
          call fatal_error ('Not set up to have time varying longitude...' &
-                          ,'getll_array','ed_met_driver.f90')
+                          ,'getll','ed_met_driver.f90')
       endif
       
       !  Allocate the latitude array
@@ -1624,7 +1624,7 @@ subroutine getll_array(cgrid,iformat)
       !  Determine the indices of the grid that each polygon sees
       !  returns poly%ilon and poly%ilat
       
-      call match_poly_grid_array(cgrid,met_nlon(iformat),met_nlat(iformat),lon2d,lat2d)
+      call match_poly_grid(cgrid,met_nlon(iformat),met_nlat(iformat),lon2d,lat2d)
       
       ! Deallocate the lat-lon arrays
       deallocate(lat2d,lon2d)
@@ -1633,7 +1633,7 @@ subroutine getll_array(cgrid,iformat)
    
    return
    
-end subroutine getll_array
+end subroutine getll
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1644,7 +1644,7 @@ end subroutine getll_array
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine calc_met_lapse_ar(cgrid,ipy)
+subroutine calc_met_lapse(cgrid,ipy)
   
   use ed_state_vars,only    : edtype,polygontype
   use canopy_radiation_coms,only : rlong_min
@@ -1682,16 +1682,16 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
 !        if ( cpoly%met(isi)%rlong < rlong_min) then
 !           print*,"Problems with RLONG A"  
 !           print*,cpoly%met(isi)%rlong,cgrid%met(ipy)%rlong,rlong_min
-!           call fatal_error('Problems with RLONG A','calc_met_lapse_ar','ed_met_driver.f90')
+!           call fatal_error('Problems with RLONG A','calc_met_lapse','ed_met_driver.f90')
 !        end if
 !        if ( cpoly%met(isi)%atm_tmp < 150.0) then
 !           print*,cpoly%met(isi)%atm_tmp,cgrid%met(ipy)%atm_tmp
-!           call fatal_error('Problems with ATM TEMP A','calc_met_lapse_ar','ed_met_driver.f90')
+!           call fatal_error('Problems with ATM TEMP A','calc_met_lapse','ed_met_driver.f90')
 !        endif
         if ( cpoly%met(isi)%atm_shv < 0.01e-2) then
             cpoly%met(isi)%atm_shv = 0.01e-2
 !           print*,cpoly%met(isi)%atm_shv,cgrid%met(ipy)%atm_shv
-!           call fatal_error('Problems with ATM MOISTURE A','calc_met_lapse_ar','ed_met_driver.f90')
+!           call fatal_error('Problems with ATM MOISTURE A','calc_met_lapse','ed_met_driver.f90')
         endif
 
      enddo
@@ -1730,16 +1730,16 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
 !        if ( cpoly%met(isi)%rlong < 200.0) then
 !           print*,"Problems with RLONG A"  
 !           print*,cpoly%met(isi)%rlong,cgrid%met(ipy)%rlong
-!           call fatal_error('Problems with RLONG A','calc_met_lapse_ar','ed_met_driver.f90')
+!           call fatal_error('Problems with RLONG A','calc_met_lapse','ed_met_driver.f90')
 !        end if
 !        if ( cpoly%met(isi)%atm_tmp < 150.0) then
 !           print*,cpoly%met(isi)%atm_tmp,cgrid%met(ipy)%atm_tmp
-!           call fatal_error('Problems with ATM TEMP A','calc_met_lapse_ar','ed_met_driver.f90')
+!           call fatal_error('Problems with ATM TEMP A','calc_met_lapse','ed_met_driver.f90')
 !        endif
         if ( cpoly%met(isi)%atm_shv < 0.01e-2) then
             cpoly%met(isi)%atm_shv = 0.01e-2
 !           print*,cpoly%met(isi)%atm_shv,cgrid%met(ipy)%atm_shv
-!           call fatal_error('Problems with ATM MOISTURE A','calc_met_lapse_ar','ed_met_driver.f90')
+!           call fatal_error('Problems with ATM MOISTURE A','calc_met_lapse','ed_met_driver.f90')
         endif
 
         call MetDiagnostics(cpoly,ipy,isi)
@@ -1748,7 +1748,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
   endif
 
   return
-end subroutine calc_met_lapse_ar
+end subroutine calc_met_lapse
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1839,7 +1839,7 @@ end subroutine MetDiagnostics
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine setLapseParms_ar(cgrid)
+subroutine setLapseParms(cgrid)
   
   use ed_state_vars,only:edtype
   use met_driver_coms, only: lapse
@@ -1869,7 +1869,7 @@ subroutine setLapseParms_ar(cgrid)
   enddo
 
   return
-end subroutine setLapseParms_ar
+end subroutine setLapseParms
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1890,7 +1890,7 @@ subroutine int_met_avg(cgrid)
 
 
   use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
-  use misc_coms,only : dtlsm,frqsum
+  use ed_misc_coms,only : dtlsm,frqsum
   
   implicit none
 

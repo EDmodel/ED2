@@ -1,8 +1,8 @@
-subroutine euler_timestep_ar(cgrid)
+subroutine euler_timestep(cgrid)
 
   use ed_state_vars,only: edtype,polygontype, &
        sitetype,patchtype
-  use misc_coms, only: dtlsm
+  use ed_misc_coms, only: dtlsm
   use soil_coms, only: soil_rough
   use consts_coms, only: cp,mmdryi
   use canopy_struct_dynamics,only:ed_stars
@@ -61,7 +61,7 @@ subroutine euler_timestep_ar(cgrid)
                 csite%ustar(ipa) * csite%qstar(ipa) * dtlsm
 
            ! This is like the LEAF-3 implemented in OLAM.
-           call leaf3_land_ar(csite,ipa,csite%nlev_sfcwater(ipa),   &
+           call leaf3_land(csite,ipa,csite%nlev_sfcwater(ipa),   &
                 csite%ntext_soil(:,ipa), csite%soil_water(:,ipa),   &
                 csite%soil_energy(:,ipa), csite%sfcwater_mass(:,ipa),   &
                 csite%sfcwater_energy(:,ipa), csite%sfcwater_depth(:,ipa),   &
@@ -86,11 +86,11 @@ subroutine euler_timestep_ar(cgrid)
   enddo
 
   return
-end subroutine euler_timestep_ar
+end subroutine euler_timestep
 
 !*****************************************************************************
 
-subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
+subroutine leaf3_land(csite,ipa, nlev_sfcwater,   &
      ntext_soil, soil_water,   &
      soil_energy, sfcwater_mass,   &
      sfcwater_energy, sfcwater_depth,   &
@@ -108,8 +108,8 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
   use ed_state_vars, only: sitetype
   use grid_coms, only: nzg, nzs
   use soil_coms, only: soil_rough, snow_rough, soil
-  use misc_coms, only: dtlsm
-  use max_dims, only: n_pft
+  use ed_misc_coms, only: dtlsm
+  use ed_max_dims, only: n_pft
   use therm_lib, only: qtk,qwtk
   use ed_therm_lib,only:ed_grndvap
   use consts_coms, only: wdns
@@ -205,7 +205,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
 
   nlsw1 = max(csite%nlev_sfcwater(ipa),1)
 
-  call canopy_ar(                                        &
+  call canopy(                                        &
        nlev_sfcwater,         ntext_soil,            &
        ktrans,                &
        soil_water,            soil_fracliq,          &
@@ -253,7 +253,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
        wshed,            qwshed,           &
        lsl            )
   
-  call soil_euler_ar(                       &
+  call soil_euler(                       &
        nlev_sfcwater, &
        ntext_soil,   ktrans,        &
        soil_tempk,   soil_fracliq,  &
@@ -317,11 +317,11 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
   csite%ebudget_loss2runoff(ipa) = qrunoff
 
   return
-end subroutine leaf3_land_ar
+end subroutine leaf3_land
 
 !***************************************************************************
 
-subroutine canopy_ar(nlev_sfcwater, ntext_soil, ktrans,   &
+subroutine canopy(nlev_sfcwater, ntext_soil, ktrans,   &
                   soil_water, soil_fracliq, soil_tempk,                   &
                   sfcwater_mass, sfcwater_tempk,                          &
                   veg_height, veg_rough, veg_tai,                &
@@ -339,12 +339,12 @@ subroutine canopy_ar(nlev_sfcwater, ntext_soil, ktrans,   &
 
 use soil_coms,   only: soil_rough, dslz
 use grid_coms, only: nzg
-use misc_coms, only: dtlsm
+use ed_misc_coms, only: dtlsm
 use consts_coms, only: cp, vonk, alvl, cliq, cice, alli, rvap
 
 use ed_state_vars,only:sitetype,patchtype
 use canopy_air_coms, only: exar, covr
-use max_dims, only: n_pft
+use ed_max_dims, only: n_pft
 
 implicit none
 
@@ -510,7 +510,7 @@ ktrans = 0
 transp = 0.
 ed_transp(:) = 0.
 
-call canopy_update_euler_ar(csite,ipa, vels, rhos, atm_tmp, prss, pcpg, qpcpg,   &
+call canopy_update_euler(csite,ipa, vels, rhos, atm_tmp, prss, pcpg, qpcpg,   &
      wshed, qwshed, canair, canhcap, dtlsm, hxfergc, sxfer_t,  &
      wxfergc, hxfersc, wxfersc, sxfer_r, ed_transp, ntext_soil,  &
      soil_water, soil_fracliq, lsl, leaf_aging_factor, green_leaf_factor,  &
@@ -518,7 +518,7 @@ call canopy_update_euler_ar(csite,ipa, vels, rhos, atm_tmp, prss, pcpg, qpcpg,  
 
 
 return
-end subroutine canopy_ar
+end subroutine canopy
 
 !***************************************************************************
 subroutine sfcwater(nlev_sfcwater,ntext_soil,                       &
@@ -532,7 +532,7 @@ subroutine sfcwater(nlev_sfcwater,ntext_soil,                       &
 
 use soil_coms, only: slz, dslz, dslzi, dslzo2, soil
 use grid_coms, only: nzg, nzs                       
-use misc_coms, only: dtlsm
+use ed_misc_coms, only: dtlsm
 use consts_coms, only: alvi, cice, cliq, alli, t3ple, qicet3, qliqt3, tsupercool, wdns, wdnsi
 use therm_lib, only: qwtk
 
@@ -1121,7 +1121,7 @@ end subroutine sfcwater
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine soil_euler_ar(nlev_sfcwater, ntext_soil, ktrans,    &
+subroutine soil_euler(nlev_sfcwater, ntext_soil, ktrans,    &
                 soil_tempk, soil_fracliq, soil_rfactor,                  &
                 hxfergc, wxfergc, rshort_g, rlong_g, transp,             &
                 soil_energy, soil_water, hxferg, wxfer, qwxfer,          &
@@ -1133,7 +1133,7 @@ use consts_coms, only: cliqvlme, allivlme, alvi,t3ple, tsupercool,wdnsi
 
 use ed_state_vars,only:sitetype,patchtype
 
-use misc_coms, only: dtlsm
+use ed_misc_coms, only: dtlsm
 
 implicit none
 
@@ -1288,10 +1288,10 @@ do k = lsl,nzg
 enddo
 
 ! Compute soil respiration
-call soil_respiration_ar(csite,ipa)
+call soil_respiration(csite,ipa)
 
 return
-end subroutine soil_euler_ar
+end subroutine soil_euler
 
 !*****************************************************************************
 
@@ -1303,7 +1303,7 @@ subroutine remove_runoff(ksn, sfcwater_fracliq, sfcwater_mass,   &
   use soil_coms, only: runoff_time
   use grid_coms, only: nzs
   use consts_coms, only: alli, cliq,t3ple, wdnsi, tsupercool
-  use misc_coms, only: dtlsm
+  use ed_misc_coms, only: dtlsm
   use therm_lib, only: qtk
 
   implicit none

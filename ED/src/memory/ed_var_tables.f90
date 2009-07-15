@@ -1,5 +1,5 @@
 !==========================================================================================!
-!   Module var_tables_array: this module contains all information about variables, includ- !
+!   Module ed_var_tables: this module contains all information about variables, includ- !
 ! ing the kind of variable and whether they need to be passed in parallel runs, in which   !
 ! output they should be included etc.                                                      !
 !   The following list is the number used to identify the type of variable.                !
@@ -52,7 +52,7 @@
 !     !-----------------------------------------------------!                              !
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
-module var_tables_array
+module ed_var_tables
   
    !---------------------------------------------------------------------------------------!
    !    Define data type for main variable table                                           !
@@ -204,7 +204,7 @@ module var_tables_array
               vt_info(nv,igr)%iyear=1
            case default
               print*, 'Illegal table specification for var:', tokens(1),ctab
-              call fatal_error('Bad var table','vtable_edio_r','var_tables_array.f90')
+              call fatal_error('Bad var table','vtable_edio_r','ed_var_tables.f90')
            end select
            
         enddo
@@ -222,7 +222,7 @@ module var_tables_array
           write (unit=*,fmt='(a)') '! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! !'
           write (unit=*,fmt='(a)') '! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! !'
           write (unit=*,fmt='(a)') '!-------------------------------------------------------------------------!'
-          write (unit=*,fmt='(a)') '! In subroutine vtable_edio_r (file var_tables_array.f90)                 !'
+          write (unit=*,fmt='(a)') '! In subroutine vtable_edio_r (file ed_var_tables.f90)                 !'
           write (unit=*,fmt='(a,1x,i4,1x,a,1x,i2,1x,a)')  &
                                    '! Vt_vector for variable',nv,'of grid',igr,'is not associated                !'
           write (unit=*,fmt='(a)') '! I will allocate it now.                                                 !'
@@ -345,7 +345,7 @@ module var_tables_array
              vt_info(nv,igr)%iyear=1
           case default
              print*, 'Illegal table specification for var:', tokens(1),ctab
-             call fatal_error('Bad var table','vtable_edio_r','var_tables_array.f90')
+             call fatal_error('Bad var table','vtable_edio_r','ed_var_tables.f90')
           end select
           
        enddo
@@ -363,7 +363,7 @@ module var_tables_array
          write (unit=*,fmt='(a)') '! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! !'
          write (unit=*,fmt='(a)') '! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! !'
          write (unit=*,fmt='(a)') '!-------------------------------------------------------------------------!'
-         write (unit=*,fmt='(a)') '! In subroutine vtable_edio_r (file var_tables_array.f90)                 !'
+         write (unit=*,fmt='(a)') '! In subroutine vtable_edio_r (file ed_var_tables.f90)                 !'
          write (unit=*,fmt='(a,1x,i4,1x,a,1x,i2,1x,a)')  &
                                   '! Vt_vector for variable',nv,'of grid',igr,'is not associated                !'
          write (unit=*,fmt='(a)') '! I will allocate it now.                                                 !'
@@ -488,7 +488,7 @@ module var_tables_array
              vt_info(nv,igr)%iyear=1
           case default
              print*, 'Illegal table specification for var:', tokens(1),ctab
-             call fatal_error('Bad var table','vtable_edio_i','var_tables_array.f90')
+             call fatal_error('Bad var table','vtable_edio_i','ed_var_tables.f90')
           end select
           
        enddo
@@ -508,7 +508,7 @@ module var_tables_array
          write (unit=*,fmt='(a)') '! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! !'
          write (unit=*,fmt='(a)') '! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! !'
          write (unit=*,fmt='(a)') '!-------------------------------------------------------------------------!'
-         write (unit=*,fmt='(a)') '! In subroutine vtable_edio_i (file var_tables_array.f90)                 !'
+         write (unit=*,fmt='(a)') '! In subroutine vtable_edio_i (file ed_var_tables.f90)                 !'
          write (unit=*,fmt='(a,1x,i4,1x,a,1x,i2,1x,a)')  &
                                   '! Vt_vector for variable',nv,'of grid',igr,'is not associated                !'
          write (unit=*,fmt='(a)') '! I will allocate it now.                                                 !'
@@ -626,7 +626,7 @@ module var_tables_array
              vt_info(nv,igr)%iyear=1
           case default
              print*, 'Illegal table specification for var:', tokens(1),ctab
-             call fatal_error('Bad var table','vtable_edio_c','var_tables_array.f90')
+             call fatal_error('Bad var table','vtable_edio_c','ed_var_tables.f90')
           end select
           
        enddo
@@ -644,7 +644,7 @@ module var_tables_array
          write (unit=*,fmt='(a)') '! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! !'
          write (unit=*,fmt='(a)') '! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! !'
          write (unit=*,fmt='(a)') '!-------------------------------------------------------------------------!'
-         write (unit=*,fmt='(a)') '! In subroutine vtable_edio_c (file var_tables_array.f90)                 !'
+         write (unit=*,fmt='(a)') '! In subroutine vtable_edio_c (file ed_var_tables.f90)                 !'
          write (unit=*,fmt='(a,1x,i4,1x,a,1x,i2,1x,a)')  &
                                   '! Vt_vector for variable',nv,'of grid',igr,'is not associated                !'
          write (unit=*,fmt='(a)') '! I will allocate it now.                                                 !'
@@ -698,5 +698,5 @@ module var_tables_array
      return
   end subroutine nullify_vt_vector_pointers
 
-end module var_tables_array
+end module ed_var_tables
 

@@ -1,13 +1,13 @@
 module ed_state_vars
 
   use grid_coms, only: nzg,nzs,ngrids
-  use max_dims, only: max_site,n_pft,n_dbh, n_dist_types,maxmach,maxgrds
+  use ed_max_dims, only: max_site,n_pft,n_dbh, n_dist_types,maxmach,maxgrds
   use c34constants, only : stoma_data
   use disturb_coms, only : lutime,num_lu_trans,max_lu_years
   use met_driver_coms, only: met_driv_data,met_driv_state
   use fusion_fission_coms, only: ff_ndbh
   use phenology_coms, only: prescribed_phen
-  use misc_coms, only: idoutput, imoutput
+  use ed_misc_coms, only: idoutput, imoutput
 
 
 
@@ -1430,7 +1430,9 @@ module ed_state_vars
      real, pointer, dimension(:) :: stdev_sensible
      real, pointer, dimension(:) :: stdev_nep
      real, pointer, dimension(:) :: stdev_rh
-
+     
+     !----- Disturbance rates. ------------------------------------------!
+     real, pointer, dimension(:,:,:) :: disturbance_rates
   end type edtype
 !============================================================================!
 !============================================================================!
@@ -1524,7 +1526,7 @@ contains
 
   subroutine allocate_edglobals(ngrids)
 
-    use var_tables_array,only:num_var,vt_info,maxvars
+    use ed_var_tables,only:num_var,vt_info,maxvars
 
     implicit none
     integer :: ngrids
@@ -1826,7 +1828,10 @@ contains
           allocate(cgrid%stdev_sensible     (             npolygons))
           allocate(cgrid%stdev_nep          (             npolygons))
           allocate(cgrid%stdev_rh           (             npolygons))
+          allocate(cgrid%disturbance_rates  (n_dist_types,n_dist_types,npolygons))
        end if
+
+
        ! Initialize the variables with a non-sense number.
        !call huge_edtype(cgrid)
     end if
@@ -2547,6 +2552,7 @@ contains
        nullify(cgrid%stdev_sensible          )
        nullify(cgrid%stdev_nep               )
        nullify(cgrid%stdev_rh                )
+       nullify(cgrid%disturbance_rates       )
       
     return
   end subroutine nullify_edtype
@@ -3256,7 +3262,7 @@ contains
        if(associated(cgrid%stdev_sensible          )) deallocate(cgrid%stdev_sensible          )
        if(associated(cgrid%stdev_nep               )) deallocate(cgrid%stdev_nep               )
        if(associated(cgrid%stdev_rh                )) deallocate(cgrid%stdev_rh                )
-
+       if(associated(cgrid%disturbance_rates       )) deallocate(cgrid%disturbance_rates       )
     return
   end subroutine deallocate_edtype
 !============================================================================!
@@ -3989,6 +3995,7 @@ contains
     if(associated(cgrid%stdev_sensible          )) cgrid%stdev_sensible           = large_real
     if(associated(cgrid%stdev_nep               )) cgrid%stdev_nep                = large_real
     if(associated(cgrid%stdev_rh                )) cgrid%stdev_rh                 = large_real
+    if(associated(cgrid%disturbance_rates       )) cgrid%disturbance_rates        = large_real
 
     return
   end subroutine huge_edtype
@@ -5222,6 +5229,7 @@ contains
   ! 14  : rank 2 : polygon, pft
   ! 146 : rank 3 : polygon, pft, dbh
   ! 15  : rank 2 : polygon, disturbance
+  ! 155 : rank 3 : polygon, disturbance, disturbance
   ! 16  : rank 2 : polygon, dbh
   !
   ! 20  : rank 1 : site, integer
@@ -5278,9 +5286,9 @@ contains
     ! =================================================
     
     
-    use var_tables_array,only:num_var,vt_info,var_table,nullify_vt_vector_pointers
+    use ed_var_tables,only:num_var,vt_info,var_table,nullify_vt_vector_pointers
     use ed_node_coms,only:mynum,mchnum,machs,nmachs,nnodetot,sendnum,recvnum,master_num
-    use max_dims, only: maxgrds, maxmach
+    use ed_max_dims, only: maxgrds, maxmach
     implicit none
     
     include 'mpif.h'
@@ -5540,8 +5548,8 @@ contains
 !==========================================================================================!
   subroutine filltab_globtype(igr)
 
-    use var_tables_array,only:vtable_edio_r,vtable_edio_i,vtable_edio_c,metadata_edio
-    use misc_coms,only:expnme
+    use ed_var_tables,only:vtable_edio_r,vtable_edio_i,vtable_edio_c,metadata_edio
+    use ed_misc_coms,only:expnme
     use soil_coms,only:soil,ed_nstyp,slz
 
 
@@ -5642,7 +5650,7 @@ contains
 !==========================================================================================!
   subroutine filltab_edtype(igr,init)
 
-    use var_tables_array,only:vtable_edio_r,vtable_edio_i,vtable_edio_d,metadata_edio
+    use ed_var_tables,only:vtable_edio_r,vtable_edio_i,vtable_edio_d,metadata_edio
 
     implicit none
 
@@ -7115,6 +7123,13 @@ contains
             var_len,var_len_global,max_ptrs,'STDEV_RH :11:hist:mont:mpti:mpt3') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
+    
+    if(associated(cgrid%disturbance_rates)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%disturbance_rates(1,1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DISTURBANCE_RATES :155:hist:mont:mpti:mpt3') 
+       call metadata_edio(nvar,igr,'Disturbance Rates','[NA]','NA') 
+    end if
 
 
 
@@ -7137,7 +7152,7 @@ contains
 !==========================================================================================!
   subroutine filltab_polygontype(igr,ipy,init)
 
-    use var_tables_array,only:vtable_edio_r,vtable_edio_i,metadata_edio
+    use ed_var_tables,only:vtable_edio_r,vtable_edio_i,metadata_edio
 
     implicit none
 
@@ -7709,7 +7724,7 @@ contains
 !==========================================================================================!
   subroutine filltab_sitetype(igr,ipy,isi,init)
 
-    use var_tables_array,only:vtable_edio_r,vtable_edio_i,metadata_edio,vtable_edio_d
+    use ed_var_tables,only:vtable_edio_r,vtable_edio_i,metadata_edio,vtable_edio_d
 
     implicit none
     
@@ -8503,7 +8518,7 @@ contains
 !==========================================================================================!
   subroutine filltab_patchtype(igr,ipy,isi,ipa,init)
 
-    use var_tables_array,only:vtable_edio_r,vtable_edio_i,metadata_edio
+    use ed_var_tables,only:vtable_edio_r,vtable_edio_i,metadata_edio
 
     implicit none
 

@@ -7,13 +7,13 @@ subroutine h5_output(vtype)
 
   use an_header
   
-  use var_tables_array,only: &
+  use ed_var_tables,only: &
        vt_info,              &
        var_table,            &
        var_table_vector,     &
        num_var
 
-  use misc_coms, only : ffilout, &
+  use ed_misc_coms, only : ffilout, &
                         sfilout, &
 	                itimea,  &
 	                idatea,  &
@@ -39,7 +39,7 @@ subroutine h5_output(vtype)
   use hdf5
 #endif
   use ed_node_coms,only:mynum,nnodetot,recvnum,sendnum
-  use max_dims, only : n_pft,n_dist_types,n_dbh,maxgrds
+  use ed_max_dims, only : n_pft,n_dist_types,n_dbh,maxgrds
   use ed_state_vars,only: edgrid_g,edtype,polygontype,sitetype,patchtype,gdpy
 
   implicit none
@@ -680,7 +680,7 @@ subroutine h5_output(vtype)
 subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,irec)
   
   use grid_coms,only : nzg,nzs
-  use max_dims, only : n_pft,n_dist_types,n_dbh
+  use ed_max_dims, only : n_pft,n_dist_types,n_dbh
   use hdf5_coms,only : chnkdims,chnkoffs,cnt,stride,globdims
   use fusion_fission_coms, only: ff_ndbh
 
@@ -747,7 +747,6 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
      
   case (14) ! (n_pft,npolygons)  
      
-     ! Soil column type
      dsetrank = 2
      globdims(1) = int(n_pft,8)
      chnkdims(1) = int(n_pft,8)
@@ -776,7 +775,6 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
 
   case (15) ! (n_dist_types,npolygons)  
      
-     ! Soil column type
      dsetrank = 2
      globdims(1) = int(n_dist_types,8)
      chnkdims(1) = int(n_dist_types,8)
@@ -787,9 +785,23 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
      cnt(1:2)    = 1_8
      stride(1:2) = 1_8
 
+  case (155) ! (n_dist_types,n_dist_types,npolygons)  
+     
+     dsetrank = 3
+     globdims(1) = int(n_dist_types,8)
+     chnkdims(1) = int(n_dist_types,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(n_dist_types,8)
+     chnkdims(2) = int(n_dist_types,8)
+     chnkoffs(2) = 0_8
+     globdims(3) = int(var_len_global,8)
+     chnkdims(3) = int(varlen,8)
+     chnkoffs(3) = int(globid,8)
+     cnt(1:3)    = 1_8
+     stride(1:3) = 1_8
+
   case (16) ! (n_dbh,npolygons)  
      
-     ! Soil column type
      dsetrank = 2
      globdims(1) = int(n_dbh,8)
      chnkdims(1) = int(n_dbh,8)
@@ -802,7 +814,6 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
 
   case (17) ! (nlai,nvars,npolygons)  
      
-     ! Soil column type
      dsetrank = 3
      globdims(1) = 3_8
      chnkdims(1) = 3_8

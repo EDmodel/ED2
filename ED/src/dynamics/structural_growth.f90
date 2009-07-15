@@ -5,7 +5,7 @@
 ! IMPORTANT: Do not change the order of operations below unless you know what you are      !
 !            doing.  Changing the order can affect the C/N budgets.                        !
 !------------------------------------------------------------------------------------------!
-subroutine structural_growth_ar(cgrid, month)
+subroutine structural_growth(cgrid, month)
    use ed_state_vars , only : edtype                 & ! structure
                             , polygontype            & ! structure
                             , sitetype               & ! structure
@@ -19,7 +19,7 @@ subroutine structural_growth_ar(cgrid, month)
                             , c2n_stem               & ! intent(in)
                             , l2n_stem               ! ! intent(in)
    use decomp_coms   , only : f_labile               ! ! intent(in)
-   use max_dims      , only : n_pft                  & ! intent(in)
+   use ed_max_dims      , only : n_pft                  & ! intent(in)
                             , n_dbh                  ! ! intent(in)
    use ed_therm_lib  , only : calc_hcapveg           & ! function
                             , update_veg_energy_cweh ! ! function
@@ -111,7 +111,7 @@ subroutine structural_growth_ar(cgrid, month)
                cpatch%monthly_dndt(ico) = 0.0
 
                !----- Determine how to distribute what is in bstorage. --------------------!
-               call plant_structural_allocation_ar(cpatch%pft(ico),cpatch%hite(ico)        &
+               call plant_structural_allocation(cpatch%pft(ico),cpatch%hite(ico)        &
                                                   ,cgrid%lat(ipy),month,f_bseeds,f_bdead)
 
                !----- Grow plants; bdead gets fraction f_bdead of bstorage. ---------------!
@@ -161,7 +161,7 @@ subroutine structural_growth_ar(cgrid, month)
                     + net_stem_N_uptake
 
                !----- Calculate the derived cohort properties. ----------------------------!
-               call update_derived_cohort_props_ar(cpatch,ico                              &
+               call update_derived_cohort_props(cpatch,ico                              &
                                                   ,cpoly%green_leaf_factor(ipft,isi)       &
                                                   ,cpoly%lsl(isi))
 
@@ -203,7 +203,7 @@ subroutine structural_growth_ar(cgrid, month)
                end if
 
                !----- Update interesting output quantities. -------------------------------!
-               call update_vital_rates_ar(cpatch,ico,ilu,dbh_in,bdead_in,balive_in         &
+               call update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in         &
                                          ,hite_in,bstorage_in,nplant_in,mort_litter        &
                                          ,csite%area(ipa),cpoly%basal_area(:,:,isi)        &
                                          ,cpoly%agb(:,:,isi),cpoly%agb_lu(:,isi)           &
@@ -223,7 +223,7 @@ subroutine structural_growth_ar(cgrid, month)
 
 
    return
-end subroutine structural_growth_ar
+end subroutine structural_growth
 !==========================================================================================!
 !==========================================================================================!
 
@@ -237,7 +237,7 @@ end subroutine structural_growth_ar
 !     This subroutine will decide the partition of storage biomass into seeds and dead     !
 ! (structural) biomass.                                                                    !
 !------------------------------------------------------------------------------------------!
-subroutine plant_structural_allocation_ar(ipft,hite,lat,month,f_bseeds,f_bdead)
+subroutine plant_structural_allocation(ipft,hite,lat,month,f_bseeds,f_bdead)
    use pft_coms      , only : phenology    & ! intent(in)
                             , repro_min_h  & ! intent(in)
                             , r_fract      ! ! intent(in)
@@ -274,7 +274,7 @@ subroutine plant_structural_allocation_ar(ipft,hite,lat,month,f_bseeds,f_bdead)
    end if
          
    return
-end subroutine plant_structural_allocation_ar
+end subroutine plant_structural_allocation
 !==========================================================================================!
 !==========================================================================================!
 
@@ -288,7 +288,7 @@ end subroutine plant_structural_allocation_ar
 !     This subroutine will assign values derived from the basic properties of a given      !
 ! cohort.                                                                                  !
 !------------------------------------------------------------------------------------------!
-subroutine update_derived_cohort_props_ar(cpatch,ico,green_leaf_factor,lsl)
+subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
 
    use ed_state_vars , only : patchtype           ! ! structure
    use pft_coms      , only : phenology           & ! intent(in)
@@ -346,7 +346,7 @@ subroutine update_derived_cohort_props_ar(cpatch,ico,green_leaf_factor,lsl)
    cpatch%krdepth(ico) = assign_root_depth(rootdepth, lsl)
    
    return
-end subroutine update_derived_cohort_props_ar
+end subroutine update_derived_cohort_props
 !==========================================================================================!
 !==========================================================================================!
 
@@ -359,13 +359,13 @@ end subroutine update_derived_cohort_props_ar
 !==========================================================================================!
 !    This subroutine will compute the growth and mortality rates.                          !
 !------------------------------------------------------------------------------------------!
-subroutine update_vital_rates_ar(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in          &
+subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in          &
                                 ,bstorage_in,nplant_in,mort_litter,area,basal_area,agb     &
                                 ,agb_lu,basal_area_growth,agb_growth,basal_area_mort       &
                                 ,agb_mort)
    
    use ed_state_vars , only : patchtype    ! ! structure
-   use max_dims      , only : n_pft        & ! intent(in)
+   use ed_max_dims      , only : n_pft        & ! intent(in)
                             , n_dbh        & ! intent(in)
                             , n_dist_types ! ! intent(in)
    use consts_coms   , only : pio4         ! ! intent(in)
@@ -448,7 +448,7 @@ subroutine update_vital_rates_ar(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_i
    agb_mort(ipft,bdbh)        = agb_mort(ipft,bdbh) + area * mort_litter * 10.0
 
    return
-end subroutine update_vital_rates_ar
+end subroutine update_vital_rates
 !==========================================================================================!
 !==========================================================================================!
 
@@ -521,7 +521,7 @@ subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
                             , polygontype    & ! structure
                             , sitetype       & ! structure
                             , patchtype      ! ! structure
-   use max_dims      , only : n_pft          ! ! intent(in)
+   use ed_max_dims      , only : n_pft          ! ! intent(in)
    use pft_coms      , only : include_pft    & ! intent(in)
                             , c2n_recruit    & ! intent(in)
                             , c2n_stem       & ! intent(in)

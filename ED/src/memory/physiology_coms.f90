@@ -1,6 +1,6 @@
 Module physiology_coms
 
-  use max_dims,only:n_pft
+  use ed_max_dims,only:n_pft
 
   implicit none
 

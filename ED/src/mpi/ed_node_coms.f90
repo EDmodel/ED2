@@ -22,7 +22,7 @@
 
 Module ed_node_coms
 
-  use max_dims, only : maxgrds,maxmach
+  use ed_max_dims, only : maxgrds,maxmach
 
   !---------------------------------------------------------------------------
   integer :: mxp,myp,mzp,ia,iz,ja,jz,i0,j0,master_num,mchnum,ibcon,ipara

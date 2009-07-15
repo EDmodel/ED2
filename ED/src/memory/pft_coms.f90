@@ -9,7 +9,7 @@
 !==========================================================================================!
 module pft_coms
 
-   use max_dims, only: n_pft
+   use ed_max_dims, only: n_pft
    !---------------------------------------------------------------------------------------!
    !  PFT | Name                                | Grass   | Tropical | agriculture?        !
    !------+-------------------------------------+---------+----------+---------------------!
@@ -313,8 +313,8 @@ module pft_coms
    ! 0. Evergreen coniferous;                                                              !
    ! 1. Drought deciduous;                                                                 !
    ! 2. Cold deciduous;
-   ! 3. Tropical light-controlled;
-   ! 4. Tropical water-controlled.
+   ! 3. Light controlled;
+   ! 4. Drought deciduous - based on 10day average.
                                                                    !
    !---------------------------------------------------------------------------------------!
    integer, dimension(n_pft) :: phenology 

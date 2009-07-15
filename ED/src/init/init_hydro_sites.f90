@@ -1,16 +1,16 @@
 !!! translate from C to fortran
 ! ===============================================================
 
-subroutine read_site_file_array(cgrid)
+subroutine read_site_file(cgrid)
    ! function for loading sites within polygons and initializing polygon parms
    ! call prior to loading pss/css files but after basic polygon established
   
    use soil_coms, only: soil,slz
    use grid_coms, only: nzg
-   use misc_coms, only: ied_init_mode,sfilin
+   use ed_misc_coms, only: ied_init_mode,sfilin
    use mem_sites, only: edres
    use ed_state_vars, only: edtype,polygontype,sitetype,allocate_polygontype
-   use max_dims, only: max_site,n_pft
+   use ed_max_dims, only: max_site,n_pft
 
    implicit none
 
@@ -294,7 +294,7 @@ subroutine read_site_file_array(cgrid)
    end do
 
 
-end subroutine read_site_file_array
+end subroutine read_site_file
 !==========================================================================================!
 !==========================================================================================!
 

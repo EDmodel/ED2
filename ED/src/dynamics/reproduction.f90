@@ -4,7 +4,7 @@
 ! PFT-specific reproduction properties.  No reproduction will happen if the user didn't    !
 ! want it, in which case the seedling biomass will go to the litter pools.                 !
 !------------------------------------------------------------------------------------------!
-subroutine reproduction_ar(cgrid, month)
+subroutine reproduction(cgrid, month)
    use ed_state_vars      , only : edtype                & ! structure
                                  , polygontype           & ! structure
                                  , sitetype              & ! structure
@@ -31,11 +31,11 @@ subroutine reproduction_ar(cgrid, month)
                                  , hgt_min               & ! intent(in)
                                  , plant_min_temp        ! ! intent(in)
    use decomp_coms        , only : f_labile              ! ! intent(in)
-   use max_dims           , only : n_pft                 ! ! intent(in)
-   use fuse_fiss_utils_ar , only : sort_cohorts_ar       & ! subroutine
-                                 , terminate_cohorts_ar  & ! subroutine
-                                 , fuse_cohorts_ar       & ! subroutine
-                                 , split_cohorts_ar      ! ! subroutine
+   use ed_max_dims           , only : n_pft                 ! ! intent(in)
+   use fuse_fiss_utils , only : sort_cohorts       & ! subroutine
+                                 , terminate_cohorts  & ! subroutine
+                                 , fuse_cohorts       & ! subroutine
+                                 , split_cohorts      ! ! subroutine
    use phenology_coms     , only : repro_scheme          ! ! intent(in)
    use mem_sites          , only : maxcohort             ! ! intent(in)
    use ed_therm_lib       , only : calc_hcapveg          ! ! function
@@ -96,7 +96,7 @@ subroutine reproduction_ar(cgrid, month)
          !---------------------------------------------------------------------------------!
          sortloop: do ipa = 1,csite%npatches
             cpatch => csite%patch(ipa)
-            call sort_cohorts_ar(cpatch)
+            call sort_cohorts(cpatch)
          end do sortloop
 
          !---------------------------------------------------------------------------------!
@@ -266,9 +266,9 @@ subroutine reproduction_ar(cgrid, month)
                   cpatch%nplant (ico)   = recruit(inew)%nplant
 
                   !----- Carry out standard initialization. -------------------------------!
-                  call init_ed_cohort_vars_array(cpatch,ico,cpoly%lsl(isi))
+                  call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
 
-                  !----- Assign temperature after init_ed_cohort_vars_ar... ---------------!
+                  !----- Assign temperature after init_ed_cohort_vars... ---------------!
                   cpatch%veg_temp(ico)  = recruit(inew)%veg_temp
 
                   !----- Initialise the next variables with zeroes... ---------------------!
@@ -293,7 +293,7 @@ subroutine reproduction_ar(cgrid, month)
                   call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico) &
                                    ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)   &
                                    ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)       &
-                                   ,cpatch%wpa(ico),cpatch%wai(ico)) !here sla is not yet assigned; will be in init_ed_cohort_vars_array 
+                                   ,cpatch%wpa(ico),cpatch%wai(ico)) !here sla is not yet assigned; will be in init_ed_cohort_vars 
                   !----- Finding heat capacity and vegetation internal energy. ------------!
                   cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)   &
                                                     ,cpatch%balive(ico),cpatch%nplant(ico) &
@@ -319,28 +319,28 @@ subroutine reproduction_ar(cgrid, month)
             cpatch => csite%patch(ipa)
 
             if(cpatch%ncohorts > 0 .and. maxcohort >= 0) then
-               call terminate_cohorts_ar(csite,ipa,elim_nplant,elim_lai)
-               call fuse_cohorts_ar(csite,ipa, cpoly%green_leaf_factor(:,isi)              &
+               call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+               call fuse_cohorts(csite,ipa, cpoly%green_leaf_factor(:,isi)              &
                                    , cpoly%lsl(isi))                         
-               call split_cohorts_ar(cpatch, cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
+               call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
             end if
 
             !----- Update the number of cohorts (this is redundant...). -------------------!
             csite%cohort_count(ipa) = cpatch%ncohorts
 
             !----- Since cohorts may have changed, update patch properties... -------------!
-            call update_patch_derived_props_ar(csite,cpoly%lsl(isi),cpoly%met(isi)%rhos    &
+            call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%rhos    &
                                               ,ipa)
          end do update_patch_loop
 
          !----- Since patch properties may have changed, update site properties... --------!
-         call update_site_derived_props_ar(cpoly,0,isi)
+         call update_site_derived_props(cpoly,0,isi)
          
          !----- Reset minimum monthly temperature. ----------------------------------------!
          cpoly%min_monthly_temp(isi) = huge(1.)
       end do siteloop
    end do polyloop
    return
-end subroutine reproduction_ar
+end subroutine reproduction
 !==========================================================================================!
 !==========================================================================================!

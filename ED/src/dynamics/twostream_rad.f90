@@ -11,7 +11,7 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
                              ,UW_vishi_beam,UW_vishi_diffuse,DW_nirlo_beam                 &
                              ,DW_nirlo_diffuse,UW_nirhi_beam,UW_nirhi_diffuse)
 
-   use max_dims             , only : n_pft                   ! ! intent(in) 
+   use ed_max_dims             , only : n_pft                   ! ! intent(in) 
    use pft_coms             , only : clumping_factor         & ! intent(in) 
                                    , phenology               ! ! intent(in) 
    use canopy_radiation_coms, only : diffuse_backscatter_nir & ! intent(in)

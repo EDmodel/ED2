@@ -19,7 +19,7 @@ subroutine ed_opspec_grid
 !   This subroutine checks the grid definition for ED, like grid size, dimensions and if   !
 ! the provided numbers are allowed.                                                        !
 !------------------------------------------------------------------------------------------!
-  use max_dims, only : maxgrds,nxpmax,nypmax,nzpmax,nzgmax,nzsmax,max_soi,max_ed_regions
+  use ed_max_dims, only : maxgrds,nxpmax,nypmax,nzpmax,nzgmax,nzsmax,max_soi,max_ed_regions
   use grid_coms, only : nnxp,nnyp,ngrids,polelat,polelon,centlat,centlon,deltax,deltay    &
                        ,nstratx,nstraty,nzg,nzs
   use mem_sites, only : n_ed_region,n_soi,grid_type,grid_res,soi_lat,soi_lon              &
@@ -280,7 +280,7 @@ subroutine ed_opspec_par
 !   This subroutine checks the grid definition for ED, like grid size, dimensions and if   !
 ! the provided numbers are allowed.                                                        !
 !------------------------------------------------------------------------------------------!
-   use max_dims     , only : maxmach
+   use ed_max_dims     , only : maxmach
    use grid_coms    , only : nnxp,nnyp,ngrids
    use mem_sites    , only : n_ed_region,n_soi
    use ed_para_coms , only : nmachs
@@ -339,7 +339,7 @@ subroutine ed_opspec_times
 !------------------------------------------------------------------------------------------!
 !    This subroutine checks time related settings from ED2IN.                              !
 !------------------------------------------------------------------------------------------!
-   use misc_coms , only : frqfast,frqstate,imontha,idatea,iyeara,itimea  &
+   use ed_misc_coms , only : frqfast,frqstate,imontha,idatea,iyeara,itimea  &
                          ,imonthz,idatez,iyearz,itimez,dtlsm,radfrq      &
                          ,ifoutput,isoutput,idoutput,imoutput,iyoutput,  &
                          nrec_fast,nrec_state,outfast,outstate,unitfast,unitstate
@@ -945,8 +945,8 @@ subroutine ed_opspec_misc
    !    This subroutine performs miscellaneous tests over the options, like values outside !
    ! the allowed ranges and conflicting dynamic settings.                                  !
    !---------------------------------------------------------------------------------------!
-   use max_dims              , only : n_pft                        ! ! intent(in)
-   use misc_coms             , only : ifoutput                     & ! intent(in)
+   use ed_max_dims              , only : n_pft                        ! ! intent(in)
+   use ed_misc_coms             , only : ifoutput                     & ! intent(in)
                                     , idoutput                     & ! intent(in)
                                     , imoutput                     & ! intent(in)
                                     , iyoutput                     & ! intent(in)

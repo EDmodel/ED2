@@ -34,6 +34,7 @@ OBJ_MODEL =                        \
 	ed_init.o                  \
 	ed_init_atm.o              \
 	ed_load_namelist.o         \
+	ed_max_dims.o              \
 	ed_mem_alloc.o             \
 	ed_mem_grid_dim_defs.o     \
 	ed_met_driver.o            \
@@ -48,6 +49,7 @@ OBJ_MODEL =                        \
 	ed_state_vars.o            \
 	ed_therm_lib.o             \
 	ed_type_init.o             \
+	ed_var_tables.o            \
 	ed_work_vars.o             \
 	ed_xml_config.o            \
 	ename_coms.o               \
@@ -73,10 +75,8 @@ OBJ_MODEL =                        \
 	leaf_database.o            \
 	libxml2f90.f90_pp.o        \
 	lsm_hyd.o                  \
-	max_dims.o                 \
 	mem_sites.o                \
 	met_driver_coms.o          \
-	misc_coms.o                \
 	mortality.o                \
 	numutils.o                 \
 	optimiz_coms.o             \
@@ -102,5 +102,4 @@ OBJ_MODEL =                        \
 	twostream_rad.o            \
 	update_derived_props.o     \
 	utils_c.o                  \
-	utils_f.o                  \
-	var_tables_array.o
+	utils_f.o

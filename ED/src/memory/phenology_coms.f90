@@ -21,9 +21,10 @@ Module phenology_coms
   real :: phen_c
 
   ! Flag specifying which phenology scheme to run.
-  ! 0 - predictive scheme for the temperate
+  ! 0 - predictive scheme with cold-deciduous and drought-deciduous
   ! 1 - user prescribed, remote sensing driven
-  ! 2 - predictive scheme for the tropics
+  ! 2 - predictive scheme with cold-deciduous and new drought-deciuous
+  ! 3 - predictive scheme with cold-deciduous, new drought-deciduous and light-controlled
   integer :: iphen_scheme
 
   ! Flag specifying which reproduction scheme to run
