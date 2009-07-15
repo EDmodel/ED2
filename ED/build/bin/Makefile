@@ -25,7 +25,7 @@ include objects.mk
 
 all: $(EXE)
 
-$(EXE): $(LIBMODEL) $(MAINOBJ) 
+$(EXE): gendep $(LIBMODEL) $(MAINOBJ) 
 	@echo ""
 	$(LOADER) -o $(EXE) edmain.o $(LOADER_OPTS) $(LIBMODEL) $(HDF5_LIBS) $(PAR_LIBS)   \
 	$(NC_LIBS) $(LIBS) $(LOADER_OPTS)
@@ -33,11 +33,14 @@ $(EXE): $(LIBMODEL) $(MAINOBJ)
 	@echo Finished building === $(EXE)
 	@echo ""
 
+gendep:
+	./generate_deps.sh
+
 $(MAINOBJ):  $(MAIN) 
 	@echo ""
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
-#	rm -f $(<F:.f90=.f90) 
+	rm -f $(<F:.f90=.f90) 
 
 $(LIBMODEL): $(OBJ_MODEL)
 	$(ARCHIVE) $(LIBMODEL) $(OBJ_MODEL)
@@ -57,4 +60,4 @@ clean:
 	@echo ""
 
 #----- Define dependencies ----------------------------------------------------------------#
-include depend.mk
+include rules.mk

@@ -9,6 +9,8 @@ MAINOBJ = edmain.o
 # Define objects.
 
 OBJ_MODEL =                        \
+	ed_state_vars.o            \
+	ed_max_dims.o              \
 	allometry.o                \
 	an_header.o                \
 	average_utils.o            \
@@ -45,7 +47,6 @@ OBJ_MODEL =                        \
 	ed_params.o                \
 	ed_para_coms.o             \
 	ed_para_init.o             \
-	ed_state_vars.o            \
 	ed_therm_lib.o             \
 	ed_type_init.o             \
 	ed_work_vars.o             \
@@ -73,7 +74,6 @@ OBJ_MODEL =                        \
 	leaf_database.o            \
 	libxml2f90.f90_pp.o        \
 	lsm_hyd.o                  \
-	ed_max_dims.o              \
 	mem_sites.o                \
 	met_driver_coms.o          \
 	mortality.o                \
