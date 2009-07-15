@@ -12,7 +12,8 @@ subroutine apply_forestry_ar(cpoly, isi, year, rhos)
                                    , allocate_sitetype             & ! Subroutine
                                    , deallocate_sitetype           & ! Subroutine
                                    , copy_sitetype_mask            ! ! Subroutine
-   use disturb_coms         , only : lutime                        & ! intent(in)
+   use disturb_coms         , only : ianth_disturb                 & ! intent(in)
+                                   , lutime                        & ! intent(in)
                                    , min_new_patch_area            & ! intent(in)
                                    , plantation_year               ! ! intent(in)
    use disturbance_utils_ar , only : initialize_disturbed_patch_ar & ! subroutine
@@ -48,6 +49,9 @@ subroutine apply_forestry_ar(cpoly, isi, year, rhos)
    real                               :: lambda_mature_plantation
    real                               :: harvest_deficit
    !---------------------------------------------------------------------------------------!
+
+   !----- This subroutine will be skipped if anthropogenic disturbance is turned off. -----!
+   if (ianth_disturb == 0) return
 
    csite => cpoly%site(isi)
 

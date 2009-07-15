@@ -451,9 +451,6 @@ module rk4_stepper_ar
       !        argument for the temporary surface water.                                   !
       !------------------------------------------------------------------------------------!
 
-      !----- Finding canopy relative humidity ---------------------------------------------!
-      can_rhv = dble(rehuil(sngl(rk4met%prss),sngl(max(y%can_temp,toocold))                &
-                           ,sngl(y%can_shv)))
 
       !------------------------------------------------------------------------------------!
       !   Checking whether the canopy temperature is too hot or too cold.                  !
@@ -476,28 +473,35 @@ module rk4_stepper_ar
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
+      !     The check of canopy humidity is done only when temperature makes sense, to     !
+      ! avoid floating point exceptions when temperature is too cold or too hot.           !
+      !------------------------------------------------------------------------------------!
+      if (.not. reject_step) then
+         !----- Finding canopy relative humidity ------------------------------------------!
+         can_rhv = dble(rehuil(sngl(rk4met%prss),sngl(max(y%can_temp,toocold))             &
+                              ,sngl(y%can_shv)))
 
-      !------------------------------------------------------------------------------------!
-      !   Checking whether the canopy air is too dry or too humid.                         !
-      !------------------------------------------------------------------------------------!
-      if((can_rhv > rk4max_can_rhv .and. y%can_shv > rk4max_can_shv) .or.                  &
-         y%can_shv < rk4min_can_shv )then
-         reject_step = .true.
-         if(record_err) integ_err(2,2) = integ_err(2,2) + 1_8
-         if (print_problems) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           ' + Canopy air mix. rat. is off-track...'
-            write(unit=*,fmt='(a)')           '----------------------------------------'
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:       ',y%can_shv
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:       ',can_rhv
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:      ',y%can_temp
-            write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:      ',rk4met%prss
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_TEMP)/Dt:',dydx%can_temp
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt: ',dydx%can_shv
-            write(unit=*,fmt='(a,1x,es12.4)') ' H:            ',h
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-         elseif (.not. record_err) then
-            return
+         !----- Checking whether the canopy air is too dry or too humid. ------------------!
+         if ((can_rhv > rk4max_can_rhv .and. y%can_shv > rk4max_can_shv) .or.              &
+             y%can_shv < rk4min_can_shv )then
+            reject_step = .true.
+            if(record_err) integ_err(2,2) = integ_err(2,2) + 1_8
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+               write(unit=*,fmt='(a)')           ' + Canopy air mix. rat. is off-track...'
+               write(unit=*,fmt='(a)')           '----------------------------------------'
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:       ',y%can_shv
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:       ',can_rhv
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:      ',y%can_temp
+               write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:      ',rk4met%prss
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_TEMP)/Dt:',dydx%can_temp
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt: ',dydx%can_shv
+               write(unit=*,fmt='(a,1x,es12.4)') ' H:            ',h
+               write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            elseif (.not. record_err) then
+               return
+            end if
          end if
       end if
       !------------------------------------------------------------------------------------!

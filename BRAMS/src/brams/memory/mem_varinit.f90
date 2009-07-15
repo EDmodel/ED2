@@ -36,7 +36,7 @@ module mem_varinit
   real(kind=8), dimension(maxnudfiles) :: nud_times
   character(len=128) :: nud_hfile
   real :: tnudlat,tnudcent,tnudtop,znudtop
-  real :: wt_nudge_uv,wt_nudge_th,wt_nudge_pi,wt_nudge_rt
+  real :: wt_nudge_uv,wt_nudge_th,wt_nudge_pi,wt_nudge_rt,wt_nudge_co2
   real :: wt_nudge_grid(maxgrds)
   real(kind=8) :: htime1, htime2
 

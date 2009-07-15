@@ -908,10 +908,11 @@ subroutine ReadNamelist(fileName)
        vwait1, &
        vwaittot, &
        wt_nudge_grid, &
-       wt_nudge_pi, &
-       wt_nudge_rt, &
-       wt_nudge_th, &
-       wt_nudge_uv, &
+       wt_nudge_pi,  &
+       wt_nudge_rt,  &
+       wt_nudge_th,  &
+       wt_nudge_uv,  &
+       wt_nudge_co2, &
        wt_nudgec_grid, &
        znudtop
   use micphys, only: aparm, &
@@ -1065,11 +1066,11 @@ subroutine ReadNamelist(fileName)
   namelist /MODEL_FILE_INFO/                                           &
        initial, nud_type, varfpfx, vwait1, vwaittot, nud_hfile, nudlat,&
        tnudlat, tnudcent, tnudtop, znudtop, wt_nudge_grid, wt_nudge_uv,&
-       wt_nudge_th, wt_nudge_pi, wt_nudge_rt, nud_cond, cond_hfile,    &
-       tcond_beg, tcond_end, t_nudge_rc, wt_nudgec_grid, if_oda,       &
-       oda_upaprefix,oda_sfcprefix, frqoda, todabeg, todaend, tnudoda, &
-       wt_oda_grid, wt_oda_uv, wt_oda_th, wt_oda_pi, wt_oda_rt,        &
-       roda_sfce, roda_sfc0, roda_upae,roda_upa0, roda_hgt,            &
+       wt_nudge_th, wt_nudge_pi, wt_nudge_rt, wt_nudge_co2, nud_cond,  &
+       cond_hfile,tcond_beg, tcond_end, t_nudge_rc, wt_nudgec_grid,    &
+       if_oda,oda_upaprefix,oda_sfcprefix, frqoda, todabeg, todaend,   &
+       tnudoda, wt_oda_grid, wt_oda_uv, wt_oda_th, wt_oda_pi,          &
+       wt_oda_rt, roda_sfce, roda_sfc0, roda_upae,roda_upa0, roda_hgt, &
        roda_zfact, oda_sfc_til, oda_sfc_tel, oda_upa_til, oda_upa_tel, &
        if_cuinv, cu_prefix, tnudcu, wt_cu_grid, tcu_beg, tcu_end,      &
        cu_tel, cu_til, imonthh, idateh, iyearh, itimeh,                &
@@ -1527,6 +1528,7 @@ subroutine ReadNamelist(fileName)
      write (*,*) "wt_nudge_th=", wt_nudge_th
      write (*,*) "wt_nudge_pi=", wt_nudge_pi
      write (*,*) "wt_nudge_rt=", wt_nudge_rt
+     write (*,*) "wt_nudge_co2=", wt_nudge_co2
      write (*,*) "nud_cond=", nud_cond
      write (*,*) "cond_hfile=", trim(cond_hfile)
      write (*,*) "tcond_beg=", tcond_beg
