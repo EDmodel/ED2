@@ -9,6 +9,8 @@ MAINOBJ = edmain.o
 # Define objects.
 
 OBJ_MODEL =                        \
+	ed_state_vars.o            \
+	ed_max_dims.o              \
 	allometry.o                \
 	an_header.o                \
 	average_utils.o            \
@@ -34,7 +36,6 @@ OBJ_MODEL =                        \
 	ed_init.o                  \
 	ed_init_atm.o              \
 	ed_load_namelist.o         \
-	ed_max_dims.o              \
 	ed_mem_alloc.o             \
 	ed_mem_grid_dim_defs.o     \
 	ed_met_driver.o            \
@@ -46,7 +47,6 @@ OBJ_MODEL =                        \
 	ed_params.o                \
 	ed_para_coms.o             \
 	ed_para_init.o             \
-	ed_state_vars.o            \
 	ed_therm_lib.o             \
 	ed_type_init.o             \
 	ed_var_tables.o            \
