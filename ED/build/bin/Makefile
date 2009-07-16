@@ -23,9 +23,13 @@ include objects.mk
 
 #----- Define targets. --------------------------------------------------------------------#
 
+depends:
+	(make gendep)
+	(make all)
+
 all: $(EXE)
 
-$(EXE): gendep $(LIBMODEL) $(MAINOBJ) 
+$(EXE): $(LIBMODEL) $(MAINOBJ) 
 	@echo ""
 	$(LOADER) -o $(EXE) edmain.o $(LOADER_OPTS) $(LIBMODEL) $(HDF5_LIBS) $(PAR_LIBS)   \
 	$(NC_LIBS) $(LIBS) $(LOADER_OPTS)
