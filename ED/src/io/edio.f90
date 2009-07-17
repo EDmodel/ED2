@@ -163,7 +163,7 @@ subroutine spatial_averages
    use soil_coms             , only : min_sfcwater_mass & ! intent(in)
                                     , soil              ! ! intent(in)
    use c34constants          , only : n_stoma_atts
-   use max_dims              , only : n_pft
+   use ed_max_dims              , only : n_pft
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    type(edtype)         , pointer :: cgrid

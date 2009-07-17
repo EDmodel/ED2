@@ -109,7 +109,6 @@ subroutine init_nbg_cohorts(csite,lsl,atm_tmp,ipa_a,ipa_z)
    integer                            :: ipft    ! PFT counter
    !---------------------------------------------------------------------------------------!
 
-
    !----- Patch loop. ---------------------------------------------------------------------!
    patchloop: do ipa=ipa_a,ipa_z
       cpatch => csite%patch(ipa)
@@ -193,7 +192,9 @@ subroutine init_nbg_cohorts(csite,lsl,atm_tmp,ipa_a,ipa_z)
                                               ,cpatch%balive(ico),cpatch%nplant(ico)       &
                                               ,cpatch%hite(ico),cpatch%pft(ico)            &
                                               ,cpatch%phenology_status(ico))
-         cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
+ 
+!!!  WE DO NOT HAVE TEMPERATURE YET - SO WAIT FOR ed_init_atm         
+!!!        cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
 
          !----- Update total patch-level above-ground biomass -----------------------------!
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa) + cpatch%nplant(ico)    &

@@ -1998,25 +1998,33 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
       call fatal_error('Dataset did not have soil water?' &
            ,'fill_history_site','ed_history_io.f90')
    endif
-   call h5dget_type_f(dset_id,datatype_id,hdferr)
-   call h5tget_size_f(datatype_id,setsize,hdferr)
-   call h5dclose_f(dset_id  , hdferr)
-   
-   if (setsize==4_8) then  !Old precision
-      call hdf_getslab_r(csite%soil_water,'SOIL_WATER_PA ',dsetrank,iparallel,.true.)
-   else if (setsize==8_8) then ! Newer precision
-      allocate(buff(nzg,csite%npatches))
-      write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
-      write (unit=*,fmt='(a)') '  Loading 8-byte precision soil water and converting to 4-byte'
-      write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
-      call hdf_getslab_d(buff,'SOIL_WATER_PA ',dsetrank,iparallel,.true.)
-      csite%soil_water(1:nzg,1:csite%npatches) = sngl(buff(1:nzg,1:csite%npatches))
-      deallocate(buff)
-  else
-     call fatal_error('Soil water dataset is not real nor double?'                         &
-                     ,'fill_history_site','ed_history_io.f90')
-  end if
 
+   ! ---------------------------------------------------------------------------------!
+   ! THESE LINES ARE USEFULL FOR DETERMINING DATA SIZE OF ANY GIVEN OBJECT IN A SET   !
+   ! ---------------------------------------------------------------------------------!
+   
+   !call h5dget_type_f(dset_id,datatype_id,hdferr)
+   !call h5tget_size_f(datatype_id,setsize,hdferr)
+   !call h5dclose_f(dset_id  , hdferr)
+ 
+! =============================================================================================
+! KEEP THIS CODE AS A TEMPLATE IN CASE WE NEED TO DO SOMETHING LIKE THIS IN THE FUTURE
+!  HELPFUL IF WE CHANGE DATA TYPES
+! ---------------------------------------------------------------------------------------------
+!   if (setsize==4_8) then  !Old precision
+!      call hdf_getslab_r(csite%soil_water,'SOIL_WATER_PA ',dsetrank,iparallel,.true.)
+!   else if (setsize==8_8) then ! Newer precision
+!      allocate(buff(nzg,csite%npatches))
+!      write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
+!      write (unit=*,fmt='(a)') '  Loading 8-byte precision soil water and converting to 4-byte'
+!      write (unit=*,fmt='(a)') '-------------------------------------------------------------------'
+!      call hdf_getslab_d(buff,'SOIL_WATER_PA ',dsetrank,iparallel,.true.)
+!      csite%soil_water(1:nzg,1:csite%npatches) = sngl(buff(1:nzg,1:csite%npatches))
+!      deallocate(buff)
+!  else
+!     call fatal_error('Soil water dataset is not real nor double?'                         &
+!                     ,'fill_history_site','ed_history_io.f90')
+!  end if
 
   !--------------------------------------------------------------------------------------------  
   
@@ -2233,80 +2241,12 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%veg_temp,'VEG_TEMP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%veg_water,'VEG_WATER ',dsetrank,iparallel,.true.)
      
-     !----- Older versions may not have WPA/WAI. If this is the case, assign it here
-     call hdf_getslab_r(cpatch%wpa,'WPA_CO ',dsetrank,iparallel,.false.)
-     call hdf_getslab_r(cpatch%wai,'WAI_CO ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%wpa,'WPA_CO ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%wai,'WAI_CO ',dsetrank,iparallel,.true.)
 
-!!! ====== MARCOS ASKED TO HAVE THIS REMOVED
-!!!     if (sum(cpatch%wpa(1:cpatch%ncohorts),1) == 0.0 .or. &
-!!!         sum(cpatch%wai(1:cpatch%ncohorts),1) == 0.0      ) then
-!!!        do ico=1,cpatch%ncohorts
-!!!           call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)  &
-!!!                            ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)    &
-!!!                            ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)         &
-!!!                            ,cpatch%wpa(ico),cpatch%wai(ico))
-!!!        end do
-!!!     end if
-!!! =====================================================================================
-
-     ! ------------------------------------------------------------------------------------
-     ! ======= Older versions of the code did not have vegetation energy
-     ! ======= If the VEG_ENERGY variable was not there, and was initialized to 0._4
-     ! ======= then reconstruct those values from temperature, biomass and water
-     ! ======= This makes an assumption that may not exactly true in the model, but
-     ! ======= is an acceptable approximation if this process only occurs once.  It is
-     ! ======= assumed that the vegetation water is all liquid if the temperature is
-     ! ======= greater than or equal to 0, and all ice if it is less than zero.
-     
      call hdf_getslab_r(cpatch%veg_energy,'VEG_ENERGY ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%hcapveg,'HCAPVEG ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%veg_fliq,'VEG_FLIQ ',dsetrank,iparallel,.true.)
-     
-!     if ( sum(cpatch%veg_energy(1:cpatch%ncohorts),1) == 0.0 .or.                          &
-!          sum(cpatch%hcapveg(1:cpatch%ncohorts),1)    == 0.0 ) then
-!        
-!        write (unit=*,fmt='(a)') '---------------------------------------------------------'
-!        write (unit=*,fmt='(a)') ' - Reconstructing HCAPVEG from BLEAF and BDEAD...'
-!        write (unit=*,fmt='(a)') ' - Reconstructing VEG_ENERGY from VEG_WATER & VEG_TEMP...'
-!        write (unit=*,fmt='(a)') '---------------------------------------------------------'
-!
-!
-!        do ico=1,cpatch%ncohorts
-!           
-!           ! Calculate the vegetation energy based on the leaf temperature
-!           ! biomass and the stuff that is written in the banner above.
-!           
-!           cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)          &
-!                                             ,cpatch%balive(ico),cpatch%nplant(ico)        &
-!                                             ,cpatch%hite(ico),cpatch%pft(ico)             &
-!                                             ,cpatch%phenology_status(ico))
-!           if (cpatch%veg_water(ico) == 0.0) then
-!              cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
-!              cpatch%veg_fliq(ico)   = 0.0
-!           elseif (cpatch%veg_temp(ico) >= t3ple) then
-!              cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)          &
-!                                     + cpatch%veg_water(ico)                               &
-!                                     * cliq * (cpatch%veg_temp(ico) - tsupercool)
-!              cpatch%veg_fliq(ico) = 1.0
-!           else
-!              cpatch%veg_energy(ico) = (cpatch%hcapveg(ico) + cpatch%veg_water(ico)*cice)  &
-!                                     * cpatch%veg_temp(ico)
-!              cpatch%veg_fliq(ico) = 0.0
-!           end if
-!           
-!        enddo
-!     elseif (sum(cpatch%veg_fliq(1:cpatch%ncohorts),1) == 0.0) then
-!        write (unit=*,fmt='(a)') '---------------------------------------------------------'
-!        write (unit=*,fmt='(a)') ' - Reconstructing VEG_FLIQ from VEG_WATER & VEG_TEMP...'
-!        write (unit=*,fmt='(a)') '---------------------------------------------------------'
-!        do ico=1,cpatch%ncohorts
-!!           call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)      &
-!                    ,cpatch%veg_temp(ico),cpatch%veg_fliq(ico))
-!        end do
-!     end if
-     
-! ------------------------------------------------------------------------------------------
-     
      
      call hdf_getslab_r(cpatch%mean_gpp,'MEAN_GPP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%mean_leaf_resp,'MEAN_LEAF_RESP ',dsetrank,iparallel,.true.)
@@ -2351,9 +2291,6 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%root_respiration,'ROOT_RESPIRATION ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%gpp,'GPP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%paw_avg,'PAW_AVG ',dsetrank,iparallel,.true.)
-
- 
-
      
      dsetrank    = 2
      globdims(1) = 13_8
@@ -2370,7 +2307,6 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      memdims(2)  = int(cpatch%ncohorts,8)
      memsize(2)  = int(cpatch%ncohorts,8)
      memoffs(2)  = 0_8
-     
      
      call hdf_getslab_r(cpatch%cb,'CB ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%cb_max,'CB_MAX ',dsetrank,iparallel,.true.)

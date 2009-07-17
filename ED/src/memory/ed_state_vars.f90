@@ -5599,45 +5599,45 @@ contains
     ! (switched 99 by 90 just to keep the notation)
     nvar=1
     call vtable_edio_i(cgrid%npolygons_global,nvar,igr,0,0, &
-         var_len,var_len_global,max_ptrs,'NPOLYGONS_GLOBAL :90:hist:anal:dail:mont:year:core')
+         var_len,var_len_global,max_ptrs,'NPOLYGONS_GLOBAL :90:hist:anal:dail:mont:year')
 
     call vtable_edio_i(cgrid%npolygons_global,nvar,igr,1,0, &
-         var_len,var_len_global,max_ptrs,'NPOLYGONS_GLOBAL :90:hist:anal:dail:mont:year:core')
+         var_len,var_len_global,max_ptrs,'NPOLYGONS_GLOBAL :90:hist:anal:dail:mont:year')
     
     nvar=nvar+1
     call vtable_edio_i(cgrid%nsites_global,nvar,igr,0,0, &
-         var_len,var_len_global,max_ptrs,'NSITES_GLOBAL :90:hist:anal:dail:mont:year:core')
+         var_len,var_len_global,max_ptrs,'NSITES_GLOBAL :90:hist:anal:dail:mont:year')
     
     call vtable_edio_i(cgrid%nsites_global,nvar,igr,1,0, &
-         var_len,var_len_global,max_ptrs,'NSITES_GLOBAL :90:hist:anal:dail:mont:year:core')
+         var_len,var_len_global,max_ptrs,'NSITES_GLOBAL :90:hist:anal:dail:mont:year')
     
     nvar=nvar+1
     call vtable_edio_i(cgrid%npatches_global,nvar,igr,0,0, &
-         var_len,var_len_global,max_ptrs,'NPATCHES_GLOBAL :90:hist:anal:dail:mont:year:core')
+         var_len,var_len_global,max_ptrs,'NPATCHES_GLOBAL :90:hist:anal:dail:mont:year')
     
     call vtable_edio_i(cgrid%npatches_global,nvar,igr,1,0, &
-         var_len,var_len_global,max_ptrs,'NPATCHES_GLOBAL :90:hist:anal:dail:mont:year:core')
+         var_len,var_len_global,max_ptrs,'NPATCHES_GLOBAL :90:hist:anal:dail:mont:year')
 
     nvar=nvar+1
     call vtable_edio_i(cgrid%ncohorts_global,nvar,igr,0,0, &
-         var_len,var_len_global,max_ptrs,'NCOHORTS_GLOBAL :90:hist:anal:dail:mont:year:core')
+         var_len,var_len_global,max_ptrs,'NCOHORTS_GLOBAL :90:hist:anal:dail:mont:year')
     
     call vtable_edio_i(cgrid%ncohorts_global,nvar,igr,1,0, &
-         var_len,var_len_global,max_ptrs,'NCOHORTS_GLOBAL :90:hist:anal:dail:mont:year:core')
+         var_len,var_len_global,max_ptrs,'NCOHORTS_GLOBAL :90:hist:anal:dail:mont:year')
     nvar=nvar+1
     call vtable_edio_i(nzg,nvar,igr,0,0, &
-         var_len,var_len_global,max_ptrs,'NZG :90:hist:anal:dail:mont:year:core')
+         var_len,var_len_global,max_ptrs,'NZG :90:hist:anal:dail:mont:year')
 
     call vtable_edio_i(nzg,nvar,igr,1,0, &
-         var_len,var_len_global,max_ptrs,'NZG :90:hist:anal:dail:mont:year:core')
+         var_len,var_len_global,max_ptrs,'NZG :90:hist:anal:dail:mont:year')
     nvar=nvar+1
     var_len        = nzg
     var_len_global = nzg
     call vtable_edio_r(slz(1),nvar,igr,0,0, &
-         var_len,var_len_global,max_ptrs,'SLZ :90:hist:anal:dail:mont:year:core')
+         var_len,var_len_global,max_ptrs,'SLZ :90:hist:anal:dail:mont:year')
 
     call vtable_edio_r(slz(1),nvar,igr,1,0, &
-         var_len,var_len_global,max_ptrs,'SLZ :90:hist:anal:dail:mont:year:core')
+         var_len,var_len_global,max_ptrs,'SLZ :90:hist:anal:dail:mont:year')
 
 !! SOIL PARAMETERS MAY BE ADDED IN THE FUTURE - 
 !!    RIGHT NOW THIS DOESNT REALLY WORK - RGK 7-19-08
@@ -5694,7 +5694,7 @@ contains
     if (associated(cgrid%pysi_id)) then
        nvar = nvar + 1
        call vtable_edio_i(cgrid%pysi_id(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'PYSI_ID :11:hist:anal:dail:mont:year:core')
+            var_len,var_len_global,max_ptrs,'PYSI_ID :11:hist:anal:dail:mont:year')
 
        call metadata_edio(nvar,igr,'Polygons first site indices','NA','ipoly')
 
@@ -5703,7 +5703,7 @@ contains
     if (associated(cgrid%pysi_n)) then
        nvar=nvar+1
        call vtable_edio_i(cgrid%pysi_n(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'PYSI_N :11:hist:anal:dail:mont:year:core')
+            var_len,var_len_global,max_ptrs,'PYSI_N :11:hist:anal:dail:mont:year')
 
        call metadata_edio(nvar,igr,'Number of sites per polygon','NA','ipoly')
 
@@ -5712,7 +5712,7 @@ contains
     if (associated(cgrid%walltime_py)) then
        nvar=nvar+1
        call vtable_edio_d(cgrid%walltime_py(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'WALLTIME_PY :11:hist:anal:dail:mont:year:core')
+            var_len,var_len_global,max_ptrs,'WALLTIME_PY :11:hist:anal:dail:mont:year')
        call metadata_edio(nvar,igr,'simulation walltime of each polygon for fast integration','seconds','ipoly')
        
     endif
@@ -5721,7 +5721,7 @@ contains
     if (associated(cgrid%lat)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%lat(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'LATITUDE :11:hist:anal:dail:mont:year:core')
+            var_len,var_len_global,max_ptrs,'LATITUDE :11:hist:anal:dail:mont:year')
 
        call metadata_edio(nvar,igr,'Latitude of Polygon','decimal degrees','ipoly')
 
@@ -5730,7 +5730,7 @@ contains
     if (associated(cgrid%lon)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%lon(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'LONGITUDE :11:hist:anal:dail:mont:year:core') 
+            var_len,var_len_global,max_ptrs,'LONGITUDE :11:hist:anal:dail:mont:year') 
        
         call metadata_edio(nvar,igr,'Longitude of Polygon','decimal degrees','ipoly')
        
@@ -5766,7 +5766,7 @@ contains
     if (associated(cgrid%ntext_soil)) then
        nvar=nvar+1
        call vtable_edio_i(cgrid%ntext_soil(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'NTEXT_SOIL :12:hist:anal:dail:mont:year:core')   
+            var_len,var_len_global,max_ptrs,'NTEXT_SOIL :12:hist:anal:dail:mont:year')   
        call metadata_edio(nvar,igr,'Polygon mode soil class','OGE2 Class','ipoly-ngz')
 
     endif
@@ -5774,7 +5774,7 @@ contains
     if (associated(cgrid%lsl)) then
        nvar=nvar+1
        call vtable_edio_i(cgrid%lsl(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'LSL :11:hist:anal:dail:mont:year:core')
+            var_len,var_len_global,max_ptrs,'LSL :11:hist:anal:dail:mont:year')
        call metadata_edio(nvar,igr,'Index of lowest soil layer','NA','ipoly')
        
     endif
@@ -5782,7 +5782,7 @@ contains
     if (associated(cgrid%wbar)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%wbar(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'WBAR :11:hist:core') 
+            var_len,var_len_global,max_ptrs,'WBAR :11:hist') 
        call metadata_edio(nvar,igr,'NA','NA','ipoly')
        
     endif
@@ -5790,14 +5790,14 @@ contains
     if (associated(cgrid%Te)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%Te(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'TE :11:hist:core') 
+            var_len,var_len_global,max_ptrs,'TE :11:hist') 
        call metadata_edio(nvar,igr,'NA','NA','ipoly')
     endif
     
     if (associated(cgrid%zbar)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%zbar(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'ZBAR :11:hist:anal:fdrt') 
+            var_len,var_len_global,max_ptrs,'ZBAR :11:hist:anal') 
        call metadata_edio(nvar,igr,'Polygon average water table depth','[m]','ipoly')
     endif
  
@@ -5812,28 +5812,28 @@ contains
     if (associated(cgrid%sheat)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%sheat(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'SHEAT :11:hist:fdrt') 
+            var_len,var_len_global,max_ptrs,'SHEAT :11:hist') 
        call metadata_edio(nvar,igr,'NA','NA','ipoly')
     endif
     
     if (associated(cgrid%baseflow)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%baseflow(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'BASEFLOW :11:hist:anal:fdrt') 
+            var_len,var_len_global,max_ptrs,'BASEFLOW :11:hist:anal') 
        call metadata_edio(nvar,igr,'loss of water from site to watershed discharge','kg/m2/s','ipoly')
     endif
     
     if (associated(cgrid%runoff)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%runoff(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'RUNOFF :11:hist:anal:fdrt') 
+            var_len,var_len_global,max_ptrs,'RUNOFF :11:hist:anal') 
        call metadata_edio(nvar,igr,'NA','NA','ipoly')
     endif
     
     if (associated(cgrid%swliq)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%swliq(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'SWLIQ :11:hist:anal:core') 
+            var_len,var_len_global,max_ptrs,'SWLIQ :11:hist:anal') 
        call metadata_edio(nvar,igr,'NA','NA','ipoly')
     endif
 
@@ -8606,63 +8606,63 @@ contains
     if (associated(cpatch%pft)) then
        nvar=nvar+1
          call vtable_edio_i(cpatch%pft(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'PFT :41:hist:mont:year:core') 
+         var_len,var_len_global,max_ptrs,'PFT :41:hist:mont:year') 
        call metadata_edio(nvar,igr,'Plant Functional Type','[-]','NA') 
     endif
 
     if (associated(cpatch%nplant)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%nplant(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'NPLANT :41:hist:year:core') 
+         var_len,var_len_global,max_ptrs,'NPLANT :41:hist:year') 
        call metadata_edio(nvar,igr,'Plant density','[NA]','NA') 
     endif
 
     if (associated(cpatch%hite)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%hite(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'HITE :41:hist:year:core') 
+         var_len,var_len_global,max_ptrs,'HITE :41:hist:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%dbh)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%dbh(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'DBH :41:hist:year:mont:core') 
+         var_len,var_len_global,max_ptrs,'DBH :41:hist:year:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%bdead)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bdead(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BDEAD :41:hist:year:core') 
+         var_len,var_len_global,max_ptrs,'BDEAD :41:hist:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%bleaf)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bleaf(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BLEAF :41:hist:year:core') 
+         var_len,var_len_global,max_ptrs,'BLEAF :41:hist:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%phenology_status)) then
        nvar=nvar+1
          call vtable_edio_i(cpatch%phenology_status(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'PHENOLOGY_STATUS :41:hist:core') 
+         var_len,var_len_global,max_ptrs,'PHENOLOGY_STATUS :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%balive)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%balive(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BALIVE :41:hist:year:core') 
+         var_len,var_len_global,max_ptrs,'BALIVE :41:hist:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%lai)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%lai(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'LAI_CO :41:hist:dail:mont:year:core') 
+         var_len,var_len_global,max_ptrs,'LAI_CO :41:hist:dail:mont:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 

@@ -45,6 +45,7 @@ subroutine ed_init_atm
 
      ! If this is a standard ED2 restart, we will read these fields in from 
      ! a history file and therefore not worry about setting them here.
+
      if(ied_init_mode == 4 .or. trim(runtype) == 'HISTORY' )return
 
      ! Loop over polygons, sites and patches
