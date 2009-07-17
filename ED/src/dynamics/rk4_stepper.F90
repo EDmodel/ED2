@@ -3,17 +3,17 @@
 !    This module contains some subroutines used to compute the stages for advancing the    !
 ! Runge-Kutta step.                                                                        !
 !------------------------------------------------------------------------------------------!
-module rk4_stepper_ar
+module rk4_stepper
 
    contains 
    !=======================================================================================!
    !=======================================================================================!
    !   This subroutine is the main Runge-Kutta step driver.                                !
    !---------------------------------------------------------------------------------------!
-   subroutine rkqs_ar(integration_buff, x,htry,hdid,hnext,csite,ipa,isi,ipy,ifm)
+   subroutine rkqs(integration_buff, x,htry,hdid,hnext,csite,ipa,isi,ipy,ifm)
 
       use rk4_coms      , only : rk4patchtype        & ! structure
-                               , integration_vars_ar & ! structure
+                               , integration_vars & ! structure
                                , rk4met              & ! intent(in)
                                , hmin                & ! intent(in)
                                , rk4eps              & ! intent(in)
@@ -31,7 +31,7 @@ module rk4_stepper_ar
       !----- Arguments --------------------------------------------------------------------!
       integer                  , intent(in)    :: ipa,isi,ipy,ifm
       type(sitetype)           , target        :: csite
-      type(integration_vars_ar), target        :: integration_buff
+      type(integration_vars), target        :: integration_buff
       real(kind=8)             , intent(in)    :: htry
       real(kind=8)             , intent(inout) :: x
       real(kind=8)             , intent(out)   :: hdid,hnext
@@ -50,7 +50,7 @@ module rk4_stepper_ar
          !---------------------------------------------------------------------------------!
          ! 1. Try a step of varying size.                                                  !
          !---------------------------------------------------------------------------------!
-         call rkck_ar(integration_buff%y,integration_buff%dydx,integration_buff%ytemp      &
+         call rkck(integration_buff%y,integration_buff%dydx,integration_buff%ytemp      &
                      ,integration_buff%yerr,integration_buff%ak2,integration_buff%ak3      &
                      ,integration_buff%ak4,integration_buff%ak5,integration_buff%ak6       &
                      ,integration_buff%ak7,x,h,csite,ipa,isi,ipy,reject_step)
@@ -67,7 +67,7 @@ module rk4_stepper_ar
             !------------------------------------------------------------------------------!
             errmax = 1.d1
          else
-            call get_errmax_ar(errmax, integration_buff%yerr,integration_buff%yscal        &
+            call get_errmax(errmax, integration_buff%yerr,integration_buff%yscal        &
                               ,csite%patch(ipa),integration_buff%y,integration_buff%ytemp)
             errmax = errmax * rk4epsi
          end if
@@ -135,9 +135,9 @@ module rk4_stepper_ar
                      call rk4_sanity_check(integration_buff%ak7,test_reject,csite,ipa      &
                                           ,integration_buff%dydx,h,.true.)
                   end if
-                  call print_sanity_check_ar(integration_buff%y,csite,ipa)
+                  call print_sanity_check(integration_buff%y,csite,ipa)
                else
-                  call print_errmax_ar(errmax,integration_buff%yerr,integration_buff%yscal &
+                  call print_errmax(errmax,integration_buff%yerr,integration_buff%yscal &
                                       ,csite%patch(ipa),integration_buff%y                 &
                                       ,integration_buff%ytemp)
                   write (unit=*,fmt='(80a)') ('=',k=1,80)
@@ -146,7 +146,7 @@ module rk4_stepper_ar
                   write (unit=*,fmt='(a,1x,es12.4)') ' - Epsilon:',rk4eps
                   write (unit=*,fmt='(80a)') ('=',k=1,80)
                end if
-               call print_rk4patch_ar(integration_buff%y, csite,ipa)
+               call print_rk4patch(integration_buff%y, csite,ipa)
             endif
          
          else
@@ -157,9 +157,9 @@ module rk4_stepper_ar
             !----- 1. Final update of leaf properties to avoid negative water. ------------!
             call adjust_veg_properties(integration_buff%ytemp,h,csite,ipa)
             !----- 2. Make snow layers stable and positively defined. ---------------------!
-            call redistribute_snow_ar(integration_buff%ytemp, csite,ipa)
+            call redistribute_snow(integration_buff%ytemp, csite,ipa)
             !----- 3. Update the diagnostic variables. ------------------------------------!
-            call update_diagnostic_vars_ar(integration_buff%ytemp, csite,ipa)
+            call update_diagnostic_vars(integration_buff%ytemp, csite,ipa)
             
             !------------------------------------------------------------------------------!
             ! 4. Set up h for the next time.  And here we can relax h for the next step,   !
@@ -177,14 +177,14 @@ module rk4_stepper_ar
             hdid = h
             
             !----- 6. Copying the temporary structure to the intermediate state. ----------!
-            call copy_rk4_patch_ar(integration_buff%ytemp,integration_buff%y               &
+            call copy_rk4_patch(integration_buff%ytemp,integration_buff%y               &
                                   ,csite%patch(ipa))
             exit hstep
          end if
       end do hstep
 
       return
-   end subroutine rkqs_ar
+   end subroutine rkqs
    !=======================================================================================!
    !=======================================================================================!
 
@@ -197,11 +197,11 @@ module rk4_stepper_ar
    !=======================================================================================!
    !    This subroutine will update the variables and perform the actual time stepping.    !
    !---------------------------------------------------------------------------------------!
-   subroutine rkck_ar(y,dydx,yout,yerr,ak2,ak3,ak4,ak5,ak6,ak7,x,h,csite,ipa,isi,ipy       &
+   subroutine rkck(y,dydx,yout,yerr,ak2,ak3,ak4,ak5,ak6,ak7,x,h,csite,ipa,isi,ipy       &
                      ,reject_step)
 
       use rk4_coms      , only : rk4patchtype        & ! structure
-                               , integration_vars_ar & ! structure
+                               , integration_vars & ! structure
                                , rk4met              & ! intent(in)
                                , print_diags         & ! intent(in)
                                , a2                  & ! intent(in)
@@ -253,7 +253,7 @@ module rk4_stepper_ar
       !----- Interfaces, in case the model is compiled without forcing them. --------------!
 #if USE_INTERF
       interface
-         subroutine leaf_derivs_ar(initp,dydx,csite,ipa,isi,ipy)
+         subroutine leaf_derivs(initp,dydx,csite,ipa,isi,ipy)
             use rk4_coms      ,only : rk4patchtype
             use ed_state_vars ,only : sitetype
             implicit none
@@ -261,7 +261,7 @@ module rk4_stepper_ar
             type (rk4patchtype) , target     :: initp
             type (rk4patchtype) , target     :: dydx
             type (sitetype)     , target     :: csite
-         end subroutine leaf_derivs_ar
+         end subroutine leaf_derivs
       end interface
 #endif
 
@@ -273,95 +273,95 @@ module rk4_stepper_ar
       reject_step = .false.
       cpatch => csite%patch(ipa)
 
-      call copy_rk4_patch_ar(y, ak7, cpatch)
-      call inc_rk4_patch_ar(ak7, dydx, b21*h, cpatch)
+      call copy_rk4_patch(y, ak7, cpatch)
+      call inc_rk4_patch(ak7, dydx, b21*h, cpatch)
       combh = b21*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
-      call redistribute_snow_ar(ak7, csite,ipa)
-      call update_diagnostic_vars_ar(ak7, csite,ipa)
+      call redistribute_snow(ak7, csite,ipa)
+      call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7, reject_step, csite, ipa,dydx,h,print_diags)
       if (reject_step) return
 
 
 
-      call leaf_derivs_ar(ak7, ak2, csite, ipa,isi,ipy)
-      call copy_rk4_patch_ar(y, ak7, cpatch)
-      call inc_rk4_patch_ar(ak7, dydx, b31*h, cpatch)
-      call inc_rk4_patch_ar(ak7, ak2, b32*h, cpatch)
+      call leaf_derivs(ak7, ak2, csite, ipa,isi,ipy)
+      call copy_rk4_patch(y, ak7, cpatch)
+      call inc_rk4_patch(ak7, dydx, b31*h, cpatch)
+      call inc_rk4_patch(ak7, ak2, b32*h, cpatch)
       combh = (b31+b32)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
-      call redistribute_snow_ar(ak7, csite,ipa)
-      call update_diagnostic_vars_ar(ak7, csite,ipa)
+      call redistribute_snow(ak7, csite,ipa)
+      call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7,reject_step,csite,ipa,dydx,h,print_diags)
       if (reject_step) return
 
 
 
-      call leaf_derivs_ar(ak7, ak3, csite,ipa,isi,ipy)
-      call copy_rk4_patch_ar(y, ak7, cpatch)
-      call inc_rk4_patch_ar(ak7, dydx, b41*h, cpatch)
-      call inc_rk4_patch_ar(ak7,  ak2, b42*h, cpatch)
-      call inc_rk4_patch_ar(ak7,  ak3, b43*h, cpatch)
+      call leaf_derivs(ak7, ak3, csite,ipa,isi,ipy)
+      call copy_rk4_patch(y, ak7, cpatch)
+      call inc_rk4_patch(ak7, dydx, b41*h, cpatch)
+      call inc_rk4_patch(ak7,  ak2, b42*h, cpatch)
+      call inc_rk4_patch(ak7,  ak3, b43*h, cpatch)
       combh = (b41+b42+b43)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
-      call redistribute_snow_ar(ak7, csite,ipa)
-      call update_diagnostic_vars_ar(ak7, csite,ipa)
+      call redistribute_snow(ak7, csite,ipa)
+      call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7, reject_step, csite,ipa,dydx,h,print_diags)
       if (reject_step) return
 
 
 
-      call leaf_derivs_ar(ak7, ak4, csite, ipa,isi,ipy)
-      call copy_rk4_patch_ar(y, ak7, cpatch)
-      call inc_rk4_patch_ar(ak7, dydx, b51*h, cpatch)
-      call inc_rk4_patch_ar(ak7,  ak2, b52*h, cpatch)
-      call inc_rk4_patch_ar(ak7,  ak3, b53*h, cpatch)
-      call inc_rk4_patch_ar(ak7,  ak4, b54*h, cpatch)
+      call leaf_derivs(ak7, ak4, csite, ipa,isi,ipy)
+      call copy_rk4_patch(y, ak7, cpatch)
+      call inc_rk4_patch(ak7, dydx, b51*h, cpatch)
+      call inc_rk4_patch(ak7,  ak2, b52*h, cpatch)
+      call inc_rk4_patch(ak7,  ak3, b53*h, cpatch)
+      call inc_rk4_patch(ak7,  ak4, b54*h, cpatch)
       combh = (b51+b52+b53+b54)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
-      call redistribute_snow_ar(ak7, csite,ipa)
-      call update_diagnostic_vars_ar(ak7, csite,ipa)
+      call redistribute_snow(ak7, csite,ipa)
+      call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7,reject_step,csite,ipa,dydx,h,print_diags)
       if (reject_step) return
 
 
 
-      call leaf_derivs_ar(ak7, ak5, csite, ipa,isi,ipy)
-      call copy_rk4_patch_ar(y, ak7, cpatch)
-      call inc_rk4_patch_ar(ak7, dydx, b61*h, cpatch)
-      call inc_rk4_patch_ar(ak7,  ak2, b62*h, cpatch)
-      call inc_rk4_patch_ar(ak7,  ak3, b63*h, cpatch)
-      call inc_rk4_patch_ar(ak7,  ak4, b64*h, cpatch)
-      call inc_rk4_patch_ar(ak7,  ak5, b65*h, cpatch)
+      call leaf_derivs(ak7, ak5, csite, ipa,isi,ipy)
+      call copy_rk4_patch(y, ak7, cpatch)
+      call inc_rk4_patch(ak7, dydx, b61*h, cpatch)
+      call inc_rk4_patch(ak7,  ak2, b62*h, cpatch)
+      call inc_rk4_patch(ak7,  ak3, b63*h, cpatch)
+      call inc_rk4_patch(ak7,  ak4, b64*h, cpatch)
+      call inc_rk4_patch(ak7,  ak5, b65*h, cpatch)
       combh = (b61+b62+b63+b64+b65)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
-      call redistribute_snow_ar(ak7, csite,ipa)
-      call update_diagnostic_vars_ar(ak7, csite,ipa)
+      call redistribute_snow(ak7, csite,ipa)
+      call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7, reject_step, csite,ipa,dydx,h,print_diags)
       if(reject_step)return
 
-      call leaf_derivs_ar(ak7, ak6, csite,ipa,isi,ipy)
-      call copy_rk4_patch_ar(y, yout, cpatch)
-      call inc_rk4_patch_ar(yout, dydx, c1*h, cpatch)
-      call inc_rk4_patch_ar(yout,  ak3, c3*h, cpatch)
-      call inc_rk4_patch_ar(yout,  ak4, c4*h, cpatch)
-      call inc_rk4_patch_ar(yout,  ak6, c6*h, cpatch)
+      call leaf_derivs(ak7, ak6, csite,ipa,isi,ipy)
+      call copy_rk4_patch(y, yout, cpatch)
+      call inc_rk4_patch(yout, dydx, c1*h, cpatch)
+      call inc_rk4_patch(yout,  ak3, c3*h, cpatch)
+      call inc_rk4_patch(yout,  ak4, c4*h, cpatch)
+      call inc_rk4_patch(yout,  ak6, c6*h, cpatch)
       combh = (c1+c3+c4+c6)*h
       call adjust_veg_properties(yout,combh,csite,ipa)
-      call redistribute_snow_ar(yout, csite,ipa)
-      call update_diagnostic_vars_ar(yout, csite,ipa)
+      call redistribute_snow(yout, csite,ipa)
+      call update_diagnostic_vars(yout, csite,ipa)
       call rk4_sanity_check(yout, reject_step, csite,ipa,dydx,h,print_diags)
       if(reject_step)return
 
-      call copy_rk4_patch_ar(dydx, yerr, cpatch)
-      call inc_rk4_patch_ar(yerr, dydx, dc1*h-1.d0, cpatch)
-      call inc_rk4_patch_ar(yerr, ak3,  dc3*h     , cpatch)
-      call inc_rk4_patch_ar(yerr, ak4,  dc4*h     , cpatch)
-      call inc_rk4_patch_ar(yerr, ak5,  dc5*h     , cpatch)
-      call inc_rk4_patch_ar(yerr, ak6,  dc6*h     , cpatch)
+      call copy_rk4_patch(dydx, yerr, cpatch)
+      call inc_rk4_patch(yerr, dydx, dc1*h-1.d0, cpatch)
+      call inc_rk4_patch(yerr, ak3,  dc3*h     , cpatch)
+      call inc_rk4_patch(yerr, ak4,  dc4*h     , cpatch)
+      call inc_rk4_patch(yerr, ak5,  dc5*h     , cpatch)
+      call inc_rk4_patch(yerr, ak6,  dc6*h     , cpatch)
 
       return
-   end subroutine rkck_ar
+   end subroutine rkck
    !=======================================================================================!
    !=======================================================================================!
 
@@ -379,7 +379,7 @@ module rk4_stepper_ar
    !---------------------------------------------------------------------------------------!
    subroutine rk4_sanity_check(y,reject_step, csite,ipa,dydx,h,print_problems)
       use rk4_coms              , only : rk4patchtype         & ! structure
-                                       , integration_vars_ar  & ! structure
+                                       , integration_vars  & ! structure
                                        , rk4met               & ! intent(in)
                                        , rk4eps               & ! intent(in)
                                        , toocold              & ! intent(in)
@@ -403,7 +403,7 @@ module rk4_stepper_ar
       use grid_coms             , only : nzg                  ! ! intent(in)
       use soil_coms             , only : soil8                ! ! intent(in), lookup table
       use consts_coms           , only : t3ple8               ! ! intent(in)
-      use misc_coms             , only : integ_err            & ! intent(inout)
+      use ed_misc_coms             , only : integ_err            & ! intent(inout)
                                        , record_err           ! ! intent(inout)
       use therm_lib             , only : rehuil               & ! function
                                        , qtk8                 ! ! subroutine
@@ -436,7 +436,7 @@ module rk4_stepper_ar
       !----- First check, if top soil temperature is NaN, end of story... -----------------!
       if (y%soil_tempk(nzg) /= y%soil_tempk(nzg)) then
          write (unit=*,fmt='(a)') 'Top soil temperature is NaN!!!'
-         call print_rk4patch_ar(y,csite,ipa)
+         call print_rk4patch(y,csite,ipa)
       end if
 
       !----- Being optimistic and assuming things are fine --------------------------------!
@@ -451,9 +451,6 @@ module rk4_stepper_ar
       !        argument for the temporary surface water.                                   !
       !------------------------------------------------------------------------------------!
 
-      !----- Finding canopy relative humidity ---------------------------------------------!
-      can_rhv = dble(rehuil(sngl(rk4met%prss),sngl(max(y%can_temp,toocold))                &
-                           ,sngl(y%can_shv)))
 
       !------------------------------------------------------------------------------------!
       !   Checking whether the canopy temperature is too hot or too cold.                  !
@@ -476,28 +473,35 @@ module rk4_stepper_ar
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
+      !     The check of canopy humidity is done only when temperature makes sense, to     !
+      ! avoid floating point exceptions when temperature is too cold or too hot.           !
+      !------------------------------------------------------------------------------------!
+      if (.not. reject_step) then
+         !----- Finding canopy relative humidity ------------------------------------------!
+         can_rhv = dble(rehuil(sngl(rk4met%prss),sngl(max(y%can_temp,toocold))             &
+                              ,sngl(y%can_shv)))
 
-      !------------------------------------------------------------------------------------!
-      !   Checking whether the canopy air is too dry or too humid.                         !
-      !------------------------------------------------------------------------------------!
-      if((can_rhv > rk4max_can_rhv .and. y%can_shv > rk4max_can_shv) .or.                  &
-         y%can_shv < rk4min_can_shv )then
-         reject_step = .true.
-         if(record_err) integ_err(2,2) = integ_err(2,2) + 1_8
-         if (print_problems) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           ' + Canopy air mix. rat. is off-track...'
-            write(unit=*,fmt='(a)')           '----------------------------------------'
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:       ',y%can_shv
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:       ',can_rhv
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:      ',y%can_temp
-            write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:      ',rk4met%prss
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_TEMP)/Dt:',dydx%can_temp
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt: ',dydx%can_shv
-            write(unit=*,fmt='(a,1x,es12.4)') ' H:            ',h
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-         elseif (.not. record_err) then
-            return
+         !----- Checking whether the canopy air is too dry or too humid. ------------------!
+         if ((can_rhv > rk4max_can_rhv .and. y%can_shv > rk4max_can_shv) .or.              &
+             y%can_shv < rk4min_can_shv )then
+            reject_step = .true.
+            if(record_err) integ_err(2,2) = integ_err(2,2) + 1_8
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+               write(unit=*,fmt='(a)')           ' + Canopy air mix. rat. is off-track...'
+               write(unit=*,fmt='(a)')           '----------------------------------------'
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:       ',y%can_shv
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:       ',can_rhv
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:      ',y%can_temp
+               write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:      ',rk4met%prss
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_TEMP)/Dt:',dydx%can_temp
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt: ',dydx%can_shv
+               write(unit=*,fmt='(a,1x,es12.4)') ' H:            ',h
+               write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            elseif (.not. record_err) then
+               return
+            end if
          end if
       end if
       !------------------------------------------------------------------------------------!
@@ -760,7 +764,7 @@ module rk4_stepper_ar
    !     This will print the values whenever the step didn't converge due to crazy values  !
    ! no matter how small the steps were (reject_step=.true.).                              !
    !---------------------------------------------------------------------------------------!
-   subroutine print_sanity_check_ar(y, csite, ipa)
+   subroutine print_sanity_check(y, csite, ipa)
 
       use rk4_coms              , only : rk4patchtype  & ! structure
                                        , rk4met        ! ! intent(in)
@@ -855,9 +859,9 @@ module rk4_stepper_ar
       write(unit=*,fmt='(a)') ' '
 
       return
-   end subroutine print_sanity_check_ar
+   end subroutine print_sanity_check
    !=======================================================================================!
    !=======================================================================================!
-end module rk4_stepper_ar
+end module rk4_stepper
 !==========================================================================================!
 !==========================================================================================!

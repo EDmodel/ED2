@@ -23,6 +23,10 @@ include objects.mk
 
 #----- Define targets. --------------------------------------------------------------------#
 
+depends:
+	(make gendep)
+	(make all)
+
 all: $(EXE)
 
 $(EXE): $(LIBMODEL) $(MAINOBJ) 
@@ -33,11 +37,14 @@ $(EXE): $(LIBMODEL) $(MAINOBJ)
 	@echo Finished building === $(EXE)
 	@echo ""
 
+gendep:
+	./generate_deps.sh
+
 $(MAINOBJ):  $(MAIN) 
 	@echo ""
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
-#	rm -f $(<F:.f90=.f90) 
+	rm -f $(<F:.f90=.f90) 
 
 $(LIBMODEL): $(OBJ_MODEL)
 	$(ARCHIVE) $(LIBMODEL) $(OBJ_MODEL)
@@ -57,4 +64,4 @@ clean:
 	@echo ""
 
 #----- Define dependencies ----------------------------------------------------------------#
-include depend.mk
+include rules.mk

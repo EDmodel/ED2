@@ -1,7 +1,7 @@
 !====================================================================
 ! ============================================
 
-subroutine init_ed_cohort_vars_array(cpatch,ico, lsl)
+subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   
   use ed_state_vars,only : patchtype
   use allometry, only: calc_root_depth, assign_root_depth
@@ -97,20 +97,25 @@ subroutine init_ed_cohort_vars_array(cpatch,ico, lsl)
   cpatch%veg_water(ico)  = 0.
   cpatch%veg_fliq(ico)   = 0.
 
-  cpatch%turnover_amp = 1.0
-  cpatch%llspan = 12.0/leaf_turnover_rate(cpatch%pft(ico)) !in month
-  cpatch%vm_bar = Vm0(cpatch%pft(ico))
-  cpatch%sla = sla(cpatch%pft(ico))
+  cpatch%turnover_amp(ico) = 1.0
+  
+  if (leaf_turnover_rate(cpatch%pft(ico)) > 0.0) then
+     cpatch%llspan(ico) = 12.0/leaf_turnover_rate(cpatch%pft(ico)) !in month
+  else
+     cpatch%llspan(ico) = 1.e20
+  end if
+  cpatch%vm_bar(ico) = Vm0(cpatch%pft(ico))
+  cpatch%sla(ico) = sla(cpatch%pft(ico))
 
   return
-end subroutine init_ed_cohort_vars_array
+end subroutine init_ed_cohort_vars
 
 ! ==========================================
 
-subroutine init_ed_patch_vars_array(csite,ip1,ip2,lsl)
+subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   
   use ed_state_vars,only:sitetype
-  use max_dims, only: n_pft
+  use ed_max_dims, only: n_pft
 !  use fuse_fiss_utils, only: count_cohorts
   use grid_coms,     only: nzs, nzg
   use soil_coms, only: slz
@@ -234,15 +239,15 @@ subroutine init_ed_patch_vars_array(csite,ip1,ip2,lsl)
   csite%cohort_count = ncohorts
 
   return
-end subroutine init_ed_patch_vars_array
+end subroutine init_ed_patch_vars
 
 !======================================================================
 
 
-subroutine init_ed_site_vars_array(cpoly, lat)
+subroutine init_ed_site_vars(cpoly, lat)
 
   use ed_state_vars,only:polygontype
-  use max_dims, only: n_pft, n_dbh, n_dist_types 
+  use ed_max_dims, only: n_pft, n_dbh, n_dist_types 
   use pft_coms, only: agri_stock,plantation_stock
   use grid_coms, only: nzs, nzg
 
@@ -284,6 +289,7 @@ subroutine init_ed_site_vars_array(cpoly, lat)
   cpoly%lambda_fire(1:12,:) = 0.0
   
   cpoly%disturbance_memory(1:n_dist_types, 1:n_dist_types,:) = 0.0
+  cpoly%disturbance_rates(1:n_dist_types, 1:n_dist_types,:) = 0.0
 
   cpoly%agri_stocking_density(:) = 10.0
 
@@ -303,10 +309,10 @@ subroutine init_ed_site_vars_array(cpoly, lat)
   
   
   return
-end subroutine init_ed_site_vars_array
+end subroutine init_ed_site_vars
 
 !======================================================================
-subroutine init_ed_poly_vars_array(cgrid)
+subroutine init_ed_poly_vars(cgrid)
   
    use ed_state_vars,only:edtype
   
@@ -331,10 +337,10 @@ subroutine init_ed_poly_vars_array(cgrid)
       cgrid%cbudget_initialstorage(ipy) = soil_C + veg_C
       cgrid%nbudget_initialstorage(ipy) = soil_N + veg_N
       cgrid%cbudget_nep(ipy) = 0.0
-   enddo
+   end do
 
    return
-end subroutine init_ed_poly_vars_array
+end subroutine init_ed_poly_vars
 !==========================================================================================!
 !==========================================================================================!
 
@@ -348,7 +354,7 @@ end subroutine init_ed_poly_vars_array
 !     This subroutine will assign the values of some diagnostic variables, such as soil    !
 ! and temporary layer temperature and liquid fraction, and the surface properties.         !
 !------------------------------------------------------------------------------------------!
-subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
+subroutine new_patch_sfc_props(csite,ipa, rhos)
    use ed_state_vars , only : sitetype          & ! structure
                             , patchtype         ! ! structure
    use grid_coms     , only : nzg               & ! intent(in)
@@ -455,6 +461,6 @@ subroutine new_patch_sfc_props_ar(csite,ipa, rhos)
    !---------------------------------------------------------------------------------------! 
  
    return
-end subroutine new_patch_sfc_props_ar
+end subroutine new_patch_sfc_props
 !==========================================================================================!
 !==========================================================================================!

@@ -278,6 +278,7 @@ OBJ_MODEL =                         \
 	ed_grid.o                   \
 	ed_history_io.o             \
 	ed_init.o                   \
+	ed_max_dims.o               \
 	ed_mem_grid_dim_defs.o      \
 	ed_misc_coms.o              \
 	ed_node_coms.o              \
@@ -285,8 +286,9 @@ OBJ_MODEL =                         \
 	ed_para_coms.o              \
 	ed_params.o                 \
 	ed_state_vars.o             \
-	ed_type_init.o              \
 	ed_therm_lib.o              \
+	ed_type_init.o              \
+	ed_var_tables.o             \
 	ed_work_vars.o              \
 	ed_xml_config.o             \
 	edio.o                      \
@@ -313,10 +315,8 @@ OBJ_MODEL =                         \
 	leaf_database.o             \
 	libxml2f90.f90_pp.o         \
 	lsm_hyd.o                   \
-	max_dims.o                  \
 	mem_sites.o                 \
 	met_driver_coms.o           \
-	misc_coms.o                 \
 	mortality.o                 \
 	optimiz_coms.o              \
 	phenology_aux.o             \
@@ -337,6 +337,5 @@ OBJ_MODEL =                         \
 	stable_cohorts.o            \
 	structural_growth.o         \
 	twostream_rad.o             \
-	update_derived_props.o      \
-	var_tables_array.o
+	update_derived_props.o
 

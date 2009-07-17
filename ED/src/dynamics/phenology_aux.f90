@@ -10,7 +10,7 @@ subroutine prescribed_leaf_state(lat,imonth,iyear,doy,green_leaf_factor,leaf_agi
                              , iphenyf1         & ! intent(in)
                              , iphenyff         & ! intent(in)
                              , prescribed_phen  ! ! intent(in)
-   use max_dims       , only : n_pft            ! ! intent(in)
+   use ed_max_dims       , only : n_pft            ! ! intent(in)
    use pft_coms       , only : phenology        ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -117,7 +117,7 @@ end subroutine prescribed_leaf_state
 !  + Chill days  - number of days with average temperatures below 278.15 K;                !
 !  + Degree days - sum of daily average temperatures above 278.15 K.                       !
 !------------------------------------------------------------------------------------------!
-subroutine update_thermal_sums_ar(month, cpoly, isi, lat)
+subroutine update_thermal_sums(month, cpoly, isi, lat)
   
    use ed_state_vars ,only : polygontype & ! structure
                            , sitetype    ! ! structure
@@ -164,7 +164,7 @@ subroutine update_thermal_sums_ar(month, cpoly, isi, lat)
    end do
    
    return
-end subroutine update_thermal_sums_ar
+end subroutine update_thermal_sums
 !==========================================================================================!
 !==========================================================================================!
 

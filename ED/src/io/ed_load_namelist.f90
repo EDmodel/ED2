@@ -26,7 +26,7 @@ end subroutine read_nl
 !------------------------------------------------------------------------------------------!
 subroutine copy_nl(copy_type)
 
-  use max_dims , only: n_pft, nzgmax
+  use ed_max_dims , only: n_pft, nzgmax
   use ename_coms, only: nl
   use soil_coms, only: isoilflg, nslcon, slmstr, zrough, soil_database, &
        isoilstateinit, isoildepthflg, isoilbc, soilstate_db, soildepth_db,   &
@@ -42,7 +42,7 @@ subroutine copy_nl(copy_type)
        treefall_disturbance_rate
   use pft_coms, only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
 
-  use misc_coms, only: expnme, runtype, itimez, idatez, imonthz, iyearz,  &
+  use ed_misc_coms, only: expnme, runtype, itimez, idatez, imonthz, iyearz,  &
        itimea, idatea, imontha, iyeara, ifoutput, iclobber, frqfast, &
        sfilin, ied_init_mode, current_time, ed_inputs_dir,   &
        end_time, radfrq, integration_scheme, ffilout, idoutput,imoutput,iyoutput, dtlsm, &

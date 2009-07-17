@@ -153,10 +153,11 @@
                              !   to determine full nudging weight. 
                              !   (Timescales)/(WT_NUDGE_*) 
                              !    must be larger than DTLONG
-   WT_NUDGE_UV = 1.,         ! Anal nudging weight for u and v
-   WT_NUDGE_TH = 1.,         ! Anal nudging weight for theta
-   WT_NUDGE_PI = 1.,         ! Anal nudging weight for pi
-   WT_NUDGE_RT = 1.,         ! Anal nudging weight for r_tot
+   WT_NUDGE_UV  = 1.,        ! Anal nudging weight for u and v
+   WT_NUDGE_TH  = 1.,        ! Anal nudging weight for theta
+   WT_NUDGE_PI  = 1.,        ! Anal nudging weight for pi
+   WT_NUDGE_RT  = 1.,        ! Anal nudging weight for r_tot
+   WT_NUDGE_CO2 = 1.,        ! Anal nudging weight for CO2
    
 !-------------------------------------------------------------------------
 

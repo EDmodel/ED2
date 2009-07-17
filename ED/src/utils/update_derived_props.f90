@@ -24,13 +24,13 @@ subroutine update_derived_props(cgrid)
         csite => cpoly%site(isi)
 
         do ipa = 1,csite%npatches
-           call update_patch_derived_props_ar(csite,cpoly%lsl(isi),cpoly%met(isi)%rhos,ipa)
+           call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%rhos,ipa)
         end do
 
-        call update_site_derived_props_ar(cpoly, 0, isi)
+        call update_site_derived_props(cpoly, 0, isi)
      end do
 
-     call update_polygon_derived_props_ar(cgrid)
+     call update_polygon_derived_props(cgrid)
    end do
 
    return
@@ -49,13 +49,13 @@ end subroutine update_derived_props
 ! depend on the results from reproduction, which in turn depends on structural growth      !
 ! results from all patches.                                                                !
 !------------------------------------------------------------------------------------------!
-subroutine update_patch_derived_props_ar(csite,lsl,rhos,ipa)
+subroutine update_patch_derived_props(csite,lsl,rhos,ipa)
   
    use ed_state_vars       , only : sitetype                   & ! structure
                                   , patchtype                  ! ! structure
    use allometry           , only : ed_biomass                 ! ! function
    use fusion_fission_coms , only : ff_ndbh                    ! ! intent(in)
-   use fuse_fiss_utils_ar  , only : patch_pft_size_profile_ar  ! ! subroutine
+   use fuse_fiss_utils  , only : patch_pft_size_profile  ! ! subroutine
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -70,9 +70,9 @@ subroutine update_patch_derived_props_ar(csite,lsl,rhos,ipa)
    !----- Local constants -----------------------------------------------------------------!
    real            , parameter  :: veg_height_min = 1.0 !was 0.2
    !----- External functions --------------------------------------------------------------!
-   real            , external   :: compute_water_storage_ar
-   real            , external   :: compute_energy_storage_ar
-   real            , external   :: compute_co2_storage_ar
+   real            , external   :: compute_water_storage
+   real            , external   :: compute_energy_storage
+   real            , external   :: compute_co2_storage
    !---------------------------------------------------------------------------------------!
 
 
@@ -110,7 +110,7 @@ subroutine update_patch_derived_props_ar(csite,lsl,rhos,ipa)
    end do
   
    !----- Find the PFT-dependent size distribution of this patch. -------------------------!
-   call patch_pft_size_profile_ar(csite,ipa,ff_ndbh)
+   call patch_pft_size_profile(csite,ipa,ff_ndbh)
 
   
    !----- Update vegetation height of this patch. -----------------------------------------!
@@ -126,15 +126,15 @@ subroutine update_patch_derived_props_ar(csite,lsl,rhos,ipa)
   
 
    !----- Computing the water, energy, and carbon storage (may be unecessary). ------------!
-   csite%wbudget_initialstorage(ipa)   = compute_water_storage_ar(csite,lsl,rhos,ipa)
-   csite%ebudget_initialstorage(ipa)   = compute_energy_storage_ar(csite,lsl,rhos,ipa)
-   csite%co2budget_initialstorage(ipa) = compute_co2_storage_ar(csite,rhos,ipa)
+   csite%wbudget_initialstorage(ipa)   = compute_water_storage(csite,lsl,rhos,ipa)
+   csite%ebudget_initialstorage(ipa)   = compute_energy_storage(csite,lsl,rhos,ipa)
+   csite%co2budget_initialstorage(ipa) = compute_co2_storage(csite,rhos,ipa)
 
    !----- Updating the cohort count (may be redundant as well...) -------------------------!
    csite%cohort_count(ipa) = cpatch%ncohorts
 
    return
-end subroutine update_patch_derived_props_ar
+end subroutine update_patch_derived_props
 !==========================================================================================!
 !==========================================================================================!
 
@@ -147,7 +147,7 @@ end subroutine update_patch_derived_props_ar
 !==========================================================================================!
 !     This subroutine will update the derived properties at the site level.                !
 !------------------------------------------------------------------------------------------!
-subroutine update_site_derived_props_ar(cpoly,census_flag,isi)
+subroutine update_site_derived_props(cpoly,census_flag,isi)
   
    use ed_state_vars , only : polygontype  & ! structure
                             , sitetype     & ! structure
@@ -209,7 +209,7 @@ subroutine update_site_derived_props_ar(cpoly,census_flag,isi)
    end do
    
    return
-end subroutine update_site_derived_props_ar
+end subroutine update_site_derived_props
 !==========================================================================================!
 !==========================================================================================!
 
@@ -222,7 +222,7 @@ end subroutine update_site_derived_props_ar
 !==========================================================================================!
 !     This subroutine will update the derived properties at the polygon level.             !
 !------------------------------------------------------------------------------------------!
-subroutine update_polygon_derived_props_ar(cgrid)
+subroutine update_polygon_derived_props(cgrid)
 
    use ed_state_vars , only : edtype      & ! structure
                             , polygontype ! ! structure
@@ -251,7 +251,7 @@ subroutine update_polygon_derived_props_ar(cgrid)
    end do
 
    return
-end subroutine update_polygon_derived_props_ar
+end subroutine update_polygon_derived_props
 !==========================================================================================!
 !==========================================================================================!
 
@@ -264,7 +264,7 @@ end subroutine update_polygon_derived_props_ar
 !==========================================================================================!
 !    This subroutine will read the regular soil moisture and temperature dataset.          !
 !------------------------------------------------------------------------------------------!
-subroutine read_soil_moist_temp_ar(cgrid)
+subroutine read_soil_moist_temp(cgrid)
 
    use ed_state_vars , only : edtype       & ! structure
                             , polygontype  & ! structure
@@ -324,7 +324,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
       write (unit=*,fmt='(a)') ' soil moisture and temperature from a file.  The file'
       write (unit=*,fmt='(a)') ' specified by SOILSTATE_DB, however, doesn''t exist!'
       call fatal_error('Soil database '//trim(soilstate_db)//' not found!'                 &
-                     &,'read_soil_moist_temp_ar','update_derived_props.f90')
+                     &,'read_soil_moist_temp','update_derived_props.f90')
    end if
 
    open (unit=12,file=trim(soilstate_db),form='formatted',status='old',position='rewind')
@@ -443,7 +443,7 @@ subroutine read_soil_moist_temp_ar(cgrid)
    close(unit=12,status='keep')
    return
 
-end subroutine read_soil_moist_temp_ar
+end subroutine read_soil_moist_temp
 !==========================================================================================!
 !==========================================================================================!
 
@@ -461,7 +461,7 @@ subroutine update_rad_avg(cgrid)
    use ed_state_vars , only : edtype      & ! structure
                             , polygontype & ! structure
                             , sitetype    ! ! structure
-   use misc_coms     , only : radfrq      ! ! intent(in)
+   use ed_misc_coms     , only : radfrq      ! ! intent(in)
    use consts_coms   , only : day_sec     ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!

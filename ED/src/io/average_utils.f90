@@ -5,10 +5,10 @@
 !                           |----------------------------------|                           !
 !==========================================================================================!
 !==========================================================================================!
-subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
+subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
 
    use grid_coms, only: nzg
-   use misc_coms, only: radfrq
+   use ed_misc_coms, only: radfrq
    use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
 
    
@@ -93,7 +93,7 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
    end do
    
    return
-end subroutine normalize_averaged_vars_ar
+end subroutine normalize_averaged_vars
 !==========================================================================================!
 !==========================================================================================!
 
@@ -252,7 +252,7 @@ subroutine integrate_ed_daily_output_state(cgrid)
                                    , sitetype      & ! structure
                                    , patchtype     ! ! structure
    use grid_coms            , only : nzg           ! ! intent(in)
-   use max_dims             , only : n_dbh         & ! intent(in)
+   use ed_max_dims             , only : n_dbh         & ! intent(in)
                                    , n_pft         & ! intent(in)
                                    , n_dist_types  ! ! structure
    implicit none
@@ -392,8 +392,8 @@ subroutine integrate_ed_daily_output_flux(cgrid)
 !------------------------------------------------------------------------------------------!
    use ed_state_vars        , only : edtype,polygontype,sitetype,patchtype
    use grid_coms            , only : nzg
-   use max_dims             , only : n_dbh, n_pft, n_dist_types
-   use misc_coms            , only : dtlsm
+   use ed_max_dims             , only : n_dbh, n_pft, n_dist_types
+   use ed_misc_coms            , only : dtlsm
    implicit none
    
    type(edtype)      , target  :: cgrid
@@ -547,7 +547,7 @@ end subroutine integrate_ed_daily_output_flux
 !==========================================================================================!
 subroutine normalize_ed_daily_vars(cgrid,timefac1)
    use ed_state_vars , only : edtype,polygontype,sitetype,patchtype
-   use max_dims      , only : n_pft
+   use ed_max_dims      , only : n_pft
    implicit none
    real, intent(in)         :: timefac1 ! Daily sum          => daily average
    type(edtype)      , target  :: cgrid
@@ -602,9 +602,9 @@ subroutine normalize_ed_daily_output_vars(cgrid)
 !------------------------------------------------------------------------------------------!
    use grid_coms     , only : nzg
    use ed_state_vars , only : edtype,polygontype,sitetype,patchtype
-   use max_dims      , only : n_pft,n_dist_types
+   use ed_max_dims      , only : n_pft,n_dist_types
    use consts_coms   , only : alvl,day_sec,umol_2_kgC
-   use misc_coms     , only : dtlsm,frqsum
+   use ed_misc_coms     , only : dtlsm,frqsum
    use therm_lib     , only : qwtk
    implicit none
    type(edtype)      , target  :: cgrid
@@ -954,17 +954,21 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
 !    This subroutine integrates the monthly average. This is called after the daily means  !
 ! were integrated and normalized.                                                          !
 !------------------------------------------------------------------------------------------!
-   use ed_state_vars, only : edtype
-   use      max_dims, only : n_dbh,n_pft, n_dist_types
+   use ed_state_vars, only : edtype       ! ! structure
+   use ed_max_dims  , only : n_dbh        & ! intent(in)
+                           , n_pft        & ! intent(in) 
+                           , n_dist_types ! ! intent(in)
    implicit none
-   
+   !----- Argument. -----------------------------------------------------------------------!
    type(edtype)      , target  :: cgrid
+   !----- Local variables. ----------------------------------------------------------------!
    integer                     :: ipy
+   !---------------------------------------------------------------------------------------!
    
    do ipy=1,cgrid%npolygons
-      !------------------------------------------------------------------------------!
-      ! First the mean variables that can be computed from the daily averages        !
-      !------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      ! First the mean variables that can be computed from the daily averages              !
+      !------------------------------------------------------------------------------------!
       cgrid%mmean_gpp           (ipy) = cgrid%mmean_gpp           (ipy) +  cgrid%dmean_gpp           (ipy)
       cgrid%mmean_evap          (ipy) = cgrid%mmean_evap          (ipy) +  cgrid%dmean_evap          (ipy)
       cgrid%mmean_transp        (ipy) = cgrid%mmean_transp        (ipy) +  cgrid%dmean_transp        (ipy)
@@ -1035,30 +1039,47 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
 !    This subroutine normalize the sum before writing the mobthly analysis. It also        !
 ! computes some of the variables that didn't need to be computed every day, like AGB.      !
 !------------------------------------------------------------------------------------------!
-   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype
-   use     misc_coms, only: current_time,simtime
-   use      max_dims, only: n_pft,n_dbh,n_dist_types
+   use ed_state_vars, only: edtype        & ! structure
+                          , polygontype   & ! structure
+                          , sitetype      & ! structure
+                          , patchtype     ! ! structure
+   use ed_misc_coms , only: current_time  & ! intent(in)
+                          , simtime       ! ! intent(in)
+   use ed_max_dims  , only: n_pft         & ! intent(in)
+                          , n_dbh         & ! intent(in)
+                          , n_dist_types  ! ! intent(in)
    implicit none
-  
+   !----- Arguments. ----------------------------------------------------------------------!
    type(edtype)      , target  :: cgrid
+   !----- Local variables. ----------------------------------------------------------------!
    type(polygontype) , pointer :: cpoly
    type(sitetype)    , pointer :: csite
    type(patchtype)   , pointer :: cpatch
-
    type(simtime)               :: lastmonth
-   real                        :: ndaysi,polygon_area_i,site_area_i
-   integer                     :: ipy,isi,ipa,ico,ipft,dbh,ilu
+   real                        :: ndaysi
+   real                        :: polygon_area_i
+   real                        :: site_area_i
+   integer                     :: ipy
+   integer                     :: isi
+   integer                     :: ipa
+   integer                     :: ico
+   integer                     :: ipft
+   integer                     :: dbh
+   integer                     :: ilu
+   integer                     :: jlu
    real                        :: srnonm1
-   !----------------------------------------------------------------------!
-   ! Finding the inverse of number of days used for this monthly integral !
-   !----------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+  
+   !---------------------------------------------------------------------------------------!
+   !     Finding the inverse of number of days used for this monthly integral.             !
+   !---------------------------------------------------------------------------------------!
    call lastmonthdate(current_time,lastmonth,ndaysi)
 
    polyloop: do ipy=1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
-      !-----------------------------------------------------------!
-      ! First normalize the variables previously defined          !
-      !-----------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !      First normalize the variables previously defined.                             !
+      !------------------------------------------------------------------------------------!
       cgrid%mmean_gpp            (ipy) = cgrid%mmean_gpp            (ipy) * ndaysi
       cgrid%mmean_evap           (ipy) = cgrid%mmean_evap           (ipy) * ndaysi
       cgrid%mmean_transp         (ipy) = cgrid%mmean_transp         (ipy) * ndaysi
@@ -1122,17 +1143,28 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       polygon_area_i = 1./sum(cpoly%area)
       do ipft = 1,n_pft
         do dbh =1,n_dbh
-          cgrid%agb_pft(ipft,ipy) = cgrid%agb_pft(ipft,ipy) &
-               + sum(cpoly%agb(ipft,dbh,:)*cpoly%area)*polygon_area_i
-          cgrid%ba_pft(ipft,ipy)  = cgrid%ba_pft(ipft,ipy)  &
-               + sum(cpoly%basal_area(ipft,dbh,:)*cpoly%area)*polygon_area_i
+          cgrid%agb_pft(ipft,ipy) = cgrid%agb_pft(ipft,ipy)                                &
+                                  + sum(cpoly%agb(ipft,dbh,:)*cpoly%area)*polygon_area_i
+          cgrid%ba_pft(ipft,ipy)  = cgrid%ba_pft(ipft,ipy)                                 &
+                                  + sum(cpoly%basal_area(ipft,dbh,:)*cpoly%area)           &
+                                  * polygon_area_i
         end do
       end do
 
       !----- Finding AGB per land use type ------------------------------------------------!
       do ilu = 1,n_dist_types
-          cgrid%agb_lu(ilu,ipy) = cgrid%agb_lu(ilu,ipy) &
-                            + sum(cpoly%agb_lu(ilu,:)*cpoly%area)*polygon_area_i
+          cgrid%agb_lu(ilu,ipy) = cgrid%agb_lu(ilu,ipy)                                    &
+                                + sum(cpoly%agb_lu(ilu,:)*cpoly%area)*polygon_area_i
+      end do
+
+      !----- Finding disturbance rates per source and target land use types. --------------!
+      do ilu = 1,n_dist_types
+         do jlu = 1,n_dist_types
+          cgrid%disturbance_rates(ilu,jlu,ipy) = cgrid%disturbance_rates(ilu,jlu,ipy)      &
+                                               + sum( cpoly%disturbance_rates(ilu,jlu,:)   &
+                                                    * cpoly%area)                          &
+                                               * polygon_area_i
+         end do
       end do
 
       !----- Finding the fractional area covered by each land use and each PFT ------------!
@@ -1228,6 +1260,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%stdev_sensible       (ipy) = 0.
       cgrid%stdev_nep            (ipy) = 0.
       cgrid%stdev_rh             (ipy) = 0.
+      cgrid%disturbance_rates(:,:,ipy) = 0.
    end do
 
    return
@@ -1247,10 +1280,10 @@ end subroutine zero_ed_monthly_output_vars
 !                             |--------------------------------|                           !
 !==========================================================================================!
 !==========================================================================================!
-subroutine update_ed_yearly_vars_ar(cgrid)
+subroutine update_ed_yearly_vars(cgrid)
 
    use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
-   use max_dims, only: n_pft, n_dbh
+   use ed_max_dims, only: n_pft, n_dbh
    use consts_coms, only: pi1
    use allometry, only: ed_biomass
   
@@ -1333,7 +1366,7 @@ subroutine update_ed_yearly_vars_ar(cgrid)
    enddo
 
    return
-end subroutine update_ed_yearly_vars_ar
+end subroutine update_ed_yearly_vars
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1344,9 +1377,9 @@ end subroutine update_ed_yearly_vars_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine zero_ed_yearly_vars_ar(cgrid)
+subroutine zero_ed_yearly_vars(cgrid)
 
-   use max_dims, only: n_pft, n_dbh
+   use ed_max_dims, only: n_pft, n_dbh
    use ed_state_vars,only:edtype,polygontype
 
    implicit none
@@ -1370,6 +1403,6 @@ subroutine zero_ed_yearly_vars_ar(cgrid)
    enddo
 
    return
-end subroutine zero_ed_yearly_vars_ar
+end subroutine zero_ed_yearly_vars
 !==========================================================================================!
 !==========================================================================================!

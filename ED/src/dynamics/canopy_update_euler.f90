@@ -1,4 +1,4 @@
-subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, atm_tmp, prss, pcpg, qpcpg,  &
+subroutine canopy_update_euler(csite, ipa, vels, rhos, atm_tmp, prss, pcpg, qpcpg,  &
      wshed_canopy, qwshed_canopy, canair, canhcap, dt_leaf, hxfergc,  &
      sxfer_t, wxfergc, hxfersc, wxfersc, sxfer_r, ed_transp,          &
      ntext_soil, soil_water, soil_fracliq, lsl,  &
@@ -8,7 +8,7 @@ subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, atm_tmp, prss, pcpg, q
   use ed_state_vars,only:sitetype,patchtype
   use grid_coms, only: nzg
   use consts_coms, only: alvi
-  use max_dims, only: n_pft
+  use ed_max_dims, only: n_pft
 
   implicit none
 
@@ -46,11 +46,11 @@ subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, atm_tmp, prss, pcpg, q
   integer, intent(in) :: lsl
 
   ! Get photosynthesis, stomatal conductance, and transpiration
-  call canopy_photosynthesis_ar(csite,ipa, vels, rhos, atm_tmp, prss, &
+  call canopy_photosynthesis(csite,ipa, vels, rhos, atm_tmp, prss, &
        ed_ktrans, ntext_soil, soil_water, soil_fracliq, lsl, sum_lai_rbi, &
        leaf_aging_factor, green_leaf_factor)
 
-  call canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  &
+  call canopy_precip_interception(csite,ipa, pcpg, qpcpg, wshed_canopy,  &
        qwshed_canopy)
   
   ndims = 2
@@ -65,7 +65,7 @@ subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, atm_tmp, prss, pcpg, q
 !  call canopy_implicit_driver(ed_patch, ndims, rhos, canhcap, canair,   &
 !       sum_lai_rbi, dt_leaf, hxfergc, hxferca, wxfergc, hxfersc, wxfersc,  &
   !       sxfer_r, ed_transp, ed_ktrans)
-  call canopy_explicit_driver_ar(csite, ipa, ndims, rhos, canhcap, canair,   &
+  call canopy_explicit_driver(csite, ipa, ndims, rhos, canhcap, canair,   &
        sum_lai_rbi, dt_leaf, hxfergc, sxfer_t, wxfergc, hxfersc, wxfersc,  &
        sxfer_r, ed_transp, ed_ktrans, sxfer_c)
 
@@ -75,11 +75,11 @@ subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, atm_tmp, prss, pcpg, q
 !  ed_patch%mean_hflux = ed_patch%mean_hflux + hxferca / dt_leaf
 
   return
-end subroutine canopy_update_euler_ar
+end subroutine canopy_update_euler
 
 !==============================================================
 
-subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  &
+subroutine canopy_precip_interception(csite,ipa, pcpg, qpcpg, wshed_canopy,  &
      qwshed_canopy)
 
   use ed_state_vars,only:sitetype,patchtype
@@ -175,11 +175,11 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
   endif
 
   return
-end subroutine canopy_precip_interception_ar
+end subroutine canopy_precip_interception
 
 !==============================================================
 
-subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
+subroutine canopy_implicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
      sum_lai_rbi, dt_leaf, hxfergc, sxfer_t, wxfergc, hxfersc, wxfersc,    &
      sxfer_r, ed_transp, ed_ktrans, sxfer_c)
 
@@ -500,10 +500,10 @@ subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
   csite%avg_daily_temp(ipa) = csite%avg_daily_temp(ipa) + csite%can_temp(ipa)
 
   return
-end subroutine canopy_implicit_driver_ar
+end subroutine canopy_implicit_driver
 !==============================================================
 
-subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
+subroutine canopy_explicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
      sum_lai_rbi, dt_leaf, hxfergc, sxfer_t, wxfergc, hxfersc, wxfersc,    &
      sxfer_r, ed_transp, ed_ktrans, sxfer_c)
 
@@ -700,7 +700,7 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
   csite%avg_daily_temp(ipa) = csite%avg_daily_temp(ipa) + csite%can_temp(ipa)
 
   return
-end subroutine canopy_explicit_driver_ar
+end subroutine canopy_explicit_driver
 
 !======================================================================
 
