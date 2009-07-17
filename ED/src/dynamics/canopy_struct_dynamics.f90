@@ -70,7 +70,8 @@ module canopy_struct_dynamics
                                 , patchtype            ! ! structure
       use rk4_coms       , only : rk4patchtype         & ! structure
                                 , rk4met               & ! intent(in)
-                                , tiny_offset          ! ! intent(in)
+                                , tiny_offset          & ! intent(in)
+                                , ibranch_thermo
       use pft_coms       , only : crown_depth_fraction & ! intent(in)
                                 , leaf_width           ! ! intent(in)
       use canopy_air_coms, only : exar8                & ! intent(in)
@@ -423,6 +424,12 @@ module canopy_struct_dynamics
             !------------------------------------------------------------------------------!
             zetac = 0.d0  ! Cumulative zeta
 
+            if( ibranch_thermo.ne.0 .and. (sum(initp%wpa)+sum(initp%lai)) .eq. 0. ) then
+               call fatal_error('Your plants must have some TAI, M97','canopy_turbulence'            &
+                    ,'canopy_struct_dynamics.f90')
+            endif
+
+            
             !------------------------------------------------------------------------------!
             !     Loop through the canopy at equal increments.  At each increment,         !
             ! determine the frontal area drag surface, and the drag force zeta.            !
@@ -451,17 +458,26 @@ module canopy_struct_dynamics
                      ! gone, then the branches contribute about 50% of the drag surface,   !
                      ! everything in between is a linear combination.                      !
                      !---------------------------------------------------------------------!
-                     ! layertai=layertai + cpatch%lai(ico)*(dz/crowndepth) 
-                     ! layertai=layertai + cpatch%nplant(ico)*0.5*(dz/crowndepth)
 
-                     !---------------------------------------------------------------------!
-                     !    Use LAI and WPA to define the frontal area of drag surface.  If  !
-                     ! the user decided to ignore branches, ignore them here too.          !
-                     !---------------------------------------------------------------------!
-                     layertai = layertai + (initp%lai(ico) + initp%wpa(ico))               &
-                                           * (dz /crowndepth)
+                     if(ibranch_thermo==0) then
+                     
+                        layertai=layertai + initp%lai(ico)*(dz/crowndepth)
+                        layertai=layertai + cpatch%nplant(ico)*0.5*(dz/crowndepth)
+                        
+                     else
+                        
+                        !---------------------------------------------------------------------!
+                        !    Use LAI and WPA to define the frontal area of drag surface.  If  !
+                        ! the user decided to ignore branches, ignore them here too.          !
+                        !---------------------------------------------------------------------!
+                        layertai = layertai + (initp%lai(ico) + initp%wpa(ico))               &
+                             * (dz /crowndepth)
+                     end if
+
                   end if
                end do
+               
+               
 
                a_front  = layertai/dz ! Frontal area of drag surface
                zetac    = zetac + 5.d-1 * a_front * (Cd0 / Pm) * dz
@@ -482,7 +498,7 @@ module canopy_struct_dynamics
             !------------------------------------------------------------------------------!
             d0 = h
             do k=1,zcan
-               d0 = d0 - dz*exp(-2.d0*eta*(1-zeta(k)/zeta(zcan)))
+               d0 = d0 - dz*exp(-2.0*eta*(1-zeta(k)/zeta(zcan)))
             end do
 
             !----- Calculate the roughness lengths zo,zt,zr. ------------------------------!

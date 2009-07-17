@@ -171,7 +171,6 @@ subroutine dbalive_dt_ar(cgrid, tfact)
               csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
               !----------------------------------------------------------------------------!
 
-
            end do
            
            ! Update litter

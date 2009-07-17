@@ -28,6 +28,9 @@ module rk4_driver_ar
       use consts_coms            , only : umol_2_kgC           ! ! intent(in)
       use canopy_struct_dynamics , only : canopy_turbulence ! ! subroutine
       implicit none
+
+      !----------- Use MPI timing calls, need declarations --------------------------------!
+      include 'mpif.h'
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)              , target      :: cgrid
       integer                   , intent (in) :: ifm
@@ -37,7 +40,7 @@ module rk4_driver_ar
       type(patchtype)           , pointer     :: cpatch
       integer                                 :: ipy,isi,ipa
       integer, dimension(nzg)                 :: ed_ktrans
-      real                                    :: time_py_start,time_py_spent
+      real(kind=8)                            :: time_py_start,time_py_end
       real   , dimension(n_dbh)               :: gpp_dbh
       real                                    :: sum_lai_rbi
       real                                    :: gpp
@@ -50,7 +53,8 @@ module rk4_driver_ar
       polygonloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
 
-         time_py_start = walltime(0.) 
+!!!         time_py_start = walltime(0.) 
+         time_py_start = MPI_Wtime() 
 
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
@@ -167,8 +171,11 @@ module rk4_driver_ar
             end do patchloop
          end do siteloop
 
-         time_py_spent = walltime(time_py_start)
-         cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) + dble(time_py_spent)
+!!!         time_py_spent = walltime(time_py_start)
+!!!         cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) + dble(time_py_spent)
+         
+         time_py_end = MPI_Wtime() 
+         cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) + (time_py_end-time_py_start)
 
       end do polygonloop
 
@@ -329,6 +336,7 @@ module rk4_driver_ar
       integer           , intent(in) :: isi
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)   , pointer    :: cpatch
+      integer                        :: mould
       integer                        :: ico
       integer                        :: k
       integer                        :: kclosest
@@ -478,15 +486,13 @@ module rk4_driver_ar
       end do
       !------------------------------------------------------------------------------------!
 
-
-
-      
       !------------------------------------------------------------------------------------!
       !     Cohort variables.  Here we must check whether the cohort was really solved or  !
       ! it was skipped after being flagged as "unsafe".  Here the reason why it was flag-  !
       ! ged as such matters.                                                               !
       !------------------------------------------------------------------------------------!
       do ico = 1,cpatch%ncohorts
+
          if (initp%solvable(ico)) then
             !------------------------------------------------------------------------------!
             !    The cohort was solved, update internal energy and water, and re-calculate !
@@ -577,44 +583,6 @@ module rk4_driver_ar
    !=======================================================================================!
 
 
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    Currently not in use.                                                              !
-   !---------------------------------------------------------------------------------------!
-   subroutine canopy_atm_fluxes_ar(csite,cpoly,ipa,isi)
-      use ed_state_vars , only : polygontype  & ! structure
-                               , sitetype     & ! structure
-                               , patchtype    ! ! structure
-      use consts_coms   , only : cpi          ! ! intent(in)
-      implicit none
-    
-      !----- Arguments --------------------------------------------------------------------!
-      type(polygontype) , target     :: cpoly
-      type(sitetype)    , target     :: csite
-      integer           , intent(in) :: ipa
-      integer           , intent(in) :: isi
-      !------------------------------------------------------------------------------------!
-
-      call fatal_error('Decide how to set vels in canopy_atm_fluxes.'                      &
-                     &,'canopy_atm_fluxes_ar','rk4_driver.f90')
-
-      !----- Calculate turbulent fluxes between atmosphere and canopy. --------------------!
-      !    pis = cpoly%pi0 * cpi
-      !    thetacan = pss%can_temp / pis
-      !    if(thetacan.lt.cpoly%theta)then
-      !       cpoly%vels = cpoly%vels_stab
-      !    else
-      !       cpoly%vels = cpoly%vels_unstab
-      !    endif
-
-      return
-   end subroutine canopy_atm_fluxes_ar
-   !=======================================================================================!
-   !=======================================================================================! 
 end module rk4_driver_ar
 !==========================================================================================!
 !==========================================================================================!

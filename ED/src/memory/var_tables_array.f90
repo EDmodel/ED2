@@ -44,6 +44,7 @@
 !     ! 41  : rank 1 : cohort (real)                        !                              !
 !     ! 44  : rank 2 : cohort, pft                          !                              !
 !     ! 46  : rank 2 : cohort, dbh                          !                              !
+!     ! 47  : rank 2 : cohort, 16 (stoma data)              !
 !     ! 49  : rank 2 : cohort, nmonths+1                    !                              !
 !     !-----------------------------------------------------!                              !
 !                                                                                          !
@@ -63,7 +64,7 @@ module var_tables_array
    type var_table
       integer :: idim_type
       integer :: nptrs
-      integer :: ihist,ianal,imean,ilite,impti,impt1,impt2,impt3,irecycle,iyear
+      integer :: ihist,ianal,imean,ilite,icore,ifdrt,irecycle,iyear
       character (len=64) :: name
       character (len=2) :: dtype
       integer :: imont,idail
@@ -84,6 +85,7 @@ module var_tables_array
       integer, pointer            :: var_ip
       character (len=256),pointer :: var_cp
       real(kind=8),pointer        :: var_dp
+      logical, pointer            :: var_lp
       integer                     :: globid
       integer                     :: varlen
    end type var_table_vector
@@ -167,10 +169,8 @@ module var_tables_array
         vt_info(nv,igr)%ianal=0
         vt_info(nv,igr)%imean=0
         vt_info(nv,igr)%ilite=0
-        vt_info(nv,igr)%impti=0
-        vt_info(nv,igr)%impt1=0
-        vt_info(nv,igr)%impt2=0
-        vt_info(nv,igr)%impt3=0
+        vt_info(nv,igr)%icore=0
+        vt_info(nv,igr)%ifdrt=0
         vt_info(nv,igr)%irecycle=0
         vt_info(nv,igr)%imont=0
         vt_info(nv,igr)%idail=0
@@ -186,14 +186,10 @@ module var_tables_array
               vt_info(nv,igr)%ianal=1
            case('lite') 
               vt_info(nv,igr)%ilite=1
-           case('mpti') 
-              vt_info(nv,igr)%impti=1
-           case('mpt1') 
-              vt_info(nv,igr)%impt1=1
-           case('mpt2') 
-              vt_info(nv,igr)%impt2=1
-           case('mpt3') 
-              vt_info(nv,igr)%impt3=1
+           case('core')                 ! contained in model core (restart)
+              vt_info(nv,igr)%icore=1
+           case('fdrt')                 ! filled during run-time
+              vt_info(nv,igr)%ifdrt=1
            case('recycle') 
               vt_info(nv,igr)%irecycle=1
            case('mont') 
@@ -308,10 +304,8 @@ module var_tables_array
        vt_info(nv,igr)%ianal=0
        vt_info(nv,igr)%imean=0
        vt_info(nv,igr)%ilite=0
-       vt_info(nv,igr)%impti=0
-       vt_info(nv,igr)%impt1=0
-       vt_info(nv,igr)%impt2=0
-       vt_info(nv,igr)%impt3=0
+       vt_info(nv,igr)%icore=0
+       vt_info(nv,igr)%ifdrt=0
        vt_info(nv,igr)%irecycle=0
        vt_info(nv,igr)%imont=0
        vt_info(nv,igr)%idail=0
@@ -327,14 +321,10 @@ module var_tables_array
              vt_info(nv,igr)%ianal=1
           case('lite') 
              vt_info(nv,igr)%ilite=1
-          case('mpti') 
-             vt_info(nv,igr)%impti=1
-          case('mpt1') 
-             vt_info(nv,igr)%impt1=1
-          case('mpt2') 
-             vt_info(nv,igr)%impt2=1
-          case('mpt3') 
-             vt_info(nv,igr)%impt3=1
+          case('fdrt') 
+             vt_info(nv,igr)%ifdrt=1
+          case('core') 
+             vt_info(nv,igr)%icore=1
           case('recycle') 
              vt_info(nv,igr)%irecycle=1
           case('mont') 
@@ -451,10 +441,8 @@ module var_tables_array
        vt_info(nv,igr)%ianal=0
        vt_info(nv,igr)%imean=0
        vt_info(nv,igr)%ilite=0
-       vt_info(nv,igr)%impti=0
-       vt_info(nv,igr)%impt1=0
-       vt_info(nv,igr)%impt2=0
-       vt_info(nv,igr)%impt3=0
+       vt_info(nv,igr)%icore=0
+       vt_info(nv,igr)%ifdrt=0
        vt_info(nv,igr)%irecycle=0
        vt_info(nv,igr)%imont=0
        vt_info(nv,igr)%idail=0
@@ -470,14 +458,10 @@ module var_tables_array
              vt_info(nv,igr)%ianal=1
           case('lite') 
              vt_info(nv,igr)%ilite=1
-          case('mpti') 
-             vt_info(nv,igr)%impti=1
-          case('mpt1') 
-             vt_info(nv,igr)%impt1=1
-          case('mpt2') 
-             vt_info(nv,igr)%impt2=1
-          case('mpt3') 
-             vt_info(nv,igr)%impt3=1
+          case('core') 
+             vt_info(nv,igr)%icore=1
+          case('fdrt') 
+             vt_info(nv,igr)%ifdrt=1
           case('recycle') 
              vt_info(nv,igr)%irecycle=1
           case('mont') 
@@ -589,10 +573,8 @@ module var_tables_array
        vt_info(nv,igr)%ianal=0
        vt_info(nv,igr)%imean=0
        vt_info(nv,igr)%ilite=0
-       vt_info(nv,igr)%impti=0
-       vt_info(nv,igr)%impt1=0
-       vt_info(nv,igr)%impt2=0
-       vt_info(nv,igr)%impt3=0
+       vt_info(nv,igr)%icore=0
+       vt_info(nv,igr)%ifdrt=0
        vt_info(nv,igr)%irecycle=0
        vt_info(nv,igr)%imont=0
        vt_info(nv,igr)%idail=0
@@ -608,14 +590,10 @@ module var_tables_array
              vt_info(nv,igr)%ianal=1
           case('lite') 
              vt_info(nv,igr)%ilite=1
-          case('mpti') 
-             vt_info(nv,igr)%impti=1
-          case('mpt1') 
-             vt_info(nv,igr)%impt1=1
-          case('mpt2') 
-             vt_info(nv,igr)%impt2=1
-          case('mpt3') 
-             vt_info(nv,igr)%impt3=1
+          case('core') 
+             vt_info(nv,igr)%icore=1
+          case('fdrt') 
+             vt_info(nv,igr)%ifdrt=1
           case('recycle') 
              vt_info(nv,igr)%irecycle=1
           case('mont') 
@@ -666,6 +644,139 @@ module var_tables_array
     return
   end subroutine vtable_edio_c
 
+  !=================================================================
+  
+  recursive subroutine vtable_edio_l( &
+       var,      &    ! The pointer of the current state variable
+       nv,       &    ! The variable type number
+       igr,      &    ! The number of the current grid
+       init,     &    ! Initialize the vt_info?
+       glob_id,  &    ! The global index of the data
+       var_len,  &    ! The length of the states current vector
+       var_len_global, & ! THe length of the entire dataset's vector
+       max_ptrs,  &    ! The maximum possible number of pointers
+       ! necessary for this variable
+       tabstr)        ! The string describing the variables usage
+    
+    implicit none
+    
+    logical,target :: var
+    
+    integer :: init
+    integer :: var_len,var_len_global,max_ptrs,glob_id,iptr,igr
+    character (len=*) :: tabstr
+    
+    character (len=1), parameter ::toksep=':'
+    character (len=128) ::tokens(10)
+    character (len=8) :: ctab
+    integer :: ntok,nt,nv
+    
+    ! ------------------------------------------------
+    ! Determine if this is the first
+    ! time we view this variable.  If so, then
+    ! fill some descriptors for the vtable
+    ! and allocate some space for any pointers
+    ! that may follow
+    ! ------------------------------------------------
+    
+    if (init == 0) then
+       
+       ! Count the number of variables
+       num_var(igr) = num_var(igr) + 1
+      
+       call tokenize1(tabstr,tokens,ntok,toksep)
+       
+       vt_info(nv,igr)%name=tokens(1)
+
+!       print*,num_var(igr),nv,trim(vt_info(nv,igr)%name)
+
+       vt_info(nv,igr)%dtype='l'  ! This is a string variable
+
+       vt_info(nv,igr)%nptrs = 0
+       
+       vt_info(nv,igr)%var_len_global = var_len_global
+
+       nullify(vt_info(nv,igr)%vt_vector)
+       allocate(vt_info(nv,igr)%vt_vector(max_ptrs))
+       
+       read(tokens(2),*) vt_info(nv,igr)%idim_type
+       
+       vt_info(nv,igr)%ihist=0
+       vt_info(nv,igr)%ianal=0
+       vt_info(nv,igr)%imean=0
+       vt_info(nv,igr)%ilite=0
+       vt_info(nv,igr)%icore=0
+       vt_info(nv,igr)%ifdrt=0
+       vt_info(nv,igr)%irecycle=0
+       vt_info(nv,igr)%imont=0
+       vt_info(nv,igr)%idail=0
+       vt_info(nv,igr)%iyear=0
+       
+       do nt=3,ntok
+          ctab=tokens(nt)
+          
+          select case (trim(ctab))
+          case('hist') 
+             vt_info(nv,igr)%ihist=1
+          case('anal') 
+             vt_info(nv,igr)%ianal=1
+          case('lite') 
+             vt_info(nv,igr)%ilite=1
+          case('core') 
+             vt_info(nv,igr)%icore=1
+          case('fdrt') 
+             vt_info(nv,igr)%ifdrt=1
+          case('recycle') 
+             vt_info(nv,igr)%irecycle=1
+          case('mont') 
+             vt_info(nv,igr)%imont=1
+          case('dail') 
+             vt_info(nv,igr)%idail=1
+          case('year') 
+             vt_info(nv,igr)%iyear=1
+          case default
+             print*, 'Illegal table specification for var:', tokens(1),ctab
+             call fatal_error('Bad var table','vtable_edio_c','var_tables_array.f90')
+          end select
+          
+       enddo
+       
+       ! Set the first pass logical to false
+        
+    else
+       !    Make sure that vt_info is associated. If not, call the function with init = 0 then 
+       ! do this part. Since I think this should never happen, I will also make a fuss to warn 
+       ! the user
+       if (.not.associated(vt_info(nv,igr)%vt_vector)) then
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a)') '!-------------------------------------------------------------------------!'
+         write (unit=*,fmt='(a)') '! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! !'
+         write (unit=*,fmt='(a)') '! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! !'
+         write (unit=*,fmt='(a)') '! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! !'
+         write (unit=*,fmt='(a)') '!-------------------------------------------------------------------------!'
+         write (unit=*,fmt='(a)') '! In subroutine vtable_edio_c (file var_tables_array.f90)                 !'
+         write (unit=*,fmt='(a,1x,i4,1x,a,1x,i2,1x,a)')  &
+                                  '! Vt_vector for variable',nv,'of grid',igr,'is not associated                !'
+         write (unit=*,fmt='(a)') '! I will allocate it now.                                                 !'
+         write (unit=*,fmt='(a)') '!-------------------------------------------------------------------------!'
+         write (unit=*,fmt='(a)') ' '
+         call vtable_edio_l(var,nv,igr,0,glob_id,var_len,var_len_global,max_ptrs,tabstr)
+       end if
+       
+       vt_info(nv,igr)%nptrs = vt_info(nv,igr)%nptrs + 1
+       iptr = vt_info(nv,igr)%nptrs
+       
+       vt_info(nv,igr)%vt_vector(iptr)%globid = glob_id
+       vt_info(nv,igr)%vt_vector(iptr)%var_lp   => var
+       vt_info(nv,igr)%vt_vector(iptr)%varlen = var_len
+
+    end if
+    
+    
+    return
+  end subroutine vtable_edio_l
+
+  ! =====================================================
   ! =====================================================
   
   subroutine metadata_edio(nv,igr,lname,units,dimstr)
@@ -695,6 +806,7 @@ module var_tables_array
      if (associated(vt_vec%var_ip)) nullify(vt_vec%var_ip)
      if (associated(vt_vec%var_cp)) nullify(vt_vec%var_cp)
      if (associated(vt_vec%var_dp)) nullify(vt_vec%var_dp)
+     if (associated(vt_vec%var_lp)) nullify(vt_vec%var_lp)
      return
   end subroutine nullify_vt_vector_pointers
 

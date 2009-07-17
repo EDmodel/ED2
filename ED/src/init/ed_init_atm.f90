@@ -58,7 +58,7 @@ subroutine ed_init_atm_ar
            csite => cpoly%site(isi)
 
            do ipa = 1,csite%npatches
-              
+
               cpatch => csite%patch(ipa)
 
               csite%can_temp(ipa) =   cpoly%met(isi)%atm_tmp

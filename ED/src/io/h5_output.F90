@@ -56,7 +56,7 @@ subroutine h5_output(vtype)
   character(len=40) :: subaname
   character(len=64) :: varn
   character(len=1)  :: vnam
-  character(len=15) :: c0
+  character(len=64) :: c0
   character(len=64),dimension(3) :: metadata
   logical exans
 
@@ -135,14 +135,14 @@ subroutine h5_output(vtype)
 
   do ngr=1,ngrids
 
-!     call h5garbage_collect_f(hdferr) 
+     call h5garbage_collect_f(hdferr) 
      
      ping = 0 
 
 #if USE_COLLECTIVE_MPIO
 #else
 
-        if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,350+ngr,MPI_COMM_WORLD,status,ierr)
+        if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,3510+ngr,MPI_COMM_WORLD,status,ierr)
 
 #endif
      ! If there are no polygons on this node, we do not have any interaction with the file
@@ -157,7 +157,11 @@ subroutine h5_output(vtype)
            !Return the current year,month and day of the last 24hrs
            call date_add_to (iyeara,imontha,idatea,itimea*100,  &
                 time-21600.0d0,'s',outyear,outmonth,outdate,outhour)
-           
+
+           !Fix outhour to zero again, it was just pushed backwards
+           !to get the previous day
+           outhour = 0
+
            call makefnam(anamel,ffilout,zero,outyear,outmonth,outdate, &
                 0,vnam,cgrid,'h5 ')
            
@@ -166,14 +170,14 @@ subroutine h5_output(vtype)
            call date_add_to (iyeara,imontha,idatea,itimea*100,  &
                 time-21600.0d0,'s',outyear,outmonth,outdate,outhour)
            
-           
+           outhour = 0
            call makefnam(anamel,ffilout,zero,outyear,outmonth,0, &
                 0,vnam,cgrid,'h5 ')
         case('YEAR')
            
            call date_add_to (iyeara,imontha,idatea,itimea*100,  &
                 time-21600.0d0,'s',outyear,outmonth,outdate,outhour)
-           
+           outhour = 0
            call makefnam(anamel,ffilout,zero,outyear,0,0, &
                 0,vnam,cgrid,'h5 ')
            
@@ -181,7 +185,11 @@ subroutine h5_output(vtype)
 
            call makefnam(anamel,sfilout,time,iyeara,imontha,idatea,  &
                 itimea*100,vnam,cgrid,'h5 ')
-           
+           outyear = iyeara
+           outmonth = imontha
+           outdate  = idatea
+           outhour  = itimea*100
+
         case default
            if(nrec_fast .eq. 1) then  !! single file per output
               call makefnam(anamel,ffilout,time,iyeara,imontha,idatea,  &
@@ -529,6 +537,7 @@ subroutine h5_output(vtype)
                        call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%var_dp,globdims, &
                             hdferr,file_space_id = filespace, mem_space_id = memspace, &
                             xfer_prp = plist_id) 
+
                     end if
                     if (hdferr /= 0) then
                        write (unit=*,fmt=*) 'Variable name:    ',varn
@@ -559,7 +568,7 @@ subroutine h5_output(vtype)
                        
                        call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%var_dp,globdims, &
                             hdferr,file_space_id = filespace, mem_space_id = memspace)
-                       
+
                     end if
                     if (hdferr /= 0) then
                        write (unit=*,fmt=*) 'Variable name:    ',varn
@@ -627,7 +636,7 @@ subroutine h5_output(vtype)
      
 #else     
 
-        if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,350+ngr,MPI_COMM_WORLD,ierr)
+        if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,3510+ngr,MPI_COMM_WORLD,ierr)
 !        if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
 #endif     
@@ -683,6 +692,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
   use max_dims, only : n_pft,n_dist_types,n_dbh
   use hdf5_coms,only : chnkdims,chnkoffs,cnt,stride,globdims
   use fusion_fission_coms, only: ff_ndbh
+  use c34constants,only: n_stoma_atts
 
   implicit none
   character(len=*) :: varn
@@ -971,6 +981,24 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
      cnt(1:3)      = 1_8
      stride(1:3)   = 1_8
 
+ case (316) ! (n_stoma_atts,n_pft,npatches)
+
+     dsetrank = 3
+     globdims(1) = int(n_stoma_atts,8)
+     chnkdims(1) = int(n_stoma_atts,8)
+     chnkoffs(1) = 0_8
+     
+     globdims(2) = int(n_pft,8)
+     chnkdims(2) = int(n_pft,8)
+     chnkoffs(2) = 0_8
+
+     globdims(3) = int(var_len_global,8)
+     chnkdims(3) = int(varlen,8)
+     chnkoffs(3) = int(globid,8)
+     cnt(1:3)      = 1_8
+     stride(1:3)   = 1_8
+     
+
   case (36) !(n_dbh,npatches)
      
      ! DBH type
@@ -992,7 +1020,19 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
      globdims(1) = int(var_len_global,8)
      cnt(1)      = 1_8
      stride(1)   = 1_8
+
+  case (416) !(16 - ncohorts (stoma data))
      
+     dsetrank = 2
+     globdims(1) = 16_8
+     chnkdims(1) = 16_8
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
+    
   case (49) !(13,ncohorts)
      
      ! 13 Months type
