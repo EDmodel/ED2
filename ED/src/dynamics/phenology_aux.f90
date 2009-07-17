@@ -182,7 +182,9 @@ subroutine update_turnover(cpoly, isi)
    use ed_state_vars  , only : polygontype        & ! structure
                              , sitetype           & ! structure
                              , patchtype          ! ! structure
-   use pft_coms       , only : leaf_turnover_rate ! ! intent(in)
+   use pft_coms       , only : is_tropical        & ! intent(in)
+                             , sla                & ! intent(in)
+                             , leaf_turnover_rate ! ! intent(in)
    use phenology_coms , only : rad_turnover_int   & ! intent(in)
                              , rad_turnover_slope & ! intent(in)
                              , vm_tran            & ! intent(in)
@@ -237,7 +239,11 @@ subroutine update_turnover(cpoly, isi)
                                   +        tfact10  * turnover0
 
          !----- Update leaf lifespan. -----------------------------------------------------!
-         llspan0       = 12.0 / (cpatch%turnover_amp(ico) * leaf_turnover_rate(ipft))
+         if (leaf_turnover_rate(ipft) > 0.) then
+            llspan0       = 12.0 / (cpatch%turnover_amp(ico) * leaf_turnover_rate(ipft))
+         else
+            llspan0       = 9999.
+         end if
          cpatch%llspan = (1.0 - tfact60) * cpatch%llspan + tfact60 * llspan0
 
          !----- Update vm_bar. ------------------------------------------------------------!
@@ -245,10 +251,14 @@ subroutine update_turnover(cpoly, isi)
          cpatch%vm_bar(ico)= (1.0 - tfact60) * cpatch%vm_bar(ico) + tfact60 * vm0
 
          !----- Update the specific leaf area (SLA). --------------------------------------!
-         cpatch%sla(ico) =  10.0                                                           &
-                         ** ( 1.6923                                                       &
-                            - 0.3305 *log10(12.0 / ( cpatch%turnover_amp(ico)              &
-                                                   * leaf_turnover_rate(ipft)) ) )
+         if (is_tropical(ipft)) then
+            cpatch%sla(ico) =  10.0                                                        &
+                            ** ( 1.6923                                                    &
+                               - 0.3305 *log10(12.0 / ( cpatch%turnover_amp(ico)           &
+                                                      * leaf_turnover_rate(ipft)) ) )
+         else
+            cpatch%sla(ico) = sla(ipft)
+         end if
       end do cohortloop
 
    end do patchloop

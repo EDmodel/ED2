@@ -12,8 +12,16 @@ contains
     logical,parameter :: bypass=.true.
 
     ! Initialize the Botta et al. scheme.
-    if(iphen_scheme .eq. 0)then
-    
+    select case (iphen_scheme)
+    case (1)
+
+       ! Initialize from satellite.  This subroutine gives ALL SITES the
+       ! phenological parameters from Harvard Forest.
+       
+!!       call read_harvard_phenology
+       call read_prescribed_phenology
+
+    case default
        ! Only initialize thermal sums here if no thermal sums information is
        ! available from the restart file, or if this is a run with bare 
        ! ground initialization.
@@ -23,21 +31,9 @@ contains
           print'(/,a)','    Reading thermal sums'
           call read_thermal_sums
           
-       endif
+       end if
 
-    elseif(iphen_scheme == 1)then
-       
-       ! Initialize from satellite.  This subroutine gives ALL SITES the
-       ! phenological parameters from Harvard Forest.
-       
-!!       call read_harvard_phenology
-       call read_prescribed_phenology
-
-    else
-
-       print'(/,a)','   Invalid iphen_scheme.'
-!       stop
-    endif
+    end select
 
 
     return

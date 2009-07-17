@@ -37,8 +37,11 @@ subroutine phenology_driver(cgrid, doy, month, tfact)
          end do
          
          select case (iphen_scheme)
-         case (0)
-            !----- Default predictive scheme (Botta et al.). ------------------------------!
+         case (0,2)
+            !------------------------------------------------------------------------------!
+            !     Default predictive scheme (Botta et al.) or the modified drought         !
+            ! deciduous phenology for broadleaf PFTs.                                      !
+            !------------------------------------------------------------------------------!
             call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
             call update_phenology(doy,cpoly,isi,cgrid%lat(ipy))
             
@@ -51,7 +54,7 @@ subroutine phenology_driver(cgrid, doy, month, tfact)
             call update_phenology(doy,cpoly,isi,cgrid%lat(ipy))
 
 
-         case (2)
+         case (3)
             !----- KIM light-controlled predictive phenology scheme. ----------------------!
             call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
             call update_turnover(cpoly,isi)
@@ -161,14 +164,14 @@ subroutine update_phenology(doy, cpoly, isi, lat)
 
          !----- Find cohort-specific thresholds. ------------------------------------------!
          select case (iphen_scheme)
-         case (0,2)
-            !----- Drop_cold is computed in phenology_thresholds for Botta scheme. --------!
-            if (drop_cold) bl_max = 0.0
          case (1)
             !----- Get cohort-specific thresholds for prescribed phenology. ---------------!
             call assign_prescribed_phen(cpoly%green_leaf_factor(ipft,isi)                  &
                                        ,cpoly%leaf_aging_factor(ipft,isi),cpatch%dbh(ico)  &
                                        ,ipft,drop_cold,leaf_out_cold, bl_max)
+         case default
+            !----- Drop_cold is computed in phenology_thresholds for Botta scheme. --------!
+            if (drop_cold) bl_max = 0.0
          end select
 
          !---------------------------------------------------------------------------------!
@@ -316,7 +319,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             !                                                                              !
             ! 1. The soil has been dry recently, and the plants have leaves, so we flag    !
             !    them with phenology_status=0 (leaves not growing) and the plants will     !
-            !    start losing their leaves;                                                !a
+            !    start losing their leaves;                                                !
             ! 2. The plant has no leaves, but the soil has started to come back to more    !
             !    moist conditions. Given this situation, leaves can start growing again.   !
             !------------------------------------------------------------------------------!

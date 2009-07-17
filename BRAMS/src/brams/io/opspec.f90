@@ -636,7 +636,7 @@ subroutine opspec3
 
   implicit none
 
-  integer :: ip,k,ifaterr,iwarerr,infoerr,ng,ngr,nc
+  integer :: ip,k,ifaterr,iwarerr,infoerr,ng,ngr,nc,nzz
   character(len=*), parameter :: h="**(opspec3)**"
   logical :: grell_on
 
@@ -1064,13 +1064,25 @@ subroutine opspec3
 
   case (1)
      !----- Value is okay, now check whether the initial co2con makes sense... ------------!
-     if (co2con < 0.) then
+     if (co2con(1) < 0.) then
         print *, 'FATAL - When ICO2=1, CO2CON cannot be negative and yours is '            &
-               ,co2con,'...'
+               ,co2con(1),'...'
         ifaterr = ifaterr + 1
-     elseif (co2con > 1.e6) then
+     elseif (co2con(1) > 1.e6) then
         print *, 'FATAL - When ICO2=1, CO2CON cannot be more than 1 million and yours is ' &
-               ,co2con,'...'
+               ,co2con(1),'...'
+        ifaterr = ifaterr + 1
+     end if
+  case (2)
+     !----- Value is okay, now check whether the initial co2con makes sense... ------------!
+     nzz = maxval(nnzp(1:ngrids))
+     if (any(co2con(1:nzz) < 0.)) then
+        print *, 'FATAL - When ICO2=2, CO2CON must be positive for all levels...'
+        print *, 'Your values: ',co2con(1:nzz)
+        ifaterr = ifaterr + 1
+     elseif (any(co2con(1:nzz) > 1.e6) then
+        print *, 'FATAL - When ICO2=2, CO2CON must be less than 1 million for all levels...'
+        print *, 'Your values: ',co2con(1:nzz)
         ifaterr = ifaterr + 1
      end if
   case (3)

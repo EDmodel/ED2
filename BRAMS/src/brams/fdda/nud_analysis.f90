@@ -398,16 +398,21 @@ end subroutine varweight
 
 !==========================================================================================!
 !==========================================================================================!
-!    This subrotuine will temporarily fill VT2DA with interpolated topography from coarser !
-! grid.                                                                                    !
+!    This subrotuine will interpolate the atmospheric variables between the previous and   !
+! the future fields (since meteorological drivers usually have a coarser time resolution   !
+! than BRAMS runs).                                                                        !
 !------------------------------------------------------------------------------------------!
 subroutine vfintrpf(ifm,ifflag)
-
-   use mem_grid
-   use mem_scratch
-   use mem_varinit
-   use mem_basic
-
+   use mem_grid   , only : grid_g    & ! intent(in)
+                         , nnxp      & ! intent(in)
+                         , nnyp      & ! intent(in)
+                         , nnzp      & ! intent(in)
+                         , maxnxp    & ! intent(in)
+                         , maxnyp    ! ! intent(in)
+   use mem_scratch, only : scratch   ! ! intent(inout)
+   use mem_varinit, only : varinit_g ! ! intent(inout)
+   use mem_basic  , only : co2_on    & ! intent(in)
+                         , basic_g   ! ! intent(inout)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                     , intent(in)    :: ifm
@@ -416,23 +421,22 @@ subroutine vfintrpf(ifm,ifflag)
    integer                                     :: icm
    !---------------------------------------------------------------------------------------!
 
+   !----- Find the parent grid. -----------------------------------------------------------!
    icm = nxtnest(ifm)
    if (icm == 0) return
 
-
+   !----- Copy topography to vt2da. -------------------------------------------------------!
    call fillscr(1,maxnxp,maxnyp,1,nnxp(icm),nnyp(icm),1,1,scratch%scr1,grid_g(icm)%topt)
    call eintp(scratch%scr1,scratch%scr2,1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),ifm,2,'t',0,0)
    call fillvar(1,maxnxp,maxnyp,1,nnxp(ifm),nnyp(ifm),1,1,scratch%scr2,scratch%vt2da)
 
-   if (ifflag == 1) then
+   select case (ifflag)
+   case (1)
       !----- Interpolate varwts. ----------------------------------------------------------!
-
       call fmint4(varinit_g(icm)%varwts,varinit_g(ifm)%varwts,basic_g(icm)%dn0             &
                  ,basic_g(ifm)%dn0,scratch%vt2da,ifm,icm,'t',0)
-   end if
 
-
-   if (ifflag == 2) then
+   case (2)
       !----- Interpolate future level atmospheric variables. ------------------------------!
       call fmint4(varinit_g(icm)%varuf,varinit_g(ifm)%varuf,basic_g(icm)%dn0u              &
                  ,basic_g(ifm)%dn0u,scratch%vt2da,ifm,icm,'u',1)
@@ -444,7 +448,11 @@ subroutine vfintrpf(ifm,ifflag)
                  ,basic_g(ifm)%dn0,scratch%vt2da,ifm,icm,'t',1)
       call fmint4(varinit_g(icm)%varrf,varinit_g(ifm)%varrf,basic_g(icm)%dn0               &
                  ,basic_g(ifm)%dn0,scratch%vt2da,ifm,icm,'t',1)
-   end if
+      if (co2_on) then
+         call fmint4(varinit_g(icm)%varof,varinit_g(ifm)%varof,basic_g(icm)%dn0            &
+                    ,basic_g(ifm)%dn0,scratch%vt2da,ifm,icm,'t',1)
+      end if
+   end select
 
    return
 end subroutine vfintrpf

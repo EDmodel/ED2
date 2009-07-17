@@ -102,7 +102,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   if (leaf_turnover_rate(cpatch%pft(ico)) > 0.0) then
      cpatch%llspan(ico) = 12.0/leaf_turnover_rate(cpatch%pft(ico)) !in month
   else
-     cpatch%llspan(ico) = 1.e20
+     cpatch%llspan(ico) = 9999.
   end if
   cpatch%vm_bar(ico) = Vm0(cpatch%pft(ico))
   cpatch%sla(ico) = sla(cpatch%pft(ico))

@@ -6,7 +6,7 @@
 !  Regional Atmospheric Modeling System - RAMS                                             !
 !==========================================================================================!
 module mem_basic
-
+   use grid_dims, only : nzpmax
    type basic_vars
       !----- Variables to be dimensioned by (nzp,nxp,nyp). --------------------------------!
       real, dimension(:,:,:), pointer :: up
@@ -42,9 +42,9 @@ module mem_basic
    !  Namelist variables.                                                                  !
    !---------------------------------------------------------------------------------------!
    !----- This variable is going to control how to solve CO2. -----------------------------!
-   integer :: ico2
-   !----- This variable will assign an initial value of CO2 if constant for entire domain. !
-   real    :: co2con
+   integer                    :: ico2
+   !----- Initial value of CO2, or initial CO2 profile, if constant for the entire domain. !
+   real, dimension(nzpmax)    :: co2con
    !---------------------------------------------------------------------------------------!
 
 
