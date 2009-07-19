@@ -125,6 +125,13 @@ subroutine ed_model()
             call zero_ed_daily_output_vars(edgrid_g(ifm))
          end do
       end if
+
+      !!Output Initial State
+      do ifm=1,ngrids
+         call update_ed_yearly_vars(edgrid_g(ifm))
+      end do
+      
+
    endif
    
    !    Allocate memory to the integration patch
@@ -135,10 +142,7 @@ subroutine ed_model()
       call reset_averaged_vars(edgrid_g(ifm))
    end do
    
-   !!Output Initial State
-   do ifm=1,ngrids
-      call update_ed_yearly_vars(edgrid_g(ifm))
-   end do
+   
    if (writing_year) call h5_output('YEAR')
 
    !         Start the timesteps

@@ -503,7 +503,9 @@ subroutine read_ed1_history_file
 
               cpatch => csite%patch(ipa)
               
+
               if (csite%cohort_count(ipa) /= 0) then
+
                  call allocate_patchtype(cpatch,csite%cohort_count(ipa))
                  csite%plant_ag_biomass(ipa) = 0.
                  ic2 = 0
@@ -1988,17 +1990,17 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    
    call hdf_getslab_i(csite%ntext_soil,'NTEXT_SOIL_PA ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%soil_energy,'SOIL_ENERGY_PA ',dsetrank,iparallel,.true.)
-   
+   call hdf_getslab_r(csite%soil_water,'SOIL_WATER_PA ',dsetrank,iparallel,.true.)
+
    !-----------------------------------------------------------------------------------!
    !  Soil water is double precision, although it may not be DP in the dataset
    !  The following lines make provisions for this by testing the dataset.
    
-   call h5dopen_f(file_id,'SOIL_WATER_PA ', dset_id, hdferr)
-   if (hdferr /= 0 ) then
-      call fatal_error('Dataset did not have soil water?' &
-           ,'fill_history_site','ed_history_io.f90')
-   endif
-
+!   call h5dopen_f(file_id,'SOIL_WATER_PA ', dset_id, hdferr)
+!   if (hdferr /= 0 ) then
+!      call fatal_error('Dataset did not have soil water?' &
+!           ,'fill_history_site','ed_history_io.f90')
+!   endif
    ! ---------------------------------------------------------------------------------!
    ! THESE LINES ARE USEFULL FOR DETERMINING DATA SIZE OF ANY GIVEN OBJECT IN A SET   !
    ! ---------------------------------------------------------------------------------!

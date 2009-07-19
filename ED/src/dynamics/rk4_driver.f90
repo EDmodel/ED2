@@ -6,11 +6,11 @@
 module rk4_driver
 
    contains
-   !=======================================================================================!
-   !=======================================================================================!
-   !      Main driver of short-time scale dynamics of the Runge-Kutta integrator for the   !
-   ! land surface model.                                                                   !
-   !---------------------------------------------------------------------------------------!
+   !==============================================================================!
+   !==============================================================================!
+   !      Main driver of short-time scale dynamics of the Runge-Kutta integrator  !
+   !      for the land surface model.                                             !
+   !------------------------------------------------------------------------------!
    subroutine rk4_timestep(cgrid,ifm)
       use rk4_coms               , only : integration_vars  & ! structure
                                         , integration_buff     & ! structure
@@ -656,7 +656,7 @@ real function compute_water_storage(csite, lsl, rhos,ipa)
 
    !----- 1. Adding the water stored in the soil. -----------------------------------------!
    do k = lsl, nzg
-      compute_water_storage = compute_water_storage                                  &
+      compute_water_storage = compute_water_storage     &
                                + real(csite%soil_water(k,ipa)) * dslz(k) * wdns
    end do
    !----- 2. Adding the water stored in the temporary surface water/snow. -----------------!

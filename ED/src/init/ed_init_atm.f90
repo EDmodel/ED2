@@ -48,6 +48,10 @@ subroutine ed_init_atm
 
      if(ied_init_mode == 4 .or. trim(runtype) == 'HISTORY' )return
 
+     print*,"=========================================="
+     print*,"ENTERING A NON HISTORY PORTION OF THE CODE"
+     print*,"=========================================="
+
      ! Loop over polygons, sites and patches
      
      do ipy = 1,cgrid%npolygons
