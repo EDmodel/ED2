@@ -441,7 +441,7 @@ subroutine varref(n1,n2,n3,thp,pc,pi0,th0,rtp,co2p,dn0,dn0u,dn0v,uc,vc,topt,topu
    do k = 1,nzp
      vctr4(k)        = (pi01dn(k,ngrid) / cp) ** cpor * p00
      dn01dn(k,ngrid) = cp * vctr4(k) / (rgas * th01dn(k,ngrid) * pi01dn(k,ngrid))
-   enddo
+   end do
 
    !------ Compute 3-D reference state from 1-D reference state. --------------------------!
    call refs3d(nzp,nxp,nyp,pi0,dn0,dn0u,dn0v,th0,topt,rtgt)

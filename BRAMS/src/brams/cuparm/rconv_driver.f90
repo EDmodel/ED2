@@ -139,8 +139,9 @@ subroutine rconv_driver(banneron)
    !---------------------------------------------------------------------------------------!
    do icld=1,nclouds
       !----- Accumulating the tendencies --------------------------------------------------!
-      call accum(mxp*myp*mzp,tend%tht,cuparm_g(ngrid)%thsrc(:,:,:,icld)    )
-      call accum(mxp*myp*mzp,tend%rtt,cuparm_g(ngrid)%rtsrc(:,:,:,icld)    )
+      call accum(mxp*myp*mzp,tend%tht,cuparm_g(ngrid)%thsrc(:,:,:,icld))
+      call accum(mxp*myp*mzp,tend%rtt,cuparm_g(ngrid)%rtsrc(:,:,:,icld))
+      if (co2_on) call accum(mxp*myp*mzp,tend%co2t,cuparm_g(ngrid)%co2src(:,:,:,icld))
       !----- Updating total precipitation -------------------------------------------------!
       call update(mxp*myp,cuparm_g(ngrid)%aconpr,cuparm_g(ngrid)%conprr(:,:,icld),dtlt)
    end do

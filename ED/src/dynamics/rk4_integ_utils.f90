@@ -1087,6 +1087,7 @@ subroutine redistribute_snow(initp,csite,ipa)
                             , cliq8                & ! intent(in)
                             , t3ple8               & ! intent(in)
                             , wdns8                & ! intent(in)
+                            , wdnsi8               & ! intent(in)
                             , tsupercool8          & ! intent(in)
                             , qliqt38              & ! intent(in)
                             , wdnsi8               ! ! intent(in)
@@ -1147,8 +1148,7 @@ subroutine redistribute_snow(initp,csite,ipa)
       elseif (totsnow <= rk4min_sfcwater_mass) then
          !---------------------------------------------------------------------------------!
          ! 1.a. Too little or negative mass.  Eliminate layers, ensuring that it will  not !
-         !      leak mass or energy, by "stealing" them from the top soil  !
-         !      layer.                                                                     !
+         !      leak mass or energy, by "stealing" them from the top soil layer.           !
          !---------------------------------------------------------------------------------!
          initp%sfcwater_energy(1) = sum(initp%sfcwater_energy(1:ksn))
          initp%sfcwater_mass(1)   = sum(initp%sfcwater_mass(1:ksn))
@@ -1193,7 +1193,7 @@ subroutine redistribute_snow(initp,csite,ipa)
          initp%soil_energy(nzg)   = initp%soil_energy(nzg)                                 &
                                   + initp%virtual_heat * dslzi8(nzg)
          initp%soil_water(nzg)    = initp%soil_water(nzg)                                  &
-                                  + initp%virtual_water * dslzi8(nzg)
+                                  + initp%virtual_water * dslzi8(nzg) * wdnsi8
          call qwtk8(initp%soil_energy(nzg),initp%soil_water(nzg)*wdns8                     &
                    ,soil8(csite%ntext_soil(nzg,ipa))%slcpd,initp%soil_tempk(nzg)           &
                    ,initp%soil_fracliq(nzg))

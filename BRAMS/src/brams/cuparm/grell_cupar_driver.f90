@@ -155,6 +155,7 @@ subroutine grell_cupar_driver(banneron,icld)
    !---------------------------------------------------------------------------------------!
    call azero(mzp*mxp*myp,cuparm_g(ngrid)%thsrc  (:,:,:,icld))
    call azero(mzp*mxp*myp,cuparm_g(ngrid)%rtsrc  (:,:,:,icld))
+   if (co2_on) call azero(mzp*mxp*myp,cuparm_g(ngrid)%co2src (:,:,:,icld))
    call azero(mzp*mxp*myp,cuparm_g(ngrid)%cuprliq(:,:,:,icld))
    call azero(mzp*mxp*myp,cuparm_g(ngrid)%cuprice(:,:,:,icld))
    call azero(    mxp*myp,cuparm_g(ngrid)%conprr (  :,:,icld))

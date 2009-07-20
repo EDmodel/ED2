@@ -92,8 +92,8 @@ contains
        allocate (varinit%varrf(n1,n2,n3))                      
        allocate (varinit%varwts(n1,n2,n3))
        if (co2_on) then
-       allocate (varinit%varop(n1,n2,n3))
-       allocate (varinit%varof(n1,n2,n3))
+          allocate (varinit%varop(n1,n2,n3))
+          allocate (varinit%varof(n1,n2,n3))
        end if
     endif
 
