@@ -255,8 +255,8 @@
                            !       and light phenology (not fully tested);
   
    NL%REPRO_SCHEME    = 1  ! This specifies the reproduction scheme:
-                         !  0 -- reproduction off (useful for short runs)
-                         !  1 -- original ED1 default
+                           !  0 -- reproduction off (useful for short runs)
+                           !  1 -- original ED1 default
 
    NL%LAPSE_SCHEME    = 0  ! This specifies the met lapse rate scheme:
                            !  0 -- lapse rates off
@@ -275,7 +275,12 @@
    NL%N_DECOMP_LIM    = 1  ! Determines whether (1) or not (0) decomposition
                          ! can be limited by nitrogen
 
-   NL%INCLUDE_FIRE    = 1  ! Determines whether (1) or not (0) simulation can have fires 
+   NL%INCLUDE_FIRE    = 1  ! Determines how to apply fire in the model:
+                           ! 0. No fires;
+                           ! 1. Fire will be triggered with enough biomass and 
+                           !    ground water depth less than a threshold;
+                           ! 2. Fire will be triggered with enough biomass and 
+                           !    column-averaged soil moisture less than a threshold.
 
    NL%IANTH_DISTURB   = 1  ! Flag specifying whether (1) or not (0) to include
                            ! anthropogenic disturbances such as agriculture, 

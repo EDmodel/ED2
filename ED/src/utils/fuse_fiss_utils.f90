@@ -417,6 +417,7 @@ module fuse_fiss_utils
                   ! leaves fully flushed, this is the same as adding the individual LAIs,  !
                   ! but if they are not, we need to consider that LAI may grow...          !
                   !------------------------------------------------------------------------!
+
                   lai_max = (cpatch%nplant(recc)*dbh2bl(cpatch%dbh(recc),cpatch%pft(recc)) &
                           + cpatch%nplant(donc)*dbh2bl(cpatch%dbh(donc),cpatch%pft(donc))) &
                           * cpatch%sla(recc)
@@ -440,7 +441,7 @@ module fuse_fiss_utils
                   !    first census.                                                       !
                   ! 5. Both cohorts must have the same phenology status.                   !
                   !------------------------------------------------------------------------!
-                  if (     cpatch%pft(donc)              == cpatch%pft(recc)               &     
+                  if (     cpatch%pft(donc)              == cpatch%pft(recc)               &
                      .and. lai_max                        < lai_fuse_tol*tolerance_mult    &
                      .and. cpatch%first_census(donc)     == cpatch%first_census(recc)      &
                      .and. cpatch%new_recruit_flag(donc) == cpatch%new_recruit_flag(recc)  &
@@ -448,8 +449,8 @@ module fuse_fiss_utils
                      ) then
 
                      !----- Proceed with fusion -------------------------------------------!
-                     call fuse_2_cohorts(cpatch,donc,recc,newn                          &
-                                           ,green_leaf_factor(cpatch%pft(donc)),lsl)
+                     call fuse_2_cohorts(cpatch,donc,recc,newn                             &
+                                        ,green_leaf_factor(cpatch%pft(donc)),lsl)
 
                      !----- Flag donating cohort as gone, so it won't be checked again. ---!
                      fuse_table(donc) = .false.
@@ -928,6 +929,7 @@ module fuse_fiss_utils
       cpatch%veg_energy(recc) = cpatch%veg_energy(recc) + cpatch%veg_energy(donc)
       cpatch%veg_water(recc)  = cpatch%veg_water(recc)  + cpatch%veg_water(donc)
       cpatch%hcapveg(recc)    = cpatch%hcapveg(recc)    + cpatch%hcapveg(donc)
+
       if ( cpatch%hcapveg(recc) > 0. ) then !----- almost always the case. ----------------!
          !----- Updating temperature ------------------------------------------------------!
          call qwtk(cpatch%veg_energy(recc),cpatch%veg_water(recc),cpatch%hcapveg(recc)     &
@@ -1161,6 +1163,9 @@ module fuse_fiss_utils
             old_lai_tot    = 0.
             old_area       = 0.
             do ipa = 1,csite%npatches
+
+               call patch_pft_size_profile(csite,ipa,ff_ndbh)
+
                old_area  = old_area + csite%area(ipa)
                cpatch => csite%patch(ipa)
                do ico = 1, cpatch%ncohorts
@@ -1183,22 +1188,9 @@ module fuse_fiss_utils
             ! 5. Check fusion criterion. If within criterion, fuse, otherwise, skip        !
             ! 6. Loop from the youngest to oldest patch                                    !
             !------------------------------------------------------------------------------!
-            mean_nplant = 0.0
-            do ipa = csite%npatches,1,-1
-               call patch_pft_size_profile(csite,ipa,ff_ndbh)
+
             
-               !---------------------------------------------------------------------------!
-               !    Get a mean density profile for all of the patches. This will be used   !
-               ! for normalization.                                                        !
-               !---------------------------------------------------------------------------!
-               do ipft=1,n_pft
-                  do idbh=1,ff_ndbh 
-                     mean_nplant(ipft,idbh) = mean_nplant(ipft,idbh)                       &
-                                            + csite%pft_density_profile(ipft,idbh,ipa)     &
-                                            / real(csite%npatches)
-                  end do
-               end do
-            end do
+            npatches_new = csite%npatches
 
             !----- Start with no multiplication factor. -----------------------------------!
             tolerance_mult = 1.0

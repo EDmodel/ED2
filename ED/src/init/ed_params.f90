@@ -1085,36 +1085,63 @@ end subroutine init_pft_derived_params
 !==========================================================================================!
 subroutine init_disturb_params
 
-  use disturb_coms,only:patch_dynamics,min_new_patch_area, &
-       treefall_hite_threshold,treefall_age_threshold, &
-       forestry_on,agriculture_on,plantation_year,plantation_rotation, &
-       mature_harvest_age,fire_dryness_threshold,fire_parameter
+   use disturb_coms , only : patch_dynamics           & ! intent(out)
+                           , min_new_patch_area       & ! intent(out)
+                           , treefall_hite_threshold  & ! intent(out)
+                           , treefall_age_threshold   & ! intent(out)
+                           , forestry_on              & ! intent(out)
+                           , agriculture_on           & ! intent(out)
+                           , plantation_year          & ! intent(out)
+                           , plantation_rotation      & ! intent(out)
+                           , mature_harvest_age       & ! intent(out)
+                           , fire_dryness_threshold   & ! intent(out)
+                           , fire_smoist_threshold    & ! intent(out)
+                           , fire_parameter           ! ! intent(out)
 
-  implicit none
-  
-  patch_dynamics = 1
-  
-  min_new_patch_area = 0.005
-  
-  treefall_hite_threshold = 10.0  !  Only trees above this height create a gap when they fall.
-  
-  treefall_age_threshold = 0.0  !  Minimum patch age for treefall disturbance.  
-  
-  forestry_on = 0  ! Set to 1 if to do forest harvesting.
-  
-  agriculture_on = 0  ! Set to 1 if to do agriculture.
-  
-  plantation_year = 1960 ! Earliest year at which plantations occur
-  
-  plantation_rotation = 25.0 ! Number of years that a plantation requires to reach maturity
-  
-  mature_harvest_age = 50.0 ! Years that a non-plantation patch requires to reach maturity
-  
-  fire_dryness_threshold = 0.2  !  (meters) Fire can occur if total soil water falls below this threshold.
-  
-  fire_parameter = 1.0  ! Dimensionless parameter controlling speed of fire spread.
-  
-  return
+   implicit none
+   
+   patch_dynamics = 1
+   
+   min_new_patch_area = 0.005
+
+   !----- Only trees above this height create a gap when they fall. -----------------------!
+   treefall_hite_threshold = 10.0 
+
+   !----- Minimum patch age for treefall disturbance. -------------------------------------!
+   treefall_age_threshold = 0.0
+
+   !----- Set to 1 if to do forest harvesting. --------------------------------------------!
+   forestry_on = 0
+
+   !----- Set to 1 if to do agriculture. --------------------------------------------------!
+   agriculture_on = 0
+
+   !----- Earliest year at which plantations occur. ---------------------------------------!
+   plantation_year = 1960 
+
+   !----- Number of years that a plantation requires to reach maturity. -------------------!
+   plantation_rotation = 25.0
+
+   !----- Years that a non-plantation patch requires to reach maturity. -------------------!
+   mature_harvest_age = 50.0 
+   
+   !---------------------------------------------------------------------------------------!
+   !     If include_fire is 1, then fire may occur if total (ground + underground) water   !
+   ! converted to meters falls below this threshold.                                       !
+   !---------------------------------------------------------------------------------------!
+   fire_dryness_threshold = 0.2
+
+   !---------------------------------------------------------------------------------------!
+   !     If include_fire is 2, then fire may occur if total (ground + underground) water   !
+   ! falls below a threshold defined by the total water of a soil column with average soil !
+   ! moisture equal to fire_smoist_threshold [m3_H2O/m3_gnd] would have.                   !
+   !---------------------------------------------------------------------------------------!
+   fire_smoist_threshold = 0.102
+
+   !----- Dimensionless parameter controlling speed of fire spread. -----------------------!
+   fire_parameter = 1.0  
+   
+   return
 
 end subroutine init_disturb_params
 !==========================================================================================!

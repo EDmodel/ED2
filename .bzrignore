@@ -370,3 +370,4 @@ RAPP/build/bin/mod_netcdf.mod
 RAPP/build/bin/mod_time.mod
 RAPP/build/bin/rconstants.mod
 RAPP/build/bin/therm_lib.mod
+ED/src/memory/var_tables_array.f90

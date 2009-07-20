@@ -152,7 +152,6 @@ subroutine ed_driver
   ! STEP 9. Initialize ed fields that depend on the atmosphere
   !-----------------------------------------------------------------------!
   
-  
   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Ed_Init_Atm...'
   call ed_init_atm
   

@@ -71,7 +71,8 @@ module canopy_struct_dynamics
       use rk4_coms       , only : ibranch_thermo       & ! intent(in)
                                 , rk4patchtype         & ! structure
                                 , rk4met               & ! intent(in)
-                                , tiny_offset          ! ! intent(in)
+                                , tiny_offset          & ! intent(in)
+                                , ibranch_thermo
       use pft_coms       , only : crown_depth_fraction & ! intent(in)
                                 , leaf_width           ! ! intent(in)
       use canopy_air_coms, only : exar8                & ! intent(in)
@@ -134,9 +135,9 @@ module canopy_struct_dynamics
       real(kind=8), dimension(200), save :: zeta     ! Attenuation factor for sub-canopy K 
                                                      !    and u.  A vector size of 200, 
                                                      !    allows for trees 100 meters tall
-      real(kind=8),save                  :: d0       ! Zero-plane displacement height (m)
-      real(kind=8),save                  :: ustarouh ! The ratio of ustar over u(h)
-      real(kind=8),save                  :: eta      ! The in-canopy wind attenuation scal-
+      real(kind=8)                , save :: d0       ! Zero-plane displacement height (m)
+      real(kind=8)                , save :: ustarouh ! The ratio of ustar over u(h)
+      real(kind=8)                , save :: eta      ! The in-canopy wind attenuation scal-
                                                      !    ing parameter
       !------ External procedures ---------------------------------------------------------!
       real        , external             :: sngloff  ! Safe double -> simple precision.
@@ -424,6 +425,12 @@ module canopy_struct_dynamics
             !------------------------------------------------------------------------------!
             zetac = 0.d0  ! Cumulative zeta
 
+            if( ibranch_thermo /= 0 .and. (sum(initp%wpa)+sum(initp%lai)) == 0. ) then
+               call fatal_error('Your plants must have some TAI, M97','canopy_turbulence'  &
+                               ,'canopy_struct_dynamics.f90')
+            end if
+
+            
             !------------------------------------------------------------------------------!
             !     Loop through the canopy at equal increments.  At each increment,         !
             ! determine the frontal area drag surface, and the drag force zeta.            !
@@ -463,8 +470,11 @@ module canopy_struct_dynamics
                         layertai = layertai + (initp%lai(ico) + initp%wpa(ico))            &
                                            * (dz /crowndepth)
                      end select
+
                   end if
                end do
+               
+               
 
                a_front  = layertai/dz ! Frontal area of drag surface
                zetac    = zetac + 5.d-1 * a_front * (Cd0 / Pm) * dz
@@ -485,7 +495,7 @@ module canopy_struct_dynamics
             !------------------------------------------------------------------------------!
             d0 = h
             do k=1,zcan
-               d0 = d0 - dz*exp(-2.d0*eta*(1-zeta(k)/zeta(zcan)))
+               d0 = d0 - dz*exp(-2.d0*eta*(1.d0-zeta(k)/zeta(zcan)))
             end do
 
             !----- Calculate the roughness lengths zo,zt,zr. ------------------------------!

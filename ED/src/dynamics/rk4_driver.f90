@@ -6,11 +6,11 @@
 module rk4_driver
 
    contains
-   !=======================================================================================!
-   !=======================================================================================!
-   !      Main driver of short-time scale dynamics of the Runge-Kutta integrator for the   !
-   ! land surface model.                                                                   !
-   !---------------------------------------------------------------------------------------!
+   !==============================================================================!
+   !==============================================================================!
+   !      Main driver of short-time scale dynamics of the Runge-Kutta integrator  !
+   !      for the land surface model.                                             !
+   !------------------------------------------------------------------------------!
    subroutine rk4_timestep(cgrid,ifm)
       use rk4_coms               , only : integration_vars  & ! structure
                                         , integration_buff     & ! structure
@@ -28,6 +28,9 @@ module rk4_driver
       use consts_coms            , only : umol_2_kgC           ! ! intent(in)
       use canopy_struct_dynamics , only : canopy_turbulence ! ! subroutine
       implicit none
+
+      !----------- Use MPI timing calls, need declarations --------------------------------!
+      include 'mpif.h'
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)              , target      :: cgrid
       integer                   , intent (in) :: ifm
@@ -37,7 +40,7 @@ module rk4_driver
       type(patchtype)           , pointer     :: cpatch
       integer                                 :: ipy,isi,ipa
       integer, dimension(nzg)                 :: ed_ktrans
-      real                                    :: time_py_start,time_py_spent
+      real(kind=8)                            :: time_py_start,time_py_end
       real   , dimension(n_dbh)               :: gpp_dbh
       real                                    :: sum_lai_rbi
       real                                    :: gpp
@@ -50,7 +53,8 @@ module rk4_driver
       polygonloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
 
-         time_py_start = walltime(0.) 
+!!!         time_py_start = walltime(0.) 
+         time_py_start = MPI_Wtime() 
 
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
@@ -167,8 +171,11 @@ module rk4_driver
             end do patchloop
          end do siteloop
 
-         time_py_spent = walltime(time_py_start)
-         cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) + dble(time_py_spent)
+!!!         time_py_spent = walltime(time_py_start)
+!!!         cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) + dble(time_py_spent)
+         
+         time_py_end = MPI_Wtime() 
+         cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) + (time_py_end-time_py_start)
 
       end do polygonloop
 
@@ -329,6 +336,7 @@ module rk4_driver
       integer           , intent(in) :: isi
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)   , pointer    :: cpatch
+      integer                        :: mould
       integer                        :: ico
       integer                        :: k
       integer                        :: kclosest
@@ -478,15 +486,13 @@ module rk4_driver
       end do
       !------------------------------------------------------------------------------------!
 
-
-
-      
       !------------------------------------------------------------------------------------!
       !     Cohort variables.  Here we must check whether the cohort was really solved or  !
       ! it was skipped after being flagged as "unsafe".  Here the reason why it was flag-  !
       ! ged as such matters.                                                               !
       !------------------------------------------------------------------------------------!
       do ico = 1,cpatch%ncohorts
+
          if (initp%solvable(ico)) then
             !------------------------------------------------------------------------------!
             !    The cohort was solved, update internal energy and water, and re-calculate !
@@ -577,10 +583,6 @@ module rk4_driver
    !=======================================================================================!
 
 
-
-
-
-
    !=======================================================================================!
    !=======================================================================================!
    !    Currently not in use.                                                              !
@@ -616,6 +618,8 @@ module rk4_driver
    !=======================================================================================!
    !=======================================================================================! 
 end module rk4_driver
+
+
 !==========================================================================================!
 !==========================================================================================!
 
@@ -652,7 +656,7 @@ real function compute_water_storage(csite, lsl, rhos,ipa)
 
    !----- 1. Adding the water stored in the soil. -----------------------------------------!
    do k = lsl, nzg
-      compute_water_storage = compute_water_storage                                  &
+      compute_water_storage = compute_water_storage     &
                                + real(csite%soil_water(k,ipa)) * dslz(k) * wdns
    end do
    !----- 2. Adding the water stored in the temporary surface water/snow. -----------------!

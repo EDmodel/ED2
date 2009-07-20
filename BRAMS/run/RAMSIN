@@ -867,7 +867,12 @@
    N_DECOMP_LIM    = 0,  ! Determines whether (1) or not (0) decomposition
                          ! can be limited by nitrogen
 
-   INCLUDE_FIRE    = 1,  ! Determines whether (1) or not (0) simulation can have fires 
+   INCLUDE_FIRE    = 1,  ! Determines how to apply fire in the model:
+                         ! 0. No fires;
+                         ! 1. Fire will be triggered with enough biomass and 
+                         !    ground water depth less than a threshold;
+                         ! 2. Fire will be triggered with enough biomass and 
+                         !    column-averaged soil moisture less than a threshold.
 
    IANTH_DISTURB   = 0,  ! Flag specifying whether (1) or not (0) to include
                          ! anthropogenic disturbances such as agriculture, 

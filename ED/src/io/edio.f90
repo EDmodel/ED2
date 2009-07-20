@@ -122,6 +122,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
 
 
   if(history_time) then
+
      if (isoutput /= 0) then
         call h5_output('HIST')
      end if
@@ -161,6 +162,8 @@ subroutine spatial_averages
                                     , qtk               ! ! subroutine
    use soil_coms             , only : min_sfcwater_mass & ! intent(in)
                                     , soil              ! ! intent(in)
+   use c34constants          , only : n_stoma_atts
+   use ed_max_dims              , only : n_pft
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    type(edtype)         , pointer :: cgrid
@@ -170,7 +173,7 @@ subroutine spatial_averages
    real, dimension(3)             :: area_sum
    real, dimension(nzg)           :: site_avg_soil_hcap
    real, dimension(nzg)           :: poly_avg_soil_hcap
-   integer                        :: igr,ipy,isi,ipa
+   integer                        :: igr,ipy,isi,ipa,ico,ipft,iatt
    integer                        :: k,ksn
    integer                        :: lai_index
    real                           :: lai_patch
@@ -494,6 +497,47 @@ subroutine spatial_averages
                   end if
                end do
 
+
+               cohortloop: do ico=1,cpatch%ncohorts
+                  cpatch%old_stoma_vector(1,ico) = real(cpatch%old_stoma_data(ico)%recalc)
+                  cpatch%old_stoma_vector(2,ico) = cpatch%old_stoma_data(ico)%T_L
+                  cpatch%old_stoma_vector(3,ico) = cpatch%old_stoma_data(ico)%e_A
+                  cpatch%old_stoma_vector(4,ico) = cpatch%old_stoma_data(ico)%PAR
+                  cpatch%old_stoma_vector(5,ico) = cpatch%old_stoma_data(ico)%rb_factor
+                  cpatch%old_stoma_vector(6,ico) = cpatch%old_stoma_data(ico)%prss
+                  cpatch%old_stoma_vector(7,ico) = cpatch%old_stoma_data(ico)%phenology_factor
+                  cpatch%old_stoma_vector(8,ico) = cpatch%old_stoma_data(ico)%gsw_open
+                  cpatch%old_stoma_vector(9,ico) = real(cpatch%old_stoma_data(ico)%ilimit)
+                  
+                  cpatch%old_stoma_vector(10,ico) = cpatch%old_stoma_data(ico)%T_L_residual
+                  cpatch%old_stoma_vector(11,ico) = cpatch%old_stoma_data(ico)%e_a_residual
+                  cpatch%old_stoma_vector(12,ico) = cpatch%old_stoma_data(ico)%par_residual
+                  cpatch%old_stoma_vector(13,ico) = cpatch%old_stoma_data(ico)%rb_residual
+                  cpatch%old_stoma_vector(14,ico) = cpatch%old_stoma_data(ico)%prss_residual
+                  cpatch%old_stoma_vector(15,ico) = cpatch%old_stoma_data(ico)%leaf_residual
+                  cpatch%old_stoma_vector(16,ico) = cpatch%old_stoma_data(ico)%gsw_residual
+               end do cohortloop
+                  
+               pftloop: do ipft = 1,n_pft
+                  csite%old_stoma_vector_max(1,ipft,ipa) = real(csite%old_stoma_data_max(ipft,ipa)%recalc)
+                  csite%old_stoma_vector_max(2,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%T_L
+                  csite%old_stoma_vector_max(3,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%e_A
+                  csite%old_stoma_vector_max(4,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%PAR
+                  csite%old_stoma_vector_max(5,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%rb_factor
+                  csite%old_stoma_vector_max(6,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%prss
+                  csite%old_stoma_vector_max(7,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%phenology_factor
+                  csite%old_stoma_vector_max(8,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%gsw_open
+                  csite%old_stoma_vector_max(9,ipft,ipa) = real(csite%old_stoma_data_max(ipft,ipa)%ilimit)
+                  
+                  csite%old_stoma_vector_max(10,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%T_L_residual
+                  csite%old_stoma_vector_max(11,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%e_a_residual
+                  csite%old_stoma_vector_max(12,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%par_residual
+                  csite%old_stoma_vector_max(13,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%rb_residual
+                  csite%old_stoma_vector_max(14,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%prss_residual
+                  csite%old_stoma_vector_max(15,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%leaf_residual
+                  csite%old_stoma_vector_max(16,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%gsw_residual
+               end do pftloop
+            
             end do longpatchloop
 
             laiarea_site  = sum(csite%laiarea)

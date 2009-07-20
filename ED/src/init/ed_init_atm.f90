@@ -45,7 +45,12 @@ subroutine ed_init_atm
 
      ! If this is a standard ED2 restart, we will read these fields in from 
      ! a history file and therefore not worry about setting them here.
+
      if(ied_init_mode == 4 .or. trim(runtype) == 'HISTORY' )return
+
+     print*,"=========================================="
+     print*,"ENTERING A NON HISTORY PORTION OF THE CODE"
+     print*,"=========================================="
 
      ! Loop over polygons, sites and patches
      
@@ -58,7 +63,7 @@ subroutine ed_init_atm
            csite => cpoly%site(isi)
 
            do ipa = 1,csite%npatches
-              
+
               cpatch => csite%patch(ipa)
 
               csite%can_temp(ipa) =   cpoly%met(isi)%atm_tmp

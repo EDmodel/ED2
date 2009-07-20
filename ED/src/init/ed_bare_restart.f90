@@ -43,7 +43,7 @@ subroutine bare_ground_init(cgrid)
          csite%plant_ag_biomass   (1) = 0.
 
          !----- We now populate the cohorts with near bare ground condition. --------------!
-         call init_nbg_cohorts(csite,cpoly%lsl(isi),cpoly%met(isi)%atm_tmp,1,csite%npatches)
+         call init_nbg_cohorts(csite,cpoly%lsl(isi),1,csite%npatches)
 
          !----- Initialise the patches now that cohorts are there. ------------------------!
          call init_ed_patch_vars(csite,1,csite%npatches,cpoly%lsl(isi))
@@ -69,7 +69,7 @@ end subroutine bare_ground_init
 !==========================================================================================!
 !      This subroutine assigns a near-bare ground (NBG) state for some patches.            !
 !------------------------------------------------------------------------------------------!
-subroutine init_nbg_cohorts(csite,lsl,atm_tmp,ipa_a,ipa_z)
+subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
    use ed_state_vars      , only : edtype             & ! structure
                                  , polygontype        & ! structure
                                  , sitetype           & ! structure
@@ -100,7 +100,6 @@ subroutine init_nbg_cohorts(csite,lsl,atm_tmp,ipa_a,ipa_z)
    integer               , intent(in) :: lsl     ! Lowest soil level
    integer               , intent(in) :: ipa_a   ! 1st patch to be assigned with NBG state
    integer               , intent(in) :: ipa_z   ! Last patch to be assigned with NBG state
-   real                  , intent(in) :: atm_tmp ! Atmospheric temperature
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)       , pointer    :: cpatch  ! Current patch
    integer                            :: ipa     ! Patch number
@@ -108,7 +107,6 @@ subroutine init_nbg_cohorts(csite,lsl,atm_tmp,ipa_a,ipa_z)
    integer                            :: mypfts  ! Number of PFTs to be included.
    integer                            :: ipft    ! PFT counter
    !---------------------------------------------------------------------------------------!
-
 
    !----- Patch loop. ---------------------------------------------------------------------!
    patchloop: do ipa=ipa_a,ipa_z
@@ -188,13 +186,11 @@ subroutine init_nbg_cohorts(csite,lsl,atm_tmp,ipa_a,ipa_z)
          !---------------------------------------------------------------------------------!
          cpatch%veg_water(ico)  = 0.0
          cpatch%veg_fliq(ico)   = 0.0
-         cpatch%veg_temp(ico)   = atm_tmp
          cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)         &
                                               ,cpatch%balive(ico),cpatch%nplant(ico)       &
                                               ,cpatch%hite(ico),cpatch%pft(ico)            &
                                               ,cpatch%phenology_status(ico))
-         cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
-
+ 
          !----- Update total patch-level above-ground biomass -----------------------------!
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa) + cpatch%nplant(ico)    &
                                      * ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)     &
