@@ -380,7 +380,7 @@ module ed_state_vars
      ! Water vapor specific humidity (kg/kg) of canopy air
      real , pointer,dimension(:) :: can_shv
 
-     ! CO2 concentration [umol/mol] of canopy air
+     ! CO2 mixing ratio [umol/mol] of canopy air
      real , pointer,dimension(:) :: can_co2
 
      ! Canopy depth (m)
@@ -661,6 +661,8 @@ module ed_state_vars
      real, pointer,dimension(:)  :: tpwp !eddy heat flux t-prime w-prime
 
      real, pointer,dimension(:)  :: qpwp !eddy moist. flux q-prime w-prime
+
+     real, pointer,dimension(:)  :: cpwp !eddy CO2 flux flux c-prime w-prime
 
      real, pointer,dimension(:)  :: wpwp !eddy v. mom. flux w-prime w-prime
 
@@ -1000,6 +1002,7 @@ module ed_state_vars
      
      real,pointer,dimension(:) :: avg_can_temp
      real,pointer,dimension(:) :: avg_can_shv
+     real,pointer,dimension(:) :: avg_can_co2
 
      real,pointer,dimension(:,:) :: avg_soil_energy
      real,pointer,dimension(:,:) :: avg_soil_water
@@ -1020,7 +1023,6 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_fsc
      real,pointer,dimension(:) :: avg_ssc
      real,pointer,dimension(:) :: avg_stsc
-     real,pointer,dimension(:) :: avg_co2can
      real,pointer,dimension(:) :: avg_balive
      real,pointer,dimension(:) :: avg_bdead
 
@@ -1244,6 +1246,7 @@ module ed_state_vars
      
      real,pointer,dimension(:) :: avg_can_temp
      real,pointer,dimension(:) :: avg_can_shv
+     real,pointer,dimension(:) :: avg_can_co2
 
      real,pointer,dimension(:,:) :: avg_soil_energy
      real,pointer,dimension(:,:) :: avg_soil_water
@@ -1256,7 +1259,6 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_snowmass      !sfcwater_mass
      real,pointer,dimension(:) :: avg_snowtempk     !sfcwater_tempk
      real,pointer,dimension(:) :: avg_snowfracliq   !sfcwater_fracliq
-     real,pointer,dimension(:) :: avg_co2can
      real,pointer,dimension(:) :: avg_bdead
      real,pointer,dimension(:) :: avg_balive
      real,pointer,dimension(:) :: avg_fsc
@@ -1339,6 +1341,7 @@ module ed_state_vars
      
      real, pointer, dimension(:)   :: dmean_can_temp   ! (npolygons)
      real, pointer, dimension(:)   :: dmean_can_shv    ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_can_co2    ! (npolygons)
      real, pointer, dimension(:)   :: dmean_veg_energy ! (npolygons)
      real, pointer, dimension(:)   :: dmean_veg_water  ! (npolygons)
      real, pointer, dimension(:)   :: dmean_veg_hcap   ! (npolygons)
@@ -1397,6 +1400,7 @@ module ed_state_vars
 
      real, pointer, dimension(:)   :: mmean_can_temp   ! (npolygons)
      real, pointer, dimension(:)   :: mmean_can_shv    ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_can_co2    ! (npolygons)
      real, pointer, dimension(:)   :: mmean_veg_energy ! (npolygons)
      real, pointer, dimension(:)   :: mmean_veg_water  ! (npolygons)
      real, pointer, dimension(:)   :: mmean_veg_temp   ! (npolygons)
@@ -1673,6 +1677,7 @@ contains
        allocate(cgrid%avg_veg_water (npolygons))
        allocate(cgrid%avg_can_temp  (npolygons))
        allocate(cgrid%avg_can_shv   (npolygons))
+       allocate(cgrid%avg_can_co2   (npolygons))
        allocate(cgrid%avg_soil_energy(nzg,npolygons))
        allocate(cgrid%avg_soil_water(nzg,npolygons))
        allocate(cgrid%avg_soil_temp (nzg,npolygons))
@@ -1692,7 +1697,6 @@ contains
        allocate(cgrid%avg_snowmass    (npolygons))
        allocate(cgrid%avg_snowtempk   (npolygons))
        allocate(cgrid%avg_snowfracliq (npolygons))
-       allocate(cgrid%avg_co2can      (npolygons))
        allocate(cgrid%avg_bdead       (npolygons))
        allocate(cgrid%avg_balive      (npolygons))
        allocate(cgrid%avg_fsc         (npolygons))
@@ -1765,6 +1769,7 @@ contains
           allocate(cgrid%dmean_gpp_dbh      (n_dbh       ,npolygons))
           allocate(cgrid%dmean_can_temp     (             npolygons))
           allocate(cgrid%dmean_can_shv      (             npolygons))
+          allocate(cgrid%dmean_can_co2      (             npolygons))
           allocate(cgrid%dmean_veg_energy   (             npolygons))
           allocate(cgrid%dmean_veg_water    (             npolygons))
           allocate(cgrid%dmean_veg_hcap    (             npolygons))
@@ -1808,6 +1813,7 @@ contains
           allocate(cgrid%mmean_wai_lu       (n_dist_types,npolygons))
           allocate(cgrid%mmean_can_temp     (             npolygons))
           allocate(cgrid%mmean_can_shv      (             npolygons))
+          allocate(cgrid%mmean_can_co2      (             npolygons))
           allocate(cgrid%mmean_veg_energy   (             npolygons))
           allocate(cgrid%mmean_veg_water    (             npolygons))
           allocate(cgrid%mmean_veg_temp     (             npolygons))
@@ -1991,6 +1997,7 @@ contains
     allocate(cpoly%avg_veg_water (nsites))
     allocate(cpoly%avg_can_temp  (nsites))
     allocate(cpoly%avg_can_shv   (nsites))
+    allocate(cpoly%avg_can_co2   (nsites))
     allocate(cpoly%avg_soil_energy(nzg,nsites))
     allocate(cpoly%avg_soil_water(nzg,nsites))
     allocate(cpoly%avg_soil_temp (nzg,nsites))
@@ -2010,7 +2017,6 @@ contains
     allocate(cpoly%avg_ssc                 (nsites))
     allocate(cpoly%avg_balive              (nsites))
     allocate(cpoly%avg_bdead               (nsites))
-    allocate(cpoly%avg_co2can              (nsites))
 
     ! Initialize the variables with a non-sense number.
     !call huge_polygontype(cpoly)
@@ -2159,6 +2165,7 @@ contains
     
     allocate(csite%upwp(npatches))
     allocate(csite%qpwp(npatches))
+    allocate(csite%cpwp(npatches))
     allocate(csite%tpwp(npatches))
     allocate(csite%wpwp(npatches))
 
@@ -2416,6 +2423,7 @@ contains
        nullify(cgrid%avg_veg_water           )
        nullify(cgrid%avg_can_temp            )
        nullify(cgrid%avg_can_shv             )
+       nullify(cgrid%avg_can_co2             )
        nullify(cgrid%avg_soil_energy         )
        nullify(cgrid%avg_soil_water          )
        nullify(cgrid%avg_soil_temp           )
@@ -2436,7 +2444,6 @@ contains
        nullify(cgrid%avg_snowmass      )
        nullify(cgrid%avg_snowtempk     )
        nullify(cgrid%avg_snowfracliq   )
-       nullify(cgrid%avg_co2can        )
        nullify(cgrid%avg_bdead         )
        nullify(cgrid%avg_balive        )
        nullify(cgrid%avg_fsc           )
@@ -2496,6 +2503,7 @@ contains
        nullify(cgrid%dmean_gpp_dbh           )
        nullify(cgrid%dmean_can_temp          )
        nullify(cgrid%dmean_can_shv           )
+       nullify(cgrid%dmean_can_co2           )
        nullify(cgrid%dmean_veg_energy        )
        nullify(cgrid%dmean_veg_water         )
        nullify(cgrid%dmean_veg_hcap          )
@@ -2539,6 +2547,7 @@ contains
        nullify(cgrid%mmean_wai_lu            )
        nullify(cgrid%mmean_can_temp          )
        nullify(cgrid%mmean_can_shv           )
+       nullify(cgrid%mmean_can_co2           )
        nullify(cgrid%mmean_veg_energy        )
        nullify(cgrid%mmean_veg_water         )
        nullify(cgrid%mmean_veg_hcap          )
@@ -2711,6 +2720,7 @@ contains
     nullify(cpoly%avg_veg_water )
     nullify(cpoly%avg_can_temp  )
     nullify(cpoly%avg_can_shv   )
+    nullify(cpoly%avg_can_co2   )
     nullify(cpoly%avg_soil_energy)
     nullify(cpoly%avg_soil_water)
     nullify(cpoly%avg_soil_temp )
@@ -2729,7 +2739,6 @@ contains
     nullify(cpoly%avg_ssc          )
     nullify(cpoly%avg_balive       )
     nullify(cpoly%avg_bdead        )
-    nullify(cpoly%avg_co2can       )
 
     return
   end subroutine nullify_polygontype
@@ -2864,6 +2873,7 @@ contains
 
     nullify(csite%upwp)
     nullify(csite%qpwp)
+    nullify(csite%cpwp)
     nullify(csite%tpwp)
     nullify(csite%wpwp)
 
@@ -3120,6 +3130,7 @@ contains
        if(associated(cgrid%avg_veg_water           )) deallocate(cgrid%avg_veg_water           )
        if(associated(cgrid%avg_can_temp            )) deallocate(cgrid%avg_can_temp            )
        if(associated(cgrid%avg_can_shv             )) deallocate(cgrid%avg_can_shv             )
+       if(associated(cgrid%avg_can_co2             )) deallocate(cgrid%avg_can_co2             )
        if(associated(cgrid%avg_soil_energy         )) deallocate(cgrid%avg_soil_energy         )
        if(associated(cgrid%avg_soil_water          )) deallocate(cgrid%avg_soil_water          )
        if(associated(cgrid%avg_soil_temp           )) deallocate(cgrid%avg_soil_temp           )
@@ -3141,7 +3152,6 @@ contains
        if(associated(cgrid%avg_snowmass            )) deallocate(cgrid%avg_snowmass        )
        if(associated(cgrid%avg_snowtempk           )) deallocate(cgrid%avg_snowtempk       )
        if(associated(cgrid%avg_snowfracliq         )) deallocate(cgrid%avg_snowfracliq     )
-       if(associated(cgrid%avg_co2can              )) deallocate(cgrid%avg_co2can          )
        if(associated(cgrid%avg_bdead               )) deallocate(cgrid%avg_bdead           )
        if(associated(cgrid%avg_balive              )) deallocate(cgrid%avg_balive          )
        if(associated(cgrid%avg_fsc                 )) deallocate(cgrid%avg_fsc             )
@@ -3208,6 +3218,7 @@ contains
        if(associated(cgrid%dmean_gpp_dbh           )) deallocate(cgrid%dmean_gpp_dbh           )
        if(associated(cgrid%dmean_can_temp          )) deallocate(cgrid%dmean_can_temp          )
        if(associated(cgrid%dmean_can_shv           )) deallocate(cgrid%dmean_can_shv           )
+       if(associated(cgrid%dmean_can_co2           )) deallocate(cgrid%dmean_can_co2           )
        if(associated(cgrid%dmean_veg_energy        )) deallocate(cgrid%dmean_veg_energy        )
        if(associated(cgrid%dmean_veg_water         )) deallocate(cgrid%dmean_veg_water         )
        if(associated(cgrid%dmean_veg_hcap          )) deallocate(cgrid%dmean_veg_hcap          )
@@ -3251,6 +3262,7 @@ contains
        if(associated(cgrid%mmean_wai_pft           )) deallocate(cgrid%mmean_wai_lu            )
        if(associated(cgrid%mmean_can_temp          )) deallocate(cgrid%mmean_can_temp          )
        if(associated(cgrid%mmean_can_shv           )) deallocate(cgrid%mmean_can_shv           )
+       if(associated(cgrid%mmean_can_co2           )) deallocate(cgrid%mmean_can_co2           )
        if(associated(cgrid%mmean_veg_energy        )) deallocate(cgrid%mmean_veg_energy        )
        if(associated(cgrid%mmean_veg_water         )) deallocate(cgrid%mmean_veg_water         )
        if(associated(cgrid%mmean_veg_hcap          )) deallocate(cgrid%mmean_veg_hcap          )
@@ -3416,6 +3428,7 @@ contains
     if(associated(cpoly%avg_veg_water               )) deallocate(cpoly%avg_veg_water               )
     if(associated(cpoly%avg_can_temp                )) deallocate(cpoly%avg_can_temp                )
     if(associated(cpoly%avg_can_shv                 )) deallocate(cpoly%avg_can_shv                 )
+    if(associated(cpoly%avg_can_co2                 )) deallocate(cpoly%avg_can_co2                 )
     if(associated(cpoly%avg_soil_energy             )) deallocate(cpoly%avg_soil_energy             )
     if(associated(cpoly%avg_soil_water              )) deallocate(cpoly%avg_soil_water              )
     if(associated(cpoly%avg_soil_temp               )) deallocate(cpoly%avg_soil_temp               )
@@ -3433,7 +3446,6 @@ contains
     if(associated(cpoly%avg_ssc                   )) deallocate(cpoly%avg_ssc                   )
     if(associated(cpoly%avg_bdead                 )) deallocate(cpoly%avg_bdead                 )
     if(associated(cpoly%avg_balive                )) deallocate(cpoly%avg_balive                )
-    if(associated(cpoly%avg_co2can                )) deallocate(cpoly%avg_co2can                )
 
     return
   end subroutine deallocate_polygontype
@@ -3571,6 +3583,7 @@ contains
 
     if(associated(csite%upwp                         )) deallocate(csite%upwp                         )
     if(associated(csite%qpwp                         )) deallocate(csite%qpwp                         )
+    if(associated(csite%cpwp                         )) deallocate(csite%cpwp                         )
     if(associated(csite%tpwp                         )) deallocate(csite%tpwp                         )
     if(associated(csite%wpwp                         )) deallocate(csite%wpwp                         )
 
@@ -3871,6 +3884,7 @@ contains
     if(associated(cgrid%avg_veg_water           )) cgrid%avg_veg_water            = large_real
     if(associated(cgrid%avg_can_temp            )) cgrid%avg_can_temp             = large_real
     if(associated(cgrid%avg_can_shv             )) cgrid%avg_can_shv              = large_real
+    if(associated(cgrid%avg_can_co2             )) cgrid%avg_can_co2              = large_real
     if(associated(cgrid%avg_soil_energy         )) cgrid%avg_soil_energy          = large_real
     if(associated(cgrid%avg_soil_water          )) cgrid%avg_soil_water           = large_real
     if(associated(cgrid%avg_soil_temp           )) cgrid%avg_soil_temp            = large_real
@@ -3884,7 +3898,6 @@ contains
     if(associated(cgrid%avg_snowmass            )) cgrid%avg_snowmass             = large_real
     if(associated(cgrid%avg_snowtempk           )) cgrid%avg_snowtempk            = large_real
     if(associated(cgrid%avg_snowfracliq         )) cgrid%avg_snowfracliq          = large_real
-    if(associated(cgrid%avg_co2can              )) cgrid%avg_co2can               = large_real
     if(associated(cgrid%avg_bdead               )) cgrid%avg_bdead                = large_real
     if(associated(cgrid%avg_balive              )) cgrid%avg_balive               = large_real
     if(associated(cgrid%avg_fsc                 )) cgrid%avg_fsc                  = large_real
@@ -3948,6 +3961,7 @@ contains
     if(associated(cgrid%dmean_gpp_dbh           )) cgrid%dmean_gpp_dbh            = large_real
     if(associated(cgrid%dmean_can_temp          )) cgrid%dmean_can_temp           = large_real
     if(associated(cgrid%dmean_can_shv           )) cgrid%dmean_can_shv            = large_real
+    if(associated(cgrid%dmean_can_co2           )) cgrid%dmean_can_co2            = large_real
     if(associated(cgrid%dmean_veg_energy        )) cgrid%dmean_veg_energy         = large_real
     if(associated(cgrid%dmean_veg_water         )) cgrid%dmean_veg_water          = large_real
     if(associated(cgrid%dmean_veg_temp          )) cgrid%dmean_veg_temp           = large_real
@@ -3991,6 +4005,7 @@ contains
     if(associated(cgrid%mmean_wai_lu            )) cgrid%mmean_wai_lu             = large_real
     if(associated(cgrid%dmean_can_temp          )) cgrid%dmean_can_temp           = large_real
     if(associated(cgrid%dmean_can_shv           )) cgrid%dmean_can_shv            = large_real
+    if(associated(cgrid%dmean_can_co2           )) cgrid%dmean_can_co2            = large_real
     if(associated(cgrid%dmean_veg_energy        )) cgrid%dmean_veg_energy         = large_real
     if(associated(cgrid%dmean_veg_water         )) cgrid%dmean_veg_water          = large_real
     if(associated(cgrid%dmean_veg_hcap          )) cgrid%dmean_veg_hcap           = large_real
@@ -4181,6 +4196,7 @@ contains
     if(associated(cpoly%avg_veg_water               )) cpoly%avg_veg_water               = large_real
     if(associated(cpoly%avg_can_temp                )) cpoly%avg_can_temp                = large_real
     if(associated(cpoly%avg_can_shv                 )) cpoly%avg_can_shv                 = large_real
+    if(associated(cpoly%avg_can_co2                 )) cpoly%avg_can_co2                 = large_real
     if(associated(cpoly%avg_soil_energy             )) cpoly%avg_soil_energy             = large_real
     if(associated(cpoly%avg_soil_water              )) cpoly%avg_soil_water              = large_real
     if(associated(cpoly%avg_soil_temp               )) cpoly%avg_soil_temp               = large_real
@@ -4198,7 +4214,6 @@ contains
     if(associated(cpoly%avg_ssc                     )) cpoly%avg_ssc                     = large_real
     if(associated(cpoly%avg_balive                  )) cpoly%avg_balive                  = large_real
     if(associated(cpoly%avg_bdead                   )) cpoly%avg_bdead                   = large_real
-    if(associated(cpoly%avg_co2can                  )) cpoly%avg_co2can                  = large_real
 
     return
   end subroutine huge_polygontype
@@ -4352,6 +4367,7 @@ contains
     if(associated(csite%upwp                         )) csite%upwp                         = large_real
     if(associated(csite%tpwp                         )) csite%tpwp                         = large_real
     if(associated(csite%qpwp                         )) csite%qpwp                         = large_real
+    if(associated(csite%cpwp                         )) csite%cpwp                         = large_real
     if(associated(csite%wpwp                         )) csite%wpwp                         = large_real
 
     if(associated(csite%avg_carbon_ac                )) csite%avg_carbon_ac                = large_real
@@ -4800,6 +4816,7 @@ contains
     siteout%upwp(1:inc)                 = pack(sitein%upwp,logmask)
     siteout%tpwp(1:inc)                 = pack(sitein%tpwp,logmask)
     siteout%qpwp(1:inc)                 = pack(sitein%qpwp,logmask)
+    siteout%cpwp(1:inc)                 = pack(sitein%cpwp,logmask)
     siteout%wpwp(1:inc)                 = pack(sitein%wpwp,logmask)
 
     siteout%avg_carbon_ac(1:inc)        = pack(sitein%avg_carbon_ac,logmask)
@@ -5169,7 +5186,7 @@ contains
        patchout%vm_bar(iout)           = patchin%vm_bar(iin)
        patchout%sla(iout)              = patchin%sla(iin)
 
-       patchout%old_stoma_vector(:,iout) = patchout%old_stoma_vector(:,iin)
+       patchout%old_stoma_vector(:,iout) = patchin%old_stoma_vector(:,iin)
        
        osdo => patchout%old_stoma_data(iout)
        osdi => patchin%old_stoma_data(iin)
@@ -5192,10 +5209,7 @@ contains
 
        iin = iin + 1
 
-    enddo
-
-
-    ! Check whether the phenology is allocated. If it is, I need to copy them
+    end do
 
     return
   end subroutine copy_patchtype
@@ -6198,12 +6212,6 @@ contains
             var_len,var_len_global,max_ptrs,'AVG_SNOWFRACLIQ :11:hist:anal') 
        call metadata_edio(nvar,igr,'Poly Avg. Snow liquid fraction','[proportion]','ipoly') 
     endif
-    if (associated(cgrid%avg_co2can)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%avg_co2can(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_CO2CAN :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Poly Avg. Canopy Air Space CO2','[umol/mol]','ipoly') 
-    endif
     if (associated(cgrid%avg_bdead)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_bdead(1),nvar,igr,init,cgrid%pyglob_id, &
@@ -6446,6 +6454,13 @@ contains
        call vtable_edio_r(cgrid%avg_can_shv(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_CAN_SHV :11:hist:anal') 
        call metadata_edio(nvar,igr,'Polygon Average Specific Humidity of Canopy Air','[kg/kg]','NA') 
+    endif
+    
+    if (associated(cgrid%avg_can_co2)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_can_co2(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_CAN_CO2 :11:hist:anal') 
+       call metadata_edio(nvar,igr,'Polygon Average CO2 mixing ratio of Canopy Air','[umol/mol]','NA') 
     endif
     
     if (associated(cgrid%avg_soil_energy)) then
@@ -6703,6 +6718,13 @@ contains
        call vtable_edio_r(cgrid%dmean_can_shv(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'DMEAN_CAN_SHV :11:hist:dail') 
        call metadata_edio(nvar,igr,'Daily mean canopy specific humidity','[kg/kg]','ipoly') 
+    end if
+    
+    if(associated(cgrid%dmean_can_co2)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_can_co2(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_CAN_CO2 :11:hist:dail') 
+       call metadata_edio(nvar,igr,'Daily mean canopy CO2 mixing ratio','[umol/mol]','ipoly') 
     end if
     
     if(associated(cgrid%dmean_veg_energy)) then
@@ -7004,6 +7026,13 @@ contains
        call vtable_edio_r(cgrid%mmean_can_shv(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'MMEAN_CAN_SHV :11:hist:mont') 
        call metadata_edio(nvar,igr,'Monthly mean canopy specific humidity','[kg/kg]','ipoly') 
+    end if
+    
+    if(associated(cgrid%mmean_can_co2)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_can_co2(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_CAN_CO2 :11:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean canopy CO2 mixing ratio','[umol/mol]','ipoly') 
     end if
     
     if(associated(cgrid%mmean_veg_water)) then
@@ -7635,7 +7664,7 @@ contains
     if (associated(cpoly%disturbance_rates)) then
        nvar=nvar+1
          call vtable_edio_r(cpoly%disturbance_rates(1,1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'DISTURBANCE_RATES :255:hist') 
+         var_len,var_len_global,max_ptrs,'DISTURBANCE_RATES_SI :255:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
@@ -7876,21 +7905,21 @@ contains
        nvar=nvar+1
          call vtable_edio_r(csite%can_temp(1),nvar,igr,init,csite%paglob_id, &
          var_len,var_len_global,max_ptrs,'CAN_TEMP :31:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+       call metadata_edio(nvar,igr,'Canopy air temperature','[K]','NA') 
     endif
 
     if (associated(csite%can_shv)) then
        nvar=nvar+1
          call vtable_edio_r(csite%can_shv(1),nvar,igr,init,csite%paglob_id, &
          var_len,var_len_global,max_ptrs,'CAN_SHV :31:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+       call metadata_edio(nvar,igr,'Canopy air specific humidity','[kg_H2O/kg_Air]','NA') 
     endif
 
     if (associated(csite%can_co2)) then
        nvar=nvar+1
          call vtable_edio_r(csite%can_co2(1),nvar,igr,init,csite%paglob_id, &
          var_len,var_len_global,max_ptrs,'CAN_CO2 :31:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+       call metadata_edio(nvar,igr,'Canopy air CO2 mixing ratio','[umol/mol]','NA') 
     endif
     
     if (associated(csite%can_depth)) then
@@ -8506,7 +8535,14 @@ contains
        nvar=nvar+1
        call vtable_edio_r(csite%qpwp(1),nvar,igr,init,csite%paglob_id, &
             var_len,var_len_global,max_ptrs,'QPWP :31:hist') 
-       call metadata_edio(nvar,igr,'Vertical flux of Moisture','[kg^2 m-5 s-1]','ipatch')
+       call metadata_edio(nvar,igr,'Vertical flux of Moisture','[kg m^-2 s% -1]','ipatch')
+    endif
+
+    if (associated(csite%cpwp)) then
+       nvar=nvar+1
+       call vtable_edio_r(csite%cpwp(1),nvar,igr,init,csite%paglob_id, &
+            var_len,var_len_global,max_ptrs,'CPWP :31:hist') 
+       call metadata_edio(nvar,igr,'Vertical flux of Carbon','[kg umolC mol^-1 m^-2 s-1]','ipatch')
     endif
     
     if (associated(csite%wpwp)) then

@@ -173,23 +173,10 @@ subroutine timestep()
   if (isfcl <= 2) then
      if (banneron) write(unit=*,fmt='(a)') '     [-] Calling sfclyr...'
      call SFCLYR(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
-  elseif (isfcl == 3) then
-     if (banneron) write(unit=*,fmt='(a)') '     [-] Calling sfclyr_sib...'
-     call sfclyr_sib(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
-  endif
+  end if
   
 
   if (acct) call acctimes('accu',6,'SFCLYR',t1,w1)
-
-  ! CO2  bio source
-  if (ISFCL == 3) then
-     t1=cputime(w1)
-     !! New version of SiB-BRAMS
-     if (banneron) write(unit=*,fmt='(a)') '     [-] Calling CO2_biosource...'
-     call co2_biosource(mzp,mxp,myp,ia,iz,ja,jz,ngrid,  &
-          scalar_g(1,ngrid)%sclt,basic_g(ngrid)%dn0,grid_g(ngrid)%rtgt)
-     if (acct) call acctimes('accu',7,'co2_biosource',t1,w1)
-  endif
   !----------------------------------------
 
   if (CATT==1) then

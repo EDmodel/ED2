@@ -86,7 +86,7 @@ module mem_tend
       if (associated(basic_g(1)%vp   ))   allocate (tend%vt   (ntpts))
       if (associated(basic_g(1)%wp   ))   allocate (tend%wt   (ntpts))
       if (associated(basic_g(1)%pp   ))   allocate (tend%pt   (ntpts))
-      if (associated(basic_g(1)%co2p ))   allocate (tend%rtt  (ntpts))
+      if (associated(basic_g(1)%co2p ))   allocate (tend%co2t (ntpts))
       if (associated(basic_g(1)%thp  ))   allocate (tend%tht  (ntpts))
       if (associated(basic_g(1)%rtp  ))   allocate (tend%rtt  (ntpts))
       if (associated(turb_g(1)%tkep  ))   allocate (tend%tket (ntpts))
@@ -338,12 +338,12 @@ module mem_tend
    !     This subroutine will fill pointers to arrays into scalar tables.                  !
    !---------------------------------------------------------------------------------------!
    subroutine filltab_tend(basic,micro,turb,scalar,gaspart,naddsc,ng)
-      use mem_basic     , only : basic_vars   & ! type
-      use mem_micro     , only : micro_vars   & ! type
-      use mem_turb      , only : turb_vars    & ! type
-      use mem_scalar    , only : scalar_vars  & ! type
-      use teb_spm_start , only : TEB_SPM      & ! intent(in)
-      use mem_gaspart   , only : gaspart_vars & ! type
+      use mem_basic     , only : basic_vars   ! ! type
+      use mem_micro     , only : micro_vars   ! ! type
+      use mem_turb      , only : turb_vars    ! ! type
+      use mem_scalar    , only : scalar_vars  ! ! type
+      use teb_spm_start , only : TEB_SPM      ! ! intent(in)
+      use mem_gaspart   , only : gaspart_vars ! ! type
       use mem_emiss     , only : ichemi       & ! intent(in)
                                , isource      ! ! intent(in)
       implicit none
@@ -399,7 +399,7 @@ module mem_tend
             if (associated(gaspart%pnot)) then
                call vtables_scalar (gaspart%pno(1,1,1),gaspart%pnot(1),ng,'PNO')
                elements = size(gaspart%pno)
-               call vtables_scalar_new (gaspart%p,gaspart%pnot,ng,'PNO',elements)
+               call vtables_scalar_new (gaspart%pno,gaspart%pnot,ng,'PNO',elements)
             end if
 
             if (associated(gaspart%pno2t)) then

@@ -225,7 +225,7 @@ subroutine initlz (name_name)
      case (1,2,5)
         call sfcdata
      case (3)
-        call sfcdata_sib_driver
+        !call sfcdata_sib_driver
      end select
 
 
@@ -405,7 +405,7 @@ subroutine initlz (name_name)
      case (1,2,5)
         call sfcdata
      case (3)
-        call sfcdata_sib_driver
+        !call sfcdata_sib_driver
      end select
 
      ! Heterogenous Soil Moisture Init.
@@ -942,7 +942,8 @@ subroutine ReadNamelist(fileName)
        rts, &
        ts, &
        us, &
-       vs
+       vs, &
+       co2s
 
   ! CATT
   use catt_start, only: CATT
@@ -1015,6 +1016,10 @@ subroutine ReadNamelist(fileName)
   use grid_dims, only: &
        maxsteb,        &
        maxubtp
+  use mem_basic, only : &
+       co2_on,          &
+       co2con,          &
+       ico2             !
 
   ! Explicit domain decomposition
   use domain_decomp, only: domain_fname
@@ -1091,7 +1096,7 @@ subroutine ReadNamelist(fileName)
   namelist /MODEL_OPTIONS/ &
        naddsc, icorflg, iexev,imassflx, ibnd, jbnd, cphas, lsflg, nfpt,  &
        distim,iswrtyp, ilwrtyp,icumfdbk,                                 &
-       raddatfn,radfrq, lonrad, npatch, nvegpat, isfcl,ico2,co2con       &
+       raddatfn,radfrq, lonrad, npatch, nvegpat, isfcl,ico2,co2con,      &
        nvgcon, pctlcon, nslcon, drtcon, zrough, albedo, seatmp, dthcon,  &
        soil_moist, soil_moist_fail, usdata_in, usmodel_in, slz, slmstr,  &
        stgoff, if_urban_canopy, idiffk, ibruvais, ibotflx, ihorgrad,     &
@@ -1163,6 +1168,8 @@ subroutine ReadNamelist(fileName)
   itopsflg=0
   toptenh=0.0
   toptwvl=0.0
+  co2con=0.0
+  ico2=0
   iz0flg=0
   z0max=0.0
   gnu=0.0
@@ -1176,7 +1183,6 @@ subroutine ReadNamelist(fileName)
   hs=0.0
   rts=0.0
   co2s=0.0
-  co2_init=0.0
   slz=0.0
   slmstr=0.0
   stgoff=0.0

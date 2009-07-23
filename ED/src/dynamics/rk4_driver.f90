@@ -272,6 +272,7 @@ module rk4_driver
       initp%upwp = 0.d0
       initp%tpwp = 0.d0
       initp%qpwp = 0.d0
+      initp%cpwp = 0.d0
       initp%wpwp = 0.d0
 
       !----- Go into the ODE integrator. --------------------------------------------------!
@@ -284,6 +285,7 @@ module rk4_driver
       initp%upwp = rk4met%rhos*initp%upwp * dtrk4i
       initp%tpwp = rk4met%rhos*initp%tpwp * dtrk4i
       initp%qpwp = rk4met%rhos*initp%qpwp * dtrk4i
+      initp%cpwp = rk4met%rhos*initp%cpwp * dtrk4i
       initp%wpwp = rk4met%rhos*initp%wpwp * dtrk4i
       
       
@@ -372,6 +374,7 @@ module rk4_driver
       csite%wpwp(ipa)     = sngloff(initp%wpwp    ,tiny_offset)
       csite%tpwp(ipa)     = sngloff(initp%tpwp    ,tiny_offset)
       csite%qpwp(ipa)     = sngloff(initp%qpwp    ,tiny_offset)
+      csite%cpwp(ipa)     = sngloff(initp%cpwp    ,tiny_offset)
 
       !------------------------------------------------------------------------------------!
       !    These variables are fast scale fluxes, and they may not be allocated, so just   !

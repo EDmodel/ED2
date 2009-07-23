@@ -822,6 +822,8 @@ module fuse_fiss_utils
       cpatch%vm_bar(idt)  = cpatch%vm_bar(isc)  
       cpatch%sla(idt)  = cpatch%sla(isc)  
 
+      cpatch%old_stoma_vector(:,idt) = cpatch%old_stoma_vector(:,isc)
+
       osdt => cpatch%old_stoma_data(idt)
       ossc => cpatch%old_stoma_data(isc)
 

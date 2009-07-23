@@ -24,7 +24,7 @@ subroutine lphysiol_full(T_L,  &
   use physiology_coms, only: istoma_scheme
   use phenology_coms,only: vm_tran, vm_slop, vm_amp, vm_min
   use therm_lib, only : rslif
-  use consts_coms, only : t00,mmdov
+  use consts_coms, only : t00,epi
   implicit none
 
   real, intent(in) :: T_L
@@ -69,7 +69,7 @@ subroutine lphysiol_full(T_L,  &
   met%par = PAR*(1.0e6)
   met%gbc = adens / (rb*4.06e-8)
   met%gbci = 1.0/met%gbc
-  met%el = mmdov * rslif(prss, met%tl + t00)
+  met%el = epi * rslif(prss, met%tl + t00)
   met%compp = co2cp(met%tl)
   met%gbw = 1.4*met%gbc
   met%eta = 1.0 + (met%el-met%ea)/gsdata%d0
@@ -1114,7 +1114,7 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
 
   use c34constants
   use therm_lib, only: rslif
-  use consts_coms, only: t00,mmdov
+  use consts_coms, only: t00,epi
   implicit none
 
   
@@ -1176,7 +1176,7 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
         
         ! Temperature derivative
         met%tl = met%tl + 0.1
-        met%el = mmdov * rslif(prss,met%tl + t00)
+        met%el = epi * rslif(prss,met%tl + t00)
         met%compp = co2cp(met%tl)
         apar%vm = Vm0 * arrhenius(met%tl,1.0,3000.0)  &
              /(1.0+exp(0.4*(Vm_low_temp-met%tl)))  &
@@ -1200,7 +1200,7 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
 
         ! Reset parameters
         met%tl = met%tl - 0.1
-        met%el = mmdov*rslif(prss,met%tl+t00)
+        met%el = epi * rslif(prss,met%tl+t00)
         met%compp = co2cp(met%tl)
         apar%vm = Vm0 * arrhenius(met%tl,1.0,3000.0)  &
              /(1.0+exp(0.4*(Vm_low_temp-met%tl)))  &
@@ -1244,12 +1244,12 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
 
         ! pressure derivative
         dprss = prss * 1.005
-        met%el = mmdov*rslif(dprss,met%tl+t00)
+        met%el = epi * rslif(dprss,met%tl+t00)
         met%eta = 1.0 + (met%el-met%ea)/gsdata%d0
         call setapar_c3(gsdata,met,apar,ilimit)
         old_st_data%prss_residual = residual_c3(gsdata,met,apar,sol%gsw(2,1)) &
              / (dprss*(1.0-1.0/1.005)*old_st_data%gsw_residual)
-        met%el = mmdov*rslif(prss,met%tl+t00)
+        met%el = epi * rslif(prss,met%tl+t00)
         met%eta = 1.0 + (met%el-met%ea)/gsdata%d0
 
      else
@@ -1261,7 +1261,7 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
              sol%gsw(2,1)*1.01) / (0.01*sol%gsw(2,1))
         
         met%tl = met%tl + 0.1
-        met%el = mmdov*rslif(prss,met%tl+t00)
+        met%el = epi * rslif(prss,met%tl+t00)
         met%compp = co2cp(met%tl)
         apar%vm = Vm0 * arrhenius(met%tl,1.0,3000.0)  &
              /(1.0+exp(0.4*(5.0-met%tl)))/(1.0+exp(0.4*(met%tl-100.0))) 
@@ -1270,7 +1270,7 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
              residual_c4(gsdata,met,apar,sol%gsw(2,1)) &
              / (0.1 * old_st_data%gsw_residual)
         met%tl = met%tl - 0.1
-        met%el = mmdov*rslif(prss,met%tl+t00)
+        met%el = epi * rslif(prss,met%tl+t00)
         met%compp = co2cp(met%tl)
         apar%vm = Vm0 * arrhenius(met%tl,1.0,3000.0)  &
              /(1.0+exp(0.4*(5.0-met%tl)))/(1.0+exp(0.4*(met%tl-100.0))) 
@@ -1299,12 +1299,12 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
         met%gbc = met%gbc / 1.01
         
         dprss = prss * 1.005
-        met%el = mmdov*rslif(dprss,met%tl+t00)
+        met%el = epi * rslif(dprss,met%tl+t00)
         met%eta = 1.0 + (met%el-met%ea)/gsdata%d0
         call setapar_c4(gsdata,met,apar,ilimit)
         old_st_data%prss_residual = residual_c4(gsdata,met,apar,sol%gsw(2,1)) &
              / (dprss*(1.0-1.0/1.005)*old_st_data%gsw_residual)
-        met%el = mmdov*rslif(prss,met%tl+t00)
+        met%el = epi * rslif(prss,met%tl+t00)
         met%eta = 1.0 + (met%el-met%ea)/gsdata%d0
         
      endif

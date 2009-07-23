@@ -73,7 +73,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
      
      if (iprintpolys.eq.1) then
         do ifm=1,ngrids
-           call print(ifm,edgrid_g(ifm))
+           call print_fields(ifm,edgrid_g(ifm))
         enddo
      endif
 
@@ -274,7 +274,6 @@ subroutine spatial_averages
             cpoly%avg_fsc(isi)    = sum(csite%fast_soil_C       * csite%area ) * site_area_i
             cpoly%avg_ssc(isi)    = sum(csite%slow_soil_C       * csite%area ) * site_area_i
             cpoly%avg_stsc(isi)   = sum(csite%structural_soil_C * csite%area ) * site_area_i
-            cpoly%avg_co2can(isi) = sum(csite%can_co2           * csite%area ) * site_area_i
 
 
             !------------------------------------------------------------------------------!
@@ -551,6 +550,7 @@ subroutine spatial_averages
             !----- Site average of canopy thermodynamic state -----------------------------!
             cpoly%avg_can_temp(isi) = sum(csite%can_temp  * csite%area) * site_area_i
             cpoly%avg_can_shv(isi)  = sum(csite%can_shv   * csite%area) * site_area_i
+            cpoly%avg_can_co2(isi)  = sum(csite%can_co2   * csite%area) * site_area_i
 
             !------------------------------------------------------------------------------!
             !   Site average of leaf properties.  Again, we average "extensive" properties !
@@ -616,7 +616,6 @@ subroutine spatial_averages
          cgrid%avg_dew_cg(ipy)       = sum(cpoly%avg_dew_cg      * cpoly%area)*poly_area_i
          cgrid%avg_vapor_gc(ipy)     = sum(cpoly%avg_vapor_gc    * cpoly%area)*poly_area_i
          cgrid%avg_wshed_vg(ipy)     = sum(cpoly%avg_wshed_vg    * cpoly%area)*poly_area_i
-         cgrid%avg_co2can(ipy)       = sum(cpoly%avg_co2can      * cpoly%area)*poly_area_i
          cgrid%avg_fsc(ipy)          = sum(cpoly%avg_fsc         * cpoly%area)*poly_area_i
          cgrid%avg_stsc(ipy)         = sum(cpoly%avg_stsc        * cpoly%area)*poly_area_i
          cgrid%avg_ssc(ipy)          = sum(cpoly%avg_ssc         * cpoly%area)*poly_area_i
@@ -635,6 +634,7 @@ subroutine spatial_averages
          cgrid%avg_sensible_tot(ipy) = sum(cpoly%avg_sensible_tot *cpoly%area)*poly_area_i
          cgrid%avg_can_temp(ipy)     = sum(cpoly%avg_can_temp     *cpoly%area)*poly_area_i
          cgrid%avg_can_shv(ipy)      = sum(cpoly%avg_can_shv      *cpoly%area)*poly_area_i
+         cgrid%avg_can_co2(ipy)      = sum(cpoly%avg_can_co2      *cpoly%area)*poly_area_i
 
          !---------------------------------------------------------------------------------!
          !    Similar to the site level, average mass, heat capacity and energy then find  !
@@ -752,7 +752,7 @@ end subroutine get3d
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine print(ifm,cgrid)
+subroutine print_fields(ifm,cgrid)
   
   !------------------------------------------------------
   ! PRINT OUT FIELDS OF INTEREST
@@ -1059,7 +1059,7 @@ subroutine print(ifm,cgrid)
 
   
   return
-end subroutine print
+end subroutine print_fields
 
 ! =======================================================
 

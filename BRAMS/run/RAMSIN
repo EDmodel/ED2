@@ -566,7 +566,8 @@
                              !  5 - ED2 submodel
 
    ICO2    = 0,              ! CO2 prognostic level
-                             !  0 - Do not solve it;
+                             !  0 - Do not solve it (CO2CON will be used as a time
+                             !      invariant CO2 mixing ratio whenever needed);
                              !  1 - Solve it initialising with a constant value (CO2CON)
                              !  2 - Solve and initialise with a horizontally homogeneous
                              !      profile, (filling CO2CON with all values from bottom
@@ -574,7 +575,10 @@
                              !  3 - Solve and initialise with a RALPH2/SOUND_IN file
                              !      (not available yet).
 
-   CO2CON   = 380.,          ! Initial constant CO2 value if for all domain
+   CO2CON   = 380.,          ! Initial constant CO2 value or profile if for all domain.
+                             ! If ICO2 = 0 or 1, only the first value will be considered,
+                             ! and if ICO2=2, then provide one value per level. 
+                             ! Unit here is ppm.
 
    NVGCON   = 7,             ! Vegetation type (see below)
 !-------------------------------------------------------------------------------
@@ -967,9 +971,6 @@
    IPMIN        = 1,       ! The first polygon index to print
    IPMAX        = 60,       ! The last polygon index to print
 !-------------------------------------------------------------------------!
-
-   INITIAL_CO2 = 370., ! Initial value for CO2 in case no CO2 is provided at the 
-                       ! meteorological driver dataset
 
 
 !----- For phenology prescribed from observations, we also need to recycle over years. ----!

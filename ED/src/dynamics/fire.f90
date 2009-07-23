@@ -12,10 +12,13 @@ subroutine fire_frequency(month, cgrid)
                             , qsw                    & ! intent(in)
                             , q                      ! ! intent(in)
    use grid_coms     , only : nzg                    ! ! intent(in)
-   use soil_coms     , only : dslz                   ! ! intent(in)
+   use soil_coms     , only : slz                    & ! intent(in)
+                            , dslz                   ! ! intent(in)
    use disturb_coms  , only : include_fire           & ! intent(in)
                             , fire_dryness_threshold & ! intent(in)
                             , fire_smoist_threshold  & ! intent(in)
+                            , fire_smoist_depth      & ! intent(in)
+                            , k_fire_first           & ! intent(in)
                             , fire_parameter         ! ! intent(in)
    use allometry     , only : ed_biomass             ! ! function
    use consts_coms   , only : wdnsi                  & ! intent(in)
@@ -33,13 +36,24 @@ subroutine fire_frequency(month, cgrid)
    integer                        :: ipa
    integer                        :: ico
    integer                        :: k
+   integer                        :: ka
    real                           :: babove
    real                           :: fire_wmass_threshold
    real                           :: fuel
    real                           :: ignition_rate
    real                           :: patch_water_depth
    real                           :: patch_water_mass
+   !----- Locally saved variables. --------------------------------------------------------!
+   logical           , save       :: first_time=.true.
    !---------------------------------------------------------------------------------------!
+
+   if (first_time) then
+      kfireloop: do k_fire_first=nzg-1,1,-1
+         if (slz(k_fire_first) < fire_smoist_depth) exit kfireloop
+      end do kfireloop
+      k_fire_first = k_fire_first + 1
+      first_time = .false.
+   end if
 
 
    !----- Loop over polygons and sites. ---------------------------------------------------!
@@ -106,10 +120,12 @@ subroutine fire_frequency(month, cgrid)
                !    Compute the total (ground + underground) water in kg/m2.               !
                !---------------------------------------------------------------------------!
                patch_water_mass = 0.0
+               ka = max(cpoly%lsl(isi),k_fire_first)
+
                do k = 1, csite%nlev_sfcwater(ipa)
                   patch_water_mass = patch_water_mass + csite%sfcwater_mass(k,ipa)
                end do
-               do k = cpoly%lsl(isi), nzg
+               do k = ka, nzg
                   patch_water_mass = patch_water_mass                                      &
                                    + csite%soil_water(k,ipa) * dslz(k) * wdns
                end do
@@ -120,7 +136,7 @@ subroutine fire_frequency(month, cgrid)
                ! fraction threshold.                                                       !
                !---------------------------------------------------------------------------!
                fire_wmass_threshold = 0
-               do k = cpoly%lsl(isi), nzg
+               do k = ka, nzg
                   fire_wmass_threshold = fire_wmass_threshold                              &
                                        + fire_smoist_threshold * dslz(k) * wdns
                end do

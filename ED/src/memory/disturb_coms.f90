@@ -48,6 +48,7 @@ Module disturb_coms
   
   ! FIRE
   !--------------------------
+  real :: fire_parameter          ! Dimensionless parameter controlling speed of fire spread.
   
   real :: fire_dryness_threshold  ! (meters) Fire may occur if total equivalent water depth
                                   !          (ground + underground) falls below this 
@@ -56,8 +57,12 @@ Module disturb_coms
                                   !          (ground + underground) converted to 
                                   !          equivalent average soil moisture is below 
                                   !          this threshold and include_fire is 2.
-  real :: fire_parameter          ! Dimensionless parameter controlling speed of fire spread.
+  real :: fire_smoist_depth       ! (m)      Depth to be compared with the soil average
+                                  !          when include_fire is 2.
   
+  integer :: k_fire_first         ! k level of the deepest layer to be considered.
+
+
   type lutime
      integer :: landuse_year ! the year
      real, dimension(num_lu_trans) :: landuse  ! the landuse information 

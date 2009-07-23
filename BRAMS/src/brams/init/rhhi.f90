@@ -10,10 +10,15 @@
 !------------------------------------------------------------------------------------------!
 subroutine inithh()
    use mem_basic  , only : basic_g  & ! intent(inout)
-                         , co2_on   ! ! intent(in)
+                         , co2_on   & ! intent(in)
+                         , co2con   ! ! intent(in)
    use mem_grid   , only : nxtnest  & ! intent(in)
                          , grid_g   & ! intent(in)
-                         , ngrids   ! ! intent(in)
+                         , ngrids   & ! intent(in)
+                         , nzp      & ! intent(in)
+                         , nxp      & ! intent(in)
+                         , nyp      & ! intent(in)
+                         , if_adap  ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer :: ifm
@@ -34,7 +39,7 @@ subroutine inithh()
       if (icm == 0) then
 
          call newgrid(ifm)
-         call refs1d(co2_on)
+         call refs1d(co2_on,co2con(1))
 
          call refs3d( nzp,nxp,nyp           , basic_g(ifm)%pi0      , basic_g(ifm)%dn0     &
                     , basic_g(ifm)%dn0u     , basic_g(ifm)%dn0v     , basic_g(ifm)%th0     &
@@ -88,6 +93,7 @@ subroutine arrsnd(co2_on)
    logical           , intent(in)   :: co2_on
    !----- Local variables. ----------------------------------------------------------------!
    integer                          :: nnns
+   integer                          :: k
    integer                          :: here
    integer                          :: beneath
    integer                          :: above
@@ -240,7 +246,7 @@ subroutine arrsnd(co2_on)
          write(unit=*,fmt='(a,1x,i2,a)') 'Invalid humidity type (IRTSFLG): ',irtsflg,'...'
          call abort_run('Incorrect humidity unit in MODEL_SOUND, check your namelist!'     &
                        ,'arrsnd','rhhi.f90')
-      endif
+      end select
    end do mainloop
 
    !---------------------------------------------------------------------------------------!
@@ -274,9 +280,9 @@ subroutine arrsnd(co2_on)
 
    !----- Check whether the provided sounding goes high enough. ---------------------------!
    if (hs(nsndg) < zt(nzp)) then
-      write (unit=*,fmt='(a,1x,es12.5)' 'Sounding top [  m] : ',hs(nsndg)
-      write (unit=*,fmt='(a,1x,es12.5)' 'Sounding top [hPa] : ',0.01*ps(nsndg)
-      write (unit=*,fmt='(a,1x,es12.5)' 'Model top    [  m] : ',zt(nzp)
+      write (unit=*,fmt='(a,1x,es12.5)') 'Sounding top [  m] : ',hs(nsndg)
+      write (unit=*,fmt='(a,1x,es12.5)') 'Sounding top [hPa] : ',0.01*ps(nsndg)
+      write (unit=*,fmt='(a,1x,es12.5)') 'Model top    [  m] : ',zt(nzp)
       call abort_run('Input sounding needs to go higher!!!','arrsnd','rhhi.f90')
    end if
 
@@ -286,9 +292,10 @@ subroutine arrsnd(co2_on)
    end do
    
    !---------------------------------------------------------------------------------------!
-   !   CO2 has no option for units, so it must be in ppm.  Thus, we don't need to do  any- !
-   ! thing other than reading it if it is in SOUND_IN...                                   !
+   !   CO2 has no option for units, so it must be given in ppm [µmol_CO2/mol_air].  BRAMS  !
+   ! also uses CO2 in ppm, so we don't need to do any unit conversion.                     !
    !---------------------------------------------------------------------------------------!
+
    return
 end subroutine arrsnd
 !==========================================================================================!
@@ -304,7 +311,7 @@ end subroutine arrsnd
 !    This routine computes the reference state sounding on the model sigma-z levels from   !
 ! input sounding defined on pressure levels.                                               !
 !------------------------------------------------------------------------------------------!
-subroutine refs1d(co2_on)
+subroutine refs1d(co2_on,co2con)
    use mem_grid
    use mem_scratch
    use ref_sounding
@@ -314,6 +321,7 @@ subroutine refs1d(co2_on)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    logical           , intent(in)   :: co2_on
+   real              , intent(in)   :: co2con
    !----- Local variables. ----------------------------------------------------------------!
    integer                          :: k
    !---------------------------------------------------------------------------------------!
@@ -342,7 +350,7 @@ subroutine refs1d(co2_on)
       call htint(nsndg,co2s,hs,nnzp(ngrid),co201dn(1,ngrid),ztn(1,ngrid))
    else
       do k = 1,nnzp(ngrid)
-         co201dn(k,ngrid) = 0.
+         co201dn(k,ngrid) = co2con
       end do
    end if
 
@@ -544,7 +552,7 @@ end subroutine flds3d
 !    This routine initializes the 3-D velocity and thermodynamic fields from the 1-D       !
 ! reference state sounding when the adaptive (shaved-eta) coordinate is used.              !
 !------------------------------------------------------------------------------------------!
-subroutine flds3d_adap(n1,n2,n3,flpu,flpv,flpw,uc,vc,pi0,theta,thp,rtp,pc,rv)
+subroutine flds3d_adap(n1,n2,n3,flpu,flpv,flpw,uc,vc,pi0,theta,thp,rtp,pc,rv,co2p)
    use mem_grid
    use ref_sounding
    use rconstants
@@ -593,8 +601,6 @@ subroutine flds3d_adap(n1,n2,n3,flpu,flpv,flpw,uc,vc,pi0,theta,thp,rtp,pc,rv)
          !     If sounding winds are to be interpreted as eastward (U) and northward (V)   !
          ! components, rotate winds from geographic to polar stereographic orientation.    !
          !---------------------------------------------------------------------------------!
-
-         if (ihtran == 1) then
          select case (ihtran)
          case (0) !----- Cartesian. -------------------------------------------------------!
             do k = 1,n1

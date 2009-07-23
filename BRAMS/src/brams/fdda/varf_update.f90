@@ -11,7 +11,8 @@ subroutine varf_update(iswap,initflag,ifileok)
    use mem_basic
    use mem_grid
    use mem_scratch
-   use therm_lib  , only: level
+   use therm_lib  , only : level
+   use rconstants , only : toodry
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer           , intent(in)  :: initflag
@@ -57,14 +58,13 @@ subroutine varf_update(iswap,initflag,ifileok)
    ! past first.                                                                           !
    !---------------------------------------------------------------------------------------!
    if (iswap == 1) then
-      npts = nnzp(ngrid)*nnxp(ngrid)*nnyp(ngrid)
-      call atob(npts,varinit_g(ngrid)%varuf,varinit_g(ngrid)%varup)
-      call atob(npts,varinit_g(ngrid)%varvf,varinit_g(ngrid)%varvp)
-      call atob(npts,varinit_g(ngrid)%varpf,varinit_g(ngrid)%varpp)
-      call atob(npts,varinit_g(ngrid)%vartf,varinit_g(ngrid)%vartp)
-      call atob(npts,varinit_g(ngrid)%varrf,varinit_g(ngrid)%varrp)
+      call atob(nxyzp,varinit_g(ngrid)%varuf,varinit_g(ngrid)%varup)
+      call atob(nxyzp,varinit_g(ngrid)%varvf,varinit_g(ngrid)%varvp)
+      call atob(nxyzp,varinit_g(ngrid)%varpf,varinit_g(ngrid)%varpp)
+      call atob(nxyzp,varinit_g(ngrid)%vartf,varinit_g(ngrid)%vartp)
+      call atob(nxyzp,varinit_g(ngrid)%varrf,varinit_g(ngrid)%varrp)
       if (co2_on) then
-         call atob(npts,varinit_g(ngrid)%varof,varinit_g(ngrid)%varop)
+         call atob(nxyzp,varinit_g(ngrid)%varof,varinit_g(ngrid)%varop)
       end if
    end if
 
@@ -149,24 +149,12 @@ subroutine varf_update(iswap,initflag,ifileok)
    !---------------------------------------------------------------------------------------!
    select case (ico2)
    case (0) !----- Skip, nothing needs to be done in this case. ---------------------------!
-      call azero(nzp*nxp*nyp,scratch%vt3do)
+      call ae0(nzp*nxp*nyp,scratch%vt3do,co2con(1))
    case (1) !----- Initialise with constant value. ----------------------------------------!
-      do j=1,nyp
-         do i=1,nxp
-            do k=1,nzp
-               varinit_g(ngrid)%varof(k,i,j) = co2con(1)
-            end do
-         end do
-      end do
+      call ae0(nzp*nxp*nyp,varinit_g(ngrid)%varof,co2con(1))
       call atob(nzp*nxp*nyp,varinit_g(ngrid)%varof,scratch%vt3do)
    case (2) !----- Initialise with constant profile. --------------------------------------!
-      do j=1,nyp
-         do i=1,nxp
-            do k=1,nzp
-               varinit_g(ngrid)%varof(k,i,j) = co2con(k)
-            end do
-         end do
-      end do
+      call a3e1(nzp,nxp,nyp,1,nxp,1,nyp,1,nzp,varinit_g(ngrid)%varof,co2con(1:nzp))
       call atob(nzp*nxp*nyp,varinit_g(ngrid)%varof,scratch%vt3do)
    case (3) !----- Initialise with data read from ISAN files. -----------------------------!
       call vfirec(iun,varinit_g(ngrid)%varof,nxyzp,'LIN')

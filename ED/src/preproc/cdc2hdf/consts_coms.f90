@@ -164,8 +164,6 @@ Module consts_coms
    real, parameter :: mmdry       = 0.02897        ! Mean dry air molar mass    [   kg/mol]
    real, parameter :: mmvap       = 0.01801505     ! Mean water molar mass      [   kg/mol]
    real, parameter :: mmco2       = 0.0440095      ! Mean CO2 molar mass        [   kg/mol]
-   real, parameter :: mmdov       = mmdry/mmvap    ! mmdry/mmvap                [     ----]
-   real, parameter :: mmvod       = mmvap/mmdry    ! mmvap/mmdry                [     ----]
    real, parameter :: mmdry1000   = 1000.*mmdry    ! Mean dry air molar mass    [   kg/mol]
    real, parameter :: mmdryi      = 1./mmdry       ! 1./mmdry                   [   mol/kg]
    !---------------------------------------------------------------------------------------!

@@ -121,7 +121,7 @@ subroutine copy_in_bramsmpi(master_num_b,mchnum_b,mynum_b,nmachs_b,machs_b,ipara
 
   use ed_node_coms,only: master_num,mchnum,mynum,nmachs,machs,nnodetot,recvnum,sendnum
   use ed_para_coms,only: iparallel,mainnum
-  use max_dims,only:maxgrds
+  use ed_max_dims,only:maxgrds
   use grid_coms, only : ngrids,nnxp,nnyp
 
   implicit none

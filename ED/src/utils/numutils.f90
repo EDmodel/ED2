@@ -433,6 +433,25 @@ end
 !
 !     ******************************************************************
 !
+subroutine a3e1(n1,n2,n3,i1,i2,j1,j2,k1,k2,a,b)
+   implicit none
+   integer                  , intent(in)    :: n1,n2,n3
+   integer                  , intent(in)    :: i1,i2,j1,j2,k1,k2
+   real, dimension(n1,n2,n3), intent(inout) :: a
+   real, dimension(n1)      , intent(in)    :: b
+   integer :: i,j,k
+   do j=j1,j2
+      do i=i1,i2
+         do k=k1,k2
+            a(k,i,j)=b(k)
+         end do
+      end do
+   end do
+   return
+end subroutine a3e1
+!
+!     ******************************************************************
+!
 subroutine a3e0(n1,n2,n3,i1,i2,j1,j2,k,a,b)
 implicit none
 integer :: n1,n2,n3,i1,i2,j1,j2,k

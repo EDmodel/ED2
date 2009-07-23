@@ -561,6 +561,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
                                     , zveg                 & ! intent(in)
                                     , wcapcan              & ! intent(in)
                                     , wcapcani             & ! intent(in)
+                                    , ccapcani             & ! intent(in)
                                     , hcapcani             & ! intent(in)
                                     , any_solvable         & ! intent(in)
                                     , tiny_offset          & ! intent(in)
@@ -678,7 +679,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    rho_ustar = rk4met%rhos * initp%ustar                ! Aux. variable
    hflxac    = rho_ustar   * initp%tstar * rk4met%exner ! Sensible Heat flux
    wflxac    = rho_ustar   * initp%qstar                ! Water flux
-   cflxac    = rho_ustar   * initp%cstar                ! CO2 flux
+   cflxac    = rho_ustar   * initp%cstar * mmdryi8      ! CO2 flux [umol/m2/s]
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -1052,7 +1053,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
 
 
    !----- Update CO2 concentration in the canopy ------------------------------------------!
-   dinitp%can_co2 = ( (cflxgc + cflxvc_tot)*mmdry8 + cflxac) * wcapcani
+   dinitp%can_co2  = (cflxgc + cflxvc_tot + cflxac) * ccapcani
 
 
    !---------------------------------------------------------------------------------------!
@@ -1065,8 +1066,8 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
       dinitp%ebudget_loss2atm = - hflxac
       dinitp%ebudget_latent   = dinitp%ebudget_latent -qdewgndflx + qwflxgc
       
-      dinitp%co2budget_loss2atm = - cflxac * mmdryi8
-      dinitp%avg_carbon_ac      =   cflxac * mmdryi8
+      dinitp%co2budget_loss2atm = - cflxac
+      dinitp%avg_carbon_ac      =   cflxac
 
       dinitp%avg_sensible_vc   = hflxvc_tot                     ! Sens. heat,  Leaf->Canopy
       dinitp%avg_sensible_2cas = hflxgc+hflxac+hflxvc_tot       ! Sens. heat,  All ->Canopy
@@ -1092,6 +1093,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    !---------------------------------------------------------------------------------------!
    dinitp%upwp = -(initp%ustar*initp%ustar)
    dinitp%qpwp = -(initp%ustar*initp%qstar)
+   dinitp%cpwp = -(initp%ustar*initp%cstar)
    dinitp%tpwp = -(initp%ustar*initp%tstar)
    if(debug .and. abs(rk4met%atm_tmp) < tiny(1.d0)) print*,"atm_tmp = 0"
    gzotheta = grav8 * rk4met%geoht * cpi8 * rk4met%exner / rk4met%atm_tmp

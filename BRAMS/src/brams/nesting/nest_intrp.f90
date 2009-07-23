@@ -8,48 +8,50 @@
 
 subroutine fmrefs1d(ngbegin,ngend)
 
-use mem_grid
-use ref_sounding
-use mem_scratch
-use rconstants
+   use mem_grid
+   use ref_sounding
+   use mem_scratch
+   use rconstants
 
-implicit none
+   implicit none
 
-integer :: ngbegin,ngend,ifm,icm,k
-real :: c1,c2
+   integer :: ngbegin,ngend,ifm,icm,k
+   real :: c1,c2
 
-!     Interpolate the fine mesh 1-d reference state variables.
+   !     Interpolate the fine mesh 1-d reference state variables.
 
-c1 = rgas / (cp - rgas)
-c2 = cp * (rgas / p00) ** c1
-do ifm = ngbegin,ngend
-   icm = nxtnest(ifm)
-   if (icm .ge. 1) then
-      do k = 1,nnzp(icm)
-         vctr1(k) = th01dn(k,icm) * dn01dn(k,icm)
-         vctr2(k) = u01dn(k,icm) * dn01dn(k,icm)
-         vctr3(k) = v01dn(k,icm) * dn01dn(k,icm)
-         vctr4(k) = rt01dn(k,icm) * dn01dn(k,icm)
-      enddo
+   c1 = rgas / (cp - rgas)
+   c2 = cp * (rgas / p00) ** c1
+   do ifm = ngbegin,ngend
+      icm = nxtnest(ifm)
+      if (icm .ge. 1) then
+         do k = 1,nnzp(icm)
+            vctr1(k) = th01dn(k,icm)  * dn01dn(k,icm)
+            vctr2(k) = u01dn(k,icm)   * dn01dn(k,icm)
+            vctr3(k) = v01dn(k,icm)   * dn01dn(k,icm)
+            vctr4(k) = rt01dn(k,icm)  * dn01dn(k,icm)
+            vctr5(k) = co201dn(k,icm) * dn01dn(k,icm)
+         enddo
 
-     call eintp(dn01dn(1,icm),dn01dn(1,ifm),maxnzp,1,1,nnzp(ifm)  &
-        ,1,1,ifm,1,'t',0,0)
-     call eintp(vctr1,vctr5,maxnzp,1,1,nnzp(ifm),1,1,ifm,1,'t',0,0)
-     call eintp(vctr2,vctr6,maxnzp,1,1,nnzp(ifm),1,1,ifm,1,'t',0,0)
-     call eintp(vctr3,vctr7,maxnzp,1,1,nnzp(ifm),1,1,ifm,1,'t',0,0)
-     call eintp(vctr4,vctr8,maxnzp,1,1,nnzp(ifm),1,1,ifm,1,'t',0,0)
+        call eintp(dn01dn(1,icm),dn01dn(1,ifm),maxnzp,1,1,nnzp(ifm),1,1,ifm,1,'t',0,0)
+        call eintp(vctr1, vctr6,maxnzp,1,1,nnzp(ifm),1,1,ifm,1,'t',0,0)
+        call eintp(vctr2, vctr7,maxnzp,1,1,nnzp(ifm),1,1,ifm,1,'t',0,0)
+        call eintp(vctr3, vctr8,maxnzp,1,1,nnzp(ifm),1,1,ifm,1,'t',0,0)
+        call eintp(vctr4, vctr9,maxnzp,1,1,nnzp(ifm),1,1,ifm,1,'t',0,0)
+        call eintp(vctr5,vctr10,maxnzp,1,1,nnzp(ifm),1,1,ifm,1,'t',0,0)
 
-      do k = 1,nnzp(ifm)
-         th01dn(k,ifm) = vctr5(k) / dn01dn(k,ifm)
-         u01dn(k,ifm) = vctr6(k) / dn01dn(k,ifm)
-         v01dn(k,ifm) = vctr7(k) / dn01dn(k,ifm)
-         rt01dn(k,ifm) = vctr8(k) / dn01dn(k,ifm)
-         pi01dn(k,ifm) = c2 * (dn01dn(k,ifm) * th01dn(k,ifm)) ** c1
-      enddo
-   endif
-enddo
-return
-end
+         do k = 1,nnzp(ifm)
+            th01dn(k,ifm)  = vctr6(k)  / dn01dn(k,ifm)
+            u01dn(k,ifm)   = vctr7(k)  / dn01dn(k,ifm)
+            v01dn(k,ifm)   = vctr8(k)  / dn01dn(k,ifm)
+            rt01dn(k,ifm)  = vctr9(k)  / dn01dn(k,ifm)
+            co201dn(k,ifm) = vctr10(k) / dn01dn(k,ifm)
+            pi01dn(k,ifm)  = c2 * (dn01dn(k,ifm) * th01dn(k,ifm)) ** c1
+         end do
+      end if
+   end do
+   return
+end subroutine fmrefs1d
 
 !     *****************************************************************
 

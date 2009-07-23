@@ -337,6 +337,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    targetp%wpwp = dble(sourcesite%wpwp(ipa))
    targetp%tpwp = dble(sourcesite%tpwp(ipa))
    targetp%qpwp = dble(sourcesite%qpwp(ipa))
+   targetp%cpwp = dble(sourcesite%cpwp(ipa))
 
   
    targetp%nlev_sfcwater = sourcesite%nlev_sfcwater(ipa)
@@ -518,6 +519,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
    rkp%wpwp = rkp%wpwp + fac * inc%wpwp
    rkp%tpwp = rkp%tpwp + fac * inc%tpwp
    rkp%qpwp = rkp%qpwp + fac * inc%qpwp
+   rkp%cpwp = rkp%cpwp + fac * inc%cpwp
 
   
    do ico = 1,cpatch%ncohorts
@@ -1626,6 +1628,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%wpwp          = sourcep%wpwp
    targetp%tpwp          = sourcep%tpwp
    targetp%qpwp          = sourcep%qpwp
+   targetp%cpwp          = sourcep%cpwp
 
    targetp%ground_shv    = sourcep%ground_shv
    targetp%surface_ssh   = sourcep%surface_ssh

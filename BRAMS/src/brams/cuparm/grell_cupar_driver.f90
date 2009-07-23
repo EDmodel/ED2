@@ -57,7 +57,8 @@ subroutine grell_cupar_driver(banneron,icld)
 
    use mem_basic         , only: &
            co2_on                & ! intent(in) - Flag for CO2 presence.
-           basic_g               ! ! intent(in) - Basic variables structure
+          ,co2con                & ! intent(in) - CO2 mixing ratio if constant.
+          ,basic_g               ! ! intent(in) - Basic variables structure
 
    use mem_cuparm        , only: &
            confrq                & ! intent(in)    - Convective frequency 
@@ -100,6 +101,7 @@ subroutine grell_cupar_driver(banneron,icld)
           ,vctr7         & ! intent(out) - Scratch, contains the ice mixing ratio.
           ,vctr8         & ! intent(out) - Scratch, contains the column CO2 mixing ratio.
           ,vctr9         & ! intent(out) - Scratch, contains the vertical velocity sigma.
+          ,vctr18        & ! intent(out) - Scratch, contains the large-scale CO2 tendency.
           ,vctr28        ! ! intent(out) - Scratch, contains the convective CO2 forcing.
    
    use mem_scratch_grell , only: &
@@ -222,7 +224,7 @@ subroutine grell_cupar_driver(banneron,icld)
          call zero_scratch_grell()
          call zero_ensemble(ensemble_e(icld))
          call azero5(mzp,vctr6(1:mzp),vctr7(1:mzp),vctr9(1:mzp),vctr18(1:mzp),vctr28(1:mzp))
-         call aone(mzp,vctr8(1:mzp))
+         call ae0(mzp,vctr8(1:mzp),co2con(1)) !---- Not really used unless CO2 is on.
 
          !---------------------------------------------------------------------------------!
          ! 6b. Initialise grid-related variables (how many levels, offset, etc.)           !
@@ -263,7 +265,7 @@ subroutine grell_cupar_driver(banneron,icld)
          ! 6d. Copy CO2 array to scratch variable, if CO2 is actively prognosed.           !
          !---------------------------------------------------------------------------------!
          if (co2_on) then
-            call atob(mzp,basic_g(ngrid)%co2(:,i,j),vctr8(1:mzp))
+            call atob(mzp,basic_g(ngrid)%co2p(:,i,j),vctr8(1:mzp))
          end if
 
          !---------------------------------------------------------------------------------!
@@ -332,11 +334,11 @@ subroutine grell_cupar_driver(banneron,icld)
             ,zcutdown(icld),z_detr(icld)                                                   &
             ,ensemble_e(icld)%edt_eff             , ensemble_e(icld)%dellatheiv_eff        &
             ,ensemble_e(icld)%dellathil_eff       , ensemble_e(icld)%dellaqtot_eff         &
-            ,ensemble_e(icld)%pw_eff              , ensemble_e(icld)%dnmf_ens              &
-            ,ensemble_e(icld)%upmf_ens            , cuparm_g(ngrid)%aadn       (i,j,icld)  &
-            ,cuparm_g(ngrid)%aaup       (i,j,icld), cuparm_g(ngrid)%edt        (i,j,icld)  &
-            ,cuparm_g(ngrid)%dnmf       (i,j,icld), cuparm_g(ngrid)%upmf       (i,j,icld)  &
-            ,mynum                                )
+            ,ensemble_e(icld)%dellaco2_eff        , ensemble_e(icld)%pw_eff                &
+            ,ensemble_e(icld)%dnmf_ens            , ensemble_e(icld)%upmf_ens              &
+            ,cuparm_g(ngrid)%aadn       (i,j,icld), cuparm_g(ngrid)%aaup       (i,j,icld)  &
+            ,cuparm_g(ngrid)%edt        (i,j,icld),cuparm_g(ngrid)%dnmf       (i,j,icld)   &
+            ,cuparm_g(ngrid)%upmf       (i,j,icld),mynum                                   )
 
          !---------------------------------------------------------------------------------!
          ! 6j. Compute the other output variables                                          !

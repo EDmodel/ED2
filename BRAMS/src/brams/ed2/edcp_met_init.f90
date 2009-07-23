@@ -2,12 +2,12 @@
 !==========================================================================================!
 subroutine ed_init_coup_atm
   
-  use misc_coms,     only: ied_init_mode,runtype
+  use ed_misc_coms,  only: ied_init_mode,runtype
   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype,edgrid_g
   use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr,dslz
   use rconstants,    only: tsupercool, cliqvlme, cicevlme, t3ple
   use grid_coms,      only: nzs, nzg, ngrids
-  use fuse_fiss_utils_ar, only: fuse_patches_ar,fuse_cohorts_ar,terminate_cohorts_ar,split_cohorts_ar
+  use fuse_fiss_utils, only: fuse_patches,fuse_cohorts,terminate_cohorts,split_cohorts
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
   use pft_coms,only : sla
   use ed_therm_lib,only : calc_hcapveg,ed_grndvap
@@ -120,13 +120,13 @@ subroutine ed_init_coup_atm
         if (mynum    /= 1) &
            call MPI_Recv(ping,1,MPI_INTEGER,recvnum,92,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
 
-        call read_soil_moist_temp_ar(cgrid)
+        call read_soil_moist_temp(cgrid)
 
         if (mynum     < nnodetot) &
            call MPI_Send(ping,1,MPI_INTEGER,sendnum,92,MPI_COMM_WORLD,ierr)
      elseif (isoilstateinit == 2) then
         ! Use the soil moisture and energy from LEAF-3 initialisation ---------------------!
-        call leaf2ed_soil_moist_energy_ar(cgrid,igr)
+        call leaf2ed_soil_moist_energy(cgrid,igr)
      end if
 
      ! Do a simple, uniform initialization or take care of 
@@ -200,13 +200,13 @@ subroutine ed_init_coup_atm
               endif
               
               ! Compute patch-level LAI, vegetation height, and roughness
-              call update_patch_derived_props_ar(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos, ipa)
+              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos, ipa)
               
 
            enddo
            
            ! Compute basal area and AGB profiles.
-           call update_site_derived_props_ar(cpoly, 0, isi)
+           call update_site_derived_props(cpoly, 0, isi)
            
         enddo
         
@@ -214,10 +214,10 @@ subroutine ed_init_coup_atm
         
      enddo
      
-     call update_polygon_derived_props_ar(cgrid)
+     call update_polygon_derived_props(cgrid)
 
 
-     call fuse_patches_ar(cgrid,igr)
+     call fuse_patches(cgrid,igr)
 
      do ipy = 1,cgrid%npolygons
         ncohorts     = 0
@@ -236,9 +236,9 @@ subroutine ed_init_coup_atm
               npatches = npatches + 1
               cpatch => csite%patch(ipa)
               if (cpatch%ncohorts > 0) then
-                 call fuse_cohorts_ar(csite,ipa,cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
-                 call terminate_cohorts_ar(csite,ipa,elim_nplant,elim_lai)
-                 call split_cohorts_ar(cpatch, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
+                 call fuse_cohorts(csite,ipa,cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
+                 call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+                 call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
               end if
               do ico = 1,cpatch%ncohorts
                  ncohorts=ncohorts+1
@@ -321,7 +321,7 @@ end subroutine ed_init_radiation
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine leaf2ed_soil_moist_energy_ar(cgrid,ifm)
+subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
    use ed_state_vars, only : edtype       & ! structure
                            , polygontype  & ! structure
                            , sitetype     & ! structure
@@ -443,6 +443,6 @@ subroutine leaf2ed_soil_moist_energy_ar(cgrid,ifm)
    end do polyloop
   
    return
-end subroutine leaf2ed_soil_moist_energy_ar
+end subroutine leaf2ed_soil_moist_energy
 !==========================================================================================!
 !==========================================================================================!

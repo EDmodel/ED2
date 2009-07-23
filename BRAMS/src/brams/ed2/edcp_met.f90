@@ -6,7 +6,9 @@ subroutine copy_atm2lsm(ifm,init)
    use ed_state_vars        , only : edgrid_g     & ! structure
                                    , edtype       & ! structure
                                    , polygontype  ! ! structure
-   use mem_basic            , only : basic_g      ! ! structure
+   use mem_basic            , only : co2_on       & ! intent(in)
+                                   , co2con       & ! intent(in)
+                                   , basic_g      ! ! structure
    use mem_radiate          , only : radiate_g    ! ! structure
    use mem_cuparm           , only : cuparm_g     ! ! structure
    use mem_micro            , only : micro_g      ! ! structure
@@ -39,8 +41,6 @@ subroutine copy_atm2lsm(ifm,init)
                                    , t3ple        & ! intent(in)
                                    , cpor         & ! intent(in)
                                    , tsupercool   ! ! intent(in)
-   use met_driver_coms      , only : have_co2     & ! intent(in)
-                                   , initial_co2  ! ! intent(in)
    use ed_node_coms         , only : mynum        ! ! intent(in)
    use canopy_radiation_coms, only : rlong_min    ! ! intent(in)
    use therm_lib            , only : virtt        ! ! function
@@ -60,6 +60,7 @@ subroutine copy_atm2lsm(ifm,init)
    real, dimension(mmxp(ifm),mmyp(ifm))             :: rshortd
    real, dimension(mmxp(ifm),mmyp(ifm))             :: up_mean,vp_mean,pi0_mean
    real, dimension(mmxp(ifm),mmyp(ifm))             :: rv_mean,rtp_mean,theta_mean
+   real, dimension(mmxp(ifm),mmyp(ifm))             :: co2p_mean
    real, dimension(mmxp(ifm),mmyp(ifm))             :: map_2d_lsm
    real                                             :: rshort1,cosz1,rshortd1,scalar1
    real                                             :: topma_t,wtw,wtu1,wtu2,wtv1,wtv2
@@ -101,7 +102,11 @@ subroutine copy_atm2lsm(ifm,init)
             vp_mean(i,j)    = (basic_g(ifm)%vp(2,i,j) + basic_g(ifm)% vp(2,i,j-jdim)) * 0.5
             pi0_mean(i,j)   = ( basic_g(ifm)%pp(1,i,j) + basic_g(ifm)%pp(2,i,j)            &
                               + basic_g(ifm)%pi0(1,i,j)+basic_g(ifm)%pi0(2,i,j)) * 0.5
-
+            if (co2_on) then
+               co2p_mean(i,j) = basic_g(ifm)%co2p(2,i,j)
+            else
+               co2p_mean(i,j) = co2con(1)
+            end if
             !------------------------------------------------------------------------------!
             !      The following subroutine calculates diffuse shortwave radiation.  This  !
             ! is a gross approximation that uses constant scattering coefficients.  A more !
@@ -155,23 +160,30 @@ subroutine copy_atm2lsm(ifm,init)
             wtv1 = grid_g(ifm)%arv(k2v_1,i,j-jdim) / grid_g(ifm)%arv(k3v_1,i,j-jdim)
             wtv2 = grid_g(ifm)%arv(k2v,i,j)        / grid_g(ifm)%arv(k3v,i,j)
 
-            theta_mean(i,j) =       wtw   * basic_g(ifm)%theta(k2w,i,j)                    &
-                            + (1. - wtw)  * basic_g(ifm)%theta(k3w,i,j)
+            theta_mean(i,j)   =       wtw   * basic_g(ifm)%theta(k2w,i,j)                  &
+                              + (1. - wtw)  * basic_g(ifm)%theta(k3w,i,j)
 
-            rv_mean(i,j)    =       wtw   * basic_g(ifm)%rv(k2w,i,j)                       &
-                            + (1. - wtw)  * basic_g(ifm)%rv(k3w,i,j)
+            rv_mean(i,j)      =       wtw   * basic_g(ifm)%rv(k2w,i,j)                     &
+                              + (1. - wtw)  * basic_g(ifm)%rv(k3w,i,j)
 
-            rtp_mean(i,j)   =       wtw   * basic_g(ifm)%rtp(k2w,i,j)                      &
-                            + (1. - wtw)  * basic_g(ifm)%rtp(k3w,i,j)
+            rtp_mean(i,j)     =       wtw   * basic_g(ifm)%rtp(k2w,i,j)                    &
+                              + (1. - wtw)  * basic_g(ifm)%rtp(k3w,i,j)
 
-            up_mean(i,j)    = (        wtu1  * basic_g(ifm)%up(k2u_1,i-1,j)                &
-                              +  (1. - wtu1) * basic_g(ifm)%up(k3u_1,i-1,j)                &
-                              +        wtu2  * basic_g(ifm)%up(k2u,i,j)                    &
-                              +  (1. - wtu2) * basic_g(ifm)%up(k3u,i,j)       ) * .5
-            vp_mean(i,j)    = (        wtv1  * basic_g(ifm)%vp(k2v_1,i,j-jdim)             &
-                              +  (1. - wtv1) * basic_g(ifm)%vp(k3v_1,i,j-jdim)             &
-                              +        wtv2  * basic_g(ifm)%vp(k2v,i,j)                    &
-                              +  (1. - wtv2) * basic_g(ifm)%vp(k3v,i,j)       ) * .5
+            if (co2_on) then
+               co2p_mean(i,j) =       wtw   * basic_g(ifm)%co2p(k2w,i,j)                   &
+                              + (1. - wtw)  * basic_g(ifm)%co2p(k3w,i,j)
+            else
+               co2p_mean(i,j) = co2con(1)
+            end if
+
+            up_mean(i,j)      = (        wtu1  * basic_g(ifm)%up(k2u_1,i-1,j)              &
+                                +  (1. - wtu1) * basic_g(ifm)%up(k3u_1,i-1,j)              &
+                                +        wtu2  * basic_g(ifm)%up(k2u,i,j)                  &
+                                +  (1. - wtu2) * basic_g(ifm)%up(k3u,i,j)       ) * .5
+            vp_mean(i,j)      = (        wtv1  * basic_g(ifm)%vp(k2v_1,i,j-jdim)           &
+                                +  (1. - wtv1) * basic_g(ifm)%vp(k3v_1,i,j-jdim)           &
+                                +        wtv2  * basic_g(ifm)%vp(k2v,i,j)                  &
+                                +  (1. - wtv2) * basic_g(ifm)%vp(k3v,i,j)       ) * .5
             
             !------------------------------------------------------------------------------!
             !     Exner function and density, need to consider the layer beneath the       !
@@ -236,7 +248,7 @@ subroutine copy_atm2lsm(ifm,init)
 
       !------------------------------------------------------------------------------------!
       !   Finding the kinetic energy (twice its value, to be precise).  It will be con-    !
-      ! verted to wind speed later, after calc_met_lapse_ar.                               !
+      ! verted to wind speed later, after calc_met_lapse.                                  !
       !------------------------------------------------------------------------------------!
       cgrid%met(ipy)%vels     = up_mean(ix,iy)**2 + vp_mean(ix,iy)**2
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -248,12 +260,12 @@ subroutine copy_atm2lsm(ifm,init)
 
       !------------------------------------------------------------------------------------!
       !    ED needs specific humidity, and temperature, but BRAMS has mixing ratio and     !
-      ! potential temperature, so we must convert before sending to ED.                    !
+      ! potential temperature, so we must convert before sending to ED.  CO2 is already in !
+      ! µmol_CO2 / mol_air, no conversion needed...                                        !
       !------------------------------------------------------------------------------------!
       cgrid%met(ipy)%atm_shv  = rv_mean(ix,iy) / (1.+rtp_mean(ix,iy))
       cgrid%met(ipy)%atm_tmp  = theta_mean(ix,iy)*pi0_mean(ix,iy) * cpi
-      !----- CO2 is currently unavailable, use prescribed values. -------------------------!
-      cgrid%met(ipy)%atm_co2  = initial_co2
+      cgrid%met(ipy)%atm_co2  = co2p_mean(ix,iy)
 
       !----- Finding density, using the ideal gas law. ------------------------------------!
       tvir = virtt(cgrid%met(ipy)%atm_tmp,rv_mean(ix,iy),rtp_mean(ix,iy))
@@ -274,7 +286,7 @@ subroutine copy_atm2lsm(ifm,init)
 
 
       !------ Apply met to sites, and adjust met variables for topography. ----------------!
-      call calc_met_lapse_ar(cgrid,ipy)
+      call calc_met_lapse(cgrid,ipy)
 
       !----- Converting vels to wind (m/s) ------------------------------------------------!
       cgrid%met(ipy)%vels = sqrt(max(0.0,cgrid%met(ipy)%vels))
@@ -343,7 +355,7 @@ subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean)
                            , cliq         ! ! intent(in)
    use ed_state_vars, only : edtype       ! ! structure
    use mem_edcp     , only : ed_precip_g  ! ! structure
-   use misc_coms    , only : dtlsm        ! ! intent(in)
+   use ed_misc_coms , only : dtlsm        ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(edtype)          , target     :: cgrid
@@ -464,6 +476,7 @@ subroutine copy_fluxes_future_2_past(ifm)
    ed_fluxp_g(ifm)%ustar   = ed_fluxf_g(ifm)%ustar
    ed_fluxp_g(ifm)%tstar   = ed_fluxf_g(ifm)%tstar
    ed_fluxp_g(ifm)%rstar   = ed_fluxf_g(ifm)%rstar
+   ed_fluxp_g(ifm)%cstar   = ed_fluxf_g(ifm)%cstar
    ed_fluxp_g(ifm)%albedt  = ed_fluxf_g(ifm)%albedt
    ed_fluxp_g(ifm)%rlongup = ed_fluxf_g(ifm)%rlongup
    ed_fluxp_g(ifm)%sflux_u = ed_fluxf_g(ifm)%sflux_u
@@ -471,6 +484,7 @@ subroutine copy_fluxes_future_2_past(ifm)
    ed_fluxp_g(ifm)%sflux_w = ed_fluxf_g(ifm)%sflux_w
    ed_fluxp_g(ifm)%sflux_t = ed_fluxf_g(ifm)%sflux_t
    ed_fluxp_g(ifm)%sflux_r = ed_fluxf_g(ifm)%sflux_r
+   ed_fluxp_g(ifm)%sflux_c = ed_fluxf_g(ifm)%sflux_c
 
    return
 end subroutine copy_fluxes_future_2_past
@@ -502,6 +516,7 @@ subroutine copy_fluxes_lsm2atm(ifm)
                             , jdim        ! ! intent(in)
    use mem_basic     , only : basic_g     ! ! structure
    use mem_leaf      , only : leaf_g      ! ! structure
+   use rconstants    , only : mmcod       ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer               , intent(in) :: ifm
@@ -536,11 +551,13 @@ subroutine copy_fluxes_lsm2atm(ifm)
       fluxp%ustar(ix,iy)   = 0.0
       fluxp%tstar(ix,iy)   = 0.0
       fluxp%rstar(ix,iy)   = 0.0
+      fluxp%cstar(ix,iy)   = 0.0
       fluxp%sflux_u(ix,iy)   = 0.0
       fluxp%sflux_v(ix,iy)   = 0.0
       fluxp%sflux_w(ix,iy)   = 0.0
       fluxp%sflux_t(ix,iy)   = 0.0
       fluxp%sflux_r(ix,iy)   = 0.0
+      fluxp%sflux_c(ix,iy)   = 0.0
       fluxp%rlongup(ix,iy) = 0.0
       fluxp%albedt(ix,iy)  = 0.0
 
@@ -607,6 +624,10 @@ subroutine copy_fluxes_lsm2atm(ifm)
                             + cpoly%area(isi)*sum(csite%area * csite%tstar)                &
                             * site_area_i * poly_area_i
 
+         fluxp%cstar(ix,iy) = fluxp%cstar(ix,iy)                                           &
+                            + cpoly%area(isi)*sum(csite%area * csite%cstar)                &
+                            * site_area_i * poly_area_i
+
          !---------------------------------------------------------------------------------!
          !     BRAMS needs rstar (mixing ratio), but ED computes qstar (specific humidity) !
          ! characteristic friction scales.  We must find the appropriate conversion.       !
@@ -616,7 +637,6 @@ subroutine copy_fluxes_lsm2atm(ifm)
                             * sum(csite%area * csite%qstar / (1.-csite%can_shv))           &
                             / (1. - cpoly%met(isi)%atm_shv)
          !---------------------------------------------------------------------------------!
-
 
          !---------------------------------------------------------------------------------!
          !     The flux of momentum for the horizontal wind needs to be split with the     !
@@ -647,6 +667,14 @@ subroutine copy_fluxes_lsm2atm(ifm)
                               * sum(csite%area * csite%qpwp / (1.-csite%can_shv))          &
                               / (1. - cpoly%met(isi)%atm_shv)
          !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Same thing as the cstar case: we must convert the ED-2 flux to BRAMS units. !
+         !---------------------------------------------------------------------------------!
+         fluxp%sflux_c(ix,iy) = fluxp%sflux_c(ix,iy)                                       &
+                              + cpoly%area(isi)*sum(csite%area * csite%cpwp)               &
+                              * site_area_i * poly_area_i
 
          !---------------------------------------------------------------------------------!
          !   Include emission and reflected longwave in rlongup.                           !
@@ -904,6 +932,8 @@ subroutine transfer_ed2leaf(ifm,timel)
                                   +       tfact  * ed_fluxf_g(ifm)%tstar(i,j)
          leaf_g(ifm)%rstar(i,j,2) = (1. - tfact) * ed_fluxp_g(ifm)%rstar(i,j)              &
                                   +       tfact  * ed_fluxf_g(ifm)%rstar(i,j)
+         leaf_g(ifm)%cstar(i,j,2) = (1. - tfact) * ed_fluxp_g(ifm)%cstar(i,j)              &
+                                  +       tfact  * ed_fluxf_g(ifm)%cstar(i,j)
 
          !---------------------------------------------------------------------------------!
          !      For the albedo and surface fluxes, we must blend land and water.  The land !
@@ -952,10 +982,17 @@ subroutine transfer_ed2leaf(ifm,timel)
                                      + leaf_g(ifm)%patch_area(i,j,1)                       &
                                      * wgrid_g(ifm)%sflux_r(i,j)
 
+         turb_g(ifm)%sflux_c(i,j)    = leaf_g(ifm)%patch_area(i,j,2)                       &
+                                     * ( (1.-tfact) * ed_fluxp_g(ifm)%sflux_c(i,j)         &
+                                       +     tfact  * ed_fluxf_g(ifm)%sflux_c(i,j))        &
+                                     + leaf_g(ifm)%patch_area(i,j,1)                       &
+                                     * wgrid_g(ifm)%sflux_c(i,j)
+
          !----- Copy the water-body fluxes, they are synchronised with BRAMS --------------!
          leaf_g(ifm)%ustar(i,j,1) = wgrid_g(ifm)%ustar(i,j)
          leaf_g(ifm)%tstar(i,j,1) = wgrid_g(ifm)%tstar(i,j)
          leaf_g(ifm)%rstar(i,j,1) = wgrid_g(ifm)%rstar(i,j)
+         leaf_g(ifm)%cstar(i,j,1) = wgrid_g(ifm)%cstar(i,j)
 
          !----- Find roughness scales for water bodies ------------------------------------!
          leaf_g(ifm)%patch_rough(i,j,1) = max(z0fac_water * leaf_g(ifm)%ustar(i,j,1) ** 2  &
@@ -1019,17 +1056,23 @@ subroutine transfer_ed2leaf(ifm,timel)
       do j=ja,jz
          radiate_g(ifm)%albedt(1,j) = radiate_g(ifm)%albedt(2,j)
          radiate_g(ifm)%rlongup(1,j)= radiate_g(ifm)%rlongup(2,j)
+
          turb_g(ifm)%sflux_u(1,j)   = turb_g(ifm)%sflux_u(2,j)
          turb_g(ifm)%sflux_v(1,j)   = turb_g(ifm)%sflux_v(2,j)
          turb_g(ifm)%sflux_w(1,j)   = turb_g(ifm)%sflux_w(2,j)
          turb_g(ifm)%sflux_t(1,j)   = turb_g(ifm)%sflux_t(2,j)
          turb_g(ifm)%sflux_r(1,j)   = turb_g(ifm)%sflux_r(2,j)
+         turb_g(ifm)%sflux_c(1,j)   = turb_g(ifm)%sflux_c(2,j)
+ 
          leaf_g(ifm)%ustar(1,j,1)   = leaf_g(ifm)%ustar(2,j,1)
          leaf_g(ifm)%rstar(1,j,1)   = leaf_g(ifm)%rstar(2,j,1)
          leaf_g(ifm)%tstar(1,j,1)   = leaf_g(ifm)%tstar(2,j,1)
+         leaf_g(ifm)%cstar(1,j,1)   = leaf_g(ifm)%cstar(2,j,1)
+ 
          leaf_g(ifm)%ustar(1,j,2)   = leaf_g(ifm)%ustar(2,j,2)
          leaf_g(ifm)%rstar(1,j,2)   = leaf_g(ifm)%rstar(2,j,2)
          leaf_g(ifm)%tstar(1,j,2)   = leaf_g(ifm)%tstar(2,j,2)
+         leaf_g(ifm)%cstar(1,j,2)   = leaf_g(ifm)%cstar(2,j,2)
       end do
    end if
 
@@ -1038,18 +1081,23 @@ subroutine transfer_ed2leaf(ifm,timel)
       do j = ja, jz
          radiate_g(ifm)%albedt(m2,j) = radiate_g(ifm)%albedt(m2-1,j)
          radiate_g(ifm)%rlongup(m2,j)= radiate_g(ifm)%rlongup(m2-1,j)
+
          turb_g(ifm)%sflux_u(m2,j)= turb_g(ifm)%sflux_u(m2-1,j)
          turb_g(ifm)%sflux_v(m2,j)= turb_g(ifm)%sflux_v(m2-1,j)
          turb_g(ifm)%sflux_w(m2,j)= turb_g(ifm)%sflux_w(m2-1,j)
          turb_g(ifm)%sflux_t(m2,j)= turb_g(ifm)%sflux_t(m2-1,j)
          turb_g(ifm)%sflux_r(m2,j)= turb_g(ifm)%sflux_r(m2-1,j)
+         turb_g(ifm)%sflux_c(m2,j)= turb_g(ifm)%sflux_c(m2-1,j)
       
          leaf_g(ifm)%ustar(m2,j,1)=leaf_g(ifm)%ustar(m2-1,j,1)
          leaf_g(ifm)%rstar(m2,j,1)=leaf_g(ifm)%rstar(m2-1,j,1)
          leaf_g(ifm)%tstar(m2,j,1)=leaf_g(ifm)%tstar(m2-1,j,1)
+         leaf_g(ifm)%cstar(m2,j,1)=leaf_g(ifm)%cstar(m2-1,j,1)
+
          leaf_g(ifm)%ustar(m2,j,2)=leaf_g(ifm)%ustar(m2-1,j,2)
          leaf_g(ifm)%rstar(m2,j,2)=leaf_g(ifm)%rstar(m2-1,j,2)
          leaf_g(ifm)%tstar(m2,j,2)=leaf_g(ifm)%tstar(m2-1,j,2)
+         leaf_g(ifm)%cstar(m2,j,2)=leaf_g(ifm)%cstar(m2-1,j,2)
       end do
    end if
   
@@ -1058,19 +1106,24 @@ subroutine transfer_ed2leaf(ifm,timel)
       do i = ia,iz
          radiate_g(ifm)%albedt(i,1) = radiate_g(ifm)%albedt(i,2)
          radiate_g(ifm)%rlongup(i,1)= radiate_g(ifm)%rlongup(i,2)
+
          turb_g(ifm)%sflux_u(i,1)= turb_g(ifm)%sflux_u(i,2)
          turb_g(ifm)%sflux_v(i,1)= turb_g(ifm)%sflux_v(i,2)
          turb_g(ifm)%sflux_w(i,1)= turb_g(ifm)%sflux_w(i,2)
          turb_g(ifm)%sflux_t(i,1)= turb_g(ifm)%sflux_t(i,2)
          turb_g(ifm)%sflux_r(i,1)= turb_g(ifm)%sflux_r(i,2)
+         turb_g(ifm)%sflux_c(i,1)= turb_g(ifm)%sflux_c(i,2)
          
          leaf_g(ifm)%ustar(i,1,1)=leaf_g(ifm)%ustar(i,2,1)
          leaf_g(ifm)%rstar(i,1,1)=leaf_g(ifm)%rstar(i,2,1)
          leaf_g(ifm)%tstar(i,1,1)=leaf_g(ifm)%tstar(i,2,1)
+         leaf_g(ifm)%cstar(i,1,1)=leaf_g(ifm)%cstar(i,2,1)
+
          leaf_g(ifm)%ustar(i,1,2)=leaf_g(ifm)%ustar(i,2,2)
          leaf_g(ifm)%rstar(i,1,2)=leaf_g(ifm)%rstar(i,2,2)
          leaf_g(ifm)%tstar(i,1,2)=leaf_g(ifm)%tstar(i,2,2)
-      enddo
+         leaf_g(ifm)%cstar(i,1,2)=leaf_g(ifm)%cstar(i,2,2)
+      end do
    end if
 
 
@@ -1079,20 +1132,25 @@ subroutine transfer_ed2leaf(ifm,timel)
       do i = ia,iz
          radiate_g(ifm)%albedt(i,m3) = radiate_g(ifm)%albedt(i,m3-1)
          radiate_g(ifm)%rlongup(i,m3)= radiate_g(ifm)%rlongup(i,m3-1)
+
          turb_g(ifm)%sflux_u(i,m3)= turb_g(ifm)%sflux_u(i,m3-1)
          turb_g(ifm)%sflux_v(i,m3)= turb_g(ifm)%sflux_v(i,m3-1)
          turb_g(ifm)%sflux_w(i,m3)= turb_g(ifm)%sflux_w(i,m3-1)
          turb_g(ifm)%sflux_t(i,m3)= turb_g(ifm)%sflux_t(i,m3-1)
          turb_g(ifm)%sflux_r(i,m3)= turb_g(ifm)%sflux_r(i,m3-1)
+         turb_g(ifm)%sflux_c(i,m3)= turb_g(ifm)%sflux_c(i,m3-1)
          
          leaf_g(ifm)%ustar(i,m3,1)=leaf_g(ifm)%ustar(i,m3-1,1)
          leaf_g(ifm)%rstar(i,m3,1)=leaf_g(ifm)%rstar(i,m3-1,1)
          leaf_g(ifm)%tstar(i,m3,1)=leaf_g(ifm)%tstar(i,m3-1,1)
+         leaf_g(ifm)%cstar(i,m3,1)=leaf_g(ifm)%cstar(i,m3-1,1)
+
          leaf_g(ifm)%ustar(i,m3,2)=leaf_g(ifm)%ustar(i,m3-1,2)
          leaf_g(ifm)%rstar(i,m3,2)=leaf_g(ifm)%rstar(i,m3-1,2)
          leaf_g(ifm)%tstar(i,m3,2)=leaf_g(ifm)%tstar(i,m3-1,2)
+         leaf_g(ifm)%cstar(i,m3,2)=leaf_g(ifm)%cstar(i,m3-1,2)
 
-      enddo
+      end do
    end if
 
    !----- Southwestern corner -------------------------------------------------------------!
@@ -1101,19 +1159,26 @@ subroutine transfer_ed2leaf(ifm,timel)
       jc=1
       ici=2
       jci=1+jdim
+
       radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
       radiate_g(ifm)%rlongup(ic,jc)= radiate_g(ifm)%rlongup(ici,jci)
+
       turb_g(ifm)%sflux_u(ic,jc)= turb_g(ifm)%sflux_u(ici,jci)
       turb_g(ifm)%sflux_v(ic,jc)= turb_g(ifm)%sflux_v(ici,jci)
       turb_g(ifm)%sflux_w(ic,jc)= turb_g(ifm)%sflux_w(ici,jci)
       turb_g(ifm)%sflux_t(ic,jc)= turb_g(ifm)%sflux_t(ici,jci)
       turb_g(ifm)%sflux_r(ic,jc)= turb_g(ifm)%sflux_r(ici,jci)
+      turb_g(ifm)%sflux_c(ic,jc)= turb_g(ifm)%sflux_c(ici,jci)
+
       leaf_g(ifm)%ustar(ic,jc,1)=leaf_g(ifm)%ustar(ici,jci,1)
       leaf_g(ifm)%rstar(ic,jc,1)=leaf_g(ifm)%rstar(ici,jci,1)
       leaf_g(ifm)%tstar(ic,jc,1)=leaf_g(ifm)%tstar(ici,jci,1)
+      leaf_g(ifm)%cstar(ic,jc,1)=leaf_g(ifm)%cstar(ici,jci,1)
+
       leaf_g(ifm)%ustar(ic,jc,2)=leaf_g(ifm)%ustar(ici,jci,2)
       leaf_g(ifm)%rstar(ic,jc,2)=leaf_g(ifm)%rstar(ici,jci,2)
       leaf_g(ifm)%tstar(ic,jc,2)=leaf_g(ifm)%tstar(ici,jci,2)
+      leaf_g(ifm)%cstar(ic,jc,2)=leaf_g(ifm)%cstar(ici,jci,2)
    end if
 
    !----- Southeastern corner -------------------------------------------------------------!
@@ -1122,19 +1187,26 @@ subroutine transfer_ed2leaf(ifm,timel)
       jc=1
       ici=m2-1
       jci=1+jdim
+
       radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
       radiate_g(ifm)%rlongup(ic,jc)= radiate_g(ifm)%rlongup(ici,jci)
+
       turb_g(ifm)%sflux_u(ic,jc)= turb_g(ifm)%sflux_u(ici,jci)
       turb_g(ifm)%sflux_v(ic,jc)= turb_g(ifm)%sflux_v(ici,jci)
       turb_g(ifm)%sflux_w(ic,jc)= turb_g(ifm)%sflux_w(ici,jci)
       turb_g(ifm)%sflux_t(ic,jc)= turb_g(ifm)%sflux_t(ici,jci)
       turb_g(ifm)%sflux_r(ic,jc)= turb_g(ifm)%sflux_r(ici,jci)
+      turb_g(ifm)%sflux_c(ic,jc)= turb_g(ifm)%sflux_c(ici,jci)
+
       leaf_g(ifm)%ustar(ic,jc,1)=leaf_g(ifm)%ustar(ici,jci,1)
       leaf_g(ifm)%rstar(ic,jc,1)=leaf_g(ifm)%rstar(ici,jci,1)
       leaf_g(ifm)%tstar(ic,jc,1)=leaf_g(ifm)%tstar(ici,jci,1)
+      leaf_g(ifm)%cstar(ic,jc,1)=leaf_g(ifm)%cstar(ici,jci,1)
+
       leaf_g(ifm)%ustar(ic,jc,2)=leaf_g(ifm)%ustar(ici,jci,2)
       leaf_g(ifm)%rstar(ic,jc,2)=leaf_g(ifm)%rstar(ici,jci,2)
       leaf_g(ifm)%tstar(ic,jc,2)=leaf_g(ifm)%tstar(ici,jci,2)
+      leaf_g(ifm)%cstar(ic,jc,2)=leaf_g(ifm)%cstar(ici,jci,2)
    end if
   
    !----- Northeastern corner -------------------------------------------------------------!
@@ -1143,40 +1215,54 @@ subroutine transfer_ed2leaf(ifm,timel)
       jc=m3
       ici=m2-1
       jci=m3-jdim
+
       radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
       radiate_g(ifm)%rlongup(ic,jc)= radiate_g(ifm)%rlongup(ici,jci)
+
       turb_g(ifm)%sflux_u(ic,jc)= turb_g(ifm)%sflux_u(ici,jci)
       turb_g(ifm)%sflux_v(ic,jc)= turb_g(ifm)%sflux_v(ici,jci)
       turb_g(ifm)%sflux_w(ic,jc)= turb_g(ifm)%sflux_w(ici,jci)
       turb_g(ifm)%sflux_t(ic,jc)= turb_g(ifm)%sflux_t(ici,jci)
       turb_g(ifm)%sflux_r(ic,jc)= turb_g(ifm)%sflux_r(ici,jci)
+      turb_g(ifm)%sflux_c(ic,jc)= turb_g(ifm)%sflux_c(ici,jci)
+
       leaf_g(ifm)%ustar(ic,jc,1)=leaf_g(ifm)%ustar(ici,jci,1)
       leaf_g(ifm)%rstar(ic,jc,1)=leaf_g(ifm)%rstar(ici,jci,1)
       leaf_g(ifm)%tstar(ic,jc,1)=leaf_g(ifm)%tstar(ici,jci,1)
+      leaf_g(ifm)%cstar(ic,jc,1)=leaf_g(ifm)%cstar(ici,jci,1)
+
       leaf_g(ifm)%ustar(ic,jc,2)=leaf_g(ifm)%ustar(ici,jci,2)
       leaf_g(ifm)%rstar(ic,jc,2)=leaf_g(ifm)%rstar(ici,jci,2)
       leaf_g(ifm)%tstar(ic,jc,2)=leaf_g(ifm)%tstar(ici,jci,2)
-   !end if
+      leaf_g(ifm)%cstar(ic,jc,2)=leaf_g(ifm)%cstar(ici,jci,2)
+   end if
   
    !----- Northwestern corner -------------------------------------------------------------!
-   !if (iand(ibcon,10) /= 0 .or. (iand(ibcon,2) /= 0 .and. jdim == 0)) then
+   if (iand(ibcon,10) /= 0 .or. (iand(ibcon,2) /= 0 .and. jdim == 0)) then
       ic=1
       jc=m3
       ici=2
       jci=m3-jdim
+
       radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
       radiate_g(ifm)%rlongup(ic,jc)= radiate_g(ifm)%rlongup(ici,jci)
+
       turb_g(ifm)%sflux_u(ic,jc)= turb_g(ifm)%sflux_u(ici,jci)
       turb_g(ifm)%sflux_v(ic,jc)= turb_g(ifm)%sflux_v(ici,jci)
       turb_g(ifm)%sflux_w(ic,jc)= turb_g(ifm)%sflux_w(ici,jci)
       turb_g(ifm)%sflux_t(ic,jc)= turb_g(ifm)%sflux_t(ici,jci)
       turb_g(ifm)%sflux_r(ic,jc)= turb_g(ifm)%sflux_r(ici,jci)
+      turb_g(ifm)%sflux_c(ic,jc)= turb_g(ifm)%sflux_c(ici,jci)
+
       leaf_g(ifm)%ustar(ic,jc,1)=leaf_g(ifm)%ustar(ici,jci,1)
       leaf_g(ifm)%rstar(ic,jc,1)=leaf_g(ifm)%rstar(ici,jci,1)
       leaf_g(ifm)%tstar(ic,jc,1)=leaf_g(ifm)%tstar(ici,jci,1)
+      leaf_g(ifm)%cstar(ic,jc,1)=leaf_g(ifm)%cstar(ici,jci,1)
+
       leaf_g(ifm)%ustar(ic,jc,2)=leaf_g(ifm)%ustar(ici,jci,2)
       leaf_g(ifm)%rstar(ic,jc,2)=leaf_g(ifm)%rstar(ici,jci,2)
       leaf_g(ifm)%tstar(ic,jc,2)=leaf_g(ifm)%tstar(ici,jci,2)
+      leaf_g(ifm)%cstar(ic,jc,2)=leaf_g(ifm)%cstar(ici,jci,2)
    end if
 
 
@@ -1192,7 +1278,7 @@ end subroutine transfer_ed2leaf
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine calc_met_lapse_ar(cgrid,ipy)
+subroutine calc_met_lapse(cgrid,ipy)
   
    use ed_state_vars         , only : edtype      & ! structure
                                     , polygontype ! ! structure
@@ -1250,7 +1336,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%rlong
             write(unit=*,fmt='(a,1x,es12.5)') '+ Minimum OK value: ',rlong_min
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with RLONG A','calc_met_lapse_ar'                   &
+            call fatal_error('Problems with RLONG A','calc_met_lapse'                      &
                             ,'edcp_met.f90')
          elseif ( cpoly%met(isi)%atm_tmp < 150.0) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -1259,7 +1345,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_tmp
             write(unit=*,fmt='(a,1x,es12.5)') '+ Minimum OK value: ',150.0
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with ATM_TMP','calc_met_lapse_ar'                   &
+            call fatal_error('Problems with ATM_TMP','calc_met_lapse'                      &
                             ,'edcp_met.f90')
          else if ( cpoly%met(isi)%atm_shv < 1.e-5) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -1268,7 +1354,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_shv
             write(unit=*,fmt='(a,1x,es12.5)') '+ Minimum OK value: ',1.e-5
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with ATM_SHV','calc_met_lapse_ar'                   &
+            call fatal_error('Problems with ATM_SHV','calc_met_lapse'                      &
                             ,'edcp_met.f90')
          elseif ( cpoly%met(isi)%rlong > 600.0) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -1277,7 +1363,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%rlong
             write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value: ',600.0
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with RLONG A','calc_met_lapse_ar'                   &
+            call fatal_error('Problems with RLONG A','calc_met_lapse'                      &
                             ,'edcp_met.f90')
          elseif ( cpoly%met(isi)%atm_tmp > 317.0) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -1286,7 +1372,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_tmp
             write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value: ',317.0
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with ATM_TMP','calc_met_lapse_ar'                   &
+            call fatal_error('Problems with ATM_TMP','calc_met_lapse'                      &
                             ,'edcp_met.f90')
          elseif ( cpoly%met(isi)%atm_shv > 30.0e-3) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -1295,7 +1381,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_shv
             write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value: ',30.0e-3
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with ATM_SHV','calc_met_lapse_ar'                   &
+            call fatal_error('Problems with ATM_SHV','calc_met_lapse'                      &
                             ,'edcp_met.f90')
          elseif ( cpoly%met(isi)%par_beam + cpoly%met(isi)%nir_beam &
                 + cpoly%met(isi)%par_diffuse + cpoly%met(isi)%nir_diffuse > 1320.0 ) then
@@ -1309,7 +1395,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
                                               , cpoly%met(isi)%nir_diffuse
             write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value (sum): ',1320.0
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with solar radiation','calc_met_lapse_ar'           &
+            call fatal_error('Problems with solar radiation','calc_met_lapse'              &
                             ,'ed_met_driver.f90')
          end if
       end do
@@ -1355,7 +1441,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%rlong
             write(unit=*,fmt='(a,1x,es12.5)') '+ Minimum OK value: ',rlong_min
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with RLONG A','calc_met_lapse_ar'                   &
+            call fatal_error('Problems with RLONG A','calc_met_lapse'                      &
                             ,'edcp_met.f90')
          elseif ( cpoly%met(isi)%atm_tmp < 150.0) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -1364,7 +1450,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_tmp
             write(unit=*,fmt='(a,1x,es12.5)') '+ Minimum OK value: ',150.0
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with ATM_TMP','calc_met_lapse_ar'                   &
+            call fatal_error('Problems with ATM_TMP','calc_met_lapse'                      &
                             ,'edcp_met.f90')
          else if ( cpoly%met(isi)%atm_shv < 1.e-5) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -1373,7 +1459,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_shv
             write(unit=*,fmt='(a,1x,es12.5)') '+ Minimum OK value: ',1.e-5
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with ATM_SHV','calc_met_lapse_ar'                   &
+            call fatal_error('Problems with ATM_SHV','calc_met_lapse'                      &
                             ,'edcp_met.f90')
          elseif ( cpoly%met(isi)%rlong > 600.0) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -1382,7 +1468,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%rlong
             write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value: ',600.0
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with RLONG A','calc_met_lapse_ar'                   &
+            call fatal_error('Problems with RLONG A','calc_met_lapse'                      &
                             ,'edcp_met.f90')
          elseif ( cpoly%met(isi)%atm_tmp > 317.0) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -1391,7 +1477,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_tmp
             write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value: ',317.0
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with ATM_TMP','calc_met_lapse_ar'                   &
+            call fatal_error('Problems with ATM_TMP','calc_met_lapse'                      &
                             ,'edcp_met.f90')
          elseif ( cpoly%met(isi)%atm_shv > 30.0e-3) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -1400,7 +1486,7 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_shv
             write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value: ',30.0e-3
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with ATM_SHV','calc_met_lapse_ar'                   &
+            call fatal_error('Problems with ATM_SHV','calc_met_lapse'                      &
                             ,'edcp_met.f90')
          elseif ( cpoly%met(isi)%par_beam + cpoly%met(isi)%nir_beam &
                 + cpoly%met(isi)%par_diffuse + cpoly%met(isi)%nir_diffuse > 1320.0 ) then
@@ -1414,13 +1500,13 @@ subroutine calc_met_lapse_ar(cgrid,ipy)
                                               , cpoly%met(isi)%nir_diffuse
             write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value (sum): ',1320.0
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with solar radiation','calc_met_lapse_ar'           &
+            call fatal_error('Problems with solar radiation','calc_met_lapse'              &
                             ,'ed_met_driver.f90')
          end if
       end do
    end if
    return
-end subroutine calc_met_lapse_ar
+end subroutine calc_met_lapse
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1441,7 +1527,7 @@ subroutine int_met_avg(cgrid)
                             , polygontype & ! structure
                             , sitetype    & ! structure
                             , patchtype   ! ! structure
-   use misc_coms     , only : dtlsm       & ! intent(in)
+   use ed_misc_coms  , only : dtlsm       & ! intent(in)
                             , frqfast     ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -1527,7 +1613,7 @@ subroutine copy_avgvars_to_leaf(ifm)
    use mem_grid      , only: nzg,nzs
    use rconstants    , only: t3ple,cliqvlme,cicevlme,allivlme
    use soil_coms     , only: soil
-   use misc_coms, only: frqsum
+   use ed_misc_coms  , only: frqsum
    implicit none
    
    !----- Argument ------------------------------------------------------------------------!
@@ -1572,6 +1658,7 @@ subroutine copy_avgvars_to_leaf(ifm)
       leaf_g(ifm)%veg_temp(ix,iy,2)  = cgrid%avg_veg_temp(ipy)
       
       leaf_g(ifm)%can_temp(ix,iy,2)  = cgrid%avg_can_temp(ipy)
+      leaf_g(ifm)%can_co2(ix,iy,2)  = cgrid%avg_can_co2(ipy)
       !----- ED uses specific humidity, converting it to mixing ratio. --------------------!
       leaf_g(ifm)%can_rvap(ix,iy,2)  = cgrid%avg_can_shv(ipy)/(1.-cgrid%avg_can_shv(ipy))
       

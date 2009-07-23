@@ -15,42 +15,37 @@
 !==========================================================================================!
 !==========================================================================================!
 subroutine rconv_driver(banneron)
-   use mem_cuparm, only : &
-           confrq       &  ! How often I should call this cloud
-          ,cptime       &  ! Time to start calling this cloud
-          ,nclouds      &  ! Number of clouds to use here 
-          ,nnqparm      &  ! Flag for cumulus parameterization
-          ,ndeepest     &  ! Flag for deepest cloud
-          ,nshallowest  &  ! Flag for shallowest cloud
-          ,grell_1st    &  ! First cloud to use Grell's parameterization
-          ,grell_last   &  ! Last cloud to use Grell's parameterization
-          ,cuparm_g     !
+   use mem_cuparm , only : confrq       & ! How often I should call this cloud
+                         , cptime       & ! Time to start calling this cloud
+                         , nclouds      & ! Number of clouds to use here 
+                         , nnqparm      & ! Flag for cumulus parameterization
+                         , ndeepest     & ! Flag for deepest cloud
+                         , nshallowest  & ! Flag for shallowest cloud
+                         , grell_1st    & ! First cloud to use Grell's parameterization
+                         , grell_last   & ! Last cloud to use Grell's parameterization
+                         , cuparm_g     !
           
-   use mem_grid, only:  &
-           initial      &  ! Flag for "initial" run
-          ,ngrid        &  ! Current grid
-          ,ngrids       &  ! Total # of grids
-          ,time         &  ! Current time
-          ,dtlt         &  ! Current grid delta-t
-          ,grid_g       !  ! Grid structure
+   use mem_grid   , only : initial      & ! Flag for "initial" run
+                         , ngrid        & ! Current grid
+                         , ngrids       & ! Total # of grids
+                         , time         & ! Current time
+                         , dtlt         & ! Current grid delta-t
+                         , grid_g       ! ! Grid structure
 
-   use node_mod, only:  &
-           mzp          &  ! Current grid # of vertical levels for this node
-          ,myp          &  ! Current grid # of meridional points for this node
-          ,mxp          &  ! Current grid # of zonal points for this node
-          ,ia           &  ! Westernmost boundary
-          ,iz           &  ! Easternmost boundary
-          ,ja           &  ! Southernmost boundary
-          ,jz           !  ! Northermost boundary
+   use node_mod   , only : mzp          & ! Current grid # of vertical levels for this node
+                         , myp          & ! Current grid # of meridional pts for this node
+                         , mxp          & ! Current grid # of zonal points for this node
+                         , ia           & ! Westernmost boundary
+                         , iz           & ! Easternmost boundary
+                         , ja           & ! Southernmost boundary
+                         , jz           ! ! Northermost boundary
    
-   use mem_turb, only:  &
-           turb_g       &  ! Turbulence structure
-          ,idiffk       !  ! Turbulence closure flag
+   use mem_turb   , only : turb_g       & ! Turbulence structure
+                         , idiffk       ! ! Turbulence closure flag
    
-   use mem_scratch, only : & 
-           scratch      !  ! Scratch structure
-   use mem_tend, only:  &
-           tend         !  ! Tendency structure
+   use mem_scratch, only : scratch      ! ! Scratch structure
+   use mem_tend   , only : tend         ! ! Tendency structure
+   use mem_basic  , only : co2_on       ! ! Flag, whether CO2 is prognosed in this run.
 
    implicit none
    logical, intent(in) :: banneron          ! Flag to print the banner

@@ -356,6 +356,8 @@ subroutine diffuse_brams31()
                   call atob(mxp*myp,turb_g(ngrid)%sflux_t,scratch%vt2da)
                case ('RTP')
                   call atob(mxp*myp,turb_g(ngrid)%sflux_r,scratch%vt2da)
+               case ('CO2P')
+                  call atob(mxp*myp,turb_g(ngrid)%sflux_c,scratch%vt2da)
                end select
             end if
 

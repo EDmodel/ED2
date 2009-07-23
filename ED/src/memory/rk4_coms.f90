@@ -66,6 +66,7 @@ module rk4_coms
       !----- Vertical fluxes. -------------------------------------------------------------!
       real(kind=8)                        :: upwp 
       real(kind=8)                        :: qpwp
+      real(kind=8)                        :: cpwp
       real(kind=8)                        :: tpwp
       real(kind=8)                        :: wpwp
 
@@ -385,6 +386,7 @@ module rk4_coms
    real(kind=8)    :: zveg
    real(kind=8)    :: wcapcan
    real(kind=8)    :: wcapcani
+   real(kind=8)    :: ccapcani
    real(kind=8)    :: hcapcani
    !=======================================================================================!
    !=======================================================================================!
@@ -534,6 +536,7 @@ module rk4_coms
       y%wpwp                           = 0.d0
       y%tpwp                           = 0.d0
       y%qpwp                           = 0.d0
+      y%cpwp                           = 0.d0
       
       y%rasveg                         = 0.d0
      

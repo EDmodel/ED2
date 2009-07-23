@@ -508,7 +508,7 @@ subroutine vegetation_dynamics(new_month,new_year)
 !        write (unit=*,fmt='(a)') '^^^ Reproduction...'
         call reproduction(cgrid,current_time%month)
 
-        if(include_fire == 1) then
+        if(include_fire /= 0) then
 !           write (unit=*,fmt='(a)') '^^^ Fire_frequency...'
            call fire_frequency(current_time%month,cgrid)
         end if

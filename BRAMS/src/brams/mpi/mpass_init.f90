@@ -359,6 +359,7 @@ subroutine masterput_nl(master_num)
    call MPI_Bcast(ISFCL,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(ICO2,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(CO2_ON,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(CO2CON,NZPMAX,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    
    call MPI_Bcast(LONRAD,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -1225,6 +1226,7 @@ subroutine nodeget_nl
    call MPI_Bcast(ISFCL,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(ICO2,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(CO2_ON,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(CO2CON,NZPMAX,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   
    call MPI_Bcast(LONRAD,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

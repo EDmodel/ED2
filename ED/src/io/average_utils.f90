@@ -267,7 +267,7 @@ subroutine integrate_ed_daily_output_state(cgrid)
    real                        :: poly_area_i,site_area_i, patch_lai_i
    real                        :: forest_site,forest_site_i, forest_poly
    real                        :: sss_fsn, sss_fsw, pss_fsn, pss_fsw
-   real                        :: sss_can_temp, sss_can_shv
+   real                        :: sss_can_temp, sss_can_shv, sss_can_co2
    real                        :: pss_veg_water, pss_veg_energy, pss_veg_hcap
    real                        :: sss_veg_water, sss_veg_energy, sss_veg_hcap
    !---------------------------------------------------------------------------------------!
@@ -285,6 +285,7 @@ subroutine integrate_ed_daily_output_state(cgrid)
       sss_veg_hcap   = 0.
       sss_can_temp   = 0.
       sss_can_shv    = 0.
+      sss_can_co2    = 0.
       forest_poly    = 0.
       
       siteloop: do isi=1, cpoly%nsites
@@ -346,6 +347,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
                         + cpoly%area(isi) * (sum(csite%can_temp * csite%area) * site_area_i)
          sss_can_shv    = sss_can_shv                                                      &
                         + cpoly%area(isi) * (sum(csite%can_shv * csite%area)  * site_area_i)
+         sss_can_co2    = sss_can_co2                                                      &
+                        + cpoly%area(isi) * (sum(csite%can_co2 * csite%area)  * site_area_i)
       end do siteloop
       
       !------------------------------------------------------------------------------------!
@@ -360,6 +363,7 @@ subroutine integrate_ed_daily_output_state(cgrid)
       cgrid%dmean_veg_hcap(ipy)   = cgrid%dmean_veg_hcap(ipy) + sss_veg_hcap  * poly_area_i
       cgrid%dmean_can_temp(ipy)   = cgrid%dmean_can_temp(ipy) + sss_can_temp  * poly_area_i
       cgrid%dmean_can_shv(ipy)    = cgrid%dmean_can_shv(ipy)  + sss_can_shv   * poly_area_i
+      cgrid%dmean_can_co2(ipy)    = cgrid%dmean_can_co2(ipy)  + sss_can_co2   * poly_area_i
 
       !------------------------------------------------------------------------------------!
       !    Variables already at edtype level, simple integration only.                     !
@@ -659,6 +663,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_veg_water(ipy)    = cgrid%dmean_veg_water(ipy)    * dtlsm_o_daysec
       cgrid%dmean_can_temp(ipy)     = cgrid%dmean_can_temp(ipy)     * dtlsm_o_daysec
       cgrid%dmean_can_shv(ipy)      = cgrid%dmean_can_shv(ipy)      * dtlsm_o_daysec
+      cgrid%dmean_can_co2(ipy)      = cgrid%dmean_can_co2(ipy)      * dtlsm_o_daysec
       cgrid%dmean_atm_temp(ipy)     = cgrid%dmean_atm_temp(ipy)     * dtlsm_o_daysec
       cgrid%dmean_atm_shv(ipy)      = cgrid%dmean_atm_shv(ipy)      * dtlsm_o_daysec
       cgrid%dmean_atm_prss(ipy)     = cgrid%dmean_atm_prss(ipy)     * dtlsm_o_daysec
@@ -908,6 +913,7 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_veg_temp       (ipy) = 0.
       cgrid%dmean_can_temp       (ipy) = 0.
       cgrid%dmean_can_shv        (ipy) = 0.
+      cgrid%dmean_can_co2        (ipy) = 0.
       cgrid%dmean_atm_temp       (ipy) = 0.
       cgrid%dmean_atm_shv        (ipy) = 0.
       cgrid%dmean_atm_prss       (ipy) = 0.
@@ -1004,6 +1010,7 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
       cgrid%mmean_veg_temp      (ipy) = cgrid%mmean_veg_temp      (ipy) + cgrid%dmean_veg_temp       (ipy)
       cgrid%mmean_can_temp      (ipy) = cgrid%mmean_can_temp      (ipy) + cgrid%dmean_can_temp       (ipy)
       cgrid%mmean_can_shv       (ipy) = cgrid%mmean_can_shv       (ipy) + cgrid%dmean_can_shv        (ipy)
+      cgrid%mmean_can_co2       (ipy) = cgrid%mmean_can_co2       (ipy) + cgrid%dmean_can_co2        (ipy)
       cgrid%mmean_atm_temp      (ipy) = cgrid%mmean_atm_temp      (ipy) + cgrid%dmean_atm_temp       (ipy)
       cgrid%mmean_atm_shv       (ipy) = cgrid%mmean_atm_shv       (ipy) + cgrid%dmean_atm_shv        (ipy)
       cgrid%mmean_atm_prss      (ipy) = cgrid%mmean_atm_prss      (ipy) + cgrid%dmean_atm_prss       (ipy)
@@ -1107,6 +1114,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_veg_temp       (ipy) = cgrid%mmean_veg_temp       (ipy) * ndaysi
       cgrid%mmean_can_temp       (ipy) = cgrid%mmean_can_temp       (ipy) * ndaysi
       cgrid%mmean_can_shv        (ipy) = cgrid%mmean_can_shv        (ipy) * ndaysi
+      cgrid%mmean_can_co2        (ipy) = cgrid%mmean_can_co2        (ipy) * ndaysi
       cgrid%mmean_atm_temp       (ipy) = cgrid%mmean_atm_temp       (ipy) * ndaysi
       cgrid%mmean_atm_shv        (ipy) = cgrid%mmean_atm_shv        (ipy) * ndaysi
       cgrid%mmean_atm_prss       (ipy) = cgrid%mmean_atm_prss       (ipy) * ndaysi
@@ -1241,6 +1249,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_veg_temp       (ipy) = 0.
       cgrid%mmean_can_temp       (ipy) = 0.
       cgrid%mmean_can_shv        (ipy) = 0.
+      cgrid%mmean_can_co2        (ipy) = 0.
       cgrid%mmean_atm_temp       (ipy) = 0.
       cgrid%mmean_atm_shv        (ipy) = 0.
       cgrid%mmean_atm_prss       (ipy) = 0.

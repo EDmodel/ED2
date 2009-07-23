@@ -1096,6 +1096,8 @@ subroutine init_disturb_params
                            , mature_harvest_age       & ! intent(out)
                            , fire_dryness_threshold   & ! intent(out)
                            , fire_smoist_threshold    & ! intent(out)
+                           , fire_smoist_depth        & ! intent(out)
+                           , k_fire_first             & ! intent(out)
                            , fire_parameter           ! ! intent(out)
 
    implicit none
@@ -1136,10 +1138,13 @@ subroutine init_disturb_params
    ! falls below a threshold defined by the total water of a soil column with average soil !
    ! moisture equal to fire_smoist_threshold [m3_H2O/m3_gnd] would have.                   !
    !---------------------------------------------------------------------------------------!
-   fire_smoist_threshold = 0.102
+   fire_smoist_threshold = 0.12
+
+   !----- Maximum depth that will be considered in the average soil -----------------------!
+   fire_smoist_depth     = -0.75
 
    !----- Dimensionless parameter controlling speed of fire spread. -----------------------!
-   fire_parameter = 1.0  
+   fire_parameter = 1.0
    
    return
 

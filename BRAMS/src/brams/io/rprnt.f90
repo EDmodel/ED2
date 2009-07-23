@@ -236,6 +236,8 @@ elseif (vnam == 'tstar'          ) then
         vnam2 = '[tstar (K)]              '
 elseif (vnam == 'rstar'          ) then
         vnam2 = '[rstar (g/kg)]           '
+elseif (vnam == 'cstar'          ) then
+        vnam2 = '[cstar (umol/mol)]       '
 elseif (vnam == 'veg_fracarea'   ) then
         vnam2 = '[veg_fracarea]           '
 elseif (vnam == 'veg_lai'        ) then
@@ -272,6 +274,8 @@ elseif (vnam == 'veg_temp'       ) then
         vnam2 = '[veg temp (K)]           '
 elseif (vnam == 'can_rvap'       ) then
         vnam2 = '[can_rvap (g/kg)]        '
+elseif (vnam == 'can_co2'       ) then
+        vnam2 = '[can_co2  (umol/mol)]    '
 elseif (vnam == 'can_temp'       ) then
         vnam2 = '[can_temp (K)]           '
 elseif (vnam == 'veg_ndvip'      ) then
@@ -365,6 +369,10 @@ do k = k1,k2
                call plin(nc,j,ipat,3,1.e3             &
                   ,leaf%rstar(i1:i2,j,ipat)              &
                   ,leaf%patch_area(i1:i2,j,ipat))
+            elseif (vnam == 'cstar'          ) then
+               call plin(nc,j,ipat,3,1.                  &
+                  ,leaf%cstar(i1:i2,j,ipat)              &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'veg_fracarea'   ) then
                call plin(nc,j,ipat,3,1.               &
                   ,leaf%veg_fracarea(i1:i2,j,ipat)       &
@@ -434,6 +442,10 @@ do k = k1,k2
             elseif (vnam == 'can_rvap'       ) then
                call plin(nc,j,ipat,3,1.e3             &
                   ,leaf%can_rvap(i1:i2,j,ipat)           &
+                  ,leaf%patch_area(i1:i2,j,ipat))
+            elseif (vnam == 'can_co2'       ) then
+               call plin(nc,j,ipat,3,1.                  &
+                  ,leaf%can_co2(i1:i2,j,ipat)            &
                   ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'can_temp'       ) then
                call plin(nc,j,ipat,2,1.               &
@@ -1781,14 +1793,14 @@ DO K=1,NNZP(1)
 ENDDO
 WRITE(M,310)IREF,JREF,TOPREF,(ZTN(K,1),U01DN(K,1),V01DN(K,1)  &
   ,DN01DN(K,1),PI01DN(K,1),VCTR1(K),TH01DN(K,1),VCTR2(K)  &
-  ,RT01DN(K,1),K=1,NNZP(1))
+  ,RT01DN(K,1),CO201DN(K,1),K=1,NNZP(1))
 310   FORMAT(/,'--------REFERENCE STATE at I,J=(',I4,',',I4  &
       ,')   SFC ELEV (M)= ',F6.1,'-------------'  &
  ,//,4X,'Z',6X,'U01D',4X,'V01D',4X,'DN01D',4X  &
- ,'PI01D',4X,'PRESS',4X,'TH01D',4X,'THD',6X,'RT01D'  &
+ ,'PI01D',4X,'PRESS',4X,'TH01D',4X,'THD',6X,'RT01D',4X,'CO201D'  &
  ,/,3X,'(m)',5X,'(m/s)',3X,'(m/s)',2X,'(kg/m3)',2X  &
- ,'(J/kgK)',4X,'(Pa)',5X,'(K)',5X,'(K)',5X,'(kg/kg)'  &
- ,//,(1X,F7.1,2F8.2,F8.3,F10.2,F10.1,2F8.2,F10.5))
+ ,'(J/kgK)',4X,'(Pa)',5X,'(K)',5X,'(K)',5X,'(kg/kg)',3X,'(ppm)'  &
+ ,//,(1X,F7.1,2F8.2,F8.3,F10.2,F10.1,2F8.2,F10.5,F9.3))
 !
 !STC..................................................................
 !  Print out the values chosen for the empirical constants in

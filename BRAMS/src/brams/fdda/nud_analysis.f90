@@ -9,19 +9,26 @@
 !------------------------------------------------------------------------------------------!
 subroutine datassim()
 
-   use mem_tend    , only : tend      ! ! intent(inout)
-   use mem_basic   , only : basic_g   & ! intent(in)
-                          , co2_on    ! ! intent(in)
-   use mem_grid    , only : ibcon     ! ! intent(in)
-   use mem_varinit , only : varinit_g ! ! intent(in)
-   use mem_scratch , only : scratch   ! ! intent(in)
-   use node_mod    , only : ia        & ! intent(in)
-                          , iz        & ! intent(in)
-                          , ja        & ! intent(in)
-                          , jz        & ! intent(in)
-                          , mxp       & ! intent(in)
-                          , myp       & ! intent(in)
-                          , mzp       ! ! intent(in)
+   use mem_tend    , only : tend        ! ! intent(inout)
+   use mem_basic   , only : basic_g     & ! intent(in)
+                          , co2_on      & ! intent(in)
+                          , co2con      ! ! intent(in)
+   use mem_grid    , only : jdim        & ! intent(in)
+                          , ngrid       & ! intent(in)
+                          , time        ! ! intent(in)
+   use mem_varinit , only : varinit_g   & ! intent(inout)
+                          , nud_cond    & ! intent(in)
+                          , tcond_beg   & ! intent(in)
+                          , tcond_end   ! ! intent(in)
+   use mem_scratch , only : scratch     ! ! intent(in)
+   use node_mod    , only : ia          & ! intent(in)
+                          , iz          & ! intent(in)
+                          , ja          & ! intent(in)
+                          , jz          & ! intent(in)
+                          , ibcon       & ! intent(in)
+                          , mxp         & ! intent(in)
+                          , myp         & ! intent(in)
+                          , mzp         ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer :: iwest
@@ -52,7 +59,10 @@ subroutine datassim()
    !      We now must copy CO2 to scratch variables so it won't fail in case CO2 is not    !
    ! solved in this run.                                                                   !
    !---------------------------------------------------------------------------------------!
-   call azero4(mzp*mxp*myp,scratch%vt3do,scratch%vt3df,scratch%vt3dp,scratch%vt3de)
+   call azero(mzp*mxp*myp,scratch%vt3de)
+   call ae0(mzp*mxp*myp,scratch%vt3do,co2con(1))
+   call ae0(mzp*mxp*myp,scratch%vt3dp,co2con(1))
+   call ae0(mzp*mxp*myp,scratch%vt3df,co2con(1))
    if (co2_on) then
       call atob(mzp*mxp*myp,basic_g(ngrid)%co2p   ,scratch%vt3do)
       call atob(mzp*mxp*myp,varinit_g(ngrid)%varop,scratch%vt3dp)
@@ -108,10 +118,15 @@ subroutine nudge(m1,m2,m3,ia,iz,ja,jz,varwts,varup,varvp,varpp,vartp,varrp,varop
                 ,ut,vt,tht,rtt,pt,co2t)
 
    use mem_varinit , only : nud_type      & ! intent(in)
+                          , htime1        & ! intent(in)
+                          , htime2        & ! intent(in)
+                          , vtime1        & ! intent(in)
+                          , vtime2        & ! intent(in)
                           , wt_nudge_grid & ! intent(in)
                           , wt_nudge_uv   & ! intent(in)
                           , wt_nudge_th   & ! intent(in)
                           , wt_nudge_rt   & ! intent(in)
+                          , wt_nudge_pi   & ! intent(in)
                           , wt_nudge_co2  ! ! intent(in)
    use mem_scratch , only : vctr1         & ! intent(inout)
                           , vctr2         & ! intent(inout)
@@ -155,12 +170,14 @@ subroutine nudge(m1,m2,m3,ia,iz,ja,jz,varwts,varup,varvp,varpp,vartp,varrp,varop
    real   , dimension(m1,m2,m3), intent(in)    :: vp
    real   , dimension(m1,m2,m3), intent(in)    :: theta
    real   , dimension(m1,m2,m3), intent(in)    :: rtp
+   real   , dimension(m1,m2,m3), intent(in)    :: co2p
    real   , dimension(m1,m2,m3), intent(in)    :: pp
    real   , dimension(m1,m2,m3), intent(inout) :: ut
    real   , dimension(m1,m2,m3), intent(inout) :: vt
    real   , dimension(m1,m2,m3), intent(inout) :: tht
    real   , dimension(m1,m2,m3), intent(inout) :: rtt
-   real   , dimension(m1,m2,m3), intent(inout) :: pt             
+   real   , dimension(m1,m2,m3), intent(inout) :: co2t
+   real   , dimension(m1,m2,m3), intent(inout) :: pt
    !----- Local variables. ----------------------------------------------------------------!
    integer                                     :: i
    integer                                     :: j
@@ -233,13 +250,16 @@ end subroutine nudge
 ! for some condensed water.                                                                !
 !------------------------------------------------------------------------------------------! 
 subroutine nudge_cond(m1,m2,m3,ia,iz,ja,jz,varwts,varrph,varcph,varrfh,varcfh,rtp,rtt)
-   use mem_grid   , only : ngrid     & ! intent(in)
-                         , time      ! ! intent(in)
-   use mem_varinit, only : condtime1 & ! intent(in)
-                         , condtime2 ! ! intent(in)
-   use mem_scratch, only : vctr7     & ! intent(inout)
-                         , vctr8     & ! intent(inout)
-                         , vctr9     ! ! intent(inout)
+   use mem_grid   , only : ngrid          & ! intent(in)
+                         , time           ! ! intent(in)
+   use mem_varinit, only : condtime1      & ! intent(in)
+                         , condtime2      & ! intent(in)
+                         , wt_nudgec_grid & ! intent(in)
+                         , t_nudge_rc     ! ! intent(in)
+   use mem_scratch, only : vctr7          & ! intent(inout)
+                         , vctr8          & ! intent(inout)
+                         , vctr9          & ! intent(inout)
+                         , vctr17         ! ! intent(inout)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                  , intent(in)    :: m1
@@ -300,17 +320,21 @@ end subroutine nudge_cond
 !     This subroutine computes the nudging weight for large scale and model tendencies.    !
 !------------------------------------------------------------------------------------------!
 subroutine varweight(n1,n2,n3,varwts,topt,rtgt)
-   use mem_grid   , only : nzp      ! ! intent(in)
+   use mem_grid   , only : nzp      & ! intent(in)
+                         , ztop     & ! intent(in)
+                         , zt       & ! intent(in)
+                         , nxtnest  ! ! intent(in)
    use mem_varinit, only : tnudcent & ! intent(in)
                          , tnudlat  & ! intent(in)
                          , tnudtop  & ! intent(in)
-                         , znudtop  ! ! intent(in)
+                         , znudtop  & ! intent(in)
+                         , nudlat   ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                     , intent(in)    :: n1,n2,n3
    real   , dimension(n1,n2,n3), intent(inout) :: varwts
-   real   , dimension(n1,n2)   , intent(in)    :: topt
-   real   , dimension(n1,n2)   , intent(in)    :: rtgt
+   real   , dimension(n2,n2)   , intent(in)    :: topt
+   real   , dimension(n2,n3)   , intent(in)    :: rtgt
    !----- Local variables. ----------------------------------------------------------------!
    integer                                     :: i
    integer                                     :: j
@@ -408,7 +432,8 @@ subroutine vfintrpf(ifm,ifflag)
                          , nnyp      & ! intent(in)
                          , nnzp      & ! intent(in)
                          , maxnxp    & ! intent(in)
-                         , maxnyp    ! ! intent(in)
+                         , maxnyp    & ! intent(in)
+                         , nxtnest   ! ! intent(in)
    use mem_scratch, only : scratch   ! ! intent(inout)
    use mem_varinit, only : varinit_g ! ! intent(inout)
    use mem_basic  , only : co2_on    & ! intent(in)

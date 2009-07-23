@@ -211,6 +211,7 @@ module mem_scratch_grell
      
      allocate (outqtot       (mgmzp))
      allocate (outthil       (mgmzp))
+     allocate (outco2        (mgmzp))
 
      return
   end subroutine alloc_scratch_grell
@@ -358,6 +359,8 @@ module mem_scratch_grell
 
      if(allocated(outqtot       )) outqtot       = 0.
      if(allocated(outthil       )) outthil       = 0.
+     if(allocated(outco2        )) outco2        = 0.
+
      !-------------------------------------------------------------------------------------!
      ! Flushing scalars, we don't need to check for allocation here...                     !
      !-------------------------------------------------------------------------------------!

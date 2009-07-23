@@ -84,6 +84,26 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%cbr_bar(ico) = 1.0
 
   cpatch%old_stoma_data(ico)%recalc = 1
+  cpatch%old_stoma_data(ico)%T_L = 0.0
+  cpatch%old_stoma_data(ico)%e_A              = 0.0
+  cpatch%old_stoma_data(ico)%PAR              = 0.0
+  cpatch%old_stoma_data(ico)%rb_factor        = 0.0
+  cpatch%old_stoma_data(ico)%prss             = 0.0
+  cpatch%old_stoma_data(ico)%phenology_factor = 0.0
+  cpatch%old_stoma_data(ico)%gsw_open         = 0.0
+  cpatch%old_stoma_data(ico)%ilimit           = 0
+  cpatch%old_stoma_data(ico)%T_L_residual     = 0.0
+  cpatch%old_stoma_data(ico)%e_a_residual     = 0.0
+  cpatch%old_stoma_data(ico)%par_residual     = 0.0
+  cpatch%old_stoma_data(ico)%rb_residual      = 0.0
+  cpatch%old_stoma_data(ico)%leaf_residual    = 0.0
+  cpatch%old_stoma_data(ico)%gsw_residual     = 0.0
+  
+  
+  cpatch%old_stoma_vector(:,ico) = 0.
+  cpatch%old_stoma_vector(1,ico) = 1.
+
+
   root_depth = calc_root_depth(cpatch%hite(ico),cpatch%dbh(ico), cpatch%pft(ico))
   cpatch%krdepth(ico) = assign_root_depth(root_depth, lsl)
   
@@ -230,6 +250,26 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%total_plant_nitrogen_uptake(ip1:ip2) = 0.0
   
   csite%watertable(ip1:ip2)                  = slz(lsl)
+
+  csite%old_stoma_data_max(:,ip1:ip2)%recalc = 1
+  csite%old_stoma_data_max(:,ip1:ip2)%T_L = 0.0
+  csite%old_stoma_data_max(:,ip1:ip2)%e_A              = 0.0
+  csite%old_stoma_data_max(:,ip1:ip2)%PAR              = 0.0
+  csite%old_stoma_data_max(:,ip1:ip2)%rb_factor        = 0.0
+  csite%old_stoma_data_max(:,ip1:ip2)%prss             = 0.0
+  csite%old_stoma_data_max(:,ip1:ip2)%phenology_factor = 0.0
+  csite%old_stoma_data_max(:,ip1:ip2)%gsw_open         = 0.0
+  csite%old_stoma_data_max(:,ip1:ip2)%ilimit           = 0
+  csite%old_stoma_data_max(:,ip1:ip2)%T_L_residual     = 0.0
+  csite%old_stoma_data_max(:,ip1:ip2)%e_a_residual     = 0.0
+  csite%old_stoma_data_max(:,ip1:ip2)%par_residual     = 0.0
+  csite%old_stoma_data_max(:,ip1:ip2)%rb_residual      = 0.0
+  csite%old_stoma_data_max(:,ip1:ip2)%leaf_residual    = 0.0
+  csite%old_stoma_data_max(:,ip1:ip2)%gsw_residual     = 0.0
+  
+  
+  csite%old_stoma_vector_max(:,:,ip1:ip2) = 0.
+  csite%old_stoma_vector_max(1,:,ip1:ip2) = real(csite%old_stoma_data_max(:,ip1:ip2)%recalc)
 
   ncohorts = 0
   do ipa=1,csite%npatches

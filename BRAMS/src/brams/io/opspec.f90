@@ -1034,7 +1034,7 @@ subroutine opspec3
   case default
      print*,' fatal - isfcl must be either 1, 2, or 5. Yours is set to ',ibruvais,'...'
      ifaterr=ifaterr+1
-  end if
+  end select
 
   ! check whether the soil model will be run and make sure that the
   !   number of soil levels are correct.(severity - f,i )
@@ -1058,18 +1058,14 @@ subroutine opspec3
   
   !----- Check CO2 settings. --------------------------------------------------------------!
   select case (ico2)
-  case (0,2)
-     !----- No further check is necessary for the time being, move on. --------------------!
-     continue
-
-  case (1)
+  case (0,1)
      !----- Value is okay, now check whether the initial co2con makes sense... ------------!
      if (co2con(1) < 0.) then
-        print *, 'FATAL - When ICO2=1, CO2CON cannot be negative and yours is '            &
+        print *, 'FATAL - When ICO2 < 2, CO2CON(1) cannot be negative and yours is '       &
                ,co2con(1),'...'
         ifaterr = ifaterr + 1
      elseif (co2con(1) > 1.e6) then
-        print *, 'FATAL - When ICO2=1, CO2CON cannot be more than 1 million and yours is ' &
+        print *, 'FATAL - When ICO2 < 2, CO2CON(1) cannot be more than 1.E6 and yours is ' &
                ,co2con(1),'...'
         ifaterr = ifaterr + 1
      end if
@@ -1080,7 +1076,7 @@ subroutine opspec3
         print *, 'FATAL - When ICO2=2, CO2CON must be positive for all levels...'
         print *, 'Your values: ',co2con(1:nzz)
         ifaterr = ifaterr + 1
-     elseif (any(co2con(1:nzz) > 1.e6) then
+     elseif (any(co2con(1:nzz) > 1.e6)) then
         print *, 'FATAL - When ICO2=2, CO2CON must be less than 1 million for all levels...'
         print *, 'Your values: ',co2con(1:nzz)
         ifaterr = ifaterr + 1

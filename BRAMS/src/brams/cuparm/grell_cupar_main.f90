@@ -25,12 +25,12 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
                            ,wnorm_increment,dtime,depth_min,depth_max,edtmax,edtmin        &
                            ,inv_ensdim,masstol,max_heat,pmass_left,radius,relheight_down   &
                            ,zkbmax,zcutdown,z_detr,edt_eff,dellatheiv_eff,dellathil_eff    &
-                           ,dellaqtot_eff,pw_eff,dnmf_ens,upmf_ens,aad,aau,edt,dnmf,upmf   &
-                           ,mynum)
+                           ,dellaqtot_eff,dellaco2_eff,pw_eff,dnmf_ens,upmf_ens,aad,aau    &
+                           ,edt,dnmf,upmf,mynum)
                
    use mem_scratch_grell, only : &
       !----- Variables defined at the initialization process ------------------------------!
-      ,co20         & ! intent(in)  - Current CO2 mixing ratio                    [    ppm]
+       co20         & ! intent(in)  - Current CO2 mixing ratio                    [    ppm]
       ,co2          & ! intent(in)  - CO2 mixing ratio with forcing.              [    ppm]
       ,co2sur       & ! intent(in)  - surface CO2 mixing ratio                    [    ppm]
       ,dens_curr    & ! intent(in)  - Current density to strenghten updraft       [kg/m²/s]
@@ -159,7 +159,8 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
    real, dimension(mgmzp,maxens_eff,maxens_cap), intent(inout) :: &
                            dellatheiv_eff & ! Ice-vapour equiv. pot. temperature  [      K]
                           ,dellathil_eff  & ! Ice-liquid potential temperature    [      K]
-                          ,dellaqtot_eff  & ! Total mixing ratio                  [  kg/kg]
+                          ,dellaco2_eff   & ! CO2 mixing ratio                    [    ppm]
+                          ,dellaqtot_eff  & ! Total water mixing ratio            [  kg/kg]
                           ,pw_eff         ! ! Fall-out water                      [  kg/kg]
    !----- Ensemble variables, reference mass fluxes, in [kg/m²/s] -------------------------!
    real, dimension(maxens_dyn,maxens_lsf,maxens_eff,maxens_cap), intent(out) :: & 
@@ -1038,8 +1039,8 @@ subroutine grell_cupar_main(closure_type,comp_down,comp_noforc_cldwork,comp_modi
                                              ,x_co2_cup,x_rho_cup,x_theivu_cld,etau_cld    &
                                              ,dzu_cld,x_thilu_cld,x_tu_cld,x_qtotu_cld     &
                                              ,x_qvapu_cld,x_qliqu_cld,x_qiceu_cld          &
-                                             ,x_qsatu_cld,x_co2u_cld,x_rhou_cld,x_dbyu     &,x_pwu_cld      &
-                                             ,x_pwav,x_ktop,x_ierr)
+                                             ,x_qsatu_cld,x_co2u_cld,x_rhou_cld,x_dbyu     &
+                                             ,x_pwu_cld,x_pwav,x_ktop,x_ierr)
 
                !---------------------------------------------------------------------------!
                ! 6i. Recalculating the updraft cloud work                                  !

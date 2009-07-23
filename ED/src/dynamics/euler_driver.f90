@@ -205,7 +205,7 @@ subroutine leaf3_land(csite,ipa, nlev_sfcwater,   &
 
   nlsw1 = max(csite%nlev_sfcwater(ipa),1)
 
-  call canopy(                                        &
+  call euler_canopy(                                 &
        nlev_sfcwater,         ntext_soil,            &
        ktrans,                &
        soil_water,            soil_fracliq,          &
@@ -239,7 +239,7 @@ subroutine leaf3_land(csite,ipa, nlev_sfcwater,   &
   !  4. Update sfcwater layer energies due to heat flux and solar radiation
   !  5. Evaluate melting and percolation of liquid through sfcwater layers
   
-  call sfcwater(  &
+  call euler_sfcwater(  &
        nlev_sfcwater,    ntext_soil,       &
        soil_rfactor,     soil_water,       &
        soil_energy,      sfcwater_mass,    &
@@ -321,7 +321,7 @@ end subroutine leaf3_land
 
 !***************************************************************************
 
-subroutine canopy(nlev_sfcwater, ntext_soil, ktrans,   &
+subroutine euler_canopy(nlev_sfcwater, ntext_soil, ktrans,   &
                   soil_water, soil_fracliq, soil_tempk,                   &
                   sfcwater_mass, sfcwater_tempk,                          &
                   veg_height, veg_rough, veg_tai,                &
@@ -518,10 +518,10 @@ call canopy_update_euler(csite,ipa, vels, rhos, atm_tmp, prss, pcpg, qpcpg,   &
 
 
 return
-end subroutine canopy
+end subroutine euler_canopy
 
 !***************************************************************************
-subroutine sfcwater(nlev_sfcwater,ntext_soil,                       &
+subroutine euler_sfcwater(nlev_sfcwater,ntext_soil,                        &
                     soil_rfactor, soil_water, soil_energy,                 &
                     sfcwater_mass, sfcwater_energy, sfcwater_depth,        &
                     soil_tempk, soil_fracliq, sfcwater_tempk,              &
@@ -1110,7 +1110,7 @@ enddo
 nlev_sfcwater = nlev_new
 
 return
-end subroutine sfcwater
+end subroutine euler_sfcwater
 !==========================================================================================!
 !==========================================================================================!
 

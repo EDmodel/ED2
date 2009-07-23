@@ -364,11 +364,11 @@ subroutine rams_mem_alloc(proc_type)
    allocate(turb_g(ngrids),turbm_g(ngrids))
    do ng=1,ngrids
       call nullify_turb(turb_g(ng)) ; call nullify_turb(turbm_g(ng))
-      call alloc_turb(turb_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng)
+      call alloc_turb(turb_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng,co2_on)
       if (imean == 1) then
-         call alloc_turb(turbm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng)
+         call alloc_turb(turbm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng,co2_on)
       elseif (imean == 0) then
-         call alloc_turb(turbm_g(ng),1,1,1,ng)
+         call alloc_turb(turbm_g(ng),1,1,1,ng,co2_on)
       end if
       call zero_turb(turb_g(ng))
       call zero_turb(turbm_g(ng))

@@ -843,10 +843,12 @@ module canopy_struct_dynamics
       use rk4_coms             , only : rk4met                & ! intent(in)
                                       , wcapcan               & ! intent(out)
                                       , wcapcani              & ! intent(out)
+                                      , ccapcani              & ! intent(out)
                                       , hcapcani              ! ! intent(out)
       use canopy_air_coms      , only : minimum_canopy_depth  ! ! intent(in)
       use ed_state_vars        , only : sitetype              ! ! structure
-      use consts_coms          , only : cpi8                  ! ! intent(in)
+      use consts_coms          , only : cpi8                  & ! intent(in)
+                                      , mmdry8                ! ! intent(in)
       
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -862,8 +864,8 @@ module canopy_struct_dynamics
       
       wcapcan  = rk4met%rhos * canopy_depth
       wcapcani = 1.d0 / wcapcan
+      ccapcani = mmdry8 * wcapcani
       hcapcani = cpi8 * wcapcani
-
       return
    end subroutine can_whcap
    !=======================================================================================!
