@@ -1,13 +1,13 @@
 
 subroutine read_ednl(iunit)
   
-  use max_dims , only: n_pft
+  use ed_max_dims , only: n_pft
 
   use soil_coms, only: ed_zrough => zrough, soil_database, &
        isoilstateinit, isoildepthflg, isoilbc, soilstate_db, soildepth_db,   &
        runoff_time,veg_database
 
-  use met_driver_coms,only: ed_met_driver_db,imettype,metcyc1,metcycf,initial_co2 &
+  use met_driver_coms,only: ed_met_driver_db,imettype,metcyc1,metcycf &
                            ,lapse_scheme
 
   use mem_sites, only: n_soi, soi_lat, soi_lon, n_ed_region, ed_reg_latmin,  &
@@ -25,16 +25,15 @@ subroutine read_ednl(iunit)
   
   use pft_coms, only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
   
-  use misc_coms, only:  ifoutput,idoutput,imoutput,iyoutput,isoutput, &
+  use ed_misc_coms, only:  ifoutput,idoutput,imoutput,iyoutput,isoutput, &
        frqfast, frqstate, outfast,outstate,unitfast,unitstate,        &
        ied_init_mode, current_time,ed_inputs_dir,                     &
        end_time, integration_scheme, ffilout,  dtlsm,                 &
        iprintpolys,printvars,npvars,pfmtstr,ipmax,ipmin,              &
-       iedcnfgf,ffilout,sfilout,sfilin,event_file
+       iedcnfgf,ffilout,sfilout,sfilin,event_file, attach_metadata, icanturb
 
   use grid_coms, only: timmax,time
   
-  use ed_misc_coms,only: attach_metadata, icanturb
   
   use optimiz_coms, only : ioptinpt
   
@@ -69,7 +68,7 @@ subroutine read_ednl(iunit)
        crown_mod,n_plant_lim,n_decomp_lim,include_fire,ianth_disturb,        &
        icanturb,include_these_pft,agri_stock,plantation_stock,pft_1st_check, &
        maxpatch,maxcohort,treefall_disturbance_rate,runoff_time,iprintpolys, &
-       npvars,printvars,pfmtstr,ipmin,ipmax,initial_co2,iphenys1,iphenysf,   &
+       npvars,printvars,pfmtstr,ipmin,ipmax,iphenys1,iphenysf,               &
        iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
 
   read (iunit, iostat=err, NML=ED2_INFO)
@@ -125,7 +124,6 @@ subroutine read_ednl(iunit)
      write(*,*) "pfmtstr=",pfmtstr
      write(*,*) "ipmin=",ipmin
      write(*,*) "ipmax=",ipmax
-     write(*,*) "initial_co2=",initial_co2
      write(*,*) "iphenys1=",iphenys1
      write(*,*) "iphenysf=",iphenysf
      write(*,*) "iphenyf1=",iphenyf1
@@ -247,7 +245,7 @@ subroutine copy_in_bramsnl(expnme_b, runtype_b, itimez_b, idatez_b, &
      centlat_b,centlon_b,nstratx_b,nstraty_b,iclobber_b,nzg_b,nzs_b,&
      isoilflg_b,nslcon_b,slz_b,slmstr_b,stgoff_b,zrough_b,ngrids_b)
   
-  use misc_coms, only: expnme, runtype, itimez, idatez, imonthz, iyearz, &
+  use ed_misc_coms, only: expnme, runtype, itimez, idatez, imonthz, iyearz, &
        itimea, idatea, imontha, iyeara, iclobber,radfrq
   
   use grid_coms, only: centlon,centlat,deltax,deltay,nnxp,nnyp,nstratx, &

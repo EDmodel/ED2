@@ -1,15 +1,15 @@
 !==========================================================================================!
 !==========================================================================================!
-! Subroutine odeint_ar                                                                     !
+! Subroutine odeint                                                                     !
 !                                                                                          !
 !     This subroutine will drive the integration of several ODEs that drive the fast-scale !
 ! state variables.                                                                         !
 !------------------------------------------------------------------------------------------!
-subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff)
+subroutine odeint(h1,csite,ipa,isi,ipy,ifm,integration_buff)
 
    use ed_state_vars  , only : sitetype               & ! structure
                              , patchtype              ! ! structure
-   use rk4_coms       , only : integration_vars_ar    & ! structure
+   use rk4_coms       , only : integration_vars    & ! structure
                              , rk4met                 & ! intent(in)
                              , rk4min_sfcwater_mass   & ! intent(in)
                              , maxstp                 & ! intent(in)
@@ -18,7 +18,7 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff)
                              , dtrk4                  & ! intent(in)
                              , dtrk4i                 & ! intent(in)
                              , tiny_offset            ! ! intent(in)
-   use rk4_stepper_ar , only : rkqs_ar                ! ! subroutine
+   use rk4_stepper , only : rkqs                ! ! subroutine
    use ed_misc_coms   , only : fast_diagnostics       ! ! intent(in)
    use hydrology_coms , only : useRUNOFF              ! ! intent(in)
    use grid_coms      , only : nzg                    ! ! intent(in)
@@ -30,7 +30,7 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff)
                              , wdnsi8                 ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(integration_vars_ar) , target      :: integration_buff ! RK4 variables
+   type(integration_vars) , target      :: integration_buff ! RK4 variables
    type(sitetype)            , target      :: csite            ! Current site
    integer                   , intent(in)  :: ipa              ! Current patch ID
    integer                   , intent(in)  :: isi              ! Current site ID
@@ -70,8 +70,8 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff)
    !    If top snow layer is too thin for computational stability, have it evolve in       !
    ! thermal equilibrium with top soil layer.                                              !
    !---------------------------------------------------------------------------------------!
-   call redistribute_snow_ar(integration_buff%initp, csite,ipa)
-   call update_diagnostic_vars_ar(integration_buff%initp,csite,ipa)
+   call redistribute_snow(integration_buff%initp, csite,ipa)
+   call update_diagnostic_vars(integration_buff%initp,csite,ipa)
 
 
 
@@ -79,7 +79,7 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff)
    !     Create temporary patches.                                                         !
    !---------------------------------------------------------------------------------------!
    cpatch => csite%patch(ipa)
-   call copy_rk4_patch_ar(integration_buff%initp, integration_buff%y,cpatch)
+   call copy_rk4_patch(integration_buff%initp, integration_buff%y,cpatch)
 
 
    !---------------------------------------------------------------------------------------!
@@ -95,17 +95,17 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff)
    timesteploop: do i=1,maxstp
 
       !----- Get initial derivatives ------------------------------------------------------!
-      call leaf_derivs_ar(integration_buff%y,integration_buff%dydx,csite,ipa,isi,ipy)
+      call leaf_derivs(integration_buff%y,integration_buff%dydx,csite,ipa,isi,ipy)
 
       !----- Get scalings used to determine stability -------------------------------------!
-      call get_yscal_ar(integration_buff%y, integration_buff%dydx,h,integration_buff%yscal &
+      call get_yscal(integration_buff%y, integration_buff%dydx,h,integration_buff%yscal &
                        ,cpatch)
 
       !----- Be sure not to overstep ------------------------------------------------------!
       if((x+h-tend)*(x+h-tbeg) > 0.d0) h=tend-x
 
       !----- Take the step ----------------------------------------------------------------!
-      call rkqs_ar(integration_buff,x,h,hdid,hnext,csite,ipa,isi,ipy,ifm)
+      call rkqs(integration_buff,x,h,hdid,hnext,csite,ipa,isi,ipy,ifm)
 
       !----- If the integration reached the next step, make some final adjustments --------!
       if((x-tend)*dtrk4 >= 0.d0)then
@@ -143,8 +143,8 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff)
                integration_buff%y%sfcwater_energy(ksn) =                                   &
                                      integration_buff%y%sfcwater_energy(ksn) - qwfree
 
-               call redistribute_snow_ar(integration_buff%y,csite,ipa)
-               call update_diagnostic_vars_ar(integration_buff%y,csite,ipa)
+               call redistribute_snow(integration_buff%y,csite,ipa)
+               call update_diagnostic_vars(integration_buff%y,csite,ipa)
 
                !----- Compute runoff for output -------------------------------------------!
                if(fast_diagnostics) then
@@ -174,7 +174,7 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff)
          end if
 
          !------ Copying the temporary patch to the next intermediate step ----------------!
-         call copy_rk4_patch_ar(integration_buff%y,integration_buff%initp, cpatch)
+         call copy_rk4_patch(integration_buff%y,integration_buff%initp, cpatch)
          !------ Updating the substep for next time and leave -----------------------------!
          csite%htry(ipa) = sngl(hnext)
 
@@ -187,10 +187,10 @@ subroutine odeint_ar(h1,csite,ipa,isi,ipy,ifm,integration_buff)
 
    !----- If it reached this point, that is really bad news... ----------------------------!
    print*,'Too many steps in routine odeint'
-   call print_rk4patch_ar(integration_buff%y, csite,ipa)
+   call print_rk4patch(integration_buff%y, csite,ipa)
 
    return
-end subroutine odeint_ar
+end subroutine odeint
 !==========================================================================================!
 !==========================================================================================!
 
@@ -264,7 +264,7 @@ end subroutine copy_met_2_rk4met
 !    This subroutine copies that variables that are integrated by the Runge-Kutta solver   !
 ! to a buffer structure.                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine copy_patch_init_ar(sourcesite,ipa,targetp)
+subroutine copy_patch_init(sourcesite,ipa,targetp)
    use ed_state_vars        , only : sitetype              & ! structure
                                    , patchtype             ! ! structure
    use grid_coms            , only : nzg                   & ! intent(in)
@@ -285,7 +285,7 @@ subroutine copy_patch_init_ar(sourcesite,ipa,targetp)
                                    , hcapcani              & ! intent(out)
                                    , rk4water_stab_thresh  & ! intent(in)
                                    , rk4min_sfcwater_mass  ! ! intent(in)
-   use max_dims             , only : n_pft                 ! ! intent(in)
+   use ed_max_dims             , only : n_pft                 ! ! intent(in)
    use canopy_radiation_coms, only : tai_min               ! ! intent(in)
    use therm_lib            , only : qwtk8                 ! ! subroutine
    use allometry            , only : dbh2bl                ! ! function
@@ -337,6 +337,7 @@ subroutine copy_patch_init_ar(sourcesite,ipa,targetp)
    targetp%wpwp = dble(sourcesite%wpwp(ipa))
    targetp%tpwp = dble(sourcesite%tpwp(ipa))
    targetp%qpwp = dble(sourcesite%qpwp(ipa))
+   targetp%cpwp = dble(sourcesite%cpwp(ipa))
 
   
    targetp%nlev_sfcwater = sourcesite%nlev_sfcwater(ipa)
@@ -458,7 +459,7 @@ subroutine copy_patch_init_ar(sourcesite,ipa,targetp)
    end if
 
    return
-end subroutine copy_patch_init_ar
+end subroutine copy_patch_init
 !==========================================================================================!
 !==========================================================================================!
 
@@ -472,7 +473,7 @@ end subroutine copy_patch_init_ar
 !    This subroutines increment the derivative into the previous guess to create the new   !
 ! guess.                                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine inc_rk4_patch_ar(rkp, inc, fac, cpatch)
+subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
    use ed_state_vars , only : sitetype          & ! structure
                             , patchtype         ! ! structure
    use rk4_coms      , only : rk4patchtype      & ! structure
@@ -518,6 +519,7 @@ subroutine inc_rk4_patch_ar(rkp, inc, fac, cpatch)
    rkp%wpwp = rkp%wpwp + fac * inc%wpwp
    rkp%tpwp = rkp%tpwp + fac * inc%tpwp
    rkp%qpwp = rkp%qpwp + fac * inc%qpwp
+   rkp%cpwp = rkp%cpwp + fac * inc%cpwp
 
   
    do ico = 1,cpatch%ncohorts
@@ -559,7 +561,7 @@ subroutine inc_rk4_patch_ar(rkp, inc, fac, cpatch)
    end if
 
    return
-end subroutine inc_rk4_patch_ar
+end subroutine inc_rk4_patch
 !==========================================================================================!
 !==========================================================================================!
 
@@ -573,7 +575,7 @@ end subroutine inc_rk4_patch_ar
 !    This subroutine finds the error scale for the integrated variables, which will be     !
 ! later used to define the relative error.                                                 !
 !------------------------------------------------------------------------------------------!
-subroutine get_yscal_ar(y, dy, htry, yscal, cpatch)
+subroutine get_yscal(y, dy, htry, yscal, cpatch)
    use ed_state_vars        , only : patchtype            ! ! structure
    use rk4_coms             , only : rk4patchtype         & ! structure
                                    , rk4met               & ! intent(in)
@@ -689,7 +691,7 @@ subroutine get_yscal_ar(y, dy, htry, yscal, cpatch)
 
 
    return
-end subroutine get_yscal_ar
+end subroutine get_yscal
 !==========================================================================================!
 !==========================================================================================!
 
@@ -703,14 +705,14 @@ end subroutine get_yscal_ar
 !    This subroutine loops through the integrating variables, seeking for the largest      !
 ! error.                                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine get_errmax_ar(errmax,yerr,yscal,cpatch,y,ytemp)
+subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
 
    use rk4_coms              , only : rk4patchtype  & ! structure
                                     , rk4eps        & ! intent(in)
                                     , rk4met        ! ! intent(in)
    use ed_state_vars         , only : patchtype     ! ! structure
    use grid_coms             , only : nzg           ! ! intent(in)
-   use misc_coms             , only : integ_err     & ! intent(in)
+   use ed_misc_coms             , only : integ_err     & ! intent(in)
                                     , record_err    ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -803,7 +805,7 @@ subroutine get_errmax_ar(errmax,yerr,yscal,cpatch,y,ytemp)
    end if
 
    return
-end subroutine get_errmax_ar
+end subroutine get_errmax
 !==========================================================================================!
 !==========================================================================================!
 
@@ -814,7 +816,7 @@ end subroutine get_errmax_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine print_errmax_ar(errmax,yerr,yscal,cpatch,y,ytemp)
+subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    use rk4_coms              , only : rk4patchtype  & ! Structure
                                     , rk4eps        & ! intent(in)
                                     , rk4met        ! ! intent(in)
@@ -934,7 +936,7 @@ subroutine print_errmax_ar(errmax,yerr,yscal,cpatch,y,ytemp)
    write(unit=*,fmt='(80a)') ('-',k=1,80)
 
    return
-end subroutine print_errmax_ar
+end subroutine print_errmax
 !==========================================================================================!
 !==========================================================================================!
 
@@ -975,7 +977,7 @@ end function large_error
 ! ables, namely the temperature and liquid fraction of leaf water, soil layers and         !
 ! temporary snow/pond layers.                                                                      !
 !------------------------------------------------------------------------------------------!
-subroutine update_diagnostic_vars_ar(initp, csite,ipa)
+subroutine update_diagnostic_vars(initp, csite,ipa)
    use rk4_coms             , only : rk4met               & ! intent(in)
                                    , rk4min_sfcwater_mass & ! intent(in)
                                    , rk4patchtype         ! ! structure
@@ -1047,7 +1049,7 @@ subroutine update_diagnostic_vars_ar(initp, csite,ipa)
    end do cohortloop
 
    return
-end subroutine update_diagnostic_vars_ar
+end subroutine update_diagnostic_vars
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1066,7 +1068,7 @@ end subroutine update_diagnostic_vars_ar
 ! 3. Compute the amount of mass each layer has, and redistribute them accordingly.         !
 ! 4. Percolates excessive liquid water if needed.                                          !
 !------------------------------------------------------------------------------------------!
-subroutine redistribute_snow_ar(initp,csite,ipa)
+subroutine redistribute_snow(initp,csite,ipa)
 
    use rk4_coms      , only : rk4patchtype         & ! structure
                             , rk4min_sfcw_mass     & ! intent(in)
@@ -1087,6 +1089,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
                             , cliq8                & ! intent(in)
                             , t3ple8               & ! intent(in)
                             , wdns8                & ! intent(in)
+                            , wdnsi8               & ! intent(in)
                             , tsupercool8          & ! intent(in)
                             , qliqt38              & ! intent(in)
                             , wdnsi8               ! ! intent(in)
@@ -1147,8 +1150,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
       elseif (totsnow <= rk4min_sfcwater_mass) then
          !---------------------------------------------------------------------------------!
          ! 1.a. Too little or negative mass.  Eliminate layers, ensuring that it will  not !
-         !      leak mass or energy, by "stealing" them from the top soil  !
-         !      layer.                                                                     !
+         !      leak mass or energy, by "stealing" them from the top soil layer.           !
          !---------------------------------------------------------------------------------!
          initp%sfcwater_energy(1) = sum(initp%sfcwater_energy(1:ksn))
          initp%sfcwater_mass(1)   = sum(initp%sfcwater_mass(1:ksn))
@@ -1193,7 +1195,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
          initp%soil_energy(nzg)   = initp%soil_energy(nzg)                                 &
                                   + initp%virtual_heat * dslzi8(nzg)
          initp%soil_water(nzg)    = initp%soil_water(nzg)                                  &
-                                  + initp%virtual_water * dslzi8(nzg)
+                                  + initp%virtual_water * dslzi8(nzg) * wdnsi8
          call qwtk8(initp%soil_energy(nzg),initp%soil_water(nzg)*wdns8                     &
                    ,soil8(csite%ntext_soil(nzg,ipa))%slcpd,initp%soil_tempk(nzg)           &
                    ,initp%soil_fracliq(nzg))
@@ -1441,7 +1443,7 @@ subroutine redistribute_snow_ar(initp,csite,ipa)
    end if
 
    return
-end subroutine redistribute_snow_ar
+end subroutine redistribute_snow
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1592,7 +1594,7 @@ end subroutine adjust_veg_properties
 !    This subroutine copies the values to different buffers inside the RK4 integration     !
 ! scheme.                                                                                  !
 !------------------------------------------------------------------------------------------!
-subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch)
+subroutine copy_rk4_patch(sourcep, targetp, cpatch)
 
    use rk4_coms      , only : rk4met            & ! intent(in)
                             , rk4patchtype      ! ! structure
@@ -1600,7 +1602,7 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch)
                             , patchtype         ! ! structure
    use grid_coms     , only : nzg               & ! intent(in)
                             , nzs               ! ! intent(in)
-   use max_dims      , only : n_pft             ! ! intent(in)
+   use ed_max_dims      , only : n_pft             ! ! intent(in)
    use ed_misc_coms  , only : fast_diagnostics  ! ! intent(in)
 
    implicit none
@@ -1626,6 +1628,7 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch)
    targetp%wpwp          = sourcep%wpwp
    targetp%tpwp          = sourcep%tpwp
    targetp%qpwp          = sourcep%qpwp
+   targetp%cpwp          = sourcep%cpwp
 
    targetp%ground_shv    = sourcep%ground_shv
    targetp%surface_ssh   = sourcep%surface_ssh
@@ -1705,7 +1708,7 @@ subroutine copy_rk4_patch_ar(sourcep, targetp, cpatch)
 
 
    return
-end subroutine copy_rk4_patch_ar
+end subroutine copy_rk4_patch
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1718,14 +1721,14 @@ end subroutine copy_rk4_patch_ar
 !==========================================================================================!
 !    This subroutine prints the patch and cohort information when the model falls apart... !
 !------------------------------------------------------------------------------------------!
-subroutine print_csiteipa_ar(csite, ipa)
+subroutine print_csiteipa(csite, ipa)
    use rk4_coms              , only : rk4met        ! ! intent(in)
    use ed_state_vars         , only : sitetype      & ! structure
                                     , patchtype     ! ! structure
-   use misc_coms             , only : current_time  ! ! intent(in)
+   use ed_misc_coms             , only : current_time  ! ! intent(in)
    use grid_coms             , only : nzs           & ! intent(in)
                                     , nzg           ! ! intent(in)
-   use max_dims              , only : n_pft         ! ! intent(in)
+   use ed_max_dims              , only : n_pft         ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)  , target     :: csite
@@ -1827,7 +1830,7 @@ subroutine print_csiteipa_ar(csite, ipa)
    write(unit=*,fmt='(80a)') ('=',k=1,80)
    write(unit=*,fmt='(a)'  ) ' '
    return
-end subroutine print_csiteipa_ar
+end subroutine print_csiteipa
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1838,10 +1841,10 @@ end subroutine print_csiteipa_ar
 
 !==========================================================================================!
 !==========================================================================================!
-!    This subroutine is similar to print_csiteipa_ar, except that it also prints the       !
+!    This subroutine is similar to print_csiteipa, except that it also prints the       !
 ! outcome of the Runge-Kutta integrator.                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine print_rk4patch_ar(y,csite,ipa)
+subroutine print_rk4patch(y,csite,ipa)
    use rk4_coms              , only : rk4patchtype         & ! structure
                                     , rk4met               & ! intent(in)
                                     , rk4min_sfcwater_mass ! ! intent(in)
@@ -1849,7 +1852,7 @@ subroutine print_rk4patch_ar(y,csite,ipa)
                                     , patchtype            ! ! structure
    use grid_coms             , only : nzg                  & ! intent(in)
                                     , nzs                  ! ! intent(in)
-   use misc_coms             , only : current_time         ! ! intent(in)
+   use ed_misc_coms             , only : current_time         ! ! intent(in)
    use therm_lib             , only : qtk8                 & ! subroutine
                                     , qwtk8                ! ! subroutine
    implicit none
@@ -1978,12 +1981,12 @@ subroutine print_rk4patch_ar(y,csite,ipa)
    write(unit=*,fmt='(a)'  ) ' '
 
    !----- Printing the corresponding patch information (with some redundancy) -------------!
-   call print_csiteipa_ar(csite, ipa)
+   call print_csiteipa(csite, ipa)
 
-   call fatal_error('IFLAG1 problem. The model didn''t converge!','print_rk4patch_ar'&
+   call fatal_error('IFLAG1 problem. The model didn''t converge!','print_rk4patch'&
                  &,'rk4_integ_utils.f90')
    return
-end subroutine print_rk4patch_ar
+end subroutine print_rk4patch
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1997,7 +2000,7 @@ end subroutine print_rk4patch_ar
 !    This subroutine will perform the allocation for the Runge-Kutta integrator structure, !
 ! and initialize it as well.                                                               !
 !------------------------------------------------------------------------------------------!
-subroutine initialize_rk4patches_ar(init)
+subroutine initialize_rk4patches(init)
 
    use ed_state_vars , only : edgrid_g              & ! intent(inout)
                             , edtype                & ! structure
@@ -2005,9 +2008,9 @@ subroutine initialize_rk4patches_ar(init)
                             , sitetype              & ! structure
                             , patchtype             ! ! structure
    use rk4_coms      , only : integration_buff      & ! structure
-                            , deallocate_rk4_coh_ar & ! structure
+                            , deallocate_rk4_coh & ! structure
                             , allocate_rk4_patch    & ! structure
-                            , allocate_rk4_coh_ar   ! ! structure
+                            , allocate_rk4_coh   ! ! structure
    use grid_coms     , only : ngrids                ! ! intent(in)
    implicit none
    !----- Argument ------------------------------------------------------------------------!
@@ -2029,18 +2032,18 @@ subroutine initialize_rk4patches_ar(init)
       !    If this is not initialization, deallocate cohort memory from integration        !
       ! patches.                                                                           !
       !------------------------------------------------------------------------------------!
-      call deallocate_rk4_coh_ar(integration_buff%initp)
-      call deallocate_rk4_coh_ar(integration_buff%yscal)
-      call deallocate_rk4_coh_ar(integration_buff%y)
-      call deallocate_rk4_coh_ar(integration_buff%dydx)
-      call deallocate_rk4_coh_ar(integration_buff%yerr)
-      call deallocate_rk4_coh_ar(integration_buff%ytemp)
-      call deallocate_rk4_coh_ar(integration_buff%ak2)
-      call deallocate_rk4_coh_ar(integration_buff%ak3)
-      call deallocate_rk4_coh_ar(integration_buff%ak4)
-      call deallocate_rk4_coh_ar(integration_buff%ak5)
-      call deallocate_rk4_coh_ar(integration_buff%ak6)
-      call deallocate_rk4_coh_ar(integration_buff%ak7)
+      call deallocate_rk4_coh(integration_buff%initp)
+      call deallocate_rk4_coh(integration_buff%yscal)
+      call deallocate_rk4_coh(integration_buff%y)
+      call deallocate_rk4_coh(integration_buff%dydx)
+      call deallocate_rk4_coh(integration_buff%yerr)
+      call deallocate_rk4_coh(integration_buff%ytemp)
+      call deallocate_rk4_coh(integration_buff%ak2)
+      call deallocate_rk4_coh(integration_buff%ak3)
+      call deallocate_rk4_coh(integration_buff%ak4)
+      call deallocate_rk4_coh(integration_buff%ak5)
+      call deallocate_rk4_coh(integration_buff%ak6)
+      call deallocate_rk4_coh(integration_buff%ak7)
    else
       !------------------------------------------------------------------------------------!
       !     If this is initialization, make sure soil and sfcwater arrays are allocated.   !
@@ -2077,21 +2080,21 @@ subroutine initialize_rk4patches_ar(init)
    ! write (unit=*,fmt='(a,1x,i5)') 'Maxcohort = ',maxcohort
 
    !----- Create new memory in each of the integration patches. ---------------------------!
-   call allocate_rk4_coh_ar(maxcohort,integration_buff%initp)
-   call allocate_rk4_coh_ar(maxcohort,integration_buff%yscal)
-   call allocate_rk4_coh_ar(maxcohort,integration_buff%y)
-   call allocate_rk4_coh_ar(maxcohort,integration_buff%dydx)
-   call allocate_rk4_coh_ar(maxcohort,integration_buff%yerr)
-   call allocate_rk4_coh_ar(maxcohort,integration_buff%ytemp)
-   call allocate_rk4_coh_ar(maxcohort,integration_buff%ak2)
-   call allocate_rk4_coh_ar(maxcohort,integration_buff%ak3)
-   call allocate_rk4_coh_ar(maxcohort,integration_buff%ak4)
-   call allocate_rk4_coh_ar(maxcohort,integration_buff%ak5)
-   call allocate_rk4_coh_ar(maxcohort,integration_buff%ak6)
-   call allocate_rk4_coh_ar(maxcohort,integration_buff%ak7)
+   call allocate_rk4_coh(maxcohort,integration_buff%initp)
+   call allocate_rk4_coh(maxcohort,integration_buff%yscal)
+   call allocate_rk4_coh(maxcohort,integration_buff%y)
+   call allocate_rk4_coh(maxcohort,integration_buff%dydx)
+   call allocate_rk4_coh(maxcohort,integration_buff%yerr)
+   call allocate_rk4_coh(maxcohort,integration_buff%ytemp)
+   call allocate_rk4_coh(maxcohort,integration_buff%ak2)
+   call allocate_rk4_coh(maxcohort,integration_buff%ak3)
+   call allocate_rk4_coh(maxcohort,integration_buff%ak4)
+   call allocate_rk4_coh(maxcohort,integration_buff%ak5)
+   call allocate_rk4_coh(maxcohort,integration_buff%ak6)
+   call allocate_rk4_coh(maxcohort,integration_buff%ak7)
   
    return
-end subroutine initialize_rk4patches_ar
+end subroutine initialize_rk4patches
 !==========================================================================================!
 !==========================================================================================!
 

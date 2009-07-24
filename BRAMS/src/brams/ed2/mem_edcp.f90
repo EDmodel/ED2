@@ -14,10 +14,12 @@ module mem_edcp
      real, pointer, dimension (:,:) :: ustar
      real, pointer, dimension (:,:) :: tstar
      real, pointer, dimension (:,:) :: rstar
+     real, pointer, dimension (:,:) :: cstar
      real, pointer, dimension (:,:) :: sflux_u
      real, pointer, dimension (:,:) :: sflux_v
      real, pointer, dimension (:,:) :: sflux_t
      real, pointer, dimension (:,:) :: sflux_r
+     real, pointer, dimension (:,:) :: sflux_c
      real, pointer, dimension (:,:) :: sflux_w
      real, pointer, dimension (:,:) :: rlongup
      real, pointer, dimension (:,:) :: albedt
@@ -29,10 +31,12 @@ module mem_edcp
      real, pointer, dimension(:,:) :: ustar
      real, pointer, dimension(:,:) :: tstar
      real, pointer, dimension(:,:) :: rstar
+     real, pointer, dimension(:,:) :: cstar
      real, pointer, dimension(:,:) :: sflux_u
      real, pointer, dimension(:,:) :: sflux_v
      real, pointer, dimension(:,:) :: sflux_t
      real, pointer, dimension(:,:) :: sflux_r
+     real, pointer, dimension(:,:) :: sflux_c
      real, pointer, dimension(:,:) :: sflux_w
      real, pointer, dimension(:,:) :: rlongup
      real, pointer, dimension(:,:) :: albedt
@@ -66,9 +70,11 @@ contains
     allocate(ed%ustar   (n2,n3)   )
     allocate(ed%tstar   (n2,n3)   )
     allocate(ed%rstar   (n2,n3)   )
+    allocate(ed%cstar   (n2,n3)   )
     allocate(ed%sflux_u   (n2,n3)   )
     allocate(ed%sflux_v   (n2,n3)   )
     allocate(ed%sflux_r   (n2,n3)   )
+    allocate(ed%sflux_c   (n2,n3)   )
     allocate(ed%sflux_t   (n2,n3)   )
     allocate(ed%sflux_w   (n2,n3)   )
     allocate(ed%rlongup   (n2,n3)   )
@@ -86,10 +92,12 @@ contains
     if (associated(ed%ustar     ))  nullify(ed%ustar   )
     if (associated(ed%tstar     ))  nullify(ed%tstar   )
     if (associated(ed%rstar     ))  nullify(ed%rstar   )
+    if (associated(ed%cstar     ))  nullify(ed%cstar   )
     if (associated(ed%sflux_u   ))  nullify(ed%sflux_u   )
     if (associated(ed%sflux_v   ))  nullify(ed%sflux_v   )
     if (associated(ed%sflux_r   ))  nullify(ed%sflux_r   )
     if (associated(ed%sflux_t   ))  nullify(ed%sflux_t   )
+    if (associated(ed%sflux_c   ))  nullify(ed%sflux_c   )
     if (associated(ed%sflux_w   ))  nullify(ed%sflux_w   )
     if (associated(ed%albedt    ))  nullify(ed%albedt   )
     if (associated(ed%rlongup   ))  nullify(ed%rlongup )
@@ -105,10 +113,12 @@ contains
     if (associated(ed%ustar     ))  ed%ustar   = 0.0
     if (associated(ed%tstar     ))  ed%tstar   = 0.0
     if (associated(ed%rstar     ))  ed%rstar   = 0.0
+    if (associated(ed%cstar     ))  ed%cstar   = 0.0
     if (associated(ed%sflux_u   ))  ed%sflux_u = 0.0
     if (associated(ed%sflux_v   ))  ed%sflux_v = 0.0
     if (associated(ed%sflux_r   ))  ed%sflux_r = 0.0
     if (associated(ed%sflux_t   ))  ed%sflux_t = 0.0
+    if (associated(ed%sflux_c   ))  ed%sflux_c = 0.0
     if (associated(ed%sflux_w   ))  ed%sflux_w = 0.0
     if (associated(ed%albedt    ))  ed%albedt  = 0.0
     if (associated(ed%rlongup   ))  ed%rlongup = 0.0
@@ -124,11 +134,13 @@ contains
     if (associated(ed%ustar  ))deallocate(ed%ustar  )
     if (associated(ed%tstar  ))deallocate(ed%tstar  )
     if (associated(ed%rstar  ))deallocate(ed%rstar  )
+    if (associated(ed%cstar  ))deallocate(ed%cstar  )
     if (associated(ed%rlongup  ))deallocate(ed%rlongup  )
     if (associated(ed%albedt   ))deallocate(ed%albedt   )
     if (associated(ed%sflux_u   ))  deallocate(ed%sflux_u   )
     if (associated(ed%sflux_v   ))  deallocate(ed%sflux_v   )
     if (associated(ed%sflux_r   ))  deallocate(ed%sflux_r   )
+    if (associated(ed%sflux_c   ))  deallocate(ed%sflux_c   )
     if (associated(ed%sflux_t   ))  deallocate(ed%sflux_t   )
     if (associated(ed%sflux_w   ))  deallocate(ed%sflux_w   )
     return
@@ -146,12 +158,14 @@ contains
     allocate(wg%ustar     (n2,n3)   )
     allocate(wg%tstar     (n2,n3)   )
     allocate(wg%rstar     (n2,n3)   )
+    allocate(wg%cstar     (n2,n3)   )
     allocate(wg%rlongup   (n2,n3)   )
     allocate(wg%albedt    (n2,n3)   )
     allocate(wg%sflux_u   (n2,n3)   )
     allocate(wg%sflux_v   (n2,n3)   )
     allocate(wg%sflux_r   (n2,n3)   )
     allocate(wg%sflux_t   (n2,n3)   )
+    allocate(wg%sflux_c   (n2,n3)   )
     allocate(wg%sflux_w   (n2,n3)   )
 
     return
@@ -166,12 +180,14 @@ contains
     if (associated(wg%ustar     ))  nullify(wg%ustar   )
     if (associated(wg%tstar     ))  nullify(wg%tstar   )
     if (associated(wg%rstar     ))  nullify(wg%rstar   )
+    if (associated(wg%cstar     ))  nullify(wg%cstar   )
     if (associated(wg%albedt    ))  nullify(wg%albedt   )
     if (associated(wg%rlongup   ))  nullify(wg%rlongup ) 
     if (associated(wg%sflux_u   ))  nullify(wg%sflux_u   )
     if (associated(wg%sflux_v   ))  nullify(wg%sflux_v   )
     if (associated(wg%sflux_r   ))  nullify(wg%sflux_r   )
     if (associated(wg%sflux_t   ))  nullify(wg%sflux_t   )
+    if (associated(wg%sflux_c   ))  nullify(wg%sflux_c   )
     if (associated(wg%sflux_w   ))  nullify(wg%sflux_w   )
     return
   end subroutine nullify_wgrid
@@ -185,12 +201,14 @@ contains
     if (associated(wg%ustar     ))  wg%ustar   = 0.0
     if (associated(wg%tstar     ))  wg%tstar   = 0.0
     if (associated(wg%rstar     ))  wg%rstar   = 0.0
+    if (associated(wg%cstar     ))  wg%cstar   = 0.0
     if (associated(wg%albedt    ))  wg%albedt  = 0.0
     if (associated(wg%rlongup   ))  wg%rlongup = 0.0 
     if (associated(wg%sflux_u   ))  wg%sflux_u = 0.0
     if (associated(wg%sflux_v   ))  wg%sflux_v = 0.0
     if (associated(wg%sflux_r   ))  wg%sflux_r = 0.0
     if (associated(wg%sflux_t   ))  wg%sflux_t = 0.0
+    if (associated(wg%sflux_c   ))  wg%sflux_c = 0.0
     if (associated(wg%sflux_w   ))  wg%sflux_w = 0.0
     return
   end subroutine zero_wgrid
@@ -205,12 +223,14 @@ contains
     if (associated(wg%ustar  ))deallocate(wg%ustar  )
     if (associated(wg%tstar  ))deallocate(wg%tstar  )
     if (associated(wg%rstar  ))deallocate(wg%rstar  )
+    if (associated(wg%cstar  ))deallocate(wg%cstar  )
     if (associated(wg%rlongup  ))deallocate(wg%rlongup  )
     if (associated(wg%albedt   ))deallocate(wg%albedt   )
     if (associated(wg%sflux_u   ))  deallocate(wg%sflux_u   )
     if (associated(wg%sflux_v   ))  deallocate(wg%sflux_v   )
     if (associated(wg%sflux_r   ))  deallocate(wg%sflux_r   )
     if (associated(wg%sflux_t   ))  deallocate(wg%sflux_t   )
+    if (associated(wg%sflux_c   ))  deallocate(wg%sflux_c   )
     if (associated(wg%sflux_w   ))  deallocate(wg%sflux_w   )
     return
   end subroutine dealloc_wgrid

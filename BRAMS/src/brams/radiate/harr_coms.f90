@@ -90,6 +90,7 @@ module harr_coms
    real, dimension(:)  , allocatable :: dzl   ! Delta-z                            [     m]
    real, dimension(:)  , allocatable :: dl    ! Air density                        [ kg/m³]
    real, dimension(:)  , allocatable :: pl    ! Pressure                           [    Pa]
+   real, dimension(:)  , allocatable :: co2l  ! CO2 density                        [ kg/m³]
    real, dimension(:)  , allocatable :: o3l   ! Calculated ozone profile           [  g/m³]
    real, dimension(:)  , allocatable :: vp    ! Vapour pressure                    [    Pa]
    real, dimension(:)  , allocatable :: zml   ! Heights of W points                [     m]
@@ -170,6 +171,7 @@ module harr_coms
       allocate (dl       (nrad    ))
       allocate (pl       (nrad    ))
       allocate (o3l      (nrad    ))
+      allocate (co2l     (nrad    ))
       allocate (vp       (nrad    ))
       allocate (zml      (nrad    ))
       allocate (ztl      (nrad    ))
@@ -226,6 +228,7 @@ module harr_coms
          dl   (k) = 0.0
          pl   (k) = 0.0
          o3l  (k) = 0.0
+         co2l (k) = 0.0
          vp   (k) = 0.0
          zml  (k) = 0.0
          ztl  (k) = 0.0

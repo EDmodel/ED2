@@ -274,6 +274,7 @@ rm -fv ed_filelist.o              ed_filelist.mod
 rm -fv ed_grid.o                  ed_grid.mod
 rm -fv ed_history_io.o            ed_history_io.mod
 rm -fv ed_init.o                  ed_init.mod
+rm -fv ed_max_dims.o              ed_max_dims.mod
 rm -fv ed_mem_grid_dim_defs.o     ed_mem_grid_dim_defs.mod
 rm -fv ed_misc_coms.o             ed_misc_coms.mod
 rm -fv ed_node_coms.o             ed_node_coms.mod
@@ -283,6 +284,7 @@ rm -fv ed_params.o                ed_params.mod
 rm -fv ed_state_vars.o            ed_state_vars.mod
 rm -fv ed_therm_lib.o             ed_therm_lib.mod
 rm -fv ed_type_init.o             ed_type_init.mod
+rm -fv ed_var_tables.o            ed_var_tables.mod
 rm -fv ed_work_vars.o             ed_work_vars.mod
 rm -fv ed_xml_config.o            ed_xml_config.mod
 rm -fv edio.o                     edio.mod
@@ -308,10 +310,8 @@ rm -fv landuse_init.o             landuse_init.mod
 rm -fv leaf_database.o            leaf_database.mod
 rm -fv libxml2f90.f90_pp.o        libxml2f90.f90_pp.mod
 rm -fv lsm_hyd.o                  lsm_hyd.mod
-rm -fv max_dims.o                 max_dims.mod
 rm -fv mem_sites.o                mem_sites.mod
 rm -fv met_driver_coms.o          met_driver_coms.mod
-rm -fv misc_coms.o                misc_coms.mod
 rm -fv mortality.o                mortality.mod
 rm -fv optimiz_coms.o             optimiz_coms.mod
 rm -fv phenology_aux.o            phenology_aux.mod
@@ -332,4 +332,3 @@ rm -fv soil_coms.o                soil_coms.mod
 rm -fv structural_growth.o        structural_growth.mod
 rm -fv twostream_rad.o            twostream_rad.mod
 rm -fv update_derived_props.o     update_derived_props.mod
-rm -fv var_tables_array.o         var_tables_array.mod

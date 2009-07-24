@@ -225,7 +225,7 @@ subroutine initlz (name_name)
      case (1,2,5)
         call sfcdata
      case (3)
-        call sfcdata_sib_driver
+        !call sfcdata_sib_driver
      end select
 
 
@@ -405,7 +405,7 @@ subroutine initlz (name_name)
      case (1,2,5)
         call sfcdata
      case (3)
-        call sfcdata_sib_driver
+        !call sfcdata_sib_driver
      end select
 
      ! Heterogenous Soil Moisture Init.
@@ -908,10 +908,11 @@ subroutine ReadNamelist(fileName)
        vwait1, &
        vwaittot, &
        wt_nudge_grid, &
-       wt_nudge_pi, &
-       wt_nudge_rt, &
-       wt_nudge_th, &
-       wt_nudge_uv, &
+       wt_nudge_pi,  &
+       wt_nudge_rt,  &
+       wt_nudge_th,  &
+       wt_nudge_uv,  &
+       wt_nudge_co2, &
        wt_nudgec_grid, &
        znudtop
   use micphys, only: aparm, &
@@ -941,9 +942,8 @@ subroutine ReadNamelist(fileName)
        rts, &
        ts, &
        us, &
-       vs
-  use sib_vars, only: co2_init, &
-       n_co2
+       vs, &
+       co2s
 
   ! CATT
   use catt_start, only: CATT
@@ -1016,6 +1016,10 @@ subroutine ReadNamelist(fileName)
   use grid_dims, only: &
        maxsteb,        &
        maxubtp
+  use mem_basic, only : &
+       co2_on,          &
+       co2con,          &
+       ico2             !
 
   ! Explicit domain decomposition
   use domain_decomp, only: domain_fname
@@ -1067,11 +1071,11 @@ subroutine ReadNamelist(fileName)
   namelist /MODEL_FILE_INFO/                                           &
        initial, nud_type, varfpfx, vwait1, vwaittot, nud_hfile, nudlat,&
        tnudlat, tnudcent, tnudtop, znudtop, wt_nudge_grid, wt_nudge_uv,&
-       wt_nudge_th, wt_nudge_pi, wt_nudge_rt, nud_cond, cond_hfile,    &
-       tcond_beg, tcond_end, t_nudge_rc, wt_nudgec_grid, if_oda,       &
-       oda_upaprefix,oda_sfcprefix, frqoda, todabeg, todaend, tnudoda, &
-       wt_oda_grid, wt_oda_uv, wt_oda_th, wt_oda_pi, wt_oda_rt,        &
-       roda_sfce, roda_sfc0, roda_upae,roda_upa0, roda_hgt,            &
+       wt_nudge_th, wt_nudge_pi, wt_nudge_rt, wt_nudge_co2, nud_cond,  &
+       cond_hfile,tcond_beg, tcond_end, t_nudge_rc, wt_nudgec_grid,    &
+       if_oda,oda_upaprefix,oda_sfcprefix, frqoda, todabeg, todaend,   &
+       tnudoda, wt_oda_grid, wt_oda_uv, wt_oda_th, wt_oda_pi,          &
+       wt_oda_rt, roda_sfce, roda_sfc0, roda_upae,roda_upa0, roda_hgt, &
        roda_zfact, oda_sfc_til, oda_sfc_tel, oda_upa_til, oda_upa_tel, &
        if_cuinv, cu_prefix, tnudcu, wt_cu_grid, tcu_beg, tcu_end,      &
        cu_tel, cu_til, imonthh, idateh, iyearh, itimeh,                &
@@ -1092,7 +1096,7 @@ subroutine ReadNamelist(fileName)
   namelist /MODEL_OPTIONS/ &
        naddsc, icorflg, iexev,imassflx, ibnd, jbnd, cphas, lsflg, nfpt,  &
        distim,iswrtyp, ilwrtyp,icumfdbk,                                 &
-       raddatfn,radfrq, lonrad, npatch, nvegpat, isfcl, n_co2, co2_init, &
+       raddatfn,radfrq, lonrad, npatch, nvegpat, isfcl,ico2,co2con,      &
        nvgcon, pctlcon, nslcon, drtcon, zrough, albedo, seatmp, dthcon,  &
        soil_moist, soil_moist_fail, usdata_in, usmodel_in, slz, slmstr,  &
        stgoff, if_urban_canopy, idiffk, ibruvais, ibotflx, ihorgrad,     &
@@ -1101,7 +1105,7 @@ subroutine ReadNamelist(fileName)
        pparm, sparm, aparm, gparm, hparm, gnu
 
   namelist /MODEL_SOUND/ &
-       ipsflg, itsflg, irtsflg, iusflg, hs, ps, ts, rts, us, vs
+       ipsflg, itsflg, irtsflg, iusflg, hs, ps, ts, rts, us, vs, co2s
 
   namelist /MODEL_PRINT/ &
        nplt, iplfld, ixsctn, isbval
@@ -1164,6 +1168,8 @@ subroutine ReadNamelist(fileName)
   itopsflg=0
   toptenh=0.0
   toptwvl=0.0
+  co2con=0.0
+  ico2=0
   iz0flg=0
   z0max=0.0
   gnu=0.0
@@ -1176,7 +1182,7 @@ subroutine ReadNamelist(fileName)
   ps=0.0
   hs=0.0
   rts=0.0
-  co2_init=0.0
+  co2s=0.0
   slz=0.0
   slmstr=0.0
   stgoff=0.0
@@ -1528,6 +1534,7 @@ subroutine ReadNamelist(fileName)
      write (*,*) "wt_nudge_th=", wt_nudge_th
      write (*,*) "wt_nudge_pi=", wt_nudge_pi
      write (*,*) "wt_nudge_rt=", wt_nudge_rt
+     write (*,*) "wt_nudge_co2=", wt_nudge_co2
      write (*,*) "nud_cond=", nud_cond
      write (*,*) "cond_hfile=", trim(cond_hfile)
      write (*,*) "tcond_beg=", tcond_beg
@@ -1673,8 +1680,8 @@ subroutine ReadNamelist(fileName)
      write (*, *) "npatch=",npatch
      write (*, *) "nvegpat=",nvegpat
      write (*, *) "isfcl=",isfcl
-     write (*, *) "n_co2=",n_co2
-     write (*, *) "co2_init=",co2_init
+     write (*, *) "ico2=",ico2
+     write (*, *) "co2con=",co2con
      write (*, *) "nvgcon=",nvgcon
      write (*, *) "pctlcon=",pctlcon
      write (*, *) "nslcon=",nslcon
@@ -1744,6 +1751,7 @@ subroutine ReadNamelist(fileName)
      write (*, *) "rts=",rts
      write (*, *) "us=",us
      write (*, *) "vs=",vs
+     write (*, *) "co2s=",co2s
      call abort_run('Error reading namelist, MODEL_SOUND block.' &
                    ,'ReadNamelist','rdint.f90')
   end if
@@ -1850,6 +1858,11 @@ subroutine ReadNamelist(fileName)
   vapour_on = level >= 1
   cloud_on  = level >= 2
   bulk_on   = level >= 3
+
+  !----------------------------------------------------------------------------------------!
+  !    Saving the CO2 complexity level into a logical variable.                            !
+  !----------------------------------------------------------------------------------------!
+  co2_on    = ico2 > 0
 
   return
 end subroutine ReadNamelist

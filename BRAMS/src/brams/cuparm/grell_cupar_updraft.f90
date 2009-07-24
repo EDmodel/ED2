@@ -110,13 +110,15 @@ end subroutine grell_updraft_origin
 recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwind,sigw     &
                                          ,exner_cup,p_cup,theiv_cup,thil_cup,t_cup         &
                                          ,qtot_cup,qvap_cup,qliq_cup,qice_cup,qsat_cup     &
-                                         ,rho_cup,dzd_cld,mentru_rate,theivu_cld,thilu_cld &
-                                         ,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld,qiceu_cld   &
-                                         ,qsatu_cld,rhou_cld,dbyu,k22,ierr,kbcon,wbuoymin)
+                                         ,co2_cup,rho_cup,dzd_cld,mentru_rate,theivu_cld   &
+                                         ,thilu_cld,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld   &
+                                         ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,k22   &
+                                         ,ierr,kbcon,wbuoymin)
    use rconstants, only : epi,rgas
    use therm_lib , only : idealdens
    implicit none
 
+   !----- Input variables -----------------------------------------------------------------!
    integer, intent(in)                  :: mkx        ! # of vertical layers
    integer, intent(in)                  :: mgmzp      ! Vertical dimension
    integer, intent(in)                  :: kbmax      ! Top level allowed for LFC
@@ -135,6 +137,7 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
    real, dimension(mgmzp), intent(in)   :: qliq_cup   ! Liquid mixing ratio        [ kg/kg]
    real, dimension(mgmzp), intent(in)   :: qice_cup   ! Ice mixing ratio           [ kg/kg]
    real, dimension(mgmzp), intent(in)   :: qsat_cup   ! Sat. vapour mixing ratio   [ kg/kg]
+   real, dimension(mgmzp), intent(in)   :: co2_cup    ! CO2 mixing ratio           [   ppm]
    real, dimension(mgmzp), intent(in)   :: rho_cup    ! Density                    [ kg/m設
    real, dimension(mgmzp), intent(in)   :: dzd_cld    ! Top-bottom cloud thickness [     m]
    real, dimension(mgmzp), intent(in)   :: mentru_rate! Entrainment rate           [   1/m]
@@ -147,6 +150,7 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
    real, dimension(mgmzp), intent(inout):: qliqu_cld  ! Updraft liquid mix.  ratio [ kg/kg]
    real, dimension(mgmzp), intent(inout):: qiceu_cld  ! Updraft ice    mix.  ratio [ kg/kg]
    real, dimension(mgmzp), intent(inout):: qsatu_cld  ! Updraft satur. mix. ratio  [ kg/kg]
+   real, dimension(mgmzp), intent(inout):: co2u_cld   ! Updraft CO2 mixing ratio   [   ppm]
    real, dimension(mgmzp), intent(inout):: rhou_cld   ! Updraft density            [ kg/m設
    real, dimension(mgmzp), intent(inout):: dbyu       ! Buoyancy acceleration      [  m/s淫
    !----- These variables may or may not be assigned here so use inout --------------------!
@@ -183,6 +187,7 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
    qliqu_cld  = qliq_cup
    qiceu_cld  = qice_cup
    qsatu_cld  = qsat_cup
+   co2u_cld   = co2_cup
    rhou_cld   = rho_cup
    dbyu       = 0.  
    
@@ -202,6 +207,7 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
       theivu_cld(kbcon) = theiv_cup(k22)
       thilu_cld (kbcon) = thil_cup (k22)
       qtotu_cld (kbcon) = qtot_cup (k22)
+      co2u_cld  (kbcon) = co2_cup  (k22)
       !------ Finding a consistent set of temperature and mixing ratios -------------------!
       call thil2tqall(thilu_cld(kbcon),exner_cup(kbcon),p_cup(kbcon),qtotu_cld(kbcon)      &
                      ,qliqu_cld(kbcon),qiceu_cld(kbcon),tu_cld(kbcon),qvapu_cld(kbcon)     &
@@ -260,10 +266,11 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
    if (pushup) then
       k22 = k22 + 1
       call grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwind,sigw,exner_cup     &
-                              ,p_cup,theiv_cup,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup   &
-                              ,qice_cup,qsat_cup,rho_cup,dzd_cld,mentru_rate,theivu_cld    &
-                              ,thilu_cld,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld,qiceu_cld    &
-                              ,qsatu_cld,rhou_cld,dbyu,k22,ierr,kbcon,wbuoymin)
+                               ,p_cup,theiv_cup,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup  &
+                               ,qice_cup,qsat_cup,co2_cup,rho_cup,dzd_cld,mentru_rate      &
+                               ,theivu_cld,thilu_cld,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld  &
+                               ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,k22,ierr,kbcon  &
+                               ,wbuoymin)
 
    end if
 
@@ -283,9 +290,9 @@ end subroutine grell_find_cloud_lfc
 ! k22 and kbcon already found, and computing the buoyancy at this lowest part.             !
 !------------------------------------------------------------------------------------------!
 subroutine grell_buoy_below_lfc(mkx,mgmzp,k22,kbcon,exner_cup,p_cup,theiv_cup,thil_cup     &
-                               ,t_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup,qsat_cup,rho_cup &
-                               ,theivu_cld,thilu_cld,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld  &
-                               ,qiceu_cld,qsatu_cld,rhou_cld,dbyu)
+                               ,t_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup,qsat_cup,co2_cup &
+                               ,rho_cup,theivu_cld,thilu_cld,tu_cld,qtotu_cld,qvapu_cld    &
+                               ,qliqu_cld,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu)
    use rconstants, only : epi,rgas
    use therm_lib , only : idealdens
    implicit none
@@ -305,6 +312,7 @@ subroutine grell_buoy_below_lfc(mkx,mgmzp,k22,kbcon,exner_cup,p_cup,theiv_cup,th
    real, dimension(mgmzp), intent(in)   :: qliq_cup   ! Liquid mixing ratio        [ kg/kg]
    real, dimension(mgmzp), intent(in)   :: qice_cup   ! Ice mixing ratio           [ kg/kg]
    real, dimension(mgmzp), intent(in)   :: qsat_cup   ! Sat. vapour mixing ratio   [ kg/kg]
+   real, dimension(mgmzp), intent(in)   :: co2_cup    ! CO2 mixing ratio           [   ppm]
    real, dimension(mgmzp), intent(in)   :: rho_cup    ! Density                    [ kg/m設
    !----- Updraft variables. --------------------------------------------------------------!
    real, dimension(mgmzp), intent(inout):: theivu_cld ! Updraft theta_il           [     K]
@@ -315,6 +323,7 @@ subroutine grell_buoy_below_lfc(mkx,mgmzp,k22,kbcon,exner_cup,p_cup,theiv_cup,th
    real, dimension(mgmzp), intent(inout):: qliqu_cld  ! Updraft liquid mix.  ratio [ kg/kg]
    real, dimension(mgmzp), intent(inout):: qiceu_cld  ! Updraft ice    mix.  ratio [ kg/kg]
    real, dimension(mgmzp), intent(inout):: qsatu_cld  ! Updraft satur. mix. ratio  [ kg/kg]
+   real, dimension(mgmzp), intent(inout):: co2u_cld   ! Updraft CO2 mixing ratio   [   ppm]
    real, dimension(mgmzp), intent(inout):: rhou_cld   ! Updraft density            [ kg/m設
    real, dimension(mgmzp), intent(inout):: dbyu       ! Buoyancy acceleration      [  m/s淫
    !----- External functions --------------------------------------------------------------!
@@ -335,6 +344,7 @@ subroutine grell_buoy_below_lfc(mkx,mgmzp,k22,kbcon,exner_cup,p_cup,theiv_cup,th
    qliqu_cld  = qliq_cup
    qiceu_cld  = qice_cup
    qsatu_cld  = qsat_cup
+   co2u_cld   = co2_cup
    rhou_cld   = rho_cup
    dbyu       = 0.  
    
@@ -347,6 +357,7 @@ subroutine grell_buoy_below_lfc(mkx,mgmzp,k22,kbcon,exner_cup,p_cup,theiv_cup,th
       theivu_cld(k) = theiv_cup(k22)
       thilu_cld (k) = thil_cup (k22)
       qtotu_cld (k) = qtot_cup (k22)
+      co2u_cld  (k) = co2_cup  (k22)
       !------ Finding a consistent set of temperature and mixing ratios -------------------!
       call thil2tqall(thilu_cld(k),exner_cup(k),p_cup(k),qtotu_cld(k),qliqu_cld(k)         &
                      ,qiceu_cld(k),tu_cld(k),qvapu_cld(k),qsatu_cld(k))
@@ -471,11 +482,12 @@ end subroutine grell_nms_updraft
 ! in particular those affected by phase change.                                            !
 !------------------------------------------------------------------------------------------!
 subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,cdu         &
-                                    ,mentru_rate,qtot,p_cup,exner_cup,theiv_cup,thil_cup   &
-                                    ,t_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup,qsat_cup    &
-                                    ,rho_cup,theivu_cld,etau_cld,dzu_cld,thilu_cld,tu_cld  &
-                                    ,qtotu_cld,qvapu_cld,qliqu_cld,qiceu_cld,qsatu_cld     &
-                                    ,rhou_cld,dbyu,pwu_cld,pwavu,ktop,ierr)
+                                    ,mentru_rate,qtot,co2,p_cup,exner_cup,theiv_cup        &
+                                    ,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup    &
+                                    ,qsat_cup,co2_cup,rho_cup,theivu_cld,etau_cld,dzu_cld  &
+                                    ,thilu_cld,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld        &
+                                    ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,pwu_cld    &
+                                    ,pwavu,ktop,ierr)
    use rconstants, only : epi,rgas, t00, toodry
    use therm_lib , only : thetaeiv2thil, idealdens, toler, maxfpo
    implicit none
@@ -490,6 +502,7 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
    real, dimension(mgmzp), intent(in)    :: mentru_rate ! Entrainment function     [   1/m]
    !----- Variables at model levels -------------------------------------------------------!
    real, dimension(mgmzp), intent(in)    :: qtot        ! Total mixing ratio       [ kg/kg]
+   real, dimension(mgmzp), intent(in)    :: co2         ! CO2 mixing ratio         [   ppm]
    !----- Variables at cloud levels -------------------------------------------------------!
    real, dimension(mgmzp), intent(in)    :: p_cup       ! Pressure @ cloud levels  [   1/m]
    real, dimension(mgmzp), intent(in)    :: exner_cup   ! Exner fctn. @ cloud lev. [J/kg/K]
@@ -502,6 +515,7 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
    real, dimension(mgmzp), intent(in)    :: qice_cup    ! Ice mixing ratio         [ kg/kg]
    real, dimension(mgmzp), intent(in)    :: qsat_cup    ! Sat. mixing ratio        [ kg/kg]
    real, dimension(mgmzp), intent(in)    :: rho_cup     ! Density                  [ kg/m設
+   real, dimension(mgmzp), intent(in)    :: co2_cup     ! CO2 mixing ratio         [   ppm]
    !----- Input variables at updraft ------------------------------------------------------!
    real, dimension(mgmzp), intent(in)    :: dzu_cld     ! Layer thickness          [     m]
    !----- Transit variables, which will be changed between kbcon and ktop -----------------!
@@ -515,6 +529,7 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
    real, dimension(mgmzp), intent(inout) :: qliqu_cld   ! Liquid mixing ratio      [ kg/kg]
    real, dimension(mgmzp), intent(inout) :: qiceu_cld   ! Ice mixing ratio         [ kg/kg]
    real, dimension(mgmzp), intent(inout) :: qsatu_cld   ! Sat. mixing ratio        [ kg/kg]
+   real, dimension(mgmzp), intent(inout) :: co2u_cld    ! CO2 mixing ratio         [   ppm]
    real, dimension(mgmzp), intent(inout) :: rhou_cld    ! Density                  [ kg/m設
    real, dimension(mgmzp), intent(inout) :: dbyu        ! Buoyancy acceleration    [  m/s淫
    integer               , intent(inout) :: ierr        ! Error flag               [   ---]
@@ -594,6 +609,7 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
    qliqu_cld((kbcon+1):mkx) = qliq_cup((kbcon+1):mkx)
    qiceu_cld((kbcon+1):mkx) = qice_cup((kbcon+1):mkx)
    qtotu_cld((kbcon+1):mkx) = qtot_cup((kbcon+1):mkx)
+   co2u_cld ((kbcon+1):mkx) = co2_cup ((kbcon+1):mkx)
    rhou_cld ((kbcon+1):mkx) = rho_cup ((kbcon+1):mkx)
    dbyu     ((kbcon+1):mkx) = 0.
 
@@ -615,6 +631,11 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
       denomini    = 1./denomin
       qeverything = ( qtotu_cld(k-1)*(1.-.5*cdu(k)*dzu_cld(k))                             &
                      + qtot(k-1)*mentru_rate(k)*dzu_cld(k) - 0.5*leftu_cld(k-1) )          &
+                    * denomini
+
+      !----- CO2 will not fall through precipitation, a simple balance is enough. ---------!
+      co2u_cld(k) = ( co2u_cld(k-1)*(1.-.5*cdu(k)*dzu_cld(k))                              &
+                     + co2(k-1)*mentru_rate(k)*dzu_cld(k))                                 &
                     * denomini
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
@@ -914,6 +935,7 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
          qliqu_cld(k) = qliq_cup(k)
          qiceu_cld(k) = qice_cup(k)
          qtotu_cld(k) = qtot_cup(k)
+         co2u_cld(k)  = co2_cup(k)
          rhou_cld (k) = rho_cup (k)
          dbyu(k)      = 0.
          ktop         = k -1

@@ -60,7 +60,7 @@ UTILS_LIB=$(BRAMS_ROOT)/src/utils/lib
 EFF=$(BRAMS_ROOT)/src/utils/eff
 NCARGD=$(BRAMS_ROOT)/src/utils/ncargd
 UTILS_INCS=$(BRAMS_ROOT)/src/utils/include
-UTILS_MODS=$(BRAMS_ROOT)/src/utils/lib/modules
+UTILS_MODS=$(BRAMS_ROOT)/src/utils/modules
 
 ISAN=$(BRAMS_ROOT)/src/brams/isan
 ISAN_MODS=$(BRAMS_ROOT)/src/brams/isan

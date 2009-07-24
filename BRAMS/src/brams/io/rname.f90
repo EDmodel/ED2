@@ -40,10 +40,6 @@ subroutine NAMEOUT
        USDATA_IN,                            & ! INTENT(IN)
        USMODEL_IN                              ! INTENT(IN)
 
-  ! For SIB
-  use sib_vars, only : N_CO2,  & ! INTENT(OUT)
-       CO2_INIT                  ! INTENT(OUT)
-
   ! CATT
   use catt_start, only: CATT           ! intent(in)
   use emission_source_map, only: FIREMAPFN, & ! intent(in)
@@ -129,7 +125,6 @@ subroutine NAMEOUT
   write(6,205)LONRAD,IMONTHA,IDATEA,IYEARA,ITIMEA,ISFCL
   write(6,299) IMONTHZ,IDATEZ,IYEARZ,ITIMEZ
 !MLO]
-  write(6,998)N_CO2 ! For SIB
 
   write(6,206)NVGCON,NPLT,IPSFLG,ITSFLG,IRTSFLG
   write(6,207)IUSFLG,MKCOLTAB,NZG,NZS,IUPDNDVI
@@ -150,8 +145,6 @@ subroutine NAMEOUT
 298 format('   IEXEV=',I4,'   IMASSFLX=',I4,'   IBRUVAIS=',I4,'   IBOTFLX=',I4)
 299 format('  IMONTHZ=',I4,'     IDATEZ=',I4  &
        ,'     IYEARZ=',I4,'     ITIMEZ=',I4)
-
-998 format('  N_CO2=',I4) ! For SIB
 
 206 format('  NVGCON=',I4,'       NPLT=',I4,'     IPSFLG=',I4  &
        ,'     ITSFLG=',I4,'    IRTSFLG=',I4)

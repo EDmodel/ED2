@@ -43,17 +43,17 @@ subroutine bare_ground_init(cgrid)
          csite%plant_ag_biomass   (1) = 0.
 
          !----- We now populate the cohorts with near bare ground condition. --------------!
-         call init_nbg_cohorts(csite,cpoly%lsl(isi),cpoly%met(isi)%atm_tmp,1,csite%npatches)
+         call init_nbg_cohorts(csite,cpoly%lsl(isi),1,csite%npatches)
 
          !----- Initialise the patches now that cohorts are there. ------------------------!
-         call init_ed_patch_vars_array(csite,1,csite%npatches,cpoly%lsl(isi))
+         call init_ed_patch_vars(csite,1,csite%npatches,cpoly%lsl(isi))
       end do
       !----- Once all patches are set, then we can assign initial values for sites. -------!
-      call init_ed_site_vars_array(cpoly,cgrid%lat(ipy))
+      call init_ed_site_vars(cpoly,cgrid%lat(ipy))
    end do
    
    !----- Last, but not the least, the polygons. ------------------------------------------!
-   call init_ed_poly_vars_array(cgrid)
+   call init_ed_poly_vars(cgrid)
 
    return
 end subroutine bare_ground_init
@@ -69,14 +69,14 @@ end subroutine bare_ground_init
 !==========================================================================================!
 !      This subroutine assigns a near-bare ground (NBG) state for some patches.            !
 !------------------------------------------------------------------------------------------!
-subroutine init_nbg_cohorts(csite,lsl,atm_tmp,ipa_a,ipa_z)
+subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
    use ed_state_vars      , only : edtype             & ! structure
                                  , polygontype        & ! structure
                                  , sitetype           & ! structure
                                  , patchtype          & ! structure
                                  , allocate_sitetype  & ! subroutine
                                  , allocate_patchtype ! ! subroutine
-   use max_dims           , only : n_pft              ! ! intent(in)
+   use ed_max_dims           , only : n_pft              ! ! intent(in)
    use pft_coms           , only : q                  & ! intent(in)
                                  , qsw                & ! intent(in)
                                  , sla                & ! intent(in)
@@ -92,7 +92,7 @@ subroutine init_nbg_cohorts(csite,lsl,atm_tmp,ipa_a,ipa_z)
                                  , dbh2bl             & ! function
                                  , ed_biomass         & ! function
                                  , area_indices       ! ! subroutine
-   use fuse_fiss_utils_ar , only : sort_cohorts_ar    ! ! subroutine
+   use fuse_fiss_utils , only : sort_cohorts    ! ! subroutine
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -100,7 +100,6 @@ subroutine init_nbg_cohorts(csite,lsl,atm_tmp,ipa_a,ipa_z)
    integer               , intent(in) :: lsl     ! Lowest soil level
    integer               , intent(in) :: ipa_a   ! 1st patch to be assigned with NBG state
    integer               , intent(in) :: ipa_z   ! Last patch to be assigned with NBG state
-   real                  , intent(in) :: atm_tmp ! Atmospheric temperature
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)       , pointer    :: cpatch  ! Current patch
    integer                            :: ipa     ! Patch number
@@ -108,7 +107,6 @@ subroutine init_nbg_cohorts(csite,lsl,atm_tmp,ipa_a,ipa_z)
    integer                            :: mypfts  ! Number of PFTs to be included.
    integer                            :: ipft    ! PFT counter
    !---------------------------------------------------------------------------------------!
-
 
    !----- Patch loop. ---------------------------------------------------------------------!
    patchloop: do ipa=ipa_a,ipa_z
@@ -178,7 +176,7 @@ subroutine init_nbg_cohorts(csite,lsl,atm_tmp,ipa_a,ipa_z)
 
          
          !----- Initialize other cohort-level variables. ----------------------------------!
-         call init_ed_cohort_vars_array(cpatch,ico,lsl)
+         call init_ed_cohort_vars(cpatch,ico,lsl)
          
          !---------------------------------------------------------------------------------!
          !     Set the initial vegetation thermodynamic properties.  We assume the veget-  !
@@ -188,13 +186,11 @@ subroutine init_nbg_cohorts(csite,lsl,atm_tmp,ipa_a,ipa_z)
          !---------------------------------------------------------------------------------!
          cpatch%veg_water(ico)  = 0.0
          cpatch%veg_fliq(ico)   = 0.0
-         cpatch%veg_temp(ico)   = atm_tmp
          cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)         &
                                               ,cpatch%balive(ico),cpatch%nplant(ico)       &
                                               ,cpatch%hite(ico),cpatch%pft(ico)            &
                                               ,cpatch%phenology_status(ico))
-         cpatch%veg_energy(ico) = cpatch%hcapveg(ipa) * cpatch%veg_temp(ico)
-
+ 
          !----- Update total patch-level above-ground biomass -----------------------------!
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa) + cpatch%nplant(ico)    &
                                      * ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)     &
@@ -205,7 +201,7 @@ subroutine init_nbg_cohorts(csite,lsl,atm_tmp,ipa_a,ipa_z)
       !------------------------------------------------------------------------------------!
       !     Since initial heights may not be constant, we must sort the cohorts.           !
       !------------------------------------------------------------------------------------!
-      call sort_cohorts_ar(cpatch)
+      call sort_cohorts(cpatch)
    end do patchloop
 
    return

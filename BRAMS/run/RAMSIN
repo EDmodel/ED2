@@ -153,10 +153,11 @@
                              !   to determine full nudging weight. 
                              !   (Timescales)/(WT_NUDGE_*) 
                              !    must be larger than DTLONG
-   WT_NUDGE_UV = 1.,         ! Anal nudging weight for u and v
-   WT_NUDGE_TH = 1.,         ! Anal nudging weight for theta
-   WT_NUDGE_PI = 1.,         ! Anal nudging weight for pi
-   WT_NUDGE_RT = 1.,         ! Anal nudging weight for r_tot
+   WT_NUDGE_UV  = 1.,        ! Anal nudging weight for u and v
+   WT_NUDGE_TH  = 1.,        ! Anal nudging weight for theta
+   WT_NUDGE_PI  = 1.,        ! Anal nudging weight for pi
+   WT_NUDGE_RT  = 1.,        ! Anal nudging weight for r_tot
+   WT_NUDGE_CO2 = 1.,        ! Anal nudging weight for CO2
    
 !-------------------------------------------------------------------------
 
@@ -564,10 +565,20 @@
                              !  4 - GEMTM submodel (not available)
                              !  5 - ED2 submodel
 
-   N_CO2    = 1,             ! number of CO2 tracers
+   ICO2    = 0,              ! CO2 prognostic level
+                             !  0 - Do not solve it (CO2CON will be used as a time
+                             !      invariant CO2 mixing ratio whenever needed);
+                             !  1 - Solve it initialising with a constant value (CO2CON)
+                             !  2 - Solve and initialise with a horizontally homogeneous
+                             !      profile, (filling CO2CON with all values from bottom
+                             !      to top).
+                             !  3 - Solve and initialise with a RALPH2/SOUND_IN file
+                             !      (not available yet).
 
-   CO2_INIT=  360., 360., 360., 355., 355.,
-              350., 350., 355., 355., 340.,   ! ppm
+   CO2CON   = 380.,          ! Initial constant CO2 value or profile if for all domain.
+                             ! If ICO2 = 0 or 1, only the first value will be considered,
+                             ! and if ICO2=2, then provide one value per level. 
+                             ! Unit here is ppm.
 
    NVGCON   = 7,             ! Vegetation type (see below)
 !-------------------------------------------------------------------------------
@@ -831,10 +842,13 @@
                          ! the full, exact calculation each time.  Set to 1 
                          ! to do the 'small perturbation' scheme.
 
-   IPHEN_SCHEME    = 0,  ! This specifies the phenology scheme:
-                           !  0 is for the Botta et al scheme
-                           !  1 is for prescribed phenology
-                           !  Other options coming soon.
+   IPHEN_SCHEME    = 0,  !This specifies the phenology scheme:
+                         !  0 -- the cold-deciuous (Botta et al.) 
+                         !       and old drought-deciduous (same with ED2.0);
+                         !  1 -- the Harvard Forest observations
+                         !  2 -- the cold-deciduous and new drought-deciduous;
+                         !  3 -- the cold-deciduous, new drought-deciduous 
+                         !       and light phenology (not fully tested);
   
    REPRO_SCHEME    = 0,  ! This specifies the reproduction scheme:
                          !  0 -- reproduction off (useful for short runs)
@@ -857,7 +871,12 @@
    N_DECOMP_LIM    = 0,  ! Determines whether (1) or not (0) decomposition
                          ! can be limited by nitrogen
 
-   INCLUDE_FIRE    = 1,  ! Determines whether (1) or not (0) simulation can have fires 
+   INCLUDE_FIRE    = 1,  ! Determines how to apply fire in the model:
+                         ! 0. No fires;
+                         ! 1. Fire will be triggered with enough biomass and 
+                         !    ground water depth less than a threshold;
+                         ! 2. Fire will be triggered with enough biomass and 
+                         !    column-averaged soil moisture less than a threshold.
 
    IANTH_DISTURB   = 0,  ! Flag specifying whether (1) or not (0) to include
                          ! anthropogenic disturbances such as agriculture, 
@@ -953,9 +972,6 @@
    IPMAX        = 60,       ! The last polygon index to print
 !-------------------------------------------------------------------------!
 
-   INITIAL_CO2 = 370., ! Initial value for CO2 in case no CO2 is provided at the 
-                       ! meteorological driver dataset
-
 
 !----- For phenology prescribed from observations, we also need to recycle over years. ----!
    IPHENYS1 = 1992, ! initial year for spring
@@ -1001,13 +1017,14 @@
                              ! 0-u,v component(m/s) 
                              ! 1-umoms-direction, vmoms-speed
  
-  HS  =  182.,
-  PS  =    0., 1010., 1000.,  925.,  850.,  700.,  600.,  500.,  400.,  300.,  200.,  100.,   70.,
-  TS  =          25.,  18.5,  12.0,   4.5,  -11.,  -24.,  -37., -56.5, -56.5, -56.5, -56.5,
-  RTS =          70.,   70.,   70.,   70.,   20.,   20.,   20.,   20.,   10.,   10.,   10.,
-  US  =          2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,
-  VS  =           3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,
- 
+  HS   =  182.,
+  PS   =    0., 1010., 1000.,  925.,  850.,  700.,  600.,  500.,  400.,  300.,  200.,  100.,   70.,
+  TS   =          25.,  18.5,  12.0,   4.5,  -11.,  -24.,  -37., -56.5, -56.5, -56.5, -56.5,
+  RTS  =          70.,   70.,   70.,   70.,   20.,   20.,   20.,   20.,   10.,   10.,   10.,
+  US   =          2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,   2.5,
+  VS   =           3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,    3.,
+  CO2S =         380.,  380.,  380.,  380.,  380.,  380.,  380.,  380.,  380.,  380.,  380.,
+
  $END
  
  

@@ -7,7 +7,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine load_ed_ecosystem_params()
 
-   use max_dims    , only : n_pft               ! ! intent(in)
+   use ed_max_dims    , only : n_pft               ! ! intent(in)
    use pft_coms    , only : include_these_pft   & ! intent(in)
                           , include_pft         & ! intent(out)
                           , include_pft_ag      & ! intent(out)
@@ -188,7 +188,7 @@ subroutine init_can_rad_params()
                                     , blfac_min                   & ! intent(out)
                                     , rlong_min                   & ! intent(out)
                                     , veg_temp_min                ! ! intent(out)
-   use max_dims              , only : n_pft                       ! ! intent(out)
+   use ed_max_dims              , only : n_pft                       ! ! intent(out)
    use pft_coms              , only : phenology                   ! ! intent(out)
 
    implicit none
@@ -312,7 +312,7 @@ end subroutine init_can_air_params
 !==========================================================================================!
 subroutine init_pft_photo_params()
 
-use max_dims,only : n_pft
+use ed_max_dims,only : n_pft
 use pft_coms, only: D0, Vm_low_temp, Vm0, stomatal_slope, cuticular_cond, &
      quantum_efficiency, photosyn_pathway
 
@@ -870,19 +870,26 @@ subroutine init_pft_leaf_params()
 
    select case (iphen_scheme)
    case (0,1)
-      phenology(1)     = 4
-      phenology(2:4)   = 4
-      phenology(5)     = 4
-      phenology(6:8)   = 0
-      phenology(9:11)  = 2
-      phenology(12:15) = 4
-   case (2)
       phenology(1)     = 1
       phenology(2:4)   = 1
       phenology(5)     = 1
       phenology(6:8)   = 0
       phenology(9:11)  = 2
       phenology(12:15) = 1
+   case (2)
+      phenology(1)     = 4
+      phenology(2:4)   = 4
+      phenology(5)     = 4
+      phenology(6:8)   = 0
+      phenology(9:11)  = 2
+      phenology(12:15) = 4
+   case (3)
+      phenology(1)     = 4
+      phenology(2:4)   = 3
+      phenology(5)     = 4
+      phenology(6:8)   = 0
+      phenology(9:11)  = 2
+      phenology(12:15) = 4
    end select
 
    clumping_factor(1)     = 1.000d0
@@ -983,7 +990,7 @@ end subroutine init_pft_repro_params
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_derived_params()
    use decomp_coms , only : f_labile             ! ! intent(in)
-   use max_dims    , only : n_pft                ! ! intent(in)
+   use ed_max_dims    , only : n_pft                ! ! intent(in)
    use consts_coms , only : onesixth             ! ! intent(in)
    use pft_coms    , only : init_density         & ! intent(in)
                           , c2n_leaf             & ! intent(in)
@@ -1078,36 +1085,68 @@ end subroutine init_pft_derived_params
 !==========================================================================================!
 subroutine init_disturb_params
 
-  use disturb_coms,only:patch_dynamics,min_new_patch_area, &
-       treefall_hite_threshold,treefall_age_threshold, &
-       forestry_on,agriculture_on,plantation_year,plantation_rotation, &
-       mature_harvest_age,fire_dryness_threshold,fire_parameter
+   use disturb_coms , only : patch_dynamics           & ! intent(out)
+                           , min_new_patch_area       & ! intent(out)
+                           , treefall_hite_threshold  & ! intent(out)
+                           , treefall_age_threshold   & ! intent(out)
+                           , forestry_on              & ! intent(out)
+                           , agriculture_on           & ! intent(out)
+                           , plantation_year          & ! intent(out)
+                           , plantation_rotation      & ! intent(out)
+                           , mature_harvest_age       & ! intent(out)
+                           , fire_dryness_threshold   & ! intent(out)
+                           , fire_smoist_threshold    & ! intent(out)
+                           , fire_smoist_depth        & ! intent(out)
+                           , k_fire_first             & ! intent(out)
+                           , fire_parameter           ! ! intent(out)
 
-  implicit none
-  
-  patch_dynamics = 1
-  
-  min_new_patch_area = 0.005
-  
-  treefall_hite_threshold = 10.0  !  Only trees above this height create a gap when they fall.
-  
-  treefall_age_threshold = 0.0  !  Minimum patch age for treefall disturbance.  
-  
-  forestry_on = 0  ! Set to 1 if to do forest harvesting.
-  
-  agriculture_on = 0  ! Set to 1 if to do agriculture.
-  
-  plantation_year = 1960 ! Earliest year at which plantations occur
-  
-  plantation_rotation = 25.0 ! Number of years that a plantation requires to reach maturity
-  
-  mature_harvest_age = 50.0 ! Years that a non-plantation patch requires to reach maturity
-  
-  fire_dryness_threshold = 0.2  !  (meters) Fire can occur if total soil water falls below this threshold.
-  
-  fire_parameter = 1.0  ! Dimensionless parameter controlling speed of fire spread.
-  
-  return
+   implicit none
+   
+   patch_dynamics = 1
+   
+   min_new_patch_area = 0.005
+
+   !----- Only trees above this height create a gap when they fall. -----------------------!
+   treefall_hite_threshold = 10.0 
+
+   !----- Minimum patch age for treefall disturbance. -------------------------------------!
+   treefall_age_threshold = 0.0
+
+   !----- Set to 1 if to do forest harvesting. --------------------------------------------!
+   forestry_on = 0
+
+   !----- Set to 1 if to do agriculture. --------------------------------------------------!
+   agriculture_on = 0
+
+   !----- Earliest year at which plantations occur. ---------------------------------------!
+   plantation_year = 1960 
+
+   !----- Number of years that a plantation requires to reach maturity. -------------------!
+   plantation_rotation = 25.0
+
+   !----- Years that a non-plantation patch requires to reach maturity. -------------------!
+   mature_harvest_age = 50.0 
+   
+   !---------------------------------------------------------------------------------------!
+   !     If include_fire is 1, then fire may occur if total (ground + underground) water   !
+   ! converted to meters falls below this threshold.                                       !
+   !---------------------------------------------------------------------------------------!
+   fire_dryness_threshold = 0.2
+
+   !---------------------------------------------------------------------------------------!
+   !     If include_fire is 2, then fire may occur if total (ground + underground) water   !
+   ! falls below a threshold defined by the total water of a soil column with average soil !
+   ! moisture equal to fire_smoist_threshold [m3_H2O/m3_gnd] would have.                   !
+   !---------------------------------------------------------------------------------------!
+   fire_smoist_threshold = 0.12
+
+   !----- Maximum depth that will be considered in the average soil -----------------------!
+   fire_smoist_depth     = -0.75
+
+   !----- Dimensionless parameter controlling speed of fire spread. -----------------------!
+   fire_parameter = 1.0
+   
+   return
 
 end subroutine init_disturb_params
 !==========================================================================================!
@@ -1125,7 +1164,7 @@ subroutine init_hydro_coms
   use hydrology_coms,only:useTOPMODEL,useRUNOFF,HydroOutputPeriod, &
        MoistRateTuning,MoistSatThresh,Moist_dWT,FracLiqRunoff, &
        GrassLAIMax,inverse_runoff_time
-  use misc_coms, only: ied_init_mode
+  use ed_misc_coms, only: ied_init_mode
 
   implicit none
 
@@ -1330,6 +1369,8 @@ subroutine init_rk4_params()
                                    , rk4min_can_shv        & ! intent(out)
                                    , rk4max_can_shv        & ! intent(out)
                                    , rk4max_can_rhv        & ! intent(out)
+                                   , rk4min_can_co2        & ! intent(out)
+                                   , rk4max_can_co2        & ! intent(out)
                                    , rk4min_soil_temp      & ! intent(out)
                                    , rk4max_soil_temp      & ! intent(out)
                                    , rk4min_veg_temp       & ! intent(out)
@@ -1402,6 +1443,8 @@ subroutine init_rk4_params()
    rk4min_can_shv    =  1.0000d-8 ! Minimum canopy    specific humidity         [kg/kg_air]
    rk4max_can_shv    =  4.0000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
    rk4max_can_rhv    =  1.1000d0  ! Maximum canopy    relative humidity (**)    [      ---]
+   rk4min_can_co2    =  2.0000d2  ! Minimum canopy    CO2 mixing ratio          [ µmol/mol]
+   rk4max_can_co2    =  1.2000d3  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4min_soil_temp  =  1.8400d2  ! Minimum soil      temperature               [        K]
    rk4max_soil_temp  =  3.4100d2  ! Maximum soil      temperature               [        K]
    rk4max_veg_temp   =  3.4100d2  ! Maximum leaf      temperature               [        K]
@@ -1447,8 +1490,8 @@ end subroutine init_rk4_params
 !==========================================================================================!
 subroutine overwrite_with_xml_config(thisnode)
    !!! PARSE XML FILE
-   use max_dims, only: n_pft
-   use misc_coms, only: iedcnfgf
+   use ed_max_dims, only: n_pft
+   use ed_misc_coms, only: iedcnfgf
    
    implicit none
    integer, intent(in) :: thisnode
@@ -1468,7 +1511,7 @@ subroutine overwrite_with_xml_config(thisnode)
             write(unit=*,fmt='(a)') '**  Number of PFTs required by XML Config  **'
             write(unit=*,fmt='(a)') '**  exceeds the memory available           **'
             write(unit=*,fmt='(a)') '**                                         **'
-            write(unit=*,fmt='(a)') '**  Please change n_pft in Module max_dims **'
+            write(unit=*,fmt='(a)') '**  Please change n_pft in Module ed_max_dims **'
             write(unit=*,fmt='(a)') '**  and recompile                          **'
             write(unit=*,fmt='(a)') '**                                         **'
             write(unit=*,fmt='(a)') '*********************************************'

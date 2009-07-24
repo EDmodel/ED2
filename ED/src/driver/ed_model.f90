@@ -4,7 +4,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine ed_model()
   
-   use misc_coms     , only : integration_scheme  & ! intent(in)
+   use ed_misc_coms  , only : integration_scheme  & ! intent(in)
                             , current_time        & ! intent(in)
                             , frqfast             & ! intent(in)
                             , frqstate            & ! intent(in)
@@ -27,7 +27,8 @@ subroutine ed_model()
                             , integ_err           & ! intent(in)
                             , record_err          & ! intent(in)
                             , err_label           & ! intent(in)
-                            , ffilout             ! ! intent(in)
+                            , ffilout             & ! intent(in)
+                            , runtype
    use ed_misc_coms  , only : outputMonth         & ! intent(in)
                             , fast_diagnostics    ! ! intent(in)
    use grid_coms     , only : ngrids              & ! intent(in)
@@ -43,7 +44,7 @@ subroutine ed_model()
                             , patchtype           & ! intent(in)
                             , filltab_alltypes    & ! intent(in)
                             , filltables          ! ! intent(in)
-   use rk4_driver_ar , only : rk4_timestep_ar     ! ! intent(in)
+   use rk4_driver , only : rk4_timestep     ! ! intent(in)
    use ed_node_coms  , only : mynum               & ! intent(in)
                             , nnodetot            ! ! intent(in)
    use disturb_coms  , only : include_fire        ! ! intent(in)
@@ -78,7 +79,6 @@ subroutine ed_model()
    integer , external :: num_days ! Number of days in the current month
    !---------------------------------------------------------------------------------------!
 
-
    past_one_day   = .false.
    past_one_month = .false.
    filltables     = .false.
@@ -109,30 +109,40 @@ subroutine ed_model()
    !---------------------------------------------------------------------------------------!
    fast_diagnostics = ifoutput /= 0 .or. idoutput /= 0 .or. imoutput /= 0
 
+   !------------------------------------------------------------------------!
+   ! If this is not a history restart - then zero out the
+   ! long term diagnostics
+   !------------------------------------------------------------------------!
+   if (trim(runtype) .ne. 'HISTORY') then
+      
+      if (writing_mont) then
+         do ifm=1,ngrids
+            call zero_ed_monthly_output_vars(edgrid_g(ifm))
+            call zero_ed_daily_output_vars(edgrid_g(ifm))
+         end do
+      elseif (writing_dail) then
+         do ifm=1,ngrids
+            call zero_ed_daily_output_vars(edgrid_g(ifm))
+         end do
+      end if
 
-   if (writing_mont) then
+      !!Output Initial State
       do ifm=1,ngrids
-         call zero_ed_monthly_output_vars(edgrid_g(ifm))
-         call zero_ed_daily_output_vars(edgrid_g(ifm))
+         call update_ed_yearly_vars(edgrid_g(ifm))
       end do
-   elseif (writing_dail) then
-      do ifm=1,ngrids
-         call zero_ed_daily_output_vars(edgrid_g(ifm))
-      end do
-   end if
+      
 
+   endif
+   
    !    Allocate memory to the integration patch
 
-   if(integration_scheme == 1) call initialize_rk4patches_ar(1)
+   if(integration_scheme == 1) call initialize_rk4patches(1)
 
    do ifm=1,ngrids
       call reset_averaged_vars(edgrid_g(ifm))
    end do
    
-   !!Output Initial State
-   do ifm=1,ngrids
-      call update_ed_yearly_vars_ar(edgrid_g(ifm))
-   end do
+   
    if (writing_year) call h5_output('YEAR')
 
    !         Start the timesteps
@@ -150,35 +160,30 @@ subroutine ed_model()
       !   CPU timing information & model timing information
       !   ===================================================
 
-
-      ! This MPI barrier slows down massively parallel runs
-      ! Removing unless someone has an objection RGK 2-2009
-      !     if (nnodetot>1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
-
       call timing(1,t1)
 
       wtime1=walltime(wtime_start)
 
       if(current_time%time < dtlsm .and. mynum == 1)  &
-           write(*,'(a,3x,2(i2.2,a),i4.4)')'Simulating:',current_time%month,'/',  &
-           current_time%date,'/',current_time%year
+           write(*,'(a,3x,2(i2.2,a),i4.4,a,f8.2)')'Simulating:',current_time%month,'/',  &
+           current_time%date,'/',current_time%year,' ',current_time%time
 
       do ifm=1,ngrids
          call flag_stable_cohorts(edgrid_g(ifm))
       end do
 
       do ifm=1,ngrids
-          call radiate_driver_ar(edgrid_g(ifm))
+          call radiate_driver(edgrid_g(ifm))
       end do
 
       ! THEN, DO THE PHOTOSYNTHESIS AND BIOPHYSICS.
       if(integration_scheme == 0)then
          do ifm=1,ngrids
-            call euler_timestep_ar(edgrid_g(ifm))
+            call euler_timestep(edgrid_g(ifm))
          end do
       elseif(integration_scheme == 1)then
          do ifm=1,ngrids
-            call rk4_timestep_ar(edgrid_g(ifm),ifm)
+            call rk4_timestep(edgrid_g(ifm),ifm)
          end do
       endif
       
@@ -244,20 +249,6 @@ subroutine ed_model()
          if (outstate == -2.) nrec_state = ndays*ceiling(day_sec/frqstate)
       end if
 
-      !   Call the model output driver 
-      !   ====================================================
-      call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time &
-                    ,writing_dail,writing_mont,history_time,the_end)
-
-      ! Reset time happens every frqsum. This is to avoid variables to build up when
-      ! history and analysis are off. Put outside ed_output so I have a chance to copy
-      ! some of these to BRAMS structures.
-      if(reset_time) then    
-         do ifm=1,ngrids
-            call reset_averaged_vars(edgrid_g(ifm))
-         end do
-      end if
-
       ! Check if this is the beginning of a new simulated day.
       if(new_day)then
          if(record_err) then
@@ -277,7 +268,7 @@ subroutine ed_model()
 
          ! First day of a month.
          if(new_month)then
-            
+
             ! On the monthly timestep we have performed various
             ! fusion/fission calls. Therefore the var-table's pointer
             ! vectors must be updated, and the global definitions
@@ -297,22 +288,34 @@ subroutine ed_model()
                if ( mynum == 1) write(*,"(a)")'-- Synchronized'
             endif
 
-!            call filltab_alltypes
-
             if (maxcohort >= 0 .or. maxpatch >= 0) filltables=.true.   ! call filltab_alltypes
 
             ! Read new met driver files only if this is the first timestep 
-            call read_met_drivers_array()
+            call read_met_drivers()
             
             ! Re-allocate integration buffer
             if(integration_scheme == 1 .and. (maxcohort >= 0 .or. maxpatch >= 0)) &
-               call initialize_rk4patches_ar(0)
+               call initialize_rk4patches(0)
          endif
          
       endif
 
+      !   Call the model output driver 
+      !   ====================================================
+      call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time &
+                    ,writing_dail,writing_mont,history_time,the_end)
+
+      ! Reset time happens every frqsum. This is to avoid variables to build up when
+      ! history and analysis are off. Put outside ed_output so I have a chance to copy
+      ! some of these to BRAMS structures.
+      if(reset_time) then    
+         do ifm=1,ngrids
+            call reset_averaged_vars(edgrid_g(ifm))
+         end do
+      end if
+
       do ifm=1,ngrids
-         call update_met_drivers_array(edgrid_g(ifm))
+         call update_met_drivers(edgrid_g(ifm))
       end do
       if(new_day .and. new_month)then
          ! Loop all grids
@@ -327,7 +330,7 @@ subroutine ed_model()
             if(current_time%month == 6)then
                do ifm = 1,ngrids
                      
-                  call update_ed_yearly_vars_ar(edgrid_g(ifm))
+                  call update_ed_yearly_vars(edgrid_g(ifm))
                   enddo
                   !call zero_ed_yearly_vars(polygon_list_g(1)%first_polygon)
             endif
@@ -380,7 +383,7 @@ end subroutine ed_model
 !==========================================================================================!
 subroutine update_model_time_dm(ctime,dtlong)
 
-   use misc_coms, only: simtime
+   use ed_misc_coms, only: simtime
    use consts_coms, only : day_sec
    implicit none
 
@@ -451,12 +454,12 @@ subroutine vegetation_dynamics(new_month,new_year)
 
   use ed_node_coms,only:mynum,nnodetot
   use grid_coms, only: ngrids
-  use misc_coms, only: current_time, dtlsm,frqsum
+  use ed_misc_coms, only: current_time, dtlsm,frqsum
   use disturb_coms, only: include_fire
-  use disturbance_utils_ar, only: apply_disturbances_ar, site_disturbance_rates_ar
-  use fuse_fiss_utils_ar, only : fuse_patches_ar
+  use disturbance_utils, only: apply_disturbances, site_disturbance_rates
+  use fuse_fiss_utils, only : fuse_patches
   use ed_state_vars,only : edgrid_g,edtype
-  use growth_balive_ar,only : dbalive_dt_ar
+  use growth_balive,only : dbalive_dt
   use consts_coms, only : day_sec,yr_day
   use mem_sites, only: maxpatch
 
@@ -490,61 +493,57 @@ subroutine vegetation_dynamics(new_month,new_year)
 !     write (unit=*,fmt='(a)') '~~~ Normalize_ed_daily_vars...'
      call normalize_ed_daily_vars(cgrid, tfact1)
      
-!     write (unit=*,fmt='(a)') '~~~ Phenology_driver_ar...'
-     call phenology_driver_ar(cgrid,doy,current_time%month, tfact1)
+!     write (unit=*,fmt='(a)') '~~~ Phenology_driver...'
+     call phenology_driver(cgrid,doy,current_time%month, tfact1)
      
-!     write (unit=*,fmt='(a)') '~~~ Dbalive_dt_ar...'
-     call dbalive_dt_ar(cgrid,tfact2)
-     
+!     write (unit=*,fmt='(a)') '~~~ Dbalive_dt...'
+     call dbalive_dt(cgrid,tfact2)
      
      if(new_month)then
 
-!        write (unit=*,fmt='(a)') '^^^ Structural_growth_ar...'
-        call structural_growth_ar(cgrid, current_time%month)
+!        write (unit=*,fmt='(a)') '^^^ Structural_growth...'
+        call structural_growth(cgrid, current_time%month)
 
 
-!        write (unit=*,fmt='(a)') '^^^ Reproduction_ar...'
-        call reproduction_ar(cgrid,current_time%month)
+!        write (unit=*,fmt='(a)') '^^^ Reproduction...'
+        call reproduction(cgrid,current_time%month)
 
-        ! NB: FIRE CURRENTLY OCCURS AT THE SITE LEVEL. MIKE: MAYBE
-        ! YOU HAVE SOME IDEAS HERE?
-
-        if(include_fire == 1) then
-!           write (unit=*,fmt='(a)') '^^^ Fire_frequency_ar...'
-           call fire_frequency_ar(current_time%month,cgrid)
+        if(include_fire /= 0) then
+!           write (unit=*,fmt='(a)') '^^^ Fire_frequency...'
+           call fire_frequency(current_time%month,cgrid)
         end if
-!        write (unit=*,fmt='(a)') '^^^ Site_disturbance_rates_ar...'
-        call site_disturbance_rates_ar(current_time%month,   &
+
+!        write (unit=*,fmt='(a)') '^^^ Site_disturbance_rates...'
+        call site_disturbance_rates(current_time%month,   &
              current_time%year, cgrid)
 
         if(new_year) then
 
-  
-
-
-!           write (unit=*,fmt='(a)') '### Apply_disturbances_ar...'
-           call apply_disturbances_ar(cgrid)
+!           write (unit=*,fmt='(a)') '### Apply_disturbances...'
+           call apply_disturbances(cgrid)
         end if
         
      end if
 
-!     write (unit=*,fmt='(a)') '~~~ Update_C_and_N_pools_ar...'
-     call update_C_and_N_pools_ar(cgrid)
-
-!     write (unit=*,fmt='(a)') '~~~ Zero_ed_daily_vars...'
+     !     write (unit=*,fmt='(a)') '~~~ Update_C_and_N_pools...'
+     call update_C_and_N_pools(cgrid)
+     
+     
+     !  write (unit=*,fmt='(a)') '~~~ Zero_ed_daily_vars...'
      call zero_ed_daily_vars(cgrid)
+     
 
      ! Fuse patches last, after all updates have been applied.  This reduces
      ! the number of patch variables that actually need to be fused.  
      if(new_year) then
 !        write (unit=*,fmt='(a)') '### Fuse_patchesar...'
-        if (maxpatch >= 0) call fuse_patches_ar(cgrid,ifm)
+        if (maxpatch >= 0) call fuse_patches(cgrid,ifm)
         first_time =.false.
      end if
 
      ! Recalculate the agb and basal area at the polygon level
-!     write (unit=*,fmt='(a)') '~~~ Update_polygon_derived_props_ar...'
-     call update_polygon_derived_props_ar(cgrid)
+!     write (unit=*,fmt='(a)') '~~~ Update_polygon_derived_props...'
+     call update_polygon_derived_props(cgrid)
 
 !     write (unit=*,fmt='(a)') '~~~ Print_C_and_N_budgets...'
      call print_C_and_N_budgets(cgrid)

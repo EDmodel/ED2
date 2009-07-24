@@ -1,9 +1,9 @@
-module growth_balive_ar
+module growth_balive
 
 
 contains
 
-subroutine dbalive_dt_ar(cgrid, tfact)
+subroutine dbalive_dt(cgrid, tfact)
 
   ! Do not change the order of operations below unless you know what you
   ! are doing.  Changing the order can affect the C/N budgets.
@@ -35,7 +35,7 @@ subroutine dbalive_dt_ar(cgrid, tfact)
   real :: carbon_balance_max
   real :: balive_in
   real :: nitrogen_supply
-  real, external :: mortality_rates_ar
+  real, external :: mortality_rates
   real :: dndt
   real :: old_hcapveg
   real :: nitrogen_uptake
@@ -80,7 +80,7 @@ subroutine dbalive_dt_ar(cgrid, tfact)
 
               ! If plants are off allometry, move carbon from bstorage
               ! to balive
-              call transfer_C_from_storage_ar(cpatch,ico, salloc, nitrogen_uptake,   &
+              call transfer_C_from_storage(cpatch,ico, salloc, nitrogen_uptake,   &
                    N_uptake_pot)
               
               ! Calculate leaf, fine root biomass
@@ -94,7 +94,7 @@ subroutine dbalive_dt_ar(cgrid, tfact)
               ! Compute maintenance costs and growth/storage/vleaf respiration
               ! for the coming day.
               
-              call plant_maintenance_and_resp_ar(cpatch,ico, br, bl, tfact,   &
+              call plant_maintenance_and_resp(cpatch,ico, br, bl, tfact,   &
                    daily_C_gain, csite%avg_daily_temp(ipa))
               
               ! Subtract maintenance costs from balive.
@@ -103,7 +103,7 @@ subroutine dbalive_dt_ar(cgrid, tfact)
               cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - cpatch%maintenance_costs(ico)
 
               ! Calculate actual, potential and maximum carbon balances
-              call plant_carbon_balances_ar(cpatch,ipa,ico, daily_C_gain, carbon_balance,  &
+              call plant_carbon_balances(cpatch,ipa,ico, daily_C_gain, carbon_balance,  &
                    carbon_balance_pot, carbon_balance_max)
 
               ! Compute respiration rates for coming day [kgC/plant/day]
@@ -118,14 +118,14 @@ subroutine dbalive_dt_ar(cgrid, tfact)
 
               ! Allocate plant carbon balance to balive and bstorage
               balive_in = cpatch%balive(ico)
-              call alloc_plant_c_balance_ar(csite,ipa,ico, salloc, salloci,   &
+              call alloc_plant_c_balance(csite,ipa,ico, salloc, salloci,   &
                    carbon_balance, nitrogen_uptake,   &
                    cpoly%green_leaf_factor(cpatch%pft(ico),isi))
               ! Do a shadow calculation to see what would have happened if 
               ! stomata were open.  This is used to calculate potential 
               ! nitrogen uptake, N_uptake_pot.
 
-              if(N_plant_lim == 1)call potential_N_uptake_ar(cpatch,ico, salloc,   &
+              if(N_plant_lim == 1)call potential_N_uptake(cpatch,ico, salloc,   &
                    salloci, balive_in, carbon_balance_pot, N_uptake_pot,   &
                    cpoly%green_leaf_factor(cpatch%pft(ico),isi))
               
@@ -145,7 +145,7 @@ subroutine dbalive_dt_ar(cgrid, tfact)
               endif
               
               ! Do mortality --- note that only frost mortality changes daily.
-              dndt = - mortality_rates_ar(cpatch,ipa,ico, csite%avg_daily_temp(ipa)) *   &
+              dndt = - mortality_rates(cpatch,ipa,ico, csite%avg_daily_temp(ipa)) *   &
                    cpatch%nplant(ico) * tfact
               
               ! Update monthly mortality rate [plants/m2/month]
@@ -171,14 +171,13 @@ subroutine dbalive_dt_ar(cgrid, tfact)
               csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
               !----------------------------------------------------------------------------!
 
-
            end do
            
            ! Update litter
-           call litter_ar(csite,ipa)
+           call litter(csite,ipa)
            
            ! Recompute patch LAI
-           call update_patch_derived_props_ar(csite,cpoly%lsl(isi),   &
+           call update_patch_derived_props(csite,cpoly%lsl(isi),   &
                 cpoly%met(isi)%rhos,ipa)
 
            !reset average daily temperature
@@ -192,11 +191,11 @@ subroutine dbalive_dt_ar(cgrid, tfact)
 
 
   return
-end subroutine dbalive_dt_ar
+end subroutine dbalive_dt
 
 !====================================================================
 
-subroutine transfer_C_from_storage_ar(cpatch,ico, salloc, nitrogen_uptake, N_uptake_pot)
+subroutine transfer_C_from_storage(cpatch,ico, salloc, nitrogen_uptake, N_uptake_pot)
 
   use ed_state_vars,only:patchtype
 
@@ -232,11 +231,11 @@ subroutine transfer_C_from_storage_ar(cpatch,ico, salloc, nitrogen_uptake, N_upt
   endif
 
   return
-end subroutine transfer_C_from_storage_ar
+end subroutine transfer_C_from_storage
 
 !====================================================================
 
-subroutine plant_maintenance_and_resp_ar(cpatch,ico, br, bl, tfact, daily_C_gain, tempk)
+subroutine plant_maintenance_and_resp(cpatch,ico, br, bl, tfact, daily_C_gain, tempk)
   
   use ed_state_vars,only:patchtype
   use pft_coms, only: phenology, root_turnover_rate, leaf_turnover_rate
@@ -256,7 +255,7 @@ subroutine plant_maintenance_and_resp_ar(cpatch,ico, br, bl, tfact, daily_C_gain
   ipft=cpatch%pft(ico)
 
   ! Get the temperature dependence
-  if(phenology(ipft) == 0 .or. phenology(ipft) == 3)then
+  if(phenology(ipft) == 0)then
      maintenance_temp_dep = 1.0 / (1.0 + exp(0.4 * (278.15 - tempk)))
   else
      maintenance_temp_dep = 1.0
@@ -286,18 +285,18 @@ subroutine plant_maintenance_and_resp_ar(cpatch,ico, br, bl, tfact, daily_C_gain
   endif
 
   return
-end subroutine plant_maintenance_and_resp_ar
+end subroutine plant_maintenance_and_resp
 
 !===================================================================
 
-subroutine plant_carbon_balances_ar(cpatch,ipa,ico, daily_C_gain, carbon_balance,  &
+subroutine plant_carbon_balances(cpatch,ipa,ico, daily_C_gain, carbon_balance,  &
      carbon_balance_pot, carbon_balance_max)
  
   use ed_state_vars,only:patchtype
   use pft_coms, only: growth_resp_factor
   use consts_coms, only: umol_2_kgC,day_sec
-  use misc_coms, only: current_time
-  use max_dims, only: n_pft
+  use ed_misc_coms, only: current_time
+  use ed_max_dims, only: n_pft
 
   implicit none
 
@@ -365,11 +364,11 @@ subroutine plant_carbon_balances_ar(cpatch,ipa,ico, daily_C_gain, carbon_balance
    !    ,cpatch%maintenance_costs(ico)
 
   return
-end subroutine plant_carbon_balances_ar
+end subroutine plant_carbon_balances
 
 !====================================================================
 
-subroutine alloc_plant_c_balance_ar(csite,ipa,ico, salloc, salloci, carbon_balance,   &
+subroutine alloc_plant_c_balance(csite,ipa,ico, salloc, salloci, carbon_balance,   &
      nitrogen_uptake, green_leaf_factor)
 
   use ed_state_vars,only:sitetype,patchtype
@@ -463,14 +462,14 @@ subroutine alloc_plant_c_balance_ar(csite,ipa,ico, salloc, salloci, carbon_balan
   endif
   
   ! LAI and bleaf probably changed, so we need to update TAI and HCAPVEG.  And we
-  ! will do it, but in the main subroutine (dbalive_dt_ar), at the end.
+  ! will do it, but in the main subroutine (dbalive_dt), at the end.
 
   return
-end subroutine alloc_plant_c_balance_ar
+end subroutine alloc_plant_c_balance
 
 !====================================================================
 
-subroutine potential_N_uptake_ar(cpatch,ico, salloc, salloci, balive_in,   &
+subroutine potential_N_uptake(cpatch,ico, salloc, salloci, balive_in,   &
      carbon_balance_pot, N_uptake_pot, green_leaf_factor)
  
   use ed_state_vars,only:patchtype
@@ -534,11 +533,11 @@ subroutine potential_N_uptake_ar(cpatch,ico, salloc, salloci, balive_in,   &
   endif
 
   return
-end subroutine potential_N_uptake_ar
+end subroutine potential_N_uptake
 
 !====================================================================
 
-subroutine litter_ar(csite,ipa)
+subroutine litter(csite,ipa)
 
   use ed_state_vars,only:patchtype,sitetype
   use pft_coms, only: c2n_leaf, c2n_stem, l2n_stem
@@ -573,6 +572,6 @@ subroutine litter_ar(csite,ipa)
   enddo
 
   return
-end subroutine litter_ar
+end subroutine litter
 
-end module growth_balive_ar
+end module growth_balive

@@ -47,8 +47,25 @@ Module rconstants
    real, parameter :: stefan    = 5.6696e-8         ! Stefan-Boltzmann constant [ W/m²/K^4]
    real, parameter :: boltzmann = 1.3806503e-23     ! Boltzmann constant        [m²kg/s²/K]
    real, parameter :: t00       = 273.15            ! 0°C                       [       °C]
+   real, parameter :: rmol      = 8.314510          ! Molar gas constant        [  J/mol/K]
+   real, parameter :: volmol    = 0.022710980       ! Molar volume at STP       [       m³]
+   real, parameter :: volmoll   = volmol*1.e3       ! Molar volume at STP       [        L]
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   ! Molar masses and derived variables                                                    !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: mmdry       = 0.02897        ! Mean dry air molar mass    [   kg/mol]
+   real, parameter :: mmvap       = 0.01801505     ! Mean water molar mass      [   kg/mol]
+   real, parameter :: mmco2       = 0.0440095      ! Mean CO2 molar mass        [   kg/mol]
+   real, parameter :: mmdoc       = mmdry/mmco2    ! mmdry/mmco2                [     ----]
+   real, parameter :: mmcod       = mmco2/mmdry    ! mmco2/mmdry                [     ----]
+   real, parameter :: mmdry1000   = 1000.*mmdry    ! Mean dry air molar mass    [   kg/mol]
+   real, parameter :: mmcod1em6   = mmcod * 1.e-6  ! Convert ppm to kgCO2/kgair [     ----]
+   real, parameter :: mmdryi      = 1./mmdry       ! 1./mmdry                   [   mol/kg]
+   real, parameter :: mmco2i      = 1./mmco2       ! 1./mmco2                   [   mol/kg]
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -88,7 +105,7 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Dry air properties                                                                    !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: rgas   = 287.04    ! Gas constant for dry air (Ra)        [   J/kg/K]
+   real, parameter :: rgas   = rmol/mmdry! Gas constant for dry air (Ra)        [   J/kg/K]
    real, parameter :: cp     = 1004.     ! Specific heat at constant pressure   [   J/kg/K]
    real, parameter :: cv     = 717.      ! Specific heat at constant volume     [   J/kg/K]
    real, parameter :: cpog   = cp /g     ! cp/g                                 [      m/K]
@@ -108,12 +125,12 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Water vapour properties                                                               !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: rm     = 461.5     ! Gas constant for water vapour (Rv)   [   J/kg/K]
-   real, parameter :: gorm   = g / rm    ! g/Rv                                 [      K/m]
-   real, parameter :: ep     = rgas / rm ! Ra/Rv, epsilon, used to find rv      [    kg/kg]
-   real, parameter :: epi    = rm / rgas ! Rv/Ra, 1/epsilon                     [    kg/kg]
-   real, parameter :: rmocp  = rm / cp   ! Rv/cp                                [     ----]
-   real, parameter :: toodry = 1.e-8     ! Minimum acceptable mixing ratio.     [    kg/kg]
+   real, parameter :: rm     = rmol/mmvap  ! Gas constant for water vapour (Rv) [   J/kg/K]
+   real, parameter :: gorm   = g / rm      ! g/Rv                               [      K/m]
+   real, parameter :: ep     = mmvap/mmdry ! or Ra/Rv, epsilon, used to find rv [    kg/kg]
+   real, parameter :: epi    = mmdry/mmvap ! or Rv/Ra, 1/epsilon                [    kg/kg]
+   real, parameter :: rmocp  = rm / cp     ! Rv/cp                              [     ----]
+   real, parameter :: toodry = 1.e-8       ! Minimum acceptable mixing ratio.   [    kg/kg]
    !---------------------------------------------------------------------------------------!
 
 
@@ -217,6 +234,8 @@ Module rconstants
    real, parameter :: abswltlmin  = 1.e-4 ! Minimum abs value of Theta*         [    K m/s]
    real, parameter :: lturbmin    = 1.e-3 ! Minimum abs value of turb. lenght   [        m]
    !---------------------------------------------------------------------------------------!
+
+
 
 
 

@@ -1,13 +1,13 @@
 !==========================================================================================!
 !==========================================================================================!
-! Subroutine leaf_derivs_ar                                                                !
+! Subroutine leaf_derivs                                                                !
 !                                                                                          !
 !     This subroutine finds the fast-scale derivatives at canopy, soil, and leaf surface.  !
 ! This subroutine is based on LEAF-3, except that here only the derivative is computed,    !
 ! whereas in LEAF-3 the actual step is done at once. This derivative will be used for the  !
 ! Runge-Kutta integration step.                                                            !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_derivs_ar(initp,dinitp,csite,ipa,isi,ipy)
+subroutine leaf_derivs(initp,dinitp,csite,ipa,isi,ipy)
   
    use rk4_coms               , only : rk4met            & ! intent(in)
                                      , rk4patchtype      ! ! structure
@@ -34,7 +34,7 @@ subroutine leaf_derivs_ar(initp,dinitp,csite,ipa,isi,ipy)
       !------------------------------------------------------------------------------------!
       !    Subroutine that computes the canopy and leaf fluxes.                            ! 
       !------------------------------------------------------------------------------------!
-      subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy)
+      subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
          use rk4_coms      , only : rk4patchtype ! ! structure
          use ed_state_vars , only : sitetype     ! ! structure
          implicit none
@@ -42,7 +42,7 @@ subroutine leaf_derivs_ar(initp,dinitp,csite,ipa,isi,ipy)
          type(rk4patchtype) , target     :: dinitp 
          type(sitetype)     , target     :: csite
          integer            , intent(in) :: ipa,isi,ipy
-      end subroutine leaftw_derivs_ar
+      end subroutine leaftw_derivs
       !------------------------------------------------------------------------------------!
    end interface
 #endif
@@ -55,13 +55,13 @@ subroutine leaf_derivs_ar(initp,dinitp,csite,ipa,isi,ipy)
    call canopy_turbulence(csite,initp,isi,ipa,.true.)
 
    !----- Finding the derivatives. --------------------------------------------------------!
-   call leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy)
+   call leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
 
    !----- Nlev_sfcwater derivative... I doubt it's really used... -------------------------!
    dinitp%nlev_sfcwater = initp%nlev_sfcwater
 
    return
-end subroutine leaf_derivs_ar
+end subroutine leaf_derivs
 !==========================================================================================!
 !==========================================================================================!
 
@@ -72,8 +72,8 @@ end subroutine leaf_derivs_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy)
-   use max_dims             , only : nzgmax               & ! intent(in)
+subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
+   use ed_max_dims             , only : nzgmax               & ! intent(in)
                                    , nzsmax               ! ! intent(in)
    use consts_coms          , only : alvl8                & ! intent(in)
                                    , cliqvlme8            & ! intent(in)
@@ -92,7 +92,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy)
                                    , slzt8                & ! intent(in)
                                    , ss                   & ! intent(in)
                                    , isoilbc              ! ! intent(in)
-   use misc_coms            , only : dtlsm                & ! intent(in)
+   use ed_misc_coms            , only : dtlsm                & ! intent(in)
                                    , current_time         ! ! intent(in)
    use rk4_coms             , only : rk4eps               & ! intent(in)
                                    , rk4min_sfcwater_mass & ! intent(in)
@@ -162,7 +162,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy)
    !---------------------------------------------------------------------------------------!
 #if USE_INTERF
    interface
-      subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxgc &
+      subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxgc &
                                      ,dewgndflx,qdewgndflx,ddewgndflx,wshed_tot,qwshed_tot &
                                      ,dwshed_tot)
          use rk4_coms     , only: rk4patchtype  ! ! structure
@@ -175,7 +175,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy)
          real(kind=8)        , intent(out) :: hflxgc, wflxgc, qwflxgc
          real(kind=8)        , intent(out) :: dewgndflx, qdewgndflx, ddewgndflx
          real(kind=8)        , intent(out) :: wshed_tot, qwshed_tot, dwshed_tot
-      end subroutine canopy_derivs_two_ar
+      end subroutine canopy_derivs_two
    end interface
 #endif
    !---------------------------------------------------------------------------------------!
@@ -256,7 +256,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy)
 
  
    !----- Get derivatives of canopy variables. --------------------------------------------!
-   call canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxgc,dewgnd   &
+   call canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxgc,dewgnd   &
                             ,qdewgnd,ddewgnd,wshed,qwshed,dwshed)
 
    !---------------------------------------------------------------------------------------!
@@ -404,7 +404,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy)
    !---------------------------------------------------------------------------------------!
    if (infiltration_method /= 0) then
       call fatal_error ('Running alt infiltation when we shouldn''t be',&
-                       &'leaftw_derivs_ar','rk4_derivs.F90')
+                       &'leaftw_derivs','rk4_derivs.F90')
 
       if (initp%virtual_water /= 0.d0) then  !!process "virtural water" pool
          nsoil = csite%ntext_soil(nzg,ipa)
@@ -535,7 +535,7 @@ subroutine leaftw_derivs_ar(initp,dinitp,csite,ipa,isi,ipy)
    end if
 
    return
-end subroutine leaftw_derivs_ar
+end subroutine leaftw_derivs
 !==========================================================================================!
 !==========================================================================================!
 
@@ -546,7 +546,7 @@ end subroutine leaftw_derivs_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxgc       &
+subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxgc       &
                                ,dewgndflx,qdewgndflx,ddewgndflx,wshed_tot,qwshed_tot       &
                                ,dwshed_tot)
    use rk4_coms              , only : rk4patchtype         & ! Structure
@@ -561,6 +561,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
                                     , zveg                 & ! intent(in)
                                     , wcapcan              & ! intent(in)
                                     , wcapcani             & ! intent(in)
+                                    , ccapcani             & ! intent(in)
                                     , hcapcani             & ! intent(in)
                                     , any_solvable         & ! intent(in)
                                     , tiny_offset          & ! intent(in)
@@ -590,7 +591,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
                                     , dewmax               ! ! intent(in)
    use therm_lib             , only : qwtk                 & ! subroutine
                                     , rhovsil              ! ! function
-   use misc_coms             , only : dtlsm                ! ! intent(in)
+   use ed_misc_coms             , only : dtlsm                ! ! intent(in)
    use ed_misc_coms          , only : fast_diagnostics     ! ! intent(in)
    use allometry             , only : dbh2ca               ! ! function
    use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
@@ -678,7 +679,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    rho_ustar = rk4met%rhos * initp%ustar                ! Aux. variable
    hflxac    = rho_ustar   * initp%tstar * rk4met%exner ! Sensible Heat flux
    wflxac    = rho_ustar   * initp%qstar                ! Water flux
-   cflxac    = rho_ustar   * initp%cstar                ! CO2 flux
+   cflxac    = rho_ustar   * initp%cstar * mmdryi8      ! CO2 flux [umol/m2/s]
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -1052,7 +1053,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
 
 
    !----- Update CO2 concentration in the canopy ------------------------------------------!
-   dinitp%can_co2 = ( (cflxgc + cflxvc_tot)*mmdry8 + cflxac) * wcapcani
+   dinitp%can_co2  = (cflxgc + cflxvc_tot + cflxac) * ccapcani
 
 
    !---------------------------------------------------------------------------------------!
@@ -1065,8 +1066,8 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
       dinitp%ebudget_loss2atm = - hflxac
       dinitp%ebudget_latent   = dinitp%ebudget_latent -qdewgndflx + qwflxgc
       
-      dinitp%co2budget_loss2atm = - cflxac * mmdryi8
-      dinitp%avg_carbon_ac      =   cflxac * mmdryi8
+      dinitp%co2budget_loss2atm = - cflxac
+      dinitp%avg_carbon_ac      =   cflxac
 
       dinitp%avg_sensible_vc   = hflxvc_tot                     ! Sens. heat,  Leaf->Canopy
       dinitp%avg_sensible_2cas = hflxgc+hflxac+hflxvc_tot       ! Sens. heat,  All ->Canopy
@@ -1092,6 +1093,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    !---------------------------------------------------------------------------------------!
    dinitp%upwp = -(initp%ustar*initp%ustar)
    dinitp%qpwp = -(initp%ustar*initp%qstar)
+   dinitp%cpwp = -(initp%ustar*initp%cstar)
    dinitp%tpwp = -(initp%ustar*initp%tstar)
    if(debug .and. abs(rk4met%atm_tmp) < tiny(1.d0)) print*,"atm_tmp = 0"
    gzotheta = grav8 * rk4met%geoht * cpi8 * rk4met%exner / rk4met%atm_tmp
@@ -1101,7 +1103,7 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    !---------------------------------------------------------------------------------------!
    !     If the single pond layer is too thin, force equilibrium with top soil layer.      !
    ! This is done in two steps: first, we don't transfer all the energy to the top soil    !
-   ! layer.  Then, in redistribute_snow_ar, we will make them in thermal equilibrium.      !
+   ! layer.  Then, in redistribute_snow, we will make them in thermal equilibrium.      !
    !---------------------------------------------------------------------------------------!
    if (initp%nlev_sfcwater == 1) then
       if (abs(initp%sfcwater_mass(1)) < rk4water_stab_thresh) then
@@ -1112,6 +1114,6 @@ subroutine canopy_derivs_two_ar(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwf
    end if
 
    return
-end subroutine canopy_derivs_two_ar
+end subroutine canopy_derivs_two
 !==========================================================================================!
 !==========================================================================================!

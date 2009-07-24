@@ -52,7 +52,7 @@ subroutine inithis()
    real             , allocatable, dimension(:)         :: scr,scr2,scr3
    real             , allocatable, dimension(:)         :: platn1,plonn1
    real             , allocatable, dimension(:)         :: u01dn1,v01dn1,rt01dn1,th01dn1
-   real             , allocatable, dimension(:)         :: pi01dn1,dn01dn1
+   real             , allocatable, dimension(:)         :: pi01dn1,dn01dn1,co201dn1
    real             , allocatable, dimension(:,:)       :: xmn1,xtn1,ymn1,ytn1,zmn1,ztn1
    real             , allocatable, dimension(:,:)       :: topt1,parea
    real(kind=8) :: time1
@@ -338,15 +338,16 @@ subroutine inithis()
    !-----  Prepare 1D reference sounding --------------------------------------------------!
    nzpg1=nnzp1(1)
    allocate(u01dn1(nzpg1), v01dn1(nzpg1),rt01dn1(nzpg1),th01dn1(nzpg1),pi01dn1(nzpg1)      &
-           ,dn01dn1(nzpg1) )
+           ,dn01dn1(nzpg1), co201dn1(nzpg1) )
 
    cng='01'
-   ie=cio_f(iunhd,1,'u01dn'//cng,  u01dn1,nnzp1(1))
-   ie=cio_f(iunhd,1,'v01dn'//cng,  v01dn1,nnzp1(1))
-   ie=cio_f(iunhd,1,'pi01dn'//cng,pi01dn1,nnzp1(1))
-   ie=cio_f(iunhd,1,'th01dn'//cng,th01dn1,nnzp1(1))
-   ie=cio_f(iunhd,1,'dn01dn'//cng,dn01dn1,nnzp1(1))
-   ie=cio_f(iunhd,1,'rt01dn'//cng,rt01dn1,nnzp1(1))
+   ie=cio_f(iunhd,1,'u01dn'//cng  ,  u01dn1,nnzp1(1))
+   ie=cio_f(iunhd,1,'v01dn'//cng  ,  v01dn1,nnzp1(1))
+   ie=cio_f(iunhd,1,'pi01dn'//cng , pi01dn1,nnzp1(1))
+   ie=cio_f(iunhd,1,'th01dn'//cng , th01dn1,nnzp1(1))
+   ie=cio_f(iunhd,1,'dn01dn'//cng , dn01dn1,nnzp1(1))
+   ie=cio_f(iunhd,1,'rt01dn'//cng , rt01dn1,nnzp1(1))
+   ie=cio_f(iunhd,1,'co201dn'//cng,co201dn1,nnzp1(1))
 
 
    call htint(nzpg1,th01dn1,ztn1(1,1),nnzp(1),vctr1,ztn(1,1))
@@ -358,6 +359,13 @@ subroutine inithis()
       call htint(nzpg1,rt01dn1,ztn1(1,1),nnzp(1),rt01dn(1,1),ztn(1,1))
    else
       rt01dn(1:nnzp(ngrid),1) = 0.
+   end if
+
+   !----- Assing CO2 mixing ratio only if the user is running a CO2 run -------------------!
+   if (co2_on) then
+      call htint(nzpg1,co201dn1,ztn1(1,1),nnzp(1),co201dn(1,1),ztn(1,1))
+   else
+      co201dn(1:nnzp(ngrid),1) = co2con(1)
    endif
 
    !----- Saving the virtual potential temperature ----------------------------------------!

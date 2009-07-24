@@ -25,24 +25,39 @@ subroutine kuo_cupar_driver()
    
    select case (if_cuinv)
    case (0) !----- This is the "direct" cumulus parametrisation ---------------------------!
-         !---------------------------------------------------------------------------------!
-         !    Zero out tendencies initially. This has been moved to the initialization at  !
-         ! rams_mem_alloc.f90.                                                             !
-         !---------------------------------------------------------------------------------!
-         call azero(mxp*myp*mzp,cuparm_g(ngrid)%thsrc(:,:,:,icld))
-         call azero(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(:,:,:,icld))
-         call azero(mxp*myp,cuparm_g(ngrid)%conprr(:,:,icld))
-         !----- Call the main subroutine --------------------------------------------------!
-         call conpar(mzp,mxp,myp,ia,iz,ja,jz,ibcon                                         &
-             ,basic_g(ngrid)%up                     ,basic_g(ngrid)%vp                     &
-             ,basic_g(ngrid)%wp                     ,basic_g(ngrid)%theta                  &
-             ,basic_g(ngrid)%pp                     ,basic_g(ngrid)%pi0                    &
-             ,basic_g(ngrid)%dn0                    ,basic_g(ngrid)%rv                     &
-             ,cuparm_g(ngrid)%thsrc    (:,:,:,icld) ,cuparm_g(ngrid)%rtsrc    (:,:,:,icld) &
-             ,grid_g(ngrid)%rtgt                    ,cuparm_g(ngrid)%conprr   (  :,:,icld) &
-             ,grid_g(ngrid)%flpw                    )
+      !------------------------------------------------------------------------------------!
+      !    Zero out tendencies initially. This has been moved to the initialization at     !
+      ! rams_mem_alloc.f90.                                                                !
+      !------------------------------------------------------------------------------------!
+      call azero(mxp*myp*mzp,cuparm_g(ngrid)%thsrc(:,:,:,icld))
+      call azero(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(:,:,:,icld))
+      call azero(mxp*myp,cuparm_g(ngrid)%conprr(:,:,icld))
+
+      !------------------------------------------------------------------------------------!
+      !     Zero out CO2 tendency if CO2 is prognosed.  Currently Kuo scheme won't compute !
+      ! the transport of CO2 through updrafts and downdrafts, feel free to add this.  It   !
+      ! should be similar to the water transport, except that CO2 doesn't change phase.    !
+      !------------------------------------------------------------------------------------!
+      if (co2_on) call azero(mxp*myp*mzp,cuparm_g(ngrid)%co2src(:,:,:,icld))
+
+      !----- Call the main subroutine -----------------------------------------------------!
+      call conpar( mzp,mxp,myp,ia,iz,ja,jz,ibcon                                           &
+                 , basic_g(ngrid)%up                  , basic_g(ngrid)%vp                  &
+                 , basic_g(ngrid)%wp                  , basic_g(ngrid)%theta               &
+                 , basic_g(ngrid)%pp                  , basic_g(ngrid)%pi0                 &
+                 , basic_g(ngrid)%dn0                 , basic_g(ngrid)%rv                  &
+                 , cuparm_g(ngrid)%thsrc (:,:,:,icld) , cuparm_g(ngrid)%rtsrc (:,:,:,icld) &
+                 , grid_g(ngrid)%rtgt                 , cuparm_g(ngrid)%conprr(  :,:,icld) &
+                 , grid_g(ngrid)%flpw                 )
 
    case (1) !----- This is the cumulus inversion method -----------------------------------!
+      !------------------------------------------------------------------------------------!
+      !     Zero out CO2 tendency if CO2 is prognosed.  Currently Kuo scheme won't compute !
+      ! the transport of CO2 through updrafts and downdrafts, feel free to add this.  It   !
+      ! should be similar to the water transport, except that CO2 doesn't change phase.    !
+      !------------------------------------------------------------------------------------!
+      if (co2_on) call azero(mxp*myp*mzp,cuparm_g(ngrid)%co2src(:,:,:,icld))
+
       !------------------------------------------------------------------------------------!
       !     Check cumulus inversion tendencies and see if they are usable. If so, put in   !
       ! thsrc,rtscr,conprr arrays.                                                         !

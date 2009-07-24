@@ -1,4 +1,4 @@
-Module max_dims
+Module ed_max_dims
 
   ! This module contains very basic specification of grid dimensions and other 
   ! parameters that will be used to dimension arrays and allocate memory.
@@ -124,4 +124,4 @@ Module max_dims
 
   integer, parameter :: maxlist = 3*maxfiles  ! Maximum number of files (site+patch+cohort)
   
-end Module max_dims
+end Module ed_max_dims

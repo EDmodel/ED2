@@ -2,12 +2,12 @@
 !==========================================================================================!
 !    This subroutine controls the changes in leaf biomass due to phenology.                !
 !------------------------------------------------------------------------------------------!
-subroutine phenology_driver_ar(cgrid, doy, month, tfact)
+subroutine phenology_driver(cgrid, doy, month, tfact)
    use ed_state_vars  , only : edtype        & ! structure
                              , polygontype   & ! structure
                              , sitetype      ! ! structure
    use phenology_coms , only : iphen_scheme  ! ! intent(in)
-   use misc_coms      , only : current_time  ! ! intent(in)
+   use ed_misc_coms      , only : current_time  ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)      , target      :: cgrid
@@ -37,10 +37,13 @@ subroutine phenology_driver_ar(cgrid, doy, month, tfact)
          end do
          
          select case (iphen_scheme)
-         case (0)
-            !----- Default predictive scheme (Botta et al.). ------------------------------!
-            call update_thermal_sums_ar(month, cpoly, isi, cgrid%lat(ipy))
-            call update_phenology_ar(doy,cpoly,isi,cgrid%lat(ipy))
+         case (0,2)
+            !------------------------------------------------------------------------------!
+            !     Default predictive scheme (Botta et al.) or the modified drought         !
+            ! deciduous phenology for broadleaf PFTs.                                      !
+            !------------------------------------------------------------------------------!
+            call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
+            call update_phenology(doy,cpoly,isi,cgrid%lat(ipy))
             
          case (1)
             !----- Use prescribed phenology. ----------------------------------------------!
@@ -48,20 +51,20 @@ subroutine phenology_driver_ar(cgrid, doy, month, tfact)
                                       ,current_time%year, doy                              &
                                       ,cpoly%green_leaf_factor(:,isi)                      &
                                       ,cpoly%leaf_aging_factor(:,isi),cpoly%phen_pars(isi)) 
-            call update_phenology_ar(doy,cpoly,isi,cgrid%lat(ipy))
+            call update_phenology(doy,cpoly,isi,cgrid%lat(ipy))
 
 
-         case (2)
+         case (3)
             !----- KIM light-controlled predictive phenology scheme. ----------------------!
-            call update_thermal_sums_ar(month, cpoly, isi, cgrid%lat(ipy))
+            call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
             call update_turnover(cpoly,isi)
-            call update_phenology_ar(doy,cpoly,isi,cgrid%lat(ipy))
+            call update_phenology(doy,cpoly,isi,cgrid%lat(ipy))
          end select
       end do
    end do
 
    return
-end subroutine phenology_driver_ar
+end subroutine phenology_driver
 !==========================================================================================!
 !==========================================================================================!
 
@@ -72,7 +75,7 @@ end subroutine phenology_driver_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine update_phenology_ar(doy, cpoly, isi, lat)
+subroutine update_phenology(doy, cpoly, isi, lat)
 
    use ed_state_vars  , only : polygontype              & ! structure
                              , sitetype                 & ! structure
@@ -95,8 +98,8 @@ subroutine update_phenology_ar(doy, cpoly, isi, lat)
                              , alli                     ! ! intent(in)
    use ed_therm_lib   , only : calc_hcapveg             & ! function
                              , update_veg_energy_cweh   ! ! subroutine
-   use max_dims       , only : n_pft                    ! ! intent(in)
-   use misc_coms      , only : current_time             ! ! intent(in)
+   use ed_max_dims       , only : n_pft                    ! ! intent(in)
+   use ed_misc_coms      , only : current_time             ! ! intent(in)
    use allometry      , only : area_indices             & ! subroutine
                              , dbh2bl                   ! ! function
 
@@ -161,14 +164,14 @@ subroutine update_phenology_ar(doy, cpoly, isi, lat)
 
          !----- Find cohort-specific thresholds. ------------------------------------------!
          select case (iphen_scheme)
-         case (0,2)
-            !----- Drop_cold is computed in phenology_thresholds for Botta scheme. --------!
-            if (drop_cold) bl_max = 0.0
          case (1)
             !----- Get cohort-specific thresholds for prescribed phenology. ---------------!
             call assign_prescribed_phen(cpoly%green_leaf_factor(ipft,isi)                  &
                                        ,cpoly%leaf_aging_factor(ipft,isi),cpatch%dbh(ico)  &
                                        ,ipft,drop_cold,leaf_out_cold, bl_max)
+         case default
+            !----- Drop_cold is computed in phenology_thresholds for Botta scheme. --------!
+            if (drop_cold) bl_max = 0.0
          end select
 
          !---------------------------------------------------------------------------------!
@@ -310,7 +313,7 @@ subroutine update_phenology_ar(doy, cpoly, isi, lat)
             end if
 
 
-         case (3,4) 
+         case (4) 
             !------------------------------------------------------------------------------!
             !    Drought deciduous.  Here we must check two possibilities:                 !
             !                                                                              !
@@ -403,7 +406,7 @@ subroutine update_phenology_ar(doy, cpoly, isi, lat)
       end do cohortloop
    end do patchloop
    return
-end subroutine update_phenology_ar
+end subroutine update_phenology
 !==========================================================================================!
 !==========================================================================================!
 

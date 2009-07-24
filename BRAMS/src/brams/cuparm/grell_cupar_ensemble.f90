@@ -601,8 +601,8 @@ end subroutine grell_dyncontrol_ensemble
 !------------------------------------------------------------------------------------------!
 subroutine grell_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dyn      &
                          ,inv_ensdim,max_heat,ktop,edt_eff,dellathil_eff,dellaqtot_eff     &
-                         ,pw_eff,dnmf_ens,upmf_ens,ierr,upmf,dnmf,edt,outthil,outqtot      &
-                         ,precip)
+                         ,dellaco2_eff,pw_eff,dnmf_ens,upmf_ens,ierr,upmf,dnmf,edt,outthil &
+                         ,outqtot,outco2,precip)
 
    use rconstants,   only: day_sec
    implicit none
@@ -626,6 +626,7 @@ subroutine grell_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxen
    real, dimension(mgmzp,maxens_eff,maxens_cap), intent(in) ::  & 
                                             dellathil_eff  & ! Ice-liquid potential temp.
                                            ,dellaqtot_eff  & ! Total mixing ratio
+                                           ,dellaco2_eff   & ! CO2 mixing ratio
                                            ,pw_eff         ! ! Fall-out water
    !----- Reference mass fluxes, in [kg/m²/s] ---------------------------------------------!
    real, dimension(maxens_dyn,maxens_lsf,maxens_eff,maxens_cap), intent(in) :: &
@@ -639,6 +640,7 @@ subroutine grell_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxen
    real                  , intent(out)   :: edt         ! m0/mb, Grell's epsilon
    real, dimension(mgmzp), intent(inout) :: outthil     ! Change in temperature profile
    real, dimension(mgmzp), intent(inout) :: outqtot     ! Change in total mixing ratio
+   real, dimension(mgmzp), intent(inout) :: outco2      ! Change in total mixing ratio
    real                  , intent(out)   :: precip      ! Precipitation rate
 
    integer                               :: k,l               ! Counter
@@ -734,6 +736,7 @@ subroutine grell_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxen
    !---------------------------------------------------------------------------------------!
    do k=1,ktop
       outqtot(k)  = upmf * sum(dellaqtot_eff(k,:,:) ) * inv_maxens_effcap
+      outco2(k)   = upmf * sum(dellaco2_eff(k,:,:) )  * inv_maxens_effcap
    end do
 
    !---------------------------------------------------------------------------------------!

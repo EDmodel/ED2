@@ -18,7 +18,7 @@ subroutine ed_driver
        filltab_alltypes, &
        edgrid_g
   
-  use misc_coms, only: &
+  use ed_misc_coms, only: &
        iyeara,          &
        imontha,         &
        idatea,          &
@@ -81,8 +81,8 @@ subroutine ed_driver
   ! STEP 4: Set some polygon-level basic information, such as lon/lat/soil texture  !
   !---------------------------------------------------------------------------------!
   
-  if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Set_Polygon_Coordinates_Ar...'
-  call set_polygon_coordinates_ar()
+  if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Set_Polygon_Coordinates...'
+  call set_polygon_coordinates()
   
   !---------------------------------------------------------------------------!
   ! STEP 5: Initialize inherent soil and vegetation properties.               !
@@ -138,11 +138,11 @@ subroutine ed_driver
 
   if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,82,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
 
-  if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Init_Met_Drivers_Array...'
-  call init_met_drivers_array
+  if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Init_Met_Drivers...'
+  call init_met_drivers
   
-  if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Read_Met_Drivers_Init_Array...'
-  call read_met_drivers_init_array
+  if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Read_Met_Drivers_Init...'
+  call read_met_drivers_init
 
 
   if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,82,MPI_COMM_WORLD,ierr)
@@ -152,9 +152,8 @@ subroutine ed_driver
   ! STEP 9. Initialize ed fields that depend on the atmosphere
   !-----------------------------------------------------------------------!
   
-  
-  if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Ed_Init_Atm_Ar...'
-  call ed_init_atm_ar
+  if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Ed_Init_Atm...'
+  call ed_init_atm
   
   !-----------------------------------------------------------------------!
   ! STEP 10. Initialized some derived variables. This must be done        !
@@ -218,7 +217,7 @@ end subroutine ed_driver
 !==========================================================================================!
 !==========================================================================================!
 subroutine find_frqsum()
-   use misc_coms, only:  &
+   use ed_misc_coms, only:  &
         unitfast,        &
         unitstate,       &
         isoutput,        &

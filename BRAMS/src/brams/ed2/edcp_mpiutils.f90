@@ -1,20 +1,19 @@
 subroutine masterput_ednl(mainnum)
   
-  use max_dims,        only: str_len,n_pft,maxpvars,nzgmax,str_len_short,maxgrds,max_soi   &
+  use ed_max_dims,     only: str_len,n_pft,maxpvars,nzgmax,str_len_short,maxgrds,max_soi   &
                            ,max_ed_regions,n_pft
-  use misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz   &
+  use ed_misc_coms,    only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz   &
                            ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput         &
                            ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir    &
                            ,integration_scheme,end_time,current_time,sfilout,frqstate      &
                            ,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmin,ipmax      &
                            ,iedcnfgf,event_file,iyoutput,outfast,outstate,unitfast         &
-                           ,unitstate
-  use ed_misc_coms,only: attach_metadata
+                           ,unitstate,attach_metadata
   use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,time,timmax
   use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database  &
                             ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg        &
                             ,isoilbc,runoff_time,zrough
-  use met_driver_coms, only: initial_co2,lapse_scheme
+  use met_driver_coms, only: lapse_scheme
   use mem_sites,       only: edres,maxpatch,maxcohort
   use physiology_coms, only: istoma_scheme,n_plant_lim
   use phenology_coms , only: iphen_scheme,repro_scheme,iphenys1,iphenysf,iphenyf1,iphenyff &
@@ -99,7 +98,6 @@ subroutine masterput_ednl(mainnum)
   end do
   call MPI_Bcast(ipmin,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(ipmax,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(initial_co2,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(iphenys1,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(iphenysf,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(iphenyf1,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -153,21 +151,20 @@ end subroutine masterput_ednl
 !===================================================================
 subroutine nodeget_ednl(master_num)
   
-  use max_dims,        only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars &
+  use ed_max_dims,      only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars &
                             ,str_len_short
-  use misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
+  use ed_misc_coms,     only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
                            ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput        &
                            ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir   &
                            ,integration_scheme,end_time,current_time,sfilout,frqstate     &
                            ,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmin,ipmax     &
                            ,iedcnfgf,event_file,iyoutput,outfast,outstate,unitfast        &
-                           ,unitstate
-  use ed_misc_coms,only: attach_metadata
+                           ,unitstate,attach_metadata
   use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,time,timmax
   use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database &
                              ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg       &
                              ,isoilbc,runoff_time,zrough
-  use met_driver_coms, only: initial_co2,lapse_scheme
+  use met_driver_coms, only: lapse_scheme
   use mem_sites,       only: edres,maxpatch,maxcohort
   use physiology_coms, only: istoma_scheme,n_plant_lim
   use phenology_coms , only: iphen_scheme,repro_scheme,iphenys1,iphenysf,iphenyf1,iphenyff &
@@ -251,7 +248,6 @@ subroutine nodeget_ednl(master_num)
   end do
   call MPI_Bcast(ipmin,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(ipmax,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(initial_co2,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(iphenys1,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(iphenysf,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(iphenyf1,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

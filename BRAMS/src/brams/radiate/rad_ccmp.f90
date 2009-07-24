@@ -340,7 +340,7 @@ end subroutine shradc
 
 !«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»!
 ![MLO - Changed the dimensions of i/o arrays to attempt to achieve binary reproducibility
-subroutine lwradc(nzp,rvr,rtr,dn0r,temprd,prd,dzzr,fthr,rlong)
+subroutine lwradc(nzp,rvr,rtr,co2r,dn0r,temprd,prd,dzzr,fthr,rlong)
   !  +--------------------------------------------------------------------
   !  !  Longwave radiation parameterization based on Rodgers and
   !  !  Stephens and discussed in Chen and Cotton (1983).  First written
@@ -351,8 +351,9 @@ subroutine lwradc(nzp,rvr,rtr,dn0r,temprd,prd,dzzr,fthr,rlong)
   !  !  Upward and downward fluxes will be calculated at w points while
   !  !  the heating rates will be at thermo points. The program takes as
   !  !  input the first five arrays passed in:
-  !  ! RVR ......... vapor mixing ratio
-  !  ! RTR ......... total water mixing ratio
+  !  ! RVR ......... vapor mixing ratio [kg/kg]
+  !  ! RTR ......... total water mixing ratio [kg/kg]
+  !  ! CO2R ........ CO2 mixing ratio [kg/kg]
   !  ! DN0R ........ density in (cgs units)
   !  ! TEMPRD ...... temperature in K (TEMPRD(1) is surface temperature)
   !  ! PRD ......... pressure at thermo points in (cgs units)
@@ -375,11 +376,12 @@ subroutine lwradc(nzp,rvr,rtr,dn0r,temprd,prd,dzzr,fthr,rlong)
   !  ! FU1,FU2 ..... upwelling fluxes (1-vapor) (2-CO2)
   !  ! FD1,FD2 ..... downwelling fluxes (1-vapor) (2-CO2)
   !  +--------------------------------------------------------------------
-  use rconstants, only : g, cp, stefan, ep ! The subroutine uses CGS but constants are based on the global ones.
+  ! The subroutine uses CGS but constants are based on the global ones.
+  use rconstants, only : g, cp, stefan, ep , volmoll, mmco2i
   implicit none
 !----- List of arguments --------------------------------------------------------------------------------!
   integer, intent(in)                     :: nzp
-  real,    intent(in)  , dimension(nzp)   :: rvr,rtr,dn0r,prd,dzzr,temprd
+  real,    intent(in)  , dimension(nzp)   :: rvr,rtr,co2r,dn0r,prd,dzzr,temprd
   real,    intent(out) , dimension(nzp)   :: fthr
   real,    intent(out)                    :: rlong
 
@@ -394,7 +396,7 @@ subroutine lwradc(nzp,rvr,rtr,dn0r,temprd,prd,dzzr,fthr,rlong)
   real(kind=8),    parameter   , dimension(5)     :: bu=(/   .5983,    .15068, 3.4041e-2, 6.5535e-3,  4.887e-4/)
   real(kind=8),    parameter   , dimension(5)     :: ed=(/   .2837,    -.1231,    -.1057,    -.0199,  -1.16e-3/)
   real(kind=8),    parameter   , dimension(5)     :: eu=(/  .21699, -9.185e-2, -7.971e-2, -1.502e-2, -8.754e-4/)
-  real(kind=8),    parameter                      :: rco2=.25537, fhl = 0., bndi = 1./200.
+  real(kind=8),    parameter                      :: fhl = 0., bndi = 1./200.
   real(kind=8),    parameter                      :: c11=160.87,  c21=-326.5,  c31=-158.22
   real(kind=8),    parameter                      :: c02=74.103,  c12=19.632,  c22=  0.821, c32=-0.11834
   real(kind=8),    parameter                      ::  b1= 7.345,   b2=142.47
@@ -406,14 +408,12 @@ subroutine lwradc(nzp,rvr,rtr,dn0r,temprd,prd,dzzr,fthr,rlong)
   !- The following arguments are only scratch variables in reality.
   real(kind=8),                  dimension(nzp+1) :: vpr,scr1,scr2,scr3,dmr,co2,cld
   real(kind=8),                  dimension(nzp+1) :: uf1,uf2,df1,df2,em1,em2,bb1,bb2
-  real(kind=8),                  dimension(nzp)   :: drvr,drtr,ddn0r,dprd,ddzzr,dtemprd
+  real(kind=8),                  dimension(nzp)   :: drvr,drtr,dco2r,ddn0r,dprd,ddzzr,dtemprd
   !
   !     Water vapor band. The vibration rotation and continuum effects
   !     of the water vapor are considered.
   !
   !
-  ! the CO2 concentration is assumed to be 330 ppm from surface to 40km:
-  !          CO2(K) = 330./1000.*(44.011/28.966)*(22415./44.011)
   ! also downwelling flux at top of model is given by FHL
   !
   !
@@ -421,12 +421,13 @@ subroutine lwradc(nzp,rvr,rtr,dn0r,temprd,prd,dzzr,fthr,rlong)
   nz=nzp-1
   ![MLO - Transferring information from single precision to double for internal use
   do k=1,nzp
-    drvr(k)    = rvr(k)   
-    drtr(k)    = rtr(k)   
-    ddn0r(k)   = dn0r(k)  
-    dprd(k)    = prd(k)   
-    ddzzr(k)   = dzzr(k)  
-    dtemprd(k) = temprd(k)
+    drvr(k)    = dble(rvr(k)   )
+    drtr(k)    = dble(rtr(k)   )
+    dco2r(k)   = dble(co2r(k)  ) * dble (volmoll) * dble(mmco2i) ! CO2 is now in cm3_CO2/g_air
+    ddn0r(k)   = dble(dn0r(k)  )
+    dprd(k)    = dble(prd(k)   )
+    ddzzr(k)   = dble(dzzr(k)  )
+    dtemprd(k) = dble(temprd(k))
   end do
   !
   ! calculation of optical path lengths
@@ -437,7 +438,7 @@ subroutine lwradc(nzp,rvr,rtr,dn0r,temprd,prd,dzzr,fthr,rlong)
      vpr(k)= drvr(k)*path_fact
      cld(k)=(drtr(k)-drvr(k))*path_fact
      dmr(k)=vpr(k)*dprd(k)*drvr(k)/(dble(ep)*prefcgs)
-     co2(k)=rco2*path_fact
+     co2(k)=dco2r(k)*path_fact
   enddo
   vpr(nzp)=vpr(nz)
   vpr(nzpp)=vpr(nz)
@@ -796,7 +797,7 @@ end subroutine shradp
 
 
 !«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»«»!
-subroutine lwradp(nzp,temprd,rvr,dn0r,dzzr,pird,sc,fthr,rlong)
+subroutine lwradp(nzp,temprd,rvr,co2r,dn0r,dzzr,pird,sc,fthr,rlong)
   !--------------------------------------------------------------------------------------------------------------------!
   !     Longwave radiation parameterization described in Mahrer and                                                    !
   !     Pielke (1977).  Does not include any cloud effects.                                                            !
@@ -807,6 +808,7 @@ subroutine lwradp(nzp,temprd,rvr,dn0r,dzzr,pird,sc,fthr,rlong)
   !       Input:  NZP    - number of vertical levels                                                                   !
   !               TEMPRD - temperature in Kelvin at each level                                                         !
   !               RVR    - water vapor at each level                                                                   !
+  !               CO2R   - CO2 mixing ratio at each level                                                              !
   !               DN0R   - air density at each level                                                                   !
   !               DZZR   - inverse of delta z = 1./(ZZ(K)-ZZ(K-1))                                                     !
   !                        where ZZ is staggered midway between T levels                                               !
@@ -820,7 +822,7 @@ subroutine lwradp(nzp,temprd,rvr,dn0r,dzzr,pird,sc,fthr,rlong)
   use rconstants, only : g,cp,stefan,p00,cpor
   implicit none
   integer , intent(in)            :: nzp
-  real    , intent(in)   , dimension(nzp)    :: rvr,dn0r,temprd,dzzr, pird
+  real    , intent(in)   , dimension(nzp)    :: rvr,co2r,dn0r,temprd,dzzr, pird
   real    , intent(out)                      :: rlong
   real    , intent(out)  , dimension(nzp)    :: fthr
   real    , intent(out)  , dimension(nzp,18) :: sc
@@ -829,8 +831,6 @@ subroutine lwradp(nzp,temprd,rvr,dn0r,dzzr,pird,sc,fthr,rlong)
   real    , parameter                         :: gcgs      =100.   * g
   real    , parameter                         :: stefancgs =1000.  * stefan
   real    , parameter                         :: cpcgs     =10000. * cp
-  real    , parameter                         :: c1        = .0004148239
-  real    , parameter                         :: c2        = c1 * gcgs
   integer , parameter                         ::   iv1=  1,  iv2=  2,  iv3=  3,  iv4=  4,  iv5=  5,  iv6=  6 &
                                                 ,  iv7=  7,  iv8=  8,  iv9=  9, iv10= 10, iv11= 11, iv12= 12 &
                                                 , iv13= 13, iv14= 14, iv15= 15, iv16= 16, iv17= 17, iv18= 18
@@ -880,9 +880,9 @@ subroutine lwradp(nzp,temprd,rvr,dn0r,dzzr,pird,sc,fthr,rlong)
 
   !                           CO2 path lengths and emissivities
   do k=2,nz
-     sc(k,iv11)=c2*dn0r(k)/dzzr(k)
+     sc(k,iv11)=co2r(k) * gcgs * dn0r(k) / dzzr(k)
   enddo
-  sc(nzp,iv11)=c1*pird(nzp)**(cpor)*p00cgs
+  sc(nzp,iv11)=co2r(nzp) * pird(nzp)**(cpor)*p00cgs
 
   sc(1,iv12)=0.
   do k=2,nz

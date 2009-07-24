@@ -433,7 +433,7 @@ subroutine init_fields(init)
      case (1,2,5)
         call sfcdata
      case (3)
-        call sfcdata_sib_driver
+        !call sfcdata_sib_driver
      end select
   endif
 

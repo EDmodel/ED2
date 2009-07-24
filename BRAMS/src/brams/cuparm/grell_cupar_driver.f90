@@ -56,7 +56,9 @@ subroutine grell_cupar_driver(banneron,icld)
            frqanl                ! ! intent(in) - Frequency of analysis.
 
    use mem_basic         , only: &
-           basic_g               ! ! intent(in) - Basic variables structure
+           co2_on                & ! intent(in) - Flag for CO2 presence.
+          ,co2con                & ! intent(in) - CO2 mixing ratio if constant.
+          ,basic_g               ! ! intent(in) - Basic variables structure
 
    use mem_cuparm        , only: &
            confrq                & ! intent(in)    - Convective frequency 
@@ -97,7 +99,10 @@ subroutine grell_cupar_driver(banneron,icld)
            scratch       & ! intent(out) - Scratch array, to save old info.
           ,vctr6         & ! intent(out) - Scratch, contains the liquid water mix. ratio.
           ,vctr7         & ! intent(out) - Scratch, contains the ice mixing ratio.
-          ,vctr9         ! ! intent(out) - Scratch, contains the vertical velocity sigma.
+          ,vctr8         & ! intent(out) - Scratch, contains the column CO2 mixing ratio.
+          ,vctr9         & ! intent(out) - Scratch, contains the vertical velocity sigma.
+          ,vctr18        & ! intent(out) - Scratch, contains the large-scale CO2 tendency.
+          ,vctr28        ! ! intent(out) - Scratch, contains the convective CO2 forcing.
    
    use mem_scratch_grell , only: &
            zero_scratch_grell    ! ! Subroutine - Flushes scratch variables to zero.
@@ -152,24 +157,20 @@ subroutine grell_cupar_driver(banneron,icld)
    !---------------------------------------------------------------------------------------!
    call azero(mzp*mxp*myp,cuparm_g(ngrid)%thsrc  (:,:,:,icld))
    call azero(mzp*mxp*myp,cuparm_g(ngrid)%rtsrc  (:,:,:,icld))
+   if (co2_on) call azero(mzp*mxp*myp,cuparm_g(ngrid)%co2src (:,:,:,icld))
    call azero(mzp*mxp*myp,cuparm_g(ngrid)%cuprliq(:,:,:,icld))
    call azero(mzp*mxp*myp,cuparm_g(ngrid)%cuprice(:,:,:,icld))
    call azero(    mxp*myp,cuparm_g(ngrid)%conprr (  :,:,icld))
 
    !---------------------------------------------------------------------------------------!
-   ! 2. Accumulate all convection sources into scratch arrays. This is to remove           !
-   !    instability as we move to deeper convection.                                       !
-   !    scratch%vt3di => ice-liquid potential temperature forcing.                         !
-   !    scratch%vt3dj => total mixing ratio forcing.                                       !
+   ! 2. Flushing a scratch array to zero, and depending on whether CO2 is prognosed, this  !
+   !    will store the large-scale tendency.                                               !
+   !    scratch%vt3dj => large-scale CO2 mixing ratio forcing.                             !
    !---------------------------------------------------------------------------------------!
-   call azero(mzp*mxp*myp,scratch%vt3di)
    call azero(mzp*mxp*myp,scratch%vt3dj)
-   do ccc=icld+1,nclouds
-      call accum(mxp*myp*mzp, scratch%vt3di, cuparm_g(ngrid)%thsrc(:,:,:,ccc))
-      call accum(mxp*myp*mzp, scratch%vt3dj, cuparm_g(ngrid)%rtsrc(:,:,:,ccc))
-   end do
-   
-   
+   if (co2_on) then
+      call atob(mxp*myp*mzp,tend%co2t,scratch%vt3dj)
+   end if
 
    !---------------------------------------------------------------------------------------!
    ! 3. Flush CATT-related variables to zero.                                              !
@@ -222,8 +223,9 @@ subroutine grell_cupar_driver(banneron,icld)
          !---------------------------------------------------------------------------------!
          call zero_scratch_grell()
          call zero_ensemble(ensemble_e(icld))
-         call azero3(mzp,vctr6(1:mzp),vctr7(1:mzp),vctr9(1:mzp))
-         
+         call azero5(mzp,vctr6(1:mzp),vctr7(1:mzp),vctr9(1:mzp),vctr18(1:mzp),vctr28(1:mzp))
+         call ae0(mzp,vctr8(1:mzp),co2con(1)) !---- Not really used unless CO2 is on.
+
          !---------------------------------------------------------------------------------!
          ! 6b. Initialise grid-related variables (how many levels, offset, etc.)           !
          !---------------------------------------------------------------------------------!
@@ -260,7 +262,14 @@ subroutine grell_cupar_driver(banneron,icld)
          end select
 
          !---------------------------------------------------------------------------------!
-         ! 6d. Copying sigma-w to a scratch array. This is because it is available only    !
+         ! 6d. Copy CO2 array to scratch variable, if CO2 is actively prognosed.           !
+         !---------------------------------------------------------------------------------!
+         if (co2_on) then
+            call atob(mzp,basic_g(ngrid)%co2p(:,i,j),vctr8(1:mzp))
+         end if
+
+         !---------------------------------------------------------------------------------!
+         ! 6e. Copying sigma-w to a scratch array. This is because it is available only    !
          !     for idiffk = 1 or idiffk = 7. It's really unlikely that one would use the   !
          !     other TKE-related schemes with cumulus parameterization though, because     !
          !     they are LES schemes. If that happens, use special flag (sigmaw=0).         !
@@ -274,16 +283,15 @@ subroutine grell_cupar_driver(banneron,icld)
 
 
          !---------------------------------------------------------------------------------!
-         ! 6e. Copying the tendencies to the scratch array.                                !
+         ! 6f. Copying the tendencies to the scratch array.                                !
          !---------------------------------------------------------------------------------!
          if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                         &
                              '       [~] Calling initial_tend_grell... i=',i,'j=',j
-         call initial_tend_grell(mzp,mxp,myp,i,j,tend%tht,tend%tket,tend%rtt               &
-                                   ,scratch%vt3di,scratch%vt3dj)
+         call initial_tend_grell(mzp,mxp,myp,i,j,tend%tht,tend%tket,tend%rtt,scratch%vt3dj)
 
 
          !---------------------------------------------------------------------------------!
-         ! 6f. Initialising pressure, temperature, and mixing ratio. This will include the !
+         ! 6g. Initialising pressure, temperature, and mixing ratio. This will include the !
          !     effect of previously called shallow convection in case it happened. If this !
          !     is the shallowest cloud, or if the shallower clouds didn't happen, this     !
          !     will simply copy the BRAMS fields.                                          !
@@ -292,14 +300,14 @@ subroutine grell_cupar_driver(banneron,icld)
                              '       [~] Calling initial_thermo_grell... i=',i,'j=',j
          call initial_thermo_grell(mzp,dtlt         , basic_g(ngrid)%thp           (:,i,j) &
               , basic_g(ngrid)%theta         (:,i,j), basic_g(ngrid)%rtp           (:,i,j) &
-              , basic_g(ngrid)%pi0           (:,i,j), basic_g(ngrid)%pp            (:,i,j) &
-              , basic_g(ngrid)%pc            (:,i,j), basic_g(ngrid)%wp            (:,i,j) &
-              , basic_g(ngrid)%dn0           (:,i,j), turb_g(ngrid)%tkep           (:,i,j) &
-              , vctr6                        (1:mzp), vctr7                        (1:mzp) &
-              , vctr9                        (1:mzp))
+              , vctr8                        (1:mzp), basic_g(ngrid)%pi0           (:,i,j) &
+              , basic_g(ngrid)%pp            (:,i,j), basic_g(ngrid)%pc            (:,i,j) &
+              , basic_g(ngrid)%wp            (:,i,j), basic_g(ngrid)%dn0           (:,i,j) &
+              , turb_g(ngrid)%tkep           (:,i,j), vctr6                        (1:mzp) &
+              , vctr7                        (1:mzp), vctr9                        (1:mzp))
 
          !---------------------------------------------------------------------------------!
-         ! 6g. Initialise the remainder Grell's scratch variables. This is done only if    !
+         ! 6h. Initialise the remainder Grell's scratch variables. This is done only if    !
          !     the user asked for this check, otherwise I will pretend that convection     !
          !     never happen at the surroundings. This requires full grid information, and  !
          !     needs some old information as well, thus the scratch structures.            !
@@ -311,7 +319,7 @@ subroutine grell_cupar_driver(banneron,icld)
               , basic_g(ngrid)%up                   , basic_g(ngrid)%vp                    )
          
          !---------------------------------------------------------------------------------!
-         ! 6h. Call the main cumulus parameterization subroutine, which will deal with the !
+         ! 6i. Call the main cumulus parameterization subroutine, which will deal with the !
          !     static control, dynamic control and feedback. This sends back the reference !
          !     upward and downward mass flux in kg/m²/s.                                   !
          !---------------------------------------------------------------------------------!
@@ -326,14 +334,14 @@ subroutine grell_cupar_driver(banneron,icld)
             ,zcutdown(icld),z_detr(icld)                                                   &
             ,ensemble_e(icld)%edt_eff             , ensemble_e(icld)%dellatheiv_eff        &
             ,ensemble_e(icld)%dellathil_eff       , ensemble_e(icld)%dellaqtot_eff         &
-            ,ensemble_e(icld)%pw_eff              , ensemble_e(icld)%dnmf_ens              &
-            ,ensemble_e(icld)%upmf_ens            , cuparm_g(ngrid)%aadn       (i,j,icld)  &
-            ,cuparm_g(ngrid)%aaup       (i,j,icld), cuparm_g(ngrid)%edt        (i,j,icld)  &
-            ,cuparm_g(ngrid)%dnmf       (i,j,icld), cuparm_g(ngrid)%upmf       (i,j,icld)  &
-            ,mynum                                )
+            ,ensemble_e(icld)%dellaco2_eff        , ensemble_e(icld)%pw_eff                &
+            ,ensemble_e(icld)%dnmf_ens            , ensemble_e(icld)%upmf_ens              &
+            ,cuparm_g(ngrid)%aadn       (i,j,icld), cuparm_g(ngrid)%aaup       (i,j,icld)  &
+            ,cuparm_g(ngrid)%edt        (i,j,icld),cuparm_g(ngrid)%dnmf       (i,j,icld)   &
+            ,cuparm_g(ngrid)%upmf       (i,j,icld),mynum                                   )
 
          !---------------------------------------------------------------------------------!
-         ! 6i. Compute the other output variables                                          !
+         ! 6j. Compute the other output variables                                          !
          !---------------------------------------------------------------------------------!
          if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                         &
                              '       [~] Calling grell_output... i=',i,'j=',j
@@ -344,12 +352,17 @@ subroutine grell_cupar_driver(banneron,icld)
               , cuparm_g(ngrid)%zk22      (i,j,icld), cuparm_g(ngrid)%zkbcon    (i,j,icld) &
               , cuparm_g(ngrid)%zkdt      (i,j,icld), cuparm_g(ngrid)%zktop     (i,j,icld) &
               , cuparm_g(ngrid)%conprr    (i,j,icld), cuparm_g(ngrid)%thsrc   (:,i,j,icld) &
-              , cuparm_g(ngrid)%rtsrc   (:,i,j,icld), cuparm_g(ngrid)%areadn    (i,j,icld) &
-              , cuparm_g(ngrid)%areaup    (i,j,icld), cuparm_g(ngrid)%cuprliq (:,i,j,icld) &
-              , cuparm_g(ngrid)%cuprice (:,i,j,icld))
+              , cuparm_g(ngrid)%rtsrc   (:,i,j,icld), vctr28                       (1:mzp) &
+              , cuparm_g(ngrid)%areadn    (i,j,icld), cuparm_g(ngrid)%areaup    (i,j,icld) &
+              , cuparm_g(ngrid)%cuprliq (:,i,j,icld), cuparm_g(ngrid)%cuprice (:,i,j,icld))
 
          !---------------------------------------------------------------------------------!
-         ! 6j. If the user needs the full mass flux information to drive Lagrangian models !
+         ! 6k. Copy the CO2 forcing if CO2 is available.                                   !
+         !---------------------------------------------------------------------------------!
+         if (co2_on) call atob(mzp,vctr28(1:mzp),cuparm_g(ngrid)%co2src(:,i,j,icld))
+
+         !---------------------------------------------------------------------------------!
+         ! 6k. If the user needs the full mass flux information to drive Lagrangian models !
          !     do it now.                                                                  !
          !---------------------------------------------------------------------------------!
          if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                         &
@@ -363,7 +376,7 @@ subroutine grell_cupar_driver(banneron,icld)
          end if
 
          !---------------------------------------------------------------------------------!
-         ! 6k. Here are CATT-related procedures. It does pretty much the same as it used   !
+         ! 6l. Here are CATT-related procedures. It does pretty much the same as it used   !
          !     to, except that I took the statistics out from inside grell_cupar_main and  !
          !     brought trans_conv_mflx inside the i/j loop.                                !
          !---------------------------------------------------------------------------------!

@@ -22,7 +22,7 @@ module mem_turb
 
      ! Variables to be dimensioned by (nxp,nyp)
      real, pointer, dimension(:,:) :: &
-          sflux_u,sflux_v,sflux_w,sflux_t,sflux_r &
+          sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c &
 ![MLO - For Nakanishi/Niino
          ,lmo,pblhgt,akscal
      integer, pointer, dimension(:,:) :: kpbl
@@ -42,11 +42,12 @@ module mem_turb
 contains
 !==========================================================================================!
 !==========================================================================================!
-  subroutine alloc_turb(turb,n1,n2,n3,ng)
+  subroutine alloc_turb(turb,n1,n2,n3,ng,co2_on)
 
     implicit none
     type (turb_vars) :: turb
     integer, intent(in) :: n1,n2,n3,ng
+    logical, intent(in) :: co2_on
 
     ! Allocate arrays based on options (if necessary)
     
@@ -77,7 +78,10 @@ contains
     allocate (turb%sflux_w(n2,n3))
     allocate (turb%sflux_t(n2,n3))
     allocate (turb%sflux_r(n2,n3))
+    
     allocate (turb%akscal (n2,n3))
+
+    if (co2_on) allocate(turb%sflux_c(n2,n3))
 
     return
   end subroutine alloc_turb
@@ -96,24 +100,24 @@ contains
     implicit none
     type (turb_vars) :: turb
 
-
-    if (associated(turb%tkep))    nullify (turb%tkep)
-    if (associated(turb%epsp))    nullify (turb%epsp)
-    if (associated(turb%hkm))     nullify (turb%hkm)
-    if (associated(turb%vkm))     nullify (turb%vkm)
-    if (associated(turb%vkh))     nullify (turb%vkh)
-    if (associated(turb%cdrag))   nullify (turb%cdrag)
-    if (associated(turb%sflux_u)) nullify (turb%sflux_u)
-    if (associated(turb%sflux_v)) nullify (turb%sflux_v)
-    if (associated(turb%sflux_w)) nullify (turb%sflux_w)
-    if (associated(turb%sflux_t)) nullify (turb%sflux_t)
-    if (associated(turb%sflux_r)) nullify (turb%sflux_r)
-    if (associated(turb%akscal   ))  nullify (turb%akscal   )
-    if (associated(turb%ltscale  ))  nullify (turb%ltscale  )
-    if (associated(turb%sigw     ))  nullify (turb%sigw     )
-    if (associated(turb%pblhgt   ))  nullify (turb%pblhgt   )
-    if (associated(turb%lmo      ))  nullify (turb%lmo      )
-    if (associated(turb%kpbl     ))  nullify (turb%kpbl     )
+    if (associated(turb%tkep    ))  nullify (turb%tkep    )
+    if (associated(turb%epsp    ))  nullify (turb%epsp    )
+    if (associated(turb%hkm     ))  nullify (turb%hkm     )
+    if (associated(turb%vkm     ))  nullify (turb%vkm     )
+    if (associated(turb%vkh     ))  nullify (turb%vkh     )
+    if (associated(turb%cdrag   ))  nullify (turb%cdrag   )
+    if (associated(turb%sflux_r ))  nullify (turb%sflux_r )
+    if (associated(turb%sflux_u ))  nullify (turb%sflux_u )
+    if (associated(turb%sflux_v ))  nullify (turb%sflux_v )
+    if (associated(turb%sflux_w ))  nullify (turb%sflux_w )
+    if (associated(turb%sflux_t ))  nullify (turb%sflux_t )
+    if (associated(turb%sflux_c ))  nullify (turb%sflux_c )
+    if (associated(turb%akscal  ))  nullify (turb%akscal  )
+    if (associated(turb%ltscale ))  nullify (turb%ltscale )
+    if (associated(turb%sigw    ))  nullify (turb%sigw    )
+    if (associated(turb%pblhgt  ))  nullify (turb%pblhgt  )
+    if (associated(turb%lmo     ))  nullify (turb%lmo     )
+    if (associated(turb%kpbl    ))  nullify (turb%kpbl    )
 
     return
   end subroutine nullify_turb
@@ -133,18 +137,19 @@ contains
     type (turb_vars) :: turb
 
 
-    if (associated(turb%tkep))    deallocate (turb%tkep)
-    if (associated(turb%epsp))    deallocate (turb%epsp)
-    if (associated(turb%hkm))     deallocate (turb%hkm)
-    if (associated(turb%vkm))     deallocate (turb%vkm)
-    if (associated(turb%vkh))     deallocate (turb%vkh)
-    if (associated(turb%cdrag))   deallocate (turb%cdrag)
-    if (associated(turb%sflux_u)) deallocate (turb%sflux_u)
-    if (associated(turb%sflux_v)) deallocate (turb%sflux_v)
-    if (associated(turb%sflux_w)) deallocate (turb%sflux_w)
-    if (associated(turb%sflux_t)) deallocate (turb%sflux_t)
-    if (associated(turb%sflux_r)) deallocate (turb%sflux_r)
-    if (associated(turb%akscal  )) deallocate (turb%akscal   )
+    if (associated(turb%tkep    ))  deallocate (turb%tkep    )
+    if (associated(turb%epsp    ))  deallocate (turb%epsp    )
+    if (associated(turb%hkm     ))  deallocate (turb%hkm     )
+    if (associated(turb%vkm     ))  deallocate (turb%vkm     )
+    if (associated(turb%vkh     ))  deallocate (turb%vkh     )
+    if (associated(turb%cdrag   ))  deallocate (turb%cdrag   )
+    if (associated(turb%sflux_r ))  deallocate (turb%sflux_r )
+    if (associated(turb%sflux_u ))  deallocate (turb%sflux_u )
+    if (associated(turb%sflux_v ))  deallocate (turb%sflux_v )
+    if (associated(turb%sflux_w ))  deallocate (turb%sflux_w )
+    if (associated(turb%sflux_t ))  deallocate (turb%sflux_t )
+    if (associated(turb%sflux_c ))  deallocate (turb%sflux_c )
+    if (associated(turb%akscal  ))  deallocate (turb%akscal  )
     if (associated(turb%ltscale ))  deallocate (turb%ltscale )
     if (associated(turb%sigw    ))  deallocate (turb%sigw    )
     if (associated(turb%pblhgt  ))  deallocate (turb%pblhgt  )
@@ -169,17 +174,18 @@ contains
     type (turb_vars) :: turb
 
 
-    if (associated(turb%tkep))      turb%tkep    = tkmin
-    if (associated(turb%epsp))      turb%epsp    = tkmin
-    if (associated(turb%hkm))       turb%hkm     = 0.
-    if (associated(turb%vkm))       turb%vkm     = 0.
-    if (associated(turb%vkh))       turb%vkh     = 0.
-    if (associated(turb%cdrag))     turb%cdrag   = 0.
-    if (associated(turb%sflux_u))   turb%sflux_u = 0.
-    if (associated(turb%sflux_v))   turb%sflux_v = 0.
-    if (associated(turb%sflux_w))   turb%sflux_w = 0.
-    if (associated(turb%sflux_t))   turb%sflux_t = 0.
-    if (associated(turb%sflux_r))   turb%sflux_r = 0.
+    if (associated(turb%tkep    ))  turb%tkep    = tkmin
+    if (associated(turb%epsp    ))  turb%epsp    = tkmin
+    if (associated(turb%hkm     ))  turb%hkm     = 0.
+    if (associated(turb%vkm     ))  turb%vkm     = 0.
+    if (associated(turb%vkh     ))  turb%vkh     = 0.
+    if (associated(turb%cdrag   ))  turb%cdrag   = 0.
+    if (associated(turb%sflux_u ))  turb%sflux_u = 0.
+    if (associated(turb%sflux_v ))  turb%sflux_v = 0.
+    if (associated(turb%sflux_w ))  turb%sflux_w = 0.
+    if (associated(turb%sflux_t ))  turb%sflux_t = 0.
+    if (associated(turb%sflux_r ))  turb%sflux_r = 0.
+    if (associated(turb%sflux_c ))  turb%sflux_c = 0.
     if (associated(turb%akscal  ))  turb%akscal  = 0.
     if (associated(turb%ltscale ))  turb%ltscale = 0.
     if (associated(turb%sigw    ))  turb%sigw    = 0.
@@ -268,6 +274,10 @@ contains
          call vtables2 (turb%sflux_r(1,1),turbm%sflux_r(1,1)  &
          ,ng, npts, imean,  &
          'SFLUX_R :2:anal:mpt3')
+    if (associated(turb%sflux_c))  &
+         call vtables2 (turb%sflux_c(1,1),turbm%sflux_c(1,1)  &
+         ,ng, npts, imean,  &
+         'SFLUX_C :2:anal:mpt3')
     if (associated(turb%akscal))  &
          call vtables2 (turb%akscal(1,1),turbm%akscal(1,1)  &
          ,ng, npts, imean,  &

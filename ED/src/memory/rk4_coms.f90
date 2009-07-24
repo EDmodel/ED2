@@ -66,6 +66,7 @@ module rk4_coms
       !----- Vertical fluxes. -------------------------------------------------------------!
       real(kind=8)                        :: upwp 
       real(kind=8)                        :: qpwp
+      real(kind=8)                        :: cpwp
       real(kind=8)                        :: tpwp
       real(kind=8)                        :: wpwp
 
@@ -151,7 +152,7 @@ module rk4_coms
    !---------------------------------------------------------------------------------------!
    ! Structure with all the necessary buffers.                                             !
    !---------------------------------------------------------------------------------------!
-   type integration_vars_ar
+   type integration_vars
       type(rk4patchtype) :: initp   ! The current state
       type(rk4patchtype) :: dinitp  ! The derivatives
       type(rk4patchtype) :: yscal   ! The scale for prognostic variables
@@ -165,12 +166,12 @@ module rk4_coms
       type(rk4patchtype) :: ak5     ! 
       type(rk4patchtype) :: ak6     ! 
       type(rk4patchtype) :: ak7     ! 
-   end type integration_vars_ar
+   end type integration_vars
    !---------------------------------------------------------------------------------------!
 
 
    !----- This is the actual integration buffer structure. --------------------------------!
-   type(integration_vars_ar) :: integration_buff
+   type(integration_vars) :: integration_buff
    type(rk4mettype)          :: rk4met
    !=======================================================================================!
    !=======================================================================================!
@@ -311,6 +312,8 @@ module rk4_coms
    real(kind=8) :: rk4min_can_shv       ! Minimum canopy    specific humidity   [kg/kg_air]
    real(kind=8) :: rk4max_can_shv       ! Maximum canopy    specific humidity   [kg/kg_air]
    real(kind=8) :: rk4max_can_rhv       ! Maximum canopy    relative humidity   [      ---]
+   real(kind=8) :: rk4min_can_co2       ! Minimum canopy    CO2 mixing ratio    [ µmol/mol]
+   real(kind=8) :: rk4max_can_co2       ! Maximum canopy    CO2 mixing ratio    [ µmol/mol]
    real(kind=8) :: rk4min_soil_temp     ! Minimum soil      temperature         [        K]
    real(kind=8) :: rk4max_soil_temp     ! Maximum soil      temperature         [        K]
    real(kind=8) :: rk4min_veg_temp      ! Minimum leaf      temperature         [        K]
@@ -373,7 +376,7 @@ module rk4_coms
    !     Flag to determine whether the patch is too sparsely populated to be computed at   !
    ! the cohort level.  The decision is made based on the difference in order of magnitude !
    ! between the patch "natural" leaf heat capacity and the minimum heat capacity for the  !
-   ! Runge-Kutta solver (checked at copy_patch_init_ar).                                   !
+   ! Runge-Kutta solver (checked at copy_patch_init).                                   !
    !---------------------------------------------------------------------------------------!
    logical :: toosparse
    
@@ -385,6 +388,7 @@ module rk4_coms
    real(kind=8)    :: zveg
    real(kind=8)    :: wcapcan
    real(kind=8)    :: wcapcani
+   real(kind=8)    :: ccapcani
    real(kind=8)    :: hcapcani
    !=======================================================================================!
    !=======================================================================================!
@@ -534,6 +538,7 @@ module rk4_coms
       y%wpwp                           = 0.d0
       y%tpwp                           = 0.d0
       y%qpwp                           = 0.d0
+      y%cpwp                           = 0.d0
       
       y%rasveg                         = 0.d0
      
@@ -635,7 +640,7 @@ module rk4_coms
    !    This subroutine will allocate the cohorts of the temporary patch.                  !
    !---------------------------------------------------------------------------------------!
 
-   subroutine allocate_rk4_coh_ar(maxcohort,y)
+   subroutine allocate_rk4_coh(maxcohort,y)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype)              :: y
@@ -658,7 +663,7 @@ module rk4_coms
       call zero_rk4_cohort(y)
 
       return
-   end subroutine allocate_rk4_coh_ar
+   end subroutine allocate_rk4_coh
    !=======================================================================================!
    !=======================================================================================!
 
@@ -733,7 +738,7 @@ module rk4_coms
    !=======================================================================================!
    !    This subroutine will deallocate the cohorts of the temporary patch.                !
    !---------------------------------------------------------------------------------------!
-   subroutine deallocate_rk4_coh_ar(y)
+   subroutine deallocate_rk4_coh(y)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype) :: y
@@ -751,7 +756,7 @@ module rk4_coms
       if(associated(y%solvable      ))  deallocate(y%solvable  )
 
       return
-   end subroutine deallocate_rk4_coh_ar
+   end subroutine deallocate_rk4_coh
    !=======================================================================================!
    !=======================================================================================!
 end module rk4_coms

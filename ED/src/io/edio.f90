@@ -9,7 +9,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
 
   use ed_node_coms,only : mynum,nnodetot
 
-  use misc_coms, only: dtlsm, current_time, &
+  use ed_misc_coms, only: dtlsm, current_time, &
        idoutput,    &
        imoutput,    &
        iyoutput,    &
@@ -46,7 +46,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
 
   if(analysis_time .or. history_time .or. (new_day .and. (writing_dail .or. writing_mont))) then
      do ifm=1,ngrids
-        call normalize_averaged_vars_ar(edgrid_g(ifm),frqsum,dtlsm)
+        call normalize_averaged_vars(edgrid_g(ifm),frqsum,dtlsm)
      enddo
 
      !  Perform averaging and data preparation
@@ -73,7 +73,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
      
      if (iprintpolys.eq.1) then
         do ifm=1,ngrids
-           call print_array(ifm,edgrid_g(ifm))
+           call print_fields(ifm,edgrid_g(ifm))
         enddo
      endif
 
@@ -122,6 +122,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
 
 
   if(history_time) then
+
      if (isoutput /= 0) then
         call h5_output('HIST')
      end if
@@ -156,11 +157,13 @@ subroutine spatial_averages
                                     , nzs               ! ! intent(in)
    use consts_coms           , only : alvl              & ! intent(in)
                                     , wdns              ! ! intent(in)
-   use misc_coms             , only : frqsum            ! ! intent(in)
+   use ed_misc_coms             , only : frqsum            ! ! intent(in)
    use therm_lib             , only : qwtk              & ! subroutine
                                     , qtk               ! ! subroutine
    use soil_coms             , only : min_sfcwater_mass & ! intent(in)
                                     , soil              ! ! intent(in)
+   use c34constants          , only : n_stoma_atts
+   use ed_max_dims              , only : n_pft
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    type(edtype)         , pointer :: cgrid
@@ -170,7 +173,7 @@ subroutine spatial_averages
    real, dimension(3)             :: area_sum
    real, dimension(nzg)           :: site_avg_soil_hcap
    real, dimension(nzg)           :: poly_avg_soil_hcap
-   integer                        :: igr,ipy,isi,ipa
+   integer                        :: igr,ipy,isi,ipa,ico,ipft,iatt
    integer                        :: k,ksn
    integer                        :: lai_index
    real                           :: lai_patch
@@ -271,7 +274,6 @@ subroutine spatial_averages
             cpoly%avg_fsc(isi)    = sum(csite%fast_soil_C       * csite%area ) * site_area_i
             cpoly%avg_ssc(isi)    = sum(csite%slow_soil_C       * csite%area ) * site_area_i
             cpoly%avg_stsc(isi)   = sum(csite%structural_soil_C * csite%area ) * site_area_i
-            cpoly%avg_co2can(isi) = sum(csite%can_co2           * csite%area ) * site_area_i
 
 
             !------------------------------------------------------------------------------!
@@ -494,6 +496,47 @@ subroutine spatial_averages
                   end if
                end do
 
+
+               cohortloop: do ico=1,cpatch%ncohorts
+                  cpatch%old_stoma_vector(1,ico) = real(cpatch%old_stoma_data(ico)%recalc)
+                  cpatch%old_stoma_vector(2,ico) = cpatch%old_stoma_data(ico)%T_L
+                  cpatch%old_stoma_vector(3,ico) = cpatch%old_stoma_data(ico)%e_A
+                  cpatch%old_stoma_vector(4,ico) = cpatch%old_stoma_data(ico)%PAR
+                  cpatch%old_stoma_vector(5,ico) = cpatch%old_stoma_data(ico)%rb_factor
+                  cpatch%old_stoma_vector(6,ico) = cpatch%old_stoma_data(ico)%prss
+                  cpatch%old_stoma_vector(7,ico) = cpatch%old_stoma_data(ico)%phenology_factor
+                  cpatch%old_stoma_vector(8,ico) = cpatch%old_stoma_data(ico)%gsw_open
+                  cpatch%old_stoma_vector(9,ico) = real(cpatch%old_stoma_data(ico)%ilimit)
+                  
+                  cpatch%old_stoma_vector(10,ico) = cpatch%old_stoma_data(ico)%T_L_residual
+                  cpatch%old_stoma_vector(11,ico) = cpatch%old_stoma_data(ico)%e_a_residual
+                  cpatch%old_stoma_vector(12,ico) = cpatch%old_stoma_data(ico)%par_residual
+                  cpatch%old_stoma_vector(13,ico) = cpatch%old_stoma_data(ico)%rb_residual
+                  cpatch%old_stoma_vector(14,ico) = cpatch%old_stoma_data(ico)%prss_residual
+                  cpatch%old_stoma_vector(15,ico) = cpatch%old_stoma_data(ico)%leaf_residual
+                  cpatch%old_stoma_vector(16,ico) = cpatch%old_stoma_data(ico)%gsw_residual
+               end do cohortloop
+                  
+               pftloop: do ipft = 1,n_pft
+                  csite%old_stoma_vector_max(1,ipft,ipa) = real(csite%old_stoma_data_max(ipft,ipa)%recalc)
+                  csite%old_stoma_vector_max(2,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%T_L
+                  csite%old_stoma_vector_max(3,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%e_A
+                  csite%old_stoma_vector_max(4,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%PAR
+                  csite%old_stoma_vector_max(5,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%rb_factor
+                  csite%old_stoma_vector_max(6,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%prss
+                  csite%old_stoma_vector_max(7,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%phenology_factor
+                  csite%old_stoma_vector_max(8,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%gsw_open
+                  csite%old_stoma_vector_max(9,ipft,ipa) = real(csite%old_stoma_data_max(ipft,ipa)%ilimit)
+                  
+                  csite%old_stoma_vector_max(10,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%T_L_residual
+                  csite%old_stoma_vector_max(11,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%e_a_residual
+                  csite%old_stoma_vector_max(12,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%par_residual
+                  csite%old_stoma_vector_max(13,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%rb_residual
+                  csite%old_stoma_vector_max(14,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%prss_residual
+                  csite%old_stoma_vector_max(15,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%leaf_residual
+                  csite%old_stoma_vector_max(16,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%gsw_residual
+               end do pftloop
+            
             end do longpatchloop
 
             laiarea_site  = sum(csite%laiarea)
@@ -507,6 +550,7 @@ subroutine spatial_averages
             !----- Site average of canopy thermodynamic state -----------------------------!
             cpoly%avg_can_temp(isi) = sum(csite%can_temp  * csite%area) * site_area_i
             cpoly%avg_can_shv(isi)  = sum(csite%can_shv   * csite%area) * site_area_i
+            cpoly%avg_can_co2(isi)  = sum(csite%can_co2   * csite%area) * site_area_i
 
             !------------------------------------------------------------------------------!
             !   Site average of leaf properties.  Again, we average "extensive" properties !
@@ -572,7 +616,6 @@ subroutine spatial_averages
          cgrid%avg_dew_cg(ipy)       = sum(cpoly%avg_dew_cg      * cpoly%area)*poly_area_i
          cgrid%avg_vapor_gc(ipy)     = sum(cpoly%avg_vapor_gc    * cpoly%area)*poly_area_i
          cgrid%avg_wshed_vg(ipy)     = sum(cpoly%avg_wshed_vg    * cpoly%area)*poly_area_i
-         cgrid%avg_co2can(ipy)       = sum(cpoly%avg_co2can      * cpoly%area)*poly_area_i
          cgrid%avg_fsc(ipy)          = sum(cpoly%avg_fsc         * cpoly%area)*poly_area_i
          cgrid%avg_stsc(ipy)         = sum(cpoly%avg_stsc        * cpoly%area)*poly_area_i
          cgrid%avg_ssc(ipy)          = sum(cpoly%avg_ssc         * cpoly%area)*poly_area_i
@@ -591,6 +634,7 @@ subroutine spatial_averages
          cgrid%avg_sensible_tot(ipy) = sum(cpoly%avg_sensible_tot *cpoly%area)*poly_area_i
          cgrid%avg_can_temp(ipy)     = sum(cpoly%avg_can_temp     *cpoly%area)*poly_area_i
          cgrid%avg_can_shv(ipy)      = sum(cpoly%avg_can_shv      *cpoly%area)*poly_area_i
+         cgrid%avg_can_co2(ipy)      = sum(cpoly%avg_can_co2      *cpoly%area)*poly_area_i
 
          !---------------------------------------------------------------------------------!
          !    Similar to the site level, average mass, heat capacity and energy then find  !
@@ -708,7 +752,7 @@ end subroutine get3d
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine print_array(ifm,cgrid)
+subroutine print_fields(ifm,cgrid)
   
   !------------------------------------------------------
   ! PRINT OUT FIELDS OF INTEREST
@@ -736,14 +780,14 @@ subroutine print_array(ifm,cgrid)
   
   use ed_node_coms,only: mynum,nnodetot,sendnum,recvnum,master_num,machs
   use ed_state_vars,only: edtype,polygontype
-  use misc_coms, only: &
+  use ed_misc_coms, only: &
             printvars,  &
             ipmax,      &
             ipmin,      &
             pfmtstr,    &
             iprintpolys
   
-  use var_tables_array,only:vt_info,num_var
+  use ed_var_tables,only:vt_info,num_var
 
 
   implicit none
@@ -1015,7 +1059,7 @@ subroutine print_array(ifm,cgrid)
 
   
   return
-end subroutine print_array
+end subroutine print_fields
 
 ! =======================================================
 

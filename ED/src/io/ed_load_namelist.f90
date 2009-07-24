@@ -26,7 +26,7 @@ end subroutine read_nl
 !------------------------------------------------------------------------------------------!
 subroutine copy_nl(copy_type)
 
-  use max_dims , only: n_pft, nzgmax
+  use ed_max_dims , only: n_pft, nzgmax
   use ename_coms, only: nl
   use soil_coms, only: isoilflg, nslcon, slmstr, zrough, soil_database, &
        isoilstateinit, isoildepthflg, isoilbc, soilstate_db, soildepth_db,   &
@@ -42,7 +42,7 @@ subroutine copy_nl(copy_type)
        treefall_disturbance_rate
   use pft_coms, only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
 
-  use misc_coms, only: expnme, runtype, itimez, idatez, imonthz, iyearz,  &
+  use ed_misc_coms, only: expnme, runtype, itimez, idatez, imonthz, iyearz,  &
        itimea, idatea, imontha, iyeara, ifoutput, iclobber, frqfast, &
        sfilin, ied_init_mode, current_time, ed_inputs_dir,   &
        end_time, radfrq, integration_scheme, ffilout, idoutput,imoutput,iyoutput, dtlsm, &
@@ -200,8 +200,8 @@ subroutine copy_nl(copy_type)
      
      do ifm=1,n_ed_region
         if (grid_type == 0) then
-           nnxp(ifm)=1+floor(real(nstratx(ifm))*(ed_reg_lonmax(ifm)-ed_reg_lonmin(ifm))/grid_res)
-           nnyp(ifm)=1+floor(real(nstratx(ifm))*(ed_reg_latmax(ifm)-ed_reg_latmin(ifm))/grid_res)
+           nnxp(ifm)=floor(real(nstratx(ifm))*(ed_reg_lonmax(ifm)-ed_reg_lonmin(ifm))/grid_res)
+           nnyp(ifm)=floor(real(nstratx(ifm))*(ed_reg_latmax(ifm)-ed_reg_latmin(ifm))/grid_res)
         endif
      end do
 
@@ -277,12 +277,15 @@ subroutine copy_nl(copy_type)
   end if
 
   ! Sorting up the chosen PFTs
-  where (include_these_pft < 1) include_these_pft=huge(1)
-     call sort_up(include_these_pft,n_pft)
+  where (include_these_pft < 1) 
+     include_these_pft=huge(1)
+  end where
+
+  call sort_up(include_these_pft,n_pft)
      
-     !  Determine the length of simuation
-     call date_2_seconds (iyearz,imonthz,idatez,itimez*100, &
+  !  Determine the length of simuation
+  call date_2_seconds (iyearz,imonthz,idatez,itimez*100, &
           iyeara,imontha,idatea,itimea*100,timmax)
-     return
-   end subroutine copy_nl
+  return
+end subroutine copy_nl
 !------------------------------------------------------------------------------------------!

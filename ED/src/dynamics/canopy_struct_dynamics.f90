@@ -68,9 +68,11 @@ module canopy_struct_dynamics
       use ed_state_vars  , only : polygontype          & ! structure
                                 , sitetype             & ! structure
                                 , patchtype            ! ! structure
-      use rk4_coms       , only : rk4patchtype         & ! structure
+      use rk4_coms       , only : ibranch_thermo       & ! intent(in)
+                                , rk4patchtype         & ! structure
                                 , rk4met               & ! intent(in)
-                                , tiny_offset          ! ! intent(in)
+                                , tiny_offset          & ! intent(in)
+                                , ibranch_thermo
       use pft_coms       , only : crown_depth_fraction & ! intent(in)
                                 , leaf_width           ! ! intent(in)
       use canopy_air_coms, only : exar8                & ! intent(in)
@@ -133,9 +135,9 @@ module canopy_struct_dynamics
       real(kind=8), dimension(200), save :: zeta     ! Attenuation factor for sub-canopy K 
                                                      !    and u.  A vector size of 200, 
                                                      !    allows for trees 100 meters tall
-      real(kind=8),save                  :: d0       ! Zero-plane displacement height (m)
-      real(kind=8),save                  :: ustarouh ! The ratio of ustar over u(h)
-      real(kind=8),save                  :: eta      ! The in-canopy wind attenuation scal-
+      real(kind=8)                , save :: d0       ! Zero-plane displacement height (m)
+      real(kind=8)                , save :: ustarouh ! The ratio of ustar over u(h)
+      real(kind=8)                , save :: eta      ! The in-canopy wind attenuation scal-
                                                      !    ing parameter
       !------ External procedures ---------------------------------------------------------!
       real        , external             :: sngloff  ! Safe double -> simple precision.
@@ -423,6 +425,12 @@ module canopy_struct_dynamics
             !------------------------------------------------------------------------------!
             zetac = 0.d0  ! Cumulative zeta
 
+            if( ibranch_thermo /= 0 .and. (sum(initp%wpa)+sum(initp%lai)) == 0. ) then
+               call fatal_error('Your plants must have some TAI, M97','canopy_turbulence'  &
+                               ,'canopy_struct_dynamics.f90')
+            end if
+
+            
             !------------------------------------------------------------------------------!
             !     Loop through the canopy at equal increments.  At each increment,         !
             ! determine the frontal area drag surface, and the drag force zeta.            !
@@ -442,26 +450,31 @@ module canopy_struct_dynamics
 
                   crowndepth = max(dz,dble(crown_depth_fraction(ipft))*hite8)
 
-                  if( z < hite8 .and. z >= (hite8-crowndepth)) then
-
-                     !---------------------------------------------------------------------!
-                     !     Assume that at full leaf-out, there is sheltering of branches.  !
-                     ! When leaves are not at full out, then the stems and branches start  !
-                     ! to become visible to the fluid flow.  Assume that when leaves are   !
-                     ! gone, then the branches contribute about 50% of the drag surface,   !
-                     ! everything in between is a linear combination.                      !
-                     !---------------------------------------------------------------------!
-                     ! layertai=layertai + cpatch%lai(ico)*(dz/crowndepth) 
-                     ! layertai=layertai + cpatch%nplant(ico)*0.5*(dz/crowndepth)
-
-                     !---------------------------------------------------------------------!
-                     !    Use LAI and WPA to define the frontal area of drag surface.  If  !
-                     ! the user decided to ignore branches, ignore them here too.          !
-                     !---------------------------------------------------------------------!
-                     layertai = layertai + (initp%lai(ico) + initp%wpa(ico))               &
+                  if ( z < hite8 .and. z >= (hite8-crowndepth)) then
+                     select case (ibranch_thermo)
+                     case (0)
+                        !------------------------------------------------------------------!
+                        !     Although we are not solving branches, assume that at full    !
+                        ! leaf-out, there is sheltering of branches.  When leaves are not  !
+                        ! at full out, then the stems and branches start to become visible !
+                        ! to the fluid flow.  Assume that when leaves are gone, then the   !
+                        ! branches contribute about 50% of the drag surface, everything in !
+                        ! between is a linear combination.                                 !
+                        !------------------------------------------------------------------!
+                        layertai=layertai + (cpatch%lai(ico) + cpatch%nplant(ico) * 0.5)   &
+                                          * (dz/crowndepth) 
+                     case default
+                        !------------------------------------------------------------------!
+                        !    Use LAI and WPA to define the frontal area of drag surface.   !
+                        !------------------------------------------------------------------!
+                        layertai = layertai + (initp%lai(ico) + initp%wpa(ico))            &
                                            * (dz /crowndepth)
+                     end select
+
                   end if
                end do
+               
+               
 
                a_front  = layertai/dz ! Frontal area of drag surface
                zetac    = zetac + 5.d-1 * a_front * (Cd0 / Pm) * dz
@@ -482,7 +495,7 @@ module canopy_struct_dynamics
             !------------------------------------------------------------------------------!
             d0 = h
             do k=1,zcan
-               d0 = d0 - dz*exp(-2.d0*eta*(1-zeta(k)/zeta(zcan)))
+               d0 = d0 - dz*exp(-2.d0*eta*(1.d0-zeta(k)/zeta(zcan)))
             end do
 
             !----- Calculate the roughness lengths zo,zt,zr. ------------------------------!
@@ -830,10 +843,12 @@ module canopy_struct_dynamics
       use rk4_coms             , only : rk4met                & ! intent(in)
                                       , wcapcan               & ! intent(out)
                                       , wcapcani              & ! intent(out)
+                                      , ccapcani              & ! intent(out)
                                       , hcapcani              ! ! intent(out)
       use canopy_air_coms      , only : minimum_canopy_depth  ! ! intent(in)
       use ed_state_vars        , only : sitetype              ! ! structure
-      use consts_coms          , only : cpi8                  ! ! intent(in)
+      use consts_coms          , only : cpi8                  & ! intent(in)
+                                      , mmdry8                ! ! intent(in)
       
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -849,8 +864,8 @@ module canopy_struct_dynamics
       
       wcapcan  = rk4met%rhos * canopy_depth
       wcapcani = 1.d0 / wcapcan
+      ccapcani = mmdry8 * wcapcani
       hcapcani = cpi8 * wcapcani
-
       return
    end subroutine can_whcap
    !=======================================================================================!

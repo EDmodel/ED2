@@ -3,12 +3,12 @@
 !     This subroutine will control the photosynthesis scheme (Farquar and Leuning).  This  !
 ! is called every step, but not every sub-step.                                            !
 !------------------------------------------------------------------------------------------!
-subroutine canopy_photosynthesis_ar(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,ntext_soil  &
+subroutine canopy_photosynthesis(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,ntext_soil  &
                                    ,soil_water,soil_fracliq,lsl,sum_lai_rbi                &
                                    ,leaf_aging_factor,green_leaf_factor)
    use ed_state_vars         , only : sitetype           & ! structure
                                     , patchtype          ! ! structure
-   use max_dims              , only : n_pft              ! ! intent(in)
+   use ed_max_dims           , only : n_pft              ! ! intent(in)
    use pft_coms              , only : leaf_width         & ! intent(in)
                                     , water_conductance  & ! intent(in)
                                     , q                  & ! intent(in)
@@ -18,10 +18,10 @@ subroutine canopy_photosynthesis_ar(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,n
    use soil_coms             , only : soil               & ! intent(in)
                                     , dslz               ! ! intent(in)
    use consts_coms           , only : t00                & ! intent(in)
-                                    , mmdov              & ! intent(in)
+                                    , epi                & ! intent(in)
                                     , wdnsi              & ! intent(in)
                                     , wdns               ! ! intent(in)
-   use misc_coms             , only : current_time       ! ! intent(in)
+   use ed_misc_coms          , only : current_time       ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)            , target      :: csite             ! Current site
@@ -137,7 +137,7 @@ subroutine canopy_photosynthesis_ar(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,n
             !----- Calling the photosynthesis for maximum photosynthetic rates. -----------!
             call lphysiol_full(            & !
                  cpatch%veg_temp(tuco)-t00 & ! Vegetation temperature       [           °C]
-               , mixrat*mmdov              & ! Vapour mixing ratio          [      mol/mol]
+               , mixrat*epi                & ! Vapour mixing ratio          [      mol/mol]
                , csite%can_co2(ipa)*1e-6   & ! CO2 mixing ratio             [      mol/mol]
                , parv_o_lai                & ! Absorbed PAR                 [ Ein/m²leaf/s]
                , cpatch%rb(tuco)           & ! Aerodynamic resistance       [          s/m]
@@ -205,7 +205,7 @@ subroutine canopy_photosynthesis_ar(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,n
             !----- Calling the photosynthesis for maximum photosynthetic rates. -----------!
             call lphysiol_full(            & !
                  cpatch%veg_temp(ico)-t00  & ! Vegetation temperature       [           °C]
-               , mixrat*mmdov              & ! Vapour mixing ratio          [      mol/mol]
+               , mixrat*epi                & ! Vapour mixing ratio          [      mol/mol]
                , csite%can_co2(ipa)*1e-6   & ! CO2 mixing ratio             [      mol/mol]
                , parv_o_lai                & ! Absorbed PAR                 [ Ein/m²leaf/s]
                , cpatch%rb(ico)            & ! Aerodynamic resistance       [          s/m]
@@ -366,4 +366,4 @@ subroutine canopy_photosynthesis_ar(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,n
    end if
 
    return
-end subroutine canopy_photosynthesis_ar
+end subroutine canopy_photosynthesis

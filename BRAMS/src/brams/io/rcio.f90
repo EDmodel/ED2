@@ -24,7 +24,7 @@ subroutine commio (cfile,io,iun)
 
    integer, external :: cio_i,cio_f,cio_f8,cio_c,cio_i_sca,cio_f_sca,cio_f8_sca,cio_c_sca
    character(len=2) :: cng
-   integer :: irw,ie,ng
+   integer :: irw,ie,ng,max_nnzp
 
    IF(IO.EQ.'READ') irw=1
    IF(IO.EQ.'WRITE') irw=2
@@ -49,6 +49,7 @@ subroutine commio (cfile,io,iun)
    ie=cio_i(iun,irw,'nnxp',nnxp,ngrids)
    ie=cio_i(iun,irw,'nnyp',nnyp,ngrids)
    ie=cio_i(iun,irw,'nnzp',nnzp,ngrids)
+   max_nnzp=maxval(nnzp(1:ngrids))
 
    ie=cio_i(iun,irw,'nndtrat',nndtrat,ngrids)
    ie=cio_i(iun,irw,'nstratx',nstratx,ngrids)
@@ -105,6 +106,7 @@ subroutine commio (cfile,io,iun)
       ie=cio_f(iun,irw,'th01dn'//cng,th01dn(1,ng),nnzp(ng))
       ie=cio_f(iun,irw,'dn01dn'//cng,dn01dn(1,ng),nnzp(ng))
       ie=cio_f(iun,irw,'rt01dn'//cng,rt01dn(1,ng),nnzp(ng))
+      ie=cio_f(iun,irw,'co201dn'//cng,co201dn(1,ng),nnzp(ng))
    enddo
 
    ie=cio_i(iun,irw,'kroot',kroot,nvtyp+nvtyp_teb)
@@ -166,6 +168,8 @@ subroutine commio (cfile,io,iun)
    ie=cio_i_sca(iun,irw,'idate2',idatez,1)
    ie=cio_i_sca(iun,irw,'itime2',itimez,1)
    ie=cio_i_sca(iun,irw,'isfcl',isfcl,1)
+   ie=cio_i_sca(iun,irw,'ico2',ico2,1)
+   ie=cio_f    (iun,irw,'co2con',co2con,max_nnzp)
    ie=cio_i_sca(iun,irw,'npatch',npatch,1)
    ie=cio_i_sca(iun,irw,'nvegpat',nvegpat,1)
    ie=cio_i_sca(iun,irw,'level',level,1)
@@ -209,6 +213,7 @@ subroutine commio (cfile,io,iun)
    ie=cio_f(iun,irw,'thds',thds,maxsndg)
    ie=cio_f(iun,irw,'ps',ps,maxsndg)
    ie=cio_f(iun,irw,'hs',hs,maxsndg)
+   ie=cio_f(iun,irw,'co2s',co2s,maxsndg)
 
    ie=cio_f(iun,irw,'slden',slden,nstyp)
    ie=cio_f(iun,irw,'slcpd',slcpd,nstyp)

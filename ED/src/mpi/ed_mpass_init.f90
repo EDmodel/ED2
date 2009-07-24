@@ -73,8 +73,8 @@ subroutine ed_masterput_nl(par_run)
 ! patches for the SOI runs).                                                               !
 !------------------------------------------------------------------------------------------!
    use ed_para_coms,    only: mainnum
-   use max_dims,        only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
-   use misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
+   use ed_max_dims,        only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
+   use ed_misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
                              ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput,iyoutput &
                              ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir   &
                              ,integration_scheme,end_time,current_time,sfilout,frqstate     &
@@ -284,7 +284,7 @@ subroutine ed_masterput_met_header(par_run)
 ! the hdf5 in parallel                                                                     !
 !------------------------------------------------------------------------------------------!
    use ed_para_coms, only: mainnum
-   use max_dims, only: max_met_vars,str_len
+   use ed_max_dims, only: max_met_vars,str_len
    use met_driver_coms, only: nformats, met_names, met_nlon,   &
         met_nlat, met_dx, met_dy, met_xmin, met_ymin, met_nv,   &
         met_vars, met_frq, met_interp, ed_met_driver_db, no_ll,  &
@@ -461,7 +461,7 @@ end subroutine ed_masterput_poly_dims
 
 subroutine ed_masterput_worklist_info(par_run)
 
-  use max_dims, only: maxmach
+  use ed_max_dims, only: maxmach
   use grid_coms, only: ngrids
   use ed_work_vars, only: work_e,work_vars,ed_alloc_work,ed_nullify_work,ed_dealloc_work
   use ed_para_coms, only: nmachs,mainnum,machnum
@@ -589,7 +589,7 @@ end subroutine ed_masterput_worklist_info
 
 subroutine ed_nodeget_processid(init)
 
-  use max_dims
+  use ed_max_dims
   use ed_node_coms
 
   implicit none
@@ -633,8 +633,8 @@ subroutine ed_nodeget_nl
 !   This subroutine is responsible for getting all the namelist-related information in     !
 ! every node.                                                                              !
 !------------------------------------------------------------------------------------------!
-   use max_dims,        only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
-   use misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
+   use ed_max_dims,        only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
+   use ed_misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
                              ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput, iyoutput &
                              ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir   &
                              ,integration_scheme,end_time,current_time,isoutput,sfilout    &
@@ -845,7 +845,7 @@ subroutine ed_nodeget_met_header()
 ! the hdf5 in parallel                                                                     !
 !------------------------------------------------------------------------------------------!
    use ed_node_coms, only: master_num,mynum
-   use max_dims, only: max_met_vars,str_len
+   use ed_max_dims, only: max_met_vars,str_len
    use met_driver_coms, only: nformats, met_names, met_nlon,   &
         met_nlat, met_dx, met_dy, met_xmin, met_ymin, met_nv,   &
         met_vars, met_frq, met_interp, ed_met_driver_db, no_ll,  &
@@ -936,7 +936,7 @@ end subroutine ed_nodeget_poly_dims
 !==========================================================================================!
 subroutine ed_nodeget_worklist_info
 
-  use max_dims, only: maxmach
+  use ed_max_dims, only: maxmach
   use grid_coms,  only: ngrids
   use ed_work_vars,  only: work_e
   use ed_node_coms,  only: mynum,nmachs,master_num

@@ -62,6 +62,13 @@ USENC=.FALSE.
 NC_LIBS=-L/dev/null
 # --------------------------------------------------------------
 
+# MPI_Wtime. ---------------------------------------------------
+# If USE_MPIWTIME=1, then it will use MPI libraries to compute
+# the wall time (the only double-precision intrinsic).  In case
+# you don't have it, leave USE_MPIWTIME=0, in which case it will
+# use a simpler, single-precision function.
+USE_MPIWTIME=1
+
 
 #----------------- SGI -n32 ------------------------------------
 #CMACH=SGI

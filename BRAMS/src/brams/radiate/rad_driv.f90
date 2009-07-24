@@ -125,7 +125,7 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
                   , leaf_g(ngrid)%patch_area           , leaf_g(ngrid)%sfcwater_nlev       &
                   , leaf_g(ngrid)%veg_temp             , leaf_g(ngrid)%can_temp            &
                   , scratch%vt2da                      , scratch%vt2db                     &
-                  , scratch%vt2dc                      , scratch%vt3do                     &
+                  , scratch%vt2dc                      , scratch%vt3dp                     &
                   , grid_g(ngrid)%glat                 , grid_g(ngrid)%glon                &
                   , radiate_g(ngrid)%rlongup           , radiate_g(ngrid)%rlong_albedo     &
                   , radiate_g(ngrid)%albedt            , radiate_g(ngrid)%rshort           &
@@ -204,12 +204,13 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
                            ,basic_g(ngrid)%theta          ,basic_g(ngrid)%pi0              &
                            ,basic_g(ngrid)%pp             ,basic_g(ngrid)%rv               &
                            ,basic_g(ngrid)%dn0            ,basic_g(ngrid)%rtp              &
-                           ,radiate_g(ngrid)%fthrd        ,grid_g(ngrid)%rtgt              &
-                           ,grid_g(ngrid)%f13t            ,grid_g(ngrid)%f23t              &
-                           ,grid_g(ngrid)%glon            ,radiate_g(ngrid)%rshort         &
-                           ,radiate_g(ngrid)%rlong        ,radiate_g(ngrid)%albedt         &
-                           ,radiate_g(ngrid)%cosz         ,radiate_g(ngrid)%rlongup        &
-                           ,radiate_g(ngrid)%fthrd_lw     ,mynum                           )
+                           ,scratch%vt3do                 ,radiate_g(ngrid)%fthrd          &
+                           ,grid_g(ngrid)%rtgt            ,grid_g(ngrid)%f13t              &
+                           ,grid_g(ngrid)%f23t            ,grid_g(ngrid)%glon              &
+                           ,radiate_g(ngrid)%rshort       ,radiate_g(ngrid)%rlong          &
+                           ,radiate_g(ngrid)%albedt       ,radiate_g(ngrid)%cosz           &
+                           ,radiate_g(ngrid)%rlongup      ,radiate_g(ngrid)%fthrd_lw       &
+                           ,mynum                         )
       end if
 
       !----- Using Harrington radiation ---------------------------------------------------!
@@ -220,20 +221,21 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
                           ,grid_g(ngrid)%glat              ,grid_g(ngrid)%rtgt             &
                           ,basic_g(ngrid)%pi0              ,basic_g(ngrid)%pp              &
                           ,basic_g(ngrid)%dn0              ,basic_g(ngrid)%theta           &
-                          ,basic_g(ngrid)%rv               ,radiate_g(ngrid)%rshort        &
-                          ,radiate_g(ngrid)%rlong          ,radiate_g(ngrid)%fthrd         &
-                          ,radiate_g(ngrid)%rlongup        ,radiate_g(ngrid)%cosz          &
-                          ,radiate_g(ngrid)%albedt         ,radiate_g(ngrid)%rshort_top    &
-                          ,radiate_g(ngrid)%rshortup_top   ,radiate_g(ngrid)%rlongup_top   &
-                          ,radiate_g(ngrid)%fthrd_lw       ,scratch%vt3da                  &
-                          ,scratch%vt3db                   ,scratch%vt3dc                  &
-                          ,scratch%vt3dd                   ,scratch%vt3de                  &
-                          ,scratch%vt3df                   ,scratch%vt3dg                  &
-                          ,scratch%vt3dh                   ,scratch%vt3di                  &
-                          ,scratch%vt3dj                   ,scratch%vt3dk                  &
-                          ,scratch%vt3dl                   ,scratch%vt3dm                  &
-                          ,scratch%vt3dn                   ,scratch%vt4da                  &
-                          ,scratch%vt4db                   ,mynum                          )
+                          ,basic_g(ngrid)%rv               ,scratch%vt3do                  &
+                          ,radiate_g(ngrid)%rshort         ,radiate_g(ngrid)%rlong         &
+                          ,radiate_g(ngrid)%fthrd          ,radiate_g(ngrid)%rlongup       &
+                          ,radiate_g(ngrid)%cosz           ,radiate_g(ngrid)%albedt        &
+                          ,radiate_g(ngrid)%rshort_top     ,radiate_g(ngrid)%rshortup_top  &
+                          ,radiate_g(ngrid)%rlongup_top    ,radiate_g(ngrid)%fthrd_lw      &
+                          ,scratch%vt3da                   ,scratch%vt3db                  &
+                          ,scratch%vt3dc                   ,scratch%vt3dd                  &
+                          ,scratch%vt3de                   ,scratch%vt3df                  &
+                          ,scratch%vt3dg                   ,scratch%vt3dh                  &
+                          ,scratch%vt3di                   ,scratch%vt3dj                  &
+                          ,scratch%vt3dk                   ,scratch%vt3dl                  &
+                          ,scratch%vt3dm                   ,scratch%vt3dn                  &
+                          ,scratch%vt4da                   ,scratch%vt4db                  &
+                          ,mynum                           )
       end if
    end if
    return
@@ -254,21 +256,30 @@ end subroutine radiate
 ! zeroes.                                                                                  !
 !------------------------------------------------------------------------------------------!
 subroutine rad_copy2scratch(mzp,mxp,myp,mpp)
-   use mem_grid      , only : ngrid    ! ! intent(in)
-   use micphys       , only : availcat & ! intent(in)
-                             ,progncat ! ! intent(in)
-   use mem_micro     , only : micro_g  ! ! intent(in)
-   use mem_cuparm    , only : nnqparm  & ! intent(in)
-                             ,nclouds  & ! intent(in)
-                             ,cuparm_g ! ! intent(in)
-   use mem_scratch   , only : scratch  ! ! intent(inout)
-   use mem_leaf      , only : leaf_g   ! ! intent(in)
-   use mem_teb_common, only : tebc_g   ! ! intent(in)
-   use teb_spm_start , only : teb_spm  ! ! intent(in)
+   use mem_basic     , only : basic_g   & ! intent(in)
+                            , co2_on    & ! intent(in)
+                            , co2con    ! ! intent(in)
+   use mem_grid      , only : ngrid     ! ! intent(in)
+   use micphys       , only : availcat  & ! intent(in)
+                             ,progncat  ! ! intent(in)
+   use mem_micro     , only : micro_g   ! ! intent(in)
+   use mem_cuparm    , only : nnqparm   & ! intent(in)
+                             ,nclouds   & ! intent(in)
+                             ,cuparm_g  ! ! intent(in)
+   use mem_scratch   , only : scratch   ! ! intent(inout)
+   use mem_leaf      , only : leaf_g    ! ! intent(in)
+   use mem_teb_common, only : tebc_g    ! ! intent(in)
+   use teb_spm_start , only : teb_spm   ! ! intent(in)
+   use rconstants    , only : mmcod1em6 ! ! intent(in)
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer, intent(in) :: mzp,mxp,myp,mpp
+   integer, intent(in) :: mzp
+   integer, intent(in) :: mxp
+   integer, intent(in) :: myp
+   integer, intent(in) :: mpp
+   !----- Local variables. ----------------------------------------------------------------!
+   real                :: rco2
    !---------------------------------------------------------------------------------------!
 
 
@@ -364,6 +375,18 @@ subroutine rad_copy2scratch(mzp,mxp,myp,mpp)
    end if
 
    !---------------------------------------------------------------------------------------!
+   !     Copy CO2 array to scratch in case CO2 is prognosed, otherwise, dump CO2CON.  The  !
+   ! radiation schemes expect CO2 mixing ratio in kg_CO2/kg_air, so we must convert the    !
+   ! units here (BRAMS default CO2 unit is ppm, or µmol_CO2/mol_air).                      !
+   !---------------------------------------------------------------------------------------!
+   if (co2_on) then
+      call ae1t0(mzp*mxp*myp,scratch%vt3do,basic_g(ngrid)%co2p,mmcod1em6)
+   else
+      rco2 = co2con(1) * mmcod1em6
+      call ae0(mzp*mxp*myp,scratch%vt3do,rco2)
+   end if
+
+   !---------------------------------------------------------------------------------------!
    !     Checking whether the user wants the cumulus clouds to interact with the radiation !
    ! scheme. This will happen only if the user is running Harrington scheme, though.       !
    !---------------------------------------------------------------------------------------!
@@ -383,12 +406,12 @@ subroutine rad_copy2scratch(mzp,mxp,myp,mpp)
       call atob(mxp*myp    ,tebc_g(ngrid)%emis_town,scratch%vt2da)
       call atob(mxp*myp    ,tebc_g(ngrid)%alb_town ,scratch%vt2db)
       call atob(mxp*myp    ,tebc_g(ngrid)%ts_town  ,scratch%vt2dc)
-      call atob(mxp*myp*mpp,leaf_g(ngrid)%g_urban  ,scratch%vt3do)
+      call atob(mxp*myp*mpp,leaf_g(ngrid)%g_urban  ,scratch%vt3dp)
    else
       call azero(mxp*myp    ,scratch%vt2da)
       call azero(mxp*myp    ,scratch%vt2db)
       call azero(mxp*myp    ,scratch%vt2dc)
-      call azero(mxp*myp*mpp,scratch%vt3do)
+      call azero(mxp*myp*mpp,scratch%vt3dp)
    end if
 
    return
@@ -524,8 +547,8 @@ end subroutine radprep
 ! the "zen" subroutine to find the hour angle. Also, most sin/cos calculations are done in !
 ! double precision.                                                                        !
 !------------------------------------------------------------------------------------------!
-subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,fthrd,rtgt,f13t,f23t   &
-                  ,glon,rshort,rlong,albedt,cosz,rlongup,fthrd_lw,mynum)
+subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,co2p,fthrd,rtgt,f13t   &
+                  ,f23t,glon,rshort,rlong,albedt,cosz,rlongup,fthrd_lw,mynum)
 
    use mem_grid   , only : dzm,dzt,itopo,plonn,ngrid,time,itimea,centlon
    use mem_scratch, only : scratch
@@ -535,7 +558,7 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,fthrd,rtgt,f
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                          , intent(in)   :: m1,m2,m3,ifm,ia,iz,ja,jz,mynum
-   real        , dimension(m1,m2,m3), intent(in)   :: theta,pi0,pp,rv,dn0,rtp
+   real        , dimension(m1,m2,m3), intent(in)   :: theta,pi0,pp,rv,dn0,rtp,co2p
    real        , dimension(   m2,m3), intent(in)   :: rtgt,f13t,f23t,glon
    real        , dimension(   m2,m3), intent(in)   :: cosz,albedt,rlongup
    real        , dimension(m1,m2,m3), intent(inout):: fthrd,fthrd_lw
@@ -544,8 +567,8 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,fthrd,rtgt,f
    integer                                     :: i,j,k,kk
    real(kind=8)                                :: dzsdx,dzsdy,dlon,a1,a2,hrangl,sinz
    real(kind=8)                                :: sazmut,slazim,slangl,cosi,gglon 
-   real        , dimension(m1)                 :: rvr,rtr,dn0r,pird,prd,dzmr,dztr,temprd
-   real        , dimension(m1)                 :: fthrl,fthrs
+   real        , dimension(m1)                 :: rvr,rtr,co2r,dn0r,pird,prd
+   real        , dimension(m1)                 :: dzmr,dztr,temprd,fthrl,fthrs
    !----- Constants -----------------------------------------------------------------------!
    real(kind=8), parameter :: offset=1.d-20
    !---------------------------------------------------------------------------------------!
@@ -564,8 +587,9 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,fthrd,rtgt,f
             !---- Computing some basic thermodynamic variables (pressure, temperature) ----!
             pird(k) = (pp(k,i,j) + pi0(k,i,j)) * cpi
             temprd(k) = theta(k,i,j) * pird(k)
-            rvr(k) = max(0.,rv(k,i,j))
-            rtr(k) = max(rvr(k),rtp(k,i,j))
+            rvr(k)  = max(0.,rv(k,i,j))
+            rtr(k)  = max(rvr(k),rtp(k,i,j))
+            co2r(k) = co2p(k,i,j)
             !----- Convert the next 4 variables to cgs for now. ---------------------------!
             prd(k)  = pird(k) ** cpor * p00 * 10.
             dn0r(k) = dn0(k,i,j) * 1.e-3
@@ -580,8 +604,8 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,fthrd,rtgt,f
 
          !----- Sanity check --------------------------------------------------------------!
          do k=1,m1
-            if (prd(k) <  0. .or. dn0r(k) <   0. .or.  &
-                rtr(k) <  0. .or. temprd(k) < 160.) then   
+            if (prd(k)  <   0. .or. dn0r(k)   <   0. .or.  rtr(k)    <   0. .or.           &
+                co2r(k) <   0. .or. temprd(k) < 160.                             ) then
                !---------------------------------------------------------------------------!
                ! TL(k) < 160.: This is -113 C, which is much colder than the Vostok,       !
                !               Antarctica world record and should also be colder than any  !
@@ -598,11 +622,12 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,fthrd,rtgt,f
                write (unit=*,fmt='(a)') '   negative density, mixing ratio or pressure!'
                write (unit=*,fmt='(a)') ' - Sanity check at Chen-Cotton/Mahrer-Pielke:'
                write (unit=*,fmt='(a)') '-------------------------------------------------'
-               write (unit=*,fmt='(a3,1x,4(a12,1x))')                                      &
-                          'LEV','  MIX. RATIO','     DENSITY','    PRESSURE',' TEMPERATURE'
+               write (unit=*,fmt='(a3,1x,5(a12,1x))')                                      &
+                                        'LEV','  MIX. RATIO','        CO_2','     DENSITY' &
+                                             ,'    PRESSURE',' TEMPERATURE'
                do kk=1,m1
-                  write (unit=*,fmt='(i3,1x,4(es12.3,1x))')                                &
-                                        kk, rtr(kk), dn0r(kk), prd(kk), temprd(kk)
+                  write (unit=*,fmt='(i3,1x,5(es12.3,1x))')                                &
+                                       kk, rtr(kk), co2r(kk), dn0r(kk), prd(kk), temprd(kk)
                enddo
                write (unit=*,fmt='(a)') '-------------------------------------------------'
                write (unit=*,fmt='(a)') ' '
@@ -615,9 +640,9 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,fthrd,rtgt,f
          !----- Call the longwave parameterizations. --------------------------------------!
          select case (ilwrtyp)
          case (1) !----- Chen-Cotton (1983) -----------------------------------------------!
-            call lwradc(m1,rvr,rvr,dn0r,temprd,prd,dztr,fthrl,rlong(i,j))
+            call lwradc(m1,rvr,rtr,co2r,dn0r,temprd,prd,dztr,fthrl,rlong(i,j))
          case (2) !----- Mahrer-Pielke (1977) ---------------------------------------------!
-            call lwradp(m1,temprd,rvr,dn0r,dztr,pird,scratch%vt3dq,fthrl,rlong(i,j))
+            call lwradp(m1,temprd,rvr,co2r,dn0r,dztr,pird,scratch%vt3dq,fthrl,rlong(i,j))
          end select
 
          !---------------------------------------------------------------------------------!

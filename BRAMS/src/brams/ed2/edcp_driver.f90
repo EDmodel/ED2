@@ -24,20 +24,18 @@ subroutine ed_coup_driver()
        filltab_alltypes, &
        edgrid_g
 
-  use ed_misc_coms, only: fast_diagnostics
+  use ed_misc_coms, only: fast_diagnostics, &
+                          iyeara,          &
+                          imontha,         &
+                          idatea,          &
+                          itimea,          &
+                          runtype,         &
+                          ifoutput,        &
+                          idoutput,        &
+                          imoutput,        &
+                          integration_scheme
   
   use ed_work_vars,only:ed_dealloc_work,work_e
-
-  use misc_coms, only: &
-       iyeara,          &
-       imontha,         &
-       idatea,          &
-       itimea,          &
-       runtype,         &
-       ifoutput,        &
-       idoutput,        &
-       imoutput,        &
-       integration_scheme
 
   use soil_coms, only: alloc_soilgrid
   use ed_node_coms , only: mynum,nnodetot,sendnum,recvnum,mmxp,mmyp
@@ -104,8 +102,8 @@ subroutine ed_coup_driver()
   ! STEP 5: Set some polygon-level basic information, such as lon/lat/soil texture  !
   !---------------------------------------------------------------------------------!
   
-  if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Set_Polygon_Coordinates_Ar...'
-  call set_polygon_coordinates_ar()
+  if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Set_Polygon_Coordinates...'
+  call set_polygon_coordinates()
   
   !---------------------------------------------------------------------------!
   ! STEP 6: Initialize inherent soil and vegetation properties.               !
@@ -250,7 +248,7 @@ subroutine ed_coup_driver()
   !-----------------------------------------------------------------------!
   ! STEP 18: Allocate memory to the integration patch
   !-----------------------------------------------------------------------!
-  if(integration_scheme == 1) call initialize_rk4patches_ar(1)
+  if(integration_scheme == 1) call initialize_rk4patches(1)
   do ifm=1,ngrids
      call reset_averaged_vars(edgrid_g(ifm))
   end do
@@ -283,7 +281,7 @@ end subroutine ed_coup_driver
 !=========================================================================!
 
 subroutine find_frqsum()
-   use misc_coms, only:  &
+   use ed_misc_coms, only:  &
         unitfast,        &
         unitstate,       &
         isoutput,        &

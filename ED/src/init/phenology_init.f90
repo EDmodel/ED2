@@ -5,15 +5,23 @@ contains
   subroutine phenology_init
     
     use phenology_coms, only: iphen_scheme
-    use misc_coms, only: ied_init_mode
+    use ed_misc_coms, only: ied_init_mode
 
     implicit none
 
     logical,parameter :: bypass=.true.
 
     ! Initialize the Botta et al. scheme.
-    if(iphen_scheme .eq. 0)then
-    
+    select case (iphen_scheme)
+    case (1)
+
+       ! Initialize from satellite.  This subroutine gives ALL SITES the
+       ! phenological parameters from Harvard Forest.
+       
+!!       call read_harvard_phenology
+       call read_prescribed_phenology
+
+    case default
        ! Only initialize thermal sums here if no thermal sums information is
        ! available from the restart file, or if this is a run with bare 
        ! ground initialization.
@@ -23,21 +31,9 @@ contains
           print'(/,a)','    Reading thermal sums'
           call read_thermal_sums
           
-       endif
+       end if
 
-    elseif(iphen_scheme == 1)then
-       
-       ! Initialize from satellite.  This subroutine gives ALL SITES the
-       ! phenological parameters from Harvard Forest.
-       
-!!       call read_harvard_phenology
-       call read_prescribed_phenology
-
-    else
-
-       print'(/,a)','   Invalid iphen_scheme.'
-!       stop
-    endif
+    end select
 
 
     return
@@ -49,7 +45,7 @@ contains
 
     use ed_state_vars,only:edtype,polygontype,sitetype,edgrid_g
     use grid_coms,only:ngrids
-    use misc_coms, only: iyeara, imontha, idatea, itimea, ed_inputs_dir
+    use ed_misc_coms, only: iyeara, imontha, idatea, itimea, ed_inputs_dir
 
     implicit none
 
@@ -295,7 +291,7 @@ contains
   subroutine read_harvard_phenology
 
     use ed_state_vars,only:edgrid_g,edtype,polygontype,sitetype
-    use misc_coms, only: imontha, idatea, iyeara
+    use ed_misc_coms, only: imontha, idatea, iyeara
     use grid_coms,only:ngrids
 
     implicit none
@@ -432,10 +428,10 @@ contains
   subroutine read_prescribed_phenology
 
     use ed_state_vars,only:edgrid_g,edtype,polygontype,sitetype
-    use misc_coms, only: imontha, idatea, iyeara
+    use ed_misc_coms, only: imontha, idatea, iyeara
     use grid_coms,only:ngrids
     use phenology_coms, only: prescribed_phen,phenpath
-    use max_dims, only: str_len
+    use ed_max_dims, only: str_len
 
     implicit none
 
