@@ -113,7 +113,7 @@ module disturbance_utils
         ! patches. Since agb and basal area is calculated based on these
         ! numbers
         do q = onsp+1, onsp+n_dist_types
-            call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv,q,1,cpoly%lsl(isi))
+            call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,q,1,cpoly%lsl(isi))
         enddo
 
         ! Loop over q, the *destination* landuse type
@@ -153,8 +153,8 @@ module disturbance_utils
               csite%plantation(onsp+q) = 0
               csite%area(onsp+q)       = area
               
-              ! Initialize to zero the new trasitioned patches (redundant)
-              call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv,onsp+q,1,cpoly%lsl(isi))
+              ! Initialize to zero the new trasitioned patches
+              call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,onsp+q,1,cpoly%lsl(isi))
               
               ! Now go through patches, adding its contribution to the new patch.
               do ipa=1,onsp
@@ -315,13 +315,14 @@ end subroutine apply_disturbances
           csite => cpoly%site(isi)
 
           !  Calculate fire disturbance rates only if fire is on.
-          if(include_fire == 1)then
-             fire_dist_rate = sum(cpoly%lambda_fire(1:12,isi)) / 12.0
-          else
+          select case (include_fire)
+          case (0) 
              fire_dist_rate = 0.0
-          endif
+          case (1,2)
+             fire_dist_rate = sum(cpoly%lambda_fire(1:12,isi)) / 12.0
+          end select
 
-          cpoly%fire_disturbance_rate = fire_dist_rate
+          cpoly%fire_disturbance_rate(isi) = fire_dist_rate
     
           !  treefall disturbance is currently spatiotemporally constant, 
           !  from ED2IN
@@ -415,7 +416,7 @@ end subroutine apply_disturbances
 
   !=====================================================================
 
-  subroutine initialize_disturbed_patch(csite,atm_tmp,atm_shv,np,dp,lsl)
+  subroutine initialize_disturbed_patch(csite,atm_tmp,np,dp,lsl)
     
     use ed_state_vars, only: sitetype,patchtype
     use consts_coms, only : t00
@@ -423,7 +424,7 @@ end subroutine apply_disturbances
 
     implicit none
     type(sitetype),target    :: csite
-    real, intent(in)         :: atm_tmp,atm_shv
+    real   , intent(in)      :: atm_tmp
     integer, intent(in)      :: np,dp,lsl
     integer                  :: k
 
@@ -435,9 +436,6 @@ end subroutine apply_disturbances
 
     csite%patch(np)%ncohorts = 0
 
-    ! Initializing some water/energy properties 
-    csite%can_temp(np) = atm_tmp
-    csite%can_shv(np)  = atm_shv
     ! For now, choose heat/vapor capacities for stability
     csite%can_depth(np) = 30.0
     do k=1,nzs
@@ -485,6 +483,8 @@ end subroutine apply_disturbances
     csite%can_temp(np) = 0.0
 
     csite%can_shv(np) = 0.0
+
+    csite%can_co2(np) = 0.0
 
     csite%soil_energy(1:nzg,np) = 0.0
 
@@ -554,6 +554,8 @@ end subroutine apply_disturbances
     csite%can_temp(np) = csite%can_temp(np) + csite%can_temp(cp) * area_fac
 
     csite%can_shv(np) = csite%can_shv(np) + csite%can_shv(cp) * area_fac
+
+    csite%can_co2(np) = csite%can_co2(np) + csite%can_co2(cp) * area_fac
 
     csite%can_depth(np) = csite%can_depth(np) + csite%can_depth(cp) * area_fac
 

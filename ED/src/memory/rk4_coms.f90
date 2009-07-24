@@ -312,6 +312,8 @@ module rk4_coms
    real(kind=8) :: rk4min_can_shv       ! Minimum canopy    specific humidity   [kg/kg_air]
    real(kind=8) :: rk4max_can_shv       ! Maximum canopy    specific humidity   [kg/kg_air]
    real(kind=8) :: rk4max_can_rhv       ! Maximum canopy    relative humidity   [      ---]
+   real(kind=8) :: rk4min_can_co2       ! Minimum canopy    CO2 mixing ratio    [ µmol/mol]
+   real(kind=8) :: rk4max_can_co2       ! Maximum canopy    CO2 mixing ratio    [ µmol/mol]
    real(kind=8) :: rk4min_soil_temp     ! Minimum soil      temperature         [        K]
    real(kind=8) :: rk4max_soil_temp     ! Maximum soil      temperature         [        K]
    real(kind=8) :: rk4min_veg_temp      ! Minimum leaf      temperature         [        K]

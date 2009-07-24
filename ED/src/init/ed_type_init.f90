@@ -184,8 +184,6 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
 
   csite%htry(ip1:ip2) = 1.0
 
-  csite%can_co2(ip1:ip2) = 370.0
-
   csite%wbudget_loss2atm(ip1:ip2) = 0.0
   csite%wbudget_loss2runoff(ip1:ip2) = 0.0
   csite%co2budget_loss2atm(ip1:ip2) = 0.0

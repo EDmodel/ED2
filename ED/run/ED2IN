@@ -269,11 +269,11 @@
                            !  0  - ED1 default (continuous horizontal)
                            !  1  - finite radius mixing model (Dietze)
   
-   NL%N_PLANT_LIM     = 1  ! Determines whether (1) or not (0) plants can
-                         ! be limited by nitrogen
+   NL%N_PLANT_LIM     = 0  ! Determines whether (1) or not (0) plants can
+                           ! be limited by nitrogen
 
-   NL%N_DECOMP_LIM    = 1  ! Determines whether (1) or not (0) decomposition
-                         ! can be limited by nitrogen
+   NL%N_DECOMP_LIM    = 0  ! Determines whether (1) or not (0) decomposition
+                           ! can be limited by nitrogen
 
    NL%INCLUDE_FIRE    = 1  ! Determines how to apply fire in the model:
                            ! 0. No fires;

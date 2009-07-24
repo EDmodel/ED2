@@ -150,8 +150,7 @@ subroutine apply_forestry(cpoly, isi, year, rhos)
    !------ Initialize the new patch (newp) in the last position. --------------------------!
    csite%dist_type(newp) = 2
    ! Area is not initialized.
-   call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv     &
-                                  ,newp,1,cpoly%lsl(isi))
+   call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,newp,1,cpoly%lsl(isi))
 
    !------ Compute current stocks of agb in mature forests. -------------------------------!
    call inventory_mat_forests(cpoly,isi,area_mature_primary,agb_mature_primary             &

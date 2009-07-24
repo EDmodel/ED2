@@ -50,7 +50,7 @@ module rk4_stepper
          !---------------------------------------------------------------------------------!
          ! 1. Try a step of varying size.                                                  !
          !---------------------------------------------------------------------------------!
-         call rkck(integration_buff%y,integration_buff%dydx,integration_buff%ytemp      &
+         call rkck(integration_buff%y,integration_buff%dydx,integration_buff%ytemp         &
                      ,integration_buff%yerr,integration_buff%ak2,integration_buff%ak3      &
                      ,integration_buff%ak4,integration_buff%ak5,integration_buff%ak6       &
                      ,integration_buff%ak7,x,h,csite,ipa,isi,ipy,reject_step)
@@ -67,7 +67,7 @@ module rk4_stepper
             !------------------------------------------------------------------------------!
             errmax = 1.d1
          else
-            call get_errmax(errmax, integration_buff%yerr,integration_buff%yscal        &
+            call get_errmax(errmax, integration_buff%yerr,integration_buff%yscal           &
                               ,csite%patch(ipa),integration_buff%y,integration_buff%ytemp)
             errmax = errmax * rk4epsi
          end if
@@ -137,7 +137,7 @@ module rk4_stepper
                   end if
                   call print_sanity_check(integration_buff%y,csite,ipa)
                else
-                  call print_errmax(errmax,integration_buff%yerr,integration_buff%yscal &
+                  call print_errmax(errmax,integration_buff%yerr,integration_buff%yscal    &
                                       ,csite%patch(ipa),integration_buff%y                 &
                                       ,integration_buff%ytemp)
                   write (unit=*,fmt='(80a)') ('=',k=1,80)
@@ -177,7 +177,7 @@ module rk4_stepper
             hdid = h
             
             !----- 6. Copying the temporary structure to the intermediate state. ----------!
-            call copy_rk4_patch(integration_buff%ytemp,integration_buff%y               &
+            call copy_rk4_patch(integration_buff%ytemp,integration_buff%y                  &
                                   ,csite%patch(ipa))
             exit hstep
          end if
@@ -197,11 +197,11 @@ module rk4_stepper
    !=======================================================================================!
    !    This subroutine will update the variables and perform the actual time stepping.    !
    !---------------------------------------------------------------------------------------!
-   subroutine rkck(y,dydx,yout,yerr,ak2,ak3,ak4,ak5,ak6,ak7,x,h,csite,ipa,isi,ipy       &
+   subroutine rkck(y,dydx,yout,yerr,ak2,ak3,ak4,ak5,ak6,ak7,x,h,csite,ipa,isi,ipy          &
                      ,reject_step)
 
       use rk4_coms      , only : rk4patchtype        & ! structure
-                               , integration_vars & ! structure
+                               , integration_vars    & ! structure
                                , rk4met              & ! intent(in)
                                , print_diags         & ! intent(in)
                                , a2                  & ! intent(in)
@@ -379,7 +379,7 @@ module rk4_stepper
    !---------------------------------------------------------------------------------------!
    subroutine rk4_sanity_check(y,reject_step, csite,ipa,dydx,h,print_problems)
       use rk4_coms              , only : rk4patchtype         & ! structure
-                                       , integration_vars  & ! structure
+                                       , integration_vars     & ! structure
                                        , rk4met               & ! intent(in)
                                        , rk4eps               & ! intent(in)
                                        , toocold              & ! intent(in)
@@ -388,6 +388,8 @@ module rk4_stepper
                                        , rk4max_can_rhv       & ! intent(in)
                                        , rk4max_can_shv       & ! intent(in)
                                        , rk4min_can_shv       & ! intent(in)
+                                       , rk4min_can_co2       & ! intent(in)
+                                       , rk4max_can_co2       & ! intent(in)
                                        , rk4max_veg_temp      & ! intent(in)
                                        , rk4min_veg_temp      & ! intent(in)
                                        , rk4min_veg_lwater    & ! intent(in)
@@ -403,7 +405,7 @@ module rk4_stepper
       use grid_coms             , only : nzg                  ! ! intent(in)
       use soil_coms             , only : soil8                ! ! intent(in), lookup table
       use consts_coms           , only : t3ple8               ! ! intent(in)
-      use ed_misc_coms             , only : integ_err            & ! intent(inout)
+      use ed_misc_coms          , only : integ_err            & ! intent(inout)
                                        , record_err           ! ! intent(inout)
       use therm_lib             , only : rehuil               & ! function
                                        , qtk8                 ! ! subroutine
@@ -459,13 +461,19 @@ module rk4_stepper
          reject_step = .true.
          if(record_err) integ_err(1,2) = integ_err(1,2) + 1_8
          if (print_problems) then
+            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            write(unit=*,fmt='(a)')           ' + Canopy air temperature is off-track...'
+            write(unit=*,fmt='(a)')           '-----------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:       ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:       ',can_rhv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:      ',y%can_temp
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:       ',y%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:      ',rk4met%prss
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_TEMP)/Dt:',dydx%can_temp
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt: ',dydx%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2)/Dt: ',dydx%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' H:            ',h
+            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
          elseif (.not. record_err) then
             return
          end if
@@ -489,14 +497,16 @@ module rk4_stepper
             if(record_err) integ_err(2,2) = integ_err(2,2) + 1_8
             if (print_problems) then
                write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-               write(unit=*,fmt='(a)')           ' + Canopy air mix. rat. is off-track...'
+               write(unit=*,fmt='(a)')           ' + Canopy air spec. hum. is off-track...'
                write(unit=*,fmt='(a)')           '----------------------------------------'
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:       ',y%can_shv
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:       ',can_rhv
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:      ',y%can_temp
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:       ',y%can_co2
                write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:      ',rk4met%prss
                write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_TEMP)/Dt:',dydx%can_temp
                write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt: ',dydx%can_shv
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2)/Dt: ',dydx%can_co2
                write(unit=*,fmt='(a,1x,es12.4)') ' H:            ',h
                write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             elseif (.not. record_err) then
@@ -506,6 +516,32 @@ module rk4_stepper
       end if
       !------------------------------------------------------------------------------------!
 
+
+      !------------------------------------------------------------------------------------!
+      !   Checking whether the canopy CO2 is reasonable.                                   !
+      !------------------------------------------------------------------------------------! 
+      !if (y%can_co2 > rk4max_can_co2 .or. y%can_co2 < rk4min_can_co2) then
+      !   reject_step = .true.
+      !   if(record_err) integ_err(3,2) = integ_err(3,2) + 1_8
+      !   if (print_problems) then
+      !      write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      !      write(unit=*,fmt='(a)')           ' + Canopy air CO2  is off-track...       '
+      !      write(unit=*,fmt='(a)')           '-----------------------------------------'
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:       ',y%can_shv
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:       ',can_rhv
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:      ',y%can_temp
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:       ',y%can_co2
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:      ',rk4met%prss
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_TEMP)/Dt:',dydx%can_temp
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt: ',dydx%can_shv
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2)/Dt: ',dydx%can_co2
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' H:            ',h
+      !      write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      !   elseif (.not. record_err) then
+      !      return
+      !   end if
+      !end if
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
