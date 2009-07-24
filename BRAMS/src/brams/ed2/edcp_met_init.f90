@@ -40,9 +40,6 @@ subroutine ed_init_coup_atm
   do igr = 1,ngrids
      
      cgrid => edgrid_g(igr)
-     
-     ! First we need to update the meteorological fields.
-!     call update_met_drivers_array(cgrid)
 
      ! If this is a standard ED2 restart, we will read these fields in from 
      ! a history file and therefore not worry about setting them here.
@@ -63,8 +60,8 @@ subroutine ed_init_coup_atm
               cpatch => csite%patch(ipa)
 
               csite%can_temp(ipa) =   cpoly%met(isi)%atm_tmp
-              
               csite%can_shv(ipa)  =   cpoly%met(isi)%atm_shv
+              csite%can_co2(ipa)  =   cpoly%met(isi)%atm_co2
 
               ! Initialize stars
               csite%tstar(ipa)  = 0.

@@ -6,13 +6,13 @@
 module rk4_driver
 
    contains
-   !==============================================================================!
-   !==============================================================================!
-   !      Main driver of short-time scale dynamics of the Runge-Kutta integrator  !
-   !      for the land surface model.                                             !
-   !------------------------------------------------------------------------------!
+   !=======================================================================================!
+   !=======================================================================================!
+   !      Main driver of short-time scale dynamics of the Runge-Kutta integrator           !
+   !      for the land surface model.                                                      !
+   !---------------------------------------------------------------------------------------!
    subroutine rk4_timestep(cgrid,ifm)
-      use rk4_coms               , only : integration_vars  & ! structure
+      use rk4_coms               , only : integration_vars     & ! structure
                                         , integration_buff     & ! structure
                                         , rk4patchtype         & ! structure
                                         , zero_rk4_patch       & ! subroutine
@@ -23,10 +23,10 @@ module rk4_driver
                                         , sitetype             & ! structure
                                         , patchtype            ! ! structure
       use grid_coms              , only : nzg                  ! ! intent(in)
-      use ed_max_dims               , only : n_dbh                ! ! intent(in)
-      use ed_misc_coms              , only : dtlsm                ! ! intent(in)
+      use ed_max_dims            , only : n_dbh                ! ! intent(in)
+      use ed_misc_coms           , only : dtlsm                ! ! intent(in)
       use consts_coms            , only : umol_2_kgC           ! ! intent(in)
-      use canopy_struct_dynamics , only : canopy_turbulence ! ! subroutine
+      use canopy_struct_dynamics , only : canopy_turbulence    ! ! subroutine
       implicit none
 
       !----------- Use MPI timing calls, need declarations --------------------------------!
@@ -40,11 +40,18 @@ module rk4_driver
       type(patchtype)           , pointer     :: cpatch
       integer                                 :: ipy,isi,ipa
       integer, dimension(nzg)                 :: ed_ktrans
-      real(kind=8)                            :: time_py_start,time_py_end
       real   , dimension(n_dbh)               :: gpp_dbh
       real                                    :: sum_lai_rbi
       real                                    :: gpp
       real                                    :: plant_respiration
+      !----- Variables declared differently depending on the user's compilation options. --!
+#if USE_MPIWTIME
+      real(kind=8)                            :: time_py_start
+      real(kind=8)                            :: time_py_end
+#else
+      real                                    :: time_py_start
+      real                                    :: time_py_spent
+#endif
       !----- Functions --------------------------------------------------------------------!
       real                      , external    :: compute_netrad
       real                      , external    :: walltime
@@ -53,8 +60,11 @@ module rk4_driver
       polygonloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
 
-!!!         time_py_start = walltime(0.) 
+#if USE_MPIWTIME
          time_py_start = MPI_Wtime() 
+#else
+         time_py_start = walltime(0.)
+#endif
 
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
@@ -171,11 +181,13 @@ module rk4_driver
             end do patchloop
          end do siteloop
 
-!!!         time_py_spent = walltime(time_py_start)
-!!!         cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) + dble(time_py_spent)
-         
-         time_py_end = MPI_Wtime() 
+#if (USE_MPIWTIME)
+         time_py_end            = MPI_Wtime() 
          cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) + (time_py_end-time_py_start)
+#else
+         time_py_spent          = walltime(time_py_start)
+         cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) + dble(time_py_spent)
+#endif
 
       end do polygonloop
 
@@ -443,8 +455,8 @@ module rk4_driver
          available_water = available_water / (-1.d0*slz8(cpatch%krdepth(ico)))
 
 
-         cpatch%paw_avg(ico) = cpatch%paw_avg(ico)*(1.0-sngl(hdid)/tendays_sec)      &
-                                + sngl(available_water)*sngl(hdid)/tendays_sec
+         cpatch%paw_avg(ico) = cpatch%paw_avg(ico)*(1.0-sngl(hdid)/tendays_sec)            &
+                             + sngl(available_water)*sngl(hdid)/tendays_sec
       end do
 
       
