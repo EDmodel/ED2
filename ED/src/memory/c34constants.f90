@@ -25,7 +25,7 @@ module c34constants
 
   Type stoma_data
 
-     integer :: recalc=1
+     integer :: recalc=1   !THIS SHOULD BE INIT IN ED_PARAMS
      real :: T_L
      real :: e_A
      real :: PAR
@@ -44,6 +44,9 @@ module c34constants
      real :: gsw_residual
      
   End Type stoma_data
+
+  ! the number of stomatal attributes
+  integer,parameter :: n_stoma_atts = 16
 
 
 

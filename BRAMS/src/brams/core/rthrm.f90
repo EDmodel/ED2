@@ -546,6 +546,8 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
    real, intent(out)   :: rsat        ! Saturation water vapour mixing ratio       [ kg/kg]
    !----- Local variables -----------------------------------------------------------------!
    real                :: tempa,tempz ! Aux. vars for regula falsi iteration
+   real                :: t1stguess   ! Book keeping temperature 1st guess 
+   real                :: fun1st      ! Book keeping 1st guess function
    real                :: funa,funz   ! The functions for regula falsi
    real                :: funnow      ! Function at this iteration.
    real                :: delta       ! Aux. var in case we need regula falsi.
@@ -555,6 +557,8 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
    logical             :: zside       ! Aux. Flag, for two purposes:
                                       ! 1. Found a good 2nd guess for regula falsi.
                                       ! 2. I retained the "zside" (T/F)
+
+   t1stguess = temp
 
    !---------------------------------------------------------------------------------------!
    !      First check: try to find temperature assuming sub-saturation and check if this   !
@@ -613,6 +617,7 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
    !----- Updating the derivative. --------------------------------------------------------!
    deriv  = dthetail_dt(.false.,funnow,exner,pres,tempz,rliq,rice)
    funnow = funnow - thil
+   fun1st = funnow
 
    !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
    !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
@@ -709,16 +714,20 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
       if (funa*funnow < 0) then
          funz = funnow
          zside = .true.
+      !----- Otherwise, checking whether the 1st guess had opposite sign. -----------------!
+      elseif (funa*fun1st < 0 ) then
+         funz = fun1st
+         zside = .true.
       !------------------------------------------------------------------------------------!
       !    Looking for a guess. Extrapolate funa linearly, trying to get the -funa. We     !
       ! don't need it to be funa, just with the opposite sign. If that's not enough, we    !
-      ! keep going further...                                                              !
+      ! keep going further... Force the guesses to be at least 1K apart                    !
       !------------------------------------------------------------------------------------!
       else
-         if (abs(funnow-funa) < toler*tempa) then
+         if (abs(funnow-funa) < 100.*toler*tempa) then
             delta = 100.*toler*tempa
          else
-            delta = max(abs(funa*(tempz-tempa)/(funnow-funa)),100.*toler*tempa)
+            delta = max(abs(funa)*abs((tempz-tempa)/(funnow-funa)),100.*toler*tempa)
          end if
          tempz = tempa + delta
          funz  = funa
@@ -745,10 +754,13 @@ subroutine thil2tqall(thil,exner,pres,rtot,rliq,rice,temp,rvap,rsat)
             write (unit=*,fmt='(a)')           ' '
             write (unit=*,fmt='(a)')           ' -> Input: '
             write (unit=*,fmt='(a,1x,f12.5)')  '    THETA_IL [     K]:',thil
+            write (unit=*,fmt='(a,1x,f12.5)')  '    PRESS    [   hPa]:',0.01*pres
             write (unit=*,fmt='(a,1x,f12.5)')  '    EXNER    [J/kg/K]:',exner
             write (unit=*,fmt='(a,1x,f12.5)')  '    RTOT     [  g/kg]:',1000.*rtot
+            write (unit=*,fmt='(a,1x,f12.5)')  '    T1ST     [  degC]:',t1stguess-t00
             write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPA    [  degC]:',tempa-t00
             write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPZ    [  degC]:',tempz-t00
+            write (unit=*,fmt='(a,1x,f12.5)')  '    FUNNOW   [     K]:',funnow
             write (unit=*,fmt='(a,1x,f12.5)')  '    FUNA     [     K]:',funa
             write (unit=*,fmt='(a,1x,f12.5)')  '    FUNZ     [     K]:',funz
             write (unit=*,fmt='(a,1x,f12.5)')  '    DELTA    [     K]:',delta

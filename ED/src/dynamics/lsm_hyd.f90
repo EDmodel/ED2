@@ -104,7 +104,7 @@ subroutine initHydroSubsurface()
   use hydrology_coms, only: useTOPMODEL, MoistRateTuning
   use soil_coms, only: soil,slz,dslz,dslzi
   use grid_coms, only: ngrids,nzg
-  use misc_coms, only: dtlsm
+  use ed_misc_coms, only: dtlsm
   use ed_state_vars, only: edgrid_g,edtype,polygontype,sitetype
   implicit none
 
@@ -169,11 +169,11 @@ subroutine initHydroSubsurface()
 !                 nsoil = csite%ntext_soil(k,ipa)
                  nsoil = cpoly%ntext_soil(k,isi) !! mcd [9/30/08]
                  if(cpoly%moist_zi(isi) < slz(k+1)) then
-                    csite%soil_water(k,ipa) = dble(max(soil(nsoil)%soilcp, &
-                         soil(nsoil)%slmsts*(cpoly%moist_zi(isi)-slz(k))*dslzi(k)))
+                    csite%soil_water(k,ipa) = max(soil(nsoil)%soilcp, &
+                         soil(nsoil)%slmsts*(cpoly%moist_zi(isi)-slz(k))*dslzi(k))
                     exit 
                  else
-                    csite%soil_water(k,ipa) = dble(soil(nsoil)%slmsts) 
+                    csite%soil_water(k,ipa) = soil(nsoil)%slmsts
                  endif
               end do
               call calcWatertable(cpoly,isi,ipa)
@@ -201,7 +201,7 @@ subroutine calcHydroSubsurface()
   use hydrology_coms, only: useTOPMODEL, FracLiqRunoff,MoistRateTuning
   use soil_coms, only: soil,slz,dslz
   use grid_coms, only: ngrids,nzg
-  use misc_coms, only: dtlsm
+  use ed_misc_coms, only: dtlsm
   use therm_lib, only: qtk,qwtk,qwtk8
   use consts_coms, only: wdns
   implicit none
@@ -431,7 +431,7 @@ end subroutine calcHydroSubsurface
 !!!!!!   use hydrology_coms, only: useTOPMODEL
 !!!!!!   use soil_coms, only: soil
 !!!!!!   use grid_coms, only: ngrids
-!!!!!!   use misc_coms, only: dtlsm
+!!!!!!   use ed_misc_coms, only: dtlsm
 !!!!!!   implicit none
 !!!!!!   include "mpif.h"
 !!!!!! !  include 'rcommons.h'
@@ -525,7 +525,7 @@ subroutine calcWatertable(cpoly,isi,ipa)
   !  to compute a mean temperature of transported water.
   csite => cpoly%site(isi)
 
-  WTold = csite%watertable(ipa)
+  !WTold = csite%watertable(ipa)
 
   csite%watertable(ipa) = slz(cpoly%lsl(isi))   !initialize water table depth to deepest soil layer
   csite%soil_sat_energy(ipa) = 0.0
@@ -535,10 +535,10 @@ subroutine calcWatertable(cpoly,isi,ipa)
   layerloop: do k = cpoly%lsl(isi),nzg
      nsoil = cpoly%ntext_soil(k,isi)  !look up soil type (switched to using SITE level soils [mcd 9/30/08]
 !     nsoil = csite%ntext_soil(k,ipa)  !look up soil type
-     fracw = real(csite%soil_water(k,ipa) / dble(soil(nsoil)%slmsts))  !calculate fraction of moisture capacity
+     fracw = csite%soil_water(k,ipa) / soil(nsoil)%slmsts !calculate fraction of moisture capacity
      csite%watertable(ipa)      = csite%watertable(ipa)      + fracw *dslz(k)
      csite%soil_sat_energy(ipa) = csite%soil_sat_energy(ipa) + csite%soil_energy(k,ipa)*dslz(k)
-     csite%soil_sat_water(ipa)  = csite%soil_sat_water(ipa)  + real(csite%soil_water(k,ipa)*dble(dslz(k)))
+     csite%soil_sat_water(ipa)  = csite%soil_sat_water(ipa)  + csite%soil_water(k,ipa)*dslz(k)
      csite%soil_sat_heat(ipa)   = csite%soil_sat_heat(ipa)   + soil(nsoil)%slcpd*dslz(k)
      if (fracw < MoistSatThresh) exit layerloop!change from original version to go one layer up
   end do layerloop
@@ -595,7 +595,7 @@ subroutine updateWatertableAdd(cpoly,isi,ipa,dw,sheat)
   use ed_state_vars, only: sitetype,polygontype
   use soil_coms, only: soil,slz,dslz,dslzi
   use grid_coms, only: nzg
-  use therm_lib, only: qwtk8
+  use therm_lib, only: qwtk
   use consts_coms, only: wdns
   implicit none
   type(polygontype) , target        :: cpoly
@@ -619,19 +619,19 @@ subroutine updateWatertableAdd(cpoly,isi,ipa,dw,sheat)
 
    layerloop: do k = cpoly%lsl(isi),nzg
       nsoil = csite%ntext_soil(k,ipa)  !look up soil type
-      fracw = real(csite%soil_water(k,ipa) / dble(soil(nsoil)%slmsts))  !calculate fraction of moisture capacity
+      fracw = csite%soil_water(k,ipa) / soil(nsoil)%slmsts  !calculate fraction of moisture capacity
       if(fracw < 1.0) then
 
-         wcap = real(dble(soil(nsoil)%slmsts)-csite%soil_water(k,ipa))*dslz(k) !!m3/m2
+         wcap = soil(nsoil)%slmsts-csite%soil_water(k,ipa)*dslz(k) !!m3/m2
          if(dw > wcap) then
             !! saturate layer
             dw_layer = wcap
-            csite%soil_water(k,ipa) = dble(soil(nsoil)%slmsts)
+            csite%soil_water(k,ipa) = soil(nsoil)%slmsts
             dw = dw - wcap
          else
             !! add all the water
             dw_layer = dw
-            csite%soil_water(k,ipa) = csite%soil_water(k,ipa)+dble(dw*dslzi(k))
+            csite%soil_water(k,ipa) = csite%soil_water(k,ipa)+dw*dslzi(k)
             dw = 0.0
             done = .true.
          endif
@@ -648,7 +648,7 @@ subroutine updateWatertableAdd(cpoly,isi,ipa,dw,sheat)
          end if
 
          !!update soil temperature
-         call qwtk8(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*dble(wdns)            &
+         call qwtk(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*wdns            &
                    ,soil(nsoil)%slcpd,tempk,fracliq)
          csite%soil_tempk(k,ipa) = tempk
          if(done) exit layerloop
@@ -719,7 +719,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
    use consts_coms, only : cliqvlme,wdns,tsupercool
    use soil_coms, only: soil,slz,dslz,dslzi
    use grid_coms, only: nzg
-   use therm_lib, only : qwtk8
+   use therm_lib, only : qwtk
 
    implicit none
    type(polygontype), target      :: cpoly
@@ -758,28 +758,28 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
    k = int(csite%ksat(ipa))
 
    nsoil = csite%ntext_soil(k,ipa)  !look up soil type
-   fracw = real(csite%soil_water(k,ipa) / dble(soil(nsoil)%slmsts))  !calculate fraction of moisture capacity
+   fracw = csite%soil_water(k,ipa) / soil(nsoil)%slmsts  !calculate fraction of moisture capacity
    if(fracw > MoistSatThresh) then  !if layer above threshold, move up one
       k = k+1
       nsoil = csite%ntext_soil(k,ipa)
-      fracw = real(csite%soil_water(k,ipa))
+      fracw = csite%soil_water(k,ipa)
    end if
 
    if(k > nzg) then
       !! soil completely saturated, reset to top layer
       k = nzg
       nsoil = csite%ntext_soil(k,ipa)  !look up soil type
-      fracw = real(csite%soil_water(k,ipa) / dble(soil(nsoil)%slmsts))  !calculate fraction of moisture capacity
+      fracw = csite%soil_water(k,ipa) / soil(nsoil)%slmsts  !calculate fraction of moisture capacity
    end if
 
    !!work down from saturation layer, removing water & heat
    do while (k >= cpoly%lsl(isi))
       !capacity for layer to loose moisture (unit = meters)
       wcap = (fracw - soil(nsoil)%soilcp/soil(nsoil)%slmsts) * dslz(k)  
-      wtmp = real(csite%soil_water(k,ipa))
+      wtmp = csite%soil_water(k,ipa)
       if(wcap > dzl) then 
          !!empty soil layer completely 
-         dw = -1.0*real(csite%soil_water(k,ipa) - dble(soil(nsoil)%soilcp))
+         dw = -1.0*(csite%soil_water(k,ipa) - soil(nsoil)%soilcp)
          dzl = dzl + wcap
       else
          !!reduce water by dz
@@ -789,9 +789,9 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
       end if
 
       !!update soil water
-      csite%soil_water(k,ipa) = csite%soil_water(k,ipa) + dble(dw)
+      csite%soil_water(k,ipa) = csite%soil_water(k,ipa) + dw
       !! error message for positive dw or soil below capacity
-      if(dw .gt. 1.0E-9 .or. (csite%soil_water(k,ipa)+1.0d-8) < dble(soil(nsoil)%soilcp)) then 
+      if(dw .gt. 1.0E-9 .or. (csite%soil_water(k,ipa)+1.0e-8) < soil(nsoil)%soilcp) then 
          print*," "
          print*,"dw = ",dw," in updateWatertableSubtract"
          print*,dzl,wcap,k,csite%watertable(ipa),done,fracw,nsoil
@@ -811,7 +811,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
 
 
       !!update soil temperature
-      call qwtk8(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*dble(wdns)               &
+      call qwtk(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*wdns               &
                 ,soil(nsoil)%slcpd,tempk,fracliq)
       csite%soil_tempk(k,ipa) = tempk
 
@@ -821,7 +821,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
       else
          k = k-1
          nsoil = csite%ntext_soil(k,ipa)  !look up soil type
-         fracw = real(csite%soil_water(k,ipa) / dble(soil(nsoil)%slmsts))
+         fracw = csite%soil_water(k,ipa) / soil(nsoil)%slmsts
       endif
    enddo
    return
@@ -839,7 +839,7 @@ end subroutine updateWatertableSubtract
 subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
    use ed_state_vars, only: polygontype, sitetype
    use soil_coms, only: soil,slz,dslz,dslzi,slcons1
-   use misc_coms, only: dtlsm
+   use ed_misc_coms, only: dtlsm
    use consts_coms, only: cliqvlme, tsupercool
    implicit none
 
@@ -860,9 +860,9 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
    nsoil = csite%ntext_soil(slsl,ipa)
    potn_fd = -dslzi(slsl)+soil(nsoil)%slpots* &
         ((soil(nsoil)%slmsts/soil(nsoil)%soilcp)**soil(nsoil)%slbs - &
-        real(dble(soil(nsoil)%slmsts)/csite%soil_water(slsl,ipa))**soil(nsoil)%slbs)
+        (soil(nsoil)%slmsts/csite%soil_water(slsl,ipa))**soil(nsoil)%slbs)
    wflux_fd = slcons1(slsl,nsoil)  &
-                 * real(csite%soil_water(1,ipa)/ dble(soil(nsoil)%slmsts))**(2. * soil(nsoil)%slbs + 3.)  &
+                 * (csite%soil_water(1,ipa)/ soil(nsoil)%slmsts)**(2. * soil(nsoil)%slbs + 3.)  &
                  * potn_fd
    bf = min(-wflux_fd,baseflow)*dtlsm*0.001
 
@@ -872,11 +872,11 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
    end if
 
    !! first, remove baseflow water and heat
-   csite%soil_water(slsl,ipa) = csite%soil_water(slsl,ipa)-dble(bf*dslzi(slsl))
-   if(csite%soil_water(slsl,ipa) < dble(soil(nsoil)%soilcp)) then
+   csite%soil_water(slsl,ipa) = csite%soil_water(slsl,ipa)-bf*dslzi(slsl)
+   if(csite%soil_water(slsl,ipa) < soil(nsoil)%soilcp) then
       write(unit=*,fmt=*) 'Bottom dry:',csite%soil_water(1,ipa),bf,soil(nsoil)%soilcp
-      bf = bf + real(csite%soil_water(slsl,ipa)-dble(soil(nsoil)%soilcp))*dslz(slsl)
-      csite%soil_water(slsl,ipa) = dble(soil(nsoil)%soilcp)
+      bf = bf + (csite%soil_water(slsl,ipa)-soil(nsoil)%soilcp)*dslz(slsl)
+      csite%soil_water(slsl,ipa) = soil(nsoil)%soilcp
    end if
    csite%soil_energy(slsl,ipa) = csite%soil_energy(slsl,ipa)-bf*cliqvlme*(csite%soil_tempk(slsl,ipa)-tsupercool)
 
@@ -911,7 +911,7 @@ subroutine writeHydro()
   !!        writes to <output_filepath>-HYD<year>
   !!        after every HydroOutputPeriod calls
   use ed_state_vars       , only : edgrid_g,edtype, polygontype,sitetype
-  use misc_coms           , only : ffilout, current_time
+  use ed_misc_coms           , only : ffilout, current_time
   use hydrology_constants
   use hydrology_coms      , only : HydroOutputPeriod, useRUNOFF, useTOPMODEL
   use grid_coms            , only : nzg,ngrids
@@ -1006,7 +1006,7 @@ subroutine writeHydro()
 
                   tpw = 0.0
                   do k = cpoly%lsl(isi),nzg
-                     tpw = tpw + real(csite%soil_water(k,ipa)*dble(dslzi(k)))
+                     tpw = tpw + csite%soil_water(k,ipa)*dslzi(k)
                   enddo
                   tsw = tsw + tpw*csite%area(ipa)
 
@@ -1018,7 +1018,7 @@ subroutine writeHydro()
                   SSH   = SSH   + csite%soil_sat_heat(ipa)            * csite%area(ipa)
                   ksat  = ksat  + csite%ksat(ipa)                     * csite%area(ipa)
                   do k =cpoly%lsl(isi),nzg
-                     WPbar(k)  = WPbar(k)  + real(csite%soil_water(k,ipa)*dble(csite%area(ipa)))
+                     WPbar(k)  = WPbar(k)  + csite%soil_water(k,ipa)  * csite%area(ipa)
                      WPTbar(k) = WPTbar(k) + csite%soil_tempk(k,ipa)  * csite%area(ipa)
                   end do
                end do
@@ -1069,7 +1069,7 @@ subroutine calcHydroSurface()
   use hydrology_constants
   use hydrology_coms, only: useRUNOFF,FracLiqRunoff,runoff_Vmax
   use grid_coms, only: ngrids, nzg
-  use misc_coms, only: dtlsm
+  use ed_misc_coms, only: dtlsm
   use grid_coms,only:ngrids
   use consts_coms, only : cliqvlme,cliq,t3ple,qicet3,qliqt3,tsupercool
   use soil_coms, only: water_stab_thresh
@@ -1411,7 +1411,7 @@ end subroutine calcHydroSurface
 !!!!!!   use hydrology_coms, only: useRUNOFF, FracLiqRunoff,runoff_Vmax
 !!!!!!   use soil_coms, only: nzg, water_stab_thresh
 !!!!!!   use grid_coms,only: ngrids
-!!!!!!   use misc_coms, only: dtlsm
+!!!!!!   use ed_misc_coms, only: dtlsm
 !!!!!!   use ed_node_coms, only: master_num
 !!!!!!   use const_coms, only : g, 
 !!!!!!   use therm_lib, only: qtk

@@ -1,4 +1,4 @@
-subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, prss, pcpg, qpcpg,  &
+subroutine canopy_update_euler(csite, ipa, vels, rhos, atm_tmp, prss, pcpg, qpcpg,  &
      wshed_canopy, qwshed_canopy, canair, canhcap, dt_leaf, hxfergc,  &
      sxfer_t, wxfergc, hxfersc, wxfersc, sxfer_r, ed_transp,          &
      ntext_soil, soil_water, soil_fracliq, lsl,  &
@@ -7,9 +7,8 @@ subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, prss, pcpg, qpcpg,  &
 
   use ed_state_vars,only:sitetype,patchtype
   use grid_coms, only: nzg
-  use canopy_radiation_coms, only: lai_min
   use consts_coms, only: alvi
-  use max_dims, only: n_pft
+  use ed_max_dims, only: n_pft
 
   implicit none
 
@@ -18,6 +17,7 @@ subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, prss, pcpg, qpcpg,  &
   integer :: ipa,ico
   real, intent(in) :: vels
   real, intent(in) :: rhos
+  real, intent(in) :: atm_tmp
   real, intent(in) :: prss
   real, intent(in) :: pcpg
   real, intent(in) :: qpcpg
@@ -41,22 +41,22 @@ subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, prss, pcpg, qpcpg,  &
   integer :: ndims
   integer, dimension(nzg) :: ed_ktrans
   integer, dimension(nzg), intent(in) :: ntext_soil
-  real(kind=8), dimension(nzg), intent(in) :: soil_water
+  real, dimension(nzg), intent(in) :: soil_water
   real, dimension(nzg), intent(in) :: soil_fracliq
   integer, intent(in) :: lsl
 
   ! Get photosynthesis, stomatal conductance, and transpiration
-  call canopy_photosynthesis_ar(csite,ipa, vels, rhos, prss, &
+  call canopy_photosynthesis(csite,ipa, vels, rhos, atm_tmp, prss, &
        ed_ktrans, ntext_soil, soil_water, soil_fracliq, lsl, sum_lai_rbi, &
        leaf_aging_factor, green_leaf_factor)
 
-  call canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  &
+  call canopy_precip_interception(csite,ipa, pcpg, qpcpg, wshed_canopy,  &
        qwshed_canopy)
   
   ndims = 2
   cpatch => csite%patch(ipa)
   do ico = 1,cpatch%ncohorts
-     if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa) )then
+     if(cpatch%solvable(ico) )then
         ndims = ndims + 2
      endif
   enddo
@@ -65,7 +65,7 @@ subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, prss, pcpg, qpcpg,  &
 !  call canopy_implicit_driver(ed_patch, ndims, rhos, canhcap, canair,   &
 !       sum_lai_rbi, dt_leaf, hxfergc, hxferca, wxfergc, hxfersc, wxfersc,  &
   !       sxfer_r, ed_transp, ed_ktrans)
-  call canopy_explicit_driver_ar(csite, ipa, ndims, rhos, canhcap, canair,   &
+  call canopy_explicit_driver(csite, ipa, ndims, rhos, canhcap, canair,   &
        sum_lai_rbi, dt_leaf, hxfergc, sxfer_t, wxfergc, hxfersc, wxfersc,  &
        sxfer_r, ed_transp, ed_ktrans, sxfer_c)
 
@@ -75,15 +75,14 @@ subroutine canopy_update_euler_ar(csite, ipa, vels, rhos, prss, pcpg, qpcpg,  &
 !  ed_patch%mean_hflux = ed_patch%mean_hflux + hxferca / dt_leaf
 
   return
-end subroutine canopy_update_euler_ar
+end subroutine canopy_update_euler
 
 !==============================================================
 
-subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  &
+subroutine canopy_precip_interception(csite,ipa, pcpg, qpcpg, wshed_canopy,  &
      qwshed_canopy)
 
   use ed_state_vars,only:sitetype,patchtype
-
   use canopy_radiation_coms, only: lai_min
   use consts_coms, only: cice, cliq, alli, t3ple, tsupercool
   use therm_lib, only: qwtk
@@ -103,7 +102,6 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
   real :: tvegaux
   real :: qwtot
   real :: lai_fraction
-  real :: fracliqv
   real :: wshed_layer
   real :: hcapveg_factor
 
@@ -122,7 +120,7 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
      
      do ico = 1,cpatch%ncohorts
 
-        if(cpatch%hite(ico) > csite%total_snow_depth(ipa) .and. cpatch%lai(ico) > lai_min)then
+        if(cpatch%solvable(ico))then
            tvegaux = cpatch%veg_temp(ico) - t3ple
 
            hcapveg_factor = cpatch%lai(ico) / csite%lai(ipa)
@@ -149,7 +147,7 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
 ! Compute equilbrium temperature of veg + precipitation
 
            call qwtk(cpatch%veg_energy(ico), cpatch%veg_water(ico), cpatch%hcapveg(ico) * hcapveg_factor,   &
-                cpatch%veg_temp(ico), fracliqv)
+                cpatch%veg_temp(ico), cpatch%veg_fliq(ico))
       
 ! Shed any excess intercepted precipitation and its energy
 
@@ -157,12 +155,12 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
               wshed_layer = cpatch%veg_water(ico) - .22 * cpatch%lai(ico)
               wshed_canopy = wshed_canopy + wshed_layer
 
-              if (fracliqv <= .0001) then
+              if (cpatch%veg_fliq(ico) <= .0001) then
                  qwshed_canopy = qwshed_canopy + cice * cpatch%veg_temp(ico) * wshed_layer
               else
                  qwshed_canopy = qwshed_canopy + wshed_layer &
-                               * ( fracliqv*cliq*(cpatch%veg_temp(ico)-tsupercool) &
-                                 + (1.-fracliqv)*cice*cpatch%veg_temp(ico))
+                               * ( cpatch%veg_fliq(ico)*cliq*(cpatch%veg_temp(ico)-tsupercool) &
+                                 + (1.-cpatch%veg_fliq(ico))*cice*cpatch%veg_temp(ico))
               endif
               
               cpatch%veg_water(ico) = cpatch%veg_water(ico) - wshed_layer
@@ -177,11 +175,11 @@ subroutine canopy_precip_interception_ar(csite,ipa, pcpg, qpcpg, wshed_canopy,  
   endif
 
   return
-end subroutine canopy_precip_interception_ar
+end subroutine canopy_precip_interception
 
 !==============================================================
 
-subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
+subroutine canopy_implicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
      sum_lai_rbi, dt_leaf, hxfergc, sxfer_t, wxfergc, hxfersc, wxfersc,    &
      sxfer_r, ed_transp, ed_ktrans, sxfer_c)
 
@@ -191,7 +189,6 @@ subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
 !-----------------------------------------------------------------------------
 
   use ed_state_vars,only: sitetype,patchtype
-  use canopy_radiation_coms, only: lai_min
   use consts_coms, only: cp, alvl, alvi
   use grid_coms, only: nzg
   use therm_lib, only: rhovsil,rhovsilp
@@ -263,7 +260,7 @@ subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
   ic = 0
 
   do ico = 1,cpatch%ncohorts
-     if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))then
+     if(cpatch%solvable(ico))then
 
         ! Set indices
         ic = ic + 1
@@ -436,7 +433,7 @@ subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
   
   do ico = 1,cpatch%ncohorts
 
-     if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))then
+     if(cpatch%solvable(ico))then
         ic = ic + 1
         idim = idim + 2
         cpatch%veg_temp(ico) = implicit_new_state(idim)
@@ -475,7 +472,7 @@ subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
 
   ! Require veg_water >= 0
   do ico = 1,cpatch%ncohorts
-     if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))then
+     if(cpatch%solvable(ico))then
         if(cpatch%veg_water(ico) < 0.0)then
            
            ! Take away from the canopy humidity...
@@ -503,10 +500,10 @@ subroutine canopy_implicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
   csite%avg_daily_temp(ipa) = csite%avg_daily_temp(ipa) + csite%can_temp(ipa)
 
   return
-end subroutine canopy_implicit_driver_ar
+end subroutine canopy_implicit_driver
 !==============================================================
 
-subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
+subroutine canopy_explicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
      sum_lai_rbi, dt_leaf, hxfergc, sxfer_t, wxfergc, hxfersc, wxfersc,    &
      sxfer_r, ed_transp, ed_ktrans, sxfer_c)
 
@@ -516,7 +513,6 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
 !-----------------------------------------------------------------------------
 
   use ed_state_vars,only:sitetype,patchtype
-  use canopy_radiation_coms, only: lai_min
   use consts_coms, only: cp, alvl, alvi, cliq, cice, alli, t3ple,tsupercool
   use grid_coms, only: nzg
   use therm_lib, only: rhovsil,rhovsilp
@@ -582,7 +578,7 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
 
   ic = 0
   do ico = 1,cpatch%ncohorts
-     if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))then
+     if(cpatch%solvable(ico))then
 
         ! Set indices
         ic = ic + 1
@@ -676,7 +672,7 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
   idim = 1
   ic = 0
   do ico = 1,cpatch%ncohorts
-     if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))then
+     if(cpatch%solvable(ico))then
         ic = ic + 1
         idim = idim + 2
         cpatch%veg_temp(ico) = explicit_new_state(idim)
@@ -688,7 +684,7 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
 
   ! Require 0.22 LAI >= veg_water >= 0
   do ico = 1,cpatch%ncohorts
-     if(cpatch%lai(ico) > lai_min .and. cpatch%hite(ico) > csite%total_snow_depth(ipa))then
+     if(cpatch%solvable(ico))then
         if(cpatch%veg_water(ico) < 0.0)then
            
            ! Take away from the canopy humidity...
@@ -704,7 +700,7 @@ subroutine canopy_explicit_driver_ar(csite,ipa, ndims, rhos, canhcap, canair,  &
   csite%avg_daily_temp(ipa) = csite%avg_daily_temp(ipa) + csite%can_temp(ipa)
 
   return
-end subroutine canopy_explicit_driver_ar
+end subroutine canopy_explicit_driver
 
 !======================================================================
 

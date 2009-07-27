@@ -256,17 +256,24 @@ subroutine geonest_nofile(ngra,ngrb)
   do ifm = ngra,ngrb
      icm = nxtnest(ifm)
 
+     if (co2_on) then
+        call atob(nnzp(ifm)*nnxp(ifm)*nnyp(ifm),basic_g(ifm)%co2p,scratch%vt3do)
+     else
+        call ae0(nnzp(ifm)*nnxp(ifm)*nnyp(ifm),scratch%vt3do,co2con(1))
+     end if
+
      ! First, fill NOFILE LEAF-2 variables with default values in SFCINIT.
 
      call sfcinit_nofile(nnzp(ifm),nnxp(ifm),nnyp(ifm),nzg,nzs,npatch,ifm                  &
           , basic_g(ifm)%theta                    , basic_g(ifm)%pi0                       &
           , basic_g(ifm)%pp                       , basic_g(ifm)%rv                        &
-          , leaf_g(ifm)%seatp                     , leaf_g(ifm)%seatf                      &
-          , leaf_g(ifm)%soil_water                , leaf_g(ifm)%soil_energy                &
-          , leaf_g(ifm)%soil_text                 , leaf_g(ifm)%sfcwater_mass              &
-          , leaf_g(ifm)%sfcwater_energy           , leaf_g(ifm)%sfcwater_depth             &
-          , leaf_g(ifm)%ustar                     , leaf_g(ifm)%tstar                      &
-          , leaf_g(ifm)%rstar                     , leaf_g(ifm)%veg_fracarea               &
+          , scratch%vt3do                         , leaf_g(ifm)%seatp                      &
+          , leaf_g(ifm)%seatf                     , leaf_g(ifm)%soil_water                 &
+          , leaf_g(ifm)%soil_energy               , leaf_g(ifm)%soil_text                  &
+          , leaf_g(ifm)%sfcwater_mass             , leaf_g(ifm)%sfcwater_energy            &
+          , leaf_g(ifm)%sfcwater_depth            , leaf_g(ifm)%ustar                      &
+          , leaf_g(ifm)%tstar                     , leaf_g(ifm)%rstar                      &
+          , leaf_g(ifm)%cstar                     , leaf_g(ifm)%veg_fracarea               &
           , leaf_g(ifm)%veg_lai                   , leaf_g(ifm)%veg_tai                    &
           , leaf_g(ifm)%veg_rough                 , leaf_g(ifm)%veg_height                 &
           , leaf_g(ifm)%veg_albedo                , leaf_g(ifm)%patch_area                 &
@@ -275,14 +282,15 @@ subroutine geonest_nofile(ngra,ngrb)
           , leaf_g(ifm)%sfcwater_nlev             , leaf_g(ifm)%stom_resist                &
           , leaf_g(ifm)%ground_rsat               , leaf_g(ifm)%ground_rvap                &
           , leaf_g(ifm)%veg_water                 , leaf_g(ifm)%veg_temp                   &
-          , leaf_g(ifm)%can_rvap                  , leaf_g(ifm)%can_temp                   &
-          , leaf_g(ifm)%veg_ndvip                 , leaf_g(ifm)%veg_ndvic                  &
-          , leaf_g(ifm)%veg_ndvif                 , leaf_g(ifm)%snow_mass                  &
-          , leaf_g(ifm)%snow_depth                , scratch%vt2da                          &
-          , scratch%vt2db                         , scratch%vt2dc                          &
-          , scratch%vt2dd                         , scratch%vt2de                          &
-          , grid_g(ifm)%glat                      , grid_g(ifm)%glon                       &
-          , grid_g(ifm)%topzo                     , grid_g(ifm)%flpw                       )
+          , leaf_g(ifm)%can_rvap                  , leaf_g(ifm)%can_co2                    &
+          , leaf_g(ifm)%can_temp                  , leaf_g(ifm)%veg_ndvip                  &
+          , leaf_g(ifm)%veg_ndvic                 , leaf_g(ifm)%veg_ndvif                  &
+          , leaf_g(ifm)%snow_mass                 , leaf_g(ifm)%snow_depth                 &
+          , scratch%vt2da                         , scratch%vt2db                          &
+          , scratch%vt2dc                         , scratch%vt2dd                          &
+          , scratch%vt2de                         , grid_g(ifm)%glat                       &
+          , grid_g(ifm)%glon                      , grid_g(ifm)%topzo                      &
+          , grid_g(ifm)%flpw                      )
 
      ! Assignment section for NOFILE leaf-2 variables
 
@@ -343,6 +351,8 @@ subroutine geonest_nofile(ngra,ngrb)
                          leaf_g(icm)%veg_temp        (ic,jc,ipat) 
                     leaf_g(ifm)%can_rvap             (i,j,ipat) = &
                          leaf_g(icm)%can_rvap        (ic,jc,ipat)
+                    leaf_g(ifm)%can_co2              (i,j,ipat) = &
+                         leaf_g(icm)%can_co2         (ic,jc,ipat)
                     leaf_g(ifm)%can_temp             (i,j,ipat) = &
                          leaf_g(icm)%can_temp        (ic,jc,ipat) 
                     leaf_g(ifm)%veg_ndvic            (i,j,ipat) = &
@@ -383,10 +393,11 @@ subroutine geonest_nofile(ngra,ngrb)
      call sfcinit_nofile_user(nnzp(ifm),nnxp(ifm),nnyp(ifm),nzg,nzs,npatch,ifm             &
                , basic_g(ifm)%theta                  , basic_g(ifm)%pi0                    &
                , basic_g(ifm)%pp                     , basic_g(ifm)%rv                     &
-               , leaf_g(ifm)%soil_water              , leaf_g(ifm)%soil_energy             &
-               , leaf_g(ifm)%soil_text               , leaf_g(ifm)%sfcwater_mass           &
-               , leaf_g(ifm)%sfcwater_energy         , leaf_g(ifm)%sfcwater_depth          &
-               , leaf_g(ifm)%ustar                   , leaf_g(ifm)%tstar                   &
+               , scratch%vt3do                       , leaf_g(ifm)%soil_water              &
+               , leaf_g(ifm)%soil_energy             , leaf_g(ifm)%soil_text               &
+               , leaf_g(ifm)%sfcwater_mass           , leaf_g(ifm)%sfcwater_energy         &
+               , leaf_g(ifm)%sfcwater_depth          , leaf_g(ifm)%ustar                   &
+               , leaf_g(ifm)%tstar                   , leaf_g(ifm)%rstar                   &
                , leaf_g(ifm)%rstar                   , leaf_g(ifm)%veg_fracarea            &
                , leaf_g(ifm)%veg_lai                 , leaf_g(ifm)%veg_tai                 &
                , leaf_g(ifm)%veg_rough               , leaf_g(ifm)%veg_height              &
@@ -396,14 +407,15 @@ subroutine geonest_nofile(ngra,ngrb)
                , leaf_g(ifm)%sfcwater_nlev           , leaf_g(ifm)%stom_resist             &
                , leaf_g(ifm)%ground_rsat             , leaf_g(ifm)%ground_rvap             &
                , leaf_g(ifm)%veg_water               , leaf_g(ifm)%veg_temp                &
-               , leaf_g(ifm)%can_rvap                , leaf_g(ifm)%can_temp                & 
-               , leaf_g(ifm)%veg_ndvip               , leaf_g(ifm)%veg_ndvic               & 
-               , leaf_g(ifm)%veg_ndvif               , leaf_g(ifm)%snow_mass               &
-               , leaf_g(ifm)%snow_depth              , scratch%vt2da                       &
-               , scratch%vt2db                       , scratch%vt2dc                       &
-               , scratch%vt2dd                       , scratch%vt2de                       &
-               , grid_g(ifm)%glat                    , grid_g(ifm)%glon                    &
-               , grid_g(ifm)%topzo                   , grid_g(ifm)%flpw                    )
+               , leaf_g(ifm)%can_rvap                , leaf_g(ifm)%can_co2                 &
+               , leaf_g(ifm)%can_temp                , leaf_g(ifm)%veg_ndvip               &
+               , leaf_g(ifm)%veg_ndvic               , leaf_g(ifm)%veg_ndvif               &
+               , leaf_g(ifm)%snow_mass               , leaf_g(ifm)%snow_depth              &
+               , scratch%vt2da                       , scratch%vt2db                       &
+               , scratch%vt2dc                       , scratch%vt2dd                       &
+               , scratch%vt2de                       , grid_g(ifm)%glat                    &
+               , grid_g(ifm)%glon                    , grid_g(ifm)%topzo                   &
+               , grid_g(ifm)%flpw                    )
 
   end do
 

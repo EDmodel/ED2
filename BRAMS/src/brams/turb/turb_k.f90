@@ -148,7 +148,8 @@ subroutine diffuse()
              ,scratch%vt3dh            ,scratch%vt3di            ,scratch%vt3dj            &
              ,scratch%vt3dk            ,scratch%scr1             ,scratch%scr2             &
              ,basic_g(ngrid)%dn0       ,grid_g(ngrid)%rtgt       ,grid_g(ngrid)%dxt        &
-             ,grid_g(ngrid)%dyt        ,grid_g(ngrid)%flpw       ,mynum                    )
+             ,grid_g(ngrid)%dyt        ,grid_g(ngrid)%flpw       ,turb_g(ngrid)%akscal     &
+             ,mynum                    )
 
       !------------------------------------------------------------------------------------!
       !    If CATT is on, we need to find specific horizontal diffusion coefficients for   !
@@ -158,7 +159,7 @@ subroutine diffuse()
          call mxdefm_tracer(mzp,mxp,myp,ia,iz,ja,jz,ibcon,jdim                             &
              ,scratch%vt3dh            ,scratch%scr3             ,basic_g(ngrid)%dn0       &
              ,grid_g(ngrid)%dxt        ,grid_g(ngrid)%dyt        ,grid_g(ngrid)%flpw       &
-             ,mynum                                                                        )
+             ,turb_g(ngrid)%akscal     ,mynum                                              )
       end if
    end if
    !---------------------------------------------------------------------------------------!
@@ -358,6 +359,8 @@ subroutine diffuse()
             call atob(mxp*myp,turb_g(ngrid)%sflux_t,scratch%vt2da)
          case ('RTP')
             call atob(mxp*myp,turb_g(ngrid)%sflux_r,scratch%vt2da)
+         case ('CO2P')
+            call atob(mxp*myp,turb_g(ngrid)%sflux_c,scratch%vt2da)
          end select
       end if
 

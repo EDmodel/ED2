@@ -121,7 +121,7 @@ subroutine copy_in_bramsmpi(master_num_b,mchnum_b,mynum_b,nmachs_b,machs_b,ipara
 
   use ed_node_coms,only: master_num,mchnum,mynum,nmachs,machs,nnodetot,recvnum,sendnum
   use ed_para_coms,only: iparallel,mainnum
-  use max_dims,only:maxgrds
+  use ed_max_dims,only:maxgrds
   use grid_coms, only : ngrids,nnxp,nnyp
 
   implicit none
@@ -198,24 +198,24 @@ subroutine init_node_work
 
         if(nm==mynum) then
            
-           call MPI_Recv(mmxp(ifm),1,MPI_INTEGER,mainnum,190,MPI_COMM_WORLD,status,ierr)
-           call MPI_Recv(mmyp(ifm),1,MPI_INTEGER,mainnum,191,MPI_COMM_WORLD,status,ierr)
+           call MPI_Recv(mmxp(ifm),1,MPI_INTEGER,mainnum,61,MPI_COMM_WORLD,status,ierr)
+           call MPI_Recv(mmyp(ifm),1,MPI_INTEGER,mainnum,62,MPI_COMM_WORLD,status,ierr)
 
-           call MPI_Recv(iwest(ifm),1,MPI_INTEGER,mainnum,1900,MPI_COMM_WORLD,status,ierr)
-           call MPI_Recv(jsouth(ifm),1,MPI_INTEGER,mainnum,1901,MPI_COMM_WORLD,status,ierr)
+           call MPI_Recv(iwest(ifm),1,MPI_INTEGER,mainnum,63,MPI_COMM_WORLD,status,ierr)
+           call MPI_Recv(jsouth(ifm),1,MPI_INTEGER,mainnum,64,MPI_COMM_WORLD,status,ierr)
 
            
            call ed_nullify_work(work_e(ifm))
            call ed_alloc_work(work_e(ifm),mmxp(ifm),mmyp(ifm))
 
-           call MPI_Recv(work_e(ifm)%glat,mmxp(ifm)*mmyp(ifm),MPI_REAL,mainnum,192,MPI_COMM_WORLD,status,ierr)
-           call MPI_Recv(work_e(ifm)%glon,mmxp(ifm)*mmyp(ifm),MPI_REAL,mainnum,193,MPI_COMM_WORLD,status,ierr)
-           call MPI_Recv(work_e(ifm)%work,mmxp(ifm)*mmyp(ifm),MPI_REAL,mainnum,194,MPI_COMM_WORLD,status,ierr)
-           call MPI_Recv(work_e(ifm)%land,mmxp(ifm)*mmyp(ifm),MPI_LOGICAL,mainnum,195,MPI_COMM_WORLD,status,ierr)
-           call MPI_Recv(work_e(ifm)%landfrac,mmxp(ifm)*mmyp(ifm),MPI_REAL,mainnum,196,MPI_COMM_WORLD,status,ierr)
-           call MPI_Recv(work_e(ifm)%ntext,mmxp(ifm)*mmyp(ifm),MPI_INTEGER,mainnum,197,MPI_COMM_WORLD,status,ierr)
-           call MPI_Recv(work_e(ifm)%xatm,mmxp(ifm)*mmyp(ifm),MPI_INTEGER,mainnum,198,MPI_COMM_WORLD,status,ierr)
-           call MPI_Recv(work_e(ifm)%yatm,mmxp(ifm)*mmyp(ifm),MPI_INTEGER,mainnum,199,MPI_COMM_WORLD,status,ierr)
+           call MPI_Recv(work_e(ifm)%glat,mmxp(ifm)*mmyp(ifm),MPI_REAL,mainnum,65,MPI_COMM_WORLD,status,ierr)
+           call MPI_Recv(work_e(ifm)%glon,mmxp(ifm)*mmyp(ifm),MPI_REAL,mainnum,66,MPI_COMM_WORLD,status,ierr)
+           call MPI_Recv(work_e(ifm)%work,mmxp(ifm)*mmyp(ifm),MPI_REAL,mainnum,67,MPI_COMM_WORLD,status,ierr)
+           call MPI_Recv(work_e(ifm)%land,mmxp(ifm)*mmyp(ifm),MPI_LOGICAL,mainnum,68,MPI_COMM_WORLD,status,ierr)
+           call MPI_Recv(work_e(ifm)%landfrac,mmxp(ifm)*mmyp(ifm),MPI_REAL,mainnum,69,MPI_COMM_WORLD,status,ierr)
+           call MPI_Recv(work_e(ifm)%ntext,mmxp(ifm)*mmyp(ifm),MPI_INTEGER,mainnum,70,MPI_COMM_WORLD,status,ierr)
+           call MPI_Recv(work_e(ifm)%xatm,mmxp(ifm)*mmyp(ifm),MPI_INTEGER,mainnum,71,MPI_COMM_WORLD,status,ierr)
+           call MPI_Recv(work_e(ifm)%yatm,mmxp(ifm)*mmyp(ifm),MPI_INTEGER,mainnum,72,MPI_COMM_WORLD,status,ierr)
 
         endif
 
@@ -337,7 +337,7 @@ subroutine init_master_work(ipara)
            end do jloop
         end do iloop
         
-        call get_work(ifm,xmax,ymax)
+        call edcp_get_work(ifm,xmax,ymax,iwest,ieast,jsouth,jnorth)
         
         offset=offset+npolys
         npolys=count(work_e(ifm)%land)
@@ -352,20 +352,20 @@ subroutine init_master_work(ipara)
 
            ! Send the work grids to the nodes
 
-           call MPI_Send(xmax,1,MPI_INTEGER,machnum(nm),190,MPI_COMM_WORLD,ierr)
-           call MPI_Send(ymax,1,MPI_INTEGER,machnum(nm),191,MPI_COMM_WORLD,ierr)
+           call MPI_Send(xmax,1,MPI_INTEGER,machnum(nm),61,MPI_COMM_WORLD,ierr)
+           call MPI_Send(ymax,1,MPI_INTEGER,machnum(nm),62,MPI_COMM_WORLD,ierr)
            
-           call MPI_Send(iwest,1,MPI_INTEGER,machnum(nm),1900,MPI_COMM_WORLD,ierr)
-           call MPI_Send(jsouth,1,MPI_INTEGER,machnum(nm),1901,MPI_COMM_WORLD,ierr)
+           call MPI_Send(iwest,1,MPI_INTEGER,machnum(nm),63,MPI_COMM_WORLD,ierr)
+           call MPI_Send(jsouth,1,MPI_INTEGER,machnum(nm),64,MPI_COMM_WORLD,ierr)
 
-           call MPI_Send(work_e(ifm)%glat,xmax*ymax,MPI_REAL,machnum(nm),192,MPI_COMM_WORLD,ierr)
-           call MPI_Send(work_e(ifm)%glon,xmax*ymax,MPI_REAL,machnum(nm),193,MPI_COMM_WORLD,ierr)
-           call MPI_Send(work_e(ifm)%work,xmax*ymax,MPI_REAL,machnum(nm),194,MPI_COMM_WORLD,ierr)
-           call MPI_Send(work_e(ifm)%land,xmax*ymax,MPI_LOGICAL,machnum(nm),195,MPI_COMM_WORLD,ierr)
-           call MPI_Send(work_e(ifm)%landfrac,xmax*ymax,MPI_REAL,machnum(nm),196,MPI_COMM_WORLD,ierr)
-           call MPI_Send(work_e(ifm)%ntext,xmax*ymax,MPI_INTEGER,machnum(nm),197,MPI_COMM_WORLD,ierr)
-           call MPI_Send(work_e(ifm)%xatm,xmax*ymax,MPI_INTEGER,machnum(nm),198,MPI_COMM_WORLD,ierr)
-           call MPI_Send(work_e(ifm)%yatm,xmax*ymax,MPI_INTEGER,machnum(nm),199,MPI_COMM_WORLD,ierr)
+           call MPI_Send(work_e(ifm)%glat,xmax*ymax,MPI_REAL,machnum(nm),65,MPI_COMM_WORLD,ierr)
+           call MPI_Send(work_e(ifm)%glon,xmax*ymax,MPI_REAL,machnum(nm),66,MPI_COMM_WORLD,ierr)
+           call MPI_Send(work_e(ifm)%work,xmax*ymax,MPI_REAL,machnum(nm),67,MPI_COMM_WORLD,ierr)
+           call MPI_Send(work_e(ifm)%land,xmax*ymax,MPI_LOGICAL,machnum(nm),68,MPI_COMM_WORLD,ierr)
+           call MPI_Send(work_e(ifm)%landfrac,xmax*ymax,MPI_REAL,machnum(nm),69,MPI_COMM_WORLD,ierr)
+           call MPI_Send(work_e(ifm)%ntext,xmax*ymax,MPI_INTEGER,machnum(nm),70,MPI_COMM_WORLD,ierr)
+           call MPI_Send(work_e(ifm)%xatm,xmax*ymax,MPI_INTEGER,machnum(nm),71,MPI_COMM_WORLD,ierr)
+           call MPI_Send(work_e(ifm)%yatm,xmax*ymax,MPI_INTEGER,machnum(nm),72,MPI_COMM_WORLD,ierr)
     
            call ed_dealloc_work(work_e(ifm))
         else
@@ -417,3 +417,5 @@ subroutine init_master_work(ipara)
 
   return
 end subroutine init_master_work
+!==========================================================================================!
+!==========================================================================================!

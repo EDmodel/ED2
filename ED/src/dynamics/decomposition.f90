@@ -1,4 +1,4 @@
-subroutine soil_respiration_ar(csite,ipa)
+subroutine soil_respiration(csite,ipa)
 
   use ed_state_vars,only:sitetype,patchtype
   use soil_coms, only: soil
@@ -42,10 +42,10 @@ subroutine soil_respiration_ar(csite,ipa)
        csite%A_decomp(ipa))
 
   ! Compute nitrogen immobilization factor
-  call resp_f_decomp_ar(csite,ipa, Lc)
+  call resp_f_decomp(csite,ipa, Lc)
 
   ! Compute heterotrophic respiration
-  call resp_rh_ar(csite,ipa, Lc)
+  call resp_rh(csite,ipa, Lc)
 
   ! Update averaged variables
   csite%dmean_A_decomp(ipa) = csite%dmean_A_decomp(ipa) + csite%A_decomp(ipa)
@@ -54,7 +54,7 @@ subroutine soil_respiration_ar(csite,ipa)
   csite%mean_rh(ipa) = csite%mean_rh(ipa) + csite%rh(ipa)
 
   return
-end subroutine soil_respiration_ar
+end subroutine soil_respiration
 
 !=====================================================================
 
@@ -67,7 +67,7 @@ subroutine resp_index(nsoil,tempk,theta,slmsts,resp_weight)
 
   integer :: nsoil
   real :: tempk
-  real(kind=8) :: theta
+  real :: theta
   real :: slmsts
   real :: resp_weight
   real :: temperature_limitation
@@ -79,7 +79,7 @@ subroutine resp_index(nsoil,tempk,theta,slmsts,resp_weight)
        (tempk-318.15)))
 
   ! moisture dependence
-  Ws = real(theta/dble(slmsts))
+  Ws = theta/slmsts
 
 
 
@@ -98,7 +98,7 @@ end subroutine resp_index
 
 !===================================================================
 
-subroutine resp_f_decomp_ar(csite,ipa,Lc)
+subroutine resp_f_decomp(csite,ipa,Lc)
 
   use ed_state_vars,only: sitetype
   use decomp_coms, only: r_stsc, N_immobil_supply_scale, K1,   &
@@ -136,11 +136,11 @@ subroutine resp_f_decomp_ar(csite,ipa,Lc)
   endif
 
   return
-end subroutine resp_f_decomp_ar
+end subroutine resp_f_decomp
 
 !=============================================================
 
-subroutine resp_rh_ar(csite,ipa,Lc)
+subroutine resp_rh(csite,ipa,Lc)
 
   use decomp_coms, only: K1, K2, K3, r_fsc, r_ssc, r_stsc, cwd_frac
   use ed_state_vars,only:sitetype
@@ -168,11 +168,11 @@ subroutine resp_rh_ar(csite,ipa,Lc)
        cwd_frac
 
   return
-end subroutine resp_rh_ar
+end subroutine resp_rh
 
 !==========================================================================
 
-subroutine update_C_and_N_pools_ar(cgrid)
+subroutine update_C_and_N_pools(cgrid)
   
   use ed_state_vars,only:edtype,polygontype,sitetype
   use decomp_coms, only: K1, K2, K3, r_stsc
@@ -274,4 +274,4 @@ subroutine update_C_and_N_pools_ar(cgrid)
   enddo
   
   return
-end subroutine update_C_and_N_pools_ar
+end subroutine update_C_and_N_pools

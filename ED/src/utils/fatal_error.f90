@@ -6,7 +6,7 @@ subroutine fatal_error(reason,subr,file)
 !being frozen.                                                                             !
 !------------------------------------------------------------------------------------------!
    use ed_node_coms, only: nnodetot,mynum
-   use misc_coms, only: ied_init_mode
+   use ed_misc_coms, only: ied_init_mode
    implicit none
    character(len=*), intent(in) :: reason
    character(len=*), intent(in) :: subr,file
@@ -72,7 +72,16 @@ subroutine opspec_fatal(reason,opssub)
    write (unit=*,fmt='(a)')       ' '
    return
 end subroutine opspec_fatal
+!==========================================================================================!
+!==========================================================================================!
 
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine warning(reason,subr,file)
 !------------------------------------------------------------------------------------------!
 !  Warning message, does not exit                                                          !

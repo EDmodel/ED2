@@ -24,8 +24,6 @@ module allometry
    real, parameter :: b2l   =   0.605
    real, parameter :: c2l   =   0.848
    real, parameter :: d2l   =   0.438
-   !----- Constants for root depth --------------------------------------------------------!
-   real(kind=8), parameter :: volume_min = 1.d-24
    !---------------------------------------------------------------------------------------!
 
    contains
@@ -33,17 +31,17 @@ module allometry
    !=======================================================================================!
    real function h2dbh(h,ipft)
 
-      use pft_coms, only:  rho     & ! intent(in)
-                         , b1Ht    & ! intent(in), lookup table
-                         , b2Ht    & ! intent(in), lookup table
-                         , hgt_ref ! ! intent(in), lookup table
+      use pft_coms, only:  is_tropical & ! intent(in)
+                         , b1Ht        & ! intent(in), lookup table
+                         , b2Ht        & ! intent(in), lookup table
+                         , hgt_ref     ! ! intent(in), lookup table
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: h
       integer, intent(in) :: ipft
       !------------------------------------------------------------------------------------!
-      if (rho(ipft) /= 0.0)then  ! Tropical 
+      if (is_tropical(ipft)) then
          h2dbh = 10.0**((log10(h)-0.37)/0.64)
       else ! Temperate
          h2dbh = log(1.0-(h-hgt_ref(ipft))/b1Ht(ipft))/b2Ht(ipft)
@@ -63,11 +61,12 @@ module allometry
    !=======================================================================================!
    real function dbh2bd(dbh,h,ipft)
 
-      use pft_coms, only:  rho     & ! intent(in), lookup table
-                         , C2B     & ! intent(in)
-                         , b1Bs    & ! intent(in), lookup table
-                         , b2Bs    & ! intent(in), lookup table
-                         , max_dbh ! ! intent(in), lookup table
+      use pft_coms, only:  is_tropical & ! intent(in), lookup table
+                         , rho         & ! intent(in), lookup table
+                         , C2B         & ! intent(in)
+                         , b1Bs        & ! intent(in), lookup table
+                         , b2Bs        & ! intent(in), lookup table
+                         , max_dbh     ! ! intent(in), lookup table
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
@@ -77,7 +76,7 @@ module allometry
       real                :: p,r,qq
       !------------------------------------------------------------------------------------!
 
-      if (rho(ipft) /= 0.0) then !----- Tropical PFT --------------------------------------!
+      if (is_tropical(ipft)) then
 
          if (dbh > max_dbh(ipft)) then
             p  = a1 + c1d * log(h) + d1d * log(rho(ipft))
@@ -108,11 +107,12 @@ module allometry
    !=======================================================================================!
    !=======================================================================================!
    real function dbh2bl(dbh,ipft)
-      use pft_coms, only:  rho     & ! intent(in), lookup table
-                         , max_dbh & ! intent(in), lookup table
-                         , C2B     & ! intent(in)
-                         , b1Bl    & ! intent(in), lookup table
-                         , b2Bl    ! ! intent(in), lookup table
+      use pft_coms, only:  is_tropical & ! intent(in), lookup table
+                         , rho         & ! intent(in), lookup table
+                         , max_dbh     & ! intent(in), lookup table
+                         , C2B         & ! intent(in)
+                         , b1Bl        & ! intent(in), lookup table
+                         , b2Bl        ! ! intent(in), lookup table
    
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -123,7 +123,7 @@ module allometry
       real                :: p,r,qq
       !------------------------------------------------------------------------------------!
 
-      if (rho(ipft) /= 0.0) then !----- Tropical PFT --------------------------------------!
+      if (is_tropical(ipft)) then
          p  = a1 + c1l * gg * log(10.0) + d1l * log(rho(ipft))
          r  = ( (a2l - a1) + gg * log(10.0) * (c2l - c1l) + log(rho(ipft))                 &
               * (d2l - d1l)) * (1.0/log(dcrit))
@@ -154,13 +154,21 @@ module allometry
    !    Canopy Area allometry from Dietze and Clark (2008).                                !
    !---------------------------------------------------------------------------------------!
    real function dbh2ca(dbh,ipft)
+      use pft_coms, only : is_tropical,is_grass
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
       integer, intent(in) :: ipft
+      !----- Internal variables -----------------------------------------------------------!
+      real :: hite ! Only testing...
       !------------------------------------------------------------------------------------!
-      if(dbh < tiny(1.0)) then
+      if (dbh < tiny(1.0)) then
          dbh2ca = 0.0
+      !----- Based on Poorter et al. (2006) -----------------------------------------------!
+      !elseif(is_tropical(ipft) .or. is_grass(ipft)) then
+      !   hite   = dbh2h(ipft,dbh)
+      !   dbh2ca = 0.156766*hite**1.888
+      !----- Based on Dietze and Clark (2008). --------------------------------------------!
       else
          dbh2ca = 2.490154*dbh**0.8068806
       end if
@@ -184,7 +192,6 @@ module allometry
       real   , intent(in) :: dbh
       integer, intent(in) :: ipft
       !----- Local variables --------------------------------------------------------------!
-      real(kind=8)        :: volume8
       real                :: volume
       !------------------------------------------------------------------------------------!
 
@@ -192,10 +199,7 @@ module allometry
       case(1,5) !----- Grasses get a fixed rooting depth of 70 cm. ------------------------!
          calc_root_depth = -0.7
       case default
-         !----- Using double precision to avoid FPE when both dbh and h are tiny. ---------!
-         volume8          = max(volume_min,dble(h) * 0.65 * dble(pi1)                      &
-                          * (dble(dbh)*0.11)*(dble(dbh)*0.11))
-         volume           = sngl(volume8)
+         volume           = h * 0.65 * pi1 * (dbh*0.11)*(dbh*0.11)
          calc_root_depth = -10.0**(0.545 + 0.277*log10(volume))
       end select
 
@@ -239,18 +243,19 @@ module allometry
    !=======================================================================================!
    !=======================================================================================!
    real function dbh2h(ipft, dbh)
-      use pft_coms, only:  rho      & ! intent(in)
-                         , max_dbh  & ! intent(in)
-                         , b1Ht     & ! intent(in)
-                         , b2Ht     & ! intent(in)
-                         , hgt_ref  ! ! intent(in)
+      use pft_coms, only:  is_tropical & ! intent(in)
+                         , rho         & ! intent(in)
+                         , max_dbh     & ! intent(in)
+                         , b1Ht        & ! intent(in)
+                         , b2Ht        & ! intent(in)
+                         , hgt_ref     ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer , intent(in) :: ipft
       real    , intent(in) :: dbh
       !------------------------------------------------------------------------------------!
 
-      if (rho(ipft) /= 0.0) then !----- Tropical PFT allometry ----------------------------!
+      if (is_tropical(ipft)) then
          if (dbh <= max_dbh(ipft)) then
             !----- This means that height is below its maximum. ---------------------------!
             dbh2h = 10.0 ** (log10(dbh) * 0.64 + 0.37)
@@ -274,6 +279,64 @@ module allometry
 
    !=======================================================================================!
    !=======================================================================================!
+   !    This function finds the trunk height, based on Antonarakis (2008) estimation for   !
+   ! secondary forests.                                                                    !
+   !---------------------------------------------------------------------------------------!
+   real function h2trunkh(h)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real , intent(in) :: h
+      !------------------------------------------------------------------------------------!
+      
+      h2trunkh = 0.4359 * h ** 0.878
+
+      return
+   end function h2trunkh
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine finds the total above ground biomass corresponding to wood (stem  !
+   ! + branches).                                                                          !
+   !---------------------------------------------------------------------------------------!
+   real function wood_biomass(bdead, balive, pft, hite)
+      use pft_coms, only:  agf_bs          & ! intent(in)
+                         , q               & ! intent(in)
+                         , qsw             ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real    , intent(in) :: bdead
+      real    , intent(in) :: balive
+      real    , intent(in) :: hite
+      integer , intent(in) :: pft
+      !----- Local variables --------------------------------------------------------------!
+      real                 :: bstem
+      real                 :: bsapwood
+      !------------------------------------------------------------------------------------!
+
+      bstem        = agf_bs * bdead
+      bsapwood     = agf_bs * balive * qsw(pft) * hite / (1.0 + q(pft) + qsw(pft) * hite)
+      wood_biomass = bstem + bsapwood
+      return
+   end function wood_biomass
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine finds the total above ground biomass (wood + leaves)              !
+   !---------------------------------------------------------------------------------------!
    real function ed_biomass(bdead, balive, bleaf, pft, hite, bstorage)
       use pft_coms, only:  agf_bs & ! intent(in)
                          , q      & ! intent(in)
@@ -287,13 +350,12 @@ module allometry
       real    , intent(in) :: bstorage
       integer , intent(in) :: pft
       !----- Local variables --------------------------------------------------------------!
-      real                 :: bstem
-      real                 :: bsw
+      real                 :: bwood
       !------------------------------------------------------------------------------------!
 
-      bstem      = agf_bs * bdead
-      bsw        = agf_bs * balive * qsw(pft) * hite / (1.0 + q(pft) + qsw(pft) * hite)
-      ed_biomass = bstem + bleaf + bsw
+      bwood      = wood_biomass(bdead, balive, pft, hite)
+      ed_biomass = bleaf + bwood
+
       return
    end function ed_biomass
    !=======================================================================================!
@@ -308,11 +370,12 @@ module allometry
    !=======================================================================================!
    real function bd2dbh(ipft, bdead)
 
-      use pft_coms, only:  rho     & ! intent(in), lookup table
-                         , b1Bs    & ! intent(in), lookup table
-                         , b2Bs    & ! intent(in), lookup table
-                         , C2B     & ! intent(in)
-                         , max_dbh ! ! intent(in), lookup table
+      use pft_coms, only:  is_tropical & ! intent(in), lookup table
+                         , rho         & ! intent(in), lookup table
+                         , b1Bs        & ! intent(in), lookup table
+                         , b2Bs        & ! intent(in), lookup table
+                         , C2B         & ! intent(in)
+                         , max_dbh     ! ! intent(in), lookup table
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -326,7 +389,7 @@ module allometry
       real :: h_max
       !------------------------------------------------------------------------------------!
 
-      if (rho(ipft) /= 0.0) then !----- Tropical PFT --------------------------------------!
+      if (is_tropical(ipft)) then
 
          p = a1 + c1d * gg * log(10.0) + d1d * log(rho(ipft))
          r = ( (a2d - a1 ) + gg * log(10.0) * (c2d - c1d) + log(rho(ipft))                 &
@@ -350,6 +413,135 @@ module allometry
 
       return
    end function bd2dbh
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine estimates the tree area indices, namely leaf, branch(plus twigs), !
+   ! and stem.  For the leaf area index (LAI), we use the specific leaf area (SLA), a      !
+   ! constant.  The wood area index WAI is found using the model proposed by Järvelä       !
+   ! (2004) to find the specific projected area.                                           !
+   !                                                                                       !
+   ! Järvelä, J., 2004: Determination of flow resistance caused by non-submerged woody     !
+   !                    vegetation. Intl. J. River Basin Management, 2, 61-70.             !
+   !                                                                                       !
+   !     There is also a very simplified estimation of branch area index, which is just a  !
+   ! simple curve adjusted with the information I found in Conijn (1995), which is actual- !
+   ! ly for the Sahel...                                                                   !
+   !                                                                                       !
+   ! Conijn, J.G., 1995: RECAFS: a model for resource competition and cycling in agro-     !
+   !                     forestry systems. Rapports Production Soudano-Sahélienne.         !
+   !                     Wageningen, 1995.                                                 !
+   !---------------------------------------------------------------------------------------!
+   subroutine area_indices(nplant,bleaf,bdead,balive,dbh,hite,pft,sla,lai,wpa,wai)
+      use pft_coms    , only : is_tropical     & ! intent(in)
+                             , is_grass        & ! intent(in)
+                             , rho             & ! intent(in)
+                             , C2B             & ! intent(in)
+                             , horiz_branch    & ! intent(in)
+                             , rbranch         & ! intent(in)
+                             , rdiamet         & ! intent(in)
+                             , rlength         & ! intent(in)
+                             , diammin         & ! intent(in)
+                             , ntrunk          & ! intent(in)
+                             , conijn_a        & ! intent(in)
+                             , conijn_b        & ! intent(in)
+                             , conijn_c        & ! intent(in)
+                             , conijn_d        ! ! intent(in)
+      use consts_coms , only : onethird        & ! intent(in)
+                             , pi1             ! ! intent(in)
+      use rk4_coms    , only : ibranch_thermo  ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      integer , intent(in)  :: pft     ! Plant functional type               [         ---]
+      real    , intent(in)  :: nplant  ! Number of plants                    [    plant/m²]
+      real    , intent(in)  :: bleaf   ! Specific leaf biomass               [   kgC/plant]
+      real    , intent(in)  :: bdead   ! Specific structural                 [   kgC/plant]
+      real    , intent(in)  :: balive  ! Specific live tissue biomass        [   kgC/plant]
+      real    , intent(in)  :: dbh     ! Diameter at breast height           [          cm]
+      real    , intent(in)  :: hite    ! Plant height                        [           m]
+      real    , intent(in)  :: sla     ! Specific leaf area                  [m²leaf/plant]
+      real    , intent(out) :: lai     ! Leaf area index                     [   m²leaf/m²]
+      real    , intent(out) :: wpa     ! Wood projected area                 [   m²wood/m²]
+      real    , intent(out) :: wai     ! Wood area index                     [   m²wood/m²]
+      !----- Local variables --------------------------------------------------------------!
+      real                  :: bwood   ! Wood biomass                        [   kgC/plant]
+      real                  :: swa     ! Specific wood area                  [    m²/plant]
+      real                  :: bdiamet ! Diameter of current branch          [           m]
+      real                  :: blength ! Length of each branch of this order [           m]
+      real                  :: nbranch ! Number of branches of this order    [        ----]
+      !----- External functions -----------------------------------------------------------!
+      real    , external    :: errorfun ! Error function.
+      !------------------------------------------------------------------------------------!
+      
+      !----- First, we compute the LAI ----------------------------------------------------!
+      lai = bleaf * nplant * sla
+      
+      !------------------------------------------------------------------------------------!
+      !     Here we check whether we need to compute the branch, stem, and effective       !
+      ! branch area indices.  These are only needed when branch thermodynamics is used,    !
+      ! otherwise, simply assign zeroes to them.                                           !
+      !------------------------------------------------------------------------------------!
+      select case (ibranch_thermo)
+      !----- Ignore branches and trunk. ---------------------------------------------------!
+      case (0) 
+         wpa  = 0.
+         wai  = 0.
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Use curve fit based on Conijn (1995) model. ----------------------------------!
+      case (1) 
+         !---------------------------------------------------------------------------------!
+         !     Finding the total wood biomass and the fraction corresponding to branches.  !
+         !---------------------------------------------------------------------------------!
+         bwood   = wood_biomass(bdead, balive, pft, hite)
+         if (is_grass(pft)) then
+            swa = conijn_a(pft)
+         else
+            swa = conijn_a(pft)                                                            &
+                + conijn_b(pft) * errorfun(conijn_c(pft)*C2B*bwood + conijn_d(pft))
+         end if
+         wai = nplant * bwood * swa
+         wpa = wai * dbh2ca(dbh,pft)
+         !---------------------------------------------------------------------------------!
+
+
+      !----- Use  Järvelä (2004) method. --------------------------------------------------!
+      case (2) 
+         !----- Now we check the first branching height, that will be the trunk height. ---!
+         blength = h2trunkh(hite)
+         !----- Main branch diameter is DBH (in meters) -----------------------------------!
+         bdiamet = dbh * 0.01
+         !----- Number of main "branches" (trunk), this is usually 1. ---------------------!
+         nbranch = ntrunk(pft)
+
+         swa = nbranch * blength * bdiamet
+         !---------------------------------------------------------------------------------!
+         !     Initialize branch values with trunk.                                        !
+         !---------------------------------------------------------------------------------!
+         branchloop: do
+            if (bdiamet < diammin(pft)) exit branchloop
+            !----- Updating branch habits. ------------------------------------------------!
+            bdiamet = bdiamet / rdiamet(pft)
+            blength = blength / rlength(pft)
+            nbranch = nbranch * rbranch(pft)
+            swa     = swa + nbranch * blength * bdiamet
+         end do branchloop
+         !----- The wood projected area and the wood area index. --------------------------!
+         wpa = nplant       * swa
+         wai = horiz_branch(pft) * wpa
+      !------------------------------------------------------------------------------------!
+      end select
+
+      return
+   end subroutine area_indices
    !=======================================================================================!
    !=======================================================================================!
 end module allometry

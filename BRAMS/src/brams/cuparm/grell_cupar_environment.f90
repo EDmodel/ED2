@@ -14,10 +14,10 @@
 !==========================================================================================!
 !   This subroutine computes the values of some thermodynamic variables at the cloud level !
 !------------------------------------------------------------------------------------------!
-subroutine grell_thermo_cldlev(mkx,mgmzp,z_cup,exner,thil,t,qtot,qliq,qice,exnersur        &
-                              ,thilsur,tsur,qtotsur,qliqsur,qicesur,exner_cup,p_cup,t_cup  &
-                              ,thil_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup,qsat_cup       &
-                              ,rho_cup,theiv_cup,theivs_cup)
+subroutine grell_thermo_cldlev(mkx,mgmzp,z_cup,exner,thil,t,qtot,qliq,qice,co2,exnersur    &
+                              ,thilsur,tsur,qtotsur,qliqsur,qicesur,co2sur,exner_cup,p_cup &
+                              ,t_cup,thil_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup,qsat_cup &
+                              ,co2_cup,rho_cup,theiv_cup,theivs_cup)
 
    use rconstants, only : p00,cpi,cpor,t3ple
    use therm_lib , only : & 
@@ -28,6 +28,7 @@ subroutine grell_thermo_cldlev(mkx,mgmzp,z_cup,exner,thil,t,qtot,qliq,qice,exner
           ,theta_iceliq   ! ! Function that computes theta_il
 
    implicit none
+   !------ Input variables ----------------------------------------------------------------!
    integer                  , intent(in)  :: mkx      ! # of Grell levels
    integer                  , intent(in)  :: mgmzp    ! # of levels for dimensions
    real   , dimension(mgmzp), intent(in)  :: z_cup    ! Height @ cloud levels      [     m]
@@ -38,6 +39,7 @@ subroutine grell_thermo_cldlev(mkx,mgmzp,z_cup,exner,thil,t,qtot,qliq,qice,exner
    real   , dimension(mgmzp), intent(in)  :: qtot     ! Total mixing ratio         [ kg/kg]
    real   , dimension(mgmzp), intent(in)  :: qliq     ! Liquid water mixing ratio  [ kg/kg]
    real   , dimension(mgmzp), intent(in)  :: qice     ! Ice mixing ratio           [ kg/kg]
+   real   , dimension(mgmzp), intent(in)  :: co2      ! CO2 mixing ratio           [   ppm]
    !------ Input variables, at surface ----------------------------------------------------!
    real                     , intent(in)  :: exnersur ! Sfc. Exner function        [  J/kg]
    real                     , intent(in)  :: thilsur  ! Sfc. theta_il              [     K]
@@ -45,6 +47,7 @@ subroutine grell_thermo_cldlev(mkx,mgmzp,z_cup,exner,thil,t,qtot,qliq,qice,exner
    real                     , intent(in)  :: qtotsur  ! Sfc. total mixing ratio    [ kg/kg]
    real                     , intent(in)  :: qliqsur  ! Sfc. water mixing ratio    [ kg/kg]
    real                     , intent(in)  :: qicesur  ! Sfc. ice mixing ratio      [ kg/kg]
+   real                     , intent(in)  :: co2sur   ! Sfc. CO2 mixing ratio      [   ppm]
    !------ Output variables, at cloud levels ----------------------------------------------!
    real   , dimension(mgmzp), intent(inout) :: exner_cup  ! Exner function         [J/kg/K]
    real   , dimension(mgmzp), intent(inout) :: p_cup      ! Pressure               [    Pa]
@@ -55,10 +58,10 @@ subroutine grell_thermo_cldlev(mkx,mgmzp,z_cup,exner,thil,t,qtot,qliq,qice,exner
    real   , dimension(mgmzp), intent(inout) :: qliq_cup   ! Liq. water mix. ratio  [ kg/kg]
    real   , dimension(mgmzp), intent(inout) :: qice_cup   ! Ice mixing ratio       [ kg/kg]
    real   , dimension(mgmzp), intent(inout) :: qsat_cup   ! Sat. vapour mix. ratio [ kg/kg]
+   real   , dimension(mgmzp), intent(inout) :: co2_cup    ! CO2 mixing ratio       [   ppm]
    real   , dimension(mgmzp), intent(inout) :: rho_cup    ! Air density            [ kg/m³]
    real   , dimension(mgmzp), intent(inout) :: theiv_cup  ! Thetae_iv              [     K]
    real   , dimension(mgmzp), intent(inout) :: theivs_cup ! Sat. thetae_iv         [     K]
-
    !------ Local variables ----------------------------------------------------------------!
    integer           :: k        ! Level counter
    real              :: qtotsat  ! Total mixing ratio if air was saturated.        [ kg/kg]
@@ -75,11 +78,13 @@ subroutine grell_thermo_cldlev(mkx,mgmzp,z_cup,exner,thil,t,qtot,qliq,qice,exner
    do k = 2,mkx
       exner_cup(k) = sqrt(exner(k-1) * exner(k)) !----- Log-interpolation -----------------!
       qtot_cup(k)  = sqrt(qtot(k-1)  * qtot(k) ) !----- Log-interpolation -----------------!
+      co2_cup(k)   = sqrt(co2(k-1)   * co2(k)  ) !----- Log-interpolation -----------------!
       t_cup   (k)  = 0.5 * (t(k-1)   + t(k)    )
    end do
    !----- 1st. level, boundary condition only, just copying the surface variables. --------!
    exner_cup(1) = exnersur
    qtot_cup (1) = qtotsur
+   co2_cup  (1) = co2sur
    t_cup    (1) = tsur
 
    !---------------------------------------------------------------------------------------!

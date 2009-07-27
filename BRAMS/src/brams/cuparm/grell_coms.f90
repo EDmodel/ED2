@@ -136,7 +136,8 @@ module grell_coms
   !------ Maximum "leakage" of mass allowed (normalized) ----------------------------------!
   real, parameter ::   masstol        = 1.e-6
 
-
+  !----- Maximum height that a cloud can ever possibly reach [m] --------------------------!
+  real, parameter ::   zmaxtpse       = 18000.
 
   !----------------------------------------------------------------------------------------!
   !    Ensemble related variables. acrit and acritt are a look-up table for climatological !

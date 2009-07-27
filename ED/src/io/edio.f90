@@ -4,19 +4,18 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
                     ,writing_dail,writing_mont,history_time,the_end)
   
   use ed_state_vars,only:filltab_alltypes,edgrid_g,filltables
+
   use grid_coms, only: ngrids,nzg  ! INTENT(IN)
 
   use ed_node_coms,only : mynum,nnodetot
 
-  use ed_state_vars,only:filltab_alltypes,edgrid_g,filltables
-
-  use misc_coms, only: dtlsm, current_time, &
-       idoutput, &
-       imoutput, &
-       iyoutput, &
-       isoutput, &
-       itoutput, &
-       ifoutput, &
+  use ed_misc_coms, only: dtlsm, current_time, &
+       idoutput,    &
+       imoutput,    &
+       iyoutput,    &
+       isoutput,    &
+       ifoutput,    &
+       itoutput,    &
        iprintpolys, &
        frqsum
 
@@ -48,7 +47,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
 
   if(analysis_time .or. history_time .or. (new_day .and. (writing_dail .or. writing_mont))) then
      do ifm=1,ngrids
-        call normalize_averaged_vars_ar(edgrid_g(ifm),frqsum,dtlsm)
+        call normalize_averaged_vars(edgrid_g(ifm),frqsum,dtlsm)
      enddo
 
      !  Perform averaging and data preparation
@@ -79,7 +78,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
      
      if (iprintpolys.eq.1) then
         do ifm=1,ngrids
-           call print_array(ifm,edgrid_g(ifm))
+           call print_fields(ifm,edgrid_g(ifm))
         enddo
      endif
 
@@ -128,9 +127,10 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
 
 
   if(history_time) then
-     
-     call h5_output('HIST')
-     
+
+     if (isoutput /= 0) then
+        call h5_output('HIST')
+     end if
   endif
 
 
@@ -147,379 +147,591 @@ end subroutine ed_output
 
 !==========================================================================================!
 !==========================================================================================!
+!     The following subroutine performs several spatial averaging functions and temporal   !
+! integrations.  Specifically, it area averages patch level quantities to the site, and    !
+! site level quantities to the polygon.                                                    !
+!------------------------------------------------------------------------------------------!
 subroutine spatial_averages
-  
-  ! ----------------------------------------------------------------------------
-  ! The following subroutine performs several spatial averaging functions
-  ! and temporal integrations.  Specifically, it area averages patch level
-  ! quantities to the site, and site level quantities to the polygon
-  ! -----------------------------------------------------------------------------
 
-  use ed_state_vars,only:edtype,polygontype,sitetype,patchtype,edgrid_g
-  use grid_coms, only : ngrids,nzg,nzs
-  use canopy_radiation_coms, only: lai_min
-  use consts_coms, only : alvl
-  use misc_coms, only: frqsum
+   use ed_state_vars         , only : edtype            & ! structure
+                                    , polygontype       & ! structure
+                                    , sitetype          & ! structure
+                                    , patchtype         & ! structure
+                                    , edgrid_g          ! ! structure
+   use grid_coms             , only : ngrids            & ! intent(in)
+                                    , nzg               & ! intent(in)
+                                    , nzs               ! ! intent(in)
+   use consts_coms           , only : alvl              & ! intent(in)
+                                    , wdns              ! ! intent(in)
+   use ed_misc_coms             , only : frqsum            ! ! intent(in)
+   use therm_lib             , only : qwtk              & ! subroutine
+                                    , qtk               ! ! subroutine
+   use soil_coms             , only : min_sfcwater_mass & ! intent(in)
+                                    , soil              ! ! intent(in)
+   use c34constants          , only : n_stoma_atts
+   use ed_max_dims              , only : n_pft
+   implicit none
+   !----- Local variables -----------------------------------------------------------------!
+   type(edtype)         , pointer :: cgrid
+   type(polygontype)    , pointer :: cpoly
+   type(sitetype)       , pointer :: csite
+   type(patchtype)      , pointer :: cpatch
+   real, dimension(3)             :: area_sum
+   real, dimension(nzg)           :: site_avg_soil_hcap
+   real, dimension(nzg)           :: poly_avg_soil_hcap
+   integer                        :: igr,ipy,isi,ipa,ico,ipft,iatt
+   integer                        :: k,ksn
+   integer                        :: lai_index
+   real                           :: lai_patch
+   real                           :: laiarea_site
+   real                           :: laiarea_poly
+   real                           :: site_area_i
+   real                           :: poly_area_i
+   real                           :: site_avg_veg_hcap
+   real                           :: poly_avg_veg_hcap
+   real                           :: frqsumi
+   real                           :: snowarea
+   !---------------------------------------------------------------------------------------!
 
-  implicit none
-  
-  type(edtype),pointer :: cgrid
-  type(polygontype),pointer :: cpoly
-  type(sitetype),pointer :: csite
-  type(patchtype),pointer :: cpatch
-  integer :: igr,ipy,isi,ipa
-  integer :: k
-  integer :: lai_index
-  real :: lai_patch,laiarea_site,site_area_i,poly_area_i
-  real :: frqsumi
-  real :: snow_min = 0.0000001
-  real,dimension(3) :: area_sum
+   !----- Time scale for output.  We will use the inverse more often. ---------------------!
+   frqsumi = 1.0 / frqsum
 
-  frqsumi = 1.0 / frqsum
+   gridloop: do igr=1,ngrids
+      cgrid => edgrid_g(igr)
 
-  do igr=1,ngrids
-     cgrid => edgrid_g(igr)
+      !------------------------------------------------------------------------------------!
+      !    WARNING! cgrid variables should never be initialized outside the                !
+      !             "do ipy=1,cgrid%npolygons" loop. npolygons is often 0 for some nodes   !
+      !             on coupled runs (sudomains entirely over ocean), and initializing here !
+      !             will cause either a crash or even worse, a memory leak.                !
+      !------------------------------------------------------------------------------------!
+      polyloop: do ipy=1,cgrid%npolygons
+         cpoly => cgrid%polygon(ipy)
 
-     !-------------------------------------------------------------------------------------!
-     !    WARNING! cgrid variables should never be initialized outside the                 !
-     !             "do ipy=1,cgrid%npolygons" loop. npolygons is often 0 for some nodes on !
-     !             coupled runs (sudomains entirely over ocean), and initializing here     !
-     !             will cause either a crash or even worse, a memory leak.                 !
-     !-------------------------------------------------------------------------------------!
-     do ipy=1,cgrid%npolygons
-        cpoly => cgrid%polygon(ipy)
+         !----- Initialise some integrated variables --------------------------------------!
+         area_sum           = 0.0
+         laiarea_poly       = 0.0
+         poly_avg_soil_hcap = 0.0
+         poly_avg_veg_hcap  = 0.0
 
-        area_sum=0.0
+         !---------------------------------------------------------------------------------!
+         !    Here is the safe place to initialize cgrid-level variables.                  !
+         !---------------------------------------------------------------------------------!
+         cgrid%avg_lai_ebalvars(:,:,ipy) = 0.0
+         cgrid%avg_balive(ipy)      = 0.0
+         cgrid%avg_bdead(ipy)       = 0.0
+         cgrid%lai(ipy)             = 0.0
+         cgrid%avg_gpp(ipy)         = 0.0
+         cgrid%avg_leaf_resp(ipy)   = 0.0
+         cgrid%avg_root_resp(ipy)   = 0.0
+         cgrid%avg_plant_resp(ipy)  = 0.0
+         cgrid%avg_growth_resp(ipy) = 0.0
+         cgrid%avg_storage_resp(ipy)= 0.0
+         cgrid%avg_vleaf_resp(ipy)  = 0.0
+         cgrid%avg_htroph_resp(ipy) = 0.0
+         cgrid%max_veg_temp(ipy)    = -huge(1.)
+         cgrid%min_veg_temp(ipy)    =  huge(1.)
+         cgrid%max_soil_temp(ipy)   = -huge(1.)
+         cgrid%min_soil_temp(ipy)   =  huge(1.)
 
-        !----------------------------------------------------------------------------------!
-        !    Here is the safe place to initialize cgrid-level variables.                   !
-        !----------------------------------------------------------------------------------!
-        cgrid%avg_lai_ebalvars(:,:,ipy) = 0.0
-  
-        cgrid%avg_balive(ipy)      = 0.0
-        cgrid%avg_bdead(ipy)       = 0.0
+         !----- Inverse of this polygon area (it should be always 1.) ---------------------!
+         poly_area_i = 1./sum(cpoly%area)
 
-        cgrid%lai(ipy)             = 0.0
+         siteloop: do isi=1,cpoly%nsites
+            csite => cpoly%site(isi)
+            
+            if (csite%npatches == 0) then
+               call fatal_error('No patches in this site, impossible!!!'                   &
+                               &,'spatial_averages','edio.f90')
+            end if
 
-        cgrid%avg_gpp(ipy)         = 0.0
-        cgrid%avg_leaf_resp(ipy)   = 0.0
-        cgrid%avg_root_resp(ipy)   = 0.0
-        cgrid%avg_plant_resp(ipy)  = 0.0
-        cgrid%avg_growth_resp(ipy)  = 0.0
-        cgrid%avg_storage_resp(ipy)  = 0.0
-        cgrid%avg_vleaf_resp(ipy)  = 0.0
-        cgrid%avg_htroph_resp(ipy) = 0.0
+            !----- Inverse of this site area (it should be always 1.) ---------------------!
+            site_area_i=1./sum(csite%area)
 
-        cgrid%max_veg_temp(ipy)    = -10.0
-        cgrid%min_veg_temp(ipy)    = 390.0
-        cgrid%max_soil_temp(ipy)    = -10.0
-        cgrid%min_soil_temp(ipy)    = 390.0
-
-
-        poly_area_i = 1./sum(cpoly%area)
-
-        do isi=1,cpoly%nsites
-           csite => cpoly%site(isi)
-           
-           if (csite%npatches>0) then
-              site_area_i=1./sum(csite%area)
-
-           cpoly%lai(isi)                = sum(csite%lai                * csite%area ) * site_area_i
-
-
-           ! Average Fast Time Flux Dynamics Over Sites
-           cpoly%avg_vapor_vc(isi)       = sum(csite%avg_vapor_vc       * csite%area ) * site_area_i
-           cpoly%avg_dew_cg(isi)         = sum(csite%avg_dew_cg         * csite%area ) * site_area_i
-           cpoly%avg_vapor_gc(isi)       = sum(csite%avg_vapor_gc       * csite%area ) * site_area_i
-           cpoly%avg_wshed_vg(isi)       = sum(csite%avg_wshed_vg       * csite%area ) * site_area_i
-           cpoly%avg_vapor_ac(isi)       = sum(csite%avg_vapor_ac       * csite%area ) * site_area_i
-           cpoly%avg_transp(isi)         = sum(csite%avg_transp         * csite%area ) * site_area_i
-           cpoly%avg_evap(isi)           = sum(csite%avg_evap           * csite%area ) * site_area_i
-           cpoly%aux(isi)                = sum(csite%aux                * csite%area ) * site_area_i
-           cpoly%avg_sensible_vc(isi)    = sum(csite%avg_sensible_vc    * csite%area ) * site_area_i
-           cpoly%avg_sensible_2cas(isi)  = sum(csite%avg_sensible_2cas  * csite%area ) * site_area_i
-           cpoly%avg_qwshed_vg(isi)      = sum(csite%avg_qwshed_vg      * csite%area ) * site_area_i
-           cpoly%avg_sensible_gc(isi)    = sum(csite%avg_sensible_gc    * csite%area ) * site_area_i
-           cpoly%avg_sensible_ac(isi)    = sum(csite%avg_sensible_ac    * csite%area ) * site_area_i
-           cpoly%avg_sensible_tot(isi)   = sum(csite%avg_sensible_tot   * csite%area ) * site_area_i
-
-
-           !! for NACP intercomparision (MCD)
-           cpoly%avg_fsc(isi)            = sum(csite%fast_soil_C        * csite%area ) * site_area_i
-           cpoly%avg_ssc(isi)            = sum(csite%slow_soil_C        * csite%area ) * site_area_i
-           cpoly%avg_stsc(isi)           = sum(csite%structural_soil_C  * csite%area ) * site_area_i
-           cpoly%avg_co2can(isi)         = sum(csite%can_co2            * csite%area ) * site_area_i
-           
-           cpoly%avg_snowdepth(isi)   = 0.0
-           cpoly%avg_snowenergy(isi)   = 0.0
-           cpoly%avg_snowmass(isi)    = 0.0
-           cpoly%avg_snowtempk(isi)   = 0.0
-           cpoly%avg_snowfracliq(isi) = 0.0
+            !----- LAI --------------------------------------------------------------------!
+            cpoly%lai(isi)  = sum(csite%lai  * csite%area ) * site_area_i
+            cpoly%wpa(isi)  = sum(csite%wpa  * csite%area ) * site_area_i
+            cpoly%wai(isi)  = sum(csite%wai  * csite%area ) * site_area_i
 
 
-           do k=1,csite%npatches
-              if(csite%nlev_sfcwater(k) > 0 .and. csite%sfcwater_mass(1,k) > snow_min) then
-                 !! if snow is present, sum mass and depth over layers
-                 cpoly%avg_snowdepth(isi)   = cpoly%avg_snowdepth(isi)   + &
-                      &sum(csite%sfcwater_depth(1:csite%nlev_sfcwater(k)  ,k)) * csite%area(k)
-                 cpoly%avg_snowmass(isi)    = cpoly%avg_snowmass(isi)    + &
-                      &sum(csite%sfcwater_mass(1:csite%nlev_sfcwater(k)   ,k)) * csite%area(k)
-                 !! average temp, energy, and frac liq weighted by **mass**
-                 cpoly%avg_snowtempk(isi)   = cpoly%avg_snowtempk(isi)   + &
-                      &sum(csite%sfcwater_tempk(1:csite%nlev_sfcwater(k),k)*csite%sfcwater_mass(1:csite%nlev_sfcwater(k),k))&
-                      &/sum(csite%sfcwater_mass(1:csite%nlev_sfcwater(k)   ,k))* csite%area(k)
-                 !! average temp and frac liq weighted by **mass**
-                 cpoly%avg_snowenergy(isi)   = cpoly%avg_snowenergy(isi)   + &
-                      &sum(csite%sfcwater_energy(1:csite%nlev_sfcwater(k),k)*csite%sfcwater_mass(1:csite%nlev_sfcwater(k),k))&
-                      &/sum(csite%sfcwater_mass(1:csite%nlev_sfcwater(k)   ,k))* csite%area(k)
-                 cpoly%avg_snowfracliq(isi) = cpoly%avg_snowfracliq(isi) + &
-                      & sum(csite%sfcwater_fracliq(1:csite%nlev_sfcwater(k),k)*csite%sfcwater_mass(1:csite%nlev_sfcwater(k),k)) &
-                      &/sum(csite%sfcwater_mass(1:csite%nlev_sfcwater(k)   ,k)) * csite%area(k)
-
-              else
-                 !! assume a thin layer in equilibrium with the top soil layer
-                 cpoly%avg_snowtempk(isi)   = cpoly%avg_snowtempk(isi) + csite%soil_tempk(nzg,k) * csite%area(k)
-                 cpoly%avg_snowtempk(isi)   = cpoly%avg_snowtempk(isi) + csite%soil_fracliq(nzg,k) * csite%area(k)
-              endif
-           enddo
-
-           cpoly%avg_snowfracliq(isi) = cpoly%avg_snowfracliq(isi) * site_area_i
-           cpoly%avg_snowdepth(isi)   = cpoly%avg_snowdepth(isi)   * site_area_i
-           cpoly%avg_snowmass(isi)    = cpoly%avg_snowmass(isi)    * site_area_i
-           cpoly%avg_snowenergy(isi)  = cpoly%avg_snowenergy(isi)  * site_area_i
-           cpoly%avg_snowtempk(isi)   = cpoly%avg_snowtempk(isi)   * site_area_i
+            !----- Average fast time flux dynamics over sites. ----------------------------!
+            cpoly%avg_vapor_vc(isi) = sum(csite%avg_vapor_vc * csite%area ) * site_area_i
+            cpoly%avg_dew_cg(isi)   = sum(csite%avg_dew_cg   * csite%area ) * site_area_i
+            cpoly%avg_vapor_gc(isi) = sum(csite%avg_vapor_gc * csite%area ) * site_area_i
+            cpoly%avg_wshed_vg(isi) = sum(csite%avg_wshed_vg * csite%area ) * site_area_i
+            cpoly%avg_vapor_ac(isi) = sum(csite%avg_vapor_ac * csite%area ) * site_area_i
+            cpoly%avg_transp(isi)   = sum(csite%avg_transp   * csite%area ) * site_area_i
+            cpoly%avg_evap(isi)     = sum(csite%avg_evap     * csite%area ) * site_area_i
+            cpoly%avg_drainage(isi) = sum(csite%avg_drainage * csite%area ) * site_area_i
+            cpoly%avg_runoff(isi)   = sum(csite%avg_runoff   * csite%area ) * site_area_i
+            cpoly%aux(isi)          = sum(csite%aux          * csite%area ) * site_area_i
+            cpoly%avg_sensible_vc(isi)   = sum(csite%avg_sensible_vc    * csite%area )     &
+                                         * site_area_i
+            cpoly%avg_sensible_2cas(isi) = sum(csite%avg_sensible_2cas  * csite%area )     &
+                                         * site_area_i
+            cpoly%avg_qwshed_vg(isi)     = sum(csite%avg_qwshed_vg      * csite%area )     &
+                                         * site_area_i
+            cpoly%avg_sensible_gc(isi)   = sum(csite%avg_sensible_gc    * csite%area )     &
+                                         * site_area_i
+            cpoly%avg_sensible_ac(isi)   = sum(csite%avg_sensible_ac    * csite%area )     &
+                                         * site_area_i
+            cpoly%avg_sensible_tot(isi)  = sum(csite%avg_sensible_tot   * csite%area )     &
+                                         * site_area_i
 
 
-           !!--------------------
+            !----- Extra variables for NACP intercomparision (MCD) ------------------------!
+            cpoly%avg_fsc(isi)    = sum(csite%fast_soil_C       * csite%area ) * site_area_i
+            cpoly%avg_ssc(isi)    = sum(csite%slow_soil_C       * csite%area ) * site_area_i
+            cpoly%avg_stsc(isi)   = sum(csite%structural_soil_C * csite%area ) * site_area_i
+            cpoly%avg_co2can(isi)         = sum(csite%can_co2            * csite%area ) * site_area_i           
+            cpoly%avg_snowdepth(isi)   = 0.0
+            cpoly%avg_snowenergy(isi)   = 0.0
+            cpoly%avg_snowmass(isi)    = 0.0
+            cpoly%avg_snowtempk(isi)   = 0.0
+            cpoly%avg_snowfracliq(isi) = 0.0
 
-           do k=cpoly%lsl(isi),nzg
 
-              cpoly%avg_sensible_gg(k,isi)  = sum(csite%avg_sensible_gg(k,:)  * csite%area ) * site_area_i
-              cpoly%avg_smoist_gg(k,isi)    = sum(csite%avg_smoist_gg(k,:)    * csite%area ) * site_area_i
-              cpoly%avg_smoist_gc(k,isi)    = sum(csite%avg_smoist_gc(k,:)    * csite%area ) * site_area_i
-              cpoly%aux_s(k,isi)            = sum(csite%aux_s(k,:)            * csite%area ) * site_area_i
+            !------------------------------------------------------------------------------!
+            !------------------------------------------------------------------------------!
+            !     Finding average soil properties.  The average soil temperature and       !
+            ! liquid fraction is not directly computed, since the total mass and therefore !
+            ! the total heat capacity (dry + water/ice) is different from each patch.      !
+            !------------------------------------------------------------------------------!
+            do k=cpoly%lsl(isi),nzg
+               cpoly%avg_sensible_gg(k,isi) = sum(csite%avg_sensible_gg(k,:) * csite%area) &
+                                            * site_area_i
+               cpoly%avg_smoist_gg(k,isi)   = sum(csite%avg_smoist_gg(k,:)   * csite%area) &
+                                            * site_area_i
+               cpoly%avg_smoist_gc(k,isi)   = sum(csite%avg_smoist_gc(k,:)   * csite%area) &
+                                            * site_area_i
+               cpoly%aux_s(k,isi)           = sum(csite%aux_s(k,:)           * csite%area) &
+                                            * site_area_i
 
-              cpoly%avg_soil_energy(k,isi)  = sum(csite%soil_energy(k,:)      * csite%area ) * site_area_i
-              cpoly%avg_soil_water(k,isi)   = real(sum(csite%soil_water(k,:)       * dble(csite%area) )) * site_area_i
-              cpoly%avg_soil_temp(k,isi)    = sum(csite%soil_tempk(k,:)       * csite%area ) * site_area_i
-              cpoly%avg_soil_fracliq(k,isi) = sum(csite%soil_fracliq(k,:)     * csite%area ) * site_area_i
+               cpoly%avg_soil_energy(k,isi) = sum(csite%soil_energy(k,:)     * csite%area) &
+                                            * site_area_i
+               cpoly%avg_soil_water(k,isi)  = sum(csite%soil_water(k,:)      * csite%area) &
+                                            * site_area_i
 
-           enddo
+               !---------------------------------------------------------------------------!
+               !    Finding the mean heat capacity. This shouldn't matter in the current   !
+               ! version as all patches within the same site have the same soil texture.   !
+               ! Since heat capacity is given in J/m3/K, it's safe to average it even if   !
+               ! soil texture changed.                                                     !
+               !---------------------------------------------------------------------------!
+               site_avg_soil_hcap(k) = 0.
+               do ipa=1,csite%npatches
+                  site_avg_soil_hcap(k) = site_avg_soil_hcap(k)                            &
+                                        + soil(csite%ntext_soil(k,ipa))%slcpd              &
+                                        * csite%area(ipa) * site_area_i
+               end do
+               !----- Also integrate the polygon-level average. ---------------------------!
+               poly_avg_soil_hcap(k) = poly_avg_soil_hcap(k)                               &
+                                     + site_avg_soil_hcap(k) * cpoly%area(isi)*poly_area_i
 
-           ! Average over patches
-           
-           do ipa=1,csite%npatches
-              cpatch => csite%patch(ipa)
-              
-              if (cpatch%ncohorts > 0) then
-                 lai_patch = sum(cpatch%lai, cpatch%lai > lai_min)
-              else
-                 lai_patch = 0.
-              end if
-              
-              if (lai_patch > 0.) then
-                 
-                 csite%laiarea(ipa) = csite%area(ipa)
+               !----- Finding the average temperature and liquid fraction. ----------------!
+               call qwtk(cpoly%avg_soil_energy(k,isi),cpoly%avg_soil_water(k,isi)*wdns     &
+                        ,site_avg_soil_hcap(k),cpoly%avg_soil_temp(k,isi)                  &
+                        ,cpoly%avg_soil_fracliq(k,isi))
+            end do
+            !------------------------------------------------------------------------------!
 
-                 csite%avg_veg_temp(ipa)   = sum(cpatch%veg_temp * cpatch%lai,cpatch%lai > lai_min)   &
-                                           / lai_patch
-                 csite%avg_veg_energy(ipa) = sum(cpatch%veg_energy)
-                 csite%avg_veg_water(ipa)  = sum(cpatch%veg_water)
 
-                 cgrid%avg_gpp(ipy)       = cgrid%avg_gpp(ipy)       + &
-                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_gpp)
-                 
-                 cgrid%avg_leaf_resp(ipy) = cgrid%avg_leaf_resp(ipy) + &
-                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_leaf_resp)
-                 cgrid%avg_root_resp(ipy) = cgrid%avg_root_resp(ipy) + &
-                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_root_resp)
+            !------------------------------------------------------------------------------!
+            !------------------------------------------------------------------------------!
+            !    Temporary water/snow layer must be averaged differently, since each patch !
+            ! may or may not have the layer, and the number of layers may vary from patch  !
+            ! to patch.  Here we average the integrated energy, mass and depth, and        !
+            ! compute the average temperature and liquid fraction from the average.        !
+            !------------------------------------------------------------------------------!
+            cpoly%avg_snowdepth(isi)   = 0.0
+            cpoly%avg_snowenergy(isi)  = 0.0
+            cpoly%avg_snowmass(isi)    = 0.0
 
-                 cgrid%avg_growth_resp(ipy) = cgrid%avg_growth_resp(ipy) + &
-                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_growth_resp)
+            do ipa=1,csite%npatches
+               ksn = csite%nlev_sfcwater(ipa)
+               !----- Check whether mass is present.  If so, add this patch. --------------!
+               if (ksn > 0) then
+                  do k=1,ksn
+                     cpoly%avg_snowdepth(isi)   = cpoly%avg_snowdepth(isi)                 &
+                                                + csite%sfcwater_depth(k,ipa)              &
+                                                * csite%area(ipa) * site_area_i
+                     cpoly%avg_snowmass(isi)    = cpoly%avg_snowmass(isi)                  &
+                                                + csite%sfcwater_mass(k,ipa)               &
+                                                * csite%area(ipa) * site_area_i
+                     !---------------------------------------------------------------------!
+                     !     Internal energy.  For averaging we use the extensive one (J/m2) !
+                     ! we will switch back to J/kg after the mean mass is found.           !
+                     !---------------------------------------------------------------------!
+                     cpoly%avg_snowenergy(isi)  = cpoly%avg_snowenergy(isi)                &
+                                                + csite%sfcwater_energy(k,ipa)             &
+                                                * csite%sfcwater_mass(k,ipa)               &
+                                                * csite%area(ipa) * site_area_i
+                  end do
+               end if
+            end do
+
+            !------------------------------------------------------------------------------!
+            !   If the site had some layer, convert the mean energy to J/kg, then find     !
+            ! the mean temperature and liquid fraction.  Otherwise, make them with zero/   !
+            ! default values.                                                              !
+            !------------------------------------------------------------------------------!
+            if (cpoly%avg_snowmass(isi) > min_sfcwater_mass) then
+               cpoly%avg_snowenergy(isi) = cpoly%avg_snowenergy(isi)                       &
+                                         / cpoly%avg_snowmass(isi)
+               call qtk(cpoly%avg_snowenergy(isi),cpoly%avg_snowtempk(isi)                 &
+                       ,cpoly%avg_snowfracliq(isi))
+            else
+               cpoly%avg_snowmass(isi)    = 0.
+               cpoly%avg_snowdepth(isi)   = 0.
+               cpoly%avg_snowenergy(isi)  = 0.
+               cpoly%avg_snowtempk(isi)   = cpoly%avg_soil_temp(nzg,isi)
+               cpoly%avg_snowfracliq(isi) = cpoly%avg_soil_fracliq(nzg,isi)
+            end if
+            !------------------------------------------------------------------------------!
+
+
+            !----- Average over patches. --------------------------------------------------!
+            longpatchloop: do ipa=1,csite%npatches
+               cpatch => csite%patch(ipa)
+
+               !---------------------------------------------------------------------------!
+               !     Adding cohort "extensive" variables. Those that are not must be       !
+               ! scaled by nplant. Just make sure that we have at least one cohort.        !
+               !---------------------------------------------------------------------------!
+               if (cpatch%ncohorts > 0) then
+                  lai_patch = sum(cpatch%lai, cpatch%solvable)
+                  csite%avg_veg_energy(ipa) = sum(cpatch%veg_energy)
+                  csite%avg_veg_water(ipa)  = sum(cpatch%veg_water)
+                  csite%hcapveg(ipa)        = sum(cpatch%hcapveg)
+                  call qwtk(csite%avg_veg_energy(ipa),csite%avg_veg_water(ipa)             &
+                           ,csite%hcapveg(ipa),csite%avg_veg_temp(ipa)                     &
+                           ,csite%avg_veg_fliq(ipa))
+
+                  cgrid%avg_gpp(ipy)        = cgrid%avg_gpp(ipy)                           &
+                                            + sum(cpatch%mean_gpp)                         &
+                                            * csite%area(ipa)*cpoly%area(isi)              &
+                                            * site_area_i * poly_area_i
+
+                  cgrid%avg_leaf_resp(ipy)  = cgrid%avg_leaf_resp(ipy)                     &
+                                            + sum(cpatch%mean_leaf_resp)                   &
+                                            * csite%area(ipa)*cpoly%area(isi)              &
+                                            * site_area_i * poly_area_i
+
+                  cgrid%avg_root_resp(ipy)  = cgrid%avg_root_resp(ipy)                     &
+                                            + sum(cpatch%mean_root_resp)                   &
+                                            * csite%area(ipa)*cpoly%area(isi)              &
+                                            * site_area_i * poly_area_i
+
+                  cgrid%avg_growth_resp(ipy) = cgrid%avg_growth_resp(ipy) + &
+                       csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_growth_resp) &
+                       *site_area_i * poly_area_i
                  cgrid%avg_storage_resp(ipy) = cgrid%avg_storage_resp(ipy) + &
-                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_storage_resp)
+                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_storage_resp) &
+                      *site_area_i * poly_area_i
                  cgrid%avg_vleaf_resp(ipy) = cgrid%avg_vleaf_resp(ipy) + &
-                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_vleaf_resp)
+                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_vleaf_resp) &
+                      *site_area_i * poly_area_i
 
-                 cgrid%avg_balive(ipy)    = cgrid%avg_balive(ipy) + &
-                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%balive*cpatch%nplant)
-                 cgrid%avg_bdead(ipy)     = cgrid%avg_bdead(ipy) + &
-                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%bdead*cpatch%nplant)
 
-                 ! Check the extremes
+                  cgrid%avg_balive(ipy)     = cgrid%avg_balive(ipy)                        &
+                                            + sum(cpatch%balive*cpatch%nplant)             &
+                                            * csite%area(ipa)*cpoly%area(isi)              &
+                                            * site_area_i * poly_area_i
+
+                  cgrid%avg_bdead(ipy)      = cgrid%avg_bdead(ipy)                         &
+                                            + sum(cpatch%bdead*cpatch%nplant)              &
+                                            * csite%area(ipa)*cpoly%area(isi)              &
+                                            * site_area_i * poly_area_i
+
+                  !----- Check the extremes and update if necessary. ----------------------!
+                  if (maxval(cpatch%veg_temp) > cgrid%max_veg_temp(ipy)) then
+                     cgrid%max_veg_temp(ipy) = maxval(cpatch%veg_temp)
+                  end if
+                  if (minval(cpatch%veg_temp) < cgrid%min_veg_temp(ipy)) then
+                     cgrid%min_veg_temp(ipy) = minval(cpatch%veg_temp)
+                  end if
+               else
+                  lai_patch                 = 0.
+                  csite%avg_veg_energy(ipa) = 0.
+                  csite%avg_veg_water(ipa)  = 0.
+                  csite%hcapveg(ipa)        = 0.
+                  csite%avg_veg_temp(ipa)   = csite%can_temp(ipa)
+                  csite%avg_veg_fliq(ipa)   = 0.
+               end if
+
+               if (lai_patch > 0.) then
+                  csite%laiarea(ipa) = csite%area(ipa)
+               else
+                  csite%laiarea(ipa) = 0.
+               end if
+
+               !---------------------------------------------------------------------------!
+               !    Updating some other flux variables that need to be scaled by frqsum.   !
+               !---------------------------------------------------------------------------!
+               cgrid%avg_plant_resp(ipy)  = cgrid%avg_plant_resp(ipy)                      &
+                                          + csite%co2budget_plresp(ipa)                    &
+                                          * csite%area(ipa)*cpoly%area(isi)                &
+                                          * site_area_i * poly_area_i * frqsumi
+
+               cgrid%avg_htroph_resp(ipy) = cgrid%avg_htroph_resp(ipy)                     &
+                                          + csite%co2budget_rh(ipa)                        &
+                                          * csite%area(ipa)*cpoly%area(isi)                &
+                                          * site_area_i * poly_area_i * frqsumi
+
+               !----- Not sure what these variables do. -----------------------------------!
+               lai_index = min(3,max(1, floor(csite%lai(ipa)/2.0) + 1)  )
+               area_sum(lai_index) = area_sum(lai_index) + csite%area(ipa)
+
+               !----- Net radiation. ------------------------------------------------------!
+               cgrid%avg_lai_ebalvars(lai_index,1,ipy) =                                   &
+                      cgrid%avg_lai_ebalvars(lai_index,1,ipy)                              &
+                    + csite%avg_netrad(ipa)                                                &
+                    * csite%area(ipa)*cpoly%area(isi)                                      &
+                    * site_area_i * poly_area_i
+
+               !----- Latent heat flux. ---------------------------------------------------!
+               cgrid%avg_lai_ebalvars(lai_index,2,ipy) =                                   &
+                      cgrid%avg_lai_ebalvars(lai_index,2,ipy)                              &
+                    + csite%avg_vapor_ac(ipa)                                              &
+                    * csite%area(ipa)*cpoly%area(isi)                                      &
+                    * site_area_i * poly_area_i
+
+               !----- Sensible heat flux. -------------------------------------------------!
+               cgrid%avg_lai_ebalvars(lai_index,3,ipy) =                                   &
+                      cgrid%avg_lai_ebalvars(lai_index,3,ipy)                              &
+                    + csite%avg_sensible_ac(ipa)                                           &
+                    * csite%area(ipa)*cpoly%area(isi)                                      &
+                    * site_area_i * poly_area_i
+
+               !----- Canopy temperature --------------------------------------------------!
+               cgrid%avg_lai_ebalvars(lai_index,4,ipy) =                                   &
+                      cgrid%avg_lai_ebalvars(lai_index,4,ipy)                              &
+                    + csite%can_temp(ipa)                                                  &
+                    * csite%area(ipa)*cpoly%area(isi)                                      &
+                    * site_area_i * poly_area_i
+
+
+               !------ Updating maximum and minimum soil temperature. ---------------------!
+               do k=1,nzg
+                  if (csite%soil_tempk(k,ipa) > cgrid%max_soil_temp(ipy)) then
+                     cgrid%max_soil_temp(ipy) = csite%soil_tempk(k,ipa)
+                  end if
                  
-                 if (maxval(cpatch%veg_temp) > cgrid%max_veg_temp(ipy)) then
-                    cgrid%max_veg_temp(ipy) = maxval(cpatch%veg_temp)
-                 endif
-
-                 if (minval(cpatch%veg_temp) < cgrid%min_veg_temp(ipy)) then
-                    cgrid%min_veg_temp(ipy) = minval(cpatch%veg_temp)
-                 endif
-
-                 
-
-                 
-              else
-                 ! Set veg-temp to air temp
-                 csite%laiarea(ipa)         = 0.0
-                 !csite%avg_veg_energy(ipa)  = 0.0          
-                 csite%avg_veg_temp(ipa)    = csite%can_temp(ipa)
-                 !csite%avg_veg_water(ipa)  = 0.0
-
-              endif
-
-              cgrid%avg_plant_resp(ipy)  = cgrid%avg_plant_resp(ipy)  + &
-                   csite%area(ipa)*cpoly%area(isi)*csite%co2budget_plresp(ipa)*frqsumi
-
-              cgrid%avg_htroph_resp(ipy) = cgrid%avg_htroph_resp(ipy) + &
-                   csite%area(ipa)*cpoly%area(isi)*csite%co2budget_rh(ipa)    *frqsumi
-              
-
-              lai_index = min(3,max(1, floor(csite%lai(ipa)/2.0) + 1)  )
-              
-              area_sum(lai_index) = area_sum(lai_index) + csite%area(ipa)
+                  if (csite%soil_tempk(k,ipa) < cgrid%min_soil_temp(ipy)) then
+                     cgrid%min_soil_temp(ipy) = csite%soil_tempk(k,ipa)
+                  end if
+               end do
 
 
-              ! Net radiation
-              cgrid%avg_lai_ebalvars(lai_index,1,ipy) = &
-                   cgrid%avg_lai_ebalvars(lai_index,1,ipy) + csite%avg_netrad(ipa)*csite%area(ipa)
+               cohortloop: do ico=1,cpatch%ncohorts
+                  cpatch%old_stoma_vector(1,ico) = real(cpatch%old_stoma_data(ico)%recalc)
+                  cpatch%old_stoma_vector(2,ico) = cpatch%old_stoma_data(ico)%T_L
+                  cpatch%old_stoma_vector(3,ico) = cpatch%old_stoma_data(ico)%e_A
+                  cpatch%old_stoma_vector(4,ico) = cpatch%old_stoma_data(ico)%PAR
+                  cpatch%old_stoma_vector(5,ico) = cpatch%old_stoma_data(ico)%rb_factor
+                  cpatch%old_stoma_vector(6,ico) = cpatch%old_stoma_data(ico)%prss
+                  cpatch%old_stoma_vector(7,ico) = cpatch%old_stoma_data(ico)%phenology_factor
+                  cpatch%old_stoma_vector(8,ico) = cpatch%old_stoma_data(ico)%gsw_open
+                  cpatch%old_stoma_vector(9,ico) = real(cpatch%old_stoma_data(ico)%ilimit)
+                  
+                  cpatch%old_stoma_vector(10,ico) = cpatch%old_stoma_data(ico)%T_L_residual
+                  cpatch%old_stoma_vector(11,ico) = cpatch%old_stoma_data(ico)%e_a_residual
+                  cpatch%old_stoma_vector(12,ico) = cpatch%old_stoma_data(ico)%par_residual
+                  cpatch%old_stoma_vector(13,ico) = cpatch%old_stoma_data(ico)%rb_residual
+                  cpatch%old_stoma_vector(14,ico) = cpatch%old_stoma_data(ico)%prss_residual
+                  cpatch%old_stoma_vector(15,ico) = cpatch%old_stoma_data(ico)%leaf_residual
+                  cpatch%old_stoma_vector(16,ico) = cpatch%old_stoma_data(ico)%gsw_residual
+               end do cohortloop
+                  
+               pftloop: do ipft = 1,n_pft
+                  csite%old_stoma_vector_max(1,ipft,ipa) = real(csite%old_stoma_data_max(ipft,ipa)%recalc)
+                  csite%old_stoma_vector_max(2,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%T_L
+                  csite%old_stoma_vector_max(3,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%e_A
+                  csite%old_stoma_vector_max(4,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%PAR
+                  csite%old_stoma_vector_max(5,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%rb_factor
+                  csite%old_stoma_vector_max(6,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%prss
+                  csite%old_stoma_vector_max(7,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%phenology_factor
+                  csite%old_stoma_vector_max(8,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%gsw_open
+                  csite%old_stoma_vector_max(9,ipft,ipa) = real(csite%old_stoma_data_max(ipft,ipa)%ilimit)
+                  
+                  csite%old_stoma_vector_max(10,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%T_L_residual
+                  csite%old_stoma_vector_max(11,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%e_a_residual
+                  csite%old_stoma_vector_max(12,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%par_residual
+                  csite%old_stoma_vector_max(13,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%rb_residual
+                  csite%old_stoma_vector_max(14,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%prss_residual
+                  csite%old_stoma_vector_max(15,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%leaf_residual
+                  csite%old_stoma_vector_max(16,ipft,ipa) = csite%old_stoma_data_max(ipft,ipa)%gsw_residual
+               end do pftloop
+            
+            end do longpatchloop
 
-              ! Latent heat flux
-              cgrid%avg_lai_ebalvars(lai_index,2,ipy) = &
-                   cgrid%avg_lai_ebalvars(lai_index,2,ipy) + csite%avg_vapor_ac(ipa)*csite%area(ipa)
+            laiarea_site  = sum(csite%laiarea)
+            laiarea_poly  = laiarea_poly + laiarea_site
+            if (laiarea_site == 0.0) then
+               csite%laiarea = 0.0
+            else
+               csite%laiarea = csite%laiarea / laiarea_site
+            end if
 
-              ! Sensible heat flux
-              cgrid%avg_lai_ebalvars(lai_index,3,ipy) = &
-                   cgrid%avg_lai_ebalvars(lai_index,3,ipy) + csite%avg_sensible_ac(ipa)*csite%area(ipa)
+            !----- Site average of canopy thermodynamic state -----------------------------!
+            cpoly%avg_can_temp(isi) = sum(csite%can_temp  * csite%area) * site_area_i
+            cpoly%avg_can_shv(isi)  = sum(csite%can_shv   * csite%area) * site_area_i
+            cpoly%avg_can_co2(isi)  = sum(csite%can_co2   * csite%area) * site_area_i
 
-              ! Canopy temperature
-              cgrid%avg_lai_ebalvars(lai_index,4,ipy) = &
-                   cgrid%avg_lai_ebalvars(lai_index,4,ipy) + csite%can_temp(ipa)*csite%area(ipa)
+            !------------------------------------------------------------------------------!
+            !   Site average of leaf properties.  Again, we average "extensive" properties !
+            ! and find the average temperature based on the average leaf internal energy.  !
+            ! mass, and heat capacity.                                                     !
+            !------------------------------------------------------------------------------!
+            cpoly%avg_veg_energy(isi) = sum(csite%avg_veg_energy * csite%area)*site_area_i
+            cpoly%avg_veg_water(isi)  = sum(csite%avg_veg_water  * csite%area)*site_area_i
+            site_avg_veg_hcap         = sum(csite%hcapveg        * csite%area)*site_area_i
+            !----- Also integrate the polygon-level mean leaf heat capacity. --------------!
+            poly_avg_veg_hcap         = poly_avg_veg_hcap                                  &
+                                      + site_avg_veg_hcap * cpoly%area(isi) * poly_area_i
+            !------------------------------------------------------------------------------!
+            !    Unless this is a bare site or it is absolute leafless, there should be    !
+            ! some heat capacity, then compute the average leaf temperature. Otherwise,    !
+            ! assign mean canopy temperature.                                              !
+            !------------------------------------------------------------------------------!
+            if (laiarea_site > 0.) then
+               call qwtk(cpoly%avg_veg_energy(isi),cpoly%avg_veg_water(isi)                &
+                        ,site_avg_veg_hcap,cpoly%avg_veg_temp(isi),cpoly%avg_veg_fliq(isi))
+            else
+               cpoly%avg_veg_temp(isi) = cpoly%avg_can_temp(isi)
+               cpoly%avg_veg_fliq(isi) = 0.
+            end if
+
+         end do siteloop     
+
+         !----- Normalize the lai specific quantities -------------------------------------!
+         if (area_sum(1)>0.) then
+            cgrid%avg_lai_ebalvars(1,1,ipy) = cgrid%avg_lai_ebalvars(1,1,ipy)/area_sum(1)
+            cgrid%avg_lai_ebalvars(1,2,ipy) = cgrid%avg_lai_ebalvars(1,2,ipy)/area_sum(1)
+            cgrid%avg_lai_ebalvars(1,3,ipy) = cgrid%avg_lai_ebalvars(1,3,ipy)/area_sum(1)
+            cgrid%avg_lai_ebalvars(1,4,ipy) = cgrid%avg_lai_ebalvars(1,4,ipy)/area_sum(1)
+         else
+            cgrid%avg_lai_ebalvars(1,:,ipy) = -9999.0
+         end if
+         if (area_sum(2)>0.) then
+            cgrid%avg_lai_ebalvars(2,1,ipy) = cgrid%avg_lai_ebalvars(2,1,ipy)/area_sum(2)
+            cgrid%avg_lai_ebalvars(2,2,ipy) = cgrid%avg_lai_ebalvars(2,2,ipy)/area_sum(2)
+            cgrid%avg_lai_ebalvars(2,3,ipy) = cgrid%avg_lai_ebalvars(2,3,ipy)/area_sum(2)
+            cgrid%avg_lai_ebalvars(2,4,ipy) = cgrid%avg_lai_ebalvars(2,4,ipy)/area_sum(2)
+         else
+            cgrid%avg_lai_ebalvars(2,:,ipy) = -9999.0
+         end if
+         if (area_sum(3)>0.) then
+            cgrid%avg_lai_ebalvars(3,1,ipy) = cgrid%avg_lai_ebalvars(3,1,ipy)/area_sum(3)
+            cgrid%avg_lai_ebalvars(3,2,ipy) = cgrid%avg_lai_ebalvars(3,2,ipy)/area_sum(3)
+            cgrid%avg_lai_ebalvars(3,3,ipy) = cgrid%avg_lai_ebalvars(3,3,ipy)/area_sum(3)
+            cgrid%avg_lai_ebalvars(3,4,ipy) = cgrid%avg_lai_ebalvars(3,4,ipy)/area_sum(3)
+         else
+            cgrid%avg_lai_ebalvars(3,:,ipy) = -9999.0
+         end if
 
 
-              
-              do k=1,nzg
-                 if ( csite%soil_tempk(k,ipa) > cgrid%max_soil_temp(ipy)) then
-                    cgrid%max_soil_temp(ipy) = csite%soil_tempk(k,ipa)
-                 endif
-                 
-                 if ( csite%soil_tempk(k,ipa) < cgrid%min_soil_temp(ipy)) then
-                    cgrid%min_soil_temp(ipy) = csite%soil_tempk(k,ipa)
-                 endif
-              enddo
-                 
-
-           enddo
-           
-           laiarea_site  = sum(csite%laiarea)
-           if (laiarea_site == 0.0) then
-              csite%laiarea = 0.0
-           else
-              csite%laiarea = csite%laiarea / sum(csite%laiarea)
-           end if
-
-           ! Energy and water should be averaged including areas where they are zero.
-           cpoly%avg_veg_energy(isi) = sum(csite%avg_veg_energy   * csite%area)
-           cpoly%avg_veg_temp(isi)   = sum(csite%avg_veg_temp     * csite%area)
-           cpoly%avg_veg_water(isi)  = sum(csite%avg_veg_water    * csite%area)
-           cpoly%avg_can_temp(isi)   = sum(csite%can_temp         * csite%area)
-           cpoly%avg_can_shv(isi)    = sum(csite%can_shv          * csite%area)
-
-        else
-           call fatal_error('No patches in this site, impossible','spatial_averages','edio.f90')
-        endif
-
+         !----- Finding the polygon mean LAI ----------------------------------------------!
+         cgrid%lai(ipy)  = sum(cpoly%lai  * cpoly%area ) * poly_area_i
+         cgrid%wpa(ipy)  = sum(cpoly%wpa  * cpoly%area ) * poly_area_i
+         cgrid%wai(ipy)  = sum(cpoly%wai  * cpoly%area ) * poly_area_i
         
+         !----- Average fast time flux dynamics over polygons. ----------------------------!
+         cgrid%avg_vapor_vc(ipy)     = sum(cpoly%avg_vapor_vc    * cpoly%area)*poly_area_i
+         cgrid%avg_dew_cg(ipy)       = sum(cpoly%avg_dew_cg      * cpoly%area)*poly_area_i
+         cgrid%avg_vapor_gc(ipy)     = sum(cpoly%avg_vapor_gc    * cpoly%area)*poly_area_i
+         cgrid%avg_wshed_vg(ipy)     = sum(cpoly%avg_wshed_vg    * cpoly%area)*poly_area_i
+         cgrid%avg_fsc(ipy)          = sum(cpoly%avg_fsc         * cpoly%area)*poly_area_i
+         cgrid%avg_stsc(ipy)         = sum(cpoly%avg_stsc        * cpoly%area)*poly_area_i
+         cgrid%avg_ssc(ipy)          = sum(cpoly%avg_ssc         * cpoly%area)*poly_area_i
+         cgrid%avg_runoff_heat(ipy)  = sum(cpoly%avg_runoff_heat * cpoly%area)*poly_area_i
+         cgrid%avg_runoff(ipy)       = sum(cpoly%avg_runoff      * cpoly%area)*poly_area_i
+         cgrid%avg_drainage(ipy)     = sum(cpoly%avg_drainage    * cpoly%area)*poly_area_i
+         cgrid%avg_vapor_ac(ipy)     = sum(cpoly%avg_vapor_ac     *cpoly%area)*poly_area_i
+         cgrid%avg_transp(ipy)       = sum(cpoly%avg_transp       *cpoly%area)*poly_area_i
+         cgrid%avg_evap(ipy)         = sum(cpoly%avg_evap         *cpoly%area)*poly_area_i
+         cgrid%aux(ipy)              = sum(cpoly%aux              *cpoly%area)*poly_area_i
+         cgrid%avg_sensible_vc(ipy)  = sum(cpoly%avg_sensible_vc  *cpoly%area)*poly_area_i
+         cgrid%avg_sensible_2cas(ipy)= sum(cpoly%avg_sensible_2cas*cpoly%area)*poly_area_i
+         cgrid%avg_qwshed_vg(ipy)    = sum(cpoly%avg_qwshed_vg    *cpoly%area)*poly_area_i
+         cgrid%avg_sensible_gc(ipy)  = sum(cpoly%avg_sensible_gc  *cpoly%area)*poly_area_i
+         cgrid%avg_sensible_ac(ipy)  = sum(cpoly%avg_sensible_ac  *cpoly%area)*poly_area_i
+         cgrid%avg_sensible_tot(ipy) = sum(cpoly%avg_sensible_tot *cpoly%area)*poly_area_i
+         cgrid%avg_can_temp(ipy)     = sum(cpoly%avg_can_temp     *cpoly%area)*poly_area_i
+         cgrid%avg_can_shv(ipy)      = sum(cpoly%avg_can_shv      *cpoly%area)*poly_area_i
+         cgrid%avg_can_co2(ipy)      = sum(cpoly%avg_can_co2      *cpoly%area)*poly_area_i
 
-     enddo
-     
+         !---------------------------------------------------------------------------------!
+         !    Similar to the site level, average mass, heat capacity and energy then find  !
+         ! the average temperature and liquid water fraction.                              !
+         !---------------------------------------------------------------------------------!
+         do k=cgrid%lsl(ipy),nzg
+            cgrid%avg_sensible_gg(k,ipy) = sum(cpoly%avg_sensible_gg(k,:)*cpoly%area)      &
+                                         * poly_area_i
+            cgrid%avg_smoist_gg(k,ipy)   = sum(cpoly%avg_smoist_gg(k,:)  *cpoly%area)      &
+                                         * poly_area_i
+            cgrid%avg_smoist_gc(k,ipy)   = sum(cpoly%avg_smoist_gc(k,:)  *cpoly%area)      &
+                                         * poly_area_i
+            cgrid%aux_s(k,ipy)           = sum(cpoly%aux_s(k,:)          *cpoly%area)      &
+                                         * poly_area_i
+            cgrid%avg_soil_energy(k,ipy) = sum(cpoly%avg_soil_energy(k,:)*cpoly%area)      &
+                                         * poly_area_i
+            cgrid%avg_soil_water(k,ipy)  = sum(cpoly%avg_soil_water(k,:) *cpoly%area)      &
+                                         * poly_area_i
 
-     ! Normalize the lai specific quantities
-     if (area_sum(1)>0.) then
-        cgrid%avg_lai_ebalvars(1,1,ipy) = cgrid%avg_lai_ebalvars(1,1,ipy)/area_sum(1)
-        cgrid%avg_lai_ebalvars(1,2,ipy) = cgrid%avg_lai_ebalvars(1,2,ipy)/area_sum(1)
-        cgrid%avg_lai_ebalvars(1,3,ipy) = cgrid%avg_lai_ebalvars(1,3,ipy)/area_sum(1)  
-        cgrid%avg_lai_ebalvars(1,4,ipy) = cgrid%avg_lai_ebalvars(1,4,ipy)/area_sum(1)
-     else
-        cgrid%avg_lai_ebalvars(1,:,ipy) = -9999.0
-     endif
-
-
-     if (area_sum(2)>0.) then
-        cgrid%avg_lai_ebalvars(2,1,ipy) = cgrid%avg_lai_ebalvars(2,1,ipy)/area_sum(2)
-        cgrid%avg_lai_ebalvars(2,2,ipy) = cgrid%avg_lai_ebalvars(2,2,ipy)/area_sum(2)
-        cgrid%avg_lai_ebalvars(2,3,ipy) = cgrid%avg_lai_ebalvars(2,3,ipy)/area_sum(2)
-        cgrid%avg_lai_ebalvars(2,4,ipy) = cgrid%avg_lai_ebalvars(2,4,ipy)/area_sum(2)
-     else
-        cgrid%avg_lai_ebalvars(2,:,ipy) = -9999.0
-     endif
-     if (area_sum(3)>0.) then
-        cgrid%avg_lai_ebalvars(3,1,ipy) = cgrid%avg_lai_ebalvars(3,1,ipy)/area_sum(3)
-        cgrid%avg_lai_ebalvars(3,2,ipy) = cgrid%avg_lai_ebalvars(3,2,ipy)/area_sum(3)
-        cgrid%avg_lai_ebalvars(3,3,ipy) = cgrid%avg_lai_ebalvars(3,3,ipy)/area_sum(3)
-        cgrid%avg_lai_ebalvars(3,4,ipy) = cgrid%avg_lai_ebalvars(3,4,ipy)/area_sum(3)
-     else
-        cgrid%avg_lai_ebalvars(3,:,ipy) = -9999.0
-     endif
-
-
-
-        cgrid%lai(ipy)                = sum(cpoly%lai                * cpoly%area ) * poly_area_i
-        
-        ! Average Fast Time Flux Dynamics Over Polygons
-        cgrid%avg_vapor_vc(ipy)       = sum(cpoly%avg_vapor_vc       * cpoly%area ) * poly_area_i
-        cgrid%avg_dew_cg(ipy)         = sum(cpoly%avg_dew_cg         * cpoly%area ) * poly_area_i
-        cgrid%avg_vapor_gc(ipy)       = sum(cpoly%avg_vapor_gc       * cpoly%area ) * poly_area_i
-        cgrid%avg_wshed_vg(ipy)       = sum(cpoly%avg_wshed_vg       * cpoly%area ) * poly_area_i
-        cgrid%avg_co2can(ipy)         = sum(cpoly%avg_co2can         * cpoly%area ) * poly_area_i
-        cgrid%avg_fsc(ipy)            = sum(cpoly%avg_fsc            * cpoly%area ) * poly_area_i
-        cgrid%avg_stsc(ipy)           = sum(cpoly%avg_stsc           * cpoly%area ) * poly_area_i
-        cgrid%avg_ssc(ipy)            = sum(cpoly%avg_ssc            * cpoly%area ) * poly_area_i
-        cgrid%avg_runoff_heat(ipy)    = sum(cpoly%avg_runoff_heat    * cpoly%area ) * poly_area_i
-        cgrid%avg_runoff(ipy)         = sum(cpoly%avg_runoff         * cpoly%area ) * poly_area_i
-        cgrid%avg_snowmass(ipy)       = sum(cpoly%avg_snowmass       * cpoly%area ) * poly_area_i
-        cgrid%avg_snowenergy(ipy)     = sum(cpoly%avg_snowenergy     * cpoly%area ) * poly_area_i
-        cgrid%avg_snowtempk(ipy)      = sum(cpoly%avg_snowtempk      * cpoly%area ) * poly_area_i
-        cgrid%avg_snowfracliq(ipy)    = sum(cpoly%avg_snowfracliq    * cpoly%area ) * poly_area_i
-        cgrid%avg_snowdepth(ipy)      = sum(cpoly%avg_snowdepth      * cpoly%area ) * poly_area_i
-
-        cgrid%avg_vapor_ac(ipy)       = sum(cpoly%avg_vapor_ac       * cpoly%area ) * poly_area_i !* alvl
-        cgrid%avg_transp(ipy)         = sum(cpoly%avg_transp         * cpoly%area ) * poly_area_i
-        cgrid%avg_evap(ipy)           = sum(cpoly%avg_evap           * cpoly%area ) * poly_area_i
-        cgrid%aux(ipy)                = sum(cpoly%aux                * cpoly%area ) * poly_area_i
-        cgrid%avg_sensible_vc(ipy)    = sum(cpoly%avg_sensible_vc    * cpoly%area ) * poly_area_i
-        cgrid%avg_sensible_2cas(ipy)  = sum(cpoly%avg_sensible_2cas  * cpoly%area ) * poly_area_i
-        cgrid%avg_qwshed_vg(ipy)      = sum(cpoly%avg_qwshed_vg      * cpoly%area ) * poly_area_i
-        cgrid%avg_sensible_gc(ipy)    = sum(cpoly%avg_sensible_gc    * cpoly%area ) * poly_area_i
-        cgrid%avg_sensible_ac(ipy)    = sum(cpoly%avg_sensible_ac    * cpoly%area ) * poly_area_i
-        cgrid%avg_sensible_tot(ipy)   = sum(cpoly%avg_sensible_tot   * cpoly%area ) * poly_area_i
+            !------------------------------------------------------------------------------!
+            !     Finding the average temperature and liquid fraction.  The polygon-level  !
+            ! mean heat capacity was already found during the site loop.                   !
+            !------------------------------------------------------------------------------!
+            call qwtk(cgrid%avg_soil_energy(k,ipy),cgrid%avg_soil_water(k,ipy)*wdns        &
+                     ,poly_avg_soil_hcap(k),cgrid%avg_soil_temp(k,ipy)                     &
+                     ,cgrid%avg_soil_fracliq(k,ipy))
+         end do
 
 
-        cgrid%avg_veg_energy(ipy)     = sum(cpoly%avg_veg_energy     * cpoly%area ) * poly_area_i
-        cgrid%avg_veg_temp(ipy)       = sum(cpoly%avg_veg_temp       * cpoly%area ) * poly_area_i
-        cgrid%avg_veg_water(ipy)      = sum(cpoly%avg_veg_water      * cpoly%area ) * poly_area_i
-        cgrid%avg_can_temp(ipy)       = sum(cpoly%avg_can_temp       * cpoly%area ) * poly_area_i
-        cgrid%avg_can_shv(ipy)        = sum(cpoly%avg_can_shv        * cpoly%area ) * poly_area_i
+         !---------------------------------------------------------------------------------!
+         !    Also using the same idea as the site-level: average energy, mass, and depth, !
+         ! but find temperature and liquid fraction with the averaged values. Again, use   !
+         ! the energy in J/m2 instead of J/kg to do the polygon averaging.                 !
+         !---------------------------------------------------------------------------------!
+         cgrid%avg_snowmass(ipy)     = sum(cpoly%avg_snowmass  * cpoly%area) * poly_area_i
+         cgrid%avg_snowdepth(ipy)    = sum(cpoly%avg_snowdepth * cpoly%area) * poly_area_i
+         cgrid%avg_snowenergy(ipy)   = sum( cpoly%avg_snowenergy                           &
+                                          * cpoly%avg_snowmass * cpoly%area) * poly_area_i
 
+         !----- Scale energy and find temp and fracliq if there is enogh mass -------------!
+         if (cgrid%avg_snowmass(ipy) > min_sfcwater_mass) then
+            cgrid%avg_snowenergy(ipy) = cgrid%avg_snowenergy(ipy) / cgrid%avg_snowmass(ipy)
+            call qtk(cgrid%avg_snowenergy(ipy),cgrid%avg_snowtempk(ipy)                    &
+                    ,cgrid%avg_snowfracliq(ipy))
+         else
+            cgrid%avg_snowmass(ipy)    = 0.
+            cgrid%avg_snowdepth(ipy)   = 0.
+            cgrid%avg_snowenergy(ipy)  = 0.
+            cgrid%avg_snowtempk(ipy)   = cgrid%avg_soil_temp(nzg,ipy)
+            cgrid%avg_snowfracliq(ipy) = cgrid%avg_soil_fracliq(nzg,ipy)
+         end if
 
-        do k=cgrid%lsl(ipy),nzg
+         !---------------------------------------------------------------------------------!
+         !    Similar to site level, compute mean leaf internal energy and water mass.     !
+         ! Also find the mean heat capacity.  If there is enough LAI, then find the mean   !
+         ! temperature, otherwise just assume to be the canopy temperature.                !
+         !---------------------------------------------------------------------------------!
+         cgrid%avg_veg_energy(ipy) = sum(cpoly%avg_veg_energy * cpoly%area) * poly_area_i
+         cgrid%avg_veg_water(ipy)  = sum(cpoly%avg_veg_water  * cpoly%area) * poly_area_i
 
-           cgrid%avg_sensible_gg(k,ipy)  = sum(cpoly%avg_sensible_gg(k,:)  * cpoly%area ) * poly_area_i
-           cgrid%avg_smoist_gg(k,ipy)    = sum(cpoly%avg_smoist_gg(k,:)    * cpoly%area ) * poly_area_i
-           cgrid%avg_smoist_gc(k,ipy)    = sum(cpoly%avg_smoist_gc(k,:)    * cpoly%area ) * poly_area_i
-           cgrid%aux_s(k,ipy)            = sum(cpoly%aux_s(k,:)            * cpoly%area ) * poly_area_i
-           cgrid%avg_soil_energy(k,ipy)  = sum(cpoly%avg_soil_energy(k,:)  * cpoly%area ) * poly_area_i
-           cgrid%avg_soil_water(k,ipy)   = sum(cpoly%avg_soil_water(k,:)   * cpoly%area ) * poly_area_i
-           cgrid%avg_soil_temp(k,ipy)    = sum(cpoly%avg_soil_temp(k,:)    * cpoly%area ) * poly_area_i
-           cgrid%avg_soil_fracliq(k,ipy) = sum(cpoly%avg_soil_fracliq(k,:) * cpoly%area ) * poly_area_i
+         if (laiarea_poly > 0.) then
+            call qwtk(cgrid%avg_veg_energy(ipy),cgrid%avg_veg_water(ipy),poly_avg_veg_hcap &
+                     ,cgrid%avg_veg_temp(ipy),cgrid%avg_veg_fliq(ipy))
+         else
+            cgrid%avg_veg_temp(ipy) = cgrid%avg_can_temp(ipy)
+            cgrid%avg_veg_fliq(ipy) = 0.
+         end if
 
-        enddo
-        
-     enddo
+      end do polyloop
+   end do gridloop
 
-  enddo
-
-  return
+   return
 end subroutine spatial_averages
 
 ! ==============================
@@ -555,10 +767,17 @@ subroutine get3d(m1,m2,m3,temp3,in_ptr)
   enddo
   return
 end subroutine get3d
+!==========================================================================================!
+!==========================================================================================!
 
-! =================================================
 
-subroutine print_array(ifm,cgrid)
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine print_fields(ifm,cgrid)
   
   !------------------------------------------------------
   ! PRINT OUT FIELDS OF INTEREST
@@ -586,14 +805,14 @@ subroutine print_array(ifm,cgrid)
   
   use ed_node_coms,only: mynum,nnodetot,sendnum,recvnum,master_num,machs
   use ed_state_vars,only: edtype,polygontype
-  use misc_coms, only: &
+  use ed_misc_coms, only: &
             printvars,  &
             ipmax,      &
             ipmin,      &
             pfmtstr,    &
             iprintpolys
   
-  use var_tables_array,only:vt_info,num_var
+  use ed_var_tables,only:vt_info,num_var
 
 
   implicit none
@@ -685,13 +904,13 @@ subroutine print_array(ifm,cgrid)
 
                  do nm = 1,nnodetot-1
 
-                    call MPI_Recv(ptr_recv,1,MPI_LOGICAL,machs(nm),31,MPI_COMM_WORLD,status,ierr)
+                    call MPI_Recv(ptr_recv,1,MPI_LOGICAL,machs(nm),120,MPI_COMM_WORLD,status,ierr)
 
                     if (ptr_recv) then
-                       call MPI_Recv(mast_idmin,1,MPI_INTEGER,machs(nm),32,MPI_COMM_WORLD,status,ierr)
-                       call MPI_Recv(mast_idmax,1,MPI_INTEGER,machs(nm),33,MPI_COMM_WORLD,status,ierr)
+                       call MPI_Recv(mast_idmin,1,MPI_INTEGER,machs(nm),121,MPI_COMM_WORLD,status,ierr)
+                       call MPI_Recv(mast_idmax,1,MPI_INTEGER,machs(nm),122,MPI_COMM_WORLD,status,ierr)
                        call MPI_Recv(pvar_g(mast_idmin:mast_idmax),mast_idmax-mast_idmin+1,MPI_REAL,&
-                            machs(nm),34,MPI_COMM_WORLD,status,ierr)
+                            machs(nm),123,MPI_COMM_WORLD,status,ierr)
                     end if
                  enddo
               endif
@@ -715,7 +934,7 @@ subroutine print_array(ifm,cgrid)
            pvar_l =-99.9
            
            ! Set the blocking recieve to allow ordering, start with machine 1
-           if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,212,MPI_COMM_WORLD,status,ierr)
+           if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,93,MPI_COMM_WORLD,status,ierr)
            
            ! Cycle through this node's pointers for the current variable.  If the index
            ! falls within the printable range. Save that pointer to a local array.
@@ -783,18 +1002,18 @@ subroutine print_array(ifm,cgrid)
 
               if (mynum /= nnodetot) then
 
-                 call MPI_Send(ptr_send,1,MPI_LOGICAL,machs(nnodetot),31,MPI_COMM_WORLD,ierr)
+                 call MPI_Send(ptr_send,1,MPI_LOGICAL,machs(nnodetot),120,MPI_COMM_WORLD,ierr)
                  if (ptr_send) then
-                    call MPI_Send(node_idmin,1,MPI_INTEGER,machs(nnodetot),32,MPI_COMM_WORLD,ierr)
-                    call MPI_Send(node_idmax,1,MPI_INTEGER,machs(nnodetot),33,MPI_COMM_WORLD,ierr)
+                    call MPI_Send(node_idmin,1,MPI_INTEGER,machs(nnodetot),121,MPI_COMM_WORLD,ierr)
+                    call MPI_Send(node_idmax,1,MPI_INTEGER,machs(nnodetot),122,MPI_COMM_WORLD,ierr)
                     call MPI_Send(pvar_l(node_idmin:node_idmax),node_idmax-node_idmin+1, &
-                         MPI_REAL,machs(nnodetot),34,MPI_COMM_WORLD,ierr)
+                         MPI_REAL,machs(nnodetot),123,MPI_COMM_WORLD,ierr)
                  end if
                  
               
                  ! When this node is finished, send the blocking MPI_Send to the next machine
 
-                 call MPI_Send(ping,1,MPI_INTEGER,sendnum,212,MPI_COMM_WORLD,ierr)
+                 call MPI_Send(ping,1,MPI_INTEGER,sendnum,93,MPI_COMM_WORLD,ierr)
                  
                  ! If this is root, then just copy the array to the global
               else
@@ -865,7 +1084,7 @@ subroutine print_array(ifm,cgrid)
 
   
   return
-end subroutine print_array
+end subroutine print_fields
 
 ! =======================================================
 

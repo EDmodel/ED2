@@ -2,7 +2,7 @@
 !==========================================================================================!
 subroutine ed_mem_alloc(proc_type)
 
-   use max_dims            , only: n_pft,                  & ! intent(in)
+   use ed_max_dims            , only: n_pft,                  & ! intent(in)
                                    n_dist_types,           & ! intent(in)
                                    n_dbh,                  & ! intent(in)
                                    maxvars,                & ! intent(in)
@@ -21,7 +21,7 @@ subroutine ed_mem_alloc(proc_type)
                                    ed_alloc_work,          & ! subroutine
                                    ed_nullify_work         ! ! subroutine
    
-   use misc_coms          , only : idoutput,               & ! intent(in)
+   use ed_misc_coms          , only : idoutput,               & ! intent(in)
                                    imoutput                ! ! intent(in)
    use ed_node_coms       , only : mmxp, mmyp, mynum
    use soil_coms          , only : alloc_soilgrid,         & ! subroutine 

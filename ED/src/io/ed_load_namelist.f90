@@ -26,12 +26,12 @@ end subroutine read_nl
 !------------------------------------------------------------------------------------------!
 subroutine copy_nl(copy_type)
 
-  use max_dims , only: n_pft, nzgmax
+  use ed_max_dims , only: n_pft, nzgmax
   use ename_coms, only: nl
   use soil_coms, only: isoilflg, nslcon, slmstr, zrough, soil_database, &
        isoilstateinit, isoildepthflg, isoilbc, soilstate_db, soildepth_db,   &
                        runoff_time, slz,veg_database
-  use met_driver_coms, only: ed_met_driver_db, metcyc1, metcycf,imettype,initial_co2, lapse_scheme
+  use met_driver_coms, only: ed_met_driver_db, ishuffle, metcyc1, metcycf,imettype,initial_co2, lapse_scheme
   use mem_sites, only: n_soi, soi_lat, soi_lon, n_ed_region, ed_reg_latmin,  &
        ed_reg_latmax, ed_reg_lonmin, ed_reg_lonmax, grid_res, grid_type, edres, &
        maxpatch, maxcohort
@@ -40,9 +40,9 @@ subroutine copy_nl(copy_type)
   use decomp_coms, only: n_decomp_lim
   use disturb_coms, only: include_fire, ianth_disturb,   &
        treefall_disturbance_rate
-  use pft_coms, only: include_these_pft,pft_1st_check
+  use pft_coms, only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
 
-  use misc_coms, only: expnme, runtype, itimez, idatez, imonthz, iyearz,  &
+  use ed_misc_coms, only: expnme, runtype, itimez, idatez, imonthz, iyearz,  &
        itimea, idatea, imontha, iyeara, ifoutput, iclobber, frqfast, &
        sfilin, ied_init_mode, current_time, ed_inputs_dir,   &
        end_time, radfrq, integration_scheme, ffilout, idoutput,imoutput,&
@@ -53,11 +53,13 @@ subroutine copy_nl(copy_type)
   use grid_coms, only: time,centlon,centlat,deltax,deltay,nnxp,nnyp,nstratx, &
                        nstraty,polelat,polelon,ngrids,timmax,time,nzg, nzs
 
-  use ed_misc_coms,only: attach_metadata
+  use ed_misc_coms,only: attach_metadata, icanturb
 
   use optimiz_coms, only : ioptinpt
 
   use canopy_radiation_coms, only : crown_mod
+  
+  use rk4_coms, only : ibranch_thermo
 
 
   implicit none
@@ -129,17 +131,22 @@ subroutine copy_nl(copy_type)
      ed_reg_lonmax = nl%ed_reg_lonmax
 
      integration_scheme = nl%integration_scheme
-     istoma_scheme = nl%istoma_scheme
-     iphen_scheme  = nl%iphen_scheme
-     repro_scheme  = nl%repro_scheme
-     lapse_scheme  = nl%lapse_scheme
-     crown_mod     = nl%crown_mod
-     n_plant_lim   = nl%n_plant_lim
-     n_decomp_lim  = nl%n_decomp_lim
-     include_fire  = nl%include_fire
-     ianth_disturb = nl%ianth_disturb
+     ibranch_thermo     = nl%ibranch_thermo
+     istoma_scheme      = nl%istoma_scheme
+     iphen_scheme       = nl%iphen_scheme
+     repro_scheme       = nl%repro_scheme
+     lapse_scheme       = nl%lapse_scheme
+     crown_mod          = nl%crown_mod
+     n_plant_lim        = nl%n_plant_lim
+     n_decomp_lim       = nl%n_decomp_lim
+     include_fire       = nl%include_fire
+     ianth_disturb      = nl%ianth_disturb
+     
+     icanturb      = nl%icanturb
      
      include_these_pft = nl%include_these_pft
+     agri_stock        = nl%agri_stock
+     plantation_stock  = nl%plantation_stock
      pft_1st_check     = nl%pft_1st_check
      
      treefall_disturbance_rate = nl%treefall_disturbance_rate
@@ -154,6 +161,7 @@ subroutine copy_nl(copy_type)
      ipmax         = nl%ipmax
 
      imettype      = nl%imettype
+     ishuffle      = nl%ishuffle
      metcyc1       = nl%metcyc1
      metcycf       = nl%metcycf
      initial_co2   = nl%initial_co2
@@ -194,8 +202,8 @@ subroutine copy_nl(copy_type)
      
      do ifm=1,n_ed_region
         if (grid_type == 0) then
-           nnxp(ifm)=1+floor(real(nstratx(ifm))*(ed_reg_lonmax(ifm)-ed_reg_lonmin(ifm))/grid_res)
-           nnyp(ifm)=1+floor(real(nstratx(ifm))*(ed_reg_latmax(ifm)-ed_reg_latmin(ifm))/grid_res)
+           nnxp(ifm)=floor(real(nstratx(ifm))*(ed_reg_lonmax(ifm)-ed_reg_lonmin(ifm))/grid_res)
+           nnyp(ifm)=floor(real(nstratx(ifm))*(ed_reg_latmax(ifm)-ed_reg_latmin(ifm))/grid_res)
         endif
      end do
 
@@ -271,12 +279,15 @@ subroutine copy_nl(copy_type)
   end if
 
   ! Sorting up the chosen PFTs
-  where (include_these_pft < 1) include_these_pft=huge(1)
-     call sort_up(include_these_pft,n_pft)
+  where (include_these_pft < 1) 
+     include_these_pft=huge(1)
+  end where
+
+  call sort_up(include_these_pft,n_pft)
      
-     !  Determine the length of simuation
-     call date_2_seconds (iyearz,imonthz,idatez,itimez*100, &
+  !  Determine the length of simuation
+  call date_2_seconds (iyearz,imonthz,idatez,itimez*100, &
           iyeara,imontha,idatea,itimea*100,timmax)
-     return
-   end subroutine copy_nl
+  return
+end subroutine copy_nl
 !------------------------------------------------------------------------------------------!

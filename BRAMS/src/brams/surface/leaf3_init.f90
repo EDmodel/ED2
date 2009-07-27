@@ -240,20 +240,20 @@ end subroutine sfcinit_file
 !*************************************************************************
 
 subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm  &
-   ,theta,pi0,pp,rv,seatp,seatf  &
+   ,theta,pi0,pp,rv,co2p,seatp,seatf  &
 
    ,soil_water     ,soil_energy      ,soil_text       &
    ,sfcwater_mass  ,sfcwater_energy  ,sfcwater_depth  &
    ,ustar          ,tstar            ,rstar           &
-   ,veg_fracarea   ,veg_lai          ,veg_tai         &
-   ,veg_rough                                         &
+   ,cstar          ,veg_fracarea     ,veg_lai         &
+   ,veg_tai        ,veg_rough                         &
    ,veg_height     ,veg_albedo       ,patch_area      &
    ,patch_rough    ,patch_wetind     ,leaf_class      &
    ,soil_rough     ,sfcwater_nlev    ,stom_resist     &
    ,ground_rsat    ,ground_rvap      ,veg_water       &
-   ,veg_temp       ,can_rvap         ,can_temp        &
-   ,veg_ndvip      ,veg_ndvic        ,veg_ndvif       &
-   ,snow_mass      ,snow_depth                        &
+   ,veg_temp       ,can_rvap         ,can_co2         &
+   ,can_temp       ,veg_ndvip        ,veg_ndvic       &
+   ,veg_ndvif      ,snow_mass        ,snow_depth      &
 
    ,rvv,prsv,piv,vt2da,vt2db,glat,glon,zot,flpw)
 
@@ -269,7 +269,7 @@ integer :: n1,n2,n3,mzg,mzs,npat,ifm,i,j,k,ipat,nveg,nsoil
 
 real :: c1,airtemp,tsoil
 
-real, dimension(n1,n2,n3) :: theta,pi0,pp,rv
+real, dimension(n1,n2,n3) :: theta,pi0,pp,rv,co2p
 real, dimension(n2,n3)    :: rvv,prsv,piv,vt2da,vt2db,glat,glon,zot  &
                             ,seatp,seatf,snow_mass,snow_depth
 real, dimension(n2,n3) :: flpw
@@ -279,14 +279,15 @@ real, dimension(mzs,n2,n3,npat) :: sfcwater_mass,sfcwater_energy  &
                                   ,sfcwater_depth
 
 real, dimension(n2,n3,npat) :: ustar        ,tstar         ,rstar        &
-                              ,veg_fracarea ,veg_lai       ,veg_tai      &
-                              ,veg_rough                                 &
+                              ,cstar        ,veg_fracarea  ,veg_lai      &
+                              ,veg_tai      ,veg_rough                   &
                               ,veg_height   ,veg_albedo    ,patch_area   &
                               ,patch_rough  ,patch_wetind  ,leaf_class   &
                               ,soil_rough   ,sfcwater_nlev ,stom_resist  &
                               ,ground_rsat  ,ground_rvap   ,veg_water    &
-                              ,veg_temp     ,can_rvap      ,can_temp     &
-                              ,veg_ndvip    ,veg_ndvic     ,veg_ndvif
+                              ,veg_temp     ,can_rvap      ,can_co2      &
+                              ,can_temp     ,veg_ndvip    ,veg_ndvic     &
+                              ,veg_ndvif
 
 integer :: k2
 
@@ -321,6 +322,7 @@ do j = 1,n3
       patch_rough(i,j,1) = 0.001
       can_temp(i,j,1) = airtemp
       can_rvap(i,j,1) = rv(k2,i,j)
+      can_co2(i,j,1)  = co2p(k2,i,j)
 
       soil_energy(mzg,i,j,1) =  cliq * (seatp(i,j) + (seatf(i,j) - seatp(i,j))  &
          * timefac_sst  - tsupercool)
@@ -342,6 +344,8 @@ do j = 1,n3
 
          veg_water(i,j,ipat) = 0.
          can_rvap(i,j,ipat) = rv(k2,i,j)
+         
+         can_co2(i,j,ipat) = co2p(k2,i,j)
 
          do k = 1,mzg
 

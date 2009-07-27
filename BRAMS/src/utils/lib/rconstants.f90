@@ -31,6 +31,7 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    real, parameter :: srtwo     = 1.414213562373095 ! Square root of 2.         [      ---]
    real, parameter :: srthree   = 1.732050807568877 ! Square root of 3.         [      ---]
+   real, parameter :: sqrt2o2   = 0.5 * srtwo       ! ½ Square root of 2.       [      ---]
    real, parameter :: srtwoi    = 1./srtwo          ! 1./ Square root of 2.     [      ---]
    real, parameter :: srthreei  = 1./srthree        ! 1./ Square root of 3.     [      ---]
    real, parameter :: onethird  = 1./3.             ! 1/3                       [      ---]
@@ -46,8 +47,25 @@ Module rconstants
    real, parameter :: stefan    = 5.6696e-8         ! Stefan-Boltzmann constant [ W/m²/K^4]
    real, parameter :: boltzmann = 1.3806503e-23     ! Boltzmann constant        [m²kg/s²/K]
    real, parameter :: t00       = 273.15            ! 0°C                       [       °C]
+   real, parameter :: rmol      = 8.314510          ! Molar gas constant        [  J/mol/K]
+   real, parameter :: volmol    = 0.022710980       ! Molar volume at STP       [       m³]
+   real, parameter :: volmoll   = volmol*1.e3       ! Molar volume at STP       [        L]
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   ! Molar masses and derived variables                                                    !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: mmdry       = 0.02897        ! Mean dry air molar mass    [   kg/mol]
+   real, parameter :: mmvap       = 0.01801505     ! Mean water molar mass      [   kg/mol]
+   real, parameter :: mmco2       = 0.0440095      ! Mean CO2 molar mass        [   kg/mol]
+   real, parameter :: mmdoc       = mmdry/mmco2    ! mmdry/mmco2                [     ----]
+   real, parameter :: mmcod       = mmco2/mmdry    ! mmco2/mmdry                [     ----]
+   real, parameter :: mmdry1000   = 1000.*mmdry    ! Mean dry air molar mass    [   kg/mol]
+   real, parameter :: mmcod1em6   = mmcod * 1.e-6  ! Convert ppm to kgCO2/kgair [     ----]
+   real, parameter :: mmdryi      = 1./mmdry       ! 1./mmdry                   [   mol/kg]
+   real, parameter :: mmco2i      = 1./mmco2       ! 1./mmco2                   [   mol/kg]
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -87,7 +105,7 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Dry air properties                                                                    !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: rgas   = 287.04    ! Gas constant for dry air (Ra)        [   J/kg/K]
+   real, parameter :: rgas   = rmol/mmdry! Gas constant for dry air (Ra)        [   J/kg/K]
    real, parameter :: cp     = 1004.     ! Specific heat at constant pressure   [   J/kg/K]
    real, parameter :: cv     = 717.      ! Specific heat at constant volume     [   J/kg/K]
    real, parameter :: cpog   = cp /g     ! cp/g                                 [      m/K]
@@ -107,12 +125,12 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Water vapour properties                                                               !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: rm     = 461.5     ! Gas constant for water vapour (Rv)   [   J/kg/K]
-   real, parameter :: gorm   = g / rm    ! g/Rv                                 [      K/m]
-   real, parameter :: ep     = rgas / rm ! Ra/Rv, epsilon, used to find rv      [    kg/kg]
-   real, parameter :: epi    = rm / rgas ! Rv/Ra, 1/epsilon                     [    kg/kg]
-   real, parameter :: rmocp  = rm / cp   ! Rv/cp                                [     ----]
-   real, parameter :: toodry = 1.e-8     ! Minimum acceptable mixing ratio.     [    kg/kg]
+   real, parameter :: rm     = rmol/mmvap  ! Gas constant for water vapour (Rv) [   J/kg/K]
+   real, parameter :: gorm   = g / rm      ! g/Rv                               [      K/m]
+   real, parameter :: ep     = mmvap/mmdry ! or Ra/Rv, epsilon, used to find rv [    kg/kg]
+   real, parameter :: epi    = mmdry/mmvap ! or Rv/Ra, 1/epsilon                [    kg/kg]
+   real, parameter :: rmocp  = rm / cp     ! Rv/cp                              [     ----]
+   real, parameter :: toodry = 1.e-8       ! Minimum acceptable mixing ratio.   [    kg/kg]
    !---------------------------------------------------------------------------------------!
 
 
@@ -216,4 +234,42 @@ Module rconstants
    real, parameter :: abswltlmin  = 1.e-4 ! Minimum abs value of Theta*         [    K m/s]
    real, parameter :: lturbmin    = 1.e-3 ! Minimum abs value of turb. lenght   [        m]
    !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Double precision version of constants used in Runge-Kutta.                         !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8), parameter :: alli8        = dble(alli      )
+   real(kind=8), parameter :: allii8       = dble(allii     )
+   real(kind=8), parameter :: alvi8        = dble(alvi      )
+   real(kind=8), parameter :: alvl8        = dble(alvl      )
+   real(kind=8), parameter :: cice8        = dble(cice      )
+   real(kind=8), parameter :: cicei8       = dble(cicei     )
+   real(kind=8), parameter :: cliq8        = dble(cliq      )
+   real(kind=8), parameter :: cliqi8       = dble(cliqi     )
+   real(kind=8), parameter :: cliqvlme8    = dble(cliqvlme  )
+   real(kind=8), parameter :: cp8          = dble(cp        )
+   real(kind=8), parameter :: cpi8         = dble(cpi       )
+   real(kind=8), parameter :: day_sec8     = dble(day_sec   )
+   real(kind=8), parameter :: gorvap8      = dble(gorm      )
+   real(kind=8), parameter :: grav8        = dble(g         )
+   real(kind=8), parameter :: hr_sec8      = dble(hr_sec    )
+   real(kind=8), parameter :: idns8        = dble(idns      )
+   real(kind=8), parameter :: pi18         = dble(pi1       )
+   real(kind=8), parameter :: pio1808      = dble(pio180    )
+   real(kind=8), parameter :: qicet38      = dble(qicet3    )
+   real(kind=8), parameter :: qliqt38      = dble(qliqt3    )
+   real(kind=8), parameter :: stefan8      = dble(stefan    )
+   real(kind=8), parameter :: t3ple8       = dble(t3ple     )
+   real(kind=8), parameter :: tsupercool8  = dble(tsupercool)
+   real(kind=8), parameter :: twopi8       = dble(twopi     )
+   real(kind=8), parameter :: twothirds8   = dble(twothirds )
+   real(kind=8), parameter :: vonk8        = dble(vonk      )
+   real(kind=8), parameter :: wdns8        = dble(wdns      )
+   real(kind=8), parameter :: wdnsi8       = dble(wdnsi     )
+   !---------------------------------------------------------------------------------------!
+
 end module rconstants

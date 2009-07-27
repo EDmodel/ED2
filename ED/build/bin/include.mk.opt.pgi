@@ -83,10 +83,19 @@ NC_LIBS=-L/dev/null
 # interfaces in the code.
 USE_INTERF=1
 
+
+# MPI_Wtime.  
+# If USE_MPIWTIME=1, then it will use MPI libraries to compute
+# the wall time (the only double-precision intrinsic).  In case
+# you don't have it, leave USE_MPIWTIME=0, in which case it will
+# use a simpler, single-precision function.
+USE_MPIWTIME=1
+
 #----------------- PGI Compiler on Linux x86_64 ----------------
 CMACH=PC_LINUX1
 F_COMP=mpif90
-F_OPTS = -g -ffpe-trap=invalid,zero -fbounds-check
+F_OPTS=-O2
+#F_OPTS = -g -ffpe-trap=invalid,zero,underflow,overflow -fbounds-check
 #F_OPTS= -Mvect=cachesize:262144,sse -Munroll -Mnoframe -O2 -pc 64 \
 #       -Mfree
 #  -Mbyteswapio
@@ -95,10 +104,11 @@ F_OPTS = -g -ffpe-trap=invalid,zero -fbounds-check
 #	-Mcache_align -Mconcur=nonuma -Msmartalloc
 #F_OPTS= -g -Ktrap=divz,fp,inv,ovf,unf -Mbounds
 C_COMP=mpicc 
+C_OPTS=-O2
 #C_OPTS= -g -Ktrap=divz,fp,inv,ovf,unf -Mbounds
 #C_OPTS= -fastsse -Mipa=fast,inline -tp amd64e -Mvect=sse \
 #	-Mcache_align -Msmartalloc
-C_OPTS= -g -ffpe-trap=invalid,zero -fbounds-check
+#C_OPTS= -g -ffpe-trap=invalid,zero,underflow,overflow -fbounds-check
 USE_INTERF=1
 CPP_OPTS=
 LOADER=$(F_COMP)

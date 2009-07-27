@@ -30,14 +30,17 @@ module leaf_coms
             , dtlc_factor  & ! canopy timestep factor (canopy timestep / leaf timestep)
             , dtllohcc     & ! leaf timestep / canopy heat capacity
             , dtllowcc     & ! leaf timestep / canopy vapor capacity
+            , dtlloccc     & ! leaf timestep / canopy CO2 capacity
             , dtlcohcc     & ! canopy timestep / canopy heat capacity
             , dtlcowcc     & ! canopy timestep / canopy vapor capacity
+            , dtlcoccc     & ! canopy timestep / canopy CO2 capacity
             , dtlcohcv     & ! caonpy timestep / vegetation heat capacity
   
             , ups          & ! U velocity at top of surface layer [up(2,i,j)]    
             , vps          & ! V velocity at top of surface layer [vp(2,i,j)]
             , ths          & ! potential temperature at top of surface layer [theta(2,i,j)]
             , rvs          & ! vapor mixing ratio at top of surface layer [rv(2,i,j)]
+            , rco2s        & ! CO2 mixing ratio at top of surface layer [rv(2,i,j)]
             , zts          & ! height at top of surface layer [zt(2)*rtgt(i,j)]
             , pis          & ! Exner function at surface
             , dens         & ! density at surface
@@ -75,8 +78,10 @@ module leaf_coms
 
             , hflxgc       & ! sensible heat from ground to canopy (J/m2)
             , wflxgc       & ! water vapor from ground to canopy (kg/m2)
+            , cflxgc       & ! carbon from ground to canopy (umol/m2)
             , hflxvc       & ! sensible heat from vegetation to canopy (J/m2)
             , wflxvc       & ! water vapor from vegetation to canopy (kg/m2)
+            , cflxvc       & ! carbon from vegetation to canopy (umol/m2)
             
             , wshed        & ! water shed from vegetation to ground (kg/m2)
             , qwshed       & ! energy from shed water (J/m2)
@@ -140,9 +145,10 @@ module leaf_coms
 
 
    !----- Heat and vapour capacities ------------------------------------------------------!
-   real, parameter :: hcapcan = 2.0e4 ! Canopy heat capacity
-   real, parameter :: wcapcan = 2.0e1 ! Canopy vapour capacity
-   real, parameter :: hcapveg = 3.e4  ! Leaf heat capacity
+   real, parameter :: hcapcan = 2.0e4   ! Canopy heat capacity
+   real, parameter :: wcapcan = 2.0e1   ! Canopy vapour capacity
+   real, parameter :: ccapcan = 6.904e2 ! Canopy CO2 capacity [wcapcan/molar mass of air]
+   real, parameter :: hcapveg = 3.e4    ! Leaf heat capacity
    !---------------------------------------------------------------------------------------!
 
 

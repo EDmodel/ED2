@@ -1,16 +1,13 @@
-#Makefile Make_model
-############################## Change Log ##################################
-# 4.3.0.1
-#
-############################################################################
+###################################### Change Log ##########################################
+#   4.3.0.1                                                                                #
+#                                                                                          #
+############################################################################################
 
-# Define path and compilation 
-
+#----- Define path and compilation --------------------------------------------------------#
 include paths.mk
 include include.mk.$(OPT)
 
-# Compiler commands.
-
+#----- Compiler commands. -----------------------------------------------------------------#
 INCLUDES  = -I$(UTILS_INCS) $(PAR_INCS) $(HDF5_INCS)
 F90_COMMAND = $(F_COMP) -c $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
 FPP_COMMAND = $(F_COMP) -c  -DUSE_INTERF=$(USE_INTERF) -DUSENC=$(USENC) -D$(CMACH)         \
@@ -18,17 +15,24 @@ FPP_COMMAND = $(F_COMP) -c  -DUSE_INTERF=$(USE_INTERF) -DUSENC=$(USENC) -D$(CMAC
                $(INCLUDES) $(PAR_DEFS)
 CXX_COMMAND = $(C_COMP) -c $(C_OPTS) -D$(CMACH) $(INCLUDES) $(PAR_DEFS)
 
-# Define archive and executable names.
+#----- Define archive and executable names. -----------------------------------------------#
 EXE=$(BASE)/edbrams-$(OPT)
 LIBMODEL=$(BASE)/edbrams-$(OPT).a
 
 include objects.mk
 
-# Define targets.
+#----- Define targets. --------------------------------------------------------------------#
+all: 
+	make gendep
+	make $(EXE)
+	make $(EXE)
 
-all: $(EXE)
+gendep:
+	@echo ""
+	`pwd`/generate_deps.sh $(BRAMS_ROOT) $(ED_ROOT)
+	@echo Finished dependencies
 
-$(EXE): $(LIBMODEL) $(MAINOBJ) 
+$(EXE): $(LIBMODEL) $(MAINOBJ)
 	@echo ""
 	$(LOADER) -o $(EXE) rammain.o $(LOADER_OPTS) $(LIBMODEL) \
 	$(HDF4_LIBS) $(HDF5_LIBS) $(PAR_LIBS) $(NC_LIBS) $(LIBS)
@@ -57,11 +61,11 @@ install:
 clean:
 	@echo ""
 	#(cd ./utils ; $(MAKE) -f Make.utils.$(OPT) OPT=$(OPT) clean)
-	rm -f $(LIBMODEL) $(EXE) *.o *.mod *.f *.f90 *.c *.F90 *.stb *.d 
+	rm -f $(LIBMODEL) $(EXE) *.o *.mod *.f *.f90 *.c *.F90 *.stb *.d dependency.mk 
 	rm -f ../$(EXE) ../$(LIBMODEL)
+	touch dependency.mk
 	@echo ""
 
-# Define dependencies
-
-include depend.mk
+#----- Define rules -----------------------------------------------------------------------#
+include rules.mk
 

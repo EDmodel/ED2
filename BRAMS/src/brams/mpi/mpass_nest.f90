@@ -26,7 +26,7 @@ subroutine node_sendnbc(ifm,icm)
 
   use var_tables
   use mem_basic
-
+  use grid_dims, only: maxgrds
   implicit none
 
   include 'interface.h'
@@ -35,6 +35,7 @@ subroutine node_sendnbc(ifm,icm)
   integer :: ierr,ipos
   integer :: nm,i1,i2,j1,j2,k1,k2,ng,itype,mtp,iptr,nv
   integer :: ifm,icm
+  integer :: la,lz,mpiid
 
   real, allocatable, save :: buffnest(:)
   integer, save :: ncall=0, membuff,membuff_extra,nvar
@@ -48,9 +49,10 @@ subroutine node_sendnbc(ifm,icm)
   do nm=1,nmachs
      irecv_req(nm)=0
      if (iget_paths(itype,ifm,nm).ne.0) then
-        call MPI_Irecv(node_buffs(nm)%lbc_recv_buff(1),             &
-             node_buffs(nm)%nrecv*f_ndmd_size,MPI_PACKED,                       &
-             machs(nm),5000+icm,MPI_COMM_WORLD,irecv_req(nm),ierr )
+        mpiid=400000+maxgrds*(machs(nm)-1)+icm
+        call MPI_Irecv(node_buffs(nm)%lbc_recv_buff,                  &
+             node_buffs(nm)%nrecv*f_ndmd_size,MPI_PACKED,             &
+             machs(nm),mpiid,MPI_COMM_WORLD,irecv_req(nm),ierr )
      endif
   enddo
 
@@ -108,32 +110,36 @@ subroutine node_sendnbc(ifm,icm)
 
   ! Put variables into buffer. All need coarse grid density weighting first.
 
-        iptr=0
-        call mknest_buff(1,basic_g(icm)%uc,buffnest(1+iptr:)  &
+        la = 1
+        lz = mtp
+        call mknest_buff(1,basic_g(icm)%uc,buffnest(la:lz)    &
             ,basic_g(icm)%dn0,mmzp(icm),mmxp(icm),mmyp(icm)   &
             ,mi0(icm),mj0(icm),i1,i2,j1,j2,k1,k2,mynum,nm,nv)
-        iptr=iptr+mtp
-        call mknest_buff(2,basic_g(icm)%vc,buffnest(1+iptr:)  &
+        la   = lz + 1
+        lz   = lz + mtp
+        call mknest_buff(2,basic_g(icm)%vc,buffnest(la:lz)    &
             ,basic_g(icm)%dn0,mmzp(icm),mmxp(icm),mmyp(icm)   &
             ,mi0(icm),mj0(icm),i1,i2,j1,j2,k1,k2,mynum,nm,nv)
-        iptr=iptr+mtp
-        call mknest_buff(3,basic_g(icm)%wc,buffnest(1+iptr:)  &
+        la   = lz + 1
+        lz   = lz + mtp
+        call mknest_buff(3,basic_g(icm)%wc,buffnest(la:lz)    &
             ,basic_g(icm)%dn0,mmzp(icm),mmxp(icm),mmyp(icm)   &
             ,mi0(icm),mj0(icm),i1,i2,j1,j2,k1,k2,mynum,nm,nv)
-        iptr=iptr+mtp
-        call mknest_buff(4,basic_g(icm)%pc,buffnest(1+iptr:)  &
+        la   = lz + 1
+        lz   = lz + mtp
+        call mknest_buff(4,basic_g(icm)%pc,buffnest(la:lz)    &
             ,basic_g(icm)%dn0,mmzp(icm),mmxp(icm),mmyp(icm)   &
             ,mi0(icm),mj0(icm),i1,i2,j1,j2,k1,k2,mynum,nm,nv)
-        iptr=iptr+mtp
 
         do nv=1,num_scalar(ifm)
-           call mknest_buff(5,scalar_tab(nv,icm)%var_p,buffnest(1+iptr:)  &
-               ,basic_g(icm)%dn0,mmzp(icm),mmxp(icm),mmyp(icm)            &
+           la   = lz + 1
+           lz   = lz + mtp
+           call mknest_buff(5,scalar_tab(nv,icm)%var_p,buffnest(la:lz)  &
+               ,basic_g(icm)%dn0,mmzp(icm),mmxp(icm),mmyp(icm)          &
                ,mi0(icm),mj0(icm),i1,i2,j1,j2,k1,k2,mynum,nm,nv)
-           iptr=iptr+mtp
-        enddo
+        end do
 
-
+        iptr = lz
         ipos = 1
         call MPI_Pack(i1,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
@@ -156,9 +162,11 @@ subroutine node_sendnbc(ifm,icm)
 
         call MPI_Pack(buffnest,iptr,MPI_REAL,node_buffs(nm)%lbc_send_buff, &
                       node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
+
+        mpiid=400000+maxgrds*(mchnum-1)+icm
         call MPI_Isend(node_buffs(nm)%lbc_send_buff,  &
              ipos - 1,  &
-             MPI_PACKED,ipaths(5,itype,ifm,nm),5000+icm,MPI_COMM_WORLD,isend_req(nm),ierr)
+             MPI_PACKED,ipaths(5,itype,ifm,nm),mpiid,MPI_COMM_WORLD,isend_req(nm),ierr)
      endif
 
   enddo
@@ -254,7 +262,7 @@ subroutine node_getnbc(ifm,icm)
   integer :: ifm,icm
   integer, dimension(maxmach) :: i1c,i2c,j1c,j2c,k1c,k2c,iptv,iptc
 
-  integer :: itype,nm,iptr,machf,nvar,nwords,nv,nxc,nyc,nzc,mtp
+  integer :: itype,nm,iptr,machf,nvar,nwords,nv,nxc,nyc,nzc,mtp,la,lz
   !integer :: ibytes,msgid,ihostnum
   real, allocatable, save :: buffnest(:)
   integer, save :: ncall=0, nbuff_save=0
@@ -315,9 +323,10 @@ subroutine node_getnbc(ifm,icm)
                         ipos,nvar,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
         call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,     &
                         ipos,nwords,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-
+        la=1+iptr
+        lz=iptr+nwords
         call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,     &
-                        ipos,buffnest(1+iptr:),nwords,MPI_REAL,MPI_COMM_WORLD,ierr)
+                        ipos,buffnest(la:lz),nwords,MPI_REAL,MPI_COMM_WORLD,ierr)
         iptc(nm)=1+iptr
         iptv(nm)=0
 
@@ -331,15 +340,17 @@ subroutine node_getnbc(ifm,icm)
 
   !            First, construct coarse grid variable in scr1.
 
-     call azero(ubound(scratch%scr1,1),scratch%scr1)
-     call azero(ubound(scratch%scr2,1),scratch%scr2)
+     call azero(maxnzp*maxnxp*maxnyp,scratch%scr1)
+     call azero(maxnzp*maxnxp*maxnyp,scratch%scr2)
      do nm=1,nmachs
         if(iget_paths(itype,ifm,nm).ne.0) then
            nzc=k2c(nm)-k1c(nm)+1
            nxc=i2c(nm)-i1c(nm)+1
            nyc=j2c(nm)-j1c(nm)+1
            mtp=nzc*nxc*nyc
-           call unmkbuff(scratch%scr1,buffnest(iptc(nm)+iptv(nm):)  &
+           la=iptc(nm)+iptv(nm)
+           lz=la+mtp-1
+           call unmkbuff(scratch%scr1,buffnest(la:lz)  &
                 ,maxnzp,maxnxp,maxnyp,nzc,nxc,nyc  &
                 ,i1c(nm),i2c(nm),j1c(nm),j2c(nm),k1c(nm),k2c(nm),mynum)
 

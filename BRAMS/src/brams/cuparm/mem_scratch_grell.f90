@@ -38,7 +38,8 @@ module mem_scratch_grell
            ,kdet                         & ! Top of downdraft detrainemnt layer
            ,kstabi                       & ! cloud stable layer base
            ,kstabm                       & ! cloud stable layer top
-           ,ktop                         ! ! cloud top
+           ,ktop                         & ! cloud top
+           ,ktpse                        ! ! maximum height allowed for cloud top
    !---------------------------------------------------------------------------------------!
 
 
@@ -66,7 +67,8 @@ module mem_scratch_grell
             wbuoymin                     ! ! Minimum buoyant velocity               [  m/s]
 
    !------ Scalars, surface variables -----------------------------------------------------!
-   real    ::  exnersur  & ! Surface: Exner function                               [J/kg/K]
+   real    ::  co2sur    & ! Surface: CO2 mixing ratio                             [   ppm]
+              ,exnersur  & ! Surface: Exner function                               [J/kg/K]
               ,psur      & ! Surface: pressure                                     [    Pa]
               ,qtotsur   & ! Surface: mixing ratio                                 [ kg/kg]
               ,qvapsur   & ! Surface: mixing ratio                                 [ kg/kg]
@@ -87,11 +89,11 @@ module mem_scratch_grell
 
    !------ 1D dependence (mgmzp), variables with all forcings but convection --------------!
      real, allocatable, dimension(:) ::          &
-            dqtotdt        & ! Temporary total mixing ratio tendency             [ kg/kg/s]
-           ,dqtotdt_shal   & ! Mixing ratio tendency due to shallower clouds     [ kg/kg/s]
+            dco2dt         & ! Temporary CO2 mixing ratio tendency               [   ppm/s]
+           ,dqtotdt        & ! Temporary total mixing ratio tendency             [ kg/kg/s]
            ,dthildt        & ! Temporary temperature tendency                    [     K/s]
-           ,dthildt_shal   & ! temperature tendency due to shallower clouds      [     K/s]
            ,dtkedt         & ! Temporary TKE tendency                            [  J/kg/s]
+           ,co2            & ! CO2 Mixing ratio                                  [     ppm]
            ,exner          & ! Exner function                                    [  J/kg/K]
            ,omeg           & ! Omega - Lagrangian pressure tendency              [    Pa/s]
            ,p              & ! Pressure                                          [      Pa]
@@ -114,7 +116,8 @@ module mem_scratch_grell
 
    !------ 1D dependence (mgmzp), variables at current time step --------------------------!
    real, allocatable, dimension(:) :: &
-            exner0    & ! Exner function                                         [  J/kg/K]
+            co20      & ! CO2 mixing ratio                                       [     ppm]
+           ,exner0    & ! Exner function                                         [  J/kg/K]
            ,p0        & ! Pressure with forcing                                  [     hPa]
            ,qtot0     & ! Total mixing ratio                                     [   kg/kg]
            ,qice0     & ! Ice mixing ratio                                       [   kg/kg]
@@ -129,7 +132,8 @@ module mem_scratch_grell
 
    !------ 1D dependence (mgmzp), forcing due to convectivion -----------------------------!
    real, allocatable, dimension(:) :: &
-            outqtot   & ! Total water mixing ratio tendency due to cumulus       [ kg/kg/s]
+            outco2    & ! Total CO2 mixing ratio tendency due to cumulus         [   ppm/s]
+           ,outqtot   & ! Total water mixing ratio tendency due to cumulus       [ kg/kg/s]
            ,outthil   ! ! Ice-liquid potential temperature tendency due to Cu    [     K/s]  
 
    !----- Scalar, forcing due to convection -----------------------------------------------!
@@ -171,11 +175,11 @@ module mem_scratch_grell
      allocate (qiceu_cld     (mgmzp))
 
 
+     allocate (dco2dt        (mgmzp))
      allocate (dqtotdt       (mgmzp))
-     allocate (dqtotdt_shal  (mgmzp))
      allocate (dthildt       (mgmzp))
-     allocate (dthildt_shal  (mgmzp))
      allocate (dtkedt        (mgmzp))
+     allocate (co2           (mgmzp))
      allocate (exner         (mgmzp))
      allocate (omeg          (mgmzp))
      allocate (p             (mgmzp))
@@ -193,6 +197,7 @@ module mem_scratch_grell
      allocate (vwind         (mgmzp))
      allocate (wwind         (mgmzp))
 
+     allocate (co20          (mgmzp))
      allocate (exner0        (mgmzp))
      allocate (p0            (mgmzp))
      allocate (qtot0         (mgmzp))
@@ -206,6 +211,7 @@ module mem_scratch_grell
      
      allocate (outqtot       (mgmzp))
      allocate (outthil       (mgmzp))
+     allocate (outco2        (mgmzp))
 
      return
   end subroutine alloc_scratch_grell
@@ -243,11 +249,11 @@ module mem_scratch_grell
      if(allocated(qliqd_cld     )) deallocate (qliqd_cld     )
      if(allocated(qliqu_cld     )) deallocate (qliqu_cld     )
 
+     if(allocated(dco2dt        )) deallocate (dco2dt        )
      if(allocated(dqtotdt       )) deallocate (dqtotdt       )
-     if(allocated(dqtotdt_shal  )) deallocate (dqtotdt_shal  )
      if(allocated(dthildt       )) deallocate (dthildt       )
-     if(allocated(dthildt_shal  )) deallocate (dthildt_shal  )
      if(allocated(dtkedt        )) deallocate (dtkedt        )
+     if(allocated(co2           )) deallocate (co2           )
      if(allocated(exner         )) deallocate (exner         )
      if(allocated(omeg          )) deallocate (omeg          )
      if(allocated(p             )) deallocate (p             )
@@ -265,6 +271,7 @@ module mem_scratch_grell
      if(allocated(vwind         )) deallocate (vwind         )
      if(allocated(wwind         )) deallocate (wwind         )
 
+     if(allocated(co20          )) deallocate (co20          )
      if(allocated(exner0        )) deallocate (exner0        )
      if(allocated(p0            )) deallocate (p0            )
      if(allocated(qtot0         )) deallocate (qtot0         )
@@ -276,6 +283,7 @@ module mem_scratch_grell
      if(allocated(theiv0        )) deallocate (theiv0        )
      if(allocated(tke0          )) deallocate (tke0          )
 
+     if(allocated(outco2        )) deallocate (outco2        )
      if(allocated(outqtot       )) deallocate (outqtot       )
      if(allocated(outthil       )) deallocate (outthil       )
 
@@ -315,11 +323,11 @@ module mem_scratch_grell
      if(allocated(qliqd_cld     )) qliqd_cld     = 0.
      if(allocated(qliqu_cld     )) qliqu_cld     = 0.
 
+     if(allocated(dco2dt        )) dco2dt        = 0.
      if(allocated(dqtotdt       )) dqtotdt       = 0.
-     if(allocated(dqtotdt_shal  )) dqtotdt_shal  = 0.
      if(allocated(dthildt       )) dthildt       = 0.
-     if(allocated(dthildt_shal  )) dthildt_shal  = 0.
      if(allocated(dtkedt        )) dtkedt        = 0.
+     if(allocated(co2           )) co2           = 0.
      if(allocated(exner         )) exner         = 0.
      if(allocated(omeg          )) omeg          = 0.
      if(allocated(p             )) p             = 0.
@@ -337,6 +345,7 @@ module mem_scratch_grell
      if(allocated(vwind         )) vwind         = 0.
      if(allocated(wwind         )) wwind         = 0.
 
+     if(allocated(co20          )) co20          = 0.
      if(allocated(exner0        )) exner0        = 0.
      if(allocated(p0            )) p0            = 0.
      if(allocated(qtot0         )) qtot0         = 0.
@@ -350,6 +359,8 @@ module mem_scratch_grell
 
      if(allocated(outqtot       )) outqtot       = 0.
      if(allocated(outthil       )) outthil       = 0.
+     if(allocated(outco2        )) outco2        = 0.
+
      !-------------------------------------------------------------------------------------!
      ! Flushing scalars, we don't need to check for allocation here...                     !
      !-------------------------------------------------------------------------------------!
@@ -367,8 +378,10 @@ module mem_scratch_grell
      kstabi            = 0
      kstabm            = 0
      ktop              = 0
+     ktpse             = 0
 
      !----- Real variables ----------------------------------------------------------------!
+     co2sur            = 0.
      exnersur          = 0.
      psur              = 0.
      qtotsur           = 0.

@@ -10,11 +10,11 @@
 !------------------------------------------------------------------------------------------!
 subroutine ed_filelist(fnames,file_prefix,nfile)
  
-   use max_dims, only : str_len, maxfiles
+   use ed_max_dims, only : str_len, maxfiles
 
    implicit none
    integer                        , intent(out)    :: nfile
-   character(len=*), dimension(*) , intent(out)    :: fnames
+   character(len=*), dimension(*) , intent(inout)  :: fnames
    character(len=str_len)         , intent(inout)  :: file_prefix
    integer                                         :: iprelen,nf
 
@@ -91,7 +91,7 @@ subroutine ed_filelist(fnames,file_prefix,nfile)
    do nf=1,n
 
       fnames(nf) = trim(filelist(indices(nf):indices(nf+1)-1))
-      !write (unit=*,fmt='(a,1x,i5,1x,a)') '   [-] File #: ',nf,trim(fnames(nf))
+      write (unit=*,fmt='(a,1x,i5,1x,a)') '   [-] File #: ',nf,trim(fnames(nf))
    end do
 
 #endif
@@ -116,15 +116,15 @@ end subroutine ed_filelist
 !==========================================================================================!
 !==========================================================================================!
 subroutine ed1_fileinfo(text,nfiles,full_list,ntype,type_list,tlon_list,tlat_list)
-   use max_dims, only: str_len,maxfiles
+   use ed_max_dims, only: str_len,maxfiles,maxlist
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    character(len=*)                           , intent(in)  :: text   ! Type file extension
    integer                                    , intent(in)  :: nfiles ! # of input files
-   character(len=str_len), dimension(nfiles)  , intent(in)  :: full_list 
-   integer                                    , intent(out) :: ntype
-   character(len=str_len), dimension(maxfiles), intent(out) :: type_list
-   real                  , dimension(maxfiles), intent(out) :: tlon_list, tlat_list
+   character(len=str_len), dimension(maxlist) , intent(in)  :: full_list 
+   integer                                    , intent(inout) :: ntype
+   character(len=str_len), dimension(maxfiles), intent(inout) :: type_list
+   real                  , dimension(maxfiles), intent(inout) :: tlon_list, tlat_list
    !----- Local variables -----------------------------------------------------------------!
    character(len=str_len)                                   :: this_file
    integer                                                  :: n,posend,posdot,posextradot

@@ -143,7 +143,8 @@ subroutine diffuse_brams31()
              ,scratch%vt3dh            ,scratch%vt3di            ,scratch%vt3dj            &
              ,scratch%vt3dk            ,scratch%scr1             ,scratch%scr2             &
              ,basic_g(ngrid)%dn0       ,grid_g(ngrid)%rtgt       ,grid_g(ngrid)%dxt        &
-             ,grid_g(ngrid)%dyt        ,grid_g(ngrid)%flpw       ,mynum                    )
+             ,grid_g(ngrid)%dyt        ,grid_g(ngrid)%flpw       ,turb_g(ngrid)%akscal     &
+             ,mynum                    )
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -355,6 +356,8 @@ subroutine diffuse_brams31()
                   call atob(mxp*myp,turb_g(ngrid)%sflux_t,scratch%vt2da)
                case ('RTP')
                   call atob(mxp*myp,turb_g(ngrid)%sflux_r,scratch%vt2da)
+               case ('CO2P')
+                  call atob(mxp*myp,turb_g(ngrid)%sflux_c,scratch%vt2da)
                end select
             end if
 

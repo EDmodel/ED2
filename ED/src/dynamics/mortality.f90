@@ -1,50 +1,94 @@
-real function mortality_rates_ar(cpatch,ico,avg_daily_temp)
+!==========================================================================================!
+!==========================================================================================!
+!    This function computes the total PFT-dependent mortality rate:                        !
+!------------------------------------------------------------------------------------------!
+real function mortality_rates(cpatch,ipa,ico,avg_daily_temp)
+   use ed_state_vars , only : patchtype                  ! ! Structure
+   use pft_coms      , only : mort1                      & ! intent(in)
+                            , mort2                      & ! intent(in)
+                            , mort3                      & ! intent(in)
+                            , plant_min_temp             & ! intent(in)
+                            , frost_mort                 ! ! intent(in)
+   use disturb_coms  , only : treefall_disturbance_rate  & ! intent(in)
+                            , treefall_hite_threshold    ! ! intent(in)
+   use ed_misc_coms     , only : current_time               ! ! intent(in)
+   use ed_max_dims      , only : n_pft                      ! ! intent(in)
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   type(patchtype)          , target     :: cpatch           ! Current patch
+   integer                  , intent(in) :: ipa              ! Current patch  ID
+   integer                  , intent(in) :: ico              ! Current cohort ID
+   real                     , intent(in) :: avg_daily_temp   ! Mean temperature yesterday
+   !----- Local variables -----------------------------------------------------------------!
+   integer                              :: ipft              ! PFT 
+   real                                 :: threshtemp        ! Cold threshold temperature
+   real                                 :: carbon_mort       ! Mortality due to carbon
+   real                                 :: treefall_mort     ! Mortality due to treefall
+   real                                 :: cold_mort         ! Mortality due to cold
+   logical, dimension(n_pft), save      :: first_time=.true.
+   !---------------------------------------------------------------------------------------!
 
-  use ed_state_vars,only:patchtype
-  use pft_coms, only: mort1, mort2, mort3, plant_min_temp, frost_mort
-  use disturb_coms, only: treefall_disturbance_rate, treefall_hite_threshold
-  use consts_coms, only: t00
 
-  implicit none
-  type(patchtype),target :: cpatch
-  integer :: ico,ipft
-  real :: mintemp,threshtemp,cold_mort
-  real, intent(in) :: avg_daily_temp
-  real(kind=8) :: hugelog
+   !----- Assume happy end, all plants survive... -----------------------------------------!
+   mortality_rates = 0.0
+   ipft = cpatch%pft(ico)
+
+   !---------------------------------------------------------------------------------------!
+   !    Check mortality due to carbon balance (Density-dependent).                         !
+   !---------------------------------------------------------------------------------------!
+   carbon_mort = mort1(ipft) / (1. + exp(mort2(ipft) * cpatch%cbr_bar(ico)))
+   !---------------------------------------------------------------------------------------!
 
 
-  hugelog = log(huge(1.d0))
+   !---------------------------------------------------------------------------------------!
+   !     Mortality due to treefall.                                                        !
+   !---------------------------------------------------------------------------------------!
+   if(cpatch%hite(ico) <= treefall_hite_threshold) then
+      treefall_mort = treefall_disturbance_rate
+   else
+      treefall_mort = 0.
+   end if
+   !---------------------------------------------------------------------------------------!
 
-  mortality_rates_ar = 0.0
 
-  ipft = cpatch%pft(ico)
 
-  !--------Carbon Balance (Density-dependent)
-  !    The double precision and the min statement were necessary here because of the 
-  ! exponential, which can cause overflow.
-  mortality_rates_ar = mortality_rates_ar + sngl(dble(mort1(ipft )) /  &
-       (1.d0 + dexp(min(dble(mort2(ipft )) * dble(cpatch%cbr_bar(ico)),hugelog))))
-  
-  !--------Treefall
-  if(cpatch%hite(ico) <= treefall_hite_threshold)then
-     mortality_rates_ar = mortality_rates_ar + treefall_disturbance_rate
-  endif
+   !---------------------------------------------------------------------------------------!
+   !     Mortality due to cold.                                                            !
+   !---------------------------------------------------------------------------------------!
+   threshtemp = 5.0 + plant_min_temp(ipft)
+   if(avg_daily_temp < threshtemp)then
+      cold_mort = frost_mort(ipft)
+      if (avg_daily_temp > plant_min_temp(ipft)) then
+         cold_mort = cold_mort * (1.0 - (avg_daily_temp - plant_min_temp(ipft))            &
+                                      / (threshtemp - plant_min_temp(ipft)) )
+      end if
+   else
+      cold_mort = 0.
+   end if
 
-  !--------Cold
-  mintemp = avg_daily_temp - t00
-  threshtemp = 5.0 + plant_min_temp(cpatch%pft(ico))
-  if(mintemp < threshtemp)then
-     cold_mort = frost_mort
-     if(mintemp > plant_min_temp(cpatch%pft(ico)))then
-        cold_mort = cold_mort * (1.0 -   &
-             (mintemp - plant_min_temp(cpatch%pft(ico)))  &
-             /(threshtemp - plant_min_temp(cpatch%pft(ico))))
-     endif
-!     mortality_rates_ar = mortality_rates_ar + cold_mort
-  endif
 
-  !-------Density independent
-  mortality_rates_ar = mortality_rates_ar + mort3(cpatch%pft(ico))
+   !if (first_time(ipft)) then
+   !   first_time(ipft) = .false.
+   !   write (unit=20+ipft,fmt='(a10,8(1x,a12))')                                           &
+   !      &'      TIME','       PATCH','      COHORT','      CARBON','    TREEFALL'         &
+   !      &            ,'        COLD','     CBR_BAR','      HEIGHT','   YTDY_TEMP'
+   !end if
+   
+   !write (unit=20+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i12),6(1x,es12.5))')                     &
+   !     current_time%month,'/',current_time%date,'/',current_time%year,ipa,ico             &
+   !    ,carbon_mort,treefall_mort,cold_mort                                                &
+   !    ,cpatch%cbr_bar(ico),cpatch%hite(ico),avg_daily_temp
 
-  return
-end function mortality_rates_ar
+   !---------------------------------------------------------------------------------------!
+   !    Find the total, density independent, mortality rate.  This is the combination of   !
+   ! four factors:                                                                         !
+   !---------------------------------------------------------------------------------------!
+   mortality_rates = mort3(ipft)   & ! 1. Ageing, PFT-dependent but otherwise constant;
+                      + carbon_mort   & ! 2. Negative carbon balance;
+                      + treefall_mort & ! 3. Treefall mortality;
+                      + cold_mort     ! ! 4. Mortality due to cold weather.
+
+   return
+end function mortality_rates
+!==========================================================================================!
+!==========================================================================================!

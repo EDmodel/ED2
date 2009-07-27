@@ -609,7 +609,6 @@ subroutine opspec3
           closure_type,  & ! intent(in)
           cap_maxs,      & ! intent(in)
           maxclouds,     & ! intent(in)
-          iupmethod,     & ! intent(in)
           depth_min,     & ! intent(in)
           maxens_lsf,    & ! intent(in)
           maxens_eff,    & ! intent(in)
@@ -630,16 +629,14 @@ subroutine opspec3
   ! CAT
   use catt_start, only: CATT ! INTENT(IN)
 
-  ! Sib
-  use sib_vars, only: N_CO2 ! INTENT(IN)
-
   ![MLO - mass check and exner function check
   use mem_mass, only : iexev, imassflx
-
+  
+  use mem_basic, only : ico2, co2con
 
   implicit none
 
-  integer :: ip,k,ifaterr,iwarerr,infoerr,ng,ngr,nc
+  integer :: ip,k,ifaterr,iwarerr,infoerr,ng,ngr,nc,nzz
   character(len=*), parameter :: h="**(opspec3)**"
   logical :: grell_on
 
@@ -690,6 +687,44 @@ subroutine opspec3
      end do
    end if
    
+   !---------------------------------------------------------------------------------------!
+   !    Checking whether the combination of akmin,akmax,hgtmin, hgtmax makes sense...      !
+   !---------------------------------------------------------------------------------------!
+   do ng=1,ngrids
+      if (akmin(ng) <= 0.) then
+         print *, 'FATAL - AKMIN must be positive'
+         print *, 'Please change your setup for grid ',ng,'...'
+         IFATERR=IFATERR+1
+      end if
+
+      if (akmax(ng) > 0.) then
+         if (akmax(ng) < akmin(ng)) then
+            print *, 'FATAL - If AKMAX is positive, then it must be greater than AKMIN...'
+            print *, 'Please change your setup for grid ',ng,'...'
+            IFATERR=IFATERR+1
+         end if 
+         if (hgtmax(ng) <= 0.) then
+            print *, 'FATAL - If AKMAX is positive, HGTMAX must be positive as well...'
+            print *, 'Please change your setup for grid ',ng,'...'
+            IFATERR=IFATERR+1
+         end if
+         if (hgtmin(ng) < 0.) then
+            print *, 'FATAL - If AKMAX is positive, HGTMIN must be non-negative...'
+            print *, 'Please change your setup for grid ',ng,'...'
+            IFATERR=IFATERR+1
+         end if
+         if (hgtmin(ng) >= hgtmax(ng)) then
+            print *, 'FATAL - If AKMAX is positive, HGTMIN must less than HGTMAX...'
+            print *, 'Please change your setup for grid ',ng,'...'
+            IFATERR=IFATERR+1
+         end if
+      elseif (akmax(ng) < 0.) then
+         print *, 'FATAL - AKMAX can''t be negative...'
+         print *, 'Please change your setup for grid ',ng,'...'
+         IFATERR=IFATERR+1
+      end if
+   end do
+
    !---------------------------------------------------------------------------------------!
    !   Determining whether Grell will be called or not, so the Grell-related               !
    ! configuration tests will be performed only if Grell is to be called.                  !
@@ -755,8 +790,8 @@ subroutine opspec3
      end do
    
      do nc=1,nclouds
-        if (iupmethod < 1 .or. iupmethod > 3) then
-            print *, 'FATAL - If Cumulus parameterization is used, iupmethod must be 1, 2, or 3.'
+        if (iupmethod < 1 .or. iupmethod > 4) then
+            print *, 'FATAL - If Cumulus parameterization is used, iupmethod must be between 1 and 4.'
             print *, 'Yours is currently set to ',iupmethod
             IFATERR=IFATERR+1
         end if
@@ -837,15 +872,6 @@ subroutine opspec3
            end do
         end if
      end do
-  end if
-  ! SiB
-  ! Checking the naddsc variable
-  if (isfcl == 3) then
-     if (n_co2 < 1) then
-        print *, "FATAL - If using SiB, N_CO2 must to be > 1"
-        print *, "        NADDSC must be equal NADDSC + N_CO2."
-        IFATERR = IFATERR + 1
-     end if
   end if
 
 
@@ -945,8 +971,13 @@ subroutine opspec3
      print*,' fatal - ibruvais must be either 1, 2, or 3. Yours is set to ',ibruvais,'...'
      ifaterr=ifaterr+1
   end if
-  ! check that diffusion flags are compatible if using ihorgrad=1
 
+  if(ibotflx < 0 .or. ibotflx > 1)then
+     print*,' fatal - ibotflx must be either 0 or 1. Yours is set to ',ibotflx,'...'
+     ifaterr=ifaterr+1
+  end if
+
+  ! check that diffusion flags are compatible if using ihorgrad=1
   if(ihorgrad.eq.2)then
      if(idiffk(ngr) >= 3 .and. idiffk(ngrid) /= 7)then
         print*,' fatal - can''t use ihorgrad=2 if idiffk 3, 4, 5 or 6'
@@ -991,6 +1022,20 @@ subroutine opspec3
     end if 
   end do
 
+  select case (isfcl)
+  case (1,2,5)
+     continue
+  case (3)
+     print*,' fatal - SSiB is not available in this version, use LEAF or ED instead...'
+     ifaterr=ifaterr+1
+  case (4)
+     print*,' fatal - GEMTM is not available in this version, use LEAF or ED instead...'
+     ifaterr=ifaterr+1
+  case default
+     print*,' fatal - isfcl must be either 1, 2, or 5. Yours is set to ',ibruvais,'...'
+     ifaterr=ifaterr+1
+  end select
+
   ! check whether the soil model will be run and make sure that the
   !   number of soil levels are correct.(severity - f,i )
 
@@ -1010,6 +1055,39 @@ subroutine opspec3
           ,' model.'
      ifaterr=ifaterr+1
   endif
+  
+  !----- Check CO2 settings. --------------------------------------------------------------!
+  select case (ico2)
+  case (0,1)
+     !----- Value is okay, now check whether the initial co2con makes sense... ------------!
+     if (co2con(1) < 0.) then
+        print *, 'FATAL - When ICO2 < 2, CO2CON(1) cannot be negative and yours is '       &
+               ,co2con(1),'...'
+        ifaterr = ifaterr + 1
+     elseif (co2con(1) > 1.e6) then
+        print *, 'FATAL - When ICO2 < 2, CO2CON(1) cannot be more than 1.E6 and yours is ' &
+               ,co2con(1),'...'
+        ifaterr = ifaterr + 1
+     end if
+  case (2)
+     !----- Value is okay, now check whether the initial co2con makes sense... ------------!
+     nzz = maxval(nnzp(1:ngrids))
+     if (any(co2con(1:nzz) < 0.)) then
+        print *, 'FATAL - When ICO2=2, CO2CON must be positive for all levels...'
+        print *, 'Your values: ',co2con(1:nzz)
+        ifaterr = ifaterr + 1
+     elseif (any(co2con(1:nzz) > 1.e6)) then
+        print *, 'FATAL - When ICO2=2, CO2CON must be less than 1 million for all levels...'
+        print *, 'Your values: ',co2con(1:nzz)
+        ifaterr = ifaterr + 1
+     end if
+  case (3)
+        print *, 'FATAL - Assimilation of CO2 through RALPH2 files is not available yet.'
+        ifaterr = ifaterr + 1
+  case default 
+        print *, 'FATAL - Invalid ICO2... Yours is set to ',ico2,'...'
+        ifaterr = ifaterr + 1
+  end select
 
   do k=1,nzg
      if (slz(k) .gt. -.001) then

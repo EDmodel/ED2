@@ -133,7 +133,7 @@ subroutine get_work(ifm,nxp,nyp)
 
   use ed_work_vars,only : work_e
   use soil_coms, only: veg_database,soil_database,isoilflg,nslcon
-  use mem_sites,only:n_soi
+  use mem_sites,only:n_soi,grid_res,grid_type
 
   implicit none
   integer, intent(in) :: ifm
@@ -209,21 +209,28 @@ subroutine get_work(ifm,nxp,nyp)
            lon_list(1,ipy) = work_e(ifm)%glon(i,j)
            
            ! Top latitude
-           if(j==nyp)jtoff=-1
-           lat_list(2,ipy) = work_e(ifm)%glat(i,j) + real(jtoff)*0.5*(work_e(ifm)%glat(i,j+jtoff)-work_e(ifm)%glat(i,j))
-           
-           ! Bottom latitude
-           if(j==1)jboff=-1
-           lat_list(3,ipy) = work_e(ifm)%glat(i,j) + real(jboff)*0.5*(work_e(ifm)%glat(i,j-jboff)-work_e(ifm)%glat(i,j))
-           
-           ! Left longitude
-           if(i==1)iloff=-1
-           lon_list(2,ipy) = work_e(ifm)%glon(i,j) + real(iloff)*0.5*(work_e(ifm)%glon(i-iloff,j)-work_e(ifm)%glon(i,j))
-           
-           ! Right longitude
-           if(i==nxp)iroff=-1
-           lon_list(3,ipy) = work_e(ifm)%glon(i,j) + real(iroff)*0.5*(work_e(ifm)%glon(i+iroff,j)-work_e(ifm)%glon(i,j))
-           
+           if(grid_type == 0)then
+              lat_list(2,ipy) = work_e(ifm)%glat(i,j) + 0.5 * grid_res
+              lat_list(3,ipy) = work_e(ifm)%glat(i,j) - 0.5 * grid_res
+              lon_list(2,ipy) = work_e(ifm)%glon(i,j) - 0.5 * grid_res
+              lon_list(3,ipy) = work_e(ifm)%glon(i,j) + 0.5 * grid_res
+           elseif(grid_type == 1)then
+              if(j==nyp)jtoff=-1
+              lat_list(2,ipy) = work_e(ifm)%glat(i,j) + real(jtoff)*0.5*(work_e(ifm)%glat(i,j+jtoff)-work_e(ifm)%glat(i,j))
+              
+              ! Bottom latitude
+              if(j==1)jboff=-1
+              lat_list(3,ipy) = work_e(ifm)%glat(i,j) + real(jboff)*0.5*(work_e(ifm)%glat(i,j-jboff)-work_e(ifm)%glat(i,j))
+              
+              ! Left longitude
+              if(i==1)iloff=-1
+              lon_list(2,ipy) = work_e(ifm)%glon(i,j) + real(iloff)*0.5*(work_e(ifm)%glon(i-iloff,j)-work_e(ifm)%glon(i,j))
+              
+              ! Right longitude
+              if(i==nxp)iroff=-1
+              lon_list(3,ipy) = work_e(ifm)%glon(i,j) + real(iroff)*0.5*(work_e(ifm)%glon(i+iroff,j)-work_e(ifm)%glon(i,j))
+           endif
+
            if (lon_list(1,ipy) >=  180.) lon_list(1,ipy) = lon_list(1,ipy) - 360.
            if (lon_list(1,ipy) <= -180.) lon_list(1,ipy) = lon_list(1,ipy) + 360.
            if (lon_list(2,ipy) >=  180.) lon_list(2,ipy) = lon_list(2,ipy) - 360.
@@ -242,7 +249,7 @@ subroutine get_work(ifm,nxp,nyp)
   write(unit=*,fmt=*) ' => Generating the land/sea mask.'
 
   call leaf_database(trim(veg_database), npoly, 'leaf_class', lat_list,  &
-       lon_list, ipcent_land)
+                     lon_list, ipcent_land)
 
   if (isoilflg(ifm) == 1) then
      allocate(ntext_soil_list(npoly))
@@ -263,15 +270,16 @@ subroutine get_work(ifm,nxp,nyp)
            work_e(ifm)%work(i,j)      = 1.0
            work_e(ifm)%landfrac(i,j)  = real(ipcent_land(ipy))/100.0
 
-           if (isoilflg(ifm) == 1) then
+           select case (isoilflg(ifm))
+           case (1)  !! set from data base or LEAF-3
               datsoil = ntext_soil_list(ipy)
 
               ! This is to prevent datsoil to be zero when the polygon was assumed land
               if (datsoil == 0) datsoil=nslcon
               work_e(ifm)%ntext(i,j) = datsoil
-           else  !! set from ED2IN
+           case (2) !! set from ED2IN/RAMSIN
               work_e(ifm)%ntext(i,j) = nslcon
-           end if
+           end select
         else
            !----- Making this grid point 100% water ---------------------------------------!
            work_e(ifm)%landfrac(i,j)  = 0.

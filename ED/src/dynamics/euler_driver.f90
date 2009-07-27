@@ -1,10 +1,11 @@
-subroutine euler_timestep_ar(cgrid)
+subroutine euler_timestep(cgrid)
 
   use ed_state_vars,only: edtype,polygontype, &
        sitetype,patchtype
-  use misc_coms, only: dtlsm
+  use ed_misc_coms, only: dtlsm
   use soil_coms, only: soil_rough
   use consts_coms, only: cp,mmdryi
+  use canopy_struct_dynamics,only:ed_stars
 
   implicit none
 
@@ -17,6 +18,7 @@ subroutine euler_timestep_ar(cgrid)
   real :: thetacan
   real, parameter :: snowrough=0.001
   real :: hgtmin
+  real :: fm
 
 
   do ipy = 1,cgrid%npolygons
@@ -44,28 +46,29 @@ subroutine euler_timestep_ar(cgrid)
               cpoly%met(isi)%vels = cpoly%met(isi)%vels_unstab
            endif
 
-           call ed_stars(thetaatm, cpoly%met(isi)%atm_shv,   &
-                cpoly%met(isi)%atm_co2, thetacan, hgtmin, cpoly%met(isi)%vels, &
-                csite%rough(ipa), csite%ustar(ipa), csite%rstar(ipa),   &
-                csite%tstar(ipa), csite%cstar(ipa), csite%can_shv(ipa), &
-                csite%can_co2(ipa))
+           call ed_stars(thetaatm,cpoly%met(isi)%atm_shv,cpoly%met(isi)%atm_co2,&
+                thetacan,csite%can_shv(ipa),csite%can_co2(ipa),                 &
+                hgtmin,0.0,cpoly%met(isi)%vels,csite%rough(ipa),                &
+                csite%ustar(ipa), csite%qstar(ipa),                             &
+                csite%tstar(ipa), csite%cstar(ipa),                             &
+                fm)
 
            csite%co2budget_loss2atm(ipa) = - cpoly%met(isi)%rhos *   &
                 csite%ustar(ipa) * csite%cstar(ipa) * mmdryi * dtlsm
            csite%ebudget_loss2atm(ipa) = - cp * cpoly%met(isi)%rhos * &
                 csite%ustar(ipa) * csite%tstar(ipa) * cpoly%met(isi)%exner * dtlsm
            csite%wbudget_loss2atm(ipa) = - cpoly%met(isi)%rhos *  &
-                csite%ustar(ipa) * csite%rstar(ipa) * dtlsm
+                csite%ustar(ipa) * csite%qstar(ipa) * dtlsm
 
            ! This is like the LEAF-3 implemented in OLAM.
-           call leaf3_land_ar(csite,ipa,csite%nlev_sfcwater(ipa),   &
+           call leaf3_land(csite,ipa,csite%nlev_sfcwater(ipa),   &
                 csite%ntext_soil(:,ipa), csite%soil_water(:,ipa),   &
                 csite%soil_energy(:,ipa), csite%sfcwater_mass(:,ipa),   &
                 csite%sfcwater_energy(:,ipa), csite%sfcwater_depth(:,ipa),   &
                 csite%rshort_s(:,ipa), csite%rshort_g(ipa), csite%rlong_s(ipa),  &
                 csite%rlong_g(ipa), csite%veg_height(ipa), csite%veg_rough(ipa),  &
                 csite%lai(ipa), csite%can_depth(ipa), cpoly%met(isi)%rhos,   &
-                cpoly%met(isi)%vels, cpoly%met(isi)%prss,   &
+                cpoly%met(isi)%vels, cpoly%met(isi)%atm_tmp, cpoly%met(isi)%prss,   &
                 cpoly%met(isi)%pcpg * dtlsm,   &
                 cpoly%met(isi)%qpcpg * dtlsm,  &
                 cpoly%met(isi)%dpcpg * dtlsm,   &
@@ -83,18 +86,18 @@ subroutine euler_timestep_ar(cgrid)
   enddo
 
   return
-end subroutine euler_timestep_ar
+end subroutine euler_timestep
 
 !*****************************************************************************
 
-subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
+subroutine leaf3_land(csite,ipa, nlev_sfcwater,   &
      ntext_soil, soil_water,   &
      soil_energy, sfcwater_mass,   &
      sfcwater_energy, sfcwater_depth,   &
      rshort_s, rshort_g, rlong_s,  &
      rlong_g, veg_height, veg_rough,  &
      veg_tai, can_depth, rhos,   &
-     vels, prss, pcpg,   &
+     vels, atm_tmp, prss, pcpg,   &
      qpcpg, dpcpg,   &
      sxfer_t, sxfer_r, sxfer_c,   &
      ustar, snowfac, surface_ssh,  &
@@ -105,9 +108,9 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
   use ed_state_vars, only: sitetype
   use grid_coms, only: nzg, nzs
   use soil_coms, only: soil_rough, snow_rough, soil
-  use misc_coms, only: dtlsm
-  use max_dims, only: n_pft
-  use therm_lib, only: qtk,qwtk8
+  use ed_misc_coms, only: dtlsm
+  use ed_max_dims, only: n_pft
+  use therm_lib, only: qtk,qwtk
   use ed_therm_lib,only:ed_grndvap
   use consts_coms, only: wdns
 
@@ -117,7 +120,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
   integer, intent(in) :: ipa
   integer, intent(inout) :: nlev_sfcwater
   integer, dimension(nzg), intent(in) :: ntext_soil
-  real(kind=8), dimension(nzg), intent(inout) :: soil_water
+  real, dimension(nzg), intent(inout) :: soil_water
   real, dimension(nzg), intent(inout) :: soil_energy
   real, dimension(nzs), intent(inout) :: sfcwater_mass
   real, dimension(nzs), intent(inout) :: sfcwater_energy
@@ -132,6 +135,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
   real, intent(in) :: can_depth
   real, intent(in) :: rhos
   real, intent(in) :: vels
+  real, intent(in) :: atm_tmp
   real, intent(in) :: prss
   real, intent(in) :: pcpg
   real, intent(in) :: qpcpg
@@ -201,7 +205,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
 
   nlsw1 = max(csite%nlev_sfcwater(ipa),1)
 
-  call canopy_ar(                                        &
+  call euler_canopy(                                 &
        nlev_sfcwater,         ntext_soil,            &
        ktrans,                &
        soil_water,            soil_fracliq,          &
@@ -209,7 +213,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
        sfcwater_tempk(nlsw1), veg_height,            &
        veg_rough,             veg_tai,               &
        can_depth,             rhos,                  &
-       vels,                  prss,                  &
+       vels,                  atm_tmp, prss,                  &
        pcpg,                  qpcpg,                 &
        sxfer_t,               sxfer_r,               &
        sxfer_c,               ustar,                 &
@@ -235,7 +239,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
   !  4. Update sfcwater layer energies due to heat flux and solar radiation
   !  5. Evaluate melting and percolation of liquid through sfcwater layers
   
-  call sfcwater(  &
+  call euler_sfcwater(  &
        nlev_sfcwater,    ntext_soil,       &
        soil_rfactor,     soil_water,       &
        soil_energy,      sfcwater_mass,    &
@@ -249,7 +253,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
        wshed,            qwshed,           &
        lsl            )
   
-  call soil_euler_ar(                       &
+  call soil_euler(                       &
        nlev_sfcwater, &
        ntext_soil,   ktrans,        &
        soil_tempk,   soil_fracliq,  &
@@ -278,7 +282,7 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
        surface_temp,surface_fliq)
   
   do k = lsl,nzg
-     call qwtk8(soil_energy(k),soil_water(k)*dble(wdns),  &
+     call qwtk(soil_energy(k),soil_water(k)*wdns,  &
           soil(ntext_soil(k))%slcpd,soil_tempk(k),soil_fracliq(k))
   enddo
   
@@ -313,16 +317,16 @@ subroutine leaf3_land_ar(csite,ipa, nlev_sfcwater,   &
   csite%ebudget_loss2runoff(ipa) = qrunoff
 
   return
-end subroutine leaf3_land_ar
+end subroutine leaf3_land
 
 !***************************************************************************
 
-subroutine canopy_ar(nlev_sfcwater, ntext_soil, ktrans,   &
+subroutine euler_canopy(nlev_sfcwater, ntext_soil, ktrans,   &
                   soil_water, soil_fracliq, soil_tempk,                   &
                   sfcwater_mass, sfcwater_tempk,                          &
                   veg_height, veg_rough, veg_tai,                &
                   can_depth,                                     &
-                  rhos, vels, prss, pcpg, qpcpg,                          &
+                  rhos, vels, atm_tmp, prss, pcpg, qpcpg,                          &
                   sxfer_t, sxfer_r, sxfer_c, ustar,     &
                   snowfac, surface_ssh, ground_shv,                   &
                   can_temp, can_shv, can_co2,                 &
@@ -335,11 +339,12 @@ subroutine canopy_ar(nlev_sfcwater, ntext_soil, ktrans,   &
 
 use soil_coms,   only: soil_rough, dslz
 use grid_coms, only: nzg
-use misc_coms, only: dtlsm
+use ed_misc_coms, only: dtlsm
 use consts_coms, only: cp, vonk, alvl, cliq, cice, alli, rvap
 
 use ed_state_vars,only:sitetype,patchtype
-use max_dims, only: n_pft
+use canopy_air_coms, only: exar, covr
+use ed_max_dims, only: n_pft
 
 implicit none
 
@@ -347,7 +352,7 @@ integer, intent(in)  :: nlev_sfcwater   ! # active levels of surface water
 integer, intent(in)  :: ntext_soil(nzg) ! soil textural class
 integer, intent(out) :: ktrans          ! k index of soil layer supplying transp
 
-real(kind=8), intent(in) :: soil_water(nzg)   ! soil water content [vol_water/vol_tot]
+real, intent(in) :: soil_water(nzg)   ! soil water content [vol_water/vol_tot]
 real, intent(in) :: soil_fracliq(nzg) ! fraction of soil moisture in liquid phase
 real, intent(in) :: soil_tempk        ! soil temp [K]
 real, intent(in) :: sfcwater_mass     ! surface water mass [kg/m^2]
@@ -358,6 +363,7 @@ real, intent(in) :: veg_tai     ! veg total area index
 real, intent(in) :: can_depth   ! canopy depth for heat and vap capacity [m]
 real, intent(in) :: rhos        ! atmospheric air density [kg/m^3]
 real, intent(in) :: vels        ! surface wind speed [m/s]
+real, intent(in) :: atm_tmp     ! atmospheric air density [kg/m^3]
 real, intent(in) :: prss        ! air pressure [Pa]
 real, intent(in) :: pcpg        ! new precip amount this leaf timestep [kg/m^2]
 real, intent(in) :: qpcpg       ! new precip energy this leaf timestep [J/m^2]
@@ -390,17 +396,6 @@ integer :: ipa
 real, intent(in), dimension(n_pft) :: leaf_aging_factor, green_leaf_factor
 
 ! Local parameters
-
-real, parameter :: exar = 2.5  ! for computing rasveg
-real, parameter :: covr = 2.16 ! scaling tai value for computing wtveg
-real, parameter :: c1 = 116.6  ! for computing rb
-
-!     Note: c1=261.5*sqrt((1.-exp(-2.*exar))/(2.*exar)) 
-!     from Lee's dissertation, Eq. 3.36.  The factor of 261.5 is
-!     100 * ln((h-d)/zo) / vonk   where d = .63 * h and zo = .13 * h.
-!     The factor of 100 is 1/L in Eq. 3.37.  Thus, c1 * ustar is the
-!     total expression inside the radical in Eq. 3.37.
-!bob      parameter(exar=3.5,covr=2.16,c1=98.8)
 
 ! Intercept, slope parameters for stomatal conductance factors
 
@@ -515,7 +510,7 @@ ktrans = 0
 transp = 0.
 ed_transp(:) = 0.
 
-call canopy_update_euler_ar(csite,ipa, vels, rhos, prss, pcpg, qpcpg,   &
+call canopy_update_euler(csite,ipa, vels, rhos, atm_tmp, prss, pcpg, qpcpg,   &
      wshed, qwshed, canair, canhcap, dtlsm, hxfergc, sxfer_t,  &
      wxfergc, hxfersc, wxfersc, sxfer_r, ed_transp, ntext_soil,  &
      soil_water, soil_fracliq, lsl, leaf_aging_factor, green_leaf_factor,  &
@@ -523,10 +518,10 @@ call canopy_update_euler_ar(csite,ipa, vels, rhos, prss, pcpg, qpcpg,   &
 
 
 return
-end subroutine canopy_ar
+end subroutine euler_canopy
 
 !***************************************************************************
-subroutine sfcwater(nlev_sfcwater,ntext_soil,                       &
+subroutine euler_sfcwater(nlev_sfcwater,ntext_soil,                        &
                     soil_rfactor, soil_water, soil_energy,                 &
                     sfcwater_mass, sfcwater_energy, sfcwater_depth,        &
                     soil_tempk, soil_fracliq, sfcwater_tempk,              &
@@ -537,7 +532,7 @@ subroutine sfcwater(nlev_sfcwater,ntext_soil,                       &
 
 use soil_coms, only: slz, dslz, dslzi, dslzo2, soil
 use grid_coms, only: nzg, nzs                       
-use misc_coms, only: dtlsm
+use ed_misc_coms, only: dtlsm
 use consts_coms, only: alvi, cice, cliq, alli, t3ple, qicet3, qliqt3, tsupercool, wdns, wdnsi
 use therm_lib, only: qwtk
 
@@ -547,7 +542,7 @@ integer, intent(inout) :: nlev_sfcwater      ! # of active sfc water levels
 integer, intent(in)    :: ntext_soil   (nzg) ! soil textural class
 
 real, intent(out)   :: soil_rfactor    (nzg) ! soil thermal resistance [K m^2/W]
-real(kind=8), intent(inout) :: soil_water      (nzg) ! soil water content [water_vol/total_vol]
+real, intent(inout) :: soil_water      (nzg) ! soil water content [water_vol/total_vol]
 real, intent(inout) :: soil_energy     (nzg) ! soil internal energy [J/m^3]
 real, intent(inout) :: sfcwater_mass   (nzs) ! surface water mass [kg/m^2]
 real, intent(inout) :: sfcwater_energy (nzs) ! surface water energy [J/kg]
@@ -631,7 +626,7 @@ data thick(1:10,10)/ .02, .03, .06, .13, .26, .26, .13, .06, .03, .02/
 ! Compute soil heat resistance times HALF layer depth (soil_rfactor).
 
 do k = lsl,nzg
-   waterfrac = real(soil_water(k)) / soil(ntext_soil(k))%slmsts
+   waterfrac = soil_water(k) / soil(ntext_soil(k))%slmsts
    soilcond =        soil(ntext_soil(k))%soilcond0  &
       + waterfrac * (soil(ntext_soil(k))%soilcond1  &
       + waterfrac *  soil(ntext_soil(k))%soilcond2  )
@@ -813,7 +808,7 @@ do k = nlev_sfcwater,1,-1
 
 ! Combined sfcwater and soil water mass per square meter
 
-      wt = sfcwater_mass(1) + sngl(soil_water(nzg)) * 1.e3 * dslz(nzg)
+      wt = sfcwater_mass(1) + soil_water(nzg) * wdns * dslz(nzg)
 
 ! Combined sfcwater and soil energy per square meter.
 
@@ -853,7 +848,7 @@ do k = nlev_sfcwater,1,-1
 
 ! Lower bound on sfcwater_fracliq(1): case with soil_water(nzg) all liquid
 
-         flmin = (fracliq * wt - sngl(soil_water(nzg)) * wdns * dslz(nzg))  &
+         flmin = (fracliq * wt - soil_water(nzg) * wdns * dslz(nzg))  &
                / sfcwater_mass(1)         
 
 ! Upper bound on sfcwater_fracliq(1): case with soil_water(nzg) all ice
@@ -905,8 +900,8 @@ do k = nlev_sfcwater,1,-1
 ! This is lowest sfcwater layer.  Reduce wfree if necessary to maximum 
 ! amount that can percolate into top soil layer
 
-         soilcap = 1.e3 * max (0.,dslz(nzg)  &
-                 * (soil(ntext_soil(nzg))%slmsts - sngl(soil_water(nzg))))
+         soilcap = wdns * max (0.,dslz(nzg)  &
+                 * (soil(ntext_soil(nzg))%slmsts - soil_water(nzg)))
          if (wfree > soilcap) wfree = soilcap
 
       endif
@@ -944,7 +939,7 @@ do k = nlev_sfcwater,1,-1
 
 ! This is lowest sfcwater layer.  Drained water goes to top soil layer
 
-         soil_water(nzg) = soil_water(nzg) + 1.d-3 * dble(wfree) * dble(dslzi(nzg))
+         soil_water(nzg) = soil_water(nzg) + wdnsi * wfree * dslzi(nzg)
          soil_energy(nzg) = soil_energy(nzg) + qwfree * dslzi(nzg)
 
       else
@@ -1115,7 +1110,7 @@ enddo
 nlev_sfcwater = nlev_new
 
 return
-end subroutine sfcwater
+end subroutine euler_sfcwater
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1126,7 +1121,7 @@ end subroutine sfcwater
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine soil_euler_ar(nlev_sfcwater, ntext_soil, ktrans,    &
+subroutine soil_euler(nlev_sfcwater, ntext_soil, ktrans,    &
                 soil_tempk, soil_fracliq, soil_rfactor,                  &
                 hxfergc, wxfergc, rshort_g, rlong_g, transp,             &
                 soil_energy, soil_water, hxferg, wxfer, qwxfer,          &
@@ -1134,11 +1129,11 @@ subroutine soil_euler_ar(nlev_sfcwater, ntext_soil, ktrans,    &
 
 use soil_coms, only: dslz, dslzi, slzt, dslzidt, dslztidt, soil, slcons1 
 use grid_coms, only: nzg
-use consts_coms, only: cliqvlme, allivlme, alvi,t3ple, tsupercool
+use consts_coms, only: cliqvlme, allivlme, alvi,t3ple, tsupercool,wdnsi
 
 use ed_state_vars,only:sitetype,patchtype
 
-use misc_coms, only: dtlsm
+use ed_misc_coms, only: dtlsm
 
 implicit none
 
@@ -1157,7 +1152,7 @@ real, intent(in) :: rlong_g             ! l/w radiative flux abs by ground [W/m^
 real, intent(in) :: transp              ! transpiration loss [kg/m^2]
 
 real, intent(inout) :: soil_energy(nzg) ! [J/m^3]
-real(kind=8), intent(inout) :: soil_water (nzg) ! soil water content [vol_water/vol_tot]
+real, intent(inout) :: soil_water (nzg) ! soil water content [vol_water/vol_tot]
 
 real, intent(out) :: hxferg      (nzg+1) ! soil internal heat xfer (J/m^2]
 real, intent(out) :: wxfer       (nzg+1) ! soil water xfer [m]
@@ -1186,9 +1181,9 @@ real, dimension(nzg) :: ed_transp
 ! Units of wloss are [vol_water/vol_tot], of transp are [kg/m^2].
 
 do k = lsl, nzg
-   wloss = ed_transp(k) * dslzi(k) * 1.e-3
+   wloss = ed_transp(k) * dslzi(k) * wdnsi
    qwloss = wloss * cliqvlme * (soil_tempk(k) - tsupercool)
-   soil_water(k) = soil_water(k) - dble(wloss)
+   soil_water(k) = soil_water(k) - wloss
    soil_energy(k) = soil_energy(k) - qwloss
    csite%mean_latflux(ipa) =   &
         csite%mean_latflux(ipa) + qwloss * dslz(k) / dtlsm
@@ -1220,8 +1215,8 @@ soil_energy(nzg) = soil_energy(nzg)  &
    + dslzi(nzg) * (dtlsm * (rshort_g + rlong_g) - hxfergc - wxfergc * alvi)
 
 if (nlev_sfcwater == 0) then
-   soil_water(nzg) = soil_water(nzg) - 1.d-3 * dble(wxfergc) * dble(dslzi(nzg))
-endif
+   soil_water(nzg) = soil_water(nzg) - wdnsi * wxfergc * dslzi(nzg)
+end if
 
 ! [12/07/04] Revisit the computation of water xfer between soil layers in
 ! relation to the extreme nonlinearity of hydraulic conductivity with respect
@@ -1242,13 +1237,13 @@ endif
 do k = lsl,nzg
    nts = ntext_soil(k)
 
-   psiplusz(k) = soil(nts)%slpots * (soil(nts)%slmsts / sngl(soil_water(k))) ** soil(nts)%slbs  &
+   psiplusz(k) = soil(nts)%slpots * (soil(nts)%slmsts / soil_water(k)) ** soil(nts)%slbs  &
                + slzt(k) 
 
    soil_liq(k) = dslz(k)  &
-      * sngl(min(soil_water(k) - dble(soil(nts)%soilcp) , soil_water(k) * dble(soil_fracliq(k)) ) )
+      * min(soil_water(k) - soil(nts)%soilcp , soil_water(k) * soil_fracliq(k))
 
-   half_soilair(k) = (soil(nts)%slmsts - sngl(soil_water(k))) * dslz(k) * .5
+   half_soilair(k) = (soil(nts)%slmsts - soil_water(k)) * dslz(k) * .5
 enddo
 
 ! Find amount of water transferred between soil layers (wxfer) [m]
@@ -1262,7 +1257,7 @@ qwxfer(nzg+1) = 0.
 do k = lsl+1,nzg
    nts = ntext_soil(k)
 
-   watermid = .5 * sngl(soil_water(k) + soil_water(k-1))
+   watermid = .5 * soil_water(k) + soil_water(k-1)
    
    hydraul_cond(k) = slcons1(k,nts)  &
       * (watermid / soil(nts)%slmsts) ** (2. * soil(nts)%slbs + 3.)
@@ -1287,16 +1282,16 @@ enddo
 
 do k = lsl,nzg
    nts = ntext_soil(k)
-   soil_water(k) = max(dble(soil(nts)%soilcp),soil_water(k)  &
-      - dble(dslzi(k)) * (dble(wxfer(k+1)) - dble(wxfer(k))))
+   soil_water(k) = max(soil(nts)%soilcp &
+                      ,soil_water(k) - dslzi(k) * (wxfer(k+1) - wxfer(k)))
    soil_energy(k) = soil_energy(k) - dslzi(k) * (qwxfer(k+1) - qwxfer(k))
 enddo
 
 ! Compute soil respiration
-call soil_respiration_ar(csite,ipa)
+call soil_respiration(csite,ipa)
 
 return
-end subroutine soil_euler_ar
+end subroutine soil_euler
 
 !*****************************************************************************
 
@@ -1308,7 +1303,7 @@ subroutine remove_runoff(ksn, sfcwater_fracliq, sfcwater_mass,   &
   use soil_coms, only: runoff_time
   use grid_coms, only: nzs
   use consts_coms, only: alli, cliq,t3ple, wdnsi, tsupercool
-  use misc_coms, only: dtlsm
+  use ed_misc_coms, only: dtlsm
   use therm_lib, only: qtk
 
   implicit none
@@ -1345,7 +1340,8 @@ subroutine remove_runoff(ksn, sfcwater_fracliq, sfcwater_mass,   &
   
   return
 end subroutine remove_runoff
-
+!==========================================================================================!
+!==========================================================================================!
 
 
 

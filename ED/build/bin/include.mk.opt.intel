@@ -45,9 +45,8 @@ BASE=$(ED_ROOT)/build/
 
 # For 64-bit 
 USE_HDF5=1
-HDF5_INCS=-I/n/Moorcroft_Lab/Lab/apps/i91/lib -I/n/Moorcroft_Lab/Lab/apps/i91/include
-HDF5_LIBS=-L/n/Moorcroft_Lab/Lab/apps/i91/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
-          -L/n/Moorcroft_Lab/User/mlongo/util/hdflib/hdf5_64/zlib-1.2.1/lib -lz
+HDF5_INCS=
+HDF5_LIBS=-lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
 
 
 #---------------------------------------------------------------
@@ -75,6 +74,13 @@ NC_LIBS=-L/dev/null
 # -gen-interfaces option are on, so this flag bypass all 
 # interfaces in the code.
 USE_INTERF=1
+
+# MPI_Wtime. ---------------------------------------------------
+# If USE_MPIWTIME=1, then it will use MPI libraries to compute
+# the wall time (the only double-precision intrinsic).  In case
+# you don't have it, leave USE_MPIWTIME=0, in which case it will
+# use a simpler, single-precision function.
+USE_MPIWTIME=1
 
 #----------------- SGI -n32 ------------------------------------
 #CMACH=SGI
@@ -253,13 +259,13 @@ MOD_EXT=mod
 #    You should use this if your run seems to be working fine at the beginning, but it is  #
 #    failing or giving instabilities, or funny results after a long time.                  #
 #------------------------------------------------------------------------------------------#
-USE_INTERF=1
-F_OPTS= -FR -O2 -recursive -static -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
+#USE_INTERF=1
+#F_OPTS= -FR -O2 -recursive -static -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
         -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
-C_OPTS= -O2 -DLITTLE  -g -static -traceback -debug extended
-LOADER_OPTS= -FR -O2 -Vaxlib -static -check all -g -fpe0 -ftz -debug extended        \
+#C_OPTS= -O2 -DLITTLE  -g -static -traceback -debug extended
+#LOADER_OPTS= -FR -O2 -Vaxlib -static -check all -g -fpe0 -ftz -debug extended        \
              -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
-C_LOADER_OPTS=-v -g -traceback -static
+#C_LOADER_OPTS=-v -g -traceback -static
 #------------------------------------------------------------------------------------------#
 
 

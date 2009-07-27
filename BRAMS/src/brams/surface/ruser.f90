@@ -338,18 +338,18 @@ end
 !*****************************************************************
 
 subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm  &
-   ,theta,pi0,pp,rv  &
+   ,theta,pi0,pp,rv,co2p  &
 
    ,soil_water     ,soil_energy      ,soil_text       &
    ,sfcwater_mass  ,sfcwater_energy  ,sfcwater_depth  &
    ,ustar          ,tstar            ,rstar           &
-   ,veg_fracarea   ,veg_lai          ,veg_tai         &
-   ,veg_rough      ,veg_height       ,veg_albedo      &
-   ,patch_area                                        &
-   ,patch_rough    ,patch_wetind     ,leaf_class      &
-   ,soil_rough     ,sfcwater_nlev    ,stom_resist     &
-   ,ground_rsat    ,ground_rvap      ,veg_water       &
-   ,veg_temp       ,can_rvap         ,can_temp        &
+   ,cstar          ,veg_fracarea     ,veg_lai         &
+   ,veg_tai        ,veg_rough        ,veg_height      &
+   ,veg_albedo     ,patch_area       ,patch_rough     &
+   ,patch_wetind   ,leaf_class       ,soil_rough      &
+   ,sfcwater_nlev  ,stom_resist      ,ground_rsat     &
+   ,ground_rvap    ,veg_water        ,veg_temp        &
+   ,can_rvap       ,can_co2          ,can_temp        &
    ,veg_ndvip      ,veg_ndvic        ,veg_ndvif       &
    ,snow_mass      ,snow_depth  &
 
@@ -363,23 +363,23 @@ integer :: n1,n2,n3,mzg,mzs,npat,ifm,i,j,k,ipat,nveg,nsoil
 
 real :: c1,airtemp
 
-real, dimension(n1,n2,n3) :: theta,pi0,pp,rv
+real, dimension(n1,n2,n3) :: theta,pi0,pp,rv,co2p
 real, dimension(n2,n3)    :: rvs,prss,pis,vt2da,vt2db,glat,glon,zot  &
                             ,snow_mass, snow_depth
 real, dimension(n2,n3) :: flpw
 
 real, dimension(mzg,n2,n3,npat) :: soil_water,soil_energy,soil_text
-real, dimension(mzs,n2,n3,npat) :: sfcwater_mass,sfcwater_energy  &
+real, dimension(mzs,n2,n3,npat) :: sfcwater_mass,sfcwater_energy         &
                                   ,sfcwater_depth
 
 real, dimension(n2,n3,npat) :: ustar        ,tstar         ,rstar        &
-                              ,veg_fracarea ,veg_lai       ,veg_tai      &
-                              ,veg_rough    ,veg_height    ,veg_albedo   &
-                              ,patch_area                                &
-                              ,patch_rough  ,patch_wetind  ,leaf_class   &
-                              ,soil_rough   ,sfcwater_nlev ,stom_resist  &
-                              ,ground_rsat  ,ground_rvap   ,veg_water    &
-                              ,veg_temp     ,can_rvap      ,can_temp     &
+                              ,cstar        ,veg_fracarea  ,veg_lai      &
+                              ,veg_tai      ,veg_rough     ,veg_height   &
+                              ,veg_albedo   ,patch_area    ,patch_rough  &
+                              ,patch_wetind ,leaf_class    ,soil_rough   &
+                              ,sfcwater_nlev,stom_resist   ,ground_rsat  &
+                              ,ground_rvap  ,veg_water     ,veg_temp     &
+                              ,can_rvap     ,can_co2       ,can_temp     &
                               ,veg_ndvip    ,veg_ndvic     ,veg_ndvif
 
 !  This subroutine is the intended location for a user to customize the

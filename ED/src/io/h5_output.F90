@@ -7,13 +7,13 @@ subroutine h5_output(vtype)
 
   use an_header
   
-  use var_tables_array,only: &
+  use ed_var_tables,only: &
        vt_info,              &
        var_table,            &
        var_table_vector,     &
        num_var
 
-  use misc_coms, only : ffilout, &
+  use ed_misc_coms, only : ffilout, &
                         sfilout, &
 	                itimea,  &
 	                idatea,  &
@@ -39,7 +39,7 @@ subroutine h5_output(vtype)
   use hdf5
 #endif
   use ed_node_coms,only:mynum,nnodetot,recvnum,sendnum
-  use max_dims, only : n_pft,n_dist_types,n_dbh,maxgrds
+  use ed_max_dims, only : n_pft,n_dist_types,n_dbh,maxgrds
   use ed_state_vars,only: edgrid_g,edtype,polygontype,sitetype,patchtype,gdpy
 
   implicit none
@@ -52,11 +52,11 @@ subroutine h5_output(vtype)
   character*(*) vtype
 
   character(len=128) :: anamel
-  character(len=2)  :: cgrid
-  character(len=25) :: subaname
+  character(len=3)  :: cgrid
+  character(len=40) :: subaname
   character(len=64) :: varn
   character(len=1)  :: vnam
-  character(len=15) :: c0
+  character(len=64) :: c0
   character(len=64),dimension(3) :: metadata
   logical exans
 
@@ -138,21 +138,21 @@ subroutine h5_output(vtype)
 
   do ngr=1,ngrids
 
-!     call h5garbage_collect_f(hdferr) 
+     call h5garbage_collect_f(hdferr) 
      
      ping = 0 
 
 #if USE_COLLECTIVE_MPIO
 #else
 
-        if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,734+ngr,MPI_COMM_WORLD,status,ierr)
+        if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,3510+ngr,MPI_COMM_WORLD,status,ierr)
 
 #endif
      ! If there are no polygons on this node, we do not have any interaction with the file
      
      if (gdpy(mynum,ngr)>0) then
         
-        write(cgrid,'(a1,i1)') 'g',ngr
+        write(cgrid,'(a1,i2.2)') 'g',ngr
         
         select case (trim(vtype))
         case('DAIL')
@@ -160,7 +160,11 @@ subroutine h5_output(vtype)
            !Return the current year,month and day of the last 24hrs
            call date_add_to (iyeara,imontha,idatea,itimea*100,  &
                 time-21600.0d0,'s',outyear,outmonth,outdate,outhour)
-           
+
+           !Fix outhour to zero again, it was just pushed backwards
+           !to get the previous day
+           outhour = 0
+
            call makefnam(anamel,ffilout,zero,outyear,outmonth,outdate, &
                 0,vnam,cgrid,'h5 ')
            
@@ -169,14 +173,14 @@ subroutine h5_output(vtype)
            call date_add_to (iyeara,imontha,idatea,itimea*100,  &
                 time-21600.0d0,'s',outyear,outmonth,outdate,outhour)
            
-           
+           outhour = 0
            call makefnam(anamel,ffilout,zero,outyear,outmonth,0, &
                 0,vnam,cgrid,'h5 ')
         case('YEAR')
            
            call date_add_to (iyeara,imontha,idatea,itimea*100,  &
                 time-21600.0d0,'s',outyear,outmonth,outdate,outhour)
-           
+           outhour = 0
            call makefnam(anamel,ffilout,zero,outyear,0,0, &
                 0,vnam,cgrid,'h5 ')
 
@@ -210,7 +214,11 @@ subroutine h5_output(vtype)
 
            call makefnam(anamel,sfilout,time,iyeara,imontha,idatea,  &
                 itimea*100,vnam,cgrid,'h5 ')
-           
+           outyear = iyeara
+           outmonth = imontha
+           outdate  = idatea
+           outhour  = itimea*100
+
         case default
            if(nrec_fast .eq. 1) then  !! single file per output
               call makefnam(anamel,ffilout,time,iyeara,imontha,idatea,  &
@@ -559,6 +567,7 @@ subroutine h5_output(vtype)
                        call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%var_dp,globdims, &
                             hdferr,file_space_id = filespace, mem_space_id = memspace, &
                             xfer_prp = plist_id) 
+
                     end if
                     if (hdferr /= 0) then
                        write (unit=*,fmt=*) 'Variable name:    ',varn
@@ -589,7 +598,7 @@ subroutine h5_output(vtype)
                        
                        call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%var_dp,globdims, &
                             hdferr,file_space_id = filespace, mem_space_id = memspace)
-                       
+
                     end if
                     if (hdferr /= 0) then
                        write (unit=*,fmt=*) 'Variable name:    ',varn
@@ -657,7 +666,7 @@ subroutine h5_output(vtype)
      
 #else     
 
-        if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,734+ngr,MPI_COMM_WORLD,ierr)
+        if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,3510+ngr,MPI_COMM_WORLD,ierr)
 !        if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
 #endif     
@@ -712,9 +721,10 @@ subroutine h5_output(vtype)
 subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,irec)
   
   use grid_coms,only : nzg,nzs
-  use max_dims, only : n_pft,n_dist_types,n_dbh
+  use ed_max_dims, only : n_pft,n_dist_types,n_dbh
   use hdf5_coms,only : chnkdims,chnkoffs,cnt,stride,globdims
   use fusion_fission_coms, only: ff_ndbh
+  use c34constants,only: n_stoma_atts
 
   implicit none
   character(len=*) :: varn
@@ -779,7 +789,6 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
      
   case (14) ! (n_pft,npolygons)  
      
-     ! Soil column type
      dsetrank = 2
      globdims(1) = int(n_pft,8)
      chnkdims(1) = int(n_pft,8)
@@ -808,7 +817,6 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
 
   case (15) ! (n_dist_types,npolygons)  
      
-     ! Soil column type
      dsetrank = 2
      globdims(1) = int(n_dist_types,8)
      chnkdims(1) = int(n_dist_types,8)
@@ -819,9 +827,23 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
      cnt(1:2)    = 1_8
      stride(1:2) = 1_8
 
+  case (155) ! (n_dist_types,n_dist_types,npolygons)  
+     
+     dsetrank = 3
+     globdims(1) = int(n_dist_types,8)
+     chnkdims(1) = int(n_dist_types,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(n_dist_types,8)
+     chnkdims(2) = int(n_dist_types,8)
+     chnkoffs(2) = 0_8
+     globdims(3) = int(var_len_global,8)
+     chnkdims(3) = int(varlen,8)
+     chnkoffs(3) = int(globid,8)
+     cnt(1:3)    = 1_8
+     stride(1:3) = 1_8
+
   case (16) ! (n_dbh,npolygons)  
      
-     ! Soil column type
      dsetrank = 2
      globdims(1) = int(n_dbh,8)
      chnkdims(1) = int(n_dbh,8)
@@ -834,7 +856,6 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
 
   case (17) ! (nlai,nvars,npolygons)  
      
-     ! Soil column type
      dsetrank = 3
      globdims(1) = 3_8
      chnkdims(1) = 3_8
@@ -1003,6 +1024,24 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
      cnt(1:3)      = 1_8
      stride(1:3)   = 1_8
 
+ case (316) ! (n_stoma_atts,n_pft,npatches)
+
+     dsetrank = 3
+     globdims(1) = int(n_stoma_atts,8)
+     chnkdims(1) = int(n_stoma_atts,8)
+     chnkoffs(1) = 0_8
+     
+     globdims(2) = int(n_pft,8)
+     chnkdims(2) = int(n_pft,8)
+     chnkoffs(2) = 0_8
+
+     globdims(3) = int(var_len_global,8)
+     chnkdims(3) = int(varlen,8)
+     chnkoffs(3) = int(globid,8)
+     cnt(1:3)      = 1_8
+     stride(1:3)   = 1_8
+     
+
   case (36) !(n_dbh,npatches)
      
      ! DBH type
@@ -1024,7 +1063,19 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
      globdims(1) = int(var_len_global,8)
      cnt(1)      = 1_8
      stride(1)   = 1_8
+
+  case (416) !(16 - ncohorts (stoma data))
      
+     dsetrank = 2
+     globdims(1) = 16_8
+     chnkdims(1) = 16_8
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
+    
   case (49) !(13,ncohorts)
      
      ! 13 Months type

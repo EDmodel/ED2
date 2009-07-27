@@ -22,8 +22,8 @@ subroutine micro_1st()
    use therm_lib  , only: bulk_on
    use mem_radiate, only: ilwrtyp,iswrtyp,icumfdbk
    use micro_coms , only: pcp_tab, nullify_sedimtab, alloc_sedimtab
-   use node_mod   , only: mmzp
-   use mem_grid   , only: ngrids
+   use node_mod   , only: mmzp,mzp
+   use mem_grid   , only: ngrids,dtlt,zm,dzt
    use micphys    , only: maxkfall,nembfall,nhcat
    implicit none
    !----- Local variable ------------------------------------------------------------------!
@@ -46,8 +46,12 @@ subroutine micro_1st()
       !----- Allocating the precipitation table -------------------------------------------!
       allocate(pcp_tab(ngrids))
       do ifm=1,ngrids
+         call newgrid(ifm)
          call nullify_sedimtab(pcp_tab(ifm))
-         call alloc_sedimtab(pcp_tab(ifm),mmzp(ifm),maxkfall,nembfall,nhcat)
+         call alloc_sedimtab(pcp_tab(ifm),mzp,maxkfall,nembfall,nhcat)
+         call mksedim_tab(mzp,zm,dzt,pcp_tab(ifm)%pcpfillc,pcp_tab(ifm)%pcpfillr           &
+                         ,pcp_tab(ifm)%sfcpcp)
+         call homfrzcl(dtlt,ifm)
       end do
 
    end if
@@ -338,11 +342,17 @@ subroutine initqin(n1,n2,n3,q2,q6,q7,pi0,pp,theta,dn0,cccnp,cifnp)
    end do
    return
 end subroutine initqin
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine jnmbinit()
-
    use therm_lib, only : &
            level         ! ! intent(in)
    use micphys  , only : &

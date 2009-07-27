@@ -18,8 +18,8 @@ integer :: ivflag
 
 character(len=14)  :: itotdate_current
 integer :: iyears,imonths,idates,ihours,nf,ifm  &
-          ,ivar_wait,nwaits,nw,ivwait1,irsleep,irslp,ifileok,icm
-
+          ,ivar_wait,nwaits,nw,ivwait1,irsleep,irslp,icm
+logical :: ifileok
 ! See if we want to possibly wait for files to be available.
 !    This will control some logic...
 
@@ -76,7 +76,7 @@ if (ivflag == 0) then   ! Initialization of initial fields
    ! Now do actual initialization for the coarse grid
    !     and find 1D reference state
    call newgrid(1)
-   call varf_update(0,ifileok,1)
+   call varf_update(0,1,ifileok)
 
    !  On all fine grids, initialize the 1-D reference state arrays,
    !  the 3-D reference state arrays,
@@ -98,9 +98,9 @@ if (ivflag == 0) then   ! Initialization of initial fields
       call newgrid(ifm)
 
       ! See if this grid's varfile is created.
-      call varf_update(0,ifileok,1)
+      call varf_update(0,1,ifileok)
 
-      if (ifileok  ==  1) then
+      if (ifileok) then
          ! Everything's cool...
          print*,'Initial varfile read of grid-',ifm
       else
@@ -161,9 +161,9 @@ elseif (ivflag == 1) then   ! Fill nudging arrays and compute weights
       if (ifm > 1) call vfintrpf(ifm,1)
 
       ! See if this grid's varfile is created.
-      call varf_update(0,ifileok,0)
+      call varf_update(0,0,ifileok)
 
-      if (ifileok  ==  1) then
+      if (ifileok) then
          ! Everything's cool...
          print*,'Varfile read of grid-',ifm
       else
@@ -232,9 +232,9 @@ do ifm = 1,ngrids
    call newgrid(ifm)
 
    ! See if this grid's varfile is created.
-   call varf_update(1,ifileok,0)
+   call varf_update(1,0,ifileok)
 
-   if (ifileok  ==  1) then
+   if (ifileok) then
       ! Everything's cool...
       print*,'Future varfile read of grid-',ifm
    else

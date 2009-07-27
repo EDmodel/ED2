@@ -9,11 +9,14 @@ MAINOBJ = edmain.o
 # Define objects.
 
 OBJ_MODEL =                        \
+	ed_state_vars.o            \
+	ed_max_dims.o              \
 	allometry.o                \
 	an_header.o                \
 	average_utils.o            \
 	canopy_air_coms.o          \
 	canopy_radiation_coms.o    \
+	canopy_struct_dynamics.o   \
 	canopy_update_euler.o      \
 	c34constants.o             \
 	charutils.o                \
@@ -44,9 +47,9 @@ OBJ_MODEL =                        \
 	ed_params.o                \
 	ed_para_coms.o             \
 	ed_para_init.o             \
-	ed_state_vars.o            \
 	ed_therm_lib.o             \
 	ed_type_init.o             \
+	ed_var_tables.o            \
 	ed_work_vars.o             \
 	ed_xml_config.o            \
 	ename_coms.o               \
@@ -72,10 +75,8 @@ OBJ_MODEL =                        \
 	leaf_database.o            \
 	libxml2f90.f90_pp.o        \
 	lsm_hyd.o                  \
-	max_dims.o                 \
 	mem_sites.o                \
 	met_driver_coms.o          \
-	misc_coms.o                \
 	mortality.o                \
 	numutils.o                 \
 	optimiz_coms.o             \
@@ -95,9 +96,10 @@ OBJ_MODEL =                        \
 	rk4_stepper.o              \
 	rsys.o                     \
 	soil_coms.o                \
+	stable_cohorts.o           \
 	structural_growth.o        \
 	therm_lib.o                \
 	twostream_rad.o            \
+	update_derived_props.o     \
 	utils_c.o                  \
-	utils_f.o                  \
-	var_tables_array.o
+	utils_f.o

@@ -26,6 +26,8 @@ subroutine node_sendlbc()
 
   use var_tables
   use mem_scratch
+  use mem_cuparm, only: nclouds
+  use grid_dims, only: maxgrds
 
   implicit none
 
@@ -33,7 +35,7 @@ subroutine node_sendlbc()
   include 'mpif.h'
 
   integer :: ierr,ipos
-  integer :: itype,nm,i1,i2,j1,j2,nv,mtp
+  integer :: itype,nm,i1,i2,j1,j2,nv,mtp,mpiid
 
   itype=1
   !______________________
@@ -43,14 +45,13 @@ subroutine node_sendlbc()
 
   do nm=1,nmachs
      if (iget_paths(itype,ngrid,nm).ne.0) then
-  !      call par_get_noblock(node_buffs(nm)%lbc_recv_buff(1)  &
-  !          ,node_buffs(nm)%nrecv ,20000+ngrid,machs(nm),irecv_req(nm) )
 
+        mpiid=300000 +maxgrds*(machs(nm)-1)+ngrid
         call MPI_Irecv(node_buffs(nm)%lbc_recv_buff(1),  &
              node_buffs(nm)%nrecv*f_ndmd_size,  &
              MPI_PACKED,  &
              machs(nm),  &
-             200+ngrid,  &
+             mpiid,  &
              MPI_COMM_WORLD,  &
              irecv_req(nm),ierr )
         
@@ -86,23 +87,35 @@ subroutine node_sendlbc()
 
         do nv = 1,num_var(ngrid)
            if ( vtab_r(nv,ngrid)%impt1 == 1) then
-              if ( vtab_r(nv,ngrid)%idim_type == 3) then
-                 call mkstbuff(mzp,mxp,myp,vtab_r(nv,ngrid)%var_p  &
-                     ,scratch%vt3dp,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
-                 call MPI_Pack(scratch%vt3dp,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff,  &
-                      node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-              elseif ( vtab_r(nv,ngrid)%idim_type == 2) then
-                 call mkstbuff(1,mxp,myp,vtab_r(nv,ngrid)%var_p  &
-                     ,scratch%vt3dp,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
-                 call MPI_Pack(scratch%vt3dp,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff,  &
-                      node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-              endif
+              select case (vtab_r(nv,ngrid)%idim_type)
+              case (2) !---- (X,Y) --------------------------------------------------------!
+                 call mkstbuff(1,mxp,myp,1,vtab_r(nv,ngrid)%var_p,scratch%vt3dp            &
+                              ,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+                 call MPI_Pack(scratch%vt3dp,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff     &
+                              ,node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
+              case (3) !---- (Z,X,Y) ------------------------------------------------------!
+                 call mkstbuff(mzp,mxp,myp,1,vtab_r(nv,ngrid)%var_p,scratch%vt3dp          &
+                              ,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+                 call MPI_Pack(scratch%vt3dp,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff     &
+                              ,node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
+              case (9) !---- (X,Y,C) ------------------------------------------------------!
+                 call mkstbuff(1,mxp,myp,nclouds,vtab_r(nv,ngrid)%var_p,scratch%vt3dp      &
+                              ,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+                 call MPI_Pack(scratch%vt3dp,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff     &
+                              ,node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
+              case default
+                 write(unit=*,fmt='(a)')       ' Invalid data type set to mpt1!!!'
+                 write(unit=*,fmt='(a,1x,a)')  ' Variable name: ',vtab_r(nv,ngrid)%name
+                 write(unit=*,fmt='(a,1x,i5)') ' Variable type: ',vtab_r(nv,ngrid)%idim_type
+                 call abort_run ('This data type is not set up to work with LBC'           &
+                                ,'node_sendlbc','mpass_lbc.f90')
+              end select
            endif
         enddo
-
-        call MPI_Isend(node_buffs(nm)%lbc_send_buff,  &
-             ipos-1,  &
-             MPI_Packed,ipaths(5,itype,ngrid,nm),200+ngrid,MPI_COMM_WORLD,  &
+        
+        mpiid=300000+maxgrds*(mchnum-1)+ngrid
+        call MPI_Isend(node_buffs(nm)%lbc_send_buff,ipos-1,  &
+             MPI_Packed,ipaths(5,itype,ngrid,nm),mpiid,MPI_COMM_WORLD,  &
              isend_req(nm),ierr)
 
      endif
@@ -122,6 +135,7 @@ subroutine node_getlbc()
 
   use var_tables
   use mem_scratch
+  use mem_cuparm, only: nclouds
 
   implicit none
 
@@ -183,25 +197,39 @@ subroutine node_getlbc()
 
         do nv = 1,num_var(ngrid)
            if ( vtab_r(nv,ngrid)%impt1 == 1) then
-              if ( vtab_r(nv,ngrid)%idim_type == 3) then
-                 mtp=nnzp(ngrid) * nptsxy
-                 call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
-                      scratch%vt3dp,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
-                 call exstbuff(mzp,mxp,myp,vtab_r(nv,ngrid)%var_p  &
-                     ,scratch%vt3dp,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
-              elseif ( vtab_r(nv,ngrid)%idim_type == 2) then
+              select case(vtab_r(nv,ngrid)%idim_type)
+              case (2) !---- (X,Y) --------------------------------------------------------!
                  mtp= nptsxy
-                 call MPI_Unpack(node_buffs(nm)%lbc_recv_buff,node_buffs(nm)%nrecv*f_ndmd_size,ipos,  &
-                      scratch%vt3dp(1),mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
-                 call exstbuff(1,mxp,myp,vtab_r(nv,ngrid)%var_p  &
-                     ,scratch%vt3dp,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
-              endif
-           endif
-        enddo
-        
-     endif
-
-  enddo
+                 call MPI_Unpack(node_buffs(nm)%lbc_recv_buff                              &
+                                ,node_buffs(nm)%nrecv*f_ndmd_size,ipos,scratch%vt3dp,mtp   &
+                                ,MPI_REAL,MPI_COMM_WORLD,ierr)
+                 call exstbuff(1,mxp,myp,1,vtab_r(nv,ngrid)%var_p,scratch%vt3dp            &
+                              ,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+              case (3) !---- (Z,X,Y) ------------------------------------------------------!
+                 mtp = nnzp(ngrid) * nptsxy
+                 call MPI_Unpack(node_buffs(nm)%lbc_recv_buff                              &
+                                ,node_buffs(nm)%nrecv*f_ndmd_size,ipos,scratch%vt3dp,mtp   &
+                                ,MPI_REAL,MPI_COMM_WORLD,ierr)
+                 call exstbuff(mzp,mxp,myp,1,vtab_r(nv,ngrid)%var_p,scratch%vt3dp          &
+                              ,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+              case (9) !---- (X,Y,C) ------------------------------------------------------!
+                 mtp= nptsxy * nclouds
+                 call MPI_Unpack(node_buffs(nm)%lbc_recv_buff                              &
+                                ,node_buffs(nm)%nrecv*f_ndmd_size,ipos,scratch%vt3dp,mtp   &
+                                ,MPI_REAL,MPI_COMM_WORLD,ierr)
+                 call exstbuff(1,mxp,myp,nclouds,vtab_r(nv,ngrid)%var_p,scratch%vt3dp      &
+                              ,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+              case default
+                 write(unit=*,fmt='(a)')       ' Invalid data type set to mpt1!!!'
+                 write(unit=*,fmt='(a,1x,a)')  ' Variable name: ',vtab_r(nv,ngrid)%name
+                 write(unit=*,fmt='(a,1x,i5)') ' Variable type: ',vtab_r(nv,ngrid)%idim_type
+                 call abort_run ('This data type is not set up to work with LBC'           &
+                                ,'node_getlbc','mpass_lbc.f90')
+              end select
+           end if
+        end do        
+     end if
+  end do
 
   return
 end subroutine node_getlbc

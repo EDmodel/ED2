@@ -24,20 +24,18 @@ subroutine ed_coup_driver()
        filltab_alltypes, &
        edgrid_g
 
-  use ed_misc_coms, only: fast_diagnostics
+  use ed_misc_coms, only: fast_diagnostics, &
+                          iyeara,          &
+                          imontha,         &
+                          idatea,          &
+                          itimea,          &
+                          runtype,         &
+                          ifoutput,        &
+                          idoutput,        &
+                          imoutput,        &
+                          integration_scheme
   
   use ed_work_vars,only:ed_dealloc_work,work_e
-
-  use misc_coms, only: &
-       iyeara,          &
-       imontha,         &
-       idatea,          &
-       itimea,          &
-       runtype,         &
-       ifoutput,        &
-       idoutput,        &
-       imoutput,        &
-       integration_scheme
 
   use soil_coms, only: alloc_soilgrid
   use ed_node_coms , only: mynum,nnodetot,sendnum,recvnum,mmxp,mmyp
@@ -85,12 +83,12 @@ subroutine ed_coup_driver()
   ! STEP 3: Overwrite the parameters in case a XML file is provided           !
   !---------------------------------------------------------------------------!
 
-  if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,602,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
+  if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,91,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
   if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Checking for XML config...'
   
   call overwrite_with_xml_config(mynum)
   
-  if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,602,MPI_COMM_WORLD,ierr)
+  if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,91,MPI_COMM_WORLD,ierr)
 
   
   !---------------------------------------------------------------------------!
@@ -104,8 +102,8 @@ subroutine ed_coup_driver()
   ! STEP 5: Set some polygon-level basic information, such as lon/lat/soil texture  !
   !---------------------------------------------------------------------------------!
   
-  if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Set_Polygon_Coordinates_Ar...'
-  call set_polygon_coordinates_ar()
+  if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Set_Polygon_Coordinates...'
+  call set_polygon_coordinates()
   
   !---------------------------------------------------------------------------!
   ! STEP 6: Initialize inherent soil and vegetation properties.               !
@@ -123,12 +121,12 @@ subroutine ed_coup_driver()
      !          state.
      !-----------------------------------------------------------------------!
 
-     if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,606,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
+     if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,90,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
   
      if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Init_Full_History_Restart...'
      call init_full_history_restart()
      
-     if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,606,MPI_COMM_WORLD,ierr)
+     if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,90,MPI_COMM_WORLD,ierr)
 !     if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
      
      
@@ -250,7 +248,7 @@ subroutine ed_coup_driver()
   !-----------------------------------------------------------------------!
   ! STEP 18: Allocate memory to the integration patch
   !-----------------------------------------------------------------------!
-  if(integration_scheme == 1) call initialize_rk4patches_ar(1)
+  if(integration_scheme == 1) call initialize_rk4patches(1)
   do ifm=1,ngrids
      call reset_averaged_vars(edgrid_g(ifm))
   end do
@@ -283,7 +281,7 @@ end subroutine ed_coup_driver
 !=========================================================================!
 
 subroutine find_frqsum()
-   use misc_coms, only:  &
+   use ed_misc_coms, only:  &
         unitfast,        &
         unitstate,       &
         isoutput,        &
@@ -294,13 +292,14 @@ subroutine find_frqsum()
         frqfast,         &
         frqsum
    use consts_coms, only: day_sec
-
+   use io_params  , only: ioutput
    implicit none 
    !---------------------------------------------------------------------------------------!
    ! Determining which frequency I should use to normalize variables. FRQSUM should never  !
    ! exceed 1 day.                                                                         !
    !---------------------------------------------------------------------------------------!
-   if (ifoutput == 0 .and. isoutput == 0 .and. idoutput == 0 .and. imoutput == 0) then
+   if (ifoutput == 0 .and. isoutput == 0 .and. idoutput == 0 .and. imoutput == 0 .and.     &
+       ioutput  == 0 ) then
       write(unit=*,fmt='(a)') '---------------------------------------------------------'
       write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
       write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
@@ -316,12 +315,18 @@ subroutine find_frqsum()
    !     Either no instantaneous output was requested, or the user is outputting it at     !
    ! monthly or yearly scale, force it to be one day.                                      !
    !---------------------------------------------------------------------------------------!
-   elseif ((isoutput == 0 .and. ifoutput == 0) .or.                                        &
+   elseif ((isoutput == 0 .and. ifoutput == 0 .and. ioutput == 0 ) .or.                    &
            (ifoutput == 0 .and. isoutput  > 0 .and. unitstate > 1) .or.                    &
            (isoutput == 0 .and. ifoutput  > 0 .and. unitfast  > 1) .or.                    &
            (ifoutput  > 0 .and. isoutput  > 0 .and. unitstate > 1 .and. unitfast > 1)      &
           ) then
       frqsum=day_sec
+   !---------------------------------------------------------------------------------------!
+   !    BRAMS output is on, and because this is a coupled run, the units are in seconds,   !
+   ! test which frqsum to use (the smallest between frqfast and frqstate.).                !
+   !---------------------------------------------------------------------------------------!
+   elseif (ioutput > 0) then
+      frqsum=min(min(frqstate,frqfast),day_sec)
    !---------------------------------------------------------------------------------------!
    !    Only restarts, and the unit is in seconds, test which frqsum to use.               !
    !---------------------------------------------------------------------------------------!
