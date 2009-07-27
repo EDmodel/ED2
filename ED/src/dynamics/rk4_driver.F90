@@ -181,15 +181,18 @@ module rk4_driver
             end do patchloop
          end do siteloop
 
-#if (USE_MPIWTIME)
+#if USE_MPIWTIME
          time_py_end            = MPI_Wtime() 
          cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) + (time_py_end-time_py_start)
 #else
-         time_py_spent          = walltime(time_py_start)
-         cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) + dble(time_py_spent)
+         ! You will get funky results unless you use MPI_Wtime, best to flag as
+         ! nonesense so the analysis is not misleading
+!         time_py_spent          = walltime(time_py_start)
+         cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) -9.9 !+ dble(time_py_spent)
 #endif
 
       end do polygonloop
+
 
       return
    end subroutine rk4_timestep
