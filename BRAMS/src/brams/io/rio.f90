@@ -65,12 +65,13 @@ subroutine history_start(name_name)
    !----- Get the 1-d reference state -----------------------------------------------------!
    do ngr=1,ngridsh
       write(cng,fmt='(i2.2)') ngr
-      ie=cio_f(iunhd,1,'u01dn'//cng,u01dn(:,ngr),nnzp(ngr))
-      ie=cio_f(iunhd,1,'v01dn'//cng,v01dn(:,ngr),nnzp(ngr))
-      ie=cio_f(iunhd,1,'pi01dn'//cng,pi01dn(:,ngr),nnzp(ngr))
-      ie=cio_f(iunhd,1,'th01dn'//cng,th01dn(:,ngr),nnzp(ngr))
-      ie=cio_f(iunhd,1,'dn01dn'//cng,dn01dn(:,ngr),nnzp(ngr))
-      ie=cio_f(iunhd,1,'rt01dn'//cng,rt01dn(:,ngr),nnzp(ngr))
+      ie=cio_f(iunhd,1,  'u01dn'//cng,  u01dn(:,ngr),nnzp(ngr))
+      ie=cio_f(iunhd,1,  'v01dn'//cng,  v01dn(:,ngr),nnzp(ngr))
+      ie=cio_f(iunhd,1, 'pi01dn'//cng, pi01dn(:,ngr),nnzp(ngr))
+      ie=cio_f(iunhd,1, 'th01dn'//cng, th01dn(:,ngr),nnzp(ngr))
+      ie=cio_f(iunhd,1, 'dn01dn'//cng, dn01dn(:,ngr),nnzp(ngr))
+      ie=cio_f(iunhd,1, 'rt01dn'//cng, rt01dn(:,ngr),nnzp(ngr))
+      ie=cio_f(iunhd,1,'co201dn'//cng,co201dn(:,ngr),nnzp(ngr))
    end do
 
    !----- Put these into regular arrays (for moving grids) --------------------------------!

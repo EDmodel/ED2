@@ -72,7 +72,7 @@ recursive subroutine read_ed_xml_config(filename)
 
   use soil_coms  !, only: infiltration_method, dewmax, water_stab_thresh
 !  use ed_data
-  use misc_coms, only: ied_init_mode,ffilout,integration_scheme,ed_inputs_dir,sfilin,sfilout
+  use ed_misc_coms, only: ied_init_mode,ffilout,integration_scheme,ed_inputs_dir,sfilin,sfilout
   implicit none
   integer(4) :: i,npft,ntag,myPFT,ival = 0
   logical(4) :: texist = .false.
@@ -846,11 +846,11 @@ end subroutine getConfigREAL
 
 subroutine write_ed_xml_config
 !!produce a record of parameters used in a run
-  use max_dims, only: n_pft
+  use ed_max_dims, only: n_pft
   use pft_coms
   use canopy_radiation_coms
   use decomp_coms
-  use misc_coms, only: sfilout
+  use ed_misc_coms, only: sfilout
 
   character(512) :: xfilout 
 

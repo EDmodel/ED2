@@ -43,12 +43,12 @@ subroutine ed_masterput_processid(nproc,headnode_num,masterworks,par_run)
   machs(machsize)=0  !Thats me!!
 
   do nm=1,nmachs
-    call MPI_Send(mainnum,1,MPI_INTEGER,machnum(nm),11,MPI_COMM_WORLD,ierr)
-    call MPI_Send(machnum(nm),1,MPI_INTEGER,machnum(nm),12,MPI_COMM_WORLD,ierr)
-    call MPI_Send(nm,1,MPI_INTEGER,machnum(nm),13,MPI_COMM_WORLD,ierr)
-    call MPI_Send(nmachs,1,MPI_INTEGER,machnum(nm),14,MPI_COMM_WORLD,ierr)
-    call MPI_Send(machnum,nmachs,MPI_INTEGER,machnum(nm),15,MPI_COMM_WORLD,ierr)
-    call MPI_Send(machsize,1,MPI_INTEGER,machnum(nm),16,MPI_COMM_WORLD,ierr)
+    call MPI_Send(mainnum,1,MPI_INTEGER,machnum(nm),311,MPI_COMM_WORLD,ierr)
+    call MPI_Send(machnum(nm),1,MPI_INTEGER,machnum(nm),312,MPI_COMM_WORLD,ierr)
+    call MPI_Send(nm,1,MPI_INTEGER,machnum(nm),313,MPI_COMM_WORLD,ierr)
+    call MPI_Send(nmachs,1,MPI_INTEGER,machnum(nm),314,MPI_COMM_WORLD,ierr)
+    call MPI_Send(machnum,nmachs,MPI_INTEGER,machnum(nm),315,MPI_COMM_WORLD,ierr)
+    call MPI_Send(machsize,1,MPI_INTEGER,machnum(nm),316,MPI_COMM_WORLD,ierr)
   enddo
 
 
@@ -73,8 +73,8 @@ subroutine ed_masterput_nl(par_run)
 ! patches for the SOI runs).                                                               !
 !------------------------------------------------------------------------------------------!
    use ed_para_coms,    only: mainnum
-   use max_dims,        only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
-   use misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
+   use ed_max_dims,        only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
+   use ed_misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
                              ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput,iyoutput &
                              ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir   &
                              ,integration_scheme,end_time,current_time,sfilout,frqstate     &
@@ -82,23 +82,25 @@ subroutine ed_masterput_nl(par_run)
                              ,outfast,outstate,out_time_fast,out_time_state,nrec_fast       &
                              ,nrec_state,irec_fast,irec_state,unitfast,unitstate,event_file
 
-   use ed_misc_coms,only: attach_metadata
+   use ed_misc_coms,only: attach_metadata,icanturb
    use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,deltax,deltay,polelat,polelon       &
                              ,centlat,centlon,time,timmax,nstratx,nstraty
    use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database &
                              ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg       &
                              ,isoilbc,runoff_time,zrough,layer_index,nlon_lyr,nlat_lyr
-   use met_driver_coms, only: ed_met_driver_db,imettype,metcyc1,metcycf,initial_co2, lapse_scheme
+   use met_driver_coms, only: ed_met_driver_db,imettype,ishuffle,metcyc1,metcycf           &
+                             ,initial_co2, lapse_scheme
    use mem_sites,       only: n_soi,n_ed_region,grid_type,grid_res,soi_lat,soi_lon         &
                              ,ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax      &
                              ,edres,maxpatch,maxcohort
    use physiology_coms, only: istoma_scheme,n_plant_lim
    use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath,repro_scheme
    use decomp_coms,     only: n_decomp_lim
-   use pft_coms,        only: include_these_pft,pft_1st_check
+   use pft_coms,        only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
    use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
    use optimiz_coms,    only: ioptinpt
    use canopy_radiation_coms, only : crown_mod
+   use rk4_coms,        only: ibranch_thermo
 
    implicit none
    include 'mpif.h'
@@ -204,6 +206,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(centlon,maxgrds,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(integration_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ibranch_thermo,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(repro_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -214,7 +217,11 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(include_fire,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ianth_disturb,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_these_pft,n_pft,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(agri_stock,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(plantation_stock,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(pft_1st_check,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+
+   call MPI_Bcast(icanturb,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(treefall_disturbance_rate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(runoff_time,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -228,6 +235,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(ipmax,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    
    call MPI_Bcast(imettype,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ishuffle,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(metcyc1,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(metcycf,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(initial_co2,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -276,7 +284,7 @@ subroutine ed_masterput_met_header(par_run)
 ! the hdf5 in parallel                                                                     !
 !------------------------------------------------------------------------------------------!
    use ed_para_coms, only: mainnum
-   use max_dims, only: max_met_vars,str_len
+   use ed_max_dims, only: max_met_vars,str_len
    use met_driver_coms, only: nformats, met_names, met_nlon,   &
         met_nlat, met_dx, met_dy, met_xmin, met_ymin, met_nv,   &
         met_vars, met_frq, met_interp, ed_met_driver_db, no_ll,  &
@@ -453,7 +461,7 @@ end subroutine ed_masterput_poly_dims
 
 subroutine ed_masterput_worklist_info(par_run)
 
-  use max_dims, only: maxmach
+  use ed_max_dims, only: maxmach
   use grid_coms, only: ngrids
   use ed_work_vars, only: work_e,work_vars,ed_alloc_work,ed_nullify_work,ed_dealloc_work
   use ed_para_coms, only: nmachs,mainnum,machnum
@@ -488,21 +496,19 @@ subroutine ed_masterput_worklist_info(par_run)
            
            allocate(rscratch(npoly),iscratch(npoly))
 
+           mpiid=maxmach*(ifm-1)+nm
+
            rscratch(1:npoly) = work_e(ifm)%vec_glon(offset+1:offset+npoly)
-           mpiid=0000+maxmach*(ifm-1)+nm
-           call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+           call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),1300000+mpiid,MPI_COMM_WORLD,ierr)
   
            rscratch(1:npoly) = work_e(ifm)%vec_glat(offset+1:offset+npoly)
-           mpiid=10000+maxmach*(ifm-1)+nm
-           call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+           call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),1400000+mpiid,MPI_COMM_WORLD,ierr)
            
            rscratch(1:npoly) = work_e(ifm)%vec_landfrac(offset+1:offset+npoly)
-           mpiid=20000+maxmach*(ifm-1)+nm
-           call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+           call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),1500000+mpiid,MPI_COMM_WORLD,ierr)
            
            iscratch(1:npoly) = work_e(ifm)%vec_ntext(offset+1:offset+npoly)
-           mpiid=30000+maxmach*(ifm-1)+nm
-           call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),mpiid,MPI_COMM_WORLD,ierr)
+           call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),1600000+mpiid,MPI_COMM_WORLD,ierr)
 
            deallocate(rscratch,iscratch)
 
@@ -583,7 +589,7 @@ end subroutine ed_masterput_worklist_info
 
 subroutine ed_nodeget_processid(init)
 
-  use max_dims
+  use ed_max_dims
   use ed_node_coms
 
   implicit none
@@ -595,12 +601,12 @@ subroutine ed_nodeget_processid(init)
 
   if(init == 1) then
      
-     call MPI_Recv(master_num,1,MPI_INTEGER,0,11,MPI_COMM_WORLD,status,ierr)
-     call MPI_Recv(mchnum,1,MPI_INTEGER,0,12,MPI_COMM_WORLD,status,ierr)
-     call MPI_Recv(mynum,1,MPI_INTEGER,0,13,MPI_COMM_WORLD,status,ierr)
-     call MPI_Recv(nmachs,1,MPI_INTEGER,0,14,MPI_COMM_WORLD,status,ierr)
-     call MPI_Recv(machs,nmachs,MPI_INTEGER,0,15,MPI_COMM_WORLD,status,ierr)
-     call MPI_Recv(nnodetot,1,MPI_INTEGER,0,16,MPI_COMM_WORLD,status,ierr)
+     call MPI_Recv(master_num,1,MPI_INTEGER,0,311,MPI_COMM_WORLD,status,ierr)
+     call MPI_Recv(mchnum,1,MPI_INTEGER,0,312,MPI_COMM_WORLD,status,ierr)
+     call MPI_Recv(mynum,1,MPI_INTEGER,0,313,MPI_COMM_WORLD,status,ierr)
+     call MPI_Recv(nmachs,1,MPI_INTEGER,0,314,MPI_COMM_WORLD,status,ierr)
+     call MPI_Recv(machs,nmachs,MPI_INTEGER,0,315,MPI_COMM_WORLD,status,ierr)
+     call MPI_Recv(nnodetot,1,MPI_INTEGER,0,316,MPI_COMM_WORLD,status,ierr)
      
      recvnum = mynum-1
      sendnum = mynum+1
@@ -627,8 +633,8 @@ subroutine ed_nodeget_nl
 !   This subroutine is responsible for getting all the namelist-related information in     !
 ! every node.                                                                              !
 !------------------------------------------------------------------------------------------!
-   use max_dims,        only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
-   use misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
+   use ed_max_dims,        only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
+   use ed_misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
                              ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput, iyoutput &
                              ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir   &
                              ,integration_scheme,end_time,current_time,isoutput,sfilout    &
@@ -641,7 +647,8 @@ subroutine ed_nodeget_nl
    use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database &
                              ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg       &
                              ,isoilbc,runoff_time,zrough,layer_index,nlon_lyr,nlat_lyr
-   use met_driver_coms, only: ed_met_driver_db,imettype,metcyc1,metcycf,initial_co2,lapse_scheme
+   use met_driver_coms, only: ed_met_driver_db,imettype,ishuffle,metcyc1,metcycf           &
+                             ,initial_co2,lapse_scheme
    use mem_sites,       only: n_soi,n_ed_region,grid_type,grid_res,soi_lat,soi_lon         &
                              ,ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax      &
                              ,edres,maxpatch,maxcohort
@@ -650,9 +657,10 @@ subroutine ed_nodeget_nl
    use decomp_coms,     only: n_decomp_lim
    use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
    use optimiz_coms,    only: ioptinpt
-   use ed_misc_coms,only: attach_metadata
-   use pft_coms,        only: include_these_pft,pft_1st_check
+   use ed_misc_coms,    only: attach_metadata,icanturb
+   use pft_coms,        only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
    use canopy_radiation_coms, only: crown_mod
+   use rk4_coms,        only: ibranch_thermo
 
    implicit none
    include 'mpif.h'
@@ -756,6 +764,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(centlon,maxgrds,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(integration_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ibranch_thermo,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(repro_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
@@ -766,7 +775,11 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(include_fire,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ianth_disturb,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_these_pft,n_pft,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(agri_stock,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(plantation_stock,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(pft_1st_check,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+
+   call MPI_Bcast(icanturb,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(treefall_disturbance_rate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(runoff_time,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -780,6 +793,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(ipmax,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    
    call MPI_Bcast(imettype,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ishuffle,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(metcyc1,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(metcycf,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(initial_co2,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -831,7 +845,7 @@ subroutine ed_nodeget_met_header()
 ! the hdf5 in parallel                                                                     !
 !------------------------------------------------------------------------------------------!
    use ed_node_coms, only: master_num,mynum
-   use max_dims, only: max_met_vars,str_len
+   use ed_max_dims, only: max_met_vars,str_len
    use met_driver_coms, only: nformats, met_names, met_nlon,   &
         met_nlat, met_dx, met_dy, met_xmin, met_ymin, met_nv,   &
         met_vars, met_frq, met_interp, ed_met_driver_db, no_ll,  &
@@ -922,7 +936,7 @@ end subroutine ed_nodeget_poly_dims
 !==========================================================================================!
 subroutine ed_nodeget_worklist_info
 
-  use max_dims, only: maxmach
+  use ed_max_dims, only: maxmach
   use grid_coms,  only: ngrids
   use ed_work_vars,  only: work_e
   use ed_node_coms,  only: mynum,nmachs,master_num
@@ -948,21 +962,19 @@ subroutine ed_nodeget_worklist_info
      allocate(work_e(ifm)%vec_landfrac(npolygons))
      allocate(work_e(ifm)%vec_ntext(npolygons))
 
-     mpiid=0000+maxmach*(ifm-1)+mynum
+     mpiid=maxmach*(ifm-1)+mynum
+
      call MPI_Recv(work_e(ifm)%vec_glon(1:npolygons),npolygons, &
-          MPI_REAL,0,mpiid,MPI_COMM_WORLD,status,ierr)
+          MPI_REAL,0,1300000+mpiid,MPI_COMM_WORLD,status,ierr)
      
-     mpiid=10000+maxmach*(ifm-1)+mynum
      call MPI_Recv(work_e(ifm)%vec_glat(1:npolygons),npolygons, &
-          MPI_REAL,0,mpiid,MPI_COMM_WORLD,status,ierr)
+          MPI_REAL,0,1400000+mpiid,MPI_COMM_WORLD,status,ierr)
      
-     mpiid=20000+maxmach*(ifm-1)+mynum
      call MPI_Recv(work_e(ifm)%vec_landfrac(1:npolygons),npolygons, &
-          MPI_REAL,0,mpiid,MPI_COMM_WORLD,status,ierr)
+          MPI_REAL,0,1500000+mpiid,MPI_COMM_WORLD,status,ierr)
      
-     mpiid=30000+maxmach*(ifm-1)+mynum
      call MPI_Recv(work_e(ifm)%vec_ntext(1:npolygons),npolygons, &
-          MPI_INTEGER,0,mpiid,MPI_COMM_WORLD,status,ierr)
+          MPI_INTEGER,0,1600000+mpiid,MPI_COMM_WORLD,status,ierr)
 
      
   end do

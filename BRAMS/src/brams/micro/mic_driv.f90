@@ -75,22 +75,9 @@ subroutine micro_driver()
 
    !----- Local Variables: ----------------------------------------------------------------!
    integer                            :: ngr,lhcat,i,j
-   logical, dimension(maxgrds), save  :: ncall2g = .true.
    real                               :: dtlti 
    !---------------------------------------------------------------------------------------!
 
-
-   !----- Sedimentation and homogeneous freezing table are build only once per grid -------!
-   if (ncall2g(ngrid)) then
-
-      call mksedim_tab(mzp,zm,dzt                       , pcp_tab(ngrid)%pcpfillc          &
-                      ,pcp_tab(ngrid)%pcpfillr          , pcp_tab(ngrid)%sfcpcp             )
-
-      call homfrzcl(dtlt,ngrid)
-
-      ncall2g(ngrid) = .false.
-   end if
-   !---------------------------------------------------------------------------------------!
 
    call each_call(mzp,dtlt)
 

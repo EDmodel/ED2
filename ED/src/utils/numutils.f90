@@ -433,6 +433,25 @@ end
 !
 !     ******************************************************************
 !
+subroutine a3e1(n1,n2,n3,i1,i2,j1,j2,k1,k2,a,b)
+   implicit none
+   integer                  , intent(in)    :: n1,n2,n3
+   integer                  , intent(in)    :: i1,i2,j1,j2,k1,k2
+   real, dimension(n1,n2,n3), intent(inout) :: a
+   real, dimension(n1)      , intent(in)    :: b
+   integer :: i,j,k
+   do j=j1,j2
+      do i=i1,i2
+         do k=k1,k2
+            a(k,i,j)=b(k)
+         end do
+      end do
+   end do
+   return
+end subroutine a3e1
+!
+!     ******************************************************************
+!
 subroutine a3e0(n1,n2,n3,i1,i2,j1,j2,k,a,b)
 implicit none
 integer :: n1,n2,n3,i1,i2,j1,j2,k
@@ -1522,5 +1541,69 @@ real function expmsq(x)
 
    return
 end function expmsq
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This function converts the double precision variable into single, in a way to prevent !
+! floating point exception when they are tiny.  In case the number is too small, less than !
+! off, then the output value is flushed to 0.                                              !
+!------------------------------------------------------------------------------------------!
+real function sngloff(x,off)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real(kind=8), intent(in) :: x
+   real(kind=8), intent(in) :: off
+   !---------------------------------------------------------------------------------------!
+   
+   if (abs(x) < off) then
+      sngloff = 0.
+   else
+      sngloff = sngl(x)
+   end if
+
+   return
+end function sngloff
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+! Check two corresponding real arrays and see values are close enough.                     !
+!------------------------------------------------------------------------------------------!
+integer function check_real(xx,yy,nsiz)
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   integer                 , intent(in) :: nsiz
+   real   , dimension(nsiz), intent(in) :: xx
+   real   , dimension(nsiz), intent(in) :: yy
+   !----- Local variables -----------------------------------------------------------------!
+   integer                              :: n
+   real                                 :: tol
+   !---------------------------------------------------------------------------------------!
+   
+   !----- We first assume that we don't find any similar element. -------------------------!
+   check_real = 0
+
+   tol = min( (maxval(xx)-minval(xx)),(maxval(yy)-minval(yy)) ) * .0001
+   do n = 1, nsiz
+      if (abs(xx(n)-yy(n)) > tol) then
+         check_real=n
+         return
+      end if
+   end do
+   return
+end function check_real
 !==========================================================================================!
 !==========================================================================================!

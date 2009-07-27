@@ -51,7 +51,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nadd_rad      &
                        ,iswrtyp,ilwrtyp,icumfdbk,flpw,topt,glat,rtgt,pi0,pp,rho,theta,rv   &
-                       ,rshort,rlong,fthrd,rlongup,cosz                                    &
+                       ,co2p,rshort,rlong,fthrd,rlongup,cosz                               &
                        ,albedt,rshort_top,rshortup_top,rlongup_top,fthrd_lw                &
                        ,sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h                                 &
                        ,con_c,con_r,con_p,con_s,con_a,con_g,con_h                          &
@@ -62,7 +62,7 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
    use rconstants,      only: cpor, p00i, stefan, cp, cpi, p00, hr_sec
    use micphys,         only: ncat,rxmin
    use mem_leaf,        only: isfcl
-   use harr_coms,       only: rl,dzl,dl,pl,o3l,vp,u,tp,omgp,gp,zml,ztl,tl                  &
+   use harr_coms,       only: rl,dzl,dl,pl,co2l,o3l,vp,u,tp,omgp,gp,zml,ztl,tl             &
                              ,flxus,flxds,flxul,flxdl,fu,fd,zero_harr_scratch,nradmax      &
                              ,tairk,rhoi,rhoe,rhov,press,rcl_parm,rpl_parm
 
@@ -74,7 +74,7 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
    real(kind=8)                     , intent(in)    :: time
    real                             , intent(in)    :: deltat
    real, dimension(m2,m3)           , intent(in)    :: topt,glat,flpw,rtgt
-   real, dimension(m1,m2,m3)        , intent(in)    :: pi0,pp,rho,theta,rv
+   real, dimension(m1,m2,m3)        , intent(in)    :: pi0,pp,rho,theta,rv,co2p
    real, dimension(m1,m2,m3)        , intent(in)    :: sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h
    real, dimension(m1,m2,m3)        , intent(in)    :: con_c,con_r,con_p,con_s,con_a
    real, dimension(m1,m2,m3)        , intent(in)    :: con_g,con_h
@@ -88,7 +88,6 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
    integer                                          :: koff
    integer                                          :: icld
    integer                                          :: i,j,k,ib,ig,kk,ik,krad,mcat
-   real                                             :: rmix,dzl9,rvk0,rvk1
    logical                                          :: first_with_ed
    !---------------------------------------------------------------------------------------!
   
@@ -109,15 +108,16 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
          nrad=m1-1-koff+nadd_rad
 
          do k = ka,m1-1
-            tairk(k)    = theta(k,i,j) * (pi0(k,i,j)+pp(k,i,j)) * cpi
-            rhoe(k)     = rho(k,i,j)
-            rhov(k)     = max(0.,rv(k,i,j)) * rhoe(k)
-            rhoi(k)     = 1./rho(k,i,j)
-            press(k)    = p00 * (cpi * (pi0(k,i,j)+pp(k,i,j)) ) ** cpor
-            dl(k-koff)  = rho(k,i,j)
-            pl(k-koff)  = press(k)
-            tl(k-koff)  = tairk(k)
-            rl(k-koff)  = rhov (k)
+            tairk(k)     = theta(k,i,j) * (pi0(k,i,j)+pp(k,i,j)) * cpi
+            rhoe(k)      = rho(k,i,j)
+            rhov(k)      = max(0.,rv(k,i,j)) * rhoe(k)
+            rhoi(k)      = 1./rho(k,i,j)
+            press(k)     = p00 * (cpi * (pi0(k,i,j)+pp(k,i,j)) ) ** cpor
+            dl(k-koff)   = rho(k,i,j)
+            pl(k-koff)   = press(k)
+            tl(k-koff)   = tairk(k)
+            rl(k-koff)   = rhov (k)
+            co2l(k-koff) = co2p(k,i,j) * rhoe(k)
          end do
 
          !---------------------------------------------------------------------------------!
@@ -171,8 +171,9 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
          else
            tl(1) = sqrt(sqrt(rlongup(i,j) / stefan))
          end if
-         dl(1) = dl(2)
-         rl(1) = rl(2)
+         dl(1)   = dl(2)
+         rl(1)   = rl(2)
+         co2l(1) = co2l(2)
 
          !----- Fill arrays rxharr, cxharr, and embharr with hydrometeor properties -------!
          call cloudprep_rad(m1,ka,mcat,sh_c(:,i,j),sh_r(:,i,j),sh_p(:,i,j),sh_s(:,i,j)     &
@@ -192,23 +193,24 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
          ! temperature.                                                                    !
          !---------------------------------------------------------------------------------!
          do k = 1,nrad
-            if (rl(k) <   0. .or.   dl(k) <   0. .or.  &
-                pl(k) <   0. .or.  o3l(k) <   0. .or.   tl(k) < 160.) then   
+            if (rl(k)   <   0. .or.   dl(k) <   0. .or.   pl(k) <   0. .or.                &
+                co2l(k) <   0. .or.  o3l(k) <   0. .or.   tl(k) < 160.      ) then   
 
                 write (unit=*,fmt='(a)') '================================================'
-                write (unit=*,fmt='(a)') ' ERROR!!! The model is about to stop!'
+                write (unit=*,fmt='(a)') ' ERROR - harr_raddriv!!!'
+                write (unit=*,fmt='(a)') '         The model is about to stop!'
                 write (unit=*,fmt='(2(a,1x,i5,a))') ' - Node:',mynum,' Grid: ',ifm
                 write (unit=*,fmt='(3(a,1x,i5,a))') ' - k = ',k,' i = ',i,' j = ',j
                 write (unit=*,fmt='(a)') ' - Either the temperature is too low, or some'
                 write (unit=*,fmt='(a)') '   negative density, mixing ratio or pressure!'
                 write (unit=*,fmt='(a)') ' - Sanity check at Harrington:'
                 write (unit=*,fmt='(a)') '------------------------------------------------'
-                write (unit=*,fmt='(a3,1x,5(a12,1x))') &
-                   'LEV','  MIX. RATIO','     DENSITY','    PRESSURE','       OZONE'       &
-                        ,' TEMPERATURE'
+                write (unit=*,fmt='(a3,1x,6(a12,1x))') &
+                   'LEV','  MIX. RATIO','     DENSITY','    PRESSURE','        CO_2'       &
+                        ,'       OZONE',' TEMPERATURE'
                 do kk=1,nrad
-                   write (unit=*,fmt='(i3,1x,5(es12.3,1x))')                               &
-                                         kk, rl(kk), dl(kk), pl(kk), o3l(kk), tl(kk)
+                   write (unit=*,fmt='(i3,1x,6(es12.3,1x))')                               &
+                                      kk, rl(kk), dl(kk), pl(kk), co2l(kk), o3l(kk), tl(kk)
                 enddo
                 write (unit=*,fmt='(a)') '------------------------------------------------'
                 write (unit=*,fmt='(a)') ' '
@@ -846,6 +848,7 @@ subroutine path_lengths(nrad)
                          , rl    & ! intent(in)
                          , dzl   & ! intent(in)
                          , dl    & ! intent(in)
+                         , co2l  & ! intent(in)
                          , o3l   & ! intent(in)
                          , vp    & ! intent(out)
                          , pl    ! ! intent(in)
@@ -853,26 +856,24 @@ subroutine path_lengths(nrad)
    !----- Arguments -----------------------------------------------------------------------!
    integer                     , intent(in)    :: nrad
    !----- Local variables -----------------------------------------------------------------!
-   real                                        :: rvk0,rvk1,dzl9,rmix
+   real                                        :: dzl9,rmix
    integer                                     :: k
    !----- Constants  ----------------------------------------------------------------------!
-   real, parameter :: eps_rad = 1.e-15,rvmin=1.e-6
-   real, parameter :: co2_mixing_ratio = 360.0e-6 * 44.011 / 28.966 ! [kg/kg]
+   real, parameter :: eps_rad = 1.e-15
+   real, parameter :: rvmin=1.e-6
    !---------------------------------------------------------------------------------------!
 
-   u(1,1) = .5 * (rl(2) + rl(1)) * g * dzl(1)
-   u(1,2) = .5 * (dl(2) + dl(1)) * co2_mixing_ratio * g * dzl(1)
-   u(1,3) = o3l(1) * g * dzl(1)
+   u(1,1) = .5 * (rl(2)   +   rl(1)) * g * dzl(1)
+   u(1,2) = .5 * (co2l(2) + co2l(1)) * g * dzl(1)
+   u(1,3) =       o3l(1)             * g * dzl(1)
 
-   rvk0=rl(1)
    do k = 2,nrad
       dzl9   = g * dzl(k)
       rmix   = rl(k) / dl(k)
       vp(k)  = pl(k) * rmix / (ep + rmix)
-      rvk1   = (rl(k)+rvmin)
-      u(k,1) = 0.5 * dzl9 * (rl(k) + rl(k-1))
-      u(k,2) = 0.5 * dzl9 * (dl(k) + dl(k-1)) * co2_mixing_ratio
-      u(k,3) = 0.5 * dzl9 * (o3l(k) + o3l(k-1))
+      u(k,1) = 0.5 * dzl9 * (  rl(k) +   rl(k-1))
+      u(k,2) = 0.5 * dzl9 * (co2l(k) + co2l(k-1))
+      u(k,3) = 0.5 * dzl9 * ( o3l(k) +  o3l(k-1))
    end do
 
    return
@@ -889,7 +890,7 @@ end subroutine path_lengths
 !==========================================================================================!
 subroutine print_longwave(mynum,nrad,m1,i,j,time,rlong,rlongup)
    use micphys  , only: ncat
-   use harr_coms, only: rl,dl,pl,o3l,tl,rcl_parm,rpl_parm,rxharr,cxharr,flxus,flxds        &
+   use harr_coms, only: rl,dl,pl,co2l, o3l,tl,rcl_parm,rpl_parm,rxharr,cxharr,flxus,flxds  &
                        ,flxul,flxdl,embharr
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -909,15 +910,16 @@ subroutine print_longwave(mynum,nrad,m1,i,j,time,rlong,rlongup)
    write (unit=m,fmt='(a,1x,es12.5)')     ' + RLONGUP: ',rlongup
    write (unit=m,fmt='(a,1x,es12.5)')     ' + TIME   : ',time
    write (unit=m,fmt='(80a)')             ('-',k=1,80)
-   write (unit=m,fmt='(a3,1x,9(a12,1x))') 'LEV','  MIX. RATIO','     DENSITY'              &
-                                               ,'    PRESSURE','       OZONE'              &
-                                               ,' TEMPERATURE','       FLXUS'              &
-                                               ,'       FLXDS','       FLXUL'              &
-                                               ,'       FLXDL'
+   write (unit=m,fmt='(a3,1x,10(a12,1x))') 'LEV','  MIX. RATIO','     DENSITY'             &
+                                                ,'    PRESSURE','        CO_2'             &
+                                                ,'       OZONE',' TEMPERATURE'             &
+                                                ,'       FLXUS','       FLXDS'             &
+                                                ,'       FLXUL','       FLXDL'
 
    do k=1,nrad
-      write (unit=m,fmt='(i3,1x,9(es12.3,1x))') k, rl(k), dl(k), pl(k), o3l(k), tl(k)      &
-                                                 , flxus(k), flxds(k), flxul(k), flxdl(k)
+      write (unit=m,fmt='(i3,1x,10(es12.3,1x))') k, rl(k), dl(k), pl(k)                    &
+                                                  , co2l(k), o3l(k), tl(k)                 &
+                                                  , flxus(k), flxds(k), flxul(k), flxdl(k)
    end do
    write (unit=m,fmt='(80a)')             ('-',k=1,80)
    write (unit=m,fmt='(a3,1x,7(a12,1x))') 'LEV','      RCLOUD','       RRAIN'              &

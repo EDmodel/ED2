@@ -30,7 +30,7 @@ subroutine sfclyr(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
    !----- Local variables -----------------------------------------------------------------!
    integer                              :: ng
    real, dimension(mxp,myp)             :: l_ths2,l_rvs2,l_pis2,l_dens2,l_ups2
-   real, dimension(mxp,myp)             :: l_vps2,l_zts2
+   real, dimension(mxp,myp)             :: l_vps2,l_zts2,l_co2s2
    !---------------------------------------------------------------------------------------!
    
    if (nstbot == 0) return
@@ -40,8 +40,8 @@ subroutine sfclyr(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
 
    !----- Calling LEAF-3 main driver ------------------------------------------------------!
    call leaf3(mzp,mxp,myp,nzg,nzs,npatch,ia,iz,ja,jz,leaf_g (ng),basic_g (ng),turb_g (ng)  &
-             ,radiate_g(ng),grid_g (ng),cuparm_g(ng),micro_g(ng),l_ths2,l_rvs2,l_pis2      &
-             ,l_dens2,l_ups2,l_vps2,l_zts2,teb_g(ng),tebc_g(ng))
+             ,radiate_g(ng),grid_g (ng),cuparm_g(ng),micro_g(ng),l_ths2,l_rvs2,l_co2s2     &
+             ,l_pis2,l_dens2,l_ups2,l_vps2,l_zts2,teb_g(ng),tebc_g(ng))
 
    !---- Calling TOPMODEL if the user wants so --------------------------------------------!
    if (isfcl == 2) then
@@ -84,7 +84,7 @@ end subroutine sfclyr
 !    This is the LEAF-3 main driver.                                                       !
 !------------------------------------------------------------------------------------------!
 subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cuparm,micro &
-                ,ths2,rvs2,pis2,dens2,ups2,vps2,zts2,teb,tebc)
+                ,ths2,rvs2,co2s2,pis2,dens2,ups2,vps2,zts2,teb,tebc)
 
    use mem_all
    use leaf_coms
@@ -96,6 +96,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
    use mem_teb_common , only : teb_common  ! ! type
    use therm_lib      , only : rslif       & ! function
                              , level       ! ! intent(in)
+   use mem_scratch    , only : scratch
    implicit none
    
    !----- Arguments -----------------------------------------------------------------------!
@@ -107,7 +108,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
    type(grid_vars)                       :: grid
    type(cuparm_vars)                     :: cuparm
    type(micro_vars)                      :: micro
-   real, dimension(m2,m3), intent(inout) :: ths2,rvs2,pis2,dens2,ups2,vps2,zts2
+   real, dimension(m2,m3), intent(inout) :: ths2,rvs2,co2s2,pis2,dens2,ups2,vps2,zts2
    !----- Local variables -----------------------------------------------------------------!
    type(teb_vars)                      :: teb
    type(teb_common)                    :: tebc
@@ -153,23 +154,31 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
    !----- Defining some variables to speed up calculations --------------------------------!
    dtllohcc = dtll / hcapcan
    dtllowcc = dtll / wcapcan
+   dtllowcc = dtll / ccapcan
    dtlcohcc = dtlc / hcapcan
    dtlcowcc = dtlc / wcapcan
+   dtlcoccc = dtlc / ccapcan
    dtlcohcv = dtlc / hcapveg
 
-   !----- Copy surface atmospheric variables into 2d arrays for input to LEAF. ------------!
+   !----- Check whether we have CO2, and copy to an scratch array. ------------------------!
+   if (co2_on) then
+      call atob(m1*m2*m3,basic%co2p,scratch%vt3do)
+   else
+      call ae0(m1*m2*m3,scratch%vt3do,co2con(1))
+   end if
 
+   !----- Copy surface atmospheric variables into 2d arrays for input to LEAF. ------------!
    if (if_adap == 1) then
       call sfc_fields_adap(m1,m2,m3,ia,iz,ja,jz,jdim      , grid%flpu     , grid%flpv      &
                           , grid%flpw     , grid%topma    , grid%aru      , grid%arv       &
-                          , basic%theta   , basic%rv      , basic%up      , basic%vp       &
-                          , basic%dn0     , basic%pp      , basic%pi0                      &
-                          , zt,zm,dzt,ths2,rvs2,ups2,vps2,pis2,dens2,zts2)
+                          , basic%theta   , basic%rv      , scratch%vt3do , basic%up       &
+                          , basic%vp      , basic%dn0     , basic%pp      , basic%pi0      &
+                          , zt,zm,dzt,ths2,rvs2,co2s2,ups2,vps2,pis2,dens2,zts2)
    else
       call sfc_fields(m1,m2,m3,ia,iz,ja,jz,jdim           , basic%theta   , basic%rv       &
-                          , basic%up      , basic%vp      , basic%dn0     ,  basic%pp      &
-                          , basic%pi0     , grid%rtgt                                      &
-                          , zt,ths2,rvs2,ups2,vps2,pis2,dens2,zts2)
+                          , scratch%vt3do , basic%up      , basic%vp      , basic%dn0      &
+                          ,  basic%pp     , basic%pi0     , grid%rtgt                      &
+                          , zt,ths2,rvs2,co2s2,ups2,vps2,pis2,dens2,zts2)
    end if
 
    !----- Big domain loop -----------------------------------------------------------------!
@@ -177,13 +186,14 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
       iloop1: do i = ia,iz
 
          !----- Copy surface variables to single-column values ----------------------------!
-         ups  = ups2(i,j)
-         vps  = vps2(i,j)
-         ths  = ths2(i,j)
-         rvs  = rvs2(i,j)
-         zts  = zts2(i,j)
-         pis  = pis2(i,j)
-         dens = dens2(i,j)
+         ups  =  ups2(i,j)
+         vps  =  vps2(i,j)
+         ths  =  ths2(i,j)
+         rvs  =  rvs2(i,j)
+         zts  =  zts2(i,j)
+         pis  =  pis2(i,j)
+         dens =  dens2(i,j)
+         rco2s = co2s2(i,j)
 
          prss     = pis ** cpor * p00
          vels     = sqrt(ups ** 2 + vps ** 2)
@@ -212,11 +222,13 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
          turb%sflux_w(i,j) = 0.
          turb%sflux_t(i,j) = 0.
          turb%sflux_r(i,j) = 0.
+         turb%sflux_c(i,j) = 0.
 
          !----- For no soil model (patch 2) fill "canopy" temperature and moisture. -------!
          if (isfcl == 0) then
             leaf%can_temp  (i,j,2) = (ths - dthcon) * pis
             leaf%can_rvap  (i,j,2) = rvs - drtcon
+            leaf%can_co2   (i,j,2) = rco2s
             leaf%patch_area(i,j,1) = 1. - pctlcon
             leaf%patch_area(i,j,2) = pctlcon
          end if
@@ -320,24 +332,26 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                end if
 
                call stars( leaf%ustar          (i,j,ip) , leaf%tstar              (i,j,ip) &
-                         , leaf%rstar          (i,j,ip) , ths                              &
-                         , rvs                          , thetacan                         &
-                         , leaf%can_rvap       (i,j,ip) , zts                              &
-                         , leaf%patch_rough    (i,j,ip) , leaf%patch_area         (i,j,ip) &
-                         , vels                         , vels_pat                         &
-                         , vonk                         , dtllohcc                         &
-                         , dens                         , dtll                             &
-                         , leaf%R_aer          (i,j,ip) )
+                         , leaf%rstar          (i,j,ip) , leaf%cstar              (i,j,ip) &
+                         , ths                          , rvs                              &
+                         , rco2s                        , thetacan                         &
+                         , leaf%can_rvap       (i,j,ip) , leaf%can_co2            (i,j,ip) &
+                         , zts                          , leaf%patch_rough        (i,j,ip) &
+                         , leaf%patch_area     (i,j,ip) , vels                             &
+                         , vels_pat                     , vonk                             &
+                         , dtllohcc                     , dens                             &
+                         , dtll                         , leaf%R_aer          (i,j,ip)     )
 
                if (teb_spm==1) g_urban = leaf%g_urban(i,j,ip)
 
                call sfclmcv( leaf%ustar        (i,j,ip) , leaf%tstar              (i,j,ip) &
-                           , leaf%rstar        (i,j,ip) , vels                             &
-                           , vels_pat                   , ups                              &
-                           , vps                        , gzotheta                         &
-                           , leaf%patch_area   (i,j,ip) , turb%sflux_u            (i,j   ) &
-                           , turb%sflux_v      (i,j   ) , turb%sflux_w            (i,j   ) &
-                           , turb%sflux_t      (i,j   ) , turb%sflux_r            (i,j   ) &
+                           , leaf%rstar        (i,j,ip) , leaf%cstar              (i,j,ip) &
+                           , vels                       , vels_pat                         &
+                           , ups                        , vps                              &
+                           , gzotheta                   , leaf%patch_area   (i,j,ip)       &
+                           , turb%sflux_u      (i,j   ) , turb%sflux_v      (i,j   )       &
+                           , turb%sflux_w      (i,j   ) , turb%sflux_t      (i,j   )       &
+                           , turb%sflux_r      (i,j   ) , turb%sflux_c      (i,j   )       &
                            , g_urban                    )
 
                !---------------------------------------------------------------------------!
@@ -358,6 +372,10 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                                        + dtllowcc * dens * rdi                             &
                                        * ((leaf%ground_rsat(i,j,1) - leaf%can_rvap(i,j,1)) &
                                        + leaf%ustar(i,j,1) * leaf%rstar(i,j,1))
+
+                  leaf%can_co2(i,j,1)  = leaf%can_co2(i,j,1)                               &
+                                       + dtlloccc * dens * rdi                             &
+                                       * leaf%cstar(i,j,1) * leaf%rstar(i,j,1)
 
                   !----- KML - drydep -----------------------------------------------------!
                   if (catt == 1) leaf%R_aer(i,j,ip) = rdi
@@ -431,15 +449,16 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                         , leaf%soil_text      (:,i,j,ip) , leaf%sfcwater_mass  (:,i,j,ip)  &
                         , leaf%sfcwater_depth (:,i,j,ip) , leaf%ustar            (i,j,ip)  &
                         , leaf%tstar            (i,j,ip) , leaf%rstar            (i,j,ip)  &
-                        , leaf%veg_albedo       (i,j,ip) , leaf%veg_fracarea     (i,j,ip)  &
-                        , leaf%veg_lai          (i,j,ip) , leaf%veg_tai          (i,j,ip)  &
-                        , leaf%veg_rough        (i,j,ip) , leaf%veg_height       (i,j,ip)  &
-                        , leaf%patch_area       (i,j,ip) , leaf%patch_rough      (i,j,ip)  &
-                        , leaf%patch_wetind     (i,j,ip) , leaf%leaf_class       (i,j,ip)  &
-                        , leaf%soil_rough       (i,j,ip) , leaf%sfcwater_nlev    (i,j,ip)  &
-                        , leaf%stom_resist      (i,j,ip) , leaf%ground_rsat      (i,j,ip)  &
-                        , leaf%ground_rvap      (i,j,ip) , leaf%veg_water        (i,j,ip)  &
-                        , leaf%veg_temp         (i,j,ip) , leaf%can_rvap         (i,j,ip)  &
+                        , leaf%cstar            (i,j,ip) , leaf%veg_albedo       (i,j,ip)  &
+                        , leaf%veg_fracarea     (i,j,ip) , leaf%veg_lai          (i,j,ip)  &
+                        , leaf%veg_tai          (i,j,ip) , leaf%veg_rough        (i,j,ip)  &
+                        , leaf%veg_height       (i,j,ip) , leaf%patch_area       (i,j,ip)  &
+                        , leaf%patch_rough      (i,j,ip) , leaf%patch_wetind     (i,j,ip)  &
+                        , leaf%leaf_class       (i,j,ip) , leaf%soil_rough       (i,j,ip)  &
+                        , leaf%sfcwater_nlev    (i,j,ip) , leaf%stom_resist      (i,j,ip)  &
+                        , leaf%ground_rsat      (i,j,ip) , leaf%ground_rvap      (i,j,ip)  &
+                        , leaf%veg_water        (i,j,ip) , leaf%veg_temp         (i,j,ip)  &
+                        , leaf%can_rvap         (i,j,ip) , leaf%can_co2          (i,j,ip)  &
                         , leaf%can_temp         (i,j,ip) , leaf%veg_ndvip        (i,j,ip)  &
                         , leaf%veg_ndvic        (i,j,ip) , leaf%veg_ndvif        (i,j,ip)  &
                         , radiate%rshort        (i,j)    , radiate%cosz          (i,j)     &
@@ -477,6 +496,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
          turb%sflux_w(i,j) = turb%sflux_w(i,j) * dtll_factor * dens2(i,j)
          turb%sflux_t(i,j) = turb%sflux_t(i,j) * dtll_factor * dens2(i,j)
          turb%sflux_r(i,j) = turb%sflux_r(i,j) * dtll_factor * dens2(i,j)
+         turb%sflux_c(i,j) = turb%sflux_c(i,j) * dtll_factor * dens2(i,j)
       end do
    end do
 
@@ -503,11 +523,11 @@ end subroutine leaf3
 !==========================================================================================!
 !==========================================================================================!
 subroutine leaftw(mzg,mzs,np,soil_water, soil_energy, soil_text,sfcwater_mass              &
-                 ,sfcwater_depth,ustar, tstar,rstar,veg_albedo,veg_fracarea,veg_lai        &
+                 ,sfcwater_depth,ustar, tstar,rstar,cstar,veg_albedo,veg_fracarea,veg_lai  &
                  ,veg_tai,veg_rough,veg_height,patch_area,patch_rough,patch_wetind         &
                  ,leaf_class,soil_rough,sfcwater_nlev,stom_resist,ground_rsat,ground_rvap  &
-                 ,veg_water,veg_temp,can_rvap,can_temp,veg_ndvip,veg_ndvic,veg_ndvif       &
-                 ,rshort,cosz,ip,i,j)
+                 ,veg_water,veg_temp,can_rvap,can_co2,can_temp,veg_ndvip,veg_ndvic         &
+                 ,veg_ndvif,rshort,cosz,ip,i,j)
 
    use leaf_coms
    use mem_leaf
@@ -523,15 +543,15 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy, soil_text,sfcwater_mass   
    real   , dimension(mzs), intent(inout) :: sfcwater_mass,sfcwater_depth
 
    real                 :: ustar        ,tstar         ,rstar        &
-                          ,veg_albedo   ,veg_fracarea  ,veg_lai      &
-                          ,veg_tai                                   &
+                          ,cstar        ,veg_albedo    ,veg_fracarea &
+                          ,veg_lai      ,veg_tai                     &
                           ,veg_rough    ,veg_height    ,patch_area   &
                           ,patch_rough  ,patch_wetind  ,leaf_class   &
                           ,soil_rough   ,sfcwater_nlev ,stom_resist  &
                           ,ground_rsat  ,ground_rvap   ,veg_water    &
-                          ,veg_temp     ,can_rvap      ,can_temp     &
-                          ,veg_ndvip    ,veg_ndvic     ,veg_ndvif    &
-                          ,rshort       ,cosz
+                          ,veg_temp     ,can_rvap      ,can_co2      &
+                          ,can_temp     ,veg_ndvip     ,veg_ndvic    &
+                          ,veg_ndvif    ,rshort        ,cosz
 
    integer :: ip,k,nveg,ksn,nsoil,ksnnew,newlayers,nlayers,kold,ktrans,nsl,kzs
    integer, save :: ncall=0
@@ -590,9 +610,9 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy, soil_text,sfcwater_mass   
 
    call canopy(mzg,mzs,ksn,nveg  &
       ,soil_energy,soil_water,soil_text,sfcwater_mass  &
-      ,ustar,tstar,rstar,soil_rough,veg_rough,veg_height  &
+      ,ustar,tstar,rstar,cstar,soil_rough,veg_rough,veg_height  &
       ,veg_lai,veg_tai,veg_water,veg_temp,leaf_class,veg_fracarea  &
-      ,stom_resist,can_temp,can_rvap,ground_rsat,ground_rvap,rshort  &
+      ,stom_resist,can_temp,can_rvap,can_co2,ground_rsat,ground_rvap,rshort  &
       ,i,j,ip)
 
    ! Compute soil and effective snow heat resistance times layer depth (rfactor).
@@ -894,9 +914,9 @@ end subroutine leaftw
 !==========================================================================================!
 subroutine canopy(mzg,mzs,ksn,nveg  &
    ,soil_energy,soil_water,soil_text,sfcwater_mass  &
-   ,ustar,tstar,rstar,soil_rough,veg_rough,veg_height &
+   ,ustar,tstar,rstar,cstar,soil_rough,veg_rough,veg_height &
    ,veg_lai,veg_tai,veg_water,veg_temp,leaf_class,veg_fracarea  &
-   ,stom_resist,can_temp,can_rvap,ground_rsat,ground_rvap,rshort  &
+   ,stom_resist,can_temp,can_rvap,can_co2,ground_rsat,ground_rvap,rshort  &
    ,i,j,ip)
 
    use leaf_coms
@@ -913,9 +933,10 @@ subroutine canopy(mzg,mzs,ksn,nveg  &
 
    real, dimension(mzg) :: soil_energy,soil_water,soil_text
    real, dimension(mzs) :: sfcwater_mass
-   real :: ustar,tstar,rstar,soil_rough,veg_rough,veg_height             &
+   real :: ustar,tstar,rstar,cstar,soil_rough,veg_rough,veg_height       &
           ,veg_lai,veg_tai,veg_water,veg_temp,leaf_class,veg_fracarea    &
-          ,stom_resist,can_temp,can_rvap,ground_rsat,ground_rvap,rshort
+          ,stom_resist,can_temp,can_rvap,can_co2,ground_rsat,ground_rvap &
+          ,rshort
 
    integer :: k,kk,nsoil,iter_can
 
@@ -1142,6 +1163,12 @@ subroutine canopy(mzg,mzs,ksn,nveg  &
          !         + transp + dens * ustar * rstar)
          can_rvap = can_rvap + dtlcowcc * (wflxgc - dewgndflx + wflxvc  &
               + transp0 + dens * ustar * rstar)
+         ! CO2 exchange with biosphere is currently not computed in LEAF-3
+         ! Feel free to include here, cflxgc would be the root respiration, and
+         ! cflxvc R-GPP.
+         cflxgc   = 0.
+         cflxvc   = 0.
+         can_co2  = can_co2  + dtlcoccc * (cflxgc + cflxvc + dens * ustar * cstar)
 
       enddo
 
@@ -1149,6 +1176,7 @@ subroutine canopy(mzg,mzs,ksn,nveg  &
 
       can_temp = can_temp + dtllohcc * (hflxgc + dens * cp * ustar * tstar * pis)
       can_rvap = can_rvap + dtllowcc * (wflxgc - dewgndflx + dens * ustar * rstar)
+      can_co2  = can_co2  + dtlcoccc * (dens * ustar * cstar)
 
    endif
 
@@ -1158,7 +1186,8 @@ end subroutine canopy
 !*****************************************************************************
 
 !subroutine stars(t,ng,mynum,i0,j0,i,j,ip  &
-subroutine stars(ustar,tstar,rstar,ths,rvs,thetacan,can_rvap,zts,patch_rough  &
+subroutine stars(ustar,tstar,rstar,cstar,ths,rvs,rco2s,thetacan,can_rvap,can_co2 &
+    ,zts,patch_rough  &
 !kml drydep
    ,patch_area,vels,vels_pat,vonk,dtllohcc,dens,dtll                        &
    ,R_aer)
@@ -1170,8 +1199,8 @@ subroutine stars(ustar,tstar,rstar,ths,rvs,thetacan,can_rvap,zts,patch_rough  &
 
    implicit none
 
-   real :: ustar,tstar,rstar,ths,rvs,thetacan,can_rvap,zts,patch_rough  &
-          ,patch_area,vels,vels_pat,vonk,dtllohcc,dens,dtll,t
+   real :: ustar,tstar,rstar,cstar,ths,rvs,rco2s,thetacan,can_rvap,can_co2,zts &
+          ,patch_rough,patch_area,vels,vels_pat,vonk,dtllohcc,dens,dtll,t
 
    !kml drydep
    real :: R_aer
@@ -1222,6 +1251,7 @@ subroutine stars(ustar,tstar,rstar,ths,rvs,thetacan,can_rvap,zts,patch_rough  &
    c3 = c1 * fh / ustar
    rstar = c3 * (rvs - can_rvap)
    tstar = c3 * (ths - thetacan)
+   cstar = c3 * (rco2s - can_co2)
 
    if (CATT==1) then
       !kml drydep
@@ -1282,8 +1312,8 @@ end subroutine stars
 
 !*****************************************************************************
 
-subroutine sfclmcv(ustar,tstar,rstar,vels,vels_pat,ups,vps,gzotheta,patch_area&
-     ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r                                 &
+subroutine sfclmcv(ustar,tstar,rstar,cstar,vels,vels_pat,ups,vps,gzotheta,patch_area &
+     ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c                                &
      ! For TEB
      ,G_URBAN)
      !
@@ -1301,9 +1331,9 @@ subroutine sfclmcv(ustar,tstar,rstar,vels,vels_pat,ups,vps,gzotheta,patch_area&
    implicit none
 
    ! Arguments:
-   real, intent(in)    :: ustar, tstar, rstar, vels,vels_pat, ups, vps, gzotheta,&
+   real, intent(in)    :: ustar, tstar, rstar, cstar, vels,vels_pat, ups, vps, gzotheta,&
         patch_area
-   real, intent(inout) :: sflux_u, sflux_v, sflux_w, sflux_t, sflux_r
+   real, intent(inout) :: sflux_u, sflux_v, sflux_w, sflux_t, sflux_r, sflux_c
    ! For TEB
    real:: G_URBAN
 
@@ -1335,6 +1365,8 @@ subroutine sfclmcv(ustar,tstar,rstar,vels,vels_pat,ups,vps,gzotheta,patch_area&
          sflux_r = sflux_r - rstar * vtscr
       end if
    end if
+   !----- TEB currently doesn't save CO2, compute sflux_c outside the if statement.
+   sflux_c = sflux_c - cstar * vtscr
 
 
    zoverl = gzotheta * vonk * tstar / (ustar * ustar)
@@ -1597,7 +1629,7 @@ end subroutine leaf_bcond
 !****************************************************************************
 
 subroutine sfc_fields(m1,m2,m3,ia,iz,ja,jz,jd  &
-   ,theta,rv,up,vp,dn0,pp,pi0,rtgt,zt,ths2,rvs2,ups2,vps2,pis2,dens2,zts2)
+   ,theta,rv,co2p,up,vp,dn0,pp,pi0,rtgt,zt,ths2,rvs2,co2s2,ups2,vps2,pis2,dens2,zts2)
 
    use leaf_coms
    use rconstants
@@ -1605,8 +1637,8 @@ subroutine sfc_fields(m1,m2,m3,ia,iz,ja,jz,jd  &
    implicit none
 
    integer :: m1,m2,m3,ia,iz,ja,jz,jd
-   real, dimension(m1,m2,m3) :: theta,rv,up,vp,dn0,pp,pi0
-   real, dimension(m2,m3) :: rtgt,ths2,rvs2,ups2,vps2,pis2,dens2,zts2
+   real, dimension(m1,m2,m3) :: theta,rv,co2p,up,vp,dn0,pp,pi0
+   real, dimension(m2,m3) :: rtgt,ths2,rvs2,co2s2,ups2,vps2,pis2,dens2,zts2
    real, dimension(m1) :: zt
 
    integer :: i,j
@@ -1620,6 +1652,7 @@ subroutine sfc_fields(m1,m2,m3,ia,iz,ja,jz,jd  &
       do i = ia,iz
          ths2(i,j) = theta(2,i,j)
          rvs2(i,j) = rv(2,i,j)
+         co2s2(i,j) = co2p(2,i,j)
          ups2(i,j) = (up(2,i-1,j) + up(2,i,j)) * .5
          vps2(i,j) = (vp(2,i,j-jd) + vp(2,i,j)) * .5
          zts2(i,j) = zt(2) * rtgt(i,j)
@@ -1634,8 +1667,8 @@ end subroutine sfc_fields
 !****************************************************************************
 
 subroutine sfc_fields_adap(m1,m2,m3,ia,iz,ja,jz,jd,flpu,flpv,flpw  &
-   ,topma,aru,arv,theta,rv,up,vp,dn0,pp,pi0,zt,zm,dzt       &
-   ,ths2,rvs2,ups2,vps2,pis2,dens2,zts2)
+   ,topma,aru,arv,theta,rv,co2p,up,vp,dn0,pp,pi0,zt,zm,dzt       &
+   ,ths2,rvs2,co2s2,ups2,vps2,pis2,dens2,zts2)
 
    use leaf_coms
    use rconstants
@@ -1644,8 +1677,8 @@ subroutine sfc_fields_adap(m1,m2,m3,ia,iz,ja,jz,jd,flpu,flpv,flpw  &
 
    integer :: m1,m2,m3,ia,iz,ja,jz,jd
    real, dimension(m2,m3) :: flpu,flpv,flpw
-   real, dimension(m1,m2,m3) :: aru,arv,theta,rv,up,vp,dn0,pp,pi0
-   real, dimension(m2,m3) :: topma,ths2,rvs2,ups2,vps2,pis2,dens2,zts2
+   real, dimension(m1,m2,m3) :: aru,arv,theta,rv,co2p,up,vp,dn0,pp,pi0
+   real, dimension(m2,m3) :: topma,ths2,rvs2,co2s2,ups2,vps2,pis2,dens2,zts2
    real, dimension(m1) :: zt,zm,dzt
 
    integer :: i,j,k1,k2,k3
@@ -1670,9 +1703,10 @@ subroutine sfc_fields_adap(m1,m2,m3,ia,iz,ja,jz,jd,flpu,flpv,flpw  &
          wtv1 = arv(nint(flpv(i,j-jd)),i,j-jd) / arv(nint(flpv(i,j-jd))+1,i,j-jd)
          wtv2 = arv(nint(flpv(i,j)),i,j)       / arv(nint(flpv(i,j))+1,i,j)
 
-         ths2(i,j) =  wtw * theta(k2,i,j) + (1. - wtw)  * theta(k3,i,j)
+         ths2(i,j)  =  wtw * theta(k2,i,j) + (1. - wtw)  * theta(k3,i,j)
 
-         rvs2(i,j) =  wtw * rv(k2,i,j)    + (1. - wtw)  * rv(k3,i,j)
+         rvs2(i,j)  =  wtw * rv(k2,i,j)    + (1. - wtw)  * rv(k3,i,j)
+         co2s2(i,j) =  wtw * co2p(k2,i,j)  + (1. - wtw)  * co2p(k3,i,j)
 
          ups2(i,j) = (wtu1        * up(nint(flpu(i-1,j)),i-1,j)    &
                    +  (1. - wtu1) * up(nint(flpu(i-1,j))+1,i-1,j)  &

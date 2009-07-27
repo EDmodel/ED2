@@ -21,12 +21,15 @@ subroutine initial_grid_grell(m1,deltax,deltay,zt,zm,flpw,rtgt,confrq,pblidx)
            mkx                  & ! intent(out) - Number of Grell levels.
           ,kgoff                & ! intent(out) - BRAMS offset related to Grell
           ,kpbl                 & ! intent(out) - Level of PBL top
+          ,ktpse                & ! intent(out) - Maximum cloud top allowed
           ,lpw                  & ! intent(out) - Lowest thermodynamic point
           ,tscal_kf             & ! intent(out) - Kain-Fritsch(1990) time scale
           ,z                    & ! intent(out) - Height
           ,z_cup                & ! intent(out) - Height at cloud levels
           ,dzu_cld              & ! intent(out) - Delta z for updraft calculations
           ,dzd_cld              ! ! intent(out) - Delta z for downdraft calculations
+   use grell_coms       , only: &
+           zmaxtpse             ! ! intent(in)  - Maximum height allowed for cloud top.
    implicit none
    !------ I/O variables ------------------------------------------------------------------!
    integer               , intent(in)  :: m1        ! Number of vertical levels
@@ -87,6 +90,12 @@ subroutine initial_grid_grell(m1,deltax,deltay,zt,zm,flpw,rtgt,confrq,pblidx)
    do k=2,mkx
       dzu_cld(k) = z_cup(k)-z_cup(k-1)
    end do
+   
+   !----- Finding the top height that we allow convection to develop. ---------------------!
+   pauseloop: do ktpse=2,mkx-1
+      if (z_cup(ktpse) > zmaxtpse) exit pauseloop
+   end do pauseloop
+   ktpse = ktpse - 1
 
    return
 end subroutine initial_grid_grell
@@ -103,16 +112,15 @@ end subroutine initial_grid_grell
 !    This subroutine simply copies the tendencies to scratch arrays. It is done separated- !
 ! ly because it is the only place that we must give i and j information.                   !
 !------------------------------------------------------------------------------------------!
-subroutine initial_tend_grell(m1,m2,m3,i,j,tht,tket,rtt,thsrc_shal,rtsrc_shal)
+subroutine initial_tend_grell(m1,m2,m3,i,j,tht,tket,rtt,co2t)
    use mem_scratch_grell, only : &
            mkx          & ! intent(in)  - Number of Grell levels.
           ,kgoff        & ! intent(in)  - BRAMS offset related to Grell
           ,lpw          & ! intent(in)  - Lowest thermodynamic point
           ,dthildt      & ! intent(out) - Theta_il tendency
           ,dtkedt       & ! intent(out) - TKE tendency
-          ,dqtotdt      & ! intent(out) - Total mixing ratio tendency
-          ,dthildt_shal & ! intent(out) - Theta_il tend. due to shallower clouds
-          ,dqtotdt_shal ! ! intent(out) - Total mix. ratio tend. due to shallower clouds
+          ,dqtotdt      & ! intent(out) - Total H2O mixing ratio tendency
+          ,dco2dt       ! ! intent(out) - Total CO2 mixing ratio tendency
    use rconstants, only: day_sec
    implicit none
    !------ I/O variables ------------------------------------------------------------------!
@@ -120,10 +128,8 @@ subroutine initial_tend_grell(m1,m2,m3,i,j,tht,tket,rtt,thsrc_shal,rtsrc_shal)
    integer, intent(in)                      :: i,j        ! Current position
    real   , intent(in), dimension(m1,m2,m3) :: tht        ! Potential temperature tend.
    real   , intent(in), dimension(m1,m2,m3) :: tket       ! Turbulent Kinetic Energy tend.
-   real   , intent(in), dimension(m1,m2,m3) :: rtt        ! Total mixing ratio tend.
-   !------ This includes the tendencies due to convection that already happened -----------!
-   real   , intent(in), dimension(m1,m2,m3) :: thsrc_shal ! Shallower conv. theta forcing
-   real   , intent(in), dimension(m1,m2,m3) :: rtsrc_shal ! Shallower conv. mix.rat. forc.
+   real   , intent(in), dimension(m1,m2,m3) :: co2t       ! Total CO2 mixing ratio tend.
+   real   , intent(in), dimension(m1,m2,m3) :: rtt        ! Total H2O mixing ratio tend.
    !------ Local variables ----------------------------------------------------------------!
    integer                                  :: k,kr       ! Counters
    !---------------------------------------------------------------------------------------!
@@ -134,9 +140,8 @@ subroutine initial_tend_grell(m1,m2,m3,i,j,tht,tket,rtt,thsrc_shal,rtsrc_shal)
    !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
    !write (unit=23,fmt='(a)') '-------------------------------------------------------------'
    !write (unit=23,fmt='(3(a,1x,i5,1x))') 'i=',i,'j=',j,'mkx=',mkx
-   !write (unit=23,fmt='(2(1x,a5),5(1x,a13))') adjustr('k'),adjustr('kgoff')                &
-   !          ,adjustr('dthildt'),adjustr('dqtotdt'),adjustr('dtkedt')                      &
-   !          ,adjustr('dthildt_shal'),adjustr('dqtotdt_shal')
+   !write (unit=23,fmt='(2(1x,a5),3(1x,a13))') adjustr('k'),adjustr('kgoff')                &
+   !          ,adjustr('dthildt'),adjustr('dqtotdt'),adjustr('dtkedt'),adjustr('dco2dt')
    !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
    !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
 
@@ -146,14 +151,13 @@ subroutine initial_tend_grell(m1,m2,m3,i,j,tht,tket,rtt,thsrc_shal,rtsrc_shal)
       dthildt(k)      = tht(kr,i,j)
       dqtotdt(k)      = rtt(kr,i,j)
       dtkedt(k)       = tket(kr,i,j)
-      dthildt_shal(k) = thsrc_shal(kr,i,j)
-      dqtotdt_shal(k) = rtsrc_shal(kr,i,j)
+      dco2dt(k)       = co2t(kr,i,j)
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
       !write (unit=23,fmt='(2(1x,i5),5(1x,es13.6))') k,kgoff                                &
       !      ,day_sec*dthildt(k),day_sec*dqtotdt(k),day_sec*dtkedt(k)                       &
-      !      ,day_sec*dthildt_shal(k),day_sec*dqtotdt_shal(k)
+      !      ,day_sec*dthildt_shal(k),day_sec*dqtotdt_shal(k),day_sec*dco2dt_shal(k)
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -181,18 +185,21 @@ end subroutine initial_tend_grell
 ! is a deep convection call, then it will include the effect of shallow convection, and    !
 ! make the variables for the case in which no convection happens consistent with this.     !
 !------------------------------------------------------------------------------------------!
-subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,pi0,pp,pc,wp,dn0,tkep,rliq,rice,wstd)
+subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tkep,rliq     &
+                               ,rice,wstd)
 
    use mem_scratch_grell, only : &
-          dthildt      & ! intent(in)  - Temporary theta_il tendency              [    K/s]
-         ,dthildt_shal & ! intent(in)  - Theta_il tendency due to shallower clds. [    K/s]
-         ,dqtotdt      & ! intent(in)  - Total mixing ratio tendency              [kg/kg/s]
-         ,dqtotdt_shal & ! intent(in)  - Total mixing ratio tendency due to shal. [kg/kg/s]
+          dco2dt       & ! intent(in)  - Total CO2 mixing ratio tendency          [  ppm/s]
+         ,dthildt      & ! intent(in)  - Temporary theta_il tendency              [    K/s]
+         ,dqtotdt      & ! intent(in)  - Total H2O mixing ratio tendency          [kg/kg/s]
          ,dtkedt       & ! intent(in)  - Temporary TKE tendency                   [ J/kg/s]
          ,mkx          & ! intent(in)  - Number of Grell levels.                  [    ---]
          ,kgoff        & ! intent(in)  - BRAMS offset related to Grell            [    ---]
          ,lpw          & ! intent(in)  - Lowest thermodynamic point               [    ---]
          ,z            & ! intent(in)  - Grell's heights                          [      m]
+         ,co20         & ! intent(out) - CO2 mixing ratio                         [    ppm]
+         ,co2          & ! intent(out) - Forced CO2 mixing ratio                  [    ppm]
+         ,co2sur       & ! intent(out) - Sfc. CO2 mixing ratio                    [    ppm]
          ,exner0       & ! intent(out) - Exner function                           [ J/kg/K]
          ,exner        & ! intent(out) - Forced Exner function                    [ J/kg/K]
          ,exnersur     & ! intent(out) - Surface Exner function                   [ J/kg/K]
@@ -243,7 +250,8 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,pi0,pp,pc,wp,dn0,tkep,rli
    real   , intent(in)                  :: dtime ! Time step                      [      s]
    real   , intent(in)  , dimension(m1) :: thp   ! Ice-liquid potential temp.     [      K]
    real   , intent(in)  , dimension(m1) :: theta ! Potential temperature          [      K]
-   real   , intent(in)  , dimension(m1) :: rtp   ! Total mixing ratio             [  kg/kg]
+   real   , intent(in)  , dimension(m1) :: rtp   ! Total H2O mixing ratio         [  kg/kg]
+   real   , intent(in)  , dimension(m1) :: co2p  ! Total CO2 mixing ratio         [    ppm]
    real   , intent(in)  , dimension(m1) :: pi0   ! Reference Exner function       [ J/kg/K]
    real   , intent(in)  , dimension(m1) :: pp    ! Current perturbation on pi     [ J/kg/K]
    real   , intent(in)  , dimension(m1) :: pc    ! Future perturbation on pi      [ J/kg/K]
@@ -271,35 +279,27 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,pi0,pp,pc,wp,dn0,tkep,rli
       !------ 2. Pressure. ----------------------------------------------------------------!
       p0(k)     = p00*(cpi*exner0(k))**cpor
       !------------------------------------------------------------------------------------!
-      ! 3. Temperature and water, depending on whether shallower cumulus had happened.     !
+      ! 3. Temperature and water.                                                          !
       !------------------------------------------------------------------------------------!
-      !------ 3a. Shallower cumulus weren't called or didn't happen, using default --------!
-      if (dthildt_shal(k) == 0. .and. dqtotdt_shal(k) == 0.) then
-         thil0(k)  = thp(kr)
-         qtot0(k)  = max(toodry,rtp(kr))
-         qliq0(k)  = max(0.,rliq(kr))
-         qice0(k)  = max(0.,rice(kr))
-         qvap0(k)  = max(toodry,qtot0(k)-qice0(k)-qliq0(k))
-         t0(k)     = cpi * theta(kr) * exner0(k)
-      !------ 3b. Shallower cumulus happened, need to find new equilibrium state ----------!
-      else
-         thil0(k)  = thp(kr)   + dtime*dthildt_shal(k)
-         qtot0(k)  = max(toodry,rtp(kr)   + dtime*dqtotdt_shal(k))
-        !----- Using the Taylor expansion proxy as Tripoli/Cotton (1981) with prev. t -----!
-         t0(k)     = cpi * theta(kr) * exner0(k)
-         call thil2tqall(thil0(k),exner0(k),p0(k),qtot0(k),qliq0(k),qice0(k),t0(k)         &
-                        ,qvap0(k),qsat)
-      end if
+      thil0(k)  = thp(kr)
+      qtot0(k)  = max(toodry,rtp(kr))
+      qliq0(k)  = max(0.,rliq(kr))
+      qice0(k)  = max(0.,rice(kr))
+      qvap0(k)  = max(toodry,qtot0(k)-qice0(k)-qliq0(k))
+      t0(k)     = cpi * theta(kr) * exner0(k)
+
       !------ 4. Finding the ice-vapour equivalent potential temperature ------------------!
       theiv0(k) = thetaeiv(thil0(k),p0(k),t0(k),qvap0(k),qtot0(k))
 
-      !------ 5. Turbulent kinetic energy [m²/s²] -----------------------------------------!
+      !------ 5. CO2 mixing ratio. --------------------------------------------------------!
+      co20(k)   = max(0.,co2p(kr))
+      !------ 6. Turbulent kinetic energy [m²/s²] -----------------------------------------!
       tke0(k)     = tkep(kr)
-      !------ 6. Vertical velocity in terms of pressure, or Lagrangian dp/dt [ Pa/s] ------!
+      !------ 7. Vertical velocity in terms of pressure, or Lagrangian dp/dt [ Pa/s] ------!
       omeg(k)     = -g*dn0(kr)*.5*( wp(kr)+wp(kr-1) )
-      !------ 7. Vertical velocity [m/s], this is staggered, averaging... -----------------!
+      !------ 8. Vertical velocity [m/s], this is staggered, averaging... -----------------!
       wwind(k)    = 0.5 * (wp(kr)+wp(kr-1))
-      !------ 8. Standard-deviation of vertical velocity ----------------------------------!
+      !------ 9. Standard-deviation of vertical velocity ----------------------------------!
       sigw(k)     = max(wstd(kr),sigwmin)
       !------------------------------------------------------------------------------------!
       !]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]!
@@ -326,9 +326,11 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,pi0,pp,pc,wp,dn0,tkep,rli
       call thil2tqall(thil(k),exner(k),p(k),qtot(k),qliq(k),qice(k),t(k),qvap(k),qsat)
       !------ 6. Finding the ice-vapour equivalent potential temperature ------------------!
       theiv(k) = thetaeiv(thil(k),p(k),t(k),qvap(k),qtot(k))
-      !------ 7. Turbulent kinetic energy -------------------------------------------------!
+      !------ 7. CO2 mixing ratio ---------------------------------------------------------!
+      co2(k)   = co2p(kr) + dco2dt(k) * dtime
+      !------ 8. Turbulent kinetic energy -------------------------------------------------!
       tke(k)   = max(tkmin,tkep(kr) + dtkedt(k) * dtime)
-      !------ 8. Air density --------------------------------------------------------------!
+      !------ 9. Air density --------------------------------------------------------------!
       rho(k)   = idealdens(p(k),t(k),qvap(k),qtot(k))
       !------------------------------------------------------------------------------------!
       !]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]!
@@ -359,7 +361,9 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,pi0,pp,pc,wp,dn0,tkep,rli
    !----- 7. Temperature ------------------------------------------------------------------!
    tsur        = cpi*theta(lpw)*exnersur
    !----- 8. Ice-vapour equivalent potential temperature ----------------------------------!
-   theivsur = thetaeiv(thilsur,psur,tsur,qvapsur,qtotsur)
+   theivsur    = thetaeiv(thilsur,psur,tsur,qvapsur,qtotsur)
+   !----- 9. CO2 mixing ratio -------------------------------------------------------------!
+   co2sur      = co2p(lpw)
    !---------------------------------------------------------------------------------------!
    !]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]!
 
@@ -582,7 +586,7 @@ end subroutine initial_upstream_grell
 ! moistening rates due to convection.                                                      !
 !------------------------------------------------------------------------------------------!
 subroutine grell_output(comp_down,m1,mgmzp,rtgt,zt,zm,dnmf,upmf,xierr,zjmin,zk22,zkbcon    &
-                       ,zkdt,zktop,conprr,thsrc,rtsrc,areadn,areaup,cuprliq,cuprice        )
+                       ,zkdt,zktop,conprr,thsrc,rtsrc,co2src,areadn,areaup,cuprliq,cuprice)
    use mem_scratch_grell, only: &
            cdd                  & ! intent(in) - Normalized downdraft detr. rate  [    1/m]
           ,cdu                  & ! intent(in) - Normalized updraft detr. rate    [    1/m]
@@ -602,6 +606,7 @@ subroutine grell_output(comp_down,m1,mgmzp,rtgt,zt,zm,dnmf,upmf,xierr,zjmin,zk22
           ,mentrd_rate          & ! intent(in) - Normalized downdraft entr. rate  [    1/m]
           ,mentru_rate          & ! intent(in) - Normalized updraft entr. rate    [    1/m]
           ,mkx                  & ! intent(in) - # of cloud grid levels
+          ,outco2               & ! intent(in) - Total CO2 mixing ratio forcing   [  ppm/s]
           ,outqtot              & ! intent(in) - Total mixing ratio forcing       [kg/kg/s]
           ,outthil              & ! intent(in) - Theta_il forcing                 [    K/s]
           ,qliqd_cld            & ! intent(in) - Downdraft liquid mixing ratio    [  kg/kg]
@@ -629,6 +634,7 @@ subroutine grell_output(comp_down,m1,mgmzp,rtgt,zt,zm,dnmf,upmf,xierr,zjmin,zk22
    
    real, dimension(m1), intent(out) :: thsrc     ! Potential temperature feedback [    K/s]
    real, dimension(m1), intent(out) :: rtsrc     ! Total mixing ratio feedback    [kg/kg/s]
+   real, dimension(m1), intent(out) :: co2src    ! Total CO2 mixing ratio fdbk    [  ppm/s]
    real, dimension(m1), intent(out) :: cuprliq   ! Cumulus water mixing ratio     [  kg/kg]
    real, dimension(m1), intent(out) :: cuprice   ! Cumulus ice mixing ratio       [  kg/kg]
    real               , intent(out) :: areadn    ! Fractional downdraft area      [    ---]
@@ -651,6 +657,7 @@ subroutine grell_output(comp_down,m1,mgmzp,rtgt,zt,zm,dnmf,upmf,xierr,zjmin,zk22
    do k=1,m1
       thsrc  (k) = 0.
       rtsrc  (k) = 0.
+      co2src (k) = 0.
       cuprliq(k) = 0.
       cuprice(k) = 0.
    end do
@@ -694,6 +701,7 @@ subroutine grell_output(comp_down,m1,mgmzp,rtgt,zt,zm,dnmf,upmf,xierr,zjmin,zk22
       !----- Here we are simply copying including the offset back. ------------------------!
       thsrc(kr)   = outthil(k)
       rtsrc(kr)   = outqtot(k)
+      co2src(kr)  = outco2(k)
    end do
 
 

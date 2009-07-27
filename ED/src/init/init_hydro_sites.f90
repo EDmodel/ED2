@@ -1,16 +1,16 @@
 !!! translate from C to fortran
 ! ===============================================================
 
-subroutine read_site_file_array(cgrid)
+subroutine read_site_file(cgrid)
    ! function for loading sites within polygons and initializing polygon parms
    ! call prior to loading pss/css files but after basic polygon established
   
    use soil_coms, only: soil,slz
    use grid_coms, only: nzg
-   use misc_coms, only: ied_init_mode,sfilin
+   use ed_misc_coms, only: ied_init_mode,sfilin
    use mem_sites, only: edres
    use ed_state_vars, only: edtype,polygontype,sitetype,allocate_polygontype
-   use max_dims, only: max_site,n_pft
+   use ed_max_dims, only: max_site,n_pft
 
    implicit none
 
@@ -44,19 +44,22 @@ subroutine read_site_file_array(cgrid)
 
       cpoly => cgrid%polygon(ipy)
 
-      call create_ed1_fname(cgrid%lat(ipy), edres, cgrid%lon(ipy),  &
-           trim(sfilin), pss_name, css_name, site_name)
-           
+      if (ied_init_mode == 3) then
+         call create_ed1_fname(cgrid%lat(ipy), edres, cgrid%lon(ipy),trim(sfilin)          &
+                              ,pss_name,css_name,site_name)
+         !! check if site file exists
+         inquire(file=trim(site_name),exist=fexist)
+         if(.not.fexist) then
+            print*,"error opening site file ",site_name
+            print*,"setting ied_init_mode to 2 and loading as single site"
+         end if
+      else
+         fexist = .false.
+      end if
 
-      !! check if site file exists
-      inquire(file=trim(site_name),exist=fexist)
-      if(ied_init_mode == 3 .and. .not.fexist) then
-         print*,"error opening site file ",site_name
-         print*,"setting ied_init_mode to 2 and loading as single site"
-      endif
       
       ! If there is no terrestrial site
-      if(ied_init_mode /= 3 .or. .not.fexist) then  !! have no site file
+      if(.not. fexist) then  !! have no site file or ied_init_mode is not 3
 
          ! Allocate single site vector information to
          ! the swap polygon
@@ -291,7 +294,7 @@ subroutine read_site_file_array(cgrid)
    end do
 
 
-end subroutine read_site_file_array
+end subroutine read_site_file
 !==========================================================================================!
 !==========================================================================================!
 

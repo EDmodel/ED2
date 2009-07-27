@@ -5,7 +5,8 @@
 
 subroutine old_grell_cupar_driver(icld)
 
-  use mem_basic         , only: basic_g
+  use mem_basic         , only: basic_g & ! intent(in)
+                              , co2_on  ! ! intent(in)
 
   use mem_tend          , only: tend
 ![MLO - Adding shallow cumulus output
@@ -79,13 +80,20 @@ subroutine old_grell_cupar_driver(icld)
 
   if (icld == 1) then
 
-     !----- Remove part of the instability due to shallow cumulus action ---------------------!
-     call include_shal_effect(mzp,mxp,myp,ia,iz,ja,jz,dtlt                                    &
+     !----- Remove part of the instability due to shallow cumulus action ------------------!
+     call include_shal_effect(mzp,mxp,myp,ia,iz,ja,jz,dtlt                                 &
                    ,sc1_grell_g(ngrid)%thetasta , sc1_grell_g(ngrid)%rvsta      &
                    ,basic_g(ngrid)%theta, basic_g(ngrid)%rv                     &
                    ,basic_g(ngrid)%pi0  , basic_g(ngrid)%pp                     &
                    ,cuparm_g(ngrid)%thsrc(:,:,:,nclouds)                        &
                    ,cuparm_g(ngrid)%rtsrc(:,:,:,nclouds))
+
+     !-------------------------------------------------------------------------------------!
+     !     Zero out CO2 tendency if CO2 is prognosed.  The old Grell scheme won't compute  !
+     ! the transport of CO2 through updrafts and downdrafts, feel free to add this.  It    !
+     ! should be similar to the water transport, except that CO2 doesn't change phase.     !
+     !-------------------------------------------------------------------------------------!
+     if (co2_on) call azero(mxp*myp*mzp,cuparm_g(ngrid)%co2src(:,:,:,icld))
 
      call azero(mxp*myp*mzp,cuparm_g(ngrid)%thsrc(:,:,:,icld))
      call azero(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(:,:,:,icld))
@@ -142,6 +150,13 @@ subroutine old_grell_cupar_driver(icld)
 
      call azero(mxp*myp*mzp,cuparm_g(ngrid)%thsrc(:,:,:,icld))
      call azero(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(:,:,:,icld))
+
+     !-------------------------------------------------------------------------------------!
+     !     Zero out CO2 tendency if CO2 is prognosed.  The old Grell scheme won't compute  !
+     ! the transport of CO2 through updrafts and downdrafts, feel free to add this.  It    !
+     ! should be similar to the water transport, except that CO2 doesn't change phase.     !
+     !-------------------------------------------------------------------------------------!
+     if (co2_on) call azero(mxp*myp*mzp,cuparm_g(ngrid)%co2src(:,:,:,icld))
 
      call cuparth_shal(mynum,mgmxp,mgmyp,mgmzp,mzp,mxp,myp,ia,iz,ja,jz,i0,j0,maxiens,icld &
                       ,iupmethod,depth_min(icld),cap_maxs(icld),radius(icld),zkbmax(icld) &

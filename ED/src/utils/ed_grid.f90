@@ -35,7 +35,7 @@ subroutine ed_gridset(ngra)
 
   use ed_node_coms,only : mxp,myp,mmxp,mmyp
 
-  use max_dims, only: &
+  use ed_max_dims, only: &
        maxgrds,        &
        nzpmax
 

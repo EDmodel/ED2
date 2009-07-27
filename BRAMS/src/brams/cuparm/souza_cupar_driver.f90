@@ -33,6 +33,13 @@ subroutine souza_cupar_driver()
    call azero(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(:,:,:,icld))
    call azero(mxp*myp,cuparm_g(ngrid)%upmf(:,:,icld))
 
+   !---------------------------------------------------------------------------------------!
+   !     Zero out CO2 tendency if CO2 is prognosed.  Currently Kuo scheme won't compute    !
+   ! the transport of CO2 through updrafts and downdrafts, feel free to add this.  It      !
+   ! should be similar to the water transport, except that CO2 doesn't change phase.       !
+   !---------------------------------------------------------------------------------------!
+   if (co2_on) call azero(mxp*myp*mzp,cuparm_g(ngrid)%co2src(:,:,:,icld))
+
    call shcupar(mzp,mxp,myp,ia,iz,ja,jz,i0,j0,                   &
         basic_g(ngrid)%wp, basic_g(ngrid)%theta,   &
         basic_g(ngrid)%pp, basic_g(ngrid)%pi0,     &

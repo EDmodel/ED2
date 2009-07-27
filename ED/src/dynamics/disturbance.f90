@@ -1,4 +1,4 @@
-module disturbance_utils_ar
+module disturbance_utils
 
   use ed_state_vars,only: &
        allocate_patchtype,   &
@@ -8,20 +8,20 @@ module disturbance_utils_ar
        deallocate_sitetype,  &
        copy_sitetype_mask
 
-  use fuse_fiss_utils_ar,only: &
-       fuse_cohorts_ar,      &
-       terminate_cohorts_ar, &
-       split_cohorts_ar
+  use fuse_fiss_utils,only: &
+       fuse_cohorts,      &
+       terminate_cohorts, &
+       split_cohorts
 
   contains
 
-  subroutine apply_disturbances_ar(cgrid)
+  subroutine apply_disturbances(cgrid)
 
     use ed_state_vars,only: edtype,polygontype,sitetype,patchtype
-    use misc_coms, only: current_time
+    use ed_misc_coms, only: current_time
     use disturb_coms, only: treefall_age_threshold,  &
          min_new_patch_area
-    use max_dims, only: n_dist_types, n_pft, n_dbh
+    use ed_max_dims, only: n_dist_types, n_pft, n_dbh
     use mem_sites, only: maxcohort
 
     implicit none
@@ -38,6 +38,8 @@ module disturbance_utils_ar
 
     real :: dA
     real :: area_fac
+    real :: elim_nplant
+    real :: elim_lai
     real, dimension(n_pft, n_dbh) :: initial_agb
     real, dimension(n_pft, n_dbh) :: initial_basal_area
 
@@ -58,16 +60,16 @@ module disturbance_utils_ar
 
         
         ! Store AGB, basal area profiles in memory.
-        call update_site_derived_props_ar(cpoly, 1,isi)
+        call update_site_derived_props(cpoly, 1,isi)
         initial_agb(1:n_pft, 1:n_dbh) = cpoly%agb(1:n_pft, 1:n_dbh,isi)
         initial_basal_area(1:n_pft, 1:n_dbh) = cpoly%basal_area(1:n_pft, 1:n_dbh,isi)
         
         ! First take care of harvesting: secondary -> secondary and 
         ! primary -> secondary.
-        call apply_forestry_ar(cpoly,isi, current_time%year, cpoly%met(isi)%rhos)
+        call apply_forestry(cpoly,isi, current_time%year, cpoly%met(isi)%rhos)
         
         ! Update the cut output variables
-        call update_site_derived_props_ar(cpoly, 1,isi)
+        call update_site_derived_props(cpoly, 1,isi)
         
         cpoly%agb_cut(1:n_pft, 1:n_dbh,isi) = cpoly%agb_cut(1:n_pft, 1:n_dbh,isi) +  &
              initial_agb(1:n_pft, 1:n_dbh) - cpoly%agb(1:n_pft, 1:n_dbh,isi)
@@ -111,7 +113,7 @@ module disturbance_utils_ar
         ! patches. Since agb and basal area is calculated based on these
         ! numbers
         do q = onsp+1, onsp+n_dist_types
-            call initialize_disturbed_patch_ar(csite,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv,q,1)
+            call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,q,1,cpoly%lsl(isi))
         enddo
 
         ! Loop over q, the *destination* landuse type
@@ -151,8 +153,8 @@ module disturbance_utils_ar
               csite%plantation(onsp+q) = 0
               csite%area(onsp+q)       = area
               
-              ! Initialize to zero the new trasitioned patches (redundant)
-              call initialize_disturbed_patch_ar(csite,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv,onsp+q,1)
+              ! Initialize to zero the new trasitioned patches
+              call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,onsp+q,1,cpoly%lsl(isi))
               
               ! Now go through patches, adding its contribution to the new patch.
               do ipa=1,onsp
@@ -169,10 +171,10 @@ module disturbance_utils_ar
                     
                     area_fac = dA / csite%area(onsp+q)
                     
-                    call increment_patch_vars_ar(csite,q+onsp,ipa,area_fac)
-                    call insert_survivors_ar(csite,q+onsp,ipa,q,area_fac,cpoly%nat_dist_type(isi))
+                    call increment_patch_vars(csite,q+onsp,ipa,area_fac)
+                    call insert_survivors(csite,q+onsp,ipa,q,area_fac,cpoly%nat_dist_type(isi))
 
-                    call accum_dist_litt_ar(csite,q+onsp,ipa,q,area_fac, &
+                    call accum_dist_litt(csite,q+onsp,ipa,q,area_fac, &
                          cpoly%loss_fraction(q,isi),cpoly%nat_dist_type(isi))
                     
                     ! update patch area
@@ -182,27 +184,27 @@ module disturbance_utils_ar
               enddo
               
               ! if the new patch is agriculture, plant it with grasses.
-              if(q == 1)call plant_patch_ar(csite,q+onsp,cpoly%agri_stocking_pft(isi),   &
-                   cpoly%agri_stocking_density(isi), 1.0, cpoly%lsl(isi))
+              if(q == 1)call plant_patch(csite,q+onsp,cpoly%agri_stocking_pft(isi),   &
+                   cpoly%agri_stocking_density(isi),cpoly%green_leaf_factor(:,isi), 1.0, cpoly%lsl(isi))
               
               qpatch => csite%patch(q+onsp)
 
               !  fuse then terminate cohorts
               if (csite%patch(q+onsp)%ncohorts > 0 .and. maxcohort >= 0) then
-                 call fuse_cohorts_ar(csite,q+onsp, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
-                 call terminate_cohorts_ar(csite,q+onsp)
-                 call split_cohorts_ar(qpatch, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
+                 call fuse_cohorts(csite,q+onsp, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
+                 call terminate_cohorts(csite,q+onsp,elim_nplant,elim_lai)
+                 call split_cohorts(qpatch, cpoly%green_leaf_factor(:,isi), cpoly%lsl(isi))
               endif
           
               ! Store AGB, basal area profiles in memory.
               initial_agb(1:n_pft, 1:n_dbh) = cpoly%agb(1:n_pft, 1:n_dbh,isi)
               initial_basal_area(1:n_pft, 1:n_dbh) = cpoly%basal_area(1:n_pft, 1:n_dbh, isi)
               
-              ! Update the derived properties including veg_height, lai
-              call update_patch_derived_props_ar(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,q+onsp)
+              ! Update the derived properties including veg_height, patch hcapveg, lai
+              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,q+onsp)
 
               ! Update soil temp, fracliq, etc.
-              call new_patch_sfc_props_ar(csite, q+onsp, cpoly%met(isi)%rhos)
+              call new_patch_sfc_props(csite, q+onsp, cpoly%met(isi)%rhos)
               
               ! Update AGB, basal area.
               ! !!!!!!!!!! SHOULD THIS BE HERE OR OUTSIDE THIS LOOP?? !!!!!!!!
@@ -210,7 +212,7 @@ module disturbance_utils_ar
               ! !!!! NEW DISTURBANCE PATCH CREATION ATTEMPT? I WILL LEAVE IT
               ! !!!! FOR NOW.  IT DOES NOT INCREMEMNT ANY VARIABLES SO IT CANT HURT
 
-              call update_site_derived_props_ar(cpoly,1,isi)
+              call update_site_derived_props(cpoly,1,isi)
               
               ! Update either cut or mortality
               if(q /= 3)then
@@ -278,11 +280,11 @@ module disturbance_utils_ar
   first_time = .false.
   
   return
-end subroutine apply_disturbances_ar
+end subroutine apply_disturbances
 
   !====================================================================
 
-  subroutine site_disturbance_rates_ar(month, year, cgrid)
+  subroutine site_disturbance_rates(month, year, cgrid)
 
     use ed_state_vars,only:edtype,polygontype,sitetype
     use disturb_coms, only: treefall_disturbance_rate, lutime, include_fire
@@ -313,13 +315,14 @@ end subroutine apply_disturbances_ar
           csite => cpoly%site(isi)
 
           !  Calculate fire disturbance rates only if fire is on.
-          if(include_fire == 1)then
-             fire_dist_rate = sum(cpoly%lambda_fire(1:12,isi)) / 12.0
-          else
+          select case (include_fire)
+          case (0) 
              fire_dist_rate = 0.0
-          endif
+          case (1,2)
+             fire_dist_rate = sum(cpoly%lambda_fire(1:12,isi)) / 12.0
+          end select
 
-          cpoly%fire_disturbance_rate = fire_dist_rate
+          cpoly%fire_disturbance_rate(isi) = fire_dist_rate
     
           !  treefall disturbance is currently spatiotemporally constant, 
           !  from ED2IN
@@ -409,11 +412,11 @@ end subroutine apply_disturbances_ar
     enddo
 
     return
-  end subroutine site_disturbance_rates_ar
+  end subroutine site_disturbance_rates
 
   !=====================================================================
 
-  subroutine initialize_disturbed_patch_ar(csite,atm_tmp,atm_shv,np,dp)
+  subroutine initialize_disturbed_patch(csite,atm_tmp,np,dp,lsl)
     
     use ed_state_vars, only: sitetype,patchtype
     use consts_coms, only : t00
@@ -421,8 +424,8 @@ end subroutine apply_disturbances_ar
 
     implicit none
     type(sitetype),target    :: csite
-    real, intent(in)         :: atm_tmp,atm_shv
-    integer, intent(in)      :: np,dp
+    real   , intent(in)      :: atm_tmp
+    integer, intent(in)      :: np,dp,lsl
     integer                  :: k
 
 
@@ -433,19 +436,16 @@ end subroutine apply_disturbances_ar
 
     csite%patch(np)%ncohorts = 0
 
-    ! Initializing some water/energy properties 
-    csite%can_temp(np) = atm_tmp
-    csite%can_shv(np)  = atm_shv
     ! For now, choose heat/vapor capacities for stability
     csite%can_depth(np) = 30.0
     do k=1,nzs
-       csite%sfcwater_tempk(k,np) = t00   ! Set canopy temp to 0 C
-       csite%sfcwater_fracliq(k,np) = 1.0 ! Set to 100% liquid
+       csite%sfcwater_tempk(k,np) = atm_tmp   ! Set canopy temp to 0 C
+       csite%sfcwater_fracliq(k,np) = 1.0     ! Set to 100% liquid
     end do
 
 
     ! Included the initialization for all fast variables.
-    call init_ed_patch_vars_array(csite,np,np)
+    call init_ed_patch_vars(csite,np,np,lsl)
 
     ! dist_type is not set here.
 
@@ -484,21 +484,25 @@ end subroutine apply_disturbances_ar
 
     csite%can_shv(np) = 0.0
 
+    csite%can_co2(np) = 0.0
+
     csite%soil_energy(1:nzg,np) = 0.0
 
-    csite%soil_water(1:nzg,np) = 0.0d+0
+    csite%soil_water(1:nzg,np) = 0.0
 
     csite%sfcwater_mass(1:nzs,np) =  0.0
 
     csite%sfcwater_energy(1:nzs,np) = 0.0
 
     csite%sfcwater_depth(1:nzs,np) = 0.0
+    
+    csite%hcapveg(np) = 0.0
 
     !--------------------------------------------------------------------------------------!
     csite%rough(np) = 0.0
 
     ! this 
-    call init_ed_patch_vars_array(csite,np,np)
+    call init_ed_patch_vars(csite,np,np,lsl)
 
     csite%fsc_in(np) = 0.0
 
@@ -511,14 +515,14 @@ end subroutine apply_disturbances_ar
     csite%total_plant_nitrogen_uptake(np) = 0.0
 
     return
-  end subroutine initialize_disturbed_patch_ar
+  end subroutine initialize_disturbed_patch
 
   !======================================================================
 
-  subroutine increment_patch_vars_ar(csite,np, cp, area_fac)
+  subroutine increment_patch_vars(csite,np, cp, area_fac)
 
     use ed_state_vars, only: sitetype,patchtype
-    use max_dims, only: n_pft
+    use ed_max_dims, only: n_pft
     use grid_coms, only: nzg
 
     implicit none
@@ -551,17 +555,14 @@ end subroutine apply_disturbances_ar
 
     csite%can_shv(np) = csite%can_shv(np) + csite%can_shv(cp) * area_fac
 
+    csite%can_co2(np) = csite%can_co2(np) + csite%can_co2(cp) * area_fac
+
     csite%can_depth(np) = csite%can_depth(np) + csite%can_depth(cp) * area_fac
 
     do k = 1, csite%nlev_sfcwater(cp)
        csite%sfcwater_mass(k,np) = csite%sfcwater_mass(k,np) + csite%sfcwater_mass(k,cp) *   &
             area_fac
 
-       !!!! IS THE FOLLOWING LINE CORRECT? IT SEEMS TO BE ADDING AN EXTRA AND UNECESARY
-       !!!! MASS TERM FROM THE DONOR PATCH  !!!
-       !!!! MLO: I don't think it's correct, it should be cp, shouldn't it? I switched it.
-       !csite%sfcwater_energy(k,np) = csite%sfcwater_energy(k,np) +   &
-       !     csite%sfcwater_energy(k,np) * csite%sfcwater_mass(k,cp) * area_fac
        csite%sfcwater_energy(k,np) = csite%sfcwater_energy(k,np) +   &
             csite%sfcwater_energy(k,cp) * csite%sfcwater_mass(k,cp) * area_fac
        csite%sfcwater_depth(k,np) = csite%sfcwater_depth(k,np) + csite%sfcwater_depth(k,cp) *   &
@@ -569,9 +570,9 @@ end subroutine apply_disturbances_ar
     enddo
 
     do k = 1, nzg
-       csite%ntext_soil(k,np) = csite%ntext_soil(k,np)
-       csite%soil_energy(k,np) = csite%soil_energy(k,np) +csite%soil_energy(k,cp) * area_fac
-       csite%soil_water(k,np) = csite%soil_water(k,np) + csite%soil_water(k,cp) * dble(area_fac)
+       csite%ntext_soil(k,np)  = csite%ntext_soil(k,np)
+       csite%soil_energy(k,np) = csite%soil_energy(k,np) + csite%soil_energy(k,cp) * area_fac
+       csite%soil_water(k,np)  = csite%soil_water(k,np)  + csite%soil_water(k,cp)  * area_fac
     enddo
 
     csite%rough(np) = csite%rough(np) + csite%rough(cp) * area_fac
@@ -596,11 +597,11 @@ end subroutine apply_disturbances_ar
          csite%total_plant_nitrogen_uptake(cp) * area_fac
 
     return
-  end subroutine increment_patch_vars_ar
+  end subroutine increment_patch_vars
 
   !=======================================================================
 
-  subroutine insert_survivors_ar(csite, np, cp, q, area_fac,nat_dist_type)
+  subroutine insert_survivors(csite, np, cp, q, area_fac,nat_dist_type)
 
     use ed_state_vars, only: sitetype,patchtype
     
@@ -630,7 +631,7 @@ end subroutine apply_disturbances_ar
     
     do ico = 1,cpatch%ncohorts
        
-       cohort_area_fac = survivorship_ar(q,nat_dist_type, csite, cp, ico) * area_fac
+       cohort_area_fac = survivorship(q,nat_dist_type, csite, cp, ico) * area_fac
        n_survivors = cpatch%nplant(ico) * cohort_area_fac
        
        ! If something survived, make a new cohort
@@ -660,7 +661,7 @@ end subroutine apply_disturbances_ar
 
     do ico = 1,cpatch%ncohorts
        
-       cohort_area_fac = survivorship_ar(q,nat_dist_type, csite, cp, ico) * area_fac
+       cohort_area_fac = survivorship(q,nat_dist_type, csite, cp, ico) * area_fac
        n_survivors = cpatch%nplant(ico) * cohort_area_fac
        
        if(mask(ico)) then
@@ -668,25 +669,29 @@ end subroutine apply_disturbances_ar
           nco = nco + 1
           
           call copy_patchtype(cpatch,tpatch,ico,ico,nco,nco)
-          
+
           ! Adjust area-based variables
-          tpatch%nplant(nco)     = tpatch%nplant(nco)    * cohort_area_fac
-          tpatch%lai(nco)        = tpatch%lai(nco)       * cohort_area_fac       
-          tpatch%veg_water(nco)  = tpatch%veg_water(nco) * cohort_area_fac
-          tpatch%mean_gpp(nco)   = tpatch%mean_gpp(nco)  * cohort_area_fac
-          tpatch%mean_leaf_resp(nco)      = tpatch%mean_leaf_resp(nco) * cohort_area_fac
-          tpatch%mean_root_resp(nco)      = tpatch%mean_root_resp(nco) * cohort_area_fac
-          tpatch%growth_respiration(nco)  = tpatch%growth_respiration(nco) * cohort_area_fac
-          tpatch%storage_respiration(nco) = tpatch%storage_respiration(nco) * cohort_area_fac
-          tpatch%vleaf_respiration(nco)   = tpatch%vleaf_respiration(nco) * cohort_area_fac
-          tpatch%Psi_open(nco)            = tpatch%Psi_open(nco) * cohort_area_fac
-
-          !    Because both nplant and water were scaled by a factor, and bleaf/bdead 
-          ! didn't change, energy and heat capacity are updated by the same metrics.
-          tpatch%hcapveg(nco)    = tpatch%hcapveg(nco)    * cohort_area_fac
-          tpatch%veg_energy(nco) = tpatch%veg_energy(nco) * cohort_area_fac
-
-       endif
+          tpatch%lai(nco)                 = tpatch%lai(nco)                  * cohort_area_fac
+          tpatch%wai(nco)                 = tpatch%wai(nco)                  * cohort_area_fac
+          tpatch%wpa(nco)                 = tpatch%wpa(nco)                  * cohort_area_fac
+          tpatch%nplant(nco)              = tpatch%nplant(nco)               * cohort_area_fac
+          tpatch%mean_gpp(nco)            = tpatch%mean_gpp(nco)             * cohort_area_fac
+          tpatch%mean_leaf_resp(nco)      = tpatch%mean_leaf_resp(nco)       * cohort_area_fac
+          tpatch%mean_root_resp(nco)      = tpatch%mean_root_resp(nco)       * cohort_area_fac
+          tpatch%dmean_gpp(nco)           = tpatch%dmean_gpp(nco)            * cohort_area_fac
+          tpatch%dmean_gpp_pot(nco)       = tpatch%dmean_gpp_pot(nco)        * cohort_area_fac
+          tpatch%dmean_gpp_max(nco)       = tpatch%dmean_gpp_max(nco)        * cohort_area_fac
+          tpatch%dmean_leaf_resp(nco)     = tpatch%dmean_leaf_resp(nco)      * cohort_area_fac
+          tpatch%dmean_root_resp(nco)     = tpatch%dmean_root_resp(nco)      * cohort_area_fac
+          tpatch%Psi_open(nco)            = tpatch%Psi_open(nco)             * cohort_area_fac
+          tpatch%gpp(nco)                 = tpatch%gpp(nco)                  * cohort_area_fac
+          tpatch%leaf_respiration(nco)    = tpatch%leaf_respiration(nco)     * cohort_area_fac
+          tpatch%root_respiration(nco)    = tpatch%root_respiration(nco)     * cohort_area_fac
+          tpatch%monthly_dndt(nco)        = tpatch%monthly_dndt(nco)         * cohort_area_fac
+          tpatch%veg_water(nco)           = tpatch%veg_water(nco)            * cohort_area_fac
+          tpatch%hcapveg(nco)             = tpatch%hcapveg(nco)              * cohort_area_fac
+          tpatch%veg_energy(nco)          = tpatch%veg_energy(nco)           * cohort_area_fac
+       end if
           
     enddo  ! end loop over cohorts
 
@@ -701,14 +706,14 @@ end subroutine apply_disturbances_ar
 
 
     return
-  end subroutine insert_survivors_ar
+  end subroutine insert_survivors
 
   !======================================================================
-  subroutine accum_dist_litt_ar(csite,np,cp, q, area_fac,loss_fraction,nat_dist_type)
+  subroutine accum_dist_litt(csite,np,cp, q, area_fac,loss_fraction,nat_dist_type)
     
     use ed_state_vars, only: sitetype,patchtype,polygontype
     use decomp_coms, only: f_labile
-    use max_dims, only: n_pft
+    use ed_max_dims, only: n_pft
     use pft_coms, only: c2n_storage, c2n_leaf, c2n_recruit, c2n_stem, l2n_stem
     use grid_coms, only: nzg
 
@@ -737,18 +742,18 @@ end subroutine apply_disturbances_ar
     do ico = 1,cpatch%ncohorts
 
        fast_litter = fast_litter + (1.0 - &
-            survivorship_ar(q,nat_dist_type,csite, cp, ico)) * &
+            survivorship(q,nat_dist_type,csite, cp, ico)) * &
             (f_labile(cpatch%pft(ico)) * cpatch%balive(ico) &
             + cpatch%bstorage(ico)) * cpatch%nplant(ico)
 
        fast_litter_n = fast_litter_n + (1.0 - &
-            survivorship_ar(q,nat_dist_type, csite, cp, ico)) * &
+            survivorship(q,nat_dist_type, csite, cp, ico)) * &
             (f_labile(cpatch%pft(ico)) * cpatch%balive(ico) &
             / c2n_leaf(cpatch%pft(ico)) + cpatch%bstorage(ico) /  &
             c2n_storage ) * cpatch%nplant(ico)
 
        struct_litter = struct_litter + cpatch%nplant(ico) *   &
-            (1.0 - survivorship_ar(q,nat_dist_type, csite, cp, ico)) * ( (1.0 -   &
+            (1.0 - survivorship(q,nat_dist_type, csite, cp, ico)) * ( (1.0 -   &
             loss_fraction ) * cpatch%bdead(ico) +   & ! DOUBLE CHECK THIS, IS THIS RIGHT??
             (1.0 - f_labile(cpatch%pft(ico))) * cpatch%balive(ico))
        
@@ -765,11 +770,11 @@ end subroutine apply_disturbances_ar
     csite%fast_soil_N(np) = csite%fast_soil_N(np) + fast_litter_n * area_fac
 
     return
-  end subroutine accum_dist_litt_ar
+  end subroutine accum_dist_litt
 
   !============================================================================
 
-  real function survivorship_ar(dest_type,poly_dest_type,csite, ipa, ico)
+  real function survivorship(dest_type,poly_dest_type,csite, ipa, ico)
 
     use ed_state_vars, only: patchtype,sitetype
     use disturb_coms, only: treefall_hite_threshold
@@ -786,19 +791,19 @@ end subroutine apply_disturbances_ar
     cpatch => csite%patch(ipa)
 
     if(dest_type == 1)then
-       survivorship_ar = 0.0  !  agric
+       survivorship = 0.0  !  agric
     else
        if(dest_type == 2)then
-          survivorship_ar = 0.0   ! secondary land
+          survivorship = 0.0   ! secondary land
        else  !   natural land 
           if(dest_type == 3)then
              if(poly_dest_type == 1)then
-                survivorship_ar = 0.0 ! fire
+                survivorship = 0.0 ! fire
              elseif(poly_dest_type == 0)then
                 if(cpatch%hite(ico) < treefall_hite_threshold)then
-                   survivorship_ar =  treefall_s_ltht(cpatch%pft(ico)) 
+                   survivorship =  treefall_s_ltht(cpatch%pft(ico)) 
                 else 
-                   survivorship_ar = treefall_s_gtht(cpatch%pft(ico))
+                   survivorship = treefall_s_gtht(cpatch%pft(ico))
                 endif
              endif
           endif
@@ -806,21 +811,21 @@ end subroutine apply_disturbances_ar
     endif
     
     return
-  end function survivorship_ar
+  end function survivorship
 
   !=============================================================
 
-  subroutine plant_patch_ar(csite, np, pft, density, height_factor, lsl)
+  subroutine plant_patch(csite, np, pft, density, green_leaf_factor, height_factor, lsl)
 
     use ed_state_vars,only : sitetype,patchtype
 
     use pft_coms, only: q, qsw, sla, hgt_min, max_dbh
-    use misc_coms, only: dtlsm
-    use fuse_fiss_utils_ar, only : sort_cohorts_ar
-!    use canopy_air_coms, only: hcapveg_ref,heathite_min
+    use ed_misc_coms, only: dtlsm
+    use fuse_fiss_utils, only : sort_cohorts
     use ed_therm_lib,only : calc_hcapveg
     use consts_coms, only: t3ple
-    use allometry, only : h2dbh, dbh2bd, dbh2bl, dbh2h
+    use allometry, only : h2dbh, dbh2bd, dbh2bl, dbh2h, area_indices
+    use ed_max_dims, only : n_pft
 
     implicit none
 
@@ -833,7 +838,7 @@ end subroutine apply_disturbances_ar
     integer, intent(in) :: pft
     real, intent(in) :: density
     real, intent(in) :: height_factor
-    
+    real, dimension(n_pft), intent(in) :: green_leaf_factor
     cpatch => csite%patch(np)
 
     ! Reallocate the current cohort with an extra space for the
@@ -879,32 +884,42 @@ end subroutine apply_disturbances_ar
        cpatch%hite(nc)  = dbh2h(pft,max_dbh(pft))
     end if
 
-    cpatch%phenology_status = 0
+    cpatch%phenology_status(nc) = 0
     cpatch%balive(nc) = cpatch%bleaf(nc) * &
          (1.0 + q(cpatch%pft(nc)) + qsw(cpatch%pft(nc)) * cpatch%hite(nc))
-    cpatch%lai(nc) = cpatch%bleaf(nc) * cpatch%nplant(nc) * sla(cpatch%pft(nc))
+    cpatch%sla(nc)=sla(cpatch%pft(nc))
+    call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)        &
+                     ,cpatch%balive(nc),cpatch%dbh(nc), cpatch%hite(nc)          &
+                     ,cpatch%pft(nc),cpatch%sla(nc), cpatch%lai(nc)              &
+                     ,cpatch%wpa(nc),cpatch%wai(nc))
+
     cpatch%bstorage(nc) = 1.0*(cpatch%balive(nc)) !! changed by MCD, was 0.0
 
 
-    cpatch%veg_temp(nc) = csite%can_temp(np)
+
+    call init_ed_cohort_vars(cpatch, nc, lsl)
+
+    cpatch%veg_temp(nc)  = csite%can_temp(np)
     cpatch%veg_water(nc) = 0.0
+    cpatch%veg_fliq(nc)  = 0.0
 
     !----- Because we assigned no water, the internal energy is simply hcapveg*T
 
-    cpatch%hcapveg(nc) = calc_hcapveg(cpatch%bleaf(nc),cpatch%bdead(nc), &
-         cpatch%nplant(nc),cpatch%pft(nc))
+    cpatch%hcapveg(nc) = calc_hcapveg(cpatch%bleaf(nc),cpatch%bdead(nc)   &
+                                     ,cpatch%balive(nc),cpatch%nplant(nc) &
+                                     ,cpatch%hite(nc),cpatch%pft(nc)      &
+                                     ,cpatch%phenology_status(nc))
     
     cpatch%veg_energy(nc) = cpatch%hcapveg(nc) * cpatch%veg_temp(nc)
     
-    call init_ed_cohort_vars_array(cpatch, nc, lsl)
     
     cpatch%new_recruit_flag(nc) = 1 ! should plantations be considered recruits?
 
     ! Sort the cohorts so that the new cohort is at the correct height bin
 
-    call sort_cohorts_ar(cpatch)
+    call sort_cohorts(cpatch)
     
     return
-  end subroutine plant_patch_ar
+  end subroutine plant_patch
   
-end module disturbance_utils_ar
+end module disturbance_utils

@@ -116,8 +116,6 @@ OBJ_MODEL =                         \
 	mem_scratch2_grell_sh.o     \
 	mem_scratch3_grell.o        \
 	mem_scratch3_grell_sh.o     \
-	mem_sib.o                   \
-	mem_sib_co2.o               \
 	mem_soil_moisture.o         \
 	mem_tconv.o                 \
 	mem_teb.o                   \
@@ -229,10 +227,6 @@ OBJ_MODEL =                         \
 	rsys.o                      \
 	ruser.o                     \
 	shcu_vars_const.o           \
-	sib_vars.o                  \
-	sib2_co2.o                  \
-	sib2_driver.o               \
-	sib2_init.o                 \
 	soil_moisture_init.o        \
 	souza_cupar_driver.o        \
 	sst_read.o                  \
@@ -264,6 +258,7 @@ OBJ_MODEL =                         \
 	edcp_met_init.o             \
 	edcp_model.o                \
 	edcp_mpiutils.o             \
+	edcp_para_init.o            \
 	edcp_water.o                \
 	mem_edcp.o                  \
 	allometry.o                 \
@@ -271,6 +266,7 @@ OBJ_MODEL =                         \
 	c34constants.o              \
 	canopy_air_coms.o           \
 	canopy_radiation_coms.o     \
+	canopy_struct_dynamics.o   \
 	canopy_update_euler.o       \
 	consts_coms.o               \
 	decomp_coms.o               \
@@ -282,16 +278,17 @@ OBJ_MODEL =                         \
 	ed_grid.o                   \
 	ed_history_io.o             \
 	ed_init.o                   \
+	ed_max_dims.o               \
 	ed_mem_grid_dim_defs.o      \
 	ed_misc_coms.o              \
 	ed_node_coms.o              \
 	ed_opspec.o                 \
 	ed_para_coms.o              \
-	ed_para_init.o              \
 	ed_params.o                 \
 	ed_state_vars.o             \
-	ed_type_init.o              \
 	ed_therm_lib.o              \
+	ed_type_init.o              \
+	ed_var_tables.o             \
 	ed_work_vars.o              \
 	ed_xml_config.o             \
 	edio.o                      \
@@ -318,10 +315,8 @@ OBJ_MODEL =                         \
 	leaf_database.o             \
 	libxml2f90.f90_pp.o         \
 	lsm_hyd.o                   \
-	max_dims.o                  \
 	mem_sites.o                 \
 	met_driver_coms.o           \
-	misc_coms.o                 \
 	mortality.o                 \
 	optimiz_coms.o              \
 	phenology_aux.o             \
@@ -339,7 +334,8 @@ OBJ_MODEL =                         \
 	rk4_integ_utils.o           \
 	rk4_stepper.o               \
 	soil_coms.o                 \
+	stable_cohorts.o            \
 	structural_growth.o         \
 	twostream_rad.o             \
-	var_tables_array.o
+	update_derived_props.o
 

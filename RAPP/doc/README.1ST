@@ -1,0 +1,24 @@
+=================================================
+  HOW TO GENERATE A NEW METEOROLOGICAL DATASET.
+=================================================
+
+   This is just a quick guide to generate NCEP meteorological driver dataset, and it 
+probably needs to be better explained.  Should you have any questions, feel free to 
+send me an e-mail (mlongo@fas.harvard.edu)
+
+1. At EDBRAMS/RAPP/run, you will find a script called download.sh. Open it and edit the 
+   first few lines (leave the #!/bin/bash unchanged, and edit the variables at the user's
+   preference section.
+
+2. Run the script.  This will take a while, especially if you are downloading several
+   years...
+
+3. Make a link of the executable at the EDBRAMS/RAPP/run directory:
+   ln -s ../build/rapp-1.0 rapp-1.0
+
+4. Edit RAPP_IN, adjusting it to your preferences, and run ./rapp-1.0.  This is also going 
+   to take several hours to finish, especially if your domain is large.
+
+5. After the run is completed, you should have one _OL1_ and one _OL2_ file for each 
+   month, plus the header.  Adjust your ED2IN to call this new header and you are all set.
+   

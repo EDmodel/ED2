@@ -1,5 +1,5 @@
 module optimiz_coms
-  use max_dims, only: str_len
+  use ed_max_dims, only: str_len
   
   !------------------------------------------------------------------------------!
   !    This module has currently a single variable used nowhere in the code. I   !

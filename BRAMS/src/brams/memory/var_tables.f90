@@ -10,7 +10,7 @@
 Module var_tables
 
     !    Maximum number of variables of all types (3d + 2d + leaf)
-integer, parameter :: maxvars=1050
+integer, parameter :: maxvars=1500
 
     !    Define data type for main variable table
 

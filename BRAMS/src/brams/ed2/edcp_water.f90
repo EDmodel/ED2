@@ -1,357 +1,438 @@
 !==========================================================================================!
 !==========================================================================================!
+!     This subroutine will compute the fluxes between water and the air.  ED solves only   !
+! the land regions, so this subroutine is a simplified version of LEAF-3 without consider- !
+! ing land, only water.  It's called lake model but it is used for oceans and rivers too   !
+! (using prescribed surface temperature.)                                                  !
+!------------------------------------------------------------------------------------------!
 subroutine simple_lake_model(time,dtlongest)
+   use node_mod               , only : ja                & ! intent(in)
+                                     , jz                & ! intent(in)
+                                     , ia                & ! intent(in)
+                                     , iz                ! ! intent(in)
+   use consts_coms            , only : stefan            & ! intent(in)
+                                     , cpi               & ! intent(in)
+                                     , vonk              & ! intent(in)
+                                     , cp                & ! intent(in)
+                                     , grav              & ! intent(in)
+                                     , rdry              & ! intent(in)
+                                     , p00               & ! intent(in)
+                                     , rocp              & ! intent(in)
+                                     , cpor              & ! intent(in)
+                                     , alvl              & ! intent(in)
+                                     , mmdryi            ! ! intent(in)
+   use canopy_air_coms        , only : ustmin            ! ! intent(in)
+   use mem_edcp               , only : wgrid_g           ! ! structure
+   use io_params              , only : ssttime1          & ! intent(in)
+                                     , ssttime2          & ! intent(in)
+                                     , iupdsst           ! ! intent(in)
+   use mem_leaf               , only : leaf_g            ! ! structure
+   use mem_basic              , only : co2_on            & ! intent(in)
+                                     , co2con            & ! intent(in)
+                                     , basic_g           ! ! structure
+   use mem_radiate            , only : radiate_g         ! ! structure
+   use mem_cuparm             , only : cuparm_g          ! ! structure
+   use mem_micro              , only : micro_g           ! ! structure
+   use mem_grid               , only : zt                & ! intent(in)
+                                     , grid_g            & ! structure
+                                     , dzt               & ! intent(in)
+                                     , zm                & ! intent(in)
+                                     , if_adap           & ! intent(in)
+                                     , jdim              & ! intent(in)
+                                     , ngrid             & ! intent(in)
+                                     , nzs               ! ! intent(in)
+   use met_driver_coms        , only : initial_co2       ! ! intent(in)
+   use leaf_coms              , only : min_waterrough    ! ! intent(in)
+   use rk4_coms               , only : rk4min_can_shv    & ! intent(in)
+                                     , rk4max_can_shv    & ! intent(in)
+                                     , rk4min_can_temp   & ! intent(in)
+                                     , rk4max_can_temp   ! ! intent(in)
+   use therm_lib              , only : rhovsil           & ! function
+                                     , virtt             ! ! function
+   use canopy_struct_dynamics , only : ed_stars          & ! subroutine
+                                     , vertical_vel_flux ! ! function
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   real        , intent(in) :: dtlongest
+   real(kind=8), intent(in) :: time
+   !----- Local variables -----------------------------------------------------------------!
+   integer                  :: k1w,k2w,k3w
+   integer                  :: k2u,k3u,k2u_1,k3u_1
+   integer                  :: k2v,k3v,k2v_1,k3v_1
+   integer                  :: i,j,k,n
+   integer                  :: niter_leaf
+   real                     :: topma_t,wtw,wtu1,wtu2,wtv1,wtv2
+   real                     :: dtll, dtll_factor, dtllohcc, dtllowcc, dtlloccc
+   real                     :: up_mean,vp_mean,exner_mean, rv_mean,rtp_mean
+   real                     :: theta_mean,co2p_mean
+   real                     :: cosz, prss, rhos, geoht, vels, tvir
+   real                     :: cosine, sine
+   real                     :: atm_temp,atm_theta,atm_shv,atm_co2
+   real                     :: can_temp,can_theta,can_shv,can_co2
+   real                     :: water_temp,water_ssh,water_rough
+   real                     :: ustar,tstar,qstar,cstar
+   real(kind=8)             :: angle
+   real                     :: avg_water_lc,avg_water_ac
+   real                     :: avg_sensible_lc,avg_sensible_ac
+   real                     :: avg_carbon_lc,avg_carbon_ac
+   real                     :: prev_can_shv,prev_can_temp,prev_can_co2
+   real                     :: hcapcan, wcapcan, ccapcan, rdi
+   real                     :: sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c
+   real                     :: gzotheta, timefac_sst
+   real                     :: fm
+   !----- Local constants -----------------------------------------------------------------!
+   real, parameter          :: d0=0.
+   real, parameter          :: z0fac_water = .016 / grav
+   real, parameter          :: emiss_w = 0.97         ! emissivity of water
+   !---------------------------------------------------------------------------------------!
 
 
-  use node_mod,only:ja,jz,ia,iz
 
-  use consts_coms,only:stefan,cpi,vonk,cp,grav,p00,rocp,cpor,alvl
-  use canopy_air_coms, only : ubmin
-  use mem_edcp,only:wgrid_g
-
-  !------- Transfer these arrays to the polygons --------------!
-  use io_params,  only: ssttime1,ssttime2,iupdsst
-  use mem_leaf,   only: leaf_g
-  use mem_basic,  only: basic_g
-  use mem_radiate,only: radiate_g
-  use mem_cuparm, only: cuparm_g
-  use mem_micro,  only: micro_g
-  use mem_grid,   only: zt,grid_g,dzt,zm,if_adap,jdim,ngrid,nzs
-  use therm_lib,  only: rslif
-  !------------------------------------------------------------!
-
-  implicit none
-  real, intent(in) :: dtlongest
-  real(kind=8),intent(in) :: time
-  real :: cosz
-  real :: prss
-  real :: ustar,tstar,rstar,thetacan,water_rsat,zts,water_rough
-  real :: vels_pat
-  real :: bot,top,last_rv,last_th
-  real :: hcapcan,wcapcan
-  real :: z0fac_water,pis,rdi,idt
-  real,external :: vertical_vel_flux
-
-
-  integer :: i,j,n
-  integer :: k1w,k2w,k3w,k2u,k2u_1,k2v,k2v_1
-  real :: up_mean,vp_mean,exner_mean,dn0_mean
-  real :: rv_mean,theta_mean
-  real :: topma_t,wtw,wtu1,wtu2,wtv1,wtv2
-  real :: canopy_water_vapor
-  real :: canopy_tempk
-  real :: sflux_u,sflux_v,sflux_w,sflux_t,sflux_r
-  integer :: niter_leaf
-  
-  real :: dtll_factor,dtll,dtlc_factor,dtlc
-  real :: dtllohcc,dtllowcc,dtlcohcc,dtlcowcc
-  real :: gzotheta, patarea,vels
-  real :: timefac_sst,seatc
-  real    :: ustaro,delz,d_vel,d_veln,vel_new
-  integer :: ifixu,k
-  real, parameter   :: co2_mean   = 370.00
-  real, parameter   :: canopy_co2 = 370.00
-  real, parameter   :: emiss_w  = 0.97  ! emissivity of water (super gross approximation!)
-
-  real              :: cstar ! Dummy variables for now, if you have 
-                             ! Actual data feel free to compute co2_mean
-                             ! and canopy_co2, then cstar will have meaning.
-
-   ! Define leaf3 and canopy time-split timesteps here.  This ensures that leaf3
-   ! will not use a timestep longer than about 40 seconds, and canopy will not
-   ! use a timestep longer than about 15 seconds.  This allows values of
-   ! hcapcan = 2.e4, wcapcan = 2.e1, and hcapveg = 3.e4 as are now defined below.
+   !---------------------------------------------------------------------------------------!
+   !      Define lake time-split timesteps here.  This ensures that the lake model will    !
+   ! not use a timestep longer than about 40 seconds.  This allows values of hcapcan and   !
+   ! wcapcan at which we are aiming.                                                       !
+   !---------------------------------------------------------------------------------------!
    niter_leaf  = max(1,nint(dtlongest/40.+.4))
    dtll_factor = 1. / float(niter_leaf)
    dtll        = dtlongest * dtll_factor
-  
    
    
-   ! Update the sea-surface temperature
    
+   !---------------------------------------------------------------------------------------!
+   !     If we have time-varying water surface temperature, we perform a linear interpol-  !
+   ! ation over time now. Otherwise, we just use the initially prescribed value (which     !
+   ! can be spatially heterogeneous.                                                       !
+   !---------------------------------------------------------------------------------------!
    if (iupdsst == 0) then
-      timefac_sst = 0.
+      timefac_sst = 0. !----- This will force it to use the initial value only. -----------!
    else
       timefac_sst = sngl((time - ssttime1(ngrid)) / (ssttime2(ngrid) - ssttime1(ngrid)))
-   endif
+   end if
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Big domain loops start here.                                                       !
+   !---------------------------------------------------------------------------------------!
+   jloop: do j=ja,jz
+      iloop: do i=ia,iz
+
+         !---------------------------------------------------------------------------------!
+         !   We now retrieve some variables from the atmosphere.  We may need to do some   !
+         ! interpolation in the vertical, for example, when we use adaptive coordinate.    !
+         ! Therefore, we always check this.                                                !
+         !---------------------------------------------------------------------------------!
+         select case (if_adap)
+         case (0)
+            !------------------------------------------------------------------------------!
+            !      Terrain-following coordinate (sigma_z).  Here we simply use the lowest  !
+            ! predicted level for thermo and wind variables, and a simple average between  !
+            ! levels one and two for Exner function and density.  I am not sure this is    !
+            ! consistent with what is done for density in adaptive coordinate...           !
+            !------------------------------------------------------------------------------!
+            !----- W/T points, only the i,j points are needed...  -------------------------!
+            k2w   = nint(grid_g(ngrid)%flpw(i,j))
+            k1w   = k2w - 1
+            k3w   = k2w + 1
+            theta_mean = basic_g(ngrid)%theta(2,i,j)
+            rv_mean    = basic_g(ngrid)%rv(2,i,j)
+            rtp_mean   = basic_g(ngrid)%rtp(2,i,j)
+
+            if (co2_on) then
+               co2p_mean = basic_g(ngrid)%co2p(2,i,j)
+            else 
+               co2p_mean = co2con(1)
+            end if
+
+            up_mean    = (basic_g(ngrid)%up(2,i,j) + basic_g(ngrid)%up(2,i-1,j))     * 0.5
+            vp_mean    = (basic_g(ngrid)%vp(2,i,j) + basic_g(ngrid)% vp(2,i,j-jdim)) * 0.5
+            exner_mean = ( basic_g(ngrid)%pp(1,i,j) + basic_g(ngrid)%pp(2,i,j)             &
+                         + basic_g(ngrid)%pi0(1,i,j)+basic_g(ngrid)%pi0(2,i,j))      * 0.5
+         case (1)
+            !------------------------------------------------------------------------------!
+            !     Adaptive height coordinate (shaved-eta).  Here we need to do a weighted  !
+            ! average using the lowest predicted points and the points avove them.         !
+            !------------------------------------------------------------------------------!
+
+            !------------------------------------------------------------------------------!
+            !    Finding the lowest boundary levels, depending on which kind of variable   !
+            ! we are averaging (staggered grid).                                           !
+            !------------------------------------------------------------------------------!
+            !----- U points, need to average between i-1 and i... -------------------------!
+            k2u   = nint(grid_g(ngrid)%flpu(i,j))
+            k3u   = k2u + 1
+            k2u_1 = nint(grid_g(ngrid)%flpu(i-1,j))
+            k3u_1 = k2u_1 + 1
+            !----- V points, need to average between j-jdim and j... ----------------------!
+            k2v   = nint(grid_g(ngrid)%flpv(i,j))
+            k3v   = k2v+1
+            k2v_1 = nint(grid_g(ngrid)%flpv(i,j-jdim))
+            k3v_1 = k2v_1 + 1
+            !----- W/T points, only the i,j points are needed...  -------------------------!
+            k2w   = nint(grid_g(ngrid)%flpw(i,j))
+            k1w   = k2w - 1
+            k3w   = k2w + 1
+            !------------------------------------------------------------------------------!
+            topma_t = .25 * ( grid_g(ngrid)%topma(i,j) + grid_g(ngrid)%topma(i-1,j)            &
+                            + grid_g(ngrid)%topma(i,j-jdim) + grid_g(ngrid)%topma(i-1,j-jdim))
+
+            !------------------------------------------------------------------------------!
+            !     Computing the weights for lowest predicted points, relative to points    !
+            ! above them.                                                                  !
+            !------------------------------------------------------------------------------!
+            wtw  = (zm(k2w) - topma_t) * dzt(k2w)
+            wtu1 = grid_g(ngrid)%aru(k2u_1,i-1,j)    / grid_g(ngrid)%aru(k3u_1,i-1,j)
+            wtu2 = grid_g(ngrid)%aru(k2u,i,j)        / grid_g(ngrid)%aru(k3u,i,j)
+            wtv1 = grid_g(ngrid)%arv(k2v_1,i,j-jdim) / grid_g(ngrid)%arv(k3v_1,i,j-jdim)
+            wtv2 = grid_g(ngrid)%arv(k2v,i,j)        / grid_g(ngrid)%arv(k3v,i,j)
+
+            theta_mean   =       wtw   * basic_g(ngrid)%theta(k2w,i,j)                     &
+                         + (1. - wtw)  * basic_g(ngrid)%theta(k3w,i,j)
+
+            rv_mean      =       wtw   * basic_g(ngrid)%rv(k2w,i,j)                        &
+                         + (1. - wtw)  * basic_g(ngrid)%rv(k3w,i,j)
+
+            rtp_mean     =       wtw   * basic_g(ngrid)%rtp(k2w,i,j)                       &
+                         + (1. - wtw)  * basic_g(ngrid)%rtp(k3w,i,j)
+
+            if (co2_on) then
+               co2p_mean =       wtw   * basic_g(ngrid)%co2p(k2w,i,j)                       &
+                         + (1. - wtw)  * basic_g(ngrid)%co2p(k3w,i,j)
+
+            else 
+               co2p_mean = co2con(1)
+            end if
+
+            up_mean      = (        wtu1  * basic_g(ngrid)%up(k2u_1,i-1,j)                 &
+                           +  (1. - wtu1) * basic_g(ngrid)%up(k3u_1,i-1,j)                 &
+                           +        wtu2  * basic_g(ngrid)%up(k2u,i,j)                     &
+                           +  (1. - wtu2) * basic_g(ngrid)%up(k3u,i,j)       ) * .5
+            vp_mean      = (        wtv1  * basic_g(ngrid)%vp(k2v_1,i,j-jdim)              &
+                           +  (1. - wtv1) * basic_g(ngrid)%vp(k3v_1,i,j-jdim)              &
+                           +        wtv2  * basic_g(ngrid)%vp(k2v,i,j)                     &
+                           +  (1. - wtv2) * basic_g(ngrid)%vp(k3v,i,j)       ) * .5
+            
+            !------------------------------------------------------------------------------!
+            !     Exner function and density, need to consider the layer beneath the       !
+            ! ground to make the profile.                                                  !
+            !------------------------------------------------------------------------------!
+            if (wtw >= .5) then
+               exner_mean  = (wtw - .5)                                                    &
+                           * (basic_g(ngrid)%pp(k1w,i,j) + basic_g(ngrid)%pi0(k1w,i,j))    &
+                           + (1.5 - wtw)                                                   &
+                           * (basic_g(ngrid)%pp(k2w,i,j) + basic_g(ngrid)%pi0(k2w,i,j))
+            else
+               exner_mean  = (wtw + .5)                                                    &
+                           * (basic_g(ngrid)%pp(k2w,i,j) + basic_g(ngrid)%pi0(k2w,i,j))    &
+                           + (.5 - wtw)                                                    &
+                           * (basic_g(ngrid)%pp(k3w,i,j) + basic_g(ngrid)%pi0(k3w,i,j))
+            end if
+         end select
+
+         !----- Defining some variables that won't change during the sub time steps. ------!
+         cosz      = radiate_g(ngrid)%cosz(i,j)
+         prss      = (exner_mean * cpi) ** cpor * p00
+         geoht     = (zt(k2w)-zm(k1w))*grid_g(ngrid)%rtgt(i,j)
+         atm_temp  = cpi * theta_mean * exner_mean
+         atm_theta = theta_mean
+         atm_co2   = co2p_mean
+         !---------------------------------------------------------------------------------!
+         !   Most of ED expects specific humidity, not mixing ratio.  Since we will use    !
+         ! ed_stars, which is set up for the former, not the latter, we locally solve      !
+         ! everything for specific humidity, converting in the end.                        !
+         !---------------------------------------------------------------------------------!
+         atm_shv  = rv_mean / (1. + rtp_mean)
+         !---------------------------------------------------------------------------------!
+         tvir     = virtt(atm_temp,rv_mean,rtp_mean)
+         rhos     = prss / (rdry * tvir)
+
+         
+         !---------------------------------------------------------------------------------!
+         !     Finding standard values for vapour and heat capacity of our layer.  This    !
+         ! assumes a constant 20-m thickness canopy.                                       !
+         !---------------------------------------------------------------------------------!
+         wcapcan = 20.0 * rhos
+         hcapcan = wcapcan * cp
+         ccapcan = wcapcan * mmdryi
+         dtllohcc = dtll/hcapcan
+         dtllowcc = dtll/wcapcan
+         dtlloccc = dtll/ccapcan
+
+         !---------------------------------------------------------------------------------!
+         !    Finding the mean wind speed and mean wind direction, so we can split the     !
+         ! flux of momentum according to this.                                             !
+         !---------------------------------------------------------------------------------!
+         vels     = sqrt(up_mean**2 + vp_mean**2)
+         angle    = datan2(dble(vp_mean),dble(up_mean))
+         cosine   = sngl(dcos(angle))
+         sine     = sngl(dsin(angle))
+ 
+
+         !---------------------------------------------------------------------------------!
+         !    Finding the current water temperature and saturation spec. humidity.  None   !
+         ! of them vary in the intermediate steps.                                         !
+         !---------------------------------------------------------------------------------!
+         water_temp = leaf_g(ngrid)%seatp(i,j)                                             &
+                    + timefac_sst*(leaf_g(ngrid)%seatf(i,j) - leaf_g(ngrid)%seatp(i,j))
+         water_ssh  = rhovsil(water_temp) / rhos
+         !---------------------------------------------------------------------------------!
+
+         !----- Assigning initial values for "canopy" properties. -------------------------!
+         can_co2    = leaf_g(ngrid)%can_co2(i,j,1)
+         can_temp   = leaf_g(ngrid)%can_temp(i,j,1)
+         can_theta  = cpi * can_temp * exner_mean
+         !------ Converting mixing ratio to specific humidity. ----------------------------!
+         can_shv    = leaf_g(ngrid)%can_rvap(i,j,1) / (1. +leaf_g(ngrid)%can_rvap(i,j,1))
+         sflux_u    = 0.0
+         sflux_v    = 0.0
+         sflux_w    = 0.0
+         sflux_r    = 0.0
+         sflux_c    = 0.0
+         sflux_t    = 0.0
+
+         !---------------------------------------------------------------------------------!
+         !     Assigning an initial value for ustar.  At the first time, ustar is probably !
+         ! zero, so to avoid singularities, we impose the minimum ustmin, which is also    !
+         ! used in ed_stars subroutine.                                                    !
+         !---------------------------------------------------------------------------------!
+         ustar      = max(ustmin,wgrid_g(ngrid)%ustar(i,j))
+         !---------------------------------------------------------------------------------!
+         !     Loop for the intermediate time steps.                                       !
+         !---------------------------------------------------------------------------------!
+         timeloop: do n = 1,niter_leaf
+            
+            !----- Finding effective water surface roughness. -----------------------------!
+            water_rough = max(z0fac_water * ustar ** 2,min_waterrough)
+            
+            !------------------------------------------------------------------------------!
+            !     This is the ED-2 stars subroutine (Euler method, single precision).      !
+            !------------------------------------------------------------------------------!
+            call ed_stars(atm_theta,atm_shv,atm_co2,can_theta,can_shv,can_co2,geoht,d0     &
+                         ,vels,water_rough ,ustar,tstar,qstar,cstar,fm)
+
+            
+            gzotheta = grav * geoht / atm_theta
+            sflux_w  = sflux_w + vertical_vel_flux(gzotheta,tstar,ustar)
+
+            !------------------------------------------------------------------------------!
+            !      Finding the resistance, and updating the canopy temperature and         !
+            ! specific humidity.                                                           !
+            !------------------------------------------------------------------------------!
+            rdi = .2 * ustar
+            !------ Copying the values to scratch buffers. --------------------------------!
+            prev_can_temp = can_temp
+            prev_can_shv  = can_shv
+            prev_can_co2  = can_co2
+            
+            !------ Computing the lake->canopy and free atmosphere->canopy fluxes. --------!
+            avg_water_lc    = rhos * ( water_ssh - can_shv) * rdi
+            avg_water_ac    = rhos * ustar * qstar
+            avg_sensible_lc = rhos * cp * (water_temp -  can_temp) * rdi 
+            avg_sensible_ac = rhos * ustar * (tstar * exner_mean)
+            avg_carbon_lc   = 0. ! For the time being, no idea of what to put in here...
+            avg_carbon_ac   = rhos * ustar * cstar * mmdryi
+
+            can_temp = prev_can_temp + dtllohcc * (avg_sensible_lc + avg_sensible_ac)
+            can_shv  = prev_can_shv  + dtllowcc * (avg_water_lc    + avg_water_ac)
+            can_co2  = prev_can_co2  + dtlloccc * (avg_carbon_lc   + avg_carbon_ac)
+            
+            !----- Sanity check -----------------------------------------------------------!
+            if(can_shv  < sngl(rk4min_can_shv)  .or. can_shv  > sngl(rk4max_can_shv)  .or. &
+               can_temp < sngl(rk4min_can_temp) .or. can_temp > sngl(rk4max_can_temp) .or. &
+               can_co2  < 0.                    .or. can_co2  > 1.e6                  .or. &
+               can_shv /= can_shv               .or. can_temp /= can_temp             .or. &
+               can_co2 /= can_co2                                                    ) then
+
+               write(unit=*,fmt='(a)') '====== PROBLEMS IN THE LAKE MODEL!!! ====== '
+               write(unit=*,fmt='(3(a,1x,i5,1x))') 'i=',i,'j=',j,'n=',n
+               write(unit=*,fmt='(2(a,1x,f8.2,1x))') 'Lon: ',grid_g(ngrid)%glon(i,j) &
+                                                    ,'Lat: ',grid_g(ngrid)%glat(i,j)
+               write(unit=*,fmt='(a,1x,es12.5)') 'EXNER (PIO)        : ',exner_mean
+               write(unit=*,fmt='(a,1x,es12.5)') 'atm_DENS           : ',rhos
+               write(unit=*,fmt='(a,1x,es12.5)') 'atm_TEMP           : ',atm_temp
+               write(unit=*,fmt='(a,1x,es12.5)') 'atm_QVAP           : ',atm_shv
+               write(unit=*,fmt='(a,1x,es12.5)') 'atm_CO2            : ',atm_co2
+               write(unit=*,fmt='(a,1x,es12.5)') 'WATER_TEMP         : ',water_temp
+               write(unit=*,fmt='(a,1x,es12.5)') 'WATER_SSH          : ',water_ssh
+               write(unit=*,fmt='(a,1x,es12.5)') 'CANOPY_TEMP        : ',can_temp
+               write(unit=*,fmt='(a,1x,es12.5)') 'PREV_CAN_TEMP      : ',prev_can_temp
+               write(unit=*,fmt='(a,1x,es12.5)') 'CANOPY_QVAP        : ',can_shv
+               write(unit=*,fmt='(a,1x,es12.5)') 'PREV_CAN_QVAP      : ',prev_can_shv
+               write(unit=*,fmt='(a,1x,es12.5)') 'CANOPY_CO2         : ',can_co2
+               write(unit=*,fmt='(a,1x,es12.5)') 'PREV_CAN_CO2       : ',prev_can_co2
+               write(unit=*,fmt='(a,1x,es12.5)') 'RDI                : ',rdi
+               write(unit=*,fmt='(a,1x,es12.5)') 'DTLLOWCC           : ',dtllowcc
+               write(unit=*,fmt='(a,1x,es12.5)') 'USTAR              : ',ustar
+               write(unit=*,fmt='(a,1x,es12.5)') 'TSTAR              : ',tstar
+               write(unit=*,fmt='(a,1x,es12.5)') 'QSTAR              : ',qstar
+               write(unit=*,fmt='(a,1x,es12.5)') 'CSTAR              : ',cstar
+               write(unit=*,fmt='(a,1x,es12.5)') 'AVG_WATER_LAKE2CAN : ',avg_water_lc
+               write(unit=*,fmt='(a,1x,es12.5)') 'AVG_WATER_ATM2CAN  : ',avg_water_ac
+               write(unit=*,fmt='(a,1x,es12.5)') 'AVG_HEAT_LAKE2CAN  : ',avg_sensible_lc
+               write(unit=*,fmt='(a,1x,es12.5)') 'AVG_HEAT_ATM2CAN   : ',avg_sensible_ac
+               write(unit=*,fmt='(a,1x,es12.5)') 'AVG_CARBON_LAKE2CAN: ',avg_carbon_lc
+               write(unit=*,fmt='(a,1x,es12.5)') 'AVG_CARBON_ATM2CAN : ',avg_carbon_ac
+               call fatal_error('Lake model failed','simple_lake_model','edcp_water.f90')
+            end if
+            
+
+            !------------------------------------------------------------------------------!
+            !     Integrate the full fluxes of water, heat, and momentum.  They will be    !
+            ! normalised outside the loop.                                                 !
+            !------------------------------------------------------------------------------!
+            sflux_u = sflux_u - ustar*ustar*cosine
+            sflux_v = sflux_v - ustar*ustar*sine
+            sflux_t = sflux_t - ustar*tstar
+            sflux_r = sflux_r                                                              &
+                    - ustar * qstar / ((1.-atm_shv)*(1. - 0.5*(can_shv+prev_can_shv)))
+            sflux_c = sflux_c - ustar * cstar
+         end do timeloop
+
+         !---------------------------------------------------------------------------------!
+         !     Transfer model scalars back to global arrays.                               !
+         !---------------------------------------------------------------------------------!
+         !----- Stars, converting qstar to rstar ------------------------------------------!
+         wgrid_g(ngrid)%ustar(i,j) = ustar
+         wgrid_g(ngrid)%rstar(i,j) = qstar                                                 &
+                                   / ((1.-atm_shv)*(1. - 0.5*(can_shv+prev_can_shv)))
+         wgrid_g(ngrid)%tstar(i,j) = tstar
+         wgrid_g(ngrid)%cstar(i,j) = cstar
+         !----- Dividing surface flux 
+         wgrid_g(ngrid)%sflux_u(i,j) = rhos * sflux_u * dtll_factor
+         wgrid_g(ngrid)%sflux_v(i,j) = rhos * sflux_v * dtll_factor
+         wgrid_g(ngrid)%sflux_w(i,j) = rhos * sflux_w * dtll_factor
+         wgrid_g(ngrid)%sflux_t(i,j) = rhos * sflux_t * dtll_factor
+         wgrid_g(ngrid)%sflux_r(i,j) = rhos * sflux_r * dtll_factor
+         wgrid_g(ngrid)%sflux_c(i,j) = rhos * sflux_c * dtll_factor
+
+         wgrid_g(ngrid)%albedt(i,j)  = min(max(-.0139 + .0467 * tan(acos(cosz)),.03),.999)
+         wgrid_g(ngrid)%rlongup(i,j) = emiss_w * stefan * water_temp**4
 
    
+         leaf_g(ngrid)%can_temp(i,j,1) = can_temp
+         leaf_g(ngrid)%can_rvap(i,j,1) = can_shv / (1. - can_shv)
+         leaf_g(ngrid)%can_co2(i,j,1)  = can_co2
+         !---------------------------------------------------------------------------------! 
+         !     Unless one includes a PFT for water lilies, there is no vegetation on       !
+         ! water, so assume canopy temperature.
+         !---------------------------------------------------------------------------------! 
+         leaf_g(ngrid)%veg_temp(i,j,1) = can_temp
+         
+         !---------------------------------------------------------------------------------!
+         !    Our simple lake model allows no ice, making sure the values are properly     !
+         ! zeroed.                                                                         !
+         !---------------------------------------------------------------------------------!
+         leaf_g(ngrid)%sfcwater_nlev     (i,j,1) = 0.
+         do k=1, nzs
+            leaf_g(ngrid)%sfcwater_energy (1,i,j,1) = 0.
+            leaf_g(ngrid)%sfcwater_mass   (1,i,j,1) = 0.
+            leaf_g(ngrid)%sfcwater_depth  (1,i,j,1) = 0.
+         end do
+      end do iloop
+   end do jloop
 
-
-  ! Note: Water albedo from Atwater and Bell (1981), excerpted from the LEAF3 scheme
-  
-  ! The target step size for the water body suface flux is about 30 seconds
-
-!  hcapcan = 2.0e4
-!  wcapcan = 2.0e1
-
-!  hcapcan = 2.0e4
-!  wcapcan = 2.0e1
-
-   
-
-
-
-!  dtllohcc = dtll / hcapcan
-!  dtllowcc = dtll / wcapcan
-
-  
-  z0fac_water = .016 / grav
-
-  ! Transfer atmospheric information to the ed lsm and fill those
-  ! values.  Requires some mean calculations.  Also perform a 
-  ! sanity check on the pressure; exit if it is unacceptable.
-  !------------------------------------------------------------
-
-
-  ! Prepare the atm data fields
-  
-  
-  do j=ja,jz
-     do i=ia,iz
-
-        seatc = leaf_g(ngrid)%seatp(i,j) + timefac_sst*(leaf_g(ngrid)%seatf(i,j) - leaf_g(ngrid)%seatp(i,j))
-
-        if (if_adap == 1) then
-           
-           ! Shaved Eta coordinate system
-           !--------------------------------------
-           
-           k2w = nint(grid_g(ngrid)%flpw(i,j))
-           k1w = k2w - 1
-           k3w = k2w + 1
-           
-           k2u   = nint(grid_g(ngrid)%flpu(i,j))
-           k2u_1 = nint(grid_g(ngrid)%flpu(i-1,j))
-           
-           k2v   = nint(grid_g(ngrid)%flpv(i,j))
-           k2v_1 = nint(grid_g(ngrid)%flpv(i,j-jdim))
-           
-           topma_t = .25 * (grid_g(ngrid)%topma(i,j) + grid_g(ngrid)%topma(i-1,j)  &
-                + grid_g(ngrid)%topma(i,j-jdim) + grid_g(ngrid)%topma(i-1,j-jdim))
-           
-           ! weights for lowest predicted points, relative to points above them
-           
-           wtw = (zm(k2w) - topma_t) * dzt(k2w)
-           wtu1 = grid_g(ngrid)%aru(k2u_1,i-1,j)   / grid_g(ngrid)%aru(k2u_1+1,i-1,j)
-           wtu2 = grid_g(ngrid)%aru(k2u,i,j)       / grid_g(ngrid)%aru(k2u+1,i,j)
-           wtv1 = grid_g(ngrid)%arv(k2v_1,i,j-jdim) / grid_g(ngrid)%arv(k2v_1+1,i,j-jdim)
-           wtv2 = grid_g(ngrid)%arv(k2v,i,j)       / grid_g(ngrid)%arv(k2v+1,i,j)
-           
-           theta_mean   =  wtw * basic_g(ngrid)%theta(k2w,i,j) + (1. - wtw)  * basic_g(ngrid)%theta(k3w,i,j)
-           
-           rv_mean      =  wtw * basic_g(ngrid)%rv(k2w,i,j)    + (1. - wtw)  * basic_g(ngrid)%rv(k3w,i,j)
-           
-           up_mean      = (wtu1        * basic_g(ngrid)%up(k2u_1,i-1,j)    &
-                +  (1. - wtu1) * basic_g(ngrid)%up(k2u_1+1,i-1,j)  &
-                +  wtu2        * basic_g(ngrid)%up(k2u,i,j)        &
-                +  (1. - wtu2) * basic_g(ngrid)%up(k2u+1,i,j)) * .5
-        
-           vp_mean      = (wtv1        * basic_g(ngrid)%vp(k2v_1,i,j-jdim)    &
-                +  (1. - wtv1) * basic_g(ngrid)%vp(k2v_1+1,i,j-jdim)  &
-                +  wtv2        * basic_g(ngrid)%vp(k2v,i,j)          &
-                +  (1. - wtv2) * basic_g(ngrid)%vp(k2v+1,i,j)) * .5
-           
-           if (wtw >= .5) then
-              exner_mean   = ((wtw - .5) * (basic_g(ngrid)%pp(k1w,i,j) + basic_g(ngrid)%pi0(k1w,i,j))  &
-                   + (1.5 - wtw) * (basic_g(ngrid)%pp(k2w,i,j) + basic_g(ngrid)%pi0(k2w,i,j)))
-              dn0_mean     = (wtw - .5)  * basic_g(ngrid)%dn0(k1w,i,j)  &
-                   + (1.5 - wtw) * basic_g(ngrid)%dn0(k2w,i,j)
-           else
-              exner_mean  = ((wtw + .5) * (basic_g(ngrid)%pp(k2w,i,j) + basic_g(ngrid)%pi0(k2w,i,j))  &
-                   + (.5 - wtw) * (basic_g(ngrid)%pp(k3w,i,j) + basic_g(ngrid)%pi0(k3w,i,j)))
-              dn0_mean    = (wtw + .5) * basic_g(ngrid)%dn0(k2w,i,j)  &
-                   + (.5 - wtw) * basic_g(ngrid)%dn0(k3w,i,j)
-           endif
-           
-           
-        else
-           
-           ! Terrain following coordinate system
-           !--------------------------------------       
-           
-           theta_mean   = basic_g(ngrid)%theta(2,i,j)
-           rv_mean      = basic_g(ngrid)%rv(2,i,j)
-           
-           up_mean       = (basic_g(ngrid)%up(2,i,j) + basic_g(ngrid)%up(2,i-1,j))     * 0.5
-           vp_mean       = (basic_g(ngrid)%vp(2,i,j) + basic_g(ngrid)% vp(2,i,j-jdim)) * 0.5
-           exner_mean    = (basic_g(ngrid)%pp(1,i,j) + basic_g(ngrid)%pp(2,i,j) & 
-                         +  basic_g(ngrid)%pi0(1,i,j)+basic_g(ngrid)%pi0(2,i,j))       * 0.5
-           
-           
-           dn0_mean     = (basic_g(ngrid)%dn0(1,i,j) + basic_g(ngrid)%dn0(2,i,j)) * 0.5
-           
-        endif
-
-
-        cosz  = radiate_g(ngrid)%cosz(i,j)
-
-        ustar              = wgrid_g(ngrid)%ustar(i,j)
-        canopy_tempk       = leaf_g(ngrid)%can_temp(i,j,1)
-        canopy_water_vapor = leaf_g(ngrid)%can_rvap(i,j,1)
-
-        sflux_u = 0.0
-        sflux_v = 0.0
-        sflux_w = 0.0
-        sflux_r = 0.0
-        sflux_t = 0.0
-
-        idt = 0
-        do n = 1,niter_leaf
-
-           pis =  exner_mean * cpi
-           
-           prss = pis ** cpor * p00
-
-           water_rsat  = rslif(prss,seatc)
-           
-           water_rough = max(z0fac_water * ustar ** 2,.0001)
-           
-           thetacan = canopy_tempk / pis
-           
-           zts = zt(2) + grid_g(ngrid)%rtgt(i,j)
-
-           patarea  = leaf_g(ngrid)%patch_area(i,j,1)
-           vels     = sqrt(up_mean**2 + vp_mean**2)
-           vels_pat = max(vels,ubmin)
-           
-           !---- This is the LEAF stars subroutine. ---------------------------------------!
-           call ed_stars(theta_mean,rv_mean,co2_mean,thetacan,zts,vels,water_rough &
-                        ,ustar,rstar,tstar,cstar,canopy_water_vapor,canopy_co2)
-           
-           !----- This part is on LEAF, but not on ED, don't know how necessary this is. --!
-!           ifixu=0
-!           ustaro=ustar
-!           delz = 2.*zts
-!           d_vel =  - ustar * ustar *dtlongest / delz
-!           vel_new = vels_pat + d_vel
-!           if (vel_new < .5 * vels_pat) then
-!              ifixu=1
-!              d_veln = .5 * vels_pat
-!              ustar=sqrt(d_veln*delz/dtlongest)
-!           end if
-
-           ! Calculate the heat,moisture and momentum fluxes
-           ! -----------------------------------------------
-
-           sflux_u = sflux_u - ustar*ustar*up_mean/vels_pat
-           sflux_v = sflux_v - ustar*ustar*vp_mean/vels_pat
-           sflux_t = sflux_t - ustar*tstar
-           sflux_r = sflux_r - ustar*rstar
-           
-           gzotheta = grav * zts / theta_mean
-           
-           sflux_w = sflux_w + vertical_vel_flux(gzotheta,tstar,ustar)
-           
-           ! Update the sea surface air temperature and water vapor mixing ratio
-           ! -------------------------------------------------------------------
-
-           ! In calculating the water capacity and heat capacity of the
-           ! sea surface air space
-           ! We will assume a layer that is 20 meters thick
-           
-           wcapcan = 20.0 * dn0_mean
-           hcapcan = cp * 20.0 * dn0_mean
-
-           dtllohcc = dtll/hcapcan
-           dtllowcc = dtll/wcapcan
-
-
-           rdi = .2 * ustar
-           
-           last_th = canopy_tempk
-
-           canopy_tempk  = canopy_tempk        &
-                + dtllohcc * dn0_mean * cp                    &
-                * ( (seatc -  canopy_tempk) * rdi    &
-                + ustar * tstar * pis)
-           
-           bot = ( water_rsat - canopy_water_vapor) * rdi
-           top = ustar * rstar
-           last_rv = canopy_water_vapor
-           
-           canopy_water_vapor = canopy_water_vapor &
-                + dtllowcc * dn0_mean * (( water_rsat-canopy_water_vapor) * rdi  &
-                + ustar * rstar )
-           
-           if(canopy_water_vapor < 0.001 .or. canopy_water_vapor /= canopy_water_vapor .or. &
-              canopy_tempk /= canopy_tempk ) then
-              write(unit=*,fmt='(a)') '======= WATER VAPOR IN CAS ABOVE WATER-BODIES IS SCREWY! ======'
-              write(unit=*,fmt='(3(a,1x,i5,1x))') 'i=',i,'j=',j,'n=',n
-              write(unit=*,fmt='(2(a,1x,f8.2,1x))') 'Lon: ',grid_g(ngrid)%glon(i,j) &
-                                                   ,'Lat: ',grid_g(ngrid)%glat(i,j)
-              write(unit=*,fmt=*) 'EXNER (PIO)        : ',exner_mean
-              write(unit=*,fmt=*) 'DN0_MEAN           : ',dn0_mean
-              write(unit=*,fmt=*) 'THETA_MEAN         : ',theta_mean
-              write(unit=*,fmt=*) 'RV_MEAN            : ',rv_mean
-              write(unit=*,fmt=*) 'SST                : ',seatc
-              write(unit=*,fmt=*) 'CANOPY_TEMPK       : ',canopy_tempk
-              write(unit=*,fmt=*) 'CANOPY_RVAP/RSAT   : ',canopy_water_vapor,water_rsat
-              write(unit=*,fmt=*) 'RDI                : ',rdi
-              write(unit=*,fmt=*) 'DTLLOWCC           : ',dtllowcc
-              write(unit=*,fmt=*) 'USTAR              : ',ustar
-              write(unit=*,fmt=*) 'TSTAR              : ',tstar
-              write(unit=*,fmt=*) 'RSTAR              : ',rstar
-              write(unit=*,fmt=*) 'BOTTOM             : ',bot
-              write(unit=*,fmt=*) 'TOP                : ',top
-              write(unit=*,fmt=*) 'LAST_RV            : ',last_rv
-              write(unit=*,fmt=*) 'LAST_TH            : ',last_th
-
-              write(unit=*,fmt='(a)') '=======FLUXES======='
-              
-              write(unit=*,fmt=*) 'U momentum flux:    ',wgrid_g(ngrid)%sflux_u(i,j)
-              write(unit=*,fmt=*) 'V momentum flux:    ',wgrid_g(ngrid)%sflux_v(i,j)
-              write(unit=*,fmt=*) 'W momentum flux:    ',wgrid_g(ngrid)%sflux_w(i,j)
-              write(unit=*,fmt=*) 'Sensible Heat flux: ',wgrid_g(ngrid)%sflux_t(i,j)
-              write(unit=*,fmt=*) 'Latent Heat flux:   ',alvl*wgrid_g(ngrid)%sflux_r(i,j)
-
-              call fatal_error('Lake model failed','simple_lake_model','edcp_water.f90')
-           end if
-     
-        enddo
-
-        ! Transfer model scalars back to global arrays
-        ! --------------------------------------------
-
-        wgrid_g(ngrid)%ustar(i,j) = ustar
-        wgrid_g(ngrid)%rstar(i,j) = rstar
-        wgrid_g(ngrid)%tstar(i,j) = tstar
-
-        wgrid_g(ngrid)%sflux_u(i,j) = dn0_mean*sflux_u/real(niter_leaf)
-        wgrid_g(ngrid)%sflux_v(i,j) = dn0_mean*sflux_v/real(niter_leaf)
-        wgrid_g(ngrid)%sflux_w(i,j) = dn0_mean*sflux_w/real(niter_leaf)
-        wgrid_g(ngrid)%sflux_t(i,j) = dn0_mean*sflux_t/real(niter_leaf)
-        wgrid_g(ngrid)%sflux_r(i,j) = dn0_mean*sflux_r/real(niter_leaf)
-
-        wgrid_g(ngrid)%albedt(i,j) = min(max(-.0139 + .0467 * tan(acos(cosz)),.03),.999)
-        wgrid_g(ngrid)%rlongup(i,j) = emiss_w * stefan * seatc**4
-
-
-        leaf_g(ngrid)%can_temp(i,j,1) = canopy_tempk
-        leaf_g(ngrid)%can_rvap(i,j,1) = canopy_water_vapor
-        leaf_g(ngrid)%veg_temp(i,j,1) = canopy_tempk
-        
-        !---- Ice free water... --------------------------------------------------------!
-        leaf_g(ngrid)%sfcwater_nlev     (i,j,1) = 0.
-        do k=1, nzs
-           leaf_g(ngrid)%sfcwater_energy (1,i,j,1) = 0.
-           leaf_g(ngrid)%sfcwater_mass   (1,i,j,1) = 0.
-           leaf_g(ngrid)%sfcwater_depth  (1,i,j,1) = 0.
-        end do
-     end do
-  end do
-
-!  print*,"LAKE MODEL",ja,ja,ia,iz
-!  print*,"ustar:", wgridf_g(ngrid)%ustar(2,2)," tstar: " &
-!       , wgridf_g(ngrid)%tstar(2,2)," rstar:", wgridf_g(ngrid)%rstar(2,2)
-!  print*,"CANOPY TEMP:",wgrids_g(ngrid)%canopy_tempk(2,2)
-!  print*,"SEA TEMP:",leaf_g(ngrid)%seatp(2,2)
-!  print*,"WATER VAPOR ",wgrids_g(ngrid)%canopy_water_vapor(ia:iz,ja:jz)
-!  print*,"U MOMENTUM FLUX",wgridf_g(ngrid)%sflux_u(2,2)
-!  print*,"HEAT FLUX:",wgridf_g(ngrid)%sflux_t(2,2)
-!  print*,"MOISTURE FLUX:",wgridf_g(ngrid)%sflux_r(2,2)
-
-  return
+   return
 end subroutine simple_lake_model
 !==========================================================================================!
 !==========================================================================================!

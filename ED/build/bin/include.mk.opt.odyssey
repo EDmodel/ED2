@@ -37,8 +37,8 @@ BASE=$(ED_ROOT)/build/
 # and specify the location of the include directory
 # library files. Make sure you include the zlib.a location too.
 USE_HDF5=1
-HDF5_INCS=-I/odyssey/apps/hdf5/intel/lib -I/odyssey/apps/hdf5/intel/include
-HDF5_LIBS=-L/odyssey/apps/hdf5/intel/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
+HDF5_INCS=
+HDF5_LIBS= -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
 
 #---------------------------------------------------------------
 # If you have a version of hdf5 compiled in parallel, then you
@@ -65,6 +65,14 @@ NC_LIBS=-L/dev/null
 # -gen-interfaces option are on, so this flag bypass all 
 # interfaces in the code.
 USE_INTERF=1
+
+
+# MPI_Wtime. ---------------------------------------------------
+# If USE_MPIWTIME=1, then it will use MPI libraries to compute
+# the wall time (the only double-precision intrinsic).  In case
+# you don't have it, leave USE_MPIWTIME=0, in which case it will
+# use a simpler, single-precision function.
+USE_MPIWTIME=1
 
 #----------------- SGI -n32 ------------------------------------
 #CMACH=SGI
@@ -243,19 +251,19 @@ MOD_EXT=mod
 #    You should use this if your run seems to be working fine at the beginning, but it is  #
 #    failing or giving instabilities, or funny results after a long time.                  #
 #------------------------------------------------------------------------------------------#
-USE_INTERF=1
-F_OPTS= -FR -O2 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
-        -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
-C_OPTS= -O2 -DLITTLE  -g -traceback -debug extended
-LOADER_OPTS= -FR -O2 -Vaxlib  -check all -g -fpe0 -ftz -debug extended        \
-             -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
-C_LOADER_OPTS=-v -g -traceback
+#USE_INTERF=1
+#F_OPTS= -FR -O2 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
+#        -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+#C_OPTS= -O2 -DLITTLE  -g -traceback -debug extended
+#LOADER_OPTS= -FR -O2 -Vaxlib  -check all -g -fpe0 -ftz -debug extended        \
+#             -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+#C_LOADER_OPTS=-v -g -traceback
 #------------------------------------------------------------------------------------------#
 
 
 #------------------------------------------------------------------------------------------#
 # D. Fast check - This will check pretty much the same as C, but it will not set up        #
-#    anything for the debugger. Use this only if you really don't want to deal with idb    #
+#    anything for the debugger. Use this only if you really don't want 249544to deal with idb    #
 #    or if you have a good idea of which problem you are dealing with.                     #
 #------------------------------------------------------------------------------------------#
 #USE_INTERF=1

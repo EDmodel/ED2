@@ -21,9 +21,10 @@ Module phenology_coms
   real :: phen_c
 
   ! Flag specifying which phenology scheme to run.
-  ! 0 - old ED predictive schemes
+  ! 0 - predictive scheme with cold-deciduous and drought-deciduous
   ! 1 - user prescribed, remote sensing driven
-  ! 2 - new scheme (not yet implemented)
+  ! 2 - predictive scheme with cold-deciduous and new drought-deciuous
+  ! 3 - predictive scheme with cold-deciduous, new drought-deciduous and light-controlled
   integer :: iphen_scheme
 
   ! Flag specifying which reproduction scheme to run
@@ -37,6 +38,15 @@ Module phenology_coms
   integer :: iphenys1,iphenysf,iphenyf1,iphenyff 
 
   character(len=512) :: phenpath
+
+  ! Light-controlled
+  real :: rad_turnover_int
+  real :: rad_turnover_slope  
+
+  real :: vm_tran
+  real :: vm_slop
+  real :: vm_amp
+  real :: vm_min
 
   ! Derived type describing prescribed phenology.
   type prescribed_phen

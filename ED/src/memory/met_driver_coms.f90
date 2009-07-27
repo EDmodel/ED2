@@ -1,6 +1,6 @@
 Module met_driver_coms
 
-  use max_dims, only: str_len
+  use ed_max_dims, only: str_len
   integer, parameter :: metname_len = 128
   integer, parameter :: metvars_len =  16
   logical            :: have_co2
@@ -23,6 +23,8 @@ Module met_driver_coms
   character(len=metvars_len), allocatable, dimension(:,:) :: met_vars
   real, allocatable, dimension(:,:) :: met_frq
   integer, allocatable, dimension(:,:) :: met_interp
+  integer, allocatable, dimension(:) :: metyears
+  integer :: ishuffle
   integer :: metcyc1
   integer :: metcycf
   character(len=str_len) :: ed_met_driver_db

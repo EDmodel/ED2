@@ -265,7 +265,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,mzs,npat,ifm   &
                  nsoil = nint(soil_text(k,i,j,ipat))
                  !print*, 'nsoil',nsoil,slmsts(nsoil)
                  soil_water(k,i,j,ipat) = max(soilcp(nsoil),  &
-                      slmstr(k)*slmsts(nsoil))
+                      min(1.0,slmstr(k))*slmsts(nsoil))
                  !              print*,soil_water(k,i,j,ipat)
                  tsoil = airtemp + stgoff(k)
                  if (tsoil >= t3ple) then
@@ -438,43 +438,33 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,mzs,npat,ifm   &
 
               enddo
 
-              do k = mzg,1,-1
-                 do kk = n4us,1,-1
-                    if (slz(k).ge.slz_us(kk)) then
+              kloop: do k = mzg,1,-1
+                 kkloop: do kk = n4us,1,-1
+                    if (slz(k) >= slz_us(kk)) then
                        do ipat=2,npat
                           nsoil = nint(soil_text(k,i,j,ipat))
-                          soil_water(k,i,j,ipat) = usdum(kk+1)
-                          
-                          if(usdum(kk+1) .lt. 1.e-5)   &
-                               soil_water(k,i,j,ipat) = slmstr(k)*slmsts(nsoil)!oceano
-
-                          soil_water(k,i,j,ipat) = max(soilcp(nsoil), &
-                                                    min(soil_water(k,i,j,ipat), slmsts(nsoil)))
-
-                       enddo
-                       goto 222
-                    elseif (slz(k).lt.slz_us(1)) then
+                          !----- Only reasonable soil moisture values are accepted. --------------!
+                          if (usdum(kk+1) >= soilcp(nsoil) .and. usdum(kk+1) <= slmsts(nsoil))    &
+                             soil_water(k,i,j,ipat) = usdum(kk+1)
+                       end do
+                       cycle kloop
+                    elseif (slz(k) < slz_us(1)) then
                        do ipat=2,npat
                           nsoil = nint(soil_text(k,i,j,ipat))
-                          soil_water(k,i,j,ipat) = usdum(1)
-                          
-                          if(usdum(1) .lt. 1.e-5)   &
-                               soil_water(k,i,j,ipat) = slmstr(k)*slmsts(nsoil)!oceano
+                          if (usdum(1) >= soilcp(nsoil) .and. usdum(1) <= slmsts(nsoil))          &
+                             soil_water(k,i,j,ipat) = usdum(1)
 
-                          soil_water(k,i,j,ipat) = max(soilcp(nsoil), &
-                                                    min(soil_water(k,i,j,ipat), slmsts(nsoil)))
-                       enddo
-                       goto 222
-                    endif
-                 enddo
-222              continue
-              enddo
-           endif
-        enddo
-     enddo
+                       end do
+                       cycle kloop
+                    end if
+                 end do kkloop
+              end do kloop
+           end if
+        end do
+     end do
 
      deallocate(api_us,usdum,prlat,prlon)
-        
+         
      open(2,status='NEW',form='unformatted',access='direct', &
           recl=4*n2*n3*mzg*npat,file=usmodel)
      write(UNIT=2,REC=1) soil_water
@@ -506,6 +496,9 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,mzs,npat,ifm   &
         do ipat= 2,npat
            do k = 1,mzg
               nsoil = nint(soil_text(k,i,j,ipat))
+              ! Just making sure that the soil moisture is bounded...
+              soil_water(k,i,j,npat) = max(soilcp(nsoil), &
+                                           min(soil_water(k,i,j,ipat), slmsts(nsoil)))
 
               tsoil = airtemp + stgoff(k)
               if (tsoil >= t3ple) then

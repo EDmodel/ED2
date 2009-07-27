@@ -30,7 +30,7 @@ end subroutine read_events_xml
 
 subroutine prescribed_event(year,doy)
 
-  use misc_coms, only: event_file 
+  use ed_misc_coms, only: event_file 
 
   integer, intent(in) :: year
   integer, intent(in) :: doy !! day of year
@@ -288,11 +288,11 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
   use pft_coms, only:sla,qsw,q,hgt_min, agf_bs
-  use misc_coms, only: integration_scheme
-  use disturbance_utils_ar,only: plant_patch_ar
+  use ed_misc_coms, only: integration_scheme
+  use disturbance_utils,only: plant_patch
   use ed_therm_lib, only: calc_hcapveg,update_veg_energy_cweh
-  use fuse_fiss_utils_ar, only: terminate_cohorts_ar
-  use allometry, only : bd2dbh, dbh2h
+  use fuse_fiss_utils, only: terminate_cohorts
+  use allometry, only : bd2dbh, dbh2h, area_indices
   real(kind=8),intent(in) :: agb_frac8
   real(kind=8),intent(in) :: bgb_frac8
   real(kind=8),intent(in) :: fol_frac8
@@ -300,6 +300,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   real :: ialloc,bdead_new,bsw_new,bleaf_new,bfr_new,bstore_new
   real :: agb_frac,bgb_frac,fol_frac,stor_frac
   real :: old_hcapveg
+  real :: elim_nplant
+  real :: elim_lai
   integer :: ifm,ipy,isi,ipa,pft
   type(edtype), pointer :: cgrid
   type(polygontype), pointer :: cpoly
@@ -359,27 +361,16 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  !! update biomass pools  
                  !! [[this needs to be more sophisticated]] 
                  
-                 cpatch%balive(ico) = max(0.0,bleaf_new + bfr_new + bsw_new)
-                 cpatch%bdead(ico)  = max(0.0,bdead_new)
+                 cpatch%balive(ico)   = max(0.0,bleaf_new + bfr_new + bsw_new)
+                 cpatch%bdead(ico)    = max(0.0,bdead_new)
                  cpatch%bstorage(ico) = max(0.0,bstore_new)
                  if(bleaf_new .le. tiny(1.0)) then
                     cpatch%phenology_status(ico) = 2
-                    cpatch%lai(ico)        = 0.0
+                    !----- No leaves, then set it to zero. --------------------------------!
                     cpatch%bleaf(ico)      = 0.0
-                    cpatch%veg_energy(ico) = 0.0
-                    cpatch%veg_water(ico)  = 0.0
-                    cpatch%veg_temp(ico)   = 0.0
                  else
                     cpatch%phenology_status(ico) = 1
-                    cpatch%lai(ico)     = bleaf_new * cpatch%nplant(ico) * sla(cpatch%pft(ico))
                     cpatch%bleaf(ico)   = bleaf_new
-                    old_hcapveg         = cpatch%hcapveg(ico)
-                    cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico) &
-                                                      ,cpatch%nplant(ico),cpatch%pft(ico))
-                    call update_veg_energy_cweh(cpatch%veg_energy(ico)                     &
-                                               ,cpatch%veg_temp(ico)                       &
-                                               ,cpatch%veg_water(ico),old_hcapveg          &
-                                               ,cpatch%hcapveg(ico))
                  end if
 
                  if(cpatch%bdead(ico) .gt. tiny(1.0)) then
@@ -389,20 +380,41 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                     cpatch%dbh(ico)  = 0.0
                     cpatch%hite(ico) = 0.0
                  end if
+                 
+                 !----- Update LAI, WPA, and WAI ------------------------------------------!
+                 call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)  &
+                                  ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)    &
+                                  ,cpatch%pft(nc),cpatch%sla(nc), cpatch%lai(nc)           &
+                                  ,cpatch%wpa(nc),cpatch%wai(nc))
 
+                 !-------------------------------------------------------------------------!
+                 !    Here we are leaving all water in the branches and twigs... Do not    !
+                 ! worry, if there is any, it will go down through shedding the next       !
+                 ! step.                                                                   !
+                 !-------------------------------------------------------------------------!
+                 old_hcapveg         = cpatch%hcapveg(ico)
+                 cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)   &
+                                                   ,cpatch%balive(ico),cpatch%nplant(ico) &
+                                                   ,cpatch%hite(ico),cpatch%pft(ico)      &
+                                                   ,cpatch%phenology_status(ico))
+                 call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
+
+                 !----- Updating patch heat capacity. ----------------------------------!
+                 csite%hcapveg(ipa) = csite%hcapveg(ipa)                                &
+                                    + cpatch%hcapveg(ico) - old_hcapveg
 
               enddo
              
               !! remove small cohorts
-              call terminate_cohorts_ar(csite,ipa)
+              call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
 
-              call update_patch_derived_props_ar(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,ipa)
+              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,ipa)
               
            end if  !! check to make sure there ARE cohorts
 
            enddo
            ! Update site properties. ## THINK ABOUT WHAT TO SET FLAG##########
-           call update_site_derived_props_ar(cpoly,0,isi)           
+           call update_site_derived_props(cpoly,0,isi)           
         end do
      end do
 
@@ -420,8 +432,8 @@ subroutine event_planting(pft,density8)
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype, &
        filltab_alltypes 
   use pft_coms, only:sla,qsw,q,hgt_min
-  use misc_coms, only: integration_scheme
-  use disturbance_utils_ar,only: plant_patch_ar
+  use ed_misc_coms, only: integration_scheme
+  use disturbance_utils,only: plant_patch
 
   integer(kind=4),intent(in) :: pft
   real(kind=8),intent(in) :: density8
@@ -458,14 +470,15 @@ subroutine event_planting(pft,density8)
 
            do ipa=1,csite%npatches
               
-              call plant_patch_ar(csite,ipa,pft,density,planting_ht,cpoly%lsl(isi))            
-              call update_patch_derived_props_ar(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,ipa)
-              call new_patch_sfc_props_ar(csite, ipa, cpoly%met(isi)%rhos)
+              call plant_patch(csite,ipa,pft,density,cpoly%green_leaf_factor(:,isi) &
+                                 ,planting_ht,cpoly%lsl(isi))            
+              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,ipa)
+              call new_patch_sfc_props(csite, ipa, cpoly%met(isi)%rhos)
 
            enddo
 
            ! Update site properties. ## THINK ABOUT WHAT TO SET FLAG##########
-           call update_site_derived_props_ar(cpoly,1,isi)           
+           call update_site_derived_props(cpoly,1,isi)           
 
         enddo
 
@@ -473,7 +486,7 @@ subroutine event_planting(pft,density8)
   end do
 
   ! Re-allocate integration buffer
-  if(integration_scheme == 1) call initialize_rk4patches_ar(0)
+  if(integration_scheme == 1) call initialize_rk4patches(0)
 
   ! Reset hdf vars since number of cohorts changed mid-month
   call filltab_alltypes
@@ -486,8 +499,8 @@ subroutine event_fertilize(rval8)
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
   use pft_coms, only:sla,qsw,q,hgt_min, agf_bs
-  use misc_coms, only: integration_scheme
-  use disturbance_utils_ar,only: plant_patch_ar
+  use ed_misc_coms, only: integration_scheme
+  use disturbance_utils,only: plant_patch
   real(kind=8),intent(in),dimension(5) :: rval8
 
   real :: nh4,no3,p,k,ca
@@ -532,12 +545,12 @@ subroutine event_fertilize(rval8)
               csite%mineralized_soil_N(ipa) = max(0.0,csite%mineralized_soil_N(ipa) + nh4 + no3)
              
               !! update patch properties
-              call update_patch_derived_props_ar(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,ipa)
+              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,ipa)
 
            enddo
 
            ! Update site properties. ## THINK ABOUT WHAT TO SET FLAG##########
-           call update_site_derived_props_ar(cpoly,0,isi)           
+           call update_site_derived_props(cpoly,0,isi)           
         end do
      end do
 
@@ -656,12 +669,13 @@ subroutine event_till(rval8)
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
   use pft_coms, only: c2n_structural, c2n_slow, c2n_storage,c2n_leaf,c2n_stem,l2n_stem
   use decomp_coms, only: f_labile
-  use fuse_fiss_utils_ar, only: terminate_cohorts_ar
+  use fuse_fiss_utils, only: terminate_cohorts
   
   real(kind=8),intent(in) :: rval8
 
   real :: depth
   integer :: ifm,ipy,isi,ipa,pft
+  real :: elim_nplant,elim_lai
   type(edtype), pointer :: cgrid
   type(polygontype), pointer :: cpoly
   type(sitetype),pointer :: csite
@@ -719,28 +733,31 @@ subroutine event_till(rval8)
                  !! where does bdead's N go??
 
 
-                 !! update biomass pools                   
-                 cpatch%balive(ico)   = 0.0
-                 cpatch%bdead(ico)    = 0.0
-                 cpatch%bstorage(ico) = 0.0
-                 cpatch%nplant(ico)   = 0.0
-                 cpatch%lai(ico)      = 0.0
-                 cpatch%bleaf(ico)    = 0.0
+                 !! update biomass pools
+                 cpatch%balive(ico)     = 0.0
+                 cpatch%bdead(ico)      = 0.0
+                 cpatch%bstorage(ico)   = 0.0
+                 cpatch%nplant(ico)     = 0.0
+                 cpatch%lai(ico)        = 0.0
+                 cpatch%wpa(ico)        = 0.0
+                 cpatch%wai(ico)        = 0.0
+                 cpatch%bleaf(ico)      = 0.0
                  cpatch%veg_energy(ico) = 0.0
-                 cpatch%veg_water(ico) = 0.0
-                 cpatch%veg_temp(ico)  = 0.0
+                 cpatch%veg_water(ico)  = 0.0
+                 cpatch%veg_fliq(ico)   = 0.0
+                 cpatch%veg_temp(ico)   = csite%can_temp(ipa)
                  cpatch%phenology_status(ico) = 2
                  
               enddo
               !! remove small cohorts
-              call terminate_cohorts_ar(csite,ipa)
+              call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
 
               !! update patch properties
-              call update_patch_derived_props_ar(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,ipa)
+              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,ipa)
               endif
            enddo
            ! Update site properties. ## THINK ABOUT WHAT TO SET FLAG##########
-           call update_site_derived_props_ar(cpoly,0,isi)           
+           call update_site_derived_props(cpoly,0,isi)           
         end do
      end do
 
@@ -790,7 +807,7 @@ end subroutine event_till
 !!$              !! count as new recruitment?
 !!$              cpatch%new_recruit_flag(ico) = 1 
 !!$print*,"init_cohorts"
-!!$              call init_ed_cohort_vars_array(cpatch,ico,cpoly%lsl(isi))
+!!$              call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
 !!$              
 !!$              csite%cohort_count(ipa) = csite%cohort_count(ipa) + 1
 !!$              cpatch%ncohorts = ico
@@ -798,7 +815,7 @@ end subroutine event_till
 !!$
 !!$              ! Sort the cohorts so that the new cohort is at the correct height bin
 !!$
-!!$              call sort_cohorts_ar(cpatch)           
+!!$              call sort_cohorts(cpatch)           
 !!$   
-!!$!              call update_patch_derived_props_ar(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos, ipa)
+!!$!              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos, ipa)
 !!$          

@@ -17,14 +17,14 @@
 !----- Start of simulation (RUNTYPE=initial only) -----------------------------------------!
    NL%IMONTHA  = 01        ! Month
    NL%IDATEA   = 01        ! Day
-   NL%IYEARA   = 1978      ! Year
+   NL%IYEARA   = 1700      ! Year
    NL%ITIMEA   = 0000      ! UTC
 
 !----- End of simulation ------------------------------------------------------------------!
 
    NL%IMONTHZ  = 01       ! Month
    NL%IDATEZ   = 01       ! Day
-   NL%IYEARZ   = 1982     ! Year
+   NL%IYEARZ   = 2007     ! Year
    NL%ITIMEZ   = 0000     ! UTC
 !------------------------------------------------------------------------------------------!
 
@@ -72,21 +72,21 @@
    NL%DELTAX   = 60000.           ! X and Y grid spacing scale  [\*/]
    NL%DELTAY   = 60000.           ! in metres (dimension 1)     [\*/]
                                   !
-   NL%POLELAT  = -3.5            ! Latitude of pole point   (dimension 1)
-   NL%POLELON  = -58.0            ! Longitude of pole point  (dimension 1)
+   NL%POLELAT  = -15.60            ! Latitude of pole point   (dimension 1)
+   NL%POLELON  = -56.10           ! Longitude of pole point  (dimension 1)
                                   !
-   NL%CENTLAT  = -3.5 ,-3.0       ! Latitude of central point  (n_ed_regions)
-   NL%CENTLON  = -58.0,-57.5      ! Longitude of central point (n_ed_regions)
+   NL%CENTLAT  = -15.60          ! Latitude of central point  (n_ed_regions)
+   NL%CENTLON  = -56.10          ! Longitude of central point (n_ed_regions)
 
 !----- For both kinds of region
    NL%NSTRATX = 1,4 ! Fraction of the sizes given above that I should use for these
    NL%NSTRATY = 1,4 ! regions. The variables affected are denoted by [\*/]
 
 !----- You can pinpoint individual locations, known as SOI. -------------------------------!
-   NL%N_SOI    =    1  ! number of sites of interest (SOIs).  This could be zero.
-
-   NL%SOI_LAT  =  -2.50,  42.5, -3.5  ! list of the latitudes of the SOIs (degrees north)
-   NL%SOI_LON  = -59.50, -72.5,-55.5  ! list of the longitudes of the SOIs (degrees east)
+   NL%N_SOI    =    1   ! number of sites of interest (SOIs).  This could be zero.
+                
+   NL%SOI_LAT  = -15.60 ! list of the latitudes of the SOIs (degrees north)
+   NL%SOI_LON  = -56.10 ! list of the longitudes of the SOIs (degrees east)
 !------------------------------------------------------------------------------------------!
 
 
@@ -96,16 +96,14 @@
 !------------------------------------------------------------------------------------------!
  
    NL%IFOUTPUT  =  0            ! Instantaneous analysis (site average)
-   NL%IDOUTPUT  =  3            ! Daily means (site average)
+   NL%IDOUTPUT  =  0            ! Daily means (site average)
    NL%IMOUTPUT  =  3            ! Monthly means (site average)
    NL%IYOUTPUT  =  0            ! Annual output
-   NL%ISOUTPUT  =  3            ! History files
+   NL%ISOUTPUT  =  0            ! History files
                                 ! 0 - no file;
                                 ! 1 - save ascii (deprecated);
                                 ! 2 - save RAMS-vfm file (deprecated);
                                 ! 3 - save HDF5;
-				! Note: Performance gains may be significant when
-				! (IFOUTPUT and IDOUTPUT and IMOUTPUT) = 0
    
    
    NL%ATTACH_METADATA = 0       ! Flag for attaching metadata to HDF datasets
@@ -114,29 +112,24 @@
 	                        ! but will compromise I/O performance significantly
         	                ! 0 = no metadata, 1 = yes metadata
 
-   NL%UNITFAST   = 2            ! Units for FRQFAST/OUTFAST
-   NL%UNITSTATE  = 3            ! Units for FRQSTATE/OUTSTATE
-                                ! 0 - Seconds;
-                                ! 1 - Days;
-                                ! 2 - Calendar months (variable)
-                                ! 3 - Calendar years  (variable)
-                                ! PS: If OUTFAST/OUTSTATE are set to special flags
-                                !     (-1 or -2) unitfast/unitstate will be ignored for
-                                !     them
+   NL%UNITFAST   = 0             ! Units for FRQFAST/OUTFAST
+   NL%UNITSTATE  = 3             ! Units for FRQSTATE/OUTSTATE
+                                 ! 0 - Seconds;
+                                 ! 1 - Days;
+                                 ! 2 - Calendar months (variable)
+                                 ! 3 - Calendar years  (variable)
+                                 ! PS: If OUTFAST/OUTSTATE are set to special flags
+                                 !     (-1 or -2) unitfast/unitstate will be ignored for
+                                 !     them
 
    NL%OUTFAST    = 0		! Time interval between analysis files
    NL%OUTSTATE   = 0		! Time interval between history files
-				! Notes: 
-                                ! - Values are given by UNITFAST/UNITSTATE;
-                                ! - Values over one month are accepted only if they are
-                                !   exactly the same as FRQFAST/FRQSTATE 
-				! - Values < FRQFAST/FRQSTATE are set to those values
-				! - Special values:  0 = same as FRQFAST/FRQSTATE;
-                                !                   -1 = daily; 
-                                !                   -2 = monthly
+				! Values are in seconds and must be <= 1 month
+				! Values < FRQFAST/FRQSTATE are set to those values
+				! Special values: -1 = daily; -2 = monthly
 
    NL%ICLOBBER  = 1             ! 0 = stop if files exist, 1 = overwite files
-   NL%FRQFAST   = 3.            ! Time interval between analysis/history files
+   NL%FRQFAST   = 21600.            ! Time interval between analysis/history files
    NL%FRQSTATE  = 1.            ! Time interval between history files
 !------------------------------------------------------------------------------------------!
 
@@ -145,24 +138,17 @@
 !------------------------------------------------------------------------------------------!
 ! Analysis/history/restart file: path, prefix, settings                                    !
 !------------------------------------------------------------------------------------------!
-   NL%FFILOUT = 'analy/mytest'      ! Analysis output prefix
-   NL%SFILOUT   = 'histo/mytest'    ! History output prefix
+   NL%FFILOUT = 'analy/cuiaba'         ! Analysis output prefix
+   NL%SFILOUT   = 'histo/cuiaba'       ! History output prefix
 
-   NL%IED_INIT_MODE   = 0           ! 0 signifies a start from near-bare ground.   
-                                    ! 1 allows you to do a history restart from ED1-type
-                                    !   restart files
-                                    ! 2 allows you to do a standard history restart from
-                                    !   ED2-type restart files.
-                                    ! 3 - initialize via ed-2 and site file restarts 
-                                    !
-                                    ! -1 - use a mix of ED-1 and ED-2 files. This should
-                                    !      be avoided by all means, unless:
-                                    !      a. You are absolute sure of what you're doing;
-                                    !      b. You have absolute no idea about what you're 
-                                    !         doing;
+   NL%IED_INIT_MODE   = 0              ! 0 signifies a start from near-bare ground.   
+                                       ! 1 allows you to do a history restart from ED1-type
+                                       !   restart files
+                                       ! 2 allows you to do a standard history restart from
+                                       !   ED2-type restart files.
+                                       ! 3 - initialize via ed-2 and site file restarts 
                          
    NL%EDRES  = 1.0                     ! ED2/ED1 restart grid resolution
-                                       ! Probably not necessary anymore.
 
    NL%SFILIN   = '/n/Moorcroft_Lab/Users/dmm2/ED2/inputs/amazon_restart/lu.sa.05.restart.01.'
 
@@ -182,12 +168,12 @@
    NL%NZG = 13     ! Number of soil layers
    NL%NZS = 4      ! Maximum number of snowcover layers
 
-   NL%ISOILFLG = 2,2    ! Options are: 1. Read from LAT/LON
+   NL%ISOILFLG = 1      ! Options are: 1. Read from LAT/LON
                         !              2. Constant default soil
                         ! This variable must be defined for all grids. The order is
                         ! all ED regions first followed by ED SOIs. 
    
-   NL%NSLCON   = 8      ! Default soil type if ISOILFLG = 2 (choices below:)
+   NL%NSLCON   = 2      ! Default soil type if ISOILFLG = 2 (choices below:)
    !-----------------------------------------------------------------------!
    ! ED Soil classes:                                                      !
    !-----------------------------------------------------------------------!
@@ -232,14 +218,14 @@
    NL%ISOILDEPTHFLG  = 0  ! 0 -- use NZG, SLZ for each grid cell
                           ! 1 -- read file to get soil depth for each grid cell
 
-   NL%ISOILBC        = 0  ! Soil boundary condition at lowest soil level
+   NL%ISOILBC        = 1  ! Soil boundary condition at lowest soil level
                           ! 0 - Bedrock;
                           ! 1 - Free drainage.
 !------------------------------------------------------------------------------------------!
 
 
 
-!------------a-------------------------------------------------------------------------------!
+!------------------------------------------------------------------------------------------!
 ! ED model options                                                                         !
 !------------------------------------------------------------------------------------------!
 
@@ -248,17 +234,27 @@
                               !  0  --  Euler step
                               !  1  --  Fourth-order Runge Kutta
 
+   NL%IBRANCH_THERMO = 0      ! This determines whether branches should be included in
+                              !    the vegetation thermodynamics or not.  This is under
+                              !    development, not fully tested.
+                              !  0  --  No branches in energy/radiation;
+                              !  1  --  Use Conijn (1995) numbers;
+                              !  2  --  Use parameterization from Jarvela (2004);
+
    NL%ISTOMA_SCHEME   = 0  ! This is the scheme used to compute stomatal 
-                           ! conductance and photosynthesis.  Set to 0 to do 
-                           ! the full, exact calculation each time.  Set to 1 
-                           ! to do the 'small perturbation' scheme.
+                         ! conductance and photosynthesis.  Set to 0 to do 
+                         ! the full, exact calculation each time.  Set to 1 
+                         ! to do the 'small perturbation' scheme.
 
    NL%IPHEN_SCHEME    = 0  ! This specifies the phenology scheme:
-                           !  0 is for the Botta et al scheme
-                           !  1 is for the Harvard Forest observations
-                           !  Other options coming soon.
+                           !  0 -- the cold-deciuous (Botta et al.)
+                           !       and old drought-deciduous (same with ED2.0);
+                           !  1 -- the Harvard Forest observations
+                           !  2 -- the cold-deciduous and new drought-deciduous;
+                           !  3 -- the cold-deciduous, new drought-deciduous 
+                           !       and light phenology (not fully tested);
   
-   NL%REPRO_SCHEME    = 0  ! This specifies the reproduction scheme:
+   NL%REPRO_SCHEME    = 1  ! This specifies the reproduction scheme:
                            !  0 -- reproduction off (useful for short runs)
                            !  1 -- original ED1 default
 
@@ -266,24 +262,40 @@
                            !  0 -- lapse rates off
                            !  1 -- phenomenological, global
                            !  2 -- phenomenological, local (not yet implemented)
-                           !  3 -- mechanistic(not yet implemented)
+                           !  2 -- mechanistic(not yet implemented)
   
    NL%CROWN_MOD       = 0  ! Specifies how tree crowns are represent in the 
                            ! canopy radiation model
                            !  0  - ED1 default (continuous horizontal)
                            !  1  - finite radius mixing model (Dietze)
-
-   NL%N_PLANT_LIM     = 1  ! Determines whether (1) or not (0) plants can
+  
+   NL%N_PLANT_LIM     = 0  ! Determines whether (1) or not (0) plants can
                            ! be limited by nitrogen
 
-   NL%N_DECOMP_LIM    = 1  ! Determines whether (1) or not (0) decomposition
-                         ! can be limited by nitrogen
+   NL%N_DECOMP_LIM    = 0  ! Determines whether (1) or not (0) decomposition
+                           ! can be limited by nitrogen
 
-   NL%INCLUDE_FIRE    = 1  ! Determines whether (1) or not (0) simulation can have fires 
+   NL%INCLUDE_FIRE    = 1  ! Determines how to apply fire in the model:
+                           ! 0. No fires;
+                           ! 1. Fire will be triggered with enough biomass and 
+                           !    ground water depth less than a threshold;
+                           ! 2. Fire will be triggered with enough biomass and 
+                           !    column-averaged soil moisture less than a threshold.
 
-   NL%IANTH_DISTURB   = 0  ! Flag specifying whether (1) or not (0) to include
-                         ! anthropogenic disturbances such as agriculture, 
-                         ! abandonment, and harvesting.
+   NL%IANTH_DISTURB   = 1  ! Flag specifying whether (1) or not (0) to include
+                           ! anthropogenic disturbances such as agriculture, 
+                           ! abandonment, and harvesting.
+
+   NL%ICANTURB        = 2 ! Canopy turbulence scheme
+                          ! 0. is the default scheme
+                          ! 1. will rescale reference wind-speed if it
+                          !    the reference height is (inapropriately)
+                          !    below the canopy
+                          ! 2. (recommended) uses the method of Massman 
+                          !    1997 and the bulk Richardson number of 
+                          !    instability
+                          !    this method will not work when zref<h
+
 
 
    !--------------------------------------------------------------------!                             
@@ -297,6 +309,8 @@
    ! 6 - northern pines              |                                  !
    !--------------------------------------------------------------------!                             
    NL%INCLUDE_THESE_PFT = 1,2,3,4        ! List of PFTs to be included 
+   NL%AGRI_STOCK        = 1              ! Agriculture PFT (used only if ianth_disturb=1)
+   NL%PLANTATION_STOCK  = 3              ! Plantation PFT  (used only if ianth_disturb=1)
 
    NL%PFT_1ST_CHECK = 0 ! What should I do when I find a cohort with an unexpected PFT 
                         !    in the history start?
@@ -307,10 +321,10 @@
                         ! This option is ignored in near bare ground runs.
 
 !----- Patch and cohort dimension settings ------------------------------------------------!
-   NL%MAXPATCH  = 10 ! If number of patches in a given site exceeds 
-                     ! NL%MAXPATCH, force patch fusion.
-   NL%MAXCOHORT = 10 ! If number of cohorts in a given patch exceeds
-                     ! NL%MAXCOHORT, force cohort fusion.
+   NL%MAXPATCH  =  10 ! If number of patches in a given site exceeds 
+                      ! NL%MAXPATCH, force patch fusion.
+   NL%MAXCOHORT =  12 ! If number of cohorts in a given patch exceeds
+                      ! NL%MAXCOHORT, force cohort fusion.
 !------------------------------------------------------------------------------------------!
                                          
                                          
@@ -321,13 +335,15 @@
 
    NL%ZROUGH = 0.1                      ! Constant roughness if for all domain
 
-   NL%TREEFALL_DISTURBANCE_RATE  = 0.0  ! Treefall disturbance rate, 1/years
+   NL%TREEFALL_DISTURBANCE_RATE  = 0.01 ! Treefall disturbance rate, 1/years
 
-   NL%RUNOFF_TIME     = 86400.0         ! the forest could get saturated and 
-                                        ! develop a sfcwater pool of meters or 
-                                        ! more.  In many cases, this is not realistic.
-                                        ! This is the time scale in seconds for 
-                                        ! this water to disappear.        
+   NL%RUNOFF_TIME    = 28800.0         ! the forest could get saturated and 
+                                       ! develop a sfcwater pool of meters or 
+                                       ! more.  In many cases, this is not realistic.
+                                       ! This is the time scale in seconds for 
+                                       ! this water to disappear.  If you want no runoff
+                                       ! set runoff_time = 0 (not recommended for long 
+                                       ! runs).
 !------------------------------------------------------------------------------------------!
 
 
@@ -363,6 +379,13 @@
 !------------------------------------------------------------------------------------------!
 
    NL%IMETTYPE  = 1          ! 0 = ASCII, 1 = HDF5
+
+   NL%ISHUFFLE  = 0          ! How to choose an year outside the met data range:
+                             ! 0. Sequentially cycle over years
+                             ! 1. Randomly pick the years, using the same sequence
+                             ! 2. Randomly pick the years, choosing a different 
+                             !    sequence each time the model is run.
+
    NL%METCYC1         = 1948 ! First year of met data
    NL%METCYCF         = 2007 ! Last year of met data
    

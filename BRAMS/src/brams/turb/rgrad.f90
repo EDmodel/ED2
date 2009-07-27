@@ -7,7 +7,7 @@
 !###########################################################################
 
 subroutine grad(m1,m2,m3,ia,iz,ja,jz  &
-     ,vc3da,vc3db,dir,gpnt)
+     ,vc3da,vc3db,dir,gpnt,ibotflx)
   implicit none
 
   integer, INTENT(IN) :: m1   &
@@ -23,19 +23,20 @@ subroutine grad(m1,m2,m3,ia,iz,ja,jz  &
   real, INTENT(INOUT) :: vc3db(m1,m2,m3)
 
   character(len=*), INTENT(IN) :: dir,gpnt
+  integer, intent(in) :: ibotflx
 
   character(len=6) :: optyp
 
   optyp='GRADNT'
 
-  call rams_grad(m1,m2,m3,ia,iz,ja,jz,VC3DA,VC3DB,DIR,GPNT,optyp)
+  call rams_grad(m1,m2,m3,ia,iz,ja,jz,VC3DA,VC3DB,DIR,GPNT,optyp,ibotflx)
 
   return
 end subroutine grad
 
 !------------------------------------------------------------------------------------
 
-subroutine divcart(m1,m2,m3,ia,iz,ja,jz,vc3da,vc3db,dir,gpnt)
+subroutine divcart(m1,m2,m3,ia,iz,ja,jz,vc3da,vc3db,dir,gpnt,ibotflx)
   implicit none
 
   integer, INTENT(IN) :: m1   &
@@ -53,17 +54,18 @@ subroutine divcart(m1,m2,m3,ia,iz,ja,jz,vc3da,vc3db,dir,gpnt)
   character(len=*), INTENT(IN) :: dir,gpnt
 
   character(len=6) :: optyp
+  integer, intent(in) :: ibotflx
 
   optyp='DIVCRT'
 
-  call rams_grad(m1,m2,m3,ia,iz,ja,jz,VC3DA,VC3DB,DIR,GPNT,optyp)
+  call rams_grad(m1,m2,m3,ia,iz,ja,jz,VC3DA,VC3DB,DIR,GPNT,optyp,ibotflx)
 
   return
 end subroutine divcart
 
 !------------------------------------------------------------------------------------
 
-subroutine divstar(m1,m2,m3,ia,iz,ja,jz,vc3da,vc3db,dir,gpnt)
+subroutine divstar(m1,m2,m3,ia,iz,ja,jz,vc3da,vc3db,dir,gpnt,ibotflx)
   implicit none
 
   integer, INTENT(IN) :: m1    &
@@ -81,17 +83,18 @@ subroutine divstar(m1,m2,m3,ia,iz,ja,jz,vc3da,vc3db,dir,gpnt)
   character(len=*), INTENT(IN) :: dir,gpnt
 
   character(len=6) :: optyp
+  integer, intent(in) :: ibotflx
 
   optyp='DIVSTR'
 
-  call rams_grad(m1,m2,m3,ia,iz,ja,jz,VC3DA,VC3DB,DIR,GPNT,optyp)
+  call rams_grad(m1,m2,m3,ia,iz,ja,jz,VC3DA,VC3DB,DIR,GPNT,optyp,ibotflx)
 
   return
 end subroutine divstar
 
 !------------------------------------------------------------------------------------
 
-subroutine rams_grad(m1,m2,m3,ia,iz,ja,jz,vc3da,vc3db,dir,gpnt,optyp)
+subroutine rams_grad(m1,m2,m3,ia,iz,ja,jz,vc3da,vc3db,dir,gpnt,optyp,ibotflx)
 
   use mem_grid, only : jdim   &  !INTENT(IN)
                      , dzt    &  !INTENT(IN)
@@ -122,7 +125,7 @@ subroutine rams_grad(m1,m2,m3,ia,iz,ja,jz,vc3da,vc3db,dir,gpnt,optyp)
   character(len=*), INTENT(IN) :: dir,gpnt
 
   character(len=6), INTENT(IN) :: optyp
-
+  integer, intent(in) :: ibotflx
   integer :: jaa,jzz
 
   jaa=ja
@@ -138,56 +141,56 @@ subroutine rams_grad(m1,m2,m3,ia,iz,ja,jz,vc3da,vc3db,dir,gpnt,optyp)
              ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGU  &
              ,GRID_G(NGRID)%RTGT,GRID_G(NGRID)%DXT,DZT    &
              ,GRID_G(NGRID)%FMAPUI,GRID_G(NGRID)%FMAPT    &
-             ,GRID_G(NGRID)%F13T,HW,VCTR2,'T',JDIM)
+             ,GRID_G(NGRID)%F13T,HW,VCTR2,'T',JDIM,ibotflx)
      ELSEIF(GPNT.EQ.'VPNT')THEN
         CALL GRADXT(m1,m2,m3,ia,iz,jaa,jzz  &
              ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGV  &
              ,GRID_G(NGRID)%RTGM,GRID_G(NGRID)%DXM,DZT  &
              ,GRID_G(NGRID)%FMAPVI,GRID_G(NGRID)%FMAPM  &
              ,GRID_G(NGRID)%F13M  &
-             ,HW,VCTR2,'T',JDIM)
+             ,HW,VCTR2,'T',JDIM,ibotflx)
      ELSEIF(GPNT.EQ.'WPNT')THEN
         CALL GRADXT(m1,m2,m3,ia,iz,jaa,jzz  &
              ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGT  &
              ,GRID_G(NGRID)%RTGU,GRID_G(NGRID)%DXU,DZM  &
              ,GRID_G(NGRID)%FMAPTI,GRID_G(NGRID)%FMAPU  &
              ,GRID_G(NGRID)%F13U  &
-             ,HT,VCTR2,'W',JDIM)
+             ,HT,VCTR2,'W',JDIM,ibotflx)
      ELSEIF(GPNT.EQ.'TPNT')THEN
         CALL GRADXT(m1,m2,m3,ia,iz,jaa,jzz  &
              ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGT  &
              ,GRID_G(NGRID)%RTGU,GRID_G(NGRID)%DXU,DZT  &
              ,GRID_G(NGRID)%FMAPTI,GRID_G(NGRID)%FMAPU  &
              ,GRID_G(NGRID)%F13U  &
-             ,HW,VCTR2,'T',JDIM)
+             ,HW,VCTR2,'T',JDIM,ibotflx)
      ELSEIF(GPNT.EQ.'NPNT')THEN
         CALL GRADXT(m1,m2,m3,ia,iz,jaa,jzz  &
              ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGV  &
              ,GRID_G(NGRID)%RTGM,GRID_G(NGRID)%DXM,DZM  &
              ,GRID_G(NGRID)%FMAPVI,GRID_G(NGRID)%FMAPM  &
              ,GRID_G(NGRID)%F13M  &
-             ,HT,VCTR2,'W',JDIM)
+             ,HT,VCTR2,'W',JDIM,ibotflx)
      ELSEIF(GPNT.EQ.'OPNT')THEN
         CALL GRADXU(m1,m2,m3,ia,iz,jaa,jzz  &
              ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGU  &
              ,GRID_G(NGRID)%RTGT,GRID_G(NGRID)%DXT,DZM  &
              ,GRID_G(NGRID)%FMAPUI,GRID_G(NGRID)%FMAPT  &
              ,GRID_G(NGRID)%F13T  &
-             ,HT,VCTR2,'W',JDIM)
+             ,HT,VCTR2,'W',JDIM,ibotflx)
      ELSEIF(GPNT.EQ.'PPNT')THEN
         CALL GRADXU(m1,m2,m3,ia,iz,jaa,jzz  &
              ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGM  &
              ,GRID_G(NGRID)%RTGV,GRID_G(NGRID)%DXV,DZT  &
              ,GRID_G(NGRID)%FMAPMI,GRID_G(NGRID)%FMAPV  &
              ,GRID_G(NGRID)%F13V  &
-             ,HW,VCTR2,'T',JDIM)
+             ,HW,VCTR2,'T',JDIM,ibotflx)
      ELSEIF(GPNT.EQ.'MPNT')THEN
         CALL GRADXU(m1,m2,m3,ia,iz,jaa,jzz  &
              ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGM  &
              ,GRID_G(NGRID)%RTGV,GRID_G(NGRID)%DXV,DZM  &
              ,GRID_G(NGRID)%FMAPMI,GRID_G(NGRID)%FMAPV  &
              ,GRID_G(NGRID)%F13V  &
-             ,HT,VCTR2,'W',JDIM)
+             ,HT,VCTR2,'W',JDIM,ibotflx)
      ENDIF
   ELSEIF(DIR.EQ.'YDIR')THEN
      IF(GPNT.EQ.'UPNT')THEN
@@ -196,56 +199,56 @@ subroutine rams_grad(m1,m2,m3,ia,iz,ja,jz,vc3da,vc3db,dir,gpnt,optyp)
              ,GRID_G(NGRID)%RTGM,GRID_G(NGRID)%DYM,DZT  &
              ,GRID_G(NGRID)%FMAPUI,GRID_G(NGRID)%FMAPM  &
              ,GRID_G(NGRID)%F23M  &
-           ,HW,VCTR2,'T',JDIM)
+           ,HW,VCTR2,'T',JDIM,ibotflx)
      ELSEIF(GPNT.EQ.'VPNT')THEN
         CALL GRADYV(m1,m2,m3,ia,iz,jaa,jzz  &
              ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGV  &
              ,GRID_G(NGRID)%RTGT,GRID_G(NGRID)%DYT,DZT  &
              ,GRID_G(NGRID)%FMAPVI,GRID_G(NGRID)%FMAPT  &
              ,GRID_G(NGRID)%F23T  &
-             ,HW,VCTR2,'T',JDIM)
+             ,HW,VCTR2,'T',JDIM,ibotflx)
      ELSEIF(GPNT.EQ.'WPNT')THEN
         CALL GRADYT(m1,m2,m3,ia,iz,jaa,jzz  &
              ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGT  &
              ,GRID_G(NGRID)%RTGV,GRID_G(NGRID)%DYV,DZM  &
              ,GRID_G(NGRID)%FMAPTI,GRID_G(NGRID)%FMAPV  &
              ,GRID_G(NGRID)%F23V  &
-             ,HT,VCTR2,'W',JDIM)
+             ,HT,VCTR2,'W',JDIM,ibotflx)
      ELSEIF(GPNT.EQ.'TPNT')THEN
         CALL GRADYT(m1,m2,m3,ia,iz,jaa,jzz  &
              ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGT  &
              ,GRID_G(NGRID)%RTGV,GRID_G(NGRID)%DYV,DZT  &
              ,GRID_G(NGRID)%FMAPTI,GRID_G(NGRID)%FMAPV  &
              ,GRID_G(NGRID)%F23V  &
-             ,HW,VCTR2,'T',JDIM)
+             ,HW,VCTR2,'T',JDIM,ibotflx)
      ELSEIF(GPNT.EQ.'NPNT')THEN
         CALL GRADYV(m1,m2,m3,ia,iz,jaa,jzz  &
              ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGV  &
              ,GRID_G(NGRID)%RTGT,GRID_G(NGRID)%DYT,DZM  &
              ,GRID_G(NGRID)%FMAPVI,GRID_G(NGRID)%FMAPT  &
              ,GRID_G(NGRID)%F23T  &
-             ,HT,VCTR2,'W',JDIM)
+             ,HT,VCTR2,'W',JDIM,ibotflx)
      ELSEIF(GPNT.EQ.'OPNT')THEN
         CALL GRADYT(m1,m2,m3,ia,iz,jaa,jzz  &
              ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGU  &
              ,GRID_G(NGRID)%RTGM,GRID_G(NGRID)%DYM,DZM  &
              ,GRID_G(NGRID)%FMAPUI,GRID_G(NGRID)%FMAPM  &
              ,GRID_G(NGRID)%F23M  &
-             ,HT,VCTR2,'W',JDIM)
+             ,HT,VCTR2,'W',JDIM,ibotflx)
      ELSEIF(GPNT.EQ.'PPNT')THEN
         CALL GRADYV(m1,m2,m3,ia,iz,jaa,jzz  &
              ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGM  &
              ,GRID_G(NGRID)%RTGU,GRID_G(NGRID)%DYU,DZT  &
              ,GRID_G(NGRID)%FMAPMI,GRID_G(NGRID)%FMAPU  &
              ,GRID_G(NGRID)%F23U  &
-             ,HW,VCTR2,'T',JDIM)
+             ,HW,VCTR2,'T',JDIM,ibotflx)
      ELSEIF(GPNT.EQ.'MPNT')THEN
         CALL GRADYV(m1,m2,m3,ia,iz,jaa,jzz  &
              ,OPTYP,VC3DA,VC3DB,VCTR1,GRID_G(NGRID)%RTGM  &
              ,GRID_G(NGRID)%RTGU,GRID_G(NGRID)%DYU,DZM  &
              ,GRID_G(NGRID)%FMAPMI,GRID_G(NGRID)%FMAPU  &
              ,GRID_G(NGRID)%F23U  &
-             ,HT,VCTR2,'W',JDIM)
+             ,HT,VCTR2,'W',JDIM,ibotflx)
      ENDIF
   ELSEIF(DIR.EQ.'ZDIR')THEN
      IF(GPNT.EQ.'UPNT')THEN
@@ -285,7 +288,7 @@ END subroutine rams_grad
 
 subroutine gradxu(m1,m2,m3,ia,iz,ja,jz  &
      ,optyp,vc3da,vc3db,vc1da,rtge,rtgc  &
-     ,dx,dz,fmapi,fmap,fq,hq,hq4,lev,jd)
+     ,dx,dz,fmapi,fmap,fq,hq,hq4,lev,jd,ibotflx)
 
   implicit none
 
@@ -296,7 +299,8 @@ subroutine gradxu(m1,m2,m3,ia,iz,ja,jz  &
                         ,iz  &
                         ,ja  &
                         ,jz  &
-                        ,jd
+                        ,jd  &
+                        ,ibotflx
 
   real, INTENT(IN) :: vc3da(m1,m2,m3)   &
                     , rtge(m2,m3)       &
@@ -375,6 +379,7 @@ subroutine gradxu(m1,m2,m3,ia,iz,ja,jz  &
               vc1da(k)=hq4(k)*(vc3da(k,i,j)+vc3da(k-1,i,j)  &
                    +vc3da(k,i-1,j)+vc3da(k-1,i-1,j))
            enddo
+           if (optyp /= 'GRADNT' .and. ibotflx == 1) vc1da(2) = 0. 
            do k=2,m1-1
               vc3db(k,i,j)=vc3db(k,i,j)  &
                    +fq(i,j)*dz(k)*(vc1da(k+1)-vc1da(k))
@@ -407,7 +412,7 @@ END subroutine gradxu
 
 SUBROUTINE GRADXT(m1,m2,m3,ia,iz,ja,jz  &
      ,OPTYP,VC3DA,VC3DB,VC1DA,RTGE,RTGC  &
-     ,DX,DZ,FMAPI,FMAP,FQ,HQ,HQ4,LEV,JD)
+     ,DX,DZ,FMAPI,FMAP,FQ,HQ,HQ4,LEV,JD,ibotflx)
 
   implicit none
 
@@ -418,7 +423,8 @@ SUBROUTINE GRADXT(m1,m2,m3,ia,iz,ja,jz  &
                        , iz   & 
                        , ja   &
                        , jz   &
-                       , jd
+                       , jd   &
+                       , ibotflx
 
   real, INTENT(IN)    :: VC3DA(m1,m2,m3)  &
                        , RTGE(m2,m3)      &
@@ -498,6 +504,7 @@ SUBROUTINE GRADXT(m1,m2,m3,ia,iz,ja,jz  &
               vc1da(k)=hq4(k)*(vc3da(k,i,j)+vc3da(k-1,i,j)  &
                    +vc3da(k,i+1,j)+vc3da(k-1,i+1,j))
            enddo
+           if (optyp /= 'GRADNT' .and. ibotflx == 1) vc1da(2) = 0. 
            do k=2,m1-1
               vc3db(k,i,j)=vc3db(k,i,j)  &
                    +fq(i,j)*dz(k)*(vc1da(k+1)-vc1da(k))
@@ -532,7 +539,7 @@ END SUBROUTINE GRADXT
 
 SUBROUTINE GRADYV(m1,m2,m3,ia,iz,ja,jz  &
      ,OPTYP,VC3DA,VC3DB,VC1DA,RTGE,RTGC  &
-     ,DY,DZ,FMAPI,FMAP,FQ,HQ,HQ4,LEV,JD)
+     ,DY,DZ,FMAPI,FMAP,FQ,HQ,HQ4,LEV,JD,ibotflx)
 
   implicit none
 
@@ -543,7 +550,8 @@ SUBROUTINE GRADYV(m1,m2,m3,ia,iz,ja,jz  &
                        , iz   &
                        , ja   &
                        , jz   &
-                       , jd
+                       , jd   &
+                       , ibotflx
 
   real, INTENT(IN)  :: VC3DA(m1,m2,m3)   &
                      , RTGE(m2,m3)       &
@@ -623,6 +631,7 @@ SUBROUTINE GRADYV(m1,m2,m3,ia,iz,ja,jz  &
               vc1da(k)=hq4(k)*(vc3da(k,i,j)+vc3da(k-1,i,j)  &
                    +vc3da(k,i,j-jd)+vc3da(k-1,i,j-jd))
            enddo
+           if (optyp /= 'GRADNT' .and. ibotflx == 1) vc1da(2) = 0. 
            do k=2,m1-1
               vc3db(k,i,j)=vc3db(k,i,j)  &
                    +fq(i,j)*dz(k)*(vc1da(k+1)-vc1da(k))
@@ -655,7 +664,7 @@ END SUBROUTINE GRADYV
 
 SUBROUTINE GRADYT(m1,m2,m3,ia,iz,ja,jz  &
      ,OPTYP,VC3DA,VC3DB,VC1DA,RTGE,RTGC  &
-     ,DY,DZ,FMAPI,FMAP,FQ,HQ,HQ4,LEV,JD)
+     ,DY,DZ,FMAPI,FMAP,FQ,HQ,HQ4,LEV,JD,ibotflx)
 
  implicit none
 
@@ -666,7 +675,8 @@ SUBROUTINE GRADYT(m1,m2,m3,ia,iz,ja,jz  &
                        , iz    &
                        , ja    &
                        , jz    &
-                       , jd
+                       , jd    &
+                       , ibotflx
 
   real, INTENT(IN) :: VC3DA(m1,m2,m3)   &
                     , RTGE(m2,m3)       &
@@ -745,6 +755,7 @@ SUBROUTINE GRADYT(m1,m2,m3,ia,iz,ja,jz  &
               vc1da(k)=hq4(k)*(vc3da(k,i,j)+vc3da(k-1,i,j)  &
                    +vc3da(k,i,j+jd)+vc3da(k-1,i,j+jd))
            enddo
+           if (optyp /= 'GRADNT' .and. ibotflx == 1) vc1da(2) = 0. 
            do k=2,m1-1
               vc3db(k,i,j)=vc3db(k,i,j)  &
                    +fq(i,j)*dz(k)*(vc1da(k+1)-vc1da(k))

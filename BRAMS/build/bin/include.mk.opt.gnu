@@ -54,6 +54,13 @@ USE_HDF4=0
 HDF4_LIBS=-L./.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
 # --------------------------------------------------------------
 
+# MPI_Wtime. ---------------------------------------------------
+# If USE_MPIWTIME=1, then it will use MPI libraries to compute
+# the wall time (the only double-precision intrinsic).  In case
+# you don't have it, leave USE_MPIWTIME=0, in which case it will
+# use a simpler, single-precision function.
+USE_MPIWTIME=0
+
 
 #----------------- SGI -n32 ------------------------------------
 #CMACH=SGI

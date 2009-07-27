@@ -40,10 +40,6 @@ subroutine NAMEOUT
        USDATA_IN,                            & ! INTENT(IN)
        USMODEL_IN                              ! INTENT(IN)
 
-  ! For SIB
-  use sib_vars, only : N_CO2,  & ! INTENT(OUT)
-       CO2_INIT                  ! INTENT(OUT)
-
   ! CATT
   use catt_start, only: CATT           ! intent(in)
   use emission_source_map, only: FIREMAPFN, & ! intent(in)
@@ -124,12 +120,11 @@ subroutine NAMEOUT
 
 ![MLO - Adding ED2 and mass variables: 
 ! mass:
-  write(6,298) IEXEV,IMASSFLX,IBRUVAIS
+  write(6,298) IEXEV,IMASSFLX,IBRUVAIS,IBOTFLX
 ! ED2:
   write(6,205)LONRAD,IMONTHA,IDATEA,IYEARA,ITIMEA,ISFCL
   write(6,299) IMONTHZ,IDATEZ,IYEARZ,ITIMEZ
 !MLO]
-  write(6,998)N_CO2 ! For SIB
 
   write(6,206)NVGCON,NPLT,IPSFLG,ITSFLG,IRTSFLG
   write(6,207)IUSFLG,MKCOLTAB,NZG,NZS,IUPDNDVI
@@ -147,11 +142,9 @@ subroutine NAMEOUT
        ,'    IDELTAT=',I4,'    ISWRTYP=',I4,'    ILWRTYP=',I4,'    ICUMFDBK=',I4)
 205 format('  LONRAD=',I4,'    IMONTHA=',I4,'     IDATEA=',I4  &
        ,'     IYEARA=',I4,'     ITIMEA=',I4,'      ISFCL=',I4)
-298 format('   IEXEV=',I4,'   IMASSFLX=',I4,'   IBRUVAIS=',I4)
+298 format('   IEXEV=',I4,'   IMASSFLX=',I4,'   IBRUVAIS=',I4,'   IBOTFLX=',I4)
 299 format('  IMONTHZ=',I4,'     IDATEZ=',I4  &
        ,'     IYEARZ=',I4,'     ITIMEZ=',I4)
-
-998 format('  N_CO2=',I4) ! For SIB
 
 206 format('  NVGCON=',I4,'       NPLT=',I4,'     IPSFLG=',I4  &
        ,'     ITSFLG=',I4,'    IRTSFLG=',I4)
@@ -168,7 +161,8 @@ subroutine NAMEOUT
   write(6,301)(' ',TOPTENH(NG),TOPTWVL(NG),CENTLAT(NG),NG=1,NGRIDS)
   write(6,302)(' ',CENTLON(NG),CSX(NG),CSZ(NG),NG=1,NGRIDS)
   write(6,303)(' ',XKHKM(NG),ZKHKM(NG),AKMIN(NG),NG=1,NGRIDS)
-  write(6,304)(' ',GRIDU(NG),GRIDV(NG),NG=1,NGRIDS)
+  write(6,304)(' ',AKMAX(NG),HGTMIN(NG),HGTMAX(NG),NG=1,NGRIDS)
+  write(6,305)(' ',GRIDU(NG),GRIDV(NG),NG=1,NGRIDS)
 
 301 format(A1,'TOPTENH=',E12.5,'        TOPTWVL=',E12.5  &
        ,'        CENTLAT=',E12.5,999(A1,/,E21.5,2E28.5))
@@ -176,7 +170,9 @@ subroutine NAMEOUT
        ,'            CSZ=',E12.5,999(A1,/,E21.5,2E28.5))
 303 format(A1,'  XKHKM=',E12.5,'          ZKHKM=',E12.5  &
        ,'          AKMIN=',E12.5,999(A1,/,E21.5,2E28.5))
-304 format(A1,'  GRIDU=',E12.5,'          GRIDV=',E12.5  &
+304 format(A1,'  AKMAX=',E12.5,'         HGTMIN=',E12.5  &
+       ,'         HGTMAX=',E12.5,999(A1,/,E21.5,2E28.5))
+305 format(A1,'  GRIDU=',E12.5,'          GRIDV=',E12.5  &
        ,999(A1,/,E21.5,E28.5))
 
   print*, ' '

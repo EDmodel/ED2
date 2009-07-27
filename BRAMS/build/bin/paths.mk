@@ -2,7 +2,7 @@
 
 # RAMS root directory.
 #
-EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/mlongo/repository/EDBRAMS
+EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/mlongo/EDBRAMS
 
 # MCD: EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/mcd/EDBRAMS
 # KIM: EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/kim/ed-code/EDBRAMS
@@ -60,7 +60,7 @@ UTILS_LIB=$(BRAMS_ROOT)/src/utils/lib
 EFF=$(BRAMS_ROOT)/src/utils/eff
 NCARGD=$(BRAMS_ROOT)/src/utils/ncargd
 UTILS_INCS=$(BRAMS_ROOT)/src/utils/include
-UTILS_MODS=$(BRAMS_ROOT)/src/utils/lib/modules
+UTILS_MODS=$(BRAMS_ROOT)/src/utils/modules
 
 ISAN=$(BRAMS_ROOT)/src/brams/isan
 ISAN_MODS=$(BRAMS_ROOT)/src/brams/isan

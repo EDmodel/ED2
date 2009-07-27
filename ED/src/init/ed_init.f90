@@ -1,254 +1,328 @@
-
-subroutine set_polygon_coordinates_ar()
-  
-  use grid_coms, only: ngrids,nzg
-  use ed_work_vars, only: work_e
-  use soil_coms, only: isoilflg
-  use ed_node_coms, only: mxp, myp,mynum,iwest,jsouth
-  use ed_state_vars, only: edgrid_g,gdpy
-  
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine will assign the longitude, latitude, and soil class for all non-empty !
+! polygons.                                                                                !
+!------------------------------------------------------------------------------------------!
+subroutine set_polygon_coordinates()
+   use grid_coms     , only : ngrids    & ! intent(in)
+                            , nzg       ! ! intent(in)
+   use ed_work_vars  , only : work_e    ! ! structure
+   use ed_node_coms  , only : mynum     ! ! intent(in)
+   use ed_state_vars , only : edgrid_g  & ! structure
+                            , gdpy      ! ! intent(in)
    implicit none 
-   integer                :: ifm,ipy,x,y,npoly
-   
+   !----- Local variables -----------------------------------------------------------------!
+   integer                :: ifm
+   integer                :: ipy
+   integer                :: npoly
+   !---------------------------------------------------------------------------------------!
+
    gloop: do ifm=1,ngrids
 
       npoly=gdpy(mynum,ifm)
 
-      do ipy=1,npoly
-         
+      ploop: do ipy=1,npoly
          edgrid_g(ifm)%lon(ipy) = work_e(ifm)%vec_glon(ipy)
          edgrid_g(ifm)%lat(ipy) = work_e(ifm)%vec_glat(ipy)
          edgrid_g(ifm)%ntext_soil(1:nzg,ipy) = work_e(ifm)%vec_ntext(ipy)
-         
-         ! This should be meaningless right now
-         !         edgrid_g(ifm)%xatm(ipy) = work_e(ifm)%xatm(x,y) + iwest(ifm)  - 2
-         !         edgrid_g(ifm)%yatm(ipy) = work_e(ifm)%yatm(x,y) + jsouth(ifm) - 2
-         
-         
-      end do
+      end do ploop
+
    end do gloop
 
-   
-   return
- end subroutine set_polygon_coordinates_ar
- 
- !==========================================================================================!
- 
- subroutine soil_depth_fill_ar(cgrid,igr)
-   !---------------------------------------------------------------------------------------!
-   !    This subroutine fills the lsl variables based on the soil_depth file. In case         !
-   ! isoildepthflg was zero, then the layer_index matrix was filled with zeroes, so we do not !
-   ! need to worry about this here.                                                           !
-   !------------------------------------------------------------------------------------------!
-   
-   use soil_coms, only: soildepth_db, slz, isoildepthflg,layer_index
-   use grid_coms,only:ngrids, nzg
-   use ed_state_vars,only: edtype
-  
-  implicit none
-
-  type(edtype),target  :: cgrid
-  integer, intent(in) :: igr
-  integer :: ilat_bin
-  integer :: ilon_bin
-  integer :: ipy
     
-  do ipy = 1,cgrid%npolygons
-     ilat_bin = min(180,int(90.0 - cgrid%lat(ipy)) + 1)
-     ilon_bin = int(180.0 + cgrid%lon(ipy)) + 1
-
-     !------------------------------------------------------------------------------------------!
-     !    Require at least 2 layers. This requirement was taken in consideration when           !
-     ! layer_index was filled at the first initialization, so it is safe to just copy.          !
-     !------------------------------------------------------------------------------------------!
-     cgrid%lsl(ipy) =layer_index(ilat_bin,ilon_bin) 
-
-  enddo
-!----- layer_index is unecessary beyond this point. Deallocating it... ------=-------------!
-  !if (igr == ngrids) deallocate(layer_index)
-
-  return
-end subroutine soil_depth_fill_ar
-
+   return
+end subroutine set_polygon_coordinates
+!==========================================================================================!
 !==========================================================================================!
 
-subroutine load_ecosystem_state
-
-  use phenology_coms, only: iphen_scheme
-  use misc_coms, only: ied_init_mode
-  use phenology_startup, only: phenology_init
-  use ed_node_coms, only: mynum,nmachs,nnodetot,mchnum,machs,master_num,sendnum,recvnum
-  use grid_coms,only : ngrids
-  use ed_state_vars,only : edgrid_g
-
-  implicit none
-  include 'mpif.h'
-  
-  integer,       dimension(MPI_STATUS_SIZE) :: status
-  integer                                   :: ierr
-  integer :: igr
-  integer :: ping 
-
-  ping = 741776
-  
-
-  ! ----------------------------------------------------
-  ! Several Procedures requiring ASCII reads follow
-  ! If this is a parallel run, then the nodes must queue.
-  ! Since we will access sequential format files, each node needs to wait its turn
-  ! to access it... MPI_File commands won't work with ascii files, so that's a 
-  ! bottleneck here. If the run is serial mynum=nnodetot, so I don't need to 
-  ! wait.
-  ! ----------------------------------------------------
-
-
-  if (mynum .eq. 1)print'(/,a)','    Doing sequential initialization over nodes'
-  !----------------------------------------------------
-  ! STEP 0: Find lowest soil layer for each site 
-  !         (derived from soil depth)!
-  !----------------------------------------------------
-  
-  do igr=1,ngrids
-     call ed_newgrid(igr)
-     call soil_depth_fill_ar(edgrid_g(igr),igr)
-  end do
-
-
-  ! ----------------------------------------------------
-  ! STEP 1: Read in Site files and initialize 
-  !         hydrologic adjacencies
-  ! ----------------------------------------------------
-
-  if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,734,MPI_COMM_WORLD,status,ierr)
-  
-  do igr = 1,ngrids
-     call read_site_file_array(edgrid_g(igr))
-  enddo
-  
-  if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,734,MPI_COMM_WORLD,ierr)
-!  if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
-  
-  ! ----------------------------------------------------
-  ! STEP 2: Do ascii type restart initialization of site
-  !         patch and cohort biophysical states
-  ! ----------------------------------------------------
-  
-  if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,799,MPI_COMM_WORLD,status,ierr)
-  
-  
-  select case (ied_init_mode)
-  case(0)
-     
-     ! Initialize everything with near-bare ground
-     if (mynum /= 1) print'(/,a)','    Doing bare ground initialization'
-     do igr=1,ngrids
-          call bare_ground_init(edgrid_g(igr))
-     end do
-     
-  case(-1,1,2,3)
-     
-     ! Initialize with ED1-type restart info
-     
-     write(*,'(a,i3.3)')'    Initializing from ED restart file. Node: ',mynum
-     
-     call read_ed1_history_file_array
-     
-  end select
-
-  if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,799,MPI_COMM_WORLD,ierr)
-!  if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
-  
-
-  ! ----------------------------------------------------
-  ! STEP 3: Initialize phenology parameters and thermal sums
-  ! ----------------------------------------------------
-  
-  if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,735,MPI_COMM_WORLD,status,ierr)
-  
-  write(*,'(a,i3.3)')'    Initializing phenology. Node: ',mynum
-  call phenology_init
-  
-  if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,735,MPI_COMM_WORLD,ierr)
-!  if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
-  
-  
-  ! ----------------------------------------------------
-  ! STEP 4: Initialize anthropogenic disturbance
-  ! ----------------------------------------------------
-  
-  if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,736,MPI_COMM_WORLD,status,ierr)
-  
-
-  write(*,'(a,i3.3)')'    Initializing anthropogenic disturbance forcing. Node: ',mynum
-
-  call landuse_init_array
-
-  if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,736,MPI_COMM_WORLD,ierr)
-!  if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
-  
-
-  ! Initialize the lapse rates that transfer meteorologic forcing variables
-  ! from the atmospheric reference height to a site specific quanity.
 
 
 
-  return
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine fills the lsl variables based on the soil_depth file.  In case       !
+! isoildepthflg was zero, then the layer_index matrix was filled with zeroes, so we do not !
+! need to worry about this here.                                                           !
+!------------------------------------------------------------------------------------------!
+subroutine soil_depth_fill(cgrid,igr)
+   
+   use soil_coms     , only : layer_index ! ! intent(in)
+   use ed_state_vars , only : edtype      ! ! structure
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   type(edtype) , target     :: cgrid
+   integer      , intent(in) :: igr
+   !----- Local variables -----------------------------------------------------------------!
+   integer                   :: ilat_bin
+   integer                   :: ilon_bin
+   integer                   :: ipy
+   !---------------------------------------------------------------------------------------!
+
+   do ipy = 1,cgrid%npolygons
+      ilat_bin = min(180,int(90.0 - cgrid%lat(ipy)) + 1)
+      ilon_bin = int(180.0 + cgrid%lon(ipy)) + 1
+
+      !------------------------------------------------------------------------------------!
+      !    Require at least 2 layers.  This requirement was taken in consideration when    !
+      ! layer_index was filled at the first initialization, so it is safe to just copy.    !
+      !------------------------------------------------------------------------------------!
+      cgrid%lsl(ipy) =layer_index(ilat_bin,ilon_bin) 
+   end do
+
+   return
+end subroutine soil_depth_fill
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    Several Procedures requiring ASCII reads follow.  If this is a parallel run, then the !
+! nodes must queue.  Since we will access sequential format files, each node needs to wait !
+! its turn to access it... MPI_File commands won't work with ASCII files, so that's a      !
+! bottleneck here. If the run is serial mynum=nnodetot, so I don't need to wait.           !
+!------------------------------------------------------------------------------------------!
+subroutine load_ecosystem_state()
+   use phenology_coms    , only : iphen_scheme    ! ! intent(in)
+   use ed_misc_coms         , only : ied_init_mode   ! ! intent(in)
+   use phenology_startup , only : phenology_init  ! ! intent(in)
+   use ed_node_coms      , only : mynum           & ! intent(in)
+                                , nmachs          & ! intent(in)
+                                , nnodetot        & ! intent(in)
+                                , mchnum          & ! intent(in)
+                                , machs           & ! intent(in)
+                                , master_num      & ! intent(in)
+                                , sendnum         & ! intent(in)
+                                , recvnum         ! ! intent(in)
+   use grid_coms         , only : ngrids          ! ! intent(in)
+   use ed_state_vars     , only : edgrid_g        ! ! structure
+
+   implicit none
+   include 'mpif.h'
+   !----- Local variables -----------------------------------------------------------------!
+   integer                :: ierr
+   integer                :: igr
+   integer                :: ping 
+   !---------------------------------------------------------------------------------------!
+
+   ping = 741776
+  
+
+
+
+   if (mynum == 1) write(unit=*,fmt='(a)') ' + Doing sequential initialization over nodes.'
+
+   !---------------------------------------------------------------------------------------!
+   ! STEP 1: Find lowest soil layer for each site (derived from soil depth).               !
+   !---------------------------------------------------------------------------------------!
+   do igr=1,ngrids
+      call ed_newgrid(igr)
+      call soil_depth_fill(edgrid_g(igr),igr)
+   end do
+
+
+   !---------------------------------------------------------------------------------------!
+   ! STEP 2: Read in Site files and initialize hydrologic adjacencies.                     !
+   !---------------------------------------------------------------------------------------!
+   if (mynum /= 1) &
+      call MPI_Recv(ping,1,MPI_INTEGER,recvnum,100,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
+  
+   do igr = 1,ngrids
+      call read_site_file(edgrid_g(igr))
+   end do
+  
+   if (mynum < nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,100,MPI_COMM_WORLD,ierr)
+  
+   !---------------------------------------------------------------------------------------!
+   ! STEP 3: Do ASCII type restart initialization of site patch and cohort biophysical     !
+   !         states.                                                                       !
+   !---------------------------------------------------------------------------------------!
+   if (mynum /= 1) &
+      call MPI_RECV(ping,1,MPI_INTEGER,recvnum,101,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
+  
+
+   select case (ied_init_mode)
+   case(0)
+      !----- Initialize everything with near-bare ground ----------------------------------!
+      if (mynum /= 1) write(unit=*,fmt='(a)') ' + Doing bare ground initialization...'
+      do igr=1,ngrids
+           call bare_ground_init(edgrid_g(igr))
+      end do
+      
+   case(-1,1,2,3)
+      !----- Initialize with ED1-type restart information. --------------------------------!
+      write(unit=*,fmt='(a,i3.3)') ' + Initializing from ED restart file. Node: ',mynum
+      call read_ed1_history_file
+   end select
+
+   if (mynum < nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,101,MPI_COMM_WORLD,ierr)
+
+   !---------------------------------------------------------------------------------------!
+   ! STEP 4: Initialize phenology parameters and thermal sums.                             !
+   !---------------------------------------------------------------------------------------!
+   if (mynum /= 1) &
+      call MPI_Recv(ping,1,MPI_INTEGER,recvnum,102,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
+
+   write(unit=*,fmt='(a,i3.3)') ' + Initializing phenology. Node: ',mynum
+   call phenology_init()
+
+   if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,102,MPI_COMM_WORLD,ierr)
+  
+  
+   !---------------------------------------------------------------------------------------!
+   ! STEP 5: Initialize anthropogenic disturbance.                                         !
+   !---------------------------------------------------------------------------------------!
+   if (mynum /= 1) &
+     call MPI_Recv(ping,1,MPI_INTEGER,recvnum,103,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
+
+   write(unit=*,fmt='(a,i3.3)')                                                            &
+      ' + Initializing anthropogenic disturbance forcing. Node: ',mynum
+
+   call landuse_init()
+
+   if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,103,MPI_COMM_WORLD,ierr)
+
+   return
 end subroutine load_ecosystem_state
+!==========================================================================================!
+!==========================================================================================!
 
-!=============================================================================!
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine defines the variables related to the soil layers, and also initial-  !
+! ises some RK4 variables that depend on the soil grid.                                    !
+!------------------------------------------------------------------------------------------!
 subroutine sfcdata_ed()
-  use grid_coms, only: nzg
-  use soil_coms, only: ed_nstyp, slz, dslz, dslzo2, dslzi, &
-                       dslzidt, slzt, dslzt, dslzti, dslztidt,  &
-                       fhydraul, slcons1, slden,  emisg, &
- ! Using the table defined in soil_coms instead of redefining locally.
-                       soil
-                       
-  use misc_coms, only: dtlsm
-  implicit none
+   use grid_coms   , only : nzg               & ! intent(in)
+                          , nzs               ! ! intent(in)
+   use soil_coms   , only : ed_nstyp          & ! intent(in)
+                          , slz               & ! intent(in)
+                          , dslz              & ! intent(out)
+                          , dslzo2            & ! intent(out)
+                          , dslzi             & ! intent(out)
+                          , dslzidt           & ! intent(out)
+                          , slzt              & ! intent(out)
+                          , dslzt             & ! intent(out)
+                          , dslzti            & ! intent(out)
+                          , dslztidt          & ! intent(out)
+                          , slz8              & ! intent(in)
+                          , dslz8             & ! intent(out)
+                          , dslzo28           & ! intent(out)
+                          , dslzi8            & ! intent(out)
+                          , dslzidt8          & ! intent(out)
+                          , slzt8             & ! intent(out)
+                          , dslzt8            & ! intent(out)
+                          , dslzti8           & ! intent(out)
+                          , dslztidt8         & ! intent(out)
+                          , fhydraul          & ! intent(out)
+                          , slcons1           & ! intent(out)
+                          , slcons18          & ! intent(out)
+                          , slden             & ! intent(out)
+                          , emisg             & ! intent(out)
+                          , soil              & ! intent(in)
+                          , thicknet          & ! intent(out)
+                          , thick             ! ! intent(out)
+   use consts_coms , only : wdns              ! ! intent(in)
+   use rk4_coms    , only : rk4min_sfcw_moist & ! intent(in)
+                          , rk4min_virt_moist & ! intent(in)
+                          , rk4min_sfcw_mass  & ! intent(out)
+                          , rk4min_virt_water ! ! intent(out)
+   use ed_misc_coms   , only : dtlsm             ! ! intent(in)
+   implicit none
+   !----- Local variables -----------------------------------------------------------------!
+   integer                :: k
+   integer                :: nnn
+   integer                :: kzs
+   real                   :: refdepth
+   real                   :: thik
+   real                   :: stretch
+   !---------------------------------------------------------------------------------------!
 
-  integer :: k
-  integer :: nnn
 
-  real :: refdepth
+   !----- Soil vertical grid spacing arrays (some with timestep info). --------------------!
+   slz(nzg+1) = 0.
 
+   do k = 1,nzg
+      dslz    (k) = slz(k+1) - slz(k)
+      dslzo2  (k) = .5 * dslz(k)
+      dslzi   (k) = 1. / dslz(k)
+      dslzidt (k) = dslzi(k) * dtlsm
+      slzt    (k) = .5 * (slz(k) + slz(k+1))
+      slz8    (k) = dble(slz    (k))
+      dslz8   (k) = dble(dslz   (k))
+      dslzo28 (k) = dble(dslzo2 (k))
+      dslzi8  (k) = dble(dslzi  (k))
+      dslzidt8(k) = dble(dslzidt(k))
+      slzt8   (k) = dble(slzt   (k))
+   end do
 
-  ! Soil vertical grid spacing arrays (some with timestep info)
+   do k = 2,nzg
+      dslzt    (k) = slzt(k) - slzt(k-1)
+      dslzti   (k) = 1. / dslzt(k)
+      dslztidt (k) = dslzti(k) * dtlsm
+      dslzt8   (k) = dble(dslzt   (k))
+      dslzti8  (k) = dble(dslzti  (k))
+      dslztidt8(k) = dble(dslztidt(k))
+   end do
 
-  slz(nzg+1) = 0.
+   !----- These must be defined for free drainage bc (RGK) --------------------------------!
+   dslzt    (1) = 2.0*slz(1) - slzt(1)
+   dslzti   (1) = 1./dslzt(1)
+   dslztidt (1) = dslzti(1) * dtlsm
+   dslzt8   (1) = dble(dslzt   (1))
+   dslzti8  (1) = dble(dslzti  (1))
+   dslztidt8(1) = dble(dslztidt(1))
 
-  do k = 1,nzg
-     dslz   (k) = slz(k+1) - slz(k)
-     dslzo2 (k) = .5 * dslz(k)
-     dslzi  (k) = 1. / dslz(k)
-     dslzidt(k) = dslzi(k) * dtlsm
-     slzt   (k) = .5 * (slz(k) + slz(k+1))
-  enddo
+   !----- Soil constants. -----------------------------------------------------------------!
+   refdepth = -2.0
 
-  do k = 2,nzg
-     dslzt   (k) = slzt(k) - slzt(k-1)
-     dslzti  (k) = 1. / dslzt(k)
-     dslztidt(k) = dslzti(k) * dtlsm
-  enddo
+   do nnn = 1,ed_nstyp
+      fhydraul(nnn) = log (soil(nnn)%slcons / soil(nnn)%slcons0) / refdepth
 
-  ! Soil constants
+      do k = 1,nzg
+         slcons1(k,nnn) = soil(nnn)%slcons     ! ORIGINAL form - const with depth
+   !     slcons1(k,nnn) = soilparms(5,nnn)  &  ! TOPMODEL form - large at surface
+   !        * exp(slz(k) * fhydraul(nnn))      !    and exp decrease with depth
+         slcons18(k,nnn) = dble(slcons1(k,nnn))
+      end do
 
-  refdepth = -2.0
+      slden    (nnn) =  soil(nnn)%slden    
+      emisg (nnn) = .98
+   end do
 
-  do nnn = 1,ed_nstyp
-     fhydraul(nnn) = log (soil(nnn)%slcons / soil(nnn)%slcons0) / refdepth
+   !----- Defining some snow thickness variables ------------------------------------------!
+   stretch = 2.0
+   do kzs = 1,nzs
+      thik          = 1.0
+      thicknet(kzs) = 0.0
+      do k = 1,(kzs+1)/2
+         thick(k,kzs)       = thik
+         thick(kzs+1-k,kzs) = thik
+         thicknet(kzs)      = thicknet(kzs) + 2. * thik
+         thik               = thik * stretch
+      end do
+      if ((kzs+1)/2 .ne. kzs/2) thicknet(kzs) = thicknet(kzs) - thik/stretch
+      do k = 1,kzs
+         thick(k,kzs) = thick(k,kzs) / thicknet(kzs)
+      end do
+   end do
 
-     do k = 1,nzg
-        slcons1(k,nnn) = soil(nnn)%slcons     ! ORIGINAL form - const with depth
-  !     slcons1(k,nnn) = soilparms(5,nnn)  &  ! TOPMODEL form - large at surface
-  !        * exp(slz(k) * fhydraul(nnn))      !    and exp decrease with depth
-     enddo
+   !----- Assigning some soil grid-dependent RK4 variables --------------------------------!
+   rk4min_sfcw_mass  = rk4min_sfcw_moist * wdns * dslz(nzg)
+   rk4min_virt_water = rk4min_virt_moist * wdns * dslz(nzg)
 
-     slden    (nnn) =  soil(nnn)%slden    
-     emisg (nnn) = .98
-  enddo
-
-  return
+   return
 end subroutine sfcdata_ed
-
+!==========================================================================================!
+!==========================================================================================!

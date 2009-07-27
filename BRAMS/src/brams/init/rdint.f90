@@ -21,6 +21,7 @@ subroutine initlz (name_name)
   use io_params
   use micphys
   use therm_lib, only : level
+  use mem_turb, only : turb_g
 
   ! CATT
   use catt_start, only         : CATT                      ! intent(in)
@@ -224,7 +225,7 @@ subroutine initlz (name_name)
      case (1,2,5)
         call sfcdata
      case (3)
-        call sfcdata_sib_driver
+        !call sfcdata_sib_driver
      end select
 
 
@@ -296,7 +297,17 @@ subroutine initlz (name_name)
 
      ! Read Radiation Parameters if CARMA Radiation is selected
      call master_read_carma_data()
-     !
+
+     ! Initialise turbulence factor akscal
+     if (if_adap == 1) then
+        do ifm=1,ngrids
+           call akscal_init(nnxp(ifm),nnyp(ifm),ifm,grid_g(ifm)%topta,turb_g(ifm)%akscal)
+        end do
+     else
+        do ifm=1,ngrids
+           call akscal_init(nnxp(ifm),nnyp(ifm),ifm,grid_g(ifm)%topt,turb_g(ifm)%akscal)
+        end do
+     end if
 
      ! CATT
      if (CATT==1) then
@@ -394,7 +405,7 @@ subroutine initlz (name_name)
      case (1,2,5)
         call sfcdata
      case (3)
-        call sfcdata_sib_driver
+        !call sfcdata_sib_driver
      end select
 
      ! Heterogenous Soil Moisture Init.
@@ -464,6 +475,13 @@ subroutine initlz (name_name)
                    ,leaf_g(ifm)%sfcwater_depth  ,grid_g(ifm)%glat              &
                    ,grid_g(ifm)%glon            ,grid_g(ifm)%flpw              )
            endif
+
+          ! Initialise turbulence factor akscal
+          if (if_adap == 1) then
+             call akscal_init(nnxp(ifm),nnyp(ifm),ifm,grid_g(ifm)%topta,turb_g(ifm)%akscal)
+          else
+             call akscal_init(nnxp(ifm),nnyp(ifm),ifm,grid_g(ifm)%topt,turb_g(ifm)%akscal)
+          end if
 
         enddo
 
@@ -863,9 +881,13 @@ subroutine ReadNamelist(fileName)
        usdata_in, &
        usmodel_in
   use mem_turb, only: akmin, &
+       akmax, &
+       hgtmin, &
+       hgtmax, &
        csx, &
        csz, &
        idiffk, &
+       ibotflx, &
        ibruvais, &
        if_urban_canopy, &
        ihorgrad, &
@@ -886,10 +908,11 @@ subroutine ReadNamelist(fileName)
        vwait1, &
        vwaittot, &
        wt_nudge_grid, &
-       wt_nudge_pi, &
-       wt_nudge_rt, &
-       wt_nudge_th, &
-       wt_nudge_uv, &
+       wt_nudge_pi,  &
+       wt_nudge_rt,  &
+       wt_nudge_th,  &
+       wt_nudge_uv,  &
+       wt_nudge_co2, &
        wt_nudgec_grid, &
        znudtop
   use micphys, only: aparm, &
@@ -919,9 +942,8 @@ subroutine ReadNamelist(fileName)
        rts, &
        ts, &
        us, &
-       vs
-  use sib_vars, only: co2_init, &
-       n_co2
+       vs, &
+       co2s
 
   ! CATT
   use catt_start, only: CATT
@@ -994,6 +1016,10 @@ subroutine ReadNamelist(fileName)
   use grid_dims, only: &
        maxsteb,        &
        maxubtp
+  use mem_basic, only : &
+       co2_on,          &
+       co2con,          &
+       ico2             !
 
   ! Explicit domain decomposition
   use domain_decomp, only: domain_fname
@@ -1045,11 +1071,11 @@ subroutine ReadNamelist(fileName)
   namelist /MODEL_FILE_INFO/                                           &
        initial, nud_type, varfpfx, vwait1, vwaittot, nud_hfile, nudlat,&
        tnudlat, tnudcent, tnudtop, znudtop, wt_nudge_grid, wt_nudge_uv,&
-       wt_nudge_th, wt_nudge_pi, wt_nudge_rt, nud_cond, cond_hfile,    &
-       tcond_beg, tcond_end, t_nudge_rc, wt_nudgec_grid, if_oda,       &
-       oda_upaprefix,oda_sfcprefix, frqoda, todabeg, todaend, tnudoda, &
-       wt_oda_grid, wt_oda_uv, wt_oda_th, wt_oda_pi, wt_oda_rt,        &
-       roda_sfce, roda_sfc0, roda_upae,roda_upa0, roda_hgt,            &
+       wt_nudge_th, wt_nudge_pi, wt_nudge_rt, wt_nudge_co2, nud_cond,  &
+       cond_hfile,tcond_beg, tcond_end, t_nudge_rc, wt_nudgec_grid,    &
+       if_oda,oda_upaprefix,oda_sfcprefix, frqoda, todabeg, todaend,   &
+       tnudoda, wt_oda_grid, wt_oda_uv, wt_oda_th, wt_oda_pi,          &
+       wt_oda_rt, roda_sfce, roda_sfc0, roda_upae,roda_upa0, roda_hgt, &
        roda_zfact, oda_sfc_til, oda_sfc_tel, oda_upa_til, oda_upa_tel, &
        if_cuinv, cu_prefix, tnudcu, wt_cu_grid, tcu_beg, tcu_end,      &
        cu_tel, cu_til, imonthh, idateh, iyearh, itimeh,                &
@@ -1070,16 +1096,16 @@ subroutine ReadNamelist(fileName)
   namelist /MODEL_OPTIONS/ &
        naddsc, icorflg, iexev,imassflx, ibnd, jbnd, cphas, lsflg, nfpt,  &
        distim,iswrtyp, ilwrtyp,icumfdbk,                                 &
-       raddatfn,radfrq, lonrad, npatch, nvegpat, isfcl, n_co2, co2_init, &
+       raddatfn,radfrq, lonrad, npatch, nvegpat, isfcl,ico2,co2con,      &
        nvgcon, pctlcon, nslcon, drtcon, zrough, albedo, seatmp, dthcon,  &
        soil_moist, soil_moist_fail, usdata_in, usmodel_in, slz, slmstr,  &
-       stgoff, if_urban_canopy, idiffk, ibruvais, ihorgrad, csx, csz,    &
-       xkhkm, zkhkm, akmin, level, icloud, irain, ipris, isnow, iaggr,   &
-       igraup, ihail, cparm, rparm, pparm, sparm, aparm, gparm, hparm,   &
-       gnu
+       stgoff, if_urban_canopy, idiffk, ibruvais, ibotflx, ihorgrad,     &
+       csx, csz, xkhkm, zkhkm, akmin, akmax, hgtmin, hgtmax, level,      &
+       icloud, irain, ipris, isnow, iaggr, igraup, ihail, cparm, rparm,  &
+       pparm, sparm, aparm, gparm, hparm, gnu
 
   namelist /MODEL_SOUND/ &
-       ipsflg, itsflg, irtsflg, iusflg, hs, ps, ts, rts, us, vs
+       ipsflg, itsflg, irtsflg, iusflg, hs, ps, ts, rts, us, vs, co2s
 
   namelist /MODEL_PRINT/ &
        nplt, iplfld, ixsctn, isbval
@@ -1142,6 +1168,8 @@ subroutine ReadNamelist(fileName)
   itopsflg=0
   toptenh=0.0
   toptwvl=0.0
+  co2con=0.0
+  ico2=0
   iz0flg=0
   z0max=0.0
   gnu=0.0
@@ -1154,17 +1182,21 @@ subroutine ReadNamelist(fileName)
   ps=0.0
   hs=0.0
   rts=0.0
-  co2_init=0.0
+  co2s=0.0
   slz=0.0
   slmstr=0.0
   stgoff=0.0
   idiffk=0
+  ibotflx = 0
   ibruvais = 0
   csx=0.0
   csz=0.0
   xkhkm=0.0
   zkhkm=0.0
   akmin=0.0
+  akmax=0.0
+  hgtmin=0.0
+  hgtmax=0.0
   levth=0
   notid=" "
   gridwt=0.0
@@ -1502,6 +1534,7 @@ subroutine ReadNamelist(fileName)
      write (*,*) "wt_nudge_th=", wt_nudge_th
      write (*,*) "wt_nudge_pi=", wt_nudge_pi
      write (*,*) "wt_nudge_rt=", wt_nudge_rt
+     write (*,*) "wt_nudge_co2=", wt_nudge_co2
      write (*,*) "nud_cond=", nud_cond
      write (*,*) "cond_hfile=", trim(cond_hfile)
      write (*,*) "tcond_beg=", tcond_beg
@@ -1647,8 +1680,8 @@ subroutine ReadNamelist(fileName)
      write (*, *) "npatch=",npatch
      write (*, *) "nvegpat=",nvegpat
      write (*, *) "isfcl=",isfcl
-     write (*, *) "n_co2=",n_co2
-     write (*, *) "co2_init=",co2_init
+     write (*, *) "ico2=",ico2
+     write (*, *) "co2con=",co2con
      write (*, *) "nvgcon=",nvgcon
      write (*, *) "pctlcon=",pctlcon
      write (*, *) "nslcon=",nslcon
@@ -1667,12 +1700,16 @@ subroutine ReadNamelist(fileName)
      write (*, *) "if_urban_canopy=",if_urban_canopy
      write (*, *) "idiffk=",idiffk
      write (*, *) "ibruvais=",ibruvais
+     write (*, *) "ibotflx=",ibotflx
      write (*, *) "ihorgrad=",ihorgrad
      write (*, *) "csx=",csx
      write (*, *) "csz=",csz
      write (*, *) "xkhkm=",xkhkm
      write (*, *) "zkhkm=",zkhkm
      write (*, *) "akmin=",akmin
+     write (*, *) "akmax=",akmax
+     write (*, *) "hgtmin=",hgtmin
+     write (*, *) "hgtmax=",hgtmax
      write (*, *) "level=",level
      write (*, *) "icloud=",icloud
      write (*, *) "irain=",irain
@@ -1714,6 +1751,7 @@ subroutine ReadNamelist(fileName)
      write (*, *) "rts=",rts
      write (*, *) "us=",us
      write (*, *) "vs=",vs
+     write (*, *) "co2s=",co2s
      call abort_run('Error reading namelist, MODEL_SOUND block.' &
                    ,'ReadNamelist','rdint.f90')
   end if
@@ -1802,7 +1840,15 @@ subroutine ReadNamelist(fileName)
   if (isfcl == 5) then
      npatch = 2
      nvegpat = 1
+  else !---- Not an ED-BRAMS run, and isoilflg/ivegtflg are set to 3, switch them by 1. ---!
+     where (isoilflg == 3) isoilflg = 1
+     where (ivegtflg == 3) ivegtflg = 1
   end if
+  !---- If someone accidentally defined itoptflg, isstflg or ndviflg to 3, make them 1. ---!
+  where (itoptflg == 3) itoptflg = 1
+  where (isstflg  == 3) isstflg  = 1
+  where (ndviflg  == 3) ndviflg  = 1
+
   !----------------------------------------------------------------------------------------!
   !    Saving the moisture complexity level into logical variables. Note that vapour_on is !
   ! not level == 1, it will be true when level is 1, 2, and 3. (whenever vapour is on).    !
@@ -1812,6 +1858,11 @@ subroutine ReadNamelist(fileName)
   vapour_on = level >= 1
   cloud_on  = level >= 2
   bulk_on   = level >= 3
+
+  !----------------------------------------------------------------------------------------!
+  !    Saving the CO2 complexity level into a logical variable.                            !
+  !----------------------------------------------------------------------------------------!
+  co2_on    = ico2 > 0
 
   return
 end subroutine ReadNamelist

@@ -1369,14 +1369,14 @@ subroutine cup_forcing_ens_16(aa0,aa1,xaa0,mbdt,dtime,xmb,ierr,   &
            xff_ens3(6)=     -omeg(i,1)/g
            do k=2,kbcon(i)-1
               xomg=     -omeg(i,k)/g   
-              if(xomg.gt.xff_ens3(6)) xff_ens3(6)=xomg
+              if(xomg.gt.xff_ens3(6)) xff_ens3(6)= 0. !xomg
            enddo
            !
            !--- More like Krishnamurti et al.
            !
-           xff_ens3(7)=    mconv(i)
-           xff_ens3(8)= .9*mconv(i)
-           xff_ens3(9)=1.1*mconv(i)
+           xff_ens3(7)=      mconv(i)
+           xff_ens3(8)=   .9*mconv(i)
+           xff_ens3(9)=  1.1*mconv(i)
            !
            !--- More like Fritsch Chappel or Kain Fritsch (plus triggers)
            !srf - changed at dec/2002 - greater timescale instab. removal

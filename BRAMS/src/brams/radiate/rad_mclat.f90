@@ -43,7 +43,7 @@ subroutine rad_mclat(m1,nrad,koff,glat,rtgt)
   use mem_radiate, only: nadd_rad, zmrad
   use rconstants,  only: gordry
   use mem_grid,    only: zm
-  use harr_coms,   only: dl,pl,rl,tl,o3l,zml,ztl,dzl
+  use harr_coms,   only: dl,pl,rl,co2l,tl,o3l,zml,ztl,dzl
 
   implicit none
   integer, intent(in) :: m1
@@ -121,7 +121,11 @@ subroutine rad_mclat(m1,nrad,koff,glat,rtgt)
         tavg = 0.5 * (tl(k)+tl(k-1))
         pl(k) = pl(k-1) * exp( -gordry * (ztl(k) - ztl(k-1))*rtgt / tavg )
      enddo
-
+     
+     !----- Copy the CO2 at the top level to the remainder levels. ------------------------!
+     do k = kadd,nrad
+        co2l(k) = co2l(kadd-1)
+     end do
   end if
 
   return

@@ -1,6 +1,6 @@
 Module ename_coms
 
-  use max_dims, only: max_soi, max_ed_regions, str_len,n_pft,maxgrds, nzgmax,maxpvars
+  use ed_max_dims, only: max_soi, max_ed_regions, str_len,n_pft,maxgrds, nzgmax,maxpvars
 
   implicit none
 
@@ -128,19 +128,23 @@ Module ename_coms
 
 !!    OPTIONS FOR MODEL DYNAMICS
       integer                   :: integration_scheme = 0
-      integer                   :: istoma_scheme = 0
-      integer                   :: iphen_scheme  = 0
-      integer                   :: repro_scheme  = 1
-      integer                   :: lapse_scheme  = 0
-      integer                   :: crown_mod     = 0
-      integer                   :: n_plant_lim   = 0
-      integer                   :: n_decomp_lim  = 0
-      integer                   :: include_fire  = 0
-      integer                   :: ianth_disturb = 0
+      integer                   :: ibranch_thermo     = 0
+      integer                   :: istoma_scheme      = 0
+      integer                   :: iphen_scheme       = 0
+      integer                   :: repro_scheme       = 1
+      integer                   :: lapse_scheme       = 0
+      integer                   :: crown_mod          = 0
+      integer                   :: n_plant_lim        = 0
+      integer                   :: n_decomp_lim       = 0
+      integer                   :: include_fire       = 0
+      integer                   :: ianth_disturb      = 0
+      integer                   :: icanturb           = 0
       
       ! Huge(1) will initialize with the maximum representable number, which 
       !   will be ignored by ED, which include pfts that are <= n_pft only.
       integer, dimension(n_pft) :: include_these_pft = (/(huge(1),i=1,n_pft)/) 
+      integer                   :: agri_stock = 0
+      integer                   :: plantation_stock = 0
       integer                   :: pft_1st_check = 0
       
       real              :: treefall_disturbance_rate = 0.0
@@ -156,6 +160,7 @@ Module ename_coms
 
 !!    OPTIONS CONTROLLING METEOROLOGICAL FORCING
       integer           :: imettype      = 0
+      integer           :: ishuffle      = 0
       integer           :: metcyc1       = 0
       integer           :: metcycf       = 0
       real              :: initial_co2   = 370.

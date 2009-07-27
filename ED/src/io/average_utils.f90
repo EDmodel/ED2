@@ -5,10 +5,10 @@
 !                           |----------------------------------|                           !
 !==========================================================================================!
 !==========================================================================================!
-subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
+subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
 
    use grid_coms, only: nzg
-   use misc_coms, only: radfrq
+   use ed_misc_coms, only: radfrq
    use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
 
    
@@ -50,6 +50,7 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
             csite%avg_transp(ipa)       = csite%avg_transp(ipa)        * frqsumi
             csite%avg_evap(ipa)         = csite%avg_evap(ipa)          * frqsumi
             csite%avg_runoff(ipa)       = csite%avg_runoff(ipa)        * frqsumi
+            csite%avg_drainage(ipa)     = csite%avg_drainage(ipa)      * frqsumi
             csite%avg_sensible_vc(ipa)  = csite%avg_sensible_vc(ipa)   * frqsumi
             csite%avg_sensible_2cas(ipa)= csite%avg_sensible_2cas(ipa) * frqsumi
             csite%avg_qwshed_vg(ipa)    = csite%avg_qwshed_vg(ipa)     * frqsumi
@@ -92,7 +93,7 @@ subroutine normalize_averaged_vars_ar(cgrid,frqsum,dtlsm)
    end do
    
    return
-end subroutine normalize_averaged_vars_ar
+end subroutine normalize_averaged_vars
 !==========================================================================================!
 !==========================================================================================!
 
@@ -150,6 +151,7 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_smoist_gg(:,ipa)      = 0.0
             csite%avg_smoist_gc(:,ipa)      = 0.0
             csite%avg_runoff(ipa)           = 0.0
+            csite%avg_drainage(ipa)         = 0.0
             csite%avg_sensible_vc(ipa)      = 0.0
             csite%avg_sensible_2cas(ipa)    = 0.0
             csite%avg_qwshed_vg(ipa)        = 0.0
@@ -214,6 +216,7 @@ subroutine reset_averaged_vars(cgrid)
       cgrid%avg_rlongup(ipy)        = 0.0
    
       !
+      cgrid%avg_drainage(ipy)       = 0.0
       cgrid%avg_evap(ipy)           = 0.0
       cgrid%avg_transp(ipy)         = 0.0
       cgrid%avg_sensible_tot(ipy)   = 0.0
@@ -240,48 +243,58 @@ end subroutine reset_averaged_vars
 !                             |-------------------------------|                            !
 !==========================================================================================!
 !==========================================================================================!
-subroutine integrate_ed_daily_output_state(cgrid)
-!------------------------------------------------------------------------------------------!
 !    This subroutine integrates the daily averages for state vars. This is called after    !
 ! each time step in case daily or monthly averages were requested.                         !
 !------------------------------------------------------------------------------------------!
-   use ed_state_vars        , only: edtype,polygontype,sitetype,patchtype
-   use grid_coms            , only : nzg
-   use max_dims             , only : n_dbh, n_pft, n_dist_types
-   use canopy_radiation_coms, only: lai_min
+subroutine integrate_ed_daily_output_state(cgrid)
+   use ed_state_vars        , only : edtype        & ! structure
+                                   , polygontype   & ! structure
+                                   , sitetype      & ! structure
+                                   , patchtype     ! ! structure
+   use grid_coms            , only : nzg           ! ! intent(in)
+   use ed_max_dims             , only : n_dbh         & ! intent(in)
+                                   , n_pft         & ! intent(in)
+                                   , n_dist_types  ! ! structure
    implicit none
-   
+   !----- Argument ------------------------------------------------------------------------!
    type(edtype)      , target  :: cgrid
+   !----- Local variables -----------------------------------------------------------------!
    type(polygontype) , pointer :: cpoly
    type(sitetype)    , pointer :: csite
    type(patchtype)   , pointer :: cpatch
    integer                     :: ipy, isi, ipa
+   logical                     :: any_solvable
    real                        :: poly_area_i,site_area_i, patch_lai_i
    real                        :: forest_site,forest_site_i, forest_poly
-   ! These are auxiliary variables for averaging sitetype variables
-   !----------------------------------------------------------------------------------------
-   real :: sitesum_fsn, sitesum_fsw
-   ! These are auxiliary variables for averaging patchtype variables
-   !----------------------------------------------------------------------------------------
-   real :: patchsum_fsn, patchsum_fsw
-         
+   real                        :: sss_fsn, sss_fsw, pss_fsn, pss_fsw
+   real                        :: sss_can_temp, sss_can_shv, sss_can_co2
+   real                        :: pss_veg_water, pss_veg_energy, pss_veg_hcap
+   real                        :: sss_veg_water, sss_veg_energy, sss_veg_hcap
+   !---------------------------------------------------------------------------------------!
+
    polyloop: do ipy=1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
       poly_area_i=1./sum(cpoly%area)
 
       
-      ! Initialize auxiliary variables to add sitetype variables
-      sitesum_fsn          = 0.
-      sitesum_fsw          = 0.
-      
-      forest_poly          = 0.
+      !----- Initialize auxiliary variables to add sitetype variables. --------------------!
+      sss_fsn        = 0.
+      sss_fsw        = 0.
+      sss_veg_energy = 0.
+      sss_veg_water  = 0.
+      sss_veg_hcap   = 0.
+      sss_can_temp   = 0.
+      sss_can_shv    = 0.
+      sss_can_co2    = 0.
+      forest_poly    = 0.
       
       siteloop: do isi=1, cpoly%nsites
          csite => cpoly%site(isi)
          
-         ! Inverse of total site area (sum of all patches' area)
+         !----- Inverse of total site area (sum of all patches' area). --------------------!
          site_area_i=1./sum(csite%area)
-         ! Forest areas
+
+         !----- Forest areas. -------------------------------------------------------------!
          forest_site           = sum(csite%area,csite%dist_type /= 1)
          if (forest_site > 1.0e-6) then
             forest_site_i         = 1./forest_site
@@ -290,31 +303,76 @@ subroutine integrate_ed_daily_output_state(cgrid)
          end if
          forest_poly           = forest_poly + forest_site
 
-         ! Initialize auxiliary variables to add patchtype variables
-         patchsum_fsn          = 0.
-         patchsum_fsw          = 0.
+         !----- Initialize auxiliary variables to add patchtype variables. ----------------!
+         pss_fsn          = 0.
+         pss_fsw          = 0.
+         
+         pss_veg_energy        = 0.
+         pss_veg_water         = 0.
+         pss_veg_hcap          = 0.
 
-         ! Looping through the patches to normalize the sum of all cohorts.
+         !----- Looping through the patches to normalize the sum of all cohorts. ----------!
          patchloop: do ipa=1, csite%npatches
             cpatch => csite%patch(ipa)
-            
+
+            any_solvable = .false.
             if (cpatch%ncohorts > 0) then
-               patch_lai_i = 1./max(tiny(1.),sum(cpatch%lai,cpatch%lai > lai_min))
-            
-               patchsum_fsn = patchsum_fsn + (sum(cpatch%fsn * cpatch%lai,cpatch%lai > lai_min) * patch_lai_i) * csite%area(ipa)
-               patchsum_fsw = patchsum_fsw + (sum(cpatch%fsw * cpatch%lai,cpatch%lai > lai_min) * patch_lai_i) * csite%area(ipa)
+               any_solvable = any(cpatch%solvable(1:cpatch%ncohorts))
+
+               pss_veg_energy = pss_veg_energy + sum(cpatch%veg_energy) * csite%area(ipa)
+               pss_veg_water  = pss_veg_water  + sum(cpatch%veg_water ) * csite%area(ipa)
+               pss_veg_hcap   = pss_veg_hcap   + sum(cpatch%hcapveg   ) * csite%area(ipa)
+            end if
+
+            if (any_solvable) then
+               patch_lai_i = 1./max(tiny(1.),sum(cpatch%lai,cpatch%solvable))
+
+               pss_fsn = pss_fsn + csite%area(ipa)                                         &
+                       * (sum(cpatch%fsn * cpatch%lai,cpatch%solvable) * patch_lai_i)
+               pss_fsw = pss_fsw + csite%area(ipa)                                         &
+                       * (sum(cpatch%fsw * cpatch%lai,cpatch%solvable) * patch_lai_i)
             end if
          end do patchloop
-         
-         ! Variables already average at the sitetype level, just add them to polygontype level
-         sitesum_fsn          = sitesum_fsn          + (patchsum_fsn            *site_area_i) * cpoly%area(isi)
-         sitesum_fsw          = sitesum_fsw          + (patchsum_fsw            *site_area_i) * cpoly%area(isi)
-         
+
+         !---------------------------------------------------------------------------------!
+         !    Variables already average at the sitetype level, just add them to polygon-   !
+         ! type level.                                                                     !
+         !---------------------------------------------------------------------------------!
+         sss_fsn        = sss_fsn        + (pss_fsn        * site_area_i) * cpoly%area(isi)
+         sss_fsw        = sss_fsw        + (pss_fsw        * site_area_i) * cpoly%area(isi)
+         sss_veg_energy = sss_veg_energy + (pss_veg_energy * site_area_i) * cpoly%area(isi)
+         sss_veg_water  = sss_veg_water  + (pss_veg_water  * site_area_i) * cpoly%area(isi)
+         sss_veg_hcap   = sss_veg_hcap   + (pss_veg_hcap   * site_area_i) * cpoly%area(isi)
+         sss_can_temp   = sss_can_temp                                                     &
+                        + cpoly%area(isi) * (sum(csite%can_temp * csite%area) * site_area_i)
+         sss_can_shv    = sss_can_shv                                                      &
+                        + cpoly%area(isi) * (sum(csite%can_shv * csite%area)  * site_area_i)
+         sss_can_co2    = sss_can_co2                                                      &
+                        + cpoly%area(isi) * (sum(csite%can_co2 * csite%area)  * site_area_i)
       end do siteloop
       
-      cgrid%dmean_fsn(ipy)          = cgrid%dmean_fsn(ipy)          + sitesum_fsn          * poly_area_i
-      cgrid%dmean_fsw(ipy)          = cgrid%dmean_fsw(ipy)          + sitesum_fsw          * poly_area_i
-      
+      !------------------------------------------------------------------------------------!
+      !    Variables already averaged at the polygontype level, just add them to edtype    !
+      ! level.                                                                             !
+      !------------------------------------------------------------------------------------!
+      cgrid%dmean_fsn(ipy)        = cgrid%dmean_fsn(ipy) + sss_fsn * poly_area_i
+      cgrid%dmean_fsw(ipy)        = cgrid%dmean_fsw(ipy) + sss_fsw * poly_area_i
+      cgrid%dmean_veg_energy(ipy) = cgrid%dmean_veg_energy(ipy)                            &
+                                  + sss_veg_energy * poly_area_i
+      cgrid%dmean_veg_water(ipy)  = cgrid%dmean_veg_water(ipy)+ sss_veg_water * poly_area_i
+      cgrid%dmean_veg_hcap(ipy)   = cgrid%dmean_veg_hcap(ipy) + sss_veg_hcap  * poly_area_i
+      cgrid%dmean_can_temp(ipy)   = cgrid%dmean_can_temp(ipy) + sss_can_temp  * poly_area_i
+      cgrid%dmean_can_shv(ipy)    = cgrid%dmean_can_shv(ipy)  + sss_can_shv   * poly_area_i
+      cgrid%dmean_can_co2(ipy)    = cgrid%dmean_can_co2(ipy)  + sss_can_co2   * poly_area_i
+
+      !------------------------------------------------------------------------------------!
+      !    Variables already at edtype level, simple integration only.                     !
+      !------------------------------------------------------------------------------------!
+      cgrid%dmean_atm_temp(ipy) = cgrid%dmean_atm_temp(ipy) + cgrid%met(ipy)%atm_tmp
+      cgrid%dmean_atm_shv(ipy)  = cgrid%dmean_atm_shv(ipy)  + cgrid%met(ipy)%atm_shv
+      cgrid%dmean_atm_prss(ipy) = cgrid%dmean_atm_prss(ipy) + cgrid%met(ipy)%prss
+      cgrid%dmean_atm_vels(ipy) = cgrid%dmean_atm_vels(ipy) + cgrid%met(ipy)%vels
+
 
    end do polyloop
       
@@ -338,9 +396,8 @@ subroutine integrate_ed_daily_output_flux(cgrid)
 !------------------------------------------------------------------------------------------!
    use ed_state_vars        , only : edtype,polygontype,sitetype,patchtype
    use grid_coms            , only : nzg
-   use max_dims             , only : n_dbh, n_pft, n_dist_types
-   use canopy_radiation_coms, only : lai_min
-   use misc_coms            , only : dtlsm
+   use ed_max_dims             , only : n_dbh, n_pft, n_dist_types
+   use ed_misc_coms            , only : dtlsm
    implicit none
    
    type(edtype)      , target  :: cgrid
@@ -406,8 +463,8 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          patchloop: do ipa=1, csite%npatches
             cpatch => csite%patch(ipa)
             if (cpatch%ncohorts > 0) then
-               patchsum_leaf_resp = patchsum_leaf_resp + sum(cpatch%mean_leaf_resp, cpatch%lai > lai_min)  * csite%area(ipa) 
-               patchsum_root_resp = patchsum_root_resp + sum(cpatch%mean_root_resp                      )  * csite%area(ipa) 
+               patchsum_leaf_resp = patchsum_leaf_resp + sum(cpatch%mean_leaf_resp, cpatch%solvable)  * csite%area(ipa) 
+               patchsum_root_resp = patchsum_root_resp + sum(cpatch%mean_root_resp                 )  * csite%area(ipa) 
             end if
 
          end do patchloop
@@ -471,6 +528,12 @@ subroutine integrate_ed_daily_output_flux(cgrid)
       cgrid%dmean_sensible_gc(ipy)  = cgrid%dmean_sensible_gc(ipy)  + cgrid%avg_sensible_gc(ipy) 
       cgrid%dmean_sensible_ac(ipy)  = cgrid%dmean_sensible_ac(ipy)  + cgrid%avg_sensible_ac(ipy) 
       cgrid%dmean_sensible(ipy)     = cgrid%dmean_sensible(ipy)     + cgrid%avg_sensible_tot(ipy) 
+      cgrid%dmean_pcpg(ipy)         = cgrid%dmean_pcpg(ipy)         + cgrid%avg_pcpg(ipy)     
+      cgrid%dmean_runoff(ipy)       = cgrid%dmean_runoff(ipy)       + cgrid%avg_runoff(ipy)
+      cgrid%dmean_drainage(ipy)     = cgrid%dmean_drainage(ipy)     + cgrid%avg_drainage(ipy)
+      cgrid%dmean_vapor_vc(ipy)     = cgrid%dmean_vapor_vc(ipy)     + cgrid%avg_vapor_vc(ipy) 
+      cgrid%dmean_vapor_gc(ipy)     = cgrid%dmean_vapor_gc(ipy)     + cgrid%avg_vapor_gc(ipy) 
+      cgrid%dmean_vapor_ac(ipy)     = cgrid%dmean_vapor_ac(ipy)     + cgrid%avg_vapor_ac(ipy) 
 
    end do polyloop
 
@@ -488,7 +551,7 @@ end subroutine integrate_ed_daily_output_flux
 !==========================================================================================!
 subroutine normalize_ed_daily_vars(cgrid,timefac1)
    use ed_state_vars , only : edtype,polygontype,sitetype,patchtype
-   use max_dims      , only : n_pft
+   use ed_max_dims      , only : n_pft
    implicit none
    real, intent(in)         :: timefac1 ! Daily sum          => daily average
    type(edtype)      , target  :: cgrid
@@ -543,28 +606,40 @@ subroutine normalize_ed_daily_output_vars(cgrid)
 !------------------------------------------------------------------------------------------!
    use grid_coms     , only : nzg
    use ed_state_vars , only : edtype,polygontype,sitetype,patchtype
-   use max_dims      , only : n_pft
+   use ed_max_dims      , only : n_pft,n_dist_types
    use consts_coms   , only : alvl,day_sec,umol_2_kgC
-   use misc_coms     , only : dtlsm,frqsum
+   use ed_misc_coms     , only : dtlsm,frqsum
+   use therm_lib     , only : qwtk
    implicit none
    type(edtype)      , target  :: cgrid
    type(polygontype) , pointer :: cpoly
    type(sitetype)    , pointer :: csite
    type(patchtype)   , pointer :: cpatch
-   integer                  :: ipy,isi,ipa,ipft,k
+   integer                  :: ipy,isi,ipa,ipft,ilu,k
    real                     :: polygon_area_i, site_area_i
    real :: sitesum_storage_resp, sitesum_vleaf_resp, sitesum_growth_resp
    real :: patchsum_storage_resp, patchsum_vleaf_resp , patchsum_growth_resp
+   real :: veg_fliq
    
    logical           , save :: find_factors=.true.
    real              , save :: dtlsm_o_daysec=1.E34, frqsum_o_daysec=1.E34
 
-   !!! RESET LAI
+   !!! RESET area indices
    do ipy=1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
       cgrid%lai_pft            (:,ipy) = 0.
+      cgrid%lai_lu             (:,ipy) = 0.
+      cgrid%wpa_pft            (:,ipy) = 0.
+      cgrid%wpa_lu             (:,ipy) = 0.
+      cgrid%wai_pft            (:,ipy) = 0.
+      cgrid%wai_lu             (:,ipy) = 0.
       do isi=1,cpoly%nsites
-         cpoly%lai_pft (:,isi) = 0.
+         cpoly%lai_pft (:,isi)  = 0.
+         cpoly%lai_lu  (:,isi)  = 0.
+         cpoly%wpa_pft (:,isi)  = 0.
+         cpoly%wpa_lu  (:,isi)  = 0.
+         cpoly%wai_pft (:,isi)  = 0.
+         cpoly%wai_lu  (:,isi)  = 0.
       end do
    end do
 
@@ -583,12 +658,36 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       ! State variables, updated every time step, so these are normalized by dtlsm/day_sec
       cgrid%dmean_fsw(ipy)          = cgrid%dmean_fsw(ipy)          * dtlsm_o_daysec
       cgrid%dmean_fsn(ipy)          = cgrid%dmean_fsn(ipy)          * dtlsm_o_daysec
-   
+      cgrid%dmean_veg_energy(ipy)   = cgrid%dmean_veg_energy(ipy)   * dtlsm_o_daysec
+      cgrid%dmean_veg_hcap(ipy)     = cgrid%dmean_veg_hcap(ipy)     * dtlsm_o_daysec
+      cgrid%dmean_veg_water(ipy)    = cgrid%dmean_veg_water(ipy)    * dtlsm_o_daysec
+      cgrid%dmean_can_temp(ipy)     = cgrid%dmean_can_temp(ipy)     * dtlsm_o_daysec
+      cgrid%dmean_can_shv(ipy)      = cgrid%dmean_can_shv(ipy)      * dtlsm_o_daysec
+      cgrid%dmean_can_co2(ipy)      = cgrid%dmean_can_co2(ipy)      * dtlsm_o_daysec
+      cgrid%dmean_atm_temp(ipy)     = cgrid%dmean_atm_temp(ipy)     * dtlsm_o_daysec
+      cgrid%dmean_atm_shv(ipy)      = cgrid%dmean_atm_shv(ipy)      * dtlsm_o_daysec
+      cgrid%dmean_atm_prss(ipy)     = cgrid%dmean_atm_prss(ipy)     * dtlsm_o_daysec
+      cgrid%dmean_atm_vels(ipy)     = cgrid%dmean_atm_vels(ipy)     * dtlsm_o_daysec
+      
+      !----- Finding vegetation temperature -----------------------------------------------!
+      call qwtk(cgrid%dmean_veg_energy(ipy),cgrid%dmean_veg_water(ipy)                     &
+               ,cgrid%dmean_veg_hcap(ipy),cgrid%dmean_veg_temp(ipy),veg_fliq)
+      
       ! State variables, updated every frqsum, so these are normalized by frqsum/day_sec
       do k=1,nzg
          cgrid%dmean_soil_temp (k,ipy) = cgrid%dmean_soil_temp (k,ipy)   * frqsum_o_daysec
          cgrid%dmean_soil_water(k,ipy) = cgrid%dmean_soil_water(k,ipy)   * frqsum_o_daysec
       end do
+      ! Precip and runoff
+      cgrid%dmean_pcpg       (ipy)  = cgrid%dmean_pcpg       (ipy)  * frqsum_o_daysec ! kg/m2/sec
+      cgrid%dmean_runoff     (ipy)  = cgrid%dmean_runoff     (ipy)  * frqsum_o_daysec ! kg/m2/sec
+      cgrid%dmean_drainage   (ipy)  = cgrid%dmean_drainage   (ipy)  * frqsum_o_daysec ! kg/m2/sec
+
+      ! vapor flux
+      cgrid%dmean_vapor_vc(ipy)  = cgrid%dmean_vapor_vc(ipy)  * frqsum_o_daysec
+      cgrid%dmean_vapor_gc(ipy)  = cgrid%dmean_vapor_gc(ipy)  * frqsum_o_daysec
+      cgrid%dmean_vapor_ac(ipy)  = cgrid%dmean_vapor_ac(ipy)  * frqsum_o_daysec
+
 
       ! Flux variables, updated every frqsum, so these are normalized by frqsum/day_sec
       cgrid%dmean_evap       (ipy)  = cgrid%dmean_evap       (ipy)  * frqsum_o_daysec
@@ -640,21 +739,51 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                patchsum_vleaf_resp   = patchsum_vleaf_resp   + csite%area(ipa)             &
                                      * sum(cpatch%vleaf_respiration   * cpatch%nplant)
                do ipft=1,n_pft
-                  cpoly%lai_pft(ipft,isi) = cpoly%lai_pft(ipft,isi)                        &
-                                          + sum(cpatch%lai,cpatch%pft == ipft)             &
-                                          * csite%area(ipa) * site_area_i
+                  cpoly%lai_pft(ipft,isi)  = cpoly%lai_pft(ipft,isi)                       &
+                                           + sum(cpatch%lai,cpatch%pft == ipft)            &
+                                           * csite%area(ipa) * site_area_i
+                  cpoly%wpa_pft(ipft,isi)  = cpoly%wpa_pft(ipft,isi)                       &
+                                           + sum(cpatch%wpa,cpatch%pft == ipft)            &
+                                           * csite%area(ipa) * site_area_i
+                  cpoly%wai_pft(ipft,isi)  = cpoly%wai_pft(ipft,isi)                       &
+                                           + sum(cpatch%wai,cpatch%pft == ipft)            &
+                                           * csite%area(ipa) * site_area_i
                end do
             end if
+
+            ilu = csite%dist_type(ipa)
+            cpoly%lai_lu(ilu,isi)  = cpoly%lai_lu(ilu,isi)                                 &
+                                   + csite%lai(ipa) * csite%area(ipa) * site_area_i
+            cpoly%wpa_lu(ilu,isi)  = cpoly%wpa_lu(ilu,isi)                                 &
+                                   + csite%wpa(ipa) * csite%area(ipa) * site_area_i
+            cpoly%wai_lu(ilu,isi)  = cpoly%wai_lu(ilu,isi)                                 &
+                                   + csite%wai(ipa) * csite%area(ipa) * site_area_i
+
          end do patchloop
 
          sitesum_growth_resp  = sitesum_growth_resp  + (patchsum_growth_resp    *site_area_i) * cpoly%area(isi)
          sitesum_storage_resp = sitesum_storage_resp + (patchsum_storage_resp   *site_area_i) * cpoly%area(isi)
          sitesum_vleaf_resp   = sitesum_vleaf_resp   + (patchsum_vleaf_resp     *site_area_i) * cpoly%area(isi)
 
+
       end do siteloop
       
       do ipft=1,n_pft
-         cgrid%lai_pft(ipft,ipy) = cgrid%lai_pft(ipft,ipy) + sum(cpoly%lai_pft(ipft,:)*cpoly%area) * polygon_area_i
+         cgrid%lai_pft(ipft,ipy)  = cgrid%lai_pft(ipft,ipy)                                &
+                                  + sum(cpoly%lai_pft(ipft,:)*cpoly%area) * polygon_area_i
+         cgrid%wpa_pft(ipft,ipy)  = cgrid%wpa_pft(ipft,ipy)                                &
+                                  + sum(cpoly%wpa_pft(ipft,:)*cpoly%area) * polygon_area_i
+         cgrid%wai_pft(ipft,ipy)  = cgrid%wai_pft(ipft,ipy)                                &
+                                  + sum(cpoly%wai_pft(ipft,:)*cpoly%area) * polygon_area_i
+      end do
+      
+      do ilu=1,n_dist_types
+         cgrid%lai_lu(ilu,ipy)  = cgrid%lai_lu(ilu,ipy)                                    &
+                                + sum(cpoly%lai_lu(ilu,:)*cpoly%area) * polygon_area_i
+         cgrid%wpa_lu(ilu,ipy)  = cgrid%wpa_lu(ilu,ipy)                                    &
+                                + sum(cpoly%wpa_lu(ilu,:)*cpoly%area) * polygon_area_i
+         cgrid%wai_lu(ilu,ipy)  = cgrid%wai_lu(ilu,ipy)                                    &
+                                + sum(cpoly%wai_lu(ilu,:)*cpoly%area) * polygon_area_i
       end do
       
       cgrid%dmean_growth_resp(ipy)  = cgrid%dmean_growth_resp(ipy)  + sitesum_growth_resp  * polygon_area_i
@@ -747,6 +876,12 @@ subroutine zero_ed_daily_output_vars(cgrid)
       !-------------------------------------!
       ! Variables stored in edtype          !
       !-------------------------------------!
+      cgrid%dmean_pcpg           (ipy) = 0.
+      cgrid%dmean_drainage       (ipy) = 0.
+      cgrid%dmean_runoff         (ipy) = 0.
+      cgrid%dmean_vapor_vc       (ipy) = 0.
+      cgrid%dmean_vapor_gc       (ipy) = 0.
+      cgrid%dmean_vapor_ac       (ipy) = 0.
       cgrid%dmean_gpp            (ipy) = 0.
       cgrid%dmean_evap           (ipy) = 0.
       cgrid%dmean_transp         (ipy) = 0.
@@ -770,13 +905,36 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_rh_lu        (:,ipy) = 0.
       cgrid%dmean_nep_lu       (:,ipy) = 0.
       cgrid%dmean_gpp_dbh      (:,ipy) = 0.
+      cgrid%dmean_fsw            (ipy) = 0.
+      cgrid%dmean_fsn            (ipy) = 0.
+      cgrid%dmean_veg_energy     (ipy) = 0.
+      cgrid%dmean_veg_hcap       (ipy) = 0.
+      cgrid%dmean_veg_water      (ipy) = 0.
+      cgrid%dmean_veg_temp       (ipy) = 0.
+      cgrid%dmean_can_temp       (ipy) = 0.
+      cgrid%dmean_can_shv        (ipy) = 0.
+      cgrid%dmean_can_co2        (ipy) = 0.
+      cgrid%dmean_atm_temp       (ipy) = 0.
+      cgrid%dmean_atm_shv        (ipy) = 0.
+      cgrid%dmean_atm_prss       (ipy) = 0.
+      cgrid%dmean_atm_vels       (ipy) = 0.
       cgrid%lai_pft            (:,ipy) = 0.
+      cgrid%lai_lu             (:,ipy) = 0.
+      cgrid%wpa_pft            (:,ipy) = 0.
+      cgrid%wpa_lu             (:,ipy) = 0.
+      cgrid%wai_pft            (:,ipy) = 0.
+      cgrid%wai_lu             (:,ipy) = 0.
 
       !-----------------------------------------!
       ! Reset variables stored in polygontype   !
       !-----------------------------------------!
       do isi=1,cpoly%nsites
-         cpoly%lai_pft (:,isi) = 0.
+         cpoly%lai_pft (:,isi)  = 0.
+         cpoly%lai_lu  (:,isi)  = 0.
+         cpoly%wpa_pft (:,isi)  = 0.
+         cpoly%wpa_lu  (:,isi)  = 0.
+         cpoly%wai_pft (:,isi)  = 0.
+         cpoly%wai_lu  (:,isi)  = 0.
       end do
    end do
 
@@ -802,17 +960,21 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
 !    This subroutine integrates the monthly average. This is called after the daily means  !
 ! were integrated and normalized.                                                          !
 !------------------------------------------------------------------------------------------!
-   use ed_state_vars, only : edtype
-   use      max_dims, only : n_dbh,n_pft, n_dist_types
+   use ed_state_vars, only : edtype       ! ! structure
+   use ed_max_dims  , only : n_dbh        & ! intent(in)
+                           , n_pft        & ! intent(in) 
+                           , n_dist_types ! ! intent(in)
    implicit none
-   
+   !----- Argument. -----------------------------------------------------------------------!
    type(edtype)      , target  :: cgrid
+   !----- Local variables. ----------------------------------------------------------------!
    integer                     :: ipy
+   !---------------------------------------------------------------------------------------!
    
    do ipy=1,cgrid%npolygons
-      !------------------------------------------------------------------------------!
-      ! First the mean variables that can be computed from the daily averages        !
-      !------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      ! First the mean variables that can be computed from the daily averages              !
+      !------------------------------------------------------------------------------------!
       cgrid%mmean_gpp           (ipy) = cgrid%mmean_gpp           (ipy) +  cgrid%dmean_gpp           (ipy)
       cgrid%mmean_evap          (ipy) = cgrid%mmean_evap          (ipy) +  cgrid%dmean_evap          (ipy)
       cgrid%mmean_transp        (ipy) = cgrid%mmean_transp        (ipy) +  cgrid%dmean_transp        (ipy)
@@ -836,6 +998,24 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
       cgrid%mmean_nep_lu      (:,ipy) = cgrid%mmean_nep_lu      (:,ipy) +  cgrid%dmean_nep_lu      (:,ipy)
       cgrid%mmean_gpp_dbh     (:,ipy) = cgrid%mmean_gpp_dbh     (:,ipy) +  cgrid%dmean_gpp_dbh     (:,ipy)
       cgrid%mmean_lai_pft     (:,ipy) = cgrid%mmean_lai_pft     (:,ipy) +  cgrid%lai_pft           (:,ipy)
+      cgrid%mmean_lai_lu      (:,ipy) = cgrid%mmean_lai_lu      (:,ipy) +  cgrid%lai_lu            (:,ipy)
+      cgrid%mmean_wpa_pft     (:,ipy) = cgrid%mmean_wpa_pft     (:,ipy) +  cgrid%wpa_pft           (:,ipy)
+      cgrid%mmean_wpa_lu      (:,ipy) = cgrid%mmean_wpa_lu      (:,ipy) +  cgrid%wpa_lu            (:,ipy)
+      cgrid%mmean_wai_pft     (:,ipy) = cgrid%mmean_wai_pft     (:,ipy) +  cgrid%wai_pft           (:,ipy)
+      cgrid%mmean_wai_lu      (:,ipy) = cgrid%mmean_wai_lu      (:,ipy) +  cgrid%wai_lu            (:,ipy)
+
+      cgrid%mmean_veg_energy    (ipy) = cgrid%mmean_veg_energy    (ipy) + cgrid%dmean_veg_energy     (ipy)
+      cgrid%mmean_veg_hcap      (ipy) = cgrid%mmean_veg_hcap      (ipy) + cgrid%dmean_veg_hcap       (ipy)
+      cgrid%mmean_veg_water     (ipy) = cgrid%mmean_veg_water     (ipy) + cgrid%dmean_veg_water      (ipy)
+      cgrid%mmean_veg_temp      (ipy) = cgrid%mmean_veg_temp      (ipy) + cgrid%dmean_veg_temp       (ipy)
+      cgrid%mmean_can_temp      (ipy) = cgrid%mmean_can_temp      (ipy) + cgrid%dmean_can_temp       (ipy)
+      cgrid%mmean_can_shv       (ipy) = cgrid%mmean_can_shv       (ipy) + cgrid%dmean_can_shv        (ipy)
+      cgrid%mmean_can_co2       (ipy) = cgrid%mmean_can_co2       (ipy) + cgrid%dmean_can_co2        (ipy)
+      cgrid%mmean_atm_temp      (ipy) = cgrid%mmean_atm_temp      (ipy) + cgrid%dmean_atm_temp       (ipy)
+      cgrid%mmean_atm_shv       (ipy) = cgrid%mmean_atm_shv       (ipy) + cgrid%dmean_atm_shv        (ipy)
+      cgrid%mmean_atm_prss      (ipy) = cgrid%mmean_atm_prss      (ipy) + cgrid%dmean_atm_prss       (ipy)
+      cgrid%mmean_atm_vels      (ipy) = cgrid%mmean_atm_vels      (ipy) + cgrid%dmean_atm_vels       (ipy)
+      cgrid%mmean_pcpg          (ipy) = cgrid%mmean_pcpg          (ipy) + cgrid%dmean_pcpg           (ipy)
 
       !------------------------------------------------------------------------------------!
       !    During the integration stage we keep the sum of squares, it will be converted   !
@@ -866,28 +1046,47 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
 !    This subroutine normalize the sum before writing the mobthly analysis. It also        !
 ! computes some of the variables that didn't need to be computed every day, like AGB.      !
 !------------------------------------------------------------------------------------------!
-   use ed_state_vars, only: edtype,polygontype
-   use     misc_coms, only: current_time,simtime
-   use      max_dims, only: n_pft,n_dbh
+   use ed_state_vars, only: edtype        & ! structure
+                          , polygontype   & ! structure
+                          , sitetype      & ! structure
+                          , patchtype     ! ! structure
+   use ed_misc_coms , only: current_time  & ! intent(in)
+                          , simtime       ! ! intent(in)
+   use ed_max_dims  , only: n_pft         & ! intent(in)
+                          , n_dbh         & ! intent(in)
+                          , n_dist_types  ! ! intent(in)
    implicit none
-  
+   !----- Arguments. ----------------------------------------------------------------------!
    type(edtype)      , target  :: cgrid
+   !----- Local variables. ----------------------------------------------------------------!
    type(polygontype) , pointer :: cpoly
-   
+   type(sitetype)    , pointer :: csite
+   type(patchtype)   , pointer :: cpatch
    type(simtime)               :: lastmonth
-   real                        :: ndaysi,polygon_area_i
-   integer                     :: ipy,ipft,dbh
+   real                        :: ndaysi
+   real                        :: polygon_area_i
+   real                        :: site_area_i
+   integer                     :: ipy
+   integer                     :: isi
+   integer                     :: ipa
+   integer                     :: ico
+   integer                     :: ipft
+   integer                     :: dbh
+   integer                     :: ilu
+   integer                     :: jlu
    real                        :: srnonm1
-   !----------------------------------------------------------------------!
-   ! Finding the inverse of number of days used for this monthly integral !
-   !----------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+  
+   !---------------------------------------------------------------------------------------!
+   !     Finding the inverse of number of days used for this monthly integral.             !
+   !---------------------------------------------------------------------------------------!
    call lastmonthdate(current_time,lastmonth,ndaysi)
 
-   do ipy=1,cgrid%npolygons
+   polyloop: do ipy=1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
-      !-----------------------------------------------------------!
-      ! First normalize the variables previously defined          !
-      !-----------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !      First normalize the variables previously defined.                             !
+      !------------------------------------------------------------------------------------!
       cgrid%mmean_gpp            (ipy) = cgrid%mmean_gpp            (ipy) * ndaysi
       cgrid%mmean_evap           (ipy) = cgrid%mmean_evap           (ipy) * ndaysi
       cgrid%mmean_transp         (ipy) = cgrid%mmean_transp         (ipy) * ndaysi
@@ -909,8 +1108,25 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_rh_lu        (:,ipy) = cgrid%mmean_rh_lu        (:,ipy) * ndaysi
       cgrid%mmean_nep_lu       (:,ipy) = cgrid%mmean_nep_lu       (:,ipy) * ndaysi
       cgrid%mmean_gpp_dbh      (:,ipy) = cgrid%mmean_gpp_dbh      (:,ipy) * ndaysi
+      cgrid%mmean_veg_energy     (ipy) = cgrid%mmean_veg_energy     (ipy) * ndaysi
+      cgrid%mmean_veg_hcap       (ipy) = cgrid%mmean_veg_hcap       (ipy) * ndaysi
+      cgrid%mmean_veg_water      (ipy) = cgrid%mmean_veg_water      (ipy) * ndaysi
+      cgrid%mmean_veg_temp       (ipy) = cgrid%mmean_veg_temp       (ipy) * ndaysi
+      cgrid%mmean_can_temp       (ipy) = cgrid%mmean_can_temp       (ipy) * ndaysi
+      cgrid%mmean_can_shv        (ipy) = cgrid%mmean_can_shv        (ipy) * ndaysi
+      cgrid%mmean_can_co2        (ipy) = cgrid%mmean_can_co2        (ipy) * ndaysi
+      cgrid%mmean_atm_temp       (ipy) = cgrid%mmean_atm_temp       (ipy) * ndaysi
+      cgrid%mmean_atm_shv        (ipy) = cgrid%mmean_atm_shv        (ipy) * ndaysi
+      cgrid%mmean_atm_prss       (ipy) = cgrid%mmean_atm_prss       (ipy) * ndaysi
+      cgrid%mmean_atm_vels       (ipy) = cgrid%mmean_atm_vels       (ipy) * ndaysi
+      cgrid%mmean_pcpg           (ipy) = cgrid%mmean_pcpg           (ipy) * ndaysi
       cgrid%mmean_lai_pft      (:,ipy) = cgrid%mmean_lai_pft      (:,ipy) * ndaysi
-  
+      cgrid%mmean_lai_lu       (:,ipy) = cgrid%mmean_lai_lu       (:,ipy) * ndaysi
+      cgrid%mmean_wpa_pft      (:,ipy) = cgrid%mmean_wpa_pft      (:,ipy) * ndaysi
+      cgrid%mmean_wpa_lu       (:,ipy) = cgrid%mmean_wpa_lu       (:,ipy) * ndaysi
+      cgrid%mmean_wai_pft      (:,ipy) = cgrid%mmean_wai_pft      (:,ipy) * ndaysi
+      cgrid%mmean_wai_lu       (:,ipy) = cgrid%mmean_wai_lu       (:,ipy) * ndaysi
+
       !------------------------------------------------------------------------------------!
       !   Here we convert the sum of squares into standard deviation. The standard devi-   !
       ! ation can be written in two different ways, and we will use the latter because it  !
@@ -931,17 +1147,59 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%stdev_nep     (ipy) = srnonm1 * sqrt(cgrid%stdev_nep     (ipy) * ndaysi - cgrid%mmean_nep     (ipy) ** 2)
       cgrid%stdev_rh      (ipy) = srnonm1 * sqrt(cgrid%stdev_rh      (ipy) * ndaysi - cgrid%mmean_rh      (ipy) ** 2)
   
-      
+      !---- Finding AGB and basal area per PFT --------------------------------------------!
       polygon_area_i = 1./sum(cpoly%area)
       do ipft = 1,n_pft
         do dbh =1,n_dbh
-          cgrid%agb_pft(ipft,ipy) = cgrid%agb_pft(ipft,ipy) &
-               + sum(cpoly%agb(ipft,dbh,:)*cpoly%area)*polygon_area_i
-          cgrid%ba_pft(ipft,ipy)  = cgrid%ba_pft(ipft,ipy)  &
-               + sum(cpoly%basal_area(ipft,dbh,:)*cpoly%area)*polygon_area_i
+          cgrid%agb_pft(ipft,ipy) = cgrid%agb_pft(ipft,ipy)                                &
+                                  + sum(cpoly%agb(ipft,dbh,:)*cpoly%area)*polygon_area_i
+          cgrid%ba_pft(ipft,ipy)  = cgrid%ba_pft(ipft,ipy)                                 &
+                                  + sum(cpoly%basal_area(ipft,dbh,:)*cpoly%area)           &
+                                  * polygon_area_i
         end do
       end do
-   end do
+
+      !----- Finding AGB per land use type ------------------------------------------------!
+      do ilu = 1,n_dist_types
+          cgrid%agb_lu(ilu,ipy) = cgrid%agb_lu(ilu,ipy)                                    &
+                                + sum(cpoly%agb_lu(ilu,:)*cpoly%area)*polygon_area_i
+      end do
+
+      !----- Finding disturbance rates per source and target land use types. --------------!
+      do ilu = 1,n_dist_types
+         do jlu = 1,n_dist_types
+          cgrid%disturbance_rates(ilu,jlu,ipy) = cgrid%disturbance_rates(ilu,jlu,ipy)      &
+                                               + sum( cpoly%disturbance_rates(ilu,jlu,:)   &
+                                                    * cpoly%area)                          &
+                                               * polygon_area_i
+         end do
+      end do
+
+      !----- Finding the fractional area covered by each land use and each PFT ------------!
+      cgrid%area_pft(:,ipy) = 0.
+      cgrid%area_lu(:,ipy)  = 0.
+      siteloop: do isi = 1, cpoly%nsites
+         csite => cpoly%site(isi)
+         site_area_i = 1./sum(csite%area)
+         patchloop: do ipa=1,csite%npatches
+            ilu = csite%dist_type(ipa)
+            cgrid%area_lu(ilu,ipy) = cgrid%area_lu(ilu,ipy)                                &
+                                   + csite%area(ipa) * cpoly%area(isi)                     &
+                                   * site_area_i * polygon_area_i
+            cpatch => csite%patch(ipa)
+            if (cpatch%ncohorts > 0) then
+               pftloop: do ipft=1,n_pft
+                  if (any(cpatch%pft(:) == ipft)) then
+                     cgrid%area_pft(ipft,ipy) = cgrid%area_pft(ipft,ipy)                   &
+                                              + csite%area(ipa) * cpoly%area(isi)          &
+                                              * site_area_i * polygon_area_i
+                  end if
+               end do pftloop
+            end if
+         end do patchloop
+      end do siteloop
+
+   end do polyloop
 
    return
 end subroutine normalize_ed_monthly_output_vars
@@ -964,36 +1222,54 @@ subroutine zero_ed_monthly_output_vars(cgrid)
 
    !----- The loop is necessary for coupled runs (when npolygons may be 0) ----------------!
    do ipy=1,cgrid%npolygons
-      cgrid%mmean_gpp(ipy)          = 0.
-      cgrid%mmean_evap(ipy)         = 0.
-      cgrid%mmean_transp(ipy)       = 0.
-      cgrid%mmean_sensible(ipy)     = 0.
-      cgrid%mmean_sensible_ac(ipy)  = 0.
-      cgrid%mmean_sensible_gc(ipy)  = 0.
-      cgrid%mmean_sensible_vc(ipy)  = 0.
-      cgrid%mmean_nep(ipy)          = 0.
-      cgrid%mmean_plresp(ipy)       = 0.
-      cgrid%mmean_rh(ipy)           = 0.
-      cgrid%mmean_leaf_resp(ipy)    = 0.
-      cgrid%mmean_root_resp(ipy)    = 0.
-      cgrid%mmean_growth_resp(ipy)  = 0.
-      cgrid%mmean_storage_resp(ipy) = 0.
-      cgrid%mmean_vleaf_resp(ipy)   = 0.
-      cgrid%mmean_soil_temp(:,ipy)  = 0.
-      cgrid%mmean_soil_water(:,ipy) = 0.
-      cgrid%mmean_gpp_lu(:,ipy)     = 0.
-      cgrid%mmean_rh_lu(:,ipy)      = 0.
-      cgrid%mmean_nep_lu(:,ipy)     = 0.
-      cgrid%mmean_gpp_dbh(:,ipy)    = 0.
-      cgrid%mmean_lai_pft(:,ipy)    = 0.
-      cgrid%agb_pft(:,ipy)          = 0.
-      cgrid%ba_pft(:,ipy)           = 0.
-      cgrid%stdev_gpp(ipy)          = 0.
-      cgrid%stdev_evap(ipy)         = 0.
-      cgrid%stdev_transp(ipy)       = 0.
-      cgrid%stdev_sensible(ipy)     = 0.
-      cgrid%stdev_nep(ipy)          = 0.
-      cgrid%stdev_rh(ipy)           = 0.
+      cgrid%mmean_gpp            (ipy) = 0.
+      cgrid%mmean_evap           (ipy) = 0.
+      cgrid%mmean_transp         (ipy) = 0.
+      cgrid%mmean_sensible       (ipy) = 0.
+      cgrid%mmean_sensible_ac    (ipy) = 0.
+      cgrid%mmean_sensible_gc    (ipy) = 0.
+      cgrid%mmean_sensible_vc    (ipy) = 0.
+      cgrid%mmean_nep            (ipy) = 0.
+      cgrid%mmean_plresp         (ipy) = 0.
+      cgrid%mmean_rh             (ipy) = 0.
+      cgrid%mmean_leaf_resp      (ipy) = 0.
+      cgrid%mmean_root_resp      (ipy) = 0.
+      cgrid%mmean_growth_resp    (ipy) = 0.
+      cgrid%mmean_storage_resp   (ipy) = 0.
+      cgrid%mmean_vleaf_resp     (ipy) = 0.
+      cgrid%mmean_soil_temp    (:,ipy) = 0.
+      cgrid%mmean_soil_water   (:,ipy) = 0.
+      cgrid%mmean_gpp_lu       (:,ipy) = 0.
+      cgrid%mmean_rh_lu        (:,ipy) = 0.
+      cgrid%mmean_nep_lu       (:,ipy) = 0.
+      cgrid%mmean_gpp_dbh      (:,ipy) = 0.
+      cgrid%mmean_veg_energy     (ipy) = 0.
+      cgrid%mmean_veg_hcap       (ipy) = 0.
+      cgrid%mmean_veg_water      (ipy) = 0.
+      cgrid%mmean_veg_temp       (ipy) = 0.
+      cgrid%mmean_can_temp       (ipy) = 0.
+      cgrid%mmean_can_shv        (ipy) = 0.
+      cgrid%mmean_can_co2        (ipy) = 0.
+      cgrid%mmean_atm_temp       (ipy) = 0.
+      cgrid%mmean_atm_shv        (ipy) = 0.
+      cgrid%mmean_atm_prss       (ipy) = 0.
+      cgrid%mmean_atm_vels       (ipy) = 0.
+      cgrid%mmean_pcpg           (ipy) = 0.
+      cgrid%mmean_lai_pft      (:,ipy) = 0.
+      cgrid%mmean_lai_lu       (:,ipy) = 0.
+      cgrid%mmean_wpa_pft      (:,ipy) = 0.
+      cgrid%mmean_wpa_lu       (:,ipy) = 0.
+      cgrid%mmean_wai_pft      (:,ipy) = 0.
+      cgrid%mmean_wai_lu       (:,ipy) = 0.
+      cgrid%agb_pft            (:,ipy) = 0.
+      cgrid%ba_pft             (:,ipy) = 0.
+      cgrid%stdev_gpp            (ipy) = 0.
+      cgrid%stdev_evap           (ipy) = 0.
+      cgrid%stdev_transp         (ipy) = 0.
+      cgrid%stdev_sensible       (ipy) = 0.
+      cgrid%stdev_nep            (ipy) = 0.
+      cgrid%stdev_rh             (ipy) = 0.
+      cgrid%disturbance_rates(:,:,ipy) = 0.
    end do
 
    return
@@ -1013,10 +1289,10 @@ end subroutine zero_ed_monthly_output_vars
 !                             |--------------------------------|                           !
 !==========================================================================================!
 !==========================================================================================!
-subroutine update_ed_yearly_vars_ar(cgrid)
+subroutine update_ed_yearly_vars(cgrid)
 
    use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
-   use max_dims, only: n_pft, n_dbh
+   use ed_max_dims, only: n_pft, n_dbh
    use consts_coms, only: pi1
    use allometry, only: ed_biomass
   
@@ -1099,7 +1375,7 @@ subroutine update_ed_yearly_vars_ar(cgrid)
    enddo
 
    return
-end subroutine update_ed_yearly_vars_ar
+end subroutine update_ed_yearly_vars
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1110,9 +1386,9 @@ end subroutine update_ed_yearly_vars_ar
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine zero_ed_yearly_vars_ar(cgrid)
+subroutine zero_ed_yearly_vars(cgrid)
 
-   use max_dims, only: n_pft, n_dbh
+   use ed_max_dims, only: n_pft, n_dbh
    use ed_state_vars,only:edtype,polygontype
 
    implicit none
@@ -1136,6 +1412,6 @@ subroutine zero_ed_yearly_vars_ar(cgrid)
    enddo
 
    return
-end subroutine zero_ed_yearly_vars_ar
+end subroutine zero_ed_yearly_vars
 !==========================================================================================!
 !==========================================================================================!

@@ -23,13 +23,13 @@ Module mem_leaf
 
      ! Variables to be dimensioned by (nxp,nyp,npatch)
      real, pointer, dimension(:,:,:) :: &
-          ustar,tstar,rstar  &
+          ustar,tstar,rstar,cstar  &
           ,veg_fracarea,veg_lai,veg_rough,veg_height  &
           ,veg_albedo,veg_tai  &
           ,patch_area,patch_rough,patch_wetind,leaf_class  &
           ,soil_rough,sfcwater_nlev,stom_resist  &
           ,ground_rsat,ground_rvap  &
-          ,veg_water,veg_temp,can_rvap,can_temp &
+          ,veg_water,veg_temp,can_rvap,can_temp,can_co2    &
           ,veg_ndvip,veg_ndvic,veg_ndvif
      
      ! TEB_SPM
@@ -74,6 +74,7 @@ Contains
     allocate (leaf%ustar        (nx,ny,np))
     allocate (leaf%tstar        (nx,ny,np))
     allocate (leaf%rstar        (nx,ny,np))
+    allocate (leaf%cstar        (nx,ny,np))
 
     allocate (leaf%veg_fracarea (nx,ny,np))
     allocate (leaf%veg_lai      (nx,ny,np))
@@ -104,6 +105,7 @@ Contains
 
     allocate (leaf%can_rvap     (nx,ny,np))
     allocate (leaf%can_temp     (nx,ny,np))
+    allocate (leaf%can_co2      (nx,ny,np))
 
     allocate (leaf%veg_ndvip    (nx,ny,np))
     allocate (leaf%veg_ndvic    (nx,ny,np))
@@ -146,6 +148,7 @@ Contains
     if(associated(leaf%ustar))           nullify (leaf%ustar)
     if(associated(leaf%tstar))           nullify (leaf%tstar)
     if(associated(leaf%rstar))           nullify (leaf%rstar)
+    if(associated(leaf%cstar))           nullify (leaf%cstar)
 
     if(associated(leaf%veg_fracarea))    nullify (leaf%veg_fracarea)
     if(associated(leaf%veg_lai))         nullify (leaf%veg_lai)
@@ -176,6 +179,7 @@ Contains
     
     if(associated(leaf%can_rvap))        nullify (leaf%can_rvap)
     if(associated(leaf%can_temp))        nullify (leaf%can_temp)
+    if(associated(leaf%can_co2 ))        nullify (leaf%can_co2 )
 
     if(associated(leaf%veg_ndvip))       nullify (leaf%veg_ndvip)
     if(associated(leaf%veg_ndvic))       nullify (leaf%veg_ndvic)
@@ -216,6 +220,7 @@ Contains
     if(associated(leaf%ustar))           deallocate (leaf%ustar)
     if(associated(leaf%tstar))           deallocate (leaf%tstar)
     if(associated(leaf%rstar))           deallocate (leaf%rstar)
+    if(associated(leaf%cstar))           deallocate (leaf%cstar)
     
     if(associated(leaf%veg_fracarea))    deallocate (leaf%veg_fracarea)
     if(associated(leaf%veg_lai))         deallocate (leaf%veg_lai)
@@ -246,6 +251,7 @@ Contains
     
     if(associated(leaf%can_rvap))        deallocate (leaf%can_rvap)
     if(associated(leaf%can_temp))        deallocate (leaf%can_temp)
+    if(associated(leaf%can_co2 ))        deallocate (leaf%can_co2 )
     
     if(associated(leaf%veg_ndvip))       deallocate (leaf%veg_ndvip)
     if(associated(leaf%veg_ndvic))       deallocate (leaf%veg_ndvic)
@@ -323,6 +329,9 @@ Contains
     call vtables2 (leaf%rstar(1,1,1),leafm%rstar(1,1,1)  &
          ,ng, npts, imean,  &
          'RSTAR :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+    call vtables2 (leaf%cstar(1,1,1),leafm%cstar(1,1,1)  &
+         ,ng, npts, imean,  &
+         'CSTAR :6:hist:anal:mpti:mpt3'//trim(str_recycle))
     
     call vtables2 (leaf%veg_fracarea(1,1,1),leafm%veg_fracarea(1,1,1)  &
          ,ng, npts, imean,  &
@@ -393,6 +402,9 @@ Contains
     call vtables2 (leaf%can_temp(1,1,1),leafm%can_temp(1,1,1)  &
          ,ng, npts, imean,  &
          'CAN_TEMP :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+    call vtables2 (leaf%can_co2(1,1,1),leafm%can_co2(1,1,1)  &
+         ,ng, npts, imean,  &
+         'CAN_CO2 :6:hist:anal:mpti:mpt3'//trim(str_recycle))
     
     call vtables2 (leaf%veg_ndvip(1,1,1),leafm%veg_ndvip(1,1,1)  &
          ,ng, npts, imean,  &

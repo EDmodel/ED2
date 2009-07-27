@@ -601,8 +601,8 @@ end subroutine grell_dyncontrol_ensemble
 !------------------------------------------------------------------------------------------!
 subroutine grell_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dyn      &
                          ,inv_ensdim,max_heat,ktop,edt_eff,dellathil_eff,dellaqtot_eff     &
-                         ,pw_eff,dnmf_ens,upmf_ens,ierr,upmf,dnmf,edt,outthil,outqtot      &
-                         ,precip)
+                         ,dellaco2_eff,pw_eff,dnmf_ens,upmf_ens,ierr,upmf,dnmf,edt,outthil &
+                         ,outqtot,outco2,precip)
 
    use rconstants,   only: day_sec
    implicit none
@@ -626,6 +626,7 @@ subroutine grell_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxen
    real, dimension(mgmzp,maxens_eff,maxens_cap), intent(in) ::  & 
                                             dellathil_eff  & ! Ice-liquid potential temp.
                                            ,dellaqtot_eff  & ! Total mixing ratio
+                                           ,dellaco2_eff   & ! CO2 mixing ratio
                                            ,pw_eff         ! ! Fall-out water
    !----- Reference mass fluxes, in [kg/m²/s] ---------------------------------------------!
    real, dimension(maxens_dyn,maxens_lsf,maxens_eff,maxens_cap), intent(in) :: &
@@ -639,6 +640,7 @@ subroutine grell_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxen
    real                  , intent(out)   :: edt         ! m0/mb, Grell's epsilon
    real, dimension(mgmzp), intent(inout) :: outthil     ! Change in temperature profile
    real, dimension(mgmzp), intent(inout) :: outqtot     ! Change in total mixing ratio
+   real, dimension(mgmzp), intent(inout) :: outco2      ! Change in total mixing ratio
    real                  , intent(out)   :: precip      ! Precipitation rate
 
    integer                               :: k,l               ! Counter
@@ -664,10 +666,12 @@ subroutine grell_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxen
    !    Here I am also doing something different from the original code. upmf (the mb term !
    ! using Grell's notation) is simply the average accross all members, not only the       !
    ! positive ones. My claim is that if most terms are zero, then little convection        !
-   ! should happen. If it turns out to be too little rain, I switch this back to the old   !
-   ! style.                                                                                ! 
+   ! should happen. Also, if it is a sufficiently deep convection, find dnmf the same way. !
    !---------------------------------------------------------------------------------------!
    upmf=sum(upmf_ens) * inv_ensdim
+   if (comp_down .and. upmf > 0) then
+      dnmf = sum(dnmf_ens) * inv_ensdim
+   end if
 
    !---------------------------------------------------------------------------------------!
    !  If the reference upward mass flux is zero, that means that there is no cloud...      !
@@ -691,18 +695,20 @@ subroutine grell_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxen
    kmin = minloc(outthil,dim=1)
    kmax = maxloc(outthil,dim=1)
    
-   !----- If excessive heat happens, scale down -------------------------------------------!
+   !----- If excessive heat happens, scale down both updrafts and downdrafts --------------!
    if (kmax > 2 .and. outthil(kmax) > max_heat) then
       rescale = max_heat / outthil(kmax)
       upmf = upmf * rescale
+      dnmf = dnmf * rescale
       do k=1,ktop
          outthil(k) = outthil(k) * rescale
       end do
    end if
-   !----- If excessive cooling happens, scale down ----------------------------------------!
+   !----- If excessive cooling happens, scale down both updrafts and downdrafts. ----------!
    if (outthil(kmin)  < - max_heat) then
       rescale = - max_heat/ outthil(kmin)
       upmf = upmf * rescale
+      dnmf = dnmf * rescale
       do k=1,ktop
          outthil(k) = outthil(k) * rescale
       end do
@@ -712,6 +718,7 @@ subroutine grell_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxen
       if (outthil(k) > 0.5 * max_heat) then
          rescale = 0.5 * max_heat / outthil(k)
          upmf = upmf * rescale
+         dnmf = dnmf * rescale
          do l=1,ktop
             outthil(l) = outthil(l) * rescale
          end do
@@ -729,6 +736,7 @@ subroutine grell_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxen
    !---------------------------------------------------------------------------------------!
    do k=1,ktop
       outqtot(k)  = upmf * sum(dellaqtot_eff(k,:,:) ) * inv_maxens_effcap
+      outco2(k)   = upmf * sum(dellaco2_eff(k,:,:) )  * inv_maxens_effcap
    end do
 
    !---------------------------------------------------------------------------------------!
@@ -746,10 +754,9 @@ subroutine grell_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxen
    end if
    
    !---------------------------------------------------------------------------------------!
-   !    Compute downdraft mass flux, and redefining epsilon.                               !
+   !    Redefining epsilon.                                                                !
    !---------------------------------------------------------------------------------------!
    if (comp_down .and. upmf > 0) then
-      dnmf = sum(dnmf_ens) * inv_ensdim
       edt  = dnmf/upmf
    end if
 
