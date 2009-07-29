@@ -21,7 +21,8 @@ module rk4_stepper
                                , safety              & ! intent(in)
                                , pgrow               & ! intent(in)
                                , pshrnk              & ! intent(in)
-                               , errcon              ! ! intent(in)
+                               , errcon              & ! intent(in)
+                               , print_diags
       use ed_state_vars , only : sitetype            & ! structure
                                , patchtype           & ! structure
                                , edtype              & ! structure
@@ -38,7 +39,7 @@ module rk4_stepper
       !----- Local variables --------------------------------------------------------------!
       type(edtype)             , pointer       :: cgrid
       real(kind=8)                             :: h,errmax,xnew,newh,oldh
-      logical                                  :: reject_step,minstep,stuck,test_reject
+      logical                                  :: reject_step,minstep,stuck,test_reject,pdo
       integer                                  :: k
       !------------------------------------------------------------------------------------!
 
@@ -68,7 +69,7 @@ module rk4_stepper
             errmax = 1.d1
          else
             call get_errmax(errmax, integration_buff%yerr,integration_buff%yscal           &
-                              ,csite%patch(ipa),integration_buff%y,integration_buff%ytemp)
+                              ,csite%patch(ipa),integration_buff%y,integration_buff%ytemp,.false.)
             errmax = errmax * rk4epsi
          end if
 
@@ -98,6 +99,18 @@ module rk4_stepper
          !    the run.  Please, don't hate the messenger.                                  !
          !---------------------------------------------------------------------------------!
             if (minstep .or. stuck) then
+
+             !! redo calcs to see where fails
+             pdo = print_diags
+             print_diags = 1
+             call rkck(integration_buff%y,integration_buff%dydx,integration_buff%ytemp         &
+                     ,integration_buff%yerr,integration_buff%ak2,integration_buff%ak3      &
+                     ,integration_buff%ak4,integration_buff%ak5,integration_buff%ak6       &
+                     ,integration_buff%ak7,x,h,csite,ipa,isi,ipy,reject_step)
+             call get_errmax(errmax, integration_buff%yerr,integration_buff%yscal           &
+                  ,csite%patch(ipa),integration_buff%y,integration_buff%ytemp,.true.)
+             print_diags = pdo
+
 
                write (unit=*,fmt='(80a)')         ('=',k=1,80)
                write (unit=*,fmt='(a)')           '   STEPSIZE UNDERFLOW IN RKQS'

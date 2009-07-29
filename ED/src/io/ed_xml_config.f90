@@ -23,7 +23,7 @@ subroutine count_pft_xml_config(filename,maxpft)
   character(1),allocatable    ::  readstring(:)
   allocate(readstring(10))
   deallocate(readstring)
-
+print*,'count xml pft : ',trim(filename)
   !! Open File and Init
   call libxml2f90__setformat(1) !set to pure XML but with blank removal
   call libxml2f90__readin_file(trim(filename),'CONFIG')
@@ -61,7 +61,7 @@ recursive subroutine read_ed_xml_config(filename)
 
   use pft_coms
   use hydrology_coms
-  use met_driver_coms, only : lapse
+  use met_driver_coms
   use canopy_radiation_coms
   use disturb_coms
   use phenology_coms
@@ -74,7 +74,7 @@ recursive subroutine read_ed_xml_config(filename)
 !  use ed_data
   use ed_misc_coms, only: ied_init_mode,ffilout,integration_scheme,ed_inputs_dir,sfilin,sfilout
   implicit none
-  integer(4) :: i,npft,ntag,myPFT,ival = 0
+  integer(4) :: i,npft,ntag,myPFT,len,ival = 0
   logical(4) :: texist = .false.
   real(8) :: rval
   character*(*) :: filename
@@ -96,14 +96,21 @@ recursive subroutine read_ed_xml_config(filename)
   print*,"EXTERN READ FROM FILE ::",ntag
   if(ntag .ge. 1) then
      do i=1,ntag
-        
-        call getConfigSTRING  ('extern','config',i,cval,texist)
-        if(texist) then
+        call libxml2f90__ll_selecttag('DOWN','extern',i)
+        call libxml2f90__existid('extern',texist)
+        if(texist) then 
+           call libxml2f90__ll_getsize('extern',len)
+           call libxml2f90__ll_getch('extern',len,cval)
+           cval = cval(1:len)
            print*,"XML recursively loading ",trim(cval)
            call read_ed_xml_config(trim(cval))
         endif
-
-      enddo
+        !! reset to original list
+        call libxml2f90__ll_selectlist(TRIM(FILENAME))       
+        call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
+        call libxml2f90__ll_exist('DOWN','extern',ntag)    !get number of pft tags
+     enddo
+!!     stop
   endif
   
 
@@ -152,6 +159,16 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) outputMonth = ival
         call getConfigINT  ('burnin','ed_misc',i,ival,texist)
         if(texist) burnin = ival
+
+        !! simple flags to turn on/off edaphic factors
+        call getConfigINT  ('vary_elev','ed_misc',i,ival,texist)
+        if(texist) vary_elev = ival
+        call getConfigINT  ('vary_rad','ed_misc',i,ival,texist)
+        if(texist) vary_rad = ival
+        call getConfigINT  ('vary_hyd','ed_misc',i,ival,texist)
+        if(texist) vary_hyd = ival
+        
+        
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
         
@@ -247,8 +264,12 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) dark_respiration_factor(myPFT) = real(rval)
            call getConfigREAL  ('qsw','pft',i,rval,texist)
            if(texist) qsw(myPFT) = real(rval)
+           call getConfigREAL  ('sapwood_ratio','pft',i,rval,texist)
+           if(texist) sapwood_ratio(myPFT) = real(rval)
            call getConfigREAL  ('c2n_leaf','pft',i,rval,texist)
            if(texist) c2n_leaf(myPFT) = real(rval)
+           call getConfigREAL  ('c2n_stem','pft',i,rval,texist)
+           if(texist) c2n_stem(myPFT) = real(rval)
            call getConfigREAL  ('c2n_recruit','pft',i,rval,texist)
            if(texist) c2n_recruit(myPFT) = real(rval)
 !!$           call getConfigREAL  ('c2n_storage','pft',i,rval,texist)
@@ -319,8 +340,8 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) c2n_slow = real(rval)
         call getConfigREAL  ('c2n_structural','pftconst',i,rval,texist)
         if(texist) c2n_structural = real(rval)
-        call getConfigREAL  ('c2n_stem','pftconst',i,rval,texist)
-        if(texist) c2n_stem = real(rval)
+!        call getConfigREAL  ('c2n_stem','pftconst',i,rval,texist)
+!        if(texist) c2n_stem = real(rval)
         call getConfigREAL  ('l2n_stem','pftconst',i,rval,texist)
         if(texist) l2n_stem = real(rval)
         call getConfigREAL  ('C2B','pftconst',i,rval,texist)
@@ -374,6 +395,31 @@ recursive subroutine read_ed_xml_config(filename)
 
       enddo
   endif
+
+  !********* READ CLIMATE SCENARIO PARMS
+  call libxml2f90__ll_selectlist(TRIM(FILENAME))       
+  call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
+  call libxml2f90__ll_exist('DOWN','scenario',ntag)    !get number of pft tags
+  print*,"SCENARIO READ FROM FILE ::",ntag
+  if(ntag .ge. 1) then
+     do i=1,ntag
+        call libxml2f90__ll_selecttag('DOWN','scenario',i)
+        
+        call getConfigREAL  ('atm_tmp_intercept','scenario',i,rval,texist)
+        if(texist) atm_tmp_intercept = real(rval)
+        call getConfigREAL  ('atm_tmp_slope','scenario',i,rval,texist)
+        if(texist) atm_tmp_slope = real(rval)
+        call getConfigREAL  ('prec_intercept','scenario',i,rval,texist)
+        if(texist) prec_intercept = real(rval)
+        call getConfigREAL  ('prec_slope','scenario',i,rval,texist)
+        if(texist) prec_slope = real(rval)
+        call getConfigINT  ('humid_scenario','scenario',i,ival,texist)
+        if(texist)  humid_scenario = real(ival)
+        
+        call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
+     enddo
+  endif
+   
 
   !********* READ LAPSE PARMS
   call libxml2f90__ll_selectlist(TRIM(FILENAME))       
@@ -515,7 +561,7 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) resp_water_below_opt = real(rval)
         call getConfigREAL  ('resp_water_above_opt','decomposition',i,rval,texist)
         if(texist) resp_water_above_opt = real(rval)
-        call getConfigREAL  ('resp_tempoerature_increase','decomposition',i,rval,texist)
+        call getConfigREAL  ('resp_temperature_increase','decomposition',i,rval,texist)
         if(texist) resp_temperature_increase = real(rval)
         call getConfigREAL  ('N_immobil_supply_scale','decomposition',i,rval,texist)
         if(texist) N_immobil_supply_scale = real(rval)
@@ -860,7 +906,7 @@ subroutine write_ed_xml_config
 
   !! construct list
   call libxml2f90_ll_add_list("OUTCONFIG")
-  call libxml2f90_ll_opentag("CONFIG")
+  call libxml2f90_ll_opentag("config")
 
   !************   PFT  *****************
   do i=1,n_pft
@@ -898,7 +944,7 @@ subroutine write_ed_xml_config
         call putConfigREAL("dark_respiration_factor",dark_respiration_factor(i))
         call putConfigREAL("qsw",qsw(i))
         call putConfigREAL("c2n_leaf",c2n_leaf(i))
-        call putConfigREAL("c2n_reruit",c2n_recruit(i))
+        call putConfigREAL("c2n_recruit",c2n_recruit(i))
         call putConfigREAL("max_dbh",max_dbh(i))
         call putConfigREAL("rho",rho(i))
         call putConfigREAL("D0",D0(i))
@@ -922,7 +968,7 @@ subroutine write_ed_xml_config
      endif
   end do
  
-  call libxml2f90_ll_closetag("CONFIG")
+  call libxml2f90_ll_closetag("config")
   !! write list
   print*,"Wrote Config Record:", trim(xfilout)
   open(12,file=trim(xfilout),form='formatted',status='replace')

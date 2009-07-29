@@ -5,7 +5,7 @@
 #ED_ROOT=/n/Moorcroft_Lab/Users/mlongo/repository/EDBRAMS/ED
 
 # MCD: ED_ROOT=/n/Moorcroft_Lab/Users/mcd/EDBRAMS/ED
-ED_ROOT=/home/mdietze/EDBRAMS/ED
+ED_ROOT=/home/mdietze/r31/EDBRAMS/ED
 # KIM: ED_ROOT=/n/Moorcroft_Lab/Users/kim/ed-code/EDBRAMS/ED
 # RGK: ED_ROOT=/Home2ln/rknox/Models/EDBRAMS/ED
 # DMM: ED_ROOT=/n/Moorcroft_Lab/Users/dmm2/ED2/my-edbrams/ED

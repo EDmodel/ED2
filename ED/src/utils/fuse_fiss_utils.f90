@@ -136,7 +136,7 @@ module fuse_fiss_utils
             csite%ssl_in(ipa) = csite%ssl_in(ipa) + cpatch%nplant(ico)                     &
                               * ((1.0 - f_labile(cpatch%pft(ico)))                         &
                                  *cpatch%balive(ico) + cpatch%bdead(ico))                  &
-                              * l2n_stem/c2n_stem
+                              * l2n_stem/c2n_stem(cpatch%pft(ico))
 
          end if
       end do
@@ -820,7 +820,8 @@ module fuse_fiss_utils
       cpatch%fsw(idt)                 = cpatch%fsw(isc)
       cpatch%fs_open(idt)             = cpatch%fs_open(isc)
       cpatch%stomatal_resistance(idt) = cpatch%stomatal_resistance(isc)
-      cpatch%maintenance_costs(idt)   = cpatch%maintenance_costs(isc)
+      cpatch%leaf_maintenance_costs(idt)   = cpatch%leaf_maintenance_costs(isc)
+      cpatch%root_maintenance_costs(idt)   = cpatch%root_maintenance_costs(isc)
       cpatch%bseeds(idt)              = cpatch%bseeds(isc)
       cpatch%leaf_respiration(idt)    = cpatch%leaf_respiration(isc)
       cpatch%root_respiration(idt)    = cpatch%root_respiration(isc)
@@ -918,9 +919,12 @@ module fuse_fiss_utils
                               + cpatch%nplant(donc) * cpatch%bstorage(donc) ) * newni
       cpatch%bseeds(recc)   = ( cpatch%nplant(recc) * cpatch%bseeds(recc)                  &
                               + cpatch%nplant(donc) * cpatch%bseeds(donc) ) * newni
-      cpatch%maintenance_costs(recc) = newni                                               &
-                            * ( cpatch%nplant(recc) * cpatch%maintenance_costs(recc)       &
-                              + cpatch%nplant(donc) * cpatch%maintenance_costs(donc) )
+      cpatch%leaf_maintenance_costs(recc) = newni                                               &
+                            * ( cpatch%nplant(recc) * cpatch%leaf_maintenance_costs(recc)       &
+                              + cpatch%nplant(donc) * cpatch%leaf_maintenance_costs(donc) )
+      cpatch%root_maintenance_costs(recc) = newni                                               &
+                            * ( cpatch%nplant(recc) * cpatch%root_maintenance_costs(recc)       &
+                              + cpatch%nplant(donc) * cpatch%root_maintenance_costs(donc) )
       !------------------------------------------------------------------------------------!
 
 

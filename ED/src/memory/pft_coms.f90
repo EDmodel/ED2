@@ -250,7 +250,7 @@ module pft_coms
    !----- Carbon to Nitrogen ratio, storage pool. -----------------------------------------!
    real :: c2n_storage
    !----- Carbon to Nitrogen ratio, structural stem. --------------------------------------!
-   real :: c2n_stem
+   real, dimension(n_pft) :: c2n_stem
    !----- Carbon to Nitrogen ratio, structural stem. --------------------------------------!
    real :: l2n_stem
    !----- Leaf carbon to nitrogen ratio. --------------------------------------------------!
@@ -287,6 +287,7 @@ module pft_coms
    real   , dimension(n_pft)    :: q
    !----- Mass ratio between sapwood and leaves [kg_sapwood]/[kg_leaves]. -----------------!
    real   , dimension(n_pft)    :: qsw
+   real   , dimension(n_pft)    :: sapwood_ratio ! AREA ratio
    real   , dimension(n_pft)    :: hgt_ref     ! ref height for diam/ht allom (Temperate)
    real   , dimension(n_pft)    :: b1Ht  !  DBH-height allometry intercept (m).  Temperate PFTs only.
    real   , dimension(n_pft)    :: b2Ht  !  DBH-height allometry slope (1/cm).  Temperate PFTs only.

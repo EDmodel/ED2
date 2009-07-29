@@ -40,6 +40,7 @@ subroutine dbalive_dt(cgrid, tfact)
   real :: old_hcapveg
   real :: nitrogen_uptake
   real :: N_uptake_pot
+  real :: temp_dep
 
   do ipy = 1,cgrid%npolygons
      
@@ -98,22 +99,25 @@ subroutine dbalive_dt(cgrid, tfact)
                    daily_C_gain, csite%avg_daily_temp(ipa))
               
               ! Subtract maintenance costs from balive.
-              cpatch%balive(ico) = cpatch%balive(ico) - cpatch%maintenance_costs(ico)
-              cpatch%cb(13,ico) = cpatch%cb(13,ico) - cpatch%maintenance_costs(ico)
-              cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - cpatch%maintenance_costs(ico)
+              cpatch%balive(ico) = cpatch%balive(ico) - cpatch%leaf_maintenance_costs(ico) - cpatch%root_maintenance_costs(ico)
+              cpatch%cb(13,ico) = cpatch%cb(13,ico) - cpatch%leaf_maintenance_costs(ico)- cpatch%root_maintenance_costs(ico)
+              cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) &
+                   - cpatch%leaf_maintenance_costs(ico) &
+                   - cpatch%root_maintenance_costs(ico)
 
               ! Calculate actual, potential and maximum carbon balances
               call plant_carbon_balances(cpatch,ipa,ico, daily_C_gain, carbon_balance,  &
                    carbon_balance_pot, carbon_balance_max)
 
               ! Compute respiration rates for coming day [kgC/plant/day]
+              temp_dep = 1.0!! / (1.0 + exp(0.4 * (278.15 - csite%avg_daily_temp(ipa))))  !! experimental and arbitrary (borrowed from maintainence temp dep) [[MCD]]
               cpatch%growth_respiration(ico) = max(0.0, daily_C_gain *   &
                    growth_resp_factor(cpatch%pft(ico)))
               cpatch%storage_respiration(ico) = cpatch%bstorage(ico) *   &
-                   storage_turnover_rate(cpatch%pft(ico)) * tfact
+                   storage_turnover_rate(cpatch%pft(ico)) * tfact * temp_dep
               cpatch%vleaf_respiration(ico) = (1.0 - cpoly%green_leaf_factor(cpatch%pft(ico),isi))  &
                    / (1.0 + q(cpatch%pft(ico)) + qsw(cpatch%pft(ico)) * cpatch%hite(ico))  &
-                   * cpatch%balive(ico) * storage_turnover_rate(cpatch%pft(ico)) * tfact
+                   * cpatch%balive(ico) * storage_turnover_rate(cpatch%pft(ico)) * tfact * temp_dep
 
 
               ! Allocate plant carbon balance to balive and bstorage
@@ -225,7 +229,7 @@ subroutine transfer_C_from_storage(cpatch,ico, salloc, nitrogen_uptake, N_uptake
      ! N uptake is required since c2n_leaf < c2n_storage.
      ! Units are kgN/plant/day.
      nitrogen_uptake = increment * ( f_labile (cpatch%pft(ico)) / c2n_leaf(cpatch%pft(ico)) +   &
-          (1.0 - f_labile(cpatch%pft(ico))) / c2n_stem - 1.0 / c2n_storage)
+          (1.0 - f_labile(cpatch%pft(ico))) / c2n_stem(cpatch%pft(ico)) - 1.0 / c2n_storage)
      N_uptake_pot = nitrogen_uptake
      
   endif
@@ -262,17 +266,17 @@ subroutine plant_maintenance_and_resp(cpatch,ico, br, bl, tfact, daily_C_gain, t
   endif
 
   ! Calculate maintenance demand (kgC/plant/year)
+     cpatch%root_maintenance_costs(ico) = root_turnover_rate(ipft) * br * maintenance_temp_dep
   if(phenology(ipft) /= 3)then
-     cpatch%maintenance_costs(ico) = (root_turnover_rate(ipft) * br +  &
-       leaf_turnover_rate(ipft) * bl) * maintenance_temp_dep
+     cpatch%leaf_maintenance_costs(ico) = leaf_turnover_rate(ipft) * bl * maintenance_temp_dep
   else
-     cpatch%maintenance_costs(ico) = (root_turnover_rate(ipft) * br +  &
-       leaf_turnover_rate(ipft) * bl * cpatch%turnover_amp(ico)) * maintenance_temp_dep
+     cpatch%leaf_maintenance_costs(ico) = leaf_turnover_rate(ipft) * bl * cpatch%turnover_amp(ico) * maintenance_temp_dep
   endif
 
   ! Convert units of maintenance to [kgC/plant/day]
   
-  cpatch%maintenance_costs(ico) = cpatch%maintenance_costs(ico) * tfact
+  cpatch%root_maintenance_costs(ico) = cpatch%root_maintenance_costs(ico) * tfact
+  cpatch%leaf_maintenance_costs(ico) = cpatch%leaf_maintenance_costs(ico) * tfact
   
         
   ! Compute daily C uptake [kgC/plant/day]
@@ -422,7 +426,7 @@ subroutine alloc_plant_c_balance(csite,ipa,ico, salloc, salloci, carbon_balance,
            cpatch%balive(ico) = cpatch%balive(ico) + increment
            nitrogen_uptake = nitrogen_uptake +  &
                 increment * (f_labile(cpatch%pft(ico)) / c2n_leaf(cpatch%pft(ico)) +  &
-                (1.0 - f_labile(cpatch%pft(ico))) / c2n_stem)
+                (1.0 - f_labile(cpatch%pft(ico))) / c2n_stem(cpatch%pft(ico)))
            cpatch%bleaf(ico) = bl_max
 
            cpatch%phenology_status(ico) = 0
@@ -440,11 +444,11 @@ subroutine alloc_plant_c_balance(csite,ipa,ico, salloc, salloci, carbon_balance,
            if(carbon_balance < 0.0)then
               csite%fsn_in(ipa) = csite%fsn_in(ipa) - carbon_balance *  &
                    (f_labile(cpatch%pft(ico)) / c2n_leaf(cpatch%pft(ico)) + (1.0 -  &
-                   f_labile(cpatch%pft(ico))) / c2n_stem ) * cpatch%nplant(ico)
+                   f_labile(cpatch%pft(ico))) / c2n_stem(cpatch%pft(ico)) ) * cpatch%nplant(ico)
            else
               nitrogen_uptake = nitrogen_uptake +  &
                    carbon_balance * (f_labile(cpatch%pft(ico)) / c2n_leaf(cpatch%pft(ico)) +  &
-                   (1.0 - f_labile(cpatch%pft(ico))) / c2n_stem)
+                   (1.0 - f_labile(cpatch%pft(ico))) / c2n_stem(cpatch%pft(ico)))
            endif
 
         endif
@@ -456,7 +460,7 @@ subroutine alloc_plant_c_balance(csite,ipa,ico, salloc, salloci, carbon_balance,
         cpatch%bleaf(ico) = 0.0
         csite%fsn_in(ipa) = csite%fsn_in(ipa) - carbon_balance *  &
              (f_labile(cpatch%pft(ico)) / c2n_leaf(cpatch%pft(ico)) + (1.0 -   &
-             f_labile(cpatch%pft(ico))) / c2n_stem) * cpatch%nplant(ico)
+             f_labile(cpatch%pft(ico))) / c2n_stem(cpatch%pft(ico))) * cpatch%nplant(ico)
         
      endif
   endif
@@ -512,7 +516,7 @@ subroutine potential_N_uptake(cpatch,ico, salloc, salloci, balive_in,   &
            N_uptake_pot = N_uptake_pot + increment / c2n_storage
            increment = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico)) * salloc - balive_in
            N_uptake_pot = N_uptake_pot + increment * (f_labile(cpatch%pft(ico)) /   &
-                c2n_leaf(cpatch%pft(ico)) + (1.0 - f_labile(cpatch%pft(ico))) / c2n_stem)
+                c2n_leaf(cpatch%pft(ico)) + (1.0 - f_labile(cpatch%pft(ico))) / c2n_stem(cpatch%pft(ico)))
         else
 
            ! this increment did not exceed the limit.
@@ -523,7 +527,7 @@ subroutine potential_N_uptake(cpatch,ico, salloc, salloci, balive_in,   &
 
               N_uptake_pot = N_uptake_pot + carbon_balance_pot *   &
                    (f_labile(cpatch%pft(ico)) / c2n_leaf(cpatch%pft(ico)) + (1.0 -   &
-                   f_labile(cpatch%pft(ico))) / c2n_stem)
+                   f_labile(cpatch%pft(ico))) / c2n_stem(cpatch%pft(ico)))
            endif
 
         endif
@@ -559,7 +563,8 @@ subroutine litter(csite,ipa)
 
   do ico=1,cpatch%ncohorts
 
-     plant_litter = cpatch%maintenance_costs(ico) * cpatch%nplant(ico)
+     plant_litter = (cpatch%leaf_maintenance_costs(ico) &
+          + cpatch%root_maintenance_costs(ico)) * cpatch%nplant(ico)
      plant_litter_f = plant_litter * f_labile(cpatch%pft(ico))
      plant_litter_s = plant_litter - plant_litter_f
 
@@ -567,7 +572,7 @@ subroutine litter(csite,ipa)
      csite%fsn_in(ipa) = csite%fsn_in(ipa) + plant_litter_f / c2n_leaf(cpatch%pft(ico))
 
      csite%ssc_in(ipa) = csite%ssc_in(ipa) + plant_litter_s
-     csite%ssl_in(ipa) = csite%ssl_in(ipa) + plant_litter_s * l2n_stem / c2n_stem
+     csite%ssl_in(ipa) = csite%ssl_in(ipa) + plant_litter_s * l2n_stem / c2n_stem(cpatch%pft(ico))
 
   enddo
 

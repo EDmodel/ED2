@@ -202,7 +202,7 @@ subroutine calcHydroSubsurface()
   use soil_coms, only: soil,slz,dslz
   use grid_coms, only: ngrids,nzg
   use ed_misc_coms, only: dtlsm
-  use therm_lib, only: qtk,qwtk,qwtk8
+  use therm_lib, only: qtk,qwtk
   use consts_coms, only: wdns
   implicit none
 
@@ -683,7 +683,10 @@ subroutine updateWatertableAdd(cpoly,isi,ipa,dw,sheat)
          else
             csite%sfcwater_energy(1,ipa) = 0.0
          end if
-
+         if(csite%sfcwater_energy(i,ipa) /= csite%sfcwater_energy(i,ipa))then
+            call fatal_error('Failed sfcwater_energy sanity check in lsm_hyd' &
+                 ,'updateWaterTableAdd','lsm_hyd.f90')
+         end if
          do i= 1,csite%nlev_sfcwater(ipa)
             csite%sfcwater_depth(i,ipa) = csite%sfcwater_depth(i,ipa) + dw
          end do
@@ -774,10 +777,12 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
 
    !!work down from saturation layer, removing water & heat
    do while (k >= cpoly%lsl(isi))
+      call qwtk(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*1.e3,soil(nsoil)%slcpd,tempk,fracliq)
       !capacity for layer to loose moisture (unit = meters)
-      wcap = (fracw - soil(nsoil)%soilcp/soil(nsoil)%slmsts) * dslz(k)  
-      wtmp = csite%soil_water(k,ipa)
-      if(wcap > dzl) then 
+      wcap = (fracw - soil(nsoil)%soilcp/soil(nsoil)%slmsts) * dslz(k)*fracliq  
+      wtmp = real(csite%soil_water(k,ipa))
+!!      if(wcap > dzl) then 
+      if(-dzl > wcap) then 
          !!empty soil layer completely 
          dw = -1.0*(csite%soil_water(k,ipa) - soil(nsoil)%soilcp)
          dzl = dzl + wcap
@@ -800,7 +805,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
       endif
 
       !!update soil heat
-      dh = dw*cliqvlme*(csite%soil_tempk(k,ipa)-tsupercool)
+      dh = dw*cliqvlme*(tempk-tsupercool)
       csite%soil_energy(k,ipa) = csite%soil_energy(k,ipa) + dh
       sheat = sheat - dh*dslz(k)   !cumulative sum as return value
       swater = swater - dw*dslz(k)
@@ -841,8 +846,10 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
    use soil_coms, only: soil,slz,dslz,dslzi,slcons1
    use ed_misc_coms, only: dtlsm
    use consts_coms, only: cliqvlme, tsupercool
+   use therm_lib, only : qwtk
    implicit none
 
+   real, parameter :: freezeCoef = 7.0        !! should probably move to the com
    type(polygontype) , target        :: cpoly
    integer           , intent(in)    :: isi, ipa
    real              , intent(inout) :: baseflow !read in as mm/s
@@ -851,9 +858,17 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
    real                              :: bf   !baseflow in water content (meters/timestep)
    real                              :: potn_fd,wflux_fd ! potential & flux for free-drainage
    integer                           :: nsoil,slsl
+   real                              :: tempk, fracliq, freezeCor
 
    !  print*,"in water table baseflow when shouldn't be"
    csite => cpoly%site(isi)
+   slsl  = cpoly%lsl(isi)
+
+   !! determine freeze
+   call qwtk(csite%soil_energy(slsl,ipa),csite%soil_water(slsl,ipa)*1.e3,soil(nsoil)%slcpd,tempk,fracliq)
+   freezeCor = fracliq
+   if(freezeCor .lt. 1.0) freezeCor = 10.0**(-freezeCoef*(1.0-freezeCor))
+
    !! calc max free-drainage as cap to baseflow
    !! assumes layer below is permenantly at minimal water capacity
    slsl  = cpoly%lsl(isi)
@@ -863,7 +878,7 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
         (soil(nsoil)%slmsts/csite%soil_water(slsl,ipa))**soil(nsoil)%slbs)
    wflux_fd = slcons1(slsl,nsoil)  &
                  * (csite%soil_water(1,ipa)/ soil(nsoil)%slmsts)**(2. * soil(nsoil)%slbs + 3.)  &
-                 * potn_fd
+                 * potn_fd * freezeCor
    bf = min(-wflux_fd,baseflow)*dtlsm*0.001
 
    if(bf < 0.0) then

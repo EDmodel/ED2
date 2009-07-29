@@ -709,7 +709,12 @@ subroutine update_met_drivers(cgrid)
                              , met_interp   & ! intent(in)
                              , met_vars     & ! intent(in)
                              , have_co2     & ! intent(in)
-                             , initial_co2  ! ! intent(in)
+                             , initial_co2  & ! intent(in)
+                             , atm_tmp_intercept &
+                             , atm_tmp_slope &
+                             , prec_intercept &
+                             , prec_slope &
+                             , humid_scenario
    use ed_misc_coms      , only : current_time ! ! intent(in)
    use consts_coms    , only : rdry         & ! intent(in)
                              , cice         & ! intent(in)
@@ -739,7 +744,7 @@ subroutine update_met_drivers(cgrid)
    integer                    :: iformat
    integer                    :: iv
    integer                    :: ipy,isi
-   real                       :: t1
+   real                       :: t1, T0
    real                       :: t2
    real                       :: rvaux, rvsat
    real                       :: tvir
@@ -1015,6 +1020,18 @@ subroutine update_met_drivers(cgrid)
          
       !----- CO2 --------------------------------------------------------------------------!
       if (.not.have_co2) cgrid%met(ipy)%atm_co2 = initial_co2
+
+     !! ADJUST MET FOR SIMPLE CLIMATE SCENARIOS
+     T0 = cgrid%met(ipy)%atm_tmp
+     cgrid%met(ipy)%atm_tmp = atm_tmp_intercept + &
+          cgrid%met(ipy)%atm_tmp * atm_tmp_slope
+     cgrid%met(ipy)%pcpg = prec_intercept + &
+          cgrid%met(ipy)%pcpg * prec_slope
+     if(humid_scenario == 1) then 
+        !! change SHV to keep RH const
+        cgrid%met(ipy)%atm_shv = cgrid%met(ipy)%atm_shv * &
+             exp(5415*(1.0/T0 - 1.0/cgrid%met(ipy)%atm_tmp))
+     endif
 
 
       !------------------------------------------------------------------------------------!
@@ -1661,21 +1678,23 @@ subroutine calc_met_lapse(cgrid,ipy)
   real            :: delE   !! deviation from mean elevation
   real            :: aterr  !! terrestrial area
   real, parameter :: offset=tiny(1.)/epsilon(1.) !! Tiny offset to avoid FPE
+  real :: hillshade
 
   cpoly => cgrid%polygon(ipy)
 
   if (lapse_scheme == 0) then  !!!!! bypass
      do isi = 1,cpoly%nsites
+        hillshade = cpoly%slope(isi)/180.
         cpoly%met(isi)%geoht       = cgrid%met(ipy)%geoht
         cpoly%met(isi)%atm_tmp     = cgrid%met(ipy)%atm_tmp
         cpoly%met(isi)%atm_shv     = cgrid%met(ipy)%atm_shv
         cpoly%met(isi)%prss        = cgrid%met(ipy)%prss
         cpoly%met(isi)%pcpg        = cgrid%met(ipy)%pcpg
-        cpoly%met(isi)%par_diffuse = cgrid%met(ipy)%par_diffuse
+        cpoly%met(isi)%par_diffuse = cgrid%met(ipy)%par_diffuse*(1.0-hillshade)
         cpoly%met(isi)%atm_co2     = cgrid%met(ipy)%atm_co2
         cpoly%met(isi)%rlong       = cgrid%met(ipy)%rlong
         cpoly%met(isi)%par_beam    = cgrid%met(ipy)%par_beam
-        cpoly%met(isi)%nir_diffuse = cgrid%met(ipy)%nir_diffuse
+        cpoly%met(isi)%nir_diffuse = cgrid%met(ipy)%nir_diffuse*(1.0-hillshade)
         cpoly%met(isi)%nir_beam    = cgrid%met(ipy)%nir_beam
         cpoly%met(isi)%vels        = cgrid%met(ipy)%vels
 
@@ -1719,9 +1738,11 @@ subroutine calc_met_lapse(cgrid,ipy)
         cpoly%met(isi)%prss    = cgrid%met(ipy)%prss    + cgrid%lapse(ipy)%prss*delE
         cpoly%met(isi)%atm_co2 = cgrid%met(ipy)%atm_co2 + cgrid%lapse(ipy)%atm_co2*delE
         cpoly%met(isi)%rlong   = cgrid%met(ipy)%rlong   + cgrid%lapse(ipy)%rlong*delE
-        cpoly%met(isi)%par_diffuse = cgrid%met(ipy)%par_diffuse + cgrid%lapse(ipy)%par_diffuse*delE
+        cpoly%met(isi)%par_diffuse = (cgrid%met(ipy)%par_diffuse + &
+             cgrid%lapse(ipy)%par_diffuse*delE)*(1.0-hillshade)
         cpoly%met(isi)%par_beam    = cgrid%met(ipy)%par_beam    + cgrid%lapse(ipy)%par_beam*delE
-        cpoly%met(isi)%nir_diffuse = cgrid%met(ipy)%nir_diffuse + cgrid%lapse(ipy)%nir_diffuse*delE
+        cpoly%met(isi)%nir_diffuse = (cgrid%met(ipy)%nir_diffuse + &
+             cgrid%lapse(ipy)%nir_diffuse*delE)*(1.0-hillshade)
         cpoly%met(isi)%nir_beam    = cgrid%met(ipy)%nir_beam    + cgrid%lapse(ipy)%nir_beam*delE
         cpoly%met(isi)%vels    = cgrid%met(ipy)%vels    + cgrid%lapse(ipy)%vels*delE
         !! PROPORTIONAL ADJUSTMENTS

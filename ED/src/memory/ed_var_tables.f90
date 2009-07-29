@@ -63,7 +63,7 @@ module ed_var_tables
    type var_table
       integer :: idim_type
       integer :: nptrs
-      integer :: ihist,ianal,imean,ilite,impti,impt1,impt2,impt3,irecycle,iyear
+      integer :: ihist,ianal,imean,ilite,impti,impt1,impt2,impt3,irecycle,iyear,iopti
       character (len=64) :: name
       character (len=2) :: dtype
       integer :: imont,idail

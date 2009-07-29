@@ -237,6 +237,9 @@ subroutine ed_init_atm
                  ncohorts=ncohorts+1
                  poly_lai    = poly_lai + cpatch%lai(ico) * csite%area(ipa)                &
                                         * cpoly%area(isi) * site_area_i * poly_area_i
+                 if(poly_lai /= poly_lai) then !!NAN
+                    print*,"NAN",cpatch%lai(ico),csite%area(ipa),cpoly%area(isi)
+                 endif
                  poly_nplant = poly_nplant + cpatch%nplant(ico) * csite%area(ipa)          &
                                            * cpoly%area(isi) * site_area_i * poly_area_i
               end do

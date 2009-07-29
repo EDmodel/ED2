@@ -37,7 +37,7 @@ subroutine copy_nl(copy_type)
        maxpatch, maxcohort
   use physiology_coms, only: istoma_scheme, n_plant_lim
   use phenology_coms, only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath,repro_scheme
-  use decomp_coms, only: n_decomp_lim
+  use decomp_coms, only: n_decomp_lim, LloydTaylor
   use disturb_coms, only: include_fire, ianth_disturb,   &
        treefall_disturbance_rate
   use pft_coms, only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
@@ -141,6 +141,11 @@ subroutine copy_nl(copy_type)
      n_decomp_lim       = nl%n_decomp_lim
      include_fire       = nl%include_fire
      ianth_disturb      = nl%ianth_disturb
+     if(nl%decomp_scheme == 1) then
+        LloydTaylor = .true.
+     else
+        LloydTaylor = .false.
+     endif
      
      icanturb      = nl%icanturb
      
