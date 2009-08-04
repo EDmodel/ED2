@@ -1157,7 +1157,7 @@ subroutine redistribute_snow(initp,csite,ipa)
          initp%soil_energy(nzg)   = initp%soil_energy(nzg)                                 &
                                   + initp%sfcwater_energy(1) * dslzi8(nzg)
          initp%soil_water(nzg)    = initp%soil_water(nzg)                                  &
-                                  + initp%sfcwater_mass(1)   * dslzi8(nzg)
+                                  + initp%sfcwater_mass(1)   * dslzi8(nzg) * wdnsi8
          call qwtk8(initp%soil_energy(nzg),initp%soil_water(nzg)*wdns8                     &
                    ,soil8(csite%ntext_soil(nzg,ipa))%slcpd,initp%soil_tempk(nzg)           &
                    ,initp%soil_fracliq(nzg))

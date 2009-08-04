@@ -615,7 +615,6 @@ subroutine opspec3
           maxens_dyn,    & ! intent(in)
           maxens_cap,    & ! intent(in)
           iupmethod,     & ! intent(in)
-          iupstrm,       & ! intent(in)
           radius,        & ! intent(in)
           zkbmax,        & ! intent(in)
           max_heat,      & ! intent(in)
@@ -639,6 +638,7 @@ subroutine opspec3
   integer :: ip,k,ifaterr,iwarerr,infoerr,ng,ngr,nc,nzz
   character(len=*), parameter :: h="**(opspec3)**"
   logical :: grell_on
+  integer :: grella, grellz
 
   ifaterr=0
   iwarerr=0
@@ -779,6 +779,31 @@ subroutine opspec3
            IFATERR=IFATERR+1
         end if
      end do
+     !  If Grell is on, then all Grell clouds must be solved at the same frequency.
+     if (grell_on) then
+        do ng=1,ngrids
+           ! Find the first and last Grell cloud. 
+           if (ndeepest(ng) == 2) then
+              grella = 1
+           else
+              grella = 2
+           end if
+           if (nshallowest(ng) == 2) then
+              grellz = nclouds
+           else
+              grellz = nclouds-1
+           end if
+           do nc=grella+1,grellz
+              if (confrq(nc) /= confrq(grella)) then
+                 print *, 'FATAL - All clouds using Grell''s cumulus scheme must be '
+                 print *, '        updated simultaneously.  Check your CONFRQ'
+                 print *, '        Cloud # =',grella,' CONFRQ= ',confrq(grella)
+                 print *, '        Cloud # =',nc    ,' CONFRQ= ',confrq(nc)
+                 IFATERR = IFATERR + 1
+              end if
+           end do
+        end do
+     end if
   end if
   if (grell_on) then
      do nc=1,nclouds-1
@@ -788,16 +813,37 @@ subroutine opspec3
            IFATERR=IFATERR+1
         end if
      end do
-   
+
+     select case (closure_type)
+     case ('en','nc','gr','lo','mc','kf','as')
+       continue
+     case default
+       print *, 'FATAL - Invalid closure_type for Grell''s convection.'
+       print *, 'Yours is currently set to ',closure_type
+       IFATERR=IFATERR+1
+     end select
+
+     if (maxens_lsf <= 0) then
+       print *, 'FATAL - maxens_lsf must be positive when Cuparm is activated.'
+       print *, 'Yours is currently set to ',maxens_lsf,'...'
+       IFATERR=IFATERR+1
+     end if
+     if (maxens_eff <= 0) then
+       print *, 'FATAL - maxens_eff must be positive when Cuparm is activated.'
+       print *, 'Yours is currently set to ',maxens_eff,'...'
+       IFATERR=IFATERR+1
+     end if
+     if (maxens_cap <= 0) then
+       print *, 'FATAL - maxens_cap must be positive when Cuparm is activated.'
+       print *, 'Yours is currently set to ',maxens_cap,'...'
+       IFATERR=IFATERR+1
+     end if
+
+
      do nc=1,nclouds
         if (iupmethod < 1 .or. iupmethod > 4) then
             print *, 'FATAL - If Cumulus parameterization is used, iupmethod must be between 1 and 4.'
             print *, 'Yours is currently set to ',iupmethod
-            IFATERR=IFATERR+1
-        end if
-        if (iupstrm < 0 .or. iupstrm > 2 .and. grell_on) then
-            print *, 'FATAL - If Cumulus parameterization is used, iupstrm must be 0, 1, or 2.'
-            print *, 'Yours is currently set to ',iupstrm
             IFATERR=IFATERR+1
         end if
         if (depth_min(nc) <= 0.) then
@@ -823,29 +869,6 @@ subroutine opspec3
         if (max_heat(nc) <= 0.) then
           print *, 'FATAL - max_heat(nc) must be positive when Cuparm is activated.'
           print *, 'Yours is currently set to ',max_heat(nc),' for type ',nc
-          IFATERR=IFATERR+1
-        end if
-        select case (closure_type(nc))
-        case ('en','nc','gr','lo','mc','kf','as')
-          continue
-        case default
-          print *, 'FATAL - Invalid closure_type for Grell''s convection.'
-          print *, 'Yours is currently set to ',closure_type(nc)
-          IFATERR=IFATERR+1
-        end select
-        if (maxens_lsf(nc) <= 0) then
-          print *, 'FATAL - maxens_lsf(nc) must be positive when Cuparm is activated.'
-          print *, 'Yours is currently set to ',maxens_lsf(nc),' for type ',nc
-          IFATERR=IFATERR+1
-        end if
-        if (maxens_eff(nc) <= 0) then
-          print *, 'FATAL - maxens_eff(nc) must be positive when Cuparm is activated.'
-          print *, 'Yours is currently set to ',maxens_eff(nc),' for type ',nc
-          IFATERR=IFATERR+1
-        end if
-        if (maxens_cap(nc) <= 0) then
-          print *, 'FATAL - maxens_cap(nc) must be positive when Cuparm is activated.'
-          print *, 'Yours is currently set to ',maxens_cap(nc),' for type ',nc
           IFATERR=IFATERR+1
         end if
         !----------------------------------------------------------------------------------!

@@ -470,4 +470,4 @@ utils_f.o: $(ED_UTILS)/utils_f.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-include Make.depend
+include dependency.mk

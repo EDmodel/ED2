@@ -10,8 +10,8 @@ ed_model.o: ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
 ed_model.o: fuse_fiss_utils.mod grid_coms.mod growth_balive.mod mem_sites.mod
 ed_model.o: rk4_driver.mod
 canopy_struct_dynamics.o: allometry.mod canopy_air_coms.mod consts_coms.mod
-canopy_struct_dynamics.o: ed_misc_coms.mod ed_state_vars.mod pft_coms.mod
-canopy_struct_dynamics.o: rk4_coms.mod soil_coms.mod
+canopy_struct_dynamics.o: ed_misc_coms.mod ed_state_vars.mod met_driver_coms.mod
+canopy_struct_dynamics.o: pft_coms.mod rk4_coms.mod soil_coms.mod
 canopy_update_euler.o: canopy_radiation_coms.mod consts_coms.mod ed_max_dims.mod
 canopy_update_euler.o: ed_state_vars.mod grid_coms.mod therm_lib.mod
 decomposition.o: decomp_coms.mod ed_state_vars.mod grid_coms.mod pft_coms.mod
@@ -22,7 +22,8 @@ disturbance.o: ed_therm_lib.mod fuse_fiss_utils.mod grid_coms.mod mem_sites.mod
 disturbance.o: pft_coms.mod
 euler_driver.o: canopy_air_coms.mod canopy_struct_dynamics.mod consts_coms.mod
 euler_driver.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
-euler_driver.o: ed_therm_lib.mod grid_coms.mod soil_coms.mod therm_lib.mod
+euler_driver.o: ed_therm_lib.mod grid_coms.mod met_driver_coms.mod soil_coms.mod
+euler_driver.o: therm_lib.mod
 events.o: allometry.mod decomp_coms.mod disturbance_utils.mod ed_misc_coms.mod
 events.o: ed_state_vars.mod ed_therm_lib.mod fuse_fiss_utils.mod grid_coms.mod
 events.o: pft_coms.mod therm_lib.mod
@@ -176,7 +177,7 @@ therm_lib.o: consts_coms.mod
 update_derived_props.o: allometry.mod consts_coms.mod ed_misc_coms.mod
 update_derived_props.o: ed_state_vars.mod ed_therm_lib.mod fuse_fiss_utils.mod
 update_derived_props.o: fusion_fission_coms.mod grid_coms.mod soil_coms.mod
-utils_c.o: ../../src/include/utils_sub_names.h
+utils_c.o: /n/Moorcroft_Lab/Users/mlongo/EDBRAMS/ED/src/include/utils_sub_names.h
 utils_c.o:
 allometry.mod: allometry.o
 an_header.mod: an_header.o

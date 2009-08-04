@@ -430,19 +430,19 @@ contains
     if (associated(cuparm%thsrcp))  &
          call vtables2 (cuparm%thsrcp(1,1,1),cuparmm%thsrcp(1,1,1)  &
          ,ng, npts, imean,  &
-         'THSRCP :3:mpti:')
+         'THSRCP :3:mpti')
     if (associated(cuparm%rtsrcp))  &
          call vtables2 (cuparm%rtsrcp(1,1,1),cuparmm%rtsrcp(1,1,1)  &
          ,ng, npts, imean,  &
-         'RTSRCP :3:mpti:')
+         'RTSRCP :3:mpti')
     if (associated(cuparm%thsrcf))  &
          call vtables2 (cuparm%thsrcf(1,1,1),cuparmm%thsrcf(1,1,1)  &
          ,ng, npts, imean,  &
-         'THSRCF :3:mpti:')
+         'THSRCF :3:mpti')
     if (associated(cuparm%rtsrcf))  &
          call vtables2 (cuparm%rtsrcf(1,1,1),cuparmm%rtsrcf(1,1,1)  &
          ,ng, npts, imean,  &
-         'RTSRCF :3:mpti:')
+         'RTSRCF :3:mpti')
     !--------------------------------------------------------------------------------------!
 
 
@@ -480,7 +480,7 @@ contains
     if (associated(cuparm%dnmf))  &
          call vtables2 (cuparm%dnmf(1,1,1),cuparmm%dnmf(1,1,1)  &
          ,ng, npts, imean,  &
-         'DNMF :9:hist:anal:mpti:mpt3:mpt1')
+         'DNMF :9:hist:anal:mpti:mpt3')
 
     if (associated(cuparm%edt))  &
          call vtables2 (cuparm%edt(1,1,1),cuparmm%edt(1,1,1)  &
@@ -495,7 +495,7 @@ contains
     if (associated(cuparm%xierr))  &
          call vtables2 (cuparm%xierr(1,1,1),cuparmm%xierr(1,1,1)  &
          ,ng, npts, imean,  &
-         'XIERR :9:hist:anal:mpti:mpt3:mpt1')
+         'XIERR :9:hist:anal:mpti:mpt3')
 
     if (associated(cuparm%zjmin))  &
          call vtables2 (cuparm%zjmin(1,1,1),cuparmm%zjmin(1,1,1)  &

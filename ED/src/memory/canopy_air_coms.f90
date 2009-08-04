@@ -32,25 +32,28 @@ module canopy_air_coms
 
    !=======================================================================================!
    !=======================================================================================!
-   !     Constants for new canopy turbulence.  They are used only with Runge-Kutta, so     !
-   ! make them double precision.                                                           !
+   !     Constants for new canopy turbulence.                                              !
    !---------------------------------------------------------------------------------------!
    !----- Discrete step size in canopy elevation [m]. -------------------------------------!
-   real(kind=8),parameter :: dz = 5.d-1
-   !----- Dynamic viscosity of air at 20°C [Pa*s]. ----------------------------------------!
-   real(kind=8),parameter :: mu0 = 1.827d-5
-   !----- Calibration parameter for mu at 20°C [dimensionless]. ---------------------------!
-   real(kind=8),parameter :: mu0_c = 1.20d2
+   real        , parameter :: dz     = 0.5
    !----- Fluid drag coefficient for turbulent flow in leaves. ----------------------------!
-   real(kind=8),parameter :: Cd0 = 2.0d-1
+   real        , parameter :: Cd0    = 0.2
    !----- Sheltering factor of fluid drag on canopies. ------------------------------------!
-   real(kind=8),parameter :: Pm = 1.0d0
+   real        , parameter :: Pm     = 1.0
    !----- Surface drag parameters (Massman 1997). -----------------------------------------!
-   real(kind=8),parameter :: c1_m97 = 3.20d-1 
-   real(kind=8),parameter :: c2_m97 = 2.64d-1
-   real(kind=8),parameter :: c3_m97 = 1.51d1
+   real        , parameter :: c1_m97 = 0.320 
+   real        , parameter :: c2_m97 = 0.264
+   real        , parameter :: c3_m97 = 15.1
    !----- Eddy diffusivity due to Von Karman Wakes in gravity flows. ----------------------!
-   real(kind=8),parameter :: kvwake = 1.d-3
+   real        , parameter :: kvwake = 0.001
+   !----- Double precision version of these variables, used in the Runge-Kutta scheme. ----!
+   real(kind=8), parameter :: dz8     = dble(dz)
+   real(kind=8), parameter :: Cd08    = dble(Cd0)
+   real(kind=8), parameter :: Pm8     = dble(Pm)
+   real(kind=8), parameter :: c1_m978 = dble(c1_m97)
+   real(kind=8), parameter :: c2_m978 = dble(c2_m97)
+   real(kind=8), parameter :: c3_m978 = dble(c3_m97)
+   real(kind=8), parameter :: kvwake8 = dble(kvwake)
    !=======================================================================================!
    !=======================================================================================!
 
@@ -93,7 +96,8 @@ module canopy_air_coms
    !      This is the minimum canopy depth that is used to calculate the heat and moisture !
    ! storage capacity in the canopy air [m].                                               !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) :: minimum_canopy_depth
+   real         :: minimum_canopy_depth
+   real(kind=8) :: minimum_canopy_depth8
 
    !=======================================================================================!
    !=======================================================================================!

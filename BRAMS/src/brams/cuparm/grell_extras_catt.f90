@@ -1,4 +1,4 @@
-subroutine trans_conv_mflx(icld,iscl,m1,m2,m3,i,j,edt,upmf,sttend)
+subroutine trans_conv_mflx(icld,iscl,m1,m2,m3,maxens_cap,i,j,ee,edt,upmf,sttend)
   !------------------------------------------------------------------
   !-Convective transport for smoke aerosols and non-hygroscopic gases
   !-Developed by Saulo Freitas (sfreitas@cptec.inpe.br)
@@ -12,26 +12,39 @@ subroutine trans_conv_mflx(icld,iscl,m1,m2,m3,i,j,edt,upmf,sttend)
                                alloc_trans_conv, &    !alloc subroutine
                                zero_tconv
 
-  use mem_scalar        ,only: scalar_g
-  use mem_grid          ,only: dtlt,ngrid,naddsc
-  use mem_scratch       ,only: scratch
-  use mem_basic         ,only: basic_g
+  use mem_scalar        ,only : scalar_g
+  use mem_grid          ,only : dtlt,ngrid,naddsc
+  use mem_scratch       ,only : scratch
+  use mem_basic         ,only : basic_g
   use grell_coms        ,only : mgmzp
-  use mem_scratch_grell ,only: jmin,k22,kbcon,kdet,ktop,cdu,mentru_rate,etau_cld,cdd &
-                              ,mentrd_rate,etad_cld,z_cup,ierr,kstabi,kstabm,kgoff
+  use mem_ensemble      ,only : ensemble_vars
+  use mem_scratch_grell ,only :  z_cup,kgoff
   
 
   implicit none
 
-  integer, intent(in)                      :: m1,m2,m3,icld,iscl,i,j
+  integer, intent(in)                      :: m1,m2,m3,icld,iscl,i,j,maxens_cap
   real, dimension(m1,m2,m3), intent(inout) :: sttend
   real, intent(in)                         :: edt,upmf
+  type(ensemble_vars), intent(in)          :: ee
+  integer                                  :: icap
 
   integer                                  :: k,kr,iconv,iwet
   real, dimension(2) :: c0
 
   c0(1) = 0.002
   c0(2) = 0.000
+  
+  
+  if (upmf == 0. .or. all(ee%ierr_cap /= 0)) return
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!! THIS IS NOT RIGHT... Yet... The right way to do this is averaging all non-zero !!!!
+  !!!!!! members.                                                                       !!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  stacloop: do icap=1,maxens_cap
+     if (ee%ierr_cap(icap) == 0) exit stacloop
+  end do stacloop
 
 !  data (c0(i),i=1,2)  &
 !       /0.002 &  
@@ -55,55 +68,56 @@ subroutine trans_conv_mflx(icld,iscl,m1,m2,m3,i,j,edt,upmf,sttend)
 
   call azero(mgmzp,stcum1d)
   iconv = 0       
-  if(ierr == 0) then
+  if(ee%ierr_cap(icap) == 0) then
      
      iconv = 1
      call get_dn01d(mgmzp,m1,dn01d,basic_g(ngrid)%dn0(:,i,j))
-     call get_se(mgmzp,m1,m2,m3,i,j,scalar_g(iscl,ngrid)%sclp,&
-          se,se_cup)
+     call get_se(mgmzp,m1,m2,m3,i,j,scalar_g(iscl,ngrid)%sclp,se,se_cup)
 
      if(iwet == 0) then
         call get_sc_up( mgmzp,m1,se,se_cup,sc_up,    &
-             k22,kbcon,cdu(1:m1),mentru_rate(1:m1),  &
-             etau_cld(1:m1)   )
+             ee%k22_cap(icap),ee%kbcon_cap(icap),ee%cdu_cap(1:m1,icap), &
+             ee%mentru_rate_cap(1:m1,icap),ee%etau_cld_cap(1:m1,icap))
      else
         ! print*,'I J PREC:',i,j
         ! print*,'PM25=',scalar_g(iscl,ngrid)%sclp(:,I,J)
                        
         call get_sc_up_wet( mgmzp,m1,se,se_cup,sc_up,   &
-             k22, kbcon,ktop, cdu(1:m1),mentru_rate(1:m1),  &
-             etau_cld(1:m1),sc_up_c,henry_coef,pw_up,dn01d, &
-             c0(icld),etau_cld(1:m1) )
+             ee%k22_cap(icap), ee%kbcon_cap(icap), ee%ktop_cap(icap), &
+             ee%cdu_cap(1:m1,icap),ee%mentru_rate_cap(1:m1,icap),  &
+             ee%etau_cld_cap(1:m1,icap),sc_up_c,henry_coef,pw_up,dn01d, &
+             c0(icld),ee%etau_cld_cap(1:m1,icap) )
 
      endif
 
-     call get_sc_dn(mgmzp,m1,se,se_cup,sc_dn,jmin,kdet,cdd(1:m1),mentrd_rate(1:m1),  &
-                    etau_cld(1:m1)  )
+     call get_sc_dn(mgmzp,m1,se,se_cup,sc_dn,ee%jmin_cap(icap),ee%kdet_cap(icap), &
+                    ee%cdd_cap(:,icap),ee%mentrd_rate_cap(:,icap), &
+                    ee%etau_cld_cap(:,icap)  )
 
-     call get_stcum(mgmzp,m1,dn01d,stcum1d,se,se_cup,sc_up,sc_dn,                             &
-          upmf  , edt, jmin  , kdet, k22   , kbcon, ktop  ,  kstabi, kstabm,             &
-          z_cup(1:m1), cdu(1:m1), mentru_rate(1:m1),cdd(1:m1),                 &
-          mentrd_rate(1:m1),etau_cld(1:m1) , etad_cld(1:m1))
+     call get_stcum(mgmzp,m1,dn01d,stcum1d,se,se_cup,sc_up,sc_dn,                      &
+          upmf  , edt, ee%jmin_cap(icap)  , ee%kdet_cap(icap), ee%k22_cap(icap)   ,    &
+          ee%kbcon_cap(icap), ee%ktop_cap(icap),  ee%kstabi_cap(icap),                 &
+          ee%kstabm_cap(icap), z_cup(1:m1), ee%cdu_cap(1:m1,icap), &
+          ee%mentru_rate_cap(1:m1,icap), ee%cdd_cap(1:m1,icap),    &
+          ee%mentrd_rate_cap(1:m1,icap), ee%etau_cld_cap(1:m1,icap), &
+          ee%etad_cld_cap(1:m1,icap))
 
      if(iwet == 1) then
         !------------- WET REMOVAL SCHEMES -------------
         !-- contribuicao devido `a concentracao aquosa desentranhada
         !-- junto com a agua liquida
-        call get_stcum_detrain(mgmzp,m1,dn01d,stcum1d,sc_up_c,sc_dn_c,&
-             upmf    , edt,           &
-             jmin    , kdet,          &
-             k22     , kbcon,         &
-             ktop    ,           &
-             kstabi  , kstabm,        &
-             z_cup(1:m1)  ,   &
-             cdu(1:m1)  , mentru_rate(1:m1),  &
-             cdd(1:m1)  , mentrd_rate(1:m1),  &
-             etau_cld(1:m1)   , etad_cld(1:m1)    )
+        call get_stcum_detrain(mgmzp,m1,dn01d,stcum1d,sc_up_c,sc_dn_c,upmf, edt,          &
+                               ee%jmin_cap(icap), ee%kdet_cap(icap), ee%k22_cap(icap),    &
+                               ee%kbcon_cap(icap),ee%ktop_cap(icap), ee%kstabi_cap(icap), &
+                               ee%kstabm_cap(icap), z_cup(1:m1), ee%cdu_cap(:,icap),      &
+                               ee%mentru_rate_cap(1:m1,icap), ee%cdd_cap(:,icap),         &
+                               ee%mentrd_rate_cap(:,icap), ee%etau_cld_cap(:,icap),       &
+                               ee%etad_cld_cap(:,icap))
 
         !-- calcula a massa removida e depositada na superficie
         call get_wet_deposited_mass(mgmzp,m1,dtlt,dn01d,pw_up,pw_dn,                   &
              scalar_g(iscl,ngrid)%wetdep(i,j),                                         &
-             upmf,  edt,kbcon,ktop)
+             upmf,  edt,ee%kbcon_cap(icap),ee%ktop_cap(icap))
         !print*,'I J WM:',i,j, scalar_g(iscl,ngrid)%wetdep(i,j)
 
 

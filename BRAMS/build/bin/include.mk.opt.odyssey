@@ -250,7 +250,7 @@ MOD_EXT=mod
 #------------------------------------------------------------------------------------------#
 #USE_INTERF=1
 #F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
-#        -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+        -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
 #C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended
 #LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -debug extended        \
              -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
