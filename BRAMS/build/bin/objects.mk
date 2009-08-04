@@ -53,9 +53,11 @@ OBJ_MODEL =                         \
 	grell_cupar_aux.o           \
 	grell_cupar_downdraft.o     \
 	grell_cupar_driver.o        \
+	grell_cupar_dynamic.o       \
 	grell_cupar_ensemble.o      \
 	grell_cupar_environment.o   \
-	grell_cupar_main.o          \
+	grell_cupar_feedback.o      \
+	grell_cupar_static.o        \
 	grell_cupar_updraft.o       \
 	grell_extras_catt.o         \
 	grid_dims.o                 \

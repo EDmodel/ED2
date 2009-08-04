@@ -413,6 +413,7 @@ subroutine init_fields(init)
   use var_tables
 
   use mem_leaf, only : ISFCL ! For SiB
+  use mem_cuparm, only : nclouds
 
   implicit none
 
@@ -462,8 +463,7 @@ subroutine init_fields(init)
         i2=ipaths(2,itype,ng,nm)
         j1=ipaths(3,itype,ng,nm)
         j2=ipaths(4,itype,ng,nm)
-        memf=(i2-i1+1)*(j2-j1+1)*(nnzp(ng))  &
-             *(4+num_scalar(ng))
+        memf=(i2-i1+1)*(j2-j1+1)*nnzp(ng)*(4+num_scalar(ng))
         nbuff_feed=max(nbuff_feed,memf)
      enddo
   enddo

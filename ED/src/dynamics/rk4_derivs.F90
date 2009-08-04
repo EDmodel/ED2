@@ -9,13 +9,13 @@
 !------------------------------------------------------------------------------------------!
 subroutine leaf_derivs(initp,dinitp,csite,ipa,isi,ipy)
   
-   use rk4_coms               , only : rk4met            & ! intent(in)
-                                     , rk4patchtype      ! ! structure
-   use ed_state_vars          , only : sitetype          ! ! structure
-   use consts_coms            , only : cp8               & ! intent(in)
-                                     , cpi8              ! ! intent(in)
-   use grid_coms              , only : nzg               ! ! intent(in)
-   use canopy_struct_dynamics , only : canopy_turbulence ! ! subroutine
+   use rk4_coms               , only : rk4met             & ! intent(in)
+                                     , rk4patchtype       ! ! structure
+   use ed_state_vars          , only : sitetype           ! ! structure
+   use consts_coms            , only : cp8                & ! intent(in)
+                                     , cpi8               ! ! intent(in)
+   use grid_coms              , only : nzg                ! ! intent(in)
+   use canopy_struct_dynamics , only : canopy_turbulence8 ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype) , target     :: initp     ! Structure with RK4 intermediate state
@@ -52,7 +52,7 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa,isi,ipy)
    dinitp%ebudget_latent = 0.0d0
 
    !----- Compute canopy turbulence properties. -------------------------------------------!
-   call canopy_turbulence(csite,initp,isi,ipa,.true.)
+   call canopy_turbulence8(csite,initp,isi,ipa,.true.)
 
    !----- Finding the derivatives. --------------------------------------------------------!
    call leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)

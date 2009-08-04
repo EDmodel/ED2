@@ -98,14 +98,14 @@ subroutine rconv_driver(banneron)
 
 
    !---------------------------------------------------------------------------------------!
-   !   Looping accross the cloud sizes, from last to first                                 !
+   !    Solving the cloud sizes that should be determined by Grell's scheme, if any of     !
+   ! such exists and if this is the time to call Grell's parametrisation.                  !
    !---------------------------------------------------------------------------------------!
-   do icld = grell_last(ngrid),grell_1st(ngrid),-1
-      !----- Checking whether this is time to call Grell's parameterization ---------------!
-      if (cumulus_time(initial,time,cptime(icld),confrq(icld),dtlt)) then
-         call grell_cupar_driver(banneron,icld)
-      end if
-   end do
+   icld = grell_1st(ngrid)
+   if (grell_1st(ngrid) <= grell_last(ngrid) .and.                                         &
+       cumulus_time(initial,time,cptime(icld),confrq(icld),dtlt) ) then
+      call grell_cupar_driver(banneron,grell_1st(ngrid),grell_last(ngrid))
+   end if
 
    !---------------------------------------------------------------------------------------!
    !   Checking whether I was supposed to run Kuo for this grid.                           !

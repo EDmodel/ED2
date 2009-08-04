@@ -13,7 +13,7 @@
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine grell_cupar_driver(banneron,icld)
+subroutine grell_cupar_driver(banneron,cldd,clds)
 
    use catt_start        , only: &
            catt                  ! ! intent(in) - flag for CATT. 
@@ -40,7 +40,6 @@ subroutine grell_cupar_driver(banneron,icld)
           ,edtmin                & ! Minimum Grell's epsilon (dnmf/upmf)
           ,inv_ensdim            & ! Inverse of ensemble dimension size
           ,iupmethod             & ! Method to define updraft originating level.
-          ,iupstrm               & ! Check for upstream convection?
           ,masstol               & ! Maximum mass leak allowed to happen    [ ---]
           ,max_heat              & ! Maximum heating scale                  [K/dy]
           ,pmass_left            & ! Fraction of mass left at the ground    [ ---]
@@ -101,7 +100,6 @@ subroutine grell_cupar_driver(banneron,icld)
           ,vctr7         & ! intent(out) - Scratch, contains the ice mixing ratio.
           ,vctr8         & ! intent(out) - Scratch, contains the column CO2 mixing ratio.
           ,vctr9         & ! intent(out) - Scratch, contains the vertical velocity sigma.
-          ,vctr18        & ! intent(out) - Scratch, contains the large-scale CO2 tendency.
           ,vctr28        ! ! intent(out) - Scratch, contains the convective CO2 forcing.
    
    use mem_scratch_grell , only: &
@@ -133,15 +131,19 @@ subroutine grell_cupar_driver(banneron,icld)
    implicit none
 
 
-   !------ Variable declaration -----------------------------------------------------------!
-   logical, intent(in)               :: banneron        ! Flag for banner printing.
-   integer, intent(in)               :: icld            ! Current cloud type:
-                                                        ! 1. shallow; 2. deep.
-   integer                           :: i,j             ! Counters for x and y
-   integer                           :: iscl            ! Scalar counter
-   integer                           :: ccc             ! For initialization cloud loop
-   real                              :: dti             ! confrq/frqanl
-   integer                           :: iedt,imbp,idync ! Counters - debugging
+   !----- Arguments. ----------------------------------------------------------------------!
+   logical, intent(in)               :: banneron         ! Flag for banner printing.
+   integer, intent(in)               :: cldd             ! Deepest Grell cloud.
+   integer, intent(in)               :: clds             ! Shallowest Grell cloud.
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                           :: icld             ! Cloud type counter.
+   integer                           :: i,j              ! Counters for x and y
+   integer                           :: iscl             ! Scalar counter
+   integer                           :: ccc              ! For initialization cloud loop
+   real                              :: dti              ! confrq/frqanl
+   integer                           :: iedt,imbp,idync  ! Counters - debugging
+   !----- Local constants. ----------------------------------------------------------------!
+   logical, parameter                :: printing=.false. ! Should I print debugging stuff?
    !---------------------------------------------------------------------------------------!
 
 
@@ -155,22 +157,29 @@ subroutine grell_cupar_driver(banneron,icld)
    !---------------------------------------------------------------------------------------!
    ! 1.  Flushing the feedback to zero, so the default is no convection happened.          !
    !---------------------------------------------------------------------------------------!
-   call azero(mzp*mxp*myp,cuparm_g(ngrid)%thsrc  (:,:,:,icld))
-   call azero(mzp*mxp*myp,cuparm_g(ngrid)%rtsrc  (:,:,:,icld))
-   if (co2_on) call azero(mzp*mxp*myp,cuparm_g(ngrid)%co2src (:,:,:,icld))
-   call azero(mzp*mxp*myp,cuparm_g(ngrid)%cuprliq(:,:,:,icld))
-   call azero(mzp*mxp*myp,cuparm_g(ngrid)%cuprice(:,:,:,icld))
-   call azero(    mxp*myp,cuparm_g(ngrid)%conprr (  :,:,icld))
+   do icld=cldd,clds
+       call azero(mzp*mxp*myp,cuparm_g(ngrid)%thsrc  (:,:,:,icld))
+       call azero(mzp*mxp*myp,cuparm_g(ngrid)%rtsrc  (:,:,:,icld))
+       if (co2_on) call azero(mzp*mxp*myp,cuparm_g(ngrid)%co2src (:,:,:,icld))
+       call azero(mzp*mxp*myp,cuparm_g(ngrid)%cuprliq(:,:,:,icld))
+       call azero(mzp*mxp*myp,cuparm_g(ngrid)%cuprice(:,:,:,icld))
+       call azero(    mxp*myp,cuparm_g(ngrid)%conprr (  :,:,icld))
+   end do
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    ! 2. Flushing a scratch array to zero, and depending on whether CO2 is prognosed, this  !
    !    will store the large-scale tendency.                                               !
    !    scratch%vt3dj => large-scale CO2 mixing ratio forcing.                             !
    !---------------------------------------------------------------------------------------!
-   call azero(mzp*mxp*myp,scratch%vt3dj)
    if (co2_on) then
       call atob(mxp*myp*mzp,tend%co2t,scratch%vt3dj)
+   else
+      call azero(mzp*mxp*myp,scratch%vt3dj)
    end if
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    ! 3. Flush CATT-related variables to zero.                                              !
@@ -178,67 +187,33 @@ subroutine grell_cupar_driver(banneron,icld)
    if (catt == 1) then
        dti = confrq(icld) / frqanl
        call azero(mzp*mxp*myp,scratch%scr1)
-       select case (icld)
-       case (1)
-          call azero(mzp*mxp*myp,extra3d(1,ngrid)%d3)
-          if(mod(time,dble(frqanl)) < dtlongn(1) ) then
-             call azero(mxp*myp*mzp,extra3d(4,ngrid)%d3  )
-          end if
-       case (2)
-          call azero(mzp*mxp*myp,extra3d(2,ngrid)%d3)
-          call azero(mzp*mxp*myp,scratch%vt3dp)
-       end select
+       call azero(mzp*mxp*myp,scratch%vt3dp)
+       call azero(mzp*mxp*myp,extra3d(1,ngrid)%d3)
+       call azero(mzp*mxp*myp,extra3d(2,ngrid)%d3)
+       if (mod(time,dble(frqanl)) < dtlongn(1)) then
+          call azero(mxp*myp*mzp,extra3d(4,ngrid)%d3)
+       end if
    end if
    !---------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------!
-   ! 4. If upstream is on, save the error flag and previous downdraft in some scratch      !
-   !    array before the grid loop, so they are safely stored.                             !
-   !---------------------------------------------------------------------------------------!
-   if (iupstrm == 1) then
-      call atob(mxp*myp,cuparm_g(ngrid)%dnmf(:,:,icld),scratch%vt2de)
-      call atob(mxp*myp,cuparm_g(ngrid)%xierr(:,:,icld),scratch%vt2df)
-   end if
 
    !---------------------------------------------------------------------------------------!
-   ! 5. Reset some extra 3d scratch variables for the ice/liquid first guess (the wetthrm3 !
-   !    subroutine requires some scratch 3D arrays even though we'll be solving column by  !
-   !    column).                                                                           !
-   !---------------------------------------------------------------------------------------!
-   call azero(mzp*mxp*myp,scratch%vt3dm)
-   call azero(mzp*mxp*myp,scratch%vt3dn)
-
-
-   !---------------------------------------------------------------------------------------!
-   ! 6. Big loop accross the horizontal grid points. Now I will call the model column by   !
-   !    column.                                                                            !
+   !     Big loop accross the horizontal grid points. Now we call the model column by      !
+   ! column.                                                                               !
    !---------------------------------------------------------------------------------------!
    jloop: do j=ja,jz
       iloop: do i=ia,iz
 
+         ![[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[!
+         !---------------------------------------------------------------------------------!
+         ! 4. We now initialise some variables that don't depend on the cloud spectral     !
+         !    size because they must be done only once.                                    !
+         !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
-         ! 6a. Flushes scratch variables to zero. Setting position for 3D-1D interface.    !
-         !---------------------------------------------------------------------------------!
-         call zero_scratch_grell()
-         call zero_ensemble(ensemble_e(icld))
-         call azero5(mzp,vctr6(1:mzp),vctr7(1:mzp),vctr9(1:mzp),vctr18(1:mzp),vctr28(1:mzp))
-         call ae0(mzp,vctr8(1:mzp),co2con(1)) !---- Not really used unless CO2 is on.
-
-         !---------------------------------------------------------------------------------!
-         ! 6b. Initialise grid-related variables (how many levels, offset, etc.)           !
-         !---------------------------------------------------------------------------------!
-         if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                         &
-                             '       [~] Calling initial_grid_grell... i=',i,'j=',j
-         call initial_grid_grell(mzp,deltax,deltay,zt(1:mzp),zm(1:mzp)                     &
-              , grid_g(ngrid)%flpw             (i,j), grid_g(ngrid)%rtgt             (i,j) &
-              , confrq                        (icld), turb_g(ngrid)%kpbl             (i,j) )
-         
-         !---------------------------------------------------------------------------------!
-         ! 6c. Finding the ice and liquid mixing ratio. This may be changed for some       !
-         !     clouds due to the impact of other clouds. We will store the first guess of  !
-         !     liquid and ice on scratch vectors 6 an 7, respectively.                     !
+         ! 4a. Finding the ice and liquid mixing ratio.  Since ice and liquid may not be   !
+         !     solved for some user's configuration (level = 1), we must check that first. !
          !---------------------------------------------------------------------------------!
          if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                         &
                              '       [~] Maybe calling integ_liq_ice... i=',i,'j=',j
@@ -260,16 +235,26 @@ subroutine grell_cupar_driver(banneron,icld)
               , micro_g(ngrid)%q7            (:,i,j), vctr6(1:mzp)                         &
               , vctr7(1:mzp)                        )
          end select
+         !---------------------------------------------------------------------------------!
+
 
          !---------------------------------------------------------------------------------!
-         ! 6d. Copy CO2 array to scratch variable, if CO2 is actively prognosed.           !
+         ! 4b. Copy CO2 array to scratch variable, if CO2 is actively prognosed.  Other-   !
+         !     wise, put the constant CO2 mixing ratio, although it will not be really     !
+         !     used.                                                                       !
          !---------------------------------------------------------------------------------!
          if (co2_on) then
             call atob(mzp,basic_g(ngrid)%co2p(:,i,j),vctr8(1:mzp))
+            call azero(mzp,vctr28(1:mzp))
+         else
+            call ae0(mzp,vctr8(1:mzp),co2con(1))
+            call azero(mzp,vctr28(1:mzp))
          end if
+         !---------------------------------------------------------------------------------!
+
 
          !---------------------------------------------------------------------------------!
-         ! 6e. Copying sigma-w to a scratch array. This is because it is available only    !
+         ! 4c. Copying sigma-w to a scratch array. This is because it is available only    !
          !     for idiffk = 1 or idiffk = 7. It's really unlikely that one would use the   !
          !     other TKE-related schemes with cumulus parameterization though, because     !
          !     they are LES schemes. If that happens, use special flag (sigmaw=0).         !
@@ -280,10 +265,27 @@ subroutine grell_cupar_driver(banneron,icld)
          case default
             call azero(mzp,vctr9(1:mzp))
          end select
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
-         ! 6f. Copying the tendencies to the scratch array.                                !
+         ! 4d. Flushes scratch variables to zero.                                          !
+         !---------------------------------------------------------------------------------!
+         call zero_scratch_grell()
+
+
+         !---------------------------------------------------------------------------------!
+         ! 4e. Initialise grid-related variables (how many levels, offset, etc.)           !
+         !---------------------------------------------------------------------------------!
+         if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                         &
+                             '       [~] Calling initial_grid_grell... i=',i,'j=',j
+         call initial_grid_grell(mzp,deltax,deltay,zt(1:mzp),zm(1:mzp)                     &
+              , grid_g(ngrid)%flpw             (i,j), grid_g(ngrid)%rtgt             (i,j) &
+              , confrq                        (cldd), turb_g(ngrid)%kpbl             (i,j) )
+
+
+         !---------------------------------------------------------------------------------!
+         ! 4f. Copying the tendencies to the scratch array.                                !
          !---------------------------------------------------------------------------------!
          if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                         &
                              '       [~] Calling initial_tend_grell... i=',i,'j=',j
@@ -291,7 +293,7 @@ subroutine grell_cupar_driver(banneron,icld)
 
 
          !---------------------------------------------------------------------------------!
-         ! 6g. Initialising pressure, temperature, and mixing ratio. This will include the !
+         ! 4g. Initialising pressure, temperature, and mixing ratio. This will include the !
          !     effect of previously called shallow convection in case it happened. If this !
          !     is the shallowest cloud, or if the shallower clouds didn't happen, this     !
          !     will simply copy the BRAMS fields.                                          !
@@ -306,48 +308,90 @@ subroutine grell_cupar_driver(banneron,icld)
               , turb_g(ngrid)%tkep           (:,i,j), vctr6                        (1:mzp) &
               , vctr7                        (1:mzp), vctr9                        (1:mzp))
 
-         !---------------------------------------------------------------------------------!
-         ! 6h. Initialise the remainder Grell's scratch variables. This is done only if    !
-         !     the user asked for this check, otherwise I will pretend that convection     !
-         !     never happen at the surroundings. This requires full grid information, and  !
-         !     needs some old information as well, thus the scratch structures.            !
-         !---------------------------------------------------------------------------------!
-         if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                         &
-                             '       [~] Calling initial_upstream_grell... i=',i,'j=',j
-         call initial_upstream_grell(comp_down(icld),iupstrm,mzp,mxp,myp,i,j,jdim          &
-              , scratch%vt2de                       , scratch%vt2df                        &
-              , basic_g(ngrid)%up                   , basic_g(ngrid)%vp                    )
-         
-         !---------------------------------------------------------------------------------!
-         ! 6i. Call the main cumulus parameterization subroutine, which will deal with the !
-         !     static control, dynamic control and feedback. This sends back the reference !
-         !     upward and downward mass flux in kg/m²/s.                                   !
-         !---------------------------------------------------------------------------------!
-         if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                         &
-                             '       [~] Calling grell_cupar_main... i=',i,'j=',j
-         call grell_cupar_main(closure_type(icld),comp_down(icld)                          &
-            ,comp_noforc_cldwork(icld),comp_modif_thermo(icld),checkmass,iupmethod         &
-            ,maxens_cap(icld),maxens_dyn(icld),maxens_eff(icld),maxens_lsf(icld)           &
-            ,mgmzp,cap_maxs(icld),cap_max_increment,wnorm_max(icld),wnorm_increment        &
-            ,dtlt,depth_min(icld),depth_max(icld),edtmax,edtmin,inv_ensdim(icld)           &
-            ,masstol,max_heat(icld),pmass_left,radius(icld),relheight_down,zkbmax(icld)    &
-            ,zcutdown(icld),z_detr(icld)                                                   &
-            ,ensemble_e(icld)%edt_eff             , ensemble_e(icld)%dellatheiv_eff        &
-            ,ensemble_e(icld)%dellathil_eff       , ensemble_e(icld)%dellaqtot_eff         &
-            ,ensemble_e(icld)%dellaco2_eff        , ensemble_e(icld)%pw_eff                &
-            ,ensemble_e(icld)%dnmf_ens            , ensemble_e(icld)%upmf_ens              &
-            ,cuparm_g(ngrid)%aadn       (i,j,icld), cuparm_g(ngrid)%aaup       (i,j,icld)  &
-            ,cuparm_g(ngrid)%edt        (i,j,icld),cuparm_g(ngrid)%dnmf       (i,j,icld)   &
-            ,cuparm_g(ngrid)%upmf       (i,j,icld),mynum                                   )
 
          !---------------------------------------------------------------------------------!
-         ! 6j. Compute the other output variables                                          !
+         ! 5. We will now go through the cloud sizes for the first time, in order to solve !
+         !    the static control.                                                          !
+         !---------------------------------------------------------------------------------!
+         staticloop: do icld = cldd,clds
+
+            !------------------------------------------------------------------------------!
+            ! 5a. Reset the entire ensemble structure for this cloud.                      !
+            !------------------------------------------------------------------------------!
+            call zero_ensemble(ensemble_e(icld))
+
+
+            !------------------------------------------------------------------------------!
+            ! 5b. Initialise the remainder Grell's scratch variables. This is done only if !
+            !     the user asked for this check, otherwise I will pretend that convection  !
+            !     never happen at the surroundings. This requires full grid information,   !
+            !     and needs some old information as well, thus the scratch structures.     !
+            !------------------------------------------------------------------------------!
+            if (banneron) write (unit=60+mynum,fmt='(3(a,1x,i5,1x))')                      &
+                   '       [~] Calling initial_upstream_grell... i=',i,'j=',j,'icld=',icld
+            call initial_winds_grell(comp_down(icld),mzp,mxp,myp,nclouds,i,j,jdim,icld     &
+                                    , cuparm_g(ngrid)%dnmf (:,:,icld)                      &
+                                    , basic_g(ngrid)%up                                    &
+                                    , basic_g(ngrid)%vp                                    &
+                                    , ensemble_e(icld)%prev_dnmf                           )
+         
+            !------------------------------------------------------------------------------!
+            ! 5c. Call the subroutine which will deal with the static control.             !
+            !------------------------------------------------------------------------------!
+            if (banneron) write (unit=60+mynum,fmt='(3(a,1x,i5,1x))')                      &
+                       '       [~] Calling grell_cupar_static... i=',i,'j=',j,'icld=',icld
+            call grell_cupar_static(comp_down(icld),comp_noforc_cldwork,checkmass          &
+                                   ,iupmethod,maxens_cap,maxens_eff,mgmzp,cap_maxs(icld)   &
+                                   ,cap_max_increment,wnorm_max(icld),wnorm_increment      &
+                                   ,depth_min(icld),depth_max(icld),edtmax,edtmin,masstol  &
+                                   ,pmass_left,radius(icld),relheight_down,zkbmax(icld)    &
+                                   ,zcutdown(icld),z_detr(icld),ensemble_e(icld)           &
+                                   ,cuparm_g(ngrid)%aadn(i,j,icld)                         &
+                                   ,cuparm_g(ngrid)%aaup(i,j,icld)                         &
+                                   ,mynum                                                  )
+         end do staticloop
+
+         !---------------------------------------------------------------------------------!
+         ! 6. We now compute the dynamic control, which will determine the characteristic  !
+         !    mass flux for each Grell cumulus cloud.                                      !
          !---------------------------------------------------------------------------------!
          if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                         &
-                             '       [~] Calling grell_output... i=',i,'j=',j
-         call grell_output(comp_down(icld),mzp,mgmzp, grid_g(ngrid)%rtgt             (i,j) &
-              , zt(1:mzp)                           , zm(1:mzp)                            &
-              , cuparm_g(ngrid)%dnmf      (i,j,icld), cuparm_g(ngrid)%upmf      (i,j,icld) &
+                             '       [~] Calling grell_cupar_dynamic... i=',i,'j=',j
+         call grell_cupar_dynamic(cldd,clds,nclouds,dtlt,maxens_cap,maxens_eff,maxens_lsf  &
+                                 ,maxens_dyn,mgmzp,closure_type,comp_modif_thermo          &
+                                 ,comp_down,mynum,i,j,printing)
+
+         !---------------------------------------------------------------------------------!
+         ! 7. We now go through the cloud sizes again, to compute the feedback to the      !
+         !    large scale and any other cloud-dependent variable that needs to be          !
+         !    computed.
+         !---------------------------------------------------------------------------------!
+         fdbkloop: do icld=cldd,clds
+            !------------------------------------------------------------------------------!
+            ! 7a. Computing the feedback to the large-scale per se.  This will determine   !
+            !     the forcing of large-scale variables, namely ice-liquid potential        !
+            !     temperature, total water vapour mixing ratio, and carbon dioxide mixing  !
+            !     ratio.                                                                   !
+            !------------------------------------------------------------------------------!
+            if (banneron) write (unit=60+mynum,fmt='(3(a,1x,i5,1x))')                      &
+                   '       [~] Calling grell_cupar_feedback... i=',i,'j=',j,'icld=',icld
+            call grell_cupar_feedback( comp_down(icld),mgmzp,maxens_cap,maxens_eff         &
+                                     , maxens_lsf,maxens_dyn,inv_ensdim,max_heat(icld)     &
+                                     , ensemble_e(icld)                                    &
+                                     , cuparm_g(ngrid)%upmf(i,j,icld)                      &
+                                     , cuparm_g(ngrid)%upmf(i,j,icld)                      &
+                                     , cuparm_g(ngrid)%edt (i,j,icld)                      )
+
+            !------------------------------------------------------------------------------!
+            ! 7b. We now compute the other output variables such as mass fluxes and inter- !
+            !     esting levels.                                                           !
+            !------------------------------------------------------------------------------!
+            if (banneron) write (unit=60+mynum,fmt='(3(a,1x,i5,1x))')                      &
+                     '       [~] Calling grell_cupar_output... i=',i,'j=',j,'icld=',icld
+            call grell_cupar_output(comp_down(icld),mzp,mgmzp,maxens_cap                   &
+              , grid_g(ngrid)%rtgt             (i,j), zt(1:mzp)                            &
+              , zm(1:mzp)                           , cuparm_g(ngrid)%dnmf      (i,j,icld) &
+              , cuparm_g(ngrid)%upmf      (i,j,icld), ensemble_e                    (icld) &
               , cuparm_g(ngrid)%xierr     (i,j,icld), cuparm_g(ngrid)%zjmin     (i,j,icld) &
               , cuparm_g(ngrid)%zk22      (i,j,icld), cuparm_g(ngrid)%zkbcon    (i,j,icld) &
               , cuparm_g(ngrid)%zkdt      (i,j,icld), cuparm_g(ngrid)%zktop     (i,j,icld) &
@@ -356,54 +400,61 @@ subroutine grell_cupar_driver(banneron,icld)
               , cuparm_g(ngrid)%areadn    (i,j,icld), cuparm_g(ngrid)%areaup    (i,j,icld) &
               , cuparm_g(ngrid)%cuprliq (:,i,j,icld), cuparm_g(ngrid)%cuprice (:,i,j,icld))
 
-         !---------------------------------------------------------------------------------!
-         ! 6k. Copy the CO2 forcing if CO2 is available.                                   !
-         !---------------------------------------------------------------------------------!
-         if (co2_on) call atob(mzp,vctr28(1:mzp),cuparm_g(ngrid)%co2src(:,i,j,icld))
+            !------------------------------------------------------------------------------!
+            ! 7c. Copy the CO2 forcing if CO2 is available.                                !
+            !------------------------------------------------------------------------------!
+            if (co2_on) call atob(mzp,vctr28(1:mzp),cuparm_g(ngrid)%co2src(:,i,j,icld))
 
-         !---------------------------------------------------------------------------------!
-         ! 6k. If the user needs the full mass flux information to drive Lagrangian models !
-         !     do it now.                                                                  !
-         !---------------------------------------------------------------------------------!
-         if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                         &
-                             '       [~] Maybe calling prep_convflx_to_mass... i=',i,'j=',j
-         if (imassflx == 1) then
-            call prep_convflx_to_mass(mzp                                                  &
+            !------------------------------------------------------------------------------!
+            ! 7d. If the user needs the full mass flux information to drive Lagrangian     !
+            !     models do it now.                                                        !
+            !------------------------------------------------------------------------------!
+            if (banneron) write (unit=60+mynum,fmt='(3(a,1x,i5,1x))')                      &
+               '       [~] Maybe calling prep_convflx_to_mass... i=',i,'j=',j,'icld=',icld
+            if (imassflx == 1) then
+               call prep_convflx_to_mass(mzp,mgmzp,maxens_cap                              &
                   , cuparm_g(ngrid)%dnmf    (i,j,icld), cuparm_g(ngrid)%upmf    (i,j,icld) &
-                  , mass_g(ngrid)%cfxdn   (:,i,j,icld), mass_g(ngrid)%cfxup   (:,i,j,icld) &
-                  , mass_g(ngrid)%dfxdn   (:,i,j,icld), mass_g(ngrid)%dfxup   (:,i,j,icld) &
-                  , mass_g(ngrid)%efxdn   (:,i,j,icld), mass_g(ngrid)%efxup   (:,i,j,icld) )
-         end if
-
-         !---------------------------------------------------------------------------------!
-         ! 6l. Here are CATT-related procedures. It does pretty much the same as it used   !
-         !     to, except that I took the statistics out from inside grell_cupar_main and  !
-         !     brought trans_conv_mflx inside the i/j loop.                                !
-         !---------------------------------------------------------------------------------!
-         if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                         &
-                             '       [~] Maybe calling grell_massflx_stats... i=',i,'j=',j
-         if (catt == 1) then
-            if (icld == 1) then
-               call grell_massflx_stats(mzp,icld,.true.,dti,maxens_dyn(icld)               &
-                  , maxens_lsf(icld),maxens_eff(icld),maxens_cap(icld),inv_ensdim(icld)    &
-                  , closure_type(icld)                , ensemble_e(icld)%upmf_ens          &
-                  , extra3d(1,ngrid)%d3        (:,i,j), extra3d(4,ngrid)%d3        (:,i,j) )
-               call grell_massflx_stats(mzp,icld,.false.,dti,maxens_dyn(icld)              &
-                  , maxens_lsf(icld),maxens_eff(icld),maxens_cap(icld),inv_ensdim(icld)    &
-                  , closure_type(icld)                , ensemble_e(icld)%upmf_ens          &
-                  , extra3d(1,ngrid)%d3        (:,i,j), extra3d(4,ngrid)%d3        (:,i,j) )
-            elseif (icld == 2) then
-               call grell_massflx_stats(mzp,icld,.true.,dti,maxens_dyn(icld)               &
-                  , maxens_lsf(icld), maxens_eff(icld),maxens_cap(icld),inv_ensdim(icld)   &
-                  , closure_type(icld)                , ensemble_e(icld)%upmf_ens          &
-                  , extra3d(2,ngrid)%d3        (:,i,j), scratch%vt3dp                      )
+                  , ensemble_e(icld)                  , mass_g(ngrid)%cfxdn   (:,i,j,icld) &
+                  , mass_g(ngrid)%cfxup   (:,i,j,icld), mass_g(ngrid)%dfxdn   (:,i,j,icld) &
+                  , mass_g(ngrid)%dfxup   (:,i,j,icld), mass_g(ngrid)%efxdn   (:,i,j,icld) &
+                  , mass_g(ngrid)%efxup   (:,i,j,icld))
             end if
-            do iscl=1,naddsc
-               call trans_conv_mflx(icld,iscl,mzp,mxp,myp,i,j                              &
-                  , cuparm_g(ngrid)%edt     (i,j,icld), cuparm_g(ngrid)%upmf    (i,j,icld) &
-                  , scalar_g(iscl,ngrid)%sclt                                              )
-            end do
-         end if
+
+            !------------------------------------------------------------------------------!
+            ! 7e. Here are CATT-related procedures. It does pretty much the same as it     !
+            !     used to, except that I took the statistics out from inside               !
+            !     grell_cupar_main and brought trans_conv_mflx inside the i/j loop.        !
+            !------------------------------------------------------------------------------!
+            if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                      &
+                '       [~] Maybe calling grell_massflx_stats... i=',i,'j=',j,'icld=',icld
+            if (catt == 1) then
+               if (icld == 1) then
+                  call grell_massflx_stats(mzp,icld,.true.,dti,maxens_dyn,maxens_lsf       &
+                                          , maxens_eff,maxens_cap,inv_ensdim,closure_type  &
+                                          , ensemble_e(icld)                               &
+                                          , extra3d(1,ngrid)%d3        (:,i,j)             &
+                                          , extra3d(4,ngrid)%d3        (:,i,j)             )
+                  call grell_massflx_stats(mzp,icld,.false.,dti,maxens_dyn,maxens_lsf      &
+                                          , maxens_eff,maxens_cap,inv_ensdim,closure_type  &
+                                          , ensemble_e(icld)                               &
+                                          , extra3d(1,ngrid)%d3        (:,i,j)             &
+                                          , extra3d(4,ngrid)%d3        (:,i,j)             )
+               elseif (icld == 2) then
+                  call grell_massflx_stats(mzp,icld,.true.,dti,maxens_dyn,maxens_lsf       &
+                                          , maxens_eff,maxens_cap,inv_ensdim,closure_type  &
+                                          , ensemble_e(icld)                               &
+                                          , extra3d(2,ngrid)%d3        (:,i,j)             &
+                                          , scratch%vt3dp                                  )
+               end if
+               do iscl=1,naddsc
+                  call trans_conv_mflx(icld,iscl,mzp,mxp,myp,maxens_cap,i,j                &
+                                      ,ensemble_e(icld)                                    &
+                                      ,cuparm_g(ngrid)%edt     (i,j,icld)                  &
+                                      ,cuparm_g(ngrid)%upmf    (i,j,icld)                  &
+                                      ,scalar_g(iscl,ngrid)%sclt                           )
+               end do
+            end if
+         end do fdbkloop
 
 
       end do iloop

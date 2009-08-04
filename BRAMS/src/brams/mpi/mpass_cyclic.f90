@@ -324,7 +324,7 @@ subroutine node_sendcyclic(isflag)
                         call mkcycbuff(mmzp(1),mmxp(1),mmyp(1),1,vtab_r(nv,1)%var_p        &
                                       ,scratch%vt3dp,isn,jsn)
 
-                        call MPI_Pack(scratch%vt3dp(1),mmzp(1),MPI_REAL                    &
+                        call MPI_Pack(scratch%vt3dp,mmzp(1),MPI_REAL                       &
                                      ,node_buffs_cyc(ndn)%buffsend_cyc(1),nbuffsend_cyc    &
                                      ,ipos,MPI_COMM_WORLD,ierr)
                      case (9) !----- (X,Y,C) ----------------------------------------------!

@@ -224,8 +224,8 @@ subroutine rams_mem_alloc(proc_type)
       allocate(ensemble_e(nclouds))
       do ne=1, nclouds
          call nullify_ensemble(ensemble_e(ne))
-         call alloc_ensemble(ensemble_e(ne),mgmzp,maxens_dyn(ne),maxens_lsf(ne)            &
-                            ,maxens_eff(ne),maxens_cap(ne))
+         call alloc_ensemble(ensemble_e(ne),nclouds,mgmzp,maxens_dyn,maxens_lsf,maxens_eff &
+                            ,maxens_cap)
          call zero_ensemble(ensemble_e(ne))
       end do
    end if
@@ -263,34 +263,27 @@ subroutine rams_mem_alloc(proc_type)
 
       Flag_Grell = 2
       !----- Translating closure_type to icoic --------------------------------------------!
-      select case (closure_type(1))
+      select case (closure_type)
       case ('en')
          icoic = 0
-      case ('gr')
-         icoic = 1
-      case ('lo')
-         icoic = 4
-      case ('mc')
-         icoic = 7
-      case ('kf') 
-         icoic = 10
-      case ('as') 
-         icoic = 13
-      case default 
-         icoic_sh = 1
-      end select
-      !----- Translating closure_type to icoic_sh -----------------------------------------!
-      select case (CLOSURE_TYPE(nclouds))
-      case ('en')
          icoic_sh = 0
       case ('gr')
+         icoic = 1
          icoic_sh = 1
-      case ('as')
-         icoic_sh = 4
+      case ('lo')
+         icoic = 4
+         icoic_sh = 8
+      case ('mc')
+         icoic = 7
+         icoic_sh = 8
       case ('kf') 
+         icoic = 10
          icoic_sh = 8
+      case ('as') 
+         icoic = 13
+         icoic_sh = 4
       case default 
-         icoic_sh = 8
+         icoic_sh = 1
       end select
    end if
 

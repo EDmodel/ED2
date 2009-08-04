@@ -262,11 +262,12 @@ end subroutine init_can_rad_params
 !------------------------------------------------------------------------------------------!
 subroutine init_can_air_params()
 
-   use canopy_air_coms, only : dry_veg_lwater       & ! intent(out)
-                             , fullveg_lwater       & ! intent(out)
-                             , rb_inter             & ! intent(out)
-                             , rb_slope             & ! intent(out)
-                             , minimum_canopy_depth ! ! intent(out)
+   use canopy_air_coms, only : dry_veg_lwater        & ! intent(out) 
+                             , fullveg_lwater        & ! intent(out) 
+                             , rb_inter              & ! intent(out) 
+                             , rb_slope              & ! intent(out) 
+                             , minimum_canopy_depth  & ! intent(out) 
+                             , minimum_canopy_depth8 ! ! intent(out)
 
    !---------------------------------------------------------------------------------------!
    !    Minimum leaf water content to be considered.  Values smaller than this will be     !
@@ -289,14 +290,15 @@ subroutine init_can_air_params()
    !      Variables to define the vegetation aerodynamic resistance.  They are currently   !
    ! not PFT dependent.                                                                    !
    !---------------------------------------------------------------------------------------!
-   rb_slope = 25.0 ! 0.00
-   rb_inter = 0.0  ! 1.e6
+   rb_slope = 25.0
+   rb_inter =  0.0 
 
    !---------------------------------------------------------------------------------------!
    !      This is the minimum canopy depth that is used to calculate the heat and moisture !
    ! storage capacity in the canopy air [m].                                               !
    !---------------------------------------------------------------------------------------!
-   minimum_canopy_depth = 5.d0
+   minimum_canopy_depth  = 5.0
+   minimum_canopy_depth8 = dble(minimum_canopy_depth)
 
    return
 end subroutine init_can_air_params

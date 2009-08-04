@@ -44,9 +44,11 @@ rm -fv grell_coms.o               grell_coms.mod
 rm -fv grell_cupar_aux.o          grell_cupar_aux.mod
 rm -fv grell_cupar_downdraft.o    grell_cupar_downdraft.mod
 rm -fv grell_cupar_driver.o       grell_cupar_driver.mod
+rm -fv grell_cupar_dynamic.o      grell_cupar_dynamic.mod
 rm -fv grell_cupar_ensemble.o     grell_cupar_ensemble.mod
 rm -fv grell_cupar_environment.o  grell_cupar_environment.mod
-rm -fv grell_cupar_main.o         grell_cupar_main.mod
+rm -fv grell_cupar_static.o       grell_cupar_static.mod
+rm -fv grell_cupar_feedback.o     grell_cupar_feedback.mod
 rm -fv grell_cupar_updraft.o      grell_cupar_updraft.mod
 rm -fv grell_extras_catt.o        grell_extras_catt.mod
 rm -fv grid_dims.o                grid_dims.mod

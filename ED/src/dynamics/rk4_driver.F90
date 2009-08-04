@@ -26,7 +26,7 @@ module rk4_driver
       use ed_max_dims            , only : n_dbh                ! ! intent(in)
       use ed_misc_coms           , only : dtlsm                ! ! intent(in)
       use consts_coms            , only : umol_2_kgC           ! ! intent(in)
-      use canopy_struct_dynamics , only : canopy_turbulence    ! ! subroutine
+      use canopy_struct_dynamics , only : canopy_turbulence8   ! ! subroutine
       implicit none
 
       !----------- Use MPI timing calls, need declarations --------------------------------!
@@ -129,7 +129,7 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !     Calculate the canopy geometry, and the scalar transport coefficients. !
                !---------------------------------------------------------------------------!
-               call canopy_turbulence(csite,integration_buff%initp,isi,ipa,.true.)
+               call canopy_turbulence8(csite,integration_buff%initp,isi,ipa,.true.)
 
 
 
@@ -172,7 +172,7 @@ module rk4_driver
                call integrate_patch(csite,ipa,isi,ipy,ifm,integration_buff)
 
                !---------------------------------------------------------------------------!
-               !    Update the minimum monthly temperature, based on canopy temperature.
+               !    Update the minimum monthly temperature, based on canopy temperature.   !
                !---------------------------------------------------------------------------!
                if (cpoly%site(isi)%can_temp(ipa) < cpoly%min_monthly_temp(isi)) then
                   cpoly%min_monthly_temp(isi) = cpoly%site(isi)%can_temp(ipa)
@@ -596,6 +596,10 @@ module rk4_driver
    end subroutine initp2modelp
    !=======================================================================================!
    !=======================================================================================!
+
+
+
+
 
 
    !=======================================================================================!
