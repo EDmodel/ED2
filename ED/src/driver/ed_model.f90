@@ -44,7 +44,8 @@ subroutine ed_model()
                             , patchtype           & ! intent(in)
                             , filltab_alltypes    & ! intent(in)
                             , filltables          ! ! intent(in)
-   use rk4_driver , only : rk4_timestep     ! ! intent(in)
+   use rk4_driver    , only : rk4_timestep        ! ! intent(in)
+   use rk4_coms      , only : checkbudget         ! ! intent(in)
    use ed_node_coms  , only : mynum               & ! intent(in)
                             , nnodetot            ! ! intent(in)
    use disturb_coms  , only : include_fire        ! ! intent(in)
@@ -107,7 +108,7 @@ subroutine ed_model()
    ! variables, these are used in conditions of ifoutput,idoutput and imoutput conditions.
    ! If they are not >0, then set the logical, fast_diagnostics to false.
    !---------------------------------------------------------------------------------------!
-   fast_diagnostics = ifoutput /= 0 .or. idoutput /= 0 .or. imoutput /= 0
+   fast_diagnostics = checkbudget .or. ifoutput /= 0 .or. idoutput /= 0 .or. imoutput /= 0
 
    !------------------------------------------------------------------------!
    ! If this is not a history restart - then zero out the

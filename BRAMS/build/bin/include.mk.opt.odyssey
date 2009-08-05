@@ -230,11 +230,11 @@ MOD_EXT=mod
 #                  face problems. If it successfully compiles, then you can switch to B.   #
 #------------------------------------------------------------------------------------------#
 #USE_INTERF=0
-#F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces            \
+#F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces             \
          -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
          -traceback -ftrapuv
 #C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended
-#LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces \
+#LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces  \
              -warn interfaces -debug extended -debug inline_debug_info  \
              -debug-parameters all -traceback -ftrapuv
 #C_LOADER_OPTS=-v -g -traceback

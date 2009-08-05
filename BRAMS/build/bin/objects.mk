@@ -265,10 +265,11 @@ OBJ_MODEL =                         \
 	mem_edcp.o                  \
 	allometry.o                 \
 	average_utils.o             \
+	budget_utils.o              \
 	c34constants.o              \
 	canopy_air_coms.o           \
 	canopy_radiation_coms.o     \
-	canopy_struct_dynamics.o   \
+	canopy_struct_dynamics.o    \
 	canopy_update_euler.o       \
 	consts_coms.o               \
 	decomp_coms.o               \

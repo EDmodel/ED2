@@ -184,19 +184,29 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
 
   csite%htry(ip1:ip2) = 1.0
 
-  csite%wbudget_loss2atm(ip1:ip2) = 0.0
-  csite%wbudget_loss2runoff(ip1:ip2) = 0.0
-  csite%co2budget_loss2atm(ip1:ip2) = 0.0
-  csite%ebudget_loss2atm(ip1:ip2) = 0.0
-  csite%ebudget_latent(ip1:ip2) = 0.0
-
-  csite%wbudget_precipgain(ip1:ip2) = 0.0
-  csite%ebudget_precipgain(ip1:ip2) = 0.0
-  csite%ebudget_netrad(ip1:ip2) = 0.0
-  csite%co2budget_gpp(ip1:ip2) = 0.0
-  csite%co2budget_gpp_dbh(:,ip1:ip2) = 0.0
-  csite%co2budget_plresp(ip1:ip2) = 0.0
-  csite%co2budget_rh(ip1:ip2) = 0.0
+  csite%co2budget_gpp(ip1:ip2)            = 0.0
+  csite%co2budget_gpp_dbh(:,ip1:ip2)      = 0.0
+  csite%co2budget_rh(ip1:ip2)             = 0.0
+  csite%co2budget_plresp(ip1:ip2)         = 0.0
+  csite%co2budget_initialstorage(ip1:ip2) = 0.0
+  csite%co2budget_residual(ip1:ip2)       = 0.0
+  csite%wbudget_precipgain(ip1:ip2)       = 0.0
+  csite%wbudget_loss2atm(ip1:ip2)         = 0.0
+  csite%wbudget_loss2runoff(ip1:ip2)      = 0.0
+  csite%wbudget_loss2drainage(ip1:ip2)    = 0.0
+  csite%wbudget_initialstorage(ip1:ip2)   = 0.0
+  csite%wbudget_residual(ip1:ip2)         = 0.0
+  csite%ebudget_precipgain(ip1:ip2)       = 0.0
+  csite%ebudget_netrad(ip1:ip2)           = 0.0
+  csite%ebudget_latent(ip1:ip2)           = 0.0
+  csite%ebudget_loss2atm(ip1:ip2)         = 0.0
+  csite%ebudget_loss2runoff(ip1:ip2)      = 0.0
+  csite%ebudget_loss2drainage(ip1:ip2)    = 0.0
+  csite%ebudget_initialstorage(ip1:ip2)   = 0.0
+  csite%ebudget_residual(ip1:ip2)         = 0.0
+  csite%dmean_co2_residual(ip1:ip2)       = 0.0
+  csite%dmean_energy_residual(ip1:ip2)    = 0.0
+  csite%dmean_water_residual(ip1:ip2)     = 0.0
 
   !----------------------------------------------------------------------------------------!
   !    These variables need to be initialized here otherwise it will fail when new patches !

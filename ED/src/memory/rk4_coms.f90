@@ -118,10 +118,14 @@ module rk4_coms
       real(kind=8),pointer,dimension(:) :: avg_sensible_gg ! Soil heat flux between layers
       real(kind=8)                      :: avg_drainage    ! Drainage at the bottom.
       !----- Full budget variables --------------------------------------------------------!
-      real(kind=8) :: wbudget_loss2atm
-      real(kind=8) :: ebudget_loss2atm
-      real(kind=8) :: ebudget_latent
       real(kind=8) :: co2budget_loss2atm
+      real(kind=8) :: ebudget_loss2atm
+      real(kind=8) :: ebudget_loss2drainage
+      real(kind=8) :: ebudget_loss2runoff
+      real(kind=8) :: ebudget_latent
+      real(kind=8) :: wbudget_loss2atm
+      real(kind=8) :: wbudget_loss2drainage
+      real(kind=8) :: wbudget_loss2runoff
    end type rk4patchtype
    !---------------------------------------------------------------------------------------!
 
@@ -270,7 +274,10 @@ module rk4_coms
    real(kind=8) :: rk4eps      ! Desired relative accuracy
    real(kind=8) :: rk4epsi     ! Inverse of rk4eps
    real(kind=8) :: hmin        ! Minimum step size
-   logical      :: print_diags ! Flag to print the diagnostic check. 
+   logical      :: print_diags ! Flag to print the diagnostic check.
+   logical      :: checkbudget ! Flag to decide whether we will check whether the budgets 
+                               !    close every time step (and stop the run if they don't)
+                               !    or if we will skip this part.
    !---------------------------------------------------------------------------------------!
 
 
@@ -507,10 +514,14 @@ module rk4_coms
       type(rk4patchtype) :: y
       !------------------------------------------------------------------------------------!
 
-      y%wbudget_loss2atm               = 0.d0
+      y%co2budget_loss2atm             = 0.d0
       y%ebudget_loss2atm               = 0.d0
       y%ebudget_latent                 = 0.d0
-      y%co2budget_loss2atm             = 0.d0
+      y%ebudget_loss2drainage          = 0.d0
+      y%ebudget_loss2runoff            = 0.d0
+      y%wbudget_loss2atm               = 0.d0
+      y%wbudget_loss2drainage          = 0.d0
+      y%wbudget_loss2runoff            = 0.d0
      
       y%can_temp                       = 0.d0
       y%can_shv                        = 0.d0

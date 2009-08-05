@@ -69,7 +69,7 @@ subroutine update_patch_derived_props(csite,lsl,rhos,ipa)
    integer                      :: ico
    !----- Local constants -----------------------------------------------------------------!
    real            , parameter  :: veg_height_min = 1.0 !was 0.2
-   !----- External functions --------------------------------------------------------------!
+   !----- External functions. -------------------------------------------------------------!
    real            , external   :: compute_water_storage
    real            , external   :: compute_energy_storage
    real            , external   :: compute_co2_storage
@@ -124,11 +124,10 @@ subroutine update_patch_derived_props(csite,lsl,rhos,ipa)
    !----- Finding the patch roughness due to vegetation. ----------------------------------!
    csite%veg_rough(ipa) = 0.13 * csite%veg_height(ipa)
   
-
-   !----- Computing the water, energy, and carbon storage (may be unecessary). ------------!
+   !----- Computing the storage terms for CO2, energy, and water budgets. -----------------!
+   csite%co2budget_initialstorage(ipa) = compute_co2_storage(csite,rhos,ipa)
    csite%wbudget_initialstorage(ipa)   = compute_water_storage(csite,lsl,rhos,ipa)
    csite%ebudget_initialstorage(ipa)   = compute_energy_storage(csite,lsl,rhos,ipa)
-   csite%co2budget_initialstorage(ipa) = compute_co2_storage(csite,rhos,ipa)
 
    !----- Updating the cohort count (may be redundant as well...) -------------------------!
    csite%cohort_count(ipa) = cpatch%ncohorts

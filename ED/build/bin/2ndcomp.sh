@@ -3,6 +3,7 @@ rm -fv edmain.o                   edmain.mod
 rm -fv allometry.o                allometry.mod 
 rm -fv an_header.o                an_header.mod 
 rm -fv average_utils.o            average_utils.mod 
+rm -fv budget_utils.o             budget_utils.mod 
 rm -fv canopy_air_coms.o          canopy_air_coms.mod 
 rm -fv canopy_radiation_coms.o    canopy_radiation_coms.mod 
 rm -fv canopy_struct_dynamics.o   canopy_struct_dynamics.mod

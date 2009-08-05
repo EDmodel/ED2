@@ -92,7 +92,8 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
                                    , slzt8                & ! intent(in)
                                    , ss                   & ! intent(in)
                                    , isoilbc              ! ! intent(in)
-   use ed_misc_coms            , only : dtlsm                & ! intent(in)
+   use ed_misc_coms         , only : dtlsm                & ! intent(in)
+                                   , fast_diagnostics     & ! intent(in)
                                    , current_time         ! ! intent(in)
    use rk4_coms             , only : rk4eps               & ! intent(in)
                                    , rk4min_sfcwater_mass & ! intent(in)
@@ -505,6 +506,12 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
       dinitp%avg_drainage = 0.d0
    end if
 
+   !----- Copying the variables to the budget arrays. -------------------------------------!
+   if (fast_diagnostics) then
+      dinitp%wbudget_loss2drainage = dinitp%avg_drainage
+      dinitp%ebudget_loss2drainage = qw_flux(rk4met%lsl)
+   end if
+
    !----- Finally, update soil moisture (impose minimum value of soilcp) and soil energy. -!
    do k = rk4met%lsl,nzg
       dinitp%soil_water(k)  = dinitp%soil_water(k)                                         &
@@ -591,8 +598,8 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
                                     , dewmax               ! ! intent(in)
    use therm_lib             , only : qwtk                 & ! subroutine
                                     , rhovsil              ! ! function
-   use ed_misc_coms             , only : dtlsm                ! ! intent(in)
-   use ed_misc_coms          , only : fast_diagnostics     ! ! intent(in)
+   use ed_misc_coms          , only : dtlsm                & ! intent(in)
+                                    , fast_diagnostics     ! ! intent(in)
    use allometry             , only : dbh2ca               ! ! function
    use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
    use pft_coms              , only : water_conductance    & ! intent(in)
@@ -1062,11 +1069,11 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    !---------------------------------------------------------------------------------------!
    if (fast_diagnostics) then
 
-      dinitp%wbudget_loss2atm = - wflxac
-      dinitp%ebudget_loss2atm = - hflxac
-      dinitp%ebudget_latent   = dinitp%ebudget_latent -qdewgndflx + qwflxgc
-      
       dinitp%co2budget_loss2atm = - cflxac
+      dinitp%ebudget_loss2atm   = - hflxac
+      dinitp%ebudget_latent     = dinitp%ebudget_latent -qdewgndflx + qwflxgc
+      dinitp%wbudget_loss2atm   = - wflxac
+      
       dinitp%avg_carbon_ac      =   cflxac
 
       dinitp%avg_sensible_vc   = hflxvc_tot                     ! Sens. heat,  Leaf->Canopy

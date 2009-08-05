@@ -23,9 +23,6 @@ module rk4_driver
                                         , sitetype             & ! structure
                                         , patchtype            ! ! structure
       use grid_coms              , only : nzg                  ! ! intent(in)
-      use ed_max_dims            , only : n_dbh                ! ! intent(in)
-      use ed_misc_coms           , only : dtlsm                ! ! intent(in)
-      use consts_coms            , only : umol_2_kgC           ! ! intent(in)
       use canopy_struct_dynamics , only : canopy_turbulence8   ! ! subroutine
       implicit none
 
@@ -40,10 +37,15 @@ module rk4_driver
       type(patchtype)           , pointer     :: cpatch
       integer                                 :: ipy,isi,ipa
       integer, dimension(nzg)                 :: ed_ktrans
-      real   , dimension(n_dbh)               :: gpp_dbh
       real                                    :: sum_lai_rbi
-      real                                    :: gpp
-      real                                    :: plant_respiration
+      real                                    :: wcurr_loss2atm
+      real                                    :: ecurr_loss2atm
+      real                                    :: co2curr_loss2atm
+      real                                    :: wcurr_loss2drainage
+      real                                    :: ecurr_loss2drainage
+      real                                    :: wcurr_loss2runoff
+      real                                    :: ecurr_loss2runoff
+      real                                    :: ecurr_latent
       !----- Variables declared differently depending on the user's compilation options. --!
 #if USE_MPIWTIME
       real(kind=8)                            :: time_py_start
@@ -53,7 +55,6 @@ module rk4_driver
       real                                    :: time_py_spent
 #endif
       !----- Functions --------------------------------------------------------------------!
-      real                      , external    :: compute_netrad
       real                      , external    :: walltime
       !------------------------------------------------------------------------------------!
       
@@ -71,7 +72,7 @@ module rk4_driver
 
             patchloop: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
-
+                
                !----- Reset all buffers to zero, as a safety measure. ---------------------!
                call zero_rk4_patch(integration_buff%initp)
                call zero_rk4_patch(integration_buff%dinitp)
@@ -134,7 +135,7 @@ module rk4_driver
 
 
                !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
-               call canopy_photosynthesis(csite,ipa,cpoly%met(isi)%vels                 &
+               call canopy_photosynthesis(csite,ipa,cpoly%met(isi)%vels                    &
                           ,cpoly%met(isi)%rhos,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%prss  &
                           ,ed_ktrans,csite%ntext_soil(:,ipa),csite%soil_water(:,ipa)       &
                           ,csite%soil_fracliq(:,ipa),cpoly%lsl(isi),sum_lai_rbi            &
@@ -145,31 +146,13 @@ module rk4_driver
                !----- Compute root and heterotrophic respiration. -------------------------!
                call soil_respiration(csite,ipa)
 
-               csite%wbudget_precipgain(ipa) = csite%wbudget_precipgain(ipa)               &
-                                             + cpoly%met(isi)%pcpg * dtlsm
-               csite%ebudget_precipgain(ipa) = csite%ebudget_precipgain(ipa)               &
-                                             + cpoly%met(isi)%qpcpg * dtlsm
-               csite%ebudget_netrad(ipa)     = csite%ebudget_netrad(ipa)                   &
-                                             + compute_netrad(csite,ipa) * dtlsm
-
-               !----- Compute the carbon flux components. ---------------------------------!
-               call sum_plant_cfluxes(csite,ipa,gpp,gpp_dbh,plant_respiration)
-               csite%co2budget_gpp(ipa)       = csite%co2budget_gpp(ipa) + gpp * dtlsm
-               csite%co2budget_gpp_dbh(:,ipa) = csite%co2budget_gpp_dbh(:,ipa)             & 
-                                              + gpp_dbh(:) *dtlsm
-               csite%co2budget_plresp(ipa)    = csite%co2budget_plresp(ipa)                &
-                                              + plant_respiration * dtlsm
-               csite%co2budget_rh(ipa)        = csite%co2budget_rh(ipa)                    &
-                                              + csite%rh(ipa) * dtlsm
-               cgrid%cbudget_nep(ipy)         = cgrid%cbudget_nep(ipy)                     &
-                                              + cpoly%area(isi) * csite%area(ipa) * dtlsm  &
-                                              * (gpp - plant_respiration - csite%rh(ipa))  &
-                                              * umol_2_kgC
-
                !---------------------------------------------------------------------------!
                !    This is the driver for the integration process...                      !
                !---------------------------------------------------------------------------!
-               call integrate_patch(csite,ipa,isi,ipy,ifm,integration_buff)
+               call integrate_patch(csite,ipa,isi,ipy,ifm,integration_buff,wcurr_loss2atm  &
+                             ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage          &
+                             ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff      &
+                             ,ecurr_latent)
 
                !---------------------------------------------------------------------------!
                !    Update the minimum monthly temperature, based on canopy temperature.   !
@@ -177,6 +160,18 @@ module rk4_driver
                if (cpoly%site(isi)%can_temp(ipa) < cpoly%min_monthly_temp(isi)) then
                   cpoly%min_monthly_temp(isi) = cpoly%site(isi)%can_temp(ipa)
                end if
+               
+               !-------------------------------------------------------------!
+               !     Compute the residuals.                                  ! 
+               !-------------------------------------------------------------!
+               call compute_budget(csite,cpoly%lsl(isi),cpoly%met(isi)%rhos  &
+                                  ,cpoly%met(isi)%pcpg,cpoly%met(isi)%qpcpg  &
+                                  ,ipa,wcurr_loss2atm,ecurr_loss2atm         &
+                                  ,co2curr_loss2atm,wcurr_loss2drainage      &
+                                  ,ecurr_loss2drainage,wcurr_loss2runoff     &
+                                  ,ecurr_loss2runoff,ecurr_latent            &
+                                  ,cpoly%area(isi),cgrid%cbudget_nep(ipy))
+               
 
             end do patchloop
          end do siteloop
@@ -205,7 +200,10 @@ module rk4_driver
    !=======================================================================================!
    !     This subroutine will drive the integration process.                               !
    !---------------------------------------------------------------------------------------!
-   subroutine integrate_patch(csite,ipa,isi,ipy,ifm,integration_buff)
+   subroutine integrate_patch(csite,ipa,isi,ipy,ifm,integration_buff,wcurr_loss2atm        &
+                             ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage          &
+                             ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff      &
+                             ,ecurr_latent)
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
       use ed_misc_coms       , only : dtlsm                ! ! intent(in)
@@ -229,12 +227,20 @@ module rk4_driver
                                  , effarea_heat         ! ! intent(out)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(integration_vars), target     :: integration_buff
-      type(sitetype)           , target     :: csite
-      integer                  , intent(in) :: ifm
-      integer                  , intent(in) :: ipy
-      integer                  , intent(in) :: isi
-      integer                  , intent(in) :: ipa
+      type(integration_vars), target      :: integration_buff
+      type(sitetype)        , target      :: csite   
+      integer               , intent(in)  :: ifm     
+      integer               , intent(in)  :: ipy     
+      integer               , intent(in)  :: isi     
+      integer               , intent(in)  :: ipa     
+      real                  , intent(out) :: wcurr_loss2atm
+      real                  , intent(out) :: ecurr_loss2atm
+      real                  , intent(out) :: co2curr_loss2atm
+      real                  , intent(out) :: wcurr_loss2drainage
+      real                  , intent(out) :: ecurr_loss2drainage
+      real                  , intent(out) :: wcurr_loss2runoff
+      real                  , intent(out) :: ecurr_loss2runoff
+      real                  , intent(out) :: ecurr_latent
       !----- Local variables --------------------------------------------------------------!
       type(rk4patchtype)       , pointer    :: initp
       real(kind=8)                          :: hbeg
@@ -304,7 +310,9 @@ module rk4_driver
       !------------------------------------------------------------------------------------!
       ! Move the state variables from the integrated patch to the model patch.             !
       !------------------------------------------------------------------------------------!
-      call initp2modelp(tend-tbeg,initp,csite,ipa,isi,ipy)
+      call initp2modelp(tend-tbeg,initp,csite,ipa,isi,ipy,wcurr_loss2atm,ecurr_loss2atm    &
+                       ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage           &
+                       ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent)
 
       return
    end subroutine integrate_patch
@@ -321,7 +329,9 @@ module rk4_driver
    !     This subroutine will copy the variables from the integration buffer to the state  !
    ! patch and cohorts.                                                                    !
    !---------------------------------------------------------------------------------------!
-   subroutine initp2modelp(hdid,initp,csite,ipa,isi,ipy)
+   subroutine initp2modelp(hdid,initp,csite,ipa,isi,ipy,wbudget_loss2atm,ebudget_loss2atm  &
+                          ,co2budget_loss2atm,wbudget_loss2drainage,ebudget_loss2drainage  &
+                          ,wbudget_loss2runoff,ebudget_loss2runoff,ebudget_latent)              
       use rk4_coms             , only : rk4patchtype         & ! structure
                                       , rk4met               & ! intent(in)
                                       , rk4min_veg_temp      & ! intent(in)
@@ -332,7 +342,8 @@ module rk4_driver
                                       , edgrid_g             ! ! structure
       use consts_coms          , only : day_sec              & ! intent(in)
                                       , t3ple8               ! ! intent(in)
-      use ed_misc_coms         , only : fast_diagnostics     ! ! intent(in)
+      use ed_misc_coms         , only : fast_diagnostics     & ! intent(in)
+                                      , dtlsm                ! ! intent(in)
       use soil_coms            , only : soil8                & ! intent(in)
                                       , slz8                 ! ! intent(in)
       use ed_misc_coms         , only : fast_diagnostics     ! ! intent(in)
@@ -342,29 +353,37 @@ module rk4_driver
       use ed_therm_lib         , only : ed_grndvap           ! ! subroutine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(rk4patchtype), target     :: initp
-      type(sitetype)    , target     :: csite
-      real(kind=8)      , intent(in) :: hdid
-      integer           , intent(in) :: ipa
-      integer           , intent(in) :: ipy
-      integer           , intent(in) :: isi
+      type(rk4patchtype), target      :: initp
+      type(sitetype)    , target      :: csite
+      real(kind=8)      , intent(in)  :: hdid
+      integer           , intent(in)  :: ipa
+      integer           , intent(in)  :: ipy
+      integer           , intent(in)  :: isi
+      real              , intent(out) :: wbudget_loss2atm
+      real              , intent(out) :: ebudget_loss2atm
+      real              , intent(out) :: co2budget_loss2atm
+      real              , intent(out) :: wbudget_loss2drainage
+      real              , intent(out) :: ebudget_loss2drainage
+      real              , intent(out) :: wbudget_loss2runoff
+      real              , intent(out) :: ebudget_loss2runoff
+      real              , intent(out) :: ebudget_latent
       !----- Local variables --------------------------------------------------------------!
-      type(patchtype)   , pointer    :: cpatch
-      integer                        :: mould
-      integer                        :: ico
-      integer                        :: k
-      integer                        :: kclosest
-      integer                        :: ksn
-      integer                        :: nsoil
-      integer                        :: nlsw1
-      real(kind=8)                   :: available_water
-      real(kind=8)                   :: tmp_energy
-      real                           :: surface_temp
-      real                           :: surface_fliq
+      type(patchtype)   , pointer     :: cpatch
+      integer                         :: mould
+      integer                         :: ico
+      integer                         :: k
+      integer                         :: kclosest
+      integer                         :: ksn
+      integer                         :: nsoil
+      integer                         :: nlsw1
+      real(kind=8)                    :: available_water
+      real(kind=8)                    :: tmp_energy
+      real                            :: surface_temp
+      real                            :: surface_fliq
       !----- Local contants ---------------------------------------------------------------!
-      real        , parameter        :: tendays_sec=10.*day_sec
+      real        , parameter         :: tendays_sec=10.*day_sec
       !----- External function ------------------------------------------------------------!
-      real        , external         :: sngloff
+      real        , external          :: sngloff
       !------------------------------------------------------------------------------------!
 
 
@@ -393,31 +412,45 @@ module rk4_driver
       ! check this before copying.                                                         !
       !------------------------------------------------------------------------------------!
       if(fast_diagnostics) then
-         csite%wbudget_loss2atm(ipa)     =sngloff(initp%wbudget_loss2atm  ,tiny_offset)
-         csite%ebudget_loss2atm(ipa)     =sngloff(initp%ebudget_loss2atm  ,tiny_offset)
-         csite%co2budget_loss2atm(ipa)   =sngloff(initp%co2budget_loss2atm,tiny_offset)
-         csite%ebudget_latent(ipa)       =sngloff(initp%ebudget_latent    ,tiny_offset)
-         csite%avg_vapor_vc(ipa)         =sngloff(initp%avg_vapor_vc      ,tiny_offset)
-         csite%avg_dew_cg(ipa)           =sngloff(initp%avg_dew_cg        ,tiny_offset)
-         csite%avg_vapor_gc(ipa)         =sngloff(initp%avg_vapor_gc      ,tiny_offset)
-         csite%avg_wshed_vg(ipa)         =sngloff(initp%avg_wshed_vg      ,tiny_offset)
-         csite%avg_vapor_ac(ipa)         =sngloff(initp%avg_vapor_ac      ,tiny_offset)
-         csite%avg_transp(ipa)           =sngloff(initp%avg_transp        ,tiny_offset)
-         csite%avg_evap(ipa)             =sngloff(initp%avg_evap          ,tiny_offset)
-         csite%avg_drainage(ipa)         =sngloff(initp%avg_drainage      ,tiny_offset)
-         csite%avg_netrad(ipa)           =sngloff(initp%avg_netrad        ,tiny_offset)
-         csite%avg_sensible_vc(ipa)      =sngloff(initp%avg_sensible_vc   ,tiny_offset)
-         csite%avg_sensible_2cas(ipa)    =sngloff(initp%avg_sensible_2cas ,tiny_offset)
-         csite%avg_qwshed_vg(ipa)        =sngloff(initp%avg_qwshed_vg     ,tiny_offset)
-         csite%avg_sensible_gc(ipa)      =sngloff(initp%avg_sensible_gc   ,tiny_offset)
-         csite%avg_sensible_ac(ipa)      =sngloff(initp%avg_sensible_ac   ,tiny_offset)
-         csite%avg_sensible_tot(ipa)     =sngloff(initp%avg_sensible_tot  ,tiny_offset)
-         csite%avg_carbon_ac(ipa)        =sngloff(initp%avg_carbon_ac     ,tiny_offset)
+         co2budget_loss2atm    = sngloff(initp%co2budget_loss2atm   ,tiny_offset)
+         ebudget_loss2atm      = sngloff(initp%ebudget_loss2atm     ,tiny_offset)
+         ebudget_loss2drainage = sngloff(initp%ebudget_loss2drainage,tiny_offset)
+         ebudget_loss2runoff   = sngloff(initp%ebudget_loss2runoff  ,tiny_offset)
+         ebudget_latent        = sngloff(initp%ebudget_latent       ,tiny_offset)
+         wbudget_loss2atm      = sngloff(initp%wbudget_loss2atm     ,tiny_offset)
+         wbudget_loss2drainage = sngloff(initp%wbudget_loss2drainage,tiny_offset)
+         wbudget_loss2runoff   = sngloff(initp%wbudget_loss2runoff  ,tiny_offset)
+
+         csite%avg_vapor_vc(ipa)         =sngloff(initp%avg_vapor_vc         ,tiny_offset)
+         csite%avg_dew_cg(ipa)           =sngloff(initp%avg_dew_cg           ,tiny_offset)
+         csite%avg_vapor_gc(ipa)         =sngloff(initp%avg_vapor_gc         ,tiny_offset)
+         csite%avg_wshed_vg(ipa)         =sngloff(initp%avg_wshed_vg         ,tiny_offset)
+         csite%avg_vapor_ac(ipa)         =sngloff(initp%avg_vapor_ac         ,tiny_offset)
+         csite%avg_transp(ipa)           =sngloff(initp%avg_transp           ,tiny_offset)
+         csite%avg_evap(ipa)             =sngloff(initp%avg_evap             ,tiny_offset)
+         csite%avg_drainage(ipa)         =sngloff(initp%avg_drainage         ,tiny_offset)
+         csite%avg_netrad(ipa)           =sngloff(initp%avg_netrad           ,tiny_offset)
+         csite%avg_sensible_vc(ipa)      =sngloff(initp%avg_sensible_vc      ,tiny_offset)
+         csite%avg_sensible_2cas(ipa)    =sngloff(initp%avg_sensible_2cas    ,tiny_offset)
+         csite%avg_qwshed_vg(ipa)        =sngloff(initp%avg_qwshed_vg        ,tiny_offset)
+         csite%avg_sensible_gc(ipa)      =sngloff(initp%avg_sensible_gc      ,tiny_offset)
+         csite%avg_sensible_ac(ipa)      =sngloff(initp%avg_sensible_ac      ,tiny_offset)
+         csite%avg_sensible_tot(ipa)     =sngloff(initp%avg_sensible_tot     ,tiny_offset)
+         csite%avg_carbon_ac(ipa)        =sngloff(initp%avg_carbon_ac        ,tiny_offset)
          do k = rk4met%lsl, nzg
-            csite%avg_sensible_gg(k,ipa) =sngloff(initp%avg_sensible_gg(k),tiny_offset)
-            csite%avg_smoist_gg(k,ipa)   =sngloff(initp%avg_smoist_gg(k)  ,tiny_offset)
-            csite%avg_smoist_gc(k,ipa)   =sngloff(initp%avg_smoist_gc(k)  ,tiny_offset)
+            csite%avg_sensible_gg(k,ipa) =sngloff(initp%avg_sensible_gg(k)   ,tiny_offset)
+            csite%avg_smoist_gg(k,ipa)   =sngloff(initp%avg_smoist_gg(k)     ,tiny_offset)
+            csite%avg_smoist_gc(k,ipa)   =sngloff(initp%avg_smoist_gc(k)     ,tiny_offset)
          end do
+      else
+         co2budget_loss2atm             = 0.
+         ebudget_loss2atm               = 0.
+         ebudget_loss2drainage          = 0.
+         ebudget_loss2runoff            = 0.
+         ebudget_latent                 = 0.
+         wbudget_loss2atm               = 0.
+         wbudget_loss2drainage          = 0.
+         wbudget_loss2runoff            = 0.
       end if
       !------------------------------------------------------------------------------------!
 
@@ -637,285 +670,5 @@ module rk4_driver
    !=======================================================================================!
    !=======================================================================================! 
 end module rk4_driver
-
-
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!   This function computes the total water stored in the system, in kg/m2.                 !
-!   (soil + temporary pools + canopy air space + leaf surface).                            !
-!------------------------------------------------------------------------------------------!
-real function compute_water_storage(csite, lsl, rhos,ipa)
-   use ed_state_vars , only : sitetype   & ! structure
-                            , patchtype  ! ! structure
-   use grid_coms     , only : nzg        ! ! intent(in)
-   use soil_coms     , only : dslz       ! ! intent(in)
-   use consts_coms   , only : wdns       ! ! intent(in)
-   implicit none
-   !----- Arguments -----------------------------------------------------------------------!
-   type(sitetype) , target     :: csite
-   integer        , intent(in) :: ipa
-   integer        , intent(in) :: lsl
-   real           , intent(in) :: rhos
-   !----- Local variables -----------------------------------------------------------------!
-   type(patchtype), pointer    :: cpatch
-   integer                     :: k
-   integer                     :: ico
-   !---------------------------------------------------------------------------------------!
-
-   compute_water_storage = 0.0
-   cpatch => csite%patch(ipa)
-
-   !----- 1. Adding the water stored in the soil. -----------------------------------------!
-   do k = lsl, nzg
-      compute_water_storage = compute_water_storage     &
-                               + real(csite%soil_water(k,ipa)) * dslz(k) * wdns
-   end do
-   !----- 2. Adding the water stored in the temporary surface water/snow. -----------------!
-   do k = 1, csite%nlev_sfcwater(ipa)
-      compute_water_storage = compute_water_storage + csite%sfcwater_mass(k,ipa)
-   end do
-   !----- 3. Adding the water vapour floating in the canopy air space. --------------------!
-   compute_water_storage = compute_water_storage                                     &
-                            + csite%can_shv(ipa) * csite%veg_height(ipa) * rhos
-   !----- 4. Adding the water over the leaf surface. --------------------------------------!
-   do ico = 1,cpatch%ncohorts
-      compute_water_storage = compute_water_storage + cpatch%veg_water(ico)
-   end do
-
-   return
-end function compute_water_storage
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!    This function computs the total net radiation, by adding the radiation that interacts !
-! with the different surfaces.                                                             !
-!------------------------------------------------------------------------------------------!
-real function compute_netrad(csite,ipa)
-   use ed_state_vars , only : sitetype  & ! structure
-                            , patchtype ! ! structure
-   implicit none
-   !----- Arguments -----------------------------------------------------------------------!
-   type(sitetype) , target     :: csite
-   integer        , intent(in) :: ipa
-   !----- Local variables -----------------------------------------------------------------!
-   type(patchtype), pointer    :: cpatch
-   integer                     :: k
-   integer                     :: ico
-   !---------------------------------------------------------------------------------------!
-
-   cpatch => csite%patch(ipa)
-
-   compute_netrad = 0.0
-   !----- 1. Adding the ground components -------------------------------------------------!
-   compute_netrad = csite%rshort_g(ipa) + csite%rlong_g(ipa) + csite%rlong_s(ipa)
-   !----- 2. Adding the shortwave radiation that reaches each snow/water layer ------------!
-   do k = 1, csite%nlev_sfcwater(ipa)
-      compute_netrad = compute_netrad + csite%rshort_s(k,ipa)
-   end do
-   !----- 3. Adding the radiation components that interact with leaves. -------------------!
-   do ico = 1,cpatch%ncohorts
-      compute_netrad = compute_netrad + cpatch%rshort_v(ico) + cpatch%rlong_v(ico)
-   end do
-   return
-end function compute_netrad
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!    This function computs the total net radiation, by adding the radiation that interacts !
-! with the different surfaces.  The result is given in J/m2.                               !
-!------------------------------------------------------------------------------------------!
-real function compute_energy_storage(csite, lsl, rhos, ipa)
-   use ed_state_vars        , only : sitetype   & ! structure
-                                   , patchtype  ! ! structure
-   use grid_coms            , only : nzg        ! ! intent(in)
-   use soil_coms            , only : dslz       ! ! intent(in)
-   use consts_coms          , only : cp         & ! intent(in)
-                                   , cliq       & ! intent(in)
-                                   , cice       & ! intent(in)
-                                   , alli       & ! intent(in)
-                                   , t3ple      ! ! intent(in)
-   use rk4_coms             , only : toosparse  ! ! intent(in)
-   implicit none
-   !----- Arguments -----------------------------------------------------------------------!
-   type(sitetype) , target     :: csite
-   integer        , intent(in) :: ipa
-   integer        , intent(in) :: lsl
-   real           , intent(in) :: rhos
-   !----- Local variables -----------------------------------------------------------------!
-   type(patchtype), pointer    :: cpatch
-   integer                     :: k
-   integer                     :: ico
-   real                        :: soil_storage
-   real                        :: sfcwater_storage
-   real                        :: cas_storage
-   real                        :: veg_storage
-   !---------------------------------------------------------------------------------------!
-
-   cpatch => csite%patch(ipa)
-   !----- 1. Computing internal energy stored at the soil. --------------------------------!
-   soil_storage = 0.0
-   do k = lsl, nzg
-      soil_storage = soil_storage + csite%soil_energy(k,ipa) * dslz(k)
-   end do
-   !---------------------------------------------------------------------------------------!
-   !   2. Computing internal energy stored at the temporary snow/water sfc. layer.         !
-   !      Converting it to J/m2. 
-   !---------------------------------------------------------------------------------------!
-   sfcwater_storage = 0.0
-   do k = 1, csite%nlev_sfcwater(ipa)
-      sfcwater_storage = sfcwater_storage                                                  &
-                       + csite%sfcwater_energy(k,ipa) * csite%sfcwater_mass(k,ipa)
-   end do
-
-   !---------------------------------------------------------------------------------------!
-   ! 3. Finding and approximated value for canopy air total enthalpy.                      !
-   !---------------------------------------------------------------------------------------!
-   cas_storage = cp * rhos * csite%veg_height(ipa) * csite%can_temp(ipa)
-
-   !---------------------------------------------------------------------------------------!
-   ! 4. Compute the internal energy stored in the plants.                                  !
-   !    Originally we were only considering those patches that were prognosed, but since   !
-   !    we are assigning non-zero internal energy to the tiny cohorts or those cohorts     !
-   !    buried in snow, we should account for them, even if this will put the energy con-  !
-   !    servation off. After all, this can help us identifying how bad is the assumption   !
-   !    of diagnosing such cohorts instead of solving them.                                !
-   !---------------------------------------------------------------------------------------!
-   veg_storage = 0.0
-   do ico = 1,cpatch%ncohorts
-      veg_storage = veg_storage + cpatch%veg_energy(ico)
-   end do
- 
-   !----- 5. Integrating the total energy in ED. ------------------------------------------!
-   compute_energy_storage = soil_storage + sfcwater_storage + cas_storage               &
-                             + veg_storage
-
-   return
-end function compute_energy_storage
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!    This subroutine computes the carbon flux terms.                                       !
-!------------------------------------------------------------------------------------------!
-subroutine sum_plant_cfluxes(csite,ipa, gpp, gpp_dbh,plresp)
-   use ed_state_vars        , only : sitetype    & ! structure
-                                   , patchtype   ! ! structure
-   use consts_coms          , only : day_sec     & ! intent(in)
-                                   , umol_2_kgC  ! ! intent(in)
-   use ed_max_dims             , only : n_dbh
-   implicit none
-   !----- Arguments -----------------------------------------------------------------------!
-   type(sitetype)        , target      :: csite
-   integer               , intent(in)  :: ipa
-   real                  , intent(out) :: gpp
-   real, dimension(n_dbh), intent(out) :: gpp_dbh
-   real                  , intent(out) :: plresp
-   !----- Local variables -----------------------------------------------------------------!
-   type(patchtype), pointer            :: cpatch
-   integer                             :: k
-   integer                             :: ico
-   integer                             :: idbh
-   real                                :: lrresp !----- Leaf and root respiration
-   real                                :: sresp  !----- Storage, growth, vleaf respiration.
-   logical                             :: forest
-   !----- Local constants -----------------------------------------------------------------!
-   real, parameter                     :: ddbh=1./real(n_dbh-1)
-   !---------------------------------------------------------------------------------------!
-
-  
-   !----- GPP by DBH is computed for forested areas only. ---------------------------------!
-   forest = csite%dist_type(ipa) /= 1
-
-   !----- Initializing some variables. ----------------------------------------------------!
-   gpp     = 0.0
-   gpp_dbh = 0.0 
-   lrresp  = 0.0
-   sresp   = 0.0
-   cpatch => csite%patch(ipa)
-
-   !---------------------------------------------------------------------------------------!
-   !     Looping over cohorts.                                                             !
-   !---------------------------------------------------------------------------------------!
-   do ico = 1,cpatch%ncohorts
-      !----- Adding GPP and leaf respiration only for those cohorts with enough leaves. ---!
-      if (cpatch%solvable(ico)) then
-         gpp = gpp + cpatch%gpp(ico)
-         !----- Forest cohorts have dbh distribution, add them to gpp_dbh. ----------------!
-         if (forest) then 
-            idbh=max(1,min(n_dbh,ceiling(cpatch%dbh(ico)*ddbh)))
-            gpp_dbh(idbh) = gpp_dbh(idbh) + cpatch%gpp(ico)
-         end if
-         lrresp = lrresp + cpatch%leaf_respiration(ico)
-
-      end if
-      !----- Root respiration happens even when the LAI is tiny ---------------------------!
-      lrresp = lrresp + cpatch%root_respiration(ico)
-      !------------------------------------------------------------------------------------!
-      !     So do the other components that go to sresp.  Structural terms are "intens-    !
-      ! ive", we must convert them from kgC/plant/day to umol/m2/s.                        !
-      !------------------------------------------------------------------------------------!
-      sresp  = sresp                                                                       &
-             + ( cpatch%growth_respiration(ico) + cpatch%storage_respiration(ico)          &
-               + cpatch%vleaf_respiration(ico))                                            &
-               * cpatch%nplant(ico) / (day_sec * umol_2_kgC)
-   end do
-   !----- Plant respiration is the sum between alive and structural. ----------------------!
-   plresp = lrresp + sresp
-   return
-end subroutine sum_plant_cfluxes
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!    This function computes the co2 stored in the canopy air space from ppm to kgC/m2.     !
-!------------------------------------------------------------------------------------------!
-real function compute_co2_storage(csite, rhos, ipa)
-   use ed_state_vars, only : sitetype ! ! structure
-   use consts_coms  , only : mmdryi   ! ! intent(in)
-   implicit none
-   !----- Arguments -----------------------------------------------------------------------!
-   type(sitetype)        , target      :: csite
-   integer               , intent(in)  :: ipa
-   real                  , intent(in)  :: rhos
-   !---------------------------------------------------------------------------------------!
-
-   compute_co2_storage = csite%can_co2(ipa) * mmdryi * rhos * csite%veg_height(ipa)
-
-   return
-end function compute_co2_storage
 !==========================================================================================!
 !==========================================================================================!

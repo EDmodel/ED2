@@ -154,23 +154,23 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm,integration_buff)
                                         + sngloff(wfreeb * dtrk4i,tiny_offset)
                   csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa)                  &
                                              + sngloff(qwfree * dtrk4i,tiny_offset)
-                  csite%wbudget_loss2runoff(ipa) = sngloff(wfreeb,tiny_offset)
-                  csite%ebudget_loss2runoff(ipa) = sngloff(qwfree,tiny_offset)
+                  integration_buff%initp%wbudget_loss2runoff = wfreeb
+                  integration_buff%initp%ebudget_loss2runoff = qwfree
                end if
 
             else
-               csite%runoff(ipa)              = 0.0
-               csite%avg_runoff(ipa)          = 0.0
-               csite%avg_runoff_heat(ipa)     = 0.0
-               csite%wbudget_loss2runoff(ipa) = 0.0
-               csite%ebudget_loss2runoff(ipa) = 0.0
+               csite%runoff(ipa)                          = 0.0
+               csite%avg_runoff(ipa)                      = 0.0
+               csite%avg_runoff_heat(ipa)                 = 0.0
+               integration_buff%initp%wbudget_loss2runoff = 0.d0
+               integration_buff%initp%ebudget_loss2runoff = 0.d0
             end if
          else
-            csite%runoff(ipa)              = 0.0
-            csite%avg_runoff(ipa)          = 0.0
-            csite%avg_runoff_heat(ipa)     = 0.0
-            csite%wbudget_loss2runoff(ipa) = 0.0
-            csite%ebudget_loss2runoff(ipa) = 0.0
+            csite%runoff(ipa)                          = 0.0
+            csite%avg_runoff(ipa)                      = 0.0
+            csite%avg_runoff_heat(ipa)                 = 0.0
+            integration_buff%initp%wbudget_loss2runoff = 0.d0
+            integration_buff%initp%ebudget_loss2runoff = 0.d0
          end if
 
          !------ Copying the temporary patch to the next intermediate step ----------------!
@@ -429,11 +429,11 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    end do
    !----- Diagnostics variables -----------------------------------------------------------!
    if(fast_diagnostics) then
-
-      targetp%wbudget_loss2atm   = dble(sourcesite%wbudget_loss2atm(ipa)  )
-      targetp%ebudget_loss2atm   = dble(sourcesite%ebudget_loss2atm(ipa)  )
-      targetp%co2budget_loss2atm = dble(sourcesite%co2budget_loss2atm(ipa))
-      targetp%ebudget_latent     = dble(sourcesite%ebudget_latent(ipa)    )
+      !----------------------------------------------------------------------!
+      !   N.B. The "budget" variables are not copied here because they are   !
+      ! integrated outside RK4.  Inside RK4 we only want the contribution    !
+      ! of those variables during the span of one time step.                 !
+      !----------------------------------------------------------------------!
       targetp%avg_carbon_ac      = dble(sourcesite%avg_carbon_ac(ipa)     )
       targetp%avg_vapor_vc       = dble(sourcesite%avg_vapor_vc(ipa)      )
       targetp%avg_dew_cg         = dble(sourcesite%avg_dew_cg(ipa)        )
@@ -529,9 +529,13 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
 
    if(fast_diagnostics) then
 
-      rkp%wbudget_loss2atm   = rkp%wbudget_loss2atm   + fac * inc%wbudget_loss2atm
-      rkp%ebudget_loss2atm   = rkp%ebudget_loss2atm   + fac * inc%ebudget_loss2atm
       rkp%co2budget_loss2atm = rkp%co2budget_loss2atm + fac * inc%co2budget_loss2atm
+
+      rkp%wbudget_loss2atm      = rkp%wbudget_loss2atm      + fac * inc%wbudget_loss2atm
+      rkp%wbudget_loss2drainage = rkp%wbudget_loss2drainage + fac * inc%wbudget_loss2drainage
+
+      rkp%ebudget_loss2atm      = rkp%ebudget_loss2atm      + fac * inc%ebudget_loss2atm
+      rkp%ebudget_loss2drainage = rkp%ebudget_loss2drainage + fac * inc%ebudget_loss2drainage
       rkp%ebudget_latent     = rkp%ebudget_latent     + fac * inc%ebudget_latent
 
       rkp%avg_carbon_ac      = rkp%avg_carbon_ac      + fac * inc%avg_carbon_ac
@@ -1678,25 +1682,27 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    end do
 
    if (fast_diagnostics) then
-      targetp%wbudget_loss2atm   = sourcep%wbudget_loss2atm
-      targetp%co2budget_loss2atm = sourcep%co2budget_loss2atm
-      targetp%ebudget_loss2atm   = sourcep%ebudget_loss2atm
-      targetp%ebudget_latent     = sourcep%ebudget_latent
-      targetp%avg_carbon_ac      = sourcep%avg_carbon_ac
-      targetp%avg_vapor_vc       = sourcep%avg_vapor_vc
-      targetp%avg_dew_cg         = sourcep%avg_dew_cg  
-      targetp%avg_vapor_gc       = sourcep%avg_vapor_gc
-      targetp%avg_wshed_vg       = sourcep%avg_wshed_vg
-      targetp%avg_vapor_ac       = sourcep%avg_vapor_ac
-      targetp%avg_transp         = sourcep%avg_transp  
-      targetp%avg_evap           = sourcep%avg_evap   
-      targetp%avg_netrad         = sourcep%avg_netrad   
-      targetp%avg_sensible_vc    = sourcep%avg_sensible_vc  
-      targetp%avg_sensible_2cas  = sourcep%avg_sensible_2cas
-      targetp%avg_qwshed_vg      = sourcep%avg_qwshed_vg    
-      targetp%avg_sensible_gc    = sourcep%avg_sensible_gc  
-      targetp%avg_sensible_ac    = sourcep%avg_sensible_ac  
-      targetp%avg_sensible_tot   = sourcep%avg_sensible_tot 
+      targetp%co2budget_loss2atm     = sourcep%co2budget_loss2atm
+      targetp%ebudget_loss2atm       = sourcep%ebudget_loss2atm
+      targetp%ebudget_loss2drainage  = sourcep%ebudget_loss2drainage
+      targetp%ebudget_latent         = sourcep%ebudget_latent
+      targetp%wbudget_loss2atm       = sourcep%wbudget_loss2atm
+      targetp%wbudget_loss2drainage  = sourcep%wbudget_loss2drainage
+      targetp%avg_carbon_ac          = sourcep%avg_carbon_ac
+      targetp%avg_vapor_vc           = sourcep%avg_vapor_vc
+      targetp%avg_dew_cg             = sourcep%avg_dew_cg  
+      targetp%avg_vapor_gc           = sourcep%avg_vapor_gc
+      targetp%avg_wshed_vg           = sourcep%avg_wshed_vg
+      targetp%avg_vapor_ac           = sourcep%avg_vapor_ac
+      targetp%avg_transp             = sourcep%avg_transp  
+      targetp%avg_evap               = sourcep%avg_evap   
+      targetp%avg_netrad             = sourcep%avg_netrad   
+      targetp%avg_sensible_vc        = sourcep%avg_sensible_vc  
+      targetp%avg_sensible_2cas      = sourcep%avg_sensible_2cas
+      targetp%avg_qwshed_vg          = sourcep%avg_qwshed_vg    
+      targetp%avg_sensible_gc        = sourcep%avg_sensible_gc  
+      targetp%avg_sensible_ac        = sourcep%avg_sensible_ac  
+      targetp%avg_sensible_tot       = sourcep%avg_sensible_tot 
 
       do k=rk4met%lsl,nzg
          targetp%avg_sensible_gg(k) = sourcep%avg_sensible_gg(k)

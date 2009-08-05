@@ -88,6 +88,26 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
                cpatch%mean_gpp(ico)       = cpatch%mean_gpp(ico)       * tfact
                
             end do
+            
+            !------ Budget variables. -----------------------------------------------------!
+            csite%co2budget_gpp(ipa)         = csite%co2budget_gpp(ipa)         * frqsumi
+            csite%co2budget_gpp_dbh(:,ipa)   = csite%co2budget_gpp_dbh(:,ipa)   * frqsumi
+            csite%co2budget_plresp(ipa)      = csite%co2budget_plresp(ipa)      * frqsumi
+            csite%co2budget_rh(ipa)          = csite%co2budget_rh(ipa)          * frqsumi
+            csite%co2budget_loss2atm(ipa)    = csite%co2budget_loss2atm(ipa)    * frqsumi
+            csite%co2budget_residual(ipa)    = csite%co2budget_residual(ipa)    * frqsumi
+            csite%ebudget_precipgain(ipa)    = csite%ebudget_precipgain(ipa)    * frqsumi
+            csite%ebudget_netrad(ipa)        = csite%ebudget_netrad(ipa)        * frqsumi
+            csite%ebudget_latent(ipa)        = csite%ebudget_latent(ipa)        * frqsumi
+            csite%ebudget_loss2atm(ipa)      = csite%ebudget_loss2atm(ipa)      * frqsumi
+            csite%ebudget_loss2drainage(ipa) = csite%ebudget_loss2drainage(ipa) * frqsumi
+            csite%ebudget_loss2runoff(ipa)   = csite%ebudget_loss2runoff(ipa)   * frqsumi
+            csite%ebudget_residual(ipa)      = csite%ebudget_residual(ipa)      * frqsumi
+            csite%wbudget_precipgain(ipa)    = csite%wbudget_precipgain(ipa)    * frqsumi
+            csite%wbudget_loss2atm(ipa)      = csite%wbudget_loss2atm(ipa)      * frqsumi
+            csite%wbudget_loss2drainage(ipa) = csite%wbudget_loss2drainage(ipa) * frqsumi
+            csite%wbudget_loss2runoff(ipa)   = csite%wbudget_loss2runoff(ipa)   * frqsumi
+            csite%wbudget_residual(ipa)      = csite%wbudget_residual(ipa)      * frqsumi
          end do
       end do
    end do
@@ -128,15 +148,34 @@ subroutine reset_averaged_vars(cgrid)
             cpatch => csite%patch(ipa)
 
             !----------------------------------------------------------------!
-            ! Zeroing CO2 budget variables                                   !
+            ! Zeroing CO2 budget variables.                                  !
             !----------------------------------------------------------------!
-            csite%co2budget_gpp(ipa)        = 0.0
-            csite%co2budget_gpp_dbh(:,ipa)  = 0.0
-            csite%co2budget_rh(ipa)         = 0.0
-            csite%co2budget_plresp(ipa)     = 0.0
-            csite%wbudget_precipgain(ipa)   = 0.0
-            csite%ebudget_precipgain(ipa)   = 0.0
-            csite%ebudget_netrad(ipa)       = 0.0
+            csite%co2budget_gpp(ipa)            = 0.0
+            csite%co2budget_gpp_dbh(:,ipa)      = 0.0
+            csite%co2budget_rh(ipa)             = 0.0
+            csite%co2budget_plresp(ipa)         = 0.0
+            csite%co2budget_residual(ipa)       = 0.0
+
+            !----------------------------------------------------------------!
+            ! Zeroing water budget variables.                                !
+            !----------------------------------------------------------------!
+            csite%wbudget_precipgain(ipa)       = 0.0
+            csite%wbudget_loss2atm(ipa)         = 0.0
+            csite%wbudget_loss2runoff(ipa)      = 0.0
+            csite%wbudget_loss2drainage(ipa)    = 0.0
+            csite%wbudget_residual(ipa)         = 0.0
+
+
+            !----------------------------------------------------------------!
+            ! Zeroing energy budget variables.                               !
+            !----------------------------------------------------------------!
+            csite%ebudget_precipgain(ipa)       = 0.0
+            csite%ebudget_netrad(ipa)           = 0.0
+            csite%ebudget_latent(ipa)           = 0.0
+            csite%ebudget_loss2atm(ipa)         = 0.0
+            csite%ebudget_loss2runoff(ipa)      = 0.0
+            csite%ebudget_loss2drainage(ipa)    = 0.0
+            csite%ebudget_residual(ipa)         = 0.0
             !----------------------------------------------------------------!
 
             csite%avg_carbon_ac(ipa)        = 0.0
@@ -332,6 +371,7 @@ subroutine integrate_ed_daily_output_state(cgrid)
                pss_fsw = pss_fsw + csite%area(ipa)                                         &
                        * (sum(cpatch%fsw * cpatch%lai,cpatch%solvable) * patch_lai_i)
             end if
+            
          end do patchloop
 
          !---------------------------------------------------------------------------------!
@@ -413,6 +453,7 @@ subroutine integrate_ed_daily_output_flux(cgrid)
    real :: sitesum_leaf_resp, sitesum_root_resp 
    real :: sitesum_plresp,sitesum_gpp,sitesum_rh
    real :: sitesum_evap,sitesum_transp,sitesum_sensible_tot
+   real :: sitesum_co2_residual,sitesum_energy_residual,sitesum_water_residual
    real, dimension(n_dist_types) :: sitesum_gpp_lu, sitesum_rh_lu,sitesum_nep_lu
    real, dimension(n_dbh)        :: sitesum_gpp_dbh
    ! These are auxiliary variables for averaging patchtype variables
@@ -425,19 +466,22 @@ subroutine integrate_ed_daily_output_flux(cgrid)
 
       
       ! Initialize auxiliary variables to add sitetype variables
-      sitesum_rh           = 0.
-      sitesum_leaf_resp    = 0.
-      sitesum_root_resp    = 0.
-      sitesum_plresp       = 0.
-      sitesum_gpp          = 0.
-      sitesum_rh           = 0.
-      sitesum_gpp_lu       = 0.
-      sitesum_nep_lu       = 0.
-      sitesum_rh_lu        = 0.
-      sitesum_gpp_dbh      = 0.
-      sitesum_evap         = 0.
-      sitesum_transp       = 0.
-      sitesum_sensible_tot = 0.
+      sitesum_rh              = 0.
+      sitesum_leaf_resp       = 0.
+      sitesum_root_resp       = 0.
+      sitesum_plresp          = 0.
+      sitesum_gpp             = 0.
+      sitesum_rh              = 0.
+      sitesum_gpp_lu          = 0.
+      sitesum_nep_lu          = 0.
+      sitesum_rh_lu           = 0.
+      sitesum_gpp_dbh         = 0.
+      sitesum_evap            = 0.
+      sitesum_transp          = 0.
+      sitesum_sensible_tot    = 0.
+      sitesum_co2_residual    = 0.
+      sitesum_water_residual  = 0.
+      sitesum_energy_residual = 0.
       
       forest_poly          = 0.
       
@@ -466,7 +510,9 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                patchsum_leaf_resp = patchsum_leaf_resp + sum(cpatch%mean_leaf_resp, cpatch%solvable)  * csite%area(ipa) 
                patchsum_root_resp = patchsum_root_resp + sum(cpatch%mean_root_resp                 )  * csite%area(ipa) 
             end if
-
+            csite%dmean_co2_residual(ipa)    = csite%dmean_co2_residual(ipa)    + csite%co2budget_residual(ipa)
+            csite%dmean_energy_residual(ipa) = csite%dmean_energy_residual(ipa) + csite%ebudget_residual(ipa)
+            csite%dmean_water_residual(ipa)  = csite%dmean_water_residual(ipa)  + csite%wbudget_residual(ipa)
          end do patchloop
          
          ! Variables already average at the sitetype level, just add them to polygontype level
@@ -481,7 +527,14 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          sitesum_transp       = sitesum_transp       + (sum(csite%avg_transp      *csite%area) * site_area_i) * cpoly%area(isi)
          sitesum_sensible_tot = sitesum_sensible_tot + (sum(csite%avg_sensible_tot*csite%area) * site_area_i) * cpoly%area(isi)
          
-         
+         sitesum_co2_residual    = sitesum_co2_residual    + (sum(csite%co2budget_residual*csite%area) * site_area_i) * cpoly%area(isi)
+         sitesum_water_residual  = sitesum_water_residual  + (sum(csite%ebudget_residual  *csite%area) * site_area_i) * cpoly%area(isi)
+         sitesum_energy_residual = sitesum_energy_residual + (sum(csite%wbudget_residual  *csite%area) * site_area_i) * cpoly%area(isi)
+
+         cpoly%dmean_co2_residual(isi)    = cpoly%dmean_co2_residual(isi)    + sum(csite%co2budget_residual*csite%area) * site_area_i
+         cpoly%dmean_energy_residual(isi) = cpoly%dmean_energy_residual(isi) + sum(csite%ebudget_residual  *csite%area) * site_area_i
+         cpoly%dmean_water_residual(isi)  = cpoly%dmean_water_residual(isi)  + sum(csite%wbudget_residual  *csite%area) * site_area_i
+        
          luloop: do lu=1,n_dist_types
             sitesum_rh_lu(lu)    = sitesum_rh_lu(lu) + &
                                    (sum(csite%co2budget_rh*csite%area,csite%dist_type == lu)   * site_area_i) * cpoly%area(isi)
@@ -507,6 +560,11 @@ subroutine integrate_ed_daily_output_flux(cgrid)
       cgrid%dmean_plresp(ipy)       = cgrid%dmean_plresp(ipy)       + sitesum_plresp       * poly_area_i
       cgrid%dmean_nep(ipy)          = cgrid%dmean_nep(ipy)          + (sitesum_gpp-sitesum_rh-sitesum_plresp)     &
                                                                                            * poly_area_i
+
+      cgrid%dmean_co2_residual(ipy)    = cgrid%dmean_co2_residual(ipy)    + sitesum_co2_residual    * poly_area_i
+      cgrid%dmean_energy_residual(ipy) = cgrid%dmean_energy_residual(ipy) + sitesum_water_residual  * poly_area_i
+      cgrid%dmean_water_residual(ipy)  = cgrid%dmean_water_residual(ipy)  + sitesum_energy_residual * poly_area_i
+
       do lu=1,n_dist_types
          cgrid%dmean_gpp_lu(lu,ipy) = cgrid%dmean_gpp_lu(lu,ipy)    + sitesum_gpp_lu(lu)   * poly_area_i
          cgrid%dmean_nep_lu(lu,ipy) = cgrid%dmean_nep_lu(lu,ipy)    + sitesum_nep_lu(lu)   * poly_area_i
@@ -534,6 +592,7 @@ subroutine integrate_ed_daily_output_flux(cgrid)
       cgrid%dmean_vapor_vc(ipy)     = cgrid%dmean_vapor_vc(ipy)     + cgrid%avg_vapor_vc(ipy) 
       cgrid%dmean_vapor_gc(ipy)     = cgrid%dmean_vapor_gc(ipy)     + cgrid%avg_vapor_gc(ipy) 
       cgrid%dmean_vapor_ac(ipy)     = cgrid%dmean_vapor_ac(ipy)     + cgrid%avg_vapor_ac(ipy) 
+
 
    end do polyloop
 
@@ -712,15 +771,26 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_nep_lu     (:,ipy)  = cgrid%dmean_nep_lu    (:,ipy)   * umol_2_kgC
       cgrid%dmean_gpp_dbh    (:,ipy)  = cgrid%dmean_gpp_dbh   (:,ipy)   * umol_2_kgC
 
+      cgrid%dmean_co2_residual(ipy)    = cgrid%dmean_co2_residual(ipy)    * frqsum_o_daysec
+      cgrid%dmean_energy_residual(ipy) = cgrid%dmean_energy_residual(ipy) * frqsum_o_daysec
+      cgrid%dmean_water_residual(ipy)  = cgrid%dmean_water_residual(ipy)  * frqsum_o_daysec
+
+
       polygon_area_i = 1./sum(cpoly%area)
 
       sitesum_growth_resp  = 0.
       sitesum_storage_resp = 0.
       sitesum_vleaf_resp   = 0.
+
       
       siteloop: do isi=1,cpoly%nsites
          csite => cpoly%site(isi)
+
+         cpoly%dmean_co2_residual(isi)    = cpoly%dmean_co2_residual(isi)    * frqsum_o_daysec
+         cpoly%dmean_energy_residual(isi) = cpoly%dmean_energy_residual(isi) * frqsum_o_daysec
+         cpoly%dmean_water_residual(isi)  = cpoly%dmean_water_residual(isi)  * frqsum_o_daysec
          
+
          site_area_i = 1./sum(csite%area)
          
          patchsum_growth_resp  = 0.
@@ -729,6 +799,10 @@ subroutine normalize_ed_daily_output_vars(cgrid)
 
          patchloop: do ipa=1,csite%npatches
             cpatch => csite%patch(ipa)
+
+            csite%dmean_co2_residual(ipa)    = csite%dmean_co2_residual(ipa)    * frqsum_o_daysec
+            csite%dmean_energy_residual(ipa) = csite%dmean_energy_residual(ipa) * frqsum_o_daysec
+            csite%dmean_water_residual(ipa)  = csite%dmean_water_residual(ipa)  * frqsum_o_daysec
             
             if (cpatch%ncohorts > 0) then
                ! These are in kg/plant/day, converting to kg/m²/day
@@ -867,7 +941,8 @@ subroutine zero_ed_daily_output_vars(cgrid)
    implicit none
    type(edtype)     , target  :: cgrid
    type(polygontype), pointer :: cpoly
-   integer                    :: ipy,isi
+   type(sitetype)   , pointer :: csite
+   integer                    :: ipy,isi,ipa
    
 
    do ipy = 1,cgrid%npolygons
@@ -924,17 +999,31 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%wpa_lu             (:,ipy) = 0.
       cgrid%wai_pft            (:,ipy) = 0.
       cgrid%wai_lu             (:,ipy) = 0.
+      cgrid%dmean_co2_residual   (ipy) = 0.
+      cgrid%dmean_energy_residual(ipy) = 0.
+      cgrid%dmean_water_residual (ipy) = 0.
 
       !-----------------------------------------!
       ! Reset variables stored in polygontype   !
       !-----------------------------------------!
       do isi=1,cpoly%nsites
-         cpoly%lai_pft (:,isi)  = 0.
-         cpoly%lai_lu  (:,isi)  = 0.
-         cpoly%wpa_pft (:,isi)  = 0.
-         cpoly%wpa_lu  (:,isi)  = 0.
-         cpoly%wai_pft (:,isi)  = 0.
-         cpoly%wai_lu  (:,isi)  = 0.
+         csite => cpoly%site(isi)
+
+         cpoly%lai_pft           (:,isi)  = 0.
+         cpoly%lai_lu            (:,isi)  = 0.
+         cpoly%wpa_pft           (:,isi)  = 0.
+         cpoly%wpa_lu            (:,isi)  = 0.
+         cpoly%wai_pft           (:,isi)  = 0.
+         cpoly%wai_lu            (:,isi)  = 0.
+         cpoly%dmean_co2_residual   (isi) = 0.
+         cpoly%dmean_energy_residual(isi) = 0.
+         cpoly%dmean_water_residual (isi) = 0.
+
+         do ipa=1,csite%npatches
+            csite%dmean_co2_residual   (ipa) = 0.
+            csite%dmean_energy_residual(ipa) = 0.
+            csite%dmean_water_residual (ipa) = 0.       
+         end do
       end do
    end do
 
@@ -960,7 +1049,9 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
 !    This subroutine integrates the monthly average. This is called after the daily means  !
 ! were integrated and normalized.                                                          !
 !------------------------------------------------------------------------------------------!
-   use ed_state_vars, only : edtype       ! ! structure
+   use ed_state_vars, only : edtype       & ! structure
+                           , polygontype  & ! structure
+                           , sitetype     ! ! structure
    use ed_max_dims  , only : n_dbh        & ! intent(in)
                            , n_pft        & ! intent(in) 
                            , n_dist_types ! ! intent(in)
@@ -968,7 +1059,11 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
    !----- Argument. -----------------------------------------------------------------------!
    type(edtype)      , target  :: cgrid
    !----- Local variables. ----------------------------------------------------------------!
+   type(polygontype) , pointer :: cpoly
+   type(sitetype)    , pointer :: csite
    integer                     :: ipy
+   integer                     :: isi
+   integer                     :: ipa
    !---------------------------------------------------------------------------------------!
    
    do ipy=1,cgrid%npolygons
@@ -1017,6 +1112,10 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
       cgrid%mmean_atm_vels      (ipy) = cgrid%mmean_atm_vels      (ipy) + cgrid%dmean_atm_vels       (ipy)
       cgrid%mmean_pcpg          (ipy) = cgrid%mmean_pcpg          (ipy) + cgrid%dmean_pcpg           (ipy)
 
+      cgrid%mmean_co2_residual(ipy)    = cgrid%mmean_co2_residual(ipy)    + cgrid%dmean_co2_residual(ipy)   
+      cgrid%mmean_energy_residual(ipy) = cgrid%mmean_energy_residual(ipy) + cgrid%dmean_energy_residual(ipy)
+      cgrid%mmean_water_residual(ipy)  = cgrid%mmean_water_residual(ipy)  + cgrid%dmean_water_residual(ipy) 
+
       !------------------------------------------------------------------------------------!
       !    During the integration stage we keep the sum of squares, it will be converted   !
       ! to standard deviation right before the monthly output.                             !
@@ -1027,6 +1126,22 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
       cgrid%stdev_sensible(ipy) = cgrid%stdev_sensible(ipy) +  cgrid%dmean_sensible(ipy) ** 2
       cgrid%stdev_nep     (ipy) = cgrid%stdev_nep     (ipy) +  cgrid%dmean_nep     (ipy) ** 2
       cgrid%stdev_rh      (ipy) = cgrid%stdev_rh      (ipy) +  cgrid%dmean_rh      (ipy) ** 2
+      
+      cpoly => cgrid%polygon(ipy)
+      do isi=1,cpoly%nsites
+         cpoly%mmean_co2_residual(isi)    = cpoly%mmean_co2_residual(isi)    + cpoly%dmean_co2_residual(isi)   
+         cpoly%mmean_energy_residual(isi) = cpoly%mmean_energy_residual(isi) + cpoly%dmean_energy_residual(isi)
+         cpoly%mmean_water_residual(isi)  = cpoly%mmean_water_residual(isi)  + cpoly%dmean_water_residual(isi) 
+
+         csite => cpoly%site(isi)
+         do ipa=1,csite%npatches
+            csite%mmean_co2_residual(ipa)    = csite%mmean_co2_residual(ipa)    + csite%dmean_co2_residual(ipa)   
+            csite%mmean_energy_residual(ipa) = csite%mmean_energy_residual(ipa) + csite%dmean_energy_residual(ipa)
+            csite%mmean_water_residual(ipa)  = csite%mmean_water_residual(ipa)  + csite%dmean_water_residual(ipa) 
+         end do
+
+      end do
+      
    end do
 
    return
@@ -1127,6 +1242,10 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_wai_pft      (:,ipy) = cgrid%mmean_wai_pft      (:,ipy) * ndaysi
       cgrid%mmean_wai_lu       (:,ipy) = cgrid%mmean_wai_lu       (:,ipy) * ndaysi
 
+      cgrid%mmean_co2_residual(ipy)    = cgrid%mmean_co2_residual(ipy)    * ndaysi
+      cgrid%mmean_energy_residual(ipy) = cgrid%mmean_energy_residual(ipy) * ndaysi
+      cgrid%mmean_water_residual(ipy)  = cgrid%mmean_water_residual(ipy)  * ndaysi
+
       !------------------------------------------------------------------------------------!
       !   Here we convert the sum of squares into standard deviation. The standard devi-   !
       ! ation can be written in two different ways, and we will use the latter because it  !
@@ -1180,8 +1299,19 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%area_lu(:,ipy)  = 0.
       siteloop: do isi = 1, cpoly%nsites
          csite => cpoly%site(isi)
+
+         cpoly%mmean_co2_residual(isi)    = cpoly%mmean_co2_residual(isi)    * ndaysi
+         cpoly%mmean_energy_residual(isi) = cpoly%mmean_energy_residual(isi) * ndaysi
+         cpoly%mmean_water_residual(isi)  = cpoly%mmean_water_residual(isi)  * ndaysi
+
+
          site_area_i = 1./sum(csite%area)
          patchloop: do ipa=1,csite%npatches
+
+            csite%mmean_co2_residual(ipa)    = csite%mmean_co2_residual(ipa)    * ndaysi
+            csite%mmean_energy_residual(ipa) = csite%mmean_energy_residual(ipa) * ndaysi
+            csite%mmean_water_residual(ipa)  = csite%mmean_water_residual(ipa)  * ndaysi
+
             ilu = csite%dist_type(ipa)
             cgrid%area_lu(ilu,ipy) = cgrid%area_lu(ilu,ipy)                                &
                                    + csite%area(ipa) * cpoly%area(isi)                     &
@@ -1214,11 +1344,13 @@ end subroutine normalize_ed_monthly_output_vars
 !==========================================================================================!
 !==========================================================================================!
 subroutine zero_ed_monthly_output_vars(cgrid)
-   use ed_state_vars,only:edtype
+   use ed_state_vars,only:edtype,polygontype,sitetype
 
    implicit none
-   type(edtype),target       :: cgrid
-   integer                   :: ipy
+   type(edtype)     , target  :: cgrid
+   type(polygontype), pointer :: cpoly
+   type(sitetype)   , pointer :: csite
+   integer                    :: ipy,isi,ipa
 
    !----- The loop is necessary for coupled runs (when npolygons may be 0) ----------------!
    do ipy=1,cgrid%npolygons
@@ -1270,6 +1402,26 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%stdev_nep            (ipy) = 0.
       cgrid%stdev_rh             (ipy) = 0.
       cgrid%disturbance_rates(:,:,ipy) = 0.
+
+      cgrid%mmean_co2_residual(ipy)    = 0.
+      cgrid%mmean_energy_residual(ipy) = 0.
+      cgrid%mmean_water_residual(ipy)  = 0.
+      
+      cpoly => cgrid%polygon(ipy)
+      do isi = 1, cpoly%nsites
+
+         cpoly%mmean_co2_residual(isi)    = 0.
+         cpoly%mmean_energy_residual(isi) = 0.
+         cpoly%mmean_water_residual(isi)  = 0.
+
+         csite => cpoly%site(isi)
+         do ipa=1,csite%npatches
+            csite%mmean_co2_residual(ipa)    = 0.
+            csite%mmean_energy_residual(ipa) = 0.
+            csite%mmean_water_residual(ipa)  = 0.
+         end do
+      end do
+      
    end do
 
    return

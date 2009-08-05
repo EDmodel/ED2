@@ -1352,6 +1352,7 @@ subroutine init_rk4_params()
                                    , rk4epsi               & ! intent(out)
                                    , hmin                  & ! intent(out)
                                    , print_diags           & ! intent(out)
+                                   , checkbudget           & ! intent(out)
                                    , debug                 & ! intent(out)
                                    , toocold               & ! intent(out)
                                    , toohot                & ! intent(out)
@@ -1402,8 +1403,11 @@ subroutine init_rk4_params()
    maxstp      = 100000000    ! Maximum number of intermediate steps. 
    rk4eps      = 1.d-2        ! The desired accuracy.
    rk4epsi     = 1.d0/rk4eps  ! The inverse of desired accuracy.
-   hmin        = 1.d-13        ! The minimum step size.
+   hmin        = 1.d-13       ! The minimum step size.
    print_diags = .false.      ! Flag to print the diagnostic check.
+   checkbudget = .true.       ! Flag to check CO2, water, and energy budgets every time
+                              !     step and stop the run in case any of these budgets 
+                              !     doesn't close.
    !---------------------------------------------------------------------------------------!
 
 

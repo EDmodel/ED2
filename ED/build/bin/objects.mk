@@ -14,6 +14,7 @@ OBJ_MODEL =                        \
 	allometry.o                \
 	an_header.o                \
 	average_utils.o            \
+	budget_utils.o             \
 	canopy_air_coms.o          \
 	canopy_radiation_coms.o    \
 	canopy_struct_dynamics.o   \

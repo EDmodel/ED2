@@ -86,15 +86,6 @@ subroutine euler_timestep(cgrid)
             call soil_respiration(csite,ipa)
 
 
-            !----- Compute the rain and radiation flux components. ------------------------!
-            csite%wbudget_precipgain(ipa) = csite%wbudget_precipgain(ipa)                  &
-                                          + cpoly%met(isi)%pcpg * dtlsm
-            csite%ebudget_precipgain(ipa) = csite%ebudget_precipgain(ipa)                  &
-                                          + cpoly%met(isi)%qpcpg * dtlsm
-            csite%ebudget_netrad(ipa)     = csite%ebudget_netrad(ipa)                      &
-                                          + compute_netrad(csite,ipa) * dtlsm
-
-
             !------------------------------------------------------------------------------!
             !     Here we compute the new canopy air CO2 mixing ratio.  This should be     !
             ! probably done at the Euler solver, otherwise it will be always a simple      !
@@ -139,28 +130,6 @@ subroutine euler_timestep(cgrid)
             csite%can_co2(ipa) = csite%can_co2(ipa)                                        &
                                + (cflxgc + cflxvc + cflxac) * dtlsm / canccap
             !------------------------------------------------------------------------------!
-
-
-            !----- Storing CO2 budget terms. ----------------------------------------------!
-            csite%co2budget_gpp(ipa)       = csite%co2budget_gpp(ipa) + gpp * dtlsm
-            csite%co2budget_gpp_dbh(:,ipa) = csite%co2budget_gpp_dbh(:,ipa)                &
-                                           + gpp_dbh(:) *dtlsm
-            csite%co2budget_plresp(ipa)    = csite%co2budget_plresp(ipa)                   &
-                                           + plant_respiration * dtlsm
-            csite%co2budget_rh(ipa)        = csite%co2budget_rh(ipa)                       &
-                                           + csite%rh(ipa) * dtlsm
-            cgrid%cbudget_nep(ipy)         = cgrid%cbudget_nep(ipy)                        &
-                                           + cpoly%area(isi) * csite%area(ipa) * dtlsm     &
-                                           * (gpp - plant_respiration - csite%rh(ipa))     &
-                                           * umol_2_kgC
-
-            !----- Compute the canopy->free atmosphere exchange. --------------------------!
-            csite%co2budget_loss2atm(ipa) = - cmet%rhos * csite%ustar(ipa)                 &
-                                          * csite%cstar(ipa) * mmdryi * dtlsm
-            csite%ebudget_loss2atm(ipa)   = - cp * cmet%rhos * csite%ustar(ipa)            &
-                                          * csite%tstar(ipa) * cmet%exner * dtlsm
-            csite%wbudget_loss2atm(ipa)   = - cmet%rhos * csite%ustar(ipa)                 &
-                                          * csite%qstar(ipa) * dtlsm
 
             !----- Finding total precipitation and associated variables. ------------------!
             pcpg_int  = cmet%pcpg  * dtlsm
