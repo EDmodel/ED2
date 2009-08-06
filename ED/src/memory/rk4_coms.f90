@@ -208,7 +208,7 @@ module rk4_coms
    !---------------------------------------------------------------------------------------!
 
    !----- Small number, to avoid singularities. -------------------------------------------!
-   real(kind=8), parameter :: tiny_offset = 1.d-30
+   real(kind=8), parameter :: tiny_offset = 1.d-20
    !----- Huge number, to bypass errmax checks. -------------------------------------------!
    real(kind=8), parameter :: huge_offset = 1.d30
    !---------------------------------------------------------------------------------------!

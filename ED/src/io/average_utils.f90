@@ -528,8 +528,8 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          sitesum_sensible_tot = sitesum_sensible_tot + (sum(csite%avg_sensible_tot*csite%area) * site_area_i) * cpoly%area(isi)
          
          sitesum_co2_residual    = sitesum_co2_residual    + (sum(csite%co2budget_residual*csite%area) * site_area_i) * cpoly%area(isi)
-         sitesum_water_residual  = sitesum_water_residual  + (sum(csite%ebudget_residual  *csite%area) * site_area_i) * cpoly%area(isi)
-         sitesum_energy_residual = sitesum_energy_residual + (sum(csite%wbudget_residual  *csite%area) * site_area_i) * cpoly%area(isi)
+         sitesum_water_residual  = sitesum_water_residual  + (sum(csite%wbudget_residual  *csite%area) * site_area_i) * cpoly%area(isi)
+         sitesum_energy_residual = sitesum_energy_residual + (sum(csite%ebudget_residual  *csite%area) * site_area_i) * cpoly%area(isi)
 
          cpoly%dmean_co2_residual(isi)    = cpoly%dmean_co2_residual(isi)    + sum(csite%co2budget_residual*csite%area) * site_area_i
          cpoly%dmean_energy_residual(isi) = cpoly%dmean_energy_residual(isi) + sum(csite%ebudget_residual  *csite%area) * site_area_i
@@ -562,8 +562,8 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                                                                                            * poly_area_i
 
       cgrid%dmean_co2_residual(ipy)    = cgrid%dmean_co2_residual(ipy)    + sitesum_co2_residual    * poly_area_i
-      cgrid%dmean_energy_residual(ipy) = cgrid%dmean_energy_residual(ipy) + sitesum_water_residual  * poly_area_i
-      cgrid%dmean_water_residual(ipy)  = cgrid%dmean_water_residual(ipy)  + sitesum_energy_residual * poly_area_i
+      cgrid%dmean_energy_residual(ipy) = cgrid%dmean_energy_residual(ipy) + sitesum_energy_residual  * poly_area_i
+      cgrid%dmean_water_residual(ipy)  = cgrid%dmean_water_residual(ipy)  + sitesum_water_residual * poly_area_i
 
       do lu=1,n_dist_types
          cgrid%dmean_gpp_lu(lu,ipy) = cgrid%dmean_gpp_lu(lu,ipy)    + sitesum_gpp_lu(lu)   * poly_area_i

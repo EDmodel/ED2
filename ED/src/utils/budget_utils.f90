@@ -10,7 +10,8 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
                            , fast_diagnostics & ! intent(in)
                            , current_time     ! ! intent(in)
    use ed_max_dims  , only : n_dbh            ! ! intent(in)
-   use consts_coms  , only : umol_2_kgC       ! ! intent(in)
+   use consts_coms  , only : umol_2_kgC       & ! intent(in)
+                           , day_sec          ! ! intent(in)
    use rk4_coms     , only : rk4eps           & ! intent(in)
                            , checkbudget      ! ! intent(in)
    implicit none
@@ -56,6 +57,7 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
    logical                               :: water_ok
    !----- Local constants. --------------------------------------------------!
    character(len=13)     , parameter     :: fmtf='(a,1x,es14.7)'
+   logical               , parameter     :: print_debug = .true.
    !----- External functions. -----------------------------------------------!
    real                  , external      :: compute_netrad
    real                  , external      :: compute_water_storage
@@ -121,17 +123,56 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
    ! whenever there is some significant leak of CO2, water, or energy.       !
    !-------------------------------------------------------------------------!
    if (checkbudget) then
-      !co2_ok  = abs(co2curr_residual) <= rk4eps * abs(co2budget_finalstorage)
+      !co2_ok  = abs(co2curr_residual) <= rk4eps                              &
+      !                                 * (abs(co2budget_finalstorage)        &
+      !                                   +abs(co2budget_deltastorage)*dtlsm)
       co2_ok = .true. ! Skipping CO2 test
-      energy_ok = abs(ecurr_residual) <= rk4eps * abs(ebudget_finalstorage)
-      water_ok  = abs(wcurr_residual) <= rk4eps * abs(wbudget_finalstorage)
-      write (unit=55,fmt='(i4.4,2(a,i2.2),1x,f6.0,3(1x,es14.7))') &
-       current_time%year,'-',current_time%month,'-',current_time%date,current_time%time &
-       ,86400.*co2curr_residual/dtlsm,ecurr_residual/dtlsm,86400.*wcurr_residual/dtlsm
+      energy_ok = abs(ecurr_residual) <= rk4eps                              &
+                                       * (abs(ebudget_finalstorage)          &
+                                         +abs(ebudget_deltastorage)*dtlsm)
+      water_ok  = abs(wcurr_residual) <= rk4eps                              &
+                                       * (abs(wbudget_finalstorage)          &
+                                         +abs(wbudget_deltastorage)*dtlsm)
+
+      if (print_debug) then 
+         write (unit=56,fmt='(i4.4,2(1x,i2.2),1x,f6.0,4(1x,es14.7))')        &
+                current_time%year,current_time%month,current_time%date       &
+               ,current_time%time                                            &
+               ,co2curr_residual/dtlsm                                       &
+               ,co2budget_deltastorage/dtlsm                                 &
+               ,co2curr_nep/dtlsm                                            &
+               ,co2curr_loss2atm/dtlsm
+
+         write (unit=66,fmt='(i4.4,2(1x,i2.2),1x,f6.0,8(1x,es14.7))')        &
+                current_time%year,current_time%month,current_time%date       &
+               ,current_time%time                                            &
+               ,ecurr_residual/dtlsm                                         &
+               ,ebudget_deltastorage/dtlsm                                   &
+               ,ecurr_precipgain/dtlsm                                       &
+               ,ecurr_netrad/dtlsm                                           &
+               ,ecurr_latent/dtlsm                                           &
+               ,ecurr_loss2atm/dtlsm                                         &
+               ,ecurr_loss2drainage/dtlsm                                    &
+               ,ecurr_loss2runoff/dtlsm
+
+         write (unit=76,fmt='(i4.4,2(1x,i2.2),1x,f6.0,6(1x,es14.7))')        &
+                current_time%year,current_time%month,current_time%date       &
+               ,current_time%time                                            &
+               ,wcurr_residual*day_sec/dtlsm                                 &
+               ,wbudget_deltastorage*day_sec/dtlsm                           &
+               ,wcurr_precipgain*day_sec/dtlsm                               &
+               ,wcurr_loss2atm*day_sec/dtlsm                                 &
+               ,wcurr_loss2drainage*day_sec/dtlsm                            &
+               ,wcurr_loss2runoff*day_sec/dtlsm
+      end if
+
+
       if (.not. co2_ok) then
          write (unit=*,fmt='(a)') '|-----------------------------------------------------|'
          write (unit=*,fmt='(a)') '|           !!! ): CO2 budget failed :( !!!           |'
          write (unit=*,fmt='(a)') '|-----------------------------------------------------|'
+         write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : ',           &
+            current_time%year,current_time%month,current_time%date ,current_time%time
          write (unit=*,fmt=fmtf ) ' RESIDUAL       : ',co2curr_residual
          write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE: ',csite%co2budget_initialstorage(ipa)
          write (unit=*,fmt=fmtf ) ' FINAL_STORAGE  : ',co2budget_finalstorage
@@ -149,6 +190,8 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
          write (unit=*,fmt='(a)') '|-----------------------------------------------------|'
          write (unit=*,fmt='(a)') '|         !!! ): Energy budget failed :( !!!          |'
          write (unit=*,fmt='(a)') '|-----------------------------------------------------|'
+         write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : ',           &
+            current_time%year,current_time%month,current_time%date ,current_time%time
          write (unit=*,fmt=fmtf ) ' RESIDUAL       : ',ecurr_residual
          write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE: ',csite%ebudget_initialstorage(ipa)
          write (unit=*,fmt=fmtf ) ' FINAL_STORAGE  : ',ebudget_finalstorage
@@ -168,6 +211,8 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
          write (unit=*,fmt='(a)') '|-----------------------------------------------------|'
          write (unit=*,fmt='(a)') '|          !!! ): Water budget failed :( !!!          |'
          write (unit=*,fmt='(a)') '|-----------------------------------------------------|'
+         write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : ',           &
+            current_time%year,current_time%month,current_time%date ,current_time%time
          write (unit=*,fmt=fmtf ) ' RESIDUAL       : ',wcurr_residual
          write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE: ',csite%wbudget_initialstorage(ipa)
          write (unit=*,fmt=fmtf ) ' FINAL_STORAGE  : ',wbudget_finalstorage
@@ -262,11 +307,12 @@ end subroutine compute_budget
 !   (soil + temporary pools + canopy air space + leaf surface).                            !
 !------------------------------------------------------------------------------------------!
 real function compute_water_storage(csite, lsl, rhos,ipa)
-   use ed_state_vars , only : sitetype   & ! structure
-                            , patchtype  ! ! structure
-   use grid_coms     , only : nzg        ! ! intent(in)
-   use soil_coms     , only : dslz       ! ! intent(in)
-   use consts_coms   , only : wdns       ! ! intent(in)
+   use ed_state_vars , only  : sitetype              & ! structure
+                             , patchtype             ! ! structure
+   use canopy_air_coms, only : minimum_canopy_depth  ! ! intent(in)
+   use grid_coms      , only : nzg                   ! ! intent(in)
+   use soil_coms      , only : dslz                  ! ! intent(in)
+   use consts_coms    , only : wdns                  ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype) , target     :: csite
@@ -277,7 +323,10 @@ real function compute_water_storage(csite, lsl, rhos,ipa)
    type(patchtype), pointer    :: cpatch
    integer                     :: k
    integer                     :: ico
+   real                        :: canopy_depth
    !---------------------------------------------------------------------------------------!
+
+   canopy_depth = max(csite%veg_height(ipa),minimum_canopy_depth)
 
    compute_water_storage = 0.0
    cpatch => csite%patch(ipa)
@@ -293,7 +342,7 @@ real function compute_water_storage(csite, lsl, rhos,ipa)
    end do
    !----- 3. Adding the water vapour floating in the canopy air space. --------------------!
    compute_water_storage = compute_water_storage                                           &
-                            + csite%can_shv(ipa) * csite%veg_height(ipa) * rhos
+                            + csite%can_shv(ipa) * canopy_depth * rhos
    !----- 4. Adding the water over the leaf surface. --------------------------------------!
    do ico = 1,cpatch%ncohorts
       compute_water_storage = compute_water_storage + cpatch%veg_water(ico)
@@ -356,16 +405,17 @@ end function compute_netrad
 ! with the different surfaces.  The result is given in J/m2.                               !
 !------------------------------------------------------------------------------------------!
 real function compute_energy_storage(csite, lsl, rhos, ipa)
-   use ed_state_vars        , only : sitetype   & ! structure
-                                   , patchtype  ! ! structure
-   use grid_coms            , only : nzg        ! ! intent(in)
-   use soil_coms            , only : dslz       ! ! intent(in)
-   use consts_coms          , only : cp         & ! intent(in)
-                                   , cliq       & ! intent(in)
-                                   , cice       & ! intent(in)
-                                   , alli       & ! intent(in)
-                                   , t3ple      ! ! intent(in)
-   use rk4_coms             , only : toosparse  ! ! intent(in)
+   use ed_state_vars        , only : sitetype              & ! structure
+                                   , patchtype             ! ! structure
+   use canopy_air_coms      , only : minimum_canopy_depth  ! ! intent(in)
+   use grid_coms            , only : nzg                   ! ! intent(in)
+   use soil_coms            , only : dslz                  ! ! intent(in)
+   use consts_coms          , only : cp                    & ! intent(in)
+                                   , cliq                  & ! intent(in)
+                                   , cice                  & ! intent(in)
+                                   , alli                  & ! intent(in)
+                                   , t3ple                 ! ! intent(in)
+   use rk4_coms             , only : toosparse             ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype) , target     :: csite
@@ -380,7 +430,10 @@ real function compute_energy_storage(csite, lsl, rhos, ipa)
    real                        :: sfcwater_storage
    real                        :: cas_storage
    real                        :: veg_storage
+   real                        :: canopy_depth
    !---------------------------------------------------------------------------------------!
+
+   canopy_depth = max(csite%veg_height(ipa),minimum_canopy_depth)
 
    cpatch => csite%patch(ipa)
    !----- 1. Computing internal energy stored at the soil. --------------------------------!
@@ -401,7 +454,7 @@ real function compute_energy_storage(csite, lsl, rhos, ipa)
    !---------------------------------------------------------------------------------------!
    ! 3. Finding and approximated value for canopy air total enthalpy.                      !
    !---------------------------------------------------------------------------------------!
-   cas_storage = cp * rhos * csite%veg_height(ipa) * csite%can_temp(ipa)
+   cas_storage = cp * rhos * canopy_depth * csite%can_temp(ipa)
 
    !---------------------------------------------------------------------------------------!
    ! 4. Compute the internal energy stored in the plants.                                  !
@@ -513,16 +566,21 @@ end subroutine sum_plant_cfluxes
 !    This function computes the co2 stored in the canopy air space from ppm to umol/m2.    !
 !------------------------------------------------------------------------------------------!
 real function compute_co2_storage(csite, rhos, ipa)
-   use ed_state_vars, only : sitetype ! ! structure
-   use consts_coms  , only : mmdryi   ! ! intent(in)
+   use ed_state_vars  , only : sitetype              ! ! structure
+   use canopy_air_coms, only : minimum_canopy_depth  ! ! intent(in)
+   use consts_coms    , only : mmdryi                ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)        , target      :: csite
    integer               , intent(in)  :: ipa
    real                  , intent(in)  :: rhos
+   !----- Local variables -----------------------------------------------------------------!
+   real                                :: canopy_depth
    !---------------------------------------------------------------------------------------!
 
-   compute_co2_storage = csite%can_co2(ipa) * mmdryi * rhos * csite%veg_height(ipa)
+   canopy_depth = max(csite%veg_height(ipa),minimum_canopy_depth)
+
+   compute_co2_storage = csite%can_co2(ipa) * mmdryi * rhos * canopy_depth
 
    return
 end function compute_co2_storage

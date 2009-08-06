@@ -562,9 +562,48 @@ subroutine scale_ed_radiation(rshort, rshort_diffuse, rlong, csite)
    type(patchtype) , pointer    :: cpatch
    integer                      :: ipa,ico, k
    real                         :: beam_radiation
+   !----- This should be false unless you really want to turn off radiation. --------------!
+   logical         , parameter  :: skip_rad = .false.
    !----- External functions. -------------------------------------------------------------!
    real            , external   :: sngloff
    !---------------------------------------------------------------------------------------!
+
+   if (skip_rad) then
+      do ipa = 1, csite%npatches
+         cpatch => csite%patch(ipa)
+         do ico = 1, cpatch%ncohorts
+            if (cpatch%solvable(ico)) then
+               cpatch%rshort_v_beam(ico)    = 0.
+               cpatch%rshort_v_diffuse(ico) = 0.
+               cpatch%rshort_v(ico)         = 0.
+               cpatch%par_v_beam(ico)       = 0.
+               cpatch%par_v_diffuse(ico)    = 0.
+               cpatch%par_v(ico)            = 0.
+               cpatch%rlong_v_incid(ico)    = 0.
+               cpatch%rlong_v_surf(ico)     = 0.
+               cpatch%rlong_v(ico)          = 0.
+            end if
+         end do
+         
+         csite%rshort_g_beam(ipa)    = 0.
+         csite%rshort_g_diffuse(ipa) = 0.
+         csite%rshort_g(ipa)         = 0.
+         !----- Absorption rate of short wave by the surface water. -----------------------!
+         do k=1,csite%nlev_sfcwater(ipa)
+            csite%rshort_s_beam(k,ipa)    = 0.
+            csite%rshort_s_diffuse(k,ipa) = 0.
+            csite%rshort_s(k,ipa)         = 0.
+         end do
+         csite%rlong_s_incid(ipa) = 0.
+         csite%rlong_g_incid(ipa) = 0.
+         csite%rlong_s_surf(ipa)  = 0.
+         csite%rlong_g_surf(ipa)  = 0.
+      
+         csite%rlong_s(ipa)       = 0.
+         csite%rlong_g(ipa)       = 0.
+      end do
+      return
+   end if
 
    beam_radiation = rshort - rshort_diffuse
 
@@ -585,6 +624,7 @@ subroutine scale_ed_radiation(rshort, rshort_diffuse, rlong, csite)
                                          + cpatch%par_v_diffuse(ico)
             
             cpatch%rlong_v_incid(ico)    = cpatch%rlong_v_incid(ico) * rlong
+            
             cpatch%rlong_v(ico)          = cpatch%rlong_v_incid(ico)                       &
                                          + cpatch%rlong_v_surf(ico)
          end if
@@ -604,6 +644,7 @@ subroutine scale_ed_radiation(rshort, rshort_diffuse, rlong, csite)
 
       csite%rlong_s_incid(ipa) = csite%rlong_s_incid(ipa) * rlong
       csite%rlong_g_incid(ipa) = csite%rlong_g_incid(ipa) * rlong
+      
       csite%rlong_s(ipa)       = csite%rlong_s_surf(ipa) + csite%rlong_s_incid(ipa)
       csite%rlong_g(ipa)       = csite%rlong_g_surf(ipa) + csite%rlong_g_incid(ipa)
    end do

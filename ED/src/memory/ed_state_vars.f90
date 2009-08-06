@@ -6950,21 +6950,21 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%dmean_co2_residual(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'DMEAN_CO2_RESIDUAL :11:hist:dail') 
-       call metadata_edio(nvar,igr,'Daily mean of residual canopy CO2 ','[umol/m2/day]','ipoly') 
+       call metadata_edio(nvar,igr,'Daily mean of residual canopy CO2 ','[umol/m2/s]','ipoly') 
     end if
 
     if(associated(cgrid%dmean_water_residual)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%dmean_water_residual(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'DMEAN_WATER_RESIDUAL :11:hist:dail') 
-       call metadata_edio(nvar,igr,'Daily mean of residual water ','[kg/m2/day]','ipoly') 
+       call metadata_edio(nvar,igr,'Daily mean of residual water ','[kg/m2/s]','ipoly') 
     end if
 
     if(associated(cgrid%dmean_energy_residual)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%dmean_energy_residual(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'DMEAN_ENERGY_RESIDUAL :11:hist:dail') 
-       call metadata_edio(nvar,igr,'Daily mean of residual water ','[J/m2/day]','ipoly') 
+       call metadata_edio(nvar,igr,'Daily mean of residual water ','[J/m2/s]','ipoly') 
     end if
 
     if(associated(cgrid%lai_pft)) then
@@ -7286,21 +7286,21 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%mmean_co2_residual(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'MMEAN_CO2_RESIDUAL :11:hist:mont') 
-       call metadata_edio(nvar,igr,'Monthly mean of residual canopy CO2 ','[umol/m2/day]','ipoly') 
+       call metadata_edio(nvar,igr,'Monthly mean of residual canopy CO2 ','[umol/m2/s]','ipoly') 
     end if
 
     if(associated(cgrid%mmean_water_residual)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%mmean_water_residual(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'MMEAN_WATER_RESIDUAL :11:hist:mont') 
-       call metadata_edio(nvar,igr,'Monthly mean of residual water ','[kg/m2/day]','ipoly') 
+       call metadata_edio(nvar,igr,'Monthly mean of residual water ','[kg/m2/s]','ipoly') 
     end if
 
     if(associated(cgrid%mmean_energy_residual)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%mmean_energy_residual(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'MMEAN_ENERGY_RESIDUAL :11:hist:mont') 
-       call metadata_edio(nvar,igr,'Monthly mean of residual energy ','[J/m2/day]','ipoly') 
+       call metadata_edio(nvar,igr,'Monthly mean of residual energy ','[J/m2/s]','ipoly') 
     end if
     
     if(associated(cgrid%agb_pft)) then

@@ -534,7 +534,7 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
                   qwloss = wloss * cliqvlme8 * (initp%soil_tempk(k2) - tsupercool8)
                   dinitp%soil_energy(k2)   = dinitp%soil_energy(k2)   - qwloss
                   dinitp%avg_smoist_gc(k2) = dinitp%avg_smoist_gc(k2) - wdns8*wloss
-                  dinitp%ebudget_latent    = dinitp%ebudget_latent    + qwloss
+                  dinitp%ebudget_latent    = dinitp%ebudget_latent    + qwloss*dslz8(k2)
                end if
             end if
          end do

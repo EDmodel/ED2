@@ -18,7 +18,7 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm,integration_buff)
                              , dtrk4                  & ! intent(in)
                              , dtrk4i                 & ! intent(in)
                              , tiny_offset            ! ! intent(in)
-   use rk4_stepper , only : rkqs                ! ! subroutine
+   use rk4_stepper    , only : rkqs                ! ! subroutine
    use ed_misc_coms   , only : fast_diagnostics       ! ! intent(in)
    use hydrology_coms , only : useRUNOFF              ! ! intent(in)
    use grid_coms      , only : nzg                    ! ! intent(in)
@@ -110,8 +110,6 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm,integration_buff)
       !----- If the integration reached the next step, make some final adjustments --------!
       if((x-tend)*dtrk4 >= 0.d0)then
 
-         csite%wbudget_loss2runoff(ipa) = 0.0
-         csite%ebudget_loss2runoff(ipa) = 0.0
          ksn = integration_buff%y%nlev_sfcwater
 
          !---------------------------------------------------------------------------------!
@@ -587,11 +585,13 @@ subroutine get_yscal(y, dy, htry, yscal, cpatch)
                                    , huge_offset          & ! intent(in)
                                    , rk4water_stab_thresh & ! intent(in)
                                    , rk4min_sfcwater_mass & ! intent(in)
-                                   , rk4dry_veg_lwater    ! ! intent(in)
+                                   , rk4dry_veg_lwater    & ! intent(in)
+                                   , checkbudget          ! ! intent(in)
    use grid_coms            , only : nzg                  & ! intent(in)
                                    , nzs                  ! ! intent(in)
    use consts_coms          , only : cliq8                & ! intent(in)
                                    , qliqt38              ! ! intent(in)
+   use soil_coms            , only : isoilbc              ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype), target     :: y                ! Structure with the guesses
@@ -693,6 +693,82 @@ subroutine get_yscal(y, dy, htry, yscal, cpatch)
       end if
    end do
 
+   !-------------------------------------------------------------------------!
+   !     Here we just need to make sure the user is checking mass, otherwise !
+   ! these variables will not be computed at all.  If this turns out to be   !
+   ! essential, we will make this permanent and not dependent on             !
+   ! checkbudget.  The only one that is not checked is the runoff, because   !
+   ! it is computed after a step was accepted.                               !
+   !-------------------------------------------------------------------------!
+   if (checkbudget) then
+      !----------------------------------------------------------------------!
+      !    If this is the very first time step, or if we are misfortuned, we !
+      ! may have a situation in which the derivative is numerically zero,    !
+      ! and making the check will become impossible because the scale would  !
+      ! be ridiculously tiny, so we skip the check this time and hope that   !
+      ! everything will be alright next step.                                !
+      !----------------------------------------------------------------------!
+      if (abs(y%co2budget_loss2atm)  < tiny_offset .and.                     &
+          abs(dy%co2budget_loss2atm) < tiny_offset) then
+         yscal%co2budget_loss2atm = huge_offset
+      else 
+         yscal%co2budget_loss2atm = abs(y%co2budget_loss2atm)                &
+                                  + abs(dy%co2budget_loss2atm*htry)
+      end if
+
+      if (abs(y%ebudget_loss2atm)  < tiny_offset .and.                       &
+          abs(dy%ebudget_loss2atm) < tiny_offset) then
+         yscal%ebudget_loss2atm = huge_offset
+      else 
+         yscal%ebudget_loss2atm = abs(y%ebudget_loss2atm)                    &
+                                + abs(dy%ebudget_loss2atm*htry)
+      end if
+
+      if (abs(y%wbudget_loss2atm)  < tiny_offset .and.                       &
+          abs(dy%wbudget_loss2atm) < tiny_offset) then
+         yscal%wbudget_loss2atm      = huge_offset
+      else 
+         yscal%wbudget_loss2atm = abs(y%wbudget_loss2atm)                    &
+                                + abs(dy%wbudget_loss2atm*htry)
+      end if
+
+      if (abs(y%ebudget_latent)  < tiny_offset .and.                         &
+          abs(dy%ebudget_latent) < tiny_offset) then
+         yscal%ebudget_latent      = huge_offset
+      else 
+         yscal%ebudget_latent = abs(y%ebudget_latent)                        &
+                              + abs(dy%ebudget_latent*htry)
+      end if
+
+      !----------------------------------------------------------------------!
+      !     Drainage terms will be checked only if the boundary condition is !
+      ! free drainage.                                                       !
+      !----------------------------------------------------------------------!
+      if (isoilbc == 0                                .or.                   &
+          (abs(y%ebudget_loss2drainage)  < tiny_offset .and.                 &
+           abs(dy%ebudget_loss2drainage) < tiny_offset)      ) then
+         yscal%ebudget_loss2drainage = huge_offset
+      else 
+         yscal%ebudget_loss2drainage = abs(y%ebudget_loss2drainage)          &
+                                     + abs(dy%ebudget_loss2drainage*htry)
+      end if
+      if (isoilbc == 0                                .or.                   &
+          (abs(y%wbudget_loss2drainage)  < tiny_offset .and.                 &
+           abs(dy%wbudget_loss2drainage) < tiny_offset)      ) then
+         yscal%wbudget_loss2drainage = huge_offset
+      else 
+         yscal%wbudget_loss2drainage = abs(y%wbudget_loss2drainage)          &
+                                     + abs(dy%wbudget_loss2drainage*htry)
+      end if
+
+   else 
+      yscal%co2budget_loss2atm      = huge_offset
+      yscal%ebudget_loss2atm        = huge_offset
+      yscal%wbudget_loss2atm        = huge_offset
+      yscal%ebudget_latent          = huge_offset
+      yscal%ebudget_loss2drainage   = huge_offset
+      yscal%wbudget_loss2drainage   = huge_offset
+   end if
 
    return
 end subroutine get_yscal
@@ -713,10 +789,11 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
 
    use rk4_coms              , only : rk4patchtype  & ! structure
                                     , rk4eps        & ! intent(in)
-                                    , rk4met        ! ! intent(in)
+                                    , rk4met        & ! intent(in)
+                                    , checkbudget   ! ! intent(in)
    use ed_state_vars         , only : patchtype     ! ! structure
    use grid_coms             , only : nzg           ! ! intent(in)
-   use ed_misc_coms             , only : integ_err     & ! intent(in)
+   use ed_misc_coms          , only : integ_err     & ! intent(in)
                                     , record_err    ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -808,6 +885,28 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       if(erreneMAX > rk4eps) integ_err(41,1) = integ_err(41,1) + 1_8
    end if
 
+   !-------------------------------------------------------------------------!
+   !     Here we just need to make sure the user is checking mass, otherwise !
+   ! these variables will not be computed at all.  If this turns out to be   !
+   ! essential, we will make this permanent and not dependent on             !
+   ! checkbudget.  The only one that is not checked is the runoff, because   !
+   ! it is computed after a step was accepted.                               !
+   !-------------------------------------------------------------------------!
+   if (checkbudget) then
+      err    = abs(yerr%co2budget_loss2atm/yscal%co2budget_loss2atm)
+      errmax = max(errmax,err)
+      err    = abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm)
+      errmax = max(errmax,err)
+      err    = abs(yerr%wbudget_loss2atm/yscal%wbudget_loss2atm)
+      errmax = max(errmax,err)
+      err    = abs(yerr%ebudget_latent/yscal%ebudget_latent)
+      errmax = max(errmax,err)
+      err    = abs(yerr%ebudget_loss2drainage/yscal%ebudget_loss2drainage)
+      errmax = max(errmax,err)
+      err    = abs(yerr%wbudget_loss2drainage/yscal%wbudget_loss2drainage)
+      errmax = max(errmax,err)
+   end if
+
    return
 end subroutine get_errmax
 !==========================================================================================!
@@ -823,7 +922,8 @@ end subroutine get_errmax
 subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    use rk4_coms              , only : rk4patchtype  & ! Structure
                                     , rk4eps        & ! intent(in)
-                                    , rk4met        ! ! intent(in)
+                                    , rk4met        & ! intent(in)
+                                    , checkbudget   ! ! intent(in)
    use ed_state_vars         , only : patchtype     ! ! Structure
    use grid_coms             , only : nzg           & ! intent(in)
                                     , nzs           ! ! intent(in)
@@ -840,7 +940,7 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    !----- Constants -----------------------------------------------------------------------!
    character(len=28)  , parameter    :: onefmt = '(a16,1x,3(es12.4,1x),11x,l1)'
    character(len=34)  , parameter    :: lyrfmt = '(a16,1x,i6,1x,3(es12.4,1x),11x,l1)'
-   character(len=34)  , parameter    :: cohfmt = '(a16,1x,i6,1x,7(es12.4,1x),11x,l1)'
+   character(len=34)  , parameter    :: cohfmt = '(a16,1x,i6,1x,6(es12.4,1x),11x,l1)'
    !----- Functions -----------------------------------------------------------------------!
    logical            , external     :: large_error
    !---------------------------------------------------------------------------------------!
@@ -916,7 +1016,7 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    write(unit=*,fmt='(a)'  ) 
    write(unit=*,fmt='(80a)') ('-',k=1,80)
    write(unit=*,fmt='(a)'      ) ' Cohort_level variables (only the solvable ones):'
-   write(unit=*,fmt='(7(a,1x))')  'Name            ','         PFT','         LAI'         &
+   write(unit=*,fmt='(9(a,1x))')  'Name            ','         PFT','         LAI'         &
                                      ,'         WPA','         TAI','   Max.Error'         &
                                      ,'   Abs.Error','       Scale','Problem(T|F)'
    do ico = 1,cpatch%ncohorts
@@ -935,6 +1035,59 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
                                                ,yscal%veg_energy(ico),troublemaker
       end if
    end do
+
+   !-------------------------------------------------------------------------!
+   !     Here we just need to make sure the user is checking mass, otherwise !
+   ! these variables will not be computed at all.  If this turns out to be   !
+   ! essential, we will make this permanent and not dependent on             !
+   ! checkbudget.  The only one that is not checked is the runoff, because   !
+   ! it is computed after a step was accepted.                               !
+   !-------------------------------------------------------------------------!
+   if (checkbudget) then
+      errmax = max(errmax                                                    &
+                  ,abs(yerr%co2budget_loss2atm/yscal%co2budget_loss2atm))
+      troublemaker = large_error(yerr%co2budget_loss2atm                     &
+                                ,yscal%co2budget_loss2atm)
+      write(unit=*,fmt=onefmt) 'CO2LOSS2ATM:',errmax,yerr%co2budget_loss2atm &
+                              ,yscal%co2budget_loss2atm,troublemaker
+
+      errmax = max(errmax                                                    &
+                  ,abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm))
+      troublemaker = large_error(yerr%ebudget_loss2atm                       &
+                                ,yscal%ebudget_loss2atm)
+      write(unit=*,fmt=onefmt) 'ENLOSS2ATM:',errmax,yerr%ebudget_loss2atm    &
+                              ,yscal%ebudget_loss2atm,troublemaker
+
+      errmax = max(errmax                                                    &
+                  ,abs(yerr%wbudget_loss2atm/yscal%wbudget_loss2atm))
+      troublemaker = large_error(yerr%wbudget_loss2atm                       &
+                                ,yscal%wbudget_loss2atm)
+      write(unit=*,fmt=onefmt) 'H2OLOSS2ATM:',errmax,yerr%wbudget_loss2atm   &
+                              ,yscal%wbudget_loss2atm,troublemaker
+
+      errmax = max(errmax                                                    &
+                  ,abs(yerr%ebudget_latent/yscal%ebudget_latent))
+      troublemaker = large_error(yerr%ebudget_latent                         &
+                                ,yscal%ebudget_latent)
+      write(unit=*,fmt=onefmt) 'EN_LATENT:',errmax,yerr%ebudget_latent       &
+                              ,yscal%ebudget_latent,troublemaker
+
+      errmax = max(errmax,abs( yerr%ebudget_loss2drainage                    &
+                             / yscal%ebudget_loss2drainage))
+      troublemaker = large_error(yerr%ebudget_loss2drainage                  &
+                                ,yscal%ebudget_loss2drainage)
+      write(unit=*,fmt=onefmt) 'ENDRAINAGE:',errmax                          &
+                              ,yerr%ebudget_loss2drainage                    &
+                              ,yscal%ebudget_loss2drainage,troublemaker
+
+      errmax = max(errmax,abs( yerr%wbudget_loss2drainage                    &
+                             / yscal%wbudget_loss2drainage))
+      troublemaker = large_error(yerr%wbudget_loss2drainage                  &
+                                ,yscal%wbudget_loss2drainage)
+      write(unit=*,fmt=onefmt) 'H2ODRAINAGE:',errmax                         &
+                              ,yerr%wbudget_loss2drainage                    &
+                              ,yscal%wbudget_loss2drainage,troublemaker
+   end if
 
    write(unit=*,fmt='(a)'  ) 
    write(unit=*,fmt='(80a)') ('-',k=1,80)

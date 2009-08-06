@@ -1401,7 +1401,7 @@ subroutine init_rk4_params()
    ! changing them...                                                                      !
    !---------------------------------------------------------------------------------------!
    maxstp      = 100000000    ! Maximum number of intermediate steps. 
-   rk4eps      = 1.d-2        ! The desired accuracy.
+   rk4eps      = 1.d-3        ! The desired accuracy.
    rk4epsi     = 1.d0/rk4eps  ! The inverse of desired accuracy.
    hmin        = 1.d-13       ! The minimum step size.
    print_diags = .false.      ! Flag to print the diagnostic check.

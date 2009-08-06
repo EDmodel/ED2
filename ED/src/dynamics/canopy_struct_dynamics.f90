@@ -242,7 +242,7 @@ module canopy_struct_dynamics
          !                 vortices when determining diffusivity.  The default method      !
          !                 taken from LEAF-3, as applied here, assumes that the zero plane !
          !                 is at the ground surface when computing the log wind profile,   !
-         !                 hence the 0.0 as the argument to ed_stars8.                     !
+         !                 hence the 0.0 as the argument to ed_stars.                      !
          !---------------------------------------------------------------------------------!
          can_theta = cpi * cmet%exner * csite%can_temp(ipa)
          atm_theta = cpi * cmet%exner * cmet%atm_tmp
