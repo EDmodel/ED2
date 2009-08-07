@@ -93,6 +93,11 @@ module canopy_air_coms
    real :: rb_inter
 
    !---------------------------------------------------------------------------------------!
+   !      This is the minimum vegetation height.  [m]                                      !
+   !---------------------------------------------------------------------------------------!
+   real         :: veg_height_min
+
+   !---------------------------------------------------------------------------------------!
    !      This is the minimum canopy depth that is used to calculate the heat and moisture !
    ! storage capacity in the canopy air [m].                                               !
    !---------------------------------------------------------------------------------------!

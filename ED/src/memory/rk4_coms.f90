@@ -20,9 +20,11 @@ module rk4_coms
    type rk4patchtype
 
       !----- Canopy air variables. --------------------------------------------------------!
-      real(kind=8)                        :: can_temp     ! Temperature           [      K]
-      real(kind=8)                        :: can_shv      ! Specific humidity     [  kg/kg]
-      real(kind=8)                        :: can_co2      ! CO_2                  [µmol/m³]
+      real(kind=8)                        :: can_temp     ! Temperature          [       K]
+      real(kind=8)                        :: can_shv      ! Specific humidity    [   kg/kg]
+      real(kind=8)                        :: can_co2      ! CO_2                 [µmol/mol]
+      real(kind=8)                        :: can_depth    ! Canopy depth         [       m]
+      real(kind=8)                        :: can_mass     ! Canopy total mass    [   kg/m2]
       
       !----- Soil variables. --------------------------------------------------------------!
       real(kind=8), dimension(:), pointer :: soil_energy  ! Internal energy       [   J/m³]
@@ -526,6 +528,8 @@ module rk4_coms
       y%can_temp                       = 0.d0
       y%can_shv                        = 0.d0
       y%can_co2                        = 0.d0
+      y%can_depth                      = 0.d0
+      y%can_mass                      = 0.d0
       y%virtual_water                  = 0.d0
       y%virtual_heat                   = 0.d0
       y%virtual_depth                  = 0.d0

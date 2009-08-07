@@ -268,7 +268,9 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    use grid_coms            , only : nzg                   & ! intent(in)
                                    , nzs                   ! ! intent(in) 
    use ed_misc_coms         , only : fast_diagnostics      ! ! intent(in)
-   use consts_coms          , only : cpi8                  ! ! intent(in)
+   use consts_coms          , only : cpi8                  & ! intent(in)
+                                   , ep8                   & ! intent(in)
+                                   , rdry8                 ! ! intent(in)
    use rk4_coms             , only : rk4patchtype          & ! structure
                                    , rk4met                & ! structure
                                    , hcapveg_ref           & ! intent(in)
@@ -283,7 +285,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                    , hcapcani              & ! intent(out)
                                    , rk4water_stab_thresh  & ! intent(in)
                                    , rk4min_sfcwater_mass  ! ! intent(in)
-   use ed_max_dims             , only : n_pft                 ! ! intent(in)
+   use ed_max_dims          , only : n_pft                 ! ! intent(in)
    use canopy_radiation_coms, only : tai_min               ! ! intent(in)
    use therm_lib            , only : qwtk8                 ! ! subroutine
    use allometry            , only : dbh2bl                ! ! function
@@ -306,6 +308,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    targetp%can_temp  = dble(sourcesite%can_temp(ipa))
    targetp%can_shv   = dble(sourcesite%can_shv(ipa))
    targetp%can_co2   = dble(sourcesite%can_co2(ipa))
+   targetp%can_depth = dble(sourcesite%can_depth(ipa))
 
    do k = rk4met%lsl, nzg
       targetp%soil_water(k)   = dble(sourcesite%soil_water(k,ipa))
@@ -521,9 +524,9 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
 
   
    do ico = 1,cpatch%ncohorts
-      rkp%veg_water(ico)     = rkp%veg_water(ico) + fac * inc%veg_water(ico)
+      rkp%veg_water(ico)     = rkp%veg_water(ico)  + fac * inc%veg_water(ico)
       rkp%veg_energy(ico)    = rkp%veg_energy(ico) + fac * inc%veg_energy(ico)
-   enddo
+   end do
 
    if(fast_diagnostics) then
 
@@ -683,8 +686,8 @@ subroutine get_yscal(y, dy, htry, yscal, cpatch)
          yscal%veg_energy(ico) = huge_offset
       elseif (y%veg_water(ico) > rk4dry_veg_lwater*y%tai(ico)) then
          yscal%solvable(ico)   = .true.
-         yscal%veg_water(ico)  = abs(y%veg_water(ico)) + abs(dy%veg_water(ico)*htry)
-         yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico)*htry)
+         yscal%veg_water(ico)  = abs(y%veg_water(ico))  + abs(dy%veg_water(ico)  * htry)
+         yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico) * htry)
       else
          yscal%solvable(ico)   = .true.
          yscal%veg_water(ico)  = rk4dry_veg_lwater*y%tai(ico)
@@ -873,8 +876,8 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       errh2oMAX = 0.d0
       erreneMAX = 0.d0
       if (yscal%solvable(ico)) then
-         errh2o     = abs(yerr%veg_water(ico)/yscal%veg_water(ico))
-         errene     = abs(yerr%veg_energy(ico)/yscal%veg_energy(ico))
+         errh2o     = abs(yerr%veg_water(ico)  / yscal%veg_water(ico))
+         errene     = abs(yerr%veg_energy(ico) / yscal%veg_energy(ico))
          errmax     = max(errmax,errh2o,errene)
          errh2oMAX  = max(errh2oMAX,errh2o)
          erreneMAX  = max(erreneMAX,errene)
@@ -1033,6 +1036,7 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
          write(unit=*,fmt=cohfmt) 'VEG_ENERGY:',cpatch%pft(ico),cpatch%lai(ico),y%wpa(ico) &
                                                ,y%tai(ico),errmax,yerr%veg_energy(ico)     &
                                                ,yscal%veg_energy(ico),troublemaker
+
       end if
    end do
 
@@ -1135,17 +1139,18 @@ end function large_error
 ! temporary snow/pond layers.                                                                      !
 !------------------------------------------------------------------------------------------!
 subroutine update_diagnostic_vars(initp, csite,ipa)
-   use rk4_coms             , only : rk4met               & ! intent(in)
-                                   , rk4min_sfcwater_mass & ! intent(in)
-                                   , rk4patchtype         ! ! structure
-   use ed_state_vars        , only : sitetype             & ! structure
-                                   , patchtype            ! ! structure
-   use soil_coms            , only : soil8                ! ! intent(in)
-   use grid_coms            , only : nzg                  & ! intent(in)
-                                   , nzs                  ! ! intent(in)
-   use therm_lib            , only : qwtk8                & ! subroutine
-                                   , qtk8                 ! ! subroutine
-   use consts_coms          , only : wdns8                ! ! intent(in)
+   use rk4_coms              , only : rk4met               & ! intent(in)
+                                    , rk4min_sfcwater_mass & ! intent(in)
+                                    , rk4patchtype         ! ! structure
+   use ed_state_vars         , only : sitetype             & ! structure
+                                    , patchtype            ! ! structure
+   use soil_coms             , only : soil8                ! ! intent(in)
+   use grid_coms             , only : nzg                  & ! intent(in)
+                                    , nzs                  ! ! intent(in)
+   use therm_lib             , only : qwtk8                & ! subroutine
+                                    , qtk8                 ! ! subroutine
+   use consts_coms           , only : wdns8                ! ! intent(in)
+   use canopy_struct_dynamics, only : can_whcap8           ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype) , target     :: initp
@@ -1158,6 +1163,9 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    real(kind=8)                     :: soilhcap
    !---------------------------------------------------------------------------------------!
 
+
+   !----- Updating canopy depth and capacities. -------------------------------------------!
+   call can_whcap8(csite,ipa,initp%can_temp,initp%can_shv,initp%can_depth)
 
    !----- Updating soil temperature and liquid water fraction. ----------------------------!
    do k = rk4met%lsl, nzg - 1
@@ -1632,6 +1640,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
                                    , cliq8             & ! intent(in)
                                    , alvl8             & ! intent(in)
                                    , alvi8             & ! intent(in)
+                                   , alli8             & ! intent(in)
                                    , t3ple8            & ! intent(in)
                                    , wdns8             & ! intent(in)
                                    , idns8             & ! intent(in)
@@ -1708,17 +1717,14 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             initp%avg_qwshed_vg = initp%avg_qwshed_vg + veg_qwshed * hdidi
 
          !---------------------------------------------------------------------------------!
-         !    If veg_water is tiny or negative, exchange moisture with the air, "stealing" !
-         ! moisture as fast "dew/frost" condensation if it is negative, or "donating" the  !
-         ! remaining as "boiling" (fast evaporation).                                      !
+         !    If veg_water is tiny, exchange moisture with the air.  If the tiny number is !
+         ! positive, then "donate" the remaining as "boiling" (fast evaporation or         !
+         ! sublimation).  Likewise, if veg_water is tiny and negative, exchange moisture   !
+         ! with the air, "stealing" moisture as fast "dew/frost" condensation.             !
          !---------------------------------------------------------------------------------!
          elseif (initp%veg_water(ico) < min_leaf_water) then
             veg_dew = - initp%veg_water(ico)
-            if (initp%can_temp >= t3ple8) then
-               veg_qdew = veg_dew * alvl8
-            else
-               veg_qdew = veg_dew * alvi8
-            end if
+            veg_qdew = veg_dew * (alvi8 - initp%veg_fliq(ico) * alli8)
 
             !----- Updating state variables -----------------------------------------------!
             initp%veg_water(ico)  = 0.d0
@@ -1727,6 +1733,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
 
             !----- Updating output flux ---------------------------------------------------!
             initp%avg_vapor_vc    = initp%avg_vapor_vc - veg_dew * hdidi
+            initp%ebudget_latent  = initp%ebudget_latent - veg_dew * hdidi
          end if
 
          !----- Lastly we update leaf temperature and liquid fraction. --------------------!
@@ -1774,6 +1781,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%can_temp      = sourcep%can_temp
    targetp%can_shv       = sourcep%can_shv
    targetp%can_co2       = sourcep%can_co2
+   targetp%can_depth     = sourcep%can_depth
 
    targetp%virtual_water = sourcep%virtual_water
    targetp%virtual_heat  = sourcep%virtual_heat
@@ -1940,12 +1948,12 @@ subroutine print_csiteipa(csite, ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(7(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','         LAI'          &
+   write (unit=*,fmt='(8(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','         LAI'          &
                                    &,'        HTRY','     CAN_CO2','    CAN_TEMP'          &
-                                   &,'     CAN_SHV'
-   write (unit=*,fmt='(7(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
+                                   &,'     CAN_SHV','   CAN_DEPTH'
+   write (unit=*,fmt='(8(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
          ,csite%lai(ipa),csite%htry(ipa),csite%can_co2(ipa),csite%can_temp(ipa)            &
-         ,csite%can_shv(ipa) 
+         ,csite%can_shv(ipa),csite%can_depth(ipa) 
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
@@ -2084,10 +2092,11 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(a)'  ) ' '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(6(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','   PATCH_LAI'          &
-                                   &,'     CAN_CO2','    CAN_TEMP','     CAN_SHV'
-   write (unit=*,fmt='(6(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
-         ,csite%lai(ipa),y%can_co2,y%can_temp,y%can_shv
+   write (unit=*,fmt='(7(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','   PATCH_LAI'          &
+                                    ,'     CAN_CO2','    CAN_TEMP','     CAN_SHV'          &
+                                    ,'   CAN_DEPTH'
+   write (unit=*,fmt='(7(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
+         ,csite%lai(ipa),y%can_co2,y%can_temp,y%can_shv,y%can_depth
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 

@@ -70,8 +70,6 @@ subroutine ed_init_coup_atm
               csite%cstar(ipa)  = 0.
               
               
-              ! For now, choose heat/vapor capacities for stability
-              csite%can_depth(ipa) = 30.0
 
               csite%rshort_g(ipa) = 0.0
               csite%rlong_g(ipa) = 0.0

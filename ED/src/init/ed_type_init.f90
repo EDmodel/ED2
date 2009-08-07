@@ -139,6 +139,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
 !  use fuse_fiss_utils, only: count_cohorts
   use grid_coms,     only: nzs, nzg
   use soil_coms, only: slz
+  use canopy_air_coms, only : veg_height_min, minimum_canopy_depth
 
   implicit none
 

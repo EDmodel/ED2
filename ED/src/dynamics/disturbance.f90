@@ -437,7 +437,6 @@ end subroutine apply_disturbances
     csite%patch(np)%ncohorts = 0
 
     ! For now, choose heat/vapor capacities for stability
-    csite%can_depth(np) = 30.0
     do k=1,nzs
        csite%sfcwater_tempk(k,np) = atm_tmp   ! Set canopy temp to 0 C
        csite%sfcwater_fracliq(k,np) = 1.0     ! Set to 100% liquid

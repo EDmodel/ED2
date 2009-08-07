@@ -168,7 +168,7 @@ module canopy_struct_dynamics
          end if
 
          zref     = cmet%geoht
-         h        = 0.
+         h        = csite%can_depth(ipa)
          d0       = 0.
 
          !----- Calculate the surface roughness inside the canopy. ------------------------!
@@ -192,7 +192,7 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap(csite,ipa,h,zref,cmet%rhos,canwcap,canccap,canhcap)
+         call can_whcap(csite,ipa,cmet%rhos,cmet%prss,canwcap,canccap,canhcap)
          return
       end if
 
@@ -210,7 +210,7 @@ module canopy_struct_dynamics
       !               even though it is nonsense.                                          !
       !------------------------------------------------------------------------------------!
       case (0)
-         h        = csite%veg_height(ipa) ! Canopy height
+         h        = csite%can_depth(ipa)  ! Canopy depth
          d0       = 0.63 * h              ! 0-plane displacement
          zref     = cmet%geoht
 
@@ -300,7 +300,7 @@ module canopy_struct_dynamics
             ! interfacial layer as the "reference elevation plus the top of the canopy".   !
             ! An alternative could be to make a conditional like in case(1).               !
             !------------------------------------------------------------------------------!
-            call can_whcap(csite,ipa,h,zref+h,cmet%rhos,canwcap,canccap,canhcap)
+            call can_whcap(csite,ipa,cmet%rhos,cmet%prss,canwcap,canccap,canhcap)
          end if
       !------------------------------------------------------------------------------------!
 
@@ -315,7 +315,7 @@ module canopy_struct_dynamics
       ! velocity to estimate ustar.                                                        !
       !------------------------------------------------------------------------------------!
       case(1)
-         h    = csite%veg_height(ipa) ! Canopy height
+         h    = csite%can_depth(ipa)  ! Canopy depth
          zref = cmet%geoht            ! Reference height
          d0   = 0.63 * h              ! 0-plane displacement
          
@@ -341,7 +341,7 @@ module canopy_struct_dynamics
             !----- Assume a new reference elevation at the canopy top. --------------------!
             zref = h
             if (get_flow_geom) then
-               call can_whcap(csite,ipa,h,zref+h,cmet%rhos,canwcap,canccap,canhcap)
+               call can_whcap(csite,ipa,cmet%rhos,cmet%prss,canwcap,canccap,canhcap)
             end if
 
          else         
@@ -353,7 +353,7 @@ module canopy_struct_dynamics
             end if
 
             if(get_flow_geom) then
-               call can_whcap(csite,ipa,h,zref,cmet%rhos,canwcap,canccap,canhcap)
+               call can_whcap(csite,ipa,cmet%rhos,cmet%prss,canwcap,canccap,canhcap)
             end if
 
          end if
@@ -430,7 +430,7 @@ module canopy_struct_dynamics
          !    LAI base drag calculation for center of pressure, d0.  Cumulative LAI based  !
          ! velocity attenuation in the canopy.                                             !
          !---------------------------------------------------------------------------------!
-         h = cpatch%hite(1)
+         h = csite%can_depth(ipa)
 
          if (cmet%geoht < h) then
 
@@ -600,7 +600,7 @@ module canopy_struct_dynamics
             ! Calculate the heat and mass storage capacity of the canopy and interfacial   !
             ! air spaces.                                                                  !
             !------------------------------------------------------------------------------!
-            call can_whcap(csite,ipa,h,zref,cmet%rhos,canwcap,canccap,canhcap)
+            call can_whcap(csite,ipa,cmet%rhos,cmet%prss,canwcap,canccap,canhcap)
          end if
 
       end select
@@ -760,7 +760,7 @@ module canopy_struct_dynamics
          
          vels_ref = rk4met%vels
          zref     = rk4met%geoht
-         h        = 0.d0
+         h        = initp%can_depth
          d0       = 0.d0
 
          !----- Calculate the surface roughness inside the canopy. ------------------------!
@@ -783,7 +783,7 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap8(csite,ipa,h,zref)
+         call can_whcap8(csite,ipa,initp%can_temp,initp%can_shv,initp%can_depth)
          
          return
       end if
@@ -802,8 +802,8 @@ module canopy_struct_dynamics
       !               even though it is nonsense.                                          !
       !------------------------------------------------------------------------------------!
       case (0)
-         h        = dble(csite%veg_height(ipa)) ! Canopy height
-         d0       = 6.3d-1 * h                  ! 0-plane displacement
+         h        = initp%can_depth   ! Canopy air space depth
+         d0       = 6.3d-1 * h        ! 0-plane displacement
          vels_ref = rk4met%vels
          zref     = rk4met%geoht
 
@@ -885,7 +885,7 @@ module canopy_struct_dynamics
             ! interfacial layer as the "reference elevation plus the top of the canopy".   !
             ! An alternative could be to make a conditional like in case(1).               !
             !------------------------------------------------------------------------------!
-            call can_whcap8(csite,ipa,h,zref+h)
+            call can_whcap8(csite,ipa,initp%can_temp,initp%can_shv,initp%can_depth)
          end if
       !------------------------------------------------------------------------------------!
 
@@ -900,7 +900,7 @@ module canopy_struct_dynamics
       ! velocity to estimate ustar.                                                        !
       !------------------------------------------------------------------------------------!
       case(1)
-         h    = dble(csite%veg_height(ipa)) ! Canopy height
+         h    = initp%can_depth             ! Canopy height
          zref = rk4met%geoht                ! Initial reference height
          d0   = 6.3d-1 * h                  ! 0-plane displacement
          
@@ -918,12 +918,16 @@ module canopy_struct_dynamics
             vels_ref = rk4met%vels / exp(-exar8 *(1.d0 - zref/h))
             !----- Assume a new reference elevation at the canopy top. --------------------!
             zref = h
-            if (get_flow_geom) call can_whcap8(csite,ipa,h,zref+h)
+            if (get_flow_geom) then
+               call can_whcap8(csite,ipa,initp%can_temp,initp%can_shv,initp%can_depth)
+            end if 
 
          else
             vels_ref = rk4met%vels
             zref     = rk4met%geoht
-            if(get_flow_geom) call can_whcap8(csite,ipa,h,zref)
+            if (get_flow_geom) then
+               call can_whcap8(csite,ipa,initp%can_temp,initp%can_shv,initp%can_depth)
+            end if
          end if
          
          !---------------------------------------------------------------------------------!
@@ -997,7 +1001,7 @@ module canopy_struct_dynamics
          !    LAI base drag calculation for center of pressure, d0.  Cumulative LAI based  !
          ! velocity attenuation in the canopy.                                             !
          !---------------------------------------------------------------------------------!
-         h = dble(cpatch%hite(1))
+         h = initp%can_depth
 
          if (rk4met%geoht < h) then
 
@@ -1160,7 +1164,7 @@ module canopy_struct_dynamics
             ! Calculate the heat and mass storage capacity of the canopy and interfacial   !
             ! air spaces.                                                                  !
             !------------------------------------------------------------------------------!
-            call can_whcap8(csite,ipa,h,zref)
+            call can_whcap8(csite,ipa,initp%can_temp,initp%can_shv,initp%can_depth)
          end if
 
       end select
@@ -1439,34 +1443,31 @@ module canopy_struct_dynamics
 
    !=======================================================================================!
    !=======================================================================================!
-   !     Calculate the heat can general scalar storage capacity of the canopy air and      !
-   ! interfacial air spaces.  The capacites are essentiall the amount of air mass stored   !
-   ! in each space.                                                                        !
+   !     Calculate some canopy air space properties, such as the total mass and depth, and !
+   ! also the total capacities (carbon, water, and heat).                                  !
    !---------------------------------------------------------------------------------------!
-   subroutine can_whcap(csite,ipa,veg_height,zref,rhos,canwcap,canccap,canhcap)
+   !---------------------------------------------------------------------------------------!
+   subroutine can_whcap(csite,ipa,rhos,prss,canwcap,canccap,canhcap)
 
-      use canopy_air_coms      , only : minimum_canopy_depth  ! ! intent(in)
       use ed_state_vars        , only : sitetype              ! ! structure
       use consts_coms          , only : cp                    & ! intent(in)
+                                      , ep                    & ! intent(in)
+                                      , rdry                  & ! intent(in)
                                       , mmdryi                ! ! intent(in)
       
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype) , target      :: csite
-      integer        , intent(in)  :: ipa
-      real           , intent(in)  :: zref
-      real           , intent(in)  :: veg_height
-      real           , intent(in)  :: rhos
-      real           , intent(out) :: canwcap
-      real           , intent(out) :: canccap
-      real           , intent(out) :: canhcap
-      !----- Local variables --------------------------------------------------------------!
-      real                         :: canopy_depth
+      type(sitetype) , target         :: csite
+      integer        , intent(in)     :: ipa
+      real           , intent(in)     :: prss
+      real           , intent(in)     :: rhos
+      real           , intent(out)    :: canwcap
+      real           , intent(out)    :: canccap
+      real           , intent(out)    :: canhcap
       !------------------------------------------------------------------------------------!
       
-      canopy_depth  = max(veg_height,minimum_canopy_depth)
-      
-      canwcap = rhos   * canopy_depth
+
+      canwcap = rhos   * csite%can_depth(ipa)
       canccap = mmdryi * canwcap
       canhcap = cp     * canwcap
 
@@ -1482,35 +1483,38 @@ module canopy_struct_dynamics
 
    !=======================================================================================!
    !=======================================================================================!
-   !     Calculate the heat can general scalar storage capacity of the canopy air and      !
-   ! interfacial air spaces.  The capacites are essentiall the amount of air mass stored   !
-   ! in each space.                                                                        !
+   !     Calculate some canopy air space properties, such as the total mass and depth, and !
+   ! also the total capacities (carbon, water, and heat).                                  !
+   !     Canopy air space depth must change because we are imposing that pressure and      !
+   ! density are constants. Since mass and temperature can freely change, in order to      !
+   ! guarantee that the ideal gas law and the first law of thermodynamic apply, the volume !
+   ! (or the canopy depth) must be allowed to change over time, so work can be done by the !
+   ! canopy or into the canopy.                                                            !
    !---------------------------------------------------------------------------------------!
-   subroutine can_whcap8(csite,ipa,veg_height,zref)
+   subroutine can_whcap8(csite,ipa,can_temp,can_shv,can_depth)
 
       use rk4_coms             , only : rk4met                & ! intent(in)
                                       , wcapcan               & ! intent(out)
                                       , wcapcani              & ! intent(out)
                                       , ccapcani              & ! intent(out)
                                       , hcapcani              ! ! intent(out)
-      use canopy_air_coms      , only : minimum_canopy_depth8 ! ! intent(in)
       use ed_state_vars        , only : sitetype              ! ! structure
+      use canopy_air_coms      , only : minimum_canopy_depth8 ! ! intent(in)
       use consts_coms          , only : cpi8                  & ! intent(in)
+                                      , rdry8                 & ! intent(in)
+                                      , ep8                   & ! intent(in)
                                       , mmdry8                ! ! intent(in)
       
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype) , target     :: csite
-      integer        , intent(in) :: ipa
-      real(kind=8)   , intent(in) :: zref
-      real(kind=8)   , intent(in) :: veg_height
-      !----- Local variables --------------------------------------------------------------!
-      real(kind=8)                :: canopy_depth
+      type(sitetype) , target        :: csite
+      integer        , intent(in)    :: ipa
+      real(kind=8)   , intent(in)    :: can_temp
+      real(kind=8)   , intent(in)    :: can_shv
+      real(kind=8)   , intent(in)    :: can_depth
       !------------------------------------------------------------------------------------!
-      
-      canopy_depth  = max(veg_height,minimum_canopy_depth8)
-      
-      wcapcan  = rk4met%rhos * canopy_depth
+
+      wcapcan  = rk4met%rhos * can_depth
       wcapcani = 1.d0 / wcapcan
       ccapcani = mmdry8 * wcapcani
       hcapcani = cpi8 * wcapcani

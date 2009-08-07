@@ -8174,7 +8174,7 @@ contains
        nvar=nvar+1
          call vtable_edio_r(csite%can_depth(1),nvar,igr,init,csite%paglob_id, &
          var_len,var_len_global,max_ptrs,'CAN_DEPTH :31:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+       call metadata_edio(nvar,igr,'Canopy depth','[m]','NA') 
     endif
 
     if (associated(csite%lai)) then

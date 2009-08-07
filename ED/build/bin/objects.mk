@@ -29,7 +29,6 @@ OBJ_MODEL =                        \
 	disturb_coms.o             \
 	edio.o                     \
 	ed_1st.o                   \
-	ed_bare_restart.o          \
 	ed_driver.o                \
 	ed_filelist.o              \
 	ed_grid.o                  \
@@ -43,6 +42,7 @@ OBJ_MODEL =                        \
 	ed_misc_coms.o             \
 	ed_model.o                 \
 	ed_mpass_init.o            \
+	ed_nbg_init.o              \
 	ed_node_coms.o             \
 	ed_opspec.o                \
 	ed_params.o                \

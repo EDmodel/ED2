@@ -173,6 +173,9 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
          write (unit=*,fmt='(a)') '|-----------------------------------------------------|'
          write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : ',           &
             current_time%year,current_time%month,current_time%date ,current_time%time
+         write (unit=*,fmt=fmtf ) ' LAI            : ',csite%lai(ipa)
+         write (unit=*,fmt=fmtf ) ' VEG_HEIGHT     : ',csite%veg_height(ipa)
+         write (unit=*,fmt=fmtf ) ' CAN_DEPTH      : ',csite%can_depth(ipa)
          write (unit=*,fmt=fmtf ) ' RESIDUAL       : ',co2curr_residual
          write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE: ',csite%co2budget_initialstorage(ipa)
          write (unit=*,fmt=fmtf ) ' FINAL_STORAGE  : ',co2budget_finalstorage
@@ -192,6 +195,9 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
          write (unit=*,fmt='(a)') '|-----------------------------------------------------|'
          write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : ',           &
             current_time%year,current_time%month,current_time%date ,current_time%time
+         write (unit=*,fmt=fmtf ) ' LAI            : ',csite%lai(ipa)
+         write (unit=*,fmt=fmtf ) ' VEG_HEIGHT     : ',csite%veg_height(ipa)
+         write (unit=*,fmt=fmtf ) ' CAN_DEPTH      : ',csite%can_depth(ipa)
          write (unit=*,fmt=fmtf ) ' RESIDUAL       : ',ecurr_residual
          write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE: ',csite%ebudget_initialstorage(ipa)
          write (unit=*,fmt=fmtf ) ' FINAL_STORAGE  : ',ebudget_finalstorage
@@ -213,6 +219,9 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
          write (unit=*,fmt='(a)') '|-----------------------------------------------------|'
          write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : ',           &
             current_time%year,current_time%month,current_time%date ,current_time%time
+         write (unit=*,fmt=fmtf ) ' LAI            : ',csite%lai(ipa)
+         write (unit=*,fmt=fmtf ) ' VEG_HEIGHT     : ',csite%veg_height(ipa)
+         write (unit=*,fmt=fmtf ) ' CAN_DEPTH      : ',csite%can_depth(ipa)
          write (unit=*,fmt=fmtf ) ' RESIDUAL       : ',wcurr_residual
          write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE: ',csite%wbudget_initialstorage(ipa)
          write (unit=*,fmt=fmtf ) ' FINAL_STORAGE  : ',wbudget_finalstorage
@@ -309,7 +318,6 @@ end subroutine compute_budget
 real function compute_water_storage(csite, lsl, rhos,ipa)
    use ed_state_vars , only  : sitetype              & ! structure
                              , patchtype             ! ! structure
-   use canopy_air_coms, only : minimum_canopy_depth  ! ! intent(in)
    use grid_coms      , only : nzg                   ! ! intent(in)
    use soil_coms      , only : dslz                  ! ! intent(in)
    use consts_coms    , only : wdns                  ! ! intent(in)
@@ -323,10 +331,8 @@ real function compute_water_storage(csite, lsl, rhos,ipa)
    type(patchtype), pointer    :: cpatch
    integer                     :: k
    integer                     :: ico
-   real                        :: canopy_depth
    !---------------------------------------------------------------------------------------!
 
-   canopy_depth = max(csite%veg_height(ipa),minimum_canopy_depth)
 
    compute_water_storage = 0.0
    cpatch => csite%patch(ipa)
@@ -342,7 +348,7 @@ real function compute_water_storage(csite, lsl, rhos,ipa)
    end do
    !----- 3. Adding the water vapour floating in the canopy air space. --------------------!
    compute_water_storage = compute_water_storage                                           &
-                            + csite%can_shv(ipa) * canopy_depth * rhos
+                            + csite%can_shv(ipa) * csite%can_depth(ipa) * rhos
    !----- 4. Adding the water over the leaf surface. --------------------------------------!
    do ico = 1,cpatch%ncohorts
       compute_water_storage = compute_water_storage + cpatch%veg_water(ico)
@@ -407,7 +413,6 @@ end function compute_netrad
 real function compute_energy_storage(csite, lsl, rhos, ipa)
    use ed_state_vars        , only : sitetype              & ! structure
                                    , patchtype             ! ! structure
-   use canopy_air_coms      , only : minimum_canopy_depth  ! ! intent(in)
    use grid_coms            , only : nzg                   ! ! intent(in)
    use soil_coms            , only : dslz                  ! ! intent(in)
    use consts_coms          , only : cp                    & ! intent(in)
@@ -430,10 +435,8 @@ real function compute_energy_storage(csite, lsl, rhos, ipa)
    real                        :: sfcwater_storage
    real                        :: cas_storage
    real                        :: veg_storage
-   real                        :: canopy_depth
    !---------------------------------------------------------------------------------------!
 
-   canopy_depth = max(csite%veg_height(ipa),minimum_canopy_depth)
 
    cpatch => csite%patch(ipa)
    !----- 1. Computing internal energy stored at the soil. --------------------------------!
@@ -454,15 +457,10 @@ real function compute_energy_storage(csite, lsl, rhos, ipa)
    !---------------------------------------------------------------------------------------!
    ! 3. Finding and approximated value for canopy air total enthalpy.                      !
    !---------------------------------------------------------------------------------------!
-   cas_storage = cp * rhos * canopy_depth * csite%can_temp(ipa)
+   cas_storage = cp * rhos * csite%can_depth(ipa) * csite%can_temp(ipa)
 
    !---------------------------------------------------------------------------------------!
    ! 4. Compute the internal energy stored in the plants.                                  !
-   !    Originally we were only considering those patches that were prognosed, but since   !
-   !    we are assigning non-zero internal energy to the tiny cohorts or those cohorts     !
-   !    buried in snow, we should account for them, even if this will put the energy con-  !
-   !    servation off. After all, this can help us identifying how bad is the assumption   !
-   !    of diagnosing such cohorts instead of solving them.                                !
    !---------------------------------------------------------------------------------------!
    veg_storage = 0.0
    do ico = 1,cpatch%ncohorts
@@ -567,20 +565,16 @@ end subroutine sum_plant_cfluxes
 !------------------------------------------------------------------------------------------!
 real function compute_co2_storage(csite, rhos, ipa)
    use ed_state_vars  , only : sitetype              ! ! structure
-   use canopy_air_coms, only : minimum_canopy_depth  ! ! intent(in)
    use consts_coms    , only : mmdryi                ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)        , target      :: csite
    integer               , intent(in)  :: ipa
    real                  , intent(in)  :: rhos
-   !----- Local variables -----------------------------------------------------------------!
-   real                                :: canopy_depth
    !---------------------------------------------------------------------------------------!
 
-   canopy_depth = max(csite%veg_height(ipa),minimum_canopy_depth)
 
-   compute_co2_storage = csite%can_co2(ipa) * mmdryi * rhos * canopy_depth
+   compute_co2_storage = csite%can_co2(ipa) * mmdryi * rhos * csite%can_depth(ipa)
 
    return
 end function compute_co2_storage

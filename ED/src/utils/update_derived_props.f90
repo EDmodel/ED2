@@ -55,7 +55,9 @@ subroutine update_patch_derived_props(csite,lsl,rhos,ipa)
                                   , patchtype                  ! ! structure
    use allometry           , only : ed_biomass                 ! ! function
    use fusion_fission_coms , only : ff_ndbh                    ! ! intent(in)
-   use fuse_fiss_utils  , only : patch_pft_size_profile  ! ! subroutine
+   use fuse_fiss_utils     , only : patch_pft_size_profile     ! ! subroutine
+   use canopy_air_coms     , only : veg_height_min             & ! intent(in)
+                                  , minimum_canopy_depth       ! ! intent(in)
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -65,10 +67,8 @@ subroutine update_patch_derived_props(csite,lsl,rhos,ipa)
    real            , intent(in) :: rhos
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype) , pointer    :: cpatch
-   real                         :: norm_fac, ba
+   real                         :: norm_fac, ba, old_height
    integer                      :: ico
-   !----- Local constants -----------------------------------------------------------------!
-   real            , parameter  :: veg_height_min = 1.0 !was 0.2
    !----- External functions. -------------------------------------------------------------!
    real            , external   :: compute_water_storage
    real            , external   :: compute_energy_storage
@@ -114,12 +114,17 @@ subroutine update_patch_derived_props(csite,lsl,rhos,ipa)
 
   
    !----- Update vegetation height of this patch. -----------------------------------------!
+   old_height = csite%veg_height(ipa)
+
    if (norm_fac > tiny(1.0)) then
       csite%veg_height(ipa) = max(veg_height_min,csite%veg_height(ipa) / norm_fac)
    else
       !---- In case we are dealing with an empty patch. -----------------------------------!
       csite%veg_height(ipa) = veg_height_min
    end if
+   
+   !----- Updating the canopy depth . -----------------------------------------------------!
+   csite%can_depth(ipa) = max(csite%veg_height(ipa), minimum_canopy_depth)
    
    !----- Finding the patch roughness due to vegetation. ----------------------------------!
    csite%veg_rough(ipa) = 0.13 * csite%veg_height(ipa)

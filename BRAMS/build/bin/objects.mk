@@ -276,7 +276,6 @@ OBJ_MODEL =                         \
 	decomposition.o             \
 	disturb_coms.o              \
 	disturbance.o               \
-	ed_bare_restart.o           \
 	ed_filelist.o               \
 	ed_grid.o                   \
 	ed_history_io.o             \
@@ -284,6 +283,7 @@ OBJ_MODEL =                         \
 	ed_max_dims.o               \
 	ed_mem_grid_dim_defs.o      \
 	ed_misc_coms.o              \
+	ed_nbg_init.o               \
 	ed_node_coms.o              \
 	ed_opspec.o                 \
 	ed_para_coms.o              \

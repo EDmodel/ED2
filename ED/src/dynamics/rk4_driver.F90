@@ -392,9 +392,10 @@ module rk4_driver
       ! those in which this is not true.  All floating point variables are converted back  !
       ! to single precision.                                                               !
       !------------------------------------------------------------------------------------!
-      csite%can_temp(ipa) = sngloff(initp%can_temp,tiny_offset)
-      csite%can_shv(ipa)  = sngloff(initp%can_shv ,tiny_offset)
-      csite%can_co2(ipa)  = sngloff(initp%can_co2 ,tiny_offset)
+      csite%can_temp(ipa)  = sngloff(initp%can_temp  ,tiny_offset)
+      csite%can_shv(ipa)   = sngloff(initp%can_shv   ,tiny_offset)
+      csite%can_co2(ipa)   = sngloff(initp%can_co2   ,tiny_offset)
+      csite%can_depth(ipa) = sngloff(initp%can_depth ,tiny_offset)
 
       csite%ustar(ipa)    = sngloff(initp%ustar   ,tiny_offset)
       csite%tstar(ipa)    = sngloff(initp%tstar   ,tiny_offset)

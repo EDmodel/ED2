@@ -1529,6 +1529,10 @@ module fuse_fiss_utils
                                      ( csite%can_shv(donp)            * csite%area(donp)   &
                                      + csite%can_shv(recp)            * csite%area(recp) )
 
+      csite%can_depth(recp)          = newareai *                                          &
+                                     ( csite%can_depth(donp)          * csite%area(donp)   &
+                                     + csite%can_depth(recp)          * csite%area(recp) )
+
       csite%hcapveg(recp)            = newareai *                                          &
                                      ( csite%hcapveg(donp)            * csite%area(donp)   &
                                      + csite%hcapveg(recp)            * csite%area(recp) )
@@ -1870,6 +1874,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !    Now we update some variables that depend on cohort statistics, namely:          !
       ! + csite%veg_height(recp)                                                           !
+      ! + csite%can_depth(recp)                                                            !
       ! + csite%lai(recp)                                                                  !
       ! + csite%veg_rough(recp)                                                            !
       ! + csite%wbudget_initialstorage(recp)                                               !

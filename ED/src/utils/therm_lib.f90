@@ -995,7 +995,7 @@ module therm_lib
          tempk = t3ple
       !----- No water, but it must be at freezing point (qw = qwfroz = qwmelt) ------------!
       else
-         fracliq = 0.
+         fracliq = 0.5
          tempk   = t3ple
       end if
       !------------------------------------------------------------------------------------!
@@ -1099,7 +1099,7 @@ module therm_lib
          tempk = t3ple8
       !----- No water, but it must be at freezing point (qw = qwfroz = qwmelt) ------------!
       else
-         fracliq = 0.d0
+         fracliq = 5.d-1
          tempk   = t3ple8
       end if
       !------------------------------------------------------------------------------------!

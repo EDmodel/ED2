@@ -584,6 +584,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
                                     , day_sec8             & ! intent(in)
                                     , grav8                & ! intent(in)
                                     , alvi8                & ! intent(in)
+                                    , alvl8                & ! intent(in)
                                     , alli8                & ! intent(in)
                                     , umol_2_kgC8          & ! intent(in)
                                     , pi18                 & ! intent(in)
@@ -591,7 +592,8 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
                                     , mmdryi8              & ! intent(in)
                                     , wdns8                & ! intent(in)
                                     , wdnsi8               & ! intent(in)
-                                    , idns8                ! ! intent(in)
+                                    , idns8                & ! intent(in)
+                                    , t3ple8               ! ! intent(in)
    use grid_coms             , only : nzg                  ! ! intent(in)
    use soil_coms             , only : soil8                & ! intent(in)
                                     , dslzi8               & ! intent(in)
@@ -936,29 +938,29 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
             wflxvc  = c3tai * sigmaw * rbi
             qwflxvc = wflxvc * (alvi8 - initp%veg_fliq(ico) * alli8)
             !----- Transpiration, consider the leaf area rather than TAI. -----------------!
-            if (initp%solvable(ico) .and. initp%available_liquid_water(kroot) > 0.d0 ) then
+            if (initp%available_liquid_water(kroot) > 0.d0 ) then
                cpatch%Psi_open(ico)   = c3lai / (cpatch%rb(ico) + cpatch%rsw_open(ico)  )
                cpatch%Psi_closed(ico) = c3lai / (cpatch%rb(ico) + cpatch%rsw_closed(ico))
                transp = dble(cpatch%fs_open(ico)) * dble(cpatch%Psi_open(ico))             &
                       + (1.0d0 - dble(cpatch%fs_open(ico))) * dble(cpatch%Psi_closed(ico))
-           else
-              cpatch%Psi_open(ico) = 0.
-              cpatch%Psi_closed(ico) = 0.
-              transp = 0.0d0
+            else
+               cpatch%Psi_open(ico) = 0.
+               cpatch%Psi_closed(ico) = 0.
+               transp = 0.0d0
             end if
             qtransp = transp * alvl8
          else
-            !------ Dew/frost formation ---------------------------------------------------!
+            !------------------------------------------------------------------------------!
+            !     Dew/frost formation. The deposition will conserve the liquid/ice         !
+            ! partition (or use the default if there is no water).                         !
+            !------------------------------------------------------------------------------!
             wflxvc                 = c3tai * rbi
-            qwflxvc                = wflxvc  * (alvi8 - initp%veg_fliq(ico)*alli8)
+            qwflxvc                = wflxvc * (alvi8 - initp%veg_fliq(ico)*alli8)
             transp                 = 0.0d0
             qtransp                = 0.0d0
             cpatch%Psi_open(ico)   = 0.0d0
             cpatch%Psi_closed(ico) = 0.0d0
          end if
-
-         !----- Diagnostic ----------------------------------------------------------------!
-         dinitp%ebudget_latent = dinitp%ebudget_latent + qwflxvc + qtransp
 
 
          !----- We need to extract water from the soil equal to the transpiration. --------!
@@ -1018,7 +1020,6 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
                                 - qtransp              & ! Transpiration.
                                 + qintercepted         ! ! Intercepted water energy
 
-
          !----- Add the contribution of this cohort to total heat and evapotranspiration. -!
          wflxvc_tot  = wflxvc_tot  + wflxvc
          qwflxvc_tot = qwflxvc_tot + qwflxvc
@@ -1040,6 +1041,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
          !---------------------------------------------------------------------------------!
          dinitp%veg_energy(ico) = 0.d0
          dinitp%veg_water(ico)  = 0.d0
+         dinitp%veg_temp(ico)   = 0.d0
 
          !---------------------------------------------------------------------------------!
          !     Allow the complete bypass of precipitation if there are no leaves.          !
@@ -1071,7 +1073,8 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
 
       dinitp%co2budget_loss2atm = - cflxac
       dinitp%ebudget_loss2atm   = - hflxac
-      dinitp%ebudget_latent     = dinitp%ebudget_latent -qdewgndflx + qwflxgc
+      dinitp%ebudget_latent     = dinitp%ebudget_latent -qdewgndflx  + qwflxgc             &
+                                                        + transp_tot + qwflxvc_tot
       dinitp%wbudget_loss2atm   = - wflxac
       
       dinitp%avg_carbon_ac      =   cflxac
