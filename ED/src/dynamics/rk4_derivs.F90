@@ -10,7 +10,8 @@
 subroutine leaf_derivs(initp,dinitp,csite,ipa,isi,ipy)
   
    use rk4_coms               , only : rk4met             & ! intent(in)
-                                     , rk4patchtype       ! ! structure
+                                     , rk4patchtype       & ! structure
+                                     , checkbudget        ! ! intent(in)
    use ed_state_vars          , only : sitetype           ! ! structure
    use consts_coms            , only : cp8                & ! intent(in)
                                      , cpi8               ! ! intent(in)
@@ -35,7 +36,8 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa,isi,ipy)
       !    Subroutine that computes the canopy and leaf fluxes.                            ! 
       !------------------------------------------------------------------------------------!
       subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
-         use rk4_coms      , only : rk4patchtype ! ! structure
+         use rk4_coms      , only : rk4patchtype & ! structure
+                                  , checkbudget  ! ! intent(in)
          use ed_state_vars , only : sitetype     ! ! structure
          implicit none
          type(rk4patchtype) , target     :: initp  
@@ -49,7 +51,8 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa,isi,ipy)
    !---------------------------------------------------------------------------------------!
 
    !----- Resetting the energy budget. ----------------------------------------------------!
-   dinitp%ebudget_latent = 0.0d0
+   dinitp%ebudget_latent  = 0.0d0
+   dinitp%ebudget_storage = 0.0d0
 
    !----- Compute canopy turbulence properties. -------------------------------------------!
    call canopy_turbulence8(csite,initp,isi,ipa,.true.)
@@ -510,6 +513,7 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
    if (fast_diagnostics) then
       dinitp%wbudget_loss2drainage = dinitp%avg_drainage
       dinitp%ebudget_loss2drainage = qw_flux(rk4met%lsl)
+      dinitp%ebudget_storage = dinitp%ebudget_storage - qw_flux(rk4met%lsl)
    end if
 
    !----- Finally, update soil moisture (impose minimum value of soilcp) and soil energy. -!
@@ -535,6 +539,7 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
                   dinitp%soil_energy(k2)   = dinitp%soil_energy(k2)   - qwloss
                   dinitp%avg_smoist_gc(k2) = dinitp%avg_smoist_gc(k2) - wdns8*wloss
                   dinitp%ebudget_latent    = dinitp%ebudget_latent    + qwloss*dslz8(k2)
+                  dinitp%ebudget_storage   = dinitp%ebudget_storage   - qwloss*dslz8(k2)
                end if
             end if
          end do
@@ -654,6 +659,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    real(kind=8)                     :: qwflx            !
    real(kind=8)                     :: hflxvc_tot       !
    real(kind=8)                     :: transp_tot       !
+   real(kind=8)                     :: qtransp_tot      !
    real(kind=8)                     :: cflxvc_tot       !
    real(kind=8)                     :: wflxvc_tot       !
    real(kind=8)                     :: qwflxvc_tot      !
@@ -845,11 +851,12 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    ! canopy air space, integrate cohort energy, calculate precipitation throughfall and    !
    ! sum fluxes to the patch level. Initialize variables used to store sums over cohorts.  !
    !---------------------------------------------------------------------------------------!
-   hflxvc_tot  = 0.d0               
-   wflxvc_tot  = 0.d0               
-   qwflxvc_tot = 0.d0               
-   cflxvc_tot  = csite%cwd_rh(ipa) 
-   transp_tot  = 0.d0               
+   hflxvc_tot   = 0.d0               
+   wflxvc_tot   = 0.d0               
+   qwflxvc_tot  = 0.d0               
+   cflxvc_tot   = csite%cwd_rh(ipa) 
+   transp_tot   = 0.d0               
+   qtransp_tot  = 0.d0               
    cflxgc      = csite%rh(ipa) - csite%cwd_rh(ipa)
   
    cohortloop: do ico = 1,cpatch%ncohorts
@@ -1021,10 +1028,11 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
                                 + qintercepted         ! ! Intercepted water energy
 
          !----- Add the contribution of this cohort to total heat and evapotranspiration. -!
-         wflxvc_tot  = wflxvc_tot  + wflxvc
-         qwflxvc_tot = qwflxvc_tot + qwflxvc
-         hflxvc_tot  = hflxvc_tot  + hflxvc
-         transp_tot  = transp_tot  + transp
+         wflxvc_tot   = wflxvc_tot  + wflxvc
+         qwflxvc_tot  = qwflxvc_tot + qwflxvc
+         hflxvc_tot   = hflxvc_tot  + hflxvc
+         transp_tot   = transp_tot  + transp
+         qtransp_tot  = qtransp_tot  + qtransp
 
          !---------------------------------------------------------------------------------!
          ! wshed:  Water passing through vegetated canopy to soil surface                  !
@@ -1073,8 +1081,11 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
 
       dinitp%co2budget_loss2atm = - cflxac
       dinitp%ebudget_loss2atm   = - hflxac
-      dinitp%ebudget_latent     = dinitp%ebudget_latent -qdewgndflx  + qwflxgc             &
-                                                        + transp_tot + qwflxvc_tot
+      dinitp%ebudget_latent     = dinitp%ebudget_latent - qdewgndflx  + qwflxgc            &
+                                                        + qtransp_tot + qwflxvc_tot
+      dinitp%ebudget_storage    = dinitp%ebudget_storage + hflxac + qdewgndflx - qwflxgc   &
+                                                         - qtransp_tot - qwflxvc_tot
+
       dinitp%wbudget_loss2atm   = - wflxac
       
       dinitp%avg_carbon_ac      =   cflxac

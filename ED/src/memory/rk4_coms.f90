@@ -24,7 +24,6 @@ module rk4_coms
       real(kind=8)                        :: can_shv      ! Specific humidity    [   kg/kg]
       real(kind=8)                        :: can_co2      ! CO_2                 [µmol/mol]
       real(kind=8)                        :: can_depth    ! Canopy depth         [       m]
-      real(kind=8)                        :: can_mass     ! Canopy total mass    [   kg/m2]
       
       !----- Soil variables. --------------------------------------------------------------!
       real(kind=8), dimension(:), pointer :: soil_energy  ! Internal energy       [   J/m³]
@@ -125,6 +124,7 @@ module rk4_coms
       real(kind=8) :: ebudget_loss2drainage
       real(kind=8) :: ebudget_loss2runoff
       real(kind=8) :: ebudget_latent
+      real(kind=8) :: ebudget_storage
       real(kind=8) :: wbudget_loss2atm
       real(kind=8) :: wbudget_loss2drainage
       real(kind=8) :: wbudget_loss2runoff
@@ -519,6 +519,7 @@ module rk4_coms
       y%co2budget_loss2atm             = 0.d0
       y%ebudget_loss2atm               = 0.d0
       y%ebudget_latent                 = 0.d0
+      y%ebudget_storage                = 0.d0
       y%ebudget_loss2drainage          = 0.d0
       y%ebudget_loss2runoff            = 0.d0
       y%wbudget_loss2atm               = 0.d0

@@ -154,6 +154,8 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm,integration_buff)
                                              + sngloff(qwfree * dtrk4i,tiny_offset)
                   integration_buff%initp%wbudget_loss2runoff = wfreeb
                   integration_buff%initp%ebudget_loss2runoff = qwfree
+                  integration_buff%initp%ebudget_storage =                                 &
+                                   integration_buff%initp%ebudget_storage - qwfree
                end if
 
             else
@@ -452,6 +454,8 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%avg_sensible_ac    = dble(sourcesite%avg_sensible_ac(ipa)   )
       targetp%avg_sensible_tot   = dble(sourcesite%avg_sensible_tot(ipa)  )
 
+      targetp%ebudget_storage    = dble(sourcesite%ebudget_initialstorage(ipa)  )
+
       do k = rk4met%lsl, nzg
          targetp%avg_sensible_gg(k) = dble(sourcesite%avg_sensible_gg(k,ipa))
          targetp%avg_smoist_gg(k)   = dble(sourcesite%avg_smoist_gg(k,ipa)  )
@@ -537,7 +541,8 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
 
       rkp%ebudget_loss2atm      = rkp%ebudget_loss2atm      + fac * inc%ebudget_loss2atm
       rkp%ebudget_loss2drainage = rkp%ebudget_loss2drainage + fac * inc%ebudget_loss2drainage
-      rkp%ebudget_latent     = rkp%ebudget_latent     + fac * inc%ebudget_latent
+      rkp%ebudget_latent        = rkp%ebudget_latent        + fac * inc%ebudget_latent
+      rkp%ebudget_storage       = rkp%ebudget_latent        + fac * inc%ebudget_storage
 
       rkp%avg_carbon_ac      = rkp%avg_carbon_ac      + fac * inc%avg_carbon_ac
       
@@ -743,6 +748,14 @@ subroutine get_yscal(y, dy, htry, yscal, cpatch)
                               + abs(dy%ebudget_latent*htry)
       end if
 
+      if (abs(y%ebudget_storage)  < tiny_offset .and.                        &
+          abs(dy%ebudget_storage) < tiny_offset) then
+         yscal%ebudget_storage      = huge_offset
+      else 
+         yscal%ebudget_storage = abs(y%ebudget_storage)                      &
+                               + abs(dy%ebudget_storage*htry)
+      end if
+
       !----------------------------------------------------------------------!
       !     Drainage terms will be checked only if the boundary condition is !
       ! free drainage.                                                       !
@@ -766,11 +779,12 @@ subroutine get_yscal(y, dy, htry, yscal, cpatch)
 
    else 
       yscal%co2budget_loss2atm      = huge_offset
+      yscal%wbudget_loss2drainage   = huge_offset
       yscal%ebudget_loss2atm        = huge_offset
       yscal%wbudget_loss2atm        = huge_offset
       yscal%ebudget_latent          = huge_offset
       yscal%ebudget_loss2drainage   = huge_offset
-      yscal%wbudget_loss2drainage   = huge_offset
+      yscal%ebudget_storage         = huge_offset
    end if
 
    return
@@ -1732,8 +1746,9 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             initp%can_shv         = initp%can_shv          - veg_dew * wcapcani
 
             !----- Updating output flux ---------------------------------------------------!
-            initp%avg_vapor_vc    = initp%avg_vapor_vc - veg_dew * hdidi
-            initp%ebudget_latent  = initp%ebudget_latent - veg_dew * hdidi
+            initp%avg_vapor_vc    = initp%avg_vapor_vc    - veg_dew  * hdidi
+            initp%ebudget_latent  = initp%ebudget_latent  - veg_qdew * hdidi
+            initp%ebudget_storage = initp%ebudget_storage + veg_dew  * hdidi
          end if
 
          !----- Lastly we update leaf temperature and liquid fraction. --------------------!
@@ -1849,6 +1864,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%ebudget_latent         = sourcep%ebudget_latent
       targetp%wbudget_loss2atm       = sourcep%wbudget_loss2atm
       targetp%wbudget_loss2drainage  = sourcep%wbudget_loss2drainage
+      targetp%ebudget_storage        = sourcep%ebudget_storage
       targetp%avg_carbon_ac          = sourcep%avg_carbon_ac
       targetp%avg_vapor_vc           = sourcep%avg_vapor_vc
       targetp%avg_dew_cg             = sourcep%avg_dew_cg  
