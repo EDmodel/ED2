@@ -378,37 +378,40 @@ module rk4_stepper
    ! canopy_radiation_coms).                                                               !
    !---------------------------------------------------------------------------------------!
    subroutine rk4_sanity_check(y,reject_step, csite,ipa,dydx,h,print_problems)
-      use rk4_coms              , only : rk4patchtype         & ! structure
-                                       , integration_vars     & ! structure
-                                       , rk4met               & ! intent(in)
-                                       , rk4eps               & ! intent(in)
-                                       , toocold              & ! intent(in)
-                                       , rk4min_can_temp      & ! intent(in)
-                                       , rk4max_can_temp      & ! intent(in)
-                                       , rk4max_can_rhv       & ! intent(in)
-                                       , rk4max_can_shv       & ! intent(in)
-                                       , rk4min_can_shv       & ! intent(in)
-                                       , rk4min_can_co2       & ! intent(in)
-                                       , rk4max_can_co2       & ! intent(in)
-                                       , rk4max_veg_temp      & ! intent(in)
-                                       , rk4min_veg_temp      & ! intent(in)
-                                       , rk4min_veg_lwater    & ! intent(in)
-                                       , rk4min_sfcw_temp     & ! intent(in)
-                                       , rk4max_sfcw_temp     & ! intent(in)
-                                       , rk4max_soil_temp     & ! intent(in)
-                                       , rk4min_soil_temp     & ! intent(in)
-                                       , rk4min_sfcw_mass     & ! intent(in)
-                                       , rk4min_virt_water    & ! intent(in)
-                                       , rk4min_sfcwater_mass ! ! intent(in)
-      use ed_state_vars         , only : sitetype             & ! structure
-                                       , patchtype            ! ! structure
-      use grid_coms             , only : nzg                  ! ! intent(in)
-      use soil_coms             , only : soil8                ! ! intent(in), lookup table
-      use consts_coms           , only : t3ple8               ! ! intent(in)
-      use ed_misc_coms          , only : integ_err            & ! intent(inout)
-                                       , record_err           ! ! intent(inout)
-      use therm_lib             , only : rehuil               & ! function
-                                       , qtk8                 ! ! subroutine
+      use rk4_coms              , only : rk4patchtype          & ! structure
+                                       , integration_vars      & ! structure
+                                       , rk4met                & ! intent(in)
+                                       , rk4eps                & ! intent(in)
+                                       , toocold               & ! intent(in)
+                                       , rk4min_can_temp       & ! intent(in)
+                                       , rk4max_can_temp       & ! intent(in)
+                                       , rk4max_can_rhv        & ! intent(in)
+                                       , rk4max_can_shv        & ! intent(in)
+                                       , rk4min_can_shv        & ! intent(in)
+                                       , rk4min_can_co2        & ! intent(in)
+                                       , rk4max_can_co2        & ! intent(in)
+                                       , rk4min_can_depth      & ! intent(in)
+                                       , rk4max_can_depth      & ! intent(in)
+                                       , rk4max_veg_temp       & ! intent(in)
+                                       , rk4min_veg_temp       & ! intent(in)
+                                       , rk4min_veg_lwater     & ! intent(in)
+                                       , rk4min_sfcw_temp      & ! intent(in)
+                                       , rk4max_sfcw_temp      & ! intent(in)
+                                       , rk4max_soil_temp      & ! intent(in)
+                                       , rk4min_soil_temp      & ! intent(in)
+                                       , rk4min_sfcw_mass      & ! intent(in)
+                                       , rk4min_virt_water     & ! intent(in)
+                                       , rk4min_sfcwater_mass  ! ! intent(in)
+      use ed_state_vars         , only : sitetype              & ! structure
+                                       , patchtype             ! ! structure
+      use canopy_air_coms       , only : minimum_canopy_depth8 ! ! intent(in)
+      use grid_coms             , only : nzg                   ! ! intent(in)
+      use soil_coms             , only : soil8                 ! ! intent(in)
+      use consts_coms           , only : t3ple8                ! ! intent(in)
+      use ed_misc_coms          , only : integ_err             & ! intent(inout)
+                                       , record_err            ! ! intent(inout)
+      use therm_lib             , only : rehuil                & ! function
+                                       , qtk8                  ! ! subroutine
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -464,20 +467,54 @@ module rk4_stepper
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             write(unit=*,fmt='(a)')           ' + Canopy air temperature is off-track...'
             write(unit=*,fmt='(a)')           '-----------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:  ',y%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_MVAP:      ',y%can_mvap
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_NCO2:      ',y%can_nco2
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:       ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:      ',y%can_temp
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:       ',y%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:     ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:      ',rk4met%prss
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_TEMP)/Dt:',dydx%can_temp
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt: ',dydx%can_shv
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2)/Dt: ',dydx%can_co2
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTH)/Dt:',dydx%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_MVAP)/Dt:',dydx%can_mvap
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_NCO2)/Dt:',dydx%can_nco2
             write(unit=*,fmt='(a,1x,es12.4)') ' H:            ',h
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
          elseif (.not. record_err) then
             return
          end if
       end if
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !   Checking whether the canopy temperature is too hot or too cold.                  !
+      !------------------------------------------------------------------------------------! 
+      !if (y%can_depth > rk4max_can_depth .or. y%can_depth < rk4min_can_depth ) then
+      !   reject_step = .true.
+      !   if(record_err) integ_err(1,2) = integ_err(1,2) + 1_8
+      !   if (print_problems) then
+      !      write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      !      write(unit=*,fmt='(a)')           ' + Canopy air depth is off-track...'
+      !      write(unit=*,fmt='(a)')           '-----------------------------------------'
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:  ',y%can_enthalpy
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_MVAP:      ',y%can_mvap
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_NCO2:      ',y%can_nco2
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:       ',y%can_shv
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:      ',y%can_temp
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:       ',y%can_co2
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:     ',y%can_depth
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH_MAX: ',rk4max_can_depth
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH_MIN: ',rk4min_can_depth
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:      ',rk4met%prss
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTH)/Dt:',dydx%can_enthalpy
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_MVAP)/Dt:',dydx%can_mvap
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_NCO2)/Dt:',dydx%can_nco2
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' H:            ',h
+      !      write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      !   elseif (.not. record_err) then
+      !      return
+      !   end if
+      !end if
       !------------------------------------------------------------------------------------!
 
 
@@ -499,15 +536,18 @@ module rk4_stepper
                write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
                write(unit=*,fmt='(a)')           ' + Canopy air spec. hum. is off-track...'
                write(unit=*,fmt='(a)')           '----------------------------------------'
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:  ',y%can_enthalpy
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_MVAP:      ',y%can_mvap
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_NCO2:      ',y%can_nco2
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:       ',y%can_shv
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:       ',can_rhv
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:      ',y%can_temp
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:       ',y%can_co2
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:     ',y%can_depth
                write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:      ',rk4met%prss
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_TEMP)/Dt:',dydx%can_temp
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt: ',dydx%can_shv
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2)/Dt: ',dydx%can_co2
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTH)/Dt:',dydx%can_enthalpy
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_MVAP)/Dt:',dydx%can_mvap
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_NCO2)/Dt:',dydx%can_nco2
                write(unit=*,fmt='(a,1x,es12.4)') ' H:            ',h
                write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             elseif (.not. record_err) then
@@ -528,15 +568,18 @@ module rk4_stepper
       !      write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
       !      write(unit=*,fmt='(a)')           ' + Canopy air CO2  is off-track...       '
       !      write(unit=*,fmt='(a)')           '-----------------------------------------'
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:  ',y%can_enthalpy
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_MVAP:      ',y%can_mvap
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_NCO2:      ',y%can_nco2
       !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:       ',y%can_shv
       !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:       ',can_rhv
       !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:      ',y%can_temp
       !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:       ',y%can_co2
       !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:     ',y%can_depth
       !      write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:      ',rk4met%prss
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_TEMP)/Dt:',dydx%can_temp
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt: ',dydx%can_shv
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2)/Dt: ',dydx%can_co2
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTH)/Dt:',dydx%can_enthalpy
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_MVAP)/Dt:',dydx%can_mvap
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_NCO2)/Dt:',dydx%can_nco2
       !      write(unit=*,fmt='(a,1x,es12.4)') ' H:            ',h
       !      write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
       !   elseif (.not. record_err) then

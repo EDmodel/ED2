@@ -51,8 +51,8 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa,isi,ipy)
    !---------------------------------------------------------------------------------------!
 
    !----- Resetting the energy budget. ----------------------------------------------------!
-   dinitp%ebudget_latent  = 0.0d0
-   dinitp%ebudget_storage = 0.0d0
+   dinitp%ebudget_storage   = 0.0d0
+   dinitp%wbudget_storage   = 0.0d0
 
    !----- Compute canopy turbulence properties. -------------------------------------------!
    call canopy_turbulence8(csite,initp,isi,ipa,.true.)
@@ -511,9 +511,11 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
 
    !----- Copying the variables to the budget arrays. -------------------------------------!
    if (fast_diagnostics) then
-      dinitp%wbudget_loss2drainage = dinitp%avg_drainage
       dinitp%ebudget_loss2drainage = qw_flux(rk4met%lsl)
-      dinitp%ebudget_storage = dinitp%ebudget_storage - qw_flux(rk4met%lsl)
+      dinitp%wbudget_loss2drainage = dinitp%avg_drainage
+
+      dinitp%ebudget_storage = dinitp%ebudget_storage - dinitp%ebudget_loss2drainage
+      dinitp%wbudget_storage = dinitp%wbudget_storage - dinitp%wbudget_loss2drainage
    end if
 
    !----- Finally, update soil moisture (impose minimum value of soilcp) and soil energy. -!
@@ -538,8 +540,6 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
                   qwloss = wloss * cliqvlme8 * (initp%soil_tempk(k2) - tsupercool8)
                   dinitp%soil_energy(k2)   = dinitp%soil_energy(k2)   - qwloss
                   dinitp%avg_smoist_gc(k2) = dinitp%avg_smoist_gc(k2) - wdns8*wloss
-                  dinitp%ebudget_latent    = dinitp%ebudget_latent    + qwloss*dslz8(k2)
-                  dinitp%ebudget_storage   = dinitp%ebudget_storage   - qwloss*dslz8(k2)
                end if
             end if
          end do
@@ -571,10 +571,6 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
                                     , effarea_heat         & ! intent(in)
                                     , zoveg                & ! intent(in)
                                     , zveg                 & ! intent(in)
-                                    , wcapcan              & ! intent(in)
-                                    , wcapcani             & ! intent(in)
-                                    , ccapcani             & ! intent(in)
-                                    , hcapcani             & ! intent(in)
                                     , any_solvable         & ! intent(in)
                                     , tiny_offset          & ! intent(in)
                                     , rk4water_stab_thresh & ! intent(in)
@@ -640,6 +636,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    real(kind=8)                     :: transp           ! Cohort transpiration
    real(kind=8)                     :: cflxac           ! Atm->canopy carbon flux
    real(kind=8)                     :: wflxac           ! Atm->canopy water flux
+   real(kind=8)                     :: qwflxac          ! Atm->canopy int. energy  flux
    real(kind=8)                     :: hflxac           ! Atm->canopy heat flux
    real(kind=8)                     :: c2               ! Coefficient (????)
    real                             :: c3lai            ! Coefficient (????)
@@ -694,6 +691,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    rho_ustar = rk4met%rhos * initp%ustar                ! Aux. variable
    hflxac    = rho_ustar   * initp%tstar * rk4met%exner ! Sensible Heat flux
    wflxac    = rho_ustar   * initp%qstar                ! Water flux
+   qwflxac   = wflxac * cp8 * initp%can_temp
    cflxac    = rho_ustar   * initp%cstar * mmdryi8      ! CO2 flux [umol/m2/s]
    !---------------------------------------------------------------------------------------!
 
@@ -861,7 +859,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
   
    cohortloop: do ico = 1,cpatch%ncohorts
       
-      cflxgc = cflxgc + cpatch%root_respiration(ico)
+      cflxgc = cflxgc + dble(cpatch%root_respiration(ico))
       
       !------------------------------------------------------------------------------------!
       !    Calculate 'decay' term of storage (same for all) need to convert units from     !
@@ -1062,15 +1060,12 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
 
 
    !---------------------------------------------------------------------------------------!
-   !     Update temperature and moisture of canopy.  hcapcan [J/m2/K] and wcapcan          !
-   ! [kg_air/m2] are the heat and moisture capacities of the canopy.                       !
+   !     Update enthalpy, and masses of water vapour and CO2.                              !
    !---------------------------------------------------------------------------------------!
-   dinitp%can_temp = (hflxgc + hflxvc_tot + hflxac) * hcapcani
-   dinitp%can_shv  = (wflxgc - dewgndflx + wflxvc_tot + transp_tot +  wflxac) * wcapcani
-
-
-   !----- Update CO2 concentration in the canopy ------------------------------------------!
-   dinitp%can_co2  = (cflxgc + cflxvc_tot + cflxac) * ccapcani
+   dinitp%can_enthalpy = hflxgc + hflxvc_tot + hflxac + qwflxgc - qdewgndflx               &
+                       + qwflxvc_tot + qtransp_tot + qwflxac
+   dinitp%can_mvap     = wflxgc - dewgndflx + wflxvc_tot + transp_tot +  wflxac
+   dinitp%can_nco2     = cflxgc + cflxvc_tot + cflxac
 
 
    !---------------------------------------------------------------------------------------!
@@ -1080,11 +1075,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    if (fast_diagnostics) then
 
       dinitp%co2budget_loss2atm = - cflxac
-      dinitp%ebudget_loss2atm   = - hflxac
-      dinitp%ebudget_latent     = dinitp%ebudget_latent - qdewgndflx  + qwflxgc            &
-                                                        + qtransp_tot + qwflxvc_tot
-      dinitp%ebudget_storage    = dinitp%ebudget_storage + hflxac + qdewgndflx - qwflxgc   &
-                                                         - qtransp_tot - qwflxvc_tot
+      dinitp%ebudget_loss2atm   = - hflxac - qwflxac
 
       dinitp%wbudget_loss2atm   = - wflxac
       
@@ -1104,6 +1095,9 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
       do k=1,initp%nlev_sfcwater
          dinitp%avg_netrad = dinitp%avg_netrad + dble(csite%rshort_s(k,ipa))
       end do
+      dinitp%ebudget_storage    = dinitp%ebudget_storage + hflxac + qwflxac                &
+                                + dinitp%avg_netrad + rk4met%qpcpg
+      dinitp%wbudget_storage    = dinitp%wbudget_storage + wflxac + rk4met%pcpg
    end if
   
    !---------------------------------------------------------------------------------------!

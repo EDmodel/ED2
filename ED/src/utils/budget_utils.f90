@@ -3,8 +3,8 @@
 subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
                          ,ecurr_loss2atm,co2curr_loss2atm                    &
                          ,wcurr_loss2drainage,ecurr_loss2drainage            &
-                         ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent   &
-                         ,site_area,cbudget_nep)
+                         ,wcurr_loss2runoff,ecurr_loss2runoff,site_area      &
+                         ,cbudget_nep)
    use ed_state_vars, only : sitetype         ! ! structure
    use ed_misc_coms , only : dtlsm            & ! intent(in)
                            , fast_diagnostics & ! intent(in)
@@ -24,7 +24,6 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
    real                  , intent(in)    :: ecurr_loss2atm
    real                  , intent(in)    :: ecurr_loss2drainage
    real                  , intent(in)    :: ecurr_loss2runoff
-   real                  , intent(in)    :: ecurr_latent
    real                  , intent(in)    :: wcurr_loss2atm
    real                  , intent(in)    :: wcurr_loss2drainage
    real                  , intent(in)    :: wcurr_loss2runoff
@@ -57,7 +56,7 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
    logical                               :: water_ok
    !----- Local constants. --------------------------------------------------!
    character(len=13)     , parameter     :: fmtf='(a,1x,es14.7)'
-   logical               , parameter     :: print_debug = .true.
+   logical               , parameter     :: print_debug = .false.
    !----- External functions. -----------------------------------------------!
    real                  , external      :: compute_netrad
    real                  , external      :: compute_water_storage
@@ -108,7 +107,7 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
                     - ( - co2curr_nep - co2curr_loss2atm)
    !----- 2. Energy. --------------------------------------------------------!
    ecurr_residual = ebudget_deltastorage                                     &
-                  - ( ecurr_precipgain + ecurr_netrad - ecurr_latent         &
+                  - ( ecurr_precipgain + ecurr_netrad                        &
                     - ecurr_loss2atm - ecurr_loss2drainage                   &
                     - ecurr_loss2runoff)
    !----- 3. Water. ---------------------------------------------------------!
@@ -123,10 +122,10 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
    ! whenever there is some significant leak of CO2, water, or energy.       !
    !-------------------------------------------------------------------------!
    if (checkbudget) then
-      !co2_ok  = abs(co2curr_residual) <= rk4eps                              &
-      !                                 * (abs(co2budget_finalstorage)        &
-      !                                   +abs(co2budget_deltastorage)*dtlsm)
-      co2_ok = .true. ! Skipping CO2 test
+      co2_ok  = abs(co2curr_residual) <= rk4eps                              &
+                                       * (abs(co2budget_finalstorage)        &
+                                         +abs(co2budget_deltastorage)*dtlsm)
+      !co2_ok = .true. ! Skipping CO2 test
       energy_ok = abs(ecurr_residual) <= rk4eps                              &
                                        * (abs(ebudget_finalstorage)          &
                                          +abs(ebudget_deltastorage)*dtlsm)
@@ -143,14 +142,13 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
                ,co2curr_nep/dtlsm                                            &
                ,co2curr_loss2atm/dtlsm
 
-         write (unit=66,fmt='(i4.4,2(1x,i2.2),1x,f6.0,8(1x,es14.7))')        &
+         write (unit=66,fmt='(i4.4,2(1x,i2.2),1x,f6.0,7(1x,es14.7))')        &
                 current_time%year,current_time%month,current_time%date       &
                ,current_time%time                                            &
                ,ecurr_residual/dtlsm                                         &
                ,ebudget_deltastorage/dtlsm                                   &
                ,ecurr_precipgain/dtlsm                                       &
                ,ecurr_netrad/dtlsm                                           &
-               ,ecurr_latent/dtlsm                                           &
                ,ecurr_loss2atm/dtlsm                                         &
                ,ecurr_loss2drainage/dtlsm                                    &
                ,ecurr_loss2runoff/dtlsm
@@ -204,7 +202,6 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
          write (unit=*,fmt=fmtf ) ' DELTA_STORAGE  : ',ebudget_deltastorage
          write (unit=*,fmt=fmtf ) ' PRECIPGAIN     : ',ecurr_precipgain
          write (unit=*,fmt=fmtf ) ' NETRAD         : ',ecurr_netrad
-         write (unit=*,fmt=fmtf ) ' LATENT         : ',ecurr_latent
          write (unit=*,fmt=fmtf ) ' LOSS2ATM       : ',ecurr_loss2atm
          write (unit=*,fmt=fmtf ) ' LOSS2DRAINAGE  : ',ecurr_loss2drainage
          write (unit=*,fmt=fmtf ) ' LOSS2RUNOFF    : ',ecurr_loss2runoff
@@ -273,8 +270,6 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
                                     + ecurr_precipgain
    csite%ebudget_netrad(ipa)        = csite%ebudget_netrad(ipa)              &
                                     + ecurr_netrad
-   csite%ebudget_latent(ipa)        = csite%ebudget_latent(ipa)              &
-                                    + ecurr_latent
    csite%ebudget_loss2atm(ipa)      = csite%ebudget_loss2atm(ipa)            &
                                     + ecurr_loss2atm
    csite%ebudget_loss2drainage(ipa) = csite%ebudget_loss2drainage(ipa)       &

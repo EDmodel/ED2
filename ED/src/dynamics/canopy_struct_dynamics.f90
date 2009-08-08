@@ -760,7 +760,7 @@ module canopy_struct_dynamics
          
          vels_ref = rk4met%vels
          zref     = rk4met%geoht
-         h        = initp%can_depth
+         h        = dble(csite%veg_height(ipa))
          d0       = 0.d0
 
          !----- Calculate the surface roughness inside the canopy. ------------------------!
@@ -779,11 +779,6 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          initp%rasveg = 0.0  
 
-
-         !---------------------------------------------------------------------------------!
-         !     Calculate the heat and mass storage capacity of the canopy.                 !
-         !---------------------------------------------------------------------------------!
-         call can_whcap8(csite,ipa,initp%can_temp,initp%can_shv,initp%can_depth)
          
          return
       end if
@@ -802,7 +797,7 @@ module canopy_struct_dynamics
       !               even though it is nonsense.                                          !
       !------------------------------------------------------------------------------------!
       case (0)
-         h        = initp%can_depth   ! Canopy air space depth
+         h        = dble(csite%veg_height(ipa))   ! Canopy air space depth
          d0       = 6.3d-1 * h        ! 0-plane displacement
          vels_ref = rk4met%vels
          zref     = rk4met%geoht
@@ -877,15 +872,6 @@ module canopy_struct_dynamics
                cpatch%rb(ico) = sngloff(initp%rb(ico),tiny_offset)
             end do
 
-            !------------------------------------------------------------------------------!
-            !    Calculate the heat and mass storage capacity of the canopy and inter-     !
-            ! facial air spaces.  This is a tough call, because the reference height is    !
-            ! allowed to be abnormally low in this case, and it is possible that it is     !
-            ! even lower than the top of the canopy.  So... we will set the top of the     !
-            ! interfacial layer as the "reference elevation plus the top of the canopy".   !
-            ! An alternative could be to make a conditional like in case(1).               !
-            !------------------------------------------------------------------------------!
-            call can_whcap8(csite,ipa,initp%can_temp,initp%can_shv,initp%can_depth)
          end if
       !------------------------------------------------------------------------------------!
 
@@ -900,7 +886,7 @@ module canopy_struct_dynamics
       ! velocity to estimate ustar.                                                        !
       !------------------------------------------------------------------------------------!
       case(1)
-         h    = initp%can_depth             ! Canopy height
+         h    = csite%veg_height(ipa)            ! Canopy height
          zref = rk4met%geoht                ! Initial reference height
          d0   = 6.3d-1 * h                  ! 0-plane displacement
          
@@ -918,16 +904,10 @@ module canopy_struct_dynamics
             vels_ref = rk4met%vels / exp(-exar8 *(1.d0 - zref/h))
             !----- Assume a new reference elevation at the canopy top. --------------------!
             zref = h
-            if (get_flow_geom) then
-               call can_whcap8(csite,ipa,initp%can_temp,initp%can_shv,initp%can_depth)
-            end if 
 
          else
             vels_ref = rk4met%vels
             zref     = rk4met%geoht
-            if (get_flow_geom) then
-               call can_whcap8(csite,ipa,initp%can_temp,initp%can_shv,initp%can_depth)
-            end if
          end if
          
          !---------------------------------------------------------------------------------!
@@ -1001,7 +981,7 @@ module canopy_struct_dynamics
          !    LAI base drag calculation for center of pressure, d0.  Cumulative LAI based  !
          ! velocity attenuation in the canopy.                                             !
          !---------------------------------------------------------------------------------!
-         h = initp%can_depth
+         h = csite%veg_height(ipa)
 
          if (rk4met%geoht < h) then
 
@@ -1160,11 +1140,6 @@ module canopy_struct_dynamics
                cpatch%rb(ico) = sngloff(initp%rb(ico),tiny_offset)
             end do
 
-            !------------------------------------------------------------------------------!
-            ! Calculate the heat and mass storage capacity of the canopy and interfacial   !
-            ! air spaces.                                                                  !
-            !------------------------------------------------------------------------------!
-            call can_whcap8(csite,ipa,initp%can_temp,initp%can_shv,initp%can_depth)
          end if
 
       end select

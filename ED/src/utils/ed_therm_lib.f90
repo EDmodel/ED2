@@ -212,6 +212,132 @@ module ed_therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
+   !      This routine converts enthalpy and mass of water vapour into temperature, mix-   !
+   ! ing ratio and height, for a given pressure and density.                               !
+   !---------------------------------------------------------------------------------------!
+   subroutine hmv2tqz(enthalpy,mvap,prss,rhos,temp,shv,depth)
+      use consts_coms , only : epim1  & ! intent(in)
+                             , rdry   & ! intent(in)
+                             , cp     ! ! intent(in)
+     
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!     
+      real, intent(in)  :: enthalpy ! Enthalpy                                  [     J/m²]
+      real, intent(in)  :: mvap     ! Water vapour mass                         [    kg/m²]
+      real, intent(in)  :: prss     ! Pressure                                  [     N/m²]
+      real, intent(in)  :: rhos     ! Air density                               [    kg/m³]
+      real, intent(out) :: temp     ! Temperature                               [        K]
+      real, intent(out) :: shv      ! Specific humidity                         [kg_vap/kg]
+      real, intent(out) :: depth    ! Depth of the reservoir                    [        m]
+      !----- Local variables --------------------------------------------------------------!
+      real              :: b        ! "B" term of Baskara quadratic eq.         [        K]
+      real              :: ac4      ! 4*A*C of Baskara quadratic eqn.           [       K²]
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !      Finding the auxiliary terms used to find temperature as a function of water   !
+      ! vapour mass and enthalpy.                                                          !
+      !------------------------------------------------------------------------------------!
+      b   = enthalpy / (epim1 * mvap * cp)
+      ac4 = 4.0 * prss * b / (rdry * rhos)
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !      Finding the temperature.                                                      !
+      !------------------------------------------------------------------------------------!
+      temp = 0.5 * (sqrt(b*b + ac4) - b)
+      !------------------------------------------------------------------------------------!
+      
+      !------------------------------------------------------------------------------------!
+      !      Now that the temperature is defined, we invert the definition of water vapour !
+      ! mass to find the specific humidity.                                                !
+      !------------------------------------------------------------------------------------!
+      shv = mvap * cp * temp / enthalpy 
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Finally, using the definition of enthalpy and density, we can find the depth  !
+      ! of this reservoir.                                                                 !
+      !------------------------------------------------------------------------------------!
+      depth = enthalpy / (rhos * cp * temp)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine hmv2tqz
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      This routine converts enthalpy and mass of water vapour into temperature, mix-   !
+   ! ing ratio and height, for a given pressure and density.                               !
+   !---------------------------------------------------------------------------------------!
+   subroutine hmv2tqz8(enthalpy,mvap,prss,rhos,temp,shv,depth)
+      use consts_coms , only : epim18  & ! intent(in)
+                             , rdry8   & ! intent(in)
+                             , cp8     ! ! intent(in)
+     
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!     
+      real(kind=8), intent(in)  :: enthalpy ! Enthalpy                          [     J/m²]
+      real(kind=8), intent(in)  :: mvap     ! Water vapour mass                 [    kg/m²]
+      real(kind=8), intent(in)  :: prss     ! Pressure                          [     N/m²]
+      real(kind=8), intent(in)  :: rhos     ! Air density                       [    kg/m³]
+      real(kind=8), intent(out) :: temp     ! Temperature                       [        K]
+      real(kind=8), intent(out) :: shv      ! Specific humidity                 [kg_vap/kg]
+      real(kind=8), intent(out) :: depth    ! Depth of the reservoir            [        m]
+      !----- Local variables --------------------------------------------------------------!
+      real(kind=8)              :: b        ! "B" term of Baskara quadratic eq. [        K]
+      real(kind=8)              :: ac4      ! 4*A*C of Baskara quadratic eqn.   [       K²]
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !      Finding the auxiliary terms used to find temperature as a function of water   !
+      ! vapour mass and enthalpy.                                                          !
+      !------------------------------------------------------------------------------------!
+      b   = enthalpy / (epim18 * mvap * cp8)
+      ac4 = 4.d0 * prss * b / (rdry8 * rhos)
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !      Finding the temperature.                                                      !
+      !------------------------------------------------------------------------------------!
+      temp = 5.0d-1 * (sqrt(b*b + ac4) - b)
+      !------------------------------------------------------------------------------------!
+      
+      !------------------------------------------------------------------------------------!
+      !      Now that the temperature is defined, we invert the definition of water vapour !
+      ! mass to find the specific humidity.                                                !
+      !------------------------------------------------------------------------------------!
+      shv = mvap * cp8 * temp / enthalpy 
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Finally, using the definition of enthalpy and density, we can find the depth  !
+      ! of this reservoir.                                                                 !
+      !------------------------------------------------------------------------------------!
+      depth = enthalpy / (rhos * cp8 * temp)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine hmv2tqz8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !      This routine computes surface_ssh, which is is the saturation mixing ratio of    !
    ! the top soil or snow surface and is used for dew formation and snow evaporation.      !
    !---------------------------------------------------------------------------------------!

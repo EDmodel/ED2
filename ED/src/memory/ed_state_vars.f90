@@ -492,9 +492,6 @@ module ed_state_vars
      ! Residual of the water budget (kg_H2O/m2/s)
      real , pointer,dimension(:) :: wbudget_residual
 
-     ! Mean latent heat flux (J/m2/s)
-     real , pointer,dimension(:) :: ebudget_latent
-
      ! Mean sensible heat transfer from the canopy air to the atmosphere
      ! (J/m2/s)
      real , pointer,dimension(:) :: ebudget_loss2atm
@@ -542,11 +539,11 @@ module ed_state_vars
 
      ! Daily average residuals
      real, pointer, dimension(:) :: dmean_co2_residual    ! [umol_CO2/m2]
-     real, pointer, dimension(:) :: dmean_energy_residual ! [J/m2]
+     real, pointer, dimension(:) :: dmean_enthalpy_residual ! [J/m2]
      real, pointer, dimension(:) :: dmean_water_residual  ! [kg_H20/m2]
      ! Monthly average residuals
      real, pointer, dimension(:) :: mmean_co2_residual    ! [umol_CO2/m2]
-     real, pointer, dimension(:) :: mmean_energy_residual ! [J/m2]
+     real, pointer, dimension(:) :: mmean_enthalpy_residual ! [J/m2]
      real, pointer, dimension(:) :: mmean_water_residual  ! [kg_H20/m2]
 
      ! Daily average of A_decomp, the temperature and moisture dependence
@@ -1057,11 +1054,11 @@ module ed_state_vars
 
      ! Daily average residuals
      real, pointer, dimension(:) :: dmean_co2_residual    ! [umol_CO2/m2]
-     real, pointer, dimension(:) :: dmean_energy_residual ! [J/m2]
+     real, pointer, dimension(:) :: dmean_enthalpy_residual ! [J/m2]
      real, pointer, dimension(:) :: dmean_water_residual  ! [kg_H20/m2]
      ! Monthly average residuals
      real, pointer, dimension(:) :: mmean_co2_residual    ! [umol_CO2/m2]
-     real, pointer, dimension(:) :: mmean_energy_residual ! [J/m2]
+     real, pointer, dimension(:) :: mmean_enthalpy_residual ! [J/m2]
      real, pointer, dimension(:) :: mmean_water_residual  ! [kg_H20/m2]
 
   end type polygontype
@@ -1391,11 +1388,11 @@ module ed_state_vars
 
      ! Daily average residuals
      real, pointer, dimension(:) :: dmean_co2_residual    ! [umol_CO2/m2]
-     real, pointer, dimension(:) :: dmean_energy_residual ! [J/m2]
+     real, pointer, dimension(:) :: dmean_enthalpy_residual ! [J/m2]
      real, pointer, dimension(:) :: dmean_water_residual  ! [kg_H20/m2]
      ! Monthly average residuals
      real, pointer, dimension(:) :: mmean_co2_residual    ! [umol_CO2/m2]
-     real, pointer, dimension(:) :: mmean_energy_residual ! [J/m2]
+     real, pointer, dimension(:) :: mmean_enthalpy_residual ! [J/m2]
      real, pointer, dimension(:) :: mmean_water_residual  ! [kg_H20/m2]
 
      !-------------------------------------------------------------------!
@@ -1827,7 +1824,7 @@ contains
           allocate(cgrid%dmean_atm_vels     (             npolygons))
 
           allocate(cgrid%dmean_co2_residual   (             npolygons))
-          allocate(cgrid%dmean_energy_residual(             npolygons))
+          allocate(cgrid%dmean_enthalpy_residual(             npolygons))
           allocate(cgrid%dmean_water_residual (             npolygons))
 
        end if
@@ -1876,7 +1873,7 @@ contains
           allocate(cgrid%mmean_atm_vels     (             npolygons))
           allocate(cgrid%mmean_pcpg         (             npolygons))
           allocate(cgrid%mmean_co2_residual   (           npolygons))
-          allocate(cgrid%mmean_energy_residual(           npolygons))
+          allocate(cgrid%mmean_enthalpy_residual(           npolygons))
           allocate(cgrid%mmean_water_residual (           npolygons))
           allocate(cgrid%agb_pft            (n_pft       ,npolygons))
           allocate(cgrid%ba_pft             (n_pft       ,npolygons))
@@ -2074,10 +2071,10 @@ contains
     allocate(cpoly%avg_bdead               (nsites))
 
     allocate(cpoly%dmean_co2_residual      (nsites))
-    allocate(cpoly%dmean_energy_residual   (nsites))
+    allocate(cpoly%dmean_enthalpy_residual   (nsites))
     allocate(cpoly%dmean_water_residual    (nsites))
     allocate(cpoly%mmean_co2_residual      (nsites))
-    allocate(cpoly%mmean_energy_residual   (nsites))
+    allocate(cpoly%mmean_enthalpy_residual   (nsites))
     allocate(cpoly%mmean_water_residual    (nsites))
 
 
@@ -2169,7 +2166,6 @@ contains
     allocate(csite%wbudget_loss2drainage(npatches))
     allocate(csite%wbudget_initialstorage(npatches))
     allocate(csite%wbudget_residual(npatches))
-    allocate(csite%ebudget_latent(npatches))
     allocate(csite%ebudget_loss2atm(npatches))
     allocate(csite%ebudget_loss2runoff(npatches))
     allocate(csite%ebudget_loss2drainage(npatches))
@@ -2284,10 +2280,10 @@ contains
 
 
     allocate(csite%dmean_co2_residual      (npatches))
-    allocate(csite%dmean_energy_residual   (npatches))
+    allocate(csite%dmean_enthalpy_residual   (npatches))
     allocate(csite%dmean_water_residual    (npatches))
     allocate(csite%mmean_co2_residual      (npatches))
-    allocate(csite%mmean_energy_residual   (npatches))
+    allocate(csite%mmean_enthalpy_residual   (npatches))
     allocate(csite%mmean_water_residual    (npatches))
 
     ! Initialize the variables with a non-sense number.
@@ -2589,7 +2585,7 @@ contains
        nullify(cgrid%dmean_atm_prss          )
        nullify(cgrid%dmean_atm_vels          )
        nullify(cgrid%dmean_co2_residual      )
-       nullify(cgrid%dmean_energy_residual   )
+       nullify(cgrid%dmean_enthalpy_residual   )
        nullify(cgrid%dmean_water_residual    )
        nullify(cgrid%lai_pft                 )
        nullify(cgrid%lai_lu                  )
@@ -2637,7 +2633,7 @@ contains
        nullify(cgrid%mmean_atm_vels          )
        nullify(cgrid%mmean_pcpg              )
        nullify(cgrid%mmean_co2_residual      )
-       nullify(cgrid%mmean_energy_residual   )
+       nullify(cgrid%mmean_enthalpy_residual   )
        nullify(cgrid%mmean_water_residual    )
        nullify(cgrid%agb_pft                 )
        nullify(cgrid%ba_pft                  )
@@ -2823,10 +2819,10 @@ contains
     nullify(cpoly%avg_bdead        )
 
     nullify(cpoly%dmean_co2_residual      )
-    nullify(cpoly%dmean_energy_residual   )
+    nullify(cpoly%dmean_enthalpy_residual   )
     nullify(cpoly%dmean_water_residual    )
     nullify(cpoly%mmean_co2_residual      )
-    nullify(cpoly%mmean_energy_residual   )
+    nullify(cpoly%mmean_enthalpy_residual   )
     nullify(cpoly%mmean_water_residual    )
 
     return
@@ -2903,7 +2899,6 @@ contains
     nullify(csite%wbudget_loss2drainage)
     nullify(csite%wbudget_initialstorage)
     nullify(csite%wbudget_residual)
-    nullify(csite%ebudget_latent)
     nullify(csite%ebudget_loss2atm)
     nullify(csite%ebudget_loss2runoff)
     nullify(csite%ebudget_loss2drainage)
@@ -3018,10 +3013,10 @@ contains
     nullify(csite%patch)
 
     nullify(csite%dmean_co2_residual      )
-    nullify(csite%dmean_energy_residual   )
+    nullify(csite%dmean_enthalpy_residual   )
     nullify(csite%dmean_water_residual    )
     nullify(csite%mmean_co2_residual      )
-    nullify(csite%mmean_energy_residual   )
+    nullify(csite%mmean_enthalpy_residual   )
     nullify(csite%mmean_water_residual    )
 
     return
@@ -3329,7 +3324,7 @@ contains
        if(associated(cgrid%dmean_atm_prss          )) deallocate(cgrid%dmean_atm_prss          )
        if(associated(cgrid%dmean_atm_vels          )) deallocate(cgrid%dmean_atm_vels          )
        if(associated(cgrid%dmean_co2_residual      )) deallocate(cgrid%dmean_co2_residual      )
-       if(associated(cgrid%dmean_energy_residual   )) deallocate(cgrid%dmean_energy_residual   )
+       if(associated(cgrid%dmean_enthalpy_residual   )) deallocate(cgrid%dmean_enthalpy_residual   )
        if(associated(cgrid%dmean_water_residual    )) deallocate(cgrid%dmean_water_residual    )
 
        if(associated(cgrid%lai_pft                 )) deallocate(cgrid%lai_pft                 )
@@ -3378,7 +3373,7 @@ contains
        if(associated(cgrid%mmean_atm_vels          )) deallocate(cgrid%mmean_atm_vels          )
        if(associated(cgrid%mmean_pcpg              )) deallocate(cgrid%mmean_pcpg              )
        if(associated(cgrid%mmean_co2_residual      )) deallocate(cgrid%mmean_co2_residual      )
-       if(associated(cgrid%mmean_energy_residual   )) deallocate(cgrid%mmean_energy_residual   )
+       if(associated(cgrid%mmean_enthalpy_residual   )) deallocate(cgrid%mmean_enthalpy_residual   )
        if(associated(cgrid%mmean_water_residual    )) deallocate(cgrid%mmean_water_residual    )
        if(associated(cgrid%agb_pft                 )) deallocate(cgrid%agb_pft                 )
        if(associated(cgrid%ba_pft                  )) deallocate(cgrid%ba_pft                  )
@@ -3556,10 +3551,10 @@ contains
     if(associated(cpoly%avg_balive                )) deallocate(cpoly%avg_balive                )
 
     if(associated(cpoly%dmean_co2_residual        )) deallocate(cpoly%dmean_co2_residual        )
-    if(associated(cpoly%dmean_energy_residual     )) deallocate(cpoly%dmean_energy_residual     )
+    if(associated(cpoly%dmean_enthalpy_residual     )) deallocate(cpoly%dmean_enthalpy_residual     )
     if(associated(cpoly%dmean_water_residual      )) deallocate(cpoly%dmean_water_residual      )
     if(associated(cpoly%mmean_co2_residual        )) deallocate(cpoly%mmean_co2_residual        )
-    if(associated(cpoly%mmean_energy_residual     )) deallocate(cpoly%mmean_energy_residual     )
+    if(associated(cpoly%mmean_enthalpy_residual     )) deallocate(cpoly%mmean_enthalpy_residual     )
     if(associated(cpoly%mmean_water_residual      )) deallocate(cpoly%mmean_water_residual      )
 
     return
@@ -3639,7 +3634,6 @@ contains
     if(associated(csite%wbudget_loss2drainage        )) deallocate(csite%wbudget_loss2drainage        )
     if(associated(csite%wbudget_initialstorage       )) deallocate(csite%wbudget_initialstorage       )
     if(associated(csite%wbudget_residual             )) deallocate(csite%wbudget_residual             )
-    if(associated(csite%ebudget_latent               )) deallocate(csite%ebudget_latent               )
     if(associated(csite%ebudget_loss2atm             )) deallocate(csite%ebudget_loss2atm             )
     if(associated(csite%ebudget_loss2runoff          )) deallocate(csite%ebudget_loss2runoff          )
     if(associated(csite%ebudget_loss2drainage        )) deallocate(csite%ebudget_loss2drainage        )
@@ -3748,10 +3742,10 @@ contains
     if(associated(csite%runoff                       )) deallocate(csite%runoff                       )
 
     if(associated(csite%dmean_co2_residual        )) deallocate(csite%dmean_co2_residual        )
-    if(associated(csite%dmean_energy_residual     )) deallocate(csite%dmean_energy_residual     )
+    if(associated(csite%dmean_enthalpy_residual     )) deallocate(csite%dmean_enthalpy_residual     )
     if(associated(csite%dmean_water_residual      )) deallocate(csite%dmean_water_residual      )
     if(associated(csite%mmean_co2_residual        )) deallocate(csite%mmean_co2_residual        )
-    if(associated(csite%mmean_energy_residual     )) deallocate(csite%mmean_energy_residual     )
+    if(associated(csite%mmean_enthalpy_residual     )) deallocate(csite%mmean_enthalpy_residual     )
     if(associated(csite%mmean_water_residual      )) deallocate(csite%mmean_water_residual      )
 
     do ipa=1,csite%npatches
@@ -4098,7 +4092,7 @@ contains
     if(associated(cgrid%dmean_atm_prss          )) cgrid%dmean_atm_prss           = large_real
     if(associated(cgrid%dmean_atm_vels          )) cgrid%dmean_atm_vels           = large_real
     if(associated(cgrid%dmean_co2_residual      )) cgrid%dmean_co2_residual       = large_real
-    if(associated(cgrid%dmean_energy_residual   )) cgrid%dmean_energy_residual    = large_real
+    if(associated(cgrid%dmean_enthalpy_residual   )) cgrid%dmean_enthalpy_residual    = large_real
     if(associated(cgrid%dmean_water_residual    )) cgrid%dmean_water_residual     = large_real
     if(associated(cgrid%lai_pft                 )) cgrid%lai_pft                  = large_real
     if(associated(cgrid%lai_lu                  )) cgrid%lai_lu                   = large_real
@@ -4145,7 +4139,7 @@ contains
     if(associated(cgrid%dmean_atm_prss          )) cgrid%dmean_atm_prss           = large_real
     if(associated(cgrid%dmean_atm_vels          )) cgrid%dmean_atm_vels           = large_real
     if(associated(cgrid%mmean_co2_residual      )) cgrid%mmean_co2_residual       = large_real
-    if(associated(cgrid%mmean_energy_residual   )) cgrid%mmean_energy_residual    = large_real
+    if(associated(cgrid%mmean_enthalpy_residual   )) cgrid%mmean_enthalpy_residual    = large_real
     if(associated(cgrid%mmean_water_residual    )) cgrid%mmean_water_residual     = large_real
     if(associated(cgrid%agb_pft                 )) cgrid%agb_pft                  = large_real
     if(associated(cgrid%ba_pft                  )) cgrid%ba_pft                   = large_real
@@ -4349,10 +4343,10 @@ contains
     if(associated(cpoly%avg_bdead                   )) cpoly%avg_bdead                   = large_real
 
     if(associated(cpoly%dmean_co2_residual      )) cpoly%dmean_co2_residual       = large_real
-    if(associated(cpoly%dmean_energy_residual   )) cpoly%dmean_energy_residual    = large_real
+    if(associated(cpoly%dmean_enthalpy_residual   )) cpoly%dmean_enthalpy_residual    = large_real
     if(associated(cpoly%dmean_water_residual    )) cpoly%dmean_water_residual     = large_real
     if(associated(cpoly%mmean_co2_residual      )) cpoly%mmean_co2_residual       = large_real
-    if(associated(cpoly%mmean_energy_residual   )) cpoly%mmean_energy_residual    = large_real
+    if(associated(cpoly%mmean_enthalpy_residual   )) cpoly%mmean_enthalpy_residual    = large_real
     if(associated(cpoly%mmean_water_residual    )) cpoly%mmean_water_residual     = large_real
 
     return
@@ -4447,7 +4441,6 @@ contains
     if(associated(csite%wbudget_loss2drainage        )) csite%wbudget_loss2drainage        = large_real
     if(associated(csite%wbudget_initialstorage       )) csite%wbudget_initialstorage       = large_real
     if(associated(csite%wbudget_residual             )) csite%wbudget_residual             = large_real
-    if(associated(csite%ebudget_latent               )) csite%ebudget_latent               = large_real
     if(associated(csite%ebudget_loss2atm             )) csite%ebudget_loss2atm             = large_real
     if(associated(csite%ebudget_loss2runoff          )) csite%ebudget_loss2runoff          = large_real
     if(associated(csite%ebudget_loss2drainage        )) csite%ebudget_loss2drainage        = large_real
@@ -4556,10 +4549,10 @@ contains
     if(associated(csite%runoff                       )) csite%runoff                       = large_real
 
     if(associated(csite%dmean_co2_residual      )) csite%dmean_co2_residual       = large_real
-    if(associated(csite%dmean_energy_residual   )) csite%dmean_energy_residual    = large_real
+    if(associated(csite%dmean_enthalpy_residual   )) csite%dmean_enthalpy_residual    = large_real
     if(associated(csite%dmean_water_residual    )) csite%dmean_water_residual     = large_real
     if(associated(csite%mmean_co2_residual      )) csite%mmean_co2_residual       = large_real
-    if(associated(csite%mmean_energy_residual   )) csite%mmean_energy_residual    = large_real
+    if(associated(csite%mmean_enthalpy_residual   )) csite%mmean_enthalpy_residual    = large_real
     if(associated(csite%mmean_water_residual    )) csite%mmean_water_residual     = large_real
 
     return
@@ -4914,7 +4907,6 @@ contains
     siteout%wbudget_loss2drainage(1:inc)     = pack(sitein%wbudget_loss2drainage,logmask)
     siteout%wbudget_initialstorage(1:inc)    = pack(sitein%wbudget_initialstorage,logmask)
     siteout%wbudget_residual(1:inc)     = pack(sitein%wbudget_residual,logmask)
-    siteout%ebudget_latent(1:inc)       = pack(sitein%ebudget_latent,logmask)
     siteout%ebudget_loss2atm(1:inc)     = pack(sitein%ebudget_loss2atm,logmask)
     siteout%ebudget_loss2runoff(1:inc)    = pack(sitein%ebudget_loss2runoff,logmask)
     siteout%ebudget_loss2drainage(1:inc)    = pack(sitein%ebudget_loss2drainage,logmask)
@@ -5007,10 +4999,10 @@ contains
     siteout%avg_veg_fliq(1:inc)         = pack(sitein%avg_veg_fliq,logmask)
     siteout%avg_veg_water(1:inc)        = pack(sitein%avg_veg_water,logmask)
     siteout%dmean_co2_residual   (1:inc)= pack(sitein%dmean_co2_residual      ,logmask)
-    siteout%dmean_energy_residual(1:inc)= pack(sitein%dmean_energy_residual   ,logmask)
+    siteout%dmean_enthalpy_residual(1:inc)= pack(sitein%dmean_enthalpy_residual   ,logmask)
     siteout%dmean_water_residual (1:inc)= pack(sitein%dmean_water_residual    ,logmask)
     siteout%mmean_co2_residual   (1:inc)= pack(sitein%mmean_co2_residual      ,logmask)
-    siteout%mmean_energy_residual(1:inc)= pack(sitein%mmean_energy_residual   ,logmask)
+    siteout%mmean_enthalpy_residual(1:inc)= pack(sitein%mmean_enthalpy_residual   ,logmask)
     siteout%mmean_water_residual (1:inc)= pack(sitein%mmean_water_residual    ,logmask)
 
 
@@ -6960,11 +6952,11 @@ contains
        call metadata_edio(nvar,igr,'Daily mean of residual water ','[kg/m2/s]','ipoly') 
     end if
 
-    if(associated(cgrid%dmean_energy_residual)) then
+    if(associated(cgrid%dmean_enthalpy_residual)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%dmean_energy_residual(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'DMEAN_ENERGY_RESIDUAL :11:hist:dail') 
-       call metadata_edio(nvar,igr,'Daily mean of residual water ','[J/m2/s]','ipoly') 
+       call vtable_edio_r(cgrid%dmean_enthalpy_residual(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_ENTHALPY_RESIDUAL :11:hist:dail') 
+       call metadata_edio(nvar,igr,'Daily mean of residual enthalpy ','[J/m2/s]','ipoly') 
     end if
 
     if(associated(cgrid%lai_pft)) then
@@ -7296,10 +7288,10 @@ contains
        call metadata_edio(nvar,igr,'Monthly mean of residual water ','[kg/m2/s]','ipoly') 
     end if
 
-    if(associated(cgrid%mmean_energy_residual)) then
+    if(associated(cgrid%mmean_enthalpy_residual)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_energy_residual(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_ENERGY_RESIDUAL :11:hist:mont') 
+       call vtable_edio_r(cgrid%mmean_enthalpy_residual(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_enthalpy_residual :11:hist:mont') 
        call metadata_edio(nvar,igr,'Monthly mean of residual energy ','[J/m2/s]','ipoly') 
     end if
     
@@ -7979,11 +7971,11 @@ contains
        call metadata_edio(nvar,igr,'Daily mean of residual water ','[kg/m2/day]','ipoly') 
     end if
 
-    if(associated(cpoly%dmean_energy_residual)) then
+    if(associated(cpoly%dmean_enthalpy_residual)) then
        nvar=nvar+1
-       call vtable_edio_r(cpoly%dmean_energy_residual(1),nvar,igr,init,cpoly%siglob_id, &
-            var_len,var_len_global,max_ptrs,'DMEAN_ENERGY_RESIDUAL_SI :21:hist:dail') 
-       call metadata_edio(nvar,igr,'Daily mean of residual water ','[J/m2/day]','ipoly') 
+       call vtable_edio_r(cpoly%dmean_enthalpy_residual(1),nvar,igr,init,cpoly%siglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_ENTHALPY_RESIDUAL_SI :21:hist:dail') 
+       call metadata_edio(nvar,igr,'Daily mean of residual enthalpy ','[J/m2/s]','ipoly') 
     end if
 
     if(associated(cpoly%mmean_co2_residual)) then
@@ -8000,10 +7992,10 @@ contains
        call metadata_edio(nvar,igr,'Monthly mean of residual water ','[kg/m2/day]','ipoly') 
     end if
 
-    if(associated(cpoly%mmean_energy_residual)) then
+    if(associated(cpoly%mmean_enthalpy_residual)) then
        nvar=nvar+1
-       call vtable_edio_r(cpoly%mmean_energy_residual(1),nvar,igr,init,cpoly%siglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_ENERGY_RESIDUAL_SI :21:hist:mont') 
+       call vtable_edio_r(cpoly%mmean_enthalpy_residual(1),nvar,igr,init,cpoly%siglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_ENTHALPY_RESIDUAL_SI :21:hist:mont') 
        call metadata_edio(nvar,igr,'Monthly mean of residual energy ','[J/m2/day]','ipoly') 
     end if
 
@@ -8391,13 +8383,6 @@ contains
        nvar=nvar+1
          call vtable_edio_r(csite%wbudget_residual(1),nvar,igr,init,csite%paglob_id, &
          var_len,var_len_global,max_ptrs,'WBUDGET_RESIDUAL :31:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-
-    if (associated(csite%ebudget_latent)) then
-       nvar=nvar+1
-         call vtable_edio_r(csite%ebudget_latent(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'EBUDGET_LATENT :31:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -8864,11 +8849,11 @@ contains
        call metadata_edio(nvar,igr,'Daily mean of residual water ','[kg/m2/day]','ipoly') 
     end if
 
-    if(associated(csite%dmean_energy_residual)) then
+    if(associated(csite%dmean_enthalpy_residual)) then
        nvar=nvar+1
-       call vtable_edio_r(csite%dmean_energy_residual(1),nvar,igr,init,csite%paglob_id, &
-            var_len,var_len_global,max_ptrs,'DMEAN_ENERGY_RESIDUAL_PA :31:hist:dail') 
-       call metadata_edio(nvar,igr,'Daily mean of residual water ','[J/m2/day]','ipoly') 
+       call vtable_edio_r(csite%dmean_enthalpy_residual(1),nvar,igr,init,csite%paglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_ENTHALPY_RESIDUAL_PA :31:hist:dail') 
+       call metadata_edio(nvar,igr,'Daily mean of residual enthalpy ','[J/m2/s]','ipoly') 
     end if
 
     if(associated(csite%mmean_co2_residual)) then
@@ -8885,10 +8870,10 @@ contains
        call metadata_edio(nvar,igr,'Monthly mean of residual water ','[kg/m2/day]','ipoly') 
     end if
 
-    if(associated(csite%mmean_energy_residual)) then
+    if(associated(csite%mmean_enthalpy_residual)) then
        nvar=nvar+1
-       call vtable_edio_r(csite%mmean_energy_residual(1),nvar,igr,init,csite%paglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_ENERGY_RESIDUAL_PA :31:hist:mont') 
+       call vtable_edio_r(csite%mmean_enthalpy_residual(1),nvar,igr,init,csite%paglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_ENTHALPY_RESIDUAL_PA :31:hist:mont') 
        call metadata_edio(nvar,igr,'Monthly mean of residual energy ','[J/m2/day]','ipoly') 
     end if
 
