@@ -511,8 +511,8 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
 
    !----- Copying the variables to the budget arrays. -------------------------------------!
    if (fast_diagnostics) then
-      dinitp%ebudget_loss2drainage = qw_flux(rk4met%lsl)
-      dinitp%wbudget_loss2drainage = dinitp%avg_drainage
+      dinitp%ebudget_loss2drainage = - qw_flux(rk4met%lsl)
+      dinitp%wbudget_loss2drainage = - dinitp%avg_drainage
 
       dinitp%ebudget_storage = dinitp%ebudget_storage - dinitp%ebudget_loss2drainage
       dinitp%wbudget_storage = dinitp%wbudget_storage - dinitp%wbudget_loss2drainage
