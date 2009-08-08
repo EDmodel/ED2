@@ -5,15 +5,16 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
                          ,wcurr_loss2drainage,ecurr_loss2drainage            &
                          ,wcurr_loss2runoff,ecurr_loss2runoff,site_area      &
                          ,cbudget_nep)
-   use ed_state_vars, only : sitetype         ! ! structure
-   use ed_misc_coms , only : dtlsm            & ! intent(in)
-                           , fast_diagnostics & ! intent(in)
-                           , current_time     ! ! intent(in)
-   use ed_max_dims  , only : n_dbh            ! ! intent(in)
-   use consts_coms  , only : umol_2_kgC       & ! intent(in)
-                           , day_sec          ! ! intent(in)
-   use rk4_coms     , only : rk4eps           & ! intent(in)
-                           , checkbudget      ! ! intent(in)
+   use ed_state_vars   , only : sitetype             ! ! structure
+   use ed_misc_coms    , only : dtlsm                & ! intent(in)
+                              , fast_diagnostics     & ! intent(in)
+                              , current_time         ! ! intent(in)
+   use ed_max_dims     , only : n_dbh                ! ! intent(in)
+   use consts_coms     , only : umol_2_kgC           & ! intent(in)
+                              , day_sec              ! ! intent(in)
+   use rk4_coms        , only : rk4eps               & ! intent(in)
+                              , checkbudget          ! ! intent(in)
+   use canopy_air_coms , only : minimum_canopy_depth ! ! intent(in)
    implicit none
    !----- Arguments ---------------------------------------------------------!
    type(sitetype)        , target        :: csite
@@ -35,22 +36,26 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
    real, dimension(n_dbh)                :: gpp_dbh
    real                                  :: co2budget_finalstorage
    real                                  :: co2budget_deltastorage
+   real                                  :: co2curr_resizecan
    real                                  :: co2curr_gpp
    real                                  :: co2curr_plresp
    real                                  :: co2curr_hetresp
    real                                  :: co2curr_nep
    real                                  :: co2curr_residual
+   real                                  :: ebudget_resizecan
    real                                  :: ebudget_finalstorage
    real                                  :: ebudget_deltastorage
    real                                  :: ecurr_precipgain
    real                                  :: ecurr_netrad
    real                                  :: ecurr_residual
+   real                                  :: wbudget_resizecan
    real                                  :: wbudget_finalstorage
    real                                  :: wbudget_deltastorage
    real                                  :: wcurr_precipgain
    real                                  :: wcurr_residual
    real                                  :: gpp
    real                                  :: plant_respiration
+   real                                  :: new_canopy_depth
    logical                               :: co2_ok
    logical                               :: energy_ok
    logical                               :: water_ok
@@ -289,11 +294,15 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
 
 
    !-------------------------------------------------------------------------!
-   !     Updating the initial storage (initial for next step)                !
+   !     Updating the initial storage (initial for next step), after we      !
+   ! update the canopy depth.                                                !
    !-------------------------------------------------------------------------!
-   csite%wbudget_initialstorage(ipa)   = wbudget_finalstorage
-   csite%ebudget_initialstorage(ipa)   = ebudget_finalstorage
-   csite%co2budget_initialstorage(ipa) = co2budget_finalstorage
+   csite%can_depth(ipa) =  max(csite%veg_height(ipa), minimum_canopy_depth)
+   csite%wbudget_initialstorage(ipa)   =                                     &
+                                   compute_water_storage(csite,lsl,rhos,ipa)
+   csite%ebudget_initialstorage(ipa)   =                                     &
+                                   compute_energy_storage(csite,lsl,rhos,ipa)
+   csite%co2budget_initialstorage(ipa) = compute_co2_storage(csite,rhos,ipa)
 
    return
 end subroutine compute_budget

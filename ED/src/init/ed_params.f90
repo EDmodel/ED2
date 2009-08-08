@@ -1410,7 +1410,7 @@ subroutine init_rk4_params()
    ! changing them...                                                                      !
    !---------------------------------------------------------------------------------------!
    maxstp      = 100000000    ! Maximum number of intermediate steps. 
-   rk4eps      = 1.d-3        ! The desired accuracy.
+   rk4eps      = 1.d-2        ! The desired accuracy.
    rk4epsi     = 1.d0/rk4eps  ! The inverse of desired accuracy.
    hmin        = 1.d-13       ! The minimum step size.
    print_diags = .false.      ! Flag to print the diagnostic check.
@@ -1440,7 +1440,7 @@ subroutine init_rk4_params()
    ! nominal heat capacity, the laziest way to turn this off is by setting hcapveg_ref to  !
    ! a small number.  Don't set it to zero, otherwise you may have FPE issues.             !
    !---------------------------------------------------------------------------------------!
-   hcapveg_ref         = 3.0d3  ! Reference heat capacity value                   [J/m³/K]
+   hcapveg_ref         = 3.0d-1  ! Reference heat capacity value                   [J/m³/K]
    min_height          = 1.5d0  ! Minimum vegetation height                       [     m]
    hcapveg_stab_thresh = 2.5d1  ! Minimum stable patch-level heat capacity        [J/m²/K]
    !----- The minimum cohort-level heat capacity that we can solve [J/m²/K] ---------------!

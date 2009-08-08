@@ -489,7 +489,7 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       !   Checking whether the canopy temperature is too hot or too cold.                  !
       !------------------------------------------------------------------------------------! 
-      !if (y%can_depth > rk4max_can_depth .or. y%can_depth < rk4min_can_depth ) then
+      !if (y%can_depth < rk4min_can_depth ) then
       !   reject_step = .true.
       !   if(record_err) integ_err(1,2) = integ_err(1,2) + 1_8
       !   if (print_problems) then
@@ -503,7 +503,6 @@ module rk4_stepper
       !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:      ',y%can_temp
       !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:       ',y%can_co2
       !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:     ',y%can_depth
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH_MAX: ',rk4max_can_depth
       !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH_MIN: ',rk4min_can_depth
       !      write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:      ',rk4met%prss
       !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTH)/Dt:',dydx%can_enthalpy

@@ -157,8 +157,9 @@ ed_para_init.o: ed_node_coms.mod ed_para_coms.mod ed_work_vars.mod grid_coms.mod
 ed_para_init.o: mem_sites.mod soil_coms.mod
 allometry.o: consts_coms.mod grid_coms.mod pft_coms.mod rk4_coms.mod
 allometry.o: soil_coms.mod
-budget_utils.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
-budget_utils.o: ed_state_vars.mod grid_coms.mod rk4_coms.mod soil_coms.mod
+budget_utils.o: canopy_air_coms.mod consts_coms.mod ed_max_dims.mod
+budget_utils.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod rk4_coms.mod
+budget_utils.o: soil_coms.mod
 dateutils.o: consts_coms.mod
 ed_filelist.o: ed_max_dims.mod
 ed_grid.o: consts_coms.mod ed_max_dims.mod ed_node_coms.mod grid_coms.mod
