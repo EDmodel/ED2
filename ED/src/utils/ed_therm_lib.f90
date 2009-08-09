@@ -215,24 +215,38 @@ module ed_therm_lib
    !      This routine converts enthalpy and mass of water vapour into temperature, mix-   !
    ! ing ratio and height, for a given pressure and density.                               !
    !---------------------------------------------------------------------------------------!
-   subroutine hmv2tqz(enthalpy,mvap,prss,rhos,temp,shv,depth)
+   subroutine hmv2tqz(enthalpy,mvap,prss,rhos,temp,shv,depth,reject_step)
       use consts_coms , only : epim1  & ! intent(in)
+                             , toodry & ! intent(in)
                              , rdry   & ! intent(in)
                              , cp     ! ! intent(in)
      
       implicit none
       !----- Arguments --------------------------------------------------------------------!     
-      real, intent(in)  :: enthalpy ! Enthalpy                                  [     J/m²]
-      real, intent(in)  :: mvap     ! Water vapour mass                         [    kg/m²]
-      real, intent(in)  :: prss     ! Pressure                                  [     N/m²]
-      real, intent(in)  :: rhos     ! Air density                               [    kg/m³]
-      real, intent(out) :: temp     ! Temperature                               [        K]
-      real, intent(out) :: shv      ! Specific humidity                         [kg_vap/kg]
-      real, intent(out) :: depth    ! Depth of the reservoir                    [        m]
+      real   , intent(in)    :: enthalpy    ! Enthalpy                          [     J/m²]
+      real   , intent(in)    :: mvap        ! Water vapour mass                 [    kg/m²]
+      real   , intent(in)    :: prss        ! Pressure                          [     N/m²]
+      real   , intent(in)    :: rhos        ! Air density                       [    kg/m³]
+      real   , intent(out)   :: temp        ! Temperature                       [        K]
+      real   , intent(out)   :: shv         ! Specific humidity                 [kg_vap/kg]
+      real   , intent(out)   :: depth       ! Depth of the reservoir            [        m]
+      logical, intent(inout) :: reject_step ! Should this step be rejected?     [      T|F]
       !----- Local variables --------------------------------------------------------------!
-      real              :: b        ! "B" term of Baskara quadratic eq.         [        K]
-      real              :: ac4      ! 4*A*C of Baskara quadratic eqn.           [       K²]
+      real              :: b                ! "B" term of Baskara quadratic eq. [        K]
+      real              :: ac4              ! 4*A*C of Baskara quadratic eqn.   [       K²]
       !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Since this can be called by a bad time step, we must first check the sign of   !
+      ! mvap.  In case it is negative, we bypass the entire calculation, assign some bad   !
+      ! values to shv so the step is rejected and quit.                                    !
+      !------------------------------------------------------------------------------------!
+      if (mvap <= 0. .or. enthalpy <= 0.) then
+         reject_step = .true.
+         return
+      else
+         reject_step = .false.
+      end if
 
       !------------------------------------------------------------------------------------!
       !      Finding the auxiliary terms used to find temperature as a function of water   !
@@ -278,28 +292,57 @@ module ed_therm_lib
    !      This routine converts enthalpy and mass of water vapour into temperature, mix-   !
    ! ing ratio and height, for a given pressure and density.                               !
    !---------------------------------------------------------------------------------------!
-   subroutine hmv2tqz8(enthalpy,mvap,prss,rhos,temp,shv,depth)
-      use consts_coms , only : epim18  & ! intent(in)
-                             , rdry8   & ! intent(in)
-                             , cp8     ! ! intent(in)
-     
+   subroutine hmv2tqz8(enthalpy,mvap,prss,rhos,temp,shv,depth,reject_step)
+      use consts_coms , only : epim18          & ! intent(in)
+                             , rdry8           & ! intent(in)
+                             , cp8             ! ! intent(in)
+      use rk4_coms    , only : rk4min_can_temp & ! intent(in)
+                             , rk4min_can_shv  & ! intent(in)
+                             , rk4max_can_temp & ! intent(in)
+                             , rk4max_can_shv  ! ! intent(in)
+
       implicit none
       !----- Arguments --------------------------------------------------------------------!     
-      real(kind=8), intent(in)  :: enthalpy ! Enthalpy                          [     J/m²]
-      real(kind=8), intent(in)  :: mvap     ! Water vapour mass                 [    kg/m²]
-      real(kind=8), intent(in)  :: prss     ! Pressure                          [     N/m²]
-      real(kind=8), intent(in)  :: rhos     ! Air density                       [    kg/m³]
-      real(kind=8), intent(out) :: temp     ! Temperature                       [        K]
-      real(kind=8), intent(out) :: shv      ! Specific humidity                 [kg_vap/kg]
-      real(kind=8), intent(out) :: depth    ! Depth of the reservoir            [        m]
+      real(kind=8), intent(in)    :: enthalpy    ! Enthalpy                     [     J/m²]
+      real(kind=8), intent(in)    :: mvap        ! Water vapour mass            [    kg/m²]
+      real(kind=8), intent(in)    :: prss        ! Pressure                     [     N/m²]
+      real(kind=8), intent(in)    :: rhos        ! Air density                  [    kg/m³]
+      real(kind=8), intent(inout) :: temp        ! Temperature                  [        K]
+      real(kind=8), intent(inout) :: shv         ! Specific humidity            [kg_vap/kg]
+      real(kind=8), intent(inout) :: depth       ! Depth of the reservoir       [        m]
+      logical     , intent(inout) :: reject_step ! Should this step be rejected?[      T|F]
       !----- Local variables --------------------------------------------------------------!
-      real(kind=8)              :: b        ! "B" term of Baskara quadratic eq. [        K]
-      real(kind=8)              :: ac4      ! 4*A*C of Baskara quadratic eqn.   [       K²]
+      real(kind=8)              :: b             ! "B" term of Baskara eqn .    [        K]
+      real(kind=8)              :: ac4           ! 4*A*C of Baskara eqn.        [       K²]
+      real(kind=8)              :: min_enthalpy  ! Minimum acceptable enthalpy  [     J/m²]
+      real(kind=8)              :: min_mvap      ! Minimum acceptable mass      [    kg/m²]
+      real(kind=8)              :: max_enthalpy  ! Maximum acceptable enthalpy  [     J/m²]
+      real(kind=8)              :: max_mvap      ! Maximum acceptable mass      [    kg/m²]
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
+      !     Since this can be called by a bad time step, we must first check the sign of   !
+      ! mvap.  In case it is negative, we bypass the entire calculation, assign some bad   !
+      ! values to shv so the step is rejected and quit.                                    !
+      !------------------------------------------------------------------------------------!
+      min_enthalpy = rhos * depth * cp8 * rk4min_can_temp
+      max_enthalpy = rhos * depth * cp8 * rk4max_can_temp
+      min_mvap     = rhos * depth * rk4min_can_shv
+      max_mvap     = rhos * depth * rk4max_can_shv
+
+      if (mvap     <= min_mvap     .or. enthalpy <= min_enthalpy) then
+         reject_step = .true.
+         return
+      else
+         reject_step = .false.
+      end if
+
+
+      !------------------------------------------------------------------------------------!
       !      Finding the auxiliary terms used to find temperature as a function of water   !
-      ! vapour mass and enthalpy.                                                          !
+      ! vapour mass and enthalpy.  Since this can be called by a bad time step, we must    !
+      ! check the sign of mvap, because if it is negative, we don't even bother computing  !
+      ! the variables.                                                                     !
       !------------------------------------------------------------------------------------!
       b   = enthalpy / (epim18 * mvap * cp8)
       ac4 = 4.d0 * prss * b / (rdry8 * rhos)
@@ -325,6 +368,24 @@ module ed_therm_lib
       !------------------------------------------------------------------------------------!
       depth = enthalpy / (rhos * cp8 * temp)
       !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Since this can be called by a bad time step, we must first check the sign of   !
+      ! mvap.  In case it is negative, we bypass the entire calculation, assign some bad   !
+      ! values to shv so the step is rejected and quit.                                    !
+      !------------------------------------------------------------------------------------!
+      min_enthalpy = rhos * depth * cp8 * rk4min_can_temp
+      max_enthalpy = rhos * depth * cp8 * rk4max_can_temp
+      min_mvap     = rhos * depth * rk4min_can_shv
+      max_mvap     = rhos * depth * rk4max_can_shv
+
+      if (mvap     <= min_mvap     .or. mvap     >= max_mvap    .or.                       &
+          enthalpy <= min_enthalpy .or. enthalpy >= max_enthalpy) then
+         reject_step = .true.
+         return
+      else
+         reject_step = .false.
+      end if
 
       return
    end subroutine hmv2tqz8

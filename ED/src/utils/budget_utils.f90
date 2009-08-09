@@ -127,10 +127,10 @@ subroutine compute_budget(csite,lsl,rhos,pcpg,qpcpg,ipa,wcurr_loss2atm       &
    ! whenever there is some significant leak of CO2, water, or energy.       !
    !-------------------------------------------------------------------------!
    if (checkbudget) then
-      co2_ok  = abs(co2curr_residual) <= rk4eps                              &
-                                       * (abs(co2budget_finalstorage)        &
-                                         +abs(co2budget_deltastorage)*dtlsm)
-      !co2_ok = .true. ! Skipping CO2 test
+      !co2_ok  = abs(co2curr_residual) <= rk4eps                              &
+      !                                 * (abs(co2budget_finalstorage)        &
+      !                                   +abs(co2budget_deltastorage)*dtlsm)
+      co2_ok = .true. ! Skipping CO2 test
       energy_ok = abs(ecurr_residual) <= rk4eps                              &
                                        * (abs(ebudget_finalstorage)          &
                                          +abs(ebudget_deltastorage)*dtlsm)

@@ -581,6 +581,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    use consts_coms           , only : alvl8                & ! intent(in)
                                     , cp8                  & ! intent(in)
                                     , cpi8                 & ! intent(in)
+                                    , epi8                 & ! intent(in)
                                     , twothirds8           & ! intent(in)
                                     , day_sec8             & ! intent(in)
                                     , grav8                & ! intent(in)
@@ -691,9 +692,15 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    rho_ustar = rk4met%rhos * initp%ustar                ! Aux. variable
    hflxac    = rho_ustar   * initp%tstar * rk4met%exner ! Sensible Heat flux
    wflxac    = rho_ustar   * initp%qstar                ! Water flux
-   qwflxac   = wflxac * cp8 * initp%can_temp
    cflxac    = rho_ustar   * initp%cstar * mmdryi8      ! CO2 flux [umol/m2/s]
    !---------------------------------------------------------------------------------------!
+
+   !----- Finding the appropriate energy transfer due to water flux. ----------------------!
+   if (wflxac > 0.d0) then
+      qwflxac = wflxac * cp8 * rk4met%atm_tmp ! Free atm entering canopy.
+   else
+      qwflxac = wflxac * cp8 * initp%can_temp ! Canopy air leaving canopy.
+   end if
 
    !---------------------------------------------------------------------------------------!
    !     The following value of ground-canopy resistance for the nonvegetated (bare soil   !
@@ -807,39 +814,59 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    qwflx = wflx * (alvi8 - initp%surface_fliq * alli8)
    !---------------------------------------------------------------------------------------!
 
-
- 
-   !---------------------------------------------------------------------------------------!
-   !     Calculate the dew flux.  Here the decision on whether dew or frost will form      !
-   ! depends on the surface_temperature.                                                   !
-   !---------------------------------------------------------------------------------------!
-   dewgndflx  = max(0.d0, -wflx)
-   qdewgndflx = dewgndflx * (alvi8 - initp%surface_fliq * alli8)
-   !---------------------------------------------------------------------------------------!
-   !    I know this is a lame way to define frost density, however I couldn't find a good  !
-   ! parametrisation for frost over leaves (just a bunch of engineering papers on frost    !
-   ! formation over flat metal surfaces), so I decided to keep it simple and stupid. I     !
-   ! will leave this as the first attempt, so if you know a better way to do it, feel free !
-   ! to add it here.                                                                       !
-   !---------------------------------------------------------------------------------------!
-   ddewgndflx = dewgndflx / (initp%surface_fliq*wdns8 + (1.d0-initp%surface_fliq)*idns8)
-
-
-   !----- Temporary water/snow layers exist. ----------------------------------------------!
-   if (initp%nlev_sfcwater > 0) then
-      wflxgc  = max(0.d0,wflx)
-      qwflxgc = max(0.d0,qwflx)
-   !----- No surface water and not dry: evaporate from soil pores -------------------------!
-   else if (initp%soilair01(nzg) > 0.d0 ) then
-      wflxgc = max( 0.d0, (initp%ground_shv - initp%can_shv) * rdi)
-      !----- Adjusting the flux accordingly to the surface fraction (no phase bias) -------!
-      qwflxgc = wflxgc * ( alvi8 - initp%surface_fliq * alli8)
-   !----- No surface water and really dry: don't evaporate at all -------------------------!
-   else 
+   !----- Decide whether there will be dew formation or evaporation. ----------------------!
+   if (wflx <= 0.d0) then
+      !------------------------------------------------------------------------------------!
+      !     The spontaneous phase change is condensation, so evaporation must be zero.     !
+      !------------------------------------------------------------------------------------!
       wflxgc  = 0.d0
       qwflxgc = 0.d0
-   endif
-   !---------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Calculate the dew flux.  Here the decision on whether it is going to be dew or !
+      ! frost depends on the surface_temperature.                                          !
+      !------------------------------------------------------------------------------------!
+      dewgndflx  =  -wflx
+      qdewgndflx = -qwflx
+      !------------------------------------------------------------------------------------!
+      !    I know this is a lame way to define frost density, however I couldn't find a    !
+      ! good parametrisation for frost over leaves (just a bunch of engineering papers on  !
+      ! frost formation over flat metal surfaces), so I decided to keep it simple and      !
+      ! stupid.  I will leave this as the first attempt, so if you know a better way to do !
+      ! it, feel free to add it here.                                                      !
+      !------------------------------------------------------------------------------------!
+      ddewgndflx = -wflx / (initp%surface_fliq*wdns8 + (1.d0-initp%surface_fliq)*idns8)
+
+   else
+      !------------------------------------------------------------------------------------!
+      !     The spontaneous phase change is evaporation, so condensation must be zero.     !
+      !------------------------------------------------------------------------------------!
+      dewgndflx  = 0.d0
+      qdewgndflx = 0.d0
+      ddewgndflx = 0.d0
+
+      !------------------------------------------------------------------------------------!
+      !     Now we must decide where the water for evaporation will come from.  If we have !
+      ! a temporary surface water, then we will use it as our source.  Otherwise, the top  !
+      ! soil layer will do it for us as long as it has enough water to withdraw.           ! 
+      !------------------------------------------------------------------------------------!
+      if (initp%nlev_sfcwater > 0) then
+         !------ Surface water exists, use it. --------------------------------------------!
+         wflxgc  = wflx
+         qwflxgc = qwflx
+      else if (initp%soilair01(nzg) > 0.d0 ) then
+         !---------------------------------------------------------------------------------!
+         !    No surface water and not dry: evaporate from soil pores, and the latent heat !
+         ! will be scaled by the fraction of liquid water.                                 !
+         !---------------------------------------------------------------------------------!
+         wflxgc = max( 0.d0, (initp%ground_shv - initp%can_shv) * rdi)
+         qwflxgc = wflxgc * ( alvi8 - initp%surface_fliq * alli8)
+      else 
+         wflxgc  = 0.d0
+         qwflxgc = 0.d0
+      end if
+   end if
+      !---------------------------------------------------------------------------------------!
 
 
 
@@ -1062,10 +1089,10 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    !---------------------------------------------------------------------------------------!
    !     Update enthalpy, and masses of water vapour and CO2.                              !
    !---------------------------------------------------------------------------------------!
-   dinitp%can_enthalpy = hflxgc + hflxvc_tot + hflxac + qwflxgc - qdewgndflx               &
-                       + qwflxvc_tot + qtransp_tot + qwflxac
-   dinitp%can_mvap     = wflxgc - dewgndflx + wflxvc_tot + transp_tot +  wflxac
-   dinitp%can_nco2     = cflxgc + cflxvc_tot + cflxac
+   dinitp%can_enthalpy = hflxgc  + hflxvc_tot + hflxac                                      &
+                       + qwflxgc - qdewgndflx + qwflxvc_tot + qtransp_tot + qwflxac
+   dinitp%can_mvap     = wflxgc  - dewgndflx  + wflxvc_tot  + transp_tot  +  wflxac
+   dinitp%can_nco2     = cflxgc  + cflxvc_tot + cflxac
 
 
    !---------------------------------------------------------------------------------------!

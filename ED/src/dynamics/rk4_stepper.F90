@@ -159,7 +159,24 @@ module rk4_stepper
             !----- 2. Make snow layers stable and positively defined. ---------------------!
             call redistribute_snow(integration_buff%ytemp, csite,ipa)
             !----- 3. Update the diagnostic variables. ------------------------------------!
-            call update_diagnostic_vars(integration_buff%ytemp, csite,ipa)
+            call update_diagnostic_vars(integration_buff%ytemp, csite,ipa,reject_step)
+            
+            if (reject_step) then
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:  '                        &
+                                               ,integration_buff%ytemp%can_enthalpy
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_MVAP:      '                        &
+                                              ,integration_buff%ytemp%can_mvap
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_NCO2:      '                        &
+                                              ,integration_buff%ytemp%can_nco2
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:  '                            &
+                                               ,integration_buff%ytemp%can_temp
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:      '                         &
+                                              ,integration_buff%ytemp%can_shv
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:      '                         &
+                                              ,integration_buff%ytemp%can_co2
+               call fatal_error('Step was rejected where it shouldn''t be...'              &
+                               ,'rkqs','rk4_stepper.F90')
+            end if
             
             !------------------------------------------------------------------------------!
             ! 4. Set up h for the next time.  And here we can relax h for the next step,   !
@@ -278,7 +295,7 @@ module rk4_stepper
       combh = b21*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
       call redistribute_snow(ak7, csite,ipa)
-      call update_diagnostic_vars(ak7, csite,ipa)
+      call update_diagnostic_vars(ak7, csite,ipa,reject_step)
       call rk4_sanity_check(ak7, reject_step, csite, ipa,dydx,h,print_diags)
       if (reject_step) return
 
@@ -291,7 +308,7 @@ module rk4_stepper
       combh = (b31+b32)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
       call redistribute_snow(ak7, csite,ipa)
-      call update_diagnostic_vars(ak7, csite,ipa)
+      call update_diagnostic_vars(ak7, csite,ipa,reject_step)
       call rk4_sanity_check(ak7,reject_step,csite,ipa,dydx,h,print_diags)
       if (reject_step) return
 
@@ -305,7 +322,7 @@ module rk4_stepper
       combh = (b41+b42+b43)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
       call redistribute_snow(ak7, csite,ipa)
-      call update_diagnostic_vars(ak7, csite,ipa)
+      call update_diagnostic_vars(ak7, csite,ipa,reject_step)
       call rk4_sanity_check(ak7, reject_step, csite,ipa,dydx,h,print_diags)
       if (reject_step) return
 
@@ -320,7 +337,7 @@ module rk4_stepper
       combh = (b51+b52+b53+b54)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
       call redistribute_snow(ak7, csite,ipa)
-      call update_diagnostic_vars(ak7, csite,ipa)
+      call update_diagnostic_vars(ak7, csite,ipa,reject_step)
       call rk4_sanity_check(ak7,reject_step,csite,ipa,dydx,h,print_diags)
       if (reject_step) return
 
@@ -336,7 +353,7 @@ module rk4_stepper
       combh = (b61+b62+b63+b64+b65)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
       call redistribute_snow(ak7, csite,ipa)
-      call update_diagnostic_vars(ak7, csite,ipa)
+      call update_diagnostic_vars(ak7, csite,ipa,reject_step)
       call rk4_sanity_check(ak7, reject_step, csite,ipa,dydx,h,print_diags)
       if(reject_step)return
 
@@ -349,7 +366,7 @@ module rk4_stepper
       combh = (c1+c3+c4+c6)*h
       call adjust_veg_properties(yout,combh,csite,ipa)
       call redistribute_snow(yout, csite,ipa)
-      call update_diagnostic_vars(yout, csite,ipa)
+      call update_diagnostic_vars(yout, csite,ipa,reject_step)
       call rk4_sanity_check(yout, reject_step, csite,ipa,dydx,h,print_diags)
       if(reject_step)return
 
@@ -415,10 +432,10 @@ module rk4_stepper
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(rk4patchtype) , target      :: y,dydx
-      type(sitetype)     , target      :: csite
-      logical            , intent(in)  :: print_problems
-      logical            , intent(out) :: reject_step
+      type(rk4patchtype) , target        :: y,dydx
+      type(sitetype)     , target        :: csite
+      logical            , intent(in)    :: print_problems
+      logical            , intent(inout) :: reject_step
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)    , pointer     :: cpatch
       integer                          :: k
@@ -444,8 +461,37 @@ module rk4_stepper
          call print_rk4patch(y,csite,ipa)
       end if
 
-      !----- Being optimistic and assuming things are fine --------------------------------!
-      reject_step = .false.
+      !------------------------------------------------------------------------------------!
+      !      If something already went wrong in update_diagnostic_vars, the step is        !
+      ! already rejected.  This is likely to be because of enthalpy or water mass, print   !
+      ! the banner if the user wants and return.                                           !
+      !------------------------------------------------------------------------------------!
+      if (reject_step) then
+         if(record_err) integ_err(1,2) = integ_err(1,2) + 1_8
+         if(record_err) integ_err(2,2) = integ_err(2,2) + 1_8
+         if(record_err) integ_err(3,2) = integ_err(3,2) + 1_8
+         if (print_problems) then
+            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            write(unit=*,fmt='(a)')           ' + Canopy enthalpy or mass is off-track...'
+            write(unit=*,fmt='(a)')           '-----------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:  ',y%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_MVAP:      ',y%can_mvap
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_NCO2:      ',y%can_nco2
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:       ',y%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:      ',y%can_temp
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:       ',y%can_co2
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:     ',y%can_depth
+            write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:      ',rk4met%prss
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTH)/Dt:',dydx%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_MVAP)/Dt:',dydx%can_mvap
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_NCO2)/Dt:',dydx%can_nco2
+            write(unit=*,fmt='(a,1x,es12.4)') ' H:            ',h
+            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            return
+         elseif (.not. record_err) then
+            return
+         end if
+      end if
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -489,31 +535,31 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       !   Checking whether the canopy temperature is too hot or too cold.                  !
       !------------------------------------------------------------------------------------! 
-      !if (y%can_depth < rk4min_can_depth ) then
-      !   reject_step = .true.
-      !   if(record_err) integ_err(1,2) = integ_err(1,2) + 1_8
-      !   if (print_problems) then
-      !      write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-      !      write(unit=*,fmt='(a)')           ' + Canopy air depth is off-track...'
-      !      write(unit=*,fmt='(a)')           '-----------------------------------------'
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:  ',y%can_enthalpy
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_MVAP:      ',y%can_mvap
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_NCO2:      ',y%can_nco2
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:       ',y%can_shv
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:      ',y%can_temp
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:       ',y%can_co2
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:     ',y%can_depth
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH_MIN: ',rk4min_can_depth
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:      ',rk4met%prss
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTH)/Dt:',dydx%can_enthalpy
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_MVAP)/Dt:',dydx%can_mvap
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_NCO2)/Dt:',dydx%can_nco2
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' H:            ',h
-      !      write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-      !   elseif (.not. record_err) then
-      !      return
-      !   end if
-      !end if
+      if (y%can_depth < rk4min_can_depth .or. y%can_depth > rk4max_can_depth ) then
+         reject_step = .true.
+         if(record_err) integ_err(1,2) = integ_err(1,2) + 1_8
+         if (print_problems) then
+            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            write(unit=*,fmt='(a)')           ' + Canopy air depth is off-track...'
+            write(unit=*,fmt='(a)')           '-----------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:  ',y%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_MVAP:      ',y%can_mvap
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_NCO2:      ',y%can_nco2
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:       ',y%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:      ',y%can_temp
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:       ',y%can_co2
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:     ',y%can_depth
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH_MIN: ',rk4min_can_depth
+            write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:      ',rk4met%prss
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTH)/Dt:',dydx%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_MVAP)/Dt:',dydx%can_mvap
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_NCO2)/Dt:',dydx%can_nco2
+            write(unit=*,fmt='(a,1x,es12.4)') ' H:            ',h
+            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         elseif (.not. record_err) then
+            return
+         end if
+      end if
       !------------------------------------------------------------------------------------!
 
 

@@ -41,6 +41,7 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm,integration_buff)
    type(patchtype)           , pointer     :: cpatch           ! Current patch
    integer                                 :: i                ! Step counter
    integer                                 :: ksn              ! # of snow/water layers
+   logical                                 :: reject_step      ! Non-sense enthalpy/mass
    real(kind=8)                            :: x                ! Elapsed time
    real(kind=8)                            :: h                ! Current delta-t attempt
    real(kind=8)                            :: hnext            ! Next delta-t
@@ -71,9 +72,18 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm,integration_buff)
    ! thermal equilibrium with top soil layer.                                              !
    !---------------------------------------------------------------------------------------!
    call redistribute_snow(integration_buff%initp, csite,ipa)
-   call update_diagnostic_vars(integration_buff%initp,csite,ipa)
+   call update_diagnostic_vars(integration_buff%initp,csite,ipa,reject_step)
 
-
+   if (reject_step) then
+     write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:  '                                  &
+                                              ,integration_buff%initp%can_enthalpy
+     write(unit=*,fmt='(a,1x,es12.4)') ' CAN_MVAP:      '                                  &
+                                              ,integration_buff%initp%can_mvap
+     write(unit=*,fmt='(a,1x,es12.4)') ' CAN_NCO2:      '                                  &
+                                              ,integration_buff%initp%can_nco2
+     call fatal_error('Initial mass or enthalpy makes no sense!'                           &
+                      ,'odeint','rk4_integ_utils')
+   end if
 
    !---------------------------------------------------------------------------------------!
    !     Create temporary patches.                                                         !
@@ -141,8 +151,20 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm,integration_buff)
                integration_buff%y%sfcwater_energy(ksn) =                                   &
                                      integration_buff%y%sfcwater_energy(ksn) - qwfree
 
+
                call redistribute_snow(integration_buff%y,csite,ipa)
-               call update_diagnostic_vars(integration_buff%y,csite,ipa)
+               call update_diagnostic_vars(integration_buff%y,csite,ipa,reject_step)
+
+               if (reject_step) then
+                  write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:  '                     &
+                                                           ,integration_buff%y%can_enthalpy
+                  write(unit=*,fmt='(a,1x,es12.4)') ' CAN_MVAP:      '                     &
+                                                           ,integration_buff%y%can_mvap
+                  write(unit=*,fmt='(a,1x,es12.4)') ' CAN_NCO2:      '                     &
+                                                           ,integration_buff%y%can_nco2
+                  call fatal_error('Initial mass or enthalpy makes no sense!'              &
+                                  ,'odeint','rk4_integ_utils')
+               end if
 
                !----- Compute runoff for output -------------------------------------------!
                if(fast_diagnostics) then
@@ -522,7 +544,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
 
    rkp%can_enthalpy = rkp%can_enthalpy  + fac * inc%can_enthalpy
    rkp%can_mvap     = rkp%can_mvap      + fac * inc%can_mvap
-   rkp%can_nco2     = rkp%can_nco2       + fac * inc%can_nco2
+   rkp%can_nco2     = rkp%can_nco2      + fac * inc%can_nco2
 
    do k=rk4met%lsl,nzg
       rkp%soil_water(k)       = rkp%soil_water(k)  + fac * inc%soil_water(k)
@@ -1182,7 +1204,7 @@ end function large_error
 ! ables, namely the temperature and liquid fraction of leaf water, soil layers and         !
 ! temporary snow/pond layers.                                                                      !
 !------------------------------------------------------------------------------------------!
-subroutine update_diagnostic_vars(initp, csite,ipa)
+subroutine update_diagnostic_vars(initp, csite,ipa,reject_step)
    use rk4_coms              , only : rk4met               & ! intent(in)
                                     , rk4min_sfcwater_mass & ! intent(in)
                                     , rk4patchtype         ! ! structure
@@ -1199,9 +1221,10 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    use canopy_struct_dynamics, only : can_whcap8           ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(rk4patchtype) , target     :: initp
-   type(sitetype)     , target     :: csite
-   integer            , intent(in) :: ipa
+   type(rk4patchtype) , target      :: initp
+   type(sitetype)     , target      :: csite
+   integer            , intent(in)  :: ipa
+   logical            , intent(out) :: reject_step
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)        , pointer :: cpatch
    integer                          :: ico
@@ -1212,7 +1235,8 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
 
    !----- Updating canopy temperature, mixing ratio, and depth. ---------------------------!
    call hmv2tqz8(initp%can_enthalpy,initp%can_mvap,rk4met%prss,rk4met%rhos,initp%can_temp  &
-                ,initp%can_shv,initp%can_depth)
+                ,initp%can_shv,initp%can_depth,reject_step)
+   if (reject_step) return
 
    !----- Updating CO2 mixing ratio. ------------------------------------------------------!
    initp%can_co2 = initp%can_nco2 / (rk4met%rhos * initp%can_depth * mmdryi8)
@@ -1783,7 +1807,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             initp%can_enthalpy    = initp%can_enthalpy     - veg_qdew
 
             !----- Updating output flux ---------------------------------------------------!
-            initp%avg_vapor_vc    = initp%avg_vapor_vc    - veg_dew  * hdidi
+            initp%avg_vapor_vc    = initp%avg_vapor_vc    - veg_dew * hdidi
          end if
 
          !----- Lastly we update leaf temperature and liquid fraction. --------------------!
@@ -1816,7 +1840,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
                             , patchtype         ! ! structure
    use grid_coms     , only : nzg               & ! intent(in)
                             , nzs               ! ! intent(in)
-   use ed_max_dims      , only : n_pft             ! ! intent(in)
+   use ed_max_dims   , only : n_pft             ! ! intent(in)
    use ed_misc_coms  , only : fast_diagnostics  ! ! intent(in)
 
    implicit none
@@ -2150,7 +2174,7 @@ subroutine print_rk4patch(y,csite,ipa)
                                      ,'     CAN_CO2','    CAN_TEMP','     CAN_SHV'         &
                                      ,'   CAN_DEPTH','    CAN_NCO2','CAN_ENTHALPY'         &
                                      ,'    CAN_MVAP'    
-   write (unit=*,fmt='(9(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
+   write (unit=*,fmt='(10(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)         &
          ,csite%lai(ipa),y%can_co2,y%can_temp,y%can_shv,y%can_depth,y%can_nco2             &
          ,y%can_enthalpy,y%can_mvap
 

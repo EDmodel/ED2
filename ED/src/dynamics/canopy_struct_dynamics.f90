@@ -760,7 +760,7 @@ module canopy_struct_dynamics
          
          vels_ref = rk4met%vels
          zref     = rk4met%geoht
-         h        = dble(csite%veg_height(ipa))
+         h        = dble(csite%can_depth(ipa)) ! Use the stored, not the updated one.
          d0       = 0.d0
 
          !----- Calculate the surface roughness inside the canopy. ------------------------!
@@ -797,7 +797,7 @@ module canopy_struct_dynamics
       !               even though it is nonsense.                                          !
       !------------------------------------------------------------------------------------!
       case (0)
-         h        = dble(csite%veg_height(ipa))   ! Canopy air space depth
+         h        = dble(csite%can_depth(ipa))   ! Canopy air space depth
          d0       = 6.3d-1 * h        ! 0-plane displacement
          vels_ref = rk4met%vels
          zref     = rk4met%geoht
@@ -886,7 +886,7 @@ module canopy_struct_dynamics
       ! velocity to estimate ustar.                                                        !
       !------------------------------------------------------------------------------------!
       case(1)
-         h    = csite%veg_height(ipa)            ! Canopy height
+         h    = dble(csite%can_depth(ipa))            ! Canopy height
          zref = rk4met%geoht                ! Initial reference height
          d0   = 6.3d-1 * h                  ! 0-plane displacement
          
@@ -981,7 +981,7 @@ module canopy_struct_dynamics
          !    LAI base drag calculation for center of pressure, d0.  Cumulative LAI based  !
          ! velocity attenuation in the canopy.                                             !
          !---------------------------------------------------------------------------------!
-         h = csite%veg_height(ipa)
+         h = dble(csite%can_depth(ipa))
 
          if (rk4met%geoht < h) then
 

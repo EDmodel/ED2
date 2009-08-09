@@ -383,6 +383,9 @@ module ed_state_vars
      ! CO2 mixing ratio [umol/mol] of canopy air
      real , pointer,dimension(:) :: can_co2
 
+     ! Canopy air density
+     real , pointer,dimension(:) :: can_rhos
+
      ! Canopy depth (m)
      real , pointer,dimension(:) :: can_depth
 
@@ -2130,6 +2133,7 @@ contains
     allocate(csite%can_temp(npatches))
     allocate(csite%can_shv(npatches))
     allocate(csite%can_co2(npatches))
+    allocate(csite%can_rhos(npatches))
     allocate(csite%can_depth(npatches))
     allocate(csite%cohort_count(npatches))
     allocate(csite%pname(npatches))
@@ -2864,6 +2868,7 @@ contains
     nullify(csite%can_temp)
     nullify(csite%can_shv)
     nullify(csite%can_co2)
+    nullify(csite%can_rhos)
     nullify(csite%can_depth)
     nullify(csite%lai)
     nullify(csite%wpa)
@@ -3597,6 +3602,7 @@ contains
     if(associated(csite%can_temp                     )) deallocate(csite%can_temp                     )
     if(associated(csite%can_shv                      )) deallocate(csite%can_shv                      )
     if(associated(csite%can_co2                      )) deallocate(csite%can_co2                      )
+    if(associated(csite%can_rhos                     )) deallocate(csite%can_rhos                     )
     if(associated(csite%can_depth                    )) deallocate(csite%can_depth                    )
     if(associated(csite%lai                          )) deallocate(csite%lai                          )
     if(associated(csite%wpa                          )) deallocate(csite%wpa                          )
@@ -4387,6 +4393,7 @@ contains
     if(associated(csite%can_temp                     )) csite%can_temp                     = large_real
     if(associated(csite%can_shv                      )) csite%can_shv                      = large_real
     if(associated(csite%can_co2                      )) csite%can_co2                      = large_real
+    if(associated(csite%can_rhos                     )) csite%can_rhos                     = large_real
     if(associated(csite%can_depth                    )) csite%can_depth                    = large_real
     if(associated(csite%lai                          )) csite%lai                          = large_real
     if(associated(csite%wpa                          )) csite%wpa                          = large_real
@@ -4827,6 +4834,7 @@ contains
     siteout%can_temp(ipout)           = sitein%can_temp(ipin)
     siteout%can_shv(ipout)            = sitein%can_shv(ipin)
     siteout%can_co2(ipout)            = sitein%can_co2(ipin)
+    siteout%can_rhos(ipout)           = sitein%can_rhos(ipin)
     siteout%can_depth(ipout)          = sitein%can_depth(ipin)
   
     return
@@ -4894,6 +4902,7 @@ contains
     siteout%can_temp(1:inc)             = pack(sitein%can_temp,logmask)
     siteout%can_shv(1:inc)              = pack(sitein%can_shv,logmask)
     siteout%can_co2(1:inc)              = pack(sitein%can_co2,logmask)
+    siteout%can_rhos(1:inc)             = pack(sitein%can_rhos,logmask)
     siteout%can_depth(1:inc)            = pack(sitein%can_depth,logmask)
     siteout%lai(1:inc)                  = pack(sitein%lai,logmask)
     siteout%wpa(1:inc)                  = pack(sitein%wpa,logmask)
@@ -8160,6 +8169,13 @@ contains
          call vtable_edio_r(csite%can_co2(1),nvar,igr,init,csite%paglob_id, &
          var_len,var_len_global,max_ptrs,'CAN_CO2 :31:hist') 
        call metadata_edio(nvar,igr,'Canopy air CO2 mixing ratio','[umol/mol]','NA') 
+    endif
+
+    if (associated(csite%can_rhos)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%can_rhos(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'CAN_RHOS :31:hist') 
+       call metadata_edio(nvar,igr,'Canopy air density','[kg/m3]','NA') 
     endif
     
     if (associated(csite%can_depth)) then
