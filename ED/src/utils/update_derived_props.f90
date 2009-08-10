@@ -24,7 +24,7 @@ subroutine update_derived_props(cgrid)
         csite => cpoly%site(isi)
 
         do ipa = 1,csite%npatches
-           call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%rhos,ipa)
+           call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss,ipa)
         end do
 
         call update_site_derived_props(cpoly, 0, isi)
@@ -49,7 +49,7 @@ end subroutine update_derived_props
 ! depend on the results from reproduction, which in turn depends on structural growth      !
 ! results from all patches.                                                                !
 !------------------------------------------------------------------------------------------!
-subroutine update_patch_derived_props(csite,lsl,rhos,ipa)
+subroutine update_patch_derived_props(csite,lsl,prss,ipa)
   
    use ed_state_vars       , only : sitetype                   & ! structure
                                   , patchtype                  ! ! structure
@@ -58,13 +58,15 @@ subroutine update_patch_derived_props(csite,lsl,rhos,ipa)
    use fuse_fiss_utils     , only : patch_pft_size_profile     ! ! subroutine
    use canopy_air_coms     , only : veg_height_min             & ! intent(in)
                                   , minimum_canopy_depth       ! ! intent(in)
+   use consts_coms         , only : rdry                       & ! intent(in)
+                                  , epim1                      ! ! intent(in)
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)  , target     :: csite
    integer         , intent(in) :: ipa
    integer         , intent(in) :: lsl
-   real            , intent(in) :: rhos
+   real            , intent(in) :: prss
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype) , pointer    :: cpatch
    real                         :: norm_fac, ba, old_height
@@ -129,10 +131,14 @@ subroutine update_patch_derived_props(csite,lsl,rhos,ipa)
    !----- Finding the patch roughness due to vegetation. ----------------------------------!
    csite%veg_rough(ipa) = 0.13 * csite%veg_height(ipa)
   
+   !----- Finding the updated canopy air density. -----------------------------------------!
+   csite%can_rhos(ipa) = prss                                                              &
+                       / (rdry * csite%can_temp(ipa) + (1. + epim1 * csite%can_shv(ipa)))  
+
    !----- Computing the storage terms for CO2, energy, and water budgets. -----------------!
-   csite%co2budget_initialstorage(ipa) = compute_co2_storage(csite,rhos,ipa)
-   csite%wbudget_initialstorage(ipa)   = compute_water_storage(csite,lsl,rhos,ipa)
-   csite%ebudget_initialstorage(ipa)   = compute_energy_storage(csite,lsl,rhos,ipa)
+   csite%co2budget_initialstorage(ipa) = compute_co2_storage(csite,ipa)
+   csite%wbudget_initialstorage(ipa)   = compute_water_storage(csite,lsl,ipa)
+   csite%ebudget_initialstorage(ipa)   = compute_energy_storage(csite,lsl,ipa)
 
    !----- Updating the cohort count (may be redundant as well...) -------------------------!
    csite%cohort_count(ipa) = cpatch%ncohorts
@@ -432,7 +438,7 @@ subroutine read_soil_moist_temp(cgrid)
                                        ,csite%soil_water(nzg,ipa)                          &
                                        ,csite%soil_energy(nzg,ipa)                         &
                                        ,csite%sfcwater_energy(nlsw1,ipa)                   &
-                                       ,cpoly%met(isi)%rhos,csite%can_shv(ipa)             &
+                                       ,csite%can_rhos(ipa),csite%can_shv(ipa)             &
                                        ,csite%ground_shv(ipa),csite%surface_ssh(ipa)       &
                                        ,surface_temp,surface_fliq)
 

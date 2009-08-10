@@ -199,13 +199,14 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%wbudget_residual(ip1:ip2)         = 0.0
   csite%ebudget_precipgain(ip1:ip2)       = 0.0
   csite%ebudget_netrad(ip1:ip2)           = 0.0
+  csite%ebudget_latent(ip1:ip2)           = 0.0
   csite%ebudget_loss2atm(ip1:ip2)         = 0.0
   csite%ebudget_loss2runoff(ip1:ip2)      = 0.0
   csite%ebudget_loss2drainage(ip1:ip2)    = 0.0
   csite%ebudget_initialstorage(ip1:ip2)   = 0.0
   csite%ebudget_residual(ip1:ip2)         = 0.0
   csite%dmean_co2_residual(ip1:ip2)       = 0.0
-  csite%dmean_enthalpy_residual(ip1:ip2)  = 0.0
+  csite%dmean_energy_residual(ip1:ip2)    = 0.0
   csite%dmean_water_residual(ip1:ip2)     = 0.0
 
   !----------------------------------------------------------------------------------------!
@@ -402,7 +403,7 @@ end subroutine init_ed_poly_vars
 !     This subroutine will assign the values of some diagnostic variables, such as soil    !
 ! and temporary layer temperature and liquid fraction, and the surface properties.         !
 !------------------------------------------------------------------------------------------!
-subroutine new_patch_sfc_props(csite,ipa, rhos)
+subroutine new_patch_sfc_props(csite,ipa)
    use ed_state_vars , only : sitetype          & ! structure
                             , patchtype         ! ! structure
    use grid_coms     , only : nzg               & ! intent(in)
@@ -418,7 +419,6 @@ subroutine new_patch_sfc_props(csite,ipa, rhos)
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype) , target     :: csite          ! Current site
    integer        , intent(in) :: ipa            ! Number of the current patch
-   real           , intent(in) :: rhos           ! Air density                     [ kg/m3]
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype), pointer    :: cpatch         ! Current patch
    integer                     :: k              ! Layer counter
@@ -476,7 +476,7 @@ subroutine new_patch_sfc_props(csite,ipa, rhos)
    k=max(1,csite%nlev_sfcwater(ipa))
    call ed_grndvap(csite%nlev_sfcwater(ipa),csite%ntext_soil(nzg,ipa)                      &
                   ,csite%soil_water(nzg,ipa),csite%soil_energy(nzg,ipa)                    &
-                  ,csite%sfcwater_energy(k,ipa), rhos,csite%can_shv(ipa)                   &
+                  ,csite%sfcwater_energy(k,ipa), csite%can_rhos(ipa),csite%can_shv(ipa)    &
                   ,csite%ground_shv(ipa),csite%surface_ssh(ipa),surface_temp,surface_fliq)
    !---------------------------------------------------------------------------------------! 
 

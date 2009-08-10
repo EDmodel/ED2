@@ -173,7 +173,7 @@ Module consts_coms
    real, parameter :: gorvap = grav / rvap  ! g/Rv                              [      K/m]
    real, parameter :: ep     = mmvap/mmdry  ! or Ra/Rv, epsilon, used to find rv[    kg/kg]
    real, parameter :: epi    = mmdry/mmvap  ! or Rv/Ra, 1/epsilon               [    kg/kg]
-   real, parameter :: epim1  = epi - 1.     ! the 0.608 term before qv in Tv    [    kg/kg]
+   real, parameter :: epim1  = epi-1.       ! that 0.61 term of virtual temp.   [    kg/kg]
    real, parameter :: toodry = 1.e-8        ! Minimum acceptable mixing ratio.  [    kg/kg]
    !---------------------------------------------------------------------------------------!
 
@@ -284,7 +284,6 @@ Module consts_coms
    real(kind=8), parameter :: stefan8      = dble(stefan    )
    real(kind=8), parameter :: sqrt2o28     = dble(sqrt2o2   )
    real(kind=8), parameter :: t3ple8       = dble(t3ple     )
-   real(kind=8), parameter :: toodry8      = dble(toodry    )
    real(kind=8), parameter :: tsupercool8  = dble(tsupercool)
    real(kind=8), parameter :: twopi8       = dble(twopi     )
    real(kind=8), parameter :: twothirds8   = dble(twothirds )

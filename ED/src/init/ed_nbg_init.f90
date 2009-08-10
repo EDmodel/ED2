@@ -121,9 +121,9 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
       end select
 
       !----- Perform cohort allocation. ---------------------------------------------------!
-      !call allocate_patchtype(cpatch,mypfts)
-      call allocate_patchtype(cpatch,0)
-      cycle patchloop
+      call allocate_patchtype(cpatch,mypfts)
+      !call allocate_patchtype(cpatch,0)
+      !cycle patchloop
       !------------------------------------------------------------------------------------!
       !    Here we loop over PFTs rather than assigning the cohorts, so we ensure to only  !
       ! include the PFTs that should be  included (i.e., patches that should not happen in !

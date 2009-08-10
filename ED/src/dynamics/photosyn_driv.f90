@@ -3,7 +3,7 @@
 !     This subroutine will control the photosynthesis scheme (Farquar and Leuning).  This  !
 ! is called every step, but not every sub-step.                                            !
 !------------------------------------------------------------------------------------------!
-subroutine canopy_photosynthesis(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,ntext_soil     &
+subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soil          &
                                    ,soil_water,soil_fracliq,lsl,sum_lai_rbi                &
                                    ,leaf_aging_factor,green_leaf_factor)
    use ed_state_vars         , only : sitetype           & ! structure
@@ -31,7 +31,6 @@ subroutine canopy_photosynthesis(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,ntex
    real   , dimension(nzg)   , intent(in)  :: soil_water        ! Soil water
    real   , dimension(nzg)   , intent(in)  :: soil_fracliq      ! Soil liq. water fraction
    real                      , intent(in)  :: vels              ! Wind speed
-   real                      , intent(in)  :: rhos              ! Air density
    real                      , intent(in)  :: atm_tmp           ! Atm. temperature
    real                      , intent(in)  :: prss              ! Atmospheric pressure
    real   , dimension(n_pft) , intent(in)  :: leaf_aging_factor ! 
@@ -141,7 +140,7 @@ subroutine canopy_photosynthesis(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,ntex
                , csite%can_co2(ipa)*1e-6   & ! CO2 mixing ratio             [      mol/mol]
                , parv_o_lai                & ! Absorbed PAR                 [ Ein/m²leaf/s]
                , cpatch%rb(tuco)           & ! Aerodynamic resistance       [          s/m]
-               , rhos                      & ! Air density                  [        kg/m³]
+               , csite%can_rhos(ipa)       & ! Air density                  [        kg/m³]
                , csite%A_o_max(ipft,ipa)   & ! Max. open photosynth. rate   [µmol/m²leaf/s]
                , csite%A_c_max(ipft,ipa)   & ! Max. closed photosynth. rate [µmol/m²leaf/s]
                , P_op                      & ! Open stomata res. for water  [          s/m]
@@ -209,7 +208,7 @@ subroutine canopy_photosynthesis(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,ntex
                , csite%can_co2(ipa)*1e-6   & ! CO2 mixing ratio             [      mol/mol]
                , parv_o_lai                & ! Absorbed PAR                 [ Ein/m²leaf/s]
                , cpatch%rb(ico)            & ! Aerodynamic resistance       [          s/m]
-               , rhos                      & ! Air density                  [        kg/m³]
+               , csite%can_rhos(ipa)       & ! Air density                  [        kg/m³]
                , cpatch%A_open(ico)        & ! Max. open photosynth. rate   [µmol/m²leaf/s]
                , cpatch%A_closed(ico)      & ! Max. closed photosynth. rate [µmol/m²leaf/s]
                , cpatch%rsw_open(ico)      & ! Open stomata res. for water  [          s/m]
@@ -345,7 +344,7 @@ subroutine canopy_photosynthesis(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,ntex
             write(unit=80+ipft,fmt='(28(a,1x))') '     CURRENT_TIME','PFT'                 &
              ,'      NPLANT','       BLEAF','         LAI','         WAI','     HCAPVEG'   &
              ,'   VEG_WATER','    VEG_TEMP',' CAN_MIX_RAT','    CAN_TEMP','    AIR_TEMP'   &
-             ,'    PRESSURE','     DENSITY','       PAR_V','         GPP','   LEAF_RESP'   &
+             ,'    PRESSURE','    CAN_RHOS','       PAR_V','         GPP','   LEAF_RESP'   &
              ,'          RB',' STOM_RESIST','      A_OPEN','    A_CLOSED','    RSW_OPEN'   &
              ,'  RSW_CLOSED','    PSI_OPEN','  PSI_CLOSED','         FSW','         FSN'   &
              ,'     FS_OPEN'
@@ -357,11 +356,12 @@ subroutine canopy_photosynthesis(csite,ipa,vels,rhos,atm_tmp,prss,ed_ktrans,ntex
             current_time%year,'-',current_time%month,'-',current_time%date                 &
            ,current_time%time,cpatch%pft(ico),cpatch%nplant(ico),cpatch%bleaf(ico)         &
            ,cpatch%lai(ico),cpatch%wai(ico),cpatch%hcapveg(ico),cpatch%veg_water(ico)      &
-           ,cpatch%veg_temp(ico),csite%can_shv(ipa),csite%can_temp(ipa),atm_tmp,prss,rhos  &
-           ,cpatch%par_v(ico),cpatch%gpp(ico),cpatch%leaf_respiration(ico),cpatch%rb(ico)  &
-           ,cpatch%stomatal_resistance(ico),cpatch%A_open(ico),cpatch%A_closed(ico)        &
-           ,cpatch%rsw_open(ico),cpatch%rsw_closed(ico),cpatch%Psi_open(ico)               &
-           ,cpatch%Psi_closed(ico),cpatch%fsw(ico),cpatch%fsn(ico),cpatch%fs_open(ico)
+           ,cpatch%veg_temp(ico),csite%can_shv(ipa),csite%can_temp(ipa),atm_tmp,prss       &
+           ,csite%can_rhos(ipa),cpatch%par_v(ico),cpatch%gpp(ico)                          &
+           ,cpatch%leaf_respiration(ico),cpatch%rb(ico),cpatch%stomatal_resistance(ico)    &
+           ,cpatch%A_open(ico),cpatch%A_closed(ico),cpatch%rsw_open(ico)                   &
+           ,cpatch%rsw_closed(ico),cpatch%Psi_open(ico),cpatch%Psi_closed(ico)             &
+           ,cpatch%fsw(ico),cpatch%fsn(ico),cpatch%fs_open(ico)
       end do
    end if
 

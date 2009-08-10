@@ -408,7 +408,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
               !! remove small cohorts
               call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
 
-              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,ipa)
+              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss,ipa)
               
            end if  !! check to make sure there ARE cohorts
 
@@ -472,8 +472,8 @@ subroutine event_planting(pft,density8)
               
               call plant_patch(csite,ipa,pft,density,cpoly%green_leaf_factor(:,isi) &
                                  ,planting_ht,cpoly%lsl(isi))            
-              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,ipa)
-              call new_patch_sfc_props(csite, ipa, cpoly%met(isi)%rhos)
+              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss,ipa)
+              call new_patch_sfc_props(csite, ipa)
 
            enddo
 
@@ -545,7 +545,7 @@ subroutine event_fertilize(rval8)
               csite%mineralized_soil_N(ipa) = max(0.0,csite%mineralized_soil_N(ipa) + nh4 + no3)
              
               !! update patch properties
-              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,ipa)
+              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss,ipa)
 
            enddo
 
@@ -753,7 +753,7 @@ subroutine event_till(rval8)
               call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
 
               !! update patch properties
-              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,ipa)
+              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss,ipa)
               endif
            enddo
            ! Update site properties. ## THINK ABOUT WHAT TO SET FLAG##########
@@ -817,5 +817,5 @@ end subroutine event_till
 !!$
 !!$              call sort_cohorts(cpatch)           
 !!$   
-!!$!              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos, ipa)
+!!$!              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss, ipa)
 !!$          

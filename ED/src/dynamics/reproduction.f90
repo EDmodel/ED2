@@ -320,8 +320,7 @@ subroutine reproduction(cgrid, month)
 
             if(cpatch%ncohorts > 0 .and. maxcohort >= 0) then
                call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
-               call fuse_cohorts(csite,ipa, cpoly%green_leaf_factor(:,isi)              &
-                                   , cpoly%lsl(isi))                         
+               call fuse_cohorts(csite,ipa, cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))                         
                call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
             end if
 
@@ -329,8 +328,7 @@ subroutine reproduction(cgrid, month)
             csite%cohort_count(ipa) = cpatch%ncohorts
 
             !----- Since cohorts may have changed, update patch properties... -------------!
-            call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%rhos    &
-                                              ,ipa)
+            call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss,ipa)
          end do update_patch_loop
 
          !----- Since patch properties may have changed, update site properties... --------!

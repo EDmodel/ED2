@@ -75,8 +75,8 @@ subroutine euler_timestep(cgrid)
             call canopy_turbulence(cpoly,isi,ipa,rasveg,canwcap,canccap,canhcap,.true.)
 
             !----- Get photosynthesis, stomatal conductance, and transpiration. -----------!
-            call canopy_photosynthesis(csite,ipa,cmet%vels,cmet%rhos,cmet%atm_tmp          &
-                                      ,cmet%prss,ed_ktrans,csite%ntext_soil(:,ipa)         &
+            call canopy_photosynthesis(csite,ipa,cmet%vels,cmet%atm_tmp,cmet%prss          &
+                                      ,ed_ktrans,csite%ntext_soil(:,ipa)                   &
                                       ,csite%soil_water(:,ipa),csite%soil_fracliq(:,ipa)   &
                                       ,cpoly%lsl(isi),sum_lai_rbi                          &
                                       ,cpoly%leaf_aging_factor(:,isi)                      &
@@ -95,7 +95,7 @@ subroutine euler_timestep(cgrid)
             call sum_plant_cfluxes(csite,ipa,gpp,gpp_dbh,plant_respiration)
 
             !----- Finding the atmosphere -> canopy flux. ---------------------------------!
-            cflxac = cmet%rhos * csite%ustar(ipa) * csite%cstar(ipa) * mmdryi
+            cflxac = csite%can_rhos(ipa) * csite%ustar(ipa) * csite%cstar(ipa) * mmdryi
 
             !----- We now compute the plant -> canopy and ground -> canopy fluxes. --------!
             cflxgc = csite%rh(ipa) - csite%cwd_rh(ipa)
@@ -146,8 +146,8 @@ subroutine euler_timestep(cgrid)
                            ,csite%sfcwater_depth(:,ipa),csite%rshort_s(:,ipa)              &
                            ,csite%rshort_g(ipa),csite%rlong_s(ipa),csite%rlong_g(ipa)      &
                            ,csite%veg_height(ipa),csite%veg_rough(ipa),veg_tai             &
-                           ,csite%can_depth(ipa),cmet%rhos,cmet%vels,cmet%atm_tmp          &
-                           ,cmet%prss,pcpg_int,qpcpg_int,dpcpg_int                         &
+                           ,csite%can_depth(ipa),csite%can_rhos(ipa),cmet%vels             &
+                           ,cmet%atm_tmp,cmet%prss,pcpg_int,qpcpg_int,dpcpg_int            &
                            ,csite%ebudget_loss2atm(ipa),csite%wbudget_loss2atm(ipa)        &
                            ,csite%co2budget_loss2atm(ipa),csite%ustar(ipa)                 &
                            ,csite%snowfac(ipa),csite%surface_ssh(ipa)                      &
@@ -540,7 +540,7 @@ subroutine euler_canopy(nlev_sfcwater,ntext_soil,ktrans,soil_water,soil_fracliq,
    transp       = 0.
    ed_transp(:) = 0.
 
-   call canopy_update_euler(csite,ipa,vels,rhos,atm_tmp,prss,pcpg,qpcpg,wshed,qwshed       &
+   call canopy_update_euler(csite,ipa,vels,atm_tmp,prss,pcpg,qpcpg,wshed,qwshed            &
                            ,canwcap,canhcap,dtlsm,hxfergc,sxfer_t,wxfergc,hxfersc,wxfersc  &
                            ,sxfer_r,ed_transp,ntext_soil,soil_water,soil_fracliq,lsl       &
                            ,leaf_aging_factor,green_leaf_factor,sxfer_c)

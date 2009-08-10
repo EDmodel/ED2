@@ -63,12 +63,11 @@ rk4_driver.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod grid_coms.mod
 rk4_driver.o: rk4_coms.mod soil_coms.mod therm_lib.mod
 rk4_integ_utils.o: allometry.mod canopy_radiation_coms.mod
 rk4_integ_utils.o: canopy_struct_dynamics.mod consts_coms.mod ed_max_dims.mod
-rk4_integ_utils.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
-rk4_integ_utils.o: grid_coms.mod hydrology_coms.mod rk4_coms.mod rk4_stepper.mod
-rk4_integ_utils.o: soil_coms.mod therm_lib.mod
-rk4_stepper.o: canopy_air_coms.mod consts_coms.mod ed_misc_coms.mod
-rk4_stepper.o: ed_state_vars.mod grid_coms.mod rk4_coms.mod soil_coms.mod
-rk4_stepper.o: therm_lib.mod
+rk4_integ_utils.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
+rk4_integ_utils.o: hydrology_coms.mod rk4_coms.mod rk4_stepper.mod soil_coms.mod
+rk4_integ_utils.o: therm_lib.mod
+rk4_stepper.o: consts_coms.mod ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
+rk4_stepper.o: rk4_coms.mod soil_coms.mod therm_lib.mod
 structural_growth.o: allometry.mod consts_coms.mod decomp_coms.mod
 structural_growth.o: ed_max_dims.mod ed_state_vars.mod ed_therm_lib.mod
 structural_growth.o: pft_coms.mod
@@ -157,9 +156,8 @@ ed_para_init.o: ed_node_coms.mod ed_para_coms.mod ed_work_vars.mod grid_coms.mod
 ed_para_init.o: mem_sites.mod soil_coms.mod
 allometry.o: consts_coms.mod grid_coms.mod pft_coms.mod rk4_coms.mod
 allometry.o: soil_coms.mod
-budget_utils.o: canopy_air_coms.mod consts_coms.mod ed_max_dims.mod
-budget_utils.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod rk4_coms.mod
-budget_utils.o: soil_coms.mod
+budget_utils.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
+budget_utils.o: ed_state_vars.mod grid_coms.mod rk4_coms.mod soil_coms.mod
 dateutils.o: consts_coms.mod
 ed_filelist.o: ed_max_dims.mod
 ed_grid.o: consts_coms.mod ed_max_dims.mod ed_node_coms.mod grid_coms.mod

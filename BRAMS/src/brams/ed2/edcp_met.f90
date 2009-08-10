@@ -43,7 +43,6 @@ subroutine copy_atm2lsm(ifm,init)
                                    , tsupercool   ! ! intent(in)
    use ed_node_coms         , only : mynum        ! ! intent(in)
    use canopy_radiation_coms, only : rlong_min    ! ! intent(in)
-   use therm_lib            , only : virtt        ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                             , intent(in) :: ifm
@@ -64,7 +63,6 @@ subroutine copy_atm2lsm(ifm,init)
    real, dimension(mmxp(ifm),mmyp(ifm))             :: map_2d_lsm
    real                                             :: rshort1,cosz1,rshortd1,scalar1
    real                                             :: topma_t,wtw,wtu1,wtu2,wtv1,wtv2
-   real                                             :: tvir
    !---------------------------------------------------------------------------------------!
   
    !----- Assigning some aliases. ---------------------------------------------------------!
@@ -266,10 +264,6 @@ subroutine copy_atm2lsm(ifm,init)
       cgrid%met(ipy)%atm_shv  = rv_mean(ix,iy) / (1.+rtp_mean(ix,iy))
       cgrid%met(ipy)%atm_tmp  = theta_mean(ix,iy)*pi0_mean(ix,iy) * cpi
       cgrid%met(ipy)%atm_co2  = co2p_mean(ix,iy)
-
-      !----- Finding density, using the ideal gas law. ------------------------------------!
-      tvir = virtt(cgrid%met(ipy)%atm_tmp,rv_mean(ix,iy),rtp_mean(ix,iy))
-      cgrid%met(ipy)%rhos = cgrid%met(ipy)%prss  / (rgas * tvir)
    end do
 
    !----- Filling the precipitation arrays. -----------------------------------------------!
@@ -1316,7 +1310,6 @@ subroutine calc_met_lapse(cgrid,ipy)
          cpoly%met(isi)%atm_tmp     = cgrid%met(ipy)%atm_tmp
          cpoly%met(isi)%atm_shv     = cgrid%met(ipy)%atm_shv
          cpoly%met(isi)%prss        = cgrid%met(ipy)%prss
-         cpoly%met(isi)%rhos        = cgrid%met(ipy)%rhos
          cpoly%met(isi)%pcpg        = cgrid%met(ipy)%pcpg
          cpoly%met(isi)%par_diffuse = cgrid%met(ipy)%par_diffuse
          cpoly%met(isi)%atm_co2     = cgrid%met(ipy)%atm_co2
@@ -1412,7 +1405,6 @@ subroutine calc_met_lapse(cgrid,ipy)
          cpoly%met(isi)%atm_tmp = cgrid%met(ipy)%atm_tmp + cgrid%lapse(ipy)%atm_tmp * delE
          cpoly%met(isi)%atm_shv = cgrid%met(ipy)%atm_shv + cgrid%lapse(ipy)%atm_shv * delE
          cpoly%met(isi)%prss    = cgrid%met(ipy)%prss    + cgrid%lapse(ipy)%prss    * delE
-         cpoly%met(isi)%rhos    = cgrid%met(ipy)%rhos    + cgrid%lapse(ipy)%rhos    * delE
          cpoly%met(isi)%pcpg    = cgrid%met(ipy)%pcpg    + cgrid%lapse(ipy)%pcpg    * delE
          cpoly%met(isi)%atm_co2 = cgrid%met(ipy)%atm_co2 + cgrid%lapse(ipy)%atm_co2 * delE
          cpoly%met(isi)%rlong   = cgrid%met(ipy)%rlong   + cgrid%lapse(ipy)%rlong   * delE
@@ -1561,8 +1553,6 @@ subroutine int_met_avg(cgrid)
                                     + cpoly%met(isi)%atm_tmp * cpoly%area(isi) * tfact
          cgrid%avg_atm_shv(ipy)     = cgrid%avg_atm_shv(ipy)                               &
                                     + cpoly%met(isi)%atm_shv * cpoly%area(isi) * tfact
-         cgrid%avg_rhos(ipy)        = cgrid%avg_rhos(ipy)                                  &
-                                    + cpoly%met(isi)%rhos * cpoly%area(isi) * tfact
          cgrid%avg_rshort(ipy)      = cgrid%avg_rshort(ipy)                                &
                                     + cpoly%met(isi)%rshort * cpoly%area(isi) * tfact
          cgrid%avg_rshort_diffuse(ipy) = cgrid%avg_rshort_diffuse(ipy)                     &

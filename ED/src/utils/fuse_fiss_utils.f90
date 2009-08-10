@@ -1273,7 +1273,7 @@ module fuse_fiss_utils
                               ! and ipa_tp assign the average to index ipa_tp.             !
                               !------------------------------------------------------------!
                               call fuse_2_patches(csite,donp,recp                          &
-                                                 ,cpoly%met(isi)%rhos,cpoly%lsl(isi)       &
+                                                 ,cpoly%met(isi)%prss,cpoly%lsl(isi)       &
                                                  ,cpoly%green_leaf_factor(:,isi)           &
                                                  ,elim_nplant,elim_lai)
 
@@ -1427,7 +1427,7 @@ module fuse_fiss_utils
    !=======================================================================================!
    !   This subroutine will merge two patches into 1.                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_2_patches(csite,donp,recp,rhos,lsl,green_leaf_factor                 &
+   subroutine fuse_2_patches(csite,donp,recp,prss,lsl,green_leaf_factor                 &
                                ,elim_nplant,elim_lai)
       use ed_state_vars      , only :  sitetype              & ! Structure 
                                      , patchtype             ! ! Structure
@@ -1436,7 +1436,7 @@ module fuse_fiss_utils
       use grid_coms          , only :  nzg                   & ! intent(in)
                                      , nzs                   ! ! intent(in)
       use fusion_fission_coms, only :  ff_ndbh               ! ! intent(in)
-      use ed_max_dims           , only :  n_pft                 & ! intent(in)
+      use ed_max_dims        , only :  n_pft                 & ! intent(in)
                                      , n_dbh                 ! ! intent(in)
       use mem_sites          , only :  maxcohort             ! ! intent(in)
       use consts_coms        , only :  cpi                   & ! intent(in)
@@ -1449,7 +1449,7 @@ module fuse_fiss_utils
       integer                , intent(in)  :: recp              ! Receptor patch
       integer                , intent(in)  :: lsl               ! Lowest soil level
       real, dimension(n_pft) , intent(in)  :: green_leaf_factor ! Green leaf factor...
-      real                   , intent(in)  :: rhos              ! Sfc. air density
+      real                   , intent(in)  :: prss              ! Sfc. air density
       real                   , intent(out) :: elim_nplant       ! Eliminated nplant 
       real                   , intent(out) :: elim_lai          ! Eliminated lai
       !----- Local variables --------------------------------------------------------------!
@@ -1626,7 +1626,7 @@ module fuse_fiss_utils
       ! + csite%csite%sfcwater_tempk(k,recp)                                               !
       ! + csite%sfcwater_fracliq(k,recp)                                                   !
       !------------------------------------------------------------------------------------!
-      call new_patch_sfc_props(csite,recp,rhos)
+      call new_patch_sfc_props(csite,recp)
       !------------------------------------------------------------------------------------!
 
       csite%mean_rh(recp)                = newareai *                                      &
@@ -1874,6 +1874,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !    Now we update some variables that depend on cohort statistics, namely:          !
       ! + csite%veg_height(recp)                                                           !
+      ! + csite%can_rhos(recp)                                                             !
       ! + csite%can_depth(recp)                                                            !
       ! + csite%lai(recp)                                                                  !
       ! + csite%veg_rough(recp)                                                            !
@@ -1881,7 +1882,7 @@ module fuse_fiss_utils
       ! + csite%ebudget_initialstorage(recp)                                               !
       ! + csite%co2budget_initialstorage(recp)                                             !
       !------------------------------------------------------------------------------------!
-      call update_patch_derived_props(csite,lsl, rhos,recp)
+      call update_patch_derived_props(csite,lsl, prss,recp)
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!

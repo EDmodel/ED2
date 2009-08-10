@@ -177,28 +177,27 @@ subroutine ed_init_coup_atm
                     csite%sfcwater_tempk  (k,ipa) = csite%soil_tempk(nzg,ipa)
                     csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(nzg,ipa)
                  end do
+              
+                 !----- Compute patch-level LAI, vegetation height, and roughness. --------!
+                 call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss  &
+                                                ,ipa)
 
                  nls   = csite%nlev_sfcwater(ipa)
                  nlsw1 = max(nls,1)
                  
-                 call ed_grndvap(nls,                    &
-                      csite%ntext_soil       (nzg,ipa),  &
-                      csite%soil_water       (nzg,ipa),  &
-                      csite%soil_energy      (nzg,ipa),  &
-                      csite%sfcwater_energy(nlsw1,ipa),  &
-                      cpoly%met(isi)%rhos,  &
-                      csite%can_shv(ipa),  &
-                      csite%ground_shv(ipa),  &
-                      csite%surface_ssh(ipa), &
-                      surface_temp,&
-                      surface_fliq)
-              endif
-              
-              ! Compute patch-level LAI, vegetation height, and roughness
-              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos, ipa)
+                 call ed_grndvap(nls,csite%ntext_soil(nzg,ipa),csite%soil_water(nzg,ipa)   &
+                                ,csite%soil_energy(nzg,ipa)                                &
+                                ,csite%sfcwater_energy(nlsw1,ipa),csite%can_rhos(ipa)      &
+                                ,csite%can_shv(ipa),csite%ground_shv(ipa)                  &
+                                ,csite%surface_ssh(ipa),surface_temp,surface_fliq)
+              else
+                 !----- Compute patch-level LAI, vegetation height, and roughness. --------!
+                 call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss  &
+                                                ,ipa)
+              end if
               
 
-           enddo
+           end do
            
            ! Compute basal area and AGB profiles.
            call update_site_derived_props(cpoly, 0, isi)

@@ -24,6 +24,7 @@ module rk4_driver
                                         , patchtype            ! ! structure
       use grid_coms              , only : nzg                  ! ! intent(in)
       use canopy_struct_dynamics , only : canopy_turbulence8   ! ! subroutine
+      use ed_misc_coms           , only : current_time         ! ! intent(in)
       implicit none
 
       !----------- Use MPI timing calls, need declarations --------------------------------!
@@ -36,6 +37,7 @@ module rk4_driver
       type(sitetype)            , pointer     :: csite
       type(patchtype)           , pointer     :: cpatch
       integer                                 :: ipy,isi,ipa
+      integer                                 :: iun
       integer, dimension(nzg)                 :: ed_ktrans
       real                                    :: sum_lai_rbi
       real                                    :: wcurr_loss2atm
@@ -45,6 +47,7 @@ module rk4_driver
       real                                    :: ecurr_loss2drainage
       real                                    :: wcurr_loss2runoff
       real                                    :: ecurr_loss2runoff
+      real                                    :: ecurr_latent
       !----- Variables declared differently depending on the user's compilation options. --!
 #if USE_MPIWTIME
       real(kind=8)                            :: time_py_start
@@ -53,6 +56,10 @@ module rk4_driver
       real                                    :: time_py_start
       real                                    :: time_py_spent
 #endif
+      !----- Locally saved variables. -----------------------------------------------------!
+      logical                   , save        :: first_time=.true.
+      !----- Local constants. -------------------------------------------------------------!
+      logical                   , parameter   :: print_fields = .true.
       !----- Functions --------------------------------------------------------------------!
       real                      , external    :: walltime
       !------------------------------------------------------------------------------------!
@@ -71,7 +78,28 @@ module rk4_driver
 
             patchloop: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
-                
+
+               if (print_fields) then
+                  iun = 30+ipa
+                  if (first_time) then
+                     write (unit=iun,fmt='(19(a,1x))') 'YEAR','MONTH','  DAY','  TIME'     &
+                          ,'  VEG.HEIGHT','   CAN.DEPTH','       SPEED','       PRESS'     &
+                          ,'    ATM.TEMP','    CAN.TEMP','   SFCW.TEMP','    SOIL.TMP'     &
+                          ,'    ATM.SHV ','     CAN.SHV','   SFCW.MASS','  SOIL.MOIST'     &
+                          ,'    ATM.CO2 ','     CAN.CO2','    CAN.DENS'
+                  end if
+                  write (unit=iun,fmt='(i4.4,2(4x,i2.2),1x,f6.0,15(1x,es12.5))')           &
+                     current_time%year,current_time%month,current_time%date                &
+                    ,current_time%time,csite%veg_height(ipa),csite%can_depth(ipa)          &
+                    ,cpoly%met(isi)%vels,cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp        &
+                    ,csite%can_temp(ipa),csite%sfcwater_tempk(1,ipa)                       &
+                    ,csite%soil_tempk(nzg,ipa),cpoly%met(isi)%atm_shv,csite%can_shv(ipa)   &
+                    ,csite%sfcwater_mass(1,ipa),csite%soil_water(nzg,ipa)                  &
+                    ,cpoly%met(isi)%atm_co2,csite%can_co2(ipa),csite%can_rhos(ipa)
+                   
+               end if
+
+               
                !----- Reset all buffers to zero, as a safety measure. ---------------------!
                call zero_rk4_patch(integration_buff%initp)
                call zero_rk4_patch(integration_buff%dinitp)
@@ -110,13 +138,13 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !    Copy the meteorological variables to the rk4met structure.             !
                !---------------------------------------------------------------------------!
-               call copy_met_2_rk4met(cpoly%met(isi)%rhos,cpoly%met(isi)%vels              &
-                                     ,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%atm_shv        &
-                                     ,cpoly%met(isi)%atm_co2,cpoly%met(isi)%geoht          &
-                                     ,cpoly%met(isi)%exner,cpoly%met(isi)%pcpg             &
-                                     ,cpoly%met(isi)%qpcpg,cpoly%met(isi)%dpcpg            &
-                                     ,cpoly%met(isi)%prss,cpoly%met(isi)%geoht             &
-                                     ,cpoly%lsl(isi),cgrid%lon(ipy),cgrid%lat(ipy))
+               call copy_met_2_rk4met(cpoly%met(isi)%vels,cpoly%met(isi)%atm_tmp           &
+                                     ,cpoly%met(isi)%atm_shv,cpoly%met(isi)%atm_co2        &
+                                     ,cpoly%met(isi)%geoht,cpoly%met(isi)%exner            &
+                                     ,cpoly%met(isi)%pcpg,cpoly%met(isi)%qpcpg             &
+                                     ,cpoly%met(isi)%dpcpg,cpoly%met(isi)%prss             &
+                                     ,cpoly%met(isi)%geoht,cpoly%lsl(isi)                  &
+                                     ,cgrid%lon(ipy),cgrid%lat(ipy))
 
 
                !---------------------------------------------------------------------------!
@@ -135,8 +163,8 @@ module rk4_driver
 
                !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
                call canopy_photosynthesis(csite,ipa,cpoly%met(isi)%vels                    &
-                          ,cpoly%met(isi)%rhos,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%prss  &
-                          ,ed_ktrans,csite%ntext_soil(:,ipa),csite%soil_water(:,ipa)       &
+                          ,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%prss,ed_ktrans            &
+                          ,csite%ntext_soil(:,ipa),csite%soil_water(:,ipa)                 &
                           ,csite%soil_fracliq(:,ipa),cpoly%lsl(isi),sum_lai_rbi            &
                           ,cpoly%leaf_aging_factor(:,isi),cpoly%green_leaf_factor(:,isi) )
 
@@ -150,7 +178,8 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                call integrate_patch(csite,ipa,isi,ipy,ifm,integration_buff,wcurr_loss2atm  &
                              ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage          &
-                             ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff)
+                             ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff      &
+                             ,ecurr_latent)
 
                !---------------------------------------------------------------------------!
                !    Update the minimum monthly temperature, based on canopy temperature.   !
@@ -160,15 +189,15 @@ module rk4_driver
                end if
                
                !-------------------------------------------------------------!
-               !     Compute the residuals.                                  ! 
+               !     Compute the residuals.                                  !
                !-------------------------------------------------------------!
-               call compute_budget(csite,cpoly%lsl(isi),cpoly%met(isi)%rhos  &
+               call compute_budget(csite,cpoly%lsl(isi)                      &
                                   ,cpoly%met(isi)%pcpg,cpoly%met(isi)%qpcpg  &
                                   ,ipa,wcurr_loss2atm,ecurr_loss2atm         &
                                   ,co2curr_loss2atm,wcurr_loss2drainage      &
                                   ,ecurr_loss2drainage,wcurr_loss2runoff     &
-                                  ,ecurr_loss2runoff,cpoly%area(isi)         &
-                                  ,cgrid%cbudget_nep(ipy))
+                                  ,ecurr_loss2runoff,ecurr_latent            &
+                                  ,cpoly%area(isi),cgrid%cbudget_nep(ipy))
                
 
             end do patchloop
@@ -184,6 +213,7 @@ module rk4_driver
 
       end do polygonloop
 
+      first_time = .false.
       return
    end subroutine rk4_timestep
    !=======================================================================================!
@@ -200,7 +230,8 @@ module rk4_driver
    !---------------------------------------------------------------------------------------!
    subroutine integrate_patch(csite,ipa,isi,ipy,ifm,integration_buff,wcurr_loss2atm        &
                              ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage          &
-                             ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff)
+                             ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff      &
+                             ,ecurr_latent)
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
       use ed_misc_coms       , only : dtlsm                ! ! intent(in)
@@ -237,6 +268,7 @@ module rk4_driver
       real                  , intent(out) :: ecurr_loss2drainage
       real                  , intent(out) :: wcurr_loss2runoff
       real                  , intent(out) :: ecurr_loss2runoff
+      real                  , intent(out) :: ecurr_latent
       !----- Local variables --------------------------------------------------------------!
       type(rk4patchtype)       , pointer    :: initp
       real(kind=8)                          :: hbeg
@@ -296,11 +328,11 @@ module rk4_driver
       !      Normalize canopy-atmosphere flux values.  These values are updated every      !
       ! dtlsm, so they must be normalized every time.                                      !
       !------------------------------------------------------------------------------------!
-      initp%upwp = rk4met%rhos*initp%upwp * dtrk4i
-      initp%tpwp = rk4met%rhos*initp%tpwp * dtrk4i
-      initp%qpwp = rk4met%rhos*initp%qpwp * dtrk4i
-      initp%cpwp = rk4met%rhos*initp%cpwp * dtrk4i
-      initp%wpwp = rk4met%rhos*initp%wpwp * dtrk4i
+      initp%upwp = initp%can_rhos * initp%upwp * dtrk4i
+      initp%tpwp = initp%can_rhos * initp%tpwp * dtrk4i
+      initp%qpwp = initp%can_rhos * initp%qpwp * dtrk4i
+      initp%cpwp = initp%can_rhos * initp%cpwp * dtrk4i
+      initp%wpwp = initp%can_rhos * initp%wpwp * dtrk4i
       
       
       !------------------------------------------------------------------------------------!
@@ -308,7 +340,7 @@ module rk4_driver
       !------------------------------------------------------------------------------------!
       call initp2modelp(tend-tbeg,initp,csite,ipa,isi,ipy,wcurr_loss2atm,ecurr_loss2atm    &
                        ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage           &
-                       ,wcurr_loss2runoff,ecurr_loss2runoff)
+                       ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent)
 
       return
    end subroutine integrate_patch
@@ -327,7 +359,7 @@ module rk4_driver
    !---------------------------------------------------------------------------------------!
    subroutine initp2modelp(hdid,initp,csite,ipa,isi,ipy,wbudget_loss2atm,ebudget_loss2atm  &
                           ,co2budget_loss2atm,wbudget_loss2drainage,ebudget_loss2drainage  &
-                          ,wbudget_loss2runoff,ebudget_loss2runoff)              
+                          ,wbudget_loss2runoff,ebudget_loss2runoff,ebudget_latent)              
       use rk4_coms             , only : rk4patchtype         & ! structure
                                       , rk4met               & ! intent(in)
                                       , rk4min_veg_temp      & ! intent(in)
@@ -362,6 +394,7 @@ module rk4_driver
       real              , intent(out) :: ebudget_loss2drainage
       real              , intent(out) :: wbudget_loss2runoff
       real              , intent(out) :: ebudget_loss2runoff
+      real              , intent(out) :: ebudget_latent
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)   , pointer     :: cpatch
       integer                         :: mould
@@ -390,6 +423,7 @@ module rk4_driver
       csite%can_temp(ipa)  = sngloff(initp%can_temp  ,tiny_offset)
       csite%can_shv(ipa)   = sngloff(initp%can_shv   ,tiny_offset)
       csite%can_co2(ipa)   = sngloff(initp%can_co2   ,tiny_offset)
+      csite%can_rhos(ipa)  = sngloff(initp%can_rhos  ,tiny_offset)
       csite%can_depth(ipa) = sngloff(initp%can_depth ,tiny_offset)
 
       csite%ustar(ipa)    = sngloff(initp%ustar   ,tiny_offset)
@@ -412,6 +446,7 @@ module rk4_driver
          ebudget_loss2atm      = sngloff(initp%ebudget_loss2atm     ,tiny_offset)
          ebudget_loss2drainage = sngloff(initp%ebudget_loss2drainage,tiny_offset)
          ebudget_loss2runoff   = sngloff(initp%ebudget_loss2runoff  ,tiny_offset)
+         ebudget_latent        = sngloff(initp%ebudget_latent       ,tiny_offset)
          wbudget_loss2atm      = sngloff(initp%wbudget_loss2atm     ,tiny_offset)
          wbudget_loss2drainage = sngloff(initp%wbudget_loss2drainage,tiny_offset)
          wbudget_loss2runoff   = sngloff(initp%wbudget_loss2runoff  ,tiny_offset)
@@ -442,6 +477,7 @@ module rk4_driver
          ebudget_loss2atm               = 0.
          ebudget_loss2drainage          = 0.
          ebudget_loss2runoff            = 0.
+         ebudget_latent                 = 0.
          wbudget_loss2atm               = 0.
          wbudget_loss2drainage          = 0.
          wbudget_loss2runoff            = 0.
@@ -616,7 +652,7 @@ module rk4_driver
       nsoil = csite%ntext_soil(nzg,ipa)
       nlsw1 = max(1, ksn)
       call ed_grndvap(ksn,nsoil,csite%soil_water(nzg,ipa),csite%soil_energy(nzg,ipa)       &
-                     ,csite%sfcwater_energy(nlsw1,ipa),sngl(rk4met%rhos)                   &
+                     ,csite%sfcwater_energy(nlsw1,ipa),csite%can_rhos(ipa)                 &
                      ,csite%can_shv(ipa),csite%ground_shv(ipa),csite%surface_ssh(ipa)      &
                      ,surface_temp,surface_fliq)
       return

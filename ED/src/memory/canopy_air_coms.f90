@@ -11,19 +11,17 @@ module canopy_air_coms
    !     Parameters used in Euler and Runge-Kutta.                                         !
    !---------------------------------------------------------------------------------------!
    !----- Exponential wind atenuation factor [dimensionless]. -----------------------------!
-   real ::   exar
+   real, parameter ::   exar =   2.5
    !----- Scaling factor of Tree Area Index, for computing wtveg [dimensionless]. ---------!
-   real ::   covr
+   real, parameter ::   covr =   2.16
    !----- Minimum Ustar [m/s]. ------------------------------------------------------------!
-   real :: ustmin
+   real, parameter :: ustmin =    .1
    !----- Minimum speed for stars [m/s]. --------------------------------------------------!
-   real ::  ubmin_stable !---- Stable conditions. -----------------------------------------!
-   real ::  ubmin_convec !---- Convective conditions. -------------------------------------!
+   real, parameter ::  ubmin =    .25 
    !----- Double precision version of these variables (for Runge-Kutta). ------------------!
-   real(kind=8) ::   exar8 
-   real(kind=8) :: ustmin8 
-   real(kind=8) ::  ubmin_stable8 
-   real(kind=8) ::  ubmin_convec8 
+   real(kind=8), parameter ::   exar8 =dble(  exar)
+   real(kind=8), parameter :: ustmin8 =dble(ustmin)
+   real(kind=8), parameter ::  ubmin8 =dble( ubmin)
    !=======================================================================================!
    !=======================================================================================!
 

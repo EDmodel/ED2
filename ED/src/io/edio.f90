@@ -549,8 +549,9 @@ subroutine spatial_averages
 
             !----- Site average of canopy thermodynamic state -----------------------------!
             cpoly%avg_can_temp(isi) = sum(csite%can_temp  * csite%area) * site_area_i
-            cpoly%avg_can_shv(isi)  = sum(csite%can_shv   * csite%area) * site_area_i
-            cpoly%avg_can_co2(isi)  = sum(csite%can_co2   * csite%area) * site_area_i
+            cpoly%avg_can_shv (isi) = sum(csite%can_shv   * csite%area) * site_area_i
+            cpoly%avg_can_co2 (isi) = sum(csite%can_co2   * csite%area) * site_area_i
+            cpoly%avg_can_rhos(isi) = sum(csite%can_rhos  * csite%area) * site_area_i
 
             !------------------------------------------------------------------------------!
             !   Site average of leaf properties.  Again, we average "extensive" properties !
@@ -635,6 +636,7 @@ subroutine spatial_averages
          cgrid%avg_can_temp(ipy)     = sum(cpoly%avg_can_temp     *cpoly%area)*poly_area_i
          cgrid%avg_can_shv(ipy)      = sum(cpoly%avg_can_shv      *cpoly%area)*poly_area_i
          cgrid%avg_can_co2(ipy)      = sum(cpoly%avg_can_co2      *cpoly%area)*poly_area_i
+         cgrid%avg_can_rhos(ipy)     = sum(cpoly%avg_can_rhos     *cpoly%area)*poly_area_i
 
          !---------------------------------------------------------------------------------!
          !    Similar to the site level, average mass, heat capacity and energy then find  !

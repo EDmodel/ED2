@@ -1,6 +1,6 @@
 !==========================================================================================!
 !==========================================================================================!
-! Subroutine odeint                                                                        !
+! Subroutine odeint                                                                     !
 !                                                                                          !
 !     This subroutine will drive the integration of several ODEs that drive the fast-scale !
 ! state variables.                                                                         !
@@ -41,7 +41,6 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm,integration_buff)
    type(patchtype)           , pointer     :: cpatch           ! Current patch
    integer                                 :: i                ! Step counter
    integer                                 :: ksn              ! # of snow/water layers
-   logical                                 :: reject_step      ! Non-sense enthalpy/mass
    real(kind=8)                            :: x                ! Elapsed time
    real(kind=8)                            :: h                ! Current delta-t attempt
    real(kind=8)                            :: hnext            ! Next delta-t
@@ -72,18 +71,9 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm,integration_buff)
    ! thermal equilibrium with top soil layer.                                              !
    !---------------------------------------------------------------------------------------!
    call redistribute_snow(integration_buff%initp, csite,ipa)
-   call update_diagnostic_vars(integration_buff%initp,csite,ipa,reject_step)
+   call update_diagnostic_vars(integration_buff%initp,csite,ipa)
 
-   if (reject_step) then
-     write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:  '                                  &
-                                              ,integration_buff%initp%can_enthalpy
-     write(unit=*,fmt='(a,1x,es12.4)') ' CAN_MVAP:      '                                  &
-                                              ,integration_buff%initp%can_mvap
-     write(unit=*,fmt='(a,1x,es12.4)') ' CAN_NCO2:      '                                  &
-                                              ,integration_buff%initp%can_nco2
-     call fatal_error('Initial mass or enthalpy makes no sense!'                           &
-                      ,'odeint','rk4_integ_utils')
-   end if
+
 
    !---------------------------------------------------------------------------------------!
    !     Create temporary patches.                                                         !
@@ -151,20 +141,8 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm,integration_buff)
                integration_buff%y%sfcwater_energy(ksn) =                                   &
                                      integration_buff%y%sfcwater_energy(ksn) - qwfree
 
-
                call redistribute_snow(integration_buff%y,csite,ipa)
-               call update_diagnostic_vars(integration_buff%y,csite,ipa,reject_step)
-
-               if (reject_step) then
-                  write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:  '                     &
-                                                           ,integration_buff%y%can_enthalpy
-                  write(unit=*,fmt='(a,1x,es12.4)') ' CAN_MVAP:      '                     &
-                                                           ,integration_buff%y%can_mvap
-                  write(unit=*,fmt='(a,1x,es12.4)') ' CAN_NCO2:      '                     &
-                                                           ,integration_buff%y%can_nco2
-                  call fatal_error('Initial mass or enthalpy makes no sense!'              &
-                                  ,'odeint','rk4_integ_utils')
-               end if
+               call update_diagnostic_vars(integration_buff%y,csite,ipa)
 
                !----- Compute runoff for output -------------------------------------------!
                if(fast_diagnostics) then
@@ -176,10 +154,6 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm,integration_buff)
                                              + sngloff(qwfree * dtrk4i,tiny_offset)
                   integration_buff%initp%wbudget_loss2runoff = wfreeb
                   integration_buff%initp%ebudget_loss2runoff = qwfree
-                  integration_buff%initp%ebudget_storage =                                 &
-                                   integration_buff%initp%ebudget_storage - qwfree
-                  integration_buff%initp%wbudget_storage =                                 &
-                                   integration_buff%initp%wbudget_storage - wfreeb
                end if
 
             else
@@ -229,14 +203,13 @@ end subroutine odeint
 ! is to ensure all variables are in double precision, so consistent with the buffer vari-  !
 ! ables.                                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine copy_met_2_rk4met(rhos,vels,atm_tmp,atm_shv,atm_co2,zoff,exner,pcpg,qpcpg,dpcpg &
-                            ,prss,geoht,lsl,lon,lat)
+subroutine copy_met_2_rk4met(vels,atm_tmp,atm_shv,atm_co2,zoff,exner,pcpg,qpcpg,dpcpg,prss &
+                            ,geoht,lsl,lon,lat)
    use rk4_coms   , only : rk4met ! ! structure
    use consts_coms, only : cpi8   ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer, intent(in) :: lsl
-   real   , intent(in) :: rhos
    real   , intent(in) :: vels
    real   , intent(in) :: atm_tmp
    real   , intent(in) :: atm_shv
@@ -255,7 +228,6 @@ subroutine copy_met_2_rk4met(rhos,vels,atm_tmp,atm_shv,atm_co2,zoff,exner,pcpg,q
    
    rk4met%lsl     = lsl
    !----- Converting to double precision. -------------------------------------------------!
-   rk4met%rhos      = dble(rhos   )
    rk4met%vels      = dble(vels   )
    rk4met%atm_tmp   = dble(atm_tmp)
    rk4met%atm_shv   = dble(atm_shv)
@@ -295,11 +267,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                    , nzs                   ! ! intent(in) 
    use ed_misc_coms         , only : fast_diagnostics      ! ! intent(in)
    use consts_coms          , only : cpi8                  & ! intent(in)
-                                   , mmdryi8               & ! intent(in)
                                    , ep8                   & ! intent(in)
-                                   , alvl8                 & ! intent(in)
-                                   , alvi8                 & ! intent(in)
-                                   , cp8                   & ! intent(in)
                                    , rdry8                 ! ! intent(in)
    use rk4_coms             , only : rk4patchtype          & ! structure
                                    , rk4met                & ! structure
@@ -310,6 +278,9 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                    , any_solvable          & ! intent(out)
                                    , zoveg                 & ! intent(out)
                                    , zveg                  & ! intent(out)
+                                   , wcapcan               & ! intent(out)
+                                   , wcapcani              & ! intent(out)
+                                   , hcapcani              & ! intent(out)
                                    , rk4water_stab_thresh  & ! intent(in)
                                    , rk4min_sfcwater_mass  ! ! intent(in)
    use ed_max_dims          , only : n_pft                 ! ! intent(in)
@@ -335,25 +306,8 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    targetp%can_temp  = dble(sourcesite%can_temp(ipa))
    targetp%can_shv   = dble(sourcesite%can_shv(ipa))
    targetp%can_co2   = dble(sourcesite%can_co2(ipa))
+   targetp%can_rhos  = dble(sourcesite%can_rhos(ipa))
    targetp%can_depth = dble(sourcesite%can_depth(ipa))
-   
-   !---------------------------------------------------------------------------------------!
-   !    During the course of this time step, we are imposing that both pressure and        !
-   ! density must remain constant.  This also implies the the canopy air virtual tempera-  !
-   ! ture needs to be constant during the integration of one time step.  Because we cannot !
-   ! force volume to remain constant (that would impose temperature to be constant in      !
-   ! order to satisfy the ideal gas law), we instead use the canopy air total enthalpy,    !
-   ! vapour mass and CO2 count as our prognostic variables, which will ease the total      !
-   ! enthalpy and mass.  Dry air could be also a prognostic variable, but we do not need   !
-   ! to because it is well mixed (dryair_star=0) and there is no source of dry air.        !
-   !   Now the tricky part... Enthalpy and mass are tracked only during one time step,     !
-   ! because we are not accounting for changes in pressure and density in between time     !
-   ! steps.                                                                                !
-   !---------------------------------------------------------------------------------------!
-   targetp%can_enthalpy = rk4met%rhos * targetp%can_depth                                  &
-                        * (cp8 * targetp%can_temp + alvl8 * targetp%can_shv)
-   targetp%can_mvap     = rk4met%rhos * targetp%can_depth * targetp%can_shv
-   targetp%can_nco2     = rk4met%rhos * targetp%can_depth * targetp%can_co2 * mmdryi8
 
    do k = rk4met%lsl, nzg
       targetp%soil_water(k)   = dble(sourcesite%soil_water(k,ipa))
@@ -497,9 +451,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%avg_sensible_ac    = dble(sourcesite%avg_sensible_ac(ipa)   )
       targetp%avg_sensible_tot   = dble(sourcesite%avg_sensible_tot(ipa)  )
 
-      targetp%ebudget_storage    = dble(sourcesite%ebudget_initialstorage(ipa)  )
-      targetp%wbudget_storage    = dble(sourcesite%wbudget_initialstorage(ipa)  )
-
       do k = rk4met%lsl, nzg
          targetp%avg_sensible_gg(k) = dble(sourcesite%avg_sensible_gg(k,ipa))
          targetp%avg_smoist_gg(k)   = dble(sourcesite%avg_smoist_gg(k,ipa)  )
@@ -544,10 +495,9 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
    !---------------------------------------------------------------------------------------!
 
 
-
-   rkp%can_enthalpy = rkp%can_enthalpy  + fac * inc%can_enthalpy
-   rkp%can_mvap     = rkp%can_mvap      + fac * inc%can_mvap
-   rkp%can_nco2     = rkp%can_nco2      + fac * inc%can_nco2
+   rkp%can_temp = rkp%can_temp  + fac * inc%can_temp
+   rkp%can_shv  = rkp%can_shv   + fac * inc%can_shv
+   rkp%can_co2  = rkp%can_co2   + fac * inc%can_co2
 
    do k=rk4met%lsl,nzg
       rkp%soil_water(k)       = rkp%soil_water(k)  + fac * inc%soil_water(k)
@@ -583,11 +533,10 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
 
       rkp%wbudget_loss2atm      = rkp%wbudget_loss2atm      + fac * inc%wbudget_loss2atm
       rkp%wbudget_loss2drainage = rkp%wbudget_loss2drainage + fac * inc%wbudget_loss2drainage
-      rkp%wbudget_storage       = rkp%wbudget_storage       + fac * inc%wbudget_storage
 
       rkp%ebudget_loss2atm      = rkp%ebudget_loss2atm      + fac * inc%ebudget_loss2atm
       rkp%ebudget_loss2drainage = rkp%ebudget_loss2drainage + fac * inc%ebudget_loss2drainage
-      rkp%ebudget_storage       = rkp%ebudget_storage       + fac * inc%ebudget_storage
+      rkp%ebudget_latent     = rkp%ebudget_latent     + fac * inc%ebudget_latent
 
       rkp%avg_carbon_ac      = rkp%avg_carbon_ac      + fac * inc%avg_carbon_ac
       
@@ -659,9 +608,9 @@ subroutine get_yscal(y, dy, htry, yscal, cpatch)
    !---------------------------------------------------------------------------------------!
 
   
-   yscal%can_enthalpy = abs(y%can_enthalpy) + abs(dy%can_enthalpy*htry) + tiny_offset
-   yscal%can_mvap     = abs(y%can_mvap)     + abs(dy%can_mvap*htry)     + tiny_offset
-   yscal%can_nco2     = abs(y%can_nco2)     + abs(dy%can_nco2*htry)     + tiny_offset
+   yscal%can_temp = abs(y%can_temp) + abs(dy%can_temp*htry) + tiny_offset
+   yscal%can_shv  = abs(y%can_shv)  + abs(dy%can_shv*htry)  + tiny_offset
+   yscal%can_co2  = abs(y%can_co2)  + abs(dy%can_co2*htry)  + tiny_offset
   
    yscal%upwp = max(abs(y%upwp) + abs(dy%upwp*htry),1.d0)
    yscal%wpwp = max(abs(y%wpwp) + abs(dy%wpwp*htry),1.d0)
@@ -785,20 +734,12 @@ subroutine get_yscal(y, dy, htry, yscal, cpatch)
                                 + abs(dy%wbudget_loss2atm*htry)
       end if
 
-      if (abs(y%ebudget_storage)  < tiny_offset .and.                        &
-          abs(dy%ebudget_storage) < tiny_offset) then
-         yscal%ebudget_storage      = huge_offset
+      if (abs(y%ebudget_latent)  < tiny_offset .and.                         &
+          abs(dy%ebudget_latent) < tiny_offset) then
+         yscal%ebudget_latent      = huge_offset
       else 
-         yscal%ebudget_storage = abs(y%ebudget_storage)                      &
-                               + abs(dy%ebudget_storage*htry)
-      end if
-
-      if (abs(y%wbudget_storage)  < tiny_offset .and.                        &
-          abs(dy%wbudget_storage) < tiny_offset) then
-         yscal%wbudget_storage      = huge_offset
-      else 
-         yscal%wbudget_storage = abs(y%wbudget_storage)                      &
-                               + abs(dy%wbudget_storage*htry)
+         yscal%ebudget_latent = abs(y%ebudget_latent)                        &
+                              + abs(dy%ebudget_latent*htry)
       end if
 
       !----------------------------------------------------------------------!
@@ -824,12 +765,11 @@ subroutine get_yscal(y, dy, htry, yscal, cpatch)
 
    else 
       yscal%co2budget_loss2atm      = huge_offset
-      yscal%wbudget_loss2drainage   = huge_offset
       yscal%ebudget_loss2atm        = huge_offset
       yscal%wbudget_loss2atm        = huge_offset
+      yscal%ebudget_latent          = huge_offset
       yscal%ebudget_loss2drainage   = huge_offset
-      yscal%ebudget_storage         = huge_offset
-      yscal%wbudget_storage         = huge_offset
+      yscal%wbudget_loss2drainage   = huge_offset
    end if
 
    return
@@ -883,15 +823,15 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    ! be our worst guess in the end.                                                        !
    !---------------------------------------------------------------------------------------!
    
-   err    = abs(yerr%can_enthalpy/yscal%can_enthalpy)
+   err    = abs(yerr%can_temp/yscal%can_temp)
    errmax = max(errmax,err)
    if(record_err .and. err > rk4eps) integ_err(1,1) = integ_err(1,1) + 1_8 
 
-   err    = abs(yerr%can_mvap/yscal%can_mvap)
+   err    = abs(yerr%can_shv/yscal%can_shv)
    errmax = max(errmax,err)
    if(record_err .and. err > rk4eps) integ_err(2,1) = integ_err(2,1) + 1_8 
 
-   err    = abs(yerr%can_nco2/yscal%can_nco2)
+   err    = abs(yerr%can_co2/yscal%can_co2)
    errmax = max(errmax,err)
    if(record_err .and. err > rk4eps) integ_err(3,1) = integ_err(3,1) + 1_8 
   
@@ -961,13 +901,11 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       errmax = max(errmax,err)
       err    = abs(yerr%wbudget_loss2atm/yscal%wbudget_loss2atm)
       errmax = max(errmax,err)
+      err    = abs(yerr%ebudget_latent/yscal%ebudget_latent)
+      errmax = max(errmax,err)
       err    = abs(yerr%ebudget_loss2drainage/yscal%ebudget_loss2drainage)
       errmax = max(errmax,err)
       err    = abs(yerr%wbudget_loss2drainage/yscal%wbudget_loss2drainage)
-      errmax = max(errmax,err)
-      err    = abs(yerr%ebudget_storage/yscal%ebudget_storage)
-      errmax = max(errmax,err)
-      err    = abs(yerr%wbudget_storage/yscal%wbudget_storage)
       errmax = max(errmax,err)
    end if
 
@@ -1017,18 +955,17 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    write(unit=*,fmt='(5(a,1x))')  'Name            ','   Max.Error','   Abs.Error'&
                                 &,'       Scale','Problem(T|F)'
 
-   errmax       = max(0.0,abs(yerr%can_enthalpy/yscal%can_enthalpy))
-   troublemaker = large_error(yerr%can_enthalpy,yscal%can_enthalpy)
-   write(unit=*,fmt=onefmt) 'CAN_ENTHALPY:',errmax,yerr%can_enthalpy,yscal%can_enthalpy    &
-                           ,troublemaker
+   errmax       = max(0.0,abs(yerr%can_temp/yscal%can_temp))
+   troublemaker = large_error(yerr%can_temp,yscal%can_temp)
+   write(unit=*,fmt=onefmt) 'CAN_TEMP:',errmax,yerr%can_temp,yscal%can_temp,troublemaker
 
-   errmax       = max(errmax,abs(yerr%can_mvap/yscal%can_mvap))
-   troublemaker = large_error(yerr%can_mvap,yscal%can_mvap)
-   write(unit=*,fmt=onefmt) 'CAN_MVAP:',errmax,yerr%can_mvap,yscal%can_mvap,troublemaker
+   errmax       = max(errmax,abs(yerr%can_shv/yscal%can_shv))
+   troublemaker = large_error(yerr%can_shv,yscal%can_shv)
+   write(unit=*,fmt=onefmt) 'CAN_SHV:',errmax,yerr%can_shv,yscal%can_shv,troublemaker
 
-   errmax = max(errmax,abs(yerr%can_nco2/yscal%can_nco2))
-   troublemaker = large_error(yerr%can_nco2,yscal%can_nco2)
-   write(unit=*,fmt=onefmt) 'CAN_NCO2:',errmax,yerr%can_nco2,yscal%can_nco2,troublemaker
+   errmax = max(errmax,abs(yerr%can_co2/yscal%can_co2))
+   troublemaker = large_error(yerr%can_co2,yscal%can_co2)
+   write(unit=*,fmt=onefmt) 'CAN_CO2:',errmax,yerr%can_co2,yscal%can_co2,troublemaker
 
   
    errmax = max(errmax,abs(yerr%virtual_heat/yscal%virtual_heat))
@@ -1131,6 +1068,13 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       write(unit=*,fmt=onefmt) 'H2OLOSS2ATM:',errmax,yerr%wbudget_loss2atm   &
                               ,yscal%wbudget_loss2atm,troublemaker
 
+      errmax = max(errmax                                                    &
+                  ,abs(yerr%ebudget_latent/yscal%ebudget_latent))
+      troublemaker = large_error(yerr%ebudget_latent                         &
+                                ,yscal%ebudget_latent)
+      write(unit=*,fmt=onefmt) 'EN_LATENT:',errmax,yerr%ebudget_latent       &
+                              ,yscal%ebudget_latent,troublemaker
+
       errmax = max(errmax,abs( yerr%ebudget_loss2drainage                    &
                              / yscal%ebudget_loss2drainage))
       troublemaker = large_error(yerr%ebudget_loss2drainage                  &
@@ -1146,20 +1090,6 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       write(unit=*,fmt=onefmt) 'H2ODRAINAGE:',errmax                         &
                               ,yerr%wbudget_loss2drainage                    &
                               ,yscal%wbudget_loss2drainage,troublemaker
-
-      errmax = max(errmax                                                    &
-                  ,abs(yerr%ebudget_storage/yscal%ebudget_storage))
-      troublemaker = large_error(yerr%ebudget_storage                        &
-                                ,yscal%ebudget_storage)
-      write(unit=*,fmt=onefmt) 'ENSTORAGE:',errmax,yerr%ebudget_storage      &
-                              ,yscal%ebudget_storage,troublemaker
-
-      errmax = max(errmax                                                    &
-                  ,abs(yerr%wbudget_storage/yscal%wbudget_storage))
-      troublemaker = large_error(yerr%wbudget_storage                        &
-                                ,yscal%wbudget_storage)
-      write(unit=*,fmt=onefmt) 'ENSTORAGE:',errmax,yerr%wbudget_storage      &
-                              ,yscal%wbudget_storage,troublemaker
    end if
 
    write(unit=*,fmt='(a)'  ) 
@@ -1207,7 +1137,7 @@ end function large_error
 ! ables, namely the temperature and liquid fraction of leaf water, soil layers and         !
 ! temporary snow/pond layers.                                                                      !
 !------------------------------------------------------------------------------------------!
-subroutine update_diagnostic_vars(initp, csite,ipa,reject_step)
+subroutine update_diagnostic_vars(initp, csite,ipa)
    use rk4_coms              , only : rk4met               & ! intent(in)
                                     , rk4min_sfcwater_mass & ! intent(in)
                                     , rk4patchtype         ! ! structure
@@ -1218,16 +1148,15 @@ subroutine update_diagnostic_vars(initp, csite,ipa,reject_step)
                                     , nzs                  ! ! intent(in)
    use therm_lib             , only : qwtk8                & ! subroutine
                                     , qtk8                 ! ! subroutine
-   use ed_therm_lib          , only : hmv2tqz8             ! ! subroutine
    use consts_coms           , only : wdns8                & ! intent(in)
-                                    , mmdryi8              ! ! intent(in)
+                                    , epim18               & ! intent(in)
+                                    , rdry8                ! ! intent(in)
    use canopy_struct_dynamics, only : can_whcap8           ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(rk4patchtype) , target      :: initp
-   type(sitetype)     , target      :: csite
-   integer            , intent(in)  :: ipa
-   logical            , intent(out) :: reject_step
+   type(rk4patchtype) , target     :: initp
+   type(sitetype)     , target     :: csite
+   integer            , intent(in) :: ipa
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)        , pointer :: cpatch
    integer                          :: ico
@@ -1236,13 +1165,12 @@ subroutine update_diagnostic_vars(initp, csite,ipa,reject_step)
    !---------------------------------------------------------------------------------------!
 
 
-   !----- Updating canopy temperature, mixing ratio, and depth. ---------------------------!
-   call hmv2tqz8(initp%can_enthalpy,initp%can_mvap,rk4met%prss,rk4met%rhos,initp%can_temp  &
-                ,initp%can_shv,initp%can_depth,reject_step)
-   if (reject_step) return
+   !----- Updating canopy density. --------------------------------------------------------!
+   initp%can_rhos = rk4met%prss                                                            &
+                  / (rdry8 * initp%can_temp * (1.d0 + epim18 * initp%can_shv) )
 
-   !----- Updating CO2 mixing ratio. ------------------------------------------------------!
-   initp%can_co2 = initp%can_nco2 / (rk4met%rhos * initp%can_depth * mmdryi8)
+   !----- Updating canopy capacities. -----------------------------------------------------!
+   call can_whcap8(csite,ipa,initp%can_rhos,initp%can_depth)
 
    !----- Updating soil temperature and liquid water fraction. ----------------------------!
    do k = rk4met%lsl, nzg - 1
@@ -1806,11 +1734,11 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             !----- Updating state variables -----------------------------------------------!
             initp%veg_water(ico)  = 0.d0
             initp%veg_energy(ico) = initp%veg_energy(ico)  + veg_qdew
-            initp%can_mvap        = initp%can_mvap         - veg_dew
-            initp%can_enthalpy    = initp%can_enthalpy     - veg_qdew
+            initp%can_shv         = initp%can_shv          - veg_dew * wcapcani
 
             !----- Updating output flux ---------------------------------------------------!
-            initp%avg_vapor_vc    = initp%avg_vapor_vc    - veg_dew * hdidi
+            initp%avg_vapor_vc    = initp%avg_vapor_vc   - veg_dew * hdidi
+            initp%ebudget_latent  = initp%ebudget_latent - veg_dew
          end if
 
          !----- Lastly we update leaf temperature and liquid fraction. --------------------!
@@ -1843,7 +1771,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
                             , patchtype         ! ! structure
    use grid_coms     , only : nzg               & ! intent(in)
                             , nzs               ! ! intent(in)
-   use ed_max_dims   , only : n_pft             ! ! intent(in)
+   use ed_max_dims      , only : n_pft             ! ! intent(in)
    use ed_misc_coms  , only : fast_diagnostics  ! ! intent(in)
 
    implicit none
@@ -1858,10 +1786,8 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%can_temp      = sourcep%can_temp
    targetp%can_shv       = sourcep%can_shv
    targetp%can_co2       = sourcep%can_co2
+   targetp%can_rhos      = sourcep%can_rhos
    targetp%can_depth     = sourcep%can_depth
-   targetp%can_enthalpy  = sourcep%can_enthalpy
-   targetp%can_mvap      = sourcep%can_mvap
-   targetp%can_nco2      = sourcep%can_nco2
 
    targetp%virtual_water = sourcep%virtual_water
    targetp%virtual_heat  = sourcep%virtual_heat
@@ -1926,10 +1852,9 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%co2budget_loss2atm     = sourcep%co2budget_loss2atm
       targetp%ebudget_loss2atm       = sourcep%ebudget_loss2atm
       targetp%ebudget_loss2drainage  = sourcep%ebudget_loss2drainage
-      targetp%ebudget_storage        = sourcep%ebudget_storage
+      targetp%ebudget_latent         = sourcep%ebudget_latent
       targetp%wbudget_loss2atm       = sourcep%wbudget_loss2atm
       targetp%wbudget_loss2drainage  = sourcep%wbudget_loss2drainage
-      targetp%wbudget_storage        = sourcep%wbudget_storage
       targetp%avg_carbon_ac          = sourcep%avg_carbon_ac
       targetp%avg_vapor_vc           = sourcep%avg_vapor_vc
       targetp%avg_dew_cg             = sourcep%avg_dew_cg  
@@ -2029,12 +1954,12 @@ subroutine print_csiteipa(csite, ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(8(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','         LAI'          &
+   write (unit=*,fmt='(9(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','         LAI'          &
                                    &,'        HTRY','     CAN_CO2','    CAN_TEMP'          &
-                                   &,'     CAN_SHV','   CAN_DEPTH'
-   write (unit=*,fmt='(8(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
+                                   &,'     CAN_SHV','    CAN_RHOS','   CAN_DEPTH'
+   write (unit=*,fmt='(9(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
          ,csite%lai(ipa),csite%htry(ipa),csite%can_co2(ipa),csite%can_temp(ipa)            &
-         ,csite%can_shv(ipa),csite%can_depth(ipa) 
+         ,csite%can_shv(ipa),csite%can_rhos(ipa),csite%can_depth(ipa) 
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
@@ -2138,7 +2063,6 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(a,1x,es12.4)') ' CO2  mixing ratio  : ',rk4met%atm_co2
    write (unit=*,fmt='(a,1x,es12.4)') ' Pressure           : ',rk4met%prss
    write (unit=*,fmt='(a,1x,es12.4)') ' Exner function     : ',rk4met%exner
-   write (unit=*,fmt='(a,1x,es12.4)') ' Air density        : ',rk4met%rhos
    write (unit=*,fmt='(a,1x,es12.4)') ' Wind speed         : ',rk4met%vels
    write (unit=*,fmt='(a,1x,es12.4)') ' Height             : ',rk4met%geoht
    write (unit=*,fmt='(a,1x,es12.4)') ' Precip. mass  flux : ',rk4met%pcpg
@@ -2173,13 +2097,11 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(a)'  ) ' '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(10(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','   PATCH_LAI'         &
-                                     ,'     CAN_CO2','    CAN_TEMP','     CAN_SHV'         &
-                                     ,'   CAN_DEPTH','    CAN_NCO2','CAN_ENTHALPY'         &
-                                     ,'    CAN_MVAP'    
-   write (unit=*,fmt='(10(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)         &
-         ,csite%lai(ipa),y%can_co2,y%can_temp,y%can_shv,y%can_depth,y%can_nco2             &
-         ,y%can_enthalpy,y%can_mvap
+   write (unit=*,fmt='(8(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','   PATCH_LAI'          &
+                                    ,'     CAN_CO2','    CAN_TEMP','     CAN_SHV'          &
+                                    ,'    CAN_RHOS','   CAN_DEPTH'
+   write (unit=*,fmt='(8(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
+         ,csite%lai(ipa),y%can_co2,y%can_temp,y%can_shv,y%can_rhos,y%can_depth
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 

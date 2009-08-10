@@ -23,10 +23,8 @@ module rk4_coms
       real(kind=8)                        :: can_temp     ! Temperature          [       K]
       real(kind=8)                        :: can_shv      ! Specific humidity    [   kg/kg]
       real(kind=8)                        :: can_co2      ! CO_2                 [µmol/mol]
-      real(kind=8)                        :: can_enthalpy ! Enthalpy             [    J/m²]
-      real(kind=8)                        :: can_mvap     ! Vapour mass          [   kg/m²]
-      real(kind=8)                        :: can_nco2     ! # of CO_2 molecules  [ µmol/m²]
       real(kind=8)                        :: can_depth    ! Canopy depth         [       m]
+      real(kind=8)                        :: can_rhos     ! Canopy air density   [   kg/m³]
       
       !----- Soil variables. --------------------------------------------------------------!
       real(kind=8), dimension(:), pointer :: soil_energy  ! Internal energy       [   J/m³]
@@ -126,11 +124,10 @@ module rk4_coms
       real(kind=8) :: ebudget_loss2atm
       real(kind=8) :: ebudget_loss2drainage
       real(kind=8) :: ebudget_loss2runoff
-      real(kind=8) :: ebudget_storage
+      real(kind=8) :: ebudget_latent
       real(kind=8) :: wbudget_loss2atm
       real(kind=8) :: wbudget_loss2drainage
       real(kind=8) :: wbudget_loss2runoff
-      real(kind=8) :: wbudget_storage
    end type rk4patchtype
    !---------------------------------------------------------------------------------------!
 
@@ -332,9 +329,6 @@ module rk4_coms
    real(kind=8) :: rk4max_veg_temp      ! Maximum leaf      temperature         [        K]
    real(kind=8) :: rk4min_sfcw_temp     ! Minimum snow/pond temperature         [        K]
    real(kind=8) :: rk4max_sfcw_temp     ! Maximum snow/pond temperature         [        K]
-   !----- The following variables are dimensionless, to be scaled with veg_height. --------!
-   real(kind=8) :: rk4min_can_depth     ! Minimum canopy depth                  [        m]
-   real(kind=8) :: rk4max_can_depth     ! Maximum canopy depth                  [        m]
    !----- The following variables have units different from the actual value. -------------!
    real(kind=8) :: rk4min_veg_lwater    ! Maximum leaf      surface water mass  [kg/m²leaf]
    real(kind=8) :: rk4min_sfcw_moist    ! Maximum snow/pond water mass          [m³/m³soil]
@@ -524,20 +518,16 @@ module rk4_coms
 
       y%co2budget_loss2atm             = 0.d0
       y%ebudget_loss2atm               = 0.d0
-      y%ebudget_storage                = 0.d0
+      y%ebudget_latent                 = 0.d0
       y%ebudget_loss2drainage          = 0.d0
       y%ebudget_loss2runoff            = 0.d0
       y%wbudget_loss2atm               = 0.d0
       y%wbudget_loss2drainage          = 0.d0
       y%wbudget_loss2runoff            = 0.d0
-      y%wbudget_storage                = 0.d0
      
       y%can_temp                       = 0.d0
       y%can_shv                        = 0.d0
       y%can_co2                        = 0.d0
-      y%can_enthalpy                   = 0.d0
-      y%can_mvap                       = 0.d0
-      y%can_nco2                       = 0.d0
       y%can_depth                      = 0.d0
       y%virtual_water                  = 0.d0
       y%virtual_heat                   = 0.d0
