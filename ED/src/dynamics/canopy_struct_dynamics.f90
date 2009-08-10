@@ -1166,10 +1166,11 @@ module canopy_struct_dynamics
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars(theta_atm,shv_atm,co2_atm,theta_can,shv_can,co2_can,zref,d0,uref    &
                       ,rough,ustar,tstar,qstar,cstar,fm)
-      use consts_coms     , only : grav   & ! intent(in)
-                                 , vonk   ! ! intent(in)
-      use canopy_air_coms , only : ustmin & ! intent(in)
-                                 , ubmin  ! ! intent(in)
+      use consts_coms     , only : grav          & ! intent(in)
+                                 , vonk          ! ! intent(in)
+      use canopy_air_coms , only : ustmin        & ! intent(in)
+                                 , ubmin_stable  & ! intent(in)
+                                 , ubmin_convec  ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)  :: theta_atm ! Above canopy air pot. temperature        [        K]
@@ -1204,22 +1205,30 @@ module canopy_struct_dynamics
       real, parameter   :: csh = 5.0 !
       real, parameter   :: d   = 5.0 !
       !------------------------------------------------------------------------------------!
-
-      vels_pat = max(uref,ubmin)
-
-      !----- Make the log profile (constant shear assumption). ----------------------------!
-      a2 = (vonk / log((zref-d0)/rough)) ** 2.
-      c1 = a2 * vels_pat
-
-      ri = grav * (zref-d0) * (theta_atm - theta_can)                                      &
-         / (0.5 * (theta_atm + theta_can) * vels_pat * vels_pat )
-     
       if (theta_atm - theta_can > 0.0) then
          !----- Stable case ---------------------------------------------------------------!
+         vels_pat = max(uref,ubmin_stable)
+
+         !----- Make the log profile (constant shear assumption). -------------------------!
+         a2 = (vonk / log((zref-d0)/rough)) ** 2.
+         c1 = a2 * vels_pat
+
+         ri = grav * (zref-d0) * (theta_atm - theta_can)                                   &
+            / (0.5 * (theta_atm + theta_can) * vels_pat * vels_pat )
+     
          fm = 1.0 / (1.0 + (2.0 * b * ri / sqrt(1.0 + d * ri)))
          fh = 1.0 / (1.0 + (3.0 * b * ri * sqrt(1.0 + d * ri)))
       else
-         !----- Unstable case -------------------------------------------------------------!
+         !----- Convective case -----------------------------------------------------------!
+         vels_pat = max(uref,ubmin_convec)
+
+         !----- Make the log profile (constant shear assumption). -------------------------!
+         a2 = (vonk / log((zref-d0)/rough)) ** 2.
+         c1 = a2 * vels_pat
+
+         ri = grav * (zref-d0) * (theta_atm - theta_can)                                   &
+            / (0.5 * (theta_atm + theta_can) * vels_pat * vels_pat )
+     
          c2 = b * a2 * sqrt( (zref-d0)/rough * (abs(ri)))
          cm = csm * c2
          ch = csh * c2
@@ -1256,10 +1265,11 @@ module canopy_struct_dynamics
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars8(theta_atm,shv_atm,co2_atm,theta_can,shv_can,co2_can,zref,d0,uref   &
                        ,rough,ustar,tstar,qstar,cstar,fm)
-      use consts_coms     , only : grav8   & ! intent(in)
-                                 , vonk8   ! ! intent(in)
-      use canopy_air_coms , only : ustmin8 & ! intent(in)
-                                 , ubmin8  ! ! intent(in)
+      use consts_coms     , only : grav8         & ! intent(in)
+                                 , vonk8         ! ! intent(in)
+      use canopy_air_coms , only : ubmin_stable8 & ! intent(in)
+                                 , ubmin_convec8 & ! intent(in)
+                                 , ustmin8       ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real(kind=8), intent(in)  :: theta_atm ! Above canopy air pot. temperature [        K]
@@ -1295,21 +1305,31 @@ module canopy_struct_dynamics
       real(kind=8), parameter   :: d   = 5.0d0 !
       !------------------------------------------------------------------------------------!
 
-      vels_pat = max(uref,ubmin8)
-
-      !----- Make the log profile (constant shear assumption). ----------------------------!
-      a2 = (vonk8 / log((zref-d0)/rough)) ** 2.
-      c1 = a2 * vels_pat
-
-      ri = grav8 * (zref-d0) * (theta_atm - theta_can)                                     &
-         / (5.d-1 * (theta_atm + theta_can) * vels_pat * vels_pat )
      
       if (theta_atm - theta_can > 0.d0) then
          !----- Stable case ---------------------------------------------------------------!
+         vels_pat = max(uref,ubmin_stable8)
+
+         !----- Make the log profile (constant shear assumption). -------------------------!
+         a2 = (vonk8 / log((zref-d0)/rough)) ** 2.
+         c1 = a2 * vels_pat
+
+         ri = grav8 * (zref-d0) * (theta_atm - theta_can)                                  &
+            / (5.d-1 * (theta_atm + theta_can) * vels_pat * vels_pat )
+
          fm = 1.d0 / (1.d0 + (2.d0 * b * ri / sqrt(1.d0 + d * ri)))
          fh = 1.d0 / (1.d0 + (3.d0 * b * ri * sqrt(1.d0 + d * ri)))
       else
-         !----- Unstable case -------------------------------------------------------------!
+         !----- Convective case -----------------------------------------------------------!
+         vels_pat = max(uref,ubmin_convec8)
+
+         !----- Make the log profile (constant shear assumption). -------------------------!
+         a2 = (vonk8 / log((zref-d0)/rough)) ** 2.
+         c1 = a2 * vels_pat
+
+         ri = grav8 * (zref-d0) * (theta_atm - theta_can)                                  &
+            / (5.d-1 * (theta_atm + theta_can) * vels_pat * vels_pat )
+
          c2 = b * a2 * sqrt( (zref-d0)/rough * (abs(ri)))
          cm = csm * c2
          ch = csh * c2

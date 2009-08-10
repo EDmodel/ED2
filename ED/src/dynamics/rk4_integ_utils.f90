@@ -297,6 +297,8 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    use consts_coms          , only : cpi8                  & ! intent(in)
                                    , mmdryi8               & ! intent(in)
                                    , ep8                   & ! intent(in)
+                                   , alvl8                 & ! intent(in)
+                                   , alvi8                 & ! intent(in)
                                    , cp8                   & ! intent(in)
                                    , rdry8                 ! ! intent(in)
    use rk4_coms             , only : rk4patchtype          & ! structure
@@ -348,7 +350,8 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    ! because we are not accounting for changes in pressure and density in between time     !
    ! steps.                                                                                !
    !---------------------------------------------------------------------------------------!
-   targetp%can_enthalpy = rk4met%rhos * targetp%can_depth * cp8 * targetp%can_temp
+   targetp%can_enthalpy = rk4met%rhos * targetp%can_depth                                  &
+                        * (cp8 * targetp%can_temp + alvl8 * targetp%can_shv)
    targetp%can_mvap     = rk4met%rhos * targetp%can_depth * targetp%can_shv
    targetp%can_nco2     = rk4met%rhos * targetp%can_depth * targetp%can_co2 * mmdryi8
 

@@ -268,7 +268,16 @@ subroutine init_can_air_params()
                              , rb_slope              & ! intent(out) 
                              , veg_height_min        & ! intent(out) 
                              , minimum_canopy_depth  & ! intent(out) 
-                             , minimum_canopy_depth8 ! ! intent(out)
+                             , minimum_canopy_depth8 & ! intent(out)
+                             , exar                  & ! intent(out)
+                             , covr                  & ! intent(out)
+                             , ustmin                & ! intent(out)
+                             , ubmin_stable          & ! intent(out)
+                             , ubmin_convec          & ! intent(out)
+                             , exar8                 & ! intent(out)
+                             , ustmin8               & ! intent(out)
+                             , ubmin_stable8         & ! intent(out)
+                             , ubmin_convec8         ! ! intent(out)
 
    !---------------------------------------------------------------------------------------!
    !    Minimum leaf water content to be considered.  Values smaller than this will be     !
@@ -306,6 +315,22 @@ subroutine init_can_air_params()
    ! similar things.                                                                       !
    !---------------------------------------------------------------------------------------!
    veg_height_min = 1.0 ! was 0.2
+
+   !---------------------------------------------------------------------------------------!
+   !     Assigning some wind related variables.                                            !
+   !---------------------------------------------------------------------------------------!
+   exar         = 2.5    !----- Exponential wind atenuation factor [dimensionless]. -------!
+   covr         = 2.16   !----- Scaling factor of Tree Area Index, for computing wtveg. ---!
+   ustmin       = 0.1    !----- Minimum Ustar [m/s]. --------------------------------------!
+   ubmin_stable = 0.25   !----- Minimum speed for stars when it's stable [m/s]. -----------!
+   ubmin_convec = 1.00   !----- Minimum speed for stars when it's convective [m/s]. -------!
+   !----- Double precision version of these variables. ------------------------------------!
+   exar8         = dble(exar        )
+   covr8         = dble(covr        )
+   ustmin8       = dble(ustmin      )
+   ubmin_stable8 = dble(ubmin_stable)
+   ubmin_convec8 = dble(ubmin_convec)
+
 
    return
 end subroutine init_can_air_params
@@ -1410,10 +1435,10 @@ subroutine init_rk4_params()
    ! changing them...                                                                      !
    !---------------------------------------------------------------------------------------!
    maxstp      = 100000000    ! Maximum number of intermediate steps. 
-   rk4eps      = 1.d-3        ! The desired accuracy.
+   rk4eps      = 1.d-2        ! The desired accuracy.
    rk4epsi     = 1.d0/rk4eps  ! The inverse of desired accuracy.
    hmin        = 1.d-13       ! The minimum step size.
-   print_diags = .false.      ! Flag to print the diagnostic check.
+   print_diags = .false.       ! Flag to print the diagnostic check.
    checkbudget = .true.       ! Flag to check CO2, water, and energy budgets every time
                               !     step and stop the run in case any of these budgets 
                               !     doesn't close.
@@ -1441,8 +1466,8 @@ subroutine init_rk4_params()
    ! a small number.  Don't set it to zero, otherwise you may have FPE issues.             !
    !---------------------------------------------------------------------------------------!
    hcapveg_ref         = 3.0d-3  ! Reference heat capacity value                   [J/m³/K]
-   min_height          = 1.5d0  ! Minimum vegetation height                       [     m]
-   hcapveg_stab_thresh = 2.5d1  ! Minimum stable patch-level heat capacity        [J/m²/K]
+   min_height          = 1.5d0  ! Minimum vegetation height                        [     m]
+   hcapveg_stab_thresh = 2.5d1  ! Minimum stable patch-level heat capacity         [J/m²/K]
    !----- The minimum cohort-level heat capacity that we can solve [J/m²/K] ---------------!
    hcapveg_coh_min     = 4.5e-1 ! 1.d-4 * hcapveg_ref * min_height 
    !---------------------------------------------------------------------------------------!

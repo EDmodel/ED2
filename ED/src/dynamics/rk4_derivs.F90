@@ -76,7 +76,7 @@ end subroutine leaf_derivs
 !==========================================================================================!
 !==========================================================================================!
 subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
-   use ed_max_dims             , only : nzgmax               & ! intent(in)
+   use ed_max_dims          , only : nzgmax               & ! intent(in)
                                    , nzsmax               ! ! intent(in)
    use consts_coms          , only : alvl8                & ! intent(in)
                                    , cliqvlme8            & ! intent(in)
@@ -697,9 +697,9 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
 
    !----- Finding the appropriate energy transfer due to water flux. ----------------------!
    if (wflxac > 0.d0) then
-      qwflxac = wflxac * cp8 * rk4met%atm_tmp ! Free atm entering canopy.
+      qwflxac = wflxac * (cp8 * rk4met%atm_tmp  + alvl8 ) ! Free atm entering canopy.
    else
-      qwflxac = wflxac * cp8 * initp%can_temp ! Canopy air leaving canopy.
+      qwflxac = wflxac * (cp8 * initp%can_temp  + alvl8 ) ! Canopy air leaving canopy.
    end if
 
    !---------------------------------------------------------------------------------------!
@@ -860,15 +860,14 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
          ! will be scaled by the fraction of liquid water.                                 !
          !---------------------------------------------------------------------------------!
          wflxgc = max( 0.d0, (initp%ground_shv - initp%can_shv) * rdi)
+!         wflxgc = max( 0.d0, (initp%surface_ssh - initp%can_shv) * rdi)
          qwflxgc = wflxgc * ( alvi8 - initp%surface_fliq * alli8)
       else 
          wflxgc  = 0.d0
          qwflxgc = 0.d0
       end if
    end if
-      !---------------------------------------------------------------------------------------!
-
-
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
