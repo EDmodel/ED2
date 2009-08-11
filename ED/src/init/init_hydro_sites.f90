@@ -246,11 +246,6 @@ subroutine read_site_file(cgrid)
          deallocate(soilclass)
       end if
 
-      !! initialize phenology variables
-      cpoly%elongation_factor(:,:) = 1.0
-      cpoly%gee_phen_delay(:,:) = 1.0
-
-
       !adjust areas
       !assume that if area_sum ~ 1 need to renormalize terrestrial
       if( area_sum > 0.995d+0) then

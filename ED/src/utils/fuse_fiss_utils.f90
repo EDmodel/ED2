@@ -1692,10 +1692,6 @@ module fuse_fiss_utils
                                       ( csite%avg_sensible_vc(donp)   * csite%area(donp)   &
                                       + csite%avg_sensible_vc(recp)   * csite%area(recp) )  
 
-      csite%avg_sensible_2cas(recp)   = newareai *                                         &
-                                      ( csite%avg_sensible_2cas(donp) * csite%area(donp)   &
-                                      + csite%avg_sensible_2cas(recp) * csite%area(recp) )  
-
       csite%avg_qwshed_vg(recp)       = newareai *                                         &
                                       ( csite%avg_qwshed_vg(donp)     * csite%area(donp)   &
                                       + csite%avg_qwshed_vg(recp)     * csite%area(recp) )  
@@ -1708,17 +1704,9 @@ module fuse_fiss_utils
                                       ( csite%avg_sensible_ac(donp)   * csite%area(donp)   &
                                       + csite%avg_sensible_ac(recp)   * csite%area(recp) )  
 
-      csite%avg_sensible_tot(recp)    = newareai *                                         &
-                                      ( csite%avg_sensible_tot(donp)  * csite%area(donp)   &
-                                      + csite%avg_sensible_tot(recp)  * csite%area(recp) )  
-
       csite%avg_runoff_heat(recp)     = newareai *                                         &
                                       ( csite%avg_runoff_heat(donp)   * csite%area(donp)   &
                                       + csite%avg_runoff_heat(recp)   * csite%area(recp) )  
-
-      csite%avg_heatstor_veg(recp)    = newareai *                                         &
-                                      ( csite%avg_heatstor_veg(donp)  * csite%area(donp)   &
-                                      + csite%avg_heatstor_veg(recp)  * csite%area(recp) )  
 
       csite%avg_veg_energy(recp)      = newareai *                                         &
                                       ( csite%avg_veg_energy(donp)    * csite%area(donp)   &

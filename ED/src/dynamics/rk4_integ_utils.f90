@@ -445,11 +445,9 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%avg_drainage       = dble(sourcesite%avg_drainage(ipa)      )
       targetp%avg_netrad         = dble(sourcesite%avg_netrad(ipa)        )
       targetp%avg_sensible_vc    = dble(sourcesite%avg_sensible_vc(ipa)   )
-      targetp%avg_sensible_2cas  = dble(sourcesite%avg_sensible_2cas(ipa) )
       targetp%avg_qwshed_vg      = dble(sourcesite%avg_qwshed_vg(ipa)     )
       targetp%avg_sensible_gc    = dble(sourcesite%avg_sensible_gc(ipa)   )
       targetp%avg_sensible_ac    = dble(sourcesite%avg_sensible_ac(ipa)   )
-      targetp%avg_sensible_tot   = dble(sourcesite%avg_sensible_tot(ipa)  )
 
       do k = rk4met%lsl, nzg
          targetp%avg_sensible_gg(k) = dble(sourcesite%avg_sensible_gg(k,ipa))
@@ -546,11 +544,9 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       rkp%avg_drainage       = rkp%avg_drainage       + fac * inc%avg_drainage
       rkp%avg_netrad         = rkp%avg_netrad         + fac * inc%avg_netrad
       rkp%avg_sensible_vc    = rkp%avg_sensible_vc    + fac * inc%avg_sensible_vc
-      rkp%avg_sensible_2cas  = rkp%avg_sensible_2cas  + fac * inc%avg_sensible_2cas
       rkp%avg_qwshed_vg      = rkp%avg_qwshed_vg      + fac * inc%avg_qwshed_vg
       rkp%avg_sensible_gc    = rkp%avg_sensible_gc    + fac * inc%avg_sensible_gc
       rkp%avg_sensible_ac    = rkp%avg_sensible_ac    + fac * inc%avg_sensible_ac
-      rkp%avg_sensible_tot   = rkp%avg_sensible_tot   + fac * inc%avg_sensible_tot
 
       do k=rk4met%lsl,nzg
          rkp%avg_sensible_gg(k)  = rkp%avg_sensible_gg(k)  + fac * inc%avg_sensible_gg(k)
@@ -1692,11 +1688,9 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%avg_evap           = sourcep%avg_evap   
       targetp%avg_netrad         = sourcep%avg_netrad   
       targetp%avg_sensible_vc    = sourcep%avg_sensible_vc  
-      targetp%avg_sensible_2cas  = sourcep%avg_sensible_2cas
       targetp%avg_qwshed_vg      = sourcep%avg_qwshed_vg    
       targetp%avg_sensible_gc    = sourcep%avg_sensible_gc  
       targetp%avg_sensible_ac    = sourcep%avg_sensible_ac  
-      targetp%avg_sensible_tot   = sourcep%avg_sensible_tot 
 
       do k=rk4met%lsl,nzg
          targetp%avg_sensible_gg(k) = sourcep%avg_sensible_gg(k)

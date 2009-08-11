@@ -410,11 +410,9 @@ module rk4_driver
          csite%avg_drainage(ipa)         =sngloff(initp%avg_drainage      ,tiny_offset)
          csite%avg_netrad(ipa)           =sngloff(initp%avg_netrad        ,tiny_offset)
          csite%avg_sensible_vc(ipa)      =sngloff(initp%avg_sensible_vc   ,tiny_offset)
-         csite%avg_sensible_2cas(ipa)    =sngloff(initp%avg_sensible_2cas ,tiny_offset)
          csite%avg_qwshed_vg(ipa)        =sngloff(initp%avg_qwshed_vg     ,tiny_offset)
          csite%avg_sensible_gc(ipa)      =sngloff(initp%avg_sensible_gc   ,tiny_offset)
          csite%avg_sensible_ac(ipa)      =sngloff(initp%avg_sensible_ac   ,tiny_offset)
-         csite%avg_sensible_tot(ipa)     =sngloff(initp%avg_sensible_tot  ,tiny_offset)
          csite%avg_carbon_ac(ipa)        =sngloff(initp%avg_carbon_ac     ,tiny_offset)
          do k = rk4met%lsl, nzg
             csite%avg_sensible_gg(k,ipa) =sngloff(initp%avg_sensible_gg(k),tiny_offset)

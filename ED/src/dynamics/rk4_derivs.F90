@@ -968,7 +968,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
                    * (initp%veg_temp(ico) - initp%can_temp)
 
          !---------------------------------------------------------------------------------!
-         !     Calculate interception by leaves. Added RGK 11-2008, comments welcomed      !
+         !     Calculate interception by leaves.                                           !
          !                                                                                 !
          !  wflxvc accounts for evaporation and dew formation.  If the leaf has more water !
          ! than the carrying capacity, then it must flux all precipitation and dew. The    !
@@ -1070,14 +1070,12 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
       dinitp%avg_carbon_ac      =   cflxac
 
       dinitp%avg_sensible_vc   = hflxvc_tot                     ! Sens. heat,  Leaf->Canopy
-      dinitp%avg_sensible_2cas = hflxgc+hflxac+hflxvc_tot       ! Sens. heat,  All ->Canopy
       dinitp%avg_vapor_vc      = wflxvc_tot                     ! Lat.  heat,  Leaf->Canopy
       dinitp%avg_sensible_gc   = hflxgc                         ! Sens. heat,  Gnd ->Canopy
       dinitp%avg_sensible_ac   = hflxac / rk4met%exner          ! Sens. heat,  Atmo->Canopy
       dinitp%avg_vapor_ac      = wflxac                         ! Lat.  heat,  Atmo->Canopy
       dinitp%avg_transp        = transp_tot                     ! Transpiration
-      dinitp%avg_evap          = qwflxgc-qdewgndflx+qwflxvc_tot ! Evaporation/Condensation
-      dinitp%avg_sensible_tot  = (hflxgc + hflxvc_tot)          ! Total Sensible heat
+      dinitp%avg_evap          = wflxgc-dewgndflx+wflxvc_tot ! Evaporation/Condensation
       dinitp%avg_netrad = dble(csite%rlong_g(ipa)) + dble(csite%rlong_s(ipa))              &
                         + dble(csite%rshort_g(ipa))
       do k=1,initp%nlev_sfcwater
