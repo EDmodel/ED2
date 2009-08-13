@@ -293,7 +293,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
       theiv0(k) = thetaeiv(thil0(k),p0(k),t0(k),qvap0(k),qtot0(k))
 
       !------ 5. CO2 mixing ratio. --------------------------------------------------------!
-      co20(k)   = max(0.,co2p(kr))
+      co20(k)   = co2p(kr)
       !------ 6. Turbulent kinetic energy [m²/s²] -----------------------------------------!
       tke0(k)     = tkep(kr)
       !------ 7. Vertical velocity in terms of pressure, or Lagrangian dp/dt [ Pa/s] ------!
@@ -401,7 +401,7 @@ end subroutine initial_thermo_grell
 !   This subroutine intialises the wind information and the previous downdraft mass flux,  !
 ! which may affect current convection depending on the dynamic control chosen.             !
 !------------------------------------------------------------------------------------------!
-subroutine initial_winds_grell(comp_down,m1,m2,m3,m4,i,j,jdim,l,last_dnmf,ua,va,prev_dnmf)
+subroutine initial_winds_grell(comp_down,m1,m2,m3,i,j,jdim,last_dnmf,ua,va,prev_dnmf)
 
    use mem_scratch_grell, only: &
             mkx                 & ! intent(in)  - Number of Grell levels.
@@ -418,11 +418,10 @@ subroutine initial_winds_grell(comp_down,m1,m2,m3,m4,i,j,jdim,l,last_dnmf,ua,va,
    integer                      , intent(in)  :: m1        ! Number of z points
    integer                      , intent(in)  :: m2        ! Number of x points
    integer                      , intent(in)  :: m3        ! Number of y points
-   integer                      , intent(in)  :: m4        ! Number of cloud sizes
-   integer                      , intent(in)  :: i,j,l     ! Current x, y & cloud position
+   integer                      , intent(in)  :: i,j       ! Current x, y & cloud position
    integer                      , intent(in)  :: jdim      ! Dimension in y
    logical                      , intent(in)  :: comp_down ! Computing downdrafts (T/F)
-   real   , dimension(m2,m3,m4) , intent(in)  :: last_dnmf ! Last time downdraft
+   real   , dimension(m2,m3)    , intent(in)  :: last_dnmf ! Last time downdraft
    real   , dimension(m1,m2,m3) , intent(in)  :: ua        ! Zonal wind
    real   , dimension(m1,m2,m3) , intent(in)  :: va        ! Meridional wind
    real                         , intent(out) :: prev_dnmf ! Previous downdraft
@@ -433,7 +432,7 @@ subroutine initial_winds_grell(comp_down,m1,m2,m3,m4,i,j,jdim,l,last_dnmf,ua,va,
 
    
    !------ Initializing scalars -----------------------------------------------------------!
-   prev_dnmf = last_dnmf(i,j,l)
+   prev_dnmf = last_dnmf(i,j)
    !---------------------------------------------------------------------------------------!
    !    Transferring the values from BRAMS to Grell's levels, remembering that Grell's     !
    ! grid goes from 1 to m1-1.                                                             !
@@ -591,7 +590,8 @@ end subroutine grell_draft_area
 ! This is currently used only for CATT.                                                    !
 !------------------------------------------------------------------------------------------!
 subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_eff          &
-                              ,maxens_cap,inv_ensdim,closure_type,ee,sgrell1_3d,sgrell2_3d)
+                              ,maxens_cap,inv_ensdim,closure_type,ierr_cap,upmf_ens        &
+                              ,sgrell1_3d,sgrell2_3d)
 
    use rconstants  , only : hr_sec
    use mem_ensemble, only : ensemble_vars ! ! type
@@ -610,8 +610,8 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
    integer            , intent(in)    :: maxens_eff   ! # of precip. efficiencies
    real               , intent(in)    :: inv_ensdim   ! 1/(maxens_dyn*maxens_lsf*maxens_eff)
    character(len=2)   , intent(in)    :: closure_type ! Which dynamic control
-   type(ensemble_vars), intent(in)    :: ee           ! The ensemble structure
-
+   integer, dimension(maxens_cap), intent(in) :: ierr_cap
+   real, dimension(maxens_dyn,maxens_lsf,maxens_eff,maxens_cap), intent(in) :: upmf_ens
    real, dimension(m1), intent(inout) :: sgrell1_3d ! Lots of things, depends on the index
    real, dimension(m1), intent(inout) :: sgrell2_3d ! Lots of things, depends on the index
    
@@ -647,7 +647,7 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
    !---------------------------------------------------------------------------------------!
 
 
-   if (all(ee%ierr_cap(:) /= 0)) then
+   if (all(ierr_cap(:) /= 0)) then
       select case (icld)
       case (1)
          sgrell1_3d = 0.
@@ -685,7 +685,7 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
    !   The mean for each cap_maxs member                                                   !
    !---------------------------------------------------------------------------------------!
    do imbp=1,maxens_cap
-      upmf_ave_cap(icap) = sum(ee%upmf_ens(:,:,:,icap)) * maxens_effdynlsf_i
+      upmf_ave_cap(icap) = sum(upmf_ens(:,:,:,icap)) * maxens_effdynlsf_i
    end do
 
    !---------------------------------------------------------------------------------------!
@@ -694,23 +694,23 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
    select case (trim(closure_type))
    case ('gr')
       do icap=1,maxens_cap
-         upmf_ave_cap1(icap)= sum(ee%upmf_ens(1,:,:,icap)) * maxens_efflsf_i
+         upmf_ave_cap1(icap)= sum(upmf_ens(1,:,:,icap)) * maxens_efflsf_i
       end do
    case ('lo')
       do icap=1,maxens_cap
-         upmf_ave_cap2(icap)= sum(ee%upmf_ens(1,:,:,icap)) * maxens_efflsf_i
+         upmf_ave_cap2(icap)= sum(upmf_ens(1,:,:,icap)) * maxens_efflsf_i
       end do
    case ('mc')
       do icap=1,maxens_cap
-         upmf_ave_cap3(icap)= sum(ee%upmf_ens(1,:,:,icap)) * maxens_efflsf_i
+         upmf_ave_cap3(icap)= sum(upmf_ens(1,:,:,icap)) * maxens_efflsf_i
       end do
    case ('kf')
       do icap=1,maxens_cap
-         upmf_ave_cap4(icap)= sum(ee%upmf_ens(1,:,:,icap)) * maxens_efflsf_i
+         upmf_ave_cap4(icap)= sum(upmf_ens(1,:,:,icap)) * maxens_efflsf_i
       end do
    case ('as')
       do icap=1,maxens_cap
-         upmf_ave_cap5(icap)= sum(ee%upmf_ens(1,:,:,icap)) * maxens_efflsf_i
+         upmf_ave_cap5(icap)= sum(upmf_ens(1,:,:,icap)) * maxens_efflsf_i
       end do
    case ('nc','en')
       !------------------------------------------------------------------------------------!
@@ -723,22 +723,22 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
       ! 14-16: Frank-Cohen    (upmf_ave_cap2)                                              !
       !------------------------------------------------------------------------------------!
       do icap=1,maxens_cap
-         upmf_ave_cap1(icap) = sum(ee%upmf_ens(1:3,:,:,icap))*0.3333333333*maxens_efflsf_i
+         upmf_ave_cap1(icap) = sum(upmf_ens(1:3,:,:,icap))*0.3333333333*maxens_efflsf_i
       end do
       do icap=1,maxens_cap
-         upmf_ave_cap5(icap) = sum(ee%upmf_ens(4:7,:,:,icap))*0.250*maxens_efflsf_i
+         upmf_ave_cap5(icap) = sum(upmf_ens(4:7,:,:,icap))*0.250*maxens_efflsf_i
       end do
       do icap=1,maxens_cap
-         upmf_ave_cap4(icap) = sum(ee%upmf_ens(8:10,:,:,icap))                             &
+         upmf_ave_cap4(icap) = sum(upmf_ens(8:10,:,:,icap))                                &
                              * 0.3333333333 * maxens_efflsf_i
       end do
       if (closure_type == 'en') then
          do icap=1,maxens_cap
-            upmf_ave_cap3(icap) = sum(ee%upmf_ens(11:13,:,:,icap))                         &
+            upmf_ave_cap3(icap) = sum(upmf_ens(11:13,:,:,icap))                            &
                                 * 0.3333333333*maxens_efflsf_i
          end do
          do imbp=1,maxens_lsf
-            upmf_ave_cap2(icap) = sum(ee%upmf_ens(14:16,:,:,icap))                         &
+            upmf_ave_cap2(icap) = sum(upmf_ens(14:16,:,:,icap))                            &
                                 * 0.3333333333*maxens_efflsf_i
          end do
       end if
@@ -748,10 +748,10 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
    !   Mass flux average for each closure                                                  !
    !---------------------------------------------------------------------------------------!
    do idync=1,maxens_dyn
-      upmf_ave(idync) = sum(ee%upmf_ens(:,:,idync,:)) * maxens_efflsf_i
+      upmf_ave(idync) = sum(upmf_ens(:,:,idync,:)) * maxens_efflsf_i
    end do
    
-   upmf_tot_ave = sum(ee%upmf_ens) * inv_ensdim
+   upmf_tot_ave = sum(upmf_ens) * inv_ensdim
    
    !---------------------------------------------------------------------------------------!
    !   Computing Standard deviation, skewness, and curtosis                                !
@@ -760,12 +760,12 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
       do iedt=1,maxens_eff
          do imbp=1,maxens_lsf
             do idync=1,maxens_dyn
-               thisdiff = max(small_number,ee%upmf_ens(idync,imbp,iedt,icap)-upmf_ave(idync))
+               thisdiff = max(small_number,upmf_ens(idync,imbp,iedt,icap)-upmf_ave(idync))
                upmf_std(idync) = upmf_std(idync) + thisdiff**2
                upmf_ske(idync) = upmf_ske(idync) + thisdiff**3
                upmf_cur(idync) = upmf_cur(idync) + thisdiff**4
                
-               thisdiff = max(small_number,ee%upmf_ens(idync,imbp,iedt,icap)-upmf_tot_ave)
+               thisdiff = max(small_number,upmf_ens(idync,imbp,iedt,icap)-upmf_tot_ave)
                upmf_tot_std    = upmf_tot_std    + thisdiff**2
                upmf_tot_ske    = upmf_tot_ske    + thisdiff**3
                upmf_tot_cur    = upmf_tot_cur    + thisdiff**4

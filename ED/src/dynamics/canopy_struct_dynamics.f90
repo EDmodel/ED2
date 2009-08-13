@@ -473,7 +473,6 @@ module canopy_struct_dynamics
                                ,'canopy_struct_dynamics.f90')
             end if
 
-            
             !------------------------------------------------------------------------------!
             !     Loop through the canopy at equal increments.  At each increment,         !
             ! determine the frontal area drag surface, and the drag force zeta.            !
@@ -493,7 +492,8 @@ module canopy_struct_dynamics
 
                   crowndepth = max(dz,crown_depth_fraction(ipft)*hite)
 
-                  if ( z < hite .and. z >= (hite-crowndepth)) then
+                  if ( (z < hite .and. z >= (hite-crowndepth)) .or.                        &
+                       (k == 1 .and. hite < dz) ) then
                      select case (ibranch_thermo)
                      case (0)
                         !------------------------------------------------------------------!
@@ -1001,7 +1001,7 @@ module canopy_struct_dynamics
          !    LAI base drag calculation for center of pressure, d0.  Cumulative LAI based  !
          ! velocity attenuation in the canopy.                                             !
          !---------------------------------------------------------------------------------!
-         h = initp%can_depth
+         h = dble(cpatch%hite(1))
 
          if (rk4met%geoht < h) then
 
@@ -1059,7 +1059,8 @@ module canopy_struct_dynamics
 
                   crowndepth = max(dz8,dble(crown_depth_fraction(ipft))*hite8)
 
-                  if ( z < hite8 .and. z >= (hite8-crowndepth)) then
+                  if ( (z < hite8 .and. z >= (hite8-crowndepth)) .or.                      &
+                       (k == 1 .and. hite8 < dz8) ) then
                      select case (ibranch_thermo)
                      case (0)
                         !------------------------------------------------------------------!
@@ -1077,7 +1078,7 @@ module canopy_struct_dynamics
                         !    Use LAI and WPA to define the frontal area of drag surface.   !
                         !------------------------------------------------------------------!
                         layertai = layertai + (initp%lai(ico) + initp%wpa(ico))            &
-                                           * (dz8 /crowndepth)
+                                            * (dz8 /crowndepth)
                      end select
 
                   end if

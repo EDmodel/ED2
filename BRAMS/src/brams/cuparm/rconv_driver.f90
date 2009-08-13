@@ -15,21 +15,22 @@
 !==========================================================================================!
 !==========================================================================================!
 subroutine rconv_driver(banneron)
-   use mem_cuparm , only : confrq       & ! How often I should call this cloud
-                         , cptime       & ! Time to start calling this cloud
-                         , nclouds      & ! Number of clouds to use here 
-                         , nnqparm      & ! Flag for cumulus parameterization
-                         , ndeepest     & ! Flag for deepest cloud
-                         , nshallowest  & ! Flag for shallowest cloud
-                         , grell_1st    & ! First cloud to use Grell's parameterization
-                         , grell_last   & ! Last cloud to use Grell's parameterization
-                         , cuparm_g     !
+   use mem_cuparm , only : confrq            & ! How often I should call this cloud
+                         , cptime            & ! Time to start calling this cloud
+                         , nclouds           & ! Number of clouds to use here 
+                         , nnqparm           & ! Flag for cumulus parameterization
+                         , ndeepest          & ! Flag for deepest cloud
+                         , nshallowest       & ! Flag for shallowest cloud
+                         , grell_1st         & ! First cloud to use Grell's method
+                         , grell_last        & ! Last cloud to use Grell's scheme
+                         , cuparm_g          ! ! The cumulus scheme structure
           
    use mem_grid   , only : initial      & ! Flag for "initial" run
                          , ngrid        & ! Current grid
                          , ngrids       & ! Total # of grids
                          , time         & ! Current time
                          , dtlt         & ! Current grid delta-t
+                         , dtlongn      & ! Delta-t array
                          , grid_g       ! ! Grid structure
 
    use node_mod   , only : mzp          & ! Current grid # of vertical levels for this node
@@ -66,6 +67,7 @@ subroutine rconv_driver(banneron)
       do ifm=1,ngrids
          call azero(mzp*mxp*myp*nclouds,cuparm_g(ifm)%rtsrc)
          call azero(mzp*mxp*myp*nclouds,cuparm_g(ifm)%thsrc)
+         if (co2_on) call azero(mzp*mxp*myp*nclouds,cuparm_g(ngrid)%co2src)
          call azero(mxp*myp*nclouds,cuparm_g(ifm)%conprr)
 
          if (associated(cuparm_g(ifm)%dnmf)) call azero(mxp*myp*nclouds,cuparm_g(ifm)%dnmf)

@@ -59,7 +59,7 @@ module rk4_driver
       !----- Locally saved variables. -----------------------------------------------------!
       logical                   , save        :: first_time=.true.
       !----- Local constants. -------------------------------------------------------------!
-      logical                   , parameter   :: print_fields = .true.
+      logical                   , parameter   :: print_fields = .false.
       !----- Functions --------------------------------------------------------------------!
       real                      , external    :: walltime
       !------------------------------------------------------------------------------------!

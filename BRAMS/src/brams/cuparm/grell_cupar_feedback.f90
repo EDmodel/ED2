@@ -5,7 +5,9 @@
 ! the permutation of all ensemble dimensions is fully filled.                              !
 !------------------------------------------------------------------------------------------!
 subroutine grell_cupar_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf           &
-                               ,maxens_dyn,inv_ensdim,max_heat,ee,upmf,dnmf,edt)
+                               ,maxens_dyn,inv_ensdim,max_heat,dnmf_ens,upmf_ens           &
+                               ,dellathil_eff,dellaqtot_eff,dellaco2_eff,pw_eff,ierr_cap   &
+                               ,upmf,dnmf,edt)
 
    use rconstants        , only : day_sec       ! ! intent(in)
    use mem_ensemble      , only : ensemble_vars ! ! type
@@ -15,7 +17,7 @@ subroutine grell_cupar_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf
                                 , outthil       & ! intent(out)
                                 , precip        ! ! intent(out)
    implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
+   !----- Arguments, input variables. -----------------------------------------------------!
    logical               , intent(in)    :: comp_down         ! I am computing downdrafts
    integer               , intent(in)    :: mgmzp             ! # of levels
    integer               , intent(in)    :: maxens_cap        ! # of static controls
@@ -24,7 +26,18 @@ subroutine grell_cupar_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf
    integer               , intent(in)    :: maxens_dyn        ! # of dyn. control members
    real                  , intent(in)    :: inv_ensdim        ! 1 / # of members 
    real                  , intent(in)    :: max_heat          ! Maximum heat allowed
-   type(ensemble_vars)   , intent(inout) :: ee                ! Ensemble structure
+   !----- Arguments, input/output variables (ensemble structure). -------------------------!
+   real, dimension(maxens_dyn,maxens_lsf,maxens_eff,maxens_cap), intent(inout) ::          &
+            dnmf_ens       & ! Reference downdraft mass flux                      [kg/m²/s]
+           ,upmf_ens       ! ! Reference updraft mass flux                        [kg/m²/s]
+   real   , dimension(mgmzp,maxens_eff,maxens_cap), intent(inout) ::                       &
+            dellathil_eff  & ! Change in ice-liquid potential temperature                
+           ,dellaqtot_eff  & ! Change in total mixing ratio                              
+           ,dellaco2_eff   & ! Change in CO2 mixing ratio                                
+           ,pw_eff         ! ! Water that doesn't evaporate (aka rain).                  
+   integer, dimension(maxens_cap), intent(inout) ::                                        &
+            ierr_cap       ! ! Convection failure flag.
+   !----- Arguments, output variables. ----------------------------------------------------!
    real                  , intent(out)   :: upmf              ! Ref. upward mass flx (mb)
    real                  , intent(out)   :: dnmf              ! Ref. dnward mass flx (m0)
    real                  , intent(out)   :: edt               ! m0/mb, Grell's epsilon
@@ -58,12 +71,12 @@ subroutine grell_cupar_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf
    !     Before we average, we just need to make sure we don't have negative reference     !
    ! mass fluxes.  If we do, then we flush those to zero.                                  !
    !---------------------------------------------------------------------------------------!
-   where (ee%upmf_ens < 0.)
-      ee%upmf_ens = 0.
+   where (upmf_ens < 0.)
+      upmf_ens = 0.
    end where
    
-   where (ee%dnmf_ens < 0.)
-      ee%dnmf_ens = 0.
+   where (dnmf_ens < 0.)
+      dnmf_ens = 0.
    end where
 
    !---------------------------------------------------------------------------------------!
@@ -74,20 +87,20 @@ subroutine grell_cupar_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf
    ! if most terms are zero, then the environment is unfavourable for convection, so       !
    ! little, if any, convection should happen.                                             !
    !---------------------------------------------------------------------------------------!
-   upmf=sum(ee%upmf_ens) * inv_ensdim
+   upmf=sum(upmf_ens) * inv_ensdim
    if (comp_down .and. upmf > 0) then
       !------------------------------------------------------------------------------------!
       !     Convection happened and it this cloud supports downdrafts.  Find the downdraft !
       ! reference and the ratio between downdrafts and updrafts.                           !
       !------------------------------------------------------------------------------------!
-      dnmf = sum(ee%dnmf_ens) * inv_ensdim
+      dnmf = sum(dnmf_ens) * inv_ensdim
    elseif (upmf == 0.) then
       !------------------------------------------------------------------------------------!
       !     Unlikely, but if the reference upward mass flux is zero, that means that there !
       ! is no cloud...                                                                     !
       !------------------------------------------------------------------------------------!
-      where (ee%ierr_cap == 0)
-         ee%ierr_cap = 10
+      where (ierr_cap == 0)
+         ierr_cap = 10
       end where
       return
    end if
@@ -100,7 +113,7 @@ subroutine grell_cupar_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf
    ! back to K/s.                                                                          !
    !---------------------------------------------------------------------------------------!
    do k=1,mkx
-      outthil(k) = upmf * sum(ee%dellathil_eff(k,1:maxens_eff,1:maxens_cap))               &
+      outthil(k) = upmf * sum(dellathil_eff(k,1:maxens_eff,1:maxens_cap))                  &
                  * inv_maxens_effcap * day_sec
    end do
    !----- Get minimum and maximum outt, and where they happen -----------------------------!
@@ -147,9 +160,9 @@ subroutine grell_cupar_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf
    !    With the mass flux and heating on the track, compute other sources/sinks           !
    !---------------------------------------------------------------------------------------!
    do k=1,mkx
-      outqtot(k) = upmf * sum(ee%dellaqtot_eff(k,1:maxens_eff,1:maxens_cap))               &
+      outqtot(k) = upmf * sum(dellaqtot_eff(k,1:maxens_eff,1:maxens_cap))                  &
                  * inv_maxens_effcap
-      outco2(k)  = upmf * sum(ee%dellaco2_eff (k,1:maxens_eff,1:maxens_cap))               &
+      outco2(k)  = upmf * sum(dellaco2_eff (k,1:maxens_eff,1:maxens_cap))                  &
                  * inv_maxens_effcap
    end do
 
@@ -161,7 +174,7 @@ subroutine grell_cupar_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf
    if (comp_down) then
       do icap=1,maxens_cap
          do iedt=1,maxens_eff
-            precip        = precip + max(0.,upmf*sum(ee%pw_eff(1:mkx,iedt,icap)))
+            precip        = precip + max(0.,upmf*sum(pw_eff(1:mkx,iedt,icap)))
          end do
       end do
       precip = precip * inv_maxens_effcap
@@ -189,8 +202,12 @@ end subroutine grell_cupar_feedback
 !    This subroutine organises the variables that go to the output, namely the heating and !
 ! moistening rates due to convection.                                                      !
 !------------------------------------------------------------------------------------------!
-subroutine grell_cupar_output(comp_down,m1,mgmzp,maxens_cap,rtgt,zt,zm,dnmf,upmf,ee,xierr  &
-                             ,zjmin,zk22,zkbcon,zkdt,zktop,conprr,thsrc,rtsrc,co2src       &
+subroutine grell_cupar_output(comp_down,m1,mgmzp,maxens_cap,rtgt,zt,zm,dnmf,upmf,ierr_cap  &
+                             ,kdet_cap,k22_cap,kbcon_cap,jmin_cap,ktop_cap,wbuoymin_cap    &
+                             ,etad_cld_cap,mentrd_rate_cap,cdd_cap,dbyd_cap,rhod_cld_cap   &
+                             ,etau_cld_cap,mentru_rate_cap,cdu_cap,dbyu_cap,rhou_cld_cap   &
+                             ,qliqd_cld_cap,qliqu_cld_cap,qiced_cld_cap,qiceu_cld_cap      &
+                             ,xierr,zjmin,zk22,zkbcon,zkdt,zktop,conprr,thsrc,rtsrc,co2src &
                              ,areadn,areaup,cuprliq,cuprice)
    use mem_ensemble     , only: &
            ensemble_vars        ! ! type
@@ -218,7 +235,29 @@ subroutine grell_cupar_output(comp_down,m1,mgmzp,maxens_cap,rtgt,zt,zm,dnmf,upmf
    real, dimension(m1), intent(in)  :: zm          ! Height at momentum levels    [      m]
    real               , intent(in)  :: dnmf        ! Reference downdraft mass flux[kg/m²/s]
    real               , intent(in)  :: upmf        ! Reference updraft mass flux  [kg/m²/s]
-   type(ensemble_vars), intent(in)  :: ee          ! Ensemble structure           [   ----]
+   !----- Input, ensemble structure variables. --------------------------------------------!
+   integer, dimension      (maxens_cap), intent(in) :: ierr_cap
+   integer, dimension      (maxens_cap), intent(in) :: kdet_cap
+   integer, dimension      (maxens_cap), intent(in) :: k22_cap
+   integer, dimension      (maxens_cap), intent(in) :: kbcon_cap
+   integer, dimension      (maxens_cap), intent(in) :: jmin_cap
+   integer, dimension      (maxens_cap), intent(in) :: ktop_cap
+   real   , dimension      (maxens_cap), intent(in) :: wbuoymin_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: etad_cld_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: mentrd_rate_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: cdd_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: dbyd_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: rhod_cld_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: etau_cld_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: mentru_rate_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: cdu_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: dbyu_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: rhou_cld_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: qliqd_cld_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: qliqu_cld_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: qiced_cld_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: qiceu_cld_cap
+   !----- Output variables. ---------------------------------------------------------------!
    real, dimension(m1), intent(out) :: thsrc       ! Potential temperature fdbck  [    K/s]
    real, dimension(m1), intent(out) :: rtsrc       ! Total mixing ratio feedback  [kg/kg/s]
    real, dimension(m1), intent(out) :: co2src      ! Total CO2 mixing ratio fdbk  [  ppm/s]
@@ -277,10 +316,10 @@ subroutine grell_cupar_output(comp_down,m1,mgmzp,maxens_cap,rtgt,zt,zm,dnmf,upmf
    !---------------------------------------------------------------------------------------!
    !   Copying the error flag. This should not be zero in case convection failed.          !
    !---------------------------------------------------------------------------------------!
-   if (upmf > 0. .and. any(ee%ierr_cap == 0)) then
+   if (upmf > 0. .and. any(ierr_cap == 0)) then
       xierr = 0.
    else
-      xierr = real(ee%ierr_cap(1))
+      xierr = real(ierr_cap(1))
    end if
 
 
@@ -290,11 +329,11 @@ subroutine grell_cupar_output(comp_down,m1,mgmzp,maxens_cap,rtgt,zt,zm,dnmf,upmf
    !     We choose the level to be the most level that will encompass all non-zero         !
    ! members.                                                                              !
    !---------------------------------------------------------------------------------------!
-   kdet  = maxval(ee%kdet_cap ,mask = ee%ierr_cap == 0)
-   k22   = minval(ee%k22_cap  ,mask = ee%ierr_cap == 0)
-   kbcon = minval(ee%kbcon_cap,mask = ee%ierr_cap == 0)
-   jmin  = maxval(ee%jmin_cap ,mask = ee%ierr_cap == 0)
-   ktop  = maxval(ee%ktop_cap ,mask = ee%ierr_cap == 0)
+   kdet  = maxval(kdet_cap ,mask = ierr_cap == 0)
+   k22   = minval(k22_cap  ,mask = ierr_cap == 0)
+   kbcon = minval(kbcon_cap,mask = ierr_cap == 0)
+   jmin  = maxval(jmin_cap ,mask = ierr_cap == 0)
+   ktop  = maxval(ktop_cap ,mask = ierr_cap == 0)
 
    !---------------------------------------------------------------------------------------!
    !    Fixing the levels, here I will add back the offset so the output will be consist-  !
@@ -328,16 +367,16 @@ subroutine grell_cupar_output(comp_down,m1,mgmzp,maxens_cap,rtgt,zt,zm,dnmf,upmf
    !---------------------------------------------------------------------------------------!
    nmok = 0
    stacloop: do icap=1,maxens_cap
-      if (ee%ierr_cap(icap) /= 0) cycle stacloop
+      if (ierr_cap(icap) /= 0) cycle stacloop
       nmok = nmok + 1
-      call grell_draft_area(comp_down,m1,mgmzp,kgoff,ee%jmin_cap(icap),ee%k22_cap(icap)    &
-                           ,ee%kbcon_cap(icap),ee%ktop_cap(icap),dzu_cld,wwind,tke,sigw    &
-                           ,ee%wbuoymin_cap(icap),ee%etad_cld_cap(1:mgmzp,icap)            &
-                           ,ee%mentrd_rate_cap(1:mgmzp,icap),ee%cdd_cap(1:mgmzp,icap)      &
-                           ,ee%dbyd_cap(1:mgmzp,icap),ee%rhod_cld_cap(1:mgmzp,icap),dnmf   &
-                           ,ee%etau_cld_cap(1:mgmzp,icap),ee%mentru_rate_cap(1:mgmzp,icap) &
-                           ,ee%cdu_cap(1:mgmzp,icap),ee%dbyu_cap(1:mgmzp,icap)             &
-                           ,ee%rhou_cld_cap(1:mgmzp,icap),upmf,areadn_cap(icap)            &
+      call grell_draft_area(comp_down,m1,mgmzp,kgoff,jmin_cap(icap),k22_cap(icap)          &
+                           ,kbcon_cap(icap),ktop_cap(icap),dzu_cld,wwind,tke,sigw          &
+                           ,wbuoymin_cap(icap),etad_cld_cap(1:mgmzp,icap)                  &
+                           ,mentrd_rate_cap(1:mgmzp,icap),cdd_cap(1:mgmzp,icap)            &
+                           ,dbyd_cap(1:mgmzp,icap),rhod_cld_cap(1:mgmzp,icap),dnmf         &
+                           ,etau_cld_cap(1:mgmzp,icap),mentru_rate_cap(1:mgmzp,icap)       &
+                           ,cdu_cap(1:mgmzp,icap),dbyu_cap(1:mgmzp,icap)                   &
+                           ,rhou_cld_cap(1:mgmzp,icap),upmf,areadn_cap(icap)               &
                            ,areaup_cap(icap))
 
       !------------------------------------------------------------------------------------!
@@ -345,12 +384,12 @@ subroutine grell_cupar_output(comp_down,m1,mgmzp,maxens_cap,rtgt,zt,zm,dnmf,upmf
       ! by Harrington when cumulus feedback is requested, so we rescale the liquid water   !
       ! at the downdrafts and updrafts by their area.                                      !
       !------------------------------------------------------------------------------------!
-      do k=1,ee%ktop_cap(icap)
+      do k=1,ktop_cap(icap)
          kr=k+kgoff
-         cuprliq_cap(kr,icap) = max(0., ee%qliqd_cld_cap(k,icap) * areadn_cap(icap)        &
-                              + ee%qliqu_cld_cap(k,icap) * areaup_cap(icap) )
-         cuprice_cap(kr,icap) = max(0., ee%qiced_cld_cap(k,icap) * areadn_cap(icap)        &
-                              + ee%qiceu_cld_cap(k,icap) * areaup_cap(icap) )
+         cuprliq_cap(kr,icap) = max(0., qliqd_cld_cap(k,icap) * areadn_cap(icap)           &
+                              + qliqu_cld_cap(k,icap) * areaup_cap(icap) )
+         cuprice_cap(kr,icap) = max(0., qiced_cld_cap(k,icap) * areadn_cap(icap)           &
+                              + qiceu_cld_cap(k,icap) * areaup_cap(icap) )
       end do
    end do stacloop
    !----- Find the averaged area. ---------------------------------------------------------! 

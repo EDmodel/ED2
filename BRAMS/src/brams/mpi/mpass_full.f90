@@ -164,9 +164,23 @@ subroutine mk_2_buff(mydata,buff,nx,ny,mx,my,ibeg,iend,jbeg,jend)
    integer               , intent(in)  :: nx,ny,mx,my,ibeg,iend,jbeg,jend
    real, dimension(nx,ny), intent(in)  :: mydata
    real, dimension(mx,my), intent(out) :: buff
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                             :: mi
+   integer                             :: mj
+   integer                             :: ni
+   integer                             :: nj
    !---------------------------------------------------------------------------------------!
+   nj = jbeg
+   do mj=1,my
+      ni=ibeg
 
-   buff(1:mx,1:my)=mydata(ibeg:iend,jbeg:jend)
+      do mi=1,mx
+         buff(mi,mj)=mydata(ni,nj)
+         ni = ni + 1
+      end do
+
+      nj = nj +1
+   end do
 
    return
 end subroutine mk_2_buff
@@ -191,9 +205,29 @@ subroutine mk_2p_buff(mydata,buff,nx,ny,ne,mx,my,ibeg,iend,jbeg,jend)
    integer                  , intent(in)  :: nx,ny,ne,mx,my,ibeg,iend,jbeg,jend
    real, dimension(nx,ny,ne), intent(in)  :: mydata
    real, dimension(mx,my,ne), intent(out) :: buff
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                             :: mi
+   integer                             :: mj
+   integer                             :: ni
+   integer                             :: nj
+   integer                             :: nl
    !---------------------------------------------------------------------------------------!
 
-   buff(1:mx,1:my,1:ne) = mydata(ibeg:iend,jbeg:jend,1:ne)
+   do nl=1,ne
+      nj = jbeg
+      do mj=1,my
+         ni=ibeg
+
+         do mi=1,mx
+
+            buff(mi,mj,nl)=mydata(ni,nj,nl)
+
+            ni = ni + 1
+         end do
+
+         nj = nj +1
+      end do
+   end do
 
    return
 end subroutine mk_2p_buff
@@ -217,9 +251,29 @@ subroutine mk_3_buff(mydata,buff,nz,nx,ny,mx,my,ibeg,iend,jbeg,jend)
    integer                  , intent(in)  :: nz,nx,ny,mx,my,ibeg,iend,jbeg,jend
    real, dimension(nz,nx,ny), intent(in)  :: mydata
    real, dimension(nz,mx,my), intent(out) :: buff
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                             :: mi
+   integer                             :: mj
+   integer                             :: ni
+   integer                             :: nj
+   integer                             :: nk
    !---------------------------------------------------------------------------------------!
 
-   buff(1:nz,1:mx,1:my) = mydata(1:nz,ibeg:iend,jbeg:jend)
+   nj = jbeg
+   do mj=1,my
+      ni=ibeg
+
+      do mi=1,mx
+
+         do nk=1,nz
+            buff(nk,mi,mj)=mydata(nk,ni,nj)
+         end do
+
+         ni = ni + 1
+      end do
+
+      nj = nj +1
+   end do
 
    return
 end subroutine mk_3_buff
@@ -243,9 +297,31 @@ subroutine mk_4_buff(mydata,buff,nz,nx,ny,ne,mx,my,ibeg,iend,jbeg,jend)
    integer                     , intent(in)  :: nz,nx,ny,ne,mx,my,ibeg,iend,jbeg,jend
    real, dimension(nz,nx,ny,ne), intent(in)  :: mydata
    real, dimension(nz,mx,my,ne), intent(out) :: buff
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                             :: mi
+   integer                             :: mj
+   integer                             :: ni
+   integer                             :: nj
+   integer                             :: nk
+   integer                             :: nl
    !---------------------------------------------------------------------------------------!
 
-   buff(1:nz,1:mx,1:my,1:ne) = mydata(1:nz,ibeg:iend,jbeg:jend,1:ne)
+   do nl=1,ne
+      nj = jbeg
+      do mj=1,my
+         ni=ibeg
+
+         do mi=1,mx
+            do nk=1,nz
+               buff(nk,mi,mj,nl)=mydata(nk,ni,nj,nl)
+            end do
+            ni = ni + 1
+         end do
+
+         nj = nj +1
+      end do
+   end do
+
 
    return
 end subroutine mk_4_buff
@@ -381,7 +457,7 @@ subroutine node_sendall()
             mpiidvtab = mpiidvtab + 1
 
             !----- Sending the tags then the variable to the head node --------------------!
-            call MPI_Send(msgtags,ntags,MPI_INTEGER,master_num,mpiidtags  &
+            call MPI_Send(msgtags,ntags,MPI_INTEGER,master_num,mpiidtags                   &
                          ,MPI_COMM_WORLD,ierr)
             call MPI_Send(vtab_r(nv,ng)%var_p,vtab_r(nv,ng)%npts,MPI_REAL,master_num       &
                          ,mpiidvtab,MPI_COMM_WORLD,ierr)
@@ -532,9 +608,20 @@ subroutine ex_2_buff(mydata,buff,nx,ny,mx,my,ioff,joff,ibeg,iend,jbeg,jend)
    integer               , intent(in)    :: nx,ny,mx,my,ioff,joff,ibeg,iend,jbeg,jend
    real, dimension(mx,my), intent(in)    :: buff
    real, dimension(nx,ny), intent(inout) :: mydata
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                               :: ni
+   integer                               :: nj
+   integer                               :: mi
+   integer                               :: mj
    !---------------------------------------------------------------------------------------!
 
-   mydata(ibeg+ioff:iend+ioff,jbeg+joff:jend+joff) = buff(ibeg:iend,jbeg:jend)
+   do mj=jbeg,jend
+      nj = mj + joff
+      do mi=ibeg,iend
+         ni = mi + ioff
+         mydata(ni,nj) = buff(mi,mj)
+      end do
+   end do
 
    return
 end subroutine ex_2_buff
@@ -559,9 +646,23 @@ subroutine ex_2p_buff(mydata,buff,nx,ny,ne,mx,my,ioff,joff,ibeg,iend,jbeg,jend)
    integer                  , intent(in)    :: nx,ny,ne,mx,my,ioff,joff,ibeg,iend,jbeg,jend
    real, dimension(mx,my,ne), intent(in)    :: buff
    real, dimension(nx,ny,ne), intent(inout) :: mydata
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                               :: ni
+   integer                               :: nj
+   integer                               :: nl
+   integer                               :: mi
+   integer                               :: mj
    !---------------------------------------------------------------------------------------!
 
-   mydata(ibeg+ioff:iend+ioff,jbeg+joff:jend+joff,1:ne) = buff(ibeg:iend,jbeg:jend,1:ne)
+   do nl = 1, ne
+      do mj=jbeg,jend
+         nj = mj + joff
+         do mi=ibeg,iend
+            ni = mi + ioff
+            mydata(ni,nj,nl) = buff(mi,mj,nl)
+         end do
+      end do
+   end do
 
    return
 end subroutine ex_2p_buff
@@ -586,10 +687,23 @@ subroutine ex_3_buff(mydata,buff,nz,nx,ny,mx,my,ioff,joff,ibeg,iend,jbeg,jend)
    integer                  , intent(in)    :: nz,nx,ny,mx,my,ioff,joff,ibeg,iend,jbeg,jend
    real, dimension(nz,mx,my), intent(in)    :: buff
    real, dimension(nz,nx,ny), intent(inout) :: mydata
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                               :: ni
+   integer                               :: nj
+   integer                               :: nk
+   integer                               :: mi
+   integer                               :: mj
    !---------------------------------------------------------------------------------------!
 
-
-   mydata (1:nz,ibeg+ioff:iend+ioff,jbeg+joff:jend+joff) = buff(1:nz,ibeg:iend,jbeg:jend)
+   do mj=jbeg,jend
+      nj = mj + joff
+      do mi=ibeg,iend
+         ni = mi + ioff
+         do nk=1,nz
+            mydata(nk,ni,nj) = buff(nk,mi,mj)
+         end do
+      end do
+   end do
 
    return
 end subroutine ex_3_buff
@@ -615,10 +729,26 @@ subroutine ex_4_buff(mydata,buff,nz,nx,ny,ne,mx,my,ioff,joff,ibeg,iend,jbeg,jend
    integer                     , intent(in)    :: ibeg,iend,jbeg,jend
    real, dimension(nz,mx,my,ne), intent(in)    :: buff
    real, dimension(nz,nx,ny,ne), intent(inout) :: mydata
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                               :: ni
+   integer                               :: nj
+   integer                               :: nk
+   integer                               :: nl
+   integer                               :: mi
+   integer                               :: mj
    !---------------------------------------------------------------------------------------!
 
-   mydata(1:nz,ibeg+ioff:iend+ioff,jbeg+joff:jend+joff,1:ne) =                             &
-                                                        buff(1:nz,ibeg:iend,jbeg:jend,1:ne)
+   do nl=1,ne
+      do mj=jbeg,jend
+         nj = mj + joff
+         do mi=ibeg,iend
+            ni = mi + ioff
+            do nk=1,nz
+               mydata(nk,ni,nj,nl) = buff(nk,mi,mj,nl)
+            end do
+         end do
+      end do
+   end do
 
    return
 end subroutine ex_4_buff

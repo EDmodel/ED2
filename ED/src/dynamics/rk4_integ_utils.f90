@@ -1738,7 +1738,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
 
             !----- Updating output flux ---------------------------------------------------!
             initp%avg_vapor_vc    = initp%avg_vapor_vc   - veg_dew * hdidi
-            initp%ebudget_latent  = initp%ebudget_latent - veg_dew
+            initp%ebudget_latent  = initp%ebudget_latent - veg_qdew
          end if
 
          !----- Lastly we update leaf temperature and liquid fraction. --------------------!

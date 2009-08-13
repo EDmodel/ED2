@@ -81,7 +81,8 @@ contains
     
     allocate (turb%akscal (n2,n3))
 
-    if (co2_on) allocate(turb%sflux_c(n2,n3))
+!    if (co2_on) allocate(turb%sflux_c(n2,n3))
+    allocate(turb%sflux_c(n2,n3))
 
     return
   end subroutine alloc_turb

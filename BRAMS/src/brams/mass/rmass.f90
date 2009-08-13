@@ -103,9 +103,10 @@ end subroutine compute_mass_flux
 !                                                                                          !
 !   This subroutine prepares the convective fluxes to be used in Lagrangian models.        !
 !------------------------------------------------------------------------------------------!
-subroutine prep_convflx_to_mass(m1,mgmzp,maxens_cap,dnmf,upmf,ee,cfxdn,cfxup,dfxdn,dfxup   &
-                               ,efxdn,efxup)
-   use mem_ensemble     , only : ensemble_vars ! ! Ensemble structure
+subroutine prep_convflx_to_mass(m1,mgmzp,maxens_cap,dnmf,upmf,ierr_cap,jmin_cap,k22_cap    &
+                               ,kbcon_cap,kdet_cap,ktop_cap,cdd_cap,cdu_cap                &
+                               ,mentrd_rate_cap,mentru_rate_cap,etad_cld_cap,etau_cld_cap  &
+                               ,cfxdn,cfxup,dfxdn,dfxup,efxdn,efxup)
    use mem_scratch_grell, only : dzd_cld       & ! Delta-z for downdrafts;
                                , kgoff         ! ! BRAMS grid offset
    implicit none
@@ -118,7 +119,19 @@ subroutine prep_convflx_to_mass(m1,mgmzp,maxens_cap,dnmf,upmf,ee,cfxdn,cfxup,dfx
    integer            , intent(in)    :: maxens_cap  ! # of static control members
    real               , intent(in)    :: dnmf        ! Reference downdraft mass flux
    real               , intent(in)    :: upmf        ! Reference updraft mass flux
-   type(ensemble_vars), intent(in)    :: ee          ! Ensemble structure
+   !----- Input variables, ensemble components. -------------------------------------------!
+   integer, dimension      (maxens_cap), intent(in) :: ierr_cap
+   integer, dimension      (maxens_cap), intent(in) :: jmin_cap
+   integer, dimension      (maxens_cap), intent(in) :: k22_cap
+   integer, dimension      (maxens_cap), intent(in) :: kbcon_cap
+   integer, dimension      (maxens_cap), intent(in) :: kdet_cap
+   integer, dimension      (maxens_cap), intent(in) :: ktop_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: cdd_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: cdu_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: mentrd_rate_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: mentru_rate_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: etad_cld_cap
+   real   , dimension(mgmzp,maxens_cap), intent(in) :: etau_cld_cap
    !----- Output variables.  All fluxes are given in kg/m²/s. -----------------------------!
    real, dimension(m1), intent(out)   :: cfxdn       ! Convective downdraft flux
    real, dimension(m1), intent(out)   :: cfxup       ! Convective updraft flux
@@ -188,21 +201,21 @@ subroutine prep_convflx_to_mass(m1,mgmzp,maxens_cap,dnmf,upmf,ee,cfxdn,cfxup,dfx
    stacloop: do icap=1,maxens_cap
    
       !----- If this member failed to produce a cloud, skip it. ---------------------------!
-      if (ee%ierr_cap(icap) /= 0) cycle stacloop
+      if (ierr_cap(icap) /= 0) cycle stacloop
       
       !----- Otherwise we copy the array values to local variables. -----------------------!
-      jmin        = ee%jmin_cap (icap)
-      k22         = ee%k22_cap  (icap)
-      kbcon       = ee%kbcon_cap(icap)
-      kdet        = ee%kdet_cap (icap)
-      ktop        = ee%ktop_cap (icap)
+      jmin        = jmin_cap (icap)
+      k22         = k22_cap  (icap)
+      kbcon       = kbcon_cap(icap)
+      kdet        = kdet_cap (icap)
+      ktop        = ktop_cap (icap)
 
-      cdd         = ee%cdd_cap(:,icap)
-      cdu         = ee%cdu_cap(:,icap)
-      mentrd_rate = ee%mentrd_rate_cap(:,icap)
-      mentru_rate = ee%mentru_rate_cap(:,icap)
-      etad_cld    = ee%etad_cld_cap(:,icap)
-      etau_cld    = ee%etau_cld_cap(:,icap)
+      cdd         = cdd_cap(:,icap)
+      cdu         = cdu_cap(:,icap)
+      mentrd_rate = mentrd_rate_cap(:,icap)
+      mentru_rate = mentru_rate_cap(:,icap)
+      etad_cld    = etad_cld_cap(:,icap)
+      etau_cld    = etau_cld_cap(:,icap)
 
       !----- We include this member in the final average. ---------------------------------!
       nmok = nmok + 1

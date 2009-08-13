@@ -198,13 +198,14 @@ subroutine rams_mem_alloc(proc_type)
    do ng=1,ngrids
       call nullify_cuparm(cuparm_g(ng))
       call nullify_cuparm(cuparmm_g(ng))
-      call alloc_cuparm(cuparm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng)
+      call alloc_cuparm(cuparm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng,co2_on)
       if (imean == 1) then  
-         call alloc_cuparm(cuparmm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng)
+         call alloc_cuparm(cuparmm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng,co2_on)
       elseif (imean == 0) then
-         call alloc_cuparm(cuparmm_g(ng),1,1,1,ng)
+         call alloc_cuparm(cuparmm_g(ng),1,1,1,ng,co2_on)
       endif
       call initialize_cuparm(cuparm_g(ng))
+      call initialize_cuparm(cuparmm_g(ng))
       call filltab_cuparm(cuparm_g(ng),cuparmm_g(ng),imean,nmzp(ng),nmxp(ng),nmyp(ng),ng)
    end do
    !---------------------------------------------------------------------------------------!
@@ -219,7 +220,7 @@ subroutine rams_mem_alloc(proc_type)
                             ,grell_1st(1:ngrids),grell_last(1:ngrids))
       ! Initializing Grell scratch
       call alloc_scratch_grell(mgmzp)
-      call zero_scratch_grell()
+      call zero_scratch_grell(3)
 
       allocate(ensemble_e(nclouds))
       do ne=1, nclouds
@@ -293,11 +294,11 @@ subroutine rams_mem_alloc(proc_type)
    do ng=1,ngrids
       call nullify_leaf(leaf_g(ng)) ; call nullify_leaf(leafm_g(ng))
       call alloc_leaf(leaf_g(ng),nmzp(ng),nmxp(ng),nmyp(ng)  &
-           ,nzg,nzs,npatch,ng)
+           ,nzg,nzs,npatch,ng,co2_on)
       if (imean == 1) then
-         call alloc_leaf(leafm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),nzg,nzs,npatch,ng)
+         call alloc_leaf(leafm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),nzg,nzs,npatch,ng,co2_on)
       elseif (imean == 0) then
-         call alloc_leaf(leafm_g(ng),1,1,1,1,1,1,1)
+         call alloc_leaf(leafm_g(ng),1,1,1,1,1,1,1,co2_on)
       end if
 
       call filltab_leaf(leaf_g(ng),leafm_g(ng),imean,nmzp(ng),nmxp(ng),nmyp(ng),nzg,nzs    &

@@ -430,7 +430,7 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
             ksnw1 = max(ksn,1)
             call ed_grndvap(ksn,csite%ntext_soil(nzg,ipa),csite%soil_water(nzg,ipa)        &
                            ,csite%soil_energy(nzg,ipa),csite%sfcwater_energy(ksnw1,ipa)    &
-                           ,cpoly%met(isi)%rhos,csite%can_shv(ipa),csite%ground_shv(ipa)   &
+                           ,csite%can_rhos(ipa),csite%can_shv(ipa),csite%ground_shv(ipa)   &
                            ,csite%surface_ssh(ipa),surface_temp,surface_fliq)
          end do patchloop
       end do siteloop

@@ -529,6 +529,7 @@ module rk4_coms
       y%can_shv                        = 0.d0
       y%can_co2                        = 0.d0
       y%can_depth                      = 0.d0
+      y%can_rhos                       = 0.d0
       y%virtual_water                  = 0.d0
       y%virtual_heat                   = 0.d0
       y%virtual_depth                  = 0.d0

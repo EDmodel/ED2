@@ -1028,7 +1028,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
          qwflxvc_tot  = qwflxvc_tot  + qwflxvc
          hflxvc_tot   = hflxvc_tot   + hflxvc
          transp_tot   = transp_tot   + transp
-         qtransp_tot  = qtransp_tot  + transp
+         qtransp_tot  = qtransp_tot  + qtransp
 
          !---------------------------------------------------------------------------------!
          ! wshed:  Water passing through vegetated canopy to soil surface                  !

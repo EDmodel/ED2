@@ -1,18 +1,10 @@
 !==========================================================================================!
+!==========================================================================================!
 ! grell_cupar_driver.f90                                                                   !
 !                                                                                          !
 !    This file contains the driver that will compute the Cumulus based on Grell-Dévényi    !
 ! parameterization, and send the information needed by the other modules.                  !
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
+!------------------------------------------------------------------------------------------!
 subroutine grell_cupar_driver(banneron,cldd,clds)
 
    use catt_start        , only: &
@@ -61,7 +53,7 @@ subroutine grell_cupar_driver(banneron,cldd,clds)
 
    use mem_cuparm        , only: &
            confrq                & ! intent(in)    - Convective frequency 
-          ,cptime                & ! intent(in)    - Time to start computing the cloud. 
+          ,cptime                & ! intent(in)    - Time to start computing the cloud.
           ,cuparm_g              & ! intent(inout) - Structure with convection
           ,nclouds               ! ! intent(in)    - # of clouds available.
 
@@ -158,12 +150,26 @@ subroutine grell_cupar_driver(banneron,cldd,clds)
    ! 1.  Flushing the feedback to zero, so the default is no convection happened.          !
    !---------------------------------------------------------------------------------------!
    do icld=cldd,clds
-       call azero(mzp*mxp*myp,cuparm_g(ngrid)%thsrc  (:,:,:,icld))
-       call azero(mzp*mxp*myp,cuparm_g(ngrid)%rtsrc  (:,:,:,icld))
-       if (co2_on) call azero(mzp*mxp*myp,cuparm_g(ngrid)%co2src (:,:,:,icld))
-       call azero(mzp*mxp*myp,cuparm_g(ngrid)%cuprliq(:,:,:,icld))
-       call azero(mzp*mxp*myp,cuparm_g(ngrid)%cuprice(:,:,:,icld))
-       call azero(    mxp*myp,cuparm_g(ngrid)%conprr (  :,:,icld))
+      call azero(mzp*mxp*myp,cuparm_g(ngrid)%thsrc  (:,:,:,icld))
+      call azero(mzp*mxp*myp,cuparm_g(ngrid)%rtsrc  (:,:,:,icld))
+      if (co2_on) call azero(mzp*mxp*myp,cuparm_g(ngrid)%co2src (:,:,:,icld))
+      call azero(mzp*mxp*myp,cuparm_g(ngrid)%cuprliq(:,:,:,icld))
+      call azero(mzp*mxp*myp,cuparm_g(ngrid)%cuprice(:,:,:,icld))
+
+      call azero(    mxp*myp,cuparm_g(ngrid)%conprr (  :,:,icld))
+      call azero(    mxp*myp,cuparm_g(ngrid)%aadn   (  :,:,icld))
+      call azero(    mxp*myp,cuparm_g(ngrid)%aaup   (  :,:,icld))
+      call azero(    mxp*myp,cuparm_g(ngrid)%areadn (  :,:,icld))
+      call azero(    mxp*myp,cuparm_g(ngrid)%areaup (  :,:,icld))
+      call azero(    mxp*myp,cuparm_g(ngrid)%dnmf   (  :,:,icld))
+      call azero(    mxp*myp,cuparm_g(ngrid)%edt    (  :,:,icld))
+      call azero(    mxp*myp,cuparm_g(ngrid)%upmf   (  :,:,icld))
+      call aone (    mxp*myp,cuparm_g(ngrid)%xierr  (  :,:,icld))
+      call azero(    mxp*myp,cuparm_g(ngrid)%zjmin  (  :,:,icld))
+      call azero(    mxp*myp,cuparm_g(ngrid)%zk22   (  :,:,icld))
+      call azero(    mxp*myp,cuparm_g(ngrid)%zkdt   (  :,:,icld))
+      call azero(    mxp*myp,cuparm_g(ngrid)%zkbcon (  :,:,icld))
+      call azero(    mxp*myp,cuparm_g(ngrid)%zktop  (  :,:,icld))
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -269,9 +275,9 @@ subroutine grell_cupar_driver(banneron,cldd,clds)
 
 
          !---------------------------------------------------------------------------------!
-         ! 4d. Flushes scratch variables to zero.                                          !
+         ! 4d. Flushes all scratch variables to zero.                                      !
          !---------------------------------------------------------------------------------!
-         call zero_scratch_grell()
+         call zero_scratch_grell(3)
 
 
          !---------------------------------------------------------------------------------!
@@ -318,6 +324,7 @@ subroutine grell_cupar_driver(banneron,cldd,clds)
             !------------------------------------------------------------------------------!
             ! 5a. Reset the entire ensemble structure for this cloud.                      !
             !------------------------------------------------------------------------------!
+            call zero_scratch_grell(1)
             call zero_ensemble(ensemble_e(icld))
 
 
@@ -329,7 +336,7 @@ subroutine grell_cupar_driver(banneron,cldd,clds)
             !------------------------------------------------------------------------------!
             if (banneron) write (unit=60+mynum,fmt='(3(a,1x,i5,1x))')                      &
                    '       [~] Calling initial_upstream_grell... i=',i,'j=',j,'icld=',icld
-            call initial_winds_grell(comp_down(icld),mzp,mxp,myp,nclouds,i,j,jdim,icld     &
+            call initial_winds_grell(comp_down(icld),mzp,mxp,myp,i,j,jdim                  &
                                     , cuparm_g(ngrid)%dnmf (:,:,icld)                      &
                                     , basic_g(ngrid)%up                                    &
                                     , basic_g(ngrid)%vp                                    &
@@ -345,10 +352,43 @@ subroutine grell_cupar_driver(banneron,cldd,clds)
                                    ,cap_max_increment,wnorm_max(icld),wnorm_increment      &
                                    ,depth_min(icld),depth_max(icld),edtmax,edtmin,masstol  &
                                    ,pmass_left,radius(icld),relheight_down,zkbmax(icld)    &
-                                   ,zcutdown(icld),z_detr(icld),ensemble_e(icld)           &
+                                   ,zcutdown(icld),z_detr(icld)                            &
                                    ,cuparm_g(ngrid)%aadn(i,j,icld)                         &
                                    ,cuparm_g(ngrid)%aaup(i,j,icld)                         &
-                                   ,mynum                                                  )
+                                   ,ensemble_e(icld)%dellatheiv_eff                        &
+                                   ,ensemble_e(icld)%dellathil_eff                         &
+                                   ,ensemble_e(icld)%dellaqtot_eff                         &
+                                   ,ensemble_e(icld)%dellaco2_eff                          &
+                                   ,ensemble_e(icld)%pw_eff                                &
+                                   ,ensemble_e(icld)%edt_eff                               &
+                                   ,ensemble_e(icld)%aatot0_eff                            &
+                                   ,ensemble_e(icld)%aatot_eff                             &
+                                   ,ensemble_e(icld)%ierr_cap                              &
+                                   ,ensemble_e(icld)%jmin_cap                              &
+                                   ,ensemble_e(icld)%k22_cap                               &
+                                   ,ensemble_e(icld)%kbcon_cap                             &
+                                   ,ensemble_e(icld)%kdet_cap                              &
+                                   ,ensemble_e(icld)%kstabi_cap                            &
+                                   ,ensemble_e(icld)%kstabm_cap                            &
+                                   ,ensemble_e(icld)%ktop_cap                              &
+                                   ,ensemble_e(icld)%pwav_cap                              &
+                                   ,ensemble_e(icld)%pwev_cap                              &
+                                   ,ensemble_e(icld)%wbuoymin_cap                          &
+                                   ,ensemble_e(icld)%cdd_cap                               &
+                                   ,ensemble_e(icld)%cdu_cap                               &
+                                   ,ensemble_e(icld)%mentrd_rate_cap                       &
+                                   ,ensemble_e(icld)%mentru_rate_cap                       &
+                                   ,ensemble_e(icld)%dbyd_cap                              &
+                                   ,ensemble_e(icld)%dbyu_cap                              &
+                                   ,ensemble_e(icld)%etad_cld_cap                          &
+                                   ,ensemble_e(icld)%etau_cld_cap                          &
+                                   ,ensemble_e(icld)%rhod_cld_cap                          &
+                                   ,ensemble_e(icld)%rhou_cld_cap                          &
+                                   ,ensemble_e(icld)%qliqd_cld_cap                         &
+                                   ,ensemble_e(icld)%qliqu_cld_cap                         &
+                                   ,ensemble_e(icld)%qiced_cld_cap                         &
+                                   ,ensemble_e(icld)%qiceu_cld_cap                         &
+                                   ,i,j,icld,mynum                                         )
          end do staticloop
 
          !---------------------------------------------------------------------------------!
@@ -377,7 +417,13 @@ subroutine grell_cupar_driver(banneron,cldd,clds)
                    '       [~] Calling grell_cupar_feedback... i=',i,'j=',j,'icld=',icld
             call grell_cupar_feedback( comp_down(icld),mgmzp,maxens_cap,maxens_eff         &
                                      , maxens_lsf,maxens_dyn,inv_ensdim,max_heat(icld)     &
-                                     , ensemble_e(icld)                                    &
+                                     , ensemble_e(icld)%dnmf_ens                           &
+                                     , ensemble_e(icld)%upmf_ens                           &
+                                     , ensemble_e(icld)%dellathil_eff                      &
+                                     , ensemble_e(icld)%dellaqtot_eff                      &
+                                     , ensemble_e(icld)%dellaco2_eff                       &
+                                     , ensemble_e(icld)%pw_eff                             &
+                                     , ensemble_e(icld)%ierr_cap                           &
                                      , cuparm_g(ngrid)%upmf(i,j,icld)                      &
                                      , cuparm_g(ngrid)%upmf(i,j,icld)                      &
                                      , cuparm_g(ngrid)%edt (i,j,icld)                      )
@@ -391,7 +437,17 @@ subroutine grell_cupar_driver(banneron,cldd,clds)
             call grell_cupar_output(comp_down(icld),mzp,mgmzp,maxens_cap                   &
               , grid_g(ngrid)%rtgt             (i,j), zt(1:mzp)                            &
               , zm(1:mzp)                           , cuparm_g(ngrid)%dnmf      (i,j,icld) &
-              , cuparm_g(ngrid)%upmf      (i,j,icld), ensemble_e                    (icld) &
+              , cuparm_g(ngrid)%upmf      (i,j,icld), ensemble_e(icld)%ierr_cap            &
+              , ensemble_e(icld)%kdet_cap           , ensemble_e(icld)%k22_cap             &
+              , ensemble_e(icld)%kbcon_cap          , ensemble_e(icld)%jmin_cap            &
+              , ensemble_e(icld)%ktop_cap           , ensemble_e(icld)%wbuoymin_cap        &
+              , ensemble_e(icld)%etad_cld_cap       , ensemble_e(icld)%mentrd_rate_cap     &
+              , ensemble_e(icld)%cdd_cap            , ensemble_e(icld)%dbyd_cap            &
+              , ensemble_e(icld)%rhod_cld_cap       , ensemble_e(icld)%etau_cld_cap        &
+              , ensemble_e(icld)%mentru_rate_cap    , ensemble_e(icld)%cdu_cap             &
+              , ensemble_e(icld)%dbyu_cap           , ensemble_e(icld)%rhou_cld_cap        &
+              , ensemble_e(icld)%qliqd_cld_cap      , ensemble_e(icld)%qliqu_cld_cap       &
+              , ensemble_e(icld)%qiced_cld_cap      , ensemble_e(icld)%qiceu_cld_cap       &
               , cuparm_g(ngrid)%xierr     (i,j,icld), cuparm_g(ngrid)%zjmin     (i,j,icld) &
               , cuparm_g(ngrid)%zk22      (i,j,icld), cuparm_g(ngrid)%zkbcon    (i,j,icld) &
               , cuparm_g(ngrid)%zkdt      (i,j,icld), cuparm_g(ngrid)%zktop     (i,j,icld) &
@@ -414,10 +470,15 @@ subroutine grell_cupar_driver(banneron,cldd,clds)
             if (imassflx == 1) then
                call prep_convflx_to_mass(mzp,mgmzp,maxens_cap                              &
                   , cuparm_g(ngrid)%dnmf    (i,j,icld), cuparm_g(ngrid)%upmf    (i,j,icld) &
-                  , ensemble_e(icld)                  , mass_g(ngrid)%cfxdn   (:,i,j,icld) &
-                  , mass_g(ngrid)%cfxup   (:,i,j,icld), mass_g(ngrid)%dfxdn   (:,i,j,icld) &
-                  , mass_g(ngrid)%dfxup   (:,i,j,icld), mass_g(ngrid)%efxdn   (:,i,j,icld) &
-                  , mass_g(ngrid)%efxup   (:,i,j,icld))
+                  , ensemble_e(icld)%ierr_cap         , ensemble_e(icld)%jmin_cap          &
+                  , ensemble_e(icld)%k22_cap          , ensemble_e(icld)%kbcon_cap         &
+                  , ensemble_e(icld)%kdet_cap         , ensemble_e(icld)%ktop_cap          &
+                  , ensemble_e(icld)%cdd_cap          , ensemble_e(icld)%cdu_cap           &
+                  , ensemble_e(icld)%mentrd_rate_cap  , ensemble_e(icld)%mentru_rate_cap   &
+                  , ensemble_e(icld)%etad_cld_cap     , ensemble_e(icld)%etau_cld_cap      &           
+                  , mass_g(ngrid)%cfxdn   (:,i,j,icld), mass_g(ngrid)%cfxup   (:,i,j,icld) &
+                  , mass_g(ngrid)%dfxdn   (:,i,j,icld), mass_g(ngrid)%dfxup   (:,i,j,icld) &
+                  , mass_g(ngrid)%efxdn   (:,i,j,icld), mass_g(ngrid)%efxup   (:,i,j,icld) )
             end if
 
             !------------------------------------------------------------------------------!
@@ -431,24 +492,40 @@ subroutine grell_cupar_driver(banneron,cldd,clds)
                if (icld == 1) then
                   call grell_massflx_stats(mzp,icld,.true.,dti,maxens_dyn,maxens_lsf       &
                                           , maxens_eff,maxens_cap,inv_ensdim,closure_type  &
-                                          , ensemble_e(icld)                               &
+                                          , ensemble_e(icld)%ierr_cap                      &
+                                          , ensemble_e(icld)%upmf_ens                      &
                                           , extra3d(1,ngrid)%d3        (:,i,j)             &
                                           , extra3d(4,ngrid)%d3        (:,i,j)             )
                   call grell_massflx_stats(mzp,icld,.false.,dti,maxens_dyn,maxens_lsf      &
                                           , maxens_eff,maxens_cap,inv_ensdim,closure_type  &
-                                          , ensemble_e(icld)                               &
+                                          , ensemble_e(icld)%ierr_cap                      &
+                                          , ensemble_e(icld)%upmf_ens                      &
                                           , extra3d(1,ngrid)%d3        (:,i,j)             &
                                           , extra3d(4,ngrid)%d3        (:,i,j)             )
                elseif (icld == 2) then
                   call grell_massflx_stats(mzp,icld,.true.,dti,maxens_dyn,maxens_lsf       &
                                           , maxens_eff,maxens_cap,inv_ensdim,closure_type  &
-                                          , ensemble_e(icld)                               &
+                                          , ensemble_e(icld)%ierr_cap                      &
+                                          , ensemble_e(icld)%upmf_ens                      &
                                           , extra3d(2,ngrid)%d3        (:,i,j)             &
                                           , scratch%vt3dp                                  )
                end if
                do iscl=1,naddsc
                   call trans_conv_mflx(icld,iscl,mzp,mxp,myp,maxens_cap,i,j                &
-                                      ,ensemble_e(icld)                                    &
+                                      ,ensemble_e(icld)%ierr_cap                           &
+                                      ,ensemble_e(icld)%jmin_cap                           &
+                                      ,ensemble_e(icld)%k22_cap                            &
+                                      ,ensemble_e(icld)%kbcon_cap                          &
+                                      ,ensemble_e(icld)%kdet_cap                           &
+                                      ,ensemble_e(icld)%kstabi_cap                         &
+                                      ,ensemble_e(icld)%kstabm_cap                         &
+                                      ,ensemble_e(icld)%ktop_cap                           &
+                                      ,ensemble_e(icld)%cdd_cap                            &
+                                      ,ensemble_e(icld)%cdu_cap                            &
+                                      ,ensemble_e(icld)%mentrd_rate_cap                    &
+                                      ,ensemble_e(icld)%mentru_rate_cap                    &
+                                      ,ensemble_e(icld)%etad_cld_cap                       &
+                                      ,ensemble_e(icld)%etau_cld_cap                       &
                                       ,cuparm_g(ngrid)%edt     (i,j,icld)                  &
                                       ,cuparm_g(ngrid)%upmf    (i,j,icld)                  &
                                       ,scalar_g(iscl,ngrid)%sclt                           )

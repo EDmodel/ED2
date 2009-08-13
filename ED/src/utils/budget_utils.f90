@@ -58,7 +58,7 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm            &
    logical                               :: water_ok
    !----- Local constants. --------------------------------------------------!
    character(len=13)     , parameter     :: fmtf='(a,1x,es14.7)'
-   logical               , parameter     :: print_debug = .true.
+   logical               , parameter     :: print_debug = .false.
    !----- External functions. -----------------------------------------------!
    real                  , external      :: compute_netrad
    real                  , external      :: compute_water_storage
