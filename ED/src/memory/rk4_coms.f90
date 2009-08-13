@@ -110,8 +110,6 @@ module rk4_coms
       real(kind=8) :: avg_sensible_gc   ! Ground    -> canopy air
       real(kind=8) :: avg_sensible_ac   ! Free atm. -> canopy air
       real(kind=8) :: avg_heatstor_veg  ! Heat storage in vegetation
-      real(kind=8) :: avg_sensible_tot  ! Sensible heat flux
-      real(kind=8) :: avg_sensible_2cas ! Sensible heat flux to canopy air space
       !----- Carbon flux ------------------------------------------------------------------!
       real(kind=8) :: avg_carbon_ac     ! Free atm. -> canopy air
       !----- Soil fluxes ------------------------------------------------------------------!
@@ -567,11 +565,9 @@ module rk4_coms
       y%avg_evap                       = 0.d0
       y%avg_netrad                     = 0.d0
       y%avg_sensible_vc                = 0.d0
-      y%avg_sensible_2cas              = 0.d0
       y%avg_qwshed_vg                  = 0.d0
       y%avg_sensible_gc                = 0.d0
       y%avg_sensible_ac                = 0.d0
-      y%avg_sensible_tot               = 0.d0
       y%avg_heatstor_veg               = 0.d0
 
       y%avg_drainage                   = 0.d0

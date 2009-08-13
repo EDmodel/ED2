@@ -309,7 +309,7 @@ subroutine shcu_env(nz)
    rlll  = (qve(kcon)+qve(kcon-1))/2.      
    zlll  = ze(kcon)
    thlll = tlll*(p00/plll)**(r/cp)
-   call lcl_il(thlll,plll,tlll,rlll,rlll,tlcl,plcl,dzlcl,.false.)
+   call lcl_il(thlll,plll,tlll,rlll,rlll,tlcl,plcl,dzlcl,2,.false.)
    if (dzlcl == 0.) then
       tlcl = tlll
       plcl = plll

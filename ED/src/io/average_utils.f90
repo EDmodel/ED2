@@ -52,14 +52,11 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%avg_runoff(ipa)       = csite%avg_runoff(ipa)        * frqsumi
             csite%avg_drainage(ipa)     = csite%avg_drainage(ipa)      * frqsumi
             csite%avg_sensible_vc(ipa)  = csite%avg_sensible_vc(ipa)   * frqsumi
-            csite%avg_sensible_2cas(ipa)= csite%avg_sensible_2cas(ipa) * frqsumi
             csite%avg_qwshed_vg(ipa)    = csite%avg_qwshed_vg(ipa)     * frqsumi
             csite%avg_sensible_gc(ipa)  = csite%avg_sensible_gc(ipa)   * frqsumi
             csite%avg_sensible_ac(ipa)  = csite%avg_sensible_ac(ipa)   * frqsumi
-            csite%avg_sensible_tot(ipa) = csite%avg_sensible_tot(ipa)  * frqsumi
             csite%avg_carbon_ac(ipa)    = csite%avg_carbon_ac(ipa)     * frqsumi
             csite%avg_runoff_heat(ipa)  = csite%avg_runoff_heat(ipa)   * frqsumi
-            ! csite%avg_heatstor_veg(ipa) = csite%avg_heatstor_veg(ipa)  * tfact ! CHECK THIS?
          
             do k=cpoly%lsl(isi),nzg
                csite%avg_sensible_gg(k,ipa) = csite%avg_sensible_gg(k,ipa) * frqsumi
@@ -192,27 +189,18 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_runoff(ipa)           = 0.0
             csite%avg_drainage(ipa)         = 0.0
             csite%avg_sensible_vc(ipa)      = 0.0
-            csite%avg_sensible_2cas(ipa)    = 0.0
             csite%avg_qwshed_vg(ipa)        = 0.0
             csite%avg_sensible_gc(ipa)      = 0.0
             csite%avg_sensible_ac(ipa)      = 0.0
-            csite%avg_sensible_tot(ipa)     = 0.0
             csite%avg_sensible_gg(:,ipa)    = 0.0
             csite%avg_runoff_heat(ipa)      = 0.0
             csite%aux(ipa)                  = 0.0
             csite%aux_s(:,ipa)              = 0.0
          
-            csite%avg_heatstor_veg(ipa)     = 0.0  !SHOULD THIS BE ZERO'D ALSO?
-
             do ico=1,cpatch%ncohorts
                cpatch%leaf_respiration(ico)    = 0.0
                cpatch%root_respiration(ico)    = 0.0
-               !Still checking if these should be zerod, should not be necessary
-               !They are not integrated variables...
-               !cpatch%mean_leaf_resp(ico)      = 0.0
-               !cpatch%mean_root_resp(ico)      = 0.0
                cpatch%gpp(ico)                 = 0.0
-
             end do
          end do
 
@@ -257,7 +245,6 @@ subroutine reset_averaged_vars(cgrid)
       cgrid%avg_drainage(ipy)       = 0.0
       cgrid%avg_evap(ipy)           = 0.0
       cgrid%avg_transp(ipy)         = 0.0
-      cgrid%avg_sensible_tot(ipy)   = 0.0
       cgrid%avg_soil_temp(:,ipy)    = 0.0
       cgrid%avg_soil_water(:,ipy)   = 0.0
       cgrid%avg_soil_energy(:,ipy)  = 0.0
@@ -528,7 +515,6 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          
          sitesum_evap         = sitesum_evap         + (sum(csite%avg_evap        *csite%area) * site_area_i) * cpoly%area(isi)
          sitesum_transp       = sitesum_transp       + (sum(csite%avg_transp      *csite%area) * site_area_i) * cpoly%area(isi)
-         sitesum_sensible_tot = sitesum_sensible_tot + (sum(csite%avg_sensible_tot*csite%area) * site_area_i) * cpoly%area(isi)
          
          sitesum_co2_residual    = sitesum_co2_residual    + (sum(csite%co2budget_residual*csite%area) * site_area_i) * cpoly%area(isi)
          sitesum_water_residual  = sitesum_water_residual  + (sum(csite%wbudget_residual  *csite%area) * site_area_i) * cpoly%area(isi)
@@ -537,7 +523,7 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          cpoly%dmean_co2_residual(isi)    = cpoly%dmean_co2_residual(isi)    + sum(csite%co2budget_residual*csite%area) * site_area_i
          cpoly%dmean_energy_residual(isi) = cpoly%dmean_energy_residual(isi) + sum(csite%ebudget_residual  *csite%area) * site_area_i
          cpoly%dmean_water_residual(isi)  = cpoly%dmean_water_residual(isi)  + sum(csite%wbudget_residual  *csite%area) * site_area_i
-        
+
          luloop: do lu=1,n_dist_types
             sitesum_rh_lu(lu)    = sitesum_rh_lu(lu) + &
                                    (sum(csite%co2budget_rh*csite%area,csite%dist_type == lu)   * site_area_i) * cpoly%area(isi)
@@ -588,7 +574,7 @@ subroutine integrate_ed_daily_output_flux(cgrid)
       cgrid%dmean_sensible_vc(ipy)  = cgrid%dmean_sensible_vc(ipy)  + cgrid%avg_sensible_vc(ipy) 
       cgrid%dmean_sensible_gc(ipy)  = cgrid%dmean_sensible_gc(ipy)  + cgrid%avg_sensible_gc(ipy) 
       cgrid%dmean_sensible_ac(ipy)  = cgrid%dmean_sensible_ac(ipy)  + cgrid%avg_sensible_ac(ipy) 
-      cgrid%dmean_sensible(ipy)     = cgrid%dmean_sensible(ipy)     + cgrid%avg_sensible_tot(ipy) 
+
       cgrid%dmean_pcpg(ipy)         = cgrid%dmean_pcpg(ipy)         + cgrid%avg_pcpg(ipy)     
       cgrid%dmean_runoff(ipy)       = cgrid%dmean_runoff(ipy)       + cgrid%avg_runoff(ipy)
       cgrid%dmean_drainage(ipy)     = cgrid%dmean_drainage(ipy)     + cgrid%avg_drainage(ipy)
@@ -758,7 +744,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_sensible_vc(ipy)  = cgrid%dmean_sensible_vc(ipy)  * frqsum_o_daysec
       cgrid%dmean_sensible_gc(ipy)  = cgrid%dmean_sensible_gc(ipy)  * frqsum_o_daysec
       cgrid%dmean_sensible_ac(ipy)  = cgrid%dmean_sensible_ac(ipy)  * frqsum_o_daysec
-      cgrid%dmean_sensible   (ipy)  = cgrid%dmean_sensible   (ipy)  * frqsum_o_daysec
+
 
       ! Carbon flux variables should be total flux integrated over the day at this point, [µmol/m²/s] -> [kgC/m²/day]
       cgrid%dmean_leaf_resp  (ipy)  = cgrid%dmean_leaf_resp (ipy)   * umol_2_kgC * day_sec
@@ -967,7 +953,7 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_sensible_vc    (ipy) = 0.
       cgrid%dmean_sensible_gc    (ipy) = 0.
       cgrid%dmean_sensible_ac    (ipy) = 0.
-      cgrid%dmean_sensible       (ipy) = 0.
+ 
       cgrid%dmean_plresp         (ipy) = 0.
       cgrid%dmean_rh             (ipy) = 0.
       cgrid%dmean_leaf_resp      (ipy) = 0.
@@ -1078,7 +1064,7 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
       cgrid%mmean_gpp           (ipy) = cgrid%mmean_gpp           (ipy) +  cgrid%dmean_gpp           (ipy)
       cgrid%mmean_evap          (ipy) = cgrid%mmean_evap          (ipy) +  cgrid%dmean_evap          (ipy)
       cgrid%mmean_transp        (ipy) = cgrid%mmean_transp        (ipy) +  cgrid%dmean_transp        (ipy)
-      cgrid%mmean_sensible      (ipy) = cgrid%mmean_sensible      (ipy) +  cgrid%dmean_sensible      (ipy)
+
       cgrid%mmean_sensible_ac   (ipy) = cgrid%mmean_sensible_ac   (ipy) +  cgrid%dmean_sensible_ac   (ipy)
       cgrid%mmean_sensible_gc   (ipy) = cgrid%mmean_sensible_gc   (ipy) +  cgrid%dmean_sensible_gc   (ipy)
       cgrid%mmean_sensible_vc   (ipy) = cgrid%mmean_sensible_vc   (ipy) +  cgrid%dmean_sensible_vc   (ipy)
@@ -1129,7 +1115,7 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
       cgrid%stdev_gpp     (ipy) = cgrid%stdev_gpp     (ipy) +  cgrid%dmean_gpp     (ipy) ** 2
       cgrid%stdev_evap    (ipy) = cgrid%stdev_evap    (ipy) +  cgrid%dmean_evap    (ipy) ** 2
       cgrid%stdev_transp  (ipy) = cgrid%stdev_transp  (ipy) +  cgrid%dmean_transp  (ipy) ** 2
-      cgrid%stdev_sensible(ipy) = cgrid%stdev_sensible(ipy) +  cgrid%dmean_sensible(ipy) ** 2
+      cgrid%stdev_sensible(ipy) = cgrid%stdev_sensible(ipy) +  cgrid%dmean_sensible_ac(ipy) ** 2
       cgrid%stdev_nep     (ipy) = cgrid%stdev_nep     (ipy) +  cgrid%dmean_nep     (ipy) ** 2
       cgrid%stdev_rh      (ipy) = cgrid%stdev_rh      (ipy) +  cgrid%dmean_rh      (ipy) ** 2
       
@@ -1211,7 +1197,6 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_gpp            (ipy) = cgrid%mmean_gpp            (ipy) * ndaysi
       cgrid%mmean_evap           (ipy) = cgrid%mmean_evap           (ipy) * ndaysi
       cgrid%mmean_transp         (ipy) = cgrid%mmean_transp         (ipy) * ndaysi
-      cgrid%mmean_sensible       (ipy) = cgrid%mmean_sensible       (ipy) * ndaysi
       cgrid%mmean_sensible_ac    (ipy) = cgrid%mmean_sensible_ac    (ipy) * ndaysi
       cgrid%mmean_sensible_gc    (ipy) = cgrid%mmean_sensible_gc    (ipy) * ndaysi
       cgrid%mmean_sensible_vc    (ipy) = cgrid%mmean_sensible_vc    (ipy) * ndaysi
@@ -1269,7 +1254,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%stdev_gpp     (ipy) = srnonm1 * sqrt(cgrid%stdev_gpp     (ipy) * ndaysi - cgrid%mmean_gpp     (ipy) ** 2)
       cgrid%stdev_evap    (ipy) = srnonm1 * sqrt(cgrid%stdev_evap    (ipy) * ndaysi - cgrid%mmean_evap    (ipy) ** 2)
       cgrid%stdev_transp  (ipy) = srnonm1 * sqrt(cgrid%stdev_transp  (ipy) * ndaysi - cgrid%mmean_transp  (ipy) ** 2)
-      cgrid%stdev_sensible(ipy) = srnonm1 * sqrt(cgrid%stdev_sensible(ipy) * ndaysi - cgrid%mmean_sensible(ipy) ** 2)
+      cgrid%stdev_sensible(ipy) = srnonm1 * sqrt(cgrid%stdev_sensible(ipy) * ndaysi - cgrid%mmean_sensible_ac(ipy) ** 2)
       cgrid%stdev_nep     (ipy) = srnonm1 * sqrt(cgrid%stdev_nep     (ipy) * ndaysi - cgrid%mmean_nep     (ipy) ** 2)
       cgrid%stdev_rh      (ipy) = srnonm1 * sqrt(cgrid%stdev_rh      (ipy) * ndaysi - cgrid%mmean_rh      (ipy) ** 2)
   
@@ -1364,7 +1349,6 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_gpp            (ipy) = 0.
       cgrid%mmean_evap           (ipy) = 0.
       cgrid%mmean_transp         (ipy) = 0.
-      cgrid%mmean_sensible       (ipy) = 0.
       cgrid%mmean_sensible_ac    (ipy) = 0.
       cgrid%mmean_sensible_gc    (ipy) = 0.
       cgrid%mmean_sensible_vc    (ipy) = 0.

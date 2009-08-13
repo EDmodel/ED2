@@ -7,7 +7,7 @@
 subroutine grell_cupar_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf           &
                                ,maxens_dyn,inv_ensdim,max_heat,dnmf_ens,upmf_ens           &
                                ,dellathil_eff,dellaqtot_eff,dellaco2_eff,pw_eff,ierr_cap   &
-                               ,upmf,dnmf,edt)
+                               ,upmf,dnmf,edt,i,j,icld,mynum)
 
    use rconstants        , only : day_sec       ! ! intent(in)
    use mem_ensemble      , only : ensemble_vars ! ! type
@@ -26,6 +26,10 @@ subroutine grell_cupar_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf
    integer               , intent(in)    :: maxens_dyn        ! # of dyn. control members
    real                  , intent(in)    :: inv_ensdim        ! 1 / # of members 
    real                  , intent(in)    :: max_heat          ! Maximum heat allowed
+   integer               , intent(in)    :: i                 ! X coordinate
+   integer               , intent(in)    :: j                 ! Y coordinate
+   integer               , intent(in)    :: icld              ! Cloud "coordinate"
+   integer               , intent(in)    :: mynum             ! My number, for debugging
    !----- Arguments, input/output variables (ensemble structure). -------------------------!
    real, dimension(maxens_dyn,maxens_lsf,maxens_eff,maxens_cap), intent(inout) ::          &
             dnmf_ens       & ! Reference downdraft mass flux                      [kg/m²/s]
@@ -48,8 +52,11 @@ subroutine grell_cupar_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf
    integer                               :: kmax              ! Maximum location index
    integer                               :: iedt              ! efficiency counter
    integer                               :: icap              ! Cap_max counter
+   integer                               :: iun
    real                                  :: rescale           ! Rescaling factor
    real                                  :: inv_maxens_effcap ! 1/( maxens_eff*maxens_cap)
+   !----- Local constant, controlling debugging information. ------------------------------!
+   logical               , parameter     :: print_debug = .false.
    !---------------------------------------------------------------------------------------!
 
    !----- Assigning the inverse of part of the ensemble dimension. ------------------------!
@@ -62,11 +69,12 @@ subroutine grell_cupar_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf
    upmf    = 0.
    dnmf    = 0.
    edt     = 0.
-   outthil = 0.
-   outqtot = 0.
-   outco2  = 0.
    precip  = 0.
-
+   do k=1,mgmzp
+      outthil (k) = 0.
+      outqtot (k) = 0.
+      outco2  (k) = 0.
+   end do
    !---------------------------------------------------------------------------------------!
    !     Before we average, we just need to make sure we don't have negative reference     !
    ! mass fluxes.  If we do, then we flush those to zero.                                  !
@@ -113,8 +121,12 @@ subroutine grell_cupar_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf
    ! back to K/s.                                                                          !
    !---------------------------------------------------------------------------------------!
    do k=1,mkx
-      outthil(k) = upmf * sum(dellathil_eff(k,1:maxens_eff,1:maxens_cap))                  &
-                 * inv_maxens_effcap * day_sec
+      do icap = 1, maxens_cap
+         do iedt = 1, maxens_eff
+            outthil(k) = outthil(k) + dellathil_eff(k,iedt,icap)
+         end do
+      end do
+      outthil(k) = upmf * outthil(k) * inv_maxens_effcap * day_sec
    end do
    !----- Get minimum and maximum outt, and where they happen -----------------------------!
    kmin = minloc(outthil,dim=1)
@@ -160,10 +172,14 @@ subroutine grell_cupar_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf
    !    With the mass flux and heating on the track, compute other sources/sinks           !
    !---------------------------------------------------------------------------------------!
    do k=1,mkx
-      outqtot(k) = upmf * sum(dellaqtot_eff(k,1:maxens_eff,1:maxens_cap))                  &
-                 * inv_maxens_effcap
-      outco2(k)  = upmf * sum(dellaco2_eff (k,1:maxens_eff,1:maxens_cap))                  &
-                 * inv_maxens_effcap
+      do icap = 1, maxens_cap
+         do iedt= 1, maxens_eff
+            outqtot(k) = outqtot(k) + dellaqtot_eff(k,iedt,icap)
+            outco2 (k) = outco2 (k) + dellaco2_eff (k,iedt,icap)
+         end do
+      end do
+      outqtot(k) = upmf * outqtot(k) * inv_maxens_effcap
+      outco2(k)  = upmf * outco2(k)  * inv_maxens_effcap
    end do
 
    !---------------------------------------------------------------------------------------!
@@ -185,6 +201,24 @@ subroutine grell_cupar_feedback(comp_down,mgmzp,maxens_cap,maxens_eff,maxens_lsf
    !---------------------------------------------------------------------------------------!
    if (comp_down .and. upmf > 0) then
       edt  = dnmf/upmf
+   end if
+
+   !----- If the user wants print outs, now that is the time... ---------------------------!
+   if (print_debug) then
+      iun=mynum+50
+      write(unit=iun,fmt='(a)') '---------------------------------------------------------'
+      write(unit=iun,fmt='(3(a,1x,i5,1x))') ' I=',i,'J=',j,'ICLD=',icld
+      write(unit=iun,fmt='(4(a,1x,f10.4,1x))') ' PRECIP   =',precip                        &
+                                              ,' EDT      =',edt                           &
+                                              ,' DNMF     =',dnmf                          &
+                                              ,' UPMF     =',upmf
+      write(unit=iun,fmt='(a,3(1x,a))')  'Level','    DTHILDT','    DQTOTDT','     DCO2DT'
+      do k=1,mkx
+         write(unit=iun,fmt='(i5,3(1x,es12.5))') outthil(k),outqtot(k),outco2(k)
+      end do
+      write(unit=iun,fmt='(a)') '---------------------------------------------------'
+      write(unit=iun,fmt='(a)') ' '
+      
    end if
 
    return

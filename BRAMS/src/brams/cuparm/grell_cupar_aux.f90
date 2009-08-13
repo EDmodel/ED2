@@ -290,7 +290,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
       t0(k)     = cpi * theta(kr) * exner0(k)
 
       !------ 4. Finding the ice-vapour equivalent potential temperature ------------------!
-      theiv0(k) = thetaeiv(thil0(k),p0(k),t0(k),qvap0(k),qtot0(k))
+      theiv0(k) = thetaeiv(thil0(k),p0(k),t0(k),qvap0(k),qtot0(k),5)
 
       !------ 5. CO2 mixing ratio. --------------------------------------------------------!
       co20(k)   = co2p(kr)
@@ -328,7 +328,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
       t(k)     = t0(k)
       call thil2tqall(thil(k),exner(k),p(k),qtot(k),qliq(k),qice(k),t(k),qvap(k),qsat)
       !------ 6. Finding the ice-vapour equivalent potential temperature ------------------!
-      theiv(k) = thetaeiv(thil(k),p(k),t(k),qvap(k),qtot(k))
+      theiv(k) = thetaeiv(thil(k),p(k),t(k),qvap(k),qtot(k),6)
       !------ 7. CO2 mixing ratio ---------------------------------------------------------!
       co2(k)   = co2p(kr) + dco2dt(k) * dtime
       !------ 8. Turbulent kinetic energy -------------------------------------------------!
@@ -364,7 +364,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
    !----- 7. Temperature ------------------------------------------------------------------!
    tsur        = cpi*theta(lpw)*exnersur
    !----- 8. Ice-vapour equivalent potential temperature ----------------------------------!
-   theivsur    = thetaeiv(thilsur,psur,tsur,qvapsur,qtotsur)
+   theivsur    = thetaeiv(thilsur,psur,tsur,qvapsur,qtotsur,7)
    !----- 9. CO2 mixing ratio -------------------------------------------------------------!
    co2sur      = co2p(lpw)
    !---------------------------------------------------------------------------------------!

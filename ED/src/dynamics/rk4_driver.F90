@@ -203,12 +203,14 @@ module rk4_driver
             end do patchloop
          end do siteloop
 
-#if (USE_MPIWTIME)
+#if USE_MPIWTIME
          time_py_end            = MPI_Wtime() 
          cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) + (time_py_end-time_py_start)
 #else
-         time_py_spent          = walltime(time_py_start)
-         cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) + dble(time_py_spent)
+         ! You will get funky results unless you use MPI_Wtime, best to flag as
+         ! nonesense so the analysis is not misleading
+!         time_py_spent          = walltime(time_py_start)
+         cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) -9.9 !+ dble(time_py_spent)
 #endif
 
       end do polygonloop
@@ -451,22 +453,20 @@ module rk4_driver
          wbudget_loss2drainage = sngloff(initp%wbudget_loss2drainage,tiny_offset)
          wbudget_loss2runoff   = sngloff(initp%wbudget_loss2runoff  ,tiny_offset)
 
-         csite%avg_vapor_vc(ipa)         =sngloff(initp%avg_vapor_vc         ,tiny_offset)
-         csite%avg_dew_cg(ipa)           =sngloff(initp%avg_dew_cg           ,tiny_offset)
-         csite%avg_vapor_gc(ipa)         =sngloff(initp%avg_vapor_gc         ,tiny_offset)
-         csite%avg_wshed_vg(ipa)         =sngloff(initp%avg_wshed_vg         ,tiny_offset)
-         csite%avg_vapor_ac(ipa)         =sngloff(initp%avg_vapor_ac         ,tiny_offset)
-         csite%avg_transp(ipa)           =sngloff(initp%avg_transp           ,tiny_offset)
-         csite%avg_evap(ipa)             =sngloff(initp%avg_evap             ,tiny_offset)
-         csite%avg_drainage(ipa)         =sngloff(initp%avg_drainage         ,tiny_offset)
-         csite%avg_netrad(ipa)           =sngloff(initp%avg_netrad           ,tiny_offset)
-         csite%avg_sensible_vc(ipa)      =sngloff(initp%avg_sensible_vc      ,tiny_offset)
-         csite%avg_sensible_2cas(ipa)    =sngloff(initp%avg_sensible_2cas    ,tiny_offset)
-         csite%avg_qwshed_vg(ipa)        =sngloff(initp%avg_qwshed_vg        ,tiny_offset)
-         csite%avg_sensible_gc(ipa)      =sngloff(initp%avg_sensible_gc      ,tiny_offset)
-         csite%avg_sensible_ac(ipa)      =sngloff(initp%avg_sensible_ac      ,tiny_offset)
-         csite%avg_sensible_tot(ipa)     =sngloff(initp%avg_sensible_tot     ,tiny_offset)
-         csite%avg_carbon_ac(ipa)        =sngloff(initp%avg_carbon_ac        ,tiny_offset)
+         csite%avg_vapor_vc(ipa)         =sngloff(initp%avg_vapor_vc      ,tiny_offset)
+         csite%avg_dew_cg(ipa)           =sngloff(initp%avg_dew_cg        ,tiny_offset)
+         csite%avg_vapor_gc(ipa)         =sngloff(initp%avg_vapor_gc      ,tiny_offset)
+         csite%avg_wshed_vg(ipa)         =sngloff(initp%avg_wshed_vg      ,tiny_offset)
+         csite%avg_vapor_ac(ipa)         =sngloff(initp%avg_vapor_ac      ,tiny_offset)
+         csite%avg_transp(ipa)           =sngloff(initp%avg_transp        ,tiny_offset)
+         csite%avg_evap(ipa)             =sngloff(initp%avg_evap          ,tiny_offset)
+         csite%avg_drainage(ipa)         =sngloff(initp%avg_drainage      ,tiny_offset)
+         csite%avg_netrad(ipa)           =sngloff(initp%avg_netrad        ,tiny_offset)
+         csite%avg_sensible_vc(ipa)      =sngloff(initp%avg_sensible_vc   ,tiny_offset)
+         csite%avg_qwshed_vg(ipa)        =sngloff(initp%avg_qwshed_vg     ,tiny_offset)
+         csite%avg_sensible_gc(ipa)      =sngloff(initp%avg_sensible_gc   ,tiny_offset)
+         csite%avg_sensible_ac(ipa)      =sngloff(initp%avg_sensible_ac   ,tiny_offset)
+         csite%avg_carbon_ac(ipa)        =sngloff(initp%avg_carbon_ac     ,tiny_offset)
          do k = rk4met%lsl, nzg
             csite%avg_sensible_gg(k,ipa) =sngloff(initp%avg_sensible_gg(k)   ,tiny_offset)
             csite%avg_smoist_gg(k,ipa)   =sngloff(initp%avg_smoist_gg(k)     ,tiny_offset)

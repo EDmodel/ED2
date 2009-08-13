@@ -57,9 +57,9 @@ module mem_scratch_grell
            ,p              & ! Pressure                                          [      Pa]
            ,rho            & ! Air density                                       [   kg/m³]
            ,qtot           & ! Total mixing ratio                                [   kg/kg]
-           ,qice           & ! Ice mixing ratio                                  [   kg/kg]
-           ,qliq           & ! Liquid water mixing ratio                         [   kg/kg]
            ,qvap           & ! Water vapour mixing ratio                         [   kg/kg]
+           ,qliq           & ! Liquid water mixing ratio                         [   kg/kg]
+           ,qice           & ! Ice mixing ratio                                  [   kg/kg]
            ,t              & ! Temperature                                       [       K]
            ,thil           & ! Ice-liquid potential temperature                  [       K]
            ,theiv          & ! Ice-vapour equivalent potential temperature       [       K]
@@ -78,9 +78,9 @@ module mem_scratch_grell
            ,exner0    & ! Exner function                                         [  J/kg/K]
            ,p0        & ! Pressure with forcing                                  [     hPa]
            ,qtot0     & ! Total mixing ratio                                     [   kg/kg]
-           ,qice0     & ! Ice mixing ratio                                       [   kg/kg]
-           ,qliq0     & ! Liquid water mixing ratio                              [   kg/kg]
            ,qvap0     & ! Water vapour mixing ratio                              [   kg/kg]
+           ,qliq0     & ! Liquid water mixing ratio                              [   kg/kg]
+           ,qice0     & ! Ice mixing ratio                                       [   kg/kg]
            ,rho0      & ! Air density                                            [   kg/m³]
            ,t0        & ! Temperature                                            [       K]
            ,thil0     & ! Ice-liquid potential temperature                       [       K]
@@ -322,11 +322,11 @@ module mem_scratch_grell
       allocate (exner         (mgmzp))
       allocate (omeg          (mgmzp))
       allocate (p             (mgmzp))
+      allocate (rho           (mgmzp))
       allocate (qtot          (mgmzp))
       allocate (qvap          (mgmzp))
       allocate (qliq          (mgmzp))
       allocate (qice          (mgmzp))
-      allocate (rho           (mgmzp))
       allocate (t             (mgmzp))
       allocate (thil          (mgmzp))
       allocate (theiv         (mgmzp))
@@ -434,10 +434,6 @@ module mem_scratch_grell
       allocate (tu_cld        (mgmzp))
       allocate (thilu_cld     (mgmzp))
       allocate (theivu_cld    (mgmzp))
-     
-      allocate (outqtot       (mgmzp))
-      allocate (outthil       (mgmzp))
-      allocate (outco2        (mgmzp))
 
       allocate (x_co2         (mgmzp))
       allocate (x_qtot        (mgmzp))
@@ -487,6 +483,10 @@ module mem_scratch_grell
       allocate (x_tu_cld      (mgmzp))
       allocate (x_thilu_cld   (mgmzp))
       allocate (x_theivu_cld  (mgmzp))
+     
+      allocate (outqtot       (mgmzp))
+      allocate (outthil       (mgmzp))
+      allocate (outco2        (mgmzp))
 
       return
    end subroutine alloc_scratch_grell

@@ -426,7 +426,8 @@ subroutine grell_cupar_driver(banneron,cldd,clds)
                                      , ensemble_e(icld)%ierr_cap                           &
                                      , cuparm_g(ngrid)%upmf(i,j,icld)                      &
                                      , cuparm_g(ngrid)%upmf(i,j,icld)                      &
-                                     , cuparm_g(ngrid)%edt (i,j,icld)                      )
+                                     , cuparm_g(ngrid)%edt (i,j,icld)                      &
+                                     , i,j,icld,mynum)
 
             !------------------------------------------------------------------------------!
             ! 7b. We now compute the other output variables such as mass fluxes and inter- !

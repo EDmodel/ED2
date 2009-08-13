@@ -247,7 +247,6 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
             edt(icld) = ensemble_e(icld)%edt_eff(iedt,icap)
 
             mbprimeloop1: do imbp=maxens_lsf,1,-1
-               call zero_scratch_grell(2)
 
                !---------------------------------------------------------------------------!
                ! 3. Initialise some ensemble-related scratch variables. mbprime is an      !
@@ -274,16 +273,13 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                !    cloud work function.                                                   !
                !---------------------------------------------------------------------------!
                jcldloop1: do jcld=cldd,clds
+                  call zero_scratch_grell(2)
                   !------ We compute x_aatot only if the j cloud exists... ----------------!
                   if (ensemble_e(jcld)%ierr_cap(icap) == 0) then
                      !---------------------------------------------------------------------! 
                      !     Assign the  original values, then change the conditions from    !
                      ! the surface to the cloud top.                                       ! 
                      !---------------------------------------------------------------------! 
-                     x_theiv = theiv
-                     x_qtot  = qtot
-                     x_thil  = thil
-                     x_co2   = co2
                      do k=1,ensemble_e(jcld)%ktop_cap(icap)
                         x_theiv(k) = theiv(k)                                              &
                                    + mbprime(imbp) * dtime                                 &
@@ -298,6 +294,13 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                                    + mbprime(imbp) * dtime                                 &
                                    * ensemble_e(jcld)%dellaco2_eff(k,iedt,icap)
                      end do
+                     do k = ensemble_e(jcld)%ktop_cap(icap)+1,mkx
+                        x_theiv(k) = theiv(k)
+                        x_qtot(k)  = qtot(k)
+                        x_thil(k)  = thil(k)
+                        x_co2(k)   = co2(k)
+                     end do
+
                      !---------------------------------------------------------------------!
                      ! 5a. Initialise some variables.                                      !
                      !---------------------------------------------------------------------!

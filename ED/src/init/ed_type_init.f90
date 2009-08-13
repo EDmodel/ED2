@@ -225,18 +225,14 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%avg_smoist_gc(:,ip1:ip2)    = 0.0
   csite%avg_runoff(ip1:ip2)       = 0.0
   csite%avg_sensible_vc(ip1:ip2)  = 0.0
-  csite%avg_sensible_2cas(ip1:ip2)= 0.0
   csite%avg_qwshed_vg(ip1:ip2)    = 0.0
   csite%avg_sensible_gc(ip1:ip2)  = 0.0
   csite%avg_sensible_ac(ip1:ip2)  = 0.0
-  csite%avg_sensible_tot(ip1:ip2) = 0.0
   csite%avg_sensible_gg(:,ip1:ip2)  = 0.0
   csite%avg_runoff_heat(ip1:ip2)  = 0.0
   csite%aux(ip1:ip2)              = 0.0
   csite%aux_s(:,ip1:ip2)            = 0.0
   
-  csite%avg_heatstor_veg(ip1:ip2) = 0.0  !SHOULD THIS BE ZERO'D ALSO?
-
   csite%rshort_g(ip1:ip2) = 0.0
   csite%rshort_g_beam(ip1:ip2) = 0.0
   csite%rshort_g_diffuse(ip1:ip2) = 0.0

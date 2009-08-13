@@ -112,7 +112,7 @@ module ed_state_vars
      ! Plant storage pool of carbon [kgC/plant]
      real ,pointer,dimension(:) :: bstorage
      
-     ! Monthly carbon balance for past 12 months and the current month 
+     ! Monthly carbon balance for past 12 months and the current month
      ! (kgC/plant)
      real, pointer,dimension(:,:) :: cb       !(13,ncohorts)
      
@@ -183,6 +183,9 @@ module ed_state_vars
      ! This is where you keep the derivatives of the 
      ! stomatal conductance residual and the old met conditions.
      type(stoma_data) ,pointer,dimension(:) :: old_stoma_data
+
+     ! This vector is just for transporting the data into and out
+     ! of the HDF5 file
      real ,pointer,dimension(:,:)           :: old_stoma_vector
 
      ! Transpiration rate, open stomata (mm/s)
@@ -276,6 +279,7 @@ module ed_state_vars
      ! Gross Primary Productivity [umol/m2/s]
      real, pointer,dimension(:) :: gpp
 
+     ! Plant available water, (stress function)  0 to 1 [unitless]
      real, pointer, dimension(:) :: paw_avg
 
      ! Phenology-related
@@ -569,7 +573,7 @@ module ed_state_vars
      ! Vegetation height (m)
      real , pointer,dimension(:) :: veg_height 
 
-          ! Input to fast soil carbon pool [kgC/m2/day]
+     ! Input to fast soil carbon pool [kgC/m2/day]
      real , pointer,dimension(:) :: fsc_in
 
      ! Input to structural soil carbon pool [kgC/m2/day]
@@ -631,7 +635,7 @@ module ed_state_vars
      real , pointer,dimension(:) :: rlong_albedo
 
      ! Total snow depth as calculated in the radiation scheme.  Used for 
-     ! checking if cohorts are buried.
+     ! checking if cohorts are buried.  [m]
      real , pointer,dimension(:) :: total_snow_depth
 
      ! Fraction of vegetation covered with snow.  Used for computing 
@@ -697,54 +701,72 @@ module ed_state_vars
 
      real, pointer,dimension(:)  :: wpwp !eddy v. mom. flux w-prime w-prime
 
-     real, pointer,dimension(:)  :: avg_carbon_ac
+     ! Marcos: are we still leaving questions for each other in the code?  Or should I
+     ! just send you an email?  RGK 8-4-09
+     ! Ryan: I prefer e-mail because I can always add some new spam rules :)...
 
-     ! ------------------------------------------
+     ! -----------------------------------------------------------------
      ! Fast time flux diagnostic variables
-     !-------------------------------------------
+     ! The following variables are all averaged over 
+     ! the fast time flux period frqfast
+     !------------------------------------------------------------------
      
-     !----- Radiation ---------------------------
+     !----- Radiation --------------------------------------------------
      
      real,pointer,dimension(:) :: avg_netrad        ! Net radiation of soil,surface water and vegetation sum
+                                                    ! [W/m2]
 
-     !----- Moisture ----------------------------
-     !                                              | Description
-     real,pointer,dimension(:)   :: avg_vapor_vc    ! Vegetation to canopy air water flux [kg/m2/s]
-     real,pointer,dimension(:)   :: avg_dew_cg      ! Dew to ground flux
-     real,pointer,dimension(:)   :: avg_vapor_gc    ! Ground to canopy air water heat flux [kg/m2/s]
-     real,pointer,dimension(:)   :: avg_wshed_vg    ! Latent heat (shedding)
-     real,pointer,dimension(:)   :: avg_vapor_ac    ! Canopy to atmosphere water flux [kg/m2/s]
-     real,pointer,dimension(:)   :: avg_transp      ! Transpiration
-     real,pointer,dimension(:)   :: avg_evap        ! Evaporation
-     real,pointer,dimension(:,:) :: avg_smoist_gg   ! Moisture flux between layers
-     real,pointer,dimension(:,:) :: avg_smoist_gc   ! Trabspired soil moisture sink
-     real,pointer,dimension(:)   :: avg_runoff          ! Total runoff
-     real,pointer,dimension(:)   :: avg_drainage    ! Total drainage through the lower soil layer
+     ! Notation
+     ! ATM - atmosphere, CAS - canopy air space
 
-     !----- Auxillary Variables (user can modify to view any variable -----------------------------------------------!
+     !----- Moisture ---------------------------------------------------
+
+     real,pointer,dimension(:)   :: avg_carbon_ac   ! Average carbon flux, ATM -> CAS,       [umol/m2/s]
+     real,pointer,dimension(:)   :: avg_vapor_vc    ! Average water vapor flux, VEG -> CAS   [kg/m2/s]
+     real,pointer,dimension(:)   :: avg_dew_cg      ! Average dew flux, CAS -> GND           [kg/m2/s]
+     real,pointer,dimension(:)   :: avg_vapor_gc    ! Average water vapor flux, GND -> CAS   [kg/m2/s]
+     real,pointer,dimension(:)   :: avg_wshed_vg    ! Average flux of precip that bypasses
+                                                    !  leaves at water holding capacity (throughfall)
+                                                    !                                        [kg/m2/s]
+     real,pointer,dimension(:)   :: avg_vapor_ac    ! Average water vapor flux, ATM-CAS      [kg/m2/s]
+     real,pointer,dimension(:)   :: avg_transp      ! Average transpiration of water vapor   [kg/m2/s]
+     real,pointer,dimension(:)   :: avg_evap        ! Average evaporation from leaf and
+                                                    !  and ground surfaces -> CAS            [kg/m2/s]
+     real,pointer,dimension(:,:) :: avg_smoist_gg   ! Moisture flux between soil layers
+                                                    !  where layer (nzg) is the flux from the
+                                                    !  surface water into the top layer      [kg/m2/s]
+     real,pointer,dimension(:,:) :: avg_smoist_gc   ! Transpired soil moisture sink in each layer
+                                                    !                                        [kg/m2/s]
+     real,pointer,dimension(:)   :: avg_runoff      ! Average surface water runoff           [kg/m2/s]
+     real,pointer,dimension(:)   :: avg_drainage    ! Average water drainage through the lower 
+                                                    !  soil layer                            [kg/m2/s]
+
+     !----- Auxillary Variables (user can modify to view any variable ----------------------!
      real,pointer,dimension(:)   :: aux             ! Auxillary surface variable
      real,pointer,dimension(:,:) :: aux_s           ! Auxillary soil variable
+     
+     !----- Sensible heat ------------------------------------------------------------------!
 
-     !----- Sensible heat -------------------------------------------------------------------------------------------!
-     !                                              | Description
-     real,pointer,dimension(:) :: avg_sensible_vc   ! Vegetation to Canopy sensible heat flux
-     real,pointer,dimension(:) :: avg_sensible_2cas ! Sensible heat flux to canopy air space
-     real,pointer,dimension(:) :: avg_qwshed_vg     ! Sensible heat (shedding)
-     real,pointer,dimension(:) :: avg_sensible_gc   ! Ground to canopy air sensible heat flux
-     real,pointer,dimension(:) :: avg_sensible_ac   ! Canopy to atmosphere sensible heat flux
-     real,pointer,dimension(:) :: avg_sensible_tot  ! Sensible heat flux
-     real,pointer,dimension(:,:) :: avg_sensible_gg ! Net soil heat flux between layers
-     real,pointer,dimension(:) :: avg_runoff_heat   ! Total runoff internal energy flux
-     real,pointer,dimension(:) :: avg_heatstor_veg  ! Heat storage in vegetation
+     real,pointer,dimension(:) :: avg_sensible_vc   ! Sensible heat flux, VEG -> CAS         [W/m2]
+     real,pointer,dimension(:) :: avg_qwshed_vg     ! Internal energy flux of precipitation
+                                                    !  througfall                            [W/m2]
+     real,pointer,dimension(:) :: avg_sensible_gc   ! Sensible heat flux, GND -> CAS         [W/m2]
+     real,pointer,dimension(:) :: avg_sensible_ac   ! Sensible heat flux, ATM -> CAS         [W/m2]
+     real,pointer,dimension(:,:) :: avg_sensible_gg ! Net soil heat flux between layers      [W/m2]
+     real,pointer,dimension(:) :: avg_runoff_heat   ! Surface runoff internal energy flux    [W/m2]
 
-     !----- Mass and Energy --------------------------------------------------!
+     !----- Mass and Energy ----------------------------------------------------------------!
 
-     real,pointer,dimension(:) :: avg_veg_energy
-     real,pointer,dimension(:) :: avg_veg_temp
-     real,pointer,dimension(:) :: avg_veg_fliq
-     real,pointer,dimension(:) :: avg_veg_water
+     real,pointer,dimension(:) :: avg_veg_energy    ! The sum of vegetation energy of cohorts in patch
+                                                    ! [J/m2]   
+     real,pointer,dimension(:) :: avg_veg_temp      ! The mean patch level vegetation temp  [K]
+                                                    ! 
+     real,pointer,dimension(:) :: avg_veg_fliq      ! The mean patch level leaf surf liquid frac 
+     real,pointer,dimension(:) :: avg_veg_water     ! The sum of water residing on all leaf surface
+                                                    ! [kg/m2]
 
      !----- Hydrology variables ------------------------------------------------------------!
+
      real,pointer,dimension(:)   :: watertable
      real,pointer,dimension(:)   :: moist_dz
      real,pointer,dimension(:)   :: ksat
@@ -791,61 +813,43 @@ module ed_state_vars
 
      integer,pointer,dimension(:) :: sitenum
 
-     integer,pointer,dimension(:) :: fia_forestry
-
-     integer,pointer,dimension(:) :: agri_species
-     real,pointer,dimension(:) :: agri_stocking
-     
-     real,pointer,dimension(:) :: lambda_primary
-     real,pointer,dimension(:) :: lambda_secondary
-     integer,pointer,dimension(:) :: plantation_species
-     real,pointer,dimension(:) :: plantation_stocking
-     real,pointer,dimension(:) :: reference_agb
-
-     ! ====================================
-!     type(lutime), pointer,dimension(:) :: first_lutime
-!     type(lutime), pointer,dimension(:) :: last_lutime
-!     type(lutime), pointer,dimension(:) :: clutime
      ! The vectorized landuse matrix is allocated in landuse_init
      type(lutime), pointer,dimension(:,:) :: clutimes !(luyears,nsites)
 
-!     integer,pointer,dimension(:,:)   :: landuse_year !(luyears,nsites)
-!     integer,pointer,dimension(:,:,:) :: landuse      !(num_lu_trans,luyears,nsites)
+     integer,pointer,dimension(:) :: num_landuse_years  !The number of years of landuse data
+                                                        ! calculated at read-in of data during 
+                                                        ! landuse_init
 
-     ! ====================================
-
-     integer,pointer,dimension(:) :: num_landuse_years
-     real,   pointer,dimension(:,:) :: lai_pft ! (n_pft,nsites)
-     real,   pointer,dimension(:,:) :: lai_lu ! (n_dist_types,nsites)
-     real,   pointer,dimension(:,:) :: wpa_pft ! (n_pft,nsites)
-     real,   pointer,dimension(:,:) :: wpa_lu ! (n_dist_types,nsites)
-     real,   pointer,dimension(:,:) :: wai_pft ! (n_pft,nsites)
-     real,   pointer,dimension(:,:) :: wai_lu ! (n_dist_types,nsites)
-
-     real, pointer,dimension(:,:) :: elongation_factor
-     real, pointer,dimension(:,:) :: delta_elongf
-     real, pointer,dimension(:,:) :: gee_phen_delay
+     real,   pointer,dimension(:,:) :: lai_pft    ! Site level mean LAI, grouped by cohort PFT
+                                                  ! [m2/m2] (n_pft,nsites)
+     real,   pointer,dimension(:,:) :: lai_lu     ! Site level mean LAI, grouped by patch land use type
+                                                  ! [m2/m2] (n_dist_types,nsites)
+     real,   pointer,dimension(:,:) :: wpa_pft    ! Woody Projected Area, grouped by cohort PFT
+                                                  ! [m2/m2] (n_pft,nsites)
+     real,   pointer,dimension(:,:) :: wpa_lu     ! Woody projected area, grouped by patch landuse type
+                                                  ! [m2/m2] (n_dist_types,nsites)
+     real,   pointer,dimension(:,:) :: wai_pft    ! Woody area index, grouped by cohort PFT
+                                                  ! [m2/m2] (n_pft,nsites)
+     real,   pointer,dimension(:,:) :: wai_lu     ! Woody area index, grouped by patch landuse type
+                                                  ! [m2/m2] (n_dist_types,nsites)
 
      !-----------------------------------
      ! BASIC INFO
      !-----------------------------------
-     ! is the site an SOI?
-     integer,pointer,dimension(:) :: soi
-     character(len=20),pointer,dimension(:) :: soi_name
 
-     real,pointer,dimension(:) :: area  !proportion of a grid cell occupied by the site
-     real,pointer,dimension(:) :: patch_area !unnormalized sum of patch areas
-     real,pointer,dimension(:) :: elevation ! mean site elevation (meters)
-     real,pointer,dimension(:) :: slope     ! mean site slope (degrees)
-     real,pointer,dimension(:) :: aspect     ! mean site aspect (degrees)
+     real,pointer,dimension(:) :: area            ! Proportion of a grid cell occupied by the site
+     real,pointer,dimension(:) :: patch_area      ! Un-normalized sum of patch areas
+     real,pointer,dimension(:) :: elevation       ! mean site elevation (meters)
+     real,pointer,dimension(:) :: slope           ! mean site slope (degrees)
+     real,pointer,dimension(:) :: aspect          ! mean site aspect (degrees)
 
      
      !--------------------------
      !  hydrologic routing info
      !--------------------------
-     real,pointer,dimension(:) :: TCI       ! topographic convergence index
+     real,pointer,dimension(:) :: TCI             ! topographic convergence index
 
-     integer,pointer,dimension(:) :: lsl    ! Lowest soil layer
+     integer,pointer,dimension(:) :: lsl          ! Index of the lowest soil layer
 
      ! The Following variables used to point to structures
      ! Now they point to the array index of the site
@@ -859,14 +863,11 @@ module ed_state_vars
      real,pointer,dimension(:)  :: moist_tau ! tau characteristic time scale for water redistribution
      real,pointer,dimension(:)  :: moist_zi  ! TOPMODEL "equilibrium" water table depth 
      real,pointer,dimension(:)  :: baseflow  ! loss of water from site to watershed discharge (kg/m2/s)
-     integer,pointer,dimension(:,:) :: ntext_soil
 
-     !-------------------------------------
-     ! Over what period do we estimate?
-     !    (currently the minimum is 1992, maximum is 2003)  
-     integer,pointer,dimension(:)  :: metplex_beg_month
-     integer,pointer,dimension(:)  :: metplex_beg_year
-     integer,pointer,dimension(:)  :: metplex_end_year
+     integer,pointer,dimension(:,:) :: ntext_soil  ! The soil classifications index of the soil layer
+                                                   ! refer to soil_coms to view the soil parameters
+                                                   ! associated with each of these classes
+
      !-----------------------------------
      ! TEMPERATURE VARIABLES
      !-----------------------------------
@@ -877,10 +878,7 @@ module ed_state_vars
      !-----------------------------------
      ! FORESTRY
      !-----------------------------------
-     !total carbon removed (not as timber) in the last patch dynamics call(KgC)
-     real,pointer,dimension(:) :: removed_biomass  ! calculated in spawn_patches  
-     ! total carbon harvested in the last patch dynamics call (KgC) 
-     real,pointer,dimension(:) :: harvested_biomass  ! calculated in spawn_patches
+
      ! is the site under plantation management? (1=yes, 0=no)
      integer,pointer,dimension(:) :: plantation  ! initialized to zero in site creation
 
@@ -913,16 +911,12 @@ module ed_state_vars
      !-----------------------------------
      ! FIRE
      !-----------------------------------
-     ! fire occurence flag
-     integer,pointer,dimension(:) :: fire_flag
+
      ! site average fire disturbance rate
      real,pointer,dimension(:) :: fire_disturbance_rate
-     ! total biomass available as fuel
-     real,pointer,dimension(:) :: fuel
      ! total fuel in the dry patches
      real,pointer,dimension(:) :: ignition_rate
-     ! site averaged fire disturbance rate for each month of the year
-     real,pointer, dimension(:,:) :: lambda1 ! initialized in create_site   !(12,nsites)
+
      real,pointer, dimension(:,:) :: lambda_fire ! initialized in create_site !(12,nsites)
 
      type(prescribed_phen),pointer, dimension(:) :: phen_pars
@@ -950,13 +944,8 @@ module ed_state_vars
      ! the disturbance matrix (to,from)
      real,pointer,dimension(:,:,:) :: disturbance_rates !(n_dist_types,n_dist_types,nsites)
 
-     ! area by landuse/disturbance type
-     real,pointer,dimension(:,:) :: lu_dist_area !(n_dist_types,nsites)
-
      ! fraction of non-surviving a.g. material removed from patch
      real,pointer,dimension(:,:) :: loss_fraction !(n_dist_types,nsites)
-
-     real,pointer,dimension(:) :: disturbance_rate
 
      real,pointer,dimension(:,:):: green_leaf_factor !(n_pft,nsites)
      real,pointer,dimension(:,:) :: leaf_aging_factor !(n_pft,nsites)
@@ -1015,14 +1004,11 @@ module ed_state_vars
      !----- Sensible heat -------------------------------------------------------------------------------------------!
      !                                              | Description
      real,pointer,dimension(:) :: avg_sensible_vc   ! Vegetation to Canopy sensible heat flux
-     real,pointer,dimension(:) :: avg_sensible_2cas ! Sensible heat flux to canopy air space
      real,pointer,dimension(:) :: avg_qwshed_vg     ! Sensible heat (shedding)
      real,pointer,dimension(:) :: avg_sensible_gc   ! Ground to canopy air sensible heat flux
      real,pointer,dimension(:) :: avg_sensible_ac   ! Canopy to atmosphere sensible heat flux
-     real,pointer,dimension(:) :: avg_sensible_tot  ! Sensible heat flux
      real,pointer,dimension(:,:) :: avg_sensible_gg ! Net soil heat flux between layers
      real,pointer,dimension(:) :: avg_runoff_heat   ! Total runoff internal energy flux
-     real,pointer,dimension(:) :: avg_heatstor_veg  ! Heat storage in vegetation
 
      !----- Mass and Energy --------------------------------------------------!
 
@@ -1160,9 +1146,6 @@ module ed_state_vars
 
      type(polygontype),pointer,dimension(:) :: polygon
 
-     integer,pointer,dimension(:) :: soi
-     character(len=20),pointer,dimension(:) :: soi_name
-
      integer,pointer,dimension(:) :: ilon   ! index for matching met. data
      integer,pointer,dimension(:) :: ilat   ! index for matching met. data
 
@@ -1264,14 +1247,11 @@ module ed_state_vars
      !----- Sensible heat Flux -----------------------------------------------!
 
      real,pointer,dimension(:) :: avg_sensible_vc   ! Vegetation to Canopy sensible heat flux
-     real,pointer,dimension(:) :: avg_sensible_2cas ! Sensible heat flux to canopy air space
      real,pointer,dimension(:) :: avg_qwshed_vg     ! Sensible heat (shedding)
      real,pointer,dimension(:) :: avg_sensible_gc   ! Ground to canopy air sensible heat flux
      real,pointer,dimension(:) :: avg_sensible_ac   ! Canopy to atmosphere sensible heat flux
-     real,pointer,dimension(:) :: avg_sensible_tot  ! Sensible heat flux
      real,pointer,dimension(:,:) :: avg_sensible_gg ! Net soil heat flux between layers
      real,pointer,dimension(:) :: avg_runoff_heat   ! Total runoff internal energy flux
-     real,pointer,dimension(:) :: avg_heatstor_veg  ! Heat storage in vegetation
 
      !----- Mass and Energy --------------------------------------------------!
 
@@ -1359,7 +1339,6 @@ module ed_state_vars
      real, pointer, dimension(:)   :: dmean_sensible_vc    ! [      W/m2]
      real, pointer, dimension(:)   :: dmean_sensible_gc    ! [      W/m2]
      real, pointer, dimension(:)   :: dmean_sensible_ac    ! [      W/m2]
-     real, pointer, dimension(:)   :: dmean_sensible       ! [      W/m2]
      real, pointer, dimension(:)   :: dmean_vapor_vc       ! [      W/m2]
      real, pointer, dimension(:)   :: dmean_vapor_gc       ! [      W/m2]
      real, pointer, dimension(:)   :: dmean_vapor_ac       ! [      W/m2]
@@ -1425,7 +1404,6 @@ module ed_state_vars
      real, pointer, dimension(:)   :: mmean_gpp
      real, pointer, dimension(:)   :: mmean_evap
      real, pointer, dimension(:)   :: mmean_transp
-     real, pointer, dimension(:)   :: mmean_sensible
      real, pointer, dimension(:)   :: mmean_sensible_vc    ! [      W/m2]
      real, pointer, dimension(:)   :: mmean_sensible_gc    ! [      W/m2]
      real, pointer, dimension(:)   :: mmean_sensible_ac    ! [      W/m2]
@@ -1658,8 +1636,6 @@ contains
        allocate(cgrid%runoff(npolygons))
        allocate(cgrid%swliq(npolygons))
        
-       allocate(cgrid%soi(npolygons))
-       allocate(cgrid%soi_name(npolygons))
        allocate(cgrid%ilon(npolygons))
        allocate(cgrid%ilat(npolygons))
        allocate(cgrid%total_agb(npolygons))
@@ -1709,14 +1685,11 @@ contains
        allocate(cgrid%aux           (npolygons))
        allocate(cgrid%aux_s         (nzg,npolygons))
        allocate(cgrid%avg_sensible_vc  (npolygons))
-       allocate(cgrid%avg_sensible_2cas(npolygons))
        allocate(cgrid%avg_qwshed_vg    (npolygons))
        allocate(cgrid%avg_sensible_gc  (npolygons))
        allocate(cgrid%avg_sensible_ac  (npolygons))
-       allocate(cgrid%avg_sensible_tot (npolygons))
        allocate(cgrid%avg_sensible_gg  (nzg,npolygons))
        allocate(cgrid%avg_runoff_heat  (npolygons))
-       allocate(cgrid%avg_heatstor_veg (npolygons))
 
        allocate(cgrid%max_veg_temp(npolygons))
        allocate(cgrid%min_veg_temp(npolygons))
@@ -1803,7 +1776,6 @@ contains
           allocate(cgrid%dmean_sensible_ac  (             npolygons))
           allocate(cgrid%dmean_sensible_gc  (             npolygons))
           allocate(cgrid%dmean_sensible_vc  (             npolygons))
-          allocate(cgrid%dmean_sensible     (             npolygons))
           allocate(cgrid%dmean_plresp       (             npolygons))
           allocate(cgrid%dmean_rh           (             npolygons))
           allocate(cgrid%dmean_leaf_resp    (             npolygons))
@@ -1846,7 +1818,6 @@ contains
           allocate(cgrid%mmean_gpp          (             npolygons))
           allocate(cgrid%mmean_evap         (             npolygons))
           allocate(cgrid%mmean_transp       (             npolygons))
-          allocate(cgrid%mmean_sensible     (             npolygons))
           allocate(cgrid%mmean_sensible_ac  (             npolygons))
           allocate(cgrid%mmean_sensible_gc  (             npolygons))
           allocate(cgrid%mmean_sensible_vc  (             npolygons))
@@ -1932,20 +1903,8 @@ contains
     allocate(cpoly%patch_count(nsites))  
     allocate(cpoly%site(nsites))
     allocate(cpoly%sitenum(nsites))
-    allocate(cpoly%fia_forestry(nsites))
-    allocate(cpoly%agri_species(nsites))
-    allocate(cpoly%agri_stocking(nsites))
-    allocate(cpoly%lambda_primary(nsites))
-    allocate(cpoly%lambda_secondary(nsites))
-    allocate(cpoly%plantation_species(nsites))
-    allocate(cpoly%plantation_stocking(nsites))
-    allocate(cpoly%reference_agb(nsites))
-    
-    allocate(cpoly%lsl(nsites))   
 
-    allocate(cpoly%elongation_factor(n_pft,nsites))
-    allocate(cpoly%delta_elongf(n_pft,nsites))
-    allocate(cpoly%gee_phen_delay(n_pft,nsites))
+    allocate(cpoly%lsl(nsites))   
 
     allocate(cpoly%area(nsites))
     allocate(cpoly%patch_area(nsites))
@@ -1961,8 +1920,7 @@ contains
     allocate(cpoly%wpa_lu(n_dist_types,nsites))
     allocate(cpoly%wai_pft(n_pft,nsites))
     allocate(cpoly%wai_lu(n_dist_types,nsites))
-    allocate(cpoly%soi(nsites))
-    allocate(cpoly%soi_name(nsites))
+
     allocate(cpoly%TCI(nsites))      
     allocate(cpoly%hydro_next(nsites))
     allocate(cpoly%hydro_prev(nsites))
@@ -1972,12 +1930,7 @@ contains
     allocate(cpoly%moist_zi(nsites)) 
     allocate(cpoly%baseflow(nsites)) 
     allocate(cpoly%ntext_soil(nzg,nsites))
-    allocate(cpoly%metplex_beg_month(nsites))
-    allocate(cpoly%metplex_beg_year(nsites))
-    allocate(cpoly%metplex_end_year(nsites))
     allocate(cpoly%min_monthly_temp(nsites))
-    allocate(cpoly%removed_biomass(nsites)) 
-    allocate(cpoly%harvested_biomass(nsites)) 
     allocate(cpoly%plantation(nsites)) 
     allocate(cpoly%agri_stocking_pft(nsites))
     allocate(cpoly%agri_stocking_density(nsites))
@@ -1985,11 +1938,8 @@ contains
     allocate(cpoly%plantation_stocking_density(nsites))
     allocate(cpoly%primary_harvest_memory(nsites))
     allocate(cpoly%secondary_harvest_memory(nsites))
-    allocate(cpoly%fire_flag(nsites))
     allocate(cpoly%fire_disturbance_rate(nsites))
-    allocate(cpoly%fuel(nsites))
     allocate(cpoly%ignition_rate(nsites))
-    allocate(cpoly%lambda1(12,nsites))
     allocate(cpoly%lambda_fire(12,nsites))
     allocate(cpoly%phen_pars(nsites))!THIS PTR IS ALLOCATED IN PHENOLOGY_INIT
     allocate(cpoly%treefall_disturbance_rate(nsites))
@@ -1997,9 +1947,7 @@ contains
     allocate(cpoly%nat_dist_type(nsites))
     allocate(cpoly%disturbance_memory(n_dist_types,n_dist_types,nsites))
     allocate(cpoly%disturbance_rates(n_dist_types,n_dist_types,nsites))
-    allocate(cpoly%lu_dist_area(n_dist_types,nsites))
     allocate(cpoly%loss_fraction(n_dist_types,nsites))
-    allocate(cpoly%disturbance_rate(nsites))
 
     allocate(cpoly%green_leaf_factor(n_pft,nsites))
     allocate(cpoly%leaf_aging_factor(n_pft,nsites))
@@ -2045,14 +1993,12 @@ contains
     allocate(cpoly%aux           (nsites))
     allocate(cpoly%aux_s         (nzg,nsites))
     allocate(cpoly%avg_sensible_vc  (nsites))
-    allocate(cpoly%avg_sensible_2cas(nsites))
     allocate(cpoly%avg_qwshed_vg    (nsites))
     allocate(cpoly%avg_sensible_gc  (nsites))
     allocate(cpoly%avg_sensible_ac  (nsites))
-    allocate(cpoly%avg_sensible_tot (nsites))
     allocate(cpoly%avg_sensible_gg  (nzg,nsites))
     allocate(cpoly%avg_runoff_heat  (nsites))
-    allocate(cpoly%avg_heatstor_veg (nsites))
+
     ! Fast time state diagnostics
     allocate(cpoly%avg_veg_energy(nsites))
     allocate(cpoly%avg_veg_temp  (nsites))
@@ -2266,15 +2212,14 @@ contains
     allocate(csite%aux           (npatches))
     allocate(csite%aux_s         (nzg,npatches))
     allocate(csite%avg_sensible_vc  (npatches))
-    allocate(csite%avg_sensible_2cas(npatches))
     allocate(csite%avg_qwshed_vg    (npatches))
     allocate(csite%avg_sensible_gc  (npatches))
     allocate(csite%avg_sensible_ac  (npatches))
-    allocate(csite%avg_sensible_tot (npatches))
     allocate(csite%avg_sensible_gg  (nzg,npatches))
     allocate(csite%avg_runoff_heat  (npatches))
-    allocate(csite%avg_heatstor_veg (npatches))
+
     ! ----------------------------------------------
+
     allocate(csite%avg_veg_energy(npatches))
     allocate(csite%avg_veg_temp  (npatches))
     allocate(csite%avg_veg_fliq  (npatches))
@@ -2442,8 +2387,6 @@ contains
        nullify(cgrid%runoff                  )
        nullify(cgrid%swliq                   )
        
-       nullify(cgrid%soi                     )
-       nullify(cgrid%soi_name                )
        nullify(cgrid%ilon                    )
        nullify(cgrid%ilat                    )
        nullify(cgrid%total_agb               )
@@ -2493,14 +2436,11 @@ contains
        nullify(cgrid%aux                     )
        nullify(cgrid%aux_s                   )
        nullify(cgrid%avg_sensible_vc         )
-       nullify(cgrid%avg_sensible_2cas       )
        nullify(cgrid%avg_qwshed_vg           )
        nullify(cgrid%avg_sensible_gc         )
        nullify(cgrid%avg_sensible_ac         )
-       nullify(cgrid%avg_sensible_tot        )
        nullify(cgrid%avg_sensible_gg         )
        nullify(cgrid%avg_runoff_heat         )
-       nullify(cgrid%avg_heatstor_veg        )
 
        ! Fast time state diagnostics 
        nullify(cgrid%avg_veg_energy          )
@@ -2570,7 +2510,6 @@ contains
        nullify(cgrid%dmean_sensible_vc       )
        nullify(cgrid%dmean_sensible_gc       )
        nullify(cgrid%dmean_sensible_ac       )
-       nullify(cgrid%dmean_sensible          )
        nullify(cgrid%dmean_plresp            )
        nullify(cgrid%dmean_rh                )
        nullify(cgrid%dmean_leaf_resp         )
@@ -2611,7 +2550,6 @@ contains
        nullify(cgrid%mmean_gpp               )
        nullify(cgrid%mmean_evap              )
        nullify(cgrid%mmean_transp            )
-       nullify(cgrid%mmean_sensible          )
        nullify(cgrid%mmean_sensible_vc       )
        nullify(cgrid%mmean_sensible_gc       )
        nullify(cgrid%mmean_sensible_ac       )
@@ -2685,24 +2623,6 @@ contains
     nullify(cpoly%patch_count)  
     nullify(cpoly%site)
     nullify(cpoly%sitenum)
-    nullify(cpoly%fia_forestry)
-    nullify(cpoly%agri_species)
-    nullify(cpoly%agri_stocking)
-    nullify(cpoly%lambda_primary)
-    nullify(cpoly%lambda_secondary)
-    nullify(cpoly%plantation_species)
-    nullify(cpoly%plantation_stocking)
-    nullify(cpoly%reference_agb)
-
-!    nullify(cpoly%clutime)
-
-!    nullify(cpoly%landuse_year)
-!    nullify(cpoly%landuse)
-
-    
-    nullify(cpoly%elongation_factor)
-    nullify(cpoly%delta_elongf)
-    nullify(cpoly%gee_phen_delay)
 
     nullify(cpoly%area)
     nullify(cpoly%patch_area)
@@ -2717,8 +2637,7 @@ contains
     nullify(cpoly%wpa_lu)
     nullify(cpoly%wai_pft)
     nullify(cpoly%wai_lu)
-    nullify(cpoly%soi)
-    nullify(cpoly%soi_name)
+
     nullify(cpoly%TCI)   
     nullify(cpoly%lsl)   
     nullify(cpoly%hydro_next)
@@ -2729,12 +2648,7 @@ contains
     nullify(cpoly%moist_zi) 
     nullify(cpoly%baseflow) 
     nullify(cpoly%ntext_soil)
-    nullify(cpoly%metplex_beg_month)
-    nullify(cpoly%metplex_beg_year)
-    nullify(cpoly%metplex_end_year)
     nullify(cpoly%min_monthly_temp)
-    nullify(cpoly%removed_biomass) 
-    nullify(cpoly%harvested_biomass) 
     nullify(cpoly%plantation) 
     nullify(cpoly%agri_stocking_pft)
     nullify(cpoly%agri_stocking_density)
@@ -2742,11 +2656,8 @@ contains
     nullify(cpoly%plantation_stocking_density)
     nullify(cpoly%primary_harvest_memory)
     nullify(cpoly%secondary_harvest_memory)
-    nullify(cpoly%fire_flag)
     nullify(cpoly%fire_disturbance_rate)
-    nullify(cpoly%fuel)
     nullify(cpoly%ignition_rate)
-    nullify(cpoly%lambda1)
     nullify(cpoly%lambda_fire)
     nullify(cpoly%phen_pars)
     nullify(cpoly%treefall_disturbance_rate)
@@ -2754,9 +2665,7 @@ contains
     nullify(cpoly%nat_dist_type)
     nullify(cpoly%disturbance_memory)
     nullify(cpoly%disturbance_rates)
-    nullify(cpoly%lu_dist_area)
     nullify(cpoly%loss_fraction)
-    nullify(cpoly%disturbance_rate)
     nullify(cpoly%green_leaf_factor)
     nullify(cpoly%leaf_aging_factor)
     nullify(cpoly%met)
@@ -2798,14 +2707,12 @@ contains
     nullify(cpoly%aux           )
     nullify(cpoly%aux_s         )
     nullify(cpoly%avg_sensible_vc  )
-    nullify(cpoly%avg_sensible_2cas)
     nullify(cpoly%avg_qwshed_vg    )
     nullify(cpoly%avg_sensible_gc  )
     nullify(cpoly%avg_sensible_ac  )
-    nullify(cpoly%avg_sensible_tot )
     nullify(cpoly%avg_sensible_gg  )
     nullify(cpoly%avg_runoff_heat  )
-    nullify(cpoly%avg_heatstor_veg )
+
     ! ----------------------------------------------
     nullify(cpoly%avg_veg_energy)
     nullify(cpoly%avg_veg_temp  )
@@ -3004,14 +2911,12 @@ contains
     nullify(csite%aux           )
     nullify(csite%aux_s         )
     nullify(csite%avg_sensible_vc  )
-    nullify(csite%avg_sensible_2cas)
     nullify(csite%avg_qwshed_vg    )
     nullify(csite%avg_sensible_gc  )
     nullify(csite%avg_sensible_ac  )
-    nullify(csite%avg_sensible_tot )
     nullify(csite%avg_sensible_gg  )
     nullify(csite%avg_runoff_heat  )
-    nullify(csite%avg_heatstor_veg )
+
     ! ----------------------------------------------
     nullify(csite%avg_veg_energy) 
     nullify(csite%avg_veg_temp) 
@@ -3173,8 +3078,6 @@ contains
        if(associated(cgrid%runoff                  )) deallocate(cgrid%runoff                  )
        if(associated(cgrid%swliq                   )) deallocate(cgrid%swliq                   )
        
-       if(associated(cgrid%soi                     )) deallocate(cgrid%soi                     )
-       if(associated(cgrid%soi_name                )) deallocate(cgrid%soi_name                )
        if(associated(cgrid%ilon                    )) deallocate(cgrid%ilon                    )
        if(associated(cgrid%ilat                    )) deallocate(cgrid%ilat                    )
        if(associated(cgrid%total_agb               )) deallocate(cgrid%total_agb               )
@@ -3223,14 +3126,11 @@ contains
        if(associated(cgrid%aux                     )) deallocate(cgrid%aux                     )
        if(associated(cgrid%aux_s                   )) deallocate(cgrid%aux_s                   )
        if(associated(cgrid%avg_sensible_vc         )) deallocate(cgrid%avg_sensible_vc         )
-       if(associated(cgrid%avg_sensible_2cas       )) deallocate(cgrid%avg_sensible_2cas       )
        if(associated(cgrid%avg_qwshed_vg           )) deallocate(cgrid%avg_qwshed_vg           )
        if(associated(cgrid%avg_sensible_gc         )) deallocate(cgrid%avg_sensible_gc         )
        if(associated(cgrid%avg_sensible_ac         )) deallocate(cgrid%avg_sensible_ac         )
-       if(associated(cgrid%avg_sensible_tot        )) deallocate(cgrid%avg_sensible_tot        )
        if(associated(cgrid%avg_sensible_gg         )) deallocate(cgrid%avg_sensible_gg         )
        if(associated(cgrid%avg_runoff_heat         )) deallocate(cgrid%avg_runoff_heat         )
-       if(associated(cgrid%avg_heatstor_veg        )) deallocate(cgrid%avg_heatstor_veg        )
 
        if(associated(cgrid%max_veg_temp          )) deallocate(cgrid%max_veg_temp          )
        if(associated(cgrid%min_veg_temp          )) deallocate(cgrid%min_veg_temp          )
@@ -3313,7 +3213,6 @@ contains
        if(associated(cgrid%dmean_sensible_vc       )) deallocate(cgrid%dmean_sensible_vc       )
        if(associated(cgrid%dmean_sensible_gc       )) deallocate(cgrid%dmean_sensible_gc       )
        if(associated(cgrid%dmean_sensible_ac       )) deallocate(cgrid%dmean_sensible_ac       )
-       if(associated(cgrid%dmean_sensible          )) deallocate(cgrid%dmean_sensible          )
        if(associated(cgrid%dmean_plresp            )) deallocate(cgrid%dmean_plresp            )
        if(associated(cgrid%dmean_rh                )) deallocate(cgrid%dmean_rh                )
        if(associated(cgrid%dmean_leaf_resp         )) deallocate(cgrid%dmean_leaf_resp         )
@@ -3355,7 +3254,6 @@ contains
        if(associated(cgrid%mmean_gpp               )) deallocate(cgrid%mmean_gpp               )
        if(associated(cgrid%mmean_evap              )) deallocate(cgrid%mmean_evap              )
        if(associated(cgrid%mmean_transp            )) deallocate(cgrid%mmean_transp            )
-       if(associated(cgrid%mmean_sensible          )) deallocate(cgrid%mmean_sensible          )
        if(associated(cgrid%mmean_sensible_vc       )) deallocate(cgrid%mmean_sensible_vc       )
        if(associated(cgrid%mmean_sensible_gc       )) deallocate(cgrid%mmean_sensible_gc       )
        if(associated(cgrid%mmean_sensible_ac       )) deallocate(cgrid%mmean_sensible_ac       )
@@ -3429,18 +3327,8 @@ contains
     if(associated(cpoly%patch_count                 )) deallocate(cpoly%patch_count                 )
     if(associated(cpoly%site                        )) deallocate(cpoly%site                        )
     if(associated(cpoly%sitenum                     )) deallocate(cpoly%sitenum                     )
-    if(associated(cpoly%fia_forestry                )) deallocate(cpoly%fia_forestry                )
-    if(associated(cpoly%agri_species                )) deallocate(cpoly%agri_species                )
-    if(associated(cpoly%agri_stocking               )) deallocate(cpoly%agri_stocking               )
-    if(associated(cpoly%lambda_primary              )) deallocate(cpoly%lambda_primary              )
-    if(associated(cpoly%lambda_secondary            )) deallocate(cpoly%lambda_secondary            )
-    if(associated(cpoly%plantation_species          )) deallocate(cpoly%plantation_species          )
-    if(associated(cpoly%plantation_stocking         )) deallocate(cpoly%plantation_stocking         )
-    if(associated(cpoly%reference_agb               )) deallocate(cpoly%reference_agb               )
-    
-    if(associated(cpoly%elongation_factor           )) deallocate(cpoly%elongation_factor           )
-    if(associated(cpoly%delta_elongf                )) deallocate(cpoly%delta_elongf                )
-    if(associated(cpoly%gee_phen_delay              )) deallocate(cpoly%gee_phen_delay              )
+
+    if(associated(cpoly%lsl                         )) deallocate(cpoly%lsl                         )
 
     if(associated(cpoly%area                        )) deallocate(cpoly%area                        )
     if(associated(cpoly%patch_area                  )) deallocate(cpoly%patch_area                  )
@@ -3455,8 +3343,7 @@ contains
     if(associated(cpoly%wpa_lu                      )) deallocate(cpoly%wpa_lu                      )
     if(associated(cpoly%wai_pft                     )) deallocate(cpoly%wai_pft                     )
     if(associated(cpoly%wai_lu                      )) deallocate(cpoly%wai_lu                      )
-    if(associated(cpoly%soi                         )) deallocate(cpoly%soi                         )
-    if(associated(cpoly%soi_name                    )) deallocate(cpoly%soi_name                    )
+
     if(associated(cpoly%TCI                         )) deallocate(cpoly%TCI                         )
     if(associated(cpoly%lsl                         )) deallocate(cpoly%lsl                         )
     if(associated(cpoly%hydro_next                  )) deallocate(cpoly%hydro_next                  )
@@ -3467,12 +3354,7 @@ contains
     if(associated(cpoly%moist_zi                    )) deallocate(cpoly%moist_zi                    )
     if(associated(cpoly%baseflow                    )) deallocate(cpoly%baseflow                    )
     if(associated(cpoly%ntext_soil                  )) deallocate(cpoly%ntext_soil                  )
-    if(associated(cpoly%metplex_beg_month           )) deallocate(cpoly%metplex_beg_month           )
-    if(associated(cpoly%metplex_beg_year            )) deallocate(cpoly%metplex_beg_year            )
-    if(associated(cpoly%metplex_end_year            )) deallocate(cpoly%metplex_end_year            )
     if(associated(cpoly%min_monthly_temp            )) deallocate(cpoly%min_monthly_temp            )
-    if(associated(cpoly%removed_biomass             )) deallocate(cpoly%removed_biomass             )
-    if(associated(cpoly%harvested_biomass           )) deallocate(cpoly%harvested_biomass           )
     if(associated(cpoly%plantation                  )) deallocate(cpoly%plantation                  )
     if(associated(cpoly%agri_stocking_pft           )) deallocate(cpoly%agri_stocking_pft           )
     if(associated(cpoly%agri_stocking_density       )) deallocate(cpoly%agri_stocking_density       )
@@ -3480,11 +3362,8 @@ contains
     if(associated(cpoly%plantation_stocking_density )) deallocate(cpoly%plantation_stocking_density )
     if(associated(cpoly%primary_harvest_memory      )) deallocate(cpoly%primary_harvest_memory      )
     if(associated(cpoly%secondary_harvest_memory    )) deallocate(cpoly%secondary_harvest_memory    )
-    if(associated(cpoly%fire_flag                   )) deallocate(cpoly%fire_flag                   )
     if(associated(cpoly%fire_disturbance_rate       )) deallocate(cpoly%fire_disturbance_rate       )
-    if(associated(cpoly%fuel                        )) deallocate(cpoly%fuel                        )
     if(associated(cpoly%ignition_rate               )) deallocate(cpoly%ignition_rate               )
-    if(associated(cpoly%lambda1                     )) deallocate(cpoly%lambda1                     )
     if(associated(cpoly%lambda_fire                 )) deallocate(cpoly%lambda_fire                 )
     if(associated(cpoly%phen_pars                   )) deallocate(cpoly%phen_pars                   )
     if(associated(cpoly%treefall_disturbance_rate   )) deallocate(cpoly%treefall_disturbance_rate   )
@@ -3492,9 +3371,7 @@ contains
     if(associated(cpoly%nat_dist_type               )) deallocate(cpoly%nat_dist_type               )
     if(associated(cpoly%disturbance_memory          )) deallocate(cpoly%disturbance_memory          )
     if(associated(cpoly%disturbance_rates           )) deallocate(cpoly%disturbance_rates           )
-    if(associated(cpoly%lu_dist_area                )) deallocate(cpoly%lu_dist_area                )
     if(associated(cpoly%loss_fraction               )) deallocate(cpoly%loss_fraction               )
-    if(associated(cpoly%disturbance_rate            )) deallocate(cpoly%disturbance_rate            )
     if(associated(cpoly%green_leaf_factor           )) deallocate(cpoly%green_leaf_factor           )
     if(associated(cpoly%leaf_aging_factor           )) deallocate(cpoly%leaf_aging_factor           )
     if(associated(cpoly%met                         )) deallocate(cpoly%met                         )
@@ -3537,14 +3414,11 @@ contains
     if(associated(cpoly%aux                         )) deallocate(cpoly%aux                         )
     if(associated(cpoly%aux_s                       )) deallocate(cpoly%aux_s                       )
     if(associated(cpoly%avg_sensible_vc             )) deallocate(cpoly%avg_sensible_vc             )
-    if(associated(cpoly%avg_sensible_2cas           )) deallocate(cpoly%avg_sensible_2cas           )
     if(associated(cpoly%avg_qwshed_vg               )) deallocate(cpoly%avg_qwshed_vg               )
     if(associated(cpoly%avg_sensible_gc             )) deallocate(cpoly%avg_sensible_gc             )
     if(associated(cpoly%avg_sensible_ac             )) deallocate(cpoly%avg_sensible_ac             )
-    if(associated(cpoly%avg_sensible_tot            )) deallocate(cpoly%avg_sensible_tot            )
     if(associated(cpoly%avg_sensible_gg             )) deallocate(cpoly%avg_sensible_gg             )
     if(associated(cpoly%avg_runoff_heat             )) deallocate(cpoly%avg_runoff_heat             )
-    if(associated(cpoly%avg_heatstor_veg            )) deallocate(cpoly%avg_heatstor_veg            )
     if(associated(cpoly%avg_veg_energy              )) deallocate(cpoly%avg_veg_energy              )
     if(associated(cpoly%avg_veg_temp                )) deallocate(cpoly%avg_veg_temp                )
     if(associated(cpoly%avg_veg_fliq                )) deallocate(cpoly%avg_veg_fliq                )
@@ -3741,14 +3615,11 @@ contains
     if(associated(csite%aux                          )) deallocate(csite%aux                          )
     if(associated(csite%aux_s                        )) deallocate(csite%aux_s                        )
     if(associated(csite%avg_sensible_vc              )) deallocate(csite%avg_sensible_vc              )
-    if(associated(csite%avg_sensible_2cas            )) deallocate(csite%avg_sensible_2cas            )
     if(associated(csite%avg_qwshed_vg                )) deallocate(csite%avg_qwshed_vg                )
     if(associated(csite%avg_sensible_gc              )) deallocate(csite%avg_sensible_gc              )
     if(associated(csite%avg_sensible_ac              )) deallocate(csite%avg_sensible_ac              )
-    if(associated(csite%avg_sensible_tot             )) deallocate(csite%avg_sensible_tot             )
     if(associated(csite%avg_sensible_gg              )) deallocate(csite%avg_sensible_gg              )
     if(associated(csite%avg_runoff_heat              )) deallocate(csite%avg_runoff_heat              )
-    if(associated(csite%avg_heatstor_veg             )) deallocate(csite%avg_heatstor_veg             )
     if(associated(csite%avg_veg_energy               )) deallocate(csite%avg_veg_energy               )
     if(associated(csite%avg_veg_temp                 )) deallocate(csite%avg_veg_temp                 )
     if(associated(csite%avg_veg_fliq                 )) deallocate(csite%avg_veg_fliq                 )
@@ -3911,8 +3782,6 @@ contains
     if(associated(cgrid%runoff                  )) cgrid%runoff                   = large_real
     if(associated(cgrid%swliq                   )) cgrid%swliq                    = large_real
     
-    if(associated(cgrid%soi                     )) cgrid%soi                      = large_integer  ! Integer
-    if(associated(cgrid%soi_name                )) cgrid%soi_name                 = ''       ! Character
     if(associated(cgrid%ilon                    )) cgrid%ilon                     = large_integer  ! Integer
     if(associated(cgrid%ilat                    )) cgrid%ilat                     = large_integer  ! Integer
     if(associated(cgrid%total_agb               )) cgrid%total_agb                = large_real
@@ -4005,14 +3874,11 @@ contains
     if(associated(cgrid%aux                     )) cgrid%aux                      = large_real
     if(associated(cgrid%aux_s                   )) cgrid%aux_s                    = large_real
     if(associated(cgrid%avg_sensible_vc         )) cgrid%avg_sensible_vc          = large_real
-    if(associated(cgrid%avg_sensible_2cas       )) cgrid%avg_sensible_2cas        = large_real
     if(associated(cgrid%avg_qwshed_vg           )) cgrid%avg_qwshed_vg            = large_real
     if(associated(cgrid%avg_sensible_gc         )) cgrid%avg_sensible_gc          = large_real
     if(associated(cgrid%avg_sensible_ac         )) cgrid%avg_sensible_ac          = large_real
-    if(associated(cgrid%avg_sensible_tot        )) cgrid%avg_sensible_tot         = large_real
     if(associated(cgrid%avg_sensible_gg         )) cgrid%avg_sensible_gg          = large_real
     if(associated(cgrid%avg_runoff_heat         )) cgrid%avg_runoff_heat          = large_real
-    if(associated(cgrid%avg_heatstor_veg        )) cgrid%avg_heatstor_veg         = large_real
 
     if(associated(cgrid%max_veg_temp          )) cgrid%max_veg_temp           = large_real
     if(associated(cgrid%min_veg_temp          )) cgrid%min_veg_temp           = large_real
@@ -4084,7 +3950,6 @@ contains
     if(associated(cgrid%dmean_sensible_vc       )) cgrid%dmean_sensible_vc        = large_real
     if(associated(cgrid%dmean_sensible_gc       )) cgrid%dmean_sensible_gc        = large_real
     if(associated(cgrid%dmean_sensible_ac       )) cgrid%dmean_sensible_ac        = large_real
-    if(associated(cgrid%dmean_sensible          )) cgrid%dmean_sensible           = large_real
     if(associated(cgrid%dmean_plresp            )) cgrid%dmean_plresp             = large_real
     if(associated(cgrid%dmean_rh                )) cgrid%dmean_rh                 = large_real
     if(associated(cgrid%dmean_leaf_resp         )) cgrid%dmean_leaf_resp          = large_real
@@ -4125,7 +3990,6 @@ contains
     if(associated(cgrid%mmean_gpp               )) cgrid%mmean_gpp                = large_real
     if(associated(cgrid%mmean_evap              )) cgrid%mmean_evap               = large_real
     if(associated(cgrid%mmean_transp            )) cgrid%mmean_transp             = large_real
-    if(associated(cgrid%mmean_sensible          )) cgrid%mmean_sensible           = large_real
     if(associated(cgrid%mmean_sensible_vc       )) cgrid%mmean_sensible_vc        = large_real
     if(associated(cgrid%mmean_sensible_gc       )) cgrid%mmean_sensible_gc        = large_real
     if(associated(cgrid%mmean_sensible_ac       )) cgrid%mmean_sensible_ac        = large_real
@@ -4197,18 +4061,6 @@ contains
     if(associated(cpoly%sipa_n                      )) cpoly%sipa_n                      = large_integer ! Integer
     if(associated(cpoly%patch_count                 )) cpoly%patch_count                 = large_integer ! Integer
     if(associated(cpoly%sitenum                     )) cpoly%sitenum                     = large_integer ! Integer
-    if(associated(cpoly%fia_forestry                )) cpoly%fia_forestry                = large_integer ! Integer
-    if(associated(cpoly%agri_species                )) cpoly%agri_species                = large_integer ! Integer
-    if(associated(cpoly%agri_stocking               )) cpoly%agri_stocking               = large_real
-    if(associated(cpoly%lambda_primary              )) cpoly%lambda_primary              = large_real
-    if(associated(cpoly%lambda_secondary            )) cpoly%lambda_secondary            = large_real
-    if(associated(cpoly%plantation_species          )) cpoly%plantation_species          = large_integer ! Integer
-    if(associated(cpoly%plantation_stocking         )) cpoly%plantation_stocking         = large_real
-    if(associated(cpoly%reference_agb               )) cpoly%reference_agb               = large_real
-    
-    if(associated(cpoly%elongation_factor           )) cpoly%elongation_factor           = large_real
-    if(associated(cpoly%delta_elongf                )) cpoly%delta_elongf                = large_real
-    if(associated(cpoly%gee_phen_delay              )) cpoly%gee_phen_delay              = large_real
 
     if(associated(cpoly%area                        )) cpoly%area                        = large_real
     if(associated(cpoly%patch_area                  )) cpoly%patch_area                  = large_real
@@ -4223,8 +4075,7 @@ contains
     if(associated(cpoly%wpa_lu                      )) cpoly%wpa_lu                      = large_real
     if(associated(cpoly%wai_pft                     )) cpoly%wai_pft                     = large_real
     if(associated(cpoly%wai_lu                      )) cpoly%wai_lu                      = large_real
-    if(associated(cpoly%soi                         )) cpoly%soi                         = large_integer  ! Integer
-    if(associated(cpoly%soi_name                    )) cpoly%soi_name                    = ''       ! Character
+
     if(associated(cpoly%TCI                         )) cpoly%TCI                         = large_real
     if(associated(cpoly%lsl                         )) cpoly%lsl                         = large_integer  ! Integer
     if(associated(cpoly%hydro_next                  )) cpoly%hydro_next                  = large_integer  ! Integer
@@ -4235,12 +4086,7 @@ contains
     if(associated(cpoly%moist_zi                    )) cpoly%moist_zi                    = large_real
     if(associated(cpoly%baseflow                    )) cpoly%baseflow                    = large_real
     if(associated(cpoly%ntext_soil                  )) cpoly%ntext_soil                  = large_integer  ! Integer
-    if(associated(cpoly%metplex_beg_month           )) cpoly%metplex_beg_month           = large_integer  ! Integer
-    if(associated(cpoly%metplex_beg_year            )) cpoly%metplex_beg_year            = large_integer  ! Integer
-    if(associated(cpoly%metplex_end_year            )) cpoly%metplex_end_year            = large_integer  ! Integer
     if(associated(cpoly%min_monthly_temp            )) cpoly%min_monthly_temp            = large_real
-    if(associated(cpoly%removed_biomass             )) cpoly%removed_biomass             = large_real
-    if(associated(cpoly%harvested_biomass           )) cpoly%harvested_biomass           = large_real
     if(associated(cpoly%plantation                  )) cpoly%plantation                  = large_integer  ! Integer
     if(associated(cpoly%agri_stocking_pft           )) cpoly%agri_stocking_pft           = large_integer  ! Integer
     if(associated(cpoly%agri_stocking_density       )) cpoly%agri_stocking_density       = large_real
@@ -4248,11 +4094,8 @@ contains
     if(associated(cpoly%plantation_stocking_density )) cpoly%plantation_stocking_density = large_real
     if(associated(cpoly%primary_harvest_memory      )) cpoly%primary_harvest_memory      = large_real
     if(associated(cpoly%secondary_harvest_memory    )) cpoly%secondary_harvest_memory    = large_real
-    if(associated(cpoly%fire_flag                   )) cpoly%fire_flag                   = large_integer  ! Integer
     if(associated(cpoly%fire_disturbance_rate       )) cpoly%fire_disturbance_rate       = large_real
-    if(associated(cpoly%fuel                        )) cpoly%fuel                        = large_real
     if(associated(cpoly%ignition_rate               )) cpoly%ignition_rate               = large_real
-    if(associated(cpoly%lambda1                     )) cpoly%lambda1                     = large_real
     if(associated(cpoly%lambda_fire                 )) cpoly%lambda_fire                 = large_real
 
     if(associated(cpoly%phen_pars                   )) then
@@ -4265,9 +4108,7 @@ contains
     if(associated(cpoly%nat_dist_type               )) cpoly%nat_dist_type               = large_integer  ! Integer
     if(associated(cpoly%disturbance_memory          )) cpoly%disturbance_memory          = large_real
     if(associated(cpoly%disturbance_rates           )) cpoly%disturbance_rates           = large_real
-    if(associated(cpoly%lu_dist_area                )) cpoly%lu_dist_area                = large_real
     if(associated(cpoly%loss_fraction               )) cpoly%loss_fraction               = large_real
-    if(associated(cpoly%disturbance_rate            )) cpoly%disturbance_rate            = large_real
     if(associated(cpoly%green_leaf_factor           )) cpoly%green_leaf_factor           = large_real
     if(associated(cpoly%leaf_aging_factor           )) cpoly%leaf_aging_factor           = large_real
     if(associated(cpoly%met                         )) then
@@ -4331,14 +4172,11 @@ contains
     if(associated(cpoly%aux                         )) cpoly%aux                         = large_real
     if(associated(cpoly%aux_s                       )) cpoly%aux_s                       = large_real
     if(associated(cpoly%avg_sensible_vc             )) cpoly%avg_sensible_vc             = large_real
-    if(associated(cpoly%avg_sensible_2cas           )) cpoly%avg_sensible_2cas           = large_real
     if(associated(cpoly%avg_qwshed_vg               )) cpoly%avg_qwshed_vg               = large_real
     if(associated(cpoly%avg_sensible_gc             )) cpoly%avg_sensible_gc             = large_real
     if(associated(cpoly%avg_sensible_ac             )) cpoly%avg_sensible_ac             = large_real
-    if(associated(cpoly%avg_sensible_tot            )) cpoly%avg_sensible_tot            = large_real
     if(associated(cpoly%avg_sensible_gg             )) cpoly%avg_sensible_gg             = large_real
     if(associated(cpoly%avg_runoff_heat             )) cpoly%avg_runoff_heat             = large_real
-    if(associated(cpoly%avg_heatstor_veg            )) cpoly%avg_heatstor_veg            = large_real
     if(associated(cpoly%avg_veg_energy              )) cpoly%avg_veg_energy              = large_real
     if(associated(cpoly%avg_veg_temp                )) cpoly%avg_veg_temp                = large_real
     if(associated(cpoly%avg_veg_fliq                )) cpoly%avg_veg_fliq                = large_real
@@ -4550,14 +4388,11 @@ contains
     if(associated(csite%aux                          )) csite%aux                          = large_real
     if(associated(csite%aux_s                        )) csite%aux_s                        = large_real
     if(associated(csite%avg_sensible_vc              )) csite%avg_sensible_vc              = large_real
-    if(associated(csite%avg_sensible_2cas            )) csite%avg_sensible_2cas            = large_real
     if(associated(csite%avg_qwshed_vg                )) csite%avg_qwshed_vg                = large_real
     if(associated(csite%avg_sensible_gc              )) csite%avg_sensible_gc              = large_real
     if(associated(csite%avg_sensible_ac              )) csite%avg_sensible_ac              = large_real
-    if(associated(csite%avg_sensible_tot             )) csite%avg_sensible_tot             = large_real
     if(associated(csite%avg_sensible_gg              )) csite%avg_sensible_gg              = large_real
     if(associated(csite%avg_runoff_heat              )) csite%avg_runoff_heat              = large_real
-    if(associated(csite%avg_heatstor_veg             )) csite%avg_heatstor_veg             = large_real
     if(associated(csite%avg_veg_energy               )) csite%avg_veg_energy               = large_real
     if(associated(csite%avg_veg_temp                 )) csite%avg_veg_temp                 = large_real
     if(associated(csite%avg_veg_fliq                 )) csite%avg_veg_fliq                 = large_real
@@ -4810,9 +4645,6 @@ contains
     polyout%slope(isout)                     = polyin%slope(isin)
     polyout%aspect(isout)                    = polyin%aspect(isin)
     polyout%TCI(isout)                       = polyin%TCI(isin)
-    polyout%elongation_factor(1:n_pft,isout) = polyin%elongation_factor(1:n_pft,isin)
-    polyout%delta_elongf(1:n_pft,isout)      = polyin%delta_elongf(1:n_pft,isin)
-    polyout%gee_phen_delay(1:n_pft,isout)    = polyin%gee_phen_delay(1:n_pft,isin)
 
     return
   end subroutine copy_polygontype
@@ -5015,13 +4847,10 @@ contains
     siteout%avg_drainage(1:inc)         = pack(sitein%avg_drainage,logmask)
     siteout%aux(1:inc)                  = pack(sitein%aux,logmask)
     siteout%avg_sensible_vc(1:inc)      = pack(sitein%avg_sensible_vc,logmask)
-    siteout%avg_sensible_2cas(1:inc)    = pack(sitein%avg_sensible_2cas,logmask)
     siteout%avg_qwshed_vg(1:inc)        = pack(sitein%avg_qwshed_vg,logmask)
     siteout%avg_sensible_gc(1:inc)      = pack(sitein%avg_sensible_gc,logmask)
     siteout%avg_sensible_ac(1:inc)      = pack(sitein%avg_sensible_ac,logmask)
-    siteout%avg_sensible_tot(1:inc)     = pack(sitein%avg_sensible_tot,logmask)
     siteout%avg_runoff_heat(1:inc)      = pack(sitein%avg_runoff_heat,logmask)
-    siteout%avg_heatstor_veg(1:inc)     = pack(sitein%avg_heatstor_veg,logmask)
     siteout%avg_veg_energy(1:inc)       = pack(sitein%avg_veg_energy,logmask)
     siteout%avg_veg_temp(1:inc)         = pack(sitein%avg_veg_temp,logmask)
     siteout%avg_veg_fliq(1:inc)         = pack(sitein%avg_veg_fliq,logmask)
@@ -6191,7 +6020,7 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_evap(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_EVAP :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Polygon averaged net evap/dew from ground and leaves to CAS','[W/m2]','ipoly') 
+       call metadata_edio(nvar,igr,'Polygon averaged evap/dew from ground and leaves to CAS','[kg/m2/s]','ipoly') 
     endif
     
     if (associated(cgrid%avg_smoist_gg)) then
@@ -6243,13 +6072,6 @@ contains
        call metadata_edio(nvar,igr,'Polygon averaged vegetation to canopy air sensible heat flux','[W/m2]','ipoly') 
     endif
     
-    if (associated(cgrid%avg_sensible_2cas)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%avg_sensible_2cas(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_SENSIBLE_2CAS :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Polygon averaged sensible heat flux into canopy air from veg,ground,atm','[W/m2]','ipoly') 
-    endif
-    
     if (associated(cgrid%avg_qwshed_vg)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_qwshed_vg(1),nvar,igr,init,cgrid%pyglob_id, &
@@ -6271,13 +6093,6 @@ contains
        call metadata_edio(nvar,igr,'Polygon averaged sensible heat flux atmosphere  to canopy','[W/m2]','ipoly') 
     endif
     
-    if (associated(cgrid%avg_sensible_tot)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%avg_sensible_tot(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_SENSIBLE_TOT :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Polygon averaged sensible heat flux from ground and leaves to canopy air','[W/m2]','ipoly') 
-    endif
-    
     if (associated(cgrid%avg_sensible_gg)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_sensible_gg(1,1),nvar,igr,init,cgrid%pyglob_id, &
@@ -6292,13 +6107,7 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
-    if (associated(cgrid%avg_heatstor_veg)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%avg_heatstor_veg(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_HEATSTOR_VEG :11:hist:anal') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-        ! ---------------------------------------------
+    ! ---------------------------------------------
 
     if (associated(cgrid%avg_lai_ebalvars)) then
        nvar=nvar+1
@@ -6733,7 +6542,7 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%dmean_evap(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'DMEAN_EVAP :11:hist:dail') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+       call metadata_edio(nvar,igr,'Daily mean (leaf+soil) evaporation','[kg/m2/s]','ipoly') 
     endif
     
     if(associated(cgrid%dmean_transp)) then
@@ -6761,13 +6570,6 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%dmean_sensible_ac(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'DMEAN_SENSIBLE_AC :11:hist:dail') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%dmean_sensible)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%dmean_sensible(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'DMEAN_SENSIBLE :11:hist:dail') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
@@ -7047,20 +6849,13 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%mmean_evap(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'MMEAN_EVAP :11:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+       call metadata_edio(nvar,igr,'Monthly Mean (leaf+soil) Evaporation Rate','[kg/m2/s]','ipoly') 
     endif
     
     if(associated(cgrid%mmean_transp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%mmean_transp(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'MMEAN_TRANSP :11:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%mmean_sensible)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_sensible(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_SENSIBLE :11:hist:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -7494,61 +7289,6 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
-    if (associated(cpoly%fia_forestry)) then
-       nvar=nvar+1
-       call vtable_edio_i(cpoly%fia_forestry(1),nvar,igr,init,cpoly%siglob_id, &
-            var_len,var_len_global,max_ptrs,'FIA_FORESTRY :21:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if (associated(cpoly%agri_species)) then
-       nvar=nvar+1
-       call vtable_edio_i(cpoly%agri_species(1),nvar,igr,init,cpoly%siglob_id, &
-            var_len,var_len_global,max_ptrs,'AGRI_SPECIES :21:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if (associated(cpoly%agri_stocking)) then
-       nvar=nvar+1
-       call vtable_edio_r(cpoly%agri_stocking(1),nvar,igr,init,cpoly%siglob_id, &
-            var_len,var_len_global,max_ptrs,'AGRI_STOCKING :21:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if (associated(cpoly%lambda_primary)) then
-       nvar=nvar+1
-       call vtable_edio_r(cpoly%lambda_primary(1),nvar,igr,init,cpoly%siglob_id, &
-            var_len,var_len_global,max_ptrs,'LAMBDA_PRIMARY :21:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if (associated(cpoly%lambda_secondary)) then
-       nvar=nvar+1
-       call vtable_edio_r(cpoly%lambda_secondary(1),nvar,igr,init,cpoly%siglob_id, &
-            var_len,var_len_global,max_ptrs,'LAMBDA_SECONDARY :21:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if (associated(cpoly%plantation_species)) then
-       nvar=nvar+1
-       call vtable_edio_i(cpoly%plantation_species(1),nvar,igr,init,cpoly%siglob_id, &
-            var_len,var_len_global,max_ptrs,'PLANTATION_SPECIES :21:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if (associated(cpoly%plantation_stocking)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%plantation_stocking(1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'PLANTATION_STOCKING :21:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-
-    if (associated(cpoly%reference_agb)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%reference_agb(1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'REFERENCE_AGB :21:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
 
     if (associated(cpoly%lsl)) then
        nvar=nvar+1
@@ -7599,12 +7339,12 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpoly%soi)) then
-       nvar=nvar+1
-         call vtable_edio_i(cpoly%soi(1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'SOI :21:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
+!    if (associated(cpoly%soi)) then
+!       nvar=nvar+1
+!         call vtable_edio_i(cpoly%soi(1),nvar,igr,init,cpoly%siglob_id, &
+!         var_len,var_len_global,max_ptrs,'SOI :21:hist') 
+!       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+!    endif
 
     if (associated(cpoly%TCI)) then
        nvar=nvar+1
@@ -7662,26 +7402,26 @@ contains
        call metadata_edio(nvar,igr,'loss of water from site to watershed discharge','[kg/m2/s]','NA') 
     endif 
 
-    if (associated(cpoly%metplex_beg_month)) then
-       nvar=nvar+1
-         call vtable_edio_i(cpoly%metplex_beg_month(1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'METPLEX_BEG_MONTH :21:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
+!    if (associated(cpoly%metplex_beg_month)) then
+!       nvar=nvar+1
+!         call vtable_edio_i(cpoly%metplex_beg_month(1),nvar,igr,init,cpoly%siglob_id, &
+!         var_len,var_len_global,max_ptrs,'METPLEX_BEG_MONTH :21:hist') 
+!       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+!    endif
 
-    if (associated(cpoly%metplex_beg_year)) then
-       nvar=nvar+1
-         call vtable_edio_i(cpoly%metplex_beg_year(1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'METPLEX_BEG_YEAR :21:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
+!    if (associated(cpoly%metplex_beg_year)) then
+!       nvar=nvar+1
+!         call vtable_edio_i(cpoly%metplex_beg_year(1),nvar,igr,init,cpoly%siglob_id, &
+!         var_len,var_len_global,max_ptrs,'METPLEX_BEG_YEAR :21:hist') 
+!       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+!    endif
 
-    if (associated(cpoly%metplex_end_year)) then
-       nvar=nvar+1
-         call vtable_edio_i(cpoly%metplex_end_year(1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'METPLEX_END_YEAR :21:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
+!    if (associated(cpoly%metplex_end_year)) then
+!       nvar=nvar+1
+!         call vtable_edio_i(cpoly%metplex_end_year(1),nvar,igr,init,cpoly%siglob_id, &
+!         var_len,var_len_global,max_ptrs,'METPLEX_END_YEAR :21:hist') 
+!       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+!    endif
 
     if (associated(cpoly%min_monthly_temp)) then
        nvar=nvar+1
@@ -7690,19 +7430,19 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpoly%removed_biomass)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%removed_biomass(1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'REMOVED_BIOMASS :21:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif 
+!    if (associated(cpoly%removed_biomass)) then
+!       nvar=nvar+1
+!         call vtable_edio_r(cpoly%removed_biomass(1),nvar,igr,init,cpoly%siglob_id, &
+!         var_len,var_len_global,max_ptrs,'REMOVED_BIOMASS :21:hist') 
+!       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+!    endif 
 
-    if (associated(cpoly%harvested_biomass)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%harvested_biomass(1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'HARVESTED_BIOMASS :21:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif 
+!    if (associated(cpoly%harvested_biomass)) then
+!       nvar=nvar+1
+!         call vtable_edio_r(cpoly%harvested_biomass(1),nvar,igr,init,cpoly%siglob_id, &
+!         var_len,var_len_global,max_ptrs,'HARVESTED_BIOMASS :21:hist') 
+!       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+!    endif 
 
     if (associated(cpoly%plantation)) then
        nvar=nvar+1
@@ -7753,24 +7493,10 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpoly%fire_flag)) then
-       nvar=nvar+1
-         call vtable_edio_i(cpoly%fire_flag(1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'FIRE_FLAG :21:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-
     if (associated(cpoly%fire_disturbance_rate)) then
        nvar=nvar+1
          call vtable_edio_r(cpoly%fire_disturbance_rate(1),nvar,igr,init,cpoly%siglob_id, &
          var_len,var_len_global,max_ptrs,'FIRE_DISTURBANCE_RATE :21:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-
-    if (associated(cpoly%fuel)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%fuel(1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'FUEL :21:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -7802,34 +7528,6 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpoly%disturbance_rate)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%disturbance_rate(1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'DISTURBANCE_RATE :21:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if (associated(cpoly%elongation_factor)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%elongation_factor(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'ELONGATION_FACTOR :24:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-
-    if (associated(cpoly%delta_elongf)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%delta_elongf(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'DELTA_ELONGF :24:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-
-    if (associated(cpoly%gee_phen_delay)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%gee_phen_delay(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'GEE_PHEN_DELAY :24:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
     if (associated(cpoly%lai_pft)) then
        nvar=nvar+1
          call vtable_edio_r(cpoly%lai_pft(1,1),nvar,igr,init,cpoly%siglob_id, &
@@ -7879,13 +7577,6 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
-    if (associated(cpoly%lambda1)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%lambda1(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'LAMBDA1 :28:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
     if (associated(cpoly%lambda_fire)) then
        nvar=nvar+1
          call vtable_edio_r(cpoly%lambda_fire(1,1),nvar,igr,init,cpoly%siglob_id, &
@@ -7907,13 +7598,6 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
-    if (associated(cpoly%lu_dist_area)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%lu_dist_area(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'LU_DIST_AREA :25:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-        
     if (associated(cpoly%loss_fraction)) then
        nvar=nvar+1
          call vtable_edio_r(cpoly%loss_fraction(1,1),nvar,igr,init,cpoly%siglob_id, &

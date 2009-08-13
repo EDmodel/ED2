@@ -390,7 +390,7 @@ subroutine cu_environ(k1,k2)
      rhoe(k)=pe(k)/(rgas*virtt(te(k),rve(k)))
    end do
    do k=1,kmt
-     thee(k)=thetaeiv(the(k),pe(k),te(k),rve(k),rve(k),.false.)
+     thee(k)=thetaeiv(the(k),pe(k),te(k),rve(k),rve(k),3,.false.)
    end do
 
 
@@ -422,7 +422,7 @@ subroutine cu_environ(k1,k2)
    rlll  = (rve(kcon)+rve(kcon+1)+rve(kcon-1))/3.
    zlll  = ze(kcon)
    thlll = tlll * (p00/plll)**rocp
-   call lcl_il(thlll,plll,tlll,rlll,rlll,tlcl,plcl,dzlcl,.false.)
+   call lcl_il(thlll,plll,tlll,rlll,rlll,tlcl,plcl,dzlcl,1,.false.)
    if (dzlcl == 0.) then
       tlcl = tlll
       plcl = plll

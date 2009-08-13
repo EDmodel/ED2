@@ -110,7 +110,7 @@ subroutine grell_thermo_cldlev(mkx,mgmzp,z_cup,exner,thil,t,qtot,qliq,qice,co2,e
       !------ Finding the air density -----------------------------------------------------!
       rho_cup(k)    = idealdens(p_cup(k),t_cup(k),qvap_cup(k),qtot_cup(k)) 
       !------ Finding the ice-vapour equivalent potential temperature ---------------------!
-      theiv_cup(k)  = thetaeiv(thil_cup(k),p_cup(k),t_cup(k),qvap_cup(k),qtot_cup(k))
+      theiv_cup(k)  = thetaeiv(thil_cup(k),p_cup(k),t_cup(k),qvap_cup(k),qtot_cup(k),8)
       !------ Finding the saturation ice-vapour equivalent potential temperature ----------!
       theivs_cup(k) = thetaeivs(thil_cup(k),t_cup(k),qsat_cup(k),qliq_cup(k),qice_cup(k))
    end do
