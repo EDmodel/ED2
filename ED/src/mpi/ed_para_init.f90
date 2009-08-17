@@ -344,7 +344,9 @@ subroutine ed_parvec_work(ifm,nxp,nyp,land)
   allocate(work_e(ifm)%vec_glat(npolygons))
   allocate(work_e(ifm)%vec_landfrac(npolygons))
   allocate(work_e(ifm)%vec_ntext(npolygons))
-  
+  allocate(work_e(ifm)%vec_xid(npolygons))
+  allocate(work_e(ifm)%vec_yid(npolygons))
+
   poly = 0
   do j = 1,nyp
      do i = 1,nxp
@@ -356,6 +358,8 @@ subroutine ed_parvec_work(ifm,nxp,nyp,land)
            work_e(ifm)%vec_glat(poly) = work_e(ifm)%glat(i,j)
            work_e(ifm)%vec_landfrac(poly) = work_e(ifm)%landfrac(i,j)
            work_e(ifm)%vec_ntext(poly) = work_e(ifm)%ntext(i,j)
+           work_e(ifm)%vec_xid(poly) = i
+           work_e(ifm)%vec_yid(poly) = j
 
         endif
      end do

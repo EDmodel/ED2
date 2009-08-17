@@ -52,7 +52,7 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa,isi,ipy)
    dinitp%ebudget_latent = 0.0d0
 
    !----- Compute canopy turbulence properties. -------------------------------------------!
-   call canopy_turbulence(csite,initp,isi,ipa,.true.)
+   call canopy_turbulence(csite,initp,isi,ipa,.false.)
 
    !----- Finding the derivatives. --------------------------------------------------------!
    call leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
@@ -866,6 +866,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
       ! all throughfall to the ground.  Later, these "unsafe" cohorts will have their leaf !
       ! energy set to equilibrium with the canopy air space (temperature).                 !
       !------------------------------------------------------------------------------------!
+
       if (initp%solvable(ico)) then
 
          !------ Defining some shortcuts to indices ---------------------------------------!

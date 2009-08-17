@@ -49,7 +49,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%rlong_v_surf(ico)     = 0.0
   cpatch%rlong_v_incid(ico)    = 0.0
        
-  cpatch%rb(ico)               = 0.0
+!  cpatch%rb(ico)               = 0.0
   cpatch%A_open(ico)           = 0.0
   cpatch%A_closed(ico)         = 0.0
   cpatch%Psi_closed(ico)       = 0.0

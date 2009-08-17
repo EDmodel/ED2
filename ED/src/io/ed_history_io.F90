@@ -1699,7 +1699,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    memsize(2)   = int(cpoly%nsites,8)
    memoffs(2)   = 0_8
 
-!   call hdf_getslab_r(cpoly%lu_dist_area,'LU_DIST_AREA ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%loss_fraction,'LOSS_FRACTION ',dsetrank,iparallel,.true.)
 
    dsetrank    = 3_8

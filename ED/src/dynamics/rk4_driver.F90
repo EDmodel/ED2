@@ -140,8 +140,6 @@ module rk4_driver
                           ,csite%soil_fracliq(:,ipa),cpoly%lsl(isi),sum_lai_rbi            &
                           ,cpoly%leaf_aging_factor(:,isi),cpoly%green_leaf_factor(:,isi) )
 
-
-
                !----- Compute root and heterotrophic respiration. -------------------------!
                call soil_respiration(csite,ipa)
 

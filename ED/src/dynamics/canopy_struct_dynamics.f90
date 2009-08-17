@@ -450,7 +450,8 @@ module canopy_struct_dynamics
 
                   crowndepth = max(dz,dble(crown_depth_fraction(ipft))*hite8)
 
-                  if ( z < hite8 .and. z >= (hite8-crowndepth)) then
+                  if ( z < hite8 .and. z >= (hite8-crowndepth) .or. &
+                     (k==1 .and. hite8 < dz )  ) then
                      select case (ibranch_thermo)
                      case (0)
                         !------------------------------------------------------------------!
@@ -502,8 +503,12 @@ module canopy_struct_dynamics
             initp%rough = max((h-d0)*exp(-vonk8/ustarouh),dble(soil_rough))
          end if
 
+
+         
+
          !----- Calculate ustar, tstar, qstar, and cstar. ---------------------------------!
          can_theta = cpi8 * rk4met%exner * initp%can_temp
+
          call ed_stars8(rk4met%atm_theta,rk4met%atm_shv,rk4met%atm_co2, can_theta          &
                        ,initp%can_shv,initp%can_co2,zref,d0,vels_ref,initp%rough           &
                        ,initp%ustar,initp%tstar,initp%qstar,initp%cstar,fm)
@@ -548,7 +553,7 @@ module canopy_struct_dynamics
                                           * (1.6d8*abs(initp%veg_temp(ico)-initp%can_temp) &
                                             * dble(leaf_width(ipft))**3 ) **2.5d-1         &
                                           / dble(leaf_width(ipft)) ) )
-               cpatch%rb(ico) = sngloff(initp%rb(ico),tiny_offset)
+
             end do
 
             !------------------------------------------------------------------------------!
@@ -656,7 +661,9 @@ module canopy_struct_dynamics
    !==========================================================================================!
 
 
-
+!call ed_stars8(rk4met%atm_theta,rk4met%atm_shv,rk4met%atm_co2, can_theta          &
+!                       ,initp%can_shv,initp%can_co2,zref,d0,vels_ref,initp%rough           &
+!                       ,initp%ustar,initp%tstar,initp%qstar,initp%cstar,fm)
 
 
 
