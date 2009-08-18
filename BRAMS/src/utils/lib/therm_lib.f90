@@ -1879,7 +1879,7 @@ module therm_lib
    !    In case you want to find thetae (i.e. without ice) simply provide the logical      !
    ! useice as .false. .                                                                   !
    !---------------------------------------------------------------------------------------!
-   real function thetaeiv(thil,pres,temp,rvap,rtot,useice)
+   real function thetaeiv(thil,pres,temp,rvap,rtot,iflg,useice)
       use rconstants, only : alvl,alvi,cp,ep,p00,rocp,ttripoli,t3ple
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -1888,6 +1888,7 @@ module therm_lib
       real   , intent(in)           :: temp    ! Temperature                       [     K]
       real   , intent(in)           :: rvap    ! Water vapour mixing ratio         [ kg/kg]
       real   , intent(in)           :: rtot    ! Total mixing ratio                [ kg/kg]
+      integer, intent(in)           :: iflg    ! Just to tell where this has been called.
       logical, intent(in), optional :: useice  ! Should I use ice?                 [   T|F]
       !----- Local variables for iterative method -----------------------------------------!
       real                          :: tlcl    ! Internal LCL temperature          [     K]
@@ -1896,9 +1897,9 @@ module therm_lib
       !------------------------------------------------------------------------------------!
 
       if (present(useice)) then
-         call lcl_il(thil,pres,temp,rtot,rvap,tlcl,plcl,dzlcl,useice)
+         call lcl_il(thil,pres,temp,rtot,rvap,tlcl,plcl,dzlcl,iflg,useice)
       else
-         call lcl_il(thil,pres,temp,rtot,rvap,tlcl,plcl,dzlcl)
+         call lcl_il(thil,pres,temp,rtot,rvap,tlcl,plcl,dzlcl,iflg)
       end if
 
       !------------------------------------------------------------------------------------!
@@ -2504,7 +2505,7 @@ module therm_lib
    !    decide by itself based on the LEVEL variable.                                      !
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
-   subroutine lcl_il(thil,pres,temp,rtot,rvap,tlcl,plcl,dzlcl,useice)
+   subroutine lcl_il(thil,pres,temp,rtot,rvap,tlcl,plcl,dzlcl,iflg,useice)
       use rconstants, only: cpog,alvl,alvi,cp,ep,p00,rocp,ttripoli,t3ple,t00,rgas
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -2516,6 +2517,7 @@ module therm_lib
       real   , intent(out)           :: tlcl   ! LCL temperature                  [      K]
       real   , intent(out)           :: plcl   ! LCL pressure                     [     Pa]
       real   , intent(out)           :: dzlcl  ! Sub-LCL layer thickness          [      m]
+      integer, intent(in)            :: iflg   ! Flag just to tell from where it was called
       logical, intent(in) , optional :: useice ! Should I use ice thermodynamics? [    T|F]
       !----- Local variables for iterative method -----------------------------------------!
       real                :: pvap       ! Sat. vapour pressure
@@ -2665,10 +2667,18 @@ module therm_lib
                if (zside) exit zgssloop
             end do zgssloop
             if (.not. zside) then
-               write (unit=*,fmt='(a)') ' No second guess for you...'
-               write (unit=*,fmt='(2(a,1x,es14.7))') 'tlcla=',tlcla,'funa=',funa
-               write (unit=*,fmt='(2(a,1x,es14.7))') 'tlclz=',tlclz,'func=',funz
-               write (unit=*,fmt='(2(a,1x,es14.7))') 'delta=',delta,'funn=',funnow
+               write (unit=*,fmt='(a)') ' ====== No second guess for you... ======'
+               write (unit=*,fmt='(a)') ' + INPUT variables: '
+               write (unit=*,fmt='(a,1x,es14.7)') 'THIL =',thil
+               write (unit=*,fmt='(a,1x,es14.7)') 'TEMP =',temp
+               write (unit=*,fmt='(a,1x,es14.7)') 'PRES =',pres
+               write (unit=*,fmt='(a,1x,es14.7)') 'RTOT =',rtot
+               write (unit=*,fmt='(a,1x,es14.7)') 'RVAP =',rvap
+               write (unit=*,fmt='(a,1x,i5)')     'CALL =',iflg
+               write (unit=*,fmt='(a)') ' ============ Failed guess... ==========='
+               write (unit=*,fmt='(2(a,1x,es14.7))') 'TLCLA =',tlcla,'FUNA =',funa
+               write (unit=*,fmt='(2(a,1x,es14.7))') 'TLCLZ =',tlclz,'FUNC =',funz
+               write (unit=*,fmt='(2(a,1x,es14.7))') 'DELTA =',delta,'FUNN =',funnow
                call abort_run('Failed finding the second guess for regula falsi'           &
                              ,'lcl_il','therm_lib.f90')
             end if
@@ -2740,6 +2750,7 @@ module therm_lib
          write (unit=*,fmt='(a,1x,f12.4)' ) 'Temperature     [    °C] =',temp-t00
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rtot            [  g/kg] =',1000.*rtot
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rvap            [  g/kg] =',1000.*rvap
+         write (unit=*,fmt='(a,1x,i5)'    ) 'call            [   ---] =',iflg
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a)') ' Last iteration outcome.'
          write (unit=*,fmt='(a,1x,f12.4)' ) 'tlcla           [    °C] =',tlcla-t00
@@ -2939,7 +2950,7 @@ module therm_lib
          tempk = t3ple
       !----- No water, but it must be at freezing point (qw = qwfroz = qwmelt) ------------!
       else
-         fracliq = 0.
+         fracliq = 0.5
          tempk   = t3ple
       end if
       !------------------------------------------------------------------------------------!
@@ -3043,7 +3054,7 @@ module therm_lib
          tempk = t3ple8
       !----- No water, but it must be at freezing point (qw = qwfroz = qwmelt) ------------!
       else
-         fracliq = 0.d0
+         fracliq = 5.d-1
          tempk   = t3ple8
       end if
       !------------------------------------------------------------------------------------!

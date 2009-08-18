@@ -722,8 +722,7 @@ subroutine update_met_drivers(cgrid)
                              , t3ple        & ! intent(in)
                              , wdnsi        & ! intent(in)
                              , tsupercool   ! ! intent(in)
-   use therm_lib      , only : virtt        & ! intent(in)
-                             , rslif        ! ! intent(in)
+   use therm_lib      , only : rslif        ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target  :: cgrid
@@ -742,7 +741,6 @@ subroutine update_met_drivers(cgrid)
    real                       :: t1
    real                       :: t2
    real                       :: rvaux, rvsat
-   real                       :: tvir
    !----- External functions --------------------------------------------------------------!
    logical         , external :: isleap
    !---------------------------------------------------------------------------------------!
@@ -1008,8 +1006,7 @@ subroutine update_met_drivers(cgrid)
    
    
    !---------------------------------------------------------------------------------------!
-   !     Change from velocity squared to velocity, get the rhos, and compute qpcpg and     !
-   ! dpcpg.                                                                                !
+   !     Change from velocity squared to velocity, and compute qpcpg and dpcpg.            !
    !---------------------------------------------------------------------------------------!
    polyloop: do ipy = 1,cgrid%npolygons
          
@@ -1034,12 +1031,8 @@ subroutine update_met_drivers(cgrid)
       !------ Apply met to sites, and adjust met variables for topography. ----------------!
       call calc_met_lapse(cgrid,ipy)
 
-      !----- Finding the polygon-level density. -------------------------------------------!
-      tvir = virtt(cgrid%met(ipy)%atm_tmp,rvaux)
-      cgrid%met(ipy)%rhos = cgrid%met(ipy)%prss / (rdry * tvir)
-
-       !----- Exner function ------------------------------------------------------------!
-       cgrid%met(ipy)%exner = cp * (cgrid%met(ipy)%prss / p00)**rocp
+      !----- Exner function ---------------------------------------------------------------!
+      cgrid%met(ipy)%exner = cp * (cgrid%met(ipy)%prss / p00)**rocp
 
       cpoly => cgrid%polygon(ipy)
       siteloop: do isi = 1,cpoly%nsites
@@ -1077,12 +1070,8 @@ subroutine update_met_drivers(cgrid)
          cpoly%met(isi)%atm_shv = rvaux / (1. + rvaux)
          !    Here we check whether the specific humidity is not supersaturated. Since we 
          ! haven't found density yet
-         
-         !----- Finding the polygon-level density. ----------------------------------------!
-         tvir = virtt(cpoly%met(isi)%atm_tmp,rvaux)
-         cpoly%met(isi)%rhos = cpoly%met(isi)%prss / (rdry * tvir)
-         
-         
+
+
          !---------------------------------------------------------------------------------!
          !     Precipitation internal energy and "depth".  The decision on whether it's    !
          ! rain or snow is rather simple: above the triple point is rain, below it's snow. !
@@ -1921,8 +1910,6 @@ subroutine int_met_avg(cgrid)
              cpoly%met(isi)%atm_tmp * cpoly%area(isi) * tfact
         cgrid%avg_atm_shv(ipy)     = cgrid%avg_atm_shv(ipy) + &
              cpoly%met(isi)%atm_shv * cpoly%area(isi) * tfact
-        cgrid%avg_rhos(ipy)        = cgrid%avg_rhos(ipy) + &
-             cpoly%met(isi)%rhos * cpoly%area(isi) * tfact
         cgrid%avg_rshort(ipy)      = cgrid%avg_rshort(ipy) + &
              cpoly%met(isi)%rshort * cpoly%area(isi) * tfact
         cgrid%avg_rshort_diffuse(ipy) = cgrid%avg_rshort_diffuse(ipy) + &

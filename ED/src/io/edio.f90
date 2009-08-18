@@ -258,17 +258,12 @@ subroutine spatial_averages
             cpoly%aux(isi)          = sum(csite%aux          * csite%area ) * site_area_i
             cpoly%avg_sensible_vc(isi)   = sum(csite%avg_sensible_vc    * csite%area )     &
                                          * site_area_i
-            cpoly%avg_sensible_2cas(isi) = sum(csite%avg_sensible_2cas  * csite%area )     &
-                                         * site_area_i
             cpoly%avg_qwshed_vg(isi)     = sum(csite%avg_qwshed_vg      * csite%area )     &
                                          * site_area_i
             cpoly%avg_sensible_gc(isi)   = sum(csite%avg_sensible_gc    * csite%area )     &
                                          * site_area_i
             cpoly%avg_sensible_ac(isi)   = sum(csite%avg_sensible_ac    * csite%area )     &
                                          * site_area_i
-            cpoly%avg_sensible_tot(isi)  = sum(csite%avg_sensible_tot   * csite%area )     &
-                                         * site_area_i
-
 
             !----- Extra variables for NACP intercomparision (MCD) ------------------------!
             cpoly%avg_fsc(isi)    = sum(csite%fast_soil_C       * csite%area ) * site_area_i
@@ -549,8 +544,9 @@ subroutine spatial_averages
 
             !----- Site average of canopy thermodynamic state -----------------------------!
             cpoly%avg_can_temp(isi) = sum(csite%can_temp  * csite%area) * site_area_i
-            cpoly%avg_can_shv(isi)  = sum(csite%can_shv   * csite%area) * site_area_i
-            cpoly%avg_can_co2(isi)  = sum(csite%can_co2   * csite%area) * site_area_i
+            cpoly%avg_can_shv (isi) = sum(csite%can_shv   * csite%area) * site_area_i
+            cpoly%avg_can_co2 (isi) = sum(csite%can_co2   * csite%area) * site_area_i
+            cpoly%avg_can_rhos(isi) = sum(csite%can_rhos  * csite%area) * site_area_i
 
             !------------------------------------------------------------------------------!
             !   Site average of leaf properties.  Again, we average "extensive" properties !
@@ -627,14 +623,13 @@ subroutine spatial_averages
          cgrid%avg_evap(ipy)         = sum(cpoly%avg_evap         *cpoly%area)*poly_area_i
          cgrid%aux(ipy)              = sum(cpoly%aux              *cpoly%area)*poly_area_i
          cgrid%avg_sensible_vc(ipy)  = sum(cpoly%avg_sensible_vc  *cpoly%area)*poly_area_i
-         cgrid%avg_sensible_2cas(ipy)= sum(cpoly%avg_sensible_2cas*cpoly%area)*poly_area_i
          cgrid%avg_qwshed_vg(ipy)    = sum(cpoly%avg_qwshed_vg    *cpoly%area)*poly_area_i
          cgrid%avg_sensible_gc(ipy)  = sum(cpoly%avg_sensible_gc  *cpoly%area)*poly_area_i
          cgrid%avg_sensible_ac(ipy)  = sum(cpoly%avg_sensible_ac  *cpoly%area)*poly_area_i
-         cgrid%avg_sensible_tot(ipy) = sum(cpoly%avg_sensible_tot *cpoly%area)*poly_area_i
          cgrid%avg_can_temp(ipy)     = sum(cpoly%avg_can_temp     *cpoly%area)*poly_area_i
          cgrid%avg_can_shv(ipy)      = sum(cpoly%avg_can_shv      *cpoly%area)*poly_area_i
          cgrid%avg_can_co2(ipy)      = sum(cpoly%avg_can_co2      *cpoly%area)*poly_area_i
+         cgrid%avg_can_rhos(ipy)     = sum(cpoly%avg_can_rhos     *cpoly%area)*poly_area_i
 
          !---------------------------------------------------------------------------------!
          !    Similar to the site level, average mass, heat capacity and energy then find  !

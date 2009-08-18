@@ -49,7 +49,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%rlong_v_surf(ico)     = 0.0
   cpatch%rlong_v_incid(ico)    = 0.0
        
-  cpatch%rb(ico)               = 0.0
+!  cpatch%rb(ico)               = 0.0
   cpatch%A_open(ico)           = 0.0
   cpatch%A_closed(ico)         = 0.0
   cpatch%Psi_closed(ico)       = 0.0
@@ -139,6 +139,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
 !  use fuse_fiss_utils, only: count_cohorts
   use grid_coms,     only: nzs, nzg
   use soil_coms, only: slz
+  use canopy_air_coms, only : veg_height_min, minimum_canopy_depth
 
   implicit none
 
@@ -184,19 +185,29 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
 
   csite%htry(ip1:ip2) = 1.0
 
-  csite%wbudget_loss2atm(ip1:ip2) = 0.0
-  csite%wbudget_loss2runoff(ip1:ip2) = 0.0
-  csite%co2budget_loss2atm(ip1:ip2) = 0.0
-  csite%ebudget_loss2atm(ip1:ip2) = 0.0
-  csite%ebudget_latent(ip1:ip2) = 0.0
-
-  csite%wbudget_precipgain(ip1:ip2) = 0.0
-  csite%ebudget_precipgain(ip1:ip2) = 0.0
-  csite%ebudget_netrad(ip1:ip2) = 0.0
-  csite%co2budget_gpp(ip1:ip2) = 0.0
-  csite%co2budget_gpp_dbh(:,ip1:ip2) = 0.0
-  csite%co2budget_plresp(ip1:ip2) = 0.0
-  csite%co2budget_rh(ip1:ip2) = 0.0
+  csite%co2budget_gpp(ip1:ip2)            = 0.0
+  csite%co2budget_gpp_dbh(:,ip1:ip2)      = 0.0
+  csite%co2budget_rh(ip1:ip2)             = 0.0
+  csite%co2budget_plresp(ip1:ip2)         = 0.0
+  csite%co2budget_initialstorage(ip1:ip2) = 0.0
+  csite%co2budget_residual(ip1:ip2)       = 0.0
+  csite%wbudget_precipgain(ip1:ip2)       = 0.0
+  csite%wbudget_loss2atm(ip1:ip2)         = 0.0
+  csite%wbudget_loss2runoff(ip1:ip2)      = 0.0
+  csite%wbudget_loss2drainage(ip1:ip2)    = 0.0
+  csite%wbudget_initialstorage(ip1:ip2)   = 0.0
+  csite%wbudget_residual(ip1:ip2)         = 0.0
+  csite%ebudget_precipgain(ip1:ip2)       = 0.0
+  csite%ebudget_netrad(ip1:ip2)           = 0.0
+  csite%ebudget_latent(ip1:ip2)           = 0.0
+  csite%ebudget_loss2atm(ip1:ip2)         = 0.0
+  csite%ebudget_loss2runoff(ip1:ip2)      = 0.0
+  csite%ebudget_loss2drainage(ip1:ip2)    = 0.0
+  csite%ebudget_initialstorage(ip1:ip2)   = 0.0
+  csite%ebudget_residual(ip1:ip2)         = 0.0
+  csite%dmean_co2_residual(ip1:ip2)       = 0.0
+  csite%dmean_energy_residual(ip1:ip2)    = 0.0
+  csite%dmean_water_residual(ip1:ip2)     = 0.0
 
   !----------------------------------------------------------------------------------------!
   !    These variables need to be initialized here otherwise it will fail when new patches !
@@ -214,18 +225,14 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%avg_smoist_gc(:,ip1:ip2)    = 0.0
   csite%avg_runoff(ip1:ip2)       = 0.0
   csite%avg_sensible_vc(ip1:ip2)  = 0.0
-  csite%avg_sensible_2cas(ip1:ip2)= 0.0
   csite%avg_qwshed_vg(ip1:ip2)    = 0.0
   csite%avg_sensible_gc(ip1:ip2)  = 0.0
   csite%avg_sensible_ac(ip1:ip2)  = 0.0
-  csite%avg_sensible_tot(ip1:ip2) = 0.0
   csite%avg_sensible_gg(:,ip1:ip2)  = 0.0
   csite%avg_runoff_heat(ip1:ip2)  = 0.0
   csite%aux(ip1:ip2)              = 0.0
   csite%aux_s(:,ip1:ip2)            = 0.0
   
-  csite%avg_heatstor_veg(ip1:ip2) = 0.0  !SHOULD THIS BE ZERO'D ALSO?
-
   csite%rshort_g(ip1:ip2) = 0.0
   csite%rshort_g_beam(ip1:ip2) = 0.0
   csite%rshort_g_diffuse(ip1:ip2) = 0.0
@@ -392,7 +399,7 @@ end subroutine init_ed_poly_vars
 !     This subroutine will assign the values of some diagnostic variables, such as soil    !
 ! and temporary layer temperature and liquid fraction, and the surface properties.         !
 !------------------------------------------------------------------------------------------!
-subroutine new_patch_sfc_props(csite,ipa, rhos)
+subroutine new_patch_sfc_props(csite,ipa)
    use ed_state_vars , only : sitetype          & ! structure
                             , patchtype         ! ! structure
    use grid_coms     , only : nzg               & ! intent(in)
@@ -408,7 +415,6 @@ subroutine new_patch_sfc_props(csite,ipa, rhos)
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype) , target     :: csite          ! Current site
    integer        , intent(in) :: ipa            ! Number of the current patch
-   real           , intent(in) :: rhos           ! Air density                     [ kg/m3]
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype), pointer    :: cpatch         ! Current patch
    integer                     :: k              ! Layer counter
@@ -466,7 +472,7 @@ subroutine new_patch_sfc_props(csite,ipa, rhos)
    k=max(1,csite%nlev_sfcwater(ipa))
    call ed_grndvap(csite%nlev_sfcwater(ipa),csite%ntext_soil(nzg,ipa)                      &
                   ,csite%soil_water(nzg,ipa),csite%soil_energy(nzg,ipa)                    &
-                  ,csite%sfcwater_energy(k,ipa), rhos,csite%can_shv(ipa)                   &
+                  ,csite%sfcwater_energy(k,ipa), csite%can_rhos(ipa),csite%can_shv(ipa)    &
                   ,csite%ground_shv(ipa),csite%surface_ssh(ipa),surface_temp,surface_fliq)
    !---------------------------------------------------------------------------------------! 
 

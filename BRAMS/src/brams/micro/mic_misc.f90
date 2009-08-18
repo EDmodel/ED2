@@ -398,7 +398,7 @@ subroutine fill_thermovars(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
       ! compute the new theta-il (ice-liquid potential temperature) in the end of this     !
       ! subroutine.                                                                        !
       !------------------------------------------------------------------------------------!
-      theiv(k)   = thetaeiv(thil(k),press(k),tair(k),rvap(k),rtot(k),.true.)
+      theiv(k)   = thetaeiv(thil(k),press(k),tair(k),rvap(k),rtot(k),4,.true.)
    end do
    
    !---------------------------------------------------------------------------------------!

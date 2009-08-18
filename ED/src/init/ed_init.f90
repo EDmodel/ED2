@@ -25,7 +25,12 @@ subroutine set_polygon_coordinates()
          edgrid_g(ifm)%lon(ipy) = work_e(ifm)%vec_glon(ipy)
          edgrid_g(ifm)%lat(ipy) = work_e(ifm)%vec_glat(ipy)
          edgrid_g(ifm)%ntext_soil(1:nzg,ipy) = work_e(ifm)%vec_ntext(ipy)
+         edgrid_g(ifm)%xatm(ipy) = work_e(ifm)%vec_xid(ipy)
+         edgrid_g(ifm)%yatm(ipy) = work_e(ifm)%vec_yid(ipy)
+
       end do ploop
+
+      
 
    end do gloop
 
@@ -150,9 +155,9 @@ subroutine load_ecosystem_state()
    select case (ied_init_mode)
    case(0)
       !----- Initialize everything with near-bare ground ----------------------------------!
-      if (mynum /= 1) write(unit=*,fmt='(a)') ' + Doing bare ground initialization...'
+      if (mynum /= 1) write(unit=*,fmt='(a)') ' + Doing near bare ground initialization...'
       do igr=1,ngrids
-           call bare_ground_init(edgrid_g(igr))
+           call near_bare_ground_init(edgrid_g(igr))
       end do
       
    case(-1,1,2,3)

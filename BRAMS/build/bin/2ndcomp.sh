@@ -261,6 +261,7 @@ rm -fv edcp_para_init.o           edcp_para_init.mod
 rm -fv mem_edcp.o                 mem_edcp.mod
 rm -fv allometry.o                allometry.mod
 rm -fv average_utils.o            average_utils.mod
+rm -fv budget_utils.o             budget_utils.mod
 rm -fv c34constants.o             c34constants.mod
 rm -fv canopy_air_coms.o          canopy_air_coms.mod
 rm -fv canopy_radiation_coms.o    canopy_radiation_coms.mod

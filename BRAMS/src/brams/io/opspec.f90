@@ -769,42 +769,12 @@ subroutine opspec3
           end if
        end if
    end do
-! Checking whether shallow cumulus call frequency is a divisor of deep cumulus call
-  if (any(nnqparm > 0)) then
-     do nc=1,nclouds-1
-        if (mod(confrq(nc),confrq(nc+1)) /= 0.) then
-           print *, 'FATAL - If more than one kind of cloud is used, then all frequencies'
-           print *, '        must be an integer multiple of the smaller clours'
-           print *, '        Deeper= ',confrq(nc),' and Shallower=',confrq(nc+1)
-           IFATERR=IFATERR+1
-        end if
-     end do
-     !  If Grell is on, then all Grell clouds must be solved at the same frequency.
-     if (grell_on) then
-        do ng=1,ngrids
-           ! Find the first and last Grell cloud. 
-           if (ndeepest(ng) == 2) then
-              grella = 1
-           else
-              grella = 2
-           end if
-           if (nshallowest(ng) == 2) then
-              grellz = nclouds
-           else
-              grellz = nclouds-1
-           end if
-           do nc=grella+1,grellz
-              if (confrq(nc) /= confrq(grella)) then
-                 print *, 'FATAL - All clouds using Grell''s cumulus scheme must be '
-                 print *, '        updated simultaneously.  Check your CONFRQ'
-                 print *, '        Cloud # =',grella,' CONFRQ= ',confrq(grella)
-                 print *, '        Cloud # =',nc    ,' CONFRQ= ',confrq(nc)
-                 IFATERR = IFATERR + 1
-              end if
-           end do
-        end do
-     end if
+  if (any(nnqparm > 0) .and. confrq <= 0.) then
+     print *, 'FATAL - CONFRQ must be positive when cumulus is on... '
+     print *, '        Your CONFRQ= ',confrq
+     IFATERR = IFATERR + 1
   end if
+
   if (grell_on) then
      do nc=1,nclouds-1
         if (radius(nc) < radius (nc+1)) then

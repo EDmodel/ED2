@@ -31,6 +31,7 @@ all:
 	make $(EXE)
 	make $(EXE)
 
+
 gendep:
 	@echo ""
 	./generate_deps.sh $(ED_ROOT)

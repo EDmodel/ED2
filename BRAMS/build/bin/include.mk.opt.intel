@@ -46,9 +46,13 @@ HDF4_LIBS=
 
 # For 64-bit 
 USE_HDF5=1
-HDF5_INCS=-I/n/Moorcroft_Lab/Lab/apps/i91/lib -I/n/Moorcroft_Lab/Lab/apps/i91/include
-HDF5_LIBS=-L/n/Moorcroft_Lab/Lab/apps/i91/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
-          -L/n/Moorcroft_Lab/User/mlongo/util/hdflib/hdf5_64/zlib-1.2.1/lib -lz
+HDF5_INCS=-I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/include \
+          -I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/jpeg-6b/include \
+          -I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/szip-2.0/include \
+          -I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/zlib-1.2.1/include
+HDF5_LIBS=-L/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib -lhdf5 -lm -lhdf5_fortran \
+          -lhdf5 -lhdf5_hl \
+          -L/n/Moorcroft_Lab/User/mlongo/util/hdflib/hdf5_32/zlib-1.2.1/lib -lz
 
 #---------------------------------------------------------------
 # If you have a version of hdf5 compiled in parallel, then you

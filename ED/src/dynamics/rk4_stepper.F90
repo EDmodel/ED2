@@ -465,9 +465,9 @@ module rk4_stepper
             write(unit=*,fmt='(a)')           ' + Canopy air temperature is off-track...'
             write(unit=*,fmt='(a)')           '-----------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:       ',y%can_shv
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:       ',can_rhv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:      ',y%can_temp
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:       ',y%can_co2
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:     ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:      ',rk4met%prss
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_TEMP)/Dt:',dydx%can_temp
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt: ',dydx%can_shv
@@ -503,6 +503,7 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:       ',can_rhv
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:      ',y%can_temp
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:       ',y%can_co2
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:     ',y%can_depth
                write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:      ',rk4met%prss
                write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_TEMP)/Dt:',dydx%can_temp
                write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt: ',dydx%can_shv
@@ -531,6 +532,7 @@ module rk4_stepper
       !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:       ',can_rhv
       !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:      ',y%can_temp
       !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:       ',y%can_co2
+      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:     ',y%can_depth
       !      write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:      ',rk4met%prss
       !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_TEMP)/Dt:',dydx%can_temp
       !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt: ',dydx%can_shv

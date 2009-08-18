@@ -266,6 +266,7 @@ subroutine init_can_air_params()
                              , fullveg_lwater        & ! intent(out) 
                              , rb_inter              & ! intent(out) 
                              , rb_slope              & ! intent(out) 
+                             , veg_height_min        & ! intent(out) 
                              , minimum_canopy_depth  & ! intent(out) 
                              , minimum_canopy_depth8 ! ! intent(out)
 
@@ -291,7 +292,7 @@ subroutine init_can_air_params()
    ! not PFT dependent.                                                                    !
    !---------------------------------------------------------------------------------------!
    rb_slope = 25.0
-   rb_inter =  0.0 
+   rb_inter = 0.0 
 
    !---------------------------------------------------------------------------------------!
    !      This is the minimum canopy depth that is used to calculate the heat and moisture !
@@ -299,6 +300,12 @@ subroutine init_can_air_params()
    !---------------------------------------------------------------------------------------!
    minimum_canopy_depth  = 5.0
    minimum_canopy_depth8 = dble(minimum_canopy_depth)
+
+   !---------------------------------------------------------------------------------------!
+   !     This is the minimum vegetation height, used to calculate drag coefficients and    !
+   ! similar things.                                                                       !
+   !---------------------------------------------------------------------------------------!
+   veg_height_min = 1.0 ! was 0.2
 
    return
 end subroutine init_can_air_params
@@ -1352,6 +1359,7 @@ subroutine init_rk4_params()
                                    , rk4epsi               & ! intent(out)
                                    , hmin                  & ! intent(out)
                                    , print_diags           & ! intent(out)
+                                   , checkbudget           & ! intent(out)
                                    , debug                 & ! intent(out)
                                    , toocold               & ! intent(out)
                                    , toohot                & ! intent(out)
@@ -1402,8 +1410,11 @@ subroutine init_rk4_params()
    maxstp      = 100000000    ! Maximum number of intermediate steps. 
    rk4eps      = 1.d-2        ! The desired accuracy.
    rk4epsi     = 1.d0/rk4eps  ! The inverse of desired accuracy.
-   hmin        = 1.d-13        ! The minimum step size.
+   hmin        = 1.d-13       ! The minimum step size.
    print_diags = .false.      ! Flag to print the diagnostic check.
+   checkbudget = .false.      ! Flag to check CO2, water, and energy budgets every time
+                              !     step and stop the run in case any of these budgets 
+                              !     doesn't close.
    !---------------------------------------------------------------------------------------!
 
 

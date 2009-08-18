@@ -40,6 +40,7 @@ subroutine ed_coup_driver()
   use soil_coms, only: alloc_soilgrid
   use ed_node_coms , only: mynum,nnodetot,sendnum,recvnum,mmxp,mmyp
   use ed_work_vars , only: ed_dealloc_work,work_e
+  use rk4_coms     , only: checkbudget
   implicit none
   real :: w1,w2,w3,wtime_start  ! wall time
   real, external :: walltime    ! wall time
@@ -71,7 +72,8 @@ subroutine ed_coup_driver()
   ! and imoutput conditions.                                                  !
   ! If they are not >0, then set the logical, fast_diagnostics to false.      !
   !---------------------------------------------------------------------------!
-  fast_diagnostics = ifoutput /= 0 .or. idoutput /= 0 .or. imoutput /= 0
+  fast_diagnostics = checkbudget .or. ifoutput /= 0 .or. idoutput /= 0 .or.   &
+                     imoutput /= 0
 
   !---------------------------------------------------------------------------!
   ! STEP 2: Set the ED model parameters                                       !

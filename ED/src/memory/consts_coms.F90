@@ -28,7 +28,7 @@ Module consts_coms
      , b_mmvap      => mmvap      , b_mmco2      => mmco2      , b_mmdoc      => mmdoc     &
      , b_mmcod      => mmcod      , b_mmdry1000  => mmdry1000  , b_mmdryi     => mmdryi    &
      , b_rmol       => rmol       , b_volmol     => volmol     , b_volmoll    => volmoll   &
-     , b_mmcod1em6  => mmcod1em6  , b_mmco2i     => mmco2i
+     , b_mmcod1em6  => mmcod1em6  , b_mmco2i     => mmco2i     , b_epim1      => epim1
 
    implicit none
 
@@ -69,6 +69,7 @@ Module consts_coms
    real, parameter :: mmdryi     = b_mmdryi     , rmol       = b_rmol
    real, parameter :: volmol     = b_volmol     , volmoll    = b_volmoll
    real, parameter :: mmcod1em6  = b_mmcod1em6  , mmco2i     = b_mmco2i
+   real, parameter :: epim1      = b_epim1
 #else
    implicit none
 
@@ -172,6 +173,7 @@ Module consts_coms
    real, parameter :: gorvap = grav / rvap  ! g/Rv                              [      K/m]
    real, parameter :: ep     = mmvap/mmdry  ! or Ra/Rv, epsilon, used to find rv[    kg/kg]
    real, parameter :: epi    = mmdry/mmvap  ! or Rv/Ra, 1/epsilon               [    kg/kg]
+   real, parameter :: epim1  = epi-1.       ! that 0.61 term of virtual temp.   [    kg/kg]
    real, parameter :: toodry = 1.e-8        ! Minimum acceptable mixing ratio.  [    kg/kg]
    !---------------------------------------------------------------------------------------!
 
@@ -265,6 +267,9 @@ Module consts_coms
    real(kind=8), parameter :: cp8          = dble(cp        )
    real(kind=8), parameter :: cpi8         = dble(cpi       )
    real(kind=8), parameter :: day_sec8     = dble(day_sec   )
+   real(kind=8), parameter :: ep8          = dble(ep        )
+   real(kind=8), parameter :: epi8         = dble(epi       )
+   real(kind=8), parameter :: epim18       = dble(epim1     )
    real(kind=8), parameter :: gorvap8      = dble(gorvap    )
    real(kind=8), parameter :: grav8        = dble(grav      )
    real(kind=8), parameter :: hr_sec8      = dble(hr_sec    )
@@ -275,6 +280,7 @@ Module consts_coms
    real(kind=8), parameter :: pio1808      = dble(pio180    )
    real(kind=8), parameter :: qicet38      = dble(qicet3    )
    real(kind=8), parameter :: qliqt38      = dble(qliqt3    )
+   real(kind=8), parameter :: rdry8        = dble(rdry      )
    real(kind=8), parameter :: stefan8      = dble(stefan    )
    real(kind=8), parameter :: sqrt2o28     = dble(sqrt2o2   )
    real(kind=8), parameter :: t3ple8       = dble(t3ple     )

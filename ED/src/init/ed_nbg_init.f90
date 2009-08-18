@@ -2,7 +2,7 @@
 !==========================================================================================!
 !      This subroutine initializes a near-bare ground polygon.                             !
 !------------------------------------------------------------------------------------------!
-subroutine bare_ground_init(cgrid)
+subroutine near_bare_ground_init(cgrid)
    use ed_state_vars , only: edtype           & ! structure
                            , polygontype      & ! structure
                            , sitetype         & ! structure
@@ -56,7 +56,7 @@ subroutine bare_ground_init(cgrid)
    call init_ed_poly_vars(cgrid)
 
    return
-end subroutine bare_ground_init
+end subroutine near_bare_ground_init
 !==========================================================================================!
 !==========================================================================================!
 
@@ -122,7 +122,8 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
 
       !----- Perform cohort allocation. ---------------------------------------------------!
       call allocate_patchtype(cpatch,mypfts)
-      
+      !call allocate_patchtype(cpatch,0)
+      !cycle patchloop
       !------------------------------------------------------------------------------------!
       !    Here we loop over PFTs rather than assigning the cohorts, so we ensure to only  !
       ! include the PFTs that should be  included (i.e., patches that should not happen in !

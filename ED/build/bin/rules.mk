@@ -209,6 +209,11 @@ average_utils.o : $(ED_IO)/average_utils.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+budget_utils.o : $(ED_UTILS)/budget_utils.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 canopy_update_euler.o : $(ED_DYNAMICS)/canopy_update_euler.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -235,11 +240,6 @@ edio.o : $(ED_IO)/edio.f90
 	rm -f $(<F:.f90=.f90)
 
 ed_1st.o : $(ED_DRIVER)/ed_1st.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
-
-ed_bare_restart.o : $(ED_INIT)/ed_bare_restart.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -296,6 +296,11 @@ ed_model.o : $(ED_DRIVER)/ed_model.f90
 	rm -f $(<F:.f90=.f90)
 
 ed_mpass_init.o : $(ED_MPI)/ed_mpass_init.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_nbg_init.o : $(ED_INIT)/ed_nbg_init.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

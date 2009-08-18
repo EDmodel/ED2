@@ -19,7 +19,9 @@ module ed_work_vars
      real,    pointer :: vec_glat(:)
      real,    pointer :: vec_landfrac(:)
      integer, pointer :: vec_ntext(:)
-     
+     integer, pointer :: vec_xid(:)
+     integer, pointer :: vec_yid(:)
+
   end type work_vars
 
 
@@ -42,6 +44,7 @@ contains
     allocate (worke%land(n2,n3))
     allocate (worke%landfrac(n2,n3))
     allocate (worke%ntext(n2,n3))
+
     return
   end subroutine ed_alloc_work
 !==========================================================================================!
@@ -90,6 +93,8 @@ contains
     if (associated(worke%vec_glat)  )    deallocate (worke%vec_glat)  
     if (associated(worke%vec_ntext)  )    deallocate (worke%vec_ntext)
     if (associated(worke%vec_landfrac)  )    deallocate (worke%vec_landfrac)
+    if (associated(worke%vec_xid)  )    deallocate (worke%vec_xid)
+    if (associated(worke%vec_yid)  )    deallocate (worke%vec_yid)
 
     return
   end subroutine ed_dealloc_work

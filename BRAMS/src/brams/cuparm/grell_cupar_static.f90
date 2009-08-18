@@ -21,8 +21,15 @@
 subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,maxens_cap &
                              ,maxens_eff,mgmzp,cap_maxs,cap_max_increment,wnorm_max        &
                              ,wnorm_increment,depth_min,depth_max,edtmax,edtmin,masstol    &
-                             ,pmass_left,radius,relheight_down,zkbmax,zcutdown,z_detr,ee   &
-                             ,aad,aau,mynum)
+                             ,pmass_left,radius,relheight_down,zkbmax,zcutdown,z_detr      &
+                             ,aad,aau,dellatheiv_eff,dellathil_eff,dellaqtot_eff           &
+                             ,dellaco2_eff,pw_eff,edt_eff,aatot0_eff,aatot_eff,ierr_cap    &
+                             ,jmin_cap,k22_cap,kbcon_cap,kdet_cap,kstabi_cap,kstabm_cap    &
+                             ,ktop_cap,pwav_cap,pwev_cap,wbuoymin_cap,cdd_cap,cdu_cap      &
+                             ,mentrd_rate_cap,mentru_rate_cap,dbyd_cap,dbyu_cap            &
+                             ,etad_cld_cap,etau_cld_cap,rhod_cld_cap,rhou_cld_cap          &
+                             ,qliqd_cld_cap,qliqu_cld_cap,qiced_cld_cap,qiceu_cld_cap      &
+                             ,i,j,icld,mynum)
    use mem_ensemble     , only : &
        ensemble_vars             ! ! structure - The ensemble scratch structure. ----------!
 
@@ -71,8 +78,104 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
       ,vwind        & ! intent(in)  - Meridional wind                             [    m/s]
       ,wwind        & ! intent(in)  - Mean vertical velocity                      [    m/s]
       ,z            & ! intent(in)  - Height                                      [      m]
-      ,z_cup        ! ! intent(in)  - Height at cloud levels                      [      m]
-
+      ,z_cup        & ! intent(in)  - Height at cloud levels                      [      m]
+      ,aa0d         & ! intent(out) - Dndraft Updraft work function               [   J/kg]
+      ,aa0u         & ! intent(out) - Updraft work function                       [   J/kg]
+      ,cdd          & ! intent(out) - Norm. dndraft detrainment rate              [    ---]
+      ,cdu          & ! intent(out) - Norm. updraft detrainment rate              [    ---]
+      ,co20_cup     & ! intent(out) - CO2 mixing ratio                            [    ppm]
+      ,co2_cup      & ! intent(out) - CO2 mixing ratio with forcing               [    ppm]
+      ,co2d_cld     & ! intent(out) - Dndraft CO2 mixing ratio w/ forcing         [    ppm]
+      ,co20d_cld    & ! intent(out) - Dndraft CO2 mixing ratio                    [    ppm]
+      ,co20u_cld    & ! intent(out) - Updraft CO2 water mixing ratio              [    ppm]
+      ,co2u_cld     & ! intent(out) - Updraft CO2 water mixing ratio w/ forcing   [    ppm]
+      ,dby0d        & ! intent(out) - Dndraft Buoyancy acceleration               [   m/s淫
+      ,dbyd         & ! intent(out) - Dndraft Buoyancy acceleration w/ forcing    [   m/s淫
+      ,dby0u        & ! intent(out) - Updraft Buoyancy acceleration               [   m/s淫
+      ,dbyu         & ! intent(out) - Updraft Buoyancy acceleration w/ forcing    [   m/s淫
+      ,etad_cld     & ! intent(out) - Normalised downdraft mass flux w/ forcing   [    ---]
+      ,etau_cld     & ! intent(out) - Normalised updraft mass flux                [    ---]
+      ,exner0_cup   & ! intent(out) - Exner function                              [   J/kg]
+      ,exner_cup    & ! intent(out) - Exner function with forcing                 [   J/kg]
+      ,ierr         & ! intent(out) - Flag for convection error                   [    ---]
+      ,jmin         & ! intent(out) - Level in which downdrafts originate         [    ---]
+      ,k22          & ! intent(out) - Level in which updrafts originate           [    ---]
+      ,kbcon        & ! intent(out) - Level of free convection                    [    ---]
+      ,kdet         & ! intent(out) - Top of downdraft detrainemnt layer          [    ---]
+      ,kstabi       & ! intent(out) - cloud stable layer base                     [    ---]
+      ,kstabm       & ! intent(out) - cloud stable layer top                      [    ---]
+      ,ktop         & ! intent(out) - cloud top                                   [    ---]
+      ,mentrd_rate  & ! intent(out) - Norm. dndraft entrainment rate w/ forcing   [    ---]
+      ,mentru_rate  & ! intent(out) - Norm. updraft entrainment rate              [    ---]
+      ,p0_cup       & ! intent(out) - Pressure                                    [     Pa]
+      ,p_cup        & ! intent(out) - Pressure with forcing                       [     Pa]
+      ,pw0d_cld     & ! intent(out) - Dndraft Condensation                        [  kg/kg]
+      ,pwd_cld      & ! intent(out) - Dndraft Condensation w/ forcing             [  kg/kg]
+      ,pw0u_cld     & ! intent(out) - Updraft Condensation                        [  kg/kg]
+      ,pwu_cld      & ! intent(out) - Updraft Condensation w/ forcing             [  kg/kg]
+      ,pwav0        & ! intent(out) - Updraft Integrated condensation             [  kg/kg]
+      ,pwav         & ! intent(out) - Dndraft Integrated condensation w/ forcing  [  kg/kg]
+      ,pwev0        & ! intent(out) - Dndraft Integrated evaporation              [  kg/kg]
+      ,pwev         & ! intent(out) - Updraft Integrated evaporation  w/ forcing  [  kg/kg]
+      ,qtot0_cup    & ! intent(out) - Total mixing ratio                          [  kg/kg]
+      ,qtot_cup     & ! intent(out) - Total mixing ratio with forcing             [  kg/kg]
+      ,qtot0d_cld   & ! intent(out) - Dndraft Total water mixing ratio            [  kg/kg]
+      ,qtotd_cld    & ! intent(out) - Dndraft Total water mixing ratio w/ forcing [  kg/kg]
+      ,qtot0u_cld   & ! intent(out) - Updraft Total water mixing ratio            [  kg/kg]
+      ,qtotu_cld    & ! intent(out) - Updraft Total water mixing ratio w/ forcing [  kg/kg]
+      ,qvap0_cup    & ! intent(out) - Water vapour mixing ratio                   [  kg/kg]
+      ,qvap_cup     & ! intent(out) - Water vapour mixing ratio with forcing      [  kg/kg]
+      ,qvap0d_cld   & ! intent(out) - Dndraft Vapour mixing ratio                 [  kg/kg]
+      ,qvapd_cld    & ! intent(out) - Dndraft Vapour mixing ratio w/ forcing      [  kg/kg]
+      ,qvap0u_cld   & ! intent(out) - Updraft Vapour mixing ratio                 [  kg/kg]
+      ,qvapu_cld    & ! intent(out) - Updraft Vapour mixing ratio w/ forcing      [  kg/kg]
+      ,qliq0_cup    & ! intent(out) - Liquid water                                [  kg/kg]
+      ,qliq_cup     & ! intent(out) - Liquid water with forcing                   [  kg/kg]
+      ,qliq0d_cld   & ! intent(out) - Dndraft Liquid water mixing ratio           [  kg/kg]
+      ,qliqd_cld    & ! intent(out) - Dndraft Liquid water mix. ratio w/ forcing  [  kg/kg]
+      ,qliqu_cld    & ! intent(out) - Updraft Liquid water mix. ratio w/ forcing  [  kg/kg]
+      ,qliq0u_cld   & ! intent(out) - Updraft Liquid water mixing ratio           [  kg/kg]
+      ,qice0_cup    & ! intent(out) - Mixing ratio                                [  kg/kg]
+      ,qice_cup     & ! intent(out) - Mixing ratio with forcing                   [  kg/kg]
+      ,qice0d_cld   & ! intent(out) - Dndraft Ice mixing ratio                    [  kg/kg]
+      ,qiced_cld    & ! intent(out) - Dndraft Ice mixing ratio w/ forcing         [  kg/kg]
+      ,qice0u_cld   & ! intent(out) - Updraft Ice mixing ratio                    [  kg/kg]
+      ,qiceu_cld    & ! intent(out) - Updraft Ice mixing ratio w/ forcing         [  kg/kg]
+      ,qsat0_cup    & ! intent(out) - Saturation mixing ratio                     [  kg/kg]
+      ,qsat_cup     & ! intent(out) - Saturation mixing ratio with forcing        [  kg/kg]
+      ,qsat0d_cld   & ! intent(out) - Dndraft Sat. mixing ratio                   [  kg/kg]
+      ,qsatd_cld    & ! intent(out) - Dndraft Sat. mixing ratio w/ forcing        [  kg/kg]
+      ,qsat0u_cld   & ! intent(out) - Updraft Sat. mixing ratio                   [  kg/kg]
+      ,qsatu_cld    & ! intent(out) - Updraft Sat. mixing ratio  w/ forcing       [  kg/kg]
+      ,rho0_cup     & ! intent(out) - Density                                     [  kg/m設
+      ,rho_cup      & ! intent(out) - Density with forcing                        [  kg/m設
+      ,rho0d_cld    & ! intent(out) - Dndraft Density                             [  kg/m設
+      ,rhod_cld     & ! intent(out) - Dndraft Density w/ forcing                  [  kg/m設
+      ,rho0u_cld    & ! intent(out) - Updraft Density                             [  kg/m設
+      ,rhou_cld     & ! intent(out) - Updraft Density w/ forcing                  [  kg/m設
+      ,t0_cup       & ! intent(out) - Temperature                                 [      K]
+      ,t_cup        & ! intent(out) - Temperature with forcing                    [      K]
+      ,t0d_cld      & ! intent(out) - Dndraft Temperature                         [      K]
+      ,td_cld       & ! intent(out) - Dndraft Temperature w/ forcing              [      K]
+      ,t0u_cld      & ! intent(out) - Updraft Temperature                         [      K]
+      ,tu_cld       & ! intent(out) - Updraft Temperature w/ forcing              [      K]
+      ,thil0_cup    & ! intent(out) - Ice-liquid potential temperature            [      K]
+      ,thil_cup     & ! intent(out) - Ice-liquid pot. temperature w. forcing      [      K]
+      ,thil0d_cld   & ! intent(out) - Dndraft Ice-liquid pot. temperature         [      K]
+      ,thild_cld    & ! intent(out) - Dndraft Theta-IL with forcing               [      K]
+      ,thil0u_cld   & ! intent(out) - Updraft Ice-liquid potential temperature    [      K]
+      ,thilu_cld    & ! intent(out) - Updraft THETA-il with forcing               [      K]
+      ,theiv0_cup   & ! intent(out) - Ice-vapour potential temperature            [      K]
+      ,theiv_cup    & ! intent(out) - Ice-vapour equiv. pot. temp. with forcing   [      K]
+      ,theiv0d_cld  & ! intent(out) - Dndraft Ice-vapour equiv. pot. temp.        [      K]
+      ,theivd_cld   & ! intent(out) - Dndraft Theta-Eiv with forcing              [      K]
+      ,theiv0u_cld  & ! intent(out) - Updraft Ice-vapour equiv. pot. temp.        [      K]
+      ,theivu_cld   & ! intent(out) - Updraft THETA-Eiv  with forcing             [      K]
+      ,theivs0_cup  & ! intent(out) - Sat. Ice-vapour equiv. pot. temp.           [      K]
+      ,theivs_cup   & ! intent(out) - Sat. Ice-vapour equiv. pot. temp. w/ forcing[      K]
+      ,wbuoymin0    & ! intent(out) - Updraft Minimum buoyant velocity            [    m/s]
+      ,wbuoymin     ! ! intent(out) - Minimum buoyancy velocity                   [    ---]
+   use consts_coms, only : toodry
    implicit none
    
    !---------------------------------------------------------------------------------------!
@@ -87,6 +190,9 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
    integer , intent(in) :: maxens_cap       ! Ensemble size on static control (cap_maxs)
    integer , intent(in) :: maxens_eff       ! Ensemble size on precipitation efficiency
    integer , intent(in) :: mgmzp            ! Vertical grid size
+   integer , intent(in) :: i                ! Node X position
+   integer , intent(in) :: j                ! Node Y position
+   integer , intent(in) :: icld             ! Cloud type
    integer , intent(in) :: mynum            ! Node ID, for debugging purposes only
 
    !----- Real, parameters to define the cloud --------------------------------------------!
@@ -106,12 +212,50 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
    real    , intent(in) :: zcutdown         ! Top height for downdrafts to originate [   m]
    real    , intent(in) :: z_detr           ! Top height for downdraft detrainment   [   m]
 
-   !----- The ensemble scratch structure. -------------------------------------------------!
-   type(ensemble_vars)   , intent(inout) :: ee 
+   !----- The ensemble scratch structure variables. ---------------------------------------!
+   real   , dimension(mgmzp,maxens_eff,maxens_cap), intent(inout) ::                       &
+            dellatheiv_eff  & ! Change in ice-liquid potential temperature  [       K/kg/s]
+           ,dellathil_eff   & ! Change in ice-liquid potential temperature  [       K/kg/s]
+           ,dellaqtot_eff   & ! Change in total mixing ratio                [   kg/kg/kg/s]
+           ,dellaco2_eff    & ! Change in CO2 mixing ratio                  [痠ol/mol/kg/s]
+           ,pw_eff          ! ! Water that doesn't evaporate (aka rain).    [   kg/kg/kg/s]
+   real   , dimension(maxens_eff,maxens_cap), intent(inout) ::                             &
+            edt_eff         & ! Precipitation efficiency for each member    [          ---]
+           ,aatot0_eff      & ! Current total cloud work function           [         J/kg]
+           ,aatot_eff       ! ! Total cloud work func. (forced)             [         J/kg]
+   integer, dimension(maxens_cap), intent(inout) ::                                        &
+            ierr_cap        & ! Convection failure flag.                    [          ---]
+           ,jmin_cap        & ! Level in which downdrafts originate         [          ---]
+           ,k22_cap         & ! Level in which updrafts originate           [          ---]
+           ,kbcon_cap       & ! Level of free convection                    [          ---]
+           ,kdet_cap        & ! Top of downdraft detrainemnt layer          [          ---]
+           ,kstabi_cap      & ! cloud stable layer base                     [          ---]
+           ,kstabm_cap      & ! cloud stable layer top                      [          ---]
+           ,ktop_cap        ! ! cloud top                                   [          ---]
+   real   , dimension(maxens_cap), intent(inout) ::                                        &
+            pwav_cap        & ! Integrated condensation                     [        kg/kg]
+           ,pwev_cap        & ! Integrated evaporation                      [        kg/kg]
+           ,wbuoymin_cap    ! ! Minimum buoyant velocity                    [          m/s]
+   real   , dimension(mgmzp,maxens_cap), intent(inout) ::                                  &
+            cdd_cap         & ! normalised downdraft detrainment rate       [          ---]
+           ,cdu_cap         & ! normalised updraft detrainment rate         [          ---]
+           ,mentrd_rate_cap & ! normalised downdraft entrainment rate       [          ---]
+           ,mentru_rate_cap & ! normalised updraft entrainment rate         [          ---]
+           ,dbyd_cap        & ! Buoyancy associated with downdrafts         [         m/s淫
+           ,dbyu_cap        & ! Buoyancy associated with updrafts           [         m/s淫
+           ,etad_cld_cap    & ! normalised downdraft mass flux              [          ---]
+           ,etau_cld_cap    & ! normalised updraft mass flux                [          ---]
+           ,rhod_cld_cap    & ! Downdraft density                           [        kg/m設
+           ,rhou_cld_cap    & ! Updraft density                             [        kg/m設
+           ,qliqd_cld_cap   & ! Liquid water mixing ratio at downdraft      [        kg/kg]
+           ,qliqu_cld_cap   & ! Liquid water mixing ratio at updraft        [        kg/kg]
+           ,qiced_cld_cap   & ! Ice mixing ratio at downdraft               [        kg/kg]
+           ,qiceu_cld_cap   ! ! Ice mixing ratio at updraft                 [        kg/kg]
+   !---------------------------------------------------------------------------------------!
 
    !----- Output variables, the cloud work functions. Others will be found afterwards. ----!
-   real                  , intent(out)   :: aad  ! Downdraft work function        [   J/kg]
-   real                  , intent(out)   :: aau  ! Updraft work function          [   J/kg]
+   real                  , intent(inout) :: aad  ! Downdraft work function        [   J/kg]
+   real                  , intent(inout) :: aau  ! Updraft work function          [   J/kg]
    !---------------------------------------------------------------------------------------!
 
 
@@ -129,139 +273,13 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
    integer                   :: kzdown        ! Actual maximum origin for downdrafts;
    integer                   :: capoffset     ! Offset for perturbation of cap_max
    !---------------------------------------------------------------------------------------!
-   !     Environment variables at Grell's staggered grid.                                  !
-   !---------------------------------------------------------------------------------------!
-   !----- Variables based on values before any forcing is applied -------------------------!
-   real   , dimension(mgmzp) :: co20_cup      ! CO2 mixing ratio                  [    ppm]
-   real   , dimension(mgmzp) :: exner0_cup    ! Exner function                    [   J/kg]
-   real   , dimension(mgmzp) :: p0_cup        ! Pressure                          [     Pa]
-   real   , dimension(mgmzp) :: qtot0_cup     ! Total mixing ratio                [  kg/kg]
-   real   , dimension(mgmzp) :: qvap0_cup     ! Water vapour mixing ratio         [  kg/kg]
-   real   , dimension(mgmzp) :: qliq0_cup     ! Liquid water                      [  kg/kg]
-   real   , dimension(mgmzp) :: qice0_cup     ! Mixing ratio                      [  kg/kg]
-   real   , dimension(mgmzp) :: qsat0_cup     ! Saturation mixing ratio           [  kg/kg]
-   real   , dimension(mgmzp) :: rho0_cup      ! Density                           [  kg/m設
-   real   , dimension(mgmzp) :: t0_cup        ! Temperature                       [      K]
-   real   , dimension(mgmzp) :: thil0_cup     ! Ice-liquid potential temperature  [      K]
-   real   , dimension(mgmzp) :: theiv0_cup    ! Ice-vapour potential temperature  [      K]
-   real   , dimension(mgmzp) :: theivs0_cup   ! Sat. Ice-vapour equiv. pot. temp. [      K]
-   !----- Variables with all time tendencies but this convection. -------------------------!
-   real   , dimension(mgmzp) :: co2_cup       ! CO2 mixing ratio                  [    ppm]
-   real   , dimension(mgmzp) :: exner_cup     ! Exner function                    [   J/kg]
-   real   , dimension(mgmzp) :: p_cup         ! Pressure                          [     Pa]
-   real   , dimension(mgmzp) :: qtot_cup      ! Total mixing ratio                [  kg/kg]
-   real   , dimension(mgmzp) :: qvap_cup      ! Water vapour mixing ratio         [  kg/kg]
-   real   , dimension(mgmzp) :: qliq_cup      ! Liquid water                      [  kg/kg]
-   real   , dimension(mgmzp) :: qice_cup      ! Mixing ratio                      [  kg/kg]
-   real   , dimension(mgmzp) :: qsat_cup      ! Saturation mixing ratio           [  kg/kg]
-   real   , dimension(mgmzp) :: rho_cup       ! Density                           [  kg/m設
-   real   , dimension(mgmzp) :: t_cup         ! Temperature                       [      K]
-   real   , dimension(mgmzp) :: thil_cup      ! Ice-liquid potential temperature  [      K]
-   real   , dimension(mgmzp) :: theiv_cup     ! Ice-vapour equiv. pot. temp.      [      K]
-   real   , dimension(mgmzp) :: theivs_cup    ! Sat. Ice-vapour equiv. pot. temp. [      K]
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Downdraft-related variables                                                        !
-   !---------------------------------------------------------------------------------------!
-   !----- Based on current values (no forcing) --------------------------------------------!
-   real   , dimension(mgmzp) :: co20d_cld     ! CO2 water mixing ratio            [    ppm]
-   real   , dimension(mgmzp) :: dby0d         ! Buoyancy acceleration             [   m/s淫
-   real   , dimension(mgmzp) :: pw0d_cld      ! Condensation                      [  kg/kg]
-   real   , dimension(mgmzp) :: qtot0d_cld    ! Total water mixing ratio          [  kg/kg]
-   real   , dimension(mgmzp) :: qvap0d_cld    ! Vapour mixing ratio               [  kg/kg]
-   real   , dimension(mgmzp) :: qliq0d_cld    ! Liquid water mixing ratio         [  kg/kg]
-   real   , dimension(mgmzp) :: qice0d_cld    ! Ice mixing ratio                  [  kg/kg]
-   real   , dimension(mgmzp) :: qsat0d_cld    ! Sat. mixing ratio                 [  kg/kg]
-   real   , dimension(mgmzp) :: rho0d_cld     ! Density                           [  kg/m設
-   real   , dimension(mgmzp) :: t0d_cld       ! Temperature                       [      K]
-   real   , dimension(mgmzp) :: theiv0d_cld   ! Ice-vapour equiv. pot. temp.      [      K]
-   real   , dimension(mgmzp) :: thil0d_cld    ! Ice-liquid pot. temperature       [      K]
-   real                      :: aa0d          ! Updraft work function             [   J/kg]
-   real                      :: pwev0         ! Integrated evaporation            [  kg/kg]
-   !----- Based on values with forcing ----------------------------------------------------!
-   real   , dimension(mgmzp) :: cdd           ! Norm. dndraft detrainment rate    [    ---]
-   real   , dimension(mgmzp) :: co2d_cld      ! CO2 water mixing ratio            [    ppm]
-   real   , dimension(mgmzp) :: dbyd          ! Buoyancy acceleration             [   m/s淫
-   real   , dimension(mgmzp) :: etad_cld      ! normalised downdraft mass flux    [    ---]
-   real   , dimension(mgmzp) :: mentrd_rate   ! Norm. dndraft entrainment rate    [    ---]
-   real   , dimension(mgmzp) :: pwd_cld       ! Condensation                      [  kg/kg]
-   real   , dimension(mgmzp) :: qtotd_cld     ! Total water mixing ratio          [  kg/kg]
-   real   , dimension(mgmzp) :: qvapd_cld     ! Vapour mixing ratio               [  kg/kg]
-   real   , dimension(mgmzp) :: qliqd_cld     ! Liquid water mixing ratio         [  kg/kg]
-   real   , dimension(mgmzp) :: qiced_cld     ! Ice mixing ratio                  [  kg/kg]
-   real   , dimension(mgmzp) :: qsatd_cld     ! Sat. mixing ratio                 [  kg/kg]
-   real   , dimension(mgmzp) :: rhod_cld      ! Density                           [  kg/m設
-   real   , dimension(mgmzp) :: td_cld        ! Temperature                       [      K]
-   real   , dimension(mgmzp) :: theivd_cld    ! Ice-vapour equiv. pot. temp.      [      K]
-   real   , dimension(mgmzp) :: thild_cld     ! Ice-liquid pot. temperature       [      K]
-   real                      :: pwav          ! Integrated condensation           [  kg/kg]
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Updraft-related variables                                                          !
-   !---------------------------------------------------------------------------------------!
-   !----- Based on current values (no forcing) --------------------------------------------!
-   real   , dimension(mgmzp) :: co20u_cld     ! CO2 water mixing ratio            [    ppm]
-   real   , dimension(mgmzp) :: dby0u         ! Buoyancy acceleration             [   m/s淫
-   real   , dimension(mgmzp) :: pw0u_cld      ! Condensation                      [  kg/kg]
-   real   , dimension(mgmzp) :: qtot0u_cld    ! Total water mixing ratio          [  kg/kg]
-   real   , dimension(mgmzp) :: qvap0u_cld    ! Vapour mixing ratio               [  kg/kg]
-   real   , dimension(mgmzp) :: qliq0u_cld    ! Liquid water mixing ratio         [  kg/kg]
-   real   , dimension(mgmzp) :: qice0u_cld    ! Ice mixing ratio                  [  kg/kg]
-   real   , dimension(mgmzp) :: qsat0u_cld    ! Sat. mixing ratio                 [  kg/kg]
-   real   , dimension(mgmzp) :: rho0u_cld     ! Density                           [  kg/m設
-   real   , dimension(mgmzp) :: t0u_cld       ! Temperature                       [      K]
-   real   , dimension(mgmzp) :: thil0u_cld    ! Ice-liquid potential temperature  [      K]
-   real   , dimension(mgmzp) :: theiv0u_cld   ! Ice-vapour equiv. pot. temp.      [      K]
-   real                      :: aa0u          ! Updraft work function             [   J/kg]
-   real                      :: pwav0         ! Integrated condensation           [  kg/kg]
-   real                      :: wbuoymin0     ! Minimum buoyant velocity          [    m/s]
-   !----- Based on values with forcing ----------------------------------------------------!
-   real   , dimension(mgmzp) :: cdu           ! Norm. updraft detrainment rate    [    ---]
-   real   , dimension(mgmzp) :: co2u_cld      ! CO2 water mixing ratio            [    ppm]
-   real   , dimension(mgmzp) :: dbyu          ! Buoyancy acceleration             [   m/s淫
-   real   , dimension(mgmzp) :: etau_cld      ! Normalised updraft mass flux      [    ---]
-   real   , dimension(mgmzp) :: mentru_rate   ! Norm. updraft entrainment rate    [    ---]
-   real   , dimension(mgmzp) :: pwu_cld       ! Condensation                      [  kg/kg]
-   real   , dimension(mgmzp) :: qtotu_cld     ! Total water mixing ratio          [  kg/kg]
-   real   , dimension(mgmzp) :: qvapu_cld     ! Vapour mixing ratio               [  kg/kg]
-   real   , dimension(mgmzp) :: qliqu_cld     ! Liquid water mixing ratio         [  kg/kg]
-   real   , dimension(mgmzp) :: qiceu_cld     ! Ice mixing ratio                  [  kg/kg]
-   real   , dimension(mgmzp) :: qsatu_cld     ! Sat. mixing ratio                 [  kg/kg]
-   real   , dimension(mgmzp) :: rhou_cld      ! Density                           [  kg/m設
-   real   , dimension(mgmzp) :: tu_cld        ! Temperature                       [      K]
-   real   , dimension(mgmzp) :: thilu_cld     ! Ice-liquid potential temperature  [      K]
-   real   , dimension(mgmzp) :: theivu_cld    ! Ice-vapour equiv. pot. temp.      [      K]
-   real                      :: pwev          ! Integrated evaporation            [  kg/kg]
-   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !    Flag for convection error when using the "0"  variables.                           !
    !---------------------------------------------------------------------------------------!
    integer :: ierr0     ! Flag for convection error
    integer :: ktop0     ! ktop, but it is just a dummy variable.
-
-   !---------------------------------------------------------------------------------------!
-   !    Aliases for some levels/flags, they will be stored in the ensemble structure       !
-   ! later.                                                                                !
-   !---------------------------------------------------------------------------------------!
-   !----- Scalars. ------------------------------------------------------------------------!
-   integer :: ierr      ! Flag for convection error
-   integer :: jmin      ! Level in which downdrafts originate
-   integer :: k22       ! Level in which updrafts originate
-   integer :: kbcon     ! Level of free convection
-   integer :: kdet      ! Top of downdraft detrainemnt layer
-   integer :: kstabi    ! cloud stable layer base
-   integer :: kstabm    ! cloud stable layer top
-   integer :: ktop      ! cloud top
-   real    :: wbuoymin  ! Minimum buoyancy velocity
-   !---------------------------------------------------------------------------------------!
-
+   integer :: iun       ! Unit number, for debugging only
    !---------------------------------------------------------------------------------------!
    !    Miscellaneous parameters                                                           !
    !---------------------------------------------------------------------------------------!
@@ -272,6 +290,8 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
    real :: edt        ! dnmf/upmf                                                 [    ---]
    !----- Scratch array -------------------------------------------------------------------!
    real, dimension(mgmzp) :: scrvar    ! Scratch variable
+   !----- Parameter to print debug stuff. -------------------------------------------------!
+   logical, parameter :: print_debug=.false.
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -290,24 +310,6 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
    !               the variables will have the values I need.                              !
    !---------------------------------------------------------------------------------------!
    stacloop: do icap=maxens_cap,1,-1
-
-      do k=1,mkx
-         ee%cdd_cap(k,icap)         = 0.
-         ee%cdu_cap(k,icap)         = 0.
-         ee%mentrd_rate_cap(k,icap) = 0.
-         ee%mentru_rate_cap(k,icap) = 0.
-         ee%dbyd_cap(k,icap)        = 0.
-         ee%dbyu_cap(k,icap)        = 0.
-         ee%etad_cld_cap(k,icap)    = 0.
-         ee%etau_cld_cap(k,icap)    = 0.
-         ee%rhod_cld_cap(k,icap)    = 0.
-         ee%rhou_cld_cap(k,icap)    = 0.
-         ee%qliqd_cld_cap(k,icap)   = 0.
-         ee%qliqu_cld_cap(k,icap)   = 0.
-         ee%qiced_cld_cap(k,icap)   = 0.
-         ee%qiceu_cld_cap(k,icap)   = 0.
-      end do
-
       capoffset= (-1)**icap * icap / 2 !----- This gives 0,1,-1,2,-2 for icap=1,2,3... ----!
       if (cap_maxs > 0.) then
          !---------------------------------------------------------------------------------!
@@ -420,7 +422,7 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
 
 
       if (ierr /= 0) then
-         ee%ierr_cap(icap) = ierr
+         ierr_cap(icap) = ierr
          cycle stacloop
       end if
 
@@ -437,7 +439,7 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
                                ,wbuoymin)
 
       if (ierr /= 0) then
-         ee%ierr_cap(icap) = ierr
+         ierr_cap(icap) = ierr
          cycle stacloop
       end if
 
@@ -484,16 +486,17 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
       ! 9. Checking whether we found a cloud top. Since this may keep convection to        !
       !    happen, I check whether I should move on or break here.  Also check whether     !
       !    this cloud qualifies to be in this spectrum size. It need to be thicker than    !
-      !    the minimum value provided by the user.                                         !
+      !    the minimum value provided by the user, and there must be some condensation     !
+      !    (we don't solve dry convection, that should be done by the turbulence scheme).  !
       !------------------------------------------------------------------------------------!
       if (ierr /= 0) then
-         ee%ierr_cap(icap) = ierr
+         ierr_cap(icap) = ierr
          cycle stacloop
       elseif (z_cup(ktop)-z_cup(k22) < depth_min) then
-         ee%ierr_cap(icap) = 6
+         ierr_cap(icap) = 6
          cycle stacloop
       elseif (z_cup(ktop)-z_cup(k22) > depth_max) then
-         ee%ierr_cap(icap) = 7
+         ierr_cap(icap) = 7
          cycle stacloop
       end if
 
@@ -503,7 +506,7 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
       !------------------------------------------------------------------------------------!
       call grell_cldwork_updraft(mkx,mgmzp,kbcon,ktop,dbyu,dzu_cld,etau_cld,aau)
       if (aau == 0.) then
-         ee%ierr_cap(icap) = 10
+         ierr_cap(icap) = 10
          cycle stacloop
       end if
 
@@ -532,7 +535,7 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
          call grell_find_downdraft_origin(mkx,mgmzp,k22,ktop,relheight_down,zcutdown,z_cup &
                                          ,theivs_cup,dzd_cld,ierr,kdet,jmin)
          if (ierr /= 0) then
-            ee%ierr_cap(icap) = ierr
+            ierr_cap(icap) = ierr
             cycle stacloop
          end if
 
@@ -559,7 +562,7 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
          call grell_theiv_downdraft(mkx,mgmzp,jmin,cdd,mentrd_rate,theiv,theiv_cup         &
                                    ,theivs_cup,dzd_cld,ierr,theivd_cld)
          if (ierr /= 0) then
-            ee%ierr_cap(icap) = ierr
+            ierr_cap(icap) = ierr
             cycle stacloop
          end if
 
@@ -574,7 +577,7 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
                                          ,qsatd_cld,co2d_cld,rhod_cld,dbyd,pwd_cld,pwev    &
                                          ,ierr)
          if (ierr /= 0) then
-            ee%ierr_cap(icap) = ierr
+            ierr_cap(icap) = ierr
             cycle stacloop
          end if
          !---------------------------------------------------------------------------------!
@@ -583,24 +586,26 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
          !---------------------------------------------------------------------------------!
          call grell_efficiency_ensemble(mkx,mgmzp,maxens_eff,k22,kbcon,ktop,edtmin,edtmax  &
                                        ,pwav,pwev,z_cup,uwind,vwind,dzd_cld                &
-                                       ,ee%edt_eff(:,icap))
+                                       ,edt_eff(:,icap))
 
          !---------------------------------------------------------------------------------!
          ! 8. Checking for water availability and evaporation consistency: we assume that  !
-         !    downdraft is always saturated, and it gets the moisture from the rain. How-  !
+         !    downdraft is always saturated, and it gets the moisture from the rain.  How- !
          !    ever, it cannot require more rain than what is available, so if that would   !
-         !    be the case, we don't allow this cloud.                                      !
+         !    be the case, we don't allow this cloud to exist.                             !
          !---------------------------------------------------------------------------------!
-         do iedt = 1, maxens_eff
-            if (pwav + ee%edt_eff(iedt,icap) * pwev < 0. ) then
-               !ee%edt_eff(iedt,icap) = - 0.9999 * pwav / pwev
-               ee%ierr_cap(icap) = 9
+         ddcheckloop: do iedt = 1, maxens_eff
+            if (pwav + edt_eff(iedt,icap) * pwev < 0. ) then
+               !edt_eff(iedt,icap) = - 0.9999 * pwav / pwev 
+               ierr_cap(icap) = 9
                cycle stacloop
             end if
-         end do
+         end do ddcheckloop
 
          !---------------------------------------------------------------------------------!
-         ! 9. Computing cloud work function associated with downdrafts                     !
+         ! 9. Computing cloud work function associated with downdrafts.  If downdrafts     !
+         !    were forbidden, then reset all information and make cloud work due to down-  !
+         !    drafts zero.                                                                 !
          !---------------------------------------------------------------------------------!
          call grell_cldwork_downdraft(mkx,mgmzp,jmin,dbyd,dzd_cld,etad_cld,aad)
 
@@ -624,7 +629,7 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
          pwev               = 0.
          aad                = 0.
          do iedt=1,maxens_eff
-            ee%edt_eff(iedt,icap) = 0.
+            edt_eff(iedt,icap) = 0.
          end do
       end if
       !]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]!
@@ -741,8 +746,8 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
          !---------------------------------------------------------------------------------!
          ! 2. Compute the total cloud work function for this edt member                    !
          !---------------------------------------------------------------------------------!
-         if (comp_noforc_cldwork) ee%aatot0_eff(iedt,icap) = aa0u + edt * aa0d
-         ee%aatot_eff(iedt,icap)  = aau + edt * aad
+         if (comp_noforc_cldwork) aatot0_eff(iedt,icap) = aa0u + edt * aa0d
+         aatot_eff(iedt,icap)  = aau + edt * aad
 
 
          !---------------------------------------------------------------------------------!
@@ -773,39 +778,57 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
          call grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,k22,kbcon,jmin,ktop   &
                                    ,theiv,p_cup,theiv_cup,mentrd_rate,mentru_rate,cdd      &
                                    ,cdu,dzd_cld,etad_cld,etau_cld,theivd_cld,theivu_cld    &
-                                   ,ee%dellatheiv_eff(:,iedt,icap))
+                                   ,dellatheiv_eff(:,iedt,icap))
          call grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,k22,kbcon,jmin,ktop   &
                                    ,qtot,p_cup,qtot_cup,mentrd_rate,mentru_rate,cdd,cdu    &
                                    ,dzd_cld,etad_cld,etau_cld,qtotd_cld,qtotu_cld          &
-                                   ,ee%dellaqtot_eff(:,iedt,icap))
+                                   ,dellaqtot_eff(:,iedt,icap))
          call grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,k22,kbcon,jmin,ktop   &
                                    ,thil,p_cup,thil_cup,mentrd_rate,mentru_rate,cdd,cdu    &
                                    ,dzd_cld,etad_cld,etau_cld,thild_cld,thilu_cld          &
-                                   ,ee%dellathil_eff(:,iedt,icap))
+                                   ,dellathil_eff(:,iedt,icap))
          call grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,k22,kbcon,jmin,ktop   &
                                    ,co2,p_cup,co2_cup,mentrd_rate,mentru_rate,cdd,cdu      &
                                    ,dzd_cld,etad_cld,etau_cld,co2d_cld,co2u_cld            &
-                                   ,ee%dellaco2_eff(:,iedt,icap))
+                                   ,dellaco2_eff(:,iedt,icap))
 
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-         !write(unit=16,fmt='(a)') '-------------------------------------------------------'
-         !write(unit=16,fmt='(2(a,1x,i5,1x))') '   Densities: iedt=',iedt,'icap=',icap
-         !write(unit=16,fmt='(4(a,1x,f10.4,1x))') '     k22      =',   z(ee%k22)               &
-         !                                            ,'kbcon    =',   z(ee%kbcon)             &
-         !                                            ,'jmin     =',   z(ee%jmin)              &
-         !                                            ,'ktop     =',   z(ee%ktop)
-         !write(unit=16,fmt='(a5,2(3x,5(1x,a11)))')                                         &
-         !   'Level','   RHO0_CUP','  RHO0D_CLD','  RHO0U_CLD','      DBY0D','      DBY0U'  &
-         !          ,'    RHO_CUP','   RHOD_CLD','   RHOU_CLD','       DBYD','       DBYU'
-         !do k=1,mkx
-         !   write(unit=16,fmt='(i5,2(3x,5(1x,f11.5)))')                                    &
-         !       k,rho0_cup(k),rho0d_cld(k),rho0u_cld(k),dby0d(k),dby0u(k)                  &
-         !        ,rho_cup (k),ee%rhod_cld (k),ee%rhou_cld (k),ee%dbyd (k),ee%dbyu (k)
-         !end do
-         !write(unit=16,fmt='(a)') '-------------------------------------------------------'
-         !write(unit=16,fmt='(a)') ' '
+         if (print_debug) then
+            iun=mynum+20
+            write(unit=iun,fmt='(a)') '---------------------------------------------------'
+            write(unit=iun,fmt='(2(a,1x,i5,1x))') ' I=',i,'J=',icap
+            write(unit=iun,fmt='(2(a,1x,i5,1x))') ' IEDT=',iedt,'ICAP=',icap
+            write(unit=iun,fmt='(5(a,1x,f10.4,1x))') ' K22   =',z(k22)                     &
+                                                     ,'KBCON =',z(kbcon)                   &
+                                                     ,'KDET  =',z(kdet)                    &
+                                                     ,'JMIN  =',z(jmin)                    &
+                                                     ,'KTOP  =',z(ktop)
+            write(unit=iun,fmt='(a,34(1x,a))')  'Level'                                    &
+                   ,'       THIL','      THIL0','   THIL_CUP','  THILD_CLD','  THILD_CLD'  &
+                   ,'      THEIV','     THEIV0','  THEIV_CUP',' THEIVD_CLD',' THEIVD_CLD'  &
+                   ,'       QTOT','      QTOT0','   QTOT_CUP','  QTOTD_CLD','  QTOTU_CLD'  &
+                   ,'       QVAP','      QVAP0','   QVAP_CUP','  QVAPD_CLD','  QVAPU_CLD'  &
+                   ,'       QLIQ','      QLIQ0','   QLIQ_CUP','  QLIQD_CLD','  QLIQU_CLD'  &
+                   ,'       QICE','      QICE0','   QICE_CUP','  QICED_CLD','  QICEU_CLD'  &
+                   ,'        CO2','       CO20','    CO2_CUP','   CO2D_CLD','   CO2U_CLD'  &
+                   ,' DELLA_THIL','DELLA_THEIV',' DELLA_QTOT','  DELLA_CO2'
+            do k=1,mkx
+               write(unit=iun,fmt='(i5,34(1x,es12.5))')                                    &
+                   k, thil(k), thil0(k), thil_cup(k), thild_cld(k), thilu_cld(k)           &
+                    ,theiv(k),theiv0(k),theiv_cup(k),theivd_cld(k),theivu_cld(k)           &
+                    , qtot(k), qtot0(k), qtot_cup(k), qtotd_cld(k), qtotu_cld(k)           &
+                    , qvap(k), qvap0(k), qvap_cup(k), qvapd_cld(k), qvapu_cld(k)           &
+                    , qliq(k), qliq0(k), qliq_cup(k), qliqd_cld(k), qliqu_cld(k)           &
+                    , qice(k), qice0(k), qice_cup(k), qiced_cld(k), qiceu_cld(k)           &
+                    ,  co2(k),  co20(k),  co2_cup(k),  co2d_cld(k),  co2u_cld(k)           &
+                    ,dellathil_eff(k,iedt,icap),dellatheiv_eff(k,iedt,icap)                &
+                    ,dellaqtot_eff(k,iedt,icap),dellaco2_eff(k,iedt,icap)
+            end do
+            write(unit=iun,fmt='(a)') '---------------------------------------------------'
+            write(unit=iun,fmt='(a)') ' '
+         end if
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
 
@@ -825,34 +848,34 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
       !     on the static control.  In case this static control didn't happen and we don't !
       !     reach this point, no problem, the values will keep the original value (zero).  !
       !------------------------------------------------------------------------------------!
-      ee%ierr_cap(icap)          = 0
-      ee%jmin_cap(icap)          = jmin
-      ee%k22_cap(icap)           = k22
-      ee%kbcon_cap(icap)         = kbcon
-      ee%kdet_cap(icap)          = kdet
-      ee%kstabi_cap(icap)        = kstabi
-      ee%kstabm_cap(icap)        = kstabm
-      ee%ktop_cap(icap)          = ktop
+      ierr_cap(icap)          = 0
+      jmin_cap(icap)          = jmin
+      k22_cap(icap)           = k22
+      kbcon_cap(icap)         = kbcon
+      kdet_cap(icap)          = kdet
+      kstabi_cap(icap)        = kstabi
+      kstabm_cap(icap)        = kstabm
+      ktop_cap(icap)          = ktop
 
-      ee%pwav_cap(icap)          = pwav
-      ee%pwev_cap(icap)          = pwev
-      ee%wbuoymin_cap(icap)      = wbuoymin
+      pwav_cap(icap)          = pwav
+      pwev_cap(icap)          = pwev
+      wbuoymin_cap(icap)      = wbuoymin
       
       do k=1,mkx
-         ee%cdd_cap(k,icap)         = cdd(k)
-         ee%cdu_cap(k,icap)         = cdu(k)
-         ee%mentrd_rate_cap(k,icap) = mentrd_rate(k)
-         ee%mentru_rate_cap(k,icap) = mentru_rate(k)
-         ee%dbyd_cap(k,icap)        = dbyd(k)
-         ee%dbyu_cap(k,icap)        = dbyu(k)
-         ee%etad_cld_cap(k,icap)    = etad_cld(k)
-         ee%etau_cld_cap(k,icap)    = etau_cld(k)
-         ee%rhod_cld_cap(k,icap)    = rhod_cld(k)
-         ee%rhou_cld_cap(k,icap)    = rhou_cld(k)
-         ee%qliqd_cld_cap(k,icap)   = qliqd_cld(k)
-         ee%qliqu_cld_cap(k,icap)   = qliqu_cld(k)
-         ee%qiced_cld_cap(k,icap)   = qiced_cld(k)
-         ee%qiceu_cld_cap(k,icap)   = qiceu_cld(k)
+         cdd_cap(k,icap)         = cdd(k)
+         cdu_cap(k,icap)         = cdu(k)
+         mentrd_rate_cap(k,icap) = mentrd_rate(k)
+         mentru_rate_cap(k,icap) = mentru_rate(k)
+         dbyd_cap(k,icap)        = dbyd(k)
+         dbyu_cap(k,icap)        = dbyu(k)
+         etad_cld_cap(k,icap)    = etad_cld(k)
+         etau_cld_cap(k,icap)    = etau_cld(k)
+         rhod_cld_cap(k,icap)    = rhod_cld(k)
+         rhou_cld_cap(k,icap)    = rhou_cld(k)
+         qliqd_cld_cap(k,icap)   = qliqd_cld(k)
+         qliqu_cld_cap(k,icap)   = qliqu_cld(k)
+         qiced_cld_cap(k,icap)   = qiced_cld(k)
+         qiceu_cld_cap(k,icap)   = qiceu_cld(k)
       end do
 
    end do stacloop

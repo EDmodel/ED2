@@ -1294,9 +1294,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   if(associated(cgrid%dmean_sensible_ac )) &
        call hdf_getslab_r(cgrid%dmean_sensible_ac(ipy:ipy)  ,'DMEAN_SENSIBLE_AC ' ,&
        dsetrank,iparallel,.false.)
-  if(associated(cgrid%dmean_sensible    )) &
-       call hdf_getslab_r(cgrid%dmean_sensible(ipy:ipy)     ,'DMEAN_SENSIBLE '    ,&
-       dsetrank,iparallel,.false.)
   if(associated(cgrid%dmean_plresp      )) &
        call hdf_getslab_r(cgrid%dmean_plresp(ipy:ipy)       ,'DMEAN_PLRESP '      ,&
        dsetrank,iparallel,.false.)
@@ -1335,9 +1332,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
        dsetrank,iparallel,.false.)
   if(associated(cgrid%mmean_transp      )) &
        call hdf_getslab_r(cgrid%mmean_transp(ipy:ipy)       ,'MMEAN_TRANSP '      ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%mmean_sensible    )) &
-       call hdf_getslab_r(cgrid%mmean_sensible(ipy:ipy)     ,'MMEAN_SENSIBLE '    ,&
        dsetrank,iparallel,.false.)
   if(associated(cgrid%mmean_sensible_ac )) &
        call hdf_getslab_r(cgrid%mmean_sensible_ac(ipy:ipy)  ,'MMEAN_SENSIBLE_AC ' ,&
@@ -1587,19 +1581,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    call hdf_getslab_i(cpoly%patch_count,'PATCH_COUNT ',dsetrank,iparallel,.true.)  
    call hdf_getslab_i(cpoly%sitenum,'SITENUM ',dsetrank,iparallel,.true.)
-   call hdf_getslab_i(cpoly%fia_forestry,'FIA_FORESTRY ',dsetrank,iparallel,.true.)
-   call hdf_getslab_i(cpoly%agri_species,'AGRI_SPECIES ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%agri_stocking,'AGRI_STOCKING ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%lambda_primary,'LAMBDA_PRIMARY ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%lambda_secondary,'LAMBDA_SECONDARY ',dsetrank,iparallel,.true.)
-   call hdf_getslab_i(cpoly%plantation_species,'PLANTATION_SPECIES ',&
-        dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%plantation_stocking,'PLANTATION_STOCKING ',&
-        dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%reference_agb,'REFERENCE_AGB ',dsetrank,iparallel,.true.)
-  ! call hdf_getslab_r(cpoly%first_lutime,'FIRST_LUTIME ',dsetrank,iparallel)
-  ! call hdf_getslab_r(cpoly%last_lutime,'LAST_LUTIME ',dsetrank,iparallel)
-  ! call hdf_getslab_r(cpoly%clutime,' ',dsetrank,iparallel)
+
    call hdf_getslab_i(cpoly%lsl,'LSL_SI ',dsetrank,iparallel,.true.)   
    call hdf_getslab_r(cpoly%area,'AREA_SI ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%patch_area,'PATCH_AREA ',dsetrank,iparallel,.true.)
@@ -1608,8 +1590,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(cpoly%aspect,'ASPECT ',dsetrank,iparallel,.true.)
 
    call hdf_getslab_i(cpoly%num_landuse_years,'NUM_LANDUSE_YEARS ',dsetrank,iparallel,.true.)
-   call hdf_getslab_i(cpoly%soi,'SOI ',dsetrank,iparallel,.true.)
- !  call hdf_getslab_r(cpoly%soi_name,' ',dsetrank,iparallel)
    call hdf_getslab_r(cpoly%TCI,'TCI ',dsetrank,iparallel,.true.)      
    call hdf_getslab_i(cpoly%hydro_next,'HYDRO_NEXT ',dsetrank,iparallel,.true.)
    call hdf_getslab_i(cpoly%hydro_prev,'HYDRO_PREV ',dsetrank,iparallel,.true.)
@@ -1618,14 +1598,14 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(cpoly%moist_tau,'MOIST_TAU ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%moist_zi,'MOIST_ZI ',dsetrank,iparallel,.true.) 
    call hdf_getslab_r(cpoly%baseflow,'BASEFLOW_SI ',dsetrank,iparallel,.true.) 
-   call hdf_getslab_i(cpoly%metplex_beg_month,'METPLEX_BEG_MONTH ',dsetrank,iparallel,.true.)
-   call hdf_getslab_i(cpoly%metplex_beg_year,'METPLEX_BEG_YEAR ',dsetrank,iparallel,.true.)
-   call hdf_getslab_i(cpoly%metplex_end_year,'METPLEX_END_YEAR ',dsetrank,iparallel,.true.)
+!   call hdf_getslab_i(cpoly%metplex_beg_month,'METPLEX_BEG_MONTH ',dsetrank,iparallel,.true.)
+!   call hdf_getslab_i(cpoly%metplex_beg_year,'METPLEX_BEG_YEAR ',dsetrank,iparallel,.true.)
+!   call hdf_getslab_i(cpoly%metplex_end_year,'METPLEX_END_YEAR ',dsetrank,iparallel,.true.)
 
    call hdf_getslab_r(cpoly%min_monthly_temp,'MIN_MONTHLY_TEMP ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%removed_biomass,'REMOVED_BIOMASS ',dsetrank,iparallel,.true.) 
-   call hdf_getslab_r(cpoly%harvested_biomass,'HARVESTED_BIOMASS ', &
-        dsetrank,iparallel,.true.) 
+!   call hdf_getslab_r(cpoly%removed_biomass,'REMOVED_BIOMASS ',dsetrank,iparallel,.true.) 
+!   call hdf_getslab_r(cpoly%harvested_biomass,'HARVESTED_BIOMASS ', &
+!        dsetrank,iparallel,.true.) 
    call hdf_getslab_i(cpoly%plantation,'PLANTATION_SI ',dsetrank,iparallel,.true.) 
    call hdf_getslab_i(cpoly%agri_stocking_pft,'AGRI_STOCKING_PFT ', &
         dsetrank,iparallel,.true.)
@@ -1639,18 +1619,14 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
         dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%secondary_harvest_memory,'SECONDARY_HARVEST_MEMORY ', &
         dsetrank,iparallel,.true.)
-   call hdf_getslab_i(cpoly%fire_flag,'FIRE_FLAG ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%fire_disturbance_rate,'FIRE_DISTURBANCE_RATE ', &
         dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%fuel,'FUEL ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%ignition_rate,'IGNITION_RATE ',dsetrank,iparallel,.true.)
-  ! call hdf_getslab_r(cpoly%phen_pars,'PHEN_PARS ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%treefall_disturbance_rate,'TREEFALL_DISTURBANCE_RATE ', &
         dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%nat_disturbance_rate,'NAT_DISTURBANCE_RATE ', &
         dsetrank,iparallel,.true.)
    call hdf_getslab_i(cpoly%nat_dist_type,'NAT_DIST_TYPE ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%disturbance_rate,'DISTURBANCE_RATE ',dsetrank,iparallel,.true.)
 
    dsetrank    = 2_8
    globdims(1) = int(n_pft,8)
@@ -1666,11 +1642,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    memsize(2)   = int(cpoly%nsites,8)
    memoffs(2)   = 0_8
 
-   call hdf_getslab_r(cpoly%elongation_factor,'ELONGATION_FACTOR ', &
-        dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%delta_elongf,'DELTA_ELONGF ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%gee_phen_delay,'GEE_PHEN_DELAY ',&
-        dsetrank,iparallel,.true.)
    if (associated(cpoly%lai_pft)) call hdf_getslab_r(cpoly%lai_pft,'LAI_PFT_SI ', &
         dsetrank,iparallel,.false.)
    if (associated(cpoly%wpa_pft)) call hdf_getslab_r(cpoly%wpa_pft,'WPA_PFT_SI ', &
@@ -1712,7 +1683,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    memsize(2)   = int(cpoly%nsites,8)
    memoffs(2)   = 0_8
 
-   call hdf_getslab_r(cpoly%lambda1,'LAMBDA1 ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%lambda_fire,'LAMBDA_FIRE ',dsetrank,iparallel,.true.)
 
    dsetrank    = 2_8
@@ -1729,7 +1699,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    memsize(2)   = int(cpoly%nsites,8)
    memoffs(2)   = 0_8
 
-   call hdf_getslab_r(cpoly%lu_dist_area,'LU_DIST_AREA ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%loss_fraction,'LOSS_FRACTION ',dsetrank,iparallel,.true.)
 
    dsetrank    = 3_8
@@ -1748,7 +1717,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    call hdf_getslab_r(cpoly%disturbance_memory,'DISTURBANCE_MEMORY ', &
         dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%disturbance_rates,'DISTURBANCE_RATES ', &
+   call hdf_getslab_r(cpoly%disturbance_rates,'DISTURBANCE_RATES_SI ', &
         dsetrank,iparallel,.true.)
 
    dsetrank    = 3
@@ -1884,6 +1853,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%can_temp,'CAN_TEMP ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%can_shv,'CAN_SHV ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%can_co2,'CAN_CO2 ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%can_rhos,'CAN_RHOS ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%can_depth,'CAN_DEPTH ',dsetrank,iparallel,.true.)
    !  call hdf_getslab_i(csite%pname,'PNAME ',dsetrank,iparallel)
    call hdf_getslab_r(csite%lai,'LAI_PA ',dsetrank,iparallel,.true.)

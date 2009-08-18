@@ -290,10 +290,10 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
       t0(k)     = cpi * theta(kr) * exner0(k)
 
       !------ 4. Finding the ice-vapour equivalent potential temperature ------------------!
-      theiv0(k) = thetaeiv(thil0(k),p0(k),t0(k),qvap0(k),qtot0(k))
+      theiv0(k) = thetaeiv(thil0(k),p0(k),t0(k),qvap0(k),qtot0(k),5)
 
       !------ 5. CO2 mixing ratio. --------------------------------------------------------!
-      co20(k)   = max(0.,co2p(kr))
+      co20(k)   = co2p(kr)
       !------ 6. Turbulent kinetic energy [m²/s²] -----------------------------------------!
       tke0(k)     = tkep(kr)
       !------ 7. Vertical velocity in terms of pressure, or Lagrangian dp/dt [ Pa/s] ------!
@@ -328,7 +328,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
       t(k)     = t0(k)
       call thil2tqall(thil(k),exner(k),p(k),qtot(k),qliq(k),qice(k),t(k),qvap(k),qsat)
       !------ 6. Finding the ice-vapour equivalent potential temperature ------------------!
-      theiv(k) = thetaeiv(thil(k),p(k),t(k),qvap(k),qtot(k))
+      theiv(k) = thetaeiv(thil(k),p(k),t(k),qvap(k),qtot(k),6)
       !------ 7. CO2 mixing ratio ---------------------------------------------------------!
       co2(k)   = co2p(kr) + dco2dt(k) * dtime
       !------ 8. Turbulent kinetic energy -------------------------------------------------!
@@ -364,7 +364,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
    !----- 7. Temperature ------------------------------------------------------------------!
    tsur        = cpi*theta(lpw)*exnersur
    !----- 8. Ice-vapour equivalent potential temperature ----------------------------------!
-   theivsur    = thetaeiv(thilsur,psur,tsur,qvapsur,qtotsur)
+   theivsur    = thetaeiv(thilsur,psur,tsur,qvapsur,qtotsur,7)
    !----- 9. CO2 mixing ratio -------------------------------------------------------------!
    co2sur      = co2p(lpw)
    !---------------------------------------------------------------------------------------!
@@ -401,7 +401,7 @@ end subroutine initial_thermo_grell
 !   This subroutine intialises the wind information and the previous downdraft mass flux,  !
 ! which may affect current convection depending on the dynamic control chosen.             !
 !------------------------------------------------------------------------------------------!
-subroutine initial_winds_grell(comp_down,m1,m2,m3,m4,i,j,jdim,l,last_dnmf,ua,va,prev_dnmf)
+subroutine initial_winds_grell(comp_down,m1,m2,m3,i,j,jdim,last_dnmf,ua,va,prev_dnmf)
 
    use mem_scratch_grell, only: &
             mkx                 & ! intent(in)  - Number of Grell levels.
@@ -415,17 +415,16 @@ subroutine initial_winds_grell(comp_down,m1,m2,m3,m4,i,j,jdim,l,last_dnmf,ua,va,
 
    implicit none
    !------ Arguments. ---------------------------------------------------------------------!
-   integer                      , intent(in)  :: m1        ! Number of z points
-   integer                      , intent(in)  :: m2        ! Number of x points
-   integer                      , intent(in)  :: m3        ! Number of y points
-   integer                      , intent(in)  :: m4        ! Number of cloud sizes
-   integer                      , intent(in)  :: i,j,l     ! Current x, y & cloud position
-   integer                      , intent(in)  :: jdim      ! Dimension in y
-   logical                      , intent(in)  :: comp_down ! Computing downdrafts (T/F)
-   real   , dimension(m2,m3,m4) , intent(in)  :: last_dnmf ! Last time downdraft
-   real   , dimension(m1,m2,m3) , intent(in)  :: ua        ! Zonal wind
-   real   , dimension(m1,m2,m3) , intent(in)  :: va        ! Meridional wind
-   real                         , intent(out) :: prev_dnmf ! Previous downdraft
+   integer                      , intent(in)    :: m1        ! Number of z points
+   integer                      , intent(in)    :: m2        ! Number of x points
+   integer                      , intent(in)    :: m3        ! Number of y points
+   integer                      , intent(in)    :: i,j       ! Current x, y & cld position
+   integer                      , intent(in)    :: jdim      ! Dimension in y
+   logical                      , intent(in)    :: comp_down ! Computing downdrafts (T/F)
+   real   , dimension(m2,m3)    , intent(in)    :: last_dnmf ! Last time downdraft
+   real   , dimension(m1,m2,m3) , intent(in)    :: ua        ! Zonal wind
+   real   , dimension(m1,m2,m3) , intent(in)    :: va        ! Meridional wind
+   real                         , intent(inout) :: prev_dnmf ! Previous downdraft
    !------ Local variables ----------------------------------------------------------------!
    integer            :: k         ! Counter for current Grell level
    integer            :: kr        ! Counter for corresponding BRAMS level
@@ -433,7 +432,7 @@ subroutine initial_winds_grell(comp_down,m1,m2,m3,m4,i,j,jdim,l,last_dnmf,ua,va,
 
    
    !------ Initializing scalars -----------------------------------------------------------!
-   prev_dnmf = last_dnmf(i,j,l)
+   prev_dnmf = last_dnmf(i,j)
    !---------------------------------------------------------------------------------------!
    !    Transferring the values from BRAMS to Grell's levels, remembering that Grell's     !
    ! grid goes from 1 to m1-1.                                                             !
@@ -516,8 +515,8 @@ subroutine grell_draft_area(comp_down,m1,mgmzp,kgoff,jmin,k22,kbcon,ktop,dzu_cld
    real, dimension(mgmzp), intent(in)  :: rhou_cld    ! Density                   [  kg/m³]
    real                  , intent(in)  :: upmf        ! Reference mass flux       [kg/m²/s]
    !----- Output variables ----------------------------------------------------------------!
-   real                  , intent(out) :: areadn      ! Downdraft relative area   [    ---]
-   real                  , intent(out) :: areaup      ! Updraft   relative area   [    ---]
+   real                  , intent(inout) :: areadn      ! Downdraft relative area   [    ---]
+   real                  , intent(inout) :: areaup      ! Updraft   relative area   [    ---]
    !----- Local variables -----------------------------------------------------------------!
    integer                             :: k         ! Cloud level counter
    integer                             :: kr        ! BRAMS level counter
@@ -591,7 +590,8 @@ end subroutine grell_draft_area
 ! This is currently used only for CATT.                                                    !
 !------------------------------------------------------------------------------------------!
 subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_eff          &
-                              ,maxens_cap,inv_ensdim,closure_type,ee,sgrell1_3d,sgrell2_3d)
+                              ,maxens_cap,inv_ensdim,closure_type,ierr_cap,upmf_ens        &
+                              ,sgrell1_3d,sgrell2_3d)
 
    use rconstants  , only : hr_sec
    use mem_ensemble, only : ensemble_vars ! ! type
@@ -610,8 +610,8 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
    integer            , intent(in)    :: maxens_eff   ! # of precip. efficiencies
    real               , intent(in)    :: inv_ensdim   ! 1/(maxens_dyn*maxens_lsf*maxens_eff)
    character(len=2)   , intent(in)    :: closure_type ! Which dynamic control
-   type(ensemble_vars), intent(in)    :: ee           ! The ensemble structure
-
+   integer, dimension(maxens_cap), intent(in) :: ierr_cap
+   real, dimension(maxens_dyn,maxens_lsf,maxens_eff,maxens_cap), intent(in) :: upmf_ens
    real, dimension(m1), intent(inout) :: sgrell1_3d ! Lots of things, depends on the index
    real, dimension(m1), intent(inout) :: sgrell2_3d ! Lots of things, depends on the index
    
@@ -647,7 +647,7 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
    !---------------------------------------------------------------------------------------!
 
 
-   if (all(ee%ierr_cap(:) /= 0)) then
+   if (all(ierr_cap(:) /= 0)) then
       select case (icld)
       case (1)
          sgrell1_3d = 0.
@@ -723,22 +723,22 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
       ! 14-16: Frank-Cohen    (upmf_ave_cap2)                                              !
       !------------------------------------------------------------------------------------!
       do icap=1,maxens_cap
-         upmf_ave_cap1(icap) = sum(ee%upmf_ens(1:3,:,:,icap))*0.3333333333*maxens_efflsf_i
+         upmf_ave_cap1(icap) = sum(upmf_ens(1:3,:,:,icap))*0.3333333333*maxens_efflsf_i
       end do
       do icap=1,maxens_cap
-         upmf_ave_cap5(icap) = sum(ee%upmf_ens(4:7,:,:,icap))*0.250*maxens_efflsf_i
+         upmf_ave_cap5(icap) = sum(upmf_ens(4:7,:,:,icap))*0.250*maxens_efflsf_i
       end do
       do icap=1,maxens_cap
-         upmf_ave_cap4(icap) = sum(ee%upmf_ens(8:10,:,:,icap))                             &
+         upmf_ave_cap4(icap) = sum(upmf_ens(8:10,:,:,icap))                                &
                              * 0.3333333333 * maxens_efflsf_i
       end do
       if (closure_type == 'en') then
          do icap=1,maxens_cap
-            upmf_ave_cap3(icap) = sum(ee%upmf_ens(11:13,:,:,icap))                         &
+            upmf_ave_cap3(icap) = sum(upmf_ens(11:13,:,:,icap))                            &
                                 * 0.3333333333*maxens_efflsf_i
          end do
          do imbp=1,maxens_lsf
-            upmf_ave_cap2(icap) = sum(ee%upmf_ens(14:16,:,:,icap))                         &
+            upmf_ave_cap2(icap) = sum(upmf_ens(14:16,:,:,icap))                            &
                                 * 0.3333333333*maxens_efflsf_i
          end do
       end if

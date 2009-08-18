@@ -178,7 +178,7 @@ subroutine dbalive_dt(cgrid, tfact)
            
            ! Recompute patch LAI
            call update_patch_derived_props(csite,cpoly%lsl(isi),   &
-                cpoly%met(isi)%rhos,ipa)
+                cpoly%met(isi)%prss,ipa)
 
            !reset average daily temperature
            csite%avg_daily_temp(ipa) = 0.0 
