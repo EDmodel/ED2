@@ -80,12 +80,12 @@ subroutine NAMEOUT
   write(*,fmt='(a,10(1x,i5))')   'NDEEPEST     = ',ndeepest
   write(*,fmt='(a,10(1x,i5))')   'NSHALLOWEST  = ',nshallowest
   write(*,fmt='(a,1x,f8.5)')     'WCLDBS       = ',wcldbs
+  write(*,fmt='(a,1x,f8.2)')     'CONFRQ       = ',confrq
+  write(*,fmt='(a,1x,f8.2)')     'CPTIME       = ',cptime
   write(*,fmt='(a,1x,a)')        'CLOSURE_TYPE = ',closure_type
   write(*,fmt='(a,1x,i5)')       'MAXENS_LSF   = ',maxens_lsf
   write(*,fmt='(a,1x,i5)')       'MAXENS_EFF   = ',maxens_eff
   write(*,fmt='(a,1x,i5)')       'MAXENS_CAP   = ',maxens_cap
-  write(*,fmt='(a,10(1x,f8.2))') 'CONFRQ       = ',confrq
-  write(*,fmt='(a,10(1x,f8.2))') 'CPTIME       = ',cptime
   write(*,fmt='(a,1x,i5)')       'IUPMETHOD    = ',iupmethod
   write(*,fmt='(a,10(1x,f8.2))') 'RADIUS       = ',radius
   write(*,fmt='(a,10(1x,f8.2))') 'DEPTH_MIN    = ',depth_min

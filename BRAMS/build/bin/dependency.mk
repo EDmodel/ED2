@@ -37,7 +37,7 @@ rnode.o: advect_kit.mod catt_start.mod dtset.mod io_params.mod mem_cuparm.mod
 rnode.o: mem_grid.mod mem_leaf.mod mem_oda.mod mem_radiate.mod node_mod.mod
 rnode.o: var_tables.mod
 rthrm.o: mem_basic.mod mem_grid.mod mem_micro.mod mem_scratch.mod micphys.mod
-rthrm.o: rconstants.mod therm_lib.mod
+rthrm.o: node_mod.mod rconstants.mod therm_lib.mod
 rtimh.o: /n/Moorcroft_Lab/Users/mlongo/EDBRAMS/BRAMS/src/utils/include/interface.h
 rtimh.o: advect_kit.mod catt_start.mod emission_source_map.mod mem_all.mod
 rtimh.o: mem_basic.mod mem_cuparm.mod mem_emiss.mod mem_grid.mod mem_leaf.mod
@@ -59,8 +59,9 @@ grell_cupar_dynamic.o: grell_coms.mod mem_ensemble.mod mem_scratch_grell.mod
 grell_cupar_dynamic.o: rconstants.mod
 grell_cupar_ensemble.o: rconstants.mod
 grell_cupar_environment.o: grell_coms.mod rconstants.mod therm_lib.mod
-grell_cupar_feedback.o: mem_ensemble.mod mem_scratch_grell.mod rconstants.mod
-grell_cupar_static.o: mem_ensemble.mod mem_scratch_grell.mod
+grell_cupar_feedback.o: consts_coms.mod mem_ensemble.mod mem_scratch_grell.mod
+grell_cupar_feedback.o: rconstants.mod
+grell_cupar_static.o: consts_coms.mod mem_ensemble.mod mem_scratch_grell.mod
 grell_cupar_updraft.o: rconstants.mod therm_lib.mod
 grell_extras_catt.o: grell_coms.mod mem_basic.mod mem_ensemble.mod mem_grid.mod
 grell_extras_catt.o: mem_scalar.mod mem_scratch.mod mem_scratch_grell.mod

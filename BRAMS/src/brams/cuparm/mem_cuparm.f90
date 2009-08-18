@@ -90,9 +90,9 @@ module mem_cuparm
    !------ Index to tell which one is the first cloud for Grell to solve ------------------!
    integer, dimension(maxgrds)        :: grell_last
    !------ How often the cumulus parameterization should be called? -----------------------!
-   real, dimension(maxclouds)         :: confrq
+   real                               :: confrq
    !------ Time to start running the parameterization for this cloud type -----------------!
-   real(kind=8), dimension(maxclouds) :: cptime
+   real(kind=8)                       :: cptime
    !---------------------------------------------------------------------------------------!
 
 

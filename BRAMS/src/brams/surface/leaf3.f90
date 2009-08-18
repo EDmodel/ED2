@@ -1252,6 +1252,10 @@ subroutine stars(ustar,tstar,rstar,cstar,ths,rvs,rco2s,thetacan,can_rvap,can_co2
    rstar = c3 * (rvs - can_rvap)
    tstar = c3 * (ths - thetacan)
    cstar = c3 * (rco2s - can_co2)
+   
+   if (abs(rstar) < 1.e-7) rstar = 0.
+   if (abs(tstar) < 1.e-7) tstar = 0.
+   if (abs(cstar) < 1.e-7) cstar = 0.
 
    if (CATT==1) then
       !kml drydep

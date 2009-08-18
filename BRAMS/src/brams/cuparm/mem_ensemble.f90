@@ -71,7 +71,7 @@ module mem_ensemble
       !  6. This cloud would be too thin to fall in this spectral type;                    !
       !  7. This cloud would be too thick to fall in this spectral type;                   !
       !  8. Forced downdraft layer would have positive buoyancy, which doesn't make sense; !
-      !  9. Downdraft would require more water than what is available to stay saturated;   !
+      !  9. This cloud didn't have any condensation;                                       !
       ! 10. Cloud work function associated with updraft is zero;                           !
       ! 11. Reference upward mass flux is zero;                                            !
       ! 12. Downdrafts would happen below the updrafts origin;                             !

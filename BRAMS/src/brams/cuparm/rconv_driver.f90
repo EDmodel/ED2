@@ -23,7 +23,8 @@ subroutine rconv_driver(banneron)
                          , nshallowest       & ! Flag for shallowest cloud
                          , grell_1st         & ! First cloud to use Grell's method
                          , grell_last        & ! Last cloud to use Grell's scheme
-                         , cuparm_g          ! ! The cumulus scheme structure
+                         , cuparm_g          & ! The cumulus scheme structure
+                         , initialize_cuparm ! ! Routine that resets structure to zero
           
    use mem_grid   , only : initial      & ! Flag for "initial" run
                          , ngrid        & ! Current grid
@@ -33,7 +34,8 @@ subroutine rconv_driver(banneron)
                          , dtlongn      & ! Delta-t array
                          , grid_g       ! ! Grid structure
 
-   use node_mod   , only : mzp          & ! Current grid # of vertical levels for this node
+   use node_mod   , only : mynum        & ! This node number
+                         , mzp          & ! Current grid # of vertical levels for this node
                          , myp          & ! Current grid # of meridional pts for this node
                          , mxp          & ! Current grid # of zonal points for this node
                          , ia           & ! Westernmost boundary
@@ -46,42 +48,50 @@ subroutine rconv_driver(banneron)
    
    use mem_scratch, only : scratch      ! ! Scratch structure
    use mem_tend   , only : tend         ! ! Tendency structure
-   use mem_basic  , only : co2_on       ! ! Flag, whether CO2 is prognosed in this run.
+   use mem_basic  , only : co2_on       & ! Flag, whether CO2 is prognosed in this run.
+                         , basic_g      ! ! Basic variable structure
 
    implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
    logical, intent(in) :: banneron          ! Flag to print the banner
+   !----- Local variables. ----------------------------------------------------------------!
    integer             :: icld              ! Cloud counter
+   integer             :: i                 ! x-position 
+   integer             :: j                 ! y-position
+   integer             :: k                 ! z-position
+   integer             :: n                 ! xyz-position
    integer             :: ifm               ! Grid counter
+   integer             :: iun               ! File unit for debugging
+   logical             :: cumulus_now       ! Is now a good time to call cumulus? [T|F]
+   !----- Local constants. ----------------------------------------------------------------!
+   logical          , parameter      :: print_debug=.false. ! Print debugging stuff [T|F]
+   character(len=9) , parameter      :: fmti='(a,1x,i6)'
+   character(len=13), parameter      :: fmtf='(a,1x,es14.7)'   
+   !----- External functions. -------------------------------------------------------------!
    logical, external   :: cumulus_time      ! Function to check whether it's cumulus time.
-   logical, save       :: first_time=.true. ! Flag to check whether this is the 1st call
+   !---------------------------------------------------------------------------------------!
 
    !----- Nothing to be done in here for this grid ----------------------------------------!
    if (nnqparm(ngrid) == 0) return
 
+   cumulus_now = cumulus_time(initial,time,cptime,confrq,dtlt)
+   
+   
    !---------------------------------------------------------------------------------------!
-   !    Checking whether this is the first time I access the subroutine. If so, perform a  !
-   ! handful of initialisations. This should be unecessary because the variables are       !
-   ! initialised at the rams_mem_alloc time, but apparently it is reset again.             !
+   !     Initialise all cumulus variables. Before we do that, though, we must copy aconpr  !
+   ! to a scratch array and copy back.                                                     !
    !---------------------------------------------------------------------------------------!
-   if (first_time) then
-      do ifm=1,ngrids
-         call azero(mzp*mxp*myp*nclouds,cuparm_g(ifm)%rtsrc)
-         call azero(mzp*mxp*myp*nclouds,cuparm_g(ifm)%thsrc)
-         if (co2_on) call azero(mzp*mxp*myp*nclouds,cuparm_g(ngrid)%co2src)
-         call azero(mxp*myp*nclouds,cuparm_g(ifm)%conprr)
-
-         if (associated(cuparm_g(ifm)%dnmf)) call azero(mxp*myp*nclouds,cuparm_g(ifm)%dnmf)
-         if (associated(cuparm_g(ifm)%xierr)) call aone(mxp*myp*nclouds,cuparm_g(ifm)%xierr)
-      end do
-      first_time=.false.
+   if (cumulus_now) then
+      call atob(mxp*myp,cuparm_g(ngrid)%aconpr,scratch%vt2de)
+      call initialize_cuparm(cuparm_g(ngrid))
+      call atob(mxp*myp,scratch%vt2de,cuparm_g(ngrid)%aconpr)
    end if
 
 
    !---------------------------------------------------------------------------------------!
    !   Checking whether I should use Souza's or old Grell's scheme                         !
    !---------------------------------------------------------------------------------------!
-   if ((nshallowest(ngrid) == 1 .or. nshallowest(ngrid) == 3) .and.                        &
-        cumulus_time(initial,time,cptime(nclouds),confrq(nclouds),dtlt)) then
+   if ((nshallowest(ngrid) == 1 .or. nshallowest(ngrid) == 3) .and. cumulus_now) then
       select case(nshallowest(ngrid))
       case (1) !
          call souza_cupar_driver()
@@ -103,17 +113,14 @@ subroutine rconv_driver(banneron)
    !    Solving the cloud sizes that should be determined by Grell's scheme, if any of     !
    ! such exists and if this is the time to call Grell's parametrisation.                  !
    !---------------------------------------------------------------------------------------!
-   icld = grell_1st(ngrid)
-   if (grell_1st(ngrid) <= grell_last(ngrid) .and.                                         &
-       cumulus_time(initial,time,cptime(icld),confrq(icld),dtlt) ) then
+   if (grell_1st(ngrid) <= grell_last(ngrid) .and. cumulus_now) then
       call grell_cupar_driver(banneron,grell_1st(ngrid),grell_last(ngrid))
    end if
 
    !---------------------------------------------------------------------------------------!
    !   Checking whether I was supposed to run Kuo for this grid.                           !
    !---------------------------------------------------------------------------------------!
-   if ((ndeepest(ngrid) == 1 .or. ndeepest(ngrid) == 3) .and.                              &
-       cumulus_time(initial,time,cptime(1),confrq(1),dtlt)) then
+   if ((ndeepest(ngrid) == 1 .or. ndeepest(ngrid) == 3) .and. cumulus_now) then
        select case (ndeepest(ngrid))
        case (1)
           call kuo_cupar_driver()
@@ -138,10 +145,38 @@ subroutine rconv_driver(banneron)
       !----- Accumulating the tendencies --------------------------------------------------!
       call accum(mxp*myp*mzp,tend%tht,cuparm_g(ngrid)%thsrc(:,:,:,icld))
       call accum(mxp*myp*mzp,tend%rtt,cuparm_g(ngrid)%rtsrc(:,:,:,icld))
-      if (co2_on) call accum(mxp*myp*mzp,tend%co2t,cuparm_g(ngrid)%co2src(:,:,:,icld))
+      if (co2_on) then
+         call accum(mxp*myp*mzp,tend%co2t,cuparm_g(ngrid)%co2src(:,:,:,icld))
+      end if
       !----- Updating total precipitation -------------------------------------------------!
       call update(mxp*myp,cuparm_g(ngrid)%aconpr,cuparm_g(ngrid)%conprr(:,:,icld),dtlt)
    end do
+
+   if (print_debug) then
+      iun=20+mynum
+      do icld=1,nclouds
+         n = 0
+         do j=1,myp
+            do i=1,mxp
+               write(unit=iun,fmt='(a)') '------------------------------------------------'
+               write(unit=iun,fmt=fmti)  'I    = ',i
+               write(unit=iun,fmt=fmti)  'J    = ',j
+               write(unit=iun,fmt=fmti)  'ICLD = ',icld
+               write(unit=iun,fmt='(4(a,1x))') 'LEVEL','         THP','         THT'       &
+                                                      ,'       THSRC'
+               do k=1,mzp
+                  n=n+1
+                  write (unit=iun,fmt='(i5,(3(1x,es12.5)))')                               &
+                       k,basic_g(ngrid)%thp(k,i,j),cuparm_g(ngrid)%thsrc(k,i,j,icld)       &
+                        ,tend%tht(n)
+               end do
+               write(unit=iun,fmt='(a)') '------------------------------------------------'
+               write(unit=iun,fmt='(a)') ' '
+            end do
+         end do
+      end do
+   end if
+
 
 
    return

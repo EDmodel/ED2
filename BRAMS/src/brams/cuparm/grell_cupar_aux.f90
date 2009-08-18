@@ -415,16 +415,16 @@ subroutine initial_winds_grell(comp_down,m1,m2,m3,i,j,jdim,last_dnmf,ua,va,prev_
 
    implicit none
    !------ Arguments. ---------------------------------------------------------------------!
-   integer                      , intent(in)  :: m1        ! Number of z points
-   integer                      , intent(in)  :: m2        ! Number of x points
-   integer                      , intent(in)  :: m3        ! Number of y points
-   integer                      , intent(in)  :: i,j       ! Current x, y & cloud position
-   integer                      , intent(in)  :: jdim      ! Dimension in y
-   logical                      , intent(in)  :: comp_down ! Computing downdrafts (T/F)
-   real   , dimension(m2,m3)    , intent(in)  :: last_dnmf ! Last time downdraft
-   real   , dimension(m1,m2,m3) , intent(in)  :: ua        ! Zonal wind
-   real   , dimension(m1,m2,m3) , intent(in)  :: va        ! Meridional wind
-   real                         , intent(out) :: prev_dnmf ! Previous downdraft
+   integer                      , intent(in)    :: m1        ! Number of z points
+   integer                      , intent(in)    :: m2        ! Number of x points
+   integer                      , intent(in)    :: m3        ! Number of y points
+   integer                      , intent(in)    :: i,j       ! Current x, y & cld position
+   integer                      , intent(in)    :: jdim      ! Dimension in y
+   logical                      , intent(in)    :: comp_down ! Computing downdrafts (T/F)
+   real   , dimension(m2,m3)    , intent(in)    :: last_dnmf ! Last time downdraft
+   real   , dimension(m1,m2,m3) , intent(in)    :: ua        ! Zonal wind
+   real   , dimension(m1,m2,m3) , intent(in)    :: va        ! Meridional wind
+   real                         , intent(inout) :: prev_dnmf ! Previous downdraft
    !------ Local variables ----------------------------------------------------------------!
    integer            :: k         ! Counter for current Grell level
    integer            :: kr        ! Counter for corresponding BRAMS level
@@ -515,8 +515,8 @@ subroutine grell_draft_area(comp_down,m1,mgmzp,kgoff,jmin,k22,kbcon,ktop,dzu_cld
    real, dimension(mgmzp), intent(in)  :: rhou_cld    ! Density                   [  kg/m³]
    real                  , intent(in)  :: upmf        ! Reference mass flux       [kg/m²/s]
    !----- Output variables ----------------------------------------------------------------!
-   real                  , intent(out) :: areadn      ! Downdraft relative area   [    ---]
-   real                  , intent(out) :: areaup      ! Updraft   relative area   [    ---]
+   real                  , intent(inout) :: areadn      ! Downdraft relative area   [    ---]
+   real                  , intent(inout) :: areaup      ! Updraft   relative area   [    ---]
    !----- Local variables -----------------------------------------------------------------!
    integer                             :: k         ! Cloud level counter
    integer                             :: kr        ! BRAMS level counter

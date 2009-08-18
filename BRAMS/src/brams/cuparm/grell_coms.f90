@@ -100,7 +100,7 @@ module grell_coms
   !  These variables are parameters for various Grell's computation                        !
   !----------------------------------------------------------------------------------------!
   !------ Minimum diameter for clouds to develop downdrafts and rain ----------------------!
-  real                              , parameter  :: min_down_radius = 900.
+  real                              , parameter  :: min_down_radius = 2000.
   
   !------ Epsilon is the ratio between reference downdraft and updraft mass fluxes --------!
   real                              , parameter  :: edtmax = .95  ! Upper bound

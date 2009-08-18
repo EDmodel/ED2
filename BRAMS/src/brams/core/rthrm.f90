@@ -307,19 +307,17 @@ subroutine wetthrm3(m1,m2,m3,ia,iz,ja,jz,availcat,pi0,pp,thp,theta,rtp,rv,rcp,rr
    ! given prognosed theta_il, cloud, rain, pristine ice, snow, aggregates,
    ! graupel, hail, q6, and q7.
 
-   use rconstants, only: &
-        cpi,      & ! intent(in)
-        cp,       & ! intent(in)
-        cpor,     & ! intent(in)
-        p00,      & ! intent(in)
-        ttripoli, & ! intent(in)
-        alvl,     & ! intent(in)
-        alvi,     & ! intent(in)
-        cpi4,     & ! intent(in)
-        htripolii ! ! intent(in)       
-   !---- External function ----------------------------------------------------------------!
-   use therm_lib , only: &
-        thil2temp ! ! Theta_il => Temperature function
+   use rconstants, only : cpi       & ! intent(in)
+                        , cp        & ! intent(in)
+                        , cpor      & ! intent(in)
+                        , p00       & ! intent(in)
+                        , ttripoli  & ! intent(in)
+                        , alvl      & ! intent(in)
+                        , alvi      & ! intent(in)
+                        , cpi4      & ! intent(in)
+                        , htripolii ! ! intent(in)
+   use node_mod  , only : mynum     ! ! intent(in)
+   use therm_lib , only : thil2temp ! ! Theta_il => Temperature function
 
    implicit none
 
@@ -383,6 +381,32 @@ subroutine wetthrm3(m1,m2,m3,ia,iz,ja,jz,availcat,pi0,pp,thp,theta,rtp,rv,rcp,rr
             !----- First guess for temperature --------------------------------------------!
             temp         = thil2temp(thp(k,i,j),exner,pres,rliq(k),rice(k),temp)
             theta(k,i,j) = cp * temp / exner
+
+            if (rv(k,i,j) > rtp(k,i,j) .or. rliq(k) < 0. .or. rice(k) < 0.) then
+               write (unit=*,fmt='(a)') '------ MODEL THERMODYNAMIC IS NON-SENSE... ------'
+               write (unit=*,fmt='(a,1x,i5,a)'  ) 'In node ',mynum,'...'
+               write (unit=*,fmt='(a,1x,i5)'    ) 'I     =',i
+               write (unit=*,fmt='(a,1x,i5)'    ) 'J     =',j
+               write (unit=*,fmt='(a,1x,i5)'    ) 'K     =',k
+               write (unit=*,fmt='(a,1x,es12.5)') 'EXNER =',exner
+               write (unit=*,fmt='(a,1x,es12.5)') 'PRESS =',pres
+               write (unit=*,fmt='(a,1x,es12.5)') 'THIL  =',thp(k,i,j)
+               write (unit=*,fmt='(a,1x,es12.5)') 'THETA =',thp(k,i,j)
+               write (unit=*,fmt='(a,1x,es12.5)') 'TEMP  =',temp
+               write (unit=*,fmt='(a,1x,es12.5)') 'RTOT  =',rtp(k,i,j)
+               write (unit=*,fmt='(a,1x,es12.5)') 'RVAP  =',rv(k,i,j)
+               write (unit=*,fmt='(a,1x,es12.5)') 'RLIQ  =',rliq(k)
+               write (unit=*,fmt='(a,1x,es12.5)') 'RICE  =',rice(k)
+               write (unit=*,fmt='(a,1x,es12.5)') 'CLOUD =',rcp(k,i,j)
+               write (unit=*,fmt='(a,1x,es12.5)') 'RAIN  =',rrp(k,i,j)
+               write (unit=*,fmt='(a,1x,es12.5)') 'PICE  =',rpp(k,i,j)
+               write (unit=*,fmt='(a,1x,es12.5)') 'SNOW  =',rsp(k,i,j)
+               write (unit=*,fmt='(a,1x,es12.5)') 'AGGR  =',rap(k,i,j)
+               write (unit=*,fmt='(a,1x,es12.5)') 'GRAUP =',rgp(k,i,j)
+               write (unit=*,fmt='(a,1x,es12.5)') 'HAIL  =',rhp(k,i,j)
+               write (unit=*,fmt='(a)') '-------------------------------------------------'
+               call abort_run('Weird thermodynamic state found!','wetthrm3','rthrm.f90')
+            end if
          end do
 
       end do

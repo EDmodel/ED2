@@ -175,7 +175,7 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
       ,theivs_cup   & ! intent(out) - Sat. Ice-vapour equiv. pot. temp. w/ forcing[      K]
       ,wbuoymin0    & ! intent(out) - Updraft Minimum buoyant velocity            [    m/s]
       ,wbuoymin     ! ! intent(out) - Minimum buoyancy velocity                   [    ---]
-
+   use consts_coms, only : toodry
    implicit none
    
    !---------------------------------------------------------------------------------------!
@@ -254,8 +254,8 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
    !---------------------------------------------------------------------------------------!
 
    !----- Output variables, the cloud work functions. Others will be found afterwards. ----!
-   real                  , intent(out)   :: aad  ! Downdraft work function        [   J/kg]
-   real                  , intent(out)   :: aau  ! Updraft work function          [   J/kg]
+   real                  , intent(inout) :: aad  ! Downdraft work function        [   J/kg]
+   real                  , intent(inout) :: aau  ! Updraft work function          [   J/kg]
    !---------------------------------------------------------------------------------------!
 
 
@@ -487,7 +487,8 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
       ! 9. Checking whether we found a cloud top. Since this may keep convection to        !
       !    happen, I check whether I should move on or break here.  Also check whether     !
       !    this cloud qualifies to be in this spectrum size. It need to be thicker than    !
-      !    the minimum value provided by the user.                                         !
+      !    the minimum value provided by the user, and there must be some condensation     !
+      !    (we don't solve dry convection, that should be done by the turbulence scheme).  !
       !------------------------------------------------------------------------------------!
       if (ierr /= 0) then
          ierr_cap(icap) = ierr
@@ -590,20 +591,22 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
 
          !---------------------------------------------------------------------------------!
          ! 8. Checking for water availability and evaporation consistency: we assume that  !
-         !    downdraft is always saturated, and it gets the moisture from the rain. How-  !
+         !    downdraft is always saturated, and it gets the moisture from the rain.  How- !
          !    ever, it cannot require more rain than what is available, so if that would   !
-         !    be the case, we don't allow this cloud.                                      !
+         !    be the case, we don't allow this cloud to exist.                             !
          !---------------------------------------------------------------------------------!
-         do iedt = 1, maxens_eff
+         ddcheckloop: do iedt = 1, maxens_eff
             if (pwav + edt_eff(iedt,icap) * pwev < 0. ) then
-               !edt_eff(iedt,icap) = - 0.9999 * pwav / pwev
+               !edt_eff(iedt,icap) = - 0.9999 * pwav / pwev 
                ierr_cap(icap) = 9
                cycle stacloop
             end if
-         end do
+         end do ddcheckloop
 
          !---------------------------------------------------------------------------------!
-         ! 9. Computing cloud work function associated with downdrafts                     !
+         ! 9. Computing cloud work function associated with downdrafts.  If downdrafts     !
+         !    were forbidden, then reset all information and make cloud work due to down-  !
+         !    drafts zero.                                                                 !
          !---------------------------------------------------------------------------------!
          call grell_cldwork_downdraft(mkx,mgmzp,jmin,dbyd,dzd_cld,etad_cld,aad)
 

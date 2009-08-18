@@ -21,24 +21,13 @@ subroutine souza_cupar_driver()
         I0,                    &   ! INTENT(IN)  ! Rever função
         J0                         ! INTENT(IN)  ! Rever função
 
-   use mem_cuparm, only : confrq,cuparm_g,nclouds,cptime       ! INTENT(IN)
+   use mem_cuparm, only : cuparm_g,nclouds       ! INTENT(IN)
 
    implicit none
 
    integer :: I, J
    integer :: icld
    icld = nclouds ! Just to make it similar to other methods
-
-   call azero(mxp*myp*mzp,cuparm_g(ngrid)%thsrc(:,:,:,icld))
-   call azero(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(:,:,:,icld))
-   call azero(mxp*myp,cuparm_g(ngrid)%upmf(:,:,icld))
-
-   !---------------------------------------------------------------------------------------!
-   !     Zero out CO2 tendency if CO2 is prognosed.  Currently Kuo scheme won't compute    !
-   ! the transport of CO2 through updrafts and downdrafts, feel free to add this.  It      !
-   ! should be similar to the water transport, except that CO2 doesn't change phase.       !
-   !---------------------------------------------------------------------------------------!
-   if (co2_on) call azero(mxp*myp*mzp,cuparm_g(ngrid)%co2src(:,:,:,icld))
 
    call shcupar(mzp,mxp,myp,ia,iz,ja,jz,i0,j0,                   &
         basic_g(ngrid)%wp, basic_g(ngrid)%theta,   &

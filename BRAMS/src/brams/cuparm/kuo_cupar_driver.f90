@@ -25,20 +25,6 @@ subroutine kuo_cupar_driver()
    
    select case (if_cuinv)
    case (0) !----- This is the "direct" cumulus parametrisation ---------------------------!
-      !------------------------------------------------------------------------------------!
-      !    Zero out tendencies initially. This has been moved to the initialization at     !
-      ! rams_mem_alloc.f90.                                                                !
-      !------------------------------------------------------------------------------------!
-      call azero(mxp*myp*mzp,cuparm_g(ngrid)%thsrc(:,:,:,icld))
-      call azero(mxp*myp*mzp,cuparm_g(ngrid)%rtsrc(:,:,:,icld))
-      call azero(mxp*myp,cuparm_g(ngrid)%conprr(:,:,icld))
-
-      !------------------------------------------------------------------------------------!
-      !     Zero out CO2 tendency if CO2 is prognosed.  Currently Kuo scheme won't compute !
-      ! the transport of CO2 through updrafts and downdrafts, feel free to add this.  It   !
-      ! should be similar to the water transport, except that CO2 doesn't change phase.    !
-      !------------------------------------------------------------------------------------!
-      if (co2_on) call azero(mxp*myp*mzp,cuparm_g(ngrid)%co2src(:,:,:,icld))
 
       !----- Call the main subroutine -----------------------------------------------------!
       call conpar( mzp,mxp,myp,ia,iz,ja,jz,ibcon                                           &
@@ -51,13 +37,6 @@ subroutine kuo_cupar_driver()
                  , grid_g(ngrid)%flpw                 )
 
    case (1) !----- This is the cumulus inversion method -----------------------------------!
-      !------------------------------------------------------------------------------------!
-      !     Zero out CO2 tendency if CO2 is prognosed.  Currently Kuo scheme won't compute !
-      ! the transport of CO2 through updrafts and downdrafts, feel free to add this.  It   !
-      ! should be similar to the water transport, except that CO2 doesn't change phase.    !
-      !------------------------------------------------------------------------------------!
-      if (co2_on) call azero(mxp*myp*mzp,cuparm_g(ngrid)%co2src(:,:,:,icld))
-
       !------------------------------------------------------------------------------------!
       !     Check cumulus inversion tendencies and see if they are usable. If so, put in   !
       ! thsrc,rtscr,conprr arrays.                                                         !
@@ -240,7 +219,7 @@ subroutine conpar(m1,m2,m3,ia,iz,ja,jz,ibcon,up,vp,wp,theta,pp,pi0,dn0,rv,thsrc,
          end do
          conprr(i,j)=0.
          wconmin=wcldbs
-         contim=confrq(1)
+         contim=confrq
 
          lpw = nint(flpw(i,j))
 

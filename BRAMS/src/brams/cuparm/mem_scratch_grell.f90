@@ -760,6 +760,7 @@ module mem_scratch_grell
          kpbl              = 0
          ktpse             = 0
          !----- Real variables. -----------------------------------------------------------!
+         tscal_kf          = 0.
          mconv             = 0.
          co2sur            = 0.
          exnersur          = 0.

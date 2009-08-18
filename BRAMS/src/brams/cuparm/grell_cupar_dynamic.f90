@@ -18,7 +18,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,maxens_lsf    &
                               ,maxens_dyn,mgmzp,closure_type,comp_modif_thermo,comp_down   &
-                              ,mynum,i,j,printing)
+                              ,mynum,i,j)
    use mem_ensemble     , only : ensemble_vars & ! structure
                                , ensemble_e    ! ! intent(inout)
 
@@ -134,7 +134,6 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
    integer , intent(in)  :: mynum        ! Node ID
    integer , intent(in)  :: i            ! zonal grid point
    integer , intent(in)  :: j            ! meridional grid point
-   logical , intent(in)  :: printing     ! Printing some debug stuff              [    T|F]
    !----- Character, containing the closure type(s) for dynamic control -------------------!
    character(len=2), intent(in) :: closure_type! Short name to define the method.
    !----- Logical flags, to bypass uncessary steps ----------------------------------------!
@@ -192,6 +191,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
    real, dimension(maxens_lsf) :: one_b   ! 1-b, Krishnamurti et al. (1983)       [    ---]
    real, dimension(nclouds)    :: edt     ! Alias for the downdraft/updraft ratio.
    !------ Printing aux. variables. -------------------------------------------------------!
+   logical          , parameter :: printing=.false. ! Printing some debug stuff   [    T|F]
    integer                      :: uni
    character(len=13), parameter :: fmti='(a,1x,i13,1x)'
    character(len=16), parameter :: fmtf='(a,1x,es13.6,1x)'
@@ -664,8 +664,8 @@ subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,cl
    integer, dimension(nclouds)        , intent(in) :: kbcon     ! Level of free convection
    integer, dimension(nclouds)        , intent(in) :: ktop      ! Cloud top
    !----- Output variables. ---------------------------------------------------------------!
-   real, dimension(nclouds,maxens_dyn), intent(out) :: dnmf_dyn ! Ref. dndraft mass flux
-   real, dimension(nclouds,maxens_dyn), intent(out) :: upmf_dyn ! Ref. updraft mass flux
+   real, dimension(nclouds,maxens_dyn), intent(inout) :: dnmf_dyn ! Ref. dndraft mass flux
+   real, dimension(nclouds,maxens_dyn), intent(inout) :: upmf_dyn ! Ref. updraft mass flux
    !----- Local variables -----------------------------------------------------------------!
    integer                      :: icld      ! Cloud index
    integer                      :: idyn      ! Dynamic control counter
@@ -800,6 +800,12 @@ subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,cl
       end if
    end select
 
+   do idyn=1,maxens_dyn
+      do icld=cldd,clds
+         dnmf_dyn(icld,idyn) = edt(icld) * upmf_dyn(icld,idyn)
+      end do
+   end do
+
    return
 end subroutine grell_dyncontrol_ensemble
 !==========================================================================================!
@@ -828,7 +834,7 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
    real   , dimension(nclouds,nclouds), intent(in)    :: mfke    ! Mass flux kernel.
    !----- Downdraft is inout because I may not compute it ---------------------------------!
    integer, dimension(nclouds)        , intent(in)    :: ierr    ! Error flag
-   real   , dimension(nclouds)        , intent(out)   :: upmf    ! Ref. updraft mass flux
+   real   , dimension(nclouds)        , intent(inout) :: upmf    ! Ref. updraft mass flux
    !----- Local variables. ----------------------------------------------------------------!
    integer                              :: icld    ! Cloud index
    integer                              :: jcld    ! Cloud index too
@@ -987,7 +993,7 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
    real   , dimension(nclouds,nclouds), intent(in)    :: mfke    ! Mass flux kernel.
    !----- Downdraft is inout because I may not compute it ---------------------------------!
    integer, dimension(nclouds)        , intent(in)    :: ierr    ! Error flag
-   real   , dimension(nclouds)        , intent(out)   :: upmf    ! Ref. updraft mass flux
+   real   , dimension(nclouds)        , intent(inout) :: upmf    ! Ref. updraft mass flux
    !----- Local variables. ----------------------------------------------------------------!
    integer                              :: icld    ! Cloud index
    integer                              :: jcld    ! Cloud index too
@@ -1159,7 +1165,7 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf)
    real   , dimension(nclouds,nclouds), intent(in)    :: mfke    ! Mass flux kernel.
    !----- Downdraft is inout because I may not compute it ---------------------------------!
    integer, dimension(nclouds)        , intent(in)    :: ierr    ! Error flag
-   real   , dimension(nclouds)        , intent(out)   :: upmf    ! Ref. updraft mass flux
+   real   , dimension(nclouds)        , intent(inout) :: upmf    ! Ref. updraft mass flux
    !----- Local variables. ----------------------------------------------------------------!
    integer                              :: icld    ! Cloud index
    integer                              :: jcld    ! Cloud index too
@@ -1284,13 +1290,5 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf)
 
    return
 end subroutine grell_inre_solver
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
 !==========================================================================================!
 !==========================================================================================!
