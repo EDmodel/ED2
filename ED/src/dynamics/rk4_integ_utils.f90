@@ -66,6 +66,8 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm,integration_buff)
       first_time   = .false.
    end if
 
+   cpatch => csite%patch(ipa)
+
    !---------------------------------------------------------------------------------------!
    !    If top snow layer is too thin for computational stability, have it evolve in       !
    ! thermal equilibrium with top soil layer.                                              !
@@ -78,7 +80,7 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm,integration_buff)
    !---------------------------------------------------------------------------------------!
    !     Create temporary patches.                                                         !
    !---------------------------------------------------------------------------------------!
-   cpatch => csite%patch(ipa)
+   
    call copy_rk4_patch(integration_buff%initp, integration_buff%y,cpatch)
 
 
@@ -1842,6 +1844,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%wpa(k)         = sourcep%wpa(k)
       targetp%tai(k)         = sourcep%tai(k)
       targetp%solvable(k)    = sourcep%solvable(k)
+      targetp%rb(k)          = sourcep%rb(k)
    end do
 
    if (fast_diagnostics) then

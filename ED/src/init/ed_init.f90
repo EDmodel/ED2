@@ -25,7 +25,12 @@ subroutine set_polygon_coordinates()
          edgrid_g(ifm)%lon(ipy) = work_e(ifm)%vec_glon(ipy)
          edgrid_g(ifm)%lat(ipy) = work_e(ifm)%vec_glat(ipy)
          edgrid_g(ifm)%ntext_soil(1:nzg,ipy) = work_e(ifm)%vec_ntext(ipy)
+         edgrid_g(ifm)%xatm(ipy) = work_e(ifm)%vec_xid(ipy)
+         edgrid_g(ifm)%yatm(ipy) = work_e(ifm)%vec_yid(ipy)
+
       end do ploop
+
+      
 
    end do gloop
 
