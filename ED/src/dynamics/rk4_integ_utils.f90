@@ -5,11 +5,12 @@
 !     This subroutine will drive the integration of several ODEs that drive the fast-scale !
 ! state variables.                                                                         !
 !------------------------------------------------------------------------------------------!
-subroutine odeint(h1,csite,ipa,isi,ipy,ifm,integration_buff)
+subroutine odeint(h1,csite,ipa,isi,ipy,ifm)
 
    use ed_state_vars  , only : sitetype               & ! structure
                              , patchtype              ! ! structure
-   use rk4_coms       , only : integration_vars    & ! structure
+   use rk4_coms       , only : integration_vars       & ! structure
+                             , integration_buff       & ! intent(inout)
                              , rk4met                 & ! intent(in)
                              , rk4min_sfcwater_mass   & ! intent(in)
                              , maxstp                 & ! intent(in)
@@ -30,7 +31,6 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm,integration_buff)
                              , wdnsi8                 ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(integration_vars) , target      :: integration_buff ! RK4 variables
    type(sitetype)            , target      :: csite            ! Current site
    integer                   , intent(in)  :: ipa              ! Current patch ID
    integer                   , intent(in)  :: isi              ! Current site ID
@@ -107,7 +107,7 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm,integration_buff)
       if((x+h-tend)*(x+h-tbeg) > 0.d0) h=tend-x
 
       !----- Take the step ----------------------------------------------------------------!
-      call rkqs(integration_buff,x,h,hdid,hnext,csite,ipa,isi,ipy,ifm)
+      call rkqs(x,h,hdid,hnext,csite,ipa,isi,ipy,ifm)
 
       !----- If the integration reached the next step, make some final adjustments --------!
       if((x-tend)*dtrk4 >= 0.d0)then

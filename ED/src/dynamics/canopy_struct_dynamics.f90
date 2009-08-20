@@ -1163,6 +1163,7 @@ module canopy_struct_dynamics
                                             * dble(leaf_width(ipft))**3 ) **2.5d-1         &
                                           / dble(leaf_width(ipft)) ) )
 
+               cpatch%rb(ico) = sngloff(initp%rb(ico),tiny_offset)
             end do
 
             !------------------------------------------------------------------------------!

@@ -231,7 +231,7 @@ MOD_EXT=mod
 #           problems, which means that this is an option suitable for end users, not de-   #
 #           velopers.                                                                      #
 #------------------------------------------------------------------------------------------#
-KIND_COMP=A
+KIND_COMP=E
 
 #------------------------------------------------------------------------------------------#
 ifeq ($(KIND_COMP),A)

@@ -255,6 +255,8 @@ subroutine spatial_averages
             cpoly%avg_evap(isi)     = sum(csite%avg_evap     * csite%area ) * site_area_i
             cpoly%avg_drainage(isi) = sum(csite%avg_drainage * csite%area ) * site_area_i
             cpoly%avg_runoff(isi)   = sum(csite%avg_runoff   * csite%area ) * site_area_i
+            cpoly%avg_runoff_heat(isi) = sum(csite%avg_runoff_heat   * csite%area )        &
+                                       * site_area_i
             cpoly%aux(isi)          = sum(csite%aux          * csite%area ) * site_area_i
             cpoly%avg_sensible_vc(isi)   = sum(csite%avg_sensible_vc    * csite%area )     &
                                          * site_area_i

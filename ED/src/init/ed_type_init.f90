@@ -13,6 +13,8 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   integer :: ico
   real :: root_depth
   integer, intent(in) :: lsl
+  
+  cpatch%solvable(ico) = .false.
 
   cpatch%mean_gpp(ico) = 0.0
   cpatch%mean_leaf_resp(ico) = 0.0
@@ -49,7 +51,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%rlong_v_surf(ico)     = 0.0
   cpatch%rlong_v_incid(ico)    = 0.0
        
-!  cpatch%rb(ico)               = 0.0
+  cpatch%rb(ico)               = 0.0
   cpatch%A_open(ico)           = 0.0
   cpatch%A_closed(ico)         = 0.0
   cpatch%Psi_closed(ico)       = 0.0
@@ -59,22 +61,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       
   cpatch%stomatal_resistance(ico) = 0.0
   cpatch%maintenance_costs(ico)   = 0.0
-  cpatch%paw_avg(ico)          = 0.5 !0.0 - [KIM] starting from the mid point.  if starting from the driest point, plants'll drop leaves initially due to the water stress
-  
-
-  ! From the ed_state_vars comment, these variables are now deprecated, commenting
-  ! them so it will compile...
-  ! cpatch%co_srad_h(ico)        = 1.0
-  ! cpatch%co_lrad_h(ico)        = 1.0
-  ! cpatch%co_sens_h(ico)        = 1.0
-  ! cpatch%co_evap_h(ico)        = 1.0
-  ! cpatch%co_liqr_h(ico)        = 1.0
-
-  ! cpatch%co_srad_h(ico)  =   cpatch%co_srad_h(ico)  -      1.0
-  ! cpatch%co_lrad_h(ico)  =   cpatch%co_lrad_h(ico)  -      1.0
-  ! cpatch%co_sens_h(ico)  =   cpatch%co_sens_h(ico)  -      1.0
-  ! cpatch%co_evap_h(ico)  =   cpatch%co_evap_h(ico)  -      1.0
-  ! cpatch%co_liqr_h(ico)  =   cpatch%co_liqr_h(ico)  -      1.0
+  cpatch%paw_avg(ico)             = 0.5 !0.0 - [KIM] starting from the mid point.  if starting from the driest point, plants'll drop leaves initially due to the water stress
 
 
   cpatch%Psi_open(ico) = 0.0
@@ -159,6 +146,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%sfcwater_energy(1:nzs,ip1:ip2) = 0.0
   csite%sfcwater_depth(1:nzs,ip1:ip2)  = 0.0
   csite%total_snow_depth(ip1:ip2)      = 0.0
+  csite%snowfac(ip1:ip2)               = 0.0
 
   csite%rshort_s(:,ip1:ip2) = 0.0
   csite%rshort_s_beam(:,ip1:ip2) = 0.0
@@ -171,6 +159,13 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
 
   csite%mean_rh(ip1:ip2) = 0.0
   csite%mean_nep(ip1:ip2) = 0.0
+    
+  csite%A_decomp(ip1:ip2)             = 0.0
+  csite%f_decomp(ip1:ip2)             = 0.0
+  csite%rh(ip1:ip2)                   = 0.0
+  csite%cwd_rh(ip1:ip2)               = 0.0
+  csite%fuse_flag(ip1:ip2)            = 0.0
+  csite%plant_ag_biomass(ip1:ip2)     = 0.0
 
   csite%mean_runoff(ip1:ip2) = 0.0
   csite%mean_wflux(ip1:ip2) = 0.0
@@ -178,10 +173,13 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%mean_qrunoff(ip1:ip2) = 0.0
   csite%mean_hflux(ip1:ip2) = 0.0
 
+
   csite%dmean_A_decomp(ip1:ip2) = 0.0
   csite%dmean_Af_decomp(ip1:ip2) = 0.0
 
   csite%repro(1:n_pft,ip1:ip2) = 0.0
+  csite%A_o_max(1:n_pft,ip1:ip2) = 0.0
+  csite%A_c_max(1:n_pft,ip1:ip2) = 0.0
 
   csite%htry(ip1:ip2) = 1.0
 
@@ -208,31 +206,41 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%dmean_co2_residual(ip1:ip2)       = 0.0
   csite%dmean_energy_residual(ip1:ip2)    = 0.0
   csite%dmean_water_residual(ip1:ip2)     = 0.0
+  csite%mmean_co2_residual   (ip1:ip2)     = 0.0
+  csite%mmean_energy_residual(ip1:ip2)     = 0.0
+  csite%mmean_water_residual (ip1:ip2)     = 0.0
 
   !----------------------------------------------------------------------------------------!
   !    These variables need to be initialized here otherwise it will fail when new patches !
   ! are created.                                                                           !
   !----------------------------------------------------------------------------------------!
-  csite%avg_carbon_ac(ip1:ip2)    = 0.0
-  csite%avg_vapor_vc(ip1:ip2)     = 0.0
-  csite%avg_dew_cg(ip1:ip2)       = 0.0
-  csite%avg_vapor_gc(ip1:ip2)     = 0.0
-  csite%avg_wshed_vg(ip1:ip2)     = 0.0
-  csite%avg_vapor_ac(ip1:ip2)     = 0.0
-  csite%avg_transp(ip1:ip2)       = 0.0
-  csite%avg_evap(ip1:ip2)         = 0.0
-  csite%avg_smoist_gg(:,ip1:ip2)    = 0.0
-  csite%avg_smoist_gc(:,ip1:ip2)    = 0.0
-  csite%avg_runoff(ip1:ip2)       = 0.0
-  csite%avg_sensible_vc(ip1:ip2)  = 0.0
-  csite%avg_qwshed_vg(ip1:ip2)    = 0.0
-  csite%avg_sensible_gc(ip1:ip2)  = 0.0
-  csite%avg_sensible_ac(ip1:ip2)  = 0.0
+  csite%avg_carbon_ac    (ip1:ip2)  = 0.0
+  csite%avg_vapor_vc     (ip1:ip2)  = 0.0
+  csite%avg_dew_cg       (ip1:ip2)  = 0.0
+  csite%avg_vapor_gc     (ip1:ip2)  = 0.0
+  csite%avg_wshed_vg     (ip1:ip2)  = 0.0
+  csite%avg_vapor_ac     (ip1:ip2)  = 0.0
+  csite%avg_transp       (ip1:ip2)  = 0.0
+  csite%avg_evap         (ip1:ip2)  = 0.0
+  csite%avg_netrad       (ip1:ip2)  = 0.0
+  csite%avg_runoff       (ip1:ip2)  = 0.0
+  csite%avg_drainage     (ip1:ip2)  = 0.0
+  csite%aux              (ip1:ip2)  = 0.0
+  csite%avg_sensible_vc  (ip1:ip2)  = 0.0
+  csite%avg_qwshed_vg    (ip1:ip2)  = 0.0
+  csite%avg_sensible_gc  (ip1:ip2)  = 0.0
+  csite%avg_sensible_ac  (ip1:ip2)  = 0.0
+  csite%avg_runoff_heat  (ip1:ip2)  = 0.0
   csite%avg_sensible_gg(:,ip1:ip2)  = 0.0
-  csite%avg_runoff_heat(ip1:ip2)  = 0.0
-  csite%aux(ip1:ip2)              = 0.0
-  csite%aux_s(:,ip1:ip2)            = 0.0
-  
+  csite%avg_smoist_gg  (:,ip1:ip2)  = 0.0
+  csite%avg_smoist_gc  (:,ip1:ip2)  = 0.0
+  csite%aux_s          (:,ip1:ip2)  = 0.0
+
+  csite%avg_veg_energy(ip1:ip2)     = 0.0
+  csite%avg_veg_temp(ip1:ip2)       = 0.0
+  csite%avg_veg_fliq(ip1:ip2)       = 0.0
+  csite%avg_veg_water(ip1:ip2)      = 0.0
+
   csite%rshort_g(ip1:ip2) = 0.0
   csite%rshort_g_beam(ip1:ip2) = 0.0
   csite%rshort_g_diffuse(ip1:ip2) = 0.0
@@ -255,6 +263,15 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%total_plant_nitrogen_uptake(ip1:ip2) = 0.0
   
   csite%watertable(ip1:ip2)                  = slz(lsl)
+  csite%ustar(ip1:ip2) = 0.0
+  csite%tstar(ip1:ip2) = 0.0
+  csite%qstar(ip1:ip2) = 0.0
+  csite%cstar(ip1:ip2) = 0.0
+  csite%upwp(ip1:ip2)  = 0.0
+  csite%tpwp(ip1:ip2)  = 0.0
+  csite%qpwp(ip1:ip2)  = 0.0
+  csite%cpwp(ip1:ip2)  = 0.0
+  csite%wpwp(ip1:ip2)  = 0.0
 
   csite%old_stoma_data_max(:,ip1:ip2)%recalc = 1
   csite%old_stoma_data_max(:,ip1:ip2)%T_L = 0.0
@@ -351,6 +368,7 @@ subroutine init_ed_site_vars(cpoly, lat)
   cpoly%primary_harvest_memory(:) = 0.0
   cpoly%secondary_harvest_memory(:) = 0.0
   
+  cpoly%rad_avg(:) = 0.0
   
   
   return

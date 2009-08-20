@@ -133,6 +133,42 @@ subroutine reset_averaged_vars(cgrid)
    integer :: ipy,isi,ipa,ico
 
    do ipy = 1,cgrid%npolygons
+
+      ! Should this be here as well?
+      cgrid%cbudget_nep(ipy)       = 0.0
+
+      ! Reset the meteorological diagnostic
+   
+      cgrid%avg_nir_beam(ipy)       = 0.0
+      cgrid%avg_nir_diffuse(ipy)    = 0.0
+      cgrid%avg_par_beam(ipy)       = 0.0
+      cgrid%avg_par_diffuse(ipy)    = 0.0
+      cgrid%avg_atm_tmp(ipy)        = 0.0
+      cgrid%avg_atm_shv(ipy)        = 0.0
+      cgrid%avg_rshort(ipy)         = 0.0
+      cgrid%avg_rshort_diffuse(ipy) = 0.0
+      cgrid%avg_rlong(ipy)          = 0.0
+      cgrid%avg_pcpg(ipy)           = 0.0
+      cgrid%avg_qpcpg(ipy)          = 0.0
+      cgrid%avg_dpcpg(ipy)          = 0.0
+      cgrid%avg_vels(ipy)           = 0.0
+      cgrid%avg_prss(ipy)           = 0.0
+      cgrid%avg_exner(ipy)          = 0.0
+      cgrid%avg_geoht(ipy)          = 0.0
+      cgrid%avg_atm_co2(ipy)        = 0.0
+      cgrid%avg_albedt(ipy)         = 0.0
+      cgrid%avg_rlongup(ipy)        = 0.0
+   
+      !
+      cgrid%avg_drainage(ipy)       = 0.0
+      cgrid%avg_evap(ipy)           = 0.0
+      cgrid%avg_transp(ipy)         = 0.0
+      cgrid%avg_soil_temp(:,ipy)    = 0.0
+      cgrid%avg_soil_water(:,ipy)   = 0.0
+      cgrid%avg_soil_energy(:,ipy)  = 0.0
+      cgrid%avg_soil_fracliq(:,ipy) = 0.0
+
+
       cpoly => cgrid%polygon(ipy)
       do isi = 1,cpoly%nsites
          csite => cpoly%site(isi)
@@ -187,6 +223,7 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_smoist_gg(:,ipa)      = 0.0
             csite%avg_smoist_gc(:,ipa)      = 0.0
             csite%avg_runoff(ipa)           = 0.0
+            csite%avg_runoff_heat(ipa)      = 0.0
             csite%avg_drainage(ipa)         = 0.0
             csite%avg_sensible_vc(ipa)      = 0.0
             csite%avg_qwshed_vg(ipa)        = 0.0
@@ -214,42 +251,6 @@ subroutine reset_averaged_vars(cgrid)
 
    enddo
 
-
-   do ipy = 1,cgrid%npolygons
-      ! Should this be here as well?
-      cgrid%cbudget_nep(ipy)       = 0.0
-
-      ! Reset the meteorological diagnostic
-   
-      cgrid%avg_nir_beam(ipy)       = 0.0
-      cgrid%avg_nir_diffuse(ipy)    = 0.0
-      cgrid%avg_par_beam(ipy)       = 0.0
-      cgrid%avg_par_diffuse(ipy)    = 0.0
-      cgrid%avg_atm_tmp(ipy)        = 0.0
-      cgrid%avg_atm_shv(ipy)        = 0.0
-      cgrid%avg_rshort(ipy)         = 0.0
-      cgrid%avg_rshort_diffuse(ipy) = 0.0
-      cgrid%avg_rlong(ipy)          = 0.0
-      cgrid%avg_pcpg(ipy)           = 0.0
-      cgrid%avg_qpcpg(ipy)          = 0.0
-      cgrid%avg_dpcpg(ipy)          = 0.0
-      cgrid%avg_vels(ipy)           = 0.0
-      cgrid%avg_prss(ipy)           = 0.0
-      cgrid%avg_exner(ipy)          = 0.0
-      cgrid%avg_geoht(ipy)          = 0.0
-      cgrid%avg_atm_co2(ipy)        = 0.0
-      cgrid%avg_albedt(ipy)         = 0.0
-      cgrid%avg_rlongup(ipy)        = 0.0
-   
-      !
-      cgrid%avg_drainage(ipy)       = 0.0
-      cgrid%avg_evap(ipy)           = 0.0
-      cgrid%avg_transp(ipy)         = 0.0
-      cgrid%avg_soil_temp(:,ipy)    = 0.0
-      cgrid%avg_soil_water(:,ipy)   = 0.0
-      cgrid%avg_soil_energy(:,ipy)  = 0.0
-      cgrid%avg_soil_fracliq(:,ipy) = 0.0
-   end do
 
    return
 end subroutine reset_averaged_vars
@@ -1387,6 +1388,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_wai_lu       (:,ipy) = 0.
       cgrid%agb_pft            (:,ipy) = 0.
       cgrid%ba_pft             (:,ipy) = 0.
+      cgrid%agb_lu             (:,ipy) = 0.
       cgrid%stdev_gpp            (ipy) = 0.
       cgrid%stdev_evap           (ipy) = 0.
       cgrid%stdev_transp         (ipy) = 0.

@@ -10,10 +10,10 @@ module rk4_stepper
    !=======================================================================================!
    !   This subroutine is the main Runge-Kutta step driver.                                !
    !---------------------------------------------------------------------------------------!
-   subroutine rkqs(integration_buff, x,htry,hdid,hnext,csite,ipa,isi,ipy,ifm)
+   subroutine rkqs(x,htry,hdid,hnext,csite,ipa,isi,ipy,ifm)
 
       use rk4_coms      , only : rk4patchtype        & ! structure
-                               , integration_vars & ! structure
+                               , integration_buff    & ! intent(inout)
                                , rk4met              & ! intent(in)
                                , hmin                & ! intent(in)
                                , rk4eps              & ! intent(in)
@@ -31,7 +31,6 @@ module rk4_stepper
       !----- Arguments --------------------------------------------------------------------!
       integer                  , intent(in)    :: ipa,isi,ipy,ifm
       type(sitetype)           , target        :: csite
-      type(integration_vars), target        :: integration_buff
       real(kind=8)             , intent(in)    :: htry
       real(kind=8)             , intent(inout) :: x
       real(kind=8)             , intent(out)   :: hdid,hnext
