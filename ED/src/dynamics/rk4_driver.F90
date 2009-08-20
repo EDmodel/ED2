@@ -13,10 +13,10 @@ module rk4_driver
    !---------------------------------------------------------------------------------------!
    subroutine rk4_timestep(cgrid,ifm)
       use rk4_coms               , only : integration_vars     & ! structure
-                                        , integration_buff     & ! structure
                                         , rk4patchtype         & ! structure
                                         , zero_rk4_patch       & ! subroutine
                                         , zero_rk4_cohort      & ! subroutine
+                                        , integration_buff     & ! intent(out)
                                         , rk4met               ! ! intent(out)
       use ed_state_vars          , only : edtype               & ! structure
                                         , polygontype          & ! structure
@@ -174,10 +174,10 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !    This is the driver for the integration process...                      !
                !---------------------------------------------------------------------------!
-               call integrate_patch(csite,ipa,isi,ipy,ifm,integration_buff,wcurr_loss2atm  &
-                             ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage          &
-                             ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff      &
-                             ,ecurr_latent)
+               call integrate_patch(csite,integration_buff%initp,ipa,isi,ipy,ifm           &
+                                   ,wcurr_loss2atm,ecurr_loss2atm,co2curr_loss2atm         &
+                                   ,wcurr_loss2drainage,ecurr_loss2drainage                &
+                                   ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent)
 
                !---------------------------------------------------------------------------!
                !    Update the minimum monthly temperature, based on canopy temperature.   !
@@ -228,10 +228,9 @@ module rk4_driver
    !=======================================================================================!
    !     This subroutine will drive the integration process.                               !
    !---------------------------------------------------------------------------------------!
-   subroutine integrate_patch(csite,ipa,isi,ipy,ifm,integration_buff,wcurr_loss2atm        &
-                             ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage          &
-                             ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff      &
-                             ,ecurr_latent)
+   subroutine integrate_patch(csite,initp,ipa,isi,ipy,ifm,wcurr_loss2atm,ecurr_loss2atm    &
+                             ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage     &
+                             ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent)
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
       use ed_misc_coms       , only : dtlsm                ! ! intent(in)
@@ -241,7 +240,7 @@ module rk4_driver
       use consts_coms     , only : vonk8                & ! intent(in)
                                  , cp8                  & ! intent(in)
                                  , cpi8                 ! ! intent(in)
-      use rk4_coms        , only : integration_vars  & ! structure
+      use rk4_coms        , only : integration_vars     & ! structure
                                  , rk4patchtype         & ! structure
                                  , rk4met               & ! intent(inout)
                                  , zero_rk4_patch       & ! subroutine
@@ -255,8 +254,8 @@ module rk4_driver
                                  , effarea_heat         ! ! intent(out)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(integration_vars), target      :: integration_buff
       type(sitetype)        , target      :: csite   
+      type(rk4patchtype)    , target      :: initp
       integer               , intent(in)  :: ifm     
       integer               , intent(in)  :: ipy     
       integer               , intent(in)  :: isi     
@@ -270,14 +269,10 @@ module rk4_driver
       real                  , intent(out) :: ecurr_loss2runoff
       real                  , intent(out) :: ecurr_latent
       !----- Local variables --------------------------------------------------------------!
-      type(rk4patchtype)       , pointer    :: initp
       real(kind=8)                          :: hbeg
       !----- Locally saved variable -------------------------------------------------------!
       logical                  , save       :: first_time=.true.
       !------------------------------------------------------------------------------------!
-
-      !----- Making an alias. -------------------------------------------------------------!
-      initp => integration_buff%initp
 
       !----- Assigning some constants which will remain the same throughout the run. ------!
       if (first_time) then
@@ -322,7 +317,7 @@ module rk4_driver
       initp%wpwp = 0.d0
 
       !----- Go into the ODE integrator. --------------------------------------------------!
-      call odeint(hbeg,csite,ipa,isi,ipy,ifm,integration_buff)
+      call odeint(hbeg,csite,ipa,isi,ipy,ifm)
 
       !------------------------------------------------------------------------------------!
       !      Normalize canopy-atmosphere flux values.  These values are updated every      !
