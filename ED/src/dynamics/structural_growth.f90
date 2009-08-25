@@ -161,7 +161,7 @@ subroutine structural_growth(cgrid, month)
                     + net_stem_N_uptake
 
                !----- Calculate the derived cohort properties. ----------------------------!
-               call update_derived_cohort_props(cpatch,ico                              &
+               call update_derived_cohort_props(cpatch,ico                                 &
                                                   ,cpoly%green_leaf_factor(ipft,isi)       &
                                                   ,cpoly%lsl(isi))
 

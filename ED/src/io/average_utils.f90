@@ -235,9 +235,12 @@ subroutine reset_averaged_vars(cgrid)
             csite%aux_s(:,ipa)              = 0.0
          
             do ico=1,cpatch%ncohorts
-               cpatch%leaf_respiration(ico)    = 0.0
-               cpatch%root_respiration(ico)    = 0.0
-               cpatch%gpp(ico)                 = 0.0
+               cpatch%leaf_respiration(ico)      = 0.0
+               cpatch%root_respiration(ico)      = 0.0
+               cpatch%gpp(ico)                   = 0.0
+               cpatch%mean_leaf_resp(ico)        = 0.0
+               cpatch%mean_root_resp(ico)        = 0.0
+               cpatch%mean_gpp(ico)              = 0.0
             end do
          end do
 

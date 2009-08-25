@@ -2575,6 +2575,7 @@ contains
        nullify(cgrid%mmean_wai_lu            )
        nullify(cgrid%mmean_can_temp          )
        nullify(cgrid%mmean_can_shv           )
+       nullify(cgrid%mmean_can_co2           )
        nullify(cgrid%mmean_can_rhos          )
        nullify(cgrid%mmean_veg_energy        )
        nullify(cgrid%mmean_veg_water         )
