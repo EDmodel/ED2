@@ -22,7 +22,15 @@ module mod_interp
    real(kind=8) :: minweight8 ! Double precision version of minweight
    !---------------------------------------------------------------------------------------!
 
-
+   !---------------------------------------------------------------------------------------!
+   !     Parameters for precipitation downscaling.                                         !
+   !---------------------------------------------------------------------------------------!
+   !----- Number of elements in the local precipitation sampling CDF and inverse. ---------!
+   integer, parameter :: nlocpcp  = 250
+   real   , parameter :: nlocpcpi = 1. / real(nlocpcp)
+   !----- Maximum precipitation rate. -----------------------------------------------------!
+   real   , parameter :: max_local_precip = 1.e-2
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !    Indexing variables.                                                                !

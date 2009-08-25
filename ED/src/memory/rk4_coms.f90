@@ -300,9 +300,6 @@ module rk4_coms
    !---------------------------------------------------------------------------------------!
    real(kind=8) :: hcapveg_ref         ! Reference value                          [ J/m³/K]
    real(kind=8) :: min_height          ! Minimum vegetation height                [      m]
-   real(kind=8) :: hcapveg_stab_thresh ! Minimum stable patch-level heat capacity [ J/m²/K]
-   !----- This is compared with the original heat capacity, leave it single precision. ----!
-   real         :: hcapveg_coh_min     ! Minimum solvable cohort-level heat cap.  [ J/m²/K]
    !---------------------------------------------------------------------------------------!
 
 

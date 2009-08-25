@@ -274,7 +274,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    use rk4_coms             , only : rk4patchtype          & ! structure
                                    , rk4met                & ! structure
                                    , hcapveg_ref           & ! intent(in)
-                                   , hcapveg_coh_min       & ! intent(in)
                                    , rk4eps                & ! intent(in)
                                    , min_height            & ! intent(in)
                                    , any_solvable          & ! intent(out)
@@ -594,15 +593,18 @@ subroutine get_yscal(y, dy, htry, yscal, cpatch)
    use soil_coms            , only : isoilbc              ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(rk4patchtype), target     :: y                ! Structure with the guesses
-   type(rk4patchtype), target     :: dy               ! Structure with their derivatives
-   type(rk4patchtype), target     :: yscal            ! Structure with their scales
-   type(patchtype)   , target     :: cpatch           ! Current patch
-   real(kind=8)      , intent(in) :: htry             ! Time-step we are trying
+   type(rk4patchtype), target     :: y                     ! Struct. with the guesses
+   type(rk4patchtype), target     :: dy                    ! Struct. with their derivatives
+   type(rk4patchtype), target     :: yscal                 ! Struct. with their scales
+   type(patchtype)   , target     :: cpatch                ! Current patch
+   real(kind=8)      , intent(in) :: htry                  ! Time-step we are trying
    !----- Local variables -----------------------------------------------------------------!
-   real(kind=8)                   :: tot_sfcw_mass    ! Total surface water/snow mass
-   integer                        :: k                ! Counter
-   integer                        :: ico              ! Current cohort ID
+   real(kind=8)                   :: tot_sfcw_mass         ! Total surface water/snow mass
+   real(kind=8)                   :: meanscale_sfcw_mass   ! Average Sfc. water mass scale
+   real(kind=8)                   :: meanscale_sfcw_energy ! Average Sfc. water en. scale
+   real(kind=8)                   :: meanscale_sfcw_depth  ! Average Sfc. water depth scale
+   integer                        :: k                     ! Counter
+   integer                        :: ico                   ! Current cohort ID
    !---------------------------------------------------------------------------------------!
 
   
@@ -628,15 +630,39 @@ subroutine get_yscal(y, dy, htry, yscal, cpatch)
    end do
    tot_sfcw_mass = abs(tot_sfcw_mass)
    
+   
+   !---------------------------------------------------------------------------------------!
+   !     Temporary surface layers require a special approach. The number of layers may     !
+   ! vary during the integration process, so we must make sure that all layers initially   !
+   ! have a scale.  Also, if the total mass is small, we must be more tolerant to avoid    !
+   ! overestimating the error because of the small size.                                   !
+   !---------------------------------------------------------------------------------------!
    if (tot_sfcw_mass > 1.d-2*rk4water_stab_thresh) then
       !----- Computationally stable layer. ------------------------------------------------!
-      do k=1,nzs
+      meanscale_sfcw_mass   = 0.d0
+      meanscale_sfcw_energy = 0.d0
+      meanscale_sfcw_depth  = 0.d0
+      do k=1,y%nlev_sfcwater
          yscal%sfcwater_mass(k)   = abs(y%sfcwater_mass(k))                                &
                                   + abs(dy%sfcwater_mass(k)*htry)
          yscal%sfcwater_energy(k) = abs(y%sfcwater_energy(k))                              &
                                   + abs(dy%sfcwater_energy(k)*htry)
          yscal%sfcwater_depth(k)  = abs(y%sfcwater_depth(k))                               &
                                   + abs(dy%sfcwater_depth(k)*htry)
+
+         meanscale_sfcw_mass   = meanscale_sfcw_mass   + yscal%sfcwater_mass(k)
+         meanscale_sfcw_energy = meanscale_sfcw_energy + yscal%sfcwater_energy(k)
+         meanscale_sfcw_depth  = meanscale_sfcw_depth  + yscal%sfcwater_depth(k)
+      end do
+      !----- Update average (this is safe because here there is at least one layer. -------!
+      meanscale_sfcw_mass   = meanscale_sfcw_mass   / real(y%nlev_sfcwater)
+      meanscale_sfcw_energy = meanscale_sfcw_energy / real(y%nlev_sfcwater)
+      meanscale_sfcw_depth  = meanscale_sfcw_depth  / real(y%nlev_sfcwater)
+
+      do k=y%nlev_sfcwater+1,nzs
+         yscal%sfcwater_mass(k)   = meanscale_sfcw_mass
+         yscal%sfcwater_energy(k) = meanscale_sfcw_energy
+         yscal%sfcwater_depth(k)  = meanscale_sfcw_depth
       end do
    else
       !----- Low stability threshold ------------------------------------------------------!

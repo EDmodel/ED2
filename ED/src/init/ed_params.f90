@@ -7,7 +7,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine load_ed_ecosystem_params()
 
-   use ed_max_dims    , only : n_pft               ! ! intent(in)
+   use ed_max_dims , only : n_pft               ! ! intent(in)
    use pft_coms    , only : include_these_pft   & ! intent(in)
                           , include_pft         & ! intent(out)
                           , include_pft_ag      & ! intent(out)
@@ -275,7 +275,7 @@ subroutine init_can_air_params()
    ! flushed to zero.  This value is in kg/[m2 plant], so it will be always scaled by      !
    ! (LAI+WAI).                                                                            !
    !---------------------------------------------------------------------------------------!
-   dry_veg_lwater = 5.e-4
+   dry_veg_lwater = 5.e-3
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -1365,8 +1365,6 @@ subroutine init_rk4_params()
                                    , toohot                & ! intent(out)
                                    , lai_to_cover          & ! intent(out)
                                    , hcapveg_ref           & ! intent(out)
-                                   , hcapveg_stab_thresh   & ! intent(out)
-                                   , hcapveg_coh_min       & ! intent(out)
                                    , min_height            & ! intent(out)
                                    , rk4min_veg_temp       & ! intent(out)
                                    , rk4water_stab_thresh  & ! intent(out)
@@ -1410,7 +1408,7 @@ subroutine init_rk4_params()
    maxstp      = 100000000    ! Maximum number of intermediate steps. 
    rk4eps      = 1.d-2        ! The desired accuracy.
    rk4epsi     = 1.d0/rk4eps  ! The inverse of desired accuracy.
-   hmin        = 1.d-13       ! The minimum step size.
+   hmin        = 1.d-7        ! The minimum step size.
    print_diags = .false.      ! Flag to print the diagnostic check.
    checkbudget = .false.      ! Flag to check CO2, water, and energy budgets every time
                               !     step and stop the run in case any of these budgets 
@@ -1440,9 +1438,6 @@ subroutine init_rk4_params()
    !---------------------------------------------------------------------------------------!
    hcapveg_ref         = 3.0d3  ! Reference heat capacity value                   [J/m³/K]
    min_height          = 1.5d0  ! Minimum vegetation height                       [     m]
-   hcapveg_stab_thresh = 2.5d1  ! Minimum stable patch-level heat capacity        [J/m²/K]
-   !----- The minimum cohort-level heat capacity that we can solve [J/m²/K] ---------------!
-   hcapveg_coh_min     = 4.5e-1 ! 1.d-4 * hcapveg_ref * min_height 
    !---------------------------------------------------------------------------------------!
 
 
@@ -1474,7 +1469,7 @@ subroutine init_rk4_params()
    !     Minimum water mass at the leaf surface.  This is given in kg/m²leaf rather than   !
    ! kg/m²ground, so we scale it with LAI.                                                 !
    !---------------------------------------------------------------------------------------!
-   rk4min_veg_lwater = -5.0000d-4 ! Minimum leaf water mass                     [kg/m²leaf]
+   rk4min_veg_lwater = -rk4dry_veg_lwater ! Minimum leaf water mass             [kg/m²leaf]
    !---------------------------------------------------------------------------------------!
 
 
