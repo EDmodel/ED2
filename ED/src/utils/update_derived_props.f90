@@ -53,11 +53,15 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
   
    use ed_state_vars       , only : sitetype                   & ! structure
                                   , patchtype                  ! ! structure
+   use ed_misc_coms        , only : icanturb                   ! ! intent(in)
    use allometry           , only : ed_biomass                 ! ! function
    use fusion_fission_coms , only : ff_ndbh                    ! ! intent(in)
    use fuse_fiss_utils     , only : patch_pft_size_profile     ! ! subroutine
    use canopy_air_coms     , only : veg_height_min             & ! intent(in)
-                                  , minimum_canopy_depth       ! ! intent(in)
+                                  , minimum_canopy_depth       & ! intent(in)
+                                  , ez                         & ! intent(in)
+                                  , vh2vr                      & ! intent(in)
+                                  , vh2dh                      ! ! intent(in)
    use consts_coms         , only : rdry                       & ! intent(in)
                                   , epim1                      ! ! intent(in)
    implicit none
@@ -69,7 +73,7 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    real            , intent(in) :: prss
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype) , pointer    :: cpatch
-   real                         :: norm_fac, ba, old_height
+   real                         :: norm_fac, weight
    integer                      :: ico
    !----- External functions. -------------------------------------------------------------!
    real            , external   :: compute_water_storage
@@ -91,12 +95,6 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
 
    !----- Loop over cohorts. --------------------------------------------------------------!
    do ico = 1,cpatch%ncohorts
-      
-      !----- Compute contribution to height. ----------------------------------------------!
-      ba                    = cpatch%nplant(ico) * cpatch%dbh(ico) * cpatch%dbh(ico)
-      norm_fac              = norm_fac + ba
-      csite%veg_height(ipa) = csite%veg_height(ipa) + cpatch%hite(ico) * ba
-      
       !----- Update the patch-level area indices. -----------------------------------------!
       csite%lai(ipa)  = csite%lai(ipa)  + cpatch%lai(ico)
       csite%wpa(ipa)  = csite%wpa(ipa)  + cpatch%wpa(ico)
@@ -108,28 +106,71 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
                                               ,cpatch%bleaf(ico),cpatch%pft(ico)           &
                                               ,cpatch%hite(ico),cpatch%bstorage(ico))      &
                                   * cpatch%nplant(ico)           
-  
    end do
-  
+
+   !---------------------------------------------------------------------------------------!
+   !    Compute vegetation height.  This may be done in two different ways, one is the     !
+   ! LEAF3-based method, and the default is the ED-2.1 method.                             !
+   !---------------------------------------------------------------------------------------!
+   select case (icanturb)
+   case (-1)
+      !------------------------------------------------------------------------------------!
+      !    Original LEAF-3-based scheme.                                                   !
+      !------------------------------------------------------------------------------------!
+      do ico=1,cpatch%ncohorts
+         !----- Compute average vegetation height, weighting using structural biomass. ----!
+         weight                 = cpatch%nplant(ico) * cpatch%bdead(ico)
+         norm_fac               = norm_fac + weight
+         csite%veg_height(ipa)  = csite%veg_height(ipa) + cpatch%hite(ico) * weight
+      end do
+
+      if (norm_fac > tiny(1.0)) then
+         csite%veg_height(ipa)  = max(veg_height_min,csite%veg_height(ipa) / norm_fac)
+      else
+         csite%veg_height(ipa)  = veg_height_min
+      end if
+
+      !----- Finding the patch roughness due to vegetation. -------------------------------!
+      csite%veg_rough(ipa) = max(veg_height_min,vh2vr * csite%veg_height(ipa)) * ez
+
+      !----- Updating the canopy depth.  Before we wouldn't distinguish between -----------!
+      csite%can_depth(ipa) = csite%veg_height(ipa)
+      !------------------------------------------------------------------------------------!
+
+
+
+   case default
+      !------------------------------------------------------------------------------------!
+      !      ED-2.1 method.                                                                !
+      !------------------------------------------------------------------------------------!
+      do ico=1,cpatch%ncohorts
+         !----- Compute average vegetation height, weighting using basal area. ------------!
+         weight                 = cpatch%nplant(ico) * cpatch%dbh(ico) * cpatch%dbh(ico)
+         norm_fac               = norm_fac + weight
+         csite%veg_height(ipa)  = csite%veg_height(ipa) + cpatch%hite(ico) * weight
+      end do
+
+      if (norm_fac > tiny(1.0)) then
+         csite%veg_height(ipa)  = max(veg_height_min,csite%veg_height(ipa) / norm_fac)
+      else
+         csite%veg_height(ipa)  = veg_height_min
+      end if
+
+      !----- Finding the patch roughness due to vegetation. -------------------------------!
+      csite%veg_rough(ipa) = vh2vr * csite%veg_height(ipa)
+
+      !----- Updating the canopy depth . --------------------------------------------------!
+      csite%can_depth(ipa) = max(csite%veg_height(ipa), minimum_canopy_depth)
+      !------------------------------------------------------------------------------------!
+
+   end select
+
    !----- Find the PFT-dependent size distribution of this patch. -------------------------!
    call patch_pft_size_profile(csite,ipa,ff_ndbh)
 
-  
-   !----- Update vegetation height of this patch. -----------------------------------------!
-   old_height = csite%veg_height(ipa)
 
-   if (norm_fac > tiny(1.0)) then
-      csite%veg_height(ipa) = max(veg_height_min,csite%veg_height(ipa) / norm_fac)
-   else
-      !---- In case we are dealing with an empty patch. -----------------------------------!
-      csite%veg_height(ipa) = veg_height_min
-   end if
    
-   !----- Updating the canopy depth . -----------------------------------------------------!
-   csite%can_depth(ipa) = max(csite%veg_height(ipa), minimum_canopy_depth)
    
-   !----- Finding the patch roughness due to vegetation. ----------------------------------!
-   csite%veg_rough(ipa) = 0.13 * csite%veg_height(ipa)
   
    !----- Finding the updated canopy air density. -----------------------------------------!
    csite%can_rhos(ipa) = prss                                                              &

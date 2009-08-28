@@ -6,20 +6,25 @@
 ! analysis for use with satellite and conventional data.                                   !
 !------------------------------------------------------------------------------------------!
 module mod_interp
+
+   use mod_maxdims, only : maxpdf
    implicit none
    
    !---------------------------------------------------------------------------------------!
    !    Namelist variables                                                                 !
    !---------------------------------------------------------------------------------------!
-   real         :: dtinc      ! Time step of integration of the radiation fluxes.
-   real         :: gamma0     ! Parameter gamma.
-   real         :: minweight  ! Minimum weight we will consider for the objective analysis
+   real                        :: dtinc     ! Time step of integration of the rad. fluxes.
+   real                        :: gamma0    ! The Gamma parameter.
+   real                        :: minweight ! Minimum weight we consider for obj. analysis
+   integer                     :: ndownscal ! # of precipitation downscaling realizations.
+   real   , dimension(maxpdf)  :: frac_u    ! Precipitation PDF by time of day and month.
    !---------------------------------------------------------------------------------------!
 
 
    !----- Namelist based variables. -------------------------------------------------------!
    real         :: dtinc_fday ! Time step, in fraction of a day.
    real(kind=8) :: minweight8 ! Double precision version of minweight
+   integer      :: npdf       ! Number of PDF data.
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -30,6 +35,8 @@ module mod_interp
    real   , parameter :: nlocpcpi = 1. / real(nlocpcp)
    !----- Maximum precipitation rate. -----------------------------------------------------!
    real   , parameter :: max_local_precip = 1.e-2
+   !----- Vector with local precipitation. ------------------------------------------------!
+   real   , dimension(nlocpcp) :: local_precip
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -66,6 +73,8 @@ module mod_interp
       real   , pointer, dimension(:,:) :: diy      ! Distance from point to jno
       !----- Variable for radiation interpolation. ----------------------------------------!
       real   , pointer, dimension(:)   :: zen_norm ! Normalised zenithal angle
+      !----- Variable for precipitation downscaling. --------------------------------------!
+      real   , pointer, dimension(:,:) :: frac_u   ! Month and time-of-day dependent PDF.
       !------------------------------------------------------------------------------------!
    end type interp_vars
 
@@ -92,22 +101,23 @@ module mod_interp
       type(interp_vars), intent(inout) :: interp
       !------------------------------------------------------------------------------------!
 
-      allocate(interp%deltan   (mxgauss , mygauss           ))
-      allocate(interp%kappa0   (mxgauss , mygauss           ))
-      allocate(interp%g0       (mxgauss , mygauss           ))
+      allocate(interp%deltan   (mxgauss , mygauss               ))
+      allocate(interp%kappa0   (mxgauss , mygauss               ))
+      allocate(interp%g0       (mxgauss , mygauss               ))
 
-      allocate(interp%weight   (mxlola  , mylola            ))
-      allocate(interp%rm2      (mxlola  , mylola            ))
-      allocate(interp%mask     (mxlola  , mylola            ))
+      allocate(interp%weight   (mxlola  , mylola                ))
+      allocate(interp%rm2      (mxlola  , mylola                ))
+      allocate(interp%mask     (mxlola  , mylola                ))
 
-      allocate(interp%residu   (mxlola  , mylola  , mtp     ))
+      allocate(interp%residu   (mxlola  , mylola  , mtp         ))
       
-      allocate(interp%iwe      (mxlola  , mylola            ))
-      allocate(interp%jno      (mxlola  , mylola            ))
-      allocate(interp%dix      (mxlola  , mylola            ))
-      allocate(interp%diy      (mxlola  , mylola            ))
+      allocate(interp%iwe      (mxlola  , mylola                ))
+      allocate(interp%jno      (mxlola  , mylola                ))
+      allocate(interp%dix      (mxlola  , mylola                ))
+      allocate(interp%diy      (mxlola  , mylola                ))
       
-      allocate(interp%zen_norm (                    radratio))
+      allocate(interp%zen_norm (                    radratio    ))
+      allocate(interp%frac_u   (                    radratio, 12))
 
       return
    end subroutine alloc_interp
@@ -139,6 +149,7 @@ module mod_interp
       if (associated(interp%dix     )) nullify(interp%dix     )
       if (associated(interp%diy     )) nullify(interp%diy     )
       if (associated(interp%zen_norm)) nullify(interp%zen_norm)
+      if (associated(interp%frac_u  )) nullify(interp%frac_u  )
 
       return
    end subroutine nullify_interp
@@ -168,6 +179,7 @@ module mod_interp
       if (associated(interp%mask    )) interp%mask     = .false.
       if (associated(interp%residu  )) interp%residu   = missflg_real
       if (associated(interp%zen_norm)) interp%zen_norm = missflg_real
+      if (associated(interp%frac_u  )) interp%frac_u   = missflg_real
 
       !----- The grid resolution and matching information don't change during the run. ----!
       if (fullinit) then
@@ -212,6 +224,7 @@ module mod_interp
       if (associated(interp%dix     )) deallocate(interp%dix     )
       if (associated(interp%diy     )) deallocate(interp%diy     )
       if (associated(interp%zen_norm)) deallocate(interp%zen_norm)
+      if (associated(interp%frac_u  )) deallocate(interp%frac_u  )
 
 
       return

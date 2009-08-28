@@ -64,4 +64,32 @@
                           !     and suggested number is 0.2
    NL%MINWEIGHT = 1.e-6   ! Minimum weight to be considered.
 
+!------------------------------------------------------------------------------------------!
+!     Rain downscaling parameters.  If you want the precipitation to be downscaled, set    !
+! the ndownscal to the number of realizations you want to make.  Setting it to zero will   !
+! make no downscaling.                                                                     !
+!     IMPORTANT NOTES:                                                                     !
+! 1. The downscaled "frequency" is given by radfrq.                                        !
+! 2. The data will be produced, but the header will be always written with the first real- !
+!    isation only.  In case you want to use a different one, you must change the header    !
+!    manually.                                                                             !
+! 3. FRAC_U is a vector that must have size (INPFRQ/RADFRQ)*12, and must have all the      !
+!    partial distribution function of precipitation for each INPFRQ block of day for every !
+!    month. This must be in the following order (PDF for first INPFRQ hours of January,    !
+!    then second, third, ... block of hours for January, then repeat the same thing for    !
+!    February, March, ..., December).                                                      !
+!------------------------------------------------------------------------------------------!
+   NL%NDOWNSCAL = 0
+   NL%FRAC_U    = 0.1234, 0.1384, 0.1428, 0.1248,
+                  0.1234, 0.1384, 0.1428, 0.1248,
+                  0.1234, 0.1384, 0.1428, 0.1248,
+                  0.1234, 0.1384, 0.1428, 0.1248,
+                  0.0538, 0.0541, 0.0681, 0.0692,
+                  0.0538, 0.0541, 0.0681, 0.0692,
+                  0.0538, 0.0541, 0.0681, 0.0692,
+                  0.0538, 0.0541, 0.0681, 0.0692,
+                  0.0402, 0.0403, 0.0543, 0.0637,
+                  0.0402, 0.0403, 0.0543, 0.0637,
+                  0.0402, 0.0403, 0.0543, 0.0637,
+                  0.0402, 0.0403, 0.0543, 0.0637
 / ! End of RAPP_OPTIONS namelist

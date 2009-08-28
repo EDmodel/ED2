@@ -954,7 +954,8 @@ subroutine ed_opspec_misc
                                     , iclobber                     & ! intent(in)
                                     , runtype                      & ! intent(in)
                                     , ied_init_mode                & ! intent(in)
-                                    , integration_scheme           ! ! intent(in)
+                                    , integration_scheme           & ! intent(in)
+                                    , icanturb                     ! ! intent(in)
    use soil_coms             , only : isoilflg                     & ! intent(in)
                                     , nslcon                       & ! intent(in)
                                     , isoilstateinit               & ! intent(in)
@@ -1202,6 +1203,13 @@ subroutine ed_opspec_misc
    if (ianth_disturb < 0 .or. ianth_disturb > 1) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid IANTH_DISTURB, it must be between 0 and 1. Yours is set to',ianth_disturb,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (icanturb < -1 .or. icanturb > 2) then
+      write (reason,fmt='(a,1x,i4,a)') &
+        'Invalid ICANTURB, it must be between -1 and 2. Yours is set to',icanturb,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if

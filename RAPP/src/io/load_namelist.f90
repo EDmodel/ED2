@@ -29,7 +29,10 @@ subroutine load_namelist(rapp_in)
                           , dtinc_fday           & ! intent(out)
                           , gamma0               & ! intent(out)
                           , minweight            & ! intent(out)
-                          , minweight8           ! ! intent(out)
+                          , minweight8           & ! intent(out)
+                          , ndownscal            & ! intent(out)
+                          , frac_u               & ! intent(out)
+                          , npdf                 ! ! intent(out)
    use therm_lib   , only : level                & ! intent(out)
                           , vapour_on            & ! intent(out)
                           , cloud_on             & ! intent(out)
@@ -62,10 +65,10 @@ subroutine load_namelist(rapp_in)
                       ,'load_namelist','load_namelist.f90')
    else
       read (unit=10,nml=rapp_options,iostat=ierr)
-      if (ierr /= 0) then
-        call fatal_error('Problems reading namelist '//trim(rapp_in)//'!!!'                &
-                        ,'load_namelist','load_namelist.f90')
-      end if
+      !if (ierr /= 0) then
+      !  call fatal_error('Problems reading namelist '//trim(rapp_in)//'!!!'                &
+      !                  ,'load_namelist','load_namelist.f90')
+      !end if
    end if
 
    !---------------------------------------------------------------------------------------!
@@ -92,6 +95,9 @@ subroutine load_namelist(rapp_in)
    
    gamma0       = nl%gamma0
    minweight    = nl%minweight
+   
+   ndownscal    = nl%ndownscal
+   frac_u       = nl%frac_u
 
    !---------------------------------------------------------------------------------------!
    ! 3. Converting some setting variables into lower-case, so the code is case insenstive  !
@@ -114,11 +120,12 @@ subroutine load_namelist(rapp_in)
    ! 6. Find the various ratios between time scales                                        !
    !---------------------------------------------------------------------------------------!
    dtinc_fday  = dtinc/day_sec
-   radratio    = nint(inpfrq / radfrq)
-   nsteps      = nint(inpfrq / dtinc )
-   nrads       = nint(radfrq / dtinc )
+   radratio    = nint(inpfrq / radfrq  )
+   nsteps      = nint(inpfrq / dtinc   )
+   nrads       = nint(radfrq / dtinc   )
    nstepsi     =      dtinc  / inpfrq
    nradsi      =      dtinc  / radfrq
+   npdf        = 12 * nint(day_sec / inpfrq)
 
    !---------------------------------------------------------------------------------------!
    ! 7. Making the longitude in line with the meteorological dataset range (either 0..360  !
@@ -162,7 +169,8 @@ end subroutine load_namelist
 ! won't get bored and will able to check that RAPP understood what they asked.             !
 !------------------------------------------------------------------------------------------!
 subroutine dump_namelist()
-   use mod_maxdims,  only : maxstr               ! ! intent(in)
+   use mod_maxdims,  only : maxstr               & ! intent(in)
+                          , maxpdf               ! ! intent(in)
    use mod_ioopts  , only : intype               & ! intent(in)
                           , inpath               & ! intent(in)
                           , outpref              & ! intent(in)
@@ -176,40 +184,46 @@ subroutine dump_namelist()
                           , latn                 & ! intent(in)
                           , edgeoff              ! ! intent(in)
    use mod_interp  , only : gamma0               & ! intent(in)
-                          , minweight            ! ! intent(in)
+                          , minweight            & ! intent(in)
+                          , ndownscal            & ! intent(in)
+                          , frac_u               ! ! intent(in)
    implicit none
    !----- Internal variables --------------------------------------------------------------!
    integer    :: v
    !---------------------------------------------------------------------------------------!
 
-   write (unit=*,fmt='(102a)'      ) ('-',v=1,102)
-   write (unit=*,fmt='(a)'         ) ' RAPP - Namelist information:                       '
-   write (unit=*,fmt='(102a)'      ) ('-',v=1,102)
-   write (unit=*,fmt='(a,1x,a)'    ) ' -> Intype:        ',trim(intype)
-   write (unit=*,fmt='(a,1x,a)'    ) ' -> Inpath:        ',trim(inpath)
-   write (unit=*,fmt='(a,1x,a)'    ) ' -> Outpref:       ',trim(outpref)
-   write (unit=*,fmt='(a)'         ) ' '
+   write (unit=*,fmt='(102a)'              ) ('-',v=1,102)
+   write (unit=*,fmt='(a)'                 ) ' RAPP - Namelist information:               '
+   write (unit=*,fmt='(102a)'              ) ('-',v=1,102)
+   write (unit=*,fmt='(a,1x,a)'            ) ' -> Intype:        ',trim(intype)
+   write (unit=*,fmt='(a,1x,a)'            ) ' -> Inpath:        ',trim(inpath)
+   write (unit=*,fmt='(a,1x,a)'            ) ' -> Outpref:       ',trim(outpref)
+   write (unit=*,fmt='(a)'                 ) ' '
    
-   write (unit=*,fmt='(a,1x,i5)'   ) ' -> Iyeara:        ',iyeara
-   write (unit=*,fmt='(a,1x,i5)'   ) ' -> Iyearz:        ',iyearz
-   write (unit=*,fmt='(a,1x,f10.3)') ' -> Inpfrq:        ',inpfrq
-   write (unit=*,fmt='(a,1x,f10.3)') ' -> Radfrq:        ',radfrq
-   write (unit=*,fmt='(a)'         ) ' '
+   write (unit=*,fmt='(a,1x,i5)'           ) ' -> Iyeara:        ',iyeara
+   write (unit=*,fmt='(a,1x,i5)'           ) ' -> Iyearz:        ',iyearz
+   write (unit=*,fmt='(a,1x,f10.3)'        ) ' -> Inpfrq:        ',inpfrq
+   write (unit=*,fmt='(a,1x,f10.3)'        ) ' -> Radfrq:        ',radfrq
+   write (unit=*,fmt='(a)'                 ) ' '
 
-   write (unit=*,fmt='(a,1x,f10.3)') ' -> Lonw:          ',lonw
-   write (unit=*,fmt='(a,1x,f10.3)') ' -> Lone:          ',lone
-   write (unit=*,fmt='(a,1x,f10.3)') ' -> Lats:          ',lats
-   write (unit=*,fmt='(a,1x,f10.3)') ' -> Latn:          ',latn
-   write (unit=*,fmt='(a)'         ) ' '
+   write (unit=*,fmt='(a,1x,f10.3)'        ) ' -> Lonw:          ',lonw
+   write (unit=*,fmt='(a,1x,f10.3)'        ) ' -> Lone:          ',lone
+   write (unit=*,fmt='(a,1x,f10.3)'        ) ' -> Lats:          ',lats
+   write (unit=*,fmt='(a,1x,f10.3)'        ) ' -> Latn:          ',latn
+   write (unit=*,fmt='(a)'                 ) ' '
 
-   write (unit=*,fmt='(a,1x,i5)'   ) ' -> Edgeoff:       ',edgeoff
-   write (unit=*,fmt='(a)'         ) ' '
+   write (unit=*,fmt='(a,1x,i5)'           ) ' -> Edgeoff:       ',edgeoff
+   write (unit=*,fmt='(a)'                 ) ' '
 
-   write (unit=*,fmt='(a,1x,f10.3)') ' -> Gamma0:        ',gamma0
-   write (unit=*,fmt='(a,1x,f10.3)') ' -> Minweight:     ',minweight
-   write (unit=*,fmt='(a)'         ) ' '
+   write (unit=*,fmt='(a,1x,f10.3)'        ) ' -> Gamma0:        ',gamma0
+   write (unit=*,fmt='(a,1x,es10.3)'       ) ' -> Minweight:     ',minweight
+   write (unit=*,fmt='(a)'                 ) ' '
 
-   write (unit=*,fmt='(102a)'      ) ('-',v=1,102)
+   write (unit=*,fmt='(a,1x,i5)'           ) ' -> Ndownscal:     ',ndownscal
+   write (unit=*,fmt='(a,1x,99(1x,es11.4))') ' -> Frac_u:        ',frac_u
+
+
+   write (unit=*,fmt='(102a)'       ) ('-',v=1,102)
 
    return
 end subroutine dump_namelist

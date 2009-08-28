@@ -261,7 +261,7 @@ end subroutine init_can_rad_params
 !    This subroutine will assign some canopy air related parameters.                       !
 !------------------------------------------------------------------------------------------!
 subroutine init_can_air_params()
-
+   use ed_misc_coms   , only : icanturb              ! ! intent(in)
    use canopy_air_coms, only : dry_veg_lwater        & ! intent(out) 
                              , fullveg_lwater        & ! intent(out) 
                              , rb_inter              & ! intent(out) 
@@ -294,18 +294,36 @@ subroutine init_can_air_params()
    rb_slope = 25.0
    rb_inter = 0.0 
 
-   !---------------------------------------------------------------------------------------!
-   !      This is the minimum canopy depth that is used to calculate the heat and moisture !
-   ! storage capacity in the canopy air [m].                                               !
-   !---------------------------------------------------------------------------------------!
-   minimum_canopy_depth  = 5.0
-   minimum_canopy_depth8 = dble(minimum_canopy_depth)
+   select case (icanturb)
+   case (-1)
 
-   !---------------------------------------------------------------------------------------!
-   !     This is the minimum vegetation height, used to calculate drag coefficients and    !
-   ! similar things.                                                                       !
-   !---------------------------------------------------------------------------------------!
-   veg_height_min = 1.0 ! was 0.2
+      !------------------------------------------------------------------------------------!
+      !     This is the minimum vegetation height, used to calculate drag coefficients and !
+      ! similar things.                                                                    !
+      !------------------------------------------------------------------------------------!
+      veg_height_min = 0.2
+
+      !------------------------------------------------------------------------------------!
+      !      This is the minimum canopy depth that is used to calculate the heat and       !
+      ! moisture storage capacity in the canopy air [m].                                   !
+      !------------------------------------------------------------------------------------!
+      minimum_canopy_depth  = 0.2
+      minimum_canopy_depth8 = dble(minimum_canopy_depth)
+   case default
+      !------------------------------------------------------------------------------------!
+      !      This is the minimum canopy depth that is used to calculate the heat and       !
+      ! moisture storage capacity in the canopy air [m].                                   !
+      !------------------------------------------------------------------------------------!
+      minimum_canopy_depth  = 5.0
+      minimum_canopy_depth8 = dble(minimum_canopy_depth)
+
+      !------------------------------------------------------------------------------------!
+      !     This is the minimum vegetation height, used to calculate drag coefficients and !
+      ! similar things.                                                                    !
+      !------------------------------------------------------------------------------------!
+      veg_height_min = 1.0 ! was 0.2
+   end select
+
 
    return
 end subroutine init_can_air_params

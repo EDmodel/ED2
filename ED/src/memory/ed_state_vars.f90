@@ -571,7 +571,7 @@ module ed_state_vars
      real , pointer,dimension(:) :: veg_rough
 
      ! Vegetation height (m)
-     real , pointer,dimension(:) :: veg_height 
+     real , pointer,dimension(:) :: veg_height
 
      ! Input to fast soil carbon pool [kgC/m2/day]
      real , pointer,dimension(:) :: fsc_in

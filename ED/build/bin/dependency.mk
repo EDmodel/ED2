@@ -2,9 +2,10 @@
 ed_1st.o: ed_misc_coms.mod ed_para_coms.mod ed_state_vars.mod mem_sites.mod
 ed_driver.o: consts_coms.mod ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
 ed_driver.o: grid_coms.mod soil_coms.mod
-ed_met_driver.o: canopy_radiation_coms.mod consts_coms.mod ed_max_dims.mod
-ed_met_driver.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod hdf5_utils.mod
-ed_met_driver.o: mem_sites.mod met_driver_coms.mod therm_lib.mod
+ed_met_driver.o: canopy_air_coms.mod canopy_radiation_coms.mod consts_coms.mod
+ed_met_driver.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
+ed_met_driver.o: grid_coms.mod hdf5_utils.mod mem_sites.mod met_driver_coms.mod
+ed_met_driver.o: therm_lib.mod
 ed_model.o: consts_coms.mod disturb_coms.mod disturbance_utils.mod
 ed_model.o: ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
 ed_model.o: fuse_fiss_utils.mod grid_coms.mod growth_balive.mod mem_sites.mod

@@ -77,6 +77,7 @@ module canopy_struct_dynamics
       use pft_coms       , only : crown_depth_fraction & ! intent(in)
                                 , leaf_width           ! ! intent(in)
       use canopy_air_coms, only : exar                 & ! intent(in)
+                                , vh2dh                & ! intent(in)
                                 , dz                   & ! intent(in)
                                 , Cd0                  & ! intent(in)
                                 , Pm                   & ! intent(in)
@@ -132,6 +133,9 @@ module canopy_struct_dynamics
       real           :: uh         ! Wind speed at the canopy top (z=h)         [      m/s]
       real           :: uz         ! Wind speed at some height z below h        [      m/s]
       real           :: fm         ! Stability parameter (multiplicative) using RIb
+      real           :: factv      ! Wind-dependent term for old rasveg
+      real           :: aux        ! Aux. variable
+      real           :: laicum     ! Cumulative LAI (from top to bottom.)       [    m2/m2]
       real           :: can_theta  ! Canopy air potential temperature           [        K]
       real           :: atm_theta  ! Air potential temperature                  [        K]
       real           :: rb_max     ! Maximum aerodynamic resistance.            [      s/m]
@@ -204,6 +208,105 @@ module canopy_struct_dynamics
       select case (icanturb)
 
       !------------------------------------------------------------------------------------!
+      ! LEAF-3 Case: This approach is very similar to older implementations of ED-2, and   !
+      !              it is very similar to LEAF-3, and to option 0, except that option 0   !
+      !              computes rasveg differently.                                          !
+      !------------------------------------------------------------------------------------!
+      case (-1)
+         h        = csite%veg_height(ipa) * (1. - csite%snowfac(ipa)) ! Vegetation height
+         d0       = vh2dh * h                                         ! 0-plane displacement
+         zref     = cmet%geoht
+         
+
+         !---------------------------------------------------------------------------------!
+         !      Calculate a surface roughness that is visible to the ABL.  Roughness of    !
+         ! the rough wall.                                                                 !
+         !---------------------------------------------------------------------------------!
+         csite%rough(ipa) = max(soil_rough,csite%veg_rough(ipa))                           &
+                          * (1.0 - csite%snowfac(ipa))                                     &
+                          + snow_rough * csite%snowfac(ipa)
+
+         !----- Get the appropriate characteristic wind speed. ----------------------------!
+         if (csite%can_temp(ipa) < cpoly%met(isi)%atm_tmp) then
+            cmet%vels = cmet%vels_stab
+         else
+            cmet%vels = cmet%vels_unstab
+         end if
+
+
+         !---------------------------------------------------------------------------------!
+         !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
+         ! logarithmic profile of velocity.                                                !
+         !                                                                                 !
+         ! IMPORTANT NOTE: the displacement height here (d0), is used only for scaling the !
+         !                 vortices when determining diffusivity.  The default method      !
+         !                 taken from LEAF-3, as applied here, assumes that the zero plane !
+         !                 is at the ground surface when computing the log wind profile,   !
+         !                 hence the 0.0 as the argument to ed_stars.                      !
+         !---------------------------------------------------------------------------------!
+         can_theta = cpi * cmet%exner * csite%can_temp(ipa)
+         atm_theta = cpi * cmet%exner * cmet%atm_tmp
+         call ed_stars(atm_theta,cmet%atm_shv,cmet%atm_co2,can_theta,csite%can_shv(ipa)    &
+                      ,csite%can_co2(ipa),zref,0.0,cmet%vels,csite%rough(ipa)              &
+                      ,csite%ustar(ipa),csite%tstar(ipa),csite%qstar(ipa)                  &
+                      ,csite%cstar(ipa),fm)
+
+         if (csite%snowfac(ipa) < 0.9) then
+            factv  = log(zref / csite%rough(ipa)) / (vonk * vonk * cmet%vels)
+            aux    = exp(exar * (1. - (d0 + csite%rough(ipa)) / h))
+            rasveg = factv * h / (exar * (h - d0 )) * (exp(exar) - aux)
+         else 
+            rasveg = 0.
+         end if
+
+
+         !---------------------------------------------------------------------------------!
+         !     This part of the code initializes the geometry of the canopy air space, the !
+         ! structure of the vegetation and its attenuation effects and the heat and water  !
+         ! capacities.                                                                     !
+         !---------------------------------------------------------------------------------!
+         if(get_flow_geom) then
+
+            laicum = 0.0
+            do ico=1,cpatch%ncohorts
+               if (cpatch%solvable(ico)) then
+                  ipft  = cpatch%pft(ico)
+                  hite  = cpatch%hite(ico)
+
+                  !----- Calculate the wind speed at height z. ----------------------------!
+                  uz = cmet%vels * exp ( -0.5 * laicum)
+
+                  !----- Find the aerodynamic resistance. [s/m] ---------------------------!
+                  cpatch%rb(ico) = min(rb_max                                              &
+                                      ,1.0 / ( 3.e-3 * sqrt(uz/dble(leaf_width(ipft)))     &
+                                              + 5.e-1 * 2.06e-5                            &
+                                              * (1.6e8 * abs( cpatch%veg_temp(ico)         &
+                                                            - csite%can_temp(ipa))         &
+                                                * leaf_width(ipft)**3 ) **0.25             &
+                                              / leaf_width(ipft) ) )
+                  laicum = laicum + cpatch%lai(ico)
+               else
+                  cpatch%rb(ico) = 0.0
+               end if
+            end do
+
+            !------------------------------------------------------------------------------!
+            !    Calculate the heat and mass storage capacity of the canopy and inter-     !
+            ! facial air spaces.  This is a tough call, because the reference height is    !
+            ! allowed to be abnormally low in this case, and it is possible that it is     !
+            ! even lower than the top of the canopy.  So... we will set the top of the     !
+            ! interfacial layer as the "reference elevation plus the top of the canopy".   !
+            ! An alternative could be to make a conditional like in case(1).               !
+            !------------------------------------------------------------------------------!
+            call can_whcap(csite,ipa,cmet%prss,canwcap,canccap,canhcap)
+         end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+
+      !------------------------------------------------------------------------------------!
       ! Default Case: There is no use of zero-plane displacement in calculating ustar from !
       !               log-scaling the constant shear layer.  So even if the reference      !
       !               height is inside the canopy, the mathematics will be well behaved,   !
@@ -247,7 +350,7 @@ module canopy_struct_dynamics
          can_theta = cpi * cmet%exner * csite%can_temp(ipa)
          atm_theta = cpi * cmet%exner * cmet%atm_tmp
          call ed_stars(atm_theta,cmet%atm_shv,cmet%atm_co2,can_theta,csite%can_shv(ipa)    &
-                      ,csite%can_co2(ipa),zref,d0,cmet%vels,csite%rough(ipa)               &
+                      ,csite%can_co2(ipa),zref,0.0,cmet%vels,csite%rough(ipa)              &
                       ,csite%ustar(ipa),csite%tstar(ipa),csite%qstar(ipa)                  &
                       ,csite%cstar(ipa),fm)
 
@@ -681,6 +784,9 @@ module canopy_struct_dynamics
       use pft_coms       , only : crown_depth_fraction & ! intent(in)
                                 , leaf_width           ! ! intent(in)
       use canopy_air_coms, only : exar8                & ! intent(in)
+                                , vh2dh8               & ! intent(in)
+                                , ubmin_stab8          & ! intent(in)
+                                , ubmin_unstab8        & ! intent(in)
                                 , dz8                  & ! intent(in)
                                 , Cd08                 & ! intent(in)
                                 , Pm8                  & ! intent(in)
@@ -731,6 +837,9 @@ module canopy_struct_dynamics
       real(kind=8)   :: uh         ! Wind speed at the canopy top (z=h)         [      m/s]
       real(kind=8)   :: uz         ! Wind speed at some height z below h        [      m/s]
       real(kind=8)   :: fm         ! Stability parameter (multiplicative) using RIb
+      real(kind=8)   :: factv      ! Wind-dependent term for old rasveg
+      real(kind=8)   :: aux        ! Aux. variable
+      real(kind=8)   :: laicum     ! Cumulative LAI (from top to bottom)        [    m2/m2]
       real(kind=8)   :: can_theta  ! Canopy air potential temperature           [        K]
       real(kind=8)   :: rb_max     ! Maximum aerodynamic resistance.            [      s/m]
       real(kind=8)   :: hite8      ! Double precision version of height.        [        m]
@@ -794,6 +903,102 @@ module canopy_struct_dynamics
       ! resistance.                                                                        !
       !------------------------------------------------------------------------------------!
       select case (icanturb)
+
+
+      !------------------------------------------------------------------------------------!
+      ! LEAF-3 Case: This approach is very similar to older implementations of ED-2, and   !
+      !              it is very similar to LEAF-3.                                         !
+      !------------------------------------------------------------------------------------!
+      case (-1) 
+         !----- Vegetation height. --------------------------------------------------------!
+         h        = dble(csite%veg_height(ipa)) * (1.d0 - dble(csite%snowfac(ipa)))
+         !----- 0-plane displacement height. ----------------------------------------------!
+         d0       = vh2dh8 * h     
+         zref     = rk4met%geoht
+         
+
+         !---------------------------------------------------------------------------------!
+         !      Calculate a surface roughness that is visible to the ABL.  Roughness of    !
+         ! the rough wall.                                                                 !
+         !---------------------------------------------------------------------------------!
+         initp%rough = max(dble(soil_rough),dble(csite%veg_rough(ipa)))                    &
+                     * (1.d0 - dble(csite%snowfac(ipa)))                                   &
+                       + dble(snow_rough) * dble(csite%snowfac(ipa))
+
+         !----- Get the appropriate characteristic wind speed. ----------------------------!
+         if (initp%can_temp < rk4met%atm_tmp) then
+            vels_ref = max(ubmin_stab8,rk4met%vels)
+         else
+            vels_ref = max(ubmin_unstab8,rk4met%vels)
+         end if
+
+
+         !---------------------------------------------------------------------------------!
+         !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
+         ! logarithmic profile of velocity.                                                !
+         !                                                                                 !
+         ! IMPORTANT NOTE: the displacement height here (d0), is used only for scaling the !
+         !                 vortices when determining diffusivity.  The default method      !
+         !                 taken from LEAF-3, as applied here, assumes that the zero plane !
+         !                 is at the ground surface when computing the log wind profile,   !
+         !                 hence the 0.0 as the argument to ed_stars.                      !
+         !---------------------------------------------------------------------------------!
+         can_theta = cpi8 * rk4met%exner * initp%can_temp
+         call ed_stars8(rk4met%atm_theta,rk4met%atm_shv,rk4met%atm_co2, can_theta          &
+                       ,initp%can_shv,initp%can_co2,zref,0.d0,vels_ref,initp%rough         &
+                       ,initp%ustar,initp%tstar,initp%qstar,initp%cstar,fm)
+
+         if (csite%snowfac(ipa) < 0.9) then
+            factv        = log(zref / initp%rough) / (vonk8 * vonk8 * vels_ref)
+            aux          = exp(exar8 * (1.d0 - (d0 + initp%rough) / h))
+            initp%rasveg = factv * h / (exar8 * (h - d0)) * (exp(exar8) - aux)
+         else 
+            initp%rasveg = 0.d0
+         end if
+
+
+         !---------------------------------------------------------------------------------!
+         !     This part of the code initializes the geometry of the canopy air space, the !
+         ! structure of the vegetation and its attenuation effects and the heat and water  !
+         ! capacities.                                                                     !
+         !---------------------------------------------------------------------------------!
+         if(get_flow_geom) then
+
+            laicum = 0.d0
+            do ico=1,cpatch%ncohorts
+               if (initp%solvable(ico)) then
+                  ipft  = cpatch%pft(ico)
+
+                  !----- Calculate the wind speed at height z. ----------------------------!
+                  uz = vels_ref * exp ( - 5.d-1 * laicum)
+                  !----- Find the aerodynamic resistance. [s/m] ------------------------------!
+                  initp%rb(ico) = min(rb_max                                               &
+                                     ,1.d0 / ( 3.d-3 * sqrt(uz/dble(leaf_width(ipft)))     &
+                                             + 5.d-1 * 2.06d-5                             &
+                                             * (1.6d8 * abs( initp%veg_temp(ico)           &
+                                                           - initp%can_temp)               &
+                                               * dble(leaf_width(ipft))**3 ) ** 2.5d-1     &
+                                             / dble(leaf_width(ipft)) ) )
+                  cpatch%rb(ico) = sngloff(initp%rb(ico),tiny_offset)
+
+                  laicum = laicum + initp%lai(ico)
+               else
+                  initp%rb(ico)  = 0.d0
+                  cpatch%rb(ico) = 0.d0
+               end if
+            end do
+
+            !------------------------------------------------------------------------------!
+            !    Calculate the heat and mass storage capacity of the canopy and inter-     !
+            ! facial air spaces.  This is a tough call, because the reference height is    !
+            ! allowed to be abnormally low in this case, and it is possible that it is     !
+            ! even lower than the top of the canopy.  So... we will set the top of the     !
+            ! interfacial layer as the "reference elevation plus the top of the canopy".   !
+            ! An alternative could be to make a conditional like in case(1).               !
+            !------------------------------------------------------------------------------!
+            call can_whcap8(csite,ipa,initp%can_rhos,initp%can_depth)
+         end if
+      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       ! Default Case: There is no use of zero-plane displacement in calculating ustar from !
@@ -1197,10 +1402,11 @@ module canopy_struct_dynamics
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars(theta_atm,shv_atm,co2_atm,theta_can,shv_can,co2_can,zref,d0,uref    &
                       ,rough,ustar,tstar,qstar,cstar,fm)
-      use consts_coms     , only : grav   & ! intent(in)
-                                 , vonk   ! ! intent(in)
-      use canopy_air_coms , only : ustmin & ! intent(in)
-                                 , ubmin  ! ! intent(in)
+      use consts_coms     , only : grav         & ! intent(in)
+                                 , vonk         ! ! intent(in)
+      use canopy_air_coms , only : ustmin       & ! intent(in)
+                                 , ubmin_stab   & ! intent(in)
+                                 , ubmin_unstab ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)  :: theta_atm ! Above canopy air pot. temperature        [        K]
@@ -1236,21 +1442,30 @@ module canopy_struct_dynamics
       real, parameter   :: d   = 5.0 !
       !------------------------------------------------------------------------------------!
 
-      vels_pat = max(uref,ubmin)
-
-      !----- Make the log profile (constant shear assumption). ----------------------------!
-      a2 = (vonk / log((zref-d0)/rough)) ** 2.
-      c1 = a2 * vels_pat
-
-      ri = grav * (zref-d0) * (theta_atm - theta_can)                                      &
-         / (0.5 * (theta_atm + theta_can) * vels_pat * vels_pat )
-     
       if (theta_atm - theta_can > 0.0) then
          !----- Stable case ---------------------------------------------------------------!
+         vels_pat = max(uref,ubmin_stab)
+
+         !----- Make the log profile (constant shear assumption). -------------------------!
+         a2 = (vonk / log((zref-d0)/rough)) ** 2.
+         c1 = a2 * vels_pat
+
+         ri = grav * (zref-d0) * (theta_atm - theta_can)                                   &
+            / (0.5 * (theta_atm + theta_can) * vels_pat * vels_pat )
+     
          fm = 1.0 / (1.0 + (2.0 * b * ri / sqrt(1.0 + d * ri)))
          fh = 1.0 / (1.0 + (3.0 * b * ri * sqrt(1.0 + d * ri)))
       else
          !----- Unstable case -------------------------------------------------------------!
+         vels_pat = max(uref,ubmin_unstab)
+
+         !----- Make the log profile (constant shear assumption). -------------------------!
+         a2 = (vonk / log((zref-d0)/rough)) ** 2.
+         c1 = a2 * vels_pat
+
+         ri = grav * (zref-d0) * (theta_atm - theta_can)                                   &
+            / (0.5 * (theta_atm + theta_can) * vels_pat * vels_pat )
+
          c2 = b * a2 * sqrt( (zref-d0)/rough * (abs(ri)))
          cm = csm * c2
          ch = csh * c2
@@ -1289,10 +1504,11 @@ module canopy_struct_dynamics
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars8(theta_atm,shv_atm,co2_atm,theta_can,shv_can,co2_can,zref,d0,uref   &
                        ,rough,ustar,tstar,qstar,cstar,fm)
-      use consts_coms     , only : grav8   & ! intent(in)
-                                 , vonk8   ! ! intent(in)
-      use canopy_air_coms , only : ustmin8 & ! intent(in)
-                                 , ubmin8  ! ! intent(in)
+      use consts_coms     , only : grav8         & ! intent(in)
+                                 , vonk8         ! ! intent(in)
+      use canopy_air_coms , only : ustmin8       & ! intent(in)
+                                 , ubmin_stab8   & ! intent(in)
+                                 , ubmin_unstab8 ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real(kind=8), intent(in)  :: theta_atm ! Above canopy air pot. temperature [        K]
@@ -1328,21 +1544,31 @@ module canopy_struct_dynamics
       real(kind=8), parameter   :: d   = 5.0d0 !
       !------------------------------------------------------------------------------------!
 
-      vels_pat = max(uref,ubmin8)
-
-      !----- Make the log profile (constant shear assumption). ----------------------------!
-      a2 = (vonk8 / log((zref-d0)/rough)) ** 2.
-      c1 = a2 * vels_pat
-
-      ri = grav8 * (zref-d0) * (theta_atm - theta_can)                                     &
-         / (5.d-1 * (theta_atm + theta_can) * vels_pat * vels_pat )
      
       if (theta_atm - theta_can > 0.d0) then
          !----- Stable case ---------------------------------------------------------------!
+         vels_pat = max(uref,ubmin_stab8)
+
+         !----- Make the log profile (constant shear assumption). -------------------------!
+         a2 = (vonk8 / log((zref-d0)/rough)) ** 2.
+         c1 = a2 * vels_pat
+
+         ri = grav8 * (zref-d0) * (theta_atm - theta_can)                                  &
+            / (5.d-1 * (theta_atm + theta_can) * vels_pat * vels_pat )
+
          fm = 1.d0 / (1.d0 + (2.d0 * b * ri / sqrt(1.d0 + d * ri)))
          fh = 1.d0 / (1.d0 + (3.d0 * b * ri * sqrt(1.d0 + d * ri)))
       else
          !----- Unstable case -------------------------------------------------------------!
+         vels_pat = max(uref,ubmin_unstab8)
+
+         !----- Make the log profile (constant shear assumption). -------------------------!
+         a2 = (vonk8 / log((zref-d0)/rough)) ** 2.
+         c1 = a2 * vels_pat
+
+         ri = grav8 * (zref-d0) * (theta_atm - theta_can)                                  &
+            / (5.d-1 * (theta_atm + theta_can) * vels_pat * vels_pat )
+
          c2 = b * a2 * sqrt( (zref-d0)/rough * (abs(ri)))
          cm = csm * c2
          ch = csh * c2

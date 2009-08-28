@@ -1862,6 +1862,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !    Now we update some variables that depend on cohort statistics, namely:          !
       ! + csite%veg_height(recp)                                                           !
+      ! + csite%disp_height(recp)                                                          !
       ! + csite%can_rhos(recp)                                                             !
       ! + csite%can_depth(recp)                                                            !
       ! + csite%lai(recp)                                                                  !
