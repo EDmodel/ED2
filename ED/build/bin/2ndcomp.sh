@@ -90,6 +90,7 @@ rm -fv rsys.o                     rsys.mod
 rm -fv soil_coms.o                soil_coms.mod 
 rm -fv structural_growth.o        structural_growth.mod 
 rm -fv therm_lib.o                therm_lib.mod 
+rm -fv therm_lib8.o               therm_lib8.mod 
 rm -fv twostream_rad.o            twostream_rad.mod 
 rm -fv update_derived_props.o     update_derived_props.mod
 rm -fv utils_c.o                  utils_c.mod 

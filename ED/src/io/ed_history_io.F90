@@ -1364,6 +1364,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
      call hdf_getslab_r(cgrid%dmean_fsn            (ipy:ipy) ,'DMEAN_FSN             '     &
                        ,dsetrank,iparallel,.false.)
 
+  if (associated(cgrid%dmean_can_enthalpy   ))                                             &
+     call hdf_getslab_r(cgrid%dmean_can_enthalpy   (ipy:ipy) ,'DMEAN_CAN_ENTHALPY    '     &
+                       ,dsetrank,iparallel,.false.)
+
   if (associated(cgrid%dmean_can_temp       ))                                             &
      call hdf_getslab_r(cgrid%dmean_can_temp       (ipy:ipy) ,'DMEAN_CAN_TEMP        '     &
                        ,dsetrank,iparallel,.false.)
@@ -1495,6 +1499,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
  
   if (associated(cgrid%mmean_can_temp       ))                                             &
      call hdf_getslab_r(cgrid%mmean_can_temp       (ipy:ipy) ,'MMEAN_CAN_TEMP        '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_can_enthalpy   ))                                             &
+     call hdf_getslab_r(cgrid%mmean_can_enthalpy   (ipy:ipy) ,'MMEAN_CAN_ENTHALPY    '     &
                        ,dsetrank,iparallel,.false.)
  
   if (associated(cgrid%mmean_can_shv        ))                                             &
@@ -2062,6 +2070,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%sum_chd,'SUM_CHD ',dsetrank,iparallel,.true.)
    call hdf_getslab_i(csite%plantation,'PLANTATION ',dsetrank,iparallel,.true.)
    !  call hdf_getslab_i(csite%cohort_count,'COHORT_COUNT ',dsetrank,iparallel)
+   call hdf_getslab_r(csite%can_enthalpy,'CAN_ENTHALPY ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%can_temp,'CAN_TEMP ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%can_shv,'CAN_SHV ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%can_co2,'CAN_CO2 ',dsetrank,iparallel,.true.)
@@ -2082,7 +2091,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%wbudget_precipgain,'WBUDGET_PRECIPGAIN ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%wbudget_loss2runoff,'WBUDGET_LOSS2RUNOFF ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%wbudget_initialstorage,'WBUDGET_INITIALSTORAGE ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(csite%ebudget_latent,'EBUDGET_LATENT ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_loss2atm,'EBUDGET_LOSS2ATM ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_loss2runoff,'EBUDGET_LOSS2RUNOFF ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_netrad,'EBUDGET_NETRAD ',dsetrank,iparallel,.true.)

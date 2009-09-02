@@ -198,6 +198,9 @@ subroutine apply_forestry(cpoly, isi, year)
           ' ---> Making new patch (harvesting), with area=',csite%area(newp)               &
               ,' for dist_type=',2
       call norm_harv_patch(csite,newp)
+      
+      !----- Update temperature and density. ----------------------------------------------!
+      call update_patch_thermo_props(csite,cpoly%met(isi)%prss,newp,newp)
 
       !----- Plant the patch if it is a plantation. ---------------------------------------!
       if (cpoly%plantation(isi) == 1 .and. year > plantation_year) then
@@ -613,7 +616,7 @@ subroutine norm_harv_patch(csite,newp)
    csite%fast_soil_N(newp)                 = csite%fast_soil_N(newp)         * area_fac
    csite%sum_dgd(newp)                     = csite%sum_dgd(newp)             * area_fac
    csite%sum_chd(newp)                     = csite%sum_chd(newp)             * area_fac
-   csite%can_temp(newp)                    = csite%can_temp(newp)            * area_fac
+   csite%can_enthalpy(newp)                = csite%can_enthalpy(newp)        * area_fac
    csite%can_co2(newp)                     = csite%can_co2(newp)             * area_fac
    csite%can_shv(newp)                     = csite%can_shv(newp)             * area_fac
    csite%can_depth(newp)                   = csite%can_depth(newp)           * area_fac

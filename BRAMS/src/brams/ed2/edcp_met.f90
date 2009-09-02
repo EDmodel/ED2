@@ -34,7 +34,6 @@ subroutine copy_atm2lsm(ifm,init)
                                    , cp           & ! intent(in)
                                    , p00          & ! intent(in)
                                    , rocp         & ! intent(in)
-                                   , rgas         & ! intent(in)
                                    , cliq         & ! intent(in)
                                    , alli         & ! intent(in)
                                    , cice         & ! intent(in)
@@ -858,7 +857,7 @@ subroutine transfer_ed2leaf(ifm,timel)
                             , edtime2     ! ! intent(in)
    use mem_turb      , only : turb_g      ! ! structure
    use rconstants    , only : stefan      & ! intent(in)
-                            , g           ! ! intent(in)
+                            , grav        ! ! intent(in)
    use mem_leaf      , only : leaf_g      & ! structure
                             , zrough      ! ! intent(in)
    use mem_radiate   , only : radiate_g   ! ! structure
@@ -896,7 +895,7 @@ subroutine transfer_ed2leaf(ifm,timel)
    integer                      :: ipy, isi
    real                         :: site_area_i, polygon_area_i
    !----- Local constants -----------------------------------------------------------------!
-   real             , parameter :: z0fac_water  = 0.016/g
+   real             , parameter :: z0fac_water  = 0.016/grav
    real             , parameter :: snowrough    = 0.001
    real             , parameter :: z0_min_water = 0.0001
    !---------------------------------------------------------------------------------------!
@@ -1277,6 +1276,7 @@ subroutine calc_met_lapse(cgrid,ipy)
    use ed_state_vars         , only : edtype      & ! structure
                                     , polygontype ! ! structure
    use canopy_radiation_coms , only : rlong_min   ! ! intent(in)
+   use rconstants            , only : toodry      ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
@@ -1325,6 +1325,8 @@ subroutine calc_met_lapse(cgrid,ipy)
          if ( cpoly%met(isi)%rlong < rlong_min) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             write(unit=*,fmt='(a)')           '+ RLONG is too low!!!'
+            write(unit=*,fmt='(a,1x,es12.5)') '+ Longitude       : ',cgrid%lon(ipy)
+            write(unit=*,fmt='(a,1x,es12.5)') '+ Latitude        : ',cgrid%lat(ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%rlong
             write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%rlong
             write(unit=*,fmt='(a,1x,es12.5)') '+ Minimum OK value: ',rlong_min
@@ -1334,15 +1336,19 @@ subroutine calc_met_lapse(cgrid,ipy)
          elseif ( cpoly%met(isi)%atm_tmp < 150.0) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             write(unit=*,fmt='(a)')           '+ ATM_TMP is too low!!!'
+            write(unit=*,fmt='(a,1x,es12.5)') '+ Longitude       : ',cgrid%lon(ipy)
+            write(unit=*,fmt='(a,1x,es12.5)') '+ Latitude        : ',cgrid%lat(ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%atm_tmp
             write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_tmp
             write(unit=*,fmt='(a,1x,es12.5)') '+ Minimum OK value: ',150.0
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             call fatal_error('Problems with ATM_TMP','calc_met_lapse'                      &
                             ,'edcp_met.f90')
-         else if ( cpoly%met(isi)%atm_shv < 1.e-5) then
+         else if ( cpoly%met(isi)%atm_shv < toodry) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             write(unit=*,fmt='(a)')           '+ ATM_SHV is too low!!!'
+            write(unit=*,fmt='(a,1x,es12.5)') '+ Longitude       : ',cgrid%lon(ipy)
+            write(unit=*,fmt='(a,1x,es12.5)') '+ Latitude        : ',cgrid%lat(ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%atm_shv
             write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_shv
             write(unit=*,fmt='(a,1x,es12.5)') '+ Minimum OK value: ',1.e-5
@@ -1352,6 +1358,8 @@ subroutine calc_met_lapse(cgrid,ipy)
          elseif ( cpoly%met(isi)%rlong > 600.0) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             write(unit=*,fmt='(a)')           '+ RLONG is too high!!!'
+            write(unit=*,fmt='(a,1x,es12.5)') '+ Longitude       : ',cgrid%lon(ipy)
+            write(unit=*,fmt='(a,1x,es12.5)') '+ Latitude        : ',cgrid%lat(ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%rlong
             write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%rlong
             write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value: ',600.0
@@ -1361,15 +1369,19 @@ subroutine calc_met_lapse(cgrid,ipy)
          elseif ( cpoly%met(isi)%atm_tmp > 317.0) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             write(unit=*,fmt='(a)')           '+ ATM_TMP is too high!!!'
+            write(unit=*,fmt='(a,1x,es12.5)') '+ Longitude       : ',cgrid%lon(ipy)
+            write(unit=*,fmt='(a,1x,es12.5)') '+ Latitude        : ',cgrid%lat(ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%atm_tmp
             write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_tmp
             write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value: ',317.0
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             call fatal_error('Problems with ATM_TMP','calc_met_lapse'                      &
                             ,'edcp_met.f90')
-         elseif ( cpoly%met(isi)%atm_shv > 30.0e-3) then
+         elseif ( cpoly%met(isi)%atm_shv > 3.0e-2) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             write(unit=*,fmt='(a)')           '+ ATM_SHV is too high!!!'
+            write(unit=*,fmt='(a,1x,es12.5)') '+ Longitude       : ',cgrid%lon(ipy)
+            write(unit=*,fmt='(a,1x,es12.5)') '+ Latitude        : ',cgrid%lat(ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%atm_shv
             write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_shv
             write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value: ',30.0e-3
@@ -1380,6 +1392,8 @@ subroutine calc_met_lapse(cgrid,ipy)
                 + cpoly%met(isi)%par_diffuse + cpoly%met(isi)%nir_diffuse > 1320.0 ) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             write(unit=*,fmt='(a)')           '+ SOLAR RADIATION is non-sense !!!'
+            write(unit=*,fmt='(a,1x,es12.5)') '+ Longitude       : ',cgrid%lon(ipy)
+            write(unit=*,fmt='(a,1x,es12.5)') '+ Latitude        : ',cgrid%lat(ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ PAR_BEAM        : ',cpoly%met(isi)%par_beam
             write(unit=*,fmt='(a,1x,es12.5)') '+ PAR_DIFFUSE     : '                       &
                                               , cpoly%met(isi)%par_diffuse

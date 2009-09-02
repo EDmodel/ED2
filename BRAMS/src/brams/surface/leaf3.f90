@@ -197,7 +197,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
 
          prss     = pis ** cpor * p00
          vels     = sqrt(ups ** 2 + vps ** 2)
-         gzotheta = g * zts / ths
+         gzotheta = grav * zts / ths
 
          !----- Update water internal energy from time-dependent SST. ---------------------!
          leaf%soil_energy(mzg,i,j,1) =  cliq * (leaf%seatp(i,j)                            &
@@ -1058,7 +1058,7 @@ subroutine canopy(mzg,mzs,ksn,nveg  &
    !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
          if (slpotv > swp) swp = slpotv
       enddo
-      swp = swp * g * wdns
+      swp = swp * grav * wdns
 
    ! Begin canopy time-split iterations
 
@@ -1194,7 +1194,7 @@ subroutine stars(ustar,tstar,rstar,cstar,ths,rvs,rco2s,thetacan,can_rvap,can_co2
 !kml drydep
 
    !CATT
-   use rconstants, only: g
+   use rconstants, only: grav
    use catt_start, only: CATT
 
    implicit none
@@ -1229,7 +1229,7 @@ subroutine stars(ustar,tstar,rstar,cstar,ths,rvs,rco2s,thetacan,can_rvap,can_co2
 
    a2 = (vonk / log(zts / patch_rough)) ** 2
    c1 = a2 * vels_pat
-   ri = g * zts * (ths - thetacan)  &
+   ri = grav * zts * (ths - thetacan)  &
       / (.5 * (ths + thetacan) * vels_pat * vels_pat)
 
    if (ths - thetacan > 0.) then   ! STABLE CASE
@@ -1427,7 +1427,7 @@ subroutine grndvap(soil_energy,soil_water,soil_text,sfcw_energy_int  &
      ground_rsat = rslif(prsg,tempkk)
 
      slpotvn = slpots(nsoil) * (slmsts(nsoil) / soil_water) ** slbs(nsoil)
-     alpha = exp(gorm * slpotvn / tempkk)
+     alpha = exp(gorh2o * slpotvn / tempkk)
      beta = .25 * (1. - cos (min(1.,soil_water / sfldcap(nsoil)) * pi1)) ** 2
      ground_rvap = ground_rsat * alpha * beta + (1. - beta) * can_rvap
 

@@ -284,9 +284,9 @@ subroutine varf_adap(n1,n2,n3,varu,varv,varp,vart,varr,varc,topta)
             vctr27(k) = virtt(vctr13(k),vctr14(k))
          end do
 
-         vctr28(n1)= varp(n1,i,j) + g * (ztn(n1,ngrid) - vctr10(n1)) / vctr27(n1)
+         vctr28(n1)= varp(n1,i,j) + grav * (ztn(n1,ngrid) - vctr10(n1)) / vctr27(n1)
          do k = n1-1,1,-1
-            vctr28(k) = vctr28(k+1) + g * (ztn(k+1,ngrid)-ztn(k,ngrid))                    &
+            vctr28(k) = vctr28(k+1) + grav * (ztn(k+1,ngrid)-ztn(k,ngrid))                 &
                                     / ((vctr27(k)+vctr27(k+1))*.5)
          end do
          
@@ -417,18 +417,18 @@ subroutine varref(n1,n2,n3,thp,pc,pi0,th0,rtp,co2p,dn0,dn0u,dn0v,uc,vc,topt,topu
    co201dn(1,ngrid) = co201dn(1,ngrid)
 
    !----- Hydrostatic adjustment for pressure. --------------------------------------------!
-   pi01dn(1,ngrid) = pc(1,iref,jref) + g * (vctr2(1) - zt(1))                              &
+   pi01dn(1,ngrid) = pc(1,iref,jref) + grav * (vctr2(1) - zt(1))                           &
                                      / (.5 * ( th01dn(1,ngrid)                             &
                                              + virtt(thp(1,iref,jref),rtp(1,iref,jref)) ))
    do k = 2,nzp
      pi01dn(k,ngrid) = pi01dn(k-1,ngrid)                                                   &
-                     - g / (dzm(k-1) * .5 * (th01dn(k,ngrid) + th01dn(k-1,ngrid)))
+                     - grav / (dzm(k-1) * .5 * (th01dn(k,ngrid) + th01dn(k-1,ngrid)))
    end do
 
    !----- Finding the density. ------------------------------------------------------------!
    do k = 1,nzp
      vctr4(k)        = (pi01dn(k,ngrid) / cp) ** cpor * p00
-     dn01dn(k,ngrid) = cp * vctr4(k) / (rgas * th01dn(k,ngrid) * pi01dn(k,ngrid))
+     dn01dn(k,ngrid) = cp * vctr4(k) / (rdry * th01dn(k,ngrid) * pi01dn(k,ngrid))
    end do
 
    !------ Compute 3-D reference state from 1-D reference state. --------------------------!

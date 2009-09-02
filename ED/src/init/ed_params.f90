@@ -275,7 +275,7 @@ subroutine init_can_air_params()
    ! flushed to zero.  This value is in kg/[m2 plant], so it will be always scaled by      !
    ! (LAI+WAI).                                                                            !
    !---------------------------------------------------------------------------------------!
-   dry_veg_lwater = 5.e-3
+   dry_veg_lwater = 5.e-4
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -1378,6 +1378,7 @@ subroutine init_rk4_params()
                                    , hmin                  & ! intent(out)
                                    , print_diags           & ! intent(out)
                                    , checkbudget           & ! intent(out)
+                                   , const_depth           & ! intent(out)
                                    , debug                 & ! intent(out)
                                    , toocold               & ! intent(out)
                                    , toohot                & ! intent(out)
@@ -1428,11 +1429,17 @@ subroutine init_rk4_params()
    rk4epsi     = 1.d0/rk4eps  ! The inverse of desired accuracy.
    hmin        = 1.d-7        ! The minimum step size.
    print_diags = .false.      ! Flag to print the diagnostic check.
-   checkbudget = .false.      ! Flag to check CO2, water, and energy budgets every time
+   checkbudget = .true.      ! Flag to check CO2, water, and energy budgets every time
                               !     step and stop the run in case any of these budgets 
                               !     doesn't close.
    !---------------------------------------------------------------------------------------!
 
+   !---------------------------------------------------------------------------------------!
+   !     This flag determines whether density or canopy air space density is assumed       !
+   ! constant during the RK4 integration.  The value assumed constant is updated only once !
+   ! right before the integration.                                                         !
+   !---------------------------------------------------------------------------------------!
+   const_depth = .false.
 
 
    !---------------------------------------------------------------------------------------!

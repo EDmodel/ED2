@@ -251,7 +251,7 @@ subroutine get_stcum(mgmzp,n1,dn0,stcum1d,se,se_cup,sc_up,sc_dn,xmb,edt, &
      jmin,kdet,k22,kbcon,ktop,kstabi,kstabm,z_cup,                  &
      cd,entr,cdd,entrd,zu,zd                                       )
 
-  use rconstants, only: g
+  use rconstants, only: grav
 
   implicit none
 
@@ -271,7 +271,7 @@ subroutine get_stcum(mgmzp,n1,dn0,stcum1d,se,se_cup,sc_up,sc_dn,xmb,edt, &
 
      dz =   z_cup(k+1) - z_cup(k)
 
-     dp      = g*dn0(k)*dz  
+     dp      = grav*dn0(k)*dz  
      entup   = 0.
      detup   = 0.
      entdoj  = 0.
@@ -308,13 +308,13 @@ subroutine get_stcum(mgmzp,n1,dn0,stcum1d,se,se_cup,sc_up,sc_dn,xmb,edt, &
                   - entupk*se_cup(k22)  	       &
                   - entdoj*se_cup(jmin) 	       &
                   + detupk* sc_up(ktop) 	       &
-                  )*g/dp
+                  )*grav/dp
 
   end do
   !
   !tendency due cumulus transport (at bottom, k = 1)
   dz        =       z_cup(2)-z_cup(1)
-  dp =   g*dn0(1)*dz ! ja' esta' na grade do rams
+  dp =   grav*dn0(1)*dz ! ja' esta' na grade do rams
 
   detdo1    = edt*zd(2)*cdd(1)*dz
   detdo2    = edt*zd(1)
@@ -327,7 +327,7 @@ subroutine get_stcum(mgmzp,n1,dn0,stcum1d,se,se_cup,sc_up,sc_dn,xmb,edt, &
                + detdo2*    sc_dn(1)		 &
                + subin *    se_cup(2)		 &
                - entdo *    se(1)		 &
-               )*g/dp
+               )*grav/dp
 
   return
 end subroutine get_stcum
@@ -437,7 +437,7 @@ subroutine get_stcum_detrain(mgmzp,n1,dn0,stcum1d,sc_up_c,sc_dn_c,  &
      	  		     kstabi,kstabm,z_cup,cd,entr,cdd, &
      	  		     entrd,zu,zd)
 
-  use rconstants, only: g  			
+  use rconstants, only: grav
 
   implicit none
 
@@ -453,7 +453,7 @@ subroutine get_stcum_detrain(mgmzp,n1,dn0,stcum1d,sc_up_c,sc_dn_c,  &
 
   do k=kbcon+1,ktop
      dz =   z_cup(k+1) - z_cup(k)
-     dp =   g*dn0(k)*dz  
+     dp =   grav*dn0(k)*dz  
      detup  = 0.
      if(k.lt.ktop)  detup  = cd(k+1) *dz*zu(k)
      detupk = 0.
@@ -463,7 +463,7 @@ subroutine get_stcum_detrain(mgmzp,n1,dn0,stcum1d,sc_up_c,sc_dn_c,  &
                   xmb*( 				   & !         `a contribuicao da fase 
                   + detup*( sc_up_c(k+1)+ sc_up_c(k) )*.5  & !  	gasosa.
                   + detupk* sc_up_c(ktop)		   & ! stcum1d final = fase gasosa +
-                  )*g/dp				     !  	       fase liquida
+                  )*grav/dp				     !  	       fase liquida
 
   end do
 end subroutine get_stcum_detrain

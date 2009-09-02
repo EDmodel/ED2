@@ -5,12 +5,13 @@ subroutine ed_init_coup_atm
   use ed_misc_coms,  only: ied_init_mode,runtype
   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype,edgrid_g
   use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr,dslz
-  use rconstants,    only: tsupercool, cliqvlme, cicevlme, t3ple
+  use rconstants,    only: tsupercool, cliqvlme, cicevlme, t3ple, cp, alvl
   use grid_coms,      only: nzs, nzg, ngrids
   use fuse_fiss_utils, only: fuse_patches,fuse_cohorts,terminate_cohorts,split_cohorts
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
   use pft_coms,only : sla
   use ed_therm_lib,only : calc_hcapveg,ed_grndvap
+  use therm_lib, only : tq2enthalpy, idealdenssh
 
   implicit none
 
@@ -59,9 +60,12 @@ subroutine ed_init_coup_atm
               
               cpatch => csite%patch(ipa)
 
-              csite%can_temp(ipa) =   cpoly%met(isi)%atm_tmp
-              csite%can_shv(ipa)  =   cpoly%met(isi)%atm_shv
-              csite%can_co2(ipa)  =   cpoly%met(isi)%atm_co2
+              csite%can_temp(ipa)     = cpoly%met(isi)%atm_tmp
+              csite%can_shv(ipa)      = cpoly%met(isi)%atm_shv
+              csite%can_co2(ipa)      = cpoly%met(isi)%atm_co2
+              csite%can_enthalpy(ipa) = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa))
+              csite%can_rhos(ipa)     = idealdenssh(cpoly%met(isi)%prss                    &
+                                                   ,csite%can_temp(ipa),csite%can_shv(ipa))
 
               ! Initialize stars
               csite%tstar(ipa)  = 0.
@@ -323,8 +327,8 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
    use grid_coms    , only : nzg          & ! intent(in)
                            , nzs          ! ! intent(in)
    use ed_therm_lib , only : ed_grndvap   ! ! subroutine
-   use therm_lib    , only : qwtk8        & ! subroutine
-                           , qwtk         ! ! subroutine
+   use therm_lib8   , only : qwtk8        ! ! subroutine
+   use therm_lib    , only : qwtk         ! ! subroutine
    use rconstants   , only : wdns         & ! intent(in)
                            , tsupercool   & ! intent(in)
                            , cicevlme     & ! intent(in)

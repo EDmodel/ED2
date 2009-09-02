@@ -12,7 +12,7 @@ ed_model.o: fuse_fiss_utils.mod grid_coms.mod growth_balive.mod mem_sites.mod
 ed_model.o: rk4_coms.mod rk4_driver.mod
 canopy_struct_dynamics.o: allometry.mod canopy_air_coms.mod consts_coms.mod
 canopy_struct_dynamics.o: ed_misc_coms.mod ed_state_vars.mod met_driver_coms.mod
-canopy_struct_dynamics.o: pft_coms.mod rk4_coms.mod soil_coms.mod
+canopy_struct_dynamics.o: pft_coms.mod rk4_coms.mod soil_coms.mod therm_lib.mod
 canopy_update_euler.o: canopy_radiation_coms.mod consts_coms.mod ed_max_dims.mod
 canopy_update_euler.o: ed_state_vars.mod grid_coms.mod therm_lib.mod
 decomposition.o: decomp_coms.mod ed_state_vars.mod grid_coms.mod pft_coms.mod
@@ -58,7 +58,7 @@ reproduction.o: phenology_coms.mod
 rk4_derivs.o: allometry.mod canopy_struct_dynamics.mod consts_coms.mod
 rk4_derivs.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 rk4_derivs.o: ed_therm_lib.mod grid_coms.mod pft_coms.mod rk4_coms.mod
-rk4_derivs.o: soil_coms.mod therm_lib.mod
+rk4_derivs.o: soil_coms.mod therm_lib8.mod
 rk4_driver.o: canopy_air_coms.mod canopy_struct_dynamics.mod consts_coms.mod
 rk4_driver.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod grid_coms.mod
 rk4_driver.o: rk4_coms.mod soil_coms.mod therm_lib.mod
@@ -66,9 +66,9 @@ rk4_integ_utils.o: allometry.mod canopy_radiation_coms.mod
 rk4_integ_utils.o: canopy_struct_dynamics.mod consts_coms.mod ed_max_dims.mod
 rk4_integ_utils.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
 rk4_integ_utils.o: hydrology_coms.mod rk4_coms.mod rk4_stepper.mod soil_coms.mod
-rk4_integ_utils.o: therm_lib.mod
+rk4_integ_utils.o: therm_lib8.mod
 rk4_stepper.o: consts_coms.mod ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
-rk4_stepper.o: rk4_coms.mod soil_coms.mod therm_lib.mod
+rk4_stepper.o: rk4_coms.mod soil_coms.mod therm_lib8.mod
 structural_growth.o: allometry.mod consts_coms.mod decomp_coms.mod
 structural_growth.o: ed_max_dims.mod ed_state_vars.mod ed_therm_lib.mod
 structural_growth.o: pft_coms.mod
@@ -79,7 +79,7 @@ ed_init.o: ed_work_vars.mod grid_coms.mod phenology_coms.mod
 ed_init.o: phenology_startup.mod rk4_coms.mod soil_coms.mod
 ed_init_atm.o: consts_coms.mod ed_misc_coms.mod ed_node_coms.mod
 ed_init_atm.o: ed_state_vars.mod ed_therm_lib.mod fuse_fiss_utils.mod
-ed_init_atm.o: grid_coms.mod pft_coms.mod soil_coms.mod
+ed_init_atm.o: grid_coms.mod pft_coms.mod soil_coms.mod therm_lib.mod
 ed_nbg_init.o: allometry.mod consts_coms.mod ed_max_dims.mod ed_state_vars.mod
 ed_nbg_init.o: ed_therm_lib.mod fuse_fiss_utils.mod pft_coms.mod
 ed_params.o: allometry.mod canopy_air_coms.mod canopy_radiation_coms.mod
@@ -164,6 +164,7 @@ ed_filelist.o: ed_max_dims.mod
 ed_grid.o: consts_coms.mod ed_max_dims.mod ed_node_coms.mod grid_coms.mod
 ed_therm_lib.o: allometry.mod consts_coms.mod ed_state_vars.mod grid_coms.mod
 ed_therm_lib.o: pft_coms.mod rk4_coms.mod soil_coms.mod therm_lib.mod
+ed_therm_lib.o: therm_lib8.mod
 fatal_error.o: ed_misc_coms.mod ed_node_coms.mod
 fuse_fiss_utils.o: allometry.mod consts_coms.mod decomp_coms.mod
 fuse_fiss_utils.o: disturb_coms.mod ed_max_dims.mod ed_node_coms.mod
@@ -176,10 +177,11 @@ numutils.o: consts_coms.mod therm_lib.mod
 stable_cohorts.o: allometry.mod canopy_radiation_coms.mod ed_state_vars.mod
 stable_cohorts.o: rk4_coms.mod
 therm_lib.o: consts_coms.mod
+therm_lib8.o: consts_coms.mod therm_lib.mod
 update_derived_props.o: allometry.mod canopy_air_coms.mod consts_coms.mod
 update_derived_props.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
 update_derived_props.o: fuse_fiss_utils.mod fusion_fission_coms.mod
-update_derived_props.o: grid_coms.mod soil_coms.mod
+update_derived_props.o: grid_coms.mod soil_coms.mod therm_lib.mod
 utils_c.o: /n/Moorcroft_Lab/Users/mlongo/EDBRAMS/ED/src/include/utils_sub_names.h
 utils_c.o:
 allometry.mod: allometry.o
@@ -226,3 +228,4 @@ rk4_driver.mod: rk4_driver.o
 rk4_stepper.mod: rk4_stepper.o
 soil_coms.mod: soil_coms.o
 therm_lib.mod: therm_lib.o
+therm_lib8.mod: therm_lib8.o

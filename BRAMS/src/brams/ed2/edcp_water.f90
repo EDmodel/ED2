@@ -21,7 +21,8 @@ subroutine simple_lake_model(time,dtlongest)
                                      , cpor              & ! intent(in)
                                      , alvl              & ! intent(in)
                                      , mmdryi            ! ! intent(in)
-   use canopy_air_coms        , only : ustmin            ! ! intent(in)
+   use canopy_air_coms        , only : ustmin_stab       & ! intent(in)
+                                     , ustmin_unstab     ! ! intent(in)
    use mem_edcp               , only : wgrid_g           ! ! structure
    use io_params              , only : ssttime1          & ! intent(in)
                                      , ssttime2          & ! intent(in)
@@ -48,7 +49,9 @@ subroutine simple_lake_model(time,dtlongest)
                                      , rk4min_can_temp   & ! intent(in)
                                      , rk4max_can_temp   ! ! intent(in)
    use therm_lib              , only : rhovsil           & ! function
-                                     , virtt             ! ! function
+                                     , virtt             & ! function
+                                     , tq2enthalpy       & ! function
+                                     , hq2temp           ! ! function
    use canopy_struct_dynamics , only : ed_stars          & ! subroutine
                                      , vertical_vel_flux ! ! function
    implicit none
@@ -67,15 +70,15 @@ subroutine simple_lake_model(time,dtlongest)
    real                     :: theta_mean,co2p_mean
    real                     :: cosz, prss, rhos, geoht, vels, tvir
    real                     :: cosine, sine
-   real                     :: atm_temp,atm_theta,atm_shv,atm_co2
-   real                     :: can_temp,can_theta,can_shv,can_co2
+   real                     :: atm_temp,atm_enthalpy,atm_theta,atm_shv,atm_co2
+   real                     :: can_temp,can_enthalpy,can_theta,can_shv,can_co2
    real                     :: water_temp,water_ssh,water_rough
-   real                     :: ustar,tstar,qstar,cstar
+   real                     :: ustar,tstar,hstar,qstar,cstar
    real(kind=8)             :: angle
    real                     :: avg_water_lc,avg_water_ac
-   real                     :: avg_sensible_lc,avg_sensible_ac
+   real                     :: avg_sensible_lc,avg_enthalpy_ac
    real                     :: avg_carbon_lc,avg_carbon_ac
-   real                     :: prev_can_shv,prev_can_temp,prev_can_co2
+   real                     :: prev_can_shv,prev_can_temp,prev_can_enthalpy,prev_can_co2
    real                     :: hcapcan, wcapcan, ccapcan, rdi
    real                     :: sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c
    real                     :: gzotheta, timefac_sst
@@ -231,18 +234,23 @@ subroutine simple_lake_model(time,dtlongest)
          end select
 
          !----- Defining some variables that won't change during the sub time steps. ------!
-         cosz      = radiate_g(ngrid)%cosz(i,j)
-         prss      = (exner_mean * cpi) ** cpor * p00
-         geoht     = (zt(k2w)-zm(k1w))*grid_g(ngrid)%rtgt(i,j)
-         atm_temp  = cpi * theta_mean * exner_mean
-         atm_theta = theta_mean
-         atm_co2   = co2p_mean
+         cosz         = radiate_g(ngrid)%cosz(i,j)
+         prss         = (exner_mean * cpi) ** cpor * p00
+         geoht        = (zt(k2w)-zm(k1w))*grid_g(ngrid)%rtgt(i,j)
+         atm_temp     = cpi * theta_mean * exner_mean
+         atm_theta    = theta_mean
+         atm_co2      = co2p_mean
          !---------------------------------------------------------------------------------!
          !   Most of ED expects specific humidity, not mixing ratio.  Since we will use    !
          ! ed_stars, which is set up for the former, not the latter, we locally solve      !
          ! everything for specific humidity, converting in the end.                        !
          !---------------------------------------------------------------------------------!
          atm_shv  = rv_mean / (1. + rtp_mean)
+         !---------------------------------------------------------------------------------!
+
+         !----- Finding the atmospheric enthalpy. -----------------------------------------!
+         atm_enthalpy = tq2enthalpy(atm_temp,atm_shv)
+
          !---------------------------------------------------------------------------------!
          tvir     = virtt(atm_temp,rv_mean,rtp_mean)
          rhos     = prss / (rdry * tvir)
@@ -284,6 +292,10 @@ subroutine simple_lake_model(time,dtlongest)
          can_theta  = cpi * can_temp * exner_mean
          !------ Converting mixing ratio to specific humidity. ----------------------------!
          can_shv    = leaf_g(ngrid)%can_rvap(i,j,1) / (1. +leaf_g(ngrid)%can_rvap(i,j,1))
+         !------ Finding the enthalpy. ----------------------------------------------------!
+         can_enthalpy = tq2enthalpy(can_temp,can_shv)
+
+
          sflux_u    = 0.0
          sflux_v    = 0.0
          sflux_w    = 0.0
@@ -296,7 +308,11 @@ subroutine simple_lake_model(time,dtlongest)
          ! zero, so to avoid singularities, we impose the minimum ustmin, which is also    !
          ! used in ed_stars subroutine.                                                    !
          !---------------------------------------------------------------------------------!
-         ustar      = max(ustmin,wgrid_g(ngrid)%ustar(i,j))
+         if (can_theta > atm_theta) then
+            ustar      = max(ustmin_unstab,wgrid_g(ngrid)%ustar(i,j))
+         else
+            ustar      = max(ustmin_stab,wgrid_g(ngrid)%ustar(i,j))
+         end if
          !---------------------------------------------------------------------------------!
          !     Loop for the intermediate time steps.                                       !
          !---------------------------------------------------------------------------------!
@@ -308,8 +324,10 @@ subroutine simple_lake_model(time,dtlongest)
             !------------------------------------------------------------------------------!
             !     This is the ED-2 stars subroutine (Euler method, single precision).      !
             !------------------------------------------------------------------------------!
-            call ed_stars(atm_theta,atm_shv,atm_co2,can_theta,can_shv,can_co2,geoht,d0     &
-                         ,vels,water_rough ,ustar,tstar,qstar,cstar,fm)
+            call ed_stars(atm_theta,atm_enthalpy,atm_shv,atm_co2                           &
+                         ,can_theta,can_enthalpy,can_shv,can_co2                           &
+                         ,geoht,d0,vels,water_rough                                        &
+                         ,ustar,tstar,hstar,qstar,cstar,fm)
 
             
             gzotheta = grav * geoht / atm_theta
@@ -321,21 +339,25 @@ subroutine simple_lake_model(time,dtlongest)
             !------------------------------------------------------------------------------!
             rdi = .2 * ustar
             !------ Copying the values to scratch buffers. --------------------------------!
-            prev_can_temp = can_temp
-            prev_can_shv  = can_shv
-            prev_can_co2  = can_co2
+            prev_can_enthalpy = can_enthalpy
+            prev_can_temp     = can_temp
+            prev_can_shv      = can_shv
+            prev_can_co2      = can_co2
             
             !------ Computing the lake->canopy and free atmosphere->canopy fluxes. --------!
             avg_water_lc    = rhos * ( water_ssh - can_shv) * rdi
             avg_water_ac    = rhos * ustar * qstar
             avg_sensible_lc = rhos * cp * (water_temp -  can_temp) * rdi 
-            avg_sensible_ac = rhos * ustar * (tstar * exner_mean)
+            avg_enthalpy_ac = rhos * ustar * hstar
             avg_carbon_lc   = 0. ! For the time being, no idea of what to put in here...
             avg_carbon_ac   = rhos * ustar * cstar * mmdryi
 
-            can_temp = prev_can_temp + dtllohcc * (avg_sensible_lc + avg_sensible_ac)
+            can_enthalpy = prev_can_enthalpy                                               &
+                         + dtllowcc * ( avg_sensible_lc + avg_enthalpy_ac                  &
+                                      + alvl * avg_water_lc  )
             can_shv  = prev_can_shv  + dtllowcc * (avg_water_lc    + avg_water_ac)
             can_co2  = prev_can_co2  + dtlloccc * (avg_carbon_lc   + avg_carbon_ac)
+            can_temp = hq2temp(can_enthalpy,can_shv)
             
             !----- Sanity check -----------------------------------------------------------!
             if(can_shv  < sngl(rk4min_can_shv)  .or. can_shv  > sngl(rk4max_can_shv)  .or. &
@@ -355,6 +377,8 @@ subroutine simple_lake_model(time,dtlongest)
                write(unit=*,fmt='(a,1x,es12.5)') 'atm_CO2            : ',atm_co2
                write(unit=*,fmt='(a,1x,es12.5)') 'WATER_TEMP         : ',water_temp
                write(unit=*,fmt='(a,1x,es12.5)') 'WATER_SSH          : ',water_ssh
+               write(unit=*,fmt='(a,1x,es12.5)') 'CANOPY_ENTHALPY    : ',can_enthalpy
+               write(unit=*,fmt='(a,1x,es12.5)') 'PREV_CAN_ENTHALPY  : ',prev_can_enthalpy
                write(unit=*,fmt='(a,1x,es12.5)') 'CANOPY_TEMP        : ',can_temp
                write(unit=*,fmt='(a,1x,es12.5)') 'PREV_CAN_TEMP      : ',prev_can_temp
                write(unit=*,fmt='(a,1x,es12.5)') 'CANOPY_QVAP        : ',can_shv
@@ -370,7 +394,7 @@ subroutine simple_lake_model(time,dtlongest)
                write(unit=*,fmt='(a,1x,es12.5)') 'AVG_WATER_LAKE2CAN : ',avg_water_lc
                write(unit=*,fmt='(a,1x,es12.5)') 'AVG_WATER_ATM2CAN  : ',avg_water_ac
                write(unit=*,fmt='(a,1x,es12.5)') 'AVG_HEAT_LAKE2CAN  : ',avg_sensible_lc
-               write(unit=*,fmt='(a,1x,es12.5)') 'AVG_HEAT_ATM2CAN   : ',avg_sensible_ac
+               write(unit=*,fmt='(a,1x,es12.5)') 'AVG_HEAT_ATM2CAN   : ',avg_enthalpy_ac
                write(unit=*,fmt='(a,1x,es12.5)') 'AVG_CARBON_LAKE2CAN: ',avg_carbon_lc
                write(unit=*,fmt='(a,1x,es12.5)') 'AVG_CARBON_ATM2CAN : ',avg_carbon_ac
                call fatal_error('Lake model failed','simple_lake_model','edcp_water.f90')

@@ -1,3 +1,83 @@
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine controls the initialisation at the head node.                         !
+!------------------------------------------------------------------------------------------!
+subroutine master_ed_init(iparallel)
+
+   use rpara         , only : mainnum            & ! intent(in)
+                            , nmachs             ! ! intent(out)
+   use node_mod      , only : mynum              & ! intent(out)
+                            , machs              & ! intent(out)
+                            , mchnum             ! ! intent(out)
+   use soil_coms     , only : layer_index        & ! intent(out)
+                            , nlon_lyr           & ! intent(out)
+                            , nlat_lyr           ! ! intent(out)
+   use mem_leaf      , only : isfcl              ! ! intent(in)
+   use mem_grid      , only : ngrids             ! ! intent(in)
+   use ed_state_vars , only : gdpy               & ! intent(inout)
+                            , py_off             & ! intent(inout)
+                            , allocate_edglobals & ! subroutine
+                            , allocate_edtype    & ! subroutine
+                            , edgrid_g           ! ! intent(inout)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer, intent(in) :: iparallel
+   !----- Local variables. ----------------------------------------------------------------!
+   integer             :: ifm
+   integer             :: ierr
+   !---------------------------------------------------------------------------------------!
+   include 'mpif.h'
+
+   if(isfcl /= 5) return
+
+   if (iparallel == 1) then
+      !----- Initialize the work arrays. --------------------------------------------------!
+      call init_master_work(iparallel)
+
+      !----- Read the soil depth database. ------------------------------------------------!
+      call read_soil_depth()
+
+      !----- Send soil depths to the nodes. -----------------------------------------------!
+      call MPI_Barrier(MPI_COMM_WORLD,ierr) ! Just to wait until the matrix is allocated
+      call MPI_Bcast(layer_index,nlat_lyr*nlon_lyr,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+
+   else
+      !----- Setting up a serial run. -----------------------------------------------------!
+      mynum  = 1
+      nmachs = 1
+      call copy_in_bramsmpi(mainnum,mchnum,mynum,nmachs,machs,iparallel)
+
+      !----- Initialize the work arrays. --------------------------------------------------!
+      call init_master_work(iparallel)
+
+      !----- Read the soil depth database. ------------------------------------------------!
+      call read_soil_depth()
+
+      !----- Allocate the polygons on edgrid. ---------------------------------------------!
+      write (unit=*,fmt='(a,i5,a)') ' + Polygon array allocation, node ',mynum,';'
+      call allocate_edglobals(ngrids)
+      do ifm=1,ngrids
+         call ed_newgrid(ifm)
+         call allocate_edtype(edgrid_g(ifm),gdpy(mynum,ifm))
+      end do
+
+      write (unit=*,fmt='(a,i5,a)') ' + Memory successfully allocated on none ',mynum,';'
+      call onenode()
+      call ed_coup_driver()
+
+   end if
+   return
+end subroutine master_ed_init
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine node_ed_init
   
   
@@ -54,69 +134,6 @@ end subroutine node_ed_init
 
 ! ===========================================================================================
 
-subroutine master_ed_init(iparallel)
-
-  use rpara,only: mainnum,nmachs
-  use node_mod,only:mynum,machs,mchnum
-  use soil_coms,only: layer_index,nlon_lyr,nlat_lyr
-  use mem_leaf,only:isfcl
-  use mem_grid, only: ngrids
-  use ed_state_vars,only:  &
-       gdpy,   &
-       py_off, &
-       allocate_edglobals, &
-       allocate_edtype,    &
-       edgrid_g
-  implicit none
-  include 'mpif.h'
-  integer, intent(in) :: iparallel
-  integer :: ifm,ierr
-
-  if(isfcl /= 5) return
-
-  if (iparallel == 1) then
-     ! Initialize the work arrays
-     call init_master_work(iparallel)
-
-     ! Read the soil depth database
-     call read_soil_depth()
-
-     ! Send soil depths to the nodes
-     call MPI_Barrier(MPI_COMM_WORLD,ierr) ! Just to wait until the matrix is allocated
-     call MPI_Bcast(layer_index,nlat_lyr*nlon_lyr,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-
-  else
-     ! Setting up a serial run 
-     mynum  = 1
-     nmachs = 1
-     call copy_in_bramsmpi(mainnum,mchnum,mynum,nmachs,machs,iparallel)
-
-     ! Initialize the work arrays
-     call init_master_work(iparallel)
-
-     ! Read the soil depth database
-     call read_soil_depth()
-  
-     ! Allocate the polygons on edgrid
-     write (unit=*,fmt='(a,i5,a)') ' + Polygon array allocation, node ',mynum,';'
-     call allocate_edglobals(ngrids)
-     do ifm=1,ngrids
-        call ed_newgrid(ifm)
-        call allocate_edtype(edgrid_g(ifm),gdpy(mynum,ifm))
-     end do
-  
-     write (unit=*,fmt='(a,i5,a)') ' + Memory successfully allocated on none ',mynum,';'
-     call onenode()
-     call ed_coup_driver()
-
-  end if
-
-
-  return
-end subroutine master_ed_init
-
-! ===========================================================================================
-
 subroutine copy_in_bramsmpi(master_num_b,mchnum_b,mynum_b,nmachs_b,machs_b,ipara)
 
   use ed_node_coms,only: master_num,mchnum,mynum,nmachs,machs,nnodetot,recvnum,sendnum
@@ -157,9 +174,10 @@ end subroutine copy_in_bramsmpi
 subroutine init_node_work
   
   
-  use ed_work_vars       , only : work_e,                 & ! intent(out)
-       ed_alloc_work,          & ! subroutine
-       ed_nullify_work         ! ! subroutine
+  use ed_work_vars       , only : work_e                 & ! intent(out)
+                                , work_v                 & ! intent(out)
+                                , ed_alloc_work          & ! subroutine
+                                , ed_nullify_work        ! ! subroutine
   
   use grid_coms, only : ngrids
 
@@ -180,7 +198,7 @@ subroutine init_node_work
   integer :: ipy
   integer,       dimension(MPI_STATUS_SIZE) :: status
 
-  allocate(work_e(ngrids))
+  allocate(work_e(ngrids),work_v(ngrids))
   do ifm = 1,ngrids
           
      do nm=1,nmachs 
@@ -225,33 +243,7 @@ subroutine init_node_work
      ! Fill the work vectors - these will be used in the ed2 initialization procedures
      ! to populate the first polygons
      ! -------------------------------------------------------------------------------
-     ipy = 0
-     do j = 1,mmyp(ifm)
-        do i = 1,mmxp(ifm)
-           if(work_e(ifm)%land(i,j)) then
-              ipy = ipy + 1
-           endif
-        enddo
-     enddo
-     
-     allocate(work_e(ifm)%vec_glon(ipy))
-     allocate(work_e(ifm)%vec_glat(ipy))
-     allocate(work_e(ifm)%vec_landfrac(ipy))
-     allocate(work_e(ifm)%vec_ntext(ipy))
-     ! Making sure I use the same order as set_edtype_atm
-     ! or else we will get our wires crossed
-     ipy = 0
-     do i=1,mmxp(ifm)
-        do j = 1,mmyp(ifm)
-           if (work_e(ifm)%land(i,j)) then
-              ipy = ipy + 1
-              work_e(ifm)%vec_glon(ipy) = work_e(ifm)%glon(i,j)
-              work_e(ifm)%vec_glat(ipy) = work_e(ifm)%glat(i,j)
-              work_e(ifm)%vec_landfrac(ipy) = work_e(ifm)%landfrac(i,j)
-              work_e(ifm)%vec_ntext(ipy) = work_e(ifm)%ntext(i,j)
-           endif
-        enddo
-     enddo
+     call edcp_parvec_work(ifm,mmxp(ifm),mmyp(ifm))
 
 
   enddo
@@ -318,27 +310,24 @@ subroutine init_master_work(ipara)
         call ed_nullify_work(work_e(ifm))
         call ed_alloc_work(work_e(ifm),xmax,ymax)
 
-        il=0
-        iloop: do i=iwest,ieast
-           jl=0
-           il=il+1
-           jloop: do j=jsouth,jnorth
-              jl=jl+1
+        jl=0
+        jloop: do j=jsouth,jnorth
+           jl=jl+1
+           il=0
+           iloop: do i=iwest,ieast
+              il=il+1
               work_e(ifm)%glon(il,jl) = grid_g(ifm)%glon(i,j)
               work_e(ifm)%glat(il,jl) = grid_g(ifm)%glat(i,j)
               
               ! The following will give you the tile (local) coordinates
-              work_e(ifm)%xatm(il,jl)  = i - iwest  + 2       ! Remember that all tiles have a 
-              work_e(ifm)%yatm(il,jl)  = j - jsouth + 2       ! buffer cell so add one extra 
+              work_e(ifm)%xatm(il,jl)  = i - iwest  + 2 ! Remember that all tiles have a 
+              work_e(ifm)%yatm(il,jl)  = j - jsouth + 2 ! buffer cell so add one extra 
 
-              ! The following will give you the global coordinates
-              !work_e(ifm)%xatm(il,jl)  = i       ! Remember that all tiles have a            
-              !work_e(ifm)%yatm(il,jl)  = j       ! buffer cell so add one extra 
-           end do jloop
-        end do iloop
+           end do iloop
+        end do jloop
         
         call edcp_get_work(ifm,xmax,ymax,iwest,ieast,jsouth,jnorth)
-        
+
         offset=offset+npolys
         npolys=count(work_e(ifm)%land)
            
@@ -372,38 +361,10 @@ subroutine init_master_work(ipara)
            mmxp(ifm) = xmax
            mmyp(ifm) = ymax
 
-
            ! Fill the work vectors - these will be used in the ed2 initialization procedures
            ! to populate the first polygons
            ! -------------------------------------------------------------------------------
-           ipy = 0
-           do j = 1,mmyp(ifm)
-              do i = 1,mmxp(ifm)
-                 if(work_e(ifm)%land(i,j)) then
-                    ipy = ipy + 1
-                 endif
-              enddo
-           enddo
-          
-           allocate(work_e(ifm)%vec_glon(ipy))
-           allocate(work_e(ifm)%vec_glat(ipy))
-           allocate(work_e(ifm)%vec_landfrac(ipy))
-           allocate(work_e(ifm)%vec_ntext(ipy))
-           ! Making sure I use the same order as set_edtype_atm
-           ! or else we will get our wires crossed
-           ipy = 0
-           do i=1,mmxp(ifm)
-              do j = 1,mmyp(ifm)
-                 if (work_e(ifm)%land(i,j)) then
-                    ipy = ipy + 1
-                    work_e(ifm)%vec_glon(ipy)     = work_e(ifm)%glon(i,j)
-                    work_e(ifm)%vec_glat(ipy)     = work_e(ifm)%glat(i,j)
-                    work_e(ifm)%vec_landfrac(ipy) = work_e(ifm)%landfrac(i,j)
-                    work_e(ifm)%vec_ntext(ipy)    = work_e(ifm)%ntext(i,j)
-                 endif
-              end do
-           end do
-          
+           call edcp_parvec_work(ifm,mmxp(ifm),mmyp(ifm))
      
         end if
      

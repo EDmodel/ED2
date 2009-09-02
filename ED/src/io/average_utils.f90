@@ -95,7 +95,6 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%co2budget_residual(ipa)    = csite%co2budget_residual(ipa)    * frqsumi
             csite%ebudget_precipgain(ipa)    = csite%ebudget_precipgain(ipa)    * frqsumi
             csite%ebudget_netrad(ipa)        = csite%ebudget_netrad(ipa)        * frqsumi
-            csite%ebudget_latent(ipa)        = csite%ebudget_latent(ipa)        * frqsumi
             csite%ebudget_loss2atm(ipa)      = csite%ebudget_loss2atm(ipa)      * frqsumi
             csite%ebudget_loss2drainage(ipa) = csite%ebudget_loss2drainage(ipa) * frqsumi
             csite%ebudget_loss2runoff(ipa)   = csite%ebudget_loss2runoff(ipa)   * frqsumi
@@ -188,6 +187,7 @@ subroutine reset_averaged_vars(cgrid)
             csite%co2budget_rh(ipa)             = 0.0
             csite%co2budget_plresp(ipa)         = 0.0
             csite%co2budget_residual(ipa)       = 0.0
+            csite%co2budget_loss2atm(ipa)       = 0.0
 
             !----------------------------------------------------------------!
             ! Zeroing water budget variables.                                !
@@ -204,7 +204,6 @@ subroutine reset_averaged_vars(cgrid)
             !----------------------------------------------------------------!
             csite%ebudget_precipgain(ipa)       = 0.0
             csite%ebudget_netrad(ipa)           = 0.0
-            csite%ebudget_latent(ipa)           = 0.0
             csite%ebudget_loss2atm(ipa)         = 0.0
             csite%ebudget_loss2runoff(ipa)      = 0.0
             csite%ebudget_loss2drainage(ipa)    = 0.0
@@ -296,7 +295,7 @@ subroutine integrate_ed_daily_output_state(cgrid)
    real                        :: poly_area_i,site_area_i, patch_lai_i
    real                        :: forest_site,forest_site_i, forest_poly
    real                        :: sss_fsn, sss_fsw, pss_fsn, pss_fsw
-   real                        :: sss_can_temp, sss_can_shv, sss_can_co2, sss_can_rhos
+   real                        :: sss_can_enthalpy, sss_can_shv, sss_can_co2, sss_can_rhos
    real                        :: pss_veg_water, pss_veg_energy, pss_veg_hcap
    real                        :: sss_veg_water, sss_veg_energy, sss_veg_hcap
    !---------------------------------------------------------------------------------------!
@@ -307,16 +306,16 @@ subroutine integrate_ed_daily_output_state(cgrid)
 
       
       !----- Initialize auxiliary variables to add sitetype variables. --------------------!
-      sss_fsn        = 0.
-      sss_fsw        = 0.
-      sss_veg_energy = 0.
-      sss_veg_water  = 0.
-      sss_veg_hcap   = 0.
-      sss_can_temp   = 0.
-      sss_can_shv    = 0.
-      sss_can_co2    = 0.
-      sss_can_rhos   = 0.
-      forest_poly    = 0.
+      sss_fsn          = 0.
+      sss_fsw          = 0.
+      sss_veg_energy   = 0.
+      sss_veg_water    = 0.
+      sss_veg_hcap     = 0.
+      sss_can_enthalpy = 0.
+      sss_can_shv      = 0.
+      sss_can_co2      = 0.
+      sss_can_rhos     = 0.
+      forest_poly      = 0.
       
       siteloop: do isi=1, cpoly%nsites
          csite => cpoly%site(isi)
@@ -369,13 +368,14 @@ subroutine integrate_ed_daily_output_state(cgrid)
          !    Variables already average at the sitetype level, just add them to polygon-   !
          ! type level.                                                                     !
          !---------------------------------------------------------------------------------!
-         sss_fsn        = sss_fsn        + (pss_fsn        * site_area_i) * cpoly%area(isi)
-         sss_fsw        = sss_fsw        + (pss_fsw        * site_area_i) * cpoly%area(isi)
-         sss_veg_energy = sss_veg_energy + (pss_veg_energy * site_area_i) * cpoly%area(isi)
-         sss_veg_water  = sss_veg_water  + (pss_veg_water  * site_area_i) * cpoly%area(isi)
-         sss_veg_hcap   = sss_veg_hcap   + (pss_veg_hcap   * site_area_i) * cpoly%area(isi)
-         sss_can_temp   = sss_can_temp                                                     &
-                        + cpoly%area(isi) * (sum(csite%can_temp * csite%area) * site_area_i)
+         sss_fsn          = sss_fsn        + (pss_fsn       *site_area_i) * cpoly%area(isi)
+         sss_fsw          = sss_fsw        + (pss_fsw       *site_area_i) * cpoly%area(isi)
+         sss_veg_energy   = sss_veg_energy + (pss_veg_energy*site_area_i) * cpoly%area(isi)
+         sss_veg_water    = sss_veg_water  + (pss_veg_water *site_area_i) * cpoly%area(isi)
+         sss_veg_hcap     = sss_veg_hcap   + (pss_veg_hcap  *site_area_i) * cpoly%area(isi)
+         sss_can_enthalpy = sss_can_enthalpy                                               &
+                          + cpoly%area(isi) * ( sum(csite%can_enthalpy * csite%area)       &
+                                              * site_area_i)
          sss_can_shv    = sss_can_shv                                                      &
                         + cpoly%area(isi) * (sum(csite%can_shv * csite%area)  * site_area_i)
          sss_can_co2    = sss_can_co2                                                      &
@@ -388,16 +388,22 @@ subroutine integrate_ed_daily_output_state(cgrid)
       !    Variables already averaged at the polygontype level, just add them to edtype    !
       ! level.                                                                             !
       !------------------------------------------------------------------------------------!
-      cgrid%dmean_fsn(ipy)        = cgrid%dmean_fsn(ipy) + sss_fsn * poly_area_i
-      cgrid%dmean_fsw(ipy)        = cgrid%dmean_fsw(ipy) + sss_fsw * poly_area_i
-      cgrid%dmean_veg_energy(ipy) = cgrid%dmean_veg_energy(ipy)                            &
-                                  + sss_veg_energy * poly_area_i
-      cgrid%dmean_veg_water(ipy)  = cgrid%dmean_veg_water(ipy)+ sss_veg_water * poly_area_i
-      cgrid%dmean_veg_hcap(ipy)   = cgrid%dmean_veg_hcap(ipy) + sss_veg_hcap  * poly_area_i
-      cgrid%dmean_can_temp(ipy)   = cgrid%dmean_can_temp(ipy) + sss_can_temp  * poly_area_i
-      cgrid%dmean_can_shv(ipy)    = cgrid%dmean_can_shv(ipy)  + sss_can_shv   * poly_area_i
-      cgrid%dmean_can_co2(ipy)    = cgrid%dmean_can_co2(ipy)  + sss_can_co2   * poly_area_i
-      cgrid%dmean_can_rhos(ipy)   = cgrid%dmean_can_rhos(ipy) + sss_can_rhos  * poly_area_i
+      cgrid%dmean_fsn(ipy)          = cgrid%dmean_fsn(ipy) + sss_fsn * poly_area_i
+      cgrid%dmean_fsw(ipy)          = cgrid%dmean_fsw(ipy) + sss_fsw * poly_area_i
+      cgrid%dmean_veg_energy(ipy)   = cgrid%dmean_veg_energy(ipy)                          &
+                                    + sss_veg_energy * poly_area_i
+      cgrid%dmean_veg_water(ipy)    = cgrid%dmean_veg_water(ipy)                           &
+                                    + sss_veg_water * poly_area_i
+      cgrid%dmean_veg_hcap(ipy)     = cgrid%dmean_veg_hcap(ipy)                            &
+                                    + sss_veg_hcap  * poly_area_i
+      cgrid%dmean_can_enthalpy(ipy) = cgrid%dmean_can_enthalpy(ipy)                        &
+                                    + sss_can_enthalpy  * poly_area_i
+      cgrid%dmean_can_shv(ipy)      = cgrid%dmean_can_shv(ipy)                             &
+                                    + sss_can_shv   * poly_area_i
+      cgrid%dmean_can_co2(ipy)      = cgrid%dmean_can_co2(ipy)                             &
+                                    + sss_can_co2   * poly_area_i
+      cgrid%dmean_can_rhos(ipy)     = cgrid%dmean_can_rhos(ipy)                            &
+                                    + sss_can_rhos  * poly_area_i
 
       !------------------------------------------------------------------------------------!
       !    Variables already at edtype level, simple integration only.                     !
@@ -659,9 +665,9 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    use grid_coms     , only : nzg
    use ed_state_vars , only : edtype,polygontype,sitetype,patchtype
    use ed_max_dims      , only : n_pft,n_dist_types
-   use consts_coms   , only : alvl,day_sec,umol_2_kgC
+   use consts_coms   , only : cpi, alvl,day_sec,umol_2_kgC
    use ed_misc_coms     , only : dtlsm,frqsum
-   use therm_lib     , only : qwtk
+   use therm_lib     , only : qwtk,hq2temp
    implicit none
    type(edtype)      , target  :: cgrid
    type(polygontype) , pointer :: cpoly
@@ -713,7 +719,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_veg_energy(ipy)   = cgrid%dmean_veg_energy(ipy)   * dtlsm_o_daysec
       cgrid%dmean_veg_hcap(ipy)     = cgrid%dmean_veg_hcap(ipy)     * dtlsm_o_daysec
       cgrid%dmean_veg_water(ipy)    = cgrid%dmean_veg_water(ipy)    * dtlsm_o_daysec
-      cgrid%dmean_can_temp(ipy)     = cgrid%dmean_can_temp(ipy)     * dtlsm_o_daysec
+      cgrid%dmean_can_enthalpy(ipy) = cgrid%dmean_can_enthalpy(ipy) * dtlsm_o_daysec
       cgrid%dmean_can_shv(ipy)      = cgrid%dmean_can_shv(ipy)      * dtlsm_o_daysec
       cgrid%dmean_can_co2(ipy)      = cgrid%dmean_can_co2(ipy)      * dtlsm_o_daysec
       cgrid%dmean_can_rhos(ipy)     = cgrid%dmean_can_rhos(ipy)     * dtlsm_o_daysec
@@ -721,7 +727,11 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_atm_shv(ipy)      = cgrid%dmean_atm_shv(ipy)      * dtlsm_o_daysec
       cgrid%dmean_atm_prss(ipy)     = cgrid%dmean_atm_prss(ipy)     * dtlsm_o_daysec
       cgrid%dmean_atm_vels(ipy)     = cgrid%dmean_atm_vels(ipy)     * dtlsm_o_daysec
-      
+
+      !----- Finding canopy temperature. --------------------------------------------------!
+      cgrid%dmean_can_temp(ipy)     = hq2temp(cgrid%dmean_can_enthalpy(ipy)                &
+                                             ,cgrid%dmean_can_shv(ipy) )
+
       !----- Finding vegetation temperature -----------------------------------------------!
       call qwtk(cgrid%dmean_veg_energy(ipy),cgrid%dmean_veg_water(ipy)                     &
                ,cgrid%dmean_veg_hcap(ipy),cgrid%dmean_veg_temp(ipy),veg_fliq)
@@ -980,6 +990,7 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_veg_hcap       (ipy) = 0.
       cgrid%dmean_veg_water      (ipy) = 0.
       cgrid%dmean_veg_temp       (ipy) = 0.
+      cgrid%dmean_can_enthalpy   (ipy) = 0.
       cgrid%dmean_can_temp       (ipy) = 0.
       cgrid%dmean_can_shv        (ipy) = 0.
       cgrid%dmean_can_co2        (ipy) = 0.
@@ -1098,6 +1109,7 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
       cgrid%mmean_veg_hcap      (ipy) = cgrid%mmean_veg_hcap      (ipy) + cgrid%dmean_veg_hcap       (ipy)
       cgrid%mmean_veg_water     (ipy) = cgrid%mmean_veg_water     (ipy) + cgrid%dmean_veg_water      (ipy)
       cgrid%mmean_veg_temp      (ipy) = cgrid%mmean_veg_temp      (ipy) + cgrid%dmean_veg_temp       (ipy)
+      cgrid%mmean_can_enthalpy  (ipy) = cgrid%mmean_can_enthalpy  (ipy) + cgrid%dmean_can_enthalpy   (ipy)
       cgrid%mmean_can_temp      (ipy) = cgrid%mmean_can_temp      (ipy) + cgrid%dmean_can_temp       (ipy)
       cgrid%mmean_can_shv       (ipy) = cgrid%mmean_can_shv       (ipy) + cgrid%dmean_can_shv        (ipy)
       cgrid%mmean_can_co2       (ipy) = cgrid%mmean_can_co2       (ipy) + cgrid%dmean_can_co2        (ipy)
@@ -1222,6 +1234,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_veg_hcap       (ipy) = cgrid%mmean_veg_hcap       (ipy) * ndaysi
       cgrid%mmean_veg_water      (ipy) = cgrid%mmean_veg_water      (ipy) * ndaysi
       cgrid%mmean_veg_temp       (ipy) = cgrid%mmean_veg_temp       (ipy) * ndaysi
+      cgrid%mmean_can_enthalpy   (ipy) = cgrid%mmean_can_enthalpy   (ipy) * ndaysi
       cgrid%mmean_can_temp       (ipy) = cgrid%mmean_can_temp       (ipy) * ndaysi
       cgrid%mmean_can_shv        (ipy) = cgrid%mmean_can_shv        (ipy) * ndaysi
       cgrid%mmean_can_co2        (ipy) = cgrid%mmean_can_co2        (ipy) * ndaysi
@@ -1374,6 +1387,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_veg_hcap       (ipy) = 0.
       cgrid%mmean_veg_water      (ipy) = 0.
       cgrid%mmean_veg_temp       (ipy) = 0.
+      cgrid%mmean_can_enthalpy   (ipy) = 0.
       cgrid%mmean_can_temp       (ipy) = 0.
       cgrid%mmean_can_shv        (ipy) = 0.
       cgrid%mmean_can_co2        (ipy) = 0.

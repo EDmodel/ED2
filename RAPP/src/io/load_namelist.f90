@@ -14,6 +14,7 @@ subroutine load_namelist(rapp_in)
                           , iyearz               & ! intent(out)
                           , inpfrq               & ! intent(out)
                           , radfrq               & ! intent(out)
+                          , ninputs_day          & ! intent(out)
                           , radratio             & ! intent(out)
                           , nsteps               & ! intent(out)
                           , nrads                & ! intent(out)
@@ -120,12 +121,13 @@ subroutine load_namelist(rapp_in)
    ! 6. Find the various ratios between time scales                                        !
    !---------------------------------------------------------------------------------------!
    dtinc_fday  = dtinc/day_sec
-   radratio    = nint(inpfrq / radfrq  )
-   nsteps      = nint(inpfrq / dtinc   )
-   nrads       = nint(radfrq / dtinc   )
-   nstepsi     =      dtinc  / inpfrq
-   nradsi      =      dtinc  / radfrq
-   npdf        = 12 * nint(day_sec / inpfrq)
+   ninputs_day = nint(day_sec / inpfrq  )
+   radratio    = nint(inpfrq  / radfrq  )
+   nsteps      = nint(inpfrq  / dtinc   )
+   nrads       = nint(radfrq  / dtinc   )
+   nstepsi     =      dtinc   / inpfrq
+   nradsi      =      dtinc   / radfrq
+   npdf        = 12 * ninputs_day
 
    !---------------------------------------------------------------------------------------!
    ! 7. Making the longitude in line with the meteorological dataset range (either 0..360  !

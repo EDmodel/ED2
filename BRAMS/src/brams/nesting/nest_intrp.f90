@@ -20,8 +20,8 @@ subroutine fmrefs1d(ngbegin,ngend)
 
    !     Interpolate the fine mesh 1-d reference state variables.
 
-   c1 = rgas / (cp - rgas)
-   c2 = cp * (rgas / p00) ** c1
+   c1 = rdry / (cp - rdry)
+   c2 = cp * (rdry / p00) ** c1
    do ifm = ngbegin,ngend
       icm = nxtnest(ifm)
       if (icm .ge. 1) then
@@ -88,8 +88,8 @@ call fmint3(nnzp(icm),nnxp(icm),nnyp(icm),nnzp(ifm),nnxp(ifm),nnyp(ifm)         
            ,scratch%scr1,scratch%scr2,grid_g(ifm)%topt,scratch%vt2da                       &
            ,nbounds(ifm)%bux,nbounds(ifm)%buy,nbounds(ifm)%buz,mynum)
 
-c1 = rgas / (cp - rgas)
-c2 = cp * (rgas / p00) ** c1
+c1 = rdry / (cp - rdry)
+c2 = cp * (rdry / p00) ** c1
 do j = 1,nnyp(ifm)
    do i = 1,nnxp(ifm)
       do k = 1,nnzp(ifm)

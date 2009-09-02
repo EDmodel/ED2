@@ -544,7 +544,7 @@ SUBROUTINE Get_Env_Condition(k1,k2,kmt,thtcon,picon,rvcon,zcon,qvenv, &
   DO k=2,nkp
     DO ij=ijbeg,ijend
       IF(k>kmt(ij)) CYCLE
-      pke(ij,k)=pke(ij,k-1)-g*2.*(zt(k)-zt(k-1))  & ! exner function
+      pke(ij,k)=pke(ij,k-1)-grav*2.*(zt(k)-zt(k-1))  & ! exner function
                  /(thve(ij,k)+thve(ij,k-1))
     END DO
   END DO
@@ -554,7 +554,7 @@ SUBROUTINE Get_Env_Condition(k1,k2,kmt,thtcon,picon,rvcon,zcon,qvenv, &
       IF(k>kmt(ij)) CYCLE
       te(ij,k)  = the(ij,k)*pke(ij,k)/cp         ! temperature (K)
       pe(ij,k)  = (pke(ij,k)/cp)**cpor*p00    ! pressure (Pa)
-      dne(ij,k)= pe(ij,k)/(rgas*virtt(te(ij,k),qvenv(ij,k))) !  dry air density (kg/m3)
+      dne(ij,k)= pe(ij,k)/(rdry*virtt(te(ij,k),qvenv(ij,k))) !  dry air density (kg/m3)
       !  print*,'ENV=',qvenv(k)*1000., te(k)-t00,zt(k)
     END DO
   ENDDO
@@ -789,7 +789,7 @@ SUBROUTINE Makeplume(kmt,ztopmax,zm,dzm,zt,dz, &
   !**********************************************************************
   USE plume_utils, ONLY: ijindex,indexj,indexi
   
-  use rconstants, only : g,rgas,cp,ep,alvi,alvl,alli 
+  use rconstants, only : grav,rdry,cp,ep,alvi,alvl,alli 
   IMPLICIT NONE
   ! ******************* SOME CONSTANTS **********************************
   !
@@ -1263,7 +1263,7 @@ SUBROUTINE Lbound(imm,iveg_ag,qh,qi,qc,rsurf,plume_2d,iveg,ijbeg,ijend,alpha,&
   ! QC(1).
   ! EFLUX = energy flux at ground,watt/m**2 for the last DT
   !
-  use rconstants, only: g,rgas,cp,ep,pi1 
+  use rconstants, only: grav,rdry,cp,ep,pi1 
   USE plume_utils, ONLY: indexi,indexj
   
   implicit none
@@ -1324,12 +1324,12 @@ SUBROUTINE Lbound(imm,iveg_ag,qh,qi,qc,rsurf,plume_2d,iveg,ijbeg,ijend,alpha,&
     c1 = 5. / (6. * alpha)  !alpha is entrainment constant
     c2 = 0.9 * alpha  
     f = eflux / (pres * cp * pi1)  
-    f = g * rgas * f * plume_2d(ij,iveg_ag)  !buoyancy flux
+    f = grav * rdry * f * plume_2d(ij,iveg_ag)  !buoyancy flux
     zv = c1 * rsurf(ij,iveg_ag)  !virtual boundary height
 
     !WRITE(99,FMT='(4(I3.3,1X),6(E18.8,1X))') ij,indexi(ij,ib),indexj(ij,ib),iveg_ag,c1,c2,f,e1,zv,rsurf(ij,iveg_ag)
     vvel(ij,1) = c1 * ((c2 * f) **e1) / zv**e1  !boundary velocity
-    denscor = c1 * f / g / (c2 * f) **e1 / zv**e2   !density correction
+    denscor = c1 * f / grav / (c2 * f) **e1 / zv**e2   !density correction
     temp(ij,1) = te(ij,1) / (1. - denscor)    !temperature of virtual plume at zsurf
     !
     wc(ij,1) = vvel(ij,1)
@@ -2216,7 +2216,7 @@ SUBROUTINE scl_misc(nm1,nkp,ijbeg,ijend,qvenv,te,vvel,temp,qv,qc,qh,qi, &
                     tt,qvt,qct,qht,qit,radius,alpha,adiabat,wbar,isdone)
 
   USE plume_utils, ONLY: ijindex
-  use rconstants, only:g,cp
+  use rconstants, only:grav,cp
   IMPLICIT NONE
 
   INTEGER,INTENT(IN) ,DIMENSION(ijbeg:ijend) :: nm1
@@ -2237,7 +2237,7 @@ SUBROUTINE scl_misc(nm1,nkp,ijbeg,ijend,qvenv,te,vvel,temp,qv,qc,qh,qi, &
       IF(isdone(ij) .OR. k>nm1(ij)-1) CYCLE
       wbar(ij)    = 0.5*(vvel(ij,k)+vvel(ij,k-1))  
       !-- dry adiabat
-      adiabat = - wbar(ij) * g / cp
+      adiabat = - wbar(ij) * grav / cp
       !-- entrainment    
       dmdtm = 2. * alpha * abs (wbar(ij)) / radius (ij,k)  != (1/m)dm/dt
       !-- tendency temperature = adv + adiab + entrainment
@@ -2316,7 +2316,7 @@ END SUBROUTINE Damp_Grav_Wave
 SUBROUTINE Fallpart(nm1,nkp,qvt,qct,qht,qit,rho,vvel,qh,qi,zm, &
                     vth,vti,cvi,ijbeg,ijend,isdone)
 
-  use rconstants, only: g,cp,ep
+  use rconstants, only: grav,cp,ep
   IMPLICIT NONE
 
   REAL, PARAMETER :: vconst = 5.107387, f0 = 0.75  
@@ -2528,7 +2528,7 @@ END SUBROUTINE Hadvance_Plumerise
 
 
 SUBROUTINE Buoyancy_Plumerise(nm1,temp,te,qv,qvenv,qh,qi,qc,wt,nkp,ijbeg,ijend,isdone)
-  use rconstants, only: g,ep
+  use rconstants, only: grav,ep
   IMPLICIT NONE
   REAL, PARAMETER     :: mu = 0.15
   REAL, PARAMETER     :: gama = 0.5 ! mass virtual coeff.
@@ -2556,8 +2556,8 @@ SUBROUTINE Buoyancy_Plumerise(nm1,temp,te,qv,qvenv,qh,qi,qc,wt,nkp,ijbeg,ijend,i
       tve = te(ij,k) * (1. + (qvenv(ij,k)/ep))/(1. + qvenv(ij,k))  !and environment
       qwtotl = qh(ij,k) + qi(ij,k) + qc(ij,k)                         ! QWTOTL*G is drag
       !- orig
-      !scr1(ij,k)= g*( umgamai*(  tv - tve) / tve   - qwtotl)
-      scr1(ij,k)= g*  umgamai*( (tv - tve) / tve   - qwtotl)
+      !scr1(ij,k)= grav*( umgamai*(  tv - tve) / tve   - qwtotl)
+      scr1(ij,k)= grav*  umgamai*( (tv - tve) / tve   - qwtotl)
     END DO
   END DO
 

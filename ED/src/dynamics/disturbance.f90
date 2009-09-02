@@ -183,6 +183,10 @@ module disturbance_utils
                  endif
               enddo
               
+              ! Update temperature and density. This must be done before planting, since the leaf
+              ! temperature is initially assigned as the canopy air temperature.
+              call update_patch_thermo_props(csite,cpoly%met(isi)%prss,q+onsp,q+onsp)
+
               ! if the new patch is agriculture, plant it with grasses.
               if(q == 1)call plant_patch(csite,q+onsp,cpoly%agri_stocking_pft(isi),   &
                    cpoly%agri_stocking_density(isi),cpoly%green_leaf_factor(:,isi), 1.0, cpoly%lsl(isi))
@@ -479,7 +483,7 @@ end subroutine apply_disturbances
     !--------------------------------------------------------------------------------------!
     csite%ntext_soil(1:nzg,np) = csite%ntext_soil(1:nzg,dp)
 
-    csite%can_temp(np) = 0.0
+    csite%can_enthalpy(np) = 0.0
 
     csite%can_shv(np) = 0.0
 
@@ -550,7 +554,7 @@ end subroutine apply_disturbances
 
     csite%sum_chd(np) = csite%sum_chd(np) + csite%sum_chd(cp) * area_fac
 
-    csite%can_temp(np) = csite%can_temp(np) + csite%can_temp(cp) * area_fac
+    csite%can_enthalpy(np) = csite%can_enthalpy(np) + csite%can_enthalpy(cp) * area_fac
 
     csite%can_shv(np) = csite%can_shv(np) + csite%can_shv(cp) * area_fac
 

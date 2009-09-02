@@ -1521,9 +1521,9 @@ module fuse_fiss_utils
                                      ( csite%can_co2(donp)            * csite%area(donp)   &
                                      + csite%can_co2(recp)            * csite%area(recp) )
 
-      csite%can_temp(recp)           = newareai *                                          &
-                                     ( csite%can_temp(donp)           * csite%area(donp)   &
-                                     + csite%can_temp(recp)           * csite%area(recp) )
+      csite%can_enthalpy(recp)       = newareai *                                          &
+                                     ( csite%can_enthalpy(donp)       * csite%area(donp)   &
+                                     + csite%can_enthalpy(recp)       * csite%area(recp) )
 
       csite%can_shv(recp)            = newareai *                                          &
                                      ( csite%can_shv(donp)            * csite%area(donp)   &
@@ -1765,6 +1765,12 @@ module fuse_fiss_utils
       end do
       !------------------------------------------------------------------------------------!
 
+      !------------------------------------------------------------------------------------!
+      !    We now update the canopy thermodynamic propeties:                               !
+      ! + csite%can_temp(recp)                                                             !
+      ! + csite%can_rhos(recp)                                                             !
+      !------------------------------------------------------------------------------------!
+      call update_patch_thermo_props(csite,prss,recp,recp)
 
       !------------------------------------------------------------------------------------!
       !     Now we need to adjust the densities of cohorts. Because the patch area         !
@@ -1863,8 +1869,6 @@ module fuse_fiss_utils
       !    Now we update some variables that depend on cohort statistics, namely:          !
       ! + csite%veg_height(recp)                                                           !
       ! + csite%disp_height(recp)                                                          !
-      ! + csite%can_rhos(recp)                                                             !
-      ! + csite%can_depth(recp)                                                            !
       ! + csite%lai(recp)                                                                  !
       ! + csite%veg_rough(recp)                                                            !
       ! + csite%wbudget_initialstorage(recp)                                               !

@@ -24,7 +24,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine grell_dellabot_ensemble(mgmzp,checkmass,masstol,edt,this,p_cup,this_cup         &
                                   ,mentrd_rate,cdd,dzd_cld,etad_cld,thisd_cld,dellathis)
-   use rconstants, only: g
+   use rconstants, only: grav
    implicit none
 
    integer               , intent(in)    :: mgmzp       ! Number of levels
@@ -66,7 +66,7 @@ subroutine grell_dellabot_ensemble(mgmzp,checkmass,masstol,edt,this,p_cup,this_c
    end if
    
    dellathis = (detdo1 * .5*(thisd_cld(1)+thisd_cld(2)) + detdo2 * thisd_cld(1)            &
-             + subin * this_cup(2) - entdo * this(1) ) * g /(p_cup(1)-p_cup(2))
+             + subin * this_cup(2) - entdo * this(1) ) * grav /(p_cup(1)-p_cup(2))
    
    return
 end subroutine grell_dellabot_ensemble
@@ -89,7 +89,7 @@ end subroutine grell_dellabot_ensemble
 subroutine grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,k22,kbcon,jmin,ktop,this &
                                 ,p_cup,this_cup,mentrd_rate,mentru_rate,cdd,cdu,dzd_cld    &
                                 ,etad_cld,etau_cld,thisd_cld,thisu_cld,dellathis)
-   use rconstants, only : g
+   use rconstants, only : grav
 
    implicit none
 
@@ -235,7 +235,7 @@ subroutine grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,k22,kbcon,jmin
                       + detup * .5 * (thisu_cld(k+1) + thisu_cld(k))                       &
                       + detdo * .5 * (thisd_cld(k+1) + thisd_cld(k))                       &
                       - entup * this(k)       - entdo * this(k)      )                     &
-                      * g /(p_cup(k)-p_cup(k+1)) !---- p decreases with height... ---------!
+                      * grav /(p_cup(k)-p_cup(k+1)) !---- p decreases with height... ------!
 
    end do vertloop
 

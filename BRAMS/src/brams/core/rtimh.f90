@@ -628,7 +628,7 @@ subroutine mass_flux(n1,n2,n3,m1,m2,m3,up,vp,wp  &
   print*,  wmass,emass,smass,nmass
   print*, 'total (kg/(m2 s):',tmass/area
   print*, 'total (kg/m2):',aintmass/area
-  print*, 'total pr change (pa):',aintmass/area*g
+  print*, 'total pr change (pa):',aintmass/area*grav
   print*, 'computed mean press:',prtot/area
   print*,'==============================='
 

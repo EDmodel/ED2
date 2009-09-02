@@ -2,7 +2,7 @@
 subroutine cup_env(j,z,qes,he,hes,t,q,p,z1,mix,mgmxp,mkx,mgmzp,istart,iend     &
                   ,psur,ierr,tcrit,itest)
 
-  use rconstants, only : rgas, cp, alvl, aklv, akiv, ep, g, rocp
+  use rconstants, only : rdry, cp, alvl, aklv, akiv, ep, grav, rocp
   use therm_lib, only: virtt
 
   implicit none
@@ -39,7 +39,7 @@ subroutine cup_env(j,z,qes,he,hes,t,q,p,z1,mix,mgmxp,mkx,mgmzp,istart,iend     &
   if (itest.ne.2) then
      do I=ISTART,IEND
         if (ierr(i).eq.0) then
-           Z(I,1)=max(0.,Z1(I))-(ALOG(P(I,1))-ALOG(PSUR(I)))*rgas*TV(I,1)/g
+           Z(I,1)=max(0.,Z1(I))-(ALOG(P(I,1))-ALOG(PSUR(I)))*rdry*TV(I,1)/grav
         endif
      enddo
 
@@ -48,7 +48,7 @@ subroutine cup_env(j,z,qes,he,hes,t,q,p,z1,mix,mgmxp,mkx,mgmzp,istart,iend     &
         do I=ISTART,IEND
            if (ierr(i).eq.0) then
               TVBAR =  .5*TV(I,K)+.5*TV(I,K-1)
-              Z(I,K) = Z(I,K-1)-(ALOG(P(I,K))-ALOG(P(I,K-1)))*rgas*TVBAR/g
+              Z(I,K) = Z(I,K-1)-(ALOG(P(I,K))-ALOG(P(I,K-1)))*rdry*TVBAR/grav
            endif
         enddo
      enddo
@@ -56,7 +56,7 @@ subroutine cup_env(j,z,qes,he,hes,t,q,p,z1,mix,mgmxp,mkx,mgmzp,istart,iend     &
      do k=1,mkx
         do i=istart,iend
            if (ierr(i).eq.0) then
-              z(i,k) = (he(i,k)-cp*t(i,k)-alvl*q(i,k))/g
+              z(i,k) = (he(i,k)-cp*t(i,k)-alvl*q(i,k))/grav
               z(i,k) = max(1.e-3,z(i,k))
            endif
         enddo
@@ -69,8 +69,8 @@ subroutine cup_env(j,z,qes,he,hes,t,q,p,z1,mix,mgmxp,mkx,mgmzp,istart,iend     &
   do K=1,MKX
      do I=ISTART,IEND
         if (ierr(i).eq.0) then
-           if (itest.eq.0) HE(I,K) = g*Z(I,K)+cp*T(I,K)+alvl*Q(I,K)
-           HES(I,K) = g*Z(I,K)+cp*T(I,K)+alvl*QES(I,K)
+           if (itest.eq.0) HE(I,K) = grav*Z(I,K)+cp*T(I,K)+alvl*Q(I,K)
+           HES(I,K) = grav*Z(I,K)+cp*T(I,K)+alvl*QES(I,K)
 
            if (HE(I,K).ge.HES(I,K)) HE(I,K) = HES(I,K)
 
@@ -86,7 +86,7 @@ subroutine cup_env_clev(j,t,qes,q,he,hes,z,p,qes_cup,q_cup,he_cup,hes_cup      &
                        ,z_cup,p_cup,gamma_cup,t_cup,psur,mix,mgmxp,mkx,mgmzp   &
                        ,istart,iend,ierr,z1)
 
-  use rconstants, only : alvl, rm, aklv
+  use rconstants, only : alvl, rh2o, aklv
   implicit none
 
   integer                         :: i, j, k, mix, mgmxp, mkx, mgmzp, istart   &
@@ -109,7 +109,7 @@ subroutine cup_env_clev(j,t,qes,q,he,hes,z,p,qes_cup,q_cup,he_cup,hes_cup      &
            p_cup(i,k) = .5*(p(i,k-1) + p(i,k))
            t_cup(i,k) = .5*(t(i,k-1) + t(i,k))
 
-           gamma_cup(i,k) =aklv*(alvl/(rm*t_cup(i,k)*t_cup(i,k)))*qes_cup(i,k)
+           gamma_cup(i,k) =aklv*(alvl/(rh2o*t_cup(i,k)*t_cup(i,k)))*qes_cup(i,k)
         endif
      enddo
   enddo
@@ -125,7 +125,7 @@ subroutine cup_env_clev(j,t,qes,q,he,hes,z,p,qes_cup,q_cup,he_cup,hes_cup      &
         p_cup(i,1)   = psur(i)
         t_cup(i,1)   = t(i,1)
         !srf	
-        gamma_cup(i,1) = aklv*(alvl/(rm*t_cup(i,1)*t_cup(i,1)))*qes_cup(i,1)
+        gamma_cup(i,1) = aklv*(alvl/(rh2o*t_cup(i,1)*t_cup(i,1)))*qes_cup(i,1)
      endif
   enddo
 
@@ -320,7 +320,7 @@ end subroutine cup_kbcon
 !--------------------------------------------------------------------
 subroutine cup_kbcon_cin(iloop,k22,kbcon,he_cup,hes_cup,z,tmean,qes,mix,mgmxp  &
                         ,mkx,mgmzp,istart,iend,ierr,kbmax,p_cup,cap_max)
-  use rconstants, only : alvl,aklv,rm,cp,g
+  use rconstants, only : alvl,aklv,rh2o,cp,grav
   implicit none
   integer                         :: i,mix,mgmxp,mkx,mgmzp,istart,iend,iloop
   integer, dimension(mgmxp)       :: kbcon,k22,ierr,kbmax
@@ -350,10 +350,10 @@ subroutine cup_kbcon_cin(iloop,k22,kbcon,he_cup,hes_cup,z,tmean,qes,mix,mgmxp  &
 32   continue
      dh = HE_cup(I,K22(I)) - HES_cup(I,KBCON(I))
      if (dh.lt. 0.) then
-        GAMMA = aklv*(alvl/(rm*(Tmean(I,K22(i))**2)))*QES(I,K22(i))
+        GAMMA = aklv*(alvl/(rh2o*(Tmean(I,K22(i))**2)))*QES(I,K22(i))
         tprim = dh/(cp*(1.+gamma))
 
-        cin   = cin + g*tprim*(z(i,k22(i))-z(i,k22(i)-1))/tmean(i,k22(i))
+        cin   = cin + grav*tprim*(z(i,k22(i))-z(i,k22(i)-1))/tmean(i,k22(i))
         go to 31
      end if
 

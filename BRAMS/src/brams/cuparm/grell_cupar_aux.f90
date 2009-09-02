@@ -235,8 +235,16 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
          ,tke          & ! intent(out) - Forced Turbulent kinetic energy          [   J/kg]
          ,sigw         & ! intent(out) - Vertical velocity standard deviation     [    m/s]
          ,wwind        ! ! intent(out) - Mean vertical velocity                   [    m/s]
-   use rconstants, only : cp,cpi,cpor,p00,g,alvl,rgas,t00,epi,aklv,akiv,toodry             &
-                         ,sigwmin,tkmin
+   use rconstants, only : cp      & ! intent(in)
+                        , cpi     & ! intent(in)
+                        , cpor    & ! intent(in)
+                        , p00     & ! intent(in)
+                        , grav    & ! intent(in)
+                        , rdry    & ! intent(in)
+                        , epi     & ! intent(in)
+                        , toodry  & ! intent(in)
+                        , sigwmin & ! intent(in)
+                        , tkmin   ! ! intent(in)
 
    !------ External functions -------------------------------------------------------------!
    use therm_lib, only: &
@@ -297,7 +305,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
       !------ 6. Turbulent kinetic energy [m²/s²] -----------------------------------------!
       tke0(k)     = tkep(kr)
       !------ 7. Vertical velocity in terms of pressure, or Lagrangian dp/dt [ Pa/s] ------!
-      omeg(k)     = -g*dn0(kr)*.5*( wp(kr)+wp(kr-1) )
+      omeg(k)     = -grav*dn0(kr)*.5*( wp(kr)+wp(kr-1) )
       !------ 8. Vertical velocity [m/s], this is staggered, averaging... -----------------!
       wwind(k)    = 0.5 * (wp(kr)+wp(kr-1))
       !------ 9. Standard-deviation of vertical velocity ----------------------------------!
@@ -380,7 +388,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
    do k=2,mkx-1
       dq          = .5*(qvap(k+1)-qvap(k-1))  ! Delta-q between layers.
       !------ This is moisture convergence, meaning (-1) × moisture divergence. -----------!
-      mconv       = mconv+omeg(k)*dq/g 
+      mconv       = mconv+omeg(k)*dq/grav
    end do
    !----- Moisture convergence closure is only interested when convergence is positive. ---!
    mconv     = max(0.,mconv)

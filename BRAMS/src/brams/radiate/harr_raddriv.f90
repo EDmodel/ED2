@@ -841,7 +841,7 @@ end subroutine cloud_opt
 !    Get the path lengths for the various gases...                                         !
 !------------------------------------------------------------------------------------------!
 subroutine path_lengths(nrad)
-   use rconstants , only : g     & ! intent(in)
+   use rconstants , only : grav  & ! intent(in)
                          , ep    ! ! intent(in)
    use mem_harr   , only : mg    ! ! intent(in)
    use harr_coms  , only : u     & ! intent(out)
@@ -863,12 +863,12 @@ subroutine path_lengths(nrad)
    real, parameter :: rvmin=1.e-6
    !---------------------------------------------------------------------------------------!
 
-   u(1,1) = .5 * (rl(2)   +   rl(1)) * g * dzl(1)
-   u(1,2) = .5 * (co2l(2) + co2l(1)) * g * dzl(1)
-   u(1,3) =       o3l(1)             * g * dzl(1)
+   u(1,1) = .5 * (rl(2)   +   rl(1)) * grav * dzl(1)
+   u(1,2) = .5 * (co2l(2) + co2l(1)) * grav * dzl(1)
+   u(1,3) =       o3l(1)             * grav * dzl(1)
 
    do k = 2,nrad
-      dzl9   = g * dzl(k)
+      dzl9   = grav * dzl(k)
       rmix   = rl(k) / dl(k)
       vp(k)  = pl(k) * rmix / (ep + rmix)
       u(k,1) = 0.5 * dzl9 * (  rl(k) +   rl(k-1))

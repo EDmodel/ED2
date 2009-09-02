@@ -94,30 +94,31 @@ module mod_interp
    !=======================================================================================!
    !=======================================================================================!
    subroutine alloc_interp(interp,mtp)
-      use mod_ioopts, only : radratio
+      use mod_ioopts, only : radratio    & ! intent(in)
+                           , ninputs_day ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       integer          , intent(in)    :: mtp
       type(interp_vars), intent(inout) :: interp
       !------------------------------------------------------------------------------------!
 
-      allocate(interp%deltan   (mxgauss , mygauss               ))
-      allocate(interp%kappa0   (mxgauss , mygauss               ))
-      allocate(interp%g0       (mxgauss , mygauss               ))
+      allocate(interp%deltan   (mxgauss , mygauss                  ))
+      allocate(interp%kappa0   (mxgauss , mygauss                  ))
+      allocate(interp%g0       (mxgauss , mygauss                  ))
 
-      allocate(interp%weight   (mxlola  , mylola                ))
-      allocate(interp%rm2      (mxlola  , mylola                ))
-      allocate(interp%mask     (mxlola  , mylola                ))
+      allocate(interp%weight   (mxlola  , mylola                   ))
+      allocate(interp%rm2      (mxlola  , mylola                   ))
+      allocate(interp%mask     (mxlola  , mylola                   ))
 
-      allocate(interp%residu   (mxlola  , mylola  , mtp         ))
+      allocate(interp%residu   (mxlola  , mylola  , mtp            ))
       
-      allocate(interp%iwe      (mxlola  , mylola                ))
-      allocate(interp%jno      (mxlola  , mylola                ))
-      allocate(interp%dix      (mxlola  , mylola                ))
-      allocate(interp%diy      (mxlola  , mylola                ))
+      allocate(interp%iwe      (mxlola  , mylola                   ))
+      allocate(interp%jno      (mxlola  , mylola                   ))
+      allocate(interp%dix      (mxlola  , mylola                   ))
+      allocate(interp%diy      (mxlola  , mylola                   ))
       
-      allocate(interp%zen_norm (                    radratio    ))
-      allocate(interp%frac_u   (                    radratio, 12))
+      allocate(interp%zen_norm (                    radratio       ))
+      allocate(interp%frac_u   (                    ninputs_day, 12))
 
       return
    end subroutine alloc_interp

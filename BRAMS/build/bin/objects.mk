@@ -234,6 +234,7 @@ OBJ_MODEL =                         \
 	sst_read.o                  \
 	teb_spm_start.o             \
 	therm_lib.o                 \
+	therm_lib8.o                \
 	tkenn.o                     \
 	tmpname.o                   \
 	turb_constants.o            \

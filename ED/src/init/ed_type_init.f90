@@ -188,6 +188,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%co2budget_rh(ip1:ip2)             = 0.0
   csite%co2budget_plresp(ip1:ip2)         = 0.0
   csite%co2budget_initialstorage(ip1:ip2) = 0.0
+  csite%co2budget_loss2atm(ip1:ip2)       = 0.0
   csite%co2budget_residual(ip1:ip2)       = 0.0
   csite%wbudget_precipgain(ip1:ip2)       = 0.0
   csite%wbudget_loss2atm(ip1:ip2)         = 0.0
@@ -197,7 +198,6 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%wbudget_residual(ip1:ip2)         = 0.0
   csite%ebudget_precipgain(ip1:ip2)       = 0.0
   csite%ebudget_netrad(ip1:ip2)           = 0.0
-  csite%ebudget_latent(ip1:ip2)           = 0.0
   csite%ebudget_loss2atm(ip1:ip2)         = 0.0
   csite%ebudget_loss2runoff(ip1:ip2)      = 0.0
   csite%ebudget_loss2drainage(ip1:ip2)    = 0.0

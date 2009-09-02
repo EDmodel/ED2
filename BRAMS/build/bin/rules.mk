@@ -1124,6 +1124,11 @@ therm_lib.o: $(UTILS_LIB)/therm_lib.f90
 	 $(F90_COMMAND) $(<F:.f90=.f90)
 	 rm -f $(<F:.f90=.f90)
 
+therm_lib8.o: $(UTILS_LIB)/therm_lib8.f90
+	 cp -f $< $(<F:.f90=.f90)
+	 $(F90_COMMAND) $(<F:.f90=.f90)
+	 rm -f $(<F:.f90=.f90)
+
 tkenn.o: $(TURB)/tkenn.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)

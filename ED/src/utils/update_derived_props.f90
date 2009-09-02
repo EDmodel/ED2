@@ -62,8 +62,6 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
                                   , ez                         & ! intent(in)
                                   , vh2vr                      & ! intent(in)
                                   , vh2dh                      ! ! intent(in)
-   use consts_coms         , only : rdry                       & ! intent(in)
-                                  , epim1                      ! ! intent(in)
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -168,14 +166,6 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    !----- Find the PFT-dependent size distribution of this patch. -------------------------!
    call patch_pft_size_profile(csite,ipa,ff_ndbh)
 
-
-   
-   
-  
-   !----- Finding the updated canopy air density. -----------------------------------------!
-   csite%can_rhos(ipa) = prss                                                              &
-                       / (rdry * csite%can_temp(ipa) + (1. + epim1 * csite%can_shv(ipa)))  
-
    !----- Computing the storage terms for CO2, energy, and water budgets. -----------------!
    csite%co2budget_initialstorage(ipa) = compute_co2_storage(csite,ipa)
    csite%wbudget_initialstorage(ipa)   = compute_water_storage(csite,lsl,ipa)
@@ -186,6 +176,43 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
 
    return
 end subroutine update_patch_derived_props
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This subroutine will take care of some diagnostic thermodynamic properties, namely  !
+! the canopy air density and temperature.                                                  !
+!------------------------------------------------------------------------------------------!
+subroutine update_patch_thermo_props(csite,prss,ipaa,ipaz)
+  
+   use ed_state_vars, only : sitetype    ! ! structure
+   use therm_lib    , only : idealdenssh & ! function
+                           , hq2temp     ! ! function
+  implicit none
+
+   !----- Arguments -----------------------------------------------------------------------!
+   type(sitetype)  , target     :: csite
+   integer         , intent(in) :: ipaa
+   integer         , intent(in) :: ipaz
+   real            , intent(in) :: prss
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                      :: ipa
+   !---------------------------------------------------------------------------------------!
+
+
+   do ipa=ipaa,ipaz
+      csite%can_temp(ipa) = hq2temp(csite%can_enthalpy(ipa),csite%can_shv(ipa))
+      csite%can_rhos(ipa) = idealdenssh(prss,csite%can_temp(ipa),csite%can_shv(ipa))
+   end do
+
+   return
+end subroutine update_patch_thermo_props
 !==========================================================================================!
 !==========================================================================================!
 

@@ -100,6 +100,7 @@ OBJ_MODEL =                        \
 	stable_cohorts.o           \
 	structural_growth.o        \
 	therm_lib.o                \
+	therm_lib8.o               \
 	twostream_rad.o            \
 	update_derived_props.o     \
 	utils_c.o                  \

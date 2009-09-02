@@ -322,7 +322,7 @@ end subroutine sedim_particles
 subroutine lsl_particles(m2,m3,npatch,ia,iz,ja,jz           &
      ,temps,dens,vels,rvs,Zi,ustar,tstar,patch_area,veg,Z0m &
      ,v_sed,r_lsl)
-  use rconstants, only: t00, vonk,cp,pi1,g
+  use rconstants, only: t00, vonk,cp,pi1,grav
   implicit none
   REAL,PARAMETER :: kB = 1.3807e-23      ! const Boltzmann - kg m^2 s^-2 K^-1 molecule^-1
   REAL,PARAMETER :: ASP = 1.257          ! 1.249
@@ -393,7 +393,7 @@ subroutine lsl_particles(m2,m3,npatch,ia,iz,ja,jz           &
 
            !-  Stokes number determination (Slinn, 1980)
            !-  St =     ustar^2 * V_sedim /( g * kinematic viscosity of air)   
-           St = max(ustar(i,j,ipatch)**2. * v_sed(i,j) / (g * nu), 0.01) 
+           St = max(ustar(i,j,ipatch)**2. * v_sed(i,j) / (grav * nu), 0.01) 
     
            !-  laminar sub-layer resistance for particles (s m^-1) 
 
@@ -450,7 +450,7 @@ subroutine lsl_particles(m2,m3,npatch,ia,iz,ja,jz           &
                     !- Rb= (u* (1+ (w*/u*)^2)) (Sc^2./3 + 10^(-3/St))    
 
                     wptp  = - ustar(i,j,ipatch) * tstar(i,j,ipatch) ! sensible heat flux
-                    wstar = ( max (0., g* Zi(i,j)*  wptp/temps(i,j) ) )**ep13  
+                    wstar = ( max (0., grav* Zi(i,j)*  wptp/temps(i,j) ) )**ep13  
                     !	 
                     r_lsl(i,j,ipatch) = 1./(                         &
                          ustar(i,j,ipatch)*                          &

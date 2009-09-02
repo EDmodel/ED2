@@ -231,6 +231,7 @@ rm -fv souza_cupar_driver.o       souza_cupar_driver.mod
 rm -fv sst_read.o                 sst_read.mod
 rm -fv teb_spm_start.o            teb_spm_start.mod
 rm -fv therm_lib.o                therm_lib.mod
+rm -fv therm_lib8.o               therm_lib8.mod
 rm -fv tkenn.o                    tkenn.mod
 rm -fv tmpname.o                  tmpname.mod
 rm -fv turb_constants.o           turb_constants.mod

@@ -377,7 +377,7 @@ subroutine lwradc(nzp,rvr,rtr,co2r,dn0r,temprd,prd,dzzr,fthr,rlong)
   !  ! FD1,FD2 ..... downwelling fluxes (1-vapor) (2-CO2)
   !  +--------------------------------------------------------------------
   ! The subroutine uses CGS but constants are based on the global ones.
-  use rconstants, only : g, cp, stefan, ep , volmoll, mmco2i
+  use rconstants, only : grav, cp, stefan, ep , volmoll, mmco2i
   implicit none
 !----- List of arguments --------------------------------------------------------------------------------!
   integer, intent(in)                     :: nzp
@@ -386,7 +386,7 @@ subroutine lwradc(nzp,rvr,rtr,co2r,dn0r,temprd,prd,dzzr,fthr,rlong)
   real,    intent(out)                    :: rlong
 
 !----- List of constants --------------------------------------------------------------------------------!
-  real(kind=8),    parameter                      :: gcgs=dble(g)*100.
+  real(kind=8),    parameter                      :: gcgs=dble(grav)*100.
   real(kind=8),    parameter                      :: stefancgs=1000.*dble(stefan)
   real(kind=8),    parameter                      :: prefcgs=dble(1.01325e6)
   real(kind=8),    parameter                      :: cpcgs=dble(cp)*10000.
@@ -819,7 +819,7 @@ subroutine lwradp(nzp,temprd,rvr,co2r,dn0r,dzzr,pird,sc,fthr,rlong)
   !               RLONG  - downward longwave flux at the ground                                                        !
   !                                                                                                                    !
   !--------------------------------------------------------------------------------------------------------------------!
-  use rconstants, only : g,cp,stefan,p00,cpor
+  use rconstants, only : grav,cp,stefan,p00,cpor
   implicit none
   integer , intent(in)            :: nzp
   real    , intent(in)   , dimension(nzp)    :: rvr,co2r,dn0r,temprd,dzzr, pird
@@ -828,7 +828,7 @@ subroutine lwradp(nzp,temprd,rvr,co2r,dn0r,dzzr,pird,sc,fthr,rlong)
   real    , intent(out)  , dimension(nzp,18) :: sc
   !----- List of constants --------------------------------------------------------------------------------------------!
   real    , parameter                         :: p00cgs    =10.    * p00
-  real    , parameter                         :: gcgs      =100.   * g
+  real    , parameter                         :: gcgs      =100.   * grav
   real    , parameter                         :: stefancgs =1000.  * stefan
   real    , parameter                         :: cpcgs     =10000. * cp
   integer , parameter                         ::   iv1=  1,  iv2=  2,  iv3=  3,  iv4=  4,  iv5=  5,  iv6=  6 &

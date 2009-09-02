@@ -184,6 +184,11 @@ therm_lib.o: $(ED_UTILS)/therm_lib.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+therm_lib8.o: $(ED_UTILS)/therm_lib8.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 rk4_stepper.o : $(ED_DYNAMICS)/rk4_stepper.F90
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)

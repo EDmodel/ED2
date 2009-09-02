@@ -1024,7 +1024,14 @@ subroutine ReadNamelist(fileName)
   use domain_decomp, only: domain_fname
   
   ! Logical tests for microphysics complexity 
-  use therm_lib, only: vapour_on,cloud_on,bulk_on,level
+  use therm_lib , only : vapour_on               & ! intent(out)
+                       , cloud_on                & ! intent(out)
+                       , bulk_on                 & ! intent(out)
+                       , level                   ! ! intent(out)
+  use therm_lib8, only : vapour_on8 => vapour_on & ! intent(out)
+                       , cloud_on8  => cloud_on  & ! intent(out)
+                       , bulk_on8   => bulk_on   & ! intent(out)
+                       , level8     => level     ! ! intent(out)
 
   implicit none
 
@@ -1853,9 +1860,13 @@ subroutine ReadNamelist(fileName)
   ! Likewise, cloud_on will be true when level is either 2 or 3. Bulk microphysics will be !
   ! true only when level >= 3 (levels = 4 and 5 exist too but rarely used).                !
   !----------------------------------------------------------------------------------------!
-  vapour_on = level >= 1
-  cloud_on  = level >= 2
-  bulk_on   = level >= 3
+  vapour_on  = level >= 1
+  cloud_on   = level >= 2
+  bulk_on    = level >= 3
+  vapour_on8 = vapour_on
+  cloud_on8  = cloud_on
+  bulk_on8   = bulk_on
+  level8     = level
 
   !----------------------------------------------------------------------------------------!
   !    Saving the CO2 complexity level into a logical variable.                            !

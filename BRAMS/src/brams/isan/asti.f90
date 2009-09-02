@@ -596,7 +596,7 @@ do i=1,nxp
       do k=lbcp+1,nsigz
          ps_p(i,j,k)=1e30
          if(ps_t(i,j,k).lt.1e19.and.ps_r(i,j,k).lt.1.e19) then
-            ps_p(i,j,k)=po-g*(sigzr(k)-sigo)/((thvo+thv(k))*.5)
+            ps_p(i,j,k)=po-grav*(sigzr(k)-sigo)/((thvo+thv(k))*.5)
             thvo=thv(k)
             po=ps_p(i,j,k)
             sigo=sigzr(k)
@@ -609,7 +609,7 @@ do i=1,nxp
       do k=lbcp-1,1,-1
          ps_p(i,j,k)=1e30
          if(ps_t(i,j,k).lt.1e19.and.ps_r(i,j,k).lt.1.e19) then
-            ps_p(i,j,k)=po+g*(sigo-sigzr(k))/((thvo+thv(k))*.5)
+            ps_p(i,j,k)=po+grav*(sigo-sigzr(k))/((thvo+thv(k))*.5)
             thvo=thv(k)
             po=ps_p(i,j,k)
             sigo=sigzr(k)

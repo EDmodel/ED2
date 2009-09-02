@@ -156,14 +156,16 @@ subroutine spatial_averages
                                     , nzg               & ! intent(in)
                                     , nzs               ! ! intent(in)
    use consts_coms           , only : alvl              & ! intent(in)
+                                    , cpi               & ! intent(in)
                                     , wdns              ! ! intent(in)
-   use ed_misc_coms             , only : frqsum            ! ! intent(in)
+   use ed_misc_coms          , only : frqsum            ! ! intent(in)
    use therm_lib             , only : qwtk              & ! subroutine
-                                    , qtk               ! ! subroutine
+                                    , qtk               & ! subroutine
+                                    , hq2temp           ! ! function
    use soil_coms             , only : min_sfcwater_mass & ! intent(in)
                                     , soil              ! ! intent(in)
    use c34constants          , only : n_stoma_atts
-   use ed_max_dims              , only : n_pft
+   use ed_max_dims           , only : n_pft
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    type(edtype)         , pointer :: cgrid
@@ -545,10 +547,13 @@ subroutine spatial_averages
             end if
 
             !----- Site average of canopy thermodynamic state -----------------------------!
-            cpoly%avg_can_temp(isi) = sum(csite%can_temp  * csite%area) * site_area_i
+            cpoly%avg_can_enthalpy(isi) = sum(csite%can_enthalpy  * csite%area)            &
+                                        * site_area_i
             cpoly%avg_can_shv (isi) = sum(csite%can_shv   * csite%area) * site_area_i
             cpoly%avg_can_co2 (isi) = sum(csite%can_co2   * csite%area) * site_area_i
             cpoly%avg_can_rhos(isi) = sum(csite%can_rhos  * csite%area) * site_area_i
+            cpoly%avg_can_temp(isi) = hq2temp(cpoly%avg_can_enthalpy(isi)                  &
+                                             ,cpoly%avg_can_shv (isi))
 
             !------------------------------------------------------------------------------!
             !   Site average of leaf properties.  Again, we average "extensive" properties !
@@ -628,10 +633,14 @@ subroutine spatial_averages
          cgrid%avg_qwshed_vg(ipy)    = sum(cpoly%avg_qwshed_vg    *cpoly%area)*poly_area_i
          cgrid%avg_sensible_gc(ipy)  = sum(cpoly%avg_sensible_gc  *cpoly%area)*poly_area_i
          cgrid%avg_sensible_ac(ipy)  = sum(cpoly%avg_sensible_ac  *cpoly%area)*poly_area_i
-         cgrid%avg_can_temp(ipy)     = sum(cpoly%avg_can_temp     *cpoly%area)*poly_area_i
+         cgrid%avg_can_enthalpy(ipy) = sum(cpoly%avg_can_enthalpy *cpoly%area)*poly_area_i
          cgrid%avg_can_shv(ipy)      = sum(cpoly%avg_can_shv      *cpoly%area)*poly_area_i
          cgrid%avg_can_co2(ipy)      = sum(cpoly%avg_can_co2      *cpoly%area)*poly_area_i
          cgrid%avg_can_rhos(ipy)     = sum(cpoly%avg_can_rhos     *cpoly%area)*poly_area_i
+
+         !----- Find temperature based on average enthalpy and mixing ratio. --------------!
+         cgrid%avg_can_temp(ipy)     = hq2temp(cgrid%avg_can_enthalpy(ipy)                 &
+                                              ,cgrid%avg_can_shv(ipy) )
 
          !---------------------------------------------------------------------------------!
          !    Similar to the site level, average mass, heat capacity and energy then find  !

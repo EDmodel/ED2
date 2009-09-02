@@ -623,7 +623,7 @@ subroutine pr_hystatic_z(np,z1,z2,t1,t2,r1,r2,p1,p2)
         tv1=virtt(t1(n),raux)
         raux = ptrh2rvapil(r2(n),p2*100.,t2(n))
         tv2=virtt(t2(n),raux)
-        z1(n)=z2(n)- rgas*.5*(tv1+tv2)*(log(p1/p2))/g
+        z1(n)=z2(n)- rdry*.5*(tv1+tv2)*(log(p1/p2))/grav
         !print*,z1(n),z2(n),t1(n),t2(n),tv1,tv2,p1,p2
      else
         z1(n)=1.e30
@@ -640,8 +640,8 @@ subroutine pr_hystatic_z(np,z1,z2,t1,t2,r1,r2,p1,p2)
           .and.r2(n).lt.1.e20 ) then
         raux=ptrh2rvapil(r2(n),p2*100.,t2(n))
         vtfact=virtt(t2(n),raux)/t2(n)
-        t1(n)=-t2(n)- (2.*g*(z1(n)-z2(n))  &
-             /(rgas *(log(p1/p2))) )  &
+        t1(n)=-t2(n)- (2.*grav*(z1(n)-z2(n))  &
+             /(rdry *(log(p1/p2))) )  &
              /vtfact
         !if(n.eq.36*(13-1)+13) print*,t1(n),t2(n),z1(n),z2(n),vtfact,p1,p2 
      else

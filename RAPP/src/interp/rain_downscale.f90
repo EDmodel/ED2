@@ -20,7 +20,8 @@
 !------------------------------------------------------------------------------------------!
 subroutine downscale_precip(nprecip_in,nprecip_out,imo,ireali,precip_in,precip_out)
    use rconstants, only : day_sec          ! ! intent(in)
-   use mod_ioopts, only : inpfrq           & ! intent(in)
+   use mod_ioopts, only : ninputs_day      & ! intent(in)
+                        , inpfrq           & ! intent(in)
                         , radfrq           & ! intent(in)
                         , radratio         ! ! intent(in)
    use mod_interp, only : interp_buffer    & ! intent(inout)
@@ -69,7 +70,7 @@ subroutine downscale_precip(nprecip_in,nprecip_out,imo,ireali,precip_in,precip_o
       end do
 
       !----- Copying the namelist variable into the array-based variable. -----------------!
-      interp_buffer%frac_u = reshape(frac_u(1:npdf), (/ radratio, 12 /) )
+      interp_buffer%frac_u = reshape(frac_u(1:npdf), (/ ninputs_day, 12 /) )
 
       first_time = .false.
    end if

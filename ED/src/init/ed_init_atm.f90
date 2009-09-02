@@ -11,6 +11,7 @@ subroutine ed_init_atm
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
   use pft_coms,only : sla
   use ed_therm_lib,only : calc_hcapveg,ed_grndvap
+  use therm_lib, only : tq2enthalpy,idealdenssh
   
   implicit none
 
@@ -66,10 +67,13 @@ subroutine ed_init_atm
 
               cpatch => csite%patch(ipa)
 
-              csite%can_temp(ipa) =   cpoly%met(isi)%atm_tmp
-              csite%can_shv(ipa)  =   cpoly%met(isi)%atm_shv
-              csite%can_co2(ipa)  =   cpoly%met(isi)%atm_co2
-              
+              csite%can_temp(ipa)     = cpoly%met(isi)%atm_tmp
+              csite%can_shv(ipa)      = cpoly%met(isi)%atm_shv
+              csite%can_co2(ipa)      = cpoly%met(isi)%atm_co2
+              csite%can_enthalpy(ipa) = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa))
+              csite%can_rhos(ipa)     = idealdenssh(cpoly%met(isi)%prss                    &
+                                                   ,csite%can_temp(ipa),csite%can_shv(ipa))
+
               ! Initialize stars
               csite%tstar(ipa)  = 0.
               csite%ustar(ipa)  = 0.

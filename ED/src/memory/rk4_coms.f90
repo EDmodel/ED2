@@ -20,6 +20,8 @@ module rk4_coms
    type rk4patchtype
 
       !----- Canopy air variables. --------------------------------------------------------!
+      real(kind=8)                        :: can_enthalpy ! Canopy enthalpy      [    J/kg]
+      real(kind=8)                        :: can_theta    ! Pot. Temperature     [       K]
       real(kind=8)                        :: can_temp     ! Temperature          [       K]
       real(kind=8)                        :: can_shv      ! Specific humidity    [   kg/kg]
       real(kind=8)                        :: can_co2      ! CO_2                 [µmol/mol]
@@ -64,6 +66,7 @@ module rk4_coms
       real(kind=8)                        :: cstar ! Carbon mixing ratio          [µmol/m³]
       real(kind=8)                        :: tstar ! Temperature                  [      K]
       real(kind=8)                        :: qstar ! Water vapour spec. humidity  [  kg/kg]
+      real(kind=8)                        :: hstar ! Enthalpy                     [   J/kg]
 
       !----- Vertical fluxes. -------------------------------------------------------------!
       real(kind=8)                        :: upwp 
@@ -119,10 +122,11 @@ module rk4_coms
       real(kind=8)                      :: avg_drainage    ! Drainage at the bottom.
       !----- Full budget variables --------------------------------------------------------!
       real(kind=8) :: co2budget_loss2atm
+      real(kind=8) :: ebudget_storage
       real(kind=8) :: ebudget_loss2atm
       real(kind=8) :: ebudget_loss2drainage
       real(kind=8) :: ebudget_loss2runoff
-      real(kind=8) :: ebudget_latent
+      real(kind=8) :: wbudget_storage
       real(kind=8) :: wbudget_loss2atm
       real(kind=8) :: wbudget_loss2drainage
       real(kind=8) :: wbudget_loss2runoff
@@ -137,6 +141,7 @@ module rk4_coms
       real(kind=8) :: vels
       real(kind=8) :: atm_tmp
       real(kind=8) :: atm_theta
+      real(kind=8) :: atm_enthalpy
       real(kind=8) :: atm_shv
       real(kind=8) :: atm_co2
       real(kind=8) :: zoff
@@ -283,6 +288,10 @@ module rk4_coms
 
 
    !----- Constants used in rk4_derivs ----------------------------------------------------!
+   logical      :: const_depth   ! Assume canopy depth is constant. If this is true, then 
+                                 !    density is allowed to change. Otherwise, density is
+                                 !    assumed constant and canopy depth is allowed to 
+                                 !    change. 
    logical      :: debug         ! Verbose output for debug                        [   T|F]
    real(kind=8) :: toocold       ! Minimum temperature for saturation spec. hum.   [     K]
    real(kind=8) :: toohot        ! Maximum temperature for saturation spec. hum.   [     K]
@@ -393,7 +402,6 @@ module rk4_coms
    real(kind=8)    :: wcapcan
    real(kind=8)    :: wcapcani
    real(kind=8)    :: ccapcani
-   real(kind=8)    :: hcapcani
    !=======================================================================================!
    !=======================================================================================!
 
@@ -512,10 +520,11 @@ module rk4_coms
       !------------------------------------------------------------------------------------!
 
       y%co2budget_loss2atm             = 0.d0
+      y%ebudget_storage                = 0.d0
       y%ebudget_loss2atm               = 0.d0
-      y%ebudget_latent                 = 0.d0
       y%ebudget_loss2drainage          = 0.d0
       y%ebudget_loss2runoff            = 0.d0
+      y%wbudget_storage                = 0.d0
       y%wbudget_loss2atm               = 0.d0
       y%wbudget_loss2drainage          = 0.d0
       y%wbudget_loss2runoff            = 0.d0
@@ -523,6 +532,8 @@ module rk4_coms
       y%can_temp                       = 0.d0
       y%can_shv                        = 0.d0
       y%can_co2                        = 0.d0
+      y%can_theta                      = 0.d0
+      y%can_enthalpy                   = 0.d0
       y%can_depth                      = 0.d0
       y%can_rhos                       = 0.d0
       y%virtual_water                  = 0.d0
@@ -541,6 +552,7 @@ module rk4_coms
       y%cstar                          = 0.d0
       y%tstar                          = 0.d0
       y%qstar                          = 0.d0
+      y%hstar                          = 0.d0
       y%virtual_flag                   = 0
       y%avg_carbon_ac                  = 0.d0
      

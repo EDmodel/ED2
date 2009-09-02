@@ -19,7 +19,7 @@
 module leaf_coms
 
    use grid_dims
-   use rconstants, only: g
+   use rconstants, only: grav
 
    integer :: niter_leaf   & ! number of leaf timesteps in model long timestep
             , niter_can    ! ! number of canopy timesteps in leaf timestep
@@ -154,9 +154,9 @@ module leaf_coms
 
 
    !----- Roughness -----------------------------------------------------------------------!
-   real, parameter :: z0fac_water    = .016 / g   ! Coefficient before ustar²
-   real, parameter :: min_waterrough = .0001      ! Minimum water roughness height
-   real, parameter :: snowrough      = .001       ! Snow roughness height
+   real, parameter :: z0fac_water    = .016 / grav ! Coefficient before ustar²
+   real, parameter :: min_waterrough = .0001       ! Minimum water roughness height
+   real, parameter :: snowrough      = .001        ! Snow roughness height
    !---------------------------------------------------------------------------------------!
 
 

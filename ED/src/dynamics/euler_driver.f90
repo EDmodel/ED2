@@ -151,10 +151,10 @@ subroutine euler_timestep(cgrid)
                            ,csite%ebudget_loss2atm(ipa),csite%wbudget_loss2atm(ipa)        &
                            ,csite%co2budget_loss2atm(ipa),csite%ustar(ipa)                 &
                            ,csite%snowfac(ipa),csite%surface_ssh(ipa)                      &
-                           ,csite%ground_shv(ipa),csite%can_temp(ipa),csite%can_shv(ipa)   &
-                           ,csite%can_co2(ipa),csite%rough(ipa),cpoly%lsl(isi)             &
-                           ,cpoly%leaf_aging_factor(:,isi),cpoly%green_leaf_factor(:,isi)  &
-                           ,rasveg,canwcap,canhcap)
+                           ,csite%ground_shv(ipa),csite%can_enthalpy(ipa)                  &
+                           ,csite%can_temp(ipa),csite%can_shv(ipa),csite%can_co2(ipa)      &
+                           ,csite%rough(ipa),cpoly%lsl(isi),cpoly%leaf_aging_factor(:,isi) &
+                           ,cpoly%green_leaf_factor(:,isi),rasveg,canwcap,canhcap)
 
                !---------------------------------------------------------------------------!
                !    Update the minimum monthly temperature, based on canopy temperature.   !
@@ -186,8 +186,8 @@ subroutine leaf3_land(csite,ipa,nlev_sfcwater,ntext_soil,soil_water,soil_energy 
                      ,sfcwater_mass,sfcwater_energy,sfcwater_depth,rshort_s,rshort_g       &
                      ,rlong_s,rlong_g,veg_height,veg_rough,veg_tai,can_depth,rhos,vels     &
                      ,atm_tmp,prss,pcpg,qpcpg,dpcpg,sxfer_t,sxfer_r,sxfer_c,ustar,snowfac  &
-                     ,surface_ssh,ground_shv,can_temp,can_shv,can_co2,rough,lsl            &
-                     ,leaf_aging_factor, green_leaf_factor,rasveg,canwcap,canhcap)
+                     ,surface_ssh,ground_shv,can_enthalpy,can_temp,can_shv,can_co2,rough   &
+                     ,lsl,leaf_aging_factor, green_leaf_factor,rasveg,canwcap,canhcap)
 
 
    use ed_state_vars, only : sitetype    ! ! structure
@@ -242,6 +242,7 @@ subroutine leaf3_land(csite,ipa,nlev_sfcwater,ntext_soil,soil_water,soil_energy 
    real                     , intent(inout) :: veg_tai
    real                     , intent(inout) :: surface_ssh
    real                     , intent(inout) :: ground_shv
+   real                     , intent(inout) :: can_enthalpy
    real                     , intent(inout) :: can_temp
    real                     , intent(inout) :: can_shv
    real                     , intent(inout) :: can_co2
@@ -301,8 +302,8 @@ subroutine leaf3_land(csite,ipa,nlev_sfcwater,ntext_soil,soil_water,soil_energy 
                     ,soil_tempk(nzg),sfcwater_mass (nlsw1),sfcwater_tempk(nlsw1)           &
                     ,veg_height,veg_rough,veg_tai,can_depth,rhos,vels,atm_tmp,prss,pcpg    &
                     ,qpcpg,sxfer_t,sxfer_r,sxfer_c,ustar,snowfac,surface_ssh,ground_shv    &
-                    ,can_temp,can_shv,can_co2,wshed,qwshed,transp,hxfergc,wxfergc,hxfersc  &
-                    ,wxfersc,rdi,lsl,ed_transp,csite,ipa,leaf_aging_factor                 &
+                    ,can_enthalpy,can_temp,can_shv,can_co2,wshed,qwshed,transp,hxfergc     &
+                    ,wxfergc,hxfersc,wxfersc,rdi,lsl,ed_transp,csite,ipa,leaf_aging_factor &
                     ,green_leaf_factor,rasveg,canwcap,canhcap)
 
 
@@ -377,10 +378,10 @@ end subroutine leaf3_land
 subroutine euler_canopy(nlev_sfcwater,ntext_soil,ktrans,soil_water,soil_fracliq,soil_tempk &
                        ,sfcwater_mass,sfcwater_tempk,veg_height,veg_rough,veg_tai          &
                        ,can_depth,rhos,vels,atm_tmp,prss,pcpg,qpcpg,sxfer_t,sxfer_r        &
-                       ,sxfer_c,ustar,snowfac,surface_ssh,ground_shv,can_temp,can_shv      &
-                       ,can_co2,wshed,qwshed,transp,hxfergc,wxfergc, hxfersc, wxfersc      &
-                       ,rdi,lsl,ed_transp,csite,ipa,leaf_aging_factor,green_leaf_factor    &
-                       ,rasveg,canwcap,canhcap)
+                       ,sxfer_c,ustar,snowfac,surface_ssh,ground_shv,can_enthalpy,can_temp &
+                       ,can_shv,can_co2,wshed,qwshed,transp,hxfergc,wxfergc, hxfersc       &
+                       ,wxfersc,rdi,lsl,ed_transp,csite,ipa,leaf_aging_factor              &
+                       ,green_leaf_factor,rasveg,canwcap,canhcap)
 
    use soil_coms      , only: soil_rough & ! intent(in)
                             , dslz       ! ! intent(in)
@@ -391,8 +392,7 @@ subroutine euler_canopy(nlev_sfcwater,ntext_soil,ktrans,soil_water,soil_fracliq,
                             , alvl       & ! intent(in)
                             , cliq       & ! intent(in)
                             , cice       & ! intent(in)
-                            , alli       & ! intent(in)
-                            , rvap       ! ! intent(in)
+                            , alli       ! ! intent(in)
    use ed_state_vars  , only: sitetype   & ! structure
                             , patchtype  ! ! structure
    use canopy_air_coms, only: exar       & ! intent(in)
@@ -435,6 +435,7 @@ subroutine euler_canopy(nlev_sfcwater,ntext_soil,ktrans,soil_water,soil_fracliq,
    real   , intent(in)    :: canwcap        ! Canopy air water capacity          [   kg/m2]
    real   , intent(in)    :: canhcap        ! Canopy air heat capacity           [  J/m2/K]
    !----- Input/Output variables. ---------------------------------------------------------!
+   real   , intent(inout) :: can_enthalpy   ! canopy air enthalpy                [    J/kg]
    real   , intent(inout) :: can_temp       ! canopy air temp                    [       K]
    real   , intent(inout) :: can_shv        ! canopy air vapor spec hum          [   kg/kg]
    real   , intent(inout) :: can_co2        ! canopy air CO2 mixing ratio        [umol/mol]

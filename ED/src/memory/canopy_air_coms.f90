@@ -15,15 +15,17 @@ module canopy_air_coms
    !----- Scaling factor of Tree Area Index, for computing wtveg [dimensionless]. ---------!
    real        , parameter :: covr          = 2.16
    !----- Minimum Ustar [m/s]. ------------------------------------------------------------!
-   real        , parameter :: ustmin        = 0.1
+   real        , parameter :: ustmin_stab   = 0.1
+   real        , parameter :: ustmin_unstab = 0.6
    !----- Minimum speed for stars [m/s]. --------------------------------------------------!
    real        , parameter :: ubmin_stab    = 0.1
    real        , parameter :: ubmin_unstab  = 1.0
    !----- Double precision version of these variables (for Runge-Kutta). ------------------!
-   real(kind=8), parameter :: exar8         = dble(exar        )
-   real(kind=8), parameter :: ustmin8       = dble(ustmin      )
-   real(kind=8), parameter :: ubmin_stab8   = dble(ubmin_stab  )
-   real(kind=8), parameter :: ubmin_unstab8 = dble(ubmin_unstab)
+   real(kind=8), parameter :: exar8          = dble(exar        )
+   real(kind=8), parameter :: ustmin_stab8   = dble(ustmin_stab )
+   real(kind=8), parameter :: ustmin_unstab8 = dble(ustmin_stab )
+   real(kind=8), parameter :: ubmin_stab8    = dble(ubmin_stab  )
+   real(kind=8), parameter :: ubmin_unstab8  = dble(ubmin_unstab)
    !----- Some parameters that were used in ED-2.0, added here for some tests. ------------!
    real        , parameter :: bz     = 0.91
    real        , parameter :: hz     = 0.0075
