@@ -268,7 +268,23 @@ subroutine init_can_air_params()
                              , rb_slope              & ! intent(out) 
                              , veg_height_min        & ! intent(out) 
                              , minimum_canopy_depth  & ! intent(out) 
-                             , minimum_canopy_depth8 ! ! intent(out)
+                             , minimum_canopy_depth8 & ! intent(out) 
+                             , exar                  & ! intent(out) 
+                             , covr                  & ! intent(out) 
+                             , ustmin_stab           & ! intent(out) 
+                             , ustmin_unstab         & ! intent(out) 
+                             , ubmin_stab            & ! intent(out) 
+                             , ubmin_unstab          & ! intent(out) 
+                             , exar8                 & ! intent(out) 
+                             , ez                    & ! intent(out) 
+                             , vh2vr                 & ! intent(out) 
+                             , vh2dh                 & ! intent(out) 
+                             , ustmin_stab8          & ! intent(out) 
+                             , ustmin_unstab8        & ! intent(out) 
+                             , ubmin_stab8           & ! intent(out) 
+                             , ubmin_unstab8         & ! intent(out) 
+                             , ez8                   & ! intent(out) 
+                             , vh2dh8                ! ! intent(out)
 
    !---------------------------------------------------------------------------------------!
    !    Minimum leaf water content to be considered.  Values smaller than this will be     !
@@ -324,6 +340,35 @@ subroutine init_can_air_params()
       veg_height_min = 1.0 ! was 0.2
    end select
 
+   !----- This is the dimensionless exponential wind atenuation factor. -------------------!
+   exar  = 2.5
+   exar8 = dble(exar)
+
+   !----- This is the scaling factor of tree area index (not sure if it is used...) -------!
+   covr = 2.16
+   
+   !----- This is the minimum ustar under stable and unstable conditions. -----------------!
+   ustmin_stab    = 0.10
+   ustmin_unstab  = 0.10
+   ustmin_stab8   = dble(ustmin_stab  )
+   ustmin_unstab8 = dble(ustmin_unstab)
+   
+   !----- This is the minimum wind scale under stable and unstable conditions. ------------!
+   ubmin_stab    = 0.25
+   ubmin_unstab  = 0.25
+   ubmin_stab8   = dble(ubmin_stab  )
+   ubmin_unstab8 = dble(ubmin_unstab)
+   
+   !----- This is the relation between displacement height and roughness when icanturb=-1. !
+   ez  = 0.172
+   ez8 = dble(ez)
+
+   !----- This is the conversion from veg. height to roughness when icanturb /= -1. -------!
+   vh2vr = 0.13
+   
+   !----- This is the conversion from vegetation height to displacement height. -----------!
+   vh2dh  = 0.63
+   vh2dh8 = dble(vh2dh)
 
    return
 end subroutine init_can_air_params
@@ -1429,7 +1474,7 @@ subroutine init_rk4_params()
    rk4epsi     = 1.d0/rk4eps  ! The inverse of desired accuracy.
    hmin        = 1.d-7        ! The minimum step size.
    print_diags = .false.      ! Flag to print the diagnostic check.
-   checkbudget = .true.      ! Flag to check CO2, water, and energy budgets every time
+   checkbudget = .true.       ! Flag to check CO2, water, and energy budgets every time
                               !     step and stop the run in case any of these budgets 
                               !     doesn't close.
    !---------------------------------------------------------------------------------------!

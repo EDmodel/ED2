@@ -50,8 +50,8 @@ subroutine simple_lake_model(time,dtlongest)
                                      , rk4max_can_temp   ! ! intent(in)
    use therm_lib              , only : rhovsil           & ! function
                                      , virtt             & ! function
-                                     , tq2enthalpy       & ! function
-                                     , hq2temp           ! ! function
+                                     , ptq2enthalpy      & ! function
+                                     , hpq2temp          ! ! function
    use canopy_struct_dynamics , only : ed_stars          & ! subroutine
                                      , vertical_vel_flux ! ! function
    implicit none
@@ -249,7 +249,7 @@ subroutine simple_lake_model(time,dtlongest)
          !---------------------------------------------------------------------------------!
 
          !----- Finding the atmospheric enthalpy. -----------------------------------------!
-         atm_enthalpy = tq2enthalpy(atm_temp,atm_shv)
+         atm_enthalpy = ptq2enthalpy(prss,atm_temp,atm_shv)
 
          !---------------------------------------------------------------------------------!
          tvir     = virtt(atm_temp,rv_mean,rtp_mean)
@@ -293,7 +293,7 @@ subroutine simple_lake_model(time,dtlongest)
          !------ Converting mixing ratio to specific humidity. ----------------------------!
          can_shv    = leaf_g(ngrid)%can_rvap(i,j,1) / (1. +leaf_g(ngrid)%can_rvap(i,j,1))
          !------ Finding the enthalpy. ----------------------------------------------------!
-         can_enthalpy = tq2enthalpy(can_temp,can_shv)
+         can_enthalpy = ptq2enthalpy(prss,can_temp,can_shv)
 
 
          sflux_u    = 0.0
@@ -357,7 +357,7 @@ subroutine simple_lake_model(time,dtlongest)
                                       + alvl * avg_water_lc  )
             can_shv  = prev_can_shv  + dtllowcc * (avg_water_lc    + avg_water_ac)
             can_co2  = prev_can_co2  + dtlloccc * (avg_carbon_lc   + avg_carbon_ac)
-            can_temp = hq2temp(can_enthalpy,can_shv)
+            can_temp = hpq2temp(can_enthalpy,prss,can_shv)
             
             !----- Sanity check -----------------------------------------------------------!
             if(can_shv  < sngl(rk4min_can_shv)  .or. can_shv  > sngl(rk4max_can_shv)  .or. &

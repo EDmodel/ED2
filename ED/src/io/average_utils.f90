@@ -5,6 +5,139 @@
 !                           |----------------------------------|                           !
 !==========================================================================================!
 !==========================================================================================!
+!     This subroutine increments the time averaged polygon met-forcing variables.  These   !
+! will be normalized by the output period to give time averages of each quantity.  The     !
+! polygon level variables are derived from the weighted spatial average from the site      !
+! level quantities.                                                                        !
+!------------------------------------------------------------------------------------------!
+subroutine int_met_avg(cgrid)
+   use ed_state_vars , only : edtype      & ! structure
+                            , polygontype & ! structure
+                            , sitetype    & ! structure
+                            , patchtype   ! ! structure
+   use ed_misc_coms  , only : dtlsm       & ! intent(in)
+                            , frqsum      ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(edtype)      , target  :: cgrid
+   !----- Local variables -----------------------------------------------------------------!
+   type(polygontype) , pointer :: cpoly
+   type(sitetype)    , pointer :: csite
+   type(patchtype)   , pointer :: cpatch
+   integer                     :: ipy,isi,ipa,ico
+   real                        :: frqsumi,tfact
+   real                        :: polygon_area_i
+   !---------------------------------------------------------------------------------------!
+
+   !----- Some aliases. -------------------------------------------------------------------!
+   frqsumi = 1.0 / frqsum
+   tfact = dtlsm * frqsumi
+
+   do ipy = 1,cgrid%npolygons
+      cpoly => cgrid%polygon(ipy)
+      polygon_area_i = 1. / sum(cpoly%area)
+
+      do isi = 1,cpoly%nsites
+         !---- Site-level averages.  Pressure is particularly important for enthalpy. -----!
+         cpoly%avg_atm_tmp(isi)        = cpoly%avg_atm_tmp(isi)                            &
+                                       + cpoly%met(isi)%atm_tmp  * tfact
+         cpoly%avg_atm_shv(isi)        = cpoly%avg_atm_shv(isi)                            &
+                                       + cpoly%met(isi)%atm_shv  * tfact
+         cpoly%avg_prss(isi)           = cpoly%avg_prss(isi)                               &
+                                       + cpoly%met(isi)%prss     * tfact
+
+         !----- Now the polygon-level averages. -------------------------------------------!
+         cgrid%avg_nir_beam(ipy)       = cgrid%avg_nir_beam(ipy)                           &
+                                       + cpoly%met(isi)%nir_beam * cpoly%area(isi)         &
+                                       * tfact * polygon_area_i
+
+         cgrid%avg_nir_diffuse(ipy)    = cgrid%avg_nir_diffuse(ipy)                        &
+                                       + cpoly%met(isi)%nir_diffuse * cpoly%area(isi)      &
+                                       * tfact * polygon_area_i
+
+         cgrid%avg_par_beam(ipy)       = cgrid%avg_par_beam(ipy)                           &
+                                       + cpoly%met(isi)%par_beam * cpoly%area(isi)         &
+                                       * tfact * polygon_area_i
+
+         cgrid%avg_par_diffuse(ipy)    = cgrid%avg_par_diffuse(ipy)                        &
+                                       + cpoly%met(isi)%par_diffuse * cpoly%area(isi)      &
+                                       * tfact * polygon_area_i
+
+         cgrid%avg_atm_tmp(ipy)        = cgrid%avg_atm_tmp(ipy)                            &
+                                       + cpoly%met(isi)%atm_tmp * cpoly%area(isi)          &
+                                       * tfact * polygon_area_i
+
+         cgrid%avg_atm_shv(ipy)        = cgrid%avg_atm_shv(ipy)                            &
+                                       + cpoly%met(isi)%atm_shv * cpoly%area(isi)          &
+                                       * tfact * polygon_area_i
+
+         cgrid%avg_rshort(ipy)         = cgrid%avg_rshort(ipy)                             &
+                                       + cpoly%met(isi)%rshort * cpoly%area(isi)           &
+                                       * tfact * polygon_area_i
+
+         cgrid%avg_rshort_diffuse(ipy) = cgrid%avg_rshort_diffuse(ipy)                     &
+                                       + cpoly%met(isi)%rshort_diffuse * cpoly%area(isi)   &
+                                       * tfact * polygon_area_i
+
+         cgrid%avg_rlong(ipy)          = cgrid%avg_rlong(ipy)                              &
+                                       + cpoly%met(isi)%rlong * cpoly%area(isi)            &
+                                       * tfact * polygon_area_i
+
+         cgrid%avg_pcpg(ipy)           = cgrid%avg_pcpg(ipy)                               &
+                                       + cpoly%met(isi)%pcpg * cpoly%area(isi)             &
+                                       * tfact * polygon_area_i
+
+         cgrid%avg_qpcpg(ipy)          = cgrid%avg_qpcpg(ipy)                              &
+                                       + cpoly%met(isi)%qpcpg * cpoly%area(isi)            &
+                                       * tfact * polygon_area_i
+
+         cgrid%avg_dpcpg(ipy)          = cgrid%avg_dpcpg(ipy)                              &
+                                       + cpoly%met(isi)%dpcpg * cpoly%area(isi)            &
+                                       * tfact * polygon_area_i
+
+         cgrid%avg_vels(ipy)           = cgrid%avg_vels(ipy)                               &
+                                       + cpoly%met(isi)%vels * cpoly%area(isi)             &
+                                       * tfact * polygon_area_i
+
+         cgrid%avg_prss(ipy)           = cgrid%avg_prss(ipy)                               &
+                                       + cpoly%met(isi)%prss * cpoly%area(isi)             &
+                                       * tfact * polygon_area_i
+
+         cgrid%avg_exner(ipy)          = cgrid%avg_exner(ipy)                              &
+                                       + cpoly%met(isi)%exner * cpoly%area(isi)            &
+                                       * tfact * polygon_area_i
+
+         cgrid%avg_geoht(ipy)          = cgrid%avg_geoht(ipy)                              &
+                                       + cpoly%met(isi)%geoht * cpoly%area(isi)            &
+                                       * tfact * polygon_area_i
+
+         cgrid%avg_atm_co2(ipy)        = cgrid%avg_atm_co2(ipy)                            &
+                                       + cpoly%met(isi)%atm_co2 * cpoly%area(isi)          &
+                                       * tfact * polygon_area_i
+
+         cgrid%avg_albedt(ipy)         = cgrid%avg_albedt(ipy)                             &
+                                       + 0.5 * ( cpoly%albedo_beam(isi)                    &
+                                               + cpoly%albedo_diffuse(isi) )               &
+                                       * cpoly%area(isi) * tfact * polygon_area_i
+
+         cgrid%avg_rlongup(ipy)        = cgrid%avg_rlongup(ipy)                            &
+                                       + cpoly%rlongup(isi) * cpoly%area(isi)              &
+                                       * tfact * polygon_area_i
+
+      end do
+   end do
+   return
+end subroutine int_met_avg
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
 
    use grid_coms, only: nzg
@@ -171,6 +304,10 @@ subroutine reset_averaged_vars(cgrid)
       cpoly => cgrid%polygon(ipy)
       do isi = 1,cpoly%nsites
          csite => cpoly%site(isi)
+
+         cpoly%avg_atm_tmp(isi)          = 0.0
+         cpoly%avg_atm_shv(isi)          = 0.0
+         cpoly%avg_prss(isi)             = 0.0
 
          cpoly%avg_soil_temp(:,isi)      = 0.0
          cpoly%avg_soil_water(:,isi)     = 0.0
@@ -667,7 +804,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    use ed_max_dims      , only : n_pft,n_dist_types
    use consts_coms   , only : cpi, alvl,day_sec,umol_2_kgC
    use ed_misc_coms     , only : dtlsm,frqsum
-   use therm_lib     , only : qwtk,hq2temp
+   use therm_lib     , only : qwtk,hpq2temp
    implicit none
    type(edtype)      , target  :: cgrid
    type(polygontype) , pointer :: cpoly
@@ -729,8 +866,9 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_atm_vels(ipy)     = cgrid%dmean_atm_vels(ipy)     * dtlsm_o_daysec
 
       !----- Finding canopy temperature. --------------------------------------------------!
-      cgrid%dmean_can_temp(ipy)     = hq2temp(cgrid%dmean_can_enthalpy(ipy)                &
-                                             ,cgrid%dmean_can_shv(ipy) )
+      cgrid%dmean_can_temp(ipy)     = hpq2temp(cgrid%dmean_can_enthalpy(ipy)               &
+                                              ,cgrid%dmean_atm_prss(ipy)                   &
+                                              ,cgrid%dmean_can_shv(ipy))
 
       !----- Finding vegetation temperature -----------------------------------------------!
       call qwtk(cgrid%dmean_veg_energy(ipy),cgrid%dmean_veg_water(ipy)                     &

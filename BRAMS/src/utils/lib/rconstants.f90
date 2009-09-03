@@ -211,27 +211,14 @@ Module rconstants
 
 
    !---------------------------------------------------------------------------------------!
-   !    Tcoolvap is the temperature of cooled vapour that will cause the enthalpy to       !
-   ! be the same as ice at 0K.  It can be used as an offset for temperature when defining  !
-   ! enthalpy for water vapour:                                                            !
-   !                                                                                       !
-   !   Hvap = Cice × T3 + Cliq × (TE - T3) + Lf + Cp × (T-TE) + Lv                         !
-   !                                                                                       !
-   !   Assuming TE ~ T3, which is equivalent to assume that the latent heat of vapor-      !
-   ! isation is constant (otherwise tracking enthalpy becomes cumbersome...)               !
-   !   Hvap = Cice × T3 + Lf + Cp × (T-T3) + Lv                                            !
-   !                                                                                       !
-   !   Or, equivalently:                                                                   !
-   !   Hvap = Cp × (T - Tcoolvap)                                                          !
-   !                                                                                       !
-   !     You may be asking yourself why would we have the ice term in the internal energy  !
-   ! definition. The reason is that we can think that enthalpy is the amount of heat/work  !
-   !  a parcel received to leave the 0K state to reach the current state (or if you        !
-   ! prefer the inverse way, Hvap is the amount of enthalpy the parcel would need to lose  !
-   ! to become solid at 0K.).  Evidently, there is a simplification here by assuming that  !
-   ! the latent heat of vaporisation does not depend on temperature.                       !
+   !    eta3ple is a constant related to the triple point that is used to find enthalpy    !
+   ! when the equilibrium temperature is above t3ple. cimcp (clmcp) is the difference      !
+   ! between the heat capacity of ice (liquid) and vapour, the latter assumed to be the    !
+   ! same as the dry air, for simplicity.                                                  !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: tcoolvap = t3ple - (qicet3+alvi) * cpi
+   real, parameter :: eta3ple = (cice - cliq) * t3ple + alvi
+   real, parameter :: cimcp   =  cice - cp
+   real, parameter :: clmcp   =  cliq - cp
    !---------------------------------------------------------------------------------------!
 
 
@@ -347,7 +334,9 @@ Module rconstants
    real(kind=8), parameter :: qicet38         = dble(qicet3        )
    real(kind=8), parameter :: qliqt38         = dble(qliqt3        )
    real(kind=8), parameter :: tsupercool8     = dble(tsupercool    )
-   real(kind=8), parameter :: tcoolvap8       = dble(tcoolvap      )
+   real(kind=8), parameter :: eta3ple8        = dble(eta3ple       )
+   real(kind=8), parameter :: cimcp8          = dble(cimcp         )
+   real(kind=8), parameter :: clmcp8          = dble(clmcp         )
    real(kind=8), parameter :: ttripoli8       = dble(ttripoli      )
    real(kind=8), parameter :: htripoli8       = dble(htripoli      )
    real(kind=8), parameter :: htripolii8      = dble(htripolii     )

@@ -100,8 +100,8 @@ edcp_met_init.o: pft_coms.mod rconstants.mod soil_coms.mod therm_lib.mod
 edcp_met_init.o: therm_lib8.mod
 edcp_model.o: consts_coms.mod disturb_coms.mod disturbance_utils.mod
 edcp_model.o: ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
-edcp_model.o: fuse_fiss_utils.mod grid_coms.mod growth_balive.mod io_params.mod
-edcp_model.o: mem_edcp.mod mem_grid.mod mem_leaf.mod mem_sites.mod
+edcp_model.o: fuse_fiss_utils.mod grid_coms.mod grid_dims.mod growth_balive.mod
+edcp_model.o: io_params.mod mem_edcp.mod mem_grid.mod mem_sites.mod
 edcp_model.o: rk4_driver.mod
 edcp_mpiutils.o: canopy_radiation_coms.mod decomp_coms.mod disturb_coms.mod
 edcp_mpiutils.o: ed_max_dims.mod ed_misc_coms.mod grid_coms.mod mem_sites.mod

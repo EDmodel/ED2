@@ -11,31 +11,27 @@ module canopy_air_coms
    !     Parameters used in Euler and Runge-Kutta.                                         !
    !---------------------------------------------------------------------------------------!
    !----- Exponential wind atenuation factor [dimensionless]. -----------------------------!
-   real        , parameter :: exar          = 2.5
+   real         :: exar
    !----- Scaling factor of Tree Area Index, for computing wtveg [dimensionless]. ---------!
-   real        , parameter :: covr          = 2.16
+   real         :: covr
    !----- Minimum Ustar [m/s]. ------------------------------------------------------------!
-   real        , parameter :: ustmin_stab   = 0.1
-   real        , parameter :: ustmin_unstab = 0.6
+   real         :: ustmin_stab
+   real         :: ustmin_unstab
    !----- Minimum speed for stars [m/s]. --------------------------------------------------!
-   real        , parameter :: ubmin_stab    = 0.1
-   real        , parameter :: ubmin_unstab  = 1.0
-   !----- Double precision version of these variables (for Runge-Kutta). ------------------!
-   real(kind=8), parameter :: exar8          = dble(exar        )
-   real(kind=8), parameter :: ustmin_stab8   = dble(ustmin_stab )
-   real(kind=8), parameter :: ustmin_unstab8 = dble(ustmin_stab )
-   real(kind=8), parameter :: ubmin_stab8    = dble(ubmin_stab  )
-   real(kind=8), parameter :: ubmin_unstab8  = dble(ubmin_unstab)
+   real         :: ubmin_stab
+   real         :: ubmin_unstab
    !----- Some parameters that were used in ED-2.0, added here for some tests. ------------!
-   real        , parameter :: bz     = 0.91
-   real        , parameter :: hz     = 0.0075
-   real        , parameter :: ez     = 0.172
-   real        , parameter :: vh2vr  = 0.13        ! Veg. height to veg. roughness
-   real        , parameter :: vh2dh  = 0.63        ! Veg. height to displacement height
-   real(kind=8), parameter :: bz8    = dble(bz   )   
-   real(kind=8), parameter :: hz8    = dble(hz   )
-   real(kind=8), parameter :: ez8    = dble(ez   )
-   real(kind=8), parameter :: vh2dh8 = dble(vh2dh)
+   real         :: ez
+   real         :: vh2vr
+   real         :: vh2dh
+   !----- Double precision version of some of these variables (for Runge-Kutta). ----------!
+   real(kind=8) :: exar8
+   real(kind=8) :: ustmin_stab8
+   real(kind=8) :: ustmin_unstab8
+   real(kind=8) :: ubmin_stab8
+   real(kind=8) :: ubmin_unstab8
+   real(kind=8) :: ez8
+   real(kind=8) :: vh2dh8
    !=======================================================================================!
    !=======================================================================================!
 

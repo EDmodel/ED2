@@ -1032,6 +1032,11 @@ module ed_state_vars
      !-----  Phenology
      real, pointer, dimension(:) :: rad_avg
 
+     !----- Meteorological forcing
+     real,pointer,dimension(:) :: avg_atm_tmp
+     real,pointer,dimension(:) :: avg_atm_shv
+     real,pointer,dimension(:) :: avg_prss
+
 
      !----- NACP intercomparison ---------------------------------------------!
      real,pointer,dimension(:) :: avg_snowdepth
@@ -1289,7 +1294,6 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_fsc
      real,pointer,dimension(:) :: avg_ssc
      real,pointer,dimension(:) :: avg_stsc
-
 
      !----- Meteorologic Conditions ----------------------------------------------------!
      real,pointer,dimension(:) :: avg_nir_beam
@@ -2004,25 +2008,29 @@ contains
     allocate(cpoly%avg_sensible_gc  (nsites))
     allocate(cpoly%avg_sensible_ac  (nsites))
     allocate(cpoly%avg_sensible_gg  (nzg,nsites))
-    allocate(cpoly%avg_runoff_heat  (nsites))
+    allocate(cpoly%avg_runoff_heat         (nsites))
 
     ! Fast time state diagnostics
-    allocate(cpoly%avg_veg_energy  (nsites))
-    allocate(cpoly%avg_veg_temp    (nsites))
-    allocate(cpoly%avg_veg_fliq    (nsites))
-    allocate(cpoly%avg_veg_water   (nsites))
-    allocate(cpoly%avg_can_enthalpy(nsites))
-    allocate(cpoly%avg_can_temp    (nsites))
-    allocate(cpoly%avg_can_shv     (nsites))
-    allocate(cpoly%avg_can_co2     (nsites))
-    allocate(cpoly%avg_can_rhos    (nsites))
-    allocate(cpoly%avg_soil_energy(nzg,nsites))
-    allocate(cpoly%avg_soil_water(nzg,nsites))
-    allocate(cpoly%avg_soil_temp (nzg,nsites))
-    allocate(cpoly%avg_soil_fracliq (nzg,nsites))
-    allocate(cpoly%runoff           (nsites))
+    allocate(cpoly%avg_veg_energy          (nsites))
+    allocate(cpoly%avg_veg_temp            (nsites))
+    allocate(cpoly%avg_veg_fliq            (nsites))
+    allocate(cpoly%avg_veg_water           (nsites))
+    allocate(cpoly%avg_can_enthalpy        (nsites))
+    allocate(cpoly%avg_can_temp            (nsites))
+    allocate(cpoly%avg_can_shv             (nsites))
+    allocate(cpoly%avg_can_co2             (nsites))
+    allocate(cpoly%avg_can_rhos            (nsites))
+    allocate(cpoly%avg_soil_energy     (nzg,nsites))
+    allocate(cpoly%avg_soil_water      (nzg,nsites))
+    allocate(cpoly%avg_soil_temp       (nzg,nsites))
+    allocate(cpoly%avg_soil_fracliq    (nzg,nsites))
+    allocate(cpoly%runoff                  (nsites))
     ! Phenology-related
-    allocate(cpoly%rad_avg (nsites))
+    allocate(cpoly%rad_avg                 (nsites))
+    ! Meteorological data
+    allocate(cpoly%avg_atm_tmp             (nsites))
+    allocate(cpoly%avg_atm_shv             (nsites))
+    allocate(cpoly%avg_prss                (nsites))
 
     !!!NACP
     allocate(cpoly%avg_snowdepth           (nsites))
@@ -2463,7 +2471,7 @@ contains
        nullify(cgrid%avg_soil_energy         )
        nullify(cgrid%avg_soil_water          )
        nullify(cgrid%avg_soil_temp           )
-       nullify(cgrid%avg_soil_fracliq           )
+       nullify(cgrid%avg_soil_fracliq        )
 
        nullify(cgrid%avg_lai_ebalvars)
 
@@ -2742,6 +2750,10 @@ contains
     nullify(cpoly%runoff        )
     ! Phenology
     nullify(cpoly%rad_avg          )
+    ! Meteorological conditions
+    nullify(cpoly%avg_atm_tmp      )
+    nullify(cpoly%avg_atm_shv      )
+    nullify(cpoly%avg_prss         )
     ! NACP
     nullify(cpoly%avg_snowdepth    )
     nullify(cpoly%avg_snowenergy   )
@@ -3450,6 +3462,10 @@ contains
     if(associated(cpoly%avg_soil_fracliq            )) deallocate(cpoly%avg_soil_fracliq            )
     if(associated(cpoly%runoff                      )) deallocate(cpoly%runoff                      )
     if(associated(cpoly%rad_avg                     )) deallocate(cpoly%rad_avg                     )
+    ! Meteorological information
+    if(associated(cpoly%avg_atm_tmp                 )) deallocate(cpoly%avg_atm_tmp                 )
+    if(associated(cpoly%avg_atm_shv                 )) deallocate(cpoly%avg_atm_shv                 )
+    if(associated(cpoly%avg_prss                    )) deallocate(cpoly%avg_prss                    )
     ! NACP
     if(associated(cpoly%avg_snowdepth             )) deallocate(cpoly%avg_snowdepth             )
     if(associated(cpoly%avg_snowenergy            )) deallocate(cpoly%avg_snowenergy            )
@@ -4209,8 +4225,11 @@ contains
     if(associated(cpoly%avg_soil_energy             )) cpoly%avg_soil_energy             = large_real
     if(associated(cpoly%avg_soil_water              )) cpoly%avg_soil_water              = large_real
     if(associated(cpoly%avg_soil_temp               )) cpoly%avg_soil_temp               = large_real
-    if(associated(cpoly%avg_soil_fracliq             )) cpoly%avg_soil_fracliq               = large_real
+    if(associated(cpoly%avg_soil_fracliq            )) cpoly%avg_soil_fracliq            = large_real
     if(associated(cpoly%runoff                      )) cpoly%runoff                      = large_real
+    if(associated(cpoly%avg_atm_tmp                 )) cpoly%avg_atm_tmp                 = large_real
+    if(associated(cpoly%avg_atm_shv                 )) cpoly%avg_atm_shv                 = large_real
+    if(associated(cpoly%avg_prss                    )) cpoly%avg_prss                    = large_real
 
     !NACP
     if(associated(cpoly%avg_snowdepth               )) cpoly%avg_snowdepth               = large_real
@@ -4224,12 +4243,12 @@ contains
     if(associated(cpoly%avg_balive                  )) cpoly%avg_balive                  = large_real
     if(associated(cpoly%avg_bdead                   )) cpoly%avg_bdead                   = large_real
 
-    if(associated(cpoly%dmean_co2_residual      )) cpoly%dmean_co2_residual       = large_real
-    if(associated(cpoly%dmean_energy_residual   )) cpoly%dmean_energy_residual    = large_real
-    if(associated(cpoly%dmean_water_residual    )) cpoly%dmean_water_residual     = large_real
-    if(associated(cpoly%mmean_co2_residual      )) cpoly%mmean_co2_residual       = large_real
-    if(associated(cpoly%mmean_energy_residual   )) cpoly%mmean_energy_residual    = large_real
-    if(associated(cpoly%mmean_water_residual    )) cpoly%mmean_water_residual     = large_real
+    if(associated(cpoly%dmean_co2_residual          )) cpoly%dmean_co2_residual       = large_real
+    if(associated(cpoly%dmean_energy_residual       )) cpoly%dmean_energy_residual    = large_real
+    if(associated(cpoly%dmean_water_residual        )) cpoly%dmean_water_residual     = large_real
+    if(associated(cpoly%mmean_co2_residual          )) cpoly%mmean_co2_residual       = large_real
+    if(associated(cpoly%mmean_energy_residual       )) cpoly%mmean_energy_residual    = large_real
+    if(associated(cpoly%mmean_water_residual        )) cpoly%mmean_water_residual     = large_real
 
     return
   end subroutine huge_polygontype

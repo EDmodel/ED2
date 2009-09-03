@@ -92,7 +92,7 @@ module canopy_struct_dynamics
                                 , sqrt2o2              ! ! intent(in)
       use soil_coms      , only : snow_rough           & ! intent(in)
                                 , soil_rough           ! ! intent(in)
-      use therm_lib      , only : tq2enthalpy          ! ! intent(in)
+      use therm_lib      , only : ptq2enthalpy         ! ! intent(in)
       use allometry      , only : h2trunkh             ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -190,7 +190,7 @@ module canopy_struct_dynamics
          !----- Finding the characteristic scales (a.k.a. stars). -------------------------!
          can_theta    = cpi * cmet%exner * csite%can_temp(ipa)
          atm_theta    = cpi * cmet%exner * cmet%atm_tmp
-         atm_enthalpy = tq2enthalpy(cmet%atm_tmp,cmet%atm_shv)
+         atm_enthalpy = ptq2enthalpy(cmet%prss,cmet%atm_tmp,cmet%atm_shv)
          call ed_stars(atm_theta,atm_enthalpy,cmet%atm_shv,cmet%atm_co2,can_theta          &
                       ,csite%can_enthalpy(ipa),csite%can_shv(ipa),csite%can_co2(ipa)       &
                       ,zref,d0,cmet%vels,csite%rough(ipa),csite%ustar(ipa)                 &
@@ -255,7 +255,7 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          can_theta    = cpi * cmet%exner * csite%can_temp(ipa)
          atm_theta    = cpi * cmet%exner * cmet%atm_tmp
-         atm_enthalpy = tq2enthalpy(cmet%atm_tmp,cmet%atm_shv)
+         atm_enthalpy = ptq2enthalpy(cmet%prss,cmet%atm_tmp,cmet%atm_shv)
          call ed_stars(atm_theta,atm_enthalpy,cmet%atm_shv,cmet%atm_co2,can_theta          &
                       ,csite%can_enthalpy(ipa),csite%can_shv(ipa),csite%can_co2(ipa)       &
                       ,zref,d0,cmet%vels,csite%rough(ipa),csite%ustar(ipa)                 &
@@ -359,7 +359,7 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          can_theta    = cpi * cmet%exner * csite%can_temp(ipa)
          atm_theta    = cpi * cmet%exner * cmet%atm_tmp
-         atm_enthalpy = tq2enthalpy(cmet%atm_tmp,cmet%atm_shv)
+         atm_enthalpy = ptq2enthalpy(cmet%prss,cmet%atm_tmp,cmet%atm_shv)
          call ed_stars(atm_theta,atm_enthalpy,cmet%atm_shv,cmet%atm_co2,can_theta          &
                       ,csite%can_enthalpy(ipa),csite%can_shv(ipa),csite%can_co2(ipa)       &
                       ,zref,d0,cmet%vels,csite%rough(ipa),csite%ustar(ipa)                 &
@@ -478,7 +478,7 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          can_theta    = cpi * cmet%exner * csite%can_temp(ipa)
          atm_theta    = cpi * cmet%exner * cmet%atm_tmp
-         atm_enthalpy = tq2enthalpy(cmet%atm_tmp,cmet%atm_shv)
+         atm_enthalpy = ptq2enthalpy(cmet%prss,cmet%atm_tmp,cmet%atm_shv)
          call ed_stars(atm_theta,atm_enthalpy,cmet%atm_shv,cmet%atm_co2,can_theta          &
                       ,csite%can_enthalpy(ipa),csite%can_shv(ipa),csite%can_co2(ipa)       &
                       ,zref,d0,cmet%vels,csite%rough(ipa),csite%ustar(ipa)                 &
@@ -663,7 +663,7 @@ module canopy_struct_dynamics
          !----- Finding the characteristic scales (a.k.a. stars). -------------------------!
          can_theta    = cpi * cmet%exner * csite%can_temp(ipa)
          atm_theta    = cpi * cmet%exner * cmet%atm_tmp
-         atm_enthalpy = tq2enthalpy(cmet%atm_tmp,cmet%atm_shv)
+         atm_enthalpy = ptq2enthalpy(cmet%prss,cmet%atm_tmp,cmet%atm_shv)
          call ed_stars(atm_theta,atm_enthalpy,cmet%atm_shv,cmet%atm_co2,can_theta          &
                       ,csite%can_enthalpy(ipa),csite%can_shv(ipa),csite%can_co2(ipa)       &
                       ,zref,d0,cmet%vels,csite%rough(ipa),csite%ustar(ipa)                 &

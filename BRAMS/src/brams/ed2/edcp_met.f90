@@ -1523,93 +1523,6 @@ end subroutine calc_met_lapse
 
 !==========================================================================================!
 !==========================================================================================!
-!     This subroutines increments the time averaged polygon met-forcing variables.  These  !
-! will be normalized by the output period to give time averages of each quanity.  The      !
-! polygon level variables are derived from the weighted spatial average from the site      !
-! level quantities.                                                                        !
-!------------------------------------------------------------------------------------------!
-subroutine int_met_avg(cgrid)
-   use ed_state_vars , only : edtype      & ! structure
-                            , polygontype & ! structure
-                            , sitetype    & ! structure
-                            , patchtype   ! ! structure
-   use ed_misc_coms  , only : dtlsm       & ! intent(in)
-                            , frqfast     ! ! intent(in)
-   implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   type(edtype)      , target  :: cgrid
-   !----- Local variables -----------------------------------------------------------------!
-   type(polygontype) , pointer :: cpoly
-   type(sitetype)    , pointer :: csite
-   type(patchtype)   , pointer :: cpatch
-   integer                     :: ipy,isi,ipa,ico
-   real                        :: frqfasti,tfact
-   !---------------------------------------------------------------------------------------!
-
-   !----- Some aliases. -------------------------------------------------------------------!
-   frqfasti = 1.0 / frqfast
-   tfact = dtlsm * frqfasti
-
-   do ipy = 1,cgrid%npolygons
-      cpoly => cgrid%polygon(ipy)
-
-      do isi = 1,cpoly%nsites
-         
-         cgrid%avg_nir_beam(ipy)    = cgrid%avg_nir_beam(ipy)                              &
-                                    + cpoly%met(isi)%nir_beam * cpoly%area(isi) * tfact
-         cgrid%avg_nir_diffuse(ipy) = cgrid%avg_nir_diffuse(ipy)                           &
-                                    + cpoly%met(isi)%nir_diffuse * cpoly%area(isi) * tfact
-         cgrid%avg_par_beam(ipy)    = cgrid%avg_par_beam(ipy)                              &
-                                    + cpoly%met(isi)%par_beam * cpoly%area(isi) * tfact
-         cgrid%avg_par_diffuse(ipy) = cgrid%avg_par_diffuse(ipy)                           &
-                                    + cpoly%met(isi)%par_diffuse * cpoly%area(isi) * tfact
-         cgrid%avg_atm_tmp(ipy)     = cgrid%avg_atm_tmp(ipy)                               &
-                                    + cpoly%met(isi)%atm_tmp * cpoly%area(isi) * tfact
-         cgrid%avg_atm_shv(ipy)     = cgrid%avg_atm_shv(ipy)                               &
-                                    + cpoly%met(isi)%atm_shv * cpoly%area(isi) * tfact
-         cgrid%avg_rshort(ipy)      = cgrid%avg_rshort(ipy)                                &
-                                    + cpoly%met(isi)%rshort * cpoly%area(isi) * tfact
-         cgrid%avg_rshort_diffuse(ipy) = cgrid%avg_rshort_diffuse(ipy)                     &
-                                       + cpoly%met(isi)%rshort_diffuse * cpoly%area(isi)   &
-                                       * tfact
-         cgrid%avg_rlong(ipy)       = cgrid%avg_rlong(ipy)                                 &
-                                    + cpoly%met(isi)%rlong * cpoly%area(isi) * tfact
-         cgrid%avg_pcpg(ipy)        = cgrid%avg_pcpg(ipy)                                  &
-                                    + cpoly%met(isi)%pcpg * cpoly%area(isi) * tfact
-         cgrid%avg_qpcpg(ipy)       = cgrid%avg_qpcpg(ipy)                                 &
-                                    + cpoly%met(isi)%qpcpg * cpoly%area(isi) * tfact
-         cgrid%avg_dpcpg(ipy)       = cgrid%avg_dpcpg(ipy)                                 &
-                                    + cpoly%met(isi)%dpcpg * cpoly%area(isi) * tfact
-         cgrid%avg_vels(ipy)        = cgrid%avg_vels(ipy)                                  &
-                                    + cpoly%met(isi)%vels * cpoly%area(isi) * tfact
-         cgrid%avg_prss(ipy)        = cgrid%avg_prss(ipy)                                  &
-                                    + cpoly%met(isi)%prss * cpoly%area(isi) * tfact
-         cgrid%avg_exner(ipy)       = cgrid%avg_exner(ipy)                                 &
-                                    + cpoly%met(isi)%exner * cpoly%area(isi) * tfact
-         cgrid%avg_geoht(ipy)       = cgrid%avg_geoht(ipy)                                 &
-                                    + cpoly%met(isi)%geoht * cpoly%area(isi) * tfact
-         cgrid%avg_atm_co2(ipy)     = cgrid%avg_atm_co2(ipy)                               &
-                                    + cpoly%met(isi)%atm_co2 * cpoly%area(isi) * tfact
-         cgrid%avg_albedt(ipy)      = cgrid%avg_albedt(ipy)                                &
-                                    + 0.5 * ( cpoly%albedo_beam(isi)                       &
-                                            + cpoly%albedo_diffuse(isi) )                  &
-                                    * cpoly%area(isi) * tfact
-         cgrid%avg_rlongup(ipy)     = cgrid%avg_rlongup(ipy)                               &
-                                    + cpoly%rlongup(isi) * cpoly%area(isi) * tfact
-      end do
-   end do
-   return
-end subroutine int_met_avg
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
 subroutine copy_avgvars_to_leaf(ifm)
 
    use ed_state_vars , only: edgrid_g,edtype,polygontype,sitetype,patchtype
@@ -1629,13 +1542,13 @@ subroutine copy_avgvars_to_leaf(ifm)
    type(patchtype)  , pointer :: cpatch
    integer                    :: ipy,isi,ipa,ico
    integer                    :: ix,iy,k
-   real                       :: frqsumi,site_area_i,poly_area_i
+   real                       :: site_area_i,poly_area_i
+   real                       :: sitesum_gpp, sitesum_plresp, sitesum_resphet
    !---------------------------------------------------------------------------------------!
 
    !----- Set the pointers ----------------------------------------------------------------!
    cgrid => edgrid_g(ifm)
 
-   frqsumi = 1.0 / frqsum
    do ipy=1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
 
@@ -1676,19 +1589,26 @@ subroutine copy_avgvars_to_leaf(ifm)
       leaf_g(ifm)%resphet(ix,iy)     = 0.0
       leaf_g(ifm)%plresp(ix,iy)      = 0.0
 
+      sitesum_gpp     = 0.0
+      sitesum_plresp  = 0.0
+      sitesum_resphet = 0.0
+
       poly_area_i = 1./sum(cpoly%area)
       do isi=1,cpoly%nsites
          csite => cpoly%site(isi)
-         if (csite%npatches>0) then
+         if (csite%npatches > 0) then
             site_area_i=1./sum(csite%area)
             
-            leaf_g(ifm)%gpp(ix,iy) = leaf_g(ifm)%gpp(ix,iy) + &
-                 sum(csite%area*csite%co2budget_gpp)*cpoly%area(isi)   *frqsumi
-            leaf_g(ifm)%plresp(ix,iy) = leaf_g(ifm)%plresp(ix,iy) + &
-                 sum(csite%area*csite%co2budget_plresp)*cpoly%area(isi)*frqsumi
-           
-            leaf_g(ifm)%resphet(ix,iy) = leaf_g(ifm)%resphet(ix,iy) + &
-                 sum(csite%area*csite%co2budget_rh) *cpoly%area(isi)   *frqsumi
+            sitesum_gpp     = sum(csite%area * csite%co2budget_gpp   ) * site_area_i
+            sitesum_plresp  = sum(csite%area * csite%co2budget_plresp) * site_area_i
+            sitesum_resphet = sum(csite%area * csite%co2budget_rh)     * site_area_i
+            
+            leaf_g(ifm)%gpp(ix,iy)     = leaf_g(ifm)%gpp(ix,iy)                            &
+                                       + sitesum_gpp     * cpoly%area(isi) * poly_area_i
+            leaf_g(ifm)%plresp(ix,iy)  = leaf_g(ifm)%plresp(ix,iy)                         &
+                                       + sitesum_plresp  * cpoly%area(isi) * poly_area_i
+            leaf_g(ifm)%resphet(ix,iy) = leaf_g(ifm)%resphet(ix,iy)                        &
+                                       + sitesum_resphet * cpoly%area(isi) * poly_area_i
          end if
       end do
 

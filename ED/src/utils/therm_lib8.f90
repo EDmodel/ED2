@@ -1461,19 +1461,42 @@ module therm_lib8
    ! specific humidity.  Currently it doesn't compute mixed phase air, but adding it       !
    ! should be straightforward (finding the inverse is another story...).                  !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function tq2enthalpy8(temp,qvpr)
-      use consts_coms, only : cp8       & ! intent(in)
-                            , tcoolvap8 ! ! intent(in)
+   real(kind=8) function ptq2enthalpy8(pres,temp,qvpr)
+      use consts_coms, only : ep8       & ! intent(in)
+                            , t3ple8    & ! intent(in)
+                            , eta3ple8  & ! intent(in)
+                            , cimcp8    & ! intent(in)
+                            , clmcp8    & ! intent(in)
+                            , cp8       & ! intent(in)
+                            , alvi8     ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)           :: temp ! Temperature                      [    K]
-      real(kind=8), intent(in)           :: qvpr ! Vapour specific mass             [kg/kg]
+      real(kind=8), intent(in) :: pres  ! Pressure                                 [    Pa]
+      real(kind=8), intent(in) :: temp  ! Temperature                              [     K]
+      real(kind=8), intent(in) :: qvpr  ! Vapour specific mass                     [ kg/kg]
+      !------Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: tequ  ! Dew-frost temperature                    [     K]
+      real(kind=8)             :: pequ  ! Equlibrium vapour pressure               [    Pa]
       !------------------------------------------------------------------------------------!
 
-      tq2enthalpy8 = cp8 * (temp - qvpr * tcoolvap8)
+      !----- First, we find the equilibrium vapour pressure and dew/frost point. ----------!
+      pequ = pres * qvpr / (ep8 + (1.d0 - ep8) * qvpr)
+      tequ = tslif8(pequ)
+
+      !------------------------------------------------------------------------------------!
+      !     Then, based on dew/frost point, we compute the enthalpy. This accounts whether !
+      ! we would have to dew or frost formation if the temperature dropped to the          !
+      ! equilibrium point.  Notice that if supersaturation exists, this will still give a  !
+      ! number that makes sense, similar to the internal energy of supercooled water.      !
+      !------------------------------------------------------------------------------------!
+      if (tequ <= t3ple8) then
+         ptq2enthalpy8 = cp8 * temp + qvpr * (cimcp8 * tequ + alvi8   )
+      else
+         ptq2enthalpy8 = cp8 * temp + qvpr * (clmcp8 * tequ + eta3ple8)
+      end if
 
       return
-   end function tq2enthalpy8
+   end function ptq2enthalpy8
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1488,19 +1511,43 @@ module therm_lib8
    ! humidity.  Currently it doesn't compute mixed phase air, but adding it wouldn't be    !
    ! horribly hard, but it would require some root finding.                                !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function hq2temp8(enthalpy,qvpr)
-      use consts_coms, only : cpi8      & ! intent(in)
-                            , tcoolvap8 ! ! intent(in)
+   real(kind=8) function hpq2temp8(enthalpy,pres,qvpr)
+      use consts_coms, only : ep8       & ! intent(in)
+                            , t3ple8    & ! intent(in)
+                            , eta3ple8  & ! intent(in)
+                            , cimcp8    & ! intent(in)
+                            , clmcp8    & ! intent(in)
+                            , cpi8      & ! intent(in)
+                            , alvi8     ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)           :: enthalpy ! Enthalpy...                 [  J/kg]
-      real(kind=8), intent(in)           :: qvpr     ! Vapour specific mass        [ kg/kg]
+      real(kind=8), intent(in) :: enthalpy ! Enthalpy...                           [  J/kg]
+      real(kind=8), intent(in) :: pres     ! Pressure                              [    Pa]
+      real(kind=8), intent(in) :: qvpr     ! Vapour specific mass                  [ kg/kg]
+      !------Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: tequ     ! Dew-frost temperature                 [     K]
+      real(kind=8)             :: pequ     ! Equlibrium vapour pressure            [    Pa]
       !------------------------------------------------------------------------------------!
 
-      hq2temp8 = cpi8 * enthalpy + qvpr * tcoolvap8
+      !----- First, we find the equilibrium vapour pressure and dew/frost point. ----------!
+      pequ = pres * qvpr / (ep8 + (1.d0 - ep8) * qvpr)
+      tequ = tslif8(pequ)
+
+      !------------------------------------------------------------------------------------!
+      !     Then, based on dew/frost point, we compute the temperature. This accounts      !
+      ! whether we would have to dew or frost formation if the temperature dropped to the  !
+      ! equilibrium point.  Notice that if supersaturation exists, this will still give a  !
+      ! temperature that makes sense (but less than the dew/frost point), similar to the   !
+      ! internal energy of supercooled water.                                              !
+      !------------------------------------------------------------------------------------!
+      if (tequ <= t3ple8) then
+         hpq2temp8 = cpi8 * (enthalpy - qvpr * (cimcp8 * tequ + alvi8   ))
+      else
+         hpq2temp8 = cpi8 * (enthalpy - qvpr * (clmcp8 * tequ + eta3ple8))
+      end if
 
       return
-   end function hq2temp8
+   end function hpq2temp8
    !=======================================================================================!
    !=======================================================================================!
 

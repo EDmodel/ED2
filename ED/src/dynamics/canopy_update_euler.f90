@@ -190,7 +190,7 @@ subroutine canopy_implicit_driver(csite,ipa, ndims, prss, canhcap, canwcap,  &
   use ed_state_vars,only: sitetype,patchtype
   use consts_coms, only: cp, alvl, alvi,rdry
   use grid_coms, only: nzg
-  use therm_lib, only: rhovsil,rhovsilp,tq2enthalpy,idealdenssh
+  use therm_lib, only: rhovsil,rhovsilp,ptq2enthalpy,idealdenssh
   implicit none
 
   type(sitetype), target  :: csite
@@ -497,7 +497,7 @@ subroutine canopy_implicit_driver(csite,ipa, ndims, prss, canhcap, canwcap,  &
   endif
   
   csite%can_rhos(ipa)       = idealdenssh(prss,csite%can_temp(ipa),csite%can_shv(ipa))
-  csite%can_enthalpy(ipa)   = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa))
+  csite%can_enthalpy(ipa)   = ptq2enthalpy(prss,csite%can_temp(ipa),csite%can_shv(ipa))
   csite%avg_daily_temp(ipa) = csite%avg_daily_temp(ipa) + csite%can_temp(ipa)
   return
 end subroutine canopy_implicit_driver
@@ -515,7 +515,7 @@ subroutine canopy_explicit_driver(csite,ipa, ndims, prss, canhcap, canwcap, &
   use ed_state_vars,only:sitetype,patchtype
   use consts_coms, only: cp, alvl, alvi, cliq, cice, alli, t3ple,tsupercool,rdry
   use grid_coms, only: nzg
-  use therm_lib, only: rhovsil,rhovsilp,tq2enthalpy,idealdenssh
+  use therm_lib, only: rhovsil,rhovsilp,ptq2enthalpy,idealdenssh
 
   implicit none
 
@@ -697,7 +697,7 @@ subroutine canopy_explicit_driver(csite,ipa, ndims, prss, canhcap, canwcap, &
      endif
   enddo
   csite%can_rhos(ipa)       = idealdenssh(prss,csite%can_temp(ipa),csite%can_shv(ipa))
-  csite%can_enthalpy(ipa)   = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa))
+  csite%can_enthalpy(ipa)   = ptq2enthalpy(prss,csite%can_temp(ipa),csite%can_shv(ipa))
   csite%avg_daily_temp(ipa) = csite%avg_daily_temp(ipa) + csite%can_temp(ipa)
 
   return

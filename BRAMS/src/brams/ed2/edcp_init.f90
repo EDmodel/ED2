@@ -261,6 +261,7 @@ subroutine init_master_work(ipara)
   use rpara,only: ixb,ixe,iyb,iye,nmachs,mainnum,machnum
   use ed_work_vars,only : &
        work_e,                 & ! intent(out)
+       work_v,                 & ! intent(out)
        ed_alloc_work,          & ! subroutine
        ed_nullify_work,        &         ! ! subroutine
        ed_dealloc_work
@@ -285,6 +286,7 @@ subroutine init_master_work(ipara)
   integer :: ipy
 
   allocate(work_e(ngrids))
+  if (ipara /= 1) allocate(work_v(ngrids))
   
   gridloop: do ifm = 1,ngrids
      call newgrid(ifm)

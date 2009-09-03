@@ -1447,19 +1447,42 @@ module therm_lib
    ! specific humidity.  Currently it doesn't compute mixed phase air, but adding it       !
    ! should be straightforward (finding the inverse is another story...).                  !
    !---------------------------------------------------------------------------------------!
-   real function tq2enthalpy(temp,qvpr)
-      use consts_coms, only : cp       & ! intent(in)
-                            , tcoolvap ! ! intent(in)
+   real function ptq2enthalpy(pres,temp,qvpr)
+      use consts_coms, only : ep       & ! intent(in)
+                            , t3ple    & ! intent(in)
+                            , eta3ple  & ! intent(in)
+                            , cimcp    & ! intent(in)
+                            , clmcp    & ! intent(in)
+                            , cp       & ! intent(in)
+                            , alvi     ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real, intent(in)           :: temp ! Temperature                              [    K]
-      real, intent(in)           :: qvpr ! Vapour specific mass                     [kg/kg]
+      real, intent(in)           :: pres  ! Pressure                               [    Pa]
+      real, intent(in)           :: temp  ! Temperature                            [     K]
+      real, intent(in)           :: qvpr  ! Vapour specific mass                   [ kg/kg]
+      !------Local variables. -------------------------------------------------------------!
+      real                       :: tequ  ! Dew-frost temperature                  [     K]
+      real                       :: pequ  ! Equlibrium vapour pressure             [    Pa]
       !------------------------------------------------------------------------------------!
 
-      tq2enthalpy = cp * (temp - qvpr * tcoolvap)
+      !----- First, we find the equilibrium vapour pressure and dew/frost point. ----------!
+      pequ = pres * qvpr / (ep + (1. - ep) * qvpr)
+      tequ = tslif(pequ)
+
+      !------------------------------------------------------------------------------------!
+      !     Then, based on dew/frost point, we compute the enthalpy. This accounts whether !
+      ! we would have to dew or frost formation if the temperature dropped to the          !
+      ! equilibrium point.  Notice that if supersaturation exists, this will still give a  !
+      ! number that makes sense, similar to the internal energy of supercooled water.      !
+      !------------------------------------------------------------------------------------!
+      if (tequ <= t3ple) then
+         ptq2enthalpy = cp * temp + qvpr * (cimcp * tequ + alvi   )
+      else
+         ptq2enthalpy = cp * temp + qvpr * (clmcp * tequ + eta3ple)
+      end if
 
       return
-   end function tq2enthalpy
+   end function ptq2enthalpy
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1474,19 +1497,43 @@ module therm_lib
    ! humidity.  Currently it doesn't compute mixed phase air, but adding it wouldn't be    !
    ! horribly hard, but it would require some root finding.                                !
    !---------------------------------------------------------------------------------------!
-   real function hq2temp(enthalpy,qvpr)
-      use consts_coms, only : cpi      & ! intent(in)
-                            , tcoolvap ! ! intent(in)
+   real function hpq2temp(enthalpy,pres,qvpr)
+      use consts_coms, only : ep       & ! intent(in)
+                            , t3ple    & ! intent(in)
+                            , eta3ple  & ! intent(in)
+                            , cimcp    & ! intent(in)
+                            , clmcp    & ! intent(in)
+                            , cpi      & ! intent(in)
+                            , alvi     ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)           :: enthalpy ! Enthalpy...                         [  J/kg]
+      real, intent(in)           :: pres     ! Pressure                            [    Pa]
       real, intent(in)           :: qvpr     ! Vapour specific mass                [ kg/kg]
+      !------Local variables. -------------------------------------------------------------!
+      real                       :: tequ  ! Dew-frost temperature                  [     K]
+      real                       :: pequ  ! Equlibrium vapour pressure             [    Pa]
       !------------------------------------------------------------------------------------!
 
-      hq2temp = cpi * enthalpy + qvpr * tcoolvap
+      !----- First, we find the equilibrium vapour pressure and dew/frost point. ----------!
+      pequ = pres * qvpr / (ep + (1. - ep) * qvpr)
+      tequ = tslif(pequ)
+
+      !------------------------------------------------------------------------------------!
+      !     Then, based on dew/frost point, we compute the temperature. This accounts      !
+      ! whether we would have to dew or frost formation if the temperature dropped to the  !
+      ! equilibrium point.  Notice that if supersaturation exists, this will still give a  !
+      ! temperature that makes sense (but less than the dew/frost point), similar to the   !
+      ! internal energy of supercooled water.                                              !
+      !------------------------------------------------------------------------------------!
+      if (tequ <= t3ple) then
+         hpq2temp = cpi * (enthalpy - qvpr * (cimcp * tequ + alvi   ))
+      else
+         hpq2temp = cpi * (enthalpy - qvpr * (clmcp * tequ + eta3ple))
+      end if
 
       return
-   end function hq2temp
+   end function hpq2temp
    !=======================================================================================!
    !=======================================================================================!
 

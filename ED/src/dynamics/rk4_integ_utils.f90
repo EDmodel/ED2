@@ -211,9 +211,9 @@ end subroutine odeint
 !------------------------------------------------------------------------------------------!
 subroutine copy_met_2_rk4met(vels,atm_tmp,atm_shv,atm_co2,zoff,exner,pcpg,qpcpg,dpcpg,prss &
                             ,geoht,lsl,lon,lat)
-   use rk4_coms    , only : rk4met       ! ! structure
-   use consts_coms , only : cpi8         ! ! intent(in)
-   use therm_lib8  , only : tq2enthalpy8 ! ! function
+   use rk4_coms    , only : rk4met        ! ! structure
+   use consts_coms , only : cpi8          ! ! intent(in)
+   use therm_lib8  , only : ptq2enthalpy8 ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer, intent(in) :: lsl
@@ -248,7 +248,7 @@ subroutine copy_met_2_rk4met(vels,atm_tmp,atm_shv,atm_co2,zoff,exner,pcpg,qpcpg,
    rk4met%geoht        = dble(geoht  )
    
    rk4met%atm_theta    = cpi8 * rk4met%exner * rk4met%atm_tmp
-   rk4met%atm_enthalpy = tq2enthalpy8(rk4met%atm_tmp,rk4met%atm_shv)
+   rk4met%atm_enthalpy = ptq2enthalpy8(rk4met%prss,rk4met%atm_tmp,rk4met%atm_shv)
 
    rk4met%lon          = dble(lon    )
    rk4met%lat          = dble(lat    )
@@ -1206,6 +1206,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , rk4met               & ! intent(in)
                                     , rk4min_sfcwater_mass & ! intent(in)
                                     , rk4min_can_shv       & ! intent(in)
+                                    , rk4min_can_temp      & ! intent(in)
                                     , rk4max_can_shv       & ! intent(in)
                                     , rk4patchtype         ! ! structure
    use ed_state_vars         , only : sitetype             & ! structure
@@ -1215,13 +1216,14 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , nzs                  ! ! intent(in)
    use therm_lib8            , only : qwtk8                & ! subroutine
                                     , qtk8                 & ! subroutine
-                                    , hq2temp8             & ! function
+                                    , hpq2temp8            & ! function
                                     , idealdenssh8         ! ! function
    use consts_coms           , only : alvl8                & ! intent(in)
                                     , wdns8                & ! intent(in)
                                     , rdryi8               & ! intent(in)
                                     , rdry8                & ! intent(in)
                                     , epim18               & ! intent(in)
+                                    , toodry8              & ! intent(in)
                                     , cpi8                 ! ! intent(in)
    use canopy_struct_dynamics, only : can_whcap8           ! ! subroutine
    implicit none
@@ -1240,7 +1242,11 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    !---------------------------------------------------------------------------------------!
    !     Here we convert enthalpy into temperature, potential temperature, and density.    !
    !---------------------------------------------------------------------------------------!
-   initp%can_temp  = hq2temp8(initp%can_enthalpy,initp%can_shv)
+   if (initp%can_shv >= rk4min_can_shv) then 
+      initp%can_temp  = hpq2temp8(initp%can_enthalpy,rk4met%prss,initp%can_shv)
+   else
+      initp%can_temp  = rk4min_can_temp
+   end if 
    initp%can_theta = cpi8 * rk4met%exner * initp%can_temp
    initp%can_rhos  = idealdenssh8(rk4met%prss,initp%can_temp,initp%can_shv)
    !---------------------------------------------------------------------------------------!

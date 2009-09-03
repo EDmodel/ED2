@@ -464,6 +464,7 @@ subroutine ed_masterput_worklist_info(par_run)
   use ed_max_dims, only: maxmach
   use grid_coms, only: ngrids
   use ed_work_vars , only : work_v                & ! intent(inout)
+                          , work_e                & ! intent(inout)
                           , work_vecs             & ! structure
                           , ed_alloc_work_vec     & ! subroutine
                           , ed_nullify_work_vec   & ! subroutine
@@ -553,11 +554,12 @@ subroutine ed_masterput_worklist_info(par_run)
 
   enddo
 
-  deallocate(work_v)
+  deallocate(work_e,work_v)
 
   ! So here it will be 2 (node-style) if it is a parallel run, and 0 if it is a serial run
   call ed_mem_alloc(2*par_run) 
 
+  allocate (work_v(ngrids))
   do ifm=1,ngrids
 
      npoly  = gdpy(nm,ifm)

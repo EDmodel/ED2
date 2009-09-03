@@ -129,7 +129,7 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
       end if
 
       !----- Finding the patch roughness due to vegetation. -------------------------------!
-      csite%veg_rough(ipa) = max(veg_height_min,vh2vr * csite%veg_height(ipa)) * ez
+      csite%veg_rough(ipa) = max(veg_height_min,vh2dh * csite%veg_height(ipa)) * ez
 
       !----- Updating the canopy depth.  Before we wouldn't distinguish between -----------!
       csite%can_depth(ipa) = csite%veg_height(ipa)
@@ -193,7 +193,7 @@ subroutine update_patch_thermo_props(csite,prss,ipaa,ipaz)
   
    use ed_state_vars, only : sitetype    ! ! structure
    use therm_lib    , only : idealdenssh & ! function
-                           , hq2temp     ! ! function
+                           , hpq2temp    ! ! function
   implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -207,7 +207,7 @@ subroutine update_patch_thermo_props(csite,prss,ipaa,ipaz)
 
 
    do ipa=ipaa,ipaz
-      csite%can_temp(ipa) = hq2temp(csite%can_enthalpy(ipa),csite%can_shv(ipa))
+      csite%can_temp(ipa) = hpq2temp(csite%can_enthalpy(ipa),prss,csite%can_shv(ipa))
       csite%can_rhos(ipa) = idealdenssh(prss,csite%can_temp(ipa),csite%can_shv(ipa))
    end do
 

@@ -161,7 +161,7 @@ subroutine spatial_averages
    use ed_misc_coms          , only : frqsum            ! ! intent(in)
    use therm_lib             , only : qwtk              & ! subroutine
                                     , qtk               & ! subroutine
-                                    , hq2temp           ! ! function
+                                    , hpq2temp          ! ! function
    use soil_coms             , only : min_sfcwater_mass & ! intent(in)
                                     , soil              ! ! intent(in)
    use c34constants          , only : n_stoma_atts
@@ -552,8 +552,8 @@ subroutine spatial_averages
             cpoly%avg_can_shv (isi) = sum(csite%can_shv   * csite%area) * site_area_i
             cpoly%avg_can_co2 (isi) = sum(csite%can_co2   * csite%area) * site_area_i
             cpoly%avg_can_rhos(isi) = sum(csite%can_rhos  * csite%area) * site_area_i
-            cpoly%avg_can_temp(isi) = hq2temp(cpoly%avg_can_enthalpy(isi)                  &
-                                             ,cpoly%avg_can_shv (isi))
+            cpoly%avg_can_temp(isi) = hpq2temp(cpoly%avg_can_enthalpy(isi)                 &
+                                              ,cpoly%avg_prss(isi),cpoly%avg_can_shv (isi))
 
             !------------------------------------------------------------------------------!
             !   Site average of leaf properties.  Again, we average "extensive" properties !
@@ -639,8 +639,8 @@ subroutine spatial_averages
          cgrid%avg_can_rhos(ipy)     = sum(cpoly%avg_can_rhos     *cpoly%area)*poly_area_i
 
          !----- Find temperature based on average enthalpy and mixing ratio. --------------!
-         cgrid%avg_can_temp(ipy)     = hq2temp(cgrid%avg_can_enthalpy(ipy)                 &
-                                              ,cgrid%avg_can_shv(ipy) )
+         cgrid%avg_can_temp(ipy)     = hpq2temp(cgrid%avg_can_enthalpy(ipy)                &
+                                               ,cgrid%avg_prss(ipy),cgrid%avg_can_shv(ipy))
 
          !---------------------------------------------------------------------------------!
          !    Similar to the site level, average mass, heat capacity and energy then find  !
@@ -1085,4 +1085,3 @@ subroutine fillvar_l(pvar_l,vt_ptr,npts_out,npts_in,out1,in1,in2)
   enddo
   return
 end subroutine fillvar_l
-
