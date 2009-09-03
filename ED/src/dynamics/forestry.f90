@@ -6,7 +6,7 @@
 ! NOTICE:  These subroutines have not been thoroughly tested. Please                       !
 !          report problems to David Medvigy, medvigy@post.harvard.edu.                     !
 !==========================================================================================!
-subroutine apply_forestry(cpoly, isi, year, rhos)
+subroutine apply_forestry(cpoly, isi, year)
    use ed_state_vars        , only : polygontype                & ! Structure
                                    , sitetype                   & ! Structure
                                    , allocate_sitetype          & ! Subroutine
@@ -24,7 +24,6 @@ subroutine apply_forestry(cpoly, isi, year, rhos)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(polygontype)    , target      :: cpoly
-   real                 , intent(in)  :: rhos
    integer              , intent(in)  :: year
    integer              , intent(in)  :: isi
    !----- Local variables -----------------------------------------------------------------!
@@ -207,8 +206,8 @@ subroutine apply_forestry(cpoly, isi, year, rhos)
                          ,cpoly%green_leaf_factor(:,isi), 2.0, cpoly%lsl(isi))        
          csite%plantation(newp) = 1
       end if
-      call update_patch_derived_props(csite,cpoly%lsl(isi),rhos,newp)
-      call new_patch_sfc_props(csite,newp, rhos)
+      call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss,newp)
+      call new_patch_sfc_props(csite,newp)
    end if
 
    !----- Eliminate those patches with small area. ----------------------------------------!

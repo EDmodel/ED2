@@ -298,9 +298,9 @@ subroutine inithis()
                              ,1,ngr,vtab_r(nv,1)%name,6)
                call patch_land_unaverage(1,nnxp(1),nnyp(1),npatch,scr3,vtab_r(nv,1)%var_p)
 
-            !----- 3D variables (nzp,nxp,nwave) -------------------------------------------!
+            !----- 3D variables (nxp,nyp,nwave) -------------------------------------------!
             elseif (vtab_r(nv,1)%idim_type == 7) then
-               call hi_interp(nnzp1(ngr),nnxp1(ngr),nnyp1(ngr),nwave,scr,xmn1(:,ngr)       &
+               call hi_interp(1,nnxp1(ngr),nnyp1(ngr),nwave,scr,xmn1(:,ngr)                &
                              ,xtn1(:,ngr),ymn1(:,ngr),ytn1(:,ngr),zmn1(:,ngr),ztn1(:,ngr)  &
                              ,platn1(ngr),plonn1(ngr),topt1(:,ngr),ztop1,nnzp(1),nnxp(1)   &
                              ,nnyp(1),nwave,vtab_r(nv,1)%var_p,1,ngr,vtab_r(nv,1)%name,7)

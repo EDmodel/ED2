@@ -129,6 +129,7 @@ Module rconstants
    real, parameter :: gorm   = g / rm      ! g/Rv                               [      K/m]
    real, parameter :: ep     = mmvap/mmdry ! or Ra/Rv, epsilon, used to find rv [    kg/kg]
    real, parameter :: epi    = mmdry/mmvap ! or Rv/Ra, 1/epsilon                [    kg/kg]
+   real, parameter :: epim1  = epi-1.      ! that 0.61 term of virtual temp.    [    kg/kg]
    real, parameter :: rmocp  = rm / cp     ! Rv/cp                              [     ----]
    real, parameter :: toodry = 1.e-8       ! Minimum acceptable mixing ratio.   [    kg/kg]
    !---------------------------------------------------------------------------------------!
@@ -254,6 +255,9 @@ Module rconstants
    real(kind=8), parameter :: cp8          = dble(cp        )
    real(kind=8), parameter :: cpi8         = dble(cpi       )
    real(kind=8), parameter :: day_sec8     = dble(day_sec   )
+   real(kind=8), parameter :: ep8          = dble(ep        )
+   real(kind=8), parameter :: epi8         = dble(epi       )
+   real(kind=8), parameter :: epim18       = dble(epim1     )
    real(kind=8), parameter :: gorvap8      = dble(gorm      )
    real(kind=8), parameter :: grav8        = dble(g         )
    real(kind=8), parameter :: hr_sec8      = dble(hr_sec    )
@@ -262,6 +266,7 @@ Module rconstants
    real(kind=8), parameter :: pio1808      = dble(pio180    )
    real(kind=8), parameter :: qicet38      = dble(qicet3    )
    real(kind=8), parameter :: qliqt38      = dble(qliqt3    )
+   real(kind=8), parameter :: rgas8        = dble(rgas      )
    real(kind=8), parameter :: stefan8      = dble(stefan    )
    real(kind=8), parameter :: t3ple8       = dble(t3ple     )
    real(kind=8), parameter :: tsupercool8  = dble(tsupercool)

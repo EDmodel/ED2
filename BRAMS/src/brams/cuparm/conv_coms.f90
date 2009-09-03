@@ -15,7 +15,7 @@ integer ::      kcon,klcl,klfc,ketl,kct,igo,kmt  &
                ,icprtfl,icpltfl
                
 real    ::      zmid,cdzmin,dzlow,dzhigh,plcl,tlcl,dzlcl,zlcl,garea  &
-               ,wconmin,contim,preff,envshr,supply,cptime,cprecip
+               ,wconmin,contim,preff,envshr,supply,cprecip
 
 real, dimension(nkp) :: ucon,vcon,wcon,thtcon ,rvcon,prcon,picon,tmpcon  &
                ,dncon,zcon,zzcon  &

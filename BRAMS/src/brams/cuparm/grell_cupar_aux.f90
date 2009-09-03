@@ -220,7 +220,8 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
          ,qice0        & ! intent(out) - Ice mixing ratio                         [  kg/kg]
          ,qice         & ! intent(out) - Ice mixing ratio with forcing            [  kg/kg]
          ,qicesur      & ! intent(out) - Sfc. ice mixing ratio                    [  kg/kg]
-         ,rho          & ! intent(out) - Density                                  [  kg/m³]
+         ,rho0         & ! intent(out) - Density                                  [  kg/m³]
+         ,rho          & ! intent(out) - Density with forcing                     [  kg/m³]
          ,t0           & ! intent(out) - Current Temperature                      [      K] 
          ,t            & ! intent(out) - Forced Temperature                       [      K]
          ,tsur         & ! intent(out) - Sfc. Temperature                         [      K]
@@ -289,10 +290,10 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
       t0(k)     = cpi * theta(kr) * exner0(k)
 
       !------ 4. Finding the ice-vapour equivalent potential temperature ------------------!
-      theiv0(k) = thetaeiv(thil0(k),p0(k),t0(k),qvap0(k),qtot0(k))
+      theiv0(k) = thetaeiv(thil0(k),p0(k),t0(k),qvap0(k),qtot0(k),5)
 
       !------ 5. CO2 mixing ratio. --------------------------------------------------------!
-      co20(k)   = max(0.,co2p(kr))
+      co20(k)   = co2p(kr)
       !------ 6. Turbulent kinetic energy [m²/s²] -----------------------------------------!
       tke0(k)     = tkep(kr)
       !------ 7. Vertical velocity in terms of pressure, or Lagrangian dp/dt [ Pa/s] ------!
@@ -301,6 +302,8 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
       wwind(k)    = 0.5 * (wp(kr)+wp(kr-1))
       !------ 9. Standard-deviation of vertical velocity ----------------------------------!
       sigw(k)     = max(wstd(kr),sigwmin)
+      !------ 10. Air density -------------------------------------------------------------!
+      rho(k)   = idealdens(p0(k),t0(k),qvap0(k),qtot0(k))
       !------------------------------------------------------------------------------------!
       !]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]!
 
@@ -325,7 +328,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
       t(k)     = t0(k)
       call thil2tqall(thil(k),exner(k),p(k),qtot(k),qliq(k),qice(k),t(k),qvap(k),qsat)
       !------ 6. Finding the ice-vapour equivalent potential temperature ------------------!
-      theiv(k) = thetaeiv(thil(k),p(k),t(k),qvap(k),qtot(k))
+      theiv(k) = thetaeiv(thil(k),p(k),t(k),qvap(k),qtot(k),6)
       !------ 7. CO2 mixing ratio ---------------------------------------------------------!
       co2(k)   = co2p(kr) + dco2dt(k) * dtime
       !------ 8. Turbulent kinetic energy -------------------------------------------------!
@@ -361,7 +364,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
    !----- 7. Temperature ------------------------------------------------------------------!
    tsur        = cpi*theta(lpw)*exnersur
    !----- 8. Ice-vapour equivalent potential temperature ----------------------------------!
-   theivsur    = thetaeiv(thilsur,psur,tsur,qvapsur,qtotsur)
+   theivsur    = thetaeiv(thilsur,psur,tsur,qvapsur,qtotsur,7)
    !----- 9. CO2 mixing ratio -------------------------------------------------------------!
    co2sur      = co2p(lpw)
    !---------------------------------------------------------------------------------------!
@@ -395,11 +398,10 @@ end subroutine initial_thermo_grell
 
 !==========================================================================================!
 !==========================================================================================!
-!   This subroutine intialises the upstream wind information, that may affect convection   !
-! at the current grid cell. This is done only if the user asked for it.                    !
+!   This subroutine intialises the wind information and the previous downdraft mass flux,  !
+! which may affect current convection depending on the dynamic control chosen.             !
 !------------------------------------------------------------------------------------------!
-subroutine initial_upstream_grell(comp_down,iupstrm,m1,m2,m3,i,j,jdim,last_dnmf,last_ierr  &
-                                 ,ua,va)
+subroutine initial_winds_grell(comp_down,m1,m2,m3,i,j,jdim,last_dnmf,ua,va,prev_dnmf)
 
    use mem_scratch_grell, only: &
             mkx                 & ! intent(in)  - Number of Grell levels.
@@ -407,56 +409,30 @@ subroutine initial_upstream_grell(comp_down,iupstrm,m1,m2,m3,i,j,jdim,last_dnmf,
            ,lpw                 & ! intent(in)  - Lowest thermodynamic point
            ,p                   & ! intent(in)  - Pressure at Grell's levels
            ,psur                & ! intent(in)  - Pressure at surface
-           ,dens_curr           & ! intent(out) - Downdraft mass flux as density current
-           ,prev_dnmf           & ! intent(out) - Downdraft mass flux at the previous call
            ,uwind               & ! intent(out) - Zonal wind at thermodynamic point
            ,vwind               & ! intent(out) - Meridional wind at thermodynamic point
-           ,upconv              & ! intent(out) - Flag for upstream convection.
            ,z                   ! ! intent(in)  - Height at Grell's levels
-   
-   use rconstants       , only: cpi,cpor,p00,g,onerad
 
-   use grell_coms       , only: pbotmean, ptopmean,vspeedmin
-   
    implicit none
-   !------ I/O variables ------------------------------------------------------------------!
-   integer                      , intent(in) :: iupstrm   ! Consider upstream downdrafts
-   integer                      , intent(in) :: m1,m2,m3  ! Number of z,x, and y points
-   integer                      , intent(in) :: i,j       ! Current x and y position
-   integer                      , intent(in) :: jdim      ! Dimension in y
-   logical                      , intent(in) :: comp_down ! Computing downdrafts (T/F)
-   real   , dimension   (m2,m3) , intent(in) :: last_dnmf ! Last time downdraft
-   real   , dimension   (m2,m3) , intent(in) :: last_ierr ! Last time error flag
-   real   , dimension(m1,m2,m3) , intent(in) :: ua        ! Zonal wind
-   real   , dimension(m1,m2,m3) , intent(in) :: va        ! Meridional wind
-
+   !------ Arguments. ---------------------------------------------------------------------!
+   integer                      , intent(in)    :: m1        ! Number of z points
+   integer                      , intent(in)    :: m2        ! Number of x points
+   integer                      , intent(in)    :: m3        ! Number of y points
+   integer                      , intent(in)    :: i,j       ! Current x, y & cld position
+   integer                      , intent(in)    :: jdim      ! Dimension in y
+   logical                      , intent(in)    :: comp_down ! Computing downdrafts (T/F)
+   real   , dimension(m2,m3)    , intent(in)    :: last_dnmf ! Last time downdraft
+   real   , dimension(m1,m2,m3) , intent(in)    :: ua        ! Zonal wind
+   real   , dimension(m1,m2,m3) , intent(in)    :: va        ! Meridional wind
+   real                         , intent(inout) :: prev_dnmf ! Previous downdraft
    !------ Local variables ----------------------------------------------------------------!
-   integer             :: k         ! Counter for current Grell level
-   integer             :: kr        ! Counter for corresponding BRAMS level
-   integer             :: iwest     ! Neighbour point to the west
-   integer             :: ieast     ! Neighbour point to the east
-   integer             :: jsouth    ! Neighbour point to the south
-   integer             :: jnorth    ! Neighbour point to the north
-   integer             :: myoctant  ! Octant of upstream flow 
-   real                :: dp        ! Layer thickness in terms of pressure          [   Pa]
-   real                :: dz        ! Layer thickness in terms of height            [    m]
-   real                :: pthick    ! Total thickness in terms of pressure          [   Pa]
-   real                :: zthick    ! Total thickness in terms of height            [    m]
-   real                :: vspeed    ! Average wind speed                            [  m/s]
-   real                :: direction ! Average wind direction                        [  deg]
-   real                :: umean     ! Average zonal wind                            [  m/s]
-   real                :: vmean     ! Average meridional wind                       [  m/s]
-   
-   !------ Some local parameters. ---------------------------------------------------------!
-   integer, parameter :: nocta    =  8  ! Number of octants
-   real,    parameter :: sizeocta = 45. ! Size of each octant (360/8=45.)
+   integer            :: k         ! Counter for current Grell level
+   integer            :: kr        ! Counter for corresponding BRAMS level
    !---------------------------------------------------------------------------------------!
 
    
    !------ Initializing scalars -----------------------------------------------------------!
    prev_dnmf = last_dnmf(i,j)
-   dens_curr = 0.
-   upconv    = .false.
    !---------------------------------------------------------------------------------------!
    !    Transferring the values from BRAMS to Grell's levels, remembering that Grell's     !
    ! grid goes from 1 to m1-1.                                                             !
@@ -468,265 +444,11 @@ subroutine initial_upstream_grell(comp_down,iupstrm,m1,m2,m3,i,j,jdim,last_dnmf,
       !------ Wind needs to be interpolated to the thermodynamic point --------------------!
       uwind(k) = .5*( ua(kr,i,j) + ua(kr,i-1,j)    )    ! Zonal wind                [  m/s]
       vwind(k) = .5*( va(kr,i,j) + va(kr,i,j-jdim) )    ! Meridional wind           [  m/s]
-
    end do
    !---------------------------------------------------------------------------------------!
-
-   if ((.not. comp_down) .or. iupstrm == 0) return
-
-   !------ Initializing neighbour indices -------------------------------------------------!
-   iwest  = i-1
-   ieast  = i+1
-   jsouth = j-jdim
-   jnorth = j+jdim
-
-   !---------------------------------------------------------------------------------------!
-   !   Computing some column means. Here I switched the pressure average by height average,!
-   ! it is more intuitive in my opinion. I left the tools to switch back to pressure       !
-   ! average, though.                                                                      !
-   !---------------------------------------------------------------------------------------!
-   !------ Initializing column means and scales -------------------------------------------!
-   umean       = 0.
-   vmean       = 0.
-   pthick      = 0.
-   zthick      = 0.
-   
-   !------ Looping through layers, and integrating column. --------------------------------!
-   do k=2,mkx-1
-
-      !------ Wind integral done just at the mid atmosphere -------------------------------!
-      if((psur-p(k)) > pbotmean .and. p(k) < ptopmean) then
-         dp       = -.5*(p(k+1)-p(k-1))             ! Old method
-         dz       =  .5*(z(k+1)-z(k-1))
-         umean    = umean+uwind(k)*dz
-         vmean    = vmean+vwind(k)*dz
-         pthick   = pthick+dp
-         zthick   = zthick+dz
-      end if
-   end do
-   
-   !------ Normalizing variables ----------------------------------------------------------!
-   umean     = umean/zthick  ! Scaling the integral so we have mean zonal wind.
-   vmean     = vmean/zthick  ! Scaling the integral so we have mean meridional wind.
-   vspeed    = sqrt(umean*umean+vmean*vmean)
-   !------ Compute wind direction only if wind is enough strong ---------------------------!
-   if(vspeed < vspeedmin) then
-      ! Wind is too weak to define upstream, so the "upstream"  is here... ----------------!
-      myoctant=-999
-      upconv = last_ierr(i,j) == 0.
-      if (iupstrm > 0) then
-         dens_curr = prev_dnmf
-      end if
-      return
-   else
-      !----- Defining direction of the mean wind, and the corresponding quadrant ----------!
-      direction = modulo(270.-atan2(vmean,umean)*onerad,360.)
-      myoctant  = mod(nint(direction/sizeocta),nocta)
-   end if
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Now check for upstream convection depending on the octant -----------------------!
-   select case (myoctant)
-   case (0) ! Northerly
-     upconv = last_ierr(i,jnorth) == 0.
-     if (iupstrm == 2) prev_dnmf=max(last_dnmf(i,j),last_dnmf(i,jnorth))
-
-   case (1) ! Northeasterly flow
-      upconv = last_ierr(ieast,jnorth) == 0.
-      if (iupstrm == 2) prev_dnmf=max(last_dnmf(i,j),last_dnmf(ieast,jnorth))
-      
-   case (2) ! Easterly flow
-      upconv = last_ierr(ieast,j) == 0.
-      if (iupstrm == 2) prev_dnmf=max(last_dnmf(i,j),last_dnmf(ieast,j))
-      
-   case (3) ! Southeasterly flow
-      upconv = last_ierr(ieast,jsouth) == 0.
-      if (iupstrm == 2) prev_dnmf=max(last_dnmf(i,j),last_dnmf(ieast,jsouth))
-      
-   case (4) ! Southerly flow
-      upconv = last_ierr(i,jsouth) == 0.
-      if (iupstrm == 2) prev_dnmf=max(last_dnmf(i,j),last_dnmf(i,jsouth))
-      
-   case (5) ! Southwesterly flow
-      upconv = last_ierr(iwest,jsouth) == 0.
-      if (iupstrm == 2) prev_dnmf=max(last_dnmf(i,j),last_dnmf(iwest,jsouth))
-      
-   case (6) ! Westerly flow
-      upconv = last_ierr(iwest,j) == 0.
-      if (iupstrm == 2) prev_dnmf=max(last_dnmf(i,j),last_dnmf(iwest,j))
-      
-   case (7) ! Northwesterly flow
-      upconv = last_ierr(iwest,jnorth) == 0.
-      if (iupstrm == 2) prev_dnmf=max(last_dnmf(i,j),last_dnmf(iwest,jnorth))
-      
-   end select
-   
-   !---------------------------------------------------------------------------------------!
-   !    Dens_curr is simulating the impact of a previous downdraft lifting the air         !
-   ! downstream like a density current. It will only do it if iupstrm is > 0               !
-   !---------------------------------------------------------------------------------------!
-   if (iupstrm > 0) then
-      dens_curr = prev_dnmf
-   end if
 
    return
-end subroutine initial_upstream_grell
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!    This subroutine organises the variables that go to the output, namely the heating and !
-! moistening rates due to convection.                                                      !
-!------------------------------------------------------------------------------------------!
-subroutine grell_output(comp_down,m1,mgmzp,rtgt,zt,zm,dnmf,upmf,xierr,zjmin,zk22,zkbcon    &
-                       ,zkdt,zktop,conprr,thsrc,rtsrc,co2src,areadn,areaup,cuprliq,cuprice)
-   use mem_scratch_grell, only: &
-           cdd                  & ! intent(in) - Normalized downdraft detr. rate  [    1/m]
-          ,cdu                  & ! intent(in) - Normalized updraft detr. rate    [    1/m]
-          ,dbyd                 & ! intent(in) - Downdraft-related buoyancy       [   m/s²]
-          ,dbyu                 & ! intent(in) - Updraft-related buoyancy         [   m/s²]
-          ,dzd_cld              & ! intent(in) - Top-down layer thickness         [      m]
-          ,dzu_cld              & ! intent(in) - Bottom-up layer thickness        [      m]
-          ,etad_cld             & ! intent(in) - Normalized downdraft mass flux   [    ---]
-          ,etau_cld             & ! intent(in) - Normalized updraft mass flux     [    ---]
-          ,ierr                 & ! intent(in) - Error flag
-          ,jmin                 & ! intent(in) - Downdraft originating level
-          ,k22                  & ! intent(in) - Updraft originating level
-          ,kbcon                & ! intent(in) - Level of free convection
-          ,kdet                 & ! intent(in) - Top of downdraft detrainment layer
-          ,kgoff                & ! intent(in) - BRAMS grid offset
-          ,ktop                 & ! intent(in) - Cloud top
-          ,mentrd_rate          & ! intent(in) - Normalized downdraft entr. rate  [    1/m]
-          ,mentru_rate          & ! intent(in) - Normalized updraft entr. rate    [    1/m]
-          ,mkx                  & ! intent(in) - # of cloud grid levels
-          ,outco2               & ! intent(in) - Total CO2 mixing ratio forcing   [  ppm/s]
-          ,outqtot              & ! intent(in) - Total mixing ratio forcing       [kg/kg/s]
-          ,outthil              & ! intent(in) - Theta_il forcing                 [    K/s]
-          ,qliqd_cld            & ! intent(in) - Downdraft liquid mixing ratio    [  kg/kg]
-          ,qliqu_cld            & ! intent(in) - Updraft liquid mixing ratio      [  kg/kg]
-          ,qiced_cld            & ! intent(in) - Downdraft ice mixing ratio       [  kg/kg]
-          ,qiceu_cld            & ! intent(in) - Updraft ice mixing ratio         [  kg/kg]
-          ,rhod_cld             & ! intent(in) - Downdraft density                [  kg/m³]
-          ,rhou_cld             & ! intent(in) - Updraft density                  [  kg/m³]
-          ,precip               & ! intent(in) - Precipitation rate               [kg/m²/s]
-          ,sigw                 & ! intent(in) - Vertical velocity std. deviation [    m/s]
-          ,tke                  & ! intent(in) - Turbulent kinetic energy         [   J/kg]
-          ,wwind                & ! intent(in) - Vertical velocity                [    m/s]
-          ,wbuoymin             ! ! intent(in) - Minimum buoyant velocity         [    m/s]
-
-   implicit none
-   
-   logical            , intent(in)  :: comp_down ! I will compute downdraft stuff
-   integer            , intent(in)  :: m1        ! Number of levels
-   integer            , intent(in)  :: mgmzp     ! Number of Grell's levels
-   real               , intent(in)  :: rtgt      ! Correction to get the heights  [   ----]
-   real, dimension(m1), intent(in)  :: zt        ! Height at thermodynamic levels [      m]
-   real, dimension(m1), intent(in)  :: zm        ! Height at momentum levels      [      m]
-   real               , intent(in)  :: dnmf      ! Reference downdraft mass flux  [kg/m²/s]
-   real               , intent(in)  :: upmf      ! Reference updraft mass flux    [kg/m²/s]
-   
-   real, dimension(m1), intent(out) :: thsrc     ! Potential temperature feedback [    K/s]
-   real, dimension(m1), intent(out) :: rtsrc     ! Total mixing ratio feedback    [kg/kg/s]
-   real, dimension(m1), intent(out) :: co2src    ! Total CO2 mixing ratio fdbk    [  ppm/s]
-   real, dimension(m1), intent(out) :: cuprliq   ! Cumulus water mixing ratio     [  kg/kg]
-   real, dimension(m1), intent(out) :: cuprice   ! Cumulus ice mixing ratio       [  kg/kg]
-   real               , intent(out) :: areadn    ! Fractional downdraft area      [    ---]
-   real               , intent(out) :: areaup    ! Fractional updraft area        [    ---]
-   real               , intent(out) :: conprr    ! Rate of convective precip.     [kg/m²/s]
-   real               , intent(out) :: xierr     ! Error flag
-   real               , intent(out) :: zjmin     ! Downdraft originating level    [      m]
-   real               , intent(out) :: zk22      ! Updraft origin                 [      m]
-   real               , intent(out) :: zkbcon    ! Level of free convection       [      m]
-   real               , intent(out) :: zkdt      ! Top of the dndraft detr. layer [      m]
-   real               , intent(out) :: zktop     ! Cloud top                      [      m]
-   
-   integer                          :: k         ! Cloud level counter
-   integer                          :: kr        ! BRAMS level counter
-   real                             :: exner     ! Exner fctn. for tend. convers. [ J/kg/K]
-
-   !---------------------------------------------------------------------------------------!
-   !    Flushing all variables to zero in case convection didn't happen.                   !
-   !---------------------------------------------------------------------------------------!
-   do k=1,m1
-      thsrc  (k) = 0.
-      rtsrc  (k) = 0.
-      co2src (k) = 0.
-      cuprliq(k) = 0.
-      cuprice(k) = 0.
-   end do
-
-   areadn  = 0.
-   areaup  = 0.
-   conprr  = 0.
-   zkdt    = 0.
-   zk22    = 0.
-   zkbcon  = 0.
-   zjmin   = 0.
-   zktop   = 0.
-   
-   !---------------------------------------------------------------------------------------!
-   !   Copying the error flag. This should not be zero in case convection failed.          !
-   !---------------------------------------------------------------------------------------!
-   xierr = real(ierr)
-
-   !---------------------------------------------------------------------------------------!
-   !    Fixing the levels, here I will add back the offset so the output will be consist-  !
-   ! ent. I will return these variables even when no cloud developed for debugging         !
-   ! purposes. When the code is running fine, then I should return them only when          !
-   ! convection happens.                                                                   !
-   !---------------------------------------------------------------------------------------!
-   zkdt   = (zt(kdet  + kgoff)-zm(kgoff))*rtgt
-   zk22   = (zt(k22   + kgoff)-zm(kgoff))*rtgt
-   zkbcon = (zt(kbcon + kgoff)-zm(kgoff))*rtgt
-   zjmin  = (zt(jmin  + kgoff)-zm(kgoff))*rtgt
-   zktop  = (zt(ktop  + kgoff)-zm(kgoff))*rtgt
-
-
-   if (ierr /= 0) return !----- No cloud, no need to return anything ----------------------!
-   !---------------------------------------------------------------------------------------!
-   !    Precipitation is simply copied, it could even be output directly from the main     !
-   ! subroutine, brought here just to be together with the other source terms.             !
-   !---------------------------------------------------------------------------------------!
-   conprr = precip
-   
-   do k=1,ktop
-      kr    = k + kgoff
-      !----- Here we are simply copying including the offset back. ------------------------!
-      thsrc(kr)   = outthil(k)
-      rtsrc(kr)   = outqtot(k)
-      co2src(kr)  = outco2(k)
-   end do
-
-
-   !---------------------------------------------------------------------------------------!
-   !   Computing the relative area covered by downdrafts and updrafts.                     !
-   !---------------------------------------------------------------------------------------!
-   call grell_draft_area(comp_down,m1,mgmzp,kgoff,jmin,k22,kbcon,ktop,dzu_cld,wwind,tke    &
-                        ,sigw,wbuoymin,etad_cld,mentrd_rate,cdd,dbyd,rhod_cld,dnmf         &
-                        ,etau_cld,mentru_rate,cdu,dbyu,rhou_cld,upmf,areadn,areaup)
-
-
-   !---------------------------------------------------------------------------------------!
-   !   Finally I compute the cloud condensed mixing ratio. This is used by Harrington when !
-   ! cumulus feedback is requested, so I rescale the liquid water at the downdrafts and    !
-   ! updrafts by their area (roughly stretching the cloud to the entire grid cell and find-!
-   ! ing the "equivalent stratus".                                                         !
-   !---------------------------------------------------------------------------------------!
-   do k=1,ktop
-      kr=k+kgoff
-      cuprliq(kr) = max(0.,qliqd_cld(k) * areadn + qliqu_cld(k) * areaup)
-      cuprice(kr) = max(0.,qiced_cld(k) * areadn + qiceu_cld(k) * areaup)
-   end do
-
-   return
-end subroutine grell_output
+end subroutine initial_winds_grell
 !==========================================================================================!
 !==========================================================================================!
 
@@ -793,8 +515,8 @@ subroutine grell_draft_area(comp_down,m1,mgmzp,kgoff,jmin,k22,kbcon,ktop,dzu_cld
    real, dimension(mgmzp), intent(in)  :: rhou_cld    ! Density                   [  kg/m³]
    real                  , intent(in)  :: upmf        ! Reference mass flux       [kg/m²/s]
    !----- Output variables ----------------------------------------------------------------!
-   real                  , intent(out) :: areadn      ! Downdraft relative area   [    ---]
-   real                  , intent(out) :: areaup      ! Updraft   relative area   [    ---]
+   real                  , intent(inout) :: areadn      ! Downdraft relative area   [    ---]
+   real                  , intent(inout) :: areaup      ! Updraft   relative area   [    ---]
    !----- Local variables -----------------------------------------------------------------!
    integer                             :: k         ! Cloud level counter
    integer                             :: kr        ! BRAMS level counter
@@ -868,18 +590,13 @@ end subroutine grell_draft_area
 ! This is currently used only for CATT.                                                    !
 !------------------------------------------------------------------------------------------!
 subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_eff          &
-                              ,maxens_cap,inv_ensdim,closure_type,upmf_ens,sgrell1_3d      &
-                              ,sgrell2_3d)
+                              ,maxens_cap,inv_ensdim,closure_type,ierr_cap,upmf_ens        &
+                              ,sgrell1_3d,sgrell2_3d)
 
-   use rconstants, only : hr_sec
+   use rconstants  , only : hr_sec
+   use mem_ensemble, only : ensemble_vars ! ! type
    use mem_scratch_grell, only: &
-           ierr                 & ! intent(in) - Error flag
-          ,jmin                 & ! intent(in) - Downdraft originating level
-          ,k22                  & ! intent(in) - Updraft originating level
-          ,kbcon                & ! intent(in) - Level of free convection
-          ,kdet                 & ! intent(in) - Top of downdraft detrainment layer
-          ,kgoff                & ! intent(in) - BRAMS grid offset
-          ,ktop                 & ! intent(in) - Cloud top
+           kgoff                & ! intent(in) - BRAMS grid offset
           ,mkx                  ! ! intent(in) - # of cloud grid levels
 
    implicit none
@@ -893,10 +610,8 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
    integer            , intent(in)    :: maxens_eff   ! # of precip. efficiencies
    real               , intent(in)    :: inv_ensdim   ! 1/(maxens_dyn*maxens_lsf*maxens_eff)
    character(len=2)   , intent(in)    :: closure_type ! Which dynamic control
-   
-   real, dimension(maxens_dyn,maxens_lsf,maxens_eff,maxens_cap), intent(in) &
-                                      :: upmf_ens ! Ensemble
-
+   integer, dimension(maxens_cap), intent(in) :: ierr_cap
+   real, dimension(maxens_dyn,maxens_lsf,maxens_eff,maxens_cap), intent(in) :: upmf_ens
    real, dimension(m1), intent(inout) :: sgrell1_3d ! Lots of things, depends on the index
    real, dimension(m1), intent(inout) :: sgrell2_3d ! Lots of things, depends on the index
    
@@ -932,7 +647,7 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
    !---------------------------------------------------------------------------------------!
 
 
-   if (ierr /= 0) then
+   if (all(ierr_cap(:) /= 0)) then
       select case (icld)
       case (1)
          sgrell1_3d = 0.
@@ -970,7 +685,7 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
    !   The mean for each cap_maxs member                                                   !
    !---------------------------------------------------------------------------------------!
    do imbp=1,maxens_cap
-      upmf_ave_cap(icap) = sum(upmf_ens(:,:,:,icap)) * maxens_effdynlsf_i
+      upmf_ave_cap(icap) = sum(ee%upmf_ens(:,:,:,icap)) * maxens_effdynlsf_i
    end do
 
    !---------------------------------------------------------------------------------------!
@@ -979,23 +694,23 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
    select case (trim(closure_type))
    case ('gr')
       do icap=1,maxens_cap
-         upmf_ave_cap1(icap)= sum(upmf_ens(1,:,:,icap)) * maxens_efflsf_i
+         upmf_ave_cap1(icap)= sum(ee%upmf_ens(1,:,:,icap)) * maxens_efflsf_i
       end do
    case ('lo')
       do icap=1,maxens_cap
-         upmf_ave_cap2(icap)= sum(upmf_ens(1,:,:,icap)) * maxens_efflsf_i
+         upmf_ave_cap2(icap)= sum(ee%upmf_ens(1,:,:,icap)) * maxens_efflsf_i
       end do
    case ('mc')
       do icap=1,maxens_cap
-         upmf_ave_cap3(icap)= sum(upmf_ens(1,:,:,icap)) * maxens_efflsf_i
+         upmf_ave_cap3(icap)= sum(ee%upmf_ens(1,:,:,icap)) * maxens_efflsf_i
       end do
    case ('kf')
       do icap=1,maxens_cap
-         upmf_ave_cap4(icap)= sum(upmf_ens(1,:,:,icap)) * maxens_efflsf_i
+         upmf_ave_cap4(icap)= sum(ee%upmf_ens(1,:,:,icap)) * maxens_efflsf_i
       end do
    case ('as')
       do icap=1,maxens_cap
-         upmf_ave_cap5(icap)= sum(upmf_ens(1,:,:,icap)) * maxens_efflsf_i
+         upmf_ave_cap5(icap)= sum(ee%upmf_ens(1,:,:,icap)) * maxens_efflsf_i
       end do
    case ('nc','en')
       !------------------------------------------------------------------------------------!
@@ -1014,14 +729,17 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
          upmf_ave_cap5(icap) = sum(upmf_ens(4:7,:,:,icap))*0.250*maxens_efflsf_i
       end do
       do icap=1,maxens_cap
-         upmf_ave_cap4(icap) = sum(upmf_ens(8:10,:,:,icap))*0.3333333333*maxens_efflsf_i
+         upmf_ave_cap4(icap) = sum(upmf_ens(8:10,:,:,icap))                                &
+                             * 0.3333333333 * maxens_efflsf_i
       end do
       if (closure_type == 'en') then
          do icap=1,maxens_cap
-            upmf_ave_cap3(icap) = sum(upmf_ens(11:13,:,:,icap))*0.3333333333*maxens_efflsf_i
+            upmf_ave_cap3(icap) = sum(upmf_ens(11:13,:,:,icap))                            &
+                                * 0.3333333333*maxens_efflsf_i
          end do
          do imbp=1,maxens_lsf
-            upmf_ave_cap2(icap) = sum(upmf_ens(14:16,:,:,icap))*0.3333333333*maxens_efflsf_i
+            upmf_ave_cap2(icap) = sum(upmf_ens(14:16,:,:,icap))                            &
+                                * 0.3333333333*maxens_efflsf_i
          end do
       end if
    end select
@@ -1030,10 +748,10 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
    !   Mass flux average for each closure                                                  !
    !---------------------------------------------------------------------------------------!
    do idync=1,maxens_dyn
-      upmf_ave(idync) = sum(upmf_ens(:,:,idync,:)) * maxens_efflsf_i
+      upmf_ave(idync) = sum(ee%upmf_ens(:,:,idync,:)) * maxens_efflsf_i
    end do
    
-   upmf_tot_ave = sum(upmf_ens) * inv_ensdim
+   upmf_tot_ave = sum(ee%upmf_ens) * inv_ensdim
    
    !---------------------------------------------------------------------------------------!
    !   Computing Standard deviation, skewness, and curtosis                                !
@@ -1042,12 +760,12 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
       do iedt=1,maxens_eff
          do imbp=1,maxens_lsf
             do idync=1,maxens_dyn
-               thisdiff = max(small_number,upmf_ens(idync,imbp,iedt,icap)-upmf_ave(idync))
+               thisdiff = max(small_number,ee%upmf_ens(idync,imbp,iedt,icap)-upmf_ave(idync))
                upmf_std(idync) = upmf_std(idync) + thisdiff**2
                upmf_ske(idync) = upmf_ske(idync) + thisdiff**3
                upmf_cur(idync) = upmf_cur(idync) + thisdiff**4
                
-               thisdiff = max(small_number,upmf_ens(idync,imbp,iedt,icap)-upmf_tot_ave)
+               thisdiff = max(small_number,ee%upmf_ens(idync,imbp,iedt,icap)-upmf_tot_ave)
                upmf_tot_std    = upmf_tot_std    + thisdiff**2
                upmf_tot_ske    = upmf_tot_ske    + thisdiff**3
                upmf_tot_cur    = upmf_tot_cur    + thisdiff**4

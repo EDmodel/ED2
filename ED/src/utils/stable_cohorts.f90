@@ -11,6 +11,7 @@ subroutine flag_stable_cohorts(cgrid)
                                     , patchtype       ! ! structure
    use allometry             , only : dbh2bl          ! ! function
    use canopy_radiation_coms , only : blfac_min       & ! intent(in)
+                                    , lai_min         & ! intent(in)
                                     , tai_min         ! ! intent(in)
    use rk4_coms              , only : ibranch_thermo  ! ! intent(in)
    implicit none
@@ -56,13 +57,17 @@ subroutine flag_stable_cohorts(cgrid)
                !---------------------------------------------------------------------------!
                !    Wood is not included, skip the cohort if the specific leaf biomass is  !
                ! very low compared to the maximum possible leaf biomass of this plant.     !
+               ! Since branches don't contribute to vegetation heat capacity, we must      !
+               ! ensure  that heat capacity won't be too tiny or scaled by several orders  !
+               ! of magnitude.                                                             !
                !---------------------------------------------------------------------------!
                cpatch => csite%patch(ipa)
                do ico=1, cpatch%ncohorts
-                  bleaf_pot = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
-                  exposed = cpatch%hite(ico)  > csite%total_snow_depth(ipa)
-                  green   = cpatch%bleaf(ico) >= blfac_min * bleaf_pot
-                  cpatch%solvable(ico) = exposed .and. green
+                  bleaf_pot            = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
+                  exposed              = cpatch%hite(ico)  > csite%total_snow_depth(ipa)
+                  green                = cpatch%bleaf(ico) >= blfac_min * bleaf_pot
+                  nottoosparse         = cpatch%lai(ico) > lai_min
+                  cpatch%solvable(ico) = exposed .and. (green .and. nottoosparse)
                end do
 
             case (1,2)

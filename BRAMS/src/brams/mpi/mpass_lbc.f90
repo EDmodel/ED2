@@ -74,15 +74,15 @@ subroutine node_sendlbc()
   !      call par_init_put(node_buffs(nm)%lbc_send_buff(1)  &
   !                       ,node_buffs(nm)%nsend )
         ipos = 1
-        call MPI_Pack(i1,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(i1,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-        call MPI_Pack(i2,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(i2,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-        call MPI_Pack(j1,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(j1,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-        call MPI_Pack(j2,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(j2,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-        call MPI_Pack(mynum,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff(1), &
+        call MPI_Pack(mynum,1,MPI_INTEGER,node_buffs(nm)%lbc_send_buff, &
              node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
 
         do nv = 1,num_var(ngrid)

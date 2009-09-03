@@ -224,6 +224,11 @@ grell_cupar_driver.o : $(CUPARM)/grell_cupar_driver.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+grell_cupar_dynamic.o : $(CUPARM)/grell_cupar_dynamic.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 grell_cupar_ensemble.o : $(CUPARM)/grell_cupar_ensemble.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -234,7 +239,12 @@ grell_cupar_environment.o : $(CUPARM)/grell_cupar_environment.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-grell_cupar_main.o : $(CUPARM)/grell_cupar_main.f90
+grell_cupar_feedback.o : $(CUPARM)/grell_cupar_feedback.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+grell_cupar_static.o : $(CUPARM)/grell_cupar_static.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -1289,6 +1299,11 @@ average_utils.o : $(ED_IO)/average_utils.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+budget_utils.o : $(ED_UTILS)/budget_utils.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 c34constants.o : $(ED_MEMORY)/c34constants.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -1339,11 +1354,6 @@ disturbance.o : $(ED_DYNAMICS)/disturbance.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-ed_bare_restart.o : $(ED_INIT)/ed_bare_restart.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
-
 ed_driver.o : $(ED_DRIVER)/ed_driver.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -1380,6 +1390,11 @@ ed_mem_grid_dim_defs.o : $(ED_MEMORY)/ed_mem_grid_dim_defs.f90
 	rm -f $(<F:.f90=.f90)
 
 ed_misc_coms.o : $(ED_MEMORY)/ed_misc_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_nbg_init.o : $(ED_INIT)/ed_nbg_init.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

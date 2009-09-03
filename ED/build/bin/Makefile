@@ -12,7 +12,7 @@ INCLUDES    = $(PAR_INCS) -I$(ED_INCS)
 F90_COMMAND = $(F_COMP) -c $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
 FPP_COMMAND = $(F_COMP) -c -DUSE_INTERF=$(USE_INTERF) -DUSENC=$(USENC) -D$(CMACH)          \
               -DUSE_HDF5=$(USE_HDF5) -DUSE_COLLECTIVE_MPIO=$(USE_COLLECTIVE_MPIO)          \
-              $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
+              -DUSE_MPIWTIME=$(USE_MPIWTIME) $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
 CXX_COMMAND = $(C_COMP) -c $(C_OPTS) -D$(CMACH) $(HDF5_INCS) $(INCLUDES) $(PAR_DEFS)
 
 #----- Define archive and executable names. -----------------------------------------------#
@@ -23,11 +23,19 @@ include objects.mk
 
 #----- Define targets. --------------------------------------------------------------------#
 
-depends:
-	(make gendep)
-	(make all)
+all:
+	make gendep
+	make $(EXE)
+	make $(EXE)
+	make $(EXE)
+	make $(EXE)
+	make $(EXE)
 
-all: $(EXE)
+
+gendep:
+	@echo ""
+	./generate_deps.sh $(ED_ROOT)
+	@echo Finished dependencies
 
 $(EXE): $(LIBMODEL) $(MAINOBJ) 
 	@echo ""
@@ -36,9 +44,6 @@ $(EXE): $(LIBMODEL) $(MAINOBJ)
 	@echo ""
 	@echo Finished building === $(EXE)
 	@echo ""
-
-gendep:
-	./generate_deps.sh
 
 $(MAINOBJ):  $(MAIN) 
 	@echo ""
@@ -59,8 +64,9 @@ install:
 
 clean:
 	@echo ""
-	rm -f $(LIBMODEL) $(EXE) *.o *.mod *.F90 *.f90 *.stb *.d 
+	rm -f $(LIBMODEL) $(EXE) *.o *.mod *.F90 *.f90 *.stb *.d dependency.mk 
 	rm -f ../$(EXE) ../$(LIBMODEL)
+	touch dependency.mk
 	@echo ""
 
 #----- Define rules -----------------------------------------------------------------------#

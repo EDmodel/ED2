@@ -510,6 +510,14 @@ subroutine ed_masterput_worklist_info(par_run)
            iscratch(1:npoly) = work_e(ifm)%vec_ntext(offset+1:offset+npoly)
            call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),1600000+mpiid,MPI_COMM_WORLD,ierr)
 
+           iscratch(1:npoly) = work_e(ifm)%vec_xid(offset+1:offset+npoly)
+           call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),1700000+mpiid,MPI_COMM_WORLD,ierr)
+           
+           iscratch(1:npoly) = work_e(ifm)%vec_yid(offset+1:offset+npoly)
+           call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),1800000+mpiid,MPI_COMM_WORLD,ierr)
+
+
+
            deallocate(rscratch,iscratch)
 
         enddo
@@ -531,11 +539,15 @@ subroutine ed_masterput_worklist_info(par_run)
      allocate(sc_work(ifm)%vec_glat(npoly))
      allocate(sc_work(ifm)%vec_landfrac(npoly))
      allocate(sc_work(ifm)%vec_ntext(npoly))
+     allocate(sc_work(ifm)%vec_xid(npoly))
+     allocate(sc_work(ifm)%vec_yid(npoly))
 
      sc_work(ifm)%vec_glon(1:npoly) = work_e(ifm)%vec_glon(offset+1:offset+npoly)
      sc_work(ifm)%vec_glat(1:npoly) = work_e(ifm)%vec_glat(offset+1:offset+npoly)
      sc_work(ifm)%vec_landfrac(1:npoly) = work_e(ifm)%vec_landfrac(offset+1:offset+npoly)
      sc_work(ifm)%vec_ntext(1:npoly) = work_e(ifm)%vec_ntext(offset+1:offset+npoly)
+     sc_work(ifm)%vec_xid(1:npoly) = work_e(ifm)%vec_xid(offset+1:offset+npoly)
+     sc_work(ifm)%vec_yid(1:npoly) = work_e(ifm)%vec_yid(offset+1:offset+npoly)
 
      call ed_dealloc_work(work_e(ifm))
      
@@ -567,11 +579,21 @@ subroutine ed_masterput_worklist_info(par_run)
      allocate(work_e(ifm)%vec_ntext(npoly))
      work_e(ifm)%vec_ntext(1:npoly) = sc_work(ifm)%vec_ntext(1:npoly)
 
+     ! Grid index in the x-direction
+     allocate(work_e(ifm)%vec_xid(npoly))
+     work_e(ifm)%vec_xid(1:npoly) = sc_work(ifm)%vec_xid(1:npoly)
+     
+     ! Grid index in the y-direction
+     allocate(work_e(ifm)%vec_yid(npoly))
+     work_e(ifm)%vec_yid(1:npoly) = sc_work(ifm)%vec_yid(1:npoly)
+
      ! Need we say more
      deallocate(sc_work(ifm)%vec_glon)
      deallocate(sc_work(ifm)%vec_glat)
      deallocate(sc_work(ifm)%vec_landfrac)
      deallocate(sc_work(ifm)%vec_ntext)
+     deallocate(sc_work(ifm)%vec_xid)
+     deallocate(sc_work(ifm)%vec_yid)
 
    end do
    
@@ -961,6 +983,8 @@ subroutine ed_nodeget_worklist_info
      allocate(work_e(ifm)%vec_glat(npolygons))
      allocate(work_e(ifm)%vec_landfrac(npolygons))
      allocate(work_e(ifm)%vec_ntext(npolygons))
+     allocate(work_e(ifm)%vec_xid(npolygons))
+     allocate(work_e(ifm)%vec_yid(npolygons))
 
      mpiid=maxmach*(ifm-1)+mynum
 
@@ -976,7 +1000,11 @@ subroutine ed_nodeget_worklist_info
      call MPI_Recv(work_e(ifm)%vec_ntext(1:npolygons),npolygons, &
           MPI_INTEGER,0,1600000+mpiid,MPI_COMM_WORLD,status,ierr)
 
+     call MPI_Recv(work_e(ifm)%vec_xid(1:npolygons),npolygons, &
+          MPI_INTEGER,0,1700000+mpiid,MPI_COMM_WORLD,status,ierr)
      
+     call MPI_Recv(work_e(ifm)%vec_yid(1:npolygons),npolygons, &
+          MPI_INTEGER,0,1800000+mpiid,MPI_COMM_WORLD,status,ierr)
   end do
 
   return

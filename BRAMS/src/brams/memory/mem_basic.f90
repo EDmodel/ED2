@@ -96,7 +96,7 @@ module mem_basic
       allocate (basic%cputime (   n2,n3))
 
       !----- CO2 will be allocated only when ICO2 is non-zero. ----------------------------!
-      if (ico2 /= 0) then
+      if (co2_on) then
          allocate (basic%co2p    (n1,n2,n3))
       end if
       return

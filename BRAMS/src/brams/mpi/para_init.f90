@@ -12,6 +12,7 @@ subroutine node_decomp(init)
   use var_tables
   use mem_scratch
   use mem_basic
+  use mem_cuparm, only : nclouds
   use rpara
 
   implicit none
@@ -19,8 +20,8 @@ subroutine node_decomp(init)
   integer :: init
 
   integer :: ngr,idn,isn,ng,mp_nzp,numbuff,icm,nsiz,jnode,ncols,ifm &
-       ,nestvar,nc,nf,npvar2,npvar3,nv,num_lbc_buff,num_nest_buff &
-       ,num_feed_buff,itype,i1,i2,j1,j2,ixy,ixyz,memf
+       ,nestvar,nc,nf,npvar2,npvar3,npvar9,nv,num_lbc_buff,num_nest_buff &
+       ,num_feed_buff,itype,i1,i2,j1,j2,ixy,ixyz,ixyc,memf
 
   logical :: failed
 
@@ -105,13 +106,21 @@ subroutine node_decomp(init)
      enddo
 
      !  Find number of lbc variables to be communicated.
-     npvar3=0 ; npvar2=0
+     npvar2=0
+     npvar3=0
+     npvar9=0
      do nv = 1,num_var(ng)
         if(vtab_r(nv,ng)%impt1 == 1 ) then
-           if (vtab_r(nv,ng)%idim_type==2) npvar2=npvar2+1 
-           if (vtab_r(nv,ng)%idim_type==3) npvar3=npvar3+1 
-        endif
-     enddo
+           select case (vtab_r(nv,ng)%idim_type)
+           case (2)
+              npvar2 = npvar2 + 1
+           case (3)
+              npvar3 = npvar3 + 1
+           case (9)
+              npvar9 = npvar9 + 1
+           end select
+        end if
+     end do
 
 
      do isn=1,nmachs
@@ -128,8 +137,9 @@ subroutine node_decomp(init)
            if(i1.ne.0) then
               ixy=(i2-i1+1)*(j2-j1+1)
               ixyz=(i2-i1+1)*(j2-j1+1)*(mp_nzp)
-              num_lbc_buff=ixyz*npvar3+ixy*npvar2  &
-                   +2*(npvar3+npvar2+100)
+              ixyc=(i2-i1+1)*(j2-j1+1)*nclouds
+              num_lbc_buff=ixyz*npvar3+ixy*npvar2+ixyc*npvar9  &
+                   +2*(npvar3+npvar2+npvar9+100)
            endif
 
            itype=5
@@ -171,8 +181,9 @@ subroutine node_decomp(init)
            if(i1.ne.0) then
               ixy=(i2-i1+1)*(j2-j1+1)
               ixyz=(i2-i1+1)*(j2-j1+1)*(mp_nzp)
-              num_lbc_buff=ixyz*npvar3+ixy*npvar2  &
-                   +2*(npvar3+npvar2+100)
+              ixyc=(i2-i1+1)*(j2-j1+1)*nclouds
+              num_lbc_buff=ixyz*npvar3+ixy*npvar2 +ixyc*npvar9 &
+                   +2*(npvar3+npvar2+npvar9+100)
            endif
 
            itype=5

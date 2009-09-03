@@ -66,7 +66,7 @@ module disturbance_utils
         
         ! First take care of harvesting: secondary -> secondary and 
         ! primary -> secondary.
-        call apply_forestry(cpoly,isi, current_time%year, cpoly%met(isi)%rhos)
+        call apply_forestry(cpoly,isi, current_time%year)
         
         ! Update the cut output variables
         call update_site_derived_props(cpoly, 1,isi)
@@ -201,10 +201,10 @@ module disturbance_utils
               initial_basal_area(1:n_pft, 1:n_dbh) = cpoly%basal_area(1:n_pft, 1:n_dbh, isi)
               
               ! Update the derived properties including veg_height, patch hcapveg, lai
-              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos,q+onsp)
+              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss,q+onsp)
 
               ! Update soil temp, fracliq, etc.
-              call new_patch_sfc_props(csite, q+onsp, cpoly%met(isi)%rhos)
+              call new_patch_sfc_props(csite, q+onsp)
               
               ! Update AGB, basal area.
               ! !!!!!!!!!! SHOULD THIS BE HERE OR OUTSIDE THIS LOOP?? !!!!!!!!
@@ -437,7 +437,6 @@ end subroutine apply_disturbances
     csite%patch(np)%ncohorts = 0
 
     ! For now, choose heat/vapor capacities for stability
-    csite%can_depth(np) = 30.0
     do k=1,nzs
        csite%sfcwater_tempk(k,np) = atm_tmp   ! Set canopy temp to 0 C
        csite%sfcwater_fracliq(k,np) = 1.0     ! Set to 100% liquid

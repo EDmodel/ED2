@@ -27,7 +27,6 @@ subroutine NAMEOUT
           maxens_eff,    & ! INTENT(IN)
           maxens_cap,    & ! INTENT(IN)
           iupmethod,     & ! INTENT(IN)
-          iupstrm,       & ! INTENT(IN)
           radius,        & ! INTENT(IN)
           zkbmax,        & ! INTENT(IN)
           max_heat,      & ! INTENT(IN)
@@ -80,21 +79,20 @@ subroutine NAMEOUT
   write(*,fmt='(a,1x,i5)')       'NCLOUDS      = ',iupmethod
   write(*,fmt='(a,10(1x,i5))')   'NDEEPEST     = ',ndeepest
   write(*,fmt='(a,10(1x,i5))')   'NSHALLOWEST  = ',nshallowest
-  write(*,fmt='(a,1x,f8.5)')       'WCLDBS       = ',wcldbs
-  write(*,fmt='(a,10(1x,f8.2))') 'CONFRQ       = ',confrq
-  write(*,fmt='(a,10(1x,f8.2))') 'CPTIME       = ',cptime
+  write(*,fmt='(a,1x,f8.5)')     'WCLDBS       = ',wcldbs
+  write(*,fmt='(a,1x,f8.2)')     'CONFRQ       = ',confrq
+  write(*,fmt='(a,1x,f8.2)')     'CPTIME       = ',cptime
+  write(*,fmt='(a,1x,a)')        'CLOSURE_TYPE = ',closure_type
+  write(*,fmt='(a,1x,i5)')       'MAXENS_LSF   = ',maxens_lsf
+  write(*,fmt='(a,1x,i5)')       'MAXENS_EFF   = ',maxens_eff
+  write(*,fmt='(a,1x,i5)')       'MAXENS_CAP   = ',maxens_cap
   write(*,fmt='(a,1x,i5)')       'IUPMETHOD    = ',iupmethod
-  write(*,fmt='(a,1x,i5)')       'IUPSTRM      = ',iupstrm  
   write(*,fmt='(a,10(1x,f8.2))') 'RADIUS       = ',radius
   write(*,fmt='(a,10(1x,f8.2))') 'DEPTH_MIN    = ',depth_min
   write(*,fmt='(a,10(1x,f8.2))') 'CAP_MAXS     = ',cap_maxs
   write(*,fmt='(a,10(1x,f8.2))') 'ZKBMAX       = ',zkbmax  
   write(*,fmt='(a,10(1x,f8.2))') 'ZCUTDOWN     = ',zcutdown
   write(*,fmt='(a,10(1x,f8.2))') 'Z_DETR       = ',z_detr
-  write(*,fmt='(11(a,1x))')      'CLOSURE_TYPE = ',closure_type
-  write(*,fmt='(a,10(1x,i5))')   'MAXENS_LSF   = ',maxens_lsf
-  write(*,fmt='(a,10(1x,i5))')   'MAXENS_EFF   = ',maxens_eff
-  write(*,fmt='(a,10(1x,i5))')   'MAXENS_CAP   = ',maxens_cap
 
   write(6,103)(' ',NJNEST(NG),NKNEST(NG),NNSTTOP(NG)  &
        ,NNSTBOT(NG),ITOPTFLG(NG),NG=1,NGRIDS)

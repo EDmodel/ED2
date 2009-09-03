@@ -52,7 +52,7 @@ Module mem_leaf
 
 Contains
 
-  subroutine alloc_leaf(leaf,nz,nx,ny,nzg,nzs,np,ng)
+  subroutine alloc_leaf(leaf,nz,nx,ny,nzg,nzs,np,ng,co2_on)
     
     ! TEB_SPM
     use teb_spm_start, only: TEB_SPM ! INTENT(IN)
@@ -60,6 +60,7 @@ Contains
     implicit none
     type (leaf_vars) :: leaf
     integer, intent(in) :: nz,nx,ny,nzg,nzs,np,ng
+    logical, intent(in) :: co2_on
 
     ! Allocate arrays based on options (if necessary)
 
@@ -74,7 +75,6 @@ Contains
     allocate (leaf%ustar        (nx,ny,np))
     allocate (leaf%tstar        (nx,ny,np))
     allocate (leaf%rstar        (nx,ny,np))
-    allocate (leaf%cstar        (nx,ny,np))
 
     allocate (leaf%veg_fracarea (nx,ny,np))
     allocate (leaf%veg_lai      (nx,ny,np))
@@ -105,7 +105,6 @@ Contains
 
     allocate (leaf%can_rvap     (nx,ny,np))
     allocate (leaf%can_temp     (nx,ny,np))
-    allocate (leaf%can_co2      (nx,ny,np))
 
     allocate (leaf%veg_ndvip    (nx,ny,np))
     allocate (leaf%veg_ndvic    (nx,ny,np))
@@ -118,7 +117,13 @@ Contains
     allocate (leaf%seatp        (nx,ny))
     allocate (leaf%seatf        (nx,ny))
 
-    ! ED Variables... Yes, I know it's redundant... 
+    ! CO2 variables in case the user uses co2
+!    if (co2_on) then
+       allocate (leaf%cstar        (nx,ny,np))
+       allocate (leaf%can_co2      (nx,ny,np))
+!    end if
+
+    ! ED Variables... 
     if (isfcl == 5) then
        allocate(leaf%gpp      (nx,ny))
        allocate(leaf%resphet  (nx,ny))

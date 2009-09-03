@@ -241,6 +241,7 @@ module ed_therm_lib
       real                 :: slpotvn         ! soil water potential            [        m]
       real                 :: alpha           ! "alpha" term in Lee and Pielke (1993)
       real                 :: beta            ! "beta" term in Lee and Pielke (1993)
+      real                 :: lnalpha         ! ln(alpha)
       !------------------------------------------------------------------------------------!
       
       if (nlev_sfcwater > 0 .and. sfcwater_energy > 0.) then
@@ -257,7 +258,12 @@ module ed_therm_lib
                   ,surface_fracliq)
          surface_ssh = rhovsil(surface_tempk) / rhos
          slpotvn     = soil(nts)%slpots * (soil(nts)%slmsts / soil_water) ** soil(nts)%slbs
-         alpha       = exp(gorvap * slpotvn / surface_tempk)
+         lnalpha     = gorvap * slpotvn / surface_tempk
+         if (lnalpha > -38.) then
+            alpha       = exp(lnalpha)
+         else
+            alpha       = 0.0
+         end if
          beta        = .25 * (1. - cos (min(1.,soil_water / soil(nts)%sfldcap) * pi1)) ** 2
          ground_shv  = surface_ssh * alpha * beta + (1. - beta) * can_shv
       end if
@@ -302,6 +308,7 @@ module ed_therm_lib
       real(kind=8)              :: slpotvn         ! soil water potential       [        m]
       real(kind=8)              :: alpha           ! "alpha" term in Lee and Pielke (1993)
       real(kind=8)              :: beta            ! "beta" term in Lee and Pielke (1993)
+      real(kind=8)              :: lnalpha         ! ln(alpha)
       !------------------------------------------------------------------------------------!
       
       if (nlev_sfcwater > 0 .and. sfcwater_energy > 0.d0) then
@@ -319,7 +326,12 @@ module ed_therm_lib
          surface_ssh = dble(rhovsil(sngl(surface_tempk))) / rhos
          slpotvn     = soil8(nts)%slpots*(soil8(nts)%slmsts / soil_water)                  &
                      ** soil8(nts)%slbs
-         alpha       = exp(gorvap8 * slpotvn / surface_tempk)
+         lnalpha     = gorvap8 * slpotvn / surface_tempk
+         if (lnalpha > -38.) then
+            alpha       = exp(lnalpha)
+         else
+            alpha       = 0.d0
+         end if
          beta        = 2.5d-1                                                              &
                      * (1.d0 - cos (min(1.d0,soil_water / soil8(nts)%sfldcap) * pi18)) ** 2
          ground_shv  = surface_ssh * alpha * beta + (1.d0 - beta) * can_shv

@@ -1,5 +1,5 @@
-subroutine canopy_update_euler(csite, ipa, vels, rhos, atm_tmp, prss, pcpg, qpcpg,  &
-     wshed_canopy, qwshed_canopy, canair, canhcap, dt_leaf, hxfergc,  &
+subroutine canopy_update_euler(csite, ipa, vels, atm_tmp, prss, pcpg, qpcpg,  &
+     wshed_canopy, qwshed_canopy, canwcap, canhcap, dt_leaf, hxfergc,  &
      sxfer_t, wxfergc, hxfersc, wxfersc, sxfer_r, ed_transp,          &
      ntext_soil, soil_water, soil_fracliq, lsl,  &
      leaf_aging_factor, green_leaf_factor, sxfer_c)
@@ -16,14 +16,13 @@ subroutine canopy_update_euler(csite, ipa, vels, rhos, atm_tmp, prss, pcpg, qpcp
   type(patchtype),pointer :: cpatch
   integer :: ipa,ico
   real, intent(in) :: vels
-  real, intent(in) :: rhos
   real, intent(in) :: atm_tmp
   real, intent(in) :: prss
   real, intent(in) :: pcpg
   real, intent(in) :: qpcpg
   real, intent(inout) :: wshed_canopy
   real, intent(inout) :: qwshed_canopy
-  real, intent(in) :: canair
+  real, intent(in) :: canwcap
   real, intent(in) :: canhcap
   real, intent(in) :: dt_leaf
   real, intent(in) :: hxfergc
@@ -46,7 +45,7 @@ subroutine canopy_update_euler(csite, ipa, vels, rhos, atm_tmp, prss, pcpg, qpcp
   integer, intent(in) :: lsl
 
   ! Get photosynthesis, stomatal conductance, and transpiration
-  call canopy_photosynthesis(csite,ipa, vels, rhos, atm_tmp, prss, &
+  call canopy_photosynthesis(csite,ipa, vels, atm_tmp, prss, &
        ed_ktrans, ntext_soil, soil_water, soil_fracliq, lsl, sum_lai_rbi, &
        leaf_aging_factor, green_leaf_factor)
 
@@ -62,10 +61,10 @@ subroutine canopy_update_euler(csite, ipa, vels, rhos, atm_tmp, prss, pcpg, qpcp
   enddo
 
 ! IMPLICIT SCHEME STILL NEEDS UPDATING.
-!  call canopy_implicit_driver(ed_patch, ndims, rhos, canhcap, canair,   &
+!  call canopy_implicit_driver(ed_patch, ndims, prss, canhcap, canair,   &
 !       sum_lai_rbi, dt_leaf, hxfergc, hxferca, wxfergc, hxfersc, wxfersc,  &
   !       sxfer_r, ed_transp, ed_ktrans)
-  call canopy_explicit_driver(csite, ipa, ndims, rhos, canhcap, canair,   &
+  call canopy_explicit_driver(csite, ipa, ndims, prss, canhcap, canwcap,   &
        sum_lai_rbi, dt_leaf, hxfergc, sxfer_t, wxfergc, hxfersc, wxfersc,  &
        sxfer_r, ed_transp, ed_ktrans, sxfer_c)
 
@@ -179,7 +178,7 @@ end subroutine canopy_precip_interception
 
 !==============================================================
 
-subroutine canopy_implicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
+subroutine canopy_implicit_driver(csite,ipa, ndims, prss, canhcap, canwcap,  &
      sum_lai_rbi, dt_leaf, hxfergc, sxfer_t, wxfergc, hxfersc, wxfersc,    &
      sxfer_r, ed_transp, ed_ktrans, sxfer_c)
 
@@ -189,7 +188,7 @@ subroutine canopy_implicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
 !-----------------------------------------------------------------------------
 
   use ed_state_vars,only: sitetype,patchtype
-  use consts_coms, only: cp, alvl, alvi
+  use consts_coms, only: cp, alvl, alvi,rdry,epim1
   use grid_coms, only: nzg
   use therm_lib, only: rhovsil,rhovsilp
   implicit none
@@ -198,9 +197,9 @@ subroutine canopy_implicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
   type(patchtype),pointer :: cpatch
   integer :: ipa,ico
   integer, intent(in) :: ndims
-  real, intent(in) :: rhos
+  real, intent(in) :: prss
   real, intent(in) :: canhcap
-  real, intent(in) :: canair
+  real, intent(in) :: canwcap
   real, intent(in) :: sum_lai_rbi
   real, intent(in) :: dt_leaf
   real, intent(in) :: hxfergc
@@ -251,11 +250,11 @@ subroutine canopy_implicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
        (dt_leaf * canhcap)
 
   ! Canopy air temperature  (d can_temp, Tcan)
-  t_evolve_matrix(1,1) = - 2.2 * cp * rhos / canhcap * sum_lai_rbi
+  t_evolve_matrix(1,1) = - 2.2 * cp * csite%can_rhos(ipa) / canhcap * sum_lai_rbi
 
   ! explicitly integrated contribution to the canopy specific humidity
   explicit_deriv_portion(2) = (wxfergc + wxfersc - sxfer_r) /   &
-       (dt_leaf * canair)
+       (dt_leaf * canwcap)
 
   ic = 0
 
@@ -268,13 +267,13 @@ subroutine canopy_implicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
         ind2 = 2 + 2 * ic
 
         ! Compute heat transfer coefficient
-        a10 = 2.2 * cp * rhos * cpatch%lai(ico) / cpatch%rb(ico)
+        a10 = 2.2 * cp * csite%can_rhos(ipa) * cpatch%lai(ico) / cpatch%rb(ico)
 
         ! compute ET using variables at time n
         tvegaux = cpatch%veg_temp(ico)
         veg_rhovs= rhovsil(tvegaux)
         veg_rhovsp = rhovsilp(tvegaux)
-        vp_gradient = veg_rhovs - rhos * csite%can_shv(ipa)
+        vp_gradient = veg_rhovs - csite%can_rhos(ipa) * csite%can_shv(ipa)
         a1 = 2.2 * cpatch%lai(ico) / cpatch%rb(ico)
         sigmaw = min(1.,(cpatch%veg_water(ico) / (.22 * cpatch%lai(ico)))**.66667)
         if(cpatch%veg_water(ico) > 0.0)then
@@ -292,7 +291,7 @@ subroutine canopy_implicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
            explicit_deriv_portion(ind2) = - vp_gradient * a1
 
            ! d veg_water, can_shv
-           mult = rhos * a1
+           mult = csite%can_rhos(ipa) * a1
            t_evolve_matrix(ind2,2) = mult
            explicit_deriv_portion(ind2) = explicit_deriv_portion(ind2) -   &
                 mult * csite%can_shv(ipa)
@@ -308,7 +307,7 @@ subroutine canopy_implicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
            et_conductance = a1 * sigmaw + a4 * (1.0 - sigmaw)
 
            ! d can_shv, veg_water
-           mult = vp_gradient * (a1 - a4) * dsigmaw_dW / canair
+           mult = vp_gradient * (a1 - a4) * dsigmaw_dW / canwcap
            t_evolve_matrix(2,ind2) = t_evolve_matrix(2,ind2) + mult
            explicit_deriv_portion(2) = explicit_deriv_portion(2) - mult *   &
                 cpatch%veg_water(ico)
@@ -323,7 +322,7 @@ subroutine canopy_implicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
            explicit_deriv_portion(ind2) = - vp_gradient * sigmaw * a1
 
            ! d veg_water, can_shv
-           mult = rhos * sigmaw * a1
+           mult = csite%can_rhos(ipa) * sigmaw * a1
            t_evolve_matrix(ind2,2) = mult
            explicit_deriv_portion(ind2) = explicit_deriv_portion(ind2) -   &
                 mult * csite%can_shv(ipa)
@@ -347,16 +346,16 @@ subroutine canopy_implicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
 
         ! dcan_shv, explicit
         explicit_deriv_portion(2) = explicit_deriv_portion(2) +   &
-             vp_gradient * et_conductance / canair
+             vp_gradient * et_conductance / canwcap
 
         ! dcan_shv, can_shv
-        mult = - rhos / canair * et_conductance
+        mult = - csite%can_rhos(ipa) / canwcap * et_conductance
         t_evolve_matrix(2,2) = t_evolve_matrix(2,2) + mult
         explicit_deriv_portion(2) = explicit_deriv_portion(2) - mult *   &
              csite%can_shv(ipa)
 
         ! dcan_shv, veg_temp
-        mult = veg_rhovsp * et_conductance / canair
+        mult = veg_rhovsp * et_conductance / canwcap
         t_evolve_matrix(2,ind1) = t_evolve_matrix(2,ind1) + mult
         explicit_deriv_portion(2) = explicit_deriv_portion(2) - mult *   &
              cpatch%veg_temp(ico)
@@ -374,7 +373,7 @@ subroutine canopy_implicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
              csite%can_temp(ipa) * mult
 
         ! d veg_temp, can_shv
-        mult = rhos * alvl / cpatch%hcapveg(ico) * et_conductance
+        mult = csite%can_rhos(ipa) * alvl / cpatch%hcapveg(ico) * et_conductance
         t_evolve_matrix(ind1,2) = mult
         explicit_deriv_portion(ind1) = explicit_deriv_portion(ind1) -   &
              csite%can_shv(ipa) * mult
@@ -441,7 +440,7 @@ subroutine canopy_implicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
         
         veg_rhovs= rhovsil(original_state(idim))
         veg_rhovsp = rhovsilp(original_state(idim))
-        vp_gradient = veg_rhovs - rhos * original_state(2)
+        vp_gradient = veg_rhovs - csite%can_rhos(ipa) * original_state(2)
         if(vp_gradient > 0.0)then
           ! Calculate the resulting transpiration
            sigmaw = min(1.,(original_state(idim+1) / (.22 * cpatch%lai(ico)))**.66667)
@@ -454,7 +453,7 @@ subroutine canopy_implicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
            ed_transp(ed_ktrans(cpatch%krdepth(ico))) =   &
                 ed_transp(ed_ktrans(cpatch%krdepth(ico))) +  &
                 vp_gradient * (1.0-sigmaw) * a4 - &
-                rhos * (1.0 - sigmaw) * a4 * (csite%can_shv(ipa) -   &
+                csite%can_rhos(ipa) * (1.0 - sigmaw) * a4 * (csite%can_shv(ipa) -   &
                 original_state(2)) + veg_rhovsp * (1.0 - sigmaw) * a4 *   &
                 (cpatch%veg_temp(ico) - original_state(idim))  - vp_gradient *   &
                 dsigmaw_dW * a4 * (cpatch%veg_water(ico) - original_state(idim+1))
@@ -467,7 +466,7 @@ subroutine canopy_implicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
   ed_transp(:) = ed_transp(:) * dt_leaf
 
   csite%mean_latflux(ipa) = csite%mean_latflux(ipa) +   &
-       ((csite%can_shv(ipa) - original_state(2)) * canair -  & 
+       ((csite%can_shv(ipa) - original_state(2)) * canwcap -  & 
        (wxfergc + wxfersc - sxfer_r)) / dt_leaf * alvl
 
   ! Require veg_water >= 0
@@ -476,7 +475,7 @@ subroutine canopy_implicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
         if(cpatch%veg_water(ico) < 0.0)then
            
            ! Take away from the canopy humidity...
-           csite%can_shv(ipa) = csite%can_shv(ipa)+ cpatch%veg_water(ico) / canair
+           csite%can_shv(ipa) = csite%can_shv(ipa)+ cpatch%veg_water(ico) / canwcap
            
            ! ... and set the veg_water to zero
            cpatch%veg_water(ico) = 0.0
@@ -496,15 +495,17 @@ subroutine canopy_implicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
      print*,hxfergc/canhcap,hxfersc/canhcap,sxfer_t/canhcap,csite%ustar(ipa)
      stop
   endif
+  
+  csite%can_rhos(ipa) = prss &
+                      / (rdry * csite%can_temp(ipa) * (1. + epim1 * csite%can_shv(ipa)))
 
   csite%avg_daily_temp(ipa) = csite%avg_daily_temp(ipa) + csite%can_temp(ipa)
-
   return
 end subroutine canopy_implicit_driver
 !==============================================================
 
-subroutine canopy_explicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
-     sum_lai_rbi, dt_leaf, hxfergc, sxfer_t, wxfergc, hxfersc, wxfersc,    &
+subroutine canopy_explicit_driver(csite,ipa, ndims, prss, canhcap, canwcap, &
+     sum_lai_rbi, dt_leaf, hxfergc, sxfer_t, wxfergc, hxfersc, wxfersc,     &
      sxfer_r, ed_transp, ed_ktrans, sxfer_c)
 
 !-----------------------------------------------------------------------------
@@ -513,7 +514,7 @@ subroutine canopy_explicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
 !-----------------------------------------------------------------------------
 
   use ed_state_vars,only:sitetype,patchtype
-  use consts_coms, only: cp, alvl, alvi, cliq, cice, alli, t3ple,tsupercool
+  use consts_coms, only: cp, alvl, alvi, cliq, cice, alli, t3ple,tsupercool,rdry,epim1
   use grid_coms, only: nzg
   use therm_lib, only: rhovsil,rhovsilp
 
@@ -524,9 +525,9 @@ subroutine canopy_explicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
   integer :: ipa,ico
 
   integer, intent(in) :: ndims
-  real, intent(in) :: rhos
+  real, intent(in) :: prss
   real, intent(in) :: canhcap
-  real, intent(in) :: canair
+  real, intent(in) :: canwcap
   real, intent(in) :: sum_lai_rbi
   real, intent(in) :: dt_leaf
   real, intent(in) :: hxfergc
@@ -571,7 +572,7 @@ subroutine canopy_explicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
 
   ! explicitly integrated contribution to the canopy specific humidity
   explicit_deriv_portion(2) = (wxfergc + wxfersc - sxfer_r) /   &
-       (dt_leaf * canair)
+       (dt_leaf * canwcap)
 
   cpatch => csite%patch(ipa)
 
@@ -586,13 +587,13 @@ subroutine canopy_explicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
         ind2 = 2 + 2 * ic
 
         ! Compute heat transfer coefficient
-        a10 = 2.2 * cp * rhos * cpatch%lai(ico) / cpatch%rb(ico)
+        a10 = 2.2 * cp * csite%can_rhos(ipa) * cpatch%lai(ico) / cpatch%rb(ico)
 
         ! compute ET using variables at time n
         tvegaux = cpatch%veg_temp(ico)
         veg_rhovs= rhovsil(tvegaux)
         veg_rhovsp = rhovsilp(tvegaux)
-        vp_gradient = veg_rhovs - rhos * csite%can_shv(ipa)
+        vp_gradient = veg_rhovs - csite%can_rhos(ipa) * csite%can_shv(ipa)
         a1 = 2.2 * cpatch%lai(ico) / cpatch%rb(ico)
         sigmaw = min(1.,(cpatch%veg_water(ico) / (.22 * cpatch%lai(ico)))**.66667)
         if(cpatch%veg_water(ico) > 0.0)then
@@ -627,7 +628,7 @@ subroutine canopy_explicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
 
         ! contribution to dcan_shv/dt, from this vegetation layer's veg_water
         explicit_deriv_portion(2) = explicit_deriv_portion(2) +   &
-             vp_gradient * et_conductance / canair
+             vp_gradient * et_conductance / canwcap
 
         ! dveg_temp, explicit
         dQdt = cpatch%rshort_v(ico) + cpatch%rlong_v(ico) -   &
@@ -688,7 +689,7 @@ subroutine canopy_explicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
         if(cpatch%veg_water(ico) < 0.0)then
            
            ! Take away from the canopy humidity...
-           csite%can_shv(ipa) = csite%can_shv(ipa) + cpatch%veg_water(ico) / canair
+           csite%can_shv(ipa) = csite%can_shv(ipa) + cpatch%veg_water(ico) / canwcap
            
            ! ... and set the veg_water to zero
            cpatch%veg_water(ico) = 0.0
@@ -696,6 +697,8 @@ subroutine canopy_explicit_driver(csite,ipa, ndims, rhos, canhcap, canair,  &
         endif
      endif
   enddo
+  csite%can_rhos(ipa) = prss &
+                      / (rdry * csite%can_temp(ipa) * (1. + epim1 * csite%can_shv(ipa)))
 
   csite%avg_daily_temp(ipa) = csite%avg_daily_temp(ipa) + csite%can_temp(ipa)
 

@@ -53,9 +53,11 @@ OBJ_MODEL =                         \
 	grell_cupar_aux.o           \
 	grell_cupar_downdraft.o     \
 	grell_cupar_driver.o        \
+	grell_cupar_dynamic.o       \
 	grell_cupar_ensemble.o      \
 	grell_cupar_environment.o   \
-	grell_cupar_main.o          \
+	grell_cupar_feedback.o      \
+	grell_cupar_static.o        \
 	grell_cupar_updraft.o       \
 	grell_extras_catt.o         \
 	grid_dims.o                 \
@@ -263,17 +265,17 @@ OBJ_MODEL =                         \
 	mem_edcp.o                  \
 	allometry.o                 \
 	average_utils.o             \
+	budget_utils.o              \
 	c34constants.o              \
 	canopy_air_coms.o           \
 	canopy_radiation_coms.o     \
-	canopy_struct_dynamics.o   \
+	canopy_struct_dynamics.o    \
 	canopy_update_euler.o       \
 	consts_coms.o               \
 	decomp_coms.o               \
 	decomposition.o             \
 	disturb_coms.o              \
 	disturbance.o               \
-	ed_bare_restart.o           \
 	ed_filelist.o               \
 	ed_grid.o                   \
 	ed_history_io.o             \
@@ -281,6 +283,7 @@ OBJ_MODEL =                         \
 	ed_max_dims.o               \
 	ed_mem_grid_dim_defs.o      \
 	ed_misc_coms.o              \
+	ed_nbg_init.o               \
 	ed_node_coms.o              \
 	ed_opspec.o                 \
 	ed_para_coms.o              \

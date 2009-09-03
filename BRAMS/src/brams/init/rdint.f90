@@ -771,7 +771,6 @@ subroutine ReadNamelist(fileName)
           maxens_dyn,    & ! intent(out)
           maxens_cap,    & ! intent(out)
           iupmethod,     & ! intent(out)
-          iupstrm,       & ! intent(out)
           radius,        & ! intent(out)
           zkbmax,        & ! intent(out)
           max_heat,      & ! intent(out)
@@ -1090,7 +1089,7 @@ subroutine ReadNamelist(fileName)
 
   namelist /CUPARM_OPTIONS/ &
        nnqparm,nclouds,ndeepest,nshallowest,wcldbs,confrq,cptime,        &
-       iupmethod,iupstrm,radius,depth_min,cap_maxs,zkbmax,zcutdown,      &
+       iupmethod,radius,depth_min,cap_maxs,zkbmax,zcutdown,              &
        z_detr,max_heat,closure_type,maxens_lsf,maxens_eff,maxens_cap
 
   namelist /MODEL_OPTIONS/ &
@@ -1638,7 +1637,6 @@ subroutine ReadNamelist(fileName)
      write (*, *) "confrq=",confrq
      write (*, *) "cptime=",cptime
      write (*, *) "iupmethod=",iupmethod
-     write (*, *) "iupstrm=",iupstrm
      write (*, *) "radius=",radius
      write (*, *) "depth_min=",depth_min
      write (*, *) "cap_maxs=",depth_min
@@ -1730,7 +1728,7 @@ subroutine ReadNamelist(fileName)
                    ,'ReadNamelist','rdint.f90')
   else
      !----- Switching closure type to lower case
-     call tolower(closure_type,maxclouds)
+     call tolower(closure_type,1)
   end if
 
   write (unit=*,fmt='(a)') 'Reading ED2 namelist information'
