@@ -311,6 +311,7 @@ rm -fv hydrology_constants.o      hydrology_constants.mod
 rm -fv init_hydro_sites.o         init_hydro_sites.mod
 rm -fv invmondays.o               invmondays.mod
 rm -fv landuse_init.o             landuse_init.mod
+rm -fv lapse.o                    lapse.mod
 rm -fv leaf_database.o            leaf_database.mod
 rm -fv libxml2f90.f90_pp.o        libxml2f90.f90_pp.mod
 rm -fv lsm_hyd.o                  lsm_hyd.mod
@@ -331,6 +332,7 @@ rm -fv rk4_coms.o                 rk4_coms.mod
 rm -fv rk4_derivs.o               rk4_derivs.mod
 rm -fv rk4_driver.o               rk4_driver.mod
 rm -fv rk4_integ_utils.o          rk4_integ_utils.mod
+rm -fv rk4_odeint.o               rk4_odeint.mod
 rm -fv rk4_stepper.o              rk4_stepper.mod
 rm -fv soil_coms.o                soil_coms.mod
 rm -fv structural_growth.o        structural_growth.mod

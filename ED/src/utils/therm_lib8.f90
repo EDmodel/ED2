@@ -1457,12 +1457,62 @@ module therm_lib8
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the enthalpy given the pressure, temperature, and vapour   !
-   ! specific humidity.  Currently it doesn't compute mixed phase air, but adding it       !
-   ! should be straightforward (finding the inverse is another story...).                  !
+   !     This function computes reduces the pressure from the reference height to the      !
+   ! canopy height by assuming hydrostatic equilibrium.                                    !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function ptq2enthalpy8(pres,temp,qvpr)
+   real(kind=8) function reducedpress8(pres,thetaref,shvref,zref,thetacan,shvcan,zcan)
+      use consts_coms, only : epim18    & ! intent(in)
+                            , p00k8     & ! intent(in)
+                            , rocp8     & ! intent(in)
+                            , cpor8     & ! intent(in)
+                            , cp8       & ! intent(in)
+                            , grav8     ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real(kind=8), intent(in)   :: pres     ! Pressure                        [        Pa]
+      real(kind=8), intent(in)   :: thetaref ! Potential temperature           [         K]
+      real(kind=8), intent(in)   :: shvref   ! Vapour specific mass            [     kg/kg]
+      real(kind=8), intent(in)   :: zref     ! Height at reference level       [         m]
+      real(kind=8), intent(in)   :: thetacan ! Potential temperature           [         K]
+      real(kind=8), intent(in)   :: shvcan   ! Vapour specific mass            [     kg/kg]
+      real(kind=8), intent(in)   :: zcan     ! Height at canopy level          [         m]
+      !------Local variables. -------------------------------------------------------------!
+      real(kind=8)               :: pinc     ! Pressure increment              [ Pa^(R/cp)]
+      real(kind=8)               :: thvbar   ! Average virtual pot. temper.    [         K]
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !      First we compute the average virtual potential temperature between the canopy !
+      ! top and the reference level.                                                       !
+      !------------------------------------------------------------------------------------!
+      thvbar = 5.d-1 * ( thetaref * (1.d0 + epim18 * shvref)                               &
+                       + thetacan * (1.d0 + epim18 * shvcan))
+
+      !----- Then, we find the pressure gradient scale. -----------------------------------!
+      pinc = grav8 * p00k8 * (zref - zcan) / (cp8 * thvbar)
+
+      !----- And we can find the reduced pressure. ----------------------------------------!
+      reducedpress8 = (pres**rocp8 + pinc ) ** cpor8
+
+      return
+   end function reducedpress8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the enthalpy given the pressure, temperature, vapour       !
+   ! specific humidity, and height.  Currently it doesn't compute mixed phase air, but     !
+   ! adding it should be straight forward (finding the inverse is another story...).       !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) function ptqz2enthalpy8(pres,temp,qvpr,zref)
       use consts_coms, only : ep8       & ! intent(in)
+                            , grav8     & ! intent(in)
                             , t3ple8    & ! intent(in)
                             , eta3ple8  & ! intent(in)
                             , cimcp8    & ! intent(in)
@@ -1474,6 +1524,7 @@ module therm_lib8
       real(kind=8), intent(in) :: pres  ! Pressure                                 [    Pa]
       real(kind=8), intent(in) :: temp  ! Temperature                              [     K]
       real(kind=8), intent(in) :: qvpr  ! Vapour specific mass                     [ kg/kg]
+      real(kind=8), intent(in) :: zref  ! Reference height                         [     m]
       !------Local variables. -------------------------------------------------------------!
       real(kind=8)             :: tequ  ! Dew-frost temperature                    [     K]
       real(kind=8)             :: pequ  ! Equlibrium vapour pressure               [    Pa]
@@ -1490,13 +1541,13 @@ module therm_lib8
       ! number that makes sense, similar to the internal energy of supercooled water.      !
       !------------------------------------------------------------------------------------!
       if (tequ <= t3ple8) then
-         ptq2enthalpy8 = cp8 * temp + qvpr * (cimcp8 * tequ + alvi8   )
+         ptqz2enthalpy8 = cp8 * temp + qvpr * (cimcp8 * tequ + alvi8   ) + grav8 * zref
       else
-         ptq2enthalpy8 = cp8 * temp + qvpr * (clmcp8 * tequ + eta3ple8)
+         ptqz2enthalpy8 = cp8 * temp + qvpr * (clmcp8 * tequ + eta3ple8) + grav8 * zref
       end if
 
       return
-   end function ptq2enthalpy8
+   end function ptqz2enthalpy8
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1507,12 +1558,14 @@ module therm_lib8
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the temperature given the enthalpy and vapour specific     !
-   ! humidity.  Currently it doesn't compute mixed phase air, but adding it wouldn't be    !
-   ! horribly hard, but it would require some root finding.                                !
+   !     This function computes the temperature given the enthalpy, pressure, vapour       !
+   ! specific humidity, and reference height.  Currently it doesn't compute mixed phase    !
+   ! air, but adding it wouldn't be horribly hard, though it would require some root       !
+   ! finding.                                                                              !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function hpq2temp8(enthalpy,pres,qvpr)
+   real(kind=8) function hpqz2temp8(enthalpy,pres,qvpr,zref)
       use consts_coms, only : ep8       & ! intent(in)
+                            , grav8     & ! intent(in)
                             , t3ple8    & ! intent(in)
                             , eta3ple8  & ! intent(in)
                             , cimcp8    & ! intent(in)
@@ -1524,6 +1577,7 @@ module therm_lib8
       real(kind=8), intent(in) :: enthalpy ! Enthalpy...                           [  J/kg]
       real(kind=8), intent(in) :: pres     ! Pressure                              [    Pa]
       real(kind=8), intent(in) :: qvpr     ! Vapour specific mass                  [ kg/kg]
+      real(kind=8), intent(in) :: zref     ! Reference height                      [     m]
       !------Local variables. -------------------------------------------------------------!
       real(kind=8)             :: tequ     ! Dew-frost temperature                 [     K]
       real(kind=8)             :: pequ     ! Equlibrium vapour pressure            [    Pa]
@@ -1541,13 +1595,13 @@ module therm_lib8
       ! internal energy of supercooled water.                                              !
       !------------------------------------------------------------------------------------!
       if (tequ <= t3ple8) then
-         hpq2temp8 = cpi8 * (enthalpy - qvpr * (cimcp8 * tequ + alvi8   ))
+         hpqz2temp8 = cpi8 * (enthalpy - qvpr * (cimcp8 * tequ + alvi8   ) - grav8 * zref)
       else
-         hpq2temp8 = cpi8 * (enthalpy - qvpr * (clmcp8 * tequ + eta3ple8))
+         hpqz2temp8 = cpi8 * (enthalpy - qvpr * (clmcp8 * tequ + eta3ple8) - grav8 * zref)
       end if
 
       return
-   end function hpq2temp8
+   end function hpqz2temp8
    !=======================================================================================!
    !=======================================================================================!
 

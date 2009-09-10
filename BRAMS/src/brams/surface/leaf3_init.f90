@@ -236,205 +236,254 @@ enddo
 
 return
 end subroutine sfcinit_file
-
-!*************************************************************************
-
-subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm  &
-   ,theta,pi0,pp,rv,co2p,seatp,seatf  &
-
-   ,soil_water     ,soil_energy      ,soil_text       &
-   ,sfcwater_mass  ,sfcwater_energy  ,sfcwater_depth  &
-   ,ustar          ,tstar            ,rstar           &
-   ,cstar          ,veg_fracarea     ,veg_lai         &
-   ,veg_tai        ,veg_rough                         &
-   ,veg_height     ,veg_albedo       ,patch_area      &
-   ,patch_rough    ,patch_wetind     ,leaf_class      &
-   ,soil_rough     ,sfcwater_nlev    ,stom_resist     &
-   ,ground_rsat    ,ground_rvap      ,veg_water       &
-   ,veg_temp       ,can_rvap         ,can_co2         &
-   ,can_temp       ,veg_ndvip        ,veg_ndvic       &
-   ,veg_ndvif      ,snow_mass        ,snow_depth      &
-
-   ,rvv,prsv,piv,vt2da,vt2db,glat,glon,zot,flpw)
-
-use mem_grid
-use mem_leaf
-use leaf_coms
-use io_params
-use rconstants
-
-implicit none
-
-integer :: n1,n2,n3,mzg,mzs,npat,ifm,i,j,k,ipat,nveg,nsoil
-
-real :: c1,airtemp,tsoil
-
-real, dimension(n1,n2,n3) :: theta,pi0,pp,rv,co2p
-real, dimension(n2,n3)    :: rvv,prsv,piv,vt2da,vt2db,glat,glon,zot  &
-                            ,seatp,seatf,snow_mass,snow_depth
-real, dimension(n2,n3) :: flpw
-
-real, dimension(mzg,n2,n3,npat) :: soil_water,soil_energy,soil_text
-real, dimension(mzs,n2,n3,npat) :: sfcwater_mass,sfcwater_energy  &
-                                  ,sfcwater_depth
-
-real, dimension(n2,n3,npat) :: ustar        ,tstar         ,rstar        &
-                              ,cstar        ,veg_fracarea  ,veg_lai      &
-                              ,veg_tai      ,veg_rough                   &
-                              ,veg_height   ,veg_albedo    ,patch_area   &
-                              ,patch_rough  ,patch_wetind  ,leaf_class   &
-                              ,soil_rough   ,sfcwater_nlev ,stom_resist  &
-                              ,ground_rsat  ,ground_rvap   ,veg_water    &
-                              ,veg_temp     ,can_rvap      ,can_co2      &
-                              ,can_temp     ,veg_ndvip    ,veg_ndvic     &
-                              ,veg_ndvif
-
-integer :: k2
-
-! This subroutine fills the primary LEAF3 arrays for which standard RAMS
-! data files do not exist with initial default values.  Many of the
-! initial values are horizontally homogeneous, although some depend on
-! atmospheric conditions.  The default values assigned here may be
-! overridden by (1) specification from coarser grids or (2) specifying new
-! values in subroutine sfcinit_nofile_user in the file ruser.f.
-
-c1 = .5 * cpi
-
-! Time interpolation factor for updating SST
-
-! Use calculation of continuous model time
+!==========================================================================================!
+!==========================================================================================!
 
 
-if (iupdsst == 0) then
-   timefac_sst = 0.
-else
-   timefac_sst = (time - ssttime1(ifm)) / (ssttime2(ifm) - ssttime1(ifm))
-endif
 
-do j = 1,n3
-   do i = 1,n2
-      k2=nint(flpw(i,j))
-      piv(i,j) = c1 * (pi0(k2-1,i,j) + pi0(k2,i,j)   &
-                      + pp(k2-1,i,j) + pp(k2,i,j))
-      airtemp = theta(k2,i,j) * piv(i,j)
-      prsv(i,j) = piv(i,j) ** cpor * p00
 
-      patch_rough(i,j,1) = 0.001
-      can_temp(i,j,1) = airtemp
-      can_rvap(i,j,1) = rv(k2,i,j)
-      can_co2(i,j,1)  = co2p(k2,i,j)
 
-      soil_energy(mzg,i,j,1) =  cliq * (seatp(i,j) + (seatf(i,j) - seatp(i,j))  &
-         * timefac_sst  - tsupercool)
 
-      do ipat = 2,npat
+!==========================================================================================!
+!==========================================================================================!
+!      This subroutine fills the primary LEAF3 arrays for which standard RAMS data files   !
+! do not exist with initial default values.  Many of the initial values are horizontally   !
+! homogeneous, although some depend on atmospheric conditions.  The default values         !
+! assigned here may be overridden by:                                                      !
+! 1. Specification from coarser grids;                                                     !
+! 2. Specifying new values in subroutine sfcinit_nofile_user in the file ruser.f90.        !
+!------------------------------------------------------------------------------------------!
+subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,seatf       &
+                         ,soil_water,soil_energy,soil_text,sfcwater_mass,sfcwater_energy   &
+                         ,sfcwater_depth,ustar,tstar,rstar,cstar,veg_fracarea,veg_lai      &
+                         ,veg_tai,veg_rough,veg_height,veg_albedo,patch_area,patch_rough   &
+                         ,patch_wetind,leaf_class,soil_rough,sfcwater_nlev,stom_resist     &
+                         ,ground_rsat,ground_rvap,veg_water,veg_hcap,veg_energy            &
+                         ,can_prss,can_theta,can_rvap,can_co2,sensible,evap,transp,gpp     &
+                         ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,snow_mass           &
+                         ,snow_depth,rvv,prsv,piv,vt2da,vt2db,glat,glon,zot,flpw,rtgt)
+   use mem_grid
+   use mem_leaf
+   use leaf_coms
+   use io_params
+   use rconstants
+   use therm_lib , only : reducedpress
 
-         nveg = nint(leaf_class(i,j,ipat))
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                        , intent(in)    :: n1,n2,n3,mzg,mzs,npat,ifm
+   real, dimension(n1,n2,n3)      , intent(in)    :: theta,pi0,pp,rv,co2p
+   real, dimension(   n2,n3)      , intent(in)    :: seatp,seatf,snow_mass,snow_depth
+   real, dimension(   n2,n3)      , intent(in)    :: flpw,rtgt
+   real, dimension(mzg,n2,n3,npat), intent(inout) :: soil_water,soil_energy,soil_text
+   real, dimension(mzs,n2,n3,npat), intent(inout) :: sfcwater_mass,sfcwater_energy
+   real, dimension(mzs,n2,n3,npat), intent(inout) :: sfcwater_depth
+   real, dimension(    n2,n3,npat), intent(inout) :: ustar,tstar,rstar,cstar
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_fracarea,veg_lai,veg_tai,veg_rough
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_height,veg_albedo,patch_area
+   real, dimension(    n2,n3,npat), intent(inout) :: patch_rough,patch_wetind,leaf_class
+   real, dimension(    n2,n3,npat), intent(inout) :: soil_rough,sfcwater_nlev,stom_resist
+   real, dimension(    n2,n3,npat), intent(inout) :: ground_rsat,ground_rvap
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_water,veg_energy,veg_hcap
+   real, dimension(    n2,n3,npat), intent(inout) :: can_prss,can_theta,can_rvap,can_co2
+   real, dimension(    n2,n3,npat), intent(inout) :: sensible,evap,transp
+   real, dimension(    n2,n3,npat), intent(inout) :: gpp,plresp,resphet
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvip,veg_ndvic,veg_ndvif
+   real, dimension(   n2,n3)      , intent(inout) :: rvv,prsv,piv,vt2da,vt2db,glat,glon,zot
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                        :: k2
+   integer                                        :: i,j,k,ipat,nveg,nsoil
+   real                                           :: tsoil
+   !---------------------------------------------------------------------------------------!
 
-         soil_rough(i,j,ipat) = zrough
-         patch_rough(i,j,ipat) = max(zrough,zot(i,j))
-         veg_rough(i,j,ipat) = .13 * veg_ht(nveg)
 
-         veg_height(i,j,ipat) = veg_ht(nveg)
-         veg_albedo(i,j,ipat) = albv_green(nveg)
-         stom_resist(i,j,ipat) = 1.e6
+   !---------------------------------------------------------------------------------------!
+   !      Time interpolation factor for updating SST.  Use calculation of continuous model !
+   ! time.                                                                                 !
+   !---------------------------------------------------------------------------------------!
+   if (iupdsst == 0) then
+      timefac_sst = 0.
+   else
+      timefac_sst = (time - ssttime1(ifm)) / (ssttime2(ifm) - ssttime1(ifm))
+   end if
 
-         veg_temp(i,j,ipat) = airtemp
-         can_temp(i,j,ipat) = airtemp
+   jloop: do j = 1,n3
+      iloop: do i = 1,n2
+         k2=nint(flpw(i,j))
+         piv(i,j)  = 0.5 * cpi * (pi0(k2-1,i,j) + pi0(k2,i,j) + pp(k2-1,i,j) + pp(k2,i,j))
+         prsv(i,j) = piv(i,j) ** cpor * p00
+         geoht     = zt(k2) * rtgt(i,j)
 
-         veg_water(i,j,ipat) = 0.
-         can_rvap(i,j,ipat) = rv(k2,i,j)
-         
-         can_co2(i,j,ipat) = co2p(k2,i,j)
+         atm_shv   = rv(k2,i,j) / (rv(k2,i,j) + 1.)
 
-         do k = 1,mzg
+         patch_rough(i,j,1) = waterrough
 
-            nsoil = nint(soil_text(k,i,j,ipat))
-            soil_water(k,i,j,ipat) = max(soilcp(nsoil),slmstr(k) * slmsts(nsoil))
+         !---------------------------------------------------------------------------------!
+         !     Canopy properties.  Copy conserved variables from lowest atmospheric grid,  !
+         ! and compute pressure and temperature.                                           !
+         !---------------------------------------------------------------------------------!
+         can_prss(i,j,1) = reducedpress(prsv(i,j),theta(k2,i,j),atm_shv,geoht              &
+                                       ,theta(k2,i,j),atm_shv,can_depth)
+         can_theta(i,j,1)   = theta(k2,i,j)
+         can_rvap(i,j,1)    = rv(k2,i,j)
+         can_co2(i,j,1)     = co2p(k2,i,j)
+         can_temp           = theta(k2,i,j) * (p00i * can_prss(i,j,1)) ** rocp
 
-! For persistent wetlands (bogs, marshes, fens, swamps) and irrigated crops,
-! initialize with saturated soil.  Currently, this corresponds to
-! leaf classes 16, 17, and 20.
+         !----- Water patch, so we set vegetation properties to zero. ---------------------!
+         veg_energy(i,j,1)  = 0.0
+         veg_water (i,j,1)  = 0.0
+         veg_hcap  (i,j,1)  = 0.0
 
-            if (nint(leaf_class(i,j,ipat)) == 16 .or.  &
-                nint(leaf_class(i,j,ipat)) == 17 .or.  &
-                nint(leaf_class(i,j,ipat)) == 20) then
-               soil_water(k,i,j,ipat) = slmsts(nsoil)
-            endif
+         !----- Soil properties. Except for top layer energy, everything is set to zero. --!
+         soil_energy(:,i,j,1) = 0.
+         soil_water (:,i,j,1) = 1.
+         soil_energy(mzg,i,j,1) =  cliq * (seatp(i,j) + (seatf(i,j) - seatp(i,j))          &
+                                                      * timefac_sst  - tsupercool)
 
-! By default, initialize soil internal energy at a temperature equal to
-! airtemp + stgoff(k) and with all water assumed to be liquid.  If the
-! temperature is initially below triple point, this will immediately adjust to soil
-! at triple point with part ice.  In order to begin with partially or totally frozen
-! soil, reduce or remove the latent-heat-of-fusion term (the one with the
-! factor of allivlme) from soil_energy below.  If the soil is totally frozen and the
-! temperature is below zero C, the factor of cliqvlme should be changed to cicevlme
-! to reflect the reduced heat capacity of ice compared to liquid.  These
-! changes may be alternatively be done in subroutine sfcinit_user in ruser.f
-            tsoil = airtemp + stgoff(k)
-            soil_energy(k,i,j,ipat) = slcpd(nsoil) * tsoil   &
-                                    + soil_water(k,i,j,ipat) &
-                                    * cliqvlme * (tsoil - tsupercool)
-               
+         !----- Fluxes.  Initially they should be all zero. -------------------------------!
+         sensible (i,j,1) = 0.0
+         evap     (i,j,1) = 0.0
+         transp   (i,j,1) = 0.0
+         gpp      (i,j,1) = 0.0
+         plresp   (i,j,1) = 0.0
+         resphet  (i,j,1) = 0.0
 
-         enddo
+         !---------------------------------------------------------------------------------!
+         !     We now loop over the land patches.  Some properties such as canopy          !
+         ! properties are simply copied from the water patch.                              !
+         !---------------------------------------------------------------------------------!
+         patchloop: do ipat = 2,npat
 
-         do k = 1,mzs
+            nveg = nint(leaf_class(i,j,ipat))
 
-            sfcwater_mass(k,i,j,ipat) = 0.
-            sfcwater_energy(k,i,j,ipat) = 0.
-            sfcwater_depth(k,i,j,ipat) = 0.
+            soil_rough(i,j,ipat)  = zrough
+            patch_rough(i,j,ipat) = max(zrough,zot(i,j))
+            veg_rough(i,j,ipat)   = .13 * veg_ht(nveg)
 
-! For persistent wetlands (bogs, marshes, fens, swamps), initialize with
-! 10 cm water depth.  Currently, this corresponds to leaf classes 17 and 20.
+            veg_height(i,j,ipat)  = veg_ht(nveg)
+            veg_albedo(i,j,ipat)  = albv_green(nveg)
+            stom_resist(i,j,ipat) = 1.e6
 
-            if (nint(leaf_class(i,j,ipat)) == 17 .or.  &
-                nint(leaf_class(i,j,ipat)) == 20) then
-               if (k .eq. 1) then
-                  sfcwater_mass(k,i,j,ipat) = 100.
-                  sfcwater_energy(k,i,j,ipat) = cliq * (airtemp -tsupercool)
-                  sfcwater_depth(k,i,j,ipat) = .1
-               endif
-            endif
+            veg_hcap  (i,j,ipat) = hcapveg ! Constant for LEAF, but not for other models...
+            veg_water (i,j,ipat) = 0.
+            veg_energy(i,j,ipat) = hcapveg * can_temp
 
+            can_prss (i,j,ipat) = can_prss (i,j,1)
+            can_theta(i,j,ipat) = can_theta(i,j,1)
+            can_rvap (i,j,ipat) = can_rvap (i,j,1)
+            can_co2  (i,j,ipat) = can_co2  (i,j,1)
+
+            !----- Fluxes.  Initially they should be all zero. ----------------------------!
+            sensible (i,j,ipat) = 0.0
+            evap     (i,j,ipat) = 0.0
+            transp   (i,j,ipat) = 0.0
+            gpp      (i,j,ipat) = 0.0
+            plresp   (i,j,ipat) = 0.0
+            resphet  (i,j,ipat) = 0.0
+
+            do k = 1,mzg
+
+               nsoil = nint(soil_text(k,i,j,ipat))
+
+               !---------------------------------------------------------------------------!
+               !     For persistent wetlands (bogs, marshes, fens, swamps) and irrigated   !
+               ! crops, initialize with saturated soil.  Currently, this corresponds to    !
+               ! leaf classes 16, 17, and 20.  Otherwise, use the user-defined input       !
+               ! profile.                                                                  !
+               !---------------------------------------------------------------------------!
+               select case (nint(leaf_class(i,j,ipat)))
+               case (16,17,20)
+                  soil_water(k,i,j,ipat) = slmsts(nsoil)
+               case default
+                  soil_water(k,i,j,ipat) = max(soilcp(nsoil),slmstr(k) * slmsts(nsoil))
+               end select
+
+               !---------------------------------------------------------------------------!
+               !     By default, initialize soil internal energy at a temperature equal to !
+               ! can_temp + stgoff(k).  If the temperature is initially below triple       !
+               ! point, we assume all soil water to be frozen, otherwise we assume all     !
+               ! water to be liquid.                                                       !
+               !---------------------------------------------------------------------------!
+               tsoil = can_temp + stgoff(k)
+               if (can_temp >= t3ple) then
+                  soil_energy(k,i,j,ipat) = slcpd(nsoil) * tsoil + soil_water(k,i,j,ipat)  &
+                                          * cliqvlme * (tsoil - tsupercool)
+               else
+                  soil_energy(k,i,j,ipat) = slcpd(nsoil) * tsoil                           &
+                                          + soil_water(k,i,j,ipat) * cicevlme * tsoil
+               end if
+            end do
+
+            !------ Surface water, if any, will initially occupy just the first level. ----!
+            do k = 1,mzs
+               sfcwater_mass(k,i,j,ipat) = 0.
+               sfcwater_energy(k,i,j,ipat) = 0.
+               sfcwater_depth(k,i,j,ipat) = 0.
+            end do
+
+            !------------------------------------------------------------------------------!
+            !    For persistent wetlands (bogs, marshes, fens, swamps), initialise with 10 !
+            ! cm water depth and temperature not colder than the triple point.  Currently, !
+            ! this corresponds to leaf classes 17 and  20.  Glaciers (leaf class 2) will   !
+            ! be initialised with a thick layer of compact ice (currently 6 m), not warmer !
+            ! than the triple point, so we make sure there will enough ice there.  The ice !
+            ! will be eventually split into several layers.                                !
+            !------------------------------------------------------------------------------!
+            select case (nint(leaf_class(i,j,ipat)))
+            case (2)
+               sfcwater_depth (1,i,j,ipat) = 6.
+               sfcwater_mass  (1,i,j,ipat) = idns * sfcwater_depth(1,i,j,ipat)
+               sfcwater_energy(1,i,j,ipat) = cice * min(t3ple,can_temp)
+            case (17,20)
+               sfcwater_depth (1,i,j,ipat) = .1
+               sfcwater_mass  (1,i,j,ipat) = wdns * sfcwater_depth(1,i,j,ipat) 
+               sfcwater_energy(1,i,j,ipat) = cliq * (max(t3ple,can_temp) -tsupercool)
+            end select
+
+            !------------------------------------------------------------------------------!
+            !    If there is initial snow information, add the information into the first  !
+            ! layer.                                                                       !
+            !------------------------------------------------------------------------------!
             if (snow_mass(i,j) > 0.) then
-               if (k .eq. 1) then
-                  sfcwater_mass(k,i,j,ipat) = sfcwater_mass(k,i,j,ipat)  &
-                     + snow_mass(i,j)
-                  sfcwater_energy(k,i,j,ipat) = sfcwater_energy(k,i,j,ipat)  &
-                     + min(t3ple,airtemp) * cice
-                  sfcwater_depth(k,i,j,ipat) = sfcwater_depth(k,i,j,ipat)  &
-                     + snow_mass(i,j) * 5.e-3   ! 5x equivalent liquid depth
-               endif
-            endif
+               sfcwater_energy(1,i,j,ipat) = ( sfcwater_energy(1,i,j,ipat)                 &
+                                             * sfcwater_mass  (1,i,j,ipat)                 &
+                                             + min(t3ple,can_temp)*cice*snow_mass(i,j) )   &
+                                           / (sfcwater_mass(1,i,j,ipat) + snow_mass(i,j))
+               sfcwater_mass  (1,i,j,ipat) = sfcwater_mass (1,i,j,ipat) + snow_mass(i,j)
+               !---------------------------------------------------------------------------!
+               !    Add a depth of 5x the equivalent of liquid depth so the extra snow is  !
+               ! fresh and fluffy.                                                         !
+               !---------------------------------------------------------------------------!
+               sfcwater_depth(1,i,j,ipat)  = sfcwater_depth(1,i,j,ipat)                    &
+                                           + snow_mass(i,j) * 5. * wdnsi
+            end if
 
-            sfcwater_nlev(i,j,ipat) = 0.
-            if (sfcwater_mass(k,i,j,ipat) > 0.) sfcwater_nlev(i,j,ipat) = float(k)
+            !----- We must have either nothing or a single layer at this point. -----------!
+            if (sfcwater_mass(1,i,j,ipat) > 0.) then
+               sfcwater_nlev(i,j,ipat) = 1.
+            else
+               sfcwater_nlev(i,j,ipat) = 0.
+            end if
 
-         enddo
 
-         if (ipat >= 2) call vegndvi(ifm   &
-            ,patch_area  (i,j,ipat) ,leaf_class(i,j,ipat)  &
-            ,veg_fracarea(i,j,ipat) ,veg_lai   (i,j,ipat)  &
-            ,veg_tai     (i,j,ipat) ,veg_rough (i,j,ipat)  &
-            ,veg_height  (i,j,ipat) ,veg_albedo(i,j,ipat)  &
-            ,veg_ndvip   (i,j,ipat) ,veg_ndvic (i,j,ipat)  &
-            ,veg_ndvif   (i,j,ipat)                        )
+            call vegndvi(ifm,patch_area  (i,j,ipat) ,leaf_class(i,j,ipat)                  &
+                            ,veg_fracarea(i,j,ipat) ,veg_lai   (i,j,ipat)                  &
+                            ,veg_tai     (i,j,ipat) ,veg_rough (i,j,ipat)                  &
+                            ,veg_height  (i,j,ipat) ,veg_albedo(i,j,ipat)                  &
+                            ,veg_ndvip   (i,j,ipat) ,veg_ndvic (i,j,ipat)                  &
+                            ,veg_ndvif   (i,j,ipat)                                        )
 
-         call grndvap(  &
-             soil_energy(mzg,i,j,ipat) ,soil_water     (mzg,i,j,ipat)  &
-            ,soil_text  (mzg,i,j,ipat) ,sfcwater_energy(mzs,i,j,ipat)  &
-            ,sfcwater_nlev  (i,j,ipat)      &
-            ,ground_rsat(i,j,ipat)     ,ground_rvap    (i,j,ipat)      &
-            ,can_temp   (i,j,ipat)     ,can_rvap       (i,j,ipat)      &
-            ,prsv       (i,j)                                          )
+            call grndvap(soil_energy(mzg,i,j,ipat)  ,soil_water     (mzg,i,j,ipat)         &
+                        ,soil_text  (mzg,i,j,ipat)  ,sfcwater_energy(mzs,i,j,ipat)         &
+                        ,sfcwater_nlev  (i,j,ipat)  ,ground_rsat        (i,j,ipat)         &
+                        ,ground_rvap    (i,j,ipat)  ,can_rvap           (i,j,ipat)         &
+                        ,can_prss       (i,j,ipat)  )
+         end do patchloop
+      end do iloop
+   end do jloop
 
-      enddo
-   enddo
-enddo
-
-return
-end
+   return
+end subroutine sfcinit_nofile
 
 !**********************************************************************
 

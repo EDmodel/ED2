@@ -34,6 +34,7 @@ subroutine ed_coup_driver()
                            , recvnum             & ! intent(in)
                            , mmxp                & ! intent(in)
                            , mmyp                ! ! intent(in)
+  use io_params     , only : ioutput
   use rk4_coms      , only : checkbudget         ! ! intent(in)
   implicit none
   !----- Local variables. -----------------------------------------------------------------!
@@ -75,7 +76,7 @@ subroutine ed_coup_driver()
   ! If they are not >0, then set the logical, fast_diagnostics to false.      !
   !---------------------------------------------------------------------------!
   fast_diagnostics = checkbudget .or. ifoutput /= 0 .or. idoutput /= 0 .or.   &
-                     imoutput /= 0
+                     imoutput /= 0 .or. ioutput /= 0
 
   !---------------------------------------------------------------------------!
   ! STEP 2: Set the ED model parameters                                       !
@@ -253,7 +254,9 @@ subroutine ed_coup_driver()
   !-----------------------------------------------------------------------!
   ! STEP 18: Allocate memory to the integration patch
   !-----------------------------------------------------------------------!
-  if(integration_scheme == 1) call initialize_rk4patches(1)
+  if (integration_scheme == 1 .or. integration_scheme == 2) then
+     call initialize_rk4patches(1)
+  end if
   do ifm=1,ngrids
      call reset_averaged_vars(edgrid_g(ifm))
   end do

@@ -12,7 +12,7 @@ ed_model.o: fuse_fiss_utils.mod grid_coms.mod growth_balive.mod mem_sites.mod
 ed_model.o: rk4_coms.mod rk4_driver.mod
 canopy_struct_dynamics.o: allometry.mod canopy_air_coms.mod consts_coms.mod
 canopy_struct_dynamics.o: ed_misc_coms.mod ed_state_vars.mod met_driver_coms.mod
-canopy_struct_dynamics.o: pft_coms.mod rk4_coms.mod soil_coms.mod therm_lib.mod
+canopy_struct_dynamics.o: pft_coms.mod rk4_coms.mod soil_coms.mod
 canopy_update_euler.o: canopy_radiation_coms.mod consts_coms.mod ed_max_dims.mod
 canopy_update_euler.o: ed_state_vars.mod grid_coms.mod therm_lib.mod
 decomposition.o: decomp_coms.mod ed_state_vars.mod grid_coms.mod pft_coms.mod
@@ -173,6 +173,7 @@ fuse_fiss_utils.o: mem_sites.mod pft_coms.mod soil_coms.mod therm_lib.mod
 great_circle.o: consts_coms.mod
 hdf5_utils.o: hdf5_coms.mod
 invmondays.o: ed_misc_coms.mod
+lapse.o: canopy_radiation_coms.mod consts_coms.mod ed_state_vars.mod
 numutils.o: consts_coms.mod therm_lib.mod
 stable_cohorts.o: allometry.mod canopy_radiation_coms.mod ed_state_vars.mod
 stable_cohorts.o: rk4_coms.mod

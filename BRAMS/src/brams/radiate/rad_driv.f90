@@ -123,7 +123,9 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
                   , leaf_g(ngrid)%leaf_class           , leaf_g(ngrid)%veg_fracarea        &
                   , leaf_g(ngrid)%veg_height           , leaf_g(ngrid)%veg_albedo          &
                   , leaf_g(ngrid)%patch_area           , leaf_g(ngrid)%sfcwater_nlev       &
-                  , leaf_g(ngrid)%veg_temp             , leaf_g(ngrid)%can_temp            &
+                  , leaf_g(ngrid)%veg_energy           , leaf_g(ngrid)%veg_water           &
+                  , leaf_g(ngrid)%veg_hcap             , leaf_g(ngrid)%can_prss            &
+                  , leaf_g(ngrid)%can_theta            , leaf_g(ngrid)%can_rvap            &
                   , scratch%vt2da                      , scratch%vt2db                     &
                   , scratch%vt2dc                      , scratch%vt3dp                     &
                   , grid_g(ngrid)%glat                 , grid_g(ngrid)%glon                &
@@ -465,9 +467,10 @@ end subroutine tend_accum
 !------------------------------------------------------------------------------------------!
 subroutine radprep(m2,m3,mzg,mzs,np,ia,iz,ja,jz,iswrtyp,ilwrtyp,soil_water,soil_energy     &
                   ,soil_text,sfcwater_energy,sfcwater_mass,sfcwater_depth,leaf_class       &
-                  ,veg_fracarea,veg_height,veg_albedo,patch_area,sfcwater_nlev,veg_temp    &
-                  ,can_temp,emis_town,alb_town,ts_town,g_urban,glat,glon,rlongup           &
-                  ,rlong_albedo,albedt,rshort,rlong,rshort_top,rshortup_top,cosz           )
+                  ,veg_fracarea,veg_height,veg_albedo,patch_area,sfcwater_nlev,veg_energy  &
+                  ,veg_water,veg_hcap,can_prss,can_theta,can_rvap,emis_town,alb_town       &
+                  ,ts_town,g_urban,glat,glon,rlongup,rlong_albedo,albedt,rshort,rlong      &
+                  ,rshort_top,rshortup_top,cosz)
   
    use teb_spm_start, only : TEB_SPM
    use mem_leaf     , only : isfcl
@@ -482,7 +485,8 @@ subroutine radprep(m2,m3,mzg,mzs,np,ia,iz,ja,jz,iswrtyp,ilwrtyp,soil_water,soil_
    real, dimension(mzs,m2,m3,np), intent(in)    :: sfcwater_depth
    real, dimension    (m2,m3,np), intent(in)    :: leaf_class,veg_fracarea,veg_height
    real, dimension    (m2,m3,np), intent(in)    :: veg_albedo,patch_area,sfcwater_nlev
-   real, dimension    (m2,m3,np), intent(in)    :: veg_temp  ,can_temp
+   real, dimension    (m2,m3,np), intent(in)    :: veg_energy,veg_water,veg_hcap
+   real, dimension    (m2,m3,np), intent(in)    :: can_prss,can_theta,can_rvap
    real, dimension    (m2,m3)   , intent(in)    :: emis_town,alb_town,ts_town
    real, dimension    (m2,m3,np), intent(in)    :: g_urban
    real, dimension    (m2,m3)   , intent(in)    :: glat,glon,rlong_albedo,rshort
@@ -513,14 +517,17 @@ subroutine radprep(m2,m3,mzg,mzs,np,ia,iz,ja,jz,iswrtyp,ilwrtyp,soil_water,soil_
       do ip = 1,np
          do j = ja,jz
             do i = ia,iz
+
                call sfcrad( mzg,mzs,ip                                                          &
                            , soil_energy     (:,i,j,ip)    , soil_water      (:,i,j,ip)    &
                            , soil_text       (:,i,j,ip)    , sfcwater_energy (:,i,j,ip)    &
                            , sfcwater_mass   (:,i,j,ip)    , sfcwater_depth  (:,i,j,ip)    &
-                           , patch_area        (i,j,ip)    , can_temp          (i,j,ip)    &
-                           , veg_temp          (i,j,ip)    , leaf_class        (i,j,ip)    &
+                           , patch_area        (i,j,ip)    , leaf_class        (i,j,ip)    &
                            , veg_height        (i,j,ip)    , veg_fracarea      (i,j,ip)    &
                            , veg_albedo        (i,j,ip)    , sfcwater_nlev     (i,j,ip)    &
+                           , veg_energy        (i,j,ip)    , veg_water         (i,j,ip)    &
+                           , veg_hcap          (i,j,ip)    , can_prss          (i,j,ip)    &
+                           , can_theta         (i,j,ip)    , can_rvap          (i,j,ip)    &
                            , rshort            (i,j)       , rlong             (i,j)       &
                            , albedt            (i,j)       , rlongup           (i,j)       &
                            , cosz              (i,j)       , g_urban           (i,j,ip)    &

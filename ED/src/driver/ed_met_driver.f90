@@ -701,30 +701,31 @@ end subroutine read_met_drivers
 !==========================================================================================!
 subroutine update_met_drivers(cgrid)
   
-   use ed_state_vars  , only : edtype       & ! structure
-                             , polygontype  ! ! structure
-   use met_driver_coms, only : met_frq      & ! intent(in)
-                             , nformats     & ! intent(in)
-                             , met_nv       & ! intent(in)
-                             , met_interp   & ! intent(in)
-                             , met_vars     & ! intent(in)
-                             , have_co2     & ! intent(in)
-                             , initial_co2  ! ! intent(in)
-   use ed_misc_coms   , only : current_time ! ! intent(in)
-   use canopy_air_coms, only : ubmin_stab   & ! intent(in)
-                             , ubmin_unstab ! ! intent(in)
-   use consts_coms    , only : rdry         & ! intent(in)
-                             , cice         & ! intent(in)
-                             , cliq         & ! intent(in)
-                             , alli         & ! intent(in)
-                             , rocp         & ! intent(in)
-                             , p00          & ! intent(in)
-                             , cp           & ! intent(in)
-                             , day_sec      & ! intent(in)
-                             , t3ple        & ! intent(in)
-                             , wdnsi        & ! intent(in)
-                             , tsupercool   ! ! intent(in)
-   use therm_lib      , only : rslif        ! ! intent(in)
+   use ed_state_vars  , only : edtype        & ! structure
+                             , polygontype   ! ! structure
+   use met_driver_coms, only : met_frq       & ! intent(in)
+                             , nformats      & ! intent(in)
+                             , met_nv        & ! intent(in)
+                             , met_interp    & ! intent(in)
+                             , met_vars      & ! intent(in)
+                             , have_co2      & ! intent(in)
+                             , initial_co2   ! ! intent(in)
+   use ed_misc_coms   , only : current_time  ! ! intent(in)
+   use canopy_air_coms, only : ubmin_stab    & ! intent(in)
+                             , ubmin_unstab  ! ! intent(in)
+   use consts_coms    , only : rdry          & ! intent(in)
+                             , cice          & ! intent(in)
+                             , cliq          & ! intent(in)
+                             , alli          & ! intent(in)
+                             , rocp          & ! intent(in)
+                             , p00i          & ! intent(in)
+                             , cp            & ! intent(in)
+                             , day_sec       & ! intent(in)
+                             , t3ple         & ! intent(in)
+                             , wdnsi         & ! intent(in)
+                             , tsupercool    ! ! intent(in)
+   use therm_lib      , only : rslif         & ! function
+                             , ptqz2enthalpy ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target  :: cgrid
@@ -1030,11 +1031,20 @@ subroutine update_met_drivers(cgrid)
       !------ Converting back to specific humidity. ---------------------------------------!
       cgrid%met(ipy)%atm_shv = rvaux / (1. + rvaux)
 
+      !------------------------------------------------------------------------------------!
+      !    We now find the Exner function, potential temperature, and the enthalpy.        !
+      !------------------------------------------------------------------------------------!
+      cgrid%met(ipy)%exner        = cp * (p00i * cgrid%met(ipy)%prss)**rocp
+      cgrid%met(ipy)%atm_theta    = cp * cgrid%met(ipy)%atm_tmp / cgrid%met(ipy)%exner
+      cgrid%met(ipy)%atm_enthalpy = ptqz2enthalpy(cgrid%met(ipy)%prss                      &
+                                                 ,cgrid%met(ipy)%atm_tmp                   &
+                                                 ,cgrid%met(ipy)%atm_shv                   &
+                                                 ,cgrid%met(ipy)%geoht)
+
       !------ Apply met to sites, and adjust met variables for topography. ----------------!
       call calc_met_lapse(cgrid,ipy)
 
-      !----- Exner function ---------------------------------------------------------------!
-      cgrid%met(ipy)%exner = cp * (cgrid%met(ipy)%prss / p00)**rocp
+      
 
       cpoly => cgrid%polygon(ipy)
       siteloop: do isi = 1,cpoly%nsites
@@ -1047,8 +1057,18 @@ subroutine update_met_drivers(cgrid)
          !----- CO2.  In case we used the namelist, use that value. -----------------------!
          if (.not.have_co2) cpoly%met(isi)%atm_co2 = initial_co2
          
-         !----- Exner function ------------------------------------------------------------!
-         cpoly%met(isi)%exner = cp * (cpoly%met(isi)%prss / p00)**rocp
+         !---------------------------------------------------------------------------------!
+         !     We now find some derived properties.  In case several sites exist, the      !
+         ! lapse rate was applied to pressure, temperature, and mixing ratio.  Then we     !
+         ! calculate the Exner function, potential temperature and enthalpy so it will     !
+         ! respect the ideal gas law and first law of thermodynamics.                      !
+         !---------------------------------------------------------------------------------!
+         cpoly%met(isi)%exner        = cp * (p00i * cpoly%met(isi)%prss) **rocp
+         cpoly%met(isi)%atm_theta    = cp * cpoly%met(isi)%atm_tmp / cpoly%met(isi)%exner
+         cpoly%met(isi)%atm_enthalpy = ptqz2enthalpy(cpoly%met(isi)%prss                   &
+                                                   ,cpoly%met(isi)%atm_tmp                 &
+                                                   ,cpoly%met(isi)%atm_shv                 &
+                                                   ,cpoly%met(isi)%geoht)
 
          !----- Solar radiation -----------------------------------------------------------!
          cpoly%met(isi)%rshort_diffuse = cpoly%met(isi)%par_diffuse                        &
@@ -1070,8 +1090,6 @@ subroutine update_met_drivers(cgrid)
 
          !------ Converting back to specific humidity. ------------------------------------!
          cpoly%met(isi)%atm_shv = rvaux / (1. + rvaux)
-         !    Here we check whether the specific humidity is not supersaturated. Since we 
-         ! haven't found density yet
 
 
          !---------------------------------------------------------------------------------!

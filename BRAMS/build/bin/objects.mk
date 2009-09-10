@@ -316,6 +316,7 @@ OBJ_MODEL =                         \
 	init_hydro_sites.o          \
 	invmondays.o                \
 	landuse_init.o              \
+	lapse.o                     \
 	leaf_database.o             \
 	libxml2f90.f90_pp.o         \
 	lsm_hyd.o                   \
@@ -336,6 +337,7 @@ OBJ_MODEL =                         \
 	rk4_derivs.o                \
 	rk4_driver.o                \
 	rk4_integ_utils.o           \
+	rk4_misc.o                  \
 	rk4_stepper.o               \
 	soil_coms.o                 \
 	stable_cohorts.o            \

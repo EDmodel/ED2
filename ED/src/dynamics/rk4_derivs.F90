@@ -51,6 +51,7 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa,isi,ipy)
    !----- Ensure that enthalpy and water storage derivatives are both zero. ---------------!
    dinitp%ebudget_storage = 0.d0
    dinitp%wbudget_storage = 0.d0
+   dinitp%ebudget_latent  = 0.d0
 
    !----- Compute canopy turbulence properties. -------------------------------------------!
    call canopy_turbulence8(csite,initp,isi,ipa,.false.)
@@ -247,11 +248,11 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
       ! multiplied by depth to get a depth of water.                                       !
       !------------------------------------------------------------------------------------!
       initp%soil_liq(k) = max(0.0d0                                                        &
-                             ,( initp%soil_water(k) - soil8(nsoil)%soilcp)                  &
+                             ,( initp%soil_water(k) - soil8(nsoil)%soilcp)                 &
                               * initp%soil_fracliq(k) )
-      initp%soilair99(k) = (1.d0-rk4eps) * soil8(nsoil)%slmsts - initp%soil_water(k)
-      initp%soilair01(k) = (initp%soil_water(k) - (1.+rk4eps) * soil8(nsoil)%soilcp)       &
-                         * initp%soil_fracliq(k)
+      initp%soilair99(k) = soil8(nsoil)%slmsts * (1.d0-rk4eps) - initp%soil_water(k)
+      initp%soilair01(k) = ( initp%soil_water(k) - (1.d0 + rk4eps) * soil8(nsoil)%soilcp)  &
+                           * initp%soil_fracliq(k)
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -537,6 +538,9 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
                   qwloss = wloss * cliqvlme8 * (initp%soil_tempk(k2) - tsupercool8)
                   dinitp%soil_energy(k2)   = dinitp%soil_energy(k2)   - qwloss
                   dinitp%avg_smoist_gc(k2) = dinitp%avg_smoist_gc(k2) - wdns8*wloss
+                  if (fast_diagnostics) then
+                     dinitp%ebudget_latent    = dinitp%ebudget_latent    + qwloss*dslz8(k2)
+                  end if
                end if
             end if
          end do
@@ -570,6 +574,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
                                     , zveg                 & ! intent(in)
                                     , wcapcan              & ! intent(in)
                                     , wcapcani             & ! intent(in)
+                                    , hcapcani             & ! intent(in)
                                     , ccapcani             & ! intent(in)
                                     , any_solvable         & ! intent(in)
                                     , tiny_offset          & ! intent(in)
@@ -635,7 +640,8 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    real(kind=8)                     :: transp           ! Cohort transpiration
    real(kind=8)                     :: cflxac           ! Atm->canopy carbon flux
    real(kind=8)                     :: wflxac           ! Atm->canopy water flux
-   real(kind=8)                     :: hflxac           ! Atm->canopy energy flux
+   real(kind=8)                     :: hflxac           ! Atm->canopy sensible heat flux
+   real(kind=8)                     :: eflxac           ! Atm->canopy enthalpy flux
    real(kind=8)                     :: c2               ! Coefficient (????)
    real                             :: c3lai            ! Coefficient (????)
    real(kind=8)                     :: c3tai            ! Coefficient (????)
@@ -689,10 +695,11 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    !---------------------------------------------------------------------------------------!
    !    Computing the fluxes from atmosphere to canopy.                                    !
    !---------------------------------------------------------------------------------------!
-   rho_ustar = initp%can_rhos * initp%ustar                ! Aux. variable
-   hflxac    = rho_ustar      * initp%hstar                ! Energy flux
-   wflxac    = rho_ustar      * initp%qstar                ! Water flux
-   cflxac    = rho_ustar      * initp%cstar * mmdryi8      ! CO2 flux [umol/m2/s]
+   rho_ustar = initp%can_rhos * initp%ustar                    ! Aux. variable
+   hflxac    = rho_ustar      * initp%tstar * rk4met%atm_exner ! Sensible Heat flux
+   eflxac    = rho_ustar      * initp%estar                    ! Enthalpy flux
+   wflxac    = rho_ustar      * initp%qstar                    ! Water flux
+   cflxac    = rho_ustar      * initp%cstar * mmdryi8          ! CO2 flux [umol/m2/s]
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -704,7 +711,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    rasgnd = 5.d0 / initp%ustar
 
    !---------------------------------------------------------------------------------------!
-   !Calculate fraction of open canopy                                                      !
+   !     Calculate fraction of open canopy.                                                !
    !---------------------------------------------------------------------------------------!
    cpatch => csite%patch(ipa)
    can_frac = 1.d0
@@ -827,7 +834,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
 
    !----- We now check whether the canopy air space can hold more water. ------------------!
    temp_sat = max(toocold,initp%can_temp)
-   can_ssh  = rslif8(rk4met%prss,temp_sat)
+   can_ssh  = rslif8(initp%can_prss,temp_sat)
    !----- Converting from mixing ratio to specific humidity. ------------------------------!
    can_ssh  = can_ssh / (1.d0 + can_ssh)
 
@@ -934,7 +941,8 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
          ! this happen.                                                                    !
          !---------------------------------------------------------------------------------!
          temp_sat = max(toocold,initp%veg_temp(ico))
-         veg_ssh  = rslif8(rk4met%prss,temp_sat)
+         veg_ssh  = rslif8(initp%can_prss,temp_sat)
+         !----- Converting mixing ratio to specific humidity. -----------------------------!
          veg_ssh  = veg_ssh / (1.d0 + veg_ssh)
 
          !---------------------------------------------------------------------------------!
@@ -1098,7 +1106,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    !     Update temperature and moisture of canopy.  hcapcan [J/m2/K] and wcapcan          !
    ! [kg_air/m2] are the heat and moisture capacities of the canopy.                       !
    !---------------------------------------------------------------------------------------!
-   dinitp%can_enthalpy = (hflxgc + hflxvc_tot + hflxac                                     &
+   dinitp%can_enthalpy = (hflxgc + hflxvc_tot + eflxac                                     &
                          + qwflxgc - qdewgndflx + qwflxvc_tot + qtransp_tot)               &
                        * wcapcani
    dinitp%can_shv      = (wflxgc - dewgndflx + wflxvc_tot + transp_tot +  wflxac)          &
@@ -1115,17 +1123,13 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    !---------------------------------------------------------------------------------------!
    if (fast_diagnostics) then
 
-      dinitp%co2budget_loss2atm = - cflxac
-      dinitp%ebudget_loss2atm   = - hflxac
-      dinitp%wbudget_loss2atm   = - wflxac
-      
-      
+
       dinitp%avg_carbon_ac      =   cflxac
 
       dinitp%avg_sensible_vc   = hflxvc_tot                     ! Sens. heat,  Leaf->Canopy
       dinitp%avg_vapor_vc      = wflxvc_tot                     ! Lat.  heat,  Leaf->Canopy
       dinitp%avg_sensible_gc   = hflxgc                         ! Sens. heat,  Gnd ->Canopy
-      dinitp%avg_sensible_ac   = hflxac / rk4met%exner          ! Sens. heat,  Atmo->Canopy
+      dinitp%avg_sensible_ac   = hflxac / rk4met%atm_exner      ! Sens. heat,  Atmo->Canopy
       dinitp%avg_vapor_ac      = wflxac                         ! Lat.  heat,  Atmo->Canopy
       dinitp%avg_transp        = transp_tot                     ! Transpiration
       dinitp%avg_evap          = wflxgc-dewgndflx+wflxvc_tot ! Evaporation/Condensation
@@ -1135,9 +1139,14 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
          dinitp%avg_netrad = dinitp%avg_netrad + dble(csite%rshort_s(k,ipa))
       end do
 
-      dinitp%ebudget_storage = dinitp%ebudget_storage + hflxac + dinitp%avg_netrad
+      
+      dinitp%ebudget_latent     = dinitp%ebudget_latent - qdewgndflx  + qwflxgc            &
+                                                        + qtransp_tot + qwflxvc_tot
+      dinitp%co2budget_loss2atm = - cflxac
+      dinitp%ebudget_loss2atm   = - eflxac
+      dinitp%wbudget_loss2atm   = - wflxac
+      dinitp%ebudget_storage = dinitp%ebudget_storage + eflxac + dinitp%avg_netrad
       dinitp%wbudget_storage = dinitp%wbudget_storage + wflxac
-
    end if
   
    !---------------------------------------------------------------------------------------!
@@ -1151,14 +1160,14 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    dinitp%cpwp = -(initp%ustar*initp%cstar)
    dinitp%tpwp = -(initp%ustar*initp%tstar)
    if(debug .and. abs(rk4met%atm_tmp) < tiny(1.d0)) print*,"atm_tmp = 0"
-   gzotheta = grav8 * rk4met%geoht * cpi8 * rk4met%exner / rk4met%atm_tmp
+   gzotheta = grav8 * rk4met%geoht * cpi8 * rk4met%atm_exner / rk4met%atm_tmp
    dinitp%wpwp = vertical_vel_flux8(gzotheta,initp%tstar,initp%ustar)
 
 
    !---------------------------------------------------------------------------------------!
    !     If the single pond layer is too thin, force equilibrium with top soil layer.      !
    ! This is done in two steps: first, we don't transfer all the energy to the top soil    !
-   ! layer.  Then, in redistribute_snow, we will make them in thermal equilibrium.      !
+   ! layer.  Then, in redistribute_snow, we will make them in thermal equilibrium.         !
    !---------------------------------------------------------------------------------------!
    if (initp%nlev_sfcwater == 1) then
       if (abs(initp%sfcwater_mass(1)) < rk4water_stab_thresh) then

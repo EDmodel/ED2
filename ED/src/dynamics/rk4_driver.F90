@@ -47,6 +47,7 @@ module rk4_driver
       real                                    :: ecurr_loss2drainage
       real                                    :: wcurr_loss2runoff
       real                                    :: ecurr_loss2runoff
+      real                                    :: ecurr_latent
       !----- Variables declared differently depending on the user's compilation options. --!
 #if USE_MPIWTIME
       real(kind=8)                            :: time_py_start
@@ -128,7 +129,7 @@ module rk4_driver
                call zero_rk4_cohort(integration_buff%ak7)
 
                !----- Get velocity for aerodynamic resistance. ----------------------------!
-               if (csite%can_temp(ipa) < cpoly%met(isi)%atm_tmp) then
+               if (csite%can_theta(ipa) < cpoly%met(isi)%atm_theta) then
                   cpoly%met(isi)%vels = cpoly%met(isi)%vels_stab
                else
                   cpoly%met(isi)%vels = cpoly%met(isi)%vels_unstab
@@ -137,7 +138,8 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !    Copy the meteorological variables to the rk4met structure.             !
                !---------------------------------------------------------------------------!
-               call copy_met_2_rk4met(cpoly%met(isi)%vels,cpoly%met(isi)%atm_tmp           &
+               call copy_met_2_rk4met(cpoly%met(isi)%vels,cpoly%met(isi)%atm_enthalpy      &
+                                     ,cpoly%met(isi)%atm_theta,cpoly%met(isi)%atm_tmp      &
                                      ,cpoly%met(isi)%atm_shv,cpoly%met(isi)%atm_co2        &
                                      ,cpoly%met(isi)%geoht,cpoly%met(isi)%exner            &
                                      ,cpoly%met(isi)%pcpg,cpoly%met(isi)%qpcpg             &
@@ -176,7 +178,7 @@ module rk4_driver
                call integrate_patch(csite,integration_buff%initp,ipa,isi,ipy,ifm           &
                                    ,wcurr_loss2atm,ecurr_loss2atm,co2curr_loss2atm         &
                                    ,wcurr_loss2drainage,ecurr_loss2drainage                &
-                                   ,wcurr_loss2runoff,ecurr_loss2runoff)
+                                   ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent)
 
                !---------------------------------------------------------------------------!
                !    Update the minimum monthly temperature, based on canopy temperature.   !
@@ -193,8 +195,8 @@ module rk4_driver
                                   ,ipa,wcurr_loss2atm,ecurr_loss2atm         &
                                   ,co2curr_loss2atm,wcurr_loss2drainage      &
                                   ,ecurr_loss2drainage,wcurr_loss2runoff     &
-                                  ,ecurr_loss2runoff,cpoly%area(isi)         &
-                                  ,cgrid%cbudget_nep(ipy))
+                                  ,ecurr_loss2runoff,ecurr_latent            &
+                                  ,cpoly%area(isi),cgrid%cbudget_nep(ipy))
                
 
             end do patchloop
@@ -229,10 +231,10 @@ module rk4_driver
    !---------------------------------------------------------------------------------------!
    subroutine integrate_patch(csite,initp,ipa,isi,ipy,ifm,wcurr_loss2atm,ecurr_loss2atm    &
                              ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage     &
-                             ,wcurr_loss2runoff,ecurr_loss2runoff)
+                             ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent)
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
-      use ed_misc_coms       , only : dtlsm                ! ! intent(in)
+      use ed_misc_coms    , only : dtlsm                ! ! intent(in)
       use soil_coms       , only : soil_rough           & ! intent(in)
                                  , snow_rough           ! ! intent(in)
       use canopy_air_coms , only : exar8                ! ! intent(in)
@@ -266,6 +268,7 @@ module rk4_driver
       real                  , intent(out) :: ecurr_loss2drainage
       real                  , intent(out) :: wcurr_loss2runoff
       real                  , intent(out) :: ecurr_loss2runoff
+      real                  , intent(out) :: ecurr_latent
       !----- Local variables --------------------------------------------------------------!
       real(kind=8)                          :: hbeg
       !----- Locally saved variable -------------------------------------------------------!
@@ -333,7 +336,7 @@ module rk4_driver
       !------------------------------------------------------------------------------------!
       call initp2modelp(tend-tbeg,initp,csite,ipa,isi,ipy,wcurr_loss2atm,ecurr_loss2atm    &
                        ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage           &
-                       ,wcurr_loss2runoff,ecurr_loss2runoff)
+                       ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent)
 
       return
    end subroutine integrate_patch
@@ -352,7 +355,7 @@ module rk4_driver
    !---------------------------------------------------------------------------------------!
    subroutine initp2modelp(hdid,initp,csite,ipa,isi,ipy,wbudget_loss2atm,ebudget_loss2atm  &
                           ,co2budget_loss2atm,wbudget_loss2drainage,ebudget_loss2drainage  &
-                          ,wbudget_loss2runoff,ebudget_loss2runoff)              
+                          ,wbudget_loss2runoff,ebudget_loss2runoff,ebudget_latent)
       use rk4_coms             , only : rk4patchtype         & ! structure
                                       , rk4met               & ! intent(in)
                                       , rk4min_veg_temp      & ! intent(in)
@@ -387,6 +390,7 @@ module rk4_driver
       real              , intent(out) :: ebudget_loss2drainage
       real              , intent(out) :: wbudget_loss2runoff
       real              , intent(out) :: ebudget_loss2runoff
+      real              , intent(out) :: ebudget_latent
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)   , pointer     :: cpatch
       integer                         :: mould
@@ -413,6 +417,8 @@ module rk4_driver
       ! to single precision.                                                               !
       !------------------------------------------------------------------------------------!
       csite%can_enthalpy(ipa) = sngloff(initp%can_enthalpy  ,tiny_offset)
+      csite%can_theta(ipa)    = sngloff(initp%can_theta     ,tiny_offset)
+      csite%can_prss(ipa)     = sngloff(initp%can_prss      ,tiny_offset)
       csite%can_temp(ipa)     = sngloff(initp%can_temp      ,tiny_offset)
       csite%can_shv(ipa)      = sngloff(initp%can_shv       ,tiny_offset)
       csite%can_co2(ipa)      = sngloff(initp%can_co2       ,tiny_offset)
@@ -439,6 +445,7 @@ module rk4_driver
          ebudget_loss2atm      = sngloff(initp%ebudget_loss2atm     ,tiny_offset)
          ebudget_loss2drainage = sngloff(initp%ebudget_loss2drainage,tiny_offset)
          ebudget_loss2runoff   = sngloff(initp%ebudget_loss2runoff  ,tiny_offset)
+         ebudget_latent        = sngloff(initp%ebudget_latent       ,tiny_offset)
          wbudget_loss2atm      = sngloff(initp%wbudget_loss2atm     ,tiny_offset)
          wbudget_loss2drainage = sngloff(initp%wbudget_loss2drainage,tiny_offset)
          wbudget_loss2runoff   = sngloff(initp%wbudget_loss2runoff  ,tiny_offset)
@@ -467,6 +474,7 @@ module rk4_driver
          ebudget_loss2atm               = 0.
          ebudget_loss2drainage          = 0.
          ebudget_loss2runoff            = 0.
+         ebudget_latent                 = 0.
          wbudget_loss2atm               = 0.
          wbudget_loss2drainage          = 0.
          wbudget_loss2runoff            = 0.

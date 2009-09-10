@@ -414,17 +414,14 @@ subroutine initlz (name_name)
 
         do ifm = 1,min(ngrids,ngridsh)
            call newgrid(ifm)
-           call soil_moisture_init(nnzp(ifm),nnxp(ifm),nnyp(ifm)              &
-                ,nzg,nzs,npatch,ifm                                           &
-                ,basic_g(ifm)%theta            ,basic_g(ifm)%pi0              &
-                ,basic_g(ifm)%pp               ,leaf_g(ifm)%soil_water        &
-                ,leaf_g(ifm)%soil_energy       ,leaf_g(ifm)%soil_text         &
-                ,leaf_g(ifm)%sfcwater_mass     ,leaf_g(ifm)%sfcwater_energy   &
-                ,leaf_g(ifm)%sfcwater_depth    ,grid_g(ifm)%glat              &
-                ,grid_g(ifm)%glon              ,grid_g(ifm)%flpw              )
-        enddo
+           call soil_moisture_init(nnzp(ifm),nnxp(ifm),nnyp(ifm),nzg,npatch,ifm            &
+                                ,leaf_g(ifm)%can_theta         ,leaf_g(ifm)%can_prss       &
+                                ,grid_g(ifm)%glat              ,grid_g(ifm)%glon           &
+                                ,leaf_g(ifm)%soil_water        ,leaf_g(ifm)%soil_energy    &
+                                ,leaf_g(ifm)%soil_text         )
+        end do
 
-     endif
+     end if
 
      !     If any grids are being added for this run, initialize their
      !     surface layer variables, 1-D reference state variables, and

@@ -32,7 +32,7 @@ Module consts_coms
      , b_ttripoli   => ttripoli   , b_htripoli   => htripoli   , b_htripolii  => htripolii &
      , b_cpi4       => cpi4       , b_aklv       => aklv       , b_akiv       => akiv      &
      , b_rdryi      => rdryi      , b_eta3ple    => eta3ple    , b_cimcp      => cimcp     &
-     , b_clmcp      => clmcp
+     , b_clmcp      => clmcp      , b_p00k       => p00k       , b_p00ki      => p00ki
 
    implicit none
 
@@ -78,7 +78,8 @@ Module consts_coms
    real, parameter :: cpi4       = b_cpi4       , aklv       = b_aklv
    real, parameter :: akiv       = b_akiv       , rdryi      = b_rdryi
    real, parameter :: eta3ple    = b_eta3ple    , cimcp      = b_cimcp
-   real, parameter :: clmcp      = b_clmcp
+   real, parameter :: clmcp      = b_clmcp      , p00k       = b_p00k
+   real, parameter :: p00ki      = b_p00ki
 #else
    implicit none
 
@@ -158,6 +159,8 @@ Module consts_coms
    real, parameter :: erad2     = 2.*erad     ! Earth diameter                  [        m]
    real, parameter :: p00       = 1.e5        ! Reference pressure              [       Pa]
    real, parameter :: p00i      = 1. / p00    ! 1/p00                           [     1/Pa]
+   real, parameter :: p00k      = 26.870941   ! p0 ** (Ra/Cp)                   [ Pa^0.286]
+   real, parameter :: p00ki     = 1. / p00k   ! p0 ** (-Ra/Cp)                  [Pa^-0.286]
    !---------------------------------------------------------------------------------------!
 
 
@@ -337,6 +340,8 @@ Module consts_coms
    real(kind=8), parameter :: erad28          = dble(erad2         )
    real(kind=8), parameter :: p008            = dble(p00           )
    real(kind=8), parameter :: p00i8           = dble(p00i          )
+   real(kind=8), parameter :: p00k8           = dble(p00k          )
+   real(kind=8), parameter :: p00ki8          = dble(p00ki         )
    real(kind=8), parameter :: rdry8           = dble(rdry          )
    real(kind=8), parameter :: rdryi8          = dble(rdryi         )
    real(kind=8), parameter :: cp8             = dble(cp            )

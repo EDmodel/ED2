@@ -390,6 +390,11 @@ landuse_init.o : $(ED_INIT)/landuse_init.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+lapse.o : $(ED_UTILS)/lapse.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 leaf_database.o : $(ED_IO)/leaf_database.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -441,6 +446,11 @@ rk4_derivs.o : $(ED_DYNAMICS)/rk4_derivs.F90
 	rm -f $(<F:.F90=.F90)
 
 rk4_integ_utils.o : $(ED_DYNAMICS)/rk4_integ_utils.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+rk4_misc.o : $(ED_DYNAMICS)/rk4_misc.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

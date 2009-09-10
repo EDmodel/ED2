@@ -125,6 +125,7 @@ end subroutine ed_timestep
 ! side this subroutine to avoid confusion when we run nested grid simulations.             !
 !------------------------------------------------------------------------------------------!
 subroutine ed_coup_model(ifm)
+   use ed_max_dims  , only : maxgrds            ! ! intent(in)
    use ed_misc_coms , only : integration_scheme & ! intent(in)
                            , simtime            & ! variable type
                            , current_time       & ! intent(inout)
@@ -164,7 +165,7 @@ subroutine ed_coup_model(ifm)
    use io_params    , only : ioutput            ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   integer, intent(in) :: ifm
+   integer, intent(in)                   :: ifm
    !----- Local variables. ----------------------------------------------------------------!
    logical                               :: analysis_time
    logical                               :: new_day
@@ -176,46 +177,34 @@ subroutine ed_coup_model(ifm)
    logical                               :: mont_analy_time
    logical                               :: dail_analy_time
    logical                               :: reset_time
-   logical                               :: last_grid
    integer                               :: ndays
+   integer                               :: jfm
    !----- External functions. -------------------------------------------------------------!
    integer                    , external :: num_days
    !----- Locally saved variables. --------------------------------------------------------!
-   logical                    , save     :: first_time
+   logical                    , save     :: first_time = .true.
    logical                    , save     :: writing_dail
    logical                    , save     :: writing_mont
    logical                    , save     :: writing_year
-   real(kind=8)               , save     :: timebefore
-   type(simtime)              , save     :: simtimebefore
+   logical, dimension(maxgrds), save     :: calledgrid
    !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
-   !     Checking whether this is the last grid to be called.  Some parts are done only    !
-   ! when all grids have been updated.                                                     !
+   !     Saving some of the output control variables. The test can be done only once.      !
    !---------------------------------------------------------------------------------------!
-   last_grid = ifm == ngrids
-
-   !----- Saving some of the output control variables. The test can be done only once. ----!
    if (first_time) then
       writing_dail      = idoutput > 0
       writing_mont      = imoutput > 0
       writing_year      = iyoutput > 0
+      calledgrid(:)     = .false.
       first_time        = .false.
    end if
 
    !---------------------------------------------------------------------------------------!
-   !    If this is the first grid, we save the time before updating, so we can go back in  !
-   ! time for the other grids.  It's kind of cheating, better ideas are welcome.           !
+   !     Flagging that this grid has been called.                                          !
    !---------------------------------------------------------------------------------------!
-   if (ifm == 1) then
-      timebefore    = time
-      simtimebefore = current_time
-   else
-      istp         = istp - 1
-      time         = timebefore
-      current_time = simtimebefore
-   end if
+   calledgrid(ifm) = .true.
 
    istp                = istp + 1
    out_time_fast       = current_time
@@ -232,7 +221,7 @@ subroutine ed_coup_model(ifm)
    select case (integration_scheme)
    case (0)
       call euler_timestep(edgrid_g(ifm))
-   case (1)
+   case (1,2)
       call rk4_timestep(edgrid_g(ifm),ifm)
    end select
 
@@ -243,122 +232,136 @@ subroutine ed_coup_model(ifm)
       call integrate_ed_daily_output_state(edgrid_g(ifm))
    end if
 
-   !----- Updating the time. --------------------------------------------------------------!
-   time = time + dble(dtlsm)
-   call update_model_time_dm(current_time, dtlsm)
+
+   !---------------------------------------------------------------------------------------!
+   !     The remainder of this subroutine is called only once, and it is done after all    !
+   ! grids have been called.                                                               !
+   !---------------------------------------------------------------------------------------!
+   if (all(calledgrid(1:ngrids))) then
    
-   !---------------------------------------------------------------------------------------!
-   !     Checking whether now is any of those special times...                             !
-   !---------------------------------------------------------------------------------------!
-   new_day         = current_time%time  <  dtlsm
-   new_month       = current_time%date  == 1  .and. new_day
-   new_year        = current_time%month == 1  .and. new_month
-   mont_analy_time = new_month .and. writing_mont
-   annual_time     = new_month .and. writing_year .and. current_time%month == outputmonth
-   dail_analy_time = new_day   .and. writing_dail
-   reset_time      = mod(time,dble(frqsum)) < dble(dtlsm)
-   the_end         = mod(time,timmax)       < dble(dtlsm)
+      !----- Reset all grids to false for next time step. ---------------------------------!
+      calledgrid(1:ngrids) = .false.
+   
+      !----- Updating the time. -----------------------------------------------------------!
+      time = time + dble(dtlsm)
+      call update_model_time_dm(current_time, dtlsm)
 
-   !----- Checking whether this is time to write fast analysis output or not. -------------!
-   select case (unitfast)
-   case (0,1) !----- Now both are in seconds ----------------------------------------------!
-      analysis_time   = mod(current_time%time, frqfast) < dtlsm .and.                      &
-                        (ifoutput /= 0 .or. ioutput /= 0)
-   case (2)   !----- Months, analysis time is at the new month ----------------------------!
-      analysis_time   = new_month .and. ifoutput /= 0 .and.                                &
-                        mod(real(12+current_time%month-imontha),frqfast) == 0.
-   case (3) !----- Year, analysis time is at the same month as initial time ---------------!
-      analysis_time   = new_month .and. ifoutput /= 0 .and.                                &
-                        current_time%month == imontha .and.                                &
-                        mod(real(current_time%year-iyeara),frqfast) == 0.
-   end select
+      !------------------------------------------------------------------------------------!
+      !     Checking whether now is any of those special times...                          !
+      !------------------------------------------------------------------------------------!
+      new_day         = current_time%time  <  dtlsm
+      new_month       = current_time%date  == 1  .and. new_day
+      new_year        = current_time%month == 1  .and. new_month
+      mont_analy_time = new_month .and. writing_mont
+      annual_time     = new_month .and. writing_year .and.                                 &
+                        current_time%month == outputmonth
+      dail_analy_time = new_day   .and. writing_dail
+      reset_time      = mod(time,dble(frqsum)) < dble(dtlsm)
+      the_end         = mod(time,timmax)       < dble(dtlsm)
 
-   !----- Checking whether this is time to write restart output or not. -------------------!
-   select case(unitstate)
-   case (0,1) !----- Now both are in seconds ----------------------------------------------!
-      history_time   = mod(current_time%time, frqstate) < dtlsm .and.                      &
-                       (isoutput /= 0 .or. ioutput /= 0)
-   case (2)   !----- Months, history time is at the new month -----------------------------!
-      history_time   = new_month .and. isoutput /= 0 .and.                                 &
-                       mod(real(12+current_time%month-imontha),frqstate) == 0.
-   case (3) !----- Year, history time is at the same month as initial time ----------------!
-      history_time   = new_month .and. isoutput /= 0 .and.                                 &
-                       current_time%month == imontha .and.                                 &
-                       mod(real(current_time%year-iyeara),frqstate) == 0.
-   end select
+      !----- Checking whether this is time to write fast analysis output or not. ----------!
+      select case (unitfast)
+      case (0,1) !----- Now both are in seconds -------------------------------------------!
+         analysis_time   = mod(current_time%time, frqfast) < dtlsm .and.                   &
+                           (ifoutput /= 0 .or. ioutput /= 0)
+      case (2)   !----- Months, analysis time is at the new month -------------------------!
+         analysis_time   = new_month .and. ifoutput /= 0 .and.                             &
+                           mod(real(12+current_time%month-imontha),frqfast) == 0.
+      case (3) !----- Year, analysis time is at the same month as initial time ------------!
+         analysis_time   = new_month .and. ifoutput /= 0 .and.                             &
+                           current_time%month == imontha .and.                             &
+                           mod(real(current_time%year-iyeara),frqfast) == 0.
+      end select
 
-   !---------------------------------------------------------------------------------------!
-   !    Updating nrec_fast and nrec_state if it is a new month and outfast/outstate are    !
-   ! monthly and frqfast/frqstate are daily or by seconds.                                 !
-   !---------------------------------------------------------------------------------------!
-   if (new_month) then
-      ndays = num_days(current_time%month,current_time%year)
-      if (outfast  == -2.) nrec_fast  = ndays*ceiling(day_sec/frqfast)
-      if (outstate == -2.) nrec_state = ndays*ceiling(day_sec/frqstate)
-   end if
+      !----- Checking whether this is time to write restart output or not. ----------------!
+      select case(unitstate)
+      case (0,1) !----- Now both are in seconds -------------------------------------------!
+         history_time   = mod(current_time%time, frqstate) < dtlsm .and.                   &
+                          (isoutput /= 0 .or. ioutput /= 0)
+      case (2)   !----- Months, history time is at the new month --------------------------!
+         history_time   = new_month .and. isoutput /= 0 .and.                              &
+                          mod(real(12+current_time%month-imontha),frqstate) == 0.
+      case (3) !----- Year, history time is at the same month as initial time -------------!
+         history_time   = new_month .and. isoutput /= 0 .and.                              &
+                          current_time%month == imontha .and.                              &
+                          mod(real(current_time%year-iyeara),frqstate) == 0.
+      end select
 
-   !---------------------------------------------------------------------------------------!
-   !   Call the model output driver.  This is called only when all grids are updated.      !
-   !---------------------------------------------------------------------------------------!
-   if (last_grid) then
+      !------------------------------------------------------------------------------------!
+      !    Updating nrec_fast and nrec_state if it is a new month and outfast/outstate are !
+      ! monthly and frqfast/frqstate are daily or by seconds.                              !
+      !------------------------------------------------------------------------------------!
+      if (new_month) then
+         ndays = num_days(current_time%month,current_time%year)
+         if (outfast  == -2.) nrec_fast  = ndays*ceiling(day_sec/frqfast)
+         if (outstate == -2.) nrec_state = ndays*ceiling(day_sec/frqstate)
+      end if
+
+
+      !----- Call the output subroutine. --------------------------------------------------!
       call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time     &
                     ,writing_dail,writing_mont,history_time,the_end)
-   end if
 
-   !---------------------------------------------------------------------------------------!
-   !     If this is the time to write the output, then send the data back to the LEAF      !
-   ! arrays.                                                                               !
-   !---------------------------------------------------------------------------------------!
-   if (analysis_time) then
-      call copy_avgvars_to_leaf(ifm)
-   end if
-
-   !---------------------------------------------------------------------------------------!
-   ! Reset time happens every frqsum. This is to avoid variables to build up when history  !
-   ! and analysis are off.  Put outside ed_output so we have a chance to copy some of      !
-   ! these to BRAMS structures.                                                            !
-   !---------------------------------------------------------------------------------------!
-   if(reset_time) then
-         call reset_averaged_vars(edgrid_g(ifm))
-   end if
-
-   !---------------------------------------------------------------------------------------!
-   !     Checking whether this is the beginning of a new simulated day.  Longer-scale      !
-   ! processes, those which are updated once a day, once a month, or once a year, are      !
-   ! updated here.  Since the subroutines here have internal grid loops, we only call this !
-   ! part of the code when all grids have reached this point.                              !
-   !---------------------------------------------------------------------------------------!
-
-   if (new_day .and. last_grid) then
-      
-      !----- Do phenology, growth, mortality, recruitment, disturbance. -------------------!
-      call vegetation_dynamics(new_month,new_year)
-      
       !------------------------------------------------------------------------------------!
-      !    First day of a month.  On the monthly timestep we have performed various        !
-      ! fusion, fission, and extinction calls.  Therefore the var-table's pointer vectors  !
-      ! must be updated, and the global definitions of the total numbers must be exported  !
-      ! to every node.                                                                     !
+      !     If this is the time to write the output, then send the data back to the LEAF   !
+      ! arrays.                                                                            !
       !------------------------------------------------------------------------------------!
-      if (new_month .and. (maxpatch >= 0 .or. maxcohort >= 0)) then
-         call filltab_alltypes
+      if (analysis_time) then
+         do jfm = 1, ngrids
+            call copy_avgvars_to_leaf(jfm)
+         end do
+      end if
 
-         !---- Also, we must re-allocate integration buffer if RK4 is being used. ---------!
-         if(integration_scheme == 1) call initialize_rk4patches(0)
-      endif
-      
-   endif
-   
-   if (new_day .and. new_month) then
-         call updateHydroParms(edgrid_g(ifm))
-   endif
+      !------------------------------------------------------------------------------------!
+      ! Reset time happens every frqsum. This is to avoid variables to build up when       !
+      ! history and analysis are off.  Put outside ed_output so we have a chance to copy   !
+      ! some of these to BRAMS structures.                                                 !
+      !------------------------------------------------------------------------------------!
+      if (reset_time) then
+         do jfm=1,ngrids
+            call reset_averaged_vars(edgrid_g(jfm))
+         end do
+      end if
+
+      !------------------------------------------------------------------------------------!
+      !     Checking whether this is the beginning of a new simulated day.  Longer-scale   !
+      ! processes, those which are updated once a day, once a month, or once a year, are   !
+      ! updated here.  Since the subroutines here have internal grid loops, we only call   !
+      ! this part of the code when all grids have reached this point.                      !
+      !------------------------------------------------------------------------------------!
+      if (new_day) then
+         
+         !----- Do phenology, growth, mortality, recruitment, disturbance. ----------------!
+         call vegetation_dynamics(new_month,new_year)
+         
+         !---------------------------------------------------------------------------------!
+         !    First day of a month.  On the monthly timestep we have performed various     !
+         ! fusion, fission, and extinction calls.  Therefore the var-table's pointer       !
+         ! vectors must be updated, and the global definitions of the total numbers must   !
+         ! be exported to every node.                                                      !
+         !---------------------------------------------------------------------------------!
+         if (new_month .and. (maxpatch >= 0 .or. maxcohort >= 0)) then
+            call filltab_alltypes
+
+            !---- Also, we must re-allocate integration buffer if RK4 is being used. ------!
+            if (integration_scheme == 1 .or. integration_scheme == 2) then
+               call initialize_rk4patches(0)
+            end if
+         end if
+      end if
+
+      if (new_day .and. new_month) then
+         do jfm=1,ngrids
+            call updateHydroParms(edgrid_g(jfm))
+         end do
+      end if
    
 
-   !----- Update Lateral hydrology. -------------------------------------------------------!
-   if (last_grid) then
+      !----- Update Lateral hydrology. ----------------------------------------------------!
       call calcHydroSubsurface()
       call calcHydroSurface()
       call writeHydro()
+
    end if
 
    return

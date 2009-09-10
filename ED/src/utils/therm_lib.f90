@@ -1443,12 +1443,62 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the enthalpy given the pressure, temperature, and vapour   !
-   ! specific humidity.  Currently it doesn't compute mixed phase air, but adding it       !
-   ! should be straightforward (finding the inverse is another story...).                  !
+   !     This function computes reduces the pressure from the reference height to the      !
+   ! canopy height by assuming hydrostatic equilibrium.                                    !
    !---------------------------------------------------------------------------------------!
-   real function ptq2enthalpy(pres,temp,qvpr)
+   real function reducedpress(pres,thetaref,shvref,zref,thetacan,shvcan,zcan)
+      use consts_coms, only : epim1    & ! intent(in)
+                            , p00k     & ! intent(in)
+                            , rocp     & ! intent(in)
+                            , cpor     & ! intent(in)
+                            , cp       & ! intent(in)
+                            , grav     ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real, intent(in)           :: pres     ! Pressure                          [      Pa]
+      real, intent(in)           :: thetaref ! Potential temperature             [       K]
+      real, intent(in)           :: shvref   ! Vapour specific mass              [   kg/kg]
+      real, intent(in)           :: zref     ! Height at reference level         [       m]
+      real, intent(in)           :: thetacan ! Potential temperature             [       K]
+      real, intent(in)           :: shvcan   ! Vapour specific mass              [   kg/kg]
+      real, intent(in)           :: zcan     ! Height at canopy level            [       m]
+      !------Local variables. -------------------------------------------------------------!
+      real                       :: pinc     ! Pressure increment                [ Pa^R/cp]
+      real                       :: thvbar   ! Average virtual pot. temperature  [       K]
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !      First we compute the average virtual potential temperature between the canopy !
+      ! top and the reference level.                                                       !
+      !------------------------------------------------------------------------------------!
+      thvbar = 0.5 * (thetaref * (1. + epim1 * shvref) + thetacan * (1. + epim1 * shvcan))
+
+      !----- Then, we find the pressure gradient scale. -----------------------------------!
+      pinc = grav * p00k * (zref - zcan) / (cp * thvbar)
+
+      !----- And we can find the reduced pressure. ----------------------------------------!
+      reducedpress = (pres**rocp + pinc ) ** cpor
+
+      return
+   end function reducedpress
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the enthalpy given the pressure, temperature, vapour       !
+   ! specific humidity, and height.  Currently it doesn't compute mixed phase air, but     !
+   ! adding it should be straight forward (finding the inverse is another story...).       !
+   !---------------------------------------------------------------------------------------!
+   real function ptqz2enthalpy(pres,temp,qvpr,zref)
       use consts_coms, only : ep       & ! intent(in)
+                            , grav     & ! intent(in)
                             , t3ple    & ! intent(in)
                             , eta3ple  & ! intent(in)
                             , cimcp    & ! intent(in)
@@ -1460,6 +1510,7 @@ module therm_lib
       real, intent(in)           :: pres  ! Pressure                               [    Pa]
       real, intent(in)           :: temp  ! Temperature                            [     K]
       real, intent(in)           :: qvpr  ! Vapour specific mass                   [ kg/kg]
+      real, intent(in)           :: zref  ! Reference height                       [     m]
       !------Local variables. -------------------------------------------------------------!
       real                       :: tequ  ! Dew-frost temperature                  [     K]
       real                       :: pequ  ! Equlibrium vapour pressure             [    Pa]
@@ -1476,13 +1527,13 @@ module therm_lib
       ! number that makes sense, similar to the internal energy of supercooled water.      !
       !------------------------------------------------------------------------------------!
       if (tequ <= t3ple) then
-         ptq2enthalpy = cp * temp + qvpr * (cimcp * tequ + alvi   )
+         ptqz2enthalpy = cp * temp + qvpr * (cimcp * tequ + alvi   ) + grav * zref
       else
-         ptq2enthalpy = cp * temp + qvpr * (clmcp * tequ + eta3ple)
+         ptqz2enthalpy = cp * temp + qvpr * (clmcp * tequ + eta3ple) + grav * zref
       end if
 
       return
-   end function ptq2enthalpy
+   end function ptqz2enthalpy
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1493,12 +1544,14 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the temperature given the enthalpy and vapour specific     !
-   ! humidity.  Currently it doesn't compute mixed phase air, but adding it wouldn't be    !
-   ! horribly hard, but it would require some root finding.                                !
+   !     This function computes the temperature given the enthalpy, pressure, vapour       !
+   ! specific humidity, and reference height.  Currently it doesn't compute mixed phase    !
+   ! air, but adding it wouldn't be horribly hard, though it would require some root       !
+   ! finding.                                                                              !
    !---------------------------------------------------------------------------------------!
-   real function hpq2temp(enthalpy,pres,qvpr)
+   real function hpqz2temp(enthalpy,pres,qvpr,zref)
       use consts_coms, only : ep       & ! intent(in)
+                            , grav     & ! intent(in)
                             , t3ple    & ! intent(in)
                             , eta3ple  & ! intent(in)
                             , cimcp    & ! intent(in)
@@ -1510,6 +1563,7 @@ module therm_lib
       real, intent(in)           :: enthalpy ! Enthalpy...                         [  J/kg]
       real, intent(in)           :: pres     ! Pressure                            [    Pa]
       real, intent(in)           :: qvpr     ! Vapour specific mass                [ kg/kg]
+      real, intent(in)           :: zref     ! Reference height                    [     m]
       !------Local variables. -------------------------------------------------------------!
       real                       :: tequ  ! Dew-frost temperature                  [     K]
       real                       :: pequ  ! Equlibrium vapour pressure             [    Pa]
@@ -1527,16 +1581,15 @@ module therm_lib
       ! internal energy of supercooled water.                                              !
       !------------------------------------------------------------------------------------!
       if (tequ <= t3ple) then
-         hpq2temp = cpi * (enthalpy - qvpr * (cimcp * tequ + alvi   ))
+         hpqz2temp = cpi * (enthalpy - qvpr * (cimcp * tequ + alvi   ) - grav * zref)
       else
-         hpq2temp = cpi * (enthalpy - qvpr * (clmcp * tequ + eta3ple))
+         hpqz2temp = cpi * (enthalpy - qvpr * (clmcp * tequ + eta3ple) - grav * zref)
       end if
 
       return
-   end function hpq2temp
+   end function hpqz2temp
    !=======================================================================================!
    !=======================================================================================!
-
 
 
 

@@ -430,21 +430,12 @@ subroutine sfcinit_hstart()
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    integer                                         :: i,j,ifm,ipat,k2,k,nveg
-   real   , allocatable, dimension(:,:)            :: hpis,hprss
-   !----- Local constants -----------------------------------------------------------------!
-   real                                , parameter :: c1=.5*cpi
    !---------------------------------------------------------------------------------------!
 
    gridloop: do ifm=1,ngrids
 
-      allocate(hpis(nnxp(ifm),nnyp(ifm)),hprss(nnxp(ifm),nnyp(ifm)))
-
       jloop: do j = 1,nnyp(ifm)
          iloop: do i = 1,nnxp(ifm)
-            k2         = nint(grid_g(ifm)%flpw(i,j))
-            hpis(i,j)  = c1 * (basic_g(ifm)%pi0(k2-1,i,j) + basic_g(ifm)%pi0(k2,i,j)        &
-                             + basic_g(ifm)%pp(k2-1,i,j) + basic_g(ifm)%pp(k2,i,j))
-            hprss(i,j) = hpis(i,j) ** cpor * p00
 
             leaf_g(ifm)%patch_rough(i,j,1) = 0.001
 
@@ -497,15 +488,12 @@ subroutine sfcinit_hstart()
                     ,leaf_g(ifm)%sfcwater_nlev             (i,j,ipat)                      &
                     ,leaf_g(ifm)%ground_rsat               (i,j,ipat)                      &
                     ,leaf_g(ifm)%ground_rvap               (i,j,ipat)                      &
-                    ,leaf_g(ifm)%can_temp                  (i,j,ipat)                      &
                     ,leaf_g(ifm)%can_rvap                  (i,j,ipat)                      &
-                    ,hprss                                 (i,j     )                      )
+                    ,leaf_g(ifm)%can_prss                  (i,j,ipat)                      )
 
             end do patchloop
          end do iloop
       end do jloop
-
-      deallocate(hpis,hprss)
 
    end do gridloop
    return

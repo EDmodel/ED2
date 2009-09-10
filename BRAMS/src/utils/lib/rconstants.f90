@@ -295,6 +295,8 @@ Module rconstants
    real(kind=8), parameter :: erad28          = dble(erad2         )
    real(kind=8), parameter :: p008            = dble(p00           )
    real(kind=8), parameter :: p00i8           = dble(p00i          )
+   real(kind=8), parameter :: p00k8           = dble(p00k          )
+   real(kind=8), parameter :: p00ki8          = dble(p00ki         )
    real(kind=8), parameter :: rdry8           = dble(rdry          )
    real(kind=8), parameter :: rdryi8          = dble(rdryi         )
    real(kind=8), parameter :: cp8             = dble(cp            )

@@ -73,10 +73,6 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    type(patchtype) , pointer    :: cpatch
    real                         :: norm_fac, weight
    integer                      :: ico
-   !----- External functions. -------------------------------------------------------------!
-   real            , external   :: compute_water_storage
-   real            , external   :: compute_energy_storage
-   real            , external   :: compute_co2_storage
    !---------------------------------------------------------------------------------------!
 
 
@@ -166,11 +162,6 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    !----- Find the PFT-dependent size distribution of this patch. -------------------------!
    call patch_pft_size_profile(csite,ipa,ff_ndbh)
 
-   !----- Computing the storage terms for CO2, energy, and water budgets. -----------------!
-   csite%co2budget_initialstorage(ipa) = compute_co2_storage(csite,ipa)
-   csite%wbudget_initialstorage(ipa)   = compute_water_storage(csite,lsl,ipa)
-   csite%ebudget_initialstorage(ipa)   = compute_energy_storage(csite,lsl,ipa)
-
    !----- Updating the cohort count (may be redundant as well...) -------------------------!
    csite%cohort_count(ipa) = cpatch%ncohorts
 
@@ -187,28 +178,32 @@ end subroutine update_patch_derived_props
 !==========================================================================================!
 !==========================================================================================!
 !      This subroutine will take care of some diagnostic thermodynamic properties, namely  !
-! the canopy air density and temperature.                                                  !
+! the canopy air density, enthalpy, and temperature.                                       !
 !------------------------------------------------------------------------------------------!
-subroutine update_patch_thermo_props(csite,prss,ipaa,ipaz)
+subroutine update_patch_thermo_props(csite,ipaa,ipaz)
   
-   use ed_state_vars, only : sitetype    ! ! structure
-   use therm_lib    , only : idealdenssh & ! function
-                           , hpq2temp    ! ! function
-  implicit none
+   use ed_state_vars, only : sitetype      ! ! structure
+   use therm_lib    , only : idealdenssh   & ! function
+                           , ptqz2enthalpy ! ! function
+   use consts_coms  , only : p00i          & ! intent(in)
+                           , rocp          ! ! intent(in)
+   implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)  , target     :: csite
    integer         , intent(in) :: ipaa
    integer         , intent(in) :: ipaz
-   real            , intent(in) :: prss
    !----- Local variables. ----------------------------------------------------------------!
    integer                      :: ipa
    !---------------------------------------------------------------------------------------!
 
 
    do ipa=ipaa,ipaz
-      csite%can_temp(ipa) = hpq2temp(csite%can_enthalpy(ipa),prss,csite%can_shv(ipa))
-      csite%can_rhos(ipa) = idealdenssh(prss,csite%can_temp(ipa),csite%can_shv(ipa))
+      csite%can_temp(ipa)     = csite%can_theta(ipa) * (p00i * csite%can_prss(ipa)) ** rocp
+      csite%can_enthalpy(ipa) = ptqz2enthalpy(csite%can_prss(ipa),csite%can_temp(ipa)      &
+                                             ,csite%can_shv(ipa),csite%can_depth(ipa))
+      csite%can_rhos(ipa)     = idealdenssh(csite%can_prss(ipa),csite%can_temp(ipa)        &
+                                           ,csite%can_shv(ipa))
    end do
 
    return

@@ -138,18 +138,20 @@ subroutine init_lapse_params()
 
   use met_driver_coms, only: lapse
 
-  lapse%geoht   = 0.0
-  lapse%vels    = 0.0
-  lapse%atm_tmp = 0.0
-  lapse%atm_shv = 0.0
-  lapse%prss    = 0.0
-  lapse%pcpg    = 0.0
-  lapse%atm_co2 = 0.0
-  lapse%rlong   = 0.0
-  lapse%nir_beam    = 0.0
-  lapse%nir_diffuse = 0.0
-  lapse%par_beam    = 0.0
-  lapse%par_diffuse = 0.0
+  lapse%geoht        = 0.0
+  lapse%vels         = 0.0
+  lapse%atm_tmp      = 0.0
+  lapse%atm_theta    = 0.0
+  lapse%atm_enthalpy = 0.0
+  lapse%atm_shv      = 0.0
+  lapse%prss         = 0.0
+  lapse%pcpg         = 0.0
+  lapse%atm_co2      = 0.0
+  lapse%rlong        = 0.0
+  lapse%nir_beam     = 0.0
+  lapse%nir_diffuse  = 0.0
+  lapse%par_beam     = 0.0
+  lapse%par_diffuse  = 0.0
 
 end subroutine init_lapse_params
 !==========================================================================================!
@@ -348,14 +350,14 @@ subroutine init_can_air_params()
    covr = 2.16
    
    !----- This is the minimum ustar under stable and unstable conditions. -----------------!
-   ustmin_stab    = 0.10
-   ustmin_unstab  = 0.10
+   ustmin_stab    = 0.15
+   ustmin_unstab  = 0.25
    ustmin_stab8   = dble(ustmin_stab  )
    ustmin_unstab8 = dble(ustmin_unstab)
    
    !----- This is the minimum wind scale under stable and unstable conditions. ------------!
    ubmin_stab    = 0.25
-   ubmin_unstab  = 0.25
+   ubmin_unstab  = 1.00
    ubmin_stab8   = dble(ubmin_stab  )
    ubmin_unstab8 = dble(ubmin_unstab)
    
