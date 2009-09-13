@@ -1314,8 +1314,10 @@ end subroutine canopy
 
 !==========================================================================================!
 !==========================================================================================!
-!     This subroutine computes the characteristic scales, using Louis (1981) surface layer !
-! parameterization.                                                                        !
+!     This subroutine computes the characteristic scales, using the surface layer          !
+! parameterization proposed by:                                                            !
+! LOUIS, J.F., Parametric Model of vertical eddy fluxes in the atmosphere. Boundary-Layer  !
+!     Meteor., 17, 187-202, 1979.                                                          !
 !------------------------------------------------------------------------------------------!
 subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can            &
                      ,enthalpy_can,shv_can,rvap_can,co2_can,zref,uref,dtll,rough           &
@@ -1349,7 +1351,6 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
    real, intent(out) :: r_aer        ! Aerodynamic resistance                   [      s/m]
    !----- Local variables. ----------------------------------------------------------------!
    real              :: a2           ! Drag coefficient in neutral conditions, 
-                                     !     here same for h/m
    real              :: c1           !
    real              :: ri           ! Bulk richardson numer, eq. 3.45 in Garratt
    real              :: fh           ! Stability parameter for heat

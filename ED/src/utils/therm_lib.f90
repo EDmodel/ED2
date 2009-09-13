@@ -878,6 +878,7 @@ module therm_lib
          end do zgssloop
          if (.not. zside) then
             write (unit=*,fmt='(a)') ' No second guess for you...'
+            write (unit=*,fmt='(1(a,1x,es14.7))') 'pvap =',pvap
             write (unit=*,fmt='(2(a,1x,es14.7))') 'tempa=',tempa,'funa=',funa
             write (unit=*,fmt='(2(a,1x,es14.7))') 'tempz=',tempz,'func=',funz
             call fatal_error('Failed finding the second guess for regula falsi'            &

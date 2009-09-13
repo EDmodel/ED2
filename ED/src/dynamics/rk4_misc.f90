@@ -312,7 +312,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    !---------------------------------------------------------------------------------------!
    !     Here we convert enthalpy into temperature, potential temperature, and density.    !
    !---------------------------------------------------------------------------------------!
-   if (initp%can_shv >= rk4min_can_shv) then 
+   if (initp%can_shv >= rk4min_can_shv .and. initp%can_shv <= rk4max_can_shv) then 
       initp%can_temp  = hpqz2temp8(initp%can_enthalpy,initp%can_prss,initp%can_shv         &
                                   ,initp%can_depth)
    else

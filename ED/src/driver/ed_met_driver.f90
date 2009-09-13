@@ -721,6 +721,7 @@ subroutine update_met_drivers(cgrid)
                              , p00i          & ! intent(in)
                              , cp            & ! intent(in)
                              , day_sec       & ! intent(in)
+                             , t00           & ! intent(in)
                              , t3ple         & ! intent(in)
                              , wdnsi         & ! intent(in)
                              , tsupercool    ! ! intent(in)
@@ -1036,6 +1037,18 @@ subroutine update_met_drivers(cgrid)
       !------------------------------------------------------------------------------------!
       cgrid%met(ipy)%exner        = cp * (p00i * cgrid%met(ipy)%prss)**rocp
       cgrid%met(ipy)%atm_theta    = cp * cgrid%met(ipy)%atm_tmp / cgrid%met(ipy)%exner
+
+      if (cgrid%met(ipy)%atm_tmp < 180.   .or. cgrid%met(ipy)%atm_tmp > 400.   .or.        &
+          cgrid%met(ipy)%atm_shv < 1.e-8  .or. cgrid%met(ipy)%atm_shv > 0.04   .or.        &
+          cgrid%met(ipy)%prss    < 40000. .or. cgrid%met(ipy)%prss    > 110000.) then
+          write (unit=*,fmt='(a)') '======== Weird polygon properties... ========'
+          write (unit=*,fmt='(a,f7.2)') 'POLY_PRSS [ hPa] = ',cgrid%met(ipy)%prss    * 0.01
+          write (unit=*,fmt='(a,f7.2)') 'POLY_TEMP [degC] = ',cgrid%met(ipy)%atm_tmp - t00
+          write (unit=*,fmt='(a,f7.2)') 'POLY_SHV  [g/kg] = ',cgrid%met(ipy)%atm_shv * 1.e3
+          call fatal_error('Non-sense polygon met values!!!'                               &
+                          ,'update_met_drivers','ed_met_driver.f90')
+      end if
+
       cgrid%met(ipy)%atm_enthalpy = ptqz2enthalpy(cgrid%met(ipy)%prss                      &
                                                  ,cgrid%met(ipy)%atm_tmp                   &
                                                  ,cgrid%met(ipy)%atm_shv                   &
@@ -1065,6 +1078,24 @@ subroutine update_met_drivers(cgrid)
          !---------------------------------------------------------------------------------!
          cpoly%met(isi)%exner        = cp * (p00i * cpoly%met(isi)%prss) **rocp
          cpoly%met(isi)%atm_theta    = cp * cpoly%met(isi)%atm_tmp / cpoly%met(isi)%exner
+
+
+         if (cpoly%met(isi)%atm_tmp < 180.   .or. cpoly%met(isi)%atm_tmp > 400.   .or.     &
+             cpoly%met(isi)%atm_shv < 1.e-8  .or. cpoly%met(isi)%atm_shv > 0.04   .or.     &
+             cpoly%met(isi)%prss    < 40000. .or. cpoly%met(isi)%prss    > 110000.) then
+             write (unit=*,fmt='(a)') '======== Weird site properties... ========'
+             write (unit=*,fmt='(a,f7.2)')                                                 &
+                                  'SITE_PRSS [ hPa] = ',cpoly%met(isi)%prss    * 0.01
+             write (unit=*,fmt='(a,f7.2)')                                                 &
+                                  'SITE_TEMP [degC] = ',cpoly%met(isi)%atm_tmp - t00
+             write (unit=*,fmt='(a,f7.2)')                                                 &
+                                  'SITE_SHV  [g/kg] = ',cpoly%met(isi)%atm_shv * 1.e3
+             call fatal_error('Non-sense site met values!!!'                               &
+                             ,'update_met_drivers','ed_met_driver.f90')
+         end if
+
+
+
          cpoly%met(isi)%atm_enthalpy = ptqz2enthalpy(cpoly%met(isi)%prss                   &
                                                    ,cpoly%met(isi)%atm_tmp                 &
                                                    ,cpoly%met(isi)%atm_shv                 &

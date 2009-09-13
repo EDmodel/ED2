@@ -1501,13 +1501,16 @@ module canopy_struct_dynamics
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine computes the characteristic scales based on  Louis (1981) surface   !
+   !   This subroutine computes the characteristic scales based on  Louis (1979) surface   !
    ! layer parameterization.  Assume that stability is calculated on the potential         !
    ! gradient from the surface to the atmosphere at reference height.  Apply the instabi-  !
    ! lity parameters to calculate the friction velocity.  Use the instability parameters   !
    ! for momentum and scalars, that were calculated over the distance from surface to      !
    ! refernece height to determine the heat, moisture and carbon flux rates at the canopy  !
    ! to atmosphere at reference height.                                                    !
+   !                                                                                       !
+   ! LOUIS, J.F., Parametric Model of vertical eddy fluxes in the atmosphere.              !
+   !     Boundary-Layer Meteor., 17, 187-202, 1979.                                        !
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars8(theta_atm,enthalpy_atm,shv_atm,co2_atm                             &
                        ,theta_can,enthalpy_can,shv_can,co2_can                             &
@@ -1544,7 +1547,7 @@ module canopy_struct_dynamics
       real(kind=8)              :: a2           ! Drag coefficient in neutral conditions, 
                                                 !     here same for h/m
       real(kind=8)              :: c1           !
-      real(kind=8)              :: ri           ! Bulk Richardson #, eq. 3.45 in Garratt
+      real(kind=8)              :: ribulk       ! Bulk Richardson number (eqn. 11)
       real(kind=8)              :: fh           ! Stability parameter for heat
       real(kind=8)              :: c2           !
       real(kind=8)              :: cm           !
@@ -1569,11 +1572,11 @@ module canopy_struct_dynamics
          a2 = (vonk8 / log((zref-d0)/rough)) ** 2.
          c1 = a2 * vels_pat
 
-         ri = grav8 * (zref-d0) * (theta_atm - theta_can)                                  &
-            / (5.d-1 * (theta_atm + theta_can) * vels_pat * vels_pat )
+         ribulk = grav8 * (zref-d0) * (theta_atm - theta_can)                              &
+                / (5.d-1 * (theta_atm + theta_can) * vels_pat * vels_pat )
 
-         fm = 1.d0 / (1.d0 + (2.d0 * b * ri / sqrt(1.d0 + d * ri)))
-         fh = 1.d0 / (1.d0 + (3.d0 * b * ri * sqrt(1.d0 + d * ri)))
+         fm = 1.d0 / (1.d0 + (2.d0 * b * ribulk / sqrt(1.d0 + d * ribulk)))
+         fh = 1.d0 / (1.d0 + (3.d0 * b * ribulk * sqrt(1.d0 + d * ribulk)))
 
          !----- Making sure ustar is not too small. ---------------------------------------!
          ustar = max(ustmin_stab8,sqrt(c1 * vels_pat * fm))
@@ -1588,14 +1591,14 @@ module canopy_struct_dynamics
          a2 = (vonk8 / log((zref-d0)/rough)) ** 2.
          c1 = a2 * vels_pat
 
-         ri = grav8 * (zref-d0) * (theta_atm - theta_can)                                  &
-            / (5.d-1 * (theta_atm + theta_can) * vels_pat * vels_pat )
+         ribulk = grav8 * (zref-d0) * (theta_atm - theta_can)                              &
+                / (5.d-1 * (theta_atm + theta_can) * vels_pat * vels_pat )
 
-         c2 = b * a2 * sqrt( (zref-d0)/rough * (abs(ri)))
+         c2 = b * a2 * sqrt( (zref-d0)/rough * (abs(ribulk)))
          cm = csm * c2
          ch = csh * c2
-         fm = (1.d0 - 2.d0 * b * ri / (1.d0 + 2.d0 * cm))
-         fh = (1.d0 - 3.d0 * b * ri / (1.d0 + 3.d0 * ch))
+         fm = (1.d0 - 2.d0 * b * ribulk / (1.d0 + 2.d0 * cm))
+         fh = (1.d0 - 3.d0 * b * ribulk / (1.d0 + 3.d0 * ch))
 
          !----- Making sure ustar is not too small. ---------------------------------------!
          ustar = max(ustmin_unstab8,sqrt(c1 * vels_pat * fm))

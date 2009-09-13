@@ -5,7 +5,7 @@ subroutine ed_init_atm
   use ed_misc_coms,     only: ied_init_mode,runtype
   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype,edgrid_g
   use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr
-  use consts_coms,    only: cliqvlme, cicevlme, t3ple, tsupercool, p00i, rocp
+  use consts_coms,    only: cliqvlme, cicevlme, t3ple, tsupercool, p00i, rocp,t00
   use grid_coms,      only: nzs, nzg, ngrids
   use fuse_fiss_utils, only: fuse_patches,fuse_cohorts
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
@@ -85,6 +85,23 @@ subroutine ed_init_atm
                                                     ,csite%can_theta(ipa)                  &
                                                     ,csite%can_shv(ipa)                    &
                                                     ,csite%can_depth(ipa))
+
+              if (csite%can_theta(ipa) < 180.   .or. csite%can_theta(ipa) > 400. .or.      &
+                  csite%can_shv(ipa)   < 1.e-8  .or. csite%can_shv(ipa) > 0.04   .or.      &
+                  csite%can_prss(ipa)  < 40000. .or. csite%can_prss(ipa) > 110000.) then
+                  write (unit=*,fmt='(a)') '======== Weird initial properties... ========'
+                  write (unit=*,fmt='(a,f7.2)')                                            &
+                                       ' CAN_PRSS  [ hPa] = ',csite%can_prss(ipa)  * 0.01
+                  write (unit=*,fmt='(a,f7.2)')                                            &
+                                       ' CAN_THETA [degC] = ',csite%can_theta(ipa) - t00
+                  write (unit=*,fmt='(a,f7.2)')                                            &
+                                       ' CAN_SHV   [g/kg] = ',csite%can_shv(ipa)   * 1.e3
+                  call fatal_error('Non-sense initial values!!!'                           &
+                                  ,'ed_init_atm','ed_init_atm.f90')
+              end if
+
+
+
               csite%can_temp(ipa)     = csite%can_theta(ipa)                               &
                                       * (p00i *csite%can_prss(ipa)) ** rocp
               csite%can_enthalpy(ipa) = ptqz2enthalpy(csite%can_prss(ipa)                  &
