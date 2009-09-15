@@ -263,8 +263,8 @@ end subroutine init_can_rad_params
 !    This subroutine will assign some canopy air related parameters.                       !
 !------------------------------------------------------------------------------------------!
 subroutine init_can_air_params()
-   use ed_misc_coms   , only : icanturb              ! ! intent(in)
-   use canopy_air_coms, only : dry_veg_lwater        & ! intent(out) 
+   use canopy_air_coms, only : icanturb              & ! intent(in)
+                             , dry_veg_lwater        & ! intent(out) 
                              , fullveg_lwater        & ! intent(out) 
                              , rb_inter              & ! intent(out) 
                              , rb_slope              & ! intent(out) 
@@ -273,18 +273,14 @@ subroutine init_can_air_params()
                              , minimum_canopy_depth8 & ! intent(out) 
                              , exar                  & ! intent(out) 
                              , covr                  & ! intent(out) 
-                             , ustmin_stab           & ! intent(out) 
-                             , ustmin_unstab         & ! intent(out) 
-                             , ubmin_stab            & ! intent(out) 
-                             , ubmin_unstab          & ! intent(out) 
+                             , ustmin                & ! intent(out) 
+                             , ubmin                 & ! intent(out) 
                              , exar8                 & ! intent(out) 
                              , ez                    & ! intent(out) 
                              , vh2vr                 & ! intent(out) 
                              , vh2dh                 & ! intent(out) 
-                             , ustmin_stab8          & ! intent(out) 
-                             , ustmin_unstab8        & ! intent(out) 
-                             , ubmin_stab8           & ! intent(out) 
-                             , ubmin_unstab8         & ! intent(out) 
+                             , ustmin8               & ! intent(out) 
+                             , ubmin8                & ! intent(out) 
                              , ez8                   & ! intent(out) 
                              , vh2dh8                ! ! intent(out)
 
@@ -350,16 +346,12 @@ subroutine init_can_air_params()
    covr = 2.16
    
    !----- This is the minimum ustar under stable and unstable conditions. -----------------!
-   ustmin_stab    = 0.15
-   ustmin_unstab  = 0.25
-   ustmin_stab8   = dble(ustmin_stab  )
-   ustmin_unstab8 = dble(ustmin_unstab)
+   ustmin    = 0.10
+   ustmin8   = dble(ustmin)
    
    !----- This is the minimum wind scale under stable and unstable conditions. ------------!
-   ubmin_stab    = 0.25
-   ubmin_unstab  = 1.00
-   ubmin_stab8   = dble(ubmin_stab  )
-   ubmin_unstab8 = dble(ubmin_unstab)
+   ubmin         = 0.25
+   ubmin8        = dble(ubmin)
    
    !----- This is the relation between displacement height and roughness when icanturb=-1. !
    ez  = 0.172

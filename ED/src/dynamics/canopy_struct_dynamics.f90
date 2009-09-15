@@ -68,7 +68,6 @@ module canopy_struct_dynamics
    ! DEFINED BELOW.                                                                        !
    !---------------------------------------------------------------------------------------!
    subroutine canopy_turbulence(cpoly,isi,ipa,rasveg,canwcap,canccap,canhcap,get_flow_geom)
-      use ed_misc_coms   , only : icanturb             ! ! intent(in), can. turb. scheme
       use ed_state_vars  , only : polygontype          & ! structure
                                 , sitetype             & ! structure
                                 , patchtype            ! ! structure
@@ -76,7 +75,8 @@ module canopy_struct_dynamics
       use rk4_coms       , only : ibranch_thermo       ! ! intent(in)
       use pft_coms       , only : crown_depth_fraction & ! intent(in)
                                 , leaf_width           ! ! intent(in)
-      use canopy_air_coms, only : exar                 & ! intent(in)
+      use canopy_air_coms, only : icanturb             & ! intent(in), can. turb. scheme
+                                , exar                 & ! intent(in)
                                 , vh2dh                & ! intent(in)
                                 , dz                   & ! intent(in)
                                 , Cd0                  & ! intent(in)
@@ -773,7 +773,6 @@ module canopy_struct_dynamics
    ! DEFINED ABOVE.                                                                        !
    !---------------------------------------------------------------------------------------!
    subroutine canopy_turbulence8(csite,initp,isi,ipa,get_flow_geom)
-      use ed_misc_coms   , only : icanturb             ! ! intent(in), can. turb. scheme
       use ed_state_vars  , only : polygontype          & ! structure
                                 , sitetype             & ! structure
                                 , patchtype            ! ! structure
@@ -784,10 +783,10 @@ module canopy_struct_dynamics
                                 , ibranch_thermo
       use pft_coms       , only : crown_depth_fraction & ! intent(in)
                                 , leaf_width           ! ! intent(in)
-      use canopy_air_coms, only : exar8                & ! intent(in)
+      use canopy_air_coms, only : icanturb             & ! intent(in), can. turb. scheme
+                                , exar8                & ! intent(in)
                                 , vh2dh8               & ! intent(in)
-                                , ubmin_stab8          & ! intent(in)
-                                , ubmin_unstab8        & ! intent(in)
+                                , ubmin8               & ! intent(in)
                                 , dz8                  & ! intent(in)
                                 , Cd08                 & ! intent(in)
                                 , Pm8                  & ! intent(in)
@@ -926,11 +925,7 @@ module canopy_struct_dynamics
                        + dble(snow_rough) * dble(csite%snowfac(ipa))
 
          !----- Get the appropriate characteristic wind speed. ----------------------------!
-         if (initp%can_temp < rk4met%atm_tmp) then
-            vels_ref = max(ubmin_stab8,rk4met%vels)
-         else
-            vels_ref = max(ubmin_unstab8,rk4met%vels)
-         end if
+         vels_ref = max(ubmin8,rk4met%vels)
 
 
          !---------------------------------------------------------------------------------!
@@ -945,7 +940,7 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          call ed_stars8(rk4met%atm_theta,rk4met%atm_enthalpy,rk4met%atm_shv,rk4met%atm_co2 &
                        ,initp%can_theta ,initp%can_enthalpy ,initp%can_shv ,initp%can_co2  &
-                       ,zref,d0,vels_ref,initp%rough                                       &
+                       ,zref,0.d0,vels_ref,initp%rough                                     &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar,fm)
 
          if (csite%snowfac(ipa) < 0.9) then
@@ -1036,7 +1031,7 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          call ed_stars8(rk4met%atm_theta,rk4met%atm_enthalpy,rk4met%atm_shv,rk4met%atm_co2 &
                        ,initp%can_theta ,initp%can_enthalpy ,initp%can_shv ,initp%can_co2  &
-                       ,zref,d0,vels_ref,initp%rough                                       &
+                       ,zref,0.d0,vels_ref,initp%rough                                     &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar,fm)
 
          K_top = vonk8 * initp%ustar*(h-d0)
@@ -1390,22 +1385,45 @@ module canopy_struct_dynamics
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine computes the characteristic scales based on  Louis (1981) surface   !
-   ! layer parameterization.  Assume that stability is calculated on the potential         !
-   ! gradient from the surface to the atmosphere at reference height.  Apply the instabi-  !
-   ! lity parameters to calculate the friction velocity.  Use the instability parameters   !
-   ! for momentum and scalars, that were calculated over the distance from surface to      !
-   ! refernece height to determine the heat, moisture and carbon flux rates at the canopy  !
-   ! to atmosphere at reference height.                                                    !
+   !    This subroutine computes the characteristic scales based on surface layer          !
+   ! parameterization.  Assume that stability is calculated on the potential  gradient     !
+   ! from the surface to the atmosphere at reference height.  Apply the instability        !
+   ! parameters to calculate the friction velocity.  Use the instability parameters for    !
+   ! momentum and scalars, that were calculated over the distance from surface to refer-   !
+   ! ence height to determine the heat, moisture and carbon flux rates at the canopy to    !
+   ! atmosphere at reference height.                                                       !
+   !    Two models are available, and the user can choose between them by setting the      !
+   ! variable ISFCLYRM in ED2IN (if running the coupled model, this is done in ISTAR).     ! 
+   !                                                                                       !
+   ! 1. Based on L79;                                                                      !
+   ! 2. Based on: OD95, but with some terms computed as in L79 and B71 to avoid singular-  !
+   !    ities.                                                                             !
+   !                                                                                       !
+   ! References:                                                                           !
+   ! B71.  BUSINGER, J.A, et. al; Flux-Profile relationships in the atmospheric surface    !
+   !           layer. J. Atmos. Sci., 28, 181-189, 1971.                                   !
+   ! L79.  LOUIS, J.F.; Parametric Model of vertical eddy fluxes in the atmosphere.        !
+   !           Boundary-Layer Meteor., 17, 187-202, 1979.                                  !
+   ! OD95. ONCLEY, S.P.; DUDHIA, J.; Evaluation of surface fluxes from MM5 using observa-  !
+   !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                               !
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars(theta_atm,enthalpy_atm,shv_atm,co2_atm,theta_can,enthalpy_can       &
                       ,shv_can,co2_can,zref,d0,uref,rough,ustar,tstar,estar,qstar,cstar,fm)
       use consts_coms     , only : grav          & ! intent(in)
-                                 , vonk          ! ! intent(in)
-      use canopy_air_coms , only : ustmin_stab   & ! intent(in)
-                                 , ustmin_unstab & ! intent(in)
-                                 , ubmin_stab    & ! intent(in)
-                                 , ubmin_unstab  ! ! intent(in)
+                                 , vonk          & ! intent(in)
+                                 , halfpi        ! ! intent(in)
+      use canopy_air_coms , only : isfclyrm      & ! intent(in)
+                                 , ustmin        & ! intent(in)
+                                 , bl79          & ! intent(in)
+                                 , csm           & ! intent(in)
+                                 , csh           & ! intent(in)
+                                 , dl79          & ! intent(in)
+                                 , beta          & ! intent(in)
+                                 , gamm          & ! intent(in)
+                                 , gamh          & ! intent(in)
+                                 , rri           & ! intent(in)
+                                 , ribmax        & ! intent(in)
+                                 , tprandtl      ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)  :: theta_atm    ! Above canopy air pot. temperature     [        K]
@@ -1426,64 +1444,149 @@ module canopy_struct_dynamics
       real, intent(out) :: estar        ! Enthalpy friction scale               [     J/kg]
       real, intent(out) :: cstar        ! CO2 spec. volume friction scale       [  µmol/m³]
       real, intent(out) :: fm           ! Stability parameter for momentum
+      !----- Local variables, used by L79. ------------------------------------------------!
+      logical           :: stable       ! Stable state
+      real              :: zoz0         ! zref/rough
+      real              :: lnzoz0       ! ln(zref/rough)
+      real              :: rib          ! Bulk richardson number.
+      real              :: c3           ! coefficient to find the other stars
       !----- Local variables --------------------------------------------------------------!
-      real              :: a2        ! Drag coefficient in neutral conditions, 
-                                     !     here same for h/m
-      real              :: c1        !
-      real              :: ri        ! Bulk richardson numer, eq. 3.45 in Garratt
-      real              :: fh        ! Stability parameter for heat
-      real              :: c2        !
-      real              :: cm        !
-      real              :: ch        !
-      real              :: c3        !
-      real              :: vels_pat  !
-      !----- Constants --------------------------------------------------------------------!
-      real, parameter   :: b   = 5.0 !
-      real, parameter   :: csm = 7.5 !
-      real, parameter   :: csh = 5.0 !
-      real, parameter   :: d   = 5.0 !
+      real              :: a2           ! Drag coefficient in neutral conditions
+      real              :: c1           ! a2 * vels
+      real              :: fh           ! Stability parameter for heat
+      real              :: c2           ! Part of the c coeff. common to momentum & heat.
+      real              :: cm           ! c coefficient times |Rib|^1/2 for momentum.
+      real              :: ch           ! c coefficient times |Rib|^1/2 for heat.
+      real              :: ee           ! (z/z0)^1/3 -1. for eqn. 20 w/o assuming z/z0 >> 1.
+      !----- Local variables, used by OD95. -----------------------------------------------!
+      real              :: zeta         ! stability parameter, roughly z/(Obukhov length).
+      real              :: zeta0        ! roughness/(Obukhov length).
+      real              :: xx           ! (1-gamm*zeta)^1/4., for momentum.
+      real              :: xx0          ! (1-gamm*zeta0)^1/4., for momentum.
+      real              :: yy           ! (1-gamh*zeta)^1/2., for heat.
+      real              :: yy0          ! (1-gamh*zeta0)^1/2., for heat.
+      real              :: psim         ! Stability correction function for momentum
+      real              :: psim0        ! Stability correction function for momentum
+      real              :: psih         ! Stab. correction function for heat, water, etc.
+      real              :: psih0        ! Stab. correction function for heat, water, etc.
+      !----- External functions. ----------------------------------------------------------!
+      real, external    :: cbrt         ! Cubic root
       !------------------------------------------------------------------------------------!
 
-      if (theta_atm - theta_can > 0.0) then
-         !----- Stable case ---------------------------------------------------------------!
-         vels_pat = max(uref,ubmin_stab)
+      !----- Finding the variables common to both methods. --------------------------------!
+      zoz0     = (zref-d0)/rough
+      lnzoz0   = log(zoz0)
+      rib      = 2.0 * grav * (zref-d0) * (theta_atm-theta_can)                            &
+               / ( (theta_atm+theta_can) * uref * uref)
+      stable   = theta_atm >= theta_can
 
-         !----- Make the log profile (constant shear assumption). -------------------------!
-         a2 = (vonk / log((zref-d0)/rough)) ** 2.
-         c1 = a2 * vels_pat
+      !------------------------------------------------------------------------------------!
+      !     Here we find u* and the coefficient to find the other stars based on the       !
+      ! chosen surface model.                                                              !
+      !------------------------------------------------------------------------------------!
+      select case (isfclyrm)
+      case (1)
 
-         ri = grav * (zref-d0) * (theta_atm - theta_can)                                   &
-            / (0.5 * (theta_atm + theta_can) * vels_pat * vels_pat )
+         !----- Compute the a-square factor and the coefficient to find theta*. -----------!
+         a2   = vonk * vonk / (lnzoz0 * lnzoz0)
+         c1   = a2 * uref
+
+         if (stable) then
+            !----- Stable case ------------------------------------------------------------!
      
-         fm = 1.0 / (1.0 + (2.0 * b * ri / sqrt(1.0 + d * ri)))
-         fh = 1.0 / (1.0 + (3.0 * b * ri * sqrt(1.0 + d * ri)))
+            fm = 1.0 / (1.0 + (2.0 * bl79 * rib / sqrt(1.0 + dl79 * rib)))
+            fh = 1.0 / (1.0 + (3.0 * bl79 * rib * sqrt(1.0 + dl79 * rib)))
 
-         !----- Making sure ustar is not too small. ---------------------------------------!
-         ustar = max(ustmin_stab,sqrt(c1 * vels_pat * fm))
+         else
 
-      else
-         !----- Unstable case -------------------------------------------------------------!
-         vels_pat = max(uref,ubmin_unstab)
+            !------------------------------------------------------------------------------!
+            !     Unstable case.  The only difference from the original method is that we  !
+            ! no longer assume z >> z0, so the "c" coefficient uses the full z/z0 term.    !
+            !------------------------------------------------------------------------------!
+            ee = cbrt(zoz0) - 1.
+            c2 = bl79 * a2 * ee * sqrt(ee * abs(rib))
+            cm = csm * c2
+            ch = csh * c2
+            fm = (1.0 - 2.0 * bl79 * rib / (1.0 + 2.0 * cm))
+            fh = (1.0 - 3.0 * bl79 * rib / (1.0 + 3.0 * ch))
+         end if
 
-         !----- Make the log profile (constant shear assumption). -------------------------!
-         a2 = (vonk / log((zref-d0)/rough)) ** 2.
-         c1 = a2 * vels_pat
+         !----- Finding ustar, making sure it is not too small. ---------------------------!
+         ustar = max(ustmin,sqrt(c1 * uref * fm))
+         !----- Finding the coefficient to scale the other stars. -------------------------!
+         c3 = c1 * fh / ustar
 
-         ri = grav * (zref-d0) * (theta_atm - theta_can)                                   &
-            / (0.5 * (theta_atm + theta_can) * vels_pat * vels_pat )
+         !---------------------------------------------------------------------------------!
 
-         c2 = b * a2 * sqrt( (zref-d0)/rough * (abs(ri)))
-         cm = csm * c2
-         ch = csh * c2
-         fm = (1.0 - 2.0 * b * ri / (1.0 + 2.0 * cm))
-         fh = (1.0 - 3.0 * b * ri / (1.0 + 3.0 * ch))
 
-         !----- Making sure ustar is not too small. ---------------------------------------!
-         ustar = max(ustmin_unstab,sqrt(c1 * vels_pat * fm))
-      end if
+      case (2)
+         !---------------------------------------------------------------------------------!
+         !      Here we use the model proposed by OD95, the standard for MM5, but with     !
+         ! some terms that were originally computed in B71 (namely, the "0" terms).  These !
+         ! terms were added back because they prevent singularities (which is a good       !
+         ! thing).  We use OD95 method to estimate zeta, which avoids the computation of   !
+         ! the Obukhov length L, so we can't compute zeta0 by its definition(z0/L).  How-  !
+         ! ever we know zeta, so zeta0 can be written as z0/z * zeta.                      !
+         !---------------------------------------------------------------------------------!
+
+         !----- Make sure that the bulk Richardson number is not above ribmax. ------------!
+         rib = min(rib,ribmax)
+         
+         !----- We now compute the stability correction functions. ------------------------!
+         if (stable) then
+            !----- Stable case. -----------------------------------------------------------!
+            zeta  = rib * lnzoz0 / (1.1 - 5.0 * rib)
+            zeta0 = rough * zeta / (zref - d0)
+
+            psim  = -beta * zeta
+            psim0 = -beta * zeta0
+
+            !------------------------------------------------------------------------------!
+            !    In OD95 paper, it is stated that under stable conditions psi_h = phi_m.   !
+            ! Since there is no phi_m stated in their paper, I am assuming they used the   !
+            ! same as B71 and explained in L79 introduction.                               !
+            !------------------------------------------------------------------------------!
+            psih  = - rri * beta * zeta
+            psih0 = -rri * beta * zeta0
+         else
+            !----- Unstable case. ---------------------------------------------------------!
+            zeta = rib * lnzoz0
+            zeta0 = rough * zeta / (zref - d0)
+
+            !------------------------------------------------------------------------------!
+            !    Here we distinguish gamma for momentum and heat, as it is done in B71 and !
+            ! L79.  OD95 apparently don't distinguish, but that is not very clear in their !
+            ! paper.  Assuming the same as B71 and L79.                                    !
+            !------------------------------------------------------------------------------!
+            xx    = sqrt(sqrt(1.0 - gamm * zeta))
+            xx0   = sqrt(sqrt(1.0 - gamm * zeta0))
+
+            yy    = sqrt(1.0 - gamh * zeta)
+            yy0   = sqrt(1.0 - gamh * zeta0)
+
+            psih  = log(0.25 * (1.0+yy) * (1.0+yy))
+            psih0 = log(0.25 * (1.0+yy0) * (1.0+yy0))
+
+            psim  = log(0.125 * (1.0 + xx) * (1.0 + xx) * (1.0+xx*xx))                     &
+                  - 2.0 * atan(xx) + halfpi
+
+            psim0 = log(0.125 * (1.0 + xx0) * (1.0 + xx0) * (1.0+xx0*xx0))                 &
+                  - 2.0 * atan(xx0) + halfpi
+         end if
+
+         !----- Finding the equivalent to fm, which is an output variable. ----------------!
+         fm = lnzoz0 * lnzoz0 / ((lnzoz0 - psim + psim0) * (lnzoz0 - psim + psim0))
+
+         !----- Finding ustar, making sure it is not too small. ---------------------------!
+         ustar = max (ustmin, vonk * uref / (lnzoz0 - psim + psim0))
+
+         !----- Finding the coefficient to scale the other stars. -------------------------!
+         c3    = vonk / (tprandtl * (lnzoz0 - psih + psih0))
+
+         !---------------------------------------------------------------------------------!
+      end select
 
       !----- Computing the other scales. --------------------------------------------------!
-      c3 = c1 * fh / ustar
       qstar = c3 * (shv_atm      - shv_can     )
       tstar = c3 * (theta_atm    - theta_can   )
       estar = c3 * (enthalpy_atm - enthalpy_can)
@@ -1501,28 +1604,46 @@ module canopy_struct_dynamics
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine computes the characteristic scales based on  Louis (1979) surface   !
-   ! layer parameterization.  Assume that stability is calculated on the potential         !
-   ! gradient from the surface to the atmosphere at reference height.  Apply the instabi-  !
-   ! lity parameters to calculate the friction velocity.  Use the instability parameters   !
-   ! for momentum and scalars, that were calculated over the distance from surface to      !
-   ! refernece height to determine the heat, moisture and carbon flux rates at the canopy  !
-   ! to atmosphere at reference height.                                                    !
+   !    Double precision version of the above-described subroutine.  This subroutine       !
+   ! computes the characteristic scales based on surface layer parameterization.  Assume   !
+   ! that stability is calculated on the potential gradient from the surface to the        !
+   ! atmosphere at reference height.  Apply the instability parameters to calculate the    !
+   ! friction velocity.  Use the instability parameters for momentum and scalars, that     !
+   ! were calculated over the distance from surface to reference height to determine the   !
+   ! heat, moisture and carbon flux rates at the canopy to atmosphere at reference height. !
+   !    Two models are available, and the user can choose between them by setting the      !
+   ! variable ISFCLYRM in ED2IN (if running the coupled model, this is done in ISTAR).     ! 
    !                                                                                       !
-   ! LOUIS, J.F., Parametric Model of vertical eddy fluxes in the atmosphere.              !
-   !     Boundary-Layer Meteor., 17, 187-202, 1979.                                        !
+   ! 1. Based on L79;                                                                      !
+   ! 2. Based on: OD95, but with some terms computed as in L79 and B71 to avoid singular-  !
+   !    ities.                                                                             !
+   !                                                                                       !
+   ! References:                                                                           !
+   ! B71.  BUSINGER, J.A, et. al; Flux-Profile relationships in the atmospheric surface    !
+   !           layer. J. Atmos. Sci., 28, 181-189, 1971.                                   !
+   ! L79.  LOUIS, J.F.; Parametric Model of vertical eddy fluxes in the atmosphere.        !
+   !           Boundary-Layer Meteor., 17, 187-202, 1979.                                  !
+   ! OD95. ONCLEY, S.P.; DUDHIA, J.; Evaluation of surface fluxes from MM5 using observa-  !
+   !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                               !
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars8(theta_atm,enthalpy_atm,shv_atm,co2_atm                             &
                        ,theta_can,enthalpy_can,shv_can,co2_can                             &
                        ,zref,d0,uref,rough,ustar,tstar,estar,qstar,cstar,fm)
-      use consts_coms     , only : grav8          & ! intent(in)
-                                 , vonk8          & ! intent(in)
-                                 , cp8            & ! intent(in)
-                                 , alvl8          ! ! intent(in)
-      use canopy_air_coms , only : ustmin_stab8   & ! intent(in)
-                                 , ustmin_unstab8 & ! intent(in)
-                                 , ubmin_stab8    & ! intent(in)
-                                 , ubmin_unstab8  ! ! intent(in)
+      use consts_coms     , only : grav8         & ! intent(in)
+                                 , vonk8         & ! intent(in)
+                                 , halfpi8       ! ! intent(in)
+      use canopy_air_coms , only : isfclyrm      & ! intent(in)
+                                 , ustmin8       & ! intent(in)
+                                 , bl798         & ! intent(in)
+                                 , csm8          & ! intent(in)
+                                 , csh8          & ! intent(in)
+                                 , dl798         & ! intent(in)
+                                 , beta8         & ! intent(in)
+                                 , gamm8         & ! intent(in)
+                                 , gamh8         & ! intent(in)
+                                 , rri8          & ! intent(in)
+                                 , ribmax8       & ! intent(in)
+                                 , tprandtl8     ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real(kind=8), intent(in)  :: theta_atm    ! Above canopy air pot. temp.    [        K]
@@ -1543,70 +1664,149 @@ module canopy_struct_dynamics
       real(kind=8), intent(out) :: estar        ! Enthalpy friction scale        [     J/kg]
       real(kind=8), intent(out) :: cstar        ! CO2 spec. volume friction scale[  µmol/m³]
       real(kind=8), intent(out) :: fm           ! Stability parameter for momentum
+      !----- Local variables, used by L79. ------------------------------------------------!
+      logical           :: stable       ! Stable state
+      real(kind=8)      :: zoz0         ! zref/rough
+      real(kind=8)      :: lnzoz0       ! ln(zref/rough)
+      real(kind=8)      :: rib          ! Bulk richardson number.
+      real(kind=8)      :: c3           ! coefficient to find the other stars
       !----- Local variables --------------------------------------------------------------!
-      real(kind=8)              :: a2           ! Drag coefficient in neutral conditions, 
-                                                !     here same for h/m
-      real(kind=8)              :: c1           !
-      real(kind=8)              :: ribulk       ! Bulk Richardson number (eqn. 11)
-      real(kind=8)              :: fh           ! Stability parameter for heat
-      real(kind=8)              :: c2           !
-      real(kind=8)              :: cm           !
-      real(kind=8)              :: ch           !
-      real(kind=8)              :: c3           !
-      real(kind=8)              :: vels_pat     !
-      !----- Constants --------------------------------------------------------------------!
-      real(kind=8), parameter   :: b   = 5.0d0  !
-      real(kind=8), parameter   :: csm = 7.5d0  !
-      real(kind=8), parameter   :: csh = 5.0d0  !
-      real(kind=8), parameter   :: d   = 5.0d0  !
+      real(kind=8)      :: a2           ! Drag coefficient in neutral conditions
+      real(kind=8)      :: c1           ! a2 * vels
+      real(kind=8)      :: fh           ! Stability parameter for heat
+      real(kind=8)      :: c2           ! Part of the c coeff. common to momentum & heat.
+      real(kind=8)      :: cm           ! c coefficient times |Rib|^1/2 for momentum.
+      real(kind=8)      :: ch           ! c coefficient times |Rib|^1/2 for heat.
+      real(kind=8)      :: ee           ! (z/z0)^1/3 -1. for eqn. 20 w/o assuming z/z0 >> 1.
+      !----- Local variables, used by OD95. -----------------------------------------------!
+      real(kind=8)      :: zeta         ! stability parameter, roughly z/(Obukhov length).
+      real(kind=8)      :: zeta0        ! roughness/(Obukhov length).
+      real(kind=8)      :: xx           ! (1-gamm*zeta)^1/4., for momentum.
+      real(kind=8)      :: xx0          ! (1-gamm*zeta0)^1/4., for momentum.
+      real(kind=8)      :: yy           ! (1-gamh*zeta)^1/2., for heat.
+      real(kind=8)      :: yy0          ! (1-gamh*zeta0)^1/2., for heat.
+      real(kind=8)      :: psim         ! Stability correction function for momentum
+      real(kind=8)      :: psim0        ! Stability correction function for momentum
+      real(kind=8)      :: psih         ! Stab. correction function for heat, water, etc.
+      real(kind=8)      :: psih0        ! Stab. correction function for heat, water, etc.
+      !----- External functions. ----------------------------------------------------------!
+      real(kind=8), external :: cbrt8   ! Cubic root
       !------------------------------------------------------------------------------------!
 
+      !----- Finding the variables common to both methods. --------------------------------!
+      zoz0     = (zref-d0)/rough
+      lnzoz0   = log(zoz0)
+      rib      = 2.d0 * grav8 * zref * (theta_atm-theta_can)                                 &
+               / ( (theta_atm+theta_can) * uref * uref)
+      stable   = theta_atm >= theta_can
+
+      !------------------------------------------------------------------------------------!
+      !     Here we find u* and the coefficient to find the other stars based on the       !
+      ! chosen surface model.                                                              !
+      !------------------------------------------------------------------------------------!
+      select case (isfclyrm)
+      case (1)
+
+         !----- Compute the a-square factor and the coefficient to find theta*. -----------!
+         a2   = vonk8 * vonk8 / (lnzoz0 * lnzoz0)
+         c1   = a2 * uref
+
+         if (stable) then
+            !----- Stable case ------------------------------------------------------------!
      
-      if (theta_atm - theta_can > 0.d0) then
+            fm = 1.d0 / (1.d0 + (2.d0 * bl798 * rib / sqrt(1.d0 + dl798 * rib)))
+            fh = 1.d0 / (1.d0 + (3.d0 * bl798 * rib * sqrt(1.d0 + dl798 * rib)))
+
+         else
+
+            !------------------------------------------------------------------------------!
+            !     Unstable case.  The only difference from the original method is that we  !
+            ! no longer assume z >> z0, so the "c" coefficient uses the full z/z0 term.    !
+            !------------------------------------------------------------------------------!
+            ee = cbrt8(zoz0) - 1.d0
+            c2 = bl798 * a2 * ee * sqrt(ee * abs(rib))
+            cm = csm8 * c2
+            ch = csh8 * c2
+            fm = (1.d0 - 2.d0 * bl798 * rib / (1.d0 + 2.d0 * cm))
+            fh = (1.d0 - 3.d0 * bl798 * rib / (1.d0 + 3.d0 * ch))
+         end if
+
+         !----- Finding ustar, making sure it is not too small. ---------------------------!
+         ustar = max(ustmin8,sqrt(c1 * uref * fm))
+         !----- Finding the coefficient to scale the other stars. -------------------------!
+         c3 = c1 * fh / ustar
+
          !---------------------------------------------------------------------------------!
-         !     Stable case.                                                                !
+
+
+      case (2)
          !---------------------------------------------------------------------------------!
-         vels_pat = max(uref,ubmin_stab8)
-
-         !----- Make the log profile (constant shear assumption). -------------------------!
-         a2 = (vonk8 / log((zref-d0)/rough)) ** 2.
-         c1 = a2 * vels_pat
-
-         ribulk = grav8 * (zref-d0) * (theta_atm - theta_can)                              &
-                / (5.d-1 * (theta_atm + theta_can) * vels_pat * vels_pat )
-
-         fm = 1.d0 / (1.d0 + (2.d0 * b * ribulk / sqrt(1.d0 + d * ribulk)))
-         fh = 1.d0 / (1.d0 + (3.d0 * b * ribulk * sqrt(1.d0 + d * ribulk)))
-
-         !----- Making sure ustar is not too small. ---------------------------------------!
-         ustar = max(ustmin_stab8,sqrt(c1 * vels_pat * fm))
-
-      else
+         !      Here we use the model proposed by OD95, the standard for MM5, but with     !
+         ! some terms that were originally computed in B71 (namely, the "0" terms).  These !
+         ! terms were added back because they prevent singularities (which is a good       !
+         ! thing).  We use OD95 method to estimate zeta, which avoids the computation of   !
+         ! the Obukhov length L, so we can't compute zeta0 by its definition(z0/L).  How-  !
+         ! ever we know zeta, so zeta0 can be written as z0/z * zeta.                      !
          !---------------------------------------------------------------------------------!
-         !     Unstable case.                                                              !
+
+         !----- Make sure that the bulk Richardson number is not above ribmax. ------------!
+         rib = min(rib,ribmax8)
+         
+         !----- We now compute the stability correction functions. ------------------------!
+         if (stable) then
+            !----- Stable case. -----------------------------------------------------------!
+            zeta  = rib * lnzoz0 / (1.1d0 - 5.0d0 * rib)
+            zeta0 = rough * zeta / (zref-d0)
+
+            psim  = -beta8 * zeta
+            psim0 = -beta8 * zeta0
+
+            !------------------------------------------------------------------------------!
+            !    In OD95 paper, it is stated that under stable conditions psi_h = phi_m.   !
+            ! Since there is no phi_m stated in their paper, I am assuming they used the   !
+            ! same as B71 and explained in L79 introduction.                               !
+            !------------------------------------------------------------------------------!
+            psih  = - rri8 * beta8 * zeta
+            psih0 = - rri8 * beta8 * zeta0
+         else
+            !----- Unstable case. ---------------------------------------------------------!
+            zeta  = rib * lnzoz0
+            zeta0 = rough * zeta / (zref-d0)
+
+            !------------------------------------------------------------------------------!
+            !    Here we distinguish gamma for momentum and heat, as it is done in B71 and !
+            ! L79.  OD95 apparently don't distinguish, but that is not very clear in their !
+            ! paper.  Assuming the same as B71 and L79.                                    !
+            !------------------------------------------------------------------------------!
+            xx    = sqrt(sqrt(1.d0 - gamm8 * zeta))
+            xx0   = sqrt(sqrt(1.d0 - gamm8 * zeta0))
+
+            yy    = sqrt(1.d0 - gamh8 * zeta)
+            yy0   = sqrt(1.d0 - gamh8 * zeta0)
+
+            psih  = log(2.5d-1 * (1.d0 + yy) * (1.d0 + yy))
+            psih0 = log(2.5d-1 * (1.d0 + yy0) * (1.d0 + yy0))
+
+            psim  = log(1.25d-1 * (1.d0 + xx) * (1.d0 + xx) * (1.d0+xx*xx))                &
+                  - 2.d0 * atan(xx) + halfpi8
+
+            psim0 = log(1.25d-1 * (1.d0 + xx0) * (1.d0 + xx0) * (1.d0+xx0*xx0))            &
+                  - 2.d0 * atan(xx0) + halfpi8
+         end if
+
+         !----- Finding the equivalent to fm, which is an output variable. ----------------!
+         fm = lnzoz0 * lnzoz0 / ((lnzoz0 - psim + psim0) * (lnzoz0 - psim + psim0))
+
+         !----- Finding ustar, making sure it is not too small. ---------------------------!
+         ustar = max (ustmin8, vonk8 * uref / (lnzoz0 - psim + psim0))
+
+         !----- Finding the coefficient to scale the other stars. -------------------------!
+         c3    = vonk8 / (tprandtl8 * (lnzoz0 - psih + psih0))
+
          !---------------------------------------------------------------------------------!
-         vels_pat = max(uref,ubmin_unstab8)
-
-         !----- Make the log profile (constant shear assumption). -------------------------!
-         a2 = (vonk8 / log((zref-d0)/rough)) ** 2.
-         c1 = a2 * vels_pat
-
-         ribulk = grav8 * (zref-d0) * (theta_atm - theta_can)                              &
-                / (5.d-1 * (theta_atm + theta_can) * vels_pat * vels_pat )
-
-         c2 = b * a2 * sqrt( (zref-d0)/rough * (abs(ribulk)))
-         cm = csm * c2
-         ch = csh * c2
-         fm = (1.d0 - 2.d0 * b * ribulk / (1.d0 + 2.d0 * cm))
-         fh = (1.d0 - 3.d0 * b * ribulk / (1.d0 + 3.d0 * ch))
-
-         !----- Making sure ustar is not too small. ---------------------------------------!
-         ustar = max(ustmin_unstab8,sqrt(c1 * vels_pat * fm))
-
-      end if
+      end select
 
       !----- Computing the other scales. --------------------------------------------------!
-      c3 = c1 * fh / ustar
       qstar = c3 * (shv_atm      - shv_can     )
       tstar = c3 * (theta_atm    - theta_can   )
       cstar = c3 * (co2_atm      - co2_can     )

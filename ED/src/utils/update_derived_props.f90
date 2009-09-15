@@ -53,7 +53,7 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
   
    use ed_state_vars       , only : sitetype                   & ! structure
                                   , patchtype                  ! ! structure
-   use ed_misc_coms        , only : icanturb                   ! ! intent(in)
+   use canopy_air_coms     , only : icanturb                   ! ! intent(in)
    use allometry           , only : ed_biomass                 ! ! function
    use fusion_fission_coms , only : ff_ndbh                    ! ! intent(in)
    use fuse_fiss_utils     , only : patch_pft_size_profile     ! ! subroutine

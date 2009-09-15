@@ -183,10 +183,27 @@ module leaf_coms
    !---------------------------------------------------------------------------------------!
    !     Speed-related minimum values we will consider.                                    !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: ubmin_stab    = 0.25 ! Minimum velocity for stable cases   [     m/s]
-   real, parameter :: ubmin_unstab  = 0.25 ! Minimum velocity for unstable cases [     m/s]
-   real, parameter :: ustmin_stab   = 0.1  ! Minimum ustar for stable cases      [     m/s]
-   real, parameter :: ustmin_unstab = 0.1  ! Minimum ustar for unstable cases    [     m/s]
+   real, parameter :: ubmin    = 0.25 ! Minimum velocity                         [     m/s]
+   real, parameter :: ustmin   = 0.1  ! Minimum ustar                            [     m/s]
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !      Constants for surface layer models.                                              !
+   !---------------------------------------------------------------------------------------!
+   !----- Louis (1979) model. -------------------------------------------------------------!
+   real, parameter   :: bl79     = 5.0    ! b prime parameter
+   real, parameter   :: csm      = 7.5    ! C* for momentum (eqn. 20, not co2 char. scale)
+   real, parameter   :: csh      = 5.0    ! C* for heat (eqn.20, not co2 char. scale)
+   real, parameter   :: dl79     = 5.0    ! ???
+   !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
+   real, parameter   :: bbeta    = 5.0    ! Beta used by Businger et al. (1971)
+   real, parameter   :: gamm     = 15.0   ! Gamma used by Businger et al. (1971) - momentum.
+   real, parameter   :: gamh     = 9.0    ! Gamma used by Businger et al. (1971) - heat.
+   real, parameter   :: rri      = 1./.74 ! 1/R value, used by Businger and Louis.
+   real, parameter   :: ribmax   = 0.20   ! Maximum bulk Richardson number
+   real, parameter   :: tprandtl = 1.00   ! Turbulent Prandtl number.
+   !---------------------------------------------------------------------------------------!
+
 
 
    !----- Parameters that used to be in LEAF-3 (leaftw) -----------------------------------!

@@ -52,7 +52,8 @@ subroutine copy_nl(copy_type)
   use grid_coms, only: time,centlon,centlat,deltax,deltay,nnxp,nnyp,nstratx, &
                        nstraty,polelat,polelon,ngrids,timmax,time,nzg, nzs
 
-  use ed_misc_coms,only: attach_metadata, icanturb
+  use ed_misc_coms,only: attach_metadata
+  use canopy_air_coms, only:  icanturb, isfclyrm
 
   use optimiz_coms, only : ioptinpt
 
@@ -140,8 +141,9 @@ subroutine copy_nl(copy_type)
      include_fire       = nl%include_fire
      ianth_disturb      = nl%ianth_disturb
      
-     icanturb      = nl%icanturb
-     
+     icanturb           = nl%icanturb
+     isfclyrm           = nl%isfclyrm
+
      include_these_pft = nl%include_these_pft
      agri_stock        = nl%agri_stock
      plantation_stock  = nl%plantation_stock

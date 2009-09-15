@@ -139,6 +139,7 @@ Module ename_coms
       integer                   :: include_fire       = 0
       integer                   :: ianth_disturb      = 0
       integer                   :: icanturb           = 0
+      integer                   :: isfclyrm           = 0
       
       ! Huge(1) will initialize with the maximum representable number, which 
       !   will be ignored by ED, which include pfts that are <= n_pft only.

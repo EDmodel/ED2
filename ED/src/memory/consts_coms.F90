@@ -32,7 +32,8 @@ Module consts_coms
      , b_ttripoli   => ttripoli   , b_htripoli   => htripoli   , b_htripolii  => htripolii &
      , b_cpi4       => cpi4       , b_aklv       => aklv       , b_akiv       => akiv      &
      , b_rdryi      => rdryi      , b_eta3ple    => eta3ple    , b_cimcp      => cimcp     &
-     , b_clmcp      => clmcp      , b_p00k       => p00k       , b_p00ki      => p00ki
+     , b_clmcp      => clmcp      , b_p00k       => p00k       , b_p00ki      => p00ki     &
+     , b_halfpi     => halfpi
 
    implicit none
 
@@ -79,7 +80,7 @@ Module consts_coms
    real, parameter :: akiv       = b_akiv       , rdryi      = b_rdryi
    real, parameter :: eta3ple    = b_eta3ple    , cimcp      = b_cimcp
    real, parameter :: clmcp      = b_clmcp      , p00k       = b_p00k
-   real, parameter :: p00ki      = b_p00ki
+   real, parameter :: p00ki      = b_p00ki      , halfpi     = b_halfpi
 #else
    implicit none
 
@@ -87,6 +88,7 @@ Module consts_coms
    ! Trigonometric constants                                                               !
    !---------------------------------------------------------------------------------------!
    real, parameter :: pi1       = 3.14159265358979  ! Pi                        [      ---]
+   real, parameter :: halfpi    = pi1/2             ! Pi/2                      [      ---]
    real, parameter :: twopi     = pi1* 2.           ! 2 Pi                      [      ---]
    real, parameter :: sqrtpii   = 0.564189583547756 ! 1/(pi**0.5)               [      ---]
    real, parameter :: pio180    = pi1/ 180.         ! Pi/180 (deg -> rad)       [      ---]
@@ -301,6 +303,7 @@ Module consts_coms
    !    Double precision version of all constants used in Runge-Kutta.                     !
    !---------------------------------------------------------------------------------------!
    real(kind=8), parameter :: pi18            = dble(pi1           )
+   real(kind=8), parameter :: halfpi8         = dble(halfpi        )
    real(kind=8), parameter :: twopi8          = dble(twopi         )
    real(kind=8), parameter :: sqrtpii8        = dble(sqrtpii       )
    real(kind=8), parameter :: pio1808         = dble(pio180        )

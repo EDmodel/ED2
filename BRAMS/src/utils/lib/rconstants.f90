@@ -256,6 +256,7 @@ Module rconstants
    !    Double precision version of all constants used in Runge-Kutta.                     !
    !---------------------------------------------------------------------------------------!
    real(kind=8), parameter :: pi18            = dble(pi1           )
+   real(kind=8), parameter :: halfpi8         = dble(halfpi        )
    real(kind=8), parameter :: twopi8          = dble(twopi         )
    real(kind=8), parameter :: sqrtpii8        = dble(sqrtpii       )
    real(kind=8), parameter :: pio1808         = dble(pio180        )

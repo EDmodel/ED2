@@ -120,7 +120,7 @@ subroutine NAMEOUT
 ! mass:
   write(6,298) IEXEV,IMASSFLX,IBRUVAIS,IBOTFLX
 ! ED2:
-  write(6,205)LONRAD,IMONTHA,IDATEA,IYEARA,ITIMEA,ISFCL
+  write(6,205)LONRAD,IMONTHA,IDATEA,IYEARA,ITIMEA,ISFCL,ISTAR
   write(6,299) IMONTHZ,IDATEZ,IYEARZ,ITIMEZ
 !MLO]
 
@@ -139,7 +139,7 @@ subroutine NAMEOUT
 204 format('    JBND=',I4,'      LSFLG=',I4,'       NFPT=',I4  &
        ,'    IDELTAT=',I4,'    ISWRTYP=',I4,'    ILWRTYP=',I4,'    ICUMFDBK=',I4)
 205 format('  LONRAD=',I4,'    IMONTHA=',I4,'     IDATEA=',I4  &
-       ,'     IYEARA=',I4,'     ITIMEA=',I4,'      ISFCL=',I4)
+       ,'     IYEARA=',I4,'     ITIMEA=',I4,'      ISFCL=',I4,'      ISTAR=',I4)
 298 format('   IEXEV=',I4,'   IMASSFLX=',I4,'   IBRUVAIS=',I4,'   IBOTFLX=',I4)
 299 format('  IMONTHZ=',I4,'     IDATEZ=',I4  &
        ,'     IYEARZ=',I4,'     ITIMEZ=',I4)

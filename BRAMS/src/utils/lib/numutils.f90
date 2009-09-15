@@ -1444,6 +1444,33 @@ end function cbrt
 
 !==========================================================================================!
 !==========================================================================================!
+!   This function simply computes the cubic root of all numbers, including the negative    !
+! ones, for a double precision number.                                                     !
+!------------------------------------------------------------------------------------------!
+real(kind=8) function cbrt8(x)
+   use rconstants, only: onethird8
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real(kind=8), intent(in) :: x
+   !---------------------------------------------------------------------------------------!
+   if (x > 0.d0) then
+     cbrt8 = x**onethird8
+   else
+     cbrt8 = -((-x)**onethird8)
+   end if 
+
+   return
+end function cbrt8
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 !    This function computes the error function of a variable x. Some fortran distributions !
 ! have the intrinsic erf function, but not all of them come with (pgi seems not to have).  !
 ! This function was tested against the intrinsic function for ifort and results were       !

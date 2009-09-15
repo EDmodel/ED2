@@ -19,7 +19,7 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm)
                              , dtrk4                  & ! intent(in)
                              , dtrk4i                 & ! intent(in)
                              , tiny_offset            ! ! intent(in)
-   use rk4_stepper    , only : rkqs                ! ! subroutine
+   use rk4_stepper    , only : rkqs                   ! ! subroutine
    use ed_misc_coms   , only : fast_diagnostics       ! ! intent(in)
    use hydrology_coms , only : useRUNOFF              ! ! intent(in)
    use grid_coms      , only : nzg                    ! ! intent(in)
@@ -211,7 +211,8 @@ end subroutine odeint
 !------------------------------------------------------------------------------------------!
 subroutine copy_met_2_rk4met(vels,atm_enthalpy,atm_theta,atm_tmp,atm_shv,atm_co2,zoff      &
                             ,exner,pcpg,qpcpg,dpcpg,prss,geoht,lsl,lon,lat)
-   use rk4_coms    , only : rk4met        ! ! structure
+   use rk4_coms       , only : rk4met        ! ! structure
+   use canopy_air_coms, only : ubmin8        ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer, intent(in) :: lsl
@@ -235,7 +236,7 @@ subroutine copy_met_2_rk4met(vels,atm_enthalpy,atm_theta,atm_tmp,atm_shv,atm_co2
    
    rk4met%lsl     = lsl
    !----- Converting to double precision. -------------------------------------------------!
-   rk4met%vels         = dble(vels        )
+   rk4met%vels         = max(ubmin8,dble(vels))
    rk4met%atm_enthalpy = dble(atm_enthalpy)
    rk4met%atm_theta    = dble(atm_theta   )
    rk4met%atm_tmp      = dble(atm_tmp     )
@@ -321,7 +322,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
 
    if(fast_diagnostics) then
 
-      rkp%co2budget_loss2atm = rkp%co2budget_loss2atm + fac * inc%co2budget_loss2atm
+      rkp%co2budget_loss2atm    = rkp%co2budget_loss2atm    + fac * inc%co2budget_loss2atm
 
       rkp%wbudget_storage       = rkp%wbudget_storage       + fac * inc%wbudget_storage
       rkp%wbudget_loss2atm      = rkp%wbudget_loss2atm      + fac * inc%wbudget_loss2atm
@@ -379,8 +380,8 @@ subroutine get_yscal(y, dy, htry, yscal, cpatch)
                                    , huge_offset          & ! intent(in)
                                    , rk4water_stab_thresh & ! intent(in)
                                    , rk4min_sfcwater_mass & ! intent(in)
-                                   , rk4dry_veg_lwater    & ! intent(in)
-                                   , checkbudget          ! ! intent(in)
+                                   , rk4dry_veg_lwater    ! ! intent(in)
+   use ed_misc_coms         , only : fast_diagnostics     ! ! intent(in)
    use grid_coms            , only : nzg                  & ! intent(in)
                                    , nzs                  ! ! intent(in)
    use consts_coms          , only : cliq8                & ! intent(in)
@@ -520,7 +521,7 @@ subroutine get_yscal(y, dy, htry, yscal, cpatch)
    ! checkbudget.  The only one that is not checked is the runoff, because   !
    ! it is computed after a step was accepted.                               !
    !-------------------------------------------------------------------------!
-   if (checkbudget) then
+   if (fast_diagnostics) then
       !----------------------------------------------------------------------!
       !    If this is the very first time step, or if we are misfortuned, we !
       ! may have a situation in which the derivative is numerically zero,    !
@@ -631,12 +632,12 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
 
    use rk4_coms              , only : rk4patchtype       & ! structure
                                     , rk4eps             & ! intent(in)
-                                    , rk4met             & ! intent(in)
-                                    , checkbudget        ! ! intent(in)
+                                    , rk4met             ! ! intent(in)
    use ed_state_vars         , only : patchtype          ! ! structure
    use grid_coms             , only : nzg                ! ! intent(in)
    use ed_misc_coms          , only : integ_err          & ! intent(in)
-                                    , record_err         ! ! intent(in)
+                                    , record_err         & ! intent(in)
+                                    , fast_diagnostics   ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype) , target      :: yerr             ! Error structure
@@ -734,7 +735,7 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    ! checkbudget.  The only one that is not checked is the runoff, because   !
    ! it is computed after a step was accepted.                               !
    !-------------------------------------------------------------------------!
-   if (checkbudget) then
+   if (fast_diagnostics) then
       err    = abs(yerr%co2budget_loss2atm/yscal%co2budget_loss2atm)
       errmax = max(errmax,err)
       err    = abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm)
@@ -862,9 +863,11 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%co2budget_loss2atm     = sourcep%co2budget_loss2atm
       targetp%ebudget_loss2atm       = sourcep%ebudget_loss2atm
       targetp%ebudget_loss2drainage  = sourcep%ebudget_loss2drainage
+      targetp%ebudget_loss2runoff    = sourcep%ebudget_loss2runoff
       targetp%ebudget_latent         = sourcep%ebudget_latent
       targetp%wbudget_loss2atm       = sourcep%wbudget_loss2atm
       targetp%wbudget_loss2drainage  = sourcep%wbudget_loss2drainage
+      targetp%wbudget_loss2runoff    = sourcep%wbudget_loss2runoff
       targetp%ebudget_storage        = sourcep%ebudget_storage
       targetp%wbudget_storage        = sourcep%wbudget_storage
       targetp%avg_carbon_ac          = sourcep%avg_carbon_ac

@@ -73,6 +73,7 @@ rm -fv leaf3.o                    leaf3.mod
 rm -fv leaf3_hyd.o                leaf3_hyd.mod
 rm -fv leaf3_init.o               leaf3_init.mod
 rm -fv leaf3_teb.o                leaf3_teb.mod
+rm -fv leaf3_utils.o              leaf3_utils.mod
 rm -fv local_proc.o               local_proc.mod
 rm -fv machine_arq.o              machine_arq.mod
 rm -fv map_proj.o                 map_proj.mod

@@ -82,7 +82,8 @@ subroutine ed_masterput_nl(par_run)
                              ,outfast,outstate,out_time_fast,out_time_state,nrec_fast       &
                              ,nrec_state,irec_fast,irec_state,unitfast,unitstate,event_file
 
-   use ed_misc_coms,only: attach_metadata,icanturb
+   use ed_misc_coms,only: attach_metadata
+   use canopy_air_coms, only: icanturb, isfclyrm
    use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,deltax,deltay,polelat,polelon       &
                              ,centlat,centlon,time,timmax,nstratx,nstraty
    use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database &
@@ -222,6 +223,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(pft_1st_check,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(icanturb,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(isfclyrm,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(treefall_disturbance_rate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(runoff_time,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -661,7 +663,8 @@ subroutine ed_nodeget_nl
    use decomp_coms,     only: n_decomp_lim
    use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
    use optimiz_coms,    only: ioptinpt
-   use ed_misc_coms,    only: attach_metadata,icanturb
+   use ed_misc_coms,    only: attach_metadata
+   use canopy_air_coms, only: icanturb, isfclyrm
    use pft_coms,        only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
    use canopy_radiation_coms, only: crown_mod
    use rk4_coms,        only: ibranch_thermo
@@ -784,6 +787,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(pft_1st_check,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(icanturb,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(isfclyrm,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(treefall_disturbance_rate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(runoff_time,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)

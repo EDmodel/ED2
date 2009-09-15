@@ -554,9 +554,15 @@
                              !  0 - specified surface layer gradients
                              !  1 - LEAF-3 submodel
                              !  2 - LEAF-3/TOPMODEL submodel
-                             !  3 - SIB submodel
+                             !  3 - SIB submodel   (not available)
                              !  4 - GEMTM submodel (not available)
                              !  5 - ED2 submodel
+
+   ISTAR   = 1,              ! Surface layer model (used to compute ustar, tstar,...)
+                             !  1 - Louis, 1979: Boundary-Layer Meteor., 17, 187-202.
+                             !      This is the (B)RAMS default
+                             !  2 - Oncley and Dudhia, 1995: Mon. Wea. Rev., 123, 3344-3357.
+                             !      This is used in MM5.
 
    ICO2    = 0,              ! CO2 prognostic level
                              !  0 - Do not solve it (CO2CON will be used as a time

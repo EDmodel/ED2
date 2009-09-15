@@ -23,8 +23,7 @@ subroutine simple_lake_model(time,dtlongest)
                                      , alvl              & ! intent(in)
                                      , mmdryi            & ! intent(in)
                                      , mmdry             ! ! intent(in)
-   use canopy_air_coms        , only : ustmin_stab       & ! intent(in)
-                                     , ustmin_unstab     ! ! intent(in)
+   use canopy_air_coms        , only : ustmin            ! ! intent(in)
    use mem_edcp               , only : wgrid_g           ! ! structure
    use io_params              , only : ssttime1          & ! intent(in)
                                      , ssttime2          & ! intent(in)
@@ -313,11 +312,7 @@ subroutine simple_lake_model(time,dtlongest)
          ! zero, so to avoid singularities, we impose the minimum ustmin, which is also    !
          ! used in ed_stars subroutine.                                                    !
          !---------------------------------------------------------------------------------!
-         if (can_theta > atm_theta) then
-            ustar      = max(ustmin_unstab,wgrid_g(ngrid)%ustar(i,j))
-         else
-            ustar      = max(ustmin_stab,wgrid_g(ngrid)%ustar(i,j))
-         end if
+         ustar      = max(ustmin,wgrid_g(ngrid)%ustar(i,j))
 
          !---------------------------------------------------------------------------------!
          !     Loop for the intermediate time steps.                                       !

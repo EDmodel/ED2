@@ -118,15 +118,17 @@ Module mem_leaf
    integer                 :: nslcon  ! Soil texture if constant for entire domain
    integer                 :: nvgcon  ! Vegetation class if constant for entire domain
    integer                 :: nvegpat ! Number of vegetation types
-   integer                 :: isfcl   ! Surface model
+   integer                 :: isfcl   ! Surface model (1. LEAF3, 2. LEAF-Hydro, 5. ED2)
+   integer                 :: istar   ! Which surface layer model should I use?
+                                      !    1. Louis (1979), 2. Oncley and Dudhia (1995).
    real, dimension(nzgmax) :: stgoff  ! Initial soil temperature offset
    real, dimension(nzgmax) :: slmstr  ! Initial soil moisture if constant for entire domain
    real, dimension(nzgmax) :: slz     ! Soil levels
    real                    :: zrough  ! Roughness if constant for entire domain
    real                    :: pctlcon ! Vegetation fraction if constant for entire domain
-   real                    :: albedo  ! Albedo if constant for entire domain
-   real                    :: drtcon  ! ???
-   real                    :: dthcon  ! ???
+   real                    :: albedo  ! Albedo if constant for entire domain.
+   real                    :: drtcon  ! Delta-Rt if constant for entire domain.
+   real                    :: dthcon  ! Delta-Theta if constant for entire domain.
    real                    :: seatmp  ! Sea temperature if constant for entire domain.
    !---------------------------------------------------------------------------------------!
 

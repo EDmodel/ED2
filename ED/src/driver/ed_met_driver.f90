@@ -711,8 +711,7 @@ subroutine update_met_drivers(cgrid)
                              , have_co2      & ! intent(in)
                              , initial_co2   ! ! intent(in)
    use ed_misc_coms   , only : current_time  ! ! intent(in)
-   use canopy_air_coms, only : ubmin_stab    & ! intent(in)
-                             , ubmin_unstab  ! ! intent(in)
+   use canopy_air_coms, only : ubmin         ! ! intent(in)
    use consts_coms    , only : rdry          & ! intent(in)
                              , cice          & ! intent(in)
                              , cliq          & ! intent(in)
@@ -1064,8 +1063,8 @@ subroutine update_met_drivers(cgrid)
          
          !----- Vels.  At this point vels is 2*Kinetic Energy, take the square root. ------!
          cpoly%met(isi)%vels = sqrt(max(0.0,cpoly%met(isi)%vels))
-         cpoly%met(isi)%vels_stab = max(ubmin_stab,cpoly%met(isi)%vels)
-         cpoly%met(isi)%vels_unstab = max(ubmin_unstab,cpoly%met(isi)%vels)
+         cpoly%met(isi)%vels_stab = max(ubmin,cpoly%met(isi)%vels)
+         cpoly%met(isi)%vels_unstab = max(ubmin,cpoly%met(isi)%vels)
          
          !----- CO2.  In case we used the namelist, use that value. -----------------------!
          if (.not.have_co2) cpoly%met(isi)%atm_co2 = initial_co2

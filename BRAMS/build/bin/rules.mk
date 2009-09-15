@@ -364,6 +364,11 @@ leaf3_teb.o : $(SURFACE)/leaf3_teb.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+leaf3_utils.o : $(SURFACE)/leaf3_utils.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 local_proc.o : $(CORE)/local_proc.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)

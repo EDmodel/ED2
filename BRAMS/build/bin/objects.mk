@@ -82,6 +82,7 @@ OBJ_MODEL =                         \
 	leaf3_hyd.o                 \
 	leaf3_init.o                \
 	leaf3_teb.o                 \
+	leaf3_utils.o               \
 	local_proc.o                \
 	machine_arq.o               \
 	map_proj.o                  \
