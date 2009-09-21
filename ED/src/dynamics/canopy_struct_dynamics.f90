@@ -250,7 +250,7 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          call ed_stars(cmet%atm_theta,cmet%atm_enthalpy,cmet%atm_shv,cmet%atm_co2          &
                       ,csite%can_theta(ipa),csite%can_enthalpy(ipa),csite%can_shv(ipa)     &
-                      ,csite%can_co2(ipa),zref,d0,cmet%vels,csite%rough(ipa)               &
+                      ,csite%can_co2(ipa),zref,0.0,cmet%vels,csite%rough(ipa)              &
                       ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
                       ,csite%cstar(ipa),fm)
 
@@ -352,7 +352,7 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          call ed_stars(cmet%atm_theta,cmet%atm_enthalpy,cmet%atm_shv,cmet%atm_co2          &
                       ,csite%can_theta(ipa),csite%can_enthalpy(ipa),csite%can_shv(ipa)     &
-                      ,csite%can_co2(ipa),zref,d0,cmet%vels,csite%rough(ipa)               &
+                      ,csite%can_co2(ipa),zref,0.0,cmet%vels,csite%rough(ipa)              &
                       ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
                       ,csite%cstar(ipa),fm)
 
@@ -1396,14 +1396,18 @@ module canopy_struct_dynamics
    ! variable ISFCLYRM in ED2IN (if running the coupled model, this is done in ISTAR).     ! 
    !                                                                                       !
    ! 1. Based on L79;                                                                      !
-   ! 2. Based on: OD95, but with some terms computed as in L79 and B71 to avoid singular-  !
-   !    ities.                                                                             !
+   ! 2. Based on OD95, but not assuming that z>>z0, so the zeta0 terms shall be computed   !
+   !    as presented in L79 and B71 to avoid singularities.                                !
+   ! 3. Based on BH91, using an iterative method to find zeta, and using the modified      !
+   !    equation for stable layers.                                                        !
    !                                                                                       !
    ! References:                                                                           !
    ! B71.  BUSINGER, J.A, et. al; Flux-Profile relationships in the atmospheric surface    !
    !           layer. J. Atmos. Sci., 28, 181-189, 1971.                                   !
    ! L79.  LOUIS, J.F.; Parametric Model of vertical eddy fluxes in the atmosphere.        !
    !           Boundary-Layer Meteor., 17, 187-202, 1979.                                  !
+   ! BH91. BELJAARS, A.C.M.; HOLTSLAG, A.A.M.; Flux parameterization over land surfaces    !
+   !           for atmospheric models. J. Appl. Meteor., 30, 327-341, 1991.                !
    ! OD95. ONCLEY, S.P.; DUDHIA, J.; Evaluation of surface fluxes from MM5 using observa-  !
    !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                               !
    !---------------------------------------------------------------------------------------!
@@ -1411,6 +1415,7 @@ module canopy_struct_dynamics
                       ,shv_can,co2_can,zref,d0,uref,rough,ustar,tstar,estar,qstar,cstar,fm)
       use consts_coms     , only : grav          & ! intent(in)
                                  , vonk          & ! intent(in)
+                                 , epim1         & ! intent(in)
                                  , halfpi        ! ! intent(in)
       use canopy_air_coms , only : isfclyrm      & ! intent(in)
                                  , ustmin        & ! intent(in)
@@ -1418,12 +1423,12 @@ module canopy_struct_dynamics
                                  , csm           & ! intent(in)
                                  , csh           & ! intent(in)
                                  , dl79          & ! intent(in)
-                                 , beta          & ! intent(in)
-                                 , gamm          & ! intent(in)
-                                 , gamh          & ! intent(in)
-                                 , rri           & ! intent(in)
-                                 , ribmax        & ! intent(in)
-                                 , tprandtl      ! ! intent(in)
+                                 , ribmaxod95    & ! intent(in)
+                                 , ribmaxbh91    & ! intent(in)
+                                 , tprandtl      & ! intent(in)
+                                 , psim          & ! function
+                                 , psih          & ! function
+                                 , zoobukhov     ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)  :: theta_atm    ! Above canopy air pot. temperature     [        K]
@@ -1443,7 +1448,7 @@ module canopy_struct_dynamics
       real, intent(out) :: tstar        ! Temperature friction scale            [        K]
       real, intent(out) :: estar        ! Enthalpy friction scale               [     J/kg]
       real, intent(out) :: cstar        ! CO2 spec. volume friction scale       [  µmol/m³]
-      real, intent(out) :: fm           ! Stability parameter for momentum
+      real, intent(out) :: fm           ! Stability parameter for momentum      [    -----]
       !----- Local variables, used by L79. ------------------------------------------------!
       logical           :: stable       ! Stable state
       real              :: zoz0         ! zref/rough
@@ -1461,24 +1466,21 @@ module canopy_struct_dynamics
       !----- Local variables, used by OD95. -----------------------------------------------!
       real              :: zeta         ! stability parameter, roughly z/(Obukhov length).
       real              :: zeta0        ! roughness/(Obukhov length).
-      real              :: xx           ! (1-gamm*zeta)^1/4., for momentum.
-      real              :: xx0          ! (1-gamm*zeta0)^1/4., for momentum.
-      real              :: yy           ! (1-gamh*zeta)^1/2., for heat.
-      real              :: yy0          ! (1-gamh*zeta0)^1/2., for heat.
-      real              :: psim         ! Stability correction function for momentum
-      real              :: psim0        ! Stability correction function for momentum
-      real              :: psih         ! Stab. correction function for heat, water, etc.
-      real              :: psih0        ! Stab. correction function for heat, water, etc.
+      !----- Aux. environment conditions. -------------------------------------------------!
+      real              :: thetav_atm   ! Atmos. virtual potential temperature  [        K]
+      real              :: thetav_can   ! Canopy air virtual pot. temperature   [        K]
       !----- External functions. ----------------------------------------------------------!
       real, external    :: cbrt         ! Cubic root
       !------------------------------------------------------------------------------------!
 
       !----- Finding the variables common to both methods. --------------------------------!
-      zoz0     = (zref-d0)/rough
-      lnzoz0   = log(zoz0)
-      rib      = 2.0 * grav * (zref-d0) * (theta_atm-theta_can)                            &
-               / ( (theta_atm+theta_can) * uref * uref)
-      stable   = theta_atm >= theta_can
+      thetav_atm = theta_atm * (1. + epim1 * shv_atm)
+      thetav_can = theta_can * (1. + epim1 * shv_can)
+      zoz0       = (zref-d0)/rough
+      lnzoz0     = log(zoz0)
+      rib        = 2.0 * grav * (zref-d0-rough) * (thetav_atm-thetav_can)                  &
+                 / ( (thetav_atm+thetav_can) * uref * uref)
+      stable     = thetav_atm >= thetav_can
 
       !------------------------------------------------------------------------------------!
       !     Here we find u* and the coefficient to find the other stars based on the       !
@@ -1519,69 +1521,72 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
 
 
-      case (2)
+      case (2,4)
          !---------------------------------------------------------------------------------!
-         !      Here we use the model proposed by OD95, the standard for MM5, but with     !
-         ! some terms that were originally computed in B71 (namely, the "0" terms).  These !
-         ! terms were added back because they prevent singularities (which is a good       !
-         ! thing).  We use OD95 method to estimate zeta, which avoids the computation of   !
-         ! the Obukhov length L, so we can't compute zeta0 by its definition(z0/L).  How-  !
-         ! ever we know zeta, so zeta0 can be written as z0/z * zeta.                      !
+         ! 2. Here we use the model proposed by OD95, the standard for MM5, but with some  !
+         !    terms that were computed in B71 (namely, the "0" terms). which prevent sin-  !
+         !    gularities.  We use OD95 to estimate zeta, which avoids the computation      !
+         !    of the Obukhov length L , we can't compute zeta0 by its definition(z0/L).    !
+         !    However we know zeta, so zeta0 can be written as z0/z * zeta.                !
+         ! 4. We use the model proposed by BH91, but we find zeta using the approximation  !
+         !    given by OD95.                                                               !
          !---------------------------------------------------------------------------------!
 
          !----- Make sure that the bulk Richardson number is not above ribmax. ------------!
-         rib = min(rib,ribmax)
+         rib = min(rib,ribmaxod95)
          
          !----- We now compute the stability correction functions. ------------------------!
          if (stable) then
             !----- Stable case. -----------------------------------------------------------!
             zeta  = rib * lnzoz0 / (1.1 - 5.0 * rib)
-            zeta0 = rough * zeta / (zref - d0)
-
-            psim  = -beta * zeta
-            psim0 = -beta * zeta0
-
-            !------------------------------------------------------------------------------!
-            !    In OD95 paper, it is stated that under stable conditions psi_h = phi_m.   !
-            ! Since there is no phi_m stated in their paper, I am assuming they used the   !
-            ! same as B71 and explained in L79 introduction.                               !
-            !------------------------------------------------------------------------------!
-            psih  = - rri * beta * zeta
-            psih0 = -rri * beta * zeta0
          else
             !----- Unstable case. ---------------------------------------------------------!
             zeta = rib * lnzoz0
-            zeta0 = rough * zeta / (zref - d0)
-
-            !------------------------------------------------------------------------------!
-            !    Here we distinguish gamma for momentum and heat, as it is done in B71 and !
-            ! L79.  OD95 apparently don't distinguish, but that is not very clear in their !
-            ! paper.  Assuming the same as B71 and L79.                                    !
-            !------------------------------------------------------------------------------!
-            xx    = sqrt(sqrt(1.0 - gamm * zeta))
-            xx0   = sqrt(sqrt(1.0 - gamm * zeta0))
-
-            yy    = sqrt(1.0 - gamh * zeta)
-            yy0   = sqrt(1.0 - gamh * zeta0)
-
-            psih  = log(0.25 * (1.0+yy) * (1.0+yy))
-            psih0 = log(0.25 * (1.0+yy0) * (1.0+yy0))
-
-            psim  = log(0.125 * (1.0 + xx) * (1.0 + xx) * (1.0+xx*xx))                     &
-                  - 2.0 * atan(xx) + halfpi
-
-            psim0 = log(0.125 * (1.0 + xx0) * (1.0 + xx0) * (1.0+xx0*xx0))                 &
-                  - 2.0 * atan(xx0) + halfpi
          end if
+         zeta0 = rough * zeta / (zref - d0)
 
          !----- Finding the equivalent to fm, which is an output variable. ----------------!
-         fm = lnzoz0 * lnzoz0 / ((lnzoz0 - psim + psim0) * (lnzoz0 - psim + psim0))
+         fm = lnzoz0 * lnzoz0 / ( (lnzoz0 - psim(zeta,stable) + psim(zeta0,stable))        &
+                                * (lnzoz0 - psim(zeta,stable) + psim(zeta0,stable) ))
 
          !----- Finding ustar, making sure it is not too small. ---------------------------!
-         ustar = max (ustmin, vonk * uref / (lnzoz0 - psim + psim0))
+         ustar = max (ustmin, vonk * uref                                                  &
+                            / (lnzoz0 - psim(zeta,stable) + psim(zeta0,stable)))
 
          !----- Finding the coefficient to scale the other stars. -------------------------!
-         c3    = vonk / (tprandtl * (lnzoz0 - psih + psih0))
+         c3    = vonk / (tprandtl * (lnzoz0 - psih(zeta,stable) + psih(zeta0,stable)))
+
+         !---------------------------------------------------------------------------------!
+
+
+      case (3)
+         !---------------------------------------------------------------------------------!
+         !      Here we use the model proposed by BH91, which is almost the same as the    !
+         ! OD95 method, with the two following (important) differences.                    !
+         ! 1. Zeta (z/L) is actually found using the iterative method.                     !
+         ! 2. Stable functions are computed in a more generic way.  BH91 claim that the    !
+         !    oft-used approximation (-beta*zeta) can cause poor ventilation of the stable !
+         !    layer, leading to decoupling between the atmosphere and the canopy air space !
+         !    and excessive cooling.                                                       !
+         !---------------------------------------------------------------------------------!
+
+         !----- Make sure that the bulk Richardson number is not above ribmax. ------------!
+         rib = min(rib,ribmaxbh91)
+         
+         !----- We now compute the stability correction functions. ------------------------!
+         zeta  = zoobukhov(rib,zref-d0,rough,zoz0,lnzoz0,stable)
+         zeta0 = rough * zeta / (zref - d0)
+
+         !----- Finding the equivalent to fm, which is an output variable. ----------------!
+         fm = lnzoz0 * lnzoz0 / ( (lnzoz0 - psim(zeta,stable) + psim(zeta0,stable))        &
+                                * (lnzoz0 - psim(zeta,stable) + psim(zeta0,stable)) )
+
+         !----- Finding ustar, making sure it is not too small. ---------------------------!
+         ustar = max (ustmin, vonk * uref                                                  &
+                            / (lnzoz0 - psim(zeta,stable) + psim(zeta0,stable)))
+
+         !----- Finding the coefficient to scale the other stars. -------------------------!
+         c3    = vonk / (tprandtl * (lnzoz0 - psih(zeta,stable) + psih(zeta0,stable)))
 
          !---------------------------------------------------------------------------------!
       end select
@@ -1617,12 +1622,16 @@ module canopy_struct_dynamics
    ! 1. Based on L79;                                                                      !
    ! 2. Based on: OD95, but with some terms computed as in L79 and B71 to avoid singular-  !
    !    ities.                                                                             !
+   ! 3. Based on BH91, using an iterative method to find zeta, and using the modified      !
+   !    equation for stable layers.                                                        !
    !                                                                                       !
    ! References:                                                                           !
    ! B71.  BUSINGER, J.A, et. al; Flux-Profile relationships in the atmospheric surface    !
    !           layer. J. Atmos. Sci., 28, 181-189, 1971.                                   !
    ! L79.  LOUIS, J.F.; Parametric Model of vertical eddy fluxes in the atmosphere.        !
    !           Boundary-Layer Meteor., 17, 187-202, 1979.                                  !
+   ! BH91. BELJAARS, A.C.M.; HOLTSLAG, A.A.M.; Flux parameterization over land surfaces    !
+   !           for atmospheric models. J. Appl. Meteor., 30, 327-341, 1991.                !
    ! OD95. ONCLEY, S.P.; DUDHIA, J.; Evaluation of surface fluxes from MM5 using observa-  !
    !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                               !
    !---------------------------------------------------------------------------------------!
@@ -1631,6 +1640,7 @@ module canopy_struct_dynamics
                        ,zref,d0,uref,rough,ustar,tstar,estar,qstar,cstar,fm)
       use consts_coms     , only : grav8         & ! intent(in)
                                  , vonk8         & ! intent(in)
+                                 , epim18        & ! intent(in)
                                  , halfpi8       ! ! intent(in)
       use canopy_air_coms , only : isfclyrm      & ! intent(in)
                                  , ustmin8       & ! intent(in)
@@ -1638,12 +1648,12 @@ module canopy_struct_dynamics
                                  , csm8          & ! intent(in)
                                  , csh8          & ! intent(in)
                                  , dl798         & ! intent(in)
-                                 , beta8         & ! intent(in)
-                                 , gamm8         & ! intent(in)
-                                 , gamh8         & ! intent(in)
-                                 , rri8          & ! intent(in)
-                                 , ribmax8       & ! intent(in)
-                                 , tprandtl8     ! ! intent(in)
+                                 , ribmaxod958   & ! intent(in)
+                                 , ribmaxbh918   & ! intent(in)
+                                 , tprandtl8     & ! intent(in)
+                                 , psim8         & ! function
+                                 , psih8         & ! function
+                                 , zoobukhov8    ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real(kind=8), intent(in)  :: theta_atm    ! Above canopy air pot. temp.    [        K]
@@ -1681,24 +1691,21 @@ module canopy_struct_dynamics
       !----- Local variables, used by OD95. -----------------------------------------------!
       real(kind=8)      :: zeta         ! stability parameter, roughly z/(Obukhov length).
       real(kind=8)      :: zeta0        ! roughness/(Obukhov length).
-      real(kind=8)      :: xx           ! (1-gamm*zeta)^1/4., for momentum.
-      real(kind=8)      :: xx0          ! (1-gamm*zeta0)^1/4., for momentum.
-      real(kind=8)      :: yy           ! (1-gamh*zeta)^1/2., for heat.
-      real(kind=8)      :: yy0          ! (1-gamh*zeta0)^1/2., for heat.
-      real(kind=8)      :: psim         ! Stability correction function for momentum
-      real(kind=8)      :: psim0        ! Stability correction function for momentum
-      real(kind=8)      :: psih         ! Stab. correction function for heat, water, etc.
-      real(kind=8)      :: psih0        ! Stab. correction function for heat, water, etc.
+      !----- Aux. environment conditions. -------------------------------------------------!
+      real(kind=8)      :: thetav_atm   ! Atmos. virtual potential temperature  [        K]
+      real(kind=8)      :: thetav_can   ! Canopy air virtual pot. temperature   [        K]
       !----- External functions. ----------------------------------------------------------!
       real(kind=8), external :: cbrt8   ! Cubic root
       !------------------------------------------------------------------------------------!
 
       !----- Finding the variables common to both methods. --------------------------------!
-      zoz0     = (zref-d0)/rough
-      lnzoz0   = log(zoz0)
-      rib      = 2.d0 * grav8 * zref * (theta_atm-theta_can)                                 &
-               / ( (theta_atm+theta_can) * uref * uref)
-      stable   = theta_atm >= theta_can
+      thetav_atm = theta_atm * (1.d0 + epim18 * shv_atm)
+      thetav_can = theta_can * (1.d0 + epim18 * shv_can)
+      zoz0       = (zref-d0)/rough
+      lnzoz0     = log(zoz0)
+      rib        = 2.d0 * grav8 * (zref-d0-rough) * (thetav_atm-thetav_can)                &
+                 / ( (thetav_atm+thetav_can) * uref * uref)
+      stable     = thetav_atm >= thetav_can
 
       !------------------------------------------------------------------------------------!
       !     Here we find u* and the coefficient to find the other stars based on the       !
@@ -1739,69 +1746,73 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
 
 
-      case (2)
+      case (2,4)
          !---------------------------------------------------------------------------------!
-         !      Here we use the model proposed by OD95, the standard for MM5, but with     !
-         ! some terms that were originally computed in B71 (namely, the "0" terms).  These !
-         ! terms were added back because they prevent singularities (which is a good       !
-         ! thing).  We use OD95 method to estimate zeta, which avoids the computation of   !
-         ! the Obukhov length L, so we can't compute zeta0 by its definition(z0/L).  How-  !
-         ! ever we know zeta, so zeta0 can be written as z0/z * zeta.                      !
+         ! 2. Here we use the model proposed by OD95, the standard for MM5, but with some  !
+         !    terms that were computed in B71 (namely, the "0" terms). which prevent sin-  !
+         !    gularities.  We use OD95 to estimate zeta, which avoids the computation      !
+         !    of the Obukhov length L , we can't compute zeta0 by its definition(z0/L).    !
+         !    However we know zeta, so zeta0 can be written as z0/z * zeta.                !
+         ! 4. We use the model proposed by BH91, but we find zeta using the approximation  !
+         !    given by OD95.                                                               !
          !---------------------------------------------------------------------------------!
 
          !----- Make sure that the bulk Richardson number is not above ribmax. ------------!
-         rib = min(rib,ribmax8)
+         rib = min(rib,ribmaxod958)
          
          !----- We now compute the stability correction functions. ------------------------!
          if (stable) then
             !----- Stable case. -----------------------------------------------------------!
             zeta  = rib * lnzoz0 / (1.1d0 - 5.0d0 * rib)
-            zeta0 = rough * zeta / (zref-d0)
-
-            psim  = -beta8 * zeta
-            psim0 = -beta8 * zeta0
-
-            !------------------------------------------------------------------------------!
-            !    In OD95 paper, it is stated that under stable conditions psi_h = phi_m.   !
-            ! Since there is no phi_m stated in their paper, I am assuming they used the   !
-            ! same as B71 and explained in L79 introduction.                               !
-            !------------------------------------------------------------------------------!
-            psih  = - rri8 * beta8 * zeta
-            psih0 = - rri8 * beta8 * zeta0
          else
             !----- Unstable case. ---------------------------------------------------------!
             zeta  = rib * lnzoz0
-            zeta0 = rough * zeta / (zref-d0)
-
-            !------------------------------------------------------------------------------!
-            !    Here we distinguish gamma for momentum and heat, as it is done in B71 and !
-            ! L79.  OD95 apparently don't distinguish, but that is not very clear in their !
-            ! paper.  Assuming the same as B71 and L79.                                    !
-            !------------------------------------------------------------------------------!
-            xx    = sqrt(sqrt(1.d0 - gamm8 * zeta))
-            xx0   = sqrt(sqrt(1.d0 - gamm8 * zeta0))
-
-            yy    = sqrt(1.d0 - gamh8 * zeta)
-            yy0   = sqrt(1.d0 - gamh8 * zeta0)
-
-            psih  = log(2.5d-1 * (1.d0 + yy) * (1.d0 + yy))
-            psih0 = log(2.5d-1 * (1.d0 + yy0) * (1.d0 + yy0))
-
-            psim  = log(1.25d-1 * (1.d0 + xx) * (1.d0 + xx) * (1.d0+xx*xx))                &
-                  - 2.d0 * atan(xx) + halfpi8
-
-            psim0 = log(1.25d-1 * (1.d0 + xx0) * (1.d0 + xx0) * (1.d0+xx0*xx0))            &
-                  - 2.d0 * atan(xx0) + halfpi8
          end if
 
+         zeta0 = rough * zeta / (zref - d0)
+
          !----- Finding the equivalent to fm, which is an output variable. ----------------!
-         fm = lnzoz0 * lnzoz0 / ((lnzoz0 - psim + psim0) * (lnzoz0 - psim + psim0))
+         fm = lnzoz0 * lnzoz0 / ( (lnzoz0 - psim8(zeta,stable) + psim8(zeta0,stable))      &
+                                * (lnzoz0 - psim8(zeta,stable) + psim8(zeta0,stable)) )
 
          !----- Finding ustar, making sure it is not too small. ---------------------------!
-         ustar = max (ustmin8, vonk8 * uref / (lnzoz0 - psim + psim0))
+         ustar = max (ustmin8, vonk8 * uref                                                &
+                             / (lnzoz0 - psim8(zeta,stable) + psim8(zeta0,stable)))
 
          !----- Finding the coefficient to scale the other stars. -------------------------!
-         c3    = vonk8 / (tprandtl8 * (lnzoz0 - psih + psih0))
+         c3    = vonk8 / (tprandtl8 * (lnzoz0 - psih8(zeta,stable) + psih8(zeta0,stable)))
+
+         !---------------------------------------------------------------------------------!
+
+
+      case (3)
+         !---------------------------------------------------------------------------------!
+         !      Here we use the model proposed by BH91, which is almost the same as the    !
+         ! OD95 method, with the two following (important) differences.                    !
+         ! 1. Zeta (z/L) is actually found using the iterative method.                     !
+         ! 2. Stable functions are computed in a more generic way.  BH91 claim that the    !
+         !    oft-used approximation (-beta*zeta) can cause poor ventilation of the stable !
+         !    layer, leading to decoupling between the atmosphere and the canopy air space !
+         !    and excessive cooling.                                                       !
+         !---------------------------------------------------------------------------------!
+
+         !----- Make sure that the bulk Richardson number is not above ribmax. ------------!
+         rib = min(rib,ribmaxbh918)
+
+         !----- We now compute the stability correction functions. ------------------------!
+         zeta  = zoobukhov8(rib,zref-d0,rough,zoz0,lnzoz0,stable)
+         zeta0 = rough * zeta / (zref - d0)
+
+         !----- Finding the equivalent to fm, which is an output variable. ----------------!
+         fm = lnzoz0 * lnzoz0 / ( (lnzoz0 - psim8(zeta,stable) + psim8(zeta0,stable))      &
+                                * (lnzoz0 - psim8(zeta,stable) + psim8(zeta0,stable)) )
+
+         !----- Finding ustar, making sure it is not too small. ---------------------------!
+         ustar = max (ustmin8, vonk8 * uref                                                &
+                             / (lnzoz0 - psim8(zeta,stable) + psim8(zeta0,stable)))
+
+         !----- Finding the coefficient to scale the other stars. -------------------------!
+         c3    = vonk8 / (tprandtl8 * (lnzoz0 - psih8(zeta,stable) + psih8(zeta0,stable)))
 
          !---------------------------------------------------------------------------------!
       end select

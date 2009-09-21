@@ -9,13 +9,15 @@ subroutine simple_lake_model(time,dtlongest)
    use node_mod               , only : ja                & ! intent(in)
                                      , jz                & ! intent(in)
                                      , ia                & ! intent(in)
-                                     , iz                ! ! intent(in)
+                                     , iz                & ! intent(in)
+                                     , mynum             ! ! intent(in)
    use consts_coms            , only : stefan            & ! intent(in)
                                      , cpi               & ! intent(in)
                                      , vonk              & ! intent(in)
                                      , cp                & ! intent(in)
                                      , grav              & ! intent(in)
                                      , rdry              & ! intent(in)
+                                     , t00               & ! intent(in)
                                      , p00               & ! intent(in)
                                      , p00i              & ! intent(in)
                                      , rocp              & ! intent(in)
@@ -23,7 +25,8 @@ subroutine simple_lake_model(time,dtlongest)
                                      , alvl              & ! intent(in)
                                      , mmdryi            & ! intent(in)
                                      , mmdry             ! ! intent(in)
-   use canopy_air_coms        , only : ustmin            ! ! intent(in)
+   use canopy_air_coms        , only : ustmin            & ! intent(in)
+                                     , ubmin             ! ! intent(in)
    use mem_edcp               , only : wgrid_g           ! ! structure
    use io_params              , only : ssttime1          & ! intent(in)
                                      , ssttime2          & ! intent(in)
@@ -259,6 +262,22 @@ subroutine simple_lake_model(time,dtlongest)
          !---------------------------------------------------------------------------------!
 
          !----- Finding the atmospheric enthalpy and density. -----------------------------!
+         if (atm_temp < 180.   .or. atm_temp > 400.   .or.                                 &
+             atm_shv  < 1.e-8  .or. atm_shv  > 0.04   .or.                                 &
+             atm_prss < 40000. .or. atm_prss > 110000.) then
+             write (unit=*,fmt='(a)') '======== Weird atm properties... ========'
+             write (unit=*,fmt='(a,i5)')   'Node             = ',mynum
+             write (unit=*,fmt='(a,i5)')   'X                = ',i
+             write (unit=*,fmt='(a,i5)')   'Y                = ',j
+             write (unit=*,fmt='(a,f8.2)') 'LONG      [degE] = ',grid_g(ngrid)%glon(i,j)
+             write (unit=*,fmt='(a,f8.2)') 'LAT       [degN] = ',grid_g(ngrid)%glat(i,j)
+             write (unit=*,fmt='(a,f7.2)') 'ATM_PRSS  [ hPa] = ',atm_prss    * 0.01
+             write (unit=*,fmt='(a,f7.2)') 'ATM_TEMP  [degC] = ',atm_temp - t00
+             write (unit=*,fmt='(a,f7.2)') 'ATM_SHV   [g/kg] = ',atm_shv  * 1.e3
+             call fatal_error('Non-sense atm met values!!!'                                &
+                             ,'simple_lake_model','edcp_water.f90')
+         end if
+
          atm_enthalpy = ptqz2enthalpy(atm_prss,atm_temp,atm_shv,geoht)
          atm_rhos     = idealdenssh(atm_prss,atm_temp,atm_shv)
 
@@ -267,7 +286,7 @@ subroutine simple_lake_model(time,dtlongest)
          !    Finding the mean wind speed and mean wind direction, so we can split the     !
          ! flux of momentum according to this.                                             !
          !---------------------------------------------------------------------------------!
-         vels     = sqrt(up_mean**2 + vp_mean**2)
+         vels     = max(ubmin,sqrt(up_mean*up_mean + vp_mean*vp_mean))
          angle    = datan2(dble(vp_mean),dble(up_mean))
          cosine   = sngl(dcos(angle))
          sine     = sngl(dsin(angle))

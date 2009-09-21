@@ -720,6 +720,7 @@ module therm_lib
             return
          elseif (fun ==0) then !Converged by luck!
             tslf = tempz
+            return
          end if
       end do newloop
 

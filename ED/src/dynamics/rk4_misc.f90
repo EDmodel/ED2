@@ -30,7 +30,8 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                    , wcapcan               & ! intent(out)
                                    , wcapcani              & ! intent(out)
                                    , rk4water_stab_thresh  & ! intent(in)
-                                   , rk4min_sfcwater_mass  ! ! intent(in)
+                                   , rk4min_sfcwater_mass  & ! intent(in)
+                                   , checkbudget           ! ! intent(in)
    use ed_max_dims          , only : n_pft                 ! ! intent(in)
    use canopy_radiation_coms, only : tai_min               ! ! intent(in)
    use therm_lib8           , only : qwtk8                 & ! subroutine
@@ -221,7 +222,8 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
          targetp%avg_smoist_gg(k)   = dble(sourcesite%avg_smoist_gg(k,ipa)  )
          targetp%avg_smoist_gc(k)   = dble(sourcesite%avg_smoist_gc(k,ipa)  )
       end do
-
+   end if
+   if (checkbudget) then
       targetp%ebudget_storage       = dble(sourcesite%ebudget_initialstorage(ipa))
       targetp%wbudget_storage       = dble(sourcesite%wbudget_initialstorage(ipa))
       targetp%co2budget_loss2atm    = 0.d0
@@ -1422,8 +1424,8 @@ end subroutine adjust_veg_properties
 subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    use rk4_coms              , only : rk4patchtype       & ! Structure
                                     , rk4eps             & ! intent(in)
-                                    , rk4met             ! ! intent(in)
-   use ed_misc_coms          , only : fast_diagnostics   ! ! intent(in)
+                                    , rk4met             & ! intent(in)
+                                    , checkbudget        ! ! intent(in)
    use ed_state_vars         , only : patchtype          ! ! Structure
    use grid_coms             , only : nzg                & ! intent(in)
                                     , nzs                ! ! intent(in)
@@ -1544,7 +1546,7 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    ! checkbudget.  The only one that is not checked is the runoff, because   !
    ! it is computed after a step was accepted.                               !
    !-------------------------------------------------------------------------!
-   if (fast_diagnostics) then
+   if (checkbudget) then
       errmax = max(errmax                                                    &
                   ,abs(yerr%co2budget_loss2atm/yscal%co2budget_loss2atm))
       troublemaker = large_error(yerr%co2budget_loss2atm                     &

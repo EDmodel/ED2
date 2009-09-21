@@ -719,6 +719,7 @@ module therm_lib
             return
          elseif (fun ==0) then !Converged by luck!
             tslf = tempz
+            return
          end if
       end do newloop
 
@@ -740,7 +741,7 @@ module therm_lib
          zgssloop: do itb=1,maxfpo
             tempz = tempa + real((-1)**itb * (itb+3)/2) * delta
             funz  = eslf(tempz) - pvap
-            zside = funa*funz < 0
+            zside = funa*funz < 0.
             if (zside) exit zgssloop
          end do zgssloop
          if (.not. zside) then

@@ -1030,8 +1030,8 @@ subroutine opspec3
   end select
   
   ! Check whether the surface layer exchange scheme the user chose is okay. 
-  if (isfcl /= 0 .and. (istar < 1 .or. istar > 2)) then
-     print *, 'fatal - ISTAR must be 1 or 2, and yours is set to ',istar,'...'
+  if (isfcl /= 0 .and. (istar < 1 .or. istar > 4)) then
+     print *, 'fatal - ISTAR must be between 1 and 4, and yours is set to ',istar,'...'
      ifaterr=ifaterr+1
   end if
 

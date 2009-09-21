@@ -729,6 +729,7 @@ module therm_lib8
             return
          elseif (fun == 0.d0) then !Converged by luck!
             tslf8 = tempz
+            return
          end if
       end do newloop
 

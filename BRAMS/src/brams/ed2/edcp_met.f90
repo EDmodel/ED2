@@ -39,6 +39,7 @@ subroutine copy_atm2lsm(ifm,init)
                                    , alli          & ! intent(in)
                                    , cice          & ! intent(in)
                                    , t3ple         & ! intent(in)
+                                   , t00           & ! intent(in)
                                    , cpor          & ! intent(in)
                                    , tsupercool    ! ! intent(in)
    use ed_node_coms         , only : mynum         ! ! intent(in)
@@ -251,12 +252,6 @@ subroutine copy_atm2lsm(ifm,init)
       ! verted to wind speed later, after calc_met_lapse.                                  !
       !------------------------------------------------------------------------------------!
       cgrid%met(ipy)%vels     = up_mean(ix,iy)**2 + vp_mean(ix,iy)**2
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!! WHY WERE WE FORCING WIND SPEED TO BE >= 0.65m/s???                       !!!!!!
-      ! cgrid%met(ipy)%vels     = max(0.65,sqrt( up_mean(ix,iy)**2 + vp_mean(ix,iy)**2))
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !------------------------------------------------------------------------------------!
       !    ED needs specific humidity, and temperature, but BRAMS has mixing ratio and     !
@@ -267,6 +262,23 @@ subroutine copy_atm2lsm(ifm,init)
       cgrid%met(ipy)%atm_theta    = theta_mean(ix,iy)
       cgrid%met(ipy)%atm_tmp      = cpi * cgrid%met(ipy)%atm_theta * cgrid%met(ipy)%exner
       cgrid%met(ipy)%atm_co2      = co2p_mean(ix,iy)
+
+      if (cgrid%met(ipy)%atm_tmp < 180.   .or. cgrid%met(ipy)%atm_tmp > 400.   .or.        &
+          cgrid%met(ipy)%atm_shv < 1.e-8  .or. cgrid%met(ipy)%atm_shv > 0.04   .or.        &
+          cgrid%met(ipy)%prss    < 40000. .or. cgrid%met(ipy)%prss    > 110000.) then
+          write (unit=*,fmt='(a)') '======== Weird polygon properties... ========'
+          write (unit=*,fmt='(a,i5)')   'Node             = ',mynum
+          write (unit=*,fmt='(a,i5)')   'X                = ',ix
+          write (unit=*,fmt='(a,i5)')   'Y                = ',iy
+          write (unit=*,fmt='(a,f8.2)') 'LONG      [degE] = ',cgrid%lon(ipy)
+          write (unit=*,fmt='(a,f8.2)') 'LAT       [degN] = ',cgrid%lat(ipy)
+          write (unit=*,fmt='(a,f7.2)') 'POLY_PRSS [ hPa] = ',cgrid%met(ipy)%prss    * 0.01
+          write (unit=*,fmt='(a,f7.2)') 'POLY_TEMP [degC] = ',cgrid%met(ipy)%atm_tmp - t00
+          write (unit=*,fmt='(a,f7.2)') 'POLY_SHV  [g/kg] = ',cgrid%met(ipy)%atm_shv * 1.e3
+          call fatal_error('Non-sense polygon met values!!!'                               &
+                          ,'copy_atm2lsm','edcp_met.f90')
+      end if
+
       cgrid%met(ipy)%atm_enthalpy = ptqz2enthalpy(cgrid%met(ipy)%prss                      &
                                                  ,cgrid%met(ipy)%atm_tmp                   &
                                                  ,cgrid%met(ipy)%atm_shv                   &
@@ -309,6 +321,27 @@ subroutine copy_atm2lsm(ifm,init)
          !---------------------------------------------------------------------------------!
          cpoly%met(isi)%exner        = cp * (p00i * cpoly%met(isi)%prss) **rocp
          cpoly%met(isi)%atm_theta    = cp * cpoly%met(isi)%atm_tmp / cpoly%met(isi)%exner
+
+
+         if (cpoly%met(isi)%atm_tmp < 180.   .or. cpoly%met(isi)%atm_tmp > 400.   .or.     &
+             cpoly%met(isi)%atm_shv < 1.e-8  .or. cpoly%met(isi)%atm_shv > 0.04   .or.     &
+             cpoly%met(isi)%prss    < 40000. .or. cpoly%met(isi)%prss    > 110000.) then
+             write (unit=*,fmt='(a)') '======== Weird site properties... ========'
+             write (unit=*,fmt='(a,i5)')   'Node             = ',mynum
+             write (unit=*,fmt='(a,i5)')   'X                = ',ix
+             write (unit=*,fmt='(a,i5)')   'Y                = ',iy
+             write (unit=*,fmt='(a,f8.2)') 'LONG      [degE] = ',cgrid%lon(ipy)
+             write (unit=*,fmt='(a,f8.2)') 'LAT       [degN] = ',cgrid%lat(ipy)
+             write (unit=*,fmt='(a,f7.2)')                                                 &
+                                  'SITE_PRSS [ hPa] = ',cpoly%met(isi)%prss    * 0.01
+             write (unit=*,fmt='(a,f7.2)')                                                 &
+                                  'SITE_TEMP [degC] = ',cpoly%met(isi)%atm_tmp - t00
+             write (unit=*,fmt='(a,f7.2)')                                                 &
+                                  'SITE_SHV  [g/kg] = ',cpoly%met(isi)%atm_shv * 1.e3
+             call fatal_error('Non-sense site met values!!!'                               &
+                             ,'copy_atm2lsm','edcp_met.f90')
+         end if
+
          cpoly%met(isi)%atm_enthalpy = ptqz2enthalpy(cpoly%met(isi)%prss                   &
                                                     ,cpoly%met(isi)%atm_tmp                &
                                                     ,cpoly%met(isi)%atm_shv                &

@@ -18,7 +18,8 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm)
                              , tend                   & ! intent(in)
                              , dtrk4                  & ! intent(in)
                              , dtrk4i                 & ! intent(in)
-                             , tiny_offset            ! ! intent(in)
+                             , tiny_offset            & ! intent(in)
+                             , checkbudget            ! ! intent(in)
    use rk4_stepper    , only : rkqs                   ! ! subroutine
    use ed_misc_coms   , only : fast_diagnostics       ! ! intent(in)
    use hydrology_coms , only : useRUNOFF              ! ! intent(in)
@@ -147,13 +148,15 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm)
                call update_diagnostic_vars(integration_buff%y,csite,ipa)
 
                !----- Compute runoff for output -------------------------------------------!
-               if(fast_diagnostics) then
+               if (fast_diagnostics) then
                   csite%runoff(ipa) = csite%runoff(ipa)                                    &
                                     + sngloff(wfreeb * dtrk4i,tiny_offset)
                   csite%avg_runoff(ipa) = csite%avg_runoff(ipa)                            &
                                         + sngloff(wfreeb * dtrk4i,tiny_offset)
                   csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa)                  &
                                              + sngloff(qwfree * dtrk4i,tiny_offset)
+               end if
+               if (checkbudget) then
                   integration_buff%initp%wbudget_loss2runoff = wfreeb
                   integration_buff%initp%ebudget_loss2runoff = qwfree
                   integration_buff%initp%wbudget_storage =                                 &
@@ -271,7 +274,8 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
    use ed_state_vars , only : sitetype           & ! structure
                             , patchtype          ! ! structure
    use rk4_coms      , only : rk4patchtype       & ! structure
-                            , rk4met             ! ! intent(in)
+                            , rk4met             & ! intent(in)
+                            , checkbudget        ! ! intent(in)
    use grid_coms     , only : nzg                & ! intent(in)
                             , nzs                ! ! intent(in)
    use ed_misc_coms  , only : fast_diagnostics   ! ! intent(in)
@@ -320,7 +324,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       rkp%veg_energy(ico)    = rkp%veg_energy(ico) + fac * inc%veg_energy(ico)
    end do
 
-   if(fast_diagnostics) then
+   if(checkbudget) then
 
       rkp%co2budget_loss2atm    = rkp%co2budget_loss2atm    + fac * inc%co2budget_loss2atm
 
@@ -332,7 +336,8 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       rkp%ebudget_loss2atm      = rkp%ebudget_loss2atm      + fac * inc%ebudget_loss2atm
       rkp%ebudget_loss2drainage = rkp%ebudget_loss2drainage + fac * inc%ebudget_loss2drainage
       rkp%ebudget_latent        = rkp%ebudget_latent        + fac * inc%ebudget_latent
-
+   end if
+   if (fast_diagnostics) then
       rkp%avg_carbon_ac      = rkp%avg_carbon_ac      + fac * inc%avg_carbon_ac
       
       rkp%avg_vapor_vc       = rkp%avg_vapor_vc       + fac * inc%avg_vapor_vc
@@ -380,8 +385,8 @@ subroutine get_yscal(y, dy, htry, yscal, cpatch)
                                    , huge_offset          & ! intent(in)
                                    , rk4water_stab_thresh & ! intent(in)
                                    , rk4min_sfcwater_mass & ! intent(in)
-                                   , rk4dry_veg_lwater    ! ! intent(in)
-   use ed_misc_coms         , only : fast_diagnostics     ! ! intent(in)
+                                   , rk4dry_veg_lwater    & ! intent(in)
+                                   , checkbudget          ! ! intent(in)
    use grid_coms            , only : nzg                  & ! intent(in)
                                    , nzs                  ! ! intent(in)
    use consts_coms          , only : cliq8                & ! intent(in)
@@ -521,7 +526,7 @@ subroutine get_yscal(y, dy, htry, yscal, cpatch)
    ! checkbudget.  The only one that is not checked is the runoff, because   !
    ! it is computed after a step was accepted.                               !
    !-------------------------------------------------------------------------!
-   if (fast_diagnostics) then
+   if (checkbudget) then
       !----------------------------------------------------------------------!
       !    If this is the very first time step, or if we are misfortuned, we !
       ! may have a situation in which the derivative is numerically zero,    !
@@ -632,12 +637,12 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
 
    use rk4_coms              , only : rk4patchtype       & ! structure
                                     , rk4eps             & ! intent(in)
-                                    , rk4met             ! ! intent(in)
+                                    , rk4met             & ! intent(in)
+                                    , checkbudget        ! ! intent(in)
    use ed_state_vars         , only : patchtype          ! ! structure
    use grid_coms             , only : nzg                ! ! intent(in)
    use ed_misc_coms          , only : integ_err          & ! intent(in)
-                                    , record_err         & ! intent(in)
-                                    , fast_diagnostics   ! ! intent(in)
+                                    , record_err         ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype) , target      :: yerr             ! Error structure
@@ -735,7 +740,7 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    ! checkbudget.  The only one that is not checked is the runoff, because   !
    ! it is computed after a step was accepted.                               !
    !-------------------------------------------------------------------------!
-   if (fast_diagnostics) then
+   if (checkbudget) then
       err    = abs(yerr%co2budget_loss2atm/yscal%co2budget_loss2atm)
       errmax = max(errmax,err)
       err    = abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm)
@@ -772,7 +777,8 @@ end subroutine get_errmax
 subroutine copy_rk4_patch(sourcep, targetp, cpatch)
 
    use rk4_coms      , only : rk4met            & ! intent(in)
-                            , rk4patchtype      ! ! structure
+                            , rk4patchtype      & ! structure
+                            , checkbudget       ! ! intent(in)
    use ed_state_vars , only : sitetype          & ! structure
                             , patchtype         ! ! structure
    use grid_coms     , only : nzg               & ! intent(in)
@@ -859,7 +865,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%rb(k)          = sourcep%rb(k)
    end do
 
-   if (fast_diagnostics) then
+   if (checkbudget) then
       targetp%co2budget_loss2atm     = sourcep%co2budget_loss2atm
       targetp%ebudget_loss2atm       = sourcep%ebudget_loss2atm
       targetp%ebudget_loss2drainage  = sourcep%ebudget_loss2drainage
@@ -870,6 +876,8 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%wbudget_loss2runoff    = sourcep%wbudget_loss2runoff
       targetp%ebudget_storage        = sourcep%ebudget_storage
       targetp%wbudget_storage        = sourcep%wbudget_storage
+   end if
+   if (fast_diagnostics) then
       targetp%avg_carbon_ac          = sourcep%avg_carbon_ac
       targetp%avg_vapor_vc           = sourcep%avg_vapor_vc
       targetp%avg_dew_cg             = sourcep%avg_dew_cg  

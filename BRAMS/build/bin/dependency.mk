@@ -362,7 +362,7 @@ leaf3_utils.o: catt_start.mod io_params.mod leaf_coms.mod mem_basic.mod
 leaf3_utils.o: mem_cuparm.mod mem_grid.mod mem_leaf.mod mem_micro.mod
 leaf3_utils.o: mem_scratch.mod node_mod.mod rconstants.mod teb_spm_start.mod
 leaf3_utils.o: therm_lib.mod
-leaf_coms.o: grid_dims.mod rconstants.mod
+leaf_coms.o: grid_dims.mod mem_leaf.mod rconstants.mod therm_lib.mod
 mem_leaf.o: grid_dims.mod io_params.mod var_tables.mod
 ruser.o: catt_start.mod io_params.mod leaf_coms.mod mem_grid.mod mem_leaf.mod
 ruser.o: rconstants.mod therm_lib.mod
@@ -540,6 +540,7 @@ h5_output.o: an_header.mod c34constants.mod ed_max_dims.mod ed_misc_coms.mod
 h5_output.o: ed_node_coms.mod ed_state_vars.mod ed_var_tables.mod
 h5_output.o: fusion_fission_coms.mod grid_coms.mod  hdf5_coms.mod
 leaf_database.o: grid_coms.mod hdf5_utils.mod soil_coms.mod
+canopy_air_coms.o: consts_coms.mod therm_lib.mod therm_lib8.mod
 canopy_radiation_coms.o: ed_max_dims.mod
 consts_coms.o: rconstants.mod
 decomp_coms.o: ed_max_dims.mod

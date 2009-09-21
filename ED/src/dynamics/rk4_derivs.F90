@@ -95,10 +95,10 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
                                    , ss                   & ! intent(in)
                                    , isoilbc              ! ! intent(in)
    use ed_misc_coms         , only : dtlsm                & ! intent(in)
-                                   , fast_diagnostics     & ! intent(in)
                                    , current_time         ! ! intent(in)
    use rk4_coms             , only : rk4eps               & ! intent(in)
                                    , rk4min_sfcwater_mass & ! intent(in)
+                                   , checkbudget          & ! intent(in)
                                    , any_solvable         & ! intent(in)
                                    , rk4met               & ! intent(in)
                                    , rk4patchtype         ! ! structure
@@ -508,7 +508,7 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
    end if
 
    !----- Copying the variables to the budget arrays. -------------------------------------!
-   if (fast_diagnostics) then
+   if (checkbudget) then
       dinitp%wbudget_loss2drainage = -dinitp%avg_drainage
       dinitp%ebudget_loss2drainage = -qw_flux(rk4met%lsl)
 
@@ -538,7 +538,7 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
                   qwloss = wloss * cliqvlme8 * (initp%soil_tempk(k2) - tsupercool8)
                   dinitp%soil_energy(k2)   = dinitp%soil_energy(k2)   - qwloss
                   dinitp%avg_smoist_gc(k2) = dinitp%avg_smoist_gc(k2) - wdns8*wloss
-                  if (fast_diagnostics) then
+                  if (checkbudget) then
                      dinitp%ebudget_latent    = dinitp%ebudget_latent    + qwloss*dslz8(k2)
                   end if
                end if
@@ -580,7 +580,8 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
                                     , tiny_offset          & ! intent(in)
                                     , rk4water_stab_thresh & ! intent(in)
                                     , rk4dry_veg_lwater    & ! intent(in)
-                                    , rk4fullveg_lwater    ! ! intent(in)
+                                    , rk4fullveg_lwater    & ! intent(in)
+                                    , checkbudget          ! ! intent(in)
    use ed_state_vars         , only : sitetype             & ! Structure
                                     , patchtype            ! ! Structure
    use consts_coms           , only : alvl8                & ! intent(in)
@@ -1133,13 +1134,15 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
       dinitp%avg_vapor_ac      = wflxac                         ! Lat.  heat,  Atmo->Canopy
       dinitp%avg_transp        = transp_tot                     ! Transpiration
       dinitp%avg_evap          = wflxgc-dewgndflx+wflxvc_tot ! Evaporation/Condensation
+   end if
+   if (fast_diagnostics .or. checkbudget) then
       dinitp%avg_netrad = dble(csite%rlong_g(ipa)) + dble(csite%rlong_s(ipa))              &
                         + dble(csite%rshort_g(ipa))
       do k=1,initp%nlev_sfcwater
          dinitp%avg_netrad = dinitp%avg_netrad + dble(csite%rshort_s(k,ipa))
       end do
-
-      
+   end if
+   if (checkbudget) then
       dinitp%ebudget_latent     = dinitp%ebudget_latent - qdewgndflx  + qwflxgc            &
                                                         + qtransp_tot + qwflxvc_tot
       dinitp%co2budget_loss2atm = - cflxac

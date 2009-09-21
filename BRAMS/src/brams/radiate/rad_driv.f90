@@ -751,30 +751,35 @@ subroutine zen(m2,m3,ia,iz,ja,jz,iswrtyp,ilwrtyp,glon,glat,cosz)
                          , sun_longitude   ! ! intent(out)
    use rconstants , only : pio1808         & ! intent(in)
                          , twopi8          & ! intent(in)
-                         , day_sec8        ! ! intent(in)
+                         , day_sec8        & ! intent(in)
+                         , day_hr8         & ! intent(in)
+                         , hr_sec8         & ! intent(in)
+                         , min_sec8        ! ! intent(in)
    use mem_mclat,   only : mclat_spline    ! ! subroutine
    use mem_harr,    only : nsolb           & ! intent(in)
                          , solar0          & ! intent(in)
                          , solar1          ! ! intent(out)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer, intent(in)                      :: m2,m3           ! Grid dimensions
-   integer, intent(in)                      :: ia,iz,ja,jz     ! Node dimensions
-   integer, intent(in)                      :: iswrtyp,ilwrtyp ! Radiation scheme flag
-   real   , intent(in)   , dimension(m2,m3) :: glon,glat       ! Grid coordinates
-   real   , intent(inout), dimension(m2,m3) :: cosz
+   integer               , intent(in)    :: m2,m3           ! Grid dimensions
+   integer               , intent(in)    :: ia,iz,ja,jz     ! Node dimensions
+   integer               , intent(in)    :: iswrtyp,ilwrtyp ! Radiation scheme flag
+   real, dimension(m2,m3), intent(in)    :: glon,glat       ! Grid coordinates
+   real, dimension(m2,m3), intent(inout) :: cosz
    !----- Local variables -----------------------------------------------------------------!
-   integer             :: i,j            ! Grid counters
-   integer             :: is             ! counter over solar bands in Harrington radiation
-   integer, external   :: julday         ! Function to compute Julian day
-   real(kind=8)        :: t1             ! 2 pi times fraction of year elapsed
-   real(kind=8)        :: t2             ! 2 pi times fraction of year elapsed with offset
-   real(kind=8)        :: eqn_of_time    ! equation of time solution [s]
-   real(kind=8)        :: d0             ! coefficient for solfac computation
-   real(kind=8)        :: d02            ! coefficient for solfac computation
-   real(kind=8)        :: utc_sec        ! seconds elapsed in current simulation day (UTC)
-   real(kind=8)        :: radlat         ! latitude in radians
-   real(kind=8)        :: hrangl         ! Hour angle in radians
+   integer                 :: i,j                ! Grid counters
+   integer                 :: is                 ! Solar band counter
+   real(kind=8)            :: dayhr              ! Hour of day without longitude correction
+   real(kind=8)            :: dayhrr             ! Hour of day with longitude correction
+   real(kind=8)            :: d0                 ! coefficient for solfac computation
+   real(kind=8)            :: d02                ! coefficient for solfac computation
+   real(kind=8)            :: radlat             ! latitude in radians
+   real(kind=8)            :: hrangl             ! Hour angle in radians
+   !----- Local constants. ----------------------------------------------------------------!
+   real(kind=8), parameter :: capri    = -2.35d1 ! Tropic of Capricornium latitude
+   integer     , parameter :: shsummer = -9      ! Julian day of Southern Hemisphere summer
+   !----- External functions. -------------------------------------------------------------!
+   integer, external   :: julday                 ! Function to compute day of year
    !---------------------------------------------------------------------------------------!
 
 
@@ -809,50 +814,36 @@ subroutine zen(m2,m3,ia,iz,ja,jz,iswrtyp,ilwrtyp,glon,glat,cosz)
 
 
    !----- Declin is the solar latitude in degrees (aka declination) -----------------------!
-   t1     = twopi8 * dble(jday) / 3.66d2
-   declin =  3.22003d-1                                                                       &
-            -2.29710d+1 * dcos(t1) -3.57898d-1 * dcos(t1*2.d0) -1.4398d-1 * dcos(t1*3.d0)  &
-            +3.94638d+1 * dsin(t1) +1.93340d-2 * dsin(t1*2.d0) +5.9280d-2 * dsin(t1*3.d0)
-   t2     = (2.79134d2 + 9.85647d-1 * dble(jday)) * pio1808
-   
-   sdec = dsin(declin*pio1808) !-----  sdec - sine   of declination -----------------------!
-   cdec = dcos(declin*pio1808) !-----  cdec - cosine of declination -----------------------!
+   declin = capri * cos(twopi8 * dble(jday - shsummer) / 3.65d2) * pio1808
+   sdec = dsin(declin) !-----  sdec - sine   of declination -------------------------------!
+   cdec = dcos(declin) !-----  cdec - cosine of declination -------------------------------!
 
-   !---------------------------------------------------------------------------------------!
-   !     The equation of time gives the number of seconds by which sundial time leads      !
-   ! clock time                                                                            !
-   !---------------------------------------------------------------------------------------!
-   eqn_of_time = 5.0323d0                                                                    &
-               - 1.00976d2 * dsin(t2)       -4.30847d2 * dcos(t2)                             &
-               + 5.95275d2 * dsin(t2*2.d0)  +1.25024d1 * dcos(t2*2.d0)                        &
-               + 3.68580d0 * dsin(t2*3.d0)  +1.82500d1 * dcos(t2*3.d0)                        &
-               - 1.24700d1 * dsin(t2*4.d0)
-
-   !----- Find the UTC time in seconds ----------------------------------------------------!
-   utc_sec = dmod(time+3.600d3*dble(itimea/100)+6.d1*dble(mod(itimea,100)),day_sec8)
-
-   !----- Find the longitude where the sun is at zenith -----------------------------------!
-   sun_longitude = 1.80d2 - 3.60d2 * (utc_sec + eqn_of_time) / day_sec8
+   !----- Convert the time into hour of the day. ------------------------------------------!
+   dayhr = time / hr_sec8 + dble(itimea/100) + dble(mod(itimea,100)) / min_sec8
 
   
    !----- Compute the cosine of zenith angle ----------------------------------------------!
    if (lonrad == 0) then
       !----- No longitude variation, use centlon to define the hour angle -----------------!
-      hrangl=(sun_longitude-dble(centlon(1)))*pio1808
+      dayhrr = mod(dayhr + centlon(1)/1.5d1 + day_hr8,day_hr8)
+      hrangl = 1.5d1 * (dayhrr - 1.2d1) *pio1808
       do j=ja,jz
          do i=ia,iz
             radlat=dble(glat(i,j))*pio1808
+            radlat=dble(glat(i,j))*pio1808
             cosz(i,j) = sngl(dsin(radlat)*sdec+dcos(radlat)*cdec*dcos(hrangl))
             !----- Making sure that it is bounded -----------------------------------------!
-            cosz(i,j) = max(-1.,min(1.,cosz(i,j)))
+            cosz(i,j) = max(-1.d0,min(1.d0,cosz(i,j)))
          end do
       end do
    else
       !----- Use actual position to find the hour angle -----------------------------------!
       do j=ja,jz
          do i=ia,iz
+            dayhrr = mod(dayhr + dble(glon(i,j))/1.5d1 + day_hr8,day_hr8)
+            hrangl = 1.5d1 * (dayhrr - 1.2d1) *pio1808
             radlat=dble(glat(i,j))*pio1808
-            hrangl=(sun_longitude-dble(glon(i,j)))*pio1808
+            if (radlat == declin) radlat = radlat + 1.d-5
             cosz(i,j) = sngl(dsin(radlat)*sdec+dcos(radlat)*cdec*dcos(hrangl))
             !----- Making sure that it is bounded -----------------------------------------!
             cosz(i,j) = max(-1.,min(1.,cosz(i,j)))

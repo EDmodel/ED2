@@ -558,11 +558,20 @@
                              !  4 - GEMTM submodel (not available)
                              !  5 - ED2 submodel
 
-   ISTAR   = 1,              ! Surface layer model (used to compute ustar, tstar,...)
-                             !  1 - Louis, 1979: Boundary-Layer Meteor., 17, 187-202.
-                             !      This is the (B)RAMS default
-                             !  2 - Oncley and Dudhia, 1995: Mon. Wea. Rev., 123, 3344-3357.
-                             !      This is used in MM5.
+   ISTAR   = 3,              ! Surface layer model (used to compute ustar, tstar,...)
+                             ! This variable controls the SLM for both LEAF and ED.
+                             !  1 - BRAMS default, based on Louis (1979)
+                             !      It uses empirical relations to estimate the flux
+                             !      based on the bulk Richardson number
+                             !  2 - Oncley and Dudhia (1995) model, based on MM5.
+                             !      It uses a empirical relation between bulk Richardson
+                             !      number and z/L, then computes the flux functions
+                             !  3 - Beljaars and Holtslag (1991) model. Similar to 2, but
+                             !      it finds z/L using a root-finding method, and it has a 
+                             !      different parametrisation for stable layers that
+                             !      works better during night time.
+                             !  4 - The parametrisation of Beljaars and Holtslag, but using
+                             !      z/L estimation as in Oncley and Dudhia. 
 
    ICO2    = 0,              ! CO2 prognostic level
                              !  0 - Do not solve it (CO2CON will be used as a time

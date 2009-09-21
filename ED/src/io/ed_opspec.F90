@@ -1215,9 +1215,9 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
 
-   if (isfclyrm < 1 .or. isfclyrm > 2) then
+   if (isfclyrm < 1 .or. isfclyrm > 4) then
       write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid ISFCLYRM, it must be between 1 and 2. Yours is set to',isfclyrm,'...'
+        'Invalid ISFCLYRM, it must be between 1 and 4. Yours is set to',isfclyrm,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if

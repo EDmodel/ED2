@@ -360,7 +360,8 @@ module rk4_driver
                                       , rk4met               & ! intent(in)
                                       , rk4min_veg_temp      & ! intent(in)
                                       , rk4max_veg_temp      & ! intent(in)
-                                      , tiny_offset          ! ! intent(in) 
+                                      , tiny_offset          & ! intent(in) 
+                                      , checkbudget          ! ! intent(in)
       use ed_state_vars        , only : sitetype             & ! structure
                                       , patchtype            & ! structure
                                       , edgrid_g             ! ! structure
@@ -370,7 +371,6 @@ module rk4_driver
                                       , dtlsm                ! ! intent(in)
       use soil_coms            , only : soil8                & ! intent(in)
                                       , slz8                 ! ! intent(in)
-      use ed_misc_coms         , only : fast_diagnostics     ! ! intent(in)
       use grid_coms            , only : nzg                  & ! intent(in)
                                       , nzs                  ! ! intent(in)
       use therm_lib            , only : qwtk                 ! ! subroutine
@@ -441,14 +441,6 @@ module rk4_driver
       ! check this before copying.                                                         !
       !------------------------------------------------------------------------------------!
       if(fast_diagnostics) then
-         co2budget_loss2atm    = sngloff(initp%co2budget_loss2atm   ,tiny_offset)
-         ebudget_loss2atm      = sngloff(initp%ebudget_loss2atm     ,tiny_offset)
-         ebudget_loss2drainage = sngloff(initp%ebudget_loss2drainage,tiny_offset)
-         ebudget_loss2runoff   = sngloff(initp%ebudget_loss2runoff  ,tiny_offset)
-         ebudget_latent        = sngloff(initp%ebudget_latent       ,tiny_offset)
-         wbudget_loss2atm      = sngloff(initp%wbudget_loss2atm     ,tiny_offset)
-         wbudget_loss2drainage = sngloff(initp%wbudget_loss2drainage,tiny_offset)
-         wbudget_loss2runoff   = sngloff(initp%wbudget_loss2runoff  ,tiny_offset)
 
          csite%avg_vapor_vc(ipa)         =sngloff(initp%avg_vapor_vc      ,tiny_offset)
          csite%avg_dew_cg(ipa)           =sngloff(initp%avg_dew_cg        ,tiny_offset)
@@ -469,6 +461,17 @@ module rk4_driver
             csite%avg_smoist_gg(k,ipa)   =sngloff(initp%avg_smoist_gg(k)     ,tiny_offset)
             csite%avg_smoist_gc(k,ipa)   =sngloff(initp%avg_smoist_gc(k)     ,tiny_offset)
          end do
+      end if
+
+      if(checkbudget) then
+         co2budget_loss2atm    = sngloff(initp%co2budget_loss2atm   ,tiny_offset)
+         ebudget_loss2atm      = sngloff(initp%ebudget_loss2atm     ,tiny_offset)
+         ebudget_loss2drainage = sngloff(initp%ebudget_loss2drainage,tiny_offset)
+         ebudget_loss2runoff   = sngloff(initp%ebudget_loss2runoff  ,tiny_offset)
+         ebudget_latent        = sngloff(initp%ebudget_latent       ,tiny_offset)
+         wbudget_loss2atm      = sngloff(initp%wbudget_loss2atm     ,tiny_offset)
+         wbudget_loss2drainage = sngloff(initp%wbudget_loss2drainage,tiny_offset)
+         wbudget_loss2runoff   = sngloff(initp%wbudget_loss2runoff  ,tiny_offset)
       else
          co2budget_loss2atm             = 0.
          ebudget_loss2atm               = 0.

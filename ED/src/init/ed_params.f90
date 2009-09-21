@@ -328,14 +328,14 @@ subroutine init_can_air_params()
       !      This is the minimum canopy depth that is used to calculate the heat and       !
       ! moisture storage capacity in the canopy air [m].                                   !
       !------------------------------------------------------------------------------------!
-      minimum_canopy_depth  = 5.0
+      minimum_canopy_depth  = 0.2
       minimum_canopy_depth8 = dble(minimum_canopy_depth)
 
       !------------------------------------------------------------------------------------!
       !     This is the minimum vegetation height, used to calculate drag coefficients and !
       ! similar things.                                                                    !
       !------------------------------------------------------------------------------------!
-      veg_height_min = 1.0 ! was 0.2
+      veg_height_min = 0.2 ! was 0.2
    end select
 
    !----- This is the dimensionless exponential wind atenuation factor. -------------------!
@@ -350,7 +350,7 @@ subroutine init_can_air_params()
    ustmin8   = dble(ustmin)
    
    !----- This is the minimum wind scale under stable and unstable conditions. ------------!
-   ubmin         = 0.25
+   ubmin         = 0.65
    ubmin8        = dble(ubmin)
    
    !----- This is the relation between displacement height and roughness when icanturb=-1. !
@@ -1468,7 +1468,7 @@ subroutine init_rk4_params()
    rk4epsi     = 1.d0/rk4eps  ! The inverse of desired accuracy.
    hmin        = 1.d-7        ! The minimum step size.
    print_diags = .false.      ! Flag to print the diagnostic check.
-   checkbudget = .true.       ! Flag to check CO2, water, and energy budgets every time
+   checkbudget = .false.      ! Flag to check CO2, water, and energy budgets every time
                               !     step and stop the run in case any of these budgets 
                               !     doesn't close.
    !---------------------------------------------------------------------------------------!
