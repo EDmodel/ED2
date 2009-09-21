@@ -53,7 +53,7 @@ use ke_coms, only: &
              
 use rconstants, only: &
                 vonk, &        !INTENT(IN)
-                g              !INTENT(IN)
+                grav           !INTENT(IN)
 
 implicit none
 
@@ -620,7 +620,7 @@ use rconstants, only: &
                 onethird, &    ! intent(in)
                 vonk, &        ! intent(in)
                 tkmin, &       ! intent(in)
-                g,     &       ! intent(in)
+                grav,  &       ! intent(in)
                 sigwmin        ! intent(in)
 
 implicit none
@@ -788,7 +788,7 @@ do j=ja,jz
              (-(sflux_u(i,j)*(up( lpu ,i,j)+up( lpu1 ,i-1,j))  &
                +sflux_v(i,j)*(vp( lpv ,i,j)+vp( lpv1 ,i,j-jd))  &
                +sflux_w(i,j)*wp(k2,i,j))/vctr1(k2)  &
-               +sflux_t(i,j)*g/theta(k2,i,j))/dn0(k2,i,j) &
+               +sflux_t(i,j)*grav/theta(k2,i,j))/dn0(k2,i,j) &
             
             - tkep2(k2)*sqrt(max(1.e-20,tkep2(k2)))/(vctr9(k2)*16.6)
 

@@ -33,6 +33,7 @@ OBJECTS =                       \
 	ncep_fill_infotable.o   \
 	ncep_loadvars.o         \
 	ncep_output.o           \
+	rain_downscale.o        \
 	rapp_driver.o           \
 	rapp_opspec.o           \
 	rconstants.o            \

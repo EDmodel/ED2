@@ -10,7 +10,7 @@ subroutine ed_node_decomp(init,standalone,masterworks)
   use ed_node_coms, only: mmxp,mmyp,mia,miz,mja,mjz,mi0,mj0,mibcon
   use ed_para_coms
   use mem_sites,only : n_ed_region
-  use ed_work_vars,only : work_e,ed_alloc_work,ed_nullify_work
+  use ed_work_vars,only : work_e,work_v,ed_alloc_work,ed_nullify_work
   use soil_coms, only: isoilflg
 
   implicit none
@@ -29,7 +29,7 @@ subroutine ed_node_decomp(init,standalone,masterworks)
     ntotmachs=nmachs
   end if
     
-  allocate(work_e(ngrids))
+  allocate(work_e(ngrids),work_v(ngrids))
 
   !      Decompose all grids into subdomains
   
@@ -54,7 +54,7 @@ subroutine ed_node_decomp(init,standalone,masterworks)
      
      call get_work(ngr,mmxp(ngr),mmyp(ngr))
      
-     call ed_parvec_work(ngr,mmxp(ngr),mmyp(ngr),work_e(ngr)%land)
+     call ed_parvec_work(ngr,mmxp(ngr),mmyp(ngr))
      
   enddo
 
@@ -63,7 +63,7 @@ subroutine ed_node_decomp(init,standalone,masterworks)
      work_e(ngr)%work(1,1)=1.
      work_e(ngr)%land(1,1)=.true.
 
-     call ed_parvec_work(ngr,mmxp(ngr),mmyp(ngr),work_e(ngr)%land)
+     call ed_parvec_work(ngr,mmxp(ngr),mmyp(ngr))
 
   end do
 
@@ -314,14 +314,15 @@ end subroutine get_work
 !==========================================================================================!
 !==========================================================================================!
 
-subroutine ed_parvec_work(ifm,nxp,nyp,land)
+subroutine ed_parvec_work(ifm,nxp,nyp)
 
-  use ed_work_vars,  only: work_e
-  
-  implicit none
+  use ed_work_vars,  only : work_e              & ! intent(in)
+                          , work_v              & ! intent(out)
+                          , ed_alloc_work_vec   & ! subroutine
+                          , ed_nullify_work_vec ! ! subroutine
+   implicit none
 
   integer,intent(in) :: nxp,nyp
-  logical,intent(in),dimension(nxp,nyp) :: land
   integer :: npolygons
   integer :: poly
   integer,intent(in) :: ifm
@@ -332,34 +333,29 @@ subroutine ed_parvec_work(ifm,nxp,nyp,land)
   npolygons = 0
   do j = 1,nyp
      do i = 1,nxp
-        if(land(i,j)) then
+        if(work_e(ifm)%land(i,j)) then
            npolygons = npolygons + 1
         endif
      enddo
   enddo
   
   ! Allocate the polygon vectors
-  
-  allocate(work_e(ifm)%vec_glon(npolygons))
-  allocate(work_e(ifm)%vec_glat(npolygons))
-  allocate(work_e(ifm)%vec_landfrac(npolygons))
-  allocate(work_e(ifm)%vec_ntext(npolygons))
-  allocate(work_e(ifm)%vec_xid(npolygons))
-  allocate(work_e(ifm)%vec_yid(npolygons))
+  call ed_nullify_work_vec(work_v(ifm))
+  call ed_alloc_work_vec(work_v(ifm),npolygons)
 
   poly = 0
   do j = 1,nyp
      do i = 1,nxp
         
-        if(land(i,j)) then
+        if(work_e(ifm)%land(i,j)) then
            poly = poly + 1
            
-           work_e(ifm)%vec_glon(poly) = work_e(ifm)%glon(i,j)
-           work_e(ifm)%vec_glat(poly) = work_e(ifm)%glat(i,j)
-           work_e(ifm)%vec_landfrac(poly) = work_e(ifm)%landfrac(i,j)
-           work_e(ifm)%vec_ntext(poly) = work_e(ifm)%ntext(i,j)
-           work_e(ifm)%vec_xid(poly) = i
-           work_e(ifm)%vec_yid(poly) = j
+           work_v(ifm)%glon(poly)     = work_e(ifm)%glon(i,j)
+           work_v(ifm)%glat(poly)     = work_e(ifm)%glat(i,j)
+           work_v(ifm)%landfrac(poly) = work_e(ifm)%landfrac(i,j)
+           work_v(ifm)%ntext(poly)    = work_e(ifm)%ntext(i,j)
+           work_v(ifm)%xid(poly)      = i
+           work_v(ifm)%yid(poly)      = j
 
         endif
      end do

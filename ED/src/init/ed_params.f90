@@ -138,18 +138,20 @@ subroutine init_lapse_params()
 
   use met_driver_coms, only: lapse
 
-  lapse%geoht   = 0.0
-  lapse%vels    = 0.0
-  lapse%atm_tmp = 0.0
-  lapse%atm_shv = 0.0
-  lapse%prss    = 0.0
-  lapse%pcpg    = 0.0
-  lapse%atm_co2 = 0.0
-  lapse%rlong   = 0.0
-  lapse%nir_beam    = 0.0
-  lapse%nir_diffuse = 0.0
-  lapse%par_beam    = 0.0
-  lapse%par_diffuse = 0.0
+  lapse%geoht        = 0.0
+  lapse%vels         = 0.0
+  lapse%atm_tmp      = 0.0
+  lapse%atm_theta    = 0.0
+  lapse%atm_enthalpy = 0.0
+  lapse%atm_shv      = 0.0
+  lapse%prss         = 0.0
+  lapse%pcpg         = 0.0
+  lapse%atm_co2      = 0.0
+  lapse%rlong        = 0.0
+  lapse%nir_beam     = 0.0
+  lapse%nir_diffuse  = 0.0
+  lapse%par_beam     = 0.0
+  lapse%par_diffuse  = 0.0
 
 end subroutine init_lapse_params
 !==========================================================================================!
@@ -261,21 +263,33 @@ end subroutine init_can_rad_params
 !    This subroutine will assign some canopy air related parameters.                       !
 !------------------------------------------------------------------------------------------!
 subroutine init_can_air_params()
-
-   use canopy_air_coms, only : dry_veg_lwater        & ! intent(out) 
+   use canopy_air_coms, only : icanturb              & ! intent(in)
+                             , dry_veg_lwater        & ! intent(out) 
                              , fullveg_lwater        & ! intent(out) 
                              , rb_inter              & ! intent(out) 
                              , rb_slope              & ! intent(out) 
                              , veg_height_min        & ! intent(out) 
                              , minimum_canopy_depth  & ! intent(out) 
-                             , minimum_canopy_depth8 ! ! intent(out)
+                             , minimum_canopy_depth8 & ! intent(out) 
+                             , exar                  & ! intent(out) 
+                             , covr                  & ! intent(out) 
+                             , ustmin                & ! intent(out) 
+                             , ubmin                 & ! intent(out) 
+                             , exar8                 & ! intent(out) 
+                             , ez                    & ! intent(out) 
+                             , vh2vr                 & ! intent(out) 
+                             , vh2dh                 & ! intent(out) 
+                             , ustmin8               & ! intent(out) 
+                             , ubmin8                & ! intent(out) 
+                             , ez8                   & ! intent(out) 
+                             , vh2dh8                ! ! intent(out)
 
    !---------------------------------------------------------------------------------------!
    !    Minimum leaf water content to be considered.  Values smaller than this will be     !
    ! flushed to zero.  This value is in kg/[m2 plant], so it will be always scaled by      !
    ! (LAI+WAI).                                                                            !
    !---------------------------------------------------------------------------------------!
-   dry_veg_lwater = 5.e-3
+   dry_veg_lwater = 5.e-4
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -294,18 +308,61 @@ subroutine init_can_air_params()
    rb_slope = 25.0
    rb_inter = 0.0 
 
-   !---------------------------------------------------------------------------------------!
-   !      This is the minimum canopy depth that is used to calculate the heat and moisture !
-   ! storage capacity in the canopy air [m].                                               !
-   !---------------------------------------------------------------------------------------!
-   minimum_canopy_depth  = 5.0
-   minimum_canopy_depth8 = dble(minimum_canopy_depth)
+   select case (icanturb)
+   case (-1)
 
-   !---------------------------------------------------------------------------------------!
-   !     This is the minimum vegetation height, used to calculate drag coefficients and    !
-   ! similar things.                                                                       !
-   !---------------------------------------------------------------------------------------!
-   veg_height_min = 1.0 ! was 0.2
+      !------------------------------------------------------------------------------------!
+      !     This is the minimum vegetation height, used to calculate drag coefficients and !
+      ! similar things.                                                                    !
+      !------------------------------------------------------------------------------------!
+      veg_height_min = 0.2
+
+      !------------------------------------------------------------------------------------!
+      !      This is the minimum canopy depth that is used to calculate the heat and       !
+      ! moisture storage capacity in the canopy air [m].                                   !
+      !------------------------------------------------------------------------------------!
+      minimum_canopy_depth  = 0.2
+      minimum_canopy_depth8 = dble(minimum_canopy_depth)
+   case default
+      !------------------------------------------------------------------------------------!
+      !      This is the minimum canopy depth that is used to calculate the heat and       !
+      ! moisture storage capacity in the canopy air [m].                                   !
+      !------------------------------------------------------------------------------------!
+      minimum_canopy_depth  = 5.0
+      minimum_canopy_depth8 = dble(minimum_canopy_depth)
+
+      !------------------------------------------------------------------------------------!
+      !     This is the minimum vegetation height, used to calculate drag coefficients and !
+      ! similar things.                                                                    !
+      !------------------------------------------------------------------------------------!
+      veg_height_min = 1.0 ! was 0.2
+   end select
+
+   !----- This is the dimensionless exponential wind atenuation factor. -------------------!
+   exar  = 2.5
+   exar8 = dble(exar)
+
+   !----- This is the scaling factor of tree area index (not sure if it is used...) -------!
+   covr = 2.16
+   
+   !----- This is the minimum ustar under stable and unstable conditions. -----------------!
+   ustmin    = 0.10
+   ustmin8   = dble(ustmin)
+   
+   !----- This is the minimum wind scale under stable and unstable conditions. ------------!
+   ubmin         = 0.65
+   ubmin8        = dble(ubmin)
+   
+   !----- This is the relation between displacement height and roughness when icanturb=-1. !
+   ez  = 0.172
+   ez8 = dble(ez)
+
+   !----- This is the conversion from veg. height to roughness when icanturb /= -1. -------!
+   vh2vr = 0.13
+   
+   !----- This is the conversion from vegetation height to displacement height. -----------!
+   vh2dh  = 0.63
+   vh2dh8 = dble(vh2dh)
 
    return
 end subroutine init_can_air_params
@@ -1360,6 +1417,7 @@ subroutine init_rk4_params()
                                    , hmin                  & ! intent(out)
                                    , print_diags           & ! intent(out)
                                    , checkbudget           & ! intent(out)
+                                   , const_depth           & ! intent(out)
                                    , debug                 & ! intent(out)
                                    , toocold               & ! intent(out)
                                    , toohot                & ! intent(out)
@@ -1415,6 +1473,12 @@ subroutine init_rk4_params()
                               !     doesn't close.
    !---------------------------------------------------------------------------------------!
 
+   !---------------------------------------------------------------------------------------!
+   !     This flag determines whether density or canopy air space density is assumed       !
+   ! constant during the RK4 integration.  The value assumed constant is updated only once !
+   ! right before the integration.                                                         !
+   !---------------------------------------------------------------------------------------!
+   const_depth = .false.
 
 
    !---------------------------------------------------------------------------------------!

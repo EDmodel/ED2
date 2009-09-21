@@ -18,7 +18,7 @@ subroutine cuparth(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0,maxiens,ie
        icoic                             !INTENT(IN)
 
   use mem_scratch2_grell
-  use rconstants, only: rgas, cp, rm, p00, t00, g, cpor, pi1,onerad
+  use rconstants, only: rdry, cp, rh2o, p00, t00, grav, cpor, pi1,onerad
 
   !srf   mgmxp, mgmyp, mgmzp sao usadas alocar memoria para as
   !      variaveis da parametrizacao do Grell.
@@ -156,7 +156,7 @@ subroutine cuparth(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0,maxiens,ie
            ! Pressure in mbar
            us_grell(i,k) = .5*( ua(kr,i,j) + ua(kr,i-1,j) )
            vs_grell(i,k) = .5*( va(kr,i,j) + va(kr,i,j-1) )
-           omeg(i,k)   = -g*dn0(kr,i,j)*.5*( wa(kr,i,j)+wa(kr-1,i,j) )
+           omeg(i,k)   = -grav*dn0(kr,i,j)*.5*( wa(kr,i,j)+wa(kr-1,i,j) )
 
            t(i,k)  = theta(kr,i,j)*(pp(kr,i,j)+pi0(kr,i,j))/cp
            q(i,k)  = rv(kr,i,j)
@@ -218,7 +218,7 @@ subroutine cuparth(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0,maxiens,ie
            dq=.5*(q(i,k+1)-q(i,k-1))
            ! mconv(i)=mconv(i)+1.e5*omeg(i,k)*dq/g
            ! Convergencia de umidade da coluna
-           mconv(i)=mconv(i)+omeg(i,k)*dq/g
+           mconv(i)=mconv(i)+omeg(i,k)*dq/grav
            ! Convergencia de umidade da coluna (omega em Pa/s)
         enddo
      enddo
@@ -337,7 +337,7 @@ subroutine cup_enss(mynum, m1, m2, m3, i0, j0,                 &
 
   ! USE Modules for Grell Parameterization
   use mem_scratch3_grell
-  use rconstants, only: g, day_sec,alvl,cp
+  use rconstants, only: grav, day_sec,alvl,cp
   
   implicit none
   integer maxiens,maxens,maxens2,maxens3,ensdim
@@ -841,11 +841,11 @@ subroutine cup_enss(mynum, m1, m2, m3, i0, j0,                 &
 
               if (k.eq.ktop(i)-0)                    &
                    dellaqc(i,k)=.01*zuo(i,ktop(i))*  &
-                   qrco(i,ktop(i))*g/(po_cup(i,k)-po_cup(i,k+1))
+                   qrco(i,ktop(i))*grav/(po_cup(i,k)-po_cup(i,k+1))
 
               if (k.lt.ktop(i).and.k.gt.kbcon(i)) then
                  dz = zo_cup(i,k+1)-zo_cup(i,k)
-                 dellaqc(i,k) = .01*g*cd(i,k)*dz*zuo(i,k)*  &
+                 dellaqc(i,k) = .01*grav*cd(i,k)*dz*zuo(i,k)*  &
                       .5*(qrco(i,k)+qrco(i,k+1))/              &
                       (po_cup(i,k  )-po_cup(i,k+1))
               endif
@@ -1129,7 +1129,7 @@ subroutine cup_dellas(ierr, z_cup, p_cup, hcd, edt, zd, cdd, he, mix,   &
      mgmxp, mkx, mgmzp, istart, iend, della, itest, j, mentrd_rate, zu, &
      cd, hc, ktop, k22, kbcon, mentr_rate, jmin, he_cup, kdet, kpbl,    &
      name)
-  use rconstants, only: g
+  use rconstants, only: grav
   implicit none
   character (LEN=*) name  !CHARACTER *(*) name
   integer mix, mgmxp, mkx, mgmzp, i, k, istart, iend,  &
@@ -1220,7 +1220,7 @@ subroutine cup_dellas(ierr, z_cup, p_cup, hcd, edt, zd, cdd, he, mix,   &
              detdo*.5*(HCD(i,K+1)+HCD(i,K)) -                        &
              entup*he(i,k) - entdo*he(i,k) -                         &
              entupk*he_cup(i,k22(i)) -  entdoj*he_cup(i,jmin(i)) +   &
-             detupk*hc(i,ktop(i)))*g/dp
+             detupk*hc(i,ktop(i)))*grav/dp
      enddo
   enddo
 
@@ -1232,7 +1232,7 @@ end subroutine cup_dellas
 subroutine cup_dellabot(he_cup, ierr, z_cup, p_cup, hcd, edt,   &
      zd, cdd, he, mix, mgmxp, mkx, mgmzp, istart, iend, della, itest, j,  &
      mentrd_rate, z)
-  use rconstants, only: g
+  use rconstants, only: grav
   implicit none
   integer mix, mgmxp, mkx, mgmzp, i, istart, iend, itest, j
   real z_cup(mgmxp,mgmzp), p_cup(mgmxp,mgmzp), hcd(mgmxp,mgmzp),   &
@@ -1267,7 +1267,7 @@ subroutine cup_dellabot(he_cup, ierr, z_cup, p_cup, hcd, edt,   &
 
      DELLA(I,1)= (detdo1*.5*(hcd(i,1)+hcd(i,2)) +  &
           detdo2*hcd(i,1) + subin*he_cup(i,2) -    &
-          entdo*he(i,1))*g/dp
+          entdo*he(i,1))*grav/dp
      !
      !srf-----print-------
 
@@ -1284,7 +1284,7 @@ subroutine cup_forcing_ens_16(aa0,aa1,xaa0,mbdt,dtime,xmb,ierr,   &
      mconv,omeg,zd,k22,zu,pr_ens,edt,aad,kbcon,massflx,		  &
      iact_old_gr,dir,ensdim,massfln,massfld,iresult,xff_ens3,xk,  &
      p_cup,ktop,icoic)
-  use rconstants, only: g
+  use rconstants, only: grav
   implicit none
   character (LEN=*) name  !CHARACTER *(*) name
 
@@ -1364,11 +1364,11 @@ subroutine cup_forcing_ens_16(aa0,aa1,xaa0,mbdt,dtime,xmb,ierr,   &
            !     More like Brown (1979), or Frank-Cohen (199?)
            !
            !---  omeg is in bar/s, mconv done with omeg in Pa/s
-           xff_ens3(4)=     -omeg(i,k22(i))/g
-           xff_ens3(5)=     -omeg(i,kbcon(i))/g
-           xff_ens3(6)=     -omeg(i,1)/g
+           xff_ens3(4)=     -omeg(i,k22(i))/grav
+           xff_ens3(5)=     -omeg(i,kbcon(i))/grav
+           xff_ens3(6)=     -omeg(i,1)/grav
            do k=2,kbcon(i)-1
-              xomg=     -omeg(i,k)/g   
+              xomg=     -omeg(i,k)/grav   
               if(xomg.gt.xff_ens3(6)) xff_ens3(6)= 0. !xomg
            enddo
            !

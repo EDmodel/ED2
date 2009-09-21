@@ -16,6 +16,7 @@ subroutine ncep_alloc(month,year)
    use mod_ncep   , only : ncep_g        & ! intent(inout)
                          , flux_g        & ! intent(in)
                          , state_g       & ! intent(in)
+                         , rain_g        & ! intent(in)
                          , alloc_ncep    & ! subroutine
                          , nullify_ncep  & ! subroutine
                          , init_ncep     ! ! subroutine
@@ -26,6 +27,7 @@ subroutine ncep_alloc(month,year)
    integer, intent(in)  :: year          ! This year
    !----- Local variables. ----------------------------------------------------------------!
    integer              :: ng            ! Grid counter
+   integer              :: ng4           ! Aux. grid counter
    integer              :: ndays         ! Number of days of this month
    integer              :: doy_1st       ! Day of year of the first day of this month
    !----- External functions. -------------------------------------------------------------!
@@ -40,15 +42,29 @@ subroutine ncep_alloc(month,year)
    ! first time of the next month. This is used for the time interpolation.                !
    !---------------------------------------------------------------------------------------!
    ndays          = monndays(month,year)
-   sstp(1:ngrids) = nint(day_sec/inpfrq) * ndays
-   sstp(2)        = nint(day_sec/radfrq) * ndays
-   
+   do ng=1,ngrids
+      select case (ng)
+      case (1,3)
+         sstp(ng) = nint(day_sec/inpfrq) * ndays
+      case default
+         sstp(ng) = nint(day_sec/radfrq) * ndays
+      end select
+   end do
+
    !----- Finding the offset for the time considering the month we are in. ----------------!
    doy_1st         = dayofyear(month,1,year)
-   t_1st(1:ngrids) = nint(day_sec/inpfrq) * (doy_1st - 1) + 1
-   tlast(1:ngrids) = t_1st(1:ngrids) + sstp(1:ngrids) - 1
-   t_1st(2)        = 1         ! Not really used...
-   tlast(2)        = sstp(2)   ! Not really used...
+
+   do ng=1, ngrids
+
+      select case (ng)
+      case (1,3)
+         t_1st(ng) = nint(day_sec/inpfrq) * (doy_1st - 1) + 1
+         tlast(ng) = t_1st(ng) + sstp(ng) - 1
+      case default
+         t_1st(ng) = 1        ! Not really used...
+         tlast(ng) = sstp(ng) ! Not really used...
+      end select
+   end do
 
    write (unit=*,fmt='(3(a,1x,i6),2(a,1x,a))')                                             &
       '         [|] Time info (Grid 1): T_1ST=',t_1st(1),'. TLAST=',tlast(1)               &
@@ -59,9 +75,11 @@ subroutine ncep_alloc(month,year)
    !----- Now we proceed with the actual structure allocation. ----------------------------!
    allocate(ncep_g(ngrids)) 
    do ng=1,ngrids
+      ng4 = min (ng,4)
 
       call nullify_ncep(ncep_g(ng))
-      call alloc_ncep(ncep_g(ng), ssxp(ng), ssyp(ng), sstp(ng), state_g(ng), flux_g(ng))
+      call alloc_ncep(ncep_g(ng),ssxp(ng),ssyp(ng),sstp(ng),state_g(ng4),flux_g(ng4)       &
+                     ,rain_g(ng4))
       call init_ncep(ncep_g(ng),sstp(ng))
    end do
 

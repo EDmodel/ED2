@@ -364,6 +364,11 @@ leaf3_teb.o : $(SURFACE)/leaf3_teb.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+leaf3_utils.o : $(SURFACE)/leaf3_utils.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 local_proc.o : $(CORE)/local_proc.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -1124,6 +1129,11 @@ therm_lib.o: $(UTILS_LIB)/therm_lib.f90
 	 $(F90_COMMAND) $(<F:.f90=.f90)
 	 rm -f $(<F:.f90=.f90)
 
+therm_lib8.o: $(UTILS_LIB)/therm_lib8.f90
+	 cp -f $< $(<F:.f90=.f90)
+	 $(F90_COMMAND) $(<F:.f90=.f90)
+	 rm -f $(<F:.f90=.f90)
+
 tkenn.o: $(TURB)/tkenn.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -1554,6 +1564,11 @@ landuse_init.o : $(ED_INIT)/landuse_init.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+lapse.o : $(ED_UTILS)/lapse.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 leaf_database.o : $(ED_IO)/leaf_database.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -1650,6 +1665,11 @@ rk4_driver.o : $(ED_DYNAMICS)/rk4_driver.F90
 	rm -f $(<F:.F90=.F90)
 
 rk4_integ_utils.o : $(ED_DYNAMICS)/rk4_integ_utils.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+rk4_misc.o : $(ED_DYNAMICS)/rk4_misc.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

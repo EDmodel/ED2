@@ -137,7 +137,9 @@ subroutine ed_model()
    
    !    Allocate memory to the integration patch
 
-   if(integration_scheme == 1) call initialize_rk4patches(1)
+   if (integration_scheme == 1 .or. integration_scheme == 2) then
+      call initialize_rk4patches(1)
+   end if
 
    do ifm=1,ngrids
       call reset_averaged_vars(edgrid_g(ifm))
@@ -178,15 +180,16 @@ subroutine ed_model()
       end do
 
       ! THEN, DO THE PHOTOSYNTHESIS AND BIOPHYSICS.
-      if(integration_scheme == 0)then
+      select case (integration_scheme)
+      case (0)
          do ifm=1,ngrids
             call euler_timestep(edgrid_g(ifm))
          end do
-      elseif(integration_scheme == 1)then
+      case (1,2)
          do ifm=1,ngrids
             call rk4_timestep(edgrid_g(ifm),ifm)
          end do
-      endif
+      end select
       
       !-------------------------------------------------------------------!
       ! Update the daily averages if daily or monthly analysis are needed !
@@ -295,8 +298,9 @@ subroutine ed_model()
             call read_met_drivers()
             
             ! Re-allocate integration buffer
-            if(integration_scheme == 1 .and. (maxcohort >= 0 .or. maxpatch >= 0)) &
+            if (integration_scheme == 1 .or. integration_scheme == 2) then
                call initialize_rk4patches(0)
+            end if
          endif
          
       endif

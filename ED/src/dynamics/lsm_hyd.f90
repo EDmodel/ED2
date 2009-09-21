@@ -202,7 +202,7 @@ subroutine calcHydroSubsurface()
   use soil_coms, only: soil,slz,dslz
   use grid_coms, only: ngrids,nzg
   use ed_misc_coms, only: dtlsm
-  use therm_lib, only: qtk,qwtk,qwtk8
+  use therm_lib, only: qtk,qwtk
   use consts_coms, only: wdns
   implicit none
 

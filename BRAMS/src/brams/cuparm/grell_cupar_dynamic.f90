@@ -629,7 +629,7 @@ subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,cl
                                     ,comp_down,tscal_kf,mconv,omeg,p_cup,edt,mbprime,one_b &
                                     ,aatot0,aatot,ierr,k22,kbcon,ktop,mfke,pwav,pwev       &
                                     ,prev_dnmf,dnmf_dyn,upmf_dyn)
-   use rconstants  , only : g             ! ! Gravity acceleration.
+   use rconstants  , only : grav           ! ! Gravity acceleration.
 
    implicit none
    !----- Input array dimensions and boundaries. ------------------------------------------!
@@ -714,7 +714,7 @@ subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,cl
    case ('lo')
       loloop: do icld = cldd,clds
          if (ierr(icld) /= 0) cycle loloop
-         upmf_dyn(icld,1) = max(0.,-omeg(k22(icld))/g - prev_dnmf(icld))
+         upmf_dyn(icld,1) = max(0.,-omeg(k22(icld))/grav - prev_dnmf(icld))
       end do loloop
 
    !---------------------------------------------------------------------------------------!
@@ -774,12 +774,12 @@ subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,cl
          !---------------------------------------------------------------------------------!
          enloloop: do icld=cldd,clds
             if (ierr(icld) /= 0) cycle enloloop
-            upmf_dyn(icld,11) = max(0.,-omeg(k22(icld))/g   - prev_dnmf(icld))
-            upmf_dyn(icld,12) = max(0.,-omeg(kbcon(icld))/g - prev_dnmf(icld))
+            upmf_dyn(icld,11) = max(0.,-omeg(k22(icld))/grav   - prev_dnmf(icld))
+            upmf_dyn(icld,12) = max(0.,-omeg(kbcon(icld))/grav - prev_dnmf(icld))
             !----- Picking up the strongest mass flux below the LFC (except k22) ----------!
             ksmf = minloc(omeg(1:(kbcon(icld)-1)),dim=1                                    &
                          ,mask=omeg(1:(kbcon(icld)-1)) /= omeg(k22(icld)))
-            upmf_dyn(icld,13) = max(0.,-omeg(ksmf)/g - prev_dnmf(icld))
+            upmf_dyn(icld,13) = max(0.,-omeg(ksmf)/grav - prev_dnmf(icld))
          end do enloloop
 
          

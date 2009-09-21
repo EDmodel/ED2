@@ -1028,6 +1028,12 @@ subroutine opspec3
      print*,' fatal - isfcl must be either 1, 2, or 5. Yours is set to ',ibruvais,'...'
      ifaterr=ifaterr+1
   end select
+  
+  ! Check whether the surface layer exchange scheme the user chose is okay. 
+  if (isfcl /= 0 .and. (istar < 1 .or. istar > 4)) then
+     print *, 'fatal - ISTAR must be between 1 and 4, and yours is set to ',istar,'...'
+     ifaterr=ifaterr+1
+  end if
 
   ! check whether the soil model will be run and make sure that the
   !   number of soil levels are correct.(severity - f,i )

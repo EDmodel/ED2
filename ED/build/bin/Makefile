@@ -35,7 +35,7 @@ all:
 gendep:
 	@echo ""
 	./generate_deps.sh $(ED_ROOT)
-	@echo Finished dependencies
+	@echo === Finished dependencies ===
 
 $(EXE): $(LIBMODEL) $(MAINOBJ) 
 	@echo ""

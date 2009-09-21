@@ -183,6 +183,10 @@ module disturbance_utils
                  endif
               enddo
               
+              ! Update temperature and density. This must be done before planting, since the leaf
+              ! temperature is initially assigned as the canopy air temperature.
+              call update_patch_thermo_props(csite,q+onsp,q+onsp)
+
               ! if the new patch is agriculture, plant it with grasses.
               if(q == 1)call plant_patch(csite,q+onsp,cpoly%agri_stocking_pft(isi),   &
                    cpoly%agri_stocking_density(isi),cpoly%green_leaf_factor(:,isi), 1.0, cpoly%lsl(isi))
@@ -202,10 +206,12 @@ module disturbance_utils
               
               ! Update the derived properties including veg_height, patch hcapveg, lai
               call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss,q+onsp)
-
               ! Update soil temp, fracliq, etc.
               call new_patch_sfc_props(csite, q+onsp)
-              
+
+              ! Update budget properties
+              call update_budget(csite,cpoly%lsl(isi),q+onsp,q+onsp)
+
               ! Update AGB, basal area.
               ! !!!!!!!!!! SHOULD THIS BE HERE OR OUTSIDE THIS LOOP?? !!!!!!!!
               ! !!!! IS THIS BECAUSE UPDATED SITE PROPS ARE REQUIRED ON EVERY
@@ -479,7 +485,9 @@ end subroutine apply_disturbances
     !--------------------------------------------------------------------------------------!
     csite%ntext_soil(1:nzg,np) = csite%ntext_soil(1:nzg,dp)
 
-    csite%can_temp(np) = 0.0
+    csite%can_theta(np) = 0.0
+
+    csite%can_prss(np) = 0.0
 
     csite%can_shv(np) = 0.0
 
@@ -550,7 +558,9 @@ end subroutine apply_disturbances
 
     csite%sum_chd(np) = csite%sum_chd(np) + csite%sum_chd(cp) * area_fac
 
-    csite%can_temp(np) = csite%can_temp(np) + csite%can_temp(cp) * area_fac
+    csite%can_theta(np) = csite%can_theta(np) + csite%can_theta(cp) * area_fac
+
+    csite%can_prss(np) = csite%can_prss(np) + csite%can_prss(cp) * area_fac
 
     csite%can_shv(np) = csite%can_shv(np) + csite%can_shv(cp) * area_fac
 

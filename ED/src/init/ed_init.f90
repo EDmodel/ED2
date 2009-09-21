@@ -6,7 +6,7 @@
 subroutine set_polygon_coordinates()
    use grid_coms     , only : ngrids    & ! intent(in)
                             , nzg       ! ! intent(in)
-   use ed_work_vars  , only : work_e    ! ! structure
+   use ed_work_vars  , only : work_v    ! ! structure
    use ed_node_coms  , only : mynum     ! ! intent(in)
    use ed_state_vars , only : edgrid_g  & ! structure
                             , gdpy      ! ! intent(in)
@@ -22,11 +22,11 @@ subroutine set_polygon_coordinates()
       npoly=gdpy(mynum,ifm)
 
       ploop: do ipy=1,npoly
-         edgrid_g(ifm)%lon(ipy) = work_e(ifm)%vec_glon(ipy)
-         edgrid_g(ifm)%lat(ipy) = work_e(ifm)%vec_glat(ipy)
-         edgrid_g(ifm)%ntext_soil(1:nzg,ipy) = work_e(ifm)%vec_ntext(ipy)
-         edgrid_g(ifm)%xatm(ipy) = work_e(ifm)%vec_xid(ipy)
-         edgrid_g(ifm)%yatm(ipy) = work_e(ifm)%vec_yid(ipy)
+         edgrid_g(ifm)%lon(ipy)              = work_v(ifm)%glon(ipy)
+         edgrid_g(ifm)%lat(ipy)              = work_v(ifm)%glat(ipy)
+         edgrid_g(ifm)%ntext_soil(1:nzg,ipy) = work_v(ifm)%ntext(ipy)
+         edgrid_g(ifm)%xatm(ipy)             = work_v(ifm)%xid(ipy)
+         edgrid_g(ifm)%yatm(ipy)             = work_v(ifm)%yid(ipy)
 
       end do ploop
 

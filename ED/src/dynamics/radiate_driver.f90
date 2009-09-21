@@ -438,7 +438,7 @@ end subroutine sfcrad_ed
 !==========================================================================================!
 !==========================================================================================!
 subroutine solar_zenith(cgrid)
-   use ed_misc_coms    , only : current_time ! ! intent(in)
+   use ed_misc_coms , only : current_time ! ! intent(in)
    use consts_coms  , only : pio1808      & ! intent(in)
                            , twopi8       & ! intent(in)
                            , hr_sec8      ! ! intent(in)

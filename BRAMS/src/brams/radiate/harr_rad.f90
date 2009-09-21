@@ -1095,7 +1095,7 @@ end subroutine rayleigh
 ! content input a Pascal.                                                                  !
 !------------------------------------------------------------------------------------------!
 subroutine csband(wlnlo,wlnhi,csavg)
-   use rconstants, only: g,prefsea
+   use rconstants, only: grav,prefsea
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    real    , intent(in)  :: wlnlo,wlnhi
@@ -1124,7 +1124,7 @@ subroutine csband(wlnlo,wlnhi,csavg)
       wn1 = wn2
       f1  = f2
    end do
-   csavg = sum/(plkavg(wnlo,wnhi,296.)*10.*prefsea*g)
+   csavg = sum/(plkavg(wnlo,wnhi,296.)*10.*prefsea*grav)
    return
 
 end subroutine csband

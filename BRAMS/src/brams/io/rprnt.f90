@@ -270,14 +270,18 @@ elseif (vnam == 'ground_rvap'    ) then
         vnam2 = '[ground_rvap (g/kg)]     '
 elseif (vnam == 'veg_water'      ) then
         vnam2 = '[veg_water (kg/m2)]      '
-elseif (vnam == 'veg_temp'       ) then
-        vnam2 = '[veg temp (K)]           '
+elseif (vnam == 'veg_hcap'       ) then
+        vnam2 = '[veg hcap (J/m2/K)]      '
+elseif (vnam == 'veg_energy'     ) then
+        vnam2 = '[veg energy (J/m2)]      '
+elseif (vnam == 'can_prss'       ) then
+        vnam2 = '[can_prss   (Pa)]        '
+elseif (vnam == 'can_theta'      ) then
+        vnam2 = '[can_theta   (K)]        '
 elseif (vnam == 'can_rvap'       ) then
         vnam2 = '[can_rvap (g/kg)]        '
 elseif (vnam == 'can_co2'       ) then
         vnam2 = '[can_co2  (umol/mol)]    '
-elseif (vnam == 'can_temp'       ) then
-        vnam2 = '[can_temp (K)]           '
 elseif (vnam == 'veg_ndvip'      ) then
         vnam2 = '[veg_ndvip]              '
 elseif (vnam == 'veg_ndvic'      ) then
@@ -435,21 +439,25 @@ do k = k1,k2
                call plin(nc,j,ipat,3,1.               &
                   ,leaf%veg_water(i1:i2,j,ipat)          &
                   ,leaf%patch_area(i1:i2,j,ipat))
-            elseif (vnam == 'veg_temp'       ) then
+            elseif (vnam == 'veg_hcap'       ) then
                call plin(nc,j,ipat,2,1.               &
-                  ,leaf%veg_temp(i1:i2,j,ipat)           &
+                  ,leaf%veg_hcap(i1:i2,j,ipat)           &
                   ,leaf%patch_area(i1:i2,j,ipat))
-            elseif (vnam == 'can_rvap'       ) then
-               call plin(nc,j,ipat,3,1.e3             &
-                  ,leaf%can_rvap(i1:i2,j,ipat)           &
+            elseif (vnam == 'veg_energy'     ) then
+               call plin(nc,j,ipat,2,1.               &
+                  ,leaf%veg_energy(i1:i2,j,ipat)         &
+                  ,leaf%patch_area(i1:i2,j,ipat))
+            elseif (vnam == 'can_prss'       ) then
+               call plin(nc,j,ipat,3,1.e2             &
+                  ,leaf%can_prss(i1:i2,j,ipat)           &
+                  ,leaf%patch_area(i1:i2,j,ipat))
+            elseif (vnam == 'can_theta'      ) then
+               call plin(nc,j,ipat,3,1.e0             &
+                  ,leaf%can_theta(i1:i2,j,ipat)          &
                   ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'can_co2'       ) then
                call plin(nc,j,ipat,3,1.                  &
                   ,leaf%can_co2(i1:i2,j,ipat)            &
-                  ,leaf%patch_area(i1:i2,j,ipat))
-            elseif (vnam == 'can_temp'       ) then
-               call plin(nc,j,ipat,2,1.               &
-                  ,leaf%can_temp(i1:i2,j,ipat)           &
                   ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'veg_ndvip'      ) then
                call plin(nc,j,ipat,3,1.               &

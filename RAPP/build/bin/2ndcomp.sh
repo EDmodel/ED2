@@ -27,6 +27,7 @@ rm -fv ncep_coordinates.o      ncep_coordinates.mod
 rm -fv ncep_fill_infotable.o   ncep_fill_infotable.mod
 rm -fv ncep_loadvars.o         ncep_loadvars.mod
 rm -fv ncep_output.o           ncep_output.mod
+rm -fv rain_downscale.o        rain_downscale.mod
 rm -fv rapp_driver.o           rapp_driver.mod
 rm -fv rapp_opspec.o           rapp_opspec.mod
 rm -fv rconstants.o            rconstants.mod

@@ -287,7 +287,7 @@ subroutine cu_environ(k1,k2)
 
    !----- Compute moist static energy profile ---------------------------------------------!
    do k=k1,k2
-     hz(k)=cp*tmpcon(k)+g*zcon(k)+alvl*rvcon(k)
+     hz(k)=cp*tmpcon(k)+grav*zcon(k)+alvl*rvcon(k)
    enddo
 
    !---------------------------------------------------------------------------------------!
@@ -360,13 +360,13 @@ subroutine cu_environ(k1,k2)
    end do
 
    do k=2,kmt
-     pke(k)=pke(k-1)-g*2.*(ze(k)-ze(k-1))/(thve(k)+thve(k-1))
+     pke(k)=pke(k-1)-grav*2.*(ze(k)-ze(k-1))/(thve(k)+thve(k-1))
    end do
 
    do k=1,kmt
      te(k)=the(k)*pke(k)/cp
      pe(k)=(pke(k)/cp)**cpor*p00
-     rhoe(k)=pe(k)/(rgas*virtt(te(k),rve(k)))
+     rhoe(k)=pe(k)/(rdry*virtt(te(k),rve(k)))
    end do
    do k=1,kmt
      thee(k)=thetaeiv(the(k),pe(k),te(k),rve(k),rve(k),3,.false.)

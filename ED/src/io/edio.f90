@@ -156,14 +156,18 @@ subroutine spatial_averages
                                     , nzg               & ! intent(in)
                                     , nzs               ! ! intent(in)
    use consts_coms           , only : alvl              & ! intent(in)
-                                    , wdns              ! ! intent(in)
-   use ed_misc_coms             , only : frqsum            ! ! intent(in)
+                                    , cpi               & ! intent(in)
+                                    , wdns              & ! intent(in)
+                                    , p00i              & ! intent(in)
+                                    , rocp              ! ! intent(in)
+   use ed_misc_coms          , only : frqsum            ! ! intent(in)
    use therm_lib             , only : qwtk              & ! subroutine
-                                    , qtk               ! ! subroutine
+                                    , qtk               & ! subroutine
+                                    , idealdenssh       ! ! function
    use soil_coms             , only : min_sfcwater_mass & ! intent(in)
                                     , soil              ! ! intent(in)
    use c34constants          , only : n_stoma_atts
-   use ed_max_dims              , only : n_pft
+   use ed_max_dims           , only : n_pft
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    type(edtype)         , pointer :: cgrid
@@ -181,8 +185,6 @@ subroutine spatial_averages
    real                           :: laiarea_poly
    real                           :: site_area_i
    real                           :: poly_area_i
-   real                           :: site_avg_veg_hcap
-   real                           :: poly_avg_veg_hcap
    real                           :: frqsumi
    real                           :: snowarea
    !---------------------------------------------------------------------------------------!
@@ -206,7 +208,6 @@ subroutine spatial_averages
          area_sum           = 0.0
          laiarea_poly       = 0.0
          poly_avg_soil_hcap = 0.0
-         poly_avg_veg_hcap  = 0.0
 
          !---------------------------------------------------------------------------------!
          !    Here is the safe place to initialize cgrid-level variables.                  !
@@ -425,7 +426,6 @@ subroutine spatial_averages
                   lai_patch                 = 0.
                   csite%avg_veg_energy(ipa) = 0.
                   csite%avg_veg_water(ipa)  = 0.
-                  csite%hcapveg(ipa)        = 0.
                   csite%avg_veg_temp(ipa)   = csite%can_temp(ipa)
                   csite%avg_veg_fliq(ipa)   = 0.
                end if
@@ -544,11 +544,21 @@ subroutine spatial_averages
                csite%laiarea = csite%laiarea / laiarea_site
             end if
 
-            !----- Site average of canopy thermodynamic state -----------------------------!
-            cpoly%avg_can_temp(isi) = sum(csite%can_temp  * csite%area) * site_area_i
-            cpoly%avg_can_shv (isi) = sum(csite%can_shv   * csite%area) * site_area_i
-            cpoly%avg_can_co2 (isi) = sum(csite%can_co2   * csite%area) * site_area_i
-            cpoly%avg_can_rhos(isi) = sum(csite%can_rhos  * csite%area) * site_area_i
+            !------------------------------------------------------------------------------!
+            !    Site average of canopy thermodynamic state.  We average the variables     !
+            ! that are insensitive to changes in pressure (potential temperature, specific !
+            ! humidity, CO2 mixing ratio and pressure itself) by averaging over sites.     !
+            ! The other variables are found using the prescribed diagnostic equations.     !
+            !------------------------------------------------------------------------------!
+            cpoly%avg_can_theta   (isi) = sum(csite%can_theta  * csite%area) * site_area_i
+            cpoly%avg_can_shv     (isi) = sum(csite%can_shv    * csite%area) * site_area_i
+            cpoly%avg_can_co2     (isi) = sum(csite%can_co2    * csite%area) * site_area_i
+            cpoly%avg_can_prss    (isi) = sum(csite%can_prss   * csite%area) * site_area_i
+            cpoly%avg_can_temp    (isi) = cpoly%avg_can_theta(isi)                         &
+                                        * (p00i * cpoly%avg_can_prss(isi)) ** rocp
+            cpoly%avg_can_rhos    (isi) = idealdenssh(cpoly%avg_can_prss(isi)              &
+                                                     ,cpoly%avg_can_temp(isi)              &
+                                                     ,cpoly%avg_can_shv (isi) )
 
             !------------------------------------------------------------------------------!
             !   Site average of leaf properties.  Again, we average "extensive" properties !
@@ -557,10 +567,8 @@ subroutine spatial_averages
             !------------------------------------------------------------------------------!
             cpoly%avg_veg_energy(isi) = sum(csite%avg_veg_energy * csite%area)*site_area_i
             cpoly%avg_veg_water(isi)  = sum(csite%avg_veg_water  * csite%area)*site_area_i
-            site_avg_veg_hcap         = sum(csite%hcapveg        * csite%area)*site_area_i
-            !----- Also integrate the polygon-level mean leaf heat capacity. --------------!
-            poly_avg_veg_hcap         = poly_avg_veg_hcap                                  &
-                                      + site_avg_veg_hcap * cpoly%area(isi) * poly_area_i
+            cpoly%avg_veg_hcap(isi)   = sum(csite%hcapveg        * csite%area)*site_area_i
+
             !------------------------------------------------------------------------------!
             !    Unless this is a bare site or it is absolute leafless, there should be    !
             ! some heat capacity, then compute the average leaf temperature. Otherwise,    !
@@ -568,7 +576,8 @@ subroutine spatial_averages
             !------------------------------------------------------------------------------!
             if (laiarea_site > 0.) then
                call qwtk(cpoly%avg_veg_energy(isi),cpoly%avg_veg_water(isi)                &
-                        ,site_avg_veg_hcap,cpoly%avg_veg_temp(isi),cpoly%avg_veg_fliq(isi))
+                        ,cpoly%avg_veg_hcap(isi),cpoly%avg_veg_temp(isi)                   &
+                        ,cpoly%avg_veg_fliq(isi))
             else
                cpoly%avg_veg_temp(isi) = cpoly%avg_can_temp(isi)
                cpoly%avg_veg_fliq(isi) = 0.
@@ -628,10 +637,22 @@ subroutine spatial_averages
          cgrid%avg_qwshed_vg(ipy)    = sum(cpoly%avg_qwshed_vg    *cpoly%area)*poly_area_i
          cgrid%avg_sensible_gc(ipy)  = sum(cpoly%avg_sensible_gc  *cpoly%area)*poly_area_i
          cgrid%avg_sensible_ac(ipy)  = sum(cpoly%avg_sensible_ac  *cpoly%area)*poly_area_i
-         cgrid%avg_can_temp(ipy)     = sum(cpoly%avg_can_temp     *cpoly%area)*poly_area_i
-         cgrid%avg_can_shv(ipy)      = sum(cpoly%avg_can_shv      *cpoly%area)*poly_area_i
-         cgrid%avg_can_co2(ipy)      = sum(cpoly%avg_can_co2      *cpoly%area)*poly_area_i
-         cgrid%avg_can_rhos(ipy)     = sum(cpoly%avg_can_rhos     *cpoly%area)*poly_area_i
+
+         !---------------------------------------------------------------------------------!
+         !    Polygon average of canopy thermodynamic state.  We average the variables     !
+         ! that are insensitive to changes in pressure (potential temperature, specific    !
+         ! humidity, CO2 mixing ratio and pressure itself) by averaging over sites.  The   !
+         ! other variables are found using the prescribed diagnostic equations.            !
+         !---------------------------------------------------------------------------------!
+         cgrid%avg_can_theta   (ipy) = sum(cpoly%avg_can_theta * cpoly%area) * poly_area_i
+         cgrid%avg_can_shv     (ipy) = sum(cpoly%avg_can_shv   * cpoly%area) * poly_area_i
+         cgrid%avg_can_co2     (ipy) = sum(cpoly%avg_can_co2   * cpoly%area) * poly_area_i
+         cgrid%avg_can_prss    (ipy) = sum(cpoly%avg_can_prss  * cpoly%area) * poly_area_i
+         cgrid%avg_can_temp    (ipy) = cgrid%avg_can_theta(ipy)                            &
+                                     * (p00i * cgrid%avg_can_prss(ipy)) ** rocp
+         cgrid%avg_can_rhos    (ipy) = idealdenssh(cgrid%avg_can_prss(ipy)                 &
+                                                  ,cgrid%avg_can_temp(ipy)                 &
+                                                  ,cgrid%avg_can_shv (ipy) )
 
          !---------------------------------------------------------------------------------!
          !    Similar to the site level, average mass, heat capacity and energy then find  !
@@ -691,10 +712,12 @@ subroutine spatial_averages
          !---------------------------------------------------------------------------------!
          cgrid%avg_veg_energy(ipy) = sum(cpoly%avg_veg_energy * cpoly%area) * poly_area_i
          cgrid%avg_veg_water(ipy)  = sum(cpoly%avg_veg_water  * cpoly%area) * poly_area_i
+         cgrid%avg_veg_hcap(ipy)   = sum(cpoly%avg_veg_hcap   * cpoly%area) * poly_area_i
 
          if (laiarea_poly > 0.) then
-            call qwtk(cgrid%avg_veg_energy(ipy),cgrid%avg_veg_water(ipy),poly_avg_veg_hcap &
-                     ,cgrid%avg_veg_temp(ipy),cgrid%avg_veg_fliq(ipy))
+            call qwtk(cgrid%avg_veg_energy(ipy),cgrid%avg_veg_water(ipy)                   &
+                     ,cgrid%avg_veg_hcap(ipy),cgrid%avg_veg_temp(ipy)                      &
+                     ,cgrid%avg_veg_fliq(ipy))
          else
             cgrid%avg_veg_temp(ipy) = cgrid%avg_can_temp(ipy)
             cgrid%avg_veg_fliq(ipy) = 0.
@@ -1076,4 +1099,3 @@ subroutine fillvar_l(pvar_l,vt_ptr,npts_out,npts_in,out1,in1,in2)
   enddo
   return
 end subroutine fillvar_l
-

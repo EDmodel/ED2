@@ -190,7 +190,7 @@ do j=1,nyp
             pi0(k,i,j) = pi01dn(k,ngrid)
             th0(k,i,j) = th01dn(k,ngrid)
          enddo
-         c1 = g * 2.
+         c1 = grav * 2.
 
       else
 
@@ -199,7 +199,7 @@ do j=1,nyp
          enddo
          call htint(nzp,pi01dn(1,ngrid),zt,nzp,pi0(1,i,j),vctr2)
          call htint(nzp,th01dn(1,ngrid),zt,nzp,th0(1,i,j),vctr2)
-         c1 = g * 2. * (1. - topt(i,j) / ztop)
+         c1 = grav * 2. * (1. - topt(i,j) / ztop)
 
       endif
 
@@ -211,7 +211,7 @@ do j=1,nyp
        enddo
 
       do k = 1,n1
-         dn0(k,i,j) = (c3 * p00) / (rgas * th0(k,i,j) * pi0(k,i,j) ** c2)
+         dn0(k,i,j) = (c3 * p00) / (rdry * th0(k,i,j) * pi0(k,i,j) ** c2)
       enddo
 
    enddo

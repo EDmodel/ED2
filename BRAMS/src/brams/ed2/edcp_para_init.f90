@@ -214,6 +214,64 @@ end subroutine edcp_get_work
 
 !==========================================================================================!
 !==========================================================================================!
+subroutine edcp_parvec_work(ifm,nxp,nyp)
+   use ed_work_vars, only : work_e              & ! intent(in)
+                          , work_v              & ! intent(inout)
+                          , ed_nullify_work_vec & ! subroutine
+                          , ed_alloc_work_vec   ! ! subroutine
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                   , intent(in) :: nxp
+   integer                   , intent(in) :: nyp
+   integer                   , intent(in) :: ifm
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                :: npolygons
+   integer                                :: poly
+   integer                                :: i,j
+   !---------------------------------------------------------------------------------------!
+
+   !----- Compute total work load over each row and over entire domain. -------------------!
+   npolygons = 0
+   do j = 1,nyp
+      do i = 1,nxp
+         if (work_e(ifm)%land(i,j)) then
+            npolygons = npolygons + 1
+         end if
+      end do
+   end do
+  
+   !----- Allocate the polygon vectors. ---------------------------------------------------!
+   call ed_nullify_work_vec(work_v(ifm))
+   call ed_alloc_work_vec(work_v(ifm),npolygons)
+
+   poly = 0
+   do j = 1,nyp
+      do i = 1,nxp
+         
+         if (work_e(ifm)%land(i,j)) then
+            poly = poly + 1
+            work_v(ifm)%glon(poly)     = work_e(ifm)%glon(i,j)
+            work_v(ifm)%glat(poly)     = work_e(ifm)%glat(i,j)
+            work_v(ifm)%landfrac(poly) = work_e(ifm)%landfrac(i,j)
+            work_v(ifm)%ntext(poly)    = work_e(ifm)%ntext(i,j)
+            work_v(ifm)%xid(poly)      = work_e(ifm)%xatm(i,j)
+            work_v(ifm)%yid(poly)      = work_e(ifm)%yatm(i,j)
+         end if
+      end do
+   end do
+  
+   return
+end subroutine edcp_parvec_work
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 !   This subroutine will copy LEAF-3 initial condition to ED, so we can use other LEAF     !
 ! databases to decide whether a polygon is inland or offshore, and aslo other soil texture !
 ! dataset.                                                                                 !

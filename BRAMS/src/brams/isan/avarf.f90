@@ -95,7 +95,7 @@ do j=1,n3
                  then
                nki=nki+1
                v2(nki)=(pi_s(i,j,ki)-cp*levth(ki)  &
-                    *(pi_p(i,j,ki)*p00i)**rocp)/g
+                    *(pi_p(i,j,ki)*p00i)**rocp)/grav
 !                    print*,'v2:',i,j,nki,pi_s(i,j,ki),levth(ki),pi_p(i,j,ki)
                     
                v3(nki)=pi_u(i,j,ki)
@@ -221,7 +221,7 @@ do j=1,n3
             v3(k)=topt(i,j)+zt(k)*rtgt(i,j)
          enddo
          do k=n1-1,1,-1
-            pp(k,i,j)=pp(k+1,i,j)+g*(v3(k+1)-v3(k))      &
+            pp(k,i,j)=pp(k+1,i,j)+grav*(v3(k+1)-v3(k))      &
                  /((virtt(thp(k,i,j),rtp(k,i,j))         &
                   +virtt(thp(k+1,i,j),rtp(k+1,i,j)))*.5)
          enddo
@@ -310,8 +310,8 @@ do j=1,n3
 !         Integrate P to surface
 
          piibc=cp*(pi_p(i,j,lbc)*p00i)**rocp
-         ziibc=(pi_s(i,j,lbc)-levth(lbc)*piibc)/g
-         gd2=2.*g
+         ziibc=(pi_s(i,j,lbc)-levth(lbc)*piibc)/grav
+         gd2=2.*grav
          pp(kabc-1,i,j)=piibc+gd2*(ziibc-v3(kabc-1))  &
               /(levth(lbc)+tt(kabc-1,i,j))
          do k=kabc-2,1,-1
@@ -363,7 +363,7 @@ do j=1,n3
 
          pp(1,i,j)= cp*(pp(1,i,j)/p00)**rocp
          do k=2,n1
-            pp(k,i,j)=pp(k-1,i,j)-g*(v3(k)-v3(k-1))  &
+            pp(k,i,j)=pp(k-1,i,j)-grav*(v3(k)-v3(k-1))  &
                  /((virtt(tt(k,i,j),rr(k,i,j))+virtt(tt(k-1,i,j),rr(k-1,i,j)) ) *.5)
        !  if(i==10.and.j==10) &
        !     print*,'avrf222, k:',k,tt(k,i,j),rr(k,i,j), pp(k,i,j)

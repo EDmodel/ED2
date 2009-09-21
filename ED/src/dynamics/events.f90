@@ -409,7 +409,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
               call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
 
               call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss,ipa)
-              
+              call update_budget(csite, cpoly%lsl(isi),ipa,ipa)
            end if  !! check to make sure there ARE cohorts
 
            enddo
@@ -474,6 +474,7 @@ subroutine event_planting(pft,density8)
                                  ,planting_ht,cpoly%lsl(isi))            
               call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss,ipa)
               call new_patch_sfc_props(csite, ipa)
+              call update_budget(csite, cpoly%lsl(isi),ipa,ipa)
 
            enddo
 
@@ -486,7 +487,9 @@ subroutine event_planting(pft,density8)
   end do
 
   ! Re-allocate integration buffer
-  if(integration_scheme == 1) call initialize_rk4patches(0)
+  if (integration_scheme == 1 .or. integration_scheme == 2) then
+     call initialize_rk4patches(0)
+  end if
 
   ! Reset hdf vars since number of cohorts changed mid-month
   call filltab_alltypes
@@ -546,7 +549,7 @@ subroutine event_fertilize(rval8)
              
               !! update patch properties
               call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss,ipa)
-
+              call update_budget(csite, cpoly%lsl(isi),ipa,ipa)
            enddo
 
            ! Update site properties. ## THINK ABOUT WHAT TO SET FLAG##########
@@ -754,6 +757,7 @@ subroutine event_till(rval8)
 
               !! update patch properties
               call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss,ipa)
+              call update_budget(csite, cpoly%lsl(isi),ipa,ipa)
               endif
            enddo
            ! Update site properties. ## THINK ABOUT WHAT TO SET FLAG##########
@@ -818,4 +822,5 @@ end subroutine event_till
 !!$              call sort_cohorts(cpatch)           
 !!$   
 !!$!              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss, ipa)
+!!$!              call update_budget(csite, cpoly%lsl(isi), ipa, ipa)
 !!$          

@@ -38,6 +38,7 @@ subroutine ncep_fill_infotable(year)
                              , nvars_ncep       & ! intent(in)
                              , prefvars_ncep    & ! intent(in)
                              , grids_ncep       ! ! intent(in)
+   use mod_interp     , only : ndownscal        ! ! intent(in)
 #if USE_NCDF
    use mod_netcdf     , only : ncid             & ! intent(out)
                              , ndimensions      & ! intent(out)
@@ -62,7 +63,7 @@ subroutine ncep_fill_infotable(year)
    !----- Local variables (only if NetCDF is available). ----------------------------------!
    character(len=maxstr)                       :: flnm_full     ! Full file name
    character(len=maxstr) , dimension(maxfiles) :: fnames        ! File name list
-   integer                                     :: nf            ! Various counters
+   integer                                     :: nf,ng         ! Various counters
    integer                                     :: nv,nt,tcnt    ! Various counters
    integer                                     :: ierr          ! Error flag.
    integer                                     :: ngrid         ! Error flag.
@@ -74,12 +75,14 @@ subroutine ncep_fill_infotable(year)
    nnzp      = 0
 
    !---------------------------------------------------------------------------------------!
-   !     NCEP dataset will always have three grids.                                        !
+   !     NCEP dataset will always have three grids plus the downscaled precipitation       !
+   !     arrays.                                                                           !
    ! 1. Gaussian, same time resolution as input, and state variables for output;           !
    ! 2. Gaussian, higher time resolution for radiation output;                             !
    ! 3. Lon/Lat, state variables that are read here.                                       !
+   ! 4-... . Gaussian, precipitation realizations.                                         !
    !---------------------------------------------------------------------------------------!
-   ngrids    = ngrids_ncep
+   ngrids    = ngrids_ncep + ndownscal
 
    !---------------------------------------------------------------------------------------!
    !     Making the list of files for this year:                                           !
@@ -196,6 +199,17 @@ subroutine ncep_fill_infotable(year)
    nnyp(2) = nnyp(1)
    nnzp(2) = nnzp(1)
    nntp(2) = radratio*(nntp(1)-1) + 1
+   
+   !---------------------------------------------------------------------------------------!
+   !    Finally, we include the precipitation realisations.  These should have exactly the !
+   ! same size as grid 2.                                                                  !
+   !---------------------------------------------------------------------------------------!
+   do ng=4,ngrids
+      nnxp(ng) = nnxp(2)
+      nnyp(ng) = nnyp(2)
+      nnzp(ng) = nnzp(2)
+      nntp(ng) = nntp(2)
+   end do
 
    return
 #else

@@ -5,12 +5,13 @@ subroutine ed_init_atm
   use ed_misc_coms,     only: ied_init_mode,runtype
   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype,edgrid_g
   use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr
-  use consts_coms,    only: cliqvlme, cicevlme, t3ple, tsupercool
+  use consts_coms,    only: cliqvlme, cicevlme, t3ple, tsupercool, p00i, rocp,t00
   use grid_coms,      only: nzs, nzg, ngrids
   use fuse_fiss_utils, only: fuse_patches,fuse_cohorts
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
   use pft_coms,only : sla
   use ed_therm_lib,only : calc_hcapveg,ed_grndvap
+  use therm_lib, only : ptqz2enthalpy,idealdenssh,reducedpress
   
   implicit none
 
@@ -31,7 +32,8 @@ subroutine ed_init_atm
   include 'mpif.h'
   integer :: ping,ierr
   integer :: npatches
-  ping = 6 ! Just any rubbish for MPI Send/Recv
+
+  ping = 6 ! Just any number for MPI Send/Recv
 
   ! This subroutine fills the ED2 fields which depend on current 
   ! atmospheric conditions.
@@ -66,10 +68,49 @@ subroutine ed_init_atm
 
               cpatch => csite%patch(ipa)
 
-              csite%can_temp(ipa) =   cpoly%met(isi)%atm_tmp
-              csite%can_shv(ipa)  =   cpoly%met(isi)%atm_shv
-              csite%can_co2(ipa)  =   cpoly%met(isi)%atm_co2
-              
+              !----------------------------------------------------------------------------!
+              !      This first call is just to have the vegetation height so we can       !
+              ! compute the initial canopy pressure...  It must be called again to have    !
+              ! the storage right.                                                         !
+              !----------------------------------------------------------------------------!
+              call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss,ipa)
+
+              csite%can_theta(ipa)    = cpoly%met(isi)%atm_theta
+              csite%can_shv(ipa)      = cpoly%met(isi)%atm_shv
+              csite%can_co2(ipa)      = cpoly%met(isi)%atm_co2
+              csite%can_prss(ipa)     = reducedpress(cpoly%met(isi)%prss                   &
+                                                    ,cpoly%met(isi)%atm_theta              &
+                                                    ,cpoly%met(isi)%atm_shv                &
+                                                    ,cpoly%met(isi)%geoht                  &
+                                                    ,csite%can_theta(ipa)                  &
+                                                    ,csite%can_shv(ipa)                    &
+                                                    ,csite%can_depth(ipa))
+
+              if (csite%can_theta(ipa) < 180.   .or. csite%can_theta(ipa) > 400. .or.      &
+                  csite%can_shv(ipa)   < 1.e-8  .or. csite%can_shv(ipa) > 0.04   .or.      &
+                  csite%can_prss(ipa)  < 40000. .or. csite%can_prss(ipa) > 110000.) then
+                  write (unit=*,fmt='(a)') '======== Weird initial properties... ========'
+                  write (unit=*,fmt='(a,f7.2)')                                            &
+                                       ' CAN_PRSS  [ hPa] = ',csite%can_prss(ipa)  * 0.01
+                  write (unit=*,fmt='(a,f7.2)')                                            &
+                                       ' CAN_THETA [degC] = ',csite%can_theta(ipa) - t00
+                  write (unit=*,fmt='(a,f7.2)')                                            &
+                                       ' CAN_SHV   [g/kg] = ',csite%can_shv(ipa)   * 1.e3
+                  call fatal_error('Non-sense initial values!!!'                           &
+                                  ,'ed_init_atm','ed_init_atm.f90')
+              end if
+
+
+
+              csite%can_temp(ipa)     = csite%can_theta(ipa)                               &
+                                      * (p00i *csite%can_prss(ipa)) ** rocp
+              csite%can_enthalpy(ipa) = ptqz2enthalpy(csite%can_prss(ipa)                  &
+                                                     ,csite%can_temp(ipa)                  &
+                                                     ,csite%can_shv(ipa)                   &
+                                                     ,csite%can_depth(ipa))
+              csite%can_rhos(ipa)     = idealdenssh(csite%can_prss(ipa)                    &
+                                                   ,csite%can_temp(ipa),csite%can_shv(ipa))
+
               ! Initialize stars
               csite%tstar(ipa)  = 0.
               csite%ustar(ipa)  = 0.
@@ -95,7 +136,7 @@ subroutine ed_init_atm
                  ! Initialize vegetation properties.
                  ! For now, set heat capacity for stability.
 
-                 cpatch%veg_temp(ico)   = cpoly%met(isi)%atm_tmp
+                 cpatch%veg_temp(ico)   = csite%can_temp(ipa)
                  cpatch%veg_water(ico)  = 0.0
                  cpatch%veg_fliq(ico)   = 0.0
                  cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)   &
@@ -197,7 +238,9 @@ subroutine ed_init_atm
                  call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss  &
                                                 ,ipa)
               end if
-              
+
+              !----- Computing the storage terms for CO2, energy, and water budgets. ------!
+              call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
 
            end do
            
