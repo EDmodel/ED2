@@ -19,15 +19,17 @@ module therm_lib8
                        , level4     => level     & ! intent(in)
                        , vapour_on4 => vapour_on & ! intent(in)
                        , cloud_on4  => cloud_on  & ! intent(in)
-                       , bulk_on4   => bulk_on   & ! intent(in)
-                       , iii_74     => iii_7     & ! intent(in)
-                       , l01_104    => l01_10    & ! intent(in)
-                       , l02_104    => l02_10    & ! intent(in)
-                       , ttt_104    => ttt_10    & ! intent(in)
-                       , cll4       => cll       & ! intent(in)
-                       , dll4       => dll       & ! intent(in)
-                       , cii4       => cii       & ! intent(in)
-                       , dii4       => dii       ! ! intent(in)
+                       , bulk_on4   => bulk_on  !! & ! intent(in)
+!!  The following parameter arrays are being transfered
+!!  directly to avoid compiler problems
+!!                       , iii_74     => iii_7     & ! intent(in)
+!!                       , l01_104    => l01_10    & ! intent(in)
+!!                       , l02_104    => l02_10    & ! intent(in)
+!!                       , ttt_104    => ttt_10    & ! intent(in)
+!!                       , cll4       => cll       & ! intent(in)
+!!                       , dll4       => dll       & ! intent(in)
+!!                       , cii4       => cii       & ! intent(in)
+!!                       , dii4       => dii       ! ! intent(in)
 
    !---------------------------------------------------------------------------------------!
    !     Relative tolerance for iterative methods. The smaller the value, the more         !
@@ -75,16 +77,14 @@ module therm_lib8
    !  These equations give the triple point at t3ple, with vapour pressure being es3ple.   !
    !---------------------------------------------------------------------------------------!
    !----- Coefficients based on equation (7): ---------------------------------------------!
-   real(kind=8), dimension(0:3), parameter :: iii_78 = dble(iii_74)
+   real(kind=8), dimension(0:3), parameter :: iii_78 = (/ 9.550426,-5723.265, 3.53068,-0.00728332 /)
    !----- Coefficients based on equation (10), first fit ----------------------------------!
-   real(kind=8), dimension(0:3), parameter :: l01_108= dble(l01_104)
+   real(kind=8), dimension(0:3), parameter :: l01_108 = (/54.842763,-6763.22 ,-4.210  , 0.000367   /)
    !----- Coefficients based on equation (10), second fit ---------------------------------!
-   real(kind=8), dimension(0:3), parameter :: l02_108= dble(l02_104)
+   real(kind=8), dimension(0:3), parameter :: l02_108 = (/53.878   ,-1331.22 ,-9.44523, 0.014025   /)
    !----- Coefficients based on the hyperbolic tangent ------------------------------------!
-   real(kind=8), dimension(2)  , parameter :: ttt_108= dble(ttt_104)
+   real(kind=8), dimension(2)  , parameter :: ttt_108 = (/0.0415,218.8/)
    !---------------------------------------------------------------------------------------!
-
-
 
    !---------------------------------------------------------------------------------------!
    !     These constants came from the paper in which the saturation vapour pressure is    !
@@ -98,13 +98,25 @@ module therm_lib8
    !        what was on the original code...                                               !
    !---------------------------------------------------------------------------------------!
    !----- Coefficients for esat (liquid) --------------------------------------------------!
-   real(kind=8), dimension(0:8), parameter :: cll8 = dble(cll4)
+   real(kind=8), dimension(0:8), parameter :: cll8 =   &
+        (/ .6105851e+03,  .4440316e+02,  .1430341e+01  &
+        , .2641412e-01,  .2995057e-03,  .2031998e-05   &
+        , .6936113e-08,  .2564861e-11, -.3704404e-13 /)
    !----- Coefficients for esat (ice) -----------------------------------------------------!
-   real(kind=8), dimension(0:8), parameter :: cii8 = dble(cii4)
+   real(kind=8), dimension(0:8), parameter :: cii8 =   &
+        (/ .6114327e+03,  .5027041e+02,  .1875982e+01  &
+        , .4158303e-01,  .5992408e-03,  .5743775e-05   &
+        , .3566847e-07,  .1306802e-09,  .2152144e-12 /)
    !----- Coefficients for d(esat)/dT (liquid) --------------------------------------------!
-   real(kind=8), dimension(0:8), parameter :: dll8 = dble(dll4)
+   real(kind=8), dimension(0:8), parameter :: dll8 =   &
+        (/ .4443216e+02,  .2861503e+01,  .7943347e-01  &
+        , .1209650e-02,  .1036937e-04,  .4058663e-07   &
+        ,-.5805342e-10, -.1159088e-11, -.3189651e-14 /)
    !----- Coefficients for esat (ice) -----------------------------------------------------!
-   real(kind=8), dimension(0:8), parameter :: dii8 = dble(dii4)
+   real(kind=8), dimension(0:8), parameter :: dii8 =   &
+        (/ .5036342e+02,  .3775758e+01,  .1269736e+00  &
+        , .2503052e-02,  .3163761e-04,  .2623881e-06   &
+        , .1392546e-08,  .4315126e-11,  .5961476e-14 /)
    !---------------------------------------------------------------------------------------!
 
    !=======================================================================================!
@@ -112,8 +124,6 @@ module therm_lib8
 
 
    contains
-
-
 
    !=======================================================================================!
    !=======================================================================================!

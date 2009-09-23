@@ -666,19 +666,27 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          sitesum_evap         = sitesum_evap         + (sum(csite%avg_evap        *csite%area) * site_area_i) * cpoly%area(isi)
          sitesum_transp       = sitesum_transp       + (sum(csite%avg_transp      *csite%area) * site_area_i) * cpoly%area(isi)
          
-         sitesum_co2_residual    = sitesum_co2_residual    + (sum(csite%co2budget_residual*csite%area) * site_area_i) * cpoly%area(isi)
-         sitesum_water_residual  = sitesum_water_residual  + (sum(csite%wbudget_residual  *csite%area) * site_area_i) * cpoly%area(isi)
-         sitesum_energy_residual = sitesum_energy_residual + (sum(csite%ebudget_residual  *csite%area) * site_area_i) * cpoly%area(isi)
+         sitesum_co2_residual    = sitesum_co2_residual    + &
+              (sum(csite%co2budget_residual*csite%area) * site_area_i) * cpoly%area(isi)
+         sitesum_water_residual  = sitesum_water_residual  + &
+              (sum(csite%wbudget_residual  *csite%area) * site_area_i) * cpoly%area(isi)
+         sitesum_energy_residual = sitesum_energy_residual + &
+              (sum(csite%ebudget_residual  *csite%area) * site_area_i) * cpoly%area(isi)
 
-         cpoly%dmean_co2_residual(isi)    = cpoly%dmean_co2_residual(isi)    + sum(csite%co2budget_residual*csite%area) * site_area_i
-         cpoly%dmean_energy_residual(isi) = cpoly%dmean_energy_residual(isi) + sum(csite%ebudget_residual  *csite%area) * site_area_i
-         cpoly%dmean_water_residual(isi)  = cpoly%dmean_water_residual(isi)  + sum(csite%wbudget_residual  *csite%area) * site_area_i
+         cpoly%dmean_co2_residual(isi)    = cpoly%dmean_co2_residual(isi)    + &
+              sum(csite%co2budget_residual*csite%area) * site_area_i
+         cpoly%dmean_energy_residual(isi) = cpoly%dmean_energy_residual(isi) + &
+              sum(csite%ebudget_residual  *csite%area) * site_area_i
+         cpoly%dmean_water_residual(isi)  = cpoly%dmean_water_residual(isi)  + &
+              sum(csite%wbudget_residual  *csite%area) * site_area_i
 
          luloop: do lu=1,n_dist_types
             sitesum_rh_lu(lu)    = sitesum_rh_lu(lu) + &
-                                   (sum(csite%co2budget_rh*csite%area,csite%dist_type == lu)   * site_area_i) * cpoly%area(isi)
+                                   (sum(csite%co2budget_rh*csite%area,csite%dist_type == lu)   * site_area_i) &
+                                   * cpoly%area(isi)
             sitesum_gpp_lu(lu)   = sitesum_gpp_lu(lu) + &
-                                   (sum(csite%co2budget_gpp*csite%area,csite%dist_type == lu)  * site_area_i) * cpoly%area(isi)
+                                   (sum(csite%co2budget_gpp*csite%area,csite%dist_type == lu)  * site_area_i) &
+                                   * cpoly%area(isi)
             sitesum_nep_lu(lu)   = sitesum_nep_lu(lu) + &
                                    (sum((csite%co2budget_gpp-csite%co2budget_rh-csite%co2budget_plresp)*csite%area &
                                         ,csite%dist_type == lu) * site_area_i) * cpoly%area(isi)
