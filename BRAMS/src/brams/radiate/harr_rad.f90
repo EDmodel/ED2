@@ -495,7 +495,7 @@ subroutine harr_lwrad(nz,mynum)
 
             !----- Now do rest of stuff in the flux subroutine ----------------------------!
             call flxlw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),src,t,r,tc,sigu,sigd,re,vd,td   &
-                      ,vu,fu(:,6),fd(:,6),1.,asym(:,ib),mynum)
+                      ,vu,fu(:,6),fd(:,6),1.,1.,asym(:,ib),mynum)
 
             !----- Add pseudo-band fluxes to the total flux -------------------------------!
             do iz=1,nz
@@ -516,12 +516,12 @@ subroutine harr_lwrad(nz,mynum)
          tg(1:nz) = 0.
          
          call flxlw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),src,t,r,tc,sigu,sigd,re,vd,td,vu   &
-                   ,fu(:,1),fd(:,1),chck,asym(:,ib),mynum)
+                   ,fu(:,1),fd(:,1),chck,0.,asym(:,ib),mynum)
 
          !----- If there is continuum abs. do it now since tg=0. --------------------------!
          if (nuum(ib) == 1) then
             call flxlw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),src,t,r,tc,sigu,sigd,re,vd,td   &
-                      ,vu,fu(:,5),fd(:,5),1.,asym(:,ib),mynum)
+                      ,vu,fu(:,5),fd(:,5),1.,0.,asym(:,ib),mynum)
          end if
 
          !----- Do the 1st gas. -----------------------------------------------------------!
@@ -533,7 +533,7 @@ subroutine harr_lwrad(nz,mynum)
             end do
 
             call flxlw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),src,t,r,tc,sigu,sigd,re,vd,td   &
-                      ,vu,fu(:,6),fd(:,6),chck,asym(:,ib),mynum)
+                      ,vu,fu(:,6),fd(:,6),chck,1.,asym(:,ib),mynum)
 
             fact = wght(ig1,ik1,ib)
             do iz = 1, nz
@@ -552,7 +552,7 @@ subroutine harr_lwrad(nz,mynum)
             end do
 
             call flxlw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),src,t,r,tc,sigu,sigd,re,vd,td   &
-                      ,vu,fu(:,6),fd(:,6),chck,asym(:,ib),mynum)
+                      ,vu,fu(:,6),fd(:,6),chck,1.,asym(:,ib),mynum)
 
             fact = wght(ig2,ik2,ib)
             do iz=1,nz
@@ -594,12 +594,12 @@ subroutine harr_lwrad(nz,mynum)
          tg(1:nz) = 0.
 
          call flxlw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),src,t,r,tc,sigu,sigd,re,vd,td,vu   &
-                   ,fu(:,1),fd(:,1),chck,asym(:,ib),mynum)
+                   ,fu(:,1),fd(:,1),chck,0.,asym(:,ib),mynum)
 
          !----- If there is continuum abs. do it now since tg=0. --------------------------!
          if (nuum(ib) == 1) then
             call flxlw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),src,t,r,tc,sigu,sigd,re,vd,td   &
-                      ,vu,fu(:,5),fd(:,5),1.,asym(:,ib),mynum)
+                      ,vu,fu(:,5),fd(:,5),1.,0.,asym(:,ib),mynum)
          end if
 
          !----- Do the 1st gas. -----------------------------------------------------------!
@@ -612,7 +612,7 @@ subroutine harr_lwrad(nz,mynum)
             end do
 
             call flxlw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),src,t,r,tc,sigu,sigd,re,vd,td   &
-                      ,vu,fu(:,6),fd(:,6),chck,asym(:,ib),mynum)
+                      ,vu,fu(:,6),fd(:,6),chck,1.,asym(:,ib),mynum)
 
             fact = wght(ig1,ik1,ib)
             do iz=1,nz
@@ -631,7 +631,7 @@ subroutine harr_lwrad(nz,mynum)
             end do
 
             call flxlw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),src,t,r,tc,sigu,sigd,re,vd,td   &
-                      ,vu,fu(:,6),fd(:,6),chck,asym(:,ib),mynum)
+                      ,vu,fu(:,6),fd(:,6),chck,1.,asym(:,ib),mynum)
 
             fact = wght(ig2,ik2,ib)
             do iz=1,nz
@@ -651,7 +651,7 @@ subroutine harr_lwrad(nz,mynum)
 
             !----- Now do rest of stuff in subroutine. ------------------------------------!
             call flxlw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),src,t,r,tc,sigu,sigd,re,vd,td   &
-                      ,vu,fu(:,6),fd(:,6),chck,asym(:,ib),mynum)
+                      ,vu,fu(:,6),fd(:,6),chck,1.,asym(:,ib),mynum)
 
             !----- Sum the pseudo-band fluxes to get total flux. --------------------------!
             fact = wght(ig3,ik3,ib)
@@ -682,10 +682,10 @@ subroutine harr_lwrad(nz,mynum)
             difflxb = tn1*tn2*tn3*dx
             fbd     = difflxb+fbu
 
-            tn1 = max(0.0,min(1.1,fd(iz,2)/dfac))
-            tn2 = max(0.0,min(1.1,fd(iz,3)/dfac))
-            tn3 = max(0.0,min(1.1,fd(iz,4)/dfac))
-            fbd = tn1*tn2*tn3*fd(iz,1)
+            !tn1 = max(0.0,min(1.1,fd(iz,2)/dfac))
+            !tn2 = max(0.0,min(1.1,fd(iz,3)/dfac))
+            !tn3 = max(0.0,min(1.1,fd(iz,4)/dfac))
+            !fbd = tn1*tn2*tn3*fd(iz,1)
 
 
             flxlu(iz) = flxlu(iz) + fbu
@@ -894,16 +894,16 @@ end subroutine flxsw
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine flxlw(nz,nzmax,tg,tp,tcr,omgp,src,t,r,tc,sigu,sigd,re,vd,td,vu,fu,fd,chck,asym  &
-                ,mynum)
+subroutine flxlw(nz,nzmax,tg,tp,tcr,omgp,src,t,r,tc,sigu,sigd,re,vd,td,vu,fu,fd,chck,xgry  &
+                ,asym,mynum)
 
-   use rconstants, only: halfpi,pi1
+   use rconstants, only: halfpi8,pi18
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer, intent(in)                       :: nz,nzmax,mynum
    real   , intent(in)    , dimension   (nz) :: tg,tcr,src
    real   , intent(in)    , dimension(nzmax) :: tp,omgp,asym
-   real   , intent(in)                       :: chck
+   real   , intent(in)                       :: chck,xgry
    real   , intent(inout) , dimension(nzmax) :: fu,fd
    real   , intent(inout) , dimension   (nz) :: t,r,tc,sigu,sigd
    real   , intent(inout) , dimension   (nz) :: re,vd,td,vu
@@ -912,14 +912,14 @@ subroutine flxlw(nz,nzmax,tg,tp,tcr,omgp,src,t,r,tc,sigu,sigd,re,vd,td,vu,fu,fd,
    real(kind=8)           , dimension(nz)    :: tg8,tp8,tcr8,omgp8,src8,asym8,fu8,fd8
    real(kind=8)           , dimension(nz)    :: t8,r8,tc8,sigu8,sigd8
    real(kind=8)           , dimension(nz)    :: re8,vd8,td8,vu8
-   real(kind=8)                              :: chck8
+   real(kind=8)                              :: chck8,xgry8
 
    real(kind=8)                              :: tau,omg0,af,fact,beta0,g1,g2,gg
    real(kind=8)                              :: rinf,ggtau,expp1,expp2,aa,bb,cc
    !----- Constants -----------------------------------------------------------------------!
-   real(kind=8)                  , parameter :: diffac=1.66
+   real(kind=8)                  , parameter :: diffac=1.66d0
    real(kind=8)                  , parameter :: tinyreal=1.d-20
-   real(kind=8)                  , parameter :: flush=46.
+   real(kind=8)                  , parameter :: flush=4.6d1
    !----- Functions -----------------------------------------------------------------------!
    real                          , external  :: dble2sngl
    !---------------------------------------------------------------------------------------!
@@ -942,63 +942,64 @@ subroutine flxlw(nz,nzmax,tg,tp,tcr,omgp,src,t,r,tc,sigu,sigd,re,vd,td,vu,fu,fd,
    src8  = dble(src)
    asym8 = dble(asym)
    chck8 = dble(chck)
+   xgry8 = dble(xgry)
 
    !---------------------------------------------------------------------------------------!
    !     Get total optical depth, single scattering albedo and assymetry parameter.        !
    !---------------------------------------------------------------------------------------!
    do iz=nz,2,-1
-      tau = tg8(iz) + tp8(iz) + tcr8(iz) * chck8
+      tau = tg8(iz) * xgry8 + tp8(iz) + tcr8(iz) * chck8
 
-      if ( tau == 0.0 ) then
-         omg0 = 0.
-         af = 0.
+      if ( tau == 0.d0 ) then
+         omg0 = 0.d0
+         af = 0.d0
       else
-         omg0 = min(.999999, omgp8(iz) * tp8(iz) / max(tinyreal, tau))
+         omg0 = min(9.99999d-1, omgp8(iz) * tp8(iz) / max(tinyreal, tau))
          af = asym8(iz)
       end if
       !----- Do delta-m scaling (wiscombe). -----------------------------------------------!
       fact = af * af
-      tau = (1.0 - omg0 * fact) * tau
-      omg0 = ((1.0 - fact) * omg0) / (1.0 - omg0 * fact)
+      tau = (1.d0 - omg0 * fact) * tau
+      omg0 = ((1.d0 - fact) * omg0) / (1.d0 - omg0 * fact)
       !----- Determine the ODE matrix coefficients (Ritter and Geleyn). -------------------!
-      beta0 = (4.+af)/(8.*(1.+af))
-      g1    = diffac*(1.-omg0*(1.-beta0))
+      beta0 = (4.d0+af)/(8.d0*(1.+af))
+      g1    = diffac*(1.d0-omg0*(1.d0-beta0))
       g2    = diffac*omg0*beta0
-      gg    = sqrt(g1**2-g2**2)
+      gg    = sqrt(g1*g1-g2*g2)
 
       !----- Determine the local (true) reflection and transmission coefficients. ---------!
       rinf  = g2/(gg+g1)
       ggtau = gg*tau
       if (ggtau > flush) then
-         expp1=0.
+         expp1=0.d0
       else
          expp1=dexp(-ggtau)
       end if
-      expp2=expp1**2
-      t8(iz) = (1.0-rinf**2)*expp1 / (1.0-rinf**2*expp2)
-      r8(iz) = rinf*(1.-expp2) / (1.-rinf**2*expp2)
+      expp2=expp1*expp1
+      t8(iz) = (1.d0-rinf*rinf)*expp1 / (1.d0-rinf*rinf*expp2)
+      r8(iz) = rinf*(1.d0-expp2) / (1.d0-rinf*rinf*expp2)
      
       !----- Get the source functions, go from top down to accomodate solar terms. --------!
       if (tau < 4.d-2) then      !changed June 12 after Jerry's recom.
-         sigu8(iz) = dble(halfpi) * (src8(iz) + src8(iz-1)) * tau * diffac
+         sigu8(iz) = halfpi8 * (src8(iz) + src8(iz-1)) * tau * diffac
          sigd8(iz) = sigu8(iz)
       else
-         aa =  (g1 + g2) * (1.0 - r8(iz)) - (1.0 + r8(iz) - t8(iz)) / tau
-         bb = -(g1 + g2) * t8(iz) + (1.0 + r8(iz) - t8(iz)) / tau
-         cc = diffac * pi1 * (1.0 - omg0) / gg**2
+         aa =  (g1 + g2) * (1.d0 - r8(iz)) - (1.d0 + r8(iz) - t8(iz)) / tau
+         bb = -(g1 + g2) * t8(iz) + (1.d0 + r8(iz) - t8(iz)) / tau
+         cc = diffac * pi18 * (1.d0 - omg0) / (gg * gg)
          sigu8(iz) = cc*(aa*src8(iz)+bb*src8(iz-1))
          sigd8(iz) = cc*(bb*src8(iz)+aa*src8(iz-1))
       end if
    end do
 
-  !----- Do adding, going from top down calculate fluxes going up through the layers. ----!
-    re8(nz)  = 0.
-   vd8(nz)  = 0.
-   fd8(nz)  = 0.
-   fu8(1)   = dble(pi1)*src8(1)
+   !----- Do adding, going from top down calculate fluxes going up through the layers. ----!
+   re8(nz)  = 0.d0
+   vd8(nz)  = 0.d0
+   fd8(nz)  = 0.d0
+   fu8(1)   = pi18*src8(1)
    do iz = nz,2,-1
-      td8(iz)   = 1. - re8(iz)*r8(iz)
-      re8(iz-1) = max(tinyreal,r8(iz) + t8(iz)**2*re8(iz) / td8(iz))
+      td8(iz)   = 1.d0 - re8(iz)*r8(iz)
+      re8(iz-1) = max(tinyreal,r8(iz) + t8(iz)*t8(iz)*re8(iz) / td8(iz))
       vd8(iz-1) = sigd8(iz) + ( t8(iz)*vd8(iz) + t8(iz)*re8(iz)*sigu8(iz) ) / td8(iz)
       vu8(iz-1) = ( r8(iz)*vd8(iz) + sigu8(iz) ) / td8(iz)
    end do
@@ -1091,7 +1092,7 @@ end subroutine rayleigh
 !==========================================================================================!
 !==========================================================================================!
 !     Calculate the blackbody flux (t=296.) weighted self-broadening coefficient for water !
-! vapor. See Kniezys et al 1980 (LOWTRAN 5). Units are converted to have the water vapor   !
+! vapor. See Kneizys et al 1980 (LOWTRAN 5). Units are converted to have the water vapor   !
 ! content input a Pascal.                                                                  !
 !------------------------------------------------------------------------------------------!
 subroutine csband(wlnlo,wlnhi,csavg)

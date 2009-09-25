@@ -133,7 +133,7 @@ module mem_ensemble
 
    end type ensemble_vars
 
-   type(ensemble_vars), allocatable, dimension(:), target :: ensemble_e
+   type(ensemble_vars), allocatable, dimension(:) :: ensemble_e
    !=======================================================================================!
    !=======================================================================================!
 

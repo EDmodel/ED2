@@ -1212,6 +1212,8 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
       ! transfer.  So first we compute the temperature and liquid fraction of the layer    !
       ! beneath the top.                                                                   !
       !------------------------------------------------------------------------------------!
+      kb         = nzg-1
+      nsbeneath  = csite%ntext_soil(kb,ipa)
       shcbeneath = soil8(nsbeneath)%slcpd
       call qwtk8(initp%soil_energy(kb),initp%soil_water(kb)*wdns8,shcbeneath               &
                 ,initp%soil_tempk(kb),initp%soil_fracliq(kb))

@@ -196,8 +196,8 @@ v_interps.o: isan_coms.mod rconstants.mod therm_lib.mod
 mem_mass.o: var_tables.mod
 rexev.o: mem_basic.mod mem_grid.mod mem_mass.mod mem_scratch.mod mem_tend.mod
 rexev.o: rconstants.mod therm_lib.mod
-rmass.o: mem_ensemble.mod mem_grid.mod mem_mass.mod mem_scratch.mod
-rmass.o: mem_scratch_grell.mod mem_turb.mod
+rmass.o: mem_grid.mod mem_mass.mod mem_scratch.mod mem_scratch_grell.mod
+rmass.o: mem_turb.mod
 dealloc.o: catt_start.mod mem_aerad.mod mem_all.mod mem_ensemble.mod
 dealloc.o: mem_gaspart.mod mem_globaer.mod mem_globrad.mod mem_mass.mod
 dealloc.o: mem_opt.mod mem_scratch1_grell.mod mem_scratch_grell.mod mem_teb.mod
