@@ -961,6 +961,9 @@ subroutine ed_nodeget_worklist_info
   integer :: mpiid
   integer :: ifm
   
+  ! Allocate the work vectors
+  allocate(work_v(ngrids))
+
   do ifm=1,ngrids
      
      npolygons = gdpy(mynum,ifm)

@@ -328,14 +328,14 @@ subroutine init_can_air_params()
       !      This is the minimum canopy depth that is used to calculate the heat and       !
       ! moisture storage capacity in the canopy air [m].                                   !
       !------------------------------------------------------------------------------------!
-      minimum_canopy_depth  = 0.2
+      minimum_canopy_depth  = 5.0
       minimum_canopy_depth8 = dble(minimum_canopy_depth)
 
       !------------------------------------------------------------------------------------!
       !     This is the minimum vegetation height, used to calculate drag coefficients and !
       ! similar things.                                                                    !
       !------------------------------------------------------------------------------------!
-      veg_height_min = 0.2 ! was 0.2
+      veg_height_min = 1.0 ! was 0.2
    end select
 
    !----- This is the dimensionless exponential wind atenuation factor. -------------------!
