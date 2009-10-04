@@ -47,7 +47,20 @@ FPP_COMMAND = $(F_COMP) -DUSE_NCDF=$(USE_NCDF) -D$(CMACH) -DUSE_HDF5=$(USE_HDF5)
 include objects.mk
 
 #----- Defining targets -------------------------------------------------------------------#
-all: $(EXE)
+
+all:
+	make gendep
+	make $(EXE)
+	make $(EXE)
+	make $(EXE)
+	make $(EXE)
+	make $(EXE)
+
+gendep:
+	@echo ""
+	./generate_deps.sh $(RAPP_ROOT)
+	@echo === Finished dependencies ===
+
 
 $(EXE): $(LIBMODEL) $(MAINOBJ)
 	@echo ""
@@ -70,9 +83,11 @@ FORCE:
 clean: 
 	@echo ""
 	rm -fv $(LIBMODEL) $(EXE) *.o *.mod *.F90 *.f90 *.stb *.d
+	rm -f ../$(EXE) ../$(LIBMODEL)
+	touch dependency.mk
 	@echo ""
 
-#------ Defining the dependencies ---------------------------------------------------------#
-include depend.mk
+#----- Define rules -----------------------------------------------------------------------#
+include rules.mk
 
 

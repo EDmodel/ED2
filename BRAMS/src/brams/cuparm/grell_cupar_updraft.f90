@@ -114,7 +114,7 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
                                          ,thilu_cld,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld   &
                                          ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,k22   &
                                          ,ierr,kbcon,wbuoymin)
-   use rconstants, only : epi,rgas
+   use rconstants, only : epi,rdry
    use therm_lib , only : idealdens
    implicit none
 
@@ -293,7 +293,7 @@ subroutine grell_buoy_below_lfc(mkx,mgmzp,k22,kbcon,exner_cup,p_cup,theiv_cup,th
                                ,t_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup,qsat_cup,co2_cup &
                                ,rho_cup,theivu_cld,thilu_cld,tu_cld,qtotu_cld,qvapu_cld    &
                                ,qliqu_cld,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu)
-   use rconstants, only : epi,rgas
+   use rconstants, only : epi,rdry
    use therm_lib , only : idealdens
    implicit none
 
@@ -488,7 +488,7 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
                                     ,thilu_cld,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld        &
                                     ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,pwu_cld    &
                                     ,pwavu,ktop,ierr)
-   use rconstants, only : epi,rgas, t00, toodry
+   use rconstants, only : epi,rdry, t00, toodry
    use therm_lib , only : thetaeiv2thil, idealdens, toler, maxfpo
    implicit none
    logical               , intent(in)    :: comp_down   ! Flag for downdraft/precipitation

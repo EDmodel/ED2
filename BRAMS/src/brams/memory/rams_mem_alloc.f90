@@ -294,11 +294,11 @@ subroutine rams_mem_alloc(proc_type)
    do ng=1,ngrids
       call nullify_leaf(leaf_g(ng)) ; call nullify_leaf(leafm_g(ng))
       call alloc_leaf(leaf_g(ng),nmzp(ng),nmxp(ng),nmyp(ng)  &
-           ,nzg,nzs,npatch,ng,co2_on)
+           ,nzg,nzs,npatch,ng,teb_spm)
       if (imean == 1) then
-         call alloc_leaf(leafm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),nzg,nzs,npatch,ng,co2_on)
+         call alloc_leaf(leafm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),nzg,nzs,npatch,ng,teb_spm)
       elseif (imean == 0) then
-         call alloc_leaf(leafm_g(ng),1,1,1,1,1,1,1,co2_on)
+         call alloc_leaf(leafm_g(ng),1,1,1,1,1,1,1,teb_spm)
       end if
 
       call filltab_leaf(leaf_g(ng),leafm_g(ng),imean,nmzp(ng),nmxp(ng),nmyp(ng),nzg,nzs    &

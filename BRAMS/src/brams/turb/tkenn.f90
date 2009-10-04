@@ -79,7 +79,7 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
    use mem_scratch,  only:  vctr1, vctr5, vctr9,vctr19,vctr20,vctr21,vctr22,vctr23,vctr24  &
                            ,vctr29,vctr30,vctr31,vctr32,vctr33,vctr38,vctr35,vctr36,vctr37
 
-   use rconstants,     only: abslmomin,abswltlmin,cp,g,ltscalemax,sigwmin,vonk,lturbmin    &
+   use rconstants,     only: abslmomin,abswltlmin,cp,grav,ltscalemax,sigwmin,vonk,lturbmin &
                             ,tkmin,onethird
 
    use turb_constants, only:  nna1,nna2,nnb1,nnb2,nnc1,nnc2,nnc3,nnc4,nnc5                 &
@@ -206,7 +206,7 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
          !   Since LMO can be close to zero, but either positive or negative, it must be   !
          ! truncated to a small value, but keeping the same sign                           !
          !---------------------------------------------------------------------------------!
-         lmo(i,j)= - vctr21(k2w) * ustarw * ustarw * ustarw / (vonk * g * wltl0)
+         lmo(i,j)= - vctr21(k2w) * ustarw * ustarw * ustarw / (vonk * grav * wltl0)
          if (abs(lmo(i,j)) < abslmomin) lmo(i,j)=sign(abslmomin,lmo(i,j))
 
          do k=k2w,m1-1
@@ -236,7 +236,7 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
             if (vt3dj(k,i,j) > 0 .and. vctr5(k) >= 0) then
                lb = vctr30(k) / max(sqrt(vt3dj(k,i,j)),1.e-10)
             elseif (vt3dj(k,i,j) > 0 .and. vctr5(k) < 0) then
-               qc= cbrt((g/vctr21(k2w))*wltl0*lt)
+               qc= cbrt((grav/vctr21(k2w))*wltl0*lt)
                lb = (1. + nnq6 *sqrt(qc/max((lt*sqrt(vt3dj(k,i,j))),1.e-20)))*             &
                           vctr30(k)/max(sqrt(vt3dj(k,i,j)),1.e-10)
             else
@@ -277,7 +277,7 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
             kpbl(i,j) = k2w
             pblhgt(i,j)=vctr1(k2w)
             sboundlay: do k=k2w+1,m1-1
-               ri = g * (vctr21(k)-vctr21(k2w)) * (vctr1(k)-vctr1(k2w))                    &
+               ri = grav * (vctr21(k)-vctr21(k2w)) * (vctr1(k)-vctr1(k2w))                 &
                   / ( vctr21(k2w) * ( (vctr29(k)-vctr29(k2w)) * (vctr29(k)-vctr29(k2w))    &
                                     + (vctr31(k)-vctr31(k2w)) * (vctr31(k)-vctr31(k2w))    &
                                     + 100.*ustarw*ustarw ) )
@@ -294,13 +294,13 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
             !------------------------------------------------------------------------------!
             kpbl(i,j) = k2w
             pblhgt(i,j)=vctr1(k2w)
-            aux= wltl0*g/(cp * vctr21(k2w))
+            aux= wltl0 * grav / (cp * vctr21(k2w))
             convmixlay: do k=k2w+1,m1-1
                kpbl(i,j) = k
                pblhgt(i,j)=0.5*(vctr1(k)+vctr1(k-1))
                wstarw=cbrt(aux * pblhgt(i,j) )
                vctr22(k)=vctr21(k2w)+8.5*wltl0/(wstarw*cp)
-               ri = g * (vctr21(k)-vctr22(k)) * (vctr1(k)-vctr1(k2w))                      &
+               ri = grav * (vctr21(k)-vctr22(k)) * (vctr1(k)-vctr1(k2w))                   &
                   / ( vctr22(k) * ((vctr29(k)-vctr29(k2w)) * (vctr29(k)-vctr29(k2w))       &
                     + (vctr31(k)-vctr31(k2w)) * (vctr31(k)-vctr31(k2w))                    &
                     + 100.*ustarw*ustarw) )
@@ -431,7 +431,7 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
          if (nstbot == 1 .and. weightsurf > 0) then
             tket(k2w,i,j) = tket2 -vctr37(k2w) + (1.-weightsurf)*vctr36(k2w+1)             &
                           + weightsurf*(-sflux_u(i,j)*du0dz-sflux_v(i,j)*dv0dz             &
-                          + g*sflux_t(i,j)/theta(k2w,i,j))/dn0(k2w,i,j)
+                          + grav * sflux_t(i,j) / theta(k2w,i,j)) / dn0(k2w,i,j)
          end if
       end do
    end do

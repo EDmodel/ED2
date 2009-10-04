@@ -12,11 +12,15 @@ subroutine ncep_output(month,year)
                          , sstp          & ! intent(in)
                          , ssxp          & ! intent(in)
                          , ssyp          ! ! intent(in)
+   use mod_interp , only : ndownscal     ! ! intent(in)
+   use mod_model  , only : ngrids        ! ! intent(in)
    use mod_ncep   , only : ncep_g        & ! intent(in)
                          , nvars_ol1     & ! intent(in)
                          , nvars_ol2     & ! intent(in)
+                         , nvars_ol4     & ! intent(in)
                          , vars_ol1      & ! intent(in)
-                         , vars_ol2      ! ! intent(in)
+                         , vars_ol2      & ! intent(in)
+                         , vars_ol4      ! ! intent(in)
 #if USE_HDF5
    use hdf5
    use hdf5_utils !, only : shdf5_open_f  & ! function
@@ -31,8 +35,11 @@ subroutine ncep_output(month,year)
    !----- Local variables. ----------------------------------------------------------------!
    character(len=maxstr)                  :: ol1outname
    character(len=maxstr)                  :: ol2outname
+   character(len=maxstr)                  :: olroutname
    character(len=3     )                  :: mmm
+   integer                                :: ng
    integer                                :: nv
+   integer                                :: nr
    integer                                :: mxo
    integer                                :: myo
    real   , dimension(:,:)  , allocatable :: outbuffg
@@ -70,10 +77,11 @@ subroutine ncep_output(month,year)
    statedims = (/ sstp(1),     mxo,     myo /)
    fluxdims  = (/ sstp(2),     mxo,     myo /)
 
+
+
    !----- Building the output file names. -------------------------------------------------!
    write(ol1outname,fmt='(2a,i4.4,2a)') trim(outpref),'_OL1_',year,trim(mmm),'.h5'
    write(ol2outname,fmt='(2a,i4.4,2a)') trim(outpref),'_OL2_',year,trim(mmm),'.h5'
-
 
    !---------------------------------------------------------------------------------------!
    !    We are now going to write the "Grid 1" file (the one with no time interpolation).  !
@@ -139,12 +147,12 @@ subroutine ncep_output(month,year)
    ol2loop: do nv = 1, nvars_ol2
       select case (trim(vars_ol2(nv)))
       case ('lon')   !----- Longitude. ----------------------------------------------------!
-         call fillbuff_2d(ssxp(1),ssyp(1),mxo,myo,edgeoff,grid_g(1)%lon,outbuffg)
-         call shdf5_orec_f( 2, griddims ,trim(vars_ol1(nv)),rvara=outbuffg)
+         call fillbuff_2d(ssxp(2),ssyp(2),mxo,myo,edgeoff,grid_g(2)%lon,outbuffg)
+         call shdf5_orec_f( 2, griddims ,trim(vars_ol2(nv)),rvara=outbuffg)
 
       case ('lat')   !----- Latitude. -----------------------------------------------------!
-         call fillbuff_2d(ssxp(1),ssyp(1),mxo,myo,edgeoff,grid_g(1)%lat,outbuffg)
-         call shdf5_orec_f( 2, griddims ,trim(vars_ol1(nv)),rvara=outbuffg)
+         call fillbuff_2d(ssxp(2),ssyp(2),mxo,myo,edgeoff,grid_g(2)%lat,outbuffg)
+         call shdf5_orec_f( 2, griddims ,trim(vars_ol2(nv)),rvara=outbuffg)
 
       case ('nbdsf') !----- Near-IR beam flux. --------------------------------------------!
          call fillbuff_3d(ssxp(2),ssyp(2),sstp(2),mxo,myo,edgeoff,ncep_g(2)%nbdsf,outbufff)
@@ -166,6 +174,47 @@ subroutine ncep_output(month,year)
    end do ol2loop
    call shdf5_close_f()
    !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    We will now write the files with the different precipitation realisations.         !
+   !---------------------------------------------------------------------------------------!
+   dnscloop: do nr=1,ndownscal
+      write(olroutname,fmt='(2a,i2.2,a,i4.4,2a)')                                          &
+                                             trim(outpref),'_R',nr,'_',year,trim(mmm),'.h5'
+
+      ng = nr + 3
+
+      !------------------------------------------------------------------------------------!
+      !    We are now going to write the realisation files (with time interpolation).      !
+      ! Each downscaled precipitation will go to a different file.  As in the previous     !
+      ! cases, we loop over the variables, just because if we decide to change the order,  !
+      ! everything will be done in one place (mod_ncep.f90).                               !
+      !------------------------------------------------------------------------------------!
+      write (unit=*,fmt='(a,1x,2a)') '         [|] Writing file:',trim(olroutname),'...'
+      call shdf5_open_f(trim(olroutname),'W',1)
+      ol4loop: do nv = 1, nvars_ol4
+         select case (trim(vars_ol4(nv)))
+         case ('lon')   !----- Longitude. -------------------------------------------------!
+            call fillbuff_2d(ssxp(ng),ssyp(ng),mxo,myo,edgeoff,grid_g(ng)%lon,outbuffg)
+            call shdf5_orec_f( 2, griddims ,trim(vars_ol4(nv)),rvara=outbuffg)
+
+         case ('lat')   !----- Latitude. --------------------------------------------------!
+            call fillbuff_2d(ssxp(ng),ssyp(ng),mxo,myo,edgeoff,grid_g(ng)%lat,outbuffg)
+            call shdf5_orec_f( 2, griddims ,trim(vars_ol4(nv)),rvara=outbuffg)
+
+         case ('prate') !----- Precipitation rate -----------------------------------------!
+            call fillbuff_3d(ssxp(ng),ssyp(ng),sstp(ng),mxo,myo,edgeoff,ncep_g(ng)%prate   &
+                            ,outbufff)
+            call shdf5_orec_f( 3, fluxdims,trim(vars_ol4(nv)),rvara=outbufff)
+
+         end select
+      end do ol4loop
+      call shdf5_close_f()
+      !------------------------------------------------------------------------------------!
+   end do dnscloop
+
+
 
    deallocate(outbuffg)
    deallocate(outbuffs)

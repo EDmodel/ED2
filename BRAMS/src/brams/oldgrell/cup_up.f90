@@ -182,7 +182,7 @@ end subroutine cup_up_nms
 !----------------------------------------------------------------------
 subroutine cup_up_aa0(aa0,z,zu,dby,GAMMA_CUP,t_cup,kbcon,ktop,mix,mgmxp,mkx    &
                      ,mgmzp,istart,iend,ierr)
-  use rconstants, only : g, cp
+  use rconstants, only : grav, cp
   implicit none
   integer                         :: i,k,mix,mgmxp,mkx,mgmzp,istart,iend
   integer, dimension(mgmxp)       :: kbcon,ktop,ierr
@@ -198,7 +198,7 @@ subroutine cup_up_aa0(aa0,z,zu,dby,GAMMA_CUP,t_cup,kbcon,ktop,mix,mgmxp,mkx    &
         if (K.le.KBCON(I)) cycle
         if (K.gt.KTOP(I))  cycle
         DZ = Z(I,K)-Z(I,K-1)
-        da = zu(i,k)*DZ*(g/(cp*((T_cup(I,K)))))*DBY(I,K-1)/  &
+        da = zu(i,k)*DZ*(grav/(cp*((T_cup(I,K)))))*DBY(I,K-1)/  &
              (1.+GAMMA_CUP(I,K))
         if (K.eq.KTOP(I).and.da.le.0.) cycle
         AA0(I)=AA0(I)+da

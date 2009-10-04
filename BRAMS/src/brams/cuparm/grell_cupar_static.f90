@@ -273,7 +273,6 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
    integer                   :: kzdown        ! Actual maximum origin for downdrafts;
    integer                   :: capoffset     ! Offset for perturbation of cap_max
    !---------------------------------------------------------------------------------------!
-
    !---------------------------------------------------------------------------------------!
    !    Flag for convection error when using the "0"  variables.                           !
    !---------------------------------------------------------------------------------------!
@@ -310,6 +309,8 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
    !               the variables will have the values I need.                              !
    !---------------------------------------------------------------------------------------!
    stacloop: do icap=maxens_cap,1,-1
+      
+
       capoffset= (-1)**icap * icap / 2 !----- This gives 0,1,-1,2,-2 for icap=1,2,3... ----!
       if (cap_maxs > 0.) then
          !---------------------------------------------------------------------------------!
@@ -741,7 +742,7 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
          !    ever, it will be used as scratch here. At the feedback time the value will   !
          !    be overwritten by the actual output value.                                   !
          !---------------------------------------------------------------------------------!
-         edt  = ee%edt_eff(iedt,icap)
+         edt  = edt_eff(iedt,icap)
 
          !---------------------------------------------------------------------------------!
          ! 2. Compute the total cloud work function for this edt member                    !
@@ -758,16 +759,16 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
          if (comp_down) then
             call  grell_dellabot_ensemble(mgmzp,checkmass,masstol,edt,theiv,p_cup          &
                                          ,theiv_cup,mentrd_rate,cdd,dzd_cld,etad_cld       &
-                                         ,theivd_cld,ee%dellatheiv_eff(1,iedt,icap))
+                                         ,theivd_cld,dellatheiv_eff(1,iedt,icap))
             call  grell_dellabot_ensemble(mgmzp,checkmass,masstol,edt,qtot,p_cup,qtot_cup  &
                                          ,mentrd_rate,cdd,dzd_cld,etad_cld,qtotd_cld       &
-                                         ,ee%dellaqtot_eff(1,iedt,icap))
+                                         ,dellaqtot_eff(1,iedt,icap))
             call  grell_dellabot_ensemble(mgmzp,checkmass,masstol,edt,thil,p_cup,thil_cup  &
                                          ,mentrd_rate,cdd,dzd_cld,etad_cld,thild_cld       &
-                                         ,ee%dellathil_eff(1,iedt,icap))
+                                         ,dellathil_eff(1,iedt,icap))
             call  grell_dellabot_ensemble(mgmzp,checkmass,masstol,edt,co2,p_cup,co2_cup    &
                                          ,mentrd_rate,cdd,dzd_cld,etad_cld,co2d_cld        &
-                                         ,ee%dellaco2_eff(1,iedt,icap))
+                                         ,dellaco2_eff(1,iedt,icap))
          end if
          
          !---------------------------------------------------------------------------------!
@@ -838,7 +839,7 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
          !---------------------------------------------------------------------------------!
          do k=1,ktop
             !------ Precipitation ---------------------------------------------------------!
-            ee%pw_eff(k,iedt,icap) =  pwu_cld(k) + edt * pwd_cld(k)
+            pw_eff(k,iedt,icap) =  pwu_cld(k) + edt * pwd_cld(k)
          end do
       end do effloop
       !]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]!

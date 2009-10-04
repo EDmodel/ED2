@@ -146,7 +146,7 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
                , P_op                      & ! Open stomata res. for water  [          s/m]
                , P_cl                      & ! Closed stomata res. for water[          s/m]
                , ipft                      & ! PFT                          [         ----]
-               , prss                      & ! Pressure                     [         N/m²]
+               , csite%can_prss(ipa)       & ! Pressure                     [         N/m²]
                , leaf_resp                 & ! Leaf respiration rate        [µmol/m²leaf/s]
                , green_leaf_factor(ipft)   & ! Fraction of actual green leaves relative to 
                                            ! !      on-allometry value.
@@ -214,7 +214,7 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
                , cpatch%rsw_open(ico)      & ! Open stomata res. for water  [          s/m]
                , cpatch%rsw_closed(ico)    & ! Closed stomata res. for water[          s/m]
                , ipft                      & ! PFT                          [         ----]
-               , prss                      & ! Pressure                     [         N/m²]
+               , csite%can_prss(ipa)       & ! Pressure                     [         N/m²]
                , leaf_resp                 & ! Leaf respiration rate        [µmol/m²leaf/s]
                , green_leaf_factor(ipft)   & ! Fraction of actual green leaves relative to 
                                            ! !      on-allometry value.

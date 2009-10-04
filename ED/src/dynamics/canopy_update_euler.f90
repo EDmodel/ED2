@@ -188,9 +188,9 @@ subroutine canopy_implicit_driver(csite,ipa, ndims, prss, canhcap, canwcap,  &
 !-----------------------------------------------------------------------------
 
   use ed_state_vars,only: sitetype,patchtype
-  use consts_coms, only: cp, alvl, alvi,rdry,epim1
+  use consts_coms, only: cp, alvl, alvi,rdry,p00,rocp
   use grid_coms, only: nzg
-  use therm_lib, only: rhovsil,rhovsilp
+  use therm_lib, only: rhovsil,rhovsilp,ptqz2enthalpy,idealdenssh
   implicit none
 
   type(sitetype), target  :: csite
@@ -495,10 +495,12 @@ subroutine canopy_implicit_driver(csite,ipa, ndims, prss, canhcap, canwcap,  &
      print*,hxfergc/canhcap,hxfersc/canhcap,sxfer_t/canhcap,csite%ustar(ipa)
      stop
   endif
-  
-  csite%can_rhos(ipa) = prss &
-                      / (rdry * csite%can_temp(ipa) * (1. + epim1 * csite%can_shv(ipa)))
 
+  csite%can_prss(ipa)       = prss
+  csite%can_theta(ipa)      = csite%can_temp(ipa) * (p00 / prss) ** rocp
+  csite%can_rhos(ipa)       = idealdenssh(prss,csite%can_temp(ipa),csite%can_shv(ipa))
+  csite%can_enthalpy(ipa)   = ptqz2enthalpy(prss,csite%can_temp(ipa),csite%can_shv(ipa)    &
+                                           ,csite%can_depth(ipa))
   csite%avg_daily_temp(ipa) = csite%avg_daily_temp(ipa) + csite%can_temp(ipa)
   return
 end subroutine canopy_implicit_driver
@@ -514,9 +516,9 @@ subroutine canopy_explicit_driver(csite,ipa, ndims, prss, canhcap, canwcap, &
 !-----------------------------------------------------------------------------
 
   use ed_state_vars,only:sitetype,patchtype
-  use consts_coms, only: cp, alvl, alvi, cliq, cice, alli, t3ple,tsupercool,rdry,epim1
+  use consts_coms, only: cp, alvl, alvi, cliq, cice, alli, t3ple,tsupercool,rdry,rocp,p00
   use grid_coms, only: nzg
-  use therm_lib, only: rhovsil,rhovsilp
+  use therm_lib, only: rhovsil,rhovsilp,ptqz2enthalpy,idealdenssh
 
   implicit none
 
@@ -697,9 +699,11 @@ subroutine canopy_explicit_driver(csite,ipa, ndims, prss, canhcap, canwcap, &
         endif
      endif
   enddo
-  csite%can_rhos(ipa) = prss &
-                      / (rdry * csite%can_temp(ipa) * (1. + epim1 * csite%can_shv(ipa)))
-
+  csite%can_prss(ipa)       = prss
+  csite%can_theta(ipa)      = csite%can_temp(ipa) * (p00 / prss) ** rocp
+  csite%can_rhos(ipa)       = idealdenssh(prss,csite%can_temp(ipa),csite%can_shv(ipa))
+  csite%can_enthalpy(ipa)   = ptqz2enthalpy(prss,csite%can_temp(ipa),csite%can_shv(ipa)    &
+                                           ,csite%can_depth(ipa))
   csite%avg_daily_temp(ipa) = csite%avg_daily_temp(ipa) + csite%can_temp(ipa)
 
   return

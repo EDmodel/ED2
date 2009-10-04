@@ -55,6 +55,18 @@ subroutine ncep_coordinates()
    ylast(2) = ylast(1)
    xtn(:,2) = xtn(:,1)
    ytn(:,2) = ytn(:,1)
+   
+   !----- The precipitation realisation are the same as the first grid. -------------------!
+   do ifm=4,ngrids
+      x_1st(ifm) = x_1st(1)
+      xlast(ifm) = xlast(1)
+      y_1st(ifm) = y_1st(1)
+      ylast(ifm) = ylast(1)
+      xtn(:,ifm) = xtn(:,1)
+      ytn(:,ifm) = ytn(:,1)
+   end do
+   
+   
    !----- Finding the sub-domain size for all grids. --------------------------------------!
    do ifm=1,ngrids
       ssxp(ifm) = xlast(ifm) - x_1st(ifm) + 1

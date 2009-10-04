@@ -1,21 +1,67 @@
 !============================================================================!
 !============================================================================!
+!    This subroutine simply updates the budget variables.  It used to be in  !
+! the update_patch_derived_props, but that can be a problem sometimes now    !
+! that we compute unique values for pressure, density, and enthalpy.         !
+!----------------------------------------------------------------------------!
+subroutine update_budget(csite,lsl,ipaa,ipaz)
+  
+   use ed_state_vars, only : sitetype     ! ! structure
+   implicit none
+
+   !----- Arguments ---------------------------------------------------------!
+   type(sitetype)  , target     :: csite
+   integer         , intent(in) :: lsl
+   integer         , intent(in) :: ipaa
+   integer         , intent(in) :: ipaz
+   !----- Local variables. --------------------------------------------------!
+   integer                      :: ipa
+   !----- External functions. -----------------------------------------------!
+   real            , external   :: compute_water_storage
+   real            , external   :: compute_energy_storage
+   real            , external   :: compute_co2_storage
+   !-------------------------------------------------------------------------!
+
+
+   do ipa=ipaa,ipaz
+      !----------------------------------------------------------------------!
+      !      Computing the storage terms for CO2, energy, and water budgets. !
+      !----------------------------------------------------------------------!
+      csite%co2budget_initialstorage(ipa) = compute_co2_storage(csite,ipa)
+      csite%wbudget_initialstorage(ipa)   = compute_water_storage(csite,lsl  &
+                                                                 ,ipa)
+      csite%ebudget_initialstorage(ipa)   = compute_energy_storage(csite,lsl &
+                                                                  ,ipa)
+   end do
+
+   return
+end subroutine update_budget
+!============================================================================!
+!============================================================================!
+
+
+
+
+
+
+!============================================================================!
+!============================================================================!
 subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm            &
                          ,ecurr_loss2atm,co2curr_loss2atm                    &
                          ,wcurr_loss2drainage,ecurr_loss2drainage            &
                          ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent   &
                          ,site_area,cbudget_nep)
-   use ed_state_vars, only : sitetype         ! ! structure
-   use ed_misc_coms , only : dtlsm            & ! intent(in)
-                           , fast_diagnostics & ! intent(in)
-                           , current_time     ! ! intent(in)
-   use ed_max_dims  , only : n_dbh            ! ! intent(in)
-   use consts_coms  , only : umol_2_kgC       & ! intent(in)
-                           , day_sec          & ! intent(in)
-                           , rdry             & ! intent(in)
-                           , epim1            ! ! intent(in)
-   use rk4_coms     , only : rk4eps           & ! intent(in)
-                           , checkbudget      ! ! intent(in)
+   use ed_state_vars, only : sitetype           ! ! structure
+   use ed_misc_coms , only : dtlsm              & ! intent(in)
+                           , fast_diagnostics   & ! intent(in)
+                           , current_time       ! ! intent(in)
+   use ed_max_dims  , only : n_dbh              ! ! intent(in)
+   use consts_coms  , only : umol_2_kgC         & ! intent(in)
+                           , day_sec            & ! intent(in)
+                           , rdry               & ! intent(in)
+                           , epim1              ! ! intent(in)
+   use rk4_coms     , only : rk4eps             & ! intent(in)
+                           , checkbudget        ! ! intent(in)
    implicit none
    !----- Arguments ---------------------------------------------------------!
    type(sitetype)        , target        :: csite
@@ -109,9 +155,8 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm            &
                     - ( - co2curr_nep - co2curr_loss2atm)
    !----- 2. Energy. --------------------------------------------------------!
    ecurr_residual = ebudget_deltastorage                                     &
-                  - ( ecurr_precipgain + ecurr_netrad - ecurr_latent         &
-                    - ecurr_loss2atm - ecurr_loss2drainage                   &
-                    - ecurr_loss2runoff)
+                  - ( ecurr_precipgain + ecurr_netrad - ecurr_loss2atm       &
+                  - ecurr_loss2drainage - ecurr_loss2runoff)
    !----- 3. Water. ---------------------------------------------------------!
    wcurr_residual = wbudget_deltastorage                                     &
                    - ( wcurr_precipgain - wcurr_loss2atm                     &
@@ -124,9 +169,9 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm            &
    ! whenever there is some significant leak of CO2, water, or energy.       !
    !-------------------------------------------------------------------------!
    if (checkbudget) then
-      !co2_ok  = abs(co2curr_residual) <= rk4eps                              &
-      !                                 * (abs(co2budget_finalstorage)        &
-      !                                   +abs(co2budget_deltastorage)*dtlsm)
+      co2_ok  = abs(co2curr_residual) <= rk4eps                              &
+                                       * (abs(co2budget_finalstorage)        &
+                                         +abs(co2budget_deltastorage)*dtlsm)
       co2_ok = .true. ! Skipping CO2 test
       energy_ok = abs(ecurr_residual) <= rk4eps                              &
                                        * (abs(ebudget_finalstorage)          &
@@ -274,8 +319,6 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm            &
                                     + ecurr_precipgain
    csite%ebudget_netrad(ipa)        = csite%ebudget_netrad(ipa)              &
                                     + ecurr_netrad
-   csite%ebudget_latent(ipa)        = csite%ebudget_latent(ipa)              &
-                                    + ecurr_latent
    csite%ebudget_loss2atm(ipa)      = csite%ebudget_loss2atm(ipa)            &
                                     + ecurr_loss2atm
    csite%ebudget_loss2drainage(ipa) = csite%ebudget_loss2drainage(ipa)       &
@@ -419,6 +462,7 @@ real function compute_energy_storage(csite, lsl, ipa)
    use consts_coms          , only : cp                    & ! intent(in)
                                    , cliq                  & ! intent(in)
                                    , cice                  & ! intent(in)
+                                   , alvl                  & ! intent(in)
                                    , alli                  & ! intent(in)
                                    , t3ple                 ! ! intent(in)
    use rk4_coms             , only : toosparse             ! ! intent(in)
@@ -455,9 +499,9 @@ real function compute_energy_storage(csite, lsl, ipa)
    end do
 
    !---------------------------------------------------------------------------------------!
-   ! 3. Finding and approximated value for canopy air total enthalpy.                      !
+   ! 3. Finding and value for canopy air total enthalpy .                                  !
    !---------------------------------------------------------------------------------------!
-   cas_storage = cp * csite%can_rhos(ipa) * csite%can_depth(ipa) * csite%can_temp(ipa)
+   cas_storage = csite%can_rhos(ipa) * csite%can_depth(ipa) * csite%can_enthalpy(ipa)
 
    !---------------------------------------------------------------------------------------!
    ! 4. Compute the internal energy stored in the plants.                                  !
@@ -468,8 +512,7 @@ real function compute_energy_storage(csite, lsl, ipa)
    end do
  
    !----- 5. Integrating the total energy in ED. ------------------------------------------!
-   compute_energy_storage = soil_storage + sfcwater_storage + cas_storage               &
-                             + veg_storage
+   compute_energy_storage = soil_storage + sfcwater_storage + cas_storage + veg_storage
 
    return
 end function compute_energy_storage

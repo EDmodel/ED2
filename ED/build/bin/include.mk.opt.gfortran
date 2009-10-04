@@ -66,6 +66,13 @@ HDF5_LIBS=-lz /usr/local/hdf5-1.8.2/lib/libhdf5_fortran.a \
         /usr/local/hdf5-1.8.2/lib/libhdf5.a \
         /usr/local/hdf5-1.8.2/lib/libhdf5_hl.a
 
+
+# tormenta.mit.edu
+
+HDF5_INCS=-I/opt/hdf5/1.8.1/ompi-tcp-gnu41/include
+HDF5C_INCS=-I/opt/hdf5/1.8.1/ompi-tcp-gnu41/include
+HDF5_LIBS=-lz -L/opt/hdf5/1.8.1/ompi-tcp-gnu41/lib \
+	-lhdf5_fortran -lhdf5 -lhdf5_hl
 #---------------------------------------------------------------
 # If you have a version of hdf5 compiled in parallel, then you
 # may benefit from collective I/O, then use this flag = 1
@@ -139,12 +146,12 @@ USE_MPIWTIME=1
 CMACH=PC_LINUX1
 F_COMP=mpif90
 #F_OPTS=-O3
-#F_OPTS=-g -ffpe-trap=invalid,zero,overflow -fbounds-check
-F_OPTS=-O3 -march=native
+F_OPTS=-g -ffpe-trap=invalid,zero,overflow -fbounds-check
+#F_OPTS=-O3
 C_COMP=mpicc
 #C_OPTS=-g
 #C_OPTS=-O3
-C_OPTS=-O3 -march=native
+C_OPTS=-g -ffpe-trap=invalid,zero,overflow -fbounds-check
 LOADER=mpif90
 LOADER_OPTS=${F_OPTS}
 C_LOADER=mpicc

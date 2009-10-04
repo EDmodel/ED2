@@ -945,8 +945,8 @@ subroutine ed_opspec_misc
    !    This subroutine performs miscellaneous tests over the options, like values outside !
    ! the allowed ranges and conflicting dynamic settings.                                  !
    !---------------------------------------------------------------------------------------!
-   use ed_max_dims              , only : n_pft                        ! ! intent(in)
-   use ed_misc_coms             , only : ifoutput                     & ! intent(in)
+   use ed_max_dims           , only : n_pft                        ! ! intent(in)
+   use ed_misc_coms          , only : ifoutput                     & ! intent(in)
                                     , idoutput                     & ! intent(in)
                                     , imoutput                     & ! intent(in)
                                     , iyoutput                     & ! intent(in)
@@ -955,6 +955,8 @@ subroutine ed_opspec_misc
                                     , runtype                      & ! intent(in)
                                     , ied_init_mode                & ! intent(in)
                                     , integration_scheme           ! ! intent(in)
+   use canopy_air_coms       , only : icanturb                     & ! intent(in)
+                                    , isfclyrm                     ! ! intent(in)
    use soil_coms             , only : isoilflg                     & ! intent(in)
                                     , nslcon                       & ! intent(in)
                                     , isoilstateinit               & ! intent(in)
@@ -1202,6 +1204,20 @@ subroutine ed_opspec_misc
    if (ianth_disturb < 0 .or. ianth_disturb > 1) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid IANTH_DISTURB, it must be between 0 and 1. Yours is set to',ianth_disturb,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (icanturb < -1 .or. icanturb > 2) then
+      write (reason,fmt='(a,1x,i4,a)') &
+        'Invalid ICANTURB, it must be between -1 and 2. Yours is set to',icanturb,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (isfclyrm < 1 .or. isfclyrm > 4) then
+      write (reason,fmt='(a,1x,i4,a)') &
+        'Invalid ISFCLYRM, it must be between 1 and 4. Yours is set to',isfclyrm,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if

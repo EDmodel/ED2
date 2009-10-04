@@ -235,8 +235,16 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
          ,tke          & ! intent(out) - Forced Turbulent kinetic energy          [   J/kg]
          ,sigw         & ! intent(out) - Vertical velocity standard deviation     [    m/s]
          ,wwind        ! ! intent(out) - Mean vertical velocity                   [    m/s]
-   use rconstants, only : cp,cpi,cpor,p00,g,alvl,rgas,t00,epi,aklv,akiv,toodry             &
-                         ,sigwmin,tkmin
+   use rconstants, only : cp      & ! intent(in)
+                        , cpi     & ! intent(in)
+                        , cpor    & ! intent(in)
+                        , p00     & ! intent(in)
+                        , grav    & ! intent(in)
+                        , rdry    & ! intent(in)
+                        , epi     & ! intent(in)
+                        , toodry  & ! intent(in)
+                        , sigwmin & ! intent(in)
+                        , tkmin   ! ! intent(in)
 
    !------ External functions -------------------------------------------------------------!
    use therm_lib, only: &
@@ -297,7 +305,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
       !------ 6. Turbulent kinetic energy [m²/s²] -----------------------------------------!
       tke0(k)     = tkep(kr)
       !------ 7. Vertical velocity in terms of pressure, or Lagrangian dp/dt [ Pa/s] ------!
-      omeg(k)     = -g*dn0(kr)*.5*( wp(kr)+wp(kr-1) )
+      omeg(k)     = -grav*dn0(kr)*.5*( wp(kr)+wp(kr-1) )
       !------ 8. Vertical velocity [m/s], this is staggered, averaging... -----------------!
       wwind(k)    = 0.5 * (wp(kr)+wp(kr-1))
       !------ 9. Standard-deviation of vertical velocity ----------------------------------!
@@ -380,7 +388,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
    do k=2,mkx-1
       dq          = .5*(qvap(k+1)-qvap(k-1))  ! Delta-q between layers.
       !------ This is moisture convergence, meaning (-1) × moisture divergence. -----------!
-      mconv       = mconv+omeg(k)*dq/g 
+      mconv       = mconv+omeg(k)*dq/grav
    end do
    !----- Moisture convergence closure is only interested when convergence is positive. ---!
    mconv     = max(0.,mconv)
@@ -685,7 +693,7 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
    !   The mean for each cap_maxs member                                                   !
    !---------------------------------------------------------------------------------------!
    do imbp=1,maxens_cap
-      upmf_ave_cap(icap) = sum(ee%upmf_ens(:,:,:,icap)) * maxens_effdynlsf_i
+      upmf_ave_cap(icap) = sum(upmf_ens(:,:,:,icap)) * maxens_effdynlsf_i
    end do
 
    !---------------------------------------------------------------------------------------!
@@ -694,23 +702,23 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
    select case (trim(closure_type))
    case ('gr')
       do icap=1,maxens_cap
-         upmf_ave_cap1(icap)= sum(ee%upmf_ens(1,:,:,icap)) * maxens_efflsf_i
+         upmf_ave_cap1(icap)= sum(upmf_ens(1,:,:,icap)) * maxens_efflsf_i
       end do
    case ('lo')
       do icap=1,maxens_cap
-         upmf_ave_cap2(icap)= sum(ee%upmf_ens(1,:,:,icap)) * maxens_efflsf_i
+         upmf_ave_cap2(icap)= sum(upmf_ens(1,:,:,icap)) * maxens_efflsf_i
       end do
    case ('mc')
       do icap=1,maxens_cap
-         upmf_ave_cap3(icap)= sum(ee%upmf_ens(1,:,:,icap)) * maxens_efflsf_i
+         upmf_ave_cap3(icap)= sum(upmf_ens(1,:,:,icap)) * maxens_efflsf_i
       end do
    case ('kf')
       do icap=1,maxens_cap
-         upmf_ave_cap4(icap)= sum(ee%upmf_ens(1,:,:,icap)) * maxens_efflsf_i
+         upmf_ave_cap4(icap)= sum(upmf_ens(1,:,:,icap)) * maxens_efflsf_i
       end do
    case ('as')
       do icap=1,maxens_cap
-         upmf_ave_cap5(icap)= sum(ee%upmf_ens(1,:,:,icap)) * maxens_efflsf_i
+         upmf_ave_cap5(icap)= sum(upmf_ens(1,:,:,icap)) * maxens_efflsf_i
       end do
    case ('nc','en')
       !------------------------------------------------------------------------------------!
@@ -748,10 +756,10 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
    !   Mass flux average for each closure                                                  !
    !---------------------------------------------------------------------------------------!
    do idync=1,maxens_dyn
-      upmf_ave(idync) = sum(ee%upmf_ens(:,:,idync,:)) * maxens_efflsf_i
+      upmf_ave(idync) = sum(upmf_ens(:,:,idync,:)) * maxens_efflsf_i
    end do
    
-   upmf_tot_ave = sum(ee%upmf_ens) * inv_ensdim
+   upmf_tot_ave = sum(upmf_ens) * inv_ensdim
    
    !---------------------------------------------------------------------------------------!
    !   Computing Standard deviation, skewness, and curtosis                                !
@@ -760,12 +768,12 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
       do iedt=1,maxens_eff
          do imbp=1,maxens_lsf
             do idync=1,maxens_dyn
-               thisdiff = max(small_number,ee%upmf_ens(idync,imbp,iedt,icap)-upmf_ave(idync))
+               thisdiff = max(small_number,upmf_ens(idync,imbp,iedt,icap)-upmf_ave(idync))
                upmf_std(idync) = upmf_std(idync) + thisdiff**2
                upmf_ske(idync) = upmf_ske(idync) + thisdiff**3
                upmf_cur(idync) = upmf_cur(idync) + thisdiff**4
                
-               thisdiff = max(small_number,ee%upmf_ens(idync,imbp,iedt,icap)-upmf_tot_ave)
+               thisdiff = max(small_number,upmf_ens(idync,imbp,iedt,icap)-upmf_tot_ave)
                upmf_tot_std    = upmf_tot_std    + thisdiff**2
                upmf_tot_ske    = upmf_tot_ske    + thisdiff**3
                upmf_tot_cur    = upmf_tot_cur    + thisdiff**4

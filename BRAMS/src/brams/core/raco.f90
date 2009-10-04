@@ -648,7 +648,7 @@ subroutine coefz(m1,m2,m3,ia,iz,ja,jz  &
      dt2al2 = dts
      a1da2 = 1.
   endif
-  rdto2cv = sspct ** 2 * rgas * dts / (2.0 * cv)
+  rdto2cv = sspct ** 2 * rdry * dts / (2.0 * cv)
 
   do j = ja,jz
      do i = ia,iz

@@ -17,7 +17,7 @@ subroutine CUPARTH_shal(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0      
        ensdim=>ensdim_sh,                          & !INTENT(IN)
        icoic=>icoic_sh                             !INTENT(IN)
 
-  use rconstants, only: rgas,cp,rm,p00,t00,g,cpor
+  use rconstants, only: rdry,cp,rh2o,p00,t00,grav,cpor
 
   use mem_scratch2_grell_sh
 
@@ -95,7 +95,7 @@ subroutine CUPARTH_shal(mynum,mgmxp,mgmyp,mgmzp,m1,m2,m3,ia,iz,ja,jz,i0,j0      
            PO(I,K) = ((pp(kr,i,j)+pi0(kr,i,j))/cp)**cpor*p00*1.e-2      ! Pressure in mbar
            US(I,K) = .5*( ua(kr,i,j) + ua(kr,i-1,j) )
            VS(I,K) = .5*( va(kr,i,j) + va(kr,i,j-1) )
-           OMEG(I,K)   = -g*dn0(kr,i,j)*.5*( wa(kr,i,j)+wa(kr-1,i,j) )
+           OMEG(I,K)   = -grav*dn0(kr,i,j)*.5*( wa(kr,i,j)+wa(kr-1,i,j) )
            T(I,K)  = theta(kr,i,j)*(pp(kr,i,j)+pi0(kr,i,j))/cp
            Q(I,K)  = rv(kr,i,j)
            !variables for PBL top height
@@ -189,7 +189,7 @@ subroutine CUP_enss_shal(mynum,m1,m2,m3,i0,                                & !
      
 
   use mem_scratch3_grell_sh
-  use rconstants, only: g,cpi,alvl
+  use rconstants, only: grav,cpi,alvl
 
   implicit none
   integer mynum,i0,j0,m1,m2,m3
@@ -559,7 +559,7 @@ end subroutine CUP_enss_shal
 subroutine cup_dellas_shallow(ierr,z_cup,p_cup,he,mix,mgmxp,mkx,mgmzp, &
      istart,iend,della,itest,j,zu,cd,hc,ktop,k22,kbcon,mentr_rate, &
      he_cup,name)
-  use rconstants, only: g
+  use rconstants, only: grav
   implicit none
   character *(*) name
   integer mix,mgmxp,mkx,mgmzp,i,k,istart,iend,itest,j
@@ -625,7 +625,7 @@ subroutine cup_dellas_shallow(ierr,z_cup,p_cup,he,mix,mgmxp,mkx,mgmzp, &
         dp =  100.*( p_cup(i,k)-p_cup(i,k+1) )
         della(i,k)=(subin*he_cup(i,k+1)-subDOwn*he_cup(i,k)+ &
              detup*.5*( HC(i,K+1)+ HC(i,K))-entup*he(i,k)-&
-             entupk*he_cup(i,k22(i))+detupk*hc(i,ktop(i)))*g/dp
+             entupk*he_cup(i,k22(i))+detupk*hc(i,ktop(i)))*grav/dp
      enddo
   enddo
 end subroutine cup_dellas_shallow

@@ -36,6 +36,7 @@ module mod_ioopts
 
    !----- Ratio between time variables ... ------------------------------------------------!
    integer               :: radratio    ! Inpfrq / Radfrq
+   integer               :: ninputs_day ! 1 day  / Inpfrq
    integer               :: nsteps      ! Inpfrq / Dtinc
    integer               :: nrads       ! Radfrq / Dtinc
    real                  :: nstepsi     ! Dtinc  / Inpfrq

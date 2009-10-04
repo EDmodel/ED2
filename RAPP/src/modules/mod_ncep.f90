@@ -16,6 +16,7 @@ module mod_ncep
       real          , dimension(:,:,:), pointer :: uwnd
       real          , dimension(:,:,:), pointer :: vwnd
       real          , dimension(:,:,:), pointer :: prate
+      real          , dimension(    :), pointer :: prate1d
       real          , dimension(:,:,:), pointer :: dlwrf
       real          , dimension(:,:,:), pointer :: nbdsf
       real          , dimension(:,:,:), pointer :: nddsf
@@ -36,9 +37,13 @@ module mod_ncep
    ! 2. Gaussian grid, with higher time resolution, the output grid for flux variables;    !
    ! 3. Lon/lat grid, the input grid for state variables.                                  !
    !---------------------------------------------------------------------------------------!
-   integer                        , parameter :: ngrids_ncep  = 3
-   logical, dimension(ngrids_ncep), parameter :: flux_g  = (/ .true.,  .true., .false. /) 
-   logical, dimension(ngrids_ncep), parameter :: state_g = (/ .true., .false.,  .true. /) 
+   integer                          , parameter :: ngrids_ncep  = 3
+   logical, dimension(ngrids_ncep+1), parameter :: flux_g  = (/  .true.,  .true.           &
+                                                              , .false., .false. /)
+   logical, dimension(ngrids_ncep+1), parameter :: state_g = (/ .true.,  .false.           &
+                                                             ,  .true.,  .false. /)
+   logical, dimension(ngrids_ncep+1), parameter :: rain_g  = (/ .true.,  .false.           &
+                                                             , .false.,   .true. /)
    !---------------------------------------------------------------------------------------!
 
    
@@ -46,6 +51,7 @@ module mod_ncep
    integer, parameter :: nvars_ncep = 12 ! # of input variables from NCEP
    integer, parameter :: nvars_ol1  = 10 ! # of input variables for "state" grid output
    integer, parameter :: nvars_ol2  =  6 ! # of input variables for flux grid output.
+   integer, parameter :: nvars_ol4  =  3 ! # of input variables for flux grid output.
    !---------------------------------------------------------------------------------------!
 
 
@@ -113,6 +119,11 @@ module mod_ncep
                         , 'nddsf'            & ! Near-IR diffuse radiation        [   W/m2]
                         , 'vbdsf'            & ! Visible beam radiation           [   W/m2]
                         , 'vddsf'           /) ! Visible beam radiation           [   W/m2]
+   !----- State grid. ---------------------------------------------------------------------!
+   character(len=maxstr), parameter, dimension(nvars_ol4) :: vars_ol4 =                    &
+                       (/ 'lon'              & ! Longitude                        [    deg]
+                        , 'lat'              & ! Latitude                         [    deg]
+                        , 'prate'           /) ! Precipitation rate               [kg/m2/s]
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -127,6 +138,7 @@ module mod_ncep
    !---------------------------------------------------------------------------------------!
    integer, parameter, dimension(nvars_ol1) :: vtype_ol1=(/ 2, 2, 2, 1, 1, 1, 1, 1, 1, 0/)
    integer, parameter, dimension(nvars_ol2) :: vtype_ol2=(/ 2, 2, 0, 0, 0, 0/)
+   integer, parameter, dimension(nvars_ol4) :: vtype_ol4=(/ 2, 2, 0 /)
    !=======================================================================================!
    !=======================================================================================!
 
@@ -137,7 +149,7 @@ module mod_ncep
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine alloc_ncep(ncep,nx,ny,nt,state,flux)
+   subroutine alloc_ncep(ncep,nx,ny,nt,state,flux,rain)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(ncep_vars), intent(inout) :: ncep
@@ -146,6 +158,7 @@ module mod_ncep
       integer        , intent(in)    :: nt
       logical        , intent(in)    :: state
       logical        , intent(in)    :: flux
+      logical        , intent(in)    :: rain
       !------------------------------------------------------------------------------------!
 
 
@@ -159,7 +172,6 @@ module mod_ncep
          allocate (ncep%uwnd    (nx,ny,nt))
          allocate (ncep%vwnd    (nx,ny,nt))
          allocate (ncep%shum    (nx,ny,nt))
-         allocate (ncep%prate   (nx,ny,nt))
          allocate (ncep%dlwrf   (nx,ny,nt))
       end if
 
@@ -168,6 +180,11 @@ module mod_ncep
          allocate (ncep%nddsf   (nx,ny,nt))
          allocate (ncep%vbdsf   (nx,ny,nt))
          allocate (ncep%vddsf   (nx,ny,nt))
+      end if
+      
+      if (rain) then
+         allocate (ncep%prate   (nx,ny,nt))
+         allocate (ncep%prate1d       (nt))
       end if
 
       return
@@ -195,6 +212,7 @@ module mod_ncep
       if (associated(ncep%vwnd    )) nullify (ncep%vwnd    )
       if (associated(ncep%shum    )) nullify (ncep%shum    )
       if (associated(ncep%prate   )) nullify (ncep%prate   )
+      if (associated(ncep%prate1d )) nullify (ncep%prate1d )
       if (associated(ncep%dlwrf   )) nullify (ncep%dlwrf   )
       if (associated(ncep%nbdsf   )) nullify (ncep%nbdsf   )
       if (associated(ncep%nddsf   )) nullify (ncep%nddsf   )
@@ -229,18 +247,19 @@ module mod_ncep
       !------------------------------------------------------------------------------------!
       if (associated(ncep%when    )) call missflg_time(nt,missflg_int,missflg_real         &
                                                       ,missflg_dble,missflg_char,ncep%when)
-      if (associated(ncep%pres    )) ncep%pres  = missflg_real
-      if (associated(ncep%temp    )) ncep%temp  = missflg_real
-      if (associated(ncep%rhum    )) ncep%rhum  = missflg_real
-      if (associated(ncep%uwnd    )) ncep%uwnd  = missflg_real
-      if (associated(ncep%vwnd    )) ncep%vwnd  = missflg_real
-      if (associated(ncep%shum    )) ncep%shum  = missflg_real
-      if (associated(ncep%prate   )) ncep%prate = missflg_real
-      if (associated(ncep%dlwrf   )) ncep%dlwrf = missflg_real
-      if (associated(ncep%nbdsf   )) ncep%nbdsf = missflg_real
-      if (associated(ncep%nddsf   )) ncep%nddsf = missflg_real
-      if (associated(ncep%vbdsf   )) ncep%vbdsf = missflg_real
-      if (associated(ncep%vddsf   )) ncep%vddsf = missflg_real
+      if (associated(ncep%pres    )) ncep%pres    = missflg_real
+      if (associated(ncep%temp    )) ncep%temp    = missflg_real
+      if (associated(ncep%rhum    )) ncep%rhum    = missflg_real
+      if (associated(ncep%uwnd    )) ncep%uwnd    = missflg_real
+      if (associated(ncep%vwnd    )) ncep%vwnd    = missflg_real
+      if (associated(ncep%shum    )) ncep%shum    = missflg_real
+      if (associated(ncep%prate   )) ncep%prate   = missflg_real
+      if (associated(ncep%prate1d )) ncep%prate1d = missflg_real
+      if (associated(ncep%dlwrf   )) ncep%dlwrf   = missflg_real
+      if (associated(ncep%nbdsf   )) ncep%nbdsf   = missflg_real
+      if (associated(ncep%nddsf   )) ncep%nddsf   = missflg_real
+      if (associated(ncep%vbdsf   )) ncep%vbdsf   = missflg_real
+      if (associated(ncep%vddsf   )) ncep%vddsf   = missflg_real
 
       return
    end subroutine init_ncep
@@ -267,6 +286,7 @@ module mod_ncep
       if (associated(ncep%vwnd    )) deallocate (ncep%vwnd    )
       if (associated(ncep%shum    )) deallocate (ncep%shum    )
       if (associated(ncep%prate   )) deallocate (ncep%prate   )
+      if (associated(ncep%prate1d )) deallocate (ncep%prate1d )
       if (associated(ncep%dlwrf   )) deallocate (ncep%dlwrf   )
       if (associated(ncep%nbdsf   )) deallocate (ncep%nbdsf   )
       if (associated(ncep%nddsf   )) deallocate (ncep%nddsf   )

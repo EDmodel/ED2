@@ -204,8 +204,6 @@ subroutine model()
 
      enddo
 
-     if (isfcl == 5) call ed_timestep(begtime,dtlongn(1))
-
      ! New position to update 'TIME' - ALF
      time=begtime+dtlongn(1)
 

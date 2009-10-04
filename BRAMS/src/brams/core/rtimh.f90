@@ -170,12 +170,14 @@ subroutine timestep()
   !  Surface layer, soil and veggie model
   !----------------------------------------
   t1=cputime(w1)
-  if (isfcl <= 2) then
+  select case (isfcl)
+  case (1,2)
      if (banneron) write(unit=*,fmt='(a)') '     [-] Calling sfclyr...'
      call SFCLYR(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
-  end if
-  
-
+  case (5)
+     if (banneron) write(unit=*,fmt='(a)') '     [-] Calling ED timestep...'
+     call ed_timestep()
+  end select
   if (acct) call acctimes('accu',6,'SFCLYR',t1,w1)
   !----------------------------------------
 
@@ -628,7 +630,7 @@ subroutine mass_flux(n1,n2,n3,m1,m2,m3,up,vp,wp  &
   print*,  wmass,emass,smass,nmass
   print*, 'total (kg/(m2 s):',tmass/area
   print*, 'total (kg/m2):',aintmass/area
-  print*, 'total pr change (pa):',aintmass/area*g
+  print*, 'total pr change (pa):',aintmass/area*grav
   print*, 'computed mean press:',prtot/area
   print*,'==============================='
 

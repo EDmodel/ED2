@@ -464,7 +464,7 @@ tho=thz(lbc)
 do k=lbc+1,lp
    zp(k)=1.e30
    if(pp(k) < 1e19 .and. thz(k) < 1e19)then
-      zp(k)=zso+.5*(thz(k)+tho)*(pio-cp*(pp(k)/p00)**rocp)/g
+      zp(k)=zso+.5*(thz(k)+tho)*(pio-cp*(pp(k)/p00)**rocp)/grav
       zso=zp(k)
       pio=cp*(pp(k)/p00)**rocp
       tho=thz(k)
@@ -477,7 +477,7 @@ tho=thz(lbc)
 do k=lbc-1,1,-1
    zp(k)=1.e30
    if(pp(k) < 1e19 .and. thz(k) < 1e19)then
-      zp(k)=zso+.5*(thz(k)+tho)*(pio-cp*(pp(k)/p00)**rocp)/g
+      zp(k)=zso+.5*(thz(k)+tho)*(pio-cp*(pp(k)/p00)**rocp)/grav
       zso=zp(k)
       pio=cp*(pp(k)/p00)**rocp
       tho=thz(k)
@@ -851,15 +851,15 @@ z600=4206.
 z500=5574.
 if(px.gt.1.e20.and.tx.lt.1.e20) then
    if(2.*zx.lt.z1000+z900) then
-      px=p1000*exp(-g*(zx-z1000)/(rgas*.5*(tx+t1000)))
+      px=p1000*exp(-grav*(zx-z1000)/(rdry*.5*(tx+t1000)))
    elseif(2.*zx.lt.z900+z850) then
-      px=p900*exp(-g*(zx-z900)/(rgas*.5*(tx+t900)))
+      px=p900*exp(-grav*(zx-z900)/(rdry*.5*(tx+t900)))
    elseif(2.*zx.lt.z850+z700) then
-      px=p850*exp(-g*(zx-z850)/(rgas*.5*(tx+t850)))
+      px=p850*exp(-grav*(zx-z850)/(rdry*.5*(tx+t850)))
    elseif(2.*zx.lt.z700+z600) then
-      px=p700*exp(-g*(zx-z700)/(rgas*.5*(tx+t700)))
+      px=p700*exp(-grav*(zx-z700)/(rdry*.5*(tx+t700)))
    elseif(2.*zx.lt.z600+z500) then
-      px=p600*exp(-g*(zx-z600)/(rgas*.5*(tx+t600)))
+      px=p600*exp(-grav*(zx-z600)/(rdry*.5*(tx+t600)))
    endif
 endif
 
@@ -874,7 +874,7 @@ if(tx.lt.1.e19.and.px.lt.1.e19) then
       sf_r(nsu)=1.e30
    endif
    if(zx.lt.1.e19) then
-      sf_s(nsu)=cp*tx+g*zx
+      sf_s(nsu)=cp*tx+grav*zx
    else
       sf_s(nsu)=1.e30
    endif

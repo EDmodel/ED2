@@ -123,7 +123,7 @@ staloop: do ns=1,nsta
      cycle staloop
    end if
 
-   syo=cp*pth(lbcp)*pk(lbcp)/p00**rocp+g*zsnd(ns,lbcp)
+   syo=cp*pth(lbcp)*pk(lbcp)/p00**rocp+grav*zsnd(ns,lbcp)
    obss(ns,lbc)=syo+cp*(pk(lbcp)+obsp(ns,lbc)**rocp)  &
         *.5/p00**rocp *(levth(lbc)-pth(lbcp))
    po=obsp(ns,lbc)
@@ -156,7 +156,7 @@ staloop: do ns=1,nsta
 
    do k=1,nisn
       if(obss(ns,k).lt.1e19) then
-         zi(k)=(obss(ns,k)-cp*levth(k)*(obsp(ns,k)*p00i)**rocp)/g
+         zi(k)=(obss(ns,k)-cp*levth(k)*(obsp(ns,k)*p00i)**rocp)/grav
       else
          zi(k)=1e30
       endif
@@ -335,14 +335,14 @@ staloop: do ns=1,nsta
      end if
 
      pio=cp*(psnd(ns,lbcp)/p00)**rocp
-     obsp(ns,lbc)=pio-(sigzr(lbc)-zsnd(ns,lbcp))*g/((pth(lbcp)+obst(ns,lbc))*.5)
+     obsp(ns,lbc)=pio-(sigzr(lbc)-zsnd(ns,lbcp))*grav/((pth(lbcp)+obst(ns,lbc))*.5)
      pio=obsp(ns,lbc)
      zso=sigzr(lbc)
      tho=obst(ns,lbc)
      do k=lbc+1,nsigz
         obsp(ns,k)=1e30
         if(obst(ns,k) < 1e19) then
-           obsp(ns,k)=pio-(sigzr(k)-zso)*g/((obst(ns,k)+tho)*.5)
+           obsp(ns,k)=pio-(sigzr(k)-zso)*grav/((obst(ns,k)+tho)*.5)
            zso=sigzr(k)
            pio=obsp(ns,k)
            tho=obst(ns,k)
@@ -355,7 +355,7 @@ staloop: do ns=1,nsta
      do k=lbc-1,1,-1
         obsp(ns,k)=1e30
         if(obst(ns,k) < 1e19) then
-           obsp(ns,k)=pio-(sigzr(k)-zso)*g/((obst(ns,k)+tho)*.5)
+           obsp(ns,k)=pio-(sigzr(k)-zso)*grav/((obst(ns,k)+tho)*.5)
            zso=sigzr(k)
            pio=obsp(ns,k)
            tho=obst(ns,k)
@@ -405,7 +405,7 @@ staloop: do ns=1,nsta
      do k=kbcu-1,1,-1
         obsp(ns,k)=1e30
         if(obst(ns,k).lt.1e19) then
-           obsp(ns,k)=pio-(sigzr(k)-zso)*g/((tsz(k)+tho)*.5)
+           obsp(ns,k)=pio-(sigzr(k)-zso)*grav/((tsz(k)+tho)*.5)
            zso=sigzr(k)
            pio=obsp(ns,k)
            tho=tsz(k)
@@ -573,7 +573,7 @@ do j=1,np2
          endif
       enddo
 
-      sy=cp*thd(kpbc)*pkd(kpbc)/p00k+g*zn(i,j,kpbc-2)
+      sy=cp*thd(kpbc)*pkd(kpbc)/p00k+grav*zn(i,j,kpbc-2)
 
       si2(i,j,kibc-1)=sy-cp*(pi2(i,j,kibc-1)**rocp  &
            +ppd(kpbc)**rocp)/(2.*p00k)*(thd(kpbc)-levth(kibc-1))
@@ -691,8 +691,8 @@ do j=1,np2
          thvd(k)=virtt(thetd(k),rtd(k))
       ENDDO
 
-      zd(2)=zd(3)+(thvd(3)+thvd(2))*.5*(pid(3)-pid(2))/g
-      zd(1)=zd(2)+(thvd(2)+thvd(1))*.5*(pid(2)-pid(1))/g
+      zd(2)=zd(3)+(thvd(3)+thvd(2))*.5*(pid(3)-pid(2))/grav
+      zd(1)=zd(2)+(thvd(2)+thvd(1))*.5*(pid(2)-pid(1))/grav
 
       do k=1,npi3
          sigzr(k)=topt(i,j)+sigz(k)*rtgt(i,j)
@@ -756,13 +756,13 @@ do j=1,np2
 
 
       piibc=cp*pkd(kpbc)/p00**rocp
-      pi2(i,j,kibc-1)=piibc+(zd(kpbc)-sigzr(kibc-1))*g/(.5*(thvp+vvv(kibc-1)))
+      pi2(i,j,kibc-1)=piibc+(zd(kpbc)-sigzr(kibc-1))*grav/(.5*(thvp+vvv(kibc-1)))
       do k=kibc-2,1,-1
-         pi2(i,j,k)=pi2(i,j,k+1)+(sigzr(k+1)-sigzr(k))*g/(.5*(vvv(k+1)+vvv(k)))
+         pi2(i,j,k)=pi2(i,j,k+1)+(sigzr(k+1)-sigzr(k))*grav/(.5*(vvv(k+1)+vvv(k)))
       enddo
 
       do k=kibc,npi3
-         pi2(i,j,k)=pi2(i,j,k-1)-(sigzr(k)-sigzr(k-1))*g/(.5*(vvv(k-1)+vvv(k)))
+         pi2(i,j,k)=pi2(i,j,k-1)-(sigzr(k)-sigzr(k-1))*grav/(.5*(vvv(k-1)+vvv(k)))
       enddo
       do k=1,npi3
          pi2(i,j,k)=(pi2(i,j,k)/cp)**cpor*p00

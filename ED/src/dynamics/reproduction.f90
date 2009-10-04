@@ -329,6 +329,7 @@ subroutine reproduction(cgrid, month)
 
             !----- Since cohorts may have changed, update patch properties... -------------!
             call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss,ipa)
+            call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
          end do update_patch_loop
 
          !----- Since patch properties may have changed, update site properties... --------!

@@ -61,6 +61,8 @@ Module met_driver_coms
      real :: par_beam
      real :: par_diffuse
      real :: atm_tmp
+     real :: atm_theta
+     real :: atm_enthalpy
      real :: atm_shv
      real :: theta
      real :: rshort

@@ -149,14 +149,14 @@ end subroutine grell_thermo_cldlev
 !---------------------------------------------------------------------------=--------------!
 real function buoyancy_acc(rho_cup,rhoz_cld)
 
-   use rconstants, only : g
+   use rconstants, only : grav
    implicit none
    !----- Environment variables at cloud levels -------------------------------------------!
    real, intent(in) :: rho_cup   ! Environment density                             [ kg/m³]
    !----- Draft variables -----------------------------------------------------------------!
    real, intent(in) :: rhoz_cld  ! Draft density                                   [ kg/m³]
    !---------------------------------------------------------------------------------------!
-   buoyancy_acc = g * (1. - rhoz_cld /rho_cup)
+   buoyancy_acc = grav * (1. - rhoz_cld /rho_cup)
 
    return
 end function buoyancy_acc

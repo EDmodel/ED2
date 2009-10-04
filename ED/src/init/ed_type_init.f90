@@ -188,6 +188,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%co2budget_rh(ip1:ip2)             = 0.0
   csite%co2budget_plresp(ip1:ip2)         = 0.0
   csite%co2budget_initialstorage(ip1:ip2) = 0.0
+  csite%co2budget_loss2atm(ip1:ip2)       = 0.0
   csite%co2budget_residual(ip1:ip2)       = 0.0
   csite%wbudget_precipgain(ip1:ip2)       = 0.0
   csite%wbudget_loss2atm(ip1:ip2)         = 0.0
@@ -197,10 +198,10 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%wbudget_residual(ip1:ip2)         = 0.0
   csite%ebudget_precipgain(ip1:ip2)       = 0.0
   csite%ebudget_netrad(ip1:ip2)           = 0.0
-  csite%ebudget_latent(ip1:ip2)           = 0.0
   csite%ebudget_loss2atm(ip1:ip2)         = 0.0
   csite%ebudget_loss2runoff(ip1:ip2)      = 0.0
   csite%ebudget_loss2drainage(ip1:ip2)    = 0.0
+  csite%ebudget_latent(ip1:ip2)           = 0.0
   csite%ebudget_initialstorage(ip1:ip2)   = 0.0
   csite%ebudget_residual(ip1:ip2)         = 0.0
   csite%dmean_co2_residual(ip1:ip2)       = 0.0
@@ -272,6 +273,12 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%qpwp(ip1:ip2)  = 0.0
   csite%cpwp(ip1:ip2)  = 0.0
   csite%wpwp(ip1:ip2)  = 0.0
+
+  csite%can_enthalpy(ip1:ip2) = 0.0
+  csite%can_temp    (ip1:ip2) = 0.0
+  csite%can_rhos    (ip1:ip2) = 0.0
+  csite%ground_shv  (ip1:ip2) = 0.0
+  csite%surface_ssh (ip1:ip2) = 0.0
 
   csite%old_stoma_data_max(:,ip1:ip2)%recalc = 1
   csite%old_stoma_data_max(:,ip1:ip2)%T_L = 0.0

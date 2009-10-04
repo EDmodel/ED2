@@ -55,7 +55,7 @@ OBJ_MODEL =                        \
 	ed_xml_config.o            \
 	ename_coms.o               \
 	euler_driver.o             \
-	events.o		   \
+	events.o                   \
 	farq_leuning.o             \
 	fatal_error.o              \
 	fire.o                     \
@@ -73,6 +73,7 @@ OBJ_MODEL =                        \
 	init_hydro_sites.o         \
 	invmondays.o               \
 	landuse_init.o             \
+	lapse.o                    \
 	leaf_database.o            \
 	libxml2f90.f90_pp.o        \
 	lsm_hyd.o                  \
@@ -94,12 +95,14 @@ OBJ_MODEL =                        \
 	rk4_derivs.o               \
 	rk4_driver.o               \
 	rk4_integ_utils.o          \
+	rk4_misc.o                 \
 	rk4_stepper.o              \
 	rsys.o                     \
 	soil_coms.o                \
 	stable_cohorts.o           \
 	structural_growth.o        \
 	therm_lib.o                \
+	therm_lib8.o               \
 	twostream_rad.o            \
 	update_derived_props.o     \
 	utils_c.o                  \

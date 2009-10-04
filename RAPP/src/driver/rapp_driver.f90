@@ -79,7 +79,7 @@ subroutine rapp_driver()
             ! 6. Interpolate the state variable data from lon/lat grid to Gaussian, and    !
             !    the fluxes to the more refined time scale.                                !
             !------------------------------------------------------------------------------!
-            call interp_driver()
+            call interp_driver(month)
 
             !------------------------------------------------------------------------------!
             ! 7. Write the output for ED.                                                  !

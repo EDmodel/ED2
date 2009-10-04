@@ -73,6 +73,7 @@ rm -fv leaf3.o                    leaf3.mod
 rm -fv leaf3_hyd.o                leaf3_hyd.mod
 rm -fv leaf3_init.o               leaf3_init.mod
 rm -fv leaf3_teb.o                leaf3_teb.mod
+rm -fv leaf3_utils.o              leaf3_utils.mod
 rm -fv local_proc.o               local_proc.mod
 rm -fv machine_arq.o              machine_arq.mod
 rm -fv map_proj.o                 map_proj.mod
@@ -231,6 +232,7 @@ rm -fv souza_cupar_driver.o       souza_cupar_driver.mod
 rm -fv sst_read.o                 sst_read.mod
 rm -fv teb_spm_start.o            teb_spm_start.mod
 rm -fv therm_lib.o                therm_lib.mod
+rm -fv therm_lib8.o               therm_lib8.mod
 rm -fv tkenn.o                    tkenn.mod
 rm -fv tmpname.o                  tmpname.mod
 rm -fv turb_constants.o           turb_constants.mod
@@ -310,6 +312,7 @@ rm -fv hydrology_constants.o      hydrology_constants.mod
 rm -fv init_hydro_sites.o         init_hydro_sites.mod
 rm -fv invmondays.o               invmondays.mod
 rm -fv landuse_init.o             landuse_init.mod
+rm -fv lapse.o                    lapse.mod
 rm -fv leaf_database.o            leaf_database.mod
 rm -fv libxml2f90.f90_pp.o        libxml2f90.f90_pp.mod
 rm -fv lsm_hyd.o                  lsm_hyd.mod
@@ -330,6 +333,7 @@ rm -fv rk4_coms.o                 rk4_coms.mod
 rm -fv rk4_derivs.o               rk4_derivs.mod
 rm -fv rk4_driver.o               rk4_driver.mod
 rm -fv rk4_integ_utils.o          rk4_integ_utils.mod
+rm -fv rk4_odeint.o               rk4_odeint.mod
 rm -fv rk4_stepper.o              rk4_stepper.mod
 rm -fv soil_coms.o                soil_coms.mod
 rm -fv structural_growth.o        structural_growth.mod

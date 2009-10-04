@@ -82,6 +82,7 @@ OBJ_MODEL =                         \
 	leaf3_hyd.o                 \
 	leaf3_init.o                \
 	leaf3_teb.o                 \
+	leaf3_utils.o               \
 	local_proc.o                \
 	machine_arq.o               \
 	map_proj.o                  \
@@ -234,6 +235,7 @@ OBJ_MODEL =                         \
 	sst_read.o                  \
 	teb_spm_start.o             \
 	therm_lib.o                 \
+	therm_lib8.o                \
 	tkenn.o                     \
 	tmpname.o                   \
 	turb_constants.o            \
@@ -315,6 +317,7 @@ OBJ_MODEL =                         \
 	init_hydro_sites.o          \
 	invmondays.o                \
 	landuse_init.o              \
+	lapse.o                     \
 	leaf_database.o             \
 	libxml2f90.f90_pp.o         \
 	lsm_hyd.o                   \
@@ -335,6 +338,7 @@ OBJ_MODEL =                         \
 	rk4_derivs.o                \
 	rk4_driver.o                \
 	rk4_integ_utils.o           \
+	rk4_misc.o                  \
 	rk4_stepper.o               \
 	soil_coms.o                 \
 	stable_cohorts.o            \
