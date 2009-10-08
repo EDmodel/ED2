@@ -20,7 +20,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                    , rocp8                 ! ! intent(in)
    use rk4_coms             , only : rk4patchtype          & ! structure
                                    , rk4met                & ! structure
-                                   , const_depth           & ! intent(in)
                                    , hcapveg_ref           & ! intent(in)
                                    , rk4eps                & ! intent(in)
                                    , min_height            & ! intent(in)
@@ -279,8 +278,7 @@ end function large_error
 ! temporary snow/pond layers.                                                                      !
 !------------------------------------------------------------------------------------------!
 subroutine update_diagnostic_vars(initp, csite,ipa)
-   use rk4_coms              , only : const_depth          & ! intent(in)
-                                    , rk4met               & ! intent(in)
+   use rk4_coms              , only : rk4met               & ! intent(in)
                                     , rk4min_sfcwater_mass & ! intent(in)
                                     , rk4min_can_shv       & ! intent(in)
                                     , rk4min_can_temp      & ! intent(in)

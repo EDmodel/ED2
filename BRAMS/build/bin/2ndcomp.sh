@@ -99,7 +99,6 @@ rm -fv mem_mksfc.o                mem_mksfc.mod
 rm -fv mem_nestb.o                mem_nestb.mod
 rm -fv mem_oda.o                  mem_oda.mod
 rm -fv mem_opt_scratch.o          mem_opt_scratch.mod
-rm -fv mem_precision.o            mem_precision.mod
 rm -fv mem_radiate.o              mem_radiate.mod
 rm -fv mem_scalar.o               mem_scalar.mod
 rm -fv mem_scratch.o              mem_scratch.mod

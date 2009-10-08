@@ -7287,7 +7287,7 @@ contains
     if(associated(cgrid%agb_pft)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%agb_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AGB_PFT :14:hist:mont') 
+            var_len,var_len_global,max_ptrs,'AGB_PFT :14:hist:dail:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     

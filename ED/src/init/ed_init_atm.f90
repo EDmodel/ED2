@@ -90,12 +90,20 @@ subroutine ed_init_atm
                   csite%can_shv(ipa)   < 1.e-8  .or. csite%can_shv(ipa) > 0.04   .or.      &
                   csite%can_prss(ipa)  < 40000. .or. csite%can_prss(ipa) > 110000.) then
                   write (unit=*,fmt='(a)') '======== Weird initial properties... ========'
-                  write (unit=*,fmt='(a,f7.2)')                                            &
-                                       ' CAN_PRSS  [ hPa] = ',csite%can_prss(ipa)  * 0.01
-                  write (unit=*,fmt='(a,f7.2)')                                            &
-                                       ' CAN_THETA [degC] = ',csite%can_theta(ipa) - t00
-                  write (unit=*,fmt='(a,f7.2)')                                            &
-                                       ' CAN_SHV   [g/kg] = ',csite%can_shv(ipa)   * 1.e3
+                  write (unit=*,fmt='(a,f8.3)') ' LON       [ deg] = ',cgrid%lon(ipy)
+                  write (unit=*,fmt='(a,f8.3)') ' LAT       [ deg] = ',cgrid%lat(ipy)
+                  write (unit=*,fmt='(a,f8.3)')                                            &
+                                     ' ATM_PRSS  [ hPa] = ',cpoly%met(isi)%prss  * 0.01
+                  write (unit=*,fmt='(a,f8.3)')                                            &
+                                     ' ATM_THETA [degC] = ',cpoly%met(isi)%atm_theta - t00
+                  write (unit=*,fmt='(a,f8.3)')                                            &
+                                     ' ATM_SHV   [g/kg] = ',cpoly%met(isi)%atm_shv * 1.e3
+                  write (unit=*,fmt='(a,f8.3)')                                            &
+                                     ' CAN_PRSS  [ hPa] = ',csite%can_prss(ipa)  * 0.01
+                  write (unit=*,fmt='(a,f8.3)')                                            &
+                                     ' CAN_THETA [degC] = ',csite%can_theta(ipa) - t00
+                  write (unit=*,fmt='(a,f8.3)')                                            &
+                                     ' CAN_SHV   [g/kg] = ',csite%can_shv(ipa)   * 1.e3
                   call fatal_error('Non-sense initial values!!!'                           &
                                   ,'ed_init_atm','ed_init_atm.f90')
               end if

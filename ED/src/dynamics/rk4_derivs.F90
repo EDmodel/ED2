@@ -581,7 +581,8 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
                                     , rk4water_stab_thresh & ! intent(in)
                                     , rk4dry_veg_lwater    & ! intent(in)
                                     , rk4fullveg_lwater    & ! intent(in)
-                                    , checkbudget          ! ! intent(in)
+                                    , checkbudget          & ! intent(in)
+                                    , supersat_ok          ! ! intent(in)
    use ed_state_vars         , only : sitetype             & ! Structure
                                     , patchtype            ! ! Structure
    use consts_coms           , only : alvl8                & ! intent(in)
@@ -839,7 +840,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    !----- Converting from mixing ratio to specific humidity. ------------------------------!
    can_ssh  = can_ssh / (1.d0 + can_ssh)
 
-   if (initp%can_shv < can_ssh) then
+   if (supersat_ok .or. initp%can_shv < can_ssh) then
       !------------------------------------------------------------------------------------!
       !    Canopy air can is not saturated, evaporation can take place.                    !
       !------------------------------------------------------------------------------------!
@@ -859,8 +860,8 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
       endif
    else
       !------------------------------------------------------------------------------------!
-      !    Air is already saturated, it could have condensates and develop fog, but while  !
-      ! a fog model is not available, we just don't allow evaporation to continue.         !
+      !    Air is already saturated, and based on supersat_ok, we don't want super-        !
+      ! saturation to happen.                                                              !
       !------------------------------------------------------------------------------------!
       wflxgc  = 0.d0
       qwflxgc = 0.d0
@@ -967,10 +968,10 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
          !---------------------------------------------------------------------------------!
          if (c3tai >= 0.d0) then  
             !------------------------------------------------------------------------------!
-            !    Probably evapotranspiration, as long as the canopy air is not saturated.  !
-            ! In the future, a fog model may be included and this could be relaxed.        !
+            !    Probably evapotranspiration, as long as the canopy air is not saturated   !
+            ! or the user doesn't mind that super-saturation occur.                        !
             !------------------------------------------------------------------------------!
-            if (initp%can_shv < can_ssh) then
+            if (supersat_ok .or. initp%can_shv < can_ssh) then
                !---------------------------------------------------------------------------!
                !     Evaporation, energy is scaled by liquid/ice partition (no phase       !
                ! bias).                                                                    !

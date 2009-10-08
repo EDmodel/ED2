@@ -108,7 +108,6 @@ OBJ_MODEL =                         \
 	mem_nestb.o                 \
 	mem_oda.o                   \
 	mem_opt_scratch.o           \
-	mem_precision.o             \
 	mem_radiate.o               \
 	mem_scalar.o                \
 	mem_scratch.o               \

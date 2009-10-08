@@ -1417,7 +1417,6 @@ subroutine init_rk4_params()
                                    , hmin                  & ! intent(out)
                                    , print_diags           & ! intent(out)
                                    , checkbudget           & ! intent(out)
-                                   , const_depth           & ! intent(out)
                                    , debug                 & ! intent(out)
                                    , toocold               & ! intent(out)
                                    , toohot                & ! intent(out)
@@ -1445,7 +1444,8 @@ subroutine init_rk4_params()
                                    , rk4min_sfcw_temp      & ! intent(out)
                                    , rk4max_sfcw_temp      & ! intent(out)
                                    , rk4min_sfcw_moist     & ! intent(out)
-                                   , rk4min_virt_moist     ! ! intent(out)
+                                   , rk4min_virt_moist     & ! intent(out)
+                                   , supersat_ok           ! ! intent(out)
    implicit none
 
    !---------------------------------------------------------------------------------------!
@@ -1472,13 +1472,6 @@ subroutine init_rk4_params()
                               !     step and stop the run in case any of these budgets 
                               !     doesn't close.
    !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !     This flag determines whether density or canopy air space density is assumed       !
-   ! constant during the RK4 integration.  The value assumed constant is updated only once !
-   ! right before the integration.                                                         !
-   !---------------------------------------------------------------------------------------!
-   const_depth = .false.
 
 
    !---------------------------------------------------------------------------------------!
@@ -1547,6 +1540,19 @@ subroutine init_rk4_params()
    rk4min_sfcw_moist = -5.0000d-4 ! Minimum water mass allowed.
    rk4min_virt_moist = -5.0000d-4 ! Minimum water allowed at virtual pool.
    !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    This flag is used to control evaporation and transpiration when the air is         !
+   ! saturated or super-saturated.  If supersat_ok is TRUE, then evaporation and           !
+   ! transpiration will continue to happen even if the air is super-saturated at the       !
+   ! canopy air temperature (but not at the soil or vegetation temperature).  Otherwise,   !
+   ! evaporation and transpiration will be interrupted until the air becomes sub-saturated !
+   ! again.  The air can still become super-saturated because mixing with the free atmo-   !
+   ! sphere will not stop.                                                                 !
+   !---------------------------------------------------------------------------------------!
+   supersat_ok = .false.
+
 
    return
 end subroutine init_rk4_params

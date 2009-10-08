@@ -58,6 +58,8 @@ subroutine calc_met_lapse(cgrid,ipy)
          if ( cpoly%met(isi)%rlong < rlong_min) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             write(unit=*,fmt='(a)')           '+ RLONG is too low!!!'
+            write(unit=*,fmt='(a,1x,i12)')    '+ X point         : ',cgrid%ilon(ipy)
+            write(unit=*,fmt='(a,1x,i12)')    '+ Y point         : ',cgrid%ilat(ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Longitude       : ',cgrid%lon(ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Latitude        : ',cgrid%lat(ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%rlong
@@ -150,7 +152,8 @@ subroutine calc_met_lapse(cgrid,ipy)
          !----- Perform linear adjustments. -----------------------------------------------!
          cpoly%met(isi)%geoht   = cgrid%met(ipy)%geoht   + cgrid%lapse(ipy)%geoht   * delE
          cpoly%met(isi)%atm_tmp = cgrid%met(ipy)%atm_tmp + cgrid%lapse(ipy)%atm_tmp * delE
-         cpoly%met(isi)%atm_shv = cgrid%met(ipy)%atm_shv + cgrid%lapse(ipy)%atm_shv * delE
+         cpoly%met(isi)%atm_shv = max(toodry, cgrid%met(ipy)%atm_shv                       &
+                                            + cgrid%lapse(ipy)%atm_shv * delE)
          cpoly%met(isi)%prss    = cgrid%met(ipy)%prss    + cgrid%lapse(ipy)%prss    * delE
          cpoly%met(isi)%pcpg    = cgrid%met(ipy)%pcpg    + cgrid%lapse(ipy)%pcpg    * delE
          cpoly%met(isi)%atm_co2 = cgrid%met(ipy)%atm_co2 + cgrid%lapse(ipy)%atm_co2 * delE
