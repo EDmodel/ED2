@@ -112,21 +112,61 @@ end subroutine load_ed_ecosystem_params
 !==========================================================================================!
 !==========================================================================================!
 
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine assigns values for some variables that are in ed_misc_coms, which    !
+! wouldn't fit in any of the other categories.                                             !
+!------------------------------------------------------------------------------------------!
 subroutine init_ed_misc_coms
+   use ed_max_dims  , only : n_pft               & ! intent(in)
+                           , n_dbh               & ! intent(in)
+                           , n_age               ! ! intent(in)
+   use ed_misc_coms , only : burnin              & ! intent(out)
+                           , outputMonth         & ! intent(out)
+                           , restart_target_year & ! intent(out)
+                           , use_target_year     & ! intent(out)
+                           , maxage              & ! intent(out)
+                           , dagei               & ! intent(out)
+                           , maxdbh              & ! intent(out)
+                           , ddbhi               ! ! intent(out)
+   implicit none
 
-  use ed_misc_coms,only:burnin,outputMonth, &
-       restart_target_year,use_target_year
+   !----- Number of years to ignore demography when starting a run. -----------------------!
+   burnin = 0
 
-  burnin = 0 !! number of years to ignore demography when starting a run
+   !----- Month to output the yearly files. -----------------------------------------------!
+   outputMonth = 6
 
-  outputMonth = 6 !! month to output annual files
+   !----- Year to read when parsing pss/css with multiple years. --------------------------!
+   restart_target_year = 2000
 
-  restart_target_year = 2000 !! year to read when parsing pss/css with multiple years
+   !----- Flag specifying whether to search for a target year in pss/css. -----------------!
+   use_target_year = 0    
 
-  use_target_year = 0    !! flag specifying whether to search for a target year in pss/css
-  
-  return
+   !----- Maximum age [yr] to split into classes. -----------------------------------------!
+   maxage = 200.
+
+   !----- Maximum DBH [cm] to be split into classes. --------------------------------------!
+   maxdbh = 100.
+
+   !---------------------------------------------------------------------------------------!
+   !     The inverse of bin classes will depend on max??? and n_???, leaving one class for !
+   ! when the number exceeds the maximum.                                                  !
+   !---------------------------------------------------------------------------------------!
+   dagei = real(n_age-1) / maxage
+   ddbhi = real(n_dbh-1) / maxdbh
+
+   return
 end subroutine init_ed_misc_coms
+!==========================================================================================!
+!==========================================================================================!
+
+
 
 
 
@@ -1366,7 +1406,7 @@ end subroutine init_phen_coms
 !==========================================================================================!
 subroutine init_ff_coms
 
-   use fusion_fission_coms , only :  min_dbh_class, maxdbh                                 &
+   use fusion_fission_coms , only :  min_dbh_class, maxffdbh, dffdbhi                      &
                                    , min_hgt_class, fusetol, fusetol_h, lai_fuse_tol       &
                                    , lai_tol, ntol, profile_tol,max_patch_age, ff_ndbh     &
                                    , coh_tolerance_max, pat_tolerance_max, fuse_relax
@@ -1374,7 +1414,7 @@ subroutine init_ff_coms
    implicit none
 
    min_dbh_class     = 0.0  
-   maxdbh            = 200.0 
+   maxffdbh          = 200.0 
    min_hgt_class     = 0.0
    fusetol           = 0.4
    fusetol_h         = 0.5
@@ -1387,6 +1427,7 @@ subroutine init_ff_coms
    coh_tolerance_max = 10.0 ! Original 2.0
    pat_tolerance_max = 100.0
    fuse_relax        = .false.
+   dffdbhi           = real(ff_ndbh)/maxffdbh
    return
 
 end subroutine init_ff_coms

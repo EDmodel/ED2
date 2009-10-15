@@ -1179,7 +1179,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
   use ed_state_vars,only: edtype,polygontype
   use grid_coms,only : nzg
-  use ed_max_dims,only : n_pft,n_dbh, n_dist_types
+  use ed_max_dims,only : n_pft,n_dbh,n_age,n_dist_types
   use hdf5
   use hdf5_coms,only:file_id,dset_id,dspace_id,plist_id, &
        globdims,chnkdims,chnkoffs,cnt,stride, &
@@ -1633,15 +1633,17 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    memsize(2)   = 1_8
    memoffs(2)   = 0_8
 
-   if(associated(cgrid%lai_pft)) call hdf_getslab_r(cgrid%lai_pft(:,ipy) ,'LAI_PFT '       , &
+   if(associated(cgrid%bseeds_pft)) call hdf_getslab_r(cgrid%bseeds_pft(:,ipy) ,'BSEEDS_PFT '    , &
         dsetrank,iparallel,.false.)
-   if(associated(cgrid%mmean_lai_pft)) call hdf_getslab_r(cgrid%mmean_lai_pft(:,ipy) ,'MMEAN_LAI_PFT ' , &
+   if(associated(cgrid%lai_pft)) call hdf_getslab_r(cgrid%lai_pft(:,ipy) ,'LAI_PFT '       , &
         dsetrank,iparallel,.false.)
    if(associated(cgrid%wpa_pft)) call hdf_getslab_r(cgrid%wpa_pft(:,ipy) ,'WPA_PFT '       , &
         dsetrank,iparallel,.false.)
-   if(associated(cgrid%mmean_wpa_pft)) call hdf_getslab_r(cgrid%mmean_wpa_pft(:,ipy) ,'MMEAN_WPA_PFT ' , &
-        dsetrank,iparallel,.false.)
    if(associated(cgrid%wai_pft)) call hdf_getslab_r(cgrid%wai_pft(:,ipy) ,'WAI_PFT '       , &
+        dsetrank,iparallel,.false.)
+   if(associated(cgrid%mmean_lai_pft)) call hdf_getslab_r(cgrid%mmean_lai_pft(:,ipy) ,'MMEAN_LAI_PFT ' , &
+        dsetrank,iparallel,.false.)
+   if(associated(cgrid%mmean_wpa_pft)) call hdf_getslab_r(cgrid%mmean_wpa_pft(:,ipy) ,'MMEAN_WPA_PFT ' , &
         dsetrank,iparallel,.false.)
    if(associated(cgrid%mmean_wai_pft)) call hdf_getslab_r(cgrid%mmean_wai_pft(:,ipy) ,'MMEAN_WAI_PFT ' , &
         dsetrank,iparallel,.false.)
@@ -1702,10 +1704,78 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    memsize(2)   = 1_8
    memoffs(2)   = 0_8
 
+
+   if(associated(cgrid%bseeds_dbh)) call hdf_getslab_r(cgrid%bseeds_dbh(:,ipy),  &
+        'BSEEDS_DBH ' ,dsetrank,iparallel,.false.)
+   if(associated(cgrid%agb_dbh)) call hdf_getslab_r(cgrid%agb_dbh(:,ipy) ,         &
+        'AGB_DBH '       ,dsetrank,iparallel,.true.)
+   if(associated(cgrid%ba_dbh)) call hdf_getslab_r(cgrid%ba_dbh(:,ipy) ,           &
+        'BA_DBH '        ,dsetrank,iparallel,.true.)
+
+   if(associated(cgrid%lai_dbh)) call hdf_getslab_r(cgrid%lai_dbh(:,ipy),  &
+        'LAI_DBH ' ,dsetrank,iparallel,.false.)
+
+   if(associated(cgrid%wpa_dbh)) call hdf_getslab_r(cgrid%wpa_dbh(:,ipy),  &
+        'WPA_DBH ' ,dsetrank,iparallel,.false.)
+
+   if(associated(cgrid%wai_dbh)) call hdf_getslab_r(cgrid%wai_dbh(:,ipy),  &
+        'WAI_DBH ' ,dsetrank,iparallel,.false.)
+
+   if(associated(cgrid%mmean_lai_dbh)) call hdf_getslab_r(cgrid%mmean_lai_dbh(:,ipy),  &
+        'MMEAN_LAI_DBH ' ,dsetrank,iparallel,.false.)
+
+   if(associated(cgrid%mmean_wpa_dbh)) call hdf_getslab_r(cgrid%mmean_wpa_dbh(:,ipy),  &
+        'MMEAN_WPA_DBH ' ,dsetrank,iparallel,.false.)
+
+   if(associated(cgrid%mmean_wai_dbh)) call hdf_getslab_r(cgrid%mmean_wai_dbh(:,ipy),  &
+        'MMEAN_WAI_DBH ' ,dsetrank,iparallel,.false.)
+
    if(associated(cgrid%dmean_gpp_dbh)) call hdf_getslab_r(cgrid%dmean_gpp_dbh(:,ipy) , &
         'DMEAN_GPP_DBH ' ,dsetrank,iparallel,.false.)
    if(associated(cgrid%mmean_gpp_dbh)) call hdf_getslab_r(cgrid%mmean_gpp_dbh(:,ipy) , &
         'MMEAN_GPP_DBH ' ,dsetrank,iparallel,.false.)
+
+
+   ! Variables with 2 dimensions (n_age,npolygons)
+   dsetrank    = 2
+   globdims(1) = int(n_age,8)
+   chnkdims(1) = int(n_age,8)
+   memdims(1)  = int(n_age,8)
+   memsize(1)  = int(n_age,8)
+   chnkoffs(1) = 0_8
+   memoffs(1)  = 0_8
+
+   globdims(2)  = int(cgrid%npolygons_global,8)
+   chnkdims(2)  = 1_8
+   chnkoffs(2)  = int(py_index - 1,8)
+   memdims(2)   = 1_8
+   memsize(2)   = 1_8
+   memoffs(2)   = 0_8
+
+   if(associated(cgrid%bseeds_age)) call hdf_getslab_r(cgrid%bseeds_age(:,ipy),  &
+        'BSEEDS_AGE ' ,dsetrank,iparallel,.false.)
+   if(associated(cgrid%agb_age)) call hdf_getslab_r(cgrid%agb_age(:,ipy) ,         &
+        'AGB_AGE '       ,dsetrank,iparallel,.true.)
+   if(associated(cgrid%ba_age)) call hdf_getslab_r(cgrid%ba_age(:,ipy) ,           &
+        'BA_AGE '        ,dsetrank,iparallel,.true.)
+
+   if(associated(cgrid%lai_age)) call hdf_getslab_r(cgrid%lai_age(:,ipy),  &
+        'LAI_AGE ' ,dsetrank,iparallel,.false.)
+
+   if(associated(cgrid%wpa_age)) call hdf_getslab_r(cgrid%wpa_age(:,ipy),  &
+        'WPA_AGE ' ,dsetrank,iparallel,.false.)
+
+   if(associated(cgrid%wai_age)) call hdf_getslab_r(cgrid%wai_age(:,ipy),  &
+        'WAI_AGE ' ,dsetrank,iparallel,.false.)
+
+   if(associated(cgrid%mmean_lai_age)) call hdf_getslab_r(cgrid%mmean_lai_age(:,ipy),  &
+        'MMEAN_LAI_AGE ' ,dsetrank,iparallel,.false.)
+
+   if(associated(cgrid%mmean_wpa_age)) call hdf_getslab_r(cgrid%mmean_wpa_age(:,ipy),  &
+        'MMEAN_WPA_AGE ' ,dsetrank,iparallel,.false.)
+
+   if(associated(cgrid%mmean_wai_age)) call hdf_getslab_r(cgrid%mmean_wai_age(:,ipy),  &
+        'MMEAN_WAI_AGE ' ,dsetrank,iparallel,.false.)
 
    ! Variables with three dimensions(n_dist_types,n_dist_types,npolygons)
    dsetrank    = 3
@@ -1970,6 +2040,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    call hdf_getslab_r(cpoly%basal_area,'BASAL_AREA_SI ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%agb,'AGB_SI ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(cpoly%pldens,'PLDENS_SI ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%basal_area_growth,'BASAL_AREA_GROWTH ', &
         dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%agb_growth,'AGB_GROWTH ',dsetrank,iparallel,.true.)

@@ -17,10 +17,13 @@ module fusion_fission_coms
    real :: min_dbh_class
 
    !----- Maximum DBH (cm) used in patch profiling ----------------------------------------!
-   real :: maxdbh
+   real :: maxffdbh
 
    !----- Number of DBH bins in patch profiling -------------------------------------------!
    integer :: ff_ndbh
+
+   !----- Inverse of DBH bin class in patch profiling -------------------------------------!
+   integer :: dffdbhi
 
    !----- Minimum height class in patch profiling -----------------------------------------!
    real :: min_hgt_class

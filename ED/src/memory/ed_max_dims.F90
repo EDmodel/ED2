@@ -100,12 +100,29 @@ Module ed_max_dims
   ! 15 - c4 crop (e.g.,corn/maize)
 
   integer, parameter :: n_dbh = 11 ! Number of DBH bins for output quantities
+                                   ! For maxdbh = 100 cm (this is defined in ed_params.f90)
+                                   ! the classes will be:
+                                   ! 1 - [0;10cm]
+                                   ! 2 - ]10;20cm]
+                                   ! 3 - ]20;30cm]
+                                   ! ...
+                                   ! 10 - ]90;100cm]
+                                   ! 11 - ]100cm;Infinity[
 
+  integer, parameter :: n_age = 21 ! Number of patch AGE bins for output quantities
+                                   ! For maxage = 200 yr (this is defined in ed_params.f90)
+                                   ! the classes will be:
+                                   ! 1  - [0;10yr]
+                                   ! 2  - ]10;20yr]
+                                   ! 3  - ]20;30yr]
+                                   ! ...
+                                   ! 20 - ]190;200yr]
+                                   ! 21 - ]200yr;Infinity[
 
   integer, parameter :: n_dist_types = 3 ! Number of disturbance types:  
-  ! 1     agriculture
-  ! 2     secondary forest
-  ! 3     primary forest.
+                                         ! 1 - agriculture
+                                         ! 2 - secondary forest
+                                         ! 3 - primary forest.
 
   ! Maximum number of model variables
   integer, parameter :: maxvars = 250

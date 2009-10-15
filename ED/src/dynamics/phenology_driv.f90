@@ -382,11 +382,11 @@ subroutine update_phenology(doy, cpoly, isi, lat)
          ! using a constant temperature assumption.                                        !
          !---------------------------------------------------------------------------------!
          old_hcapveg         = cpatch%hcapveg(ico)
-         csite%hcapveg(ipa)  = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
          cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)            &
                                            ,cpatch%balive(ico),cpatch%nplant(ico)          &
                                            ,cpatch%hite(ico),cpatch%pft(ico)               &
                                            ,cpatch%phenology_status(ico))
+         csite%hcapveg(ipa)  = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
          call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
 
          !----- Printing some debugging stuff if the code is set for it. ------------------!

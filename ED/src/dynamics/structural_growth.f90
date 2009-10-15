@@ -365,9 +365,10 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in  
                                 ,agb_mort)
    
    use ed_state_vars , only : patchtype    ! ! structure
-   use ed_max_dims      , only : n_pft        & ! intent(in)
+   use ed_max_dims   , only : n_pft        & ! intent(in)
                             , n_dbh        & ! intent(in)
                             , n_dist_types ! ! intent(in)
+   use ed_misc_coms  , only : ddbhi        ! ! intent(in)
    use consts_coms   , only : pio4         ! ! intent(in)
    use pft_coms      , only : agf_bs       & ! intent(in)
                             , q            & ! intent(in)
@@ -396,7 +397,7 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in  
    real, dimension(n_pft, n_dbh), intent(inout) :: agb_mort
    !----- Local variables -----------------------------------------------------------------!
    integer                                      :: ipft
-   integer                                      :: bdbh
+   integer                                      :: idbh
    !---------------------------------------------------------------------------------------!
 
 
@@ -404,13 +405,13 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in  
    ipft = cpatch%pft(ico)
 
    !----- Finding the DBH bin. ------------------------------------------------------------!
-   bdbh = max(0,min(int(dbh_in*0.1),10))+1
+   idbh = max(1,min(n_dbh,ceiling(dbh_in*ddbhi)))
 
    !----- Update the current basal area and above-ground biomass. -------------------------!
-   basal_area(ipft, bdbh) = basal_area(ipft, bdbh) + area * cpatch%nplant(ico) * pio4      &
+   basal_area(ipft, idbh) = basal_area(ipft, idbh) + area * cpatch%nplant(ico) * pio4      &
                                                    * cpatch%dbh(ico) * cpatch%dbh(ico)
 
-   agb(ipft, bdbh)        = agb(ipft, bdbh)                                                &
+   agb(ipft, idbh)        = agb(ipft, idbh)                                                &
                           + area * cpatch%nplant(ico) * 10.0                               &
                           * ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                &
                                       ,cpatch%bleaf(ico),cpatch%pft(ico)                   &
@@ -429,10 +430,10 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in  
    if (cpatch%first_census(ico) /= 1) return
 
    !----- Computed for plants alive both at past census and current census. ---------------!
-   basal_area_growth(ipft,bdbh) = basal_area_growth(ipft,bdbh)                             &
+   basal_area_growth(ipft,idbh) = basal_area_growth(ipft,idbh)                             &
                                 + area * cpatch%nplant(ico) * pio4                         &
                                 * (cpatch%dbh(ico) * cpatch%dbh(ico) - dbh_in * dbh_in)
-   agb_growth(ipft,bdbh)        = agb_growth(ipft,bdbh)                                    &
+   agb_growth(ipft,idbh)        = agb_growth(ipft,idbh)                                    &
                                 + area * cpatch%nplant(ico) * 10.0                         &
                                 * ( ed_biomass(cpatch%bdead(ico), cpatch%balive(ico)       &
                                               ,cpatch%bleaf(ico), cpatch%pft(ico)          &
@@ -441,11 +442,11 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in  
                                               ,cpatch%pft(ico),hite_in,bstorage_in))
 
    !----- Computed for plants alive at past census but dead at current census. ------------!
-   basal_area_mort(ipft,bdbh) = basal_area_mort(ipft,bdbh)                                 &
+   basal_area_mort(ipft,idbh) = basal_area_mort(ipft,idbh)                                 &
                               + area * (nplant_in - cpatch%nplant(ico)) * pio4             &
                               * dbh_in * dbh_in
          
-   agb_mort(ipft,bdbh)        = agb_mort(ipft,bdbh) + area * mort_litter * 10.0
+   agb_mort(ipft,idbh)        = agb_mort(ipft,idbh) + area * mort_litter * 10.0
 
    return
 end subroutine update_vital_rates
