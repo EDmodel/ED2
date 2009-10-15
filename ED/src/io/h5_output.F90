@@ -1011,7 +1011,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
      cnt(1:2)    = 1_8
      stride(1:2) = 1_8
            
-  case (347) ! (n_pft,ff_ndbh,npatched)
+  case (346) ! (n_pft,ff_ndbh,npatched)
 
      dsetrank = 3
      globdims(1) = int(n_pft,8)

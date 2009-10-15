@@ -397,7 +397,6 @@ module rad_carma
                             ,rmassmin       & ! intent(something)
                             ,rmin           & ! intent(something)
                             ,rmrat          & ! intent(something)
-                            ,one            & ! intent(something)
                             ,rmass          & ! intent(something)
                             ,rmasscore      & ! intent(something)
                             ,pcore          & ! intent(something)
