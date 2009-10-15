@@ -59,7 +59,7 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
 
    use mem_harr,        only: mg, mb, mpb
    use mem_grid,        only: zm, zt
-   use rconstants,      only: cpor, p00i, stefan, cp, cpi, p00, hr_sec
+   use rconstants,      only: cpor, p00i, stefan, cp, cpi, p00, hr_sec, toodry
    use micphys,         only: ncat,rxmin
    use mem_leaf,        only: isfcl
    use harr_coms,       only: rl,dzl,dl,pl,co2l,o3l,vp,u,tp,omgp,gp,zml,ztl,tl             &
@@ -110,7 +110,7 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
          do k = ka,m1-1
             tairk(k)     = theta(k,i,j) * (pi0(k,i,j)+pp(k,i,j)) * cpi
             rhoe(k)      = rho(k,i,j)
-            rhov(k)      = max(0.,rv(k,i,j)) * rhoe(k)
+            rhov(k)      = max(toodry,rv(k,i,j)) * rhoe(k)
             rhoi(k)      = 1./rho(k,i,j)
             press(k)     = p00 * (cpi * (pi0(k,i,j)+pp(k,i,j)) ) ** cpor
             dl(k-koff)   = rho(k,i,j)
@@ -157,7 +157,7 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
            zml(1) = topt(i,j) + zm(1+koff) * rtgt(i,j)
            ztl(1) = topt(i,j) + zt(1+koff) * rtgt(i,j)
          end if
-         pl (1) = pl(2) + (zml(1) - ztl(3)) / (ztl(2) - ztl(3)) * (pl(2) - pl(3))
+         pl(1) = pl(2) + (zml(1) - ztl(3)) / (ztl(2) - ztl(3)) * (pl(2) - pl(3))
 
          !---------------------------------------------------------------------------------!
          !    ED doesn't initialize rlongup before the radiation is called.  Using an      !
@@ -236,12 +236,12 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
 
             if (cosz(i,j) > 0.03) then
                call harr_swrad(nrad,albedt(i,j),cosz(i,j),sngl(time),mynum)
-               rshort(i,j)       = flxds(1)                                              
-               rshort_top(i,j)   = flxds(nrad)                                           
-               rshortup_top(i,j) = flxus(nrad)                                           
+               rshort(i,j)       = flxds(1)
+               rshort_top(i,j)   = flxds(nrad)
+               rshortup_top(i,j) = flxus(nrad)
 
-               do k = ka,m1-1                                                            
-                  krad = k - koff                                                        
+               do k = ka,m1-1
+                  krad = k - koff
                   fthrd(k,i,j) = fthrd(k,i,j)                                              &
                                + (flxds(krad)-flxds(krad-1) + flxus(krad-1)-flxus(krad))   &
                                / (dl(krad) * dzl(krad) * cp)                             
@@ -868,18 +868,18 @@ subroutine path_lengths(nrad)
    real, parameter :: rvmin=1.e-6
    !---------------------------------------------------------------------------------------!
 
-   rh2otop = max(rl(1),rvmin)/ dl(1)
-   rco2top = co2l(1)         / dl(1)
-   ro3top  = o3l(1)          / dl(1)
+   rh2otop = max(rl(1) / dl(1), rvmin)
+   rco2top = co2l(1) / dl(1)
+   ro3top  = o3l(1)  / dl(1)
 
    do k = 2,nrad
       rh2obot = rh2otop
       rco2bot = rco2top
       ro3bot  = ro3top
 
-      rh2otop = max(rl(k),rvmin) / dl(k)
-      rco2top = co2l(k)          / dl(k)
-      ro3top  = o3l(k)           / dl(k)
+      rh2otop = max(rl(k) / dl(k), rvmin)
+      rco2top = co2l(k) / dl(k)
+      ro3top  = o3l(k)  / dl(k)
       vp(k)   = pl(k) * rh2otop  / (ep + rh2otop)
       u(k,1)  = 0.5 * (rh2obot + rh2otop) * (pl(k-1) - pl(k))
       u(k,2)  = 0.5 * (rco2bot + rco2top) * (pl(k-1) - pl(k))

@@ -290,10 +290,13 @@ module rk4_coms
 
 
    !----- Constants used in rk4_derivs ----------------------------------------------------!
-   logical      :: const_depth   ! Assume canopy depth is constant. If this is true, then 
-                                 !    density is allowed to change. Otherwise, density is
-                                 !    assumed constant and canopy depth is allowed to 
-                                 !    change. 
+   logical      :: supersat_ok   ! It is fine for evaporation and transpiration to
+                                 !    occur even if this causes the canopy air to 
+                                 !    be super-saturated                           [   T|F]
+                                 !    (N.B. Super-saturation can occur even if 
+                                 !     supersat_ok is .false., but in this case
+                                 !     only mixing with free atmosphere can cause
+                                 !     the super-saturation).
    logical      :: debug         ! Verbose output for debug                        [   T|F]
    real(kind=8) :: toocold       ! Minimum temperature for saturation spec. hum.   [     K]
    real(kind=8) :: toohot        ! Maximum temperature for saturation spec. hum.   [     K]

@@ -31,11 +31,11 @@ subroutine reproduction(cgrid, month)
                                  , hgt_min               & ! intent(in)
                                  , plant_min_temp        ! ! intent(in)
    use decomp_coms        , only : f_labile              ! ! intent(in)
-   use ed_max_dims           , only : n_pft                 ! ! intent(in)
-   use fuse_fiss_utils , only : sort_cohorts       & ! subroutine
-                                 , terminate_cohorts  & ! subroutine
-                                 , fuse_cohorts       & ! subroutine
-                                 , split_cohorts      ! ! subroutine
+   use ed_max_dims        , only : n_pft                 ! ! intent(in)
+   use fuse_fiss_utils    , only : sort_cohorts          & ! subroutine
+                                 , terminate_cohorts     & ! subroutine
+                                 , fuse_cohorts          & ! subroutine
+                                 , split_cohorts         ! ! subroutine
    use phenology_coms     , only : repro_scheme          ! ! intent(in)
    use mem_sites          , only : maxcohort             ! ! intent(in)
    use ed_therm_lib       , only : calc_hcapveg          ! ! function

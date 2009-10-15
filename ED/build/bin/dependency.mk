@@ -71,8 +71,8 @@ rk4_misc.o: grid_coms.mod rk4_coms.mod soil_coms.mod therm_lib8.mod
 rk4_stepper.o: consts_coms.mod ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
 rk4_stepper.o: rk4_coms.mod soil_coms.mod therm_lib8.mod
 structural_growth.o: allometry.mod consts_coms.mod decomp_coms.mod
-structural_growth.o: ed_max_dims.mod ed_state_vars.mod ed_therm_lib.mod
-structural_growth.o: pft_coms.mod
+structural_growth.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
+structural_growth.o: ed_therm_lib.mod pft_coms.mod
 twostream_rad.o: canopy_radiation_coms.mod consts_coms.mod ed_max_dims.mod
 twostream_rad.o: pft_coms.mod
 ed_init.o: consts_coms.mod ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
@@ -186,8 +186,8 @@ therm_lib.o: consts_coms.mod
 therm_lib8.o: consts_coms.mod therm_lib.mod
 update_derived_props.o: allometry.mod canopy_air_coms.mod consts_coms.mod
 update_derived_props.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
-update_derived_props.o: fuse_fiss_utils.mod fusion_fission_coms.mod
-update_derived_props.o: grid_coms.mod soil_coms.mod therm_lib.mod
+update_derived_props.o: fuse_fiss_utils.mod grid_coms.mod soil_coms.mod
+update_derived_props.o: therm_lib.mod
 utils_c.o: /n/Moorcroft_Lab/Users/mlongo/EDBRAMS/ED/src/include/utils_sub_names.h
 utils_c.o:
 allometry.mod: allometry.o

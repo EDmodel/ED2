@@ -494,11 +494,6 @@ mem_opt_scratch.o : $(TURB)/mem_opt_scratch.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
-mem_precision.o : $(RADIATE)/mem_precision.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
-
 mem_radiate.o : $(RADIATE)/mem_radiate.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)

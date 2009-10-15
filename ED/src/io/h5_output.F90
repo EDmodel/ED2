@@ -689,7 +689,7 @@ subroutine h5_output(vtype)
 subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,irec)
   
   use grid_coms,only : nzg,nzs
-  use ed_max_dims, only : n_pft,n_dist_types,n_dbh
+  use ed_max_dims, only : n_pft,n_dist_types,n_dbh, n_age
   use hdf5_coms,only : chnkdims,chnkoffs,cnt,stride,globdims
   use fusion_fission_coms, only: ff_ndbh
   use c34constants,only: n_stoma_atts
@@ -822,7 +822,19 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
      cnt(1:2)    = 1_8
      stride(1:2) = 1_8
 
-  case (17) ! (nlai,nvars,npolygons)  
+  case (17) ! (n_age,npolygons)  
+     
+     dsetrank = 2
+     globdims(1) = int(n_age,8)
+     chnkdims(1) = int(n_age,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
+
+  case (199) ! (nlai,nvars,npolygons)  
      
      dsetrank = 3
      globdims(1) = 3_8
@@ -927,6 +939,30 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
      cnt(1:2)    = 1_8
      stride(1:2) = 1_8
      
+  case (26) !(n_dbh,nsites)
+  
+     dsetrank = 2
+     globdims(1) = int(n_dbh,8)
+     chnkdims(1) = int(n_dbh,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
+      
+  case (27) !(n_age,nsites)
+  
+     dsetrank = 2
+     globdims(1) = int(n_age,8)
+     chnkdims(1) = int(n_age,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
+    
   case (31) !(npatches)
      
      dsetrank = 1            
@@ -975,7 +1011,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
      cnt(1:2)    = 1_8
      stride(1:2) = 1_8
            
-  case (347) ! (n_pft,ff_ndbh,npatched)
+  case (346) ! (n_pft,ff_ndbh,npatched)
 
      dsetrank = 3
      globdims(1) = int(n_pft,8)
@@ -1022,7 +1058,20 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
      chnkoffs(2) = int(globid,8)
      cnt(1:2)    = 1_8
      stride(1:2) = 1_8
-              
+ 
+  case (37) !(n_age,npatches)
+     
+     ! DBH type
+     dsetrank = 2
+     globdims(1) = int(n_age,8)
+     chnkdims(1) = int(n_age,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
+             
   case (41) !(ncohorts)
      
      dsetrank = 1
@@ -1056,6 +1105,33 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
      chnkoffs(2) = int(globid,8)
      cnt(1:2)    = 1_8
      stride(1:2) = 1_8
+    
+  case (46) !(n_dbh,ncohorts)
+     
+     ! DBH class type
+     dsetrank = 2
+     globdims(1) = int(n_dbh,8)
+     chnkdims(1) = int(n_dbh,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
+    
+  case (47) !(n_age,ncohorts)
+     
+     ! Age class type
+     dsetrank = 2
+     globdims(1) = int(n_age,8)
+     chnkdims(1) = int(n_age,8)
+     chnkoffs(1) = 0_8
+     globdims(2) = int(var_len_global,8)
+     chnkdims(2) = int(varlen,8)
+     chnkoffs(2) = int(globid,8)
+     cnt(1:2)    = 1_8
+     stride(1:2) = 1_8
+
   case default
      write (unit=*,fmt='(a)')       '--------------------------------------------------'
      write (unit=*,fmt='(a)')       ' I can''t recognize this type of variable...'

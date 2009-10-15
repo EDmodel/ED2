@@ -99,6 +99,18 @@ Module ed_misc_coms
 
   integer :: attach_metadata
   
+  !----------------------------------------------------------------------------------------!
+  !     Age and Size classes.                                                              !
+  !----------------------------------------------------------------------------------------!
+  real    :: maxdbh ! Maximum DBH to be divided in classes 
+  real    :: maxage ! Maximum age to be divided in classes
+                    ! In both cases, if the value exceeds the maximum, they will all
+                    !    go to the last class.
+
+  real    :: ddbhi  ! Inverse of DBH class bin size
+  real    :: dagei  ! Inverse of age class bin size.
+  !----------------------------------------------------------------------------------------!
+  
 
 contains
   function err_label(i) result(lab)

@@ -533,7 +533,8 @@ subroutine sum_plant_cfluxes(csite,ipa, gpp, gpp_dbh,plresp)
                                    , patchtype   ! ! structure
    use consts_coms          , only : day_sec     & ! intent(in)
                                    , umol_2_kgC  ! ! intent(in)
-   use ed_max_dims             , only : n_dbh
+   use ed_max_dims          , only : n_dbh       ! ! intent(in)
+   use ed_misc_coms         , only : ddbhi       ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)        , target      :: csite
@@ -549,8 +550,6 @@ subroutine sum_plant_cfluxes(csite,ipa, gpp, gpp_dbh,plresp)
    real                                :: lrresp !----- Leaf and root respiration
    real                                :: sresp  !----- Storage, growth, vleaf respiration.
    logical                             :: forest
-   !----- Local constants -----------------------------------------------------------------!
-   real, parameter                     :: ddbh=1./real(n_dbh-1)
    !---------------------------------------------------------------------------------------!
 
   
@@ -573,7 +572,7 @@ subroutine sum_plant_cfluxes(csite,ipa, gpp, gpp_dbh,plresp)
          gpp = gpp + cpatch%gpp(ico)
          !----- Forest cohorts have dbh distribution, add them to gpp_dbh. ----------------!
          if (forest) then 
-            idbh=max(1,min(n_dbh,ceiling(cpatch%dbh(ico)*ddbh)))
+            idbh=max(1,min(n_dbh,ceiling(cpatch%dbh(ico)*ddbhi)))
             gpp_dbh(idbh) = gpp_dbh(idbh) + cpatch%gpp(ico)
          end if
          lrresp = lrresp + cpatch%leaf_respiration(ico)

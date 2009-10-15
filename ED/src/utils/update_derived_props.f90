@@ -55,7 +55,6 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
                                   , patchtype                  ! ! structure
    use canopy_air_coms     , only : icanturb                   ! ! intent(in)
    use allometry           , only : ed_biomass                 ! ! function
-   use fusion_fission_coms , only : ff_ndbh                    ! ! intent(in)
    use fuse_fiss_utils     , only : patch_pft_size_profile     ! ! subroutine
    use canopy_air_coms     , only : veg_height_min             & ! intent(in)
                                   , minimum_canopy_depth       & ! intent(in)
@@ -160,7 +159,7 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    end select
 
    !----- Find the PFT-dependent size distribution of this patch. -------------------------!
-   call patch_pft_size_profile(csite,ipa,ff_ndbh)
+   call patch_pft_size_profile(csite,ipa)
 
    !----- Updating the cohort count (may be redundant as well...) -------------------------!
    csite%cohort_count(ipa) = cpatch%ncohorts

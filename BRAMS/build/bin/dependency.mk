@@ -334,12 +334,12 @@ harr_radinit.o: micphys.mod
 mem_aerad.o: mem_grid_dim_defs.mod
 mem_carma.o: grid_dims.mod mem_aerad.mod mem_globrad.mod
 mem_globaer.o: mem_aerad.mod mem_precision.mod
-mem_globrad.o: mem_aerad.mod mem_precision.mod mem_radiate.mod
+mem_globrad.o: mem_aerad.mod mem_radiate.mod rconstants.mod
 mem_mclat.o: rconstants.mod
 mem_radiate.o: var_tables.mod
 rad_carma.o: catt_start.mod grid_dims.mod mem_aerad.mod mem_carma.mod
-rad_carma.o: mem_globaer.mod mem_globrad.mod mem_grid.mod mem_leaf.mod
-rad_carma.o: mem_radiate.mod rconstants.mod
+rad_carma.o: mem_globaer.mod mem_globrad.mod mem_grid.mod mem_radiate.mod
+rad_carma.o: node_mod.mod rconstants.mod
 rad_ccmp.o: rconstants.mod
 rad_driv.o: catt_start.mod mem_basic.mod mem_cuparm.mod mem_grid.mod
 rad_driv.o: mem_harr.mod mem_leaf.mod mem_mclat.mod mem_micro.mod

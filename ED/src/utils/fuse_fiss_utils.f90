@@ -1166,7 +1166,7 @@ module fuse_fiss_utils
             old_area       = 0.
             do ipa = 1,csite%npatches
 
-               call patch_pft_size_profile(csite,ipa,ff_ndbh)
+               call patch_pft_size_profile(csite,ipa)
 
                old_area  = old_area + csite%area(ipa)
                cpatch => csite%patch(ipa)
@@ -1287,7 +1287,7 @@ module fuse_fiss_utils
                               !     Recalculate the pft size profile for the averaged      !
                               ! patch at donp_tp.                                          !
                               !------------------------------------------------------------!
-                              call patch_pft_size_profile(csite,recp,ff_ndbh)
+                              call patch_pft_size_profile(csite,recp)
 
                               !------------------------------------------------------------!
                               !     The patch at index donp is no longer valid, it should  !
@@ -1891,7 +1891,7 @@ module fuse_fiss_utils
       !    This subroutine will update the size profile within patch.                      !
       ! + csite%pft_density_profile(:,:,recp)                                              !
       !------------------------------------------------------------------------------------!
-      call patch_pft_size_profile(csite,recp,ff_ndbh)
+      call patch_pft_size_profile(csite,recp)
       !------------------------------------------------------------------------------------!
 
       !----- Last, but not the least, we update the patch area ----------------------------!
@@ -1910,28 +1910,24 @@ module fuse_fiss_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine patch_pft_size_profile(csite,ipa,nbins)
-      use ed_state_vars      , only :  sitetype   & ! structure
+   subroutine patch_pft_size_profile(csite,ipa)
+      use ed_state_vars       , only : sitetype   & ! structure
                                      , patchtype  ! ! structure
-      use fusion_fission_coms, only :  maxdbh     ! ! intent(in)
-      use ed_max_dims           , only :  n_pft      ! ! intent(in)
+      use fusion_fission_coms , only : ff_ndbh    & ! intent(in)
+                                     , dffdbhi    ! ! intent(in)
+      use ed_max_dims         , only : n_pft      ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target     :: csite             ! Current site
       integer                , intent(in) :: ipa               ! Current patch ID
-      integer                , intent(in) :: nbins             ! # of DBH classes
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)        , pointer    :: cpatch        ! Current patch
       integer                             :: ipft,idbh,ico ! Counters
-      real                                :: ddbh          ! Class interval size
       !------------------------------------------------------------------------------------!
-
-      !----- Finding the size of each DBH class interval ----------------------------------!
-      ddbh = maxdbh/real(nbins)
 
       !----- Initialize bins --------------------------------------------------------------!
       do ipft=1,n_pft
-         do idbh=1,nbins
+         do idbh=1,ff_ndbh
             csite%pft_density_profile(ipft,idbh,ipa)=0.0
          end do
       end do
@@ -1941,7 +1937,7 @@ module fuse_fiss_utils
       do ico = 1,cpatch%ncohorts
 
          ipft = cpatch%pft(ico)
-         idbh = min(nbins,max(1,ceiling(cpatch%dbh(ico)/ddbh)))
+         idbh = min(ff_ndbh,max(1,ceiling(cpatch%dbh(ico)*dffdbhi)))
          csite%pft_density_profile(ipft,idbh,ipa) = cpatch%nplant(ico)                     &
                                                   + csite%pft_density_profile(ipft,idbh,ipa)
       end do

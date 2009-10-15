@@ -19,6 +19,7 @@ Module rconstants
    real, parameter :: pio180    = pi1/ 180.         ! Pi/180 (deg -> rad)       [      ---]
    real, parameter :: onerad    = 180. / pi1        ! 180/pi (rad -> deg)       [      ---]
    real, parameter :: pi4       = pi1 * 4.          ! 4 Pi                      [      ---]
+   real, parameter :: pi4o3     = pi1 * 4. / 3.     ! 4 Pi / 3                  [      ---]
    real, parameter :: pio4      = pi1 /4.           ! Pi/4                      [      ---]
    real, parameter :: pio6      = pi1 /6.           ! Pi/6                      [      ---]
    real, parameter :: pio6i     = 6.  /pi1          ! 6/Pi                      [      ---]
@@ -44,12 +45,16 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Universal constants                                                                   !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: stefan    = 5.6696e-8         ! Stefan-Boltzmann constant [ W/m²/K^4]
-   real, parameter :: boltzmann = 1.3806503e-23     ! Boltzmann constant        [m²kg/s²/K]
-   real, parameter :: t00       = 273.15            ! 0°C                       [       °C]
-   real, parameter :: rmol      = 8.314510          ! Molar gas constant        [  J/mol/K]
-   real, parameter :: volmol    = 0.022710980       ! Molar volume at STP       [       m³]
-   real, parameter :: volmoll   = volmol*1.e3       ! Molar volume at STP       [        L]
+   real, parameter :: stefan      = 5.6696e-8       ! Stefan-Boltzmann constant [ W/m²/K^4]
+   real, parameter :: boltzmann   = 1.3806503e-23   ! Boltzmann constant        [m²kg/s²/K]
+   real, parameter :: avogrado    = 6.02252e+23     ! Avogrado number           [    #/mol]
+   real, parameter :: loschmidt   = 2.68719e+25     ! Loschmidt number          [     #/m3]
+   real, parameter :: loschcgs    = loschmidt*1.e-6 ! Loschmidt number          [    #/cm3]
+   real, parameter :: t00         = 273.15          ! 0°C                       [       °C]
+   real, parameter :: rmol        = 8.314510        ! Molar gas constant        [  J/mol/K]
+   real, parameter :: rmolcgs     = rmol*1.e7       ! Molar gas constant        [erg/mol/K]
+   real, parameter :: volmol      = 0.022710980     ! Molar volume at STP       [       m³]
+   real, parameter :: volmoll     = volmol*1.e3     ! Molar volume at STP       [        L]
    !---------------------------------------------------------------------------------------!
 
 
@@ -57,8 +62,15 @@ Module rconstants
    ! Molar masses and derived variables                                                    !
    !---------------------------------------------------------------------------------------!
    real, parameter :: mmdry       = 0.02897        ! Mean dry air molar mass    [   kg/mol]
+   real, parameter :: mmo2        = 0.0319988      ! Mean O2 molar mass         [   kg/mol]
+   real, parameter :: mmo3        = 0.0479982      ! Mean ozone molar mass      [   kg/mol]
    real, parameter :: mmh2o       = 0.01801505     ! Mean water molar mass      [   kg/mol]
    real, parameter :: mmco2       = 0.0440095      ! Mean CO2 molar mass        [   kg/mol]
+   real, parameter :: mmdrycgs    = mmdry * 1.e3   ! Mean dry air molar mass    [    g/mol]
+   real, parameter :: mmo2cgs     = mmo2  * 1.e3   ! Mean O2 molar mass         [    g/mol]
+   real, parameter :: mmo3cgs     = mmo3  * 1.e3   ! Mean ozone molar mass      [    g/mol]
+   real, parameter :: mmh2ocgs    = mmh2o * 1.e3   ! Mean water molar mass      [    g/mol]
+   real, parameter :: mmco2cgs    = mmco2 * 1.e3   ! Mean CO2 molar mass        [    g/mol]
    real, parameter :: mmdoc       = mmdry/mmco2    ! mmdry/mmco2                [     ----]
    real, parameter :: mmcod       = mmco2/mmdry    ! mmco2/mmdry                [     ----]
    real, parameter :: mmdry1000   = 1000.*mmdry    ! Mean dry air molar mass    [   kg/mol]
@@ -85,6 +97,7 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    real, parameter :: vonk      = 0.40        ! Von Kármán constant             [      ---]
    real, parameter :: grav      = 9.80665     ! Gravity acceleration            [     m/s²]
+   real, parameter :: gcgs      = grav * 100. ! Gravity acceleration            [    cm/s²]
    real, parameter :: gg        = .5 * grav   ! ½ g                             [     m/s²]
    real, parameter :: erad      = 6370997.    ! Earth radius                    [        m]
    real, parameter :: spcon     = pio180*erad ! One degree of latitude          [        m]

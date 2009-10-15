@@ -12,6 +12,7 @@
 !     ! 146 : rank 3 : npft,ndbh                            !                              !
 !     ! 15  : rank 2 : disturbance                          !                              !
 !     ! 16  : rank 2 : dbh                                  !                              !
+!     ! 17  : rank 2 : age                                  !                              !
 !     ! 155 : rank 2 : max_lu_years                         !                              !
 !     ! 156 : rank 3 : max_lu_years, num_lu_transitions     !                              !
 !     !-----------------------------------------------------!                              !
@@ -26,6 +27,7 @@
 !     ! 25  : rank 2 : disturbance                          !                              !
 !     ! 255 : rank 3 : disturbance,disturbance              !                              !
 !     ! 26  : rank 2 : dbh                                  !                              !
+!     ! 27  : rank 2 : age                                  !                              !
 !     ! 28  : rank 2 : months                               !                              !
 !     !-----------------------------------------------------!                              !
 !                                                                                          !
@@ -35,15 +37,17 @@
 !     ! 32  : rank 2 : s-layer                              !                              !
 !     ! 33  : rank 2 : w-layer                              !                              !
 !     ! 34  : rank 2 : pft                                  !                              !
-!     ! 347 : rank 3 : pft,ff_dbh                           !                              !
+!     ! 346 : rank 3 : pft,ff_dbh                           !                              !
 !     ! 35  : rank 2 : disturbance                          !                              !
 !     ! 36  : rank 2 : dbh                                  !                              !
+!     ! 37  : rank 2 : age                                  !                              !
 !     !-----------------------------------------------------!                              !
 !                                                                                          !
 !     !----- COHORT: ---------------------------------------!                              !
 !     ! 41  : rank 1 : cohort (real)                        !                              !
 !     ! 44  : rank 2 : cohort, pft                          !                              !
 !     ! 46  : rank 2 : cohort, dbh                          !                              !
+!     ! 47  : rank 2 : cohort, age                          !                              !
 !     ! 49  : rank 2 : cohort, nmonths+1                    !                              !
 !     !-----------------------------------------------------!                              !
 !                                                                                          !
