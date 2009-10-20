@@ -7,7 +7,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine load_ed_ecosystem_params()
 
-   use ed_max_dims    , only : n_pft               ! ! intent(in)
+   use ed_max_dims , only : n_pft               ! ! intent(in)
    use pft_coms    , only : include_these_pft   & ! intent(in)
                           , include_pft         & ! intent(out)
                           , include_pft_ag      & ! intent(out)
@@ -143,18 +143,20 @@ subroutine init_lapse_params()
 
   use met_driver_coms!!, only: lapse
 
-  lapse%geoht   = 0.0
-  lapse%vels    = 0.0
-  lapse%atm_tmp = 0.0
-  lapse%atm_shv = 0.0
-  lapse%prss    = 0.0
-  lapse%pcpg    = 0.0
-  lapse%atm_co2 = 0.0
-  lapse%rlong   = 0.0
-  lapse%nir_beam    = 0.0
-  lapse%nir_diffuse = 0.0
-  lapse%par_beam    = 0.0
-  lapse%par_diffuse = 0.0
+  lapse%geoht        = 0.0
+  lapse%vels         = 0.0
+  lapse%atm_tmp      = 0.0
+  lapse%atm_theta    = 0.0
+  lapse%atm_enthalpy = 0.0
+  lapse%atm_shv      = 0.0
+  lapse%prss         = 0.0
+  lapse%pcpg         = 0.0
+  lapse%atm_co2      = 0.0
+  lapse%rlong        = 0.0
+  lapse%nir_beam     = 0.0
+  lapse%nir_diffuse  = 0.0
+  lapse%par_beam     = 0.0
+  lapse%par_diffuse  = 0.0
 
   atm_tmp_intercept = 0.0
   atm_tmp_slope     = 1.0
@@ -272,12 +274,26 @@ end subroutine init_can_rad_params
 !    This subroutine will assign some canopy air related parameters.                       !
 !------------------------------------------------------------------------------------------!
 subroutine init_can_air_params()
-
-   use canopy_air_coms, only : dry_veg_lwater       & ! intent(out)
-                             , fullveg_lwater       & ! intent(out)
-                             , rb_inter             & ! intent(out)
-                             , rb_slope             & ! intent(out)
-                             , minimum_canopy_depth ! ! intent(out)
+   use canopy_air_coms, only : icanturb              & ! intent(in)
+                             , dry_veg_lwater        & ! intent(out) 
+                             , fullveg_lwater        & ! intent(out) 
+                             , rb_inter              & ! intent(out) 
+                             , rb_slope              & ! intent(out) 
+                             , veg_height_min        & ! intent(out) 
+                             , minimum_canopy_depth  & ! intent(out) 
+                             , minimum_canopy_depth8 & ! intent(out) 
+                             , exar                  & ! intent(out) 
+                             , covr                  & ! intent(out) 
+                             , ustmin                & ! intent(out) 
+                             , ubmin                 & ! intent(out) 
+                             , exar8                 & ! intent(out) 
+                             , ez                    & ! intent(out) 
+                             , vh2vr                 & ! intent(out) 
+                             , vh2dh                 & ! intent(out) 
+                             , ustmin8               & ! intent(out) 
+                             , ubmin8                & ! intent(out) 
+                             , ez8                   & ! intent(out) 
+                             , vh2dh8                ! ! intent(out)
 
    !---------------------------------------------------------------------------------------!
    !    Minimum leaf water content to be considered.  Values smaller than this will be     !
@@ -300,14 +316,64 @@ subroutine init_can_air_params()
    !      Variables to define the vegetation aerodynamic resistance.  They are currently   !
    ! not PFT dependent.                                                                    !
    !---------------------------------------------------------------------------------------!
-   rb_slope = 25.0 ! 0.00
-   rb_inter = 0.0  ! 1.e6
+   rb_slope = 25.0
+   rb_inter = 0.0 
 
-   !---------------------------------------------------------------------------------------!
-   !      This is the minimum canopy depth that is used to calculate the heat and moisture !
-   ! storage capacity in the canopy air [m].                                               !
-   !---------------------------------------------------------------------------------------!
-   minimum_canopy_depth = 5.d0
+   select case (icanturb)
+   case (-1)
+
+      !------------------------------------------------------------------------------------!
+      !     This is the minimum vegetation height, used to calculate drag coefficients and !
+      ! similar things.                                                                    !
+      !------------------------------------------------------------------------------------!
+      veg_height_min = 0.2
+
+      !------------------------------------------------------------------------------------!
+      !      This is the minimum canopy depth that is used to calculate the heat and       !
+      ! moisture storage capacity in the canopy air [m].                                   !
+      !------------------------------------------------------------------------------------!
+      minimum_canopy_depth  = 0.2
+      minimum_canopy_depth8 = dble(minimum_canopy_depth)
+   case default
+      !------------------------------------------------------------------------------------!
+      !      This is the minimum canopy depth that is used to calculate the heat and       !
+      ! moisture storage capacity in the canopy air [m].                                   !
+      !------------------------------------------------------------------------------------!
+      minimum_canopy_depth  = 5.0
+      minimum_canopy_depth8 = dble(minimum_canopy_depth)
+
+      !------------------------------------------------------------------------------------!
+      !     This is the minimum vegetation height, used to calculate drag coefficients and !
+      ! similar things.                                                                    !
+      !------------------------------------------------------------------------------------!
+      veg_height_min = 1.0 ! was 0.2
+   end select
+
+   !----- This is the dimensionless exponential wind atenuation factor. -------------------!
+   exar  = 2.5
+   exar8 = dble(exar)
+
+   !----- This is the scaling factor of tree area index (not sure if it is used...) -------!
+   covr = 2.16
+   
+   !----- This is the minimum ustar under stable and unstable conditions. -----------------!
+   ustmin    = 0.10
+   ustmin8   = dble(ustmin)
+   
+   !----- This is the minimum wind scale under stable and unstable conditions. ------------!
+   ubmin         = 0.65
+   ubmin8        = dble(ubmin)
+   
+   !----- This is the relation between displacement height and roughness when icanturb=-1. !
+   ez  = 0.172
+   ez8 = dble(ez)
+
+   !----- This is the conversion from veg. height to roughness when icanturb /= -1. -------!
+   vh2vr = 0.13
+   
+   !----- This is the conversion from vegetation height to displacement height. -----------!
+   vh2dh  = 0.63
+   vh2dh8 = dble(vh2dh)
 
    return
 end subroutine init_can_air_params
@@ -1363,13 +1429,13 @@ subroutine init_rk4_params()
                                    , rk4epsi               & ! intent(out)
                                    , hmin                  & ! intent(out)
                                    , print_diags           & ! intent(out)
+                                   , checkbudget           & ! intent(out)
+                                   , const_depth           & ! intent(out)
                                    , debug                 & ! intent(out)
                                    , toocold               & ! intent(out)
                                    , toohot                & ! intent(out)
                                    , lai_to_cover          & ! intent(out)
                                    , hcapveg_ref           & ! intent(out)
-                                   , hcapveg_stab_thresh   & ! intent(out)
-                                   , hcapveg_coh_min       & ! intent(out)
                                    , min_height            & ! intent(out)
                                    , rk4min_veg_temp       & ! intent(out)
                                    , rk4water_stab_thresh  & ! intent(out)
@@ -1413,10 +1479,19 @@ subroutine init_rk4_params()
    maxstp      = 100000000    ! Maximum number of intermediate steps. 
    rk4eps      = 1.d-2        ! The desired accuracy.
    rk4epsi     = 1.d0/rk4eps  ! The inverse of desired accuracy.
-   hmin        = 1.d-13        ! The minimum step size.
+   hmin        = 1.d-7        ! The minimum step size.
    print_diags = .false.      ! Flag to print the diagnostic check.
+   checkbudget = .false.      ! Flag to check CO2, water, and energy budgets every time
+                              !     step and stop the run in case any of these budgets 
+                              !     doesn't close.
    !---------------------------------------------------------------------------------------!
 
+   !---------------------------------------------------------------------------------------!
+   !     This flag determines whether density or canopy air space density is assumed       !
+   ! constant during the RK4 integration.  The value assumed constant is updated only once !
+   ! right before the integration.                                                         !
+   !---------------------------------------------------------------------------------------!
+   const_depth = .false.
 
 
    !---------------------------------------------------------------------------------------!
@@ -1440,9 +1515,6 @@ subroutine init_rk4_params()
    !---------------------------------------------------------------------------------------!
    hcapveg_ref         = 3.0d3  ! Reference heat capacity value                   [J/m³/K]
    min_height          = 1.5d0  ! Minimum vegetation height                       [     m]
-   hcapveg_stab_thresh = 2.5d1  ! Minimum stable patch-level heat capacity        [J/m²/K]
-   !----- The minimum cohort-level heat capacity that we can solve [J/m²/K] ---------------!
-   hcapveg_coh_min     = 4.5e-1 ! 1.d-4 * hcapveg_ref * min_height 
    !---------------------------------------------------------------------------------------!
 
 
@@ -1474,7 +1546,7 @@ subroutine init_rk4_params()
    !     Minimum water mass at the leaf surface.  This is given in kg/m²leaf rather than   !
    ! kg/m²ground, so we scale it with LAI.                                                 !
    !---------------------------------------------------------------------------------------!
-   rk4min_veg_lwater = -5.0000d-4 ! Minimum leaf water mass                     [kg/m²leaf]
+   rk4min_veg_lwater = -rk4dry_veg_lwater ! Minimum leaf water mass             [kg/m²leaf]
    !---------------------------------------------------------------------------------------!
 
 

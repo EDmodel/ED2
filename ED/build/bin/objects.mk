@@ -14,6 +14,7 @@ OBJ_MODEL =                        \
 	allometry.o                \
 	an_header.o                \
 	average_utils.o            \
+	budget_utils.o             \
 	canopy_air_coms.o          \
 	canopy_radiation_coms.o    \
 	canopy_struct_dynamics.o   \
@@ -28,7 +29,6 @@ OBJ_MODEL =                        \
 	disturb_coms.o             \
 	edio.o                     \
 	ed_1st.o                   \
-	ed_bare_restart.o          \
 	ed_driver.o                \
 	ed_filelist.o              \
 	ed_grid.o                  \
@@ -42,6 +42,7 @@ OBJ_MODEL =                        \
 	ed_misc_coms.o             \
 	ed_model.o                 \
 	ed_mpass_init.o            \
+	ed_nbg_init.o              \
 	ed_node_coms.o             \
 	ed_opspec.o                \
 	ed_params.o                \
@@ -54,7 +55,7 @@ OBJ_MODEL =                        \
 	ed_xml_config.o            \
 	ename_coms.o               \
 	euler_driver.o             \
-	events.o		   \
+	events.o                   \
 	farq_leuning.o             \
 	fatal_error.o              \
 	fire.o                     \
@@ -72,6 +73,7 @@ OBJ_MODEL =                        \
 	init_hydro_sites.o         \
 	invmondays.o               \
 	landuse_init.o             \
+	lapse.o                    \
 	leaf_database.o            \
 	libxml2f90.f90_pp.o        \
 	lsm_hyd.o                  \
@@ -93,12 +95,14 @@ OBJ_MODEL =                        \
 	rk4_derivs.o               \
 	rk4_driver.o               \
 	rk4_integ_utils.o          \
+	rk4_misc.o                 \
 	rk4_stepper.o              \
 	rsys.o                     \
 	soil_coms.o                \
 	stable_cohorts.o           \
 	structural_growth.o        \
 	therm_lib.o                \
+	therm_lib8.o               \
 	twostream_rad.o            \
 	update_derived_props.o     \
 	utils_c.o                  \

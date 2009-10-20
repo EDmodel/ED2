@@ -12,7 +12,7 @@ subroutine commio (cfile,io,iun)
    use therm_lib, only: level
    use mem_mass, only: imassflx, iexev ![MLO
    use leaf_coms
-   use grell_coms, only : iupmethod,iupstrm,radius,depth_min,cap_maxs         &
+   use grell_coms, only : iupmethod,radius,depth_min,cap_maxs         &
                          ,zkbmax,zcutdown,z_detr,max_heat,closure_type        &
                          ,maxens_lsf,maxens_eff,maxens_cap
 
@@ -115,9 +115,8 @@ subroutine commio (cfile,io,iun)
    ie=cio_i(iun,irw,'ndeepest',ndeepest,ngrids)
    ie=cio_i(iun,irw,'nshallowest',nshallowest,ngrids)
    ie=cio_f_sca(iun,irw,'wcldbs',wcldbs,1)
-   ie=cio_f(iun,irw,'confrq',confrq,nclouds)
+   ie=cio_f_sca(iun,irw,'confrq',confrq,1)
    ie=cio_i_sca(iun,irw,'iupmethod',iupmethod,1)
-   ie=cio_i_sca(iun,irw,'iupstrm',iupstrm,1)
    ie=cio_f(iun,irw,'radius',radius,nclouds)
    ie=cio_f(iun,irw,'depth_min',depth_min,nclouds)
    ie=cio_f(iun,irw,'cap_maxs',cap_maxs,nclouds)
@@ -125,10 +124,10 @@ subroutine commio (cfile,io,iun)
    ie=cio_f(iun,irw,'zcutdown',zcutdown,nclouds)
    ie=cio_f(iun,irw,'z_detr',z_detr,nclouds)
    ie=cio_f(iun,irw,'max_heat',max_heat,nclouds)
-   ie=cio_c(iun,irw,'closure_type',closure_type,nclouds)
-   ie=cio_i(iun,irw,'maxens_lsf',maxens_lsf,ngrids)
-   ie=cio_i(iun,irw,'maxens_eff',maxens_eff,ngrids)
-   ie=cio_i(iun,irw,'maxens_cap',maxens_cap,ngrids)
+   ie=cio_c_sca(iun,irw,'closure_type',closure_type,1)
+   ie=cio_i_sca(iun,irw,'maxens_lsf',maxens_lsf,1)
+   ie=cio_i_sca(iun,irw,'maxens_eff',maxens_eff,1)
+   ie=cio_i_sca(iun,irw,'maxens_cap',maxens_cap,1)
 
    ie=cio_i_sca(iun,irw,'itopo',itopo,1)
    ie=cio_i_sca(iun,irw,'initial',initial,1)

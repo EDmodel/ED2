@@ -414,17 +414,14 @@ subroutine initlz (name_name)
 
         do ifm = 1,min(ngrids,ngridsh)
            call newgrid(ifm)
-           call soil_moisture_init(nnzp(ifm),nnxp(ifm),nnyp(ifm)              &
-                ,nzg,nzs,npatch,ifm                                           &
-                ,basic_g(ifm)%theta            ,basic_g(ifm)%pi0              &
-                ,basic_g(ifm)%pp               ,leaf_g(ifm)%soil_water        &
-                ,leaf_g(ifm)%soil_energy       ,leaf_g(ifm)%soil_text         &
-                ,leaf_g(ifm)%sfcwater_mass     ,leaf_g(ifm)%sfcwater_energy   &
-                ,leaf_g(ifm)%sfcwater_depth    ,grid_g(ifm)%glat              &
-                ,grid_g(ifm)%glon              ,grid_g(ifm)%flpw              )
-        enddo
+           call soil_moisture_init(nnzp(ifm),nnxp(ifm),nnyp(ifm),nzg,npatch,ifm            &
+                                ,leaf_g(ifm)%can_theta         ,leaf_g(ifm)%can_prss       &
+                                ,grid_g(ifm)%glat              ,grid_g(ifm)%glon           &
+                                ,leaf_g(ifm)%soil_water        ,leaf_g(ifm)%soil_energy    &
+                                ,leaf_g(ifm)%soil_text         )
+        end do
 
-     endif
+     end if
 
      !     If any grids are being added for this run, initialize their
      !     surface layer variables, 1-D reference state variables, and
@@ -466,14 +463,11 @@ subroutine initlz (name_name)
            ! Heterogenous Soil Moisture Init.
            if ((SOIL_MOIST == 'h').or.(SOIL_MOIST == 'H').or.  &
               (SOIL_MOIST == 'a').or.(SOIL_MOIST == 'A')) then
-              call soil_moisture_init(nnzp(ifm),nnxp(ifm),nnyp(ifm)            &
-                   ,nzg,nzs,npatch,ifm                                         &
-                   ,basic_g(ifm)%theta          ,basic_g(ifm)%pi0              &
-                   ,basic_g(ifm)%pp             ,leaf_g(ifm)%soil_water        &
-                   ,leaf_g(ifm)%soil_energy     ,leaf_g(ifm)%soil_text         &
-                   ,leaf_g(ifm)%sfcwater_mass   ,leaf_g(ifm)%sfcwater_energy   &
-                   ,leaf_g(ifm)%sfcwater_depth  ,grid_g(ifm)%glat              &
-                   ,grid_g(ifm)%glon            ,grid_g(ifm)%flpw              )
+              call soil_moisture_init(nnzp(ifm),nnxp(ifm),nnyp(ifm),nzg,npatch,ifm         &
+                                     ,leaf_g(ifm)%can_theta    ,leaf_g(ifm)%can_prss       &
+                                     ,grid_g(ifm)%glat         ,grid_g(ifm)%glon           &
+                                     ,leaf_g(ifm)%soil_water   ,leaf_g(ifm)%soil_energy    &
+                                     ,leaf_g(ifm)%soil_text    )
            endif
 
           ! Initialise turbulence factor akscal
@@ -771,7 +765,6 @@ subroutine ReadNamelist(fileName)
           maxens_dyn,    & ! intent(out)
           maxens_cap,    & ! intent(out)
           iupmethod,     & ! intent(out)
-          iupstrm,       & ! intent(out)
           radius,        & ! intent(out)
           zkbmax,        & ! intent(out)
           max_heat,      & ! intent(out)
@@ -840,6 +833,7 @@ subroutine ReadNamelist(fileName)
        drtcon, &
        dthcon, &
        isfcl, &
+       istar, &
        nslcon, &
        nvegpat, &
        nvgcon, &
@@ -1025,7 +1019,14 @@ subroutine ReadNamelist(fileName)
   use domain_decomp, only: domain_fname
   
   ! Logical tests for microphysics complexity 
-  use therm_lib, only: vapour_on,cloud_on,bulk_on,level
+  use therm_lib , only : vapour_on               & ! intent(out)
+                       , cloud_on                & ! intent(out)
+                       , bulk_on                 & ! intent(out)
+                       , level                   ! ! intent(out)
+  use therm_lib8, only : vapour_on8 => vapour_on & ! intent(out)
+                       , cloud_on8  => cloud_on  & ! intent(out)
+                       , bulk_on8   => bulk_on   & ! intent(out)
+                       , level8     => level     ! ! intent(out)
 
   implicit none
 
@@ -1039,6 +1040,7 @@ subroutine ReadNamelist(fileName)
   logical :: ex                       ! namelist file exists?
   integer :: err                      ! return code on iostat
   character(len=10) :: c0             ! scratch
+  character(len=2), dimension(1) :: caux
   character(len=*), parameter :: h="**(ReadNamelist)**"  ! program unit name
 
   namelist /MODEL_GRIDS/                                               &
@@ -1090,18 +1092,18 @@ subroutine ReadNamelist(fileName)
 
   namelist /CUPARM_OPTIONS/ &
        nnqparm,nclouds,ndeepest,nshallowest,wcldbs,confrq,cptime,        &
-       iupmethod,iupstrm,radius,depth_min,cap_maxs,zkbmax,zcutdown,      &
+       iupmethod,radius,depth_min,cap_maxs,zkbmax,zcutdown,              &
        z_detr,max_heat,closure_type,maxens_lsf,maxens_eff,maxens_cap
 
   namelist /MODEL_OPTIONS/ &
-       naddsc, icorflg, iexev,imassflx, ibnd, jbnd, cphas, lsflg, nfpt,  &
-       distim,iswrtyp, ilwrtyp,icumfdbk,                                 &
-       raddatfn,radfrq, lonrad, npatch, nvegpat, isfcl,ico2,co2con,      &
-       nvgcon, pctlcon, nslcon, drtcon, zrough, albedo, seatmp, dthcon,  &
-       soil_moist, soil_moist_fail, usdata_in, usmodel_in, slz, slmstr,  &
-       stgoff, if_urban_canopy, idiffk, ibruvais, ibotflx, ihorgrad,     &
-       csx, csz, xkhkm, zkhkm, akmin, akmax, hgtmin, hgtmax, level,      &
-       icloud, irain, ipris, isnow, iaggr, igraup, ihail, cparm, rparm,  &
+       naddsc, icorflg, iexev,imassflx, ibnd, jbnd, cphas, lsflg, nfpt,   &
+       distim,iswrtyp, ilwrtyp,icumfdbk,                                  &
+       raddatfn,radfrq, lonrad, npatch, nvegpat, isfcl,istar,ico2,co2con, &
+       nvgcon, pctlcon, nslcon, drtcon, zrough, albedo, seatmp, dthcon,   &
+       soil_moist, soil_moist_fail, usdata_in, usmodel_in, slz, slmstr,   &
+       stgoff, if_urban_canopy, idiffk, ibruvais, ibotflx, ihorgrad,      &
+       csx, csz, xkhkm, zkhkm, akmin, akmax, hgtmin, hgtmax, level,       &
+       icloud, irain, ipris, isnow, iaggr, igraup, ihail, cparm, rparm,   &
        pparm, sparm, aparm, gparm, hparm, gnu
 
   namelist /MODEL_SOUND/ &
@@ -1638,7 +1640,6 @@ subroutine ReadNamelist(fileName)
      write (*, *) "confrq=",confrq
      write (*, *) "cptime=",cptime
      write (*, *) "iupmethod=",iupmethod
-     write (*, *) "iupstrm=",iupstrm
      write (*, *) "radius=",radius
      write (*, *) "depth_min=",depth_min
      write (*, *) "cap_maxs=",depth_min
@@ -1680,6 +1681,7 @@ subroutine ReadNamelist(fileName)
      write (*, *) "npatch=",npatch
      write (*, *) "nvegpat=",nvegpat
      write (*, *) "isfcl=",isfcl
+     write (*, *) "istar=",istar
      write (*, *) "ico2=",ico2
      write (*, *) "co2con=",co2con
      write (*, *) "nvgcon=",nvgcon
@@ -1730,7 +1732,9 @@ subroutine ReadNamelist(fileName)
                    ,'ReadNamelist','rdint.f90')
   else
      !----- Switching closure type to lower case
-     call tolower(closure_type,maxclouds)
+     caux(1) = closure_type
+     call tolower(caux,1)
+     closure_type = caux(1)
   end if
 
   write (unit=*,fmt='(a)') 'Reading ED2 namelist information'
@@ -1855,9 +1859,13 @@ subroutine ReadNamelist(fileName)
   ! Likewise, cloud_on will be true when level is either 2 or 3. Bulk microphysics will be !
   ! true only when level >= 3 (levels = 4 and 5 exist too but rarely used).                !
   !----------------------------------------------------------------------------------------!
-  vapour_on = level >= 1
-  cloud_on  = level >= 2
-  bulk_on   = level >= 3
+  vapour_on  = level >= 1
+  cloud_on   = level >= 2
+  bulk_on    = level >= 3
+  vapour_on8 = vapour_on
+  cloud_on8  = cloud_on
+  bulk_on8   = bulk_on
+  level8     = level
 
   !----------------------------------------------------------------------------------------!
   !    Saving the CO2 complexity level into a logical variable.                            !

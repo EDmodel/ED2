@@ -53,9 +53,11 @@ OBJ_MODEL =                         \
 	grell_cupar_aux.o           \
 	grell_cupar_downdraft.o     \
 	grell_cupar_driver.o        \
+	grell_cupar_dynamic.o       \
 	grell_cupar_ensemble.o      \
 	grell_cupar_environment.o   \
-	grell_cupar_main.o          \
+	grell_cupar_feedback.o      \
+	grell_cupar_static.o        \
 	grell_cupar_updraft.o       \
 	grell_extras_catt.o         \
 	grid_dims.o                 \
@@ -80,6 +82,7 @@ OBJ_MODEL =                         \
 	leaf3_hyd.o                 \
 	leaf3_init.o                \
 	leaf3_teb.o                 \
+	leaf3_utils.o               \
 	local_proc.o                \
 	machine_arq.o               \
 	map_proj.o                  \
@@ -232,6 +235,7 @@ OBJ_MODEL =                         \
 	sst_read.o                  \
 	teb_spm_start.o             \
 	therm_lib.o                 \
+	therm_lib8.o                \
 	tkenn.o                     \
 	tmpname.o                   \
 	turb_constants.o            \
@@ -263,17 +267,17 @@ OBJ_MODEL =                         \
 	mem_edcp.o                  \
 	allometry.o                 \
 	average_utils.o             \
+	budget_utils.o              \
 	c34constants.o              \
 	canopy_air_coms.o           \
 	canopy_radiation_coms.o     \
-	canopy_struct_dynamics.o   \
+	canopy_struct_dynamics.o    \
 	canopy_update_euler.o       \
 	consts_coms.o               \
 	decomp_coms.o               \
 	decomposition.o             \
 	disturb_coms.o              \
 	disturbance.o               \
-	ed_bare_restart.o           \
 	ed_filelist.o               \
 	ed_grid.o                   \
 	ed_history_io.o             \
@@ -281,6 +285,7 @@ OBJ_MODEL =                         \
 	ed_max_dims.o               \
 	ed_mem_grid_dim_defs.o      \
 	ed_misc_coms.o              \
+	ed_nbg_init.o               \
 	ed_node_coms.o              \
 	ed_opspec.o                 \
 	ed_para_coms.o              \
@@ -312,6 +317,7 @@ OBJ_MODEL =                         \
 	init_hydro_sites.o          \
 	invmondays.o                \
 	landuse_init.o              \
+	lapse.o                     \
 	leaf_database.o             \
 	libxml2f90.f90_pp.o         \
 	lsm_hyd.o                   \
@@ -332,6 +338,7 @@ OBJ_MODEL =                         \
 	rk4_derivs.o                \
 	rk4_driver.o                \
 	rk4_integ_utils.o           \
+	rk4_misc.o                  \
 	rk4_stepper.o               \
 	soil_coms.o                 \
 	stable_cohorts.o            \

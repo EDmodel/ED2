@@ -11,8 +11,8 @@ include include.mk.$(OPT)
 INCLUDES  = -I$(UTILS_INCS) $(PAR_INCS) $(HDF5_INCS)
 F90_COMMAND = $(F_COMP) -c $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
 FPP_COMMAND = $(F_COMP) -c  -DUSE_INTERF=$(USE_INTERF) -DUSENC=$(USENC) -D$(CMACH)         \
-               -DUSE_HDF4=$(USE_HDF4) -DUSE_HDF5=$(USE_HDF5) -DCOUPLED $(F_OPTS)           \
-               $(INCLUDES) $(PAR_DEFS)
+               -DUSE_HDF4=$(USE_HDF4) -DUSE_HDF5=$(USE_HDF5)                               \
+               -DUSE_MPIWTIME=$(USE_MPIWTIME) -DCOUPLED $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
 CXX_COMMAND = $(C_COMP) -c $(C_OPTS) -D$(CMACH) $(INCLUDES) $(PAR_DEFS)
 
 #----- Define archive and executable names. -----------------------------------------------#
@@ -24,6 +24,9 @@ include objects.mk
 #----- Define targets. --------------------------------------------------------------------#
 all: 
 	make gendep
+	make $(EXE)
+	make $(EXE)
+	make $(EXE)
 	make $(EXE)
 	make $(EXE)
 

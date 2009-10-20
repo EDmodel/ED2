@@ -24,6 +24,7 @@ subroutine masterput_ednl(mainnum)
   use optimiz_coms,    only: ioptinpt
   use canopy_radiation_coms, only: crown_mod
   use rk4_coms,        only: ibranch_thermo
+  use canopy_air_coms, only : icanturb, isfclyrm
 
 
 
@@ -82,6 +83,8 @@ subroutine masterput_ednl(mainnum)
   call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(include_fire,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(ianth_disturb,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(icanturb,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(isfclyrm,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(include_these_pft,n_pft,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(agri_stock,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(plantation_stock,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -175,6 +178,7 @@ subroutine nodeget_ednl(master_num)
   use optimiz_coms,    only: ioptinpt
   use canopy_radiation_coms, only: crown_mod
   use rk4_coms,        only: ibranch_thermo
+  use canopy_air_coms, only: icanturb, isfclyrm
 
 
   implicit none
@@ -232,6 +236,8 @@ subroutine nodeget_ednl(master_num)
   call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(include_fire,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(ianth_disturb,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(icanturb,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(isfclyrm,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(include_these_pft,n_pft,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(agri_stock,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(plantation_stock,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

@@ -154,12 +154,10 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
            zml(1) = zm(1+koff)
            ztl(1) = zt(1+koff)
          else
-           zml(1) = topt(i,j) + zm(1) * rtgt(i,j)
-           ztl(1) = topt(i,j) + zt(1) * rtgt(i,j)
+           zml(1) = topt(i,j) + zm(1+koff) * rtgt(i,j)
+           ztl(1) = topt(i,j) + zt(1+koff) * rtgt(i,j)
          end if
-         pl (1) = pl(2) + (zml(1) - ztl(2)) / (ztl(2) - ztl(3)) * (pl(2) - pl(3))
-         !------ Filling upper levels if the domain doesn't go too far up. ----------------!
-         call rad_mclat(m1,nrad,koff,glat(i,j),rtgt(i,j))
+         pl (1) = pl(2) + (zml(1) - ztl(3)) / (ztl(2) - ztl(3)) * (pl(2) - pl(3))
 
          !---------------------------------------------------------------------------------!
          !    ED doesn't initialize rlongup before the radiation is called.  Using an      !
@@ -174,6 +172,9 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
          dl(1)   = dl(2)
          rl(1)   = rl(2)
          co2l(1) = co2l(2)
+
+         !------ Filling upper levels if the domain doesn't go too far up. ----------------!
+         call rad_mclat(m1,nrad,koff,glat(i,j),rtgt(i,j))
 
          !----- Fill arrays rxharr, cxharr, and embharr with hydrometeor properties -------!
          call cloudprep_rad(m1,ka,mcat,sh_c(:,i,j),sh_r(:,i,j),sh_p(:,i,j),sh_s(:,i,j)     &
@@ -199,8 +200,8 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
                 write (unit=*,fmt='(a)') '================================================'
                 write (unit=*,fmt='(a)') ' ERROR - harr_raddriv!!!'
                 write (unit=*,fmt='(a)') '         The model is about to stop!'
-                write (unit=*,fmt='(2(a,1x,i5,a))') ' - Node:',mynum,' Grid: ',ifm
-                write (unit=*,fmt='(3(a,1x,i5,a))') ' - k = ',k,' i = ',i,' j = ',j
+                write (unit=*,fmt='(2(a,1x,i5,1x))') ' - Node:',mynum,' Grid: ',ifm
+                write (unit=*,fmt='(3(a,1x,i5,1x))') ' - k = ',k,' i = ',i,' j = ',j
                 write (unit=*,fmt='(a)') ' - Either the temperature is too low, or some'
                 write (unit=*,fmt='(a)') '   negative density, mixing ratio or pressure!'
                 write (unit=*,fmt='(a)') ' - Sanity check at Harrington:'
@@ -616,6 +617,7 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,time,mynum)
                          , hr_sec       ! ! intent(in)
    use harr_coms  , only : jhcatharr    & ! intent(in)
                           ,dzl          & ! intent(in)
+                          ,dl           & ! intent(in)
                           ,rxharr       & ! intent(in)
                           ,cxharr       & ! intent(in)
                           ,embharr      & ! intent(in)
@@ -841,7 +843,7 @@ end subroutine cloud_opt
 !    Get the path lengths for the various gases...                                         !
 !------------------------------------------------------------------------------------------!
 subroutine path_lengths(nrad)
-   use rconstants , only : g     & ! intent(in)
+   use rconstants , only : grav  & ! intent(in)
                          , ep    ! ! intent(in)
    use mem_harr   , only : mg    ! ! intent(in)
    use harr_coms  , only : u     & ! intent(out)
@@ -856,25 +858,37 @@ subroutine path_lengths(nrad)
    !----- Arguments -----------------------------------------------------------------------!
    integer                     , intent(in)    :: nrad
    !----- Local variables -----------------------------------------------------------------!
-   real                                        :: dzl9,rmix
+   real                                        :: dzl9
+   real                                        :: rh2obot,rh2otop
+   real                                        :: rco2bot,rco2top
+   real                                        :: ro3bot , ro3top
    integer                                     :: k
    !----- Constants  ----------------------------------------------------------------------!
    real, parameter :: eps_rad = 1.e-15
    real, parameter :: rvmin=1.e-6
    !---------------------------------------------------------------------------------------!
 
-   u(1,1) = .5 * (rl(2)   +   rl(1)) * g * dzl(1)
-   u(1,2) = .5 * (co2l(2) + co2l(1)) * g * dzl(1)
-   u(1,3) =       o3l(1)             * g * dzl(1)
+   rh2otop = max(rl(1),rvmin)/ dl(1)
+   rco2top = co2l(1)         / dl(1)
+   ro3top  = o3l(1)          / dl(1)
 
    do k = 2,nrad
-      dzl9   = g * dzl(k)
-      rmix   = rl(k) / dl(k)
-      vp(k)  = pl(k) * rmix / (ep + rmix)
-      u(k,1) = 0.5 * dzl9 * (  rl(k) +   rl(k-1))
-      u(k,2) = 0.5 * dzl9 * (co2l(k) + co2l(k-1))
-      u(k,3) = 0.5 * dzl9 * ( o3l(k) +  o3l(k-1))
+      rh2obot = rh2otop
+      rco2bot = rco2top
+      ro3bot  = ro3top
+
+      rh2otop = max(rl(k),rvmin) / dl(k)
+      rco2top = co2l(k)          / dl(k)
+      ro3top  = o3l(k)           / dl(k)
+      vp(k)   = pl(k) * rh2otop  / (ep + rh2otop)
+      u(k,1)  = 0.5 * (rh2obot + rh2otop) * (pl(k-1) - pl(k))
+      u(k,2)  = 0.5 * (rco2bot + rco2top) * (pl(k-1) - pl(k))
+      u(k,3)  = 0.5 * (ro3bot  + ro3top ) * (pl(k-1) - pl(k))
    end do
+
+   u(1,1) = u(2,1)
+   u(1,2) = u(2,2)
+   u(1,3) = u(2,3)
 
    return
 end subroutine path_lengths

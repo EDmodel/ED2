@@ -6,7 +6,9 @@
 !------------------------------------------------------------------------------------------!
 subroutine rapp_opspec()
    use mod_maxdims , only : maxstr               & ! intent(in)
-                          , maxtimes             ! ! intent(in)
+                          , maxgrds              & ! intent(in)
+                          , maxtimes             & ! intent(in)
+                          , maxpdf               ! ! intent(in)
    use mod_ioopts  , only : intype               & ! intent(in)
                           , iyeara               & ! intent(in)
                           , iyearz               & ! intent(in)
@@ -22,7 +24,10 @@ subroutine rapp_opspec()
    use rconstants  , only : day_sec              ! ! intent(in)
    use mod_interp  , only : dtinc                & ! intent(in)
                           , gamma0               & ! intent(in)
-                          , minweight            ! ! intent(in)
+                          , minweight            & ! intent(in)
+                          , ndownscal            & ! intent(in)
+                          , frac_u               & ! intent(in)
+                          , npdf                 ! ! intent(out)
    implicit none
    !----- Internal variables --------------------------------------------------------------!
    character(len=maxstr)             :: reason
@@ -196,11 +201,35 @@ subroutine rapp_opspec()
    end if
 
    if (minweight <= 0. .or. minweight > 0.1) then
-      write (reason, fmt='(a,2x,a,1x,es14.7,a)')                                          &
+      write (reason, fmt='(a,2x,a,1x,es14.7,a)')                                           &
           'Invalid MINWEIGHT, it must be between 0. and 0.1 (0 excluded).'                 &
          ,'  Currently GAMMA0 =',gamma0,'...'
       call opspec_fatal(reason,'rapp_opspec')
       ifaterr = ifaterr +1   
+   end if
+
+   !----- Checking whether the downscaling parameters make sense. -------------------------!
+   if (ndownscal < 0 .or. ndownscal > maxgrds-3) then
+      write (reason, fmt='(a,1x,i3,2a,1x,i5,a)')                                           &
+          'Invalid NDOWNSCAL, it must be between 0 and',maxgrds-3,'.'                      &
+         ,'  Currently NDOWNSCAL =',ndownscal,'...'
+      call opspec_fatal(reason,'rapp_opspec')
+      ifaterr = ifaterr +1
+   elseif (ndownscal > 0 .and. ifaterr == 0) then
+      !------------------------------------------------------------------------------------!
+      !    PDF is only checked if downscaling will happen, and if there is no error so     !
+      ! far. The latter condition is just to avoid testing if non-sense radfrq and/or      !
+      ! inpfrq were provided.                                                              !
+      !------------------------------------------------------------------------------------!
+      npdf = nint(day_sec/inpfrq) * 12
+      
+      if (any(frac_u(1:npdf) < 0.) .or. any(frac_u(1:npdf) > 1.)) then
+         write (reason,fmt='(a,2x,a,1x,i5,1x,a)')                                          &
+            'Invalid FRAC_U, all valid elements must be between 0 and 1.'                  &
+           ,'Check your first',npdf,'elements (those which will be used)...'
+         call opspec_fatal(reason,'rapp_opspec')
+         ifaterr = ifaterr + 1
+      end if
    end if
 
 

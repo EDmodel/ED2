@@ -309,12 +309,12 @@ module therm_lib
    ! function of temperature in Kelvin.                                                    !
    !---------------------------------------------------------------------------------------!
    real function rhovsl(temp)
-      use rconstants, only : rm
+      use rconstants, only : rh2o
       implicit none
       real, intent(in) :: temp
       real             :: eequ
       eequ = eslf(temp)
-      rhovsl = eequ / (rm * temp)
+      rhovsl = eequ / (rh2o * temp)
       return
    end function rhovsl
    !=======================================================================================!
@@ -332,12 +332,12 @@ module therm_lib
    ! function of temperature in Kelvin.                                                    !
    !---------------------------------------------------------------------------------------!
    real function rhovsi(temp)
-      use rconstants, only : rm
+      use rconstants, only : rh2o
       implicit none
       real, intent(in) :: temp
       real             :: eequ
       eequ = esif(temp)
-      rhovsi = eequ / (rm * temp)
+      rhovsi = eequ / (rh2o * temp)
       return
    end function rhovsi
    !=======================================================================================!
@@ -356,7 +356,7 @@ module therm_lib
    ! temperature.                                                                          !
    !---------------------------------------------------------------------------------------!
    real function rhovsil(temp,useice)
-      use rconstants, only : rm
+      use rconstants, only : rh2o
       implicit none
       real, intent(in)              :: temp
       logical, intent(in), optional :: useice
@@ -368,7 +368,7 @@ module therm_lib
          eequ = eslif(temp)
       end if
 
-      rhovsil = eequ / (rm * temp)
+      rhovsil = eequ / (rh2o * temp)
 
       return
    end function rhovsil
@@ -461,8 +461,6 @@ module therm_lib
       real   , intent(in)           :: temp
       logical, intent(in), optional :: useice
       logical                       :: brrr_cold
-
-      ! USE ICE IS FALSE, BUT TEMP IS LESS THAN t3ple
 
       if (present(useice)) then
          brrr_cold = useice  .and. temp < t3ple
@@ -588,13 +586,15 @@ module therm_lib
    ! a function of temperature in Kelvin.                                                  !
    !---------------------------------------------------------------------------------------!
    real function rhovslp(temp)
-      use rconstants, only : rm
+      use rconstants, only : rh2o
       implicit none
       real, intent(in) :: temp
       real             :: es,desdt
+
       es    = eslf(temp)
       desdt = eslfp(temp)
-      rhovslp = (desdt-es/temp) / (rm * temp)
+      rhovslp = (desdt-es/temp) / (rh2o * temp)
+
       return
    end function rhovslp
    !=======================================================================================!
@@ -612,13 +612,15 @@ module therm_lib
    ! function of temperature in Kelvin.                                                    !
    !---------------------------------------------------------------------------------------!
    real function rhovsip(temp)
-      use rconstants, only : rm
+      use rconstants, only : rh2o
       implicit none
       real, intent(in) :: temp
       real             :: es,desdt
+
       es    = esif(temp)
       desdt = esifp(temp)
-      rhovsip = (desdt-es/temp) / (rm * temp)
+      rhovsip = (desdt-es/temp) / (rh2o * temp)
+
       return
    end function rhovsip
    !=======================================================================================!
@@ -718,6 +720,7 @@ module therm_lib
             return
          elseif (fun ==0) then !Converged by luck!
             tslf = tempz
+            return
          end if
       end do newloop
 
@@ -937,7 +940,7 @@ module therm_lib
    ! This is truly the inverse of eslf and esif.                                           !
    !---------------------------------------------------------------------------------------!
    real function tslif(pvap,useice)
-      use rconstants, only: es3ple,alvl,alvi,lvt3ple,lst3ple,rmt3ple,es3plei
+      use rconstants, only: es3ple,alvl,alvi
 
       implicit none
       real   , intent(in)           :: pvap
@@ -1375,7 +1378,7 @@ module therm_lib
    ! the vapour and the total mixing ratios.                                               !
    !---------------------------------------------------------------------------------------!
    real function idealdens(pres,temp,rvap,rtot)
-      use rconstants, only: rgas
+      use rconstants, only: rdry
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)           :: pres     ! Pressure                             [   Pa]
@@ -1391,10 +1394,201 @@ module therm_lib
         tvir = virtt(temp,rvap)
       end if
 
-      idealdens = pres / (rgas * tvir)
+      idealdens = pres / (rdry * tvir)
 
       return
    end function idealdens
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function finds the density based on the virtual temperature and the ideal    !
+   ! gas law.  The only difference between this function and the one above is that here we !
+   ! provide vapour and total specific mass (specific humidity) instead of mixing ratio.   !
+   !---------------------------------------------------------------------------------------!
+   real function idealdenssh(pres,temp,qvpr,qtot)
+      use rconstants, only : rdry & ! intent(in)
+                           , epi  ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real, intent(in)           :: pres ! Pressure                                 [   Pa]
+      real, intent(in)           :: temp ! Temperature                              [    K]
+      real, intent(in)           :: qvpr ! Vapour specific mass                     [kg/kg]
+      real, intent(in), optional :: qtot ! Total water specific mass                [kg/kg]
+      !----- Local variables. -------------------------------------------------------------!
+      real                       :: qall ! Either qtot or qvpr...                   [kg/kg]
+      !------------------------------------------------------------------------------------!
+
+      if (present(qtot)) then
+        qall = qtot
+      else
+        qall = qvpr
+      end if
+
+      idealdenssh = pres / (rdry * temp * (1. - qall + epi * qvpr))
+
+      return
+   end function idealdenssh
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes reduces the pressure from the reference height to the      !
+   ! canopy height by assuming hydrostatic equilibrium.                                    !
+   !---------------------------------------------------------------------------------------!
+   real function reducedpress(pres,thetaref,shvref,zref,thetacan,shvcan,zcan)
+      use rconstants, only : epim1    & ! intent(in)
+                           , p00k     & ! intent(in)
+                           , rocp     & ! intent(in)
+                           , cpor     & ! intent(in)
+                           , cp       & ! intent(in)
+                           , grav     ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real, intent(in)           :: pres     ! Pressure                        [        Pa]
+      real, intent(in)           :: thetaref ! Potential temperature           [         K]
+      real, intent(in)           :: shvref   ! Vapour specific mass            [     kg/kg]
+      real, intent(in)           :: zref     ! Height at reference level       [         m]
+      real, intent(in)           :: thetacan ! Potential temperature           [         K]
+      real, intent(in)           :: shvcan   ! Vapour specific mass            [     kg/kg]
+      real, intent(in)           :: zcan     ! Height at canopy level          [         m]
+      !------Local variables. -------------------------------------------------------------!
+      real                       :: pinc     ! Pressure increment              [ Pa^(R/cp)]
+      real                       :: thvbar   ! Average virtual pot. temper.    [         K]
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !      First we compute the average virtual potential temperature between the canopy !
+      ! top and the reference level.                                                       !
+      !------------------------------------------------------------------------------------!
+      thvbar = 0.5 * (thetaref * (1. + epim1 * shvref) + thetacan * (1. + epim1 * shvcan))
+
+      !----- Then, we find the pressure gradient scale. -----------------------------------!
+      pinc = grav * p00k * (zref - zcan) / (cp * thvbar)
+
+      !----- And we can find the reduced pressure. ----------------------------------------!
+      reducedpress = (pres**rocp + pinc ) ** cpor
+
+      return
+   end function reducedpress
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the enthalpy given the pressure, temperature, vapour       !
+   ! specific humidity, and height.  Currently it doesn't compute mixed phase air, but     !
+   ! adding it should be straight forward (finding the inverse is another story...).       !
+   !---------------------------------------------------------------------------------------!
+   real function ptqz2enthalpy(pres,temp,qvpr,zref)
+      use rconstants, only : ep       & ! intent(in)
+                           , grav     & ! intent(in)
+                           , t3ple    & ! intent(in)
+                           , eta3ple  & ! intent(in)
+                           , cimcp    & ! intent(in)
+                           , clmcp    & ! intent(in)
+                           , cp       & ! intent(in)
+                           , alvi     ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real, intent(in)           :: pres  ! Pressure                               [    Pa]
+      real, intent(in)           :: temp  ! Temperature                            [     K]
+      real, intent(in)           :: qvpr  ! Vapour specific mass                   [ kg/kg]
+      real, intent(in)           :: zref  ! Reference height                       [     m]
+      !------Local variables. -------------------------------------------------------------!
+      real                       :: tequ  ! Dew-frost temperature                  [     K]
+      real                       :: pequ  ! Equlibrium vapour pressure             [    Pa]
+      !------------------------------------------------------------------------------------!
+
+      !----- First, we find the equilibrium vapour pressure and dew/frost point. ----------!
+      pequ = pres * qvpr / (ep + (1. - ep) * qvpr)
+      tequ = tslif(pequ)
+
+      !------------------------------------------------------------------------------------!
+      !     Then, based on dew/frost point, we compute the enthalpy. This accounts whether !
+      ! we would have to dew or frost formation if the temperature dropped to the          !
+      ! equilibrium point.  Notice that if supersaturation exists, this will still give a  !
+      ! number that makes sense, similar to the internal energy of supercooled water.      !
+      !------------------------------------------------------------------------------------!
+      if (tequ <= t3ple) then
+         ptqz2enthalpy = cp * temp + qvpr * (cimcp * tequ + alvi   ) + grav * zref
+      else
+         ptqz2enthalpy = cp * temp + qvpr * (clmcp * tequ + eta3ple) + grav * zref
+      end if
+
+      return
+   end function ptqz2enthalpy
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the temperature given the enthalpy, pressure, vapour       !
+   ! specific humidity, and reference height.  Currently it doesn't compute mixed phase    !
+   ! air, but adding it wouldn't be horribly hard, though it would require some root       !
+   ! finding.                                                                              !
+   !---------------------------------------------------------------------------------------!
+   real function hpqz2temp(enthalpy,pres,qvpr,zref)
+      use rconstants, only : ep       & ! intent(in)
+                           , grav     & ! intent(in)
+                           , t3ple    & ! intent(in)
+                           , eta3ple  & ! intent(in)
+                           , cimcp    & ! intent(in)
+                           , clmcp    & ! intent(in)
+                           , cpi      & ! intent(in)
+                           , alvi     ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real, intent(in)           :: enthalpy ! Enthalpy...                         [  J/kg]
+      real, intent(in)           :: pres     ! Pressure                            [    Pa]
+      real, intent(in)           :: qvpr     ! Vapour specific mass                [ kg/kg]
+      real, intent(in)           :: zref     ! Reference height                    [     m]
+      !------Local variables. -------------------------------------------------------------!
+      real                       :: tequ  ! Dew-frost temperature                  [     K]
+      real                       :: pequ  ! Equlibrium vapour pressure             [    Pa]
+      !------------------------------------------------------------------------------------!
+
+      !----- First, we find the equilibrium vapour pressure and dew/frost point. ----------!
+      pequ = pres * qvpr / (ep + (1. - ep) * qvpr)
+      tequ = tslif(pequ)
+
+      !------------------------------------------------------------------------------------!
+      !     Then, based on dew/frost point, we compute the temperature. This accounts      !
+      ! whether we would have to dew or frost formation if the temperature dropped to the  !
+      ! equilibrium point.  Notice that if supersaturation exists, this will still give a  !
+      ! temperature that makes sense (but less than the dew/frost point), similar to the   !
+      ! internal energy of supercooled water.                                              !
+      !------------------------------------------------------------------------------------!
+      if (tequ <= t3ple) then
+         hpqz2temp = cpi * (enthalpy - qvpr * (cimcp * tequ + alvi   ) - grav * zref)
+      else
+         hpqz2temp = cpi * (enthalpy - qvpr * (clmcp * tequ + eta3ple) - grav * zref)
+      end if
+
+      return
+   end function hpqz2temp
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1879,7 +2073,7 @@ module therm_lib
    !    In case you want to find thetae (i.e. without ice) simply provide the logical      !
    ! useice as .false. .                                                                   !
    !---------------------------------------------------------------------------------------!
-   real function thetaeiv(thil,pres,temp,rvap,rtot,useice)
+   real function thetaeiv(thil,pres,temp,rvap,rtot,iflg,useice)
       use rconstants, only : alvl,alvi,cp,ep,p00,rocp,ttripoli,t3ple
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -1888,6 +2082,7 @@ module therm_lib
       real   , intent(in)           :: temp    ! Temperature                       [     K]
       real   , intent(in)           :: rvap    ! Water vapour mixing ratio         [ kg/kg]
       real   , intent(in)           :: rtot    ! Total mixing ratio                [ kg/kg]
+      integer, intent(in)           :: iflg    ! Just to tell where this has been called.
       logical, intent(in), optional :: useice  ! Should I use ice?                 [   T|F]
       !----- Local variables for iterative method -----------------------------------------!
       real                          :: tlcl    ! Internal LCL temperature          [     K]
@@ -1896,9 +2091,9 @@ module therm_lib
       !------------------------------------------------------------------------------------!
 
       if (present(useice)) then
-         call lcl_il(thil,pres,temp,rtot,rvap,tlcl,plcl,dzlcl,useice)
+         call lcl_il(thil,pres,temp,rtot,rvap,tlcl,plcl,dzlcl,iflg,useice)
       else
-         call lcl_il(thil,pres,temp,rtot,rvap,tlcl,plcl,dzlcl)
+         call lcl_il(thil,pres,temp,rtot,rvap,tlcl,plcl,dzlcl,iflg)
       end if
 
       !------------------------------------------------------------------------------------!
@@ -2169,6 +2364,7 @@ module therm_lib
             tlcl = tlclz
             funz = funnow
             converged = .true.
+            exit newloop
          elseif (converged) then
             tlcl = 0.5*(tlcla+tlclz)
             funz = funnow
@@ -2504,8 +2700,8 @@ module therm_lib
    !    decide by itself based on the LEVEL variable.                                      !
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
-   subroutine lcl_il(thil,pres,temp,rtot,rvap,tlcl,plcl,dzlcl,useice)
-      use rconstants, only: cpog,alvl,alvi,cp,ep,p00,rocp,ttripoli,t3ple,t00,rgas
+   subroutine lcl_il(thil,pres,temp,rtot,rvap,tlcl,plcl,dzlcl,iflg,useice)
+      use rconstants, only: cpog,alvl,alvi,cp,ep,p00,rocp,ttripoli,t3ple,t00,rdry
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in)            :: thil   ! Ice liquid potential temp. (*)   [      K]
@@ -2516,6 +2712,7 @@ module therm_lib
       real   , intent(out)           :: tlcl   ! LCL temperature                  [      K]
       real   , intent(out)           :: plcl   ! LCL pressure                     [     Pa]
       real   , intent(out)           :: dzlcl  ! Sub-LCL layer thickness          [      m]
+      integer, intent(in)            :: iflg   ! Flag just to tell from where it was called
       logical, intent(in) , optional :: useice ! Should I use ice thermodynamics? [    T|F]
       !----- Local variables for iterative method -----------------------------------------!
       real                :: pvap       ! Sat. vapour pressure
@@ -2665,10 +2862,18 @@ module therm_lib
                if (zside) exit zgssloop
             end do zgssloop
             if (.not. zside) then
-               write (unit=*,fmt='(a)') ' No second guess for you...'
-               write (unit=*,fmt='(2(a,1x,es14.7))') 'tlcla=',tlcla,'funa=',funa
-               write (unit=*,fmt='(2(a,1x,es14.7))') 'tlclz=',tlclz,'func=',funz
-               write (unit=*,fmt='(2(a,1x,es14.7))') 'delta=',delta,'funn=',funnow
+               write (unit=*,fmt='(a)') ' ====== No second guess for you... ======'
+               write (unit=*,fmt='(a)') ' + INPUT variables: '
+               write (unit=*,fmt='(a,1x,es14.7)') 'THIL =',thil
+               write (unit=*,fmt='(a,1x,es14.7)') 'TEMP =',temp
+               write (unit=*,fmt='(a,1x,es14.7)') 'PRES =',pres
+               write (unit=*,fmt='(a,1x,es14.7)') 'RTOT =',rtot
+               write (unit=*,fmt='(a,1x,es14.7)') 'RVAP =',rvap
+               write (unit=*,fmt='(a,1x,i5)')     'CALL =',iflg
+               write (unit=*,fmt='(a)') ' ============ Failed guess... ==========='
+               write (unit=*,fmt='(2(a,1x,es14.7))') 'TLCLA =',tlcla,'FUNA =',funa
+               write (unit=*,fmt='(2(a,1x,es14.7))') 'TLCLZ =',tlclz,'FUNC =',funz
+               write (unit=*,fmt='(2(a,1x,es14.7))') 'DELTA =',delta,'FUNN =',funnow
                call abort_run('Failed finding the second guess for regula falsi'           &
                              ,'lcl_il','therm_lib.f90')
             end if
@@ -2740,6 +2945,7 @@ module therm_lib
          write (unit=*,fmt='(a,1x,f12.4)' ) 'Temperature     [    °C] =',temp-t00
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rtot            [  g/kg] =',1000.*rtot
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rvap            [  g/kg] =',1000.*rvap
+         write (unit=*,fmt='(a,1x,i5)'    ) 'call            [   ---] =',iflg
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a)') ' Last iteration outcome.'
          write (unit=*,fmt='(a,1x,f12.4)' ) 'tlcla           [    °C] =',tlcla-t00
@@ -2756,93 +2962,6 @@ module therm_lib
       end if
       return
    end subroutine lcl_il
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !     This subroutine calculates the liquid saturation mixing ratio as a function of    !
-   ! pressure and Kelvin temperature for a column.                                         !
-   !---------------------------------------------------------------------------------------!
-   subroutine mrsl(n1,pres,temp,rsl)
-      implicit none
-      integer            ,intent(in)   :: n1
-      real, dimension(n1), intent(in)  :: pres,temp
-      real, dimension(n1), intent(out) :: rsl
-      integer                          :: n
-
-      do n=1,n1
-         rsl(n)=rslf(pres(n),temp(n))
-      end do
-
-      return
-   end subroutine mrsl
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !     This subroutine calculates the ice saturation mixing ratio as a function of pres- !
-   ! sure and Kelvin temperature for a column.                                             !
-   !---------------------------------------------------------------------------------------!
-   subroutine mrsi(n1,pres,temp,rsi)
-      implicit none
-      integer            ,intent(in)   :: n1
-      real, dimension(n1), intent(in)  :: pres,temp
-      real, dimension(n1), intent(out) :: rsi
-      integer                          :: n
-
-      do n=1,n1
-         rsi(n)=rsif(pres(n),temp(n))
-      end do
-
-      return
-   end subroutine mrsi
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !     This subroutine calculates the saturation mixing ratio as a function of pressure  !
-   ! and Kelvin temperature for a column.                                                  !
-   !---------------------------------------------------------------------------------------!
-   subroutine mrsli(n1,pres,temp,rsi,useice)
-      implicit none
-      integer            ,intent(in)            :: n1
-      real, dimension(n1), intent(in)           :: pres,temp
-      real, dimension(n1), intent(out)          :: rsi
-      logical            , intent(in), optional :: useice
-      integer                                   :: n
-
-      if (present(useice)) then
-         do n=1,n1
-            rsi(n)=rslif(pres(n),temp(n),useice)
-         end do
-
-      else
-         do n=1,n1
-            rsi(n)=rslif(pres(n),temp(n))
-         end do
-
-      end if
-
-      return
-   end subroutine mrsli
    !=======================================================================================!
    !=======================================================================================!
 
@@ -2939,117 +3058,13 @@ module therm_lib
          tempk = t3ple
       !----- No water, but it must be at freezing point (qw = qwfroz = qwmelt) ------------!
       else
-         fracliq = 0.
+         fracliq = 0.5
          tempk   = t3ple
       end if
       !------------------------------------------------------------------------------------!
 
       return
    end subroutine qwtk
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    This subroutine computes the temperature and fraction of liquid water from the     !
-   ! internal energy .   This requires double precision arguments.                         !
-   !---------------------------------------------------------------------------------------!
-   subroutine qtk8(q,tempk,fracliq)
-      use rconstants, only: cliqi8,cicei8,allii8,t3ple8,qicet38,qliqt38,tsupercool8
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)  :: q        ! Internal energy                     [   J/kg]
-      real(kind=8), intent(out) :: tempk    ! Temperature                         [      K]
-      real(kind=8), intent(out) :: fracliq  ! Liquid Fraction (0-1)               [    ---]
-      !------------------------------------------------------------------------------------!
-
-
-      !----- Internal energy below qwfroz, all ice  ---------------------------------------!
-      if (q <= dble(qicet38)) then
-         fracliq = 0.d0
-         tempk   = q * cicei8 
-      !----- Internal energy, above qwmelt, all liquid ------------------------------------!
-      elseif (q >= dble(qliqt38)) then
-         fracliq = 1.d0
-         tempk   = q * cliqi8 + tsupercool8
-      !----- Changing phase, it must be at freezing point ---------------------------------!
-      else
-         fracliq = (q-qicet38) * allii8
-         tempk   = t3ple8
-      endif
-      !------------------------------------------------------------------------------------!
-
-      return
-   end subroutine qtk8
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    This subroutine computes the temperature (Kelvin) and liquid fraction from inter-  !
-   ! nal energy (J/m² or J/m³), mass (kg/m² or kg/m³), and heat capacity (J/m²/K or        !
-   ! J/m³/K).                                                                              !
-   ! This routine requires an 8-byte double precision floating point value for density.    !
-   !---------------------------------------------------------------------------------------!
-   subroutine qwtk8(qw,w,dryhcap,tempk,fracliq)
-      use rconstants, only: cliqi8,cliq8,cicei8,cice8,allii8,alli8,t3ple8,tsupercool8
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)  :: qw      ! Internal energy           [  J/m²] or [  J/m³]
-      real(kind=8), intent(in)  :: w       ! Density                   [ kg/m²] or [ kg/m³]
-      real(kind=8), intent(in)  :: dryhcap ! Heat capacity, nonwater   [J/m²/K] or [J/m³/K]
-      real(kind=8), intent(out) :: tempk   ! Temperature                           [     K]
-      real(kind=8), intent(out) :: fracliq ! Liquid fraction (0-1)                 [   ---]
-      !----- Local variable ---------------------------------------------------------------!
-      real(kind=8)              :: qwfroz  ! qw of ice at triple pt.   [  J/m²] or [  J/m³] 
-      real(kind=8)              :: qwmelt  ! qw of liquid at triple pt.[  J/m²] or [  J/m³]
-      !------------------------------------------------------------------------------------!
-
-      !----- Converting melting heat to J/m² or J/m³ --------------------------------------!
-      qwfroz = (dryhcap + w*cice8) * t3ple8
-      qwmelt = qwfroz   + w*alli8
-      !------------------------------------------------------------------------------------!
-      
-      !------------------------------------------------------------------------------------!
-      !    This is analogous to the qtk computation, we should analyse the magnitude of    !
-      ! the internal energy to choose between liquid, ice, or both by comparing with our.  !
-      ! know boundaries.                                                                   !
-      !------------------------------------------------------------------------------------!
-
-      !----- Internal energy below qwfroz, all ice  ---------------------------------------!
-      if (qw < qwfroz) then
-         fracliq = 0.d0
-         tempk   = qw  / (cice8 * w + dryhcap)
-      !----- Internal energy, above qwmelt, all liquid ------------------------------------!
-      elseif (qw > qwmelt) then
-         fracliq = 1.d0
-         tempk   = (qw + w * cliq8 * tsupercool8) / (dryhcap + w*cliq8)
-      !------------------------------------------------------------------------------------!
-      !    Changing phase, it must be at freezing point.  The max and min are here just to !
-      ! avoid tiny deviations beyond 0. and 1. due to floating point arithmetics.          !
-      !------------------------------------------------------------------------------------!
-      elseif (w > 0.d0) then
-         fracliq = min(1.d0,max(0.d0,(qw - qwfroz) * allii8 / w))
-         tempk = t3ple8
-      !----- No water, but it must be at freezing point (qw = qwfroz = qwmelt) ------------!
-      else
-         fracliq = 0.d0
-         tempk   = t3ple8
-      end if
-      !------------------------------------------------------------------------------------!
-
-      return
-   end subroutine qwtk8
    !=======================================================================================!
    !=======================================================================================!
 end module therm_lib

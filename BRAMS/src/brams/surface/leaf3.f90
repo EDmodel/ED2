@@ -57,16 +57,21 @@ subroutine sfclyr(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
                   , leaf_g(ng)%sfcwater_energy     , leaf_g(ng)%soil_text                  &
                   , leaf_g(ng)%sfcwater_depth      , leaf_g(ng)%ustar                      &
                   , leaf_g(ng)%tstar               , leaf_g(ng)%rstar                      &
-                  , leaf_g(ng)%veg_albedo          , leaf_g(ng)%veg_fracarea               &
-                  , leaf_g(ng)%veg_lai             , leaf_g(ng)%veg_tai                    &
-                  , leaf_g(ng)%veg_rough           , leaf_g(ng)%veg_height                 &
-                  , leaf_g(ng)%patch_area          , leaf_g(ng)%patch_rough                &
-                  , leaf_g(ng)%patch_wetind        , leaf_g(ng)%leaf_class                 &
-                  , leaf_g(ng)%soil_rough          , leaf_g(ng)%sfcwater_nlev              &
-                  , leaf_g(ng)%stom_resist         , leaf_g(ng)%ground_rsat                &
-                  , leaf_g(ng)%ground_rvap         , leaf_g(ng)%veg_water                  &
-                  , leaf_g(ng)%veg_temp            , leaf_g(ng)%can_rvap                   &
-                  , leaf_g(ng)%can_temp            , leaf_g(ng)%veg_ndvip                  &
+                  , leaf_g(ng)%cstar               , leaf_g(ng)%veg_albedo                 &
+                  , leaf_g(ng)%veg_fracarea        , leaf_g(ng)%veg_lai                    &
+                  , leaf_g(ng)%veg_tai             , leaf_g(ng)%veg_rough                  &
+                  , leaf_g(ng)%veg_height          , leaf_g(ng)%patch_area                 &
+                  , leaf_g(ng)%patch_rough         , leaf_g(ng)%patch_wetind               &
+                  , leaf_g(ng)%leaf_class          , leaf_g(ng)%soil_rough                 &
+                  , leaf_g(ng)%sfcwater_nlev       , leaf_g(ng)%stom_resist                &
+                  , leaf_g(ng)%ground_rsat         , leaf_g(ng)%ground_rvap                &
+                  , leaf_g(ng)%veg_water           , leaf_g(ng)%veg_hcap                   &
+                  , leaf_g(ng)%veg_energy          , leaf_g(ng)%can_prss                   &
+                  , leaf_g(ng)%can_theta           , leaf_g(ng)%can_rvap                   &
+                  , leaf_g(ng)%can_co2             , leaf_g(ng)%sensible                   &
+                  , leaf_g(ng)%evap                , leaf_g(ng)%transp                     &
+                  , leaf_g(ng)%gpp                 , leaf_g(ng)%plresp                     &
+                  , leaf_g(ng)%resphet             , leaf_g(ng)%veg_ndvip                  &
                   , leaf_g(ng)%veg_ndvic           , leaf_g(ng)%veg_ndvif                  )
    
    return
@@ -89,13 +94,18 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
    use mem_all
    use leaf_coms
    use rconstants
-   use node_mod       , only : mynum       ! ! intent(in)
-   use catt_start     , only : CATT        ! ! intent(in)
-   use teb_spm_start  , only : TEB_SPM     ! ! intent(in)
-   use mem_teb        , only : teb_vars    ! ! type
-   use mem_teb_common , only : teb_common  ! ! type
-   use therm_lib      , only : rslif       & ! function
-                             , level       ! ! intent(in)
+   use node_mod       , only : mynum         ! ! intent(in)
+   use catt_start     , only : CATT          ! ! intent(in)
+   use teb_spm_start  , only : TEB_SPM       ! ! intent(in)
+   use mem_teb        , only : teb_vars      ! ! type
+   use mem_teb_common , only : teb_common    ! ! type
+   use therm_lib      , only : rslif         & ! function
+                             , reducedpress  & ! function
+                             , ptqz2enthalpy & ! function
+                             , hpqz2temp     & ! function
+                             , idealdenssh   & ! function
+                             , qwtk          & ! subroutine
+                             , level         ! ! intent(in)
    use mem_scratch    , only : scratch
    implicit none
    
@@ -141,8 +151,8 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
    !---------------------------------------------------------------------------------------!
    !    Define LEAF-3 and canopy time-split timesteps here.  This ensures that LEAF-3 will !
    ! not use a timestep longer than about 40 seconds, and canopy will not use a timestep   !
-   ! longer than about 15 seconds.  This allows values of hcapcan = 2.e4, wcapcan = 2.e1,  !
-   ! and hcapveg = 3.e4 as are now defined below.                                          !
+   ! longer than about 15 seconds.  This allows values of can_depth = 20. and              !
+   ! hcapveg = 3.e4 as are now defined below.                                              !
    !---------------------------------------------------------------------------------------!
    niter_leaf  = max(1,nint(dtlt/40.+.4))
    niter_can   = max(1,nint(dtll/15.+.4))
@@ -150,15 +160,6 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
    dtll        = dtlt * dtll_factor
    dtlc_factor = 1. / float(niter_can)
    dtlc        = dtll * dtlc_factor
-
-   !----- Defining some variables to speed up calculations --------------------------------!
-   dtllohcc = dtll / hcapcan
-   dtllowcc = dtll / wcapcan
-   dtllowcc = dtll / ccapcan
-   dtlcohcc = dtlc / hcapcan
-   dtlcowcc = dtlc / wcapcan
-   dtlcoccc = dtlc / ccapcan
-   dtlcohcv = dtlc / hcapveg
 
    !----- Check whether we have CO2, and copy to an scratch array. ------------------------!
    if (co2_on) then
@@ -168,36 +169,38 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
    end if
 
    !----- Copy surface atmospheric variables into 2d arrays for input to LEAF. ------------!
-   if (if_adap == 1) then
+   select case (if_adap)
+   case (0)
+      call sfc_fields(m1,m2,m3,ia,iz,ja,jz,jdim           , basic%theta   , basic%rv       &
+                          , scratch%vt3do , basic%up      , basic%vp      , basic%dn0      &
+                          ,  basic%pp     , basic%pi0     , grid%rtgt                      &
+                          , zt,zm,ths2,rvs2,co2s2,ups2,vps2,pis2,dens2,zts2)
+   case (1)
       call sfc_fields_adap(m1,m2,m3,ia,iz,ja,jz,jdim      , grid%flpu     , grid%flpv      &
                           , grid%flpw     , grid%topma    , grid%aru      , grid%arv       &
                           , basic%theta   , basic%rv      , scratch%vt3do , basic%up       &
                           , basic%vp      , basic%dn0     , basic%pp      , basic%pi0      &
                           , zt,zm,dzt,ths2,rvs2,co2s2,ups2,vps2,pis2,dens2,zts2)
-   else
-      call sfc_fields(m1,m2,m3,ia,iz,ja,jz,jdim           , basic%theta   , basic%rv       &
-                          , scratch%vt3do , basic%up      , basic%vp      , basic%dn0      &
-                          ,  basic%pp     , basic%pi0     , grid%rtgt                      &
-                          , zt,ths2,rvs2,co2s2,ups2,vps2,pis2,dens2,zts2)
-   end if
+   end select
 
    !----- Big domain loop -----------------------------------------------------------------!
    jloop1: do j = ja,jz
       iloop1: do i = ia,iz
 
          !----- Copy surface variables to single-column values ----------------------------!
-         ups  =  ups2(i,j)
-         vps  =  vps2(i,j)
-         ths  =  ths2(i,j)
-         rvs  =  rvs2(i,j)
-         zts  =  zts2(i,j)
-         pis  =  pis2(i,j)
-         dens =  dens2(i,j)
-         rco2s = co2s2(i,j)
-
-         prss     = pis ** cpor * p00
-         vels     = sqrt(ups ** 2 + vps ** 2)
-         gzotheta = g * zts / ths
+         atm_up       = ups2(i,j)
+         atm_vp       = vps2(i,j)
+         atm_theta    = ths2(i,j)
+         atm_rvap     = rvs2(i,j)
+         atm_shv      = atm_rvap / (1. + atm_rvap)
+         geoht        = zts2(i,j)
+         atm_exner    = pis2(i,j)
+         atm_co2      = co2s2(i,j)
+         atm_prss     = atm_exner ** cpor * p00
+         vels         = sqrt(atm_up ** 2 + atm_vp ** 2)
+         gzotheta     = grav * geoht / atm_theta
+         atm_temp     = atm_theta * atm_exner
+         atm_enthalpy = ptqz2enthalpy(atm_prss,atm_temp,atm_shv,geoht)
 
          !----- Update water internal energy from time-dependent SST. ---------------------!
          leaf%soil_energy(mzg,i,j,1) =  cliq * (leaf%seatp(i,j)                            &
@@ -226,15 +229,23 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
 
          !----- For no soil model (patch 2) fill "canopy" temperature and moisture. -------!
          if (isfcl == 0) then
-            leaf%can_temp  (i,j,2) = (ths - dthcon) * pis
-            leaf%can_rvap  (i,j,2) = rvs - drtcon
-            leaf%can_co2   (i,j,2) = rco2s
+            leaf%can_theta (i,j,2) = atm_theta - dthcon
+            leaf%can_rvap  (i,j,2) = atm_rvap  - drtcon
+            leaf%can_co2   (i,j,2) = atm_co2
             leaf%patch_area(i,j,1) = 1. - pctlcon
             leaf%patch_area(i,j,2) = pctlcon
          end if
 
          !----- Begin patch loop. ---------------------------------------------------------!
          ploop1: do ip = 1,np
+
+            !----- Resetting all fluxes. --------------------------------------------------!
+            leaf%sensible(i,j,ip) = 0.
+            leaf%evap    (i,j,ip) = 0.
+            leaf%transp  (i,j,ip) = 0.
+            leaf%gpp     (i,j,ip) = 0.
+            leaf%plresp  (i,j,ip) = 0.
+            leaf%resphet (i,j,ip) = 0.
 
             !----- Update time-dependent vegetation LAI and fractional coverage -----------!
             if (ip >= 2 .and. leaf%patch_area(i,j,ip) >= .009) then
@@ -264,8 +275,34 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                                   * leaf%sfcwater_mass(k,i,j,ip)
             end do
 
+            !----- Set initial value of specific humidity. --------------------------------!
+            can_shv = leaf%can_rvap(i,j,ip) / (leaf%can_rvap(i,j,ip) + 1.)
+
+            !------------------------------------------------------------------------------!
+            !    Update canopy air pressure here.  Canopy air pressure is assumed to       !
+            ! remain constant during one LEAF full timestep, which means that heat equals  !
+            ! to change in enthalpy.  Between time steps, atmospheric pressure changes so  !
+            ! enthalpy is no longer a conserved variable.  Potential temperature, on the   !
+            ! other hand, is conserved if no heat happens, which is the case between       !
+            ! successive calls.  Therefore, we track theta outside LEAF, but enthalpy      !
+            ! inside LEAF.                                                                 !
+            !------------------------------------------------------------------------------!
+            leaf%can_prss(i,j,ip) = reducedpress(atm_prss,atm_theta,atm_shv,geoht          &
+                                                ,leaf%can_theta(i,j,ip),can_shv,can_depth)
+
+            !----- Update canopy air temperature, density, and enthalpy. ------------------!
+            can_temp     = leaf%can_theta(i,j,ip)                                          &
+                         * (p00i * leaf%can_prss(i,j,ip)) ** rocp
+            can_rhos     = idealdenssh (leaf%can_prss(i,j,ip),can_temp,can_shv)
+            can_enthalpy = ptqz2enthalpy(leaf%can_prss(i,j,ip),can_temp,can_shv,can_depth)
+
+
             !----- Begin LEAF-3 small timestep here. --------------------------------------!
             tloop: do iter_leaf = 1,niter_leaf
+
+               !----- Finding vegetation temperature and surface liquid water fraction. ---!
+               call qwtk(leaf%veg_energy(i,j,ip),leaf%veg_water(i,j,ip)                    &
+                        ,leaf%veg_hcap(i,j,ip),veg_temp,veg_fliq)
 
                !---------------------------------------------------------------------------!
                !    Calculate radiative fluxes between atmosphere, vegetation, and ground/ !
@@ -291,10 +328,12 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                        , leaf%soil_water      (:,i,j,ip) , leaf%soil_text       (:,i,j,ip) &
                        , leaf%sfcwater_energy (:,i,j,ip) , leaf%sfcwater_mass   (:,i,j,ip) &
                        , leaf%sfcwater_depth  (:,i,j,ip) , leaf%patch_area      (  i,j,ip) &
-                       , leaf%can_temp        (  i,j,ip) , leaf%veg_temp        (  i,j,ip) &
                        , leaf%leaf_class      (  i,j,ip) , leaf%veg_height      (  i,j,ip) &
                        , leaf%veg_fracarea    (  i,j,ip) , leaf%veg_albedo      (  i,j,ip) &
-                       , leaf%sfcwater_nlev   (  i,j,ip) , radiate%rshort       (  i,j   ) &
+                       , leaf%sfcwater_nlev   (  i,j,ip) , leaf%veg_energy      (  i,j,ip) &
+                       , leaf%veg_water       (  i,j,ip) , leaf%veg_hcap        (  i,j,ip) &
+                       , leaf%can_prss        (  i,j,ip) , leaf%can_theta       (  i,j,ip) &
+                       , leaf%can_rvap        (  i,j,ip) , radiate%rshort       (  i,j   ) &
                        , radiate%rlong        (  i,j   ) , radiate%albedt       (  i,j   ) &
                        , radiate%rlongup      (  i,j   ) , radiate%cosz         (  i,j   ) &
                        , g_urban                         , emis_town                       &
@@ -309,7 +348,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                !---------------------------------------------------------------------------!
                if (ip == 1) then
 
-                  leaf%ground_rsat(i,j,ip) = rslif(prss,tempk(mzg))
+                  leaf%ground_rsat(i,j,ip) = rslif(leaf%can_prss(i,j,ip),tempk(mzg))
                   leaf%patch_rough(i,j,ip) = max( z0fac_water * leaf%ustar(i,j,ip) ** 2    &
                                                 , min_waterrough)
 
@@ -324,68 +363,90 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                end if
 
                !---------------------------------------------------------------------------!
-               !     Calculate turbulent fluxes between atmosphere and canopy (or          !
-               ! "canopy").                                                                !
+               !    Imposing minimum wind speed.                                           !
                !---------------------------------------------------------------------------!
-               if (leaf%patch_area(i,j,ip) >= .009 .or. isfcl == 0) then
-                  thetacan = leaf%can_temp(i,j,ip) / pis
-               end if
+               vels_pat = max(ubmin,vels)
 
-               call stars( leaf%ustar          (i,j,ip) , leaf%tstar              (i,j,ip) &
-                         , leaf%rstar          (i,j,ip) , leaf%cstar              (i,j,ip) &
-                         , ths                          , rvs                              &
-                         , rco2s                        , thetacan                         &
-                         , leaf%can_rvap       (i,j,ip) , leaf%can_co2            (i,j,ip) &
-                         , zts                          , leaf%patch_rough        (i,j,ip) &
-                         , leaf%patch_area     (i,j,ip) , vels                             &
-                         , vels_pat                     , vonk                             &
-                         , dtllohcc                     , dens                             &
-                         , dtll                         , leaf%R_aer          (i,j,ip)     )
+               !----- Compute the characteristic scales. ----------------------------------!
+               call leaf_stars(atm_theta,atm_enthalpy,atm_shv,atm_rvap,atm_co2             &
+                              ,leaf%can_theta(i,j,ip),can_enthalpy,can_shv                 &
+                              ,leaf%can_rvap(i,j,ip),leaf%can_co2(i,j,ip)                  &
+                              ,geoht,vels_pat,dtll                                         &
+                              ,leaf%patch_rough(i,j,ip),leaf%ustar(i,j,ip)                 &
+                              ,leaf%tstar(i,j,ip),estar,qstar,leaf%rstar(i,j,ip)           &
+                              ,leaf%cstar(i,j,ip),leaf%R_aer(i,j,ip))
+
 
                if (teb_spm==1) g_urban = leaf%g_urban(i,j,ip)
 
                call sfclmcv( leaf%ustar        (i,j,ip) , leaf%tstar              (i,j,ip) &
                            , leaf%rstar        (i,j,ip) , leaf%cstar              (i,j,ip) &
                            , vels                       , vels_pat                         &
-                           , ups                        , vps                              &
+                           , atm_up                     , atm_vp                           &
                            , gzotheta                   , leaf%patch_area   (i,j,ip)       &
                            , turb%sflux_u      (i,j   ) , turb%sflux_v      (i,j   )       &
                            , turb%sflux_w      (i,j   ) , turb%sflux_t      (i,j   )       &
                            , turb%sflux_r      (i,j   ) , turb%sflux_c      (i,j   )       &
                            , g_urban                    )
 
-               !---------------------------------------------------------------------------!
-               !     For water patches, update temperature and moisture of "canopy" from   !
-               ! divergence of fluxes with water surface and atmosphere.  rdi = ustar/5    !
-               ! is the viscous sublayer conductivity from Garratt (1992).                 !
-               !---------------------------------------------------------------------------!
-               if (ip == 1) then
+               select case (ip)
+               case (1) !----- Water. -----------------------------------------------------!
+                  !------------------------------------------------------------------------!
+                  !     For water patches, update temperature and moisture of "canopy"     !
+                  ! from divergence of fluxes with water surface and atmosphere.           !
+                  ! rdi = rho * ustar/5 is the viscous sublayer conductivity from Garratt  !
+                  ! (1992), but multiplied by density.                                     !
+                  !------------------------------------------------------------------------!
+                  rho_ustar = leaf%ustar(i,j,1) * can_rhos
+                  rdi       = .2 * rho_ustar
+                  dtllowcc  = dtll / (can_depth * can_rhos)
+                  dtlloccc  = mmdry * dtllowcc
 
-                  rdi = .2 * leaf%ustar(i,j,1)
+                  !----- Compute the fluxes from water body to canopy. --------------------!
+                  hflxgc  = rdi * cp * (tempk(mzg) - can_temp)
+                  wflxgc  = rdi * (leaf%ground_rsat(i,j,ip) - leaf%can_rvap(i,j,ip))
+                  qwflxgc = wflxgc * alvl
+                  cflxgc  = 0. !----- No water carbon emission model available...
 
-                  leaf%can_temp(i,j,1) = leaf%can_temp(i,j,1)                              &
-                                       + dtllohcc * dens * cp * rdi                        &
-                                       * ((tempk(mzg) - leaf%can_temp(i,j,1))              &
-                                       + leaf%ustar(i,j,1) * leaf%tstar(i,j,1) * pis)
+                  !----- Compute the fluxes from atmosphere to canopy air space. ----------!
+                  eflxac  = rho_ustar * estar
+                  wflxac  = rho_ustar * leaf%rstar(i,j,ip)
+                  cflxac  = rho_ustar * leaf%cstar(i,j,ip) * mmdryi
 
-                  leaf%can_rvap(i,j,1) = leaf%can_rvap(i,j,1)                              &
-                                       + dtllowcc * dens * rdi                             &
-                                       * ((leaf%ground_rsat(i,j,1) - leaf%can_rvap(i,j,1)) &
-                                       + leaf%ustar(i,j,1) * leaf%rstar(i,j,1))
+                  !----- Integrate the state variables. -----------------------------------!
+                  can_enthalpy         = can_enthalpy                                      &
+                                       + dtllowcc * (hflxgc + qwflxgc + eflxac)
 
-                  leaf%can_co2(i,j,1)  = leaf%can_co2(i,j,1)                               &
-                                       + dtlloccc * dens * rdi                             &
-                                       * leaf%cstar(i,j,1) * leaf%rstar(i,j,1)
+                  leaf%can_rvap(i,j,ip) = leaf%can_rvap(i,j,ip)                            &
+                                        + dtllowcc * (wflxgc + wflxac)
+
+                  leaf%can_co2(i,j,ip)  = leaf%can_co2(i,j,ip)                             &
+                                        + dtlloccc * (cflxgc + cflxac)
+
+                  !----- Integrate the fluxes. --------------------------------------------!
+                  leaf%sensible(i,j,ip) = leaf%sensible(i,j,ip) + hflxgc * dtll_factor
+                  leaf%evap    (i,j,ip) = leaf%evap    (i,j,ip) + wflxgc * dtll_factor
+                  leaf%plresp  (i,j,ip) = leaf%plresp  (i,j,ip) + cflxgc * dtll_factor
+
+                  !------------------------------------------------------------------------!
+                  !    Updating canopy air properties.  This is done inside the loop to    !
+                  ! ensure that we leave here with the right canopy air potential temper-  !
+                  ! ature.                                                                 !
+                  !------------------------------------------------------------------------!
+                  can_shv  = leaf%can_rvap(i,j,ip) / (leaf%can_rvap(i,j,ip) + 1.)
+                  can_temp = hpqz2temp(can_enthalpy,leaf%can_prss(i,j,ip),can_shv,can_depth)
+                  can_rhos = idealdenssh(leaf%can_prss(i,j,ip),can_temp,can_shv)
+                  leaf%can_theta(i,j,ip) = can_temp * (p00 / leaf%can_prss(i,j,ip)) ** rocp
 
                   !----- KML - drydep -----------------------------------------------------!
-                  if (catt == 1) leaf%R_aer(i,j,ip) = rdi
-               end if
+                  if (catt == 1) leaf%R_aer(i,j,ip) = .2 * leaf%ustar(i,j,ip)
 
-               if (teb_spm == 1) then
 
-                  !----- TEB: Urban canopy parameterization starts here -------------------!
-                  if (ip >= 2) then
+               case default !---- Land patch. ---------------------------------------------!
 
+                  if (teb_spm == 1) then
+
+                     !----- TEB: Urban canopy parameterization starts here ----------------!
                      if (nint(leaf%g_urban(i,j,ip))/=0.) then
 
                         !edmilson
@@ -393,7 +454,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                         psup2  = ((basic%pi0(2,i,j)+basic%pp(2,i,j))*cpi)**cpor*p00
                         depe   = psup2-psup1
                         alt2   = zt(1)*grid%rtgt(i,j)
-                        deze   = zts-alt2
+                        deze   = geoht-alt2
                         dpdz   = depe/deze
                         exn1st = (psup2/p00)**rocp
                         
@@ -403,10 +464,10 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                         g_urban   = leaf%g_urban(i,j,ip)
 
                         call leaf3_teb_interface(istp,dtlt,dtll                            &
-                           , radiate%cosz(i,j)          , zts                              &
+                           , radiate%cosz(i,j)          , geoht                            &
                            , radiate%rlong(i,j)         , radiate%rshort(i,j)              &
                            , psup2                      , airt                             &
-                           , ups                        , vps                              &
+                           , atm_up                     , atm_vp                           &
                            , basic%rv(2,i,j)            , pcpgl/dtlt                       &
                            , teb%fuso(i,j)              , teb%t_canyon(i,j)                &
                            , teb%r_canyon(i,j)          , teb%ts_roof(i,j)                 &
@@ -423,65 +484,67 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                            , teb%le_industry(i,j)       , teb%t2m_town(i,j)                &
                            , teb%r2m_town(i,j)          , time                             &
                            , itimea                     , dpdz                             &
-                           , dens                       )
+                           , can_rhos                   )
                         
                         turb%sflux_u(i,j) = turb%sflux_u(i,j)                              &
                                           + leaf%patch_area(i,j,ip) * zsfu_town
                         turb%sflux_v(i,j) = turb%sflux_v(i,j)                              &
                                           + leaf%patch_area(i,j,ip) * zsfv_town
                         turb%sflux_t(i,j) = turb%sflux_t(i,j)                              &
-                                          + leaf%patch_area(i,j,ip) * zh_town/(cp*dens)
+                                          + leaf%patch_area(i,j,ip) * zh_town              &
+                                          / (cp * can_rhos)
                         turb%sflux_r(i,j) = turb%sflux_r(i,j)                              &
-                                          + leaf%patch_area(i,j,ip) * zle_town/(alvl*dens)
+                                          + leaf%patch_area(i,j,ip) * zle_town             &
+                                          / (alvl * can_rhos)
                      end if
                   end if
-               end if
 
-               !---------------------------------------------------------------------------!
-               !     For soil model patches, update temperature and moisture of soil,      !
-               ! vegetation, and canopy                                                    !
-               !---------------------------------------------------------------------------!
-               if (isfcl >= 1 .and. ip >= 2) then
-                  if (leaf%patch_area(i,j,ip) >= .009) then
+                  if (isfcl >= 1) then
+                     !---------------------------------------------------------------------!
+                     !     For soil model patches, update temperature and moisture of      !
+                     ! soil, vegetation, and canopy                                        !
+                     !---------------------------------------------------------------------!
+                     if (leaf%patch_area(i,j,ip) >= .009) then
+                        call leaftw(mzg,mzs,np                                             &
+                          , leaf%soil_water     (:,i,j,ip), leaf%soil_energy    (:,i,j,ip) &
+                          , leaf%soil_text      (:,i,j,ip), leaf%sfcwater_mass  (:,i,j,ip) &
+                          , leaf%sfcwater_depth (:,i,j,ip), leaf%ustar            (i,j,ip) &
+                          , leaf%tstar            (i,j,ip), leaf%rstar            (i,j,ip) &
+                          , leaf%cstar            (i,j,ip), leaf%veg_albedo       (i,j,ip) &
+                          , leaf%veg_fracarea     (i,j,ip), leaf%veg_lai          (i,j,ip) &
+                          , leaf%veg_tai          (i,j,ip), leaf%veg_rough        (i,j,ip) &
+                          , leaf%veg_height       (i,j,ip), leaf%patch_area       (i,j,ip) &
+                          , leaf%patch_rough      (i,j,ip), leaf%patch_wetind     (i,j,ip) &
+                          , leaf%leaf_class       (i,j,ip), leaf%soil_rough       (i,j,ip) &
+                          , leaf%sfcwater_nlev    (i,j,ip), leaf%stom_resist      (i,j,ip) &
+                          , leaf%ground_rsat      (i,j,ip), leaf%ground_rvap      (i,j,ip) &
+                          , leaf%veg_water        (i,j,ip), leaf%veg_hcap         (i,j,ip) &
+                          , leaf%veg_energy       (i,j,ip), leaf%can_prss         (i,j,ip) &
+                          , leaf%can_theta        (i,j,ip), leaf%can_rvap         (i,j,ip) &
+                          , leaf%can_co2          (i,j,ip), leaf%sensible         (i,j,ip) &
+                          , leaf%evap             (i,j,ip), leaf%transp           (i,j,ip) &
+                          , leaf%gpp              (i,j,ip), leaf%plresp           (i,j,ip) &
+                          , leaf%resphet          (i,j,ip), leaf%veg_ndvip        (i,j,ip) &
+                          , leaf%veg_ndvic        (i,j,ip), leaf%veg_ndvif        (i,j,ip) &
+                          , radiate%rshort        (i,j)   , radiate%cosz          (i,j)    &
+                          , ip,i,j)
+                     end if
+                  end if
 
-                     call leaftw(mzg,mzs,np                                                &
-                        , leaf%soil_water     (:,i,j,ip) , leaf%soil_energy    (:,i,j,ip)  &
-                        , leaf%soil_text      (:,i,j,ip) , leaf%sfcwater_mass  (:,i,j,ip)  &
-                        , leaf%sfcwater_depth (:,i,j,ip) , leaf%ustar            (i,j,ip)  &
-                        , leaf%tstar            (i,j,ip) , leaf%rstar            (i,j,ip)  &
-                        , leaf%cstar            (i,j,ip) , leaf%veg_albedo       (i,j,ip)  &
-                        , leaf%veg_fracarea     (i,j,ip) , leaf%veg_lai          (i,j,ip)  &
-                        , leaf%veg_tai          (i,j,ip) , leaf%veg_rough        (i,j,ip)  &
-                        , leaf%veg_height       (i,j,ip) , leaf%patch_area       (i,j,ip)  &
-                        , leaf%patch_rough      (i,j,ip) , leaf%patch_wetind     (i,j,ip)  &
-                        , leaf%leaf_class       (i,j,ip) , leaf%soil_rough       (i,j,ip)  &
-                        , leaf%sfcwater_nlev    (i,j,ip) , leaf%stom_resist      (i,j,ip)  &
-                        , leaf%ground_rsat      (i,j,ip) , leaf%ground_rvap      (i,j,ip)  &
-                        , leaf%veg_water        (i,j,ip) , leaf%veg_temp         (i,j,ip)  &
-                        , leaf%can_rvap         (i,j,ip) , leaf%can_co2          (i,j,ip)  &
-                        , leaf%can_temp         (i,j,ip) , leaf%veg_ndvip        (i,j,ip)  &
-                        , leaf%veg_ndvic        (i,j,ip) , leaf%veg_ndvif        (i,j,ip)  &
-                        , radiate%rshort        (i,j)    , radiate%cosz          (i,j)     &
-                        , ip,i,j)
-
-                 end if
-               end if
-
-               !---------------------------------------------------------------------------!
-               !    Converting the surface water internal energy back to an intensive      !
-               ! variable.                                                                 !
-               !---------------------------------------------------------------------------!
-               ksn = nint(leaf%sfcwater_nlev(i,j,ip))
-               leaf%sfcwater_energy(:,i,j,ip) = 0.
-               do k=1,ksn
-                  leaf%sfcwater_energy(k,i,j,ip) = sfcw_energy_ext(k)                      &
-                                                 / leaf%sfcwater_mass(k,i,j,ip)
-               end do
-               !---------------------------------------------------------------------------!
-
+                  !------------------------------------------------------------------------!
+                  !    Converting the surface water internal energy back to an intensive   !
+                  ! variable.                                                              !
+                  !------------------------------------------------------------------------!
+                  ksn = nint(leaf%sfcwater_nlev(i,j,ip))
+                  leaf%sfcwater_energy(:,i,j,ip) = 0.
+                  do k=1,ksn
+                     leaf%sfcwater_energy(k,i,j,ip) = sfcw_energy_ext(k)                   &
+                                                    / leaf%sfcwater_mass(k,i,j,ip)
+                  end do
+                  !------------------------------------------------------------------------!
+               end select
             end do tloop
          end do ploop1
-
       end do iloop1
    end do jloop1
 
@@ -522,68 +585,70 @@ end subroutine leaf3
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine leaftw(mzg,mzs,np,soil_water, soil_energy, soil_text,sfcwater_mass              &
-                 ,sfcwater_depth,ustar, tstar,rstar,cstar,veg_albedo,veg_fracarea,veg_lai  &
+subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass               &
+                 ,sfcwater_depth,ustar,tstar,rstar,cstar,veg_albedo,veg_fracarea,veg_lai   &
                  ,veg_tai,veg_rough,veg_height,patch_area,patch_rough,patch_wetind         &
                  ,leaf_class,soil_rough,sfcwater_nlev,stom_resist,ground_rsat,ground_rvap  &
-                 ,veg_water,veg_temp,can_rvap,can_co2,can_temp,veg_ndvip,veg_ndvic         &
-                 ,veg_ndvif,rshort,cosz,ip,i,j)
+                 ,veg_water,veg_hcap,veg_energy,can_prss,can_theta,can_rvap,can_co2        &
+                 ,sensible,evap,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif    &
+                 ,rshort,cosz,ip,i,j)
 
    use leaf_coms
    use mem_leaf
    use rconstants
    use mem_scratch
-   use therm_lib   , only : qwtk & ! subroutine
-                          , qtk  ! ! subroutine
-   use catt_start  , only : CATT ! ! intent(in)
+   use therm_lib   , only : qwtk        & ! subroutine
+                          , qtk         & ! subroutine
+                          , hpqz2temp   & ! function
+                          , idealdenssh ! ! function
+   use catt_start  , only : CATT        ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                , intent(in)    :: mzg,mzs,np
    real   , dimension(mzg), intent(inout) :: soil_water,soil_energy,soil_text
    real   , dimension(mzs), intent(inout) :: sfcwater_mass,sfcwater_depth
-
-   real                 :: ustar        ,tstar         ,rstar        &
-                          ,cstar        ,veg_albedo    ,veg_fracarea &
-                          ,veg_lai      ,veg_tai                     &
-                          ,veg_rough    ,veg_height    ,patch_area   &
-                          ,patch_rough  ,patch_wetind  ,leaf_class   &
-                          ,soil_rough   ,sfcwater_nlev ,stom_resist  &
-                          ,ground_rsat  ,ground_rvap   ,veg_water    &
-                          ,veg_temp     ,can_rvap      ,can_co2      &
-                          ,can_temp     ,veg_ndvip     ,veg_ndvic    &
-                          ,veg_ndvif    ,rshort        ,cosz
-
+   real                   , intent(in)    :: ustar,tstar,rstar,cstar
+   real                   , intent(in)    :: veg_albedo,veg_fracarea,veg_lai,veg_tai
+   real                   , intent(in)    :: veg_rough,veg_height,patch_area,patch_rough
+   real                   , intent(in)    :: patch_wetind,leaf_class,soil_rough
+   real                   , intent(inout) :: sfcwater_nlev, stom_resist
+   real                   , intent(inout) :: ground_rsat,ground_rvap
+   real                   , intent(inout) :: veg_water,veg_hcap,veg_energy
+   real                   , intent(inout) :: can_prss,can_theta,can_rvap,can_co2
+   real                   , intent(inout) :: sensible,evap,transp
+   real                   , intent(inout) :: gpp,plresp,resphet
+   real                   , intent(in)    :: veg_ndvip,veg_ndvic,veg_ndvif
+   real                   , intent(in)    :: rshort,cosz
+   !----- Local variables. ----------------------------------------------------------------!
    integer :: ip,k,nveg,ksn,nsoil,ksnnew,newlayers,nlayers,kold,ktrans,nsl,kzs
-   integer, save :: ncall=0
-
    integer :: i,j
-   real :: sfcw_energy_int
+   real    :: sfcw_energy_int,stretch,thik,pf,snden,vegfracc,qwfree,wfree
+   real    :: depthgain,totsnow,qw,w,qwt,wt,soilhcap,fac,wfreeb,depthloss,soilcap
+   real    :: sndenmax,sndenmin,snowmin,hold,wtnew,wtold,wdiff,watermid,availwat,wg
+   real    :: wloss,soilcond,waterfrac
+   !----- Locally saved variables. --------------------------------------------------------!
+   logical               , save :: ncall=.true.
+   real, dimension(20)   , save :: thicknet
+   real, dimension(20,20), save :: thick
+   !---------------------------------------------------------------------------------------!
 
-   real :: stretch,thik,pf,snden,vegfracc,qwfree,wfree          &
-      ,depthgain,totsnow,qw,w,qwt,wt,soilhcap,fac,wfreeb,depthloss,soilcap    &
-      ,sndenmax,sndenmin,snowmin,hold,wtnew,wtold,wdiff,watermid,availwat,wg  &
-      ,wloss,soilcond,waterfrac
 
-   real, save, dimension(20) :: thicknet
-   real, save, dimension(20,20) :: thick
-
+   !----- Initialise some levels. ---------------------------------------------------------!
    do k = 1,mzg
       dslz   (k) = slz(k+1) - slz(k)
       dslzi  (k) = 1. / dslz(k)
       dslzidt(k) = dslzi(k) * dtll
       slzt   (k) = .5 * (slz(k) + slz(k+1))
-   enddo
-
+   end do
    do k = 2,mzg
       dslzt   (k) = slzt(k) - slzt(k-1)
       dslzti  (k) = 1. / dslzt(k)
       dslztidt(k) = dslzti(k) * dtll
-   enddo
+   end do
 
-   ! Initialize snow thickness scaling array
-
-   if (ncall /= 40) then
-      ncall = 40
+   !----- Initialize snow thickness scaling array. ----------------------------------------!
+   if (ncall) then
+      ncall = .false.
       stretch = 2.0
       do kzs = 1,mzs
          thik = 1.0
@@ -593,68 +658,64 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy, soil_text,sfcwater_mass   
             thick(kzs+1-k,kzs) = thik
             thicknet(kzs) = thicknet(kzs) + 2. * thik
             thik = thik * stretch
-         enddo
+         end do
          if ((kzs+1)/2 /= kzs/2) thicknet(kzs) = thicknet(kzs) - thik/stretch
          do k = 1,kzs
             thick(k,kzs) = thick(k,kzs) / thicknet(kzs)
-         enddo
-      enddo
-   endif
+         end do
+      end do
+   end if
 
    nveg = nint(leaf_class)
    ksn = nint(sfcwater_nlev)
 
-   ! Evaluate any exchanges of heat and moisture to or from vegetation, apply
-   ! moisture and heat changes to vegetation, and evaluate the resistance
-   ! parameter rd between canopy air and the top soil or snow surface.
+   !---------------------------------------------------------------------------------------!
+   !      Evaluate any exchanges of heat and moisture to or from vegetation, apply moist-  !
+   ! ure and heat changes to vegetation, and evaluate the resistance parameter rd between  !
+   ! canopy air and the top soil or snow surface.                                          !
+   !---------------------------------------------------------------------------------------!
+   call canopy(mzg,mzs,ksn,nveg,soil_energy,soil_water,soil_text,sfcwater_mass,ustar,tstar &
+              ,rstar,cstar,soil_rough,veg_rough,veg_height,veg_lai,veg_tai,veg_water       &
+              ,veg_hcap,veg_energy,leaf_class,veg_fracarea,stom_resist,can_prss,can_theta  &
+              ,can_rvap,can_co2,sensible,evap,transp,gpp,plresp,resphet,ground_rsat        &
+              ,ground_rvap,rshort,i,j,ip)
 
-   call canopy(mzg,mzs,ksn,nveg  &
-      ,soil_energy,soil_water,soil_text,sfcwater_mass  &
-      ,ustar,tstar,rstar,cstar,soil_rough,veg_rough,veg_height  &
-      ,veg_lai,veg_tai,veg_water,veg_temp,leaf_class,veg_fracarea  &
-      ,stom_resist,can_temp,can_rvap,can_co2,ground_rsat,ground_rvap,rshort  &
-      ,i,j,ip)
-
-   ! Compute soil and effective snow heat resistance times layer depth (rfactor).
-
+   !----- Compute soil and effective snow heat resistance times layer depth (rfactor). ----!
    do k = 1,mzg
-      nsoil = nint(soil_text(k))
+      nsoil     = nint(soil_text(k))
       waterfrac = soil_water(k) / slmsts(nsoil)
-      soilcond = soilcond0(nsoil)  &
-         + waterfrac * (soilcond1(nsoil) + waterfrac * soilcond2(nsoil))
+      soilcond  = soilcond0(nsoil)                                                         &
+                + waterfrac * (soilcond1(nsoil) + waterfrac * soilcond2(nsoil))
       rfactor(k) = dslz(k) / soilcond
-   enddo
+   end do
 
    do k = 1,ksn
       snden = sfcwater_mass(k) / sfcwater_depth(k)
-      rfactor(k+mzg) = sfcwater_depth(k)  &
-         / (1.093e-3 * exp(.028 * tempk(k+mzg)) * (.030 + snden  &
-         * (.303e-3 + snden * (-.177e-6 + snden * 2.25e-9))))
-   enddo
+      rfactor(k+mzg) = sfcwater_depth(k) / (1.093e-3 * exp(.028 * tempk(k+mzg))            &
+                    * (.030 + snden * (.303e-3 + snden * (-.177e-6 + snden * 2.25e-9))))
+   end do
 
-   ! Find soil and snow internal sensible heat fluxes [W/m2]
-
+   !----- Find soil and snow internal sensible heat fluxes [W/m2]. ------------------------!
    hfluxgsc(1) = 0.
-
    do k = 2,mzg+ksn
       hfluxgsc(k) = - (tempk(k) - tempk(k-1)) / ((rfactor(k) + rfactor(k-1)) * .5)
-   enddo
+   end do
 
-   ! Heat flux at soil or snow top from longwave, sensible, and
-   ! upward latent heat fluxes [W/m^2]
+   !---------------------------------------------------------------------------------------!
+   !     Heat flux at soil or snow top from longwave, sensible, and upward latent heat     !
+   ! fluxes [W/m^2].                                                                       !
+   !---------------------------------------------------------------------------------------!
+   hfluxgsc(ksn+1+mzg) = hflxgc + qwflxgc - rlonga_gs - rlongv_gs + rlonggs_v + rlonggs_a
 
-   hfluxgsc(ksn+1+mzg) = hflxgc + wflxgc * alvl - rlonga_gs  &
-      - rlongv_gs + rlonggs_v + rlonggs_a
-
-   ! Update soil Q values [J/m3] and snow Q values [J/kg] from sensible heat,
-   ! upward water vapor (latent heat), longwave, and shortwave fluxes.
-   ! This excludes effects of dew/frost formation, precipitation, shedding,
-   ! and percolation.  Update top soil or snow moisture from evaporation only.
-
+   !---------------------------------------------------------------------------------------!
+   !      Update soil internal energy values [J/m3] and snow/surface water internal energy !
+   ! values [J/m2] from sensible heat, upward water vapor (latent heat), longwave, and     !
+   ! shortwave fluxes.  This excludes effects of dew/frost formation, precipitation, shed- !
+   ! ding, and percolation.  Update top soil or snow moisture from evaporation only.       !
+   !---------------------------------------------------------------------------------------!
    do k = 1,mzg
       soil_energy(k) = soil_energy(k) + dslzidt(k) * (hfluxgsc(k) - hfluxgsc(k+1))
-   enddo
-
+   end do
    soil_energy(mzg)  = soil_energy(mzg) + dslzidt(mzg) * rshort_g
 
    do k = 1,ksn
@@ -668,17 +729,18 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy, soil_text,sfcwater_mass   
       sfcwater_mass(ksn) = max(0.,sfcwater_mass(ksn) - wflxgc * dtll)
    endif
 
-   ! New moisture, qw, and depth from dew/frost formation, precipitation,
-   ! shedding, and percolation.  ksnnew is the layer that receives the new
-   ! condensate that comes directly from the air above.  If there is no
-   ! pre-existing snowcover, this is a temporary "snow" layer.
-
-   if (pcpgl + wshed + dewgnd > min_sfcwater_mass) then
+   !---------------------------------------------------------------------------------------!
+   !      New moisture, qw, and depth from dew/frost formation, precipitation, shedding,   !
+   ! and percolation.  ksnnew is the layer that receives the new condensate that comes     !
+   ! directly from the air above.  If there is no pre-existing snowcover, this is a        !
+   ! temporary snow/surface water layer.                                                   !
+   !---------------------------------------------------------------------------------------!
+   if (pcpgl + wshed_tot + dewgnd_tot > min_sfcwater_mass) then
       ksnnew = max(ksn,1)
       vegfracc = 1. - veg_fracarea
-      qwfree    = qpcpgl * vegfracc + (dewgnd * alvl + qwshed )* veg_fracarea
-      wfree     =  pcpgl * vegfracc + (dewgnd + wshed) * veg_fracarea
-      depthgain = dpcpgl * vegfracc + (dewgnd + wshed) * veg_fracarea * wdnsi
+      qwfree    = qpcpgl * vegfracc + (qdewgnd_tot + qwshed_tot ) * veg_fracarea
+      wfree     =  pcpgl * vegfracc + (dewgnd_tot  + wshed_tot  ) * veg_fracarea
+      depthgain = dpcpgl * vegfracc + (dewgnd_tot  + wshed_tot  ) * veg_fracarea * wdnsi
    else
       ksnnew    = ksn
       qwfree    = 0.
@@ -883,7 +945,7 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy, soil_text,sfcwater_mass   
       end if
    end do
 
-   wloss = min(transp * dslzidt(ktrans) * wdnsi, wg, soil_water(ktrans) - soilcp(nsl))
+   wloss = min(transp_tot * dslzidt(ktrans) * wdnsi, wg, soil_water(ktrans) - soilcp(nsl))
    soil_water(ktrans)  = soil_water(ktrans)  - wloss
    soil_energy(ktrans) = soil_energy(ktrans)                                               &
                        - wloss * cliqvlme * (tempk(ktrans) - tsupercool)
@@ -898,7 +960,7 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy, soil_text,sfcwater_mass   
       sfcw_energy_int = 0.
    end if
    call grndvap(soil_energy(mzg),soil_water(mzg),soil_text(mzg),sfcw_energy_int            &
-               ,sfcwater_nlev,ground_rsat,ground_rvap,can_temp,can_rvap,prss)
+               ,sfcwater_nlev,ground_rsat,ground_rvap,can_rvap,can_prss)
 
    return
 end subroutine leaftw
@@ -912,1184 +974,329 @@ end subroutine leaftw
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine canopy(mzg,mzs,ksn,nveg  &
-   ,soil_energy,soil_water,soil_text,sfcwater_mass  &
-   ,ustar,tstar,rstar,cstar,soil_rough,veg_rough,veg_height &
-   ,veg_lai,veg_tai,veg_water,veg_temp,leaf_class,veg_fracarea  &
-   ,stom_resist,can_temp,can_rvap,can_co2,ground_rsat,ground_rvap,rshort  &
-   ,i,j,ip)
-
+!     This subroutine computes the variables that depend on heat, water, and (eventually)  !
+! carbon exchanges with the canopy air space and vegetation.                               !
+!------------------------------------------------------------------------------------------!
+subroutine canopy(mzg,mzs,ksn,nveg,soil_energy,soil_water,soil_text,sfcwater_mass,ustar    &
+                 ,tstar,rstar,cstar,soil_rough,veg_rough,veg_height,veg_lai,veg_tai        &
+                 ,veg_water,veg_hcap,veg_energy,leaf_class,veg_fracarea,stom_resist        &
+                 ,can_prss,can_theta,can_rvap,can_co2,sensible,evap,transp,gpp,plresp      &
+                 ,resphet,ground_rsat,ground_rvap,rshort,i,j,ip)
    use leaf_coms
    use rconstants
-
-   use therm_lib, only: eslif,rslif,qwtk
-
-   !CATT
-   use catt_start, only: CATT
-
+   use therm_lib , only : eslif       & ! function
+                        , rslif       & ! function
+                        , hpqz2temp   & ! function
+                        , idealdenssh & ! function
+                        , qwtk        ! ! subroutine
+   use catt_start, only : CATT
    implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer             , intent(in)    :: mzg,mzs,ksn
+   integer             , intent(inout) :: nveg
+   real, dimension(mzg), intent(in)    :: soil_energy,soil_water,soil_text
+   real, dimension(mzs), intent(in)    :: sfcwater_mass
+   real                , intent(in)    :: ustar,tstar,rstar,cstar
+   real                , intent(in)    :: soil_rough,veg_rough,veg_height,veg_lai,veg_tai
+   real                , intent(in)    :: leaf_class,veg_fracarea
+   real                , intent(in)    :: ground_rsat,ground_rvap,rshort
+   real                , intent(inout) :: veg_water,veg_hcap,veg_energy
+   real                , intent(inout) :: stom_resist,can_prss,can_theta,can_rvap,can_co2
+   real                , intent(inout) :: sensible,evap,transp,gpp,plresp,resphet
+   !----- Local arguments. ----------------------------------------------------------------!
+   integer                             :: k,kk,nsoil,iter_can
+   integer                             :: i,j,ip
+   real                                :: aux,c2,c3,c4,dsm
+   real                                :: es,fac,factv
+   real                                :: fthi,ftlo,frad,fswp,fvpd,qwtot
+   real                                :: rasgnd,rasveg,rleaf,rsatveg
+   real                                :: sigmaw ,slai,stai,slpotv,swp
+   real                                :: vpd,wtemp,wtroot,x,zognd,zoveg,zdisp,zveg
+   real                                :: wflx,dewgndflx,qdewgndflx
+   real                                :: transp_test,rc,rc_inf
+   real                                :: wshed_loc,qwshed_loc
 
-   integer :: mzg,mzs,ksn,nveg
 
-   real, dimension(mzg) :: soil_energy,soil_water,soil_text
-   real, dimension(mzs) :: sfcwater_mass
-   real :: ustar,tstar,rstar,cstar,soil_rough,veg_rough,veg_height       &
-          ,veg_lai,veg_tai,veg_water,veg_temp,leaf_class,veg_fracarea    &
-          ,stom_resist,can_temp,can_rvap,can_co2,ground_rsat,ground_rvap &
-          ,rshort
-
-   integer :: k,kk,nsoil,iter_can
-
-   integer :: i,j,ip
-
-   real :: aux,brad,bswp,bthi,btlo,bvpd,c2,c3,c4,dsm,es,fac,factv         &
-      ,fracliqv,fthi,ftlo,frad,fswp,fvpd,qwtot,rasgnd,rasveg,rleaf,rsatveg     &
-      ,sigmaw ,slai,stai,slpotv,srad,sswp,sthi,stlo,svpd,swp,tveg,tvegk         &
-      ,vpd,wtemp,wtroot,x,zognd,zoveg,zdisp,zveg,wflx,dewgndflx,ustar0         &
-      ,transp_test,rc,rc_inf
-   ! From RAMS 6.0
-   real :: wshed0, transp0
-
-   !     Note: c1=261.5*sqrt((1.-exp(-2.*exar))/(2.*exar))
-   !     from Lee's dissertation, Eq. 3.36.  The factor of 261.5 is
-   !     100 * ln((h-d)/zo) / vonk   where d = .63 * h and zo = .13 * h.
-   !     The factor of 100 is 1/L in Eq. 3.37.  Thus, c1 * ustar is the
-   !     total expression inside the radical in Eq. 3.37.
-   !bob      parameter(exar=3.5,covr=2.16,c1=98.8)
-   real, parameter :: exar=2.5,covr=2.16,c1=116.6
-
-   data   brad,  srad/    196.,   0.047/,  &
-          btlo,  stlo/   281.5,    0.26/,  &
-          bthi,  sthi/   310.1,  -0.124/,  &
-          bvpd,  svpd/  4850.0, -0.0051/,  &
-          bswp,  sswp/ -1.07e6, 7.42e-6/
-   !     save
-
-   ! Compute ground-canopy resistance rd.  Assume zognd not affected by snow.
-   ! Assume (zoveg,zdisp) decrease linearly with snow depth, attaining
-   ! the values (zognd,0) when veg covered.
+   !---------------------------------------------------------------------------------------!
+   !     Compute ground-canopy resistance rd.  Assume zognd not affected by snow.  Assume  !
+   ! (zoveg,zdisp) decrease linearly with snow depth, attaining the values (zognd,0) when  !
+   ! vegetation is fully buried in snow.                                                   !
+   !---------------------------------------------------------------------------------------!
 
    zognd = soil_rough
    zoveg = veg_rough * (1.-snowfac) + zognd * snowfac
    zdisp = veg_height * (1.-snowfac)
    zveg = zdisp / 0.63
-   !bob      rasgnd = log(zts / zognd) * log((zdisp + zoveg) / zognd)
-   !bob     +      / (vonk * vonk * vels)
 
-   ! The following value of ground-canopy resistance for the
-   ! nonvegetated (bare soil or water) surface is from John Garratt.
-   ! It is 5/ustar and replaces the one from old leaf.
-
+   !---------------------------------------------------------------------------------------!
+   ! The following value of ground-canopy resistance for the nonvegetated (bare soil or    !
+   ! water) surface is from John Garratt.  It is 5/ustar and replaces the one from old     !
+   ! LEAF.                                                                                 !
+   !---------------------------------------------------------------------------------------!
    rasgnd = 5. / ustar
 
    if (veg_tai >= .1 .and. snowfac < .9) then
 
-   ! If vegetation is sufficiently abundant and not covered by snow, compute
-   ! heat and moisture fluxes from vegetation to canopy, and flux resistance
-   ! from soil or snow to canopy.
-
-      factv = log(zts / zoveg) / (vonk * vonk * vels)
-      aux = exp(exar * (1. - (zdisp + zoveg) / zveg))
-      rasveg = factv * zveg / (exar * (zveg - zdisp)) * (exp(exar) - aux)
-      c2 = max(0.,min(1., 1.1 * veg_tai / covr))
-      rd = rasgnd * (1. - c2) + rasveg * c2
-      ! From RAMS 6.0
-      wshed = 0.
-      qwshed = 0.
-      transp = 0.
-
+      !------------------------------------------------------------------------------------!
+      !    If vegetation is sufficiently abundant and not covered by snow, compute  heat   !
+      ! and moisture fluxes from vegetation to canopy, and flux resistance from soil or    !
+      ! snow to canopy.                                                                    !
+      !------------------------------------------------------------------------------------!
+      factv       = log(geoht / zoveg) / (vonk * vonk * vels)
+      aux         = exp(exar * (1. - (zdisp + zoveg) / zveg))
+      rasveg      = factv * zveg / (exar * (zveg - zdisp)) * (exp(exar) - aux)
+      c2          = max(0.,min(1., 1.1 * veg_tai / covr))
+      rd          = rasgnd * (1. - c2) + rasveg * c2
+      wshed_tot   = 0.
+      qwshed_tot  = 0.
+      transp_tot  = 0.
    else
+      !------------------------------------------------------------------------------------!
+      !     If the TAI is very small or if snow mostly covers the vegetation, bypass       !
+      ! vegetation computations.  Set heat and moisture flux resistance rd between the     !
+      ! "canopy" and snow or soil surface to its bare soil value.  Set shed precipitation  !
+      ! heat and moisture to unintercepted values.                                         !
+      !------------------------------------------------------------------------------------!
+      wshed_tot  = pcpgl
+      qwshed_tot = qpcpgl
+      transp_tot = 0.
+      rd         = rasgnd
+   end if
 
-   ! If the TAI is very small or if snow mostly covers the vegetation, bypass
-   ! vegetation computations.  Set heat and moisture flux resistance rd between
-   ! the "canopy" and snow or soil surface to its bare soil value.  Set shed
-   ! precipitation heat and moisture to unintercepted values.
+   !---------------------------------------------------------------------------------------!
+   !     Compute sensible heat and moisture fluxes between top soil or snow surface and    !
+   ! canopy air.  wflxgc [kg/m2/s] is the upward vapor flux from soil or snow evaporation  !
+   ! and dewgnd is the mass of dew that forms on the snow/soil surface this timestep; both !
+   ! are defined as always positive or zero.                                               !
+   !---------------------------------------------------------------------------------------!
+   rdi = can_rhos / rd
 
-      wshed = pcpgl
-      qwshed = qpcpgl
-      transp = 0.
-      rd = rasgnd
+   hflxgc     = cp * rdi * (tempk(mzg+ksn) - can_temp)
+   wflx       =      rdi * (ground_rsat    - can_rvap)
+   dewgndflx  = max(0.,-wflx)
+   dewgnd_tot = dewgndflx * dtll
 
-   endif
-
-   ! Compute sensible heat and moisture fluxes between top soil or snow surface
-   ! and canopy air.  wflxgc [kg/m2/s] is the upward vapor flux from soil or snow
-   ! evaporation and dewgnd is the mass of dew that forms on the snow/soil
-   ! surface this timestep; both are defined as always positive or zero.
-
-   hflxgc = cp * dens * (tempk(mzg+ksn) - can_temp) / rd
-   wflx = dens * (ground_rsat - can_rvap) / rd
-   dewgndflx = max(0.,-wflx)
-   dewgnd = dewgndflx * dtll
    if (ksn == 0) then
-      wflxgc = max(0.,dens * (ground_rvap - can_rvap) / rd)
+      wflxgc = max(0.,rdi * (ground_rvap - can_rvap))
    else
       wflxgc = max(0.,min(wflx,sfcwater_mass(ksn)/dtll))
-   endif
+   end if
 
+   qdewgnd_tot = (alvi - alli * ground_fliq) * dewgnd_tot
+   qdewgndflx  = (alvi - alli * ground_fliq) * dewgndflx
+   qwflxgc     = (alvi - alli * ground_fliq) * wflxgc
+
+   !---------------------------------------------------------------------------------------!
+   !     If vegetation is sufficiently abundant and not covered by snow, compute heat and  !
+   ! moisture fluxes from vegetation to canopy, and flux resistance from soil or snow to   !
+   ! canopy.                                                                               !
+   !---------------------------------------------------------------------------------------!
    if (veg_tai >= .1 .and. snowfac < .9) then
 
-   ! If vegetation is sufficiently abundant and not covered by snow, compute
-   ! heat and moisture fluxes from vegetation to canopy, and flux resistance
-   ! from soil or snow to canopy.
 
-   ! Compute veg-canopy resistance rb.  Note that rb and rc are both defined
-   ! WITHOUT the LAI factor; the LAI factor is included later in computing
-   ! fluxes that involve rb and/or rc.
+      !------------------------------------------------------------------------------------!
+      !     Compute veg-canopy resistance rb.  Note that rb and rc are both defined        !
+      ! WITHOUT the LAI factor; the LAI factor is included later in computing  fluxes that !
+      ! involve rb and/or rc.                                                              !
+      !------------------------------------------------------------------------------------!
+      c4 = .01 * sqrt(ustar * c1)
+      rb  = (1. + .5 * veg_tai) / (.01 * sqrt(ustar * c1))
 
-      ustar0 = max(.1,ustar)
-      c4 = .01 * sqrt(ustar0 * c1)
-
-      rb  = (1. + .5 * veg_tai) / (.01 * sqrt(ustar0 * c1))
-
-   ! Soil water potential factor for stomatal control
-
+      !----- Soil water potential factor for stomatal control. ----------------------------!
       swp = -200.0
       nveg = nint(leaf_class)
 
       do k = kroot(nveg),mzg
-         nsoil = nint(soil_text(k))
+         nsoil  = nint(soil_text(k))
          slpotv = slpots(nsoil) * (slmsts(nsoil) / soil_water(k)) ** slbs(nsoil)
-   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-   !  Bypass this computation, and replace with wtroot = 1 for root zone
-   !      wtroot = float(int(root(k) + .95))
-   !      wtroot = 1.
-   !      swp = swp + wtroot * (max(swp,slpotv) - swp)
-   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
          if (slpotv > swp) swp = slpotv
-      enddo
-      swp = swp * g * wdns
+      end do
+      swp = swp * grav * wdns
 
-   ! Begin canopy time-split iterations
-
+      !------------------------------------------------------------------------------------!
+      !      Begin canopy time-split iterations.                                           !
+      !------------------------------------------------------------------------------------!
       do iter_can = 1,niter_can
 
-   ! Calculate the saturation vapor pressure at TVEG
-
-         tveg = veg_temp
-         es = eslif(tveg)
-         rsatveg = rslif(prss,tveg)
+         !----- Calculate the saturation vapor pressure at TVEG. --------------------------!
+         es      = eslif(veg_temp)
+         rsatveg = rslif(can_prss,veg_temp)
          
-   ! Compute mixing ratio at leaf surface using previous rc
-
-         rc = stom_resist
+         !----- Compute mixing ratio at leaf surface using previous rc --------------------!
+         rc    = stom_resist
          rleaf = (rb * rsatveg + rc * can_rvap) / (rb + rc)
-         vpd = max((es - rleaf * prss / (ep + rleaf)),0.)
+         vpd   = max((es - rleaf * can_prss / (ep + rleaf)),0.)
 
-   ! Evaluate 5 environmental factors and new rc
+         !----- Evaluate 5 environmental factors and new rc -------------------------------!
+         ftlo = 1. + exp(-stlo * (veg_temp - btlo))
+         fthi = 1. + exp(-sthi * (veg_temp - bthi))
+         frad = 1. + exp(-srad * (rshort   - brad))
+         fswp = 1. + exp(-sswp * (swp      - bswp))
+         fvpd = 1. + exp(-svpd * (vpd      - bvpd))
 
-         ftlo = 1. + exp(-stlo * (tveg - btlo))
-         fthi = 1. + exp(-sthi * (tveg - bthi))
-         frad = 1. + exp(-srad * (rshort - brad))
-         fswp = 1. + exp(-sswp * (swp - bswp))
-         fvpd = 1. + exp(-svpd * (vpd - bvpd))
-
-   ! 15-minute response time for stomatal conductance (must have dtlc <= 900.)
-
+         !----- 15-minute response time for stomatal conductance (must have dtlc <= 900.). !
          rc_inf = ftlo * fthi * frad * fvpd * fswp * rcmin(nveg)
-         rc = 1. / (1. / rc + .0011 * dtlc * (1. / rc_inf - 1. / rc))
+         rc     = 1. / (1. / rc + .0011 * dtlc * (1. / rc_inf - 1. / rc))
 
-   ! Limit maximum transpiration to be <= 400 w m-2 by increasing rc if necessary.
-
-         transp_test = alvl * dens * veg_lai * (rsatveg - can_rvap) / (rb + rc)
+         !---------------------------------------------------------------------------------!
+         !    Limit maximum transpiration to be <= 400 w m-2 by increasing rc if           !
+         ! necessary.                                                                      !
+         !---------------------------------------------------------------------------------!
+         transp_test = alvl * can_rhos * veg_lai * (rsatveg - can_rvap) / (rb + rc)
          if (transp_test > 400.) then
             rc = (rb + rc) * transp_test * .0025 - rb
          endif
-
          stom_resist = rc
 
-   ! Flux of heat and moisture from vegetation to canopy
-
+         !----- Flux of heat and moisture from vegetation to canopy. ----------------------!
          stai = veg_tai * (1. - snowfac)
          slai = veg_lai * (1. - snowfac)
 
-         hflxvc = 2. * stai * cp * dens * (tveg - can_temp) / rb
-         c3 = dens * (rsatveg - can_rvap)
+         !----- Sensible heat flux from leaf to canopy. -----------------------------------!
+         hflxvc = 2. * stai * cp * can_rhos * (veg_temp - can_temp) / rb
+
+         c3     = can_rhos * (rsatveg - can_rvap)
+
          if (c3 >= 0.) then
-            sigmaw = min(1.,(veg_water / (.2 * stai)) ** .66667)
-            wflxvc = min(c3 * 2. * stai * sigmaw / rb,veg_water/dtlc)
-            ! From RAMS 6.0
-            !transp = max(0.,c3 * slai * (1.-sigmaw) / (rb + rc))
-            transp0 = max(0.,c3 * slai * (1.-sigmaw) / (rb + rc))
+            !----- Flow will go towards the canopy, allow evaporation and transpiration. --!
+            sigmaw     = min(1.,(veg_water / (.2 * stai)) ** .66667)
+            wflxvc     = min(c3 * 2. * stai * sigmaw / rb,veg_water/dtlc)
+            transp_loc = max(0.,c3 * slai * (1.-sigmaw) / (rb + rc))
          else
-            wflxvc = c3 * 2. * stai / rb
-            ! From RAMS 6.0
-            !transp = 0.
-            transp0 = 0.
-         endif
+            !----- Flow is towards the leaf, dew/frost formation and no transpiration. ----!
+            wflxvc     = c3 * 2. * stai / rb
+            transp_loc = 0.
+         end if
+         transp_tot = transp_tot + transp_loc
 
-   ! Update vegetation moisture from precipitation, vapor flux with canopy,
-   ! and shedding of excess moisture.
+         !---------------------------------------------------------------------------------!
+         !     Update vegetation moisture from precipitation, vapor flux with canopy,      !
+         ! and shedding of excess moisture.                                                !
+         !---------------------------------------------------------------------------------!
+         wtemp     = veg_water - wflxvc * dtlc + pcpgc * vf
+         !----- If this result will lead to negative solution, then reduce evaporation. ---!
+         if (wtemp < 0.) then
+            wtemp     = 0.
+            wshed_loc = 0.
+            wflxvc    = (veg_water + pcpgc * vf) / dtlc
+         else
+            wshed_loc = max(0.,wtemp - 0.2 * stai)
+            wshed_tot = wshed_tot + wshed_loc
+            veg_water = wtemp - wshed_loc
+         end if
+         !---------------------------------------------------------------------------------!
 
-         wtemp = veg_water - wflxvc * dtlc + pcpgc * vf
-         ! From RAMS 6.0
-         !wshed = max(0.,wtemp - 0.2 * stai)
-         !veg_water = max(0.,wtemp - wshed)
-         wshed0 = max(0.,wtemp - 0.2 * stai)
-         wshed = wshed + wshed0
-         transp = transp + transp0
-         veg_water = max(0.,wtemp - wshed0)
+         !------ Find the associated latent heat flux from vegetation to canopy. ----------!
+         qwflxvc     = wflxvc     * (alvi - alli * veg_fliq)
+         qtransp_loc = transp_loc *  alvl !----- Liquid phase only in transpiration. ------!
+         !---------------------------------------------------------------------------------!
 
-   ! Update vegetation temperature from radiative fluxes and sensible and
-   ! latent heat transfer with canopy air.  Heat capacity of the vegetation
-   ! is defined as hcapveg; it requires further testing and needs to be
-   ! increased for dense vegetation.  A value of hcapveg of 3.e4 corresponds
-   ! to the heat capacity of a layer of water 7.5 mm thick.
 
-         ! From RAMS 6.0
-         tvegk = veg_temp  + dtlcohcv  &
-            * (rshort_v + rlonga_v + rlonggs_v - rlongv_gs  &
-            -  rlongv_a - hflxvc - (wflxvc + transp0) * alvl)
+         !----- Exchange heat between vegetation and precipitation in implicit scheme -----!
+         qwshed_loc = wshed_loc * (     veg_fliq  * cliq * (veg_temp - tsupercool)         &
+                                  + (1.-veg_fliq) * cice *  veg_temp )
+         qwshed_tot = qwshed_tot + qwshed_loc
 
-   ! Exchange heat between vegetation and precipitation in implicit scheme
+         !---------------------------------------------------------------------------------!
+         !      Update vegetation internal energy from radiative fluxes and sensible and   !
+         ! latent heat transfer with canopy air.                                           !
+         !---------------------------------------------------------------------------------!
+         veg_energy = veg_energy                                                           &
+                    + dtlc * ( rshort_v + rlonga_v + rlonggs_v - rlongv_gs - rlongv_a      &
+                             - hflxvc   - qwflxvc   - qtransp_loc)                         &
+                    + qpcpgc * vf - qwshed_loc
 
-         qwtot = qpcpgc * vf + hcapveg * tvegk
-         call qwtk(qwtot,pcpgc * vf,hcapveg,tvegk,fracliqv)
-         veg_temp = tvegk
-         ! From RAMS 6.0
-         qwshed = qwshed + wshed0 * ( fracliqv * cliq * (tvegk - tsupercool) &
-                                    + (1.-fracliqv) * cice * tvegk )
+         !---------------------------------------------------------------------------------!
+         !     Find the atmosphere -> canopy fluxes.                                       !
+         !---------------------------------------------------------------------------------!
+         rho_ustar  = can_rhos  * ustar
+         eflxac     = rho_ustar * estar          ! Enthalpy exchange
+         wflxac     = rho_ustar * rstar          ! Water vapour exchange
+         cflxac     = rho_ustar * mmdryi * cstar ! CO2 exchange
+         
+         dtlcowcc = dtlc / (can_depth * can_rhos)
+         dtlcoccc = dtlcowcc * mmdry
 
-   ! Update temperature and moisture of canopy.  hcapcan [J/m2/K] and
-   ! wcapcan [kg_air/m2] are
-   ! the heat and moisture capacities of the canopy, while c2 and c3 are deltat
-   ! times their inverses, respectively.  They require further testing.
+         !---------------------------------------------------------------------------------!
+         !      Update enthalpy, CO2, and canopy mixing ratio.                             !
+         !---------------------------------------------------------------------------------!
+         can_enthalpy = can_enthalpy                                                       &
+                      + dtlcowcc * ( hflxgc + hflxvc + eflxac                              &
+                                   + qwflxgc - qdewgndflx + qwflxvc + qtransp_loc)
 
-         can_temp = can_temp + dtlcohcc * (hflxgc + hflxvc  &
-                  + dens * cp * ustar * tstar * pis)
-
-         ! From RAMS 6.0
-         !can_rvap = can_rvap + dtlcowcc * (wflxgc - dewgndflx + wflxvc  &
-         !         + transp + dens * ustar * rstar)
-         can_rvap = can_rvap + dtlcowcc * (wflxgc - dewgndflx + wflxvc  &
-              + transp0 + dens * ustar * rstar)
-         ! CO2 exchange with biosphere is currently not computed in LEAF-3
-         ! Feel free to include here, cflxgc would be the root respiration, and
-         ! cflxvc R-GPP.
+         can_rvap     = can_rvap                                                           &
+                      + dtlcowcc * (wflxgc - dewgndflx + wflxvc + transp_loc + wflxac)
+         !---------------------------------------------------------------------------------!
+         !      CO2 exchange with biosphere is currently not computed in LEAF-3... Feel    !
+         ! free to include here: cflxgc would be the root respiration, and cflxvc R-GPP.   !
+         !---------------------------------------------------------------------------------!
          cflxgc   = 0.
          cflxvc   = 0.
-         can_co2  = can_co2  + dtlcoccc * (cflxgc + cflxvc + dens * ustar * cstar)
+         cflxcv   = 0.
+         can_co2  = can_co2  + dtlcowcc * mmdry * (cflxgc + cflxvc + cflxcv + cflxac)
 
-      enddo
+         !----- Update the fluxes. --------------------------------------------------------!
+         sensible = sensible + (hflxvc  + hflxgc ) * dtlc_factor
+         evap     = evap     + (qwflxvc + qwflxgc) * dtlc_factor
+         transp   = transp   + (qtransp_loc      ) * dtlc_factor
+         ! gpp      = gpp     + cflxcv * dtlc_factor
+         ! plresp   = plresp  + cflxvc * dtlc_factor
+         ! resphet  = resphet + cflxgc * dtlc_factor
+
+         !----- Find the vegetation diagnostic variables for next time step. --------------!
+         call qwtk(veg_energy,veg_water,veg_hcap,veg_temp,veg_fliq)
+
+         !----- Find the canopy air diagnostic variables for next time step. --------------!
+         can_shv   = can_rvap / (can_rvap + 1.)
+         can_temp  = hpqz2temp(can_enthalpy,can_prss,can_shv,can_depth)
+         can_rhos  = idealdenssh(can_prss,can_temp,can_shv)
+         can_theta = can_temp * (p00 / can_prss) ** rocp
+
+      end do
 
    else
+      !------------------------------------------------------------------------------------!
+      !    No vegetation, or vegetation buried in snow... Update the canopy properties and !
+      ! move to the next time step without nesting.                                        !
+      !------------------------------------------------------------------------------------!
 
-      can_temp = can_temp + dtllohcc * (hflxgc + dens * cp * ustar * tstar * pis)
-      can_rvap = can_rvap + dtllowcc * (wflxgc - dewgndflx + dens * ustar * rstar)
-      can_co2  = can_co2  + dtlcoccc * (dens * ustar * cstar)
+      !------------------------------------------------------------------------------------!
+      !     Find the atmosphere -> canopy fluxes.                                          !
+      !------------------------------------------------------------------------------------!
+      rho_ustar  = can_rhos  * ustar
+      eflxac     = rho_ustar * estar          ! Enthalpy exchange
+      wflxac     = rho_ustar * rstar          ! Water vapour exchange
+      cflxac     = rho_ustar * mmdryi * cstar ! CO2 exchange
+      !------------------------------------------------------------------------------------!
 
-   endif
+      dtllowcc = dtll / (can_depth * can_rhos)
+      dtlloccc = dtllowcc * mmdry
+
+      !----- Update the canopy prognostic variables. --------------------------------------!
+      can_enthalpy = can_enthalpy + dtllowcc * (hflxgc + qwflxgc - qdewgndflx + eflxac)
+      can_rvap     = can_rvap     + dtllowcc * (wflxgc - dewgndflx + wflxac)
+      !------------------------------------------------------------------------------------!
+      !      CO2 exchange with biosphere is currently not computed in LEAF-3... Feel       !
+      ! free to include here: cflxgc would be the root respiration, and cflxvc R-GPP.      !
+      !------------------------------------------------------------------------------------!
+      cflxgc       = 0.
+      can_co2      = can_co2      + dtlcoccc * (cflxgc + cflxac)
+      !------------------------------------------------------------------------------------!
+
+      !----- Update the fluxes. -----------------------------------------------------------!
+      sensible = sensible + hflxgc  * dtll_factor
+      evap     = evap     + qwflxgc * dtll_factor
+      ! resphet  = resphet  + cflxgc  * dtll_factor
+
+      !----- Find the canopy air diagnostic variables for next time step. -----------------!
+      can_shv   = can_rvap / (can_rvap + 1.)
+      can_temp  = hpqz2temp(can_enthalpy,can_prss,can_shv,can_depth)
+      can_rhos  = idealdenssh(can_prss,can_temp,can_shv)
+      can_theta = can_temp * (p00 / can_prss) ** rocp
+      !------------------------------------------------------------------------------------!
+   end if
 
    return
 end subroutine canopy
-
-!*****************************************************************************
-
-!subroutine stars(t,ng,mynum,i0,j0,i,j,ip  &
-subroutine stars(ustar,tstar,rstar,cstar,ths,rvs,rco2s,thetacan,can_rvap,can_co2 &
-    ,zts,patch_rough  &
-!kml drydep
-   ,patch_area,vels,vels_pat,vonk,dtllohcc,dens,dtll                        &
-   ,R_aer)
-!kml drydep
-
-   !CATT
-   use rconstants, only: g
-   use catt_start, only: CATT
-
-   implicit none
-
-   real :: ustar,tstar,rstar,cstar,ths,rvs,rco2s,thetacan,can_rvap,can_co2,zts &
-          ,patch_rough,patch_area,vels,vels_pat,vonk,dtllohcc,dens,dtll,t
-
-   !kml drydep
-   real :: R_aer
-   !kml drydep
-
-   !integer i,j,ip,ng,mynum,i0,j0
-
-   real :: b,csm,csh,d,a2,c1,ri,fm,fh,c2,cm,ch,c3
-   !real :: tstaro,d_theta,d_thetan,theta_new
-   real :: ustaro,d_vel,d_veln,vel_new,delz
-   integer :: ifix,ifixu
-
-   real, parameter :: ubmin = .25   & ! should use ubmin=1.0 for convec case
-                     ,ustmin = .1     !            ubmin=0.1 for stable case
-
-   ! Routine to compute Louis (1981) surface layer parameterization.
-
-   vels_pat = max(vels,ubmin)
-   b = 5.
-   csm = 7.5
-   csh = 5.
-   d = 5.
-
-   ! a2 is the drag coefficient in neutral conditions, here same for h/m
-   ! ri is the bulk richardson numer, eq. 3.45 in Garratt
-
-   a2 = (vonk / log(zts / patch_rough)) ** 2
-   c1 = a2 * vels_pat
-   ri = g * zts * (ths - thetacan)  &
-      / (.5 * (ths + thetacan) * vels_pat * vels_pat)
-
-   if (ths - thetacan > 0.) then   ! STABLE CASE
-
-      fm = 1. / (1. + (2 * b * ri / sqrt(1 + d * ri)))
-      fh = 1. / (1. + (3 * b * ri * sqrt(1 + d * ri)))
-
-   else                            ! UNSTABLE CASE
-
-      c2 = b * a2 * sqrt(zts / patch_rough * (abs(ri)))
-      cm = csm * c2
-      ch = csh * c2
-      fm = (1. - 2 * b * ri / (1. + 2 * cm))
-      fh = (1. - 3 * b * ri / (1. + 3 * ch))
-
-   endif
-
-   ustar = max(ustmin,sqrt(c1 * vels_pat * fm))
-   c3 = c1 * fh / ustar
-   rstar = c3 * (rvs - can_rvap)
-   tstar = c3 * (ths - thetacan)
-   cstar = c3 * (rco2s - can_co2)
-
-   if (CATT==1) then
-      !kml drydep
-      R_aer = 1./(a2*vels_pat*fh)
-      !kml drydep
-   endif
-
-   ! Limit ustar so that the flux cannot take more than 1/2 velocity in a timestep
-
-   ifixu=0
-   ustaro=ustar
-   delz = 2.*zts
-   d_vel =  - ustar * ustar *dtll / delz
-   vel_new = vels_pat + d_vel
-   if(vel_new < .5 * vels_pat) then
-         ifixu=1
-         d_veln = .5 * vels_pat
-         ustar=sqrt(d_veln*delz/dtll)
-   endif
-
-   ! Limit tstar and rstar so that the direction of the gradients cannot change
-   !   sign due to the fluxes
-      !   can_thetan = thetacan + dtlcohcc * dens * cp * ustar * tstar * pis
-   !ifix=0
-   !tstaro=tstar
-   !delz = 2.*zts
-   !d_theta = dtllohcc * dens * cp * ustar * tstar
-   !theta_new = thetacan + d_theta
-   !if(ths - thetacan > 0.) then
-   !   if(theta_new > ths) then
-   !      ifix=1
-   !      d_thetan = ths - thetacan
-   !      tstar=d_thetan/(dtllohcc * dens * cp * ustar)
-   !   endif
-   !else
-   !   if(theta_new < ths) then
-   !      ifix=2
-   !      d_thetan = ths - thetacan
-   !      tstar=d_thetan/(dtllohcc * dens * cp * ustar)
-   !   endif
-   !endif
-   !if( (ng == 1 .and. i0+i == 53 .and. j0+j == 32) .or. ifix /= 0 .or. ifixu /= 0) then
-   !if( (ng == 1 .and. i0+i == 53 .and. j0+j == 32) ) then
-   !write(11,'(a7,f8.0,6i3,2f8.0,9f10.3)')  &
-   !    'leaf--f',t,ng,i0+i,j0+j,ip,ifixu,ifix,-1004.*1.15*ustar*tstar,-2.5e6*1.15*ustar*rstar  &
-   !   ,ustar,ustaro,d_vel,d_veln,vels_pat,vel_new,patch_area,patch_rough
-      !,ustar,tstar,tstaro,ths,thetacan,theta_new,d_theta,d_thetan,vels_pat,patch_area,patch_rough
-   !endif
-
-   !if(ng == 1 .and. i0+i == 53 .and. j0+j == 32)  &
-   !if(abs(-1004.*1.15*ustar*tstar) > 1000. .or. abs(-2.5e6*1.15*ustar*rstar) > 1000.)  &
-   !write(11,'(a7,f8.0,4i3,2f8.0,2f8.3,f10.5,f9.4,2f7.1,2f9.4,2f7.2,2f8.4,f8.3)')  &
-   !    'leaf--3',t,ng,i0+i,j0+j,ip,-1004.*1.15*ustar*tstar,-2.5e6*1.15*ustar*rstar  &
-   !   ,ustar,tstar,rstar,ri,ths,thetacan,rvs,can_rvap,vels_pat,patch_rough,c1,fh,patch_area
-
-   return
-end subroutine stars
-
-!*****************************************************************************
-
-subroutine sfclmcv(ustar,tstar,rstar,cstar,vels,vels_pat,ups,vps,gzotheta,patch_area &
-     ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c                                &
-     ! For TEB
-     ,G_URBAN)
-     !
-!  +---------------------------------------------------------------+
-!  \  This routine computes the turbulent fluxes of momentum,      \
-!  \  heat and moisture from the surface layer using the           \
-!  \  Manton-Cotton algebraic surface layer equations.             \
-!  +---------------------------------------------------------------+
-
-   use rconstants
-
-   ! TEB_SPM
-   use teb_spm_start, only: TEB_SPM !INTENT(IN)
-
-   implicit none
-
-   ! Arguments:
-   real, intent(in)    :: ustar, tstar, rstar, cstar, vels,vels_pat, ups, vps, gzotheta,&
-        patch_area
-   real, intent(inout) :: sflux_u, sflux_v, sflux_w, sflux_t, sflux_r, sflux_c
-   ! For TEB
-   real:: G_URBAN
-
-   ! Local Variables:
-   real :: zoverl
-   real :: wtol,cosine1,sine1,vtscr,cx,psin
-
-
-
-   data wtol/1e-20/
-
-   cosine1 = ups / vels_pat
-   sine1   = vps / vels_pat
-
-   vtscr = ustar * patch_area
-
-   ! For TEB
-   ! For TEB is necessary to jump the lines above
-   IF (TEB_SPM /=1) then
-      sflux_u = sflux_u - ustar * vtscr * cosine1
-      sflux_v = sflux_v - ustar * vtscr * sine1
-      sflux_t = sflux_t - tstar * vtscr
-      sflux_r = sflux_r - rstar * vtscr
-   else
-      if (NINT(G_URBAN) == 0) then
-         sflux_u = sflux_u - ustar * vtscr * cosine1
-         sflux_v = sflux_v - ustar * vtscr * sine1
-         sflux_t = sflux_t - tstar * vtscr
-         sflux_r = sflux_r - rstar * vtscr
-      end if
-   end if
-   !----- TEB currently doesn't save CO2, compute sflux_c outside the if statement.
-   sflux_c = sflux_c - cstar * vtscr
-
-
-   zoverl = gzotheta * vonk * tstar / (ustar * ustar)
-
-   if (zoverl < 0.)then
-      cx = zoverl * sqrt(sqrt(1. - 15. * zoverl))
-   else
-      cx = zoverl / (1.0 + 4.7 * zoverl)
-   endif
-
-   psin = sqrt((1.-2.86 * cx) / (1. + cx * (-5.39 + cx * 6.998 )))
-   sflux_w = sflux_w + (0.27 * max(6.25 * (1. - cx) * psin,wtol)  &
-      - 1.18 * cx * psin) * ustar * vtscr
-
-   return
-end subroutine sfclmcv
-
-!*****************************************************************************
-
-subroutine grndvap(soil_energy,soil_water,soil_text,sfcw_energy_int  &
-   ,sfcwater_nlev,ground_rsat,ground_rvap,can_temp,can_rvap,prsg)
-
-  use leaf_coms
-  use rconstants
-  use therm_lib, only: rslif,qwtk,qtk
-
-  implicit none
-
-  real :: soil_energy,soil_water,soil_text,sfcw_energy_int
-  real :: sfcwater_nlev,ground_rsat,ground_rvap,can_temp,can_rvap,prsg
-
-  integer :: ksn,nsoil
-
-  real :: tempkk,fracliqq,slpotvn,alpha,beta
-
-
-  ksn = nint(sfcwater_nlev)
-
-  ! ground_rsat(i,j) is the saturation mixing ratio of the top soil/snow surface
-  ! and is used for dew formation and snow evaporation.
-
-  if (ksn > 0 .and. sfcw_energy_int > 0.) then
-     call qtk(sfcw_energy_int,tempkk,fracliqq)
-     ground_rsat = rslif(prsg,tempkk)
-  else
-
-  ! Without snowcover, ground_rvap is the effective saturation mixing
-  ! ratio of soil and is used for soil evaporation.  First, compute the
-  ! "alpha" term or soil "relative humidity" and the "beta" term.
-
-     nsoil = nint(soil_text)
-
-     call qwtk(soil_energy,soil_water*wdns,slcpd(nsoil),tempkk,fracliqq)
-     ground_rsat = rslif(prsg,tempkk)
-
-     slpotvn = slpots(nsoil) * (slmsts(nsoil) / soil_water) ** slbs(nsoil)
-     alpha = exp(gorm * slpotvn / tempkk)
-     beta = .25 * (1. - cos (min(1.,soil_water / sfldcap(nsoil)) * pi1)) ** 2
-     ground_rvap = ground_rsat * alpha * beta + (1. - beta) * can_rvap
-
-  end if
-
-  return
-end subroutine grndvap
-
-!*****************************************************************************
-
-subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim  &
-
-   ,soil_water       ,sfcwater_mass  ,soil_energy     &
-   ,sfcwater_energy  ,soil_text      ,sfcwater_depth  &
-   ,ustar            ,tstar          ,rstar           &
-   ,veg_albedo       ,veg_fracarea   ,veg_lai         &
-   ,veg_tai                                           &
-   ,veg_rough        ,veg_height     ,patch_area      &
-   ,patch_rough      ,patch_wetind   ,leaf_class      &
-   ,soil_rough       ,sfcwater_nlev  ,stom_resist     &
-   ,ground_rsat      ,ground_rvap    ,veg_water       &
-   ,veg_temp         ,can_rvap       ,can_temp        &
-   ,veg_ndvip        ,veg_ndvic      ,veg_ndvif)
-
-   implicit none
-
-   integer :: m2,m3,mzg,mzs,npat,jdim
-
-   real, dimension(mzg,m2,m3,npat) :: soil_water,soil_energy,soil_text
-   real, dimension(mzs,m2,m3,npat) :: sfcwater_mass,sfcwater_energy            &
-                                     ,sfcwater_depth
-   real, dimension(m2,m3,npat)     :: ustar        ,tstar         ,rstar        &
-                                     ,veg_albedo   ,veg_fracarea  ,veg_lai      &
-                                     ,veg_tai                                   &
-                                     ,veg_rough    ,veg_height    ,patch_area   &
-                                     ,patch_rough  ,patch_wetind  ,leaf_class   &
-                                     ,soil_rough   ,sfcwater_nlev ,stom_resist  &
-                                     ,ground_rsat  ,ground_rvap   ,veg_water    &
-                                     ,veg_temp     ,can_rvap      ,can_temp     &
-                                     ,veg_ndvip    ,veg_ndvic     ,veg_ndvif
-
-   integer :: i,j,k,ipat
-
-   do ipat = 1,npat
-      do j = 1,m3
-
-         ustar          (1,j,ipat) = ustar            (2,j,ipat)
-         tstar          (1,j,ipat) = tstar            (2,j,ipat)
-         rstar          (1,j,ipat) = rstar            (2,j,ipat)
-         veg_fracarea   (1,j,ipat) = veg_fracarea     (2,j,ipat)
-         veg_lai        (1,j,ipat) = veg_lai          (2,j,ipat)
-         veg_tai        (1,j,ipat) = veg_tai          (2,j,ipat)
-         veg_rough      (1,j,ipat) = veg_rough        (2,j,ipat)
-         veg_height     (1,j,ipat) = veg_height       (2,j,ipat)
-         patch_area     (1,j,ipat) = patch_area       (2,j,ipat)
-         patch_rough    (1,j,ipat) = patch_rough      (2,j,ipat)
-         patch_wetind   (1,j,ipat) = patch_wetind     (2,j,ipat)
-         leaf_class     (1,j,ipat) = leaf_class       (2,j,ipat)
-         soil_rough     (1,j,ipat) = soil_rough       (2,j,ipat)
-         sfcwater_nlev  (1,j,ipat) = sfcwater_nlev    (2,j,ipat)
-         stom_resist    (1,j,ipat) = stom_resist      (2,j,ipat)
-         ground_rsat    (1,j,ipat) = ground_rsat      (2,j,ipat)
-         ground_rvap    (1,j,ipat) = ground_rvap      (2,j,ipat)
-         veg_water      (1,j,ipat) = veg_water        (2,j,ipat)
-         veg_temp       (1,j,ipat) = veg_temp         (2,j,ipat)
-         can_rvap       (1,j,ipat) = can_rvap         (2,j,ipat)
-         can_temp       (1,j,ipat) = can_temp         (2,j,ipat)
-         veg_ndvip      (1,j,ipat) = veg_ndvip        (2,j,ipat)
-         veg_ndvic      (1,j,ipat) = veg_ndvic        (2,j,ipat)
-         veg_ndvif      (1,j,ipat) = veg_ndvif        (2,j,ipat)
-
-         ustar         (m2,j,ipat) = ustar         (m2-1,j,ipat)
-         tstar         (m2,j,ipat) = tstar         (m2-1,j,ipat)
-         rstar         (m2,j,ipat) = rstar         (m2-1,j,ipat)
-         veg_albedo    (m2,j,ipat) = veg_albedo    (m2-1,j,ipat)
-         veg_fracarea  (m2,j,ipat) = veg_fracarea  (m2-1,j,ipat)
-         veg_lai       (m2,j,ipat) = veg_lai       (m2-1,j,ipat)
-         veg_tai       (m2,j,ipat) = veg_tai       (m2-1,j,ipat)
-         veg_rough     (m2,j,ipat) = veg_rough     (m2-1,j,ipat)
-         veg_height    (m2,j,ipat) = veg_height    (m2-1,j,ipat)
-         patch_area    (m2,j,ipat) = patch_area    (m2-1,j,ipat)
-         patch_rough   (m2,j,ipat) = patch_rough   (m2-1,j,ipat)
-         patch_wetind  (m2,j,ipat) = patch_wetind  (m2-1,j,ipat)
-         leaf_class    (m2,j,ipat) = leaf_class    (m2-1,j,ipat)
-         soil_rough    (m2,j,ipat) = soil_rough    (m2-1,j,ipat)
-         sfcwater_nlev (m2,j,ipat) = sfcwater_nlev (m2-1,j,ipat)
-         stom_resist   (m2,j,ipat) = stom_resist   (m2-1,j,ipat)
-         ground_rsat   (m2,j,ipat) = ground_rsat   (m2-1,j,ipat)
-         ground_rvap   (m2,j,ipat) = ground_rvap   (m2-1,j,ipat)
-         veg_water     (m2,j,ipat) = veg_water     (m2-1,j,ipat)
-         veg_temp      (m2,j,ipat) = veg_temp      (m2-1,j,ipat)
-         can_rvap      (m2,j,ipat) = can_rvap      (m2-1,j,ipat)
-         can_temp      (m2,j,ipat) = can_temp      (m2-1,j,ipat)
-         veg_ndvip     (m2,j,ipat) = veg_ndvip     (m2-1,j,ipat)
-         veg_ndvic     (m2,j,ipat) = veg_ndvic     (m2-1,j,ipat)
-         veg_ndvif     (m2,j,ipat) = veg_ndvif     (m2-1,j,ipat)
-
-         do k = 1,mzg
-            soil_water       (k,1,j,ipat) = soil_water         (k,2,j,ipat)
-            soil_energy      (k,1,j,ipat) = soil_energy        (k,2,j,ipat)
-            soil_text        (k,1,j,ipat) = soil_text          (k,2,j,ipat)
-
-            soil_water      (k,m2,j,ipat) = soil_water      (k,m2-1,j,ipat)
-            soil_energy     (k,m2,j,ipat) = soil_energy     (k,m2-1,j,ipat)
-            soil_text       (k,m2,j,ipat) = soil_text       (k,m2-1,j,ipat)
-         enddo
-
-         do k = 1,mzs
-            sfcwater_mass    (k,1,j,ipat) = sfcwater_mass      (k,2,j,ipat)
-            sfcwater_energy  (k,1,j,ipat) = sfcwater_energy    (k,2,j,ipat)
-            sfcwater_depth   (k,1,j,ipat) = sfcwater_depth     (k,2,j,ipat)
-
-            sfcwater_mass   (k,m2,j,ipat) = sfcwater_mass   (k,m2-1,j,ipat)
-            sfcwater_energy (k,m2,j,ipat) = sfcwater_energy (k,m2-1,j,ipat)
-            sfcwater_depth  (k,m2,j,ipat) = sfcwater_depth  (k,m2-1,j,ipat)
-         enddo
-
-      enddo
-
-      if (jdim == 1) then
-
-         do i = 1,m2
-            ustar          (i,1,ipat) = ustar            (i,2,ipat)
-            tstar          (i,1,ipat) = tstar            (i,2,ipat)
-            rstar          (i,1,ipat) = rstar            (i,2,ipat)
-            veg_albedo     (i,1,ipat) = veg_albedo       (i,2,ipat)
-            veg_fracarea   (i,1,ipat) = veg_fracarea     (i,2,ipat)
-            veg_lai        (i,1,ipat) = veg_lai          (i,2,ipat)
-            veg_tai        (i,1,ipat) = veg_tai          (i,2,ipat)
-            veg_rough      (i,1,ipat) = veg_rough        (i,2,ipat)
-            veg_height     (i,1,ipat) = veg_height       (i,2,ipat)
-            patch_area     (i,1,ipat) = patch_area       (i,2,ipat)
-            patch_rough    (i,1,ipat) = patch_rough      (i,2,ipat)
-            patch_wetind   (i,1,ipat) = patch_wetind     (i,2,ipat)
-            leaf_class     (i,1,ipat) = leaf_class       (i,2,ipat)
-            soil_rough     (i,1,ipat) = soil_rough       (i,2,ipat)
-            sfcwater_nlev  (i,1,ipat) = sfcwater_nlev    (i,2,ipat)
-            stom_resist    (i,1,ipat) = stom_resist      (i,2,ipat)
-            ground_rsat    (i,1,ipat) = ground_rsat      (i,2,ipat)
-            ground_rvap    (i,1,ipat) = ground_rvap      (i,2,ipat)
-            veg_water      (i,1,ipat) = veg_water        (i,2,ipat)
-            veg_temp       (i,1,ipat) = veg_temp         (i,2,ipat)
-            can_rvap       (i,1,ipat) = can_rvap         (i,2,ipat)
-            can_temp       (i,1,ipat) = can_temp         (i,2,ipat)
-            veg_ndvip      (i,1,ipat) = veg_ndvip        (i,2,ipat)
-            veg_ndvic      (i,1,ipat) = veg_ndvic        (i,2,ipat)
-            veg_ndvif      (i,1,ipat) = veg_ndvif        (i,2,ipat)
-
-            ustar         (i,m3,ipat) = ustar         (i,m3-1,ipat)
-            tstar         (i,m3,ipat) = tstar         (i,m3-1,ipat)
-            rstar         (i,m3,ipat) = rstar         (i,m3-1,ipat)
-            veg_albedo    (i,m3,ipat) = veg_albedo    (i,m3-1,ipat)
-            veg_fracarea  (i,m3,ipat) = veg_fracarea  (i,m3-1,ipat)
-            veg_lai       (i,m3,ipat) = veg_lai       (i,m3-1,ipat)
-            veg_tai       (i,m3,ipat) = veg_tai       (i,m3-1,ipat)
-            veg_rough     (i,m3,ipat) = veg_rough     (i,m3-1,ipat)
-            veg_height    (i,m3,ipat) = veg_height    (i,m3-1,ipat)
-            patch_area    (i,m3,ipat) = patch_area    (i,m3-1,ipat)
-            patch_rough   (i,m3,ipat) = patch_rough   (i,m3-1,ipat)
-            patch_wetind  (i,m3,ipat) = patch_wetind  (i,m3-1,ipat)
-            leaf_class    (i,m3,ipat) = leaf_class    (i,m3-1,ipat)
-            soil_rough    (i,m3,ipat) = soil_rough    (i,m3-1,ipat)
-            sfcwater_nlev (i,m3,ipat) = sfcwater_nlev (i,m3-1,ipat)
-            stom_resist   (i,m3,ipat) = stom_resist   (i,m3-1,ipat)
-            ground_rsat   (i,m3,ipat) = ground_rsat   (i,m3-1,ipat)
-            ground_rvap   (i,m3,ipat) = ground_rvap   (i,m3-1,ipat)
-            veg_water     (i,m3,ipat) = veg_water     (i,m3-1,ipat)
-            veg_temp      (i,m3,ipat) = veg_temp      (i,m3-1,ipat)
-            can_rvap      (i,m3,ipat) = can_rvap      (i,m3-1,ipat)
-            can_temp      (i,m3,ipat) = can_temp      (i,m3-1,ipat)
-            veg_ndvip     (i,m3,ipat) = veg_ndvip     (i,m3-1,ipat)
-            veg_ndvic     (i,m3,ipat) = veg_ndvic     (i,m3-1,ipat)
-            veg_ndvif     (i,m3,ipat) = veg_ndvif     (i,m3-1,ipat)
-
-            do k = 1,mzg
-               soil_water       (k,i,1,ipat) = soil_water         (k,i,2,ipat)
-               soil_energy      (k,i,1,ipat) = soil_energy        (k,i,2,ipat)
-               soil_text        (k,i,1,ipat) = soil_text          (k,i,2,ipat)
-
-               soil_water      (k,i,m3,ipat) = soil_water      (k,i,m3-1,ipat)
-               soil_energy     (k,i,m3,ipat) = soil_energy     (k,i,m3-1,ipat)
-               soil_text       (k,i,m3,ipat) = soil_text       (k,i,m3-1,ipat)
-            enddo
-
-            do k = 1,mzs
-               sfcwater_mass    (k,i,1,ipat) = sfcwater_mass      (k,i,2,ipat)
-               sfcwater_energy  (k,i,1,ipat) = sfcwater_energy    (k,i,2,ipat)
-               sfcwater_depth   (k,i,1,ipat) = sfcwater_depth     (k,i,2,ipat)
-
-               sfcwater_mass   (k,i,m3,ipat) = sfcwater_mass   (k,i,m3-1,ipat)
-               sfcwater_energy (k,i,m3,ipat) = sfcwater_energy (k,i,m3-1,ipat)
-               sfcwater_depth  (k,i,m3,ipat) = sfcwater_depth  (k,i,m3-1,ipat)
-            enddo
-
-         enddo
-
-      endif
-
-   enddo
-   return
-end subroutine leaf_bcond
-
-!****************************************************************************
-
-subroutine sfc_fields(m1,m2,m3,ia,iz,ja,jz,jd  &
-   ,theta,rv,co2p,up,vp,dn0,pp,pi0,rtgt,zt,ths2,rvs2,co2s2,ups2,vps2,pis2,dens2,zts2)
-
-   use leaf_coms
-   use rconstants
-
-   implicit none
-
-   integer :: m1,m2,m3,ia,iz,ja,jz,jd
-   real, dimension(m1,m2,m3) :: theta,rv,co2p,up,vp,dn0,pp,pi0
-   real, dimension(m2,m3) :: rtgt,ths2,rvs2,co2s2,ups2,vps2,pis2,dens2,zts2
-   real, dimension(m1) :: zt
-
-   integer :: i,j
-   real :: hcpi
-
-   ! Compute surface atmospheric conditions
-
-   hcpi = .5 * cpi
-
-   do j = ja,jz
-      do i = ia,iz
-         ths2(i,j) = theta(2,i,j)
-         rvs2(i,j) = rv(2,i,j)
-         co2s2(i,j) = co2p(2,i,j)
-         ups2(i,j) = (up(2,i-1,j) + up(2,i,j)) * .5
-         vps2(i,j) = (vp(2,i,j-jd) + vp(2,i,j)) * .5
-         zts2(i,j) = zt(2) * rtgt(i,j)
-         pis2(i,j) = (pp(1,i,j) + pi0(1,i,j) + pp(2,i,j) + pi0(2,i,j)) * hcpi
-         dens2(i,j) = (dn0(1,i,j) + dn0(2,i,j)) * .5
-      enddo
-   enddo
-
-   return
-end subroutine sfc_fields
-
-!****************************************************************************
-
-subroutine sfc_fields_adap(m1,m2,m3,ia,iz,ja,jz,jd,flpu,flpv,flpw  &
-   ,topma,aru,arv,theta,rv,co2p,up,vp,dn0,pp,pi0,zt,zm,dzt       &
-   ,ths2,rvs2,co2s2,ups2,vps2,pis2,dens2,zts2)
-
-   use leaf_coms
-   use rconstants
-
-   implicit none
-
-   integer :: m1,m2,m3,ia,iz,ja,jz,jd
-   real, dimension(m2,m3) :: flpu,flpv,flpw
-   real, dimension(m1,m2,m3) :: aru,arv,theta,rv,co2p,up,vp,dn0,pp,pi0
-   real, dimension(m2,m3) :: topma,ths2,rvs2,co2s2,ups2,vps2,pis2,dens2,zts2
-   real, dimension(m1) :: zt,zm,dzt
-
-   integer :: i,j,k1,k2,k3
-   real :: topma_t,wtw,wtu1,wtu2,wtv1,wtv2
-
-   ! Compute surface atmospheric conditions
-
-   do j = ja,jz
-      do i = ia,iz
-         k2 = nint(flpw(i,j))
-         k1 = k2 - 1
-         k3 = k2 + 1
-
-         topma_t = .25 * (topma(i,j) + topma(i-1,j)  &
-                 + topma(i,j-jd) + topma(i-1,j-jd))
-
-   ! weights for lowest predicted points, relative to points above them
-
-         wtw = (zm(k2) - topma_t) * dzt(k2)
-         wtu1 = aru(nint(flpu(i-1,j)),i-1,j)   / aru(nint(flpu(i-1,j))+1,i-1,j)
-         wtu2 = aru(nint(flpu(i,j)),i,j)       / aru(nint(flpu(i,j))+1,i,j)
-         wtv1 = arv(nint(flpv(i,j-jd)),i,j-jd) / arv(nint(flpv(i,j-jd))+1,i,j-jd)
-         wtv2 = arv(nint(flpv(i,j)),i,j)       / arv(nint(flpv(i,j))+1,i,j)
-
-         ths2(i,j)  =  wtw * theta(k2,i,j) + (1. - wtw)  * theta(k3,i,j)
-
-         rvs2(i,j)  =  wtw * rv(k2,i,j)    + (1. - wtw)  * rv(k3,i,j)
-         co2s2(i,j) =  wtw * co2p(k2,i,j)  + (1. - wtw)  * co2p(k3,i,j)
-
-         ups2(i,j) = (wtu1        * up(nint(flpu(i-1,j)),i-1,j)    &
-                   +  (1. - wtu1) * up(nint(flpu(i-1,j))+1,i-1,j)  &
-                   +  wtu2        * up(nint(flpu(i,j)),i,j)        &
-                   +  (1. - wtu2) * up(nint(flpu(i,j))+1,i,j)) * .5
-
-         vps2(i,j) = (wtv1        * vp(nint(flpv(i,j-jd)),i,j-jd)    &
-                   +  (1. - wtv1) * vp(nint(flpv(i,j-jd))+1,i,j-jd)  &
-                   +  wtv2        * vp(nint(flpv(i,j)),i,j)          &
-                   +  (1. - wtv2) * vp(nint(flpv(i,j))+1,i,j)) * .5
-
-         zts2(i,j) = (wtw * (zt(k2) - zm(k1))  &
-                   + (1. - wtw) * (zt(k3) - zm(k2)))
-
-         if (wtw >= .5) then
-            pis2(i,j)  = ((wtw - .5) * (pp(k1,i,j) + pi0(k1,i,j))  &
-                       + (1.5 - wtw) * (pp(k2,i,j) + pi0(k2,i,j))) * cpi
-            dens2(i,j) = (wtw - .5)  * dn0(k1,i,j)  &
-                       + (1.5 - wtw) * dn0(k2,i,j)
-         else
-            pis2(i,j)  = ((wtw + .5) * (pp(k2,i,j) + pi0(k2,i,j))  &
-                       + (.5 - wtw) * (pp(k3,i,j) + pi0(k3,i,j))) * cpi
-            dens2(i,j) = (wtw + .5) * dn0(k2,i,j)  &
-                       + (.5 - wtw) * dn0(k3,i,j)
-         endif
-
-      enddo
-   enddo
-
-   return
-end subroutine sfc_fields_adap
-
-!****************************************************************************
-
-subroutine sfc_pcp(nqparm,level,i,j,cuparm,micro)
-
-   use mem_basic
-   use mem_grid
-   use mem_micro
-   use mem_cuparm
-   use leaf_coms
-   use rconstants, only : cliq,tsupercool,wdnsi
-
-   implicit none
-
-   integer :: nqparm,level,i,j,icld
-   type (cuparm_vars)  cuparm
-   type (micro_vars)   micro
-
-   if (nqparm > 0) then
-      pcpgl = 0.
-      do icld=1,nclouds
-         pcpgl  = pcpgl + cuparm%conprr(i,j,icld)
-      end do
-      pcpgl  = pcpgl  * dtll
-      qpcpgl = pcpgl  * cliq * (ths * pis - tsupercool)
-      dpcpgl = pcpgl  * wdnsi
-      pcpgc  = dtlc_factor * pcpgl
-      qpcpgc = dtlc_factor * qpcpgl
-
-   else
-
-      pcpgl  = 0.
-      qpcpgl = 0.
-      dpcpgl = 0.
-      pcpgc  = 0.
-      qpcpgc = 0.
-
-   endif
-
-   if (level >= 3) then
-
-      pcpgl  = pcpgl  + dtll_factor * micro%pcpg(i,j)
-      qpcpgl = qpcpgl + dtll_factor * micro%qpcpg(i,j)
-      dpcpgl = dpcpgl + dtll_factor * micro%dpcpg(i,j)
-      pcpgc  = pcpgc  + dtlc_factor * dtll_factor * micro%pcpg(i,j)
-      qpcpgc = qpcpgc + dtlc_factor * dtll_factor * micro%qpcpg(i,j)
-
-   endif
-
-   return
-end subroutine sfc_pcp
-
-!****************************************************************************
-
-subroutine vegndvi(ifm    &
-   ,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_rough  &
-   ,veg_height,veg_albedo,veg_ndvip,veg_ndvic,veg_ndvif)
-
-   use leaf_coms
-   use rconstants
-   use io_params
-   use mem_grid
-
-   !CATT
-   use catt_start, only: CATT  ! INTENT(IN)
-
-   implicit none
-
-   integer :: ifm
-   real :: patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_rough  &
-      ,veg_height,veg_albedo,veg_ndvip,veg_ndvic,veg_ndvif
-
-   integer :: nveg
-   integer, save :: nvcall = 0
-
-   real :: timefac_ndvi,sr,fpar,dead_lai,green_frac
-   real, save :: sr_min=1.081,fpar_min=.001,fpar_max=.950,fpcon=-.3338082
-   real, save :: ccc=-2.9657
-   real, save :: bz=.91,hz=.0075,extinc_veg=.5
-
-   real, dimension(nvtyp+nvtyp_teb), save :: dfpardsr
-
-   !  Initialize dfpardsr array
-
-   if (nvcall == 0) then
-      nvcall = 1
-      do nveg = 1,(nvtyp+nvtyp_teb)
-         dfpardsr(nveg) = (fpar_max - fpar_min) / (sr_max(nveg) - sr_min)
-      enddo
-   endif
-
-   !  Compute LAI, vegetation roughness, albedo, vegfrac from time-dependent NDVI
-
-   nveg = nint(leaf_class)
-
-   if (tai_max(nveg) < .1) then
-
-      veg_lai = 0.
-      veg_tai = 0.
-      veg_rough = 0.
-      veg_albedo = 0.
-      veg_fracarea = 0.
-
-   else
-
-      if (iupdndvi == 0) then
-         timefac_ndvi = 0.
-      else
-         
-         ! HOW LARGE COULD THIS GET? SHOULD I MAKE IT A 64bit?  RGK
-         timefac_ndvi = sngl((time - ndvitime1(ifm)) / (ndvitime2(ifm) - ndvitime1(ifm)))
-
-      endif
-
-   !  Time-interpolate ndvi to get current value veg_ndvic(i,j) for this patch
-
-      veg_ndvic = veg_ndvip + (veg_ndvif - veg_ndvip) * timefac_ndvi
-
-   !  Limit ndvi to prevent values > .99 to prevent division by zero.
-
-      if (veg_ndvic > .99) veg_ndvic = .99
-
-   ! Compute "simple ratio" and limit between sr_min and sr_max(nveg).
-
-      sr = (1. + veg_ndvic) / (1. - veg_ndvic)
-
-      if (sr < sr_min) then
-         sr = sr_min
-      elseif (sr > sr_max(nveg)) then
-         sr = sr_max(nveg)
-      endif
-
-   ! Compute fpar
-
-      fpar = fpar_min + (sr - sr_min) * dfpardsr(nveg)
-
-   ! Compute green leaf area index (veg_lai), dead leaf area index (dead_lai),
-   ! total area index (tai), and green fraction
-
-      veg_lai = glai_max(nveg) * (veg_clump(nveg) * fpar / fpar_max  &
-              + (1. - veg_clump(nveg)) * alog(1. - fpar) * fpcon)
-
-      dead_lai = (glai_max(nveg) - veg_lai) * dead_frac(nveg)
-      veg_tai = veg_lai + sai(nveg) + dead_lai
-      green_frac = veg_lai / veg_tai
-
-   ! Compute vegetation roughness height, albedo, and fractional area
-
-      veg_rough = veg_height * (1. - bz * exp(-hz * veg_tai))
-      veg_albedo = albv_green(nveg) * green_frac  &
-                 + albv_brown(nveg) * (1. - green_frac)
-      veg_fracarea = veg_frac(nveg) * (1. - exp(-extinc_veg * veg_tai))
-
-   endif
-return
-end subroutine vegndvi
-
-! Remaining issues:
-!
-! 1. Relationship between clumping, V, vegfrac
-! 2. Impact of V on radiation
-! 3. Put in 900 second response time for rc?
-! 4. Build lookup tables, especially for things with exponentials?
-
-!****************************************************************************
-
-subroutine sfcrad(mzg,mzs,ip  &
-   ,soil_energy,soil_water,soil_text,sfcwater_energy,sfcwater_mass    &
-   ,sfcwater_depth,patch_area,can_temp,veg_temp,leaf_class,veg_height &
-   ,veg_fracarea,veg_albedo,sfcwater_nlev,rshort,rlong,albedt         &
-   ,rlongup,cosz,G_URBAN, ETOWN, ALBTOWN, TSTOWN )
-   use node_mod       , only : mynum       ! ! intent(in)
-   use mem_leaf
-   use leaf_coms
-   use rconstants
-   use mem_scratch
-   use therm_lib, only : qwtk,qtk
-   !CATT
-   use catt_start, only: CATT ! INTENT(IN)
-
-   !TEB_SPM
-   use teb_spm_start, only: TEB_SPM ! INTENT(IN)
-
-   implicit none
-
-   integer, intent(in) :: mzg,mzs,ip
-   real, dimension(mzg) :: soil_energy,soil_water,soil_text !(mzg)
-   real, dimension(mzs) :: sfcwater_energy,sfcwater_depth ,sfcwater_mass   !(mzs)
-   real :: patch_area,can_temp,veg_temp,leaf_class,veg_height,veg_fracarea  &
-          ,veg_albedo,sfcwater_nlev,rshort,rlong,albedt,rlongup,cosz
-
-   ! for TEB
-   real :: G_URBAN, ETOWN, ALBTOWN, TSTOWN
-   !
-
-   integer :: k,m,nsoil,nveg,ksn
-   real :: alb,vfc,fcpct,alg,rad,als,fractrans,absg,algs,emv,emgs,gslong,vlong,alv
-
-   ! This routine is called by the radiation parameterization and by leaf.
-   ! It computes net surface albedo plus radiative exchange between the
-   ! atmosphere, vegetation, and the snow/ground given previously computed
-   ! downward longwave and shortwave fluxes from the atmosphere.
-   ! Also computed are functions of snowcover that are required for the above
-   ! radiation calculations as well as other calculations in leaf.
-
-   ! The shortwave parameterizations are only valid if the cosine of the zenith
-   ! angle is greater than .03 .  Water albedo from Atwater and Bell (1981)
-
-   ! alg, als, and alv are the albedos of the ground, snow, and vegetation
-   ! (als needs a better formula based on age of the surface snow).
-
-   ! absg and vctr32 are the actual fractions of shortwave incident on snow
-   ! plus ground that get absorbed by the ground and each snow layer,
-   ! respectively.  They currently use the variable fractrans, which is the
-   ! fraction of light transmitted through each layer based on mass per square
-   ! meter.  algs is the resultant albedo from snow plus ground.
-
-   if (ip == 1) then
-      if (cosz > .03) then
-         alb = min(max(-.0139 + .0467 * tan(acos(cosz)),.03),.999)
-         albedt = albedt + patch_area * alb
-      endif
-
-      call qtk(soil_energy(mzg),tempk(mzg),fracliq(mzg))
-      rlongup = rlongup + patch_area * stefan * tempk(mzg) ** 4
-
-   elseif (isfcl == 0) then
-
-      albedt = albedt + patch_area * albedo
-      rlongup = rlongup + patch_area * stefan * can_temp ** 4
-
-   else
-
-   ! Diagnose soil temperature and liquid fraction
-
-      do k = 1,mzg
-         nsoil = nint(soil_text(k))
-         call qwtk(soil_energy(k),soil_water(k)*wdns  &
-            ,slcpd(nsoil),tempk(k),fracliq(k))
-      enddo
-
-   ! Diagnose snow temperature and the influence of snow covering veg.
-
-      nveg = nint(leaf_class)
-      ksn = nint(sfcwater_nlev)
-      snowfac = 0.
-      do k = 1,ksn
-         snowfac = snowfac + sfcwater_depth(k)
-         call qtk(sfcwater_energy(k),tempk(k+mzg),fracliq(k+mzg))
-      enddo
-      snowfac = min(.99, snowfac / max(.001,veg_height))
-
-      vf = veg_fracarea * (1. - snowfac)
-      vfc = 1. - vf
-
-   ! Shortwave radiation calculations
-
-      !srf-25-02-2005
-      nsoil=nint(soil_text(mzg))
-      !srf
-
-      fcpct = soil_water(mzg) / slmsts(nsoil)
-      if (fcpct > .5) then
-         alg = .14
-      else
-         alg = .31 - .34 * fcpct
-      endif
-      alv = veg_albedo
-
-      rad = 1.
-      if (ksn > 0) then
-
-   ! als = .14 (the wet soil value) for all-liquid
-
-         als = .5 - .36 * fracliq(ksn+mzg)
-         rad = 1. - als
-      endif
-      do k = ksn,1,-1
-         fractrans = exp(-20. * sfcwater_depth(k))
-         vctr32(k) = rad * (1. - fractrans)
-         rad = rad * fractrans
-      enddo
-      absg = (1. - alg) * rad
-      algs = 1. - absg
-      do k = ksn,1,-1
-         algs = algs - vctr32(k)
-         rshort_s(k) = rshort * vfc * vctr32(k)
-      enddo
-      rshort_g = rshort * vfc * absg
-      rshort_v = rshort * vf * (1. - alv + vfc * algs)
-   !  rshort_a = rshort * (vf * alv + vfc * vfc * algs)
-
-      alb = vf * alv + vfc * vfc * algs
-
-      ! TEB
-      if (TEB_SPM==1) then
-         if (NINT(G_URBAN) == 0) then
-            albedt = albedt + patch_area * alb
-         else
-            albedt = albedt + patch_area * ALBTOWN
-         endif
-      else
-         albedt = albedt + patch_area * alb
-      endif
-
-   ! Longwave radiation calculations
-
-      emv = emisv(nveg)
-      emgs = emisg(nsoil)
-      if (ksn > 0) emgs = 1.0
-      gslong = emgs * stefan * tempk(ksn+mzg) ** 4
-      vlong = emv * stefan * veg_temp ** 4
-
-      rlonga_v  = rlong * vf * (emv + vfc * (1. - emgs))
-      rlonga_gs = rlong * vfc * emgs
-      rlongv_gs = vlong * vf * emgs
-      rlongv_a  = vlong * vf * (2. - emgs - vf + emgs * vf)
-      rlonggs_v = gslong * vf * emv
-      rlonggs_a = gslong * vfc
-      rlonga_a  = rlong * (vf * (1. - emv) + vfc * vfc * (1. - emgs))
-
-      ! TEB
-      if (TEB_SPM==1) then
-         IF (NINT(G_URBAN) == 0) THEN
-            rlongup = rlongup + patch_area * (rlongv_a + rlonggs_a + rlonga_a)
-         else
-            rlongup = rlongup + patch_area * ETOWN * STEFAN * TSTOWN**4
-         ENDIF
-      else
-         rlongup = rlongup + patch_area * (rlongv_a + rlonggs_a + rlonga_a)
-      endif
-
-   !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-   ! In case rlong is not computed, zero out all longwave fluxes other
-   ! than rlongup.  [On the first timestep, radiative fluxes may not
-   ! be available until microphysics is called, and zeroing these fluxes
-   ! avoids the imbalance of having upward longwave without downward longwave
-   ! in LEAF-2.  Also, this allows LEAF-2 to run without radiation for all
-   ! timesteps, if desired for testing.]
-
-      if (rlong < .1) then
-         rlonga_v  = 0.
-         rlonga_gs = 0.
-         rlongv_gs = 0.
-         rlongv_a  = 0.
-         rlonggs_v = 0.
-         rlonggs_a = 0.
-         rlonga_a  = 0.
-      endif
-   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
-   endif
-   return
-end subroutine sfcrad
-
+!==========================================================================================!
+!==========================================================================================!

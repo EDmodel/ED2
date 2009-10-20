@@ -82,7 +82,8 @@ subroutine ed_masterput_nl(par_run)
                              ,outfast,outstate,out_time_fast,out_time_state,nrec_fast       &
                              ,nrec_state,irec_fast,irec_state,unitfast,unitstate,event_file
 
-   use ed_misc_coms,only: attach_metadata,icanturb
+   use ed_misc_coms,only: attach_metadata
+   use canopy_air_coms, only: icanturb, isfclyrm
    use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,deltax,deltay,polelat,polelon       &
                              ,centlat,centlon,time,timmax,nstratx,nstraty
    use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database &
@@ -223,6 +224,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(pft_1st_check,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(icanturb,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(isfclyrm,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(treefall_disturbance_rate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(runoff_time,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -464,7 +466,12 @@ subroutine ed_masterput_worklist_info(par_run)
 
   use ed_max_dims, only: maxmach
   use grid_coms, only: ngrids
-  use ed_work_vars, only: work_e,work_vars,ed_alloc_work,ed_nullify_work,ed_dealloc_work
+  use ed_work_vars , only : work_v                & ! intent(inout)
+                          , work_e                & ! intent(inout)
+                          , work_vecs             & ! structure
+                          , ed_alloc_work_vec     & ! subroutine
+                          , ed_nullify_work_vec   & ! subroutine
+                          , ed_dealloc_work_vec   ! ! subroutine
   use ed_para_coms, only: nmachs,mainnum,machnum
   use soil_coms, only: isoilflg
   use ed_node_coms, only: mxp,myp,i0,j0
@@ -480,7 +487,7 @@ subroutine ed_masterput_worklist_info(par_run)
   integer :: mpiid
   integer :: ierr
 
-  type(work_vars), allocatable, dimension(:)   :: sc_work
+  type(work_vecs), allocatable, dimension(:)   :: sc_work
 
   real,            allocatable, dimension(:) :: rscratch
   integer,         allocatable, dimension(:) :: iscratch
@@ -499,17 +506,25 @@ subroutine ed_masterput_worklist_info(par_run)
 
            mpiid=maxmach*(ifm-1)+nm
 
-           rscratch(1:npoly) = work_e(ifm)%vec_glon(offset+1:offset+npoly)
+           rscratch(1:npoly) = work_v(ifm)%glon(offset+1:offset+npoly)
            call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),1300000+mpiid,MPI_COMM_WORLD,ierr)
   
-           rscratch(1:npoly) = work_e(ifm)%vec_glat(offset+1:offset+npoly)
+           rscratch(1:npoly) = work_v(ifm)%glat(offset+1:offset+npoly)
            call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),1400000+mpiid,MPI_COMM_WORLD,ierr)
            
-           rscratch(1:npoly) = work_e(ifm)%vec_landfrac(offset+1:offset+npoly)
+           rscratch(1:npoly) = work_v(ifm)%landfrac(offset+1:offset+npoly)
            call MPI_Send(rscratch,npoly,MPI_REAL,machnum(nm),1500000+mpiid,MPI_COMM_WORLD,ierr)
            
-           iscratch(1:npoly) = work_e(ifm)%vec_ntext(offset+1:offset+npoly)
+           iscratch(1:npoly) = work_v(ifm)%ntext(offset+1:offset+npoly)
            call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),1600000+mpiid,MPI_COMM_WORLD,ierr)
+
+           iscratch(1:npoly) = work_v(ifm)%xid(offset+1:offset+npoly)
+           call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),1700000+mpiid,MPI_COMM_WORLD,ierr)
+           
+           iscratch(1:npoly) = work_v(ifm)%yid(offset+1:offset+npoly)
+           call MPI_Send(iscratch,npoly,MPI_INTEGER,machnum(nm),1800000+mpiid,MPI_COMM_WORLD,ierr)
+
+
 
            deallocate(rscratch,iscratch)
 
@@ -527,52 +542,43 @@ subroutine ed_masterput_worklist_info(par_run)
      
      npoly  = gdpy(nm,ifm)
      offset = py_off(nm,ifm)
+     call ed_nullify_work_vec(sc_work(ifm))
+     call ed_alloc_work_vec(sc_work(ifm),npoly)
 
-     allocate(sc_work(ifm)%vec_glon(npoly))
-     allocate(sc_work(ifm)%vec_glat(npoly))
-     allocate(sc_work(ifm)%vec_landfrac(npoly))
-     allocate(sc_work(ifm)%vec_ntext(npoly))
+     sc_work(ifm)%glon(1:npoly)     = work_v(ifm)%glon(offset+1:offset+npoly)
+     sc_work(ifm)%glat(1:npoly)     = work_v(ifm)%glat(offset+1:offset+npoly)
+     sc_work(ifm)%landfrac(1:npoly) = work_v(ifm)%landfrac(offset+1:offset+npoly)
+     sc_work(ifm)%ntext(1:npoly)    = work_v(ifm)%ntext(offset+1:offset+npoly)
+     sc_work(ifm)%xid(1:npoly)      = work_v(ifm)%xid(offset+1:offset+npoly)
+     sc_work(ifm)%yid(1:npoly)      = work_v(ifm)%yid(offset+1:offset+npoly)
 
-     sc_work(ifm)%vec_glon(1:npoly) = work_e(ifm)%vec_glon(offset+1:offset+npoly)
-     sc_work(ifm)%vec_glat(1:npoly) = work_e(ifm)%vec_glat(offset+1:offset+npoly)
-     sc_work(ifm)%vec_landfrac(1:npoly) = work_e(ifm)%vec_landfrac(offset+1:offset+npoly)
-     sc_work(ifm)%vec_ntext(1:npoly) = work_e(ifm)%vec_ntext(offset+1:offset+npoly)
-
-     call ed_dealloc_work(work_e(ifm))
+     call ed_dealloc_work_vec(work_v(ifm))
      
 
   enddo
 
-  deallocate(work_e)
+  deallocate(work_e,work_v)
 
   ! So here it will be 2 (node-style) if it is a parallel run, and 0 if it is a serial run
   call ed_mem_alloc(2*par_run) 
 
+  allocate (work_v(ngrids))
   do ifm=1,ngrids
 
      npoly  = gdpy(nm,ifm)
-     
-     ! Longitudes
-     allocate(work_e(ifm)%vec_glon(npoly))
-     work_e(ifm)%vec_glon(1:npoly) = sc_work(ifm)%vec_glon(1:npoly)
-     
-     ! Latitudes
-     allocate(work_e(ifm)%vec_glat(npoly))
-     work_e(ifm)%vec_glat(1:npoly) = sc_work(ifm)%vec_glat(1:npoly)
-     
-     ! Land fractions
-     allocate(work_e(ifm)%vec_landfrac(npoly))
-     work_e(ifm)%vec_landfrac(1:npoly) = sc_work(ifm)%vec_landfrac(1:npoly)
-     
-     ! Soil Textures
-     allocate(work_e(ifm)%vec_ntext(npoly))
-     work_e(ifm)%vec_ntext(1:npoly) = sc_work(ifm)%vec_ntext(1:npoly)
+     call ed_nullify_work_vec(work_v(ifm))
+     call ed_alloc_work_vec(work_v(ifm),npoly)
 
-     ! Need we say more
-     deallocate(sc_work(ifm)%vec_glon)
-     deallocate(sc_work(ifm)%vec_glat)
-     deallocate(sc_work(ifm)%vec_landfrac)
-     deallocate(sc_work(ifm)%vec_ntext)
+     !----- Copying the scratch work structure back to the work structure. ----------------!
+     work_v(ifm)%glon(1:npoly)     = sc_work(ifm)%glon(1:npoly)
+     work_v(ifm)%glat(1:npoly)     = sc_work(ifm)%glat(1:npoly)
+     work_v(ifm)%landfrac(1:npoly) = sc_work(ifm)%landfrac(1:npoly)
+     work_v(ifm)%ntext(1:npoly)    = sc_work(ifm)%ntext(1:npoly)
+     work_v(ifm)%xid(1:npoly)      = sc_work(ifm)%xid(1:npoly)
+     work_v(ifm)%yid(1:npoly)      = sc_work(ifm)%yid(1:npoly)
+
+     !----- Deallocating the scratch structure. -------------------------------------------!
+     call ed_dealloc_work_vec(sc_work(ifm))
 
    end do
    
@@ -658,7 +664,8 @@ subroutine ed_nodeget_nl
    use decomp_coms,     only: n_decomp_lim
    use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
    use optimiz_coms,    only: ioptinpt
-   use ed_misc_coms,    only: attach_metadata,icanturb
+   use ed_misc_coms,    only: attach_metadata
+   use canopy_air_coms, only: icanturb, isfclyrm
    use pft_coms,        only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
    use canopy_radiation_coms, only: crown_mod
    use rk4_coms,        only: ibranch_thermo
@@ -782,6 +789,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(pft_1st_check,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(icanturb,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(isfclyrm,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(treefall_disturbance_rate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(runoff_time,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -940,7 +948,9 @@ subroutine ed_nodeget_worklist_info
 
   use ed_max_dims, only: maxmach
   use grid_coms,  only: ngrids
-  use ed_work_vars,  only: work_e
+  use ed_work_vars,  only: work_v              & ! intent(inout)
+                         , ed_alloc_work_vec   & ! subroutine
+                         , ed_nullify_work_vec ! ! subroutine
   use ed_node_coms,  only: mynum,nmachs,master_num
   use ed_state_vars, only: gdpy
 
@@ -953,32 +963,36 @@ subroutine ed_nodeget_worklist_info
   integer :: mpiid
   integer :: ifm
   
+  ! Allocate the work vectors
+  allocate(work_v(ngrids))
+
   do ifm=1,ngrids
      
      npolygons = gdpy(mynum,ifm)
      
      ! Allocate the work vectors
-     
-     allocate(work_e(ifm)%vec_glon(npolygons))
-     allocate(work_e(ifm)%vec_glat(npolygons))
-     allocate(work_e(ifm)%vec_landfrac(npolygons))
-     allocate(work_e(ifm)%vec_ntext(npolygons))
+     call ed_nullify_work_vec(work_v(ifm))
+     call ed_alloc_work_vec(work_v(ifm),npolygons)
 
      mpiid=maxmach*(ifm-1)+mynum
 
-     call MPI_Recv(work_e(ifm)%vec_glon(1:npolygons),npolygons, &
+     call MPI_Recv(work_v(ifm)%glon(1:npolygons),npolygons, &
           MPI_REAL,0,1300000+mpiid,MPI_COMM_WORLD,status,ierr)
      
-     call MPI_Recv(work_e(ifm)%vec_glat(1:npolygons),npolygons, &
+     call MPI_Recv(work_v(ifm)%glat(1:npolygons),npolygons, &
           MPI_REAL,0,1400000+mpiid,MPI_COMM_WORLD,status,ierr)
      
-     call MPI_Recv(work_e(ifm)%vec_landfrac(1:npolygons),npolygons, &
+     call MPI_Recv(work_v(ifm)%landfrac(1:npolygons),npolygons, &
           MPI_REAL,0,1500000+mpiid,MPI_COMM_WORLD,status,ierr)
      
-     call MPI_Recv(work_e(ifm)%vec_ntext(1:npolygons),npolygons, &
+     call MPI_Recv(work_v(ifm)%ntext(1:npolygons),npolygons, &
           MPI_INTEGER,0,1600000+mpiid,MPI_COMM_WORLD,status,ierr)
 
+     call MPI_Recv(work_v(ifm)%xid(1:npolygons),npolygons, &
+          MPI_INTEGER,0,1700000+mpiid,MPI_COMM_WORLD,status,ierr)
      
+     call MPI_Recv(work_v(ifm)%yid(1:npolygons),npolygons, &
+          MPI_INTEGER,0,1800000+mpiid,MPI_COMM_WORLD,status,ierr)
   end do
 
   return

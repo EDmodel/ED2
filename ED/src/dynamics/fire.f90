@@ -155,7 +155,7 @@ subroutine fire_frequency(month, cgrid)
          !----- Calculate fire dist rate [1/month]. ---------------------------------------!
          cpoly%lambda_fire(month,isi) = fire_parameter * ignition_rate
          cpoly%ignition_rate(isi)     = ignition_rate
-         cpoly%fuel(isi)              = fuel
+
       end do siteloop
    end do polyloop
 

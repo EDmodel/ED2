@@ -110,7 +110,7 @@ subroutine grell_thermo_cldlev(mkx,mgmzp,z_cup,exner,thil,t,qtot,qliq,qice,co2,e
       !------ Finding the air density -----------------------------------------------------!
       rho_cup(k)    = idealdens(p_cup(k),t_cup(k),qvap_cup(k),qtot_cup(k)) 
       !------ Finding the ice-vapour equivalent potential temperature ---------------------!
-      theiv_cup(k)  = thetaeiv(thil_cup(k),p_cup(k),t_cup(k),qvap_cup(k),qtot_cup(k))
+      theiv_cup(k)  = thetaeiv(thil_cup(k),p_cup(k),t_cup(k),qvap_cup(k),qtot_cup(k),8)
       !------ Finding the saturation ice-vapour equivalent potential temperature ----------!
       theivs_cup(k) = thetaeivs(thil_cup(k),t_cup(k),qsat_cup(k),qliq_cup(k),qice_cup(k))
    end do
@@ -149,14 +149,14 @@ end subroutine grell_thermo_cldlev
 !---------------------------------------------------------------------------=--------------!
 real function buoyancy_acc(rho_cup,rhoz_cld)
 
-   use rconstants, only : g
+   use rconstants, only : grav
    implicit none
    !----- Environment variables at cloud levels -------------------------------------------!
    real, intent(in) :: rho_cup   ! Environment density                             [ kg/m³]
    !----- Draft variables -----------------------------------------------------------------!
    real, intent(in) :: rhoz_cld  ! Draft density                                   [ kg/m³]
    !---------------------------------------------------------------------------------------!
-   buoyancy_acc = g * (1. - rhoz_cld /rho_cup)
+   buoyancy_acc = grav * (1. - rhoz_cld /rho_cup)
 
    return
 end function buoyancy_acc

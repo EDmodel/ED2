@@ -30,7 +30,8 @@ subroutine read_ednl(iunit)
        ied_init_mode, current_time,ed_inputs_dir,                     &
        end_time, integration_scheme, ffilout,  dtlsm,                 &
        iprintpolys,printvars,npvars,pfmtstr,ipmax,ipmin,              &
-       iedcnfgf,ffilout,sfilout,sfilin,event_file, attach_metadata, icanturb
+       iedcnfgf,ffilout,sfilout,sfilin,event_file, attach_metadata
+  use canopy_air_coms, only:  icanturb
 
   use grid_coms, only: timmax,time
   
@@ -49,7 +50,7 @@ subroutine read_ednl(iunit)
        nstraty,polelat,polelon,ngrids,nzg, nzs,npatch
   
   use io_params,only: ioutput, iclobber, frqanl,frqhis,iyearh,idateh,itimeh,imonthh,isoilflg
-  use mem_leaf,only:nslcon,leaf_zrough => zrough,slz, stgoff,slmstr,isfcl,nvegpat
+  use mem_leaf,only:nslcon,leaf_zrough => zrough,slz, stgoff,slmstr,isfcl,nvegpat,istar
   use mem_radiate, only: radfrq
 
   !============================!
@@ -138,7 +139,7 @@ subroutine read_ednl(iunit)
   call copy_in_bramsnl(expnme, runtype, itimez, idatez, imonthz, iyearz, &
        itimea, idatea, imontha, iyeara, radfrq, nnxp,nnyp,deltax,        &
        deltay,polelat,polelon,centlat,centlon,nstratx,nstraty,           &
-       iclobber,nzg,nzs,isoilflg,nslcon,slz,slmstr,stgoff,leaf_zrough,ngrids)
+       iclobber,nzg,nzs,isoilflg,nslcon,slz,slmstr,stgoff,leaf_zrough,istar,ngrids)
   
   ! The following are standard namelist variables from ED2 in stand-alone
   ! for a coupled run, these can be fixed to any old value
@@ -243,7 +244,7 @@ subroutine copy_in_bramsnl(expnme_b, runtype_b, itimez_b, idatez_b, &
      imonthz_b, iyearz_b, itimea_b, idatea_b, imontha_b, iyeara_b,  &
      radfrq_b,nnxp_b,nnyp_b,deltax_b,deltay_b,polelat_b,polelon_b,  &
      centlat_b,centlon_b,nstratx_b,nstraty_b,iclobber_b,nzg_b,nzs_b,&
-     isoilflg_b,nslcon_b,slz_b,slmstr_b,stgoff_b,zrough_b,ngrids_b)
+     isoilflg_b,nslcon_b,slz_b,slmstr_b,stgoff_b,zrough_b,isfclyrm_b,ngrids_b)
   
   use ed_misc_coms, only: expnme, runtype, itimez, idatez, imonthz, iyearz, &
        itimea, idatea, imontha, iyeara, iclobber,radfrq
@@ -254,6 +255,8 @@ subroutine copy_in_bramsnl(expnme_b, runtype_b, itimez_b, idatez_b, &
   use soil_coms, only: isoilflg, nslcon, slmstr, zrough, slz,stgoff
 
   use grid_dims,  only: maxgrds,nzgmax
+  
+  use canopy_air_coms, only: isfclyrm
 
   implicit none
   
@@ -284,6 +287,7 @@ subroutine copy_in_bramsnl(expnme_b, runtype_b, itimez_b, idatez_b, &
   integer                   , intent(in) :: nzs_b     ! snow layers
   integer,dimension(maxgrds), intent(in) :: isoilflg_b
   integer                   , intent(in) :: nslcon_b
+  integer                   , intent(in) :: isfclyrm_b
   real                      , intent(in) :: zrough_b
   real, dimension(nzgmax)   , intent(in) :: slmstr_b
   real, dimension(nzgmax)   , intent(in) :: stgoff_b
@@ -326,6 +330,7 @@ subroutine copy_in_bramsnl(expnme_b, runtype_b, itimez_b, idatez_b, &
   zrough   = zrough_b
 
   isoilflg = isoilflg_b
+  isfclyrm = isfclyrm_b
 
 
   

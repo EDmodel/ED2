@@ -174,12 +174,12 @@ subroutine bruvais(ibruvais,m1,m2,m3,ia,iz,ja,jz,pi0,pp,theta,rtp,rv,rtgt,flpw,e
           ,nzpmax          ! ! intent(in)
 
    use rconstants, only  : &
-           g               & ! intent(in)
+           grav            & ! intent(in)
           ,t00             & ! intent(in)
           ,p00             & ! intent(in)
           ,alvl            & ! intent(in)
           ,alvi            & ! intent(in)
-          ,rgas            & ! intent(in)
+          ,rdry            & ! intent(in)
           ,cp              & ! intent(in)
           ,cpi             & ! intent(in)
           ,cpor            & ! intent(in)
@@ -212,11 +212,11 @@ subroutine bruvais(ibruvais,m1,m2,m3,ia,iz,ja,jz,pi0,pp,theta,rtp,rv,rtgt,flpw,e
    integer :: i,j,k,ki,k2,k1
    real :: temp,rvlsi,rvii
    !----- Local constants, for alternative method to compute N², test only ----------------!
-   real, parameter :: cl1 = alvl / rgas
-   real, parameter :: cl2 = ep * alvl ** 2 / (cp * rgas)
+   real, parameter :: cl1 = alvl / rdry
+   real, parameter :: cl2 = ep * alvl ** 2 / (cp * rdry)
    real, parameter :: cl3 = alvl / cp
-   real, parameter :: ci1 = alvi / rgas
-   real, parameter :: ci2 = ep * alvi ** 2 / (cp * rgas)
+   real, parameter :: ci1 = alvi / rdry
+   real, parameter :: ci2 = ep * alvi ** 2 / (cp * rdry)
    real, parameter :: ci3 = alvi / cp
 
    !---------------------------------------------------------------------------------------!
@@ -263,12 +263,12 @@ subroutine bruvais(ibruvais,m1,m2,m3,ia,iz,ja,jz,pi0,pp,theta,rtp,rv,rtgt,flpw,e
          !---- Alternative way to compute, lacks citation ---------------------------------!
          if (ibruvais == 3) then
             do k=k2,m1-1
-               vctr19(k) = g / ((zt(k+1)-zt(k-1)) * rtgt(i,j))
+               vctr19(k) = grav / ((zt(k+1)-zt(k-1)) * rtgt(i,j))
             end do
          elseif (cloud_on .and. ibruvais == 2) then 
 
             do k = k2,m1-1
-               vctr19(k) = g / ((zt(k+1) - zt(k-1)) * rtgt(i,j))
+               vctr19(k) = grav / ((zt(k+1) - zt(k-1)) * rtgt(i,j))
             end do
 
             do k=k1,m1
@@ -325,15 +325,16 @@ subroutine bruvais(ibruvais,m1,m2,m3,ia,iz,ja,jz,pi0,pp,theta,rtp,rv,rtgt,flpw,e
                else
                   vctr25(k)  = vctr5(k) * (vctr12(k+1) - vctr12(k))
                   vctr26(k)  = vctr6(k) * (vctr12(k) - vctr12(k-1))
-                  en2(k,i,j) = g * (vctr10(k)*vctr25(k) + (1.-vctr10(k))*vctr26(k))        &
-                                   /vctr12(k)
+                  en2(k,i,j) = grav * ( vctr10(k)*vctr25(k) + (1. - vctr10(k))*vctr26(k))  &
+                                      / vctr12(k)
                end if
             end do
          else
             do k = k2,m1-1
                vctr25(k)  = vctr5(k) * (vctr12(k+1) - vctr12(k))
                vctr26(k)  = vctr6(k) * (vctr12(k) - vctr12(k-1))
-               en2(k,i,j) = g * (vctr10(k)*vctr25(k) + (1.-vctr10(k))*vctr26(k)) / vctr12(k)
+               en2(k,i,j) = grav * ( vctr10(k)*vctr25(k) + (1.-vctr10(k))*vctr26(k))       &
+                                   / vctr12(k)
             end do
          end if
 

@@ -220,8 +220,8 @@ module ed_therm_lib
      
       use soil_coms   , only: ed_nstyp,soil
       use grid_coms   , only: nzg
-      use consts_coms , only: pi1,wdns,gorvap
-      use therm_lib   , only: rhovsil,qtk,qwtk,qwtk
+      use consts_coms , only: pi1,wdns,gorh2o
+      use therm_lib   , only: rhovsil,qtk,qwtk
      
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -241,6 +241,7 @@ module ed_therm_lib
       real                 :: slpotvn         ! soil water potential            [        m]
       real                 :: alpha           ! "alpha" term in Lee and Pielke (1993)
       real                 :: beta            ! "beta" term in Lee and Pielke (1993)
+      real                 :: lnalpha         ! ln(alpha)
       !------------------------------------------------------------------------------------!
       
       if (nlev_sfcwater > 0 .and. sfcwater_energy > 0.) then
@@ -257,7 +258,12 @@ module ed_therm_lib
                   ,surface_fracliq)
          surface_ssh = rhovsil(surface_tempk) / rhos
          slpotvn     = soil(nts)%slpots * (soil(nts)%slmsts / soil_water) ** soil(nts)%slbs
-         alpha       = exp(gorvap * slpotvn / surface_tempk)
+         lnalpha     = gorh2o * slpotvn / surface_tempk
+         if (lnalpha > -38.) then
+            alpha       = exp(lnalpha)
+         else
+            alpha       = 0.0
+         end if
          beta        = .25 * (1. - cos (min(1.,soil_water / soil(nts)%sfldcap) * pi1)) ** 2
          ground_shv  = surface_ssh * alpha * beta + (1. - beta) * can_shv
       end if
@@ -281,8 +287,8 @@ module ed_therm_lib
                         ,can_shv,ground_shv,surface_ssh,surface_tempk,surface_fracliq)
       use soil_coms   , only: ed_nstyp,soil8
       use grid_coms   , only: nzg
-      use consts_coms , only: pi18,wdns8,gorvap8
-      use therm_lib   , only: rhovsil,qtk8,qwtk8
+      use consts_coms , only: pi18,wdns8,gorh2o8
+      use therm_lib8  , only: rhovsil8,qtk8,qwtk8
      
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -302,12 +308,13 @@ module ed_therm_lib
       real(kind=8)              :: slpotvn         ! soil water potential       [        m]
       real(kind=8)              :: alpha           ! "alpha" term in Lee and Pielke (1993)
       real(kind=8)              :: beta            ! "beta" term in Lee and Pielke (1993)
+      real(kind=8)              :: lnalpha         ! ln(alpha)
       !------------------------------------------------------------------------------------!
       
       if (nlev_sfcwater > 0 .and. sfcwater_energy > 0.d0) then
          !----- If a temporary layer exists, this is the surface. -------------------------!
          call qtk8(sfcwater_energy,surface_tempk,surface_fracliq)
-         surface_ssh = dble(rhovsil(sngl(surface_tempk))) / rhos
+         surface_ssh = rhovsil8(surface_tempk) / rhos
       else
          !---------------------------------------------------------------------------------!
          !      Without snowcover, ground_shv is the effective saturation mixing ratio of  !
@@ -316,10 +323,15 @@ module ed_therm_lib
          !---------------------------------------------------------------------------------!
          call qwtk8(soil_energy,soil_water*wdns8,soil8(nts)%slcpd,surface_tempk            &
                   ,surface_fracliq)
-         surface_ssh = dble(rhovsil(sngl(surface_tempk))) / rhos
+         surface_ssh = rhovsil8(surface_tempk) / rhos
          slpotvn     = soil8(nts)%slpots*(soil8(nts)%slmsts / soil_water)                  &
                      ** soil8(nts)%slbs
-         alpha       = exp(gorvap8 * slpotvn / surface_tempk)
+         lnalpha     = gorh2o8 * slpotvn / surface_tempk
+         if (lnalpha > -38.) then
+            alpha       = exp(lnalpha)
+         else
+            alpha       = 0.d0
+         end if
          beta        = 2.5d-1                                                              &
                      * (1.d0 - cos (min(1.d0,soil_water / soil8(nts)%sfldcap) * pi18)) ** 2
          ground_shv  = surface_ssh * alpha * beta + (1.d0 - beta) * can_shv

@@ -349,12 +349,6 @@ subroutine rams_node()
         call MPI_Barrier(MPI_COMM_WORLD,ierr)
      endif
 
-     !-------------------------------------------------------------------------------------!
-     !    Updating the ED-related variables.                                               !
-     !-------------------------------------------------------------------------------------!
-     if (isfcl == 5) call ed_timestep(begtime,dtlongn(1))
-     !-------------------------------------------------------------------------------------!
-
      !------------------------------------------------------------------------
      !                   Update main time variable by a long timestep.
 
@@ -413,6 +407,7 @@ subroutine init_fields(init)
   use var_tables
 
   use mem_leaf, only : ISFCL ! For SiB
+  use mem_cuparm, only : nclouds
 
   implicit none
 
@@ -462,8 +457,7 @@ subroutine init_fields(init)
         i2=ipaths(2,itype,ng,nm)
         j1=ipaths(3,itype,ng,nm)
         j2=ipaths(4,itype,ng,nm)
-        memf=(i2-i1+1)*(j2-j1+1)*(nnzp(ng))  &
-             *(4+num_scalar(ng))
+        memf=(i2-i1+1)*(j2-j1+1)*nnzp(ng)*(4+num_scalar(ng))
         nbuff_feed=max(nbuff_feed,memf)
      enddo
   enddo

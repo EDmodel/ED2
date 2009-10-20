@@ -74,7 +74,8 @@ module mem_scratch
          maxx   = max(maxx,nnxp(ng))
          maxy   = max(maxy,nnyp(ng))
          maxz   = max(maxz,nnzp(ng))
-         ntpts  = max(nmxp(ng)*nmyp(ng)*nmzp(ng),ntpts )
+         ntpts  = max(nmxp(ng)*nmyp(ng)*nmzp(ng),nmxp(ng)*nmyp(ng)*nclouds                 &
+                     ,nmxp(ng)*nmyp(ng)*npatch,ntpts )
          ntpts2 = max(nmxp(ng)*nmyp(ng),ntpts2 )
          ntpts4 = max(nmxp(ng)*nmyp(ng)*nmzp(ng)*nclouds,ntpts4)
       enddo

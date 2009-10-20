@@ -7,14 +7,18 @@ subroutine ed_metd_header()
    use mod_maxdims , only : maxstr     ! ! intent(in)
    use mod_ncep    , only : nvars_ol1  & ! intent(in)
                           , nvars_ol2  & ! intent(in)
+                          , nvars_ol4  & ! intent(in)
                           , vars_ol1   & ! intent(in)
                           , vars_ol2   & ! intent(in)
+                          , vars_ol4   & ! intent(in)
                           , vtype_ol1  & ! intent(in)
-                          , vtype_ol2  ! ! intent(in)
+                          , vtype_ol2  & ! intent(in)
+                          , vtype_ol4  ! ! intent(in)
    use mod_grid    , only : grid_g     & ! intent(in)
                           , ssxp       & ! intent(in)
                           , ssyp       & ! intent(in)
                           , sstp       ! ! intent(in)
+   use mod_interp  , only : ndownscal  ! ! intent(in)
    use mod_ioopts  , only : intype     & ! intent(in)
                           , inpfrq     & ! intent(in)
                           , radfrq     & ! intent(in)
@@ -34,11 +38,26 @@ subroutine ed_metd_header()
    integer                                :: ya
    integer                                :: yz
    integer                                :: nv
+   integer                                :: ndrivers
+   integer                                :: nvars_ol1_df
    real                                   :: dlon
    real                                   :: dlat
    real                                   :: lon0
    real                                   :: lat0
    !---------------------------------------------------------------------------------------!
+
+
+   !----- First we check whether we have realisations or not. -----------------------------!
+   select case (ndownscal)
+   case (0)
+      !----- No, we just add the actual precipitation. ------------------------------------!
+      nvars_ol1_df = nvars_ol1
+      ndrivers     = 2
+   case default
+      !----- Yes, but we add only the first realisation... --------------------------------!
+      nvars_ol1_df = nvars_ol1 - 1
+      ndrivers     = 3
+   end select
 
    !----- Creating the header file name and open it. --------------------------------------!
    write(headname,fmt='(2a)') trim(outpref),'_HEADER'
@@ -67,7 +86,7 @@ subroutine ed_metd_header()
       lat0 = grid_g(1)%lat(1,yz)
       !------------------------------------------------------------------------------------!
 
-      write (unit=59,fmt='(i1)') 2
+      write (unit=59,fmt='(i1)') ndrivers
 
       !------------------------------------------------------------------------------------!
       !     Filling the information about the first file set.                              !
@@ -82,7 +101,7 @@ subroutine ed_metd_header()
       varistring=''
       timestring=''
       typestring=''
-      do nv=1,nvars_ol1
+      do nv=1,nvars_ol1_df
          write(varistring,fmt='(3a)') trim(varistring)//' '''//trim(vars_ol1(nv))//''''
          write(timestring,fmt='(a,1x,f6.0)') trim(timestring),inpfrq
          write(typestring,fmt='(a,1x,i2)'  ) trim(typestring),vtype_ol1(nv)
@@ -114,6 +133,34 @@ subroutine ed_metd_header()
       write (unit=59,fmt='(a)')  trim(timestring)
       write (unit=59,fmt='(a)')  trim(typestring)
       !------------------------------------------------------------------------------------!
+
+      if (ndownscal > 0) then
+         !---------------------------------------------------------------------------------!
+         !     Filling the information about the second file set.                          !
+         !---------------------------------------------------------------------------------!
+         !----- Output file name. ---------------------------------------------------------!
+         write(outname,fmt='(2a)') trim(outpref),'_R01_'
+         write (unit=59,fmt='(a)')  trim(outname)
+         !----- File and dimension information. -------------------------------------------!
+         write (unit=59,fmt='(2(i5,1x),4(f10.4,1x))') mxo,myo,dlon,dlat,lon0,lat0
+         write (unit=59,fmt='(i2)') nvars_ol4
+         !----- Building then writing the strings with variables, times, and types. -------!
+         varistring=''
+         timestring=''
+         typestring=''
+         do nv=1,nvars_ol4
+            write(varistring,fmt='(3a)') trim(varistring)//' '''//trim(vars_ol4(nv))//''''
+            write(timestring,fmt='(a,1x,f6.0)') trim(timestring),radfrq
+            write(typestring,fmt='(a,1x,i2)'  ) trim(typestring),vtype_ol4(nv)
+         end do
+         write (unit=59,fmt='(a)')  trim(varistring)
+         write (unit=59,fmt='(a)')  trim(timestring)
+         write (unit=59,fmt='(a)')  trim(typestring)
+         !---------------------------------------------------------------------------------!
+      
+      end if
+
+
 
    end select
 

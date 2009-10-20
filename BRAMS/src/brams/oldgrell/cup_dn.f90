@@ -143,7 +143,7 @@ end subroutine cup_dd_nms
 !--------------------------------------------------------------------
 subroutine cup_dd_aa0(edt,ierr,aa0,jmin,gamma_cup,t_cup,hcd,hes_cup,z,mix      &
                      ,mgmxp,mkx,mgmzp,istart,iend,zd)
-  use rconstants, only : g, cp
+  use rconstants, only : grav, cp
   implicit none
   integer                      :: i,k,kk,mix,mgmxp,mkx,mgmzp,istart,iend
   integer, dimension(mgmxp)    :: jmin,ierr
@@ -156,7 +156,7 @@ subroutine cup_dd_aa0(edt,ierr,aa0,jmin,gamma_cup,t_cup,hcd,hes_cup,z,mix      &
            KK=JMIN(I)-K
 
            DZ=(Z(I,KK)-Z(I,KK+1))
-           AA0(I)=AA0(I)+zd(i,kk)*EDT(I)*DZ*(g/(cp*T_cup(I,KK)))* &
+           AA0(I)=AA0(I)+zd(i,kk)*EDT(I)*DZ*(grav/(cp*T_cup(I,KK)))* &
                 ((hcd(i,kk)-hes_cup(i,kk))/(1.+GAMMA_cup(i,kk)))
         endif
      enddo

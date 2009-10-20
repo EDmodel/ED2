@@ -1292,120 +1292,314 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   
   ! All daily and monthly variables need to be retrieved if you are loading there...
   
-  if(associated(cgrid%dmean_gpp         )) &
-       call hdf_getslab_r(cgrid%dmean_gpp(ipy:ipy)          ,'DMEAN_GPP '         ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%dmean_evap        )) &
-       call hdf_getslab_r(cgrid%dmean_evap(ipy:ipy)         ,'DMEAN_EVAP '        ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%dmean_transp      )) &
-       call hdf_getslab_r(cgrid%dmean_transp(ipy:ipy)       ,'DMEAN_TRANSP '      ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%dmean_sensible_vc )) &
-       call hdf_getslab_r(cgrid%dmean_sensible_vc(ipy:ipy)  ,'DMEAN_SENSIBLE_VC ' ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%dmean_sensible_gc )) &
-       call hdf_getslab_r(cgrid%dmean_sensible_gc(ipy:ipy)  ,'DMEAN_SENSIBLE_GC ' ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%dmean_sensible_ac )) &
-       call hdf_getslab_r(cgrid%dmean_sensible_ac(ipy:ipy)  ,'DMEAN_SENSIBLE_AC ' ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%dmean_sensible    )) &
-       call hdf_getslab_r(cgrid%dmean_sensible(ipy:ipy)     ,'DMEAN_SENSIBLE '    ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%dmean_plresp      )) &
-       call hdf_getslab_r(cgrid%dmean_plresp(ipy:ipy)       ,'DMEAN_PLRESP '      ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%dmean_rh          )) &
-       call hdf_getslab_r(cgrid%dmean_rh(ipy:ipy)           ,'DMEAN_RH '          ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%dmean_leaf_resp   )) &
-       call hdf_getslab_r(cgrid%dmean_leaf_resp(ipy:ipy)    ,'DMEAN_LEAF_RESP '   ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%dmean_root_resp   )) &
-       call hdf_getslab_r(cgrid%dmean_root_resp(ipy:ipy)    ,'DMEAN_ROOT_RESP '   ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%dmean_growth_resp )) &
-       call hdf_getslab_r(cgrid%dmean_growth_resp(ipy:ipy)  ,'DMEAN_GROWTH_RESP ' ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%dmean_storage_resp)) &
-       call hdf_getslab_r(cgrid%dmean_storage_resp(ipy:ipy) ,'DMEAN_STORAGE_RESP ',&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%dmean_vleaf_resp  )) &
-       call hdf_getslab_r(cgrid%dmean_vleaf_resp(ipy:ipy)   ,'DMEAN_VLEAF_RESP '  ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%dmean_nep         )) &
-       call hdf_getslab_r(cgrid%dmean_nep(ipy:ipy)          ,'DMEAN_NEP '         ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%dmean_fsw         )) &
-       call hdf_getslab_r(cgrid%dmean_fsw(ipy:ipy)          ,'DMEAN_FSW '         ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%dmean_fsn         )) &
-       call hdf_getslab_r(cgrid%dmean_fsn(ipy:ipy)          ,'DMEAN_FSN '         ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%mmean_gpp         )) &
-       call hdf_getslab_r(cgrid%mmean_gpp(ipy:ipy)          ,'MMEAN_GPP '         ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%mmean_evap        )) &
-       call hdf_getslab_r(cgrid%mmean_evap(ipy:ipy)         ,'MMEAN_EVAP '        ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%mmean_transp      )) &
-       call hdf_getslab_r(cgrid%mmean_transp(ipy:ipy)       ,'MMEAN_TRANSP '      ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%mmean_sensible    )) &
-       call hdf_getslab_r(cgrid%mmean_sensible(ipy:ipy)     ,'MMEAN_SENSIBLE '    ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%mmean_sensible_ac )) &
-       call hdf_getslab_r(cgrid%mmean_sensible_ac(ipy:ipy)  ,'MMEAN_SENSIBLE_AC ' ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%mmean_sensible_gc )) &
-       call hdf_getslab_r(cgrid%mmean_sensible_gc(ipy:ipy)  ,'MMEAN_SENSIBLE_GC ' ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%mmean_sensible_vc )) &
-       call hdf_getslab_r(cgrid%mmean_sensible_vc(ipy:ipy)  ,'MMEAN_SENSIBLE_VC ' ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%mmean_nep         )) &
-       call hdf_getslab_r(cgrid%mmean_nep(ipy:ipy)          ,'MMEAN_NEP '         ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%mmean_plresp      )) &
-       call hdf_getslab_r(cgrid%mmean_plresp(ipy:ipy)       ,'MMEAN_PLRESP '      ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%mmean_rh          )) &
-       call hdf_getslab_r(cgrid%mmean_rh(ipy:ipy)           ,'MMEAN_RH '          ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%mmean_leaf_resp   )) &
-       call hdf_getslab_r(cgrid%mmean_leaf_resp(ipy:ipy)    ,'MMEAN_LEAF_RESP '   ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%mmean_root_resp   )) &
-       call hdf_getslab_r(cgrid%mmean_root_resp(ipy:ipy)    ,'MMEAN_ROOT_RESP '   ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%mmean_growth_resp )) &
-       call hdf_getslab_r(cgrid%mmean_growth_resp(ipy:ipy)  ,'MMEAN_GROWTH_RESP ' ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%mmean_storage_resp)) &
-       call hdf_getslab_r(cgrid%mmean_storage_resp(ipy:ipy) ,'MMEAN_STORAGE_RESP ',&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%mmean_vleaf_resp  )) &
-       call hdf_getslab_r(cgrid%mmean_vleaf_resp(ipy:ipy)   ,'MMEAN_VLEAF_RESP '  ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%stdev_gpp         )) &
-       call hdf_getslab_r(cgrid%stdev_gpp(ipy:ipy)          ,'STDEV_GPP '         ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%stdev_evap        )) &
-       call hdf_getslab_r(cgrid%stdev_evap(ipy:ipy)         ,'STDEV_EVAP '        ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%stdev_transp      )) &
-       call hdf_getslab_r(cgrid%stdev_transp(ipy:ipy)       ,'STDEV_TRANSP '      ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%stdev_sensible    )) &
-       call hdf_getslab_r(cgrid%stdev_sensible(ipy:ipy)     ,'STDEV_SENSIBLE '    ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%stdev_nep         )) &
-       call hdf_getslab_r(cgrid%stdev_nep(ipy:ipy)          ,'STDEV_NEP '         ,&
-       dsetrank,iparallel,.false.)
-  if(associated(cgrid%stdev_rh          )) &
-       call hdf_getslab_r(cgrid%stdev_rh(ipy:ipy)           ,'STDEV_RH '          ,&
-       dsetrank,iparallel,.false.)
+  if (associated(cgrid%dmean_pcpg           ))                                             &
+     call hdf_getslab_r(cgrid%dmean_pcpg           (ipy:ipy) ,'DMEAN_PCPG            '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_runoff         ))                                             &
+     call hdf_getslab_r(cgrid%dmean_runoff         (ipy:ipy) ,'DMEAN_RUNOFF          '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_drainage       ))                                             &
+     call hdf_getslab_r(cgrid%dmean_drainage       (ipy:ipy) ,'DMEAN_DRAINAGE        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_gpp            ))                                             &
+     call hdf_getslab_r(cgrid%dmean_gpp            (ipy:ipy) ,'DMEAN_GPP             '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_evap           ))                                             &
+     call hdf_getslab_r(cgrid%dmean_evap           (ipy:ipy) ,'DMEAN_EVAP            '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_transp         ))                                             &
+     call hdf_getslab_r(cgrid%dmean_transp         (ipy:ipy) ,'DMEAN_TRANSP          '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
+  if (associated(cgrid%dmean_sensible_vc    ))                                             &
+     call hdf_getslab_r(cgrid%dmean_sensible_vc    (ipy:ipy) ,'DMEAN_SENSIBLE_VC     '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_sensible_gc    ))                                             &
+     call hdf_getslab_r(cgrid%dmean_sensible_gc    (ipy:ipy) ,'DMEAN_SENSIBLE_GC     '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_sensible_ac    ))                                             &
+     call hdf_getslab_r(cgrid%dmean_sensible_ac    (ipy:ipy) ,'DMEAN_SENSIBLE_AC     '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_vapor_vc       ))                                             &
+     call hdf_getslab_r(cgrid%dmean_vapor_vc       (ipy:ipy) ,'DMEAN_VAPOR_VC        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_vapor_gc       ))                                             &
+     call hdf_getslab_r(cgrid%dmean_vapor_gc       (ipy:ipy) ,'DMEAN_VAPOR_GC        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_vapor_ac       ))                                             &
+     call hdf_getslab_r(cgrid%dmean_vapor_ac       (ipy:ipy) ,'DMEAN_VAPOR_AC        '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
+  if (associated(cgrid%dmean_nep            ))                                             &
+     call hdf_getslab_r(cgrid%dmean_nep            (ipy:ipy) ,'DMEAN_NEP             '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
+  if (associated(cgrid%dmean_plresp         ))                                             &
+     call hdf_getslab_r(cgrid%dmean_plresp         (ipy:ipy) ,'DMEAN_PLRESP          '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
+  if (associated(cgrid%dmean_rh             ))                                             &
+     call hdf_getslab_r(cgrid%dmean_rh             (ipy:ipy) ,'DMEAN_RH              '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
+  if (associated(cgrid%dmean_leaf_resp      ))                                             &
+     call hdf_getslab_r(cgrid%dmean_leaf_resp      (ipy:ipy) ,'DMEAN_LEAF_RESP       '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_root_resp      ))                                             &
+     call hdf_getslab_r(cgrid%dmean_root_resp      (ipy:ipy) ,'DMEAN_ROOT_RESP       '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_growth_resp    ))                                             &
+     call hdf_getslab_r(cgrid%dmean_growth_resp    (ipy:ipy) ,'DMEAN_GROWTH_RESP     '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_storage_resp   ))                                             &
+     call hdf_getslab_r(cgrid%dmean_storage_resp   (ipy:ipy) ,'DMEAN_STORAGE_RESP    '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_vleaf_resp     ))                                             &
+     call hdf_getslab_r(cgrid%dmean_vleaf_resp     (ipy:ipy) ,'DMEAN_VLEAF_RESP      '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_fsw            ))                                             &
+     call hdf_getslab_r(cgrid%dmean_fsw            (ipy:ipy) ,'DMEAN_FSW             '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_fsn            ))                                             &
+     call hdf_getslab_r(cgrid%dmean_fsn            (ipy:ipy) ,'DMEAN_FSN             '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_can_temp       ))                                             &
+     call hdf_getslab_r(cgrid%dmean_can_temp       (ipy:ipy) ,'DMEAN_CAN_TEMP        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_can_shv        ))                                             &
+     call hdf_getslab_r(cgrid%dmean_can_shv        (ipy:ipy) ,'DMEAN_CAN_SHV         '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_can_prss       ))                                             &
+     call hdf_getslab_r(cgrid%dmean_can_prss       (ipy:ipy) ,'DMEAN_CAN_PRSS        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_can_theta      ))                                             &
+     call hdf_getslab_r(cgrid%dmean_can_theta      (ipy:ipy) ,'DMEAN_CAN_THETA       '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_can_co2        ))                                             &
+     call hdf_getslab_r(cgrid%dmean_can_co2        (ipy:ipy) ,'DMEAN_CAN_CO2         '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_can_rhos       ))                                             &
+     call hdf_getslab_r(cgrid%dmean_can_rhos       (ipy:ipy) ,'DMEAN_CAN_RHOS        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_veg_energy     ))                                             &
+     call hdf_getslab_r(cgrid%dmean_veg_energy     (ipy:ipy) ,'DMEAN_VEG_ENERGY      '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_veg_water      ))                                             &
+     call hdf_getslab_r(cgrid%dmean_veg_water      (ipy:ipy) ,'DMEAN_VEG_WATER       '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_veg_hcap       ))                                             &
+     call hdf_getslab_r(cgrid%dmean_veg_hcap       (ipy:ipy) ,'DMEAN_VEG_HCAP        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_veg_temp       ))                                             &
+     call hdf_getslab_r(cgrid%dmean_veg_temp       (ipy:ipy) ,'DMEAN_VEG_TEMP        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_atm_temp       ))                                             &
+     call hdf_getslab_r(cgrid%dmean_atm_temp       (ipy:ipy) ,'DMEAN_ATM_TEMP        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_atm_shv        ))                                             &
+     call hdf_getslab_r(cgrid%dmean_atm_shv        (ipy:ipy) ,'DMEAN_ATM_SHV         '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_atm_prss       ))                                             &
+     call hdf_getslab_r(cgrid%dmean_atm_prss       (ipy:ipy) ,'DMEAN_ATM_PRSS        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_atm_vels       ))                                             &
+     call hdf_getslab_r(cgrid%dmean_atm_vels       (ipy:ipy) ,'DMEAN_ATM_VELS        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_co2_residual   ))                                             &
+     call hdf_getslab_r(cgrid%dmean_co2_residual   (ipy:ipy) ,'DMEAN_CO2_RESIDUAL    '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_energy_residual))                                             &
+     call hdf_getslab_r(cgrid%dmean_energy_residual(ipy:ipy) ,'DMEAN_ENERGY_RESIDUAL '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%dmean_water_residual ))                                             &
+     call hdf_getslab_r(cgrid%dmean_water_residual (ipy:ipy) ,'DMEAN_WATER_RESIDUAL  '     &
+                       ,dsetrank,iparallel,.false.)
+
+
+  if (associated(cgrid%mmean_co2_residual   ))                                             &
+     call hdf_getslab_r(cgrid%mmean_co2_residual   (ipy:ipy) ,'MMEAN_CO2_RESIDUAL    '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_energy_residual))                                             &
+     call hdf_getslab_r(cgrid%mmean_energy_residual(ipy:ipy) ,'MMEAN_ENERGY_RESIDUAL '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_water_residual ))                                             &
+     call hdf_getslab_r(cgrid%mmean_water_residual (ipy:ipy) ,'MMEAN_WATER_RESIDUAL  '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_gpp            ))                                             &
+     call hdf_getslab_r(cgrid%mmean_gpp            (ipy:ipy) ,'MMEAN_GPP             '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_evap           ))                                             &
+     call hdf_getslab_r(cgrid%mmean_evap           (ipy:ipy) ,'MMEAN_EVAP            '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_transp         ))                                             &
+     call hdf_getslab_r(cgrid%mmean_transp         (ipy:ipy) ,'MMEAN_TRANSP          '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_sensible_vc    ))                                             &
+     call hdf_getslab_r(cgrid%mmean_sensible_vc    (ipy:ipy) ,'MMEAN_SENSIBLE_VC     '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_sensible_gc    ))                                             &
+     call hdf_getslab_r(cgrid%mmean_sensible_gc    (ipy:ipy) ,'MMEAN_SENSIBLE_GC     '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_sensible_ac    ))                                             &
+     call hdf_getslab_r(cgrid%mmean_sensible_ac    (ipy:ipy) ,'MMEAN_SENSIBLE_AC     '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_nep            ))                                             &
+     call hdf_getslab_r(cgrid%mmean_nep            (ipy:ipy) ,'MMEAN_NEP             '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_plresp         ))                                             &
+     call hdf_getslab_r(cgrid%mmean_plresp         (ipy:ipy) ,'MMEAN_PLRESP          '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_rh             ))                                             &
+     call hdf_getslab_r(cgrid%mmean_rh             (ipy:ipy) ,'MMEAN_RH              '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_leaf_resp      ))                                             &
+     call hdf_getslab_r(cgrid%mmean_leaf_resp      (ipy:ipy) ,'MMEAN_LEAF_RESP       '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_root_resp      ))                                             &
+     call hdf_getslab_r(cgrid%mmean_root_resp      (ipy:ipy) ,'MMEAN_ROOT_RESP       '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_growth_resp    ))                                             &
+     call hdf_getslab_r(cgrid%mmean_growth_resp    (ipy:ipy) ,'MMEAN_GROWTH_RESP     '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_storage_resp   ))                                             &
+     call hdf_getslab_r(cgrid%mmean_storage_resp   (ipy:ipy) ,'MMEAN_STORAGE_RESP    '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_vleaf_resp     ))                                             &
+     call hdf_getslab_r(cgrid%mmean_vleaf_resp     (ipy:ipy) ,'MMEAN_VLEAF_RESP      '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_can_temp       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_can_temp       (ipy:ipy) ,'MMEAN_CAN_TEMP        '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_can_shv        ))                                             &
+     call hdf_getslab_r(cgrid%mmean_can_shv        (ipy:ipy) ,'MMEAN_CAN_SHV         '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_can_co2        ))                                             &
+     call hdf_getslab_r(cgrid%mmean_can_co2        (ipy:ipy) ,'MMEAN_CAN_CO2         '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_can_rhos       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_can_rhos       (ipy:ipy) ,'MMEAN_CAN_RHOS        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%mmean_can_prss       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_can_prss       (ipy:ipy) ,'MMEAN_CAN_PRSS        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%mmean_can_theta      ))                                             &
+     call hdf_getslab_r(cgrid%mmean_can_theta      (ipy:ipy) ,'MMEAN_CAN_THETA       '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%mmean_veg_energy     ))                                             &
+     call hdf_getslab_r(cgrid%mmean_veg_energy     (ipy:ipy) ,'MMEAN_VEG_ENERGY      '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_veg_water      ))                                             &
+     call hdf_getslab_r(cgrid%mmean_veg_water      (ipy:ipy) ,'MMEAN_VEG_WATER       '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_veg_temp       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_veg_temp       (ipy:ipy) ,'MMEAN_VEG_TEMP        '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_veg_hcap       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_veg_hcap       (ipy:ipy) ,'MMEAN_VEG_HCAP        '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_atm_temp       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_atm_temp       (ipy:ipy) ,'MMEAN_ATM_TEMP        '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_atm_shv        ))                                             &
+     call hdf_getslab_r(cgrid%mmean_atm_shv        (ipy:ipy) ,'MMEAN_ATM_SHV         '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_atm_prss       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_atm_prss       (ipy:ipy) ,'MMEAN_ATM_PRSS        '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_atm_vels       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_atm_vels       (ipy:ipy) ,'MMEAN_ATM_VELS        '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_pcpg           ))                                             &
+     call hdf_getslab_r(cgrid%mmean_pcpg           (ipy:ipy) ,'MMEAN_PCPG            '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%stdev_gpp            ))                                             &
+     call hdf_getslab_r(cgrid%stdev_gpp            (ipy:ipy) ,'STDEV_GPP             '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%stdev_evap           ))                                             &
+     call hdf_getslab_r(cgrid%stdev_evap           (ipy:ipy) ,'STDEV_EVAP            '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%stdev_transp         ))                                             &
+     call hdf_getslab_r(cgrid%stdev_transp         (ipy:ipy) ,'STDEV_TRANSP          '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%stdev_sensible       ))                                             &
+     call hdf_getslab_r(cgrid%stdev_sensible       (ipy:ipy) ,'STDEV_SENSIBLE        '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%stdev_nep            ))                                             &
+     call hdf_getslab_r(cgrid%stdev_nep            (ipy:ipy) ,'STDEV_NEP             '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%stdev_rh             ))                                             &
+     call hdf_getslab_r(cgrid%stdev_rh             (ipy:ipy) ,'STDEV_RH              '     &
+                       ,dsetrank,iparallel,.false.)
 
    ! Variables with 2 dimensions (nzg,npolygons)
    dsetrank    = 2
@@ -1455,7 +1649,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    memsize(2)   = 1_8
    memoffs(2)   = 0_8
 
-   ! THIS VARIABLE DOES NOT NEED TO BE IN THE HISTORY RE-START - RGK 11-05-08
    if(associated(cgrid%lai_pft)) call hdf_getslab_r(cgrid%lai_pft(:,ipy) ,'LAI_PFT '       , &
         dsetrank,iparallel,.false.)
    if(associated(cgrid%mmean_lai_pft)) call hdf_getslab_r(cgrid%mmean_lai_pft(:,ipy) ,'MMEAN_LAI_PFT ' , &
@@ -1495,6 +1688,12 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
         'DMEAN_RH_LU '  ,dsetrank,iparallel,.false.)
    if(associated(cgrid%dmean_nep_lu))  call hdf_getslab_r(cgrid%dmean_nep_lu(:,ipy) , &
         'DMEAN_NEP_LU ' ,dsetrank,iparallel,.false.)
+   if(associated(cgrid%mmean_lai_lu))  call hdf_getslab_r(cgrid%mmean_lai_lu(:,ipy) , &
+        'MMEAN_LAI_LU ' ,dsetrank,iparallel,.false.)
+   if(associated(cgrid%mmean_wpa_lu))  call hdf_getslab_r(cgrid%mmean_wpa_lu(:,ipy) , &
+        'MMEAN_WPA_LU ' ,dsetrank,iparallel,.false.)
+   if(associated(cgrid%mmean_wai_lu))  call hdf_getslab_r(cgrid%mmean_wai_lu(:,ipy) , &
+        'MMEAN_WAI_LU ' ,dsetrank,iparallel,.false.)
    if(associated(cgrid%mmean_gpp_lu))  call hdf_getslab_r(cgrid%mmean_gpp_lu(:,ipy) , &
         'MMEAN_GPP_LU ' ,dsetrank,iparallel,.false.)
    if(associated(cgrid%mmean_rh_lu ))  call hdf_getslab_r(cgrid%mmean_rh_lu(:,ipy)  , &
@@ -1524,13 +1723,36 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    if(associated(cgrid%mmean_gpp_dbh)) call hdf_getslab_r(cgrid%mmean_gpp_dbh(:,ipy) , &
         'MMEAN_GPP_DBH ' ,dsetrank,iparallel,.false.)
 
-   ! SITE_ADJACENCY
+   ! Variables with three dimensions(n_dist_types,n_dist_types,npolygons)
+   dsetrank    = 3
+   globdims(1) = int(n_dist_types,8)
+   chnkdims(1) = int(n_dist_types,8)
+   memdims(1)  = int(n_dist_types,8)
+   memsize(1)  = int(n_dist_types,8)
+   chnkoffs(1) = 0_8
+   memoffs(1)  = 0_8
 
+   globdims(2) = int(n_dist_types,8)
+   chnkdims(2) = int(n_dist_types,8)
+   memdims(2)  = int(n_dist_types,8)
+   memsize(2)  = int(n_dist_types,8)
+   chnkoffs(2) = 0_8
+   memoffs(2)  = 0_8
+
+   globdims(3)  = int(cgrid%npolygons_global,8)
+   chnkdims(3)  = 1_8
+   chnkoffs(3)  = int(py_index - 1,8)
+   memdims(3)   = 1_8
+   memsize(3)   = 1_8
+   memoffs(3)   = 0_8
+   if (associated(cgrid%disturbance_rates))                                                &
+       call hdf_getslab_r(cgrid%disturbance_rates(:,:,ipy),'DISTURBANCE_RATES '            &
+                         ,dsetrank,iparallel,.false.)
 
    return
  end subroutine fill_history_grid
- !==========================================================================================!
- !==========================================================================================!
+ !=========================================================================================!
+ !=========================================================================================!
 
 
 
@@ -1603,19 +1825,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    call hdf_getslab_i(cpoly%patch_count,'PATCH_COUNT ',dsetrank,iparallel,.true.)  
    call hdf_getslab_i(cpoly%sitenum,'SITENUM ',dsetrank,iparallel,.true.)
-   call hdf_getslab_i(cpoly%fia_forestry,'FIA_FORESTRY ',dsetrank,iparallel,.true.)
-   call hdf_getslab_i(cpoly%agri_species,'AGRI_SPECIES ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%agri_stocking,'AGRI_STOCKING ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%lambda_primary,'LAMBDA_PRIMARY ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%lambda_secondary,'LAMBDA_SECONDARY ',dsetrank,iparallel,.true.)
-   call hdf_getslab_i(cpoly%plantation_species,'PLANTATION_SPECIES ',&
-        dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%plantation_stocking,'PLANTATION_STOCKING ',&
-        dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%reference_agb,'REFERENCE_AGB ',dsetrank,iparallel,.true.)
-  ! call hdf_getslab_r(cpoly%first_lutime,'FIRST_LUTIME ',dsetrank,iparallel)
-  ! call hdf_getslab_r(cpoly%last_lutime,'LAST_LUTIME ',dsetrank,iparallel)
-  ! call hdf_getslab_r(cpoly%clutime,' ',dsetrank,iparallel)
+
    call hdf_getslab_i(cpoly%lsl,'LSL_SI ',dsetrank,iparallel,.true.)   
    call hdf_getslab_r(cpoly%area,'AREA_SI ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%patch_area,'PATCH_AREA ',dsetrank,iparallel,.true.)
@@ -1624,8 +1834,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(cpoly%aspect,'ASPECT ',dsetrank,iparallel,.true.)
 
    call hdf_getslab_i(cpoly%num_landuse_years,'NUM_LANDUSE_YEARS ',dsetrank,iparallel,.true.)
-   call hdf_getslab_i(cpoly%soi,'SOI ',dsetrank,iparallel,.true.)
- !  call hdf_getslab_r(cpoly%soi_name,' ',dsetrank,iparallel)
    call hdf_getslab_r(cpoly%TCI,'TCI ',dsetrank,iparallel,.true.)      
    call hdf_getslab_r(cpoly%pptweight,'pptweight ',dsetrank,iparallel,.true.)      
    call hdf_getslab_i(cpoly%hydro_next,'HYDRO_NEXT ',dsetrank,iparallel,.true.)
@@ -1635,14 +1843,14 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(cpoly%moist_tau,'MOIST_TAU ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%moist_zi,'MOIST_ZI ',dsetrank,iparallel,.true.) 
    call hdf_getslab_r(cpoly%baseflow,'BASEFLOW_SI ',dsetrank,iparallel,.true.) 
-   call hdf_getslab_i(cpoly%metplex_beg_month,'METPLEX_BEG_MONTH ',dsetrank,iparallel,.true.)
-   call hdf_getslab_i(cpoly%metplex_beg_year,'METPLEX_BEG_YEAR ',dsetrank,iparallel,.true.)
-   call hdf_getslab_i(cpoly%metplex_end_year,'METPLEX_END_YEAR ',dsetrank,iparallel,.true.)
+!   call hdf_getslab_i(cpoly%metplex_beg_month,'METPLEX_BEG_MONTH ',dsetrank,iparallel,.true.)
+!   call hdf_getslab_i(cpoly%metplex_beg_year,'METPLEX_BEG_YEAR ',dsetrank,iparallel,.true.)
+!   call hdf_getslab_i(cpoly%metplex_end_year,'METPLEX_END_YEAR ',dsetrank,iparallel,.true.)
 
    call hdf_getslab_r(cpoly%min_monthly_temp,'MIN_MONTHLY_TEMP ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%removed_biomass,'REMOVED_BIOMASS ',dsetrank,iparallel,.true.) 
-   call hdf_getslab_r(cpoly%harvested_biomass,'HARVESTED_BIOMASS ', &
-        dsetrank,iparallel,.true.) 
+!   call hdf_getslab_r(cpoly%removed_biomass,'REMOVED_BIOMASS ',dsetrank,iparallel,.true.) 
+!   call hdf_getslab_r(cpoly%harvested_biomass,'HARVESTED_BIOMASS ', &
+!        dsetrank,iparallel,.true.) 
    call hdf_getslab_i(cpoly%plantation,'PLANTATION_SI ',dsetrank,iparallel,.true.) 
    call hdf_getslab_i(cpoly%agri_stocking_pft,'AGRI_STOCKING_PFT ', &
         dsetrank,iparallel,.true.)
@@ -1656,18 +1864,14 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
         dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%secondary_harvest_memory,'SECONDARY_HARVEST_MEMORY ', &
         dsetrank,iparallel,.true.)
-   call hdf_getslab_i(cpoly%fire_flag,'FIRE_FLAG ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%fire_disturbance_rate,'FIRE_DISTURBANCE_RATE ', &
         dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%fuel,'FUEL ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%ignition_rate,'IGNITION_RATE ',dsetrank,iparallel,.true.)
-  ! call hdf_getslab_r(cpoly%phen_pars,'PHEN_PARS ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%treefall_disturbance_rate,'TREEFALL_DISTURBANCE_RATE ', &
         dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%nat_disturbance_rate,'NAT_DISTURBANCE_RATE ', &
         dsetrank,iparallel,.true.)
    call hdf_getslab_i(cpoly%nat_dist_type,'NAT_DIST_TYPE ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%disturbance_rate,'DISTURBANCE_RATE ',dsetrank,iparallel,.true.)
 
    dsetrank    = 2_8
    globdims(1) = int(n_pft,8)
@@ -1683,11 +1887,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    memsize(2)   = int(cpoly%nsites,8)
    memoffs(2)   = 0_8
 
-   call hdf_getslab_r(cpoly%elongation_factor,'ELONGATION_FACTOR ', &
-        dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%delta_elongf,'DELTA_ELONGF ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%gee_phen_delay,'GEE_PHEN_DELAY ',&
-        dsetrank,iparallel,.true.)
    if (associated(cpoly%lai_pft)) call hdf_getslab_r(cpoly%lai_pft,'LAI_PFT_SI ', &
         dsetrank,iparallel,.false.)
    if (associated(cpoly%wpa_pft)) call hdf_getslab_r(cpoly%wpa_pft,'WPA_PFT_SI ', &
@@ -1729,7 +1928,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    memsize(2)   = int(cpoly%nsites,8)
    memoffs(2)   = 0_8
 
-   call hdf_getslab_r(cpoly%lambda1,'LAMBDA1 ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%lambda_fire,'LAMBDA_FIRE ',dsetrank,iparallel,.true.)
 
    dsetrank    = 2_8
@@ -1746,7 +1944,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    memsize(2)   = int(cpoly%nsites,8)
    memoffs(2)   = 0_8
 
-   call hdf_getslab_r(cpoly%lu_dist_area,'LU_DIST_AREA ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%loss_fraction,'LOSS_FRACTION ',dsetrank,iparallel,.true.)
 
    dsetrank    = 3_8
@@ -1765,7 +1962,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    call hdf_getslab_r(cpoly%disturbance_memory,'DISTURBANCE_MEMORY ', &
         dsetrank,iparallel,.true.)
-   call hdf_getslab_r(cpoly%disturbance_rates,'DISTURBANCE_RATES ', &
+   call hdf_getslab_r(cpoly%disturbance_rates,'DISTURBANCE_RATES_SI ', &
         dsetrank,iparallel,.true.)
 
    dsetrank    = 3
@@ -1898,9 +2095,13 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%sum_chd,'SUM_CHD ',dsetrank,iparallel,.true.)
    call hdf_getslab_i(csite%plantation,'PLANTATION ',dsetrank,iparallel,.true.)
    !  call hdf_getslab_i(csite%cohort_count,'COHORT_COUNT ',dsetrank,iparallel)
+   call hdf_getslab_r(csite%can_enthalpy,'CAN_ENTHALPY ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%can_prss,'CAN_PRSS ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%can_theta,'CAN_THETA ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%can_temp,'CAN_TEMP ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%can_shv,'CAN_SHV ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%can_co2,'CAN_CO2 ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%can_rhos,'CAN_RHOS ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%can_depth,'CAN_DEPTH ',dsetrank,iparallel,.true.)
    !  call hdf_getslab_i(csite%pname,'PNAME ',dsetrank,iparallel)
    call hdf_getslab_r(csite%lai,'LAI_PA ',dsetrank,iparallel,.true.)
@@ -1917,10 +2118,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%wbudget_precipgain,'WBUDGET_PRECIPGAIN ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%wbudget_loss2runoff,'WBUDGET_LOSS2RUNOFF ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%wbudget_initialstorage,'WBUDGET_INITIALSTORAGE ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(csite%ebudget_latent,'EBUDGET_LATENT ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_loss2atm,'EBUDGET_LOSS2ATM ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_loss2runoff,'EBUDGET_LOSS2RUNOFF ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_netrad,'EBUDGET_NETRAD ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%ebudget_latent,'EBUDGET_LATENT ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_precipgain,'EBUDGET_PRECIPGAIN ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_initialstorage,'EBUDGET_INITIALSTORAGE ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%co2budget_initialstorage,'CO2BUDGET_INITIALSTORAGE ',dsetrank,iparallel,.true.)
@@ -2440,7 +2641,7 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required)
      write (unit=*,fmt='(a)') '-----------------------------------------------------------'
      write (unit=*,fmt='(a)') ''
      
-     buff=0._4
+     buff=0.
      return
      
   else
@@ -2564,7 +2765,7 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required)
      write (unit=*,fmt='(a)') '-----------------------------------------------------------'
      write (unit=*,fmt='(a)') ''
      
-     buff=0._8
+     buff=0.d0
      return
      
   else

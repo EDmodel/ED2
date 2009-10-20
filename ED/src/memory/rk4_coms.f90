@@ -20,10 +20,15 @@ module rk4_coms
    type rk4patchtype
 
       !----- Canopy air variables. --------------------------------------------------------!
-      real(kind=8)                        :: can_temp     ! Temperature           [      K]
-      real(kind=8)                        :: can_shv      ! Specific humidity     [  kg/kg]
-      real(kind=8)                        :: can_co2      ! CO_2                  [µmol/m³]
-      
+      real(kind=8)                        :: can_enthalpy ! Canopy enthalpy      [    J/kg]
+      real(kind=8)                        :: can_theta    ! Pot. Temperature     [       K]
+      real(kind=8)                        :: can_temp     ! Temperature          [       K]
+      real(kind=8)                        :: can_shv      ! Specific humidity    [   kg/kg]
+      real(kind=8)                        :: can_co2      ! CO_2                 [µmol/mol]
+      real(kind=8)                        :: can_depth    ! Canopy depth         [       m]
+      real(kind=8)                        :: can_rhos     ! Canopy air density   [   kg/m³]
+      real(kind=8)                        :: can_prss     ! Pressure             [      Pa]
+
       !----- Soil variables. --------------------------------------------------------------!
       real(kind=8), dimension(:), pointer :: soil_energy  ! Internal energy       [   J/m³]
       real(kind=8), dimension(:), pointer :: soil_tempk   ! Specific humidity     [      K]
@@ -62,6 +67,7 @@ module rk4_coms
       real(kind=8)                        :: cstar ! Carbon mixing ratio          [µmol/m³]
       real(kind=8)                        :: tstar ! Temperature                  [      K]
       real(kind=8)                        :: qstar ! Water vapour spec. humidity  [  kg/kg]
+      real(kind=8)                        :: estar ! Enthalpy                     [   J/kg]
 
       !----- Vertical fluxes. -------------------------------------------------------------!
       real(kind=8)                        :: upwp 
@@ -108,8 +114,6 @@ module rk4_coms
       real(kind=8) :: avg_sensible_gc   ! Ground    -> canopy air
       real(kind=8) :: avg_sensible_ac   ! Free atm. -> canopy air
       real(kind=8) :: avg_heatstor_veg  ! Heat storage in vegetation
-      real(kind=8) :: avg_sensible_tot  ! Sensible heat flux
-      real(kind=8) :: avg_sensible_2cas ! Sensible heat flux to canopy air space
       !----- Carbon flux ------------------------------------------------------------------!
       real(kind=8) :: avg_carbon_ac     ! Free atm. -> canopy air
       !----- Soil fluxes ------------------------------------------------------------------!
@@ -118,10 +122,16 @@ module rk4_coms
       real(kind=8),pointer,dimension(:) :: avg_sensible_gg ! Soil heat flux between layers
       real(kind=8)                      :: avg_drainage    ! Drainage at the bottom.
       !----- Full budget variables --------------------------------------------------------!
-      real(kind=8) :: wbudget_loss2atm
-      real(kind=8) :: ebudget_loss2atm
-      real(kind=8) :: ebudget_latent
       real(kind=8) :: co2budget_loss2atm
+      real(kind=8) :: ebudget_storage
+      real(kind=8) :: ebudget_loss2atm
+      real(kind=8) :: ebudget_loss2drainage
+      real(kind=8) :: ebudget_loss2runoff
+      real(kind=8) :: ebudget_latent
+      real(kind=8) :: wbudget_storage
+      real(kind=8) :: wbudget_loss2atm
+      real(kind=8) :: wbudget_loss2drainage
+      real(kind=8) :: wbudget_loss2runoff
    end type rk4patchtype
    !---------------------------------------------------------------------------------------!
 
@@ -133,14 +143,15 @@ module rk4_coms
       real(kind=8) :: vels
       real(kind=8) :: atm_tmp
       real(kind=8) :: atm_theta
+      real(kind=8) :: atm_enthalpy
       real(kind=8) :: atm_shv
       real(kind=8) :: atm_co2
       real(kind=8) :: zoff
-      real(kind=8) :: exner
+      real(kind=8) :: atm_exner
       real(kind=8) :: pcpg
       real(kind=8) :: qpcpg
       real(kind=8) :: dpcpg
-      real(kind=8) :: prss
+      real(kind=8) :: atm_prss
       real(kind=8) :: geoht
       real(kind=8) :: lon
       real(kind=8) :: lat
@@ -204,7 +215,7 @@ module rk4_coms
    !---------------------------------------------------------------------------------------!
 
    !----- Small number, to avoid singularities. -------------------------------------------!
-   real(kind=8), parameter :: tiny_offset = 1.d-30
+   real(kind=8), parameter :: tiny_offset = 1.d-20
    !----- Huge number, to bypass errmax checks. -------------------------------------------!
    real(kind=8), parameter :: huge_offset = 1.d30
    !---------------------------------------------------------------------------------------!
@@ -270,12 +281,19 @@ module rk4_coms
    real(kind=8) :: rk4eps      ! Desired relative accuracy
    real(kind=8) :: rk4epsi     ! Inverse of rk4eps
    real(kind=8) :: hmin        ! Minimum step size
-   logical      :: print_diags ! Flag to print the diagnostic check. 
+   logical      :: print_diags ! Flag to print the diagnostic check.
+   logical      :: checkbudget ! Flag to decide whether we will check whether the budgets 
+                               !    close every time step (and stop the run if they don't)
+                               !    or if we will skip this part.
    !---------------------------------------------------------------------------------------!
 
 
 
    !----- Constants used in rk4_derivs ----------------------------------------------------!
+   logical      :: const_depth   ! Assume canopy depth is constant. If this is true, then 
+                                 !    density is allowed to change. Otherwise, density is
+                                 !    assumed constant and canopy depth is allowed to 
+                                 !    change. 
    logical      :: debug         ! Verbose output for debug                        [   T|F]
    real(kind=8) :: toocold       ! Minimum temperature for saturation spec. hum.   [     K]
    real(kind=8) :: toohot        ! Maximum temperature for saturation spec. hum.   [     K]
@@ -293,9 +311,6 @@ module rk4_coms
    !---------------------------------------------------------------------------------------!
    real(kind=8) :: hcapveg_ref         ! Reference value                          [ J/m³/K]
    real(kind=8) :: min_height          ! Minimum vegetation height                [      m]
-   real(kind=8) :: hcapveg_stab_thresh ! Minimum stable patch-level heat capacity [ J/m²/K]
-   !----- This is compared with the original heat capacity, leave it single precision. ----!
-   real         :: hcapveg_coh_min     ! Minimum solvable cohort-level heat cap.  [ J/m²/K]
    !---------------------------------------------------------------------------------------!
 
 
@@ -388,8 +403,8 @@ module rk4_coms
    real(kind=8)    :: zveg
    real(kind=8)    :: wcapcan
    real(kind=8)    :: wcapcani
-   real(kind=8)    :: ccapcani
    real(kind=8)    :: hcapcani
+   real(kind=8)    :: ccapcani
    !=======================================================================================!
    !=======================================================================================!
 
@@ -507,14 +522,24 @@ module rk4_coms
       type(rk4patchtype) :: y
       !------------------------------------------------------------------------------------!
 
-      y%wbudget_loss2atm               = 0.d0
-      y%ebudget_loss2atm               = 0.d0
-      y%ebudget_latent                 = 0.d0
       y%co2budget_loss2atm             = 0.d0
+      y%ebudget_storage                = 0.d0
+      y%ebudget_loss2atm               = 0.d0
+      y%ebudget_loss2drainage          = 0.d0
+      y%ebudget_loss2runoff            = 0.d0
+      y%wbudget_storage                = 0.d0
+      y%wbudget_loss2atm               = 0.d0
+      y%wbudget_loss2drainage          = 0.d0
+      y%wbudget_loss2runoff            = 0.d0
      
       y%can_temp                       = 0.d0
       y%can_shv                        = 0.d0
       y%can_co2                        = 0.d0
+      y%can_theta                      = 0.d0
+      y%can_enthalpy                   = 0.d0
+      y%can_depth                      = 0.d0
+      y%can_rhos                       = 0.d0
+      y%can_prss                       = 0.d0
       y%virtual_water                  = 0.d0
       y%virtual_heat                   = 0.d0
       y%virtual_depth                  = 0.d0
@@ -531,6 +556,7 @@ module rk4_coms
       y%cstar                          = 0.d0
       y%tstar                          = 0.d0
       y%qstar                          = 0.d0
+      y%estar                          = 0.d0
       y%virtual_flag                   = 0
       y%avg_carbon_ac                  = 0.d0
      
@@ -552,11 +578,9 @@ module rk4_coms
       y%avg_evap                       = 0.d0
       y%avg_netrad                     = 0.d0
       y%avg_sensible_vc                = 0.d0
-      y%avg_sensible_2cas              = 0.d0
       y%avg_qwshed_vg                  = 0.d0
       y%avg_sensible_gc                = 0.d0
       y%avg_sensible_ac                = 0.d0
-      y%avg_sensible_tot               = 0.d0
       y%avg_heatstor_veg               = 0.d0
 
       y%avg_drainage                   = 0.d0

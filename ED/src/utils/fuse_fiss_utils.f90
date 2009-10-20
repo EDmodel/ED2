@@ -1295,7 +1295,7 @@ module fuse_fiss_utils
                               ! and ipa_tp assign the average to index ipa_tp.             !
                               !------------------------------------------------------------!
                               call fuse_2_patches(csite,donp,recp                          &
-                                                 ,cpoly%met(isi)%rhos,cpoly%lsl(isi)       &
+                                                 ,cpoly%met(isi)%prss,cpoly%lsl(isi)       &
                                                  ,cpoly%green_leaf_factor(:,isi)           &
                                                  ,elim_nplant,elim_lai)
 
@@ -1449,7 +1449,7 @@ module fuse_fiss_utils
    !=======================================================================================!
    !   This subroutine will merge two patches into 1.                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_2_patches(csite,donp,recp,rhos,lsl,green_leaf_factor                 &
+   subroutine fuse_2_patches(csite,donp,recp,prss,lsl,green_leaf_factor                 &
                                ,elim_nplant,elim_lai)
       use ed_state_vars      , only :  sitetype              & ! Structure 
                                      , patchtype             ! ! Structure
@@ -1458,12 +1458,13 @@ module fuse_fiss_utils
       use grid_coms          , only :  nzg                   & ! intent(in)
                                      , nzs                   ! ! intent(in)
       use fusion_fission_coms, only :  ff_ndbh               ! ! intent(in)
-      use ed_max_dims           , only :  n_pft                 & ! intent(in)
+      use ed_max_dims        , only :  n_pft                 & ! intent(in)
                                      , n_dbh                 ! ! intent(in)
       use mem_sites          , only :  maxcohort             ! ! intent(in)
       use consts_coms        , only :  cpi                   & ! intent(in)
                                      , cpor                  & ! intent(in)
                                      , p00                   ! ! intent(in)
+      use therm_lib          , only :  qwtk
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target      :: csite             ! Current site
@@ -1471,7 +1472,7 @@ module fuse_fiss_utils
       integer                , intent(in)  :: recp              ! Receptor patch
       integer                , intent(in)  :: lsl               ! Lowest soil level
       real, dimension(n_pft) , intent(in)  :: green_leaf_factor ! Green leaf factor...
-      real                   , intent(in)  :: rhos              ! Sfc. air density
+      real                   , intent(in)  :: prss              ! Sfc. air density
       real                   , intent(out) :: elim_nplant       ! Eliminated nplant 
       real                   , intent(out) :: elim_lai          ! Eliminated lai
       !----- Local variables --------------------------------------------------------------!
@@ -1543,13 +1544,21 @@ module fuse_fiss_utils
                                      ( csite%can_co2(donp)            * csite%area(donp)   &
                                      + csite%can_co2(recp)            * csite%area(recp) )
 
-      csite%can_temp(recp)           = newareai *                                          &
-                                     ( csite%can_temp(donp)           * csite%area(donp)   &
-                                     + csite%can_temp(recp)           * csite%area(recp) )
+      csite%can_theta(recp)          = newareai *                                          &
+                                     ( csite%can_theta(donp)          * csite%area(donp)   &
+                                     + csite%can_theta(recp)          * csite%area(recp) )
+
+      csite%can_prss(recp)           = newareai *                                          &
+                                     ( csite%can_prss(donp)           * csite%area(donp)   &
+                                     + csite%can_prss(recp)           * csite%area(recp) )
 
       csite%can_shv(recp)            = newareai *                                          &
                                      ( csite%can_shv(donp)            * csite%area(donp)   &
                                      + csite%can_shv(recp)            * csite%area(recp) )
+
+      csite%can_depth(recp)          = newareai *                                          &
+                                     ( csite%can_depth(donp)          * csite%area(donp)   &
+                                     + csite%can_depth(recp)          * csite%area(recp) )
 
       csite%hcapveg(recp)            = newareai *                                          &
                                      ( csite%hcapveg(donp)            * csite%area(donp)   &
@@ -1644,7 +1653,7 @@ module fuse_fiss_utils
       ! + csite%csite%sfcwater_tempk(k,recp)                                               !
       ! + csite%sfcwater_fracliq(k,recp)                                                   !
       !------------------------------------------------------------------------------------!
-      call new_patch_sfc_props(csite,recp,rhos)
+      call new_patch_sfc_props(csite,recp)
       !------------------------------------------------------------------------------------!
 
       csite%mean_rh(recp)                = newareai *                                      &
@@ -1714,10 +1723,6 @@ module fuse_fiss_utils
                                       ( csite%avg_sensible_vc(donp)   * csite%area(donp)   &
                                       + csite%avg_sensible_vc(recp)   * csite%area(recp) )  
 
-      csite%avg_sensible_2cas(recp)   = newareai *                                         &
-                                      ( csite%avg_sensible_2cas(donp) * csite%area(donp)   &
-                                      + csite%avg_sensible_2cas(recp) * csite%area(recp) )  
-
       csite%avg_qwshed_vg(recp)       = newareai *                                         &
                                       ( csite%avg_qwshed_vg(donp)     * csite%area(donp)   &
                                       + csite%avg_qwshed_vg(recp)     * csite%area(recp) )  
@@ -1730,29 +1735,13 @@ module fuse_fiss_utils
                                       ( csite%avg_sensible_ac(donp)   * csite%area(donp)   &
                                       + csite%avg_sensible_ac(recp)   * csite%area(recp) )  
 
-      csite%avg_sensible_tot(recp)    = newareai *                                         &
-                                      ( csite%avg_sensible_tot(donp)  * csite%area(donp)   &
-                                      + csite%avg_sensible_tot(recp)  * csite%area(recp) )  
-
       csite%avg_runoff_heat(recp)     = newareai *                                         &
                                       ( csite%avg_runoff_heat(donp)   * csite%area(donp)   &
                                       + csite%avg_runoff_heat(recp)   * csite%area(recp) )  
 
-      csite%avg_heatstor_veg(recp)    = newareai *                                         &
-                                      ( csite%avg_heatstor_veg(donp)  * csite%area(donp)   &
-                                      + csite%avg_heatstor_veg(recp)  * csite%area(recp) )  
-
       csite%avg_veg_energy(recp)      = newareai *                                         &
                                       ( csite%avg_veg_energy(donp)    * csite%area(donp)   &
                                       + csite%avg_veg_energy(recp)    * csite%area(recp) )  
-
-      csite%avg_veg_temp(recp)        = newareai *                                         &
-                                      ( csite%avg_veg_temp(donp)      * csite%area(donp)   &
-                                      + csite%avg_veg_temp(recp)      * csite%area(recp) )  
-
-      csite%avg_veg_fliq(recp)        = newareai *                                         &
-                                      ( csite%avg_veg_fliq(donp)      * csite%area(donp)   &
-                                      + csite%avg_veg_fliq(recp)      * csite%area(recp) )  
 
       csite%avg_veg_water(recp)       = newareai *                                         &
                                       ( csite%avg_veg_water(donp)     * csite%area(donp)   &
@@ -1795,6 +1784,18 @@ module fuse_fiss_utils
       end do
       !------------------------------------------------------------------------------------!
 
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      call qwtk(csite%avg_veg_energy(recp),csite%avg_veg_water(recp),csite%hcapveg(recp)   &
+               ,csite%avg_veg_temp(recp),csite%avg_veg_fliq(recp))
+
+      !------------------------------------------------------------------------------------!
+      !    We now update the canopy thermodynamic propeties:                               !
+      ! + csite%can_temp(recp)                                                             !
+      ! + csite%can_rhos(recp)                                                             !
+      ! + csite%can_enthalpy(recp)                                                         !
+      !------------------------------------------------------------------------------------!
+      call update_patch_thermo_props(csite,recp,recp)
 
       !------------------------------------------------------------------------------------!
       !     Now we need to adjust the densities of cohorts. Because the patch area         !
@@ -1904,13 +1905,20 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !    Now we update some variables that depend on cohort statistics, namely:          !
       ! + csite%veg_height(recp)                                                           !
+      ! + csite%disp_height(recp)                                                          !
       ! + csite%lai(recp)                                                                  !
       ! + csite%veg_rough(recp)                                                            !
+      !------------------------------------------------------------------------------------!
+      call update_patch_derived_props(csite,lsl, prss,recp)
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !    Now we update the budget variables:                                             !
       ! + csite%wbudget_initialstorage(recp)                                               !
       ! + csite%ebudget_initialstorage(recp)                                               !
       ! + csite%co2budget_initialstorage(recp)                                             !
       !------------------------------------------------------------------------------------!
-      call update_patch_derived_props(csite,lsl, rhos,recp)
+      call update_budget(csite,lsl,recp,recp)
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!

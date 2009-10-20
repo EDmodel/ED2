@@ -45,7 +45,8 @@ subroutine ed_model()
                             , patchtype           & ! intent(in)
                             , filltab_alltypes    & ! intent(in)
                             , filltables          ! ! intent(in)
-   use rk4_driver , only : rk4_timestep     ! ! intent(in)
+   use rk4_driver    , only : rk4_timestep        ! ! intent(in)
+   use rk4_coms      , only : checkbudget         ! ! intent(in)
    use ed_node_coms  , only : mynum               & ! intent(in)
                             , nnodetot            ! ! intent(in)
    use disturb_coms  , only : include_fire        ! ! intent(in)
@@ -108,7 +109,7 @@ subroutine ed_model()
    ! variables, these are used in conditions of ifoutput,idoutput and imoutput conditions.
    ! If they are not >0, then set the logical, fast_diagnostics to false.
    !---------------------------------------------------------------------------------------!
-   fast_diagnostics = ifoutput /= 0 .or. idoutput /= 0 .or. imoutput /= 0 .or. itoutput /= 0
+   fast_diagnostics = checkbudget .or. ifoutput /= 0 .or. idoutput /= 0 .or. imoutput /= 0 .or. itoutput /= 0
 
    !------------------------------------------------------------------------!
    ! If this is not a history restart - then zero out the
@@ -137,7 +138,9 @@ subroutine ed_model()
    
    !    Allocate memory to the integration patch
 
-   if(integration_scheme == 1) call initialize_rk4patches(1)
+   if (integration_scheme == 1 .or. integration_scheme == 2) then
+      call initialize_rk4patches(1)
+   end if
 
    do ifm=1,ngrids
       call reset_averaged_vars(edgrid_g(ifm))
@@ -178,15 +181,16 @@ subroutine ed_model()
       end do
 
       ! THEN, DO THE PHOTOSYNTHESIS AND BIOPHYSICS.
-      if(integration_scheme == 0)then
+      select case (integration_scheme)
+      case (0)
          do ifm=1,ngrids
             call euler_timestep(edgrid_g(ifm))
          end do
-      elseif(integration_scheme == 1)then
+      case (1,2)
          do ifm=1,ngrids
             call rk4_timestep(edgrid_g(ifm),ifm)
          end do
-      endif
+      end select
       
       !-------------------------------------------------------------------!
       ! Update the daily averages if daily or monthly analysis are needed !
@@ -295,8 +299,9 @@ subroutine ed_model()
             call read_met_drivers()
             
             ! Re-allocate integration buffer
-            if(integration_scheme == 1 .and. (maxcohort >= 0 .or. maxpatch >= 0)) &
+            if (integration_scheme == 1 .or. integration_scheme == 2) then
                call initialize_rk4patches(0)
+            end if
          endif
          
       endif

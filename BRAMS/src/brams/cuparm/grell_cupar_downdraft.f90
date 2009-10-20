@@ -277,7 +277,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,co2,mentrd_rate,cdd,p
                                       ,etad_cld,dzd_cld,thild_cld,td_cld,qtotd_cld         &
                                       ,qvapd_cld,qliqd_cld,qiced_cld,qsatd_cld,co2d_cld    &
                                       ,rhod_cld,dbyd,pwd_cld,pwev,ierr)
-   use rconstants, only: epi,rgas,t00,cpi,toodry
+   use rconstants, only: epi,rdry,t00,cpi,toodry
    use therm_lib , only: thetaeiv2thil,toler,maxfpo,idealdens
    implicit none
    
@@ -394,7 +394,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,co2,mentrd_rate,cdd,p
                    + mentrd_rate(k)*dzd_cld(k)*qtot(k) -0.5*evapd_cld(k+1))                &
                    * denomini
 
-      !----- CO2 will be assume an inert gas (i.e., no sources or sinks). -----------------!
+      !----- CO2 is assumed to be an inert gas (i.e., no sources or sinks). ---------------!
       co2d_cld(k) = (co2d_cld(k+1)*(1.-0.5*cdd(k)*dzd_cld(k))                              &
                   + mentrd_rate(k)*dzd_cld(k)*co2(k) )                                     &
                   * denomini

@@ -3,47 +3,48 @@
 !     This subroutine copies various atmospheric fields that are needed by ED-2.           !
 !------------------------------------------------------------------------------------------!
 subroutine copy_atm2lsm(ifm,init)
-   use ed_state_vars        , only : edgrid_g     & ! structure
-                                   , edtype       & ! structure
-                                   , polygontype  ! ! structure
-   use mem_basic            , only : co2_on       & ! intent(in)
-                                   , co2con       & ! intent(in)
-                                   , basic_g      ! ! structure
-   use mem_radiate          , only : radiate_g    ! ! structure
-   use mem_cuparm           , only : cuparm_g     ! ! structure
-   use mem_micro            , only : micro_g      ! ! structure
-   use mem_grid             , only : grid_g       & ! structure
-                                   , zt           & ! intent(in)
-                                   , dzt          & ! intent(in)
-                                   , zm           & ! intent(in)
-                                   , if_adap      & ! intent(in)
-                                   , jdim         ! ! intent(in)
-   use node_mod             , only : master_num   & ! intent(in)
-                                   , mmzp         & ! intent(in)
-                                   , mmxp         & ! intent(in)
-                                   , mmyp         & ! intent(in)
-                                   , ia           & ! intent(in)
-                                   , iz           & ! intent(in)
-                                   , ja           & ! intent(in)
-                                   , jz           & ! intent(in)
-                                   , ia_1         & ! intent(in)
-                                   , iz1          & ! intent(in)
-                                   , ja_1         & ! intent(in)
-                                   , jz1          ! ! intent(in)
-   use rconstants           , only : cpi          & ! intent(in)
-                                   , cp           & ! intent(in)
-                                   , p00          & ! intent(in)
-                                   , rocp         & ! intent(in)
-                                   , rgas         & ! intent(in)
-                                   , cliq         & ! intent(in)
-                                   , alli         & ! intent(in)
-                                   , cice         & ! intent(in)
-                                   , t3ple        & ! intent(in)
-                                   , cpor         & ! intent(in)
-                                   , tsupercool   ! ! intent(in)
-   use ed_node_coms         , only : mynum        ! ! intent(in)
-   use canopy_radiation_coms, only : rlong_min    ! ! intent(in)
-   use therm_lib            , only : virtt        ! ! function
+   use ed_state_vars        , only : edgrid_g      & ! structure
+                                   , edtype        & ! structure
+                                   , polygontype   ! ! structure
+   use mem_basic            , only : co2_on        & ! intent(in)
+                                   , co2con        & ! intent(in)
+                                   , basic_g       ! ! structure
+   use mem_radiate          , only : radiate_g     ! ! structure
+   use mem_cuparm           , only : cuparm_g      ! ! structure
+   use mem_micro            , only : micro_g       ! ! structure
+   use mem_grid             , only : grid_g        & ! structure
+                                   , zt            & ! intent(in)
+                                   , dzt           & ! intent(in)
+                                   , zm            & ! intent(in)
+                                   , if_adap       & ! intent(in)
+                                   , jdim          ! ! intent(in)
+   use node_mod             , only : master_num    & ! intent(in)
+                                   , mmzp          & ! intent(in)
+                                   , mmxp          & ! intent(in)
+                                   , mmyp          & ! intent(in)
+                                   , ia            & ! intent(in)
+                                   , iz            & ! intent(in)
+                                   , ja            & ! intent(in)
+                                   , jz            & ! intent(in)
+                                   , ia_1          & ! intent(in)
+                                   , iz1           & ! intent(in)
+                                   , ja_1          & ! intent(in)
+                                   , jz1           ! ! intent(in)
+   use rconstants           , only : cpi           & ! intent(in)
+                                   , cp            & ! intent(in)
+                                   , p00           & ! intent(in)
+                                   , p00i          & ! intent(in)
+                                   , rocp          & ! intent(in)
+                                   , cliq          & ! intent(in)
+                                   , alli          & ! intent(in)
+                                   , cice          & ! intent(in)
+                                   , t3ple         & ! intent(in)
+                                   , t00           & ! intent(in)
+                                   , cpor          & ! intent(in)
+                                   , tsupercool    ! ! intent(in)
+   use ed_node_coms         , only : mynum         ! ! intent(in)
+   use therm_lib            , only : ptqz2enthalpy ! ! intent(in)
+   use canopy_radiation_coms, only : rlong_min     ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                             , intent(in) :: ifm
@@ -64,7 +65,6 @@ subroutine copy_atm2lsm(ifm,init)
    real, dimension(mmxp(ifm),mmyp(ifm))             :: map_2d_lsm
    real                                             :: rshort1,cosz1,rshortd1,scalar1
    real                                             :: topma_t,wtw,wtu1,wtu2,wtv1,wtv2
-   real                                             :: tvir
    !---------------------------------------------------------------------------------------!
   
    !----- Assigning some aliases. ---------------------------------------------------------!
@@ -241,7 +241,8 @@ subroutine copy_atm2lsm(ifm,init)
 
       cgrid%met(ipy)%rlong    = radiate_g(ifm)%rlong(ix,iy)
       !----- Converting Exner function to pressure. ---------------------------------------!
-      cgrid%met(ipy)%prss     = p00 * (cpi * pi0_mean(ix,iy))**cpor
+      cgrid%met(ipy)%exner    = pi0_mean(ix,iy)
+      cgrid%met(ipy)%prss     = p00 * (cpi * cgrid%met(ipy)%exner)**cpor
 
       !----- Finding the actual height above ground for 2nd level. ------------------------!
       cgrid%met(ipy)%geoht    = (zt(k2w)-zm(k1w)) * grid_g(ifm)%rtgt(ix,iy)
@@ -251,25 +252,37 @@ subroutine copy_atm2lsm(ifm,init)
       ! verted to wind speed later, after calc_met_lapse.                                  !
       !------------------------------------------------------------------------------------!
       cgrid%met(ipy)%vels     = up_mean(ix,iy)**2 + vp_mean(ix,iy)**2
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!! WHY WERE WE FORCING WIND SPEED TO BE >= 0.65m/s???                       !!!!!!
-      ! cgrid%met(ipy)%vels     = max(0.65,sqrt( up_mean(ix,iy)**2 + vp_mean(ix,iy)**2))
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !------------------------------------------------------------------------------------!
       !    ED needs specific humidity, and temperature, but BRAMS has mixing ratio and     !
       ! potential temperature, so we must convert before sending to ED.  CO2 is already in !
       ! µmol_CO2 / mol_air, no conversion needed...                                        !
       !------------------------------------------------------------------------------------!
-      cgrid%met(ipy)%atm_shv  = rv_mean(ix,iy) / (1.+rtp_mean(ix,iy))
-      cgrid%met(ipy)%atm_tmp  = theta_mean(ix,iy)*pi0_mean(ix,iy) * cpi
-      cgrid%met(ipy)%atm_co2  = co2p_mean(ix,iy)
+      cgrid%met(ipy)%atm_shv      = rv_mean(ix,iy) / (1.+rtp_mean(ix,iy))
+      cgrid%met(ipy)%atm_theta    = theta_mean(ix,iy)
+      cgrid%met(ipy)%atm_tmp      = cpi * cgrid%met(ipy)%atm_theta * cgrid%met(ipy)%exner
+      cgrid%met(ipy)%atm_co2      = co2p_mean(ix,iy)
 
-      !----- Finding density, using the ideal gas law. ------------------------------------!
-      tvir = virtt(cgrid%met(ipy)%atm_tmp,rv_mean(ix,iy),rtp_mean(ix,iy))
-      cgrid%met(ipy)%rhos = cgrid%met(ipy)%prss  / (rgas * tvir)
+      if (cgrid%met(ipy)%atm_tmp < 180.   .or. cgrid%met(ipy)%atm_tmp > 400.   .or.        &
+          cgrid%met(ipy)%atm_shv < 1.e-8  .or. cgrid%met(ipy)%atm_shv > 0.04   .or.        &
+          cgrid%met(ipy)%prss    < 40000. .or. cgrid%met(ipy)%prss    > 110000.) then
+          write (unit=*,fmt='(a)') '======== Weird polygon properties... ========'
+          write (unit=*,fmt='(a,i5)')   'Node             = ',mynum
+          write (unit=*,fmt='(a,i5)')   'X                = ',ix
+          write (unit=*,fmt='(a,i5)')   'Y                = ',iy
+          write (unit=*,fmt='(a,f8.2)') 'LONG      [degE] = ',cgrid%lon(ipy)
+          write (unit=*,fmt='(a,f8.2)') 'LAT       [degN] = ',cgrid%lat(ipy)
+          write (unit=*,fmt='(a,f7.2)') 'POLY_PRSS [ hPa] = ',cgrid%met(ipy)%prss    * 0.01
+          write (unit=*,fmt='(a,f7.2)') 'POLY_TEMP [degC] = ',cgrid%met(ipy)%atm_tmp - t00
+          write (unit=*,fmt='(a,f7.2)') 'POLY_SHV  [g/kg] = ',cgrid%met(ipy)%atm_shv * 1.e3
+          call fatal_error('Non-sense polygon met values!!!'                               &
+                          ,'copy_atm2lsm','edcp_met.f90')
+      end if
+
+      cgrid%met(ipy)%atm_enthalpy = ptqz2enthalpy(cgrid%met(ipy)%prss                      &
+                                                 ,cgrid%met(ipy)%atm_tmp                   &
+                                                 ,cgrid%met(ipy)%atm_shv                   &
+                                                 ,cgrid%met(ipy)%geoht)
    end do
 
    !----- Filling the precipitation arrays. -----------------------------------------------!
@@ -300,8 +313,39 @@ subroutine copy_atm2lsm(ifm,init)
          cpoly%met(isi)%vels_stab   = max(0.1,cpoly%met(isi)%vels)
          cpoly%met(isi)%vels_unstab = max(1.0,cpoly%met(isi)%vels_stab)
 
-         !----- Exner function, simply copy from average ----------------------------------!
-         cpoly%met(isi)%exner = pi0_mean(ix,iy)
+         !---------------------------------------------------------------------------------!
+         !     Exner function, potential temperature, and enthalpy must be calculated for  !
+         ! site level instead of being directly copied from the polygon level.  This will  !
+         ! account for modifications due to lapse rate without breaking ideal gas law or   !
+         ! first law of thermodynamics.                                                    !
+         !---------------------------------------------------------------------------------!
+         cpoly%met(isi)%exner        = cp * (p00i * cpoly%met(isi)%prss) **rocp
+         cpoly%met(isi)%atm_theta    = cp * cpoly%met(isi)%atm_tmp / cpoly%met(isi)%exner
+
+
+         if (cpoly%met(isi)%atm_tmp < 180.   .or. cpoly%met(isi)%atm_tmp > 400.   .or.     &
+             cpoly%met(isi)%atm_shv < 1.e-8  .or. cpoly%met(isi)%atm_shv > 0.04   .or.     &
+             cpoly%met(isi)%prss    < 40000. .or. cpoly%met(isi)%prss    > 110000.) then
+             write (unit=*,fmt='(a)') '======== Weird site properties... ========'
+             write (unit=*,fmt='(a,i5)')   'Node             = ',mynum
+             write (unit=*,fmt='(a,i5)')   'X                = ',ix
+             write (unit=*,fmt='(a,i5)')   'Y                = ',iy
+             write (unit=*,fmt='(a,f8.2)') 'LONG      [degE] = ',cgrid%lon(ipy)
+             write (unit=*,fmt='(a,f8.2)') 'LAT       [degN] = ',cgrid%lat(ipy)
+             write (unit=*,fmt='(a,f7.2)')                                                 &
+                                  'SITE_PRSS [ hPa] = ',cpoly%met(isi)%prss    * 0.01
+             write (unit=*,fmt='(a,f7.2)')                                                 &
+                                  'SITE_TEMP [degC] = ',cpoly%met(isi)%atm_tmp - t00
+             write (unit=*,fmt='(a,f7.2)')                                                 &
+                                  'SITE_SHV  [g/kg] = ',cpoly%met(isi)%atm_shv * 1.e3
+             call fatal_error('Non-sense site met values!!!'                               &
+                             ,'copy_atm2lsm','edcp_met.f90')
+         end if
+
+         cpoly%met(isi)%atm_enthalpy = ptqz2enthalpy(cpoly%met(isi)%prss                   &
+                                                    ,cpoly%met(isi)%atm_tmp                &
+                                                    ,cpoly%met(isi)%atm_shv                &
+                                                    ,cpoly%met(isi)%geoht)
 
          !----- Solar radiation -----------------------------------------------------------!
          cpoly%met(isi)%rshort_diffuse = cpoly%met(isi)%par_diffuse                        &
@@ -309,7 +353,7 @@ subroutine copy_atm2lsm(ifm,init)
 
          cpoly%met(isi)%rshort         = cpoly%met(isi)%rshort_diffuse                     &
                                        + cpoly%met(isi)%par_beam + cpoly%met(isi)%nir_beam
-         
+
          !---------------------------------------------------------------------------------!
          !    Finding the mean energy and depth of precipitation rates: qpcpg and dpcpg,   !
          ! respectively.  This is just an approximation, because we are assuming all ice   !
@@ -739,7 +783,11 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
                            , zm             & ! intent(in)
                            , if_adap        & ! intent(in)
                            , jdim           ! ! intent(in)
-   use rconstants   , only : cpi            ! ! intent(in)
+   use rconstants   , only : cpi            & ! intent(in)
+                           , p00            & ! intent(in)
+                           , cpor           ! ! intent(in)
+   use leaf_coms    , only : can_depth      ! ! intent(in)
+   use therm_lib    , only : reducedpress   ! ! function
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer               , intent(in) :: ifm, mxp, myp
@@ -747,7 +795,8 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
    integer                             :: ix,iy,i,j
    integer                             :: k2w,k3w,k1w
    real                                :: topma_t,wtw
-   real,dimension(mmxp(ifm),mmyp(ifm)) :: theta_mean,pi0_mean,rv_mean
+   real                                :: atm_prss,atm_shv
+   real,dimension(mmxp(ifm),mmyp(ifm)) :: theta_mean,pi0_mean,rv_mean,geoht
    !---------------------------------------------------------------------------------------!
 
 
@@ -796,6 +845,7 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
             rv_mean(i,j)    = basic_g(ifm)%rv(2,i,j)
             pi0_mean(i,j)   = ( basic_g(ifm)%pp(1,i,j)  + basic_g(ifm)%pp(2,i,j)           &
                               + basic_g(ifm)%pi0(1,i,j) + basic_g(ifm)%pi0(2,i,j) ) * 0.5
+            geoht(i,j)      = (zt(2)-zm(1)) * grid_g(ifm)%rtgt(ix,iy)
          end do
       end do
    case (1)
@@ -825,20 +875,41 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
                               + (.5 - wtw)                                                 &
                               * (basic_g(ifm)%pp(k3w,i,j) + basic_g(ifm)%pi0(k3w,i,j))
             end if
+
+            geoht(i,j)        = (zt(k2w)-zm(k1w)) * grid_g(ifm)%rtgt(ix,iy)
          end do
       end do
    end select
 
    do j=ja,jz
       do i=ia,iz
-         leaf_g(ifm)%can_temp(i,j,1) =  theta_mean(i,j) * pi0_mean(i,j) * cpi
-         leaf_g(ifm)%can_rvap(i,j,1) =  rv_mean(i,j)
-         leaf_g(ifm)%can_temp(i,j,2) =  theta_mean(i,j) * pi0_mean(i,j) * cpi
-         leaf_g(ifm)%can_rvap(i,j,2) =  rv_mean(i,j)
-     
-         leaf_g(ifm)%gpp(i,j)        = 0.0
-         leaf_g(ifm)%resphet(i,j)    = 0.0
-         leaf_g(ifm)%plresp(i,j)     = 0.0
+         !----- Finding the atmospheric pressure and specific humidity. -------------------!
+         atm_prss                     =  p00 * (cpi * pi0_mean(i,j)) ** cpor
+         atm_shv                      = leaf_g(ifm)%can_rvap(i,j,1)                        &
+                                      / (leaf_g(ifm)%can_rvap(i,j,1) + 1.)
+
+         !----- Computing the state variables. --------------------------------------------!
+         leaf_g(ifm)%can_theta(i,j,1) =  theta_mean(i,j)
+         leaf_g(ifm)%can_rvap (i,j,1) =  rv_mean(i,j)
+         leaf_g(ifm)%can_prss (i,j,1) =  reducedpress(atm_prss,theta_mean(i,j),atm_shv     &
+                                                     ,geoht(i,j),theta_mean(i,j)           &
+                                                     ,atm_shv,can_depth)
+         leaf_g(ifm)%gpp      (i,j,1) = 0.0
+         leaf_g(ifm)%resphet  (i,j,1) = 0.0
+         leaf_g(ifm)%plresp   (i,j,1) = 0.0
+         leaf_g(ifm)%sensible (i,j,1) = 0.0
+         leaf_g(ifm)%evap     (i,j,1) = 0.0
+         leaf_g(ifm)%transp   (i,j,1) = 0.0
+
+         leaf_g(ifm)%can_theta(i,j,2) = leaf_g(ifm)%can_theta(i,j,1)
+         leaf_g(ifm)%can_rvap (i,j,2) = leaf_g(ifm)%can_rvap (i,j,1)
+         leaf_g(ifm)%can_prss (i,j,2) = leaf_g(ifm)%can_prss(i,j,1)
+         leaf_g(ifm)%gpp      (i,j,2) = 0.0
+         leaf_g(ifm)%resphet  (i,j,2) = 0.0
+         leaf_g(ifm)%plresp   (i,j,2) = 0.0
+         leaf_g(ifm)%sensible (i,j,2) = 0.0
+         leaf_g(ifm)%evap     (i,j,2) = 0.0
+         leaf_g(ifm)%transp   (i,j,2) = 0.0
       end do
    end do
    return
@@ -864,7 +935,7 @@ subroutine transfer_ed2leaf(ifm,timel)
                             , edtime2     ! ! intent(in)
    use mem_turb      , only : turb_g      ! ! structure
    use rconstants    , only : stefan      & ! intent(in)
-                            , g           ! ! intent(in)
+                            , grav        ! ! intent(in)
    use mem_leaf      , only : leaf_g      & ! structure
                             , zrough      ! ! intent(in)
    use mem_radiate   , only : radiate_g   ! ! structure
@@ -902,7 +973,7 @@ subroutine transfer_ed2leaf(ifm,timel)
    integer                      :: ipy, isi
    real                         :: site_area_i, polygon_area_i
    !----- Local constants -----------------------------------------------------------------!
-   real             , parameter :: z0fac_water  = 0.016/g
+   real             , parameter :: z0fac_water  = 0.016/grav
    real             , parameter :: snowrough    = 0.001
    real             , parameter :: z0_min_water = 0.0001
    !---------------------------------------------------------------------------------------!
@@ -1278,340 +1349,12 @@ end subroutine transfer_ed2leaf
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine calc_met_lapse(cgrid,ipy)
-  
-   use ed_state_vars         , only : edtype      & ! structure
-                                    , polygontype ! ! structure
-   use canopy_radiation_coms , only : rlong_min   ! ! intent(in)
-   implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   type(edtype)     , target     :: cgrid
-   integer          , intent(in) :: ipy
-   !----- Local variables -----------------------------------------------------------------!
-   type(polygontype), pointer    :: cpoly
-   integer                       :: isi
-   real                          :: ebar   !! mean elevation
-   real                          :: delE   !! deviation from mean elevation
-   real                          :: aterr  !! terrestrial area
-   !----- Local constants -----------------------------------------------------------------!
-   real             , parameter  :: offset=tiny(1.)/epsilon(1.) !! Tiny offset to avoid FPE
-   logical          , parameter  :: bypass=.true.
-   !---------------------------------------------------------------------------------------!
-
-   !----- Pass over sites once to calc preliminary stats. ---------------------------------!
-   cpoly => cgrid%polygon(ipy)
-
-   ebar = 0.0
-   aterr = 0.0
-
-   do isi=1,cpoly%nsites
-      ebar  = ebar + cpoly%area(isi)*cpoly%elevation(isi)
-      aterr = aterr + cpoly%area(isi)
-   end do
-   ebar = ebar/aterr
-
-   if (bypass) then
-      do isi = 1,cpoly%nsites
-         cpoly%met(isi)%geoht       = cgrid%met(ipy)%geoht
-         cpoly%met(isi)%atm_tmp     = cgrid%met(ipy)%atm_tmp
-         cpoly%met(isi)%atm_shv     = cgrid%met(ipy)%atm_shv
-         cpoly%met(isi)%prss        = cgrid%met(ipy)%prss
-         cpoly%met(isi)%rhos        = cgrid%met(ipy)%rhos
-         cpoly%met(isi)%pcpg        = cgrid%met(ipy)%pcpg
-         cpoly%met(isi)%par_diffuse = cgrid%met(ipy)%par_diffuse
-         cpoly%met(isi)%atm_co2     = cgrid%met(ipy)%atm_co2
-         cpoly%met(isi)%rlong       = cgrid%met(ipy)%rlong
-         cpoly%met(isi)%par_beam    = cgrid%met(ipy)%par_beam
-         cpoly%met(isi)%nir_diffuse = cgrid%met(ipy)%nir_diffuse
-         cpoly%met(isi)%nir_beam    = cgrid%met(ipy)%nir_beam
-         cpoly%met(isi)%vels        = cgrid%met(ipy)%vels
-       
-         !---------------------------------------------------------------------------------!
-         !     Sanity check:                                                               !
-         !---------------------------------------------------------------------------------!
-         if ( cpoly%met(isi)%rlong < rlong_min) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           '+ RLONG is too low!!!'
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%rlong
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%rlong
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Minimum OK value: ',rlong_min
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with RLONG A','calc_met_lapse'                      &
-                            ,'edcp_met.f90')
-         elseif ( cpoly%met(isi)%atm_tmp < 150.0) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           '+ ATM_TMP is too low!!!'
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%atm_tmp
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_tmp
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Minimum OK value: ',150.0
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with ATM_TMP','calc_met_lapse'                      &
-                            ,'edcp_met.f90')
-         else if ( cpoly%met(isi)%atm_shv < 1.e-5) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           '+ ATM_SHV is too low!!!'
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%atm_shv
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_shv
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Minimum OK value: ',1.e-5
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with ATM_SHV','calc_met_lapse'                      &
-                            ,'edcp_met.f90')
-         elseif ( cpoly%met(isi)%rlong > 600.0) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           '+ RLONG is too high!!!'
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%rlong
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%rlong
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value: ',600.0
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with RLONG A','calc_met_lapse'                      &
-                            ,'edcp_met.f90')
-         elseif ( cpoly%met(isi)%atm_tmp > 317.0) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           '+ ATM_TMP is too high!!!'
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%atm_tmp
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_tmp
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value: ',317.0
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with ATM_TMP','calc_met_lapse'                      &
-                            ,'edcp_met.f90')
-         elseif ( cpoly%met(isi)%atm_shv > 30.0e-3) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           '+ ATM_SHV is too high!!!'
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%atm_shv
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_shv
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value: ',30.0e-3
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with ATM_SHV','calc_met_lapse'                      &
-                            ,'edcp_met.f90')
-         elseif ( cpoly%met(isi)%par_beam + cpoly%met(isi)%nir_beam &
-                + cpoly%met(isi)%par_diffuse + cpoly%met(isi)%nir_diffuse > 1320.0 ) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           '+ SOLAR RADIATION is non-sense !!!'
-            write(unit=*,fmt='(a,1x,es12.5)') '+ PAR_BEAM        : ',cpoly%met(isi)%par_beam
-            write(unit=*,fmt='(a,1x,es12.5)') '+ PAR_DIFFUSE     : '                       &
-                                              , cpoly%met(isi)%par_diffuse
-            write(unit=*,fmt='(a,1x,es12.5)') '+ NIR_BEAM        : ',cpoly%met(isi)%nir_beam
-            write(unit=*,fmt='(a,1x,es12.5)') '+ NIR_DIFFUSE     : '                       &
-                                              , cpoly%met(isi)%nir_diffuse
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value (sum): ',1320.0
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with solar radiation','calc_met_lapse'              &
-                            ,'ed_met_driver.f90')
-         end if
-      end do
-    
-   else
-      
-      !----- Second pass, calculate lapse rate adjustment. --------------------------------!
-      do isi = 1,cpoly%nsites
-         
-         delE = cpoly%elevation(isi) - ebar
-         
-         !----- Perform linear adjustments. -----------------------------------------------!
-         cpoly%met(isi)%geoht   = cgrid%met(ipy)%geoht   + cgrid%lapse(ipy)%geoht   * delE
-         cpoly%met(isi)%atm_tmp = cgrid%met(ipy)%atm_tmp + cgrid%lapse(ipy)%atm_tmp * delE
-         cpoly%met(isi)%atm_shv = cgrid%met(ipy)%atm_shv + cgrid%lapse(ipy)%atm_shv * delE
-         cpoly%met(isi)%prss    = cgrid%met(ipy)%prss    + cgrid%lapse(ipy)%prss    * delE
-         cpoly%met(isi)%rhos    = cgrid%met(ipy)%rhos    + cgrid%lapse(ipy)%rhos    * delE
-         cpoly%met(isi)%pcpg    = cgrid%met(ipy)%pcpg    + cgrid%lapse(ipy)%pcpg    * delE
-         cpoly%met(isi)%atm_co2 = cgrid%met(ipy)%atm_co2 + cgrid%lapse(ipy)%atm_co2 * delE
-         cpoly%met(isi)%rlong   = cgrid%met(ipy)%rlong   + cgrid%lapse(ipy)%rlong   * delE
-         cpoly%met(isi)%par_diffuse = cgrid%met(ipy)%par_diffuse                           &
-                                    + cgrid%lapse(ipy)%par_diffuse * delE
-         cpoly%met(isi)%par_beam    = cgrid%met(ipy)%par_beam                              &
-                                    + cgrid%lapse(ipy)%par_beam * delE
-         cpoly%met(isi)%nir_diffuse = cgrid%met(ipy)%nir_diffuse                           &
-                                    + cgrid%lapse(ipy)%nir_diffuse * delE
-         cpoly%met(isi)%nir_beam    = cgrid%met(ipy)%nir_beam                              &
-                                    + cgrid%lapse(ipy)%nir_beam * delE
-         !---------------------------------------------------------------------------------!
-         ! Note: at this point VELS is vel^2.  Thus this lapse preserves mean wind ENERGY  !
-         !       not wind SPEED.                                                           !
-         !---------------------------------------------------------------------------------!
-         cpoly%met(isi)%vels    = cgrid%met(ipy)%vels    + cgrid%lapse(ipy)%vels*delE
-
-       
-         !---------------------------------------------------------------------------------!
-         !     Sanity check:                                                               !
-         !---------------------------------------------------------------------------------!
-         if ( cpoly%met(isi)%rlong < rlong_min) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           '+ RLONG is too low!!!'
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%rlong
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%rlong
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Minimum OK value: ',rlong_min
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with RLONG A','calc_met_lapse'                      &
-                            ,'edcp_met.f90')
-         elseif ( cpoly%met(isi)%atm_tmp < 150.0) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           '+ ATM_TMP is too low!!!'
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%atm_tmp
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_tmp
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Minimum OK value: ',150.0
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with ATM_TMP','calc_met_lapse'                      &
-                            ,'edcp_met.f90')
-         else if ( cpoly%met(isi)%atm_shv < 1.e-5) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           '+ ATM_SHV is too low!!!'
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%atm_shv
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_shv
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Minimum OK value: ',1.e-5
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with ATM_SHV','calc_met_lapse'                      &
-                            ,'edcp_met.f90')
-         elseif ( cpoly%met(isi)%rlong > 600.0) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           '+ RLONG is too high!!!'
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%rlong
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%rlong
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value: ',600.0
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with RLONG A','calc_met_lapse'                      &
-                            ,'edcp_met.f90')
-         elseif ( cpoly%met(isi)%atm_tmp > 317.0) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           '+ ATM_TMP is too high!!!'
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%atm_tmp
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_tmp
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value: ',317.0
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with ATM_TMP','calc_met_lapse'                      &
-                            ,'edcp_met.f90')
-         elseif ( cpoly%met(isi)%atm_shv > 30.0e-3) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           '+ ATM_SHV is too high!!!'
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%atm_shv
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_shv
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value: ',30.0e-3
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with ATM_SHV','calc_met_lapse'                      &
-                            ,'edcp_met.f90')
-         elseif ( cpoly%met(isi)%par_beam + cpoly%met(isi)%nir_beam &
-                + cpoly%met(isi)%par_diffuse + cpoly%met(isi)%nir_diffuse > 1320.0 ) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           '+ SOLAR RADIATION is non-sense !!!'
-            write(unit=*,fmt='(a,1x,es12.5)') '+ PAR_BEAM        : ',cpoly%met(isi)%par_beam
-            write(unit=*,fmt='(a,1x,es12.5)') '+ PAR_DIFFUSE     : '                       &
-                                              , cpoly%met(isi)%par_diffuse
-            write(unit=*,fmt='(a,1x,es12.5)') '+ NIR_BEAM        : ',cpoly%met(isi)%nir_beam
-            write(unit=*,fmt='(a,1x,es12.5)') '+ NIR_DIFFUSE     : '                       &
-                                              , cpoly%met(isi)%nir_diffuse
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Maximum OK value (sum): ',1320.0
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with solar radiation','calc_met_lapse'              &
-                            ,'ed_met_driver.f90')
-         end if
-      end do
-   end if
-   return
-end subroutine calc_met_lapse
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This subroutines increments the time averaged polygon met-forcing variables.  These  !
-! will be normalized by the output period to give time averages of each quanity.  The      !
-! polygon level variables are derived from the weighted spatial average from the site      !
-! level quantities.                                                                        !
-!------------------------------------------------------------------------------------------!
-subroutine int_met_avg(cgrid)
-   use ed_state_vars , only : edtype      & ! structure
-                            , polygontype & ! structure
-                            , sitetype    & ! structure
-                            , patchtype   ! ! structure
-   use ed_misc_coms  , only : dtlsm       & ! intent(in)
-                            , frqfast     ! ! intent(in)
-   implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   type(edtype)      , target  :: cgrid
-   !----- Local variables -----------------------------------------------------------------!
-   type(polygontype) , pointer :: cpoly
-   type(sitetype)    , pointer :: csite
-   type(patchtype)   , pointer :: cpatch
-   integer                     :: ipy,isi,ipa,ico
-   real                        :: frqfasti,tfact
-   !---------------------------------------------------------------------------------------!
-
-   !----- Some aliases. -------------------------------------------------------------------!
-   frqfasti = 1.0 / frqfast
-   tfact = dtlsm * frqfasti
-
-   do ipy = 1,cgrid%npolygons
-      cpoly => cgrid%polygon(ipy)
-
-      do isi = 1,cpoly%nsites
-         
-         cgrid%avg_nir_beam(ipy)    = cgrid%avg_nir_beam(ipy)                              &
-                                    + cpoly%met(isi)%nir_beam * cpoly%area(isi) * tfact
-         cgrid%avg_nir_diffuse(ipy) = cgrid%avg_nir_diffuse(ipy)                           &
-                                    + cpoly%met(isi)%nir_diffuse * cpoly%area(isi) * tfact
-         cgrid%avg_par_beam(ipy)    = cgrid%avg_par_beam(ipy)                              &
-                                    + cpoly%met(isi)%par_beam * cpoly%area(isi) * tfact
-         cgrid%avg_par_diffuse(ipy) = cgrid%avg_par_diffuse(ipy)                           &
-                                    + cpoly%met(isi)%par_diffuse * cpoly%area(isi) * tfact
-         cgrid%avg_atm_tmp(ipy)     = cgrid%avg_atm_tmp(ipy)                               &
-                                    + cpoly%met(isi)%atm_tmp * cpoly%area(isi) * tfact
-         cgrid%avg_atm_shv(ipy)     = cgrid%avg_atm_shv(ipy)                               &
-                                    + cpoly%met(isi)%atm_shv * cpoly%area(isi) * tfact
-         cgrid%avg_rhos(ipy)        = cgrid%avg_rhos(ipy)                                  &
-                                    + cpoly%met(isi)%rhos * cpoly%area(isi) * tfact
-         cgrid%avg_rshort(ipy)      = cgrid%avg_rshort(ipy)                                &
-                                    + cpoly%met(isi)%rshort * cpoly%area(isi) * tfact
-         cgrid%avg_rshort_diffuse(ipy) = cgrid%avg_rshort_diffuse(ipy)                     &
-                                       + cpoly%met(isi)%rshort_diffuse * cpoly%area(isi)   &
-                                       * tfact
-         cgrid%avg_rlong(ipy)       = cgrid%avg_rlong(ipy)                                 &
-                                    + cpoly%met(isi)%rlong * cpoly%area(isi) * tfact
-         cgrid%avg_pcpg(ipy)        = cgrid%avg_pcpg(ipy)                                  &
-                                    + cpoly%met(isi)%pcpg * cpoly%area(isi) * tfact
-         cgrid%avg_qpcpg(ipy)       = cgrid%avg_qpcpg(ipy)                                 &
-                                    + cpoly%met(isi)%qpcpg * cpoly%area(isi) * tfact
-         cgrid%avg_dpcpg(ipy)       = cgrid%avg_dpcpg(ipy)                                 &
-                                    + cpoly%met(isi)%dpcpg * cpoly%area(isi) * tfact
-         cgrid%avg_vels(ipy)        = cgrid%avg_vels(ipy)                                  &
-                                    + cpoly%met(isi)%vels * cpoly%area(isi) * tfact
-         cgrid%avg_prss(ipy)        = cgrid%avg_prss(ipy)                                  &
-                                    + cpoly%met(isi)%prss * cpoly%area(isi) * tfact
-         cgrid%avg_exner(ipy)       = cgrid%avg_exner(ipy)                                 &
-                                    + cpoly%met(isi)%exner * cpoly%area(isi) * tfact
-         cgrid%avg_geoht(ipy)       = cgrid%avg_geoht(ipy)                                 &
-                                    + cpoly%met(isi)%geoht * cpoly%area(isi) * tfact
-         cgrid%avg_atm_co2(ipy)     = cgrid%avg_atm_co2(ipy)                               &
-                                    + cpoly%met(isi)%atm_co2 * cpoly%area(isi) * tfact
-         cgrid%avg_albedt(ipy)      = cgrid%avg_albedt(ipy)                                &
-                                    + 0.5 * ( cpoly%albedo_beam(isi)                       &
-                                            + cpoly%albedo_diffuse(isi) )                  &
-                                    * cpoly%area(isi) * tfact
-         cgrid%avg_rlongup(ipy)     = cgrid%avg_rlongup(ipy)                               &
-                                    + cpoly%rlongup(isi) * cpoly%area(isi) * tfact
-      end do
-   end do
-   return
-end subroutine int_met_avg
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
 subroutine copy_avgvars_to_leaf(ifm)
 
    use ed_state_vars , only: edgrid_g,edtype,polygontype,sitetype,patchtype
    use mem_leaf      , only: leaf_g
    use mem_grid      , only: nzg,nzs
-   use rconstants    , only: t3ple,cliqvlme,cicevlme,allivlme
+   use rconstants    , only: t3ple,cliqvlme,cicevlme,allivlme,alvl
    use soil_coms     , only: soil
    use ed_misc_coms  , only: frqsum
    implicit none
@@ -1625,13 +1368,13 @@ subroutine copy_avgvars_to_leaf(ifm)
    type(patchtype)  , pointer :: cpatch
    integer                    :: ipy,isi,ipa,ico
    integer                    :: ix,iy,k
-   real                       :: frqsumi,site_area_i,poly_area_i
+   real                       :: site_area_i,poly_area_i
+   real                       :: sitesum_gpp     , sitesum_plresp, sitesum_resphet
    !---------------------------------------------------------------------------------------!
 
    !----- Set the pointers ----------------------------------------------------------------!
    cgrid => edgrid_g(ifm)
 
-   frqsumi = 1.0 / frqsum
    do ipy=1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
 
@@ -1654,37 +1397,58 @@ subroutine copy_avgvars_to_leaf(ifm)
          leaf_g(ifm)%sfcwater_depth  (k,ix,iy,2) = 0.
       end do
       
-      leaf_g(ifm)%veg_water(ix,iy,2) = cgrid%avg_veg_water(ipy)
-      leaf_g(ifm)%veg_temp(ix,iy,2)  = cgrid%avg_veg_temp(ipy)
+      !----- Update vegetation properties. ------------------------------------------------!
+      leaf_g(ifm)%veg_water(ix,iy,2)    = cgrid%avg_veg_water (ipy)
+      leaf_g(ifm)%veg_hcap (ix,iy,2)    = cgrid%avg_veg_hcap (ipy)
+      leaf_g(ifm)%veg_energy(ix,iy,2)   = cgrid%avg_veg_energy(ipy)
+      leaf_g(ifm)%veg_lai(ix,iy,2)      = cgrid%lai(ipy)
+      leaf_g(ifm)%veg_tai(ix,iy,2)      = cgrid%lai(ipy) + cgrid%wai(ipy)
       
-      leaf_g(ifm)%can_temp(ix,iy,2)  = cgrid%avg_can_temp(ipy)
-      leaf_g(ifm)%can_co2(ix,iy,2)  = cgrid%avg_can_co2(ipy)
+      !------------------------------------------------------------------------------------!
+      !      Update canopy air properties.                                                 !
+      !------------------------------------------------------------------------------------!
+      leaf_g(ifm)%can_theta(ix,iy,2)    = cgrid%avg_can_theta(ipy)
+      leaf_g(ifm)%can_co2(ix,iy,2)      = cgrid%avg_can_co2(ipy)
+      leaf_g(ifm)%can_prss(ix,iy,2)     = cgrid%avg_can_prss(ipy)
       !----- ED uses specific humidity, converting it to mixing ratio. --------------------!
-      leaf_g(ifm)%can_rvap(ix,iy,2)  = cgrid%avg_can_shv(ipy)/(1.-cgrid%avg_can_shv(ipy))
-      
-      
-      leaf_g(ifm)%veg_lai(ix,iy,2)   = cgrid%lai(ipy)
-      leaf_g(ifm)%veg_tai(ix,iy,2)   = cgrid%lai(ipy) + cgrid%wai(ipy)
+      leaf_g(ifm)%can_rvap(ix,iy,2)     = cgrid%avg_can_shv(ipy)                           &
+                                        / (1.-cgrid%avg_can_shv(ipy))
+      !------------------------------------------------------------------------------------!
 
+      leaf_g(ifm)%sensible(ix,iy,2)  = cgrid%avg_sensible_vc(ipy)                          &
+                                     + cgrid%avg_sensible_gc(ipy)
+      leaf_g(ifm)%evap(ix,iy,2)      = cgrid%avg_evap(ipy)   * alvl
+      leaf_g(ifm)%transp(ix,iy,2)    = cgrid%avg_transp(ipy) * alvl
 
-      
-      leaf_g(ifm)%gpp(ix,iy)         = 0.0
-      leaf_g(ifm)%resphet(ix,iy)     = 0.0
-      leaf_g(ifm)%plresp(ix,iy)      = 0.0
+      leaf_g(ifm)%gpp(ix,iy,2)       = 0.0
+      leaf_g(ifm)%resphet(ix,iy,2)   = 0.0
+      leaf_g(ifm)%plresp(ix,iy,2)    = 0.0
+
+      sitesum_gpp      = 0.0
+      sitesum_plresp   = 0.0
+      sitesum_resphet  = 0.0
 
       poly_area_i = 1./sum(cpoly%area)
       do isi=1,cpoly%nsites
          csite => cpoly%site(isi)
-         if (csite%npatches>0) then
+         if (csite%npatches > 0) then
             site_area_i=1./sum(csite%area)
             
-            leaf_g(ifm)%gpp(ix,iy) = leaf_g(ifm)%gpp(ix,iy) + &
-                 sum(csite%area*csite%co2budget_gpp)*cpoly%area(isi)   *frqsumi
-            leaf_g(ifm)%plresp(ix,iy) = leaf_g(ifm)%plresp(ix,iy) + &
-                 sum(csite%area*csite%co2budget_plresp)*cpoly%area(isi)*frqsumi
-           
-            leaf_g(ifm)%resphet(ix,iy) = leaf_g(ifm)%resphet(ix,iy) + &
-                 sum(csite%area*csite%co2budget_rh) *cpoly%area(isi)   *frqsumi
+            sitesum_gpp      = sum(csite%area * csite%co2budget_gpp     ) * site_area_i
+            sitesum_plresp   = sum(csite%area * csite%co2budget_plresp  ) * site_area_i
+            sitesum_resphet  = sum(csite%area * csite%co2budget_rh      ) * site_area_i
+
+            leaf_g(ifm)%gpp(ix,iy,2)       = leaf_g(ifm)%gpp(ix,iy,2)                      &
+                                           + sitesum_gpp     * cpoly%area(isi)             &
+                                           * poly_area_i
+
+            leaf_g(ifm)%plresp(ix,iy,2)    = leaf_g(ifm)%plresp(ix,iy,2)                   &
+                                           + sitesum_plresp  * cpoly%area(isi)             &
+                                           * poly_area_i
+
+            leaf_g(ifm)%resphet(ix,iy,2)   = leaf_g(ifm)%resphet(ix,iy,2)                  &
+                                           + sitesum_resphet * cpoly%area(isi)             &
+                                           * poly_area_i
          end if
       end do
 

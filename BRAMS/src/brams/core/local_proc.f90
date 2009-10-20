@@ -41,7 +41,7 @@ contains
     use rconstants, only : &
          cp,               & ! INTENT(IN)
          cv,               & ! INTENT(IN)
-         rgas                ! INTENT(IN)
+         rdry                ! INTENT(IN)
     
     use ref_sounding, only : &
          th01dn,             & ! INTENT(IN)
@@ -114,7 +114,7 @@ contains
              vctr1(k) = th01dn(k,1) * pi01dn(k,1) / cp
           enddo
           tmax = maxval(vctr1(1:nnzp(ifm)))
-          ssmax = sqrt(cp / cv * rgas * tmax)
+          ssmax = sqrt(cp / cv * rdry * tmax)
           
           nn2 = nnxp(ifm)
           nn3 = nnyp(ifm)

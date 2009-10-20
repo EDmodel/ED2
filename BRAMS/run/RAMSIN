@@ -420,13 +420,6 @@
                              ! 3. Most turbulent layer
                              ! 4. Max w+sigw within the PBL.
    
-   IUPSTRM     = 1,          ! Check for previous upstream downdraft?
-                             ! 0. No, thanks
-                             ! 1. Check and lower cap_maxs
-                             ! 2. Check, lower cap_maxs and use the upstream downdraft
-                             !    mass flux to enhance convection downstream
-                             !    (not tested thoroughly, use with caution)
-   
    RADIUS    = 12000.,  666.,     ! (nclouds) - Cloud mean radius [m]. Important: the
                                   !    cloud won't have downdrafts nor precipitation if
                                   !    it is less than min_down_radius (grell_coms.f90).
@@ -467,14 +460,14 @@
    !    The following variables will define the ensemble members. Currently 4 types of     !
    ! ensemble are available. Odd numbers are preferred over even numbers since everything  !
    ! is centred around the reference value (except for CLOSURE_TYPE, which is done         !
-   ! differently). These are all (cloud) dependent.                                        !
-   ! PS1: Use with moderation, these members are multiplicative and can get slow down your !
-   !      run.                                                                             !
+   ! differently). These are all single values, the same numbers will be used for all      !
+   ! clouds                                                                                !
+   ! PS1: Use with moderation, these members are multiplicative and may slow your run.     !
    ! PS2: The perturbation increments are defined inside the code, feel free to take it    !
    !      out...                                                                           !
    !=======================================================================================!
 
-   CLOSURE_TYPE = 'NC','NC',      ! Closure type to find the reference updraft mass flux:
+   CLOSURE_TYPE = 'NC',           ! Closure type to find the reference updraft mass flux:
                                   ! PS1. Case insensitive - see table below:
       !----------------------------------------------------------------------------------!
       ! Type | Description                    | Deep | Shal | Reference Paper            !
@@ -488,12 +481,12 @@
       ! AS   | Quasi equilibrium of ABE       | yes  | yes  | Arakawa and Schubert, 1974 !
       !----------------------------------------------------------------------------------!
    
-   MAXENS_LSF = 1,1,1, ! Number of different arbitrary mass fluxes for GR/AS/KF dynamic
-                       ! control (it will also create some different numbers for MC)
+   MAXENS_LSF = 1, ! Number of different arbitrary mass fluxes for GR/AS/KF dynamic
+                   ! control (it will also create some different numbers for MC)
 
-   MAXENS_EFF = 1,1,1, ! Number of precipitation efficiency members
+   MAXENS_EFF = 1, ! Number of precipitation efficiency members
    
-   MAXENS_CAP = 1,1,1, ! Number of static control members, currently changes in cap_maxs.
+   MAXENS_CAP = 1, ! Number of static control members, currently changes in cap_maxs.
    
    !------------------------------------------------------------------------------------!
 
@@ -561,9 +554,24 @@
                              !  0 - specified surface layer gradients
                              !  1 - LEAF-3 submodel
                              !  2 - LEAF-3/TOPMODEL submodel
-                             !  3 - SIB submodel
+                             !  3 - SIB submodel   (not available)
                              !  4 - GEMTM submodel (not available)
                              !  5 - ED2 submodel
+
+   ISTAR   = 3,              ! Surface layer model (used to compute ustar, tstar,...)
+                             ! This variable controls the SLM for both LEAF and ED.
+                             !  1 - BRAMS default, based on Louis (1979)
+                             !      It uses empirical relations to estimate the flux
+                             !      based on the bulk Richardson number
+                             !  2 - Oncley and Dudhia (1995) model, based on MM5.
+                             !      It uses a empirical relation between bulk Richardson
+                             !      number and z/L, then computes the flux functions
+                             !  3 - Beljaars and Holtslag (1991) model. Similar to 2, but
+                             !      it finds z/L using a root-finding method, and it has a 
+                             !      different parametrisation for stable layers that
+                             !      works better during night time.
+                             !  4 - The parametrisation of Beljaars and Holtslag, but using
+                             !      z/L estimation as in Oncley and Dudhia. 
 
    ICO2    = 0,              ! CO2 prognostic level
                              !  0 - Do not solve it (CO2CON will be used as a time

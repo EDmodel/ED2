@@ -239,53 +239,131 @@ subroutine node_getst(isflag)
 
 return
 end subroutine node_getst
+!==========================================================================================!
+!==========================================================================================!
 
-!*********************************************************************
 
-subroutine mkstbuff(n1,n2,n3,n4,a,b,il,ir,jb,jt,ind)
-  implicit none
-  integer :: n1,n2,n3,n4,il,ir,jb,jt,ind
-  real :: a(n1,n2,n3,n4),b(*)
 
-  integer :: i,j,k,l
 
-  ind=0
-  do j=jb,jt
-     do i=il,ir
-        do k=1,n1
-           do l=1,n4
-              ind=ind+1
-              b(ind)=a(k,i,j,l)
-           end do
-        end do
-     end do
-  end do
 
-  return
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine simply copies a 3D subdomain data to a buffer vector.  X and Y (n2   !
+! and n3) are the only dimensions allowed to have sub-domains, and n1 and n4 can be the    !
+! third dimension, but they cannot be greater than 1 at the same time.                     !
+!------------------------------------------------------------------------------------------!
+subroutine mkstbuff(n1,n2,n3,n4,arr,buff,il,ir,jb,jt,ind)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: n1
+   integer                     , intent(in)    :: n2
+   integer                     , intent(in)    :: n3
+   integer                     , intent(in)    :: n4
+   integer                     , intent(in)    :: il
+   integer                     , intent(in)    :: ir
+   integer                     , intent(in)    :: jb
+   integer                     , intent(in)    :: jt
+   real, dimension(n1,n2,n3,n4), intent(in)    :: arr
+   real, dimension(*)          , intent(inout) :: buff
+   integer                     , intent(out)   :: ind
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: i
+   integer                                     :: j
+   integer                                     :: k
+   integer                                     :: l
+   !---------------------------------------------------------------------------------------!
+
+   ind=0
+   
+   !----- Safety check, we cannot handle 4-D arrays. --------------------------------------!
+   if (n1 > 1 .and. n4 > 1) then
+      call abort_run('N1 and N4 cannot be > 1 at the same time!!!','mkstbuff'              &
+                    ,'mpass_st.f90')
+   elseif (n1 > 1) then
+      do j=jb,jt
+         do i=il,ir
+            do k=1,n1
+               ind=ind+1
+               buff(ind) = arr(k,i,j,1)
+            end do
+         end do
+      end do
+   else ! if (n4 > 1) then
+      do j=jb,jt
+         do i=il,ir
+            do l=1,n4
+               ind=ind+1
+               buff(ind) = arr(1,i,j,l)
+            end do
+         end do
+      end do
+   end if
+
+   return
 end subroutine mkstbuff
+!==========================================================================================!
+!==========================================================================================!
 
-!*********************************************************************
 
-subroutine exstbuff(n1,n2,n3,n4,a,b,il,ir,jb,jt,ind)
-  implicit none
-  integer :: n1,n2,n3,n4,il,ir,jb,jt,ind
-  real :: a(n1,n2,n3,n4),b(*)
 
-  integer :: i,j,k,l
 
-  ind=0
-  do j=jb,jt
-     do i=il,ir
-        do k=1,n1
-           do l=1,n4
-              ind=ind+1
-              a(k,i,j,l)=b(ind)
-           end do
-        enddo
-     enddo
-  enddo
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine simply copies the buffer vector back to a 3D subdomain array.  X and !
+! Y (n2 and n3) are the only dimensions allowed to have sub-domains, and n1 and n4 can be  !
+! the third dimension, but they cannot be greater than 1 at the same time.                 !
+!------------------------------------------------------------------------------------------!
+subroutine exstbuff(n1,n2,n3,n4,arr,buff,il,ir,jb,jt,ind)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: n1
+   integer                     , intent(in)    :: n2
+   integer                     , intent(in)    :: n3
+   integer                     , intent(in)    :: n4
+   integer                     , intent(in)    :: il
+   integer                     , intent(in)    :: ir
+   integer                     , intent(in)    :: jb
+   integer                     , intent(in)    :: jt
+   real, dimension(n1,n2,n3,n4), intent(inout) :: arr
+   real, dimension(*)          , intent(in)    :: buff
+   integer                     , intent(out)   :: ind
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: i
+   integer                                     :: j
+   integer                                     :: k
+   integer                                     :: l
+   !---------------------------------------------------------------------------------------!
+
+   ind=0
+
+   !----- Safety check, we cannot handle 4-D arrays. --------------------------------------!
+   if (n1 > 1 .and. n4 > 1) then
+      call abort_run('N1 and N4 cannot be > 1 at the same time!!!','exstbuff'              &
+                    ,'mpass_st.f90')
+   elseif (n1 > 1) then
+      do j=jb,jt
+         do i=il,ir
+            do k=1,n1
+               ind=ind+1
+               arr(k,i,j,1) = buff(ind)
+            end do
+         end do
+      end do
+   else ! if (n4 > 1) then
+      do j=jb,jt
+         do i=il,ir
+            do l=1,n4
+               ind=ind+1
+               arr(1,i,j,l) = buff(ind)
+            end do
+         end do
+      end do
+   end if
 
   return
 end subroutine exstbuff
-
-!*********************************************************************
+!==========================================================================================!
+!==========================================================================================!

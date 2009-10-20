@@ -184,6 +184,11 @@ therm_lib.o: $(ED_UTILS)/therm_lib.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+therm_lib8.o: $(ED_UTILS)/therm_lib8.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 rk4_stepper.o : $(ED_DYNAMICS)/rk4_stepper.F90
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
@@ -205,6 +210,11 @@ soil_coms.o : $(ED_MEMORY)/soil_coms.F90
 	rm -f $(<F:.F90=.F90)
 
 average_utils.o : $(ED_IO)/average_utils.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+budget_utils.o : $(ED_UTILS)/budget_utils.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -235,11 +245,6 @@ edio.o : $(ED_IO)/edio.f90
 	rm -f $(<F:.f90=.f90)
 
 ed_1st.o : $(ED_DRIVER)/ed_1st.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
-
-ed_bare_restart.o : $(ED_INIT)/ed_bare_restart.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -296,6 +301,11 @@ ed_model.o : $(ED_DRIVER)/ed_model.f90
 	rm -f $(<F:.f90=.f90)
 
 ed_mpass_init.o : $(ED_MPI)/ed_mpass_init.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_nbg_init.o : $(ED_INIT)/ed_nbg_init.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -380,6 +390,11 @@ landuse_init.o : $(ED_INIT)/landuse_init.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+lapse.o : $(ED_UTILS)/lapse.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 leaf_database.o : $(ED_IO)/leaf_database.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -435,6 +450,11 @@ rk4_integ_utils.o : $(ED_DYNAMICS)/rk4_integ_utils.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+rk4_misc.o : $(ED_DYNAMICS)/rk4_misc.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 rsys.o: $(ED_UTILS)/rsys.F90
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
@@ -470,4 +490,4 @@ utils_f.o: $(ED_UTILS)/utils_f.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-include Make.depend
+include dependency.mk

@@ -5,12 +5,13 @@ subroutine ed_init_coup_atm
   use ed_misc_coms,  only: ied_init_mode,runtype
   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype,edgrid_g
   use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr,dslz
-  use rconstants,    only: tsupercool, cliqvlme, cicevlme, t3ple
+  use rconstants,    only: tsupercool, cliqvlme, cicevlme, t3ple, cp, alvl,p00i,rocp
   use grid_coms,      only: nzs, nzg, ngrids
   use fuse_fiss_utils, only: fuse_patches,fuse_cohorts,terminate_cohorts,split_cohorts
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
   use pft_coms,only : sla
   use ed_therm_lib,only : calc_hcapveg,ed_grndvap
+  use therm_lib, only : ptqz2enthalpy, idealdenssh,reducedpress
 
   implicit none
 
@@ -32,7 +33,8 @@ subroutine ed_init_coup_atm
   integer, parameter :: harvard_override = 0
   include 'mpif.h'
   integer :: ping,ierr
-  ping = 6 ! Just any rubbish for MPI Send/Recv
+
+  ping = 6 ! Just any number for MPI Send/Recv
 
   ! This subroutine fills the ED2 fields which depend on current 
   ! atmospheric conditions.
@@ -59,9 +61,32 @@ subroutine ed_init_coup_atm
               
               cpatch => csite%patch(ipa)
 
-              csite%can_temp(ipa) =   cpoly%met(isi)%atm_tmp
-              csite%can_shv(ipa)  =   cpoly%met(isi)%atm_shv
-              csite%can_co2(ipa)  =   cpoly%met(isi)%atm_co2
+
+              !----------------------------------------------------------------------------!
+              !      This first call is just to have the vegetation height so we can       !
+              ! compute the initial canopy pressure...  It must be called again to have    !
+              ! the storage right.                                                         !
+              !----------------------------------------------------------------------------!
+              call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss,ipa)
+
+              csite%can_theta(ipa)    = cpoly%met(isi)%atm_theta
+              csite%can_shv(ipa)      = cpoly%met(isi)%atm_shv
+              csite%can_co2(ipa)      = cpoly%met(isi)%atm_co2
+              csite%can_prss(ipa)     = reducedpress(cpoly%met(isi)%prss                   &
+                                                    ,cpoly%met(isi)%atm_theta              &
+                                                    ,cpoly%met(isi)%atm_shv                &
+                                                    ,cpoly%met(isi)%geoht                  &
+                                                    ,csite%can_theta(ipa)                  &
+                                                    ,csite%can_shv(ipa)                    &
+                                                    ,csite%can_depth(ipa))
+              csite%can_temp(ipa)     = csite%can_theta(ipa)                               &
+                                      * (p00i *csite%can_prss(ipa)) ** rocp
+              csite%can_enthalpy(ipa) = ptqz2enthalpy(csite%can_prss(ipa)                  &
+                                                     ,csite%can_temp(ipa)                  &
+                                                     ,csite%can_shv(ipa)                   &
+                                                     ,csite%can_depth(ipa) )
+              csite%can_rhos(ipa)     = idealdenssh(csite%can_prss(ipa)                    &
+                                                   ,csite%can_temp(ipa),csite%can_shv(ipa))
 
               ! Initialize stars
               csite%tstar(ipa)  = 0.
@@ -70,8 +95,6 @@ subroutine ed_init_coup_atm
               csite%cstar(ipa)  = 0.
               
               
-              ! For now, choose heat/vapor capacities for stability
-              csite%can_depth(ipa) = 30.0
 
               csite%rshort_g(ipa) = 0.0
               csite%rlong_g(ipa) = 0.0
@@ -90,7 +113,7 @@ subroutine ed_init_coup_atm
                  ! Initialize vegetation properties.
                  ! For now, set heat capacity for stability.
 
-                 cpatch%veg_temp(ico)   = cpoly%met(isi)%atm_tmp
+                 cpatch%veg_temp(ico)   = csite%can_temp(ipa)
                  cpatch%veg_fliq(ico)   = 0.0
                  cpatch%veg_water(ico)  = 0.0
                  cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico)           &
@@ -179,28 +202,30 @@ subroutine ed_init_coup_atm
                     csite%sfcwater_tempk  (k,ipa) = csite%soil_tempk(nzg,ipa)
                     csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(nzg,ipa)
                  end do
+              
+                 !----- Compute patch-level LAI, vegetation height, and roughness. --------!
+                 call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss  &
+                                                ,ipa)
 
                  nls   = csite%nlev_sfcwater(ipa)
                  nlsw1 = max(nls,1)
                  
-                 call ed_grndvap(nls,                    &
-                      csite%ntext_soil       (nzg,ipa),  &
-                      csite%soil_water       (nzg,ipa),  &
-                      csite%soil_energy      (nzg,ipa),  &
-                      csite%sfcwater_energy(nlsw1,ipa),  &
-                      cpoly%met(isi)%rhos,  &
-                      csite%can_shv(ipa),  &
-                      csite%ground_shv(ipa),  &
-                      csite%surface_ssh(ipa), &
-                      surface_temp,&
-                      surface_fliq)
-              endif
-              
-              ! Compute patch-level LAI, vegetation height, and roughness
-              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%rhos, ipa)
-              
+                 call ed_grndvap(nls,csite%ntext_soil(nzg,ipa),csite%soil_water(nzg,ipa)   &
+                                ,csite%soil_energy(nzg,ipa)                                &
+                                ,csite%sfcwater_energy(nlsw1,ipa),csite%can_rhos(ipa)      &
+                                ,csite%can_shv(ipa),csite%ground_shv(ipa)                  &
+                                ,csite%surface_ssh(ipa),surface_temp,surface_fliq)
+              else
+                 !----- Compute patch-level LAI, vegetation height, and roughness. --------!
+                 call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss  &
+                                                ,ipa)
+              end if
 
-           enddo
+
+              !----- Computing the storage terms for CO2, energy, and water budgets. ------!
+              call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+
+           end do
            
            ! Compute basal area and AGB profiles.
            call update_site_derived_props(cpoly, 0, isi)
@@ -326,8 +351,8 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
    use grid_coms    , only : nzg          & ! intent(in)
                            , nzs          ! ! intent(in)
    use ed_therm_lib , only : ed_grndvap   ! ! subroutine
-   use therm_lib    , only : qwtk8        & ! subroutine
-                           , qwtk         ! ! subroutine
+   use therm_lib8   , only : qwtk8        ! ! subroutine
+   use therm_lib    , only : qwtk         ! ! subroutine
    use rconstants   , only : wdns         & ! intent(in)
                            , tsupercool   & ! intent(in)
                            , cicevlme     & ! intent(in)
@@ -433,7 +458,7 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
             ksnw1 = max(ksn,1)
             call ed_grndvap(ksn,csite%ntext_soil(nzg,ipa),csite%soil_water(nzg,ipa)        &
                            ,csite%soil_energy(nzg,ipa),csite%sfcwater_energy(ksnw1,ipa)    &
-                           ,cpoly%met(isi)%rhos,csite%can_shv(ipa),csite%ground_shv(ipa)   &
+                           ,csite%can_rhos(ipa),csite%can_shv(ipa),csite%ground_shv(ipa)   &
                            ,csite%surface_ssh(ipa),surface_temp,surface_fliq)
          end do patchloop
       end do siteloop

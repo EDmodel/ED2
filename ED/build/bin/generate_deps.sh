@@ -1,10 +1,11 @@
 #!/bin/sh
-./sfmakedepend.pl -I ../../src/include -f Make.depend.1 ../../src/*/*.f90 ../../src/*/*.F90 ../../src/*/*.c
-sed s/hdf5.mod// Make.depend.1 > Make.depend.2
-sed s/leaf_coms.mod// Make.depend.2 > Make.depend.3
-sed s/grid_dims.mod// Make.depend.3 > Make.depend.4
-sed s/rconstants.mod// Make.depend.4 > Make.depend
-rm Make.depend.1
-rm Make.depend.2
-rm Make.depend.3
-rm Make.depend.4
+edroot=${1}
+includes="-I ${edroot}/src/include"
+edsrc="${edroot}/src/*/*.f90 ${edroot}/src/*/*.F90 ${edroot}/src/*/*.c"
+rm -f dependency.mk
+./sfmakedepend.pl ${includes} -f dependency.mk ${bramssrc} ${edsrc}
+cat dependency.mk   | sed s@hdf5.mod@@g        > dependency.alt
+cat dependency.alt  | sed s@leaf.coms.mod@@g   > dependency.mk
+cat dependency.mk   | sed s@grid_dims.mod@@g   > dependency.alt
+cat dependency.alt  | sed s@rconstants.mod@@g  > dependency.mk
+/bin/rm -f dependency.alt dependency.mk.old*

@@ -1,534 +1,566 @@
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine is the main driver for the Euler integration scheme.                 !
+!------------------------------------------------------------------------------------------!
 subroutine euler_timestep(cgrid)
 
-  use ed_state_vars,only: edtype,polygontype, &
-       sitetype,patchtype
-  use ed_misc_coms, only: dtlsm
-  use soil_coms, only: soil_rough
-  use consts_coms, only: cp,mmdryi
-  use canopy_struct_dynamics,only:ed_stars
+   use ed_state_vars         , only : edtype            & ! structure
+                                    , polygontype       & ! structure
+                                    , sitetype          & ! structure
+                                    , patchtype         ! ! structure
+   use met_driver_coms       , only : met_driv_state    ! ! structure
+   use soil_coms             , only : nzg
+   use ed_misc_coms          , only : dtlsm             ! ! intent(in)
+   use ed_max_dims           , only : n_dbh             ! ! intent(in)
+   use soil_coms             , only : soil_rough        & ! intent(in)
+                                    , snow_rough        ! ! intent(in)
+   use consts_coms           , only : cp                & ! intent(in)
+                                    , mmdryi            & ! intent(in)
+                                    , day_sec           & ! intent(in)
+                                    , umol_2_kgC        ! ! intent(in)
+   use canopy_struct_dynamics, only : canopy_turbulence ! ! subroutine
 
-  implicit none
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   type(edtype)             , target    :: cgrid
+   !----- Local variables -----------------------------------------------------------------!
+   type(polygontype)        , pointer   :: cpoly
+   type(sitetype)           , pointer   :: csite
+   type(patchtype)          , pointer   :: cpatch
+   type(met_driv_state)     , pointer   :: cmet
+   integer                              :: ipy
+   integer                              :: isi
+   integer                              :: ipa
+   integer                              :: ico
+   integer, dimension(nzg)              :: ed_ktrans
+   real   , dimension(n_dbh)            :: gpp_dbh
+   real                                 :: gpp
+   real                                 :: plant_respiration
+   real                                 :: thetaatm
+   real                                 :: thetacan
+   real                                 :: rasveg
+   real                                 :: cflxgc
+   real                                 :: cflxvc
+   real                                 :: storage_decay
+   real                                 :: leaf_flux
+   real                                 :: cflxac
+   real                                 :: canwcap
+   real                                 :: canccap
+   real                                 :: canhcap
+   real                                 :: pcpg_int
+   real                                 :: qpcpg_int
+   real                                 :: dpcpg_int
+   real                                 :: veg_tai
+   real                                 :: sum_lai_rbi
+   real                                 :: fm
+   !----- External functions. -------------------------------------------------------------!
+   real, external                       :: compute_netrad
+   !---------------------------------------------------------------------------------------!
 
-  type(edtype),target       :: cgrid
-  type(polygontype),pointer :: cpoly
-  type(sitetype),pointer    :: csite
-  type(patchtype),pointer   :: cpatch
-  integer :: ipy,isi,ipa
-  real :: thetaatm
-  real :: thetacan
-  real, parameter :: snowrough=0.001
-  real :: hgtmin
-  real :: fm
+   polyloop: do ipy = 1,cgrid%npolygons
+      cpoly => cgrid%polygon(ipy)
+
+      siteloop: do isi = 1,cpoly%nsites
+         csite => cpoly%site(isi)
+         cmet  => cpoly%met(isi)
+
+         patchloop: do ipa = 1,csite%npatches
+            cpatch => csite%patch(ipa)
+
+            !------------------------------------------------------------------------------!
+            !     Here we compute canopy turbulence-related variables, such as the rough-  !
+            ! ness scale, the characteristic scales (stars) and canopy resistance and      !
+            ! capacities.                                                                  !
+            !------------------------------------------------------------------------------!
+            call canopy_turbulence(cpoly,isi,ipa,rasveg,canwcap,canccap,canhcap,.true.)
+
+            !----- Get photosynthesis, stomatal conductance, and transpiration. -----------!
+            call canopy_photosynthesis(csite,ipa,cmet%vels,cmet%atm_tmp,cmet%prss          &
+                                      ,ed_ktrans,csite%ntext_soil(:,ipa)                   &
+                                      ,csite%soil_water(:,ipa),csite%soil_fracliq(:,ipa)   &
+                                      ,cpoly%lsl(isi),sum_lai_rbi                          &
+                                      ,cpoly%leaf_aging_factor(:,isi)                      &
+                                      ,cpoly%green_leaf_factor(:,isi))
+
+            !----- Compute root and heterotrophic respiration. ----------------------------!
+            call soil_respiration(csite,ipa)
 
 
-  do ipy = 1,cgrid%npolygons
+            !------------------------------------------------------------------------------!
+            !     Here we compute the new canopy air CO2 mixing ratio.  This should be     !
+            ! probably done at the Euler solver, otherwise it will be always a simple      !
+            ! explicit method.                                                             !
+            !------------------------------------------------------------------------------!
+            !----- Compute the carbon flux components. ------------------------------------!
+            call sum_plant_cfluxes(csite,ipa,gpp,gpp_dbh,plant_respiration)
 
-     cpoly => cgrid%polygon(ipy)
+            !----- Finding the atmosphere -> canopy flux. ---------------------------------!
+            cflxac = csite%can_rhos(ipa) * csite%ustar(ipa) * csite%cstar(ipa) * mmdryi
 
-     do isi = 1,cpoly%nsites
+            !----- We now compute the plant -> canopy and ground -> canopy fluxes. --------!
+            cflxgc = csite%rh(ipa) - csite%cwd_rh(ipa)
+            cflxvc = csite%cwd_rh(ipa)
 
-        csite => cpoly%site(isi)
-        
-        thetaatm = cpoly%met(isi)%atm_tmp / cpoly%met(isi)%exner
+            do ico=1, cpatch%ncohorts
+               !----- Add root respiration to ground -> canopy air fluxes. ----------------!
+               cflxgc = cflxgc + cpatch%root_respiration(ico)
 
-        do ipa = 1,csite%npatches
+               !---------------------------------------------------------------------------!
+               !    Calculate 'decay' term of storage (same for all) need to convert units !
+               ! from kgC/plant/day to umolC/m2/s.                                         !
+               !---------------------------------------------------------------------------!
+               storage_decay = cpatch%nplant(ico)                                          &
+                             * ( cpatch%growth_respiration(ico)                            &
+                               + cpatch%storage_respiration(ico)                           &
+                               + cpatch%vleaf_respiration(ico) )                           &
+                             / (day_sec * umol_2_kgC)
 
-           cpatch => csite%patch(ipa)
+               cflxvc        = cflxvc + storage_decay
 
-           thetacan = csite%can_temp(ipa) / cpoly%met(isi)%exner
-           csite%rough(ipa) = max(soil_rough, csite%veg_rough(ipa)) *   &
-                (1.0 - csite%snowfac(ipa)) + snowrough
-           hgtmin = max(csite%rough(ipa) + 1.0e-3,   &
-                max(50.0, cpoly%met(isi)%geoht))
-           if(csite%can_temp(ipa) < cpoly%met(isi)%atm_tmp)then
-              cpoly%met(isi)%vels = cpoly%met(isi)%vels_stab
-           else
-              cpoly%met(isi)%vels = cpoly%met(isi)%vels_unstab
-           endif
+               !----- Check whether this cohort is producing photosynthesis. --------------!
+               if (cpatch%solvable(ico)) then
+                  !------  Calculate leaf-level CO2 flux ----------------------------------!
+                  leaf_flux = cpatch%gpp(ico) - cpatch%leaf_respiration(ico)
+                  !------ Update CO2 flux from vegetation to canopy air space. ---------------------!
+                  cflxvc = cflxvc - leaf_flux
+               end if
+            end do
 
-           call ed_stars(thetaatm,cpoly%met(isi)%atm_shv,cpoly%met(isi)%atm_co2,&
-                thetacan,csite%can_shv(ipa),csite%can_co2(ipa),                 &
-                hgtmin,0.0,cpoly%met(isi)%vels,csite%rough(ipa),                &
-                csite%ustar(ipa), csite%qstar(ipa),                             &
-                csite%tstar(ipa), csite%cstar(ipa),                             &
-                fm)
+            !----- Updating canopy air CO2. -----------------------------------------------!
+            csite%can_co2(ipa) = csite%can_co2(ipa)                                        &
+                               + (cflxgc + cflxvc + cflxac) * dtlsm / canccap
+            !------------------------------------------------------------------------------!
 
-           csite%co2budget_loss2atm(ipa) = - cpoly%met(isi)%rhos *   &
-                csite%ustar(ipa) * csite%cstar(ipa) * mmdryi * dtlsm
-           csite%ebudget_loss2atm(ipa) = - cp * cpoly%met(isi)%rhos * &
-                csite%ustar(ipa) * csite%tstar(ipa) * cpoly%met(isi)%exner * dtlsm
-           csite%wbudget_loss2atm(ipa) = - cpoly%met(isi)%rhos *  &
-                csite%ustar(ipa) * csite%qstar(ipa) * dtlsm
+            !----- Finding total precipitation and associated variables. ------------------!
+            pcpg_int  = cmet%pcpg  * dtlsm
+            qpcpg_int = cmet%qpcpg * dtlsm
+            dpcpg_int = cmet%dpcpg * dtlsm
 
-           ! This is like the LEAF-3 implemented in OLAM.
-           call leaf3_land(csite,ipa,csite%nlev_sfcwater(ipa),   &
-                csite%ntext_soil(:,ipa), csite%soil_water(:,ipa),   &
-                csite%soil_energy(:,ipa), csite%sfcwater_mass(:,ipa),   &
-                csite%sfcwater_energy(:,ipa), csite%sfcwater_depth(:,ipa),   &
-                csite%rshort_s(:,ipa), csite%rshort_g(ipa), csite%rlong_s(ipa),  &
-                csite%rlong_g(ipa), csite%veg_height(ipa), csite%veg_rough(ipa),  &
-                csite%lai(ipa), csite%can_depth(ipa), cpoly%met(isi)%rhos,   &
-                cpoly%met(isi)%vels, cpoly%met(isi)%atm_tmp, cpoly%met(isi)%prss,   &
-                cpoly%met(isi)%pcpg * dtlsm,   &
-                cpoly%met(isi)%qpcpg * dtlsm,  &
-                cpoly%met(isi)%dpcpg * dtlsm,   &
-                csite%ebudget_loss2atm(ipa),   &
-                csite%wbudget_loss2atm(ipa),  &
-                csite%co2budget_loss2atm(ipa),   &
-                csite%ustar(ipa), csite%snowfac(ipa), csite%surface_ssh(ipa),  &
-                csite%ground_shv(ipa), csite%can_temp(ipa), csite%can_shv(ipa),  &
-                csite%can_co2(ipa), csite%rough(ipa), cpoly%lsl(isi),  &
-                cpoly%leaf_aging_factor(:,isi),   &
-                cpoly%green_leaf_factor(:,isi))
+            !----- Finding the tree area index. -------------------------------------------!
+            veg_tai = csite%lai(ipa) + csite%wai(ipa)
 
-        enddo
-     enddo
-  enddo
+            !----- This is like the LEAF-3 implemented in OLAM. ---------------------------!
+            call leaf3_land(csite,ipa,csite%nlev_sfcwater(ipa),csite%ntext_soil(:,ipa)     &
+                           ,csite%soil_water(:,ipa),csite%soil_energy(:,ipa)               &
+                           ,csite%sfcwater_mass(:,ipa),csite%sfcwater_energy(:,ipa)        &
+                           ,csite%sfcwater_depth(:,ipa),csite%rshort_s(:,ipa)              &
+                           ,csite%rshort_g(ipa),csite%rlong_s(ipa),csite%rlong_g(ipa)      &
+                           ,csite%veg_height(ipa),csite%veg_rough(ipa),veg_tai             &
+                           ,csite%can_depth(ipa),csite%can_rhos(ipa),cmet%vels             &
+                           ,cmet%atm_tmp,cmet%prss,pcpg_int,qpcpg_int,dpcpg_int            &
+                           ,csite%ebudget_loss2atm(ipa),csite%wbudget_loss2atm(ipa)        &
+                           ,csite%co2budget_loss2atm(ipa),csite%ustar(ipa)                 &
+                           ,csite%snowfac(ipa),csite%surface_ssh(ipa)                      &
+                           ,csite%ground_shv(ipa),csite%can_enthalpy(ipa)                  &
+                           ,csite%can_temp(ipa),csite%can_shv(ipa),csite%can_co2(ipa)      &
+                           ,csite%rough(ipa),cpoly%lsl(isi),cpoly%leaf_aging_factor(:,isi) &
+                           ,cpoly%green_leaf_factor(:,isi),rasveg,canwcap,canhcap)
 
-  return
+               !---------------------------------------------------------------------------!
+               !    Update the minimum monthly temperature, based on canopy temperature.   !
+               !---------------------------------------------------------------------------!
+               if (cpoly%site(isi)%can_temp(ipa) < cpoly%min_monthly_temp(isi)) then
+                  cpoly%min_monthly_temp(isi) = cpoly%site(isi)%can_temp(ipa)
+               end if
+
+         end do patchloop
+      end do siteloop
+   end do polyloop
+
+   return
 end subroutine euler_timestep
-
-!*****************************************************************************
-
-subroutine leaf3_land(csite,ipa, nlev_sfcwater,   &
-     ntext_soil, soil_water,   &
-     soil_energy, sfcwater_mass,   &
-     sfcwater_energy, sfcwater_depth,   &
-     rshort_s, rshort_g, rlong_s,  &
-     rlong_g, veg_height, veg_rough,  &
-     veg_tai, can_depth, rhos,   &
-     vels, atm_tmp, prss, pcpg,   &
-     qpcpg, dpcpg,   &
-     sxfer_t, sxfer_r, sxfer_c,   &
-     ustar, snowfac, surface_ssh,  &
-     ground_shv, can_temp, can_shv,  &
-     can_co2, rough, lsl, leaf_aging_factor, green_leaf_factor)
-
-  
-  use ed_state_vars, only: sitetype
-  use grid_coms, only: nzg, nzs
-  use soil_coms, only: soil_rough, snow_rough, soil
-  use ed_misc_coms, only: dtlsm
-  use ed_max_dims, only: n_pft
-  use therm_lib, only: qtk,qwtk
-  use ed_therm_lib,only:ed_grndvap
-  use consts_coms, only: wdns
-
-  implicit none
-
-  type(sitetype), target :: csite
-  integer, intent(in) :: ipa
-  integer, intent(inout) :: nlev_sfcwater
-  integer, dimension(nzg), intent(in) :: ntext_soil
-  real, dimension(nzg), intent(inout) :: soil_water
-  real, dimension(nzg), intent(inout) :: soil_energy
-  real, dimension(nzs), intent(inout) :: sfcwater_mass
-  real, dimension(nzs), intent(inout) :: sfcwater_energy
-  real, dimension(nzs), intent(inout) :: sfcwater_depth
-  real, intent(inout), dimension(nzs) :: rshort_s
-  real, intent(in) :: rshort_g
-  real, intent(in) :: rlong_s
-  real, intent(in) :: rlong_g
-  real, intent(in) :: veg_height
-  real, intent(inout) :: veg_rough
-  real, intent(inout) :: veg_tai
-  real, intent(in) :: can_depth
-  real, intent(in) :: rhos
-  real, intent(in) :: vels
-  real, intent(in) :: atm_tmp
-  real, intent(in) :: prss
-  real, intent(in) :: pcpg
-  real, intent(in) :: qpcpg
-  real, intent(in) :: dpcpg
-  real, intent(in) :: sxfer_t
-  real, intent(in) :: sxfer_r
-  real, intent(in) :: sxfer_c
-  real, intent(in) :: ustar
-  real, intent(in) :: snowfac
-  real, intent(inout) :: surface_ssh
-  real, intent(inout) :: ground_shv
-  real, intent(inout) :: can_temp
-  real, intent(inout) :: can_shv
-  real, intent(inout) :: can_co2
-  real, intent(inout) :: rough
-  integer, intent(in) :: lsl
-  real, intent(in), dimension(n_pft) :: leaf_aging_factor, green_leaf_factor
-
-  real, dimension(nzg) :: soil_tempk
-  real, dimension(nzg) :: soil_fracliq
-  real :: soil_rfactor    (nzg) ! soil thermal resistivity [K m^2/W]
-  real, dimension(nzs) :: sfcwater_tempk
-  real, dimension(nzs) :: sfcwater_fracliq
-  real :: hxferg        (nzg+1) ! heat xfer between soil layers [J/m^2]
-
-  real :: wxfer       (nzg+1) ! soil water xfer [m]
-  real :: qwxfer      (nzg+1) ! soil energy xfer from water xfer [J/m^2] 
-  real :: psiplusz    (nzg)   ! soil water potential (including grav) [m]
-  real :: hydraul_cond(nzg)   ! soil hydraulic conductivity [m/s]
-
-  real :: surface_temp,surface_fliq
-
-  integer :: k     ! vertical index over soil layers
-  integer :: nlsw1 ! maximum of (1,nlev_sfcwater)
-  
-  integer :: ktrans ! vertical index of soil layer supplying transpiration
-  
-  real :: transp  ! transpiration xfer this LEAF timestep [kg/m^2]
-  real, dimension(nzg) :: ed_transp ! transpired water from each soil level; ED2 cells only [kg/m^2]
-  real :: hxfergc ! heat xfer from ground (soil) to can_air this step [J/m^2]
-  real :: wxfergc ! vapor xfer from ground (soil) to can_air this step [kg_vap/m^2  ]
-  real :: hxfersc ! heat xfer from sfcwater to can_air this step [J/m^2]
-  real :: wxfersc ! vapor xfer from sfcwater to can_air this step [kg_vap/m^2]
-  real :: wshed   ! water shed from veg this timestep [kg/m^2]
-  real :: qwshed  ! water energy shed from veg this timestep [J/m^2]
-  real :: rdi     ! (soil or surface water)-to-can_air conductance [m/s]
-  
-
-  !=================================================================
-  ! TEMPORARY RUNOFF VARIABLES
-  real :: runoff
-  real :: qrunoff
-  !=================================================================
-
-  soil_tempk(lsl:nzg) = csite%soil_tempk(lsl:nzg,ipa)
-  soil_fracliq(lsl:nzg) = csite%soil_fracliq(lsl:nzg,ipa)
-  sfcwater_tempk(1:nlev_sfcwater) =   &
-       csite%sfcwater_tempk(1:nlev_sfcwater,ipa)
-  sfcwater_fracliq(1:nlev_sfcwater) =   &
-       csite%sfcwater_fracliq(1:nlev_sfcwater,ipa)
-
-  ! Evaluate turbulent exchanges of heat and moisture between vegetation 
-  ! and canopy air and also between soil or snow surface and canopy air.  
-  ! Evaluate transfer of precipitation moisture and heat to vegetation and 
-  ! shed from vegetation to surface.  Update vegetation and canopy air 
-  ! temperatures resulting from these plus radiative fluxes.
-
-  nlsw1 = max(csite%nlev_sfcwater(ipa),1)
-
-  call euler_canopy(                                 &
-       nlev_sfcwater,         ntext_soil,            &
-       ktrans,                &
-       soil_water,            soil_fracliq,          &
-       soil_tempk    (nzg),   sfcwater_mass (nlsw1), &
-       sfcwater_tempk(nlsw1), veg_height,            &
-       veg_rough,             veg_tai,               &
-       can_depth,             rhos,                  &
-       vels,                  atm_tmp, prss,                  &
-       pcpg,                  qpcpg,                 &
-       sxfer_t,               sxfer_r,               &
-       sxfer_c,               ustar,                 &
-       snowfac,                                   &
-       surface_ssh,           ground_shv,            &
-       can_temp,              can_shv,               &
-       can_co2,                                      &
-       wshed,                 qwshed,                &
-       transp,                  &
-       hxfergc,               wxfergc,               &
-       hxfersc,               wxfersc,               &
-       rdi,                   &
-       lsl,                   ed_transp,             &
-       csite,                                        &
-       ipa,                                          &
-       leaf_aging_factor, green_leaf_factor)
+!==========================================================================================!
+!==========================================================================================!
 
 
-  ! CALL SFCWATER:
-  !  1. Compute soil and sfcwater heat conductivities
-  !  2. Compute surface heat flux for top layer of soil or sfcwater
-  !  3. Evaluate internal and bottom fluxes for sfcwater
-  !  4. Update sfcwater layer energies due to heat flux and solar radiation
-  !  5. Evaluate melting and percolation of liquid through sfcwater layers
-  
-  call euler_sfcwater(  &
-       nlev_sfcwater,    ntext_soil,       &
-       soil_rfactor,     soil_water,       &
-       soil_energy,      sfcwater_mass,    &
-       sfcwater_energy,  sfcwater_depth,   &
-       soil_tempk,       soil_fracliq ,    &
-       sfcwater_tempk,   sfcwater_fracliq, &
-       rshort_s,         hxfersc,          &
-       wxfersc,          rlong_g,          &
-       rlong_s,          pcpg,             &
-       qpcpg,            dpcpg,            &
-       wshed,            qwshed,           &
-       lsl            )
-  
-  call soil_euler(                       &
-       nlev_sfcwater, &
-       ntext_soil,   ktrans,        &
-       soil_tempk,   soil_fracliq,  &
-       soil_rfactor, hxfergc,       &
-       wxfergc,      rshort_g,      &
-       rlong_g,      transp,        &
-       soil_energy,  soil_water,    &
-       hxferg,       wxfer,         &
-       qwxfer,       psiplusz,      &
-       hydraul_cond, lsl,           &
-       ed_transp,    csite, ipa)
-  
-  ! Compute ground vap mxrat for next timestep; put into ground_ssh.
-  
-  nlsw1 = max(nlev_sfcwater,1)
-  
-  call ed_grndvap(nlev_sfcwater,&
-       ntext_soil       (nzg),  &
-       soil_water       (nzg),  &
-       soil_energy      (nzg),  &
-       sfcwater_energy(nlsw1),  &
-       rhos,  &
-       can_shv,  &
-       ground_shv,  &
-       surface_ssh, &
-       surface_temp,surface_fliq)
-  
-  do k = lsl,nzg
-     call qwtk(soil_energy(k),soil_water(k)*wdns,  &
-          soil(ntext_soil(k))%slcpd,soil_tempk(k),soil_fracliq(k))
-  enddo
-  
-  ! Diagnose surface water temperature and liquid fraction
-  
-  do k = 1,nlev_sfcwater
-     call qtk(sfcwater_energy(k),sfcwater_tempk(k),sfcwater_fracliq(k))
-  enddo
-  
-  do k = lsl,nzg
-     csite%soil_tempk(k,ipa) = soil_tempk(k)
-     csite%soil_fracliq(k,ipa) = soil_fracliq(k)
-  enddo
-  
-  do k = 1,nlev_sfcwater
-     csite%sfcwater_tempk(k,ipa) = sfcwater_tempk(k)
-     csite%sfcwater_fracliq(k,ipa) = sfcwater_fracliq(k)
-  enddo
-  
-!-----------------------------------------------------------------------------
-! TEMPORARY UNTIL FULL LEAF-HYDRO MODEL IS COMPLETED WITH STREAM/RIVER RUNOFF:
-! Simple representation of runoff
 
-  call remove_runoff(nlev_sfcwater,    &
-       sfcwater_fracliq, sfcwater_mass,    &
-       sfcwater_tempk,   sfcwater_energy,  &
-       sfcwater_depth,   runoff,           &
-       qrunoff                             )
-!-----------------------------------------------------------------------------
 
-  csite%wbudget_loss2runoff(ipa) = runoff
-  csite%ebudget_loss2runoff(ipa) = qrunoff
 
-  return
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine will compute the carbon, water, and energy balance using Euler's     !
+! integration scheme.                                                                      !
+!------------------------------------------------------------------------------------------!
+subroutine leaf3_land(csite,ipa,nlev_sfcwater,ntext_soil,soil_water,soil_energy            &
+                     ,sfcwater_mass,sfcwater_energy,sfcwater_depth,rshort_s,rshort_g       &
+                     ,rlong_s,rlong_g,veg_height,veg_rough,veg_tai,can_depth,rhos,vels     &
+                     ,atm_tmp,prss,pcpg,qpcpg,dpcpg,sxfer_t,sxfer_r,sxfer_c,ustar,snowfac  &
+                     ,surface_ssh,ground_shv,can_enthalpy,can_temp,can_shv,can_co2,rough   &
+                     ,lsl,leaf_aging_factor, green_leaf_factor,rasveg,canwcap,canhcap)
+
+
+   use ed_state_vars, only : sitetype    ! ! structure
+   use grid_coms    , only : nzg         & ! intent(in)
+                           , nzs         ! ! intent(in)
+   use soil_coms    , only : soil_rough  & ! intent(in)
+                           , snow_rough  & ! intent(in)
+                           , soil        ! ! intent(in)
+   use ed_misc_coms , only : dtlsm       ! ! intent(in)
+   use ed_max_dims  , only : n_pft       ! ! intent(in)
+   use therm_lib    , only : qtk         & ! subroutine
+                           , qwtk        ! ! subroutine
+   use ed_therm_lib , only : ed_grndvap  ! ! subroutine
+   use consts_coms  , only : wdns        ! ! intent(in)
+
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   type(sitetype)           , target        :: csite
+   integer, dimension(nzg)  , intent(in)    :: ntext_soil
+   integer                  , intent(in)    :: ipa
+   integer                  , intent(in)    :: lsl
+   real   , dimension(n_pft), intent(in)    :: leaf_aging_factor
+   real   , dimension(n_pft), intent(in)    :: green_leaf_factor
+   real                     , intent(in)    :: rshort_g
+   real                     , intent(in)    :: rlong_s
+   real                     , intent(in)    :: rlong_g
+   real                     , intent(in)    :: veg_height
+   real                     , intent(in)    :: can_depth
+   real                     , intent(in)    :: rhos
+   real                     , intent(in)    :: vels
+   real                     , intent(in)    :: atm_tmp
+   real                     , intent(in)    :: prss
+   real                     , intent(in)    :: pcpg
+   real                     , intent(in)    :: qpcpg
+   real                     , intent(in)    :: dpcpg
+   real                     , intent(in)    :: sxfer_t
+   real                     , intent(in)    :: sxfer_r
+   real                     , intent(in)    :: sxfer_c
+   real                     , intent(in)    :: ustar
+   real                     , intent(in)    :: snowfac
+   real                     , intent(in)    :: rasveg
+   real                     , intent(in)    :: canhcap
+   real                     , intent(in)    :: canwcap
+   integer                  , intent(inout) :: nlev_sfcwater
+   real   , dimension(nzg)  , intent(inout) :: soil_water
+   real   , dimension(nzg)  , intent(inout) :: soil_energy
+   real   , dimension(nzs)  , intent(inout) :: sfcwater_mass
+   real   , dimension(nzs)  , intent(inout) :: sfcwater_energy
+   real   , dimension(nzs)  , intent(inout) :: sfcwater_depth
+   real   , dimension(nzs)  , intent(inout) :: rshort_s
+   real                     , intent(inout) :: veg_rough
+   real                     , intent(inout) :: veg_tai
+   real                     , intent(inout) :: surface_ssh
+   real                     , intent(inout) :: ground_shv
+   real                     , intent(inout) :: can_enthalpy
+   real                     , intent(inout) :: can_temp
+   real                     , intent(inout) :: can_shv
+   real                     , intent(inout) :: can_co2
+   real                     , intent(inout) :: rough
+   !----- Local variables -----------------------------------------------------------------!
+   integer                :: k                ! vertical index over soil layers
+   integer                :: nlsw1            ! maximum between 1 and nlev_sfcwater
+   integer                :: ktrans           ! Level supplying transpiration
+   real, dimension(nzg+1) :: hxferg           ! heat xfer between soil layers     [   J/m2]
+   real, dimension(nzg+1) :: wxfer            ! soil water xfer                   [      m]
+   real, dimension(nzg+1) :: qwxfer           ! soil energy xfer from water xfer  [   J/m2] 
+   real, dimension(nzg)   :: psiplusz         ! soil water potential (incl. grav) [      m]
+   real, dimension(nzg)   :: hydraul_cond     ! soil hydraulic conductivity       [    m/s]
+   real, dimension(nzg)   :: soil_tempk       ! Soil temperature                  [      K]
+   real, dimension(nzg)   :: soil_fracliq     ! Soil liquid water fraction        [     --]
+   real, dimension(nzg)   :: soil_rfactor     ! soil thermal resistivity          [ K m2/W]
+   real, dimension(nzg)   :: ed_transp        ! Transpired water from each soil 
+                                              !     level; ED2 cells only         [  kg/m2]
+   real, dimension(nzs)   :: sfcwater_tempk   ! surface water temperature         [      K]
+   real, dimension(nzs)   :: sfcwater_fracliq ! surface water liquid water frac.  [     --]
+   real                   :: surface_temp     ! Surface (skin) temperature        [      K]
+   real                   :: surface_fliq     ! Surface liquid water fraction     [     --]
+   real                   :: transp           ! Total transpiration xfer          [  kg/m2]
+   real                   :: hxfergc          ! Total heat xfer ground -> canopy  [   J/m2]
+   real                   :: wxfergc          ! Total vap. xfer ground -> canopy  [  kg/m2]
+   real                   :: hxfersc          ! Total heat xfer sfcw   -> canopy  [   J/m2]
+   real                   :: wxfersc          ! Total vap. xfer sfcw   -> canopy  [  kg/m2]
+   real                   :: wshed            ! water shed from veg this timestep [  kg/m2]
+   real                   :: qwshed           ! Energy shed from veg this timestep[   J/m2]
+   real                   :: rdi              ! Surface -> canopy air conductance [    m/s]
+   real                   :: runoff           ! water runoff this timestep        [  kg/m2]
+   real                   :: qrunoff          ! Energy runoff this timestep       [   J/m2]
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Copying some variables to internal arrays. --------------------------------------!
+   do k=lsl,nzg
+      soil_tempk(k)   = csite%soil_tempk(k,ipa)
+      soil_fracliq(k) = csite%soil_fracliq(k,ipa)
+   end do
+
+   do k=1,nlev_sfcwater
+      sfcwater_tempk(k)   = csite%sfcwater_tempk(k,ipa)
+      sfcwater_fracliq(k) = csite%sfcwater_fracliq(k,ipa)
+   end do
+
+   !---------------------------------------------------------------------------------------!
+   !      Evaluate turbulent exchanges of heat and moisture between vegetation and canopy  !
+   ! air and also between soil or snow surface and canopy air.  Evaluate transfer of       !
+   ! precipitation moisture and heat to vegetation and shed from vegetation to surface.    !
+   ! Update vegetation and canopy air temperatures resulting from these plus radiative     !
+   ! fluxes.                                                                               !
+   !---------------------------------------------------------------------------------------!
+   nlsw1 = max(csite%nlev_sfcwater(ipa),1)
+
+   call euler_canopy(nlev_sfcwater,ntext_soil,ktrans,soil_water,soil_fracliq               &
+                    ,soil_tempk(nzg),sfcwater_mass (nlsw1),sfcwater_tempk(nlsw1)           &
+                    ,veg_height,veg_rough,veg_tai,can_depth,rhos,vels,atm_tmp,prss,pcpg    &
+                    ,qpcpg,sxfer_t,sxfer_r,sxfer_c,ustar,snowfac,surface_ssh,ground_shv    &
+                    ,can_enthalpy,can_temp,can_shv,can_co2,wshed,qwshed,transp,hxfergc     &
+                    ,wxfergc,hxfersc,wxfersc,rdi,lsl,ed_transp,csite,ipa,leaf_aging_factor &
+                    ,green_leaf_factor,rasveg,canwcap,canhcap)
+
+
+   !---------------------------------------------------------------------------------------!
+   ! CALL SFCWATER:                                                                        !
+   !  1. Compute soil and sfcwater heat conductivities                                     !
+   !  2. Compute surface heat flux for top layer of soil or sfcwater                       !
+   !  3. Evaluate internal and bottom fluxes for sfcwater                                  !
+   !  4. Update sfcwater layer energies due to heat flux and solar radiation               !
+   !  5. Evaluate melting and percolation of liquid through sfcwater layers                !
+   !---------------------------------------------------------------------------------------!
+   call euler_sfcwater(nlev_sfcwater,ntext_soil,soil_rfactor,soil_water,soil_energy        &
+                      ,sfcwater_mass,sfcwater_energy,sfcwater_depth,soil_tempk             &
+                      ,soil_fracliq,sfcwater_tempk,sfcwater_fracliq,rshort_s,hxfersc       &
+                      ,wxfersc,rlong_g,rlong_s,pcpg,qpcpg,dpcpg,wshed,qwshed,lsl)
+   
+   call soil_euler(nlev_sfcwater,ntext_soil,ktrans,soil_tempk,soil_fracliq,soil_rfactor    &
+                  ,hxfergc,wxfergc,rshort_g,rlong_g,transp,soil_energy,soil_water,hxferg   &
+                  ,wxfer,qwxfer,psiplusz,hydraul_cond,lsl,ed_transp,csite,ipa)
+   
+   !----- Compute ground vap mxrat for next timestep; put into ground_ssh. ----------------!
+   nlsw1 = max(nlev_sfcwater,1)
+   call ed_grndvap(nlev_sfcwater,ntext_soil(nzg),soil_water(nzg),soil_energy(nzg)          &
+                  ,sfcwater_energy(nlsw1),rhos,can_shv,ground_shv,surface_ssh,surface_temp &
+                  ,surface_fliq)
+
+   !----- Diagnose soil temperature and liquid fraction. ----------------------------------!
+   do k = lsl,nzg
+      call qwtk(soil_energy(k),soil_water(k)*wdns,soil(ntext_soil(k))%slcpd,soil_tempk(k)  &
+               ,soil_fracliq(k))
+   end do
+
+   !----- Diagnose surface water temperature and liquid fraction. -------------------------!
+   do k = 1,nlev_sfcwater
+      call qtk(sfcwater_energy(k),sfcwater_tempk(k),sfcwater_fracliq(k))
+   end do
+
+   !----- Copying the temporary arrays to ED structures. ----------------------------------!
+   do k = lsl,nzg
+      csite%soil_tempk(k,ipa)   = soil_tempk(k)
+      csite%soil_fracliq(k,ipa) = soil_fracliq(k)
+   end do
+   do k = 1,nlev_sfcwater
+      csite%sfcwater_tempk(k,ipa)   = sfcwater_tempk(k)
+      csite%sfcwater_fracliq(k,ipa) = sfcwater_fracliq(k)
+   end do
+   
+   !---------------------------------------------------------------------------------------!
+   !     Temporary until full LEAF-Hydro model is completed with stream/river runoff:      !
+   !  Simple representation of runoff.                                                     !
+   !---------------------------------------------------------------------------------------!
+   call remove_runoff(nlev_sfcwater,sfcwater_fracliq,sfcwater_mass,sfcwater_tempk          &
+                     ,sfcwater_energy,sfcwater_depth,runoff,qrunoff)
+
+   csite%wbudget_loss2runoff(ipa) = runoff
+   csite%ebudget_loss2runoff(ipa) = qrunoff
+
+   return
 end subroutine leaf3_land
-
-!***************************************************************************
-
-subroutine euler_canopy(nlev_sfcwater, ntext_soil, ktrans,   &
-                  soil_water, soil_fracliq, soil_tempk,                   &
-                  sfcwater_mass, sfcwater_tempk,                          &
-                  veg_height, veg_rough, veg_tai,                &
-                  can_depth,                                     &
-                  rhos, vels, atm_tmp, prss, pcpg, qpcpg,                          &
-                  sxfer_t, sxfer_r, sxfer_c, ustar,     &
-                  snowfac, surface_ssh, ground_shv,                   &
-                  can_temp, can_shv, can_co2,                 &
-                  wshed, qwshed, transp,                      &
-                  hxfergc, wxfergc, hxfersc, wxfersc,            &
-                  rdi,                         &
-                  lsl, ed_transp, csite, ipa,   &
-                  leaf_aging_factor, green_leaf_factor)
+!==========================================================================================!
+!==========================================================================================!
 
 
-use soil_coms,   only: soil_rough, dslz
-use grid_coms, only: nzg
-use ed_misc_coms, only: dtlsm
-use consts_coms, only: cp, vonk, alvl, cliq, cice, alli, rvap
 
-use ed_state_vars,only:sitetype,patchtype
-use canopy_air_coms, only: exar, covr
-use ed_max_dims, only: n_pft
 
-implicit none
 
-integer, intent(in)  :: nlev_sfcwater   ! # active levels of surface water
-integer, intent(in)  :: ntext_soil(nzg) ! soil textural class
-integer, intent(out) :: ktrans          ! k index of soil layer supplying transp
 
-real, intent(in) :: soil_water(nzg)   ! soil water content [vol_water/vol_tot]
-real, intent(in) :: soil_fracliq(nzg) ! fraction of soil moisture in liquid phase
-real, intent(in) :: soil_tempk        ! soil temp [K]
-real, intent(in) :: sfcwater_mass     ! surface water mass [kg/m^2]
-real, intent(in) :: sfcwater_tempk    ! surface water temp [K]
-real, intent(in) :: veg_height  ! veg height [m]
-real, intent(in) :: veg_rough   ! veg roughess height [m]
-real, intent(in) :: veg_tai     ! veg total area index
-real, intent(in) :: can_depth   ! canopy depth for heat and vap capacity [m]
-real, intent(in) :: rhos        ! atmospheric air density [kg/m^3]
-real, intent(in) :: vels        ! surface wind speed [m/s]
-real, intent(in) :: atm_tmp     ! atmospheric air density [kg/m^3]
-real, intent(in) :: prss        ! air pressure [Pa]
-real, intent(in) :: pcpg        ! new precip amount this leaf timestep [kg/m^2]
-real, intent(in) :: qpcpg       ! new precip energy this leaf timestep [J/m^2]
-real, intent(in) :: sxfer_t     ! surface heat xfer this step [kg_air K/m^2]
-real, intent(in) :: sxfer_r     ! surface vapor xfer this step [kg_vap/m^2]
-real, intent(in) :: sxfer_c     ! surface CO2 xfer this step [umol/m^2]
-real, intent(in) :: ustar       ! friction velocity [m/s]
-real, intent(in) :: snowfac     ! fractional veg burial by snowcover
-real, intent(in) :: surface_ssh ! surface sat spec hum [kg_vap/kg_air]
-real, intent(in) :: ground_shv  ! soil vapor spec hum [kg_vap/kg_air]
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine will compute the fluxes related to the canopy air space.             !
+!------------------------------------------------------------------------------------------!
+subroutine euler_canopy(nlev_sfcwater,ntext_soil,ktrans,soil_water,soil_fracliq,soil_tempk &
+                       ,sfcwater_mass,sfcwater_tempk,veg_height,veg_rough,veg_tai          &
+                       ,can_depth,rhos,vels,atm_tmp,prss,pcpg,qpcpg,sxfer_t,sxfer_r        &
+                       ,sxfer_c,ustar,snowfac,surface_ssh,ground_shv,can_enthalpy,can_temp &
+                       ,can_shv,can_co2,wshed,qwshed,transp,hxfergc,wxfergc, hxfersc       &
+                       ,wxfersc,rdi,lsl,ed_transp,csite,ipa,leaf_aging_factor              &
+                       ,green_leaf_factor,rasveg,canwcap,canhcap)
 
-real, intent(inout) :: can_temp    ! canopy air temp [K]
-real, intent(inout) :: can_shv     ! canopy air vapor spec hum [kg_vap/kg_air]
-real, intent(inout) :: can_co2     ! canopy air CO2 mixing ratio [umol/mol]
+   use soil_coms      , only: soil_rough & ! intent(in)
+                            , dslz       ! ! intent(in)
+   use grid_coms      , only: nzg        ! ! intent(in)
+   use ed_misc_coms   , only: dtlsm      ! ! intent(in)
+   use consts_coms    , only: cp         & ! intent(in)
+                            , vonk       & ! intent(in)
+                            , alvl       & ! intent(in)
+                            , cliq       & ! intent(in)
+                            , cice       & ! intent(in)
+                            , alli       ! ! intent(in)
+   use ed_state_vars  , only: sitetype   & ! structure
+                            , patchtype  ! ! structure
+   use canopy_air_coms, only: exar       & ! intent(in)
+                            , covr       ! ! intent(in)
+   use ed_max_dims    , only: n_pft      ! ! intent(in)
 
-real, intent(out) :: hxfergc ! soil-to-can_air heat xfer this step [J/m^2]
-real, intent(out) :: wxfergc ! soil-to-can_air vap xfer this step [kg_vap/m^2]
-real, intent(out) :: hxfersc ! sfc_water-to-can_air heat xfer this step [J/m^2]
-real, intent(out) :: wxfersc ! sfc_water-to-can_air vap xfer this step [kg_vap/m^2]
-real, intent(out) :: wshed   ! water shed from veg this LEAF timestep [kg/m^2]
-real, intent(out) :: qwshed  ! water energy shed from veg this LEAF timestep [J/m^2]
-real, intent(out) :: transp  ! transpiration xfer this LEAF timestep [kg_vap/m^2]
-real, intent(out) :: rdi     ! (soil or surface water)-to-can_air conductance [m/s]
+   implicit none
 
-real, dimension(nzg) :: ed_transp ! transpired water from each soil level; ED2 cells only [kg/m^2]
+   !----- Arguments -----------------------------------------------------------------------!
+   type(sitetype)         , target        :: csite          ! Current site
+   integer                , intent(in)    :: ipa            ! Current patch #
+   integer                , intent(in)    :: lsl            ! Lowest soil level
+   integer                , intent(in)    :: nlev_sfcwater  ! # active surface levels
+   integer, dimension(nzg), intent(in)    :: ntext_soil     ! soil textural class
+   real, dimension(nzg)   , intent(in)    :: soil_water     ! soil water content   [ m3/m3]
+   real, dimension(nzg)   , intent(in)    :: soil_fracliq   ! soil liquid fraction [   ---]
+   real, dimension(n_pft) , intent(in)    :: leaf_aging_factor
+   real, dimension(n_pft) , intent(in)    :: green_leaf_factor
+   real   , intent(in)    :: soil_tempk     ! Soil temperature                   [       K]
+   real   , intent(in)    :: sfcwater_mass  ! Sfc. water mass                    [   kg/m2]
+   real   , intent(in)    :: sfcwater_tempk ! Sfc. water temperature             [       K]
+   real   , intent(in)    :: veg_height     ! Vegetation height                  [       m]
+   real   , intent(in)    :: veg_rough      ! Vegetation roughess height         [       m]
+   real   , intent(in)    :: veg_tai        ! Vegetation total area index        [   m2/m2]
+   real   , intent(in)    :: can_depth      ! Canopy depth                       [       m]
+   real   , intent(in)    :: rhos           ! Atmospheric air density            [   kg/m3]
+   real   , intent(in)    :: vels           ! Surface wind speed                 [     m/s]
+   real   , intent(in)    :: atm_tmp        ! Atmospheric air temperature        [       K]
+   real   , intent(in)    :: prss           ! air pressure                       [      Pa]
+   real   , intent(in)    :: pcpg           ! Total precipitation mass           [   kg/m2]
+   real   , intent(in)    :: qpcpg          ! Total precipitation energy         [    J/m2]
+   real   , intent(in)    :: sxfer_t        ! Surface heat xfer this step        [ kg K/m2]
+   real   , intent(in)    :: sxfer_r        ! Surface vapor xfer this step       [   kg/m2]
+   real   , intent(in)    :: sxfer_c        ! Surface CO2 xfer this step         [ umol/m2]
+   real   , intent(in)    :: ustar          ! friction velocity                  [     m/s]
+   real   , intent(in)    :: snowfac        ! Fractional veg burial by snowcover [     ---]
+   real   , intent(in)    :: surface_ssh    ! Sfc. saturation specific humidity  [   kg/kg]
+   real   , intent(in)    :: ground_shv     ! Soil specific humidity             [   kg/kg]
+   real   , intent(in)    :: rasveg         ! Full-veg value of rd               [     s/m]
+   real   , intent(in)    :: canwcap        ! Canopy air water capacity          [   kg/m2]
+   real   , intent(in)    :: canhcap        ! Canopy air heat capacity           [  J/m2/K]
+   !----- Input/Output variables. ---------------------------------------------------------!
+   real   , intent(inout) :: can_enthalpy   ! canopy air enthalpy                [    J/kg]
+   real   , intent(inout) :: can_temp       ! canopy air temp                    [       K]
+   real   , intent(inout) :: can_shv        ! canopy air vapor spec hum          [   kg/kg]
+   real   , intent(inout) :: can_co2        ! canopy air CO2 mixing ratio        [umol/mol]
+   !----- Output variables.  Note that the fluxes are integrated over this timestep. ------!
+   integer, intent(out)   :: ktrans         ! Soil layer supplying transp        [      --]
+   real   , intent(out)   :: hxfergc        ! Soil->Canopy heat xfer             [    J/m2]
+   real   , intent(out)   :: wxfergc        ! Soil->Canopy vapour xfer           [   kg/m2]
+   real   , intent(out)   :: hxfersc        ! Sfcw->Canopy heat xfer             [    J/m2]
+   real   , intent(out)   :: wxfersc        ! Sfcw->Canopy vapour xfer           [   kg/m2]
+   real   , intent(out)   :: wshed          ! water shed from vegetation         [   kg/m2]
+   real   , intent(out)   :: qwshed         ! water energy shed from vegetation  [    J/m2]
+   real   , intent(out)   :: transp         ! Transpiration xfer                 [   kg/m2]
+   real   , intent(out)   :: rdi            ! Surface->Canopy conductance        [     m/s]
+   !----- Local variables -----------------------------------------------------------------!
+   real, dimension(nzg) :: ed_transp ! Transpired water from each soil level     [   kg/m2]
+   real                 :: wtveg     ! Weighting of rasveg in computing rd       [     ---]
+   real                 :: zognd     ! Soil roughness height                     [       m]
+   real                 :: zoveg     ! Vegetation roughness height               [       m]
+   real                 :: zdisp     ! Veg. displ. hgt. remaining after snowcover[       m]
+   real                 :: zveg      ! Veg. height remaining after snowcover     [       m]
+   !---------------------------------------------------------------------------------------!
 
-type(sitetype),target :: csite
-integer :: ipa
 
-real, intent(in), dimension(n_pft) :: leaf_aging_factor, green_leaf_factor
+   !----- Initialize wshed and qwshed. ----------------------------------------------------!
+   wshed  = 0.
+   qwshed = 0.
 
-! Local parameters
+   !---------------------------------------------------------------------------------------!
+   !     If vegetation is sufficiently abundant and not covered by snow, compute canopy    !
+   ! transfer with vegetation influence.                                                   !
+   !---------------------------------------------------------------------------------------!
 
-! Intercept, slope parameters for stomatal conductance factors
 
-real, parameter :: brad = 196.   , srad = .047    ! for s/w radiative flux
-real, parameter :: btlo = 281.5  , stlo = .26     ! for low canopy temperature
-real, parameter :: bthi = 310.1  , sthi = -.124   ! for high canopy temperature
-real, parameter :: bvpd = 4850.  , svpd = -.0051  ! for vapor pressure deficit
-real, parameter :: bswp = -1.07e6, sswp = 7.42e-6 ! for soil water potential
+   !---------------------------------------------------------------------------------------!
+   !      Compute ground-canopy resistance rd.  Assume zognd not affected by snow.  Assume !
+   ! (zoveg,zdisp) decrease linearly with snow depth, attaining the values (zognd,0) when  !
+   ! vegetation covered.                                                                   !
+   !---------------------------------------------------------------------------------------!
+   zognd = soil_rough
+   zoveg = veg_rough * (1. - snowfac) + zognd * snowfac
+   zveg  = veg_height * (1. - snowfac)
+   zdisp = zveg * .63
 
-! Local variables
+   !---------------------------------------------------------------------------------------!
+   !      Aerodynamic resistance (rd) between surface and canopy air are weighted between  !
+   ! areas without and with vegetation.                                                    !
+   !---------------------------------------------------------------------------------------!
+   wtveg  = max(0.,min(1., 1.1 * veg_tai / covr))
+   rdi    = ustar / (5. * (1. - wtveg) + ustar * rasveg * wtveg)
+      
+   !----- Check if any surface water layers currently exist. ------------------------------!
+   if (nlev_sfcwater >= 1) then
 
-real :: factv       ! for computing rasveg
-real :: aux         ! for computing rasveg
-real :: rasveg      ! full-veg value of rd [s/m]
-real :: wtveg       ! weighting of rasveg in computing rd
-real :: zognd       ! soil roughness height [m]
-real :: zoveg       ! vegetation roughness height [m]
-real :: zdisp       ! vegetation displacement height remaining after snowcover [m]
-real :: zveg        ! vegetation height remaining after snowcover [m]
-real :: canair
-real :: canhcap
-
-integer, intent(in) :: lsl
-
-! Canopy air (vapor) and heat capacity
-
-canair = rhos * can_depth
-canhcap = cp * canair
-
-! Initialize wshed = qwshed = 0
-
-wshed  = 0.
-qwshed = 0.
-
-! If vegetation is sufficiently abundant and not covered by snow,
-! COMPUTE CANOPY XFER WITH VEGETATION INFLUENCE
-
-! Compute ground-canopy resistance rd.  Assume zognd not affected by snow.
-! Assume (zoveg,zdisp) decrease linearly with snow depth, attaining
-! the values (zognd,0) when veg covered.
-
-zognd = soil_rough
-zoveg = veg_rough * (1. - snowfac) + zognd * snowfac
-zveg  = veg_height * (1. - snowfac)
-zdisp = zveg * .63
-!bob      rasgnd = log(zts / zognd) * log((zdisp + zoveg) / zognd)
-!bob     +      / (vonk * vonk * vels)
-
-! Aerodynamic resistance (rd) between surface and canopy air are weighted
-! between areas without and with vegetation.
-
-!bob   factv  = log(zts / zoveg) / (vonk * vonk * vels)
-factv  = 1. / (vonk * ustar)
-aux    = exp(exar * (1. - (zdisp + zoveg) / zveg))
-rasveg = factv * zveg / (exar * (zveg - zdisp)) * (exp(exar) - aux)
-wtveg  = max(0.,min(1., 1.1 * veg_tai / covr))
-rdi    = ustar / (5. * (1. - wtveg) + ustar * rasveg * wtveg)
-   
-! Check if any surface water layers currently exist
-
-if (nlev_sfcwater >= 1) then
-
-! If surface water is present, compute heat and vapor xfer between 
-! surface water and canopy air.
-
-   hxfergc = 0.
-   hxfersc = cp * rhos * dtlsm * rdi * (sfcwater_tempk - can_temp)
-   
-   wxfergc = 0.
-   wxfersc = min(sfcwater_mass,                                 &
-        rhos * dtlsm * rdi * (surface_ssh - can_shv) )
-   
-else
-
-! If surface water is absent, compute heat xfer between soil and canopy air
-
-   hxfergc = cp * rhos * dtlsm * rdi * (soil_tempk - can_temp)
-   hxfersc = 0.
-
-! Compare saturation vapor specific humidity at soil temperature against 
-! canopy air vapor specific humidity
-
-   if (surface_ssh < can_shv) then
-
-! If saturation vapor specific humidity at soil temperature is less than 
-! canopy air vapor specific humidity, compute dew formation contribution 
-! to surface water
-
+      !------------------------------------------------------------------------------------!
+      !     If surface water is present, compute heat and vapor xfer between surface water !
+      ! and canopy air.                                                                    !
+      !------------------------------------------------------------------------------------!
+      hxfergc = 0.
+      hxfersc = cp * rhos * dtlsm * rdi * (sfcwater_tempk - can_temp)
+      
       wxfergc = 0.
-      wxfersc = rhos * dtlsm * rdi * (surface_ssh - can_shv)
-      
-   elseif (ground_shv > can_shv) then
-      
-! Else, if equilibrium soil vapor specific humidity is greater than 
-! canopy air vapor specific humidity, compute evaporation from soil
-
-      wxfergc = max(0.,rhos * dtlsm * rdi * (ground_shv - can_shv))
-      wxfersc = 0.
+      wxfersc = min(sfcwater_mass,rhos * dtlsm * rdi * (surface_ssh - can_shv) )
       
    else
 
-! If neither of the above is true, both vapor fluxes are zero.
+      !---- If surface water is absent, compute heat xfer between soil and canopy air. ----!
+      hxfergc = cp * rhos * dtlsm * rdi * (soil_tempk - can_temp)
+      hxfersc = 0.
 
-      wxfergc = 0.
-      wxfersc = 0.
-      
-   endif
-
-endif
-
-ktrans = 0 
-transp = 0.
-ed_transp(:) = 0.
-
-call canopy_update_euler(csite,ipa, vels, rhos, atm_tmp, prss, pcpg, qpcpg,   &
-     wshed, qwshed, canair, canhcap, dtlsm, hxfergc, sxfer_t,  &
-     wxfergc, hxfersc, wxfersc, sxfer_r, ed_transp, ntext_soil,  &
-     soil_water, soil_fracliq, lsl, leaf_aging_factor, green_leaf_factor,  &
-     sxfer_c)
+      !------------------------------------------------------------------------------------!
+      !     Compare saturation vapor specific humidity at soil temperature against canopy  !
+      ! air vapor specific humidity.                                                       !
+      !------------------------------------------------------------------------------------!
 
 
-return
+      if (surface_ssh < can_shv) then
+
+         !---------------------------------------------------------------------------------!
+         !      If saturation vapor specific humidity at soil temperature is less than     !
+         ! canopy air vapor specific humidity, compute dew formation contribution to       !
+         ! surface water.                                                                  !
+         !---------------------------------------------------------------------------------!
+         wxfergc = 0.
+         wxfersc = rhos * dtlsm * rdi * (surface_ssh - can_shv)
+         
+      elseif (ground_shv > can_shv) then
+         
+         !---------------------------------------------------------------------------------!
+         !     Else, if equilibrium soil vapor specific humidity is greater than canopy    !
+         ! air vapor specific humidity, compute evaporation from soil.                     !
+         !---------------------------------------------------------------------------------!
+         wxfergc = max(0.,rhos * dtlsm * rdi * (ground_shv - can_shv))
+         wxfersc = 0.
+      else
+
+         !----- If neither of the above is true, both vapor fluxes are zero. --------------!
+         wxfergc = 0.
+         wxfersc = 0.
+      end if
+   end if
+
+   ktrans       = 0 
+   transp       = 0.
+   ed_transp(:) = 0.
+
+   call canopy_update_euler(csite,ipa,vels,atm_tmp,prss,pcpg,qpcpg,wshed,qwshed            &
+                           ,canwcap,canhcap,dtlsm,hxfergc,sxfer_t,wxfergc,hxfersc,wxfersc  &
+                           ,sxfer_r,ed_transp,ntext_soil,soil_water,soil_fracliq,lsl       &
+                           ,leaf_aging_factor,green_leaf_factor,sxfer_c)
+   return
 end subroutine euler_canopy
+!==========================================================================================!
+!==========================================================================================!
 
-!***************************************************************************
-subroutine euler_sfcwater(nlev_sfcwater,ntext_soil,                        &
-                    soil_rfactor, soil_water, soil_energy,                 &
-                    sfcwater_mass, sfcwater_energy, sfcwater_depth,        &
-                    soil_tempk, soil_fracliq, sfcwater_tempk,              &
-                    sfcwater_fracliq, rshort_s,                            &
-                    hxfersc, wxfersc, rlong_g, rlong_s,                    &
-                    pcpg, qpcpg, dpcpg, wshed, qwshed,                     &
-                    lsl                               )
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine euler_sfcwater(nlev_sfcwater,ntext_soil,soil_rfactor,soil_water,soil_energy     &
+                         ,sfcwater_mass,sfcwater_energy,sfcwater_depth,soil_tempk          &
+                         ,soil_fracliq,sfcwater_tempk,sfcwater_fracliq,rshort_s,hxfersc    &
+                         ,wxfersc,rlong_g,rlong_s,pcpg,qpcpg,dpcpg,wshed,qwshed,lsl        )
 
 use soil_coms, only: slz, dslz, dslzi, dslzo2, soil
 use grid_coms, only: nzg, nzs                       

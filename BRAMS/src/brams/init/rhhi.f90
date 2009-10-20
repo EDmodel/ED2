@@ -199,10 +199,11 @@ subroutine arrsnd(co2_on)
             select case (itsflg)
             case (0,1) !----- Temperature. ------------------------------------------------!
                tavg      = 0.5 * (vctr4(nsndg) + vctr4(nsndg-1))
-               ps(nsndg) = ps(nsndg-1) * exp(-g * (zold2-zold1) / (rgas*tavg))
+               ps(nsndg) = ps(nsndg-1) * exp(-grav * (zold2-zold1) / (rdry*tavg))
             case (2) !----- Potential temperature. ----------------------------------------!
                tavg      = (vctr4(nsndg) + vctr4(nsndg-1)*p00k/ps(nsndg-1)**rocp) * .5
-               ps(nsndg) = (ps(nsndg-1)**rocp - g * (zold2-zold1) * p00k/(cp*tavg)) ** cpor
+               ps(nsndg) = (ps(nsndg-1)**rocp                                              &
+                         - grav * (zold2-zold1) * p00k/(cp*tavg)) ** cpor
             end select
          end if
       case default
@@ -274,8 +275,8 @@ subroutine arrsnd(co2_on)
 
    !----- Compute height levels of input sounding. ----------------------------------------!
    do k=2,nsndg
-      hs(k) = hs(k-1) - rgas * .5 * (virtt(ts(k),rts(k)) + virtt(ts(k-1),rts(k-1)))        &
-                                  * (log(ps(k)) - log(ps(k-1))) / g
+      hs(k) = hs(k-1) - rdry * .5 * (virtt(ts(k),rts(k)) + virtt(ts(k-1),rts(k-1)))        &
+                                  * (log(ps(k)) - log(ps(k-1))) / grav
    end do
 
    !----- Check whether the provided sounding goes high enough. ---------------------------!
@@ -368,17 +369,17 @@ subroutine refs1d(co2_on,co2con)
 
    !----- Finding the reference Exner function, using pressure and hydrostatic assumption. !
    pi01dn(1,ngrid) = cp * (ps(1) * p00i) ** rocp                                           &
-                   + g * (hs(1) - ztn(1,ngrid))                                            &
+                   + grav * (hs(1) - ztn(1,ngrid))                                         &
                    / (.5 * (th01dn(1,ngrid) + virtt(thds(1),rts(1)) ) )
    do k = 2,nnzp(ngrid)
       pi01dn(k,ngrid) = pi01dn(k-1,ngrid)                                                  &
-                      - g / (dzmn(k-1,ngrid) * .5 * (th01dn(k,ngrid) + th01dn(k-1,ngrid)))
+                      - grav/(dzmn(k-1,ngrid) * .5 * (th01dn(k,ngrid) + th01dn(k-1,ngrid)))
    end do
 
    !----- Finding the reference density. --------------------------------------------------!
    do k = 1,nnzp(ngrid)
       vctr4(k) = (pi01dn(k,ngrid) / cp) ** cpor * p00
-      dn01dn(k,ngrid) = cp * vctr4(k) / (rgas * th01dn(k,ngrid) * pi01dn(k,ngrid))
+      dn01dn(k,ngrid) = cp * vctr4(k) / (rdry * th01dn(k,ngrid) * pi01dn(k,ngrid))
    end do
 
    return

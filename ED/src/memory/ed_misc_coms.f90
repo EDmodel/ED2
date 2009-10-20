@@ -105,7 +105,6 @@ Module ed_misc_coms
 
   integer :: attach_metadata
   
-  integer :: icanturb
 
 contains
   function err_label(i) result(lab)

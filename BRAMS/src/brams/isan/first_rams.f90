@@ -415,7 +415,7 @@ do j=1,n3
       enddo
       pi0(n1,i,j) = vctr11(n1)
 
-      c1=g*2.*(1.-topt(i,j)/ztop)
+      c1=grav*2.*(1.-topt(i,j)/ztop)
       c2=(1-cpor)
       c3=cp**c2
       do k=n1-1,1,-1
@@ -424,7 +424,7 @@ do j=1,n3
       enddo
 
       do k=1,n1
-         dn0(k,i,j)=(c3*p00)/(rgas*th0(k,i,j)*pi0(k,i,j)**c2)
+         dn0(k,i,j)=(c3*p00)/(rdry*th0(k,i,j)*pi0(k,i,j)**c2)
         ! if(i == 10 .and. j == 10)  &
         ! print*,'th0,pi0,dn0=',th0(k,i,j),pi0(k,i,j),dn0(k,i,j)
       enddo

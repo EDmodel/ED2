@@ -42,8 +42,8 @@ real, allocatable :: vctr1(:),vctr2(:),vctr3(:),vctr4(:)
 
 allocate(vctr1(n1),vctr2(n1),vctr3(n1),vctr4(n1))
 
-c1 = rgas / (cp - rgas)
-c2 = cp * (rgas / p00) ** c1
+c1 = rdry / (cp - rdry)
+c2 = cp * (rdry / p00) ** c1
 if (icm >= 1) then
    do k = 1,n1
       vctr1(k) = thref(k,icm) * dnref(k,icm)
@@ -101,8 +101,8 @@ call fmint3(n1c,n2c,n3c,n1f,n2f,n3f,maxiz,maxix,maxiy  &
      ,ifm,icm,nbot,ntop,jd,1,0,0,'t'  &
      ,th0c,th0f,dn0c,dn0f,scr1,scr2,toptf,vt2da,b(1),b(1),b(1),0)
 
-c1 = rgas / (cp - rgas)
-c2 = cp * (rgas / p00) ** c1
+c1 = rdry / (cp - rdry)
+c2 = cp * (rdry / p00) ** c1
 pi0f(1:n1f,1:n2f,1:n3f) = c2 * (dn0f(1:n1f,1:n2f,1:n3f)  &
                             *   th0f(1:n1f,1:n2f,1:n3f) ) ** c1
 
@@ -258,18 +258,18 @@ enddo
 rtref(1) = rtref(2)
 thref(1) = thref(2)
 
-piref(1) = pc(1,ir,jr) + g * (vctr2(1) - zt(1))  &
+piref(1) = pc(1,ir,jr) + grav * (vctr2(1) - zt(1))  &
                 / (.5 * (thref(1)  &
                 + virtt(thp(1,ir,jr),rtp(1,ir,jr))))
 do k = 2,n1
-   piref(k) = piref(k-1) - g * (zt(k)-zt(k-1))  &
+   piref(k) = piref(k-1) - grav * (zt(k)-zt(k-1))  &
              / ( .5 * (thref(k) + thref(k-1)))
 enddo
 
 do k = 1,n1
   vctr1(k) = (piref(k) / cp) ** cpor * p00
   dnref(k) = cp * vctr1(k)  &
-     / (rgas * thref(k) * piref(k))
+     / (rdry * thref(k) * piref(k))
 enddo
 
 !        Compute 3-D reference state from 1-D reference state
@@ -283,7 +283,7 @@ do j=1,n3
     call htint(n1,piref(1),zt,n1,pi0(1,i,j),vctr2)
     call htint(n1,thref(1),zt,n1,th0(1,i,j),vctr2)
 
-    c1=g*2.*(1.-topt(i,j)/ztop)
+    c1=grav*2.*(1.-topt(i,j)/ztop)
     c2=(1-cpor)
     c3=cp**c2
     do k=n1-1,1,-1
@@ -292,7 +292,7 @@ do j=1,n3
     enddo
 
     do k=1,n1
-      dn0(k,i,j)=(c3*p00)/(rgas*th0(k,i,j)*pi0(k,i,j)**c2)
+      dn0(k,i,j)=(c3*p00)/(rdry*th0(k,i,j)*pi0(k,i,j)**c2)
     enddo
 
   enddo

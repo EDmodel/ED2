@@ -6,7 +6,7 @@
 ! NOTICE:  These subroutines have not been thoroughly tested. Please                       !
 !          report problems to David Medvigy, medvigy@post.harvard.edu.                     !
 !==========================================================================================!
-subroutine apply_forestry(cpoly, isi, year, rhos)
+subroutine apply_forestry(cpoly, isi, year)
    use ed_state_vars        , only : polygontype                & ! Structure
                                    , sitetype                   & ! Structure
                                    , allocate_sitetype          & ! Subroutine
@@ -24,7 +24,6 @@ subroutine apply_forestry(cpoly, isi, year, rhos)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(polygontype)    , target      :: cpoly
-   real                 , intent(in)  :: rhos
    integer              , intent(in)  :: year
    integer              , intent(in)  :: isi
    !----- Local variables -----------------------------------------------------------------!
@@ -199,6 +198,9 @@ subroutine apply_forestry(cpoly, isi, year, rhos)
           ' ---> Making new patch (harvesting), with area=',csite%area(newp)               &
               ,' for dist_type=',2
       call norm_harv_patch(csite,newp)
+      
+      !----- Update temperature and density. ----------------------------------------------!
+      call update_patch_thermo_props(csite,newp,newp)
 
       !----- Plant the patch if it is a plantation. ---------------------------------------!
       if (cpoly%plantation(isi) == 1 .and. year > plantation_year) then
@@ -207,8 +209,9 @@ subroutine apply_forestry(cpoly, isi, year, rhos)
                          ,cpoly%green_leaf_factor(:,isi), 2.0, cpoly%lsl(isi))        
          csite%plantation(newp) = 1
       end if
-      call update_patch_derived_props(csite,cpoly%lsl(isi),rhos,newp)
-      call new_patch_sfc_props(csite,newp, rhos)
+      call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss,newp)
+      call new_patch_sfc_props(csite,newp)
+      call update_budget(csite,cpoly%lsl(isi),newp,newp)
    end if
 
    !----- Eliminate those patches with small area. ----------------------------------------!
@@ -614,7 +617,8 @@ subroutine norm_harv_patch(csite,newp)
    csite%fast_soil_N(newp)                 = csite%fast_soil_N(newp)         * area_fac
    csite%sum_dgd(newp)                     = csite%sum_dgd(newp)             * area_fac
    csite%sum_chd(newp)                     = csite%sum_chd(newp)             * area_fac
-   csite%can_temp(newp)                    = csite%can_temp(newp)            * area_fac
+   csite%can_theta(newp)                   = csite%can_theta(newp)           * area_fac
+   csite%can_prss(newp)                    = csite%can_prss(newp)            * area_fac
    csite%can_co2(newp)                     = csite%can_co2(newp)             * area_fac
    csite%can_shv(newp)                     = csite%can_shv(newp)             * area_fac
    csite%can_depth(newp)                   = csite%can_depth(newp)           * area_fac

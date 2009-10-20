@@ -701,34 +701,37 @@ end subroutine read_met_drivers
 !==========================================================================================!
 subroutine update_met_drivers(cgrid)
   
-   use ed_state_vars  , only : edtype       & ! structure
-                             , polygontype  ! ! structure
-   use met_driver_coms, only : met_frq      & ! intent(in)
-                             , nformats     & ! intent(in)
-                             , met_nv       & ! intent(in)
-                             , met_interp   & ! intent(in)
-                             , met_vars     & ! intent(in)
-                             , have_co2     & ! intent(in)
-                             , initial_co2  & ! intent(in)
+   use ed_state_vars  , only : edtype        & ! structure
+                             , polygontype   ! ! structure
+   use met_driver_coms, only : met_frq       & ! intent(in)
+                             , nformats      & ! intent(in)
+                             , met_nv        & ! intent(in)
+                             , met_interp    & ! intent(in)
+                             , met_vars      & ! intent(in)
+                             , have_co2      & ! intent(in)
+                             , initial_co2   ! ! intent(in)
                              , atm_tmp_intercept &
                              , atm_tmp_slope &
                              , prec_intercept &
                              , prec_slope &
                              , humid_scenario
-   use ed_misc_coms      , only : current_time ! ! intent(in)
-   use consts_coms    , only : rdry         & ! intent(in)
-                             , cice         & ! intent(in)
-                             , cliq         & ! intent(in)
-                             , alli         & ! intent(in)
-                             , rocp         & ! intent(in)
-                             , p00          & ! intent(in)
-                             , cp           & ! intent(in)
-                             , day_sec      & ! intent(in)
-                             , t3ple        & ! intent(in)
-                             , wdnsi        & ! intent(in)
-                             , tsupercool   ! ! intent(in)
-   use therm_lib      , only : virtt        & ! intent(in)
-                             , rslif        ! ! intent(in)
+   use ed_misc_coms   , only : current_time  ! ! intent(in)
+   use canopy_air_coms, only : ubmin         ! ! intent(in)
+   use consts_coms    , only : rdry          & ! intent(in)
+                             , cice          & ! intent(in)
+                             , cliq          & ! intent(in)
+                             , alli          & ! intent(in)
+                             , rocp          & ! intent(in)
+                             , p00i          & ! intent(in)
+                             , cp            & ! intent(in)
+                             , day_sec       & ! intent(in)
+                             , t00           & ! intent(in)
+                             , t3ple         & ! intent(in)
+                             , wdnsi         & ! intent(in)
+                             , tsupercool    ! ! intent(in)
+   use therm_lib      , only : rslif         & ! function
+                             , ptqz2enthalpy ! ! function
+
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target  :: cgrid
@@ -747,7 +750,6 @@ subroutine update_met_drivers(cgrid)
    real                       :: t1, T0
    real                       :: t2
    real                       :: rvaux, rvsat
-   real                       :: tvir
    !----- External functions --------------------------------------------------------------!
    logical         , external :: isleap
    !---------------------------------------------------------------------------------------!
@@ -1013,8 +1015,7 @@ subroutine update_met_drivers(cgrid)
    
    
    !---------------------------------------------------------------------------------------!
-   !     Change from velocity squared to velocity, get the rhos, and compute qpcpg and     !
-   ! dpcpg.                                                                                !
+   !     Change from velocity squared to velocity, and compute qpcpg and dpcpg.            !
    !---------------------------------------------------------------------------------------!
    polyloop: do ipy = 1,cgrid%npolygons
          
@@ -1048,29 +1049,74 @@ subroutine update_met_drivers(cgrid)
       !------ Converting back to specific humidity. ---------------------------------------!
       cgrid%met(ipy)%atm_shv = rvaux / (1. + rvaux)
 
+      !------------------------------------------------------------------------------------!
+      !    We now find the Exner function, potential temperature, and the enthalpy.        !
+      !------------------------------------------------------------------------------------!
+      cgrid%met(ipy)%exner        = cp * (p00i * cgrid%met(ipy)%prss)**rocp
+      cgrid%met(ipy)%atm_theta    = cp * cgrid%met(ipy)%atm_tmp / cgrid%met(ipy)%exner
+
+      if (cgrid%met(ipy)%atm_tmp < 180.   .or. cgrid%met(ipy)%atm_tmp > 400.   .or.        &
+          cgrid%met(ipy)%atm_shv < 1.e-8  .or. cgrid%met(ipy)%atm_shv > 0.04   .or.        &
+          cgrid%met(ipy)%prss    < 40000. .or. cgrid%met(ipy)%prss    > 110000.) then
+          write (unit=*,fmt='(a)') '======== Weird polygon properties... ========'
+          write (unit=*,fmt='(a,f7.2)') 'POLY_PRSS [ hPa] = ',cgrid%met(ipy)%prss    * 0.01
+          write (unit=*,fmt='(a,f7.2)') 'POLY_TEMP [degC] = ',cgrid%met(ipy)%atm_tmp - t00
+          write (unit=*,fmt='(a,f7.2)') 'POLY_SHV  [g/kg] = ',cgrid%met(ipy)%atm_shv * 1.e3
+          call fatal_error('Non-sense polygon met values!!!'                               &
+                          ,'update_met_drivers','ed_met_driver.f90')
+      end if
+
+      cgrid%met(ipy)%atm_enthalpy = ptqz2enthalpy(cgrid%met(ipy)%prss                      &
+                                                 ,cgrid%met(ipy)%atm_tmp                   &
+                                                 ,cgrid%met(ipy)%atm_shv                   &
+                                                 ,cgrid%met(ipy)%geoht)
+
       !------ Apply met to sites, and adjust met variables for topography. ----------------!
       call calc_met_lapse(cgrid,ipy)
 
-      !----- Finding the polygon-level density. -------------------------------------------!
-      tvir = virtt(cgrid%met(ipy)%atm_tmp,rvaux)
-      cgrid%met(ipy)%rhos = cgrid%met(ipy)%prss / (rdry * tvir)
-
-       !----- Exner function ------------------------------------------------------------!
-       cgrid%met(ipy)%exner = cp * (cgrid%met(ipy)%prss / p00)**rocp
+      
 
       cpoly => cgrid%polygon(ipy)
       siteloop: do isi = 1,cpoly%nsites
          
          !----- Vels.  At this point vels is 2*Kinetic Energy, take the square root. ------!
          cpoly%met(isi)%vels = sqrt(max(0.0,cpoly%met(isi)%vels))
-         cpoly%met(isi)%vels_stab = max(0.1,cpoly%met(isi)%vels)
-         cpoly%met(isi)%vels_unstab = max(1.0,cpoly%met(isi)%vels_stab)
+         cpoly%met(isi)%vels_stab = max(ubmin,cpoly%met(isi)%vels)
+         cpoly%met(isi)%vels_unstab = max(ubmin,cpoly%met(isi)%vels)
          
          !----- CO2.  In case we used the namelist, use that value. -----------------------!
          if (.not.have_co2) cpoly%met(isi)%atm_co2 = initial_co2
          
-         !----- Exner function ------------------------------------------------------------!
-         cpoly%met(isi)%exner = cp * (cpoly%met(isi)%prss / p00)**rocp
+         !---------------------------------------------------------------------------------!
+         !     We now find some derived properties.  In case several sites exist, the      !
+         ! lapse rate was applied to pressure, temperature, and mixing ratio.  Then we     !
+         ! calculate the Exner function, potential temperature and enthalpy so it will     !
+         ! respect the ideal gas law and first law of thermodynamics.                      !
+         !---------------------------------------------------------------------------------!
+         cpoly%met(isi)%exner        = cp * (p00i * cpoly%met(isi)%prss) **rocp
+         cpoly%met(isi)%atm_theta    = cp * cpoly%met(isi)%atm_tmp / cpoly%met(isi)%exner
+
+
+         if (cpoly%met(isi)%atm_tmp < 180.   .or. cpoly%met(isi)%atm_tmp > 400.   .or.     &
+             cpoly%met(isi)%atm_shv < 1.e-8  .or. cpoly%met(isi)%atm_shv > 0.04   .or.     &
+             cpoly%met(isi)%prss    < 40000. .or. cpoly%met(isi)%prss    > 110000.) then
+             write (unit=*,fmt='(a)') '======== Weird site properties... ========'
+             write (unit=*,fmt='(a,f7.2)')                                                 &
+                                  'SITE_PRSS [ hPa] = ',cpoly%met(isi)%prss    * 0.01
+             write (unit=*,fmt='(a,f7.2)')                                                 &
+                                  'SITE_TEMP [degC] = ',cpoly%met(isi)%atm_tmp - t00
+             write (unit=*,fmt='(a,f7.2)')                                                 &
+                                  'SITE_SHV  [g/kg] = ',cpoly%met(isi)%atm_shv * 1.e3
+             call fatal_error('Non-sense site met values!!!'                               &
+                             ,'update_met_drivers','ed_met_driver.f90')
+         end if
+
+
+
+         cpoly%met(isi)%atm_enthalpy = ptqz2enthalpy(cpoly%met(isi)%prss                   &
+                                                   ,cpoly%met(isi)%atm_tmp                 &
+                                                   ,cpoly%met(isi)%atm_shv                 &
+                                                   ,cpoly%met(isi)%geoht)
 
          !----- Solar radiation -----------------------------------------------------------!
          cpoly%met(isi)%rshort_diffuse = cpoly%met(isi)%par_diffuse                        &
@@ -1092,14 +1138,8 @@ subroutine update_met_drivers(cgrid)
 
          !------ Converting back to specific humidity. ------------------------------------!
          cpoly%met(isi)%atm_shv = rvaux / (1. + rvaux)
-         !    Here we check whether the specific humidity is not supersaturated. Since we 
-         ! haven't found density yet
-         
-         !----- Finding the polygon-level density. ----------------------------------------!
-         tvir = virtt(cpoly%met(isi)%atm_tmp,rvaux)
-         cpoly%met(isi)%rhos = cpoly%met(isi)%prss / (rdry * tvir)
-         
-         
+
+
          !---------------------------------------------------------------------------------!
          !     Precipitation internal energy and "depth".  The decision on whether it's    !
          ! rain or snow is rather simple: above the triple point is rain, below it's snow. !
@@ -1914,88 +1954,3 @@ subroutine setLapseParms(cgrid)
 end subroutine setLapseParms
 !==========================================================================================!
 !==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine int_met_avg(cgrid)
-  
-  ! Increment the time averaged polygon met-forcing
-  ! variables. THese will be normalized by the output
-  ! period to give time averages of each quanity. The
-  ! polygon level variables are derived from the
-  ! weighted spatial average from the site level quantities.
-
-
-  use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
-  use ed_misc_coms,only : dtlsm,frqsum
-  
-  implicit none
-
-  type(edtype), target :: cgrid
-  type(polygontype),pointer :: cpoly
-
-  integer :: ipy,isi
-  real :: frqsumi,tfact
-
-  frqsumi = 1.0 / frqsum
-  tfact = dtlsm * frqsumi
-
-  do ipy = 1,cgrid%npolygons
-
-     cpoly => cgrid%polygon(ipy)
-
-     do isi = 1,cpoly%nsites
-        
-        cgrid%avg_nir_beam(ipy)    = cgrid%avg_nir_beam(ipy) + &
-             cpoly%met(isi)%nir_beam * cpoly%area(isi) * tfact
-        cgrid%avg_nir_diffuse(ipy) = cgrid%avg_nir_diffuse(ipy) + &
-             cpoly%met(isi)%nir_diffuse * cpoly%area(isi) * tfact
-        cgrid%avg_par_beam(ipy)    = cgrid%avg_par_beam(ipy) + &
-             cpoly%met(isi)%par_beam * cpoly%area(isi) * tfact
-        cgrid%avg_par_diffuse(ipy) = cgrid%avg_par_diffuse(ipy) + &
-             cpoly%met(isi)%par_diffuse * cpoly%area(isi) * tfact
-        cgrid%avg_atm_tmp(ipy)     = cgrid%avg_atm_tmp(ipy) + &
-             cpoly%met(isi)%atm_tmp * cpoly%area(isi) * tfact
-        cgrid%avg_atm_shv(ipy)     = cgrid%avg_atm_shv(ipy) + &
-             cpoly%met(isi)%atm_shv * cpoly%area(isi) * tfact
-        cgrid%avg_rhos(ipy)        = cgrid%avg_rhos(ipy) + &
-             cpoly%met(isi)%rhos * cpoly%area(isi) * tfact
-        cgrid%avg_rshort(ipy)      = cgrid%avg_rshort(ipy) + &
-             cpoly%met(isi)%rshort * cpoly%area(isi) * tfact
-        cgrid%avg_rshort_diffuse(ipy) = cgrid%avg_rshort_diffuse(ipy) + &
-             cpoly%met(isi)%rshort_diffuse * cpoly%area(isi) * tfact
-        cgrid%avg_rlong(ipy)       = cgrid%avg_rlong(ipy) + &
-             cpoly%met(isi)%rlong * cpoly%area(isi) * tfact
-        cgrid%avg_pcpg(ipy)        = cgrid%avg_pcpg(ipy) + &
-             cpoly%met(isi)%pcpg * cpoly%area(isi) * tfact
-        cgrid%avg_qpcpg(ipy)       = cgrid%avg_qpcpg(ipy) + &
-             cpoly%met(isi)%qpcpg * cpoly%area(isi) * tfact
-        cgrid%avg_dpcpg(ipy)       = cgrid%avg_dpcpg(ipy) + &
-             cpoly%met(isi)%dpcpg * cpoly%area(isi) * tfact
-        cgrid%avg_vels(ipy)        = cgrid%avg_vels(ipy) + &
-             cpoly%met(isi)%vels * cpoly%area(isi) * tfact
-        cgrid%avg_prss(ipy)        = cgrid%avg_prss(ipy) + &
-             cpoly%met(isi)%prss * cpoly%area(isi) * tfact
-        cgrid%avg_exner(ipy)       = cgrid%avg_exner(ipy) + &
-             cpoly%met(isi)%exner * cpoly%area(isi) * tfact
-        cgrid%avg_geoht(ipy)       = cgrid%avg_geoht(ipy) + &
-             cpoly%met(isi)%geoht * cpoly%area(isi) * tfact
-        cgrid%avg_atm_co2(ipy)     = cgrid%avg_atm_co2(ipy) + &
-             cpoly%met(isi)%atm_co2 * cpoly%area(isi) * tfact
-        cgrid%avg_albedt(ipy)      = cgrid%avg_albedt(ipy) + &
-             0.5*(cpoly%albedo_beam(isi)+cpoly%albedo_diffuse(isi))*cpoly%area(isi) * tfact
-        cgrid%avg_rlongup(ipy)     = cgrid%avg_rlongup(ipy) + &
-             cpoly%rlongup(isi) * cpoly%area(isi) * tfact
-
-
-     enddo
-        
-  enddo
-  
-  return
-end subroutine int_met_avg

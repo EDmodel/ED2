@@ -198,13 +198,14 @@ subroutine rams_mem_alloc(proc_type)
    do ng=1,ngrids
       call nullify_cuparm(cuparm_g(ng))
       call nullify_cuparm(cuparmm_g(ng))
-      call alloc_cuparm(cuparm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng)
+      call alloc_cuparm(cuparm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng,co2_on)
       if (imean == 1) then  
-         call alloc_cuparm(cuparmm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng)
+         call alloc_cuparm(cuparmm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng,co2_on)
       elseif (imean == 0) then
-         call alloc_cuparm(cuparmm_g(ng),1,1,1,ng)
+         call alloc_cuparm(cuparmm_g(ng),1,1,1,ng,co2_on)
       endif
       call initialize_cuparm(cuparm_g(ng))
+      call initialize_cuparm(cuparmm_g(ng))
       call filltab_cuparm(cuparm_g(ng),cuparmm_g(ng),imean,nmzp(ng),nmxp(ng),nmyp(ng),ng)
    end do
    !---------------------------------------------------------------------------------------!
@@ -219,13 +220,13 @@ subroutine rams_mem_alloc(proc_type)
                             ,grell_1st(1:ngrids),grell_last(1:ngrids))
       ! Initializing Grell scratch
       call alloc_scratch_grell(mgmzp)
-      call zero_scratch_grell()
+      call zero_scratch_grell(3)
 
       allocate(ensemble_e(nclouds))
       do ne=1, nclouds
          call nullify_ensemble(ensemble_e(ne))
-         call alloc_ensemble(ensemble_e(ne),mgmzp,maxens_dyn(ne),maxens_lsf(ne)            &
-                            ,maxens_eff(ne),maxens_cap(ne))
+         call alloc_ensemble(ensemble_e(ne),nclouds,mgmzp,maxens_dyn,maxens_lsf,maxens_eff &
+                            ,maxens_cap)
          call zero_ensemble(ensemble_e(ne))
       end do
    end if
@@ -263,34 +264,27 @@ subroutine rams_mem_alloc(proc_type)
 
       Flag_Grell = 2
       !----- Translating closure_type to icoic --------------------------------------------!
-      select case (closure_type(1))
+      select case (closure_type)
       case ('en')
          icoic = 0
-      case ('gr')
-         icoic = 1
-      case ('lo')
-         icoic = 4
-      case ('mc')
-         icoic = 7
-      case ('kf') 
-         icoic = 10
-      case ('as') 
-         icoic = 13
-      case default 
-         icoic_sh = 1
-      end select
-      !----- Translating closure_type to icoic_sh -----------------------------------------!
-      select case (CLOSURE_TYPE(nclouds))
-      case ('en')
          icoic_sh = 0
       case ('gr')
+         icoic = 1
          icoic_sh = 1
-      case ('as')
-         icoic_sh = 4
+      case ('lo')
+         icoic = 4
+         icoic_sh = 8
+      case ('mc')
+         icoic = 7
+         icoic_sh = 8
       case ('kf') 
+         icoic = 10
          icoic_sh = 8
+      case ('as') 
+         icoic = 13
+         icoic_sh = 4
       case default 
-         icoic_sh = 8
+         icoic_sh = 1
       end select
    end if
 
@@ -300,11 +294,11 @@ subroutine rams_mem_alloc(proc_type)
    do ng=1,ngrids
       call nullify_leaf(leaf_g(ng)) ; call nullify_leaf(leafm_g(ng))
       call alloc_leaf(leaf_g(ng),nmzp(ng),nmxp(ng),nmyp(ng)  &
-           ,nzg,nzs,npatch,ng)
+           ,nzg,nzs,npatch,ng,teb_spm)
       if (imean == 1) then
-         call alloc_leaf(leafm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),nzg,nzs,npatch,ng)
+         call alloc_leaf(leafm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),nzg,nzs,npatch,ng,teb_spm)
       elseif (imean == 0) then
-         call alloc_leaf(leafm_g(ng),1,1,1,1,1,1,1)
+         call alloc_leaf(leafm_g(ng),1,1,1,1,1,1,1,teb_spm)
       end if
 
       call filltab_leaf(leaf_g(ng),leafm_g(ng),imean,nmzp(ng),nmxp(ng),nmyp(ng),nzg,nzs    &

@@ -1,67 +1,71 @@
-!------------------------------------------------------------------------!
-!                                                                        !
-! Main subroutine for driving the initialization process for             !
-! the Ecosystem Demography Model 2.  All compute nodes, including        !
-! the node formerly known as master.                                     !
-!                                                                        !
-!------------------------------------------------------------------------!
-
+!==========================================================================================!
+!     Main subroutine for driving the initialization process for the Ecosystem Demography  !
+! Model 2, when run in coupled mode.                                                       !
+!------------------------------------------------------------------------------------------!
 subroutine ed_coup_driver()
   
-  use grid_coms, only: &
-       ngrids,          &
-       time,            &
-       timmax
-  
-  use mem_edcp,only:    &
-       wgrid_g,         &
-       ed_fluxp_g,      &
-       ed_fluxf_g,      &
-       ed_precip_g
+  use grid_coms     , only : ngrids              & ! intent(in)
+                           , time                & ! intent(in)
+                           , timmax              ! ! intent(in)
+  use mem_edcp      , only : wgrid_g             & ! intent(inout)
+                           , ed_fluxp_g          & ! intent(inout)
+                           , ed_fluxf_g          & ! intent(inout)
+                           , ed_precip_g         ! ! intent(inout)
+  use ed_state_vars , only : allocate_edglobals  & ! subroutine
+                           , filltab_alltypes    & ! subroutine
+                           , edgrid_g            ! ! subroutine
 
-  use ed_state_vars, only: &
-       allocate_edglobals, &    ! implicitly interfaced subroutine
-       filltab_alltypes, &
-       edgrid_g
-
-  use ed_misc_coms, only: fast_diagnostics, &
-                          iyeara,          &
-                          imontha,         &
-                          idatea,          &
-                          itimea,          &
-                          runtype,         &
-                          ifoutput,        &
-                          idoutput,        &
-                          imoutput,        &
-                          integration_scheme
-  
-  use ed_work_vars,only:ed_dealloc_work,work_e
-
-  use soil_coms, only: alloc_soilgrid
-  use ed_node_coms , only: mynum,nnodetot,sendnum,recvnum,mmxp,mmyp
-  use ed_work_vars , only: ed_dealloc_work,work_e
+  use ed_misc_coms  , only : fast_diagnostics    & ! intent(in)
+                           , iyeara              & ! intent(in)
+                           , imontha             & ! intent(in)
+                           , idatea              & ! intent(in)
+                           , itimea              & ! intent(in)
+                           , runtype             & ! intent(in)
+                           , ifoutput            & ! intent(in)
+                           , idoutput            & ! intent(in)
+                           , imoutput            & ! intent(in)
+                           , integration_scheme  ! ! intent(in)
+  use ed_work_vars  , only : ed_dealloc_work     & ! subroutine
+                           , work_e              ! ! intent(inout)
+  use soil_coms     , only : alloc_soilgrid      ! ! subroutine
+  use ed_node_coms  , only : mynum               & ! intent(in)
+                           , nnodetot            & ! intent(in)
+                           , sendnum             & ! intent(in)
+                           , recvnum             & ! intent(in)
+                           , mmxp                & ! intent(in)
+                           , mmyp                ! ! intent(in)
+  use io_params     , only : ioutput
+  use rk4_coms      , only : checkbudget         ! ! intent(in)
   implicit none
-  real :: w1,w2,w3,wtime_start  ! wall time
-  real, external :: walltime    ! wall time
-  real :: t1,t2                 ! cpu time
-  character(len=12) :: c0
-  character(len=12) :: c1
-  integer :: i,j,ifm,nndtflg,ipy
-
-  integer :: id1,id2,jd1,jd2
-  character(len=24) :: fmts1
-
-  !   MPI header
+  !----- Local variables. -----------------------------------------------------------------!
+  character(len=12)           :: c0
+  character(len=12)           :: c1
+  integer                     :: i
+  integer                     :: j
+  integer                     :: ifm
+  integer                     :: nndtflg
+  integer                     :: ipy
+  integer                     :: id1
+  integer                     :: id2
+  integer                     :: jd1
+  integer                     :: jd2
+  integer                     :: ierr
+  integer                     :: igr
+  integer                     :: ping 
+  real                        :: wtime1
+  real                        :: wtime2
+  real                        :: wtime_start     ! wall time
+  real                        :: cputime1
+  !----- External function. ---------------------------------------------------------------!
+  real             , external :: walltime    ! wall time
+  !----- MPI header. ----------------------------------------------------------------------!
   include 'mpif.h'
-
-  integer                                   :: ierr
-  integer :: igr
-  integer :: ping 
-
-  ping = 741776
-
-  wtime_start=walltime(0.)
-  w1=walltime(wtime_start)
+  !----------------------------------------------------------------------------------------!
+  
+  
+  ping        = 741776
+  wtime_start = walltime(0.)
+  wtime1      = walltime(wtime_start)
 
   !---------------------------------------------------------------------------!
   ! STEP 1: Set the special diagnostic parameter                              !
@@ -71,7 +75,8 @@ subroutine ed_coup_driver()
   ! and imoutput conditions.                                                  !
   ! If they are not >0, then set the logical, fast_diagnostics to false.      !
   !---------------------------------------------------------------------------!
-  fast_diagnostics = ifoutput /= 0 .or. idoutput /= 0 .or. imoutput /= 0
+  fast_diagnostics = checkbudget .or. ifoutput /= 0 .or. idoutput /= 0 .or.   &
+                     imoutput /= 0 .or. ioutput /= 0
 
   !---------------------------------------------------------------------------!
   ! STEP 2: Set the ED model parameters                                       !
@@ -156,6 +161,7 @@ subroutine ed_coup_driver()
   do ifm=1,ngrids
      call set_edtype_atm(ifm)
   end do
+
 
   !-----------------------------------------------------------------------!
   ! STEP 10: Initialize the flux arrays that pass to the atmosphere
@@ -248,7 +254,9 @@ subroutine ed_coup_driver()
   !-----------------------------------------------------------------------!
   ! STEP 18: Allocate memory to the integration patch
   !-----------------------------------------------------------------------!
-  if(integration_scheme == 1) call initialize_rk4patches(1)
+  if (integration_scheme == 1 .or. integration_scheme == 2) then
+     call initialize_rk4patches(1)
+  end if
   do ifm=1,ngrids
      call reset_averaged_vars(edgrid_g(ifm))
   end do
@@ -265,10 +273,10 @@ subroutine ed_coup_driver()
   ! STEP 20. Getting the CPU time and printing the banner                 !
   !-----------------------------------------------------------------------!
   if (mynum == nnodetot) then
-     call timing(1,t1)
-     w2=walltime(wtime_start)
-     write(c0,'(f12.2)') t1
-     write(c1,'(f12.2)') w2-w1
+     call timing(1,cputime1)
+     wtime2=walltime(wtime_start)
+     write(c0,'(f12.2)') cputime1
+     write(c1,'(f12.2)') wtime2-wtime1
      write(*,'(/,a,/)') ' === Finish initialization of the ED2 LSM; CPU(sec)='//&
           trim(adjustl(c0))//'; Wall(sec)='//trim(adjustl(c1))//&
           '; Time integration starts (ed_master) ===' 
@@ -276,10 +284,16 @@ subroutine ed_coup_driver()
 
   return
 end subroutine ed_coup_driver
-
 !=========================================================================!
 !=========================================================================!
 
+
+
+
+
+
+!=========================================================================!
+!=========================================================================!
 subroutine find_frqsum()
    use ed_misc_coms, only:  &
         unitfast,        &
@@ -359,33 +373,41 @@ subroutine find_frqsum()
 
    return
 end subroutine find_frqsum
-
 !==========================================================================================!
 !==========================================================================================!
 
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine set_edtype_atm(ifm)
 
-    use ed_work_vars,only:work_e
-    use ed_state_vars,only:edtype,edgrid_g
-    use ed_node_coms,only:mmxp,mmyp
-    
-    implicit none
+   use ed_work_vars,only:work_e
+   use ed_state_vars,only:edtype,edgrid_g
+   use ed_node_coms,only:mmxp,mmyp
+   
+   implicit none
 
-    integer :: ipy,i,j,ifm
-    type(edtype),pointer :: cgrid
+   integer :: ipy,i,j,ifm
+   type(edtype),pointer :: cgrid
 
-    cgrid=>edgrid_g(ifm)
+   cgrid=>edgrid_g(ifm)
 
-    ipy = 0
-    do i=1,mmxp(ifm)
-       do j = 1,mmyp(ifm)
-          if (work_e(ifm)%land(i,j)) then
-             ipy = ipy + 1
-             cgrid%ilon(ipy) = work_e(ifm)%xatm(i,j)
-             cgrid%ilat(ipy) = work_e(ifm)%yatm(i,j)
-          endif
-       enddo
-    enddo
+   ipy = 0
+   do j = 1,mmyp(ifm)
+      do i=1,mmxp(ifm)
+         if (work_e(ifm)%land(i,j)) then
+            ipy = ipy + 1
+            cgrid%ilon(ipy) = work_e(ifm)%xatm(i,j)
+            cgrid%ilat(ipy) = work_e(ifm)%yatm(i,j)
+         endif
+      end do
+   end do
 
-    return
-  end subroutine set_edtype_atm
+   return
+end subroutine set_edtype_atm
+!==========================================================================================!
+!==========================================================================================!

@@ -13,31 +13,31 @@ module grell_coms
   !   Dimension related variables                                                          !
   !----------------------------------------------------------------------------------------!
   !----- Maximum number of layers among the grids calling Grell ---------------------------!
-  integer                                       :: mgmzp
+  integer :: mgmzp
   
   !----- Number of large-scale forcing members --------------------------------------------!
-  integer     , dimension(maxclouds)            :: maxens_lsf
+  integer :: maxens_lsf
   
   !----- Number of precipitation efficiency members ---------------------------------------!
-  integer     , dimension(maxclouds)            :: maxens_eff
+  integer :: maxens_eff
   
   !----- Number of dynamic control members, it depends on the closure type ----------------!
-  integer     , dimension(maxclouds)            :: maxens_dyn
+  integer :: maxens_dyn
   
   !----- Number of control members on cap_maxs --------------------------------------------!
-  integer     , dimension(maxclouds)            :: maxens_cap
+  integer :: maxens_cap
   
   !----- 1./ (maxens_lsf * maxens_eff * maxens_dyn) ---------------------------------------!
-  real        , dimension(maxclouds)            :: inv_ensdim
+  real    :: inv_ensdim
    
   !----------------------------------------------------------------------------------------!
   !   Flags to bypass part of the cumulus parameterization. Depending on the type of cloud !
   ! and closure_type, we can skip parts of the code and speed up the run.                  !
   !----------------------------------------------------------------------------------------!
   !----- I will compute cloud work function with no forcing -------------------------------! 
-  logical     , dimension(maxclouds)            :: comp_noforc_cldwork
+  logical                                       :: comp_noforc_cldwork
   !----- I will compute the cloud work function with the arbitrary mass flux --------------!
-  logical     , dimension(maxclouds)            :: comp_modif_thermo
+  logical                                       :: comp_modif_thermo
   !----- I will compute downdrafts --------------------------------------------------------!
   logical     , dimension(maxclouds)            :: comp_down
 
@@ -46,9 +46,6 @@ module grell_coms
   !----------------------------------------------------------------------------------------!
   !----- Method to choose updraft originating level (1. Max. Moist static energy; 2. PBL) -!
   integer                 :: iupmethod
-  
-  !------ Check for upstream convection (0 - no; 1- check only; 2- check and use it) ------!
-  integer                 :: iupstrm
   
   !----- Minimum depth for the cloud to be considered [m] ---------------------------------!
   real              , dimension(maxclouds) :: depth_min
@@ -60,7 +57,7 @@ module grell_coms
   real              , dimension(maxclouds) :: cap_maxs
   
   !----- Closure type to use for dynamic control ------------------------------------------!
-  character (len=2) , dimension(maxclouds) :: closure_type
+  character (len=2)                        :: closure_type
   
   !------ Cloud radius, which will affect entrainment -------------------------------------!
   real              , dimension(maxclouds) :: radius
@@ -104,15 +101,6 @@ module grell_coms
   !----------------------------------------------------------------------------------------!
   !------ Minimum diameter for clouds to develop downdrafts and rain ----------------------!
   real                              , parameter  :: min_down_radius = 900.
-  
-  !------ Bottom "height" for wind mean [Pa] ----------------------------------------------!
-  real                              , parameter  :: pbotmean = 15000.
-  
-  !------ Pressure at the top for wind mean [Pa] ------------------------------------------!
-  real                              , parameter  :: ptopmean = 30000.
-  
-  !------ Minimum wind speed to bother to compute direction. [m/s] ------------------------!
-  real                              , parameter  :: vspeedmin = 5.
   
   !------ Epsilon is the ratio between reference downdraft and updraft mass fluxes --------!
   real                              , parameter  :: edtmax = .95  ! Upper bound
@@ -213,74 +201,10 @@ module grell_coms
          ! min_down_radius...                                                              !
          !---------------------------------------------------------------------------------!
          comp_down(icld) = radius(icld) > min_down_radius
-         if (.not. comp_down(icld)) maxens_eff(icld) = 1
 
 
-         !---------------------------------------------------------------------------------!
-         !    Then I define the dynamic control dimension and the step bypasses. I will    !
-         ! also check whether the cloud has a radius too small to have precipitation and   !
-         ! downdrafts, in which case some ensembles will be forbidden.                     !
-         !---------------------------------------------------------------------------------!
-         select case (closure_type(icld))
-         case ('en')
-            if (.not. comp_down(icld)) then
-               write(unit=*,fmt='(a)') '--------------------------------------------------'
-               write(unit=*,fmt='(a,1x,i4)')   ' - For cloud #',icld
-               write(unit=*,fmt='(a,1x,f8.2)') ' - Radius is ',radius(icld)
-               write(unit=*,fmt='(a,1x,a)')    ' - Closure type is ',closure_type(icld)
-               write(unit=*,fmt='(a,1x,f8.2)') ' - Minimum radius for this closure ',      &
-                                                   min_down_radius
-               call abort_run('Radius is too small for the chosen clousure type',          &
-                              'define_grell_coms','grell_coms.f90')
-            end if
-            maxens_dyn(icld)          = 16
-            comp_noforc_cldwork(icld) = .true.
-            comp_modif_thermo(icld)   = .true.
-
-         case ('nc')
-            maxens_dyn(icld)          = 10
-            comp_noforc_cldwork(icld) = .true.
-            comp_modif_thermo(icld)   = .true.
-
-         case ('as','kf','gr')
-            maxens_dyn(icld)          = 1
-            comp_noforc_cldwork(icld) = .true.
-            comp_modif_thermo(icld)   = .true.
-
-         case ('pp') !AS should be here, moved up for debugging only.
-            maxens_dyn(icld)          = 1
-            comp_noforc_cldwork(icld) = .false.
-            comp_modif_thermo(icld)   = .true.
-
-         case default
-            if (.not. comp_down(icld)) then
-               write(unit=*,fmt='(a)') '--------------------------------------------------'
-               write(unit=*,fmt='(a,1x,i4)')   ' - For cloud #',icld
-               write(unit=*,fmt='(a,1x,f8.2)') ' - Radius is ',radius(icld)
-               write(unit=*,fmt='(a,1x,a)')    ' - Closure type is ',closure_type(icld)
-               write(unit=*,fmt='(a,1x,f8.2)') ' - Minimum radius for this closure ',      &
-                                                   min_down_radius
-               call abort_run('Radius is too small for the chosen clousure type',          &
-                              'define_grell_coms','grell_coms.f90')
-            end if
-            maxens_dyn(icld)          = 1
-            comp_noforc_cldwork(icld) = .false.
-            comp_modif_thermo(icld)   = .false.
-
-         end select
-         !---------------------------------------------------------------------------------!
-
-
-         !----- Finding the inverse of ensemble dimension ---------------------------------!
-         inv_ensdim(icld) = 1./ real(maxens_dyn(icld)*maxens_lsf(icld)                     &
-                                    *maxens_eff(icld)*maxens_cap(icld))
-
-         !----- Finding the maximum depth. For the deepest cloud, set no bounds -----------!
-         if (icld /= 1) then
-            depth_max(icld)=depth_min(icld-1)*1.00
-         else
-            depth_max(icld)=huge(1.)
-         end if
+         !----- Finding the maximum depth. ------------------------------------------------!
+         depth_max(icld)=min(18000.,4.*radius(icld))
 
          !---------------------------------------------------------------------------------!
          !  Configure the maximum normalized wind based on cap_maxs                        !
@@ -294,24 +218,64 @@ module grell_coms
          end if
 
       end do cloudloop
+
       !------------------------------------------------------------------------------------!
-      !    Here we overwrite the ensemble dimensions to a very small number in case the    !
-      ! user opted for another cumulus parameterization for those grids.                   !
+      !    Then I define the dynamic control dimension and the step bypasses. I will also  !
+      ! check whether the cloud has a radius too small to have precipitation and down-     !
+      ! drafts, in which case some ensembles will be forbidden.                            !
       !------------------------------------------------------------------------------------!
-      if (.not. any(grell_1st == 1)) then
-         maxens_dyn(1) = 1
-         maxens_eff(1) = 1
-         maxens_lsf(1) = 1
-         maxens_cap(1) = 1
-         inv_ensdim(1) = 1.
-      end if
-      if (.not. any(grell_last == nclouds)) then
-         maxens_dyn(nclouds) = 1
-         maxens_eff(nclouds) = 1
-         maxens_lsf(nclouds) = 1
-         maxens_cap(nclouds) = 1
-         inv_ensdim(nclouds) = 1.
-      end if
+      select case (closure_type)
+      case ('en')
+         if (.not. comp_down(icld)) then
+            write(unit=*,fmt='(a)') '--------------------------------------------------'
+            write(unit=*,fmt='(a,1x,i4)')   ' - For cloud #',icld
+            write(unit=*,fmt='(a,1x,f8.2)') ' - Radius is ',radius(icld)
+            write(unit=*,fmt='(a,1x,a)')    ' - Closure type is ',closure_type
+            write(unit=*,fmt='(a,1x,f8.2)') ' - Minimum radius for this closure ',      &
+                                                min_down_radius
+            call abort_run('Radius is too small for the chosen clousure type',          &
+                           'define_grell_coms','grell_coms.f90')
+         end if
+         maxens_dyn          = 16
+         comp_noforc_cldwork = .true.
+         comp_modif_thermo   = .true.
+
+      case ('nc')
+         maxens_dyn           = 10
+         comp_noforc_cldwork  = .true.
+         comp_modif_thermo    = .true.
+
+      case ('kf','gr')
+         maxens_dyn          = 1
+         comp_noforc_cldwork = .true.
+         comp_modif_thermo   = .true.
+
+      case ('as','pp')
+         maxens_dyn          = 1
+         comp_noforc_cldwork = .false.
+         comp_modif_thermo   = .true.
+
+      case default
+         if (.not. comp_down(icld)) then
+            write(unit=*,fmt='(a)') '--------------------------------------------------'
+            write(unit=*,fmt='(a,1x,i4)')   ' - For cloud #',icld
+            write(unit=*,fmt='(a,1x,f8.2)') ' - Radius is ',radius(icld)
+            write(unit=*,fmt='(a,1x,a)')    ' - Closure type is ',closure_type
+            write(unit=*,fmt='(a,1x,f8.2)') ' - Minimum radius for this closure ',      &
+                                                min_down_radius
+            call abort_run('Radius is too small for the chosen clousure type',          &
+                           'define_grell_coms','grell_coms.f90')
+         end if
+         maxens_dyn          = 1
+         comp_noforc_cldwork = .false.
+         comp_modif_thermo   = .false.
+
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Finding the inverse of ensemble dimension ------------------------------------!
+      inv_ensdim = 1./ real(maxens_dyn*maxens_lsf*maxens_eff*maxens_cap)
       !------------------------------------------------------------------------------------!
 
       return

@@ -44,9 +44,11 @@ rm -fv grell_coms.o               grell_coms.mod
 rm -fv grell_cupar_aux.o          grell_cupar_aux.mod
 rm -fv grell_cupar_downdraft.o    grell_cupar_downdraft.mod
 rm -fv grell_cupar_driver.o       grell_cupar_driver.mod
+rm -fv grell_cupar_dynamic.o      grell_cupar_dynamic.mod
 rm -fv grell_cupar_ensemble.o     grell_cupar_ensemble.mod
 rm -fv grell_cupar_environment.o  grell_cupar_environment.mod
-rm -fv grell_cupar_main.o         grell_cupar_main.mod
+rm -fv grell_cupar_static.o       grell_cupar_static.mod
+rm -fv grell_cupar_feedback.o     grell_cupar_feedback.mod
 rm -fv grell_cupar_updraft.o      grell_cupar_updraft.mod
 rm -fv grell_extras_catt.o        grell_extras_catt.mod
 rm -fv grid_dims.o                grid_dims.mod
@@ -71,6 +73,7 @@ rm -fv leaf3.o                    leaf3.mod
 rm -fv leaf3_hyd.o                leaf3_hyd.mod
 rm -fv leaf3_init.o               leaf3_init.mod
 rm -fv leaf3_teb.o                leaf3_teb.mod
+rm -fv leaf3_utils.o              leaf3_utils.mod
 rm -fv local_proc.o               local_proc.mod
 rm -fv machine_arq.o              machine_arq.mod
 rm -fv map_proj.o                 map_proj.mod
@@ -229,6 +232,7 @@ rm -fv souza_cupar_driver.o       souza_cupar_driver.mod
 rm -fv sst_read.o                 sst_read.mod
 rm -fv teb_spm_start.o            teb_spm_start.mod
 rm -fv therm_lib.o                therm_lib.mod
+rm -fv therm_lib8.o               therm_lib8.mod
 rm -fv tkenn.o                    tkenn.mod
 rm -fv tmpname.o                  tmpname.mod
 rm -fv turb_constants.o           turb_constants.mod
@@ -259,6 +263,7 @@ rm -fv edcp_para_init.o           edcp_para_init.mod
 rm -fv mem_edcp.o                 mem_edcp.mod
 rm -fv allometry.o                allometry.mod
 rm -fv average_utils.o            average_utils.mod
+rm -fv budget_utils.o             budget_utils.mod
 rm -fv c34constants.o             c34constants.mod
 rm -fv canopy_air_coms.o          canopy_air_coms.mod
 rm -fv canopy_radiation_coms.o    canopy_radiation_coms.mod
@@ -307,6 +312,7 @@ rm -fv hydrology_constants.o      hydrology_constants.mod
 rm -fv init_hydro_sites.o         init_hydro_sites.mod
 rm -fv invmondays.o               invmondays.mod
 rm -fv landuse_init.o             landuse_init.mod
+rm -fv lapse.o                    lapse.mod
 rm -fv leaf_database.o            leaf_database.mod
 rm -fv libxml2f90.f90_pp.o        libxml2f90.f90_pp.mod
 rm -fv lsm_hyd.o                  lsm_hyd.mod
@@ -327,6 +333,7 @@ rm -fv rk4_coms.o                 rk4_coms.mod
 rm -fv rk4_derivs.o               rk4_derivs.mod
 rm -fv rk4_driver.o               rk4_driver.mod
 rm -fv rk4_integ_utils.o          rk4_integ_utils.mod
+rm -fv rk4_odeint.o               rk4_odeint.mod
 rm -fv rk4_stepper.o              rk4_stepper.mod
 rm -fv soil_coms.o                soil_coms.mod
 rm -fv structural_growth.o        structural_growth.mod
