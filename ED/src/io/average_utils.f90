@@ -451,7 +451,7 @@ subroutine integrate_ed_daily_output_flux(cgrid)
    real :: patchsum_leaf_resp   , patchsum_root_resp
    real :: patchsum_leaf_litter,patchsum_root_litter
    real :: patchsum_leaf_litterN,patchsum_root_litterN
-   
+
    cgrid%Nbiomass_uptake = 0.
    cgrid%Cleaf_litter_flux = 0.
    cgrid%Croot_litter_flux = 0.
@@ -459,7 +459,6 @@ subroutine integrate_ed_daily_output_flux(cgrid)
    cgrid%Nroot_litter_flux = 0.
    cgrid%Ngross_min = 0.
    cgrid%Nnet_min   = 0.
-
    polyloop: do ipy=1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
       poly_area_i=1./sum(cpoly%area)
@@ -527,7 +526,7 @@ subroutine integrate_ed_daily_output_flux(cgrid)
             end if
 
          end do patchloop
-         
+
          ! Variables already average at the sitetype level, just add them to polygontype level
          sitesum_leaf_resp    = sitesum_leaf_resp    + (patchsum_leaf_resp      *site_area_i) * cpoly%area(isi)
          sitesum_root_resp    = sitesum_root_resp    + (patchsum_root_resp      *site_area_i) * cpoly%area(isi)
@@ -566,7 +565,7 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          end do dbhloop
 
       end do siteloop
-      
+
       cgrid%dmean_leaf_resp(ipy)    = cgrid%dmean_leaf_resp(ipy)    + sitesum_leaf_resp    * poly_area_i
       cgrid%dmean_root_resp(ipy)    = cgrid%dmean_root_resp(ipy)    + sitesum_root_resp    * poly_area_i
 

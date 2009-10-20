@@ -305,7 +305,6 @@ subroutine spatial_averages
 
          !----- Inverse of this polygon area (it should be always 1.) ---------------------!
          poly_area_i = 1./sum(cpoly%area)
-
          siteloop: do isi=1,cpoly%nsites
             csite => cpoly%site(isi)
             
@@ -674,7 +673,6 @@ subroutine spatial_averages
             end if
 
          end do siteloop     
-
          !----- Normalize the lai specific quantities -------------------------------------!
          if (area_sum(1)>0.) then
             cgrid%avg_lai_ebalvars(1,1,ipy) = cgrid%avg_lai_ebalvars(1,1,ipy)/area_sum(1)
@@ -701,12 +699,10 @@ subroutine spatial_averages
             cgrid%avg_lai_ebalvars(3,:,ipy) = -9999.0
          end if
 
-
          !----- Finding the polygon mean LAI ----------------------------------------------!
          cgrid%lai(ipy)  = sum(cpoly%lai  * cpoly%area ) * poly_area_i
          cgrid%wpa(ipy)  = sum(cpoly%wpa  * cpoly%area ) * poly_area_i
          cgrid%wai(ipy)  = sum(cpoly%wai  * cpoly%area ) * poly_area_i
-        
          !----- Average fast time flux dynamics over polygons. ----------------------------!
          cgrid%avg_vapor_vc(ipy)     = sum(cpoly%avg_vapor_vc    * cpoly%area)*poly_area_i
          cgrid%avg_dew_cg(ipy)       = sum(cpoly%avg_dew_cg      * cpoly%area)*poly_area_i
@@ -761,7 +757,6 @@ subroutine spatial_averages
                      ,cgrid%avg_soil_fracliq(k,ipy))
          end do
 
-
          !---------------------------------------------------------------------------------!
          !    Also using the same idea as the site-level: average energy, mass, and depth, !
          ! but find temperature and liquid fraction with the averaged values. Again, use   !
@@ -784,7 +779,6 @@ subroutine spatial_averages
             cgrid%avg_snowtempk(ipy)   = cgrid%avg_soil_temp(nzg,ipy)
             cgrid%avg_snowfracliq(ipy) = cgrid%avg_soil_fracliq(nzg,ipy)
          end if
-
          !---------------------------------------------------------------------------------!
          !    Similar to site level, compute mean leaf internal energy and water mass.     !
          ! Also find the mean heat capacity.  If there is enough LAI, then find the mean   !
@@ -800,7 +794,6 @@ subroutine spatial_averages
             cgrid%avg_veg_temp(ipy) = cgrid%avg_can_temp(ipy)
             cgrid%avg_veg_fliq(ipy) = 0.
          end if
-
       end do polyloop
    end do gridloop
 
