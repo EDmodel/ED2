@@ -615,7 +615,7 @@ subroutine integrate_ed_daily_output_flux(cgrid)
    !----------------------------------------------------------------------------------------
    real :: sitesum_leaf_resp, sitesum_root_resp 
    real :: sitesum_plresp,sitesum_gpp,sitesum_rh
-   real :: sitesum_evap,sitesum_transp,sitesum_sensible_tot,sitesum_Nuptake
+   real :: sitesum_evap,sitesum_transp,sitesum_Nuptake
    real :: sitesum_co2_residual,sitesum_energy_residual,sitesum_water_residual
    real :: sitesum_root_litter,sitesum_leaf_litter
    real :: sitesum_root_litterN,sitesum_leaf_litterN
@@ -660,7 +660,6 @@ subroutine integrate_ed_daily_output_flux(cgrid)
       sitesum_gpp_dbh         = 0.
       sitesum_evap            = 0.
       sitesum_transp          = 0.
-      sitesum_sensible_tot    = 0.
       sitesum_co2_residual    = 0.
       sitesum_water_residual  = 0.
       sitesum_energy_residual = 0.
@@ -725,7 +724,6 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          
          sitesum_evap         = sitesum_evap         + (sum(csite%avg_evap        *csite%area) * site_area_i) * cpoly%area(isi)
          sitesum_transp       = sitesum_transp       + (sum(csite%avg_transp      *csite%area) * site_area_i) * cpoly%area(isi)
-         sitesum_sensible_tot = sitesum_sensible_tot + (sum(csite%avg_sensible_tot*csite%area) * site_area_i) * cpoly%area(isi)
 
          sitesum_Nuptake      = sitesum_Nuptake + (sum(csite%total_plant_nitrogen_uptake*csite%area)*site_area_i)*cpoly%area(isi)
 

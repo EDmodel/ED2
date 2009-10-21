@@ -102,11 +102,11 @@ module rk4_stepper
 
              !! redo calcs to see where fails
              pdo = print_diags
-             print_diags = 1
+             print_diags = .true.
              call rkck(integration_buff%y,integration_buff%dydx,integration_buff%ytemp         &
                      ,integration_buff%yerr,integration_buff%ak2,integration_buff%ak3      &
                      ,integration_buff%ak4,integration_buff%ak5,integration_buff%ak6       &
-                     ,integration_buff%ak7,x,h,csite,ipa,isi,ipy,reject_step)
+                     ,integration_buff%ak7,x,h,csite,ipa,isi,ipy,reject_step,reject_result)
              call get_errmax(errmax, integration_buff%yerr,integration_buff%yscal           &
                   ,csite%patch(ipa),integration_buff%y,integration_buff%ytemp,.true.)
              print_diags = pdo

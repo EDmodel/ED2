@@ -709,7 +709,7 @@ subroutine update_met_drivers(cgrid)
                              , met_interp    & ! intent(in)
                              , met_vars      & ! intent(in)
                              , have_co2      & ! intent(in)
-                             , initial_co2   ! ! intent(in)
+                             , initial_co2   &! ! intent(in)
                              , atm_tmp_intercept &
                              , atm_tmp_slope &
                              , prec_intercept &

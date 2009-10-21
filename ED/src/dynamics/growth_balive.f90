@@ -317,7 +317,7 @@ module growth_balive
       !----------------------------------------------------------------------!
       nitrogen_uptake = increment                                            &
                       * (        f_labile(ipft)  / c2n_leaf(ipft)            &
-                        + (1.0 - f_labile(ipft)) / c2n_stem                  &
+                        + (1.0 - f_labile(ipft)) / c2n_stem(ipft)            &
                         -  1.0 / c2n_storage)
       N_uptake_pot    = nitrogen_uptake
 

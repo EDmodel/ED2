@@ -45,7 +45,27 @@ subroutine radiate_driver(cgrid)
 
             csite => cpoly%site(isi)
 
+           if(cpoly%met(isi)%rlong < rlong_min ) then
+              print*,"STRANGE DATA",cpoly%met(isi)%rlong,ipy,isi,int(real(isi)/4.0),rlong_min
+              print*,cpoly%met(isi)
+              call fatal_error('Rlong is too low!','radiate_driver_ar'&
+                              &,'radiate_driver.f90')
+           endif
 
+
+           ! Update angle of incidence
+           hrangl = 15.0 * (mod(current_time%time + cgrid%lon(ipy) / 15.0 +   &
+                24.0, 24.0) - 12.0) * pio180
+           
+           call angle_of_incid(cpoly%cosaoi(isi), cgrid%cosz(ipy), hrangl,   &
+                cpoly%slope(isi) * pio180, cpoly%aspect(isi) * pio180)
+
+           rshort = cpoly%met(isi)%rshort
+           isbeam = 1.0
+           if(cpoly%cosaoi(isi) <= 0.0) then
+              rshort = cpoly%met(isi)%rshort_diffuse
+              isbeam = 0.0
+           end if
 
             !------------------------------------------------------------------------------!
             !     Compute the visible fraction of diffuse and beam radiation needed by the !
