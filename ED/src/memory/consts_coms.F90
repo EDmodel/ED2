@@ -33,7 +33,7 @@ Module consts_coms
      , b_cpi4       => cpi4       , b_aklv       => aklv       , b_akiv       => akiv      &
      , b_rdryi      => rdryi      , b_eta3ple    => eta3ple    , b_cimcp      => cimcp     &
      , b_clmcp      => clmcp      , b_p00k       => p00k       , b_p00ki      => p00ki     &
-     , b_halfpi     => halfpi
+     , b_halfpi     => halfpi     , b_yr_sec     => yr_sec
 
    implicit none
 
@@ -81,6 +81,7 @@ Module consts_coms
    real, parameter :: eta3ple    = b_eta3ple    , cimcp      = b_cimcp
    real, parameter :: clmcp      = b_clmcp      , p00k       = b_p00k
    real, parameter :: p00ki      = b_p00ki      , halfpi     = b_halfpi
+   real, parameter :: yr_sec     = b_yr_sec
 #else
    implicit none
 
@@ -143,11 +144,12 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    ! Time conversion units                                                                 !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: yr_day  = 365.2425 ! # of days in a year                  [   day/yr]
-   real, parameter :: day_sec = 86400.   ! # of seconds in a day                [    s/day]
-   real, parameter :: day_hr  = 24.      ! # of hours in a day                  [   hr/day]
-   real, parameter :: hr_sec  = 3600.    ! # of seconds in an hour              [     s/hr]
-   real, parameter :: min_sec = 60.      ! # of seconds in a minute             [    s/min]
+   real, parameter :: yr_day  = 365.2425         ! # of days in a year          [   day/yr]
+   real, parameter :: day_sec = 86400.           ! # of seconds in a day        [    s/day]
+   real, parameter :: day_hr  = 24.              ! # of hours in a day          [   hr/day]
+   real, parameter :: hr_sec  = 3600.            ! # of seconds in an hour      [     s/hr]
+   real, parameter :: min_sec = 60.              ! # of seconds in a minute     [    s/min]
+   real, parameter :: yr_sec  = yr_day * day_sec ! # of seconds in a year       [     s/yr]
    !---------------------------------------------------------------------------------------!
 
 
@@ -293,9 +295,10 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    ! Unit conversion, it must be defined locally even for coupled runs.                    !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: umol_2_kgC      = 1.20107e-8 ! µmol(CO2) => kg(C)
-   real, parameter :: kgom2_2_tonoha = 10.         ! kg(C)/m² => ton(C)/ha
-   real, parameter :: tonoha_2_kgom2 = 0.1         ! ton(C)/ha => kg(C)/m²
+   real, parameter :: umol_2_kgC     = 1.20107e-8          ! µmol(CO2)   => kg(C)
+   real, parameter :: kgom2_2_tonoha = 10.                 ! kg(C)/m²    => ton(C)/ha
+   real, parameter :: tonoha_2_kgom2 = 0.1                 ! ton(C)/ha   => kg(C)/m²
+   real, parameter :: umols_2_kgCyr  = umol_2_kgC * yr_sec ! µmol(CO2)/s => kg(C)/yr
    !---------------------------------------------------------------------------------------!
 
 

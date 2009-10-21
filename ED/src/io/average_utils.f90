@@ -816,8 +816,7 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
                             , fivedim_diags & ! intent(in)
                             , ddbhi         & ! intent(in)
                             , dagei         ! ! intent(in)
-   use consts_coms   , only : umol_2_kgC    & ! intent(in)
-                            , day_sec       ! ! intent(in)
+   use consts_coms   , only : umols_2_kgCyr ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(edtype)                                  , target     :: cgrid
@@ -838,6 +837,7 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
    real, dimension(n_pft,n_dist_types,n_dbh,n_age)            :: pss_lero_resp
    real, dimension(n_pft,n_dist_types,n_dbh,n_age)            :: sss_gpp
    real, dimension(n_pft,n_dist_types,n_dbh,n_age)            :: sss_lero_resp
+   real, dimension(n_dist_types,n_age)                        :: luage_area_i
    real                                                       :: poly_area_i
    real                                                       :: site_area_i
    !----- Locally saved variables. --------------------------------------------------------!
@@ -853,9 +853,9 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
       cpoly => cgrid%polygon(ipy)
       !----- This part is done only if arrays are sought. ---------------------------------!
       if (fivedim_diags) then
-         poly_area_i = 1./sum(cpoly%area)
-         sss_gpp        = 0.
-         sss_lero_resp  = 0.
+         poly_area_i             = 1./sum(cpoly%area)
+         sss_gpp       (:,:,:,:) = 0.
+         sss_lero_resp (:,:,:,:) = 0.
       end if
       
       siteloop: do isi=1,cpoly%nsites
@@ -866,9 +866,10 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
 
          !----- This part is done only if arrays are sought. ------------------------------!
          if (fivedim_diags) then
-            site_area_i   = 1./ sum(csite%area)
-            pss_gpp       = 0.
-            pss_lero_resp = 0.
+            luage_area_i     (:,:) = 0.
+            site_area_i            = 1./ sum(csite%area)
+            pss_gpp      (:,:,:,:) = 0.
+            pss_lero_resp(:,:,:,:) = 0.
          end if
          
          patchloop: do ipa=1,csite%npatches
@@ -878,6 +879,8 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
             if (fivedim_diags) then
                iage = max(1,min(n_age,ceiling(csite%age(ipa)*dagei)))
                ilu  = csite%dist_type(ipa)
+               !----- Incrementing the total area of this class. --------------------------!
+               luage_area_i(ilu,iage) = luage_area_i(ilu,iage) + csite%area(ipa) 
             end if
             
             !----- Included a loop so it won't crash with empty cohorts... ----------------!
@@ -895,12 +898,14 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
                !---------------------------------------------------------------------------!
                if (save_monthly) then 
                   cpatch%mmean_gpp(ico)           = cpatch%mmean_gpp(ico)                  &
-                                                  + cpatch%dmean_gpp(ico)
+                                                  + cpatch%dmean_gpp(ico)                  &
+                                                  * umols_2_kgCyr
                   cpatch%mmean_leaf_resp(ico)     = cpatch%mmean_leaf_resp(ico)            &
-                                                  + cpatch%dmean_leaf_resp(ico)
+                                                  + cpatch%dmean_leaf_resp(ico)            &
+                                                  * umols_2_kgCyr
                   cpatch%mmean_root_resp(ico)     = cpatch%mmean_root_resp(ico)            &
-                                                  + cpatch%dmean_root_resp(ico)
-                  
+                                                  + cpatch%dmean_root_resp(ico)            &
+                                                  * umols_2_kgCyr
                end if
                
                if (fivedim_diags) then
@@ -909,36 +914,66 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
                   
                   pss_gpp(ipft,ilu,idbh,iage)       = pss_gpp(ipft,ilu,idbh,iage)          &
                                                     + cpatch%dmean_gpp(ico)                &
-                                                    * csite%area(ipa)
+                                                    * csite%area(ipa)                      &
+                                                    * umols_2_kgCyr
                   pss_lero_resp(ipft,ilu,idbh,iage) = pss_lero_resp(ipft,ilu,idbh,iage)    &
                                                     + ( cpatch%dmean_leaf_resp(ico)        &
                                                       + cpatch%dmean_root_resp(ico))       &
-                                                    * csite%area(ipa)
+                                                    * csite%area(ipa)                      &
+                                                    * umols_2_kgCyr
                end if
             end do cohortloop
          end do patchloop
          
+
+         !---------------------------------------------------------------------------------!
+         !    Here we add the contribution of this site to the site sum of the 5-D vari-   !
+         ! ables.  The extensive variables are simply averaged amongst all patches, but    !
+         ! intensive variables are averaged only amongst the patches with the same land    !
+         ! use and age class.                                                              !
+         !---------------------------------------------------------------------------------!
          !----- Computing the site sum. ---------------------------------------------------!
          if (fivedim_diags) then
-            sss_gpp(:,:,:,:)       = sss_gpp(:,:,:,:)                                      &
-                                   + ( pss_gpp(:,:,:,:) * site_area_i ) * cpoly%area(isi)
-            sss_lero_resp(:,:,:,:) = sss_lero_resp(:,:,:,:)                                &
-                                   + ( pss_lero_resp(:,:,:,:) * site_area_i )              &
-                                   * cpoly%area(isi)
+            where (luage_area_i > 1.e-6)
+               luage_area_i = 1./luage_area_i
+            elsewhere
+               luage_area_i = 0.
+            end where
+            
+            !------------------------------------------------------------------------------!
+            !    The patch averaged variables must be averaged only over the patches       !
+            ! belonging to the patches in the same land use and age bins.                  !
+            !------------------------------------------------------------------------------!
+            do iage=1,n_age
+               do idbh=1,n_dbh
+                  do ilu=1,n_dist_types
+                     do ipft=1,n_pft
+                        sss_gpp      (ipft,ilu,idbh,iage) =                                &
+                                                         sss_gpp      (ipft,ilu,idbh,iage) &
+                                                       + pss_gpp      (ipft,ilu,idbh,iage) &
+                                                       * luage_area_i(ilu,iage)            &
+                                                       * cpoly%area(isi)
+                        sss_lero_resp(ipft,ilu,idbh,iage) =                                &
+                                                         sss_lero_resp(ipft,ilu,idbh,iage) &
+                                                       + pss_lero_resp(ipft,ilu,idbh,iage) &
+                                                       * luage_area_i(ilu,iage)            &
+                                                       * cpoly%area(isi)
+                     end do
+                  end do
+               end do
+            end do
          end if
       end do siteloop
       if (fivedim_diags) then
          cgrid%dmean_gpp_ar(:,:,:,:,ipy) = cgrid%dmean_gpp_ar(:,:,:,:,ipy)                 &
-                                         + sss_gpp(:,:,:,:) * poly_area_i                  &
-                                         * umol_2_kgC * day_sec
+                                         + sss_gpp(:,:,:,:) * poly_area_i
          !---------------------------------------------------------------------------------!
          !    This is not the actual plant respiration, there are terms (growth, storage,  !
          ! and vleaf) that are missing here.  They will be included in                     !
          ! normalize_ed_daily_output_vars                                                  !
          !---------------------------------------------------------------------------------!
          cgrid%dmean_plresp_ar(:,:,:,:,ipy) = cgrid%dmean_plresp_ar(:,:,:,:,ipy)           &
-                                            + sss_lero_resp(:,:,:,:) * poly_area_i         &
-                                            * umol_2_kgC * day_sec
+                                            + sss_lero_resp(:,:,:,:) * poly_area_i
       end if 
    end do polyloop
    
@@ -971,6 +1006,8 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                    , alvl          & ! intent(in)
                                    , day_sec       & ! intent(in)
                                    , umol_2_kgC    & ! intent(in)
+                                   , umols_2_kgCyr & ! intent(in)
+                                   , yr_day        & ! intent(in)
                                    , p00i          & ! intent(in)
                                    , rocp          ! ! intent(in)
    use ed_misc_coms         , only : dtlsm         & ! intent(in)
@@ -1124,23 +1161,15 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_sensible_gc(ipy)  = cgrid%dmean_sensible_gc(ipy)  * frqsum_o_daysec
       cgrid%dmean_sensible_ac(ipy)  = cgrid%dmean_sensible_ac(ipy)  * frqsum_o_daysec
 
-
       !------------------------------------------------------------------------------------!
       !      Carbon flux variables should be total flux integrated over the day at this    !
-      ! point, [µmol/m²/s] -> [kgC/m²/day].                                                !
+      ! point.  We just multiply by one year in days and convert to kgC, so the units will !
+      ! be kgC/m2/yr.                                                                      !
       !------------------------------------------------------------------------------------!
-      cgrid%dmean_leaf_resp  (ipy)  = cgrid%dmean_leaf_resp (ipy)   * umol_2_kgC * day_sec
-      cgrid%dmean_root_resp  (ipy)  = cgrid%dmean_root_resp (ipy)   * umol_2_kgC * day_sec
-
-      !------------------------------------------------------------------------------------!
-      !      Carbon flux variables should be total flux integrated over the day at this    !
-      ! point, [µmol/m²/day] -> [kgC/m²/day].                                              !
-      !------------------------------------------------------------------------------------!
-      cgrid%dmean_gpp        (ipy)  = cgrid%dmean_gpp       (ipy)   * umol_2_kgC
-      cgrid%dmean_plresp     (ipy)  = cgrid%dmean_plresp    (ipy)   * umol_2_kgC
-      cgrid%dmean_nep        (ipy)  = cgrid%dmean_nep       (ipy)   * umol_2_kgC
-   
-      cgrid%dmean_gpp_dbh  (:,ipy)  = cgrid%dmean_gpp_dbh (:,ipy)   * umol_2_kgC
+      cgrid%dmean_gpp        (ipy)  = cgrid%dmean_gpp       (ipy) * umol_2_kgC * yr_day
+      cgrid%dmean_plresp     (ipy)  = cgrid%dmean_plresp    (ipy) * umol_2_kgC * yr_day
+      cgrid%dmean_nep        (ipy)  = cgrid%dmean_nep       (ipy) * umol_2_kgC * yr_day
+      cgrid%dmean_gpp_dbh  (:,ipy)  = cgrid%dmean_gpp_dbh (:,ipy) * umol_2_kgC * yr_day
 
       cgrid%dmean_co2_residual   (ipy) = cgrid%dmean_co2_residual   (ipy) * frqsum_o_daysec
       cgrid%dmean_energy_residual(ipy) = cgrid%dmean_energy_residual(ipy) * frqsum_o_daysec
@@ -1314,7 +1343,8 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                                    + ( cpatch%growth_respiration(ico)      &
                                                      + cpatch%storage_respiration(ico)     &
                                                      + cpatch%vleaf_respiration(ico)  )    &
-                                                   * cpatch%nplant(ico) * csite%area(ipa)
+                                                   * cpatch%nplant(ico) * csite%area(ipa)  &
+                                                   * yr_day
 
                end if
             end do cohortloop
@@ -1349,16 +1379,23 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                              * frqsum_o_daysec
             csite%dmean_water_residual(ipa)  = csite%dmean_water_residual(ipa)             &
                                              * frqsum_o_daysec
-            
-            csite%dmean_rh(ipa)              = csite%dmean_rh(ipa) * umol_2_kgC
-            
+            !------------------------------------------------------------------------------!
+            !     Heterotrophic respiration is currently the integral over a day, so we    !
+            ! multiply by the number of days in a year and convert to kgC, so the final    !
+            ! units will be kgC/m2/yr.                                                     !
+            !------------------------------------------------------------------------------!
+            csite%dmean_rh(ipa)              = csite%dmean_rh(ipa) * umol_2_kgC * yr_day
+
             if (cpatch%ncohorts > 0) then
                pss_growth_resp  = pss_growth_resp + csite%area(ipa)                        &
-                                * sum(cpatch%growth_respiration  * cpatch%nplant)
+                                * sum(cpatch%growth_respiration  * cpatch%nplant)          &
+                                * yr_day
                pss_storage_resp = pss_storage_resp + csite%area(ipa)                       &
-                                * sum(cpatch%storage_respiration * cpatch%nplant)
+                                * sum(cpatch%storage_respiration * cpatch%nplant)          &
+                                * yr_day
                pss_vleaf_resp   = pss_vleaf_resp   + csite%area(ipa)                       &
-                                * sum(cpatch%vleaf_respiration   * cpatch%nplant)
+                                * sum(cpatch%vleaf_respiration   * cpatch%nplant)          &
+                                * yr_day
                do ipft=1,n_pft
                   cpoly%lai_pft(ipft,isi)  = cpoly%lai_pft(ipft,isi)                       &
                                            + sum(cpatch%lai,cpatch%pft == ipft)            &
@@ -1397,8 +1434,8 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                !     Here we find the patch-level average of those intensive variables and !
                ! add them to the patch sum variables.                                      !
                !---------------------------------------------------------------------------!
-               do ipft=1,n_pft
-                  do idbh=1,n_dbh
+               do idbh=1,n_dbh
+                  do ipft=1,n_pft
                      pss_frostmort(ipft,ilu,idbh,iage)       =                             &
                          pss_frostmort(ipft,ilu,idbh,iage)   + css_frostmort(ipft,idbh)    &
                                                              * patch_nplant_i(ipft,idbh)   &
@@ -1460,30 +1497,31 @@ subroutine normalize_ed_daily_output_vars(cgrid)
             
             !------------------------------------------------------------------------------!
             !    The intensive variables are again averaged over the patches, but only     !
-            ! those that have something.                                                   !
+            ! those that have something.  The average is weighted by areas belonging to    !
+            ! the same land use and age class.                                             !
             !------------------------------------------------------------------------------!
-            do ipft=1,n_pft
-               do ilu=1,n_dist_types
-                  do idbh=1,n_dbh
-                     do iage=1,n_age
-                        sss_frostmort(ipft,ilu,idbh,iage)       =                          &
-                                                       sss_frostmort(ipft,ilu,idbh,iage)   &
-                                                     + pss_frostmort(ipft,ilu,idbh,iage)   &
+            do iage=1,n_age
+               do idbh=1,n_dbh
+                  do ilu=1,n_dist_types
+                     do ipft=1,n_pft
+                        sss_frostmort  (ipft,ilu,idbh,iage) =                              &
+                                                       sss_frostmort  (ipft,ilu,idbh,iage) &
+                                                     + pss_frostmort  (ipft,ilu,idbh,iage) &
                                                      * luage_area_i(ilu,iage)              &
                                                      * cpoly%area(isi)
-                        sss_fs_open_ar(ipft,ilu,idbh,iage)  =                              &
-                                                       sss_fs_open_ar(ipft,ilu,idbh,iage)  &
-                                                     + pss_fs_open_ar(ipft,ilu,idbh,iage)  &
+                        sss_fs_open_ar (ipft,ilu,idbh,iage) =                              &
+                                                       sss_fs_open_ar (ipft,ilu,idbh,iage) &
+                                                     + pss_fs_open_ar (ipft,ilu,idbh,iage) &
                                                      * luage_area_i(ilu,iage)              &
                                                      * cpoly%area(isi)
-                        sss_fsw_ar(ipft,ilu,idbh,iage)  =                                  &
-                                                       sss_fsw_ar(ipft,ilu,idbh,iage)      &
-                                                     + pss_fsw_ar(ipft,ilu,idbh,iage)      &
+                        sss_fsw_ar     (ipft,ilu,idbh,iage) =                              &
+                                                       sss_fsw_ar     (ipft,ilu,idbh,iage) &
+                                                     + pss_fsw_ar     (ipft,ilu,idbh,iage) &
                                                      * luage_area_i(ilu,iage)              &
                                                      * cpoly%area(isi)
-                        sss_fsn_ar(ipft,ilu,idbh,iage)  =                                  &
-                                                       sss_fsn_ar(ipft,ilu,idbh,iage)      &
-                                                     + pss_fsn_ar(ipft,ilu,idbh,iage)      &
+                        sss_fsn_ar     (ipft,ilu,idbh,iage) =                              &
+                                                       sss_fsn_ar     (ipft,ilu,idbh,iage) &
+                                                     + pss_fsn_ar     (ipft,ilu,idbh,iage) &
                                                      * luage_area_i(ilu,iage)              &
                                                      * cpoly%area(isi)
                         sss_light_level(ipft,ilu,idbh,iage) =                              &
@@ -1491,25 +1529,35 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                                      + pss_light_level(ipft,ilu,idbh,iage) &
                                                      * luage_area_i(ilu,iage)              &
                                                      * cpoly%area(isi)
+                        sss_lai        (ipft,ilu,idbh,iage) =                              &
+                                                       sss_lai        (ipft,ilu,idbh,iage) &
+                                                     + pss_lai        (ipft,ilu,idbh,iage) &
+                                                     * luage_area_i(ilu,iage)              &
+                                                     * cpoly%area(isi)
+                        sss_wpa        (ipft,ilu,idbh,iage) =                              &
+                                                       sss_wpa        (ipft,ilu,idbh,iage) &
+                                                     + pss_wpa        (ipft,ilu,idbh,iage) &
+                                                     * luage_area_i(ilu,iage)              &
+                                                     * cpoly%area(isi)
+                        sss_wai        (ipft,ilu,idbh,iage) =                              &
+                                                       sss_wai        (ipft,ilu,idbh,iage) &
+                                                     + pss_wai        (ipft,ilu,idbh,iage) &
+                                                     * luage_area_i(ilu,iage)              &
+                                                     * cpoly%area(isi)
+                        sss_gsv_resp   (ipft,ilu,idbh,iage) =                              &
+                                                       sss_gsv_resp   (ipft,ilu,idbh,iage) &
+                                                     + pss_gsv_resp   (ipft,ilu,idbh,iage) &
+                                                     * luage_area_i(ilu,iage)              &
+                                                     * cpoly%area(isi)
                      end do
                   end do
                end do
             end do 
             !------------------------------------------------------------------------------!
-            !    The following variables are "extensive" so they should be average amongst !
-            ! all patches equally (i.e., zero is meaningful).                              !
+            !     Heterotrophic respiration doesn't have PFT nor size classes.             !
             !------------------------------------------------------------------------------!
-            sss_lai     (:,:,:,:) = sss_lai     (:,:,:,:) + pss_lai     (:,:,:,:)          &
-                                                          * site_area_i * cpoly%area(isi)
-            sss_wpa     (:,:,:,:) = sss_wpa     (:,:,:,:) + pss_wpa     (:,:,:,:)          &
-                                                          * site_area_i * cpoly%area(isi)
-            sss_wai     (:,:,:,:) = sss_wai     (:,:,:,:) + pss_wai     (:,:,:,:)          &
-                                                          * site_area_i * cpoly%area(isi)
-            sss_gsv_resp(:,:,:,:) = sss_gsv_resp(:,:,:,:) + pss_gsv_resp(:,:,:,:)          &
-                                                          * site_area_i * cpoly%area(isi)
-            !----- Heterotrophic respiration doesn't have PFT nor size classes... ---------!
-            sss_rh_ar(:,:) = sss_rh_ar(:,:)                                                &
-                           + pss_rh_ar(:,:) * site_area_i * cpoly%area(isi)
+            sss_rh_ar(:,:) = sss_rh_ar(:,:) + pss_rh_ar(:,:)                               &
+                                            * luage_area_i(:,:) * cpoly%area(isi)
          end if
 
       end do siteloop
@@ -1534,11 +1582,11 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_rh(ipy)      = cgrid%dmean_rh(ipy)      + sss_rh      * poly_area_i
 
       cgrid%dmean_growth_resp(ipy)  = cgrid%dmean_growth_resp(ipy)                         &
-                                    + sss_growth_resp  * poly_area_i * day_sec
+                                    + sss_growth_resp  * poly_area_i
       cgrid%dmean_storage_resp(ipy) = cgrid%dmean_storage_resp(ipy)                        &
-                                    + sss_storage_resp * poly_area_i * day_sec
+                                    + sss_storage_resp * poly_area_i
       cgrid%dmean_vleaf_resp(ipy)   = cgrid%dmean_vleaf_resp(ipy)                          &
-                                    + sss_vleaf_resp   * poly_area_i * day_sec
+                                    + sss_vleaf_resp   * poly_area_i
 
       !----- We now update the daily means of the 5-D arrays (plus het. respiration). -----!
       if (fivedim_diags) then
@@ -1564,8 +1612,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
          !    Plant respiration already has the contribution of leaf and root respiration. !
          !---------------------------------------------------------------------------------!
          cgrid%dmean_plresp_ar   (:,:,:,:,ipy) = cgrid%dmean_plresp_ar   (:,:,:,:,ipy)     &
-                                               + sss_gsv_resp   (:,:,:,:) * poly_area_i    &
-                                               * day_sec
+                                               + sss_gsv_resp   (:,:,:,:) * poly_area_i
       end if
    end do polyloop
 
@@ -2368,8 +2415,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                !     Here we find the patch-level average of those intensive variables and !
                ! add them to the patch sum variables.                                      !
                !---------------------------------------------------------------------------!
-               do ipft=1,n_pft
-                  do idbh=1,n_dbh
+               do idbh=1,n_dbh
+                  do ipft=1,n_pft
                      pss_ncbmort_ar(ipft,ilu,idbh,iage) =                                  &
                          pss_ncbmort_ar(ipft,ilu,idbh,iage) + css_ncbmort_ar(ipft,idbh)    &
                                                             * patch_nplant_i(ipft,idbh)    &
@@ -2413,35 +2460,47 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             end where
             !------------------------------------------------------------------------------!
             !    The intensive variables are again averaged over the patches, but only     !
-            ! those that have something.                                                   !
+            ! those that have something.  The average is weighted by areas belonging to    !
+            ! the same land use and age class.                                             !
             !------------------------------------------------------------------------------!
-            do ipft=1,n_pft
-               do ilu=1,n_dist_types
-                  do idbh=1,n_dbh
-                     do iage=1,n_age
+            do iage=1,n_age
+               do idbh=1,n_dbh
+                  do ilu=1,n_dist_types
+                     do ipft=1,n_pft
                         sss_ncbmort_ar(ipft,ilu,idbh,iage) =                               &
-                                                       sss_ncbmort_ar(ipft,ilu,idbh,iage)  &
-                                                     + pss_ncbmort_ar(ipft,ilu,idbh,iage)  &
+                                                       sss_ncbmort_ar (ipft,ilu,idbh,iage) &
+                                                     + pss_ncbmort_ar (ipft,ilu,idbh,iage) &
+                                                     * luage_area_i(ilu,iage)              &
+                                                     * cpoly%area(isi)
+                        sss_bseeds_ar (ipft,ilu,idbh,iage) =                               &
+                                                       sss_bseeds_ar  (ipft,ilu,idbh,iage) &
+                                                     + pss_bseeds_ar  (ipft,ilu,idbh,iage) &
+                                                     * luage_area_i(ilu,iage)              &
+                                                     * cpoly%area(isi)
+                        sss_agb_ar    (ipft,ilu,idbh,iage) =                               &
+                                                       sss_agb_ar     (ipft,ilu,idbh,iage) &
+                                                     + pss_agb_ar     (ipft,ilu,idbh,iage) &
+                                                     * luage_area_i(ilu,iage)              &
+                                                     * cpoly%area(isi)
+                        sss_ba_ar     (ipft,ilu,idbh,iage) =                               &
+                                                       sss_ba_ar      (ipft,ilu,idbh,iage) &
+                                                     + pss_ba_ar      (ipft,ilu,idbh,iage) &
+                                                     * luage_area_i(ilu,iage)              &
+                                                     * cpoly%area(isi)
+                        sss_pldens_ar (ipft,ilu,idbh,iage) =                               &
+                                                       sss_pldens_ar  (ipft,ilu,idbh,iage) &
+                                                     + pss_pldens_ar  (ipft,ilu,idbh,iage) &
+                                                     * luage_area_i(ilu,iage)              &
+                                                     * cpoly%area(isi)
+                        sss_carbbal_ar(ipft,ilu,idbh,iage) =                               &
+                                                       sss_carbbal_ar (ipft,ilu,idbh,iage) &
+                                                     + pss_carbbal_ar (ipft,ilu,idbh,iage) &
                                                      * luage_area_i(ilu,iage)              &
                                                      * cpoly%area(isi)
                      end do
                   end do
                end do
             end do
-            !------------------------------------------------------------------------------!
-            !    The following variables are "extensive" so they should be average amongst !
-            ! all patches equally (i.e., zero is meaningful).                              !
-            !------------------------------------------------------------------------------!
-            sss_bseeds_ar  (:,:,:,:) = sss_bseeds_ar  (:,:,:,:) + pss_bseeds_ar  (:,:,:,:) &
-                                     * site_area_i * cpoly%area(isi)
-            sss_agb_ar     (:,:,:,:) = sss_agb_ar     (:,:,:,:) + pss_agb_ar     (:,:,:,:) &
-                                     * site_area_i * cpoly%area(isi)
-            sss_ba_ar      (:,:,:,:) = sss_ba_ar      (:,:,:,:) + pss_ba_ar      (:,:,:,:) &
-                                     * site_area_i * cpoly%area(isi)
-            sss_pldens_ar  (:,:,:,:) = sss_pldens_ar  (:,:,:,:) + pss_pldens_ar  (:,:,:,:) &
-                                     * site_area_i * cpoly%area(isi)
-            sss_carbbal_ar (:,:,:,:) = sss_carbbal_ar (:,:,:,:) + pss_carbbal_ar (:,:,:,:) &
-                                     * site_area_i * cpoly%area(isi)
          end if
          !---------------------------------------------------------------------------------!
       end do siteloop

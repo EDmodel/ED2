@@ -1408,14 +1408,14 @@ module ed_state_vars
      real, pointer, dimension(:)   :: dmean_vapor_vc       ! [      W/m2]
      real, pointer, dimension(:)   :: dmean_vapor_gc       ! [      W/m2]
      real, pointer, dimension(:)   :: dmean_vapor_ac       ! [      W/m2]
-     real, pointer, dimension(:)   :: dmean_nep            ! [kgC/m²/day]
-     real, pointer, dimension(:)   :: dmean_plresp         ! [kgC/m²/day]
-     real, pointer, dimension(:)   :: dmean_rh             ! [kgC/m²/day]
-     real, pointer, dimension(:)   :: dmean_leaf_resp      ! [kgC/m²/day]
-     real, pointer, dimension(:)   :: dmean_root_resp      ! [kgC/m²/day]
-     real, pointer, dimension(:)   :: dmean_growth_resp    ! [kgC/m²/day]
-     real, pointer, dimension(:)   :: dmean_storage_resp   ! [kgC/m²/day]
-     real, pointer, dimension(:)   :: dmean_vleaf_resp     ! [kgC/m²/day]
+     real, pointer, dimension(:)   :: dmean_nep            ! [ kgC/m²/yr]
+     real, pointer, dimension(:)   :: dmean_plresp         ! [ kgC/m²/yr]
+     real, pointer, dimension(:)   :: dmean_rh             ! [ kgC/m²/yr]
+     real, pointer, dimension(:)   :: dmean_leaf_resp      ! [ kgC/m²/yr]
+     real, pointer, dimension(:)   :: dmean_root_resp      ! [ kgC/m²/yr]
+     real, pointer, dimension(:)   :: dmean_growth_resp    ! [ kgC/m²/yr]
+     real, pointer, dimension(:)   :: dmean_storage_resp   ! [ kgC/m²/yr]
+     real, pointer, dimension(:)   :: dmean_vleaf_resp     ! [ kgC/m²/yr]
      
      real, pointer, dimension(:,:) :: dmean_soil_temp      !(nzg,npolygons)
      real, pointer, dimension(:,:) :: dmean_soil_water     !(nzg,npolygons)
